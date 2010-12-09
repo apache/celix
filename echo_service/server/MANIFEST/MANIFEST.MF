@@ -1,0 +1,5 @@
+Bundle-SymbolicName: echo_server
+Bundle-Version: 1.0.0
+library: echo_server
+Export-Service: echo_server
+Import-Service: echo_server

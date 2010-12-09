@@ -1,0 +1,4 @@
+add_subdirectory(publisherA)
+add_subdirectory(publisherB)
+add_subdirectory(tracker)
+add_subdirectory(tracker_depman)

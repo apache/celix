@@ -1,0 +1,5 @@
+Bundle-SymbolicName: publisherA
+Bundle-Version: 1.0.0.test
+library: publisherA
+Export-Service: Publisher
+Import-Service: Publisher

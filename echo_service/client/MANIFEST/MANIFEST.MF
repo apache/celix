@@ -1,0 +1,4 @@
+Bundle-SymbolicName: echo_client
+Bundle-Version: 1.0.0
+library: echo_client
+Import-Service: echo_server
