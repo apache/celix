@@ -1,0 +1,2 @@
+set(BUNDLE_NAME ${NAME}_bundle)
+set(PACKAGE_NAME ${NAME}_package)

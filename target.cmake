@@ -1,0 +1,6 @@
+deploy("name" BUNDLES receiver receiver-2.0 sender shell shell_tui)
+deploy("shell test" BUNDLES shell)
+deploy("hello_world" BUNDLES hello_world shell shell_tui)
+deploy("wb" BUNDLES tracker publisherA publisherB shell shell_tui)
+deploy("wb_dp" BUNDLES tracker_depman publisherA publisherB shell shell_tui)
+deploy("echo" BUNDLES echo_server echo_client shell shell_tui)
