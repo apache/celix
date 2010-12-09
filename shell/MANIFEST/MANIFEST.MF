@@ -1,0 +1,5 @@
+Bundle-SymbolicName: shell
+Bundle-Version: 1.0.0
+library: shell
+Export-Service: shellService,commandService
+Import-Service: shellService,commandService
