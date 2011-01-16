@@ -18,10 +18,8 @@ cmake_minimum_required(VERSION 2.8)
 
 add_definitions(-DUSE_FILE32API)
 aux_source_directory("private/src" SRC)
-
 include_directories("private/include")
-include_directories("public/include")
 add_library(framework SHARED ${SRC})
-target_link_libraries(framework z)
+target_link_libraries(framework z apr-1)
 
 install(TARGETS framework LIBRARY DESTINATION lib COMPONENT framework)

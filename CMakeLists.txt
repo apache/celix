@@ -23,19 +23,24 @@ SET(CMAKE_VERBOSE_MAKEFILE ON)
 SET(CMAKE_BUILD_TYPE "Debug")
 SET(CMAKE_C_FLAGS "-std=c99")
 SET(CMAKE_C_FLAGS "-D_GNU_SOURCE")
+SET(CMAKE_INSTALL_COMPONENT "framework")
 
 ADD_CUSTOM_TARGET(install-fw
   ${CMAKE_COMMAND}
   -D "CMAKE_INSTALL_COMPONENT=framework"
-  -D "CMAKE_INSTALL_PREFIX=framework"
-  -P "celix/cmake_install.cmake"
-  -P "launcher/cmake_install.cmake"
+  -D "CMAKE_INSTALL_PREFIX=test"
+  -P "cmake_install.cmake"
   )
 
+include_directories("framework/private/include")
+include_directories("framework/public/include")
+include_directories("/opt/local/include")
+link_directories("/opt/local/lib")
+
+add_subdirectory(framework)
 
 #include(CPackConfig.in)
 include(Packaging.cmake)
-add_subdirectory(celix)
 add_subdirectory(dependency_manager)
 add_subdirectory(launcher)
 add_subdirectory(test)
