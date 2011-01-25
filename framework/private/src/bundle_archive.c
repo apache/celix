@@ -25,11 +25,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <dirent.h>
-#include <sys/stat.h>
+//#include <dirent.h>
+//#include <sys/stat.h>
 
 #include "bundle_archive.h"
 #include "headers.h"
+
+#include <apr-1/apr_file_io.h>
 
 struct bundleArchive {
 	long id;
@@ -39,12 +41,15 @@ struct bundleArchive {
 	char * revision;
 
 	BUNDLE_STATE persistentState;
+
+	apr_pool_t *mp;
 };
 
-BUNDLE_ARCHIVE bundleArchive_createSystemBundleArchive() {
+BUNDLE_ARCHIVE bundleArchive_createSystemBundleArchive(apr_pool_t *mp) {
 	BUNDLE_ARCHIVE archive = (BUNDLE_ARCHIVE) malloc(sizeof(*archive));
 	archive->id = 0l;
 	archive->location = "System Bundle";
+	archive->mp = mp;
 	return archive;
 }
 
@@ -53,15 +58,17 @@ void bundleArchive_setRevisionLocation(BUNDLE_ARCHIVE archive, char * location/*
 
 void bundleArchive_initialize(BUNDLE_ARCHIVE archive);
 
-void bundleArchive_deleteTree(char * directory);
+void bundleArchive_deleteTree(char * directory, apr_pool_t *mp);
 
-BUNDLE_ARCHIVE bundleArchive_create(char * archiveRoot, long id, char * location) {
+BUNDLE_ARCHIVE bundleArchive_create(char * archiveRoot, long id, char * location, apr_pool_t *mp) {
 	BUNDLE_ARCHIVE archive = (BUNDLE_ARCHIVE) malloc(sizeof(*archive));
 
 	archive->id = id;
 	archive->location = location;
 	archive->archiveRootDir = NULL;
 	archive->archiveRoot = archiveRoot;
+
+	archive->mp = mp;
 
 	bundleArchive_initialize(archive);
 
@@ -70,13 +77,14 @@ BUNDLE_ARCHIVE bundleArchive_create(char * archiveRoot, long id, char * location
 	return archive;
 }
 
-BUNDLE_ARCHIVE bundleArchive_recreate(char * archiveRoot) {
+BUNDLE_ARCHIVE bundleArchive_recreate(char * archiveRoot, apr_pool_t *mp) {
 	BUNDLE_ARCHIVE archive = (BUNDLE_ARCHIVE) malloc(sizeof(*archive));
 	archive->archiveRoot = archiveRoot;
 	archive->archiveRootDir = opendir(archiveRoot);
 	archive->id = -1;
 	archive->persistentState = -1;
 	archive->location = NULL;
+	archive->mp = mp;
 
 	char * location = bundleArchive_getRevisionLocation(archive);
 	bundleArchive_revise(archive, location);
@@ -92,10 +100,15 @@ long bundleArchive_getId(BUNDLE_ARCHIVE archive) {
 	char bundleId[strlen(archive->archiveRoot) + 11];
 	strcpy(bundleId, archive->archiveRoot);
 	strcat(bundleId, "/bundle.id");
-	FILE * bundleIdFile = fopen(bundleId, "r");
+
+	apr_file_t *bundleIdFile;
+	apr_status_t rv;
+	if ((rv = apr_file_open(&bundleIdFile, bundleId, APR_FOPEN_READ, APR_OS_DEFAULT, archive->mp)) != APR_SUCCESS) {
+
+	}
 	char id[256];
-	fgets (id , sizeof(id) , bundleIdFile);
-	fclose(bundleIdFile);
+	apr_file_gets(id, sizeof(id), bundleIdFile);
+	apr_file_close(bundleIdFile);
 
 	return atol(id);
 }
@@ -221,7 +234,7 @@ void bundleArchive_close(BUNDLE_ARCHIVE archive) {
 
 void bundleArchive_closeAndDelete(BUNDLE_ARCHIVE archive) {
 	bundleArchive_close(archive);
-	bundleArchive_deleteTree(archive->archiveRoot);
+	bundleArchive_deleteTree(archive->archiveRoot, archive->mp);
 }
 
 void bundleArchive_initialize(BUNDLE_ARCHIVE archive) {
@@ -229,39 +242,55 @@ void bundleArchive_initialize(BUNDLE_ARCHIVE archive) {
 		return;
 	}
 
-	mkdir(archive->archiveRoot, 0755);
+	apr_dir_make(archive->archiveRoot, APR_UREAD|APR_UWRITE|APR_UEXECUTE, archive->mp);
 	archive->archiveRootDir = opendir(archive->archiveRoot);
 
 	char bundleId[strlen(archive->archiveRoot) + 10];
 	strcpy(bundleId, archive->archiveRoot);
 	strcat(bundleId, "/bundle.id");
-	FILE * bundleIdFile = fopen(bundleId, "w");
-	fprintf(bundleIdFile, "%ld", archive->id);
-	fclose(bundleIdFile);
+	apr_file_t *bundleIdFile;
+	apr_status_t status = apr_file_open(&bundleIdFile, bundleId, APR_FOPEN_CREATE|APR_FOPEN_WRITE, APR_OS_DEFAULT, archive->mp);
+	apr_file_printf(bundleIdFile, "%ld", archive->id);
+	apr_file_close(bundleIdFile);
+
+//	FILE * bundleIdFile = fopen(bundleId, "w");
+//	fprintf(bundleIdFile, "%ld", archive->id);
+//	fclose(bundleIdFile);
 
 	char bundleLocation[strlen(archive->archiveRoot) + 16];
 	strcpy(bundleLocation,archive->archiveRoot);
 	strcat(bundleLocation, "/bundle.location");
-	FILE * bundleLocationFile = fopen(bundleLocation, "w");
-	fprintf(bundleLocationFile, "%s", archive->location);
-	fclose(bundleLocationFile);
+	apr_file_t *bundleLocationFile;
+	status = apr_file_open(&bundleLocationFile, bundleLocation, APR_FOPEN_CREATE|APR_FOPEN_WRITE, APR_OS_DEFAULT, archive->mp);
+	apr_file_printf(bundleLocationFile, "%ld", archive->id);
+	apr_file_close(bundleLocationFile);
+
+//	FILE * bundleLocationFile = fopen(bundleLocation, "w");
+//	fprintf(bundleLocationFile, "%s", archive->location);
+//	fclose(bundleLocationFile);
 }
 
-void bundleArchive_deleteTree(char * directory) {
-	DIR * dir = opendir(directory);
-	struct dirent * dp;
-	while ((dp = readdir(dir))) {
-		if ((strcmp((dp->d_name), ".") != 0) && (strcmp((dp->d_name), "..") != 0)) {
-			char subdir[strlen(directory) + strlen(dp->d_name) + 2];
+void bundleArchive_deleteTree(char * directory, apr_pool_t *mp) {
+	apr_dir_t *dir;
+	apr_dir_open(&dir, directory, mp);
+	apr_finfo_t dp;
+	while (apr_dir_read(&dp, APR_FINFO_DIRENT|APR_FINFO_TYPE, dir)) {
+
+	//DIR * dir = opendir(directory);
+//	struct dirent * dp;
+//	while ((dp = readdir(dir))) {
+		if ((strcmp((dp.name), ".") != 0) && (strcmp((dp.name), "..") != 0)) {
+			char subdir[strlen(directory) + strlen(dp.name) + 2];
 			strcpy(subdir, directory);
 			strcat(subdir, "/");
-			strcat(subdir, dp->d_name);
+			strcat(subdir, dp.name);
 
-			struct stat s;
-			stat(dp->d_name, &s);
-			if (S_ISDIR(s.st_mode)) {
+//			struct stat s;
+//			stat(dp->d_name, &s);
+			if (dp.filetype = APR_DIR) {
+//			if (S_ISDIR(s.st_mode)) {
 //			if (dp->d_type == DT_DIR) {
-				bundleCache_deleteTree(subdir);
+				bundleCache_deleteTree(subdir, mp);
 			} else {
 				remove(subdir);
 			}

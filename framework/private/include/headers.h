@@ -42,6 +42,8 @@
 #include "bundle_state.h"
 #include "bundle_cache.h"
 
+#include "apr-1/apr_general.h"
+
 #if defined(__GNUC__)
 #define ATTRIBUTE_UNUSED __attribute__ ((__unused__))
 #else
@@ -71,6 +73,8 @@ struct framework {
 	int globalLockCount;
 
 	bool interrupted;
+
+	apr_pool_t *mp;
 };
 
 typedef struct framework * FRAMEWORK;
@@ -127,7 +131,7 @@ struct serviceRegistration {
 	SERVICE_REGISTRY registry;
 	char * className;
 	SERVICE_REFERENCE reference;
-	HASHTABLE properties;
+	PROPERTIES properties;
 	void * svcObj;
 	long serviceId;
 

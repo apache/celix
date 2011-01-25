@@ -14,12 +14,13 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+cmake_minimum_required(VERSION 2.8)
 
-add_library(tracker_depman SHARED dependency_activator)
-include_directories("${PROJECT_SOURCE_DIR}/celix")
-include_directories("${PROJECT_SOURCE_DIR}/dependency_manager")
-include_directories("../publisherService")
-include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-target_link_libraries(tracker_depman framework dependency_manager)
+add_definitions(-DUSE_FILE32API)
+aux_source_directory("private/src" SRC)
+include_directories("private/include")
+include_directories("public/include")
+add_library(utils SHARED ${SRC})
+target_link_libraries(utils)
 
-bundle(tracker_depman)
+install(TARGETS utils LIBRARY DESTINATION lib COMPONENT framework)

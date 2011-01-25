@@ -41,7 +41,7 @@ PROPERTIES manifest_getMainAttributes(MANIFEST manifest) {
 
 MANIFEST manifest_read(char * filename) {
 	MANIFEST mf = (MANIFEST) malloc(sizeof(*mf));
-	PROPERTIES mainAttributes = createProperties();
+	PROPERTIES mainAttributes = properties_create();
 
 	mf->mainAttributes = mainAttributes;
 
@@ -113,7 +113,7 @@ MANIFEST manifest_read(char * filename) {
 				value[len - i] = '\0';
 			}
 
-			if ((setProperty(mainAttributes, name, value) != NULL) && (!lineContinued)) {
+			if ((properties_set(mainAttributes, name, value) != NULL) && (!lineContinued)) {
 				printf("Duplicate entry: %s", name);
 			}
 		}
@@ -129,7 +129,7 @@ void manifest_write(MANIFEST manifest, char * filename) {
 }
 
 char * manifest_getValue(MANIFEST manifest, const char * name) {
-	char * val = getProperty(manifest->mainAttributes, (char *) name);
+	char * val = properties_get(manifest->mainAttributes, (char *) name);
 	return val;
 }
 

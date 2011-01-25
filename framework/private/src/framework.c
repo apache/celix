@@ -36,7 +36,6 @@
 #include "filter.h"
 #include "constants.h"
 #include "archive.h"
-#include "hashtable_itr.h"
 #include "bundle.h"
 #include "wire.h"
 #include "resolver.h"
@@ -86,7 +85,14 @@ typedef struct fw_serviceListener * FW_SERVICE_LISTENER;
 FRAMEWORK framework_create() {
 	FRAMEWORK framework = (FRAMEWORK) malloc(sizeof(*framework));
 
-	BUNDLE bundle = bundle_create();
+	apr_status_t rv = apr_initialize();
+	if (rv != APR_SUCCESS) {
+		return NULL;
+	}
+
+	apr_pool_create(&framework->mp, NULL);
+
+	BUNDLE bundle = bundle_create(framework->mp);
 	framework->bundle = bundle;
 
 	framework->installedBundleMap = NULL;
@@ -112,9 +118,9 @@ void fw_init(FRAMEWORK framework) {
 	framework_acquireBundleLock(framework, framework->bundle, BUNDLE_INSTALLED|BUNDLE_RESOLVED|BUNDLE_STARTING|BUNDLE_ACTIVE);
 
 	if ((bundle_getState(framework->bundle) == BUNDLE_INSTALLED) || (bundle_getState(framework->bundle) == BUNDLE_RESOLVED)) {
-		PROPERTIES props = createProperties();
-		setProperty(props, (char *) FRAMEWORK_STORAGE, ".cache");
-		framework->cache = bundleCache_create(props);
+		PROPERTIES props = properties_create();
+		properties_set(props, (char *) FRAMEWORK_STORAGE, ".cache");
+		framework->cache = bundleCache_create(props, framework->mp);
 
 		if (bundle_getState(framework->bundle) == BUNDLE_INSTALLED) {
 			// clean cache
@@ -136,7 +142,7 @@ void fw_init(FRAMEWORK framework) {
 	int arcIdx;
 	for (arcIdx = 0; arcIdx < arrayList_size(archives); arcIdx++) {
 		BUNDLE_ARCHIVE archive = (BUNDLE_ARCHIVE) arrayList_get(archives, arcIdx);
-		framework->nextBundleId = fmaxl(framework->nextBundleId, bundleArchive_getId(archive) + 1);
+//		framework->nextBundleId = fmaxl(framework->nextBundleId, bundleArchive_getId(archive) + 1);
 
 		if (bundleArchive_getPersistentState(archive) == BUNDLE_UNINSTALLED) {
 			bundleArchive_closeAndDelete(archive);
@@ -411,7 +417,7 @@ void fw_stopBundle(FRAMEWORK framework, BUNDLE bundle, int options ATTRIBUTE_UNU
 	framework_releaseBundleLock(framework, bundle);
 }
 
-SERVICE_REGISTRATION fw_registerService(FRAMEWORK framework, BUNDLE bundle, char * serviceName, void * svcObj, HASHTABLE properties) {
+SERVICE_REGISTRATION fw_registerService(FRAMEWORK framework, BUNDLE bundle, char * serviceName, void * svcObj, PROPERTIES properties) {
 	if (serviceName == NULL) {
 		printf("Service name cannot be null");
 		return NULL;
@@ -448,7 +454,7 @@ ARRAY_LIST fw_getServiceReferences(FRAMEWORK framework, BUNDLE bundle ATTRIBUTE_
 	for (refIdx = 0; (references != NULL) && refIdx < arrayList_size(references); refIdx++) {
 		SERVICE_REFERENCE ref = (SERVICE_REFERENCE) arrayList_get(references, refIdx);
 		SERVICE_REGISTRATION reg = ref->registration;
-		char * serviceName = getProperty(reg->properties, (char *) OBJECTCLASS);
+		char * serviceName = properties_get(reg->properties, (char *) OBJECTCLASS);
 		if (!serviceReference_isAssignableTo(ref, bundle, serviceName)) {
 			arrayList_remove(references, refIdx);
 			refIdx--;
@@ -496,7 +502,7 @@ void fw_removeServiceListener(BUNDLE bundle, SERVICE_LISTENER listener) {
 	}
 }
 
-void fw_serviceChanged(SERVICE_EVENT event, HASHTABLE oldprops) {
+void fw_serviceChanged(SERVICE_EVENT event, PROPERTIES oldprops) {
 	unsigned int i;
 	FW_SERVICE_LISTENER element;
 	SERVICE_REGISTRATION registration = event->reference->registration;

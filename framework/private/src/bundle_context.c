@@ -51,7 +51,7 @@ BUNDLE bundleContext_installBundle(BUNDLE_CONTEXT context, char * location) {
 	return fw_installBundle(context->framework, location);
 }
 
-SERVICE_REGISTRATION bundleContext_registerService(BUNDLE_CONTEXT context, char * serviceName, void * svcObj, HASHTABLE properties) {
+SERVICE_REGISTRATION bundleContext_registerService(BUNDLE_CONTEXT context, char * serviceName, void * svcObj, PROPERTIES properties) {
 	return fw_registerService(context->framework, context->bundle, serviceName, svcObj, properties);
 }
 

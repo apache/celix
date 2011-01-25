@@ -30,7 +30,6 @@
 #include "command_private.h"
 #include "headers.h"
 #include "bundle_context.h"
-#include "hashtable_itr.h"
 #include "service_registration.h"
 
 #include "ps_command.h"

@@ -33,8 +33,6 @@
 #include "bundle_activator.h"
 #include "framework.h"
 #include "properties.h"
-#include "hashtable.h"
-#include "hashtable_itr.h"
 #include "filter.h"
 #include "bundle_context.h"
 #include "bundle.h"

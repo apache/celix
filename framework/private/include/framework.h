@@ -40,7 +40,7 @@ BUNDLE fw_installBundle(FRAMEWORK framework, char * location);
 void fw_startBundle(FRAMEWORK framework, BUNDLE bundle, int options);
 void fw_stopBundle(FRAMEWORK framework, BUNDLE bundle, int options);
 
-SERVICE_REGISTRATION fw_registerService(FRAMEWORK framework, BUNDLE bundle, char * serviceName, void * svcObj, HASHTABLE properties);
+SERVICE_REGISTRATION fw_registerService(FRAMEWORK framework, BUNDLE bundle, char * serviceName, void * svcObj, PROPERTIES properties);
 void fw_unregisterService(SERVICE_REGISTRATION registration);
 
 ARRAY_LIST fw_getServiceReferences(FRAMEWORK framework, BUNDLE bundle, char * serviceName, char * filter);
@@ -49,7 +49,7 @@ bool framework_ungetService(FRAMEWORK framework, BUNDLE bundle, SERVICE_REFERENC
 
 void fw_addServiceListener(BUNDLE bundle, SERVICE_LISTENER listener, char * filter);
 void fw_removeServiceListener(BUNDLE bundle, SERVICE_LISTENER listener);
-void fw_serviceChanged(SERVICE_EVENT event, HASHTABLE oldprops);
+void fw_serviceChanged(SERVICE_EVENT event, PROPERTIES oldprops);
 
 //BUNDLE_ARCHIVE fw_createArchive(long id, char * location);
 //void revise(BUNDLE_ARCHIVE archive, char * location);

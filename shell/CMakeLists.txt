@@ -16,7 +16,7 @@
 # under the License.
 
 add_library(shell SHARED shell command ps_command start_command stop_command)
-include_directories("${PROJECT_SOURCE_DIR}/celix")
+include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 target_link_libraries(shell framework)
 
 bundle(shell)

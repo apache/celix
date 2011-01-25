@@ -18,7 +18,7 @@
 cmake_minimum_required (VERSION 2.6)
 project (Celix)
 
-SET(CMAKE_VERBOSE_MAKEFILE ON)
+#SET(CMAKE_VERBOSE_MAKEFILE ON)
 
 SET(CMAKE_BUILD_TYPE "Debug")
 SET(CMAKE_C_FLAGS "-std=c99")
@@ -37,6 +37,7 @@ include_directories("framework/public/include")
 include_directories("/opt/local/include")
 link_directories("/opt/local/lib")
 
+add_subdirectory(utils)
 add_subdirectory(framework)
 
 #include(CPackConfig.in)

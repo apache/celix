@@ -18,6 +18,7 @@
 add_library(tracker SHARED activator)
 include_directories("${PROJECT_SOURCE_DIR}/celix")
 include_directories("../publisherService")
+include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 target_link_libraries(tracker framework)
 
 bundle(tracker)

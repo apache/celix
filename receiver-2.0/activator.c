@@ -49,8 +49,8 @@ void * dm_create() {
 void dm_init(void * userData, BUNDLE_CONTEXT context, DEPENDENCY_MANAGER manager) {
 	m_test = (SERVICE_TEST) malloc(sizeof(*m_test));
 
-	HASHTABLE props = createProperties();
-	setProperty(props, "test", "test");
+	PROPERTIES props = properties_create();
+	properties_set(props, "test", "test");
 	//setProperty(props, "a", "b");
 	m_test->handle = serviceTest_construct();
 	m_test->doo = doo;

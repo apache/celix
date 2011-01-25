@@ -32,7 +32,7 @@
 
 typedef struct bundleCache * BUNDLE_CACHE;
 
-BUNDLE_CACHE bundleCache_create(PROPERTIES configurationMap);
+BUNDLE_CACHE bundleCache_create(PROPERTIES configurationMap, apr_pool_t *mp);
 ARRAY_LIST bundleCache_getArchives(BUNDLE_CACHE cache);
 BUNDLE_ARCHIVE bundleCache_createArchive(BUNDLE_CACHE cache, long id, char * location);
 void bundleCache_delete(BUNDLE_CACHE cache);

@@ -26,13 +26,15 @@
 #ifndef BUNDLE_ARCHIVE_H_
 #define BUNDLE_ARCHIVE_H_
 
+#include <apr-1/apr_general.h>
+
 #include "bundle_state.h"
 
 typedef struct bundleArchive * BUNDLE_ARCHIVE;
 
-BUNDLE_ARCHIVE bundleArchive_create(char * archiveRoot, long id, char * location);
-BUNDLE_ARCHIVE bundleArchive_createSystemBundleArchive();
-BUNDLE_ARCHIVE bundleArchive_recreate(char * archiveRoot);
+BUNDLE_ARCHIVE bundleArchive_create(char * archiveRoot, long id, char * location, apr_pool_t *mp);
+BUNDLE_ARCHIVE bundleArchive_createSystemBundleArchive(apr_pool_t *mp);
+BUNDLE_ARCHIVE bundleArchive_recreate(char * archiveRoot, apr_pool_t *mp);
 long bundleArchive_getId(BUNDLE_ARCHIVE archive);
 char * bundleArchive_getLocation(BUNDLE_ARCHIVE archive);
 char * bundleArchive_getArchiveRoot(BUNDLE_ARCHIVE archive);

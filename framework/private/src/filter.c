@@ -404,7 +404,7 @@ ARRAY_LIST filter_parseSubstring(char * filterString, int * pos) {
 	return operands;
 }
 
-int filter_match(FILTER filter, HASHTABLE properties) {
+int filter_match(FILTER filter, PROPERTIES properties) {
 	switch (filter->operand) {
 		case AND: {
 			ARRAY_LIST filters = (ARRAY_LIST) filter->value;
@@ -437,12 +437,12 @@ int filter_match(FILTER filter, HASHTABLE properties) {
 		case GREATER :
 		case LESS :
 		case APPROX : {
-			char * value = (properties == NULL) ? NULL: getProperty(properties, filter->attribute);
+			char * value = (properties == NULL) ? NULL: properties_get(properties, filter->attribute);
 
 			return filter_compare(filter->operand, (char *) value, filter->value);
 		}
 		case PRESENT: {
-			char * value = (properties == NULL) ? NULL: getProperty(properties, filter->attribute);
+			char * value = (properties == NULL) ? NULL: properties_get(properties, filter->attribute);
 			return value != NULL;
 		}
 	}

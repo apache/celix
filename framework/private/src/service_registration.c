@@ -36,13 +36,13 @@ SERVICE_REGISTRATION serviceRegistration_create(SERVICE_REGISTRY registry, BUNDL
 	registration->className = serviceName;
 
 	if (dictionary == NULL) {
-		dictionary = createProperties();
+		dictionary = properties_create();
 	}
 
 	char sId[sizeof(serviceId) + 1];
 	sprintf(sId, "%ld", serviceId);
-	setProperty(dictionary, (char *) SERVICE_ID, strdup(sId));
-	setProperty(dictionary, (char *) OBJECTCLASS, serviceName);
+	properties_set(dictionary, (char *) SERVICE_ID, strdup(sId));
+	properties_set(dictionary, (char *) OBJECTCLASS, serviceName);
 
 	registration->properties = dictionary;
 

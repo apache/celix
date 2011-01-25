@@ -34,7 +34,7 @@ FRAMEWORK bundleContext_getFramework(BUNDLE_CONTEXT context);
 
 BUNDLE bundleContext_installBundle(BUNDLE_CONTEXT context, char * location);
 
-SERVICE_REGISTRATION bundleContext_registerService(BUNDLE_CONTEXT context, char * serviceName, void * svcObj, HASHTABLE properties);
+SERVICE_REGISTRATION bundleContext_registerService(BUNDLE_CONTEXT context, char * serviceName, void * svcObj, PROPERTIES properties);
 
 ARRAY_LIST getServiceReferences(BUNDLE_CONTEXT context, char * serviceName, char * filter);
 SERVICE_REFERENCE bundleContext_getServiceReference(BUNDLE_CONTEXT context, char * serviceName);

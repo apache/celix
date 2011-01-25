@@ -28,7 +28,7 @@
 #include "bundle.h"
 
 static void launcher_load_custom_bundles(void);
-void shutdown(int signal);
+void launcher_shutdown(int signal);
 
 int running = 0;
 
@@ -38,9 +38,9 @@ FRAMEWORK framework;
 
 int main(void) {
 	// Set signal handler
-	(void) signal(SIGINT, shutdown);
-    HASHTABLE config = loadProperties("config.properties");
-    char * autoStart = getProperty(config, "cosgi.auto.start.1");
+	(void) signal(SIGINT, launcher_shutdown);
+    PROPERTIES config = properties_load("config.properties");
+    char * autoStart = properties_get(config, "cosgi.auto.start.1");
     framework = framework_create();
     fw_init(framework);
 
@@ -71,7 +71,7 @@ int main(void) {
     return 0;
 }
 
-void shutdown(int signal) {
+void launcher_shutdown(int signal) {
 	framework_stop(framework);
 	framework_waitForStop(framework);
 }

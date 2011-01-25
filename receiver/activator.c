@@ -35,8 +35,8 @@ SERVICE_TEST m_test;
 
 void bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 	m_test = (SERVICE_TEST) malloc(sizeof(*m_test));
-	HASHTABLE props = createProperties();
-	setProperty(props, "test", "test");
+	PROPERTIES props = properties_create();
+	properties_set(props, "test", "test");
 	//setProperty(props, "a", "b");
 	m_test->handle = serviceTest_construct();
 	m_test->doo = doo;

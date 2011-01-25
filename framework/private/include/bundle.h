@@ -26,9 +26,11 @@
 #ifndef BUNDLE_H_
 #define BUNDLE_H_
 
+#include <apr-1/apr_general.h>
+
 #include "headers.h"
 
-BUNDLE bundle_create();
+BUNDLE bundle_create(apr_pool_t *mp);
 
 BUNDLE bundle_createFromArchive(FRAMEWORK framework, BUNDLE_ARCHIVE archive);
 

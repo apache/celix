@@ -17,7 +17,7 @@
 
 add_executable(launcher launcher.c)
 
-include_directories("${PROJECT_SOURCE_DIR}/celix")
 target_link_libraries(launcher framework)
+include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 
 install(TARGETS launcher RUNTIME DESTINATION bin COMPONENT framework)

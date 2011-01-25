@@ -17,6 +17,8 @@
 
 include_directories("${PROJECT_SOURCE_DIR}/celix")
 include_directories("/opt/local/include")
+include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+include_directories("${PROJECT_SOURCE_DIR}/utils/private/include")
 link_directories("/opt/local/lib")
 
 add_executable(hash_map_test hash_map_test.c)

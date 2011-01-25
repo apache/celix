@@ -26,27 +26,16 @@
 #ifndef PROPERTIES_H_
 #define PROPERTIES_H_
 
-#include "hashtable.h"
+#include "hash_map.h"
 
-struct key {
-	char * key;
-};
+typedef HASH_MAP PROPERTIES;
 
-struct value {
-	char * value;
-};
+PROPERTIES properties_create(void);
+PROPERTIES properties_load(char * filename);
+void properties_store(PROPERTIES properties, char * file, char * header);
 
-typedef struct hashtable * HASHTABLE;
-typedef struct hashtable * PROPERTIES;
-
-typedef struct entry * ENTRY;
-
-HASHTABLE createProperties(void);
-HASHTABLE loadProperties(char * filename);
-void storeProperties(HASHTABLE properties, char * file, char * header);
-
-char * getProperty(HASHTABLE properties, char * key);
-char * getPropertyWithDefault(HASHTABLE properties, char * key, char * defaultValue);
-char * setProperty(HASHTABLE properties, char * key, char * value);
+char * properties_get(PROPERTIES properties, char * key);
+char * properties_getWithDefault(PROPERTIES properties, char * key, char * defaultValue);
+char * properties_set(PROPERTIES properties, char * key, char * value);
 
 #endif /* PROPERTIES_H_ */

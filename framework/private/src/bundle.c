@@ -52,9 +52,9 @@ struct bundle {
 
 MODULE bundle_createModule(BUNDLE bundle);
 
-BUNDLE bundle_create() {
+BUNDLE bundle_create(apr_pool_t *mp) {
 	BUNDLE bundle = (BUNDLE) malloc(sizeof(*bundle));
-	BUNDLE_ARCHIVE archive = bundleArchive_createSystemBundleArchive();
+	BUNDLE_ARCHIVE archive = bundleArchive_createSystemBundleArchive(mp);
 	bundle->archive = archive;
 	bundle->activator = NULL;
 	bundle->context = NULL;
