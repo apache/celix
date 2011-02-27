@@ -34,14 +34,15 @@ int running = 0;
 
 #include <stdio.h>
 
-FRAMEWORK framework;
+struct framework * framework;
 
 int main(void) {
 	// Set signal handler
 	(void) signal(SIGINT, launcher_shutdown);
     PROPERTIES config = properties_load("config.properties");
     char * autoStart = properties_get(config, "cosgi.auto.start.1");
-    framework = framework_create();
+    framework = NULL;
+    framework_create(&framework);
     fw_init(framework);
 
     // Start the system bundle

@@ -31,19 +31,20 @@
 #include "wire.h"
 #include "hash_map.h"
 #include "array_list.h"
+#include "celix_errno.h"
 
-FRAMEWORK framework_create();
-void fw_init(FRAMEWORK framework);
+celix_status_t framework_create(FRAMEWORK *framework);
+celix_status_t fw_init(FRAMEWORK framework);
 
-BUNDLE fw_installBundle(FRAMEWORK framework, char * location);
+celix_status_t fw_installBundle(FRAMEWORK framework, BUNDLE * bundle, char * location);
 
-void fw_startBundle(FRAMEWORK framework, BUNDLE bundle, int options);
+celix_status_t fw_startBundle(FRAMEWORK framework, BUNDLE bundle, int options);
 void fw_stopBundle(FRAMEWORK framework, BUNDLE bundle, int options);
 
-SERVICE_REGISTRATION fw_registerService(FRAMEWORK framework, BUNDLE bundle, char * serviceName, void * svcObj, PROPERTIES properties);
+celix_status_t fw_registerService(FRAMEWORK framework, SERVICE_REGISTRATION * registration, BUNDLE bundle, char * serviceName, void * svcObj, PROPERTIES properties);
 void fw_unregisterService(SERVICE_REGISTRATION registration);
 
-ARRAY_LIST fw_getServiceReferences(FRAMEWORK framework, BUNDLE bundle, char * serviceName, char * filter);
+celix_status_t fw_getServiceReferences(FRAMEWORK framework, ARRAY_LIST *references, BUNDLE bundle, char * serviceName, char * filter);
 void * fw_getService(FRAMEWORK framework, BUNDLE bundle, SERVICE_REFERENCE reference);
 bool framework_ungetService(FRAMEWORK framework, BUNDLE bundle, SERVICE_REFERENCE reference);
 
@@ -59,7 +60,7 @@ BUNDLE findBundle(BUNDLE_CONTEXT context);
 SERVICE_REGISTRATION findRegistration(SERVICE_REFERENCE reference);
 
 SERVICE_REFERENCE listToArray(ARRAY_LIST list);
-void framework_markResolvedModules(FRAMEWORK framework, HASH_MAP wires);
+celix_status_t framework_markResolvedModules(FRAMEWORK framework, HASH_MAP wires);
 
 ARRAY_LIST framework_getBundles();
 

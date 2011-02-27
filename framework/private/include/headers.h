@@ -32,7 +32,6 @@
 
 #include "array_list.h"
 #include "properties.h"
-//#include "cexcept.h"
 #include "linkedlist.h"
 #include "version.h"
 #include "version_range.h"
@@ -90,6 +89,22 @@ typedef struct requirement * REQUIREMENT;
 typedef struct capability * CAPABILITY;
 
 typedef struct wire * WIRE;
+
+struct bundle {
+	BUNDLE_CONTEXT context;
+	ACTIVATOR activator;
+	long lastModified;
+	BUNDLE_STATE state;
+	void * handle;
+	BUNDLE_ARCHIVE archive;
+	MODULE module;
+
+	pthread_mutex_t lock;
+	int lockCount;
+	pthread_t lockThread;
+
+	struct framework * framework;
+};
 
 typedef struct bundle * BUNDLE;
 

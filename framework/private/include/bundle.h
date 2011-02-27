@@ -29,10 +29,10 @@
 #include <apr-1/apr_general.h>
 
 #include "headers.h"
+#include "celix_errno.h"
 
-BUNDLE bundle_create(apr_pool_t *mp);
-
-BUNDLE bundle_createFromArchive(FRAMEWORK framework, BUNDLE_ARCHIVE archive);
+celix_status_t bundle_create(BUNDLE * bundle, apr_pool_t *mp);
+celix_status_t bundle_createFromArchive(BUNDLE * bundle, FRAMEWORK framework, BUNDLE_ARCHIVE archive);
 
 BUNDLE_ARCHIVE bundle_getArchive(BUNDLE bundle);
 MODULE bundle_getModule(BUNDLE bundle);

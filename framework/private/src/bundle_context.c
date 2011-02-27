@@ -48,15 +48,21 @@ FRAMEWORK bundleContext_getFramework(BUNDLE_CONTEXT context) {
 }
 
 BUNDLE bundleContext_installBundle(BUNDLE_CONTEXT context, char * location) {
-	return fw_installBundle(context->framework, location);
+	BUNDLE bundle = NULL;
+	fw_installBundle(context->framework, &bundle, location);
+	return bundle;
 }
 
 SERVICE_REGISTRATION bundleContext_registerService(BUNDLE_CONTEXT context, char * serviceName, void * svcObj, PROPERTIES properties) {
-	return fw_registerService(context->framework, context->bundle, serviceName, svcObj, properties);
+	SERVICE_REGISTRATION registration = NULL;
+	fw_registerService(context->framework, &registration, context->bundle, serviceName, svcObj, properties);
+	return registration;
 }
 
 ARRAY_LIST getServiceReferences(BUNDLE_CONTEXT context, char * serviceName, char * filter) {
-	return fw_getServiceReferences(context->framework, context->bundle, serviceName, filter);
+	ARRAY_LIST references = NULL;
+	fw_getServiceReferences(context->framework, &references, context->bundle, serviceName, filter);
+	return references;
 }
 
 SERVICE_REFERENCE bundleContext_getServiceReference(BUNDLE_CONTEXT context, char * serviceName) {

@@ -34,65 +34,53 @@
 #include "array_list.h"
 #include "bundle_archive.h"
 
-struct bundle {
-	BUNDLE_CONTEXT context;
-	ACTIVATOR activator;
-	long lastModified;
-	BUNDLE_STATE state;
-	void * handle;
-	BUNDLE_ARCHIVE archive;
-	MODULE module;
-
-	pthread_mutex_t lock;
-	int lockCount;
-	pthread_t lockThread;
-
-	struct framework * framework;
-};
-
 MODULE bundle_createModule(BUNDLE bundle);
 
-BUNDLE bundle_create(apr_pool_t *mp) {
-	BUNDLE bundle = (BUNDLE) malloc(sizeof(*bundle));
+celix_status_t bundle_create(BUNDLE * bundle, apr_pool_t *mp) {
+	*bundle = (BUNDLE) malloc(sizeof(**bundle));
+	if (*bundle == NULL) {
+		return CELIX_ENOMEM;
+	}
 	BUNDLE_ARCHIVE archive = bundleArchive_createSystemBundleArchive(mp);
-	bundle->archive = archive;
-	bundle->activator = NULL;
-	bundle->context = NULL;
-	bundle->framework = NULL;
-	bundle->state = BUNDLE_INSTALLED;
-
+	(*bundle)->archive = archive;
+	(*bundle)->activator = NULL;
+	(*bundle)->context = NULL;
+	(*bundle)->framework = NULL;
+	(*bundle)->state = BUNDLE_INSTALLED;
 
 	MODULE module = module_createFrameworkModule();
+	(*bundle)->module = module;
 
-	bundle->module = module;
-
-	pthread_mutex_init(&bundle->lock, NULL);
-	bundle->lockCount = 0;
-	bundle->lockThread = NULL;
+	pthread_mutex_init(&(*bundle)->lock, NULL);
+	(*bundle)->lockCount = 0;
+	(*bundle)->lockThread = NULL;
 
 	resolver_addModule(module);
 
-	return bundle;
+	return CELIX_SUCCESS;
 }
 
-BUNDLE bundle_createFromArchive(FRAMEWORK framework, BUNDLE_ARCHIVE archive) {
-	BUNDLE bundle = malloc(sizeof(*bundle));
-	bundle->archive = archive;
-	bundle->activator = NULL;
-	bundle->context = NULL;
-	bundle->framework = framework;
-	bundle->state = BUNDLE_INSTALLED;
+celix_status_t bundle_createFromArchive(BUNDLE * bundle, FRAMEWORK framework, BUNDLE_ARCHIVE archive) {
+	*bundle = (BUNDLE) malloc(sizeof(**bundle));
+	if (*bundle == NULL) {
+		return CELIX_ENOMEM;
+	}
+	(*bundle)->archive = archive;
+	(*bundle)->activator = NULL;
+	(*bundle)->context = NULL;
+	(*bundle)->framework = framework;
+	(*bundle)->state = BUNDLE_INSTALLED;
 
-	MODULE module = bundle_createModule(bundle);
-	bundle->module = module;
+	MODULE module = bundle_createModule(*bundle);
+	(*bundle)->module = module;
 
-	pthread_mutex_init(&bundle->lock, NULL);
-	bundle->lockCount = 0;
-	bundle->lockThread = NULL;
+	pthread_mutex_init(&(*bundle)->lock, NULL);
+	(*bundle)->lockCount = 0;
+	(*bundle)->lockThread = NULL;
 
 	resolver_addModule(module);
 
-	return bundle;
+	return CELIX_SUCCESS;
 }
 
 BUNDLE_ARCHIVE bundle_getArchive(BUNDLE bundle) {
