@@ -41,6 +41,7 @@ ARRAY_LIST serviceRegistry_getServiceReferences(SERVICE_REGISTRY registry, char 
 void * serviceRegistry_getService(SERVICE_REGISTRY registry, BUNDLE bundle, SERVICE_REFERENCE reference);
 bool serviceRegistry_ungetService(SERVICE_REGISTRY registry, BUNDLE bundle, SERVICE_REFERENCE reference);
 void serviceRegistry_ungetServices(SERVICE_REGISTRY registry, BUNDLE bundle);
+ARRAY_LIST serviceRegistry_getUsingBundles(SERVICE_REGISTRY registry, SERVICE_REFERENCE reference);
 SERVICE_REGISTRATION serviceRegistry_findRegistration(SERVICE_REGISTRY registry, SERVICE_REFERENCE reference);
 
 #endif /* SERVICE_REGISTRY_H_ */

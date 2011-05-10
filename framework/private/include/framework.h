@@ -34,12 +34,17 @@
 #include "celix_errno.h"
 
 celix_status_t framework_create(FRAMEWORK *framework);
+celix_status_t framework_destroy(FRAMEWORK framework);
+
 celix_status_t fw_init(FRAMEWORK framework);
 
 celix_status_t fw_installBundle(FRAMEWORK framework, BUNDLE * bundle, char * location);
 
+celix_status_t framework_getBundleEntry(FRAMEWORK framework, BUNDLE bundle, char *name, char **entry);
+
 celix_status_t fw_startBundle(FRAMEWORK framework, BUNDLE bundle, int options);
-void fw_stopBundle(FRAMEWORK framework, BUNDLE bundle, int options);
+celix_status_t framework_updateBundle(FRAMEWORK framework, BUNDLE bundle, char *inputFile);
+void fw_stopBundle(FRAMEWORK framework, BUNDLE bundle, bool record);
 
 celix_status_t fw_registerService(FRAMEWORK framework, SERVICE_REGISTRATION * registration, BUNDLE bundle, char * serviceName, void * svcObj, PROPERTIES properties);
 void fw_unregisterService(SERVICE_REGISTRATION registration);
@@ -64,7 +69,7 @@ celix_status_t framework_markResolvedModules(FRAMEWORK framework, HASH_MAP wires
 
 ARRAY_LIST framework_getBundles();
 
-void framework_waitForStop();
+celix_status_t framework_waitForStop();
 
 ARRAY_LIST framework_getBundles(FRAMEWORK framework);
 BUNDLE framework_getBundle(FRAMEWORK framework, char * location);

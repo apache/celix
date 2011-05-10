@@ -36,15 +36,15 @@ bool serviceReference_isAssignableTo(SERVICE_REFERENCE reference, BUNDLE request
 		return allow;
 	}
 
-	WIRE providerWire = module_getWire(bundle_getModule(provider), serviceName);
-	WIRE requesterWire = module_getWire(bundle_getModule(requester), serviceName);
+	WIRE providerWire = module_getWire(bundle_getCurrentModule(provider), serviceName);
+	WIRE requesterWire = module_getWire(bundle_getCurrentModule(requester), serviceName);
 
 	if (providerWire == NULL && requesterWire != NULL) {
-		allow = (bundle_getModule(provider) == wire_getExporter(requesterWire));
+		allow = (bundle_getCurrentModule(provider) == wire_getExporter(requesterWire));
 	} else if (providerWire != NULL && requesterWire != NULL) {
 		allow = (wire_getExporter(providerWire) == wire_getExporter(requesterWire));
 	} else if (providerWire != NULL && requesterWire == NULL) {
-		allow = (wire_getExporter(providerWire) == bundle_getModule(requester));
+		allow = (wire_getExporter(providerWire) == bundle_getCurrentModule(requester));
 	} else {
 		allow = false;
 	}

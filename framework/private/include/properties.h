@@ -31,6 +31,7 @@
 typedef HASH_MAP PROPERTIES;
 
 PROPERTIES properties_create(void);
+void properties_destroy(PROPERTIES properties);
 PROPERTIES properties_load(char * filename);
 void properties_store(PROPERTIES properties, char * file, char * header);
 

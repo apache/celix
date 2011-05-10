@@ -34,17 +34,38 @@
 struct bundleContext {
 	struct framework * framework;
 	struct bundle * bundle;
+	apr_pool_t *pool;
 };
 
 BUNDLE_CONTEXT bundleContext_create(FRAMEWORK framework, BUNDLE bundle) {
 	BUNDLE_CONTEXT context = malloc(sizeof(*context));
 	context->framework = framework;
 	context->bundle = bundle;
+
+	apr_pool_create(&context->pool, framework->mp);
+
 	return context;
+}
+
+void bundleContext_destroy(BUNDLE_CONTEXT context) {
+	context->bundle = NULL;
+	context->framework = NULL;
+	apr_pool_destroy(context->pool);
+	context->pool = NULL;
+	free(context);
+	context = NULL;
+}
+
+BUNDLE bundleContext_getBundle(BUNDLE_CONTEXT context) {
+	return context->bundle;
 }
 
 FRAMEWORK bundleContext_getFramework(BUNDLE_CONTEXT context) {
 	return context->framework;
+}
+
+apr_pool_t * bundleContext_getMemoryPool(BUNDLE_CONTEXT context) {
+	return context->pool;
 }
 
 BUNDLE bundleContext_installBundle(BUNDLE_CONTEXT context, char * location) {
@@ -59,16 +80,17 @@ SERVICE_REGISTRATION bundleContext_registerService(BUNDLE_CONTEXT context, char 
 	return registration;
 }
 
-ARRAY_LIST getServiceReferences(BUNDLE_CONTEXT context, char * serviceName, char * filter) {
+ARRAY_LIST bundleContext_getServiceReferences(BUNDLE_CONTEXT context, char * serviceName, char * filter) {
 	ARRAY_LIST references = NULL;
 	fw_getServiceReferences(context->framework, &references, context->bundle, serviceName, filter);
 	return references;
 }
 
 SERVICE_REFERENCE bundleContext_getServiceReference(BUNDLE_CONTEXT context, char * serviceName) {
-	ARRAY_LIST services = getServiceReferences(context, serviceName, NULL);
-
-	return (arrayList_size(services) > 0) ? arrayList_get(services, 0) : NULL;
+	ARRAY_LIST services = bundleContext_getServiceReferences(context, serviceName, NULL);
+	SERVICE_REFERENCE reference = (arrayList_size(services) > 0) ? arrayList_get(services, 0) : NULL;
+	arrayList_destroy(services);
+	return reference;
 }
 
 void * bundleContext_getService(BUNDLE_CONTEXT context, SERVICE_REFERENCE reference) {
@@ -87,10 +109,10 @@ BUNDLE bundleContext_getBundleById(BUNDLE_CONTEXT context, long id) {
 	return framework_getBundleById(context->framework, id);
 }
 
-void addServiceListener(BUNDLE_CONTEXT context, SERVICE_LISTENER listener, char * filter) {
+void bundleContext_addServiceListener(BUNDLE_CONTEXT context, SERVICE_LISTENER listener, char * filter) {
 	fw_addServiceListener(context->bundle, listener, filter);
 }
 
-void removeServiceListener(BUNDLE_CONTEXT context, SERVICE_LISTENER listener) {
+void bundleContext_removeServiceListener(BUNDLE_CONTEXT context, SERVICE_LISTENER listener) {
 	fw_removeServiceListener(context->bundle, listener);
 }

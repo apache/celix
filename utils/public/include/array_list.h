@@ -50,6 +50,7 @@ void arrayList_clear(ARRAY_LIST list);
 ARRAY_LIST arrayList_clone(ARRAY_LIST list);
 
 ARRAY_LIST_ITERATOR arrayListIterator_create(ARRAY_LIST list);
+void arrayListIterator_destroy(ARRAY_LIST_ITERATOR iterator);
 bool arrayListIterator_hasNext(ARRAY_LIST_ITERATOR iterator);
 void * arrayListIterator_next(ARRAY_LIST_ITERATOR iterator);
 bool arrayListIterator_hasPrevious(ARRAY_LIST_ITERATOR iterator);

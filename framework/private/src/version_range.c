@@ -48,6 +48,16 @@ VERSION_RANGE versionRange_createVersionRange(VERSION low, bool isLowInclusive,
 	return range;
 }
 
+void versionRange_destroy(VERSION_RANGE range) {
+	if (range->high != NULL) {
+		version_destroy(range->high);
+	}
+	if (range->low != NULL) {
+		version_destroy(range->low);
+	}
+	free(range);
+}
+
 VERSION_RANGE versionRange_createInfiniteVersionRange() {
 	VERSION_RANGE range = (VERSION_RANGE) malloc(sizeof(*range));
 

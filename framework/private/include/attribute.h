@@ -34,6 +34,7 @@ struct attribute {
 typedef struct attribute * ATTRIBUTE;
 
 ATTRIBUTE attribute_create(char * key, char * value);
+void attribute_destroy(ATTRIBUTE attribute);
 
 
 #endif /* ATTRIBUTE_H_ */

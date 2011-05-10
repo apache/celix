@@ -64,11 +64,55 @@ HASH_MAP resolver_resolve(MODULE root) {
 	HASH_MAP candidatesMap = hashMap_create(NULL, NULL, NULL, NULL);
 
 	if (resolver_populateCandidatesMap(candidatesMap, root) != 0) {
+		HASH_MAP_ITERATOR iter = hashMapIterator_create(candidatesMap);
+		while (hashMapIterator_hasNext(iter)) {
+			HASH_MAP_ENTRY entry = hashMapIterator_nextEntry(iter);
+			MODULE key = hashMapEntry_getKey(entry);
+			LINKED_LIST value = hashMapEntry_getValue(entry);
+			hashMapIterator_remove(iter);
+			if (value != NULL) {
+				LINKED_LIST_ITERATOR candSetIter = linkedListIterator_create(value, 0);
+				while (linkedListIterator_hasNext(candSetIter)) {
+					CANDIDATE_SET set = linkedListIterator_next(candSetIter);
+					if (set->candidates != NULL) {
+						linkedList_destroy(set->candidates);
+					}
+					free(set);
+					linkedListIterator_remove(candSetIter);
+				}
+				linkedListIterator_destroy(candSetIter);
+				linkedList_destroy(value);
+			}
+		}
+		hashMapIterator_destroy(iter);
+		hashMap_destroy(candidatesMap, false, false);
 		return NULL;
 	}
 
 	HASH_MAP wireMap = hashMap_create(NULL,NULL,NULL,NULL);
-	return resolver_populateWireMap(candidatesMap, root, wireMap);
+	HASH_MAP resolved = resolver_populateWireMap(candidatesMap, root, wireMap);
+	HASH_MAP_ITERATOR iter = hashMapIterator_create(candidatesMap);
+	while (hashMapIterator_hasNext(iter)) {
+		HASH_MAP_ENTRY entry = hashMapIterator_nextEntry(iter);
+		MODULE key = hashMapEntry_getKey(entry);
+		LINKED_LIST value = hashMapEntry_getValue(entry);
+		hashMapIterator_remove(iter);
+		if (value != NULL) {
+			LINKED_LIST_ITERATOR candSetIter = linkedListIterator_create(value, 0);
+			while (linkedListIterator_hasNext(candSetIter)) {
+				CANDIDATE_SET set = linkedListIterator_next(candSetIter);
+				if (set->candidates != NULL) {
+					linkedList_destroy(set->candidates);
+				}
+				free(set);
+			}
+			linkedListIterator_destroy(candSetIter);
+			linkedList_destroy(value);
+		}
+	}
+	hashMapIterator_destroy(iter);
+	hashMap_destroy(candidatesMap, false, false);
+	return resolved;
 }
 
 int resolver_populateCandidatesMap(HASH_MAP candidatesMap, MODULE targetModule) {
@@ -103,7 +147,7 @@ int resolver_populateCandidatesMap(HASH_MAP candidatesMap, MODULE targetModule) 
 		}
 
 		if (linkedList_size(candidates) > 0) {
-			LINKED_LIST_ITERATOR iterator;
+			LINKED_LIST_ITERATOR iterator = NULL;
 			for (iterator = linkedListIterator_create(candidates, 0); linkedListIterator_hasNext(iterator); ) {
 				CAPABILITY candidate = (CAPABILITY) linkedListIterator_next(iterator);
 				if (!module_isResolved(capability_getModule(candidate))) {
@@ -112,11 +156,14 @@ int resolver_populateCandidatesMap(HASH_MAP candidatesMap, MODULE targetModule) 
 					}
 				}
 			}
+			linkedListIterator_destroy(iterator);
 		}
 
 		if (linkedList_size(candidates) == 0) {
 			LINKED_LIST invalid = linkedList_create();
 			resolver_removeInvalidCandidate(targetModule, candidatesMap, invalid);
+			linkedList_destroy(invalid);
+			linkedList_destroy(candidates);
 			printf("Unable to resolve: %s, %s\n", module_getSymbolicName(targetModule), requirement_getTargetName(req));
 			return -1;
 		} else if (linkedList_size(candidates) > 0) {
@@ -236,18 +283,23 @@ void resolver_moduleResolved(MODULE module) {
 				linkedList_addElement(list->capabilities, cap);
 			}
 		}
+
+		linkedList_destroy(capsCopy);
 	}
 }
 
 CAPABILITY_LIST resolver_getCapabilityList(LINKED_LIST list, char * name) {
+	CAPABILITY_LIST capabilityList = NULL;
 	LINKED_LIST_ITERATOR iterator = linkedListIterator_create(list, 0);
 	while (linkedListIterator_hasNext(iterator)) {
 		CAPABILITY_LIST services = (CAPABILITY_LIST) linkedListIterator_next(iterator);
 		if (strcmp(services->serviceName, name) == 0) {
-			return services;
+			capabilityList = services;
+			break;
 		}
 	}
-	return NULL;
+	linkedListIterator_destroy(iterator);
+	return capabilityList;
 }
 
 HASH_MAP resolver_populateWireMap(HASH_MAP candidates, MODULE importer, HASH_MAP wireMap) {
@@ -280,7 +332,8 @@ HASH_MAP resolver_populateWireMap(HASH_MAP candidates, MODULE importer, HASH_MAP
 	}
 
 	//hashMap_remove(wireMap, importer);
-	hashMap_put(wireMap, importer, serviceWires);
+	LINKED_LIST empty = hashMap_put(wireMap, importer, serviceWires);
+	linkedList_destroy(empty);
 
 	return wireMap;
 }

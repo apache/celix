@@ -119,6 +119,7 @@ SERVICE serviceComponent_addServiceDependency(SERVICE service, SERVICE_DEPENDENC
 	service->state = new;
 	pthread_mutex_unlock(&service->mutex);
 	serviceComponent_calculateStateChanges(service, old, new);
+	state_destroy(old);
 
 	return service;
 }
@@ -139,6 +140,7 @@ SERVICE serviceComponent_removeServiceDependency(SERVICE service, SERVICE_DEPEND
 	service->state = new;
 	pthread_mutex_unlock(&service->mutex);
 	serviceComponent_calculateStateChanges(service, old, new);
+	state_destroy(old);
 
 	return service;
 }
@@ -151,6 +153,7 @@ void serviceComponent_dependencyAvailable(SERVICE service, SERVICE_DEPENDENCY de
 	service->state = new;
 	pthread_mutex_unlock(&service->mutex);
 	serviceComponent_calculateStateChanges(service, old, new);
+	state_destroy(old);
 	if (state_isTrackingOptional(new)) {
 		executor_enqueue(service->executor, service, serviceComponent_updateInstance, dependency);
 		executor_execute(service->executor);
@@ -176,6 +179,7 @@ void serviceComponent_dependencyUnavailable(SERVICE service, SERVICE_DEPENDENCY 
 	service->state = new;
 	pthread_mutex_unlock(&service->mutex);
 	serviceComponent_calculateStateChanges(service, old, new);
+	state_destroy(old);
 	if (state_isTrackingOptional(new)) {
 		executor_enqueue(service->executor, service, serviceComponent_updateInstance, dependency);
 		executor_execute(service->executor);
@@ -191,6 +195,7 @@ void serviceComponent_start(SERVICE service) {
 	service->state = new;
 	pthread_mutex_unlock(&service->mutex);
 	serviceComponent_calculateStateChanges(service, old, new);
+	state_destroy(old);
 }
 
 void serviceComponent_stop(SERVICE service) {
@@ -201,6 +206,7 @@ void serviceComponent_stop(SERVICE service) {
 	service->state = new;
 	pthread_mutex_unlock(&service->mutex);
 	serviceComponent_calculateStateChanges(service, old, new);
+	state_destroy(old);
 	serviceRegistration_unregister(service->serviceRegistration);
 }
 
@@ -243,6 +249,7 @@ void serviceComponent_startTrackingOptional(SERVICE service, STATE state) {
 			serviceDependency_start(dependency, service);
 		}
 	}
+	arrayListIterator_destroy(i);
 }
 
 void serviceComponent_stopTrackingOptional(SERVICE service, STATE state) {
@@ -253,6 +260,7 @@ void serviceComponent_stopTrackingOptional(SERVICE service, STATE state) {
 			serviceDependency_stop(dependency, service);
 		}
 	}
+	arrayListIterator_destroy(i);
 }
 
 void serviceComponent_startTrackingRequired(SERVICE service, void * arg) {
@@ -264,6 +272,7 @@ void serviceComponent_startTrackingRequired(SERVICE service, void * arg) {
 			serviceDependency_start(dependency, service);
 		}
 	}
+	arrayListIterator_destroy(i);
 }
 
 void serviceComponent_stopTrackingRequired(SERVICE service, void * arg) {
@@ -275,6 +284,7 @@ void serviceComponent_stopTrackingRequired(SERVICE service, void * arg) {
 			serviceDependency_stop(dependency, service);
 		}
 	}
+	arrayListIterator_destroy(i);
 }
 
 void serviceComponent_initService(SERVICE service) {
@@ -291,6 +301,7 @@ void serviceComponent_configureService(SERVICE service, STATE state) {
 			serviceDependency_invokeAdded(dependency);
 		}
 	}
+	arrayListIterator_destroy(i);
 }
 
 void serviceComponent_destroyService(SERVICE service, STATE state) {
@@ -301,6 +312,7 @@ void serviceComponent_destroyService(SERVICE service, STATE state) {
 			serviceDependency_invokeRemoved(dependency);
 		}
 	}
+	arrayListIterator_destroy(i);
 }
 
 void serviceComponent_registerService(SERVICE service) {
@@ -351,6 +363,14 @@ STATE state_create(ARRAY_LIST dependencies, bool active) {
 	}
 
 	return state;
+}
+
+void state_destroy(STATE state) {
+	arrayList_destroy(state->dependencies);
+	state->dependencies = NULL;
+	state->state = STATE_INACTIVE;
+	free(state);
+	state = NULL;
 }
 
 bool state_isInactive(STATE state) {

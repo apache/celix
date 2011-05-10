@@ -38,6 +38,7 @@ SERVICE_DEPENDENCY serviceDependency_create(BUNDLE_CONTEXT context) {
 	SERVICE_DEPENDENCY dependency = (SERVICE_DEPENDENCY) malloc(sizeof(*dependency));
 	dependency->context = context;
 	dependency->autoConfigureField = NULL;
+	dependency->available = false;
 	return dependency;
 }
 
@@ -134,10 +135,12 @@ void serviceDependency_invokeRemoved(SERVICE_DEPENDENCY dependency) {
 SERVICE_DEPENDENCY serviceDependency_setService(SERVICE_DEPENDENCY dependency, char * serviceName, char * filter) {
 	dependency->trackedServiceName = serviceName;
 //	dependency->filter = filter;
+	return dependency;
 }
 
 SERVICE_DEPENDENCY serviceDependency_setRequired(SERVICE_DEPENDENCY dependency, bool required) {
 	dependency->required = required;
+	return dependency;
 }
 
 SERVICE_DEPENDENCY serviceDependency_setAutoConfigure(SERVICE_DEPENDENCY dependency, void ** field) {

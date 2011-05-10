@@ -39,6 +39,7 @@ typedef struct hashMapEntrySet * HASH_MAP_ENTRY_SET;
 
 HASH_MAP hashMap_create(unsigned int (*keyHash)(void *), unsigned int (*valueHash)(void *),
 		int (*keyEquals)(void *, void *), int (*valueEquals)(void *, void *));
+void hashMap_destroy(HASH_MAP map, bool freeKeys, bool freeValues);
 int hashMap_size(HASH_MAP map);
 bool hashMap_isEmpty(HASH_MAP map);
 void * hashMap_get(HASH_MAP map, void * key);
@@ -46,10 +47,11 @@ bool hashMap_containsKey(HASH_MAP map, void * key);
 HASH_MAP_ENTRY hashMap_getEntry(HASH_MAP map, void * key);
 void * hashMap_put(HASH_MAP map, void * key, void * value);
 void * hashMap_remove(HASH_MAP map, void * key);
-void hashMap_clear(HASH_MAP map);
+void hashMap_clear(HASH_MAP map, bool freeKey, bool freeValue);
 bool hashMap_containsValue(HASH_MAP map, void * value);
 
 HASH_MAP_ITERATOR hashMapIterator_create(HASH_MAP map);
+void hashMapIterator_destroy(HASH_MAP_ITERATOR iterator);
 bool hashMapIterator_hasNext(HASH_MAP_ITERATOR iterator);
 void hashMapIterator_remove(HASH_MAP_ITERATOR iterator);
 void * hashMapIterator_nextValue(HASH_MAP_ITERATOR iterator);
@@ -64,6 +66,7 @@ void hashMapKeySet_clear(HASH_MAP_KEY_SET keySet);
 bool hashMapKeySet_isEmpty(HASH_MAP_KEY_SET keySet);
 
 HASH_MAP_VALUES hashMapValues_create(HASH_MAP map);
+void hashMapValues_destroy(HASH_MAP_VALUES values);
 HASH_MAP_ITERATOR hashMapValues_iterator(HASH_MAP_VALUES values);
 int hashMapValues_size(HASH_MAP_VALUES values);
 bool hashMapValues_contains(HASH_MAP_VALUES values, void * o);

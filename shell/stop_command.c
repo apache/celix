@@ -42,6 +42,9 @@ COMMAND stopCommand_create(BUNDLE_CONTEXT context) {
 	return command;
 }
 
+void stopCommand_destroy(COMMAND command) {
+	free(command);
+}
 
 void stopCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *)) {
 	char delims[] = " ";

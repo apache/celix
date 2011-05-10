@@ -39,6 +39,7 @@ void * trk_send(void * handle) {
 		sleep(1);
 	}
 	pthread_exit(NULL);
+	return NULL;
 }
 
 ECHO_CLIENT echoClient_create(SERVICE_TRACKER echoServiceTracker) {

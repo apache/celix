@@ -41,7 +41,7 @@ SERVICE_REGISTRATION serviceRegistration_create(SERVICE_REGISTRY registry, BUNDL
 
 	char sId[sizeof(serviceId) + 1];
 	sprintf(sId, "%ld", serviceId);
-	properties_set(dictionary, (char *) SERVICE_ID, strdup(sId));
+	properties_set(dictionary, (char *) SERVICE_ID, sId);
 	properties_set(dictionary, (char *) OBJECTCLASS, serviceName);
 
 	registration->properties = dictionary;
@@ -69,6 +69,8 @@ void serviceRegistration_destroy(SERVICE_REGISTRATION registration) {
 	registration->reference->registration = NULL;
 	free(registration->reference);
 
+	properties_destroy(registration->properties);
+
 	pthread_mutex_destroy(&registration->mutex);
 
 	free(registration);
@@ -76,6 +78,12 @@ void serviceRegistration_destroy(SERVICE_REGISTRATION registration) {
 
 bool serviceRegistration_isValid(SERVICE_REGISTRATION registration) {
 	return registration->svcObj != NULL;
+}
+
+void serviceRegistration_invalidate(SERVICE_REGISTRATION registration) {
+	pthread_mutex_lock(&registration->mutex);
+	registration->svcObj = NULL;
+	pthread_mutex_unlock(&registration->mutex);
 }
 
 void serviceRegistration_unregister(SERVICE_REGISTRATION registration) {
@@ -89,7 +97,8 @@ void serviceRegistration_unregister(SERVICE_REGISTRATION registration) {
 
 	serviceRegistry_unregisterService(registration->registry, registration->reference->bundle, registration);
 
-	pthread_mutex_lock(&registration->mutex);
-	registration->svcObj = NULL;
-	pthread_mutex_unlock(&registration->mutex);
+	// Unregister service cleans up the registration
+//	pthread_mutex_lock(&registration->mutex);
+//	registration->svcObj = NULL;
+//	pthread_mutex_unlock(&registration->mutex);
 }

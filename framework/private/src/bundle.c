@@ -47,15 +47,19 @@ celix_status_t bundle_create(BUNDLE * bundle, apr_pool_t *mp) {
 	(*bundle)->context = NULL;
 	(*bundle)->framework = NULL;
 	(*bundle)->state = BUNDLE_INSTALLED;
+	(*bundle)->modules = arrayList_create();
 
 	MODULE module = module_createFrameworkModule();
-	(*bundle)->module = module;
+	bundle_addModule(*bundle, module);
+	// (*bundle)->module = module;
 
 	pthread_mutex_init(&(*bundle)->lock, NULL);
 	(*bundle)->lockCount = 0;
 	(*bundle)->lockThread = NULL;
 
 	resolver_addModule(module);
+
+	(*bundle)->manifest = NULL;
 
 	return CELIX_SUCCESS;
 }
@@ -70,9 +74,11 @@ celix_status_t bundle_createFromArchive(BUNDLE * bundle, FRAMEWORK framework, BU
 	(*bundle)->context = NULL;
 	(*bundle)->framework = framework;
 	(*bundle)->state = BUNDLE_INSTALLED;
+	(*bundle)->modules = arrayList_create();
 
 	MODULE module = bundle_createModule(*bundle);
-	(*bundle)->module = module;
+	bundle_addModule(*bundle, module);
+	// (*bundle)->module = module;
 
 	pthread_mutex_init(&(*bundle)->lock, NULL);
 	(*bundle)->lockCount = 0;
@@ -83,12 +89,24 @@ celix_status_t bundle_createFromArchive(BUNDLE * bundle, FRAMEWORK framework, BU
 	return CELIX_SUCCESS;
 }
 
+celix_status_t bundle_destroy(BUNDLE bundle) {
+	ARRAY_LIST_ITERATOR iter = arrayListIterator_create(bundle->modules);
+	while (arrayListIterator_hasNext(iter)) {
+		MODULE module = arrayListIterator_next(iter);
+		module_destroy(module);
+	}
+	arrayListIterator_destroy(iter);
+	arrayList_destroy(bundle->modules);
+	free(bundle);
+	return CELIX_SUCCESS;
+}
+
 BUNDLE_ARCHIVE bundle_getArchive(BUNDLE bundle) {
 	return bundle->archive;
 }
 
-MODULE bundle_getModule(BUNDLE bundle) {
-	return bundle->module;
+MODULE bundle_getCurrentModule(BUNDLE bundle) {
+	return arrayList_get(bundle->modules, arrayList_size(bundle->modules) - 1);
 }
 
 void * bundle_getHandle(BUNDLE bundle) {
@@ -115,12 +133,24 @@ void bundle_setContext(BUNDLE bundle, BUNDLE_CONTEXT context) {
 	bundle->context = context;
 }
 
+celix_status_t bundle_getEntry(BUNDLE bundle, char * name, char **entry) {
+	return framework_getBundleEntry(bundle->framework, bundle, name, entry);
+}
+
 BUNDLE_STATE bundle_getState(BUNDLE bundle) {
 	return bundle->state;
 }
 
 void bundle_setState(BUNDLE bundle, BUNDLE_STATE state) {
 	bundle->state = state;
+}
+
+MANIFEST bundle_getManifest(BUNDLE bundle) {
+	return bundle->manifest;
+}
+
+void bundle_setManifest(BUNDLE bundle, MANIFEST manifest) {
+	bundle->manifest = manifest;
 }
 
 MODULE bundle_createModule(BUNDLE bundle) {
@@ -143,8 +173,8 @@ MODULE bundle_createModule(BUNDLE bundle) {
 
 		long id = bundleArchive_getId(check->archive);
 		if (id != bundleArchive_getId(bundle->archive)) {
-			char * sym = module_getSymbolicName(check->module);
-			VERSION version = module_getVersion(check->module);
+			char * sym = module_getSymbolicName(bundle_getCurrentModule(check));
+			VERSION version = module_getVersion(bundle_getCurrentModule(check));
 			if ((symName != NULL) && (sym != NULL) && !strcmp(symName, sym) &&
 					!version_compareTo(bundleVersion, version)) {
 				printf("Bundle symbolic name and version are not unique: %s:%s\n", sym, version_toString(version));
@@ -152,20 +182,75 @@ MODULE bundle_createModule(BUNDLE bundle) {
 			}
 		}
 	}
+	arrayList_destroy(bundles);
 
 	return module;
 }
 
 void startBundle(BUNDLE bundle, int options) {
 	fw_startBundle(bundle->framework, bundle, options);
+}
 
+celix_status_t bundle_update(BUNDLE bundle, char *inputFile) {
+	return framework_updateBundle(bundle->framework, bundle, inputFile);
 }
 
 void stopBundle(BUNDLE bundle, int options) {
-	fw_stopBundle(bundle->framework, bundle, options);
+	fw_stopBundle(bundle->framework, bundle, ((options & 1) == 0));
 }
 
+celix_status_t bundle_setPersistentStateInactive(BUNDLE bundle) {
+	if (!bundle_isSystemBundle(bundle)) {
+		bundleArchive_setPersistentState(bundle->archive, BUNDLE_INSTALLED);
+	}
+	return CELIX_SUCCESS;
+}
 
+celix_status_t bundle_isUsed(BUNDLE bundle, bool *used) {
+	bool unresolved = true;
+	ARRAY_LIST_ITERATOR iter = arrayListIterator_create(bundle->modules);
+	while (arrayListIterator_hasNext(iter)) {
+		MODULE module = arrayListIterator_next(iter);
+		if (module_isResolved(module)) {
+			unresolved = false;
+		}
+	}
+	arrayListIterator_destroy(iter);
+	*used = false;
+	iter = arrayListIterator_create(bundle->modules);
+	while (arrayListIterator_hasNext(iter) && !unresolved && !*used) {
+		MODULE module = arrayListIterator_next(iter);
+//		module_getD
+	}
+	arrayListIterator_destroy(iter);
+	return CELIX_SUCCESS;
+}
+
+celix_status_t bundle_revise(BUNDLE bundle, char * location, char *inputFile) {
+	bundleArchive_revise(bundle_getArchive(bundle), location, inputFile);
+	MODULE module = bundle_createModule(bundle);
+	if (module == NULL) {
+		bundleArchive_rollbackRevise(bundle_getArchive(bundle));
+		return CELIX_BUNDLE_EXCEPTION;
+	}
+	bundle_addModule(bundle, module);
+	return CELIX_SUCCESS;
+}
+
+//bool bundle_rollbackRevise(BUNDLE bundle) {
+//	MODULE module = arrayList_remove(bundle->modules, arrayList_set(bundle->modules) - 1);
+//	return resolver_removeModule(module);
+//}
+
+celix_status_t bundle_addModule(BUNDLE bundle, MODULE module) {
+	arrayList_add(bundle->modules, module);
+	resolver_addModule(module);
+	return CELIX_SUCCESS;
+}
+
+bool bundle_isSystemBundle(BUNDLE bundle) {
+	return bundleArchive_getId(bundle_getArchive(bundle)) == 0;
+}
 
 bool bundle_isLockable(BUNDLE bundle) {
 	bool lockable = false;
@@ -185,6 +270,8 @@ pthread_t bundle_getLockingThread(BUNDLE bundle) {
 	lockingThread = bundle->lockThread;
 
 	pthread_mutex_unlock(&bundle->lock);
+
+	return lockingThread;
 }
 
 bool bundle_lock(BUNDLE bundle) {

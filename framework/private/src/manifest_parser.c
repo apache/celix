@@ -32,16 +32,19 @@
 #include "requirement.h"
 #include "attribute.h"
 #include "hash_map.h"
+#include "celix_errno.h"
+#include "linked_list_iterator.h"
 
 MANIFEST_PARSER manifestParser_createManifestParser(MODULE owner, MANIFEST manifest) {
 	MANIFEST_PARSER parser = (MANIFEST_PARSER) malloc(sizeof(*parser));
 	parser->manifest = manifest;
 	parser->owner = owner;
 
-	parser->bundleVersion = version_createEmptyVersion();
 	char * bundleVersion = manifest_getValue(manifest, BUNDLE_VERSION);
 	if (bundleVersion != NULL) {
 		parser->bundleVersion = version_createVersionFromString(bundleVersion);
+	} else {
+		parser->bundleVersion = version_createEmptyVersion();
 	}
 	char * bundleSymbolicName = manifest_getValue(manifest, BUNDLE_SYMBOLICNAME);
 	if (bundleSymbolicName != NULL) {
@@ -53,9 +56,21 @@ MANIFEST_PARSER manifestParser_createManifestParser(MODULE owner, MANIFEST manif
 	return parser;
 }
 
+celix_status_t manifestParser_destroy(MANIFEST_PARSER parser) {
+//	version_destroy(parser->bundleVersion);
+	parser->bundleSymbolicName = NULL;
+	parser->bundleVersion = NULL;
+	parser->owner = NULL;
+	parser->capabilities = NULL;
+	parser->manifest = NULL;
+	parser->requirements = NULL;
+	free(parser);
+	return CELIX_SUCCESS;
+}
+
 LINKED_LIST manifestParser_parseDelimitedString(char * value, char * delim) {
 	if (value == NULL) {
-		value = "";
+		value = strdup("");
 	}
 
 	LINKED_LIST list = linkedList_create();
@@ -103,6 +118,8 @@ LINKED_LIST manifestParser_parseDelimitedString(char * value, char * delim) {
 			return NULL;
 		}
 	}
+
+	free(value);
 
 	if (strlen(buffer) > 0) {
 		linkedList_addElement(list, strdup(buffer));
@@ -173,6 +190,8 @@ LINKED_LIST manifestParser_parseStandardHeaderClause(char * clauseString) {
 		}
 	}
 
+	linkedList_destroy(pieces);
+
 	LINKED_LIST clause = linkedList_create();
 	linkedList_addElement(clause, paths);
 	linkedList_addElement(clause, dirsMap);
@@ -188,12 +207,13 @@ LINKED_LIST manifestParser_parseStandardHeader(char * header) {
 			return NULL;
 		}
 
-		LINKED_LIST clauseStrings = manifestParser_parseDelimitedString(header, ",");
+		LINKED_LIST clauseStrings = manifestParser_parseDelimitedString(strdup(header), ",");
 		int i;
 	  	for (i = 0; (clauseStrings != NULL) && (i < linkedList_size(clauseStrings)); i++) {
 	  		char * clauseString = (char *) linkedList_get(clauseStrings, i);
 	  		linkedList_addElement(completeList, manifestParser_parseStandardHeaderClause(clauseString));
 		}
+	  	linkedList_destroy(clauseStrings);
 	  	return completeList;
 	}
 	return completeList;
@@ -226,6 +246,20 @@ LINKED_LIST manifestParser_parseImportHeader(char * header) {
 		}
 	}
 
+	LINKED_LIST_ITERATOR iter = linkedListIterator_create(clauses, 0);
+	while(linkedListIterator_hasNext(iter)) {
+		LINKED_LIST clause = linkedListIterator_next(iter);
+
+		LINKED_LIST paths = linkedList_get(clause, 0);
+
+		linkedList_destroy(paths);
+
+		linkedListIterator_remove(iter);
+		linkedList_destroy(clause);
+	}
+	linkedListIterator_destroy(iter);
+	linkedList_destroy(clauses);
+
 	return requirements;
 }
 
@@ -255,6 +289,19 @@ LINKED_LIST manifestParser_parseExportHeader(MODULE module, char * header) {
 			linkedList_addElement(capabilities, cap);
 		}
 	}
+	LINKED_LIST_ITERATOR iter = linkedListIterator_create(clauses, 0);
+	while(linkedListIterator_hasNext(iter)) {
+		LINKED_LIST clause = linkedListIterator_next(iter);
+
+		LINKED_LIST paths = linkedList_get(clause, 0);
+
+		linkedList_destroy(paths);
+
+		linkedListIterator_remove(iter);
+		linkedList_destroy(clause);
+	}
+	linkedListIterator_destroy(iter);
+	linkedList_destroy(clauses);
 
 	return capabilities;
 }

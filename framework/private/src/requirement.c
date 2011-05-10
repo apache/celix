@@ -52,6 +52,25 @@ REQUIREMENT requirement_create(HASH_MAP directives, HASH_MAP attributes) {
 	return requirement;
 }
 
+void requirement_destroy(REQUIREMENT requirement) {
+	HASH_MAP_ITERATOR attrIter = hashMapIterator_create(requirement->attributes);
+	while (hashMapIterator_hasNext(attrIter)) {
+		ATTRIBUTE attr = hashMapIterator_nextValue(attrIter);
+		hashMapIterator_remove(attrIter);
+		attribute_destroy(attr);
+	}
+	hashMapIterator_destroy(attrIter);
+	hashMap_destroy(requirement->attributes, false, false);
+	hashMap_destroy(requirement->directives, false, false);
+	versionRange_destroy(requirement->versionRange);
+
+	requirement->attributes = NULL;
+	requirement->directives = NULL;
+	requirement->versionRange = NULL;
+
+	free(requirement);
+}
+
 VERSION_RANGE requirement_getVersionRange(REQUIREMENT requirement) {
 	return requirement->versionRange;
 }
@@ -61,5 +80,5 @@ char * requirement_getTargetName(REQUIREMENT requirement) {
 }
 
 bool requirement_isSatisfied(REQUIREMENT requirement, CAPABILITY capability) {
-	versionRange_isInRange(requirement_getVersionRange(requirement), capability_getVersion(capability));
+	return versionRange_isInRange(requirement_getVersionRange(requirement), capability_getVersion(capability));
 }

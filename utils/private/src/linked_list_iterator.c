@@ -58,6 +58,15 @@ LINKED_LIST_ITERATOR linkedListIterator_create(LINKED_LIST list, int index) {
 	return iterator;
 }
 
+void linkedListIterator_destroy(LINKED_LIST_ITERATOR iterator) {
+	iterator->expectedModificationCount = 0;
+	iterator->lastReturned = NULL;
+	iterator->list = NULL;
+	iterator->next = NULL;
+	iterator->nextIndex = 0;
+	free(iterator);
+}
+
 bool linkedListIterator_hasNext(LINKED_LIST_ITERATOR iterator) {
 	return iterator->nextIndex != iterator->list->size;
 }

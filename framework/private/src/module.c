@@ -52,12 +52,14 @@ MODULE module_create(MANIFEST headerMap, char * moduleId, BUNDLE bundle) {
 	module->headerMap = headerMap;
 	module->id = moduleId;
 	module->bundle = bundle;
+	module->resolved = false;
 
 	MANIFEST_PARSER mp = manifestParser_createManifestParser(module, headerMap);
 	module->symbolicName = mp->bundleSymbolicName;
 	module->version = mp->bundleVersion;
 	module->capabilities = mp->capabilities;
 	module->requirements = mp->requirements;
+	manifestParser_destroy(mp);
 
 	module->wires = NULL;
 
@@ -66,25 +68,60 @@ MODULE module_create(MANIFEST headerMap, char * moduleId, BUNDLE bundle) {
 
 MODULE module_createFrameworkModule() {
 	MODULE module = (MODULE) malloc(sizeof(*module));
-	module->id = "0";
+	module->id = strdup("0");
 	module->symbolicName = strdup("framework");
 	module->version = version_createVersion(1, 0, 0, "");
 	module->capabilities = linkedList_create();
 	module->requirements = linkedList_create();
+	module->wires = NULL;
+	module->headerMap = NULL;
+	module->resolved = false;
+	module->bundle = NULL;
 	return module;
 }
 
+void module_destroy(MODULE module) {
+	LINKED_LIST_ITERATOR capIter = linkedListIterator_create(module->capabilities, 0);
+	while (linkedListIterator_hasNext(capIter)) {
+		CAPABILITY cap = linkedListIterator_next(capIter);
+		capability_destroy(cap);
+	}
+	linkedListIterator_destroy(capIter);
+
+	LINKED_LIST_ITERATOR reqIter = linkedListIterator_create(module->requirements, 0);
+	while (linkedListIterator_hasNext(reqIter)) {
+		REQUIREMENT req = linkedListIterator_next(reqIter);
+		requirement_destroy(req);
+	}
+	linkedListIterator_destroy(reqIter);
+
+	linkedList_destroy(module->capabilities);
+	linkedList_destroy(module->requirements);
+
+	version_destroy(module->version);
+
+	if (module->headerMap != NULL) {
+		manifest_destroy(module->headerMap);
+	}
+	module->headerMap = NULL;
+
+	free(module->id);
+	free(module);
+}
+
 WIRE module_getWire(MODULE module, char * serviceName) {
+	WIRE wire = NULL;
 	if (module->wires != NULL) {
 		LINKED_LIST_ITERATOR iterator = linkedListIterator_create(module->wires, 0);
 		while (linkedListIterator_hasNext(iterator)) {
-			WIRE wire = linkedListIterator_next(iterator);
-			if (strcasecmp(capability_getServiceName(wire_getCapability(wire)), serviceName) == 0) {
-				return wire;
+			WIRE next = linkedListIterator_next(iterator);
+			if (strcasecmp(capability_getServiceName(wire_getCapability(next)), serviceName) == 0) {
+				wire = next;
 			}
 		}
+		linkedListIterator_destroy(iterator);
 	}
-	return NULL;
+	return wire;
 }
 
 VERSION module_getVersion(MODULE module) {

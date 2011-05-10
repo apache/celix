@@ -24,30 +24,39 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
+#include <apr-1/apr_general.h>
 
 #include "bundle_activator.h"
+#include "bundle_context.h"
 
 struct userData {
 	char * word;
 };
 
-void * bundleActivator_create() {
-	struct userData * data = malloc(sizeof(*data));
-	data->word = "World";
-	return data;
+celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
+	*userData = apr_palloc(bundleContext_getMemoryPool(context), sizeof(struct userData));
+	((struct userData *)(*userData))->word = "World";
+	return CELIX_SUCCESS;
 }
 
-void bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 	struct userData * data = (struct userData *) userData;
 	printf("Hello %s\n", data->word);
 
+	BUNDLE b = bundleContext_getBundle(context);
+	char *entry = NULL;
+	bundle_getEntry(b, "test.txt", &entry);
+	printf("Entry: %s", entry);
+
+	return CELIX_SUCCESS;
 }
 
-void bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
 	struct userData * data = (struct userData *) userData;
 	printf("Goodbye %s\n", data->word);
+	return CELIX_SUCCESS;
 }
 
-void bundleActivator_destroy(void * userData) {
-
+celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {
+	return CELIX_SUCCESS;
 }

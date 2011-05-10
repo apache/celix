@@ -33,23 +33,30 @@
 
 celix_status_t bundle_create(BUNDLE * bundle, apr_pool_t *mp);
 celix_status_t bundle_createFromArchive(BUNDLE * bundle, FRAMEWORK framework, BUNDLE_ARCHIVE archive);
+celix_status_t bundle_destroy(BUNDLE bundle);
 
+bool bundle_isSystemBundle(BUNDLE bundle);
 BUNDLE_ARCHIVE bundle_getArchive(BUNDLE bundle);
-MODULE bundle_getModule(BUNDLE bundle);
+MODULE bundle_getCurrentModule(BUNDLE bundle);
 void * bundle_getHandle(BUNDLE bundle);
 void bundle_setHandle(BUNDLE bundle, void * handle);
 ACTIVATOR bundle_getActivator(BUNDLE bundle);
 void bundle_setActivator(BUNDLE bundle, ACTIVATOR activator);
+MANIFEST bundle_getManifest(BUNDLE bundle);
+void bundle_setManifest(BUNDLE bundle, MANIFEST manifest);
 BUNDLE_CONTEXT bundle_getContext(BUNDLE bundle);
 void bundle_setContext(BUNDLE bundle, BUNDLE_CONTEXT context);
+celix_status_t bundle_getEntry(BUNDLE bundle, char * name, char **entry);
 
 void startBundle(BUNDLE bundle, int options);
-
+celix_status_t bundle_update(BUNDLE bundle, char *inputFile);
 void stopBundle(BUNDLE bundle, int options);
 
-//void updateBundle(BUNDLE bundle, InputStream input);
+celix_status_t bundle_setPersistentStateInactive(BUNDLE bundle);
 
 void uninstallBundle(BUNDLE bundle);
+
+celix_status_t bundle_revise(BUNDLE bundle, char * location, char *inputFile);
 
 // Service Reference Functions
 ARRAY_LIST getUsingBundles(SERVICE_REFERENCE reference);

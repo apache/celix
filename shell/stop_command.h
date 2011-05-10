@@ -27,5 +27,6 @@
 #define STOP_COMMAND_H_
 
 COMMAND stopCommand_create(BUNDLE_CONTEXT context);
+void stopCommand_destroy(COMMAND command);
 
 #endif /* STOP_COMMAND_H_ */

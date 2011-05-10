@@ -33,6 +33,7 @@
 
 SERVICE_REGISTRATION serviceRegistration_create(SERVICE_REGISTRY registry, BUNDLE bundle, char * serviceName, long serviceId, void * serviceObject, PROPERTIES dictionary);
 bool serviceRegistration_isValid(SERVICE_REGISTRATION registration);
+void serviceRegistration_invalidate(SERVICE_REGISTRATION registration);
 void serviceRegistration_unregister(SERVICE_REGISTRATION registration);
 
 #endif /* SERVICE_REGISTRATION_H_ */

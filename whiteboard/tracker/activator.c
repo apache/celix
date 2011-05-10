@@ -51,6 +51,7 @@ void * trk_send(void * handle) {
 		sleep(1);
 	}
 	pthread_exit(NULL);
+	return NULL;
 }
 
 void * addingServ(void * handle, SERVICE_REFERENCE ref) {

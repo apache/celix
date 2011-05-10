@@ -42,6 +42,10 @@ COMMAND startCommand_create(BUNDLE_CONTEXT context) {
 	return command;
 }
 
+void startCommand_destroy(COMMAND command) {
+	free(command);
+}
+
 
 void startCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *)) {
 	char delims[] = " ";

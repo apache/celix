@@ -96,6 +96,13 @@ HASH_MAP hashMap_create(unsigned int (*keyHash)(void *), unsigned int (*valueHas
 	return map;
 }
 
+void hashMap_destroy(HASH_MAP map, bool freeKeys, bool freeValues) {
+	hashMap_clear(map, freeKeys, freeValues);
+	free(map->table);
+	free(map);
+	map = NULL;
+}
+
 int hashMap_size(HASH_MAP map) {
 	return map->size;
 }
@@ -198,7 +205,14 @@ void hashMap_resize(HASH_MAP map, int newCapacity) {
 
 void * hashMap_remove(HASH_MAP map, void * key) {
 	HASH_MAP_ENTRY entry = hashMap_removeEntryForKey(map, key);
-	return (entry == NULL ? NULL : entry->value);
+	void * value = (entry == NULL ? NULL : entry->value);
+	if (entry != NULL) {
+		entry->key = NULL;
+		entry->value = NULL;
+		free(entry);
+		entry = NULL;
+	}
+	return value;
 }
 
 void * hashMap_removeEntryForKey(HASH_MAP map, void * key) {
@@ -209,7 +223,7 @@ void * hashMap_removeEntryForKey(HASH_MAP map, void * key) {
 
 	while (entry != NULL) {
 		HASH_MAP_ENTRY next = entry->next;
-		if (entry->hash == hash && (entry->key == key || key != NULL && map->equalsKey(key, entry->key))) {
+		if (entry->hash == hash && (entry->key == key || (key != NULL && map->equalsKey(key, entry->key)))) {
 			map->modificationCount++;
 			map->size--;
 			if (prev == entry) {
@@ -254,7 +268,7 @@ HASH_MAP_ENTRY hashMap_removeMapping(HASH_MAP map, HASH_MAP_ENTRY entry) {
 	return e;
 }
 
-void hashMap_clear(HASH_MAP map) {
+void hashMap_clear(HASH_MAP map, bool freeKey, bool freeValue) {
 	map->modificationCount++;
 	HASH_MAP_ENTRY * table = map->table;
 	int i;
@@ -263,6 +277,10 @@ void hashMap_clear(HASH_MAP map) {
 		while (entry != NULL) {
 			HASH_MAP_ENTRY f = entry;
 			entry = entry->next;
+			if (freeKey && f->key != NULL)
+				free(f->key);
+			if (freeValue && f->value != NULL)
+				free(f->value);
 			free(f);
 		}
 		table[i] = NULL;
@@ -314,11 +332,22 @@ HASH_MAP_ITERATOR hashMapIterator_create(HASH_MAP map) {
 	iterator->expectedModCount = map->modificationCount;
 	iterator->index = 0;
 	iterator->next = NULL;
+	iterator->current = NULL;
 	if (map->size > 0) {
 		while (iterator->index < map->tablelength && (iterator->next = map->table[iterator->index++]) == NULL) {
 		}
 	}
 	return iterator;
+}
+
+void hashMapIterator_destroy(HASH_MAP_ITERATOR iterator) {
+	iterator->current = NULL;
+	iterator->expectedModCount = 0;
+	iterator->index = 0;
+	iterator->map = NULL;
+	iterator->next = NULL;
+	free(iterator);
+	iterator = NULL;
 }
 
 bool hashMapIterator_hasNext(HASH_MAP_ITERATOR iterator) {
@@ -334,7 +363,8 @@ void hashMapIterator_remove(HASH_MAP_ITERATOR iterator) {
 	}
 	void * key = iterator->current->key;
 	iterator->current = NULL;
-	hashMap_removeEntryForKey(iterator->map, key);
+	HASH_MAP_ENTRY entry = hashMap_removeEntryForKey(iterator->map, key);
+	free(entry);
 	iterator->expectedModCount = iterator->map->modificationCount;
 }
 
@@ -402,11 +432,14 @@ bool hashMapKeySet_contains(HASH_MAP_KEY_SET keySet, void * key) {
 }
 
 bool hashMapKeySet_remove(HASH_MAP_KEY_SET keySet, void * key) {
-	return hashMap_removeEntryForKey(keySet->map, key) != NULL;
+	HASH_MAP_ENTRY entry = hashMap_removeEntryForKey(keySet->map, key);
+	bool removed = entry != NULL;
+	free(entry);
+	return removed;
 }
 
 void hashMapKeySet_clear(HASH_MAP_KEY_SET keySet) {
-	hashMap_clear(keySet->map);
+	hashMap_clear(keySet->map, false, false);
 }
 
 bool hashMapKeySet_isEmpty(HASH_MAP_KEY_SET keySet) {
@@ -418,6 +451,12 @@ HASH_MAP_VALUES hashMapValues_create(HASH_MAP map) {
 	values->map = map;
 
 	return values;
+}
+
+void hashMapValues_destroy(HASH_MAP_VALUES values) {
+	values->map = NULL;
+	free(values);
+	values = NULL;
 }
 
 HASH_MAP_ITERATOR hashMapValues_iterator(HASH_MAP_VALUES values) {
@@ -453,7 +492,7 @@ bool hashMapValues_remove(HASH_MAP_VALUES values, void * value) {
 }
 
 void hashMapValues_clear(HASH_MAP_VALUES values) {
-	hashMap_clear(values->map);
+	hashMap_clear(values->map, false, false);
 }
 
 bool hashMapValues_isEmpty(HASH_MAP_VALUES values) {
@@ -480,7 +519,7 @@ bool hashMapEntrySet_remove(HASH_MAP_VALUES entrySet, HASH_MAP_ENTRY entry) {
 }
 
 void hashMapEntrySet_clear(HASH_MAP_ENTRY_SET entrySet) {
-	hashMap_clear(entrySet->map);
+	hashMap_clear(entrySet->map, false, false);
 }
 
 bool hashMapEntrySet_isEmpty(HASH_MAP_ENTRY_SET entrySet) {

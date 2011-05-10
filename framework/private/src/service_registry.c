@@ -23,9 +23,12 @@
  *      Author: alexanderb
  */
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "service_registry.h"
 #include "service_registration.h"
+#include "module.h"
+#include "bundle.h"
 
 struct usageCount {
 	unsigned int count;
@@ -56,6 +59,7 @@ USAGE_COUNT serviceRegistry_addUsageCount(SERVICE_REGISTRY registry, BUNDLE bund
 
 	if (usages == NULL) {
 		usages = arrayList_create();
+		MODULE mod = bundle_getCurrentModule(bundle);
 	}
 	arrayList_add(usages, usage);
 	hashMap_put(registry->inUseMap, bundle, usages);
@@ -69,12 +73,15 @@ void serviceRegistry_flushUsageCount(SERVICE_REGISTRY registry, BUNDLE bundle, S
 		USAGE_COUNT usage = arrayListIterator_next(iter);
 		if (usage->reference == reference) {
 			arrayListIterator_remove(iter);
+			free(usage);
 		}
 	}
+	arrayListIterator_destroy(iter);
 	if (arrayList_size(usages) > 0) {
 		hashMap_put(registry->inUseMap, bundle, usages);
 	} else {
-		hashMap_remove(registry->inUseMap, bundle);
+		ARRAY_LIST removed = hashMap_remove(registry->inUseMap, bundle);
+		arrayList_destroy(removed);
 	}
 }
 
@@ -83,7 +90,11 @@ SERVICE_REGISTRY serviceRegistry_create(void (*serviceChanged)(SERVICE_EVENT, PR
 	registry->serviceChanged = serviceChanged;
 	registry->inUseMap = hashMap_create(NULL, NULL, NULL, NULL);
 	registry->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
-	pthread_mutex_init(&registry->mutex, NULL);
+
+	pthread_mutexattr_t mutexattr;
+	pthread_mutexattr_init(&mutexattr);
+	pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE);
+	pthread_mutex_init(&registry->mutex, &mutexattr);
 	registry->currentServiceId = 1l;
 	return registry;
 }
@@ -138,8 +149,8 @@ void serviceRegistry_unregisterService(SERVICE_REGISTRY registry, BUNDLE bundle,
 	ARRAY_LIST regs = (ARRAY_LIST) hashMap_get(registry->serviceRegistrations, bundle);
 	if (regs != NULL) {
 		arrayList_removeElement(regs, registration);
+		hashMap_put(registry->serviceRegistrations, bundle, regs);
 	}
-	hashMap_put(registry->serviceRegistrations, bundle, regs);
 
 	pthread_mutex_unlock(&registry->mutex);
 
@@ -148,11 +159,26 @@ void serviceRegistry_unregisterService(SERVICE_REGISTRY registry, BUNDLE bundle,
 		event->type = UNREGISTERING;
 		event->reference = registration->reference;
 		registry->serviceChanged(event, NULL);
+		free(event);
 	}
 
-//	pthread_mutex_lock(&registry->mutex);
+	pthread_mutex_lock(&registry->mutex);
 	// unget service
-//	pthread_mutex_unlock(&registry->mutex);
+
+	ARRAY_LIST clients = serviceRegistry_getUsingBundles(registry, registration->reference);
+	int i;
+	for (i = 0; (clients != NULL) && (i < arrayList_size(clients)); i++) {
+		BUNDLE client = arrayList_get(clients, i);
+		while (serviceRegistry_ungetService(registry, client, registration->reference)) {
+			;
+		}
+	}
+	arrayList_destroy(clients);
+	serviceRegistration_invalidate(registration);
+
+	serviceRegistration_destroy(registration);
+
+	pthread_mutex_unlock(&registry->mutex);
 
 }
 
@@ -168,6 +194,12 @@ void serviceRegistry_unregisterServices(SERVICE_REGISTRY registry, BUNDLE bundle
 		if (serviceRegistration_isValid(reg)) {
 			serviceRegistration_unregister(reg);
 		}
+	}
+
+	if (regs != NULL && arrayList_isEmpty(regs)) {
+		ARRAY_LIST removed = hashMap_remove(registry->serviceRegistrations, bundle);
+		arrayList_destroy(removed);
+		removed = NULL;
 	}
 
 	pthread_mutex_lock(&registry->mutex);
@@ -201,6 +233,8 @@ ARRAY_LIST serviceRegistry_getServiceReferences(SERVICE_REGISTRY registry, char 
 			}
 		}
 	}
+	hashMapIterator_destroy(iterator);
+	hashMapValues_destroy(registrations);
 
 	return references;
 }
@@ -264,6 +298,7 @@ bool serviceRegistry_ungetService(SERVICE_REGISTRY registry, BUNDLE bundle, SERV
 
 	usage->count--;
 
+
 	if ((registration->svcObj == NULL) || (usage->count <= 0)) {
 		usage->service = NULL;
 		serviceRegistry_flushUsageCount(registry, bundle, reference);
@@ -283,13 +318,36 @@ void serviceRegistry_ungetServices(SERVICE_REGISTRY registry, BUNDLE bundle) {
 		return;
 	}
 
+	// usage arrays?
+	ARRAY_LIST fusages = arrayList_clone(usages);
+
 	int i;
-	for (i = 0; i < arrayList_size(usages); i++) {
-		USAGE_COUNT usage = arrayList_get(usages, i);
-		while (serviceRegistry_ungetService(registry, bundle, usage->reference)) {
+	for (i = 0; i < arrayList_size(fusages); i++) {
+		USAGE_COUNT usage = arrayList_get(fusages, i);
+		SERVICE_REFERENCE reference = usage->reference;
+		while (serviceRegistry_ungetService(registry, bundle, reference)) {
 			//
 		}
 	}
+
+	arrayList_destroy(fusages);
 }
 
-
+ARRAY_LIST serviceRegistry_getUsingBundles(SERVICE_REGISTRY registry, SERVICE_REFERENCE reference) {
+	ARRAY_LIST bundles = arrayList_create();
+	HASH_MAP_ITERATOR iter = hashMapIterator_create(registry->inUseMap);
+	while (hashMapIterator_hasNext(iter)) {
+		HASH_MAP_ENTRY entry = hashMapIterator_nextEntry(iter);
+		BUNDLE bundle = hashMapEntry_getKey(entry);
+		ARRAY_LIST usages = hashMapEntry_getValue(entry);
+		int i;
+		for (i = 0; i < arrayList_size(usages); i++) {
+			USAGE_COUNT usage = arrayList_get(usages, i);
+			if (usage->reference == reference) {
+				arrayList_add(bundles, bundle);
+			}
+		}
+	}
+	hashMapIterator_destroy(iter);
+	return bundles;
+}

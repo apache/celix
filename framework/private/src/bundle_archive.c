@@ -25,11 +25,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 //#include <dirent.h>
 //#include <sys/stat.h>
 
 #include "bundle_archive.h"
+#include "bundle_revision.h"
 #include "headers.h"
+#include "linked_list_iterator.h"
 
 #include <apr-1/apr_file_io.h>
 
@@ -38,7 +41,9 @@ struct bundleArchive {
 	char * location;
 	DIR * archiveRootDir;
 	char * archiveRoot;
-	char * revision;
+	LINKED_LIST revisions;
+	long refreshCount;
+	time_t lastModified;
 
 	BUNDLE_STATE persistentState;
 
@@ -50,31 +55,67 @@ BUNDLE_ARCHIVE bundleArchive_createSystemBundleArchive(apr_pool_t *mp) {
 	archive->id = 0l;
 	archive->location = "System Bundle";
 	archive->mp = mp;
+	archive->archiveRoot = NULL;
+	archive->archiveRootDir = NULL;
+	archive->revisions = linkedList_create();
+	archive->refreshCount = -1;
+	time(&archive->lastModified);
+
 	return archive;
 }
 
-char * bundleArchive_getRevisionLocation(BUNDLE_ARCHIVE archive /*, int revision */);
-void bundleArchive_setRevisionLocation(BUNDLE_ARCHIVE archive, char * location/*, int revision */);
+char * bundleArchive_getRevisionLocation(BUNDLE_ARCHIVE archive, long revNr);
+void bundleArchive_setRevisionLocation(BUNDLE_ARCHIVE archive, char * location, long revNr);
 
 void bundleArchive_initialize(BUNDLE_ARCHIVE archive);
 
 void bundleArchive_deleteTree(char * directory, apr_pool_t *mp);
 
+BUNDLE_REVISION bundleArchive_createRevisionFromLocation(BUNDLE_ARCHIVE archive, char *location, char *inputFile, long revNr);
+void bundleArchive_reviseInternal(BUNDLE_ARCHIVE archive, bool isReload, long revNr, char * location, char *inputFile);
+
+time_t bundleArchive_readLastModified(BUNDLE_ARCHIVE archive);
+void bundleArchive_writeLastModified(BUNDLE_ARCHIVE archive);
+
 BUNDLE_ARCHIVE bundleArchive_create(char * archiveRoot, long id, char * location, apr_pool_t *mp) {
 	BUNDLE_ARCHIVE archive = (BUNDLE_ARCHIVE) malloc(sizeof(*archive));
-
 	archive->id = id;
 	archive->location = location;
 	archive->archiveRootDir = NULL;
 	archive->archiveRoot = archiveRoot;
+	archive->revisions = linkedList_create();
+	archive->refreshCount = -1;
+	time(&archive->lastModified);
 
 	archive->mp = mp;
 
 	bundleArchive_initialize(archive);
 
-	bundleArchive_revise(archive, location);
+	bundleArchive_revise(archive, location, NULL);
 
 	return archive;
+}
+
+celix_status_t bundleArchive_destroy(BUNDLE_ARCHIVE archive) {
+	if (archive->archiveRootDir != NULL) {
+		closedir(archive->archiveRootDir);
+	}
+	if (archive->archiveRoot != NULL) {
+		free(archive->archiveRoot);
+	}
+	if (archive->revisions != NULL) {
+		LINKED_LIST_ITERATOR iter = linkedListIterator_create(archive->revisions, 0);
+		while (linkedListIterator_hasNext(iter)) {
+			BUNDLE_REVISION revision = linkedListIterator_next(iter);
+			bundleRevision_destroy(revision);
+		}
+		linkedListIterator_destroy(iter);
+		linkedList_destroy(archive->revisions);
+	}
+
+	free(archive);
+	archive = NULL;
+	return CELIX_SUCCESS;
 }
 
 BUNDLE_ARCHIVE bundleArchive_recreate(char * archiveRoot, apr_pool_t *mp) {
@@ -84,10 +125,23 @@ BUNDLE_ARCHIVE bundleArchive_recreate(char * archiveRoot, apr_pool_t *mp) {
 	archive->id = -1;
 	archive->persistentState = -1;
 	archive->location = NULL;
+	archive->revisions = linkedList_create();
 	archive->mp = mp;
+	archive->refreshCount = -1;
+	archive->lastModified = (time_t) NULL;
 
-	char * location = bundleArchive_getRevisionLocation(archive);
-	bundleArchive_revise(archive, location);
+	apr_dir_t *dir;
+	apr_status_t status = apr_dir_open(&dir, archiveRoot, mp);
+	apr_finfo_t dp;
+	while ((apr_dir_read(&dp, APR_FINFO_DIRENT|APR_FINFO_TYPE, dir))) {
+		if (dp.filetype == APR_DIR && (strncmp(dp.name, "version", 7) == 0)) {
+			long idx;
+			sscanf(dp.name, "version%*d.%ld", &idx);
+		}
+	}
+
+	char * location = bundleArchive_getRevisionLocation(archive, 0);
+	bundleArchive_revise(archive, location, NULL);
 
 	return archive;
 }
@@ -134,8 +188,17 @@ char * bundleArchive_getArchiveRoot(BUNDLE_ARCHIVE archive) {
 	return archive->archiveRoot;
 }
 
-char * bundleArchive_getRevision(BUNDLE_ARCHIVE archive) {
-	return archive->revision;
+long bundleArchive_getCurrentRevisionNumber(BUNDLE_ARCHIVE archive) {
+	BUNDLE_REVISION revision = bundleArchive_getCurrentRevision(archive);
+	return bundleRevision_getNumber(revision);
+}
+
+BUNDLE_REVISION bundleArchive_getCurrentRevision(BUNDLE_ARCHIVE archive) {
+	return linkedList_isEmpty(archive->revisions) ? NULL : linkedList_getLast(archive->revisions);
+}
+
+BUNDLE_REVISION bundleArchive_getRevision(BUNDLE_ARCHIVE archive, long revNr) {
+	return linkedList_get(archive->revisions, revNr);
 }
 
 BUNDLE_STATE bundleArchive_getPersistentState(BUNDLE_ARCHIVE archive) {
@@ -190,23 +253,122 @@ void bundleArchive_setPersistentState(BUNDLE_ARCHIVE archive, BUNDLE_STATE state
 	archive->persistentState = state;
 }
 
-void bundleArchive_revise(BUNDLE_ARCHIVE archive, char * location) {
-	char revisionRoot[strlen(archive->archiveRoot) + 11];
-	strcpy(revisionRoot, archive->archiveRoot);
-	strcat(revisionRoot, "/version0.0");
-	mkdir(revisionRoot, 0755);
+long bundleArchive_getRefreshCount(BUNDLE_ARCHIVE archive) {
+	if (archive->refreshCount >= 0) {
+		return archive->refreshCount;
+	}
 
-	int e = extractBundle(location, revisionRoot);
-	archive->revision = "0.0";
-
-	bundleArchive_setRevisionLocation(archive, location);
+	char refreshCounter[strlen(archive->archiveRoot) + 17];
+	strcpy(refreshCounter,archive->archiveRoot);
+	strcat(refreshCounter, "/refresh.counter");
+	FILE * refreshCounterFile = fopen(refreshCounter, "r");
+	if (refreshCounterFile != NULL) {
+		char counterStr[256];
+		fgets (counterStr , sizeof(counterStr) , refreshCounterFile);
+		fclose(refreshCounterFile);
+		sscanf(counterStr, "%ld", &archive->refreshCount);
+	} else {
+		archive->refreshCount = 0;
+	}
+	return archive->refreshCount;
 }
 
-char * bundleArchive_getRevisionLocation(BUNDLE_ARCHIVE archive /*, int revision */) {
-	char revisionLocation[strlen(archive->archiveRoot) + 30];
-	strcpy(revisionLocation, archive->archiveRoot);
-	strcat(revisionLocation, "/version0.0");
-	strcat(revisionLocation, "/revision.location");
+void bundleArchive_setRefreshCount(BUNDLE_ARCHIVE archive) {
+	char refreshCounter[strlen(archive->archiveRoot) + 17];
+	strcpy(refreshCounter, archive->archiveRoot);
+	strcat(refreshCounter, "/refresh.counter");
+	FILE * refreshCounterFile = fopen(refreshCounter, "w");
+
+	fprintf(refreshCounterFile, "%ld", archive->refreshCount);
+	fclose(refreshCounterFile);
+}
+
+time_t bundleArchive_getLastModified(BUNDLE_ARCHIVE archive) {
+	if (archive->lastModified == (time_t) NULL) {
+		archive->lastModified = bundleArchive_readLastModified(archive);
+	}
+	return archive->lastModified;
+}
+
+void bundleArchive_setLastModified(BUNDLE_ARCHIVE archive, time_t lastModifiedTime) {
+	archive->lastModified = lastModifiedTime;
+	bundleArchive_writeLastModified(archive);
+}
+
+time_t bundleArchive_readLastModified(BUNDLE_ARCHIVE archive) {
+	printf("Read time\n");
+	char lastModified[strlen(archive->archiveRoot) + 21];
+	sprintf(lastModified, "%s/bundle.lastmodified", archive->archiveRoot);
+
+	char timeStr[20];
+	apr_file_t *lastModifiedFile;
+	apr_status_t status = apr_file_open(&lastModifiedFile, lastModified, APR_FOPEN_READ, APR_OS_DEFAULT, archive->mp);
+	apr_file_gets(timeStr, sizeof(timeStr), lastModifiedFile);
+	apr_file_close(lastModifiedFile);
+
+	int year, month, day, hours, minutes, seconds;
+	sscanf(timeStr, "%d %d %d %d:%d:%d", &year, &month, &day, &hours, &minutes, &seconds);
+
+	struct tm time;
+	time.tm_year = year - 1900;
+	time.tm_mon = month - 1;
+	time.tm_mday = day;
+	time.tm_hour = hours;
+	time.tm_min = minutes;
+	time.tm_sec = seconds;
+
+	return mktime(&time);
+}
+
+void bundleArchive_writeLastModified(BUNDLE_ARCHIVE archive) {
+	char lastModified[strlen(archive->archiveRoot) + 21];
+	sprintf(lastModified, "%s/bundle.lastmodified", archive->archiveRoot);
+	char timeStr[20];
+	strftime(timeStr, 20, "%Y %m %d %H:%M:%S", localtime(&archive->lastModified));
+
+	apr_file_t *lastModifiedFile;
+	apr_status_t status = apr_file_open(&lastModifiedFile, lastModified, APR_FOPEN_CREATE|APR_FOPEN_WRITE, APR_OS_DEFAULT, archive->mp);
+	apr_file_printf(lastModifiedFile, "%s", timeStr);
+	apr_file_close(lastModifiedFile);
+}
+
+void bundleArchive_revise(BUNDLE_ARCHIVE archive, char * location, char *inputFile) {
+	long revNr = linkedList_isEmpty(archive->revisions)
+			? 0l
+			: bundleRevision_getNumber(linkedList_getLast(archive->revisions)) + 1;
+	bundleArchive_reviseInternal(archive, false, revNr, location, inputFile);
+}
+
+void bundleArchive_reviseInternal(BUNDLE_ARCHIVE archive, bool isReload, long revNr, char * location, char *inputFile) {
+	if (inputFile != NULL) {
+		location = "inputstream:";
+	}
+
+	BUNDLE_REVISION revision = bundleArchive_createRevisionFromLocation(archive, location, inputFile, revNr);
+
+	if (!isReload) {
+		bundleArchive_setRevisionLocation(archive, location, revNr);
+	}
+
+	linkedList_addElement(archive->revisions, revision);
+}
+
+bool bundleArchive_rollbackRevise(BUNDLE_ARCHIVE archive) {
+	return true;
+}
+
+BUNDLE_REVISION bundleArchive_createRevisionFromLocation(BUNDLE_ARCHIVE archive, char *location, char *inputFile, long revNr) {
+	char root[256];
+	sprintf(root, "%s/version%ld.%ld", archive->archiveRoot, bundleArchive_getRefreshCount(archive), revNr);
+
+	// TODO create revision using optional FILE *fp;
+	BUNDLE_REVISION revision = bundleRevision_create(root, location, revNr, inputFile);
+	return revision;
+}
+
+char * bundleArchive_getRevisionLocation(BUNDLE_ARCHIVE archive, long revNr) {
+	char revisionLocation[256];
+	sprintf(revisionLocation, "%s/version%ld.%ld/revision.location", archive->archiveRoot, bundleArchive_getRefreshCount(archive), revNr);
 
 	FILE * revisionLocationFile = fopen(revisionLocation, "r");
 	char location[256];
@@ -216,11 +378,9 @@ char * bundleArchive_getRevisionLocation(BUNDLE_ARCHIVE archive /*, int revision
 	return strdup(location);
 }
 
-void bundleArchive_setRevisionLocation(BUNDLE_ARCHIVE archive, char * location/*, int revision */) {
-	char revisionLocation[strlen(archive->archiveRoot) + 30];
-	strcpy(revisionLocation, archive->archiveRoot);
-	strcat(revisionLocation, "/version0.0");
-	strcat(revisionLocation, "/revision.location");
+void bundleArchive_setRevisionLocation(BUNDLE_ARCHIVE archive, char * location, long revNr) {
+	char revisionLocation[256];
+	sprintf(revisionLocation, "%s/version%ld.%ld/revision.location", archive->archiveRoot, bundleArchive_getRefreshCount(archive), revNr);
 
 	FILE * revisionLocationFile = fopen(revisionLocation, "w");
 	fprintf(revisionLocationFile, "%s", location);
@@ -262,12 +422,14 @@ void bundleArchive_initialize(BUNDLE_ARCHIVE archive) {
 	strcat(bundleLocation, "/bundle.location");
 	apr_file_t *bundleLocationFile;
 	status = apr_file_open(&bundleLocationFile, bundleLocation, APR_FOPEN_CREATE|APR_FOPEN_WRITE, APR_OS_DEFAULT, archive->mp);
-	apr_file_printf(bundleLocationFile, "%ld", archive->id);
+	apr_file_printf(bundleLocationFile, "%s", archive->location);
 	apr_file_close(bundleLocationFile);
 
 //	FILE * bundleLocationFile = fopen(bundleLocation, "w");
 //	fprintf(bundleLocationFile, "%s", archive->location);
 //	fclose(bundleLocationFile);
+
+	bundleArchive_writeLastModified(archive);
 }
 
 void bundleArchive_deleteTree(char * directory, apr_pool_t *mp) {
@@ -287,7 +449,7 @@ void bundleArchive_deleteTree(char * directory, apr_pool_t *mp) {
 
 //			struct stat s;
 //			stat(dp->d_name, &s);
-			if (dp.filetype = APR_DIR) {
+			if (dp.filetype == APR_DIR) {
 //			if (S_ISDIR(s.st_mode)) {
 //			if (dp->d_type == DT_DIR) {
 				bundleCache_deleteTree(subdir, mp);

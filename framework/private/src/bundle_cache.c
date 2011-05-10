@@ -78,7 +78,7 @@ void bundleCache_deleteTree(char * directory, apr_pool_t *mp) {
 
 //			struct stat s;
 //			stat(dp->d_name, &s);
-			if (dp.filetype = APR_DIR) {
+			if (dp.filetype == APR_DIR) {
 //			if (S_ISDIR(s.st_mode)) {
 //			if (dp->d_type == DT_DIR) {
 				bundleCache_deleteTree(subdir, mp);
@@ -125,6 +125,8 @@ ARRAY_LIST bundleCache_getArchives(BUNDLE_CACHE cache) {
 			arrayList_add(list, archive);
 		}
 	}
+
+	apr_dir_close(dir);
 
 	return list;
 }

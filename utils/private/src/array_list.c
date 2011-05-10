@@ -34,9 +34,18 @@ ARRAY_LIST arrayList_create(void) {
 
 	list->size = 0;
 	list->capacity = 10;
+	list->modCount = 0;
 	list->elementData = (void **) malloc(sizeof(void*) * list->capacity);
 
 	return list;
+}
+
+void arrayList_destroy(ARRAY_LIST list) {
+	list->size = 0;
+	free(list->elementData);
+	list->elementData = NULL;
+	free(list);
+	list = NULL;
 }
 
 void arrayList_trimToSize(ARRAY_LIST list) {
@@ -226,6 +235,15 @@ ARRAY_LIST_ITERATOR arrayListIterator_create(ARRAY_LIST list) {
 	iterator->expectedModificationCount = list->modCount;
 
 	return iterator;
+}
+
+void arrayListIterator_destroy(ARRAY_LIST_ITERATOR iterator) {
+	iterator->lastReturned = -1;
+	iterator->cursor = 0;
+	iterator->expectedModificationCount = 0;
+	iterator->list = NULL;
+	free(iterator);
+	iterator = NULL;
 }
 
 bool arrayListIterator_hasNext(ARRAY_LIST_ITERATOR iterator) {

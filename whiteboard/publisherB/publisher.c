@@ -27,6 +27,6 @@
 #include "publisher_private.h"
 
 void publisher_invoke(PUBLISHER publisher, char * text) {
-	printf("Hello from B %s\n", text);
+	printf("Publisher B received: %s\n", text);
 }
 

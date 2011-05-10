@@ -33,6 +33,7 @@
 typedef struct linkedListIterator * LINKED_LIST_ITERATOR;
 
 LINKED_LIST_ITERATOR linkedListIterator_create(LINKED_LIST list, int index);
+void linkedListIterator_destroy(LINKED_LIST_ITERATOR iterator);
 bool linkedListIterator_hasNext(LINKED_LIST_ITERATOR iterator);
 void * linkedListIterator_next(LINKED_LIST_ITERATOR iterator);
 bool linkedListIterator_hasPrevious(LINKED_LIST_ITERATOR iterator);

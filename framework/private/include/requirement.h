@@ -31,6 +31,7 @@
 #include "headers.h"
 
 REQUIREMENT requirement_create(HASH_MAP directives, HASH_MAP attributes);
+void requirement_destroy(REQUIREMENT requirement);
 VERSION_RANGE requirement_getVersionRange(REQUIREMENT requirement);
 char * requirement_getTargetName(REQUIREMENT requirement);
 

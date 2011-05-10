@@ -37,6 +37,17 @@ LINKED_LIST linkedList_create(void) {
 	list->header->previous = list->header;
 	list->size = 0;
 	list->modificationCount = 0;
+
+	return list;
+}
+
+void linkedList_destroy(LINKED_LIST list) {
+	linkedList_clear(list);
+	free(list->header);
+	list->header = NULL;
+	list->modificationCount = 0;
+	list->size = 0;
+	free(list);
 }
 
 void * linkedList_getFirst(LINKED_LIST list) {
@@ -112,8 +123,9 @@ void linkedList_clear(LINKED_LIST list) {
 	while (entry != list->header) {
 		LINKED_LIST_ENTRY next = entry->next;
 		entry->next = entry->previous = NULL;
-		free(entry->element);
+		// free(entry->element);
 		entry->element = NULL;
+		free(entry);
 		entry = next;
 	}
 	list->header->next = list->header->previous = list->header;

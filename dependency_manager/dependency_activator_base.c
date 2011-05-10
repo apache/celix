@@ -29,9 +29,6 @@
 #include "service_component_private.h"
 #include "dependency_activator_base.h"
 
-DEPENDENCY_MANAGER m_manager;
-BUNDLE_CONTEXT m_context;
-
 struct dependencyActivatorBase {
 	DEPENDENCY_MANAGER manager;
 	BUNDLE_CONTEXT context;
@@ -58,12 +55,14 @@ void bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 void bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
 	DEPENDENCY_ACTIVATOR_BASE data = (DEPENDENCY_ACTIVATOR_BASE) userData;
 	dm_destroy(data->userData, data->context, data->manager);
-	m_manager = NULL;
-	m_context = NULL;
+	data->userData = NULL;
+	data->context = NULL;
+	data->manager = NULL;
 }
 
 void bundleActivator_destroy(void * userData) {
-
+	DEPENDENCY_ACTIVATOR_BASE data = (DEPENDENCY_ACTIVATOR_BASE) userData;
+	free(data);
 }
 
 SERVICE dependencyActivatorBase_createService(DEPENDENCY_MANAGER manager) {

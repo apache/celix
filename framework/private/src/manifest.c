@@ -116,12 +116,23 @@ MANIFEST manifest_read(char * filename) {
 			if ((properties_set(mainAttributes, name, value) != NULL) && (!lineContinued)) {
 				printf("Duplicate entry: %s", name);
 			}
+			free(name);
+			free(value);
 		}
 		fclose(file);
 		return mf;
 	}
 
 	return NULL;
+}
+
+void manifest_destroy(MANIFEST manifest) {
+	if (manifest != NULL) {
+		properties_destroy(manifest->mainAttributes);
+		manifest->mainAttributes = NULL;
+		free(manifest);
+		manifest = NULL;
+	}
 }
 
 void manifest_write(MANIFEST manifest, char * filename) {

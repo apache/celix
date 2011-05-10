@@ -27,5 +27,6 @@
 #define START_COMMAND_H_
 
 COMMAND startCommand_create(BUNDLE_CONTEXT context);
+void startCommand_destroy(COMMAND command);
 
 #endif /* START_COMMAND_H_ */

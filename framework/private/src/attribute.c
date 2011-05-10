@@ -23,6 +23,7 @@
  *      Author: alexanderb
  */
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "attribute.h"
 
@@ -31,4 +32,10 @@ ATTRIBUTE attribute_create(char * key, char * value) {
 	attribute->key = key;
 	attribute->value = value;
 	return attribute;
+}
+
+void attribute_destroy(ATTRIBUTE attribute) {
+	free(attribute->key);
+	free(attribute->value);
+	free(attribute);
 }

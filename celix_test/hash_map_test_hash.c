@@ -48,7 +48,7 @@ unsigned int test_hashKeyChar(void * k) {
 }
 
 unsigned int test_hashValueChar(void * v) {
-
+	return 0;
 }
 
 int test_equalsKeyChar(void * k, void * o) {
@@ -69,7 +69,7 @@ int setup(void) {
 }
 
 void test_hashMap_get(void) {
-	hashMap_clear(map);
+	hashMap_clear(map, false, false);
 
 	// Add one entry
 	char * key = "key";
@@ -109,7 +109,7 @@ void test_hashMap_get(void) {
 }
 
 void test_hashMap_containsKey(void) {
-	hashMap_clear(map);
+	hashMap_clear(map, false, false);
 
 	// Add one entry
 	char * key = "key";
@@ -140,7 +140,7 @@ void test_hashMap_containsKey(void) {
 }
 
 void test_hashMap_getEntry(void) {
-	hashMap_clear(map);
+	hashMap_clear(map, false, false);
 
 	// Add one entry
 	char * key = "key";
@@ -185,7 +185,7 @@ void test_hashMap_getEntry(void) {
 }
 
 void test_hashMap_put(void) {
-	hashMap_clear(map);
+	hashMap_clear(map, false, false);
 
 	// Add one entry
 	char * key = "key";
@@ -237,7 +237,7 @@ void test_hashMap_put(void) {
 }
 
 void test_hashMap_remove(void) {
-	hashMap_clear(map);
+	hashMap_clear(map, false, false);
 
 	// Add one entry
 	char * key = "key";
@@ -273,7 +273,7 @@ void test_hashMap_remove(void) {
 }
 
 void test_hashMap_containsValue(void) {
-	hashMap_clear(map);
+	hashMap_clear(map, false, false);
 
 	// Add one entry
 	char * key = "key";

@@ -53,6 +53,25 @@ CAPABILITY capability_create(MODULE module, HASH_MAP directives, HASH_MAP attrib
 	return capability;
 }
 
+void capability_destroy(CAPABILITY capability) {
+	HASH_MAP_ITERATOR attrIter = hashMapIterator_create(capability->attributes);
+	while (hashMapIterator_hasNext(attrIter)) {
+		ATTRIBUTE attr = hashMapIterator_nextValue(attrIter);
+		hashMapIterator_remove(attrIter);
+		attribute_destroy(attr);
+	}
+	hashMapIterator_destroy(attrIter);
+	hashMap_destroy(capability->attributes, false, false);
+	hashMap_destroy(capability->directives, false, false);
+	version_destroy(capability->version);
+
+	capability->attributes = NULL;
+	capability->directives = NULL;
+	capability->module = NULL;
+	capability->version = NULL;
+
+}
+
 char * capability_getServiceName(CAPABILITY capability) {
 	return capability->serviceName;
 }

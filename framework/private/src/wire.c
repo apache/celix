@@ -45,6 +45,14 @@ WIRE wire_create(MODULE importer, REQUIREMENT requirement,
 	return wire;
 }
 
+void wire_destroy(WIRE wire) {
+	wire->importer = NULL;
+	wire->requirement = NULL;
+	wire->exporter = NULL;
+	wire->capability = NULL;
+	free(wire);
+}
+
 CAPABILITY wire_getCapability(WIRE wire) {
 	return wire->capability;
 }

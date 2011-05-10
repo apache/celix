@@ -28,23 +28,36 @@
 #include "bundle_context.h"
 #include "publisher_private.h"
 
+struct activatorData {
+	PUBLISHER_SERVICE ps;
+	PUBLISHER pub;
+};
+
 void * bundleActivator_create() {
-	return NULL;
+	struct activatorData * data = (struct activatorData *) malloc(sizeof(*data));
+	return data;
 }
 
 void bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
-	PUBLISHER_SERVICE ps = malloc(sizeof(*ps));
-	PUBLISHER pub = malloc(sizeof(*pub));
-	ps->invoke = publisher_invoke;
-	ps->publisher = pub;
+	struct activatorData * data = (struct activatorData *) userData;
+	data->ps = malloc(sizeof(*(data->ps)));
+	data->pub = malloc(sizeof(*(data->pub)));
+	data->ps->invoke = publisher_invoke;
+	data->ps->publisher = data->pub;
 
-	bundleContext_registerService(context, PUBLISHER_NAME, ps, NULL);
+	bundleContext_registerService(context, PUBLISHER_NAME, data->ps, NULL);
 }
 
 void bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
-
+	struct activatorData * data = (struct activatorData *) userData;
+	data->ps->publisher = NULL;
+	data->ps->invoke = NULL;
+	free(data->pub);
+	free(data->ps);
+	data->pub = NULL;
+	data->ps = NULL;
 }
 
 void bundleActivator_destroy(void * userData) {
-
+	free(userData);
 }

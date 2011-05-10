@@ -61,16 +61,18 @@ char * string_ndup(const char *s, size_t n) {
 }
 
 char * string_trim(char * string) {
+	char * copy = string;
+
 	char *end;
 	// Trim leading space
-	while(isspace(*string)) string++;
+	while(isspace(*copy)) copy++;
 
 	// Trim trailing space
-	end = string + strlen(string) - 1;
-	while(end > string && isspace(*end)) end--;
+	end = copy + strlen(copy) - 1;
+	while(end > copy && isspace(*end)) end--;
 
 	// Write new null terminator
 	*(end+1) = 0;
 
-	return string;
+	return copy;
 }

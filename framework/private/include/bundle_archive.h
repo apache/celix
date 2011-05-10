@@ -28,20 +28,27 @@
 
 #include <apr-1/apr_general.h>
 
+#include "bundle_revision.h"
 #include "bundle_state.h"
+#include "celix_errno.h"
 
 typedef struct bundleArchive * BUNDLE_ARCHIVE;
 
 BUNDLE_ARCHIVE bundleArchive_create(char * archiveRoot, long id, char * location, apr_pool_t *mp);
+celix_status_t bundleArchive_destroy(BUNDLE_ARCHIVE archive);
 BUNDLE_ARCHIVE bundleArchive_createSystemBundleArchive(apr_pool_t *mp);
 BUNDLE_ARCHIVE bundleArchive_recreate(char * archiveRoot, apr_pool_t *mp);
 long bundleArchive_getId(BUNDLE_ARCHIVE archive);
 char * bundleArchive_getLocation(BUNDLE_ARCHIVE archive);
 char * bundleArchive_getArchiveRoot(BUNDLE_ARCHIVE archive);
-char * bundleArchive_getRevision(BUNDLE_ARCHIVE archive);
+BUNDLE_REVISION bundleArchive_getCurrentRevision(BUNDLE_ARCHIVE archive);
+BUNDLE_REVISION bundleArchive_getRevision(BUNDLE_ARCHIVE archive, long revNr);
 BUNDLE_STATE bundleArchive_getPersistentState(BUNDLE_ARCHIVE archive);
-void bundleArchive_revise(BUNDLE_ARCHIVE archive, char * location);
+long bundleArchive_getRefreshCount(BUNDLE_ARCHIVE archive);
+long bundleArchive_getCurrentRevisionNumber(BUNDLE_ARCHIVE archive);
+void bundleArchive_revise(BUNDLE_ARCHIVE archive, char * location, char *inputFile);
 void bundleArchive_close(BUNDLE_ARCHIVE archive);
 void bundleArchive_closeAndDelete(BUNDLE_ARCHIVE archive);
+time_t bundleArchive_getLastModified(BUNDLE_ARCHIVE archive);
 
 #endif /* BUNDLE_ARCHIVE_H_ */

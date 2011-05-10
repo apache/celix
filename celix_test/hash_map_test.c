@@ -23,6 +23,7 @@
  *      Author: alexanderb
  */
 #include <stdio.h>
+#include <stdbool.h>
 
 #include "CUnit/Basic.h"
 
@@ -71,12 +72,12 @@ void test_hashMap_size(void) {
 	CU_ASSERT_EQUAL(map->size, 2);
 
 	// Clear map
-	hashMap_clear(map);
+	hashMap_clear(map, false, false);
 	CU_ASSERT_EQUAL(map->size, 0);
 }
 
 void test_hashMap_isEmpty(void) {
-	hashMap_clear(map);
+	hashMap_clear(map, false, false);
 	CU_ASSERT_EQUAL(map->size, 0);
 	CU_ASSERT_TRUE(hashMap_isEmpty(map));
 
@@ -94,7 +95,7 @@ void test_hashMap_isEmpty(void) {
 }
 
 void test_hashMap_get(void) {
-	hashMap_clear(map);
+	hashMap_clear(map, false, false);
 
 	// Add one entry
 	char * key = "key";
@@ -129,7 +130,7 @@ void test_hashMap_get(void) {
 }
 
 void test_hashMap_containsKey(void) {
-	hashMap_clear(map);
+	hashMap_clear(map, false, false);
 
 	// Add one entry
 	char * key = "key";
@@ -156,7 +157,7 @@ void test_hashMap_containsKey(void) {
 }
 
 void test_hashMap_getEntry(void) {
-	hashMap_clear(map);
+	hashMap_clear(map, false, false);
 
 	// Add one entry
 	char * key = "key";
@@ -194,7 +195,7 @@ void test_hashMap_getEntry(void) {
 }
 
 void test_hashMap_put(void) {
-	hashMap_clear(map);
+	hashMap_clear(map, false, false);
 
 	// Add one entry
 	char * key = "key";
@@ -217,7 +218,7 @@ void test_hashMap_put(void) {
 	char * nvalue2 = "value3";
 	char * old = (char *) hashMap_put(map, nkey2, nvalue2);
 	CU_ASSERT_PTR_NOT_NULL_FATAL(old);
-	CU_ASSERT_STRING_EQUAL(old, value2)
+	CU_ASSERT_STRING_EQUAL(old, value2);
 
 	get = hashMap_get(map, key2);
 	CU_ASSERT_STRING_EQUAL(get, nvalue2);
@@ -240,7 +241,7 @@ void test_hashMap_put(void) {
 }
 
 void test_hashMap_resize(void) {
-	hashMap_clear(map);
+	hashMap_clear(map, false, false);
 
 	CU_ASSERT_EQUAL(map->size, 0);
 	CU_ASSERT_EQUAL(map->tablelength, 16);
@@ -265,7 +266,7 @@ void test_hashMap_resize(void) {
 }
 
 void test_hashMap_remove(void) {
-	hashMap_clear(map);
+	hashMap_clear(map, false, false);
 
 	// Add one entry
 	char * key = "key";
@@ -298,7 +299,7 @@ void test_hashMap_remove(void) {
 }
 
 void test_hashMap_removeMapping(void) {
-	hashMap_clear(map);
+	hashMap_clear(map, false, false);
 
 	// Add one entry
 	char * key = "key";
@@ -331,7 +332,7 @@ void test_hashMap_removeMapping(void) {
 }
 
 void test_hashMap_clear(void) {
-	hashMap_clear(map);
+	hashMap_clear(map, false, false);
 	// Add one entry
 	char * key = "key";
 	char * value = "value";
@@ -352,12 +353,12 @@ void test_hashMap_clear(void) {
 	char * value4 = NULL;
 	hashMap_put(map, key4, value4);
 
-	hashMap_clear(map);
+	hashMap_clear(map, false, false);
 	CU_ASSERT_EQUAL(map->size, 0);
 }
 
 void test_hashMap_containsValue(void) {
-	hashMap_clear(map);
+	hashMap_clear(map, false, false);
 
 	// Add one entry
 	char * key = "key";

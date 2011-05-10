@@ -76,6 +76,17 @@ PROPERTIES properties_create(void) {
 	return hashMap_create(string_hash, string_hash, string_equals, string_equals);
 }
 
+void properties_destroy(PROPERTIES properties) {
+	HASH_MAP_ITERATOR iter = hashMapIterator_create(properties);
+	while (hashMapIterator_hasNext(iter)) {
+		HASH_MAP_ENTRY entry = hashMapIterator_nextEntry(iter);
+		free(hashMapEntry_getKey(entry));
+		free(hashMapEntry_getValue(entry));
+	}
+	hashMapIterator_destroy(iter);
+	hashMap_destroy(properties, false, false);
+}
+
 PROPERTIES properties_load(char * filename) {
 	PROPERTIES props = properties_create();
 	FILE *file = fopen ( filename, "r" );
@@ -93,15 +104,20 @@ PROPERTIES properties_load(char * filename) {
 				unsigned int pos = strcspn(line, "=");
 				if (pos != strlen(line)) {
 					key = string_trim(string_ndup((char *)line, pos));
-					value = string_trim(string_ndup(line+pos+1, strlen(line)));
+					char * ival = string_ndup(line+pos+1, strlen(line));
+					value = string_trim(ival);
 					if (value != NULL) {
-						if (strcmp(cont, string_ndup(value+strlen(value)-1, 1)) == 0) {
+						char * cmp = string_ndup(value+strlen(value)-1, 1);
+						if (strcmp(cont, cmp) == 0) {
 							split = 1;
 							value = string_ndup(value, strlen(value)-1);
 						} else {
-							char * old = hashMap_put(props, key, value);
+							char * old = hashMap_put(props, strdup(key), strdup(value));
 						}
+						free(cmp);
+						free(ival);
 					}
+					free(key);
 				}
 			} else {
 				if (strcmp(cont, string_ndup(line+strlen(line)-1, 1)) == 0) {
@@ -110,15 +126,14 @@ PROPERTIES properties_load(char * filename) {
 				} else {
 					split = 0;
 					strcat(value, string_trim(line));
-					char * old = hashMap_put(props, key, value);
+					char * old = hashMap_put(props, strdup(key), strdup(value));
 				}
 			}
 		}
 		fclose(file);
-		return props;
 	}
 	free(cont);
-	return NULL;
+	return props;
 }
 
 /**
@@ -155,5 +170,5 @@ char * properties_getWithDefault(PROPERTIES properties, char * key, char * defau
 }
 
 char * properties_set(PROPERTIES properties, char * key, char * value) {
-	return hashMap_put(properties, key, value);
+	return hashMap_put(properties, strdup(key), strdup(value));
 }

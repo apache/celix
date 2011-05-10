@@ -59,7 +59,7 @@ void tracker_open(SERVICE_TRACKER tracker) {
 	SERVICE_LISTENER listener = (SERVICE_LISTENER) malloc(sizeof(*listener));
 	FW_SERVICE_TRACKER fwTracker = findFwServiceTracker(tracker);
 
-	ARRAY_LIST initial = getServiceReferences(tracker->context, tracker->className, NULL);
+	ARRAY_LIST initial = bundleContext_getServiceReferences(tracker->context, tracker->className, NULL);
 	SERVICE_REFERENCE initial_reference;
 	unsigned int i;
 	int len = strlen(tracker->className);
@@ -73,7 +73,7 @@ void tracker_open(SERVICE_TRACKER tracker) {
 	strcat(filter, ")\0");
 
 	listener->serviceChanged = (void *) tracker_serviceChanged;
-	addServiceListener(tracker->context, listener, filter);
+	bundleContext_addServiceListener(tracker->context, listener, filter);
 	fwTracker->listener = listener;
 
 	for (i = 0; i < arrayList_size(initial); i++) {
@@ -81,14 +81,14 @@ void tracker_open(SERVICE_TRACKER tracker) {
 		track(fwTracker, initial_reference, NULL);
 	}
 	arrayList_clear(initial);
-	free(initial);
+	arrayList_destroy(initial);
 
 	initial = NULL;
 }
 
 void tracker_close(SERVICE_TRACKER tracker) {
 	FW_SERVICE_TRACKER fwTracker = findFwServiceTracker(tracker);
-	removeServiceListener(tracker->context, fwTracker->listener);
+	bundleContext_removeServiceListener(tracker->context, fwTracker->listener);
 
 	ARRAY_LIST refs = tracker_getServiceReferences(tracker);
 	if (refs != NULL) {
@@ -98,11 +98,12 @@ void tracker_close(SERVICE_TRACKER tracker) {
 			untrack(fwTracker, ref, NULL);
 		}
 	}
+	arrayList_destroy(refs);
 }
 
 void tracker_destroy(SERVICE_TRACKER tracker) {
 	FW_SERVICE_TRACKER fwTracker = findFwServiceTracker(tracker);
-	removeServiceListener(tracker->context, fwTracker->listener);
+	bundleContext_removeServiceListener(tracker->context, fwTracker->listener);
 	free(fwTracker->listener);
 	free(fwTracker->customizer);
 	tracker = NULL;
@@ -240,13 +241,14 @@ void untrack(FW_SERVICE_TRACKER fwTracker, SERVICE_REFERENCE reference, SERVICE_
 		if (tracked->reference == reference) {
 			if (tracked != NULL) {
 				arrayList_remove(fwTracker->tracked, i);
-				//ungetService(fwTracker->tracker->context, reference);
+				bundleContext_ungetService(fwTracker->tracker->context, reference);
 			}
 			if (fwTracker->customizer != NULL) {
 				fwTracker->customizer->removedService(fwTracker->customizer->handle, reference, tracked->service);
 			} else {
 				bundleContext_ungetService(fwTracker->tracker->context, reference);
 			}
+			free(tracked);
 			break;
 		}
 	}

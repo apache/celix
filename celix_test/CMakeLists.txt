@@ -30,8 +30,12 @@ target_link_libraries(hash_map_test_hash framework cunit ncurses)
 add_executable(array_list_test array_list_test.c)
 target_link_libraries(array_list_test framework cunit ncurses)
 
+add_executable(framework_test framework_test.c)
+target_link_libraries(framework_test framework cunit ncurses)
+
 enable_testing()
 #add_test (tester ${EXECUTABLE_OUTPUT_PATH}/tester)
 add_test (hash_map_test ${EXECUTABLE_OUTPUT_PATH}/hash_map_test)
 add_test (hash_map_test_hash ${EXECUTABLE_OUTPUT_PATH}/hash_map_test_hash)
 add_test (array_list_test ${EXECUTABLE_OUTPUT_PATH}/array_list_test)
+add_test (framework_test ${EXECUTABLE_OUTPUT_PATH}/framework_test)

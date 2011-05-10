@@ -49,10 +49,8 @@
 #define ATTRIBUTE_UNUSED
 #endif
 
-//struct exception { int code; const char *msg; };
-//define_exception_type(struct exception);
 
-//extern struct exception_context the_exception_context[1];
+#define celix_log(msg) printf("%s\n\tat %s(%s:%d)\n", msg, __func__, __FILE__, __LINE__);
 
 struct framework {
 	struct bundle * bundle;
@@ -93,11 +91,12 @@ typedef struct wire * WIRE;
 struct bundle {
 	BUNDLE_CONTEXT context;
 	ACTIVATOR activator;
-	long lastModified;
 	BUNDLE_STATE state;
 	void * handle;
 	BUNDLE_ARCHIVE archive;
-	MODULE module;
+	// MODULE module;
+	ARRAY_LIST modules;
+	MANIFEST manifest;
 
 	pthread_mutex_t lock;
 	int lockCount;

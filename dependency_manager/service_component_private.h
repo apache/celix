@@ -86,6 +86,7 @@ char * serviceComponent_getName(SERVICE service);
 
 
 STATE state_create(ARRAY_LIST dependencies, bool active);
+void state_destroy(STATE state);
 bool state_isInactive(STATE state);
 bool state_isWaitingForRequired(STATE state);
 bool state_isTrackingOptional(STATE state);

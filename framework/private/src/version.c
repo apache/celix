@@ -27,6 +27,7 @@
 #include <string.h>
 
 #include "version.h"
+#include "celix_errno.h"
 
 struct version {
 	int major;
@@ -60,7 +61,9 @@ VERSION version_createVersionFromString(char * version) {
 
 	token = strtok(version, delims);
 	if (token != NULL) {
-		major = atoi(strdup(token));
+		char * majorS = strdup(token);
+		major = atoi(majorS);
+		free(majorS);
 		token = strtok(NULL, delims);
 		if (token != NULL) {
 			minor = atoi(token);
@@ -84,6 +87,14 @@ VERSION version_createVersionFromString(char * version) {
 
 VERSION version_createEmptyVersion() {
 	return version_createVersion(0, 0, 0, "");
+}
+
+celix_status_t version_destroy(VERSION version) {
+	version->major = 0;
+	version->minor = 0;
+	version->micro = 0;
+	free(version);
+	return CELIX_SUCCESS;
 }
 
 int version_compareTo(VERSION version, VERSION compare) {

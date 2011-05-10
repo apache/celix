@@ -28,9 +28,9 @@
 
 #include "headers.h"
 
-void * bundleActivator_create();
-void bundleActivator_start(void * userData, BUNDLE_CONTEXT context);
-void bundleActivator_stop(void * userData, BUNDLE_CONTEXT context);
-void bundleActivator_destroy(void * userData);
+celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData);
+celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context);
+celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context);
+celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context);
 
 #endif /* BUNDLE_ACTIVATOR_H_ */

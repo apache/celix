@@ -86,12 +86,16 @@ void filter_destroy(FILTER filter) {
 	if (filter != NULL) {
 		if (filter->operand == SUBSTRING) {
 			arrayList_clear(filter->value);
-			free(filter->value);
+			arrayList_destroy(filter->value);
+			filter->value = NULL;
 		} else {
 			free(filter->value);
+			filter->value = NULL;
 		}
 		free(filter->attribute);
+		filter->attribute = NULL;
 		free(filter);
+		filter = NULL;
 	}
 }
 
@@ -266,8 +270,7 @@ FILTER filter_parseItem(char * filterString, int * pos) {
 					filter->value = string;
 
 					arrayList_clear(subs);
-					free(subs);
-//					arrayList_destroy(subs);
+					arrayList_destroy(subs);
 
 					return filter;
 				}
@@ -332,6 +335,7 @@ char * filter_parseValue(char * filterString, int * pos) {
 			case '\\': {
 				(*pos)++;
 				c = filterString[*pos];
+				//no break
 			}
 			default: {
 				char ch[2];
@@ -383,6 +387,7 @@ ARRAY_LIST filter_parseSubstring(char * filterString, int * pos) {
 			case '\\': {
 				(*pos)++;
 				c = filterString[*pos];
+				//no break
 			}
 			default: {
 				char ch[2];
@@ -518,7 +523,7 @@ int filter_compareString(OPERAND operand, char * string, void * value2) {
 		case NOT:
 		case OR:
 		case PRESENT: {
-
+			//no break
 		}
 	}
 	return 0;
