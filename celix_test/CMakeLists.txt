@@ -15,23 +15,24 @@
 # specific language governing permissions and limitations
 # under the License.
 
+include(FindCUnit)
+
 include_directories("${PROJECT_SOURCE_DIR}/celix")
-include_directories("/opt/local/include")
+include_directories(${CUNIT_INCLUDE_DIRS})
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/private/include")
-link_directories("/opt/local/lib")
 
 add_executable(hash_map_test hash_map_test.c)
-target_link_libraries(hash_map_test framework cunit ncurses)
+target_link_libraries(hash_map_test framework ${CUNIT_LIBRARIES})
 
 add_executable(hash_map_test_hash hash_map_test_hash.c)
-target_link_libraries(hash_map_test_hash framework cunit ncurses)
+target_link_libraries(hash_map_test_hash framework ${CUNIT_LIBRARIES})
 
 add_executable(array_list_test array_list_test.c)
-target_link_libraries(array_list_test framework cunit ncurses)
+target_link_libraries(array_list_test framework ${CUNIT_LIBRARIES})
 
 add_executable(framework_test framework_test.c)
-target_link_libraries(framework_test framework cunit ncurses)
+target_link_libraries(framework_test framework ${CUNIT_LIBRARIES})
 
 enable_testing()
 #add_test (tester ${EXECUTABLE_OUTPUT_PATH}/tester)

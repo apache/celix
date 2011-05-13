@@ -16,9 +16,11 @@
 # under the License.
 
 cmake_minimum_required (VERSION 2.6)
-project (Celix)
+project (Celix C)
 
 #SET(CMAKE_VERBOSE_MAKEFILE ON)
+
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 
 SET(CMAKE_BUILD_TYPE "Debug")
 SET(CMAKE_C_FLAGS "-std=c99")
@@ -34,8 +36,8 @@ ADD_CUSTOM_TARGET(install-fw
 
 include_directories("framework/private/include")
 include_directories("framework/public/include")
-include_directories("/opt/local/include")
-link_directories("/opt/local/lib")
+#include_directories("/opt/local/include")
+#link_directories("/opt/local/lib")
 
 add_subdirectory(utils)
 add_subdirectory(framework)
@@ -44,7 +46,7 @@ add_subdirectory(framework)
 include(Packaging.cmake)
 #add_subdirectory(dependency_manager)
 add_subdirectory(launcher)
-#add_subdirectory(test)
+add_subdirectory(test)
 
 add_subdirectory(shell)
 add_subdirectory(shell_tui)
@@ -60,7 +62,7 @@ add_subdirectory(mongoose)
 #add_subdirectory(whiteboard)
 #add_subdirectory(echo_service)
 
-#add_subdirectory(celix_test)
+add_subdirectory(celix_test)
 
 include(target.cmake)
 enable_testing()

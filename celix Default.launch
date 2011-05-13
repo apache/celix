@@ -42,7 +42,7 @@
 <intAttribute key="org.eclipse.linuxtools.valgrind.launch.GENERAL_NUMCALLERS" value="12"/>
 <listAttribute key="org.eclipse.linuxtools.valgrind.launch.GENERAL_SUPPFILES"/>
 <booleanAttribute key="org.eclipse.linuxtools.valgrind.launch.GENERAL_TRACECHILD" value="true"/>
-<stringAttribute key="org.eclipse.linuxtools.valgrind.launch.OUTPUT_DIR" value="/Users/alexanderb/Documents/Celix/.metadata/.plugins/org.eclipse.linuxtools.valgrind.launch"/>
+<stringAttribute key="org.eclipse.linuxtools.valgrind.launch.OUTPUT_DIR" value="/Users/alexander/Documents/Projects/Celix/.metadata/.plugins/org.eclipse.linuxtools.valgrind.launch"/>
 <stringAttribute key="org.eclipse.linuxtools.valgrind.launch.TOOL" value="org.eclipse.linuxtools.valgrind.launch.memcheck"/>
 <booleanAttribute key="org.eclipse.linuxtools.valgrind.massif.MASSIF_ALIGNMENT_BOOL" value="false"/>
 <intAttribute key="org.eclipse.linuxtools.valgrind.massif.MASSIF_ALIGNMENT_VAL" value="0"/>

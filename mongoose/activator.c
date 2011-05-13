@@ -51,9 +51,9 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 		"document_root", entry,
 		NULL
 	};
-	struct mg_context *ctx = mg_start(NULL, options);
+	data->ctx = mg_start(NULL, options);
 
-	printf("Mongoose startet: %p\n", ctx);
+	printf("Mongoose startet: %p\n", data->ctx);
 
 	return CELIX_SUCCESS;
 }

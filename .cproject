@@ -221,7 +221,7 @@
 		<buildTargets>
 			<target name="all" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
-				<buildArguments>-C /Users/alexanderb/Documents/Celix/celix/build</buildArguments>
+				<buildArguments>-C ${workspace_loc:/celix}/build</buildArguments>
 				<buildTarget>all</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>false</useDefaultCommand>
@@ -229,7 +229,7 @@
 			</target>
 			<target name="deploy" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
-				<buildArguments>-C /Users/alexanderb/Documents/workspace-c/celix/build</buildArguments>
+				<buildArguments>-C ${workspace_loc:/celix}/build</buildArguments>
 				<buildTarget>deploy</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>true</useDefaultCommand>
