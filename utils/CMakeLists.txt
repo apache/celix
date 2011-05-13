@@ -21,6 +21,6 @@ aux_source_directory("private/src" SRC)
 include_directories("private/include")
 include_directories("public/include")
 add_library(utils SHARED ${SRC})
-target_link_libraries(utils)
+target_link_libraries(utils m)
 
 install(TARGETS utils LIBRARY DESTINATION lib COMPONENT framework)

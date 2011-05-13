@@ -33,6 +33,14 @@ ADD_CUSTOM_TARGET(install-fw
   -D "CMAKE_INSTALL_PREFIX=test"
   -P "cmake_install.cmake"
   )
+  
+include(FindAPR)
+IF(APR_FOUND)
+	MESSAGE(STATUS "Looking for APR - found")
+ELSE(APR_FOUND)
+	MESSAGE(FATAL_ERROR "Looking for APR - not found")
+ENDIF(APR_FOUND)
+include_directories(${APR_INCLUDE_DIR})
 
 include_directories("framework/private/include")
 include_directories("framework/public/include")
@@ -46,7 +54,7 @@ add_subdirectory(framework)
 include(Packaging.cmake)
 #add_subdirectory(dependency_manager)
 add_subdirectory(launcher)
-add_subdirectory(test)
+#add_subdirectory(test)
 
 add_subdirectory(shell)
 add_subdirectory(shell_tui)
