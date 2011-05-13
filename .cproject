@@ -36,6 +36,7 @@
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.macosx.base.387685994" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.macosx.base">
 								<option id="gnu.c.compiler.option.include.paths.544783026" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="/opt/local/include"/>
+									<listOptionValue builtIn="false" value="/usr/include/apr-1"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1627566234" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>

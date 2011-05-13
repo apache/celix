@@ -31,7 +31,7 @@
 #include <stdbool.h>
 #include <pthread.h>
 #include <math.h>
-#include <apr-1/apr_file_io.h>
+#include <apr_file_io.h>
 
 #include "framework.h"
 #include "filter.h"

@@ -26,7 +26,7 @@
 #ifndef BUNDLE_ARCHIVE_H_
 #define BUNDLE_ARCHIVE_H_
 
-#include <apr-1/apr_general.h>
+#include <apr_general.h>
 
 #include "bundle_revision.h"
 #include "bundle_state.h"

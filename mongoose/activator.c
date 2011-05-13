@@ -24,7 +24,7 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
-#include <apr-1/apr_general.h>
+#include <apr_general.h>
 
 #include "bundle_activator.h"
 #include "bundle_context.h"

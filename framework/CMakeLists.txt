@@ -33,6 +33,7 @@ ENDIF(APR_FOUND)
 
 add_definitions(-DUSE_FILE32API)
 aux_source_directory("private/src" SRC)
+include_directories(${APR_INCLUDE_DIR})
 include_directories("private/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 add_library(framework SHARED ${SRC})

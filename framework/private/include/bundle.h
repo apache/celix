@@ -26,7 +26,7 @@
 #ifndef BUNDLE_H_
 #define BUNDLE_H_
 
-#include <apr-1/apr_general.h>
+#include <apr_general.h>
 
 #include "headers.h"
 #include "celix_errno.h"

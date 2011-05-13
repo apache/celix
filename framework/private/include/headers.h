@@ -41,7 +41,7 @@
 #include "bundle_state.h"
 #include "bundle_cache.h"
 
-#include "apr-1/apr_general.h"
+#include "apr_general.h"
 
 #if defined(__GNUC__)
 #define ATTRIBUTE_UNUSED __attribute__ ((__unused__))
