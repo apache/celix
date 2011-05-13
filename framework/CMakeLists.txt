@@ -20,18 +20,22 @@ include(FindZLIB)
 include(FindAPR)
 
 IF(ZLIB_FOUND)
-	MESSAGE(STATUS "Looking for Foo - found")
+	MESSAGE(STATUS "Looking for ZLIB - found")
 ELSE(ZLIB_FOUND)
-	MESSAGE(FATAL_ERROR "Looking for Foo - not found")
+	MESSAGE(FATAL_ERROR "Looking for ZLIB - not found")
 ENDIF(ZLIB_FOUND)
 
-
+IF(APR_FOUND)
+	MESSAGE(STATUS "Looking for APR - found")
+ELSE(APR_FOUND)
+	MESSAGE(FATAL_ERROR "Looking for APR - not found")
+ENDIF(APR_FOUND)
 
 add_definitions(-DUSE_FILE32API)
 aux_source_directory("private/src" SRC)
 include_directories("private/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 add_library(framework SHARED ${SRC})
-target_link_libraries(framework utils ${ZLIB_LIBRARY} apr-1 curl)
+target_link_libraries(framework utils ${ZLIB_LIBRARY} ${APR_LIBRARY} curl)
 
 install(TARGETS framework LIBRARY DESTINATION lib COMPONENT framework)
