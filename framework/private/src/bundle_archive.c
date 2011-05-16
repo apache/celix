@@ -236,7 +236,7 @@ void bundleArchive_setPersistentState(BUNDLE_ARCHIVE archive, BUNDLE_STATE state
 	strcpy(persistentStateLocation, archive->archiveRoot);
 	strcat(persistentStateLocation, "/bundle.state");
 	apr_file_t *persistentStateLocationFile;
-	apr_file_open(&persistentStateLocationFile, persistentStateLocation, APR_FOPEN_WRITE, APR_OS_DEFAULT, archive->mp);
+	apr_file_open(&persistentStateLocationFile, persistentStateLocation, APR_FOPEN_CREATE|APR_FOPEN_WRITE, APR_OS_DEFAULT, archive->mp);
 	char * s;
 	switch (state) {
 		case BUNDLE_ACTIVE:
@@ -267,15 +267,14 @@ long bundleArchive_getRefreshCount(BUNDLE_ARCHIVE archive) {
 	strcpy(refreshCounter,archive->archiveRoot);
 	strcat(refreshCounter, "/refresh.counter");
 	apr_file_t * refreshCounterFile;
-	apr_file_open(&refreshCounterFile, refreshCounter, APR_FOPEN_READ, APR_OS_DEFAULT, archive->mp);
-
-	if (refreshCounterFile != NULL) {
+	apr_status_t rv;
+	if ((rv = apr_file_open(&refreshCounterFile, refreshCounter, APR_FOPEN_READ, APR_OS_DEFAULT, archive->mp)) != APR_SUCCESS) {
+		archive->refreshCount = 0;
+	} else {
 		char counterStr[256];
 		apr_file_gets(counterStr , sizeof(counterStr) , refreshCounterFile);
 		apr_file_close(refreshCounterFile);
 		sscanf(counterStr, "%ld", &archive->refreshCount);
-	} else {
-		archive->refreshCount = 0;
 	}
 	return archive->refreshCount;
 }
