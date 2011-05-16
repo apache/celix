@@ -45,7 +45,6 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 	BUNDLE b = bundleContext_getBundle(context);
 	char *entry = NULL;
 	bundle_getEntry(b, "root", &entry);
-	printf("Entry: %s\n", entry);
 
 	const char *options[] = {
 		"document_root", entry,
@@ -53,7 +52,7 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 	};
 	data->ctx = mg_start(NULL, options);
 
-	printf("Mongoose startet: %p\n", data->ctx);
+	printf("Mongoose startet on: %s\n", mg_get_option(data->ctx, "listening_ports"));
 
 	return CELIX_SUCCESS;
 }
@@ -61,6 +60,7 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
 	struct userData * data = (struct userData *) userData;
 	mg_stop(data->ctx);
+	printf("Mongoose stopped");
 	return CELIX_SUCCESS;
 }
 
