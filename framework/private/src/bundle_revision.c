@@ -21,10 +21,8 @@ BUNDLE_REVISION bundleRevision_create(char *root, char *location, long revisionN
 	mkdir(root, 0755);
 
 	if (inputFile != NULL) {
-		printf("extract from temp file\n");
 		int e = extractBundle(inputFile, root);
 	} else {
-		printf("extract from initial file\n");
 		int e = extractBundle(location, root);
 	}
 
@@ -48,6 +46,5 @@ char * bundleRevision_getLocation(BUNDLE_REVISION revision) {
 }
 
 char * bundleRevision_getRoot(BUNDLE_REVISION revision) {
-	printf("rev root: %s\n", revision->root);
 	return revision->root;
 }

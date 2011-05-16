@@ -294,9 +294,11 @@ celix_status_t fw_installBundle2(FRAMEWORK framework, BUNDLE * bundle, long id, 
 		return CELIX_SUCCESS;
 	}
 
+	apr_pool_t *bundlePool;
+	apr_pool_create(&bundlePool, framework->mp);
 	if (archive == NULL) {
 		id = framework_getNextBundleId(framework);
-		archive = bundleCache_createArchive(framework->cache, id, location); //fw_createArchive(id, location);
+		archive = bundleCache_createArchive(framework->cache, id, location, bundlePool); //fw_createArchive(id, location);
 	} else {
 		// purge revision
 		// multiple revisions not yet implemented
@@ -305,13 +307,12 @@ celix_status_t fw_installBundle2(FRAMEWORK framework, BUNDLE * bundle, long id, 
 	bool locked = framework_acquireGlobalLock(framework);
 	if (!locked) {
 		printf("Unable to acquire the global lock to install the bundle\n");
+		apr_pool_destroy(bundlePool);
 		framework_releaseInstallLock(framework, location);
 		return CELIX_BUNDLE_EXCEPTION;
 	}
 
-	apr_pool_t *bundlePool;
-	apr_pool_create(&bundlePool, framework->mp);
-	celix_status_t rv = bundle_createFromArchive(bundle, framework, archive);
+	celix_status_t rv = bundle_createFromArchive(bundle, framework, archive, bundlePool);
 	framework_releaseGlobalLock(framework);
 
 	hashMap_put(framework->installedBundleMap, location, *bundle);
@@ -328,10 +329,8 @@ celix_status_t framework_getBundleEntry(FRAMEWORK framework, BUNDLE bundle, char
 	}
 
 	char *root = bundleRevision_getRoot(revision);
-	printf("Root and Entry name: %s - %s\n", root, name);
 	char *e = NULL;
 	apr_filepath_merge(&e, root, name, APR_FILEPATH_NOTABOVEROOT, framework->mp);
-	printf("Entry name: %s\n", e);
 	apr_finfo_t info;
 	apr_status_t ret = apr_stat(&info, e, APR_FINFO_DIRENT|APR_FINFO_TYPE, framework->mp);
 	if (ret == APR_ENOENT) {
@@ -946,6 +945,7 @@ celix_status_t framework_waitForStop(FRAMEWORK framework) {
 		celix_log("Error unlocking the framework.");
 		return CELIX_FRAMEWORK_EXCEPTION;
 	}
+	return CELIX_SUCCESS;
 }
 
 static void * framework_shutdown(void * framework) {

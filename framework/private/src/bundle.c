@@ -42,6 +42,7 @@ celix_status_t bundle_create(BUNDLE * bundle, apr_pool_t *mp) {
 		return CELIX_ENOMEM;
 	}
 	BUNDLE_ARCHIVE archive = bundleArchive_createSystemBundleArchive(mp);
+	(*bundle)->memoryPool = mp;
 	(*bundle)->archive = archive;
 	(*bundle)->activator = NULL;
 	(*bundle)->context = NULL;
@@ -64,11 +65,12 @@ celix_status_t bundle_create(BUNDLE * bundle, apr_pool_t *mp) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundle_createFromArchive(BUNDLE * bundle, FRAMEWORK framework, BUNDLE_ARCHIVE archive) {
+celix_status_t bundle_createFromArchive(BUNDLE * bundle, FRAMEWORK framework, BUNDLE_ARCHIVE archive, apr_pool_t *bundlePool) {
 	*bundle = (BUNDLE) malloc(sizeof(**bundle));
 	if (*bundle == NULL) {
 		return CELIX_ENOMEM;
 	}
+	(*bundle)->memoryPool = bundlePool;
 	(*bundle)->archive = archive;
 	(*bundle)->activator = NULL;
 	(*bundle)->context = NULL;

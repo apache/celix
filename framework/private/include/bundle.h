@@ -32,7 +32,7 @@
 #include "celix_errno.h"
 
 celix_status_t bundle_create(BUNDLE * bundle, apr_pool_t *mp);
-celix_status_t bundle_createFromArchive(BUNDLE * bundle, FRAMEWORK framework, BUNDLE_ARCHIVE archive);
+celix_status_t bundle_createFromArchive(BUNDLE * bundle, FRAMEWORK framework, BUNDLE_ARCHIVE archive, apr_pool_t *bundlePool);
 celix_status_t bundle_destroy(BUNDLE bundle);
 
 bool bundle_isSystemBundle(BUNDLE bundle);

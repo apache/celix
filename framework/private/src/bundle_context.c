@@ -42,7 +42,7 @@ BUNDLE_CONTEXT bundleContext_create(FRAMEWORK framework, BUNDLE bundle) {
 	context->framework = framework;
 	context->bundle = bundle;
 
-	apr_pool_create(&context->pool, framework->mp);
+	apr_pool_create(&context->pool, bundle->memoryPool);
 
 	return context;
 }

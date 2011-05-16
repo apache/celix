@@ -97,6 +97,7 @@ struct bundle {
 	// MODULE module;
 	ARRAY_LIST modules;
 	MANIFEST manifest;
+	apr_pool_t *memoryPool;
 
 	pthread_mutex_t lock;
 	int lockCount;

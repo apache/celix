@@ -42,12 +42,6 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 	struct userData * data = (struct userData *) userData;
 	printf("Hello %s\n", data->word);
-
-	BUNDLE b = bundleContext_getBundle(context);
-	char *entry = NULL;
-	bundle_getEntry(b, "test.txt", &entry);
-	printf("Entry: %s", entry);
-
 	return CELIX_SUCCESS;
 }
 
