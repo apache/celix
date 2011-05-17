@@ -83,5 +83,5 @@ void installCommand_execute(COMMAND command, char * line, void (*out)(char *), v
 }
 
 void installCommand_install(COMMAND command, BUNDLE *bundle, char * location, void (*out)(char *), void (*err)(char *)) {
-	*bundle = bundleContext_installBundle(command->bundleContext, location);
+	bundleContext_installBundle(command->bundleContext, location, bundle);
 }

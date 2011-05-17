@@ -97,7 +97,9 @@ void shellTui_serviceChanged(SERVICE_LISTENER listener, SERVICE_EVENT event) {
 }
 
 celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
-	SHELL_TUI_ACTIVATOR activator = apr_palloc(bundleContext_getMemoryPool(context), sizeof(*activator));
+	apr_pool_t *pool = NULL;
+	celix_status_t status = bundleContext_getMemoryPool(context, &pool);
+	SHELL_TUI_ACTIVATOR activator = apr_palloc(pool, sizeof(*activator));
 	//SHELL_TUI_ACTIVATOR activator = (SHELL_TUI_ACTIVATOR) malloc(sizeof(*activator));
 	activator->shell = NULL;
 	(*userData) = activator;

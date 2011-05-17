@@ -37,41 +37,102 @@ struct bundleContext {
 	apr_pool_t *pool;
 };
 
-BUNDLE_CONTEXT bundleContext_create(FRAMEWORK framework, BUNDLE bundle) {
-	BUNDLE_CONTEXT context = malloc(sizeof(*context));
-	context->framework = framework;
-	context->bundle = bundle;
+celix_status_t bundleContext_create(FRAMEWORK framework, BUNDLE bundle, BUNDLE_CONTEXT *bundle_context) {
+	celix_status_t status = CELIX_SUCCESS;
+	BUNDLE_CONTEXT context = NULL;
 
-	apr_pool_create(&context->pool, bundle->memoryPool);
+	if (*bundle_context == NULL) {
+	    context = malloc(sizeof(*context));
 
-	return context;
+		if (context != NULL) {
+			context->framework = framework;
+			context->bundle = bundle;
+
+			if (apr_pool_create(&context->pool, bundle->memoryPool) != APR_SUCCESS) {
+				status = CELIX_ENOMEM;
+			}
+
+			*bundle_context = context;
+		} else {
+			status = CELIX_ENOMEM;
+		}
+	} else {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	return status;
 }
 
-void bundleContext_destroy(BUNDLE_CONTEXT context) {
-	context->bundle = NULL;
-	context->framework = NULL;
-	apr_pool_destroy(context->pool);
-	context->pool = NULL;
-	free(context);
-	context = NULL;
+celix_status_t bundleContext_destroy(BUNDLE_CONTEXT context) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (context != NULL) {
+		context->bundle = NULL;
+		context->framework = NULL;
+		if (context->pool) {
+			apr_pool_destroy(context->pool);
+		    context->pool = NULL;
+		}
+		free(context);
+		context = NULL;
+	} else {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	return status;
 }
 
-BUNDLE bundleContext_getBundle(BUNDLE_CONTEXT context) {
-	return context->bundle;
+celix_status_t bundleContext_getBundle(BUNDLE_CONTEXT context, BUNDLE *bundle) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (context == NULL) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	} else {
+		*bundle = context->bundle;
+	}
+
+	return status;
 }
 
-FRAMEWORK bundleContext_getFramework(BUNDLE_CONTEXT context) {
-	return context->framework;
+celix_status_t bundleContext_getFramework(BUNDLE_CONTEXT context, FRAMEWORK *framework) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (context == NULL) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	} else {
+		*framework = context->framework;
+	}
+
+	return status;
 }
 
-apr_pool_t * bundleContext_getMemoryPool(BUNDLE_CONTEXT context) {
-	return context->pool;
+celix_status_t bundleContext_getMemoryPool(BUNDLE_CONTEXT context, apr_pool_t **memory_pool) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (context == NULL) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	} else {
+		*memory_pool = context->pool;
+	}
+
+	return status;
 }
 
-BUNDLE bundleContext_installBundle(BUNDLE_CONTEXT context, char * location) {
-	BUNDLE bundle = NULL;
-	fw_installBundle(context->framework, &bundle, location);
-	return bundle;
+celix_status_t bundleContext_installBundle(BUNDLE_CONTEXT context, char * location, BUNDLE *bundle) {
+	celix_status_t status = CELIX_SUCCESS;
+	BUNDLE b = NULL;
+
+	if (*bundle == NULL) {
+		if (fw_installBundle(context->framework, &b, location) != CELIX_SUCCESS) {
+            status = CELIX_FRAMEWORK_EXCEPTION;
+		} else {
+			*bundle = b;
+		}
+	} else {
+        status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	return status;
 }
 
 SERVICE_REGISTRATION bundleContext_registerService(BUNDLE_CONTEXT context, char * serviceName, void * svcObj, PROPERTIES properties) {
@@ -101,8 +162,16 @@ bool bundleContext_ungetService(BUNDLE_CONTEXT context, SERVICE_REFERENCE refere
 	return framework_ungetService(context->framework, context->bundle, reference);
 }
 
-ARRAY_LIST bundleContext_getBundles(BUNDLE_CONTEXT context) {
-	return framework_getBundles(context->framework);
+celix_status_t bundleContext_getBundles(BUNDLE_CONTEXT context, ARRAY_LIST *bundles) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (context == NULL) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	} else {
+		*bundles = framework_getBundles(context->framework);
+	}
+
+	return status;
 }
 
 BUNDLE bundleContext_getBundleById(BUNDLE_CONTEXT context, long id) {

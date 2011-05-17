@@ -49,52 +49,55 @@ void psCommand_destroy(COMMAND command) {
 }
 
 void psCommand_execute(COMMAND command, char * commandline, void (*out)(char *), void (*err)(char *)) {
-	ARRAY_LIST bundles = bundleContext_getBundles(command->bundleContext);
+	ARRAY_LIST bundles = NULL;
+	celix_status_t status = bundleContext_getBundles(command->bundleContext, &bundles);
 
-	bool showLocation = false;
-	bool showSymbolicName = false;
-	bool showUpdateLocation = false;
-	char * msg = "Name";
+	if (status == CELIX_SUCCESS) {
+		bool showLocation = false;
+		bool showSymbolicName = false;
+		bool showUpdateLocation = false;
+		char * msg = "Name";
 
-	char delims[] = " ";
-	char * sub = NULL;
-	sub = strtok(commandline, delims);
-	sub = strtok(NULL, delims);
-	while (sub != NULL) {
-		if (strcmp(sub, "-l") == 0) {
-			showLocation = true;
-			msg = "Location";
-		} else if (strcmp(sub, "-s") == 0) {
-			showSymbolicName = true;
-			msg = "Symbolic name";
-		} else if (strcmp(sub, "-u") == 0) {
-			showUpdateLocation = true;
-			msg = "Update location";
-		}
+		char delims[] = " ";
+		char * sub = NULL;
+		sub = strtok(commandline, delims);
 		sub = strtok(NULL, delims);
-	}
-
-	char line[256];
-	sprintf(line, "  %-5s %-12s %s\n", "ID", "State", msg);
-	int i;
-	out(line);
-	for (i = 0; i < arrayList_size(bundles); i++) {
-		BUNDLE bundle = arrayList_get(bundles, i);
-		long id = bundleArchive_getId(bundle_getArchive(bundle));
-		char * state = psCommand_stateString(bundle_getState(bundle));
-		char * name = module_getSymbolicName(bundle_getCurrentModule(bundle));
-		if (showLocation) {
-			name = bundleArchive_getLocation(bundle_getArchive(bundle));
-		} else if (showSymbolicName) {
-			name = module_getSymbolicName(bundle_getCurrentModule(bundle));
-		} else if (showUpdateLocation) {
-			name = bundleArchive_getLocation(bundle_getArchive(bundle));
+		while (sub != NULL) {
+			if (strcmp(sub, "-l") == 0) {
+				showLocation = true;
+				msg = "Location";
+			} else if (strcmp(sub, "-s") == 0) {
+				showSymbolicName = true;
+				msg = "Symbolic name";
+			} else if (strcmp(sub, "-u") == 0) {
+				showUpdateLocation = true;
+				msg = "Update location";
+			}
+			sub = strtok(NULL, delims);
 		}
 
-		sprintf(line, "  %-5ld %-12s %s\n", id, state, name);
+		char line[256];
+		sprintf(line, "  %-5s %-12s %s\n", "ID", "State", msg);
+		int i;
 		out(line);
+		for (i = 0; i < arrayList_size(bundles); i++) {
+			BUNDLE bundle = arrayList_get(bundles, i);
+			long id = bundleArchive_getId(bundle_getArchive(bundle));
+			char * state = psCommand_stateString(bundle_getState(bundle));
+			char * name = module_getSymbolicName(bundle_getCurrentModule(bundle));
+			if (showLocation) {
+				name = bundleArchive_getLocation(bundle_getArchive(bundle));
+			} else if (showSymbolicName) {
+				name = module_getSymbolicName(bundle_getCurrentModule(bundle));
+			} else if (showUpdateLocation) {
+				name = bundleArchive_getLocation(bundle_getArchive(bundle));
+			}
+
+			sprintf(line, "  %-5ld %-12s %s\n", id, state, name);
+			out(line);
+		}
+		arrayList_destroy(bundles);
 	}
-	arrayList_destroy(bundles);
 }
 
 char * psCommand_stateString(BUNDLE_STATE state) {

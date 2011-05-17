@@ -216,7 +216,10 @@ celix_status_t fw_init(FRAMEWORK framework) {
 		return CELIX_START_ERROR;
 	}
 
-	BUNDLE_CONTEXT context = bundleContext_create(framework, framework->bundle);
+	BUNDLE_CONTEXT context = NULL;
+	if (bundleContext_create(framework, framework->bundle, &context) != CELIX_SUCCESS) {
+		return CELIX_START_ERROR;
+	}
 	bundle_setContext(framework->bundle, context);
 
 	bundle_setHandle(framework->bundle, handle);
@@ -355,7 +358,7 @@ celix_status_t fw_startBundle(FRAMEWORK framework, BUNDLE bundle, int options AT
 	HASH_MAP wires;
 
 	void * handle;
-	BUNDLE_CONTEXT context;
+	BUNDLE_CONTEXT context = NULL;
 
 	switch (bundle_getState(bundle)) {
 		case BUNDLE_UNINSTALLED:
@@ -384,7 +387,9 @@ celix_status_t fw_startBundle(FRAMEWORK framework, BUNDLE bundle, int options AT
 			hashMap_destroy(wires, false, false);
 			// no break
 		case BUNDLE_RESOLVED:
-			context = bundleContext_create(framework, bundle);
+			if (bundleContext_create(framework, bundle, &context) != CELIX_SUCCESS) {
+				return CELIX_ENOMEM;
+			}
 			bundle_setContext(bundle, context);
 
 			MANIFEST manifest = getManifest(bundle_getArchive(bundle));
@@ -994,12 +999,18 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 
 celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
 	pthread_t shutdownThread;
-	int err = pthread_create(&shutdownThread, NULL, framework_shutdown, bundleContext_getFramework(context));
-	if (err != 0) {
-		celix_log("Could not create shutdown thread, normal exit not possible.");
-		return CELIX_BUNDLE_EXCEPTION;
+	FRAMEWORK framework;
+
+	if (bundleContext_getFramework(context, &framework) == CELIX_SUCCESS) {
+		int err = pthread_create(&shutdownThread, NULL, framework_shutdown, framework);
+		if (err != 0) {
+			celix_log("Could not create shutdown thread, normal exit not possible.");
+			return CELIX_BUNDLE_EXCEPTION;
+		}
+		return CELIX_SUCCESS;
+	} else {
+		return CELIX_FRAMEWORK_EXCEPTION;
 	}
-	return CELIX_SUCCESS;
 }
 
 celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {

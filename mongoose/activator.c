@@ -35,26 +35,33 @@ struct userData {
 };
 
 celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
-	*userData = apr_palloc(bundleContext_getMemoryPool(context), sizeof(struct userData));
+	apr_pool_t *pool;
+	celix_status_t status = bundleContext_getMemoryPool(context, &pool);
+	*userData = apr_palloc(pool, sizeof(struct userData));
 	return CELIX_SUCCESS;
 }
 
 celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
+	BUNDLE bundle;
+	celix_status_t status = CELIX_SUCCESS;
 	struct userData * data = (struct userData *) userData;
 
-	BUNDLE b = bundleContext_getBundle(context);
-	char *entry = NULL;
-	bundle_getEntry(b, "root", &entry);
+	if (bundleContext_getBundle(context, &bundle) == CELIX_SUCCESS) {
+		char *entry = NULL;
+		bundle_getEntry(bundle, "root", &entry);
 
-	const char *options[] = {
-		"document_root", entry,
-		NULL
-	};
-	data->ctx = mg_start(NULL, options);
+		const char *options[] = {
+			"document_root", entry,
+			NULL
+		};
+		data->ctx = mg_start(NULL, options);
 
-	printf("Mongoose startet on: %s\n", mg_get_option(data->ctx, "listening_ports"));
+		printf("Mongoose startet on: %s\n", mg_get_option(data->ctx, "listening_ports"));
+	} else {
+		status = CELIX_START_ERROR;
+	}
 
-	return CELIX_SUCCESS;
+	return status;
 }
 
 celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {

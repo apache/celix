@@ -28,14 +28,14 @@
 
 #include "headers.h"
 
-BUNDLE_CONTEXT bundleContext_create(FRAMEWORK framework, BUNDLE bundle);
+celix_status_t bundleContext_create(FRAMEWORK framework, BUNDLE bundle, BUNDLE_CONTEXT *bundle_context);
+celix_status_t bundleContext_destroy(BUNDLE_CONTEXT context);
 
-BUNDLE bundleContext_getBundle(BUNDLE_CONTEXT context);
-FRAMEWORK bundleContext_getFramework(BUNDLE_CONTEXT context);
+celix_status_t bundleContext_getBundle(BUNDLE_CONTEXT context, BUNDLE *bundle);
+celix_status_t bundleContext_getFramework(BUNDLE_CONTEXT context, FRAMEWORK *framework);
+celix_status_t bundleContext_getMemoryPool(BUNDLE_CONTEXT context, apr_pool_t **memory_pool);
 
-apr_pool_t *bundleContext_getMemoryPool(BUNDLE_CONTEXT context);
-
-BUNDLE bundleContext_installBundle(BUNDLE_CONTEXT context, char * location);
+celix_status_t bundleContext_installBundle(BUNDLE_CONTEXT context, char * location, BUNDLE *bundle);
 
 SERVICE_REGISTRATION bundleContext_registerService(BUNDLE_CONTEXT context, char * serviceName, void * svcObj, PROPERTIES properties);
 
@@ -45,7 +45,7 @@ SERVICE_REFERENCE bundleContext_getServiceReference(BUNDLE_CONTEXT context, char
 void * bundleContext_getService(BUNDLE_CONTEXT context, SERVICE_REFERENCE reference);
 bool bundleContext_ungetService(BUNDLE_CONTEXT context, SERVICE_REFERENCE reference);
 
-ARRAY_LIST bundleContext_getBundles(BUNDLE_CONTEXT context);
+celix_status_t bundleContext_getBundles(BUNDLE_CONTEXT context, ARRAY_LIST *bundles);
 BUNDLE bundleContext_getBundleById(BUNDLE_CONTEXT context, long id);
 
 void bundleContext_addServiceListener(BUNDLE_CONTEXT context, SERVICE_LISTENER listener, char * filter);

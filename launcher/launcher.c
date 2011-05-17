@@ -65,8 +65,9 @@ int main(void) {
     BUNDLE_CONTEXT context = bundle_getContext(framework->bundle);
     LINKED_LIST_ITERATOR iter = linkedListIterator_create(bundles, 0);
     while (linkedListIterator_hasNext(iter)) {
+    	BUNDLE current = NULL;
     	char * location = linkedListIterator_next(iter);
-    	BUNDLE current = bundleContext_installBundle(context, location);
+    	bundleContext_installBundle(context, location, &current);
     	arrayList_add(installed, current);
     	linkedListIterator_remove(iter);
     }

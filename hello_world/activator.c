@@ -34,15 +34,25 @@ struct userData {
 };
 
 celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
-	*userData = apr_palloc(bundleContext_getMemoryPool(context), sizeof(struct userData));
-	((struct userData *)(*userData))->word = "World";
+	apr_pool_t *pool;
+	celix_status_t status = bundleContext_getMemoryPool(context, &pool);
+	if (status == CELIX_SUCCESS) {
+		*userData = apr_palloc(pool, sizeof(struct userData));
+		((struct userData *)(*userData))->word = "World";
+	} else {
+		status = CELIX_START_ERROR;
+	}
 	return CELIX_SUCCESS;
 }
 
 celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
+	BUNDLE bundle;
+	celix_status_t status = CELIX_SUCCESS;
+
 	struct userData * data = (struct userData *) userData;
 	printf("Hello %s\n", data->word);
-	return CELIX_SUCCESS;
+
+	return status;
 }
 
 celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
