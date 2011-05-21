@@ -55,7 +55,8 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
         data->ps->invoke = publisher_invoke;
         data->ps->publisher = data->pub;
 
-        SERVICE_REGISTRATION service_registration = bundleContext_registerService(context, PUBLISHER_NAME, data->ps, NULL);
+    	SERVICE_REGISTRATION service_registration = NULL;
+    	bundleContext_registerService(context, PUBLISHER_NAME, data->ps, NULL, &service_registration);
     } else {
         status = CELIX_START_ERROR;
     }

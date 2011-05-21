@@ -46,13 +46,10 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 }
 
 celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
-	BUNDLE bundle;
-	celix_status_t status = CELIX_SUCCESS;
-
 	struct userData * data = (struct userData *) userData;
 	printf("Hello %s\n", data->word);
 
-	return status;
+	return CELIX_SUCCESS;
 }
 
 celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {

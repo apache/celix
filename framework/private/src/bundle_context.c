@@ -19,8 +19,6 @@
 /*
  * bundle_context.c
  *
- *Some change to test hudson
- *
  *  Created on: Mar 26, 2010
  *      Author: alexanderb
  */
@@ -123,7 +121,7 @@ celix_status_t bundleContext_installBundle(BUNDLE_CONTEXT context, char * locati
 	celix_status_t status = CELIX_SUCCESS;
 	BUNDLE b = NULL;
 
-	if (*bundle == NULL) {
+	if (context != NULL && *bundle == NULL) {
 		if (fw_installBundle(context->framework, &b, location) != CELIX_SUCCESS) {
             status = CELIX_FRAMEWORK_EXCEPTION;
 		} else {
@@ -136,37 +134,83 @@ celix_status_t bundleContext_installBundle(BUNDLE_CONTEXT context, char * locati
 	return status;
 }
 
-SERVICE_REGISTRATION bundleContext_registerService(BUNDLE_CONTEXT context, char * serviceName, void * svcObj, PROPERTIES properties) {
+celix_status_t bundleContext_registerService(BUNDLE_CONTEXT context, char * serviceName, void * svcObj,
+        PROPERTIES properties, SERVICE_REGISTRATION *service_registration) {
 	SERVICE_REGISTRATION registration = NULL;
-	fw_registerService(context->framework, &registration, context->bundle, serviceName, svcObj, properties);
-	return registration;
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (context != NULL && *service_registration == NULL) {
+	    fw_registerService(context->framework, &registration, context->bundle, serviceName, svcObj, properties);
+	    *service_registration = registration;
+	} else {
+	    status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	return status;
 }
 
-ARRAY_LIST bundleContext_getServiceReferences(BUNDLE_CONTEXT context, char * serviceName, char * filter) {
-	ARRAY_LIST references = NULL;
-	fw_getServiceReferences(context->framework, &references, context->bundle, serviceName, filter);
-	return references;
+celix_status_t bundleContext_getServiceReferences(BUNDLE_CONTEXT context, char * serviceName, char * filter, ARRAY_LIST *service_references) {
+    ARRAY_LIST references = NULL;
+    celix_status_t status = CELIX_SUCCESS;
+
+    if (context != NULL && *service_references == NULL) {
+        fw_getServiceReferences(context->framework, &references, context->bundle, serviceName, filter);
+        *service_references = references;
+    } else {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
+
+	return status;
 }
 
-SERVICE_REFERENCE bundleContext_getServiceReference(BUNDLE_CONTEXT context, char * serviceName) {
-	ARRAY_LIST services = bundleContext_getServiceReferences(context, serviceName, NULL);
-	SERVICE_REFERENCE reference = (arrayList_size(services) > 0) ? arrayList_get(services, 0) : NULL;
-	arrayList_destroy(services);
-	return reference;
+celix_status_t bundleContext_getServiceReference(BUNDLE_CONTEXT context, char * serviceName, SERVICE_REFERENCE *service_reference) {
+    SERVICE_REFERENCE reference = NULL;
+    ARRAY_LIST services = NULL;
+    celix_status_t status = CELIX_SUCCESS;
+
+    if (serviceName != NULL) {
+        if (bundleContext_getServiceReferences(context, serviceName, NULL, &services) == CELIX_SUCCESS) {
+            reference = (arrayList_size(services) > 0) ? arrayList_get(services, 0) : NULL;
+            arrayList_destroy(services);
+            *service_reference = reference;
+        } else {
+            status = CELIX_ILLEGAL_ARGUMENT;
+        }
+    } else {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
+
+	return status;
 }
 
-void * bundleContext_getService(BUNDLE_CONTEXT context, SERVICE_REFERENCE reference) {
-	return fw_getService(context->framework, context->bundle, reference);
+celix_status_t bundleContext_getService(BUNDLE_CONTEXT context, SERVICE_REFERENCE reference, void **service_instance) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    if (context != NULL && reference != NULL && *service_instance == NULL) {
+	    *service_instance = fw_getService(context->framework, context->bundle, reference);
+    } else {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
+
+    return status;
 }
 
-bool bundleContext_ungetService(BUNDLE_CONTEXT context, SERVICE_REFERENCE reference) {
-	return framework_ungetService(context->framework, context->bundle, reference);
+celix_status_t bundleContext_ungetService(BUNDLE_CONTEXT context, SERVICE_REFERENCE reference, bool *result) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    if (context != NULL && reference != NULL) {
+        *result = framework_ungetService(context->framework, context->bundle, reference);
+    } else {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
+
+    return status;
 }
 
 celix_status_t bundleContext_getBundles(BUNDLE_CONTEXT context, ARRAY_LIST *bundles) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	if (context == NULL) {
+	if (context == NULL || *bundles != NULL) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
 		*bundles = framework_getBundles(context->framework);
@@ -175,14 +219,38 @@ celix_status_t bundleContext_getBundles(BUNDLE_CONTEXT context, ARRAY_LIST *bund
 	return status;
 }
 
-BUNDLE bundleContext_getBundleById(BUNDLE_CONTEXT context, long id) {
-	return framework_getBundleById(context->framework, id);
+celix_status_t bundleContext_getBundleById(BUNDLE_CONTEXT context, long id, BUNDLE *bundle) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    if (context == NULL || *bundle != NULL) {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    } else {
+        *bundle = framework_getBundleById(context->framework, id);
+    }
+
+	return status;
 }
 
-void bundleContext_addServiceListener(BUNDLE_CONTEXT context, SERVICE_LISTENER listener, char * filter) {
-	fw_addServiceListener(context->bundle, listener, filter);
+celix_status_t bundleContext_addServiceListener(BUNDLE_CONTEXT context, SERVICE_LISTENER listener, char * filter) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    if (context != NULL && listener != NULL) {
+        fw_addServiceListener(context->bundle, listener, filter);
+    } else {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
+
+    return status;
 }
 
-void bundleContext_removeServiceListener(BUNDLE_CONTEXT context, SERVICE_LISTENER listener) {
-	fw_removeServiceListener(context->bundle, listener);
+celix_status_t bundleContext_removeServiceListener(BUNDLE_CONTEXT context, SERVICE_LISTENER listener) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    if (context != NULL && listener != NULL) {
+        fw_removeServiceListener(context->bundle, listener);
+    } else {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
+
+    return status;
 }

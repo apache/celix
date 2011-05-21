@@ -129,7 +129,8 @@ COMMAND shell_getCommand(SHELL shell, char * commandName) {
 }
 
 void shell_addCommand(SHELL shell, SERVICE_REFERENCE reference) {
-	void * cmd = bundleContext_getService(shell->bundleContext, reference);
+    void *cmd = NULL;
+	bundleContext_getService(shell->bundleContext, reference, &cmd);
 	COMMAND command = (COMMAND) cmd;
 	hashMap_put(shell->commandNameMap, command->name, command);
 	hashMap_put(shell->commandReferenceMap, reference, command);
@@ -169,6 +170,8 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 }
 
 celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
+    celix_status_t status;
+
 	struct shellServiceActivator * activator = (struct shellServiceActivator *) userData;
 	activator->shell->bundleContext = context;
 
@@ -180,36 +183,41 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 	activator->shellService->getCommandReference = shell_getCommandReference;
 	activator->shellService->executeCommand = shell_executeCommand;
 
-	activator->registration = bundleContext_registerService(context, (char *) SHELL_SERVICE_NAME, activator->shellService, NULL);
+	status = bundleContext_registerService(context, (char *) SHELL_SERVICE_NAME, activator->shellService, NULL, &activator->registration);
 
-	SERVICE_LISTENER listener = (SERVICE_LISTENER) malloc(sizeof(*listener));
-	activator->listener = listener;
-	listener->handle = activator->shell;
-	listener->serviceChanged = (void *) shell_serviceChanged;
-	bundleContext_addServiceListener(context, listener, "(objectClass=commandService)");
+	if (status == CELIX_SUCCESS) {
+	    SERVICE_LISTENER listener = (SERVICE_LISTENER) malloc(sizeof(*listener));
+	    activator->listener = listener;
+	    listener->handle = activator->shell;
+	    listener->serviceChanged = (void *) shell_serviceChanged;
+	    status = bundleContext_addServiceListener(context, listener, "(objectClass=commandService)");
 
-	activator->psCmd = psCommand_create(context);
-	activator->psCommand = bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->psCmd, NULL);
+	    if (status == CELIX_SUCCESS) {
+	        activator->psCmd = psCommand_create(context);
+	        bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->psCmd, NULL, &activator->psCommand);
 
-	activator->startCmd = startCommand_create(context);
-	activator->startCommand = bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->startCmd, NULL);
+	        activator->startCmd = startCommand_create(context);
+	        bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->startCmd, NULL, &activator->startCommand);
 
-	activator->stopCmd = stopCommand_create(context);
-	activator->stopCommand = bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->stopCmd, NULL);
+	        activator->stopCmd = stopCommand_create(context);
+	        bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->stopCmd, NULL, &activator->stopCommand);
 
-	activator->installCmd = installCommand_create(context);
-	activator->installCommand = bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->installCmd, NULL);
+	        activator->installCmd = installCommand_create(context);
+	        bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->installCmd, NULL, &activator->installCommand);
 
-	activator->uninstallCmd = uninstallCommand_create(context);
-    activator->uninstallCommand = bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->uninstallCmd, NULL);
+	        activator->uninstallCmd = uninstallCommand_create(context);
+	        bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->uninstallCmd, NULL, &activator->uninstallCommand);
 
-	activator->updateCmd = updateCommand_create(context);
-	activator->updateCommand = bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->updateCmd, NULL);
+	        activator->updateCmd = updateCommand_create(context);
+	        bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->updateCmd, NULL, &activator->updateCommand);
+	    }
+	}
 
-	return CELIX_SUCCESS;
+	return status;
 }
 
 celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
+    celix_status_t status = CELIX_SUCCESS;
 	struct shellServiceActivator * activator = (struct shellServiceActivator *) userData;
 	serviceRegistration_unregister(activator->registration);
 	serviceRegistration_unregister(activator->psCommand);
@@ -218,22 +226,23 @@ celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
 	serviceRegistration_unregister(activator->installCommand);
 	serviceRegistration_unregister(activator->uninstallCommand);
 	serviceRegistration_unregister(activator->updateCommand);
-	bundleContext_removeServiceListener(context, activator->listener);
+	status = bundleContext_removeServiceListener(context, activator->listener);
 
-	psCommand_destroy(activator->psCmd);
-	startCommand_destroy(activator->startCmd);
-	stopCommand_destroy(activator->stopCmd);
-	installCommand_destroy(activator->installCmd);
-	uninstallCommand_destroy(activator->uninstallCmd);
-	updateCommand_destroy(activator->updateCmd);
+	if (status == CELIX_SUCCESS) {
+        psCommand_destroy(activator->psCmd);
+        startCommand_destroy(activator->startCmd);
+        stopCommand_destroy(activator->stopCmd);
+        installCommand_destroy(activator->installCmd);
+        updateCommand_destroy(activator->updateCmd);
 
-	free(activator->shellService);
-	activator->shellService = NULL;
+        free(activator->shellService);
+        activator->shellService = NULL;
 
-	free(activator->listener);
-	activator->listener = NULL;
+        free(activator->listener);
+        activator->listener = NULL;
+	}
 
-	return CELIX_SUCCESS;
+	return status;
 }
 
 celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {

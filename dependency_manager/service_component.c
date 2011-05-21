@@ -188,7 +188,7 @@ void serviceComponent_dependencyUnavailable(SERVICE service, SERVICE_DEPENDENCY 
 }
 
 void serviceComponent_start(SERVICE service) {
-	service->serviceRegistration = bundleContext_registerService(service->context, SERVICE_COMPONENT_NAME, service, NULL);
+	bundleContext_registerService(service->context, SERVICE_COMPONENT_NAME, service, NULL, &service->serviceRegistration);
 	STATE old, new;
 	pthread_mutex_lock(&service->mutex);
 	old = service->state;
@@ -326,7 +326,7 @@ void serviceComponent_destroyService(SERVICE service, STATE state) {
 
 void serviceComponent_registerService(SERVICE service) {
 	if (service->serviceName != NULL) {
-		service->registration = bundleContext_registerService(service->context, service->serviceName, service->impl, service->properties);
+		bundleContext_registerService(service->context, service->serviceName, service->impl, service->properties, &service->registration);
 	}
 }
 

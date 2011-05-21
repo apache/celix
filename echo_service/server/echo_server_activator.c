@@ -50,8 +50,7 @@ void bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 
 	act->es = es;
 
-	SERVICE_REGISTRATION reg = bundleContext_registerService(context, ECHO_SERVICE_NAME, es, NULL);
-	act->reg = reg;
+    bundleContext_registerService(context, ECHO_SERVICE_NAME, es, NULL, &act->reg);
 }
 
 void bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {

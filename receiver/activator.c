@@ -41,7 +41,7 @@ void bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 	m_test->handle = serviceTest_construct();
 	m_test->doo = doo;
 
-	reg = bundleContext_registerService(context, SERVICE_TEST_NAME, m_test, props);
+	bundleContext_registerService(context, SERVICE_TEST_NAME, m_test, props, &reg);
 	//reg2 = register_service(context, SERVICE_TEST_NAME, test, NULL);
 }
 

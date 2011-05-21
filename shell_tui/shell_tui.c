@@ -76,19 +76,23 @@ void * shellTui_runnable(void * data) {
 
 void shellTui_initializeService(SHELL_TUI_ACTIVATOR activator) {
 	if (activator->shell == NULL) {
-		activator->reference = bundleContext_getServiceReference(activator->context, (char *) SHELL_SERVICE_NAME);
+		bundleContext_getServiceReference(activator->context, (char *) SHELL_SERVICE_NAME, &activator->reference);
 		if (activator->reference != NULL) {
-			activator->shell = (SHELL_SERVICE) bundleContext_getService(activator->context, activator->reference);
+		    void *shell_svc = NULL;
+		    bundleContext_getService(activator->context, activator->reference, &shell_svc);
+		    activator->shell = (SHELL_SERVICE) shell_svc;
 		}
 	}
 }
 
 void shellTui_serviceChanged(SERVICE_LISTENER listener, SERVICE_EVENT event) {
-	SHELL_TUI_ACTIVATOR act = (SHELL_TUI_ACTIVATOR) listener->handle;
+	bool result = NULL;
+    SHELL_TUI_ACTIVATOR act = (SHELL_TUI_ACTIVATOR) listener->handle;
+
 	if ((event->type == REGISTERED) && (act->reference == NULL)) {
 		shellTui_initializeService(act);
 	} else if ((event->type == UNREGISTERING) && (act->reference == event->reference)) {
-		bundleContext_ungetService(act->context, act->reference);
+		bundleContext_ungetService(act->context, act->reference, &result);
 		act->reference = NULL;
 		act->shell = NULL;
 
@@ -107,6 +111,7 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 }
 
 celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
+    celix_status_t status;
 	SHELL_TUI_ACTIVATOR act = (SHELL_TUI_ACTIVATOR) userData;
 	act->context = context;
 	act->running = true;
@@ -115,22 +120,30 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 	act->listener = listener;
 	act->listener->handle = act;
 	act->listener->serviceChanged = (void *) shellTui_serviceChanged;
-	bundleContext_addServiceListener(context, act->listener, "(objectClass=shellService)");
+	status = bundleContext_addServiceListener(context, act->listener, "(objectClass=shellService)");
 
-	shellTui_initializeService(act);
-	pthread_create(&act->runnable, NULL, shellTui_runnable, act);
-	return CELIX_SUCCESS;
+	if (status == CELIX_SUCCESS) {
+        shellTui_initializeService(act);
+        pthread_create(&act->runnable, NULL, shellTui_runnable, act);
+	}
+
+	return status;
 }
 
 celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
+    celix_status_t status;
 	SHELL_TUI_ACTIVATOR act = (SHELL_TUI_ACTIVATOR) userData;
-	bundleContext_removeServiceListener(context, act->listener);
-	free(act->listener);
-	act->listener = NULL;
-	act->context = NULL;
-	act->running = false;
-	pthread_detach(act->runnable);
-	return CELIX_SUCCESS;
+	status = bundleContext_removeServiceListener(context, act->listener);
+
+	if (status == CELIX_SUCCESS) {
+        free(act->listener);
+        act->listener = NULL;
+        act->context = NULL;
+        act->running = false;
+        pthread_detach(act->runnable);
+	}
+
+	return status;
 }
 
 celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {

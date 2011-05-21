@@ -55,7 +55,8 @@ void uninstallCommand_execute(COMMAND command, char * line, void (*out)(char *),
 	sub = strtok(NULL, delims);
 	while (sub != NULL) {
 		long id = atol(sub);
-		BUNDLE bundle = bundleContext_getBundleById(command->bundleContext, id);
+		BUNDLE bundle = NULL;
+		bundleContext_getBundleById(command->bundleContext, id, &bundle);
 		if (bundle != NULL) {
 		    bundle_uninstall(bundle);
 		} else {

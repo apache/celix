@@ -127,8 +127,12 @@ void service_destroy(void * userData) {
 //}
 
 void * addingServ(void * handle, SERVICE_REFERENCE ref) {
+    void *service_instance = NULL;
+
 	printf("Adding\n");
-	return bundleContext_getService(m_context, ref);
+	bundleContext_getService(m_context, ref, &service_instance);
+
+	return service_instance;
 }
 
 void addedServ(void * handle, SERVICE_REFERENCE ref, void * service) {

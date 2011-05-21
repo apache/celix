@@ -55,9 +55,13 @@ void * trk_send(void * handle) {
 }
 
 void * addingServ(void * handle, SERVICE_REFERENCE ref) {
-	struct data * data = (struct data *) handle;
-	printf("Adding\n");
-	return bundleContext_getService(data->context, ref);
+    void *service_instance = NULL;
+    struct data * data = (struct data *) handle;
+
+    printf("Adding\n");
+	bundleContext_getService(data->context, ref, &service_instance);
+
+	return service_instance;
 }
 
 void addedServ(void * handle, SERVICE_REFERENCE ref, void * service) {

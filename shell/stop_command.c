@@ -47,13 +47,14 @@ void stopCommand_destroy(COMMAND command) {
 }
 
 void stopCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *)) {
-	char delims[] = " ";
+    char delims[] = " ";
 	char * sub = NULL;
 	sub = strtok(line, delims);
 	sub = strtok(NULL, delims);
 	while (sub != NULL) {
 		long id = atol(sub);
-		BUNDLE bundle = bundleContext_getBundleById(command->bundleContext, id);
+		BUNDLE bundle = NULL;
+		bundleContext_getBundleById(command->bundleContext, id, &bundle);
 		if (bundle != NULL) {
 			stopBundle(bundle, 0);
 		} else {

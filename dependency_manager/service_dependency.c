@@ -76,7 +76,8 @@ void serviceDependency_stop(SERVICE_DEPENDENCY dependency, SERVICE service) {
 
 void * serviceDependency_addingService(void * handle, SERVICE_REFERENCE reference) {
 	SERVICE_DEPENDENCY dependency = (SERVICE_DEPENDENCY) handle;
-	void * service = bundleContext_getService(dependency->context, reference);
+	void * service = NULL;
+	bundleContext_getService(dependency->context, reference, &service);
 	dependency->reference = reference;
 	dependency->serviceInstance = service;
 	return service;
@@ -123,7 +124,8 @@ void serviceDependency_removedService(void * handle, SERVICE_REFERENCE reference
 		dependency->removed(dependency->service->impl, reference, service);
 	}
 
-	bundleContext_ungetService(dependency->context, reference);
+	bool result;
+	bundleContext_ungetService(dependency->context, reference, &result);
 }
 
 void serviceDependency_invokeRemoved(SERVICE_DEPENDENCY dependency) {

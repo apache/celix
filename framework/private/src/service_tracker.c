@@ -58,8 +58,9 @@ SERVICE_TRACKER tracker_create(BUNDLE_CONTEXT context, char * className, SERVICE
 void tracker_open(SERVICE_TRACKER tracker) {
 	SERVICE_LISTENER listener = (SERVICE_LISTENER) malloc(sizeof(*listener));
 	FW_SERVICE_TRACKER fwTracker = findFwServiceTracker(tracker);
+	ARRAY_LIST initial = NULL;
 
-	ARRAY_LIST initial = bundleContext_getServiceReferences(tracker->context, tracker->className, NULL);
+	bundleContext_getServiceReferences(tracker->context, tracker->className, NULL, &initial);
 	SERVICE_REFERENCE initial_reference;
 	unsigned int i;
 	int len = strlen(tracker->className);
@@ -226,27 +227,33 @@ void track(FW_SERVICE_TRACKER fwTracker, SERVICE_REFERENCE reference, SERVICE_EV
 }
 
 void * addingService(FW_SERVICE_TRACKER fwTracker, SERVICE_REFERENCE reference) {
-	if (fwTracker->customizer != NULL) {
-		return fwTracker->customizer->addingService(fwTracker->customizer->handle, reference);
+    void *svc = NULL;
+
+    if (fwTracker->customizer != NULL) {
+		svc = fwTracker->customizer->addingService(fwTracker->customizer->handle, reference);
 	} else {
-		return bundleContext_getService(fwTracker->tracker->context, reference);
+		bundleContext_getService(fwTracker->tracker->context, reference, &svc);
 	}
+
+    return svc;
 }
 
 void untrack(FW_SERVICE_TRACKER fwTracker, SERVICE_REFERENCE reference, SERVICE_EVENT event ATTRIBUTE_UNUSED) {
 	TRACKED tracked = NULL;
 	unsigned int i;
+	bool result = NULL;
+
 	for (i = 0; i < arrayList_size(fwTracker->tracked); i++) {
 		tracked = (TRACKED) arrayList_get(fwTracker->tracked, i);
 		if (tracked->reference == reference) {
 			if (tracked != NULL) {
 				arrayList_remove(fwTracker->tracked, i);
-				bundleContext_ungetService(fwTracker->tracker->context, reference);
+				bundleContext_ungetService(fwTracker->tracker->context, reference, &result);
 			}
 			if (fwTracker->customizer != NULL) {
 				fwTracker->customizer->removedService(fwTracker->customizer->handle, reference, tracked->service);
 			} else {
-				bundleContext_ungetService(fwTracker->tracker->context, reference);
+				bundleContext_ungetService(fwTracker->tracker->context, reference, &result);
 			}
 			free(tracked);
 			break;
