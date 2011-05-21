@@ -63,7 +63,7 @@ void * addingServ(void * handle, SERVICE_REFERENCE ref) {
 void addedServ(void * handle, SERVICE_REFERENCE ref, void * service) {
 	struct data * data = (struct data *) handle;
 	arrayList_add(data->publishers, service);
-	printf("Added\n");
+	printf("Added %p\n", service);
 }
 
 void modifiedServ(void * handle, SERVICE_REFERENCE ref, void * service) {
@@ -74,40 +74,61 @@ void modifiedServ(void * handle, SERVICE_REFERENCE ref, void * service) {
 void removedServ(void * handle, SERVICE_REFERENCE ref, void * service) {
 	struct data * data = (struct data *) handle;
 	arrayList_removeElement(data->publishers, service);
-	printf("Removed\n");
+	printf("Removed %p\n", service);
 }
 
-void * bundleActivator_create() {
-	struct data * data = malloc(sizeof(*data));
-	data->publishers = arrayList_create();
-	return data;
+celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
+    apr_pool_t *pool;
+    celix_status_t status = bundleContext_getMemoryPool(context, &pool);
+    if (status == CELIX_SUCCESS) {
+        *userData = apr_palloc(pool, sizeof(struct data));
+        ((struct data *) (*userData))->publishers = arrayList_create();
+    } else {
+        status = CELIX_START_ERROR;
+    }
+    return CELIX_SUCCESS;
 }
 
-void bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
-	struct data * data = (struct data *) userData;
-	data->context = context;
+celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
+    celix_status_t status = CELIX_SUCCESS;
+    apr_pool_t *pool;
+    status = bundleContext_getMemoryPool(context, &pool);
+    if (status == CELIX_SUCCESS) {
+        struct data * data = (struct data *) userData;
+        data->context = context;
 
-	SERVICE_TRACKER_CUSTOMIZER cust = (SERVICE_TRACKER_CUSTOMIZER) malloc(sizeof(*cust));
-	cust->handle = data;
-	cust->addedService = addedServ;
-	cust->addingService = addingServ;
-	cust->modifiedService = modifiedServ;
-	cust->removedService = removedServ;
-	SERVICE_TRACKER tracker = tracker_create(context, (char *) PUBLISHER_NAME, cust);
-	data->tracker = tracker;
+        SERVICE_TRACKER_CUSTOMIZER cust = (SERVICE_TRACKER_CUSTOMIZER) apr_palloc(pool, sizeof(*cust));
+        cust->handle = data;
+        cust->addedService = addedServ;
+        cust->addingService = addingServ;
+        cust->modifiedService = modifiedServ;
+        cust->removedService = removedServ;
+        SERVICE_TRACKER tracker = tracker_create(context, (char *) PUBLISHER_NAME, cust);
+        data->tracker = tracker;
 
-	tracker_open(tracker);
+        tracker_open(tracker);
 
-	data->running = true;
-	pthread_create(&data->sender, NULL, trk_send, data);
+        data->running = true;
+        pthread_create(&data->sender, NULL, trk_send, data);
+    } else {
+        status = CELIX_START_ERROR;
+    }
+    return status;
 }
 
-void bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
-	struct data * data = (struct data *) userData;
-	tracker_close(data->tracker);
-	data->running = false;
+celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
+    celix_status_t status = CELIX_SUCCESS;
+    printf("Stop\n");
+
+    struct data * data = (struct data *) userData;
+    tracker_close(data->tracker);
+    data->running = false;
+    pthread_join(data->sender, NULL);
+
+    return status;
 }
 
-void bundleActivator_destroy(void * userData) {
-
+celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {
+    celix_status_t status = CELIX_SUCCESS;
+    return status;
 }

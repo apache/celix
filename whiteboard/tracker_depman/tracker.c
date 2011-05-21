@@ -41,6 +41,7 @@ void service_start(void * userData) {
 void service_stop(void * userData) {
 	struct data * data = (struct data *) userData;
 	data->running = false;
+	pthread_join(data->sender, NULL);
 }
 
 void service_destroy(void * userData) {

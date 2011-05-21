@@ -44,17 +44,14 @@ include_directories(${APR_INCLUDE_DIR})
 
 include_directories("framework/private/include")
 include_directories("framework/public/include")
-#include_directories("/opt/local/include")
-#link_directories("/opt/local/lib")
 
 add_subdirectory(utils)
 add_subdirectory(framework)
 
-#include(CPackConfig.in)
 include(Packaging.cmake)
-#add_subdirectory(dependency_manager)
+add_subdirectory(dependency_manager)
 add_subdirectory(launcher)
-#add_subdirectory(test)
+add_subdirectory(test)
 
 add_subdirectory(shell)
 add_subdirectory(shell_tui)
@@ -63,11 +60,12 @@ add_subdirectory(shell_tui)
 #add_subdirectory(receiver-2.0)
 #add_subdirectory(sender)
 
+add_subdirectory(deployer)
 add_subdirectory(hello_world)
 add_subdirectory(mongoose)
 #add_subdirectory(echo_service/client)
 #add_subdirectory(echo_service/server)
-#add_subdirectory(whiteboard)
+add_subdirectory(whiteboard)
 #add_subdirectory(echo_service)
 
 add_subdirectory(celix_test)

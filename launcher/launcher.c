@@ -82,7 +82,6 @@ int main(void) {
 
     arrayList_destroy(installed);
 
-
     framework_waitForStop(framework);
     framework_destroy(framework);
     properties_destroy(config);

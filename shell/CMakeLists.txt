@@ -15,7 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(shell SHARED shell command ps_command start_command stop_command install_command update_command)
+add_library(shell SHARED shell command
+	ps_command start_command stop_command
+	install_command update_command
+	uninstall_command)
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 target_link_libraries(shell framework curl)
 

@@ -17,4 +17,5 @@
 <mapAttribute key="org.eclipse.debug.core.environmentVariables">
 <mapEntry key="DYLD_LIBRARY_PATH" value="${workspace_loc:celix/build/framework}:${workspace_loc:celix/build/utils}"/>
 </mapAttribute>
+<stringAttribute key="org.eclipse.dsf.launch.MEMORY_BLOCKS" value="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; standalone=&quot;no&quot;?&gt;&#10;&lt;memoryBlockExpressionList context=&quot;reserved-for-future-use&quot;/&gt;&#10;"/>
 </launchConfiguration>

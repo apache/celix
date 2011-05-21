@@ -56,7 +56,7 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 		};
 		data->ctx = mg_start(NULL, options);
 
-		printf("Mongoose startet on: %s\n", mg_get_option(data->ctx, "listening_ports"));
+		printf("Mongoose started on: %s\n", mg_get_option(data->ctx, "listening_ports"));
 	} else {
 		status = CELIX_START_ERROR;
 	}
@@ -67,7 +67,7 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
 	struct userData * data = (struct userData *) userData;
 	mg_stop(data->ctx);
-	printf("Mongoose stopped");
+	printf("Mongoose stopped\n");
 	return CELIX_SUCCESS;
 }
 

@@ -29,35 +29,45 @@
 #include "publisher_private.h"
 
 struct activatorData {
-	PUBLISHER_SERVICE ps;
-	PUBLISHER pub;
+    PUBLISHER_SERVICE ps;
+    PUBLISHER pub;
 };
 
-void * bundleActivator_create() {
-	struct activatorData * data = (struct activatorData *) malloc(sizeof(*data));
-	return data;
+celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
+    apr_pool_t *pool;
+    celix_status_t status = bundleContext_getMemoryPool(context, &pool);
+    if (status == CELIX_SUCCESS) {
+        *userData = apr_palloc(pool, sizeof(struct activatorData));
+    } else {
+        status = CELIX_START_ERROR;
+    }
+    return CELIX_SUCCESS;
 }
 
-void bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
-	struct activatorData * data = (struct activatorData *) userData;
-	data->ps = malloc(sizeof(*(data->ps)));
-	data->pub = malloc(sizeof(*(data->pub)));
-	data->ps->invoke = publisher_invoke;
-	data->ps->publisher = data->pub;
+celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
+    celix_status_t status = CELIX_SUCCESS;
+    apr_pool_t *pool;
+    status = bundleContext_getMemoryPool(context, &pool);
+    if (status == CELIX_SUCCESS) {
 
-	bundleContext_registerService(context, PUBLISHER_NAME, data->ps, NULL);
+        struct activatorData * data = (struct activatorData *) userData;
+        data->ps = apr_pcalloc(pool, sizeof(*(data->ps)));
+        data->pub = apr_pcalloc(pool, sizeof(*(data->pub)));
+        data->ps->invoke = publisher_invoke;
+        data->ps->publisher = data->pub;
+
+        SERVICE_REGISTRATION service_registration = bundleContext_registerService(context, PUBLISHER_NAME, data->ps, NULL);
+    } else {
+        status = CELIX_START_ERROR;
+    }
+    return status;
 }
 
-void bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
-	struct activatorData * data = (struct activatorData *) userData;
-	data->ps->publisher = NULL;
-	data->ps->invoke = NULL;
-	free(data->pub);
-	free(data->ps);
-	data->pub = NULL;
-	data->ps = NULL;
+celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
+    celix_status_t status = CELIX_SUCCESS;
+    return status;
 }
 
-void bundleActivator_destroy(void * userData) {
-	free(userData);
+celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {
+    return CELIX_SUCCESS;
 }

@@ -51,6 +51,7 @@ celix_status_t bundle_getEntry(BUNDLE bundle, char * name, char **entry);
 void startBundle(BUNDLE bundle, int options);
 celix_status_t bundle_update(BUNDLE bundle, char *inputFile);
 void stopBundle(BUNDLE bundle, int options);
+celix_status_t bundle_uninstall(BUNDLE bundle);
 
 celix_status_t bundle_setPersistentStateInactive(BUNDLE bundle);
 
@@ -69,6 +70,9 @@ bool bundle_isLockable(BUNDLE bundle);
 pthread_t bundle_getLockingThread(BUNDLE bundle);
 bool bundle_lock(BUNDLE bundle);
 bool bundle_unlock(BUNDLE bundle);
+
+celix_status_t bundle_closeAndDelete(BUNDLE bundle);
+celix_status_t bundle_close(BUNDLE bundle);
 
 
 #endif /* BUNDLE_H_ */

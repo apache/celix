@@ -35,6 +35,7 @@
 #include "bundle_archive.h"
 
 MODULE bundle_createModule(BUNDLE bundle);
+celix_status_t bundle_closeRevisions(BUNDLE bundle);
 
 celix_status_t bundle_create(BUNDLE * bundle, apr_pool_t *mp) {
 	*bundle = (BUNDLE) malloc(sizeof(**bundle));
@@ -201,11 +202,26 @@ void stopBundle(BUNDLE bundle, int options) {
 	fw_stopBundle(bundle->framework, bundle, ((options & 1) == 0));
 }
 
+celix_status_t bundle_uninstall(BUNDLE bundle) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    fw_uninstallBundle(bundle->framework, bundle);
+
+    return status;
+}
+
 celix_status_t bundle_setPersistentStateInactive(BUNDLE bundle) {
 	if (!bundle_isSystemBundle(bundle)) {
 		bundleArchive_setPersistentState(bundle->archive, BUNDLE_INSTALLED);
 	}
 	return CELIX_SUCCESS;
+}
+
+celix_status_t bundle_setPersistentStateUninstalled(BUNDLE bundle) {
+    if (!bundle_isSystemBundle(bundle)) {
+        bundleArchive_setPersistentState(bundle->archive, BUNDLE_UNINSTALLED);
+    }
+    return CELIX_SUCCESS;
 }
 
 celix_status_t bundle_isUsed(BUNDLE bundle, bool *used) {
@@ -306,3 +322,32 @@ bool bundle_unlock(BUNDLE bundle) {
 	pthread_mutex_unlock(&bundle->lock);
 	return true;
 }
+
+celix_status_t bundle_close(BUNDLE bundle) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    bundle_closeRevisions(bundle);
+    BUNDLE_ARCHIVE archive = bundle_getArchive(bundle);
+    bundleArchive_close(archive);
+
+    return status;
+}
+
+celix_status_t bundle_closeAndDelete(BUNDLE bundle) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    bundle_closeRevisions(bundle);
+    BUNDLE_ARCHIVE archive = bundle_getArchive(bundle);
+    bundleArchive_closeAndDelete(archive);
+
+    return status;
+}
+
+celix_status_t bundle_closeRevisions(BUNDLE bundle) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    // TODO implement this
+    return status;
+}
+
+

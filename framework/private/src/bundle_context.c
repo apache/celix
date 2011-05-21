@@ -45,6 +45,7 @@ celix_status_t bundleContext_create(FRAMEWORK framework, BUNDLE bundle, BUNDLE_C
 	    context = malloc(sizeof(*context));
 
 		if (context != NULL) {
+            context->pool = NULL;
 			context->framework = framework;
 			context->bundle = bundle;
 

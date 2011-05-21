@@ -284,7 +284,7 @@ void bundleArchive_setRefreshCount(BUNDLE_ARCHIVE archive) {
 	strcpy(refreshCounter, archive->archiveRoot);
 	strcat(refreshCounter, "/refresh.counter");
 	apr_file_t * refreshCounterFile;
-	apr_file_open(&refreshCounterFile, refreshCounter, APR_FOPEN_WRITE, APR_OS_DEFAULT, archive->mp);
+	apr_file_open(&refreshCounterFile, refreshCounter, APR_FOPEN_CREATE|APR_FOPEN_WRITE, APR_OS_DEFAULT, archive->mp);
 
 	apr_file_printf(refreshCounterFile, "%ld", archive->refreshCount);
 	apr_file_close(refreshCounterFile);
@@ -390,7 +390,7 @@ void bundleArchive_setRevisionLocation(BUNDLE_ARCHIVE archive, char * location, 
 	sprintf(revisionLocation, "%s/version%ld.%ld/revision.location", archive->archiveRoot, bundleArchive_getRefreshCount(archive), revNr);
 
 	apr_file_t * revisionLocationFile;
-	apr_file_open(&revisionLocationFile, revisionLocation, APR_FOPEN_WRITE, APR_OS_DEFAULT, archive->mp);
+	apr_file_open(&revisionLocationFile, revisionLocation, APR_FOPEN_CREATE|APR_FOPEN_WRITE, APR_OS_DEFAULT, archive->mp);
 	apr_file_printf(revisionLocationFile, "%s", location);
 	apr_file_close(revisionLocationFile);
 }

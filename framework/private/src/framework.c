@@ -32,6 +32,7 @@
 #include <pthread.h>
 #include <math.h>
 #include <apr_file_io.h>
+#include <apr_general.h>
 
 #include "framework.h"
 #include "filter.h"
@@ -74,6 +75,9 @@ long framework_getNextBundleId(FRAMEWORK framework);
 
 celix_status_t fw_installBundle2(FRAMEWORK framework, BUNDLE * bundle, long id, char * location, BUNDLE_ARCHIVE archive);
 
+celix_status_t fw_refreshBundles(FRAMEWORK framework, BUNDLE bundles[], int size);
+celix_status_t fw_refreshBundle(FRAMEWORK framework, BUNDLE bundle);
+
 struct fw_serviceListener {
 	BUNDLE bundle;
 	SERVICE_LISTENER listener;
@@ -81,6 +85,12 @@ struct fw_serviceListener {
 };
 
 typedef struct fw_serviceListener * FW_SERVICE_LISTENER;
+
+struct fw_refreshHelper {
+    FRAMEWORK framework;
+    BUNDLE bundle;
+    BUNDLE_STATE oldState;
+};
 
 celix_status_t framework_create(FRAMEWORK *framework) {
 	*framework = (FRAMEWORK) malloc(sizeof(**framework));
@@ -416,15 +426,6 @@ celix_status_t fw_startBundle(FRAMEWORK framework, BUNDLE bundle, int options AT
 					library,
 					library_extension
 					);
-//			strcpy(libraryPath, root);
-//			strcat(libraryPath, "/version");
-//			strcat(libraryPath, bundleArchive_getRefreshCount(bundle_getArchive(bundle)));
-//			strcat(libraryPath, ".");
-//			strcat(libraryPath, bundleArchive_getCurrentRevisionNumber(bundle_getArchive(bundle)));
-//			strcat(libraryPath, "/");
-//			strcat(libraryPath, library_prefix);
-//			strcat(libraryPath, library);
-//			strcat(libraryPath, library_extension);
 
 			handle = dlopen(libraryPath, RTLD_LAZY|RTLD_LOCAL);
 			if (handle == NULL) {
@@ -566,15 +567,165 @@ void fw_stopBundle(FRAMEWORK framework, BUNDLE bundle, bool record) {
 		serviceRegistry_unregisterServices(framework->registry, bundle);
 		serviceRegistry_ungetServices(framework->registry, bundle);
 
-		//dlclose(bundle_getHandle(bundle));
+		dlclose(bundle_getHandle(bundle));
 	}
 
 	bundleContext_destroy(bundle_getContext(bundle));
+	bundle_setContext(bundle, NULL);
 	manifest_destroy(bundle_getManifest(bundle));
 
 	framework_setBundleStateAndNotify(framework, bundle, BUNDLE_RESOLVED);
 
 	framework_releaseBundleLock(framework, bundle);
+}
+
+celix_status_t fw_uninstallBundle(FRAMEWORK framework, BUNDLE bundle) {
+    celix_status_t status = CELIX_SUCCESS;
+    celix_status_t lock = framework_acquireBundleLock(framework, bundle, BUNDLE_INSTALLED|BUNDLE_RESOLVED|BUNDLE_STARTING|BUNDLE_ACTIVE|BUNDLE_STOPPING);
+    if (lock != CELIX_SUCCESS) {
+        printf("Cannot stop bundle");
+        framework_releaseBundleLock(framework, bundle);
+        if (bundle_getState(bundle) == BUNDLE_UNINSTALLED) {
+            status = CELIX_ILLEGAL_STATE;
+        } else {
+            status = CELIX_BUNDLE_EXCEPTION;
+        }
+    } else {
+        fw_stopBundle(framework, bundle, true);
+
+        bool locked = framework_acquireGlobalLock(framework);
+        if (!locked) {
+            printf("Unable to acquire the global lock to install the bundle\n");
+            framework_releaseGlobalLock(framework);
+            status = CELIX_ILLEGAL_STATE;
+        } else {
+            BUNDLE_ARCHIVE archive = bundle_getArchive(bundle);
+            char * location = bundleArchive_getLocation(archive);
+            // TODO sync issues?
+            BUNDLE target = (BUNDLE) hashMap_remove(framework->installedBundleMap, location);
+
+            if (target != NULL) {
+                bundle_setPersistentStateUninstalled(target);
+                // fw_rememberUninstalledBundle(framework, target);
+            }
+
+            framework_releaseGlobalLock(framework);
+
+            if (target == NULL) {
+                printf("Could not remove bundle from installed map");
+            }
+
+            framework_setBundleStateAndNotify(framework, bundle, BUNDLE_INSTALLED);
+            // TODO: fw_fireBundleEvent(framework BUNDLE_EVENT_UNRESOLVED, bundle);
+
+            framework_setBundleStateAndNotify(framework, bundle, BUNDLE_UNINSTALLED);
+            bundleArchive_setLastModified(archive, time(NULL));
+        }
+        framework_releaseBundleLock(framework, bundle);
+
+        // TODO: fw_fireBundleEvent(framework BUNDLE_EVENT_UNINSTALLED, bundle);
+
+        locked = framework_acquireGlobalLock(framework);
+        if (locked) {
+            BUNDLE bundles[] = { bundle };
+            celix_status_t refreshStatus = fw_refreshBundles(framework, bundles, 1);
+            if (refreshStatus != CELIX_SUCCESS) {
+                printf("Could not refresh bundle");
+            }
+
+            framework_releaseGlobalLock(framework);
+        }
+    }
+
+    return status;
+}
+
+celix_status_t fw_refreshBundles(FRAMEWORK framework, BUNDLE bundles[], int size) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    bool locked = framework_acquireGlobalLock(framework);
+    if (!locked) {
+        printf("Unable to acquire the global lock to install the bundle\n");
+        framework_releaseGlobalLock(framework);
+        status = CELIX_ILLEGAL_STATE;
+    } else {
+        bool restart = false;
+        if (bundles != NULL) {
+            int i = 0;
+            for (i = 0; i < size && !restart; i++) {
+                BUNDLE bundle = bundles[i];
+                if (framework->bundle == bundle) {
+                    restart = true;
+                }
+            }
+
+            struct fw_refreshHelper * helpers[size];
+            for (i = 0; i < size && !restart; i++) {
+                BUNDLE bundle = bundles[i];
+                helpers[i] = malloc(sizeof(struct fw_refreshHelper));
+                helpers[i] ->framework = framework;
+                helpers[i]->bundle = bundle;
+            }
+
+            for (i = 0; i < size; i++) {
+                struct fw_refreshHelper * helper = helpers[i];
+                fw_refreshHelper_stop(helper);
+                fw_refreshHelper_refreshOrRemove(helper);
+            }
+
+            for (i = 0; i < size; i++) {
+                struct fw_refreshHelper * helper = helpers[i];
+                fw_refreshHelper_restart(helper);
+            }
+
+            if (restart) {
+                bundle_update(framework->bundle, NULL);
+            }
+        }
+
+        framework_releaseGlobalLock(framework);
+    }
+
+    return status;
+}
+
+celix_status_t fw_refreshBundle(FRAMEWORK framework, BUNDLE bundle) {
+    celix_status_t status = CELIX_SUCCESS;
+    status = framework_acquireBundleLock(framework, bundle, BUNDLE_INSTALLED | BUNDLE_RESOLVED);
+    if (status != CELIX_SUCCESS) {
+        printf("Cannot refresh bundle");
+        framework_releaseBundleLock(framework, bundle);
+    } else {
+        // TODO fire unresolved event
+        // TODO bundle_refresh(bundle);
+        framework_releaseBundleLock(framework, bundle);
+    }
+    return status;
+}
+
+celix_status_t fw_refreshHelper_stop(struct fw_refreshHelper * refreshHelper) {
+    if (bundle_getState(refreshHelper->bundle) == BUNDLE_ACTIVE) {
+        fw_stopBundle(refreshHelper->framework, refreshHelper->bundle, false);
+    }
+
+    return CELIX_SUCCESS;
+}
+
+celix_status_t fw_refreshHelper_refreshOrRemove(struct fw_refreshHelper * refreshHelper) {
+    if (bundle_getState(refreshHelper->bundle) == BUNDLE_UNINSTALLED) {
+        bundle_closeAndDelete(refreshHelper->bundle);
+        refreshHelper->bundle = NULL;
+    } else {
+        fw_refreshBundle(refreshHelper->framework, refreshHelper->bundle);
+    }
+    return CELIX_SUCCESS;
+}
+
+celix_status_t fw_refreshHelper_restart(struct fw_refreshHelper * refreshHelper) {
+    if ((refreshHelper->bundle != NULL) && (refreshHelper->oldState == BUNDLE_ACTIVE)) {
+        fw_startBundle(refreshHelper->framework, refreshHelper->bundle, 0);
+    }
+    return CELIX_SUCCESS;
 }
 
 celix_status_t fw_registerService(FRAMEWORK framework, SERVICE_REGISTRATION *registration, BUNDLE bundle, char * serviceName, void * svcObj, PROPERTIES properties) {

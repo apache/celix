@@ -36,6 +36,7 @@
 #include "start_command.h"
 #include "stop_command.h"
 #include "install_command.h"
+#include "uninstall_command.h"
 #include "update_command.h"
 
 #include "utils.h"
@@ -47,15 +48,21 @@ struct shellServiceActivator {
 	SERVICE_LISTENER listener;
 
 	SERVICE_REGISTRATION psCommand;
-	SERVICE_REGISTRATION startCommand;
-	SERVICE_REGISTRATION stopCommand;
-	SERVICE_REGISTRATION installCommand;
-	SERVICE_REGISTRATION updateCommand;
-
 	COMMAND psCmd;
+
+	SERVICE_REGISTRATION startCommand;
 	COMMAND startCmd;
+
+	SERVICE_REGISTRATION stopCommand;
 	COMMAND stopCmd;
+
+	SERVICE_REGISTRATION installCommand;
 	COMMAND installCmd;
+
+	SERVICE_REGISTRATION uninstallCommand;
+    COMMAND uninstallCmd;
+
+	SERVICE_REGISTRATION updateCommand;
 	COMMAND updateCmd;
 };
 
@@ -110,6 +117,8 @@ void shell_executeCommand(SHELL shell, char * commandLine, void (*out)(char *), 
 	COMMAND command = shell_getCommand(shell, commandName);
 	if (command != NULL) {
 		command->executeCommand(command, commandLine, out, error);
+	} else {
+	    error("No such command\n");
 	}
 	free(commandName);
 }
@@ -150,6 +159,7 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 	((struct shellServiceActivator *) (*userData))->startCommand = NULL;
 	((struct shellServiceActivator *) (*userData))->stopCommand = NULL;
 	((struct shellServiceActivator *) (*userData))->installCommand = NULL;
+	((struct shellServiceActivator *) (*userData))->uninstallCommand = NULL;
 	((struct shellServiceActivator *) (*userData))->updateCommand = NULL;
 	((struct shellServiceActivator *) (*userData))->registration = NULL;
 
@@ -190,6 +200,9 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 	activator->installCmd = installCommand_create(context);
 	activator->installCommand = bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->installCmd, NULL);
 
+	activator->uninstallCmd = uninstallCommand_create(context);
+    activator->uninstallCommand = bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->uninstallCmd, NULL);
+
 	activator->updateCmd = updateCommand_create(context);
 	activator->updateCommand = bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->updateCmd, NULL);
 
@@ -203,6 +216,7 @@ celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
 	serviceRegistration_unregister(activator->startCommand);
 	serviceRegistration_unregister(activator->stopCommand);
 	serviceRegistration_unregister(activator->installCommand);
+	serviceRegistration_unregister(activator->uninstallCommand);
 	serviceRegistration_unregister(activator->updateCommand);
 	bundleContext_removeServiceListener(context, activator->listener);
 
@@ -210,6 +224,7 @@ celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
 	startCommand_destroy(activator->startCmd);
 	stopCommand_destroy(activator->stopCmd);
 	installCommand_destroy(activator->installCmd);
+	uninstallCommand_destroy(activator->uninstallCmd);
 	updateCommand_destroy(activator->updateCmd);
 
 	free(activator->shellService);
