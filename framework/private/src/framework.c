@@ -167,20 +167,23 @@ celix_status_t framework_destroy(FRAMEWORK framework) {
 }
 
 celix_status_t fw_init(FRAMEWORK framework) {
-	celix_status_t lock = framework_acquireBundleLock(framework, framework->bundle, BUNDLE_INSTALLED|BUNDLE_RESOLVED|BUNDLE_STARTING|BUNDLE_ACTIVE);
-	if (lock != CELIX_SUCCESS) {
+	celix_status_t status = framework_acquireBundleLock(framework, framework->bundle, BUNDLE_INSTALLED|BUNDLE_RESOLVED|BUNDLE_STARTING|BUNDLE_ACTIVE);
+	if (status != CELIX_SUCCESS) {
 		framework_releaseBundleLock(framework, framework->bundle);
-		return lock;
+		return status;
 	}
 
 	if ((bundle_getState(framework->bundle) == BUNDLE_INSTALLED) || (bundle_getState(framework->bundle) == BUNDLE_RESOLVED)) {
-		PROPERTIES props = properties_create();
+	    PROPERTIES props = properties_create();
 		properties_set(props, (char *) FRAMEWORK_STORAGE, ".cache");
-		framework->cache = bundleCache_create(props, framework->mp);
-
-		if (bundle_getState(framework->bundle) == BUNDLE_INSTALLED) {
-			// clean cache
-			// bundleCache_delete(framework->cache);
+		status = bundleCache_create(props, framework->mp, &framework->cache);
+		if (status == CELIX_SUCCESS) {
+            if (bundle_getState(framework->bundle) == BUNDLE_INSTALLED) {
+                // clean cache
+                // bundleCache_delete(framework->cache);
+            }
+		} else {
+		    return status;
 		}
 	}
 
@@ -199,70 +202,75 @@ celix_status_t fw_init(FRAMEWORK framework) {
 	}
 
 	// reload archives from cache
-	ARRAY_LIST archives = bundleCache_getArchives(framework->cache);
-	int arcIdx;
-	for (arcIdx = 0; arcIdx < arrayList_size(archives); arcIdx++) {
-		BUNDLE_ARCHIVE archive = (BUNDLE_ARCHIVE) arrayList_get(archives, arcIdx);
-		framework->nextBundleId = fmaxl(framework->nextBundleId, bundleArchive_getId(archive) + 1);
+	ARRAY_LIST archives;
+	status = bundleCache_getArchives(framework->cache, &archives);
+	if (status != CELIX_SUCCESS) {
+	    return status;
+	} else {
+        int arcIdx;
+        for (arcIdx = 0; arcIdx < arrayList_size(archives); arcIdx++) {
+            BUNDLE_ARCHIVE archive = (BUNDLE_ARCHIVE) arrayList_get(archives, arcIdx);
+    		framework->nextBundleId = fmaxl(framework->nextBundleId, bundleArchive_getId(archive) + 1);
 
-		if (bundleArchive_getPersistentState(archive) == BUNDLE_UNINSTALLED) {
-			bundleArchive_closeAndDelete(archive);
-		} else {
-			BUNDLE bundle;
-			fw_installBundle2(framework, &bundle, bundleArchive_getId(archive), bundleArchive_getLocation(archive), archive);
-		}
+            if (bundleArchive_getPersistentState(archive) == BUNDLE_UNINSTALLED) {
+                bundleArchive_closeAndDelete(archive);
+            } else {
+                BUNDLE bundle;
+                fw_installBundle2(framework, &bundle, bundleArchive_getId(archive), bundleArchive_getLocation(archive), archive);
+            }
+        }
+        arrayList_destroy(archives);
+        framework->registry = serviceRegistry_create(fw_serviceChanged);
+
+        framework_setBundleStateAndNotify(framework, framework->bundle, BUNDLE_STARTING);
+
+        pthread_cond_init(&framework->shutdownGate, NULL);
+
+        void * handle = dlopen(NULL, RTLD_LAZY|RTLD_LOCAL);
+        if (handle == NULL) {
+            printf ("%s\n", dlerror());
+            framework_releaseBundleLock(framework, framework->bundle);
+            return CELIX_START_ERROR;
+        }
+
+        BUNDLE_CONTEXT context = NULL;
+        if (bundleContext_create(framework, framework->bundle, &context) != CELIX_SUCCESS) {
+            return CELIX_START_ERROR;
+        }
+        bundle_setContext(framework->bundle, context);
+
+        bundle_setHandle(framework->bundle, handle);
+
+        ACTIVATOR activator = (ACTIVATOR) malloc(sizeof(*activator));
+        void * (*create)(BUNDLE_CONTEXT context);
+        void (*start)(void * handle, BUNDLE_CONTEXT context);
+        void (*stop)(void * handle, BUNDLE_CONTEXT context);
+        void (*destroy)(void * handle, BUNDLE_CONTEXT context);
+        create = dlsym(bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_CREATE);
+        start = dlsym(bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_START);
+        stop = dlsym(bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_STOP);
+        destroy = dlsym(bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_DESTROY);
+        activator->start = start;
+        activator->stop = stop;
+        activator->destroy = destroy;
+        bundle_setActivator(framework->bundle, activator);
+
+        void * userData = NULL;
+        if (create != NULL) {
+            userData = create(bundle_getContext(framework->bundle));
+        }
+        activator->userData = userData;
+
+        if (start != NULL) {
+            start(userData, bundle_getContext(framework->bundle));
+        }
+
+        m_serviceListeners = arrayList_create();
+        framework_releaseBundleLock(framework, framework->bundle);
+
+        status = CELIX_SUCCESS;
 	}
-	arrayList_destroy(archives);
-	framework->registry = serviceRegistry_create(fw_serviceChanged);
-
-	framework_setBundleStateAndNotify(framework, framework->bundle, BUNDLE_STARTING);
-
-	pthread_cond_init(&framework->shutdownGate, NULL);
-
-	void * handle = dlopen(NULL, RTLD_LAZY|RTLD_LOCAL);
-	if (handle == NULL) {
-		printf ("%s\n", dlerror());
-		framework_releaseBundleLock(framework, framework->bundle);
-		return CELIX_START_ERROR;
-	}
-
-	BUNDLE_CONTEXT context = NULL;
-	if (bundleContext_create(framework, framework->bundle, &context) != CELIX_SUCCESS) {
-		return CELIX_START_ERROR;
-	}
-	bundle_setContext(framework->bundle, context);
-
-	bundle_setHandle(framework->bundle, handle);
-
-	ACTIVATOR activator = (ACTIVATOR) malloc(sizeof(*activator));
-	void * (*create)(BUNDLE_CONTEXT context);
-	void (*start)(void * handle, BUNDLE_CONTEXT context);
-	void (*stop)(void * handle, BUNDLE_CONTEXT context);
-	void (*destroy)(void * handle, BUNDLE_CONTEXT context);
-	create = dlsym(bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_CREATE);
-	start = dlsym(bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_START);
-	stop = dlsym(bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_STOP);
-	destroy = dlsym(bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_DESTROY);
-	activator->start = start;
-	activator->stop = stop;
-	activator->destroy = destroy;
-	bundle_setActivator(framework->bundle, activator);
-
-	void * userData = NULL;
-	if (create != NULL) {
-		userData = create(bundle_getContext(framework->bundle));
-	}
-	activator->userData = userData;
-
-	if (start != NULL) {
-		start(userData, bundle_getContext(framework->bundle));
-	}
-
-
-	m_serviceListeners = arrayList_create();
-	framework_releaseBundleLock(framework, framework->bundle);
-
-	return CELIX_SUCCESS;
+	return status;
 }
 
 celix_status_t framework_start(FRAMEWORK framework) {
@@ -293,7 +301,11 @@ celix_status_t fw_installBundle(FRAMEWORK framework, BUNDLE * bundle, char * loc
 }
 
 celix_status_t fw_installBundle2(FRAMEWORK framework, BUNDLE * bundle, long id, char * location, BUNDLE_ARCHIVE archive) {
-  	framework_acquireInstallLock(framework, location);
+    BUNDLE_ARCHIVE bundle_archive = NULL;
+  	celix_status_t status = framework_acquireInstallLock(framework, location);
+    if (status != CELIX_SUCCESS) {
+        return status;
+    }
 
 	if (bundle_getState(framework->bundle) == BUNDLE_STOPPING || bundle_getState(framework->bundle) == BUNDLE_UNINSTALLED) {
 		printf("The framework has been shutdown.\n");
@@ -311,7 +323,12 @@ celix_status_t fw_installBundle2(FRAMEWORK framework, BUNDLE * bundle, long id, 
 	apr_pool_create(&bundlePool, framework->mp);
 	if (archive == NULL) {
 		id = framework_getNextBundleId(framework);
-		archive = bundleCache_createArchive(framework->cache, id, location, bundlePool); //fw_createArchive(id, location);
+		status = bundleCache_createArchive(framework->cache, id, location, bundlePool, &bundle_archive);
+		if (status != CELIX_SUCCESS) {
+		    return status;
+		} else {
+		    archive = bundle_archive;
+		}
 	} else {
 		// purge revision
 		// multiple revisions not yet implemented
@@ -388,7 +405,7 @@ celix_status_t fw_startBundle(FRAMEWORK framework, BUNDLE bundle, int options AT
 			framework_releaseBundleLock(framework, bundle);
 			return CELIX_SUCCESS;
 		case BUNDLE_INSTALLED:
-		    if (!module_isResolved(bundle_getCurrentModule(bundle))) {
+			if (!module_isResolved(bundle_getCurrentModule(bundle))) {
                 wires = resolver_resolve(bundle_getCurrentModule(bundle));
                 if (wires == NULL) {
                     framework_releaseBundleLock(framework, bundle);
@@ -662,7 +679,7 @@ celix_status_t fw_refreshBundles(FRAMEWORK framework, BUNDLE bundles[], int size
         BUNDLE *newTargets;
         int nrofvalues;
         hashMapValues_toArray(values, (void *) &newTargets, &nrofvalues);
-
+    
         bool restart = false;
         if (newTargets != NULL) {
             int i = 0;
