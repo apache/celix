@@ -70,6 +70,7 @@ void hashMapValues_destroy(HASH_MAP_VALUES values);
 HASH_MAP_ITERATOR hashMapValues_iterator(HASH_MAP_VALUES values);
 int hashMapValues_size(HASH_MAP_VALUES values);
 bool hashMapValues_contains(HASH_MAP_VALUES values, void * o);
+void hashMapValues_toArray(HASH_MAP_VALUES values, void* *array[], unsigned int *size);
 bool hashMapValues_remove(HASH_MAP_VALUES values, void * o);
 void hashMapValues_clear(HASH_MAP_VALUES values);
 bool hashMapValues_isEmpty(HASH_MAP_VALUES values);

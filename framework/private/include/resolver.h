@@ -33,5 +33,6 @@
 HASH_MAP resolver_resolve(MODULE root);
 void resolver_moduleResolved(MODULE module);
 void resolver_addModule(MODULE module);
+void resolver_removeModule(MODULE module);
 
 #endif /* RESOLVER_H_ */

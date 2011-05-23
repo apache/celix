@@ -157,6 +157,7 @@ int arrayList_addIndex(ARRAY_LIST list, unsigned int index, void * element) {
 
 	list->elementData[index] = element;
 	list->size++;
+	return 0;
 }
 
 void * arrayList_remove(ARRAY_LIST list, unsigned int index) {
@@ -211,6 +212,18 @@ void arrayList_clear(ARRAY_LIST list) {
 		list->elementData[i] = NULL;
 	}
 	list->size = 0;
+}
+
+bool arrayList_addAll(ARRAY_LIST list, ARRAY_LIST toAdd) {
+    int size = arrayList_size(toAdd);
+    arrayList_ensureCapacity(list, list->size + size);
+//    memcpy(list->elementData+list->size, *toAdd->elementData, size);
+//    list->size += size;
+    int i;
+    for (i = 0; i < arrayList_size(toAdd); i++) {
+        arrayList_add(list, arrayList_get(toAdd, i));
+    }
+    return size != 0;
 }
 
 ARRAY_LIST arrayList_clone(ARRAY_LIST list) {

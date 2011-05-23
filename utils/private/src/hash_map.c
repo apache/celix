@@ -471,6 +471,20 @@ bool hashMapValues_contains(HASH_MAP_VALUES values, void * value) {
 	return hashMap_containsValue(values->map, value);
 }
 
+void hashMapValues_toArray(HASH_MAP_VALUES values, void* *array[], unsigned int *size) {
+    int vsize = hashMapValues_size(values);
+    *size = vsize;
+    *array = malloc(vsize * sizeof(*array));
+    HASH_MAP_ITERATOR it = hashMapValues_iterator(values);
+    int i = 0;
+    for (i = 0; i < vsize; i++) {
+        if (!hashMapIterator_hasNext(it)) {
+            return;
+        }
+        (*array)[i] = hashMapIterator_nextValue(it);
+    }
+}
+
 bool hashMapValues_remove(HASH_MAP_VALUES values, void * value) {
 	HASH_MAP_ITERATOR iterator = hashMapValues_iterator(values);
 	if (value == NULL) {

@@ -65,7 +65,7 @@ void bundleCache_deleteTree(char * directory, apr_pool_t *mp) {
 	apr_dir_t *dir;
 	apr_dir_open(&dir, directory, mp);
 	apr_finfo_t dp;
-	while (apr_dir_read(&dp, APR_FINFO_DIRENT|APR_FINFO_TYPE, dir)) {
+	while ((apr_dir_read(&dp, APR_FINFO_DIRENT|APR_FINFO_TYPE, dir)) == APR_SUCCESS) {
 		if ((strcmp((dp.name), ".") != 0) && (strcmp((dp.name), "..") != 0)) {
 			char subdir[strlen(directory) + strlen(dp.name) + 2];
 			strcpy(subdir, directory);
@@ -93,7 +93,7 @@ ARRAY_LIST bundleCache_getArchives(BUNDLE_CACHE cache) {
 
 	ARRAY_LIST list = arrayList_create();
 	apr_finfo_t dp;
-	while ((apr_dir_read(&dp, APR_FINFO_DIRENT|APR_FINFO_TYPE, dir))) {
+	while ((apr_dir_read(&dp, APR_FINFO_DIRENT|APR_FINFO_TYPE, dir)) == APR_SUCCESS) {
 		char archiveRoot[strlen(cache->cacheDir) + strlen(dp.name) + 2];
 		strcpy(archiveRoot, cache->cacheDir);
 		strcat(archiveRoot, "/");

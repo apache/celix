@@ -384,6 +384,28 @@ void test_hashMap_containsValue(void) {
 	CU_ASSERT_TRUE(hashMap_containsValue(map, value3));
 }
 
+void test_hashMapValues_toArray(void) {
+    hashMap_clear(map, false, false);
+
+    // Add one entry
+    char * key = "key";
+    char * value = "value";
+    hashMap_put(map, key, value);
+
+    // Add second entry
+    char * key2 = "key2";
+    char * value2 = "value2";
+    hashMap_put(map, key2, value2);
+
+    char **array;
+    int size;
+    HASH_MAP_VALUES values = hashMapValues_create(map);
+    hashMapValues_toArray(values, (void*)&array, &size);
+    CU_ASSERT_EQUAL(size, 2);
+    CU_ASSERT_TRUE(hashMapValues_contains(values, array[0]));
+    CU_ASSERT_TRUE(hashMapValues_contains(values, array[1]));
+}
+
 int main (int argc, char** argv) {
 	CU_pSuite pSuite = NULL;
 
@@ -411,6 +433,7 @@ int main (int argc, char** argv) {
 		|| NULL == CU_add_test(pSuite, "Map Remove Mapping Test", test_hashMap_removeMapping)
 		|| NULL == CU_add_test(pSuite, "Map Clear Test", test_hashMap_clear)
 		|| NULL == CU_add_test(pSuite, "Map Contains Value Test", test_hashMap_containsValue)
+		|| NULL == CU_add_test(pSuite, "Map To Array Test", test_hashMapValues_toArray)
 
 
 	)

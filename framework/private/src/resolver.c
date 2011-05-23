@@ -58,6 +58,7 @@ HASH_MAP resolver_populateWireMap(HASH_MAP candidates, MODULE importer, HASH_MAP
 
 HASH_MAP resolver_resolve(MODULE root) {
 	if (module_isResolved(root)) {
+	    printf("already resolved\n");
 		return NULL;
 	}
 
@@ -239,6 +240,26 @@ void resolver_addModule(MODULE module) {
 		}
 		linkedList_addElement(list->capabilities, cap);
 	}
+}
+
+void resolver_removeModule(MODULE module) {
+    linkedList_removeElement(m_modules, module);
+    LINKED_LIST caps = module_getCapabilities(module);
+    if (caps != NULL)
+    {
+        int i = 0;
+        for (i = 0; i < linkedList_size(caps); i++) {
+            CAPABILITY cap = (CAPABILITY) linkedList_get(caps, i);
+            CAPABILITY_LIST list = resolver_getCapabilityList(m_unresolvedServices, capability_getServiceName(cap));
+            if (list != NULL) {
+                linkedList_removeElement(list->capabilities, cap);
+            }
+            list = resolver_getCapabilityList(m_resolvedServices, capability_getServiceName(cap));
+            if (list != NULL) {
+                linkedList_removeElement(list->capabilities, cap);
+            }
+        }
+    }
 }
 
 void resolver_moduleResolved(MODULE module) {

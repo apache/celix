@@ -112,6 +112,10 @@ MODULE bundle_getCurrentModule(BUNDLE bundle) {
 	return arrayList_get(bundle->modules, arrayList_size(bundle->modules) - 1);
 }
 
+ARRAY_LIST bundle_getModules(BUNDLE bundle) {
+    return bundle->modules;
+}
+
 void * bundle_getHandle(BUNDLE bundle) {
 	return bundle->handle;
 }
@@ -326,6 +330,7 @@ bool bundle_unlock(BUNDLE bundle) {
 celix_status_t bundle_close(BUNDLE bundle) {
     celix_status_t status = CELIX_SUCCESS;
 
+    bundle_closeModules(bundle);
     bundle_closeRevisions(bundle);
     BUNDLE_ARCHIVE archive = bundle_getArchive(bundle);
     bundleArchive_close(archive);
@@ -336,6 +341,7 @@ celix_status_t bundle_close(BUNDLE bundle) {
 celix_status_t bundle_closeAndDelete(BUNDLE bundle) {
     celix_status_t status = CELIX_SUCCESS;
 
+    bundle_closeModules(bundle);
     bundle_closeRevisions(bundle);
     BUNDLE_ARCHIVE archive = bundle_getArchive(bundle);
     bundleArchive_closeAndDelete(archive);
@@ -348,6 +354,28 @@ celix_status_t bundle_closeRevisions(BUNDLE bundle) {
 
     // TODO implement this
     return status;
+}
+
+celix_status_t bundle_closeModules(BUNDLE bundle) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    int i = 0;
+    for (i = 0; i < arrayList_size(bundle->modules); i++) {
+        MODULE module = arrayList_get(bundle->modules, i);
+        resolver_removeModule(module);
+        module_setWires(module, NULL);
+    }
+
+    return status;
+}
+
+celix_status_t bundle_refresh(BUNDLE bundle) {
+    bundle_closeModules(bundle);
+    arrayList_clear(bundle->modules);
+    MODULE module = bundle_createModule(bundle);
+    bundle_addModule(bundle, module);
+    bundle->state = BUNDLE_INSTALLED;
+    return CELIX_SUCCESS;
 }
 
 

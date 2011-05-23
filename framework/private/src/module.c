@@ -37,6 +37,8 @@ struct module {
 	LINKED_LIST requirements;
 	LINKED_LIST wires;
 
+	ARRAY_LIST dependentImporters;
+
 	VERSION version;
 	char * symbolicName;
 	bool resolved;
@@ -53,6 +55,8 @@ MODULE module_create(MANIFEST headerMap, char * moduleId, BUNDLE bundle) {
 	module->id = moduleId;
 	module->bundle = bundle;
 	module->resolved = false;
+
+	module->dependentImporters = arrayList_create();
 
 	MANIFEST_PARSER mp = manifestParser_createManifestParser(module, headerMap);
 	module->symbolicName = mp->bundleSymbolicName;
@@ -141,7 +145,20 @@ LINKED_LIST module_getWires(MODULE module) {
 }
 
 void module_setWires(MODULE module, LINKED_LIST wires) {
+    int i = 0;
+    for (i = 0; (module->wires != NULL) && (i < linkedList_size(module->wires)); i++) {
+        WIRE wire = (WIRE) linkedList_get(module->wires, i);
+        MODULE exporter = wire_getExporter(wire);
+        module_removeDependentImporter(exporter, module);
+    }
+
 	module->wires = wires;
+
+	for (i = 0; (module->wires != NULL) && (i < linkedList_size(module->wires)); i++) {
+        WIRE wire = (WIRE) linkedList_get(module->wires, i);
+        MODULE exporter = wire_getExporter(wire);
+        module_addDependentImporter(exporter, module);
+    }
 }
 
 bool module_isResolved(MODULE module) {
@@ -162,4 +179,26 @@ LINKED_LIST module_getRequirements(MODULE module) {
 
 LINKED_LIST module_getCapabilities(MODULE module) {
 	return module->capabilities;
+}
+
+ARRAY_LIST module_getDependentImporters(MODULE module) {
+    return module->dependentImporters;
+}
+
+void module_addDependentImporter(MODULE module, MODULE importer) {
+    if (!arrayList_contains(module->dependentImporters, importer)) {
+        arrayList_add(module->dependentImporters, importer);
+    }
+}
+
+void module_removeDependentImporter(MODULE module, MODULE importer) {
+    arrayList_removeElement(module->dependentImporters, importer);
+}
+
+ARRAY_LIST module_getDependents(MODULE module) {
+    ARRAY_LIST dependents = arrayList_create();
+
+    arrayList_addAll(dependents, module->dependentImporters);
+
+    return dependents;
 }

@@ -52,4 +52,14 @@ BUNDLE module_getBundle(MODULE module);
 LINKED_LIST module_getRequirements(MODULE module);
 LINKED_LIST module_getCapabilities(MODULE module);
 
+ARRAY_LIST module_getDependentImporters(MODULE module);
+void module_addDependentImporter(MODULE module, MODULE importer);
+void module_removeDependentImporter(MODULE module, MODULE importer);
+
+ARRAY_LIST module_getDependentRequirers(MODULE module);
+void module_addDependentRequirer(MODULE module, MODULE requirer);
+void module_removeDependentRequirer(MODULE module, MODULE requirer);
+
+ARRAY_LIST module_getDependents(MODULE module);
+
 #endif /* MODULE_H_ */

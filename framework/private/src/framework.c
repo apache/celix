@@ -203,7 +203,7 @@ celix_status_t fw_init(FRAMEWORK framework) {
 	int arcIdx;
 	for (arcIdx = 0; arcIdx < arrayList_size(archives); arcIdx++) {
 		BUNDLE_ARCHIVE archive = (BUNDLE_ARCHIVE) arrayList_get(archives, arcIdx);
-//		framework->nextBundleId = fmaxl(framework->nextBundleId, bundleArchive_getId(archive) + 1);
+		framework->nextBundleId = fmaxl(framework->nextBundleId, bundleArchive_getId(archive) + 1);
 
 		if (bundleArchive_getPersistentState(archive) == BUNDLE_UNINSTALLED) {
 			bundleArchive_closeAndDelete(archive);
@@ -388,13 +388,15 @@ celix_status_t fw_startBundle(FRAMEWORK framework, BUNDLE bundle, int options AT
 			framework_releaseBundleLock(framework, bundle);
 			return CELIX_SUCCESS;
 		case BUNDLE_INSTALLED:
-			wires = resolver_resolve(bundle_getCurrentModule(bundle));
-			if (wires == NULL) {
-				framework_releaseBundleLock(framework, bundle);
-				return CELIX_BUNDLE_EXCEPTION;
-			}
-			framework_markResolvedModules(framework, wires);
-			hashMap_destroy(wires, false, false);
+		    if (!module_isResolved(bundle_getCurrentModule(bundle))) {
+                wires = resolver_resolve(bundle_getCurrentModule(bundle));
+                if (wires == NULL) {
+                    framework_releaseBundleLock(framework, bundle);
+                    return CELIX_BUNDLE_EXCEPTION;
+                }
+                framework_markResolvedModules(framework, wires);
+		    }
+			//hashMap_destroy(wires, false, false);
 			// no break
 		case BUNDLE_RESOLVED:
 			if (bundleContext_create(framework, bundle, &context) != CELIX_SUCCESS) {
@@ -649,31 +651,44 @@ celix_status_t fw_refreshBundles(FRAMEWORK framework, BUNDLE bundles[], int size
         framework_releaseGlobalLock(framework);
         status = CELIX_ILLEGAL_STATE;
     } else {
+        HASH_MAP map = hashMap_create(NULL, NULL, NULL, NULL);
+        int targetIdx = 0;
+        for (targetIdx = 0; targetIdx < size; targetIdx++) {
+            BUNDLE bundle = bundles[targetIdx];
+            hashMap_put(map, bundle, bundle);
+            fw_populateDependentGraph(framework, bundle, &map);
+        }
+        HASH_MAP_VALUES values = hashMapValues_create(map);
+        BUNDLE *newTargets;
+        int nrofvalues;
+        hashMapValues_toArray(values, (void *) &newTargets, &nrofvalues);
+
         bool restart = false;
-        if (bundles != NULL) {
+        if (newTargets != NULL) {
             int i = 0;
-            for (i = 0; i < size && !restart; i++) {
-                BUNDLE bundle = bundles[i];
+            for (i = 0; i < nrofvalues && !restart; i++) {
+                BUNDLE bundle = (BUNDLE) newTargets[i];
                 if (framework->bundle == bundle) {
                     restart = true;
                 }
             }
 
-            struct fw_refreshHelper * helpers[size];
-            for (i = 0; i < size && !restart; i++) {
-                BUNDLE bundle = bundles[i];
+            struct fw_refreshHelper * helpers[nrofvalues];
+            for (i = 0; i < nrofvalues && !restart; i++) {
+                BUNDLE bundle = (BUNDLE) newTargets[i];
                 helpers[i] = malloc(sizeof(struct fw_refreshHelper));
                 helpers[i] ->framework = framework;
                 helpers[i]->bundle = bundle;
+                helpers[i]->oldState = BUNDLE_INSTALLED;
             }
 
-            for (i = 0; i < size; i++) {
+            for (i = 0; i < nrofvalues; i++) {
                 struct fw_refreshHelper * helper = helpers[i];
                 fw_refreshHelper_stop(helper);
                 fw_refreshHelper_refreshOrRemove(helper);
             }
 
-            for (i = 0; i < size; i++) {
+            for (i = 0; i < nrofvalues; i++) {
                 struct fw_refreshHelper * helper = helpers[i];
                 fw_refreshHelper_restart(helper);
             }
@@ -696,8 +711,13 @@ celix_status_t fw_refreshBundle(FRAMEWORK framework, BUNDLE bundle) {
         printf("Cannot refresh bundle");
         framework_releaseBundleLock(framework, bundle);
     } else {
-        // TODO fire unresolved event
-        // TODO bundle_refresh(bundle);
+        bool fire = (bundle_getState(bundle) != BUNDLE_INSTALLED);
+        bundle_refresh(bundle);
+
+        if (fire) {
+            framework_setBundleStateAndNotify(framework, bundle, BUNDLE_INSTALLED);
+        }
+
         framework_releaseBundleLock(framework, bundle);
     }
     return status;
@@ -705,6 +725,7 @@ celix_status_t fw_refreshBundle(FRAMEWORK framework, BUNDLE bundle) {
 
 celix_status_t fw_refreshHelper_stop(struct fw_refreshHelper * refreshHelper) {
     if (bundle_getState(refreshHelper->bundle) == BUNDLE_ACTIVE) {
+        refreshHelper->oldState = BUNDLE_ACTIVE;
         fw_stopBundle(refreshHelper->framework, refreshHelper->bundle, false);
     }
 
@@ -726,6 +747,51 @@ celix_status_t fw_refreshHelper_restart(struct fw_refreshHelper * refreshHelper)
         fw_startBundle(refreshHelper->framework, refreshHelper->bundle, 0);
     }
     return CELIX_SUCCESS;
+}
+
+celix_status_t fw_getDependentBundles(FRAMEWORK framework, BUNDLE exporter, ARRAY_LIST *list) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    if (*list == NULL && exporter != NULL && framework != NULL) {
+        *list = arrayList_create();
+
+        ARRAY_LIST modules = bundle_getModules(exporter);
+        int modIdx = 0;
+        for (modIdx = 0; modIdx < arrayList_size(modules); modIdx++) {
+            MODULE module = arrayList_get(modules, modIdx);
+            ARRAY_LIST dependents = module_getDependents(module);
+            int depIdx = 0;
+            for (depIdx = 0; (dependents != NULL) && (depIdx < arrayList_size(dependents)); depIdx++) {
+                MODULE dependent = arrayList_get(dependents, depIdx);
+                arrayList_add(*list, module_getBundle(dependent));
+            }
+        }
+    } else {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
+
+    return status;
+}
+
+celix_status_t fw_populateDependentGraph(FRAMEWORK framework, BUNDLE exporter, HASH_MAP *map) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    if (exporter != NULL && framework != NULL) {
+        ARRAY_LIST dependents = NULL;
+        if ((status = fw_getDependentBundles(framework, exporter, &dependents)) == CELIX_SUCCESS) {
+            int depIdx = 0;
+            for (depIdx = 0; (dependents != NULL) && (depIdx < arrayList_size(dependents)); depIdx++) {
+                if (!hashMap_containsKey(*map, arrayList_get(dependents, depIdx))) {
+                    hashMap_put(*map, arrayList_get(dependents, depIdx), arrayList_get(dependents, depIdx));
+                    fw_populateDependentGraph(framework, arrayList_get(dependents, depIdx), map);
+                }
+            }
+        }
+    } else {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
+
+    return status;
 }
 
 celix_status_t fw_registerService(FRAMEWORK framework, SERVICE_REGISTRATION *registration, BUNDLE bundle, char * serviceName, void * svcObj, PROPERTIES properties) {

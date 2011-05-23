@@ -196,6 +196,32 @@ void test_arrayList_add(void) {
 	CU_ASSERT_EQUAL(entry2, get);
 }
 
+void test_arrayList_addAll(void) {
+    arrayList_clear(list);
+
+    ARRAY_LIST toAdd = arrayList_create();
+    char * entry = "entry";
+    arrayList_add(toAdd, entry);
+    char * entry2 = "entry2";
+    arrayList_add(toAdd, entry2);
+
+    char * entry3 = "entry3";
+    arrayList_add(list, entry3);
+
+    char * get = arrayList_get(list, 0);
+    CU_ASSERT_EQUAL(entry3, get);
+
+    bool changed = arrayList_addAll(list, toAdd);
+    CU_ASSERT_TRUE(changed);
+    CU_ASSERT_EQUAL(arrayList_size(list), 3);
+
+    get = arrayList_get(list, 1);
+    CU_ASSERT_EQUAL(entry, get);
+
+    get = arrayList_get(list, 2);
+    CU_ASSERT_EQUAL(entry2, get);
+}
+
 void test_arrayList_remove(void) {
 	arrayList_clear(list);
 
@@ -289,6 +315,7 @@ int main (int argc, char** argv) {
 		|| NULL == CU_add_test(pSuite, "Array List Remove Test", test_arrayList_remove)
 		|| NULL == CU_add_test(pSuite, "Array List Remove Element Test", test_arrayList_removeElement)
 		|| NULL == CU_add_test(pSuite, "Array List Clear Test", test_arrayList_clear)
+		|| NULL == CU_add_test(pSuite, "Array List Add All", test_arrayList_addAll)
 	)
 	{
 	  CU_cleanup_registry();

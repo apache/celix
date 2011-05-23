@@ -132,7 +132,7 @@ BUNDLE_ARCHIVE bundleArchive_recreate(char * archiveRoot, apr_pool_t *mp) {
 	apr_dir_t *dir;
 	apr_status_t status = apr_dir_open(&dir, archiveRoot, mp);
 	apr_finfo_t dp;
-	while ((apr_dir_read(&dp, APR_FINFO_DIRENT|APR_FINFO_TYPE, dir))) {
+	while ((apr_dir_read(&dp, APR_FINFO_DIRENT|APR_FINFO_TYPE, dir)) == APR_SUCCESS) {
 		if (dp.filetype == APR_DIR && (strncmp(dp.name, "version", 7) == 0)) {
 			long idx;
 			sscanf(dp.name, "version%*d.%ld", &idx);
@@ -434,9 +434,14 @@ void bundleArchive_initialize(BUNDLE_ARCHIVE archive) {
 
 void bundleArchive_deleteTree(char * directory, apr_pool_t *mp) {
 	apr_dir_t *dir;
-	apr_dir_open(&dir, directory, mp);
+	apr_status_t stat = apr_dir_open(&dir, directory, mp);
+	if (stat != APR_SUCCESS) {
+	    printf("ERROR opening: %d\n", stat);
+	}
 	apr_finfo_t dp;
-	while (apr_dir_read(&dp, APR_FINFO_DIRENT|APR_FINFO_TYPE, dir)) {
+	while ((apr_dir_read(&dp, APR_FINFO_DIRENT|APR_FINFO_TYPE, dir)) == APR_SUCCESS) {
+	    printf("Stat: %d\n", stat);
+	    printf("File: %s\n", dp.name);
 		if ((strcmp((dp.name), ".") != 0) && (strcmp((dp.name), "..") != 0)) {
 			char subdir[strlen(directory) + strlen(dp.name) + 2];
 			strcpy(subdir, directory);

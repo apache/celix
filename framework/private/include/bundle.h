@@ -38,6 +38,7 @@ celix_status_t bundle_destroy(BUNDLE bundle);
 bool bundle_isSystemBundle(BUNDLE bundle);
 BUNDLE_ARCHIVE bundle_getArchive(BUNDLE bundle);
 MODULE bundle_getCurrentModule(BUNDLE bundle);
+ARRAY_LIST bundle_getModules(BUNDLE bundle);
 void * bundle_getHandle(BUNDLE bundle);
 void bundle_setHandle(BUNDLE bundle, void * handle);
 ACTIVATOR bundle_getActivator(BUNDLE bundle);
@@ -74,5 +75,6 @@ bool bundle_unlock(BUNDLE bundle);
 celix_status_t bundle_closeAndDelete(BUNDLE bundle);
 celix_status_t bundle_close(BUNDLE bundle);
 
+celix_status_t bundle_refresh(BUNDLE bundle);
 
 #endif /* BUNDLE_H_ */

@@ -48,12 +48,13 @@
 #include "bundle_cache.h"
 #include "constants.h"
 
-void test(void ** ptr) {
-	ARRAY_LIST l;
-	ARRAY_LIST list = arrayList_create();
-	*ptr = list;
+struct bla {
+    int idx;
+};
 
-}
+typedef struct bla * bla_t;
+
+void main_arrayTest(ARRAY_LIST list, void* *array[], int *size);
 
 int main( int argc, const char* argv[] )
 {
@@ -76,9 +77,31 @@ int main( int argc, const char* argv[] )
 
 //	framework_stop(framework);
 
-	ARRAY_LIST l;
-	test((void**)&l);
-	printf("Size: %d\n", arrayList_size(l));
+    ARRAY_LIST list = arrayList_create();
+    int i = 0;
+    for (i = 0; i < 10; i++) {
+        bla_t bl = malloc(sizeof(*bl));
+        bl->idx = i;
+        arrayList_add(list, bl);
+    }
+	bla_t *array;
+	int size;
+	main_arrayTest(list, (void*) &array, &size);
+	printf("Idx: %d\n", array[2]->idx);
+	printf("Idx: %d\n", array[9]->idx);
+	printf("Idx: %d\n", array[0]->idx);
+
 
 	return 0;
+}
+
+void main_arrayTest(ARRAY_LIST list, void* *array[], int *size) {
+    int asize = arrayList_size(list);
+    *array = malloc(asize * sizeof(*array));
+    int i = 0;
+    for (i = 0; i < arrayList_size(list); i++) {
+        void *val = arrayList_get(list, i);
+        (*array)[i] = val;
+    }
+
 }
