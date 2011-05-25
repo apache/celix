@@ -60,7 +60,6 @@ add_subdirectory(shell_tui)
 #add_subdirectory(receiver-2.0)
 #add_subdirectory(sender)
 
-add_subdirectory(deployer)
 add_subdirectory(hello_world)
 add_subdirectory(mongoose)
 #add_subdirectory(echo_service/client)
