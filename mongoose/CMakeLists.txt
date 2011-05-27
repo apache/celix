@@ -16,7 +16,7 @@
 # under the License.
 
 add_library(mongoose STATIC mongoose.c)
-SET_TARGET_PROPERTIES( mongoose PROPERTIES COMPILE_FLAGS -fPIC)
+SET_TARGET_PROPERTIES(mongoose PROPERTIES COMPILE_FLAGS -fPIC)
 
 add_library(celix.mongoose SHARED activator)
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")

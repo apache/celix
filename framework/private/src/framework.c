@@ -446,6 +446,9 @@ celix_status_t fw_startBundle(FRAMEWORK framework, BUNDLE bundle, int options AT
 					library_extension
 					);
 
+			// BUG: Can't use apr_dso_load, apr assumes RTLD_GLOBAL for loading libraries.
+//			apr_dso_handle_t *handle;
+//			apr_dso_load(&handle, libraryPath, bundle->memoryPool);
 			handle = dlopen(libraryPath, RTLD_LAZY|RTLD_LOCAL);
 			if (handle == NULL) {
 				printf ("%s\n", dlerror());
