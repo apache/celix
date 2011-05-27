@@ -15,29 +15,40 @@ struct bundleRevision {
 	char *location;
 };
 
-BUNDLE_REVISION bundleRevision_create(char *root, char *location, long revisionNr, char *inputFile) {
-	BUNDLE_REVISION revision = malloc(sizeof(*revision));
+celix_status_t bundleRevision_create(char *root, char *location, long revisionNr, char *inputFile, apr_pool_t *pool, BUNDLE_REVISION *bundle_revision) {
+    celix_status_t status = CELIX_SUCCESS;
+	BUNDLE_REVISION revision = NULL;
 
-	mkdir(root, 0755);
+	revision = (BUNDLE_REVISION) apr_pcalloc(pool, sizeof(*revision));
+    if (revision != NULL) {
+        mkdir(root, 0755);
 
-	if (inputFile != NULL) {
-		int e = extractBundle(inputFile, root);
-	} else {
-		int e = extractBundle(location, root);
-	}
+        if (inputFile != NULL) {
+            status = extractBundle(inputFile, root);
+        } else {
+            status = extractBundle(location, root);
+        }
 
-	revision->revisionNr = revisionNr;
-	revision->root = strdup(root);
-	revision->location = location;
+        if (status == CELIX_SUCCESS) {
+            revision->revisionNr = revisionNr;
+            revision->root = strdup(root);
+            revision->location = strdup(location);
+            *bundle_revision = revision;
+        }
+    }
 
-	return revision;
+	return status;
 }
 
 void bundleRevision_destroy(BUNDLE_REVISION revision) {
-	free(revision);
+    free(revision->root);
+    free(revision->location);
 }
 
 long bundleRevision_getNumber(BUNDLE_REVISION revision) {
+    if (revision == NULL) {
+        return -1L;
+    }
 	return revision->revisionNr;
 }
 

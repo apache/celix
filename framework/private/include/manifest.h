@@ -27,6 +27,7 @@
 #define MANIFEST_H_
 
 #include "properties.h"
+#include "celix_errno.h"
 
 struct manifest {
 	PROPERTIES mainAttributes;
@@ -37,7 +38,7 @@ typedef struct manifest * MANIFEST;
 void manifest_clear(MANIFEST manifest);
 PROPERTIES manifest_getMainAttributes(MANIFEST manifest);
 
-MANIFEST manifest_read(char * filename);
+celix_status_t manifest_read(char *filename, MANIFEST *manifest);
 void manifest_write(MANIFEST manifest, char * filename);
 
 char * manifest_getValue(MANIFEST manifest, const char * name);

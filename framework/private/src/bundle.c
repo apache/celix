@@ -67,7 +67,9 @@ celix_status_t bundle_create(BUNDLE * bundle, apr_pool_t *mp) {
 }
 
 celix_status_t bundle_createFromArchive(BUNDLE * bundle, FRAMEWORK framework, BUNDLE_ARCHIVE archive, apr_pool_t *bundlePool) {
-	*bundle = (BUNDLE) malloc(sizeof(**bundle));
+    celix_status_t status = CELIX_SUCCESS;
+
+    *bundle = (BUNDLE) apr_pcalloc(bundlePool, sizeof(**bundle));
 	if (*bundle == NULL) {
 		return CELIX_ENOMEM;
 	}
@@ -80,16 +82,19 @@ celix_status_t bundle_createFromArchive(BUNDLE * bundle, FRAMEWORK framework, BU
 	(*bundle)->modules = arrayList_create();
 
 	MODULE module = bundle_createModule(*bundle);
-	bundle_addModule(*bundle, module);
-	// (*bundle)->module = module;
+	if (module != NULL) {
+        bundle_addModule(*bundle, module);
 
-	pthread_mutex_init(&(*bundle)->lock, NULL);
-	(*bundle)->lockCount = 0;
-	(*bundle)->lockThread = NULL;
+        pthread_mutex_init(&(*bundle)->lock, NULL);
+        (*bundle)->lockCount = 0;
+        (*bundle)->lockThread = NULL;
 
-	resolver_addModule(module);
+        resolver_addModule(module);
+	} else {
+	    status = CELIX_FILE_IO_EXCEPTION;
+	}
 
-	return CELIX_SUCCESS;
+	return status;
 }
 
 celix_status_t bundle_destroy(BUNDLE bundle) {
@@ -100,7 +105,6 @@ celix_status_t bundle_destroy(BUNDLE bundle) {
 	}
 	arrayListIterator_destroy(iter);
 	arrayList_destroy(bundle->modules);
-	free(bundle);
 	return CELIX_SUCCESS;
 }
 
@@ -161,37 +165,42 @@ void bundle_setManifest(BUNDLE bundle, MANIFEST manifest) {
 }
 
 MODULE bundle_createModule(BUNDLE bundle) {
-	MANIFEST headerMap = getManifest(bundle->archive);
-	long bundleId = bundleArchive_getId(bundle->archive);
-	int revision = 0;
-	char moduleId[sizeof(bundleId) + sizeof(revision) + 2];
-	sprintf(moduleId, "%ld.%d", bundleId, revision);
+	MANIFEST headerMap = NULL;
+	if (getManifest(bundle->archive, &headerMap) == CELIX_SUCCESS) {
+        long bundleId = bundleArchive_getId(bundle->archive);
+        int revision = 0;
+        char moduleId[sizeof(bundleId) + sizeof(revision) + 2];
+        sprintf(moduleId, "%ld.%d", bundleId, revision);
 
-	MODULE module = module_create(headerMap, strdup(moduleId), bundle);
+        MODULE module = module_create(headerMap, strdup(moduleId), bundle);
 
+        if (module != NULL) {
+            VERSION bundleVersion = module_getVersion(module);
+            char * symName = module_getSymbolicName(module);
 
-	VERSION bundleVersion = module_getVersion(module);
-	char * symName = module_getSymbolicName(module);
+            ARRAY_LIST bundles = framework_getBundles(bundle->framework);
+            int i;
+            for (i = 0; i < arrayList_size(bundles); i++) {
+                BUNDLE check = (BUNDLE) arrayList_get(bundles, i);
 
-	ARRAY_LIST bundles = framework_getBundles(bundle->framework);
-	int i;
-	for (i = 0; i < arrayList_size(bundles); i++) {
-		BUNDLE check = (BUNDLE) arrayList_get(bundles, i);
+                long id = bundleArchive_getId(check->archive);
+                if (id != bundleArchive_getId(bundle->archive)) {
+                    char * sym = module_getSymbolicName(bundle_getCurrentModule(check));
+                    VERSION version = module_getVersion(bundle_getCurrentModule(check));
+                    if ((symName != NULL) && (sym != NULL) && !strcmp(symName, sym) &&
+                            !version_compareTo(bundleVersion, version)) {
+                        printf("Bundle symbolic name and version are not unique: %s:%s\n", sym, version_toString(version));
+                        return NULL;
+                    }
+                }
+            }
+            arrayList_destroy(bundles);
+        }
 
-		long id = bundleArchive_getId(check->archive);
-		if (id != bundleArchive_getId(bundle->archive)) {
-			char * sym = module_getSymbolicName(bundle_getCurrentModule(check));
-			VERSION version = module_getVersion(bundle_getCurrentModule(check));
-			if ((symName != NULL) && (sym != NULL) && !strcmp(symName, sym) &&
-					!version_compareTo(bundleVersion, version)) {
-				printf("Bundle symbolic name and version are not unique: %s:%s\n", sym, version_toString(version));
-				return NULL;
-			}
-		}
+        return module;
+	} else {
+	    return NULL;
 	}
-	arrayList_destroy(bundles);
-
-	return module;
 }
 
 void startBundle(BUNDLE bundle, int options) {

@@ -123,8 +123,11 @@ celix_status_t bundleCache_getArchives(BUNDLE_CACHE cache, ARRAY_LIST *archives)
                     && (strncmp(dp.name, "bundle", 6) == 0)
                     && (strcmp(dp.name, "bundle0") != 0)) {
 
-                BUNDLE_ARCHIVE archive = bundleArchive_recreate(strdup(archiveRoot), cache->mp);
-                arrayList_add(list, archive);
+                BUNDLE_ARCHIVE archive = NULL;
+                status = bundleArchive_recreate(strdup(archiveRoot), cache->mp, &archive);
+                if (status == CELIX_SUCCESS) {
+                    arrayList_add(list, archive);
+                }
             }
         }
 
@@ -149,9 +152,7 @@ celix_status_t bundleCache_createArchive(BUNDLE_CACHE cache, long id, char * loc
 	if (cache && location && bundlePool) {
         sprintf(archiveRoot, "%s/bundle%ld",  cache->cacheDir, id);
 
-        *bundle_archive = bundleArchive_create(strdup(archiveRoot), id, location, bundlePool);
-
-        status = CELIX_SUCCESS;
+        status = bundleArchive_create(strdup(archiveRoot), id, location, bundlePool, bundle_archive);
 	}
 
 	return status;

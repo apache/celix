@@ -50,24 +50,28 @@ struct module {
 };
 
 MODULE module_create(MANIFEST headerMap, char * moduleId, BUNDLE bundle) {
-	MODULE module = (MODULE) malloc(sizeof(*module));
-	module->headerMap = headerMap;
-	module->id = moduleId;
-	module->bundle = bundle;
-	module->resolved = false;
+    if (headerMap != NULL) {
+        MODULE module = (MODULE) malloc(sizeof(*module));
+        module->headerMap = headerMap;
+        module->id = moduleId;
+        module->bundle = bundle;
+        module->resolved = false;
 
-	module->dependentImporters = arrayList_create();
+        module->dependentImporters = arrayList_create();
 
-	MANIFEST_PARSER mp = manifestParser_createManifestParser(module, headerMap);
-	module->symbolicName = mp->bundleSymbolicName;
-	module->version = mp->bundleVersion;
-	module->capabilities = mp->capabilities;
-	module->requirements = mp->requirements;
-	manifestParser_destroy(mp);
+        MANIFEST_PARSER mp = manifestParser_createManifestParser(module, headerMap);
+        module->symbolicName = strdup(mp->bundleSymbolicName);
+        module->version = mp->bundleVersion;
+        module->capabilities = mp->capabilities;
+        module->requirements = mp->requirements;
+        manifestParser_destroy(mp);
 
-	module->wires = NULL;
+        module->wires = NULL;
 
-	return module;
+        return module;
+    } else {
+        return NULL;
+    }
 }
 
 MODULE module_createFrameworkModule() {
@@ -77,6 +81,7 @@ MODULE module_createFrameworkModule() {
 	module->version = version_createVersion(1, 0, 0, "");
 	module->capabilities = linkedList_create();
 	module->requirements = linkedList_create();
+	module->dependentImporters = arrayList_create();
 	module->wires = NULL;
 	module->headerMap = NULL;
 	module->resolved = false;
@@ -102,6 +107,8 @@ void module_destroy(MODULE module) {
 	linkedList_destroy(module->capabilities);
 	linkedList_destroy(module->requirements);
 
+	arrayList_destroy(module->dependentImporters);
+
 	version_destroy(module->version);
 
 	if (module->headerMap != NULL) {
@@ -109,6 +116,7 @@ void module_destroy(MODULE module) {
 	}
 	module->headerMap = NULL;
 
+	free(module->symbolicName);
 	free(module->id);
 	free(module);
 }

@@ -59,7 +59,7 @@ void fw_serviceChanged(SERVICE_EVENT event, PROPERTIES oldprops);
 
 //BUNDLE_ARCHIVE fw_createArchive(long id, char * location);
 //void revise(BUNDLE_ARCHIVE archive, char * location);
-MANIFEST getManifest(BUNDLE_ARCHIVE archive);
+celix_status_t getManifest(BUNDLE_ARCHIVE archive, MANIFEST *manifest);
 
 BUNDLE findBundle(BUNDLE_CONTEXT context);
 SERVICE_REGISTRATION findRegistration(SERVICE_REFERENCE reference);

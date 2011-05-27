@@ -128,6 +128,7 @@ celix_status_t framework_create(FRAMEWORK *framework) {
 	(*framework)->globalLockCount = 0;
 	(*framework)->globalLockThread = NULL;
 	(*framework)->nextBundleId = 1l;
+	(*framework)->cache = NULL;
 
 	m_installRequestMap = hashMap_create(string_hash, string_hash, string_equals, string_equals);
 
@@ -137,8 +138,9 @@ celix_status_t framework_create(FRAMEWORK *framework) {
 celix_status_t framework_destroy(FRAMEWORK framework) {
 	HASH_MAP_ITERATOR iterator = hashMapIterator_create(framework->installedBundleMap);
 	while (hashMapIterator_hasNext(iterator)) {
-		BUNDLE bundle = hashMapIterator_nextValue(iterator);
-		char * location = hashMapIterator_nextKey(iterator);
+	    HASH_MAP_ENTRY entry = hashMapIterator_nextEntry(iterator);
+		BUNDLE bundle = hashMapEntry_getValue(entry);
+		char * location = hashMapEntry_getKey(entry);
 
 		// for each installed bundle, clean up memory
 		LINKED_LIST wires = module_getWires(bundle_getCurrentModule(bundle));
@@ -325,6 +327,7 @@ celix_status_t fw_installBundle2(FRAMEWORK framework, BUNDLE * bundle, long id, 
 		id = framework_getNextBundleId(framework);
 		status = bundleCache_createArchive(framework->cache, id, location, bundlePool, &bundle_archive);
 		if (status != CELIX_SUCCESS) {
+		    framework_releaseInstallLock(framework, location);
 		    return status;
 		} else {
 		    archive = bundle_archive;
@@ -337,19 +340,22 @@ celix_status_t fw_installBundle2(FRAMEWORK framework, BUNDLE * bundle, long id, 
 	bool locked = framework_acquireGlobalLock(framework);
 	if (!locked) {
 		printf("Unable to acquire the global lock to install the bundle\n");
-		apr_pool_destroy(bundlePool);
-		framework_releaseInstallLock(framework, location);
-		return CELIX_BUNDLE_EXCEPTION;
+		status = CELIX_BUNDLE_EXCEPTION;
+	} else {
+	    status = bundle_createFromArchive(bundle, framework, archive, bundlePool);
 	}
 
-	celix_status_t rv = bundle_createFromArchive(bundle, framework, archive, bundlePool);
-	framework_releaseGlobalLock(framework);
+    framework_releaseGlobalLock(framework);
+	if (status == CELIX_SUCCESS) {
+        hashMap_put(framework->installedBundleMap, location, *bundle);
+	} else {
+	    printf("Unable to install bundle\n");
+	    bundleArchive_closeAndDelete(bundle_archive);
+	    apr_pool_destroy(bundlePool);
+	}
+    framework_releaseInstallLock(framework, location);
 
-	hashMap_put(framework->installedBundleMap, location, *bundle);
-
-  	framework_releaseInstallLock(framework, location);
-
-  	return CELIX_SUCCESS;
+  	return status;
 }
 
 celix_status_t framework_getBundleEntry(FRAMEWORK framework, BUNDLE bundle, char *name, char **entry) {
@@ -413,7 +419,7 @@ celix_status_t fw_startBundle(FRAMEWORK framework, BUNDLE bundle, int options AT
                 }
                 framework_markResolvedModules(framework, wires);
 		    }
-			//hashMap_destroy(wires, false, false);
+			hashMap_destroy(wires, false, false);
 			// no break
 		case BUNDLE_RESOLVED:
 			if (bundleContext_create(framework, bundle, &context) != CELIX_SUCCESS) {
@@ -421,9 +427,12 @@ celix_status_t fw_startBundle(FRAMEWORK framework, BUNDLE bundle, int options AT
 			}
 			bundle_setContext(bundle, context);
 
-			MANIFEST manifest = getManifest(bundle_getArchive(bundle));
-			bundle_setManifest(bundle, manifest);
-			char * library = manifest_getValue(manifest, HEADER_LIBRARY);
+			MANIFEST manifest = NULL;
+			char *library;
+			if (getManifest(bundle_getArchive(bundle), &manifest) == CELIX_SUCCESS) {
+                bundle_setManifest(bundle, manifest);
+                library = manifest_getValue(manifest, HEADER_LIBRARY);
+			}
 
 	#ifdef __linux__
 			 char * library_prefix = "lib";
@@ -579,7 +588,7 @@ void fw_stopBundle(FRAMEWORK framework, BUNDLE bundle, bool record) {
 		activator->destroy(activator->userData, bundle_getContext(bundle));
 	}
 
-	if (module_getId(bundle_getCurrentModule(bundle)) != 0) {
+	if (strcmp(module_getId(bundle_getCurrentModule(bundle)), "0") != 0) {
 		activator->start = NULL;
 		activator->stop = NULL;
 		activator->userData = NULL;
@@ -923,23 +932,14 @@ void fw_serviceChanged(SERVICE_EVENT event, PROPERTIES oldprops) {
 	}
 }
 
-MANIFEST getManifest(BUNDLE_ARCHIVE archive) {
-	char manifest[256];
-	sprintf(manifest, "%s/version%ld.%ld/MANIFEST/MANIFEST.MF",
+celix_status_t getManifest(BUNDLE_ARCHIVE archive, MANIFEST *manifest) {
+	char mf[256];
+	sprintf(mf, "%s/version%ld.%ld/MANIFEST/MANIFEST.MF",
 			bundleArchive_getArchiveRoot(archive),
 			bundleArchive_getRefreshCount(archive),
 			bundleArchive_getCurrentRevisionNumber(archive)
 			);
-
-//	char * root = bundleArchive_getArchiveRoot(archive);
-//	char manifest[256];
-//	strcpy(manifest, root);
-//	strcat(manifest, "/version");
-//	strcat(manifest, bundleArchive_getRefreshCount(archive));
-//	strcat(manifest, ".");
-//	strcat(manifest, bundleArchive_getCurrentRevisionNumber(archive));
-//	strcat(manifest, "/MANIFEST/MANIFEST.MF");
-	return manifest_read(manifest);
+	return manifest_read(mf, manifest);
 }
 
 long framework_getNextBundleId(FRAMEWORK framework) {
@@ -1197,6 +1197,7 @@ static void * framework_shutdown(void * framework) {
 	while (hashMapIterator_hasNext(iterator)) {
 		BUNDLE bundle = hashMapIterator_nextValue(iterator);
 		if (bundle_getState(bundle) == BUNDLE_ACTIVE || bundle_getState(bundle) == BUNDLE_STARTING) {
+		    printf("stop bundle: %s\n", bundleArchive_getLocation(bundle_getArchive(bundle)));
 			fw_stopBundle(fw, bundle, 0);
 		}
 	}

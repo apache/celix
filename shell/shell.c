@@ -233,6 +233,7 @@ celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
         startCommand_destroy(activator->startCmd);
         stopCommand_destroy(activator->stopCmd);
         installCommand_destroy(activator->installCmd);
+        uninstallCommand_destroy(activator->uninstallCmd);
         updateCommand_destroy(activator->updateCmd);
 
         free(activator->shellService);
