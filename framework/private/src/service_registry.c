@@ -100,6 +100,16 @@ SERVICE_REGISTRY serviceRegistry_create(FRAMEWORK framework, void (*serviceChang
 	return registry;
 }
 
+celix_status_t serviceRegistry_destroy(SERVICE_REGISTRY registry) {
+    hashMap_destroy(registry->inUseMap, false, false);
+    hashMap_destroy(registry->serviceRegistrations, false, false);
+    pthread_mutex_destroy(&registry->mutex);
+
+    free(registry);
+
+    return CELIX_SUCCESS;
+}
+
 ARRAY_LIST serviceRegistry_getRegisteredServices(SERVICE_REGISTRY registry, BUNDLE bundle) {
 	ARRAY_LIST regs = (ARRAY_LIST) hashMap_get(registry->serviceRegistrations, bundle);
 	if (regs != NULL) {

@@ -61,7 +61,7 @@
 <intAttribute key="org.eclipse.linuxtools.valgrind.memcheck.MEMCHECK_FREELIST" value="10000000"/>
 <booleanAttribute key="org.eclipse.linuxtools.valgrind.memcheck.MEMCHECK_GCCWORK" value="false"/>
 <booleanAttribute key="org.eclipse.linuxtools.valgrind.memcheck.MEMCHECK_LEAKCHECK" value="true"/>
-<stringAttribute key="org.eclipse.linuxtools.valgrind.memcheck.MEMCHECK_LEAKRES" value="low"/>
+<stringAttribute key="org.eclipse.linuxtools.valgrind.memcheck.MEMCHECK_LEAKRES" value="high"/>
 <booleanAttribute key="org.eclipse.linuxtools.valgrind.memcheck.MEMCHECK_PARTIAL" value="false"/>
 <booleanAttribute key="org.eclipse.linuxtools.valgrind.memcheck.MEMCHECK_SHOWREACH" value="false"/>
 <booleanAttribute key="org.eclipse.linuxtools.valgrind.memcheck.MEMCHECK_TRACKORIGINS" value="false"/>

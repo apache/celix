@@ -182,6 +182,9 @@ celix_status_t framework_destroy(FRAMEWORK framework) {
 	}
 	hashMapIterator_destroy(iterator);
 
+	hashMap_destroy(framework->installRequestMap, false, false);
+
+	serviceRegistry_destroy(framework->registry);
 
 	apr_pool_destroy(framework->mp);
 
