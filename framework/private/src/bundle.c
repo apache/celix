@@ -25,6 +25,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+#include <apr_strings.h>
 
 #include "bundle.h"
 #include "framework.h"
@@ -51,7 +52,7 @@ celix_status_t bundle_create(BUNDLE * bundle, apr_pool_t *mp) {
 	(*bundle)->state = BUNDLE_INSTALLED;
 	(*bundle)->modules = arrayList_create();
 
-	MODULE module = module_createFrameworkModule();
+	MODULE module = module_createFrameworkModule((*bundle));
 	bundle_addModule(*bundle, module);
 	// (*bundle)->module = module;
 
@@ -144,8 +145,8 @@ void bundle_setContext(BUNDLE bundle, BUNDLE_CONTEXT context) {
 	bundle->context = context;
 }
 
-celix_status_t bundle_getEntry(BUNDLE bundle, char * name, char **entry) {
-	return framework_getBundleEntry(bundle->framework, bundle, name, entry);
+celix_status_t bundle_getEntry(BUNDLE bundle, char * name, apr_pool_t *pool, char **entry) {
+	return framework_getBundleEntry(bundle->framework, bundle, name, pool, entry);
 }
 
 BUNDLE_STATE bundle_getState(BUNDLE bundle) {
@@ -172,7 +173,7 @@ MODULE bundle_createModule(BUNDLE bundle) {
         char moduleId[sizeof(bundleId) + sizeof(revision) + 2];
         sprintf(moduleId, "%ld.%d", bundleId, revision);
 
-        MODULE module = module_create(headerMap, strdup(moduleId), bundle);
+        MODULE module = module_create(headerMap, apr_pstrdup(bundle->memoryPool, moduleId), bundle);
 
         if (module != NULL) {
             VERSION bundleVersion = module_getVersion(module);

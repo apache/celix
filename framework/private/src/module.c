@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <apr_strings.h>
 
 #include "module.h"
 #include "manifest_parser.h"
@@ -53,14 +54,14 @@ MODULE module_create(MANIFEST headerMap, char * moduleId, BUNDLE bundle) {
     if (headerMap != NULL) {
         MODULE module = (MODULE) malloc(sizeof(*module));
         module->headerMap = headerMap;
-        module->id = moduleId;
+        module->id = apr_pstrdup(bundle->memoryPool, moduleId);
         module->bundle = bundle;
         module->resolved = false;
 
         module->dependentImporters = arrayList_create();
 
         MANIFEST_PARSER mp = manifestParser_createManifestParser(module, headerMap);
-        module->symbolicName = strdup(mp->bundleSymbolicName);
+        module->symbolicName = apr_pstrdup(bundle->memoryPool, mp->bundleSymbolicName);
         module->version = mp->bundleVersion;
         module->capabilities = mp->capabilities;
         module->requirements = mp->requirements;
@@ -74,10 +75,10 @@ MODULE module_create(MANIFEST headerMap, char * moduleId, BUNDLE bundle) {
     }
 }
 
-MODULE module_createFrameworkModule() {
+MODULE module_createFrameworkModule(BUNDLE bundle) {
 	MODULE module = (MODULE) malloc(sizeof(*module));
-	module->id = strdup("0");
-	module->symbolicName = strdup("framework");
+	module->id = apr_pstrdup(bundle->memoryPool, "0");
+	module->symbolicName = apr_pstrdup(bundle->memoryPool, "framework");
 	module->version = version_createVersion(1, 0, 0, "");
 	module->capabilities = linkedList_create();
 	module->requirements = linkedList_create();
@@ -116,8 +117,6 @@ void module_destroy(MODULE module) {
 	}
 	module->headerMap = NULL;
 
-	free(module->symbolicName);
-	free(module->id);
 	free(module);
 }
 

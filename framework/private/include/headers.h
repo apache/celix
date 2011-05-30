@@ -41,7 +41,9 @@
 #include "bundle_state.h"
 #include "bundle_cache.h"
 
-#include "apr_general.h"
+#include <apr_general.h>
+#include <apr_thread_cond.h>
+#include <apr_thread_mutex.h>
 
 #if defined(__GNUC__)
 #define ATTRIBUTE_UNUSED __attribute__ ((__unused__))
@@ -59,11 +61,12 @@ struct framework {
 	struct serviceRegistry * registry;
 	BUNDLE_CACHE cache;
 
-	pthread_cond_t shutdownGate;
-	pthread_cond_t condition;
+	apr_thread_cond_t *shutdownGate;
+	apr_thread_cond_t *condition;
 
-	pthread_mutex_t mutex;
-	pthread_mutex_t bundleLock;
+	apr_thread_mutex_t *installRequestLock;
+	apr_thread_mutex_t *mutex;
+	apr_thread_mutex_t *bundleLock;
 
 	pthread_t globalLockThread;
 	ARRAY_LIST globalLockWaitersList;

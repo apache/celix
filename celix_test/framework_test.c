@@ -29,7 +29,17 @@
 
 void test_framework_create(void) {
 	struct framework * framework;
-	framework_create(&framework);
+	apr_pool_t *memoryPool;
+
+	apr_status_t rv = apr_initialize();
+    if (rv != APR_SUCCESS) {
+        CU_FAIL("Could not initialize APR");
+        return;
+    }
+
+    apr_pool_create(&memoryPool, NULL);
+
+	framework_create(&framework, memoryPool);
 
 
 	CU_ASSERT(framework == NULL);

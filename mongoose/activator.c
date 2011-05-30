@@ -47,16 +47,22 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 	struct userData * data = (struct userData *) userData;
 
 	if (bundleContext_getBundle(context, &bundle) == CELIX_SUCCESS) {
-		char *entry = NULL;
-		bundle_getEntry(bundle, "root", &entry);
+	    apr_pool_t *pool;
+	    celix_status_t status = bundleContext_getMemoryPool(context, &pool);
+	    if (status == CELIX_SUCCESS) {
+            char *entry = NULL;
+            bundle_getEntry(bundle, "root", pool, &entry);
 
-		const char *options[] = {
-			"document_root", entry,
-			NULL
-		};
-		data->ctx = mg_start(NULL, options);
+            const char *options[] = {
+                "document_root", entry,
+                NULL
+            };
+            data->ctx = mg_start(NULL, options);
 
-		printf("Mongoose started on: %s\n", mg_get_option(data->ctx, "listening_ports"));
+            printf("Mongoose started on: %s\n", mg_get_option(data->ctx, "listening_ports"));
+	    } else {
+	        status = CELIX_BUNDLE_EXCEPTION;
+	    }
 	} else {
 		status = CELIX_START_ERROR;
 	}

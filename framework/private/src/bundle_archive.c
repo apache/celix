@@ -33,6 +33,7 @@
 #include "linked_list_iterator.h"
 
 #include <apr_file_io.h>
+#include <apr_strings.h>
 
 struct bundleArchive {
 	long id;
@@ -108,9 +109,6 @@ celix_status_t bundleArchive_destroy(BUNDLE_ARCHIVE archive) {
 		// closedir(archive->archiveRootDir);
 		apr_dir_close(archive->archiveRootDir);
 	}
-	if (archive->archiveRoot != NULL) {
-		free(archive->archiveRoot);
-	}
 	if (archive->revisions != NULL) {
 		LINKED_LIST_ITERATOR iter = linkedListIterator_create(archive->revisions, 0);
 		while (linkedListIterator_hasNext(iter)) {
@@ -157,7 +155,6 @@ celix_status_t bundleArchive_recreate(char * archiveRoot, apr_pool_t *mp, BUNDLE
 
                 *bundle_archive = archive;
             }
-            free(location);
         } else {
             status = CELIX_FILE_IO_EXCEPTION;
         }
@@ -207,7 +204,7 @@ char * bundleArchive_getLocation(BUNDLE_ARCHIVE archive) {
 	apr_file_gets (location , sizeof(location) , bundleLocationFile);
 	apr_file_close(bundleLocationFile);
 
-	return strdup(location);
+	return apr_pstrdup(archive->mp, location);
 }
 
 char * bundleArchive_getArchiveRoot(BUNDLE_ARCHIVE archive) {
@@ -427,7 +424,7 @@ celix_status_t bundleArchive_getRevisionLocation(BUNDLE_ARCHIVE archive, long re
         apr_file_gets (location , sizeof(location) , revisionLocationFile);
         apr_file_close(revisionLocationFile);
 
-        *revision_location = strdup(location);
+        *revision_location = apr_pstrdup(archive->mp, location);
         status = CELIX_SUCCESS;
 	} else {
 	    // revision file not found

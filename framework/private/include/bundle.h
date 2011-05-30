@@ -47,7 +47,7 @@ MANIFEST bundle_getManifest(BUNDLE bundle);
 void bundle_setManifest(BUNDLE bundle, MANIFEST manifest);
 BUNDLE_CONTEXT bundle_getContext(BUNDLE bundle);
 void bundle_setContext(BUNDLE bundle, BUNDLE_CONTEXT context);
-celix_status_t bundle_getEntry(BUNDLE bundle, char * name, char **entry);
+celix_status_t bundle_getEntry(BUNDLE bundle, char * name, apr_pool_t *pool, char **entry);
 
 void startBundle(BUNDLE bundle, int options);
 celix_status_t bundle_update(BUNDLE bundle, char *inputFile);

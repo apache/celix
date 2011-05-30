@@ -20,6 +20,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <apr_general.h>
+#include <apr_strings.h>
 
 #include "framework.h"
 #include "properties.h"
@@ -28,22 +30,31 @@
 #include "bundle.h"
 #include "linked_list_iterator.h"
 
-static void launcher_load_custom_bundles(void);
 void launcher_shutdown(int signal);
 
 int running = 0;
 
-#include <stdio.h>
-
 struct framework * framework;
+apr_pool_t *memoryPool;
 
 int main(void) {
 	// Set signal handler
 	(void) signal(SIGINT, launcher_shutdown);
+
+	apr_status_t rv = apr_initialize();
+    if (rv != APR_SUCCESS) {
+        return CELIX_START_ERROR;
+    }
+
+    apr_status_t s = apr_pool_create(&memoryPool, NULL);
+    if (s != APR_SUCCESS) {
+        return CELIX_START_ERROR;
+    }
+
     PROPERTIES config = properties_load("config.properties");
     char * autoStart = properties_get(config, "cosgi.auto.start.1");
     framework = NULL;
-    framework_create(&framework);
+    framework_create(&framework, memoryPool);
     fw_init(framework);
 
     // Start the system bundle
@@ -54,7 +65,7 @@ int main(void) {
     LINKED_LIST bundles = linkedList_create();
     result = strtok(autoStart, delims);
     while (result != NULL) {
-    	char * location = strdup(result);
+    	char * location = apr_pstrdup(memoryPool, result);
     	linkedList_addElement(bundles, location);
     	result = strtok(NULL, delims);
     }
@@ -85,6 +96,10 @@ int main(void) {
     framework_waitForStop(framework);
     framework_destroy(framework);
     properties_destroy(config);
+
+    apr_pool_destroy(memoryPool);
+    apr_terminate();
+
     return 0;
 }
 

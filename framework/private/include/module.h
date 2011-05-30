@@ -33,7 +33,7 @@
 #include "manifest.h"
 
 MODULE module_create(MANIFEST headerMap, char * moduleId, BUNDLE bundle);
-MODULE module_createFrameworkModule();
+MODULE module_createFrameworkModule(BUNDLE bundle);
 
 unsigned int module_hash(void * module);
 int module_equals(void * module, void * compare);

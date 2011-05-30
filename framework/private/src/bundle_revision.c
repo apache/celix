@@ -6,6 +6,7 @@
  */
 #include <stdlib.h>
 #include <string.h>
+#include <apr_strings.h>
 
 #include "bundle_revision.h"
 
@@ -31,8 +32,8 @@ celix_status_t bundleRevision_create(char *root, char *location, long revisionNr
 
         if (status == CELIX_SUCCESS) {
             revision->revisionNr = revisionNr;
-            revision->root = strdup(root);
-            revision->location = strdup(location);
+            revision->root = apr_pstrdup(pool, root);
+            revision->location = apr_pstrdup(pool, location);
             *bundle_revision = revision;
         }
     }
@@ -41,8 +42,6 @@ celix_status_t bundleRevision_create(char *root, char *location, long revisionNr
 }
 
 void bundleRevision_destroy(BUNDLE_REVISION revision) {
-    free(revision->root);
-    free(revision->location);
 }
 
 long bundleRevision_getNumber(BUNDLE_REVISION revision) {
