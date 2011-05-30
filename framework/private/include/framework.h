@@ -53,9 +53,9 @@ celix_status_t fw_getServiceReferences(FRAMEWORK framework, ARRAY_LIST *referenc
 void * fw_getService(FRAMEWORK framework, BUNDLE bundle, SERVICE_REFERENCE reference);
 bool framework_ungetService(FRAMEWORK framework, BUNDLE bundle, SERVICE_REFERENCE reference);
 
-void fw_addServiceListener(BUNDLE bundle, SERVICE_LISTENER listener, char * filter);
-void fw_removeServiceListener(BUNDLE bundle, SERVICE_LISTENER listener);
-void fw_serviceChanged(SERVICE_EVENT event, PROPERTIES oldprops);
+void fw_addServiceListener(FRAMEWORK framework, BUNDLE bundle, SERVICE_LISTENER listener, char * filter);
+void fw_removeServiceListener(FRAMEWORK framework, BUNDLE bundle, SERVICE_LISTENER listener);
+void fw_serviceChanged(FRAMEWORK framework, SERVICE_EVENT event, PROPERTIES oldprops);
 
 //BUNDLE_ARCHIVE fw_createArchive(long id, char * location);
 //void revise(BUNDLE_ARCHIVE archive, char * location);

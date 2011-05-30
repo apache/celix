@@ -69,7 +69,6 @@ int main(void) {
     	linkedList_addElement(bundles, location);
     	result = strtok(NULL, delims);
     }
-    // Update according to Felix Main
     // First install all bundles
     // Afterwards start them
     ARRAY_LIST installed = arrayList_create();

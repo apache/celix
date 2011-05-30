@@ -235,7 +235,7 @@ celix_status_t bundleContext_addServiceListener(BUNDLE_CONTEXT context, SERVICE_
     celix_status_t status = CELIX_SUCCESS;
 
     if (context != NULL && listener != NULL) {
-        fw_addServiceListener(context->bundle, listener, filter);
+        fw_addServiceListener(context->framework, context->bundle, listener, filter);
     } else {
         status = CELIX_ILLEGAL_ARGUMENT;
     }
@@ -247,7 +247,7 @@ celix_status_t bundleContext_removeServiceListener(BUNDLE_CONTEXT context, SERVI
     celix_status_t status = CELIX_SUCCESS;
 
     if (context != NULL && listener != NULL) {
-        fw_removeServiceListener(context->bundle, listener);
+        fw_removeServiceListener(context->framework, context->bundle, listener);
     } else {
         status = CELIX_ILLEGAL_ARGUMENT;
     }

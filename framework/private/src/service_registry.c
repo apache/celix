@@ -85,11 +85,12 @@ void serviceRegistry_flushUsageCount(SERVICE_REGISTRY registry, BUNDLE bundle, S
 	}
 }
 
-SERVICE_REGISTRY serviceRegistry_create(void (*serviceChanged)(SERVICE_EVENT, PROPERTIES)) {
+SERVICE_REGISTRY serviceRegistry_create(FRAMEWORK framework, void (*serviceChanged)(FRAMEWORK, SERVICE_EVENT, PROPERTIES)) {
 	SERVICE_REGISTRY registry = (SERVICE_REGISTRY) malloc(sizeof(*registry));
 	registry->serviceChanged = serviceChanged;
 	registry->inUseMap = hashMap_create(NULL, NULL, NULL, NULL);
 	registry->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
+	registry->framework = framework;
 
 	pthread_mutexattr_t mutexattr;
 	pthread_mutexattr_init(&mutexattr);
@@ -135,7 +136,7 @@ SERVICE_REGISTRATION serviceRegistry_registerService(SERVICE_REGISTRY registry, 
 		SERVICE_EVENT event = (SERVICE_EVENT) malloc(sizeof(*event));
 		event->type = REGISTERED;
 		event->reference = reg->reference;
-		registry->serviceChanged(event, NULL);
+		registry->serviceChanged(registry->framework, event, NULL);
 		free(event);
 		event = NULL;
 	}
@@ -158,7 +159,7 @@ void serviceRegistry_unregisterService(SERVICE_REGISTRY registry, BUNDLE bundle,
 		SERVICE_EVENT event = (SERVICE_EVENT) malloc(sizeof(*event));
 		event->type = UNREGISTERING;
 		event->reference = registration->reference;
-		registry->serviceChanged(event, NULL);
+		registry->serviceChanged(registry->framework, event, NULL);
 		free(event);
 	}
 

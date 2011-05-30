@@ -57,6 +57,9 @@
 struct framework {
 	struct bundle * bundle;
 	HASH_MAP installedBundleMap;
+	HASH_MAP installRequestMap;
+	ARRAY_LIST serviceListeners;
+
 	long nextBundleId;
 	struct serviceRegistry * registry;
 	BUNDLE_CACHE cache;
@@ -134,9 +137,10 @@ struct serviceEvent {
 typedef struct serviceEvent * SERVICE_EVENT;
 
 struct serviceRegistry {
+    FRAMEWORK framework;
 	HASH_MAP serviceRegistrations;
 	HASH_MAP inUseMap;
-	void (*serviceChanged)(SERVICE_EVENT, PROPERTIES);
+	void (*serviceChanged)(FRAMEWORK, SERVICE_EVENT, PROPERTIES);
 	long currentServiceId;
 
 
