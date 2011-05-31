@@ -267,34 +267,38 @@ celix_status_t fw_init(FRAMEWORK framework) {
 
         bundle_setHandle(framework->bundle, handle);
 
-        ACTIVATOR activator = (ACTIVATOR) malloc(sizeof(*activator));
-        void * (*create)(BUNDLE_CONTEXT context);
-        void (*start)(void * handle, BUNDLE_CONTEXT context);
-        void (*stop)(void * handle, BUNDLE_CONTEXT context);
-        void (*destroy)(void * handle, BUNDLE_CONTEXT context);
-        create = dlsym(bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_CREATE);
-        start = dlsym(bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_START);
-        stop = dlsym(bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_STOP);
-        destroy = dlsym(bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_DESTROY);
-        activator->start = start;
-        activator->stop = stop;
-        activator->destroy = destroy;
-        bundle_setActivator(framework->bundle, activator);
+        ACTIVATOR activator = (ACTIVATOR) apr_palloc(framework->mp, (sizeof(*activator)));
+        if (activator == NULL) {
+            status = CELIX_ENOMEM;
+        }  else {
+            void * (*create)(BUNDLE_CONTEXT context);
+            void (*start)(void * handle, BUNDLE_CONTEXT context);
+            void (*stop)(void * handle, BUNDLE_CONTEXT context);
+            void (*destroy)(void * handle, BUNDLE_CONTEXT context);
+            create = dlsym(bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_CREATE);
+            start = dlsym(bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_START);
+            stop = dlsym(bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_STOP);
+            destroy = dlsym(bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_DESTROY);
+            activator->start = start;
+            activator->stop = stop;
+            activator->destroy = destroy;
+            bundle_setActivator(framework->bundle, activator);
 
-        void * userData = NULL;
-        if (create != NULL) {
-            userData = create(bundle_getContext(framework->bundle));
+            void * userData = NULL;
+            if (create != NULL) {
+                userData = create(bundle_getContext(framework->bundle));
+            }
+            activator->userData = userData;
+
+            if (start != NULL) {
+                start(userData, bundle_getContext(framework->bundle));
+            }
+
+            framework->serviceListeners = arrayList_create();
+            framework_releaseBundleLock(framework, framework->bundle);
+
+            status = CELIX_SUCCESS;
         }
-        activator->userData = userData;
-
-        if (start != NULL) {
-            start(userData, bundle_getContext(framework->bundle));
-        }
-
-        framework->serviceListeners = arrayList_create();
-        framework_releaseBundleLock(framework, framework->bundle);
-
-        status = CELIX_SUCCESS;
 	}
 	return status;
 }
@@ -491,33 +495,37 @@ celix_status_t fw_startBundle(FRAMEWORK framework, BUNDLE bundle, int options AT
 
 			bundle_setHandle(bundle, handle);
 
-			ACTIVATOR activator = (ACTIVATOR) malloc(sizeof(*activator));
-			void * (*create)(BUNDLE_CONTEXT context, void **userData);
-			void (*start)(void * userData, BUNDLE_CONTEXT context);
-			void (*stop)(void * userData, BUNDLE_CONTEXT context);
-			void (*destroy)(void * userData, BUNDLE_CONTEXT context);
-			create = dlsym(bundle_getHandle(bundle), BUNDLE_ACTIVATOR_CREATE);
-			start = dlsym(bundle_getHandle(bundle), BUNDLE_ACTIVATOR_START);
-			stop = dlsym(bundle_getHandle(bundle), BUNDLE_ACTIVATOR_STOP);
-			destroy = dlsym(bundle_getHandle(bundle), BUNDLE_ACTIVATOR_DESTROY);
-			activator->start = start;
-			activator->stop = stop;
-			activator->destroy = destroy;
-			bundle_setActivator(bundle, activator);
+			ACTIVATOR activator = (ACTIVATOR) apr_palloc(bundle->memoryPool, (sizeof(*activator)));
+			if (activator == NULL) {
+			    return CELIX_ENOMEM;
+			} else {
+                void * (*create)(BUNDLE_CONTEXT context, void **userData);
+                void (*start)(void * userData, BUNDLE_CONTEXT context);
+                void (*stop)(void * userData, BUNDLE_CONTEXT context);
+                void (*destroy)(void * userData, BUNDLE_CONTEXT context);
+                create = dlsym(bundle_getHandle(bundle), BUNDLE_ACTIVATOR_CREATE);
+                start = dlsym(bundle_getHandle(bundle), BUNDLE_ACTIVATOR_START);
+                stop = dlsym(bundle_getHandle(bundle), BUNDLE_ACTIVATOR_STOP);
+                destroy = dlsym(bundle_getHandle(bundle), BUNDLE_ACTIVATOR_DESTROY);
+                activator->start = start;
+                activator->stop = stop;
+                activator->destroy = destroy;
+                bundle_setActivator(bundle, activator);
 
-			framework_setBundleStateAndNotify(framework, bundle, BUNDLE_STARTING);
+                framework_setBundleStateAndNotify(framework, bundle, BUNDLE_STARTING);
 
-			void * userData = NULL;
-			if (create != NULL) {
-				create(bundle_getContext(bundle), &userData);
+                void * userData = NULL;
+                if (create != NULL) {
+                    create(bundle_getContext(bundle), &userData);
+                }
+                activator->userData = userData;
+
+                if (start != NULL) {
+                    start(userData, bundle_getContext(bundle));
+                }
+
+                framework_setBundleStateAndNotify(framework, bundle, BUNDLE_ACTIVE);
 			}
-			activator->userData = userData;
-
-			if (start != NULL) {
-				start(userData, bundle_getContext(bundle));
-			}
-
-			framework_setBundleStateAndNotify(framework, bundle, BUNDLE_ACTIVE);
 
 			break;
 	}
@@ -616,7 +624,7 @@ void fw_stopBundle(FRAMEWORK framework, BUNDLE bundle, bool record) {
 		activator->start = NULL;
 		activator->stop = NULL;
 		activator->userData = NULL;
-		free(activator);
+		//free(activator);
 		bundle_setActivator(bundle, NULL);
 
 		serviceRegistry_unregisterServices(framework->registry, bundle);

@@ -49,18 +49,32 @@ struct bundleArchive {
 	apr_pool_t *mp;
 };
 
-BUNDLE_ARCHIVE bundleArchive_createSystemBundleArchive(apr_pool_t *mp) {
-	BUNDLE_ARCHIVE archive = (BUNDLE_ARCHIVE) malloc(sizeof(*archive));
-	archive->id = 0l;
-	archive->location = "System Bundle";
-	archive->mp = mp;
-	archive->archiveRoot = NULL;
-	archive->archiveRootDir = NULL;
-	archive->revisions = linkedList_create();
-	archive->refreshCount = -1;
-	time(&archive->lastModified);
+celix_status_t bundleArchive_createSystemBundleArchive(apr_pool_t *mp, BUNDLE_ARCHIVE *bundle_archive) {
+    celix_status_t status;
+	BUNDLE_ARCHIVE archive;
 
-	return archive;
+	if (!mp || *bundle_archive) {
+	    status = CELIX_ILLEGAL_ARGUMENT;
+	} else {
+        archive = (BUNDLE_ARCHIVE) apr_palloc(mp, sizeof(*archive));
+        if (archive == NULL) {
+            status = CELIX_ENOMEM;
+        } else {
+            archive->id = 0l;
+            archive->location = "System Bundle";
+            archive->mp = mp;
+            archive->archiveRoot = NULL;
+            archive->archiveRootDir = NULL;
+            archive->revisions = linkedList_create();
+            archive->refreshCount = -1;
+            time(&archive->lastModified);
+
+            *bundle_archive = archive;
+            status = CELIX_SUCCESS;
+        }
+	}
+
+    return status;
 }
 
 celix_status_t bundleArchive_getRevisionLocation(BUNDLE_ARCHIVE archive, long revNr, char **revision_location);

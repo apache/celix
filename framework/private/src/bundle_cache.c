@@ -44,22 +44,28 @@ struct bundleCache {
 static celix_status_t bundleCache_deleteTree(char * directory, apr_pool_t *mp);
 
 celix_status_t bundleCache_create(PROPERTIES configurationMap, apr_pool_t *mp, BUNDLE_CACHE *bundle_cache) {
-    celix_status_t status = CELIX_SUCCESS;
-	BUNDLE_CACHE cache = (BUNDLE_CACHE) malloc(sizeof(*cache));
+    celix_status_t status;
+    BUNDLE_CACHE cache;
 
-	if (configurationMap != NULL && mp != NULL && *bundle_cache == NULL) {
-        cache->configurationMap = configurationMap;
-        char * cacheDir = properties_get(configurationMap, (char *) FRAMEWORK_STORAGE);
-        if (cacheDir == NULL) {
-            cacheDir = ".cache";
+	cache = (BUNDLE_CACHE) apr_palloc(mp, (sizeof(*cache)));
+    if (cache == NULL) {
+        status = CELIX_ENOMEM;
+    } else {
+		if (configurationMap != NULL && mp != NULL && *bundle_cache == NULL) {
+            cache->configurationMap = configurationMap;
+            char * cacheDir = properties_get(configurationMap, (char *) FRAMEWORK_STORAGE);
+            if (cacheDir == NULL) {
+                cacheDir = ".cache";
+            }
+            cache->cacheDir = cacheDir;
+            cache->mp = mp;
+
+            *bundle_cache = cache;
+            status = CELIX_SUCCESS;
+        } else {
+            status = CELIX_ILLEGAL_ARGUMENT;
         }
-        cache->cacheDir = cacheDir;
-        cache->mp = mp;
-
-        *bundle_cache = cache;
-	} else {
-        status = CELIX_ILLEGAL_ARGUMENT;
-	}
+    }
 
 	return status;
 }

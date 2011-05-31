@@ -39,32 +39,37 @@ MODULE bundle_createModule(BUNDLE bundle);
 celix_status_t bundle_closeRevisions(BUNDLE bundle);
 
 celix_status_t bundle_create(BUNDLE * bundle, apr_pool_t *mp) {
-	*bundle = (BUNDLE) malloc(sizeof(**bundle));
+    celix_status_t status = CELIX_SUCCESS;
+    BUNDLE_ARCHIVE archive = NULL;
+
+	*bundle = (BUNDLE) apr_palloc(mp, sizeof(**bundle));
 	if (*bundle == NULL) {
 		return CELIX_ENOMEM;
 	}
-	BUNDLE_ARCHIVE archive = bundleArchive_createSystemBundleArchive(mp);
-	(*bundle)->memoryPool = mp;
-	(*bundle)->archive = archive;
-	(*bundle)->activator = NULL;
-	(*bundle)->context = NULL;
-	(*bundle)->framework = NULL;
-	(*bundle)->state = BUNDLE_INSTALLED;
-	(*bundle)->modules = arrayList_create();
+	status = bundleArchive_createSystemBundleArchive(mp, &archive);
+	if (status == CELIX_SUCCESS) {
+        (*bundle)->memoryPool = mp;
+        (*bundle)->archive = archive;
+        (*bundle)->activator = NULL;
+        (*bundle)->context = NULL;
+        (*bundle)->framework = NULL;
+        (*bundle)->state = BUNDLE_INSTALLED;
+        (*bundle)->modules = arrayList_create();
 
-	MODULE module = module_createFrameworkModule((*bundle));
-	bundle_addModule(*bundle, module);
-	// (*bundle)->module = module;
+        MODULE module = module_createFrameworkModule((*bundle));
+        bundle_addModule(*bundle, module);
+        // (*bundle)->module = module;
 
-	pthread_mutex_init(&(*bundle)->lock, NULL);
-	(*bundle)->lockCount = 0;
-	(*bundle)->lockThread = NULL;
+        pthread_mutex_init(&(*bundle)->lock, NULL);
+        (*bundle)->lockCount = 0;
+        (*bundle)->lockThread = NULL;
 
-	resolver_addModule(module);
+        resolver_addModule(module);
 
-	(*bundle)->manifest = NULL;
+        (*bundle)->manifest = NULL;
+	}
 
-	return CELIX_SUCCESS;
+	return status;
 }
 
 celix_status_t bundle_createFromArchive(BUNDLE * bundle, FRAMEWORK framework, BUNDLE_ARCHIVE archive, apr_pool_t *bundlePool) {

@@ -86,17 +86,23 @@ void serviceRegistry_flushUsageCount(SERVICE_REGISTRY registry, BUNDLE bundle, S
 }
 
 SERVICE_REGISTRY serviceRegistry_create(FRAMEWORK framework, void (*serviceChanged)(FRAMEWORK, SERVICE_EVENT, PROPERTIES)) {
-	SERVICE_REGISTRY registry = (SERVICE_REGISTRY) malloc(sizeof(*registry));
-	registry->serviceChanged = serviceChanged;
-	registry->inUseMap = hashMap_create(NULL, NULL, NULL, NULL);
-	registry->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
-	registry->framework = framework;
+	SERVICE_REGISTRY registry;
 
-	pthread_mutexattr_t mutexattr;
-	pthread_mutexattr_init(&mutexattr);
-	pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE);
-	pthread_mutex_init(&registry->mutex, &mutexattr);
-	registry->currentServiceId = 1l;
+	registry = (SERVICE_REGISTRY) apr_palloc(framework->mp, (sizeof(*registry)));
+	if (registry == NULL) {
+	    // no memory
+	} else {
+        registry->serviceChanged = serviceChanged;
+        registry->inUseMap = hashMap_create(NULL, NULL, NULL, NULL);
+        registry->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
+        registry->framework = framework;
+
+        pthread_mutexattr_t mutexattr;
+        pthread_mutexattr_init(&mutexattr);
+        pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE);
+        pthread_mutex_init(&registry->mutex, &mutexattr);
+        registry->currentServiceId = 1l;
+	}
 	return registry;
 }
 
@@ -104,8 +110,6 @@ celix_status_t serviceRegistry_destroy(SERVICE_REGISTRY registry) {
     hashMap_destroy(registry->inUseMap, false, false);
     hashMap_destroy(registry->serviceRegistrations, false, false);
     pthread_mutex_destroy(&registry->mutex);
-
-    free(registry);
 
     return CELIX_SUCCESS;
 }
