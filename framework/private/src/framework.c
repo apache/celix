@@ -35,6 +35,7 @@
 #include <apr_strings.h>
 #include <apr_thread_cond.h>
 #include <apr_thread_mutex.h>
+#include <apr_thread_proc.h>
 
 #include "framework.h"
 #include "filter.h"
@@ -1213,7 +1214,8 @@ celix_status_t framework_waitForStop(FRAMEWORK framework) {
 	return CELIX_SUCCESS;
 }
 
-static void * framework_shutdown(void * framework) {
+static void *APR_THREAD_FUNC framework_shutdown(apr_thread_t *thd, void *framework) {
+//static void * framework_shutdown(void * framework) {
 	FRAMEWORK fw = (FRAMEWORK) framework;
 
 	HASH_MAP_ITERATOR iterator = hashMapIterator_create(fw->installedBundleMap);
@@ -1229,7 +1231,7 @@ static void * framework_shutdown(void * framework) {
 	int err = apr_thread_mutex_lock(fw->mutex);
 	if (err != 0) {
 		celix_log("Error locking the framework, cannot exit clean.");
-		pthread_exit(NULL);
+		apr_thread_exit(thd, APR_ENOLOCK);
 		return NULL;
 	}
 	err = apr_thread_cond_broadcast(fw->shutdownGate);
@@ -1240,7 +1242,7 @@ static void * framework_shutdown(void * framework) {
 			celix_log("Error unlocking the framework, cannot exit clean.");
 		}
 
-		pthread_exit(NULL);
+		apr_thread_exit(thd, APR_ENOLOCK);
 		return NULL;
 	}
 	err = apr_thread_mutex_unlock(fw->mutex);
@@ -1248,7 +1250,7 @@ static void * framework_shutdown(void * framework) {
 		celix_log("Error unlocking the framework, cannot exit clean.");
 	}
 
-	pthread_exit(NULL);
+	apr_thread_exit(thd, APR_SUCCESS);
 
 	return NULL;
 }
@@ -1259,19 +1261,23 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 }
 
 celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
-	pthread_t shutdownThread;
+    celix_status_t status = CELIX_SUCCESS;
+
+	apr_thread_t *shutdownThread;
 	FRAMEWORK framework;
 
 	if (bundleContext_getFramework(context, &framework) == CELIX_SUCCESS) {
-		int err = pthread_create(&shutdownThread, NULL, framework_shutdown, framework);
-		if (err != 0) {
-			celix_log("Could not create shutdown thread, normal exit not possible.");
-			return CELIX_BUNDLE_EXCEPTION;
-		}
-		return CELIX_SUCCESS;
+
+	    if (apr_thread_create(&shutdownThread, NULL, framework_shutdown, framework, framework->mp) == APR_SUCCESS) {
+            //int err = pthread_create(&shutdownThread, NULL, framework_shutdown, framework);
+	    } else {
+            celix_log("Could not create shutdown thread, normal exit not possible.");
+	        status = CELIX_FRAMEWORK_EXCEPTION;
+	    }
 	} else {
-		return CELIX_FRAMEWORK_EXCEPTION;
+		status = CELIX_FRAMEWORK_EXCEPTION;
 	}
+	return status;
 }
 
 celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {
