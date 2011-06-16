@@ -70,6 +70,11 @@ celix_status_t bundleCache_create(PROPERTIES configurationMap, apr_pool_t *mp, B
 	return status;
 }
 
+celix_status_t bundleCache_destroy(BUNDLE_CACHE cache) {
+    properties_destroy(cache->configurationMap);
+    return CELIX_SUCCESS;
+}
+
 celix_status_t bundleCache_delete(BUNDLE_CACHE cache) {
 	return bundleCache_deleteTree(cache->cacheDir, cache->mp);
 }

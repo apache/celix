@@ -187,6 +187,8 @@ celix_status_t framework_destroy(FRAMEWORK framework) {
 
 	serviceRegistry_destroy(framework->registry);
 
+	//bundleCache_destroy(framework->cache);
+
 	apr_pool_destroy(framework->mp);
 
 	return status;
@@ -1215,10 +1217,12 @@ celix_status_t framework_waitForStop(FRAMEWORK framework) {
 		celix_log("Error waiting for shutdown gate.");
 		return CELIX_FRAMEWORK_EXCEPTION;
 	}
+	printf("waited for stop\n");
 	if (apr_thread_mutex_unlock(framework->mutex) != 0) {
 		celix_log("Error unlocking the framework.");
 		return CELIX_FRAMEWORK_EXCEPTION;
 	}
+	printf("waited for stop finish\n");
 	return CELIX_SUCCESS;
 }
 
@@ -1278,6 +1282,7 @@ celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
 
 	    if (apr_thread_create(&shutdownThread, NULL, framework_shutdown, framework, framework->mp) == APR_SUCCESS) {
             //int err = pthread_create(&shutdownThread, NULL, framework_shutdown, framework);
+            apr_thread_detach(shutdownThread);
 	    } else {
             celix_log("Could not create shutdown thread, normal exit not possible.");
 	        status = CELIX_FRAMEWORK_EXCEPTION;
