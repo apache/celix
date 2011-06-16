@@ -26,7 +26,7 @@
 #ifndef LINKED_LIST_ITERATOR_H_
 #define LINKED_LIST_ITERATOR_H_
 
-#include <stdbool.h>
+#include "celixbool.h"
 
 #include "linkedlist.h"
 

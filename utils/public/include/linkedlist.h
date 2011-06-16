@@ -26,7 +26,7 @@
 #ifndef LINKEDLIST_H_
 #define LINKEDLIST_H_
 
-#include <stdbool.h>
+#include "celixbool.h"
 
 typedef struct linkedListEntry * LINKED_LIST_ENTRY;
 typedef struct linkedList * LINKED_LIST;

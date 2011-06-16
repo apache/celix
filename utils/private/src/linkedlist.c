@@ -22,7 +22,7 @@
  *  Created on: Jul 16, 2010
  *      Author: alexanderb
  */
-#include <stdbool.h>
+#include "celixbool.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -152,12 +152,13 @@ void * linkedList_removeIndex(LINKED_LIST list, int index) {
 }
 
 LINKED_LIST_ENTRY linkedList_entry(LINKED_LIST list, int index) {
+	LINKED_LIST_ENTRY entry;
+	int i;
 	if (index < 0 || index >= list->size) {
 		return NULL;
 	}
 
-	LINKED_LIST_ENTRY entry = list->header;
-	int i;
+	entry = list->header;
 	if (index < (list->size >> 1)) {
 		for (i = 0; i <= index; i++) {
 			entry = entry->next;
@@ -210,11 +211,12 @@ LINKED_LIST_ENTRY linkedList_addBefore(LINKED_LIST list, void * element, LINKED_
 }
 
 void * linkedList_removeEntry(LINKED_LIST list, LINKED_LIST_ENTRY entry) {
+    void * result;
 	if (entry == list->header) {
 		return NULL;
 	}
 
-	void * result = entry->element;
+	result = entry->element;
 
 	entry->previous->next = entry->next;
 	entry->next->previous = entry->previous;

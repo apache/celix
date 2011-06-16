@@ -37,10 +37,11 @@ struct linkedListIterator {
 };
 
 LINKED_LIST_ITERATOR linkedListIterator_create(LINKED_LIST list, int index) {
+	LINKED_LIST_ITERATOR iterator;
 	if (index < 0 || index > list->size) {
 		return NULL;
 	}
-	LINKED_LIST_ITERATOR iterator = (LINKED_LIST_ITERATOR) malloc(sizeof(*iterator));
+	iterator = (LINKED_LIST_ITERATOR) malloc(sizeof(*iterator));
 	iterator->lastReturned = list->header;
 	iterator->list = list;
 	iterator->expectedModificationCount = list->modificationCount;
@@ -112,10 +113,11 @@ int linkedListIterator_previousIndex(LINKED_LIST_ITERATOR iterator) {
 }
 
 void linkedListIterator_remove(LINKED_LIST_ITERATOR iterator) {
+	LINKED_LIST_ENTRY lastNext;
 	if (iterator->list->modificationCount != iterator->expectedModificationCount) {
 		return;
 	}
-	LINKED_LIST_ENTRY lastNext = iterator->lastReturned->next;
+	lastNext = iterator->lastReturned->next;
 	if (linkedList_removeEntry(iterator->list, iterator->lastReturned) == NULL) {
 		return;
 	}

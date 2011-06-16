@@ -22,7 +22,7 @@
  *  Created on: Jul 21, 2010
  *      Author: alexanderb
  */
-#include <stdbool.h>
+#include "celixbool.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -112,6 +112,8 @@ bool hashMap_isEmpty(HASH_MAP map) {
 }
 
 void * hashMap_get(HASH_MAP map, void * key) {
+	unsigned int hash;
+	HASH_MAP_ENTRY entry;
 	if (key == NULL) {
 		HASH_MAP_ENTRY entry = map->table[0];
 		for (entry = map->table[0]; entry != NULL; entry = entry->next) {
@@ -122,8 +124,8 @@ void * hashMap_get(HASH_MAP map, void * key) {
 		return NULL;
 	}
 
-	unsigned int hash = hashMap_hash(map->hashKey(key));
-	HASH_MAP_ENTRY entry = NULL;
+	hash = hashMap_hash(map->hashKey(key));
+	entry = NULL;
 	for (entry = map->table[hashMap_indexFor(hash, map->tablelength)]; entry != NULL; entry = entry->next) {
 		if (entry->hash == hash && (entry->key == key || map->equalsKey(key, entry->key))) {
 			return entry->value;
@@ -149,6 +151,9 @@ HASH_MAP_ENTRY hashMap_getEntry(HASH_MAP map, void * key) {
 }
 
 void * hashMap_put(HASH_MAP map, void * key, void * value) {
+	unsigned int hash;
+	int i;
+	HASH_MAP_ENTRY entry;
 	if (key == NULL) {
 		HASH_MAP_ENTRY entry;
 		for (entry = map->table[0]; entry != NULL; entry = entry->next) {
@@ -162,9 +167,9 @@ void * hashMap_put(HASH_MAP map, void * key, void * value) {
 		hashMap_addEntry(map, 0, NULL, value, 0);
 		return NULL;
 	}
-	unsigned int hash = hashMap_hash(map->hashKey(key));
-	int i = hashMap_indexFor(hash, map->tablelength);
-	HASH_MAP_ENTRY entry;
+	hash = hashMap_hash(map->hashKey(key));
+	i = hashMap_indexFor(hash, map->tablelength);
+	
 	for (entry = map->table[i]; entry != NULL; entry = entry->next) {
 		if (entry->hash == hash && (entry->key == key || map->equalsKey(key, entry->key))) {
 			void * oldValue = entry->value;
@@ -178,12 +183,14 @@ void * hashMap_put(HASH_MAP map, void * key, void * value) {
 }
 
 void hashMap_resize(HASH_MAP map, int newCapacity) {
+	HASH_MAP_ENTRY * newTable;
+	int j;
 	if (map->tablelength == MAXIMUM_CAPACITY) {
 		return;
 	}
 
-	HASH_MAP_ENTRY * newTable = (HASH_MAP_ENTRY *) malloc(sizeof(HASH_MAP_ENTRY) * newCapacity);
-	int j;
+	newTable = (HASH_MAP_ENTRY *) malloc(sizeof(HASH_MAP_ENTRY) * newCapacity);
+
 	for (j = 0; j < map->tablelength; j++) {
 		HASH_MAP_ENTRY entry = map->table[j];
 		if (entry != NULL) {
@@ -241,13 +248,17 @@ void * hashMap_removeEntryForKey(HASH_MAP map, void * key) {
 }
 
 HASH_MAP_ENTRY hashMap_removeMapping(HASH_MAP map, HASH_MAP_ENTRY entry) {
+	unsigned int hash;
+	HASH_MAP_ENTRY prev;
+	HASH_MAP_ENTRY e;
+    int i;
 	if (entry == NULL) {
 		return NULL;
 	}
-	unsigned int hash = (entry->key == NULL) ? 0 : hashMap_hash(map->hashKey(entry->key));
-	int i = hashMap_indexFor(hash, map->tablelength);
-	HASH_MAP_ENTRY prev = map->table[i];
-	HASH_MAP_ENTRY e = prev;
+	hash = (entry->key == NULL) ? 0 : hashMap_hash(map->hashKey(entry->key));
+    i = hashMap_indexFor(hash, map->tablelength);
+	prev = map->table[i];
+	e = prev;
 
 	while (e != NULL) {
 		HASH_MAP_ENTRY next = e->next;
@@ -269,9 +280,11 @@ HASH_MAP_ENTRY hashMap_removeMapping(HASH_MAP map, HASH_MAP_ENTRY entry) {
 }
 
 void hashMap_clear(HASH_MAP map, bool freeKey, bool freeValue) {
-	map->modificationCount++;
-	HASH_MAP_ENTRY * table = map->table;
 	int i;
+	HASH_MAP_ENTRY * table;
+	map->modificationCount++;
+	table = map->table;
+
 	for (i = 0; i < map->tablelength; i++) {
 		HASH_MAP_ENTRY entry = table[i];
 		while (entry != NULL) {
@@ -289,8 +302,8 @@ void hashMap_clear(HASH_MAP map, bool freeKey, bool freeValue) {
 }
 
 bool hashMap_containsValue(HASH_MAP map, void * value) {
+	int i;
 	if (value == NULL) {
-		int i;
 		for (i = 0; i < map->tablelength; i++) {
 			HASH_MAP_ENTRY entry;
 			for (entry = map->table[i]; entry != NULL; entry = entry->next) {
@@ -301,7 +314,6 @@ bool hashMap_containsValue(HASH_MAP map, void * value) {
 		}
 		return false;
 	}
-	int i;
 	for (i = 0; i < map->tablelength; i++) {
 		HASH_MAP_ENTRY entry;
 		for (entry = map->table[i]; entry != NULL; entry = entry->next) {
@@ -355,24 +367,27 @@ bool hashMapIterator_hasNext(HASH_MAP_ITERATOR iterator) {
 }
 
 void hashMapIterator_remove(HASH_MAP_ITERATOR iterator) {
+	void * key;
+	HASH_MAP_ENTRY entry;
 	if (iterator->current == NULL) {
 		return;
 	}
 	if (iterator->expectedModCount != iterator->map->modificationCount) {
 		return;
 	}
-	void * key = iterator->current->key;
+	key = iterator->current->key;
 	iterator->current = NULL;
-	HASH_MAP_ENTRY entry = hashMap_removeEntryForKey(iterator->map, key);
+	entry = hashMap_removeEntryForKey(iterator->map, key);
 	free(entry);
 	iterator->expectedModCount = iterator->map->modificationCount;
 }
 
 void * hashMapIterator_nextValue(HASH_MAP_ITERATOR iterator) {
+	HASH_MAP_ENTRY entry;
 	if (iterator->expectedModCount != iterator->map->modificationCount) {
 		return NULL;
 	}
-	HASH_MAP_ENTRY entry = iterator->next;
+	entry = iterator->next;
 	if (entry == NULL) {
 		return NULL;
 	}
@@ -385,10 +400,11 @@ void * hashMapIterator_nextValue(HASH_MAP_ITERATOR iterator) {
 }
 
 void * hashMapIterator_nextKey(HASH_MAP_ITERATOR iterator) {
+	HASH_MAP_ENTRY entry;
 	if (iterator->expectedModCount != iterator->map->modificationCount) {
 		return NULL;
 	}
-	HASH_MAP_ENTRY entry = iterator->next;
+	entry = iterator->next;
 	if (entry == NULL) {
 		return NULL;
 	}
@@ -401,10 +417,11 @@ void * hashMapIterator_nextKey(HASH_MAP_ITERATOR iterator) {
 }
 
 HASH_MAP_ENTRY hashMapIterator_nextEntry(HASH_MAP_ITERATOR iterator) {
+	HASH_MAP_ENTRY entry;
 	if (iterator->expectedModCount != iterator->map->modificationCount) {
 		return NULL;
 	}
-	HASH_MAP_ENTRY entry = iterator->next;
+	entry = iterator->next;
 	if (entry == NULL) {
 		return NULL;
 	}
@@ -472,11 +489,13 @@ bool hashMapValues_contains(HASH_MAP_VALUES values, void * value) {
 }
 
 void hashMapValues_toArray(HASH_MAP_VALUES values, void* *array[], unsigned int *size) {
+	HASH_MAP_ITERATOR it;
+	int i;
     int vsize = hashMapValues_size(values);
     *size = vsize;
     *array = malloc(vsize * sizeof(*array));
-    HASH_MAP_ITERATOR it = hashMapValues_iterator(values);
-    int i = 0;
+    it = hashMapValues_iterator(values);
+    i = 0;
     for (i = 0; i < vsize; i++) {
         if (!hashMapIterator_hasNext(it)) {
             return;

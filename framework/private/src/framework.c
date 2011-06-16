@@ -28,7 +28,7 @@
 #include <dlfcn.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <stdbool.h>
+#include "celixbool.h"
 #include <math.h>
 #include <apr_file_io.h>
 #include <apr_general.h>

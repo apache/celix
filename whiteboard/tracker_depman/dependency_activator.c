@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <unistd.h>
-#include <stdbool.h>
+#include "celixbool.h"
 
 #include "dependency_activator_base.h"
 #include "service_component_private.h"

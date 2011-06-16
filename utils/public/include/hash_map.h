@@ -26,7 +26,7 @@
 #ifndef HASH_MAP_H_
 #define HASH_MAP_H_
 
-#include <stdbool.h>
+#include "celixbool.h"
 
 typedef struct hashMapEntry * HASH_MAP_ENTRY;
 typedef struct hashMap * HASH_MAP;

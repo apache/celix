@@ -25,7 +25,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <unistd.h>
-#include <stdbool.h>
+#include "celixbool.h"
 
 #include "bundle_activator.h"
 #include "publisher.h"

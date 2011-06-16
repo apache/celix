@@ -26,7 +26,7 @@
 #ifndef ARRAY_LIST_H_
 #define ARRAY_LIST_H_
 
-#include <stdbool.h>
+#include "celixbool.h"
 
 typedef struct arrayList * ARRAY_LIST;
 

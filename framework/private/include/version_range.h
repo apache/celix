@@ -26,7 +26,7 @@
 #ifndef VERSION_RANGE_H_
 #define VERSION_RANGE_H_
 
-#include <stdbool.h>
+#include "celixbool.h"
 
 #include "version.h"
 
