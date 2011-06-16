@@ -29,20 +29,21 @@
 #include "celixbool.h"
 
 #include "linkedlist.h"
+#include "exports.h"
 
 typedef struct linkedListIterator * LINKED_LIST_ITERATOR;
 
-LINKED_LIST_ITERATOR linkedListIterator_create(LINKED_LIST list, int index);
-void linkedListIterator_destroy(LINKED_LIST_ITERATOR iterator);
-bool linkedListIterator_hasNext(LINKED_LIST_ITERATOR iterator);
-void * linkedListIterator_next(LINKED_LIST_ITERATOR iterator);
-bool linkedListIterator_hasPrevious(LINKED_LIST_ITERATOR iterator);
-void * linkedListIterator_previous(LINKED_LIST_ITERATOR iterator);
-int linkedListIterator_nextIndex(LINKED_LIST_ITERATOR iterator);
-int linkedListIterator_previousIndex(LINKED_LIST_ITERATOR iterator);
-void linkedListIterator_remove(LINKED_LIST_ITERATOR iterator);
-void linkedListIterator_set(LINKED_LIST_ITERATOR iterator, void * element);
-void linkedListIterator_add(LINKED_LIST_ITERATOR iterator, void * element);
+UTILS_EXPORT LINKED_LIST_ITERATOR linkedListIterator_create(LINKED_LIST list, int index);
+UTILS_EXPORT void linkedListIterator_destroy(LINKED_LIST_ITERATOR iterator);
+UTILS_EXPORT bool linkedListIterator_hasNext(LINKED_LIST_ITERATOR iterator);
+UTILS_EXPORT void * linkedListIterator_next(LINKED_LIST_ITERATOR iterator);
+UTILS_EXPORT bool linkedListIterator_hasPrevious(LINKED_LIST_ITERATOR iterator);
+UTILS_EXPORT void * linkedListIterator_previous(LINKED_LIST_ITERATOR iterator);
+UTILS_EXPORT int linkedListIterator_nextIndex(LINKED_LIST_ITERATOR iterator);
+UTILS_EXPORT int linkedListIterator_previousIndex(LINKED_LIST_ITERATOR iterator);
+UTILS_EXPORT void linkedListIterator_remove(LINKED_LIST_ITERATOR iterator);
+UTILS_EXPORT void linkedListIterator_set(LINKED_LIST_ITERATOR iterator, void * element);
+UTILS_EXPORT void linkedListIterator_add(LINKED_LIST_ITERATOR iterator, void * element);
 
 
 #endif /* LINKED_LIST_ITERATOR_H_ */

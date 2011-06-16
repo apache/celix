@@ -17,26 +17,25 @@
 
 include(FindCUnit)
 
-include_directories("${PROJECT_SOURCE_DIR}/celix")
 include_directories(${CUNIT_INCLUDE_DIRS})
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/private/include")
 
 add_executable(hash_map_test hash_map_test.c)
-target_link_libraries(hash_map_test framework ${CUNIT_LIBRARIES})
+target_link_libraries(hash_map_test utils ${CUNIT_LIBRARIES})
 
 add_executable(hash_map_test_hash hash_map_test_hash.c)
-target_link_libraries(hash_map_test_hash framework ${CUNIT_LIBRARIES})
+target_link_libraries(hash_map_test_hash utils ${CUNIT_LIBRARIES})
 
 add_executable(array_list_test array_list_test.c)
-target_link_libraries(array_list_test framework ${CUNIT_LIBRARIES})
+target_link_libraries(array_list_test utils ${CUNIT_LIBRARIES})
 
-add_executable(framework_test framework_test.c)
-target_link_libraries(framework_test framework ${CUNIT_LIBRARIES})
+#add_executable(framework_test framework_test.c)
+#target_link_libraries(framework_test utils ${CUNIT_LIBRARIES})
 
 enable_testing()
 #add_test (tester ${EXECUTABLE_OUTPUT_PATH}/tester)
 add_test (hash_map_test ${EXECUTABLE_OUTPUT_PATH}/hash_map_test)
 add_test (hash_map_test_hash ${EXECUTABLE_OUTPUT_PATH}/hash_map_test_hash)
 add_test (array_list_test ${EXECUTABLE_OUTPUT_PATH}/array_list_test)
-add_test (framework_test ${EXECUTABLE_OUTPUT_PATH}/framework_test)
+#add_test (framework_test ${EXECUTABLE_OUTPUT_PATH}/framework_test)
