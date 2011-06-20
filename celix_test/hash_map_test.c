@@ -56,7 +56,7 @@ void test_hashMap_size(void) {
 	char * value = "value";
 	char * key2 = "key2";
 	char * value2 = "value2";
-	char * key3 = "key2";
+	char * key3 = strdup("key2");
 	char * value3 = "value3";
 
 	CU_ASSERT_EQUAL(map->size, 0);
@@ -69,9 +69,9 @@ void test_hashMap_size(void) {
 	hashMap_put(map, key2, value2);
 	CU_ASSERT_EQUAL(map->size, 2);
 
-	// Overwrite existing entry
+	// Add entry using the same key, this does not overwrite an existing entry
 	hashMap_put(map, key3, value3);
-	CU_ASSERT_EQUAL(map->size, 2);
+	CU_ASSERT_EQUAL(map->size, 3);
 
 	// Clear map
 	hashMap_clear(map, false, false);
