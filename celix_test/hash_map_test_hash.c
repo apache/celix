@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "CUnit/Basic.h"
+#include <Basic.h>
 
 #include "hash_map.h"
 #include "hash_map_private.h"

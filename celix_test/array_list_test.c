@@ -23,9 +23,9 @@
  *      Author: alexanderb
  */
 #include <stdio.h>
-#include <stdbool.h>
+#include <Automated.h>
 
-#include "CUnit/Basic.h"
+#include "celixbool.h"
 
 #include "array_list.h"
 #include "array_list_private.h"
@@ -46,9 +46,10 @@ void test_arrayList_create(void) {
 }
 
 void test_arrayList_trimToSize(void) {
+	char * entry;
 	arrayList_clear(list);
 
-	char * entry = "entry";
+	entry = "entry";
 	arrayList_add(list, entry);
 	CU_ASSERT_EQUAL(list->size, 1);
 	CU_ASSERT_EQUAL(list->capacity, 10);
@@ -59,11 +60,11 @@ void test_arrayList_trimToSize(void) {
 }
 
 void test_arrayList_ensureCapacity(void) {
+	int i;
 	list = arrayList_create();
 	arrayList_clear(list);
 	CU_ASSERT_EQUAL(list->capacity, 10);
 	CU_ASSERT_EQUAL(list->size, 0);
-	int i;
 	for (i = 0; i < 100; i++) {
 		arrayList_add(list, "entry");
 	}
@@ -73,18 +74,21 @@ void test_arrayList_ensureCapacity(void) {
 }
 
 void test_arrayList_size(void) {
+	char * entry;
+	char * entry2;
+	char * entry3;
 	arrayList_clear(list);
 	CU_ASSERT_EQUAL(list->size, 0);
 
-	char * entry = "entry";
+	entry = "entry";
 	arrayList_add(list, entry);
 	CU_ASSERT_EQUAL(list->size, 1);
 
-	char * entry2 = "entry";
+	entry2 = "entry";
 	arrayList_add(list, entry2);
 	CU_ASSERT_EQUAL(list->size, 2);
 
-	char * entry3 = "entry";
+	entry3 = "entry";
 	arrayList_add(list, entry3);
 	CU_ASSERT_EQUAL(list->size, 3);
 }
@@ -96,32 +100,35 @@ void test_arrayList_isEmpty(void) {
 }
 
 void test_arrayList_contains(void) {
+	char * entry = "entry";
+	char * entry2 = "entry2";
+	char * entry3 = NULL;
+	bool contains;
+
 	arrayList_clear(list);
 
-	char * entry = "entry";
 	arrayList_add(list, entry);
 
-	char * entry2 = "entry2";
 	arrayList_add(list, entry2);
 
 	CU_ASSERT_TRUE(arrayList_contains(list, entry));
 	CU_ASSERT_TRUE(arrayList_contains(list, entry2));
-	bool contains = arrayList_contains(list, NULL);
+	contains = arrayList_contains(list, NULL);
 	CU_ASSERT_FALSE(contains);
 
-	char * entry3 = NULL;
 	arrayList_add(list, entry3);
 
 	CU_ASSERT_TRUE(arrayList_contains(list, entry3));
 }
 
 void test_arrayList_indexOf(void) {
+	char * entry = "entry";
+	char * entry2 = "entry2";
+
 	arrayList_clear(list);
 
-	char * entry = "entry";
 	arrayList_add(list, entry);
 
-	char * entry2 = "entry2";
 	arrayList_add(list, entry2);
 	arrayList_add(list, entry2);
 	arrayList_add(list, entry2);
@@ -134,20 +141,22 @@ void test_arrayList_indexOf(void) {
 }
 
 void test_arrayList_get(void) {
+	char * entry = "entry";
+	char * entry2 = "entry2";
+	char * entry3 = NULL;
+	char * get;
+	
 	arrayList_clear(list);
 
-	char * entry = "entry";
 	arrayList_add(list, entry);
-	char * entry2 = "entry2";
 	arrayList_add(list, entry2);
 
-	char * get = arrayList_get(list, 0);
+	get = arrayList_get(list, 0);
 	CU_ASSERT_EQUAL(entry, get);
 
 	get = arrayList_get(list, 1);
 	CU_ASSERT_EQUAL(entry2, get);
 
-	char * entry3 = NULL;
 	arrayList_add(list, entry3);
 
 	get = arrayList_get(list, 2);
@@ -158,35 +167,40 @@ void test_arrayList_get(void) {
 }
 
 void test_arrayList_set(void) {
+	char * entry = "entry";
+	char * entry2 = "entry2";
+	char * entry3 = "entry3";
+	char * get;
+	char * old;
+
 	arrayList_clear(list);
 
-	char * entry = "entry";
 	arrayList_add(list, entry);
-	char * entry2 = "entry2";
 	arrayList_add(list, entry2);
 
-	char * get = arrayList_get(list, 1);
+	get = arrayList_get(list, 1);
 	CU_ASSERT_EQUAL(entry2, get);
 
-	char * entry3 = "entry3";
-	char * old = arrayList_set(list, 1, entry3);
+	old = arrayList_set(list, 1, entry3);
 	CU_ASSERT_EQUAL(entry2, old);
 	get = arrayList_get(list, 1);
 	CU_ASSERT_EQUAL(entry3, get);
 }
 
 void test_arrayList_add(void) {
+	char * entry = "entry";
+	char * entry2 = "entry2";
+	char * entry3 = "entry3";
+	char * get;
+
 	arrayList_clear(list);
 
-	char * entry = "entry";
 	arrayList_add(list, entry);
-	char * entry2 = "entry2";
 	arrayList_add(list, entry2);
 
-	char * get = arrayList_get(list, 1);
+	get = arrayList_get(list, 1);
 	CU_ASSERT_EQUAL(entry2, get);
 
-	char * entry3 = "entry3";
 	arrayList_addIndex(list, 1, entry3);
 
 	get = arrayList_get(list, 1);
@@ -197,21 +211,25 @@ void test_arrayList_add(void) {
 }
 
 void test_arrayList_addAll(void) {
-    arrayList_clear(list);
-
-    ARRAY_LIST toAdd = arrayList_create();
     char * entry = "entry";
-    arrayList_add(toAdd, entry);
     char * entry2 = "entry2";
+    char * entry3 = "entry3"; 
+    char * get;
+	ARRAY_LIST toAdd;
+	bool changed;
+	
+	arrayList_clear(list);
+
+    toAdd = arrayList_create();
+    arrayList_add(toAdd, entry);
     arrayList_add(toAdd, entry2);
 
-    char * entry3 = "entry3";
     arrayList_add(list, entry3);
 
-    char * get = arrayList_get(list, 0);
+    get = arrayList_get(list, 0);
     CU_ASSERT_EQUAL(entry3, get);
 
-    bool changed = arrayList_addAll(list, toAdd);
+    changed = arrayList_addAll(list, toAdd);
     CU_ASSERT_TRUE(changed);
     CU_ASSERT_EQUAL(arrayList_size(list), 3);
 
@@ -223,18 +241,22 @@ void test_arrayList_addAll(void) {
 }
 
 void test_arrayList_remove(void) {
+	char * entry = "entry";
+	char * entry2 = "entry2";
+	char * entry3 = "entry3";
+	char * get;
+	char * removed;
+
 	arrayList_clear(list);
 
-	char * entry = "entry";
 	arrayList_add(list, entry);
-	char * entry2 = "entry2";
 	arrayList_add(list, entry2);
 
-	char * get = arrayList_get(list, 1);
+	get = arrayList_get(list, 1);
 	CU_ASSERT_EQUAL(entry2, get);
 
 	// Remove first entry
-	char * removed = arrayList_remove(list, 0);
+	removed = arrayList_remove(list, 0);
 	CU_ASSERT_EQUAL(entry, removed);
 
 	// Check the new first element
@@ -242,7 +264,6 @@ void test_arrayList_remove(void) {
 	CU_ASSERT_EQUAL(entry2, get);
 
 	// Add a new element
-	char * entry3 = "entry3";
 	arrayList_add(list, entry3);
 
 	get = arrayList_get(list, 1);
@@ -250,22 +271,24 @@ void test_arrayList_remove(void) {
 }
 
 void test_arrayList_removeElement(void) {
+	char * entry = "entry";
+	char * entry2 = "entry2";
+	char * entry3 = "entry3";
+	char * get;
+
 	arrayList_clear(list);
 
-	char * entry = "entry";
 	arrayList_add(list, entry);
-	char * entry2 = "entry2";
 	arrayList_add(list, entry2);
 
 	// Remove entry
 	CU_ASSERT_TRUE(arrayList_removeElement(list, entry));
 
 	// Check the new first element
-	char * get = arrayList_get(list, 0);
+	get = arrayList_get(list, 0);
 	CU_ASSERT_EQUAL(entry2, get);
 
 	// Add a new element
-	char * entry3 = "entry3";
 	arrayList_add(list, entry3);
 
 	get = arrayList_get(list, 1);
@@ -273,11 +296,12 @@ void test_arrayList_removeElement(void) {
 }
 
 void test_arrayList_clear(void) {
+	char * entry = "entry";
+	char * entry2 = "entry2";
+
 	arrayList_clear(list);
 
-	char * entry = "entry";
 	arrayList_add(list, entry);
-	char * entry2 = "entry2";
 	arrayList_add(list, entry2);
 
 	CU_ASSERT_EQUAL(arrayList_size(list), 2);

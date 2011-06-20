@@ -34,6 +34,7 @@ typedef struct arrayList * ARRAY_LIST;
 typedef struct arrayListIterator * ARRAY_LIST_ITERATOR;
 
 UTILS_EXPORT ARRAY_LIST arrayList_create(void);
+UTILS_EXPORT void arrayList_destroy(ARRAY_LIST list);
 UTILS_EXPORT void arrayList_trimToSize(ARRAY_LIST list);
 UTILS_EXPORT void arrayList_ensureCapacity(ARRAY_LIST list, int capacity);
 UTILS_EXPORT unsigned int arrayList_size(ARRAY_LIST list);
@@ -45,6 +46,7 @@ UTILS_EXPORT void * arrayList_get(ARRAY_LIST list, unsigned int index);
 UTILS_EXPORT void * arrayList_set(ARRAY_LIST list, unsigned int index, void * element);
 UTILS_EXPORT bool arrayList_add(ARRAY_LIST list, void * element);
 UTILS_EXPORT int arrayList_addIndex(ARRAY_LIST list, unsigned int index, void * element);
+UTILS_EXPORT bool arrayList_addAll(ARRAY_LIST list, ARRAY_LIST toAdd);
 UTILS_EXPORT void * arrayList_remove(ARRAY_LIST list, unsigned int index);
 UTILS_EXPORT bool arrayList_removeElement(ARRAY_LIST list, void * element);
 UTILS_EXPORT void arrayList_clear(ARRAY_LIST list);

@@ -40,6 +40,7 @@
 								<option id="gnu.c.compiler.option.include.paths.544783026" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="/opt/local/include"/>
 									<listOptionValue builtIn="false" value="/usr/include/apr-1"/>
+									<listOptionValue builtIn="false" value="/opt/local/include/CUnit"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1627566234" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>

@@ -27,7 +27,6 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include <stdint.h>
 
 #include "hash_map.h"
 #include "hash_map_private.h"
@@ -70,8 +69,7 @@ HASH_MAP hashMap_create(unsigned int (*keyHash)(void *), unsigned int (*valueHas
 		int (*keyEquals)(void *, void *), int (*valueEquals)(void *, void *)) {
 	HASH_MAP map = (HASH_MAP) malloc(sizeof(*map));
 	map->treshold = (int) (DEFAULT_INITIAL_CAPACITY * DEFAULT_LOAD_FACTOR);
-	map->table = (HASH_MAP_ENTRY *) malloc(sizeof(HASH_MAP_ENTRY) * DEFAULT_INITIAL_CAPACITY);
-	memset(map->table, 0, DEFAULT_INITIAL_CAPACITY * sizeof(HASH_MAP_ENTRY *));
+	map->table = (HASH_MAP_ENTRY *) calloc(DEFAULT_INITIAL_CAPACITY, sizeof(HASH_MAP_ENTRY));
 	map->size = 0;
 	map->modificationCount = 0;
 	map->tablelength = DEFAULT_INITIAL_CAPACITY;
@@ -189,7 +187,7 @@ void hashMap_resize(HASH_MAP map, int newCapacity) {
 		return;
 	}
 
-	newTable = (HASH_MAP_ENTRY *) malloc(sizeof(HASH_MAP_ENTRY) * newCapacity);
+	newTable = (HASH_MAP_ENTRY *) calloc(newCapacity, sizeof(HASH_MAP_ENTRY));
 
 	for (j = 0; j < map->tablelength; j++) {
 		HASH_MAP_ENTRY entry = map->table[j];
