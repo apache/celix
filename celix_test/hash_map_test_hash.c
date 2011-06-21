@@ -69,21 +69,27 @@ int setup(void) {
 }
 
 void test_hashMap_get(void) {
+	char * key = "key";
+	char * value = "value";
+	char * key2 = "key2";
+	char * value2 = "value2";
+	char * getKey = strdup("key");
+	char * get;
+	char * neKey;
+	char * key3 = NULL;
+	char * value3 = "value3";
+
 	hashMap_clear(map, false, false);
 
 	// Add one entry
-	char * key = "key";
-	char * value = "value";
 	hashMap_put(map, key, value);
 
 	// Add second entry
-	char * key2 = "key2";
-	char * value2 = "value2";
 	hashMap_put(map, key2, value2);
 
 	// Get with new created key
-	char * getKey = strdup("key");
-	char * get = hashMap_get(map, getKey);
+	getKey = strdup("key");
+	get = hashMap_get(map, getKey);
 	CU_ASSERT_PTR_NOT_NULL_FATAL(get);
 	CU_ASSERT_STRING_EQUAL(get, value);
 
@@ -92,7 +98,7 @@ void test_hashMap_get(void) {
 	CU_ASSERT_PTR_NOT_NULL_FATAL(get);
 	CU_ASSERT_STRING_EQUAL(get, value2);
 
-	char * neKey = strdup("notExisting");
+	neKey = strdup("notExisting");
 	get = hashMap_get(map, neKey);
 	CU_ASSERT_EQUAL(get, NULL);
 
@@ -100,8 +106,6 @@ void test_hashMap_get(void) {
 	CU_ASSERT_EQUAL(get, NULL);
 
 	// Add third entry with NULL key
-	char * key3 = NULL;
-	char * value3 = "value3";
 	hashMap_put(map, key3, value3);
 
 	get = hashMap_get(map, NULL);
@@ -109,19 +113,23 @@ void test_hashMap_get(void) {
 }
 
 void test_hashMap_containsKey(void) {
+	char * key = "key";
+	char * value = "value";
+	char * key2 = "key2";
+	char * value2 = "value2";
+	char * containsKey;
+	char * key3 = NULL;
+	char * value3 = "value3";
+
 	hashMap_clear(map, false, false);
 
 	// Add one entry
-	char * key = "key";
-	char * value = "value";
 	hashMap_put(map, key, value);
 
 	// Add second entry
-	char * key2 = "key2";
-	char * value2 = "value2";
 	hashMap_put(map, key2, value2);
 
-	char * containsKey = strdup("key");
+	containsKey = strdup("key");
 	CU_ASSERT_TRUE(hashMap_containsKey(map, containsKey));
 	containsKey = strdup("key2");
 	CU_ASSERT_TRUE(hashMap_containsKey(map, containsKey));
@@ -131,8 +139,6 @@ void test_hashMap_containsKey(void) {
 	CU_ASSERT_FALSE(hashMap_containsKey(map, containsKey));
 
 	// Add third entry with NULL key
-	char * key3 = NULL;
-	char * value3 = "value3";
 	hashMap_put(map, key3, value3);
 
 	containsKey = NULL;
@@ -140,21 +146,26 @@ void test_hashMap_containsKey(void) {
 }
 
 void test_hashMap_getEntry(void) {
+	char * key = "key";
+	char * value = "value";
+	char * key2 = "key2";
+	char * value2 = "value2";
+	char * getEntryKey;
+	char * key3 = NULL;
+	char * value3 = "value3";	
+	HASH_MAP_ENTRY entry;
+	
 	hashMap_clear(map, false, false);
 
 	// Add one entry
-	char * key = "key";
-	char * value = "value";
 	hashMap_put(map, key, value);
 
 	// Add second entry
-	char * key2 = "key2";
-	char * value2 = "value2";
 	hashMap_put(map, key2, value2);
 
 	// Get with new created key
-	char * getEntryKey = strdup("key");
-	HASH_MAP_ENTRY entry = hashMap_getEntry(map, getEntryKey);
+	getEntryKey = strdup("key");
+	entry = hashMap_getEntry(map, getEntryKey);
 	CU_ASSERT_PTR_NOT_NULL_FATAL(entry);
 	CU_ASSERT_STRING_EQUAL(entry->key, key);
 	CU_ASSERT_STRING_EQUAL(entry->value, value);
@@ -174,8 +185,6 @@ void test_hashMap_getEntry(void) {
 	CU_ASSERT_EQUAL(entry, NULL);
 
 	// Add third entry with NULL key
-	char * key3 = NULL;
-	char * value3 = "value3";
 	hashMap_put(map, key3, value3);
 
 	getEntryKey = NULL;
@@ -185,21 +194,31 @@ void test_hashMap_getEntry(void) {
 }
 
 void test_hashMap_put(void) {
+	char * key = "key";
+	char * value = "value";
+	char * key2 = "key2";
+	char * value2 = "value2";
+	char * getKey;
+	char * get;
+	char * nkey2 = strdup("key2");
+	char * nvalue2 = "value3";
+	char * old;
+	char * key3 = NULL;
+	char * value3 = "value3";
+	char * key4 = "key4";
+	char * value4 = NULL;
+
 	hashMap_clear(map, false, false);
 
 	// Add one entry
-	char * key = "key";
-	char * value = "value";
 	hashMap_put(map, key, value);
 
 	// Add second entry
-	char * key2 = "key2";
-	char * value2 = "value2";
 	hashMap_put(map, key2, value2);
 
 	// Get with new key
-	char * getKey = strdup("key");
-	char * get = hashMap_get(map, getKey);
+	getKey = strdup("key");
+	get = hashMap_get(map, getKey);
 	CU_ASSERT_STRING_EQUAL(get, value);
 
 	getKey = strdup("key2");
@@ -207,9 +226,7 @@ void test_hashMap_put(void) {
 	CU_ASSERT_STRING_EQUAL(get, value2);
 
 	// Overwrite existing entry
-	char * nkey2 = strdup("key2");
-	char * nvalue2 = "value3";
-	char * old = (char *) hashMap_put(map, nkey2, nvalue2);
+	old = (char *) hashMap_put(map, nkey2, nvalue2);
 	CU_ASSERT_PTR_NOT_NULL_FATAL(old);
 	CU_ASSERT_STRING_EQUAL(old, value2)
 
@@ -218,8 +235,6 @@ void test_hashMap_put(void) {
 	CU_ASSERT_STRING_EQUAL(get, nvalue2);
 
 	// Add third entry with NULL key
-	char * key3 = NULL;
-	char * value3 = "value3";
 	hashMap_put(map, key3, value3);
 
 	getKey = NULL;
@@ -227,8 +242,6 @@ void test_hashMap_put(void) {
 	CU_ASSERT_STRING_EQUAL(get, value3);
 
 	// Add fourth entry with NULL value
-	char * key4 = "key4";
-	char * value4 = NULL;
 	hashMap_put(map, key4, value4);
 
 	getKey = strdup("key4");
@@ -237,20 +250,22 @@ void test_hashMap_put(void) {
 }
 
 void test_hashMap_remove(void) {
+	char * key = "key";
+	char * value = "value";
+	char * key2 = NULL;
+	char * value2 = "value2";
+	char * removeKey;
+
 	hashMap_clear(map, false, false);
 
 	// Add one entry
-	char * key = "key";
-	char * value = "value";
 	hashMap_put(map, key, value);
 
 	// Add second entry with null key
-	char * key2 = NULL;
-	char * value2 = "value2";
 	hashMap_put(map, key2, value2);
 
 	// Remove unexisting entry for map
-	char * removeKey = strdup("unexisting");
+	removeKey = strdup("unexisting");
 	hashMap_remove(map, removeKey);
 	CU_ASSERT_EQUAL(map->size, 2);
 	CU_ASSERT_FALSE(hashMap_isEmpty(map));
@@ -273,19 +288,23 @@ void test_hashMap_remove(void) {
 }
 
 void test_hashMap_containsValue(void) {
+	char * key = "key";
+	char * value = "value";
+	char * key2 = "key2";
+	char * value2 = "value2";
+	char * containsValue;
+	char * key3 = "key3";
+	char * value3 = NULL;
+
 	hashMap_clear(map, false, false);
 
 	// Add one entry
-	char * key = "key";
-	char * value = "value";
 	hashMap_put(map, key, value);
 
 	// Add second entry
-	char * key2 = "key2";
-	char * value2 = "value2";
 	hashMap_put(map, key2, value2);
 
-	char * containsValue = strdup("value");
+	containsValue = strdup("value");
 	CU_ASSERT_TRUE(hashMap_containsValue(map, containsValue));
 	containsValue = strdup("value2");
 	CU_ASSERT_TRUE(hashMap_containsValue(map, containsValue));
@@ -295,8 +314,6 @@ void test_hashMap_containsValue(void) {
 	CU_ASSERT_FALSE(hashMap_containsValue(map, containsValue));
 
 	// Add third entry with NULL value
-	char * key3 = "key3";
-	char * value3 = NULL;
 	hashMap_put(map, key3, value3);
 
 	containsValue = NULL;
