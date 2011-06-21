@@ -335,7 +335,7 @@ char * filter_parseValue(char * filterString, int * pos) {
 			case '\\': {
 				(*pos)++;
 				c = filterString[*pos];
-				// no break
+				// nb
 			}
 			default: {
 				char ch[2];

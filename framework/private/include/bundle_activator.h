@@ -27,6 +27,7 @@
 #define BUNDLE_ACTIVATOR_H_
 
 #include "headers.h"
+#include "bundle_context.h"
 
 celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData);
 celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context);

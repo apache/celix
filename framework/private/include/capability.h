@@ -31,6 +31,7 @@
 
 
 CAPABILITY capability_create(MODULE module, HASH_MAP directives, HASH_MAP attributes);
+void capability_destroy(CAPABILITY capability);
 char * capability_getServiceName(CAPABILITY capability);
 VERSION capability_getVersion(CAPABILITY capability);
 MODULE capability_getModule(CAPABILITY capability);

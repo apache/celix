@@ -35,6 +35,8 @@ struct manifest {
 
 typedef struct manifest * MANIFEST;
 
+void manifest_destroy(MANIFEST manifest);
+
 void manifest_clear(MANIFEST manifest);
 PROPERTIES manifest_getMainAttributes(MANIFEST manifest);
 

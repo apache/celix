@@ -33,6 +33,7 @@ typedef struct linkedListEntry * LINKED_LIST_ENTRY;
 typedef struct linkedList * LINKED_LIST;
 
 UTILS_EXPORT LINKED_LIST linkedList_create(void);
+void linkedList_destroy(LINKED_LIST list);
 UTILS_EXPORT void * linkedList_getFirst(LINKED_LIST list);
 UTILS_EXPORT void * linkedList_getLast(LINKED_LIST list);
 UTILS_EXPORT void * linkedList_removeFirst(LINKED_LIST list);

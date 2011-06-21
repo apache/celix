@@ -54,11 +54,15 @@ celix_status_t bundle_update(BUNDLE bundle, char *inputFile);
 void stopBundle(BUNDLE bundle, int options);
 celix_status_t bundle_uninstall(BUNDLE bundle);
 
+void bundle_setState(BUNDLE bundle, BUNDLE_STATE state);
 celix_status_t bundle_setPersistentStateInactive(BUNDLE bundle);
+celix_status_t bundle_setPersistentStateUninstalled(BUNDLE bundle);
 
 void uninstallBundle(BUNDLE bundle);
 
 celix_status_t bundle_revise(BUNDLE bundle, char * location, char *inputFile);
+celix_status_t bundle_addModule(BUNDLE bundle, MODULE module);
+celix_status_t bundle_closeModules(BUNDLE bundle);
 
 // Service Reference Functions
 ARRAY_LIST getUsingBundles(SERVICE_REFERENCE reference);

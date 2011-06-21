@@ -44,6 +44,7 @@ struct manifestParser {
 typedef struct manifestParser * MANIFEST_PARSER;
 
 MANIFEST_PARSER manifestParser_createManifestParser(MODULE owner, MANIFEST manifest);
+celix_status_t manifestParser_destroy(MANIFEST_PARSER parser);
 
 LINKED_LIST manifestParser_parseImportHeader(char * header);
 LINKED_LIST manifestParser_parseExportHeader(MODULE module, char * header);

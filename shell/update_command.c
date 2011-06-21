@@ -38,7 +38,6 @@
 void updateCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *));
 celix_status_t updateCommand_download(COMMAND command, char * url, char **inputFile);
 size_t updateCommand_writeData(void *ptr, size_t size, size_t nmemb, FILE *stream);
-int updateCommand_downloadProgress(void *ptr, double dltotal, double dlnow, double ultotal, double ulnow);
 
 COMMAND updateCommand_create(BUNDLE_CONTEXT context) {
 	COMMAND command = (COMMAND) malloc(sizeof(*command));
@@ -121,12 +120,3 @@ size_t updateCommand_writeData(void *ptr, size_t size, size_t nmemb, FILE *strea
     size_t written = fwrite(ptr, size, nmemb, stream);
     return written;
 }
-
-//int updateCommand_downloadProgress(void *ptr,
-//                     double t, /* dltotal */
-//                     double d, /* dlnow */
-//                     double ultotal,
-//                     double ulnow) {
-//	printf("\r%f / %f (%g %%)", d, t, d*100.0/t);
-//	return 0;
-//}

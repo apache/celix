@@ -37,8 +37,11 @@ celix_status_t framework_create(FRAMEWORK *framework, apr_pool_t *memoryPool);
 celix_status_t framework_destroy(FRAMEWORK framework);
 
 celix_status_t fw_init(FRAMEWORK framework);
+celix_status_t framework_start(FRAMEWORK framework);
+void framework_stop(FRAMEWORK framework);
 
 celix_status_t fw_installBundle(FRAMEWORK framework, BUNDLE * bundle, char * location);
+celix_status_t fw_uninstallBundle(FRAMEWORK framework, BUNDLE bundle);
 
 celix_status_t framework_getBundleEntry(FRAMEWORK framework, BUNDLE bundle, char *name, apr_pool_t *pool, char **entry);
 

@@ -34,6 +34,7 @@
 #include "version.h"
 #include "array_list.h"
 #include "bundle_archive.h"
+#include "resolver.h"
 
 MODULE bundle_createModule(BUNDLE bundle);
 celix_status_t bundle_closeRevisions(BUNDLE bundle);

@@ -26,11 +26,14 @@
 #ifndef VERSION_H_
 #define VERSION_H_
 
+#include "celix_errno.h"
+
 typedef struct version * VERSION;
 
 VERSION version_createVersion(int major, int minor, int micro, char * qualifier);
 VERSION version_createVersionFromString(char * version);
 VERSION version_createEmptyVersion();
+celix_status_t version_destroy(VERSION version);
 
 int version_compareTo(VERSION version, VERSION compare);
 

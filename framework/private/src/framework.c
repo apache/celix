@@ -51,6 +51,7 @@
 #include "bundle_archive.h"
 #include "bundle_context.h"
 #include "linked_list_iterator.h"
+#include "service_reference.h"
 
 struct activator {
 	void * userData;
@@ -68,12 +69,27 @@ bool framework_releaseBundleLock(FRAMEWORK framework, BUNDLE bundle);
 bool framework_acquireGlobalLock(FRAMEWORK framework);
 celix_status_t framework_releaseGlobalLock(FRAMEWORK framework);
 
+celix_status_t framework_acquireInstallLock(FRAMEWORK framework, char * location);
+celix_status_t framework_releaseInstallLock(FRAMEWORK framework, char * location);
+
 long framework_getNextBundleId(FRAMEWORK framework);
 
 celix_status_t fw_installBundle2(FRAMEWORK framework, BUNDLE * bundle, long id, char * location, BUNDLE_ARCHIVE archive);
 
 celix_status_t fw_refreshBundles(FRAMEWORK framework, BUNDLE bundles[], int size);
 celix_status_t fw_refreshBundle(FRAMEWORK framework, BUNDLE bundle);
+
+celix_status_t fw_populateDependentGraph(FRAMEWORK framework, BUNDLE exporter, HASH_MAP *map);
+
+struct fw_refreshHelper {
+    FRAMEWORK framework;
+    BUNDLE bundle;
+    BUNDLE_STATE oldState;
+};
+
+celix_status_t fw_refreshHelper_refreshOrRemove(struct fw_refreshHelper * refreshHelper);
+celix_status_t fw_refreshHelper_restart(struct fw_refreshHelper * refreshHelper);
+celix_status_t fw_refreshHelper_stop(struct fw_refreshHelper * refreshHelper);
 
 struct fw_serviceListener {
 	BUNDLE bundle;
@@ -83,11 +99,6 @@ struct fw_serviceListener {
 
 typedef struct fw_serviceListener * FW_SERVICE_LISTENER;
 
-struct fw_refreshHelper {
-    FRAMEWORK framework;
-    BUNDLE bundle;
-    BUNDLE_STATE oldState;
-};
 
 celix_status_t framework_create(FRAMEWORK *framework, apr_pool_t *memoryPool) {
     celix_status_t status = CELIX_SUCCESS;

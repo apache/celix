@@ -29,6 +29,7 @@
 #include "bundle_activator.h"
 #include "bundle_context.h"
 #include "mongoose.h"
+#include "bundle.h"
 
 struct userData {
 	struct mg_context *ctx;

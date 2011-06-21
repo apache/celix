@@ -6,9 +6,12 @@
  */
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include <apr_strings.h>
+#include <apr_file_io.h>
 
 #include "bundle_revision.h"
+#include "archive.h"
 
 struct bundleRevision {
 	long revisionNr;
@@ -22,20 +25,25 @@ celix_status_t bundleRevision_create(char *root, char *location, long revisionNr
 
 	revision = (BUNDLE_REVISION) apr_pcalloc(pool, sizeof(*revision));
     if (revision != NULL) {
-        mkdir(root, 0755);
+        // if (
+        apr_dir_make(root, APR_UREAD|APR_UWRITE|APR_UEXECUTE, pool);
+        //!= APR_SUCCESS);
+        //{
+        //    status = CELIX_FILE_IO_EXCEPTION;
+        //} else {
+            if (inputFile != NULL) {
+                status = extractBundle(inputFile, root);
+            } else {
+                status = extractBundle(location, root);
+            }
 
-        if (inputFile != NULL) {
-            status = extractBundle(inputFile, root);
-        } else {
-            status = extractBundle(location, root);
-        }
-
-        if (status == CELIX_SUCCESS) {
-            revision->revisionNr = revisionNr;
-            revision->root = apr_pstrdup(pool, root);
-            revision->location = apr_pstrdup(pool, location);
-            *bundle_revision = revision;
-        }
+            if (status == CELIX_SUCCESS) {
+                revision->revisionNr = revisionNr;
+                revision->root = apr_pstrdup(pool, root);
+                revision->location = apr_pstrdup(pool, location);
+                *bundle_revision = revision;
+            }
+        //}
     }
 
 	return status;

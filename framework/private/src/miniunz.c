@@ -27,8 +27,8 @@
         #endif
 #endif
 
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <time.h>
 #include <errno.h>
@@ -36,6 +36,7 @@
 
 #include <unistd.h>
 #include <utime.h>
+#include <sys/stat.h>
 
 #include "unzip.h"
 #include "archive.h"
@@ -112,7 +113,7 @@ int mymkdir(dirname)
     ret = _mkdir(dirname);
 #else
 #if defined unix || defined __APPLE__
-    ret = mkdir (dirname,0775);
+    ret = mkdir(dirname,0775);
 #endif
 #endif
     return ret;

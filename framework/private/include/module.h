@@ -34,6 +34,7 @@
 
 MODULE module_create(MANIFEST headerMap, char * moduleId, BUNDLE bundle);
 MODULE module_createFrameworkModule(BUNDLE bundle);
+void module_destroy(MODULE module);
 
 unsigned int module_hash(void * module);
 int module_equals(void * module, void * compare);
