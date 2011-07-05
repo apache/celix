@@ -32,6 +32,7 @@
 #include "hash_map.h"
 #include "array_list.h"
 #include "celix_errno.h"
+#include "service_factory.h"
 
 celix_status_t framework_create(FRAMEWORK *framework, apr_pool_t *memoryPool);
 celix_status_t framework_destroy(FRAMEWORK framework);
@@ -50,6 +51,7 @@ celix_status_t framework_updateBundle(FRAMEWORK framework, BUNDLE bundle, char *
 void fw_stopBundle(FRAMEWORK framework, BUNDLE bundle, bool record);
 
 celix_status_t fw_registerService(FRAMEWORK framework, SERVICE_REGISTRATION * registration, BUNDLE bundle, char * serviceName, void * svcObj, PROPERTIES properties);
+celix_status_t fw_registerServiceFactory(FRAMEWORK framework, SERVICE_REGISTRATION * registration, BUNDLE bundle, char * serviceName, service_factory_t factory, PROPERTIES properties);
 void fw_unregisterService(SERVICE_REGISTRATION registration);
 
 celix_status_t fw_getServiceReferences(FRAMEWORK framework, ARRAY_LIST *references, BUNDLE bundle, char * serviceName, char * filter);

@@ -27,6 +27,7 @@
 #define BUNDLE_CONTEXT_H_
 
 #include "headers.h"
+#include "service_factory.h"
 
 celix_status_t bundleContext_create(FRAMEWORK framework, BUNDLE bundle, BUNDLE_CONTEXT *bundle_context);
 celix_status_t bundleContext_destroy(BUNDLE_CONTEXT context);
@@ -38,6 +39,8 @@ celix_status_t bundleContext_getMemoryPool(BUNDLE_CONTEXT context, apr_pool_t **
 celix_status_t bundleContext_installBundle(BUNDLE_CONTEXT context, char * location, BUNDLE *bundle);
 
 celix_status_t bundleContext_registerService(BUNDLE_CONTEXT context, char * serviceName, void * svcObj,
+        PROPERTIES properties, SERVICE_REGISTRATION *service_registration);
+celix_status_t bundleContext_registerServiceFactory(BUNDLE_CONTEXT context, char * serviceName, service_factory_t factory,
         PROPERTIES properties, SERVICE_REGISTRATION *service_registration);
 
 celix_status_t bundleContext_getServiceReferences(BUNDLE_CONTEXT context, char * serviceName, char * filter, ARRAY_LIST *service_references);

@@ -28,12 +28,31 @@
 
 #include "service_registration.h"
 #include "constants.h"
+#include "service_factory.h"
+
+celix_status_t serviceRegistration_createInternal(SERVICE_REGISTRY registry, BUNDLE bundle, char * serviceName, long serviceId,
+        void * serviceObject, PROPERTIES dictionary, bool isFactory, SERVICE_REGISTRATION *registration);
 
 SERVICE_REGISTRATION serviceRegistration_create(SERVICE_REGISTRY registry, BUNDLE bundle, char * serviceName, long serviceId, void * serviceObject, PROPERTIES dictionary) {
-	SERVICE_REGISTRATION registration = (SERVICE_REGISTRATION) malloc(sizeof(*registration));
+    SERVICE_REGISTRATION registration = NULL;
+	serviceRegistration_createInternal(registry, bundle, serviceName, serviceId, serviceObject, dictionary, false, &registration);
+	return registration;
+}
 
-	registration->registry = registry;
-	registration->className = serviceName;
+SERVICE_REGISTRATION serviceRegistration_createServiceFactory(SERVICE_REGISTRY registry, BUNDLE bundle, char * serviceName, long serviceId, void * serviceObject, PROPERTIES dictionary) {
+    SERVICE_REGISTRATION registration = NULL;
+    serviceRegistration_createInternal(registry, bundle, serviceName, serviceId, serviceObject, dictionary, true, &registration);
+    return registration;
+}
+
+celix_status_t serviceRegistration_createInternal(SERVICE_REGISTRY registry, BUNDLE bundle, char * serviceName, long serviceId,
+        void * serviceObject, PROPERTIES dictionary, bool isFactory, SERVICE_REGISTRATION *registration) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    *registration = (SERVICE_REGISTRATION) malloc(sizeof(**registration));
+    (*registration)->isServiceFactory = isFactory;
+    (*registration)->registry = registry;
+    (*registration)->className = serviceName;
 
 	if (dictionary == NULL) {
 		dictionary = properties_create();
@@ -44,21 +63,26 @@ SERVICE_REGISTRATION serviceRegistration_create(SERVICE_REGISTRY registry, BUNDL
 	properties_set(dictionary, (char *) SERVICE_ID, sId);
 	properties_set(dictionary, (char *) OBJECTCLASS, serviceName);
 
-	registration->properties = dictionary;
+	(*registration)->properties = dictionary;
 
-	registration->serviceId = serviceId;
-	registration->svcObj = serviceObject;
+	(*registration)->serviceId = serviceId;
+	(*registration)->svcObj = serviceObject;
+	if (isFactory) {
+	    (*registration)->serviceFactory = (service_factory_t) (*registration)->svcObj;
+	} else {
+	    (*registration)->serviceFactory = NULL;
+	}
 
 	SERVICE_REFERENCE reference = (SERVICE_REFERENCE) malloc(sizeof(*reference));
 	reference->bundle = bundle;
-	reference->registration = registration;
+	reference->registration = *registration;
 
-	registration->reference = reference;
+	(*registration)->reference = reference;
 
-	registration->isUnregistering = false;
-	pthread_mutex_init(&registration->mutex, NULL);
+	(*registration)->isUnregistering = false;
+	pthread_mutex_init(&(*registration)->mutex, NULL);
 
-	return registration;
+	return CELIX_SUCCESS;
 }
 
 void serviceRegistration_destroy(SERVICE_REGISTRATION registration) {
@@ -101,4 +125,14 @@ void serviceRegistration_unregister(SERVICE_REGISTRATION registration) {
 //	pthread_mutex_lock(&registration->mutex);
 //	registration->svcObj = NULL;
 //	pthread_mutex_unlock(&registration->mutex);
+}
+
+celix_status_t serviceRegistration_getService(SERVICE_REGISTRATION registration, BUNDLE bundle, void **service) {
+    if (registration->isServiceFactory) {
+        service_factory_t factory = registration->serviceFactory;
+        factory->getService(registration->serviceFactory, bundle, registration, service);
+    } else {
+        (*service) = registration->svcObj;
+    }
+    return CELIX_SUCCESS;
 }

@@ -32,10 +32,13 @@
 #include "service_registry.h"
 
 SERVICE_REGISTRATION serviceRegistration_create(SERVICE_REGISTRY registry, BUNDLE bundle, char * serviceName, long serviceId, void * serviceObject, PROPERTIES dictionary);
+SERVICE_REGISTRATION serviceRegistration_createServiceFactory(SERVICE_REGISTRY registry, BUNDLE bundle, char * serviceName, long serviceId, void * serviceObject, PROPERTIES dictionary);
 void serviceRegistration_destroy(SERVICE_REGISTRATION registration);
 
 bool serviceRegistration_isValid(SERVICE_REGISTRATION registration);
 void serviceRegistration_invalidate(SERVICE_REGISTRATION registration);
 void serviceRegistration_unregister(SERVICE_REGISTRATION registration);
+
+celix_status_t serviceRegistration_getService(SERVICE_REGISTRATION registration, BUNDLE bundle, void **service);
 
 #endif /* SERVICE_REGISTRATION_H_ */

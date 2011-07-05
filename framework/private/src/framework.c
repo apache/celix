@@ -889,6 +889,27 @@ celix_status_t fw_registerService(FRAMEWORK framework, SERVICE_REGISTRATION *reg
 	return CELIX_SUCCESS;
 }
 
+celix_status_t fw_registerServiceFactory(FRAMEWORK framework, SERVICE_REGISTRATION *registration, BUNDLE bundle, char * serviceName, service_factory_t factory, PROPERTIES properties) {
+    if (serviceName == NULL) {
+        printf("Service name cannot be null");
+        return CELIX_ILLEGAL_ARGUMENT;
+    } else if (factory == NULL) {
+        printf("Service factory cannot be null");
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+
+    celix_status_t lock = framework_acquireBundleLock(framework, bundle, BUNDLE_STARTING|BUNDLE_ACTIVE);
+    if (lock != CELIX_SUCCESS) {
+        printf("Can only register services while bundle is active or starting");
+        framework_releaseBundleLock(framework, bundle);
+        return CELIX_ILLEGAL_STATE;
+    }
+    *registration = serviceRegistry_registerServiceFactory(framework->registry, bundle, serviceName, factory, properties);
+    framework_releaseBundleLock(framework, bundle);
+
+    return CELIX_SUCCESS;
+}
+
 celix_status_t fw_getServiceReferences(FRAMEWORK framework, ARRAY_LIST *references, BUNDLE bundle ATTRIBUTE_UNUSED, char * serviceName, char * sfilter) {
 	FILTER filter = NULL;
 	if (sfilter != NULL) {

@@ -149,6 +149,21 @@ celix_status_t bundleContext_registerService(BUNDLE_CONTEXT context, char * serv
 	return status;
 }
 
+celix_status_t bundleContext_registerServiceFactory(BUNDLE_CONTEXT context, char * serviceName, service_factory_t factory,
+        PROPERTIES properties, SERVICE_REGISTRATION *service_registration) {
+    SERVICE_REGISTRATION registration = NULL;
+    celix_status_t status = CELIX_SUCCESS;
+
+    if (context != NULL && *service_registration == NULL) {
+        fw_registerServiceFactory(context->framework, &registration, context->bundle, serviceName, factory, properties);
+        *service_registration = registration;
+    } else {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
+
+    return status;
+}
+
 celix_status_t bundleContext_getServiceReferences(BUNDLE_CONTEXT context, char * serviceName, char * filter, ARRAY_LIST *service_references) {
     ARRAY_LIST references = NULL;
     celix_status_t status = CELIX_SUCCESS;

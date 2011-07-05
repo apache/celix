@@ -30,6 +30,10 @@
 #include <dirent.h>
 #include <pthread.h>
 
+#include <apr_general.h>
+#include <apr_thread_cond.h>
+#include <apr_thread_mutex.h>
+
 #include "array_list.h"
 #include "properties.h"
 #include "linkedlist.h"
@@ -40,10 +44,6 @@
 #include "bundle_archive.h"
 #include "bundle_state.h"
 #include "bundle_cache.h"
-
-#include <apr_general.h>
-#include <apr_thread_cond.h>
-#include <apr_thread_mutex.h>
 
 #if defined(__GNUC__)
 #define ATTRIBUTE_UNUSED __attribute__ ((__unused__))
@@ -159,6 +159,9 @@ struct serviceRegistration {
 
 	pthread_mutex_t mutex;
 	bool isUnregistering;
+
+	bool isServiceFactory;
+	void *serviceFactory;
 };
 
 typedef struct serviceRegistration * SERVICE_REGISTRATION;

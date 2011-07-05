@@ -38,6 +38,8 @@ struct usageCount {
 
 typedef struct usageCount * USAGE_COUNT;
 
+celix_status_t serviceRegistry_registerServiceInternal(SERVICE_REGISTRY registry, BUNDLE bundle, char * serviceName, void * serviceObject, PROPERTIES dictionary, bool isFactory, SERVICE_REGISTRATION *registration);
+
 USAGE_COUNT serviceRegistry_getUsageCount(SERVICE_REGISTRY registry, BUNDLE bundle, SERVICE_REFERENCE reference) {
 	ARRAY_LIST usages = hashMap_get(registry->inUseMap, bundle);
 	int i;
@@ -131,17 +133,31 @@ ARRAY_LIST serviceRegistry_getRegisteredServices(SERVICE_REGISTRY registry, BUND
 }
 
 SERVICE_REGISTRATION serviceRegistry_registerService(SERVICE_REGISTRY registry, BUNDLE bundle, char * serviceName, void * serviceObject, PROPERTIES dictionary) {
-	SERVICE_REGISTRATION reg = NULL;
+    SERVICE_REGISTRATION registration = NULL;
+    serviceRegistry_registerServiceInternal(registry, bundle, serviceName, serviceObject, dictionary, false, &registration);
+    return registration;
+}
 
+SERVICE_REGISTRATION serviceRegistry_registerServiceFactory(SERVICE_REGISTRY registry, BUNDLE bundle, char * serviceName, service_factory_t factory, PROPERTIES dictionary) {
+    SERVICE_REGISTRATION registration = NULL;
+    serviceRegistry_registerServiceInternal(registry, bundle, serviceName, (void *) factory, dictionary, true, &registration);
+    return registration;
+}
+
+celix_status_t serviceRegistry_registerServiceInternal(SERVICE_REGISTRY registry, BUNDLE bundle, char * serviceName, void * serviceObject, PROPERTIES dictionary, bool isFactory, SERVICE_REGISTRATION *registration) {
 	pthread_mutex_lock(&registry->mutex);
 
-	reg = serviceRegistration_create(registry, bundle, serviceName, ++registry->currentServiceId, serviceObject, dictionary);
+	if (isFactory) {
+	    *registration = serviceRegistration_createServiceFactory(registry, bundle, serviceName, ++registry->currentServiceId, serviceObject, dictionary);
+	} else {
+	    *registration = serviceRegistration_create(registry, bundle, serviceName, ++registry->currentServiceId, serviceObject, dictionary);
+	}
 
 	ARRAY_LIST regs = (ARRAY_LIST) hashMap_get(registry->serviceRegistrations, bundle);
 	if (regs == NULL) {
 		regs = arrayList_create();
 	}
-	arrayList_add(regs, reg);
+	arrayList_add(regs, *registration);
 	hashMap_put(registry->serviceRegistrations, bundle, regs);
 
 	pthread_mutex_unlock(&registry->mutex);
@@ -149,13 +165,13 @@ SERVICE_REGISTRATION serviceRegistry_registerService(SERVICE_REGISTRY registry, 
 	if (registry->serviceChanged != NULL) {
 		SERVICE_EVENT event = (SERVICE_EVENT) malloc(sizeof(*event));
 		event->type = REGISTERED;
-		event->reference = reg->reference;
+		event->reference = (*registration)->reference;
 		registry->serviceChanged(registry->framework, event, NULL);
 		free(event);
 		event = NULL;
 	}
 
-	return reg;
+	return CELIX_SUCCESS;
 }
 
 void serviceRegistry_unregisterService(SERVICE_REGISTRY registry, BUNDLE bundle, SERVICE_REGISTRATION registration) {
@@ -275,7 +291,7 @@ void * serviceRegistry_getService(SERVICE_REGISTRY registry, BUNDLE bundle, SERV
 
 	pthread_mutex_lock(&registry->mutex);
 
-	if (registration->svcObj != NULL) {
+	if (serviceRegistration_isValid(registration)) {
 		usage = serviceRegistry_getUsageCount(registry, bundle, reference);
 		if (usage == NULL) {
 			usage = serviceRegistry_addUsageCount(registry, bundle, reference);
@@ -286,10 +302,10 @@ void * serviceRegistry_getService(SERVICE_REGISTRY registry, BUNDLE bundle, SERV
 	pthread_mutex_unlock(&registry->mutex);
 
 	if ((usage != NULL) && (service == NULL)) {
-		service = registration->svcObj;
+		serviceRegistration_getService(registration, bundle, &service);
 	}
 	pthread_mutex_lock(&registry->mutex);
-	if ((registration->svcObj == NULL) || (service == NULL)) {
+	if ((serviceRegistration_isValid(registration)) || (service == NULL)) {
 		serviceRegistry_flushUsageCount(registry, bundle, reference);
 	} else {
 		usage->service = service;
@@ -314,7 +330,7 @@ bool serviceRegistry_ungetService(SERVICE_REGISTRY registry, BUNDLE bundle, SERV
 	usage->count--;
 
 
-	if ((registration->svcObj == NULL) || (usage->count <= 0)) {
+	if ((serviceRegistration_isValid(registration)) || (usage->count <= 0)) {
 		usage->service = NULL;
 		serviceRegistry_flushUsageCount(registry, bundle, reference);
 	}
