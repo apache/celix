@@ -38,6 +38,7 @@
 #include "install_command.h"
 #include "uninstall_command.h"
 #include "update_command.h"
+#include "log_command.h"
 
 #include "utils.h"
 
@@ -64,6 +65,9 @@ struct shellServiceActivator {
 
 	SERVICE_REGISTRATION updateCommand;
 	COMMAND updateCmd;
+
+	SERVICE_REGISTRATION logCommand;
+    COMMAND logCmd;
 };
 
 SHELL shell_create() {
@@ -162,6 +166,7 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 	((struct shellServiceActivator *) (*userData))->installCommand = NULL;
 	((struct shellServiceActivator *) (*userData))->uninstallCommand = NULL;
 	((struct shellServiceActivator *) (*userData))->updateCommand = NULL;
+	((struct shellServiceActivator *) (*userData))->logCommand = NULL;
 	((struct shellServiceActivator *) (*userData))->registration = NULL;
 
 	//(*userData) = &(*activator);
@@ -210,6 +215,9 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 
 	        activator->updateCmd = updateCommand_create(context);
 	        bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->updateCmd, NULL, &activator->updateCommand);
+
+	        activator->logCmd = logCommand_create(context);
+            bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->logCmd, NULL, &activator->logCommand);
 	    }
 	}
 
@@ -226,6 +234,7 @@ celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
 	serviceRegistration_unregister(activator->installCommand);
 	serviceRegistration_unregister(activator->uninstallCommand);
 	serviceRegistration_unregister(activator->updateCommand);
+	serviceRegistration_unregister(activator->logCommand);
 	status = bundleContext_removeServiceListener(context, activator->listener);
 
 	if (status == CELIX_SUCCESS) {
@@ -235,6 +244,7 @@ celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
         installCommand_destroy(activator->installCmd);
         uninstallCommand_destroy(activator->uninstallCmd);
         updateCommand_destroy(activator->updateCmd);
+        logCommand_destroy(activator->logCmd);
 
         free(activator->shellService);
         activator->shellService = NULL;

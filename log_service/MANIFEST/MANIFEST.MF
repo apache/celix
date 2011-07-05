@@ -1,0 +1,5 @@
+Bundle-SymbolicName: log_service
+Bundle-Version: 1.0.0
+library: log_service
+Export-Service: log_service,log_reader_service
+Import-Service: log_service,log_reader_service

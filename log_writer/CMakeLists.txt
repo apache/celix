@@ -15,10 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-#deploy("name" BUNDLES receiver receiver-2.0 sender shell shell_tui)
-#deploy("shell test" BUNDLES shell)
-deploy("hello_world" BUNDLES shell shell_tui hello_world celix.mongoose log_service log_writer)
-#deploy("deployer" BUNDLES shell shell_tui deployer)
-deploy("wb" BUNDLES tracker publisherA publisherB shell shell_tui)
-deploy("wb_dp" BUNDLES tracker_depman publisherA publisherB shell shell_tui log_service)
-#deploy("echo" BUNDLES echo_server echo_client shell shell_tui)
+add_library(log_writer SHARED dependency_activator log_writer)
+include_directories("${PROJECT_SOURCE_DIR}/celix")
+include_directories("${PROJECT_SOURCE_DIR}/dependency_manager")
+include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
+target_link_libraries(log_writer framework dependency_manager)
+
+bundle(log_writer)

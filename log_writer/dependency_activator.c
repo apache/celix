@@ -24,55 +24,43 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
-#include <pthread.h>
-#include <unistd.h>
 #include "celixbool.h"
 
 #include "dependency_activator_base.h"
 #include "service_component_private.h"
-#include "publisher.h"
-#include "tracker.h"
+#include "log_writer.h"
 #include "log_service.h"
+#include "bundle_context.h"
 
 void * dm_create(BUNDLE_CONTEXT context) {
-	struct data * data = malloc(sizeof(*data));
-	data->publishers = arrayList_create();
-	data->context = NULL;
-	data->running = false;
-	data->sender = NULL;
-	data->service = NULL;
-	return data;
+    apr_pool_t *pool;
+
+    bundleContext_getMemoryPool(context, &pool);
+
+    log_writer_t writer = NULL;
+    logWriter_create(pool, &writer);
+	return writer;
 }
 
 void dm_init(void * userData, BUNDLE_CONTEXT context, DEPENDENCY_MANAGER manager) {
-	struct data * data = (struct data *) userData;
-	data->context = context;
+	log_writer_t data = (log_writer_t) userData;
 
 	SERVICE service = dependencyActivatorBase_createService(manager);
 	serviceComponent_setImplementation(service, data);
 
 	SERVICE_DEPENDENCY dep = dependencyActivatorBase_createServiceDependency(manager);
-	serviceDependency_setRequired(dep, false);
-	serviceDependency_setService(dep, PUBLISHER_NAME, NULL);
-	serviceDependency_setCallbacks(dep, tracker_addedServ, tracker_modifiedServ, tracker_removedServ);
+	serviceDependency_setRequired(dep, true);
+	serviceDependency_setAutoConfigure(dep, (void**) &(data->logReader));
+	serviceDependency_setService(dep, (char *) LOG_READER_SERVICE_NAME, NULL);
 	serviceComponent_addServiceDependency(service, dep);
-
-	SERVICE_DEPENDENCY dep2 = dependencyActivatorBase_createServiceDependency(manager);
-    serviceDependency_setRequired(dep2, false);
-    serviceDependency_setService(dep2, (char *) LOG_SERVICE_NAME, NULL);
-    serviceDependency_setCallbacks(dep2, tracker_addLog, tracker_modifiedLog, tracker_removeLog);
-    serviceComponent_addServiceDependency(service, dep2);
 
 	data->service = service;
 	dependencyManager_add(manager, service);
 }
 
 void dm_destroy(void * userData, BUNDLE_CONTEXT context, DEPENDENCY_MANAGER manager) {
-	struct data * data = (struct data *) userData;
+    log_writer_t data = (log_writer_t) userData;
 	dependencyManager_remove(manager, data->service);
-	arrayList_destroy(data->publishers);
-	data->publishers = NULL;
-	free(data);
-	data = NULL;
+	//free(data);
 }
 

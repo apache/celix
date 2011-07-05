@@ -23,7 +23,7 @@ project (Celix C)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 
 SET(CMAKE_BUILD_TYPE "Debug")
-SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99")
+SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 ${CMAKE_C_FLAGS}")
 SET(CMAKE_INSTALL_COMPONENT "framework")
 
 ADD_CUSTOM_TARGET(install-fw
@@ -54,6 +54,9 @@ add_subdirectory(test)
 
 add_subdirectory(shell)
 add_subdirectory(shell_tui)
+
+add_subdirectory(log_service)
+add_subdirectory(log_writer)
 
 #add_subdirectory(receiver)
 #add_subdirectory(receiver-2.0)

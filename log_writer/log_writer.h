@@ -17,24 +17,28 @@
  *under the License.
  */
 /*
- * dependency_activator_base.h
+ * low_writer.h
  *
- *  Created on: May 12, 2010
- *      Author: dk489
+ *  Created on: Jul 4, 2011
+ *      Author: alexander
  */
 
-#ifndef DEPENDENCY_ACTIVATOR_BASE_H_
-#define DEPENDENCY_ACTIVATOR_BASE_H_
+#ifndef LOG_WRITER_H_
+#define LOG_WRITER_H_
 
 #include "headers.h"
-#include "dependency_manager.h"
-#include "service_dependency.h"
+#include "service_component.h"
+#include "log_reader_service.h"
 
-void * dm_create(BUNDLE_CONTEXT context);
-void dm_init(void * userData, BUNDLE_CONTEXT context, DEPENDENCY_MANAGER manager);
-void dm_destroy(void * userData, BUNDLE_CONTEXT context, DEPENDENCY_MANAGER manager);
+struct log_writer {
+    log_reader_service_t logReader;
+    SERVICE service;
+    log_listener_t logListener;
+};
 
-SERVICE dependencyActivatorBase_createService();
-SERVICE_DEPENDENCY dependencyActivatorBase_createServiceDependency(DEPENDENCY_MANAGER manager);
+typedef struct log_writer *log_writer_t;
 
-#endif /* DEPENDENCY_ACTIVATOR_BASE_H_ */
+celix_status_t logWriter_create(apr_pool_t *pool, log_writer_t *writer);
+
+
+#endif /* LOG_WRITER_H_ */

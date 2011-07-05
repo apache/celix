@@ -17,24 +17,16 @@
  *under the License.
  */
 /*
- * dependency_activator_base.h
+ * log_command.h
  *
- *  Created on: May 12, 2010
- *      Author: dk489
+ *  Created on: Jun 26, 2011
+ *      Author: alexander
  */
 
-#ifndef DEPENDENCY_ACTIVATOR_BASE_H_
-#define DEPENDENCY_ACTIVATOR_BASE_H_
+#ifndef LOG_COMMAND_H_
+#define LOG_COMMAND_H_
 
-#include "headers.h"
-#include "dependency_manager.h"
-#include "service_dependency.h"
+COMMAND logCommand_create(BUNDLE_CONTEXT context);
+void logCommand_destroy(COMMAND command);
 
-void * dm_create(BUNDLE_CONTEXT context);
-void dm_init(void * userData, BUNDLE_CONTEXT context, DEPENDENCY_MANAGER manager);
-void dm_destroy(void * userData, BUNDLE_CONTEXT context, DEPENDENCY_MANAGER manager);
-
-SERVICE dependencyActivatorBase_createService();
-SERVICE_DEPENDENCY dependencyActivatorBase_createServiceDependency(DEPENDENCY_MANAGER manager);
-
-#endif /* DEPENDENCY_ACTIVATOR_BASE_H_ */
+#endif /* LOG_COMMAND_H_ */

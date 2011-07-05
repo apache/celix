@@ -37,8 +37,23 @@ void serviceDependency_removedService(void * handle, SERVICE_REFERENCE reference
 SERVICE_DEPENDENCY serviceDependency_create(BUNDLE_CONTEXT context) {
 	SERVICE_DEPENDENCY dependency = (SERVICE_DEPENDENCY) malloc(sizeof(*dependency));
 	dependency->context = context;
+
 	dependency->autoConfigureField = NULL;
+	dependency->tracker = NULL;
+	dependency->trackedServiceName = NULL;
+	dependency->service = NULL;
+	dependency->serviceInstance = NULL;
+	dependency->reference = NULL;
+	dependency->interface = NULL;
+
 	dependency->available = false;
+	dependency->started = false;
+	dependency->required = false;
+
+	dependency->added = NULL;
+	dependency->changed = NULL;
+	dependency->removed = NULL;
+
 	return dependency;
 }
 

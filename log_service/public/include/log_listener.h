@@ -17,24 +17,25 @@
  *under the License.
  */
 /*
- * dependency_activator_base.h
+ * log_listener.h
  *
- *  Created on: May 12, 2010
- *      Author: dk489
+ *  Created on: Jul 4, 2011
+ *      Author: alexander
  */
 
-#ifndef DEPENDENCY_ACTIVATOR_BASE_H_
-#define DEPENDENCY_ACTIVATOR_BASE_H_
+#ifndef LOG_LISTENER_H_
+#define LOG_LISTENER_H_
 
-#include "headers.h"
-#include "dependency_manager.h"
-#include "service_dependency.h"
+#include "log_entry.h"
+#include "celix_errno.h"
 
-void * dm_create(BUNDLE_CONTEXT context);
-void dm_init(void * userData, BUNDLE_CONTEXT context, DEPENDENCY_MANAGER manager);
-void dm_destroy(void * userData, BUNDLE_CONTEXT context, DEPENDENCY_MANAGER manager);
+struct log_listener {
+    void *handle;
+    celix_status_t (*logged)(struct log_listener *listener, log_entry_t entry);
+};
 
-SERVICE dependencyActivatorBase_createService();
-SERVICE_DEPENDENCY dependencyActivatorBase_createServiceDependency(DEPENDENCY_MANAGER manager);
+typedef struct log_listener * log_listener_t;
 
-#endif /* DEPENDENCY_ACTIVATOR_BASE_H_ */
+celix_status_t logListener_logged(log_listener_t listener, log_entry_t entry);
+
+#endif /* LOG_LISTENER_H_ */

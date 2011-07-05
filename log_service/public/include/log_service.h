@@ -17,24 +17,40 @@
  *under the License.
  */
 /*
- * dependency_activator_base.h
+ * log_service.h
  *
- *  Created on: May 12, 2010
- *      Author: dk489
+ *  Created on: Jun 22, 2011
+ *      Author: alexander
  */
 
-#ifndef DEPENDENCY_ACTIVATOR_BASE_H_
-#define DEPENDENCY_ACTIVATOR_BASE_H_
+#ifndef LOG_SERVICE_H_
+#define LOG_SERVICE_H_
 
-#include "headers.h"
-#include "dependency_manager.h"
-#include "service_dependency.h"
+#include "celix_errno.h"
+#include "service_reference.h"
 
-void * dm_create(BUNDLE_CONTEXT context);
-void dm_init(void * userData, BUNDLE_CONTEXT context, DEPENDENCY_MANAGER manager);
-void dm_destroy(void * userData, BUNDLE_CONTEXT context, DEPENDENCY_MANAGER manager);
+static const char * const LOG_SERVICE_NAME = "log_service";
 
-SERVICE dependencyActivatorBase_createService();
-SERVICE_DEPENDENCY dependencyActivatorBase_createServiceDependency(DEPENDENCY_MANAGER manager);
+typedef struct log_service_data *log_service_data_t;
 
-#endif /* DEPENDENCY_ACTIVATOR_BASE_H_ */
+enum log_level
+{
+    LOG_ERROR = 0x00000001,
+    LOG_WARNING = 0x00000002,
+    LOG_INFO = 0x00000003,
+    LOG_DEBUG = 0x00000004,
+};
+
+typedef enum log_level log_level_t;
+
+struct log_service {
+    log_service_data_t logger;
+    celix_status_t (*log)(log_service_data_t logger, log_level_t level, char * message);
+    celix_status_t (*logSr)(log_service_data_t logger, SERVICE_REFERENCE reference, log_level_t level, char * message);
+};
+
+typedef struct log_service *log_service_t;
+
+
+
+#endif /* LOG_SERVICE_H_ */

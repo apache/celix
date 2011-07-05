@@ -42,8 +42,7 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 	celix_status_t status = bundleContext_getMemoryPool(context, &pool);
 	if (status == CELIX_SUCCESS) {
 		*userData = apr_palloc(pool, sizeof(DEPENDENCY_ACTIVATOR_BASE));
-		void * componentData = dm_create();
-		((DEPENDENCY_ACTIVATOR_BASE)(*userData))->userData = componentData;
+		((DEPENDENCY_ACTIVATOR_BASE)(*userData))->userData = dm_create(context);;
 	} else {
 		status = CELIX_START_ERROR;
 	}
