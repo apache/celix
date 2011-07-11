@@ -26,6 +26,9 @@
 #ifndef ATTRIBUTE_H_
 #define ATTRIBUTE_H_
 
+#include <apr_general.h>
+#include "celix_errno.h"
+
 struct attribute {
 	char * key;
 	char * value;
@@ -33,7 +36,7 @@ struct attribute {
 
 typedef struct attribute * ATTRIBUTE;
 
-ATTRIBUTE attribute_create(char * key, char * value);
+celix_status_t attribute_create(char * key, char * value, apr_pool_t *memory_pool, ATTRIBUTE *attribute);
 void attribute_destroy(ATTRIBUTE attribute);
 
 

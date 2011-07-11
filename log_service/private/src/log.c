@@ -61,7 +61,7 @@ celix_status_t log_create(apr_pool_t *pool, log_t *logger) {
     } else {
         apr_status_t apr_status;
 
-        (*logger)->entries = linkedList_create();
+        linkedList_create(pool, &(*logger)->entries);
         apr_thread_mutex_create(&(*logger)->lock, APR_THREAD_MUTEX_UNNESTED, pool);
 
         (*logger)->pool = pool;
@@ -105,20 +105,26 @@ celix_status_t log_addEntry(log_t log, log_entry_t entry) {
     return CELIX_SUCCESS;
 }
 
-celix_status_t log_getEntries(log_t log, LINKED_LIST *list) {
-    *list = linkedList_create();
-    LINKED_LIST_ITERATOR iter = NULL;
+celix_status_t log_getEntries(log_t log, apr_pool_t *memory_pool, LINKED_LIST *list) {
+    LINKED_LIST entries = NULL;
+    if (linkedList_create(memory_pool, &entries) == CELIX_SUCCESS) {
+        LINKED_LIST_ITERATOR iter = NULL;
 
-    apr_thread_mutex_lock(log->lock);
+        apr_thread_mutex_lock(log->lock);
 
-    iter = linkedListIterator_create(log->entries, 0);
-    while (linkedListIterator_hasNext(iter)) {
-        linkedList_addElement(*list, linkedListIterator_next(iter));
+        iter = linkedListIterator_create(log->entries, 0);
+        while (linkedListIterator_hasNext(iter)) {
+            linkedList_addElement(entries, linkedListIterator_next(iter));
+        }
+
+        *list = entries;
+
+        apr_thread_mutex_unlock(log->lock);
+
+        return CELIX_SUCCESS;
+    } else {
+        return CELIX_ENOMEM;
     }
-
-    apr_thread_mutex_unlock(log->lock);
-
-    return CELIX_SUCCESS;
 }
 
 celix_status_t log_addLogListener(log_t logger, log_listener_t listener) {
@@ -215,7 +221,7 @@ celix_status_t log_stopListenerThread(log_t logger) {
         if (status != APR_SUCCESS) {
             status = CELIX_INVALID_SYNTAX;
         } else {
-            apr_thread_join(&stat, logger->listenerThread);
+            //apr_thread_join(&stat, logger->listenerThread);
             logger->listenerThread = NULL;
         }
 

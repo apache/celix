@@ -26,14 +26,16 @@
 #ifndef LINKEDLIST_H_
 #define LINKEDLIST_H_
 
+#include <apr_pools.h>
+
 #include "celixbool.h"
+#include "celix_errno.h"
 #include "exports.h"
 
 typedef struct linkedListEntry * LINKED_LIST_ENTRY;
 typedef struct linkedList * LINKED_LIST;
 
-UTILS_EXPORT LINKED_LIST linkedList_create(void);
-void linkedList_destroy(LINKED_LIST list);
+UTILS_EXPORT celix_status_t linkedList_create(apr_pool_t *pool, LINKED_LIST *list);
 UTILS_EXPORT void * linkedList_getFirst(LINKED_LIST list);
 UTILS_EXPORT void * linkedList_getLast(LINKED_LIST list);
 UTILS_EXPORT void * linkedList_removeFirst(LINKED_LIST list);

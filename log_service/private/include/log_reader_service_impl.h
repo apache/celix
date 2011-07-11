@@ -31,7 +31,7 @@
 
 celix_status_t logReaderService_create(log_t log, apr_pool_t *pool, log_reader_data_t *reader);
 
-celix_status_t logReaderService_getLog(log_reader_data_t reader, LINKED_LIST *list);
+celix_status_t logReaderService_getLog(log_reader_data_t reader, apr_pool_t *memory_pool, LINKED_LIST *list);
 
 celix_status_t logReaderService_addLogListener(log_reader_data_t reader, log_listener_t listener);
 celix_status_t logReaderService_removeLogListener(log_reader_data_t reader, log_listener_t listener);

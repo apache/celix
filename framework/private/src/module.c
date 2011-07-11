@@ -51,8 +51,15 @@ struct module {
 };
 
 MODULE module_create(MANIFEST headerMap, char * moduleId, BUNDLE bundle) {
+    MODULE module;
+    MANIFEST_PARSER mp;
+    apr_pool_t *pool;
+
+    module = NULL;
+    pool = NULL;
+
     if (headerMap != NULL) {
-        MODULE module = (MODULE) malloc(sizeof(*module));
+        module = (MODULE) apr_palloc(bundle->memoryPool, sizeof(*module));
         module->headerMap = headerMap;
         module->id = apr_pstrdup(bundle->memoryPool, moduleId);
         module->bundle = bundle;
@@ -60,33 +67,47 @@ MODULE module_create(MANIFEST headerMap, char * moduleId, BUNDLE bundle) {
 
         module->dependentImporters = arrayList_create();
 
-        MANIFEST_PARSER mp = manifestParser_createManifestParser(module, headerMap);
-        module->symbolicName = apr_pstrdup(bundle->memoryPool, mp->bundleSymbolicName);
-        module->version = mp->bundleVersion;
-        module->capabilities = mp->capabilities;
-        module->requirements = mp->requirements;
-        manifestParser_destroy(mp);
-
-        module->wires = NULL;
-
-        return module;
-    } else {
-        return NULL;
+        if (apr_pool_create(&pool, bundle->memoryPool) == APR_SUCCESS) {
+            if (manifestParser_create(module, headerMap, pool, &mp) == CELIX_SUCCESS) {
+                module->symbolicName = apr_pstrdup(bundle->memoryPool, mp->bundleSymbolicName);
+                module->version = mp->bundleVersion;
+                module->capabilities = mp->capabilities;
+                module->requirements = mp->requirements;
+                module->wires = NULL;
+            } else {
+                apr_pool_destroy(pool);
+            }
+        }
     }
+
+    return module;
 }
 
 MODULE module_createFrameworkModule(BUNDLE bundle) {
-	MODULE module = (MODULE) malloc(sizeof(*module));
-	module->id = apr_pstrdup(bundle->memoryPool, "0");
-	module->symbolicName = apr_pstrdup(bundle->memoryPool, "framework");
-	module->version = version_createVersion(1, 0, 0, "");
-	module->capabilities = linkedList_create();
-	module->requirements = linkedList_create();
-	module->dependentImporters = arrayList_create();
-	module->wires = NULL;
-	module->headerMap = NULL;
-	module->resolved = false;
-	module->bundle = NULL;
+    MODULE module;
+    apr_pool_t *capabilities_pool;
+    apr_pool_t *requirements_pool;
+    apr_pool_t *dependentImporters_pool;
+
+	module = (MODULE) apr_palloc(bundle->memoryPool, sizeof(*module));
+	if (module) {
+	    if (apr_pool_create(&capabilities_pool, bundle->memoryPool) == APR_SUCCESS) {
+	        if (apr_pool_create(&requirements_pool, bundle->memoryPool) == APR_SUCCESS) {
+	            if (apr_pool_create(&dependentImporters_pool, bundle->memoryPool) == APR_SUCCESS) {
+                    module->id = apr_pstrdup(bundle->memoryPool, "0");
+                    module->symbolicName = apr_pstrdup(bundle->memoryPool, "framework");
+                    module->version = version_createVersion(1, 0, 0, "");
+                    linkedList_create(capabilities_pool, &module->capabilities);
+                    linkedList_create(requirements_pool, &module->requirements);
+                    module->dependentImporters = arrayList_create();
+                    module->wires = NULL;
+                    module->headerMap = NULL;
+                    module->resolved = false;
+                    module->bundle = bundle;
+	            }
+	        }
+	    }
+	}
 	return module;
 }
 
@@ -105,9 +126,6 @@ void module_destroy(MODULE module) {
 	}
 	linkedListIterator_destroy(reqIter);
 
-	linkedList_destroy(module->capabilities);
-	linkedList_destroy(module->requirements);
-
 	arrayList_destroy(module->dependentImporters);
 
 	version_destroy(module->version);
@@ -116,8 +134,6 @@ void module_destroy(MODULE module) {
 		manifest_destroy(module->headerMap);
 	}
 	module->headerMap = NULL;
-
-	free(module);
 }
 
 WIRE module_getWire(MODULE module, char * serviceName) {

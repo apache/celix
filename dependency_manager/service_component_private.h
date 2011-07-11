@@ -92,7 +92,7 @@ bool state_isWaitingForRequired(STATE state);
 bool state_isTrackingOptional(STATE state);
 ARRAY_LIST state_getDependencies(STATE state);
 
-EXECUTOR executor_create();
+EXECUTOR executor_create(apr_pool_t *memory_pool);
 void executor_enqueue(EXECUTOR executor, SERVICE service, void (*function), void * argument);
 void executor_execute(EXECUTOR executor);
 void executor_scheduleNext(EXECUTOR executor);

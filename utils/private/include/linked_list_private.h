@@ -29,12 +29,14 @@
 #include "linkedlist.h"
 
 struct linkedListEntry {
+    apr_pool_t *memory_pool; // this is the (sub)memory pool specific for this linked list entry
 	void * element;
 	struct linkedListEntry * next;
 	struct linkedListEntry * previous;
 };
 
 struct linkedList {
+    apr_pool_t *memory_pool;
 	LINKED_LIST_ENTRY header;
 	size_t size;
 	int modificationCount;

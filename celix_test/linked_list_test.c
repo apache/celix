@@ -17,26 +17,57 @@
  *under the License.
  */
 /*
- * test.c
+ * linked_list_test.c
  *
  *  Created on: Jul 16, 2010
  *      Author: alexanderb
  */
 #include <stdio.h>
+#include <apr_pools.h>
 
-#include "CUnit/Basic.h"
+#include "Basic.h"
 #include "linkedlist.h"
 
+apr_pool_t *memory_pool;
+LINKED_LIST list;
+
+int setup(void) {
+    apr_initialize();
+    apr_pool_create(&memory_pool, NULL);
+
+    linkedList_create(memory_pool, &list);
+    if (list) {
+        return 0;
+    } else {
+        // failure during setup
+        return 1;
+    }
+}
+
+int teardown(void) {
+    apr_pool_destroy(memory_pool);
+    apr_terminate();
+    return 0;
+}
+
 void test_linkedList_create(void) {
-	LINKED_LIST list = linkedList_create();
-	CU_ASSERT(list != NULL);
+    CU_ASSERT_PTR_NOT_NULL_FATAL(list);
+    CU_ASSERT_EQUAL(linkedList_size(list), 0);
 }
 
 void test_linkedList_add(void) {
-	LINKED_LIST list = linkedList_create();
-	linkedList_addElement(list, "element");
+    CU_ASSERT_EQUAL(linkedList_size(list), 0);
+    linkedList_addElement(list, "element");
+	CU_ASSERT_EQUAL(linkedList_size(list), 1);
+}
 
-	CU_ASSERT_EQUAL(linkedList_size(list), 2);
+void test_linkedList_remove(void) {
+    CU_ASSERT_EQUAL(linkedList_size(list), 0);
+    linkedList_addElement(list, "element");
+    CU_ASSERT_EQUAL(linkedList_size(list), 1);
+
+    linkedList_removeElement(list, "element");
+    CU_ASSERT_EQUAL(linkedList_size(list), 0);
 }
 
 int main (int argc, char** argv) {
@@ -47,7 +78,7 @@ int main (int argc, char** argv) {
 	  return CU_get_error();
 
 	/* add a suite to the registry */
-	pSuite = CU_add_suite("Suite_1", NULL, NULL);
+	pSuite = CU_add_suite("Suite_1", setup, teardown);
 	if (NULL == pSuite) {
 	  CU_cleanup_registry();
 	  return CU_get_error();
@@ -55,7 +86,8 @@ int main (int argc, char** argv) {
 
 	/* add the tests to the suite */
 	if (NULL == CU_add_test(pSuite, "List Creation Test", test_linkedList_create) ||
-		NULL == CU_add_test(pSuite, "List Add Test", test_linkedList_add))
+		NULL == CU_add_test(pSuite, "List Add Test", test_linkedList_add) ||
+		NULL == CU_add_test(pSuite, "List Remove Test", test_linkedList_remove))
 	{
 	  CU_cleanup_registry();
 	  return CU_get_error();
@@ -65,6 +97,5 @@ int main (int argc, char** argv) {
 	CU_basic_set_mode(CU_BRM_VERBOSE);
 	CU_basic_run_tests();
 	CU_cleanup_registry();
-	//return CU_get_error();
-	return -1;
+	return CU_get_error();
 }

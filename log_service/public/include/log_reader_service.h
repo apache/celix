@@ -26,6 +26,7 @@
 #ifndef LOG_READER_SERVICE_H_
 #define LOG_READER_SERVICE_H_
 
+#include <apr_general.h>
 #include "celix_errno.h"
 #include "linkedlist.h"
 #include "log_listener.h"
@@ -36,7 +37,7 @@ typedef struct log_reader_data * log_reader_data_t;
 
 struct log_reader_service {
     log_reader_data_t reader;
-    celix_status_t (*getLog)(log_reader_data_t reader, LINKED_LIST *list);
+    celix_status_t (*getLog)(log_reader_data_t reader, apr_pool_t *memory_pool, LINKED_LIST *list);
     celix_status_t (*addLogListener)(log_reader_data_t reader, log_listener_t listener);
     celix_status_t (*removeLogListener)(log_reader_data_t reader, log_listener_t listener);
     celix_status_t (*removeAllLogListener)(log_reader_data_t reader);

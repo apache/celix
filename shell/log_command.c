@@ -51,6 +51,8 @@ void logCommand_destroy(COMMAND command) {
 void logCommand_execute(COMMAND command, char *line, void (*out)(char *), void (*err)(char *)) {
     SERVICE_REFERENCE readerService = NULL;
     SERVICE_REFERENCE logService = NULL;
+    apr_pool_t *memory_pool = NULL;
+    apr_pool_t *bundle_memory_pool = NULL;
 
     bundleContext_getServiceReference(command->bundleContext, (char *) LOG_READER_SERVICE_NAME, &readerService);
     if (readerService != NULL) {
@@ -58,15 +60,22 @@ void logCommand_execute(COMMAND command, char *line, void (*out)(char *), void (
         LINKED_LIST list = NULL;
         LINKED_LIST_ITERATOR iter = NULL;
         log_reader_service_t reader = NULL;
-        bundleContext_getService(command->bundleContext, readerService, (void **) &reader);
-        reader->getLog(reader->reader, &list);
-        iter = linkedListIterator_create(list, 0);
-        while (linkedListIterator_hasNext(iter)) {
-            log_entry_t entry = linkedListIterator_next(iter);
-            sprintf(line, "%s\n", entry->message);
-            out(line);
-        }
 
+        bundleContext_getMemoryPool(command->bundleContext, &bundle_memory_pool);
+        apr_pool_create(&memory_pool, bundle_memory_pool);
+        if (memory_pool) {
+            bundleContext_getService(command->bundleContext, readerService, (void **) &reader);
+            reader->getLog(reader->reader, memory_pool, &list);
+            iter = linkedListIterator_create(list, 0);
+            while (linkedListIterator_hasNext(iter)) {
+                log_entry_t entry = linkedListIterator_next(iter);
+                sprintf(line, "%s\n", entry->message);
+                out(line);
+            }
+            apr_pool_destroy(memory_pool);
+        } else {
+            out("Log reader service: out of memory!\n");
+        }
     } else {
         out("No log reader available\n");
     }

@@ -43,13 +43,6 @@ struct manifestParser {
 
 typedef struct manifestParser * MANIFEST_PARSER;
 
-MANIFEST_PARSER manifestParser_createManifestParser(MODULE owner, MANIFEST manifest);
-celix_status_t manifestParser_destroy(MANIFEST_PARSER parser);
-
-LINKED_LIST manifestParser_parseImportHeader(char * header);
-LINKED_LIST manifestParser_parseExportHeader(MODULE module, char * header);
-LINKED_LIST manifestParser_parseDelimitedString(char * value, char * delim);
-LINKED_LIST manifestParser_parseStandardHeaderClause(char * clauseString);
-LINKED_LIST manifestParser_parseStandardHeader(char * header);
+celix_status_t manifestParser_create(MODULE owner, MANIFEST manifest, apr_pool_t *memory_pool, MANIFEST_PARSER *manifest_parser);
 
 #endif /* MANIFEST_PARSER_H_ */

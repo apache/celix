@@ -27,15 +27,22 @@
 
 #include "attribute.h"
 
-ATTRIBUTE attribute_create(char * key, char * value) {
-	ATTRIBUTE attribute = malloc(sizeof(*attribute));
-	attribute->key = key;
-	attribute->value = value;
-	return attribute;
+celix_status_t attribute_create(char * key, char * value, apr_pool_t *memory_pool, ATTRIBUTE *attribute) {
+	ATTRIBUTE attr = apr_palloc(memory_pool, sizeof(*attr));
+	if (attr) {
+        attr->key = key;
+        attr->value = value;
+
+	    *attribute = attr;
+
+        return CELIX_SUCCESS;
+	} else {
+	    return CELIX_ENOMEM;
+	}
 }
 
 void attribute_destroy(ATTRIBUTE attribute) {
-	free(attribute->key);
-	free(attribute->value);
-	free(attribute);
+	//free(attribute->key);
+	//free(attribute->value);
+	//free(attribute);
 }

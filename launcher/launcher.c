@@ -62,35 +62,39 @@ int main(void) {
 
     char delims[] = " ";
     char * result;
-    LINKED_LIST bundles = linkedList_create();
-    result = strtok(autoStart, delims);
-    while (result != NULL) {
-    	char * location = apr_pstrdup(memoryPool, result);
-    	linkedList_addElement(bundles, location);
-    	result = strtok(NULL, delims);
-    }
-    // First install all bundles
-    // Afterwards start them
-    ARRAY_LIST installed = arrayList_create();
-    BUNDLE_CONTEXT context = bundle_getContext(framework->bundle);
-    LINKED_LIST_ITERATOR iter = linkedListIterator_create(bundles, 0);
-    while (linkedListIterator_hasNext(iter)) {
-    	BUNDLE current = NULL;
-    	char * location = linkedListIterator_next(iter);
-    	bundleContext_installBundle(context, location, &current);
-    	arrayList_add(installed, current);
-    	linkedListIterator_remove(iter);
-    }
-    linkedListIterator_destroy(iter);
-    linkedList_destroy(bundles);
+    apr_pool_t *pool;
+    if (apr_pool_create(&pool, memoryPool) == APR_SUCCESS) {
+        LINKED_LIST bundles;
+        linkedList_create(pool, &bundles);
+        result = strtok(autoStart, delims);
+        while (result != NULL) {
+            char * location = apr_pstrdup(memoryPool, result);
+            linkedList_addElement(bundles, location);
+            result = strtok(NULL, delims);
+        }
+        // First install all bundles
+        // Afterwards start them
+        ARRAY_LIST installed = arrayList_create();
+        BUNDLE_CONTEXT context = bundle_getContext(framework->bundle);
+        LINKED_LIST_ITERATOR iter = linkedListIterator_create(bundles, 0);
+        while (linkedListIterator_hasNext(iter)) {
+            BUNDLE current = NULL;
+            char * location = linkedListIterator_next(iter);
+            bundleContext_installBundle(context, location, &current);
+            arrayList_add(installed, current);
+            linkedListIterator_remove(iter);
+        }
+        linkedListIterator_destroy(iter);
+        apr_pool_destroy(pool);
 
-    int i;
-    for (i = 0; i < arrayList_size(installed); i++) {
-    	BUNDLE bundle = (BUNDLE) arrayList_get(installed, i);
-		startBundle(bundle, 0);
-    }
+        int i;
+        for (i = 0; i < arrayList_size(installed); i++) {
+            BUNDLE bundle = (BUNDLE) arrayList_get(installed, i);
+            startBundle(bundle, 0);
+        }
 
-    arrayList_destroy(installed);
+        arrayList_destroy(installed);
+    }
 
     framework_waitForStop(framework);
     framework_destroy(framework);

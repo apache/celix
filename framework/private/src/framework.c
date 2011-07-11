@@ -185,7 +185,6 @@ celix_status_t framework_destroy(FRAMEWORK framework) {
 				wire_destroy(wire);
 			}
 			linkedListIterator_destroy(iter);
-			linkedList_destroy(wires);
 		}
 
 		bundleArchive_destroy(bundle->archive);

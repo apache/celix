@@ -29,25 +29,25 @@
 #include "linkedlist.h"
 #include "linked_list_private.h"
 
-LINKED_LIST linkedList_create(void) {
-	LINKED_LIST list = (LINKED_LIST) malloc(sizeof(*list));
-	list->header = (LINKED_LIST_ENTRY) malloc(sizeof(*(list->header)));
-	list->header->element = NULL;
-	list->header->next = list->header;
-	list->header->previous = list->header;
-	list->size = 0;
-	list->modificationCount = 0;
+celix_status_t linkedList_create(apr_pool_t *pool, LINKED_LIST *list) {
+	LINKED_LIST linked_list = (LINKED_LIST) apr_pcalloc(pool, sizeof(*linked_list));
+	if (linked_list) {
+        linked_list->header = (LINKED_LIST_ENTRY) apr_pcalloc(pool, sizeof(*(linked_list->header)));
+        if (linked_list->header) {
+            linked_list->header->element = NULL;
+            linked_list->header->next = linked_list->header;
+            linked_list->header->previous = linked_list->header;
+            linked_list->size = 0;
+            linked_list->modificationCount = 0;
+            linked_list->memory_pool = pool;
 
-	return list;
-}
+            *list = linked_list;
 
-void linkedList_destroy(LINKED_LIST list) {
-	linkedList_clear(list);
-	free(list->header);
-	list->header = NULL;
-	list->modificationCount = 0;
-	list->size = 0;
-	free(list);
+            return CELIX_SUCCESS;
+        }
+	}
+
+	return CELIX_ENOMEM;
 }
 
 void * linkedList_getFirst(LINKED_LIST list) {
@@ -193,19 +193,23 @@ int linkedList_indexOf(LINKED_LIST list, void * element) {
 	return -1;
 }
 
-// int linkedList_lastIndexOf(LINKED_LIST list, void * element);
-
 LINKED_LIST_ENTRY linkedList_addBefore(LINKED_LIST list, void * element, LINKED_LIST_ENTRY entry) {
-	LINKED_LIST_ENTRY new = (LINKED_LIST_ENTRY) malloc(sizeof(*new));
-	new->element = element;
-	new->next = entry;
-	new->previous = entry->previous;
+    LINKED_LIST_ENTRY new = NULL;
+    apr_pool_t *sub_pool = NULL;
 
-	new->previous->next = new;
-	new->next->previous = new;
+    if (apr_pool_create(&sub_pool, list->memory_pool) == APR_SUCCESS) {
+        new = (LINKED_LIST_ENTRY) apr_palloc(sub_pool, sizeof(*new));
+        new->memory_pool = sub_pool;
+        new->element = element;
+        new->next = entry;
+        new->previous = entry->previous;
 
-	list->size++;
-	list->modificationCount++;
+        new->previous->next = new;
+        new->next->previous = new;
+
+        list->size++;
+        list->modificationCount++;
+    }
 
 	return new;
 }
@@ -222,7 +226,7 @@ void * linkedList_removeEntry(LINKED_LIST list, LINKED_LIST_ENTRY entry) {
 	entry->next->previous = entry->previous;
 
 	entry->next = entry->previous = NULL;
-	free(entry);
+	apr_pool_destroy(entry->memory_pool);
 
 	list->size--;
 	list->modificationCount++;

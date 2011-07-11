@@ -25,5 +25,6 @@ add_library(utils SHARED ${SRC})
 IF(UNIX)
 	target_link_libraries(utils m)
 ENDIF(UNIX)
+target_link_libraries(utils ${APR_LIBRARY})
 
 install(TARGETS utils LIBRARY DESTINATION lib ARCHIVE DESTINATION lib COMPONENT framework)

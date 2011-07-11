@@ -59,24 +59,33 @@ struct executor {
 };
 
 SERVICE serviceComponent_create(BUNDLE_CONTEXT context, DEPENDENCY_MANAGER manager) {
-	SERVICE service = (SERVICE) malloc(sizeof(*service));
+    SERVICE service;
+    apr_pool_t *pool;
 
-	service->impl = NULL;
-	service->serviceName = NULL;
-	service->serviceRegistration = NULL;
-	service->dependencies = arrayList_create();
+	bundleContext_getMemoryPool(context, &pool);
 
-	service->init = service_init;
-	service->start= service_start;
-	service->stop = service_stop;
-	service->destroy = service_destroy;
+	apr_pool_t *mypool;
+	apr_pool_create(&mypool, pool);
 
-	service->context = context;
-	service->manager = manager;
-	service->state = state_create(arrayList_clone(service->dependencies), false);
-	service->executor = executor_create();
+	if (mypool) {
+        service = (SERVICE) apr_pcalloc(mypool, sizeof(*service));
+        service->impl = NULL;
+        service->serviceName = NULL;
+        service->serviceRegistration = NULL;
+        service->dependencies = arrayList_create();
 
-	pthread_mutex_init(&service->mutex, NULL);
+        service->init = service_init;
+        service->start= service_start;
+        service->stop = service_stop;
+        service->destroy = service_destroy;
+
+        service->context = context;
+        service->manager = manager;
+        service->state = state_create(arrayList_clone(service->dependencies), false);
+        service->executor = executor_create(mypool);
+
+        pthread_mutex_init(&service->mutex, NULL);
+	}
 
 	return service;
 }
@@ -398,11 +407,16 @@ ARRAY_LIST state_getDependencies(STATE state) {
 	return state->dependencies;
 }
 
-EXECUTOR executor_create() {
-	EXECUTOR executor = (EXECUTOR) malloc(sizeof(*executor));
-	executor->workQueue = linkedList_create();
-	executor->active = NULL;
-	pthread_mutex_init(&executor->mutex, NULL);
+EXECUTOR executor_create(apr_pool_t *memory_pool) {
+	EXECUTOR executor;
+
+	executor = (EXECUTOR) apr_pcalloc(memory_pool, sizeof(*executor));
+	if (executor) {
+        linkedList_create(memory_pool, &executor->workQueue);
+        executor->active = NULL;
+        pthread_mutex_init(&executor->mutex, NULL);
+	}
+
 	return executor;
 }
 
