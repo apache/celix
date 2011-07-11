@@ -40,6 +40,7 @@ void * dp_send(void * handle) {
 		for (i = 0; i < arrayList_size(data->publishers); i++) {
 			PUBLISHER_SERVICE pub = (PUBLISHER_SERVICE) arrayList_get(data->publishers, i);
 			pub->invoke(pub->publisher, "Tracker message");
+			data->logger->log(data->logger->logger, LOG_INFO, "Sending message to publisher");
 		}
 		sleep(1);
 	}
@@ -85,15 +86,21 @@ void tracker_removedServ(void * handle, SERVICE_REFERENCE ref, void * service) {
 }
 
 void tracker_addLog(void *handle, SERVICE_REFERENCE ref, void *service) {
+    struct data * data = (struct data *) handle;
     printf("Add log\n");
+    data->logger = service;
     ((log_service_t) service)->log(((log_service_t) service)->logger, LOG_DEBUG, "test");
 }
 
 void tracker_modifiedLog(void *handle, SERVICE_REFERENCE ref, void *service) {
+    struct data * data = (struct data *) handle;
     printf("Modify log\n");
+    data->logger = service;
     ((log_service_t) service)->log(((log_service_t) service)->logger, LOG_DEBUG, "test");
 }
 
 void tracker_removeLog(void *handle, SERVICE_REFERENCE ref, void *service) {
+    struct data * data = (struct data *) handle;
+    data->logger = NULL;
     printf("Remove log\n");
 }

@@ -48,7 +48,6 @@ celix_status_t logService_create(log_t log, BUNDLE bundle, apr_pool_t *pool, log
 }
 
 celix_status_t logService_log(log_service_data_t logger, log_level_t level, char * message) {
-    printf("Logging: %s from %s\n", message, module_getSymbolicName(bundle_getCurrentModule(logger->bundle)));
     return logService_logSr(logger, NULL, level, message);
 }
 

@@ -31,6 +31,8 @@
 #include "service.h"
 #include "log_writer.h"
 #include "log_listener.h"
+#include "module.h"
+#include "bundle.h"
 
 celix_status_t logWriter_create(apr_pool_t *pool, log_writer_t *writer) {
     celix_status_t status = CELIX_SUCCESS;
@@ -67,7 +69,7 @@ void service_destroy(void * userData) {
 }
 
 celix_status_t logListener_logged(log_listener_t listener, log_entry_t entry) {
-    printf("LogWriter: %s\n", entry->message);
+    printf("LogWriter: %s from %s\n", entry->message, module_getSymbolicName(bundle_getCurrentModule(entry->reference->bundle)));
 
     return CELIX_SUCCESS;
 }

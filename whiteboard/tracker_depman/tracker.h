@@ -28,6 +28,7 @@
 
 #include "headers.h"
 #include "service_component.h"
+#include "log_service.h"
 
 struct data {
 	SERVICE service;
@@ -35,6 +36,7 @@ struct data {
 	ARRAY_LIST publishers;
 	pthread_t sender;
 	bool running;
+	log_service_t logger;
 };
 
 void tracker_addedServ(void * handle, SERVICE_REFERENCE ref, void * service);

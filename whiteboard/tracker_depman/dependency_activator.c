@@ -41,6 +41,7 @@ void * dm_create(BUNDLE_CONTEXT context) {
 	data->running = false;
 	data->sender = NULL;
 	data->service = NULL;
+	data->logger = NULL;
 	return data;
 }
 
