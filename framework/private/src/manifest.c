@@ -126,6 +126,9 @@ celix_status_t manifest_read(char *filename, MANIFEST *manifest) {
             fclose(file);
 
             *manifest = mf;
+        } else {
+            printf("Could not read manifest file.\n");
+            status = CELIX_FILE_IO_EXCEPTION;
         }
 	} else {
 	    status = CELIX_ENOMEM;

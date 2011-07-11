@@ -80,8 +80,14 @@ int main(void) {
         while (linkedListIterator_hasNext(iter)) {
             BUNDLE current = NULL;
             char * location = linkedListIterator_next(iter);
-            bundleContext_installBundle(context, location, &current);
-            arrayList_add(installed, current);
+            if (bundleContext_installBundle(context, location, &current) == CELIX_SUCCESS) {
+                // Only add bundle if it is installed correctly
+                arrayList_add(installed, current);
+            } else {
+                char error[256];
+                sprintf(error, "Could not install bundle from %s", location);
+                celix_log(error);
+            }
             linkedListIterator_remove(iter);
         }
         linkedListIterator_destroy(iter);

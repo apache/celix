@@ -211,7 +211,9 @@ MODULE bundle_createModule(BUNDLE bundle) {
 }
 
 void startBundle(BUNDLE bundle, int options) {
-	fw_startBundle(bundle->framework, bundle, options);
+    if (bundle != NULL) {
+        fw_startBundle(bundle->framework, bundle, options);
+    }
 }
 
 celix_status_t bundle_update(BUNDLE bundle, char *inputFile) {

@@ -532,8 +532,6 @@ void bundleArchive_deleteTree(char * directory, apr_pool_t *mp) {
 	}
 	apr_finfo_t dp;
 	while ((apr_dir_read(&dp, APR_FINFO_DIRENT|APR_FINFO_TYPE, dir)) == APR_SUCCESS) {
-	    printf("Stat: %d\n", stat);
-	    printf("File: %s\n", dp.name);
 		if ((strcmp((dp.name), ".") != 0) && (strcmp((dp.name), "..") != 0)) {
 			char subdir[strlen(directory) + strlen(dp.name) + 2];
 			strcpy(subdir, directory);

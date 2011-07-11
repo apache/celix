@@ -389,7 +389,7 @@ celix_status_t fw_installBundle2(FRAMEWORK framework, BUNDLE * bundle, long id, 
 	if (status == CELIX_SUCCESS) {
         hashMap_put(framework->installedBundleMap, location, *bundle);
 	} else {
-	    printf("Unable to install bundle\n");
+	    printf("Unable to install bundle: %s\n", location);
 	    bundleArchive_closeAndDelete(bundle_archive);
 	    apr_pool_destroy(bundlePool);
 	}
