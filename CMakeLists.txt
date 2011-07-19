@@ -44,12 +44,15 @@ include_directories(${APR_INCLUDE_DIR})
 include_directories("framework/private/include")
 include_directories("framework/public/include")
 
+add_subdirectory(libtst)
+add_subdirectory(libtst-2.0)
+
 add_subdirectory(utils)
 add_subdirectory(framework)
+add_subdirectory(launcher)
 
 include(Packaging.cmake)
 add_subdirectory(dependency_manager)
-add_subdirectory(launcher)
 add_subdirectory(test)
 
 add_subdirectory(shell)

@@ -28,21 +28,17 @@
 #include "attribute.h"
 
 celix_status_t attribute_create(char * key, char * value, apr_pool_t *memory_pool, ATTRIBUTE *attribute) {
+	celix_status_t status = CELIX_SUCCESS;
+
 	ATTRIBUTE attr = apr_palloc(memory_pool, sizeof(*attr));
-	if (attr) {
+	if (!attr) {
+	    status = CELIX_ENOMEM;
+	} else {
         attr->key = key;
         attr->value = value;
 
 	    *attribute = attr;
-
-        return CELIX_SUCCESS;
-	} else {
-	    return CELIX_ENOMEM;
 	}
-}
 
-void attribute_destroy(ATTRIBUTE attribute) {
-	//free(attribute->key);
-	//free(attribute->value);
-	//free(attribute);
+	return status;
 }

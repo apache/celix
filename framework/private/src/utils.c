@@ -24,6 +24,7 @@
  */
 #include <stdlib.h>
 #include <string.h>
+#include <apr_portable.h>
 
 #include "utils.h"
 
@@ -75,4 +76,15 @@ char * string_trim(char * string) {
 	*(end+1) = 0;
 
 	return copy;
+}
+
+celix_status_t thread_equalsSelf(apr_os_thread_t thread, bool *equals) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	apr_os_thread_t self = apr_os_thread_current();
+	if (status == CELIX_SUCCESS) {
+		*equals = apr_os_thread_equal(self, thread);
+	}
+
+	return status;
 }

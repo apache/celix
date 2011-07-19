@@ -74,7 +74,7 @@ BUNDLE_STATE bundle_getState(BUNDLE bundle);
 bool bundle_isLockable(BUNDLE bundle);
 pthread_t bundle_getLockingThread(BUNDLE bundle);
 bool bundle_lock(BUNDLE bundle);
-bool bundle_unlock(BUNDLE bundle);
+celix_status_t bundle_unlock(BUNDLE bundle, bool *unlocked);
 
 celix_status_t bundle_closeAndDelete(BUNDLE bundle);
 celix_status_t bundle_close(BUNDLE bundle);

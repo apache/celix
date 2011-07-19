@@ -64,7 +64,8 @@ void installCommand_execute(COMMAND command, char * line, void (*out)(char *), v
 			if (strlen(info) > 0) {
 				strcat(info, ", ");
 			}
-			long id = bundleArchive_getId(bundle_getArchive(bundle));
+			long id;
+			bundleArchive_getId(bundle_getArchive(bundle), &id);
 			char bundleId[sizeof(id) + 1];
 			sprintf(bundleId, "%ld", id);
 			strcat(info, bundleId);

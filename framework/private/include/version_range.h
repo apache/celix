@@ -33,7 +33,7 @@
 typedef struct versionRange * VERSION_RANGE;
 
 VERSION_RANGE versionRange_createVersionRange(VERSION low, bool isLowInclusive, VERSION high, bool isHighInclusive);
-VERSION_RANGE versionRange_createInfiniteVersionRange();
+VERSION_RANGE versionRange_createInfiniteVersionRange(void);
 void versionRange_destroy(VERSION_RANGE range);
 
 bool versionRange_isInRange(VERSION_RANGE versionRange, VERSION version);

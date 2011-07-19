@@ -58,7 +58,6 @@ void capability_destroy(CAPABILITY capability) {
 	while (hashMapIterator_hasNext(attrIter)) {
 		ATTRIBUTE attr = hashMapIterator_nextValue(attrIter);
 		hashMapIterator_remove(attrIter);
-		attribute_destroy(attr);
 	}
 	hashMapIterator_destroy(attrIter);
 	hashMap_destroy(capability->attributes, false, false);

@@ -16,9 +16,9 @@
 typedef struct bundleRevision * BUNDLE_REVISION;
 
 celix_status_t bundleRevision_create(char *root, char *location, long revisionNr, char *inputFile, apr_pool_t *pool, BUNDLE_REVISION *bundle_revision);
-void bundleRevision_destroy(BUNDLE_REVISION revision);
-long bundleRevision_getNumber(BUNDLE_REVISION revision);
-char * bundleRevision_getLocation(BUNDLE_REVISION revision);
-char * bundleRevision_getRoot(BUNDLE_REVISION revision);
+celix_status_t bundleRevision_destroy(BUNDLE_REVISION revision);
+celix_status_t bundleRevision_getNumber(BUNDLE_REVISION revision, long *revisionNr);
+celix_status_t bundleRevision_getLocation(BUNDLE_REVISION revision, char **location);
+celix_status_t bundleRevision_getRoot(BUNDLE_REVISION revision, char **root);
 
 #endif /* BUNDLE_REVISION_H_ */

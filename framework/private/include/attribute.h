@@ -37,7 +37,5 @@ struct attribute {
 typedef struct attribute * ATTRIBUTE;
 
 celix_status_t attribute_create(char * key, char * value, apr_pool_t *memory_pool, ATTRIBUTE *attribute);
-void attribute_destroy(ATTRIBUTE attribute);
-
 
 #endif /* ATTRIBUTE_H_ */

@@ -144,6 +144,7 @@ celix_status_t framework_create(FRAMEWORK *framework, apr_pool_t *memoryPool) {
                                     (*framework)->registry = NULL;
 
                                     (*framework)->interrupted = false;
+                                    (*framework)->shutdown = false;
 
                                     (*framework)->globalLockWaitersList = arrayList_create();
                                     (*framework)->globalLockCount = 0;
@@ -227,7 +228,9 @@ celix_status_t fw_init(FRAMEWORK framework) {
 
 	framework->installedBundleMap = hashMap_create(string_hash, NULL, string_equals, NULL);
 
-	hashMap_put(framework->installedBundleMap, bundleArchive_getLocation(bundle_getArchive(framework->bundle)), framework->bundle);
+	char *location;
+	status = bundleArchive_getLocation(bundle_getArchive(framework->bundle), &location);
+	hashMap_put(framework->installedBundleMap, location, framework->bundle);
 
 	HASH_MAP wires = resolver_resolve(bundle_getCurrentModule(framework->bundle));
 	if (wires == NULL) {
@@ -248,13 +251,19 @@ celix_status_t fw_init(FRAMEWORK framework) {
         int arcIdx;
         for (arcIdx = 0; arcIdx < arrayList_size(archives); arcIdx++) {
             BUNDLE_ARCHIVE archive = (BUNDLE_ARCHIVE) arrayList_get(archives, arcIdx);
-    		framework->nextBundleId = fmaxl(framework->nextBundleId, bundleArchive_getId(archive) + 1);
+            long id;
+            bundleArchive_getId(archive, &id);
+    		framework->nextBundleId = fmaxl(framework->nextBundleId,  id + 1);
+    		BUNDLE_STATE bundleState;
 
-            if (bundleArchive_getPersistentState(archive) == BUNDLE_UNINSTALLED) {
+    		bundleArchive_getPersistentState(archive, &bundleState);
+            if (bundleState == BUNDLE_UNINSTALLED) {
                 bundleArchive_closeAndDelete(archive);
             } else {
                 BUNDLE bundle;
-                fw_installBundle2(framework, &bundle, bundleArchive_getId(archive), bundleArchive_getLocation(archive), archive);
+                char *location;
+				status = bundleArchive_getLocation(archive, &location);
+                fw_installBundle2(framework, &bundle, id, location, archive);
             }
         }
         arrayList_destroy(archives);
@@ -335,7 +344,7 @@ celix_status_t framework_start(FRAMEWORK framework) {
 }
 
 void framework_stop(FRAMEWORK framework) {
-	fw_stopBundle(framework, framework->bundle, 0);
+	fw_stopBundle(framework, framework->bundle, true);
 }
 
 celix_status_t fw_installBundle(FRAMEWORK framework, BUNDLE * bundle, char * location) {
@@ -399,25 +408,32 @@ celix_status_t fw_installBundle2(FRAMEWORK framework, BUNDLE * bundle, long id, 
 }
 
 celix_status_t framework_getBundleEntry(FRAMEWORK framework, BUNDLE bundle, char *name, apr_pool_t *pool, char **entry) {
-	BUNDLE_REVISION revision = bundleArchive_getCurrentRevision(bundle_getArchive(bundle));
-	if ((strlen(name) > 0) && (name[0] == '/')) {
-		name++;
+	celix_status_t status = CELIX_SUCCESS;
+
+	BUNDLE_REVISION revision;
+
+	status = bundleArchive_getCurrentRevision(bundle_getArchive(bundle), &revision);
+	if (status == CELIX_SUCCESS) {
+		if ((strlen(name) > 0) && (name[0] == '/')) {
+			name++;
+		}
+
+		char *root;
+		status = bundleRevision_getRoot(revision, &root);
+		if (status == CELIX_SUCCESS) {
+			char *e = NULL;
+			apr_filepath_merge(&e, root, name, APR_FILEPATH_NOTABOVEROOT, framework->mp);
+			apr_finfo_t info;
+			apr_status_t ret = apr_stat(&info, e, APR_FINFO_DIRENT|APR_FINFO_TYPE, framework->mp);
+			if (ret == APR_ENOENT) {
+				(*entry) = NULL;
+			} else if (ret == APR_SUCCESS || ret == APR_INCOMPLETE) {
+				(*entry) = apr_pstrdup(pool, e);
+			}
+		}
 	}
 
-	char *root = bundleRevision_getRoot(revision);
-	char *e = NULL;
-	apr_filepath_merge(&e, root, name, APR_FILEPATH_NOTABOVEROOT, framework->mp);
-	apr_finfo_t info;
-	apr_status_t ret = apr_stat(&info, e, APR_FINFO_DIRENT|APR_FINFO_TYPE, framework->mp);
-	if (ret == APR_ENOENT) {
-		(*entry) = NULL;
-		return CELIX_SUCCESS;
-	} else if (ret == APR_SUCCESS || ret == APR_INCOMPLETE) {
-		(*entry) = apr_pstrdup(pool, e);
-		return CELIX_SUCCESS;
-	}
-
-	return CELIX_ILLEGAL_STATE;
+	return status;
 }
 
 celix_status_t fw_startBundle(FRAMEWORK framework, BUNDLE bundle, int options ATTRIBUTE_UNUSED) {
@@ -486,10 +502,18 @@ celix_status_t fw_startBundle(FRAMEWORK framework, BUNDLE bundle, int options AT
 	#endif
 
 			char libraryPath[256];
+			long refreshCount;
+			char *archiveRoot;
+			long revisionNumber;
+
+			bundleArchive_getRefreshCount(bundle_getArchive(bundle), &refreshCount);
+			bundleArchive_getArchiveRoot(bundle_getArchive(bundle), &archiveRoot);
+			bundleArchive_getCurrentRevisionNumber(bundle_getArchive(bundle), &revisionNumber);
+
 			sprintf(libraryPath, "%s/version%ld.%ld/%s%s%s",
-					bundleArchive_getArchiveRoot(bundle_getArchive(bundle)),
-					bundleArchive_getRefreshCount(bundle_getArchive(bundle)),
-					bundleArchive_getCurrentRevisionNumber(bundle_getArchive(bundle)),
+					archiveRoot,
+					refreshCount,
+					revisionNumber,
 					library_prefix,
 					library,
 					library_extension
@@ -555,7 +579,8 @@ celix_status_t framework_updateBundle(FRAMEWORK framework, BUNDLE bundle, char *
 	}
 
 	BUNDLE_STATE oldState = bundle_getState(bundle);
-	char * location = bundleArchive_getLocation(bundle_getArchive(bundle));
+	char *location;
+	bundleArchive_getLocation(bundle_getArchive(bundle), &location);
 
 	if (oldState == BUNDLE_ACTIVE) {
 		fw_stopBundle(framework, bundle, false);
@@ -571,7 +596,7 @@ celix_status_t framework_updateBundle(FRAMEWORK framework, BUNDLE bundle, char *
 	bundle_revise(bundle, location, inputFile);
 	framework_releaseGlobalLock(framework);
 
-	bundleArchive_setLastModified(bundle_getArchive(bundle), time(NULL));
+	celix_status_t status = bundleArchive_setLastModified(bundle_getArchive(bundle), time(NULL));
 	framework_setBundleStateAndNotify(framework, bundle, BUNDLE_INSTALLED);
 
 	// Refresh packages?
@@ -675,7 +700,8 @@ celix_status_t fw_uninstallBundle(FRAMEWORK framework, BUNDLE bundle) {
             status = CELIX_ILLEGAL_STATE;
         } else {
             BUNDLE_ARCHIVE archive = bundle_getArchive(bundle);
-            char * location = bundleArchive_getLocation(archive);
+            char * location;
+            status = bundleArchive_getLocation(archive, &location);
             // TODO sync issues?
             BUNDLE target = (BUNDLE) hashMap_remove(framework->installedBundleMap, location);
 
@@ -694,7 +720,7 @@ celix_status_t fw_uninstallBundle(FRAMEWORK framework, BUNDLE bundle) {
             // TODO: fw_fireBundleEvent(framework BUNDLE_EVENT_UNRESOLVED, bundle);
 
             framework_setBundleStateAndNotify(framework, bundle, BUNDLE_UNINSTALLED);
-            bundleArchive_setLastModified(archive, time(NULL));
+            status = bundleArchive_setLastModified(archive, time(NULL));
         }
         framework_releaseBundleLock(framework, bundle);
 
@@ -998,13 +1024,30 @@ void fw_serviceChanged(FRAMEWORK framework, SERVICE_EVENT event, PROPERTIES oldp
 }
 
 celix_status_t getManifest(BUNDLE_ARCHIVE archive, MANIFEST *manifest) {
+	celix_status_t status = CELIX_SUCCESS;
 	char mf[256];
-	sprintf(mf, "%s/version%ld.%ld/MANIFEST/MANIFEST.MF",
-			bundleArchive_getArchiveRoot(archive),
-			bundleArchive_getRefreshCount(archive),
-			bundleArchive_getCurrentRevisionNumber(archive)
-			);
-	return manifest_read(mf, manifest);
+	long refreshCount;
+	char *archiveRoot;
+	long revisionNumber;
+
+	status = bundleArchive_getRefreshCount(archive, &refreshCount);
+	if (status == CELIX_SUCCESS) {
+		status = bundleArchive_getArchiveRoot(archive, &archiveRoot);
+		if (status == CELIX_SUCCESS) {
+			status = bundleArchive_getCurrentRevisionNumber(archive, &revisionNumber);
+			if (status == CELIX_SUCCESS) {
+				if (status == CELIX_SUCCESS) {
+					sprintf(mf, "%s/version%ld.%ld/MANIFEST/MANIFEST.MF",
+							archiveRoot,
+							refreshCount,
+							revisionNumber
+							);
+					status = manifest_read(mf, manifest);
+				}
+			}
+		}
+	}
+	return status;
 }
 
 long framework_getNextBundleId(FRAMEWORK framework) {
@@ -1069,7 +1112,9 @@ BUNDLE framework_getBundleById(FRAMEWORK framework, long id) {
 	BUNDLE bundle = NULL;
 	while (hashMapIterator_hasNext(iter)) {
 		BUNDLE b = hashMapIterator_nextValue(iter);
-		if (bundleArchive_getId(bundle_getArchive(b)) == id) {
+		long bid;
+		bundleArchive_getId(bundle_getArchive(b), &bid);
+		if (bid == id) {
 			bundle = b;
 			break;
 		}
@@ -1166,8 +1211,10 @@ celix_status_t framework_acquireBundleLock(FRAMEWORK framework, BUNDLE bundle, i
 
 bool framework_releaseBundleLock(FRAMEWORK framework, BUNDLE bundle) {
     apr_thread_mutex_lock(framework->bundleLock);
+    bool unlocked;
 
-	if (!bundle_unlock(bundle)) {
+    bundle_unlock(bundle, &unlocked);
+	if (!unlocked) {
 	    apr_thread_mutex_unlock(framework->bundleLock);
 		return false;
 	}
@@ -1244,9 +1291,13 @@ celix_status_t framework_waitForStop(FRAMEWORK framework) {
 		celix_log("Error locking the framework, shutdown gate not set.");
 		return CELIX_FRAMEWORK_EXCEPTION;
 	}
-	if (apr_thread_cond_wait(framework->shutdownGate, framework->mutex) != 0) {
-		celix_log("Error waiting for shutdown gate.");
-		return CELIX_FRAMEWORK_EXCEPTION;
+	while (!framework->shutdown) {
+		apr_status_t apr_status = apr_thread_cond_wait(framework->shutdownGate, framework->mutex);
+		if (apr_status != 0) {
+			celix_log("Error waiting for shutdown gate.");
+			return CELIX_FRAMEWORK_EXCEPTION;
+		}
+		printf("Interrupted %d\n", framework->shutdown);
 	}
 	printf("waited for stop\n");
 	if (apr_thread_mutex_unlock(framework->mutex) != 0) {
@@ -1265,7 +1316,9 @@ static void *APR_THREAD_FUNC framework_shutdown(apr_thread_t *thd, void *framewo
 	while (hashMapIterator_hasNext(iterator)) {
 		BUNDLE bundle = hashMapIterator_nextValue(iterator);
 		if (bundle_getState(bundle) == BUNDLE_ACTIVE || bundle_getState(bundle) == BUNDLE_STARTING) {
-		    printf("stop bundle: %s\n", bundleArchive_getLocation(bundle_getArchive(bundle)));
+			char *location;
+			bundleArchive_getLocation(bundle_getArchive(bundle), &location);
+		    printf("stop bundle: %s\n", location);
 			fw_stopBundle(fw, bundle, 0);
 		}
 	}
@@ -1277,6 +1330,7 @@ static void *APR_THREAD_FUNC framework_shutdown(apr_thread_t *thd, void *framewo
 		apr_thread_exit(thd, APR_ENOLOCK);
 		return NULL;
 	}
+	fw->shutdown = true;
 	err = apr_thread_cond_broadcast(fw->shutdownGate);
 	if (err != 0) {
 		celix_log("Error waking the shutdown gate, cannot exit clean.");

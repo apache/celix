@@ -27,10 +27,16 @@
 #define UTILS_H_
 
 #include <ctype.h>
+#include <apr_portable.h>
+
+#include "celix_errno.h"
+#include "celixbool.h"
 
 unsigned int string_hash(void * string);
 int string_equals(void * string, void * toCompare);
 char * string_ndup(const char *s, size_t n);
 char * string_trim(char * string);
+
+celix_status_t thread_equalsSelf(apr_os_thread_t thread, bool *equals);
 
 #endif /* UTILS_H_ */

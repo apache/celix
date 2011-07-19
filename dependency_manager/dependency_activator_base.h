@@ -34,7 +34,7 @@ void * dm_create(BUNDLE_CONTEXT context);
 void dm_init(void * userData, BUNDLE_CONTEXT context, DEPENDENCY_MANAGER manager);
 void dm_destroy(void * userData, BUNDLE_CONTEXT context, DEPENDENCY_MANAGER manager);
 
-SERVICE dependencyActivatorBase_createService();
+SERVICE dependencyActivatorBase_createService(void);
 SERVICE_DEPENDENCY dependencyActivatorBase_createServiceDependency(DEPENDENCY_MANAGER manager);
 
 #endif /* DEPENDENCY_ACTIVATOR_BASE_H_ */

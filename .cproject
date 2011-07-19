@@ -100,7 +100,7 @@
 		<buildTargets>
 			<target name="all" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>make</buildCommand>
-				<buildArguments>-j4 -C /Users/alexander/Documents/Projects/Celix/celix/build</buildArguments>
+				<buildArguments>-j4 -C ${workspace_loc:/celix}/build</buildArguments>
 				<buildTarget>all</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>false</useDefaultCommand>
@@ -116,6 +116,7 @@
 			</target>
 			<target name="run cmake" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
 				<buildCommand>cmake</buildCommand>
+				<buildArguments/>
 				<buildTarget>-E chdir ${workspace_loc:/celix}/build cmake -G "Unix Makefiles" ../</buildTarget>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>false</useDefaultCommand>

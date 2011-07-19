@@ -26,9 +26,9 @@
 #ifndef COMPONENT_H_
 #define COMPONENT_H_
 
-void start();
+void start(void);
 
-void stop();
+void stop(void);
 
 
 #endif /* COMPONENT_H_ */

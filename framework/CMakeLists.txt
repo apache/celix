@@ -42,4 +42,4 @@ include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 add_library(framework SHARED ${SRC})
 target_link_libraries(framework utils ${ZLIB_LIBRARY} ${APR_LIBRARY} ${CURL_LIBRARY})
 
-install(TARGETS framework LIBRARY DESTINATION lib ARCHIVE DESTINATION lib COMPONENT framework)
+install(TARGETS framework DESTINATION lib COMPONENT framework)

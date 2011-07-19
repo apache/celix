@@ -31,8 +31,10 @@
 #include <pthread.h>
 
 #include <apr_general.h>
+#include <apr_thread_proc.h>
 #include <apr_thread_cond.h>
 #include <apr_thread_mutex.h>
+#include <apr_portable.h>
 
 #include "array_list.h"
 #include "properties.h"
@@ -76,6 +78,7 @@ struct framework {
 	int globalLockCount;
 
 	bool interrupted;
+	bool shutdown;
 
 	apr_pool_t *mp;
 };
@@ -105,9 +108,9 @@ struct bundle {
 	MANIFEST manifest;
 	apr_pool_t *memoryPool;
 
-	pthread_mutex_t lock;
+	apr_thread_mutex_t *lock;
 	int lockCount;
-	pthread_t lockThread;
+	apr_os_thread_t lockThread;
 
 	struct framework * framework;
 };

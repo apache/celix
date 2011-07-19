@@ -114,8 +114,8 @@ int main(void) {
 
 void launcher_shutdown(int signal) {
 	framework_stop(framework);
-	if (framework_waitForStop(framework) != CELIX_SUCCESS) {
-		celix_log("Error waiting for stop.");
-	}
-	framework_destroy(framework);
+//	if (framework_waitForStop(framework) != CELIX_SUCCESS) {
+//		celix_log("Error waiting for stop.");
+//	}
+//	framework_destroy(framework);
 }

@@ -39,24 +39,25 @@ celix_status_t bundleArchive_create(char * archiveRoot, long id, char * location
 celix_status_t bundleArchive_destroy(BUNDLE_ARCHIVE archive);
 celix_status_t bundleArchive_createSystemBundleArchive(apr_pool_t *mp, BUNDLE_ARCHIVE *bundle_archive);
 celix_status_t bundleArchive_recreate(char * archiveRoot, apr_pool_t *mp, BUNDLE_ARCHIVE *bundle_archive);
-long bundleArchive_getId(BUNDLE_ARCHIVE archive);
-char * bundleArchive_getLocation(BUNDLE_ARCHIVE archive);
-char * bundleArchive_getArchiveRoot(BUNDLE_ARCHIVE archive);
+celix_status_t bundleArchive_getId(BUNDLE_ARCHIVE archive, long *id);
+celix_status_t bundleArchive_getLocation(BUNDLE_ARCHIVE archive, char **location);
+celix_status_t bundleArchive_getArchiveRoot(BUNDLE_ARCHIVE archive, char **archiveRoot);
 
-void bundleArchive_revise(BUNDLE_ARCHIVE archive, char * location, char *inputFile);
-bool bundleArchive_rollbackRevise(BUNDLE_ARCHIVE archive);
-BUNDLE_REVISION bundleArchive_getRevision(BUNDLE_ARCHIVE archive, long revNr);
-BUNDLE_REVISION bundleArchive_getCurrentRevision(BUNDLE_ARCHIVE archive);
-long bundleArchive_getCurrentRevisionNumber(BUNDLE_ARCHIVE archive);
+celix_status_t bundleArchive_revise(BUNDLE_ARCHIVE archive, char * location, char *inputFile);
+celix_status_t bundleArchive_rollbackRevise(BUNDLE_ARCHIVE archive, bool *rolledback);
+celix_status_t bundleArchive_getRevision(BUNDLE_ARCHIVE archive, long revNr, BUNDLE_REVISION *revision);
+celix_status_t bundleArchive_getCurrentRevision(BUNDLE_ARCHIVE archive, BUNDLE_REVISION *revision);
+celix_status_t bundleArchive_getCurrentRevisionNumber(BUNDLE_ARCHIVE archive, long *revisionNumber);
 
-long bundleArchive_getRefreshCount(BUNDLE_ARCHIVE archive);
+celix_status_t bundleArchive_getRefreshCount(BUNDLE_ARCHIVE archive, long *refreshCount);
+celix_status_t bundleArchive_setRefreshCount(BUNDLE_ARCHIVE archive);
 
-void bundleArchive_close(BUNDLE_ARCHIVE archive);
-void bundleArchive_closeAndDelete(BUNDLE_ARCHIVE archive);
+celix_status_t bundleArchive_close(BUNDLE_ARCHIVE archive);
+celix_status_t bundleArchive_closeAndDelete(BUNDLE_ARCHIVE archive);
 
-void bundleArchive_setLastModified(BUNDLE_ARCHIVE archive, time_t lastModifiedTime);
-time_t bundleArchive_getLastModified(BUNDLE_ARCHIVE archive);
-void bundleArchive_setPersistentState(BUNDLE_ARCHIVE archive, BUNDLE_STATE state);
-BUNDLE_STATE bundleArchive_getPersistentState(BUNDLE_ARCHIVE archive);
+celix_status_t bundleArchive_setLastModified(BUNDLE_ARCHIVE archive, time_t lastModifiedTime);
+celix_status_t bundleArchive_getLastModified(BUNDLE_ARCHIVE archive, time_t *lastModified);
+celix_status_t bundleArchive_setPersistentState(BUNDLE_ARCHIVE archive, BUNDLE_STATE state);
+celix_status_t bundleArchive_getPersistentState(BUNDLE_ARCHIVE archive, BUNDLE_STATE *state);
 
 #endif /* BUNDLE_ARCHIVE_H_ */

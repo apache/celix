@@ -32,7 +32,7 @@ typedef struct version * VERSION;
 
 VERSION version_createVersion(int major, int minor, int micro, char * qualifier);
 VERSION version_createVersionFromString(char * version);
-VERSION version_createEmptyVersion();
+VERSION version_createEmptyVersion(void);
 celix_status_t version_destroy(VERSION version);
 
 int version_compareTo(VERSION version, VERSION compare);
