@@ -72,9 +72,7 @@ SERVICE_REGISTRATION findRegistration(SERVICE_REFERENCE reference);
 SERVICE_REFERENCE listToArray(ARRAY_LIST list);
 celix_status_t framework_markResolvedModules(FRAMEWORK framework, HASH_MAP wires);
 
-ARRAY_LIST framework_getBundles(void);
-
-celix_status_t framework_waitForStop(void);
+celix_status_t framework_waitForStop(FRAMEWORK framework);
 
 ARRAY_LIST framework_getBundles(FRAMEWORK framework);
 BUNDLE framework_getBundle(FRAMEWORK framework, char * location);
