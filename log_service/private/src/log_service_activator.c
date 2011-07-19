@@ -88,6 +88,13 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 }
 
 celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
+	struct logActivator * activator = (struct logActivator *) userData;
+
+	serviceRegistration_unregister(activator->logReaderServiceReg);
+	activator->logReaderServiceReg = NULL;
+	serviceRegistration_unregister(activator->logServiceFactoryReg);
+	activator->logServiceFactoryReg = NULL;
+
     return CELIX_SUCCESS;
 }
 

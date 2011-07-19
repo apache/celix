@@ -443,4 +443,10 @@ celix_status_t bundle_refresh(BUNDLE bundle) {
     return status;
 }
 
+celix_status_t bundle_getBundleId(BUNDLE bundle, long *id) {
+	celix_status_t status = CELIX_SUCCESS;
+	status = bundleArchive_getId(bundle_getArchive(bundle), id);
+	return status;
+}
+
 
