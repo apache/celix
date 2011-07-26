@@ -42,11 +42,11 @@ ARRAY_LIST bundle_getModules(BUNDLE bundle);
 void * bundle_getHandle(BUNDLE bundle);
 void bundle_setHandle(BUNDLE bundle, void * handle);
 ACTIVATOR bundle_getActivator(BUNDLE bundle);
-void bundle_setActivator(BUNDLE bundle, ACTIVATOR activator);
-MANIFEST bundle_getManifest(BUNDLE bundle);
-void bundle_setManifest(BUNDLE bundle, MANIFEST manifest);
-BUNDLE_CONTEXT bundle_getContext(BUNDLE bundle);
-void bundle_setContext(BUNDLE bundle, BUNDLE_CONTEXT context);
+celix_status_t bundle_setActivator(BUNDLE bundle, ACTIVATOR activator);
+celix_status_t bundle_getManifest(BUNDLE bundle, MANIFEST *manifest);
+celix_status_t bundle_setManifest(BUNDLE bundle, MANIFEST manifest);
+celix_status_t bundle_getContext(BUNDLE bundle, BUNDLE_CONTEXT *context);
+celix_status_t bundle_setContext(BUNDLE bundle, BUNDLE_CONTEXT context);
 celix_status_t bundle_getEntry(BUNDLE bundle, char * name, apr_pool_t *pool, char **entry);
 
 celix_status_t startBundle(BUNDLE bundle, int options);
@@ -54,7 +54,7 @@ celix_status_t bundle_update(BUNDLE bundle, char *inputFile);
 celix_status_t stopBundle(BUNDLE bundle, int options);
 celix_status_t bundle_uninstall(BUNDLE bundle);
 
-void bundle_setState(BUNDLE bundle, BUNDLE_STATE state);
+celix_status_t bundle_setState(BUNDLE bundle, BUNDLE_STATE state);
 celix_status_t bundle_setPersistentStateInactive(BUNDLE bundle);
 celix_status_t bundle_setPersistentStateUninstalled(BUNDLE bundle);
 
@@ -70,7 +70,7 @@ ARRAY_LIST getUsingBundles(SERVICE_REFERENCE reference);
 int compareTo(SERVICE_REFERENCE a, SERVICE_REFERENCE b);
 
 
-BUNDLE_STATE bundle_getState(BUNDLE bundle);
+celix_status_t bundle_getState(BUNDLE bundle, BUNDLE_STATE *state);
 celix_status_t bundle_isLockable(BUNDLE bundle, bool *lockable);
 celix_status_t bundle_getLockingThread(BUNDLE bundle, apr_os_thread_t *thread);
 celix_status_t bundle_lock(BUNDLE bundle, bool *locked);

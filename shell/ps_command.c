@@ -84,7 +84,9 @@ void psCommand_execute(COMMAND command, char * commandline, void (*out)(char *),
 			BUNDLE bundle = arrayList_get(bundles, i);
 			long id;
 			bundleArchive_getId(bundle_getArchive(bundle), &id);
-			char * state = psCommand_stateString(bundle_getState(bundle));
+			BUNDLE_STATE state;
+			bundle_getState(bundle, &state);
+			char * stateString = psCommand_stateString(state);
 			char * name = module_getSymbolicName(bundle_getCurrentModule(bundle));
 			if (showLocation) {
 				bundleArchive_getLocation(bundle_getArchive(bundle), &name);
@@ -94,7 +96,7 @@ void psCommand_execute(COMMAND command, char * commandline, void (*out)(char *),
 				bundleArchive_getLocation(bundle_getArchive(bundle), &name);
 			}
 
-			sprintf(line, "  %-5ld %-12s %s\n", id, state, name);
+			sprintf(line, "  %-5ld %-12s %s\n", id, stateString, name);
 			out(line);
 		}
 		arrayList_destroy(bundles);

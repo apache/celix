@@ -75,7 +75,8 @@ int main(void) {
         // First install all bundles
         // Afterwards start them
         ARRAY_LIST installed = arrayList_create();
-        BUNDLE_CONTEXT context = bundle_getContext(framework->bundle);
+        BUNDLE_CONTEXT context = NULL;
+        bundle_getContext(framework->bundle, &context);
         LINKED_LIST_ITERATOR iter = linkedListIterator_create(bundles, 0);
         while (linkedListIterator_hasNext(iter)) {
             BUNDLE current = NULL;
