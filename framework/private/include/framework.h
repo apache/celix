@@ -48,7 +48,7 @@ celix_status_t framework_getBundleEntry(FRAMEWORK framework, BUNDLE bundle, char
 
 celix_status_t fw_startBundle(FRAMEWORK framework, BUNDLE bundle, int options);
 celix_status_t framework_updateBundle(FRAMEWORK framework, BUNDLE bundle, char *inputFile);
-void fw_stopBundle(FRAMEWORK framework, BUNDLE bundle, bool record);
+celix_status_t fw_stopBundle(FRAMEWORK framework, BUNDLE bundle, bool record);
 
 celix_status_t fw_registerService(FRAMEWORK framework, SERVICE_REGISTRATION * registration, BUNDLE bundle, char * serviceName, void * svcObj, PROPERTIES properties);
 celix_status_t fw_registerServiceFactory(FRAMEWORK framework, SERVICE_REGISTRATION * registration, BUNDLE bundle, char * serviceName, service_factory_t factory, PROPERTIES properties);

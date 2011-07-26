@@ -150,36 +150,43 @@ ACTIVATOR bundle_getActivator(BUNDLE bundle) {
 	return bundle->activator;
 }
 
-void bundle_setActivator(BUNDLE bundle, ACTIVATOR activator) {
+celix_status_t bundle_setActivator(BUNDLE bundle, ACTIVATOR activator) {
 	bundle->activator = activator;
+	return CELIX_SUCCESS;
 }
 
-BUNDLE_CONTEXT bundle_getContext(BUNDLE bundle) {
-	return bundle->context;
+celix_status_t bundle_getContext(BUNDLE bundle, BUNDLE_CONTEXT *context) {
+	*context = bundle->context;
+	return CELIX_SUCCESS;
 }
 
-void bundle_setContext(BUNDLE bundle, BUNDLE_CONTEXT context) {
+celix_status_t bundle_setContext(BUNDLE bundle, BUNDLE_CONTEXT context) {
 	bundle->context = context;
+	return CELIX_SUCCESS;
 }
 
 celix_status_t bundle_getEntry(BUNDLE bundle, char * name, apr_pool_t *pool, char **entry) {
 	return framework_getBundleEntry(bundle->framework, bundle, name, pool, entry);
 }
 
-BUNDLE_STATE bundle_getState(BUNDLE bundle) {
-	return bundle->state;
+celix_status_t bundle_getState(BUNDLE bundle, BUNDLE_STATE *state) {
+	*state = bundle->state;
+	return CELIX_SUCCESS;
 }
 
-void bundle_setState(BUNDLE bundle, BUNDLE_STATE state) {
+celix_status_t bundle_setState(BUNDLE bundle, BUNDLE_STATE state) {
 	bundle->state = state;
+	return CELIX_SUCCESS;
 }
 
-MANIFEST bundle_getManifest(BUNDLE bundle) {
-	return bundle->manifest;
+celix_status_t bundle_getManifest(BUNDLE bundle, MANIFEST *manifest) {
+	*manifest = bundle->manifest;
+	return CELIX_SUCCESS;
 }
 
-void bundle_setManifest(BUNDLE bundle, MANIFEST manifest) {
+celix_status_t bundle_setManifest(BUNDLE bundle, MANIFEST manifest) {
 	bundle->manifest = manifest;
+	return CELIX_SUCCESS;
 }
 
 celix_status_t bundle_createModule(BUNDLE bundle, MODULE *module) {
@@ -227,40 +234,52 @@ celix_status_t bundle_createModule(BUNDLE bundle, MODULE *module) {
 	return status;
 }
 
-void startBundle(BUNDLE bundle, int options) {
+celix_status_t startBundle(BUNDLE bundle, int options) {
+	celix_status_t status = CELIX_SUCCESS;
     if (bundle != NULL) {
-        fw_startBundle(bundle->framework, bundle, options);
+        status = fw_startBundle(bundle->framework, bundle, options);
     }
+    return status;
 }
 
 celix_status_t bundle_update(BUNDLE bundle, char *inputFile) {
 	return framework_updateBundle(bundle->framework, bundle, inputFile);
 }
 
-void stopBundle(BUNDLE bundle, int options) {
-	fw_stopBundle(bundle->framework, bundle, ((options & 1) == 0));
+celix_status_t stopBundle(BUNDLE bundle, int options) {
+	return fw_stopBundle(bundle->framework, bundle, ((options & 1) == 0));
 }
 
 celix_status_t bundle_uninstall(BUNDLE bundle) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    fw_uninstallBundle(bundle->framework, bundle);
-
-    return status;
+    return fw_uninstallBundle(bundle->framework, bundle);
 }
 
 celix_status_t bundle_setPersistentStateInactive(BUNDLE bundle) {
-	if (!bundle_isSystemBundle(bundle)) {
-		bundleArchive_setPersistentState(bundle->archive, BUNDLE_INSTALLED);
+	celix_status_t status = CELIX_SUCCESS;
+	bool systemBundle;
+
+	status = bundle_isSystemBundle(bundle, &systemBundle);
+	if (status == CELIX_SUCCESS) {
+		if (!systemBundle) {
+			status = bundleArchive_setPersistentState(bundle->archive, BUNDLE_INSTALLED);
+		}
 	}
-	return CELIX_SUCCESS;
+
+	return status;
 }
 
 celix_status_t bundle_setPersistentStateUninstalled(BUNDLE bundle) {
-    if (!bundle_isSystemBundle(bundle)) {
-        bundleArchive_setPersistentState(bundle->archive, BUNDLE_UNINSTALLED);
-    }
-    return CELIX_SUCCESS;
+	celix_status_t status = CELIX_SUCCESS;
+	bool systemBundle;
+
+	status = bundle_isSystemBundle(bundle, &systemBundle);
+	if (status == CELIX_SUCCESS) {
+		if (!systemBundle) {
+			status = bundleArchive_setPersistentState(bundle->archive, BUNDLE_UNINSTALLED);
+		}
+	}
+
+    return status;
 }
 
 celix_status_t bundle_isUsed(BUNDLE bundle, bool *used) {
@@ -313,48 +332,80 @@ celix_status_t bundle_addModule(BUNDLE bundle, MODULE module) {
 	return CELIX_SUCCESS;
 }
 
-bool bundle_isSystemBundle(BUNDLE bundle) {
+celix_status_t bundle_isSystemBundle(BUNDLE bundle, bool *systemBundle) {
+	celix_status_t status = CELIX_SUCCESS;
 	long bundleId;
-	bundleArchive_getId(bundle_getArchive(bundle), &bundleId);
-	return bundleId == 0;
+
+	status = bundleArchive_getId(bundle_getArchive(bundle), &bundleId);
+	if (status == CELIX_SUCCESS) {
+		*systemBundle = (bundleId == 0);
+	}
+
+	return status;
 }
 
-bool bundle_isLockable(BUNDLE bundle) {
-	bool lockable = false;
-	apr_thread_mutex_lock(bundle->lock);
+celix_status_t bundle_isLockable(BUNDLE bundle, bool *lockable) {
+	celix_status_t status = CELIX_SUCCESS;
+	apr_status_t apr_status;
 
-	lockable = (bundle->lockCount == 0) || (bundle->lockThread == pthread_self());
+	apr_status = apr_thread_mutex_lock(bundle->lock);
+	if (apr_status != APR_SUCCESS) {
+		status = CELIX_BUNDLE_EXCEPTION;
+	} else {
+		bool equals;
+		status = thread_equalsSelf(bundle->lockThread, &equals);
+		if (status == CELIX_SUCCESS) {
+			*lockable = (bundle->lockCount == 0) || (equals);
+		}
 
-	apr_thread_mutex_unlock(bundle->lock);
+		apr_status = apr_thread_mutex_unlock(bundle->lock);
+		if (apr_status != APR_SUCCESS) {
+			status = CELIX_BUNDLE_EXCEPTION;
+		}
+	}
 
-	return lockable;
+	return status;
 }
 
-pthread_t bundle_getLockingThread(BUNDLE bundle) {
-	pthread_t lockingThread = NULL;
-	apr_thread_mutex_lock(bundle->lock);
+celix_status_t bundle_getLockingThread(BUNDLE bundle, apr_os_thread_t *thread) {
+	celix_status_t status = CELIX_SUCCESS;
+	apr_status_t apr_status;
 
-	lockingThread = bundle->lockThread;
+	apr_status = apr_thread_mutex_lock(bundle->lock);
+	if (apr_status != APR_SUCCESS) {
+		status = CELIX_BUNDLE_EXCEPTION;
+	} else {
+		*thread = bundle->lockThread;
 
-	apr_thread_mutex_unlock(bundle->lock);
+		apr_status = apr_thread_mutex_unlock(bundle->lock);
+		if (apr_status != APR_SUCCESS) {
+			status = CELIX_BUNDLE_EXCEPTION;
+		}
+	}
 
-	return lockingThread;
+	return status;
 }
 
-bool bundle_lock(BUNDLE bundle) {
-	apr_thread_mutex_lock(bundle->lock);
+celix_status_t bundle_lock(BUNDLE bundle, bool *locked) {
+	celix_status_t status = CELIX_SUCCESS;
 	bool equals;
 
-	thread_equalsSelf(bundle->lockThread, &equals);
-	if ((bundle->lockCount > 0) && !equals) {
-		apr_thread_mutex_unlock(bundle->lock);
-		return false;
+	apr_thread_mutex_lock(bundle->lock);
+
+	status = thread_equalsSelf(bundle->lockThread, &equals);
+	if (status == CELIX_SUCCESS) {
+		if ((bundle->lockCount > 0) && !equals) {
+			*locked = false;
+		} else {
+			bundle->lockCount++;
+			bundle->lockThread = apr_os_thread_current();
+			*locked = true;
+		}
 	}
-	bundle->lockCount++;
-	bundle->lockThread = apr_os_thread_current();
 
 	apr_thread_mutex_unlock(bundle->lock);
-	return true;
+
+	return status;
 }
 
 celix_status_t bundle_unlock(BUNDLE bundle, bool *unlocked) {
@@ -367,15 +418,17 @@ celix_status_t bundle_unlock(BUNDLE bundle, bool *unlocked) {
 	if ((bundle->lockCount == 0)) {
 		*unlocked = false;
 	} else {
-		thread_equalsSelf(bundle->lockThread, &equals);
-		if ((bundle->lockCount > 0) && !equals) {
-			return false;
+		status = thread_equalsSelf(bundle->lockThread, &equals);
+		if (status == CELIX_SUCCESS) {
+			if ((bundle->lockCount > 0) && !equals) {
+				return false;
+			}
+			bundle->lockCount--;
+			if (bundle->lockCount == 0) {
+				bundle->lockThread = NULL;
+			}
+			*unlocked = true;
 		}
-		bundle->lockCount--;
-		if (bundle->lockCount == 0) {
-			bundle->lockThread = NULL;
-		}
-		*unlocked = true;
 	}
 
 	apr_thread_mutex_unlock(bundle->lock);

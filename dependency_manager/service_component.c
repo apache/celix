@@ -447,5 +447,6 @@ void executor_scheduleNext(EXECUTOR executor) {
 	pthread_mutex_unlock(&executor->mutex);
 	if (entry != NULL) {
 		entry->function(entry->service, entry->argument);
+		executor_scheduleNext(executor);
 	}
 }

@@ -35,7 +35,7 @@ celix_status_t bundle_create(BUNDLE * bundle, apr_pool_t *mp);
 celix_status_t bundle_createFromArchive(BUNDLE * bundle, FRAMEWORK framework, BUNDLE_ARCHIVE archive, apr_pool_t *bundlePool);
 celix_status_t bundle_destroy(BUNDLE bundle);
 
-bool bundle_isSystemBundle(BUNDLE bundle);
+celix_status_t bundle_isSystemBundle(BUNDLE bundle, bool *systemBundle);
 BUNDLE_ARCHIVE bundle_getArchive(BUNDLE bundle);
 MODULE bundle_getCurrentModule(BUNDLE bundle);
 ARRAY_LIST bundle_getModules(BUNDLE bundle);
@@ -49,9 +49,9 @@ BUNDLE_CONTEXT bundle_getContext(BUNDLE bundle);
 void bundle_setContext(BUNDLE bundle, BUNDLE_CONTEXT context);
 celix_status_t bundle_getEntry(BUNDLE bundle, char * name, apr_pool_t *pool, char **entry);
 
-void startBundle(BUNDLE bundle, int options);
+celix_status_t startBundle(BUNDLE bundle, int options);
 celix_status_t bundle_update(BUNDLE bundle, char *inputFile);
-void stopBundle(BUNDLE bundle, int options);
+celix_status_t stopBundle(BUNDLE bundle, int options);
 celix_status_t bundle_uninstall(BUNDLE bundle);
 
 void bundle_setState(BUNDLE bundle, BUNDLE_STATE state);
@@ -71,9 +71,9 @@ int compareTo(SERVICE_REFERENCE a, SERVICE_REFERENCE b);
 
 
 BUNDLE_STATE bundle_getState(BUNDLE bundle);
-bool bundle_isLockable(BUNDLE bundle);
-pthread_t bundle_getLockingThread(BUNDLE bundle);
-bool bundle_lock(BUNDLE bundle);
+celix_status_t bundle_isLockable(BUNDLE bundle, bool *lockable);
+celix_status_t bundle_getLockingThread(BUNDLE bundle, apr_os_thread_t *thread);
+celix_status_t bundle_lock(BUNDLE bundle, bool *locked);
 celix_status_t bundle_unlock(BUNDLE bundle, bool *unlocked);
 
 celix_status_t bundle_closeAndDelete(BUNDLE bundle);

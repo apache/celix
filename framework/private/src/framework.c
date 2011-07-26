@@ -609,74 +609,78 @@ celix_status_t framework_updateBundle(FRAMEWORK framework, BUNDLE bundle, char *
 	return CELIX_SUCCESS;
 }
 
-void fw_stopBundle(FRAMEWORK framework, BUNDLE bundle, bool record) {
-	celix_status_t lock = framework_acquireBundleLock(framework, bundle, BUNDLE_INSTALLED|BUNDLE_RESOLVED|BUNDLE_STARTING|BUNDLE_ACTIVE);
-	if (lock != CELIX_SUCCESS) {
+celix_status_t fw_stopBundle(FRAMEWORK framework, BUNDLE bundle, bool record) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	status = framework_acquireBundleLock(framework, bundle, BUNDLE_INSTALLED|BUNDLE_RESOLVED|BUNDLE_STARTING|BUNDLE_ACTIVE);
+	if (status != CELIX_SUCCESS) {
 		printf("Cannot stop bundle");
 		framework_releaseBundleLock(framework, bundle);
-		return;
+	} else {
+
+		if (record) {
+			bundle_setPersistentStateInactive(bundle);
+		}
+
+		//if (!fw_isBundlePersistentlyStarted(framework, bundle)) {
+		//}
+
+		switch (bundle_getState(bundle)) {
+			case BUNDLE_UNINSTALLED:
+				printf("Cannot stop bundle since it is uninstalled.");
+				framework_releaseBundleLock(framework, bundle);
+				return status;
+			case BUNDLE_STARTING:
+				printf("Cannot stop bundle since it is starting.");
+				framework_releaseBundleLock(framework, bundle);
+				return status;
+			case BUNDLE_STOPPING:
+				printf("Cannot stop bundle since it is stopping.");
+				framework_releaseBundleLock(framework, bundle);
+				return status;
+			case BUNDLE_INSTALLED:
+			case BUNDLE_RESOLVED:
+				framework_releaseBundleLock(framework, bundle);
+				return status;
+			case BUNDLE_ACTIVE:
+				// only valid state
+				break;
+		}
+
+		framework_setBundleStateAndNotify(framework, bundle, BUNDLE_STOPPING);
+
+		ACTIVATOR activator = bundle_getActivator(bundle);
+		if (activator->stop != NULL) {
+			activator->stop(activator->userData, bundle_getContext(bundle));
+		}
+
+		if (activator->destroy != NULL) {
+			activator->destroy(activator->userData, bundle_getContext(bundle));
+		}
+
+		if (strcmp(module_getId(bundle_getCurrentModule(bundle)), "0") != 0) {
+			activator->start = NULL;
+			activator->stop = NULL;
+			activator->userData = NULL;
+			//free(activator);
+			bundle_setActivator(bundle, NULL);
+
+			serviceRegistry_unregisterServices(framework->registry, bundle);
+			serviceRegistry_ungetServices(framework->registry, bundle);
+
+			dlclose(bundle_getHandle(bundle));
+		}
+
+		bundleContext_destroy(bundle_getContext(bundle));
+		bundle_setContext(bundle, NULL);
+		manifest_destroy(bundle_getManifest(bundle));
+
+		framework_setBundleStateAndNotify(framework, bundle, BUNDLE_RESOLVED);
+
+		framework_releaseBundleLock(framework, bundle);
 	}
 
-	if (record) {
-		bundle_setPersistentStateInactive(bundle);
-	}
-
-	//if (!fw_isBundlePersistentlyStarted(framework, bundle)) {
-	//}
-
-	switch (bundle_getState(bundle)) {
-		case BUNDLE_UNINSTALLED:
-			printf("Cannot stop bundle since it is uninstalled.");
-			framework_releaseBundleLock(framework, bundle);
-			return;
-		case BUNDLE_STARTING:
-			printf("Cannot stop bundle since it is starting.");
-			framework_releaseBundleLock(framework, bundle);
-			return;
-		case BUNDLE_STOPPING:
-			printf("Cannot stop bundle since it is stopping.");
-			framework_releaseBundleLock(framework, bundle);
-			return;
-		case BUNDLE_INSTALLED:
-		case BUNDLE_RESOLVED:
-			framework_releaseBundleLock(framework, bundle);
-			return;
-		case BUNDLE_ACTIVE:
-			// only valid state
-			break;
-	}
-
-	framework_setBundleStateAndNotify(framework, bundle, BUNDLE_STOPPING);
-
-	ACTIVATOR activator = bundle_getActivator(bundle);
-	if (activator->stop != NULL) {
-		activator->stop(activator->userData, bundle_getContext(bundle));
-	}
-
-	if (activator->destroy != NULL) {
-		activator->destroy(activator->userData, bundle_getContext(bundle));
-	}
-
-	if (strcmp(module_getId(bundle_getCurrentModule(bundle)), "0") != 0) {
-		activator->start = NULL;
-		activator->stop = NULL;
-		activator->userData = NULL;
-		//free(activator);
-		bundle_setActivator(bundle, NULL);
-
-		serviceRegistry_unregisterServices(framework->registry, bundle);
-		serviceRegistry_ungetServices(framework->registry, bundle);
-
-		dlclose(bundle_getHandle(bundle));
-	}
-
-	bundleContext_destroy(bundle_getContext(bundle));
-	bundle_setContext(bundle, NULL);
-	manifest_destroy(bundle_getManifest(bundle));
-
-	framework_setBundleStateAndNotify(framework, bundle, BUNDLE_RESOLVED);
-
-	framework_releaseBundleLock(framework, bundle);
+	return status;
 }
 
 celix_status_t fw_uninstallBundle(FRAMEWORK framework, BUNDLE bundle) {
@@ -1172,53 +1176,72 @@ celix_status_t framework_setBundleStateAndNotify(FRAMEWORK framework, BUNDLE bun
 }
 
 celix_status_t framework_acquireBundleLock(FRAMEWORK framework, BUNDLE bundle, int desiredStates) {
-	int err = apr_thread_mutex_lock(framework->bundleLock);
-	if (err != 0) {
-		celix_log("Failed to lock");
-		return CELIX_BUNDLE_EXCEPTION;
-	}
+	celix_status_t status = CELIX_SUCCESS;
 
-	while (!bundle_isLockable(bundle)
-			|| ((framework->globalLockThread != NULL)
-			&& (framework->globalLockThread != pthread_self()))) {
-		if ((desiredStates & bundle_getState(bundle)) == 0) {
-		    apr_thread_mutex_unlock(framework->bundleLock);
-			return CELIX_ILLEGAL_STATE;
-		} else if (framework->globalLockThread == pthread_self()
-				&& (bundle_getLockingThread(bundle) != NULL)
-				&& arrayList_contains(framework->globalLockWaitersList, bundle_getLockingThread(bundle))) {
-			framework->interrupted = true;
-//			pthread_cond_signal_thread_np(&framework->condition, bundle_getLockingThread(bundle));
-			apr_thread_cond_signal(framework->condition);
+	bool locked;
+	apr_os_thread_t lockingThread = NULL;
+
+	int err = apr_thread_mutex_lock(framework->bundleLock);
+	if (err != APR_SUCCESS) {
+		celix_log("Failed to lock");
+		status = CELIX_BUNDLE_EXCEPTION;
+	} else {
+		bool lockable = false;
+		bundle_isLockable(bundle, &lockable);
+		while (!lockable
+				|| ((framework->globalLockThread != NULL)
+				&& (framework->globalLockThread != pthread_self()))) {
+			if ((desiredStates & bundle_getState(bundle)) == 0) {
+				status = CELIX_ILLEGAL_STATE;
+				break;
+			} else
+				bundle_getLockingThread(bundle, &lockingThread);
+				if (framework->globalLockThread == pthread_self()
+					&& (lockingThread != NULL)
+					&& arrayList_contains(framework->globalLockWaitersList, lockingThread)) {
+				framework->interrupted = true;
+	//			pthread_cond_signal_thread_np(&framework->condition, bundle_getLockingThread(bundle));
+				apr_thread_cond_signal(framework->condition);
+			}
+
+			apr_thread_cond_wait(framework->condition, framework->bundleLock);
+
+			status = bundle_isLockable(bundle, &lockable);
+			if (status != CELIX_SUCCESS) {
+				break;
+			}
 		}
 
-		apr_thread_cond_wait(framework->condition, framework->bundleLock);
+		if (status == CELIX_SUCCESS) {
+			if ((desiredStates & bundle_getState(bundle)) == 0) {
+				status = CELIX_ILLEGAL_STATE;
+			} else {
+				if (bundle_lock(bundle, &locked)) {
+					if (!locked) {
+						status = CELIX_ILLEGAL_STATE;
+					}
+				}
+			}
+		}
+		apr_thread_mutex_unlock(framework->bundleLock);
 	}
 
-	if ((desiredStates & bundle_getState(bundle)) == 0) {
-	    apr_thread_mutex_unlock(framework->bundleLock);
-		return CELIX_ILLEGAL_STATE;
-	}
-
-	if (!bundle_lock(bundle)) {
-	    apr_thread_mutex_unlock(framework->bundleLock);
-		return CELIX_ILLEGAL_STATE;
-	}
-
-	apr_thread_mutex_unlock(framework->bundleLock);
 	return CELIX_SUCCESS;
 }
 
 bool framework_releaseBundleLock(FRAMEWORK framework, BUNDLE bundle) {
-    apr_thread_mutex_lock(framework->bundleLock);
     bool unlocked;
+    apr_os_thread_t lockingThread = NULL;
+
+    apr_thread_mutex_lock(framework->bundleLock);
 
     bundle_unlock(bundle, &unlocked);
 	if (!unlocked) {
 	    apr_thread_mutex_unlock(framework->bundleLock);
 		return false;
 	}
-	if (bundle_getLockingThread(bundle) == NULL) {
+	bundle_getLockingThread(bundle, &lockingThread);
+	if (lockingThread == NULL) {
 	    apr_thread_cond_broadcast(framework->condition);
 	}
 
