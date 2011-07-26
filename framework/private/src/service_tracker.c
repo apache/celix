@@ -46,9 +46,7 @@ SERVICE_TRACKER tracker_create(BUNDLE_CONTEXT context, char * className, SERVICE
 
 	fw_tracker->tracker = tracker;
 	fw_tracker->tracked = arrayList_create();
-	if (customizer != NULL) {
-		fw_tracker->customizer = customizer;
-	}
+	fw_tracker->customizer = customizer;
 
 	arrayList_add(m_trackers, fw_tracker);
 
@@ -106,7 +104,6 @@ void tracker_destroy(SERVICE_TRACKER tracker) {
 	FW_SERVICE_TRACKER fwTracker = findFwServiceTracker(tracker);
 	bundleContext_removeServiceListener(tracker->context, fwTracker->listener);
 	free(fwTracker->listener);
-	free(fwTracker->customizer);
 	tracker = NULL;
 }
 
