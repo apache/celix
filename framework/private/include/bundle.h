@@ -70,11 +70,7 @@ ARRAY_LIST getUsingBundles(SERVICE_REFERENCE reference);
 int compareTo(SERVICE_REFERENCE a, SERVICE_REFERENCE b);
 
 
-<<<<<<< HEAD
 celix_status_t bundle_getState(BUNDLE bundle, BUNDLE_STATE *state);
-=======
-BUNDLE_STATE bundle_getState(BUNDLE bundle);
->>>>>>> Updated error handling, fixed a bug in the dependency manager
 celix_status_t bundle_isLockable(BUNDLE bundle, bool *lockable);
 celix_status_t bundle_getLockingThread(BUNDLE bundle, apr_os_thread_t *thread);
 celix_status_t bundle_lock(BUNDLE bundle, bool *locked);

@@ -653,7 +653,6 @@ celix_status_t fw_stopBundle(FRAMEWORK framework, BUNDLE bundle, bool record) {
 		//if (!fw_isBundlePersistentlyStarted(framework, bundle)) {
 		//}
 
-<<<<<<< HEAD
 		BUNDLE_STATE state;
 		bundle_getState(bundle, &state);
 
@@ -717,6 +716,8 @@ celix_status_t fw_stopBundle(FRAMEWORK framework, BUNDLE bundle, bool record) {
 
 =======
 		switch (bundle_getState(bundle)) {
+=======
+>>>>>>> Fixed broken build
 			case BUNDLE_UNINSTALLED:
 				printf("Cannot stop bundle since it is uninstalled.");
 				framework_releaseBundleLock(framework, bundle);
@@ -741,12 +742,14 @@ celix_status_t fw_stopBundle(FRAMEWORK framework, BUNDLE bundle, bool record) {
 		framework_setBundleStateAndNotify(framework, bundle, BUNDLE_STOPPING);
 
 		ACTIVATOR activator = bundle_getActivator(bundle);
+		BUNDLE_CONTEXT context;
+		bundle_getContext(bundle, &context);
 		if (activator->stop != NULL) {
-			activator->stop(activator->userData, bundle_getContext(bundle));
+			activator->stop(activator->userData, context);
 		}
 
 		if (activator->destroy != NULL) {
-			activator->destroy(activator->userData, bundle_getContext(bundle));
+			activator->destroy(activator->userData, context);
 		}
 
 		if (strcmp(module_getId(bundle_getCurrentModule(bundle)), "0") != 0) {
@@ -762,9 +765,13 @@ celix_status_t fw_stopBundle(FRAMEWORK framework, BUNDLE bundle, bool record) {
 			dlclose(bundle_getHandle(bundle));
 		}
 
-		bundleContext_destroy(bundle_getContext(bundle));
+		bundleContext_destroy(context);
 		bundle_setContext(bundle, NULL);
-		manifest_destroy(bundle_getManifest(bundle));
+
+		MANIFEST manifest = NULL;
+		bundle_getManifest(bundle, &manifest);
+
+		manifest_destroy(manifest);
 
 		framework_setBundleStateAndNotify(framework, bundle, BUNDLE_RESOLVED);
 
@@ -1313,13 +1320,9 @@ celix_status_t framework_acquireBundleLock(FRAMEWORK framework, BUNDLE bundle, i
 		while (!lockable
 				|| ((framework->globalLockThread != NULL)
 				&& (framework->globalLockThread != pthread_self()))) {
-<<<<<<< HEAD
 			BUNDLE_STATE state;
 			bundle_getState(bundle, &state);
 			if ((desiredStates & state) == 0) {
-=======
-			if ((desiredStates & bundle_getState(bundle)) == 0) {
->>>>>>> Updated error handling, fixed a bug in the dependency manager
 				status = CELIX_ILLEGAL_STATE;
 				break;
 			} else
@@ -1341,13 +1344,9 @@ celix_status_t framework_acquireBundleLock(FRAMEWORK framework, BUNDLE bundle, i
 		}
 
 		if (status == CELIX_SUCCESS) {
-<<<<<<< HEAD
 			BUNDLE_STATE state;
 			bundle_getState(bundle, &state);
 			if ((desiredStates & state) == 0) {
-=======
-			if ((desiredStates & bundle_getState(bundle)) == 0) {
->>>>>>> Updated error handling, fixed a bug in the dependency manager
 				status = CELIX_ILLEGAL_STATE;
 			} else {
 				if (bundle_lock(bundle, &locked)) {
