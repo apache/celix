@@ -124,6 +124,12 @@ MACRO(deploy)
 	endforeach(BUNDLE)
 	
 	CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/config.properties.in ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/config.properties @ONLY)
+	
+	set(FW_PATH ${CMAKE_BINARY_DIR}/framework)
+	set(UTILS_PATH ${CMAKE_BINARY_DIR}/utils)
+	set(LAUNCHER ${CMAKE_BINARY_DIR}/launcher/launcher)
+	CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/run.sh.in ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/run.sh @ONLY)
+	
 	install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME} DESTINATION . COMPONENT ${DEPLOY_COMPONENT})
 	ADD_DEPENDENCIES(deploy ${__deployTarget})
 	#ADD_CUSTOM_TARGET(clean_${__packageTarget}

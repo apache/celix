@@ -29,8 +29,6 @@ target_link_libraries(utils ${APR_LIBRARY})
 
 install(TARGETS utils DESTINATION lib COMPONENT framework)
 
-include(FindCUnit)
-
 include_directories(${CUNIT_INCLUDE_DIRS})
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/private/include")
@@ -47,8 +45,7 @@ target_link_libraries(array_list_test utils ${CUNIT_LIBRARIES})
 add_executable(linked_list_test private/test/linked_list_test.c)
 target_link_libraries(linked_list_test utils ${CUNIT_LIBRARIES})
 
-enable_testing()
-add_test (hash_map_test ${EXECUTABLE_OUTPUT_PATH}/hash_map_test)
-add_test (hash_map_test_hash ${EXECUTABLE_OUTPUT_PATH}/hash_map_test_hash)
-add_test (array_list_test ${EXECUTABLE_OUTPUT_PATH}/array_list_test)
-add_test (linked_list_test ${EXECUTABLE_OUTPUT_PATH}/linked_list_test)
+run_test(array_list_test)
+run_test(hash_map_test)
+run_test(hash_map_test_hash)
+run_test(linked_list_test)

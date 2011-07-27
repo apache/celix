@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <Basic.h>
+#include <Automated.h>
 
 #include "hash_map.h"
 #include "hash_map_private.h"
@@ -349,9 +349,9 @@ int main (int argc, char** argv) {
 	  return CU_get_error();
 	}
 
-	/* Run all tests using the CUnit Basic interface */
-	CU_basic_set_mode(CU_BRM_VERBOSE);
-	CU_basic_run_tests();
+	CU_set_output_filename(argv[1]);
+	CU_list_tests_to_file();
+	CU_automated_run_tests();
 	CU_cleanup_registry();
 	return CU_get_error();
 }

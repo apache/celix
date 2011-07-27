@@ -1,14 +1,19 @@
-#
-# Find the CppUnit includes and library
-#
-# This module defines
-# CPPUNIT_INCLUDE_DIR, where to find tiff.h, etc.
-# CPPUNIT_LIBRARIES, the libraries to link against to use CppUnit.
-# CPPUNIT_FOUND, If false, do not try to use CppUnit.
-
-# also defined, but not for general use are
-# CPPUNIT_LIBRARY, where to find the CppUnit library.
-# CPPUNIT_DEBUG_LIBRARY, where to find the CppUnit library in debug mode.
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+# 
+#   http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
 
 if (NOT WIN32)
 	include(FindCurses)
@@ -18,6 +23,12 @@ FIND_PATH(CUNIT_INCLUDE_DIR Basic.h
   /usr/local/include/CUnit
   /usr/include/CUnit
   /opt/local/include/CUnit  
+)
+
+FIND_PATH(CUNIT_SHARE_DIR CUnit-List.dtd
+	/usr/local/share/CUnit
+  	/usr/share/CUnit
+  	/opt/local/share/CUnit
 )
 
 # On unix system, debug and release have the same name
