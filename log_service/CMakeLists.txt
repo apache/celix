@@ -29,4 +29,4 @@ include_directories("${PROJECT_SOURCE_DIR}/log_service/private/include")
 target_link_libraries(log_service framework)
 
 bundle(log_service)
-package(log_service FILES log_service.h)
+package(log_service FILES public/include/log_service.h)

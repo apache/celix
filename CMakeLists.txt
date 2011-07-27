@@ -18,7 +18,6 @@
 cmake_minimum_required (VERSION 2.6)
 project (Celix C)
 
-#SET(CMAKE_VERBOSE_MAKEFILE ON)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 
@@ -32,25 +31,14 @@ ADD_CUSTOM_TARGET(install-fw
   -D "CMAKE_INSTALL_PREFIX=test"
   -P "cmake_install.cmake"
   )
-  
-include(FindAPR)
-IF(APR_FOUND)
-	MESSAGE(STATUS "Looking for APR - found")
-ELSE(APR_FOUND)
-	MESSAGE(FATAL_ERROR "Looking for APR - not found")
-ENDIF(APR_FOUND)
-include_directories(${APR_INCLUDE_DIR})
 
-include_directories("framework/private/include")
-include_directories("framework/public/include")
+include(cmake/Includes.cmake)  
 
 add_subdirectory(utils)
 add_subdirectory(framework)
 add_subdirectory(launcher)
 
-include(Packaging.cmake)
 add_subdirectory(dependency_manager)
-add_subdirectory(test)
 
 add_subdirectory(shell)
 add_subdirectory(shell_tui)
@@ -58,18 +46,7 @@ add_subdirectory(shell_tui)
 add_subdirectory(log_service)
 add_subdirectory(log_writer)
 
-#add_subdirectory(receiver)
-#add_subdirectory(receiver-2.0)
-#add_subdirectory(sender)
-
-add_subdirectory(hello_world)
-add_subdirectory(mongoose)
-#add_subdirectory(echo_service/client)
-#add_subdirectory(echo_service/server)
-add_subdirectory(whiteboard)
-#add_subdirectory(echo_service)
-
-add_subdirectory(celix_test)
+add_subdirectory(examples)
 
 include(target.cmake)
 enable_testing()

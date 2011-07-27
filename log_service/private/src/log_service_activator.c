@@ -30,6 +30,7 @@
 #include "log_factory.h"
 #include "log.h"
 #include "log_reader_service_impl.h"
+#include "service_registration.h"
 
 struct logActivator {
     BUNDLE_CONTEXT bundleContext;

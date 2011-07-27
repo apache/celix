@@ -54,7 +54,7 @@ MACRO(bundle)
 	SET(__bundleTarget bundle_${BUNDLE_NAME})
 	SET(__bundleConfig ${CMAKE_CURRENT_BINARY_DIR}/CPackConfig-${BUNDLE_NAME}-bundle.cmake)
 
-	CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/CPackConfig.in ${__bundleConfig} @ONLY)
+	CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/CPackConfig.in ${__bundleConfig} @ONLY)
 	ADD_CUSTOM_TARGET(${__bundleTarget}
 		mkdir -p ${PROJECT_BINARY_DIR}/bundles \;
 		cd ${PROJECT_BINARY_DIR}/bundles \; 
@@ -82,10 +82,10 @@ MACRO(package)
 	    install (DIRECTORY ${PACKAGE_DIRECTORIES} DESTINATION . COMPONENT ${PACKAGE_COMPONENT})
     endif(PACKAGE_DIRECTORIES)
 
-	CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/CPackConfigPKG.in ${__packageConfig} @ONLY)
+	CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/CPackConfigPKG.in ${__packageConfig} @ONLY)
 	ADD_CUSTOM_TARGET(${__packageTarget}
-		mkdir -p ${PROJECT_BINARY_DIR}/packages \;
-		cd ${PROJECT_BINARY_DIR}/packages \; 
+		mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/packages \;
+		cd ${CMAKE_CURRENT_BINARY_DIR}/packages \; 
 		${CPACK_COMMAND} --config "${__packageConfig}"
 	)
 	ADD_DEPENDENCIES(${__packageTarget} ${__bundleTarget})
@@ -105,10 +105,10 @@ MACRO(deploy)
 	SET(__deployTarget deploy_${DEPLOY_NAME})
 	SET(__deployConfig ${CMAKE_CURRENT_BINARY_DIR}/CPackConfig-${DEPLOY_NAME}-deploy.cmake)
 		
-	CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/CPackConfigDeploy.in ${__deployConfig} @ONLY)
+	CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/CPackConfigDeploy.in ${__deployConfig} @ONLY)
 	ADD_CUSTOM_TARGET(${__deployTarget}
-		mkdir -p ${PROJECT_BINARY_DIR}/deploy \;
-		cd ${PROJECT_BINARY_DIR}/deploy \; 
+		mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/deploy \;
+		cd ${CMAKE_CURRENT_BINARY_DIR}/deploy \; 
 		${CPACK_COMMAND} --config "${__deployConfig}"
 	)
 	#install(FILES ${EXT_DIR}/celix/* DESTINATION . COMPONENT ${DEPLOY_COMPONENT})
@@ -123,7 +123,7 @@ MACRO(deploy)
 	    ADD_DEPENDENCIES(${__deployTarget} bundle_${BUNDLE})
 	endforeach(BUNDLE)
 	
-	CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/config.properties.in ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/config.properties @ONLY)
+	CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/config.properties.in ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/config.properties @ONLY)
 	install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME} DESTINATION . COMPONENT ${DEPLOY_COMPONENT})
 	ADD_DEPENDENCIES(deploy ${__deployTarget})
 	#ADD_CUSTOM_TARGET(clean_${__packageTarget}
