@@ -30,3 +30,7 @@ target_link_libraries(log_service framework)
 
 bundle(log_service)
 package(log_service FILES public/include/log_service.h)
+
+FILE(GLOB files public/include/log_service.h)
+INSTALL(FILES ${files} DESTINATION include/log_service COMPONENT framework)
+INSTALL(FILES ${PROJECT_BINARY_DIR}/bundles/log_service.zip DESTINATION bundles COMPONENT framework)

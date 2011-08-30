@@ -25,3 +25,7 @@ target_link_libraries(shell framework curl)
 
 bundle(shell)
 package(shell FILES shell.h command.h)
+
+FILE(GLOB files shell.h command.h)
+INSTALL(FILES ${files} DESTINATION include/shell COMPONENT framework)
+INSTALL(FILES ${PROJECT_BINARY_DIR}/bundles/shell.zip DESTINATION bundles COMPONENT framework)

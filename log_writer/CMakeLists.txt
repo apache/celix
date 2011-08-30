@@ -23,3 +23,5 @@ include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 target_link_libraries(log_writer framework dependency_manager)
 
 bundle(log_writer)
+
+INSTALL(FILES ${PROJECT_BINARY_DIR}/bundles/log_writer.zip DESTINATION bundles COMPONENT framework)

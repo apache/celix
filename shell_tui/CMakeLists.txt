@@ -22,3 +22,5 @@ target_link_libraries(shell_tui framework)
 
 bundle(shell_tui)
 package(shell_tui)
+
+INSTALL(FILES ${PROJECT_BINARY_DIR}/bundles/shell_tui.zip DESTINATION bundles COMPONENT framework)

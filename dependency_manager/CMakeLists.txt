@@ -30,3 +30,7 @@ endif(UNIX AND NOT WIN32)
 add_library(dependency_manager STATIC dependency_manager.c dependency_activator_base.c service_component.c service_dependency.c)
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 target_link_libraries(dependency_manager framework)
+
+FILE(GLOB files dependency_activator_base.h service.h)
+INSTALL(FILES ${files} DESTINATION include/dependency_manager COMPONENT framework)
+install(TARGETS dependency_manager DESTINATION lib COMPONENT framework)
