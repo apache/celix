@@ -1,4 +1,4 @@
 Bundle-SymbolicName: tracker_depman
 Bundle-Version: 1.0.0.test
 library: tracker_depman
-Import-Service: Publisher,log_service
+Import-Service: Publisher, log_service

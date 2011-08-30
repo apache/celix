@@ -129,7 +129,7 @@ static LINKED_LIST manifestParser_parseDelimitedString(char * value, char * deli
                     }
 
                     if (strlen(buffer) > 0) {
-                        linkedList_addElement(list, apr_pstrdup(memory_pool, buffer));
+                        linkedList_addElement(list, apr_pstrdup(memory_pool, string_trim(buffer)));
                     }
                 }
 
