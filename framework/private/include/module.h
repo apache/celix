@@ -26,8 +26,7 @@
 #ifndef MODULE_H_
 #define MODULE_H_
 
-#include <stdbool.h>
-
+#include "celixbool.h"
 #include "linkedlist.h"
 #include "headers.h"
 #include "manifest.h"

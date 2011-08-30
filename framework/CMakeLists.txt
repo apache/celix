@@ -43,3 +43,5 @@ add_library(framework SHARED ${SRC})
 target_link_libraries(framework utils ${ZLIB_LIBRARY} ${APR_LIBRARY} ${CURL_LIBRARY})
 
 install(TARGETS framework DESTINATION lib COMPONENT framework)
+FILE(GLOB files "private/include/*.h")
+INSTALL(FILES ${files} DESTINATION include COMPONENT framework)

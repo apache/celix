@@ -26,7 +26,7 @@
 #ifndef SERVICE_REGISTRATION_H_
 #define SERVICE_REGISTRATION_H_
 
-#include <stdbool.h>
+#include "celixbool.h"
 
 #include "headers.h"
 #include "service_registry.h"

@@ -28,6 +28,8 @@ ENDIF(UNIX)
 target_link_libraries(utils ${APR_LIBRARY})
 
 install(TARGETS utils DESTINATION lib COMPONENT framework)
+FILE(GLOB files "public/include/*.h")
+INSTALL(FILES ${files} DESTINATION include COMPONENT framework)
 
 include_directories(${CUNIT_INCLUDE_DIRS})
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")

@@ -15,7 +15,9 @@
 # endif
 #endif
 
-#ifndef C99
+
+#if __STDC_VERSION__ < 199901L && __GNUC__ < 3
+// #ifndef C99
 
 typedef int _Bool;
 

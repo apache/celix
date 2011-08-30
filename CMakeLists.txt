@@ -18,18 +18,26 @@
 cmake_minimum_required (VERSION 2.6)
 project (Celix C)
 
+#SET(CMAKE_VERBOSE_MAKEFILE ON)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 
 SET(CMAKE_BUILD_TYPE "Debug")
-SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 ${CMAKE_C_FLAGS}")
+SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 ${CMAKE_C_FLAGS} -ftest-coverage -fprofile-arcs")
+SET(LDFLAGS "-fprofile-arcs -ftest-coverage")
 SET(CMAKE_INSTALL_COMPONENT "framework")
 
+GET_FILENAME_COMPONENT(__cmake_path ${CMAKE_COMMAND} PATH)
+FIND_PROGRAM(CPACK_COMMAND cpack ${__cmake_path})
+MESSAGE(STATUS "Found CPack at: ${CPACK_COMMAND}")
+IF(NOT CPACK_COMMAND)
+	MESSAGE(FATAL_ERROR "Need CPack!")
+ENDIF(NOT CPACK_COMMAND)
+
+SET(INSTALL_FW "${PROJECT_BINARY_DIR};Celix Framework;framework;/")
+CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/CPackConfigFW.in CPackConfigFW.cmake @ONLY)
 ADD_CUSTOM_TARGET(install-fw
-  ${CMAKE_COMMAND}
-  -D "CMAKE_INSTALL_COMPONENT=framework"
-  -D "CMAKE_INSTALL_PREFIX=test"
-  -P "cmake_install.cmake"
+  ${CPACK_COMMAND} --config "CPackConfigFW.cmake"
   )
 
 include(cmake/Includes.cmake)  
