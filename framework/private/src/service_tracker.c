@@ -35,14 +35,43 @@ void * addingService(FW_SERVICE_TRACKER, SERVICE_REFERENCE);
 void track(FW_SERVICE_TRACKER, SERVICE_REFERENCE, SERVICE_EVENT);
 void untrack(FW_SERVICE_TRACKER, SERVICE_REFERENCE, SERVICE_EVENT);
 
-SERVICE_TRACKER tracker_create(BUNDLE_CONTEXT context, char * className, SERVICE_TRACKER_CUSTOMIZER customizer) {
+celix_status_t tracker_create(BUNDLE_CONTEXT context, char * service, SERVICE_TRACKER_CUSTOMIZER customizer, SERVICE_TRACKER *tracker) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (service == NULL) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	} else {
+		apr_pool_t *pool = NULL;
+		//status = bundleContext_getMemoryPool(context, &pool);
+		if (status == CELIX_SUCCESS) {
+			int len = strlen(service) + strlen(OBJECTCLASS) + 4;
+			//char *filter = apr_palloc(pool, sizeof(char) * len);
+			char *filter = malloc(sizeof(char) * len);
+			if (filter == NULL) {
+				status = CELIX_ENOMEM;
+			} else {
+				strcpy(filter, "(");
+				strcat(filter, OBJECTCLASS);
+				strcat(filter, "=");
+				strcat(filter, service);
+				strcat(filter, ")\0");
+				*tracker = tracker_createWithFilter(context, filter, customizer);
+			}
+		}
+	}
+
+
+	return status;
+}
+
+SERVICE_TRACKER tracker_createWithFilter(BUNDLE_CONTEXT context, char * filter, SERVICE_TRACKER_CUSTOMIZER customizer) {
 	SERVICE_TRACKER tracker = (SERVICE_TRACKER) malloc(sizeof(*tracker));
 	FW_SERVICE_TRACKER fw_tracker = (FW_SERVICE_TRACKER) malloc(sizeof(*fw_tracker));
 	if (m_trackers == NULL) {
 		m_trackers = arrayList_create();
 	}
 	tracker->context = context;
-	tracker->className = className;
+	tracker->filter = filter;
 
 	fw_tracker->tracker = tracker;
 	fw_tracker->tracked = arrayList_create();
@@ -58,21 +87,12 @@ void tracker_open(SERVICE_TRACKER tracker) {
 	FW_SERVICE_TRACKER fwTracker = findFwServiceTracker(tracker);
 	ARRAY_LIST initial = NULL;
 
-	bundleContext_getServiceReferences(tracker->context, tracker->className, NULL, &initial);
+	bundleContext_getServiceReferences(tracker->context, NULL, tracker->filter, &initial);
 	SERVICE_REFERENCE initial_reference;
 	unsigned int i;
-	int len = strlen(tracker->className);
-	len += strlen(OBJECTCLASS);
-	len += 4;
-	char filter[len];
-	strcpy(filter, "(");
-	strcat(filter, OBJECTCLASS);
-	strcat(filter, "=");
-	strcat(filter, tracker->className);
-	strcat(filter, ")\0");
 
 	listener->serviceChanged = (void *) tracker_serviceChanged;
-	bundleContext_addServiceListener(tracker->context, listener, filter);
+	bundleContext_addServiceListener(tracker->context, listener, tracker->filter);
 	fwTracker->listener = listener;
 
 	for (i = 0; i < arrayList_size(initial); i++) {

@@ -188,7 +188,7 @@ typedef struct serviceTrackerCustomizer * SERVICE_TRACKER_CUSTOMIZER;
 
 struct serviceTracker {
 	BUNDLE_CONTEXT context;
-	char * className;
+	char * filter;
 };
 
 typedef struct serviceTracker * SERVICE_TRACKER;

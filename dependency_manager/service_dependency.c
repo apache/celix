@@ -76,7 +76,8 @@ void serviceDependency_start(SERVICE_DEPENDENCY dependency, SERVICE service) {
 		cust->modifiedService = serviceDependency_modifiedService;
 		cust->removedService = serviceDependency_removedService;
 
-		dependency->tracker = tracker_create(dependency->context, dependency->trackedServiceName, cust);
+		dependency->tracker = NULL;
+		tracker_create(dependency->context, dependency->trackedServiceName, cust, &dependency->tracker);
 	} else {
 
 	}

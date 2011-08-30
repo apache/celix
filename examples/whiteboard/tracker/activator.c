@@ -107,7 +107,8 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
         cust->addingService = addingServ;
         cust->modifiedService = modifiedServ;
         cust->removedService = removedServ;
-        SERVICE_TRACKER tracker = tracker_create(context, (char *) PUBLISHER_NAME, cust);
+        SERVICE_TRACKER tracker = NULL;
+        tracker_create(context, (char *) PUBLISHER_NAME, cust, &tracker);
         data->tracker = tracker;
 
         tracker_open(tracker);
