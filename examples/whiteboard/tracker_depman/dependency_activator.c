@@ -54,7 +54,7 @@ void dm_init(void * userData, BUNDLE_CONTEXT context, DEPENDENCY_MANAGER manager
 
 	SERVICE_DEPENDENCY dep = dependencyActivatorBase_createServiceDependency(manager);
 	serviceDependency_setRequired(dep, false);
-	serviceDependency_setService(dep, PUBLISHER_NAME, NULL);
+	serviceDependency_setService(dep, PUBLISHER_NAME, "(|(id=A)(id=B))");
 	serviceDependency_setCallbacks(dep, tracker_addedServ, tracker_modifiedServ, tracker_removedServ);
 	serviceComponent_addServiceDependency(service, dep);
 

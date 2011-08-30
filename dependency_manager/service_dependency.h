@@ -46,6 +46,7 @@ struct serviceDependency {
 	BUNDLE_CONTEXT context;
 	void * serviceInstance;
 	char * trackedServiceName;
+	char * trackedServiceFilter;
 };
 
 typedef struct serviceDependency * SERVICE_DEPENDENCY;

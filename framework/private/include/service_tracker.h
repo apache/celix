@@ -45,7 +45,7 @@ struct tracked {
 typedef struct tracked * TRACKED;
 
 celix_status_t tracker_create(BUNDLE_CONTEXT context, char * service, SERVICE_TRACKER_CUSTOMIZER customizer, SERVICE_TRACKER *tracker);
-SERVICE_TRACKER tracker_createWithFilter(BUNDLE_CONTEXT context, char * filter, SERVICE_TRACKER_CUSTOMIZER customizer);
+celix_status_t tracker_createWithFilter(BUNDLE_CONTEXT context, char * filter, SERVICE_TRACKER_CUSTOMIZER customizer, SERVICE_TRACKER *tracker);
 
 void tracker_open(SERVICE_TRACKER tracker);
 void tracker_close(SERVICE_TRACKER tracker);

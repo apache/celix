@@ -55,7 +55,7 @@ celix_status_t tracker_create(BUNDLE_CONTEXT context, char * service, SERVICE_TR
 				strcat(filter, "=");
 				strcat(filter, service);
 				strcat(filter, ")\0");
-				*tracker = tracker_createWithFilter(context, filter, customizer);
+				tracker_createWithFilter(context, filter, customizer, tracker);
 			}
 		}
 	}
@@ -64,22 +64,22 @@ celix_status_t tracker_create(BUNDLE_CONTEXT context, char * service, SERVICE_TR
 	return status;
 }
 
-SERVICE_TRACKER tracker_createWithFilter(BUNDLE_CONTEXT context, char * filter, SERVICE_TRACKER_CUSTOMIZER customizer) {
-	SERVICE_TRACKER tracker = (SERVICE_TRACKER) malloc(sizeof(*tracker));
+celix_status_t tracker_createWithFilter(BUNDLE_CONTEXT context, char * filter, SERVICE_TRACKER_CUSTOMIZER customizer, SERVICE_TRACKER *tracker) {
+	*tracker = (SERVICE_TRACKER) malloc(sizeof(*tracker));
 	FW_SERVICE_TRACKER fw_tracker = (FW_SERVICE_TRACKER) malloc(sizeof(*fw_tracker));
 	if (m_trackers == NULL) {
 		m_trackers = arrayList_create();
 	}
-	tracker->context = context;
-	tracker->filter = filter;
+	(*tracker)->context = context;
+	(*tracker)->filter = filter;
 
-	fw_tracker->tracker = tracker;
+	fw_tracker->tracker = *tracker;
 	fw_tracker->tracked = arrayList_create();
 	fw_tracker->customizer = customizer;
 
 	arrayList_add(m_trackers, fw_tracker);
 
-	return tracker;
+	return CELIX_SUCCESS;
 }
 
 void tracker_open(SERVICE_TRACKER tracker) {

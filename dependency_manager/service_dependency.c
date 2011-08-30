@@ -28,6 +28,7 @@
 #include "service_dependency.h"
 #include "service_tracker.h"
 #include "bundle_context.h"
+#include "constants.h"
 
 void * serviceDependency_addingService(void * handle, SERVICE_REFERENCE reference);
 void serviceDependency_addedService(void * handle, SERVICE_REFERENCE reference, void * service);
@@ -41,6 +42,7 @@ SERVICE_DEPENDENCY serviceDependency_create(BUNDLE_CONTEXT context) {
 	dependency->autoConfigureField = NULL;
 	dependency->tracker = NULL;
 	dependency->trackedServiceName = NULL;
+	dependency->trackedServiceFilter = NULL;
 	dependency->service = NULL;
 	dependency->serviceInstance = NULL;
 	dependency->reference = NULL;
@@ -68,15 +70,18 @@ void * serviceDependency_getService(SERVICE_DEPENDENCY dependency) {
 void serviceDependency_start(SERVICE_DEPENDENCY dependency, SERVICE service) {
 	dependency->service = service;
 
-	if (dependency->trackedServiceName != NULL) {
-		SERVICE_TRACKER_CUSTOMIZER cust = (SERVICE_TRACKER_CUSTOMIZER) malloc(sizeof(*cust));
-		cust->handle = dependency;
-		cust->addingService = serviceDependency_addingService;
-		cust->addedService = serviceDependency_addedService;
-		cust->modifiedService = serviceDependency_modifiedService;
-		cust->removedService = serviceDependency_removedService;
+	SERVICE_TRACKER_CUSTOMIZER cust = (SERVICE_TRACKER_CUSTOMIZER) malloc(sizeof(*cust));
+	cust->handle = dependency;
+	cust->addingService = serviceDependency_addingService;
+	cust->addedService = serviceDependency_addedService;
+	cust->modifiedService = serviceDependency_modifiedService;
+	cust->removedService = serviceDependency_removedService;
 
-		dependency->tracker = NULL;
+	dependency->tracker = NULL;
+
+	if (dependency->trackedServiceFilter != NULL) {
+		tracker_createWithFilter(dependency->context, dependency->trackedServiceFilter, cust, &dependency->tracker);
+	} else if (dependency->trackedServiceName != NULL) {
 		tracker_create(dependency->context, dependency->trackedServiceName, cust, &dependency->tracker);
 	} else {
 
@@ -152,7 +157,24 @@ void serviceDependency_invokeRemoved(SERVICE_DEPENDENCY dependency) {
 
 SERVICE_DEPENDENCY serviceDependency_setService(SERVICE_DEPENDENCY dependency, char * serviceName, char * filter) {
 	dependency->trackedServiceName = serviceName;
-//	dependency->filter = filter;
+
+	if (filter != NULL) {
+		if (serviceName != NULL) {
+			int len = strlen(serviceName) + strlen(OBJECTCLASS) + strlen(filter) + 7;
+			char *nfilter = malloc(sizeof(char) * len);
+			strcpy(nfilter, "(&(");
+			strcat(nfilter, OBJECTCLASS);
+			strcat(nfilter, "=");
+			strcat(nfilter, serviceName);
+			strcat(nfilter, ")");
+			strcat(nfilter, filter);
+			strcat(nfilter, ")\0");
+			dependency->trackedServiceFilter = nfilter;
+		} else {
+			dependency->trackedServiceFilter = filter;
+		}
+	}
+
 	return dependency;
 }
 
