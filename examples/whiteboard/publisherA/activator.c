@@ -27,6 +27,7 @@
 #include "bundle_activator.h"
 #include "bundle_context.h"
 #include "publisher_private.h"
+#include "celix_errno.h"
 
 struct activatorData {
     PUBLISHER_SERVICE ps;
@@ -60,9 +61,12 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
         properties_set(props, "id", "A");
 
         SERVICE_REGISTRATION service_registration = NULL;
-        bundleContext_registerService(context, PUBLISHER_NAME, data->ps, props, &service_registration);
+        status = bundleContext_registerService(context, PUBLISHER_NAME, data->ps, props, &service_registration);
+        if (status != CELIX_SUCCESS) {
+        	printf("Error: %s\n", celix_strerror(status));
+        }
     } else {
-        status = CELIX_START_ERROR;
+        status = CELIX_BUNDLE_EXCEPTION;
     }
     return status;
 }

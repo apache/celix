@@ -296,7 +296,7 @@ celix_status_t bundle_isUsed(BUNDLE bundle, bool *used) {
 	iter = arrayListIterator_create(bundle->modules);
 	while (arrayListIterator_hasNext(iter) && !unresolved && !*used) {
 		MODULE module = arrayListIterator_next(iter);
-//		module_getD
+		module_getDependents(module);
 	}
 	arrayListIterator_destroy(iter);
 	return CELIX_SUCCESS;

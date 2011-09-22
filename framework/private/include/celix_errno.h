@@ -26,6 +26,12 @@
 typedef int celix_status_t;
 
 /*!
+ * Return a readable string for the given error code.
+ *
+ */
+char *celix_strerror(celix_status_t errorcode);
+
+/*!
  * Error code indicating successful execution of the function.
  */
 #define CELIX_SUCCESS 0

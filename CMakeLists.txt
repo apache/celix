@@ -23,8 +23,9 @@ project (Celix C)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 
 SET(CMAKE_BUILD_TYPE "Debug")
-SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 ${CMAKE_C_FLAGS} -ftest-coverage -fprofile-arcs")
-SET(LDFLAGS "-fprofile-arcs -ftest-coverage")
+#SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 ${CMAKE_C_FLAGS} -ftest-coverage -fprofile-arcs")
+SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 ${CMAKE_C_FLAGS}")
+#SET(LDFLAGS "-fprofile-arcs -ftest-coverage")
 SET(CMAKE_INSTALL_COMPONENT "framework")
 
 GET_FILENAME_COMPONENT(__cmake_path ${CMAKE_COMMAND} PATH)
