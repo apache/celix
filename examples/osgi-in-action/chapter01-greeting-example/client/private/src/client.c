@@ -19,7 +19,6 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <apr_general.h>
 
 #include "bundle_activator.h"
 #include "bundle_context.h"
@@ -27,6 +26,7 @@
 
 
 celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
+	*userData = NULL;
 	return CELIX_SUCCESS;
 }
 
@@ -37,7 +37,7 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT ctx) {
 		if (ref == NULL) {
 			printf("Greeting service reference not available\n");
 		} else {
-			GREETING_SERVICE greeting = NULL;
+			greeting_service_t greeting = NULL;
 			bundleContext_getService(ctx, ref, (void *) &greeting);
 			if (greeting == NULL){
 				printf("Greeting service not available\n");

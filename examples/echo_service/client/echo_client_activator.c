@@ -49,7 +49,8 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 	struct echoActivator * act = (struct echoActivator *) userData;
 
-	SERVICE_TRACKER tracker = tracker_create(context, ECHO_SERVICE_NAME, NULL);
+	SERVICE_TRACKER tracker = NULL;
+	tracker_create(context, ECHO_SERVICE_NAME, NULL, &tracker);
 	act->tracker = tracker;
 
 	ECHO_CLIENT client = echoClient_create(tracker);

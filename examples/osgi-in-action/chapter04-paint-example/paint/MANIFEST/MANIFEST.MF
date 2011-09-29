@@ -1,0 +1,6 @@
+Bundle-SymbolicName: chapter04-paint-example
+Bundle-Version: 1.0.0
+library: chapter04-paint-example
+Import-Service: simple_shape
+
+

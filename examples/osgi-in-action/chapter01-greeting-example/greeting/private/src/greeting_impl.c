@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include "greeting_impl.h"
 
-void greeting_sayHello(struct greeting *instance){
+void greeting_sayHello(greeting_t instance){
 	printf("Greetings from %s\n", instance->name);
 }
 

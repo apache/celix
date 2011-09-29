@@ -1,0 +1,7 @@
+Bundle-SymbolicName: circle
+Bundle-Version: 1.0.0
+library: circle
+Export-Service: simple_shape
+Import-Service: simple_shape
+
+

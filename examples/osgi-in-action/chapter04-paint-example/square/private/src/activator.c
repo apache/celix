@@ -20,65 +20,49 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <apr_general.h>
+#include <glib.h>
+#include <gtk/gtk.h>
+#include <gdk/gdk.h>
 
 #include "bundle_activator.h"
 #include "bundle_context.h"
-#include "greeting_impl.h"
-#include "greeting_service.h"
-#include "service_registration.h"
+#include "simple_shape.h"
+#include "square_shape.h"
+#include "simple_shape.h"
 
-struct greetingActivator {
+struct squareActivator {
 	SERVICE_REGISTRATION reg;
 	apr_pool_t *pool;
 };
 
-typedef struct greetingActivator *greeting_activator_t;
+typedef struct squareActivator *GREETING_ACTIVATOR;
 
 celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 	apr_pool_t *pool;
-	greeting_activator_t activator;
+	GREETING_ACTIVATOR activator;
 	celix_status_t status = bundleContext_getMemoryPool(context, &pool);
 	if (status == CELIX_SUCCESS) {
-		*userData = apr_palloc(pool, sizeof(struct greetingActivator));
-		if (userData) {
-			activator = *userData;
-			activator->reg = NULL;
-			activator->pool = pool;
-		} else {
-			status = CELIX_ENOMEM;
-		}
+		*userData = apr_palloc(pool, sizeof(struct squareActivator));
+		activator = *userData;
+		activator->reg = NULL;
+		activator->pool = pool;
+		printf("Square created\n");
 	}
 	return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT ctx) {
+	struct squareActivator * act = (struct squareActivator *) userData;
 	celix_status_t status = CELIX_SUCCESS;
-
-	greeting_activator_t act = (greeting_activator_t) userData;
-
-	greeting_service_t greetingService = apr_palloc(act->pool, sizeof(*greetingService));
-
-	if (greetingService) {
-		greetingService->instance = apr_palloc(act->pool, sizeof(*greetingService->instance));
-		if (greetingService->instance) {
-			greetingService->instance->name = GREETING_SERVICE_NAME;
-			greetingService->greeting_sayHello = greeting_sayHello;
-
-			status = bundleContext_registerService(context, GREETING_SERVICE_NAME, greetingService, NULL, &act->reg);
-		} else {
-			status = CELIX_ENOMEM;
-		}
-	} else {
-		status = CELIX_ENOMEM;
-	}
+	SIMPLE_SHAPE es = squareShape_create(ctx);
+	PROPERTIES props = properties_create();
+	properties_set(props, "name", "square");
+    status = bundleContext_registerService(ctx, SIMPLE_SHAPE_SERVICE_NAME, es, props, &act->reg);
+	printf("Square start\n");
 	return status;
 }
 
 celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
-	celix_status_t status = CELIX_SUCCESS;
-	greeting_activator_t act = (greeting_activator_t) userData;
-	serviceRegistration_unregister(act->reg);
-	act->reg = NULL;
 	return CELIX_SUCCESS;
 }
 

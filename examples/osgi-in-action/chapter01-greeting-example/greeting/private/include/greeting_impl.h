@@ -19,11 +19,13 @@
 #ifndef GREETING_IMPL_H_
 #define GREETING_IMPL_H_
 
+#include "greeting_service.h"
+
 struct greeting {
 	char *name;
 };
 
-extern void greeting_sayHello(struct greeting *instance);
+extern void greeting_sayHello(greeting_t instance);
 
 
 #endif /* GREETING_IMPL_H_ */

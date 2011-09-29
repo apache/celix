@@ -14,10 +14,31 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+cmake_minimum_required(VERSION 2.8)
+INCLUDE(FindPkgConfig)
+cmake_policy(SET CMP0014 NEW)
+pkg_search_module (GLIB  REQUIRED glib-2.0)
+pkg_search_module (GTHR  REQUIRED gthread-2.0)
+pkg_search_module (GTK   REQUIRED gtk+-2.0)
+include_directories(
+	private/include
+	public/include
+	../simple//public/include
+)
+include_directories(${GTK_INCLUDE_DIRS})
+include_directories(${GLIB_INCLUDE_DIRS})
+include_directories(${GTHR_INCLUDE_DIRS})
 
-add_library(chapter01-greeting-example-client SHARED private/src/client)
+link_directories(${GTK_LIBRARY_DIRS})
+link_directories(${GLIB_LIBRARY_DIRS})
+link_directories(${GTHR_LIBRARY_DIRS})
+
+add_library(circle SHARED 
+ private/src/activator
+ private/src/circle_shape
+ )
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-include_directories("../greeting/public/include")
-target_link_libraries(chapter01-greeting-example-client framework)
+include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
+target_link_libraries(circle framework ${GLIB_LIBRARIES} ${GTK_LIBRARIES} ${GTHR_LIBRARIES})
 
-bundle(chapter01-greeting-example-client)
+bundle(circle FILES private/src/circle.png)

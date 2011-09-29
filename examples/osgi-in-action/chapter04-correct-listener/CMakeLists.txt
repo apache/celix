@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(chapter04-correct-listener SHARED private/src/activator)
+add_library(chapter04-correct-listener SHARED private/src/listener_example)
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 target_link_libraries(chapter04-correct-listener framework)

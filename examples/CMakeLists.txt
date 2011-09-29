@@ -30,5 +30,8 @@ add_subdirectory(echo_service)
 add_subdirectory(osgi-in-action/chapter04-correct-lookup)
 add_subdirectory(osgi-in-action/chapter04-correct-listener)
 add_subdirectory(osgi-in-action/chapter01-greeting-example)
+add_subdirectory(osgi-in-action/chapter04-paint-example)
 
 deploy(chapter01-greeting-example BUNDLES shell shell_tui log_service chapter01-greeting-example-client chapter01-greeting-example)
+deploy(chapter04-correct-listener BUNDLES shell shell_tui log_service chapter04-correct-listener)
+deploy("chapter04-paint-example" BUNDLES chapter04-paint-example circle square triangle shell shell_tui log_service log_writer)
