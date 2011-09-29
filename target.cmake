@@ -21,4 +21,4 @@ deploy("hello_world" BUNDLES shell shell_tui hello_world celix.mongoose log_serv
 #deploy("deployer" BUNDLES shell shell_tui deployer)
 deploy("wb" BUNDLES tracker publisherA publisherB shell shell_tui log_service log_writer)
 deploy("wb_dp" BUNDLES tracker_depman publisherA publisherB shell shell_tui log_service log_writer)
-#deploy("echo" BUNDLES echo_server echo_client shell shell_tui)
+deploy("echo" BUNDLES echo_server echo_client shell shell_tui)

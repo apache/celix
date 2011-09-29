@@ -15,20 +15,5 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_subdirectory(hello_world)
-add_subdirectory(mongoose)
-
-#add_subdirectory(receiver)
-#add_subdirectory(receiver-2.0)
-#add_subdirectory(sender)
-
-#add_subdirectory(echo_service/client)
-#add_subdirectory(echo_service/server)
-add_subdirectory(whiteboard)
-add_subdirectory(echo_service)
-
-add_subdirectory(osgi-in-action/chapter04-correct-lookup)
-add_subdirectory(osgi-in-action/chapter04-correct-listener)
-add_subdirectory(osgi-in-action/chapter01-greeting-example)
-
-deploy(chapter01-greeting-example BUNDLES shell shell_tui log_service chapter01-greeting-example-client chapter01-greeting-example)
+add_subdirectory(greeting)
+add_subdirectory(client)

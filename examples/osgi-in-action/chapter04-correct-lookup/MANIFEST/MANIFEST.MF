@@ -1,0 +1,4 @@
+Bundle-SymbolicName: chapter04-correct-lookup
+Bundle-Version: 1.0.0
+library: chapter04-correct-lookup
+Import-Service: log_service

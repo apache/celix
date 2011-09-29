@@ -1,0 +1,6 @@
+Bundle-SymbolicName: chapter01-greeting-example-client
+Bundle-Version: 1.0.0
+library: chapter01-greeting-example-client
+Import-Service: greeting-service
+
+

@@ -16,64 +16,59 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * echo_server_activator.c
- *
- *  Created on: Sep 21, 2010
- *      Author: alexanderb
- */
+
 #include <stdlib.h>
+#include <stdio.h>
+#include <apr_general.h>
 
 #include "bundle_activator.h"
 #include "bundle_context.h"
+#include "greeting_impl.h"
+#include "greeting_service.h"
 #include "service_registration.h"
-#include "echo_server_private.h"
 
-struct echoActivator {
+struct greetingActivator {
 	SERVICE_REGISTRATION reg;
-	ECHO_SERVICE es;
+	apr_pool_t *pool;
 };
 
+typedef struct greetingActivator *GREETING_ACTIVATOR;
+
 celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
-	struct echoActivator * act = malloc(sizeof(*act));
-	act->reg = NULL;
-	*userData = act;
-	return CELIX_SUCCESS;
+	apr_pool_t *pool;
+	GREETING_ACTIVATOR activator;
+	celix_status_t status = bundleContext_getMemoryPool(context, &pool);
+	if (status == CELIX_SUCCESS) {
+		*userData = apr_palloc(pool, sizeof(struct greetingActivator));
+		activator = *userData;
+		activator->reg = NULL;
+		activator->pool = pool;
+	}
+	return status;
 }
 
 celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
-	struct echoActivator * act = (struct echoActivator *) userData;
+	struct greetingActivator * act = (struct greetingActivator *) userData;
+	celix_status_t status = CELIX_SUCCESS;
+	GREETING_SERVICE es = apr_palloc(act->pool, sizeof(*es));
+	es->instance = apr_palloc(act->pool, sizeof(*es->instance));
+	es->instance->name = GREETING_SERVICE_NAME;
+	es->greeting_sayHello = greeting_sayHello;
 
-	ECHO_SERVICE es = malloc(sizeof(*es));
-	ECHO_SERVER server = echoServer_create();
-	es->server = server;
-	es->echo = echoServer_echo;
-
-	act->es = es;
-
-    bundleContext_registerService(context, ECHO_SERVICE_NAME, es, NULL, &act->reg);
-
-    return CELIX_SUCCESS;
+    status = bundleContext_registerService(context, GREETING_SERVICE_NAME, es, NULL, &act->reg);
+	return status;
 }
 
 celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
-	struct echoActivator * act = (struct echoActivator *) userData;
-
+	celix_status_t status = CELIX_SUCCESS;
+	struct greetingActivator * act = (struct greetingActivator *) userData;
 	serviceRegistration_unregister(act->reg);
 	act->reg = NULL;
-
 	return CELIX_SUCCESS;
 }
 
 celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {
-	struct echoActivator * act = (struct echoActivator *) userData;
-	act->es->echo = NULL;
-	echoServer_destroy(act->es->server);
-	act->es->server = NULL;
-	free(act->es);
-	act->es = NULL;
+	struct greetingActivator * act = (struct greetingActivator *) userData;
 	act->reg = NULL;
-	free(act);
-
 	return CELIX_SUCCESS;
 }

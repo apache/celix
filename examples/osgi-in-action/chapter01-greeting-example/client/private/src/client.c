@@ -16,63 +16,45 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * echo_server_activator.c
- *
- *  Created on: Sep 21, 2010
- *      Author: alexanderb
- */
+
 #include <stdlib.h>
+#include <stdio.h>
+#include <apr_general.h>
 
 #include "bundle_activator.h"
 #include "bundle_context.h"
-#include "service_tracker.h"
+#include "greeting_service.h"
 
-#include "echo_server.h"
-#include "echo_client_private.h"
-
-struct echoActivator {
-	ECHO_CLIENT client;
-	SERVICE_TRACKER tracker;
-};
 
 celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
-	struct echoActivator * act = malloc(sizeof(*act));
-	act->client = NULL;
-	act->tracker = NULL;
-
-	*userData = act;
-
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
-	struct echoActivator * act = (struct echoActivator *) userData;
-
-	SERVICE_TRACKER tracker = tracker_create(context, ECHO_SERVICE_NAME, NULL);
-	act->tracker = tracker;
-
-	ECHO_CLIENT client = echoClient_create(tracker);
-	act->client = client;
-
-	echoClient_start(act->client);
-	tracker_open(act->tracker);
-
-	return CELIX_SUCCESS;
+celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT ctx) {
+	SERVICE_REFERENCE ref = NULL;
+	celix_status_t status = bundleContext_getServiceReference(ctx, (char *) GREETING_SERVICE_NAME, &ref);
+	if (status == CELIX_SUCCESS) {
+		if (ref == NULL) {
+			printf("Greeting service reference not available\n");
+		} else {
+			GREETING_SERVICE greeting = NULL;
+			bundleContext_getService(ctx, ref, (void *) &greeting);
+			if (greeting == NULL){
+				printf("Greeting service not available\n");
+			} else {
+				bool result;
+				(*greeting->greeting_sayHello)(greeting->instance);
+				bundleContext_ungetService(ctx, ref, &result);
+			}
+		}
+	}
+	return status;
 }
 
 celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
-	struct echoActivator * act = (struct echoActivator *) userData;
-	tracker_close(act->tracker);
-	echoClient_stop(act->client);
-
 	return CELIX_SUCCESS;
 }
 
 celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {
-	struct echoActivator * act = (struct echoActivator *) userData;
-	echoClient_destroy(act->client);
-	tracker_destroy(act->tracker);
-
 	return CELIX_SUCCESS;
 }
