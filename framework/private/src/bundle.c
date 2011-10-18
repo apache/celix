@@ -234,7 +234,7 @@ celix_status_t bundle_createModule(BUNDLE bundle, MODULE *module) {
 	return status;
 }
 
-celix_status_t startBundle(BUNDLE bundle, int options) {
+celix_status_t bundle_start(BUNDLE bundle, int options) {
 	celix_status_t status = CELIX_SUCCESS;
     if (bundle != NULL) {
         status = fw_startBundle(bundle->framework, bundle, options);
@@ -246,7 +246,7 @@ celix_status_t bundle_update(BUNDLE bundle, char *inputFile) {
 	return framework_updateBundle(bundle->framework, bundle, inputFile);
 }
 
-celix_status_t stopBundle(BUNDLE bundle, int options) {
+celix_status_t bundle_stop(BUNDLE bundle, int options) {
 	return fw_stopBundle(bundle->framework, bundle, ((options & 1) == 0));
 }
 
@@ -502,4 +502,10 @@ celix_status_t bundle_getBundleId(BUNDLE bundle, long *id) {
 	return status;
 }
 
+celix_status_t bundle_getRegisteredServices(BUNDLE bundle, ARRAY_LIST *list) {
+	celix_status_t status = CELIX_SUCCESS;
 
+	status = fw_getBundleRegisteredServices(bundle->framework, bundle, list);
+
+	return status;
+}

@@ -171,17 +171,17 @@ typedef struct serviceRegistration * SERVICE_REGISTRATION;
 
 struct serviceListener {
 	void * handle;
-	void (*serviceChanged)(void * listener, SERVICE_EVENT event);
+	celix_status_t (*serviceChanged)(void * listener, SERVICE_EVENT event);
 };
 
 typedef struct serviceListener * SERVICE_LISTENER;
 
 struct serviceTrackerCustomizer {
 	void * handle;
-	void * (*addingService)(void * handle, SERVICE_REFERENCE reference);
-	void (*addedService)(void * handle, SERVICE_REFERENCE reference, void * service);
-	void (*modifiedService)(void * handle, SERVICE_REFERENCE reference, void * service);
-	void (*removedService)(void * handle, SERVICE_REFERENCE reference, void * service);
+	celix_status_t (*addingService)(void * handle, SERVICE_REFERENCE reference, void **service);
+	celix_status_t (*addedService)(void * handle, SERVICE_REFERENCE reference, void * service);
+	celix_status_t (*modifiedService)(void * handle, SERVICE_REFERENCE reference, void * service);
+	celix_status_t (*removedService)(void * handle, SERVICE_REFERENCE reference, void * service);
 };
 
 typedef struct serviceTrackerCustomizer * SERVICE_TRACKER_CUSTOMIZER;

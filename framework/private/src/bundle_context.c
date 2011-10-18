@@ -164,7 +164,7 @@ celix_status_t bundleContext_registerServiceFactory(BUNDLE_CONTEXT context, char
     return status;
 }
 
-celix_status_t bundleContext_getServiceReferences(BUNDLE_CONTEXT context, char * serviceName, char * filter, ARRAY_LIST *service_references) {
+celix_status_t bundleContext_getServiceReferences(BUNDLE_CONTEXT context, const char * serviceName, char * filter, ARRAY_LIST *service_references) {
     ARRAY_LIST references = NULL;
     celix_status_t status = CELIX_SUCCESS;
 

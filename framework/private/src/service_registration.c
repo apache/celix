@@ -110,21 +110,20 @@ void serviceRegistration_invalidate(SERVICE_REGISTRATION registration) {
 	pthread_mutex_unlock(&registration->mutex);
 }
 
-void serviceRegistration_unregister(SERVICE_REGISTRATION registration) {
+celix_status_t serviceRegistration_unregister(SERVICE_REGISTRATION registration) {
+	celix_status_t status = CELIX_SUCCESS;
 	pthread_mutex_lock(&registration->mutex);
 	if (!serviceRegistration_isValid(registration) || registration->isUnregistering) {
 		printf("Service is already unregistered\n");
-		return;
+		status = CELIX_ILLEGAL_STATE;
+	} else {
+		registration->isUnregistering = true;
 	}
-	registration->isUnregistering = true;
 	pthread_mutex_unlock(&registration->mutex);
 
 	serviceRegistry_unregisterService(registration->registry, registration->reference->bundle, registration);
 
-	// Unregister service cleans up the registration
-//	pthread_mutex_lock(&registration->mutex);
-//	registration->svcObj = NULL;
-//	pthread_mutex_unlock(&registration->mutex);
+	return status;
 }
 
 celix_status_t serviceRegistration_getService(SERVICE_REGISTRATION registration, BUNDLE bundle, void **service) {

@@ -101,8 +101,8 @@ void service_destroy(void * userData) {
 //	listener = (SERVICE_LISTENER) malloc(sizeof(*listener));
 //	listener->serviceChanged = (void *) serviceChanged;
 //	addServiceListener(context, listener, "(test=test)");
-//	tracker = tracker_createServiceTracker(context, (char *) SERVICE_TEST_NAME, cust);
-//	tracker_open(tracker);
+//	tracker = serviceTracker_create(context, (char *) SERVICE_TEST_NAME, cust);
+//	serviceTracker_open(tracker);
 //	refs = tracker_getServices(tracker);
 //	printf("Size: %i\n", arrayList_size(refs));
 //	//arrayList_clear(refs);
@@ -121,7 +121,7 @@ void service_destroy(void * userData) {
 
 //void bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
 //	// removeServiceListener(context, listener);
-//	tracker_close(tracker);
+//	serviceTracker_close(tracker);
 //	tracker_destroy(tracker);
 //
 //}

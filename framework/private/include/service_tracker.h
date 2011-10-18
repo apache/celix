@@ -44,11 +44,11 @@ struct tracked {
 
 typedef struct tracked * TRACKED;
 
-celix_status_t tracker_create(BUNDLE_CONTEXT context, char * service, SERVICE_TRACKER_CUSTOMIZER customizer, SERVICE_TRACKER *tracker);
+celix_status_t serviceTracker_create(BUNDLE_CONTEXT context, char * service, SERVICE_TRACKER_CUSTOMIZER customizer, SERVICE_TRACKER *tracker);
 celix_status_t tracker_createWithFilter(BUNDLE_CONTEXT context, char * filter, SERVICE_TRACKER_CUSTOMIZER customizer, SERVICE_TRACKER *tracker);
 
-void tracker_open(SERVICE_TRACKER tracker);
-void tracker_close(SERVICE_TRACKER tracker);
+celix_status_t serviceTracker_open(SERVICE_TRACKER tracker);
+celix_status_t serviceTracker_close(SERVICE_TRACKER tracker);
 void tracker_destroy(SERVICE_TRACKER tracker);
 
 SERVICE_REFERENCE tracker_getServiceReference(SERVICE_TRACKER tracker);

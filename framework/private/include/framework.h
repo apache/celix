@@ -54,9 +54,10 @@ celix_status_t fw_registerService(FRAMEWORK framework, SERVICE_REGISTRATION * re
 celix_status_t fw_registerServiceFactory(FRAMEWORK framework, SERVICE_REGISTRATION * registration, BUNDLE bundle, char * serviceName, service_factory_t factory, PROPERTIES properties);
 void fw_unregisterService(SERVICE_REGISTRATION registration);
 
-celix_status_t fw_getServiceReferences(FRAMEWORK framework, ARRAY_LIST *references, BUNDLE bundle, char * serviceName, char * filter);
+celix_status_t fw_getServiceReferences(FRAMEWORK framework, ARRAY_LIST *references, BUNDLE bundle, const char * serviceName, char * filter);
 void * fw_getService(FRAMEWORK framework, BUNDLE bundle, SERVICE_REFERENCE reference);
 bool framework_ungetService(FRAMEWORK framework, BUNDLE bundle, SERVICE_REFERENCE reference);
+celix_status_t fw_getBundleRegisteredServices(FRAMEWORK framework, BUNDLE bundle, ARRAY_LIST *services);
 
 void fw_addServiceListener(FRAMEWORK framework, BUNDLE bundle, SERVICE_LISTENER listener, char * filter);
 void fw_removeServiceListener(FRAMEWORK framework, BUNDLE bundle, SERVICE_LISTENER listener);

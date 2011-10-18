@@ -987,7 +987,7 @@ celix_status_t fw_registerServiceFactory(FRAMEWORK framework, SERVICE_REGISTRATI
     return CELIX_SUCCESS;
 }
 
-celix_status_t fw_getServiceReferences(FRAMEWORK framework, ARRAY_LIST *references, BUNDLE bundle ATTRIBUTE_UNUSED, char * serviceName, char * sfilter) {
+celix_status_t fw_getServiceReferences(FRAMEWORK framework, ARRAY_LIST *references, BUNDLE bundle ATTRIBUTE_UNUSED, const char * serviceName, char * sfilter) {
 	FILTER filter = NULL;
 	if (sfilter != NULL) {
 		filter = filter_create(sfilter);
@@ -1015,6 +1015,12 @@ celix_status_t fw_getServiceReferences(FRAMEWORK framework, ARRAY_LIST *referenc
 
 void * fw_getService(FRAMEWORK framework, BUNDLE bundle ATTRIBUTE_UNUSED, SERVICE_REFERENCE reference) {
 	return serviceRegistry_getService(framework->registry, bundle, reference);
+}
+
+celix_status_t fw_getBundleRegisteredServices(FRAMEWORK framework, BUNDLE bundle, ARRAY_LIST *services) {
+	celix_status_t status = CELIX_SUCCESS;
+	*services = serviceRegistry_getRegisteredServices(framework->registry, bundle);
+	return status;
 }
 
 bool framework_ungetService(FRAMEWORK framework, BUNDLE bundle ATTRIBUTE_UNUSED, SERVICE_REFERENCE reference) {

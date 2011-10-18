@@ -97,7 +97,7 @@ int main(void) {
         int i;
         for (i = 0; i < arrayList_size(installed); i++) {
             BUNDLE bundle = (BUNDLE) arrayList_get(installed, i);
-            startBundle(bundle, 0);
+            bundle_start(bundle, 0);
         }
 
         arrayList_destroy(installed);

@@ -50,21 +50,21 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 	struct echoActivator * act = (struct echoActivator *) userData;
 
 	SERVICE_TRACKER tracker = NULL;
-	tracker_create(context, ECHO_SERVICE_NAME, NULL, &tracker);
+	serviceTracker_create(context, ECHO_SERVICE_NAME, NULL, &tracker);
 	act->tracker = tracker;
 
 	ECHO_CLIENT client = echoClient_create(tracker);
 	act->client = client;
 
 	echoClient_start(act->client);
-	tracker_open(act->tracker);
+	serviceTracker_open(act->tracker);
 
 	return CELIX_SUCCESS;
 }
 
 celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
 	struct echoActivator * act = (struct echoActivator *) userData;
-	tracker_close(act->tracker);
+	serviceTracker_close(act->tracker);
 	echoClient_stop(act->client);
 
 	return CELIX_SUCCESS;

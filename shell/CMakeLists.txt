@@ -18,7 +18,8 @@
 add_library(shell SHARED shell command
 	ps_command start_command stop_command
 	install_command update_command
-	uninstall_command log_command)
+	uninstall_command log_command
+	inspect_command)
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 target_link_libraries(shell framework curl)

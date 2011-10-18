@@ -37,7 +37,7 @@ void serviceRegistration_destroy(SERVICE_REGISTRATION registration);
 
 bool serviceRegistration_isValid(SERVICE_REGISTRATION registration);
 void serviceRegistration_invalidate(SERVICE_REGISTRATION registration);
-void serviceRegistration_unregister(SERVICE_REGISTRATION registration);
+celix_status_t serviceRegistration_unregister(SERVICE_REGISTRATION registration);
 
 celix_status_t serviceRegistration_getService(SERVICE_REGISTRATION registration, BUNDLE bundle, void **service);
 

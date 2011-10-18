@@ -54,31 +54,33 @@ void * trk_send(void * handle) {
 	return NULL;
 }
 
-void * addingServ(void * handle, SERVICE_REFERENCE ref) {
-    void *service_instance = NULL;
+celix_status_t addingServ(void * handle, SERVICE_REFERENCE ref, void **service) {
     struct data * data = (struct data *) handle;
 
     printf("Adding\n");
-	bundleContext_getService(data->context, ref, &service_instance);
+	bundleContext_getService(data->context, ref, service);
 
-	return service_instance;
+	return CELIX_SUCCESS;
 }
 
-void addedServ(void * handle, SERVICE_REFERENCE ref, void * service) {
+celix_status_t addedServ(void * handle, SERVICE_REFERENCE ref, void * service) {
 	struct data * data = (struct data *) handle;
 	arrayList_add(data->publishers, service);
 	printf("Added %p\n", service);
+	return CELIX_SUCCESS;
 }
 
-void modifiedServ(void * handle, SERVICE_REFERENCE ref, void * service) {
+celix_status_t modifiedServ(void * handle, SERVICE_REFERENCE ref, void * service) {
 	struct data * data = (struct data *) handle;
 	printf("Modified\n");
+	return CELIX_SUCCESS;
 }
 
-void removedServ(void * handle, SERVICE_REFERENCE ref, void * service) {
+celix_status_t removedServ(void * handle, SERVICE_REFERENCE ref, void * service) {
 	struct data * data = (struct data *) handle;
 	arrayList_removeElement(data->publishers, service);
 	printf("Removed %p\n", service);
+	return CELIX_SUCCESS;
 }
 
 celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
@@ -108,10 +110,10 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
         cust->modifiedService = modifiedServ;
         cust->removedService = removedServ;
         SERVICE_TRACKER tracker = NULL;
-        tracker_create(context, (char *) PUBLISHER_NAME, cust, &tracker);
+        serviceTracker_create(context, (char *) PUBLISHER_NAME, cust, &tracker);
         data->tracker = tracker;
 
-        tracker_open(tracker);
+        serviceTracker_open(tracker);
 
         data->running = true;
         pthread_create(&data->sender, NULL, trk_send, data);
@@ -126,7 +128,7 @@ celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
     printf("Stop\n");
 
     struct data * data = (struct data *) userData;
-    tracker_close(data->tracker);
+    serviceTracker_close(data->tracker);
     data->running = false;
     pthread_join(data->sender, NULL);
 

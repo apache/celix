@@ -49,9 +49,9 @@ celix_status_t bundle_getContext(BUNDLE bundle, BUNDLE_CONTEXT *context);
 celix_status_t bundle_setContext(BUNDLE bundle, BUNDLE_CONTEXT context);
 celix_status_t bundle_getEntry(BUNDLE bundle, char * name, apr_pool_t *pool, char **entry);
 
-celix_status_t startBundle(BUNDLE bundle, int options);
+celix_status_t bundle_start(BUNDLE bundle, int options);
 celix_status_t bundle_update(BUNDLE bundle, char *inputFile);
-celix_status_t stopBundle(BUNDLE bundle, int options);
+celix_status_t bundle_stop(BUNDLE bundle, int options);
 celix_status_t bundle_uninstall(BUNDLE bundle);
 
 celix_status_t bundle_setState(BUNDLE bundle, BUNDLE_STATE state);
@@ -81,5 +81,7 @@ celix_status_t bundle_close(BUNDLE bundle);
 
 celix_status_t bundle_refresh(BUNDLE bundle);
 celix_status_t bundle_getBundleId(BUNDLE bundle, long *id);
+
+celix_status_t bundle_getRegisteredServices(BUNDLE bundle, ARRAY_LIST *list);
 
 #endif /* BUNDLE_H_ */

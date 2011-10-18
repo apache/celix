@@ -238,7 +238,7 @@ void serviceRegistry_unregisterServices(SERVICE_REGISTRY registry, BUNDLE bundle
 	pthread_mutex_unlock(&registry->mutex);
 }
 
-ARRAY_LIST serviceRegistry_getServiceReferences(SERVICE_REGISTRY registry, char * serviceName, FILTER filter) {
+ARRAY_LIST serviceRegistry_getServiceReferences(SERVICE_REGISTRY registry, const char * serviceName, FILTER filter) {
 	ARRAY_LIST references = arrayList_create();
 
 	HASH_MAP_VALUES registrations = hashMapValues_create(registry->serviceRegistrations);

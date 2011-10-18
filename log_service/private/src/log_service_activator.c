@@ -23,6 +23,7 @@
  *      Author: alexander
  */
 #include <apr_general.h>
+#include <stdlib.h>
 
 #include "bundle_activator.h"
 #include "log_service_impl.h"
