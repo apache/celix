@@ -23,21 +23,35 @@
 
 void circleShape_draw(SIMPLE_SHAPE shape, GdkPixmap *pixMap, GtkWidget *widget, gdouble x, gdouble y);
 
-SIMPLE_SHAPE circleShape_create(BUNDLE_CONTEXT context) {
+celix_status_t circleShape_create(BUNDLE_CONTEXT context, SIMPLE_SHAPE *shape) {
+	celix_status_t status = CELIX_SUCCESS;
+
 	BUNDLE bundle;
 	apr_pool_t *pool;
-	SIMPLE_SHAPE shape = (SIMPLE_SHAPE) malloc(sizeof(*shape));
-	bundleContext_getBundle(context, &bundle);
-	bundleContext_getMemoryPool(context, &pool);
-	shape->icon_path = NULL;
-	celix_status_t status = bundle_getEntry(bundle, CIRCLE_FILE, pool, &shape->icon_path);
-	shape->simpleShape_draw = circleShape_draw;
-	if (status == CELIX_SUCCESS) {
-		// no error
+
+	if (*shape != NULL || context == NULL) {
+		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
-		printf("Could not find resource %s\n", CIRCLE_FILE);
+		status = bundleContext_getBundle(context, &bundle);
+		if (status == CELIX_SUCCESS) {
+			status = bundleContext_getMemoryPool(context, &pool);
+			if (status == CELIX_SUCCESS) {
+				*shape = (SIMPLE_SHAPE) apr_palloc(pool, sizeof(**shape));
+				if (!*shape) {
+					status = CELIX_ENOMEM;
+				} else {
+					(*shape)->icon_path = NULL;
+					celix_status_t status = bundle_getEntry(bundle, CIRCLE_FILE, pool, &(*shape)->icon_path);
+					if (status == CELIX_SUCCESS) {
+						(*shape)->simpleShape_draw = circleShape_draw;
+					} else {
+						printf("Could not find resource %s\n", CIRCLE_FILE);
+					}
+				}
+			}
+		}
 	}
-	return shape;
+	return status;
 }
 
 void circleShape_draw(SIMPLE_SHAPE shape, GdkPixmap *pixMap, GtkWidget *widget, gdouble x, gdouble y){

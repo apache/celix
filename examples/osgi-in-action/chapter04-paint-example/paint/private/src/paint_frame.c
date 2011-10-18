@@ -117,7 +117,6 @@ motion_notify_event( GtkWidget *widget, GdkEventMotion *event )
 {
   int x, y;
   GdkModifierType state;
-  printf("motion notify event\n");
   if (event->is_hint) {
     gdk_window_get_pointer (event->window, &x, &y, &state);
   } else {
@@ -132,7 +131,6 @@ motion_notify_event( GtkWidget *widget, GdkEventMotion *event )
 static gboolean
 expose_event( GtkWidget *widget, GdkEventExpose *event )
 {
-	printf("expose event\n");
 	gdk_draw_drawable(widget->window,
 			widget->style->fg_gc[GTK_WIDGET_STATE (widget)],
 			this->m_pixMap,
@@ -145,7 +143,6 @@ expose_event( GtkWidget *widget, GdkEventExpose *event )
 static gboolean
 configure_event( GtkWidget *widget, GdkEventConfigure *event )
 {
-  printf("configure event\n");
   if (this->m_pixMap) {
     g_object_unref(this->m_pixMap);
   }
@@ -314,7 +311,7 @@ PAINT_FRAME paintFrame_create(BUNDLE_CONTEXT context, apr_pool_t *pool) {
 			| GDK_POINTER_MOTION_MASK
 			| GDK_POINTER_MOTION_HINT_MASK);
 
-	gtk_drawing_area_size(this->m_drawingArea, 200, 200);
+	gtk_widget_set_size_request(this->m_drawingArea, 200, 200);
 
 	/*Add the graph navigation panel to the main panel. */
 	gtk_box_pack_start (GTK_BOX(this->m_mainPanel), this->m_toolBar, TRUE, TRUE, 0);
