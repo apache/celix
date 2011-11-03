@@ -28,6 +28,7 @@ SIMPLE_SHAPE squareShape_create(BUNDLE_CONTEXT context) {
 	SIMPLE_SHAPE shape = (SIMPLE_SHAPE) malloc(sizeof(*shape));
 	bundleContext_getBundle(context, &bundle);
 	bundleContext_getMemoryPool(context, &pool);
+	shape->name = "Square";
 	shape->icon_path = NULL;
 	celix_status_t status = bundle_getEntry(bundle, SQUARE_FILE, pool, &shape->icon_path);
 	shape->simpleShape_draw = squareShape_draw;

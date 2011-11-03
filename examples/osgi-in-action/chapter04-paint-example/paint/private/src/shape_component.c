@@ -18,17 +18,18 @@
 #include "linkedlist.h"
 #include "hash_map.h"
 #include "simple_shape.h"
-#include "paint_frame.h"
 #include "shape_component.h"
+
+static const int BOX = 54;
 
 extern void shapeComponent_paintComponent(SHAPE_COMPONENT shapeComponent, PAINT_FRAME frame,
 		GdkPixmap *pixMap, GtkWidget *widget);
 
-SHAPE_COMPONENT shapeComponent_create(PAINT_FRAME frame, char *shapeName,
+SHAPE_COMPONENT shapeComponent_create(PAINT_FRAME frame, SIMPLE_SHAPE sshape,
 		gdouble x, gdouble y) {
 	SHAPE_COMPONENT shape = malloc(sizeof(*shape));
 	shape->m_frame = frame;
-	strcpy(shape->shapeName, shapeName);
+	shape->shapeName = strdup(sshape->name);
 	shape->x = x - BOX /2;
 	shape->y = y - BOX /2;
 	shape->w = BOX;
@@ -40,7 +41,7 @@ SHAPE_COMPONENT shapeComponent_create(PAINT_FRAME frame, char *shapeName,
 
 void shapeComponent_paintComponent(SHAPE_COMPONENT shapeComponent, PAINT_FRAME frame,
 		GdkPixmap *pixMap, GtkWidget *widget) {
-	SIMPLE_SHAPE shape = frame->paintFrame_getShape(shapeComponent->shapeName);
+	SIMPLE_SHAPE shape = paintFrame_getShape(frame, shapeComponent->shapeName);
 	if (shape == NULL) {
 		g_printerr("cannot find shape %s\n", shapeComponent->shapeName);
 	} else {

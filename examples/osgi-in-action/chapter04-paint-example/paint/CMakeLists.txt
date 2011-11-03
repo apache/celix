@@ -20,6 +20,7 @@ cmake_policy(SET CMP0014 NEW)
 pkg_search_module (GLIB  REQUIRED glib-2.0)
 pkg_search_module (GTHR  REQUIRED gthread-2.0)
 pkg_search_module (GTK   REQUIRED gtk+-2.0)
+pkg_search_module (GMODULE   REQUIRED gmodule-2.0)
 include_directories(
 	../circle/public/include
 	../square/public/include
@@ -32,19 +33,21 @@ include_directories(
 include_directories(${GTK_INCLUDE_DIRS})
 include_directories(${GLIB_INCLUDE_DIRS})
 include_directories(${GTHR_INCLUDE_DIRS})
+include_directories(${GMODULE_INCLUDE_DIRS})
 
 link_directories(${GTK_LIBRARY_DIRS})
 link_directories(${GLIB_LIBRARY_DIRS})
 link_directories(${GTHR_LIBRARY_DIRS})
+link_directories(${GMODULE_LIBRARY_DIRS})
 
 add_library(chapter04-paint-example SHARED 
 	private/src/activator
 	private/src/default_shape
-	private/src/paint_frame
 	private/src/shape_component
+	private/src/paint_frame
  )
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
-target_link_libraries(chapter04-paint-example framework ${GLIB_LIBRARIES} ${GTK_LIBRARIES} ${GTHR_LIBRARIES})
+target_link_libraries(chapter04-paint-example framework ${MODULE_LIBRARIES} ${GLIB_LIBRARIES} ${GTK_LIBRARIES} ${GTHR_LIBRARIES})
 
-bundle(chapter04-paint-example FILES private/src/underc.png)
+bundle(chapter04-paint-example FILES private/src/underc.png gtktest.glade)

@@ -28,6 +28,7 @@ SIMPLE_SHAPE triangleShape_create(BUNDLE_CONTEXT context) {
 	SIMPLE_SHAPE shape = (SIMPLE_SHAPE) malloc(sizeof(*shape));
 	bundleContext_getBundle(context, &bundle);
 	bundleContext_getMemoryPool(context, &pool);
+	shape->name = "Triangle";
 	shape->icon_path = NULL;
 	celix_status_t status = bundle_getEntry(bundle, TRIANGLE_FILE, pool, &shape->icon_path);
 	shape->simpleShape_draw = triangleShape_draw;

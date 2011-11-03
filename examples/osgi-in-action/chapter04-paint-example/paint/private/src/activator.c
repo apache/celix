@@ -56,7 +56,8 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 		activator->reg = NULL;
 		activator->pool = pool;
 		activator->context = context;
-		activator->paint_frame = paintFrame_create(context, pool);
+		activator->paint_frame = NULL;
+		status = paintFrame_create(context, pool, &activator->paint_frame);
         cust = (SERVICE_TRACKER_CUSTOMIZER) apr_palloc(pool, sizeof(*cust));
         cust->handle = activator;
         cust->addedService = addedServ;
@@ -65,6 +66,7 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
         cust->removedService = removedServ;
         serviceTracker_create(context, SIMPLE_SHAPE_SERVICE_NAME, cust, &activator->tracker);
 		serviceTracker_open(activator->tracker);
+
 	}
 	return status;
 }
@@ -72,14 +74,13 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT ctx) {
 	struct paintFrameActivatorData * act = (struct paintFrameActivatorData *) userData;
 	celix_status_t status = CELIX_SUCCESS;
-    status = bundleContext_registerService(ctx, PAINT_FRAME_SERVICE_NAME,
-    		act->paint_frame, NULL, &act->reg);
 	return status;
 }
 
 celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
 	struct paintFrameActivatorData * act = (struct paintFrameActivatorData *) userData;
 	serviceTracker_close(act->tracker);
+	paintFrame_exit(act->paint_frame);
 	return CELIX_SUCCESS;
 }
 
@@ -97,7 +98,7 @@ celix_status_t addingServ(void * handle, SERVICE_REFERENCE ref, void **service) 
 celix_status_t addedServ(void * handle, SERVICE_REFERENCE ref, void * service) {
 	struct paintFrameActivatorData * data = (struct paintFrameActivatorData *) handle;
 	char * serviceName = properties_get(ref->registration->properties, "name");
-	data->paint_frame->paintFrame_addShape(data->context, serviceName, NULL, service);
+	paintFrame_addShape(data->paint_frame, data->context, service);
 	return CELIX_SUCCESS;
  }
 
@@ -110,6 +111,6 @@ celix_status_t modifiedServ(void * handle, SERVICE_REFERENCE ref, void * service
 celix_status_t removedServ(void * handle, SERVICE_REFERENCE ref, void * service) {
 	struct paintFrameActivatorData * data = (struct paintFrameActivatorData *) handle;
 	char * serviceName = properties_get(ref->registration->properties, "name");
-	data->paint_frame->paintFrame_removeShape(serviceName);
+	paintFrame_removeShape(data->paint_frame, service);
 	return CELIX_SUCCESS;
 }

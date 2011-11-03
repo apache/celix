@@ -40,6 +40,7 @@ celix_status_t circleShape_create(BUNDLE_CONTEXT context, SIMPLE_SHAPE *shape) {
 				if (!*shape) {
 					status = CELIX_ENOMEM;
 				} else {
+					(*shape)->name = "Circle";
 					(*shape)->icon_path = NULL;
 					celix_status_t status = bundle_getEntry(bundle, CIRCLE_FILE, pool, &(*shape)->icon_path);
 					if (status == CELIX_SUCCESS) {
