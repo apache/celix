@@ -1,0 +1,5 @@
+Bundle-SymbolicName: example
+Bundle-Version: 1.0.0
+library: example
+Export-Service: example
+Import-Service: example

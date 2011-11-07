@@ -35,7 +35,11 @@ bool serviceReference_isAssignableTo(SERVICE_REFERENCE reference, BUNDLE request
 	if (requester == provider) {
 		return allow;
 	}
+<<<<<<< HEAD
 
+=======
+//
+>>>>>>> Added initial remote services bundles
 //	WIRE providerWire = module_getWire(bundle_getCurrentModule(provider), serviceName);
 //	WIRE requesterWire = module_getWire(bundle_getCurrentModule(requester), serviceName);
 //

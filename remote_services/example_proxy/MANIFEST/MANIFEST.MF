@@ -1,0 +1,5 @@
+Bundle-SymbolicName: example_proxy
+Bundle-Version: 1.0.0
+library: example_proxy
+Export-Service: example
+Import-Service: example

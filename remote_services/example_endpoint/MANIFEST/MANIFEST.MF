@@ -1,0 +1,5 @@
+Bundle-SymbolicName: example_endpoint
+Bundle-Version: 1.0.0
+library: example_endpoint
+Export-Service: remote_endpoint
+Import-Service: remote_endpoint

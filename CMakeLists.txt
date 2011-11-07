@@ -57,5 +57,7 @@ add_subdirectory(log_writer)
 
 add_subdirectory(examples)
 
+add_subdirectory(remote_services)
+
 include(target.cmake)
 #enable_testing()

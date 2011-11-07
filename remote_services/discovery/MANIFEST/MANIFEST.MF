@@ -1,0 +1,5 @@
+Bundle-SymbolicName: discovery
+Bundle-Version: 1.0.0
+library: discovery
+Export-Service: endpoint_listener
+Import-Service: endpoint_listener

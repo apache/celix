@@ -1,0 +1,5 @@
+Bundle-SymbolicName: topology_manager
+Bundle-Version: 1.0.0
+library: topology_manager
+Import-Service: remote_service_admin, endpoint_listener
+Export-Service: endpoint_listener
