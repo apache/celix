@@ -7,6 +7,8 @@
 
 #include <stdlib.h>
 
+#include <apr_strings.h>
+
 #include "headers.h"
 #include "celix_errno.h"
 
@@ -15,6 +17,7 @@
 #include "remote_proxy.h"
 #include "service_tracker.h"
 #include "bundle_context.h"
+#include "bundle.h"
 
 celix_status_t importRegistration_proxyAdding(void * handle, SERVICE_REFERENCE reference, void **service);
 celix_status_t importRegistration_proxyAdded(void * handle, SERVICE_REFERENCE reference, void *service);
@@ -25,18 +28,23 @@ celix_status_t importRegistration_createProxyTracker(import_registration_t regis
 
 celix_status_t importRegistration_create(apr_pool_t *pool, endpoint_description_t endpoint, remote_service_admin_t rsa, BUNDLE_CONTEXT context, import_registration_t *registration) {
 	celix_status_t status = CELIX_SUCCESS;
+	apr_pool_t *mypool = NULL;
+	apr_pool_create(&mypool, pool);
 
-	*registration = apr_palloc(pool, sizeof(**registration));
+	*registration = apr_palloc(mypool, sizeof(**registration));
 	if (!*registration) {
 		status = CELIX_ENOMEM;
 	} else {
-		(*registration)->pool = pool;
+		(*registration)->pool = mypool;
 		(*registration)->context = context;
 		(*registration)->closed = false;
 		(*registration)->endpointDescription = endpoint;
 		(*registration)->rsa = rsa;
 		(*registration)->proxy = NULL;
+		(*registration)->reference = NULL;
 		(*registration)->proxyTracker = NULL;
+		(*registration)->bundle = NULL;
+		(*registration)->importReference = NULL;
 	}
 
 	return status;
@@ -97,6 +105,7 @@ celix_status_t importRegistration_proxyAdded(void * handle, SERVICE_REFERENCE re
 
 	remote_proxy_service_t proxy = service;
 	if (registration->proxy == NULL) {
+		registration->reference = reference;
 		registration->proxy = proxy;
 		if (registration->endpointDescription != NULL) {
 			proxy->setEndpointDescription(proxy->proxy, registration->endpointDescription);
@@ -125,6 +134,7 @@ celix_status_t importRegistration_proxyRemoved(void * handle, SERVICE_REFERENCE 
 
 	remote_proxy_service_t proxy = service;
 	if (registration->proxy != NULL) {
+		registration->reference = NULL;
 		registration->proxy = NULL;
 		proxy->setEndpointDescription(proxy->proxy, NULL);
 	}
@@ -132,8 +142,30 @@ celix_status_t importRegistration_proxyRemoved(void * handle, SERVICE_REFERENCE 
 	return status;
 }
 
+celix_status_t importRegistration_open(import_registration_t registration) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	char *name = apr_pstrcat(registration->pool, BUNDLE_STORE, "/", registration->endpointDescription->service, "_proxy.zip", NULL);
+	status = bundleContext_installBundle(registration->context, name, &registration->bundle);
+	if (status == CELIX_SUCCESS) {
+		status = bundle_start(registration->bundle, 0);
+		if (status == CELIX_SUCCESS) {
+		}
+	}
+
+	return status;
+}
+
 celix_status_t importRegistration_close(import_registration_t registration) {
 	celix_status_t status = CELIX_SUCCESS;
+
+	importRegistration_stopTracking(registration);
+
+	if (registration->bundle != NULL) {
+		bundle_stop(registration->bundle, 0);
+		bundle_uninstall(registration->bundle);
+	}
+
 	return status;
 }
 
@@ -142,8 +174,21 @@ celix_status_t importRegistration_getException(import_registration_t registratio
 	return status;
 }
 
-celix_status_t importRegistration_getImportReference(import_registration_t registration) {
+celix_status_t importRegistration_getImportReference(import_registration_t registration, import_reference_t *reference) {
 	celix_status_t status = CELIX_SUCCESS;
+
+	if (registration->importReference == NULL) {
+		registration->importReference = apr_palloc(registration->pool, sizeof(*registration->importReference));
+		if (registration->importReference == NULL) {
+			status = CELIX_ENOMEM;
+		} else {
+			registration->importReference->endpoint = registration->endpointDescription;
+			registration->importReference->reference = registration->reference;
+		}
+	}
+
+	*reference = registration->importReference;
+
 	return status;
 }
 

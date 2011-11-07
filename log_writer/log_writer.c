@@ -69,9 +69,17 @@ void service_destroy(void * userData) {
 }
 
 celix_status_t logListener_logged(log_listener_t listener, log_entry_t entry) {
-    MODULE module = bundle_getCurrentModule(entry->bundle);
-    char *sName = module_getSymbolicName(module);
-    printf("LogWriter: %s from %s\n", entry->message, sName);
+	celix_status_t status = CELIX_SUCCESS;
+    MODULE module = NULL;
+    char *sName = NULL;
 
-    return CELIX_SUCCESS;
+    status = bundle_getCurrentModule(entry->bundle, &module);
+    if (status == CELIX_SUCCESS) {
+		status = module_getSymbolicName(module, &sName);
+		if (status == CELIX_SUCCESS) {
+			printf("LogWriter: %s from %s\n", entry->message, sName);
+		}
+    }
+
+    return status;
 }

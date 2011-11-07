@@ -155,8 +155,16 @@ VERSION module_getVersion(MODULE module) {
 	return module->version;
 }
 
-char * module_getSymbolicName(MODULE module) {
-	return module->symbolicName;
+celix_status_t module_getSymbolicName(MODULE module, char **symbolicName) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (module == NULL || *symbolicName != NULL) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	} else {
+		*symbolicName = module->symbolicName;
+	}
+
+	return status;
 }
 
 char * module_getId(MODULE module) {

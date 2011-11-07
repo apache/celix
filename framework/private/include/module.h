@@ -41,7 +41,7 @@ int module_equals(void * module, void * compare);
 WIRE module_getWire(MODULE module, char * serviceName);
 
 VERSION module_getVersion(MODULE module);
-char * module_getSymbolicName(MODULE module);
+celix_status_t module_getSymbolicName(MODULE module, char **symbolicName);
 char * module_getId(MODULE module);
 LINKED_LIST module_getWires(MODULE module);
 void module_setWires(MODULE module, LINKED_LIST wires);

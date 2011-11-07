@@ -40,7 +40,7 @@ include_directories("private/include")
 include_directories("public/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 add_library(framework SHARED ${SRC})
-target_link_libraries(framework utils ${ZLIB_LIBRARY} ${APR_LIBRARY} ${CURL_LIBRARY})
+target_link_libraries(framework utils ${ZLIB_LIBRARY} ${APR_LIBRARY} ${APRUTIL_LIBRARY} ${CURL_LIBRARY})
 
 install(TARGETS framework DESTINATION lib COMPONENT framework)
 FILE(GLOB files "private/include/*.h")

@@ -6,6 +6,8 @@
  */
 #include <stdlib.h>
 
+#include <apr_strings.h>
+
 #include "headers.h"
 #include "celix_errno.h"
 
@@ -14,6 +16,7 @@
 #include "remote_endpoint.h"
 #include "service_tracker.h"
 #include "bundle_context.h"
+#include "bundle.h"
 
 celix_status_t exportRegistration_endpointAdding(void * handle, SERVICE_REFERENCE reference, void **service);
 celix_status_t exportRegistration_endpointAdded(void * handle, SERVICE_REFERENCE reference, void *service);
@@ -41,6 +44,7 @@ celix_status_t exportRegistration_create(apr_pool_t *pool, SERVICE_REFERENCE ref
 		(*registration)->endpoint = NULL;
 		(*registration)->endpointTracker = NULL;
 		(*registration)->exportReference = NULL;
+		(*registration)->bundle = NULL;
 	}
 
 	return status;
@@ -143,8 +147,27 @@ celix_status_t exportRegistration_endpointRemoved(void * handle, SERVICE_REFEREN
 	return status;
 }
 
+celix_status_t exportRegistration_open(export_registration_t registration) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	char *name = apr_pstrcat(registration->pool, BUNDLE_STORE, "/", registration->endpointDescription->service, "_endpoint.zip", NULL);
+	status = bundleContext_installBundle(registration->context, name, &registration->bundle);
+	if (status == CELIX_SUCCESS) {
+		status = bundle_start(registration->bundle, 0);
+		if (status == CELIX_SUCCESS) {
+		}
+	}
+
+	return status;
+}
+
 celix_status_t exportRegistration_close(export_registration_t registration) {
 	celix_status_t status = CELIX_SUCCESS;
+
+	exportRegistration_stopTracking(registration);
+
+	bundle_stop(registration->bundle, 0);
+	bundle_uninstall(registration->bundle);
 
 	return status;
 }

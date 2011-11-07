@@ -47,7 +47,7 @@ celix_status_t exampleProxy_add(example_t example, double a, double b, double *r
 
 	if (example->endpoint != NULL) {
 		printf("PROXY: URL: %s\n", example->endpoint->id);
-		char *url = apr_pstrcat(example->pool, example->endpoint->id, "add", NULL);
+		char *url = apr_pstrcat(example->pool, example->endpoint->id, "/add", NULL);
 
 		json_t *root;
 		root = json_pack("{s:f, s:f}", "a", a, "b", b);
@@ -78,7 +78,7 @@ celix_status_t exampleProxy_sub(example_t example, double a, double b, double *r
 	celix_status_t status = CELIX_SUCCESS;
 	if (example->endpoint != NULL) {
 		printf("PROXY: URL: %s\n", example->endpoint->id);
-		char *url = apr_pstrcat(example->pool, example->endpoint->id, "sub", NULL);
+		char *url = apr_pstrcat(example->pool, example->endpoint->id, "/sub", NULL);
 
 		json_t *root;
 		root = json_pack("{s:f, s:f}", "a", a, "b", b);
@@ -109,7 +109,7 @@ celix_status_t exampleProxy_sqrt(example_t example, double a, double *result) {
 	celix_status_t status = CELIX_SUCCESS;
 	if (example->endpoint != NULL) {
 		printf("PROXY: URL: %s\n", example->endpoint->id);
-		char *url = apr_pstrcat(example->pool, example->endpoint->id, "sqrt", NULL);
+		char *url = apr_pstrcat(example->pool, example->endpoint->id, "/sqrt", NULL);
 
 		json_t *root;
 		root = json_pack("{s:f}", "a", a);

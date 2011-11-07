@@ -81,6 +81,8 @@ struct framework {
 	bool shutdown;
 
 	apr_pool_t *mp;
+
+	PROPERTIES configurationMap;
 };
 
 typedef struct framework * FRAMEWORK;
@@ -138,17 +140,6 @@ struct serviceEvent {
 };
 
 typedef struct serviceEvent * SERVICE_EVENT;
-
-struct serviceRegistry {
-    FRAMEWORK framework;
-	HASH_MAP serviceRegistrations;
-	HASH_MAP inUseMap;
-	void (*serviceChanged)(FRAMEWORK, SERVICE_EVENT, PROPERTIES);
-	long currentServiceId;
-
-
-	pthread_mutex_t mutex;
-};
 
 typedef struct serviceRegistry * SERVICE_REGISTRY;
 

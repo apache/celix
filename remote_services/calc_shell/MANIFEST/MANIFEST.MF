@@ -2,4 +2,4 @@ Bundle-SymbolicName: calc_shell
 Bundle-Version: 1.0.0
 library: calc_shell
 Export-Service: commandService
-Import-Service: commandService, example
+Import-Service: commandService

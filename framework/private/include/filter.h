@@ -33,4 +33,6 @@ void filter_destroy(FILTER filter);
 
 int filter_match(FILTER filter, PROPERTIES properties);
 
+celix_status_t filter_getString(FILTER filter, char **filterStr);
+
 #endif /* FILTER_H_ */

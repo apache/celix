@@ -130,8 +130,16 @@ BUNDLE_ARCHIVE bundle_getArchive(BUNDLE bundle) {
 	return bundle->archive;
 }
 
-MODULE bundle_getCurrentModule(BUNDLE bundle) {
-	return arrayList_get(bundle->modules, arrayList_size(bundle->modules) - 1);
+celix_status_t bundle_getCurrentModule(BUNDLE bundle, MODULE *module) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (bundle == NULL || *module != NULL) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	} else {
+		*module = arrayList_get(bundle->modules, arrayList_size(bundle->modules) - 1);
+	}
+
+	return status;
 }
 
 ARRAY_LIST bundle_getModules(BUNDLE bundle) {
@@ -205,28 +213,34 @@ celix_status_t bundle_createModule(BUNDLE bundle, MODULE *module) {
 
 			if (*module != NULL) {
 				VERSION bundleVersion = module_getVersion(*module);
-				char * symName = module_getSymbolicName(*module);
+				char * symName = NULL;
+				status = module_getSymbolicName(*module, &symName);
+				if (status == CELIX_SUCCESS) {
+					ARRAY_LIST bundles = framework_getBundles(bundle->framework);
+					int i;
+					for (i = 0; i < arrayList_size(bundles); i++) {
+						BUNDLE check = (BUNDLE) arrayList_get(bundles, i);
 
-				ARRAY_LIST bundles = framework_getBundles(bundle->framework);
-				int i;
-				for (i = 0; i < arrayList_size(bundles); i++) {
-					BUNDLE check = (BUNDLE) arrayList_get(bundles, i);
+						long id;
+						if (bundleArchive_getId(check->archive, &id) == CELIX_SUCCESS) {
+							if (id != bundleId) {
+								MODULE mod = NULL;
+								char * sym = NULL;
+								status = bundle_getCurrentModule(check, &mod);
+								status = module_getSymbolicName(mod, &sym);
 
-					long id;
-					if (bundleArchive_getId(check->archive, &id) == CELIX_SUCCESS) {
-						if (id != bundleId) {
-							char * sym = module_getSymbolicName(bundle_getCurrentModule(check));
-							VERSION version = module_getVersion(bundle_getCurrentModule(check));
-							if ((symName != NULL) && (sym != NULL) && !strcmp(symName, sym) &&
-									!version_compareTo(bundleVersion, version)) {
-								printf("Bundle symbolic name and version are not unique: %s:%s\n", sym, version_toString(version));
-								status = CELIX_BUNDLE_EXCEPTION;
-								break;
+								VERSION version = module_getVersion(mod);
+								if ((symName != NULL) && (sym != NULL) && !strcmp(symName, sym) &&
+										!version_compareTo(bundleVersion, version)) {
+									printf("Bundle symbolic name and version are not unique: %s:%s\n", sym, version_toString(version));
+									status = CELIX_BUNDLE_EXCEPTION;
+									break;
+								}
 							}
 						}
 					}
+					arrayList_destroy(bundles);
 				}
-				arrayList_destroy(bundles);
 			}
         }
 	}

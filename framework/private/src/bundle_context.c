@@ -269,3 +269,15 @@ celix_status_t bundleContext_removeServiceListener(BUNDLE_CONTEXT context, SERVI
 
     return status;
 }
+
+celix_status_t bundleContext_getProperty(BUNDLE_CONTEXT context, const char *name, char **value) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (context == NULL || name == NULL || *value != NULL) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	} else {
+		fw_getProperty(context->framework, name, value);
+	}
+
+	return status;
+}

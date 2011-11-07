@@ -34,12 +34,14 @@
 #include "celix_errno.h"
 #include "service_factory.h"
 
-celix_status_t framework_create(FRAMEWORK *framework, apr_pool_t *memoryPool);
+celix_status_t framework_create(FRAMEWORK *framework, apr_pool_t *memoryPool, PROPERTIES config);
 celix_status_t framework_destroy(FRAMEWORK framework);
 
 celix_status_t fw_init(FRAMEWORK framework);
 celix_status_t framework_start(FRAMEWORK framework);
 void framework_stop(FRAMEWORK framework);
+
+celix_status_t fw_getProperty(FRAMEWORK framework, const char *name, char **value);
 
 celix_status_t fw_installBundle(FRAMEWORK framework, BUNDLE * bundle, char * location);
 celix_status_t fw_uninstallBundle(FRAMEWORK framework, BUNDLE bundle);

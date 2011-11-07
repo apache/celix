@@ -87,11 +87,14 @@ void psCommand_execute(COMMAND command, char * commandline, void (*out)(char *),
 			BUNDLE_STATE state;
 			bundle_getState(bundle, &state);
 			char * stateString = psCommand_stateString(state);
-			char * name = module_getSymbolicName(bundle_getCurrentModule(bundle));
+			MODULE module = NULL;
+			char * name = NULL;
+			bundle_getCurrentModule(bundle, &module);
+			module_getSymbolicName(module, &name);
 			if (showLocation) {
 				bundleArchive_getLocation(bundle_getArchive(bundle), &name);
 			} else if (showSymbolicName) {
-				name = module_getSymbolicName(bundle_getCurrentModule(bundle));
+				// do nothing
 			} else if (showUpdateLocation) {
 				bundleArchive_getLocation(bundle_getArchive(bundle), &name);
 			}

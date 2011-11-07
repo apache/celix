@@ -9,6 +9,7 @@
 #include <stdlib.h>
 
 #include <apr_strings.h>
+#include <apr_uuid.h>
 
 #include "headers.h"
 #include "bundle_activator.h"
@@ -30,7 +31,8 @@ struct activator {
 	SERVICE_REGISTRATION endpointListenerService;
 };
 
-celix_status_t bundleActivator_createEPLTracker(struct activator *activator, SERVICE_TRACKER *tracker);
+celix_status_t discoveryActivator_createEPLTracker(struct activator *activator, SERVICE_TRACKER *tracker);
+celix_status_t discoveryActivator_getUUID(struct activator *activator, char **uuidStr);
 
 celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -49,7 +51,7 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 
 		discovery_create(pool, context, &activator->discovery);
 
-		bundleActivator_createEPLTracker(activator, &activator->endpointListenerTracker);
+		discoveryActivator_createEPLTracker(activator, &activator->endpointListenerTracker);
 
 		*userData = activator;
 	}
@@ -57,7 +59,7 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 	return status;
 }
 
-celix_status_t bundleActivator_createEPLTracker(struct activator *activator, SERVICE_TRACKER *tracker) {
+celix_status_t discoveryActivator_createEPLTracker(struct activator *activator, SERVICE_TRACKER *tracker) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	SERVICE_TRACKER_CUSTOMIZER custumizer = (SERVICE_TRACKER_CUSTOMIZER) apr_palloc(activator->pool, sizeof(*custumizer));
@@ -91,7 +93,9 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 
 	PROPERTIES props = properties_create();
 	properties_set(props, "DISCOVERY", "true");
-	char *scope = apr_pstrcat(activator->pool, "(&(", OBJECTCLASS, "=*)(", ENDPOINT_FRAMEWORK_UUID, "=42", "))", NULL);
+	char *uuid = NULL;
+	discoveryActivator_getUUID(activator, &uuid);
+	char *scope = apr_pstrcat(activator->pool, "(&(", OBJECTCLASS, "=*)(", ENDPOINT_FRAMEWORK_UUID, "=", uuid, "))", NULL);
 	properties_set(props, (char *) ENDPOINT_LISTENER_SCOPE, scope);
 	bundleContext_registerService(context, (char *) endpoint_listener_service, endpointListener, props, &activator->endpointListenerService);
 
@@ -102,6 +106,7 @@ celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator *activator = userData;
 
+	discovery_stop(activator->discovery);
 	serviceTracker_close(activator->endpointListenerTracker);
 	serviceRegistration_unregister(activator->endpointListenerService);
 
@@ -110,5 +115,22 @@ celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
 
 celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {
 	celix_status_t status = CELIX_SUCCESS;
+	return status;
+}
+
+celix_status_t discoveryActivator_getUUID(struct activator *activator, char **uuidStr) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	status = bundleContext_getProperty(activator->context, ENDPOINT_FRAMEWORK_UUID, uuidStr);
+	if (status == CELIX_SUCCESS) {
+		if (*uuidStr == NULL) {
+			apr_uuid_t uuid;
+			apr_uuid_get(&uuid);
+			*uuidStr = apr_palloc(activator->pool, APR_UUID_FORMATTED_LENGTH + 1);
+			apr_uuid_format(*uuidStr, &uuid);
+			setenv(ENDPOINT_FRAMEWORK_UUID, *uuidStr, 1);
+		}
+	}
+
 	return status;
 }

@@ -10,6 +10,7 @@
 
 static const char * const SERVICE_EXPORTED_INTERFACES = "service.exported.interfaces";
 static const char * const ENDPOINT_FRAMEWORK_UUID = "endpoint.framework.uuid";
+static const char * const ENDPOINT_SERVICE_ID = "endpoint.service.id";
 
 static const char * const SERVICE_LOCATION = "service.location";
 

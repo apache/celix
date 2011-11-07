@@ -47,4 +47,6 @@ void serviceRegistry_ungetServices(SERVICE_REGISTRY registry, BUNDLE bundle);
 ARRAY_LIST serviceRegistry_getUsingBundles(SERVICE_REGISTRY registry, SERVICE_REFERENCE reference);
 SERVICE_REGISTRATION serviceRegistry_findRegistration(SERVICE_REGISTRY registry, SERVICE_REFERENCE reference);
 
+celix_status_t serviceRegistry_getListenerHooks(SERVICE_REGISTRY registry, ARRAY_LIST *hooks);
+
 #endif /* SERVICE_REGISTRY_H_ */

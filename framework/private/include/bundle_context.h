@@ -55,5 +55,6 @@ celix_status_t bundleContext_getBundleById(BUNDLE_CONTEXT context, long id, BUND
 celix_status_t bundleContext_addServiceListener(BUNDLE_CONTEXT context, SERVICE_LISTENER listener, char * filter);
 celix_status_t bundleContext_removeServiceListener(BUNDLE_CONTEXT context, SERVICE_LISTENER listener);
 
+celix_status_t bundleContext_getProperty(BUNDLE_CONTEXT context, const char *name, char **value);
 
 #endif /* BUNDLE_CONTEXT_H_ */

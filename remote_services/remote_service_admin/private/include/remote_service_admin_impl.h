@@ -11,13 +11,16 @@
 #include "remote_service_admin.h"
 #include "mongoose.h"
 
+#define BUNDLE_STORE "rs_bundles"
+
 struct export_reference {
 	endpoint_description_t endpoint;
 	SERVICE_REFERENCE reference;
 };
 
 struct import_reference {
-
+	endpoint_description_t endpoint;
+	SERVICE_REFERENCE reference;
 };
 
 struct remote_service_admin {

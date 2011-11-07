@@ -168,7 +168,10 @@ int resolver_populateCandidatesMap(HASH_MAP candidatesMap, MODULE targetModule) 
                                     resolver_removeInvalidCandidate(targetModule, candidatesMap, invalid);
                                     apr_pool_destroy(invalid_pool);
                                     apr_pool_destroy(candidates_pool);
-                                    printf("Unable to resolve: %s, %s\n", module_getSymbolicName(targetModule), requirement_getTargetName(req));
+                                    char *name = NULL;
+                                    module_getSymbolicName(targetModule, &name);
+
+                                    printf("Unable to resolve: %s, %s\n", name, requirement_getTargetName(req));
                                 }
                             }
                             return -1;

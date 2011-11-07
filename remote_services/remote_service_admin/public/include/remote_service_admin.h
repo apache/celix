@@ -38,7 +38,7 @@ struct remote_service_admin_service {
 
 	celix_status_t (*importRegistration_close)(import_registration_t registration);
 	celix_status_t (*importRegistration_getException)(import_registration_t registration);
-	celix_status_t (*importRegistration_getImportReference)(import_registration_t registration);
+	celix_status_t (*importRegistration_getImportReference)(import_registration_t registration, import_reference_t *reference);
 
 };
 

@@ -37,7 +37,7 @@ celix_status_t bundle_destroy(BUNDLE bundle);
 
 celix_status_t bundle_isSystemBundle(BUNDLE bundle, bool *systemBundle);
 BUNDLE_ARCHIVE bundle_getArchive(BUNDLE bundle);
-MODULE bundle_getCurrentModule(BUNDLE bundle);
+celix_status_t bundle_getCurrentModule(BUNDLE bundle, MODULE *module);
 ARRAY_LIST bundle_getModules(BUNDLE bundle);
 void * bundle_getHandle(BUNDLE bundle);
 void bundle_setHandle(BUNDLE bundle, void * handle);

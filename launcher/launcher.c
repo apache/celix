@@ -54,7 +54,7 @@ int main(void) {
     PROPERTIES config = properties_load("config.properties");
     char * autoStart = properties_get(config, "cosgi.auto.start.1");
     framework = NULL;
-    framework_create(&framework, memoryPool);
+    framework_create(&framework, memoryPool, config);
     fw_init(framework);
 
     // Start the system bundle

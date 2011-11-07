@@ -48,6 +48,7 @@ struct filter {
 	char * attribute;
 	int operands;
 	void * value;
+	char *filterStr;
 };
 
 void filter_skipWhiteSpace(char * filterString, int * pos);
@@ -79,6 +80,7 @@ FILTER filter_create(char * filterString) {
 		printf("Error: Extraneous trailing characters\n");
 		return NULL;
 	}
+	filter->filterStr = filterString;
 	return filter;
 }
 
@@ -529,3 +531,9 @@ int filter_compareString(OPERAND operand, char * string, void * value2) {
 	return 0;
 }
 
+celix_status_t filter_getString(FILTER filter, char **filterStr) {
+	if (filter != NULL) {
+		*filterStr = filter->filterStr;
+	}
+	return CELIX_SUCCESS;
+}

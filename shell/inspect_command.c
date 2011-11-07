@@ -110,28 +110,34 @@ celix_status_t inspectCommand_printExportedServices(COMMAND command, ARRAY_LIST 
 				ARRAY_LIST refs = NULL;
 				if (bundle_getRegisteredServices(bundle, &refs) == CELIX_SUCCESS) {
 					char line[256];
-					char * name = module_getSymbolicName(bundle_getCurrentModule(bundle));
-					sprintf(line, "%s provides services:\n", name);
-					out(line);
-					out("==============\n");
-
-					if (refs == NULL || arrayList_size(refs) == 0) {
-						out("Nothing\n");
-					} else {
-						int j = 0;
-						for (j = 0; j < arrayList_size(refs); j++) {
-							SERVICE_REFERENCE ref = arrayList_get(refs, j);
-							char line[256];
-							char *objectClass = properties_get(ref->registration->properties, (char *) OBJECTCLASS);
-							sprintf(line, "ObjectClass = %s\n", objectClass);
+					MODULE module = NULL;
+					char * name = NULL;
+					status = bundle_getCurrentModule(bundle, &module);
+					if (status == CELIX_SUCCESS) {
+						status = module_getSymbolicName(module, &name);
+						if (status == CELIX_SUCCESS) {
+							sprintf(line, "%s provides services:\n", name);
 							out(line);
-							if ((j + 1) < arrayList_size(refs)) {
-								out("----\n");
+							out("==============\n");
+
+							if (refs == NULL || arrayList_size(refs) == 0) {
+								out("Nothing\n");
+							} else {
+								int j = 0;
+								for (j = 0; j < arrayList_size(refs); j++) {
+									SERVICE_REFERENCE ref = arrayList_get(refs, j);
+									char line[256];
+									char *objectClass = properties_get(ref->registration->properties, (char *) OBJECTCLASS);
+									sprintf(line, "ObjectClass = %s\n", objectClass);
+									out(line);
+									if ((j + 1) < arrayList_size(refs)) {
+										out("----\n");
+									}
+								}
 							}
 						}
 					}
 				}
-
 			}
 		}
 	}

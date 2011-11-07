@@ -685,11 +685,17 @@ celix_status_t bundleArchive_deleteTree(char * directory, apr_pool_t *mp) {
 				}
 			}
 		}
+		if (apr_status != APR_SUCCESS && apr_status != APR_ENOENT) {
+			status = CELIX_FILE_IO_EXCEPTION;
+		}
+		apr_status = apr_dir_close(dir);
 		if (apr_status != APR_SUCCESS) {
 			status = CELIX_FILE_IO_EXCEPTION;
 		}
 		if (status == CELIX_SUCCESS) {
-			apr_file_remove(directory, mp);
+			if (apr_dir_remove(directory, mp) != APR_SUCCESS) {
+				status = CELIX_FILE_IO_EXCEPTION;
+			}
 		}
 	}
 

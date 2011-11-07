@@ -28,4 +28,7 @@ celix_status_t topologyManager_importService(topology_manager_t manager, endpoin
 celix_status_t topologyManager_exportService(topology_manager_t manager, SERVICE_REFERENCE reference);
 celix_status_t topologyManager_removeService(topology_manager_t manager, SERVICE_REFERENCE reference);
 
+celix_status_t topologyManager_listenerAdded(void *handle, ARRAY_LIST listeners);
+celix_status_t topologyManager_listenerRemoved(void *handle, ARRAY_LIST listeners);
+
 #endif /* TOPOLOGY_MANAGER_H_ */

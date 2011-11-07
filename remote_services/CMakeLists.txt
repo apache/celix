@@ -25,5 +25,5 @@ add_subdirectory(example_endpoint)
 add_subdirectory(example_proxy)
 add_subdirectory(calc_shell)
 
-deploy("remote-services" BUNDLES topology_manager remote_service_admin example example_endpoint discovery shell shell_tui log_service log_writer)
-deploy("remote-services-client" BUNDLES topology_manager remote_service_admin discovery example_proxy shell shell_tui log_service log_writer calc_shell)
+deploy("remote-services" BUNDLES discovery topology_manager remote_service_admin example shell shell_tui log_service log_writer)
+deploy("remote-services-client" BUNDLES discovery topology_manager remote_service_admin shell shell_tui log_service log_writer calc_shell)
