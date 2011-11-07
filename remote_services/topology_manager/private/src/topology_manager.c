@@ -52,7 +52,8 @@ celix_status_t topologyManager_create(BUNDLE_CONTEXT context, apr_pool_t *pool, 
 	} else {
 		(*manager)->pool = pool;
 		(*manager)->context = context;
-		(*manager)->rsaList = arrayList_create();
+		(*manager)->rsaList = NULL;
+		arrayList_create(pool, &(*manager)->rsaList);
 		(*manager)->exportedServices = hashMap_create(NULL, NULL, NULL, NULL);
 		(*manager)->importedServices = hashMap_create(NULL, NULL, NULL, NULL);
 		(*manager)->importInterests = hashMap_create(string_hash, NULL, string_equals, NULL);
@@ -194,7 +195,7 @@ celix_status_t topologyManager_notifyListeners(topology_manager_t manager, remot
 			for (eplIt = 0; eplIt < arrayList_size(endpointListeners); eplIt++) {
 				SERVICE_REFERENCE eplRef = arrayList_get(endpointListeners, eplIt);
 				char *scope = properties_get(eplRef->registration->properties, (char *) ENDPOINT_LISTENER_SCOPE);
-				FILTER filter = filter_create(scope);
+				FILTER filter = filter_create(scope, manager->pool);
 				endpoint_listener_t epl = NULL;
 				status = bundleContext_getService(manager->context, eplRef, (void **) &epl);
 				if (status == CELIX_SUCCESS) {
@@ -237,7 +238,9 @@ celix_status_t topologyManager_importService(topology_manager_t manager, endpoin
 
 			import_registration_t import = NULL;
 			status = rsa->importService(rsa->admin, endpoint, &import);
-			hashMap_put(imports, rsa, import);
+			if (status == CELIX_SUCCESS) {
+				hashMap_put(imports, rsa, import);
+			}
 		}
 	}
 

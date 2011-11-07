@@ -52,15 +52,15 @@ struct filter {
 };
 
 void filter_skipWhiteSpace(char * filterString, int * pos);
-FILTER filter_parseFilter(char * filterString, int * pos);
-FILTER filter_parseFilterComp(char * filterString, int * pos);
-FILTER filter_parseAnd(char * filterString, int * pos);
-FILTER filter_parseOr(char * filterString, int * pos);
-FILTER filter_parseNot(char * filterString, int * pos);
-FILTER filter_parseItem(char * filterString, int * pos);
+FILTER filter_parseFilter(char * filterString, int * pos, apr_pool_t *pool);
+FILTER filter_parseFilterComp(char * filterString, int * pos, apr_pool_t *pool);
+FILTER filter_parseAnd(char * filterString, int * pos, apr_pool_t *pool);
+FILTER filter_parseOr(char * filterString, int * pos, apr_pool_t *pool);
+FILTER filter_parseNot(char * filterString, int * pos, apr_pool_t *pool);
+FILTER filter_parseItem(char * filterString, int * pos, apr_pool_t *pool);
 char * filter_parseAttr(char * filterString, int * pos);
 char * filter_parseValue(char * filterString, int * pos);
-ARRAY_LIST filter_parseSubstring(char * filterString, int * pos);
+ARRAY_LIST filter_parseSubstring(char * filterString, int * pos, apr_pool_t *pool);
 
 int filter_compare(OPERAND operand, char * string, void * value2);
 int filter_compareString(OPERAND operand, char * string, void * value2);
@@ -72,10 +72,10 @@ void filter_skipWhiteSpace(char * filterString, int * pos) {
 	}
 }
 
-FILTER filter_create(char * filterString) {
+FILTER filter_create(char * filterString, apr_pool_t *pool) {
 	FILTER filter = NULL;
 	int pos = 0;
-	filter = filter_parseFilter(filterString, &pos);
+	filter = filter_parseFilter(filterString, &pos, pool);
 	if (pos != strlen(filterString)) {
 		printf("Error: Extraneous trailing characters\n");
 		return NULL;
@@ -101,7 +101,7 @@ void filter_destroy(FILTER filter) {
 	}
 }
 
-FILTER filter_parseFilter(char * filterString, int * pos) {
+FILTER filter_parseFilter(char * filterString, int * pos, apr_pool_t *pool) {
 	FILTER filter;
 	filter_skipWhiteSpace(filterString, pos);
 	if (filterString[*pos] != '(') {
@@ -110,7 +110,7 @@ FILTER filter_parseFilter(char * filterString, int * pos) {
 	}
 	(*pos)++;
 
-	filter = filter_parseFilterComp(filterString, pos);
+	filter = filter_parseFilterComp(filterString, pos, pool);
 
 	filter_skipWhiteSpace(filterString, pos);
 
@@ -124,7 +124,7 @@ FILTER filter_parseFilter(char * filterString, int * pos) {
 	return filter;
 }
 
-FILTER filter_parseFilterComp(char * filterString, int * pos) {
+FILTER filter_parseFilterComp(char * filterString, int * pos, apr_pool_t *pool) {
 	filter_skipWhiteSpace(filterString, pos);
 
 	char c = filterString[*pos];
@@ -132,23 +132,24 @@ FILTER filter_parseFilterComp(char * filterString, int * pos) {
 	switch (c) {
 		case '&': {
 			(*pos)++;
-			return filter_parseAnd(filterString, pos);
+			return filter_parseAnd(filterString, pos, pool);
 		}
 		case '|': {
 			(*pos)++;
-			return filter_parseOr(filterString, pos);
+			return filter_parseOr(filterString, pos, pool);
 		}
 		case '!': {
 			(*pos)++;
-			return filter_parseNot(filterString, pos);
+			return filter_parseNot(filterString, pos, pool);
 		}
 	}
-	return filter_parseItem(filterString, pos);
+	return filter_parseItem(filterString, pos, pool);
 }
 
-FILTER filter_parseAnd(char * filterString, int * pos) {
+FILTER filter_parseAnd(char * filterString, int * pos, apr_pool_t *pool) {
 	FILTER filter = (FILTER) malloc(sizeof(*filter));
-	ARRAY_LIST operands = arrayList_create();
+	ARRAY_LIST operands = NULL;
+	arrayList_create(pool, &operands);
 	filter_skipWhiteSpace(filterString, pos);
 
 	if (filterString[*pos] != '(') {
@@ -157,7 +158,7 @@ FILTER filter_parseAnd(char * filterString, int * pos) {
 	}
 
 	while(filterString[*pos] == '(') {
-		FILTER child = filter_parseFilter(filterString, pos);
+		FILTER child = filter_parseFilter(filterString, pos, pool);
 		arrayList_add(operands, child);
 	}
 
@@ -168,9 +169,10 @@ FILTER filter_parseAnd(char * filterString, int * pos) {
 	return filter;
 }
 
-FILTER filter_parseOr(char * filterString, int * pos) {
+FILTER filter_parseOr(char * filterString, int * pos, apr_pool_t *pool) {
 	FILTER filter = (FILTER) malloc(sizeof(*filter));
-	ARRAY_LIST operands = arrayList_create();
+	ARRAY_LIST operands = NULL;
+	arrayList_create(pool, &operands);
 	filter_skipWhiteSpace(filterString, pos);
 
 	if (filterString[*pos] != '(') {
@@ -179,7 +181,7 @@ FILTER filter_parseOr(char * filterString, int * pos) {
 	}
 
 	while(filterString[*pos] == '(') {
-		FILTER child = filter_parseFilter(filterString, pos);
+		FILTER child = filter_parseFilter(filterString, pos, pool);
 		arrayList_add(operands, child);
 	}
 
@@ -190,7 +192,7 @@ FILTER filter_parseOr(char * filterString, int * pos) {
 	return filter;
 }
 
-FILTER filter_parseNot(char * filterString, int * pos) {
+FILTER filter_parseNot(char * filterString, int * pos, apr_pool_t *pool) {
 	FILTER filter = (FILTER) malloc(sizeof(*filter));
 	filter_skipWhiteSpace(filterString, pos);
 
@@ -199,7 +201,7 @@ FILTER filter_parseNot(char * filterString, int * pos) {
 		return NULL;
 	}
 
-	FILTER child = filter_parseFilter(filterString, pos);
+	FILTER child = filter_parseFilter(filterString, pos, pool);
 
 	filter->operand = NOT;
 	filter->attribute = NULL;
@@ -208,7 +210,7 @@ FILTER filter_parseNot(char * filterString, int * pos) {
 	return filter;
 }
 
-FILTER filter_parseItem(char * filterString, int * pos) {
+FILTER filter_parseItem(char * filterString, int * pos, apr_pool_t *pool) {
 	char * attr = filter_parseAttr(filterString, pos);
 	filter_skipWhiteSpace(filterString, pos);
 	switch(filterString[*pos]) {
@@ -263,7 +265,7 @@ FILTER filter_parseItem(char * filterString, int * pos) {
 			FILTER filter = (FILTER) malloc(sizeof(*filter));
 			ARRAY_LIST subs;
 			(*pos)++;
-			subs = filter_parseSubstring(filterString, pos);
+			subs = filter_parseSubstring(filterString, pos, pool);
 			if (arrayList_size(subs) == 1) {
 				char * string = (char *) arrayList_get(subs, 0);
 				if (string != NULL) {
@@ -357,9 +359,10 @@ char * filter_parseValue(char * filterString, int * pos) {
 	return value;
 }
 
-ARRAY_LIST filter_parseSubstring(char * filterString, int * pos) {
+ARRAY_LIST filter_parseSubstring(char * filterString, int * pos, apr_pool_t *pool) {
 	char * sub = (char *) malloc(strlen(filterString));
-	ARRAY_LIST operands = arrayList_create();
+	ARRAY_LIST operands = NULL;
+	arrayList_create(pool, &operands);
 	int keepRunning = 1;
 	sub[0] = '\0';
 	while (keepRunning) {

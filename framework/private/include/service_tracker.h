@@ -29,6 +29,7 @@
 #include "headers.h"
 
 struct fwServiceTracker {
+	apr_pool_t *pool;
 	SERVICE_TRACKER tracker;
 	SERVICE_TRACKER_CUSTOMIZER customizer;
 	SERVICE_LISTENER listener;

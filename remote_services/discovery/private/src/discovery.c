@@ -69,8 +69,10 @@ celix_status_t discovery_create(apr_pool_t *pool, BUNDLE_CONTEXT context, discov
 		(*discovery)->slpServices = hashMap_create(string_hash, NULL, string_equals, NULL);
 		(*discovery)->running = true;
 		(*discovery)->rsaPort = getenv("RSA_PORT");
-		(*discovery)->handled = arrayList_create();
-		(*discovery)->registered = arrayList_create();
+		(*discovery)->handled = NULL;
+		arrayList_create(pool, &(*discovery)->handled);
+		(*discovery)->registered = NULL;
+		arrayList_create(pool, &(*discovery)->registered);
 
 		apr_thread_create(&(*discovery)->slpPoll, NULL, discovery_pollSLP, *discovery, (*discovery)->pool);
 	}
@@ -148,7 +150,7 @@ celix_status_t discovery_addService(discovery_t discovery, endpoint_description_
 		endpoint_listener_t listener = NULL;
 
 		char *scope = properties_get(reference->registration->properties, (char *) ENDPOINT_LISTENER_SCOPE);
-		FILTER filter = filter_create(scope);
+		FILTER filter = filter_create(scope, discovery->pool);
 		if (filter_match(filter, endpoint->properties)) {
 			printf("DISCOVERY: Add service (%s)\n", endpoint->service);
 			bundleContext_getService(discovery->context, reference, (void**)&listener);
@@ -312,7 +314,8 @@ celix_status_t discovery_updateEndpointListener(discovery_t discovery, SERVICE_R
 
 	ARRAY_LIST scopes = hashMap_get(discovery->listenerReferences, reference);
 	if (scopes == NULL) {
-		scopes = arrayList_create();
+		scopes = NULL;
+		arrayList_create(discovery->pool, &scopes);
 		hashMap_put(discovery->listenerReferences, reference, scopes);
 	}
 

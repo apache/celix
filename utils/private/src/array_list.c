@@ -29,15 +29,15 @@
 #include "array_list.h"
 #include "array_list_private.h"
 
-ARRAY_LIST arrayList_create(void) {
-	ARRAY_LIST list = (ARRAY_LIST) malloc(sizeof(*list));
+celix_status_t arrayList_create(apr_pool_t *pool, ARRAY_LIST *list) {
+	*list = (ARRAY_LIST) malloc(sizeof(**list));
 
-	list->size = 0;
-	list->capacity = 10;
-	list->modCount = 0;
-	list->elementData = (void **) malloc(sizeof(void*) * list->capacity);
+	(*list)->size = 0;
+	(*list)->capacity = 10;
+	(*list)->modCount = 0;
+	(*list)->elementData = (void **) malloc(sizeof(void*) * (*list)->capacity);
 
-	return list;
+	return CELIX_SUCCESS;
 }
 
 void arrayList_destroy(ARRAY_LIST list) {
@@ -234,8 +234,9 @@ bool arrayList_addAll(ARRAY_LIST list, ARRAY_LIST toAdd) {
     return size != 0;
 }
 
-ARRAY_LIST arrayList_clone(ARRAY_LIST list) {
-	ARRAY_LIST new = arrayList_create();
+ARRAY_LIST arrayList_clone(apr_pool_t *pool, ARRAY_LIST list) {
+	ARRAY_LIST new = NULL;
+	arrayList_create(pool, &new);
 //	arrayList_ensureCapacity(new, list->size);
 //	memcpy(new->elementData, list->elementData, list->size);
 //	new->size = list->size;

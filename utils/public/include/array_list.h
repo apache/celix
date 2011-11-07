@@ -26,14 +26,17 @@
 #ifndef ARRAY_LIST_H_
 #define ARRAY_LIST_H_
 
+#include <apr_general.h>
+
 #include "celixbool.h"
 #include "exports.h"
+#include "celix_errno.h"
 
 typedef struct arrayList * ARRAY_LIST;
 
 typedef struct arrayListIterator * ARRAY_LIST_ITERATOR;
 
-UTILS_EXPORT ARRAY_LIST arrayList_create(void);
+celix_status_t arrayList_create(apr_pool_t *pool, ARRAY_LIST *list);
 UTILS_EXPORT void arrayList_destroy(ARRAY_LIST list);
 UTILS_EXPORT void arrayList_trimToSize(ARRAY_LIST list);
 UTILS_EXPORT void arrayList_ensureCapacity(ARRAY_LIST list, int capacity);
@@ -50,7 +53,7 @@ UTILS_EXPORT bool arrayList_addAll(ARRAY_LIST list, ARRAY_LIST toAdd);
 UTILS_EXPORT void * arrayList_remove(ARRAY_LIST list, unsigned int index);
 UTILS_EXPORT bool arrayList_removeElement(ARRAY_LIST list, void * element);
 UTILS_EXPORT void arrayList_clear(ARRAY_LIST list);
-UTILS_EXPORT ARRAY_LIST arrayList_clone(ARRAY_LIST list);
+ARRAY_LIST arrayList_clone(apr_pool_t *pool, ARRAY_LIST list);
 
 UTILS_EXPORT ARRAY_LIST_ITERATOR arrayListIterator_create(ARRAY_LIST list);
 UTILS_EXPORT void arrayListIterator_destroy(ARRAY_LIST_ITERATOR iterator);

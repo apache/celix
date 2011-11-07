@@ -33,10 +33,14 @@
 #include "publisher.h"
 #include "tracker.h"
 #include "log_service.h"
+#include "bundle_context.h"
 
 void * dm_create(BUNDLE_CONTEXT context) {
 	struct data * data = malloc(sizeof(*data));
-	data->publishers = arrayList_create();
+	apr_pool_t *pool = NULL;
+	bundleContext_getMemoryPool(context, &pool);
+	data->publishers = NULL;
+	arrayList_create(pool, &data->publishers);
 	data->context = NULL;
 	data->running = false;
 	data->sender = NULL;

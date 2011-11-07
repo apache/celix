@@ -65,7 +65,8 @@ MODULE module_create(MANIFEST headerMap, char * moduleId, BUNDLE bundle) {
         module->bundle = bundle;
         module->resolved = false;
 
-        module->dependentImporters = arrayList_create();
+        module->dependentImporters = NULL;
+        arrayList_create(bundle->memoryPool, &module->dependentImporters);
 
         if (apr_pool_create(&pool, bundle->memoryPool) == APR_SUCCESS) {
             if (manifestParser_create(module, headerMap, pool, &mp) == CELIX_SUCCESS) {
@@ -99,7 +100,8 @@ MODULE module_createFrameworkModule(BUNDLE bundle) {
                     module->version = version_createVersion(1, 0, 0, "");
                     linkedList_create(capabilities_pool, &module->capabilities);
                     linkedList_create(requirements_pool, &module->requirements);
-                    module->dependentImporters = arrayList_create();
+                    module->dependentImporters = NULL;
+                    arrayList_create(bundle->memoryPool, &module->dependentImporters);
                     module->wires = NULL;
                     module->headerMap = NULL;
                     module->resolved = false;
@@ -227,7 +229,8 @@ void module_removeDependentImporter(MODULE module, MODULE importer) {
 }
 
 ARRAY_LIST module_getDependents(MODULE module) {
-    ARRAY_LIST dependents = arrayList_create();
+    ARRAY_LIST dependents = NULL;
+    arrayList_create(module->bundle->memoryPool, &dependents);
 
     arrayList_addAll(dependents, module->dependentImporters);
 

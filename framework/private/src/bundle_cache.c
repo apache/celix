@@ -121,7 +121,8 @@ celix_status_t bundleCache_getArchives(BUNDLE_CACHE cache, ARRAY_LIST *archives)
 	}
 
 	if (status == APR_SUCCESS) {
-        ARRAY_LIST list = arrayList_create();
+        ARRAY_LIST list = NULL;
+        arrayList_create(cache->mp, &list);
         apr_finfo_t dp;
         while ((apr_dir_read(&dp, APR_FINFO_DIRENT|APR_FINFO_TYPE, dir)) == APR_SUCCESS) {
             char archiveRoot[strlen(cache->cacheDir) + strlen(dp.name) + 2];

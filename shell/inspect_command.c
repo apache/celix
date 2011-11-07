@@ -46,7 +46,10 @@ void inspectCommand_execute(COMMAND command, char * commandline, void (*out)(cha
 	if (type != NULL) {
 		char *direction = apr_strtok(NULL, " ", &token);
 		if (direction != NULL) {
-			ARRAY_LIST ids = arrayList_create();
+			apr_pool_t *pool = NULL;
+			bundleContext_getMemoryPool(command->bundleContext, &pool);
+			ARRAY_LIST ids = NULL;
+			arrayList_create(pool, &ids);
 			char *id = apr_strtok(NULL, " ", &token);
 			while (id != NULL) {
 				arrayList_add(ids, id);
@@ -80,7 +83,10 @@ celix_status_t inspectCommand_printExportedServices(COMMAND command, ARRAY_LIST 
 	if (arrayList_isEmpty(ids)) {
 		celix_status_t status = bundleContext_getBundles(command->bundleContext, &bundles);
 	} else {
-		bundles = arrayList_create();
+		apr_pool_t *pool = NULL;
+		bundleContext_getMemoryPool(command->bundleContext, &pool);
+		ARRAY_LIST ids = NULL;
+		arrayList_create(pool, &bundles);
 		int i;
 		for (i = 0; i < arrayList_size(ids); i++) {
 			char *idStr = arrayList_get(ids, i);

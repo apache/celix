@@ -30,14 +30,18 @@
 celix_status_t attribute_create(char * key, char * value, apr_pool_t *memory_pool, ATTRIBUTE *attribute) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	ATTRIBUTE attr = apr_palloc(memory_pool, sizeof(*attr));
-	if (!attr) {
-	    status = CELIX_ENOMEM;
+	if (key == NULL || value == NULL || memory_pool == NULL || *attribute != NULL) {
+		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
-        attr->key = key;
-        attr->value = value;
+		ATTRIBUTE attr = apr_palloc(memory_pool, sizeof(*attr));
+		if (!attr) {
+			status = CELIX_ENOMEM;
+		} else {
+			attr->key = key;
+			attr->value = value;
 
-	    *attribute = attr;
+			*attribute = attr;
+		}
 	}
 
 	return status;

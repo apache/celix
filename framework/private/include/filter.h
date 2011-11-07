@@ -28,7 +28,7 @@
 
 typedef struct filter * FILTER;
 
-FILTER filter_create(char * filterString);
+FILTER filter_create(char * filterString, apr_pool_t *pool);
 void filter_destroy(FILTER filter);
 
 int filter_match(FILTER filter, PROPERTIES properties);

@@ -22,6 +22,7 @@
  *  Created on: Jun 26, 2011
  *      Author: alexander
  */
+#include <stdlib.h>
 #include <apr_thread_cond.h>
 #include <apr_thread_mutex.h>
 #include <apr_thread_proc.h>
@@ -65,8 +66,10 @@ celix_status_t log_create(apr_pool_t *pool, log_t *logger) {
         apr_thread_mutex_create(&(*logger)->lock, APR_THREAD_MUTEX_UNNESTED, pool);
 
         (*logger)->pool = pool;
-        (*logger)->listeners = arrayList_create();
-        (*logger)->listenerEntries = arrayList_create();
+        (*logger)->listeners = NULL;
+		arrayList_create(pool, &(*logger)->listeners);
+        (*logger)->listenerEntries = NULL;
+        arrayList_create(pool, &(*logger)->listenerEntries);
         (*logger)->listenerThread = NULL;
         (*logger)->running = false;
         apr_status = apr_thread_cond_create(&(*logger)->entriesToDeliver, pool);

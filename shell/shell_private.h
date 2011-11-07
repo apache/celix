@@ -32,6 +32,7 @@
 #include "command.h"
 
 struct shell {
+	apr_pool_t *pool;
 	BUNDLE_CONTEXT bundleContext;
 	HASH_MAP commandReferenceMap;
 	HASH_MAP commandNameMap;

@@ -74,8 +74,9 @@ struct shellServiceActivator {
 	COMMAND inspectCmd;
 };
 
-SHELL shell_create() {
+SHELL shell_create(apr_pool_t *pool) {
 	SHELL shell = (SHELL) malloc(sizeof(*shell));
+	shell->pool = pool;
 	shell->commandNameMap = hashMap_create(string_hash, NULL, string_equals, NULL);
 	shell->commandReferenceMap = hashMap_create(NULL, NULL, NULL, NULL);
 	return shell;
@@ -88,7 +89,8 @@ void shell_destroy(SHELL shell) {
 }
 
 ARRAY_LIST shell_getCommands(SHELL shell) {
-	ARRAY_LIST commands = arrayList_create();
+	ARRAY_LIST commands = NULL;
+	arrayList_create(shell->pool, &commands);
 	HASH_MAP_ITERATOR iter = hashMapIterator_create(shell->commandNameMap);
 	while (hashMapIterator_hasNext(iter)) {
 		char * name = hashMapIterator_nextKey(iter);
@@ -160,7 +162,9 @@ void shell_serviceChanged(SERVICE_LISTENER listener, SERVICE_EVENT event) {
 
 celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 	*userData = malloc(sizeof(struct shellServiceActivator));
-	SHELL shell = shell_create();
+	apr_pool_t *pool = NULL;
+	bundleContext_getMemoryPool(context, &pool);
+	SHELL shell = shell_create(pool);
 //	struct shellServiceActivator * activator = (struct shellServiceActivator *) (*userData);
 	((struct shellServiceActivator *) (*userData))->shell = shell;
 	((struct shellServiceActivator *) (*userData))->listener = NULL;

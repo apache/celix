@@ -76,7 +76,7 @@ USAGE_COUNT serviceRegistry_addUsageCount(SERVICE_REGISTRY registry, BUNDLE bund
 	usage->service = NULL;
 
 	if (usages == NULL) {
-		usages = arrayList_create();
+		arrayList_create(bundle->memoryPool, &usages);
 		MODULE mod = NULL;
 		bundle_getCurrentModule(bundle, &mod);
 	}
@@ -116,7 +116,7 @@ SERVICE_REGISTRY serviceRegistry_create(FRAMEWORK framework, void (*serviceChang
         registry->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
         registry->framework = framework;
 
-        registry->listenerHooks = arrayList_create();
+        arrayList_create(framework->mp, &registry->listenerHooks);
 
         pthread_mutexattr_t mutexattr;
         pthread_mutexattr_init(&mutexattr);
@@ -138,7 +138,8 @@ celix_status_t serviceRegistry_destroy(SERVICE_REGISTRY registry) {
 ARRAY_LIST serviceRegistry_getRegisteredServices(SERVICE_REGISTRY registry, BUNDLE bundle) {
 	ARRAY_LIST regs = (ARRAY_LIST) hashMap_get(registry->serviceRegistrations, bundle);
 	if (regs != NULL) {
-		ARRAY_LIST refs = arrayList_create();
+		ARRAY_LIST refs = NULL;
+		arrayList_create(bundle->memoryPool, &refs);
 		int i;
 		for (i = 0; i < arrayList_size(regs); i++) {
 			SERVICE_REGISTRATION reg = arrayList_get(regs, i);
@@ -176,7 +177,8 @@ celix_status_t serviceRegistry_registerServiceInternal(SERVICE_REGISTRY registry
 
 	ARRAY_LIST regs = (ARRAY_LIST) hashMap_get(registry->serviceRegistrations, bundle);
 	if (regs == NULL) {
-		regs = arrayList_create();
+		regs = NULL;
+		arrayList_create(bundle->memoryPool, &regs);
 	}
 	arrayList_add(regs, *registration);
 	hashMap_put(registry->serviceRegistrations, bundle, regs);
@@ -262,7 +264,8 @@ void serviceRegistry_unregisterServices(SERVICE_REGISTRY registry, BUNDLE bundle
 }
 
 ARRAY_LIST serviceRegistry_getServiceReferences(SERVICE_REGISTRY registry, const char * serviceName, FILTER filter) {
-	ARRAY_LIST references = arrayList_create();
+	ARRAY_LIST references = NULL;
+	arrayList_create(registry->framework->mp, &references);
 
 	HASH_MAP_VALUES registrations = hashMapValues_create(registry->serviceRegistrations);
 	HASH_MAP_ITERATOR iterator = hashMapValues_iterator(registrations);
@@ -296,7 +299,8 @@ ARRAY_LIST serviceRegistry_getServiceReferences(SERVICE_REGISTRY registry, const
 ARRAY_LIST serviceRegistry_getServicesInUse(SERVICE_REGISTRY registry, BUNDLE bundle) {
 	ARRAY_LIST usages = hashMap_get(registry->inUseMap, bundle);
 	if (usages != NULL) {
-		ARRAY_LIST references = arrayList_create();
+		ARRAY_LIST references = NULL;
+		arrayList_create(bundle->memoryPool, &references);
 		int i;
 		for (i = 0; i < arrayList_size(usages); i++) {
 			USAGE_COUNT usage = arrayList_get(usages, i);
@@ -373,7 +377,7 @@ void serviceRegistry_ungetServices(SERVICE_REGISTRY registry, BUNDLE bundle) {
 	}
 
 	// usage arrays?
-	ARRAY_LIST fusages = arrayList_clone(usages);
+	ARRAY_LIST fusages = arrayList_clone(bundle->memoryPool, usages);
 
 	int i;
 	for (i = 0; i < arrayList_size(fusages); i++) {
@@ -388,7 +392,8 @@ void serviceRegistry_ungetServices(SERVICE_REGISTRY registry, BUNDLE bundle) {
 }
 
 ARRAY_LIST serviceRegistry_getUsingBundles(SERVICE_REGISTRY registry, SERVICE_REFERENCE reference) {
-	ARRAY_LIST bundles = arrayList_create();
+	ARRAY_LIST bundles = NULL;
+	arrayList_create(registry->framework->mp, &bundles);
 	HASH_MAP_ITERATOR iter = hashMapIterator_create(registry->inUseMap);
 	while (hashMapIterator_hasNext(iter)) {
 		HASH_MAP_ENTRY entry = hashMapIterator_nextEntry(iter);
@@ -433,7 +438,7 @@ celix_status_t serviceRegistry_getListenerHooks(SERVICE_REGISTRY registry, ARRAY
 	if (registry == NULL || *hooks != NULL) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
-		*hooks = arrayList_clone(registry->listenerHooks);
+		*hooks = arrayList_clone(registry->framework->mp, registry->listenerHooks);
 	}
 
 	return status;

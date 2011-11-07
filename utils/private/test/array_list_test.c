@@ -23,17 +23,23 @@
  *      Author: alexanderb
  */
 #include <stdio.h>
+#include <stdlib.h>
 #include <Automated.h>
+
+#include <apr_general.h>
 
 #include "celixbool.h"
 
 #include "array_list.h"
 #include "array_list_private.h"
 
+apr_pool_t *memory_pool;
 ARRAY_LIST list;
 
 int setup(void) {
-	list = arrayList_create();
+	apr_initialize();
+	apr_pool_create(&memory_pool, NULL);
+	arrayList_create(memory_pool, &list);
 	if (list == NULL) {
 		return 1;
 	}
@@ -61,7 +67,7 @@ void test_arrayList_trimToSize(void) {
 
 void test_arrayList_ensureCapacity(void) {
 	int i;
-	list = arrayList_create();
+	arrayList_create(memory_pool, &list);
 	arrayList_clear(list);
 	CU_ASSERT_EQUAL(list->capacity, 10);
 	CU_ASSERT_EQUAL(list->size, 0);
@@ -70,7 +76,7 @@ void test_arrayList_ensureCapacity(void) {
 	}
 	CU_ASSERT_EQUAL(list->capacity, 133);
 	CU_ASSERT_EQUAL(list->size, 100);
-	list = arrayList_create();
+	arrayList_create(memory_pool, &list);
 }
 
 void test_arrayList_size(void) {
@@ -220,7 +226,7 @@ void test_arrayList_addAll(void) {
 	
 	arrayList_clear(list);
 
-    toAdd = arrayList_create();
+	arrayList_create(memory_pool, &list);
     arrayList_add(toAdd, entry);
     arrayList_add(toAdd, entry2);
 

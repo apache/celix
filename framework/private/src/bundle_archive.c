@@ -55,7 +55,7 @@ celix_status_t bundleArchive_createSystemBundleArchive(apr_pool_t *mp, BUNDLE_AR
 	BUNDLE_ARCHIVE archive;
 	apr_pool_t *revisions_pool;
 
-	if (!mp || *bundle_archive) {
+	if (mp == NULL || *bundle_archive != NULL) {
 	    status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
         archive = (BUNDLE_ARCHIVE) apr_palloc(mp, sizeof(*archive));
@@ -101,57 +101,66 @@ celix_status_t bundleArchive_readLastModified(BUNDLE_ARCHIVE archive, time_t *ti
 celix_status_t bundleArchive_writeLastModified(BUNDLE_ARCHIVE archive);
 
 celix_status_t bundleArchive_create(char * archiveRoot, long id, char * location, apr_pool_t *mp, BUNDLE_ARCHIVE *bundle_archive) {
+    celix_status_t status = CELIX_SUCCESS;
     apr_pool_t *revisions_pool;
-    celix_status_t status;
     BUNDLE_ARCHIVE archive;
 
-    status = CELIX_SUCCESS;
-    archive = (BUNDLE_ARCHIVE) apr_pcalloc(mp, sizeof(*archive));
-    if (archive != NULL) {
-        if (apr_pool_create(&revisions_pool, mp) == APR_SUCCESS) {
-            if (linkedList_create(revisions_pool, &archive->revisions) == CELIX_SUCCESS) {
-                archive->id = id;
-                archive->location = location;
-                archive->archiveRootDir = NULL;
-                archive->archiveRoot = archiveRoot;
-                archive->refreshCount = -1;
-                time(&archive->lastModified);
-
-                archive->mp = mp;
-
-                bundleArchive_initialize(archive);
-
-                bundleArchive_revise(archive, location, NULL);
-
-                *bundle_archive = archive;
-            } else {
-                apr_pool_destroy(revisions_pool);
-                status = CELIX_ENOMEM;
-            }
-        }
+    if (*bundle_archive != NULL) {
+    	status = CELIX_ILLEGAL_ARGUMENT;
     } else {
-        status = CELIX_ENOMEM;
+		archive = (BUNDLE_ARCHIVE) apr_pcalloc(mp, sizeof(*archive));
+		if (archive != NULL) {
+			if (apr_pool_create(&revisions_pool, mp) == APR_SUCCESS) {
+				if (linkedList_create(revisions_pool, &archive->revisions) == CELIX_SUCCESS) {
+					archive->id = id;
+					archive->location = location;
+					archive->archiveRootDir = NULL;
+					archive->archiveRoot = archiveRoot;
+					archive->refreshCount = -1;
+					time(&archive->lastModified);
+
+					archive->mp = mp;
+
+					bundleArchive_initialize(archive);
+
+					bundleArchive_revise(archive, location, NULL);
+
+					*bundle_archive = archive;
+				} else {
+					apr_pool_destroy(revisions_pool);
+					status = CELIX_ENOMEM;
+				}
+			}
+		} else {
+			status = CELIX_ENOMEM;
+
+		}
     }
 
 	return status;
 }
 
 celix_status_t bundleArchive_destroy(BUNDLE_ARCHIVE archive) {
-	if (archive->archiveRootDir != NULL) {
-		// closedir(archive->archiveRootDir);
-		apr_dir_close(archive->archiveRootDir);
-	}
-	if (archive->revisions != NULL) {
-		LINKED_LIST_ITERATOR iter = linkedListIterator_create(archive->revisions, 0);
-		while (linkedListIterator_hasNext(iter)) {
-			BUNDLE_REVISION revision = linkedListIterator_next(iter);
-			bundleRevision_destroy(revision);
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (archive == NULL) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	} else {
+		if (archive->archiveRootDir != NULL) {
+			apr_dir_close(archive->archiveRootDir);
 		}
-		linkedListIterator_destroy(iter);
+		if (archive->revisions != NULL) {
+			LINKED_LIST_ITERATOR iter = linkedListIterator_create(archive->revisions, 0);
+			while (linkedListIterator_hasNext(iter)) {
+				BUNDLE_REVISION revision = linkedListIterator_next(iter);
+				bundleRevision_destroy(revision);
+			}
+			linkedListIterator_destroy(iter);
+		}
 	}
 
 	archive = NULL;
-	return CELIX_SUCCESS;
+	return status;
 }
 
 celix_status_t bundleArchive_recreate(char * archiveRoot, apr_pool_t *mp, BUNDLE_ARCHIVE *bundle_archive) {

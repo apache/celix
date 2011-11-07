@@ -88,7 +88,8 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
     celix_status_t status = bundleContext_getMemoryPool(context, &pool);
     if (status == CELIX_SUCCESS) {
         *userData = apr_palloc(pool, sizeof(struct data));
-        ((struct data *) (*userData))->publishers = arrayList_create();
+        ((struct data *) (*userData))->publishers = NULL;
+        arrayList_create(pool, &((struct data *) (*userData))->publishers);
     } else {
         status = CELIX_START_ERROR;
     }

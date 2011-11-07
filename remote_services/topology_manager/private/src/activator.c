@@ -53,6 +53,11 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 	} else {
 		activator->pool = pool;
 		activator->context = context;
+		activator->endpointListenerService = NULL;
+		activator->hook = NULL;
+		activator->manager = NULL;
+		activator->remoteServiceAdminTracker = NULL;
+		activator->serviceListener = NULL;
 
 		topologyManager_create(context, pool, &activator->manager);
 

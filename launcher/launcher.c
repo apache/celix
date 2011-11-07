@@ -74,7 +74,8 @@ int main(void) {
         }
         // First install all bundles
         // Afterwards start them
-        ARRAY_LIST installed = arrayList_create();
+        ARRAY_LIST installed = NULL;
+        arrayList_create(pool, &installed);
         BUNDLE_CONTEXT context = NULL;
         bundle_getContext(framework->bundle, &context);
         LINKED_LIST_ITERATOR iter = linkedListIterator_create(bundles, 0);
@@ -92,7 +93,6 @@ int main(void) {
             linkedListIterator_remove(iter);
         }
         linkedListIterator_destroy(iter);
-        apr_pool_destroy(pool);
 
         int i;
         for (i = 0; i < arrayList_size(installed); i++) {
@@ -101,6 +101,7 @@ int main(void) {
         }
 
         arrayList_destroy(installed);
+        apr_pool_destroy(pool);
     }
 
     framework_waitForStop(framework);

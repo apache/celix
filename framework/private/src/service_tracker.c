@@ -67,14 +67,19 @@ celix_status_t serviceTracker_create(BUNDLE_CONTEXT context, char * service, SER
 celix_status_t tracker_createWithFilter(BUNDLE_CONTEXT context, char * filter, SERVICE_TRACKER_CUSTOMIZER customizer, SERVICE_TRACKER *tracker) {
 	*tracker = (SERVICE_TRACKER) malloc(sizeof(*tracker));
 	FW_SERVICE_TRACKER fw_tracker = (FW_SERVICE_TRACKER) malloc(sizeof(*fw_tracker));
+	apr_pool_t *pool;
+	bundleContext_getMemoryPool(context, &pool);
+
 	if (m_trackers == NULL) {
-		m_trackers = arrayList_create();
+		arrayList_create(pool, &m_trackers);
 	}
 	(*tracker)->context = context;
 	(*tracker)->filter = filter;
 
+	fw_tracker->pool = pool;
 	fw_tracker->tracker = *tracker;
-	fw_tracker->tracked = arrayList_create();
+	fw_tracker->tracked = NULL;
+	arrayList_create(pool, &fw_tracker->tracked);
 	fw_tracker->customizer = customizer;
 
 	arrayList_add(m_trackers, fw_tracker);
@@ -153,7 +158,8 @@ SERVICE_REFERENCE tracker_getServiceReference(SERVICE_TRACKER tracker) {
 ARRAY_LIST tracker_getServiceReferences(SERVICE_TRACKER tracker) {
 	FW_SERVICE_TRACKER fwTracker = findFwServiceTracker(tracker);
 	int size = arrayList_size(fwTracker->tracked);
-	ARRAY_LIST references = arrayList_create();
+	ARRAY_LIST references = NULL;
+	arrayList_create(fwTracker->pool, &references);
 	TRACKED tracked;
 	unsigned int i;
 	for (i = 0; i < arrayList_size(fwTracker->tracked); i++) {
@@ -179,7 +185,8 @@ void * tracker_getService(SERVICE_TRACKER tracker) {
 ARRAY_LIST tracker_getServices(SERVICE_TRACKER tracker) {
 	FW_SERVICE_TRACKER fwTracker = findFwServiceTracker(tracker);
 	int size = arrayList_size(fwTracker->tracked);
-	ARRAY_LIST references = arrayList_create();
+	ARRAY_LIST references = NULL;
+	arrayList_create(fwTracker->pool, &references);
 	TRACKED tracked;
 	unsigned int i;
 	for (i = 0; i < arrayList_size(fwTracker->tracked); i++) {
