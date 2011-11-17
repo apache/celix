@@ -22,7 +22,7 @@ include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/deployment_admin/private/include")
 
 link_directories("/opt/local/lib")
-bundle(deployment_admin SOURCES
+add_library(deployment_admin SHARED
 	private/src/deployment_package 
 	private/src/deployment_admin
 	private/src/deployment_admin_activator
@@ -31,5 +31,7 @@ bundle(deployment_admin SOURCES
 	private/src/unzip
 )
 target_link_libraries(deployment_admin framework curl)
+
+bundle(deployment_admin)
 
 deploy("deployment-admin" BUNDLES deployment_admin shell shell_tui log_service log_writer)
