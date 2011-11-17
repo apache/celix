@@ -117,7 +117,7 @@ MACRO(deploy)
     	#mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/deploy \;
 		#	cd ${CMAKE_CURRENT_BINARY_DIR}/deploy \; 
 		#	${CPACK_COMMAND} --config "${__deployConfig}"
-    	DEPENDS ${DEPS} 
+    	DEPENDS ${DEPS} launcher
     	COMMENT "Deploy target ${DEPLOY_NAME}")
     ADD_DEPENDENCIES(deploy ${__deployTarget})
 	
