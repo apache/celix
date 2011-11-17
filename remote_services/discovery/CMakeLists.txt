@@ -22,10 +22,9 @@ include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/pub
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
 
 link_directories("/opt/local/lib")
-add_library(discovery SHARED 
+bundle(discovery SOURCES 
 	private/src/discovery 
 	private/src/discovery_activator
 )
-target_link_libraries(discovery framework slp.a)
+target_link_libraries(discovery framework ${APRUTIL_LIBRARY} slp.a)
 
-bundle(discovery)

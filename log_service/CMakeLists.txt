@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(log_service SHARED
+bundle(log_service SOURCES
 	private/src/log
 	private/src/log_entry
 	private/src/log_factory  
@@ -28,7 +28,6 @@ include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/private/include")
 target_link_libraries(log_service framework)
 
-bundle(log_service)
 package(log_service FILES public/include/log_service.h)
 
 FILE(GLOB files public/include/log_service.h)

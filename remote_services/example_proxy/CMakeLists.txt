@@ -24,10 +24,8 @@ include_directories("${PROJECT_SOURCE_DIR}/remote_services/example_proxy/private
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/example_service/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
 
-add_library(example_proxy SHARED 
+bundle(example_proxy SOURCES 
 	private/src/example_proxy_activator
 	private/src/example_proxy_impl.c
 )
 target_link_libraries(example_proxy framework jansson.a curl.a)
-
-bundle(example_proxy)

@@ -22,13 +22,11 @@ include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
 
-add_library(remote_service_admin SHARED 
+bundle(remote_service_admin SOURCES 
 	private/src/remote_service_admin_impl
 	private/src/export_registration_impl
 	private/src/import_registration_impl
 	private/src/remote_service_admin_activator
 	private/src/mongoose.c  
 )
-target_link_libraries(remote_service_admin framework jansson.a)
-
-bundle(remote_service_admin)
+target_link_libraries(remote_service_admin framework ${APRUTIL_LIBRARY} jansson.a)

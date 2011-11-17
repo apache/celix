@@ -15,10 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(receiver SHARED activator serviceTest)
+bundle(receiver SOURCES activator serviceTest)
 include_directories("${PROJECT_SOURCE_DIR}/celix")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 target_link_libraries(receiver framework)
 
-bundle(receiver)
 package(receiver FILES serviceTest.h)

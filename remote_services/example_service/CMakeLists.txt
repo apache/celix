@@ -20,10 +20,8 @@ include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/example_service/private/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/example_service/public/include")
 
-add_library(example SHARED 
+bundle(example SOURCES 
 	private/src/example_impl
 	private/src/example_activator  
 )
 target_link_libraries(example framework)
-
-bundle(example)

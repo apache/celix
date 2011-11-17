@@ -88,3 +88,16 @@ celix_status_t thread_equalsSelf(apr_os_thread_t thread, bool *equals) {
 
 	return status;
 }
+
+celix_status_t utils_isNumeric(char *number, bool *ret) {
+	celix_status_t status = CELIX_SUCCESS;
+	*ret = true;
+	while(*number) {
+		if(!isdigit(*number) && *number != '.') {
+			*ret = false;
+			break;
+		}
+		number++;
+	}
+	return status;
+}

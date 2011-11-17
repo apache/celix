@@ -56,6 +56,7 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 
             const char *options[] = {
                 "document_root", entry,
+                "listening_ports", "8081",
                 NULL
             };
             data->ctx = mg_start(NULL, options);

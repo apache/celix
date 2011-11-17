@@ -18,8 +18,8 @@
 add_library(mongoose STATIC mongoose.c)
 SET_TARGET_PROPERTIES(mongoose PROPERTIES COMPILE_FLAGS -fPIC)
 
-add_library(celix.mongoose SHARED activator)
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+bundle(celix.mongoose SOURCES activator DIRECTORIES root)
 target_link_libraries(celix.mongoose framework mongoose)
 
-bundle(celix.mongoose DIRECTORIES root)
+

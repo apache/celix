@@ -22,10 +22,8 @@ include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/example_endpoint/private/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/example_service/public/include")
 
-add_library(example_endpoint SHARED 
+bundle(example_endpoint SOURCES 
 	private/src/example_endpoint_activator
 	private/src/example_endpoint_impl.c
 )
 target_link_libraries(example_endpoint framework jansson.a)
-
-bundle(example_endpoint)

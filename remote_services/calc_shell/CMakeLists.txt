@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(calc_shell SHARED
+bundle(calc_shell SOURCES
 	private/src/add_command 
 	private/src/sub_command
 	private/src/sqrt_command
@@ -27,4 +27,3 @@ include_directories("${PROJECT_SOURCE_DIR}/remote_services/example_service/publi
 include_directories("${PROJECT_SOURCE_DIR}/shell")
 target_link_libraries(calc_shell framework)
 
-bundle(calc_shell)

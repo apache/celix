@@ -29,6 +29,7 @@
 #include "array_list.h"
 #include "bundle_context.h"
 #include "bundle.h"
+#include "utils.h"
 
 void stopCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *));
 
@@ -52,13 +53,19 @@ void stopCommand_execute(COMMAND command, char * line, void (*out)(char *), void
 	sub = strtok(line, delims);
 	sub = strtok(NULL, delims);
 	while (sub != NULL) {
-		long id = atol(sub);
-		BUNDLE bundle = NULL;
-		bundleContext_getBundleById(command->bundleContext, id, &bundle);
-		if (bundle != NULL) {
-			bundle_stop(bundle, 0);
+		bool numeric;
+		utils_isNumeric(sub, &numeric);
+		if (numeric) {
+			long id = atol(sub);
+			BUNDLE bundle = NULL;
+			bundleContext_getBundleById(command->bundleContext, id, &bundle);
+			if (bundle != NULL) {
+				bundle_stop(bundle, 0);
+			} else {
+				err("Bundle id is invalid.");
+			}
 		} else {
-			err("Bundle id is invalid.");
+			err("Bundle id should be a number (bundle id).\n");
 		}
 		sub = strtok(NULL, delims);
 	}

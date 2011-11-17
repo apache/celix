@@ -33,12 +33,13 @@ link_directories(${GTK_LIBRARY_DIRS})
 link_directories(${GLIB_LIBRARY_DIRS})
 link_directories(${GTHR_LIBRARY_DIRS})
 
-add_library(circle SHARED 
- private/src/activator
- private/src/circle_shape
+bundle(circle SOURCES 
+ 	private/src/activator
+ 	private/src/circle_shape
+ FILES
+ 	private/src/circle.png
  )
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 target_link_libraries(circle framework ${GLIB_LIBRARIES} ${GTK_LIBRARIES} ${GTHR_LIBRARIES})
 
-bundle(circle FILES private/src/circle.png)

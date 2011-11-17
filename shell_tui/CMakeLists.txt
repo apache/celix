@@ -15,12 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(shell_tui SHARED shell_tui)
+bundle(shell_tui SOURCES shell_tui)
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/shell")
 target_link_libraries(shell_tui framework)
 
-bundle(shell_tui)
 package(shell_tui)
 
 INSTALL(FILES ${PROJECT_BINARY_DIR}/bundles/shell_tui.zip DESTINATION bundles COMPONENT framework)

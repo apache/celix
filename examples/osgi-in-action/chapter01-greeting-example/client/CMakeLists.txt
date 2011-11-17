@@ -15,9 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(chapter01-greeting-example-client SHARED private/src/client)
+bundle(chapter01-greeting-example-client SOURCES private/src/client)
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("../greeting/public/include")
 target_link_libraries(chapter01-greeting-example-client framework)
-
-bundle(chapter01-greeting-example-client)

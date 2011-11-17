@@ -33,12 +33,12 @@ link_directories(${GTK_LIBRARY_DIRS})
 link_directories(${GLIB_LIBRARY_DIRS})
 link_directories(${GTHR_LIBRARY_DIRS})
 
-add_library(triangle SHARED 
- private/src/activator
- private/src/triangle_shape
+bundle(triangle SOURCES 
+ 	private/src/activator
+ 	private/src/triangle_shape
+ FILES 
+ 	private/src/triangle.png
  )
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 target_link_libraries(triangle framework ${GLIB_LIBRARIES} ${GTK_LIBRARIES} ${GTHR_LIBRARIES})
-
-bundle(triangle FILES private/src/triangle.png)

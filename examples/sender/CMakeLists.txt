@@ -15,11 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(sender SHARED test_activator listenerTest)
+bundle(sender SOURCES test_activator listenerTest)
 include_directories("${PROJECT_SOURCE_DIR}/celix" "${PROJECT_SOURCE_DIR}/dependency_manager")
 include_directories("${PROJECT_SOURCE_DIR}/receiver")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 target_link_libraries(sender framework dependency_manager)
 
-bundle(sender)
 package(sender)

@@ -33,12 +33,12 @@ link_directories(${GTK_LIBRARY_DIRS})
 link_directories(${GLIB_LIBRARY_DIRS})
 link_directories(${GTHR_LIBRARY_DIRS})
 
-add_library(square SHARED 
- private/src/activator
- private/src/square_shape
+bundle(square SOURCES 
+ 	private/src/activator
+ 	private/src/square_shape
+ FILES 
+ 	private/src/square.png
 )
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 target_link_libraries(square framework ${GLIB_LIBRARIES} ${GTK_LIBRARIES} ${GTHR_LIBRARIES})
-
-bundle(square FILES private/src/square.png)

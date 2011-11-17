@@ -39,4 +39,6 @@ char * string_trim(char * string);
 
 celix_status_t thread_equalsSelf(apr_os_thread_t thread, bool *equals);
 
+celix_status_t utils_isNumeric(char *number, bool *ret);
+
 #endif /* UTILS_H_ */

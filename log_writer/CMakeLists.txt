@@ -15,13 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(log_writer SHARED dependency_activator log_writer)
+bundle(log_writer SOURCES dependency_activator log_writer)
 include_directories("${PROJECT_SOURCE_DIR}/celix")
 include_directories("${PROJECT_SOURCE_DIR}/dependency_manager")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 target_link_libraries(log_writer framework dependency_manager)
-
-bundle(log_writer)
 
 INSTALL(FILES ${PROJECT_BINARY_DIR}/bundles/log_writer.zip DESTINATION bundles COMPONENT framework)

@@ -15,10 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(chapter01-greeting-example SHARED private/src/activator private/src/greeting_impl)
+bundle(chapter01-greeting-example SOURCES private/src/activator private/src/greeting_impl)
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("public/include")
 include_directories("private/include")
 target_link_libraries(chapter01-greeting-example framework)
-
-bundle(chapter01-greeting-example)

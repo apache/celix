@@ -40,14 +40,14 @@ link_directories(${GLIB_LIBRARY_DIRS})
 link_directories(${GTHR_LIBRARY_DIRS})
 link_directories(${GMODULE_LIBRARY_DIRS})
 
-add_library(chapter04-paint-example SHARED 
+bundle(chapter04-paint-example SOURCES 
 	private/src/activator
 	private/src/default_shape
 	private/src/shape_component
 	private/src/paint_frame
+  FILES
+  	private/src/underc.png gtktest.glade
  )
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 target_link_libraries(chapter04-paint-example framework ${MODULE_LIBRARIES} ${GLIB_LIBRARIES} ${GTK_LIBRARIES} ${GTHR_LIBRARIES})
-
-bundle(chapter04-paint-example FILES private/src/underc.png gtktest.glade)

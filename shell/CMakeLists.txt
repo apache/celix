@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(shell SHARED shell command
+bundle(shell SOURCES shell command
 	ps_command start_command stop_command
 	install_command update_command
 	uninstall_command log_command
@@ -24,7 +24,6 @@ include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 target_link_libraries(shell framework curl)
 
-bundle(shell)
 package(shell FILES shell.h command.h)
 
 FILE(GLOB files shell.h command.h)
