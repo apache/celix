@@ -46,7 +46,7 @@ celix_status_t exampleProxy_add(example_t example, double a, double b, double *r
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (example->endpoint != NULL) {
-		printf("PROXY: URL: %s\n", example->endpoint->id);
+		printf("CALCULATOR_PROXY: URL: %s\n", example->endpoint->id);
 		char *url = apr_pstrcat(example->pool, example->endpoint->id, "/add", NULL);
 
 		json_t *root;
@@ -68,7 +68,7 @@ celix_status_t exampleProxy_add(example_t example, double a, double b, double *r
 			json_unpack(reply, "{s:f}", "result", result);
 		}
 	} else {
-		printf("PROXY: No endpoint information available");
+		printf("CALCULATOR_PROXY: No endpoint information available");
 	}
 
 	return status;
@@ -77,7 +77,7 @@ celix_status_t exampleProxy_add(example_t example, double a, double b, double *r
 celix_status_t exampleProxy_sub(example_t example, double a, double b, double *result) {
 	celix_status_t status = CELIX_SUCCESS;
 	if (example->endpoint != NULL) {
-		printf("PROXY: URL: %s\n", example->endpoint->id);
+		printf("CALCULATOR_PROXY: URL: %s\n", example->endpoint->id);
 		char *url = apr_pstrcat(example->pool, example->endpoint->id, "/sub", NULL);
 
 		json_t *root;
@@ -99,7 +99,7 @@ celix_status_t exampleProxy_sub(example_t example, double a, double b, double *r
 			json_unpack(reply, "{s:f}", "result", result);
 		}
 	} else {
-		printf("PROXY: No endpoint information available");
+		printf("CALCULATOR_PROXY: No endpoint information available");
 	}
 
 	return status;
@@ -108,7 +108,7 @@ celix_status_t exampleProxy_sub(example_t example, double a, double b, double *r
 celix_status_t exampleProxy_sqrt(example_t example, double a, double *result) {
 	celix_status_t status = CELIX_SUCCESS;
 	if (example->endpoint != NULL) {
-		printf("PROXY: URL: %s\n", example->endpoint->id);
+		printf("CALCULATOR_PROXY: URL: %s\n", example->endpoint->id);
 		char *url = apr_pstrcat(example->pool, example->endpoint->id, "/sqrt", NULL);
 
 		json_t *root;
@@ -130,7 +130,7 @@ celix_status_t exampleProxy_sqrt(example_t example, double a, double *result) {
 			json_unpack(reply, "{s:f}", "result", result);
 		}
 	} else {
-		printf("PROXY: No endpoint information available");
+		printf("CALCULATOR_PROXY: No endpoint information available");
 	}
 
 	return status;
@@ -155,7 +155,7 @@ celix_status_t exampleProxy_postRequest(example_t example, char *url, struct pos
 		res = curl_easy_perform(curl);
 		curl_easy_cleanup(curl);
 
-		printf("Data read: %s\n", get->writeptr);
+		printf("CALCULATOR_PROXY: Data read: \"%s\"\n", get->writeptr);
 
 	}
 	return status;

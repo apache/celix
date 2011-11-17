@@ -60,7 +60,7 @@ void sqrtCommand_execute(COMMAND command, char *line, void (*out)(char *), void 
 				status = example->sqrt(example->example, a, &result);
 				if (status == CELIX_SUCCESS) {
 					char line[256];
-					sprintf(line, "SQRT: sqrt %f = %f\n", a, result);
+					sprintf(line, "CALCULATOR_SHELL: Sqrt: %f = %f\n", a, result);
 					out(line);
 				} else {
 					out("SQRT: Unexpected exception in Calc service\n");

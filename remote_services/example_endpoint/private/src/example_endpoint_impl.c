@@ -37,6 +37,7 @@ celix_status_t exampleEndpoint_setService(remote_endpoint_t endpoint, void *serv
 celix_status_t exampleEndpoint_handleRequest(remote_endpoint_t ep, char *request, char *data, char **reply) {
 	celix_status_t status = CELIX_SUCCESS;
 
+	printf("EXAMPLE ENDPOINT: Handle request \"%s\" with data \"%s\"\n", request, data);
 	if (strcmp(request, "add") == 0) {
 		exampleEndpoint_add(ep, data, reply);
 	} else if (strcmp(request, "sub") == 0) {

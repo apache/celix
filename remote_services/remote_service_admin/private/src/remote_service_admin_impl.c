@@ -45,6 +45,9 @@ celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, BUNDLE_CONTEXT contex
 
 		// Start webserver
 		const char *port = getenv("RSA_PORT");
+		if (port == NULL) {
+			printf("No RemoteServiceAdmin port set, set it using RSA_PORT!\n");
+		}
 		const char *options[] = {"listening_ports", port, NULL};
 		(*admin)->ctx = mg_start(remoteServiceAdmin_callback, (*admin), options);
 	}
@@ -82,7 +85,7 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_t admin) {
  */
 void *remoteServiceAdmin_callback(enum mg_event event, struct mg_connection *conn, const struct mg_request_info *request_info) {
 	if (request_info->uri != NULL) {
-		printf("RSA Handle request: %s\n", request_info->uri);
+		printf("REMOTE_SERVICE_ADMIN: Handle request: %s\n", request_info->uri);
 		remote_service_admin_t rsa = request_info->user_data;
 
 		if (strncmp(request_info->uri, "/services/", 10) == 0) {
@@ -96,11 +99,9 @@ void *remoteServiceAdmin_callback(enum mg_event event, struct mg_connection *con
 			char service[pos+1];
 			strncpy(service, rest, pos);
 			service[pos] = '\0';
-			printf("RSA Find Handler for Service: %s\n", service);
 
 			char request[length - pos];
 			strncpy(request, rest + pos + 1, length - pos);
-			printf("RSA Send Request: %s\n", request);
 
 			const char *lengthStr = mg_get_header(conn, (const char *) "Content-Length");
 			int datalength = apr_atoi64(lengthStr);
@@ -116,7 +117,6 @@ void *remoteServiceAdmin_callback(enum mg_event event, struct mg_connection *con
 				for (expIt = 0; expIt < arrayList_size(exports); expIt++) {
 					export_registration_t export = arrayList_get(exports, expIt);
 					if (strcmp(service, export->endpointDescription->service) == 0) {
-						printf("RSA Sending Request: %s\n", request);
 						char *reply = NULL;
 						export->endpoint->handleRequest(export->endpoint->endpoint, request, data, &reply);
 						if (reply != NULL) {

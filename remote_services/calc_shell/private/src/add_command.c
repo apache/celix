@@ -62,7 +62,7 @@ void addCommand_execute(COMMAND command, char *line, void (*out)(char *), void (
 					status = example->add(example->example, a, b, &result);
 					if (status == CELIX_SUCCESS) {
 						char line[256];
-						sprintf(line, "ADD: %f + %f = %f\n", a, b, result);
+						sprintf(line, "CALCULATOR_SHELL: Add: %f + %f = %f\n", a, b, result);
 						out(line);
 					} else {
 						out("ADD: Unexpected exception in Calc service\n");

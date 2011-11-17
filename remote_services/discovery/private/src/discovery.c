@@ -69,6 +69,9 @@ celix_status_t discovery_create(apr_pool_t *pool, BUNDLE_CONTEXT context, discov
 		(*discovery)->slpServices = hashMap_create(string_hash, NULL, string_equals, NULL);
 		(*discovery)->running = true;
 		(*discovery)->rsaPort = getenv("RSA_PORT");
+		if ((*discovery)->rsaPort == NULL) {
+			printf("No RemoteServiceAdmin port set, set it using RSA_PORT!\n");
+		}
 		(*discovery)->handled = NULL;
 		arrayList_create(pool, &(*discovery)->handled);
 		(*discovery)->registered = NULL;
@@ -268,6 +271,13 @@ celix_status_t discovery_endpointRemoved(void *handle, endpoint_description_t en
 		status = discovery_constructServiceUrl(discovery, endpoint, &serviceUrl);
 		if (status == CELIX_SUCCESS) {
 			status = discovery_deregisterEndpoint(discovery, serviceUrl);
+			int i;
+			for (i = 0; i < arrayList_size(discovery->registered); i++) {
+				char *url = arrayList_get(discovery->registered, i);
+				if (strcmp(url, serviceUrl) == 0) {
+					arrayList_remove(discovery->registered, i);
+				}
+			}
 		}
 	}
 

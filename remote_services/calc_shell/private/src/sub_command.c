@@ -64,7 +64,7 @@ void subCommand_execute(COMMAND command, char *line, void (*out)(char *), void (
 					status = example->sub(example->example, a, b, &result);
 					if (status == CELIX_SUCCESS) {
 						char line[256];
-						sprintf(line, "SUB: %f - %f = %f\n", a, b, result);
+						sprintf(line, "CALCULATOR_SHELL: Sub: %f - %f = %f\n", a, b, result);
 						out(line);
 					} else {
 						out("SUB: Unexpected exception in Calc service\n");
