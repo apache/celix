@@ -75,7 +75,7 @@ celix_status_t framework_releaseInstallLock(FRAMEWORK framework, char * location
 
 long framework_getNextBundleId(FRAMEWORK framework);
 
-celix_status_t fw_installBundle2(FRAMEWORK framework, BUNDLE * bundle, long id, char * location, BUNDLE_ARCHIVE archive);
+celix_status_t fw_installBundle2(FRAMEWORK framework, BUNDLE * bundle, long id, char * location, char *inputFile, BUNDLE_ARCHIVE archive);
 
 celix_status_t fw_refreshBundles(FRAMEWORK framework, BUNDLE bundles[], int size);
 celix_status_t fw_refreshBundle(FRAMEWORK framework, BUNDLE bundle);
@@ -279,7 +279,7 @@ celix_status_t fw_init(FRAMEWORK framework) {
                 BUNDLE bundle;
                 char *location;
 				status = bundleArchive_getLocation(archive, &location);
-                fw_installBundle2(framework, &bundle, id, location, archive);
+                fw_installBundle2(framework, &bundle, id, location, NULL, archive);
             }
         }
         arrayList_destroy(archives);
@@ -391,11 +391,11 @@ celix_status_t fw_getProperty(FRAMEWORK framework, const char *name, char **valu
 	return status;
 }
 
-celix_status_t fw_installBundle(FRAMEWORK framework, BUNDLE * bundle, char * location) {
-	return fw_installBundle2(framework, bundle, -1, location, NULL);
+celix_status_t fw_installBundle(FRAMEWORK framework, BUNDLE * bundle, char * location, char *inputFile) {
+	return fw_installBundle2(framework, bundle, -1, location, inputFile, NULL);
 }
 
-celix_status_t fw_installBundle2(FRAMEWORK framework, BUNDLE * bundle, long id, char * location, BUNDLE_ARCHIVE archive) {
+celix_status_t fw_installBundle2(FRAMEWORK framework, BUNDLE * bundle, long id, char * location, char *inputFile, BUNDLE_ARCHIVE archive) {
     BUNDLE_ARCHIVE bundle_archive = NULL;
     BUNDLE_STATE state;
 
@@ -422,7 +422,7 @@ celix_status_t fw_installBundle2(FRAMEWORK framework, BUNDLE * bundle, long id, 
 	apr_pool_create(&bundlePool, framework->mp);
 	if (archive == NULL) {
 		id = framework_getNextBundleId(framework);
-		status = bundleCache_createArchive(framework->cache, id, location, bundlePool, &bundle_archive);
+		status = bundleCache_createArchive(framework->cache, id, location, inputFile, bundlePool, &bundle_archive);
 		if (status != CELIX_SUCCESS) {
 		    framework_releaseInstallLock(framework, location);
 		    return status;
@@ -1224,7 +1224,7 @@ celix_status_t getManifest(BUNDLE_ARCHIVE archive, MANIFEST *manifest) {
 			status = bundleArchive_getCurrentRevisionNumber(archive, &revisionNumber);
 			if (status == CELIX_SUCCESS) {
 				if (status == CELIX_SUCCESS) {
-					sprintf(mf, "%s/version%ld.%ld/MANIFEST/MANIFEST.MF",
+					sprintf(mf, "%s/version%ld.%ld/META-INF/MANIFEST.MF",
 							archiveRoot,
 							refreshCount,
 							revisionNumber

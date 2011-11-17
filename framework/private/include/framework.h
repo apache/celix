@@ -43,7 +43,7 @@ void framework_stop(FRAMEWORK framework);
 
 celix_status_t fw_getProperty(FRAMEWORK framework, const char *name, char **value);
 
-celix_status_t fw_installBundle(FRAMEWORK framework, BUNDLE * bundle, char * location);
+celix_status_t fw_installBundle(FRAMEWORK framework, BUNDLE * bundle, char * location, char *inputFile);
 celix_status_t fw_uninstallBundle(FRAMEWORK framework, BUNDLE bundle);
 
 celix_status_t framework_getBundleEntry(FRAMEWORK framework, BUNDLE bundle, char *name, apr_pool_t *pool, char **entry);

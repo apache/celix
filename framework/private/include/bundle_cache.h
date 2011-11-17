@@ -35,7 +35,7 @@ typedef struct bundleCache * BUNDLE_CACHE;
 celix_status_t bundleCache_create(PROPERTIES configurationMap, apr_pool_t *mp, BUNDLE_CACHE *bundle_cache);
 celix_status_t bundleCache_destroy(BUNDLE_CACHE cache);
 celix_status_t bundleCache_getArchives(BUNDLE_CACHE cache, ARRAY_LIST *archives);
-celix_status_t bundleCache_createArchive(BUNDLE_CACHE cache, long id, char * location, apr_pool_t *bundlePool, BUNDLE_ARCHIVE *archive);
+celix_status_t bundleCache_createArchive(BUNDLE_CACHE cache, long id, char * location, char *inputFile, apr_pool_t *bundlePool, BUNDLE_ARCHIVE *archive);
 celix_status_t bundleCache_delete(BUNDLE_CACHE cache);
 
 

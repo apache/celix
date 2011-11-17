@@ -232,8 +232,8 @@ static void paintFrame_destroy(GtkWidget *widget, gpointer data) {
 
 	frame->showing = false;
 
-	bundleContext_getBundleById(frame->context, 0, &bundle);
-	bundle_stop(bundle, 0);
+//	bundleContext_getBundleById(frame->context, 0, &bundle);
+//	bundle_stop(bundle, 0);
 }
 
 static void paintFrame_destroyWidgets(PAINT_FRAME frame) {

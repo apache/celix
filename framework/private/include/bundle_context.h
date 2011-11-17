@@ -37,6 +37,7 @@ celix_status_t bundleContext_getFramework(BUNDLE_CONTEXT context, FRAMEWORK *fra
 celix_status_t bundleContext_getMemoryPool(BUNDLE_CONTEXT context, apr_pool_t **memory_pool);
 
 celix_status_t bundleContext_installBundle(BUNDLE_CONTEXT context, char * location, BUNDLE *bundle);
+celix_status_t bundleContext_installBundle2(BUNDLE_CONTEXT context, char * location, char *inputFile, BUNDLE *bundle);
 
 celix_status_t bundleContext_registerService(BUNDLE_CONTEXT context, char * serviceName, void * svcObj,
         PROPERTIES properties, SERVICE_REGISTRATION *service_registration);

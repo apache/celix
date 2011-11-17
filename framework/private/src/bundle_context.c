@@ -118,11 +118,15 @@ celix_status_t bundleContext_getMemoryPool(BUNDLE_CONTEXT context, apr_pool_t **
 }
 
 celix_status_t bundleContext_installBundle(BUNDLE_CONTEXT context, char * location, BUNDLE *bundle) {
+	return bundleContext_installBundle2(context, location, NULL, bundle);
+}
+
+celix_status_t bundleContext_installBundle2(BUNDLE_CONTEXT context, char * location, char *inputFile, BUNDLE *bundle) {
 	celix_status_t status = CELIX_SUCCESS;
 	BUNDLE b = NULL;
 
 	if (context != NULL && *bundle == NULL) {
-		if (fw_installBundle(context->framework, &b, location) != CELIX_SUCCESS) {
+		if (fw_installBundle(context->framework, &b, location, inputFile) != CELIX_SUCCESS) {
             status = CELIX_FRAMEWORK_EXCEPTION;
 		} else {
 			*bundle = b;

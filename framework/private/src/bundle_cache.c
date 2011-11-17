@@ -156,7 +156,7 @@ celix_status_t bundleCache_getArchives(BUNDLE_CACHE cache, ARRAY_LIST *archives)
 	return status;
 }
 
-celix_status_t bundleCache_createArchive(BUNDLE_CACHE cache, long id, char * location, apr_pool_t *bundlePool,
+celix_status_t bundleCache_createArchive(BUNDLE_CACHE cache, long id, char * location, char *inputFile, apr_pool_t *bundlePool,
         BUNDLE_ARCHIVE *bundle_archive) {
     celix_status_t status;
 	char archiveRoot[256];
@@ -165,7 +165,7 @@ celix_status_t bundleCache_createArchive(BUNDLE_CACHE cache, long id, char * loc
 	if (cache && location && bundlePool) {
         sprintf(archiveRoot, "%s/bundle%ld",  cache->cacheDir, id);
 
-        status = bundleArchive_create(apr_pstrdup(cache->mp, archiveRoot), id, location, bundlePool, bundle_archive);
+        status = bundleArchive_create(apr_pstrdup(cache->mp, archiveRoot), id, location, inputFile, bundlePool, bundle_archive);
 	}
 
 	return status;

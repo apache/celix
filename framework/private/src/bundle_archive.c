@@ -100,7 +100,7 @@ celix_status_t bundleArchive_reviseInternal(BUNDLE_ARCHIVE archive, bool isReloa
 celix_status_t bundleArchive_readLastModified(BUNDLE_ARCHIVE archive, time_t *time);
 celix_status_t bundleArchive_writeLastModified(BUNDLE_ARCHIVE archive);
 
-celix_status_t bundleArchive_create(char * archiveRoot, long id, char * location, apr_pool_t *mp, BUNDLE_ARCHIVE *bundle_archive) {
+celix_status_t bundleArchive_create(char * archiveRoot, long id, char * location, char *inputFile, apr_pool_t *mp, BUNDLE_ARCHIVE *bundle_archive) {
     celix_status_t status = CELIX_SUCCESS;
     apr_pool_t *revisions_pool;
     BUNDLE_ARCHIVE archive;
@@ -123,7 +123,7 @@ celix_status_t bundleArchive_create(char * archiveRoot, long id, char * location
 
 					bundleArchive_initialize(archive);
 
-					bundleArchive_revise(archive, location, NULL);
+					bundleArchive_revise(archive, location, inputFile);
 
 					*bundle_archive = archive;
 				} else {
@@ -185,9 +185,9 @@ celix_status_t bundleArchive_recreate(char * archiveRoot, apr_pool_t *mp, BUNDLE
                 apr_dir_t *dir;
                 if (apr_dir_open(&dir, archiveRoot, mp) == APR_SUCCESS) {
                     apr_finfo_t dp;
+                    long idx;
                     while ((apr_dir_read(&dp, APR_FINFO_DIRENT|APR_FINFO_TYPE, dir)) == APR_SUCCESS) {
                         if (dp.filetype == APR_DIR && (strncmp(dp.name, "version", 7) == 0)) {
-                            long idx;
                             sscanf(dp.name, "version%*d.%ld", &idx);
                         }
                     }
@@ -195,7 +195,7 @@ celix_status_t bundleArchive_recreate(char * archiveRoot, apr_pool_t *mp, BUNDLE
                     char *location;
                     status = bundleArchive_getRevisionLocation(archive, 0, &location);
                     if (status == CELIX_SUCCESS) {
-                        bundleArchive_revise(archive, location, NULL);
+                        bundleArchive_reviseInternal(archive, true, idx, location, NULL);
 
                         *bundle_archive = archive;
                     }

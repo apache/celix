@@ -1,3 +1,4 @@
+Manifest-Version: 1.0
 Bundle-SymbolicName: hello_world
 Bundle-Version: 1.0.0
 library: hello_world

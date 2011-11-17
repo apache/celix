@@ -32,7 +32,9 @@ celix_status_t bundleRevision_create(char *root, char *location, long revisionNr
         } else {
             if (inputFile != NULL) {
                 status = extractBundle(inputFile, root);
-            } else {
+            } else if (strcmp(location, "inputstream:") != 0) {
+            	// TODO how to handle this correctly?
+            	// If location != inputstream, extract it, else ignore it and assume this is a cache entry.
                 status = extractBundle(location, root);
             }
 

@@ -28,8 +28,10 @@
 #include "celixbool.h"
 
 #include "manifest.h"
+#include "utils.h"
 
 int fpeek(FILE *stream);
+celix_status_t manifest_readAttributes(MANIFEST manifest, PROPERTIES properties, FILE *file);
 
 void manifest_clear(MANIFEST manifest) {
 
@@ -39,89 +41,89 @@ PROPERTIES manifest_getMainAttributes(MANIFEST manifest) {
 	return manifest->mainAttributes;
 }
 
+celix_status_t manifest_getEntries(MANIFEST manifest, HASH_MAP *map) {
+	*map = manifest->attributes;
+	return CELIX_SUCCESS;
+}
+
 celix_status_t manifest_read(char *filename, MANIFEST *manifest) {
     celix_status_t status = CELIX_SUCCESS;
 	MANIFEST mf = NULL;
 
 	mf = (MANIFEST) malloc(sizeof(*mf));
 	if (mf != NULL) {
-		PROPERTIES mainAttributes = properties_create();
-
-        mf->mainAttributes = mainAttributes;
+		mf->mainAttributes = properties_create();
+		mf->attributes = hashMap_create(string_hash, NULL, string_equals, NULL);
 
         FILE *file = fopen ( filename, "r" );
         if (file != NULL) {
-            char lbuf [ 512 ];
-            char * lastline;
+            char lbuf[512];
+        	manifest_readAttributes(mf, mf->mainAttributes, file);
+
+        	int len;
             char * name = NULL;
-            char * value = NULL;
+            bool skipEmptyLines = true;
+            char * lastline;
 
-            while ( fgets ( lbuf, sizeof lbuf, file ) != NULL ) {
-                bool lineContinued = false;
-                int len = strlen(lbuf);
+            while (fgets(lbuf, sizeof(lbuf), file) != NULL ) {
+            	len = strlen(lbuf);
+            	if (lbuf[--len] != '\n') {
+					printf("MANIFEST: Line too long\n");
+					return CELIX_FILE_IO_EXCEPTION;
+				}
+				if (len > 0 && lbuf[len - 1] == '\r') {
+					--len;
+				}
+				if (len == 0 && skipEmptyLines) {
+					continue;
+				}
+				skipEmptyLines = false;
 
-                if (lbuf[--len] != '\n') {
-                    return CELIX_INVALID_SYNTAX;
-                }
+				if (name == NULL) {
+					if ((tolower(lbuf[0]) == 'n') && (tolower(lbuf[1]) == 'a') &&
+						(tolower(lbuf[2]) == 'm') && (tolower(lbuf[3]) == 'e') &&
+						(lbuf[4] == ':') && (lbuf[5] == ' ')) {
+						name = (char *) malloc((len + 1) - 6);
+						name = strncpy(name, lbuf+6, len - 6);
+						name[len - 6] = '\0';
+					} else {
+						printf("MANIFEST: Invalid manifest format\n");
+						return CELIX_FILE_IO_EXCEPTION;
+					}
 
-                if (len > 0 && lbuf[len-1] == '\r') {
-                    --len;
-                }
+					if (fpeek(file) == ' ') {
+						int newlen = len - 6;
+						lastline = (char *) malloc(newlen + 1);
+						lastline = strncpy(lastline, lbuf+6, len - 6);
+						lastline[newlen] = '\0';
+						continue;
+					}
+				} else {
+					int newlen = strlen(lastline) + len;
+					char buf[newlen];
+					strcpy(buf, lastline);
+					strncat(buf, lbuf+1, len - 1);
 
-                if (len == 0) {
-                    break;
-                }
+					if (fpeek(file) == ' ') {
+						lastline = strcpy(lastline, buf);
+						continue;
+					}
+					name = (char *) malloc(strlen(buf) + 1);
+					name = strcpy(name, buf);
+					name[strlen(buf)] = '\0';
+					lastline = NULL;
+				}
 
-                int i = 0;
-                if (lbuf[0] == ' ') {
-                    // continuation of previous line
-                    if (name == NULL) {
-                        return CELIX_INVALID_SYNTAX;
-                    }
-                    lineContinued = true;
-                    int newlen = strlen(lastline) + len - 1;
-                    char buf [newlen];
-                    strcpy(buf, lastline);
-                    strncat(buf, lbuf+1, len - 1);
+				PROPERTIES attributes = hashMap_get(mf->attributes, name);
+				if (attributes == NULL) {
+					attributes = properties_create();
+					hashMap_put(mf->attributes, strdup(name), attributes);
+				}
+				manifest_readAttributes(mf, attributes, file);
 
-                    if (fpeek(file) == ' ') {
-                        lastline = strcpy(lastline, buf);
-                        continue;
-                    }
-                    value = (char *) malloc(strlen(buf) + 1);
-                    value = strcpy(value, buf);
-                    value[strlen(buf)] = '\0';
-                    lastline = NULL;
-                } else {
-                    while (lbuf[i++] != ':') {
-                        if (i >= len) {
-    //						throw new IOException("invalid header field");
-                            return CELIX_INVALID_SYNTAX;
-                        }
-                    }
-                    if (lbuf[i++] != ' ') {
-    //					throw new IOException("invalid header field");
-                        return CELIX_INVALID_SYNTAX;
-                    }
-                    name = (char *) malloc((i + 1) - 2);
-                    name = strncpy(name, lbuf, i - 2);
-                    name[i - 2] = '\0';
-                    if (fpeek(file) == ' ') {
-                        int newlen = len - i;
-                        lastline = (char *) malloc(newlen + 1);
-                        lastline = strncpy(lastline, lbuf+i, len -i);
-                        continue;
-                    }
-                    value = (char *) malloc((len + 1) - i);
-                    value = strncpy(value, lbuf+i, len - i);
-                    value[len - i] = '\0';
-                }
-
-                if ((properties_set(mainAttributes, name, value) != NULL) && (!lineContinued)) {
-                    printf("Duplicate entry: %s", name);
-                }
                 free(name);
-                free(value);
+				name = NULL;
+				skipEmptyLines = true;
             }
             fclose(file);
 
@@ -160,5 +162,81 @@ int fpeek(FILE *stream) {
 	c = fgetc(stream);
 	ungetc(c, stream);
 	return c;
+}
+
+celix_status_t manifest_readAttributes(MANIFEST manifest, PROPERTIES properties, FILE *file) {
+	char *name = NULL;
+	char *value = NULL;
+	char *lastLine = NULL;
+	char lbuf[512];
+
+	int len;
+	while (fgets(lbuf, sizeof(lbuf), file ) != NULL ) {
+		len = strlen(lbuf);
+		bool lineContinued = false;
+		if (lbuf[--len] != '\n') {
+			printf("MANIFEST: Line too long\n");
+			return CELIX_FILE_IO_EXCEPTION;
+		}
+		if (len > 0 && lbuf[len - 1] == '\r') {
+			--len;
+		}
+		if (len == 0) {
+			break;
+		}
+		int i = 0;
+		if (lbuf[0] == ' ') {
+			// Line continued
+			if (name == NULL) {
+				printf("MANIFEST: No continued line expected\n");
+				return CELIX_FILE_IO_EXCEPTION;
+			}
+			lineContinued = true;
+			int newlen = strlen(lastLine) + len - 1;
+			char buf[newlen];
+			strcpy(buf, lastLine);
+			strncat(buf, lbuf+1, len - 1);
+
+			if (fpeek(file) == ' ') {
+				lastLine = strcpy(lastLine, buf);
+				continue;
+			}
+			value = (char *) malloc(strlen(buf) + 1);
+			value = strcpy(value, buf);
+			value[strlen(buf)] = '\0';
+			lastLine = NULL;
+		} else {
+			while (lbuf[i++] != ':') {
+				if (i >= len) {
+					printf("MANIFEST: Invalid header\n");
+					return CELIX_FILE_IO_EXCEPTION;
+				}
+			}
+			if (lbuf[i++] != ' ') {
+				printf("MANIFEST: Invalid header\n");
+				return CELIX_FILE_IO_EXCEPTION;
+			}
+			name = (char *) malloc((i + 1) - 2);
+			name = strncpy(name, lbuf, i - 2);
+			name[i - 2] = '\0';
+			if (fpeek(file) == ' ') {
+				int newlen = len - i;
+				lastLine = (char *) malloc(newlen + 1);
+				lastLine = strncpy(lastLine, lbuf+i, len -i);
+				continue;
+			}
+			value = (char *) malloc((len + 1) - i);
+			value = strncpy(value, lbuf+i, len - i);
+			value[len - i] = '\0';
+		}
+
+		if ((properties_set(properties, name, value) != NULL) && (!lineContinued)) {
+			printf("Duplicate entry: %s", name);
+		}
+		free(name);
+		free(value);
+	}
+
+	return CELIX_SUCCESS;
 }
 
