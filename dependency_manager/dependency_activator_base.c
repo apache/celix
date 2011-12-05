@@ -39,9 +39,11 @@ typedef struct dependencyActivatorBase * DEPENDENCY_ACTIVATOR_BASE;
 
 celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 	apr_pool_t *pool;
+	apr_pool_t *npool = NULL;
 	celix_status_t status = bundleContext_getMemoryPool(context, &pool);
+	apr_pool_create(&npool, pool);
 	if (status == CELIX_SUCCESS) {
-		*userData = apr_palloc(pool, sizeof(DEPENDENCY_ACTIVATOR_BASE));
+		*userData = apr_palloc(npool, sizeof(DEPENDENCY_ACTIVATOR_BASE));
 		((DEPENDENCY_ACTIVATOR_BASE)(*userData))->userData = dm_create(context);;
 	} else {
 		status = CELIX_START_ERROR;

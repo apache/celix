@@ -147,6 +147,8 @@ struct serviceRegistration {
 	SERVICE_REGISTRY registry;
 	char * className;
 	SERVICE_REFERENCE reference;
+	ARRAY_LIST references;
+	BUNDLE bundle;
 	PROPERTIES properties;
 	void * svcObj;
 	long serviceId;

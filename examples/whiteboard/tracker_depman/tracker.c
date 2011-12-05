@@ -40,7 +40,9 @@ void * dp_send(void * handle) {
 		for (i = 0; i < arrayList_size(data->publishers); i++) {
 			PUBLISHER_SERVICE pub = (PUBLISHER_SERVICE) arrayList_get(data->publishers, i);
 			pub->invoke(pub->publisher, "Tracker message");
-			data->logger->log(data->logger->logger, LOG_INFO, "Sending message to publisher");
+			if (data->logger != NULL) {
+				data->logger->log(data->logger->logger, LOG_INFO, "Sending message to publisher");
+			}
 		}
 		sleep(1);
 	}

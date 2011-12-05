@@ -85,7 +85,6 @@ celix_status_t inspectCommand_printExportedServices(COMMAND command, ARRAY_LIST 
 	} else {
 		apr_pool_t *pool = NULL;
 		bundleContext_getMemoryPool(command->bundleContext, &pool);
-		ARRAY_LIST ids = NULL;
 		arrayList_create(pool, &bundles);
 		int i;
 		for (i = 0; i < arrayList_size(ids); i++) {

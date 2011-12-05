@@ -169,12 +169,10 @@ celix_status_t bundleContext_registerServiceFactory(BUNDLE_CONTEXT context, char
 }
 
 celix_status_t bundleContext_getServiceReferences(BUNDLE_CONTEXT context, const char * serviceName, char * filter, ARRAY_LIST *service_references) {
-    ARRAY_LIST references = NULL;
     celix_status_t status = CELIX_SUCCESS;
 
     if (context != NULL && *service_references == NULL) {
-        fw_getServiceReferences(context->framework, &references, context->bundle, serviceName, filter);
-        *service_references = references;
+        fw_getServiceReferences(context->framework, service_references, context->bundle, serviceName, filter);
     } else {
         status = CELIX_ILLEGAL_ARGUMENT;
     }

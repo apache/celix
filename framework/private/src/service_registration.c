@@ -53,6 +53,9 @@ celix_status_t serviceRegistration_createInternal(SERVICE_REGISTRY registry, BUN
     (*registration)->isServiceFactory = isFactory;
     (*registration)->registry = registry;
     (*registration)->className = serviceName;
+    (*registration)->bundle = bundle;
+    (*registration)->references = NULL;
+    //arrayList_create(pool, &(*registration)->references);
 
 	if (dictionary == NULL) {
 		dictionary = properties_create();

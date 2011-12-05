@@ -36,6 +36,8 @@ typedef struct state * STATE;
 typedef struct executor * EXECUTOR;
 
 struct service {
+	apr_pool_t *pool;
+
 	ARRAY_LIST dependencies;
 	void (*init)(void * userData);
 	void (*start)(void * userData);

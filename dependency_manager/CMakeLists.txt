@@ -31,6 +31,6 @@ add_library(dependency_manager STATIC dependency_manager.c dependency_activator_
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 target_link_libraries(dependency_manager framework)
 
-FILE(GLOB files dependency_activator_base.h service.h)
+FILE(GLOB files dependency_activator_base.h service.h dependency_manager.h service_component_private.h service_component.h service_dependency.h)
 INSTALL(FILES ${files} DESTINATION include/dependency_manager COMPONENT framework)
 install(TARGETS dependency_manager DESTINATION lib COMPONENT framework)

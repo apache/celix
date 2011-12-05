@@ -61,5 +61,5 @@ add_subdirectory(remote_services)
 
 add_subdirectory(deployment_admin)
 
-#include(target.cmake)
+include(target.cmake)
 #enable_testing()

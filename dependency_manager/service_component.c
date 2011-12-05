@@ -69,6 +69,7 @@ SERVICE serviceComponent_create(BUNDLE_CONTEXT context, DEPENDENCY_MANAGER manag
 
 	if (mypool) {
         service = (SERVICE) apr_pcalloc(mypool, sizeof(*service));
+        service->pool = mypool;
         service->impl = NULL;
         service->serviceName = NULL;
         service->serviceRegistration = NULL;
@@ -125,10 +126,8 @@ SERVICE serviceComponent_addServiceDependency(SERVICE service, SERVICE_DEPENDENC
 		serviceDependency_start(dependency, service);
 	}
 
-	apr_pool_t *pool = NULL;
-	bundleContext_getMemoryPool(service->context, &pool);
 	pthread_mutex_lock(&service->mutex);
-	new = state_create(arrayList_clone(pool, service->dependencies), !state_isInactive(old));
+	new = state_create(arrayList_clone(service->pool, service->dependencies), !state_isInactive(old));
 	service->state = new;
 	pthread_mutex_unlock(&service->mutex);
 	serviceComponent_calculateStateChanges(service, old, new);
@@ -148,10 +147,8 @@ SERVICE serviceComponent_removeServiceDependency(SERVICE service, SERVICE_DEPEND
 		serviceDependency_stop(dependency, service);
 	}
 
-	apr_pool_t *pool = NULL;
-	bundleContext_getMemoryPool(service->context, &pool);
 	pthread_mutex_lock(&service->mutex);
-	new = state_create(arrayList_clone(pool, service->dependencies), !state_isInactive(old));
+	new = state_create(arrayList_clone(service->pool, service->dependencies), !state_isInactive(old));
 	service->state = new;
 	pthread_mutex_unlock(&service->mutex);
 	serviceComponent_calculateStateChanges(service, old, new);
@@ -163,10 +160,8 @@ SERVICE serviceComponent_removeServiceDependency(SERVICE service, SERVICE_DEPEND
 void serviceComponent_dependencyAvailable(SERVICE service, SERVICE_DEPENDENCY dependency) {
 	STATE old, new;
 	pthread_mutex_lock(&service->mutex);
-	apr_pool_t *pool = NULL;
-	bundleContext_getMemoryPool(service->context, &pool);
 	old = service->state;
-	new = state_create(arrayList_clone(pool, service->dependencies), !state_isInactive(old));
+	new = state_create(arrayList_clone(service->pool, service->dependencies), !state_isInactive(old));
 	service->state = new;
 	pthread_mutex_unlock(&service->mutex);
 	serviceComponent_calculateStateChanges(service, old, new);
@@ -190,11 +185,9 @@ void serviceComponent_dependencyChanged(SERVICE service, SERVICE_DEPENDENCY depe
 
 void serviceComponent_dependencyUnavailable(SERVICE service, SERVICE_DEPENDENCY dependency) {
 	STATE old, new;
-	apr_pool_t *pool = NULL;
-	bundleContext_getMemoryPool(service->context, &pool);
 	pthread_mutex_lock(&service->mutex);
 	old = service->state;
-	new = state_create(arrayList_clone(pool, service->dependencies), !state_isInactive(old));
+	new = state_create(arrayList_clone(service->pool, service->dependencies), !state_isInactive(old));
 	service->state = new;
 	pthread_mutex_unlock(&service->mutex);
 	serviceComponent_calculateStateChanges(service, old, new);
@@ -208,11 +201,9 @@ void serviceComponent_dependencyUnavailable(SERVICE service, SERVICE_DEPENDENCY 
 void serviceComponent_start(SERVICE service) {
 	bundleContext_registerService(service->context, SERVICE_COMPONENT_NAME, service, NULL, &service->serviceRegistration);
 	STATE old, new;
-	apr_pool_t *pool = NULL;
-	bundleContext_getMemoryPool(service->context, &pool);
 	pthread_mutex_lock(&service->mutex);
 	old = service->state;
-	new = state_create(arrayList_clone(pool, service->dependencies), true);
+	new = state_create(arrayList_clone(service->pool, service->dependencies), true);
 	service->state = new;
 	pthread_mutex_unlock(&service->mutex);
 	serviceComponent_calculateStateChanges(service, old, new);
@@ -221,11 +212,9 @@ void serviceComponent_start(SERVICE service) {
 
 void serviceComponent_stop(SERVICE service) {
 	STATE old, new;
-	apr_pool_t *pool = NULL;
-	bundleContext_getMemoryPool(service->context, &pool);
 	pthread_mutex_lock(&service->mutex);
 	old = service->state;
-	new = state_create(arrayList_clone(pool, service->dependencies), false);
+	new = state_create(arrayList_clone(service->pool, service->dependencies), false);
 	service->state = new;
 	pthread_mutex_unlock(&service->mutex);
 	serviceComponent_calculateStateChanges(service, old, new);
@@ -265,9 +254,7 @@ void serviceComponent_deactivateService(SERVICE service, void * arg) {
 }
 
 void serviceComponent_startTrackingOptional(SERVICE service, STATE state) {
-	apr_pool_t *pool = NULL;
-	bundleContext_getMemoryPool(service->context, &pool);
-    ARRAY_LIST deps = arrayList_clone(pool, state->dependencies);
+    ARRAY_LIST deps = arrayList_clone(service->pool, state->dependencies);
 	ARRAY_LIST_ITERATOR i = arrayListIterator_create(deps);
 	while (arrayListIterator_hasNext(i)) {
 		SERVICE_DEPENDENCY dependency = (SERVICE_DEPENDENCY) arrayListIterator_next(i);
@@ -280,9 +267,7 @@ void serviceComponent_startTrackingOptional(SERVICE service, STATE state) {
 }
 
 void serviceComponent_stopTrackingOptional(SERVICE service, STATE state) {
-	apr_pool_t *pool = NULL;
-	bundleContext_getMemoryPool(service->context, &pool);
-    ARRAY_LIST deps = arrayList_clone(pool, state->dependencies);
+    ARRAY_LIST deps = arrayList_clone(service->pool, state->dependencies);
 	ARRAY_LIST_ITERATOR i = arrayListIterator_create(deps);
 	while (arrayListIterator_hasNext(i)) {
 		SERVICE_DEPENDENCY dependency = (SERVICE_DEPENDENCY) arrayListIterator_next(i);
@@ -296,9 +281,7 @@ void serviceComponent_stopTrackingOptional(SERVICE service, STATE state) {
 
 void serviceComponent_startTrackingRequired(SERVICE service, void * arg) {
 	STATE state = (STATE) arg;
-	apr_pool_t *pool = NULL;
-	bundleContext_getMemoryPool(service->context, &pool);
-	ARRAY_LIST deps = arrayList_clone(pool, state->dependencies);
+	ARRAY_LIST deps = arrayList_clone(service->pool, state->dependencies);
     ARRAY_LIST_ITERATOR i = arrayListIterator_create(deps);
 	while (arrayListIterator_hasNext(i)) {
 		SERVICE_DEPENDENCY dependency = (SERVICE_DEPENDENCY) arrayListIterator_next(i);
@@ -312,9 +295,7 @@ void serviceComponent_startTrackingRequired(SERVICE service, void * arg) {
 
 void serviceComponent_stopTrackingRequired(SERVICE service, void * arg) {
 	STATE state = (STATE) arg;
-	apr_pool_t *pool = NULL;
-	bundleContext_getMemoryPool(service->context, &pool);
-	ARRAY_LIST deps = arrayList_clone(pool, state->dependencies);
+	ARRAY_LIST deps = arrayList_clone(service->pool, state->dependencies);
     ARRAY_LIST_ITERATOR i = arrayListIterator_create(deps);
 	while (arrayListIterator_hasNext(i)) {
 		SERVICE_DEPENDENCY dependency = (SERVICE_DEPENDENCY) arrayListIterator_next(i);

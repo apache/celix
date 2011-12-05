@@ -33,10 +33,12 @@
 DEPENDENCY_MANAGER dependencyManager_create(BUNDLE_CONTEXT context) {
 	DEPENDENCY_MANAGER manager = (DEPENDENCY_MANAGER) malloc(sizeof(*manager));
 	apr_pool_t *pool = NULL;
+	apr_pool_t *npool = NULL;
 	bundleContext_getMemoryPool(context, &pool);
+	apr_pool_create(&npool, pool);
 	manager->context = context;
 	manager->services = NULL;
-	arrayList_create(pool, &manager->services);
+	arrayList_create(npool, &manager->services);
 	return manager;
 }
 
