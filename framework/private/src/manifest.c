@@ -223,6 +223,7 @@ celix_status_t manifest_readAttributes(MANIFEST manifest, PROPERTIES properties,
 				int newlen = len - i;
 				lastLine = (char *) malloc(newlen + 1);
 				lastLine = strncpy(lastLine, lbuf+i, len -i);
+				lastLine[newlen] = '\0';
 				continue;
 			}
 			value = (char *) malloc((len + 1) - i);
