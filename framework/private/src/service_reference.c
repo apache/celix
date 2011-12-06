@@ -23,6 +23,8 @@
  *      Author: alexanderb
  */
 #include <stdio.h>
+#include <stdlib.h>
+
 #include "service_reference.h"
 #include "module.h"
 #include "wire.h"
@@ -49,5 +51,15 @@ bool serviceReference_isAssignableTo(SERVICE_REFERENCE reference, BUNDLE request
 //	}
 
 	return allow;
+}
+
+celix_status_t serviceReference_getUsingBundles(SERVICE_REFERENCE reference, apr_pool_t *pool, ARRAY_LIST *bundles) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	ARRAY_LIST bnds = serviceRegistry_getUsingBundles(reference->registration->registry, pool, reference);
+
+	*bundles = bnds;
+
+	return status;
 }
 

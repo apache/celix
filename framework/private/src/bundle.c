@@ -525,3 +525,11 @@ celix_status_t bundle_getRegisteredServices(BUNDLE bundle, ARRAY_LIST *list) {
 
 	return status;
 }
+
+celix_status_t bundle_getServicesInUse(BUNDLE bundle, ARRAY_LIST *list) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	status = fw_getBundleServicesInUse(bundle->framework, bundle, list);
+
+	return status;
+}

@@ -83,5 +83,6 @@ celix_status_t bundle_refresh(BUNDLE bundle);
 celix_status_t bundle_getBundleId(BUNDLE bundle, long *id);
 
 celix_status_t bundle_getRegisteredServices(BUNDLE bundle, ARRAY_LIST *list);
+celix_status_t bundle_getServicesInUse(BUNDLE bundle, ARRAY_LIST *list);
 
 #endif /* BUNDLE_H_ */

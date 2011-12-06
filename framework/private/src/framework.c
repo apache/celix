@@ -1081,6 +1081,12 @@ celix_status_t fw_getBundleRegisteredServices(FRAMEWORK framework, BUNDLE bundle
 	return status;
 }
 
+celix_status_t fw_getBundleServicesInUse(FRAMEWORK framework, BUNDLE bundle, ARRAY_LIST *services) {
+	celix_status_t status = CELIX_SUCCESS;
+	*services = serviceRegistry_getServicesInUse(framework->registry, bundle);
+	return status;
+}
+
 bool framework_ungetService(FRAMEWORK framework, BUNDLE bundle ATTRIBUTE_UNUSED, SERVICE_REFERENCE reference) {
 	return serviceRegistry_ungetService(framework->registry, bundle, reference);
 }

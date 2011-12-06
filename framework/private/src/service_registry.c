@@ -221,7 +221,7 @@ void serviceRegistry_unregisterService(SERVICE_REGISTRY registry, BUNDLE bundle,
 	pthread_mutex_lock(&registry->mutex);
 	// unget service
 
-	ARRAY_LIST clients = serviceRegistry_getUsingBundles(registry, registration->reference);
+	ARRAY_LIST clients = serviceRegistry_getUsingBundles(registry, registry->framework->mp, registration->reference);
 	int i;
 	for (i = 0; (clients != NULL) && (i < arrayList_size(clients)); i++) {
 		BUNDLE client = arrayList_get(clients, i);
@@ -332,7 +332,7 @@ void * serviceRegistry_getService(SERVICE_REGISTRY registry, BUNDLE bundle, SERV
 		serviceRegistration_getService(registration, bundle, &service);
 	}
 	pthread_mutex_lock(&registry->mutex);
-	if ((serviceRegistration_isValid(registration)) || (service == NULL)) {
+	if ((!serviceRegistration_isValid(registration)) || (service == NULL)) {
 		serviceRegistry_flushUsageCount(registry, bundle, reference);
 	} else {
 		usage->service = service;
@@ -391,9 +391,11 @@ void serviceRegistry_ungetServices(SERVICE_REGISTRY registry, BUNDLE bundle) {
 	arrayList_destroy(fusages);
 }
 
-ARRAY_LIST serviceRegistry_getUsingBundles(SERVICE_REGISTRY registry, SERVICE_REFERENCE reference) {
+ARRAY_LIST serviceRegistry_getUsingBundles(SERVICE_REGISTRY registry, apr_pool_t *pool, SERVICE_REFERENCE reference) {
 	ARRAY_LIST bundles = NULL;
-	arrayList_create(registry->framework->mp, &bundles);
+	apr_pool_t *npool;
+	apr_pool_create(&npool, pool);
+	arrayList_create(npool, &bundles);
 	HASH_MAP_ITERATOR iter = hashMapIterator_create(registry->inUseMap);
 	while (hashMapIterator_hasNext(iter)) {
 		HASH_MAP_ENTRY entry = hashMapIterator_nextEntry(iter);

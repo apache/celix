@@ -31,4 +31,6 @@
 
 bool serviceReference_isAssignableTo(SERVICE_REFERENCE reference, BUNDLE requester, char * serviceName);
 
+celix_status_t serviceReference_getUsingBundles(SERVICE_REFERENCE reference, apr_pool_t *pool, ARRAY_LIST *bundles);
+
 #endif /* SERVICE_REFERENCE_H_ */

@@ -36,6 +36,7 @@
 SERVICE_REGISTRY serviceRegistry_create(FRAMEWORK framework, void (*serviceChanged)(FRAMEWORK, SERVICE_EVENT, PROPERTIES));
 celix_status_t serviceRegistry_destroy(SERVICE_REGISTRY registry);
 ARRAY_LIST serviceRegistry_getRegisteredServices(SERVICE_REGISTRY registry, BUNDLE bundle);
+ARRAY_LIST serviceRegistry_getServicesInUse(SERVICE_REGISTRY registry, BUNDLE bundle);
 SERVICE_REGISTRATION serviceRegistry_registerService(SERVICE_REGISTRY registry, BUNDLE bundle, char * serviceName, void * serviceObject, PROPERTIES dictionary);
 SERVICE_REGISTRATION serviceRegistry_registerServiceFactory(SERVICE_REGISTRY registry, BUNDLE bundle, char * serviceName, service_factory_t factory, PROPERTIES dictionary);
 void serviceRegistry_unregisterService(SERVICE_REGISTRY registry, BUNDLE bundle, SERVICE_REGISTRATION registration);
@@ -44,7 +45,7 @@ ARRAY_LIST serviceRegistry_getServiceReferences(SERVICE_REGISTRY registry, const
 void * serviceRegistry_getService(SERVICE_REGISTRY registry, BUNDLE bundle, SERVICE_REFERENCE reference);
 bool serviceRegistry_ungetService(SERVICE_REGISTRY registry, BUNDLE bundle, SERVICE_REFERENCE reference);
 void serviceRegistry_ungetServices(SERVICE_REGISTRY registry, BUNDLE bundle);
-ARRAY_LIST serviceRegistry_getUsingBundles(SERVICE_REGISTRY registry, SERVICE_REFERENCE reference);
+ARRAY_LIST serviceRegistry_getUsingBundles(SERVICE_REGISTRY registry, apr_pool_t *pool, SERVICE_REFERENCE reference);
 SERVICE_REGISTRATION serviceRegistry_findRegistration(SERVICE_REGISTRY registry, SERVICE_REFERENCE reference);
 
 celix_status_t serviceRegistry_getListenerHooks(SERVICE_REGISTRY registry, ARRAY_LIST *hooks);
