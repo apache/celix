@@ -28,11 +28,13 @@
 
 #include "headers.h"
 #include "service_component.h"
+#include "service_dependency.h"
 #include "log_reader_service.h"
 
 struct log_writer {
     log_reader_service_t logReader;
     SERVICE service;
+    SERVICE_DEPENDENCY dep;
     log_listener_t logListener;
 };
 

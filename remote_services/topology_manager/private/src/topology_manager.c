@@ -21,6 +21,7 @@
 #include "filter.h"
 #include "listener_hook_service.h"
 #include "utils.h"
+#include "service_reference.h"
 
 struct topology_manager {
 	apr_pool_t *pool;
@@ -101,7 +102,9 @@ celix_status_t topologyManager_serviceChanged(void *listener, SERVICE_EVENT even
 	celix_status_t status = CELIX_SUCCESS;
 	SERVICE_LISTENER listen = listener;
 	topology_manager_t manager = listen->handle;
-	PROPERTIES props = event->reference->registration->properties;
+	SERVICE_REGISTRATION registration = NULL;
+	serviceReference_getServiceRegistration(event->reference, &registration);
+	PROPERTIES props = registration->properties;
 	char *name = properties_get(props, (char *) OBJECTCLASS);
 	char *export = properties_get(props, (char *) SERVICE_EXPORTED_INTERFACES);
 
@@ -159,7 +162,9 @@ celix_status_t topologyManager_exportService(topology_manager_t manager, SERVICE
 	if (arrayList_size(manager->rsaList) == 0) {
 		char *symbolicName = NULL;
 		MODULE module = NULL;
-		status = bundle_getCurrentModule(reference->bundle, &module);
+		BUNDLE bundle = NULL;
+		serviceReference_getBundle(reference, &bundle);
+		status = bundle_getCurrentModule(bundle, &module);
 		if (status == CELIX_SUCCESS) {
 			status = module_getSymbolicName(module, &symbolicName);
 			if (status == CELIX_SUCCESS) {
@@ -194,7 +199,10 @@ celix_status_t topologyManager_notifyListeners(topology_manager_t manager, remot
 			int eplIt;
 			for (eplIt = 0; eplIt < arrayList_size(endpointListeners); eplIt++) {
 				SERVICE_REFERENCE eplRef = arrayList_get(endpointListeners, eplIt);
-				char *scope = properties_get(eplRef->registration->properties, (char *) ENDPOINT_LISTENER_SCOPE);
+				SERVICE_REGISTRATION registration = NULL;
+				serviceReference_getServiceRegistration(eplRef, &registration);
+				PROPERTIES props = registration->properties;
+				char *scope = properties_get(props, (char *) ENDPOINT_LISTENER_SCOPE);
 				FILTER filter = filter_create(scope, manager->pool);
 				endpoint_listener_t epl = NULL;
 				status = bundleContext_getService(manager->context, eplRef, (void **) &epl);
@@ -249,7 +257,11 @@ celix_status_t topologyManager_importService(topology_manager_t manager, endpoin
 
 celix_status_t topologyManager_removeService(topology_manager_t manager, SERVICE_REFERENCE reference) {
 	celix_status_t status = CELIX_SUCCESS;
-	char *name = properties_get(reference->registration->properties, (char *) OBJECTCLASS);
+
+	SERVICE_REGISTRATION registration = NULL;
+	serviceReference_getServiceRegistration(reference, &registration);
+	PROPERTIES props = registration->properties;
+	char *name = properties_get(props, (char *) OBJECTCLASS);
 
 	printf("TOPOLOGY_MANAGER: Remove Service: %s.\n", name);
 

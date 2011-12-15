@@ -22,6 +22,7 @@
  *  Created on: Jun 22, 2011
  *      Author: alexander
  */
+#include <stdlib.h>
 
 #include "log_service_impl.h"
 #include "module.h"
@@ -55,7 +56,7 @@ celix_status_t logService_logSr(log_service_data_t logger, SERVICE_REFERENCE ref
     log_entry_t entry = NULL;
     BUNDLE bundle = logger->bundle;
     if (reference != NULL) {
-        bundle = reference->bundle;
+    	serviceReference_getBundle(reference, &bundle);
     }
     logEntry_create(bundle, reference, level, message, 0, logger->pool, &entry);
     log_addEntry(logger->log, entry);

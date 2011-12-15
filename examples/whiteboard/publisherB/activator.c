@@ -27,10 +27,13 @@
 #include "bundle_activator.h"
 #include "bundle_context.h"
 #include "publisher_private.h"
+#include "service_registration.h"
 
 struct activatorData {
 	PUBLISHER_SERVICE ps;
 	PUBLISHER pub;
+
+	SERVICE_REGISTRATION reg;
 };
 
 celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
@@ -54,12 +57,12 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
         data->pub = apr_pcalloc(pool, sizeof(*(data->pub)));
         data->ps->invoke = publisher_invoke;
         data->ps->publisher = data->pub;
+        data->reg = NULL;
 
         PROPERTIES props = properties_create();
 		properties_set(props, "id", "B");
 
-    	SERVICE_REGISTRATION service_registration = NULL;
-    	bundleContext_registerService(context, PUBLISHER_NAME, data->ps, props, &service_registration);
+    	bundleContext_registerService(context, PUBLISHER_NAME, data->ps, props, &data->reg);
     } else {
         status = CELIX_START_ERROR;
     }
@@ -68,6 +71,10 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 
 celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
     celix_status_t status = CELIX_SUCCESS;
+
+    struct activatorData * data = (struct activatorData *) userData;
+	serviceRegistration_unregister(data->reg);
+
     return status;
 }
 

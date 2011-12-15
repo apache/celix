@@ -188,7 +188,6 @@ celix_status_t framework_destroy(FRAMEWORK framework) {
 			while (linkedListIterator_hasNext(iter)) {
 				WIRE wire = linkedListIterator_next(iter);
 				linkedListIterator_remove(iter);
-				wire_destroy(wire);
 			}
 			linkedListIterator_destroy(iter);
 		}
@@ -202,6 +201,9 @@ celix_status_t framework_destroy(FRAMEWORK framework) {
 	hashMap_destroy(framework->installRequestMap, false, false);
 
 	serviceRegistry_destroy(framework->registry);
+
+	arrayList_destroy(framework->globalLockWaitersList);
+	arrayList_destroy(framework->serviceListeners);
 
 	//bundleCache_destroy(framework->cache);
 
@@ -734,7 +736,7 @@ celix_status_t fw_stopBundle(FRAMEWORK framework, BUNDLE bundle, bool record) {
 			serviceRegistry_unregisterServices(framework->registry, bundle);
 			serviceRegistry_ungetServices(framework->registry, bundle);
 
-			dlclose(bundle_getHandle(bundle));
+//			dlclose(bundle_getHandle(bundle));
 		}
 
 		bundleContext_destroy(context);
@@ -1015,10 +1017,16 @@ celix_status_t fw_registerService(FRAMEWORK framework, SERVICE_REGISTRATION *reg
 			arrayList_add(infos, info);
 		}
 
-		SERVICE_REFERENCE ref = (*registration)->reference;
+		apr_pool_t *subpool;
+		apr_pool_create(&subpool, bundle->memoryPool);
+
+		SERVICE_REFERENCE ref = NULL;
+		serviceRegistry_createServiceReference(framework->registry, subpool, *registration, &ref);
 		listener_hook_service_t hook = fw_getService(framework, framework->bundle, ref);
 		hook->added(hook->handle, infos);
 		serviceRegistry_ungetService(framework->registry, framework->bundle, ref);
+
+		apr_pool_destroy(subpool);
 	}
 
 	return CELIX_SUCCESS;
@@ -1051,7 +1059,7 @@ celix_status_t fw_getServiceReferences(FRAMEWORK framework, ARRAY_LIST *referenc
 		filter = filter_create(sfilter, bundle->memoryPool);
 	}
 
-	*references = serviceRegistry_getServiceReferences(framework->registry, serviceName, filter);
+	serviceRegistry_getServiceReferences(framework->registry, bundle->memoryPool, serviceName, filter, references);
 
 	if (filter != NULL) {
 		filter_destroy(filter);
@@ -1060,7 +1068,8 @@ celix_status_t fw_getServiceReferences(FRAMEWORK framework, ARRAY_LIST *referenc
 	int refIdx = 0;
 	for (refIdx = 0; (*references != NULL) && refIdx < arrayList_size(*references); refIdx++) {
 		SERVICE_REFERENCE ref = (SERVICE_REFERENCE) arrayList_get(*references, refIdx);
-		SERVICE_REGISTRATION reg = ref->registration;
+		SERVICE_REGISTRATION reg = NULL;
+		serviceReference_getServiceRegistration(ref, &reg);
 		char * serviceName = properties_get(reg->properties, (char *) OBJECTCLASS);
 		if (!serviceReference_isAssignableTo(ref, bundle, serviceName)) {
 			arrayList_remove(*references, refIdx);
@@ -1075,10 +1084,8 @@ void * fw_getService(FRAMEWORK framework, BUNDLE bundle ATTRIBUTE_UNUSED, SERVIC
 	return serviceRegistry_getService(framework->registry, bundle, reference);
 }
 
-celix_status_t fw_getBundleRegisteredServices(FRAMEWORK framework, BUNDLE bundle, ARRAY_LIST *services) {
-	celix_status_t status = CELIX_SUCCESS;
-	*services = serviceRegistry_getRegisteredServices(framework->registry, bundle);
-	return status;
+celix_status_t fw_getBundleRegisteredServices(FRAMEWORK framework, apr_pool_t *pool, BUNDLE bundle, ARRAY_LIST *services) {
+	return serviceRegistry_getRegisteredServices(framework->registry, pool, bundle, services);
 }
 
 celix_status_t fw_getBundleServicesInUse(FRAMEWORK framework, BUNDLE bundle, ARRAY_LIST *services) {
@@ -1092,12 +1099,12 @@ bool framework_ungetService(FRAMEWORK framework, BUNDLE bundle ATTRIBUTE_UNUSED,
 }
 
 void fw_addServiceListener(FRAMEWORK framework, BUNDLE bundle, SERVICE_LISTENER listener, char * sfilter) {
-	apr_pool_t *pool;
-	apr_pool_t *bpool;
-	BUNDLE_CONTEXT context;
-	bundle_getContext(bundle, &context);
-	bundleContext_getMemoryPool(context, &bpool);
-	apr_pool_create(&pool, bpool);
+//	apr_pool_t *pool;
+//	apr_pool_t *bpool;
+//	BUNDLE_CONTEXT context;
+//	bundle_getContext(bundle, &context);
+//	bundleContext_getMemoryPool(context, &bpool);
+//	apr_pool_create(&pool, bpool);
 
 	FW_SERVICE_LISTENER fwListener = (FW_SERVICE_LISTENER) malloc(sizeof(*fwListener));
 	fwListener->bundle = bundle;
@@ -1110,37 +1117,42 @@ void fw_addServiceListener(FRAMEWORK framework, BUNDLE bundle, SERVICE_LISTENER 
 	fwListener->listener = listener;
 	arrayList_add(framework->serviceListeners, fwListener);
 
+	apr_pool_t *subpool;
+	apr_pool_create(&subpool, listener->pool);
 	ARRAY_LIST listenerHooks = NULL;
-	serviceRegistry_getListenerHooks(framework->registry, &listenerHooks);
+	serviceRegistry_getListenerHooks(framework->registry, subpool, &listenerHooks);
 
-	listener_hook_info_t info = apr_palloc(pool, sizeof(*info));
+	listener_hook_info_t info = apr_palloc(subpool, sizeof(*info));
 	info->context = bundle->context;
 	info->removed = false;
-	info->filter = sfilter == NULL ? NULL : strdup(sfilter);
+	info->filter = sfilter == NULL ? NULL : apr_pstrdup(subpool, sfilter);
 
 	int i;
 	for (i = 0; i < arrayList_size(listenerHooks); i++) {
 		SERVICE_REFERENCE ref = arrayList_get(listenerHooks, i);
 		listener_hook_service_t hook = fw_getService(framework, framework->bundle, ref);
 		ARRAY_LIST infos = NULL;
-		arrayList_create(bundle->memoryPool, &infos);
+		arrayList_create(subpool, &infos);
 		arrayList_add(infos, info);
 		hook->added(hook->handle, infos);
 		serviceRegistry_ungetService(framework->registry, framework->bundle, ref);
 	}
+
+	arrayList_destroy(listenerHooks);
+	apr_pool_destroy(subpool);
 }
 
 void fw_removeServiceListener(FRAMEWORK framework, BUNDLE bundle, SERVICE_LISTENER listener) {
 	listener_hook_info_t info = NULL;
+	apr_pool_t *pool;
+	BUNDLE_CONTEXT context;
+	bundle_getContext(bundle, &context);
+	bundleContext_getMemoryPool(context, &pool);
 	unsigned int i;
 	FW_SERVICE_LISTENER element;
 	for (i = 0; i < arrayList_size(framework->serviceListeners); i++) {
 		element = (FW_SERVICE_LISTENER) arrayList_get(framework->serviceListeners, i);
 		if (element->listener == listener && element->bundle == bundle) {
-			apr_pool_t *pool;
-			BUNDLE_CONTEXT context;
-			bundle_getContext(bundle, &context);
-			bundleContext_getMemoryPool(context, &pool);
 			info = apr_palloc(pool, sizeof(*info));
 			info->context = element->bundle->context;
 			// TODO Filter toString;
@@ -1161,7 +1173,7 @@ void fw_removeServiceListener(FRAMEWORK framework, BUNDLE bundle, SERVICE_LISTEN
 
 	if (info != NULL) {
 		ARRAY_LIST listenerHooks = NULL;
-		serviceRegistry_getListenerHooks(framework->registry, &listenerHooks);
+		serviceRegistry_getListenerHooks(framework->registry, pool, &listenerHooks);
 
 		int i;
 		for (i = 0; i < arrayList_size(listenerHooks); i++) {
@@ -1173,29 +1185,38 @@ void fw_removeServiceListener(FRAMEWORK framework, BUNDLE bundle, SERVICE_LISTEN
 			hook->removed(hook->handle, infos);
 			serviceRegistry_ungetService(framework->registry, framework->bundle, ref);
 		}
+
+		arrayList_destroy(listenerHooks);
 	}
 }
 
-void fw_serviceChanged(FRAMEWORK framework, SERVICE_EVENT event, PROPERTIES oldprops) {
+void fw_serviceChanged(FRAMEWORK framework, SERVICE_EVENT_TYPE eventType, SERVICE_REGISTRATION registration, PROPERTIES oldprops) {
 	unsigned int i;
 	FW_SERVICE_LISTENER element;
-	SERVICE_REGISTRATION registration = event->reference->registration;
 	if (arrayList_size(framework->serviceListeners) > 0) {
 		for (i = 0; i < arrayList_size(framework->serviceListeners); i++) {
 			int matched = 0;
 			element = (FW_SERVICE_LISTENER) arrayList_get(framework->serviceListeners, i);
 			matched = (element->filter == NULL) || filter_match(element->filter, registration->properties);
 			if (matched) {
-				bool assignable;
-				fw_isServiceAssignable(framework, element->bundle, event->reference, &assignable);
-				if (assignable) {
-					element->listener->serviceChanged(element->listener, event);
-				}
-			} else if (event->type == MODIFIED) {
+				SERVICE_REFERENCE reference = NULL;
+				SERVICE_EVENT event = (SERVICE_EVENT) apr_palloc(element->listener->pool, sizeof(*event));
+
+				serviceRegistry_createServiceReference(framework->registry, element->listener->pool, registration, &reference);
+
+				event->type = eventType;
+				event->reference = reference;
+
+				element->listener->serviceChanged(element->listener, event);
+			} else if (eventType == MODIFIED) {
 				int matched = (element->filter == NULL) || filter_match(element->filter, oldprops);
 				if (matched) {
+					SERVICE_REFERENCE reference = NULL;
 					SERVICE_EVENT endmatch = (SERVICE_EVENT) malloc(sizeof(*endmatch));
-					endmatch->reference = event->reference;
+
+					serviceRegistry_createServiceReference(framework->registry, element->listener->pool, registration, &reference);
+
+					endmatch->reference = reference;
 					endmatch->type = MODIFIED_ENDMATCH;
 					element->listener->serviceChanged(element->listener, endmatch);
 				}
@@ -1204,17 +1225,21 @@ void fw_serviceChanged(FRAMEWORK framework, SERVICE_EVENT event, PROPERTIES oldp
 	}
 }
 
-celix_status_t fw_isServiceAssignable(FRAMEWORK fw, BUNDLE requester, SERVICE_REFERENCE reference, bool *assignable) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	*assignable = true;
-	char *serviceName = properties_get(reference->registration->properties, (char *) OBJECTCLASS);
-	if (!serviceReference_isAssignableTo(reference, requester, serviceName)) {
-		*assignable = false;
-	}
-
-	return status;
-}
+//celix_status_t fw_isServiceAssignable(FRAMEWORK fw, BUNDLE requester, SERVICE_REFERENCE reference, bool *assignable) {
+//	celix_status_t status = CELIX_SUCCESS;
+//
+//	*assignable = true;
+//	SERVICE_REGISTRATION registration = NULL;
+//	status = serviceReference_getServiceRegistration(reference, &registration);
+//	if (status == CELIX_SUCCESS) {
+//		char *serviceName = properties_get(registration->properties, (char *) OBJECTCLASS);
+//		if (!serviceReference_isAssignableTo(reference, requester, serviceName)) {
+//			*assignable = false;
+//		}
+//	}
+//
+//	return status;
+//}
 
 celix_status_t getManifest(BUNDLE_ARCHIVE archive, MANIFEST *manifest) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -1513,6 +1538,7 @@ celix_status_t framework_waitForStop(FRAMEWORK framework) {
 	}
 	while (!framework->shutdown) {
 		apr_status_t apr_status = apr_thread_cond_wait(framework->shutdownGate, framework->mutex);
+		printf("FRAMEWORK: Gate opened\n");
 		if (apr_status != 0) {
 			celix_log("Error waiting for shutdown gate.");
 			return CELIX_FRAMEWORK_EXCEPTION;
@@ -1529,6 +1555,8 @@ celix_status_t framework_waitForStop(FRAMEWORK framework) {
 static void *APR_THREAD_FUNC framework_shutdown(apr_thread_t *thd, void *framework) {
 //static void * framework_shutdown(void * framework) {
 	FRAMEWORK fw = (FRAMEWORK) framework;
+
+	printf("FRAMEWORK: Shutdown\n");
 
 	HASH_MAP_ITERATOR iterator = hashMapIterator_create(fw->installedBundleMap);
 	while (hashMapIterator_hasNext(iterator)) {
@@ -1550,8 +1578,12 @@ static void *APR_THREAD_FUNC framework_shutdown(apr_thread_t *thd, void *framewo
 		return NULL;
 	}
 	fw->shutdown = true;
+	printf("FRAMEWORK: Open gate\n");
 	err = apr_thread_cond_broadcast(fw->shutdownGate);
+	printf("FRAMEWORK: BC send %d\n", err);
+	printf("FRAMEWORK: BC send\n");
 	if (err != 0) {
+		printf("FRAMEWORK: BC send\n");
 		celix_log("Error waking the shutdown gate, cannot exit clean.");
 		err = apr_thread_mutex_unlock(fw->mutex);
 		if (err != 0) {
@@ -1561,12 +1593,16 @@ static void *APR_THREAD_FUNC framework_shutdown(apr_thread_t *thd, void *framewo
 		apr_thread_exit(thd, APR_ENOLOCK);
 		return NULL;
 	}
+	printf("FRAMEWORK: Unlock\n");
 	err = apr_thread_mutex_unlock(fw->mutex);
 	if (err != 0) {
 		celix_log("Error unlocking the framework, cannot exit clean.");
 	}
 
+	printf("FRAMEWORK: Exit thread\n");
 	apr_thread_exit(thd, APR_SUCCESS);
+
+	printf("FRAMEWORK: Shutdown done\n");
 
 	return NULL;
 }
@@ -1584,6 +1620,7 @@ celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
 
 	if (bundleContext_getFramework(context, &framework) == CELIX_SUCCESS) {
 
+		printf("FRAMEWORK: Start shutdownthread\n");
 	    if (apr_thread_create(&shutdownThread, NULL, framework_shutdown, framework, framework->mp) == APR_SUCCESS) {
             //int err = pthread_create(&shutdownThread, NULL, framework_shutdown, framework);
             apr_thread_detach(shutdownThread);

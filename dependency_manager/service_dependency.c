@@ -93,6 +93,7 @@ void serviceDependency_start(SERVICE_DEPENDENCY dependency, SERVICE service) {
 void serviceDependency_stop(SERVICE_DEPENDENCY dependency, SERVICE service) {
 	dependency->started = true;
 	serviceTracker_close(dependency->tracker);
+	tracker_destroy(dependency->tracker);
 }
 
 celix_status_t serviceDependency_addingService(void * handle, SERVICE_REFERENCE reference, void **service) {

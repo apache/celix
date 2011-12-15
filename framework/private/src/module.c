@@ -70,10 +70,18 @@ MODULE module_create(MANIFEST headerMap, char * moduleId, BUNDLE bundle) {
 
         if (apr_pool_create(&pool, bundle->memoryPool) == APR_SUCCESS) {
             if (manifestParser_create(module, headerMap, pool, &mp) == CELIX_SUCCESS) {
-                module->symbolicName = apr_pstrdup(bundle->memoryPool, mp->bundleSymbolicName);
-                module->version = mp->bundleVersion;
-                module->capabilities = mp->capabilities;
-                module->requirements = mp->requirements;
+            	module->symbolicName = NULL;
+            	manifestParser_getSymbolicName(mp, bundle->memoryPool, &module->symbolicName);
+
+                module->version = NULL;
+                manifestParser_getBundleVersion(mp, bundle->memoryPool, &module->version);
+
+                module->capabilities = NULL;
+                manifestParser_getCapabilities(mp, bundle->memoryPool, &module->capabilities);
+
+                module->requirements = NULL;
+                manifestParser_getRequirements(mp, bundle->memoryPool, &module->requirements);
+
                 module->wires = NULL;
             } else {
                 apr_pool_destroy(pool);
@@ -97,7 +105,9 @@ MODULE module_createFrameworkModule(BUNDLE bundle) {
 	            if (apr_pool_create(&dependentImporters_pool, bundle->memoryPool) == APR_SUCCESS) {
                     module->id = apr_pstrdup(bundle->memoryPool, "0");
                     module->symbolicName = apr_pstrdup(bundle->memoryPool, "framework");
-                    module->version = version_createVersion(1, 0, 0, "");
+                    module->version = NULL;
+                    version_createVersion(bundle->memoryPool, 1, 0, 0, "", &module->version);
+
                     linkedList_create(capabilities_pool, &module->capabilities);
                     linkedList_create(requirements_pool, &module->requirements);
                     module->dependentImporters = NULL;
@@ -114,13 +124,6 @@ MODULE module_createFrameworkModule(BUNDLE bundle) {
 }
 
 void module_destroy(MODULE module) {
-	LINKED_LIST_ITERATOR capIter = linkedListIterator_create(module->capabilities, 0);
-	while (linkedListIterator_hasNext(capIter)) {
-		CAPABILITY cap = linkedListIterator_next(capIter);
-		capability_destroy(cap);
-	}
-	linkedListIterator_destroy(capIter);
-
 	LINKED_LIST_ITERATOR reqIter = linkedListIterator_create(module->requirements, 0);
 	while (linkedListIterator_hasNext(reqIter)) {
 		REQUIREMENT req = linkedListIterator_next(reqIter);
@@ -129,8 +132,6 @@ void module_destroy(MODULE module) {
 	linkedListIterator_destroy(reqIter);
 
 	arrayList_destroy(module->dependentImporters);
-
-	version_destroy(module->version);
 
 	if (module->headerMap != NULL) {
 		manifest_destroy(module->headerMap);
@@ -144,7 +145,11 @@ WIRE module_getWire(MODULE module, char * serviceName) {
 		LINKED_LIST_ITERATOR iterator = linkedListIterator_create(module->wires, 0);
 		while (linkedListIterator_hasNext(iterator)) {
 			WIRE next = linkedListIterator_next(iterator);
-			if (strcasecmp(capability_getServiceName(wire_getCapability(next)), serviceName) == 0) {
+			CAPABILITY cap = NULL;
+			wire_getCapability(next, &cap);
+			char *name;
+			capability_getServiceName(cap, &name);
+			if (strcasecmp(name, serviceName) == 0) {
 				wire = next;
 			}
 		}
@@ -181,7 +186,8 @@ void module_setWires(MODULE module, LINKED_LIST wires) {
     int i = 0;
     for (i = 0; (module->wires != NULL) && (i < linkedList_size(module->wires)); i++) {
         WIRE wire = (WIRE) linkedList_get(module->wires, i);
-        MODULE exporter = wire_getExporter(wire);
+        MODULE exporter = NULL;
+        wire_getExporter(wire, &exporter);
         module_removeDependentImporter(exporter, module);
     }
 
@@ -189,7 +195,8 @@ void module_setWires(MODULE module, LINKED_LIST wires) {
 
 	for (i = 0; (module->wires != NULL) && (i < linkedList_size(module->wires)); i++) {
         WIRE wire = (WIRE) linkedList_get(module->wires, i);
-        MODULE exporter = wire_getExporter(wire);
+        MODULE exporter = NULL;
+        wire_getExporter(wire, &exporter);
         module_addDependentImporter(exporter, module);
     }
 }

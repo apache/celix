@@ -16,6 +16,7 @@
 #include "module.h"
 #include "constants.h"
 #include "service_registration.h"
+#include "service_reference.h"
 
 #define SERVICE_TYPE "service"
 #define CAPABILITY "capability"
@@ -112,8 +113,10 @@ celix_status_t inspectCommand_printExportedServices(COMMAND command, ARRAY_LIST 
 			}
 
 			if (bundle != NULL) {
+				apr_pool_t *pool;
+				bundleContext_getMemoryPool(command->bundleContext, &pool);
 				ARRAY_LIST refs = NULL;
-				if (bundle_getRegisteredServices(bundle, &refs) == CELIX_SUCCESS) {
+				if (bundle_getRegisteredServices(bundle, pool, &refs) == CELIX_SUCCESS) {
 					char line[256];
 					MODULE module = NULL;
 					char * name = NULL;
@@ -131,8 +134,10 @@ celix_status_t inspectCommand_printExportedServices(COMMAND command, ARRAY_LIST 
 								int j = 0;
 								for (j = 0; j < arrayList_size(refs); j++) {
 									SERVICE_REFERENCE ref = arrayList_get(refs, j);
+									SERVICE_REGISTRATION reg = NULL;
+									serviceReference_getServiceRegistration(ref, &reg);
 									char line[256];
-									char *objectClass = properties_get(ref->registration->properties, (char *) OBJECTCLASS);
+									char *objectClass = properties_get(reg->properties, (char *) OBJECTCLASS);
 									sprintf(line, "ObjectClass = %s\n", objectClass);
 									out(line);
 									if ((j + 1) < arrayList_size(refs)) {

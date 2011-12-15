@@ -116,8 +116,12 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 	act->context = context;
 	act->running = true;
 
+	apr_pool_t *pool = NULL;
+	bundleContext_getMemoryPool(context, &pool);
+
 	SERVICE_LISTENER listener = (SERVICE_LISTENER) malloc(sizeof(*listener));
 	act->listener = listener;
+	act->listener->pool = pool;
 	act->listener->handle = act;
 	act->listener->serviceChanged = (void *) shellTui_serviceChanged;
 	status = bundleContext_addServiceListener(context, act->listener, "(objectClass=shellService)");

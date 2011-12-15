@@ -55,14 +55,17 @@ void service_init(void * userData) {
 
 void service_start(void * userData) {
     log_writer_t writer = (log_writer_t) userData;
-
-    writer->logReader->addLogListener(writer->logReader->reader, writer->logListener);
+    if (writer->logReader != NULL) {
+    	writer->logReader->addLogListener(writer->logReader->reader, writer->logListener);
+    }
 }
 
 void service_stop(void * userData) {
     log_writer_t writer = (log_writer_t) userData;
 
-    writer->logReader->removeLogListener(writer->logReader->reader, writer->logListener);
+    if (writer->logReader != NULL) {
+    	writer->logReader->removeLogListener(writer->logReader->reader, writer->logListener);
+    }
 }
 
 void service_destroy(void * userData) {

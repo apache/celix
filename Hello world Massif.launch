@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="org.eclipse.linuxtools.valgrind.launch.valgrindLaunch">
+<intAttribute key="org.eclipse.cdt.launch.ATTR_BUILD_BEFORE_LAUNCH_ATTR" value="0"/>
+<stringAttribute key="org.eclipse.cdt.launch.COREFILE_PATH" value=""/>
+<stringAttribute key="org.eclipse.cdt.launch.PROGRAM_NAME" value="build/launcher/launcher"/>
+<stringAttribute key="org.eclipse.cdt.launch.PROJECT_ATTR" value="celix"/>
+<booleanAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_AUTO_ATTR" value="true"/>
+<stringAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_ID_ATTR" value="cdt.managedbuild.toolchain.gnu.macosx.base.1808592147"/>
+<stringAttribute key="org.eclipse.cdt.launch.WORKING_DIRECTORY" value="${workspace_loc:celix/build/deploy/hello_world}"/>
+<booleanAttribute key="org.eclipse.cdt.launch.use_terminal" value="true"/>
+<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
+<listEntry value="/celix"/>
+</listAttribute>
+<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
+<listEntry value="4"/>
+</listAttribute>
+<mapAttribute key="org.eclipse.debug.core.environmentVariables">
+<mapEntry key="DYLD_LIBRARY_PATH" value="${workspace_loc:celix/build/framework}:${workspace_loc:celix/build/utils}"/>
+</mapAttribute>
+<booleanAttribute key="org.eclipse.linuxtools.valgrind.cachegrind.BRANCH_SIM" value="false"/>
+<booleanAttribute key="org.eclipse.linuxtools.valgrind.cachegrind.CACHE_SIM" value="true"/>
+<booleanAttribute key="org.eclipse.linuxtools.valgrind.cachegrind.D1" value="false"/>
+<intAttribute key="org.eclipse.linuxtools.valgrind.cachegrind.D1_ASSOC" value="0"/>
+<intAttribute key="org.eclipse.linuxtools.valgrind.cachegrind.D1_LSIZE" value="0"/>
+<intAttribute key="org.eclipse.linuxtools.valgrind.cachegrind.D1_SIZE" value="0"/>
+<booleanAttribute key="org.eclipse.linuxtools.valgrind.cachegrind.I1" value="false"/>
+<intAttribute key="org.eclipse.linuxtools.valgrind.cachegrind.I1_ASSOC" value="0"/>
+<intAttribute key="org.eclipse.linuxtools.valgrind.cachegrind.I1_LSIZE" value="0"/>
+<intAttribute key="org.eclipse.linuxtools.valgrind.cachegrind.I1_SIZE" value="0"/>
+<booleanAttribute key="org.eclipse.linuxtools.valgrind.cachegrind.L2" value="false"/>
+<intAttribute key="org.eclipse.linuxtools.valgrind.cachegrind.L2_ASSOC" value="0"/>
+<intAttribute key="org.eclipse.linuxtools.valgrind.cachegrind.L2_LSIZE" value="0"/>
+<intAttribute key="org.eclipse.linuxtools.valgrind.cachegrind.L2_SIZE" value="0"/>
+<intAttribute key="org.eclipse.linuxtools.valgrind.helgrind.HELGRIND_CACHESIZE" value="1000000"/>
+<stringAttribute key="org.eclipse.linuxtools.valgrind.helgrind.HELGRIND_HISTORYLEVEL" value="full"/>
+<booleanAttribute key="org.eclipse.linuxtools.valgrind.helgrind.HELGRIND_LOCKORDERS" value="true"/>
+<booleanAttribute key="org.eclipse.linuxtools.valgrind.launch.GENERAL_BELOWMAIN" value="false"/>
+<booleanAttribute key="org.eclipse.linuxtools.valgrind.launch.GENERAL_DEMANGLE" value="true"/>
+<booleanAttribute key="org.eclipse.linuxtools.valgrind.launch.GENERAL_DSYMUTIL" value="true"/>
+<booleanAttribute key="org.eclipse.linuxtools.valgrind.launch.GENERAL_ERRLIMIT" value="true"/>
+<booleanAttribute key="org.eclipse.linuxtools.valgrind.launch.GENERAL_FREERES" value="true"/>
+<intAttribute key="org.eclipse.linuxtools.valgrind.launch.GENERAL_MAINSTACK" value="0"/>
+<booleanAttribute key="org.eclipse.linuxtools.valgrind.launch.GENERAL_MAINSTACK_BOOL" value="false"/>
+<intAttribute key="org.eclipse.linuxtools.valgrind.launch.GENERAL_MAXFRAME" value="2000000"/>
+<intAttribute key="org.eclipse.linuxtools.valgrind.launch.GENERAL_NUMCALLERS" value="12"/>
+<listAttribute key="org.eclipse.linuxtools.valgrind.launch.GENERAL_SUPPFILES"/>
+<booleanAttribute key="org.eclipse.linuxtools.valgrind.launch.GENERAL_TRACECHILD" value="true"/>
+<stringAttribute key="org.eclipse.linuxtools.valgrind.launch.OUTPUT_DIR" value="/Users/alexander/Documents/Projects/CelixGIT/.metadata/.plugins/org.eclipse.linuxtools.valgrind.launch"/>
+<stringAttribute key="org.eclipse.linuxtools.valgrind.launch.TOOL" value="org.eclipse.linuxtools.valgrind.launch.massif"/>
+<booleanAttribute key="org.eclipse.linuxtools.valgrind.massif.MASSIF_ALIGNMENT_BOOL" value="false"/>
+<intAttribute key="org.eclipse.linuxtools.valgrind.massif.MASSIF_ALIGNMENT_VAL" value="0"/>
+<listAttribute key="org.eclipse.linuxtools.valgrind.massif.MASSIF_ALLOCFN"/>
+<intAttribute key="org.eclipse.linuxtools.valgrind.massif.MASSIF_DEPTH" value="30"/>
+<intAttribute key="org.eclipse.linuxtools.valgrind.massif.MASSIF_DETAILEDFREQ" value="10"/>
+<booleanAttribute key="org.eclipse.linuxtools.valgrind.massif.MASSIF_HEAP" value="true"/>
+<intAttribute key="org.eclipse.linuxtools.valgrind.massif.MASSIF_HEAPADMIN" value="8"/>
+<intAttribute key="org.eclipse.linuxtools.valgrind.massif.MASSIF_MAXSNAPSHOTS" value="100"/>
+<intAttribute key="org.eclipse.linuxtools.valgrind.massif.MASSIF_PEAKINACCURACY" value="10"/>
+<booleanAttribute key="org.eclipse.linuxtools.valgrind.massif.MASSIF_STACKS" value="false"/>
+<intAttribute key="org.eclipse.linuxtools.valgrind.massif.MASSIF_THRESHOLD" value="10"/>
+<stringAttribute key="org.eclipse.linuxtools.valgrind.massif.MASSIF_TIMEUNIT" value="i"/>
+<booleanAttribute key="org.eclipse.linuxtools.valgrind.memcheck.MEMCHECK_ALIGNMENT_BOOL" value="false"/>
+<intAttribute key="org.eclipse.linuxtools.valgrind.memcheck.MEMCHECK_ALIGNMENT_VAL" value="0"/>
+<intAttribute key="org.eclipse.linuxtools.valgrind.memcheck.MEMCHECK_FREELIST" value="10000000"/>
+<booleanAttribute key="org.eclipse.linuxtools.valgrind.memcheck.MEMCHECK_GCCWORK" value="false"/>
+<booleanAttribute key="org.eclipse.linuxtools.valgrind.memcheck.MEMCHECK_LEAKCHECK" value="true"/>
+<stringAttribute key="org.eclipse.linuxtools.valgrind.memcheck.MEMCHECK_LEAKRES" value="low"/>
+<booleanAttribute key="org.eclipse.linuxtools.valgrind.memcheck.MEMCHECK_PARTIAL" value="false"/>
+<booleanAttribute key="org.eclipse.linuxtools.valgrind.memcheck.MEMCHECK_SHOWREACH" value="false"/>
+<booleanAttribute key="org.eclipse.linuxtools.valgrind.memcheck.MEMCHECK_TRACKORIGINS" value="false"/>
+<booleanAttribute key="org.eclipse.linuxtools.valgrind.memcheck.MEMCHECK_UNDEF" value="true"/>
+</launchConfiguration>

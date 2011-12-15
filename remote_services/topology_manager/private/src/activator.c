@@ -91,11 +91,13 @@ celix_status_t bundleActivator_createRSATracker(struct activator *activator, SER
 
 celix_status_t bundleActivator_createServiceListener(struct activator *activator, SERVICE_LISTENER *listener) {
 	celix_status_t status = CELIX_SUCCESS;
-
-	*listener = apr_palloc(activator->pool, sizeof(*listener));
+	apr_pool_t *pool;
+	apr_pool_create(&pool, activator->pool);
+	*listener = apr_palloc(pool, sizeof(*listener));
 	if (!*listener) {
 		status = CELIX_ENOMEM;
 	} else {
+		(*listener)->pool = pool;
 		(*listener)->handle = activator->manager;
 		(*listener)->serviceChanged = topologyManager_serviceChanged;
 	}

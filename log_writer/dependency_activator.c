@@ -48,11 +48,11 @@ void dm_init(void * userData, BUNDLE_CONTEXT context, DEPENDENCY_MANAGER manager
 	SERVICE service = dependencyActivatorBase_createService(manager);
 	serviceComponent_setImplementation(service, data);
 
-	SERVICE_DEPENDENCY dep = dependencyActivatorBase_createServiceDependency(manager);
-	serviceDependency_setRequired(dep, true);
-	serviceDependency_setAutoConfigure(dep, (void**) &(data->logReader));
-	serviceDependency_setService(dep, (char *) LOG_READER_SERVICE_NAME, NULL);
-	serviceComponent_addServiceDependency(service, dep);
+	data->dep = dependencyActivatorBase_createServiceDependency(manager);
+	serviceDependency_setRequired(data->dep, false);
+	serviceDependency_setAutoConfigure(data->dep, (void**) &(data->logReader));
+	serviceDependency_setService(data->dep, (char *) LOG_READER_SERVICE_NAME, NULL);
+	serviceComponent_addServiceDependency(service, data->dep);
 
 	data->service = service;
 	dependencyManager_add(manager, service);
@@ -60,6 +60,7 @@ void dm_init(void * userData, BUNDLE_CONTEXT context, DEPENDENCY_MANAGER manager
 
 void dm_destroy(void * userData, BUNDLE_CONTEXT context, DEPENDENCY_MANAGER manager) {
     log_writer_t data = (log_writer_t) userData;
+//    serviceComponent_removeServiceDependency(data->service, data->dep);
 	dependencyManager_remove(manager, data->service);
 	//free(data);
 }

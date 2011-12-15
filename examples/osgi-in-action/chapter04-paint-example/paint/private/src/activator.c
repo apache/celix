@@ -29,6 +29,7 @@
 #include "simple_shape.h"
 #include "paint_frame.h"
 #include "service_tracker.h"
+#include "service_reference.h"
 
 struct paintFrameActivatorData {
 	SERVICE_REGISTRATION reg;
@@ -97,20 +98,26 @@ celix_status_t addingServ(void * handle, SERVICE_REFERENCE ref, void **service) 
 
 celix_status_t addedServ(void * handle, SERVICE_REFERENCE ref, void * service) {
 	struct paintFrameActivatorData * data = (struct paintFrameActivatorData *) handle;
-	char * serviceName = properties_get(ref->registration->properties, "name");
+	SERVICE_REGISTRATION reg = NULL;
+	serviceReference_getServiceRegistration(ref, &reg);
+	char * serviceName = properties_get(reg->properties, "name");
 	paintFrame_addShape(data->paint_frame, data->context, service);
 	return CELIX_SUCCESS;
  }
 
 celix_status_t modifiedServ(void * handle, SERVICE_REFERENCE ref, void * service) {
 	struct paintFrameActivatorData * data = (struct paintFrameActivatorData *) handle;
-	char * serviceName = properties_get(ref->registration->properties, "name");
+	SERVICE_REGISTRATION reg = NULL;
+	serviceReference_getServiceRegistration(ref, &reg);
+	char * serviceName = properties_get(reg->properties, "name");
 	return CELIX_SUCCESS;
 }
 
 celix_status_t removedServ(void * handle, SERVICE_REFERENCE ref, void * service) {
 	struct paintFrameActivatorData * data = (struct paintFrameActivatorData *) handle;
-	char * serviceName = properties_get(ref->registration->properties, "name");
+	SERVICE_REGISTRATION reg = NULL;
+	serviceReference_getServiceRegistration(ref, &reg);
+	char * serviceName = properties_get(reg->properties, "name");
 	paintFrame_removeShape(data->paint_frame, service);
 	return CELIX_SUCCESS;
 }

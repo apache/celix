@@ -31,18 +31,13 @@
 #include "manifest.h"
 #include "linkedlist.h"
 
-struct manifestParser {
-	MODULE owner;
-	MANIFEST manifest;
-
-	VERSION bundleVersion;
-	char * bundleSymbolicName;
-	LINKED_LIST capabilities;
-	LINKED_LIST requirements;
-};
-
 typedef struct manifestParser * MANIFEST_PARSER;
 
 celix_status_t manifestParser_create(MODULE owner, MANIFEST manifest, apr_pool_t *memory_pool, MANIFEST_PARSER *manifest_parser);
+
+celix_status_t manifestParser_getSymbolicName(MANIFEST_PARSER parser, apr_pool_t *pool, char **symbolicName);
+celix_status_t manifestParser_getBundleVersion(MANIFEST_PARSER parser, apr_pool_t *pool, VERSION *version);
+celix_status_t manifestParser_getCapabilities(MANIFEST_PARSER parser, apr_pool_t *pool, LINKED_LIST *capabilities);
+celix_status_t manifestParser_getRequirements(MANIFEST_PARSER parser, apr_pool_t *pool, LINKED_LIST *requirements);
 
 #endif /* MANIFEST_PARSER_H_ */

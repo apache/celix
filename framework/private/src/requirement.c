@@ -35,16 +35,18 @@ struct requirement {
 	HASH_MAP directives;
 };
 
-REQUIREMENT requirement_create(HASH_MAP directives, HASH_MAP attributes) {
+REQUIREMENT requirement_create(apr_pool_t *pool, HASH_MAP directives, HASH_MAP attributes) {
 	REQUIREMENT requirement = (REQUIREMENT) malloc(sizeof(*requirement));
 
 	requirement->attributes = attributes;
 	requirement->directives = directives;
 
-	requirement->versionRange = versionRange_createInfiniteVersionRange();
+	requirement->versionRange = NULL;
+	versionRange_createInfiniteVersionRange(pool, &requirement->versionRange);
 	ATTRIBUTE versionAttribute = (ATTRIBUTE) hashMap_get(attributes, "version");
 	if (versionAttribute != NULL) {
-		requirement->versionRange = versionRange_parse(versionAttribute->value);
+		requirement->versionRange = NULL;
+		versionRange_parse(pool, versionAttribute->value, &requirement->versionRange);
 	}
 	ATTRIBUTE serviceAttribute = (ATTRIBUTE) hashMap_get(attributes, "service");
 	requirement->targetName = serviceAttribute->value;
@@ -61,7 +63,6 @@ void requirement_destroy(REQUIREMENT requirement) {
 	hashMapIterator_destroy(attrIter);
 	hashMap_destroy(requirement->attributes, false, false);
 	hashMap_destroy(requirement->directives, false, false);
-	versionRange_destroy(requirement->versionRange);
 
 	requirement->attributes = NULL;
 	requirement->directives = NULL;
@@ -79,5 +80,9 @@ char * requirement_getTargetName(REQUIREMENT requirement) {
 }
 
 bool requirement_isSatisfied(REQUIREMENT requirement, CAPABILITY capability) {
-	return versionRange_isInRange(requirement_getVersionRange(requirement), capability_getVersion(capability));
+	bool inRange = false;
+	VERSION version = NULL;
+	capability_getVersion(capability, &version);
+	versionRange_isInRange(requirement_getVersionRange(requirement), version, &inRange);
+	return inRange;
 }

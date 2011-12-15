@@ -30,6 +30,9 @@
 #include "array_list_private.h"
 
 celix_status_t arrayList_create(apr_pool_t *pool, ARRAY_LIST *list) {
+	apr_pool_t *mypool;
+	apr_pool_create(&mypool, pool);
+//	*list = (ARRAY_LIST) apr_palloc(mypool, sizeof(**list));
 	*list = (ARRAY_LIST) malloc(sizeof(**list));
 
 	(*list)->size = 0;

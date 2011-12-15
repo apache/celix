@@ -34,37 +34,52 @@ struct wire {
 	CAPABILITY capability;
 };
 
-WIRE wire_create(MODULE importer, REQUIREMENT requirement,
-		MODULE exporter, CAPABILITY capability) {
-	WIRE wire = (WIRE) malloc(sizeof(*wire));
-	wire->importer = importer;
-	wire->requirement = requirement;
-	wire->exporter = exporter;
-	wire->capability = capability;
+apr_status_t wire_destroy(void *wireP);
 
-	return wire;
+celix_status_t wire_create(apr_pool_t *pool, MODULE importer, REQUIREMENT requirement,
+		MODULE exporter, CAPABILITY capability, WIRE *wire) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	(*wire) = (WIRE) apr_palloc(pool, sizeof(**wire));
+	if (!*wire) {
+		status = CELIX_ENOMEM;
+	} else {
+		apr_pool_pre_cleanup_register(pool, *wire, wire_destroy);
+
+		(*wire)->importer = importer;
+		(*wire)->requirement = requirement;
+		(*wire)->exporter = exporter;
+		(*wire)->capability = capability;
+	}
+
+	return status;
 }
 
-void wire_destroy(WIRE wire) {
+apr_status_t wire_destroy(void *wireP) {
+	WIRE wire = wireP;
 	wire->importer = NULL;
 	wire->requirement = NULL;
 	wire->exporter = NULL;
 	wire->capability = NULL;
-	free(wire);
+	return APR_SUCCESS;
 }
 
-CAPABILITY wire_getCapability(WIRE wire) {
-	return wire->capability;
+celix_status_t wire_getCapability(WIRE wire, CAPABILITY *capability) {
+	*capability = wire->capability;
+	return CELIX_SUCCESS;
 }
 
-REQUIREMENT wire_getRequirement(WIRE wire) {
-	return wire->requirement;
+celix_status_t wire_getRequirement(WIRE wire, REQUIREMENT *requirement) {
+	*requirement = wire->requirement;
+	return CELIX_SUCCESS;
 }
 
-MODULE wire_getImporter(WIRE wire) {
-	return wire->importer;
+celix_status_t wire_getImporter(WIRE wire, MODULE *importer) {
+	*importer = wire->importer;
+	return CELIX_SUCCESS;
 }
 
-MODULE wire_getExporter(WIRE wire) {
-	return wire->exporter;
+celix_status_t wire_getExporter(WIRE wire, MODULE *exporter) {
+	*exporter = wire->exporter;
+	return CELIX_SUCCESS;
 }

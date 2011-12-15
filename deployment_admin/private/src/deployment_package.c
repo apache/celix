@@ -83,8 +83,7 @@ celix_status_t deploymentPackage_getBundle(deployment_package_t package, char *n
 
 celix_status_t deploymentPackage_getVersion(deployment_package_t package, VERSION *version) {
 	char *versionStr = manifest_getValue(package->manifest, "DeploymentPackage-Version");
-	*version = version_createVersionFromString(versionStr);
-	return CELIX_SUCCESS;
+	return version_createVersionFromString(package->pool, versionStr, version);
 }
 
 celix_status_t deploymentPackage_setBundleInfos(deployment_package_t package) {
@@ -103,7 +102,8 @@ celix_status_t deploymentPackage_setBundleInfos(deployment_package_t package) {
 		info->attributes = values;
 		info->symbolicName = properties_get(values, (char *) BUNDLE_SYMBOLICNAME);
 		char *version = properties_get(values, (char *) BUNDLE_VERSION);
-		info->version = version_createVersionFromString(version);
+		info->version = NULL;
+		status = version_createVersionFromString(package->pool, version, &info->version);
 
 		arrayList_add(package->bundleInfos, info);
 	}

@@ -28,7 +28,9 @@
 #include "service_tracker.h"
 #include "bundle_context.h"
 #include "constants.h"
+#include "service_reference.h"
 
+// #todo: Remove this, make SERVICE_TRACKER an ADT to keep "hidden" information
 ARRAY_LIST m_trackers;
 
 void * addingService(FW_SERVICE_TRACKER, SERVICE_REFERENCE);
@@ -65,7 +67,7 @@ celix_status_t serviceTracker_create(BUNDLE_CONTEXT context, char * service, SER
 }
 
 celix_status_t tracker_createWithFilter(BUNDLE_CONTEXT context, char * filter, SERVICE_TRACKER_CUSTOMIZER customizer, SERVICE_TRACKER *tracker) {
-	*tracker = (SERVICE_TRACKER) malloc(sizeof(*tracker));
+	*tracker = (SERVICE_TRACKER) malloc(sizeof(**tracker));
 	FW_SERVICE_TRACKER fw_tracker = (FW_SERVICE_TRACKER) malloc(sizeof(*fw_tracker));
 	apr_pool_t *pool;
 	bundleContext_getMemoryPool(context, &pool);
@@ -98,6 +100,7 @@ celix_status_t serviceTracker_open(SERVICE_TRACKER tracker) {
 		SERVICE_REFERENCE initial_reference;
 		unsigned int i;
 
+		listener->pool = fwTracker->pool;
 		listener->serviceChanged = (void *) tracker_serviceChanged;
 		status = bundleContext_addServiceListener(tracker->context, listener, tracker->filter);
 		if (status == CELIX_SUCCESS) {
@@ -140,8 +143,11 @@ celix_status_t serviceTracker_close(SERVICE_TRACKER tracker) {
 void tracker_destroy(SERVICE_TRACKER tracker) {
 	FW_SERVICE_TRACKER fwTracker = findFwServiceTracker(tracker);
 	bundleContext_removeServiceListener(tracker->context, fwTracker->listener);
+	arrayList_destroy(m_trackers);
 	free(fwTracker->listener);
+	free(fwTracker);
 	tracker = NULL;
+	free(tracker);
 }
 
 SERVICE_REFERENCE tracker_getServiceReference(SERVICE_TRACKER tracker) {
@@ -202,7 +208,9 @@ void * tracker_getServiceByReference(SERVICE_TRACKER tracker, SERVICE_REFERENCE 
 	unsigned int i;
 	for (i = 0; i < arrayList_size(fwTracker->tracked); i++) {
 		tracked = (TRACKED) arrayList_get(fwTracker->tracked, i);
-		if (tracked->reference == reference) {
+		bool equals;
+		serviceReference_equals(reference, tracked->reference, &equals);
+		if (equals) {
 			return tracked->service;
 		}
 	}
@@ -239,7 +247,9 @@ celix_status_t serviceTracker_track(FW_SERVICE_TRACKER fwTracker, SERVICE_REFERE
 	unsigned int i;
 	for (i = 0; i < arrayList_size(fwTracker->tracked); i++) {
 		tracked = (TRACKED) arrayList_get(fwTracker->tracked, i);
-		if (tracked->reference == reference) {
+		bool equals;
+		serviceReference_equals(reference, tracked->reference, &equals);
+		if (equals) {
 			found = 0;
 			break;
 		}
@@ -286,7 +296,9 @@ celix_status_t serviceTracker_untrack(FW_SERVICE_TRACKER fwTracker, SERVICE_REFE
 
 	for (i = 0; i < arrayList_size(fwTracker->tracked); i++) {
 		tracked = (TRACKED) arrayList_get(fwTracker->tracked, i);
-		if (tracked->reference == reference) {
+		bool equals;
+		serviceReference_equals(reference, tracked->reference, &equals);
+		if (equals) {
 			if (tracked != NULL) {
 				arrayList_remove(fwTracker->tracked, i);
 				status = bundleContext_ungetService(fwTracker->tracker->context, reference, &result);

@@ -36,6 +36,16 @@
 #include "celix_errno.h"
 #include "linked_list_iterator.h"
 
+struct manifestParser {
+	MODULE owner;
+	MANIFEST manifest;
+
+	VERSION bundleVersion;
+	char * bundleSymbolicName;
+	LINKED_LIST capabilities;
+	LINKED_LIST requirements;
+};
+
 static LINKED_LIST manifestParser_parseImportHeader(char * header, apr_pool_t *memory_pool);
 static LINKED_LIST manifestParser_parseExportHeader(MODULE module, char * header, apr_pool_t *memory_pool);
 static LINKED_LIST manifestParser_parseDelimitedString(char * value, char * delim, apr_pool_t *memory_pool);
@@ -54,9 +64,11 @@ celix_status_t manifestParser_create(MODULE owner, MANIFEST manifest, apr_pool_t
 
         char * bundleVersion = manifest_getValue(manifest, BUNDLE_VERSION);
         if (bundleVersion != NULL) {
-            parser->bundleVersion = version_createVersionFromString(bundleVersion);
+            parser->bundleVersion = NULL;
+            version_createVersionFromString(memory_pool, bundleVersion, &parser->bundleVersion);
         } else {
-            parser->bundleVersion = version_createEmptyVersion();
+        	parser->bundleVersion = NULL;
+			version_createEmptyVersion(memory_pool, &parser->bundleVersion);
         }
         char * bundleSymbolicName = manifest_getValue(manifest, BUNDLE_SYMBOLICNAME);
         if (bundleSymbolicName != NULL) {
@@ -282,7 +294,7 @@ static LINKED_LIST manifestParser_parseImportHeader(char * header, apr_pool_t *m
                     hashMap_put(attributes, name->key, name);
                 }
 
-                REQUIREMENT req = requirement_create(directives, attributes);
+                REQUIREMENT req = requirement_create(memory_pool, directives, attributes);
                 linkedList_addElement(requirements, req);
             }
         }
@@ -330,7 +342,8 @@ static LINKED_LIST manifestParser_parseExportHeader(MODULE module, char * header
                 hashMap_put(attributes, name->key, name);
             }
 
-            CAPABILITY cap = capability_create(module, directives, attributes);
+            CAPABILITY cap = NULL;
+            capability_create(memory_pool, module, directives, attributes, &cap);
             linkedList_addElement(capabilities, cap);
         }
     }
@@ -345,4 +358,29 @@ static LINKED_LIST manifestParser_parseExportHeader(MODULE module, char * header
     linkedListIterator_destroy(iter);
 
 	return capabilities;
+}
+
+celix_status_t manifestParser_getSymbolicName(MANIFEST_PARSER parser, apr_pool_t *pool, char **symbolicName) {
+	*symbolicName = apr_pstrdup(pool, parser->bundleSymbolicName);
+	return CELIX_SUCCESS;
+}
+
+celix_status_t manifestParser_getBundleVersion(MANIFEST_PARSER parser, apr_pool_t *pool, VERSION *version) {
+	return version_clone(parser->bundleVersion, pool, version);
+}
+
+celix_status_t manifestParser_getCapabilities(MANIFEST_PARSER parser, apr_pool_t *pool, LINKED_LIST *capabilities) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	status = linkedList_clone(parser->capabilities, pool, capabilities);
+
+	return status;
+}
+
+celix_status_t manifestParser_getRequirements(MANIFEST_PARSER parser, apr_pool_t *pool, LINKED_LIST *requirements) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	status = linkedList_clone(parser->requirements, pool, requirements);
+
+	return status;
 }

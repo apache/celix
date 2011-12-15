@@ -119,11 +119,6 @@ struct bundle {
 
 typedef struct bundle * BUNDLE;
 
-struct serviceReference {
-	BUNDLE bundle;
-	struct serviceRegistration * registration;
-};
-
 typedef struct serviceReference * SERVICE_REFERENCE;
 
 typedef enum serviceEventType
@@ -146,7 +141,7 @@ typedef struct serviceRegistry * SERVICE_REGISTRY;
 struct serviceRegistration {
 	SERVICE_REGISTRY registry;
 	char * className;
-	SERVICE_REFERENCE reference;
+	// SERVICE_REFERENCE reference;
 	ARRAY_LIST references;
 	BUNDLE bundle;
 	PROPERTIES properties;
@@ -163,6 +158,7 @@ struct serviceRegistration {
 typedef struct serviceRegistration * SERVICE_REGISTRATION;
 
 struct serviceListener {
+	apr_pool_t *pool;
 	void * handle;
 	celix_status_t (*serviceChanged)(void * listener, SERVICE_EVENT event);
 };

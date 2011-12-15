@@ -199,9 +199,12 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 
 	status = bundleContext_registerService(context, (char *) SHELL_SERVICE_NAME, activator->shellService, NULL, &activator->registration);
 
+	apr_pool_t *pool = NULL;
+	bundleContext_getMemoryPool(context, &pool);
 	if (status == CELIX_SUCCESS) {
 	    SERVICE_LISTENER listener = (SERVICE_LISTENER) malloc(sizeof(*listener));
 	    activator->listener = listener;
+	    listener->pool = pool;
 	    listener->handle = activator->shell;
 	    listener->serviceChanged = (void *) shell_serviceChanged;
 	    status = bundleContext_addServiceListener(context, listener, "(objectClass=commandService)");

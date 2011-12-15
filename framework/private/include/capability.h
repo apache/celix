@@ -30,10 +30,9 @@
 #include "module.h"
 
 
-CAPABILITY capability_create(MODULE module, HASH_MAP directives, HASH_MAP attributes);
-void capability_destroy(CAPABILITY capability);
-char * capability_getServiceName(CAPABILITY capability);
-VERSION capability_getVersion(CAPABILITY capability);
-MODULE capability_getModule(CAPABILITY capability);
+celix_status_t capability_create(apr_pool_t *pool, MODULE module, HASH_MAP directives, HASH_MAP attributes, CAPABILITY *capability);
+celix_status_t capability_getServiceName(CAPABILITY capability, char **serviceName);
+celix_status_t capability_getVersion(CAPABILITY capability, VERSION *version);
+celix_status_t capability_getModule(CAPABILITY capability, MODULE *module);
 
 #endif /* CAPABILITY_H_ */

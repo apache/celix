@@ -91,7 +91,7 @@ void filter_destroy(FILTER filter) {
 			arrayList_destroy(filter->value);
 			filter->value = NULL;
 		} else {
-			free(filter->value);
+			// free(filter->value);
 			filter->value = NULL;
 		}
 		free(filter->attribute);

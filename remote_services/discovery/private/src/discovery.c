@@ -16,6 +16,7 @@
 #include "utils.h"
 #include "celix_errno.h"
 #include "filter.h"
+#include "service_reference.h"
 
 #include "discovery.h"
 
@@ -152,7 +153,10 @@ celix_status_t discovery_addService(discovery_t discovery, endpoint_description_
 		SERVICE_REFERENCE reference = hashMapEntry_getKey(entry);
 		endpoint_listener_t listener = NULL;
 
-		char *scope = properties_get(reference->registration->properties, (char *) ENDPOINT_LISTENER_SCOPE);
+		SERVICE_REGISTRATION registration = NULL;
+		serviceReference_getServiceRegistration(reference, &registration);
+		PROPERTIES serviceProperties = registration->properties;
+		char *scope = properties_get(serviceProperties, (char *) ENDPOINT_LISTENER_SCOPE);
 		FILTER filter = filter_create(scope, discovery->pool);
 		if (filter_match(filter, endpoint->properties)) {
 			printf("DISCOVERY: Add service (%s)\n", endpoint->service);
@@ -296,7 +300,11 @@ celix_status_t discovery_endpointListenerAdding(void * handle, SERVICE_REFERENCE
 celix_status_t discovery_endpointListenerAdded(void * handle, SERVICE_REFERENCE reference, void * service) {
 	celix_status_t status = CELIX_SUCCESS;
 	discovery_t discovery = handle;
-	char *discoveryListener = properties_get(reference->registration->properties, "DISCOVERY");
+
+	SERVICE_REGISTRATION registration = NULL;
+	serviceReference_getServiceRegistration(reference, &registration);
+	PROPERTIES serviceProperties = registration->properties;
+	char *discoveryListener = properties_get(serviceProperties, "DISCOVERY");
 
 	if (discoveryListener != NULL && strcmp(discoveryListener, "true") == 0) {
 		printf("DISCOVERY: EndpointListener Ignored - Discovery listener\n");

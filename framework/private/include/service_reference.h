@@ -29,8 +29,16 @@
 #include "celixbool.h"
 #include "headers.h"
 
+celix_status_t serviceReference_create(apr_pool_t *pool, BUNDLE bundle, SERVICE_REGISTRATION registration, SERVICE_REFERENCE *reference);
+
+celix_status_t serviceReference_invalidate(SERVICE_REFERENCE reference);
+
+celix_status_t serviceReference_getServiceRegistration(SERVICE_REFERENCE reference, SERVICE_REGISTRATION *registration);
+celix_status_t serviceReference_getBundle(SERVICE_REFERENCE reference, BUNDLE *bundle);
+
 bool serviceReference_isAssignableTo(SERVICE_REFERENCE reference, BUNDLE requester, char * serviceName);
 
 celix_status_t serviceReference_getUsingBundles(SERVICE_REFERENCE reference, apr_pool_t *pool, ARRAY_LIST *bundles);
+celix_status_t serviceReference_equals(SERVICE_REFERENCE reference, SERVICE_REFERENCE compareTo, bool *equal);
 
 #endif /* SERVICE_REFERENCE_H_ */

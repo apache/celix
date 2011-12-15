@@ -30,7 +30,7 @@
 #include "hash_map.h"
 #include "headers.h"
 
-REQUIREMENT requirement_create(HASH_MAP directives, HASH_MAP attributes);
+REQUIREMENT requirement_create(apr_pool_t *pool, HASH_MAP directives, HASH_MAP attributes);
 void requirement_destroy(REQUIREMENT requirement);
 VERSION_RANGE requirement_getVersionRange(REQUIREMENT requirement);
 char * requirement_getTargetName(REQUIREMENT requirement);

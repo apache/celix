@@ -47,11 +47,13 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
     bundleContext_getMemoryPool(context, &mp);
     struct logActivator * activator = apr_palloc(mp, sizeof(struct logActivator));
 
-    activator->bundleContext = context;
 
     if (activator == NULL) {
         status = CELIX_ENOMEM;
     } else {
+		activator->bundleContext = context;
+		activator->logServiceFactoryReg = NULL;
+		activator->logReaderServiceReg = NULL;
         *userData = activator;
     }
 

@@ -232,9 +232,13 @@ celix_status_t bundle_createModule(BUNDLE bundle, MODULE *module) {
 								status = module_getSymbolicName(mod, &sym);
 
 								VERSION version = module_getVersion(mod);
+								int cmp;
+								version_compareTo(bundleVersion, version, &cmp);
 								if ((symName != NULL) && (sym != NULL) && !strcmp(symName, sym) &&
-										!version_compareTo(bundleVersion, version)) {
-									printf("Bundle symbolic name and version are not unique: %s:%s\n", sym, version_toString(version));
+										!cmp) {
+									char *versionString = NULL;
+									version_toString(version, bundle->memoryPool, &versionString);
+									printf("Bundle symbolic name and version are not unique: %s:%s\n", sym, versionString);
 									status = CELIX_BUNDLE_EXCEPTION;
 									break;
 								}
@@ -518,10 +522,10 @@ celix_status_t bundle_getBundleId(BUNDLE bundle, long *id) {
 	return status;
 }
 
-celix_status_t bundle_getRegisteredServices(BUNDLE bundle, ARRAY_LIST *list) {
+celix_status_t bundle_getRegisteredServices(BUNDLE bundle, apr_pool_t *pool, ARRAY_LIST *list) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	status = fw_getBundleRegisteredServices(bundle->framework, bundle, list);
+	status = fw_getBundleRegisteredServices(bundle->framework, pool, bundle, list);
 
 	return status;
 }

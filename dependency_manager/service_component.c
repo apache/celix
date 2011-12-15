@@ -386,8 +386,10 @@ STATE state_create(ARRAY_LIST dependencies, bool active) {
 }
 
 void state_destroy(STATE state) {
-	arrayList_destroy(state->dependencies);
-	state->dependencies = NULL;
+	if (state->dependencies != NULL) {
+		arrayList_destroy(state->dependencies);
+		state->dependencies = NULL;
+	}
 	state->state = STATE_INACTIVE;
 	free(state);
 	state = NULL;

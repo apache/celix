@@ -111,6 +111,7 @@ int main(void) {
     apr_pool_destroy(memoryPool);
     apr_terminate();
 
+    printf("LAUNCHER: Exit\n");
     return 0;
 }
 

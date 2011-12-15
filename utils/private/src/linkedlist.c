@@ -50,6 +50,19 @@ celix_status_t linkedList_create(apr_pool_t *pool, LINKED_LIST *list) {
 	return CELIX_ENOMEM;
 }
 
+celix_status_t linkedList_clone(LINKED_LIST list, apr_pool_t *pool, LINKED_LIST *clone) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	status = linkedList_create(pool, clone);
+	if (status == CELIX_SUCCESS) {
+        for (struct linkedListEntry *e = list->header->next; e != list->header; e = e->next) {
+            linkedList_addElement(*clone, e->element);
+        }
+	}
+
+	return status;
+}
+
 void * linkedList_getFirst(LINKED_LIST list) {
 	if (list->size == 0) {
 		return NULL;

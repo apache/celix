@@ -25,10 +25,57 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "service_registry.h"
 #include "service_reference.h"
 #include "module.h"
 #include "wire.h"
 #include "bundle.h"
+
+struct serviceReference {
+	BUNDLE bundle;
+	struct serviceRegistration * registration;
+};
+
+apr_status_t serviceReference_destroy(void *referenceP);
+
+celix_status_t serviceReference_create(apr_pool_t *pool, BUNDLE bundle, SERVICE_REGISTRATION registration, SERVICE_REFERENCE *reference) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	*reference = apr_palloc(pool, sizeof(**reference));
+	if (!*reference) {
+		status = CELIX_ENOMEM;
+	} else {
+		apr_pool_pre_cleanup_register(pool, *reference, serviceReference_destroy);
+
+		(*reference)->bundle = bundle;
+		(*reference)->registration = registration;
+	}
+
+	return status;
+}
+
+apr_status_t serviceReference_destroy(void *referenceP) {
+	SERVICE_REFERENCE reference = referenceP;
+	printf("SERVICE_REFERENCE: Destroy\n");
+	reference->bundle = NULL;
+	reference->registration = NULL;
+	return APR_SUCCESS;
+}
+
+celix_status_t serviceReference_getBundle(SERVICE_REFERENCE reference, BUNDLE *bundle) {
+	*bundle = reference->bundle;
+	return CELIX_SUCCESS;
+}
+
+celix_status_t serviceReference_getServiceRegistration(SERVICE_REFERENCE reference, SERVICE_REGISTRATION *registration) {
+	*registration = reference->registration;
+	return CELIX_SUCCESS;
+}
+
+celix_status_t serviceReference_invalidate(SERVICE_REFERENCE reference) {
+	reference->registration = NULL;
+	return CELIX_SUCCESS;
+}
 
 bool serviceReference_isAssignableTo(SERVICE_REFERENCE reference, BUNDLE requester, char * serviceName) {
 	bool allow = true;
@@ -56,10 +103,13 @@ bool serviceReference_isAssignableTo(SERVICE_REFERENCE reference, BUNDLE request
 celix_status_t serviceReference_getUsingBundles(SERVICE_REFERENCE reference, apr_pool_t *pool, ARRAY_LIST *bundles) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	ARRAY_LIST bnds = serviceRegistry_getUsingBundles(reference->registration->registry, pool, reference);
-
-	*bundles = bnds;
+	*bundles = serviceRegistry_getUsingBundles(reference->registration->registry, pool, reference);
 
 	return status;
+}
+
+celix_status_t serviceReference_equals(SERVICE_REFERENCE reference, SERVICE_REFERENCE compareTo, bool *equal) {
+	*equal = (reference->registration == compareTo->registration);
+	return CELIX_SUCCESS;
 }
 
