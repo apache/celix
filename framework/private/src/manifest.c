@@ -103,8 +103,10 @@ celix_status_t manifest_read(char *filename, MANIFEST *manifest) {
 					char buf[newlen];
 					strcpy(buf, lastline);
 					strncat(buf, lbuf+1, len - 1);
+					buf[newlen] = '\0';
 
 					if (fpeek(file) == ' ') {
+						lastline = realloc(lastline, strlen(buf) + 1);
 						lastline = strcpy(lastline, buf);
 						continue;
 					}
@@ -192,18 +194,19 @@ celix_status_t manifest_readAttributes(MANIFEST manifest, PROPERTIES properties,
 				return CELIX_FILE_IO_EXCEPTION;
 			}
 			lineContinued = true;
-			int newlen = strlen(lastLine) + len - 1;
+			int newlen = strlen(lastLine) + len;
 			char buf[newlen];
 			strcpy(buf, lastLine);
 			strncat(buf, lbuf+1, len - 1);
+			buf[newlen] = '\0';
 
 			if (fpeek(file) == ' ') {
+				lastLine = realloc(lastLine, strlen(buf) + 1);
 				lastLine = strcpy(lastLine, buf);
 				continue;
 			}
 			value = (char *) malloc(strlen(buf) + 1);
 			value = strcpy(value, buf);
-			value[strlen(buf)] = '\0';
 			lastLine = NULL;
 		} else {
 			while (lbuf[i++] != ':') {
