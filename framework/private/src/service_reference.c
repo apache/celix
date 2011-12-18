@@ -56,7 +56,6 @@ celix_status_t serviceReference_create(apr_pool_t *pool, BUNDLE bundle, SERVICE_
 
 apr_status_t serviceReference_destroy(void *referenceP) {
 	SERVICE_REFERENCE reference = referenceP;
-	printf("SERVICE_REFERENCE: Destroy\n");
 	reference->bundle = NULL;
 	reference->registration = NULL;
 	return APR_SUCCESS;
@@ -111,5 +110,26 @@ celix_status_t serviceReference_getUsingBundles(SERVICE_REFERENCE reference, apr
 celix_status_t serviceReference_equals(SERVICE_REFERENCE reference, SERVICE_REFERENCE compareTo, bool *equal) {
 	*equal = (reference->registration == compareTo->registration);
 	return CELIX_SUCCESS;
+}
+
+int serviceReference_equals2(void *reference1, void *reference2) {
+	bool equal;
+	serviceReference_equals(reference1, reference2, &equal);
+	return equal;
+}
+
+unsigned int serviceReference_hashCode(void *referenceP) {
+	SERVICE_REFERENCE reference = referenceP;
+	int prime = 31;
+	int result = 1;
+	result = prime * result;
+
+	if (reference != NULL) {
+		intptr_t bundleA = (intptr_t) reference->bundle;
+		intptr_t registrationA = (intptr_t) reference->registration;
+
+		result += bundleA + registrationA;
+	}
+	return result;
 }
 

@@ -333,45 +333,11 @@ apr_status_t serviceRegistry_removeReference(void *referenceP) {
 	serviceReference_getServiceRegistration(reference, &registration);
 
 	if (registration != NULL) {
-		printf("SERVICE_REGISTRY: Destroy: %s\n", registration->className);
 		arrayList_removeElement(registration->references, reference);
 	}
 
 	return APR_SUCCESS;
 }
-
-//ARRAY_LIST serviceRegistry_getServiceReferences(SERVICE_REGISTRY registry, const char * serviceName, FILTER filter) {
-//	ARRAY_LIST references = NULL;
-//	arrayList_create(registry->framework->mp, &references);
-//
-//	HASH_MAP_VALUES registrations = hashMapValues_create(registry->serviceRegistrations);
-//	HASH_MAP_ITERATOR iterator = hashMapValues_iterator(registrations);
-//	while (hashMapIterator_hasNext(iterator)) {
-//		ARRAY_LIST regs = (ARRAY_LIST) hashMapIterator_nextValue(iterator);
-//		int regIdx;
-//		for (regIdx = 0; (regs != NULL) && regIdx < arrayList_size(regs); regIdx++) {
-//			SERVICE_REGISTRATION registration = (SERVICE_REGISTRATION) arrayList_get(regs, regIdx);
-//
-//			bool matched = false;
-//			if ((serviceName == NULL) && ((filter == NULL) || filter_match(filter, registration->properties))) {
-//				matched = true;
-//			} else if (serviceName != NULL) {
-//				if ((strcmp(registration->className, serviceName) == 0) && ((filter == NULL) || filter_match(filter, registration->properties))) {
-//					matched = true;
-//				}
-//			}
-//			if (matched) {
-//				if (serviceRegistration_isValid(registration)) {
-//					arrayList_add(references, registration->reference);
-//				}
-//			}
-//		}
-//	}
-//	hashMapIterator_destroy(iterator);
-//	hashMapValues_destroy(registrations);
-//
-//	return references;
-//}
 
 ARRAY_LIST serviceRegistry_getServicesInUse(SERVICE_REGISTRY registry, BUNDLE bundle) {
 	ARRAY_LIST usages = hashMap_get(registry->inUseMap, bundle);

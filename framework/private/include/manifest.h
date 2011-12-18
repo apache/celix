@@ -26,23 +26,27 @@
 #ifndef MANIFEST_H_
 #define MANIFEST_H_
 
+#include <apr_general.h>
+
 #include "properties.h"
 #include "celix_errno.h"
 
 struct manifest {
+	apr_pool_t *pool;
 	PROPERTIES mainAttributes;
 	HASH_MAP attributes;
 };
 
 typedef struct manifest * MANIFEST;
 
-void manifest_destroy(MANIFEST manifest);
+celix_status_t manifest_create(apr_pool_t *pool, MANIFEST *manifest);
+celix_status_t manifest_createFromFile(apr_pool_t *pool, char *filename, MANIFEST *manifest);
 
 void manifest_clear(MANIFEST manifest);
 PROPERTIES manifest_getMainAttributes(MANIFEST manifest);
 celix_status_t manifest_getEntries(MANIFEST manifest, HASH_MAP *map);
 
-celix_status_t manifest_read(char *filename, MANIFEST *manifest);
+celix_status_t manifest_read(MANIFEST manifest, char *filename);
 void manifest_write(MANIFEST manifest, char * filename);
 
 char * manifest_getValue(MANIFEST manifest, const char * name);

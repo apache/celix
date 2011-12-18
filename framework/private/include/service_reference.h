@@ -40,5 +40,7 @@ bool serviceReference_isAssignableTo(SERVICE_REFERENCE reference, BUNDLE request
 
 celix_status_t serviceReference_getUsingBundles(SERVICE_REFERENCE reference, apr_pool_t *pool, ARRAY_LIST *bundles);
 celix_status_t serviceReference_equals(SERVICE_REFERENCE reference, SERVICE_REFERENCE compareTo, bool *equal);
+unsigned int serviceReference_hashCode(void *referenceP);
+int serviceReference_equals2(void *reference1, void *reference2);
 
 #endif /* SERVICE_REFERENCE_H_ */

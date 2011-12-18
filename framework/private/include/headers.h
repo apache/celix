@@ -175,11 +175,6 @@ struct serviceTrackerCustomizer {
 
 typedef struct serviceTrackerCustomizer * SERVICE_TRACKER_CUSTOMIZER;
 
-struct serviceTracker {
-	BUNDLE_CONTEXT context;
-	char * filter;
-};
-
 typedef struct serviceTracker * SERVICE_TRACKER;
 
 #endif /* HEADERS_H_ */

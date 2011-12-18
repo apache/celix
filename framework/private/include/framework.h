@@ -70,7 +70,7 @@ celix_status_t fw_isServiceAssignable(FRAMEWORK fw, BUNDLE requester, SERVICE_RE
 
 //BUNDLE_ARCHIVE fw_createArchive(long id, char * location);
 //void revise(BUNDLE_ARCHIVE archive, char * location);
-celix_status_t getManifest(BUNDLE_ARCHIVE archive, MANIFEST *manifest);
+celix_status_t getManifest(BUNDLE_ARCHIVE archive, apr_pool_t *pool, MANIFEST *manifest);
 
 BUNDLE findBundle(BUNDLE_CONTEXT context);
 SERVICE_REGISTRATION findRegistration(SERVICE_REFERENCE reference);

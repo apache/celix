@@ -332,7 +332,10 @@ void serviceComponent_destroyService(SERVICE service, STATE state) {
 			serviceDependency_invokeRemoved(dependency);
 		}
 	}
+
 	arrayListIterator_destroy(i);
+
+	arrayList_destroy(service->dependencies);
 }
 
 void serviceComponent_registerService(SERVICE service) {

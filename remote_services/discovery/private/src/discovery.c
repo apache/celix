@@ -66,7 +66,7 @@ celix_status_t discovery_create(apr_pool_t *pool, BUNDLE_CONTEXT context, discov
 	} else {
 		(*discovery)->context = context;
 		(*discovery)->pool = pool;
-		(*discovery)->listenerReferences = hashMap_create(NULL, NULL, NULL, NULL);
+		(*discovery)->listenerReferences = hashMap_create(serviceReference_hashCode, NULL, serviceReference_equals2, NULL);
 		(*discovery)->slpServices = hashMap_create(string_hash, NULL, string_equals, NULL);
 		(*discovery)->running = true;
 		(*discovery)->rsaPort = getenv("RSA_PORT");

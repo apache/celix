@@ -95,7 +95,7 @@ static void *APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *deplo
 				extractBundle(test, tmpDir);
 				char *manifest = apr_pstrcat(admin->pool, tmpDir, "/META-INF/MANIFEST.MF", NULL);
 				MANIFEST mf = NULL;
-				manifest_read(manifest, &mf);
+				manifest_createFromFile(admin->pool, manifest, &mf);
 				deployment_package_t source = NULL;
 				deploymentPackage_create(admin->pool, admin->context, mf, &source);
 				char *name = NULL;

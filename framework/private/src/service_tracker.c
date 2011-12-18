@@ -30,8 +30,15 @@
 #include "constants.h"
 #include "service_reference.h"
 
+struct serviceTracker {
+	BUNDLE_CONTEXT context;
+	char * filter;
+
+	FW_SERVICE_TRACKER fwTracker;
+};
+
 // #todo: Remove this, make SERVICE_TRACKER an ADT to keep "hidden" information
-ARRAY_LIST m_trackers;
+//ARRAY_LIST m_trackers;
 
 void * addingService(FW_SERVICE_TRACKER, SERVICE_REFERENCE);
 celix_status_t serviceTracker_track(FW_SERVICE_TRACKER, SERVICE_REFERENCE, SERVICE_EVENT);
@@ -72,9 +79,9 @@ celix_status_t tracker_createWithFilter(BUNDLE_CONTEXT context, char * filter, S
 	apr_pool_t *pool;
 	bundleContext_getMemoryPool(context, &pool);
 
-	if (m_trackers == NULL) {
-		arrayList_create(pool, &m_trackers);
-	}
+//	if (m_trackers == NULL) {
+//		arrayList_create(pool, &m_trackers);
+//	}
 	(*tracker)->context = context;
 	(*tracker)->filter = filter;
 
@@ -84,7 +91,9 @@ celix_status_t tracker_createWithFilter(BUNDLE_CONTEXT context, char * filter, S
 	arrayList_create(pool, &fw_tracker->tracked);
 	fw_tracker->customizer = customizer;
 
-	arrayList_add(m_trackers, fw_tracker);
+	(*tracker)->fwTracker = fw_tracker;
+
+//	arrayList_add(m_trackers, fw_tracker);
 
 	return CELIX_SUCCESS;
 }
@@ -92,7 +101,7 @@ celix_status_t tracker_createWithFilter(BUNDLE_CONTEXT context, char * filter, S
 celix_status_t serviceTracker_open(SERVICE_TRACKER tracker) {
 	celix_status_t status = CELIX_SUCCESS;
 	SERVICE_LISTENER listener = (SERVICE_LISTENER) malloc(sizeof(*listener));
-	FW_SERVICE_TRACKER fwTracker = findFwServiceTracker(tracker);
+//	FW_SERVICE_TRACKER fwTracker = findFwServiceTracker(tracker);
 	ARRAY_LIST initial = NULL;
 
 	status = bundleContext_getServiceReferences(tracker->context, NULL, tracker->filter, &initial);
@@ -100,15 +109,16 @@ celix_status_t serviceTracker_open(SERVICE_TRACKER tracker) {
 		SERVICE_REFERENCE initial_reference;
 		unsigned int i;
 
-		listener->pool = fwTracker->pool;
+		listener->pool = tracker->fwTracker->pool;
+		listener->handle = tracker;
 		listener->serviceChanged = (void *) tracker_serviceChanged;
 		status = bundleContext_addServiceListener(tracker->context, listener, tracker->filter);
 		if (status == CELIX_SUCCESS) {
-			fwTracker->listener = listener;
+			tracker->fwTracker->listener = listener;
 
 			for (i = 0; i < arrayList_size(initial); i++) {
 				initial_reference = (SERVICE_REFERENCE) arrayList_get(initial, i);
-				serviceTracker_track(fwTracker, initial_reference, NULL);
+				serviceTracker_track(tracker->fwTracker, initial_reference, NULL);
 			}
 			arrayList_clear(initial);
 			arrayList_destroy(initial);
@@ -123,7 +133,7 @@ celix_status_t serviceTracker_open(SERVICE_TRACKER tracker) {
 celix_status_t serviceTracker_close(SERVICE_TRACKER tracker) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	FW_SERVICE_TRACKER fwTracker = findFwServiceTracker(tracker);
+	FW_SERVICE_TRACKER fwTracker = tracker->fwTracker;
 	status = bundleContext_removeServiceListener(tracker->context, fwTracker->listener);
 	if (status == CELIX_SUCCESS) {
 		ARRAY_LIST refs = tracker_getServiceReferences(tracker);
@@ -141,9 +151,10 @@ celix_status_t serviceTracker_close(SERVICE_TRACKER tracker) {
 }
 
 void tracker_destroy(SERVICE_TRACKER tracker) {
-	FW_SERVICE_TRACKER fwTracker = findFwServiceTracker(tracker);
+	FW_SERVICE_TRACKER fwTracker = tracker->fwTracker;
 	bundleContext_removeServiceListener(tracker->context, fwTracker->listener);
-	arrayList_destroy(m_trackers);
+//	arrayList_destroy(m_trackers);
+	arrayList_destroy(fwTracker->tracked);
 	free(fwTracker->listener);
 	free(fwTracker);
 	tracker = NULL;
@@ -151,7 +162,7 @@ void tracker_destroy(SERVICE_TRACKER tracker) {
 }
 
 SERVICE_REFERENCE tracker_getServiceReference(SERVICE_TRACKER tracker) {
-	FW_SERVICE_TRACKER fwTracker = findFwServiceTracker(tracker);
+	FW_SERVICE_TRACKER fwTracker = tracker->fwTracker;
 	TRACKED tracked;
 	unsigned int i;
 	for (i = 0; i < arrayList_size(fwTracker->tracked); i++) {
@@ -162,7 +173,7 @@ SERVICE_REFERENCE tracker_getServiceReference(SERVICE_TRACKER tracker) {
 }
 
 ARRAY_LIST tracker_getServiceReferences(SERVICE_TRACKER tracker) {
-	FW_SERVICE_TRACKER fwTracker = findFwServiceTracker(tracker);
+	FW_SERVICE_TRACKER fwTracker = tracker->fwTracker;
 	int size = arrayList_size(fwTracker->tracked);
 	ARRAY_LIST references = NULL;
 	arrayList_create(fwTracker->pool, &references);
@@ -176,7 +187,7 @@ ARRAY_LIST tracker_getServiceReferences(SERVICE_TRACKER tracker) {
 }
 
 void * tracker_getService(SERVICE_TRACKER tracker) {
-	FW_SERVICE_TRACKER fwTracker = findFwServiceTracker(tracker);
+	FW_SERVICE_TRACKER fwTracker = tracker->fwTracker;
 	TRACKED tracked;
 	unsigned int i;
 	if (fwTracker != NULL) {
@@ -189,7 +200,7 @@ void * tracker_getService(SERVICE_TRACKER tracker) {
 }
 
 ARRAY_LIST tracker_getServices(SERVICE_TRACKER tracker) {
-	FW_SERVICE_TRACKER fwTracker = findFwServiceTracker(tracker);
+	FW_SERVICE_TRACKER fwTracker = tracker->fwTracker;
 	int size = arrayList_size(fwTracker->tracked);
 	ARRAY_LIST references = NULL;
 	arrayList_create(fwTracker->pool, &references);
@@ -203,7 +214,7 @@ ARRAY_LIST tracker_getServices(SERVICE_TRACKER tracker) {
 }
 
 void * tracker_getServiceByReference(SERVICE_TRACKER tracker, SERVICE_REFERENCE reference) {
-	FW_SERVICE_TRACKER fwTracker = findFwServiceTracker(tracker);
+	FW_SERVICE_TRACKER fwTracker = tracker->fwTracker;
 	TRACKED tracked;
 	unsigned int i;
 	for (i = 0; i < arrayList_size(fwTracker->tracked); i++) {
@@ -218,24 +229,17 @@ void * tracker_getServiceByReference(SERVICE_TRACKER tracker, SERVICE_REFERENCE 
 }
 
 void tracker_serviceChanged(SERVICE_LISTENER listener, SERVICE_EVENT event) {
-	FW_SERVICE_TRACKER fwTracker;
-	unsigned int i;
-	for (i = 0; i < arrayList_size(m_trackers); i++) {
-		fwTracker = (FW_SERVICE_TRACKER) arrayList_get(m_trackers, i);
-		if (fwTracker->listener == listener) {
-			switch (event->type) {
-				case REGISTERED:
-				case MODIFIED:
-					serviceTracker_track(fwTracker, event->reference, event);
-					break;
-				case UNREGISTERING:
-					serviceTracker_untrack(fwTracker, event->reference, event);
-					break;
-				case MODIFIED_ENDMATCH:
-					break;
-			}
+	SERVICE_TRACKER tracker = listener->handle;
+	switch (event->type) {
+		case REGISTERED:
+		case MODIFIED:
+			serviceTracker_track(tracker->fwTracker, event->reference, event);
 			break;
-		}
+		case UNREGISTERING:
+			serviceTracker_untrack(tracker->fwTracker, event->reference, event);
+			break;
+		case MODIFIED_ENDMATCH:
+			break;
 	}
 }
 
@@ -318,16 +322,16 @@ celix_status_t serviceTracker_untrack(FW_SERVICE_TRACKER fwTracker, SERVICE_REFE
 	return status;
 }
 
-FW_SERVICE_TRACKER findFwServiceTracker(SERVICE_TRACKER tracker) {
-	FW_SERVICE_TRACKER fwTracker;
-	unsigned int i;
-	if (m_trackers != NULL) {
-		for (i = 0; i < arrayList_size(m_trackers); i++) {
-			fwTracker = (FW_SERVICE_TRACKER) arrayList_get(m_trackers, i);
-			if (fwTracker->tracker == tracker) {
-				return fwTracker;
-			}
-		}
-	}
-	return NULL;
-}
+//FW_SERVICE_TRACKER findFwServiceTracker(SERVICE_TRACKER tracker) {
+//	FW_SERVICE_TRACKER fwTracker;
+//	unsigned int i;
+//	if (m_trackers != NULL) {
+//		for (i = 0; i < arrayList_size(m_trackers); i++) {
+//			fwTracker = (FW_SERVICE_TRACKER) arrayList_get(m_trackers, i);
+//			if (fwTracker->tracker == tracker) {
+//				return fwTracker;
+//			}
+//		}
+//	}
+//	return NULL;
+//}

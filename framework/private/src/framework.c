@@ -205,7 +205,9 @@ celix_status_t framework_destroy(FRAMEWORK framework) {
 	arrayList_destroy(framework->globalLockWaitersList);
 	arrayList_destroy(framework->serviceListeners);
 
-	//bundleCache_destroy(framework->cache);
+	hashMap_destroy(framework->installedBundleMap, false, false);
+
+	bundleCache_destroy(framework->cache);
 
 	apr_pool_destroy(framework->mp);
 
@@ -541,7 +543,7 @@ celix_status_t fw_startBundle(FRAMEWORK framework, BUNDLE bundle, int options AT
 
 			MANIFEST manifest = NULL;
 			char *library;
-			if (getManifest(bundle_getArchive(bundle), &manifest) == CELIX_SUCCESS) {
+			if (getManifest(bundle_getArchive(bundle), bundle->memoryPool, &manifest) == CELIX_SUCCESS) {
                 bundle_setManifest(bundle, manifest);
                 library = manifest_getValue(manifest, HEADER_LIBRARY);
 			}
@@ -744,8 +746,6 @@ celix_status_t fw_stopBundle(FRAMEWORK framework, BUNDLE bundle, bool record) {
 
 		MANIFEST manifest = NULL;
 		bundle_getManifest(bundle, &manifest);
-
-		manifest_destroy(manifest);
 
 		framework_setBundleStateAndNotify(framework, bundle, BUNDLE_RESOLVED);
 
@@ -1199,10 +1199,13 @@ void fw_serviceChanged(FRAMEWORK framework, SERVICE_EVENT_TYPE eventType, SERVIC
 			element = (FW_SERVICE_LISTENER) arrayList_get(framework->serviceListeners, i);
 			matched = (element->filter == NULL) || filter_match(element->filter, registration->properties);
 			if (matched) {
-				SERVICE_REFERENCE reference = NULL;
-				SERVICE_EVENT event = (SERVICE_EVENT) apr_palloc(element->listener->pool, sizeof(*event));
+				apr_pool_t *spool = NULL;
+				apr_pool_create(&spool, element->listener->pool);
 
-				serviceRegistry_createServiceReference(framework->registry, element->listener->pool, registration, &reference);
+				SERVICE_REFERENCE reference = NULL;
+				SERVICE_EVENT event = (SERVICE_EVENT) apr_palloc(spool, sizeof(*event));
+
+				serviceRegistry_createServiceReference(framework->registry, spool, registration, &reference);
 
 				event->type = eventType;
 				event->reference = reference;
@@ -1241,7 +1244,7 @@ void fw_serviceChanged(FRAMEWORK framework, SERVICE_EVENT_TYPE eventType, SERVIC
 //	return status;
 //}
 
-celix_status_t getManifest(BUNDLE_ARCHIVE archive, MANIFEST *manifest) {
+celix_status_t getManifest(BUNDLE_ARCHIVE archive, apr_pool_t *pool, MANIFEST *manifest) {
 	celix_status_t status = CELIX_SUCCESS;
 	char mf[256];
 	long refreshCount;
@@ -1260,7 +1263,7 @@ celix_status_t getManifest(BUNDLE_ARCHIVE archive, MANIFEST *manifest) {
 							refreshCount,
 							revisionNumber
 							);
-					status = manifest_read(mf, manifest);
+					status = manifest_createFromFile(pool, mf, manifest);
 				}
 			}
 		}

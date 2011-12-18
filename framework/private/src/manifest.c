@@ -32,6 +32,46 @@
 
 int fpeek(FILE *stream);
 celix_status_t manifest_readAttributes(MANIFEST manifest, PROPERTIES properties, FILE *file);
+apr_status_t manifest_destroy(void *manifestP);
+
+celix_status_t manifest_create(apr_pool_t *pool, MANIFEST *manifest) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	*manifest = apr_palloc(pool, sizeof(**manifest));
+	if (!*manifest) {
+		status = CELIX_ENOMEM;
+	} else {
+		apr_pool_pre_cleanup_register(pool, *manifest, manifest_destroy);
+		(*manifest)->pool = pool;
+		(*manifest)->mainAttributes = properties_create();
+		(*manifest)->attributes = hashMap_create(string_hash, NULL, string_equals, NULL);
+	}
+
+	return status;
+}
+
+apr_status_t manifest_destroy(void *manifestP) {
+	MANIFEST manifest = manifestP;
+	if (manifest != NULL) {
+		properties_destroy(manifest->mainAttributes);
+		hashMap_destroy(manifest->attributes, false, false);
+		manifest->mainAttributes = NULL;
+		manifest->attributes = NULL;
+		manifest = NULL;
+	}
+	return APR_SUCCESS;
+}
+
+celix_status_t manifest_createFromFile(apr_pool_t *pool, char *filename, MANIFEST *manifest) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	status = manifest_create(pool, manifest);
+	if (status == CELIX_SUCCESS) {
+		manifest_read(*manifest, filename);
+	}
+
+	return status;
+}
 
 void manifest_clear(MANIFEST manifest) {
 
@@ -46,108 +86,88 @@ celix_status_t manifest_getEntries(MANIFEST manifest, HASH_MAP *map) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t manifest_read(char *filename, MANIFEST *manifest) {
+celix_status_t manifest_read(MANIFEST manifest, char *filename) {
     celix_status_t status = CELIX_SUCCESS;
-	MANIFEST mf = NULL;
 
-	mf = (MANIFEST) malloc(sizeof(*mf));
-	if (mf != NULL) {
-		mf->mainAttributes = properties_create();
-		mf->attributes = hashMap_create(string_hash, NULL, string_equals, NULL);
+	FILE *file = fopen ( filename, "r" );
+	if (file != NULL) {
+		char lbuf[512];
+		manifest_readAttributes(manifest, manifest->mainAttributes, file);
 
-        FILE *file = fopen ( filename, "r" );
-        if (file != NULL) {
-            char lbuf[512];
-        	manifest_readAttributes(mf, mf->mainAttributes, file);
+		int len;
+		char * name = NULL;
+		bool skipEmptyLines = true;
+		char * lastline;
 
-        	int len;
-            char * name = NULL;
-            bool skipEmptyLines = true;
-            char * lastline;
+		while (fgets(lbuf, sizeof(lbuf), file) != NULL ) {
+			len = strlen(lbuf);
+			if (lbuf[--len] != '\n') {
+				printf("MANIFEST: Line too long\n");
+				return CELIX_FILE_IO_EXCEPTION;
+			}
+			if (len > 0 && lbuf[len - 1] == '\r') {
+				--len;
+			}
+			if (len == 0 && skipEmptyLines) {
+				continue;
+			}
+			skipEmptyLines = false;
 
-            while (fgets(lbuf, sizeof(lbuf), file) != NULL ) {
-            	len = strlen(lbuf);
-            	if (lbuf[--len] != '\n') {
-					printf("MANIFEST: Line too long\n");
+			if (name == NULL) {
+				if ((tolower(lbuf[0]) == 'n') && (tolower(lbuf[1]) == 'a') &&
+					(tolower(lbuf[2]) == 'm') && (tolower(lbuf[3]) == 'e') &&
+					(lbuf[4] == ':') && (lbuf[5] == ' ')) {
+					name = (char *) malloc((len + 1) - 6);
+					name = strncpy(name, lbuf+6, len - 6);
+					name[len - 6] = '\0';
+				} else {
+					printf("MANIFEST: Invalid manifest format\n");
 					return CELIX_FILE_IO_EXCEPTION;
 				}
-				if (len > 0 && lbuf[len - 1] == '\r') {
-					--len;
-				}
-				if (len == 0 && skipEmptyLines) {
+
+				if (fpeek(file) == ' ') {
+					int newlen = len - 6;
+					lastline = (char *) malloc(newlen + 1);
+					lastline = strncpy(lastline, lbuf+6, len - 6);
+					lastline[newlen] = '\0';
 					continue;
 				}
-				skipEmptyLines = false;
+			} else {
+				int newlen = strlen(lastline) + len;
+				char buf[newlen];
+				strcpy(buf, lastline);
+				strncat(buf, lbuf+1, len - 1);
+				buf[newlen] = '\0';
 
-				if (name == NULL) {
-					if ((tolower(lbuf[0]) == 'n') && (tolower(lbuf[1]) == 'a') &&
-						(tolower(lbuf[2]) == 'm') && (tolower(lbuf[3]) == 'e') &&
-						(lbuf[4] == ':') && (lbuf[5] == ' ')) {
-						name = (char *) malloc((len + 1) - 6);
-						name = strncpy(name, lbuf+6, len - 6);
-						name[len - 6] = '\0';
-					} else {
-						printf("MANIFEST: Invalid manifest format\n");
-						return CELIX_FILE_IO_EXCEPTION;
-					}
-
-					if (fpeek(file) == ' ') {
-						int newlen = len - 6;
-						lastline = (char *) malloc(newlen + 1);
-						lastline = strncpy(lastline, lbuf+6, len - 6);
-						lastline[newlen] = '\0';
-						continue;
-					}
-				} else {
-					int newlen = strlen(lastline) + len;
-					char buf[newlen];
-					strcpy(buf, lastline);
-					strncat(buf, lbuf+1, len - 1);
-					buf[newlen] = '\0';
-
-					if (fpeek(file) == ' ') {
-						lastline = realloc(lastline, strlen(buf) + 1);
-						lastline = strcpy(lastline, buf);
-						continue;
-					}
-					name = (char *) malloc(strlen(buf) + 1);
-					name = strcpy(name, buf);
-					name[strlen(buf)] = '\0';
-					lastline = NULL;
+				if (fpeek(file) == ' ') {
+					lastline = realloc(lastline, strlen(buf) + 1);
+					lastline = strcpy(lastline, buf);
+					continue;
 				}
+				name = (char *) malloc(strlen(buf) + 1);
+				name = strcpy(name, buf);
+				name[strlen(buf)] = '\0';
+				lastline = NULL;
+			}
 
-				PROPERTIES attributes = hashMap_get(mf->attributes, name);
-				if (attributes == NULL) {
-					attributes = properties_create();
-					hashMap_put(mf->attributes, strdup(name), attributes);
-				}
-				manifest_readAttributes(mf, attributes, file);
+			PROPERTIES attributes = hashMap_get(manifest->attributes, name);
+			if (attributes == NULL) {
+				attributes = properties_create();
+				hashMap_put(manifest->attributes, strdup(name), attributes);
+			}
+			manifest_readAttributes(manifest, attributes, file);
 
-                free(name);
-				name = NULL;
-				skipEmptyLines = true;
-            }
-            fclose(file);
-
-            *manifest = mf;
-        } else {
-            printf("Could not read manifest file.\n");
-            status = CELIX_FILE_IO_EXCEPTION;
-        }
+			free(name);
+			name = NULL;
+			skipEmptyLines = true;
+		}
+		fclose(file);
 	} else {
-	    status = CELIX_ENOMEM;
+		printf("Could not read manifest file.\n");
+		status = CELIX_FILE_IO_EXCEPTION;
 	}
 
 	return status;
-}
-
-void manifest_destroy(MANIFEST manifest) {
-	if (manifest != NULL) {
-		properties_destroy(manifest->mainAttributes);
-		manifest->mainAttributes = NULL;
-		free(manifest);
-		manifest = NULL;
-	}
 }
 
 void manifest_write(MANIFEST manifest, char * filename) {
@@ -207,6 +227,7 @@ celix_status_t manifest_readAttributes(MANIFEST manifest, PROPERTIES properties,
 			}
 			value = (char *) malloc(strlen(buf) + 1);
 			value = strcpy(value, buf);
+			free(lastLine);
 			lastLine = NULL;
 		} else {
 			while (lbuf[i++] != ':') {

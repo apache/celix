@@ -61,6 +61,4 @@ void * tracker_getServiceByReference(SERVICE_TRACKER tracker, SERVICE_REFERENCE 
 
 void tracker_serviceChanged(SERVICE_LISTENER listener, SERVICE_EVENT event);
 
-FW_SERVICE_TRACKER findFwServiceTracker(SERVICE_TRACKER tracker);
-
 #endif /* SERVICE_TRACKER_H_ */

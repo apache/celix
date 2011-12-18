@@ -202,7 +202,7 @@ celix_status_t bundle_setManifest(BUNDLE bundle, MANIFEST manifest) {
 celix_status_t bundle_createModule(BUNDLE bundle, MODULE *module) {
 	celix_status_t status = CELIX_SUCCESS;
 	MANIFEST headerMap = NULL;
-	status = getManifest(bundle->archive, &headerMap);
+	status = getManifest(bundle->archive, bundle->memoryPool, &headerMap);
 	if (status == CELIX_SUCCESS) {
         long bundleId;
         status = bundleArchive_getId(bundle->archive, &bundleId);

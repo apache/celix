@@ -133,9 +133,6 @@ void module_destroy(MODULE module) {
 
 	arrayList_destroy(module->dependentImporters);
 
-	if (module->headerMap != NULL) {
-		manifest_destroy(module->headerMap);
-	}
 	module->headerMap = NULL;
 }
 

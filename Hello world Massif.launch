@@ -58,7 +58,7 @@
 <intAttribute key="org.eclipse.linuxtools.valgrind.massif.MASSIF_PEAKINACCURACY" value="10"/>
 <booleanAttribute key="org.eclipse.linuxtools.valgrind.massif.MASSIF_STACKS" value="false"/>
 <intAttribute key="org.eclipse.linuxtools.valgrind.massif.MASSIF_THRESHOLD" value="10"/>
-<stringAttribute key="org.eclipse.linuxtools.valgrind.massif.MASSIF_TIMEUNIT" value="i"/>
+<stringAttribute key="org.eclipse.linuxtools.valgrind.massif.MASSIF_TIMEUNIT" value="B"/>
 <booleanAttribute key="org.eclipse.linuxtools.valgrind.memcheck.MEMCHECK_ALIGNMENT_BOOL" value="false"/>
 <intAttribute key="org.eclipse.linuxtools.valgrind.memcheck.MEMCHECK_ALIGNMENT_VAL" value="0"/>
 <intAttribute key="org.eclipse.linuxtools.valgrind.memcheck.MEMCHECK_FREELIST" value="10000000"/>
