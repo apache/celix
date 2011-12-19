@@ -103,8 +103,9 @@ PROPERTIES properties_load(char * filename) {
 			if (!split) {
 				unsigned int pos = strcspn(line, "=");
 				if (pos != strlen(line)) {
+					char * ival = NULL;
 					key = string_trim(string_ndup((char *)line, pos));
-					char * ival = string_ndup(line+pos+1, strlen(line));
+					ival = string_ndup(line+pos+1, strlen(line));
 					value = string_trim(ival);
 					if (value != NULL) {
 						char * cmp = string_ndup(value+strlen(value)-1, 1);
@@ -124,9 +125,10 @@ PROPERTIES properties_load(char * filename) {
 					split = 1;
 					strcat(value, string_ndup(line, strlen(line)-1));
 				} else {
+					char * old = NULL;
 					split = 0;
 					strcat(value, string_trim(line));
-					char * old = hashMap_put(props, strdup(key), strdup(value));
+					old = hashMap_put(props, strdup(key), strdup(value));
 				}
 			}
 		}

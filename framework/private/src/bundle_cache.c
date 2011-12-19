@@ -22,7 +22,9 @@
  *  Created on: Aug 6, 2010
  *      Author: alexanderb
  */
+#ifndef _WIN32
 #include <dirent.h>
+#endif
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,8 +54,8 @@ celix_status_t bundleCache_create(PROPERTIES configurationMap, apr_pool_t *mp, B
         status = CELIX_ENOMEM;
     } else {
 		if (configurationMap != NULL && mp != NULL && *bundle_cache == NULL) {
-            cache->configurationMap = configurationMap;
             char * cacheDir = properties_get(configurationMap, (char *) FRAMEWORK_STORAGE);
+			cache->configurationMap = configurationMap;
             if (cacheDir == NULL) {
                 cacheDir = ".cache";
             }
@@ -88,7 +90,7 @@ static celix_status_t bundleCache_deleteTree(char * directory, apr_pool_t *mp) {
             apr_finfo_t dp;
             while ((apr_dir_read(&dp, APR_FINFO_DIRENT|APR_FINFO_TYPE, dir)) == APR_SUCCESS) {
                 if ((strcmp((dp.name), ".") != 0) && (strcmp((dp.name), "..") != 0)) {
-                    char subdir[strlen(directory) + strlen(dp.name) + 2];
+                    char * subdir = (char *)malloc(strlen(directory) + strlen(dp.name) + 2);
                     strcpy(subdir, directory);
                     strcat(subdir, "/");
                     strcat(subdir, dp.name);
@@ -98,6 +100,7 @@ static celix_status_t bundleCache_deleteTree(char * directory, apr_pool_t *mp) {
                     } else {
                         remove(subdir);
                     }
+					free(subdir);
                 }
             }
             remove(directory);
@@ -122,10 +125,11 @@ celix_status_t bundleCache_getArchives(BUNDLE_CACHE cache, ARRAY_LIST *archives)
 
 	if (status == APR_SUCCESS) {
         ARRAY_LIST list = NULL;
+		apr_finfo_t dp;
         arrayList_create(cache->mp, &list);
-        apr_finfo_t dp;
+        
         while ((apr_dir_read(&dp, APR_FINFO_DIRENT|APR_FINFO_TYPE, dir)) == APR_SUCCESS) {
-            char archiveRoot[strlen(cache->cacheDir) + strlen(dp.name) + 2];
+            char * archiveRoot = (char *)malloc(strlen(cache->cacheDir) + strlen(dp.name) + 2);
             strcpy(archiveRoot, cache->cacheDir);
             strcat(archiveRoot, "/");
             strcat(archiveRoot, dp.name);
@@ -142,6 +146,7 @@ celix_status_t bundleCache_getArchives(BUNDLE_CACHE cache, ARRAY_LIST *archives)
                     arrayList_add(list, archive);
                 }
             }
+			free(archiveRoot);
         }
 
         apr_dir_close(dir);

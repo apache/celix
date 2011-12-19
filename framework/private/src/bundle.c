@@ -51,7 +51,10 @@ celix_status_t bundle_create(BUNDLE * bundle, apr_pool_t *mp) {
 	}
 	status = bundleArchive_createSystemBundleArchive(mp, &archive);
 	if (status == CELIX_SUCCESS) {
-        (*bundle)->memoryPool = mp;
+        MODULE module;
+		apr_status_t apr_status;
+
+		(*bundle)->memoryPool = mp;
         (*bundle)->archive = archive;
         (*bundle)->activator = NULL;
         (*bundle)->context = NULL;
@@ -60,11 +63,11 @@ celix_status_t bundle_create(BUNDLE * bundle, apr_pool_t *mp) {
         (*bundle)->modules = NULL;
         arrayList_create(mp, &(*bundle)->modules);
 
-        MODULE module = module_createFrameworkModule((*bundle));
+        module = module_createFrameworkModule((*bundle));
         bundle_addModule(*bundle, module);
         // (*bundle)->module = module;
 
-        apr_status_t apr_status = apr_thread_mutex_create(&(*bundle)->lock, APR_THREAD_MUTEX_UNNESTED, (*bundle)->memoryPool);
+        apr_status = apr_thread_mutex_create(&(*bundle)->lock, APR_THREAD_MUTEX_UNNESTED, (*bundle)->memoryPool);
         if (apr_status != APR_SUCCESS) {
         	status = CELIX_ILLEGAL_STATE;
         } else {
@@ -81,9 +84,11 @@ celix_status_t bundle_create(BUNDLE * bundle, apr_pool_t *mp) {
 }
 
 celix_status_t bundle_createFromArchive(BUNDLE * bundle, FRAMEWORK framework, BUNDLE_ARCHIVE archive, apr_pool_t *bundlePool) {
-    celix_status_t status = CELIX_SUCCESS;
+    MODULE module;
+	
+	celix_status_t status = CELIX_SUCCESS;
 
-    *bundle = (BUNDLE) apr_pcalloc(bundlePool, sizeof(**bundle));
+	*bundle = (BUNDLE) apr_pcalloc(bundlePool, sizeof(**bundle));
 	if (*bundle == NULL) {
 		return CELIX_ENOMEM;
 	}
@@ -96,12 +101,13 @@ celix_status_t bundle_createFromArchive(BUNDLE * bundle, FRAMEWORK framework, BU
 	(*bundle)->modules = NULL;
 	arrayList_create(bundlePool, &(*bundle)->modules);
 
-	MODULE module;
+	
 	status = bundle_createModule(*bundle, &module);
 	if (status == CELIX_SUCCESS) {
-        bundle_addModule(*bundle, module);
-
-        apr_status_t apr_status = apr_thread_mutex_create(&(*bundle)->lock, APR_THREAD_MUTEX_UNNESTED, (*bundle)->memoryPool);
+        apr_status_t apr_status;
+		
+		bundle_addModule(*bundle, module);
+        apr_status = apr_thread_mutex_create(&(*bundle)->lock, APR_THREAD_MUTEX_UNNESTED, (*bundle)->memoryPool);
         if (apr_status != APR_SUCCESS) {
 			status = CELIX_ILLEGAL_STATE;
 		} else {
@@ -208,7 +214,7 @@ celix_status_t bundle_createModule(BUNDLE bundle, MODULE *module) {
         status = bundleArchive_getId(bundle->archive, &bundleId);
         if (status == CELIX_SUCCESS) {
 			int revision = 0;
-			char moduleId[sizeof(bundleId) + sizeof(revision) + 2];
+			char * moduleId = (char *)malloc(sizeof(bundleId) + sizeof(revision) + 2);
 			sprintf(moduleId, "%ld.%d", bundleId, revision);
 
 			*module = module_create(headerMap, apr_pstrdup(bundle->memoryPool, moduleId), bundle);
@@ -228,11 +234,12 @@ celix_status_t bundle_createModule(BUNDLE bundle, MODULE *module) {
 							if (id != bundleId) {
 								MODULE mod = NULL;
 								char * sym = NULL;
+								VERSION version;
+								int cmp;
 								status = bundle_getCurrentModule(check, &mod);
 								status = module_getSymbolicName(mod, &sym);
 
-								VERSION version = module_getVersion(mod);
-								int cmp;
+								version = module_getVersion(mod);
 								version_compareTo(bundleVersion, version, &cmp);
 								if ((symName != NULL) && (sym != NULL) && !strcmp(symName, sym) &&
 										!cmp) {
@@ -248,6 +255,7 @@ celix_status_t bundle_createModule(BUNDLE bundle, MODULE *module) {
 					arrayList_destroy(bundles);
 				}
 			}
+			free(moduleId);
         }
 	}
 
@@ -457,22 +465,26 @@ celix_status_t bundle_unlock(BUNDLE bundle, bool *unlocked) {
 }
 
 celix_status_t bundle_close(BUNDLE bundle) {
-    celix_status_t status = CELIX_SUCCESS;
+	BUNDLE_ARCHIVE archive;
+	
+	celix_status_t status = CELIX_SUCCESS;
 
     bundle_closeModules(bundle);
     bundle_closeRevisions(bundle);
-    BUNDLE_ARCHIVE archive = bundle_getArchive(bundle);
+    archive = bundle_getArchive(bundle);
     bundleArchive_close(archive);
 
     return status;
 }
 
 celix_status_t bundle_closeAndDelete(BUNDLE bundle) {
-    celix_status_t status = CELIX_SUCCESS;
+    BUNDLE_ARCHIVE archive;
+	
+	celix_status_t status = CELIX_SUCCESS;
 
     bundle_closeModules(bundle);
     bundle_closeRevisions(bundle);
-    BUNDLE_ARCHIVE archive = bundle_getArchive(bundle);
+    archive = bundle_getArchive(bundle);
     bundleArchive_closeAndDelete(archive);
 
     return status;

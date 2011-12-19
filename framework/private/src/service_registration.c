@@ -49,6 +49,8 @@ SERVICE_REGISTRATION serviceRegistration_createServiceFactory(apr_pool_t *pool, 
 celix_status_t serviceRegistration_createInternal(apr_pool_t *pool, SERVICE_REGISTRY registry, BUNDLE bundle, char * serviceName, long serviceId,
         void * serviceObject, PROPERTIES dictionary, bool isFactory, SERVICE_REGISTRATION *registration) {
     celix_status_t status = CELIX_SUCCESS;
+	char * sId = (char *)malloc(sizeof(serviceId) + 1);
+	SERVICE_REFERENCE reference;
 
     *registration = (SERVICE_REGISTRATION) apr_palloc(pool, sizeof(**registration));
     (*registration)->isServiceFactory = isFactory;
@@ -62,7 +64,7 @@ celix_status_t serviceRegistration_createInternal(apr_pool_t *pool, SERVICE_REGI
 		dictionary = properties_create();
 	}
 
-	char sId[sizeof(serviceId) + 1];
+	
 	sprintf(sId, "%ld", serviceId);
 	properties_set(dictionary, (char *) SERVICE_ID, sId);
 	properties_set(dictionary, (char *) OBJECTCLASS, serviceName);
@@ -80,8 +82,9 @@ celix_status_t serviceRegistration_createInternal(apr_pool_t *pool, SERVICE_REGI
 //	serviceReference_create(pool, bundle, *registration, &(*registration)->reference);
 
 	(*registration)->isUnregistering = false;
-	pthread_mutex_init(&(*registration)->mutex, NULL);
+	apr_thread_mutex_create(&(*registration)->mutex, 0, pool);
 
+	free(sId);
 	return CELIX_SUCCESS;
 }
 
@@ -92,31 +95,31 @@ void serviceRegistration_destroy(SERVICE_REGISTRATION registration) {
 	properties_destroy(registration->properties);
 	arrayList_destroy(registration->references);
 
-	pthread_mutex_destroy(&registration->mutex);
+	apr_thread_mutex_destroy(registration->mutex);
 
 //	free(registration);
 }
 
 bool serviceRegistration_isValid(SERVICE_REGISTRATION registration) {
-	return registration->svcObj != NULL;
+	return registration == NULL ? false : registration->svcObj != NULL;
 }
 
 void serviceRegistration_invalidate(SERVICE_REGISTRATION registration) {
-	pthread_mutex_lock(&registration->mutex);
+	apr_thread_mutex_lock(registration->mutex);
 	registration->svcObj = NULL;
-	pthread_mutex_unlock(&registration->mutex);
+	apr_thread_mutex_unlock(registration->mutex);
 }
 
 celix_status_t serviceRegistration_unregister(SERVICE_REGISTRATION registration) {
 	celix_status_t status = CELIX_SUCCESS;
-	pthread_mutex_lock(&registration->mutex);
+	apr_thread_mutex_lock(registration->mutex);
 	if (!serviceRegistration_isValid(registration) || registration->isUnregistering) {
 		printf("Service is already unregistered\n");
 		status = CELIX_ILLEGAL_STATE;
 	} else {
 		registration->isUnregistering = true;
 	}
-	pthread_mutex_unlock(&registration->mutex);
+	apr_thread_mutex_unlock(registration->mutex);
 
 //	BUNDLE bundle = NULL;
 //	status = serviceReference_getBundle(registration->reference, &bundle);

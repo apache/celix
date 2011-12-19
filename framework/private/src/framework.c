@@ -1408,10 +1408,14 @@ celix_status_t framework_acquireBundleLock(FRAMEWORK framework, BUNDLE bundle, i
 		status = CELIX_BUNDLE_EXCEPTION;
 	} else {
 		bool lockable = false;
+		bool isSelf = false;
+
 		bundle_isLockable(bundle, &lockable);
+		thread_equalsSelf(framework->globalLockThread, &isSelf);
+
 		while (!lockable
 				|| ((framework->globalLockThread != NULL)
-				&& (framework->globalLockThread != pthread_self()))) {
+				&& !isSelf)) {
 			BUNDLE_STATE state;
 			bundle_getState(bundle, &state);
 			if ((desiredStates & state) == 0) {
@@ -1419,7 +1423,7 @@ celix_status_t framework_acquireBundleLock(FRAMEWORK framework, BUNDLE bundle, i
 				break;
 			} else
 				bundle_getLockingThread(bundle, &lockingThread);
-				if (framework->globalLockThread == pthread_self()
+				if (isSelf
 					&& (lockingThread != NULL)
 					&& arrayList_contains(framework->globalLockWaitersList, lockingThread)) {
 				framework->interrupted = true;
@@ -1479,10 +1483,13 @@ bool framework_acquireGlobalLock(FRAMEWORK framework) {
     apr_thread_mutex_lock(framework->bundleLock);
 
 	bool interrupted = false;
+	bool isSelf = false;
+
+	thread_equalsSelf(framework->globalLockThread, &isSelf);
 
 	while (!interrupted
 			&& (framework->globalLockThread != NULL)
-			&& (framework->globalLockThread != pthread_self())) {
+			&& (!isSelf)) {
 		pthread_t currentThread = pthread_self();
 		arrayList_add(framework->globalLockWaitersList, currentThread);
 		apr_thread_cond_broadcast(framework->condition);
@@ -1498,7 +1505,7 @@ bool framework_acquireGlobalLock(FRAMEWORK framework) {
 
 	if (!interrupted) {
 		framework->globalLockCount++;
-		framework->globalLockThread = pthread_self();
+		framework->globalLockThread = apr_os_thread_current();
 	}
 
 	apr_thread_mutex_unlock(framework->bundleLock);

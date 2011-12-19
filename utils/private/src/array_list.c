@@ -238,12 +238,13 @@ bool arrayList_addAll(ARRAY_LIST list, ARRAY_LIST toAdd) {
 }
 
 ARRAY_LIST arrayList_clone(apr_pool_t *pool, ARRAY_LIST list) {
+	int i;
 	ARRAY_LIST new = NULL;
 	arrayList_create(pool, &new);
 //	arrayList_ensureCapacity(new, list->size);
 //	memcpy(new->elementData, list->elementData, list->size);
 //	new->size = list->size;
-	int i;
+	
 	for (i = 0; i < arrayList_size(list); i++) {
 		arrayList_add(new, arrayList_get(list, i));
 	}

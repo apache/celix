@@ -49,6 +49,7 @@ celix_status_t version_createVersion(apr_pool_t *pool, int major, int minor, int
 	if (!*version) {
 		status = CELIX_ENOMEM;
 	} else {
+		int i;
 		apr_pool_pre_cleanup_register(pool, *version, version_destroy);
 
 		(*version)->pool = pool;
@@ -69,7 +70,7 @@ celix_status_t version_createVersion(apr_pool_t *pool, int major, int minor, int
 		if (micro < 0) {
 			celix_log("Negative micro");
 		}
-		int i;
+		
 		for (i = 0; i < strlen(qualifier); i++) {
 			char ch = qualifier[i];
 			if (('A' <= ch) && (ch <= 'Z')) {

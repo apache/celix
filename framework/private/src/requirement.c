@@ -36,6 +36,8 @@ struct requirement {
 };
 
 REQUIREMENT requirement_create(apr_pool_t *pool, HASH_MAP directives, HASH_MAP attributes) {
+	ATTRIBUTE versionAttribute = NULL;
+	ATTRIBUTE serviceAttribute = NULL;
 	REQUIREMENT requirement = (REQUIREMENT) malloc(sizeof(*requirement));
 
 	requirement->attributes = attributes;
@@ -43,12 +45,12 @@ REQUIREMENT requirement_create(apr_pool_t *pool, HASH_MAP directives, HASH_MAP a
 
 	requirement->versionRange = NULL;
 	versionRange_createInfiniteVersionRange(pool, &requirement->versionRange);
-	ATTRIBUTE versionAttribute = (ATTRIBUTE) hashMap_get(attributes, "version");
+	versionAttribute = (ATTRIBUTE) hashMap_get(attributes, "version");
 	if (versionAttribute != NULL) {
 		requirement->versionRange = NULL;
 		versionRange_parse(pool, versionAttribute->value, &requirement->versionRange);
 	}
-	ATTRIBUTE serviceAttribute = (ATTRIBUTE) hashMap_get(attributes, "service");
+	serviceAttribute = (ATTRIBUTE) hashMap_get(attributes, "service");
 	requirement->targetName = serviceAttribute->value;
 
 	return requirement;

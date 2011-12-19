@@ -34,8 +34,11 @@
 #include <errno.h>
 #include <fcntl.h>
 
-#include <unistd.h>
+#ifdef _WIN32
+#include <sys/utime.h>
+#else
 #include <utime.h>
+#endif
 #include <sys/stat.h>
 
 #include "unzip.h"
@@ -47,7 +50,8 @@
 
 #ifdef _WIN32
 #define USEWIN32IOAPI
-#include "iowin32.h"
+#include <windows.h>
+#include <winbase.h>
 #endif
 /*
   mini unzip, demo of unzip package
@@ -204,21 +208,25 @@ int do_extract_currentfile(unzFile uf, char * revisionRoot) {
     }
 
     if ((*filename_withoutpath)=='\0') {
+		char * dir;
 		printf("creating directory: %s\n",filename_inzip);
-		char dir[strlen(revisionRoot) + strlen(filename_inzip) + 2];
+		dir = (char *)malloc(strlen(revisionRoot) + strlen(filename_inzip) + 2);
 		strcpy(dir, revisionRoot);
 		strcat(dir, "/");
 		strcat(dir, filename_inzip);
 		mymkdir(dir);
+		free(dir);
     }
     else
     {
         const char* write_filename;
         int skip=0;
+		int length;
+		char * fWFN;
         write_filename = filename_inzip;
 
-        int length = strlen(write_filename) + strlen(revisionRoot) + 2;
-        char fWFN[length];
+        length = strlen(write_filename) + strlen(revisionRoot) + 2;
+        fWFN = (char *)malloc(length);
         strcpy(fWFN, revisionRoot);
         strcat(fWFN, "/");
         strcat(fWFN, write_filename);
@@ -236,16 +244,18 @@ int do_extract_currentfile(unzFile uf, char * revisionRoot) {
             /* some zipfile don't contain directory alone before file */
             if ((fout==NULL) && (filename_withoutpath!=(char*)filename_inzip))
             {
+				char * dir;
+				int length;
                 char c=*(filename_withoutpath-1);
                 *(filename_withoutpath-1)='\0';
-                int length = strlen(write_filename) + strlen(revisionRoot) + 2;
-                char dir[length];
+                length = strlen(write_filename) + strlen(revisionRoot) + 2;
+                dir = (char *)malloc(length);
 				strcpy(dir, revisionRoot);
 				strcat(dir, "/");
 				strcat(dir, write_filename);
                 makedir(dir);
                 *(filename_withoutpath-1)=c;
-
+				free(dir);
                 fout=fopen64(fWFN,"wb");
             }
 
@@ -292,6 +302,8 @@ int do_extract_currentfile(unzFile uf, char * revisionRoot) {
         }
         else
             unzCloseCurrentFile(uf); /* don't lose the error */
+
+		free(fWFN);
     }
 
     free(buf);

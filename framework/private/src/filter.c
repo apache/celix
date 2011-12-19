@@ -125,9 +125,10 @@ FILTER filter_parseFilter(char * filterString, int * pos, apr_pool_t *pool) {
 }
 
 FILTER filter_parseFilterComp(char * filterString, int * pos, apr_pool_t *pool) {
+	char c;
 	filter_skipWhiteSpace(filterString, pos);
 
-	char c = filterString[*pos];
+	c = filterString[*pos];
 
 	switch (c) {
 		case '&': {
@@ -193,6 +194,7 @@ FILTER filter_parseOr(char * filterString, int * pos, apr_pool_t *pool) {
 }
 
 FILTER filter_parseNot(char * filterString, int * pos, apr_pool_t *pool) {
+	FILTER child = NULL;
 	FILTER filter = (FILTER) malloc(sizeof(*filter));
 	filter_skipWhiteSpace(filterString, pos);
 
@@ -201,7 +203,7 @@ FILTER filter_parseNot(char * filterString, int * pos, apr_pool_t *pool) {
 		return NULL;
 	}
 
-	FILTER child = filter_parseFilter(filterString, pos, pool);
+	child = filter_parseFilter(filterString, pos, pool);
 
 	filter->operand = NOT;
 	filter->attribute = NULL;
@@ -248,7 +250,8 @@ FILTER filter_parseItem(char * filterString, int * pos, apr_pool_t *pool) {
 			break;
 		}
 		case '=': {
-
+			FILTER filter = NULL;
+			ARRAY_LIST subs;
 			if (filterString[*pos + 1] == '*') {
 				int oldPos = *pos;
 				*pos += 2;
@@ -262,8 +265,7 @@ FILTER filter_parseItem(char * filterString, int * pos, apr_pool_t *pool) {
 				}
 				*pos = oldPos;
 			}
-			FILTER filter = (FILTER) malloc(sizeof(*filter));
-			ARRAY_LIST subs;
+			filter = (FILTER) malloc(sizeof(*filter));			
 			(*pos)++;
 			subs = filter_parseSubstring(filterString, pos, pool);
 			if (arrayList_size(subs) == 1) {
@@ -290,12 +292,13 @@ FILTER filter_parseItem(char * filterString, int * pos, apr_pool_t *pool) {
 }
 
 char * filter_parseAttr(char * filterString, int * pos) {
-	filter_skipWhiteSpace(filterString, pos);
+	char c;
 	int begin = *pos;
 	int end = *pos;
 	int length = 0;
 
-	char c = filterString[*pos];
+	filter_skipWhiteSpace(filterString, pos);
+	c = filterString[*pos];
 
 	while (c != '~' && c != '<' && c != '>' && c != '=' && c != '(' && c != ')') {
 		(*pos)++;
@@ -362,11 +365,14 @@ char * filter_parseValue(char * filterString, int * pos) {
 ARRAY_LIST filter_parseSubstring(char * filterString, int * pos, apr_pool_t *pool) {
 	char * sub = (char *) malloc(strlen(filterString));
 	ARRAY_LIST operands = NULL;
-	arrayList_create(pool, &operands);
 	int keepRunning = 1;
+	int size;
+
+	arrayList_create(pool, &operands);
 	sub[0] = '\0';
 	while (keepRunning) {
 		char c = filterString[*pos];
+		
 
 		switch (c) {
 			case ')': {
@@ -404,7 +410,7 @@ ARRAY_LIST filter_parseSubstring(char * filterString, int * pos, apr_pool_t *poo
 			}
 		}
 	}
-	int size = arrayList_size(operands);
+	size = arrayList_size(operands);
 
 	if (size == 0) {
 		printf("Missing value");
@@ -479,11 +485,12 @@ int filter_compareString(OPERAND operand, char * string, void * value2) {
 
 				if (i + 1 < size) {
 					if (substr == NULL) {
+						unsigned int index;
 						char * substr2 = (char *) arrayList_get(subs, i + 1);
 						if (substr2 == NULL) {
 							continue;
 						}
-						unsigned int index = strcspn(string+pos, substr2);
+						index = strcspn(string+pos, substr2);
 						if (index == strlen(string+pos)) {
 							return 0;
 						}
@@ -494,21 +501,26 @@ int filter_compareString(OPERAND operand, char * string, void * value2) {
 						}
 					} else {
 						unsigned int len = strlen(substr);
-						char region[len+1];
+						char * region = (char *)malloc(len+1);
 						strncpy(region, string+pos, len);
-						region[len] = '\0';
+						region[len]	= '\0';
 						if (strcmp(region, substr) == 0) {
 							pos += len;
 						} else {
+							free(region);
 							return 0;
 						}
+						free(region);
 					}
 				} else {
+					unsigned int len;
+					int begin;
+
 					if (substr == NULL) {
 						return 1;
 					}
-					unsigned int len = strlen(substr);
-					int begin = strlen(string)-len;
+					len = strlen(substr);
+					begin = strlen(string)-len;
 					return (strcmp(string+begin, substr) == 0);
 				}
 			}

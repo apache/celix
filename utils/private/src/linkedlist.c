@@ -55,7 +55,8 @@ celix_status_t linkedList_clone(LINKED_LIST list, apr_pool_t *pool, LINKED_LIST 
 
 	status = linkedList_create(pool, clone);
 	if (status == CELIX_SUCCESS) {
-        for (struct linkedListEntry *e = list->header->next; e != list->header; e = e->next) {
+		struct linkedListEntry *e;
+        for (e = list->header->next; e != list->header; e = e->next) {
             linkedList_addElement(*clone, e->element);
         }
 	}

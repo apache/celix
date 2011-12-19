@@ -26,8 +26,6 @@
 #ifndef SERVICE_REGISTRY_H_
 #define SERVICE_REGISTRY_H_
 
-#include <pthread.h>
-
 #include "headers.h"
 #include "properties.h"
 #include "filter.h"

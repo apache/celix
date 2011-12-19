@@ -36,7 +36,7 @@ typedef struct arrayList * ARRAY_LIST;
 
 typedef struct arrayListIterator * ARRAY_LIST_ITERATOR;
 
-celix_status_t arrayList_create(apr_pool_t *pool, ARRAY_LIST *list);
+UTILS_EXPORT celix_status_t arrayList_create(apr_pool_t *pool, ARRAY_LIST *list);
 UTILS_EXPORT void arrayList_destroy(ARRAY_LIST list);
 UTILS_EXPORT void arrayList_trimToSize(ARRAY_LIST list);
 UTILS_EXPORT void arrayList_ensureCapacity(ARRAY_LIST list, int capacity);

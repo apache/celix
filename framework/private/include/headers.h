@@ -27,8 +27,6 @@
 #define HEADERS_H_
 
 #include <stdio.h>
-#include <dirent.h>
-#include <pthread.h>
 
 #include <apr_general.h>
 #include <apr_thread_proc.h>
@@ -53,8 +51,11 @@
 #define ATTRIBUTE_UNUSED
 #endif
 
-
+#if defined(WIN32)
+#define celix_log(msg) printf("%s\n", msg);
+#else
 #define celix_log(msg) printf("%s\n\tat %s(%s:%d)\n", msg, __func__, __FILE__, __LINE__);
+#endif
 
 struct framework {
 	struct bundle * bundle;
@@ -73,7 +74,7 @@ struct framework {
 	apr_thread_mutex_t *mutex;
 	apr_thread_mutex_t *bundleLock;
 
-	pthread_t globalLockThread;
+	apr_os_thread_t globalLockThread;
 	ARRAY_LIST globalLockWaitersList;
 	int globalLockCount;
 
@@ -148,7 +149,7 @@ struct serviceRegistration {
 	void * svcObj;
 	long serviceId;
 
-	pthread_mutex_t mutex;
+	apr_thread_mutex_t *mutex;
 	bool isUnregistering;
 
 	bool isServiceFactory;

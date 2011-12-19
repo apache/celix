@@ -250,8 +250,8 @@ celix_status_t serviceTracker_track(FW_SERVICE_TRACKER fwTracker, SERVICE_REFERE
 	int found = -1;
 	unsigned int i;
 	for (i = 0; i < arrayList_size(fwTracker->tracked); i++) {
-		tracked = (TRACKED) arrayList_get(fwTracker->tracked, i);
 		bool equals;
+		tracked = (TRACKED) arrayList_get(fwTracker->tracked, i);
 		serviceReference_equals(reference, tracked->reference, &equals);
 		if (equals) {
 			found = 0;
@@ -299,8 +299,8 @@ celix_status_t serviceTracker_untrack(FW_SERVICE_TRACKER fwTracker, SERVICE_REFE
 	bool result = NULL;
 
 	for (i = 0; i < arrayList_size(fwTracker->tracked); i++) {
-		tracked = (TRACKED) arrayList_get(fwTracker->tracked, i);
 		bool equals;
+		tracked = (TRACKED) arrayList_get(fwTracker->tracked, i);
 		serviceReference_equals(reference, tracked->reference, &equals);
 		if (equals) {
 			if (tracked != NULL) {

@@ -59,10 +59,12 @@ celix_status_t manifestParser_create(MODULE owner, MANIFEST manifest, apr_pool_t
     status = CELIX_SUCCESS;
 	parser = (MANIFEST_PARSER) apr_pcalloc(memory_pool, sizeof(*parser));
 	if (parser) {
+		char * bundleVersion = NULL;
+		char * bundleSymbolicName = NULL;
         parser->manifest = manifest;
         parser->owner = owner;
 
-        char * bundleVersion = manifest_getValue(manifest, BUNDLE_VERSION);
+        bundleVersion = manifest_getValue(manifest, BUNDLE_VERSION);
         if (bundleVersion != NULL) {
             parser->bundleVersion = NULL;
             version_createVersionFromString(memory_pool, bundleVersion, &parser->bundleVersion);
@@ -70,7 +72,7 @@ celix_status_t manifestParser_create(MODULE owner, MANIFEST manifest, apr_pool_t
         	parser->bundleVersion = NULL;
 			version_createEmptyVersion(memory_pool, &parser->bundleVersion);
         }
-        char * bundleSymbolicName = manifest_getValue(manifest, BUNDLE_SYMBOLICNAME);
+        bundleSymbolicName = manifest_getValue(manifest, BUNDLE_SYMBOLICNAME);
         if (bundleSymbolicName != NULL) {
             parser->bundleSymbolicName = bundleSymbolicName;
         }
@@ -102,11 +104,11 @@ static LINKED_LIST manifestParser_parseDelimitedString(char * value, char * deli
 
                 char * buffer = (char *) apr_pcalloc(temp_pool, sizeof(char) * 512);
                 if (buffer != NULL) {
-                    buffer[0] = '\0';
-
                     int expecting = (CHAR | DELIMITER | STARTQUOTE);
+					int i;
 
-                    int i;
+					buffer[0] = '\0';
+                                     
                     for (i = 0; i < strlen(value); i++) {
                         char c = value[i];
 
@@ -169,6 +171,11 @@ static LINKED_LIST manifestParser_parseStandardHeaderClause(char * clauseString,
         if (linkedList_create(memory_pool, &paths) == CELIX_SUCCESS) {
             int pathCount = 0;
             int pieceIdx;
+			HASH_MAP dirsMap = NULL;
+			HASH_MAP attrsMap = NULL;
+			char * sepPtr;
+            char * sep;
+
             for (pieceIdx = 0; pieceIdx < linkedList_size(pieces); pieceIdx++) {
                 char * piece = linkedList_get(pieces, pieceIdx);
                 if (strchr(piece, '=') != NULL) {
@@ -183,13 +190,14 @@ static LINKED_LIST manifestParser_parseStandardHeaderClause(char * clauseString,
                 return NULL;
             }
 
-            HASH_MAP dirsMap = hashMap_create(string_hash, NULL, string_equals, NULL);
-            HASH_MAP attrsMap = hashMap_create(string_hash, NULL, string_equals, NULL);
+            dirsMap = hashMap_create(string_hash, NULL, string_equals, NULL);
+            attrsMap = hashMap_create(string_hash, NULL, string_equals, NULL);
 
-            char * sepPtr;
-            char * sep;
+            
             for (pieceIdx = pathCount; pieceIdx < linkedList_size(pieces); pieceIdx++) {
-                char * DIRECTIVE_SEP = ":=";
+                char * key;
+				char * value;
+				char * DIRECTIVE_SEP = ":=";
                 char * ATTRIBUTE_SEP = "=";
                 char * piece = linkedList_get(pieces, pieceIdx);
                 if ((sepPtr = strstr(piece, DIRECTIVE_SEP)) != NULL) {
@@ -200,8 +208,8 @@ static LINKED_LIST manifestParser_parseStandardHeaderClause(char * clauseString,
                     return NULL;
                 }
 
-                char * key = string_ndup(piece, sepPtr - piece);
-                char * value = apr_pstrdup(temp_pool, sepPtr+strlen(sep));
+                key = string_ndup(piece, sepPtr - piece);
+                value = apr_pstrdup(temp_pool, sepPtr+strlen(sep));
 
                 if (value[0] == '"' && value[strlen(value) -1] == '"') {
                     char * oldV = apr_pstrdup(memory_pool, value);
@@ -215,10 +223,11 @@ static LINKED_LIST manifestParser_parseStandardHeaderClause(char * clauseString,
                 if (strcmp(sep, DIRECTIVE_SEP) == 0) {
                     // Not implemented
                 } else {
-                    if (hashMap_containsKey(attrsMap, key)) {
+                    ATTRIBUTE attr = NULL;
+					if (hashMap_containsKey(attrsMap, key)) {
                         return NULL;
                     }
-                    ATTRIBUTE attr = NULL;
+                    
                     if (attribute_create(key, value, memory_pool, &attr) == CELIX_SUCCESS) {
                         hashMap_put(attrsMap, key, attr);
                     }
@@ -271,10 +280,11 @@ static LINKED_LIST manifestParser_parseImportHeader(char * header, apr_pool_t *m
     LINKED_LIST requirements;
 
     if (apr_pool_create(&temp_pool, memory_pool) == APR_SUCCESS) {
-        clauses = manifestParser_parseStandardHeader(header, memory_pool);
-        linkedList_create(memory_pool, &requirements);
-
         int clauseIdx;
+		LINKED_LIST_ITERATOR iter;
+		clauses = manifestParser_parseStandardHeader(header, memory_pool);
+        linkedList_create(memory_pool, &requirements);
+        
         for (clauseIdx = 0; clauseIdx < linkedList_size(clauses); clauseIdx++) {
             LINKED_LIST clause = linkedList_get(clauses, clauseIdx);
 
@@ -284,22 +294,23 @@ static LINKED_LIST manifestParser_parseImportHeader(char * header, apr_pool_t *m
 
             int pathIdx;
             for (pathIdx = 0; pathIdx < linkedList_size(paths); pathIdx++) {
-                char * path = (char *) linkedList_get(paths, pathIdx);
+                ATTRIBUTE name = NULL;
+				REQUIREMENT req = NULL;
+				char * path = (char *) linkedList_get(paths, pathIdx);
                 if (strlen(path) == 0) {
                     return NULL;
                 }
-
-                ATTRIBUTE name = NULL;
+                
                 if (attribute_create(apr_pstrdup(memory_pool, "service"), path, memory_pool, &name) == CELIX_SUCCESS) {
                     hashMap_put(attributes, name->key, name);
                 }
 
-                REQUIREMENT req = requirement_create(memory_pool, directives, attributes);
+                req = requirement_create(memory_pool, directives, attributes);
                 linkedList_addElement(requirements, req);
             }
         }
 
-        LINKED_LIST_ITERATOR iter = linkedListIterator_create(clauses, 0);
+        iter = linkedListIterator_create(clauses, 0);
         while(linkedListIterator_hasNext(iter)) {
             LINKED_LIST clause = linkedListIterator_next(iter);
 
@@ -318,11 +329,12 @@ static LINKED_LIST manifestParser_parseImportHeader(char * header, apr_pool_t *m
 static LINKED_LIST manifestParser_parseExportHeader(MODULE module, char * header, apr_pool_t *memory_pool) {
     LINKED_LIST clauses;
     LINKED_LIST capabilities;
-
+	int clauseIdx;
+	LINKED_LIST_ITERATOR iter;
     clauses = manifestParser_parseStandardHeader(header, memory_pool);
     linkedList_create(memory_pool, &capabilities);
 
-    int clauseIdx;
+    
     for (clauseIdx = 0; clauseIdx < linkedList_size(clauses); clauseIdx++) {
         LINKED_LIST clause = linkedList_get(clauses, clauseIdx);
 
@@ -333,21 +345,21 @@ static LINKED_LIST manifestParser_parseExportHeader(MODULE module, char * header
         int pathIdx;
         for (pathIdx = 0; pathIdx < linkedList_size(paths); pathIdx++) {
             char * path = (char *) linkedList_get(paths, pathIdx);
-            if (strlen(path) == 0) {
+            ATTRIBUTE name = NULL;
+			CAPABILITY cap = NULL;
+			if (strlen(path) == 0) {
                 return NULL;
             }
 
-            ATTRIBUTE name = NULL;
             if (attribute_create(apr_pstrdup(memory_pool, "service"), path, memory_pool, &name) == CELIX_SUCCESS) {
                 hashMap_put(attributes, name->key, name);
             }
 
-            CAPABILITY cap = NULL;
             capability_create(memory_pool, module, directives, attributes, &cap);
             linkedList_addElement(capabilities, cap);
         }
     }
-    LINKED_LIST_ITERATOR iter = linkedListIterator_create(clauses, 0);
+    iter = linkedListIterator_create(clauses, 0);
     while(linkedListIterator_hasNext(iter)) {
         LINKED_LIST clause = linkedListIterator_next(iter);
 

@@ -194,8 +194,9 @@ celix_status_t manifest_readAttributes(MANIFEST manifest, PROPERTIES properties,
 
 	int len;
 	while (fgets(lbuf, sizeof(lbuf), file ) != NULL ) {
-		len = strlen(lbuf);
 		bool lineContinued = false;
+		int i = 0;
+		len = strlen(lbuf);
 		if (lbuf[--len] != '\n') {
 			printf("MANIFEST: Line too long\n");
 			return CELIX_FILE_IO_EXCEPTION;
@@ -206,16 +207,18 @@ celix_status_t manifest_readAttributes(MANIFEST manifest, PROPERTIES properties,
 		if (len == 0) {
 			break;
 		}
-		int i = 0;
+		
 		if (lbuf[0] == ' ') {
+			int newlen = strlen(lastLine) + len - 1;
+			char * buf = (char *)malloc(newlen);
+
 			// Line continued
 			if (name == NULL) {
+				free(buf);
 				printf("MANIFEST: No continued line expected\n");
 				return CELIX_FILE_IO_EXCEPTION;
 			}
 			lineContinued = true;
-			int newlen = strlen(lastLine) + len;
-			char buf[newlen];
 			strcpy(buf, lastLine);
 			strncat(buf, lbuf+1, len - 1);
 			buf[newlen] = '\0';

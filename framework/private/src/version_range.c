@@ -139,19 +139,21 @@ celix_status_t versionRange_parse(apr_pool_t *pool, char * rangeStr, VERSION_RAN
 			if (!vlow) {
 				status = CELIX_ENOMEM;
 			} else {
+				int vhighL;
+				char * vhigh;
 				vlow = strncpy(vlow, rangeStr+1, vlowL);
-				int vhighL = strlen(rangeStr+1) - vlowL - 2;
-				char * vhigh = (char *) apr_palloc(spool, sizeof(*vhigh * vhighL));
+				vhighL = strlen(rangeStr+1) - vlowL - 2;
+				vhigh = (char *) apr_palloc(spool, sizeof(*vhigh * vhighL));
 				if (!vhigh) {
 					status = CELIX_ENOMEM;
-				} else {
-					vhigh = strncpy(vhigh, rangeStr+vlowL+2, vhighL);
-
+				} else {					
+					VERSION versionLow = NULL;
 					int rangeL = strlen(rangeStr);
 					char start = rangeStr[0];
 					char end = rangeStr[rangeL-1];
 
-					VERSION versionLow = NULL;
+					vhigh = strncpy(vhigh, rangeStr+vlowL+2, vhighL);
+					
 					status = version_createVersionFromString(pool, vlow, &versionLow);
 					if (status == CELIX_SUCCESS) {
 						VERSION versionHigh = NULL;

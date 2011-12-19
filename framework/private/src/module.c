@@ -141,10 +141,10 @@ WIRE module_getWire(MODULE module, char * serviceName) {
 	if (module->wires != NULL) {
 		LINKED_LIST_ITERATOR iterator = linkedListIterator_create(module->wires, 0);
 		while (linkedListIterator_hasNext(iterator)) {
+			char *name;
 			WIRE next = linkedListIterator_next(iterator);
 			CAPABILITY cap = NULL;
 			wire_getCapability(next, &cap);
-			char *name;
 			capability_getServiceName(cap, &name);
 			if (strcasecmp(name, serviceName) == 0) {
 				wire = next;

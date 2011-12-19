@@ -43,7 +43,7 @@ struct serviceRegistry {
 
 	ARRAY_LIST listenerHooks;
 
-	pthread_mutex_t mutex;
+	apr_thread_mutex_t * mutex;
 };
 
 struct usageCount {
@@ -80,8 +80,8 @@ USAGE_COUNT serviceRegistry_addUsageCount(SERVICE_REGISTRY registry, BUNDLE bund
 	usage->service = NULL;
 
 	if (usages == NULL) {
-		arrayList_create(bundle->memoryPool, &usages);
 		MODULE mod = NULL;
+		arrayList_create(bundle->memoryPool, &usages);		
 		bundle_getCurrentModule(bundle, &mod);
 	}
 	arrayList_add(usages, usage);
@@ -115,17 +115,16 @@ SERVICE_REGISTRY serviceRegistry_create(FRAMEWORK framework, void (*serviceChang
 	if (registry == NULL) {
 	    // no memory
 	} else {
+		apr_status_t mutexattr;
+
         registry->serviceChanged = serviceChanged;
         registry->inUseMap = hashMap_create(NULL, NULL, NULL, NULL);
         registry->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
         registry->framework = framework;
 
         arrayList_create(framework->mp, &registry->listenerHooks);
+        mutexattr = apr_thread_mutex_create(&registry->mutex, APR_THREAD_MUTEX_NESTED, framework->mp);
 
-        pthread_mutexattr_t mutexattr;
-        pthread_mutexattr_init(&mutexattr);
-        pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE);
-        pthread_mutex_init(&registry->mutex, &mutexattr);
         registry->currentServiceId = 1l;
 	}
 	return registry;
@@ -135,7 +134,7 @@ celix_status_t serviceRegistry_destroy(SERVICE_REGISTRY registry) {
     hashMap_destroy(registry->inUseMap, false, false);
     hashMap_destroy(registry->serviceRegistrations, false, false);
     arrayList_destroy(registry->listenerHooks);
-    pthread_mutex_destroy(&registry->mutex);
+    apr_thread_mutex_destroy(registry->mutex);
 
     return CELIX_SUCCESS;
 }
@@ -145,8 +144,9 @@ celix_status_t serviceRegistry_getRegisteredServices(SERVICE_REGISTRY registry, 
 
 	ARRAY_LIST regs = (ARRAY_LIST) hashMap_get(registry->serviceRegistrations, bundle);
 	if (regs != NULL) {
-		arrayList_create(pool, services);
 		int i;
+		arrayList_create(pool, services);
+		
 		for (i = 0; i < arrayList_size(regs); i++) {
 			SERVICE_REGISTRATION reg = arrayList_get(regs, i);
 			if (serviceRegistration_isValid(reg)) {
@@ -174,9 +174,11 @@ SERVICE_REGISTRATION serviceRegistry_registerServiceFactory(SERVICE_REGISTRY reg
 }
 
 celix_status_t serviceRegistry_registerServiceInternal(SERVICE_REGISTRY registry, BUNDLE bundle, char * serviceName, void * serviceObject, PROPERTIES dictionary, bool isFactory, SERVICE_REGISTRATION *registration) {
-	pthread_mutex_lock(&registry->mutex);
+	ARRAY_LIST regs;
+	apr_pool_t *pool;
+	apr_thread_mutex_lock(registry->mutex);
 
-	apr_pool_t *pool = bundle->memoryPool;
+	pool = bundle->memoryPool;
 
 	if (isFactory) {
 	    *registration = serviceRegistration_createServiceFactory(pool, registry, bundle, serviceName, ++registry->currentServiceId, serviceObject, dictionary);
@@ -186,7 +188,7 @@ celix_status_t serviceRegistry_registerServiceInternal(SERVICE_REGISTRY registry
 
 	serviceRegistry_addHooks(registry, serviceName, serviceObject, *registration);
 
-	ARRAY_LIST regs = (ARRAY_LIST) hashMap_get(registry->serviceRegistrations, bundle);
+	regs = (ARRAY_LIST) hashMap_get(registry->serviceRegistrations, bundle);
 	if (regs == NULL) {
 		regs = NULL;
 		arrayList_create(bundle->memoryPool, &regs);
@@ -194,7 +196,7 @@ celix_status_t serviceRegistry_registerServiceInternal(SERVICE_REGISTRY registry
 	arrayList_add(regs, *registration);
 	hashMap_put(registry->serviceRegistrations, bundle, regs);
 
-	pthread_mutex_unlock(&registry->mutex);
+	apr_thread_mutex_unlock(registry->mutex);
 
 	if (registry->serviceChanged != NULL) {
 //		SERVICE_EVENT event = (SERVICE_EVENT) malloc(sizeof(*event));
@@ -209,26 +211,29 @@ celix_status_t serviceRegistry_registerServiceInternal(SERVICE_REGISTRY registry
 }
 
 void serviceRegistry_unregisterService(SERVICE_REGISTRY registry, BUNDLE bundle, SERVICE_REGISTRATION registration) {
-	pthread_mutex_lock(&registry->mutex);
+	ARRAY_LIST clients;
+	int i;
+	ARRAY_LIST regs;
+
+	apr_thread_mutex_lock(registry->mutex);
 
 	serviceRegistry_removeHook(registry, registration);
 
-	ARRAY_LIST regs = (ARRAY_LIST) hashMap_get(registry->serviceRegistrations, bundle);
+	regs = (ARRAY_LIST) hashMap_get(registry->serviceRegistrations, bundle);
 	if (regs != NULL) {
 		arrayList_removeElement(regs, registration);
 		hashMap_put(registry->serviceRegistrations, bundle, regs);
 	}
 
-	pthread_mutex_unlock(&registry->mutex);
+	apr_thread_mutex_unlock(registry->mutex);
 
 	if (registry->serviceChanged != NULL) {
 		registry->serviceChanged(registry->framework, UNREGISTERING, registration, NULL);
 	}
 
-	pthread_mutex_lock(&registry->mutex);
+	apr_thread_mutex_lock(registry->mutex);
 	// unget service
 
-	int i;
 	for (i = 0; i < arrayList_size(registration->references); i++) {
 		SERVICE_REFERENCE reference = arrayList_get(registration->references, i);
 		ARRAY_LIST clients = serviceRegistry_getUsingBundles(registry, registry->framework->mp, reference);
@@ -247,17 +252,17 @@ void serviceRegistry_unregisterService(SERVICE_REGISTRY registry, BUNDLE bundle,
 
 	serviceRegistration_destroy(registration);
 
-	pthread_mutex_unlock(&registry->mutex);
+	apr_thread_mutex_unlock(registry->mutex);
 
 }
 
 void serviceRegistry_unregisterServices(SERVICE_REGISTRY registry, BUNDLE bundle) {
 	ARRAY_LIST regs = NULL;
-	pthread_mutex_lock(&registry->mutex);
-	regs = (ARRAY_LIST) hashMap_get(registry->serviceRegistrations, bundle);
-	pthread_mutex_unlock(&registry->mutex);
-
 	int i;
+	apr_thread_mutex_lock(registry->mutex);
+	regs = (ARRAY_LIST) hashMap_get(registry->serviceRegistrations, bundle);
+	apr_thread_mutex_unlock(registry->mutex);
+	
 	for (i = 0; (regs != NULL) && i < arrayList_size(regs); i++) {
 		SERVICE_REGISTRATION reg = arrayList_get(regs, i);
 		if (serviceRegistration_isValid(reg)) {
@@ -271,9 +276,9 @@ void serviceRegistry_unregisterServices(SERVICE_REGISTRY registry, BUNDLE bundle
 		removed = NULL;
 	}
 
-	pthread_mutex_lock(&registry->mutex);
+	apr_thread_mutex_lock(registry->mutex);
 	hashMap_remove(registry->serviceRegistrations, bundle);
-	pthread_mutex_unlock(&registry->mutex);
+	apr_thread_mutex_unlock(registry->mutex);
 }
 
 celix_status_t serviceRegistry_createServiceReference(SERVICE_REGISTRY registry, apr_pool_t *pool, SERVICE_REGISTRATION registration, SERVICE_REFERENCE *reference) {
@@ -293,11 +298,12 @@ celix_status_t serviceRegistry_createServiceReference(SERVICE_REGISTRY registry,
 
 celix_status_t serviceRegistry_getServiceReferences(SERVICE_REGISTRY registry, apr_pool_t *pool, const char *serviceName, FILTER filter, ARRAY_LIST *references) {
 	celix_status_t status = CELIX_SUCCESS;
-
+	HASH_MAP_VALUES registrations;
+	HASH_MAP_ITERATOR iterator;
 	arrayList_create(pool, references);
 
-	HASH_MAP_VALUES registrations = hashMapValues_create(registry->serviceRegistrations);
-	HASH_MAP_ITERATOR iterator = hashMapValues_iterator(registrations);
+	registrations = hashMapValues_create(registry->serviceRegistrations);
+	iterator = hashMapValues_iterator(registrations);
 	while (hashMapIterator_hasNext(iterator)) {
 		ARRAY_LIST regs = (ARRAY_LIST) hashMapIterator_nextValue(iterator);
 		int regIdx;
@@ -342,9 +348,10 @@ apr_status_t serviceRegistry_removeReference(void *referenceP) {
 ARRAY_LIST serviceRegistry_getServicesInUse(SERVICE_REGISTRY registry, BUNDLE bundle) {
 	ARRAY_LIST usages = hashMap_get(registry->inUseMap, bundle);
 	if (usages != NULL) {
+		int i;
 		ARRAY_LIST references = NULL;
 		arrayList_create(bundle->memoryPool, &references);
-		int i;
+		
 		for (i = 0; i < arrayList_size(usages); i++) {
 			USAGE_COUNT usage = arrayList_get(usages, i);
 			arrayList_add(references, usage->reference);
@@ -356,11 +363,11 @@ ARRAY_LIST serviceRegistry_getServicesInUse(SERVICE_REGISTRY registry, BUNDLE bu
 
 void * serviceRegistry_getService(SERVICE_REGISTRY registry, BUNDLE bundle, SERVICE_REFERENCE reference) {
 	SERVICE_REGISTRATION registration = NULL;
-	serviceReference_getServiceRegistration(reference, &registration);
 	void * service = NULL;
 	USAGE_COUNT usage = NULL;
-
-	pthread_mutex_lock(&registry->mutex);
+	serviceReference_getServiceRegistration(reference, &registration);
+	
+	apr_thread_mutex_lock(registry->mutex);
 
 	if (serviceRegistration_isValid(registration)) {
 		usage = serviceRegistry_getUsageCount(registry, bundle, reference);
@@ -370,32 +377,32 @@ void * serviceRegistry_getService(SERVICE_REGISTRY registry, BUNDLE bundle, SERV
 		usage->count++;
 		service = usage->service;
 	}
-	pthread_mutex_unlock(&registry->mutex);
+	apr_thread_mutex_unlock(registry->mutex);
 
 	if ((usage != NULL) && (service == NULL)) {
 		serviceRegistration_getService(registration, bundle, &service);
 	}
-	pthread_mutex_lock(&registry->mutex);
+	apr_thread_mutex_lock(registry->mutex);
 	if ((!serviceRegistration_isValid(registration)) || (service == NULL)) {
 		serviceRegistry_flushUsageCount(registry, bundle, reference);
 	} else {
 		usage->service = service;
 	}
-	pthread_mutex_unlock(&registry->mutex);
+	apr_thread_mutex_unlock(registry->mutex);
 
 	return service;
 }
 
 bool serviceRegistry_ungetService(SERVICE_REGISTRY registry, BUNDLE bundle, SERVICE_REFERENCE reference) {
 	SERVICE_REGISTRATION registration = NULL;
-	serviceReference_getServiceRegistration(reference, &registration);
 	USAGE_COUNT usage = NULL;
-
-	pthread_mutex_lock(&registry->mutex);
+	serviceReference_getServiceRegistration(reference, &registration);
+	
+	apr_thread_mutex_lock(registry->mutex);
 
 	usage = serviceRegistry_getUsageCount(registry, bundle, reference);
 	if (usage == NULL) {
-		pthread_mutex_unlock(&registry->mutex);
+		apr_thread_mutex_unlock(registry->mutex);
 		return false;
 	}
 
@@ -407,24 +414,27 @@ bool serviceRegistry_ungetService(SERVICE_REGISTRY registry, BUNDLE bundle, SERV
 		serviceRegistry_flushUsageCount(registry, bundle, reference);
 	}
 
-	pthread_mutex_unlock(&registry->mutex);
+	apr_thread_mutex_unlock(registry->mutex);
 
 	return true;
 }
 
 void serviceRegistry_ungetServices(SERVICE_REGISTRY registry, BUNDLE bundle) {
-	pthread_mutex_lock(&registry->mutex);
-	ARRAY_LIST usages = hashMap_get(registry->inUseMap, bundle);
-	pthread_mutex_unlock(&registry->mutex);
+	ARRAY_LIST fusages;
+	ARRAY_LIST usages;
+	int i;
+
+	apr_thread_mutex_lock(registry->mutex);
+	usages = hashMap_get(registry->inUseMap, bundle);
+	apr_thread_mutex_unlock(registry->mutex);
 
 	if (usages == NULL || arrayList_isEmpty(usages)) {
 		return;
 	}
 
 	// usage arrays?
-	ARRAY_LIST fusages = arrayList_clone(bundle->memoryPool, usages);
-
-	int i;
+	fusages = arrayList_clone(bundle->memoryPool, usages);
+	
 	for (i = 0; i < arrayList_size(fusages); i++) {
 		USAGE_COUNT usage = arrayList_get(fusages, i);
 		SERVICE_REFERENCE reference = usage->reference;
@@ -438,10 +448,11 @@ void serviceRegistry_ungetServices(SERVICE_REGISTRY registry, BUNDLE bundle) {
 
 ARRAY_LIST serviceRegistry_getUsingBundles(SERVICE_REGISTRY registry, apr_pool_t *pool, SERVICE_REFERENCE reference) {
 	ARRAY_LIST bundles = NULL;
+	HASH_MAP_ITERATOR iter;
 	apr_pool_t *npool;
 	apr_pool_create(&npool, pool);
 	arrayList_create(npool, &bundles);
-	HASH_MAP_ITERATOR iter = hashMapIterator_create(registry->inUseMap);
+	iter = hashMapIterator_create(registry->inUseMap);
 	while (hashMapIterator_hasNext(iter)) {
 		HASH_MAP_ENTRY entry = hashMapIterator_nextEntry(iter);
 		BUNDLE bundle = hashMapEntry_getKey(entry);
