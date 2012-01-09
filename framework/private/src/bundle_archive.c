@@ -251,8 +251,8 @@ celix_status_t bundleArchive_getLocation(BUNDLE_ARCHIVE archive, char **location
 	if (archive->location == NULL) {
 		apr_file_t *bundleLocationFile;
 		apr_status_t rv;
-		char * bundleLocation = (char *)malloc(strlen(archive->archiveRoot) + 16);
-		strcpy(bundleLocation,archive->archiveRoot);
+		char * bundleLocation = (char *)calloc(sizeof(char), strlen(archive->archiveRoot) + 17);
+		strcat(bundleLocation,archive->archiveRoot);
 		strcat(bundleLocation, "/bundle.location");
 		
 		if ((rv = apr_file_open(&bundleLocationFile, bundleLocation, APR_FOPEN_READ, APR_OS_DEFAULT, archive->mp)) != APR_SUCCESS) {

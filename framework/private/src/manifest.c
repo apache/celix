@@ -92,14 +92,14 @@ celix_status_t manifest_read(MANIFEST manifest, char *filename) {
 	FILE *file = fopen ( filename, "r" );
 	if (file != NULL) {
 		char lbuf[512];
-		manifest_readAttributes(manifest, manifest->mainAttributes, file);
-
 		int len;
 		char * name = NULL;
 		bool skipEmptyLines = true;
 		char * lastline;
+		manifest_readAttributes(manifest, manifest->mainAttributes, file);
 
 		while (fgets(lbuf, sizeof(lbuf), file) != NULL ) {
+			PROPERTIES attributes;
 			len = strlen(lbuf);
 			if (lbuf[--len] != '\n') {
 				printf("MANIFEST: Line too long\n");
@@ -114,6 +114,7 @@ celix_status_t manifest_read(MANIFEST manifest, char *filename) {
 			skipEmptyLines = false;
 
 			if (name == NULL) {
+				
 				if ((tolower(lbuf[0]) == 'n') && (tolower(lbuf[1]) == 'a') &&
 					(tolower(lbuf[2]) == 'm') && (tolower(lbuf[3]) == 'e') &&
 					(lbuf[4] == ':') && (lbuf[5] == ' ')) {
@@ -134,7 +135,7 @@ celix_status_t manifest_read(MANIFEST manifest, char *filename) {
 				}
 			} else {
 				int newlen = strlen(lastline) + len;
-				char buf[newlen];
+				char * buf = (char *)malloc(newlen);
 				strcpy(buf, lastline);
 				strncat(buf, lbuf+1, len - 1);
 				buf[newlen] = '\0';
@@ -142,15 +143,17 @@ celix_status_t manifest_read(MANIFEST manifest, char *filename) {
 				if (fpeek(file) == ' ') {
 					lastline = realloc(lastline, strlen(buf) + 1);
 					lastline = strcpy(lastline, buf);
+					free(buf);
 					continue;
 				}
 				name = (char *) malloc(strlen(buf) + 1);
 				name = strcpy(name, buf);
 				name[strlen(buf)] = '\0';
 				lastline = NULL;
+				free(buf);
 			}
 
-			PROPERTIES attributes = hashMap_get(manifest->attributes, name);
+			attributes = hashMap_get(manifest->attributes, name);
 			if (attributes == NULL) {
 				attributes = properties_create();
 				hashMap_put(manifest->attributes, strdup(name), attributes);
@@ -209,8 +212,8 @@ celix_status_t manifest_readAttributes(MANIFEST manifest, PROPERTIES properties,
 		}
 		
 		if (lbuf[0] == ' ') {
-			int newlen = strlen(lastLine) + len - 1;
-			char * buf = (char *)malloc(newlen);
+			int newlen = strlen(lastLine) + len;
+			char * buf = (char *)calloc(sizeof(char), newlen);
 
 			// Line continued
 			if (name == NULL) {
@@ -219,9 +222,8 @@ celix_status_t manifest_readAttributes(MANIFEST manifest, PROPERTIES properties,
 				return CELIX_FILE_IO_EXCEPTION;
 			}
 			lineContinued = true;
-			strcpy(buf, lastLine);
+			strcat(buf, lastLine);
 			strncat(buf, lbuf+1, len - 1);
-			buf[newlen] = '\0';
 
 			if (fpeek(file) == ' ') {
 				lastLine = realloc(lastLine, strlen(buf) + 1);
@@ -231,6 +233,7 @@ celix_status_t manifest_readAttributes(MANIFEST manifest, PROPERTIES properties,
 			value = (char *) malloc(strlen(buf) + 1);
 			value = strcpy(value, buf);
 			free(lastLine);
+			free(buf);
 			lastLine = NULL;
 		} else {
 			while (lbuf[i++] != ':') {
@@ -261,6 +264,7 @@ celix_status_t manifest_readAttributes(MANIFEST manifest, PROPERTIES properties,
 		if ((properties_set(properties, name, value) != NULL) && (!lineContinued)) {
 			printf("Duplicate entry: %s", name);
 		}
+		free(lastLine);
 		free(name);
 		free(value);
 	}

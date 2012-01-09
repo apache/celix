@@ -91,7 +91,7 @@ void filter_destroy(FILTER filter) {
 			arrayList_destroy(filter->value);
 			filter->value = NULL;
 		} else {
-			// free(filter->value);
+			 free(filter->value);
 			filter->value = NULL;
 		}
 		free(filter->attribute);
@@ -377,7 +377,7 @@ ARRAY_LIST filter_parseSubstring(char * filterString, int * pos, apr_pool_t *poo
 		switch (c) {
 			case ')': {
 				if (strlen(sub) > 0) {
-					arrayList_add(operands, sub);
+					arrayList_add(operands, strdup(sub));
 				}
 				keepRunning = 0;
 				break;
@@ -388,7 +388,7 @@ ARRAY_LIST filter_parseSubstring(char * filterString, int * pos, apr_pool_t *poo
 			}
 			case '*': {
 				if (strlen(sub) > 0) {
-					arrayList_add(operands, sub);
+					arrayList_add(operands, strdup(sub));
 				}
 				sub[0] = '\0';
 				arrayList_add(operands, NULL);
@@ -410,6 +410,7 @@ ARRAY_LIST filter_parseSubstring(char * filterString, int * pos, apr_pool_t *poo
 			}
 		}
 	}
+	free(sub);
 	size = arrayList_size(operands);
 
 	if (size == 0) {
