@@ -1,4 +1,4 @@
-/**
+/*
  *Licensed to the Apache Software Foundation (ASF) under one
  *or more contributor license agreements.  See the NOTICE file
  *distributed with this work for additional information
@@ -16,23 +16,39 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * filter.h
+/**
  *
- *  Created on: Apr 28, 2010
- *      Author: dk489
+ * @defgroup ServiceListener Service Listener
+ * @ingroup framework
+ * @{
+ *
+ *  \author    	Alexander Broekhuis
+ *  \date      	January 11, 2012
+ *  \copyright	Apache License, Version 2.0
  */
+#ifndef SERVICE_EVENT_H_
+#define SERVICE_EVENT_H_
 
-#ifndef FILTER_H_
-#define FILTER_H_
+typedef enum serviceEventType SERVICE_EVENT_TYPE;
+typedef struct serviceEvent * SERVICE_EVENT;
 
-typedef struct filter * FILTER;
+#include "service_reference.h"
 
-FILTER filter_create(char * filterString, apr_pool_t *pool);
-void filter_destroy(FILTER filter);
+enum serviceEventType
+{
+	REGISTERED = 0x00000001,
+	MODIFIED = 0x00000002,
+	UNREGISTERING = 0x00000004,
+	MODIFIED_ENDMATCH = 0x00000008,
+};
 
-int filter_match(FILTER filter, PROPERTIES properties);
+struct serviceEvent {
+	SERVICE_REFERENCE reference;
+	SERVICE_EVENT_TYPE type;
+};
 
-celix_status_t filter_getString(FILTER filter, char **filterStr);
+#endif /* SERVICE_EVENT_H_ */
 
-#endif /* FILTER_H_ */
+/**
+ * @}
+ */

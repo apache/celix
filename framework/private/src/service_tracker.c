@@ -42,7 +42,7 @@ struct serviceTracker {
 
 void * addingService(FW_SERVICE_TRACKER, SERVICE_REFERENCE);
 celix_status_t serviceTracker_track(FW_SERVICE_TRACKER, SERVICE_REFERENCE, SERVICE_EVENT);
-celix_status_t serviceTracker_untrack(FW_SERVICE_TRACKER fwTracker, SERVICE_REFERENCE reference, SERVICE_EVENT event ATTRIBUTE_UNUSED);
+celix_status_t serviceTracker_untrack(FW_SERVICE_TRACKER fwTracker, SERVICE_REFERENCE reference, SERVICE_EVENT event);
 
 celix_status_t serviceTracker_create(BUNDLE_CONTEXT context, char * service, SERVICE_TRACKER_CUSTOMIZER customizer, SERVICE_TRACKER *tracker) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -247,7 +247,7 @@ void tracker_serviceChanged(SERVICE_LISTENER listener, SERVICE_EVENT event) {
 	}
 }
 
-celix_status_t serviceTracker_track(FW_SERVICE_TRACKER fwTracker, SERVICE_REFERENCE reference, SERVICE_EVENT event ATTRIBUTE_UNUSED) {
+celix_status_t serviceTracker_track(FW_SERVICE_TRACKER fwTracker, SERVICE_REFERENCE reference, SERVICE_EVENT event) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	TRACKED tracked = NULL;
@@ -296,7 +296,7 @@ void * addingService(FW_SERVICE_TRACKER fwTracker, SERVICE_REFERENCE reference) 
     return svc;
 }
 
-celix_status_t serviceTracker_untrack(FW_SERVICE_TRACKER fwTracker, SERVICE_REFERENCE reference, SERVICE_EVENT event ATTRIBUTE_UNUSED) {
+celix_status_t serviceTracker_untrack(FW_SERVICE_TRACKER fwTracker, SERVICE_REFERENCE reference, SERVICE_EVENT event) {
 	celix_status_t status = CELIX_SUCCESS;
 	TRACKED tracked = NULL;
 	unsigned int i;

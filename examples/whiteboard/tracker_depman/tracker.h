@@ -26,7 +26,6 @@
 #ifndef TRACKER_H_
 #define TRACKER_H_
 
-#include "headers.h"
 #include "service_component.h"
 #include "log_service.h"
 

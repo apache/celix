@@ -33,7 +33,6 @@
 #include "bundle_context.h"
 #include "bundle.h"
 #include "update_command.h"
-#include "inputstream.h"
 
 void updateCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *));
 celix_status_t updateCommand_download(COMMAND command, char * url, char **inputFile);

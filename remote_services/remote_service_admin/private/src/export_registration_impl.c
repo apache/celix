@@ -8,7 +8,6 @@
 
 #include <apr_strings.h>
 
-#include "headers.h"
 #include "celix_errno.h"
 
 #include "export_registration_impl.h"
@@ -17,6 +16,7 @@
 #include "service_tracker.h"
 #include "bundle_context.h"
 #include "bundle.h"
+#include "celix_log.h"
 
 celix_status_t exportRegistration_endpointAdding(void * handle, SERVICE_REFERENCE reference, void **service);
 celix_status_t exportRegistration_endpointAdded(void * handle, SERVICE_REFERENCE reference, void *service);

@@ -26,10 +26,14 @@
 #ifndef MODULE_H_
 #define MODULE_H_
 
+typedef struct module *MODULE;
+
 #include "celixbool.h"
 #include "linkedlist.h"
-#include "headers.h"
 #include "manifest.h"
+#include "version.h"
+#include "array_list.h"
+#include "bundle.h"
 
 MODULE module_create(MANIFEST headerMap, char * moduleId, BUNDLE bundle);
 MODULE module_createFrameworkModule(BUNDLE bundle);

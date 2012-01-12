@@ -29,8 +29,6 @@
 #include <stdbool.h>
 #include <pthread.h>
 
-#include "headers.h"
-
 struct echoClient {
 	SERVICE_TRACKER tracker;
 	bool running;

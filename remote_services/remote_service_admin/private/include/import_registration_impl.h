@@ -8,9 +8,9 @@
 #ifndef IMPORT_REGISTRATION_IMPL_H_
 #define IMPORT_REGISTRATION_IMPL_H_
 
-#include "headers.h"
 #include "remote_service_admin.h"
 #include "remote_proxy.h"
+#include "service_tracker.h"
 
 struct import_registration {
 	apr_pool_t *pool;

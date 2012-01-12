@@ -26,7 +26,6 @@
 #ifndef LOG_ENTRY_H_
 #define LOG_ENTRY_H_
 
-#include "headers.h"
 #include "log_service.h"
 
 struct log_entry {

@@ -28,7 +28,6 @@
 #include "shell_private.h"
 #include "bundle_activator.h"
 #include "command_private.h"
-#include "headers.h"
 #include "bundle_context.h"
 #include "service_registration.h"
 

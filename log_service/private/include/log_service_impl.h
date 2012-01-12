@@ -26,7 +26,6 @@
 #ifndef LOG_SERVICE_IMPL_H_
 #define LOG_SERVICE_IMPL_H_
 
-#include "headers.h"
 #include "log_service.h"
 #include "log.h"
 

@@ -26,13 +26,19 @@
 #ifndef FRAMEWORK_H_
 #define FRAMEWORK_H_
 
-#include "headers.h"
+typedef struct activator * ACTIVATOR;
+typedef struct framework * FRAMEWORK;
+
 #include "manifest.h"
 #include "wire.h"
 #include "hash_map.h"
 #include "array_list.h"
 #include "celix_errno.h"
 #include "service_factory.h"
+#include "bundle_archive.h"
+#include "service_listener.h"
+#include "service_registration.h"
+#include "bundle_context.h"
 
 celix_status_t framework_create(FRAMEWORK *framework, apr_pool_t *memoryPool, PROPERTIES config);
 celix_status_t framework_destroy(FRAMEWORK framework);
@@ -83,5 +89,8 @@ celix_status_t framework_waitForStop(FRAMEWORK framework);
 ARRAY_LIST framework_getBundles(FRAMEWORK framework);
 BUNDLE framework_getBundle(FRAMEWORK framework, char * location);
 BUNDLE framework_getBundleById(FRAMEWORK framework, long id);
+
+celix_status_t framework_getMemoryPool(FRAMEWORK framework, apr_pool_t **pool);
+celix_status_t framework_getFrameworkBundle(FRAMEWORK framework, BUNDLE *bundle);
 
 #endif /* FRAMEWORK_H_ */

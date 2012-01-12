@@ -27,16 +27,23 @@
 #define BUNDLE_H_
 
 #include <apr_general.h>
+#include <apr_portable.h>
 
-#include "headers.h"
+typedef struct bundle * BUNDLE;
+
 #include "celix_errno.h"
+#include "bundle_state.h"
+#include "bundle_archive.h"
+#include "framework.h"
+#include "service_reference.h"
+#include "bundle_context.h"
 
 celix_status_t bundle_create(BUNDLE * bundle, apr_pool_t *mp);
 celix_status_t bundle_createFromArchive(BUNDLE * bundle, FRAMEWORK framework, BUNDLE_ARCHIVE archive, apr_pool_t *bundlePool);
 celix_status_t bundle_destroy(BUNDLE bundle);
 
 celix_status_t bundle_isSystemBundle(BUNDLE bundle, bool *systemBundle);
-BUNDLE_ARCHIVE bundle_getArchive(BUNDLE bundle);
+celix_status_t bundle_getArchive(BUNDLE bundle, BUNDLE_ARCHIVE *archive);
 celix_status_t bundle_getCurrentModule(BUNDLE bundle, MODULE *module);
 ARRAY_LIST bundle_getModules(BUNDLE bundle);
 void * bundle_getHandle(BUNDLE bundle);
@@ -84,5 +91,10 @@ celix_status_t bundle_getBundleId(BUNDLE bundle, long *id);
 
 celix_status_t bundle_getRegisteredServices(BUNDLE bundle, apr_pool_t *pool, ARRAY_LIST *list);
 celix_status_t bundle_getServicesInUse(BUNDLE bundle, ARRAY_LIST *list);
+
+celix_status_t bundle_getMemoryPool(BUNDLE bundle, apr_pool_t **pool);
+
+celix_status_t bundle_setFramework(BUNDLE bundle, FRAMEWORK framework);
+celix_status_t bundle_getFramework(BUNDLE bundle, FRAMEWORK *framework);
 
 #endif /* BUNDLE_H_ */

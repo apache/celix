@@ -24,7 +24,7 @@ ENDIF(APR_FOUND)
 
 include_directories(${APR_INCLUDE_DIR})
 include_directories(${APRUTIL_INCLUDE_DIR})
-include_directories("framework/private/include")
+#include_directories("framework/private/include")
 include_directories("framework/public/include")
 
 include(cmake/Packaging.cmake)

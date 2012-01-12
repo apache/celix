@@ -28,6 +28,7 @@
 
 #include "bundle_context.h"
 #include "framework.h"
+#include "bundle.h"
 
 struct bundleContext {
 	struct framework * framework;
@@ -43,15 +44,20 @@ celix_status_t bundleContext_create(FRAMEWORK framework, BUNDLE bundle, BUNDLE_C
 	    context = malloc(sizeof(*context));
 
 		if (context != NULL) {
+			apr_pool_t *pool = NULL;
+
             context->pool = NULL;
 			context->framework = framework;
 			context->bundle = bundle;
 
-			if (apr_pool_create(&context->pool, bundle->memoryPool) != APR_SUCCESS) {
-				status = CELIX_ENOMEM;
-			}
+			status = bundle_getMemoryPool(bundle, &pool);
+			if (status == CELIX_SUCCESS) {
+				if (apr_pool_create(&context->pool, pool) != APR_SUCCESS) {
+					status = CELIX_ENOMEM;
+				}
 
-			*bundle_context = context;
+				*bundle_context = context;
+			}
 		} else {
 			status = CELIX_ENOMEM;
 		}

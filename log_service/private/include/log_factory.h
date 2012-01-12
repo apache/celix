@@ -26,7 +26,6 @@
 #ifndef LOG_FACTORY_H_
 #define LOG_FACTORY_H_
 
-#include "headers.h"
 #include "log.h"
 
 typedef struct log_service_factory * log_service_factory_t;

@@ -10,13 +10,13 @@
 #include <slp.h>
 #include <unistd.h>
 
-#include "headers.h"
 #include "bundle_context.h"
 #include "array_list.h"
 #include "utils.h"
 #include "celix_errno.h"
 #include "filter.h"
 #include "service_reference.h"
+#include "service_registration.h"
 
 #include "discovery.h"
 
@@ -155,7 +155,8 @@ celix_status_t discovery_addService(discovery_t discovery, endpoint_description_
 
 		SERVICE_REGISTRATION registration = NULL;
 		serviceReference_getServiceRegistration(reference, &registration);
-		PROPERTIES serviceProperties = registration->properties;
+		PROPERTIES serviceProperties = NULL;
+		serviceRegistration_getProperties(registration, &serviceProperties);
 		char *scope = properties_get(serviceProperties, (char *) ENDPOINT_LISTENER_SCOPE);
 		FILTER filter = filter_create(scope, discovery->pool);
 		if (filter_match(filter, endpoint->properties)) {
@@ -303,7 +304,8 @@ celix_status_t discovery_endpointListenerAdded(void * handle, SERVICE_REFERENCE 
 
 	SERVICE_REGISTRATION registration = NULL;
 	serviceReference_getServiceRegistration(reference, &registration);
-	PROPERTIES serviceProperties = registration->properties;
+	PROPERTIES serviceProperties = NULL;
+	serviceRegistration_getProperties(registration, &serviceProperties);
 	char *discoveryListener = properties_get(serviceProperties, "DISCOVERY");
 
 	if (discoveryListener != NULL && strcmp(discoveryListener, "true") == 0) {

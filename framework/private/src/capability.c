@@ -52,14 +52,17 @@ celix_status_t capability_create(apr_pool_t *pool, MODULE module, HASH_MAP direc
 		(*capability)->version = NULL;
 		status = version_createEmptyVersion(pool, &(*capability)->version);
 		if (status == CELIX_SUCCESS) {
-			ATTRIBUTE versionAttribute;
+			ATTRIBUTE versionAttribute = NULL;
 			ATTRIBUTE serviceAttribute = (ATTRIBUTE) hashMap_get(attributes, "service");
-			(*capability)->serviceName = serviceAttribute->value;
-
-			versionAttribute = (ATTRIBUTE) hashMap_get(attributes, "version");
-			if (versionAttribute != NULL) {
-				(*capability)->version = NULL;
-				status = version_createVersionFromString(pool, versionAttribute->value, &(*capability)->version);
+			status = attribute_getValue(serviceAttribute, &(*capability)->serviceName);
+			if (status == CELIX_SUCCESS) {
+				versionAttribute = (ATTRIBUTE) hashMap_get(attributes, "version");
+				if (versionAttribute != NULL) {
+					char *versionStr = NULL;
+					attribute_getValue(versionAttribute, &versionStr);
+					(*capability)->version = NULL;
+					status = version_createVersionFromString(pool, versionStr, &(*capability)->version);
+				}
 			}
 		}
 	}

@@ -10,7 +10,6 @@
 #include <apr_uuid.h>
 #include <apr_strings.h>
 
-#include "headers.h"
 #include "remote_service_admin_impl.h"
 #include "export_registration_impl.h"
 #include "import_registration_impl.h"
@@ -20,6 +19,7 @@
 #include "bundle_context.h"
 #include "bundle.h"
 #include "service_reference.h"
+#include "service_registration.h"
 
 static const char *ajax_reply_start =
   "HTTP/1.1 200 OK\r\n"
@@ -139,7 +139,8 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t admin, SE
 
 	SERVICE_REGISTRATION registration = NULL;
 	serviceReference_getServiceRegistration(reference, &registration);
-	PROPERTIES serviceProperties = registration->properties;
+	PROPERTIES serviceProperties = NULL;
+	serviceRegistration_getProperties(registration, &serviceProperties);
 	char *exports = properties_get(serviceProperties, (char *) SERVICE_EXPORTED_INTERFACES);
 	char *provided = properties_get(serviceProperties, (char *) OBJECTCLASS);
 
@@ -196,11 +197,14 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t admin, SE
 celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_t admin, export_registration_t registration, SERVICE_REFERENCE reference, char *interface) {
 	celix_status_t status = CELIX_SUCCESS;
 	PROPERTIES endpointProperties = properties_create();
+	PROPERTIES serviceProperties = NULL;
 
 	SERVICE_REGISTRATION sRegistration = NULL;
 	serviceReference_getServiceRegistration(reference, &sRegistration);
 
-	HASH_MAP_ITERATOR iter = hashMapIterator_create(sRegistration->properties);
+	serviceRegistration_getProperties(sRegistration, &serviceProperties);
+
+	HASH_MAP_ITERATOR iter = hashMapIterator_create(serviceProperties);
 	while (hashMapIterator_hasNext(iter)) {
 		HASH_MAP_ENTRY entry = hashMapIterator_nextEntry(iter);
 		char *key = (char *) hashMapEntry_getKey(entry);
@@ -218,7 +222,7 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_t admin, 
 	properties_set(endpointProperties, (char *) SERVICE_LOCATION, apr_pstrdup(admin->pool, service));
 
 	endpoint_description_t endpointDescription = NULL;
-	remoteServiceAdmin_createEndpointDescription(admin, sRegistration->properties, endpointProperties, interface, &endpointDescription);
+	remoteServiceAdmin_createEndpointDescription(admin, serviceProperties, endpointProperties, interface, &endpointDescription);
 	exportRegistration_setEndpointDescription(registration, endpointDescription);
 
 	return status;

@@ -35,28 +35,45 @@ struct requirement {
 	HASH_MAP directives;
 };
 
-REQUIREMENT requirement_create(apr_pool_t *pool, HASH_MAP directives, HASH_MAP attributes) {
-	ATTRIBUTE versionAttribute = NULL;
-	ATTRIBUTE serviceAttribute = NULL;
-	REQUIREMENT requirement = (REQUIREMENT) malloc(sizeof(*requirement));
+apr_status_t requirement_destroy(void *requirementP);
 
-	requirement->attributes = attributes;
-	requirement->directives = directives;
+celix_status_t requirement_create(apr_pool_t *pool, HASH_MAP directives, HASH_MAP attributes, REQUIREMENT *requirement) {
+	celix_status_t status = CELIX_SUCCESS;
 
-	requirement->versionRange = NULL;
-	versionRange_createInfiniteVersionRange(pool, &requirement->versionRange);
-	versionAttribute = (ATTRIBUTE) hashMap_get(attributes, "version");
-	if (versionAttribute != NULL) {
-		requirement->versionRange = NULL;
-		versionRange_parse(pool, versionAttribute->value, &requirement->versionRange);
+	*requirement = (REQUIREMENT) apr_palloc(pool, sizeof(**requirement));
+	if (!*requirement) {
+		status = CELIX_ENOMEM;
+	} else {
+		ATTRIBUTE serviceAttribute = NULL;
+		ATTRIBUTE versionAttribute = NULL;
+
+		apr_pool_pre_cleanup_register(pool, *requirement, requirement_destroy);
+
+		(*requirement)->attributes = attributes;
+		(*requirement)->directives = directives;
+
+		serviceAttribute = (ATTRIBUTE) hashMap_get(attributes, "service");
+		status = attribute_getValue(serviceAttribute, &(*requirement)->targetName);
+		if (status == CELIX_SUCCESS) {
+			(*requirement)->versionRange = NULL;
+			status = versionRange_createInfiniteVersionRange(pool, &(*requirement)->versionRange);
+			if (status == CELIX_SUCCESS) {
+				versionAttribute = (ATTRIBUTE) hashMap_get(attributes, "version");
+				if (versionAttribute != NULL) {
+					char *versionStr = NULL;
+					attribute_getValue(versionAttribute, &versionStr);
+					(*requirement)->versionRange = NULL;
+					status = versionRange_parse(pool, versionStr, &(*requirement)->versionRange);
+				}
+			}
+		}
 	}
-	serviceAttribute = (ATTRIBUTE) hashMap_get(attributes, "service");
-	requirement->targetName = serviceAttribute->value;
 
-	return requirement;
+	return status;
 }
 
-void requirement_destroy(REQUIREMENT requirement) {
+apr_status_t requirement_destroy(void *requirementP) {
+	REQUIREMENT requirement = requirementP;
 	HASH_MAP_ITERATOR attrIter = hashMapIterator_create(requirement->attributes);
 	while (hashMapIterator_hasNext(attrIter)) {
 		ATTRIBUTE attr = hashMapIterator_nextValue(attrIter);
@@ -70,21 +87,31 @@ void requirement_destroy(REQUIREMENT requirement) {
 	requirement->directives = NULL;
 	requirement->versionRange = NULL;
 
-	free(requirement);
+	return APR_SUCCESS;
 }
 
-VERSION_RANGE requirement_getVersionRange(REQUIREMENT requirement) {
-	return requirement->versionRange;
+celix_status_t requirement_getVersionRange(REQUIREMENT requirement, VERSION_RANGE *range) {
+	*range = requirement->versionRange;
+	return CELIX_SUCCESS;
 }
 
-char * requirement_getTargetName(REQUIREMENT requirement) {
-	return requirement->targetName;
+celix_status_t requirement_getTargetName(REQUIREMENT requirement, char **targetName) {
+	*targetName = requirement->targetName;
+	return CELIX_SUCCESS;
 }
 
-bool requirement_isSatisfied(REQUIREMENT requirement, CAPABILITY capability) {
-	bool inRange = false;
+celix_status_t requirement_isSatisfied(REQUIREMENT requirement, CAPABILITY capability, bool *inRange) {
+	celix_status_t status = CELIX_SUCCESS;
 	VERSION version = NULL;
-	capability_getVersion(capability, &version);
-	versionRange_isInRange(requirement_getVersionRange(requirement), version, &inRange);
-	return inRange;
+	VERSION_RANGE range = NULL;
+
+	status = capability_getVersion(capability, &version);
+	if (status == CELIX_SUCCESS) {
+		status = requirement_getVersionRange(requirement, &range);
+		if (status == CELIX_SUCCESS) {
+			status = versionRange_isInRange(range, version, inRange);
+		}
+	}
+
+	return status;
 }

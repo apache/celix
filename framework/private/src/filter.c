@@ -27,8 +27,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include "headers.h"
 #include "filter.h"
+#include "array_list.h"
 
 typedef enum operand
 {

@@ -1,4 +1,4 @@
-/**
+/*
  *Licensed to the Apache Software Foundation (ASF) under one
  *or more contributor license agreements.  See the NOTICE file
  *distributed with this work for additional information
@@ -16,27 +16,36 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * service_factory.h
+/**
  *
- *  Created on: Jun 26, 2011
- *      Author: alexander
+ * @defgroup ServiceListener Service Listener
+ * @ingroup framework
+ * @{
+ *
+ *  \author    	Alexander Broekhuis
+ *  \date      	January 11, 2012
+ *  \copyright	Apache License, Version 2.0
  */
-
-#ifndef SERVICE_FACTORY_H_
-#define SERVICE_FACTORY_H_
+#ifndef SERVICE_LISTENER_H_
+#define SERVICE_LISTENER_H_
 
 #include <apr_general.h>
 
-#include "celix_errno.h"
-#include "headers.h"
+typedef struct serviceListener * SERVICE_LISTENER;
 
-struct service_factory {
-    void *factory;
-    celix_status_t (*getService)(void *factory, BUNDLE bundle, SERVICE_REGISTRATION registration, void **service);
-    celix_status_t (*ungetService)(void *factory, BUNDLE bundle, SERVICE_REGISTRATION registration);
+#include "celix_errno.h"
+#include "service_event.h"
+
+struct serviceListener {
+	apr_pool_t *pool;
+	void * handle;
+	celix_status_t (*serviceChanged)(void * listener, SERVICE_EVENT event);
 };
 
-typedef struct service_factory * service_factory_t;
 
-#endif /* SERVICE_FACTORY_H_ */
+
+#endif /* SERVICE_LISTENER_H_ */
+
+/**
+ * @}
+ */

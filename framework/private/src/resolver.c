@@ -29,6 +29,7 @@
 
 #include "resolver.h"
 #include "linked_list_iterator.h"
+#include "bundle.h"
 
 struct capabilityList {
 	char * serviceName;
@@ -125,6 +126,12 @@ int resolver_populateCandidatesMap(HASH_MAP candidatesMap, MODULE targetModule) 
     int c;
     REQUIREMENT req;
     CAPABILITY_LIST capList;
+    apr_pool_t *bundlePool = NULL;
+    BUNDLE bundle = NULL;
+
+    bundle = module_getBundle(targetModule);
+    bundle_getMemoryPool(bundle, &bundlePool);
+
 
 	if (hashMap_containsKey(candidatesMap, targetModule)) {
 		return 0;
@@ -132,24 +139,30 @@ int resolver_populateCandidatesMap(HASH_MAP candidatesMap, MODULE targetModule) 
 
 	hashMap_put(candidatesMap, targetModule, NULL);
 
-	if (apr_pool_create(&candSetList_pool, module_getBundle(targetModule)->memoryPool) == APR_SUCCESS) {
+	if (apr_pool_create(&candSetList_pool, bundlePool) == APR_SUCCESS) {
 	    if (linkedList_create(candSetList_pool, &candSetList) == CELIX_SUCCESS) {
             for (i = 0; i < linkedList_size(module_getRequirements(targetModule)); i++) {
+            	char *targetName = NULL;
                 req = (REQUIREMENT) linkedList_get(module_getRequirements(targetModule), i);
-                capList = resolver_getCapabilityList(m_resolvedServices, requirement_getTargetName(req));
+                requirement_getTargetName(req, &targetName);
+                capList = resolver_getCapabilityList(m_resolvedServices, targetName);
 
-                if (apr_pool_create(&candidates_pool, module_getBundle(targetModule)->memoryPool) == APR_SUCCESS) {
+                if (apr_pool_create(&candidates_pool, bundlePool) == APR_SUCCESS) {
                     if (linkedList_create(candidates_pool, &candidates) == CELIX_SUCCESS) {
                         for (c = 0; (capList != NULL) && (c < linkedList_size(capList->capabilities)); c++) {
                             CAPABILITY cap = (CAPABILITY) linkedList_get(capList->capabilities, c);
-                            if (requirement_isSatisfied(req, cap)) {
+                            bool satisfied = false;
+                            requirement_isSatisfied(req, cap, &satisfied);
+                            if (satisfied) {
                                 linkedList_addElement(candidates, cap);
                             }
                         }
-                        capList = resolver_getCapabilityList(m_unresolvedServices, requirement_getTargetName(req));
+                        capList = resolver_getCapabilityList(m_unresolvedServices, targetName);
                         for (c = 0; (capList != NULL) && (c < linkedList_size(capList->capabilities)); c++) {
                             CAPABILITY cap = (CAPABILITY) linkedList_get(capList->capabilities, c);
-                            if (requirement_isSatisfied(req, cap)) {
+                            bool satisfied = false;
+                            requirement_isSatisfied(req, cap, &satisfied);
+                            if (satisfied) {
                                 linkedList_addElement(candidates, cap);
                             }
                         }
@@ -170,7 +183,7 @@ int resolver_populateCandidatesMap(HASH_MAP candidatesMap, MODULE targetModule) 
                         }
 
                         if (linkedList_size(candidates) == 0) {
-                            if (apr_pool_create(&invalid_pool, module_getBundle(targetModule)->memoryPool) == APR_SUCCESS) {
+                            if (apr_pool_create(&invalid_pool, bundlePool) == APR_SUCCESS) {
                                 if (linkedList_create(invalid_pool, &invalid) == CELIX_SUCCESS) {
 									char *name = NULL;
                                     resolver_removeInvalidCandidate(targetModule, candidatesMap, invalid);
@@ -179,7 +192,7 @@ int resolver_populateCandidatesMap(HASH_MAP candidatesMap, MODULE targetModule) 
                                     
                                     module_getSymbolicName(targetModule, &name);
 
-                                    printf("Unable to resolve: %s, %s\n", name, requirement_getTargetName(req));
+                                    printf("Unable to resolve: %s, %s\n", name, targetName);
                                 }
                             }
                             return -1;
@@ -249,11 +262,16 @@ void resolver_addModule(MODULE module) {
     CAPABILITY cap;
     CAPABILITY_LIST list;
     apr_pool_t *capabilities_pool;
+    apr_pool_t *bundlePool = NULL;
+	BUNDLE bundle = NULL;
+
+	bundle = module_getBundle(module);
+	bundle_getMemoryPool(bundle, &bundlePool);
 
 	if (m_modules == NULL) {
-	    if (apr_pool_create(&modules_pool, module_getBundle(module)->memoryPool) == APR_SUCCESS) {
-	        if (apr_pool_create(&unresolvedServices_pool, module_getBundle(module)->memoryPool) == APR_SUCCESS) {
-	            if (apr_pool_create(&resolvedServices_pool, module_getBundle(module)->memoryPool) == APR_SUCCESS) {
+	    if (apr_pool_create(&modules_pool, bundlePool) == APR_SUCCESS) {
+	        if (apr_pool_create(&unresolvedServices_pool, bundlePool) == APR_SUCCESS) {
+	            if (apr_pool_create(&resolvedServices_pool, bundlePool) == APR_SUCCESS) {
 	                linkedList_create(modules_pool, &m_modules);
 	                linkedList_create(unresolvedServices_pool, &m_unresolvedServices);
 	                linkedList_create(resolvedServices_pool, &m_resolvedServices);
@@ -271,7 +289,7 @@ void resolver_addModule(MODULE module) {
             capability_getServiceName(cap, &serviceName);
             list = resolver_getCapabilityList(m_unresolvedServices, serviceName);
             if (list == NULL) {
-                if (apr_pool_create(&capabilities_pool, module_getBundle(module)->memoryPool) == APR_SUCCESS) {
+                if (apr_pool_create(&capabilities_pool, bundlePool) == APR_SUCCESS) {
                     list = (CAPABILITY_LIST) apr_palloc(capabilities_pool, sizeof(*list));
                     if (list != NULL) {
                         list->serviceName = apr_pstrdup(capabilities_pool, serviceName);
@@ -315,9 +333,14 @@ void resolver_moduleResolved(MODULE module) {
     LINKED_LIST capsCopy;
     apr_pool_t *capsCopy_pool;
     apr_pool_t *capabilities_pool;
+    apr_pool_t *bundlePool = NULL;
+	BUNDLE bundle = NULL;
+
+	bundle = module_getBundle(module);
+	bundle_getMemoryPool(bundle, &bundlePool);
 
 	if (module_isResolved(module)) {
-	    if (apr_pool_create(&capsCopy_pool, module_getBundle(module)->memoryPool) == APR_SUCCESS) {
+	    if (apr_pool_create(&capsCopy_pool, bundlePool) == APR_SUCCESS) {
 	        if (linkedList_create(capsCopy_pool, &capsCopy) == APR_SUCCESS) {
                 LINKED_LIST wires = NULL;
 
@@ -340,8 +363,10 @@ void resolver_moduleResolved(MODULE module) {
                     for (wireIdx = 0; (wires != NULL) && (wireIdx < linkedList_size(wires)); wireIdx++) {
                         WIRE wire = (WIRE) linkedList_get(wires, wireIdx);
                         REQUIREMENT req = NULL;
+                        bool satisfied = false;
                         wire_getRequirement(wire, &req);
-                        if (requirement_isSatisfied(req, cap)) {
+						requirement_isSatisfied(req, cap, &satisfied);
+                        if (satisfied) {
                             linkedList_set(capsCopy, capIdx, NULL);
                             break;
                         }
@@ -358,7 +383,7 @@ void resolver_moduleResolved(MODULE module) {
 
                         list = resolver_getCapabilityList(m_resolvedServices, serviceName);
                         if (list == NULL) {
-                            if (apr_pool_create(&capabilities_pool, module_getBundle(module)->memoryPool) == APR_SUCCESS) {
+                            if (apr_pool_create(&capabilities_pool, bundlePool) == APR_SUCCESS) {
                                 list = (CAPABILITY_LIST) apr_palloc(capabilities_pool, sizeof(*list));
                                 if (list != NULL) {
                                     list->serviceName = apr_pstrdup(capabilities_pool, serviceName);
@@ -397,6 +422,11 @@ HASH_MAP resolver_populateWireMap(HASH_MAP candidates, MODULE importer, HASH_MAP
     apr_pool_t *serviceWires_pool;
     LINKED_LIST emptyWires;
     apr_pool_t *emptyWires_pool;
+    apr_pool_t *bundlePool = NULL;
+	BUNDLE bundle = NULL;
+
+	bundle = module_getBundle(importer);
+	bundle_getMemoryPool(bundle, &bundlePool);
 
     if (candidates && importer && wireMap) {
         LINKED_LIST candSetList = NULL;
@@ -406,8 +436,8 @@ HASH_MAP resolver_populateWireMap(HASH_MAP candidates, MODULE importer, HASH_MAP
 
         candSetList = (LINKED_LIST) hashMap_get(candidates, importer);
 
-        if (apr_pool_create(&serviceWires_pool, module_getBundle(importer)->memoryPool) == APR_SUCCESS) {
-            if (apr_pool_create(&emptyWires_pool, module_getBundle(importer)->memoryPool) == APR_SUCCESS) {
+        if (apr_pool_create(&serviceWires_pool, bundlePool) == APR_SUCCESS) {
+            if (apr_pool_create(&emptyWires_pool, bundlePool) == APR_SUCCESS) {
                 if (linkedList_create(serviceWires_pool, &serviceWires) == APR_SUCCESS) {
                     if (linkedList_create(emptyWires_pool, &emptyWires) == APR_SUCCESS) {
                         int candSetIdx = 0;

@@ -28,7 +28,8 @@
 
 #include <stdbool.h>
 
-#include "headers.h"
+#include "service_reference.h"
+#include "service_tracker.h"
 
 struct serviceDependency {
 	char * interface;

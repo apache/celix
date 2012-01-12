@@ -26,15 +26,16 @@
 #ifndef REQUIREMENT_H_
 #define REQUIREMENT_H_
 
+typedef struct requirement *REQUIREMENT;
+
 #include "capability.h"
 #include "hash_map.h"
-#include "headers.h"
+#include "version_range.h"
 
-REQUIREMENT requirement_create(apr_pool_t *pool, HASH_MAP directives, HASH_MAP attributes);
-void requirement_destroy(REQUIREMENT requirement);
-VERSION_RANGE requirement_getVersionRange(REQUIREMENT requirement);
-char * requirement_getTargetName(REQUIREMENT requirement);
+celix_status_t requirement_create(apr_pool_t *pool, HASH_MAP directives, HASH_MAP attributes, REQUIREMENT *requirement);
+celix_status_t requirement_getVersionRange(REQUIREMENT requirement, VERSION_RANGE *range);
+celix_status_t requirement_getTargetName(REQUIREMENT requirement, char **targetName);
 
-bool requirement_isSatisfied(REQUIREMENT requirement, CAPABILITY capability);
+celix_status_t requirement_isSatisfied(REQUIREMENT requirement, CAPABILITY capability, bool *inRange);
 
 #endif /* REQUIREMENT_H_ */

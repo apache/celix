@@ -27,6 +27,7 @@
 
 #include "service_registry.h"
 #include "service_reference.h"
+#include "service_registration.h"
 #include "module.h"
 #include "wire.h"
 #include "bundle.h"
@@ -102,7 +103,10 @@ bool serviceReference_isAssignableTo(SERVICE_REFERENCE reference, BUNDLE request
 celix_status_t serviceReference_getUsingBundles(SERVICE_REFERENCE reference, apr_pool_t *pool, ARRAY_LIST *bundles) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	*bundles = serviceRegistry_getUsingBundles(reference->registration->registry, pool, reference);
+	SERVICE_REGISTRY registry = NULL;
+	serviceRegistration_getRegistry(reference->registration, &registry);
+
+	*bundles = serviceRegistry_getUsingBundles(registry, pool, reference);
 
 	return status;
 }

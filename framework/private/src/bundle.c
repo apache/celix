@@ -38,6 +38,23 @@
 #include "resolver.h"
 #include "utils.h"
 
+struct bundle {
+	BUNDLE_CONTEXT context;
+	ACTIVATOR activator;
+	BUNDLE_STATE state;
+	void * handle;
+	BUNDLE_ARCHIVE archive;
+	ARRAY_LIST modules;
+	MANIFEST manifest;
+	apr_pool_t *memoryPool;
+
+	apr_thread_mutex_t *lock;
+	int lockCount;
+	apr_os_thread_t lockThread;
+
+	struct framework * framework;
+};
+
 celix_status_t bundle_createModule(BUNDLE bundle, MODULE *module);
 celix_status_t bundle_closeRevisions(BUNDLE bundle);
 
@@ -134,8 +151,16 @@ celix_status_t bundle_destroy(BUNDLE bundle) {
 	return CELIX_SUCCESS;
 }
 
-BUNDLE_ARCHIVE bundle_getArchive(BUNDLE bundle) {
-	return bundle->archive;
+celix_status_t bundle_getArchive(BUNDLE bundle, BUNDLE_ARCHIVE *archive) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (bundle != NULL && *archive == NULL) {
+		*archive = bundle->archive;
+	} else {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	return status;
 }
 
 celix_status_t bundle_getCurrentModule(BUNDLE bundle, MODULE *module) {
@@ -332,17 +357,22 @@ celix_status_t bundle_isUsed(BUNDLE bundle, bool *used) {
 
 celix_status_t bundle_revise(BUNDLE bundle, char * location, char *inputFile) {
 	celix_status_t status = CELIX_SUCCESS;
-	status = bundleArchive_revise(bundle_getArchive(bundle), location, inputFile);
+
+	BUNDLE_ARCHIVE archive = NULL;
+	status = bundle_getArchive(bundle, &archive);
 	if (status == CELIX_SUCCESS) {
-		MODULE module;
-		status = bundle_createModule(bundle, &module);
+		status = bundleArchive_revise(archive, location, inputFile);
 		if (status == CELIX_SUCCESS) {
-			status = bundle_addModule(bundle, module);
-		} else {
-			bool rolledback;
-			status = bundleArchive_rollbackRevise(bundle_getArchive(bundle), &rolledback);
+			MODULE module;
+			status = bundle_createModule(bundle, &module);
 			if (status == CELIX_SUCCESS) {
-				status = CELIX_BUNDLE_EXCEPTION;
+				status = bundle_addModule(bundle, module);
+			} else {
+				bool rolledback;
+				status = bundleArchive_rollbackRevise(archive, &rolledback);
+				if (status == CELIX_SUCCESS) {
+					status = CELIX_BUNDLE_EXCEPTION;
+				}
 			}
 		}
 	}
@@ -363,10 +393,14 @@ celix_status_t bundle_addModule(BUNDLE bundle, MODULE module) {
 celix_status_t bundle_isSystemBundle(BUNDLE bundle, bool *systemBundle) {
 	celix_status_t status = CELIX_SUCCESS;
 	long bundleId;
+	BUNDLE_ARCHIVE archive = NULL;
 
-	status = bundleArchive_getId(bundle_getArchive(bundle), &bundleId);
+	status = bundle_getArchive(bundle, &archive);
 	if (status == CELIX_SUCCESS) {
-		*systemBundle = (bundleId == 0);
+		status = bundleArchive_getId(archive, &bundleId);
+		if (status == CELIX_SUCCESS) {
+			*systemBundle = (bundleId == 0);
+		}
 	}
 
 	return status;
@@ -465,27 +499,31 @@ celix_status_t bundle_unlock(BUNDLE bundle, bool *unlocked) {
 }
 
 celix_status_t bundle_close(BUNDLE bundle) {
-	BUNDLE_ARCHIVE archive;
+	BUNDLE_ARCHIVE archive = NULL;
 	
 	celix_status_t status = CELIX_SUCCESS;
 
     bundle_closeModules(bundle);
     bundle_closeRevisions(bundle);
-    archive = bundle_getArchive(bundle);
-    bundleArchive_close(archive);
+    status = bundle_getArchive(bundle, &archive);
+    if (status == CELIX_SUCCESS) {
+		bundleArchive_close(archive);
+    }
 
     return status;
 }
 
 celix_status_t bundle_closeAndDelete(BUNDLE bundle) {
-    BUNDLE_ARCHIVE archive;
-	
 	celix_status_t status = CELIX_SUCCESS;
+
+	BUNDLE_ARCHIVE archive = NULL;
 
     bundle_closeModules(bundle);
     bundle_closeRevisions(bundle);
-    archive = bundle_getArchive(bundle);
-    bundleArchive_closeAndDelete(archive);
+    status = bundle_getArchive(bundle, &archive);
+    if (status == CELIX_SUCCESS) {
+    	bundleArchive_closeAndDelete(archive);
+    }
 
     return status;
 }
@@ -530,7 +568,11 @@ celix_status_t bundle_refresh(BUNDLE bundle) {
 
 celix_status_t bundle_getBundleId(BUNDLE bundle, long *id) {
 	celix_status_t status = CELIX_SUCCESS;
-	status = bundleArchive_getId(bundle_getArchive(bundle), id);
+	BUNDLE_ARCHIVE archive = NULL;
+	status = bundle_getArchive(bundle, &archive);
+	if (status == CELIX_SUCCESS) {
+		status = bundleArchive_getId(archive, id);
+	}
 	return status;
 }
 
@@ -546,6 +588,42 @@ celix_status_t bundle_getServicesInUse(BUNDLE bundle, ARRAY_LIST *list) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	status = fw_getBundleServicesInUse(bundle->framework, bundle, list);
+
+	return status;
+}
+
+celix_status_t bundle_getMemoryPool(BUNDLE bundle, apr_pool_t **pool) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (bundle != NULL && *pool == NULL) {
+		*pool = bundle->memoryPool;
+	} else {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	return status;
+}
+
+celix_status_t bundle_setFramework(BUNDLE bundle, FRAMEWORK framework) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (bundle != NULL && framework != NULL) {
+		bundle->framework = framework;
+	} else {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	return status;
+}
+
+celix_status_t bundle_getFramework(BUNDLE bundle, FRAMEWORK *framework) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (bundle != NULL && *framework == NULL) {
+		*framework = bundle->framework;
+	} else {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
 
 	return status;
 }

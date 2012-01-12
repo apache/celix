@@ -29,13 +29,11 @@
 #include <apr_general.h>
 #include "celix_errno.h"
 
-struct attribute {
-	char * key;
-	char * value;
-};
-
 typedef struct attribute * ATTRIBUTE;
 
 celix_status_t attribute_create(char * key, char * value, apr_pool_t *memory_pool, ATTRIBUTE *attribute);
+
+celix_status_t attribute_getKey(ATTRIBUTE attribute, char **key);
+celix_status_t attribute_getValue(ATTRIBUTE attribute, char **value);
 
 #endif /* ATTRIBUTE_H_ */

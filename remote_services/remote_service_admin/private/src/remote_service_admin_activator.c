@@ -6,7 +6,6 @@
  */
 #include <stdlib.h>
 
-#include "headers.h"
 #include "bundle_activator.h"
 #include "service_registration.h"
 

@@ -17,22 +17,27 @@
  *under the License.
  */
 /*
- * capability.h
+ * filter.h
  *
- *  Created on: Jul 12, 2010
- *      Author: alexanderb
+ *  Created on: Apr 28, 2010
+ *      Author: dk489
  */
 
-#ifndef CAPABILITY_H_
-#define CAPABILITY_H_
+#ifndef FILTER_H_
+#define FILTER_H_
 
-#include "hash_map.h"
-#include "module.h"
+#include <apr_general.h>
 
+#include "celix_errno.h"
+#include "properties.h"
 
-celix_status_t capability_create(apr_pool_t *pool, MODULE module, HASH_MAP directives, HASH_MAP attributes, CAPABILITY *capability);
-celix_status_t capability_getServiceName(CAPABILITY capability, char **serviceName);
-celix_status_t capability_getVersion(CAPABILITY capability, VERSION *version);
-celix_status_t capability_getModule(CAPABILITY capability, MODULE *module);
+typedef struct filter * FILTER;
 
-#endif /* CAPABILITY_H_ */
+FILTER filter_create(char * filterString, apr_pool_t *pool);
+void filter_destroy(FILTER filter);
+
+int filter_match(FILTER filter, PROPERTIES properties);
+
+celix_status_t filter_getString(FILTER filter, char **filterStr);
+
+#endif /* FILTER_H_ */

@@ -25,10 +25,10 @@
 
 #include "framework.h"
 #include "properties.h"
-#include "headers.h"
 #include "bundle_context.h"
 #include "bundle.h"
 #include "linked_list_iterator.h"
+#include "celix_log.h"
 
 void launcher_shutdown(int signal);
 
@@ -77,7 +77,9 @@ int main(void) {
         ARRAY_LIST installed = NULL;
         arrayList_create(pool, &installed);
         BUNDLE_CONTEXT context = NULL;
-        bundle_getContext(framework->bundle, &context);
+        BUNDLE bundle = NULL;
+        framework_getFrameworkBundle(framework, &bundle);
+        bundle_getContext(bundle, &context);
         LINKED_LIST_ITERATOR iter = linkedListIterator_create(bundles, 0);
         while (linkedListIterator_hasNext(iter)) {
             BUNDLE current = NULL;

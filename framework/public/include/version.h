@@ -61,7 +61,7 @@ typedef struct version * VERSION;
 celix_status_t version_createVersion(apr_pool_t *pool, int major, int minor, int micro, char * qualifier, VERSION *version);
 
 /**
- * Creates a clone of <code>version</version> allocated on <code>pool</code>.
+ * Creates a clone of <code>version</code> allocated on <code>pool</code>.
  *
  * @param version The version to clone
  * @param pool The pool in which the clone must be allocated
@@ -134,14 +134,12 @@ celix_status_t version_createEmptyVersion(apr_pool_t *pool, VERSION *version);
  * major, minor and micro components are equal and the qualifier component
  * is equal (using <code>String.compareTo</code>).
  *
- * @param version The <code>VERSION</code> to be compared with <code>compare</null>.
- * @param compare The <code>VERSION</code> to be compared with <code>version</null>.
- * @param result A negative integer, zero, or a positive integer if <code>version</null> is
- *         less than, equal to, or greater than the <code>compare</null>.
+ * @param version The <code>VERSION</code> to be compared with <code>compare</code>.
+ * @param compare The <code>VERSION</code> to be compared with <code>version</code>.
+ * @param result A negative integer, zero, or a positive integer if <code>version</code> is
+ *         less than, equal to, or greater than the <code>compare</code>.
  * @return Status code indication failure or success:
  * 		- CELIX_SUCCESS when no errors are encountered.
- *
- * @return
  */
 celix_status_t version_compareTo(VERSION version, VERSION compare, int *result);
 

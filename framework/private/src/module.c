@@ -32,6 +32,7 @@
 #include "linked_list_iterator.h"
 #include "capability.h"
 #include "wire.h"
+#include "bundle.h"
 
 struct module {
 	LINKED_LIST capabilities;
@@ -54,33 +55,36 @@ MODULE module_create(MANIFEST headerMap, char * moduleId, BUNDLE bundle) {
     MODULE module;
     MANIFEST_PARSER mp;
     apr_pool_t *pool;
+    apr_pool_t *bundlePool = NULL;
 
     module = NULL;
     pool = NULL;
 
     if (headerMap != NULL) {
-        module = (MODULE) apr_palloc(bundle->memoryPool, sizeof(*module));
+    	bundle_getMemoryPool(bundle, &bundlePool);
+
+        module = (MODULE) apr_palloc(bundlePool, sizeof(*module));
         module->headerMap = headerMap;
-        module->id = apr_pstrdup(bundle->memoryPool, moduleId);
+        module->id = apr_pstrdup(bundlePool, moduleId);
         module->bundle = bundle;
         module->resolved = false;
 
         module->dependentImporters = NULL;
-        arrayList_create(bundle->memoryPool, &module->dependentImporters);
+        arrayList_create(bundlePool, &module->dependentImporters);
 
-        if (apr_pool_create(&pool, bundle->memoryPool) == APR_SUCCESS) {
+        if (apr_pool_create(&pool, bundlePool) == APR_SUCCESS) {
             if (manifestParser_create(module, headerMap, pool, &mp) == CELIX_SUCCESS) {
             	module->symbolicName = NULL;
-            	manifestParser_getSymbolicName(mp, bundle->memoryPool, &module->symbolicName);
+            	manifestParser_getSymbolicName(mp, bundlePool, &module->symbolicName);
 
                 module->version = NULL;
-                manifestParser_getBundleVersion(mp, bundle->memoryPool, &module->version);
+                manifestParser_getBundleVersion(mp, bundlePool, &module->version);
 
                 module->capabilities = NULL;
-                manifestParser_getCapabilities(mp, bundle->memoryPool, &module->capabilities);
+                manifestParser_getCapabilities(mp, bundlePool, &module->capabilities);
 
                 module->requirements = NULL;
-                manifestParser_getRequirements(mp, bundle->memoryPool, &module->requirements);
+                manifestParser_getRequirements(mp, bundlePool, &module->requirements);
 
                 module->wires = NULL;
             } else {
@@ -97,21 +101,24 @@ MODULE module_createFrameworkModule(BUNDLE bundle) {
     apr_pool_t *capabilities_pool;
     apr_pool_t *requirements_pool;
     apr_pool_t *dependentImporters_pool;
+    apr_pool_t *bundlePool = NULL;
 
-	module = (MODULE) apr_palloc(bundle->memoryPool, sizeof(*module));
+    bundle_getMemoryPool(bundle, &bundlePool);
+
+	module = (MODULE) apr_palloc(bundlePool, sizeof(*module));
 	if (module) {
-	    if (apr_pool_create(&capabilities_pool, bundle->memoryPool) == APR_SUCCESS) {
-	        if (apr_pool_create(&requirements_pool, bundle->memoryPool) == APR_SUCCESS) {
-	            if (apr_pool_create(&dependentImporters_pool, bundle->memoryPool) == APR_SUCCESS) {
-                    module->id = apr_pstrdup(bundle->memoryPool, "0");
-                    module->symbolicName = apr_pstrdup(bundle->memoryPool, "framework");
+	    if (apr_pool_create(&capabilities_pool, bundlePool) == APR_SUCCESS) {
+	        if (apr_pool_create(&requirements_pool, bundlePool) == APR_SUCCESS) {
+	            if (apr_pool_create(&dependentImporters_pool, bundlePool) == APR_SUCCESS) {
+                    module->id = apr_pstrdup(bundlePool, "0");
+                    module->symbolicName = apr_pstrdup(bundlePool, "framework");
                     module->version = NULL;
-                    version_createVersion(bundle->memoryPool, 1, 0, 0, "", &module->version);
+                    version_createVersion(bundlePool, 1, 0, 0, "", &module->version);
 
                     linkedList_create(capabilities_pool, &module->capabilities);
                     linkedList_create(requirements_pool, &module->requirements);
                     module->dependentImporters = NULL;
-                    arrayList_create(bundle->memoryPool, &module->dependentImporters);
+                    arrayList_create(bundlePool, &module->dependentImporters);
                     module->wires = NULL;
                     module->headerMap = NULL;
                     module->resolved = false;
@@ -124,13 +131,6 @@ MODULE module_createFrameworkModule(BUNDLE bundle) {
 }
 
 void module_destroy(MODULE module) {
-	LINKED_LIST_ITERATOR reqIter = linkedListIterator_create(module->requirements, 0);
-	while (linkedListIterator_hasNext(reqIter)) {
-		REQUIREMENT req = linkedListIterator_next(reqIter);
-		requirement_destroy(req);
-	}
-	linkedListIterator_destroy(reqIter);
-
 	arrayList_destroy(module->dependentImporters);
 
 	module->headerMap = NULL;
@@ -234,7 +234,9 @@ void module_removeDependentImporter(MODULE module, MODULE importer) {
 
 ARRAY_LIST module_getDependents(MODULE module) {
     ARRAY_LIST dependents = NULL;
-    arrayList_create(module->bundle->memoryPool, &dependents);
+    apr_pool_t *bundlePool = NULL;
+    bundle_getMemoryPool(module->bundle, &bundlePool);
+    arrayList_create(bundlePool, &dependents);
 
     arrayList_addAll(dependents, module->dependentImporters);
 

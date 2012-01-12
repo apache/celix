@@ -9,7 +9,6 @@
 
 #include <apr_strings.h>
 
-#include "headers.h"
 #include "celix_errno.h"
 
 #include "import_registration_impl.h"

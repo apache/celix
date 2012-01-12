@@ -27,7 +27,7 @@
 #define COMMAND_PRIVATE_H_
 
 #include "command.h"
-#include "headers.h"
+#include "bundle_context.h"
 
 struct command {
 	char * name;

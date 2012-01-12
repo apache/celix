@@ -135,9 +135,12 @@ celix_status_t inspectCommand_printExportedServices(COMMAND command, ARRAY_LIST 
 								for (j = 0; j < arrayList_size(refs); j++) {
 									SERVICE_REFERENCE ref = arrayList_get(refs, j);
 									SERVICE_REGISTRATION reg = NULL;
+									PROPERTIES props = NULL;
 									serviceReference_getServiceRegistration(ref, &reg);
 									char line[256];
-									char *objectClass = properties_get(reg->properties, (char *) OBJECTCLASS);
+
+									serviceRegistration_getProperties(reg, &props);
+									char *objectClass = properties_get(props, (char *) OBJECTCLASS);
 									sprintf(line, "ObjectClass = %s\n", objectClass);
 									out(line);
 									if ((j + 1) < arrayList_size(refs)) {

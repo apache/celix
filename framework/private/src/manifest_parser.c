@@ -302,10 +302,12 @@ static LINKED_LIST manifestParser_parseImportHeader(char * header, apr_pool_t *m
                 }
                 
                 if (attribute_create(apr_pstrdup(memory_pool, "service"), path, memory_pool, &name) == CELIX_SUCCESS) {
-                    hashMap_put(attributes, name->key, name);
+                	char *key = NULL;
+                	attribute_getKey(name, &key);
+                    hashMap_put(attributes, key, name);
                 }
 
-                req = requirement_create(memory_pool, directives, attributes);
+                requirement_create(memory_pool, directives, attributes, &req);
                 linkedList_addElement(requirements, req);
             }
         }
@@ -352,7 +354,9 @@ static LINKED_LIST manifestParser_parseExportHeader(MODULE module, char * header
             }
 
             if (attribute_create(apr_pstrdup(memory_pool, "service"), path, memory_pool, &name) == CELIX_SUCCESS) {
-                hashMap_put(attributes, name->key, name);
+            	char *key = NULL;
+				attribute_getKey(name, &key);
+				hashMap_put(attributes, key, name);
             }
 
             capability_create(memory_pool, module, directives, attributes, &cap);

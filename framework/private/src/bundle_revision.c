@@ -19,12 +19,17 @@ struct bundleRevision {
 	char *location;
 };
 
-celix_status_t bundleRevision_create(char *root, char *location, long revisionNr, char *inputFile, apr_pool_t *pool, BUNDLE_REVISION *bundle_revision) {
+static apr_status_t bundleRevision_destroy(void *revisionP);
+
+celix_status_t bundleRevision_create(apr_pool_t *pool, char *root, char *location, long revisionNr, char *inputFile, BUNDLE_REVISION *bundle_revision) {
     celix_status_t status = CELIX_SUCCESS;
 	BUNDLE_REVISION revision = NULL;
 
 	revision = (BUNDLE_REVISION) apr_pcalloc(pool, sizeof(*revision));
-    if (revision != NULL) {
+    if (!revision) {
+    	status = CELIX_ENOMEM;
+    } else {
+    	apr_pool_pre_cleanup_register(pool, revision, bundleRevision_destroy);
     	// TODO: This overwrites an existing revision, is this supposed to happen?
     	apr_status_t apr_status = apr_dir_make(root, APR_UREAD|APR_UWRITE|APR_UEXECUTE, pool);
         if ((apr_status != APR_SUCCESS) && (apr_status != APR_EEXIST)) {
@@ -50,7 +55,8 @@ celix_status_t bundleRevision_create(char *root, char *location, long revisionNr
 	return status;
 }
 
-celix_status_t bundleRevision_destroy(BUNDLE_REVISION revision) {
+apr_status_t bundleRevision_destroy(void *revisionP) {
+	BUNDLE_REVISION revision = revisionP;
 	return CELIX_SUCCESS;
 }
 

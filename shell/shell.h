@@ -26,8 +26,8 @@
 #ifndef SHELL_H_
 #define SHELL_H_
 
-#include "headers.h"
 #include "array_list.h"
+#include "service_reference.h"
 
 static const char * const SHELL_SERVICE_NAME = "shellService";
 

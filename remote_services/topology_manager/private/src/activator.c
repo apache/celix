@@ -12,7 +12,6 @@
 #include <apr_uuid.h>
 
 #include "constants.h"
-#include "headers.h"
 #include "bundle_activator.h"
 #include "service_tracker.h"
 #include "service_registration.h"

@@ -26,10 +26,16 @@
 #ifndef SERVICE_REGISTRY_H_
 #define SERVICE_REGISTRY_H_
 
-#include "headers.h"
+#include <apr_general.h>
+
+typedef struct serviceRegistry * SERVICE_REGISTRY;
+
 #include "properties.h"
 #include "filter.h"
 #include "service_factory.h"
+#include "service_event.h"
+#include "array_list.h"
+#include "service_registration.h"
 
 SERVICE_REGISTRY serviceRegistry_create(FRAMEWORK framework, void (*serviceChanged)(FRAMEWORK, SERVICE_EVENT_TYPE, SERVICE_REGISTRATION, PROPERTIES));
 celix_status_t serviceRegistry_destroy(SERVICE_REGISTRY registry);

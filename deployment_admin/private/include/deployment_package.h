@@ -8,7 +8,12 @@
 #ifndef DEPLOYMENT_PACKAGE_H_
 #define DEPLOYMENT_PACKAGE_H_
 
-#include "headers.h"
+#include <apr_general.h>
+
+#include "version.h"
+#include "bundle_context.h"
+
+#include "array_list.h"
 
 struct bundle_info {
 	char *path;

@@ -26,8 +26,12 @@
 #ifndef SERVICE_REFERENCE_H_
 #define SERVICE_REFERENCE_H_
 
+typedef struct serviceReference * SERVICE_REFERENCE;
+
 #include "celixbool.h"
-#include "headers.h"
+#include "array_list.h"
+#include "service_registration.h"
+#include "bundle.h"
 
 celix_status_t serviceReference_create(apr_pool_t *pool, BUNDLE bundle, SERVICE_REGISTRATION registration, SERVICE_REFERENCE *reference);
 

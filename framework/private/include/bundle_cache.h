@@ -26,17 +26,79 @@
 #ifndef BUNDLE_CACHE_H_
 #define BUNDLE_CACHE_H_
 
+/**
+ * @defgroup BundleCache BundleCache
+ * @ingroup framework
+ * @{
+ */
+
 #include "properties.h"
 #include "array_list.h"
 #include "bundle_archive.h"
 
+/**
+ * Type definition for the BUNDLE_CACHE abstract data type.
+ */
 typedef struct bundleCache * BUNDLE_CACHE;
 
+/**
+ * Creates the bundle cache using the supplied configuration map.
+ *
+ * @param configurationMap Set with properties to use for this cache
+ * @param mp The memory pool to use for allocation the cache
+ * @param bundle_cache Output parameter for the created cache
+ * @return Status code indication failure or success:
+ * 		- CELIX_SUCCESS when no errors are encountered.
+ * 		- CELIX_ILLEGAL_ARGUMENT If <code>bundle_cache</code> not is null.
+ * 		- CELIX_ENOMEM If allocating memory for <code>bundle_cache</code> failed.
+ */
 celix_status_t bundleCache_create(PROPERTIES configurationMap, apr_pool_t *mp, BUNDLE_CACHE *bundle_cache);
-celix_status_t bundleCache_destroy(BUNDLE_CACHE cache);
-celix_status_t bundleCache_getArchives(BUNDLE_CACHE cache, ARRAY_LIST *archives);
-celix_status_t bundleCache_createArchive(BUNDLE_CACHE cache, long id, char * location, char *inputFile, apr_pool_t *bundlePool, BUNDLE_ARCHIVE *archive);
+
+/**
+ * Recreates and retrieves the list of archives for the given bundle cache.
+ * Archives are recreated on the bundle cache memory pool, the list for the results is created on the suplied pool, and is owned by the caller.
+ *
+ * @param cache The cache to recreate archives out
+ * @param pool The pool on which the list of archives is created
+ * @param archives List with recreated archives
+ * @return Status code indication failure or success:
+ * 		- CELIX_SUCCESS when no errors are encountered.
+ * 		- CELIX_ILLEGAL_ARGUMENT If <code>archives</code> not is null.
+ * 		- CELIX_ENOMEM If allocating memory for <code>archives</code> failed.
+ * 		- CELIX_FILE_IO_EXCEPTION If the cache cannot be opened or read.
+ */
+celix_status_t bundleCache_getArchives(BUNDLE_CACHE cache, apr_pool_t *pool, ARRAY_LIST *archives);
+
+/**
+ * Creates a new archive for the given bundle (using the id and location). The archive is created on the supplied bundlePool.
+ *
+ * @param cache The cache to create an archive in
+ * @param bundlePool The pool to use for the archive creation
+ * @param id The id of the bundle
+ * @param location The location identifier of the bundle
+ * @param inputFile Input identifier to read the bundle data from
+ * @param archive The archive to create
+ *
+ * @return Status code indication failure or success:
+ * 		- CELIX_SUCCESS when no errors are encountered.
+ * 		- CELIX_ILLEGAL_ARGUMENT If <code>bundle_archive</code> not is null.
+ * 		- CELIX_ENOMEM If allocating memory for <code>bundle_archive</code> failed.
+ */
+celix_status_t bundleCache_createArchive(BUNDLE_CACHE cache, apr_pool_t *bundlePool, long id, char * location, char *inputFile, BUNDLE_ARCHIVE *archive);
+
+/**
+ * Deletes the entire bundle cache.
+ *
+ * @param cache the cache to delete
+ * @return Status code indication failure or success:
+ * 		- CELIX_SUCCESS when no errors are encountered.
+ * 		- CELIX_ILLEGAL_ARGUMENT If the cache is invalid
+ * 		- CELIX_FILE_IO_EXCEPTION If the cache cannot be opened or read.
+ */
 celix_status_t bundleCache_delete(BUNDLE_CACHE cache);
 
+/**
+ * @}
+ */
 
 #endif /* BUNDLE_CACHE_H_ */

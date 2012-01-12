@@ -27,6 +27,11 @@
 
 #include "attribute.h"
 
+struct attribute {
+	char * key;
+	char * value;
+};
+
 celix_status_t attribute_create(char * key, char * value, apr_pool_t *memory_pool, ATTRIBUTE *attribute) {
 	celix_status_t status = CELIX_SUCCESS;
 
@@ -45,4 +50,14 @@ celix_status_t attribute_create(char * key, char * value, apr_pool_t *memory_poo
 	}
 
 	return status;
+}
+
+celix_status_t attribute_getKey(ATTRIBUTE attribute, char **key) {
+	*key = attribute->key;
+	return CELIX_SUCCESS;
+}
+
+celix_status_t attribute_getValue(ATTRIBUTE attribute, char **value) {
+	*value = attribute->value;
+	return CELIX_SUCCESS;
 }

@@ -27,7 +27,7 @@
 #define LOG_H_
 
 #include <apr_general.h>
-#include "headers.h"
+
 #include "linkedlist.h"
 #include "log_entry.h"
 #include "log_listener.h"

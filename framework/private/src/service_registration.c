@@ -31,6 +31,23 @@
 #include "service_factory.h"
 #include "service_reference.h"
 
+struct serviceRegistration {
+	SERVICE_REGISTRY registry;
+	char * className;
+	// SERVICE_REFERENCE reference;
+	ARRAY_LIST references;
+	BUNDLE bundle;
+	PROPERTIES properties;
+	void * svcObj;
+	long serviceId;
+
+	apr_thread_mutex_t *mutex;
+	bool isUnregistering;
+
+	bool isServiceFactory;
+	void *serviceFactory;
+};
+
 celix_status_t serviceRegistration_createInternal(apr_pool_t *pool, SERVICE_REGISTRY registry, BUNDLE bundle, char * serviceName, long serviceId,
         void * serviceObject, PROPERTIES dictionary, bool isFactory, SERVICE_REGISTRATION *registration);
 
@@ -138,4 +155,64 @@ celix_status_t serviceRegistration_getService(SERVICE_REGISTRATION registration,
         (*service) = registration->svcObj;
     }
     return CELIX_SUCCESS;
+}
+
+celix_status_t serviceRegistration_getProperties(SERVICE_REGISTRATION registration, PROPERTIES *properties) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (registration != NULL && *properties == NULL) {
+		*properties = registration->properties;
+	} else {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	return status;
+}
+
+celix_status_t serviceRegistration_getRegistry(SERVICE_REGISTRATION registration, SERVICE_REGISTRY *registry) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (registration != NULL && *registry == NULL) {
+		*registry = registration->registry;
+	} else {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	return status;
+}
+
+celix_status_t serviceRegistration_getServiceReferences(SERVICE_REGISTRATION registration, ARRAY_LIST *references) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (registration != NULL && *references == NULL) {
+		*references = registration->references;
+	} else {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	return status;
+}
+
+celix_status_t serviceRegistration_getBundle(SERVICE_REGISTRATION registration, BUNDLE *bundle) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (registration != NULL && *bundle == NULL) {
+		*bundle = registration->bundle;
+	} else {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	return status;
+}
+
+celix_status_t serviceRegistration_getServiceName(SERVICE_REGISTRATION registration, char **serviceName) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (registration != NULL && *serviceName == NULL) {
+		*serviceName = registration->className;
+	} else {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	return status;
 }

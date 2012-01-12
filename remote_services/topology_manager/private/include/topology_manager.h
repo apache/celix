@@ -9,6 +9,8 @@
 #define TOPOLOGY_MANAGER_H_
 
 #include "endpoint_listener.h"
+#include "service_reference.h"
+#include "bundle_context.h"
 
 typedef struct topology_manager *topology_manager_t;
 

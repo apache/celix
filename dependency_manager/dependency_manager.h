@@ -26,8 +26,8 @@
 #ifndef DEPENDENCY_MANAGER_H_
 #define DEPENDENCY_MANAGER_H_
 
-#include "headers.h"
 #include "service_component.h"
+#include "bundle_context.h"
 
 struct dependencyManager {
 	BUNDLE_CONTEXT context;

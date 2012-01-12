@@ -9,6 +9,7 @@
 #define REMOTE_SERVICE_ADMIN_H_
 
 #include "endpoint_listener.h"
+#include "service_reference.h"
 
 #define REMOTE_SERVICE_ADMIN "remote_service_admin"
 

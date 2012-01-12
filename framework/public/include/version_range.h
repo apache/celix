@@ -43,7 +43,7 @@
 typedef struct versionRange * VERSION_RANGE;
 
 /**
- * Creates a new <code>VERSION_RANGE>.
+ * Creates a new <code>VERSION_RANGE</code>.
  *
  * @param pool The pool in which the version range is created
  * @param low Lower bound version

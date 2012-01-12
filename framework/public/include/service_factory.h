@@ -17,17 +17,28 @@
  *under the License.
  */
 /*
- * archive.h
+ * service_factory.h
  *
- *  Created on: May 31, 2010
- *      Author: alexanderb
+ *  Created on: Jun 26, 2011
+ *      Author: alexander
  */
 
-#ifndef ARCHIVE_H_
-#define ARCHIVE_H_
+#ifndef SERVICE_FACTORY_H_
+#define SERVICE_FACTORY_H_
+
+#include <apr_general.h>
+
+typedef struct service_factory * service_factory_t;
 
 #include "celix_errno.h"
+#include "service_registration.h"
+#include "bundle.h"
 
-celix_status_t extractBundle(char * bundleName, char * revisionRoot);
+struct service_factory {
+    void *factory;
+    celix_status_t (*getService)(void *factory, BUNDLE bundle, SERVICE_REGISTRATION registration, void **service);
+    celix_status_t (*ungetService)(void *factory, BUNDLE bundle, SERVICE_REGISTRATION registration);
+};
 
-#endif /* ARCHIVE_H_ */
+
+#endif /* SERVICE_FACTORY_H_ */

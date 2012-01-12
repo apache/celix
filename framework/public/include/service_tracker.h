@@ -26,7 +26,21 @@
 #ifndef SERVICE_TRACKER_H_
 #define SERVICE_TRACKER_H_
 
-#include "headers.h"
+#include "service_listener.h"
+#include "array_list.h"
+#include "bundle_context.h"
+
+struct serviceTrackerCustomizer {
+	void * handle;
+	celix_status_t (*addingService)(void * handle, SERVICE_REFERENCE reference, void **service);
+	celix_status_t (*addedService)(void * handle, SERVICE_REFERENCE reference, void * service);
+	celix_status_t (*modifiedService)(void * handle, SERVICE_REFERENCE reference, void * service);
+	celix_status_t (*removedService)(void * handle, SERVICE_REFERENCE reference, void * service);
+};
+
+typedef struct serviceTrackerCustomizer * SERVICE_TRACKER_CUSTOMIZER;
+
+typedef struct serviceTracker * SERVICE_TRACKER;
 
 struct fwServiceTracker {
 	apr_pool_t *pool;

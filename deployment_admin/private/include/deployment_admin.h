@@ -8,7 +8,9 @@
 #ifndef DEPLOYMENT_ADMIN_H_
 #define DEPLOYMENT_ADMIN_H_
 
-#include "headers.h"
+#include <apr_thread_proc.h>
+
+#include "bundle_context.h"
 
 typedef struct deployment_admin *deployment_admin_t;
 

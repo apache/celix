@@ -1,4 +1,4 @@
-/**
+/*
  *Licensed to the Apache Software Foundation (ASF) under one
  *or more contributor license agreements.  See the NOTICE file
  *distributed with this work for additional information
@@ -16,19 +16,35 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * component.h
+/**
  *
- *  Created on: Mar 17, 2010
- *      Author: alexanderb
+ * @defgroup Archive Archive
+ * @ingroup framework
+ * @{
+ *
+ *  \author    	Alexander Broekhuis
+ *  \date      	May 31, 2010
+ *  \copyright	Apache License, Version 2.0
  */
+#ifndef ARCHIVE_H_
+#define ARCHIVE_H_
 
-#ifndef COMPONENT_H_
-#define COMPONENT_H_
+#include "celix_errno.h"
 
-void start(void);
+/**
+ * Extracts the bundle pointed to by bundleName to the given root.
+ *
+ * @param bundleName location of the bundle to extract.
+ * @param revisionRoot directory to where the bundle must be extracted.
+ *
+ * @return Status code indication failure or success:
+ * 		- CELIX_SUCCESS when no errors are encountered.
+ * 		- CELIX_FILE_IO_EXCEPTION If the zip file cannot be extracted.
+ */
+celix_status_t extractBundle(char * bundleName, char * revisionRoot);
 
-void stop(void);
+#endif /* ARCHIVE_H_ */
 
-
-#endif /* COMPONENT_H_ */
+/**
+ * @}
+ */

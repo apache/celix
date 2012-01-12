@@ -32,7 +32,6 @@
 
 #include "bundle_archive.h"
 #include "bundle_revision.h"
-#include "headers.h"
 #include "linked_list_iterator.h"
 
 
@@ -148,14 +147,6 @@ celix_status_t bundleArchive_destroy(BUNDLE_ARCHIVE archive) {
 	} else {
 		if (archive->archiveRootDir != NULL) {
 			apr_dir_close(archive->archiveRootDir);
-		}
-		if (archive->revisions != NULL) {
-			LINKED_LIST_ITERATOR iter = linkedListIterator_create(archive->revisions, 0);
-			while (linkedListIterator_hasNext(iter)) {
-				BUNDLE_REVISION revision = linkedListIterator_next(iter);
-				bundleRevision_destroy(revision);
-			}
-			linkedListIterator_destroy(iter);
 		}
 	}
 
@@ -559,7 +550,7 @@ celix_status_t bundleArchive_createRevisionFromLocation(BUNDLE_ARCHIVE archive, 
 		
 		sprintf(root, "%s/version%ld.%ld", archive->archiveRoot, refreshCount, revNr);
 		if (apr_pool_create(&pool, archive->mp) == APR_SUCCESS) {
-			status = bundleRevision_create(root, location, revNr, inputFile, pool, &revision);
+			status = bundleRevision_create(pool, root, location, revNr, inputFile, &revision);
 
 			if (status != CELIX_SUCCESS) {
 				apr_pool_destroy(pool);

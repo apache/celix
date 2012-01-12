@@ -6,7 +6,8 @@
  */
 #include <math.h>
 
-#include "headers.h"
+#include <stdio.h>
+
 #include "example_impl.h"
 
 celix_status_t example_create(apr_pool_t *pool, example_t *example) {

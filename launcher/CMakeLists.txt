@@ -19,5 +19,6 @@ add_executable(launcher launcher.c)
 
 target_link_libraries(launcher framework)
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+include_directories("${PROJECT_SOURCE_DIR}/framework/private/include")
 
 install(TARGETS launcher RUNTIME DESTINATION bin COMPONENT framework)

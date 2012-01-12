@@ -26,7 +26,6 @@
 #ifndef SHELL_PRIVATE_H_
 #define SHELL_PRIVATE_H_
 
-#include "headers.h"
 #include "shell.h"
 #include "hash_map.h"
 #include "command.h"

@@ -21,7 +21,6 @@
 #include <stdbool.h>
 #include <glib.h>
 #include <gdk/gdk.h>
-#include "headers.h"
 #include "bundle_context.h"
 #include "bundle.h"
 #include "utils.h"

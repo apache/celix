@@ -17,21 +17,23 @@
  *under the License.
  */
 /*
- * activator.h
+ * capability.h
  *
- *  Created on: Mar 18, 2010
+ *  Created on: Jul 12, 2010
  *      Author: alexanderb
  */
 
-#ifndef BUNDLE_ACTIVATOR_H_
-#define BUNDLE_ACTIVATOR_H_
+#ifndef CAPABILITY_H_
+#define CAPABILITY_H_
 
-#include "headers.h"
-#include "bundle_context.h"
+typedef struct capability *CAPABILITY;
 
-celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData);
-celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context);
-celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context);
-celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context);
+#include "hash_map.h"
+#include "module.h"
 
-#endif /* BUNDLE_ACTIVATOR_H_ */
+celix_status_t capability_create(apr_pool_t *pool, MODULE module, HASH_MAP directives, HASH_MAP attributes, CAPABILITY *capability);
+celix_status_t capability_getServiceName(CAPABILITY capability, char **serviceName);
+celix_status_t capability_getVersion(CAPABILITY capability, VERSION *version);
+celix_status_t capability_getModule(CAPABILITY capability, MODULE *module);
+
+#endif /* CAPABILITY_H_ */

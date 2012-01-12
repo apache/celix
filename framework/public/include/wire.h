@@ -26,11 +26,13 @@
 #ifndef WIRE_H_
 #define WIRE_H_
 
+typedef struct wire *WIRE;
+
 #include "requirement.h"
 #include "capability.h"
 #include "module.h"
 #include "linkedlist.h"
-#include "headers.h"
+#include "module.h"
 
 /**
  * @defgroup Version Version
@@ -88,7 +90,7 @@ celix_status_t wire_getImporter(WIRE wire, MODULE *importer);
  * Getter for the exporter of the wire.
  *
  * @param wire The wire to get the exporter from.
- * @param importer The exporting module.
+ * @param exporter The exporting module.
  * @return Status code indication failure or success:
  * 		- CELIX_SUCCESS when no errors are encountered.
  */

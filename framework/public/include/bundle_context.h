@@ -26,8 +26,17 @@
 #ifndef BUNDLE_CONTEXT_H_
 #define BUNDLE_CONTEXT_H_
 
-#include "headers.h"
+/**
+ * A bundle's execution context within the Framework. The context is used to
+ * grant access to other methods so that this bundle can interact with the
+ * Framework.
+ */
+typedef struct bundleContext *BUNDLE_CONTEXT;
+
 #include "service_factory.h"
+#include "service_listener.h"
+#include "properties.h"
+#include "array_list.h"
 
 celix_status_t bundleContext_create(FRAMEWORK framework, BUNDLE bundle, BUNDLE_CONTEXT *bundle_context);
 celix_status_t bundleContext_destroy(BUNDLE_CONTEXT context);

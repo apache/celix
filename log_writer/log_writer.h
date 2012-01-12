@@ -26,7 +26,6 @@
 #ifndef LOG_WRITER_H_
 #define LOG_WRITER_H_
 
-#include "headers.h"
 #include "service_component.h"
 #include "service_dependency.h"
 #include "log_reader_service.h"

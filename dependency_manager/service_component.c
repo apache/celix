@@ -24,7 +24,6 @@
  */
 #include <stdlib.h>
 
-#include "headers.h"
 #include "dependency_manager.h"
 #include "service_component.h"
 #include "service_component_private.h"

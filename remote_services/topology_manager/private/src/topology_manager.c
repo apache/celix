@@ -10,7 +10,6 @@
 #include <apr_uuid.h>
 #include <apr_strings.h>
 
-#include "headers.h"
 #include "topology_manager.h"
 #include "bundle_context.h"
 #include "constants.h"
@@ -22,6 +21,7 @@
 #include "listener_hook_service.h"
 #include "utils.h"
 #include "service_reference.h"
+#include "service_registration.h"
 
 struct topology_manager {
 	apr_pool_t *pool;
@@ -104,7 +104,8 @@ celix_status_t topologyManager_serviceChanged(void *listener, SERVICE_EVENT even
 	topology_manager_t manager = listen->handle;
 	SERVICE_REGISTRATION registration = NULL;
 	serviceReference_getServiceRegistration(event->reference, &registration);
-	PROPERTIES props = registration->properties;
+	PROPERTIES props = NULL;
+	serviceRegistration_getProperties(registration, &props);
 	char *name = properties_get(props, (char *) OBJECTCLASS);
 	char *export = properties_get(props, (char *) SERVICE_EXPORTED_INTERFACES);
 
@@ -201,7 +202,8 @@ celix_status_t topologyManager_notifyListeners(topology_manager_t manager, remot
 				SERVICE_REFERENCE eplRef = arrayList_get(endpointListeners, eplIt);
 				SERVICE_REGISTRATION registration = NULL;
 				serviceReference_getServiceRegistration(eplRef, &registration);
-				PROPERTIES props = registration->properties;
+				PROPERTIES props = NULL;
+				serviceRegistration_getProperties(registration, &props);
 				char *scope = properties_get(props, (char *) ENDPOINT_LISTENER_SCOPE);
 				FILTER filter = filter_create(scope, manager->pool);
 				endpoint_listener_t epl = NULL;
@@ -260,7 +262,8 @@ celix_status_t topologyManager_removeService(topology_manager_t manager, SERVICE
 
 	SERVICE_REGISTRATION registration = NULL;
 	serviceReference_getServiceRegistration(reference, &registration);
-	PROPERTIES props = registration->properties;
+	PROPERTIES props = NULL;
+	serviceRegistration_getProperties(registration, &props);
 	char *name = properties_get(props, (char *) OBJECTCLASS);
 
 	printf("TOPOLOGY_MANAGER: Remove Service: %s.\n", name);
