@@ -648,13 +648,15 @@ celix_status_t bundleArchive_initialize(BUNDLE_ARCHIVE archive) {
 			} else {
 				apr_file_t *bundleIdFile;
 				apr_status_t apr_status;
+				apr_pool_t *spool;
 
-				char * bundleId = (char *)malloc(strlen(archive->archiveRoot) + 10);
-				strcpy(bundleId, archive->archiveRoot);
-				strcat(bundleId, "/bundle.id");
+				apr_pool_create(&spool, archive->mp);
+				char * bundleId = (char *)apr_palloc(spool, sizeof(*bundleId) * (strlen(archive->archiveRoot) + 11));
+				bundleId = apr_pstrcat(spool, archive->archiveRoot, "/bundle.id", NULL);
 				
 				apr_status = apr_file_open(&bundleIdFile, bundleId, APR_FOPEN_CREATE|APR_FOPEN_WRITE, APR_OS_DEFAULT, archive->mp);
-				free(bundleId);
+				apr_pool_destroy(spool);
+
 				if (apr_status != APR_SUCCESS) {
 					status = CELIX_FILE_IO_EXCEPTION;
 				} else {
@@ -664,7 +666,7 @@ celix_status_t bundleArchive_initialize(BUNDLE_ARCHIVE archive) {
 					// Ignore close status, let it fail if needed again
 					apr_file_close(bundleIdFile);
 
-					bundleLocation = (char *)malloc(strlen(archive->archiveRoot) + 16);
+					bundleLocation = (char *)malloc(strlen(archive->archiveRoot) + 17);
 					strcpy(bundleLocation,archive->archiveRoot);
 					strcat(bundleLocation, "/bundle.location");
 					

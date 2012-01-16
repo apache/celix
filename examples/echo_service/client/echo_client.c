@@ -64,7 +64,7 @@ void echoClient_stop(ECHO_CLIENT client) {
 
 void echoClient_destroy(ECHO_CLIENT client) {
 	client->tracker = NULL;
-	client->sender = NULL;
+	client->sender = 0;
 	free(client);
 	client = NULL;
 }

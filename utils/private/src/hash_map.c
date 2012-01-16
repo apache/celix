@@ -501,6 +501,7 @@ void hashMapValues_toArray(HASH_MAP_VALUES values, void* *array[], unsigned int 
         }
         (*array)[i] = hashMapIterator_nextValue(it);
     }
+    hashMapIterator_destroy(it);
 }
 
 bool hashMapValues_remove(HASH_MAP_VALUES values, void * value) {

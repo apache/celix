@@ -135,13 +135,13 @@ celix_status_t bundleCache_getArchives(BUNDLE_CACHE cache, apr_pool_t *pool, ARR
 
 celix_status_t bundleCache_createArchive(BUNDLE_CACHE cache, apr_pool_t *bundlePool, long id, char * location, char *inputFile, BUNDLE_ARCHIVE *bundle_archive) {
     celix_status_t status;
-	char archiveRoot[256];
+	char *archiveRoot;
     BUNDLE_ARCHIVE archive;
 
 	if (cache && location && bundlePool) {
-        sprintf(archiveRoot, "%s/bundle%ld",  cache->cacheDir, id);
+		archiveRoot = apr_psprintf(bundlePool, "%s/bundle%ld",  cache->cacheDir, id);
 
-        status = bundleArchive_create(apr_pstrdup(cache->mp, archiveRoot), id, location, inputFile, bundlePool, bundle_archive);
+        status = bundleArchive_create(archiveRoot, id, location, inputFile, bundlePool, bundle_archive);
 	}
 
 	return status;

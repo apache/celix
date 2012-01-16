@@ -17,7 +17,7 @@
 
 #deploy("name" BUNDLES receiver receiver-2.0 sender shell shell_tui)
 #deploy("shell test" BUNDLES shell)
-deploy("hello_world" BUNDLES shell shell_tui hello_world log_service log_writer)
+deploy("hello_world" BUNDLES shell shell_tui hello_world log_service)
 #deploy("deployer" BUNDLES shell shell_tui deployer)
 #deploy("wb" BUNDLES tracker publisherA publisherB shell shell_tui log_service log_writer)
 deploy("wb_dp" BUNDLES tracker_depman publisherA publisherB shell shell_tui log_service log_writer)

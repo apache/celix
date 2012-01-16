@@ -43,7 +43,7 @@ void * dm_create(BUNDLE_CONTEXT context) {
 	arrayList_create(pool, &data->publishers);
 	data->context = NULL;
 	data->running = false;
-	data->sender = NULL;
+	data->sender = 0;
 	data->service = NULL;
 	data->logger = NULL;
 	return data;

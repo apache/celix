@@ -184,7 +184,7 @@ celix_status_t framework_create(FRAMEWORK *framework, apr_pool_t *memoryPool, PR
                                     (*framework)->globalLockWaitersList = NULL;
                                     arrayList_create((*framework)->mp, &(*framework)->globalLockWaitersList);
                                     (*framework)->globalLockCount = 0;
-                                    (*framework)->globalLockThread = NULL;
+                                    (*framework)->globalLockThread = 0;
                                     (*framework)->nextBundleId = 1l;
                                     (*framework)->cache = NULL;
 
@@ -889,6 +889,8 @@ celix_status_t fw_uninstallBundle(FRAMEWORK framework, BUNDLE bundle) {
             celix_status_t refreshStatus = fw_refreshBundles(framework, bundles, 1);
             if (refreshStatus != CELIX_SUCCESS) {
                 printf("Could not refresh bundle");
+            } else {
+            	bundle_destroy(bundle);
             }
 
             framework_releaseGlobalLock(framework);
@@ -920,6 +922,9 @@ celix_status_t fw_refreshBundles(FRAMEWORK framework, BUNDLE bundles[], int size
         }
         values = hashMapValues_create(map);
         hashMapValues_toArray(values, (void *) &newTargets, &nrofvalues);
+        hashMapValues_destroy(values);
+
+        hashMap_destroy(map, false, false);
             
         if (newTargets != NULL) {
             int i = 0;
@@ -954,6 +959,7 @@ celix_status_t fw_refreshBundles(FRAMEWORK framework, BUNDLE bundles[], int size
                 bundle_update(framework->bundle, NULL);
             }
 			free(helpers);
+			free(newTargets);
         }
 
         framework_releaseGlobalLock(framework);
@@ -1034,6 +1040,7 @@ celix_status_t fw_getDependentBundles(FRAMEWORK framework, BUNDLE exporter, ARRA
                 MODULE dependent = arrayList_get(dependents, depIdx);
                 arrayList_add(*list, module_getBundle(dependent));
             }
+            arrayList_destroy(dependents);
         }
     } else {
         status = CELIX_ILLEGAL_ARGUMENT;
@@ -1055,6 +1062,7 @@ celix_status_t fw_populateDependentGraph(FRAMEWORK framework, BUNDLE exporter, H
                     fw_populateDependentGraph(framework, arrayList_get(dependents, depIdx), map);
                 }
             }
+            arrayList_destroy(dependents);
         }
     } else {
         status = CELIX_ILLEGAL_ARGUMENT;
@@ -1528,7 +1536,7 @@ celix_status_t framework_acquireBundleLock(FRAMEWORK framework, BUNDLE bundle, i
 	celix_status_t status = CELIX_SUCCESS;
 
 	bool locked;
-	apr_os_thread_t lockingThread = NULL;
+	apr_os_thread_t lockingThread = 0;
 
 	int err = apr_thread_mutex_lock(framework->bundleLock);
 	if (err != APR_SUCCESS) {
@@ -1542,7 +1550,7 @@ celix_status_t framework_acquireBundleLock(FRAMEWORK framework, BUNDLE bundle, i
 		thread_equalsSelf(framework->globalLockThread, &isSelf);
 
 		while (!lockable
-				|| ((framework->globalLockThread != NULL)
+				|| ((framework->globalLockThread != 0)
 				&& !isSelf)) {
 			BUNDLE_STATE state;
 			bundle_getState(bundle, &state);
@@ -1552,8 +1560,8 @@ celix_status_t framework_acquireBundleLock(FRAMEWORK framework, BUNDLE bundle, i
 			} else
 				bundle_getLockingThread(bundle, &lockingThread);
 				if (isSelf
-					&& (lockingThread != NULL)
-					&& arrayList_contains(framework->globalLockWaitersList, lockingThread)) {
+					&& (lockingThread != 0)
+					&& arrayList_contains(framework->globalLockWaitersList, &lockingThread)) {
 				framework->interrupted = true;
 	//			pthread_cond_signal_thread_np(&framework->condition, bundle_getLockingThread(bundle));
 				apr_thread_cond_signal(framework->condition);
@@ -1588,7 +1596,7 @@ celix_status_t framework_acquireBundleLock(FRAMEWORK framework, BUNDLE bundle, i
 
 bool framework_releaseBundleLock(FRAMEWORK framework, BUNDLE bundle) {
     bool unlocked;
-    apr_os_thread_t lockingThread = NULL;
+    apr_os_thread_t lockingThread = 0;
 
     apr_thread_mutex_lock(framework->bundleLock);
 
@@ -1598,7 +1606,7 @@ bool framework_releaseBundleLock(FRAMEWORK framework, BUNDLE bundle) {
 		return false;
 	}
 	bundle_getLockingThread(bundle, &lockingThread);
-	if (lockingThread == NULL) {
+	if (lockingThread == 0) {
 	    apr_thread_cond_broadcast(framework->condition);
 	}
 
@@ -1616,10 +1624,10 @@ bool framework_acquireGlobalLock(FRAMEWORK framework) {
 	thread_equalsSelf(framework->globalLockThread, &isSelf);
 
 	while (!interrupted
-			&& (framework->globalLockThread != NULL)
+			&& (framework->globalLockThread != 0)
 			&& (!isSelf)) {
 		apr_os_thread_t currentThread = apr_os_thread_current();
-		arrayList_add(framework->globalLockWaitersList, currentThread);
+		arrayList_add(framework->globalLockWaitersList, &currentThread);
 		apr_thread_cond_broadcast(framework->condition);
 
 		apr_thread_cond_wait(framework->condition, framework->bundleLock);
@@ -1628,7 +1636,7 @@ bool framework_acquireGlobalLock(FRAMEWORK framework) {
 			framework->interrupted = false;
 		}
 
-		arrayList_removeElement(framework->globalLockWaitersList, currentThread);
+		arrayList_removeElement(framework->globalLockWaitersList, &currentThread);
 	}
 
 	if (!interrupted) {
@@ -1651,7 +1659,7 @@ celix_status_t framework_releaseGlobalLock(FRAMEWORK framework) {
 	if (framework->globalLockThread == pthread_self()) {
 		framework->globalLockCount--;
 		if (framework->globalLockCount == 0) {
-			framework->globalLockThread = NULL;
+			framework->globalLockThread = 0;
 			if (apr_thread_cond_broadcast(framework->condition) != 0) {
 				celix_log("Failed to broadcast global lock release.");
 				ret = CELIX_FRAMEWORK_EXCEPTION;
