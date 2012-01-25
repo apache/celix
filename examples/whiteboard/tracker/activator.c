@@ -111,7 +111,7 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
         cust->modifiedService = modifiedServ;
         cust->removedService = removedServ;
         SERVICE_TRACKER tracker = NULL;
-        serviceTracker_create(context, (char *) PUBLISHER_NAME, cust, &tracker);
+        serviceTracker_create(pool, context, (char *) PUBLISHER_NAME, cust, &tracker);
         data->tracker = tracker;
 
         serviceTracker_open(tracker);
@@ -138,5 +138,9 @@ celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
 
 celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {
     celix_status_t status = CELIX_SUCCESS;
+    struct data * data = (struct data *) userData;
+
+    arrayList_destroy(data->publishers);
+
     return status;
 }

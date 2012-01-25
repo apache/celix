@@ -90,8 +90,17 @@ void filter_destroy(FILTER filter) {
 			arrayList_clear(filter->value);
 			arrayList_destroy(filter->value);
 			filter->value = NULL;
+		} else if (filter->operand == OR) {
+			int size = arrayList_size(filter->value);
+			int i = 0;
+			for (i = 0; i < size; i++) {
+				FILTER f = arrayList_get(filter->value, i);
+				filter_destroy(f);
+			}
+			arrayList_destroy(filter->value);
+			filter->value = NULL;
 		} else {
-			 free(filter->value);
+			free(filter->value);
 			filter->value = NULL;
 		}
 		free(filter->attribute);

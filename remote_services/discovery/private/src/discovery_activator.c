@@ -71,7 +71,7 @@ celix_status_t discoveryActivator_createEPLTracker(struct activator *activator, 
 		custumizer->modifiedService = discovery_endpointListenerModified;
 		custumizer->removedService = discovery_endpointListenerRemoved;
 
-		status = serviceTracker_create(activator->context, "endpoint_listener", custumizer, tracker);
+		status = serviceTracker_create(activator->pool, activator->context, "endpoint_listener", custumizer, tracker);
 
 		serviceTracker_open(activator->endpointListenerTracker);
 	}

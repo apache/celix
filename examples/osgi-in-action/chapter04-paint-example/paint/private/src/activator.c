@@ -66,7 +66,7 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
         cust->addingService = addingServ;
         cust->modifiedService = modifiedServ;
         cust->removedService = removedServ;
-        serviceTracker_create(context, SIMPLE_SHAPE_SERVICE_NAME, cust, &activator->tracker);
+        serviceTracker_create(pool, context, SIMPLE_SHAPE_SERVICE_NAME, cust, &activator->tracker);
 		serviceTracker_open(activator->tracker);
 
 	}

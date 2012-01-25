@@ -72,12 +72,12 @@ celix_status_t bundleContext_destroy(BUNDLE_CONTEXT context) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (context != NULL) {
-		context->bundle = NULL;
-		context->framework = NULL;
 		if (context->pool) {
 			apr_pool_destroy(context->pool);
 		    context->pool = NULL;
 		}
+		context->bundle = NULL;
+		context->framework = NULL;
 		free(context);
 		context = NULL;
 	} else {

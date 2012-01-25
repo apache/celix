@@ -79,10 +79,13 @@ void serviceDependency_start(SERVICE_DEPENDENCY dependency, SERVICE service) {
 
 	dependency->tracker = NULL;
 
+	apr_pool_t *pool;
+	bundleContext_getMemoryPool(dependency->context, &pool);
+
 	if (dependency->trackedServiceFilter != NULL) {
-		tracker_createWithFilter(dependency->context, dependency->trackedServiceFilter, cust, &dependency->tracker);
+		serviceTracker_createWithFilter(pool, dependency->context, dependency->trackedServiceFilter, cust, &dependency->tracker);
 	} else if (dependency->trackedServiceName != NULL) {
-		serviceTracker_create(dependency->context, dependency->trackedServiceName, cust, &dependency->tracker);
+		serviceTracker_create(pool, dependency->context, dependency->trackedServiceName, cust, &dependency->tracker);
 	} else {
 
 	}
@@ -93,7 +96,6 @@ void serviceDependency_start(SERVICE_DEPENDENCY dependency, SERVICE service) {
 void serviceDependency_stop(SERVICE_DEPENDENCY dependency, SERVICE service) {
 	dependency->started = true;
 	serviceTracker_close(dependency->tracker);
-	tracker_destroy(dependency->tracker);
 }
 
 celix_status_t serviceDependency_addingService(void * handle, SERVICE_REFERENCE reference, void **service) {

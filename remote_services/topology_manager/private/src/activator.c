@@ -82,7 +82,7 @@ celix_status_t bundleActivator_createRSATracker(struct activator *activator, SER
 		custumizer->modifiedService = topologyManager_rsaModified;
 		custumizer->removedService = topologyManager_rsaRemoved;
 
-		status = serviceTracker_create(activator->context, "remote_service_admin", custumizer, tracker);
+		status = serviceTracker_create(activator->pool, activator->context, "remote_service_admin", custumizer, tracker);
 	}
 
 	return status;

@@ -49,8 +49,11 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 	struct echoActivator * act = (struct echoActivator *) userData;
 
+	apr_pool_t *pool = NULL;
 	SERVICE_TRACKER tracker = NULL;
-	serviceTracker_create(context, ECHO_SERVICE_NAME, NULL, &tracker);
+
+	bundleContext_getMemoryPool(context, &pool);
+	serviceTracker_create(pool, context, ECHO_SERVICE_NAME, NULL, &tracker);
 	act->tracker = tracker;
 
 	ECHO_CLIENT client = echoClient_create(tracker);
@@ -73,7 +76,6 @@ celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
 celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {
 	struct echoActivator * act = (struct echoActivator *) userData;
 	echoClient_destroy(act->client);
-	tracker_destroy(act->tracker);
 
 	return CELIX_SUCCESS;
 }

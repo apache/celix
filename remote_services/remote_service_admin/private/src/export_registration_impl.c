@@ -95,7 +95,7 @@ celix_status_t exportRegistration_createEndpointTracker(export_registration_t re
 		custumizer->modifiedService = exportRegistration_endpointModified;
 		custumizer->removedService = exportRegistration_endpointRemoved;
 
-		status = serviceTracker_create(registration->context, REMOTE_ENDPOINT, custumizer, tracker);
+		status = serviceTracker_create(registration->pool, registration->context, REMOTE_ENDPOINT, custumizer, tracker);
 	}
 
 	return status;
