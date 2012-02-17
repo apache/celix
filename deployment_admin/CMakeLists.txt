@@ -20,6 +20,7 @@ add_definitions(-DUSE_FILE32API)
 include_directories("/opt/local/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/deployment_admin/private/include")
+include_directories("${PROJECT_SOURCE_DIR}/deployment_admin/public/include")
 
 link_directories("/opt/local/lib")
 bundle(deployment_admin SOURCES

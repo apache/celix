@@ -15,7 +15,12 @@
 #include "module.h"
 #include "bundle.h"
 
-celix_status_t deploymentPackage_setBundleInfos(deployment_package_t package);
+static const char * const RESOURCE_PROCESSOR = "Resource-Processor";
+static const char * const DEPLOYMENTPACKAGE_CUSTOMIZER = "DeploymentPackage-Customizer";
+
+celix_status_t deploymentPackage_processEntries(deployment_package_t package);
+static celix_status_t deploymentPackage_isBundleResource(PROPERTIES attributes, bool *isBundleResource);
+static celix_status_t deploymentPackage_parseBooleanHeader(char *value, bool *boolValue);
 
 celix_status_t deploymentPackage_create(apr_pool_t *pool, BUNDLE_CONTEXT context, MANIFEST manifest, deployment_package_t *package) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -28,15 +33,24 @@ celix_status_t deploymentPackage_create(apr_pool_t *pool, BUNDLE_CONTEXT context
 		(*package)->context = context;
 		(*package)->manifest = manifest;
 		(*package)->bundleInfos = NULL;
+		(*package)->resourceInfos = NULL;
 		(*package)->nameToBundleInfo = hashMap_create(string_hash, NULL, string_equals, NULL);
+		(*package)->pathToEntry = hashMap_create(string_hash, NULL, string_equals, NULL);
 		status = arrayList_create(pool, &(*package)->bundleInfos);
 		if (status == CELIX_SUCCESS) {
-			status = deploymentPackage_setBundleInfos(*package);
+			status = arrayList_create(pool, &(*package)->resourceInfos);
 			if (status == CELIX_SUCCESS) {
-				int i;
-				for (i = 0; i < arrayList_size((*package)->bundleInfos); i++) {
-					bundle_info_t info = arrayList_get((*package)->bundleInfos, i);
-					hashMap_put((*package)->nameToBundleInfo, info->symbolicName, info);
+				status = deploymentPackage_processEntries(*package);
+				if (status == CELIX_SUCCESS) {
+					int i;
+					for (i = 0; i < arrayList_size((*package)->bundleInfos); i++) {
+						bundle_info_t info = arrayList_get((*package)->bundleInfos, i);
+						hashMap_put((*package)->nameToBundleInfo, info->symbolicName, info);
+					}
+					for (i = 0; i < arrayList_size((*package)->resourceInfos); i++) {
+						resource_info_t info = arrayList_get((*package)->resourceInfos, i);
+						hashMap_put((*package)->pathToEntry, info->path, info);
+					}
 				}
 			}
 		}
@@ -81,12 +95,22 @@ celix_status_t deploymentPackage_getBundle(deployment_package_t package, char *n
 	return CELIX_SUCCESS;
 }
 
+celix_status_t deploymentPackage_getResourceInfos(deployment_package_t package, ARRAY_LIST *infos) {
+	*infos = arrayList_clone(package->pool, package->resourceInfos);
+	return CELIX_SUCCESS;
+}
+
+celix_status_t deploymentPackage_getResourceInfoByPath(deployment_package_t package, char *path, resource_info_t *info) {
+	*info = hashMap_get(package->pathToEntry, path);
+	return CELIX_SUCCESS;
+}
+
 celix_status_t deploymentPackage_getVersion(deployment_package_t package, VERSION *version) {
 	char *versionStr = manifest_getValue(package->manifest, "DeploymentPackage-Version");
 	return version_createVersionFromString(package->pool, versionStr, version);
 }
 
-celix_status_t deploymentPackage_setBundleInfos(deployment_package_t package) {
+celix_status_t deploymentPackage_processEntries(deployment_package_t package) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	HASH_MAP entries = NULL;
@@ -97,18 +121,48 @@ celix_status_t deploymentPackage_setBundleInfos(deployment_package_t package) {
 		char *name = hashMapEntry_getKey(entry);
 		PROPERTIES values = hashMapEntry_getValue(entry);
 
-		bundle_info_t info = apr_palloc(package->pool, sizeof(*info));
-		info->path = name;
-		info->attributes = values;
-		info->symbolicName = properties_get(values, (char *) BUNDLE_SYMBOLICNAME);
-		char *version = properties_get(values, (char *) BUNDLE_VERSION);
-		info->version = NULL;
-		status = version_createVersionFromString(package->pool, version, &info->version);
+		bool isBundleResource;
+		deploymentPackage_isBundleResource(values, &isBundleResource);
+		if (isBundleResource) {
+			bundle_info_t info = apr_palloc(package->pool, sizeof(*info));
+			info->path = name;
+			info->attributes = values;
+			info->symbolicName = properties_get(values, (char *) BUNDLE_SYMBOLICNAME);
+			char *version = properties_get(values, (char *) BUNDLE_VERSION);
+			info->version = NULL;
+			status = version_createVersionFromString(package->pool, version, &info->version);
+			char *customizer = properties_get(values, (char *) DEPLOYMENTPACKAGE_CUSTOMIZER);
+			deploymentPackage_parseBooleanHeader(customizer, &info->customizer);
 
-		arrayList_add(package->bundleInfos, info);
+			arrayList_add(package->bundleInfos, info);
+		} else {
+			resource_info_t info = apr_palloc(package->pool, sizeof(*info));
+			info->path = name;
+			info->attributes = values;
+			info->resourceProcessor = properties_get(values, (char *) RESOURCE_PROCESSOR);
+
+			arrayList_add(package->resourceInfos, info);
+		}
 	}
 
 	return status;
+}
+
+static celix_status_t deploymentPackage_isBundleResource(PROPERTIES attributes, bool *isBundleResource) {
+	*isBundleResource = properties_get(attributes, (char *) BUNDLE_SYMBOLICNAME) != NULL;
+	return CELIX_SUCCESS;
+}
+
+static celix_status_t deploymentPackage_parseBooleanHeader(char *value, bool *boolValue) {
+	*boolValue = false;
+	if (value != NULL) {
+		if (strcmp(value, "true") == 0) {
+			*boolValue = true;
+		} else {
+			*boolValue = false;
+		}
+	}
+	return CELIX_SUCCESS;
 }
 
 

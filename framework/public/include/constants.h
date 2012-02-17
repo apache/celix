@@ -28,6 +28,7 @@
 
 static const char * const OBJECTCLASS = "objectClass";
 static const char * const SERVICE_ID = "service.id";
+static const char * const SERVICE_PID = "service.pid";
 static const char * const SERVICE_RANKING = "service.ranking";
 
 static const char * const BUNDLE_ACTIVATOR_CREATE = "bundleActivator_create";
