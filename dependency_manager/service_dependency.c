@@ -62,7 +62,7 @@ SERVICE_DEPENDENCY serviceDependency_create(BUNDLE_CONTEXT context) {
 void * serviceDependency_getService(SERVICE_DEPENDENCY dependency) {
 	void * service = NULL;
 	if (dependency->started) {
-		service = tracker_getService(dependency->tracker);
+		service = serviceTracker_getService(dependency->tracker);
 	}
 	return service;
 }
@@ -140,7 +140,7 @@ celix_status_t serviceDependency_modifiedService(void * handle, SERVICE_REFERENC
 
 celix_status_t serviceDependency_removedService(void * handle, SERVICE_REFERENCE reference, void * service) {
 	SERVICE_DEPENDENCY dependency = (SERVICE_DEPENDENCY) handle;
-	if (dependency->available && tracker_getService(dependency->tracker) == NULL) {
+	if (dependency->available && serviceTracker_getService(dependency->tracker) == NULL) {
 		dependency->available = false;
 		serviceComponent_dependencyUnavailable(dependency->service, dependency);
 	}

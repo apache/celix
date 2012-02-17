@@ -48,13 +48,13 @@ celix_status_t serviceTracker_createWithFilter(apr_pool_t *pool, BUNDLE_CONTEXT 
 celix_status_t serviceTracker_open(SERVICE_TRACKER tracker);
 celix_status_t serviceTracker_close(SERVICE_TRACKER tracker);
 
-SERVICE_REFERENCE tracker_getServiceReference(SERVICE_TRACKER tracker);
-ARRAY_LIST tracker_getServiceReferences(SERVICE_TRACKER tracker);
+SERVICE_REFERENCE serviceTracker_getServiceReference(SERVICE_TRACKER tracker);
+ARRAY_LIST serviceTracker_getServiceReferences(SERVICE_TRACKER tracker);
 
-void * tracker_getService(SERVICE_TRACKER tracker);
-ARRAY_LIST tracker_getServices(SERVICE_TRACKER tracker);
-void * tracker_getServiceByReference(SERVICE_TRACKER tracker, SERVICE_REFERENCE reference);
+void * serviceTracker_getService(SERVICE_TRACKER tracker);
+ARRAY_LIST serviceTracker_getServices(SERVICE_TRACKER tracker);
+void * serviceTracker_getServiceByReference(SERVICE_TRACKER tracker, SERVICE_REFERENCE reference);
 
-void tracker_serviceChanged(SERVICE_LISTENER listener, SERVICE_EVENT event);
+void serviceTracker_serviceChanged(SERVICE_LISTENER listener, SERVICE_EVENT event);
 
 #endif /* SERVICE_TRACKER_H_ */

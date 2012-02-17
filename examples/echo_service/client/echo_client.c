@@ -33,7 +33,7 @@
 void * trk_send(void * handle) {
 	ECHO_CLIENT client = (ECHO_CLIENT) handle;
 	while (client->running) {
-		ECHO_SERVICE service = (ECHO_SERVICE) tracker_getService(client->tracker);
+		ECHO_SERVICE service = (ECHO_SERVICE) serviceTracker_getService(client->tracker);
 		if (service != NULL) {
 			service->echo(service->server, "hi");
 		}

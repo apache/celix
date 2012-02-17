@@ -49,7 +49,7 @@ struct tracked {
 typedef struct tracked * TRACKED;
 
 static apr_status_t serviceTracker_destroy(void *trackerP);
-static void * addingService(SERVICE_TRACKER tracker, SERVICE_REFERENCE reference);
+static void * serviceTracker_addingService(SERVICE_TRACKER tracker, SERVICE_REFERENCE reference);
 static celix_status_t serviceTracker_track(SERVICE_TRACKER tracker, SERVICE_REFERENCE reference, SERVICE_EVENT event);
 static celix_status_t serviceTracker_untrack(SERVICE_TRACKER tracker, SERVICE_REFERENCE reference, SERVICE_EVENT event);
 
@@ -115,7 +115,6 @@ celix_status_t serviceTracker_open(SERVICE_TRACKER tracker) {
 	ARRAY_LIST initial = NULL;
 	celix_status_t status = CELIX_SUCCESS;
 	listener = (SERVICE_LISTENER) apr_palloc(tracker->pool, sizeof(*listener));
-//	FW_SERVICE_TRACKER fwTracker = findFwServiceTracker(tracker);
 	
 	status = bundleContext_getServiceReferences(tracker->context, NULL, tracker->filter, &initial);
 	if (status == CELIX_SUCCESS) {
@@ -124,7 +123,7 @@ celix_status_t serviceTracker_open(SERVICE_TRACKER tracker) {
 
 		listener->pool = tracker->pool;
 		listener->handle = tracker;
-		listener->serviceChanged = (void *) tracker_serviceChanged;
+		listener->serviceChanged = (void *) serviceTracker_serviceChanged;
 		status = bundleContext_addServiceListener(tracker->context, listener, tracker->filter);
 		if (status == CELIX_SUCCESS) {
 			tracker->listener = listener;
@@ -148,7 +147,7 @@ celix_status_t serviceTracker_close(SERVICE_TRACKER tracker) {
 
 	status = bundleContext_removeServiceListener(tracker->context, tracker->listener);
 	if (status == CELIX_SUCCESS) {
-		ARRAY_LIST refs = tracker_getServiceReferences(tracker);
+		ARRAY_LIST refs = serviceTracker_getServiceReferences(tracker);
 		if (refs != NULL) {
 			int i;
 			for (i = 0; i < arrayList_size(refs); i++) {
@@ -162,7 +161,7 @@ celix_status_t serviceTracker_close(SERVICE_TRACKER tracker) {
 	return status;
 }
 
-SERVICE_REFERENCE tracker_getServiceReference(SERVICE_TRACKER tracker) {
+SERVICE_REFERENCE serviceTracker_getServiceReference(SERVICE_TRACKER tracker) {
 	TRACKED tracked;
 	unsigned int i;
 	for (i = 0; i < arrayList_size(tracker->tracked); i++) {
@@ -172,7 +171,7 @@ SERVICE_REFERENCE tracker_getServiceReference(SERVICE_TRACKER tracker) {
 	return NULL;
 }
 
-ARRAY_LIST tracker_getServiceReferences(SERVICE_TRACKER tracker) {
+ARRAY_LIST serviceTracker_getServiceReferences(SERVICE_TRACKER tracker) {
 	TRACKED tracked;
 	unsigned int i;
 	int size = arrayList_size(tracker->tracked);
@@ -186,7 +185,7 @@ ARRAY_LIST tracker_getServiceReferences(SERVICE_TRACKER tracker) {
 	return references;
 }
 
-void * tracker_getService(SERVICE_TRACKER tracker) {
+void *serviceTracker_getService(SERVICE_TRACKER tracker) {
 	TRACKED tracked;
 	unsigned int i;
 	for (i = 0; i < arrayList_size(tracker->tracked); i++) {
@@ -196,7 +195,7 @@ void * tracker_getService(SERVICE_TRACKER tracker) {
 	return NULL;
 }
 
-ARRAY_LIST tracker_getServices(SERVICE_TRACKER tracker) {
+ARRAY_LIST serviceTracker_getServices(SERVICE_TRACKER tracker) {
 	TRACKED tracked;
 	unsigned int i;
 	int size = arrayList_size(tracker->tracked);
@@ -210,7 +209,7 @@ ARRAY_LIST tracker_getServices(SERVICE_TRACKER tracker) {
 	return references;
 }
 
-void * tracker_getServiceByReference(SERVICE_TRACKER tracker, SERVICE_REFERENCE reference) {
+void *serviceTracker_getServiceByReference(SERVICE_TRACKER tracker, SERVICE_REFERENCE reference) {
 	TRACKED tracked;
 	unsigned int i;
 	for (i = 0; i < arrayList_size(tracker->tracked); i++) {
@@ -224,7 +223,7 @@ void * tracker_getServiceByReference(SERVICE_TRACKER tracker, SERVICE_REFERENCE 
 	return NULL;
 }
 
-void tracker_serviceChanged(SERVICE_LISTENER listener, SERVICE_EVENT event) {
+void serviceTracker_serviceChanged(SERVICE_LISTENER listener, SERVICE_EVENT event) {
 	SERVICE_TRACKER tracker = listener->handle;
 	switch (event->type) {
 		case REGISTERED:
@@ -256,7 +255,7 @@ celix_status_t serviceTracker_track(SERVICE_TRACKER tracker, SERVICE_REFERENCE r
 	}
 
 	if (found) {
-		void * service = addingService(tracker, reference);
+		void * service = serviceTracker_addingService(tracker, reference);
 		if (service != NULL) {
 			tracked = (TRACKED) malloc(sizeof(*tracked));
 			tracked->reference = reference;
@@ -276,7 +275,7 @@ celix_status_t serviceTracker_track(SERVICE_TRACKER tracker, SERVICE_REFERENCE r
 	return status;
 }
 
-void * addingService(SERVICE_TRACKER tracker, SERVICE_REFERENCE reference) {
+void * serviceTracker_addingService(SERVICE_TRACKER tracker, SERVICE_REFERENCE reference) {
     void *svc = NULL;
 
     if (tracker->customizer != NULL) {
