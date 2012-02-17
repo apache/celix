@@ -23,7 +23,11 @@
 
 #include "resource_processor.h"
 
-#define VERSIONS "http://localhost:8080/deployment/test/versions"
+#define IDENTIFICATION_ID "deployment_admin.identification"
+#define DISCOVERY_URL "deployment_admin.url"
+// "http://localhost:8080/deployment/"
+
+#define VERSIONS "/versions"
 
 static void *APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *deploymentAdmin);
 celix_status_t deploymentAdmin_download(char * url, char **inputFile);
@@ -53,7 +57,24 @@ celix_status_t deploymentAdmin_create(apr_pool_t *pool, BUNDLE_CONTEXT context, 
 		(*admin)->context = context;
 		(*admin)->current = NULL;
 		(*admin)->packages = hashMap_create(string_hash, NULL, string_equals, NULL);
-		apr_thread_create(&(*admin)->poller, NULL, deploymentAdmin_poll, *admin, subpool);
+		(*admin)->targetIdentification = NULL;
+		(*admin)->pollUrl = NULL;
+        bundleContext_getProperty(context, IDENTIFICATION_ID, &(*admin)->targetIdentification);
+		if ((*admin)->targetIdentification == NULL ) {
+			printf("Target name must be set using \"deployment_admin.identification\"\n");
+			status = CELIX_ILLEGAL_ARGUMENT;
+		} else {
+			char *url = NULL;
+			bundleContext_getProperty(context, DISCOVERY_URL, &url);
+			if (url == NULL) {
+				printf("URL must be set using \"deployment_admin.url\"\n");
+				status = CELIX_ILLEGAL_ARGUMENT;
+			} else {
+				(*admin)->pollUrl = apr_pstrcat(subpool, url, (*admin)->targetIdentification, VERSIONS);
+
+				apr_thread_create(&(*admin)->poller, NULL, deploymentAdmin_poll, *admin, subpool);
+			}
+		}
 	}
 
 	return status;
@@ -74,11 +95,11 @@ static void *APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *deplo
 			printf("install version: %s\n", last);
 			char *request = NULL;
 			if (admin->current == NULL) {
-				request = apr_pstrcat(admin->pool, VERSIONS, "/", last, NULL);
+				request = apr_pstrcat(admin->pool, admin->pollUrl, "/", last, NULL);
 			} else {
 				// We do not yet support fix packages
 				//request = apr_pstrcat(admin->pool, VERSIONS, "/", last, "?current=", admin->current, NULL);
-				request = apr_pstrcat(admin->pool, VERSIONS, "/", last, NULL);
+				request = apr_pstrcat(admin->pool, admin->pollUrl, "/", last, NULL);
 			}
 			printf("Request: %s\n", request);
 
@@ -180,7 +201,7 @@ celix_status_t deploymentAdmin_readVersions(deployment_admin_t admin, ARRAY_LIST
 	chunk.memory = malloc(1);
 	chunk.size = 0;
 	if (curl) {
-		curl_easy_setopt(curl, CURLOPT_URL, VERSIONS);
+		curl_easy_setopt(curl, CURLOPT_URL, admin->pollUrl);
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, deploymentAdmin_parseVersions);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &chunk);
 		curl_easy_setopt(curl, CURLOPT_FAILONERROR, true);

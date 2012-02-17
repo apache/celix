@@ -22,6 +22,8 @@ struct deployment_admin {
 	bool running;
 	char *current;
 	HASH_MAP packages;
+	char *targetIdentification;
+	char *pollUrl;
 };
 
 celix_status_t deploymentAdmin_create(apr_pool_t *pool, BUNDLE_CONTEXT context, deployment_admin_t *admin);
