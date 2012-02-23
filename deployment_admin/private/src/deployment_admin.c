@@ -70,7 +70,7 @@ celix_status_t deploymentAdmin_create(apr_pool_t *pool, BUNDLE_CONTEXT context, 
 				printf("URL must be set using \"deployment_admin.url\"\n");
 				status = CELIX_ILLEGAL_ARGUMENT;
 			} else {
-				(*admin)->pollUrl = apr_pstrcat(subpool, url, (*admin)->targetIdentification, VERSIONS);
+				(*admin)->pollUrl = apr_pstrcat(subpool, url, (*admin)->targetIdentification, VERSIONS, NULL);
 
 				apr_thread_create(&(*admin)->poller, NULL, deploymentAdmin_poll, *admin, subpool);
 			}
@@ -91,74 +91,76 @@ static void *APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *deplo
 
 		char *last = arrayList_get(versions, arrayList_size(versions) - 1);
 
-		if (admin->current == NULL || strcmp(last, admin->current) > 0) {
-			printf("install version: %s\n", last);
-			char *request = NULL;
-			if (admin->current == NULL) {
-				request = apr_pstrcat(admin->pool, admin->pollUrl, "/", last, NULL);
-			} else {
-				// We do not yet support fix packages
-				//request = apr_pstrcat(admin->pool, VERSIONS, "/", last, "?current=", admin->current, NULL);
-				request = apr_pstrcat(admin->pool, admin->pollUrl, "/", last, NULL);
-			}
-			printf("Request: %s\n", request);
-
-			char inputFile[MAXNAMLEN];
-			inputFile[0] = '\0';
-			char *test = inputFile;
-			celix_status_t status = deploymentAdmin_download(request, &test);
-			if (status == CELIX_SUCCESS) {
-				// Handle file
-				printf("Handle file\n");
-				char tmpDir[MAXNAMLEN];
-				tmpDir[0] = '\0';
-				tmpnam(tmpDir);
-
-				apr_dir_make(tmpDir, APR_UREAD|APR_UWRITE|APR_UEXECUTE, admin->pool);
-
-				// TODO: update to use bundle cache DataFile instead of module entries.
-				printf("Extract %s t0 %s\n", test, tmpDir);
-				extractBundle(test, tmpDir);
-				char *manifest = apr_pstrcat(admin->pool, tmpDir, "/META-INF/MANIFEST.MF", NULL);
-				MANIFEST mf = NULL;
-				manifest_createFromFile(admin->pool, manifest, &mf);
-				deployment_package_t source = NULL;
-				deploymentPackage_create(admin->pool, admin->context, mf, &source);
-				char *name = NULL;
-				deploymentPackage_getName(source, &name);
-
-				BUNDLE bundle = NULL;
-				bundleContext_getBundle(admin->context, &bundle);
-				char *entry = NULL;
-				bundle_getEntry(bundle, "/", admin->pool, &entry);
-				char *repoDir = apr_pstrcat(admin->pool, entry, "repo", NULL);
-				apr_dir_make(repoDir, APR_UREAD|APR_UWRITE|APR_UEXECUTE, admin->pool);
-				char *repoCache = apr_pstrcat(admin->pool, entry, "repo/", name, NULL);
-				printf("CAche: %s\n", repoCache);
-				deploymentAdmin_deleteTree(repoCache, admin->pool);
-				apr_status_t stat = apr_file_rename(tmpDir, repoCache, admin->pool);
-				if (stat != APR_SUCCESS) {
-					printf("No success\n");
+		if (last != NULL) {
+			if (admin->current == NULL || strcmp(last, admin->current) > 0) {
+				printf("install version: %s\n", last);
+				char *request = NULL;
+				if (admin->current == NULL) {
+					request = apr_pstrcat(admin->pool, admin->pollUrl, "/", last, NULL);
+				} else {
+					// We do not yet support fix packages
+					//request = apr_pstrcat(admin->pool, VERSIONS, "/", last, "?current=", admin->current, NULL);
+					request = apr_pstrcat(admin->pool, admin->pollUrl, "/", last, NULL);
 				}
+				printf("Request: %s\n", request);
 
-				deployment_package_t target = hashMap_get(admin->packages, name);
-				if (target == NULL) {
-//					target = empty package
+				char inputFile[MAXNAMLEN];
+				inputFile[0] = '\0';
+				char *test = inputFile;
+				celix_status_t status = deploymentAdmin_download(request, &test);
+				if (status == CELIX_SUCCESS) {
+					// Handle file
+					printf("Handle file\n");
+					char tmpDir[MAXNAMLEN];
+					tmpDir[0] = '\0';
+					tmpnam(tmpDir);
+
+					apr_dir_make(tmpDir, APR_UREAD|APR_UWRITE|APR_UEXECUTE, admin->pool);
+
+					// TODO: update to use bundle cache DataFile instead of module entries.
+					printf("Extract %s t0 %s\n", test, tmpDir);
+					extractBundle(test, tmpDir);
+					char *manifest = apr_pstrcat(admin->pool, tmpDir, "/META-INF/MANIFEST.MF", NULL);
+					MANIFEST mf = NULL;
+					manifest_createFromFile(admin->pool, manifest, &mf);
+					deployment_package_t source = NULL;
+					deploymentPackage_create(admin->pool, admin->context, mf, &source);
+					char *name = NULL;
+					deploymentPackage_getName(source, &name);
+
+					BUNDLE bundle = NULL;
+					bundleContext_getBundle(admin->context, &bundle);
+					char *entry = NULL;
+					bundle_getEntry(bundle, "/", admin->pool, &entry);
+					char *repoDir = apr_pstrcat(admin->pool, entry, "repo", NULL);
+					apr_dir_make(repoDir, APR_UREAD|APR_UWRITE|APR_UEXECUTE, admin->pool);
+					char *repoCache = apr_pstrcat(admin->pool, entry, "repo/", name, NULL);
+					printf("CAche: %s\n", repoCache);
+					deploymentAdmin_deleteTree(repoCache, admin->pool);
+					apr_status_t stat = apr_file_rename(tmpDir, repoCache, admin->pool);
+					if (stat != APR_SUCCESS) {
+						printf("No success\n");
+					}
+
+					deployment_package_t target = hashMap_get(admin->packages, name);
+					if (target == NULL) {
+	//					target = empty package
+					}
+
+					deploymentAdmin_stopDeploymentPackageBundles(admin, target);
+					deploymentAdmin_updateDeploymentPackageBundles(admin, source);
+					deploymentAdmin_startDeploymentPackageCustomizerBundles(admin, source, target);
+					deploymentAdmin_processDeploymentPackageResources(admin, source);
+					deploymentAdmin_dropDeploymentPackageResources(admin, source, target);
+					deploymentAdmin_dropDeploymentPackageBundles(admin, source, target);
+					deploymentAdmin_startDeploymentPackageBundles(admin, source);
+
+					deploymentAdmin_deleteTree(repoCache, admin->pool);
+					deploymentAdmin_deleteTree(tmpDir, admin->pool);
+					remove(test);
+					admin->current = strdup(last);
+					hashMap_put(admin->packages, name, source);
 				}
-
-				deploymentAdmin_stopDeploymentPackageBundles(admin, target);
-				deploymentAdmin_updateDeploymentPackageBundles(admin, source);
-				deploymentAdmin_startDeploymentPackageCustomizerBundles(admin, source, target);
-				deploymentAdmin_processDeploymentPackageResources(admin, source);
-				deploymentAdmin_dropDeploymentPackageResources(admin, source, target);
-				deploymentAdmin_dropDeploymentPackageBundles(admin, source, target);
-				deploymentAdmin_startDeploymentPackageBundles(admin, source);
-
-				deploymentAdmin_deleteTree(repoCache, admin->pool);
-				deploymentAdmin_deleteTree(tmpDir, admin->pool);
-				remove(test);
-				admin->current = strdup(last);
-				hashMap_put(admin->packages, name, source);
 			}
 		}
 		sleep(5);
@@ -198,7 +200,7 @@ celix_status_t deploymentAdmin_readVersions(deployment_admin_t admin, ARRAY_LIST
 	CURLcode res;
 	curl = curl_easy_init();
 	struct MemoryStruct chunk;
-	chunk.memory = malloc(1);
+	chunk.memory = calloc(1, sizeof(char));
 	chunk.size = 0;
 	if (curl) {
 		curl_easy_setopt(curl, CURLOPT_URL, admin->pollUrl);
@@ -216,7 +218,8 @@ celix_status_t deploymentAdmin_readVersions(deployment_admin_t admin, ARRAY_LIST
 		char *last;
 		char *token = apr_strtok(chunk.memory, "\n", &last);
 		while (token != NULL) {
-			arrayList_add(*versions, token);
+			printf("Version: %s\n", token);
+			arrayList_add(*versions, apr_pstrdup(admin->pool, token));
 			token = apr_strtok(NULL, "\n", &last);
 		}
 	}
