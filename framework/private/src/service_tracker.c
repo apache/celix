@@ -61,15 +61,10 @@ celix_status_t serviceTracker_create(apr_pool_t *pool, BUNDLE_CONTEXT context, c
 	} else {
 		if (status == CELIX_SUCCESS) {
 			int len = strlen(service) + strlen(OBJECTCLASS) + 4;
-			char *filter = apr_palloc(pool, sizeof(char) * len);
+			char *filter = apr_pstrcat(pool, "(", OBJECTCLASS, "=", service, ")", NULL);
 			if (filter == NULL) {
 				status = CELIX_ENOMEM;
 			} else {
-				strcpy(filter, "(");
-				strcat(filter, OBJECTCLASS);
-				strcat(filter, "=");
-				strcat(filter, service);
-				strcat(filter, ")\0");
 				serviceTracker_createWithFilter(pool, context, filter, customizer, tracker);
 			}
 		}
@@ -89,7 +84,7 @@ celix_status_t serviceTracker_createWithFilter(apr_pool_t *pool, BUNDLE_CONTEXT 
 		apr_pool_pre_cleanup_register(pool, *tracker, serviceTracker_destroy);
 
 		(*tracker)->context = context;
-		(*tracker)->filter = filter;
+		(*tracker)->filter = apr_pstrdup(pool,filter);
 
 		(*tracker)->pool = pool;
 		(*tracker)->tracker = *tracker;

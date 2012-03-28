@@ -72,7 +72,7 @@ celix_status_t serviceRegistration_createInternal(apr_pool_t *pool, SERVICE_REGI
     *registration = (SERVICE_REGISTRATION) apr_palloc(pool, sizeof(**registration));
     (*registration)->isServiceFactory = isFactory;
     (*registration)->registry = registry;
-    (*registration)->className = serviceName;
+    (*registration)->className = apr_pstrdup(pool,serviceName);
     (*registration)->bundle = bundle;
     (*registration)->references = NULL;
     arrayList_create(pool, &(*registration)->references);
