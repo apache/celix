@@ -321,7 +321,7 @@ celix_status_t fw_init(FRAMEWORK framework) {
             long id;
 			BUNDLE_STATE bundleState;
             bundleArchive_getId(archive, &id);
-    		framework->nextBundleId = fmaxl(framework->nextBundleId,  id + 1);
+    		framework->nextBundleId = framework->nextBundleId > id + 1 ? framework->nextBundleId : id + 1;
     		
     		bundleArchive_getPersistentState(archive, &bundleState);
             if (bundleState == BUNDLE_UNINSTALLED) {
