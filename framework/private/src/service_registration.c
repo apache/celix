@@ -31,10 +31,14 @@
 #include "service_factory.h"
 #include "service_reference.h"
 
+struct service {
+	char *name;
+	void *serviceStruct;
+};
+
 struct serviceRegistration {
 	SERVICE_REGISTRY registry;
 	char * className;
-	// SERVICE_REFERENCE reference;
 	ARRAY_LIST references;
 	BUNDLE bundle;
 	PROPERTIES properties;
@@ -46,6 +50,9 @@ struct serviceRegistration {
 
 	bool isServiceFactory;
 	void *serviceFactory;
+
+	struct service *services;
+	int nrOfServices;
 };
 
 celix_status_t serviceRegistration_createInternal(apr_pool_t *pool, SERVICE_REGISTRY registry, BUNDLE bundle, char * serviceName, long serviceId,

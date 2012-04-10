@@ -351,8 +351,8 @@ char * filter_parseValue(char * filterString, int * pos) {
 			case '\\': {
 				(*pos)++;
 				c = filterString[*pos];
-				// nb
 			}
+			/* no break */
 			default: {
 				char ch[2];
 				ch[0] = c;
@@ -407,8 +407,8 @@ ARRAY_LIST filter_parseSubstring(char * filterString, int * pos, apr_pool_t *poo
 			case '\\': {
 				(*pos)++;
 				c = filterString[*pos];
-				//no break
 			}
+			/* no break */
 			default: {
 				char ch[2];
 				ch[0] = c;
@@ -550,8 +550,8 @@ int filter_compareString(OPERAND operand, char * string, void * value2) {
 		case NOT:
 		case OR:
 		case PRESENT: {
-			//no break
 		}
+		/* no break */
 	}
 	return 0;
 }

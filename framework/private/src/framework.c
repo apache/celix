@@ -611,7 +611,7 @@ celix_status_t fw_startBundle(FRAMEWORK framework, BUNDLE bundle, int options) {
                 framework_markResolvedModules(framework, wires);
 		    }
 			hashMap_destroy(wires, false, false);
-			// nb
+			/* no break */
 		case BUNDLE_RESOLVED:
 			if (bundleContext_create(framework, bundle, &context) != CELIX_SUCCESS) {
 				return CELIX_ENOMEM;

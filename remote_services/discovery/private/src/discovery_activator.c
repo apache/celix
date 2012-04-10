@@ -47,6 +47,7 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 	} else {
 		activator->pool = pool;
 		activator->context = context;
+		activator->endpointListenerTracker = NULL;
 
 		discovery_create(pool, context, &activator->discovery);
 
