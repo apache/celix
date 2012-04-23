@@ -36,7 +36,6 @@
 typedef struct bundleArchive * BUNDLE_ARCHIVE;
 
 celix_status_t bundleArchive_create(char * archiveRoot, long id, char * location, char *inputFile, apr_pool_t *mp, BUNDLE_ARCHIVE *bundle_archive);
-celix_status_t bundleArchive_destroy(BUNDLE_ARCHIVE archive);
 celix_status_t bundleArchive_createSystemBundleArchive(apr_pool_t *mp, BUNDLE_ARCHIVE *bundle_archive);
 celix_status_t bundleArchive_recreate(char * archiveRoot, apr_pool_t *mp, BUNDLE_ARCHIVE *bundle_archive);
 celix_status_t bundleArchive_getId(BUNDLE_ARCHIVE archive, long *id);

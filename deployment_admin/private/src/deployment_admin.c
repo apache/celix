@@ -9,7 +9,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <curl/curl.h>
-#include <curl/types.h>
 #include <curl/easy.h>
 #include <apr_strings.h>
 
@@ -20,6 +19,10 @@
 #include "deployment_package.h"
 #include "bundle.h"
 #include "utils.h"
+
+#include "log.h"
+#include "log_store.h"
+#include "log_sync.h"
 
 #include "resource_processor.h"
 
@@ -72,6 +75,16 @@ celix_status_t deploymentAdmin_create(apr_pool_t *pool, BUNDLE_CONTEXT context, 
 			} else {
 				(*admin)->pollUrl = apr_pstrcat(subpool, url, (*admin)->targetIdentification, VERSIONS, NULL);
 
+//				log_store_t store = NULL;
+//				log_t log = NULL;
+//				log_sync_t sync = NULL;
+//				logStore_create(subpool, &store);
+//				log_create(subpool, store, &log);
+//				logSync_create(subpool, (*admin)->targetIdentification, store, &sync);
+//
+//				log_log(log, 20000, NULL);
+
+
 				apr_thread_create(&(*admin)->poller, NULL, deploymentAdmin_poll, *admin, subpool);
 			}
 		}
@@ -85,7 +98,6 @@ static void *APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *deplo
 
 	while (admin->running) {
 		//poll ace
-		printf("Read version\n");
 		ARRAY_LIST versions = NULL;
 		deploymentAdmin_readVersions(admin, &versions);
 
@@ -93,7 +105,6 @@ static void *APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *deplo
 
 		if (last != NULL) {
 			if (admin->current == NULL || strcmp(last, admin->current) > 0) {
-				printf("install version: %s\n", last);
 				char *request = NULL;
 				if (admin->current == NULL) {
 					request = apr_pstrcat(admin->pool, admin->pollUrl, "/", last, NULL);
@@ -102,7 +113,6 @@ static void *APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *deplo
 					//request = apr_pstrcat(admin->pool, VERSIONS, "/", last, "?current=", admin->current, NULL);
 					request = apr_pstrcat(admin->pool, admin->pollUrl, "/", last, NULL);
 				}
-				printf("Request: %s\n", request);
 
 				char inputFile[MAXNAMLEN];
 				inputFile[0] = '\0';
@@ -110,7 +120,6 @@ static void *APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *deplo
 				celix_status_t status = deploymentAdmin_download(request, &test);
 				if (status == CELIX_SUCCESS) {
 					// Handle file
-					printf("Handle file\n");
 					char tmpDir[MAXNAMLEN];
 					tmpDir[0] = '\0';
 					tmpnam(tmpDir);
@@ -118,7 +127,6 @@ static void *APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *deplo
 					apr_dir_make(tmpDir, APR_UREAD|APR_UWRITE|APR_UEXECUTE, admin->pool);
 
 					// TODO: update to use bundle cache DataFile instead of module entries.
-					printf("Extract %s t0 %s\n", test, tmpDir);
 					extractBundle(test, tmpDir);
 					char *manifest = apr_pstrcat(admin->pool, tmpDir, "/META-INF/MANIFEST.MF", NULL);
 					MANIFEST mf = NULL;
@@ -135,7 +143,6 @@ static void *APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *deplo
 					char *repoDir = apr_pstrcat(admin->pool, entry, "repo", NULL);
 					apr_dir_make(repoDir, APR_UREAD|APR_UWRITE|APR_UEXECUTE, admin->pool);
 					char *repoCache = apr_pstrcat(admin->pool, entry, "repo/", name, NULL);
-					printf("CAche: %s\n", repoCache);
 					deploymentAdmin_deleteTree(repoCache, admin->pool);
 					apr_status_t stat = apr_file_rename(tmpDir, repoCache, admin->pool);
 					if (stat != APR_SUCCESS) {
@@ -211,14 +218,12 @@ celix_status_t deploymentAdmin_readVersions(deployment_admin_t admin, ARRAY_LIST
 		if (res != CURLE_OK) {
 			status = CELIX_BUNDLE_EXCEPTION;
 		}
-		printf("Error: %d\n", res);
 		/* always cleanup */
 		curl_easy_cleanup(curl);
 
 		char *last;
 		char *token = apr_strtok(chunk.memory, "\n", &last);
 		while (token != NULL) {
-			printf("Version: %s\n", token);
 			arrayList_add(*versions, apr_pstrdup(admin->pool, token));
 			token = apr_strtok(NULL, "\n", &last);
 		}
@@ -249,7 +254,6 @@ celix_status_t deploymentAdmin_download(char * url, char **inputFile) {
 		if (res != CURLE_OK) {
 			status = CELIX_BUNDLE_EXCEPTION;
 		}
-		printf("Error: %d\n", res);
 		/* always cleanup */
 		curl_easy_cleanup(curl);
 		fclose(fp);
@@ -422,9 +426,7 @@ celix_status_t deploymentAdmin_processDeploymentPackageResources(deployment_admi
 
 		status = bundleContext_getServiceReferences(admin->context, RESOURCE_PROCESSOR_SERVICE, filter, &services);
 		if (status == CELIX_SUCCESS) {
-			printf("REFS\n");
 			if (services != NULL && arrayList_size(services) > 0) {
-				printf("REFS22\n");
 				SERVICE_REFERENCE ref = arrayList_get(services, 0);
 				// In Felix a check is done to assure the processor belongs to the deployment package
 				// Is this according to spec?

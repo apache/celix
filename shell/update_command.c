@@ -1,3 +1,4 @@
+
 /**
  *Licensed to the Apache Software Foundation (ASF) under one
  *or more contributor license agreements.  See the NOTICE file
@@ -25,7 +26,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <curl/curl.h>
-#include <curl/types.h>
 #include <curl/easy.h>
 
 #include "command_private.h"

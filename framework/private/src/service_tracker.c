@@ -25,6 +25,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+
+#include <apr_strings.h>
+
 #include "service_tracker.h"
 #include "bundle_context.h"
 #include "constants.h"

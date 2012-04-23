@@ -204,7 +204,6 @@ int do_extract_currentfile(unzFile uf, char * revisionRoot) {
     }
 
     if ((*filename_withoutpath)=='\0') {
-		printf("creating directory: %s\n",filename_inzip);
 		char dir[strlen(revisionRoot) + strlen(filename_inzip) + 2];
 		strcpy(dir, revisionRoot);
 		strcat(dir, "/");

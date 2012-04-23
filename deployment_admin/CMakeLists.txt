@@ -30,6 +30,9 @@ bundle(deployment_admin SOURCES
 	private/src/ioapi
 	private/src/miniunz
 	private/src/unzip
+	private/src/log
+	private/src/log_store
+	private/src/log_sync
 )
 target_link_libraries(deployment_admin framework curl)
 
