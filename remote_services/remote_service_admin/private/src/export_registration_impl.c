@@ -150,7 +150,12 @@ celix_status_t exportRegistration_endpointRemoved(void * handle, SERVICE_REFEREN
 celix_status_t exportRegistration_open(export_registration_t registration) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	char *name = apr_pstrcat(registration->pool, BUNDLE_STORE, "/", registration->endpointDescription->service, "_endpoint.zip", NULL);
+	char *bundleStore = NULL;
+	bundleContext_getProperty(registration->context, BUNDLE_STORE_PROPERTY_NAME, &bundleStore);
+	if (bundleStore == NULL) {
+		bundleStore = DEFAULT_BUNDLE_STORE;
+	}
+	char *name = apr_pstrcat(registration->pool, bundleStore, "/", registration->endpointDescription->service, "_endpoint.zip", NULL);
 	status = bundleContext_installBundle(registration->context, name, &registration->bundle);
 	if (status == CELIX_SUCCESS) {
 		status = bundle_start(registration->bundle, 0);

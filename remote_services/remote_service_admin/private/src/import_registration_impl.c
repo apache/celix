@@ -144,7 +144,12 @@ celix_status_t importRegistration_proxyRemoved(void * handle, SERVICE_REFERENCE 
 celix_status_t importRegistration_open(import_registration_t registration) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	char *name = apr_pstrcat(registration->pool, BUNDLE_STORE, "/", registration->endpointDescription->service, "_proxy.zip", NULL);
+	char *bundleStore = NULL;
+	bundleContext_getProperty(registration->context, BUNDLE_STORE_PROPERTY_NAME, &bundleStore);
+	if (bundleStore == NULL) {
+		bundleStore = DEFAULT_BUNDLE_STORE;
+	}
+	char *name = apr_pstrcat(registration->pool, bundleStore, "/", registration->endpointDescription->service, "_proxy.zip", NULL);
 	status = bundleContext_installBundle(registration->context, name, &registration->bundle);
 	if (status == CELIX_SUCCESS) {
 		status = bundle_start(registration->bundle, 0);

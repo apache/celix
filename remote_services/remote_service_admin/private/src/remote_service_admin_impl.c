@@ -45,7 +45,8 @@ celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, BUNDLE_CONTEXT contex
 		(*admin)->importedServices = hashMap_create(NULL, NULL, NULL, NULL);
 
 		// Start webserver
-		const char *port = getenv("RSA_PORT");
+		char *port = NULL;
+		bundleContext_getProperty(context, "RSA_PORT", &port);
 		if (port == NULL) {
 			printf("No RemoteServiceAdmin port set, set it using RSA_PORT!\n");
 		}
