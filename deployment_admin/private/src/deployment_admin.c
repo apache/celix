@@ -26,8 +26,8 @@
 
 #include "resource_processor.h"
 
-#define IDENTIFICATION_ID "deployment_admin.identification"
-#define DISCOVERY_URL "deployment_admin.url"
+#define IDENTIFICATION_ID "deployment_admin_identification"
+#define DISCOVERY_URL "deployment_admin_url"
 // "http://localhost:8080/deployment/"
 
 #define VERSIONS "/versions"
@@ -64,13 +64,13 @@ celix_status_t deploymentAdmin_create(apr_pool_t *pool, BUNDLE_CONTEXT context, 
 		(*admin)->pollUrl = NULL;
         bundleContext_getProperty(context, IDENTIFICATION_ID, &(*admin)->targetIdentification);
 		if ((*admin)->targetIdentification == NULL ) {
-			printf("Target name must be set using \"deployment_admin.identification\"\n");
+			printf("Target name must be set using \"deployment_admin_identification\"\n");
 			status = CELIX_ILLEGAL_ARGUMENT;
 		} else {
 			char *url = NULL;
 			bundleContext_getProperty(context, DISCOVERY_URL, &url);
 			if (url == NULL) {
-				printf("URL must be set using \"deployment_admin.url\"\n");
+				printf("URL must be set using \"deployment_admin_url\"\n");
 				status = CELIX_ILLEGAL_ARGUMENT;
 			} else {
 				(*admin)->pollUrl = apr_pstrcat(subpool, url, (*admin)->targetIdentification, VERSIONS, NULL);
@@ -151,7 +151,7 @@ static void *APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *deplo
 
 					deployment_package_t target = hashMap_get(admin->packages, name);
 					if (target == NULL) {
-	//					target = empty package
+//						target = empty package
 					}
 
 					deploymentAdmin_stopDeploymentPackageBundles(admin, target);
@@ -242,7 +242,6 @@ celix_status_t deploymentAdmin_download(char * url, char **inputFile) {
 	curl = curl_easy_init();
 	if (curl) {
 		tmpnam(*inputFile);
-		printf("Temp file: %s\n", *inputFile);
 		FILE *fp = fopen(*inputFile, "wb+");
 		curl_easy_setopt(curl, CURLOPT_URL, url);
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, deploymentAdmin_writeData);
@@ -348,10 +347,10 @@ celix_status_t deploymentAdmin_updateDeploymentPackageBundles(deployment_admin_t
 		BUNDLE updateBundle = NULL;
 		deploymentPackage_getBundle(source, info->symbolicName, &updateBundle);
 		if (updateBundle != NULL) {
-			printf("Update bundle from: %s\n", bundlePath);
+			//printf("Update bundle from: %s\n", bundlePath);
 			bundle_update(updateBundle, bundlePath);
 		} else {
-			printf("Install bundle from: %s\n", bundlePath);
+			//printf("Install bundle from: %s\n", bundlePath);
 			bundleContext_installBundle2(admin->context, bsn, bundlePath, &updateBundle);
 		}
 	}
@@ -419,8 +418,6 @@ celix_status_t deploymentAdmin_processDeploymentPackageResources(deployment_admi
 		ARRAY_LIST services = NULL;
 		char *filter = NULL;
 
-		printf("Process resource: %s with %s\n", info->path, info->resourceProcessor);
-
 		apr_pool_create(&tmpPool, admin->pool);
 		filter = apr_pstrcat(tmpPool, "(", SERVICE_PID, "=", info->resourceProcessor, ")", NULL);
 
@@ -474,7 +471,6 @@ celix_status_t deploymentAdmin_dropDeploymentPackageResources(deployment_admin_t
 				ARRAY_LIST services = NULL;
 				char *filter = NULL;
 
-				printf("Drop resource: %s with %s\n", info->path, info->resourceProcessor);
 
 				apr_pool_create(&tmpPool, admin->pool);
 				filter = apr_pstrcat(tmpPool, "(", SERVICE_PID, "=", info->resourceProcessor, ")", NULL);
