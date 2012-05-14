@@ -17,6 +17,7 @@
 
 include_directories("/opt/local/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/discovery/private/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")

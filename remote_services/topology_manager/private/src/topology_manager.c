@@ -131,7 +131,6 @@ celix_status_t topologyManager_endpointAdded(void *handle, endpoint_description_
 
 	status = topologyManager_importService(manager, endpoint);
 
-
 	return status;
 }
 

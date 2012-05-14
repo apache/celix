@@ -16,9 +16,10 @@
 # under the License.
 
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/topology_manager/private/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
 
 bundle(topology_manager SOURCES private/src/topology_manager private/src/activator)
-target_link_libraries(topology_manager framework ${APRUTIL_LIBRARY})
+target_link_libraries(topology_manager framework remote_services_utils ${APRUTIL_LIBRARY})

@@ -69,7 +69,10 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 	services[1] = REMOTE_PROXY;
 
 	bundleContext_registerService(context, EXAMPLE_SERVICE, exampleService, NULL, &activator->service);
-	bundleContext_registerService(context, REMOTE_PROXY, exampleProxy, NULL, &activator->proxy);
+
+	PROPERTIES props = properties_create();
+	properties_set(props, (char *) "proxy.interface", (char *) EXAMPLE_SERVICE);
+	bundleContext_registerService(context, REMOTE_PROXY, exampleProxy, props, &activator->proxy);
 
 	return status;
 }

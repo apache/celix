@@ -57,6 +57,8 @@ struct serviceRegistration {
 	int nrOfServices;
 };
 
+static celix_status_t serviceRegistration_initializeProperties(SERVICE_REGISTRATION registration, PROPERTIES properties);
+
 celix_status_t serviceRegistration_createInternal(apr_pool_t *pool, SERVICE_REGISTRY registry, BUNDLE bundle, char * serviceName, long serviceId,
         void * serviceObject, PROPERTIES dictionary, bool isFactory, SERVICE_REGISTRATION *registration);
 
@@ -75,7 +77,6 @@ SERVICE_REGISTRATION serviceRegistration_createServiceFactory(apr_pool_t *pool, 
 celix_status_t serviceRegistration_createInternal(apr_pool_t *pool, SERVICE_REGISTRY registry, BUNDLE bundle, char * serviceName, long serviceId,
         void * serviceObject, PROPERTIES dictionary, bool isFactory, SERVICE_REGISTRATION *registration) {
     celix_status_t status = CELIX_SUCCESS;
-	char * sId = (char *)malloc(sizeof(serviceId) + 1);
 	SERVICE_REFERENCE reference;
 
     *registration = (SERVICE_REGISTRATION) apr_palloc(pool, sizeof(**registration));
@@ -85,17 +86,6 @@ celix_status_t serviceRegistration_createInternal(apr_pool_t *pool, SERVICE_REGI
     (*registration)->bundle = bundle;
     (*registration)->references = NULL;
     arrayList_create(pool, &(*registration)->references);
-
-	if (dictionary == NULL) {
-		dictionary = properties_create();
-	}
-
-	
-	sprintf(sId, "%ld", serviceId);
-	properties_set(dictionary, (char *) SERVICE_ID, sId);
-	properties_set(dictionary, (char *) OBJECTCLASS, serviceName);
-
-	(*registration)->properties = dictionary;
 
 	(*registration)->serviceId = serviceId;
 	(*registration)->svcObj = serviceObject;
@@ -110,7 +100,8 @@ celix_status_t serviceRegistration_createInternal(apr_pool_t *pool, SERVICE_REGI
 	(*registration)->isUnregistering = false;
 	apr_thread_mutex_create(&(*registration)->mutex, 0, pool);
 
-	free(sId);
+	serviceRegistration_initializeProperties(*registration, dictionary);
+
 	return CELIX_SUCCESS;
 }
 
@@ -124,6 +115,23 @@ void serviceRegistration_destroy(SERVICE_REGISTRATION registration) {
 	apr_thread_mutex_destroy(registration->mutex);
 
 //	free(registration);
+}
+
+static celix_status_t serviceRegistration_initializeProperties(SERVICE_REGISTRATION registration, PROPERTIES dictionary) {
+	char * sId = (char *)malloc(sizeof(registration->serviceId) + 1);
+
+	if (dictionary == NULL) {
+		dictionary = properties_create();
+	}
+
+	registration->properties = dictionary;
+
+	sprintf(sId, "%ld", registration->serviceId);
+	properties_set(dictionary, (char *) SERVICE_ID, sId);
+	properties_set(dictionary, (char *) OBJECTCLASS, registration->className);
+	free(sId);
+
+	return CELIX_SUCCESS;
 }
 
 bool serviceRegistration_isValid(SERVICE_REGISTRATION registration) {
@@ -176,6 +184,16 @@ celix_status_t serviceRegistration_getProperties(SERVICE_REGISTRATION registrati
 	}
 
 	return status;
+}
+
+celix_status_t serviceRegistration_setProperties(SERVICE_REGISTRATION registration, PROPERTIES properties) {
+	PROPERTIES oldProps = registration->properties;
+
+	serviceRegistration_initializeProperties(registration, properties);
+
+	serviceRegistry_servicePropertiesModified(registration->registry, registration, oldProps);
+
+	return CELIX_SUCCESS;
 }
 
 celix_status_t serviceRegistration_getRegistry(SERVICE_REGISTRATION registration, SERVICE_REGISTRY *registry) {

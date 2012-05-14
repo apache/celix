@@ -16,6 +16,8 @@
 # under the License.
 
 #add_subdirectory(mongoose)
+add_subdirectory(utils)
+
 add_subdirectory(topology_manager)
 add_subdirectory(remote_service_admin)
 add_subdirectory(discovery)

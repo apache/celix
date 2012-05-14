@@ -35,6 +35,8 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 				status = CELIX_ENOMEM;
 			} else {
 				activator->pool = pool;
+				activator->admin = NULL;
+				activator->registration = NULL;
 
 				*userData = activator;
 			}

@@ -17,12 +17,6 @@
 
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/remote_services/example_service/private/include")
-include_directories("${PROJECT_SOURCE_DIR}/remote_services/example_service/public/include")
 
-bundle(example SOURCES 
-	private/src/example_impl
-	private/src/example_activator  
-)
-target_link_libraries(example framework)
+add_library(remote_services_utils STATIC private/src/remote_services_utils.c)
+target_link_libraries(remote_services_utils ${APRUTIL_LIBRARY})

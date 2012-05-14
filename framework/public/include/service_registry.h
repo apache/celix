@@ -55,4 +55,6 @@ celix_status_t serviceRegistry_createServiceReference(SERVICE_REGISTRY registry,
 
 celix_status_t serviceRegistry_getListenerHooks(SERVICE_REGISTRY registry, apr_pool_t *pool, ARRAY_LIST *hooks);
 
+celix_status_t serviceRegistry_servicePropertiesModified(SERVICE_REGISTRY registry, SERVICE_REGISTRATION registration, PROPERTIES oldprops);
+
 #endif /* SERVICE_REGISTRY_H_ */

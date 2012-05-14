@@ -9,6 +9,8 @@
 
 #include <apr_strings.h>
 
+#include <constants.h>
+
 #include "celix_errno.h"
 
 #include "import_registration_impl.h"
@@ -83,7 +85,9 @@ celix_status_t importRegistration_createProxyTracker(import_registration_t regis
 		custumizer->modifiedService = importRegistration_proxyModified;
 		custumizer->removedService = importRegistration_proxyRemoved;
 
-		status = serviceTracker_create(registration->pool, registration->context, REMOTE_PROXY, custumizer, tracker);
+		char *filter = apr_pstrcat(registration->pool, "(&(", OBJECTCLASS, "=", REMOTE_PROXY,
+				")(proxy.interface=", registration->endpointDescription->service, "))", NULL);
+		status = serviceTracker_createWithFilter(registration->pool, registration->context, filter, custumizer, tracker);
 	}
 
 	return status;

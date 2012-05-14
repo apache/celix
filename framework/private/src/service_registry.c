@@ -540,3 +540,11 @@ celix_status_t serviceRegistry_getListenerHooks(SERVICE_REGISTRY registry, apr_p
 
 	return status;
 }
+
+celix_status_t serviceRegistry_servicePropertiesModified(SERVICE_REGISTRY registry, SERVICE_REGISTRATION registration, PROPERTIES oldprops) {
+	if (registry->serviceChanged != NULL) {
+		registry->serviceChanged(registry->framework, MODIFIED, registration, oldprops);
+	}
+
+	return CELIX_SUCCESS;
+}
