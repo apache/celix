@@ -233,7 +233,10 @@ celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin
 		PROPERTIES endpointProperties, char *interface, endpoint_description_t *description) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	*description = apr_palloc(admin->pool, sizeof(*description));
+	apr_pool_t *childPool = NULL;
+	apr_pool_create(&childPool, admin->pool);
+
+	*description = apr_palloc(childPool, sizeof(*description));
 //	*description = malloc(sizeof(*description));
 	if (!*description) {
 		status = CELIX_ENOMEM;
