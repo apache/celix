@@ -10,8 +10,8 @@
 
 #include <stdbool.h>
 
-#include "linkedlist.h"
-#include "array_list.h"
+//#include "linkedlist.h"
+//#include "array_list.h"
 #include "hessian_2.0.h"
 
 typedef struct hessian * hessian_out_t;

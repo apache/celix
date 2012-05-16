@@ -63,5 +63,3 @@ add_subdirectory(deployment_admin)
 
 include(target.cmake)
 #enable_testing()
-
-add_subdirectory(hessian)
