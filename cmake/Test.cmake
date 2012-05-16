@@ -29,7 +29,8 @@ MACRO(run_test)
 	add_custom_target(${__testTarget}
 		${EXEC} ${EXEC} 
 		COMMAND xsltproc --path ${CUNIT_SHARE_DIR} ${CUNIT_SHARE_DIR}/CUnit-Run.xsl ${PROJECT_BINARY_DIR}/test_results/${EXEC}-Results.xml > ${EXEC}-Results.html
-		COMMAND xsltproc --path ${CUNIT_SHARE_DIR} ${CUNIT_SHARE_DIR}/CUnit-List.xsl ${PROJECT_BINARY_DIR}/test_results/${EXEC}-Listing.xml > ${EXEC}-Listing.html 
+		COMMAND xsltproc --path ${CUNIT_SHARE_DIR} ${CUNIT_SHARE_DIR}/CUnit-List.xsl ${PROJECT_BINARY_DIR}/test_results/${EXEC}-Listing.xml > ${EXEC}-Listing.html
+		
 		WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/test_results
 	)
 	ADD_DEPENDENCIES(test ${__testTarget})

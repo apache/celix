@@ -1797,7 +1797,6 @@ celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
 
 		printf("FRAMEWORK: Start shutdownthread\n");
 	    if (apr_thread_create(&shutdownThread, NULL, framework_shutdown, framework, framework->mp) == APR_SUCCESS) {
-            //int err = pthread_create(&shutdownThread, NULL, framework_shutdown, framework);
             apr_thread_detach(shutdownThread);
 	    } else {
             celix_log("Could not create shutdown thread, normal exit not possible.");
