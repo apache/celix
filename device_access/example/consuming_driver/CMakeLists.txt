@@ -27,4 +27,4 @@ include_directories(${PROJECT_SOURCE_DIR}/device_access/example/refining_driver/
 include_directories(private/include)
 include_directories("${PROJECT_SOURCE_DIR}/framework/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-target_link_libraries(word_consumingdriver utils ${CELIX_LIBRARY} ${APR_LIBRARY})
+target_link_libraries(word_consumingdriver utils framework ${APR_LIBRARY})

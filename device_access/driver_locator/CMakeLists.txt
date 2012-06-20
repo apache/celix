@@ -24,4 +24,4 @@ include_directories(${PROJECT_SOURCE_DIR}/device_access/device_access/public/inc
 include_directories(private/include)
 include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-target_link_libraries(driver_locator utils ${CELIX_LIBRARY} ${APR_LIBRARY})
+target_link_libraries(driver_locator utils framework ${APR_LIBRARY})

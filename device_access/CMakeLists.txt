@@ -15,9 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-link_directories("${PROJECT_SOURCE_DIR}/framework/lib")
-
-
 add_subdirectory(device_access)
 add_subdirectory(driver_locator)
 

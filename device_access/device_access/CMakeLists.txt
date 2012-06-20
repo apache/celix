@@ -29,4 +29,4 @@ include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("public/include")
 include_directories("private/include")
 
-target_link_libraries(device_manager ${CELIX_LIBRARY} ${UTILS_LIBRARY} ${APR_LIBRARY})
+target_link_libraries(device_manager framework utils ${APR_LIBRARY})
