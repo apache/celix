@@ -61,5 +61,7 @@ add_subdirectory(remote_services)
 
 add_subdirectory(deployment_admin)
 
+add_subdirectory(device_access)
+
 include(target.cmake)
 #enable_testing()

@@ -1,0 +1,5 @@
+Bundle-SymbolicName: device_manager
+Bundle-Version: 1.0.0.test
+library: device_manager
+Export-Service: device,driver
+Import-Service: device,driver
