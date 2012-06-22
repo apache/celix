@@ -27,5 +27,6 @@ include_directories(${APRUTIL_INCLUDE_DIR})
 #include_directories("framework/private/include")
 include_directories("framework/public/include")
 
+include(cmake/Dependencies.cmake)
 include(cmake/Packaging.cmake)
 include(cmake/Test.cmake)

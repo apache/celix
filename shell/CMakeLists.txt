@@ -14,18 +14,20 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
-bundle(shell SOURCES shell command
-	ps_command start_command stop_command
-	install_command update_command
-	uninstall_command log_command
-	inspect_command)
-include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
-target_link_libraries(shell framework curl)
-
-package(shell FILES shell.h command.h)
-
-FILE(GLOB files shell.h command.h)
-INSTALL(FILES ${files} DESTINATION include/shell COMPONENT framework)
-INSTALL(FILES ${PROJECT_BINARY_DIR}/bundles/shell.zip DESTINATION bundles COMPONENT framework)
+dep_opt(SHELL "Option to enable building the Shell bundles" "OFF" DEPS LOG_SERVICE)
+if (BUILD_SHELL)
+    bundle(shell SOURCES shell command
+    	ps_command start_command stop_command
+    	install_command update_command
+    	uninstall_command log_command
+    	inspect_command)
+    include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+    include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
+    target_link_libraries(shell framework curl)
+    
+    package(shell FILES shell.h command.h)
+    
+    FILE(GLOB files shell.h command.h)
+    INSTALL(FILES ${files} DESTINATION include/shell COMPONENT framework)
+    INSTALL(FILES ${PROJECT_BINARY_DIR}/bundles/shell.zip DESTINATION bundles COMPONENT framework)
+endif (BUILD_SHELL)

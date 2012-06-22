@@ -14,18 +14,19 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
-#add_subdirectory(mongoose)
-add_subdirectory(utils)
-
-add_subdirectory(topology_manager)
-add_subdirectory(remote_service_admin)
-add_subdirectory(discovery)
-
-add_subdirectory(example_service)
-add_subdirectory(example_endpoint)
-add_subdirectory(example_proxy)
-add_subdirectory(calc_shell)
-
-deploy("remote-services" BUNDLES discovery topology_manager remote_service_admin example shell shell_tui log_service log_writer)
-deploy("remote-services-client" BUNDLES discovery topology_manager remote_service_admin shell shell_tui log_service log_writer calc_shell)
+dep_opt(REMOTE_SERVICE_ADMIN "Option to enable building the Remote Service Admin Service bundles" OFF DEPS shell_tui)
+if (BUILD_REMOTE_SERVICE_ADMIN)
+    add_subdirectory(utils)
+    
+    add_subdirectory(topology_manager)
+    add_subdirectory(remote_service_admin)
+    add_subdirectory(discovery)
+    
+    add_subdirectory(example_service)
+    add_subdirectory(example_endpoint)
+    add_subdirectory(example_proxy)
+    add_subdirectory(calc_shell)
+    
+    deploy("remote-services" BUNDLES discovery topology_manager remote_service_admin example shell shell_tui log_service log_writer)
+    deploy("remote-services-client" BUNDLES discovery topology_manager remote_service_admin shell shell_tui log_service log_writer calc_shell)
+endif (BUILD_REMOTE_SERVICE_ADMIN)

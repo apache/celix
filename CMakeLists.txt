@@ -46,22 +46,17 @@ include(cmake/Includes.cmake)
 add_subdirectory(utils)
 add_subdirectory(framework)
 add_subdirectory(launcher)
-
 add_subdirectory(dependency_manager)
 
-add_subdirectory(shell)
-add_subdirectory(shell_tui)
-
-add_subdirectory(log_service)
-add_subdirectory(log_writer)
-
+## New sub project must use a buildoption to be able to enable/disable the project using the CMake Editor
+## Sub projects depending on another sub project automatically enable these dependencies
+## For this to work, the order off "add_subdirectory" has to be correct (ie backwards)
 add_subdirectory(examples)
-
-add_subdirectory(remote_services)
-
-add_subdirectory(deployment_admin)
-
 add_subdirectory(device_access)
-
-include(target.cmake)
+add_subdirectory(deployment_admin)
+add_subdirectory(remote_services)
+add_subdirectory(shell_tui)
+add_subdirectory(shell)
+add_subdirectory(log_writer)
+add_subdirectory(log_service)
 #enable_testing()
