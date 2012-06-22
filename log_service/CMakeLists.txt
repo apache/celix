@@ -14,7 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-option(LOG_SERVICE "Option to enable building the Log Service bundles" "OFF")
+dep_opt(LOG_SERVICE "Option to enable building the Log Service bundles" "OFF")
 if(BUILD_LOG_SERVICE)
     bundle(log_service SOURCES
     	private/src/log

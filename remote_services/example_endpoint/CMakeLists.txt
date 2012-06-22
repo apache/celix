@@ -26,4 +26,4 @@ bundle(example_endpoint SOURCES
 	private/src/example_endpoint_activator
 	private/src/example_endpoint_impl.c
 )
-target_link_libraries(example_endpoint framework jansson.a)
+target_link_libraries(example_endpoint framework jansson)

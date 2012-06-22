@@ -27,5 +27,5 @@ bundle(discovery SOURCES
 	private/src/discovery 
 	private/src/discovery_activator
 )
-target_link_libraries(discovery framework ${APRUTIL_LIBRARY} slp.a)
+target_link_libraries(discovery framework ${APRUTIL_LIBRARY} slp)
 

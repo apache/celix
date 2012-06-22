@@ -1,0 +1,17 @@
+To build:
+
+cd build
+## Run cmake and select the subprojects to be build
+## For commandline use "ccmake ..", for a GUI use "cmake-gui"
+## After running a first configure the subproject can be found by looking for "BUILD_{NAME}" options.
+## After selection a new configure and generation is needed
+##
+## Note: Running a simple "cmake .." will only generate build files for the framework and utils. 
+ccmake .. 
+
+## Make builds all bundles, but deploys nothing
+make
+
+## Deploying takes care of copying bundles to a target for testing
+make deploy
+

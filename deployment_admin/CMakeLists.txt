@@ -14,7 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-dep_opt(DEPLOYMENT_ADMIN "Option to enable building the Deployment Admin Service bundles" OFF DEPS shell_tui)
+dep_opt(DEPLOYMENT_ADMIN "Option to enable building the Deployment Admin Service bundles" OFF DEPS shell_tui log_writer)
 if (BUILD_DEPLOYMENT_ADMIN)
     add_definitions(-DUSE_FILE32API)
     
