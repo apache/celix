@@ -21,11 +21,7 @@
 #include "service_reference.h"
 #include "service_registration.h"
 
-static const char *ajax_reply_start =
-  "HTTP/1.1 200 OK\r\n"
-  "Cache: no-cache\r\n"
-  "Content-Type: application/x-javascript\r\n"
-  "\r\n";
+
 
 void *remoteServiceAdmin_callback(enum mg_event event, struct mg_connection *conn, const struct mg_request_info *request_info);
 celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_t admin, export_registration_t registration, SERVICE_REFERENCE reference, char *interface);
@@ -82,57 +78,7 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_t admin) {
 	return status;
 }
 
-/**
- * Request: http://host:port/services/{service}/{request}
- */
-void *remoteServiceAdmin_callback(enum mg_event event, struct mg_connection *conn, const struct mg_request_info *request_info) {
-	if (request_info->uri != NULL) {
-		printf("REMOTE_SERVICE_ADMIN: Handle request: %s\n", request_info->uri);
-		remote_service_admin_t rsa = request_info->user_data;
 
-		if (strncmp(request_info->uri, "/services/", 10) == 0) {
-			// uri = /services/myservice/call
-			char *uri = request_info->uri;
-			// rest = myservice/call
-			char *rest = uri+10;
-			int length = strlen(rest);
-			char *callStart = strchr(rest, '/');
-			int pos = callStart - rest;
-			char service[pos+1];
-			strncpy(service, rest, pos);
-			service[pos] = '\0';
-
-			char request[length - pos];
-			strncpy(request, rest + pos + 1, length - pos);
-
-			const char *lengthStr = mg_get_header(conn, (const char *) "Content-Length");
-			int datalength = apr_atoi64(lengthStr);
-			char data[datalength+1];
-			mg_read(conn, data, datalength);
-			data[datalength] = '\0';
-
-			HASH_MAP_ITERATOR iter = hashMapIterator_create(rsa->exportedServices);
-			while (hashMapIterator_hasNext(iter)) {
-				HASH_MAP_ENTRY entry = hashMapIterator_nextEntry(iter);
-				ARRAY_LIST exports = hashMapEntry_getValue(entry);
-				int expIt = 0;
-				for (expIt = 0; expIt < arrayList_size(exports); expIt++) {
-					export_registration_t export = arrayList_get(exports, expIt);
-					if (strcmp(service, export->endpointDescription->service) == 0) {
-						char *reply = NULL;
-						export->endpoint->handleRequest(export->endpoint->endpoint, request, data, &reply);
-						if (reply != NULL) {
-							mg_printf(conn, "%s", ajax_reply_start);
-							mg_printf(conn, "%s", reply);
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return "";
-}
 
 celix_status_t remoteServiceAdmin_handleRequest(remote_service_admin_t rsa, char *service, char *request, char *data, char **reply) {
 	HASH_MAP_ITERATOR iter = hashMapIterator_create(rsa->exportedServices);
@@ -249,10 +195,7 @@ celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin
 		PROPERTIES endpointProperties, char *interface, endpoint_description_t *description) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	apr_pool_t *childPool = NULL;
-	apr_pool_create(&childPool, admin->pool);
-
-	*description = apr_palloc(childPool, sizeof(*description));
+	*description = apr_palloc(admin->pool, sizeof(*description));
 //	*description = malloc(sizeof(*description));
 	if (!*description) {
 		status = CELIX_ENOMEM;
