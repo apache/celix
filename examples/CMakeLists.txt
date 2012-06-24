@@ -14,8 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-dep_opt(EXAMPLES "Option to enable building the Examples" "OFF" DEPS SHELL_TUI)
-if (BUILD_EXAMPLES)
+celix_subproject(EXAMPLES "Option to enable building the Examples" "OFF" DEPS FRAMEWORK LAUNCHER SHELL_TUI)
+if (EXAMPLES)
     add_subdirectory(hello_world)
     add_subdirectory(mongoose)
     
@@ -38,4 +38,4 @@ if (BUILD_EXAMPLES)
     deploy(chapter04-correct-listener BUNDLES shell shell_tui log_service chapter04-correct-listener)
     deploy("chapter04-paint-example" BUNDLES chapter04-paint-example circle square triangle shell shell_tui log_service log_writer)
     include(target.cmake)
-endif(BUILD_EXAMPLES)
+endif(EXAMPLES)

@@ -14,8 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-dep_opt(SHELL_TUI "Option to enable building the Shell Textual User Interface bundles" OFF DEPS SHELL)
-if (BUILD_SHELL_TUI)
+celix_subproject(SHELL_TUI "Option to enable building the Shell Textual User Interface bundles" OFF DEPS LAUNCHER SHELL)
+if (SHELL_TUI)
     bundle(shell_tui SOURCES shell_tui)
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/shell")
@@ -24,4 +24,4 @@ if (BUILD_SHELL_TUI)
     package(shell_tui)
     
     INSTALL(FILES ${PROJECT_BINARY_DIR}/bundles/shell_tui.zip DESTINATION bundles COMPONENT framework)
-endif (BUILD_SHELL_TUI)
+endif (SHELL_TUI)

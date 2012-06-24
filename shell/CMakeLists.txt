@@ -14,8 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-dep_opt(SHELL "Option to enable building the Shell bundles" "OFF" DEPS LOG_SERVICE)
-if (BUILD_SHELL)
+celix_subproject(SHELL "Option to enable building the Shell bundles" "OFF" DEPS LAUNCHER LOG_SERVICE)
+if (SHELL)
     bundle(shell SOURCES shell command
     	ps_command start_command stop_command
     	install_command update_command
@@ -30,4 +30,4 @@ if (BUILD_SHELL)
     FILE(GLOB files shell.h command.h)
     INSTALL(FILES ${files} DESTINATION include/shell COMPONENT framework)
     INSTALL(FILES ${PROJECT_BINARY_DIR}/bundles/shell.zip DESTINATION bundles COMPONENT framework)
-endif (BUILD_SHELL)
+endif (SHELL)

@@ -15,22 +15,25 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# Add -fPIC for x86_64 Unix platforms; this lib will be linked to a shared lib
-if(UNIX AND NOT WIN32)
-  find_program(CMAKE_UNAME uname /bin /usr/bin /usr/local/bin )
-  if(CMAKE_UNAME)
-    exec_program(uname ARGS -m OUTPUT_VARIABLE CMAKE_SYSTEM_PROCESSOR)
-    set(CMAKE_SYSTEM_PROCESSOR ${CMAKE_SYSTEM_PROCESSOR} CACHE INTERNAL "processor type (i386 and x86_64)")
-     if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
-      add_definitions(-fPIC)
-    endif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
-  endif(CMAKE_UNAME)
-endif(UNIX AND NOT WIN32)
-
-add_library(dependency_manager STATIC dependency_manager.c dependency_activator_base.c service_component.c service_dependency.c)
-include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-target_link_libraries(dependency_manager framework)
-
-FILE(GLOB files dependency_activator_base.h service.h dependency_manager.h service_component_private.h service_component.h service_dependency.h)
-INSTALL(FILES ${files} DESTINATION include/dependency_manager COMPONENT framework)
-install(TARGETS dependency_manager DESTINATION lib COMPONENT framework)
+celix_subproject(DEPENDENCY_MANAGER "Option to build the dependency manager static library" "OFF" DEPS framework)
+if (DEPENDENCY_MANAGER) 
+    # Add -fPIC for x86_64 Unix platforms; this lib will be linked to a shared lib
+    if(UNIX AND NOT WIN32)
+      find_program(CMAKE_UNAME uname /bin /usr/bin /usr/local/bin )
+      if(CMAKE_UNAME)
+        exec_program(uname ARGS -m OUTPUT_VARIABLE CMAKE_SYSTEM_PROCESSOR)
+        set(CMAKE_SYSTEM_PROCESSOR ${CMAKE_SYSTEM_PROCESSOR} CACHE INTERNAL "processor type (i386 and x86_64)")
+         if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
+          add_definitions(-fPIC)
+        endif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
+      endif(CMAKE_UNAME)
+    endif(UNIX AND NOT WIN32)
+    
+    add_library(dependency_manager STATIC dependency_manager.c dependency_activator_base.c service_component.c service_dependency.c)
+    include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+    target_link_libraries(dependency_manager framework)
+    
+    FILE(GLOB files dependency_activator_base.h service.h dependency_manager.h service_component_private.h service_component.h service_dependency.h)
+    INSTALL(FILES ${files} DESTINATION include/dependency_manager COMPONENT framework)
+    install(TARGETS dependency_manager DESTINATION lib COMPONENT framework)
+endif (DEPENDENCY_MANAGER)

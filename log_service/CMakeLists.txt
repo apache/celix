@@ -14,8 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-dep_opt(LOG_SERVICE "Option to enable building the Log Service bundles" "OFF")
-if(BUILD_LOG_SERVICE)
+celix_subproject(LOG_SERVICE "Option to enable building the Log Service bundles" "OFF" DEPS framework)
+if (LOG_SERVICE)
     bundle(log_service SOURCES
     	private/src/log
     	private/src/log_entry
@@ -34,4 +34,4 @@ if(BUILD_LOG_SERVICE)
     FILE(GLOB files public/include/log_service.h)
     INSTALL(FILES ${files} DESTINATION include/log_service COMPONENT framework)
     INSTALL(FILES ${PROJECT_BINARY_DIR}/bundles/log_service.zip DESTINATION bundles COMPONENT framework)
-endif(BUILD_LOG_SERVICE)
+endif (LOG_SERVICE)

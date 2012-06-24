@@ -14,8 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-dep_opt(LOG_WRITER "Option to enable building the Log Writer bundle" "OFF" DEPS LOG_SERVICE)
-if (BUILD_LOG_WRITER)
+celix_subproject(LOG_WRITER "Option to enable building the Log Writer bundle" "OFF" DEPS FRAMEWORK LOG_SERVICE DEPENDENCY_MANAGER)
+if (LOG_WRITER)
     bundle(log_writer SOURCES dependency_activator log_writer)
     include_directories("${PROJECT_SOURCE_DIR}/celix")
     include_directories("${PROJECT_SOURCE_DIR}/dependency_manager")
@@ -24,4 +24,4 @@ if (BUILD_LOG_WRITER)
     target_link_libraries(log_writer framework dependency_manager)
     
     INSTALL(FILES ${PROJECT_BINARY_DIR}/bundles/log_writer.zip DESTINATION bundles COMPONENT framework)
-endif (BUILD_LOG_WRITER)
+endif (LOG_WRITER)

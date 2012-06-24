@@ -18,6 +18,8 @@
 cmake_minimum_required (VERSION 2.6)
 project (Celix C)
 
+cmake_policy(SET CMP0012 NEW)
+
 #SET(CMAKE_VERBOSE_MAKEFILE ON)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
@@ -43,11 +45,6 @@ ADD_CUSTOM_TARGET(install-fw
 
 include(cmake/Includes.cmake)  
 
-add_subdirectory(utils)
-add_subdirectory(framework)
-add_subdirectory(launcher)
-add_subdirectory(dependency_manager)
-
 ## New sub project must use a buildoption to be able to enable/disable the project using the CMake Editor
 ## Sub projects depending on another sub project automatically enable these dependencies
 ## For this to work, the order off "add_subdirectory" has to be correct (ie backwards)
@@ -59,4 +56,12 @@ add_subdirectory(shell_tui)
 add_subdirectory(shell)
 add_subdirectory(log_writer)
 add_subdirectory(log_service)
+
+add_subdirectory(dependency_manager)
+
+add_subdirectory(launcher)
+add_subdirectory(framework)
+add_subdirectory(utils)
+
+
 #enable_testing()

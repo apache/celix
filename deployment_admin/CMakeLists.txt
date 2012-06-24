@@ -14,8 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-dep_opt(DEPLOYMENT_ADMIN "Option to enable building the Deployment Admin Service bundles" OFF DEPS shell_tui log_writer)
-if (BUILD_DEPLOYMENT_ADMIN)
+celix_subproject(DEPLOYMENT_ADMIN "Option to enable building the Deployment Admin Service bundles" OFF DEPS framework launcher shell_tui log_writer)
+if (DEPLOYMENT_ADMIN)
     add_definitions(-DUSE_FILE32API)
     
     include_directories("/opt/local/include")
@@ -38,4 +38,4 @@ if (BUILD_DEPLOYMENT_ADMIN)
     target_link_libraries(deployment_admin framework curl)
     
     deploy("deployment-admin" BUNDLES deployment_admin shell shell_tui log_service log_writer)
-endif (BUILD_DEPLOYMENT_ADMIN)
+endif (DEPLOYMENT_ADMIN)

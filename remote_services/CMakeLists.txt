@@ -14,9 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-dep_opt(REMOTE_SERVICE_ADMIN "Option to enable building the Remote Service Admin Service bundles" OFF DEPS shell_tui log_writer)
-if (BUILD_REMOTE_SERVICE_ADMIN)
-
+celix_subproject(REMOTE_SERVICE_ADMIN "Option to enable building the Remote Service Admin Service bundles" OFF DEPS LAUNCHER shell_tui log_writer)
+if (REMOTE_SERVICE_ADMIN)
     # Add -fPIC for x86_64 Unix platforms; this lib will be linked to a shared lib
     if(UNIX AND NOT WIN32)
       find_program(CMAKE_UNAME uname /bin /usr/bin /usr/local/bin )
@@ -42,4 +41,4 @@ if (BUILD_REMOTE_SERVICE_ADMIN)
     
     deploy("remote-services" BUNDLES discovery topology_manager remote_service_admin example shell shell_tui log_service log_writer)
     deploy("remote-services-client" BUNDLES discovery topology_manager remote_service_admin shell shell_tui log_service log_writer calc_shell)
-endif (BUILD_REMOTE_SERVICE_ADMIN)
+endif (REMOTE_SERVICE_ADMIN)

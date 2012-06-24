@@ -14,12 +14,12 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-dep_opt(DEVICE_ACCESS "Option to enable building the Device Access Service bundles" OFF DEPS LOG_SERVICE SHELL shell_tui)
-if(BUILD_DEVICE_ACCESS)
+celix_subproject(DEVICE_ACCESS "Option to enable building the Device Access Service bundles" OFF DEPS LAUNCHER LOG_SERVICE SHELL shell_tui)
+if(DEVICE_ACCESS)
     add_subdirectory(device_access)
     add_subdirectory(driver_locator)
     
     add_subdirectory(example)
     
     deploy("device_access_example" BUNDLES device_manager driver_locator shell shell_tui log_service base_driver)
-endif(BUILD_DEVICE_ACCESS)
+endif(DEVICE_ACCESS)
