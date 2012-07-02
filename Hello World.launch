@@ -35,7 +35,7 @@
 <stringAttribute key="org.eclipse.cdt.launch.PROGRAM_NAME" value="build/launcher/launcher"/>
 <stringAttribute key="org.eclipse.cdt.launch.PROJECT_ATTR" value="celix"/>
 <stringAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_ID_ATTR" value="cdt.managedbuild.toolchain.gnu.macosx.base.1808592147"/>
-<stringAttribute key="org.eclipse.cdt.launch.WORKING_DIRECTORY" value="${workspace_loc:celix/build/deploy/hello_world}"/>
+<stringAttribute key="org.eclipse.cdt.launch.WORKING_DIRECTORY" value="${workspace_loc:celix/build/examples/deploy/hello_world}"/>
 <booleanAttribute key="org.eclipse.cdt.launch.ui.ApplicationCDebuggerTab.DEFAULTS_SET" value="true"/>
 <booleanAttribute key="org.eclipse.cdt.launch.use_terminal" value="true"/>
 <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">

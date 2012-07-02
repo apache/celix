@@ -1,8 +1,0 @@
-service testService {
-  rpc doo (Type) returns (string);
-}
-
-message Type {
-	required string field1 = 1;
-	required string field2 = 2;
-}
