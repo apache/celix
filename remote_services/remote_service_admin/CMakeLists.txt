@@ -30,4 +30,4 @@ bundle(remote_service_admin SOURCES
 	private/src/remote_service_admin_activator
 	private/src/mongoose.c  
 )
-target_link_libraries(remote_service_admin framework ${APRUTIL_LIBRARY} jansson)
+target_link_libraries(remote_service_admin framework ${APRUTIL_LIBRARY} ${JANSSON_LIBRARIES})

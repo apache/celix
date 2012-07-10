@@ -28,4 +28,4 @@ bundle(example_proxy SOURCES
 	private/src/example_proxy_activator
 	private/src/example_proxy_impl.c
 )
-target_link_libraries(example_proxy framework jansson curl)
+target_link_libraries(example_proxy framework ${JANSSON_LIBRARIES} ${CURL_LIBRARIES})

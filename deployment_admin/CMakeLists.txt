@@ -16,6 +16,9 @@
 # under the License.
 celix_subproject(DEPLOYMENT_ADMIN "Option to enable building the Deployment Admin Service bundles" OFF DEPS framework launcher shell_tui log_writer)
 if (DEPLOYMENT_ADMIN)
+	
+	find_package(CURL REQUIRED)
+
     add_definitions(-DUSE_FILE32API)
     
     include_directories("/opt/local/include")
@@ -35,7 +38,7 @@ if (DEPLOYMENT_ADMIN)
     	private/src/log_store
     	private/src/log_sync
     )
-    target_link_libraries(deployment_admin framework curl)
+    target_link_libraries(deployment_admin framework ${CURL_LIBRARIES})
     
     deploy("deployment-admin" BUNDLES deployment_admin shell shell_tui log_service log_writer)
 endif (DEPLOYMENT_ADMIN)

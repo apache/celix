@@ -16,6 +16,8 @@
 # under the License.
 celix_subproject(SHELL "Option to enable building the Shell bundles" "OFF" DEPS LAUNCHER LOG_SERVICE)
 if (SHELL)
+	find_package(CURL REQUIRED)
+
     bundle(shell SOURCES shell command
     	ps_command start_command stop_command
     	install_command update_command
@@ -23,7 +25,7 @@ if (SHELL)
     	inspect_command)
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
-    target_link_libraries(shell framework curl)
+    target_link_libraries(shell framework ${CURL_LIBRARIES})
     
     package(shell FILES shell.h command.h)
     
