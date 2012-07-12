@@ -15,78 +15,92 @@
 # specific language governing permissions and limitations
 # under the License.
 
-GET_FILENAME_COMPONENT(__cmake_path ${CMAKE_COMMAND} PATH)
-FIND_PROGRAM(CPACK_COMMAND cpack ${__cmake_path})
-MESSAGE(STATUS "Found CPack at: ${CPACK_COMMAND}")
-IF(NOT CPACK_COMMAND)
-	MESSAGE(FATAL_ERROR "Need CPack!")
-ENDIF(NOT CPACK_COMMAND)
+find_program(FOUND_JAR jar)
+if(NOT FOUND_JAR)
+	message(FATAL_ERROR "Need jar command!") 
+endif()
 
-SET(CPACK_GENERATOR "ZIP")
+SET(BUNDLES_INSTALL_DIR "share/celix/bundles" CACHE PATH "Directory to install bundles. Relative to CMAKE_INSTALL_PREFIX")
 
-file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/bundles ${PROJECT_BINARY_DIR}/packages)
+file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/bundles)
 
-MACRO(bundle)
-    PARSE_ARGUMENTS(BUNDLE "SOURCES;FILES;DIRECTORIES" "" ${ARGN})
+function(bundle)
+    PARSE_ARGUMENTS(BUNDLE "SOURCES" "" ${ARGN})
     LIST(GET BUNDLE_DEFAULT_ARGS 0 BUNDLE_NAME)
-    
+  
 	add_library(${BUNDLE_NAME} SHARED ${BUNDLE_SOURCES})
+	file(WRITE ${CMAKE_BINARY_DIR}/CMakeFiles/bundle_${BUNDLE_NAME}_add.cmake "")
     
-    install (DIRECTORY META-INF DESTINATION . COMPONENT ${BUNDLE_NAME} FILES_MATCHING PATTERN "*" PATTERN ".svn" EXCLUDE)
-	install (TARGETS ${BUNDLE_NAME} DESTINATION . COMPONENT ${BUNDLE_NAME})
-    if (BUNDLE_FILES)
-	    install (FILES ${BUNDLE_FILES} DESTINATION . COMPONENT ${BUNDLE_NAME})
-    endif(BUNDLE_FILES)
-    if (BUNDLE_DIRECTORIES)
-	    install (DIRECTORY ${BUNDLE_DIRECTORIES} DESTINATION . COMPONENT ${BUNDLE_NAME})
-    endif(BUNDLE_DIRECTORIES)
-
-	SET(__bundleConfig ${CMAKE_CURRENT_BINARY_DIR}/CPackConfig-${BUNDLE_NAME}-bundle.cmake)
-	SET(BUNDLE_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR})
-	CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/CPackConfig.in ${__bundleConfig} @ONLY)
-	ADD_CUSTOM_COMMAND(TARGET ${BUNDLE_NAME}
+	set(LIB_NAME ${CMAKE_SHARED_LIBRARY_PREFIX}${BUNDLE_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
+	
+	add_custom_command(TARGET ${BUNDLE_NAME}
 		POST_BUILD
-		COMMAND ${CPACK_COMMAND} ARGS --config ${__bundleConfig}
-		COMMAND mkdir -p ${PROJECT_BINARY_DIR}/ziptojar \;
-			cd ${PROJECT_BINARY_DIR}/ziptojar \;
-			jar -xf ${PROJECT_BINARY_DIR}/bundles/${BUNDLE_NAME}.zip \;
-			jar -cfm ${PROJECT_BINARY_DIR}/bundles/${BUNDLE_NAME}.zip META-INF/MANIFEST.MF . \;
-			rm -rf ${PROJECT_BINARY_DIR}/ziptojar/*
-		WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/bundles
+		COMMAND ${CMAKE_COMMAND} -E make_directory tojar
+		COMMAND ${CMAKE_COMMAND} -P ${CMAKE_BINARY_DIR}/CMakeFiles/bundle_${BUNDLE_NAME}_add.cmake
+		COMMAND ${CMAKE_COMMAND} -E copy ${LIB_NAME} tojar/ 
+		COMMAND jar -cfm ${PROJECT_BINARY_DIR}/bundles/${BUNDLE_NAME}.zip ${CMAKE_CURRENT_SOURCE_DIR}/META-INF/MANIFEST.MF -C ${CMAKE_CURRENT_BINARY_DIR}/tojar .  
+		COMMAND ${CMAKE_COMMAND} -E remove_directory tojar
+		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 	)
-	SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${PROJECT_BINARY_DIR}/bundles/${BUNDLE_NAME}.zip)
-ENDMACRO(bundle)
-	
-MACRO(package)
-    PARSE_ARGUMENTS(PACKAGE "FILES;DIRECTORIES" "" ${ARGN})
-    LIST(GET PACKAGE_DEFAULT_ARGS 0 PACKAGE_NAME)
-	
-	SET(PACKAGE_COMPONENT package_${PACKAGE_NAME})
-	
-	install (FILES ${PROJECT_BINARY_DIR}/bundles/${PACKAGE_NAME}.zip DESTINATION . COMPONENT ${PACKAGE_COMPONENT})
-	
-	if (PACKAGE_FILES)
-	    install (FILES ${PACKAGE_FILES} DESTINATION . COMPONENT ${PACKAGE_COMPONENT})
-    endif(PACKAGE_FILES)
-    if (PACKAGE_DIRECTORIES)
-	    install (DIRECTORY ${PACKAGE_DIRECTORIES} DESTINATION . COMPONENT ${PACKAGE_COMPONENT})
-    endif(PACKAGE_DIRECTORIES)
+endfunction(bundle)
 
-	SET(__packageConfig ${CMAKE_CURRENT_BINARY_DIR}/CPackConfig-${PACKAGE_NAME}-pkg.cmake)
-	CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/CPackConfigPKG.in ${__packageConfig} @ONLY)
-	ADD_CUSTOM_COMMAND(TARGET ${PACKAGE_NAME}
-		POST_BUILD
-		COMMAND mkdir -p ${PROJECT_BINARY_DIR}/packages \;
-			cd ${PROJECT_BINARY_DIR}/packages \; 
-			${CPACK_COMMAND} --config "${__packageConfig}"
-		WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/packages
-	)
+function(bundle_add BUNDLE_NAME)
+	list (LENGTH ARGN ARGN_LENGTH)
+	list(FIND ARGN "DESTINATION" DEST_INDEX)
+	math(EXPR COPY_RANGE "${DEST_INDEX} -1")
+	math(EXPR DEST_VALUE_INDEX "${DEST_INDEX} +1")
+	math(EXPR REST_START_INDEX "${DEST_INDEX} +2")
+	math(EXPR MAX_RANGE "${ARGN_LENGTH} -1")
 	
-	GET_DIRECTORY_PROPERTY(PROPS ADDITIONAL_MAKE_CLEAN_FILES)
-	SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${PROPS};${PROJECT_BINARY_DIR}/packages/${PACKAGE_NAME}_pkg.zip")
-ENDMACRO(package)
+	list(APPEND ARGUMENTS COPY)
+	
+	#replace relative files/directory paths with absolute paths 
+	foreach(INDEX RANGE 0 ${COPY_RANGE}) 
+		list(GET ARGN ${INDEX} PATH)
+		if (IS_ABSOLUTE ${PATH})
+			list(APPEND ARGUMENTS ${PATH})	
+		else ()
+			list(APPEND ARGUMENTS ${CMAKE_CURRENT_SOURCE_DIR}/${PATH})
+		endif ()
+	endforeach()
+	
+	#add tojar to the relative DESTINATION path 
+	list(GET ARGN ${DEST_VALUE_INDEX} DEST_PATH)
+	if (IS_ABSOLUTE ${DEST_PATH})
+		message(FATAL_ERROR "Absolute path as DESTINATION is not supported!")
+	endif ()
+	list(APPEND ARGUMENTS DESTINATION)
+	list(APPEND ARGUMENTS tojar/${DEST_PATH})
+	
+	if (${REST_START_INDEX} LESS ${MAX_RANGE} OR ${REST_START_INDEX} EQUAL ${MAX_RANGE})
+		foreach(INDEX RANGE ${REST_START_INDEX} ${MAX_RANGE})
+			list(GET ARGN ${INDEX} VALUE)
+			list(APPEND ARGUMENTS ${VALUE})
+		endforeach()
+	endif () 
+	
+	file(APPEND ${CMAKE_BINARY_DIR}/CMakeFiles/bundle_${BUNDLE_NAME}_add.cmake "
+		file(${ARGUMENTS})
+	")
+endfunction()
 
+function(bundle_install BUNDLE_NAME)
+	list(FIND ARGN COMPONENT COMP_INDEX)
+	if (${COMP_INDEX} GREATER -1)
+		math(EXPR COMP_VALUE_INDEX "${COMP_INDEX} +1")
+		list(GET ARGN ${COMP_VALUE_INDEX} BUNDLE_COMPONENT)
+	else ()
+		set(BUNDLE_COMPONENT ${BUNDLE_NAME})
+	endif ()
+	
+	set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${PROJECT_BINARY_DIR}/bundles/${BUNDLE_NAME}.zip)
+	install(FILES ${PROJECT_BINARY_DIR}/bundles/${BUNDLE_NAME}.zip DESTINATION ${BUNDLES_INSTALL_DIR} COMPONENT ${BUNDLE_COMPONENT})
+endfunction()
 
+function(package)
+	#dummy function
+endfunction(package)
+	
 ADD_CUSTOM_TARGET(deploy)
 MACRO(deploy)
     PARSE_ARGUMENTS(DEPLOY "BUNDLES" "" ${ARGN})
@@ -117,7 +131,7 @@ MACRO(deploy)
     	#mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/deploy \;
 		#	cd ${CMAKE_CURRENT_BINARY_DIR}/deploy \; 
 		#	${CPACK_COMMAND} --config "${__deployConfig}"
-    	DEPENDS ${DEPS} launcher
+    	DEPENDS ${DEPS} celix
     	COMMENT "Deploy target ${DEPLOY_NAME}")
     ADD_DEPENDENCIES(deploy ${__deployTarget})
 	

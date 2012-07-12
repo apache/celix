@@ -22,32 +22,32 @@ if (UTILS)
     aux_source_directory("private/src" SRC)
     include_directories("private/include")
     include_directories("public/include")
-    add_library(utils SHARED ${SRC})
+    add_library(celix_utils SHARED ${SRC})
     
     IF(UNIX)
-    	target_link_libraries(utils m)
+    	target_link_libraries(celix_utils m)
     ENDIF(UNIX)
-    target_link_libraries(utils ${APR_LIBRARY})
+    target_link_libraries(celix_utils ${APR_LIBRARY})
     
-    install(TARGETS utils DESTINATION lib COMPONENT framework)
+    install(TARGETS celix_utils DESTINATION lib COMPONENT framework)
     FILE(GLOB files "public/include/*.h")
-    INSTALL(FILES ${files} DESTINATION include COMPONENT framework)
+    INSTALL(FILES ${files} DESTINATION include/celix COMPONENT framework)
     
     include_directories(${CUNIT_INCLUDE_DIRS})
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/utils/private/include")
     
     add_executable(hash_map_test private/test/hash_map_test.c)
-    target_link_libraries(hash_map_test utils ${CUNIT_LIBRARIES})
+    target_link_libraries(hash_map_test celix_utils ${CUNIT_LIBRARIES})
     
     add_executable(hash_map_test_hash private/test/hash_map_test_hash.c)
-    target_link_libraries(hash_map_test_hash utils ${CUNIT_LIBRARIES})
+    target_link_libraries(hash_map_test_hash celix_utils ${CUNIT_LIBRARIES})
     
     add_executable(array_list_test private/test/array_list_test.c)
-    target_link_libraries(array_list_test utils ${CUNIT_LIBRARIES})
+    target_link_libraries(array_list_test celix_utils ${CUNIT_LIBRARIES})
     
     add_executable(linked_list_test private/test/linked_list_test.c)
-    target_link_libraries(linked_list_test utils ${CUNIT_LIBRARIES})
+    target_link_libraries(linked_list_test celix_utils ${CUNIT_LIBRARIES})
     
     run_test(array_list_test)
     run_test(hash_map_test)

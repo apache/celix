@@ -48,4 +48,4 @@ bundle(chapter04-paint-example SOURCES
  )
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
-target_link_libraries(chapter04-paint-example framework ${MODULE_LIBRARIES} ${GLIB_LIBRARIES} ${GTK_LIBRARIES} ${GTHR_LIBRARIES})
+target_link_libraries(chapter04-paint-example celix_framework ${MODULE_LIBRARIES} ${GLIB_LIBRARIES} ${GTK_LIBRARIES} ${GTHR_LIBRARIES})

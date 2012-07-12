@@ -17,4 +17,4 @@
 
 bundle(hello_world SOURCES activator)
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-target_link_libraries(hello_world framework)
+target_link_libraries(hello_world celix_framework)

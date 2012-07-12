@@ -18,6 +18,6 @@
 bundle(receiver SOURCES activator serviceTest)
 include_directories("${PROJECT_SOURCE_DIR}/celix")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-target_link_libraries(receiver framework)
+target_link_libraries(receiver celix_framework)
 
 package(receiver FILES serviceTest.h)

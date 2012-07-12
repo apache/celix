@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-include(FindAPR)
+find_package(APR REQUIRED)
 
 bundle(word_consumingdriver SOURCES 
 	private/src/activator 
@@ -27,4 +27,5 @@ include_directories(${PROJECT_SOURCE_DIR}/device_access/example/refining_driver/
 include_directories(private/include)
 include_directories("${PROJECT_SOURCE_DIR}/framework/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-target_link_libraries(word_consumingdriver utils framework ${APR_LIBRARY})
+
+target_link_libraries(word_consumingdriver celix_utils celix_framework ${APR_LIBRARY})

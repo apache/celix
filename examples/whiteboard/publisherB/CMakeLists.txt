@@ -18,7 +18,7 @@
 bundle(publisherB SOURCES activator publisher)
 include_directories("${PROJECT_SOURCE_DIR}/celix")
 include_directories("../publisherService")
-target_link_libraries(publisherB framework)
+target_link_libraries(publisherB celix_framework)
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 
 package(publisherB FILES ../publisherService/publisher.h)

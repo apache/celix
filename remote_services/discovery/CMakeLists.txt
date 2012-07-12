@@ -15,6 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
+find_package(Slp REQUIRED)
+
 include_directories("/opt/local/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include")
@@ -27,5 +29,5 @@ bundle(discovery SOURCES
 	private/src/discovery 
 	private/src/discovery_activator
 )
-target_link_libraries(discovery framework ${APRUTIL_LIBRARY} ${SLP_LIBRARIES})
+target_link_libraries(discovery celix_framework ${APRUTIL_LIBRARY} ${SLP_LIBRARIES})
 

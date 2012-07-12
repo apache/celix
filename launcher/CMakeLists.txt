@@ -16,11 +16,11 @@
 # under the License.
 celix_subproject(LAUNCHER "Option to build the launcher" "ON" DEPS UTILS FRAMEWORK)
 if (LAUNCHER) 
-    add_executable(launcher launcher.c)
+    add_executable(celix launcher.c)
     
-    target_link_libraries(launcher framework)
+    target_link_libraries(celix celix_framework)
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/framework/private/include")
     
-    install(TARGETS launcher RUNTIME DESTINATION bin COMPONENT framework)
+    install(TARGETS celix RUNTIME DESTINATION bin COMPONENT framework)
 endif (LAUNCHER) 

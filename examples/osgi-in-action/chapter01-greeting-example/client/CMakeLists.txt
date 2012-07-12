@@ -18,4 +18,4 @@
 bundle(chapter01-greeting-example-client SOURCES private/src/client)
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("../greeting/public/include")
-target_link_libraries(chapter01-greeting-example-client framework)
+target_link_libraries(chapter01-greeting-example-client celix_framework)

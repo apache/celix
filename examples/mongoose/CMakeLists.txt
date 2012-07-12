@@ -20,6 +20,6 @@ SET_TARGET_PROPERTIES(mongoose PROPERTIES COMPILE_FLAGS -fPIC)
 
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 bundle(celix.mongoose SOURCES activator DIRECTORIES root)
-target_link_libraries(celix.mongoose framework mongoose)
+target_link_libraries(celix.mongoose celix_framework mongoose)
 
 

@@ -15,6 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
+find_package(Jansson REQUIRED)
+
 link_directories("/opt/local/lib")
 include_directories("/opt/local/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
@@ -26,4 +28,4 @@ bundle(example_endpoint SOURCES
 	private/src/example_endpoint_activator
 	private/src/example_endpoint_impl.c
 )
-target_link_libraries(example_endpoint framework ${JANSSON_LIBRARIES})
+target_link_libraries(example_endpoint celix_framework ${JANSSON_LIBRARIES})

@@ -25,4 +25,4 @@ bundle(example SOURCES
 	private/src/example_impl
 	private/src/example_activator  
 )
-target_link_libraries(example framework)
+target_link_libraries(example celix_framework)

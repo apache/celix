@@ -15,6 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
+find_package(Jansson REQUIRED)
+find_package(CURL REQUIRED)
+
 link_directories("/opt/local/lib")
 include_directories("/opt/local/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
@@ -28,4 +31,4 @@ bundle(example_proxy SOURCES
 	private/src/example_proxy_activator
 	private/src/example_proxy_impl.c
 )
-target_link_libraries(example_proxy framework ${JANSSON_LIBRARIES} ${CURL_LIBRARIES})
+target_link_libraries(example_proxy celix_framework ${JANSSON_LIBRARIES} ${CURL_LIBRARIES})

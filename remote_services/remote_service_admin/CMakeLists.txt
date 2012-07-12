@@ -15,6 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
+find_package(Jansson REQUIRED)
+
 link_directories("/opt/local/lib")
 include_directories("/opt/local/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
@@ -30,4 +32,4 @@ bundle(remote_service_admin SOURCES
 	private/src/remote_service_admin_activator
 	private/src/mongoose.c  
 )
-target_link_libraries(remote_service_admin framework ${APRUTIL_LIBRARY} ${JANSSON_LIBRARIES})
+target_link_libraries(remote_service_admin celix_framework ${APRUTIL_LIBRARY} ${JANSSON_LIBRARIES})

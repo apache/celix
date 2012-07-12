@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-include(FindAPR)
+find_package(APR REQUIRED)
 
 bundle(char_refiningdriver SOURCES 
 	private/src/activator 
@@ -28,4 +28,5 @@ include_directories(private/include)
 include_directories(public/include)
 include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-target_link_libraries(char_refiningdriver utils framework ${APR_LIBRARY})
+
+target_link_libraries(char_refiningdriver celix_utils celix_framework ${APR_LIBRARY})

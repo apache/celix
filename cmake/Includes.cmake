@@ -15,12 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-include(FindAPR)
-IF(APR_FOUND)
-	MESSAGE(STATUS "Looking for APR - found")
-ELSE(APR_FOUND)
-	MESSAGE(FATAL_ERROR "Looking for APR - not found")
-ENDIF(APR_FOUND)
+find_package(APR REQUIRED)
 
 include_directories(${APR_INCLUDE_DIR})
 include_directories(${APRUTIL_INCLUDE_DIR})
@@ -29,4 +24,5 @@ include_directories("framework/public/include")
 
 include(cmake/Dependencies.cmake)
 include(cmake/Packaging.cmake)
+#include(cmake/Bundling.cmake)
 include(cmake/Test.cmake)

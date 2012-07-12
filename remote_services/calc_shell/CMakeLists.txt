@@ -25,5 +25,5 @@ include_directories("${PROJECT_SOURCE_DIR}/remote_services/calc_shell/private/in
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/example_service/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/shell")
-target_link_libraries(calc_shell framework)
+target_link_libraries(calc_shell celix_framework)
 

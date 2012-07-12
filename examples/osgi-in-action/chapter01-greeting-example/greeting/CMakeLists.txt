@@ -19,4 +19,4 @@ bundle(chapter01-greeting-example SOURCES private/src/activator private/src/gree
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("public/include")
 include_directories("private/include")
-target_link_libraries(chapter01-greeting-example framework)
+target_link_libraries(chapter01-greeting-example celix_framework)

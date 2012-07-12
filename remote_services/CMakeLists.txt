@@ -27,10 +27,6 @@ if (REMOTE_SERVICE_ADMIN)
         endif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
       endif(CMAKE_UNAME)
     endif(UNIX AND NOT WIN32)
-    
-    find_package(Jansson REQUIRED)
-    find_package(CURL REQUIRED)
-    find_package(Slp REQUIRED)
 
     add_subdirectory(utils)
     

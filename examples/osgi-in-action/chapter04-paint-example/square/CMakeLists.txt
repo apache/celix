@@ -39,4 +39,4 @@ bundle(square SOURCES
 )
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
-target_link_libraries(square framework ${GLIB_LIBRARIES} ${GTK_LIBRARIES} ${GTHR_LIBRARIES})
+target_link_libraries(square celix_framework ${GLIB_LIBRARIES} ${GTK_LIBRARIES} ${GTHR_LIBRARIES})

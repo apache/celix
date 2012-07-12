@@ -27,6 +27,7 @@ if (DEPLOYMENT_ADMIN)
     include_directories("${PROJECT_SOURCE_DIR}/deployment_admin/public/include")
     
     link_directories("/opt/local/lib")
+    
     bundle(deployment_admin SOURCES
     	private/src/deployment_package 
     	private/src/deployment_admin
@@ -38,7 +39,10 @@ if (DEPLOYMENT_ADMIN)
     	private/src/log_store
     	private/src/log_sync
     )
-    target_link_libraries(deployment_admin framework ${CURL_LIBRARIES})
+    
+    target_link_libraries(deployment_admin celix_framework ${CURL_LIBRARIES})
+    
+    install(FILES public/include/resource_processor.h DESTINATION include/celix/deployment_admin)
     
     deploy("deployment-admin" BUNDLES deployment_admin shell shell_tui log_service log_writer)
 endif (DEPLOYMENT_ADMIN)

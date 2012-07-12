@@ -27,11 +27,11 @@ if (LOG_SERVICE)
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/log_service/private/include")
-    target_link_libraries(log_service framework)
+    target_link_libraries(log_service celix_framework)
     
     package(log_service FILES public/include/log_service.h)
     
     FILE(GLOB files public/include/log_service.h)
-    INSTALL(FILES ${files} DESTINATION include/log_service COMPONENT framework)
+    INSTALL(FILES ${files} DESTINATION include/celix/log_service COMPONENT framework)
     INSTALL(FILES ${PROJECT_BINARY_DIR}/bundles/log_service.zip DESTINATION bundles COMPONENT framework)
 endif (LOG_SERVICE)

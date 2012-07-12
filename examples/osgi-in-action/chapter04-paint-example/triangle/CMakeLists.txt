@@ -39,4 +39,4 @@ bundle(triangle SOURCES
  )
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
-target_link_libraries(triangle framework ${GLIB_LIBRARIES} ${GTK_LIBRARIES} ${GTHR_LIBRARIES})
+target_link_libraries(triangle celix_framework ${GLIB_LIBRARIES} ${GTK_LIBRARIES} ${GTHR_LIBRARIES})

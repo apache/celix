@@ -18,4 +18,4 @@
 bundle(chapter04-correct-listener SOURCES private/src/listener_example)
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
-target_link_libraries(chapter04-correct-listener framework)
+target_link_libraries(chapter04-correct-listener celix_framework)

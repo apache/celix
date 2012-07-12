@@ -19,6 +19,6 @@ bundle(sender SOURCES test_activator listenerTest)
 include_directories("${PROJECT_SOURCE_DIR}/celix" "${PROJECT_SOURCE_DIR}/dependency_manager")
 include_directories("${PROJECT_SOURCE_DIR}/receiver")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-target_link_libraries(sender framework dependency_manager)
+target_link_libraries(sender celix_framework dependency_manager)
 
 package(sender)

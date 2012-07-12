@@ -19,7 +19,7 @@ if (SHELL_TUI)
     bundle(shell_tui SOURCES shell_tui)
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/shell")
-    target_link_libraries(shell_tui framework)
+    target_link_libraries(shell_tui celix_framework)
     
     package(shell_tui)
     

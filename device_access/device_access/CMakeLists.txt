@@ -21,7 +21,20 @@ bundle(device_manager SOURCES
 	private/src/driver_attributes 
 	private/src/device_manager
 	private/src/driver_loader
-	private/src/driver_matcher)
+	private/src/driver_matcher
+)
+
+FILE(GLOB SERVICE_HEADERS public/include/*.h)
+
+#bundle_add(device_manager ${SERVICE_HEADERS} DESTINATION services)
+#bundle_add(device_manager 
+#	public/include DESTINATION public/include
+#	PATTERN .svn EXCLUDE)
+
+#bundle_install(device_manager COMPONENT device_access)
+
+install(FILES ${SERVICE_HEADERS} DESTINATION include/celix/device_access)
+
 
 include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
@@ -29,4 +42,4 @@ include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("public/include")
 include_directories("private/include")
 
-target_link_libraries(device_manager framework utils ${APR_LIBRARY})
+target_link_libraries(device_manager celix_framework celix_utils ${APR_LIBRARY})

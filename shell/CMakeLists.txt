@@ -25,11 +25,11 @@ if (SHELL)
     	inspect_command)
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
-    target_link_libraries(shell framework ${CURL_LIBRARIES})
+    target_link_libraries(shell celix_framework ${CURL_LIBRARIES})
     
     package(shell FILES shell.h command.h)
     
     FILE(GLOB files shell.h command.h)
-    INSTALL(FILES ${files} DESTINATION include/shell COMPONENT framework)
+    INSTALL(FILES ${files} DESTINATION include/celix/shell COMPONENT framework)
     INSTALL(FILES ${PROJECT_BINARY_DIR}/bundles/shell.zip DESTINATION bundles COMPONENT framework)
 endif (SHELL)

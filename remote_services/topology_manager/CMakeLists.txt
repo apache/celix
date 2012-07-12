@@ -22,4 +22,4 @@ include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/pub
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
 
 bundle(topology_manager SOURCES private/src/topology_manager private/src/activator)
-target_link_libraries(topology_manager framework remote_services_utils ${APRUTIL_LIBRARY})
+target_link_libraries(topology_manager celix_framework remote_services_utils ${APRUTIL_LIBRARY})

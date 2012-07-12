@@ -18,4 +18,4 @@
 bundle(chapter04-correct-lookup SOURCES private/src/activator)
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
-target_link_libraries(chapter04-correct-lookup framework pthread)
+target_link_libraries(chapter04-correct-lookup celix_framework pthread)

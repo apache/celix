@@ -14,14 +14,21 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-include(FindAPR)
+
+find_package(APR REQUIRED)
 
 bundle(driver_locator SOURCES 
 	private/src/activator 
 	private/src/driver_locator
 )
+
+#bundle_install(driver_locator COMPONENT device_access)
+
+package(driver_locator)
+
 include_directories(${PROJECT_SOURCE_DIR}/device_access/device_access/public/include)
 include_directories(private/include)
 include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-target_link_libraries(driver_locator utils framework ${APR_LIBRARY})
+
+target_link_libraries(driver_locator celix_utils celix_framework ${APR_LIBRARY})
