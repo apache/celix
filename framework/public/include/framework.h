@@ -37,6 +37,7 @@ typedef struct framework * FRAMEWORK;
 #include "service_factory.h"
 #include "bundle_archive.h"
 #include "service_listener.h"
+#include "bundle_listener.h"
 #include "service_registration.h"
 #include "bundle_context.h"
 
@@ -70,6 +71,10 @@ celix_status_t fw_getBundleServicesInUse(FRAMEWORK framework, BUNDLE bundle, ARR
 
 void fw_addServiceListener(FRAMEWORK framework, BUNDLE bundle, SERVICE_LISTENER listener, char * filter);
 void fw_removeServiceListener(FRAMEWORK framework, BUNDLE bundle, SERVICE_LISTENER listener);
+
+celix_status_t fw_addBundleListener(FRAMEWORK framework, BUNDLE bundle, bundle_listener_t listener);
+celix_status_t fw_removeBundleListener(FRAMEWORK framework, BUNDLE bundle, bundle_listener_t listener);
+
 void fw_serviceChanged(FRAMEWORK framework, SERVICE_EVENT_TYPE eventType, SERVICE_REGISTRATION registration, PROPERTIES oldprops);
 
 celix_status_t fw_isServiceAssignable(FRAMEWORK fw, BUNDLE requester, SERVICE_REFERENCE reference, bool *assignable);

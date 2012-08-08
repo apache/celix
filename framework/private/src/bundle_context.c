@@ -278,6 +278,30 @@ celix_status_t bundleContext_removeServiceListener(BUNDLE_CONTEXT context, SERVI
     return status;
 }
 
+celix_status_t bundleContext_addBundleListener(BUNDLE_CONTEXT context, bundle_listener_t listener) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    if (context != NULL && listener != NULL) {
+        fw_addBundleListener(context->framework, context->bundle, listener);
+    } else {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
+
+    return status;
+}
+
+celix_status_t bundleContext_removeBundleListener(BUNDLE_CONTEXT context, bundle_listener_t listener) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    if (context != NULL && listener != NULL) {
+        fw_removeBundleListener(context->framework, context->bundle, listener);
+    } else {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
+
+    return status;
+}
+
 celix_status_t bundleContext_getProperty(BUNDLE_CONTEXT context, const char *name, char **value) {
 	celix_status_t status = CELIX_SUCCESS;
 
