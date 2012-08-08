@@ -261,18 +261,23 @@ static void paintFrame_destroyWidgets(PAINT_FRAME frame) {
 
 static void paintFrame_configure(GtkWidget *widget, GdkEventConfigure *event, gpointer data) {
 	PAINT_FRAME frame = data;
+	GtkAllocation allocation;
+
 	if (frame->pixMap != NULL) {
 		gdk_pixmap_unref(frame->pixMap);
 	}
 
-	frame->pixMap = gdk_pixmap_new(widget->window, widget->allocation.width, widget->allocation.height, -1);
+	gtk_widget_get_allocation(widget, &allocation);
+	frame->pixMap = gdk_pixmap_new(gtk_widget_get_window(widget), allocation.width, allocation.height, -1);
 	paintFrame_redraw(frame, 0);
 }
 
 static void paintFrame_expose(GtkWidget *widget, GdkEventExpose *event, gpointer data) {
 	PAINT_FRAME frame = data;
-	gdk_draw_pixmap(widget->window, widget->style->fg_gc[GTK_WIDGET_STATE (widget)], frame->pixMap,
-			event->area.x, event->area.y, event->area.x, event->area.y, event->area.width, event->area.height);
+	gdk_draw_pixmap(gtk_widget_get_window(widget),
+			gtk_widget_get_style(widget)->fg_gc[gtk_widget_get_state(widget)],
+			frame->pixMap, event->area.x, event->area.y, event->area.x,
+			event->area.y, event->area.width, event->area.height);
 }
 
 static void paintFrame_buttonClicked(GtkWidget *button, gpointer data) {
@@ -297,13 +302,15 @@ static gboolean paintFrame_mousePressed( GtkWidget *widget, GdkEventButton *even
 static celix_status_t paintFrame_redraw(PAINT_FRAME frame, GdkModifierType state) {
 	if (frame->pixMap != NULL && frame->showing) {
 		GdkRectangle update_rect;
+		GtkAllocation allocation;
 
 		update_rect.x = 0;
 		update_rect.y = 0;
-		update_rect.width = frame->drawingArea->allocation.width;
-		update_rect.height = frame->drawingArea->allocation.height;
+		gtk_widget_get_allocation(frame->drawingArea, &allocation);
+		update_rect.width = allocation.width;
+		update_rect.height = allocation.height;
 		gdk_draw_rectangle (this->pixMap,
-				frame->drawingArea->style->white_gc,
+				gtk_widget_get_style(frame->drawingArea)->white_gc,
 				TRUE,
 				update_rect.x, update_rect.y,
 				update_rect.width, update_rect.height);

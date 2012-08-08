@@ -1902,7 +1902,7 @@ celix_status_t fw_fireBundleEvent(FRAMEWORK framework, bundle_event_type_e event
 			request->type = BUNDLE_EVENT_TYPE;
 
 			arrayList_add(framework->requests, request);
-			if (apr_thread_mutex_lock(framework->dispatcherLock != APR_SUCCESS)) {
+			if (apr_thread_mutex_lock(framework->dispatcherLock) != APR_SUCCESS) {
 				status = CELIX_FRAMEWORK_EXCEPTION;
 			} else {
 				if (apr_thread_cond_broadcast(framework->dispatcher)) {

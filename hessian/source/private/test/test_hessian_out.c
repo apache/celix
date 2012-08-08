@@ -21,6 +21,12 @@ int setup() {
 
 void test_hessian_writeBoolean() {
 	out = malloc(sizeof(*out));
+	out->offset = 0;
+	out->buffer = NULL;
+	out->capacity = 0;
+	out->chunkLength = 0;
+	out->lastChunk = false;
+	out->length = 0;
 
 	hessian_writeBoolean(out, true);
 
@@ -30,6 +36,12 @@ void test_hessian_writeBoolean() {
 
 void test_hessian_writeInt() {
 	out = malloc(sizeof(*out));
+	out->offset = 0;
+	out->buffer = NULL;
+	out->capacity = 0;
+	out->chunkLength = 0;
+	out->lastChunk = false;
+	out->length = 0;
 
 	hessian_writeInt(out, 0);
 

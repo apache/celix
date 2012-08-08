@@ -8,6 +8,8 @@
 #ifndef SIMPLE_SHAPE_H_
 #define SIMPLE_SHAPE_H_
 
+#include <gdk/gdk.h>
+
 struct simple_shape {
 	char *icon_path;
 	char *name;

@@ -25,6 +25,7 @@
 #include "log_sync.h"
 
 #include "resource_processor.h"
+#include "miniunz.h"
 
 #define IDENTIFICATION_ID "deployment_admin_identification"
 #define DISCOVERY_URL "deployment_admin_url"
@@ -127,7 +128,7 @@ static void *APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *deplo
 					apr_dir_make(tmpDir, APR_UREAD|APR_UWRITE|APR_UEXECUTE, admin->pool);
 
 					// TODO: update to use bundle cache DataFile instead of module entries.
-					extractBundle(test, tmpDir);
+					unzip_extractDeploymentPackage(test, tmpDir);
 					char *manifest = apr_pstrcat(admin->pool, tmpDir, "/META-INF/MANIFEST.MF", NULL);
 					MANIFEST mf = NULL;
 					manifest_createFromFile(admin->pool, manifest, &mf);

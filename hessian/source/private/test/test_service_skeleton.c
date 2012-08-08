@@ -4,6 +4,7 @@
  *  Created on: Aug 5, 2011
  *      Author: alexander
  */
+#include <stddef.h>
 
 #include "hessian_2.0_in.h"
 

@@ -81,7 +81,7 @@ void change_file_date(filename,dosdate,tmu_date)
   SetFileTime(hFile,&ftm,&ftLastAcc,&ftm);
   CloseHandle(hFile);
 #else
-#ifdef unix || __APPLE__
+#if defined(unix) || defined(__APPLE__)
   struct utimbuf ut;
   struct tm newdate;
   newdate.tm_sec = tmu_date.tm_sec;
@@ -326,19 +326,19 @@ int do_extract(unzFile uf, char * revisionRoot) {
     return 0;
 }
 
-celix_status_t extractBundle(char * bundleName, char * revisionRoot) {
+celix_status_t unzip_extractDeploymentPackage(char * packageName, char * destination) {
     celix_status_t status = CELIX_SUCCESS;
     char filename_try[MAXFILENAME+16] = "";
     unzFile uf=NULL;
 
-    if (bundleName!=NULL)
+    if (packageName!=NULL)
     {
 
 #        ifdef USEWIN32IOAPI
         zlib_filefunc64_def ffunc;
 #        endif
 
-        strncpy(filename_try, bundleName,MAXFILENAME-1);
+        strncpy(filename_try, packageName,MAXFILENAME-1);
         /* strncpy doesnt append the trailing NULL, of the string is too long. */
         filename_try[ MAXFILENAME ] = '\0';
 
@@ -346,7 +346,7 @@ celix_status_t extractBundle(char * bundleName, char * revisionRoot) {
         fill_win32_filefunc64A(&ffunc);
         uf = unzOpen2_64(bundleName,&ffunc);
 #        else
-        uf = unzOpen64(bundleName);
+        uf = unzOpen64(packageName);
 #        endif
         if (uf==NULL)
         {
@@ -361,10 +361,10 @@ celix_status_t extractBundle(char * bundleName, char * revisionRoot) {
 
     if (uf==NULL)
     {
-        printf("Cannot open %s or %s.zip\n",bundleName,bundleName);
+        printf("Cannot open %s or %s.zip\n",packageName,packageName);
         status = CELIX_FILE_IO_EXCEPTION;
     } else {
-        if (do_extract(uf, revisionRoot) != 0) {
+        if (do_extract(uf, destination) != 0) {
             status = CELIX_FILE_IO_EXCEPTION;
         }
 

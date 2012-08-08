@@ -74,7 +74,7 @@ void circleShape_draw(SIMPLE_SHAPE shape, GdkPixmap *pixMap, GtkWidget *widget, 
 		gdk_pixbuf_render_to_drawable(
 				curr_pix_buf,
 				pixMap,
-				widget->style->fg_gc[GTK_WIDGET_STATE (widget)],
+				gtk_widget_get_style(widget)->fg_gc[gtk_widget_get_state(widget)],
 				0, 0,
 				update_rect.x, update_rect.y,
 				update_rect.width,
