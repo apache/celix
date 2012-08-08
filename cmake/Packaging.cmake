@@ -94,12 +94,7 @@ MACRO(deploy)
 	
 	SET(DEPLOY_COMPONENT deploy_${DEPLOY_NAME})
 	SET(__deployTarget deploy_${DEPLOY_NAME})
-	#SET(__deployConfig ${CMAKE_CURRENT_BINARY_DIR}/CPackConfig-${DEPLOY_NAME}-deploy.cmake)
 		
-	#SET(DEPLOY_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME})
-	#CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/CPackConfigDeploy.in ${__deployConfig} @ONLY)
-	#install(FILES ${EXT_DIR}/celix/* DESTINATION . COMPONENT ${DEPLOY_COMPONENT})
-	
 	SET(BUNDLES "")
 	SET(DEPS)
 	FOREACH(BUNDLE ${DEPLOY_BUNDLES})
@@ -114,10 +109,7 @@ MACRO(deploy)
 	    SET(DEPS ${DEPS};${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/bundles/${BUNDLE}.zip)
 	ENDFOREACH(BUNDLE)
     ADD_CUSTOM_TARGET(${__deployTarget} 
-    	#mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/deploy \;
-		#	cd ${CMAKE_CURRENT_BINARY_DIR}/deploy \; 
-		#	${CPACK_COMMAND} --config "${__deployConfig}"
-    	DEPENDS ${DEPS} launcher
+    	DEPENDS ${DEPS} celix
     	COMMENT "Deploy target ${DEPLOY_NAME}")
     ADD_DEPENDENCIES(deploy ${__deployTarget})
 	
@@ -139,11 +131,6 @@ MACRO(deploy)
 	
 	GET_DIRECTORY_PROPERTY(PROPS ADDITIONAL_MAKE_CLEAN_FILES)
 	SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${PROPS};${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/bundles")
-	
-	#install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME} DESTINATION . COMPONENT ${DEPLOY_COMPONENT})
-	#ADD_CUSTOM_TARGET(clean_${__packageTarget}
-	#    rm ${PROJECT_BINARY_DIR}/packages/IBS-${PACKAGE_NAME}
-    #)
 ENDMACRO(deploy)
 
 MACRO(PARSE_ARGUMENTS prefix arg_names option_names)

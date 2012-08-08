@@ -25,7 +25,7 @@ if (FRAMEWORK)
     include(UseDoxygen)
     
     cpack_add_component(framework
-    	DISPLAY_NAME framework
+    	DISPLAY_NAME Framework
         DESCRIPTION "The Apache Celix framework library"
         REQUIRED
     )
