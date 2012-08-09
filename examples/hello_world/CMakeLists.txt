@@ -15,6 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-bundle(hello_world SOURCES activator)
+bundle(hello_world SOURCES private/src/activator)
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 target_link_libraries(hello_world celix_framework)

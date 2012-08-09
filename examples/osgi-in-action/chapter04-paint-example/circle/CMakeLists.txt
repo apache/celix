@@ -14,14 +14,14 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+
 INCLUDE(FindPkgConfig)
 pkg_search_module (GLIB  REQUIRED glib-2.0)
 pkg_search_module (GTHR  REQUIRED gthread-2.0)
 pkg_search_module (GTK   REQUIRED gtk+-2.0)
 include_directories(
 	private/include
-	public/include
-	../simple//public/include
+	../simple/public/include
 )
 include_directories(${GTK_INCLUDE_DIRS})
 include_directories(${GLIB_INCLUDE_DIRS})

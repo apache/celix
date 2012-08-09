@@ -19,13 +19,8 @@ if (EXAMPLES)
     add_subdirectory(hello_world)
     add_subdirectory(mongoose)
     
-    #add_subdirectory(receiver)
-    #add_subdirectory(receiver-2.0)
-    #add_subdirectory(sender)
-    
     add_subdirectory(whiteboard)
     add_subdirectory(echo_service)
-    #add_subdirectory(component_testing)
     
     add_subdirectory(osgi-in-action/chapter04-correct-lookup)
     add_subdirectory(osgi-in-action/chapter04-correct-listener)

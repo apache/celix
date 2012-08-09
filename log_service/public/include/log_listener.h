@@ -19,8 +19,9 @@
 /*
  * log_listener.h
  *
- *  Created on: Jul 4, 2011
- *      Author: alexander
+ *  \date       Jul 4, 2011
+ *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \copyright	Apache License, Version 2.0
  */
 
 #ifndef LOG_LISTENER_H_

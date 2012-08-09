@@ -19,8 +19,9 @@
 /*
  * service_registry.h
  *
- *  Created on: Aug 6, 2010
- *      Author: alexanderb
+ *  \date       Aug 6, 2010
+ *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \copyright	Apache License, Version 2.0
  */
 
 #ifndef SERVICE_REGISTRY_H_

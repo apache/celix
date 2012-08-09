@@ -16,6 +16,13 @@
  *specific language governing permissions and limitations
  *under the License.
  */
+/*
+ * greeting_impl.c
+ *
+ *  \date       Sep 29, 2011
+ *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \copyright	Apache License, Version 2.0
+ */
 #include <stdio.h>
 #include "greeting_impl.h"
 

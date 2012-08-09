@@ -1,18 +1,37 @@
+/**
+ *Licensed to the Apache Software Foundation (ASF) under one
+ *or more contributor license agreements.  See the NOTICE file
+ *distributed with this work for additional information
+ *regarding copyright ownership.  The ASF licenses this file
+ *to you under the Apache License, Version 2.0 (the
+ *"License"); you may not use this file except in compliance
+ *with the License.  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *Unless required by applicable law or agreed to in writing,
+ *software distributed under the License is distributed on an
+ *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ *specific language governing permissions and limitations
+ *under the License.
+ */
 /*
  * paint_frame.c
  *
- *  Created on: Aug 22, 2011
- *      Author: operator
+ *  \date       Aug 22, 2011
+ *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \copyright	Apache License, Version 2.0
  */
 
 
-/**
+/*
  * This class represents the main application class, which is a JFrame subclass
  * that manages a toolbar of shapes and a drawing canvas. This class does not
  * directly interact with the underlying OSGi framework; instead, it is injected
  * with the available <tt>SimpleShape</tt> instances to eliminate any
  * dependencies on the OSGi application programming interfaces.
- **/
+ */
 
 #include <stdio.h>
 #include <stdlib.h>

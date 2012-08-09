@@ -29,11 +29,16 @@ if (DEPENDENCY_MANAGER)
       endif(CMAKE_UNAME)
     endif(UNIX AND NOT WIN32)
     
-    add_library(dependency_manager STATIC dependency_manager.c dependency_activator_base.c service_component.c service_dependency.c)
+    add_library(dependency_manager STATIC 
+    	private/src/dependency_manager 
+    	private/src/dependency_activator_base 
+    	private/src/service_component
+    	private/src/service_dependency)
+   	include_directories("public/include")
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     target_link_libraries(dependency_manager celix_framework)
     
-    FILE(GLOB files dependency_activator_base.h service.h dependency_manager.h service_component_private.h service_component.h service_dependency.h)
+    FILE(GLOB files public/include/dependency_activator_base.h public/include/service.h public/include/dependency_manager.h public/include/service_component_private.h public/include/service_component.h public/include/service_dependency.h)
     INSTALL(FILES ${files} DESTINATION include/celix/dependency_manager COMPONENT framework)
     install(TARGETS dependency_manager DESTINATION lib COMPONENT framework)
 endif (DEPENDENCY_MANAGER)

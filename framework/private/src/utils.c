@@ -19,8 +19,9 @@
 /*
  * utils.c
  *
- *  Created on: Jul 27, 2010
- *      Author: alexanderb
+ *  \date       Jul 27, 2010
+ *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \copyright	Apache License, Version 2.0
  */
 #include <stdlib.h>
 #include <string.h>

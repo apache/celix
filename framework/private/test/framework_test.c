@@ -19,10 +19,13 @@
 /*
  * test.c
  *
- *  Created on: Jul 16, 2010
- *      Author: alexanderb
+ *  \date       Jul 16, 2010
+ *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \copyright	Apache License, Version 2.0
  */
 #include <stdio.h>
+
+#include <stddef.h>
 
 #include "CUnit/Basic.h"
 #include "framework.h"

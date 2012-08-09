@@ -19,8 +19,9 @@
 /*
  * properties.h
  *
- *  Created on: Apr 27, 2010
- *      Author: dk489
+ *  \date       Apr 27, 2010
+ *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \copyright	Apache License, Version 2.0
  */
 
 #ifndef PROPERTIES_H_

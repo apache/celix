@@ -16,7 +16,13 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-
+/*
+ * driver_locator_private.h
+ *
+ *  \date       Jun 20, 2011
+ *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \copyright	Apache License, Version 2.0
+ */
 #ifndef DRIVER_LOCATOR_PRIVATE_H_
 #define DRIVER_LOCATOR_PRIVATE_H_
 

@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-include(FindAPR)
+find_package(APR REQUIRED)
 
 bundle(base_driver SOURCES 
 	private/src/activator 

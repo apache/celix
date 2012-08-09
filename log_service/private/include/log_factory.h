@@ -19,8 +19,9 @@
 /*
  * log_factory.h
  *
- *  Created on: Jun 26, 2011
- *      Author: alexander
+ *  \date       Jun 26, 2011
+ *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \copyright	Apache License, Version 2.0
  */
 
 #ifndef LOG_FACTORY_H_

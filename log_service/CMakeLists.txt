@@ -14,6 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+
 celix_subproject(LOG_SERVICE "Option to enable building the Log Service bundles" "OFF" DEPS framework)
 if (LOG_SERVICE)
     bundle(log_service SOURCES

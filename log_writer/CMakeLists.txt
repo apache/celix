@@ -14,11 +14,14 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+
 celix_subproject(LOG_WRITER "Option to enable building the Log Writer bundle" "OFF" DEPS FRAMEWORK LOG_SERVICE DEPENDENCY_MANAGER)
 if (LOG_WRITER)
-    bundle(log_writer SOURCES dependency_activator log_writer)
-    include_directories("${PROJECT_SOURCE_DIR}/celix")
-    include_directories("${PROJECT_SOURCE_DIR}/dependency_manager")
+    bundle(log_writer SOURCES 
+    	private/src/dependency_activator 
+    	private/src/log_writer)
+	include_directories("private/include")
+    include_directories("${PROJECT_SOURCE_DIR}/dependency_manager/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
     target_link_libraries(log_writer celix_framework dependency_manager)

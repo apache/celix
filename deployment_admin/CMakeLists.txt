@@ -14,6 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+
 celix_subproject(DEPLOYMENT_ADMIN "Option to enable building the Deployment Admin Service bundles" OFF DEPS framework launcher shell_tui log_writer)
 if (DEPLOYMENT_ADMIN)
 	

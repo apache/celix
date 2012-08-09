@@ -16,7 +16,7 @@
 # under the License.
 celix_subproject(LAUNCHER "Option to build the launcher" "ON" DEPS UTILS FRAMEWORK)
 if (LAUNCHER) 
-    add_executable(celix launcher.c)
+    add_executable(celix private/src/launcher)
     
     target_link_libraries(celix celix_framework)
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")

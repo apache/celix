@@ -1,5 +1,0 @@
-Bundle-SymbolicName: receiver
-Bundle-Version: 1.0.0.test
-library: receiver
-Export-Service: serviceTest;version="1.0.0"
-Import-Service: serviceTest;version="1.0.0"

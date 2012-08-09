@@ -19,8 +19,9 @@
 /*
  * array_list.h
  *
- *  Created on: Aug 4, 2010
- *      Author: alexanderb
+ *  \date       Aug 4, 2010
+ *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \copyright	Apache License, Version 2.0
  */
 
 #ifndef ARRAY_LIST_H_

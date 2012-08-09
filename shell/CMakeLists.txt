@@ -18,18 +18,26 @@ celix_subproject(SHELL "Option to enable building the Shell bundles" "OFF" DEPS 
 if (SHELL)
 	find_package(CURL REQUIRED)
 
-    bundle(shell SOURCES shell command
-    	ps_command start_command stop_command
-    	install_command update_command
-    	uninstall_command log_command
-    	inspect_command)
+    bundle(shell SOURCES 
+    	private/src/shell 
+    	private/src/command
+    	private/src/ps_command 
+    	private/src/start_command 
+    	private/src/stop_command
+    	private/src/install_command 
+    	private/src/update_command
+    	private/src/uninstall_command 
+    	private/src/log_command
+    	private/src/inspect_command)
+	include_directories("public/include")
+	include_directories("private/include")
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
     target_link_libraries(shell celix_framework ${CURL_LIBRARIES})
     
-    package(shell FILES shell.h command.h)
+    package(shell FILES public/include/shell.h public/include/command.h public/include/command_private.h)
     
-    FILE(GLOB files shell.h command.h)
+    FILE(GLOB files public/include/shell.h public/include/command.h public/include/command_private.h)
     INSTALL(FILES ${files} DESTINATION include/celix/shell COMPONENT framework)
     INSTALL(FILES ${PROJECT_BINARY_DIR}/bundles/shell.zip DESTINATION bundles COMPONENT framework)
 endif (SHELL)

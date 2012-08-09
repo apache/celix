@@ -15,10 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
-bundle(publisherB SOURCES activator publisher)
-include_directories("${PROJECT_SOURCE_DIR}/celix")
-include_directories("../publisherService")
+bundle(publisherB SOURCES private/src/activator private/src/publisher)
+include_directories("../publisherService/public/include")
+include_directories("../publisherService/private/include")
 target_link_libraries(publisherB celix_framework)
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 
-package(publisherB FILES ../publisherService/publisher.h)
+package(publisherB FILES ../publisherService/public/include/publisher.h)

@@ -14,6 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+
 celix_subproject(FRAMEWORK "Option to build the framework shared library" "ON" DEPS UTILS)
 if (FRAMEWORK) 
     cmake_minimum_required(VERSION 2.6)

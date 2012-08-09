@@ -131,6 +131,24 @@ MACRO(deploy)
 	
 	GET_DIRECTORY_PROPERTY(PROPS ADDITIONAL_MAKE_CLEAN_FILES)
 	SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${PROPS};${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/bundles")
+	
+	message(${PROJECT_BINARY_DIR})
+	message(${DEPLOY_NAME})
+	message(${CMAKE_PROJECT_NAME})
+
+	# Generate an Eclipse launch file to be able to run the deployment from Eclipse	
+	string(REPLACE "/" ";" LIST ${PROJECT_BINARY_DIR})
+	list(LENGTH LIST len)
+	MATH(EXPR test "${len} - 1")
+	LIST(GET LIST ${test} last)
+	MESSAGE("${last}")
+
+	SET(CONTAINER_NAME ${DEPLOY_NAME})
+	SET(PROGRAM_NAME ${LAUNCHER})
+	SET(PROJECT_ATTR ${last})
+	SET(WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/")
+	
+	CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/RunConfig.in ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/${DEPLOY_NAME}.launch @ONLY)
 ENDMACRO(deploy)
 
 MACRO(PARSE_ARGUMENTS prefix arg_names option_names)

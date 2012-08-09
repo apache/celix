@@ -19,11 +19,13 @@
 /*
  * hash_map_test.c
  *
- *  Created on: Jul 25, 2010
- *      Author: alexanderb
+ *  \date       Jul 25, 2010
+ *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \copyright	Apache License, Version 2.0
  */
 #include <stdio.h>
 #include <string.h>
+#include <stddef.h>
 
 #include <Automated.h>
 

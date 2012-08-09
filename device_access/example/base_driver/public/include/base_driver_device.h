@@ -16,7 +16,13 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-
+/*
+ * base_driver_device.h
+ *
+ *  \date       Jun 20, 2011
+ *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \copyright	Apache License, Version 2.0
+ */
 #ifndef BASE_DRIVER_DEVICE_H_
 #define BASE_DRIVER_DEVICE_H_
 

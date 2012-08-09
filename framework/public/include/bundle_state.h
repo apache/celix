@@ -19,8 +19,9 @@
 /*
  * bundle_state.h
  *
- *  Created on: Sep 27, 2010
- *      Author: alexanderb
+ *  \date       Sep 27, 2010
+ *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \copyright	Apache License, Version 2.0
  */
 
 #ifndef BUNDLE_STATE_H_

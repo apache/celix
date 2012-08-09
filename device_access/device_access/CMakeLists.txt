@@ -14,7 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-include(FindAPR)
+
+find_package(APR REQUIRED)
 
 bundle(device_manager SOURCES 
 	private/src/activator

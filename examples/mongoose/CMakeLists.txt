@@ -15,11 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(mongoose STATIC mongoose.c)
+add_library(mongoose STATIC private/src/mongoose.c)
 SET_TARGET_PROPERTIES(mongoose PROPERTIES COMPILE_FLAGS -fPIC)
 
+include_directories("private/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-bundle(celix.mongoose SOURCES activator DIRECTORIES root)
+bundle(celix.mongoose SOURCES private/src/activator DIRECTORIES root)
 target_link_libraries(celix.mongoose celix_framework mongoose)
 
 

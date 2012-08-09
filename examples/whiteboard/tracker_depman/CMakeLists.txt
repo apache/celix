@@ -15,10 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
-bundle(tracker_depman SOURCES dependency_activator tracker)
-include_directories("${PROJECT_SOURCE_DIR}/celix")
-include_directories("${PROJECT_SOURCE_DIR}/dependency_manager")
-include_directories("../publisherService")
+bundle(tracker_depman SOURCES private/src/dependency_activator private/src/tracker)
+include_directories("private/include")
+include_directories("${PROJECT_SOURCE_DIR}/dependency_manager/public/include")
+include_directories("../publisherService/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 target_link_libraries(tracker_depman celix_framework dependency_manager)

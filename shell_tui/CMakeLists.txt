@@ -16,9 +16,9 @@
 # under the License.
 celix_subproject(SHELL_TUI "Option to enable building the Shell Textual User Interface bundles" OFF DEPS LAUNCHER SHELL)
 if (SHELL_TUI)
-    bundle(shell_tui SOURCES shell_tui)
+    bundle(shell_tui SOURCES private/src/shell_tui)
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-    include_directories("${PROJECT_SOURCE_DIR}/shell")
+    include_directories("${PROJECT_SOURCE_DIR}/shell/public/include")
     target_link_libraries(shell_tui celix_framework)
     
     package(shell_tui)

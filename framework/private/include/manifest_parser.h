@@ -19,8 +19,9 @@
 /*
  * manifest_parser.h
  *
- *  Created on: Jul 13, 2010
- *      Author: alexanderb
+ *  \date       Jul 13, 2010
+ *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \copyright	Apache License, Version 2.0
  */
 
 #ifndef MANIFEST_PARSER_H_

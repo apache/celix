@@ -19,11 +19,13 @@
 /*
  * linked_list_test.c
  *
- *  Created on: Jul 16, 2010
- *      Author: alexanderb
+ *  \date       Jul 16, 2010
+ *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \copyright	Apache License, Version 2.0
  */
 #include <stdio.h>
 #include <apr_pools.h>
+#include <stddef.h>
 
 #include <Automated.h>
 #include "linkedlist.h"
