@@ -23,7 +23,6 @@ if (FRAMEWORK)
     find_package(ZLIB REQUIRED)
     
     include(CPackComponent)
-    include(UseDoxygen)
     
     cpack_add_component(framework
     	DISPLAY_NAME Framework

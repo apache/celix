@@ -39,5 +39,5 @@ if (SHELL)
     
     FILE(GLOB files public/include/shell.h public/include/command.h public/include/command_private.h)
     INSTALL(FILES ${files} DESTINATION include/celix/shell COMPONENT framework)
-    INSTALL(FILES ${PROJECT_BINARY_DIR}/bundles/shell.zip DESTINATION bundles COMPONENT framework)
+    INSTALL(FILES ${PROJECT_BINARY_DIR}/bundles/shell.zip DESTINATION share/celix/bundles COMPONENT framework)
 endif (SHELL)

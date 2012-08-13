@@ -23,5 +23,5 @@ if (SHELL_TUI)
     
     package(shell_tui)
     
-    INSTALL(FILES ${PROJECT_BINARY_DIR}/bundles/shell_tui.zip DESTINATION bundles COMPONENT framework)
+    INSTALL(FILES ${PROJECT_BINARY_DIR}/bundles/shell_tui.zip DESTINATION share/celix/bundles COMPONENT framework)
 endif (SHELL_TUI)

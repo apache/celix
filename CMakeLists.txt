@@ -29,7 +29,9 @@ SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 ${CMAKE_C_FLAGS}")
 
 include(cmake/Includes.cmake)
 
-include(installation.cmake)  
+include(cmake/installation.cmake)
+
+include(UseDoxygen)  
 
 ## New sub project must use a buildoption to be able to enable/disable the project using the CMake Editor
 ## Sub projects depending on another sub project automatically enable these dependencies
