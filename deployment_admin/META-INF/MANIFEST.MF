@@ -1,3 +1,0 @@
-Bundle-SymbolicName: deployment_admin
-Bundle-Version: 1.0.0
-library: deployment_admin

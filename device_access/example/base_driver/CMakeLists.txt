@@ -17,6 +17,9 @@
 
 find_package(APR REQUIRED)
 
+SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_base_driver_example")
+SET_HEADERS("Bundle-Name: Apache Celix Device Access Base Driver Example")
+
 bundle(base_driver SOURCES 
 	private/src/activator 
 	private/src/base_driver

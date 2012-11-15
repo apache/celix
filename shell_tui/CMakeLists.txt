@@ -16,6 +16,10 @@
 # under the License.
 celix_subproject(SHELL_TUI "Option to enable building the Shell Textual User Interface bundles" OFF DEPS LAUNCHER SHELL)
 if (SHELL_TUI)
+
+	SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_shell_tui")
+	SET_HEADERS("Bundle-Name: Apache Celix Shell TUI") 
+
     bundle(shell_tui SOURCES private/src/shell_tui)
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/shell/public/include")

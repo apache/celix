@@ -1,4 +1,0 @@
-Bundle-SymbolicName: tracker
-Bundle-Version: 1.0.0.test
-library: tracker
-Import-Service: Publisher

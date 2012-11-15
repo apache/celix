@@ -1,7 +1,0 @@
-Bundle-SymbolicName: square
-Bundle-Version: 1.0.0
-library: square
-Export-Service: simple_shape
-Import-Service: simple_shape
-
-

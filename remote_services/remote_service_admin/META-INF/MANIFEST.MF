@@ -1,5 +1,0 @@
-Bundle-SymbolicName: remote_service_admin
-Bundle-Version: 1.0.0
-library: remote_service_admin
-Export-Service: remote_service_admin
-Import-Service: remote_service_admin

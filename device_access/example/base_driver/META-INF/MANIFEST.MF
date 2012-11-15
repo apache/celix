@@ -1,5 +1,0 @@
-Bundle-SymbolicName: base_driver
-Bundle-Version: 1.0.0.test
-library: base_driver
-Export-Service: device, base_driver_device_service
-Import-Service: device

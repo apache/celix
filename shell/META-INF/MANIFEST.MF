@@ -1,9 +1,0 @@
-Bundle-SymbolicName: shell
-Bundle-Version: 1.0.0
-library: shell
-Import-Service: 
- shellService,
- commandService,
- log_reader_service,
- log_service
-Export-Service: shellService,commandService

@@ -17,6 +17,9 @@
 celix_subproject(SHELL "Option to enable building the Shell bundles" "OFF" DEPS LAUNCHER LOG_SERVICE)
 if (SHELL)
 	find_package(CURL REQUIRED)
+	
+	SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_shell")
+	SET_HEADERS("Bundle-Name: Apache Celix Shell") 
 
     bundle(shell SOURCES 
     	private/src/shell 

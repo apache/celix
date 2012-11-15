@@ -25,6 +25,10 @@ include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/pub
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
 
 link_directories("/opt/local/lib")
+
+SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_rsa_discovery_slp")
+SET_HEADERS("Bundle-Name: Apache Celix RSA SLP Discovery")
+
 bundle(discovery SOURCES 
 	private/src/discovery 
 	private/src/discovery_activator

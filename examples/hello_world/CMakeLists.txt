@@ -15,6 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
+SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_examples_hello_world")
+SET_HEADERS("Bundle-Name: Apache Celix Shell TUI") 
+	
 bundle(hello_world SOURCES private/src/activator)
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 target_link_libraries(hello_world celix_framework)

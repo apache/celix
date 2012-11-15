@@ -1,3 +1,0 @@
-Bundle-SymbolicName: remote_service_admin_http
-Bundle-Version: 1.0.0
-library: remote_service_admin_http

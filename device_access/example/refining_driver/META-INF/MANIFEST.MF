@@ -1,4 +1,0 @@
-Bundle-SymbolicName: char_refiningdriver
-Bundle-Version: 1.0.0.test
-library: char_refiningdriver
-Import-Service: device

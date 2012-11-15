@@ -17,6 +17,10 @@
 
 celix_subproject(LOG_WRITER "Option to enable building the Log Writer bundle" "OFF" DEPS FRAMEWORK LOG_SERVICE DEPENDENCY_MANAGER)
 if (LOG_WRITER)
+
+	SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_log_writer")
+	SET_HEADERS("Bundle-Name: Apache Celix Log Writer")
+
     bundle(log_writer SOURCES 
     	private/src/dependency_activator 
     	private/src/log_writer)

@@ -17,6 +17,9 @@
 
 find_package(APR REQUIRED)
 
+SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_word_consuming_driver_example")
+SET_HEADERS("Bundle-Name: Apache Celix Device Access Word Consuming Driver Example")
+
 bundle(word_consumingdriver SOURCES 
 	private/src/activator 
 	private/src/consuming_driver

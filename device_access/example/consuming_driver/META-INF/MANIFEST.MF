@@ -1,4 +1,0 @@
-Bundle-SymbolicName: word_consumingdriver
-Bundle-Version: 1.0.0.test
-library: word_consumingdriver
-Import-Service: device

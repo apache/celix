@@ -1,5 +1,0 @@
-Bundle-SymbolicName: chapter01-greeting-example
-Bundle-Version: 1.0.0
-library: chapter01-greeting-example
-Export-Service: greeting-service
-Import-Service: greeting-service

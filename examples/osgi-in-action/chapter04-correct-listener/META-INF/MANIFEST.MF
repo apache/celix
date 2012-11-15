@@ -1,4 +1,0 @@
-Bundle-SymbolicName: chapter04-correct-listener
-Bundle-Version: 1.0.0
-library: chapter04-correct-listener
-Import-Service: log_service

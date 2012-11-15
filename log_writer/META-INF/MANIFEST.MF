@@ -1,4 +1,0 @@
-Bundle-SymbolicName: log_writer
-Bundle-Version: 1.0.0.test
-library: log_writer
-Import-Service: log_reader_service

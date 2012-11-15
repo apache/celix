@@ -17,6 +17,9 @@
 
 find_package(APR REQUIRED)
 
+SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_char_refining_driver_example")
+SET_HEADERS("Bundle-Name: Apache Celix Device Access Char Refining Driver Example")
+
 bundle(char_refiningdriver SOURCES 
 	private/src/activator 
 	private/src/refining_driver

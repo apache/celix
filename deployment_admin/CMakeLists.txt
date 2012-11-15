@@ -22,6 +22,9 @@ if (DEPLOYMENT_ADMIN)
 
     add_definitions(-DUSE_FILE32API)
     
+    SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_deployment_admin")
+	SET_HEADERS("Bundle-Name: Apache Celix Deployment Admin") 
+    
     include_directories("/opt/local/include")
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/deployment_admin/private/include")

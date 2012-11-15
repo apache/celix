@@ -1,5 +1,0 @@
-Bundle-SymbolicName: driver_locator
-Bundle-Version: 1.0.0.test
-library: driver_locator
-Export-Service: driver_locator
-Import-Service: driver_locator

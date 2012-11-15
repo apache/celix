@@ -21,5 +21,6 @@ The following templates do not include the header:
 * config.properties.in
 * run.sh.in
 * RunConfig.in
+* manifest.in
 
 This note is added to explicitly mention that the same licensing applies to these files as to any other having the header.  
