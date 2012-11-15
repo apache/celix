@@ -17,6 +17,9 @@
 
 celix_subproject(LOG_SERVICE "Option to enable building the Log Service bundles" "OFF" DEPS framework)
 if (LOG_SERVICE)
+	SET(BUNDLE_SYMBOLICNAME "Log Service")
+	SET(BUNDLE_VERSION 0.0.1-incubation)
+	SET(BUNDLE_EXTRAHEADERS "Test: TEST" "Bla: bla")
     bundle(log_service SOURCES
     	private/src/log
     	private/src/log_entry

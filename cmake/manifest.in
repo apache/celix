@@ -1,0 +1,4 @@
+Bundle-SymbolicName: @BUNDLE_SYMBOLICNAME@
+Bundle-Version: @BUNDLE_VERSION@
+library: @BUNDLE_NAME@
+@BUNDLE_EXTRAHEADERS_STR@
