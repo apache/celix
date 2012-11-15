@@ -17,7 +17,7 @@
  For Celix these include
    - Mongoose
    - Unzip and MiniZip files
-   - Doxygen script for CMake
+   - Doxygen scripts for CMake (Doxyfile.in, UseDoxygen.cmake)
  
  Also there are several files which can't have a license.
    - *.MF Manifest files cannot contain comments
@@ -27,6 +27,15 @@
              Excluded to prevent false positives when using RAT on a dev tree.
    
 (.*).MF
+
+ Todo: Why doesn't RAT exclude these files when using a full path?
+cmake/config.properties.in
+cmake/run.sh.in
+cmake/RunConfig.in
+
+Doxyfile.in
+
+ Workaround to exclude .in files.
 (.*).in
 
 .project
