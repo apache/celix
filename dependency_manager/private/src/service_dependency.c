@@ -70,18 +70,15 @@ void * serviceDependency_getService(SERVICE_DEPENDENCY dependency) {
 
 void serviceDependency_start(SERVICE_DEPENDENCY dependency, SERVICE service) {
 	dependency->service = service;
-
-	SERVICE_TRACKER_CUSTOMIZER cust = (SERVICE_TRACKER_CUSTOMIZER) malloc(sizeof(*cust));
-	cust->handle = dependency;
-	cust->addingService = serviceDependency_addingService;
-	cust->addedService = serviceDependency_addedService;
-	cust->modifiedService = serviceDependency_modifiedService;
-	cust->removedService = serviceDependency_removedService;
-
 	dependency->tracker = NULL;
 
 	apr_pool_t *pool;
 	bundleContext_getMemoryPool(dependency->context, &pool);
+
+	service_tracker_customizer_t cust = NULL;
+	serviceTrackerCustomizer_create(pool, dependency, serviceDependency_addingService,
+			serviceDependency_addedService, serviceDependency_modifiedService,
+			serviceDependency_removedService, &cust);
 
 	if (dependency->trackedServiceFilter != NULL) {
 		serviceTracker_createWithFilter(pool, dependency->context, dependency->trackedServiceFilter, cust, &dependency->tracker);

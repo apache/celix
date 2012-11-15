@@ -44,7 +44,7 @@ celix_status_t importRegistration_proxyAdded(void * handle, SERVICE_REFERENCE re
 celix_status_t importRegistration_proxyModified(void * handle, SERVICE_REFERENCE reference, void *service);
 celix_status_t importRegistration_proxyRemoved(void * handle, SERVICE_REFERENCE reference, void *service);
 
-celix_status_t importRegistration_createProxyTracker(import_registration_t registration, SERVICE_TRACKER *tracker);
+celix_status_t importRegistration_createProxyTracker(import_registration_t registration, service_tracker_t *tracker);
 
 celix_status_t importRegistration_create(apr_pool_t *pool, endpoint_description_t endpoint, remote_service_admin_t rsa, BUNDLE_CONTEXT context, import_registration_t *registration) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -91,22 +91,18 @@ celix_status_t importRegistration_stopTracking(import_registration_t registratio
 	return status;
 }
 
-celix_status_t importRegistration_createProxyTracker(import_registration_t registration, SERVICE_TRACKER *tracker) {
+celix_status_t importRegistration_createProxyTracker(import_registration_t registration, service_tracker_t *tracker) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	SERVICE_TRACKER_CUSTOMIZER custumizer = (SERVICE_TRACKER_CUSTOMIZER) apr_palloc(registration->pool, sizeof(*custumizer));
-	if (!custumizer) {
-		status = CELIX_ENOMEM;
-	} else {
-		custumizer->handle = registration;
-		custumizer->addingService = importRegistration_proxyAdding;
-		custumizer->addedService = importRegistration_proxyAdded;
-		custumizer->modifiedService = importRegistration_proxyModified;
-		custumizer->removedService = importRegistration_proxyRemoved;
+	service_tracker_customizer_t customizer = NULL;
 
+	status = serviceTrackerCustomizer_create(registration->pool, registration, importRegistration_proxyAdding,
+			importRegistration_proxyAdded, importRegistration_proxyModified, importRegistration_proxyRemoved, &customizer);
+
+	if (status == CELIX_SUCCESS) {
 		char *filter = apr_pstrcat(registration->pool, "(&(", OBJECTCLASS, "=", REMOTE_PROXY,
 				")(proxy.interface=", registration->endpointDescription->service, "))", NULL);
-		status = serviceTracker_createWithFilter(registration->pool, registration->context, filter, custumizer, tracker);
+		status = serviceTracker_createWithFilter(registration->pool, registration->context, filter, customizer, tracker);
 	}
 
 	return status;

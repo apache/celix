@@ -38,8 +38,8 @@ struct export_registration {
 	endpoint_description_t endpointDescription;
 	SERVICE_REFERENCE reference;
 
-	SERVICE_TRACKER tracker;
-	SERVICE_TRACKER endpointTracker;
+	service_tracker_t tracker;
+	service_tracker_t endpointTracker;
 
 	remote_endpoint_service_t endpoint;
 

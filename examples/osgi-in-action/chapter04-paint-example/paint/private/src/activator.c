@@ -41,7 +41,7 @@
 struct paintFrameActivatorData {
 	SERVICE_REGISTRATION reg;
 	apr_pool_t *pool;
-	SERVICE_TRACKER tracker;
+	service_tracker_t tracker;
 	BUNDLE_CONTEXT context;
 	PAINT_FRAME paint_frame;
 };
@@ -55,7 +55,7 @@ typedef struct paintFrameActivatorData *GREETING_ACTIVATOR;
 celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 	apr_pool_t *pool;
 	GREETING_ACTIVATOR activator;
-	SERVICE_TRACKER_CUSTOMIZER cust;
+	service_tracker_customizer_t cust;
 	printf("Paint_frame create\n");
 	celix_status_t status = bundleContext_getMemoryPool(context, &pool);
 	if (status == CELIX_SUCCESS) {
@@ -66,12 +66,10 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 		activator->context = context;
 		activator->paint_frame = NULL;
 		status = paintFrame_create(context, pool, &activator->paint_frame);
-        cust = (SERVICE_TRACKER_CUSTOMIZER) apr_palloc(pool, sizeof(*cust));
-        cust->handle = activator;
-        cust->addedService = addedServ;
-        cust->addingService = addingServ;
-        cust->modifiedService = modifiedServ;
-        cust->removedService = removedServ;
+
+		serviceTrackerCustomizer_create(pool, activator, addingServ,
+				addedServ, modifiedServ, removedServ, &cust);
+
         serviceTracker_create(pool, context, SIMPLE_SHAPE_SERVICE_NAME, cust, &activator->tracker);
 		serviceTracker_open(activator->tracker);
 

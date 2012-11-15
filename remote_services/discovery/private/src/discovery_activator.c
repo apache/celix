@@ -45,11 +45,11 @@ struct activator {
 
 	discovery_t discovery;
 
-	SERVICE_TRACKER endpointListenerTracker;
+	service_tracker_t endpointListenerTracker;
 	SERVICE_REGISTRATION endpointListenerService;
 };
 
-celix_status_t discoveryActivator_createEPLTracker(struct activator *activator, SERVICE_TRACKER *tracker);
+celix_status_t discoveryActivator_createEPLTracker(struct activator *activator, service_tracker_t *tracker);
 celix_status_t discoveryActivator_getUUID(struct activator *activator, char **uuidStr);
 
 celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
@@ -78,20 +78,16 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 	return status;
 }
 
-celix_status_t discoveryActivator_createEPLTracker(struct activator *activator, SERVICE_TRACKER *tracker) {
+celix_status_t discoveryActivator_createEPLTracker(struct activator *activator,  service_tracker_t *tracker) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	SERVICE_TRACKER_CUSTOMIZER custumizer = (SERVICE_TRACKER_CUSTOMIZER) apr_palloc(activator->pool, sizeof(*custumizer));
-	if (!custumizer) {
-		status = CELIX_ENOMEM;
-	} else {
-		custumizer->handle = activator->discovery;
-		custumizer->addingService = discovery_endpointListenerAdding;
-		custumizer->addedService = discovery_endpointListenerAdded;
-		custumizer->modifiedService = discovery_endpointListenerModified;
-		custumizer->removedService = discovery_endpointListenerRemoved;
+	service_tracker_customizer_t customizer = NULL;
 
-		status = serviceTracker_create(activator->pool, activator->context, "endpoint_listener", custumizer, tracker);
+	status = serviceTrackerCustomizer_create(activator->pool, activator->discovery, discovery_endpointListenerAdding,
+			discovery_endpointListenerAdded, discovery_endpointListenerModified, discovery_endpointListenerRemoved, &customizer);
+
+	if (status == CELIX_SUCCESS) {
+		status = serviceTracker_create(activator->pool, activator->context, "endpoint_listener", customizer, tracker);
 
 		serviceTracker_open(activator->endpointListenerTracker);
 	}

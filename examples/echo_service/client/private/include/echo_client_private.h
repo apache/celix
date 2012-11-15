@@ -31,7 +31,7 @@
 #include <pthread.h>
 
 struct echoClient {
-	SERVICE_TRACKER tracker;
+	service_tracker_t tracker;
 	bool running;
 
 	pthread_t sender;
@@ -39,7 +39,7 @@ struct echoClient {
 
 typedef struct echoClient * ECHO_CLIENT;
 
-ECHO_CLIENT echoClient_create(SERVICE_TRACKER context);
+ECHO_CLIENT echoClient_create(service_tracker_t context);
 
 void echoClient_start(ECHO_CLIENT client);
 void echoClient_stop(ECHO_CLIENT client);

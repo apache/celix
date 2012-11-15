@@ -38,9 +38,9 @@ struct device_manager_bundle_instance {
 	BUNDLE_CONTEXT context;
 	apr_pool_t *pool;
 	device_manager_t deviceManager;
-	SERVICE_TRACKER driverLocatorTracker;
-	SERVICE_TRACKER driverTracker;
-	SERVICE_TRACKER deviceTracker;
+	service_tracker_t driverLocatorTracker;
+	service_tracker_t driverTracker;
+	service_tracker_t deviceTracker;
 };
 
 typedef struct device_manager_bundle_instance *device_manager_bundle_instance_t;
@@ -112,15 +112,14 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 
 static celix_status_t deviceManagerBundle_createDriverLocatorTracker(device_manager_bundle_instance_t bundleData) {
 	celix_status_t status = CELIX_SUCCESS;
-	SERVICE_TRACKER_CUSTOMIZER customizer = apr_palloc(bundleData->pool, sizeof(struct serviceTrackerCustomizer));
-	if (customizer != NULL) {
-		customizer->handle=bundleData->deviceManager;
-		customizer->addingService=addingService_dummy_func;
-		customizer->addedService=deviceManager_locatorAdded;
-		customizer->modifiedService=deviceManager_locatorModified;
-		customizer->removedService=deviceManager_locatorRemoved;
 
-		SERVICE_TRACKER tracker = NULL;
+	service_tracker_customizer_t customizer = NULL;
+
+	status = serviceTrackerCustomizer_create(bundleData->pool, bundleData->deviceManager, addingService_dummy_func,
+			deviceManager_locatorAdded, deviceManager_locatorModified, deviceManager_locatorRemoved, &customizer);
+
+	if (status == CELIX_SUCCESS) {
+		service_tracker_t tracker = NULL;
 		status = serviceTracker_create(bundleData->pool, bundleData->context, "driver_locator", customizer, &tracker);
 		if (status == CELIX_SUCCESS) {
 			bundleData->driverLocatorTracker=tracker;
@@ -133,15 +132,14 @@ static celix_status_t deviceManagerBundle_createDriverLocatorTracker(device_mana
 
 static celix_status_t deviceManagerBundle_createDriverTracker(device_manager_bundle_instance_t bundleData) {
 	celix_status_t status = CELIX_SUCCESS;
-	SERVICE_TRACKER_CUSTOMIZER customizer = apr_palloc(bundleData->pool, sizeof(struct serviceTrackerCustomizer));
-	if (customizer != NULL) {
-		customizer->handle=bundleData->deviceManager;
-		customizer->addingService=addingService_dummy_func;
-		customizer->addedService=deviceManager_driverAdded;
-		customizer->modifiedService=deviceManager_driverModified;
-		customizer->removedService=deviceManager_driverRemoved;
 
-		SERVICE_TRACKER tracker = NULL;
+	service_tracker_customizer_t customizer = NULL;
+
+	status = serviceTrackerCustomizer_create(bundleData->pool, bundleData->deviceManager, addingService_dummy_func,
+			deviceManager_locatorAdded, deviceManager_locatorModified, deviceManager_locatorRemoved, &customizer);
+
+	if (status == CELIX_SUCCESS) {
+		service_tracker_t tracker = NULL;
 		status = serviceTracker_createWithFilter(bundleData->pool, bundleData->context, "(objectClass=driver)", customizer, &tracker);
 		if (status == CELIX_SUCCESS) {
 			bundleData->driverTracker=tracker;
@@ -154,15 +152,14 @@ static celix_status_t deviceManagerBundle_createDriverTracker(device_manager_bun
 
 static celix_status_t deviceManagerBundle_createDeviceTracker(device_manager_bundle_instance_t bundleData) {
 	celix_status_t status = CELIX_SUCCESS;
-	SERVICE_TRACKER_CUSTOMIZER customizer = apr_palloc(bundleData->pool, sizeof(struct serviceTrackerCustomizer));
-	if (customizer != NULL) {
-		customizer->handle=bundleData->deviceManager;
-		customizer->addingService=addingService_dummy_func;
-		customizer->addedService= deviceManager_deviceAdded;
-		customizer->modifiedService=deviceManager_deviceModified;
-		customizer->removedService=deviceManager_deviceRemoved;
 
-		SERVICE_TRACKER tracker = NULL;
+	service_tracker_customizer_t customizer = NULL;
+
+	status = serviceTrackerCustomizer_create(bundleData->pool, bundleData->deviceManager, addingService_dummy_func,
+			deviceManager_locatorAdded, deviceManager_locatorModified, deviceManager_locatorRemoved, &customizer);
+
+	if (status == CELIX_SUCCESS) {
+		service_tracker_t tracker = NULL;
 		status = serviceTracker_createWithFilter(bundleData->pool, bundleData->context, "(|(objectClass=device)(DEVICE_CATEGORY=*))", customizer, &tracker);
 		if (status == CELIX_SUCCESS) {
 			bundleData->deviceTracker=tracker;

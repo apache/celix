@@ -34,7 +34,7 @@
 
 struct echoActivator {
 	ECHO_CLIENT client;
-	SERVICE_TRACKER tracker;
+	service_tracker_t tracker;
 };
 
 celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
@@ -51,7 +51,7 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 	struct echoActivator * act = (struct echoActivator *) userData;
 
 	apr_pool_t *pool = NULL;
-	SERVICE_TRACKER tracker = NULL;
+	service_tracker_t tracker = NULL;
 
 	bundleContext_getMemoryPool(context, &pool);
 	serviceTracker_create(pool, context, ECHO_SERVICE_NAME, NULL, &tracker);

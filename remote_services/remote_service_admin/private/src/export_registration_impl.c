@@ -42,7 +42,7 @@ celix_status_t exportRegistration_endpointAdded(void * handle, SERVICE_REFERENCE
 celix_status_t exportRegistration_endpointModified(void * handle, SERVICE_REFERENCE reference, void *service);
 celix_status_t exportRegistration_endpointRemoved(void * handle, SERVICE_REFERENCE reference, void *service);
 
-celix_status_t exportRegistration_createEndpointTracker(export_registration_t registration, SERVICE_TRACKER *tracker);
+celix_status_t exportRegistration_createEndpointTracker(export_registration_t registration, service_tracker_t *tracker);
 
 celix_status_t exportRegistration_create(apr_pool_t *pool, SERVICE_REFERENCE reference, endpoint_description_t endpoint, remote_service_admin_t rsa, BUNDLE_CONTEXT context, export_registration_t *registration) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -101,20 +101,16 @@ celix_status_t exportRegistration_stopTracking(export_registration_t registratio
 	return status;
 }
 
-celix_status_t exportRegistration_createEndpointTracker(export_registration_t registration, SERVICE_TRACKER *tracker) {
+celix_status_t exportRegistration_createEndpointTracker(export_registration_t registration, service_tracker_t *tracker) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	SERVICE_TRACKER_CUSTOMIZER custumizer = (SERVICE_TRACKER_CUSTOMIZER) apr_palloc(registration->pool, sizeof(*custumizer));
-	if (!custumizer) {
-		status = CELIX_ENOMEM;
-	} else {
-		custumizer->handle = registration;
-		custumizer->addingService = exportRegistration_endpointAdding;
-		custumizer->addedService = exportRegistration_endpointAdded;
-		custumizer->modifiedService = exportRegistration_endpointModified;
-		custumizer->removedService = exportRegistration_endpointRemoved;
+	service_tracker_customizer_t customizer = NULL;
 
-		status = serviceTracker_create(registration->pool, registration->context, REMOTE_ENDPOINT, custumizer, tracker);
+	status = serviceTrackerCustomizer_create(registration->pool, registration, exportRegistration_endpointAdding,
+			exportRegistration_endpointAdded, exportRegistration_endpointModified, exportRegistration_endpointRemoved, &customizer);
+
+	if (status == CELIX_SUCCESS) {
+		status = serviceTracker_create(registration->pool, registration->context, REMOTE_ENDPOINT, customizer, tracker);
 	}
 
 	return status;

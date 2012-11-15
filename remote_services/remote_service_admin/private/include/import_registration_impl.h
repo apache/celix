@@ -37,7 +37,7 @@ struct import_registration {
 	remote_service_admin_t rsa;
 	endpoint_description_t endpointDescription;
 
-	SERVICE_TRACKER proxyTracker;
+	service_tracker_t proxyTracker;
 
 	SERVICE_REFERENCE reference;
 	remote_proxy_service_t proxy;

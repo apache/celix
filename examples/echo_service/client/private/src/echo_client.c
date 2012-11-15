@@ -44,7 +44,7 @@ void * trk_send(void * handle) {
 	return NULL;
 }
 
-ECHO_CLIENT echoClient_create(SERVICE_TRACKER echoServiceTracker) {
+ECHO_CLIENT echoClient_create(service_tracker_t echoServiceTracker) {
 	ECHO_CLIENT client = malloc(sizeof(*client));
 
 	client->tracker = echoServiceTracker;

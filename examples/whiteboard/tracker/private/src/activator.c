@@ -35,7 +35,7 @@
 
 struct data {
 	BUNDLE_CONTEXT context;
-	SERVICE_TRACKER tracker;
+	service_tracker_t tracker;
 	ARRAY_LIST publishers;
 	pthread_t sender;
 	bool running;
@@ -105,13 +105,16 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
         struct data * data = (struct data *) userData;
         data->context = context;
 
-        SERVICE_TRACKER_CUSTOMIZER cust = (SERVICE_TRACKER_CUSTOMIZER) apr_palloc(pool, sizeof(*cust));
-        cust->handle = data;
-        cust->addedService = addedServ;
-        cust->addingService = addingServ;
-        cust->modifiedService = modifiedServ;
-        cust->removedService = removedServ;
-        SERVICE_TRACKER tracker = NULL;
+//        service_tracker_customizer_t cust = (service_tracker_customizer_t) apr_palloc(pool, sizeof(*cust));
+//        cust->handle = data;
+//        cust->addedService = addedServ;
+//        cust->addingService = addingServ;
+//        cust->modifiedService = modifiedServ;
+//        cust->removedService = removedServ;
+        service_tracker_customizer_t cust = NULL;
+        serviceTrackerCustomizer_create(pool, data, addingServ, addedServ, modifiedServ, removedServ, &cust);
+
+        service_tracker_t tracker = NULL;
         serviceTracker_create(pool, context, (char *) PUBLISHER_NAME, cust, &tracker);
         data->tracker = tracker;
 

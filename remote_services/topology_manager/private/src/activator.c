@@ -47,14 +47,14 @@ struct activator {
 
 	topology_manager_t manager;
 
-	SERVICE_TRACKER remoteServiceAdminTracker;
+	service_tracker_t remoteServiceAdminTracker;
 	SERVICE_LISTENER serviceListener;
 
 	SERVICE_REGISTRATION endpointListenerService;
 	SERVICE_REGISTRATION hook;
 };
 
-static celix_status_t bundleActivator_createRSATracker(struct activator *activator, SERVICE_TRACKER *tracker);
+static celix_status_t bundleActivator_createRSATracker(struct activator *activator, service_tracker_t *tracker);
 static celix_status_t bundleActivator_createServiceListener(struct activator *activator, SERVICE_LISTENER *listener);
 
 celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
@@ -95,20 +95,16 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 	return status;
 }
 
-static celix_status_t bundleActivator_createRSATracker(struct activator *activator, SERVICE_TRACKER *tracker) {
+static celix_status_t bundleActivator_createRSATracker(struct activator *activator, service_tracker_t *tracker) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	SERVICE_TRACKER_CUSTOMIZER custumizer = (SERVICE_TRACKER_CUSTOMIZER) apr_palloc(activator->pool, sizeof(*custumizer));
-	if (!custumizer) {
-		status = CELIX_ENOMEM;
-	} else {
-		custumizer->handle = activator->manager;
-		custumizer->addingService = topologyManager_rsaAdding;
-		custumizer->addedService = topologyManager_rsaAdded;
-		custumizer->modifiedService = topologyManager_rsaModified;
-		custumizer->removedService = topologyManager_rsaRemoved;
+	service_tracker_customizer_t customizer = NULL;
 
-		status = serviceTracker_create(activator->pool, activator->context, "remote_service_admin", custumizer, tracker);
+	status = serviceTrackerCustomizer_create(activator->pool, activator->manager, topologyManager_rsaAdding,
+			topologyManager_rsaAdded, topologyManager_rsaModified, topologyManager_rsaRemoved, &customizer);
+
+	if (status == CELIX_SUCCESS) {
+		status = serviceTracker_create(activator->pool, activator->context, "remote_service_admin", customizer, tracker);
 	}
 
 	return status;

@@ -30,31 +30,22 @@
 #include "service_listener.h"
 #include "array_list.h"
 #include "bundle_context.h"
+#include "service_tracker_customizer.h"
 
-struct serviceTrackerCustomizer {
-	void * handle;
-	celix_status_t (*addingService)(void * handle, SERVICE_REFERENCE reference, void **service);
-	celix_status_t (*addedService)(void * handle, SERVICE_REFERENCE reference, void * service);
-	celix_status_t (*modifiedService)(void * handle, SERVICE_REFERENCE reference, void * service);
-	celix_status_t (*removedService)(void * handle, SERVICE_REFERENCE reference, void * service);
-};
+typedef struct serviceTracker * service_tracker_t;
 
-typedef struct serviceTrackerCustomizer * SERVICE_TRACKER_CUSTOMIZER;
+celix_status_t serviceTracker_create(apr_pool_t *pool, BUNDLE_CONTEXT context, char * service, service_tracker_customizer_t customizer, service_tracker_t *tracker);
+celix_status_t serviceTracker_createWithFilter(apr_pool_t *pool, BUNDLE_CONTEXT context, char * filter, service_tracker_customizer_t customizer, service_tracker_t *tracker);
 
-typedef struct serviceTracker * SERVICE_TRACKER;
+celix_status_t serviceTracker_open(service_tracker_t tracker);
+celix_status_t serviceTracker_close(service_tracker_t tracker);
 
-celix_status_t serviceTracker_create(apr_pool_t *pool, BUNDLE_CONTEXT context, char * service, SERVICE_TRACKER_CUSTOMIZER customizer, SERVICE_TRACKER *tracker);
-celix_status_t serviceTracker_createWithFilter(apr_pool_t *pool, BUNDLE_CONTEXT context, char * filter, SERVICE_TRACKER_CUSTOMIZER customizer, SERVICE_TRACKER *tracker);
+SERVICE_REFERENCE serviceTracker_getServiceReference(service_tracker_t tracker);
+ARRAY_LIST serviceTracker_getServiceReferences(service_tracker_t tracker);
 
-celix_status_t serviceTracker_open(SERVICE_TRACKER tracker);
-celix_status_t serviceTracker_close(SERVICE_TRACKER tracker);
-
-SERVICE_REFERENCE serviceTracker_getServiceReference(SERVICE_TRACKER tracker);
-ARRAY_LIST serviceTracker_getServiceReferences(SERVICE_TRACKER tracker);
-
-void * serviceTracker_getService(SERVICE_TRACKER tracker);
-ARRAY_LIST serviceTracker_getServices(SERVICE_TRACKER tracker);
-void * serviceTracker_getServiceByReference(SERVICE_TRACKER tracker, SERVICE_REFERENCE reference);
+void * serviceTracker_getService(service_tracker_t tracker);
+ARRAY_LIST serviceTracker_getServices(service_tracker_t tracker);
+void * serviceTracker_getServiceByReference(service_tracker_t tracker, SERVICE_REFERENCE reference);
 
 void serviceTracker_serviceChanged(SERVICE_LISTENER listener, SERVICE_EVENT event);
 

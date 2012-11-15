@@ -42,7 +42,7 @@ struct serviceDependency {
 	bool started;
 	bool available;
 	bool required;
-	SERVICE_TRACKER tracker;
+	service_tracker_t tracker;
 	SERVICE service;
 	SERVICE_REFERENCE reference;
 	BUNDLE_CONTEXT context;
