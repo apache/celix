@@ -31,13 +31,13 @@
 #include "bundle_context.h"
 
 struct dependencyManager {
-	BUNDLE_CONTEXT context;
+	bundle_context_t context;
 	ARRAY_LIST services;
 };
 
 typedef struct dependencyManager * DEPENDENCY_MANAGER;
 
-DEPENDENCY_MANAGER dependencyManager_create(BUNDLE_CONTEXT context);
+DEPENDENCY_MANAGER dependencyManager_create(bundle_context_t context);
 void dependencyManager_add(DEPENDENCY_MANAGER manager, SERVICE service);
 void dependencyManager_remove(DEPENDENCY_MANAGER manager, SERVICE service);
 

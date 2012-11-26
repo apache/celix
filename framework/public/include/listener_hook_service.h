@@ -37,7 +37,7 @@ typedef struct listener_hook_service *listener_hook_service_t;
 #define listener_hook_service_name "listener_hook_service"
 
 struct listener_hook_info {
-	BUNDLE_CONTEXT context;
+	bundle_context_t context;
 	char *filter;
 	bool removed;
 };

@@ -74,7 +74,7 @@ static void paintFrame_destroyWidgets(PAINT_FRAME frame);
 /**
  * Default constructor that populates the main window.
  **/
-celix_status_t paintFrame_create(BUNDLE_CONTEXT context, apr_pool_t *pool, PAINT_FRAME *frame) {
+celix_status_t paintFrame_create(bundle_context_t context, apr_pool_t *pool, PAINT_FRAME *frame) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_pool_t *mypool = NULL;
 	apr_pool_create(&mypool, pool);
@@ -182,7 +182,7 @@ static celix_status_t paintFrame_show(PAINT_FRAME frame) {
  * @param icon The icon associated with the injected <tt>SimpleShape</tt>.
  * @param shape The injected <tt>SimpleShape</tt> instance.
  **/
-celix_status_t paintFrame_addShape(PAINT_FRAME frame, BUNDLE_CONTEXT context, SIMPLE_SHAPE shape) {
+celix_status_t paintFrame_addShape(PAINT_FRAME frame, bundle_context_t context, SIMPLE_SHAPE shape) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	gdk_threads_enter();

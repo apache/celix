@@ -32,7 +32,7 @@ typedef struct remote_service_admin_http *remote_service_admin_http_t;
 
 struct remote_service_admin_http {
 	apr_pool_t *pool;
-	BUNDLE_CONTEXT context;
+	bundle_context_t context;
 
 	struct mg_context *ctx;
 };
@@ -45,7 +45,7 @@ static const char *ajax_reply_start =
 
 void *remoteServiceAdminHttp_callback(enum mg_event event, struct mg_connection *conn, const struct mg_request_info *request_info);
 
-celix_status_t remoteServiceAdminHttp_create(apr_pool_t *pool, BUNDLE_CONTEXT context, remote_service_admin_http_t *httpAdmin) {
+celix_status_t remoteServiceAdminHttp_create(apr_pool_t *pool, bundle_context_t context, remote_service_admin_http_t *httpAdmin) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*httpAdmin = apr_palloc(pool, sizeof(**httpAdmin));

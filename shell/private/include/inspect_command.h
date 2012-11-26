@@ -27,7 +27,7 @@
 #ifndef INSPECT_COMMAND_H_
 #define INSPECT_COMMAND_H_
 
-COMMAND inspectCommand_create(BUNDLE_CONTEXT context);
+COMMAND inspectCommand_create(bundle_context_t context);
 void inspectCommand_destroy(COMMAND command);
 
 #endif /* INSPECT_COMMAND_H_ */

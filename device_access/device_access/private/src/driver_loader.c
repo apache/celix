@@ -34,13 +34,13 @@
 struct driver_loader {
 	apr_pool_t *pool;
 
-	BUNDLE_CONTEXT context;
+	bundle_context_t context;
 	ARRAY_LIST loadedDrivers;
 };
 
 static apr_status_t driverLoader_destroy(void *loaderP);
 
-celix_status_t driverLoader_create(apr_pool_t *pool, BUNDLE_CONTEXT context, driver_loader_t *loader) {
+celix_status_t driverLoader_create(apr_pool_t *pool, bundle_context_t context, driver_loader_t *loader) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*loader = apr_palloc(pool, sizeof(**loader));

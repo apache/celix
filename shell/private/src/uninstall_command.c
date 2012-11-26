@@ -34,7 +34,7 @@
 
 void uninstallCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *));
 
-COMMAND uninstallCommand_create(BUNDLE_CONTEXT context) {
+COMMAND uninstallCommand_create(bundle_context_t context) {
 	COMMAND command = (COMMAND) malloc(sizeof(*command));
 	command->bundleContext = context;
 	command->name = "uninstall";

@@ -34,7 +34,7 @@
 struct listenerActivator {
 	apr_pool_t *pool;
 
-	BUNDLE_CONTEXT context;
+	bundle_context_t context;
 	SERVICE_LISTENER listener;
 
 	apr_thread_mutex_t *logServiceReferencesLock;
@@ -51,7 +51,7 @@ static void *APR_THREAD_FUNC listenerExample_logger(apr_thread_t *thd, void *act
 
 celix_status_t listenerExample_alternativeLog(struct listenerActivator *activator, char *message);
 
-celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_pool_t *pool;
 	apr_pool_t *subpool;
@@ -80,7 +80,7 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 	return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct listenerActivator *activator = userData;
 
@@ -119,7 +119,7 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct listenerActivator *activator = userData;
 	apr_status_t stat;
@@ -132,7 +132,7 @@ celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
 	return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct listenerActivator *activator = userData;
 	arrayList_destroy(activator->logServiceReferences);

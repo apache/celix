@@ -34,7 +34,7 @@
 #include "bundle_context.h"
 
 struct data {
-	BUNDLE_CONTEXT context;
+	bundle_context_t context;
 	service_tracker_t tracker;
 	ARRAY_LIST publishers;
 	pthread_t sender;
@@ -84,7 +84,7 @@ celix_status_t removedServ(void * handle, SERVICE_REFERENCE ref, void * service)
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
     apr_pool_t *pool;
     celix_status_t status = bundleContext_getMemoryPool(context, &pool);
     if (status == CELIX_SUCCESS) {
@@ -97,7 +97,7 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
     return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
     celix_status_t status = CELIX_SUCCESS;
     apr_pool_t *pool;
     status = bundleContext_getMemoryPool(context, &pool);
@@ -128,7 +128,7 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
     return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
     celix_status_t status = CELIX_SUCCESS;
     printf("Stop\n");
 
@@ -140,7 +140,7 @@ celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
     return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
     celix_status_t status = CELIX_SUCCESS;
     struct data * data = (struct data *) userData;
 

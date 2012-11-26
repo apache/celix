@@ -31,7 +31,7 @@
 
 typedef struct discovery *discovery_t;
 
-celix_status_t discovery_create(apr_pool_t *pool, BUNDLE_CONTEXT context, discovery_t *discovery);
+celix_status_t discovery_create(apr_pool_t *pool, bundle_context_t context, discovery_t *discovery);
 celix_status_t discovery_stop(discovery_t discovery);
 
 celix_status_t discovery_endpointAdded(void *handle, endpoint_description_t endpoint, char *machtedFilter);

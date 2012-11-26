@@ -32,7 +32,7 @@
 
 struct data {
 	SERVICE service;
-	BUNDLE_CONTEXT context;
+	bundle_context_t context;
 	ARRAY_LIST publishers;
 	pthread_t sender;
 	bool running;

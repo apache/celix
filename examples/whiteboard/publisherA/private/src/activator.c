@@ -38,7 +38,7 @@ struct activatorData {
     SERVICE_REGISTRATION reg;
 };
 
-celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
     apr_pool_t *pool;
     celix_status_t status = bundleContext_getMemoryPool(context, &pool);
     if (status == CELIX_SUCCESS) {
@@ -49,7 +49,7 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
     return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
     celix_status_t status = CELIX_SUCCESS;
     apr_pool_t *pool;
     status = bundleContext_getMemoryPool(context, &pool);
@@ -75,7 +75,7 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
     return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
     celix_status_t status = CELIX_SUCCESS;
 
     struct activatorData * data = (struct activatorData *) userData;
@@ -84,6 +84,6 @@ celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
     return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
     return CELIX_SUCCESS;
 }

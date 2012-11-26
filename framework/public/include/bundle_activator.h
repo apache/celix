@@ -53,7 +53,7 @@
  * 		- Any other status code will mark the bundle as stopped and the framework will remove this
  * 		  bundle's listeners, unregister all services, and release all services used by this bundle.
  */
-celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData);
+celix_status_t bundleActivator_create(bundle_context_t context, void **userData);
 
 /**
  * Called when this bundle is started so the Framework can perform the bundle-specific activities necessary
@@ -71,7 +71,7 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData);
  * 		- Any other status code will mark the bundle as stopped and the framework will remove this
  * 		  bundle's listeners, unregister all services, and release all services used by this bundle.
  */
-celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context);
+celix_status_t bundleActivator_start(void * userData, bundle_context_t context);
 
 /**
  * Called when this bundle is stopped so the Framework can perform the bundle-specific activities necessary
@@ -90,7 +90,7 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context);
  * 		- Any other status code will mark the bundle as stopped and the framework will remove this
  * 		  bundle's listeners, unregister all services, and release all services used by this bundle.
  */
-celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context);
+celix_status_t bundleActivator_stop(void * userData, bundle_context_t context);
 
 /**
  * Called when this bundle is stopped so the bundle can destroy the instance of its activator. In general, this
@@ -107,7 +107,7 @@ celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context);
  * 		- Any other status code will mark the bundle as stopped and the framework will remove this
  * 		  bundle's listeners, unregister all services, and release all services used by this bundle.
  */
-celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context);
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context);
 
 #endif /* BUNDLE_ACTIVATOR_H_ */
 

@@ -35,7 +35,7 @@
 #include "device_manager.h"
 
 struct device_manager_bundle_instance {
-	BUNDLE_CONTEXT context;
+	bundle_context_t context;
 	apr_pool_t *pool;
 	device_manager_t deviceManager;
 	service_tracker_t driverLocatorTracker;
@@ -52,7 +52,7 @@ static celix_status_t deviceManagerBundle_createDeviceTracker(device_manager_bun
 celix_status_t addingService_dummy_func(void * handle, SERVICE_REFERENCE reference, void **service) {
 	celix_status_t status = CELIX_SUCCESS;
 	device_manager_t dm = handle;
-	BUNDLE_CONTEXT context = NULL;
+	bundle_context_t context = NULL;
 	status = deviceManager_getBundleContext(dm, &context);
 	if (status == CELIX_SUCCESS) {
 		status = bundleContext_getService(context, reference, service);
@@ -60,7 +60,7 @@ celix_status_t addingService_dummy_func(void * handle, SERVICE_REFERENCE referen
 	return status;
 }
 
-celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_pool_t *pool;
 	status = bundleContext_getMemoryPool(context, &pool);
@@ -78,7 +78,7 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 	return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
 	celix_status_t status = CELIX_SUCCESS;
 	device_manager_bundle_instance_t bundleData = userData;
 	apr_pool_t *pool;
@@ -170,7 +170,7 @@ static celix_status_t deviceManagerBundle_createDeviceTracker(device_manager_bun
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
 	celix_status_t status = CELIX_SUCCESS;
 	device_manager_bundle_instance_t bundleData = userData;
 //	status = serviceTracker_close(bundleData->driverLocatorTracker);
@@ -183,7 +183,7 @@ celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
 	return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
 	celix_status_t status = CELIX_SUCCESS;
 	device_manager_bundle_instance_t bundleData = userData;
 	deviceManager_destroy(bundleData->deviceManager);

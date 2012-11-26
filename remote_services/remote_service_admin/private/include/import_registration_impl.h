@@ -33,7 +33,7 @@
 
 struct import_registration {
 	apr_pool_t *pool;
-	BUNDLE_CONTEXT context;
+	bundle_context_t context;
 	remote_service_admin_t rsa;
 	endpoint_description_t endpointDescription;
 
@@ -47,7 +47,7 @@ struct import_registration {
 	bool closed;
 };
 
-celix_status_t importRegistration_create(apr_pool_t *pool, endpoint_description_t endpoint, remote_service_admin_t rsa, BUNDLE_CONTEXT context, import_registration_t *registration);
+celix_status_t importRegistration_create(apr_pool_t *pool, endpoint_description_t endpoint, remote_service_admin_t rsa, bundle_context_t context, import_registration_t *registration);
 celix_status_t importRegistration_open(import_registration_t registration);
 celix_status_t importRegistration_close(import_registration_t registration);
 celix_status_t importRegistration_getException(import_registration_t registration);

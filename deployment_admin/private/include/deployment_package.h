@@ -56,7 +56,7 @@ typedef struct resource_info *resource_info_t;
 
 struct deployment_package {
 	apr_pool_t *pool;
-	BUNDLE_CONTEXT context;
+	bundle_context_t context;
 	MANIFEST manifest;
 	ARRAY_LIST bundleInfos;
 	ARRAY_LIST resourceInfos;
@@ -66,7 +66,7 @@ struct deployment_package {
 
 typedef struct deployment_package *deployment_package_t;
 
-celix_status_t deploymentPackage_create(apr_pool_t *pool, BUNDLE_CONTEXT context, MANIFEST manifest, deployment_package_t *package);
+celix_status_t deploymentPackage_create(apr_pool_t *pool, bundle_context_t context, MANIFEST manifest, deployment_package_t *package);
 celix_status_t deploymentPackage_getName(deployment_package_t package, char **name);
 celix_status_t deploymentPackage_getBundleInfos(deployment_package_t package, ARRAY_LIST *infos);
 celix_status_t deploymentPackage_getBundleInfoByName(deployment_package_t package, char *name, bundle_info_t *info);

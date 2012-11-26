@@ -33,7 +33,7 @@
 
 typedef struct topology_manager *topology_manager_t;
 
-celix_status_t topologyManager_create(BUNDLE_CONTEXT context, apr_pool_t *pool, topology_manager_t *manager);
+celix_status_t topologyManager_create(bundle_context_t context, apr_pool_t *pool, topology_manager_t *manager);
 
 celix_status_t topologyManager_rsaAdding(void *handle, SERVICE_REFERENCE reference, void **service);
 celix_status_t topologyManager_rsaAdded(void *handle, SERVICE_REFERENCE reference, void *service);

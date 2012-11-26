@@ -30,7 +30,7 @@
 
 typedef struct device_manager *device_manager_t;
 
-celix_status_t deviceManager_create(apr_pool_t *pool, BUNDLE_CONTEXT context, device_manager_t *manager);
+celix_status_t deviceManager_create(apr_pool_t *pool, bundle_context_t context, device_manager_t *manager);
 celix_status_t deviceManager_destroy(device_manager_t manager);
 
 celix_status_t deviceManager_matchAttachDriver(device_manager_t manager, apr_pool_t *attachPool, driver_loader_t loader,
@@ -47,7 +47,7 @@ celix_status_t deviceManager_driverAdded(void * handle, SERVICE_REFERENCE ref, v
 celix_status_t deviceManager_driverModified(void * handle, SERVICE_REFERENCE ref, void * service);
 celix_status_t deviceManager_driverRemoved(void * handle, SERVICE_REFERENCE ref, void * service);
 
-celix_status_t deviceManager_getBundleContext(device_manager_t manager, BUNDLE_CONTEXT *context);
+celix_status_t deviceManager_getBundleContext(device_manager_t manager, bundle_context_t *context);
 
 // celix_status_t deviceManager_match(device_manager_t manager, ...);
 

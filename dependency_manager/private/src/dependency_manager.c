@@ -31,7 +31,7 @@
 #include "bundle_context.h"
 #include "service_component_private.h"
 
-DEPENDENCY_MANAGER dependencyManager_create(BUNDLE_CONTEXT context) {
+DEPENDENCY_MANAGER dependencyManager_create(bundle_context_t context) {
 	DEPENDENCY_MANAGER manager = (DEPENDENCY_MANAGER) malloc(sizeof(*manager));
 	apr_pool_t *pool = NULL;
 	apr_pool_t *npool = NULL;

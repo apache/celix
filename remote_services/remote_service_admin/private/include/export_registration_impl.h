@@ -33,7 +33,7 @@
 
 struct export_registration {
 	apr_pool_t *pool;
-	BUNDLE_CONTEXT context;
+	bundle_context_t context;
 	remote_service_admin_t rsa;
 	endpoint_description_t endpointDescription;
 	SERVICE_REFERENCE reference;
@@ -49,7 +49,7 @@ struct export_registration {
 	bool closed;
 };
 
-celix_status_t exportRegistration_create(apr_pool_t *pool, SERVICE_REFERENCE reference, endpoint_description_t endpoint, remote_service_admin_t rsa, BUNDLE_CONTEXT context, export_registration_t *registration);
+celix_status_t exportRegistration_create(apr_pool_t *pool, SERVICE_REFERENCE reference, endpoint_description_t endpoint, remote_service_admin_t rsa, bundle_context_t context, export_registration_t *registration);
 celix_status_t exportRegistration_open(export_registration_t registration);
 celix_status_t exportRegistration_close(export_registration_t registration);
 celix_status_t exportRegistration_getException(export_registration_t registration);

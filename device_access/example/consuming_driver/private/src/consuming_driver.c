@@ -41,7 +41,7 @@
 
 struct consuming_driver {
 	apr_pool_t *pool;
-	BUNDLE_CONTEXT context;
+	bundle_context_t context;
 	ARRAY_LIST references;
 };
 
@@ -66,7 +66,7 @@ static apr_status_t consumingDriver_cleanup(void *handler) {
 	return APR_SUCCESS;
 }
 
-celix_status_t consumingDriver_create(BUNDLE_CONTEXT context, apr_pool_t *pool, consuming_driver_t *driver) {
+celix_status_t consumingDriver_create(bundle_context_t context, apr_pool_t *pool, consuming_driver_t *driver) {
 	celix_status_t status = CELIX_SUCCESS;
 	(*driver) = apr_palloc(pool, sizeof(**driver));
 	if ((*driver) != NULL) {

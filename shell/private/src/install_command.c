@@ -36,7 +36,7 @@
 void installCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *));
 void installCommand_install(COMMAND command, BUNDLE *bundle, char * location, void (*out)(char *), void (*err)(char *));
 
-COMMAND installCommand_create(BUNDLE_CONTEXT context) {
+COMMAND installCommand_create(bundle_context_t context) {
 	COMMAND command = (COMMAND) malloc(sizeof(*command));
 	command->bundleContext = context;
 	command->name = "install";
@@ -66,7 +66,7 @@ void installCommand_execute(COMMAND command, char * line, void (*out)(char *), v
 				strcat(info, ", ");
 			}
 			long id;
-			BUNDLE_ARCHIVE archive = NULL;
+			bundle_archive_t archive = NULL;
 			bundle_getArchive(bundle, &archive);
 			bundleArchive_getId(archive, &id);
 			char bundleId[sizeof(id) + 1];

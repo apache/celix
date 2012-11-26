@@ -39,7 +39,7 @@ typedef log_service_t LOG_SERVICE;
 struct threadData {
 	char * service;
 	int threadId;
-	BUNDLE_CONTEXT m_context;
+	bundle_context_t m_context;
 };
 
 typedef struct threadData *THREAD_DATA;
@@ -58,7 +58,7 @@ void alternativeLog(char *message, THREAD_DATA data);
 // global functions
 //*******************************************************************************
 
-celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
 	apr_pool_t *pool;
 	celix_status_t status = bundleContext_getMemoryPool(context, &pool);
 	if (status == CELIX_SUCCESS) {
@@ -72,18 +72,18 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 	return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
 	((THREAD_DATA) userData)->m_context = context;
 	startTestThread(((THREAD_DATA) userData));
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
 	stopTestThread();
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
 	return CELIX_SUCCESS;
 }
 
@@ -95,7 +95,7 @@ celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) 
 void *LogServiceTest (void *argument){
 	celix_status_t status = CELIX_SUCCESS;
 	THREAD_DATA data = (THREAD_DATA) argument;
-	BUNDLE_CONTEXT m_context = ((THREAD_DATA) argument)->m_context;
+	bundle_context_t m_context = ((THREAD_DATA) argument)->m_context;
 	while (pthread_self() == m_logTestThread) {
 		SERVICE_REFERENCE logServiceRef = NULL;
 		// lookup the current "best" LogService each time, just before we need to use it

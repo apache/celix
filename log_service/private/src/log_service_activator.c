@@ -35,13 +35,13 @@
 #include "service_registration.h"
 
 struct logActivator {
-    BUNDLE_CONTEXT bundleContext;
+    bundle_context_t bundleContext;
     SERVICE_REGISTRATION logServiceFactoryReg;
     SERVICE_REGISTRATION logReaderServiceReg;
 
 };
 
-celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
     celix_status_t status = CELIX_SUCCESS;
     apr_pool_t *mp = NULL;
 
@@ -61,7 +61,7 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
     return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
     struct logActivator * activator = (struct logActivator *) userData;
     celix_status_t status = CELIX_SUCCESS;
     apr_pool_t *mp = NULL;
@@ -92,7 +92,7 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
     return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
 	struct logActivator * activator = (struct logActivator *) userData;
 
 	serviceRegistration_unregister(activator->logReaderServiceReg);
@@ -103,6 +103,6 @@ celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
     return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
     return CELIX_SUCCESS;
 }

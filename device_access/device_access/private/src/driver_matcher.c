@@ -35,7 +35,7 @@ struct driver_matcher {
 	HASH_MAP attributes;
 	 ARRAY_LIST matches;
 
-	 BUNDLE_CONTEXT context;
+	 bundle_context_t context;
 };
 
 typedef struct match_key {
@@ -56,7 +56,7 @@ int driverMatcher_matchKeyEquals(void * key, void * toCompare) {
 	return ((match_key_t) key)->matchValue == ((match_key_t) toCompare)->matchValue;
 }
 
-celix_status_t driverMatcher_create(apr_pool_t *pool, BUNDLE_CONTEXT context, driver_matcher_t *matcher) {
+celix_status_t driverMatcher_create(apr_pool_t *pool, bundle_context_t context, driver_matcher_t *matcher) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*matcher = apr_palloc(pool, sizeof(**matcher));

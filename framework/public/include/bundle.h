@@ -40,11 +40,11 @@ typedef struct bundle * BUNDLE;
 #include "bundle_context.h"
 
 celix_status_t bundle_create(BUNDLE * bundle, apr_pool_t *mp);
-celix_status_t bundle_createFromArchive(BUNDLE * bundle, FRAMEWORK framework, BUNDLE_ARCHIVE archive, apr_pool_t *bundlePool);
+celix_status_t bundle_createFromArchive(BUNDLE * bundle, FRAMEWORK framework, bundle_archive_t archive, apr_pool_t *bundlePool);
 celix_status_t bundle_destroy(BUNDLE bundle);
 
 celix_status_t bundle_isSystemBundle(BUNDLE bundle, bool *systemBundle);
-celix_status_t bundle_getArchive(BUNDLE bundle, BUNDLE_ARCHIVE *archive);
+celix_status_t bundle_getArchive(BUNDLE bundle, bundle_archive_t *archive);
 celix_status_t bundle_getCurrentModule(BUNDLE bundle, MODULE *module);
 ARRAY_LIST bundle_getModules(BUNDLE bundle);
 void * bundle_getHandle(BUNDLE bundle);
@@ -53,8 +53,8 @@ ACTIVATOR bundle_getActivator(BUNDLE bundle);
 celix_status_t bundle_setActivator(BUNDLE bundle, ACTIVATOR activator);
 celix_status_t bundle_getManifest(BUNDLE bundle, MANIFEST *manifest);
 celix_status_t bundle_setManifest(BUNDLE bundle, MANIFEST manifest);
-celix_status_t bundle_getContext(BUNDLE bundle, BUNDLE_CONTEXT *context);
-celix_status_t bundle_setContext(BUNDLE bundle, BUNDLE_CONTEXT context);
+celix_status_t bundle_getContext(BUNDLE bundle, bundle_context_t *context);
+celix_status_t bundle_setContext(BUNDLE bundle, bundle_context_t context);
 celix_status_t bundle_getEntry(BUNDLE bundle, char * name, apr_pool_t *pool, char **entry);
 
 celix_status_t bundle_start(BUNDLE bundle, int options);

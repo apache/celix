@@ -36,7 +36,7 @@ typedef struct deployment_admin *deployment_admin_t;
 struct deployment_admin {
 	apr_pool_t *pool;
 	apr_thread_t *poller;
-	BUNDLE_CONTEXT context;
+	bundle_context_t context;
 
 	bool running;
 	char *current;
@@ -45,6 +45,6 @@ struct deployment_admin {
 	char *pollUrl;
 };
 
-celix_status_t deploymentAdmin_create(apr_pool_t *pool, BUNDLE_CONTEXT context, deployment_admin_t *admin);
+celix_status_t deploymentAdmin_create(apr_pool_t *pool, bundle_context_t context, deployment_admin_t *admin);
 
 #endif /* DEPLOYMENT_ADMIN_H_ */

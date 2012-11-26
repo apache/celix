@@ -312,7 +312,7 @@ celix_status_t serviceRegistry_createServiceReference(SERVICE_REGISTRY registry,
 	return status;
 }
 
-celix_status_t serviceRegistry_getServiceReferences(SERVICE_REGISTRY registry, apr_pool_t *pool, const char *serviceName, FILTER filter, ARRAY_LIST *references) {
+celix_status_t serviceRegistry_getServiceReferences(SERVICE_REGISTRY registry, apr_pool_t *pool, const char *serviceName, filter_t filter, ARRAY_LIST *references) {
 	celix_status_t status = CELIX_SUCCESS;
 	HASH_MAP_VALUES registrations;
 	HASH_MAP_ITERATOR iterator;
@@ -330,12 +330,20 @@ celix_status_t serviceRegistry_getServiceReferences(SERVICE_REGISTRY registry, a
 			status = serviceRegistration_getProperties(registration, &props);
 			if (status == CELIX_SUCCESS) {
 				bool matched = false;
-				if ((serviceName == NULL) && ((filter == NULL) || filter_match(filter, props))) {
+				bool matchResult = false;
+				if (filter != NULL) {
+					filter_match(filter, props, &matchResult);
+				}
+				if ((serviceName == NULL) && ((filter == NULL) || matchResult)) {
 					matched = true;
 				} else if (serviceName != NULL) {
 					char *className = NULL;
+					bool matchResult = false;
 					serviceRegistration_getServiceName(registration, &className);
-					if ((strcmp(className, serviceName) == 0) && ((filter == NULL) || filter_match(filter, props))) {
+					if (filter != NULL) {
+						filter_match(filter, props, &matchResult);
+					}
+					if ((strcmp(className, serviceName) == 0) && ((filter == NULL) || matchResult)) {
 						matched = true;
 					}
 				}

@@ -30,9 +30,9 @@
 #include "dependency_manager.h"
 #include "service_dependency.h"
 
-void * dm_create(BUNDLE_CONTEXT context);
-void dm_init(void * userData, BUNDLE_CONTEXT context, DEPENDENCY_MANAGER manager);
-void dm_destroy(void * userData, BUNDLE_CONTEXT context, DEPENDENCY_MANAGER manager);
+void * dm_create(bundle_context_t context);
+void dm_init(void * userData, bundle_context_t context, DEPENDENCY_MANAGER manager);
+void dm_destroy(void * userData, bundle_context_t context, DEPENDENCY_MANAGER manager);
 
 SERVICE dependencyActivatorBase_createService(DEPENDENCY_MANAGER manager);
 SERVICE_DEPENDENCY dependencyActivatorBase_createServiceDependency(DEPENDENCY_MANAGER manager);

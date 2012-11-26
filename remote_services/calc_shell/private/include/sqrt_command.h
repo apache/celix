@@ -27,7 +27,7 @@
 #ifndef SQRT_COMMAND_H_
 #define SQRT_COMMAND_H_
 
-COMMAND sqrtCommand_create(BUNDLE_CONTEXT context);
+COMMAND sqrtCommand_create(bundle_context_t context);
 void sqrtCommand_destroy(COMMAND command);
 
 #endif /* SQRT_COMMAND_H_ */

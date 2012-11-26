@@ -36,14 +36,14 @@
 #include "consuming_driver_private.h"
 
 struct consuming_driver_bundle_instance {
-	BUNDLE_CONTEXT context;
+	bundle_context_t context;
 	apr_pool_t * pool;
 	SERVICE_REGISTRATION registration;
 };
 
 typedef struct consuming_driver_bundle_instance *consuming_driver_bundle_instance_t;
 
-celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
 	printf("CONSUMING_DRIVER: creating bundle\n");
 	celix_status_t status = CELIX_SUCCESS;
 	apr_pool_t *pool;
@@ -62,7 +62,7 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 	return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
 	printf("CONSUMING_DRIVER: starting bundle\n");
 	celix_status_t status = CELIX_SUCCESS;
 	consuming_driver_bundle_instance_t bi = userData;
@@ -88,7 +88,7 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
 	printf("CONSUMING_DRIVER: stopping bundle\n");
 	celix_status_t status = CELIX_SUCCESS;
 	consuming_driver_bundle_instance_t bi = userData;
@@ -101,7 +101,7 @@ celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
 	return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
 	printf("CONSUMING_DRIVER: destroying bundle\n");
 	celix_status_t status = CELIX_SUCCESS;
 	consuming_driver_bundle_instance_t bi = userData;

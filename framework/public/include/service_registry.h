@@ -46,7 +46,7 @@ SERVICE_REGISTRATION serviceRegistry_registerService(SERVICE_REGISTRY registry, 
 SERVICE_REGISTRATION serviceRegistry_registerServiceFactory(SERVICE_REGISTRY registry, BUNDLE bundle, char * serviceName, service_factory_t factory, PROPERTIES dictionary);
 void serviceRegistry_unregisterService(SERVICE_REGISTRY registry, BUNDLE bundle, SERVICE_REGISTRATION registration);
 void serviceRegistry_unregisterServices(SERVICE_REGISTRY registry, BUNDLE bundle);
-celix_status_t serviceRegistry_getServiceReferences(SERVICE_REGISTRY registry, apr_pool_t *pool, const char *serviceName, FILTER filter, ARRAY_LIST *references);
+celix_status_t serviceRegistry_getServiceReferences(SERVICE_REGISTRY registry, apr_pool_t *pool, const char *serviceName, filter_t filter, ARRAY_LIST *references);
 void * serviceRegistry_getService(SERVICE_REGISTRY registry, BUNDLE bundle, SERVICE_REFERENCE reference);
 bool serviceRegistry_ungetService(SERVICE_REGISTRY registry, BUNDLE bundle, SERVICE_REFERENCE reference);
 void serviceRegistry_ungetServices(SERVICE_REGISTRY registry, BUNDLE bundle);

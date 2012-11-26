@@ -42,7 +42,7 @@ struct paintFrameActivatorData {
 	SERVICE_REGISTRATION reg;
 	apr_pool_t *pool;
 	service_tracker_t tracker;
-	BUNDLE_CONTEXT context;
+	bundle_context_t context;
 	PAINT_FRAME paint_frame;
 };
 celix_status_t addingServ(void * handle, SERVICE_REFERENCE ref, void **service);
@@ -52,7 +52,7 @@ celix_status_t removedServ(void * handle, SERVICE_REFERENCE reference, void * se
 
 typedef struct paintFrameActivatorData *GREETING_ACTIVATOR;
 
-celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
 	apr_pool_t *pool;
 	GREETING_ACTIVATOR activator;
 	service_tracker_customizer_t cust;
@@ -77,20 +77,20 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 	return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT ctx) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_t ctx) {
 	struct paintFrameActivatorData * act = (struct paintFrameActivatorData *) userData;
 	celix_status_t status = CELIX_SUCCESS;
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
 	struct paintFrameActivatorData * act = (struct paintFrameActivatorData *) userData;
 	serviceTracker_close(act->tracker);
 	paintFrame_exit(act->paint_frame);
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
 	struct paintFrameActivatorData * act = (struct paintFrameActivatorData *) userData;
 	return CELIX_SUCCESS;
 }

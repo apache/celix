@@ -83,7 +83,7 @@ int main(void) {
         // Afterwards start them
         ARRAY_LIST installed = NULL;
         arrayList_create(pool, &installed);
-        BUNDLE_CONTEXT context = NULL;
+        bundle_context_t context = NULL;
         BUNDLE bundle = NULL;
         framework_getFrameworkBundle(framework, &bundle);
         bundle_getContext(bundle, &context);

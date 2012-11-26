@@ -27,7 +27,7 @@
 #ifndef PS_COMMAND_H_
 #define PS_COMMAND_H_
 
-COMMAND psCommand_create(BUNDLE_CONTEXT context);
+COMMAND psCommand_create(bundle_context_t context);
 void psCommand_destroy(COMMAND command);
 
 #endif /* PS_COMMAND_H_ */

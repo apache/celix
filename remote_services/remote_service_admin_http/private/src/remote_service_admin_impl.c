@@ -47,7 +47,7 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_t admin, 
 celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_t admin, PROPERTIES serviceProperties, PROPERTIES endpointProperties, char *interface, endpoint_description_t *description);
 celix_status_t remoteServiceAdmin_getUUID(remote_service_admin_t rsa, char **uuidStr);
 
-celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, BUNDLE_CONTEXT context, remote_service_admin_t *admin) {
+celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_t context, remote_service_admin_t *admin) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*admin = apr_palloc(pool, sizeof(**admin));

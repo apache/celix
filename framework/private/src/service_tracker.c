@@ -35,7 +35,7 @@
 #include "service_reference.h"
 
 struct serviceTracker {
-	BUNDLE_CONTEXT context;
+	bundle_context_t context;
 	char * filter;
 
 	apr_pool_t *pool;
@@ -57,7 +57,7 @@ static void * serviceTracker_addingService(service_tracker_t tracker, SERVICE_RE
 static celix_status_t serviceTracker_track(service_tracker_t tracker, SERVICE_REFERENCE reference, SERVICE_EVENT event);
 static celix_status_t serviceTracker_untrack(service_tracker_t tracker, SERVICE_REFERENCE reference, SERVICE_EVENT event);
 
-celix_status_t serviceTracker_create(apr_pool_t *pool, BUNDLE_CONTEXT context, char * service, service_tracker_customizer_t customizer, service_tracker_t *tracker) {
+celix_status_t serviceTracker_create(apr_pool_t *pool, bundle_context_t context, char * service, service_tracker_customizer_t customizer, service_tracker_t *tracker) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (service == NULL || *tracker != NULL) {
@@ -78,7 +78,7 @@ celix_status_t serviceTracker_create(apr_pool_t *pool, BUNDLE_CONTEXT context, c
 	return status;
 }
 
-celix_status_t serviceTracker_createWithFilter(apr_pool_t *pool, BUNDLE_CONTEXT context, char * filter, service_tracker_customizer_t customizer, service_tracker_t *tracker) {
+celix_status_t serviceTracker_createWithFilter(apr_pool_t *pool, bundle_context_t context, char * filter, service_tracker_customizer_t customizer, service_tracker_t *tracker) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*tracker = (service_tracker_t) apr_palloc(pool, sizeof(**tracker));
@@ -327,7 +327,11 @@ celix_status_t serviceTracker_untrack(service_tracker_t tracker, SERVICE_REFEREN
 					serviceTrackerCustomizer_getHandle(tracker->customizer, &handle);
 					serviceTrackerCustomizer_getRemovedFunction(tracker->customizer, &function);
 
-					function(handle, reference, tracked->service);
+					if (function != NULL) {
+						status = function(handle, reference, tracked->service);
+					} else {
+						status = bundleContext_ungetService(tracker->tracker->context, reference, &result);
+					}
 				} else {
 					status = bundleContext_ungetService(tracker->tracker->context, reference, &result);
 				}

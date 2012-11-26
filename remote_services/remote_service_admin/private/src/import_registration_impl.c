@@ -46,7 +46,7 @@ celix_status_t importRegistration_proxyRemoved(void * handle, SERVICE_REFERENCE 
 
 celix_status_t importRegistration_createProxyTracker(import_registration_t registration, service_tracker_t *tracker);
 
-celix_status_t importRegistration_create(apr_pool_t *pool, endpoint_description_t endpoint, remote_service_admin_t rsa, BUNDLE_CONTEXT context, import_registration_t *registration) {
+celix_status_t importRegistration_create(apr_pool_t *pool, endpoint_description_t endpoint, remote_service_admin_t rsa, bundle_context_t context, import_registration_t *registration) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_pool_t *mypool = NULL;
 	apr_pool_create(&mypool, pool);

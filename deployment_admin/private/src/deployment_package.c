@@ -41,7 +41,7 @@ celix_status_t deploymentPackage_processEntries(deployment_package_t package);
 static celix_status_t deploymentPackage_isBundleResource(PROPERTIES attributes, bool *isBundleResource);
 static celix_status_t deploymentPackage_parseBooleanHeader(char *value, bool *boolValue);
 
-celix_status_t deploymentPackage_create(apr_pool_t *pool, BUNDLE_CONTEXT context, MANIFEST manifest, deployment_package_t *package) {
+celix_status_t deploymentPackage_create(apr_pool_t *pool, bundle_context_t context, MANIFEST manifest, deployment_package_t *package) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*package = apr_palloc(pool, sizeof(**package));

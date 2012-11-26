@@ -37,7 +37,7 @@
 
 typedef struct refining_driver *refining_driver_t;
 
-celix_status_t refiningDriver_create(BUNDLE_CONTEXT context, apr_pool_t *pool, refining_driver_t *driver);
+celix_status_t refiningDriver_create(bundle_context_t context, apr_pool_t *pool, refining_driver_t *driver);
 celix_status_t refiningDriver_destroy(refining_driver_t driver);
 
 celix_status_t refiningDriver_createService(refining_driver_t driver, driver_service_t *service);

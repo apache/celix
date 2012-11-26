@@ -35,7 +35,7 @@
 char * psCommand_stateString(BUNDLE_STATE state);
 void psCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *));
 
-COMMAND psCommand_create(BUNDLE_CONTEXT context) {
+COMMAND psCommand_create(bundle_context_t context) {
 	COMMAND command = (COMMAND) malloc(sizeof(*command));
 	command->bundleContext = context;
 	command->name = "ps";
@@ -83,7 +83,7 @@ void psCommand_execute(COMMAND command, char * commandline, void (*out)(char *),
 		out(line);
 		for (i = 0; i < arrayList_size(bundles); i++) {
 			BUNDLE bundle = arrayList_get(bundles, i);
-			BUNDLE_ARCHIVE archive = NULL;
+			bundle_archive_t archive = NULL;
 			long id;
 
 			bundle_getArchive(bundle, &archive);

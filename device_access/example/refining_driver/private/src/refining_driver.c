@@ -42,7 +42,7 @@ static const int MAX_BUFF_SIZE = 1024;
 struct refining_driver {
 	device_t device;
 	apr_pool_t *pool;
-	BUNDLE_CONTEXT context;
+	bundle_context_t context;
 	int deviceCount;
 	ARRAY_LIST devices;
 };
@@ -77,7 +77,7 @@ static apr_status_t refiningDriver_cleanup(void *handler) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t refiningDriver_create(BUNDLE_CONTEXT context, apr_pool_t *pool, refining_driver_t *driver) {
+celix_status_t refiningDriver_create(bundle_context_t context, apr_pool_t *pool, refining_driver_t *driver) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_pool_t *driverPool = NULL;
 	apr_status_t aprStatus = apr_pool_create(&driverPool, pool);

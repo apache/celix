@@ -44,7 +44,7 @@
 void inspectCommand_execute(COMMAND command, char * commandline, void (*out)(char *), void (*err)(char *));
 celix_status_t inspectCommand_printExportedServices(COMMAND command, ARRAY_LIST ids, void (*out)(char *), void (*err)(char *));
 
-COMMAND inspectCommand_create(BUNDLE_CONTEXT context) {
+COMMAND inspectCommand_create(bundle_context_t context) {
 	COMMAND command = (COMMAND) malloc(sizeof(*command));
 	command->bundleContext = context;
 	command->name = "inspect";

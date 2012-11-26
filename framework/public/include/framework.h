@@ -80,11 +80,11 @@ void fw_serviceChanged(FRAMEWORK framework, SERVICE_EVENT_TYPE eventType, SERVIC
 
 celix_status_t fw_isServiceAssignable(FRAMEWORK fw, BUNDLE requester, SERVICE_REFERENCE reference, bool *assignable);
 
-//BUNDLE_ARCHIVE fw_createArchive(long id, char * location);
-//void revise(BUNDLE_ARCHIVE archive, char * location);
-celix_status_t getManifest(BUNDLE_ARCHIVE archive, apr_pool_t *pool, MANIFEST *manifest);
+//bundle_archive_t fw_createArchive(long id, char * location);
+//void revise(bundle_archive_t archive, char * location);
+celix_status_t getManifest(bundle_archive_t archive, apr_pool_t *pool, MANIFEST *manifest);
 
-BUNDLE findBundle(BUNDLE_CONTEXT context);
+BUNDLE findBundle(bundle_context_t context);
 SERVICE_REGISTRATION findRegistration(SERVICE_REFERENCE reference);
 
 SERVICE_REFERENCE listToArray(ARRAY_LIST list);

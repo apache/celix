@@ -36,14 +36,14 @@ struct userData {
 	struct mg_context *ctx;
 };
 
-celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
 	apr_pool_t *pool;
 	celix_status_t status = bundleContext_getMemoryPool(context, &pool);
 	*userData = apr_palloc(pool, sizeof(struct userData));
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
 	BUNDLE bundle;
 	celix_status_t status = CELIX_SUCCESS;
 	struct userData * data = (struct userData *) userData;
@@ -73,13 +73,13 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
 	struct userData * data = (struct userData *) userData;
 	mg_stop(data->ctx);
 	printf("Mongoose stopped\n");
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
 	return CELIX_SUCCESS;
 }

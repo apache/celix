@@ -44,7 +44,7 @@
 
 struct topology_manager {
 	apr_pool_t *pool;
-	BUNDLE_CONTEXT context;
+	bundle_context_t context;
 
 	ARRAY_LIST rsaList;
 	HASH_MAP exportedServices;
@@ -63,7 +63,7 @@ celix_status_t topologyManager_notifyListenersOfRemoval(topology_manager_t manag
 
 celix_status_t topologyManager_getUUID(topology_manager_t manager, char **uuidStr);
 
-celix_status_t topologyManager_create(BUNDLE_CONTEXT context, apr_pool_t *pool, topology_manager_t *manager) {
+celix_status_t topologyManager_create(bundle_context_t context, apr_pool_t *pool, topology_manager_t *manager) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*manager = apr_palloc(pool, sizeof(**manager));
@@ -223,7 +223,7 @@ celix_status_t topologyManager_notifyListeners(topology_manager_t manager, remot
 				PROPERTIES props = NULL;
 				serviceRegistration_getProperties(registration, &props);
 				char *scope = properties_get(props, (char *) ENDPOINT_LISTENER_SCOPE);
-				FILTER filter = filter_create(scope, manager->pool);
+				filter_t filter = filter_create(scope, manager->pool);
 				endpoint_listener_t epl = NULL;
 				status = bundleContext_getService(manager->context, eplRef, (void **) &epl);
 				if (status == CELIX_SUCCESS) {
@@ -236,7 +236,9 @@ celix_status_t topologyManager_notifyListeners(topology_manager_t manager, remot
 						if (status == CELIX_SUCCESS) {
 							status = rsa->exportReference_getExportedEndpoint(reference, &endpoint);
 							if (status == CELIX_SUCCESS) {
-								if (filter_match(filter, endpoint->properties)) {
+								bool matchResult = false;
+								filter_match(filter, endpoint->properties, &matchResult);
+								if (matchResult) {
 									status = epl->endpointAdded(epl->handle, endpoint, scope);
 								}
 							}

@@ -34,7 +34,7 @@
 
 void stopCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *));
 
-COMMAND stopCommand_create(BUNDLE_CONTEXT context) {
+COMMAND stopCommand_create(bundle_context_t context) {
 	COMMAND command = (COMMAND) malloc(sizeof(*command));
 	command->bundleContext = context;
 	command->name = "stop";

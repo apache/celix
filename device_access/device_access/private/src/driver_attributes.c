@@ -50,7 +50,7 @@ celix_status_t driverAttributes_create(apr_pool_t *pool, SERVICE_REFERENCE refer
 		status = CELIX_ENOMEM;
 	} else {
 		BUNDLE bundle = NULL;
-		BUNDLE_ARCHIVE bundleArchive = NULL;
+		bundle_archive_t bundleArchive = NULL;
 		status = serviceReference_getBundle(reference, &bundle);
 
 		if (status == CELIX_SUCCESS) {

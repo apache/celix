@@ -34,7 +34,7 @@
 #include "utils.h"
 
 struct shellTuiActivator {
-	BUNDLE_CONTEXT context;
+	bundle_context_t context;
 	SHELL_SERVICE shell;
 	SERVICE_REFERENCE reference;
 	struct serviceListener * listener;
@@ -101,7 +101,7 @@ void shellTui_serviceChanged(SERVICE_LISTENER listener, SERVICE_EVENT event) {
 	}
 }
 
-celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
 	apr_pool_t *pool = NULL;
 	celix_status_t status = bundleContext_getMemoryPool(context, &pool);
 	SHELL_TUI_ACTIVATOR activator = apr_palloc(pool, sizeof(*activator));
@@ -111,7 +111,7 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
     celix_status_t status;
 	SHELL_TUI_ACTIVATOR act = (SHELL_TUI_ACTIVATOR) userData;
 	act->context = context;
@@ -135,7 +135,7 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
     celix_status_t status;
 	SHELL_TUI_ACTIVATOR act = (SHELL_TUI_ACTIVATOR) userData;
 	status = bundleContext_removeServiceListener(context, act->listener);
@@ -151,6 +151,6 @@ celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
 	return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
 	return CELIX_SUCCESS;
 }

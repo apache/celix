@@ -22,13 +22,13 @@ if (FRAMEWORK)
     find_package(CURL REQUIRED)
     find_package(ZLIB REQUIRED)
     
-    include(CPackComponent)
+    #include(CPackComponent)
     
-    cpack_add_component(framework
-    	DISPLAY_NAME Framework
-        DESCRIPTION "The Apache Celix framework library"
-        REQUIRED
-    )
+    #cpack_add_component(framework
+    #	DISPLAY_NAME Framework
+    #    DESCRIPTION "The Apache Celix framework library"
+    #    REQUIRED
+    #)
     
     add_definitions(-DUSE_FILE32API)
     aux_source_directory("private/src" SRC)

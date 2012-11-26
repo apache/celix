@@ -160,7 +160,7 @@ void shell_serviceChanged(SERVICE_LISTENER listener, SERVICE_EVENT event) {
 	}
 }
 
-celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
 	*userData = malloc(sizeof(struct shellServiceActivator));
 	apr_pool_t *pool = NULL;
 	bundleContext_getMemoryPool(context, &pool);
@@ -183,7 +183,7 @@ celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
     celix_status_t status;
 
 	struct shellServiceActivator * activator = (struct shellServiceActivator *) userData;
@@ -239,7 +239,7 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
     celix_status_t status = CELIX_SUCCESS;
 	struct shellServiceActivator * activator = (struct shellServiceActivator *) userData;
 	serviceRegistration_unregister(activator->registration);
@@ -273,7 +273,7 @@ celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
 	return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
 	struct shellServiceActivator * activator = (struct shellServiceActivator *) userData;
 	shell_destroy(activator->shell);
 	free(activator);

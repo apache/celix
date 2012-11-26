@@ -33,7 +33,7 @@
 
 void startCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *));
 
-COMMAND startCommand_create(BUNDLE_CONTEXT context) {
+COMMAND startCommand_create(bundle_context_t context) {
 	COMMAND command = (COMMAND) malloc(sizeof(*command));
 	command->bundleContext = context;
 	command->name = "start";

@@ -52,28 +52,28 @@ struct bundleArchive {
 
 static apr_status_t bundleArchive_destroy(void *archiveP);
 
-static celix_status_t bundleArchive_getRevisionLocation(BUNDLE_ARCHIVE archive, long revNr, char **revision_location);
-static celix_status_t bundleArchive_setRevisionLocation(BUNDLE_ARCHIVE archive, char * location, long revNr);
+static celix_status_t bundleArchive_getRevisionLocation(bundle_archive_t archive, long revNr, char **revision_location);
+static celix_status_t bundleArchive_setRevisionLocation(bundle_archive_t archive, char * location, long revNr);
 
-static celix_status_t bundleArchive_initialize(BUNDLE_ARCHIVE archive);
+static celix_status_t bundleArchive_initialize(bundle_archive_t archive);
 
 static celix_status_t bundleArchive_deleteTree(char * directory, apr_pool_t *mp);
 
-static celix_status_t bundleArchive_createRevisionFromLocation(BUNDLE_ARCHIVE archive, char *location, char *inputFile, long revNr, BUNDLE_REVISION *bundle_revision);
-static celix_status_t bundleArchive_reviseInternal(BUNDLE_ARCHIVE archive, bool isReload, long revNr, char * location, char *inputFile);
+static celix_status_t bundleArchive_createRevisionFromLocation(bundle_archive_t archive, char *location, char *inputFile, long revNr, BUNDLE_REVISION *bundle_revision);
+static celix_status_t bundleArchive_reviseInternal(bundle_archive_t archive, bool isReload, long revNr, char * location, char *inputFile);
 
-static celix_status_t bundleArchive_readLastModified(BUNDLE_ARCHIVE archive, time_t *time);
-static celix_status_t bundleArchive_writeLastModified(BUNDLE_ARCHIVE archive);
+static celix_status_t bundleArchive_readLastModified(bundle_archive_t archive, time_t *time);
+static celix_status_t bundleArchive_writeLastModified(bundle_archive_t archive);
 
-celix_status_t bundleArchive_createSystemBundleArchive(apr_pool_t *mp, BUNDLE_ARCHIVE *bundle_archive) {
+celix_status_t bundleArchive_createSystemBundleArchive(apr_pool_t *mp, bundle_archive_t *bundle_archive) {
     celix_status_t status;
-	BUNDLE_ARCHIVE archive;
+	bundle_archive_t archive;
 	apr_pool_t *revisions_pool;
 
 	if (mp == NULL || *bundle_archive != NULL) {
 	    status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
-        archive = (BUNDLE_ARCHIVE) apr_palloc(mp, sizeof(*archive));
+        archive = (bundle_archive_t) apr_palloc(mp, sizeof(*archive));
         if (archive == NULL) {
             status = CELIX_ENOMEM;
         } else {
@@ -103,15 +103,15 @@ celix_status_t bundleArchive_createSystemBundleArchive(apr_pool_t *mp, BUNDLE_AR
     return status;
 }
 
-celix_status_t bundleArchive_create(char * archiveRoot, long id, char * location, char *inputFile, apr_pool_t *mp, BUNDLE_ARCHIVE *bundle_archive) {
+celix_status_t bundleArchive_create(char * archiveRoot, long id, char * location, char *inputFile, apr_pool_t *mp, bundle_archive_t *bundle_archive) {
     celix_status_t status = CELIX_SUCCESS;
     apr_pool_t *revisions_pool;
-    BUNDLE_ARCHIVE archive;
+    bundle_archive_t archive;
 
     if (*bundle_archive != NULL) {
     	status = CELIX_ILLEGAL_ARGUMENT;
     } else {
-		archive = (BUNDLE_ARCHIVE) apr_pcalloc(mp, sizeof(*archive));
+		archive = (bundle_archive_t) apr_pcalloc(mp, sizeof(*archive));
 		if (archive != NULL) {
 			apr_pool_pre_cleanup_register(mp, archive, bundleArchive_destroy);
 			if (apr_pool_create(&revisions_pool, mp) == APR_SUCCESS) {
@@ -145,7 +145,7 @@ celix_status_t bundleArchive_create(char * archiveRoot, long id, char * location
 }
 
 static apr_status_t bundleArchive_destroy(void *archiveP) {
-	BUNDLE_ARCHIVE archive = archiveP;
+	bundle_archive_t archive = archiveP;
 	if (archive != NULL) {
 		if (archive->archiveRootDir != NULL) {
 			apr_dir_close(archive->archiveRootDir);
@@ -156,13 +156,13 @@ static apr_status_t bundleArchive_destroy(void *archiveP) {
 	return APR_SUCCESS;
 }
 
-celix_status_t bundleArchive_recreate(char * archiveRoot, apr_pool_t *mp, BUNDLE_ARCHIVE *bundle_archive) {
+celix_status_t bundleArchive_recreate(char * archiveRoot, apr_pool_t *mp, bundle_archive_t *bundle_archive) {
     apr_pool_t *revisions_pool;
     celix_status_t status;
-    BUNDLE_ARCHIVE archive;
+    bundle_archive_t archive;
 
     status = CELIX_SUCCESS;
-	archive = (BUNDLE_ARCHIVE) apr_pcalloc(mp, sizeof(*archive));
+	archive = (bundle_archive_t) apr_pcalloc(mp, sizeof(*archive));
 	if (archive != NULL) {
 		apr_pool_pre_cleanup_register(mp, archive, bundleArchive_destroy);
 	    if (apr_pool_create(&revisions_pool, mp) == APR_SUCCESS) {
@@ -213,13 +213,18 @@ celix_status_t bundleArchive_recreate(char * archiveRoot, apr_pool_t *mp, BUNDLE
 	return status;
 }
 
-celix_status_t bundleArchive_getId(BUNDLE_ARCHIVE archive, long *id) {
+celix_status_t bundleArchive_getId(bundle_archive_t archive, long *id) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (archive->id < 0) {
 		apr_file_t *bundleIdFile;
 		apr_status_t rv;
-		char * bundleId = (char *)malloc(strlen(archive->archiveRoot) + 11);
+		char * bundleId = NULL;
+		apr_pool_t *subpool = NULL;
+		apr_pool_create(&subpool, archive->mp);
+
+		bundleId = (char *)apr_palloc(subpool, strlen(archive->archiveRoot) + 11);
+
 		strcpy(bundleId, archive->archiveRoot);
 		strcat(bundleId, "/bundle.id");
 		
@@ -231,7 +236,8 @@ celix_status_t bundleArchive_getId(BUNDLE_ARCHIVE archive, long *id) {
 			apr_file_close(bundleIdFile);
 			sscanf(id, "%ld", &archive->id);
 		}
-		free(bundleId);
+
+		apr_pool_destroy(subpool);
 	}
 	if (status == CELIX_SUCCESS) {
 		*id = archive->id;
@@ -240,12 +246,16 @@ celix_status_t bundleArchive_getId(BUNDLE_ARCHIVE archive, long *id) {
 	return status;
 }
 
-celix_status_t bundleArchive_getLocation(BUNDLE_ARCHIVE archive, char **location) {
+celix_status_t bundleArchive_getLocation(bundle_archive_t archive, char **location) {
 	celix_status_t status = CELIX_SUCCESS;
 	if (archive->location == NULL) {
 		apr_file_t *bundleLocationFile;
 		apr_status_t rv;
-		char * bundleLocation = (char *)calloc(sizeof(char), strlen(archive->archiveRoot) + 17);
+		char * bundleLocation = NULL;
+		apr_pool_t *subpool = NULL;
+		apr_pool_create(&subpool, archive->mp);
+
+		bundleLocation = (char *)apr_palloc(subpool, strlen(archive->archiveRoot) + 17);
 		strcat(bundleLocation,archive->archiveRoot);
 		strcat(bundleLocation, "/bundle.location");
 		
@@ -258,7 +268,7 @@ celix_status_t bundleArchive_getLocation(BUNDLE_ARCHIVE archive, char **location
 
 			archive->location = apr_pstrdup(archive->mp, location);
 		}
-		free(bundleLocation);
+		apr_pool_destroy(subpool);
 	}
 
 	if (status == CELIX_SUCCESS) {
@@ -268,12 +278,12 @@ celix_status_t bundleArchive_getLocation(BUNDLE_ARCHIVE archive, char **location
 	return status;
 }
 
-celix_status_t bundleArchive_getArchiveRoot(BUNDLE_ARCHIVE archive, char **archiveRoot) {
+celix_status_t bundleArchive_getArchiveRoot(bundle_archive_t archive, char **archiveRoot) {
 	*archiveRoot = archive->archiveRoot;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleArchive_getCurrentRevisionNumber(BUNDLE_ARCHIVE archive, long *revisionNumber) {
+celix_status_t bundleArchive_getCurrentRevisionNumber(bundle_archive_t archive, long *revisionNumber) {
 	celix_status_t status = CELIX_SUCCESS;
 	BUNDLE_REVISION revision;
 	*revisionNumber = -1;
@@ -286,17 +296,17 @@ celix_status_t bundleArchive_getCurrentRevisionNumber(BUNDLE_ARCHIVE archive, lo
 	return status;
 }
 
-celix_status_t bundleArchive_getCurrentRevision(BUNDLE_ARCHIVE archive, BUNDLE_REVISION *revision) {
+celix_status_t bundleArchive_getCurrentRevision(bundle_archive_t archive, BUNDLE_REVISION *revision) {
 	*revision = linkedList_isEmpty(archive->revisions) ? NULL : linkedList_getLast(archive->revisions);
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleArchive_getRevision(BUNDLE_ARCHIVE archive, long revNr, BUNDLE_REVISION *revision) {
+celix_status_t bundleArchive_getRevision(bundle_archive_t archive, long revNr, BUNDLE_REVISION *revision) {
 	*revision = linkedList_get(archive->revisions, revNr);
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleArchive_getPersistentState(BUNDLE_ARCHIVE archive, BUNDLE_STATE *state) {
+celix_status_t bundleArchive_getPersistentState(bundle_archive_t archive, BUNDLE_STATE *state) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_status_t apr_status;
 
@@ -304,8 +314,11 @@ celix_status_t bundleArchive_getPersistentState(BUNDLE_ARCHIVE archive, BUNDLE_S
 		*state = archive->persistentState;
 	} else {
 		apr_file_t *persistentStateLocationFile;
+		char * persistentStateLocation = NULL;
+		apr_pool_t *subpool;
+		apr_pool_create(&subpool, archive->mp);
 		
-		char * persistentStateLocation = malloc(strlen(archive->archiveRoot) + 14);
+		persistentStateLocation = apr_palloc(subpool, strlen(archive->archiveRoot) + 14);
 		strcpy(persistentStateLocation, archive->archiveRoot);
 		strcat(persistentStateLocation, "/bundle.state");
 		
@@ -329,18 +342,21 @@ celix_status_t bundleArchive_getPersistentState(BUNDLE_ARCHIVE archive, BUNDLE_S
 
 			*state = archive->persistentState;
 		}
-		free(persistentStateLocation);
+		apr_pool_destroy(subpool);
 	}
 
 	return status;
 }
 
-celix_status_t bundleArchive_setPersistentState(BUNDLE_ARCHIVE archive, BUNDLE_STATE state) {
+celix_status_t bundleArchive_setPersistentState(bundle_archive_t archive, BUNDLE_STATE state) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_status_t apr_status;
+	char * persistentStateLocation = NULL;
 	apr_file_t *persistentStateLocationFile;
+	apr_pool_t *subpool = NULL;
+	apr_pool_create(&subpool, archive->mp);
 	
-	char * persistentStateLocation = (char *)malloc(strlen(archive->archiveRoot) + 14);
+	persistentStateLocation = (char *)apr_palloc(subpool, strlen(archive->archiveRoot) + 14);
 	strcpy(persistentStateLocation, archive->archiveRoot);
 	strcat(persistentStateLocation, "/bundle.state");
 	
@@ -368,18 +384,21 @@ celix_status_t bundleArchive_setPersistentState(BUNDLE_ARCHIVE archive, BUNDLE_S
 
 		archive->persistentState = state;
 	}
-	free(persistentStateLocation);
+	apr_pool_destroy(subpool);
 	return status;
 }
 
-celix_status_t bundleArchive_getRefreshCount(BUNDLE_ARCHIVE archive, long *refreshCount) {
+celix_status_t bundleArchive_getRefreshCount(bundle_archive_t archive, long *refreshCount) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (archive->refreshCount == -1) {
 		apr_file_t * refreshCounterFile;
 		apr_status_t rv;
+		apr_pool_t *subpool;
+		apr_pool_create(&subpool, archive->mp);
 		
-		char * refreshCounter = (char *)malloc(strlen(archive->archiveRoot) + 17);
+		char * refreshCounter = NULL;
+		refreshCounter = (char *) apr_palloc(subpool, strlen(archive->archiveRoot) + 17);
 		strcpy(refreshCounter,archive->archiveRoot);
 		strcat(refreshCounter, "/refresh.counter");
 		
@@ -391,7 +410,7 @@ celix_status_t bundleArchive_getRefreshCount(BUNDLE_ARCHIVE archive, long *refre
 			apr_file_close(refreshCounterFile);
 			sscanf(counterStr, "%ld", &archive->refreshCount);
 		}
-		free(refreshCounter);
+		apr_pool_destroy(subpool);
 	}
 
 	if (status == CELIX_SUCCESS) {
@@ -401,16 +420,21 @@ celix_status_t bundleArchive_getRefreshCount(BUNDLE_ARCHIVE archive, long *refre
 	return status;
 }
 
-celix_status_t bundleArchive_setRefreshCount(BUNDLE_ARCHIVE archive) {
+celix_status_t bundleArchive_setRefreshCount(bundle_archive_t archive) {
 	apr_file_t * refreshCounterFile;
 	apr_status_t apr_status;
 	celix_status_t status = CELIX_SUCCESS;
-	char * refreshCounter = (char *)malloc(strlen(archive->archiveRoot) + 17);
+	apr_pool_t *subpool;
+	char * refreshCounter = NULL;
+
+	apr_pool_create(&subpool, archive->mp);
+	refreshCounter = (char *) apr_palloc(subpool, strlen(archive->archiveRoot) + 17);
+
 	strcpy(refreshCounter, archive->archiveRoot);
 	strcat(refreshCounter, "/refresh.counter");
 	
 	apr_status = apr_file_open(&refreshCounterFile, refreshCounter, APR_FOPEN_CREATE|APR_FOPEN_WRITE, APR_OS_DEFAULT, archive->mp);
-	free(refreshCounter);
+	apr_pool_destroy(subpool);
 	if (apr_status != APR_SUCCESS) {
 		status = CELIX_FILE_IO_EXCEPTION;
 	} else {
@@ -421,7 +445,7 @@ celix_status_t bundleArchive_setRefreshCount(BUNDLE_ARCHIVE archive) {
 	return status;
 }
 
-celix_status_t bundleArchive_getLastModified(BUNDLE_ARCHIVE archive, time_t *lastModified) {
+celix_status_t bundleArchive_getLastModified(bundle_archive_t archive, time_t *lastModified) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (archive->lastModified == (time_t) NULL) {
@@ -435,7 +459,7 @@ celix_status_t bundleArchive_getLastModified(BUNDLE_ARCHIVE archive, time_t *las
 	return status;
 }
 
-celix_status_t bundleArchive_setLastModified(BUNDLE_ARCHIVE archive, time_t lastModifiedTime) {
+celix_status_t bundleArchive_setLastModified(bundle_archive_t archive, time_t lastModifiedTime) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	archive->lastModified = lastModifiedTime;
@@ -444,18 +468,22 @@ celix_status_t bundleArchive_setLastModified(BUNDLE_ARCHIVE archive, time_t last
 	return status;
 }
 
-static celix_status_t bundleArchive_readLastModified(BUNDLE_ARCHIVE archive, time_t *time) {
+static celix_status_t bundleArchive_readLastModified(bundle_archive_t archive, time_t *time) {
 	char timeStr[20];
 	apr_file_t *lastModifiedFile;
 	apr_status_t apr_status;
+	char *lastModified = NULL;
 
 	celix_status_t status = CELIX_SUCCESS;
 
-	char * lastModified = (char *)malloc(strlen(archive->archiveRoot) + 21);
+	apr_pool_t *subpool = NULL;
+	apr_pool_create(&subpool, archive->mp);
+
+	lastModified = (char *)apr_palloc(subpool, strlen(archive->archiveRoot) + 21);
 	sprintf(lastModified, "%s/bundle.lastmodified", archive->archiveRoot);
 
 	apr_status = apr_file_open(&lastModifiedFile, lastModified, APR_FOPEN_READ, APR_OS_DEFAULT, archive->mp);
-	free(lastModified);
+	apr_pool_destroy(subpool);
 	if (apr_status != APR_SUCCESS) {
 		status = CELIX_FILE_IO_EXCEPTION;
 	} else {
@@ -479,18 +507,24 @@ static celix_status_t bundleArchive_readLastModified(BUNDLE_ARCHIVE archive, tim
 	return status;
 }
 
-static celix_status_t bundleArchive_writeLastModified(BUNDLE_ARCHIVE archive) {
+static celix_status_t bundleArchive_writeLastModified(bundle_archive_t archive) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_file_t *lastModifiedFile;
 	char timeStr[20];
-	char * lastModified = (char *)malloc(strlen(archive->archiveRoot) + 21);
+	char * lastModified = NULL;
+	apr_pool_t *subpool = NULL;
 	apr_status_t apr_status;
+
+	apr_pool_create(&subpool, archive->mp);
+
+	lastModified = (char *)apr_palloc(subpool, strlen(archive->archiveRoot) + 21);
+
 
 	sprintf(lastModified, "%s/bundle.lastmodified", archive->archiveRoot);	
 	strftime(timeStr, 20, "%Y %m %d %H:%M:%S", localtime(&archive->lastModified));
 	
 	apr_status = apr_file_open(&lastModifiedFile, lastModified, APR_FOPEN_CREATE|APR_FOPEN_WRITE, APR_OS_DEFAULT, archive->mp);
-	free(lastModified);
+	apr_pool_destroy(subpool);
 	if (apr_status != APR_SUCCESS) {
 		status = CELIX_FILE_IO_EXCEPTION;
 	} else {
@@ -501,7 +535,7 @@ static celix_status_t bundleArchive_writeLastModified(BUNDLE_ARCHIVE archive) {
 	return status;
 }
 
-celix_status_t bundleArchive_revise(BUNDLE_ARCHIVE archive, char * location, char *inputFile) {
+celix_status_t bundleArchive_revise(bundle_archive_t archive, char * location, char *inputFile) {
 	celix_status_t status = CELIX_SUCCESS;
 	long revNr = 0l;
 	if (!linkedList_isEmpty(archive->revisions)) {
@@ -515,7 +549,7 @@ celix_status_t bundleArchive_revise(BUNDLE_ARCHIVE archive, char * location, cha
 	return status;
 }
 
-static celix_status_t bundleArchive_reviseInternal(BUNDLE_ARCHIVE archive, bool isReload, long revNr, char * location, char *inputFile) {
+static celix_status_t bundleArchive_reviseInternal(bundle_archive_t archive, bool isReload, long revNr, char * location, char *inputFile) {
     celix_status_t status;
     BUNDLE_REVISION revision = NULL;
 
@@ -536,12 +570,12 @@ static celix_status_t bundleArchive_reviseInternal(BUNDLE_ARCHIVE archive, bool 
 	return status;
 }
 
-celix_status_t bundleArchive_rollbackRevise(BUNDLE_ARCHIVE archive, bool *rolledback) {
+celix_status_t bundleArchive_rollbackRevise(bundle_archive_t archive, bool *rolledback) {
 	*rolledback = true;
 	return CELIX_SUCCESS;
 }
 
-static celix_status_t bundleArchive_createRevisionFromLocation(BUNDLE_ARCHIVE archive, char *location, char *inputFile, long revNr, BUNDLE_REVISION *bundle_revision) {
+static celix_status_t bundleArchive_createRevisionFromLocation(bundle_archive_t archive, char *location, char *inputFile, long revNr, BUNDLE_REVISION *bundle_revision) {
     celix_status_t status = CELIX_SUCCESS;
     char root[256];
     long refreshCount;
@@ -570,7 +604,7 @@ static celix_status_t bundleArchive_createRevisionFromLocation(BUNDLE_ARCHIVE ar
 	return status;
 }
 
-static celix_status_t bundleArchive_getRevisionLocation(BUNDLE_ARCHIVE archive, long revNr, char **revision_location) {
+static celix_status_t bundleArchive_getRevisionLocation(bundle_archive_t archive, long revNr, char **revision_location) {
     celix_status_t status;
 	char revisionLocation[256];
 	long refreshCount;
@@ -598,7 +632,7 @@ static celix_status_t bundleArchive_getRevisionLocation(BUNDLE_ARCHIVE archive, 
 	return status;
 }
 
-static celix_status_t bundleArchive_setRevisionLocation(BUNDLE_ARCHIVE archive, char * location, long revNr) {
+static celix_status_t bundleArchive_setRevisionLocation(bundle_archive_t archive, char * location, long revNr) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	char revisionLocation[256];
@@ -621,13 +655,13 @@ static celix_status_t bundleArchive_setRevisionLocation(BUNDLE_ARCHIVE archive, 
 	return status;
 }
 
-celix_status_t bundleArchive_close(BUNDLE_ARCHIVE archive) {
+celix_status_t bundleArchive_close(bundle_archive_t archive) {
 	// close revision
 	// not yet needed/possible
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleArchive_closeAndDelete(BUNDLE_ARCHIVE archive) {
+celix_status_t bundleArchive_closeAndDelete(bundle_archive_t archive) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	status = bundleArchive_close(archive);
@@ -638,7 +672,7 @@ celix_status_t bundleArchive_closeAndDelete(BUNDLE_ARCHIVE archive) {
 	return status;
 }
 
-static celix_status_t bundleArchive_initialize(BUNDLE_ARCHIVE archive) {
+static celix_status_t bundleArchive_initialize(bundle_archive_t archive) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (archive->archiveRootDir == NULL) {
@@ -668,8 +702,10 @@ static celix_status_t bundleArchive_initialize(BUNDLE_ARCHIVE archive) {
 					apr_file_printf(bundleIdFile, "%ld", archive->id);
 					// Ignore close status, let it fail if needed again
 					apr_file_close(bundleIdFile);
+					apr_pool_t *subpool = NULL;
+					apr_pool_create(&subpool, archive->mp);
 
-					bundleLocation = (char *)malloc(strlen(archive->archiveRoot) + 17);
+					bundleLocation = (char *) apr_palloc(subpool, strlen(archive->archiveRoot) + 17);
 					strcpy(bundleLocation,archive->archiveRoot);
 					strcat(bundleLocation, "/bundle.location");
 					
@@ -683,7 +719,7 @@ static celix_status_t bundleArchive_initialize(BUNDLE_ARCHIVE archive) {
 
 						status = bundleArchive_writeLastModified(archive);
 					}
-					free(bundleLocation);
+					apr_pool_destroy(subpool);
 				}
 			}
 		}
@@ -704,7 +740,13 @@ static celix_status_t bundleArchive_deleteTree(char * directory, apr_pool_t *mp)
 		apr_status_t apr_status;
 		while ((apr_status = apr_dir_read(&dp, APR_FINFO_DIRENT|APR_FINFO_TYPE, dir)) == APR_SUCCESS) {
 			if ((strcmp((dp.name), ".") != 0) && (strcmp((dp.name), "..") != 0)) {
-				char * subdir = (char *)malloc(strlen(directory) + strlen(dp.name) + 2);
+				apr_pool_t *subpool;
+				char * subdir = NULL;
+
+				apr_pool_create(&subpool, mp);
+
+				subdir = (char *) apr_palloc(subpool, strlen(directory) + strlen(dp.name) + 2);
+
 				strcpy(subdir, directory);
 				strcat(subdir, "/");
 				strcat(subdir, dp.name);
@@ -718,7 +760,7 @@ static celix_status_t bundleArchive_deleteTree(char * directory, apr_pool_t *mp)
 						break;
 					}
 				}
-				free(subdir);
+				apr_pool_destroy(subpool);
 			}
 		}
 		if (apr_status != APR_SUCCESS && apr_status != APR_ENOENT) {

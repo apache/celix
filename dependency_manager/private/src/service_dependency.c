@@ -36,7 +36,7 @@ celix_status_t serviceDependency_addedService(void * handle, SERVICE_REFERENCE r
 celix_status_t serviceDependency_modifiedService(void * handle, SERVICE_REFERENCE reference, void * service);
 celix_status_t serviceDependency_removedService(void * handle, SERVICE_REFERENCE reference, void * service);
 
-SERVICE_DEPENDENCY serviceDependency_create(BUNDLE_CONTEXT context) {
+SERVICE_DEPENDENCY serviceDependency_create(bundle_context_t context) {
 	SERVICE_DEPENDENCY dependency = (SERVICE_DEPENDENCY) malloc(sizeof(*dependency));
 	dependency->context = context;
 

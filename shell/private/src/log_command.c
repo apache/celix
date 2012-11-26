@@ -35,7 +35,7 @@
 
 void logCommand_execute(COMMAND command, char *line, void (*out)(char *), void (*err)(char *));
 
-COMMAND logCommand_create(BUNDLE_CONTEXT context) {
+COMMAND logCommand_create(bundle_context_t context) {
     COMMAND command = (COMMAND) malloc(sizeof(*command));
     command->bundleContext = context;
     command->name = "log";

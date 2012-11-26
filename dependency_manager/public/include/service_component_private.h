@@ -49,7 +49,7 @@ struct service {
 	void * impl;
 	PROPERTIES properties;
 
-	BUNDLE_CONTEXT context;
+	bundle_context_t context;
 	DEPENDENCY_MANAGER manager;
 
 	SERVICE_REGISTRATION registration;
@@ -63,7 +63,7 @@ struct service {
 	pthread_mutex_t mutex;
 };
 
-SERVICE serviceComponent_create(BUNDLE_CONTEXT context, DEPENDENCY_MANAGER manager);
+SERVICE serviceComponent_create(bundle_context_t context, DEPENDENCY_MANAGER manager);
 SERVICE serviceComponent_addServiceDependency(SERVICE service, SERVICE_DEPENDENCY dependency);
 SERVICE serviceComponent_removeServiceDependency(SERVICE service, SERVICE_DEPENDENCY dependency);
 void serviceComponent_dependencyAvailable(SERVICE service, SERVICE_DEPENDENCY dependency);

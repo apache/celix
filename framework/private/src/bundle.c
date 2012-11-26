@@ -40,11 +40,11 @@
 #include "utils.h"
 
 struct bundle {
-	BUNDLE_CONTEXT context;
+	bundle_context_t context;
 	ACTIVATOR activator;
 	BUNDLE_STATE state;
 	void * handle;
-	BUNDLE_ARCHIVE archive;
+	bundle_archive_t archive;
 	ARRAY_LIST modules;
 	MANIFEST manifest;
 	apr_pool_t *memoryPool;
@@ -61,7 +61,7 @@ celix_status_t bundle_closeRevisions(BUNDLE bundle);
 
 celix_status_t bundle_create(BUNDLE * bundle, apr_pool_t *mp) {
     celix_status_t status = CELIX_SUCCESS;
-    BUNDLE_ARCHIVE archive = NULL;
+    bundle_archive_t archive = NULL;
 
 	*bundle = (BUNDLE) apr_palloc(mp, sizeof(**bundle));
 	if (*bundle == NULL) {
@@ -101,7 +101,7 @@ celix_status_t bundle_create(BUNDLE * bundle, apr_pool_t *mp) {
 	return status;
 }
 
-celix_status_t bundle_createFromArchive(BUNDLE * bundle, FRAMEWORK framework, BUNDLE_ARCHIVE archive, apr_pool_t *bundlePool) {
+celix_status_t bundle_createFromArchive(BUNDLE * bundle, FRAMEWORK framework, bundle_archive_t archive, apr_pool_t *bundlePool) {
     MODULE module;
 	
 	celix_status_t status = CELIX_SUCCESS;
@@ -152,7 +152,7 @@ celix_status_t bundle_destroy(BUNDLE bundle) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundle_getArchive(BUNDLE bundle, BUNDLE_ARCHIVE *archive) {
+celix_status_t bundle_getArchive(BUNDLE bundle, bundle_archive_t *archive) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (bundle != NULL && *archive == NULL) {
@@ -197,12 +197,12 @@ celix_status_t bundle_setActivator(BUNDLE bundle, ACTIVATOR activator) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundle_getContext(BUNDLE bundle, BUNDLE_CONTEXT *context) {
+celix_status_t bundle_getContext(BUNDLE bundle, bundle_context_t *context) {
 	*context = bundle->context;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundle_setContext(BUNDLE bundle, BUNDLE_CONTEXT context) {
+celix_status_t bundle_setContext(BUNDLE bundle, bundle_context_t context) {
 	bundle->context = context;
 	return CELIX_SUCCESS;
 }
@@ -240,7 +240,9 @@ celix_status_t bundle_createModule(BUNDLE bundle, MODULE *module) {
         status = bundleArchive_getId(bundle->archive, &bundleId);
         if (status == CELIX_SUCCESS) {
 			int revision = 0;
-			char * moduleId = (char *)malloc(sizeof(bundleId) + sizeof(revision) + 2);
+			apr_pool_t *pool = NULL;
+			apr_pool_create(&pool, bundle->memoryPool);
+			char * moduleId = (char *) apr_palloc(pool, sizeof(bundleId) + sizeof(revision) +2);
 			sprintf(moduleId, "%ld.%d", bundleId, revision);
 
 			*module = module_create(headerMap, apr_pstrdup(bundle->memoryPool, moduleId), bundle);
@@ -281,7 +283,7 @@ celix_status_t bundle_createModule(BUNDLE bundle, MODULE *module) {
 					arrayList_destroy(bundles);
 				}
 			}
-			free(moduleId);
+			apr_pool_destroy(pool);
         }
 	}
 
@@ -359,7 +361,7 @@ celix_status_t bundle_isUsed(BUNDLE bundle, bool *used) {
 celix_status_t bundle_revise(BUNDLE bundle, char * location, char *inputFile) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	BUNDLE_ARCHIVE archive = NULL;
+	bundle_archive_t archive = NULL;
 	status = bundle_getArchive(bundle, &archive);
 	if (status == CELIX_SUCCESS) {
 		status = bundleArchive_revise(archive, location, inputFile);
@@ -394,7 +396,7 @@ celix_status_t bundle_addModule(BUNDLE bundle, MODULE module) {
 celix_status_t bundle_isSystemBundle(BUNDLE bundle, bool *systemBundle) {
 	celix_status_t status = CELIX_SUCCESS;
 	long bundleId;
-	BUNDLE_ARCHIVE archive = NULL;
+	bundle_archive_t archive = NULL;
 
 	status = bundle_getArchive(bundle, &archive);
 	if (status == CELIX_SUCCESS) {
@@ -500,7 +502,7 @@ celix_status_t bundle_unlock(BUNDLE bundle, bool *unlocked) {
 }
 
 celix_status_t bundle_close(BUNDLE bundle) {
-	BUNDLE_ARCHIVE archive = NULL;
+	bundle_archive_t archive = NULL;
 	
 	celix_status_t status = CELIX_SUCCESS;
 
@@ -517,7 +519,7 @@ celix_status_t bundle_close(BUNDLE bundle) {
 celix_status_t bundle_closeAndDelete(BUNDLE bundle) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	BUNDLE_ARCHIVE archive = NULL;
+	bundle_archive_t archive = NULL;
 
     bundle_closeModules(bundle);
     bundle_closeRevisions(bundle);
@@ -569,7 +571,7 @@ celix_status_t bundle_refresh(BUNDLE bundle) {
 
 celix_status_t bundle_getBundleId(BUNDLE bundle, long *id) {
 	celix_status_t status = CELIX_SUCCESS;
-	BUNDLE_ARCHIVE archive = NULL;
+	bundle_archive_t archive = NULL;
 	status = bundle_getArchive(bundle, &archive);
 	if (status == CELIX_SUCCESS) {
 		status = bundleArchive_getId(archive, id);

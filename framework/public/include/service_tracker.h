@@ -34,8 +34,8 @@
 
 typedef struct serviceTracker * service_tracker_t;
 
-celix_status_t serviceTracker_create(apr_pool_t *pool, BUNDLE_CONTEXT context, char * service, service_tracker_customizer_t customizer, service_tracker_t *tracker);
-celix_status_t serviceTracker_createWithFilter(apr_pool_t *pool, BUNDLE_CONTEXT context, char * filter, service_tracker_customizer_t customizer, service_tracker_t *tracker);
+celix_status_t serviceTracker_create(apr_pool_t *pool, bundle_context_t context, char * service, service_tracker_customizer_t customizer, service_tracker_t *tracker);
+celix_status_t serviceTracker_createWithFilter(apr_pool_t *pool, bundle_context_t context, char * filter, service_tracker_customizer_t customizer, service_tracker_t *tracker);
 
 celix_status_t serviceTracker_open(service_tracker_t tracker);
 celix_status_t serviceTracker_close(service_tracker_t tracker);

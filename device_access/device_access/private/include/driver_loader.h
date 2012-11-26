@@ -33,7 +33,7 @@
 
 typedef struct driver_loader *driver_loader_t;
 
-celix_status_t driverLoader_create(apr_pool_t *pool, BUNDLE_CONTEXT context, driver_loader_t *loader);
+celix_status_t driverLoader_create(apr_pool_t *pool, bundle_context_t context, driver_loader_t *loader);
 
 celix_status_t driverLoader_findDrivers(driver_loader_t loader, apr_pool_t *pool, ARRAY_LIST locators, PROPERTIES properties, ARRAY_LIST *driversIds);
 celix_status_t driverLoader_findDriversForLocator(driver_loader_t loader, apr_pool_t *pool, driver_locator_service_t locator, PROPERTIES properties, ARRAY_LIST *driversIds);

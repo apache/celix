@@ -41,17 +41,17 @@ struct paint_frame {
 	HASH_MAP m_shapes;
 	SIMPLE_SHAPE m_defaultShape;
 	LINKED_LIST m_shapeComponents;
-	BUNDLE_CONTEXT context;
+	bundle_context_t context;
 	GThread *main;
 };
 
 
 typedef struct paint_frame *PAINT_FRAME;
-celix_status_t paintFrame_create(BUNDLE_CONTEXT context, apr_pool_t *pool, PAINT_FRAME *frame);
+celix_status_t paintFrame_create(bundle_context_t context, apr_pool_t *pool, PAINT_FRAME *frame);
 celix_status_t paintFrame_exit(PAINT_FRAME frame);
 
 SIMPLE_SHAPE paintFrame_getShape(PAINT_FRAME frame, char *name);
-celix_status_t paintFrame_addShape(PAINT_FRAME frame, BUNDLE_CONTEXT context, SIMPLE_SHAPE shape);
+celix_status_t paintFrame_addShape(PAINT_FRAME frame, bundle_context_t context, SIMPLE_SHAPE shape);
 celix_status_t paintFrame_removeShape(PAINT_FRAME frame, SIMPLE_SHAPE sshape);
 
 

@@ -45,7 +45,7 @@ struct serviceDependency {
 	service_tracker_t tracker;
 	SERVICE service;
 	SERVICE_REFERENCE reference;
-	BUNDLE_CONTEXT context;
+	bundle_context_t context;
 	void * serviceInstance;
 	char * trackedServiceName;
 	char * trackedServiceFilter;
@@ -53,7 +53,7 @@ struct serviceDependency {
 
 typedef struct serviceDependency * SERVICE_DEPENDENCY;
 
-SERVICE_DEPENDENCY serviceDependency_create(BUNDLE_CONTEXT context);
+SERVICE_DEPENDENCY serviceDependency_create(bundle_context_t context);
 void * serviceDependency_getService(SERVICE_DEPENDENCY dependency);
 
 SERVICE_DEPENDENCY serviceDependency_setRequired(SERVICE_DEPENDENCY dependency, bool required);

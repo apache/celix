@@ -39,7 +39,7 @@
 void addCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *));
 celix_status_t addCommand_isNumeric(COMMAND command, char *number, bool *ret);
 
-COMMAND addCommand_create(BUNDLE_CONTEXT context) {
+COMMAND addCommand_create(bundle_context_t context) {
 	apr_pool_t *pool;
 	bundleContext_getMemoryPool(context, &pool);
 

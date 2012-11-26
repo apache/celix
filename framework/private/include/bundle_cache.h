@@ -38,9 +38,9 @@
 #include "bundle_archive.h"
 
 /**
- * Type definition for the BUNDLE_CACHE abstract data type.
+ * Type definition for the bundle_cache_t abstract data type.
  */
-typedef struct bundleCache * BUNDLE_CACHE;
+typedef struct bundleCache *bundle_cache_t;
 
 /**
  * Creates the bundle cache using the supplied configuration map.
@@ -53,7 +53,7 @@ typedef struct bundleCache * BUNDLE_CACHE;
  * 		- CELIX_ILLEGAL_ARGUMENT If <code>bundle_cache</code> not is null.
  * 		- CELIX_ENOMEM If allocating memory for <code>bundle_cache</code> failed.
  */
-celix_status_t bundleCache_create(PROPERTIES configurationMap, apr_pool_t *mp, BUNDLE_CACHE *bundle_cache);
+celix_status_t bundleCache_create(PROPERTIES configurationMap, apr_pool_t *mp, bundle_cache_t *bundle_cache);
 
 /**
  * Recreates and retrieves the list of archives for the given bundle cache.
@@ -68,7 +68,7 @@ celix_status_t bundleCache_create(PROPERTIES configurationMap, apr_pool_t *mp, B
  * 		- CELIX_ENOMEM If allocating memory for <code>archives</code> failed.
  * 		- CELIX_FILE_IO_EXCEPTION If the cache cannot be opened or read.
  */
-celix_status_t bundleCache_getArchives(BUNDLE_CACHE cache, apr_pool_t *pool, ARRAY_LIST *archives);
+celix_status_t bundleCache_getArchives(bundle_cache_t cache, apr_pool_t *pool, ARRAY_LIST *archives);
 
 /**
  * Creates a new archive for the given bundle (using the id and location). The archive is created on the supplied bundlePool.
@@ -85,7 +85,7 @@ celix_status_t bundleCache_getArchives(BUNDLE_CACHE cache, apr_pool_t *pool, ARR
  * 		- CELIX_ILLEGAL_ARGUMENT If <code>bundle_archive</code> not is null.
  * 		- CELIX_ENOMEM If allocating memory for <code>bundle_archive</code> failed.
  */
-celix_status_t bundleCache_createArchive(BUNDLE_CACHE cache, apr_pool_t *bundlePool, long id, char * location, char *inputFile, BUNDLE_ARCHIVE *archive);
+celix_status_t bundleCache_createArchive(bundle_cache_t cache, apr_pool_t *bundlePool, long id, char * location, char *inputFile, bundle_archive_t *archive);
 
 /**
  * Deletes the entire bundle cache.
@@ -96,7 +96,7 @@ celix_status_t bundleCache_createArchive(BUNDLE_CACHE cache, apr_pool_t *bundleP
  * 		- CELIX_ILLEGAL_ARGUMENT If the cache is invalid
  * 		- CELIX_FILE_IO_EXCEPTION If the cache cannot be opened or read.
  */
-celix_status_t bundleCache_delete(BUNDLE_CACHE cache);
+celix_status_t bundleCache_delete(bundle_cache_t cache);
 
 /**
  * @}

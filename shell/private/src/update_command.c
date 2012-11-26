@@ -39,7 +39,7 @@ void updateCommand_execute(COMMAND command, char * line, void (*out)(char *), vo
 celix_status_t updateCommand_download(COMMAND command, char * url, char **inputFile);
 size_t updateCommand_writeData(void *ptr, size_t size, size_t nmemb, FILE *stream);
 
-COMMAND updateCommand_create(BUNDLE_CONTEXT context) {
+COMMAND updateCommand_create(bundle_context_t context) {
 	COMMAND command = (COMMAND) malloc(sizeof(*command));
 	command->bundleContext = context;
 	command->name = "update";

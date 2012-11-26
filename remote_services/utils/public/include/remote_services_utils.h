@@ -31,6 +31,6 @@
 #include <bundle_context.h>
 #include <celix_errno.h>
 
-celix_status_t remoteServicesUtils_getUUID(apr_pool_t *pool, BUNDLE_CONTEXT context, char **uuidStr);
+celix_status_t remoteServicesUtils_getUUID(apr_pool_t *pool, bundle_context_t context, char **uuidStr);
 
 #endif /* REMOTE_SERVICES_UTILS_H_ */

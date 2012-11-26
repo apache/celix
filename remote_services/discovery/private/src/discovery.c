@@ -40,7 +40,7 @@
 #include "discovery.h"
 
 struct discovery {
-	BUNDLE_CONTEXT context;
+	bundle_context_t context;
 	apr_pool_t *pool;
 
 	HASH_MAP listenerReferences;
@@ -76,7 +76,7 @@ SLPBoolean discovery_attributesCallback(SLPHandle hslp, const char *attributes, 
 celix_status_t discovery_deregisterEndpoint(discovery_t discovery, const char *serviceUrl);
 void discovery_deregistrationReport(SLPHandle hslp, SLPError errcode, void* cookie);
 
-celix_status_t discovery_create(apr_pool_t *pool, BUNDLE_CONTEXT context, discovery_t *discovery) {
+celix_status_t discovery_create(apr_pool_t *pool, bundle_context_t context, discovery_t *discovery) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*discovery = apr_palloc(pool, sizeof(**discovery));
@@ -177,8 +177,10 @@ celix_status_t discovery_addService(discovery_t discovery, endpoint_description_
 		PROPERTIES serviceProperties = NULL;
 		serviceRegistration_getProperties(registration, &serviceProperties);
 		char *scope = properties_get(serviceProperties, (char *) ENDPOINT_LISTENER_SCOPE);
-		FILTER filter = filter_create(scope, discovery->pool);
-		if (filter_match(filter, endpoint->properties)) {
+		filter_t filter = filter_create(scope, discovery->pool);
+		bool matchResult = false;
+		filter_match(filter, endpoint->properties, &matchResult);
+		if (matchResult) {
 			printf("DISCOVERY: Add service (%s)\n", endpoint->service);
 			bundleContext_getService(discovery->context, reference, (void**)&listener);
 			discovery_informListener(discovery, listener, endpoint);

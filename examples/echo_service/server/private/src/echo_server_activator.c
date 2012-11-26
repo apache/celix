@@ -35,14 +35,14 @@ struct echoActivator {
 	ECHO_SERVICE es;
 };
 
-celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
 	struct echoActivator * act = malloc(sizeof(*act));
 	act->reg = NULL;
 	*userData = act;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
 	struct echoActivator * act = (struct echoActivator *) userData;
 
 	ECHO_SERVICE es = malloc(sizeof(*es));
@@ -57,7 +57,7 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
     return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
 	struct echoActivator * act = (struct echoActivator *) userData;
 
 	serviceRegistration_unregister(act->reg);
@@ -66,7 +66,7 @@ celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
 	struct echoActivator * act = (struct echoActivator *) userData;
 	act->es->echo = NULL;
 	echoServer_destroy(act->es->server);

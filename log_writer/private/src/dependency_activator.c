@@ -33,7 +33,7 @@
 #include "log_service.h"
 #include "bundle_context.h"
 
-void * dm_create(BUNDLE_CONTEXT context) {
+void * dm_create(bundle_context_t context) {
     apr_pool_t *pool;
 
     bundleContext_getMemoryPool(context, &pool);
@@ -43,7 +43,7 @@ void * dm_create(BUNDLE_CONTEXT context) {
 	return writer;
 }
 
-void dm_init(void * userData, BUNDLE_CONTEXT context, DEPENDENCY_MANAGER manager) {
+void dm_init(void * userData, bundle_context_t context, DEPENDENCY_MANAGER manager) {
 	log_writer_t data = (log_writer_t) userData;
 
 	SERVICE service = dependencyActivatorBase_createService(manager);
@@ -59,7 +59,7 @@ void dm_init(void * userData, BUNDLE_CONTEXT context, DEPENDENCY_MANAGER manager
 	dependencyManager_add(manager, service);
 }
 
-void dm_destroy(void * userData, BUNDLE_CONTEXT context, DEPENDENCY_MANAGER manager) {
+void dm_destroy(void * userData, bundle_context_t context, DEPENDENCY_MANAGER manager) {
     log_writer_t data = (log_writer_t) userData;
 //    serviceComponent_removeServiceDependency(data->service, data->dep);
 	dependencyManager_remove(manager, data->service);

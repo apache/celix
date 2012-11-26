@@ -27,7 +27,7 @@
 #ifndef LOG_COMMAND_H_
 #define LOG_COMMAND_H_
 
-COMMAND logCommand_create(BUNDLE_CONTEXT context);
+COMMAND logCommand_create(bundle_context_t context);
 void logCommand_destroy(COMMAND command);
 
 #endif /* LOG_COMMAND_H_ */

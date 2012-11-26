@@ -70,7 +70,7 @@ struct framework {
 
 	long nextBundleId;
 	struct serviceRegistry * registry;
-	BUNDLE_CACHE cache;
+bundle_cache_t cache;
 
 	apr_thread_cond_t *shutdownGate;
 	apr_thread_cond_t *condition;
@@ -98,9 +98,9 @@ struct framework {
 
 struct activator {
 	void * userData;
-	void (*start)(void * userData, BUNDLE_CONTEXT context);
-	void (*stop)(void * userData, BUNDLE_CONTEXT context);
-	void (*destroy)(void * userData, BUNDLE_CONTEXT context);
+	void (*start)(void * userData, bundle_context_t context);
+	void (*stop)(void * userData, bundle_context_t context);
+	void (*destroy)(void * userData, bundle_context_t context);
 };
 
 celix_status_t framework_setBundleStateAndNotify(FRAMEWORK framework, BUNDLE bundle, int state);
@@ -117,7 +117,7 @@ celix_status_t framework_releaseInstallLock(FRAMEWORK framework, char * location
 
 long framework_getNextBundleId(FRAMEWORK framework);
 
-celix_status_t fw_installBundle2(FRAMEWORK framework, BUNDLE * bundle, long id, char * location, char *inputFile, BUNDLE_ARCHIVE archive);
+celix_status_t fw_installBundle2(FRAMEWORK framework, BUNDLE * bundle, long id, char * location, char *inputFile, bundle_archive_t archive);
 
 celix_status_t fw_refreshBundles(FRAMEWORK framework, BUNDLE bundles[], int size);
 celix_status_t fw_refreshBundle(FRAMEWORK framework, BUNDLE bundle);
@@ -141,7 +141,7 @@ celix_status_t fw_refreshHelper_stop(struct fw_refreshHelper * refreshHelper);
 struct fw_serviceListener {
 	BUNDLE bundle;
 	SERVICE_LISTENER listener;
-	FILTER filter;
+	filter_t filter;
 };
 
 typedef struct fw_serviceListener * FW_SERVICE_LISTENER;
@@ -265,7 +265,7 @@ celix_status_t framework_destroy(FRAMEWORK framework) {
 	    HASH_MAP_ENTRY entry = hashMapIterator_nextEntry(iterator);
 		BUNDLE bundle = hashMapEntry_getValue(entry);
 		char * location = hashMapEntry_getKey(entry);
-		BUNDLE_ARCHIVE archive = NULL;
+		bundle_archive_t archive = NULL;
 
 		// for each installed bundle, clean up memory
 		MODULE mod = NULL;
@@ -311,7 +311,7 @@ celix_status_t fw_init(FRAMEWORK framework) {
 	MODULE module = NULL;
 	HASH_MAP wires;
 	ARRAY_LIST archives;
-	BUNDLE_ARCHIVE archive = NULL;
+	bundle_archive_t archive = NULL;
 
 	if (status != CELIX_SUCCESS) {
 		framework_releaseBundleLock(framework, framework->bundle);
@@ -371,11 +371,11 @@ celix_status_t fw_init(FRAMEWORK framework) {
 #endif
         int arcIdx;
 		void * handle;
-		BUNDLE_CONTEXT context = NULL;
+		bundle_context_t context = NULL;
 		ACTIVATOR activator;
 
         for (arcIdx = 0; arcIdx < arrayList_size(archives); arcIdx++) {
-            BUNDLE_ARCHIVE archive = (BUNDLE_ARCHIVE) arrayList_get(archives, arcIdx);
+            bundle_archive_t archive = (bundle_archive_t) arrayList_get(archives, arcIdx);
             long id;
 			BUNDLE_STATE bundleState;
             bundleArchive_getId(archive, &id);
@@ -421,12 +421,12 @@ celix_status_t fw_init(FRAMEWORK framework) {
         if (activator == NULL) {
             status = CELIX_ENOMEM;
         }  else {
-			BUNDLE_CONTEXT context = NULL;
+			bundle_context_t context = NULL;
 			void * userData = NULL;
-            void * (*create)(BUNDLE_CONTEXT context);
-            void (*start)(void * handle, BUNDLE_CONTEXT context);
-            void (*stop)(void * handle, BUNDLE_CONTEXT context);
-            void (*destroy)(void * handle, BUNDLE_CONTEXT context);
+            void * (*create)(bundle_context_t context);
+            void (*start)(void * handle, bundle_context_t context);
+            void (*stop)(void * handle, bundle_context_t context);
+            void (*destroy)(void * handle, bundle_context_t context);
             create = dlsym(bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_CREATE);
             start = dlsym(bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_START);
             stop = dlsym(bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_STOP);
@@ -514,8 +514,8 @@ celix_status_t fw_installBundle(FRAMEWORK framework, BUNDLE * bundle, char * loc
 	return fw_installBundle2(framework, bundle, -1, location, inputFile, NULL);
 }
 
-celix_status_t fw_installBundle2(FRAMEWORK framework, BUNDLE * bundle, long id, char * location, char *inputFile, BUNDLE_ARCHIVE archive) {
-    BUNDLE_ARCHIVE bundle_archive = NULL;
+celix_status_t fw_installBundle2(FRAMEWORK framework, BUNDLE * bundle, long id, char * location, char *inputFile, bundle_archive_t archive) {
+    bundle_archive_t bundle_archive = NULL;
     BUNDLE_STATE state;
 	apr_pool_t *bundlePool;
   	bool locked;
@@ -579,7 +579,7 @@ celix_status_t framework_getBundleEntry(FRAMEWORK framework, BUNDLE bundle, char
 	celix_status_t status = CELIX_SUCCESS;
 
 	BUNDLE_REVISION revision;
-	BUNDLE_ARCHIVE archive = NULL;
+	bundle_archive_t archive = NULL;
 
 	status = bundle_getArchive(bundle, &archive);
 	if (status == CELIX_SUCCESS) {
@@ -615,7 +615,7 @@ celix_status_t fw_startBundle(FRAMEWORK framework, BUNDLE bundle, int options) {
 
 	HASH_MAP wires;
 	void * handle;
-	BUNDLE_CONTEXT context = NULL;
+	bundle_context_t context = NULL;
 	BUNDLE_STATE state;
 	MODULE module = NULL;
 	MANIFEST manifest = NULL;
@@ -636,7 +636,7 @@ celix_status_t fw_startBundle(FRAMEWORK framework, BUNDLE bundle, int options) {
 	char *archiveRoot;
 	long revisionNumber;
 	ACTIVATOR activator;
-	BUNDLE_ARCHIVE archive = NULL;
+	bundle_archive_t archive = NULL;
 	apr_pool_t *bundlePool = NULL;
 
 	if (lock != CELIX_SUCCESS) {
@@ -724,11 +724,11 @@ celix_status_t fw_startBundle(FRAMEWORK framework, BUNDLE bundle, int options) {
 			    return CELIX_ENOMEM;
 			} else {
 				void * userData = NULL;
-                BUNDLE_CONTEXT context;
-                void * (*create)(BUNDLE_CONTEXT context, void **userData);
-                void (*start)(void * userData, BUNDLE_CONTEXT context);
-                void (*stop)(void * userData, BUNDLE_CONTEXT context);
-                void (*destroy)(void * userData, BUNDLE_CONTEXT context);
+                bundle_context_t context;
+                void * (*create)(bundle_context_t context, void **userData);
+                void (*start)(void * userData, bundle_context_t context);
+                void (*stop)(void * userData, bundle_context_t context);
+                void (*destroy)(void * userData, bundle_context_t context);
                 create = dlsym(bundle_getHandle(bundle), BUNDLE_ACTIVATOR_CREATE);
                 start = dlsym(bundle_getHandle(bundle), BUNDLE_ACTIVATOR_START);
                 stop = dlsym(bundle_getHandle(bundle), BUNDLE_ACTIVATOR_STOP);
@@ -771,7 +771,7 @@ celix_status_t framework_updateBundle(FRAMEWORK framework, BUNDLE bundle, char *
 	BUNDLE_STATE oldState;
 	char *location;
 	bool locked;
-	BUNDLE_ARCHIVE archive = NULL;
+	bundle_archive_t archive = NULL;
 
 	if (lock != CELIX_SUCCESS) {
 		printf("Cannot update bundle, in wrong state");
@@ -821,7 +821,7 @@ celix_status_t fw_stopBundle(FRAMEWORK framework, BUNDLE bundle, bool record) {
 	} else {
 		BUNDLE_STATE state;
 		ACTIVATOR activator;
-		BUNDLE_CONTEXT context;
+		bundle_context_t context;
 		MODULE module = NULL;
 		MANIFEST manifest = NULL;
 		if (record) {
@@ -920,7 +920,7 @@ celix_status_t fw_uninstallBundle(FRAMEWORK framework, BUNDLE bundle) {
             framework_releaseGlobalLock(framework);
             status = CELIX_ILLEGAL_STATE;
         } else {
-            BUNDLE_ARCHIVE archive = NULL;
+            bundle_archive_t archive = NULL;
             char * location;
 			BUNDLE target;
 			status = bundle_getArchive(bundle, &archive);
@@ -1171,9 +1171,9 @@ celix_status_t fw_registerService(FRAMEWORK framework, SERVICE_REGISTRATION *reg
 		for (i = 0; i > arrayList_size(framework->serviceListeners); i++) {
 			FW_SERVICE_LISTENER listener = arrayList_get(framework->serviceListeners, i);
 			apr_pool_t *pool;
-			BUNDLE_CONTEXT context;
+			bundle_context_t context;
 			listener_hook_info_t info;
-			BUNDLE_CONTEXT lContext = NULL;
+			bundle_context_t lContext = NULL;
 
 			bundle_getContext(bundle, &context);
 			bundleContext_getMemoryPool(context, &pool);
@@ -1223,7 +1223,7 @@ celix_status_t fw_registerServiceFactory(FRAMEWORK framework, SERVICE_REGISTRATI
 }
 
 celix_status_t fw_getServiceReferences(FRAMEWORK framework, ARRAY_LIST *references, BUNDLE bundle, const char * serviceName, char * sfilter) {
-	FILTER filter = NULL;
+	filter_t filter = NULL;
 	int refIdx = 0;
 	apr_pool_t *pool = NULL;
 
@@ -1277,7 +1277,7 @@ bool framework_ungetService(FRAMEWORK framework, BUNDLE bundle, SERVICE_REFERENC
 void fw_addServiceListener(FRAMEWORK framework, BUNDLE bundle, SERVICE_LISTENER listener, char * sfilter) {
 //	apr_pool_t *pool;
 //	apr_pool_t *bpool;
-//	BUNDLE_CONTEXT context;
+//	bundle_context_t context;
 //	bundle_getContext(bundle, &context);
 //	bundleContext_getMemoryPool(context, &bpool);
 //	apr_pool_create(&pool, bpool);
@@ -1289,13 +1289,13 @@ void fw_addServiceListener(FRAMEWORK framework, BUNDLE bundle, SERVICE_LISTENER 
 	FW_SERVICE_LISTENER fwListener = (FW_SERVICE_LISTENER) malloc(sizeof(*fwListener));
 	apr_pool_t *pool = NULL;
 
-	BUNDLE_CONTEXT context = NULL;
+	bundle_context_t context = NULL;
 
 	bundle_getMemoryPool(bundle, &pool);
 
 	fwListener->bundle = bundle;
 	if (sfilter != NULL) {
-		FILTER filter = filter_create(sfilter, pool);
+		filter_t filter = filter_create(sfilter, pool);
 		fwListener->filter = filter;
 	} else {
 		fwListener->filter = NULL;
@@ -1334,14 +1334,14 @@ void fw_removeServiceListener(FRAMEWORK framework, BUNDLE bundle, SERVICE_LISTEN
 	unsigned int i;
 	FW_SERVICE_LISTENER element;
 
-	BUNDLE_CONTEXT context;
+	bundle_context_t context;
 	bundle_getContext(bundle, &context);
 	bundleContext_getMemoryPool(context, &pool);
 	
 	for (i = 0; i < arrayList_size(framework->serviceListeners); i++) {
 		element = (FW_SERVICE_LISTENER) arrayList_get(framework->serviceListeners, i);
 		if (element->listener == listener && element->bundle == bundle) {
-			BUNDLE_CONTEXT lContext = NULL;
+			bundle_context_t lContext = NULL;
 
 			info = apr_palloc(pool, sizeof(*info));
 
@@ -1431,9 +1431,14 @@ void fw_serviceChanged(FRAMEWORK framework, SERVICE_EVENT_TYPE eventType, SERVIC
 		for (i = 0; i < arrayList_size(framework->serviceListeners); i++) {
 			int matched = 0;
 			PROPERTIES props = NULL;
+			bool matchResult = false;
+
 			element = (FW_SERVICE_LISTENER) arrayList_get(framework->serviceListeners, i);
 			serviceRegistration_getProperties(registration, &props);
-			matched = (element->filter == NULL) || filter_match(element->filter, props);
+			if (element->filter != NULL) {
+				filter_match(element->filter, props, &matchResult);
+			}
+			matched = (element->filter == NULL) || matchResult;
 			if (matched) {
 				SERVICE_REFERENCE reference = NULL;
 				SERVICE_EVENT event;
@@ -1449,7 +1454,11 @@ void fw_serviceChanged(FRAMEWORK framework, SERVICE_EVENT_TYPE eventType, SERVIC
 
 				element->listener->serviceChanged(element->listener, event);
 			} else if (eventType == MODIFIED) {
-				int matched = (element->filter == NULL) || filter_match(element->filter, oldprops);
+				bool matchResult = false;
+				if (element->filter != NULL) {
+					filter_match(element->filter, oldprops, &matchResult);
+				}
+				int matched = (element->filter == NULL) || matchResult;
 				if (matched) {
 					SERVICE_REFERENCE reference = NULL;
 					SERVICE_EVENT endmatch = (SERVICE_EVENT) malloc(sizeof(*endmatch));
@@ -1481,7 +1490,7 @@ void fw_serviceChanged(FRAMEWORK framework, SERVICE_EVENT_TYPE eventType, SERVIC
 //	return status;
 //}
 
-celix_status_t getManifest(BUNDLE_ARCHIVE archive, apr_pool_t *pool, MANIFEST *manifest) {
+celix_status_t getManifest(bundle_archive_t archive, apr_pool_t *pool, MANIFEST *manifest) {
 	celix_status_t status = CELIX_SUCCESS;
 	char mf[256];
 	long refreshCount;
@@ -1575,7 +1584,7 @@ BUNDLE framework_getBundleById(FRAMEWORK framework, long id) {
 	BUNDLE bundle = NULL;
 	while (hashMapIterator_hasNext(iter)) {
 		BUNDLE b = hashMapIterator_nextValue(iter);
-		BUNDLE_ARCHIVE archive = NULL;
+		bundle_archive_t archive = NULL;
 		long bid;
 		bundle_getArchive(b, &archive);
 		bundleArchive_getId(archive, &bid);
@@ -1817,7 +1826,7 @@ static void *APR_THREAD_FUNC framework_shutdown(apr_thread_t *thd, void *framewo
 		bundle_getState(bundle, &state);
 		if (state == BUNDLE_ACTIVE || state == BUNDLE_STARTING) {
 			char *location;
-			BUNDLE_ARCHIVE archive = NULL;
+			bundle_archive_t archive = NULL;
 
 			bundle_getArchive(bundle, &archive);
 			bundleArchive_getLocation(archive, &location);
@@ -1985,12 +1994,12 @@ celix_status_t fw_invokeBundleListener(FRAMEWORK framework, bundle_listener_t li
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
 	// nothing to do
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
     celix_status_t status = CELIX_SUCCESS;
 
 	apr_thread_t *shutdownThread;
@@ -2011,6 +2020,6 @@ celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
 	return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
 	return CELIX_SUCCESS;
 }

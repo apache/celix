@@ -58,7 +58,7 @@ struct executor {
 	pthread_mutex_t mutex;
 };
 
-SERVICE serviceComponent_create(BUNDLE_CONTEXT context, DEPENDENCY_MANAGER manager) {
+SERVICE serviceComponent_create(bundle_context_t context, DEPENDENCY_MANAGER manager) {
     SERVICE service;
     apr_pool_t *pool;
 

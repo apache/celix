@@ -66,7 +66,7 @@ celix_status_t deploymentAdmin_dropDeploymentPackageResources(deployment_admin_t
 celix_status_t deploymentAdmin_dropDeploymentPackageBundles(deployment_admin_t admin, deployment_package_t source, deployment_package_t target);
 celix_status_t deploymentAdmin_startDeploymentPackageBundles(deployment_admin_t admin, deployment_package_t source);
 
-celix_status_t deploymentAdmin_create(apr_pool_t *pool, BUNDLE_CONTEXT context, deployment_admin_t *admin) {
+celix_status_t deploymentAdmin_create(apr_pool_t *pool, bundle_context_t context, deployment_admin_t *admin) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_pool_t *subpool;
 	apr_pool_create(&subpool, pool);

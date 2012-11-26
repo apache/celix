@@ -43,7 +43,7 @@
 
 struct device_manager {
 	apr_pool_t *pool;
-	BUNDLE_CONTEXT context;
+	bundle_context_t context;
 	HASH_MAP devices;
 	HASH_MAP drivers;
 	ARRAY_LIST locators;
@@ -54,7 +54,7 @@ static celix_status_t deviceManager_attachAlgorithm(device_manager_t manager, SE
 static celix_status_t deviceManager_getIdleDevices(device_manager_t manager, apr_pool_t *pool, ARRAY_LIST *idleDevices);
 static celix_status_t deviceManager_isDriverBundle(device_manager_t manager, BUNDLE bundle, bool *isDriver);
 
-celix_status_t deviceManager_create(apr_pool_t *pool, BUNDLE_CONTEXT context, device_manager_t *manager) {
+celix_status_t deviceManager_create(apr_pool_t *pool, bundle_context_t context, device_manager_t *manager) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*manager = apr_palloc(pool, sizeof(**manager));
@@ -578,7 +578,7 @@ celix_status_t deviceManager_isDriverBundle(device_manager_t manager, BUNDLE bun
 }
 
 
-celix_status_t deviceManager_getBundleContext(device_manager_t manager, BUNDLE_CONTEXT *context) {
+celix_status_t deviceManager_getBundleContext(device_manager_t manager, bundle_context_t *context) {
 	celix_status_t status = CELIX_SUCCESS;
 	if (manager->context != NULL) {
 		(*context) = manager->context;

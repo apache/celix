@@ -32,7 +32,7 @@
  * grant access to other methods so that this bundle can interact with the
  * Framework.
  */
-typedef struct bundleContext *BUNDLE_CONTEXT;
+typedef struct bundleContext *bundle_context_t;
 
 #include "service_factory.h"
 #include "service_listener.h"
@@ -40,36 +40,36 @@ typedef struct bundleContext *BUNDLE_CONTEXT;
 #include "properties.h"
 #include "array_list.h"
 
-celix_status_t bundleContext_create(FRAMEWORK framework, BUNDLE bundle, BUNDLE_CONTEXT *bundle_context);
-celix_status_t bundleContext_destroy(BUNDLE_CONTEXT context);
+celix_status_t bundleContext_create(FRAMEWORK framework, BUNDLE bundle, bundle_context_t *bundle_context);
+celix_status_t bundleContext_destroy(bundle_context_t context);
 
-celix_status_t bundleContext_getBundle(BUNDLE_CONTEXT context, BUNDLE *bundle);
-celix_status_t bundleContext_getFramework(BUNDLE_CONTEXT context, FRAMEWORK *framework);
-celix_status_t bundleContext_getMemoryPool(BUNDLE_CONTEXT context, apr_pool_t **memory_pool);
+celix_status_t bundleContext_getBundle(bundle_context_t context, BUNDLE *bundle);
+celix_status_t bundleContext_getFramework(bundle_context_t context, FRAMEWORK *framework);
+celix_status_t bundleContext_getMemoryPool(bundle_context_t context, apr_pool_t **memory_pool);
 
-celix_status_t bundleContext_installBundle(BUNDLE_CONTEXT context, char * location, BUNDLE *bundle);
-celix_status_t bundleContext_installBundle2(BUNDLE_CONTEXT context, char * location, char *inputFile, BUNDLE *bundle);
+celix_status_t bundleContext_installBundle(bundle_context_t context, char * location, BUNDLE *bundle);
+celix_status_t bundleContext_installBundle2(bundle_context_t context, char * location, char *inputFile, BUNDLE *bundle);
 
-celix_status_t bundleContext_registerService(BUNDLE_CONTEXT context, char * serviceName, void * svcObj,
+celix_status_t bundleContext_registerService(bundle_context_t context, char * serviceName, void * svcObj,
         PROPERTIES properties, SERVICE_REGISTRATION *service_registration);
-celix_status_t bundleContext_registerServiceFactory(BUNDLE_CONTEXT context, char * serviceName, service_factory_t factory,
+celix_status_t bundleContext_registerServiceFactory(bundle_context_t context, char * serviceName, service_factory_t factory,
         PROPERTIES properties, SERVICE_REGISTRATION *service_registration);
 
-celix_status_t bundleContext_getServiceReferences(BUNDLE_CONTEXT context, const char * serviceName, char * filter, ARRAY_LIST *service_references);
-celix_status_t bundleContext_getServiceReference(BUNDLE_CONTEXT context, char * serviceName, SERVICE_REFERENCE *service_reference);
+celix_status_t bundleContext_getServiceReferences(bundle_context_t context, const char * serviceName, char * filter, ARRAY_LIST *service_references);
+celix_status_t bundleContext_getServiceReference(bundle_context_t context, char * serviceName, SERVICE_REFERENCE *service_reference);
 
-celix_status_t bundleContext_getService(BUNDLE_CONTEXT context, SERVICE_REFERENCE reference, void **service_instance);
-celix_status_t bundleContext_ungetService(BUNDLE_CONTEXT context, SERVICE_REFERENCE reference, bool *result);
+celix_status_t bundleContext_getService(bundle_context_t context, SERVICE_REFERENCE reference, void **service_instance);
+celix_status_t bundleContext_ungetService(bundle_context_t context, SERVICE_REFERENCE reference, bool *result);
 
-celix_status_t bundleContext_getBundles(BUNDLE_CONTEXT context, ARRAY_LIST *bundles);
-celix_status_t bundleContext_getBundleById(BUNDLE_CONTEXT context, long id, BUNDLE *bundle);
+celix_status_t bundleContext_getBundles(bundle_context_t context, ARRAY_LIST *bundles);
+celix_status_t bundleContext_getBundleById(bundle_context_t context, long id, BUNDLE *bundle);
 
-celix_status_t bundleContext_addServiceListener(BUNDLE_CONTEXT context, SERVICE_LISTENER listener, char * filter);
-celix_status_t bundleContext_removeServiceListener(BUNDLE_CONTEXT context, SERVICE_LISTENER listener);
+celix_status_t bundleContext_addServiceListener(bundle_context_t context, SERVICE_LISTENER listener, char * filter);
+celix_status_t bundleContext_removeServiceListener(bundle_context_t context, SERVICE_LISTENER listener);
 
-celix_status_t bundleContext_addBundleListener(BUNDLE_CONTEXT context, bundle_listener_t listener);
-celix_status_t bundleContext_removeBundleListener(BUNDLE_CONTEXT context, bundle_listener_t listener);
+celix_status_t bundleContext_addBundleListener(bundle_context_t context, bundle_listener_t listener);
+celix_status_t bundleContext_removeBundleListener(bundle_context_t context, bundle_listener_t listener);
 
-celix_status_t bundleContext_getProperty(BUNDLE_CONTEXT context, const char *name, char **value);
+celix_status_t bundleContext_getProperty(bundle_context_t context, const char *name, char **value);
 
 #endif /* BUNDLE_CONTEXT_H_ */

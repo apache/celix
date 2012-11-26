@@ -26,6 +26,6 @@
 #ifndef SQUARE_SHAPE_H_
 #define SQUARE_SHAPE_H_
 
-extern SIMPLE_SHAPE squareShape_create(BUNDLE_CONTEXT context);
+extern SIMPLE_SHAPE squareShape_create(bundle_context_t context);
 
 #endif /* SQUARE_SHAPE_H_ */

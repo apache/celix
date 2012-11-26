@@ -45,7 +45,7 @@ struct import_reference {
 
 struct remote_service_admin {
 	apr_pool_t *pool;
-	BUNDLE_CONTEXT context;
+	bundle_context_t context;
 
 	HASH_MAP exportedServices;
 	HASH_MAP importedServices;
@@ -53,7 +53,7 @@ struct remote_service_admin {
 	struct mg_context *ctx;
 };
 
-celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, BUNDLE_CONTEXT context, remote_service_admin_t *admin);
+celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_t context, remote_service_admin_t *admin);
 celix_status_t remoteServiceAdmin_stop(remote_service_admin_t admin);
 
 celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t admin, SERVICE_REFERENCE reference, PROPERTIES properties, ARRAY_LIST *registrations);

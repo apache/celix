@@ -31,12 +31,12 @@
 #include "greeting_service.h"
 
 
-celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
 	*userData = NULL;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT ctx) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_t ctx) {
 	SERVICE_REFERENCE ref = NULL;
 	celix_status_t status = bundleContext_getServiceReference(ctx, (char *) GREETING_SERVICE_NAME, &ref);
 	if (status == CELIX_SUCCESS) {
@@ -57,10 +57,10 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT ctx) {
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
 	return CELIX_SUCCESS;
 }
