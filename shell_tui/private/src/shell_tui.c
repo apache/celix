@@ -91,9 +91,9 @@ void shellTui_serviceChanged(SERVICE_LISTENER listener, SERVICE_EVENT event) {
 	bool result = NULL;
     SHELL_TUI_ACTIVATOR act = (SHELL_TUI_ACTIVATOR) listener->handle;
 
-	if ((event->type == REGISTEREDA) && (act->reference == NULL)) {
+	if ((event->type == SERVICE_EVENT_REGISTERED) && (act->reference == NULL)) {
 		shellTui_initializeService(act);
-	} else if ((event->type == UNREGISTERING) && (act->reference == event->reference)) {
+	} else if ((event->type == SERVICE_EVENT_UNREGISTERING) && (act->reference == event->reference)) {
 		bundleContext_ungetService(act->context, act->reference, &result);
 		act->reference = NULL;
 		act->shell = NULL;

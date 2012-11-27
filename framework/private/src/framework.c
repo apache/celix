@@ -1476,7 +1476,7 @@ void fw_serviceChanged(FRAMEWORK framework, SERVICE_EVENT_TYPE eventType, SERVIC
 				event->reference = reference;
 
 				element->listener->serviceChanged(element->listener, event);
-			} else if (eventType == MODIFIED) {
+			} else if (eventType == SERVICE_EVENT_MODIFIED) {
 				bool matchResult = false;
 				int matched = 0;
 				if (element->filter != NULL) {
@@ -1490,7 +1490,7 @@ void fw_serviceChanged(FRAMEWORK framework, SERVICE_EVENT_TYPE eventType, SERVIC
 					serviceRegistry_createServiceReference(framework->registry, element->listener->pool, registration, &reference);
 
 					endmatch->reference = reference;
-					endmatch->type = MODIFIED_ENDMATCH;
+					endmatch->type = SERVICE_EVENT_MODIFIED_ENDMATCH;
 					element->listener->serviceChanged(element->listener, endmatch);
 				}
 			}

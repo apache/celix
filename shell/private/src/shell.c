@@ -158,7 +158,7 @@ void shell_removeCommand(SHELL shell, SERVICE_REFERENCE reference) {
 
 void shell_serviceChanged(SERVICE_LISTENER listener, SERVICE_EVENT event) {
 	SHELL shell = (SHELL) listener->handle;
-	if (event->type == REGISTEREDA) {
+	if (event->type == SERVICE_EVENT_REGISTERED) {
 		shell_addCommand(shell, event->reference);
 	}
 }

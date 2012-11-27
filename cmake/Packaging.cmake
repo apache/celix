@@ -22,6 +22,13 @@ IF(NOT CPACK_COMMAND)
 	MESSAGE(FATAL_ERROR "Need CPack!")
 ENDIF(NOT CPACK_COMMAND)
 
+find_program(JAR_COMMAND jar)
+if(JAR_COMMAND)
+	message("Using JAR to repack bundles, bundles can be used by Apache ACE")
+else(JAR_COMMAND)
+    message("No JAR support, generated bundles are not usable for Apache ACE")
+endif(JAR_COMMAND)
+
 SET(CPACK_GENERATOR "ZIP")
 
 file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/bundles ${PROJECT_BINARY_DIR}/packages)
@@ -67,16 +74,25 @@ MACRO(bundle)
 	SET(__bundleConfig ${CMAKE_CURRENT_BINARY_DIR}/CPackConfig-${INT_BUNDLE_NAME}-bundle.cmake)
 	SET(BUNDLE_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR})
 	CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/CPackConfig.in ${__bundleConfig} @ONLY)
-	ADD_CUSTOM_COMMAND(TARGET ${INT_BUNDLE_NAME}
-	POST_BUILD
-		COMMAND ${CPACK_COMMAND} ARGS -C Debug --config ${__bundleConfig}
-	#	COMMAND mkdir -p ${PROJECT_BINARY_DIR}/ziptojar \;
-	#		cd ${PROJECT_BINARY_DIR}/ziptojar \;
-	#		jar -xf ${PROJECT_BINARY_DIR}/bundles/${INT_BUNDLE_NAME}.zip \;
-	#		jar -cfm ${PROJECT_BINARY_DIR}/bundles/${INT_BUNDLE_NAME}.zip META-INF/MANIFEST.MF . \;
-	#		rm -rf ${PROJECT_BINARY_DIR}/ziptojar/*
-		WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/bundles
-	)
+
+	if(JAR_COMMAND)
+		ADD_CUSTOM_COMMAND(TARGET ${INT_BUNDLE_NAME}
+		POST_BUILD
+			COMMAND ${CPACK_COMMAND} ARGS -C Debug --config ${__bundleConfig}
+			COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/ziptojar
+			COMMAND ${CMAKE_COMMAND} -E chdir ${PROJECT_BINARY_DIR}/ziptojar ${JAR_COMMAND} -xf ${PROJECT_BINARY_DIR}/bundles/${INT_BUNDLE_NAME}.zip
+			COMMAND ${CMAKE_COMMAND} -E chdir ${PROJECT_BINARY_DIR}/ziptojar ${JAR_COMMAND} -cfm ${PROJECT_BINARY_DIR}/bundles/${INT_BUNDLE_NAME}.zip META-INF/MANIFEST.MF .
+			COMMAND ${CMAKE_COMMAND} -E remove_directory ${PROJECT_BINARY_DIR}/ziptojar
+			WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/bundles
+		)
+	else(JAR_COMMAND)
+		ADD_CUSTOM_COMMAND(TARGET ${INT_BUNDLE_NAME}
+		POST_BUILD
+			COMMAND ${CPACK_COMMAND} ARGS -C Debug --config ${__bundleConfig}
+			WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/bundles
+		)
+	endif(JAR_COMMAND)
+	
 	SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${PROJECT_BINARY_DIR}/bundles/${INT_BUNDLE_NAME}.zip)
 ENDMACRO(bundle)
 	

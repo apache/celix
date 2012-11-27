@@ -106,7 +106,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 				SERVICE_REFERENCE logService = (SERVICE_REFERENCE) arrayList_get(logServices, i);
 				SERVICE_EVENT event = apr_palloc(activator->pool, sizeof(*event));
 				event->reference = logService;
-				event->type = REGISTERED;
+				event->type = SERVICE_EVENT_REGISTERED;
 
 				listenerExample_serviceChanged(listener, event);
 			}
@@ -144,13 +144,13 @@ void listenerExample_serviceChanged(SERVICE_LISTENER listener, SERVICE_EVENT eve
 	apr_thread_mutex_lock(activator->logServiceReferencesLock);
 
 	switch (event->type) {
-	case REGISTERED:
+	case SERVICE_EVENT_REGISTERED:
 		arrayList_add(activator->logServiceReferences, event->reference);
 		break;
 //	case MODIFIED:
 //		// only the service metadata has changed, so no need to do anything here
 //		break;
-	case UNREGISTERING:
+	case SERVICE_EVENT_UNREGISTERING:
 		arrayList_remove(activator->logServiceReferences,
 				arrayList_indexOf(activator->logServiceReferences, event->reference));
 		break;

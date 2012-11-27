@@ -225,14 +225,14 @@ void *serviceTracker_getServiceByReference(service_tracker_t tracker, SERVICE_RE
 void serviceTracker_serviceChanged(SERVICE_LISTENER listener, SERVICE_EVENT event) {
 	service_tracker_t tracker = listener->handle;
 	switch (event->type) {
-		case REGISTEREDA:
-		case MODIFIED:
+		case SERVICE_EVENT_REGISTERED:
+		case SERVICE_EVENT_MODIFIED:
 			serviceTracker_track(tracker, event->reference, event);
 			break;
-		case UNREGISTERING:
+		case SERVICE_EVENT_UNREGISTERING:
 			serviceTracker_untrack(tracker, event->reference, event);
 			break;
-		case MODIFIED_ENDMATCH:
+		case SERVICE_EVENT_MODIFIED_ENDMATCH:
 			break;
 	}
 }

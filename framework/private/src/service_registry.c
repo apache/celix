@@ -208,7 +208,7 @@ celix_status_t serviceRegistry_registerServiceInternal(SERVICE_REGISTRY registry
 //		SERVICE_EVENT event = (SERVICE_EVENT) malloc(sizeof(*event));
 //		event->type = REGISTERED;
 //		event->reference = (*registration)->reference;
-		registry->serviceChanged(registry->framework, REGISTEREDA, *registration, NULL);
+		registry->serviceChanged(registry->framework, SERVICE_EVENT_REGISTERED, *registration, NULL);
 //		free(event);
 //		event = NULL;
 	}
@@ -235,7 +235,7 @@ void serviceRegistry_unregisterService(SERVICE_REGISTRY registry, BUNDLE bundle,
 	apr_thread_mutex_unlock(registry->mutex);
 
 	if (registry->serviceChanged != NULL) {
-		registry->serviceChanged(registry->framework, UNREGISTERING, registration, NULL);
+		registry->serviceChanged(registry->framework, SERVICE_EVENT_UNREGISTERING, registration, NULL);
 	}
 
 	apr_thread_mutex_lock(registry->mutex);
@@ -554,7 +554,7 @@ celix_status_t serviceRegistry_getListenerHooks(SERVICE_REGISTRY registry, apr_p
 
 celix_status_t serviceRegistry_servicePropertiesModified(SERVICE_REGISTRY registry, SERVICE_REGISTRATION registration, PROPERTIES oldprops) {
 	if (registry->serviceChanged != NULL) {
-		registry->serviceChanged(registry->framework, MODIFIED, registration, oldprops);
+		registry->serviceChanged(registry->framework, SERVICE_EVENT_MODIFIED, registration, oldprops);
 	}
 
 	return CELIX_SUCCESS;
