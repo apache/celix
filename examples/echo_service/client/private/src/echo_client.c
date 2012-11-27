@@ -24,43 +24,43 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdlib.h>
-#include <unistd.h>
 
 #include "service_tracker.h"
 
 #include "echo_client_private.h"
 #include "echo_server.h"
 
-void * trk_send(void * handle) {
+static void *APR_THREAD_FUNC trk_send(apr_thread_t *thd, void *handle) {
 	ECHO_CLIENT client = (ECHO_CLIENT) handle;
 	while (client->running) {
 		ECHO_SERVICE service = (ECHO_SERVICE) serviceTracker_getService(client->tracker);
 		if (service != NULL) {
 			service->echo(service->server, "hi");
 		}
-		sleep(1);
+		apr_sleep(1);
 	}
-	pthread_exit(NULL);
+	apr_thread_exit(thd, APR_SUCCESS);
 	return NULL;
 }
 
-ECHO_CLIENT echoClient_create(service_tracker_t echoServiceTracker) {
+ECHO_CLIENT echoClient_create(service_tracker_t echoServiceTracker, apr_pool_t *pool) {
 	ECHO_CLIENT client = malloc(sizeof(*client));
 
 	client->tracker = echoServiceTracker;
 	client->running = false;
+	client->pool = pool;
 
 	return client;
 }
 
 void echoClient_start(ECHO_CLIENT client) {
 	client->running = true;
-	pthread_create(&client->sender, NULL, trk_send, client);
+	apr_thread_create(&client->sender, NULL, trk_send, client, client->pool);
 }
 
 void echoClient_stop(ECHO_CLIENT client) {
 	client->running = false;
-	pthread_join(client->sender, NULL);
+	apr_thread_join(APR_SUCCESS, client->sender);
 }
 
 void echoClient_destroy(ECHO_CLIENT client) {

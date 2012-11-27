@@ -34,7 +34,7 @@ struct data {
 	SERVICE service;
 	bundle_context_t context;
 	ARRAY_LIST publishers;
-	pthread_t sender;
+	apr_thread_t *sender;
 	bool running;
 	log_service_t logger;
 };

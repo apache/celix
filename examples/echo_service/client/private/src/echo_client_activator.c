@@ -52,12 +52,13 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 
 	apr_pool_t *pool = NULL;
 	service_tracker_t tracker = NULL;
+	ECHO_CLIENT client = NULL;
 
 	bundleContext_getMemoryPool(context, &pool);
 	serviceTracker_create(pool, context, ECHO_SERVICE_NAME, NULL, &tracker);
 	act->tracker = tracker;
 
-	ECHO_CLIENT client = echoClient_create(tracker);
+	client = echoClient_create(tracker, pool);
 	act->client = client;
 
 	echoClient_start(act->client);

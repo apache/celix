@@ -25,8 +25,6 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
-#include <pthread.h>
-#include <unistd.h>
 #include "celixbool.h"
 
 #include "dependency_activator_base.h"
@@ -52,18 +50,22 @@ void * dm_create(bundle_context_t context) {
 
 void dm_init(void * userData, bundle_context_t context, DEPENDENCY_MANAGER manager) {
 	struct data * data = (struct data *) userData;
+	SERVICE service = NULL;
+	SERVICE_DEPENDENCY dep = NULL;
+	SERVICE_DEPENDENCY dep2 = NULL;
+
 	data->context = context;
 
-	SERVICE service = dependencyActivatorBase_createService(manager);
+	service = dependencyActivatorBase_createService(manager);
 	serviceComponent_setImplementation(service, data);
 
-	SERVICE_DEPENDENCY dep = dependencyActivatorBase_createServiceDependency(manager);
+	dep = dependencyActivatorBase_createServiceDependency(manager);
 	serviceDependency_setRequired(dep, false);
 	serviceDependency_setService(dep, PUBLISHER_NAME, "(|(id=A)(id=B))");
 	serviceDependency_setCallbacks(dep, tracker_addedServ, tracker_modifiedServ, tracker_removedServ);
 	serviceComponent_addServiceDependency(service, dep);
 
-	SERVICE_DEPENDENCY dep2 = dependencyActivatorBase_createServiceDependency(manager);
+	dep2 = dependencyActivatorBase_createServiceDependency(manager);
     serviceDependency_setRequired(dep2, false);
     serviceDependency_setService(dep2, (char *) LOG_SERVICE_NAME, NULL);
     serviceDependency_setCallbacks(dep2, tracker_addLog, tracker_modifiedLog, tracker_removeLog);

@@ -26,11 +26,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <apr_general.h>
-#include <unistd.h>
 
 #include "bundle_activator.h"
 #include "bundle_context.h"
-#include "pthread.h"
 #include "log_service.h"
 #include "bundle.h"
 
@@ -44,7 +42,7 @@ struct threadData {
 
 typedef struct threadData *THREAD_DATA;
 
-static pthread_t m_logTestThread;
+static apr_thread_t *m_logTestThread;
 
 
 //*******************************************************************************
@@ -92,11 +90,13 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context
 //------------------------------------------------------------------------------------------
 
 // Test LogService by periodically sending a message
-void *LogServiceTest (void *argument){
+void *APR_THREAD_FUNC LogServiceTest(apr_thread_t *thd, void *argument) {
 	celix_status_t status = CELIX_SUCCESS;
 	THREAD_DATA data = (THREAD_DATA) argument;
 	bundle_context_t m_context = ((THREAD_DATA) argument)->m_context;
-	while (pthread_self() == m_logTestThread) {
+	apr_os_thread_t *logThread = NULL;
+	apr_os_thread_get(&logThread, m_logTestThread);
+	while (apr_os_thread_current() == logThread) {
 		SERVICE_REFERENCE logServiceRef = NULL;
 		// lookup the current "best" LogService each time, just before we need to use it
 		status = bundleContext_getServiceReference(m_context, (char *) LOG_SERVICE_NAME, &logServiceRef);
@@ -121,22 +121,25 @@ void *LogServiceTest (void *argument){
 }
 
 void startTestThread(THREAD_DATA data) {
+	apr_pool_t *pool;
+	int rc;
 	// start separate worker thread to run the actual tests, managed by the bundle lifecycle
+	bundleContext_getMemoryPool(data->m_context, &pool);
 	data->threadId++;
-	int  rc = pthread_create(&m_logTestThread, NULL, LogServiceTest, data);
+	rc = apr_thread_create(&m_logTestThread, NULL, LogServiceTest, data, pool);
 }
 
 void stopTestThread() {
 	// thread should cooperatively shutdown on the next iteration, because field is now null
-	pthread_t testThread = m_logTestThread;
-	pthread_cancel(testThread);
-	pthread_join(testThread, NULL);
+	apr_thread_t *testThread = m_logTestThread;
+	// pthread_cancel(testThread);
+	apr_thread_join(APR_SUCCESS, testThread);
 	m_logTestThread = 0;
 }
 
 void pauseTestThread() {
 	// sleep for a bit
-	sleep(5);
+	apr_sleep(5);
 }
 
 void alternativeLog(char *message, THREAD_DATA data) {

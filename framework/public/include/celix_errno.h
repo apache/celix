@@ -33,6 +33,8 @@
 
 #include <errno.h>
 
+#include "framework_exports.h"
+
 /*!
  * \defgroup celix_errno Error Codes
  * \ingroup framework
@@ -48,7 +50,7 @@ typedef int celix_status_t;
  * Return a readable string for the given error code.
  *
  */
-char *celix_strerror(celix_status_t errorcode);
+FRAMEWORK_EXPORT char *celix_strerror(celix_status_t errorcode);
 
 /*!
  * Error code indicating successful execution of the function.

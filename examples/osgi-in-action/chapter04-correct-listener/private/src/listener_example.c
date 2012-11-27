@@ -25,7 +25,6 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
-#include <unistd.h>
 #include <apr_general.h>
 
 #include "bundle_activator.h"
@@ -89,6 +88,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 		status = CELIX_ENOMEM;
 	} else {
 		char filter[30];
+		ARRAY_LIST logServices = NULL;
 		sprintf(filter, "(objectClass=%s)", LOG_SERVICE_NAME);
 
 		listener->handle = activator;
@@ -98,7 +98,6 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 			activator->listener = listener;
 		}
 
-		ARRAY_LIST logServices = NULL;
 		status = bundleContext_getServiceReferences(context, NULL, filter, &logServices);
 		if (status == CELIX_SUCCESS) {
 			int i;
@@ -184,7 +183,7 @@ static void *APR_THREAD_FUNC listenerExample_logger(apr_thread_t *thd, void *dat
 		} else {
 			listenerExample_alternativeLog(activator, "No LogService available. Printing to standard out.");
 		}
-		sleep(5);
+		apr_sleep(5);
 	}
 
 	return NULL;

@@ -52,14 +52,14 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 	    apr_pool_t *pool;
 	    celix_status_t status = bundleContext_getMemoryPool(context, &pool);
 	    if (status == CELIX_SUCCESS) {
-            char *entry = NULL;
-            bundle_getEntry(bundle, "root", pool, &entry);
-
-            const char *options[] = {
+			char *entry = NULL;
+			const char *options[] = {
                 "document_root", entry,
                 "listening_ports", "8081",
                 NULL
             };
+            bundle_getEntry(bundle, "root", pool, &entry);
+
             data->ctx = mg_start(NULL, options);
 
             printf("Mongoose started on: %s\n", mg_get_option(data->ctx, "listening_ports"));

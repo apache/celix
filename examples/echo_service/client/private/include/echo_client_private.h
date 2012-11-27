@@ -27,19 +27,19 @@
 #ifndef ECHO_CLIENT_PRIVATE_H_
 #define ECHO_CLIENT_PRIVATE_H_
 
-#include <stdbool.h>
-#include <pthread.h>
+#include <celixbool.h>
 
 struct echoClient {
 	service_tracker_t tracker;
 	bool running;
+	apr_pool_t *pool;
 
-	pthread_t sender;
+	apr_thread_t *sender;
 };
 
 typedef struct echoClient * ECHO_CLIENT;
 
-ECHO_CLIENT echoClient_create(service_tracker_t context);
+ECHO_CLIENT echoClient_create(service_tracker_t context, apr_pool_t *pool);
 
 void echoClient_start(ECHO_CLIENT client);
 void echoClient_stop(ECHO_CLIENT client);

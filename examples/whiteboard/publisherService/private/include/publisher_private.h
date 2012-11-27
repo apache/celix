@@ -30,7 +30,7 @@
 #include "publisher.h"
 
 struct publisher {
-
+	void *data;
 };
 
 void publisher_invoke(PUBLISHER publisher, char * text);

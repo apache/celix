@@ -53,14 +53,15 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
     apr_pool_t *pool;
     status = bundleContext_getMemoryPool(context, &pool);
     if (status == CELIX_SUCCESS) {
+		PROPERTIES props = properties_create();
+
         struct activatorData * data = (struct activatorData *) userData;
         data->ps = apr_pcalloc(pool, sizeof(*(data->ps)));
         data->pub = apr_pcalloc(pool, sizeof(*(data->pub)));
         data->ps->invoke = publisher_invoke;
         data->ps->publisher = data->pub;
         data->reg = NULL;
-
-        PROPERTIES props = properties_create();
+        
 		properties_set(props, "id", "B");
 
     	bundleContext_registerService(context, PUBLISHER_NAME, data->ps, props, &data->reg);

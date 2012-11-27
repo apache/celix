@@ -25,8 +25,6 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
-#include <pthread.h>
-#include <unistd.h>
 #include "celixbool.h"
 
 #include "service.h"
@@ -34,7 +32,7 @@
 #include "tracker.h"
 #include "log_service.h"
 
-void * dp_send(void * handle) {
+static void *APR_THREAD_FUNC dp_send(apr_thread_t *thd, void *handle) {
 	struct data * data = (struct data *) handle;
 	while (data->running) {
 		int i;
@@ -45,9 +43,9 @@ void * dp_send(void * handle) {
 				data->logger->log(data->logger->logger, LOG_INFO, "Sending message to publisher");
 			}
 		}
-		sleep(1);
+		apr_sleep(1);
 	}
-	pthread_exit(NULL);
+	apr_thread_exit(thd, APR_SUCCESS);
 	return NULL;
 }
 
@@ -57,14 +55,17 @@ void service_init(void * userData) {
 
 void service_start(void * userData) {
 	struct data * data = (struct data *) userData;
+	apr_pool_t *pool = NULL;
+
 	data->running = true;
-	pthread_create(&data->sender, NULL, dp_send, data);
+	bundleContext_getMemoryPool(data->context, &pool);
+	apr_thread_create(&data->sender, NULL, dp_send, data, pool);
 }
 
 void service_stop(void * userData) {
 	struct data * data = (struct data *) userData;
 	data->running = false;
-	pthread_join(data->sender, NULL);
+	apr_thread_join(APR_SUCCESS, data->sender);
 }
 
 void service_destroy(void * userData) {
