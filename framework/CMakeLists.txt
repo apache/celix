@@ -56,7 +56,8 @@ if (FRAMEWORK)
 
 	 public/include/framework.h public/include/properties.h public/include/bundle_context.h public/include/bundle.h
 	 public/include/bundle_activator.h public/include/service_registration.h public/include/service_reference.h
-	 public/include/bundle_archive.h public/include/utils.h public/include/module.h
+	 public/include/bundle_archive.h public/include/utils.h public/include/module.h public/include/service_tracker.h
+	 public/include/service_tracker_customizer.h
 	 
 		${IO}
 	 

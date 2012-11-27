@@ -35,10 +35,10 @@
 
 void * dm_create(bundle_context_t context) {
     apr_pool_t *pool;
+	log_writer_t writer = NULL;
 
     bundleContext_getMemoryPool(context, &pool);
 
-    log_writer_t writer = NULL;
     logWriter_create(pool, &writer);
 	return writer;
 }

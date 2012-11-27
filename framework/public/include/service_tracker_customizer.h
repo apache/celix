@@ -31,6 +31,7 @@
 #include <apr_general.h>
 
 #include "celix_errno.h"
+#include "framework_exports.h"
 
 typedef celix_status_t (*addingCallback)(void *handle, SERVICE_REFERENCE reference, void **service);
 typedef celix_status_t (*addedCallback)(void * handle, SERVICE_REFERENCE reference, void * service);
@@ -39,15 +40,15 @@ typedef celix_status_t (*removedCallback)(void * handle, SERVICE_REFERENCE refer
 
 typedef struct serviceTrackerCustomizer *service_tracker_customizer_t;
 
-celix_status_t serviceTrackerCustomizer_create(apr_pool_t *pool, void *handle,
+FRAMEWORK_EXPORT celix_status_t serviceTrackerCustomizer_create(apr_pool_t *pool, void *handle,
 		addingCallback addingFunction, addedCallback addedFunction,
 		modifiedCallback modifiedFunction, removedCallback removedFunction,
 		service_tracker_customizer_t *customizer);
 
-celix_status_t serviceTrackerCustomizer_getHandle(service_tracker_customizer_t customizer, void **handle);
-celix_status_t serviceTrackerCustomizer_getAddingFunction(service_tracker_customizer_t customizer, addingCallback *function);
-celix_status_t serviceTrackerCustomizer_getAddedFunction(service_tracker_customizer_t customizer, addedCallback *function);
-celix_status_t serviceTrackerCustomizer_getModifiedFunction(service_tracker_customizer_t customizer, modifiedCallback *function);
-celix_status_t serviceTrackerCustomizer_getRemovedFunction(service_tracker_customizer_t customizer, removedCallback *function);
+FRAMEWORK_EXPORT celix_status_t serviceTrackerCustomizer_getHandle(service_tracker_customizer_t customizer, void **handle);
+FRAMEWORK_EXPORT celix_status_t serviceTrackerCustomizer_getAddingFunction(service_tracker_customizer_t customizer, addingCallback *function);
+FRAMEWORK_EXPORT celix_status_t serviceTrackerCustomizer_getAddedFunction(service_tracker_customizer_t customizer, addedCallback *function);
+FRAMEWORK_EXPORT celix_status_t serviceTrackerCustomizer_getModifiedFunction(service_tracker_customizer_t customizer, modifiedCallback *function);
+FRAMEWORK_EXPORT celix_status_t serviceTrackerCustomizer_getRemovedFunction(service_tracker_customizer_t customizer, removedCallback *function);
 
 #endif /* service_tracker_customizer_t_H_ */
