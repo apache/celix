@@ -96,10 +96,11 @@ celix_status_t manifest_read(MANIFEST manifest, char *filename) {
 		int len;
 		char * name = NULL;
 		bool skipEmptyLines = true;
-		char * lastline;
-		manifest_readAttributes(manifest, manifest->mainAttributes, file);
-
+		char * lastline = NULL;
 		apr_pool_t *subpool;
+
+		manifest_readAttributes(manifest, manifest->mainAttributes, file);
+		
 		apr_pool_create(&subpool, manifest->pool);
 		while (fgets(lbuf, sizeof(lbuf), file) != NULL ) {
 			PROPERTIES attributes;

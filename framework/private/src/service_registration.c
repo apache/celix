@@ -78,7 +78,6 @@ SERVICE_REGISTRATION serviceRegistration_createServiceFactory(apr_pool_t *pool, 
 celix_status_t serviceRegistration_createInternal(apr_pool_t *pool, SERVICE_REGISTRY registry, BUNDLE bundle, char * serviceName, long serviceId,
         void * serviceObject, PROPERTIES dictionary, bool isFactory, SERVICE_REGISTRATION *registration) {
     celix_status_t status = CELIX_SUCCESS;
-	SERVICE_REFERENCE reference;
 
     *registration = (SERVICE_REGISTRATION) apr_palloc(pool, sizeof(**registration));
     (*registration)->isServiceFactory = isFactory;

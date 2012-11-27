@@ -34,7 +34,7 @@
 
 typedef struct linkedListIterator * LINKED_LIST_ITERATOR;
 
-UTILS_EXPORT LINKED_LIST_ITERATOR linkedListIterator_create(LINKED_LIST list, int index);
+UTILS_EXPORT LINKED_LIST_ITERATOR linkedListIterator_create(LINKED_LIST list, unsigned int index);
 UTILS_EXPORT void linkedListIterator_destroy(LINKED_LIST_ITERATOR iterator);
 UTILS_EXPORT bool linkedListIterator_hasNext(LINKED_LIST_ITERATOR iterator);
 UTILS_EXPORT void * linkedListIterator_next(LINKED_LIST_ITERATOR iterator);

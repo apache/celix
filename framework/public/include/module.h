@@ -35,36 +35,37 @@ typedef struct module *MODULE;
 #include "version.h"
 #include "array_list.h"
 #include "bundle.h"
+#include "framework_exports.h"
 
 MODULE module_create(MANIFEST headerMap, char * moduleId, BUNDLE bundle);
 MODULE module_createFrameworkModule(BUNDLE bundle);
 void module_destroy(MODULE module);
 
-unsigned int module_hash(void * module);
-int module_equals(void * module, void * compare);
+FRAMEWORK_EXPORT unsigned int module_hash(void * module);
+FRAMEWORK_EXPORT int module_equals(void * module, void * compare);
 
-WIRE module_getWire(MODULE module, char * serviceName);
+FRAMEWORK_EXPORT WIRE module_getWire(MODULE module, char * serviceName);
 
-VERSION module_getVersion(MODULE module);
-celix_status_t module_getSymbolicName(MODULE module, char **symbolicName);
-char * module_getId(MODULE module);
-LINKED_LIST module_getWires(MODULE module);
-void module_setWires(MODULE module, LINKED_LIST wires);
-bool module_isResolved(MODULE module);
-void module_setResolved(MODULE module);
-BUNDLE module_getBundle(MODULE module);
+FRAMEWORK_EXPORT VERSION module_getVersion(MODULE module);
+FRAMEWORK_EXPORT celix_status_t module_getSymbolicName(MODULE module, char **symbolicName);
+FRAMEWORK_EXPORT char * module_getId(MODULE module);
+FRAMEWORK_EXPORT LINKED_LIST module_getWires(MODULE module);
+FRAMEWORK_EXPORT void module_setWires(MODULE module, LINKED_LIST wires);
+FRAMEWORK_EXPORT bool module_isResolved(MODULE module);
+FRAMEWORK_EXPORT void module_setResolved(MODULE module);
+FRAMEWORK_EXPORT BUNDLE module_getBundle(MODULE module);
 
-LINKED_LIST module_getRequirements(MODULE module);
-LINKED_LIST module_getCapabilities(MODULE module);
+FRAMEWORK_EXPORT LINKED_LIST module_getRequirements(MODULE module);
+FRAMEWORK_EXPORT LINKED_LIST module_getCapabilities(MODULE module);
 
-ARRAY_LIST module_getDependentImporters(MODULE module);
-void module_addDependentImporter(MODULE module, MODULE importer);
-void module_removeDependentImporter(MODULE module, MODULE importer);
+FRAMEWORK_EXPORT ARRAY_LIST module_getDependentImporters(MODULE module);
+FRAMEWORK_EXPORT void module_addDependentImporter(MODULE module, MODULE importer);
+FRAMEWORK_EXPORT void module_removeDependentImporter(MODULE module, MODULE importer);
 
-ARRAY_LIST module_getDependentRequirers(MODULE module);
-void module_addDependentRequirer(MODULE module, MODULE requirer);
-void module_removeDependentRequirer(MODULE module, MODULE requirer);
+FRAMEWORK_EXPORT ARRAY_LIST module_getDependentRequirers(MODULE module);
+FRAMEWORK_EXPORT void module_addDependentRequirer(MODULE module, MODULE requirer);
+FRAMEWORK_EXPORT void module_removeDependentRequirer(MODULE module, MODULE requirer);
 
-ARRAY_LIST module_getDependents(MODULE module);
+FRAMEWORK_EXPORT ARRAY_LIST module_getDependents(MODULE module);
 
 #endif /* MODULE_H_ */

@@ -256,7 +256,7 @@ celix_status_t bundleArchive_getLocation(bundle_archive_t archive, char **locati
 		apr_pool_create(&subpool, archive->mp);
 
 		bundleLocation = (char *)apr_palloc(subpool, strlen(archive->archiveRoot) + 17);
-		strcat(bundleLocation,archive->archiveRoot);
+		strcpy(bundleLocation,archive->archiveRoot);
 		strcat(bundleLocation, "/bundle.location");
 		
 		if ((rv = apr_file_open(&bundleLocationFile, bundleLocation, APR_FOPEN_READ, APR_OS_DEFAULT, archive->mp)) != APR_SUCCESS) {
@@ -393,11 +393,11 @@ celix_status_t bundleArchive_getRefreshCount(bundle_archive_t archive, long *ref
 
 	if (archive->refreshCount == -1) {
 		apr_file_t * refreshCounterFile;
-		apr_status_t rv;
-		apr_pool_t *subpool;
+		apr_status_t rv = APR_SUCCESS;
+		apr_pool_t *subpool = NULL;
+		char *refreshCounter = NULL;
+
 		apr_pool_create(&subpool, archive->mp);
-		
-		char * refreshCounter = NULL;
 		refreshCounter = (char *) apr_palloc(subpool, strlen(archive->archiveRoot) + 17);
 		strcpy(refreshCounter,archive->archiveRoot);
 		strcat(refreshCounter, "/refresh.counter");
@@ -685,10 +685,11 @@ static celix_status_t bundleArchive_initialize(bundle_archive_t archive) {
 			} else {
 				apr_file_t *bundleIdFile;
 				apr_status_t apr_status;
-				apr_pool_t *spool;
+				apr_pool_t *spool = NULL;
+				char *bundleId = NULL;
 
 				apr_pool_create(&spool, archive->mp);
-				char * bundleId = (char *)apr_palloc(spool, sizeof(*bundleId) * (strlen(archive->archiveRoot) + 11));
+				bundleId = (char *)apr_palloc(spool, sizeof(*bundleId) * (strlen(archive->archiveRoot) + 11));
 				bundleId = apr_pstrcat(spool, archive->archiveRoot, "/bundle.id", NULL);
 				
 				apr_status = apr_file_open(&bundleIdFile, bundleId, APR_FOPEN_CREATE|APR_FOPEN_WRITE, APR_OS_DEFAULT, archive->mp);
@@ -699,10 +700,11 @@ static celix_status_t bundleArchive_initialize(bundle_archive_t archive) {
 				} else {
 					char * bundleLocation;
 					apr_file_t *bundleLocationFile;
+					apr_pool_t *subpool = NULL;
+
 					apr_file_printf(bundleIdFile, "%ld", archive->id);
 					// Ignore close status, let it fail if needed again
 					apr_file_close(bundleIdFile);
-					apr_pool_t *subpool = NULL;
 					apr_pool_create(&subpool, archive->mp);
 
 					bundleLocation = (char *) apr_palloc(subpool, strlen(archive->archiveRoot) + 17);

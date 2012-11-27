@@ -106,7 +106,7 @@ static LINKED_LIST manifestParser_parseDelimitedString(char * value, char * deli
                 char * buffer = (char *) apr_pcalloc(temp_pool, sizeof(char) * 512);
                 if (buffer != NULL) {
                     int expecting = (CHAR | DELIMITER | STARTQUOTE);
-					int i;
+					unsigned int i;
 
 					buffer[0] = '\0';
                                      

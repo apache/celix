@@ -67,10 +67,11 @@ void inspectCommand_execute(COMMAND command, char * commandline, void (*out)(cha
 		char *direction = apr_strtok(NULL, " ", &token);
 		if (direction != NULL) {
 			apr_pool_t *pool = NULL;
-			bundleContext_getMemoryPool(command->bundleContext, &pool);
 			ARRAY_LIST ids = NULL;
-			arrayList_create(pool, &ids);
 			char *id = apr_strtok(NULL, " ", &token);
+
+			bundleContext_getMemoryPool(command->bundleContext, &pool);
+			arrayList_create(pool, &ids);
 			while (id != NULL) {
 				arrayList_add(ids, id);
 				id = apr_strtok(NULL, " ", &token);
@@ -104,11 +105,12 @@ celix_status_t inspectCommand_printExportedServices(COMMAND command, ARRAY_LIST 
 		celix_status_t status = bundleContext_getBundles(command->bundleContext, &bundles);
 	} else {
 		apr_pool_t *pool = NULL;
+		unsigned int i;
+
 		bundleContext_getMemoryPool(command->bundleContext, &pool);
 		arrayList_create(pool, &bundles);
-		int i;
 		for (i = 0; i < arrayList_size(ids); i++) {
-			char *idStr = arrayList_get(ids, i);
+			char *idStr = (char *) arrayList_get(ids, i);
 			long id = atol(idStr);
 			BUNDLE b = NULL;
 			celix_status_t st = bundleContext_getBundleById(command->bundleContext, id, &b);
@@ -123,9 +125,9 @@ celix_status_t inspectCommand_printExportedServices(COMMAND command, ARRAY_LIST 
 	}
 
 	if (status == CELIX_SUCCESS) {
-		int i = 0;
+		unsigned int i = 0;
 		for (i = 0; i < arrayList_size(bundles); i++) {
-			BUNDLE bundle = arrayList_get(bundles, i);
+			BUNDLE bundle = (BUNDLE) arrayList_get(bundles, i);
 
 			if (i > 0) {
 				out("\n");
@@ -133,8 +135,9 @@ celix_status_t inspectCommand_printExportedServices(COMMAND command, ARRAY_LIST 
 
 			if (bundle != NULL) {
 				apr_pool_t *pool;
-				bundleContext_getMemoryPool(command->bundleContext, &pool);
 				ARRAY_LIST refs = NULL;
+
+				bundleContext_getMemoryPool(command->bundleContext, &pool);
 				if (bundle_getRegisteredServices(bundle, pool, &refs) == CELIX_SUCCESS) {
 					char line[256];
 					MODULE module = NULL;
@@ -150,16 +153,18 @@ celix_status_t inspectCommand_printExportedServices(COMMAND command, ARRAY_LIST 
 							if (refs == NULL || arrayList_size(refs) == 0) {
 								out("Nothing\n");
 							} else {
-								int j = 0;
+								unsigned int j = 0;
 								for (j = 0; j < arrayList_size(refs); j++) {
-									SERVICE_REFERENCE ref = arrayList_get(refs, j);
+									SERVICE_REFERENCE ref = (SERVICE_REFERENCE) arrayList_get(refs, j);
 									SERVICE_REGISTRATION reg = NULL;
 									PROPERTIES props = NULL;
-									serviceReference_getServiceRegistration(ref, &reg);
 									char line[256];
+									char *objectClass = NULL;
 
+									serviceReference_getServiceRegistration(ref, &reg);
+									
 									serviceRegistration_getProperties(reg, &props);
-									char *objectClass = properties_get(props, (char *) OBJECTCLASS);
+									objectClass = properties_get(props, (char *) OBJECTCLASS);
 									sprintf(line, "ObjectClass = %s\n", objectClass);
 									out(line);
 									if ((j + 1) < arrayList_size(refs)) {

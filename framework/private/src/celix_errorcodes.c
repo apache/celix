@@ -32,6 +32,7 @@ static char *celix_error_string(celix_status_t statcode) {
     case CELIX_ILLEGAL_ARGUMENT:
         return "Illegal argument";
     }
+	return "Unkown code";
 }
 
 char *celix_strerror(celix_status_t errorcode)

@@ -69,13 +69,14 @@ void * serviceDependency_getService(SERVICE_DEPENDENCY dependency) {
 }
 
 void serviceDependency_start(SERVICE_DEPENDENCY dependency, SERVICE service) {
+	apr_pool_t *pool;
+	service_tracker_customizer_t cust = NULL;
+
 	dependency->service = service;
 	dependency->tracker = NULL;
 
-	apr_pool_t *pool;
 	bundleContext_getMemoryPool(dependency->context, &pool);
 
-	service_tracker_customizer_t cust = NULL;
 	serviceTrackerCustomizer_create(pool, dependency, serviceDependency_addingService,
 			serviceDependency_addedService, serviceDependency_modifiedService,
 			serviceDependency_removedService, &cust);
@@ -137,6 +138,7 @@ celix_status_t serviceDependency_modifiedService(void * handle, SERVICE_REFERENC
 }
 
 celix_status_t serviceDependency_removedService(void * handle, SERVICE_REFERENCE reference, void * service) {
+	bool result;
 	SERVICE_DEPENDENCY dependency = (SERVICE_DEPENDENCY) handle;
 	if (dependency->available && serviceTracker_getService(dependency->tracker) == NULL) {
 		dependency->available = false;
@@ -147,7 +149,6 @@ celix_status_t serviceDependency_removedService(void * handle, SERVICE_REFERENCE
 		dependency->removed(dependency->service->impl, reference, service);
 	}
 
-	bool result;
 	bundleContext_ungetService(dependency->context, reference, &result);
 	return CELIX_SUCCESS;
 }

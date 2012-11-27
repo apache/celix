@@ -31,13 +31,36 @@ if (FRAMEWORK)
     #)
     
     add_definitions(-DUSE_FILE32API)
-    aux_source_directory("private/src" SRC)
+    #aux_source_directory("private/src" SRC)
     #include_directories(${CURL_INCLUDE_DIR})
     include_directories(${ZLIB_INCLUDE_DIR})
     include_directories("private/include")
     include_directories("public/include")
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-    add_library(celix_framework SHARED ${SRC})
+	#message("Source: ${SRC}")
+
+	if(WIN32)
+	  set(IO private/src/iowin32.c)
+	endif(WIN32)
+
+    add_library(celix_framework SHARED
+	 private/src/attribute.c private/src/bundle.c private/src/bundle_archive.c private/src/bundle_cache.c
+	 private/src/bundle_context.c private/src/bundle_revision.c private/src/capability.c private/src/celix_errorcodes.c
+	 private/src/filter.c private/src/framework.c private/src/manifest.c private/src/ioapi.c
+	 private/src/manifest_parser.c private/src/miniunz.c private/src/module.c private/src/properties.c 
+	 private/src/requirement.c private/src/resolver.c private/src/service_reference.c private/src/service_registration.c 
+	 private/src/service_registry.c private/src/service_tracker.c private/src/service_tracker_customizer.c
+	 private/src/unzip.c private/src/utils.c private/src/version.c private/src/version_range.c private/src/wire.c
+
+	 private/include/attribute.h public/include/framework_exports.h
+
+	 public/include/framework.h public/include/properties.h public/include/bundle_context.h public/include/bundle.h
+	 public/include/bundle_activator.h public/include/service_registration.h public/include/service_reference.h
+	 public/include/bundle_archive.h public/include/utils.h public/include/module.h
+	 
+		${IO}
+	 
+	)
     target_link_libraries(celix_framework celix_utils ${ZLIB_LIBRARY} ${APR_LIBRARY})
     
     install(TARGETS celix_framework DESTINATION lib COMPONENT framework)

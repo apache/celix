@@ -76,7 +76,7 @@ celix_status_t bundleCache_create(PROPERTIES configurationMap, apr_pool_t *mp, b
 }
 
 apr_status_t bundleCache_destroy(void *cacheP) {
-	bundle_cache_t cache = cacheP;
+	bundle_cache_t cache = (bundle_cache_t) cacheP;
     properties_destroy(cache->configurationMap);
     return CELIX_SUCCESS;
 }
@@ -91,7 +91,7 @@ celix_status_t bundleCache_getArchives(bundle_cache_t cache, apr_pool_t *pool, A
 	apr_dir_t *dir;
 	apr_status_t aprStatus = apr_dir_open(&dir, cache->cacheDir, pool);
 
-	if (aprStatus == APR_ENOENT) {
+	if (APR_STATUS_IS_ENOENT(aprStatus)) {
 		apr_dir_make(cache->cacheDir, APR_UREAD|APR_UWRITE|APR_UEXECUTE, cache->mp);
 		aprStatus = apr_dir_open(&dir, cache->cacheDir, pool);
 	}
@@ -103,9 +103,10 @@ celix_status_t bundleCache_getArchives(bundle_cache_t cache, apr_pool_t *pool, A
         
         while ((apr_dir_read(&dp, APR_FINFO_DIRENT|APR_FINFO_TYPE, dir)) == APR_SUCCESS) {
         	apr_pool_t *subpool = NULL;
-        	apr_pool_create(&subpool, pool);
+			char *archiveRoot = NULL;
 
-        	char * archiveRoot = (char *)apr_palloc(subpool, strlen(cache->cacheDir) + strlen(dp.name) + 2);
+        	apr_pool_create(&subpool, pool);
+        	archiveRoot = (char *)apr_palloc(subpool, strlen(cache->cacheDir) + strlen(dp.name) + 2);
 
             strcpy(archiveRoot, cache->cacheDir);
             strcat(archiveRoot, "/");
@@ -141,7 +142,6 @@ celix_status_t bundleCache_getArchives(bundle_cache_t cache, apr_pool_t *pool, A
 celix_status_t bundleCache_createArchive(bundle_cache_t cache, apr_pool_t *bundlePool, long id, char * location, char *inputFile, bundle_archive_t *bundle_archive) {
     celix_status_t status;
 	char *archiveRoot;
-    bundle_archive_t archive;
 
 	if (cache && location && bundlePool) {
 		archiveRoot = apr_psprintf(bundlePool, "%s/bundle%ld",  cache->cacheDir, id);

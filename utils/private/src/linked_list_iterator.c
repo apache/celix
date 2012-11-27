@@ -37,7 +37,7 @@ struct linkedListIterator {
 	int expectedModificationCount;
 };
 
-LINKED_LIST_ITERATOR linkedListIterator_create(LINKED_LIST list, int index) {
+LINKED_LIST_ITERATOR linkedListIterator_create(LINKED_LIST list, unsigned int index) {
 	LINKED_LIST_ITERATOR iterator;
 	if (index < 0 || index > list->size) {
 		return NULL;

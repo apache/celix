@@ -55,16 +55,15 @@ struct executor {
 	struct executorEntry * active;
 	LINKED_LIST workQueue;
 
-	pthread_mutex_t mutex;
+	apr_thread_mutex_t *mutex;
 };
 
 SERVICE serviceComponent_create(bundle_context_t context, DEPENDENCY_MANAGER manager) {
     SERVICE service;
     apr_pool_t *pool;
+	apr_pool_t *mypool;
 
 	bundleContext_getMemoryPool(context, &pool);
-
-	apr_pool_t *mypool;
 	apr_pool_create(&mypool, pool);
 
 	if (mypool) {
@@ -86,7 +85,7 @@ SERVICE serviceComponent_create(bundle_context_t context, DEPENDENCY_MANAGER man
         service->state = state_create(arrayList_clone(mypool, service->dependencies), false);
         service->executor = executor_create(mypool);
 
-        pthread_mutex_init(&service->mutex, NULL);
+		apr_thread_mutex_create(&service->mutex, APR_THREAD_MUTEX_UNNESTED, mypool);
 	}
 
 	return service;
@@ -117,19 +116,19 @@ void serviceComponent_calculateStateChanges(SERVICE service, const STATE old, co
 
 SERVICE serviceComponent_addServiceDependency(SERVICE service, SERVICE_DEPENDENCY dependency) {
 	STATE old, new;
-	pthread_mutex_lock(&service->mutex);
+	apr_thread_mutex_lock(service->mutex);
 	old = service->state;
 	arrayList_add(service->dependencies, dependency);
-	pthread_mutex_unlock(&service->mutex);
+	apr_thread_mutex_unlock(service->mutex);
 
 	if (state_isTrackingOptional(old) || ( state_isWaitingForRequired(old) && dependency->required)) {
 		serviceDependency_start(dependency, service);
 	}
 
-	pthread_mutex_lock(&service->mutex);
+	apr_thread_mutex_lock(service->mutex);
 	new = state_create(arrayList_clone(service->pool, service->dependencies), !state_isInactive(old));
 	service->state = new;
-	pthread_mutex_unlock(&service->mutex);
+	apr_thread_mutex_unlock(service->mutex);
 	serviceComponent_calculateStateChanges(service, old, new);
 	state_destroy(old);
 
@@ -138,19 +137,19 @@ SERVICE serviceComponent_addServiceDependency(SERVICE service, SERVICE_DEPENDENC
 
 SERVICE serviceComponent_removeServiceDependency(SERVICE service, SERVICE_DEPENDENCY dependency) {
 	STATE old, new;
-	pthread_mutex_lock(&service->mutex);
+	apr_thread_mutex_lock(service->mutex);
 	old = service->state;
 	arrayList_removeElement(service->dependencies, dependency);
-	pthread_mutex_unlock(&service->mutex);
+	apr_thread_mutex_unlock(service->mutex);
 
 	if (state_isTrackingOptional(old) || ( state_isWaitingForRequired(old) && dependency->required)) {
 		serviceDependency_stop(dependency, service);
 	}
 
-	pthread_mutex_lock(&service->mutex);
+	apr_thread_mutex_lock(service->mutex);
 	new = state_create(arrayList_clone(service->pool, service->dependencies), !state_isInactive(old));
 	service->state = new;
-	pthread_mutex_unlock(&service->mutex);
+	apr_thread_mutex_unlock(service->mutex);
 	serviceComponent_calculateStateChanges(service, old, new);
 	state_destroy(old);
 
@@ -159,11 +158,11 @@ SERVICE serviceComponent_removeServiceDependency(SERVICE service, SERVICE_DEPEND
 
 void serviceComponent_dependencyAvailable(SERVICE service, SERVICE_DEPENDENCY dependency) {
 	STATE old, new;
-	pthread_mutex_lock(&service->mutex);
+	apr_thread_mutex_lock(service->mutex);
 	old = service->state;
 	new = state_create(arrayList_clone(service->pool, service->dependencies), !state_isInactive(old));
 	service->state = new;
-	pthread_mutex_unlock(&service->mutex);
+	apr_thread_mutex_unlock(service->mutex);
 	serviceComponent_calculateStateChanges(service, old, new);
 	state_destroy(old);
 	if (state_isTrackingOptional(new)) {
@@ -174,9 +173,9 @@ void serviceComponent_dependencyAvailable(SERVICE service, SERVICE_DEPENDENCY de
 
 void serviceComponent_dependencyChanged(SERVICE service, SERVICE_DEPENDENCY dependency) {
 	STATE state;
-	pthread_mutex_lock(&service->mutex);
+	apr_thread_mutex_lock(service->mutex);
 	state = service->state;
-	pthread_mutex_unlock(&service->mutex);
+	apr_thread_mutex_unlock(service->mutex);
 	if (state_isTrackingOptional(state)) {
 		executor_enqueue(service->executor, service, serviceComponent_updateInstance, dependency);
 		executor_execute(service->executor);
@@ -185,11 +184,11 @@ void serviceComponent_dependencyChanged(SERVICE service, SERVICE_DEPENDENCY depe
 
 void serviceComponent_dependencyUnavailable(SERVICE service, SERVICE_DEPENDENCY dependency) {
 	STATE old, new;
-	pthread_mutex_lock(&service->mutex);
+	apr_thread_mutex_lock(service->mutex);
 	old = service->state;
 	new = state_create(arrayList_clone(service->pool, service->dependencies), !state_isInactive(old));
 	service->state = new;
-	pthread_mutex_unlock(&service->mutex);
+	apr_thread_mutex_unlock(service->mutex);
 	serviceComponent_calculateStateChanges(service, old, new);
 	state_destroy(old);
 	if (state_isTrackingOptional(new)) {
@@ -199,24 +198,24 @@ void serviceComponent_dependencyUnavailable(SERVICE service, SERVICE_DEPENDENCY 
 }
 
 void serviceComponent_start(SERVICE service) {
-	bundleContext_registerService(service->context, SERVICE_COMPONENT_NAME, service, NULL, &service->serviceRegistration);
 	STATE old, new;
-	pthread_mutex_lock(&service->mutex);
+	bundleContext_registerService(service->context, SERVICE_COMPONENT_NAME, service, NULL, &service->serviceRegistration);
+	apr_thread_mutex_lock(service->mutex);
 	old = service->state;
 	new = state_create(arrayList_clone(service->pool, service->dependencies), true);
 	service->state = new;
-	pthread_mutex_unlock(&service->mutex);
+	apr_thread_mutex_unlock(service->mutex);
 	serviceComponent_calculateStateChanges(service, old, new);
 	state_destroy(old);
 }
 
 void serviceComponent_stop(SERVICE service) {
 	STATE old, new;
-	pthread_mutex_lock(&service->mutex);
+	apr_thread_mutex_lock(service->mutex);
 	old = service->state;
 	new = state_create(arrayList_clone(service->pool, service->dependencies), false);
 	service->state = new;
-	pthread_mutex_unlock(&service->mutex);
+	apr_thread_mutex_unlock(service->mutex);
 	serviceComponent_calculateStateChanges(service, old, new);
 	state_destroy(old);
 	serviceRegistration_unregister(service->serviceRegistration);
@@ -366,7 +365,7 @@ STATE state_create(ARRAY_LIST dependencies, bool active) {
 	state->dependencies = dependencies;
 	if (active) {
 		bool allReqAvail = true;
-		int i;
+		unsigned int i;
 		for (i = 0; i < arrayList_size(dependencies); i++) {
 			SERVICE_DEPENDENCY dependency = arrayList_get(dependencies, i);
 			if (dependency->required) {
@@ -421,27 +420,28 @@ EXECUTOR executor_create(apr_pool_t *memory_pool) {
 	if (executor) {
         linkedList_create(memory_pool, &executor->workQueue);
         executor->active = NULL;
-        pthread_mutex_init(&executor->mutex, NULL);
+		apr_thread_mutex_create(&executor->mutex, APR_THREAD_MUTEX_UNNESTED, memory_pool);
 	}
 
 	return executor;
 }
 
 void executor_enqueue(EXECUTOR executor, SERVICE service, void (*function), void * argument) {
-	pthread_mutex_lock(&executor->mutex);
-	struct executorEntry * entry = malloc(sizeof(*entry));
+	struct executorEntry * entry = NULL;
+	apr_thread_mutex_lock(executor->mutex);
+	entry = (struct executorEntry *) malloc(sizeof(*entry));
 	entry->service = service;
 	entry->function = function;
 	entry->argument = argument;
 	linkedList_addLast(executor->workQueue, entry);
-	pthread_mutex_unlock(&executor->mutex);
+	apr_thread_mutex_unlock(executor->mutex);
 }
 
 void executor_execute(EXECUTOR executor) {
 	struct executorEntry * active;
-	pthread_mutex_lock(&executor->mutex);
+	apr_thread_mutex_lock(executor->mutex);
 	active = executor->active;
-	pthread_mutex_unlock(&executor->mutex);
+	apr_thread_mutex_unlock(executor->mutex);
 	if (active == NULL) {
 		executor_scheduleNext(executor);
 	}
@@ -449,9 +449,9 @@ void executor_execute(EXECUTOR executor) {
 
 void executor_scheduleNext(EXECUTOR executor) {
 	struct executorEntry * entry = NULL;
-	pthread_mutex_lock(&executor->mutex);
+	apr_thread_mutex_lock(executor->mutex);
 	entry = linkedList_removeFirst(executor->workQueue);
-	pthread_mutex_unlock(&executor->mutex);
+	apr_thread_mutex_unlock(executor->mutex);
 	if (entry != NULL) {
 		entry->function(entry->service, entry->argument);
 		executor_scheduleNext(executor);

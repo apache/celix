@@ -44,9 +44,10 @@ struct logActivator {
 celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
     celix_status_t status = CELIX_SUCCESS;
     apr_pool_t *mp = NULL;
+	struct logActivator * activator = NULL;
 
     bundleContext_getMemoryPool(context, &mp);
-    struct logActivator * activator = apr_palloc(mp, sizeof(struct logActivator));
+    activator = (struct logActivator *) apr_palloc(mp, sizeof(struct logActivator));
 
 
     if (activator == NULL) {

@@ -48,10 +48,11 @@ celix_status_t bundleRevision_create(apr_pool_t *pool, char *root, char *locatio
     if (!revision) {
     	status = CELIX_ENOMEM;
     } else {
+		apr_status_t apr_status;
     	apr_pool_pre_cleanup_register(pool, revision, bundleRevision_destroy);
     	// TODO: This overwrites an existing revision, is this supposed to happen?
-    	apr_status_t apr_status = apr_dir_make(root, APR_UREAD|APR_UWRITE|APR_UEXECUTE, pool);
-        if ((apr_status != APR_SUCCESS) && (apr_status != APR_EEXIST)) {
+    	apr_status = apr_dir_make(root, APR_UREAD|APR_UWRITE|APR_UEXECUTE, pool);
+        if ((apr_status != APR_SUCCESS) && (!APR_STATUS_IS_EEXIST(apr_status))) {
             status = CELIX_FILE_IO_EXCEPTION;
         } else {
             if (inputFile != NULL) {

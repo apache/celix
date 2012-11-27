@@ -65,12 +65,12 @@ void updateCommand_execute(COMMAND command, char * line, void (*out)(char *), vo
 		long id = atol(sub);
 		bundleContext_getBundleById(command->bundleContext, id, &bundle);
 		if (bundle != NULL) {
+			char inputFile[256];
 			sub = strtok(NULL, delims);
-			char inputFile[MAXNAMLEN];
 			inputFile[0] = '\0';
 			if (sub != NULL) {
-				printf("URL: %s\n", sub);
 				char *test = inputFile;
+				printf("URL: %s\n", sub);
 
 				if (updateCommand_download(command, sub, &test) == CELIX_SUCCESS) {
 					printf("Update bundle with stream\n");
@@ -94,9 +94,10 @@ celix_status_t updateCommand_download(COMMAND command, char * url, char **inputF
 	CURLcode res;
 	curl = curl_easy_init();
 	if (curl) {
+		FILE *fp = NULL;
 		tmpnam(*inputFile);
 		printf("Temp file: %s\n", *inputFile);
-		FILE *fp = fopen(*inputFile, "wb+");
+		fp = fopen(*inputFile, "wb+");
 		curl_easy_setopt(curl, CURLOPT_URL, url);
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, updateCommand_writeData);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);

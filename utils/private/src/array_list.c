@@ -53,7 +53,7 @@ void arrayList_destroy(ARRAY_LIST list) {
 }
 
 void arrayList_trimToSize(ARRAY_LIST list) {
-	int oldCapacity;
+	unsigned int oldCapacity;
 	list->modCount++;
 	oldCapacity = list->capacity;
 	if (list->size < oldCapacity) {
@@ -94,14 +94,14 @@ bool arrayList_contains(ARRAY_LIST list, void * element) {
 
 int arrayList_indexOf(ARRAY_LIST list, void * element) {
 	if (element == NULL) {
-		int i = 0;
+		unsigned int i = 0;
 		for (i = 0; i < list->size; i++) {
 			if (list->elementData[i] == NULL) {
 				return i;
 			}
 		}
 	} else {
-		int i = 0;
+		unsigned int i = 0;
 		for (i = 0; i < list->size; i++) {
 			if (list->elementData[i] == element) { //equalsFunction?
 				return i;
@@ -196,7 +196,7 @@ void arrayList_fastRemove(ARRAY_LIST list, unsigned int index) {
 
 bool arrayList_removeElement(ARRAY_LIST list, void * element) {
 	if (element == NULL) {
-		int i = 0;
+		unsigned int i = 0;
 		for (i = 0; i < list->size; i++) {
 			if (list->elementData[i] == NULL) {
 				arrayList_fastRemove(list, i);
@@ -204,7 +204,7 @@ bool arrayList_removeElement(ARRAY_LIST list, void * element) {
 			}
 		}
 	} else {
-		int i = 0;
+		unsigned int i = 0;
 		for (i = 0; i < list->size; i++) {
 			if (list->elementData[i] == element) { //equalsFunction?
 				arrayList_fastRemove(list, i);
@@ -216,7 +216,7 @@ bool arrayList_removeElement(ARRAY_LIST list, void * element) {
 }
 
 void arrayList_clear(ARRAY_LIST list) {
-	int i;
+	unsigned int i;
 	list->modCount++;
 
 	for (i = 0; i < list->size; i++) {
@@ -227,8 +227,8 @@ void arrayList_clear(ARRAY_LIST list) {
 }
 
 bool arrayList_addAll(ARRAY_LIST list, ARRAY_LIST toAdd) {
-    int i;
-    int size = arrayList_size(toAdd);
+    unsigned int i;
+    unsigned int size = arrayList_size(toAdd);
     arrayList_ensureCapacity(list, list->size + size);
 //    memcpy(list->elementData+list->size, *toAdd->elementData, size);
 //    list->size += size;
@@ -239,7 +239,7 @@ bool arrayList_addAll(ARRAY_LIST list, ARRAY_LIST toAdd) {
 }
 
 ARRAY_LIST arrayList_clone(apr_pool_t *pool, ARRAY_LIST list) {
-	int i;
+	unsigned int i;
 	ARRAY_LIST new = NULL;
 	arrayList_create(pool, &new);
 //	arrayList_ensureCapacity(new, list->size);

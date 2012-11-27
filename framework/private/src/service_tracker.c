@@ -148,9 +148,9 @@ celix_status_t serviceTracker_close(service_tracker_t tracker) {
 	if (status == CELIX_SUCCESS) {
 		ARRAY_LIST refs = serviceTracker_getServiceReferences(tracker);
 		if (refs != NULL) {
-			int i;
+			unsigned int i;
 			for (i = 0; i < arrayList_size(refs); i++) {
-				SERVICE_REFERENCE ref = arrayList_get(refs, i);
+				SERVICE_REFERENCE ref = (SERVICE_REFERENCE) arrayList_get(refs, i);
 				status = serviceTracker_untrack(tracker, ref, NULL);
 			}
 		}
@@ -225,7 +225,7 @@ void *serviceTracker_getServiceByReference(service_tracker_t tracker, SERVICE_RE
 void serviceTracker_serviceChanged(SERVICE_LISTENER listener, SERVICE_EVENT event) {
 	service_tracker_t tracker = listener->handle;
 	switch (event->type) {
-		case REGISTERED:
+		case REGISTEREDA:
 		case MODIFIED:
 			serviceTracker_track(tracker, event->reference, event);
 			break;
@@ -308,7 +308,7 @@ celix_status_t serviceTracker_untrack(service_tracker_t tracker, SERVICE_REFEREN
 	celix_status_t status = CELIX_SUCCESS;
 	TRACKED tracked = NULL;
 	unsigned int i;
-	bool result = NULL;
+	bool result = false;
 
 	for (i = 0; i < arrayList_size(tracker->tracked); i++) {
 		bool equals;

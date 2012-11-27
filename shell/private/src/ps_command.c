@@ -58,6 +58,8 @@ void psCommand_execute(COMMAND command, char * commandline, void (*out)(char *),
 		bool showSymbolicName = false;
 		bool showUpdateLocation = false;
 		char * msg = "Name";
+		char line[256];
+		unsigned int i;
 
 		char delims[] = " ";
 		char * sub = NULL;
@@ -77,22 +79,21 @@ void psCommand_execute(COMMAND command, char * commandline, void (*out)(char *),
 			sub = strtok(NULL, delims);
 		}
 
-		char line[256];
 		sprintf(line, "  %-5s %-12s %s\n", "ID", "State", msg);
-		int i;
 		out(line);
 		for (i = 0; i < arrayList_size(bundles); i++) {
-			BUNDLE bundle = arrayList_get(bundles, i);
+			BUNDLE bundle = (BUNDLE) arrayList_get(bundles, i);
 			bundle_archive_t archive = NULL;
 			long id;
+			BUNDLE_STATE state;
+			char * stateString = NULL;
+			MODULE module = NULL;
+			char * name = NULL;
 
 			bundle_getArchive(bundle, &archive);
 			bundleArchive_getId(archive, &id);
-			BUNDLE_STATE state;
 			bundle_getState(bundle, &state);
-			char * stateString = psCommand_stateString(state);
-			MODULE module = NULL;
-			char * name = NULL;
+			stateString = psCommand_stateString(state);
 			bundle_getCurrentModule(bundle, &module);
 			module_getSymbolicName(module, &name);
 			if (showLocation) {

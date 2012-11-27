@@ -32,14 +32,15 @@
 
 #include "celix_errno.h"
 #include "celixbool.h"
+#include "framework_exports.h"
 
-unsigned int string_hash(void * string);
-int string_equals(void * string, void * toCompare);
-char * string_ndup(const char *s, size_t n);
-char * string_trim(char * string);
+FRAMEWORK_EXPORT unsigned int string_hash(void * string);
+FRAMEWORK_EXPORT int string_equals(void * string, void * toCompare);
+FRAMEWORK_EXPORT char * string_ndup(const char *s, size_t n);
+FRAMEWORK_EXPORT char * string_trim(char * string);
 
-celix_status_t thread_equalsSelf(apr_os_thread_t thread, bool *equals);
+FRAMEWORK_EXPORT celix_status_t thread_equalsSelf(apr_os_thread_t thread, bool *equals);
 
-celix_status_t utils_isNumeric(char *number, bool *ret);
+FRAMEWORK_EXPORT celix_status_t utils_isNumeric(char *number, bool *ret);
 
 #endif /* UTILS_H_ */

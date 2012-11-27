@@ -27,7 +27,7 @@
 #ifndef SERVICE_DEPENDENCY_H_
 #define SERVICE_DEPENDENCY_H_
 
-#include <stdbool.h>
+#include <celixbool.h>
 
 #include "service_reference.h"
 #include "service_tracker.h"

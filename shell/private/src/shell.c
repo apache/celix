@@ -31,6 +31,7 @@
 #include "command_private.h"
 #include "bundle_context.h"
 #include "service_registration.h"
+#include "service_listener.h"
 
 #include "ps_command.h"
 #include "start_command.h"
@@ -90,8 +91,9 @@ void shell_destroy(SHELL shell) {
 
 ARRAY_LIST shell_getCommands(SHELL shell) {
 	ARRAY_LIST commands = NULL;
-	arrayList_create(shell->pool, &commands);
 	HASH_MAP_ITERATOR iter = hashMapIterator_create(shell->commandNameMap);
+
+	arrayList_create(shell->pool, &commands);
 	while (hashMapIterator_hasNext(iter)) {
 		char * name = hashMapIterator_nextKey(iter);
 		arrayList_add(commands, name);
@@ -139,9 +141,10 @@ COMMAND shell_getCommand(SHELL shell, char * commandName) {
 }
 
 void shell_addCommand(SHELL shell, SERVICE_REFERENCE reference) {
-    void *cmd = NULL;
+    COMMAND command = NULL;
+	void *cmd = NULL;
 	bundleContext_getService(shell->bundleContext, reference, &cmd);
-	COMMAND command = (COMMAND) cmd;
+	command = (COMMAND) cmd;
 	hashMap_put(shell->commandNameMap, command->name, command);
 	hashMap_put(shell->commandReferenceMap, reference, command);
 }
@@ -155,16 +158,17 @@ void shell_removeCommand(SHELL shell, SERVICE_REFERENCE reference) {
 
 void shell_serviceChanged(SERVICE_LISTENER listener, SERVICE_EVENT event) {
 	SHELL shell = (SHELL) listener->handle;
-	if (event->type == REGISTERED) {
+	if (event->type == REGISTEREDA) {
 		shell_addCommand(shell, event->reference);
 	}
 }
 
 celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
-	*userData = malloc(sizeof(struct shellServiceActivator));
 	apr_pool_t *pool = NULL;
+	SHELL shell = NULL;
+	*userData = malloc(sizeof(struct shellServiceActivator));
 	bundleContext_getMemoryPool(context, &pool);
-	SHELL shell = shell_create(pool);
+	shell = shell_create(pool);
 //	struct shellServiceActivator * activator = (struct shellServiceActivator *) (*userData);
 	((struct shellServiceActivator *) (*userData))->shell = shell;
 	((struct shellServiceActivator *) (*userData))->listener = NULL;
@@ -185,6 +189,7 @@ celix_status_t bundleActivator_create(bundle_context_t context, void **userData)
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
     celix_status_t status;
+	apr_pool_t *pool = NULL;
 
 	struct shellServiceActivator * activator = (struct shellServiceActivator *) userData;
 	activator->shell->bundleContext = context;
@@ -199,7 +204,6 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 
 	status = bundleContext_registerService(context, (char *) SHELL_SERVICE_NAME, activator->shellService, NULL, &activator->registration);
 
-	apr_pool_t *pool = NULL;
 	bundleContext_getMemoryPool(context, &pool);
 	if (status == CELIX_SUCCESS) {
 	    SERVICE_LISTENER listener = (SERVICE_LISTENER) malloc(sizeof(*listener));

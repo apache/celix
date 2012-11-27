@@ -50,7 +50,7 @@ celix_status_t version_createVersion(apr_pool_t *pool, int major, int minor, int
 	if (!*version) {
 		status = CELIX_ENOMEM;
 	} else {
-		int i;
+		unsigned int i;
 		apr_pool_pre_cleanup_register(pool, *version, version_destroy);
 
 		(*version)->pool = pool;

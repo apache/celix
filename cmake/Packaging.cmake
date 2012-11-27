@@ -68,13 +68,13 @@ MACRO(bundle)
 	SET(BUNDLE_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR})
 	CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/CPackConfig.in ${__bundleConfig} @ONLY)
 	ADD_CUSTOM_COMMAND(TARGET ${INT_BUNDLE_NAME}
-		POST_BUILD
-		COMMAND ${CPACK_COMMAND} ARGS --config ${__bundleConfig}
-		COMMAND mkdir -p ${PROJECT_BINARY_DIR}/ziptojar \;
-			cd ${PROJECT_BINARY_DIR}/ziptojar \;
-			jar -xf ${PROJECT_BINARY_DIR}/bundles/${INT_BUNDLE_NAME}.zip \;
-			jar -cfm ${PROJECT_BINARY_DIR}/bundles/${INT_BUNDLE_NAME}.zip META-INF/MANIFEST.MF . \;
-			rm -rf ${PROJECT_BINARY_DIR}/ziptojar/*
+	POST_BUILD
+		COMMAND ${CPACK_COMMAND} ARGS -C Debug --config ${__bundleConfig}
+	#	COMMAND mkdir -p ${PROJECT_BINARY_DIR}/ziptojar \;
+	#		cd ${PROJECT_BINARY_DIR}/ziptojar \;
+	#		jar -xf ${PROJECT_BINARY_DIR}/bundles/${INT_BUNDLE_NAME}.zip \;
+	#		jar -cfm ${PROJECT_BINARY_DIR}/bundles/${INT_BUNDLE_NAME}.zip META-INF/MANIFEST.MF . \;
+	#		rm -rf ${PROJECT_BINARY_DIR}/ziptojar/*
 		WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/bundles
 	)
 	SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${PROJECT_BINARY_DIR}/bundles/${INT_BUNDLE_NAME}.zip)
@@ -99,9 +99,8 @@ MACRO(package)
 	CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/CPackConfigPKG.in ${__packageConfig} @ONLY)
 	ADD_CUSTOM_COMMAND(TARGET ${PACKAGE_NAME}
 		POST_BUILD
-		COMMAND mkdir -p ${PROJECT_BINARY_DIR}/packages \;
-			cd ${PROJECT_BINARY_DIR}/packages \; 
-			${CPACK_COMMAND} --config "${__packageConfig}"
+		COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/packages
+		COMMAND	${CPACK_COMMAND} --config "${__packageConfig}"
 		WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/packages
 	)
 	

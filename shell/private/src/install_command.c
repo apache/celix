@@ -53,23 +53,26 @@ void installCommand_destroy(COMMAND command) {
 void installCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *)) {
 	char delims[] = " ";
 	char * sub = NULL;
+	char info[256];
+
 	// ignore the command
 	sub = strtok(line, delims);
 	sub = strtok(NULL, delims);
-	char info[256];
+	
 	info[0] = '\0';
 	while (sub != NULL) {
 		BUNDLE bundle = NULL;
 		installCommand_install(command, &bundle, strdup(sub), out, err);
 		if (bundle != NULL) {
+			long id;
+			bundle_archive_t archive = NULL;
+			char bundleId[sizeof(id) + 1];
+
 			if (strlen(info) > 0) {
 				strcat(info, ", ");
 			}
-			long id;
-			bundle_archive_t archive = NULL;
 			bundle_getArchive(bundle, &archive);
 			bundleArchive_getId(archive, &id);
-			char bundleId[sizeof(id) + 1];
 			sprintf(bundleId, "%ld", id);
 			strcat(info, bundleId);
 		}

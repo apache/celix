@@ -26,7 +26,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pthread.h>
 
 #include "bundle_context.h"
 #include "bundle_activator.h"
@@ -39,7 +38,7 @@ struct shellTuiActivator {
 	SERVICE_REFERENCE reference;
 	struct serviceListener * listener;
 	bool running;
-	pthread_t runnable;
+	apr_thread_t *runnable;
 };
 
 typedef struct shellTuiActivator * SHELL_TUI_ACTIVATOR;
@@ -48,20 +47,22 @@ void shellTui_write(char * line) {
 	fprintf(stdout, "%s", line);
 }
 
-void * shellTui_runnable(void * data) {
+static void *APR_THREAD_FUNC shellTui_runnable(apr_thread_t *thd, void *data) {
 	SHELL_TUI_ACTIVATOR act = (SHELL_TUI_ACTIVATOR) data;
 
 	char in[256];
 	bool needPrompt = true;
 	while (act->running) {
+		char * dline = NULL;
+		char * line = NULL;
 		if (needPrompt) {
 			printf("-> ");
 			needPrompt = false;
 		}
 		fgets(in, 256, stdin);
 		needPrompt = true;
-		char * dline = strdup(in);
-		char * line = string_trim(dline);
+		dline = strdup(in);
+		line = string_trim(dline);
 		if (strlen(line) == 0) {
 			continue;
 		}
@@ -71,7 +72,7 @@ void * shellTui_runnable(void * data) {
 		act->shell->executeCommand(act->shell->shell, line, shellTui_write, shellTui_write);
 		free(dline);
 	}
-	pthread_exit(NULL);
+	apr_thread_exit(thd, APR_SUCCESS);
 	return NULL;
 }
 
@@ -90,7 +91,7 @@ void shellTui_serviceChanged(SERVICE_LISTENER listener, SERVICE_EVENT event) {
 	bool result = NULL;
     SHELL_TUI_ACTIVATOR act = (SHELL_TUI_ACTIVATOR) listener->handle;
 
-	if ((event->type == REGISTERED) && (act->reference == NULL)) {
+	if ((event->type == REGISTEREDA) && (act->reference == NULL)) {
 		shellTui_initializeService(act);
 	} else if ((event->type == UNREGISTERING) && (act->reference == event->reference)) {
 		bundleContext_ungetService(act->context, act->reference, &result);
@@ -104,7 +105,7 @@ void shellTui_serviceChanged(SERVICE_LISTENER listener, SERVICE_EVENT event) {
 celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
 	apr_pool_t *pool = NULL;
 	celix_status_t status = bundleContext_getMemoryPool(context, &pool);
-	SHELL_TUI_ACTIVATOR activator = apr_palloc(pool, sizeof(*activator));
+	SHELL_TUI_ACTIVATOR activator = (SHELL_TUI_ACTIVATOR) apr_palloc(pool, sizeof(*activator));
 	//SHELL_TUI_ACTIVATOR activator = (SHELL_TUI_ACTIVATOR) malloc(sizeof(*activator));
 	activator->shell = NULL;
 	(*userData) = activator;
@@ -113,14 +114,16 @@ celix_status_t bundleActivator_create(bundle_context_t context, void **userData)
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
     celix_status_t status;
+	apr_pool_t *pool = NULL;
+
 	SHELL_TUI_ACTIVATOR act = (SHELL_TUI_ACTIVATOR) userData;
+	SERVICE_LISTENER listener = (SERVICE_LISTENER) malloc(sizeof(*listener));
+
 	act->context = context;
 	act->running = true;
 
-	apr_pool_t *pool = NULL;
+	
 	bundleContext_getMemoryPool(context, &pool);
-
-	SERVICE_LISTENER listener = (SERVICE_LISTENER) malloc(sizeof(*listener));
 	act->listener = listener;
 	act->listener->pool = pool;
 	act->listener->handle = act;
@@ -129,7 +132,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 
 	if (status == CELIX_SUCCESS) {
         shellTui_initializeService(act);
-        pthread_create(&act->runnable, NULL, shellTui_runnable, act);
+		apr_thread_create(&act->runnable, NULL, shellTui_runnable, act, pool);
 	}
 
 	return status;
@@ -145,7 +148,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
         act->listener = NULL;
         act->context = NULL;
         act->running = false;
-        pthread_detach(act->runnable);
+        apr_thread_detach(act->runnable);
 	}
 
 	return status;

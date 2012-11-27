@@ -184,7 +184,7 @@ void * hashMap_put(HASH_MAP map, void * key, void * value) {
 
 void hashMap_resize(HASH_MAP map, int newCapacity) {
 	HASH_MAP_ENTRY * newTable;
-	int j;
+	unsigned int j;
 	if (map->tablelength == MAXIMUM_CAPACITY) {
 		return;
 	}
@@ -280,7 +280,7 @@ HASH_MAP_ENTRY hashMap_removeMapping(HASH_MAP map, HASH_MAP_ENTRY entry) {
 }
 
 void hashMap_clear(HASH_MAP map, bool freeKey, bool freeValue) {
-	int i;
+	unsigned int i;
 	HASH_MAP_ENTRY * table;
 	map->modificationCount++;
 	table = map->table;
@@ -302,7 +302,7 @@ void hashMap_clear(HASH_MAP map, bool freeKey, bool freeValue) {
 }
 
 bool hashMap_containsValue(HASH_MAP map, void * value) {
-	int i;
+	unsigned int i;
 	if (value == NULL) {
 		for (i = 0; i < map->tablelength; i++) {
 			HASH_MAP_ENTRY entry;

@@ -46,20 +46,28 @@ apr_pool_t *memoryPool;
 
 int main(void) {
 	// Set signal handler
+	apr_status_t rv = APR_SUCCESS;
+	apr_status_t s = APR_SUCCESS;
+	PROPERTIES config = NULL;
+	char *autoStart = NULL;
+
+	
+    apr_pool_t *pool = NULL;
+
 	(void) signal(SIGINT, launcher_shutdown);
 
-	apr_status_t rv = apr_initialize();
+	rv = apr_initialize();
     if (rv != APR_SUCCESS) {
         return CELIX_START_ERROR;
     }
 
-    apr_status_t s = apr_pool_create(&memoryPool, NULL);
+    s = apr_pool_create(&memoryPool, NULL);
     if (s != APR_SUCCESS) {
         return CELIX_START_ERROR;
     }
 
-    PROPERTIES config = properties_load("config.properties");
-    char * autoStart = properties_get(config, "cosgi.auto.start.1");
+    config = properties_load("config.properties");
+    autoStart = properties_get(config, "cosgi.auto.start.1");
     framework = NULL;
     framework_create(&framework, memoryPool, config);
     fw_init(framework);
@@ -67,11 +75,16 @@ int main(void) {
     // Start the system bundle
     framework_start(framework);
 
-    char delims[] = " ";
-    char * result;
-    apr_pool_t *pool;
     if (apr_pool_create(&pool, memoryPool) == APR_SUCCESS) {
+		char delims[] = " ";
+		char *result = NULL;	
         LINKED_LIST bundles;
+		ARRAY_LIST installed = NULL;
+		BUNDLE bundle = NULL;
+		bundle_context_t context = NULL;
+		LINKED_LIST_ITERATOR iter = NULL;
+		unsigned int i;
+
         linkedList_create(pool, &bundles);
         result = strtok(autoStart, delims);
         while (result != NULL) {
@@ -81,16 +94,13 @@ int main(void) {
         }
         // First install all bundles
         // Afterwards start them
-        ARRAY_LIST installed = NULL;
         arrayList_create(pool, &installed);
-        bundle_context_t context = NULL;
-        BUNDLE bundle = NULL;
         framework_getFrameworkBundle(framework, &bundle);
         bundle_getContext(bundle, &context);
-        LINKED_LIST_ITERATOR iter = linkedListIterator_create(bundles, 0);
+        iter = linkedListIterator_create(bundles, 0);
         while (linkedListIterator_hasNext(iter)) {
             BUNDLE current = NULL;
-            char * location = linkedListIterator_next(iter);
+            char * location = (char *) linkedListIterator_next(iter);
             if (bundleContext_installBundle(context, location, &current) == CELIX_SUCCESS) {
                 // Only add bundle if it is installed correctly
                 arrayList_add(installed, current);
@@ -103,7 +113,6 @@ int main(void) {
         }
         linkedListIterator_destroy(iter);
 
-        int i;
         for (i = 0; i < arrayList_size(installed); i++) {
             BUNDLE bundle = (BUNDLE) arrayList_get(installed, i);
             bundle_start(bundle, 0);

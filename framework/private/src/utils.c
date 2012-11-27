@@ -34,7 +34,7 @@ unsigned int string_hash(void * string) {
 
 	unsigned int hash = 1315423911;
 	unsigned int i    = 0;
-	int len = strlen(str);
+	unsigned int len = strlen(str);
 
 	for(i = 0; i < len; str++, i++)
 	{

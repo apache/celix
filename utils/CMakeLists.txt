@@ -20,10 +20,26 @@ if (UTILS)
     cmake_minimum_required(VERSION 2.6)
     
     add_definitions(-DUSE_FILE32API)
-    aux_source_directory("private/src" SRC)
+    #aux_source_directory("private/src" SRC)
     include_directories("private/include")
     include_directories("public/include")
-    add_library(celix_utils SHARED ${SRC})
+    add_library(celix_utils SHARED 
+		private/src/array_list.c
+		public/include/array_list.h 
+		private/include/array_list_private.h 
+
+		private/src/hash_map.c
+		public/include/hash_map.h 
+		private/include/hash_map_private.h
+
+		private/src/linkedlist.c
+		private/src/linked_list_iterator.c
+		public/include/linkedlist.h
+		public/include/linked_list_iterator.h 
+		private/include/linked_list_private.h
+		
+		public/include/exports.h
+	)
     
     IF(UNIX)
     	target_link_libraries(celix_utils m)
@@ -34,24 +50,24 @@ if (UTILS)
     FILE(GLOB files "public/include/*.h")
     INSTALL(FILES ${files} DESTINATION include/celix COMPONENT framework)
     
-    include_directories(${CUNIT_INCLUDE_DIRS})
-    include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-    include_directories("${PROJECT_SOURCE_DIR}/utils/private/include")
+    #include_directories(${CUNIT_INCLUDE_DIRS})
+    #include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+    #include_directories("${PROJECT_SOURCE_DIR}/utils/private/include")
     
-    add_executable(hash_map_test private/test/hash_map_test.c)
-    target_link_libraries(hash_map_test celix_utils ${CUNIT_LIBRARIES})
+    #add_executable(hash_map_test private/test/hash_map_test.c)
+    #target_link_libraries(hash_map_test celix_utils ${CUNIT_LIBRARIES})
     
-    add_executable(hash_map_test_hash private/test/hash_map_test_hash.c)
-    target_link_libraries(hash_map_test_hash celix_utils ${CUNIT_LIBRARIES})
+    #add_executable(hash_map_test_hash private/test/hash_map_test_hash.c)
+    #target_link_libraries(hash_map_test_hash celix_utils ${CUNIT_LIBRARIES})
     
-    add_executable(array_list_test private/test/array_list_test.c)
-    target_link_libraries(array_list_test celix_utils ${CUNIT_LIBRARIES})
+    #add_executable(array_list_test private/test/array_list_test.c)
+    #target_link_libraries(array_list_test celix_utils ${CUNIT_LIBRARIES})
     
-    add_executable(linked_list_test private/test/linked_list_test.c)
-    target_link_libraries(linked_list_test celix_utils ${CUNIT_LIBRARIES})
+    #add_executable(linked_list_test private/test/linked_list_test.c)
+    #target_link_libraries(linked_list_test celix_utils ${CUNIT_LIBRARIES})
     
-    run_test(array_list_test)
-    run_test(hash_map_test)
-    run_test(hash_map_test_hash)
-    run_test(linked_list_test)
+    #run_test(array_list_test)
+    #run_test(hash_map_test)
+    #run_test(hash_map_test_hash)
+    #run_test(linked_list_test)
 endif (UTILS)

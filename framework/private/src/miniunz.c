@@ -50,8 +50,7 @@
 
 #ifdef _WIN32
 #define USEWIN32IOAPI
-#include <windows.h>
-#include <winbase.h>
+#include "iowin32.h"
 #endif
 /*
   mini unzip, demo of unzip package

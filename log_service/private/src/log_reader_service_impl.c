@@ -35,9 +35,9 @@ struct log_reader_data {
 };
 
 celix_status_t logReaderService_create(log_t log, apr_pool_t *pool, log_reader_data_t *reader) {
-    celix_status_t status;
+    celix_status_t status = APR_SUCCESS;
 
-    *reader = apr_palloc(pool, sizeof(**reader));
+    *reader = (log_reader_data_t) apr_palloc(pool, sizeof(**reader));
 
     if (reader == NULL) {
         status = CELIX_ENOMEM;

@@ -232,7 +232,6 @@ celix_status_t log_stopListenerThread(log_t logger) {
     if (apr_status != APR_SUCCESS) {
         status = CELIX_INVALID_SYNTAX;
     } else {
-        apr_status_t stat;
         logger->running = false;
         apr_thread_cond_signal(logger->entriesToDeliver);
         status = apr_thread_mutex_unlock(logger->deliverLock);

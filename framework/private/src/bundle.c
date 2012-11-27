@@ -240,9 +240,12 @@ celix_status_t bundle_createModule(BUNDLE bundle, MODULE *module) {
         status = bundleArchive_getId(bundle->archive, &bundleId);
         if (status == CELIX_SUCCESS) {
 			int revision = 0;
+			char *moduleId = NULL;
 			apr_pool_t *pool = NULL;
+
+
 			apr_pool_create(&pool, bundle->memoryPool);
-			char * moduleId = (char *) apr_palloc(pool, sizeof(bundleId) + sizeof(revision) +2);
+			moduleId = (char *) apr_palloc(pool, sizeof(bundleId) + sizeof(revision) +2);
 			sprintf(moduleId, "%ld.%d", bundleId, revision);
 
 			*module = module_create(headerMap, apr_pstrdup(bundle->memoryPool, moduleId), bundle);
@@ -253,7 +256,7 @@ celix_status_t bundle_createModule(BUNDLE bundle, MODULE *module) {
 				status = module_getSymbolicName(*module, &symName);
 				if (status == CELIX_SUCCESS) {
 					ARRAY_LIST bundles = framework_getBundles(bundle->framework);
-					int i;
+					unsigned int i;
 					for (i = 0; i < arrayList_size(bundles); i++) {
 						BUNDLE check = (BUNDLE) arrayList_get(bundles, i);
 
@@ -541,9 +544,9 @@ celix_status_t bundle_closeRevisions(BUNDLE bundle) {
 celix_status_t bundle_closeModules(BUNDLE bundle) {
     celix_status_t status = CELIX_SUCCESS;
 
-    int i = 0;
+    unsigned int i = 0;
     for (i = 0; i < arrayList_size(bundle->modules); i++) {
-        MODULE module = arrayList_get(bundle->modules, i);
+        MODULE module = (MODULE) arrayList_get(bundle->modules, i);
         resolver_removeModule(module);
         module_setWires(module, NULL);
     }

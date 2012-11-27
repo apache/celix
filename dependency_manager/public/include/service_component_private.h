@@ -26,7 +26,7 @@
 
 #ifndef SERVICE_COMPONENT_PRIVATE_H_
 #define SERVICE_COMPONENT_PRIVATE_H_
-#include <stdbool.h>
+#include <celixbool.h>
 
 #include "service_component.h"
 #include "service_dependency.h"
@@ -60,7 +60,7 @@ struct service {
 	STATE state;
 	EXECUTOR executor;
 
-	pthread_mutex_t mutex;
+	apr_thread_mutex_t *mutex;
 };
 
 SERVICE serviceComponent_create(bundle_context_t context, DEPENDENCY_MANAGER manager);
