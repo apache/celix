@@ -19,25 +19,21 @@ celix_subproject(FRAMEWORK "Option to build the framework shared library" "ON" D
 if (FRAMEWORK) 
     cmake_minimum_required(VERSION 2.6)
     
-    find_package(CURL REQUIRED)
     find_package(ZLIB REQUIRED)
     
-    #include(CPackComponent)
+    include(CPackComponent)
     
-    #cpack_add_component(framework
-    #	DISPLAY_NAME Framework
-    #    DESCRIPTION "The Apache Celix framework library"
-    #    REQUIRED
-    #)
+    cpack_add_component(framework
+    	DISPLAY_NAME Framework
+        DESCRIPTION "The Apache Celix framework library"
+        REQUIRED
+    )
     
     add_definitions(-DUSE_FILE32API)
-    #aux_source_directory("private/src" SRC)
-    #include_directories(${CURL_INCLUDE_DIR})
     include_directories(${ZLIB_INCLUDE_DIR})
     include_directories("private/include")
     include_directories("public/include")
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-	#message("Source: ${SRC}")
 
 	if(WIN32)
 	  set(IO private/src/iowin32.c)

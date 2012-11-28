@@ -43,6 +43,7 @@ struct paint_frame {
 	LINKED_LIST m_shapeComponents;
 	bundle_context_t context;
 	GThread *main;
+	char *file;
 };
 
 

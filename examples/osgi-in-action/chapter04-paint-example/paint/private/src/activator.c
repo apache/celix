@@ -55,7 +55,7 @@ typedef struct paintFrameActivatorData *GREETING_ACTIVATOR;
 celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
 	apr_pool_t *pool;
 	GREETING_ACTIVATOR activator;
-	service_tracker_customizer_t cust;
+	service_tracker_customizer_t cust = NULL;
 	printf("Paint_frame create\n");
 	celix_status_t status = bundleContext_getMemoryPool(context, &pool);
 	if (status == CELIX_SUCCESS) {

@@ -39,9 +39,9 @@ if (SHELL)
 	include_directories(${CURL_INCLUDE_DIRS})
     target_link_libraries(shell celix_framework ${CURL_LIBRARIES})
     
-    #package(shell FILES public/include/shell.h public/include/command.h public/include/command_private.h)
+    package(shell FILES public/include/shell.h public/include/command.h public/include/command_private.h)
     
-    #FILE(GLOB files public/include/shell.h public/include/command.h public/include/command_private.h)
-    #INSTALL(FILES ${files} DESTINATION include/celix/shell COMPONENT framework)
-    #INSTALL(FILES ${PROJECT_BINARY_DIR}/bundles/shell.zip DESTINATION share/celix/bundles COMPONENT framework)
+    FILE(GLOB files public/include/shell.h public/include/command.h public/include/command_private.h)
+    INSTALL(FILES ${files} DESTINATION include/celix/shell COMPONENT framework)
+    INSTALL(FILES ${PROJECT_BINARY_DIR}/bundles/shell.zip DESTINATION share/celix/bundles COMPONENT framework)
 endif (SHELL)

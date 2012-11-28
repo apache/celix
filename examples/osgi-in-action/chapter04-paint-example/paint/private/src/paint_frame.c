@@ -84,7 +84,6 @@ celix_status_t paintFrame_create(bundle_context_t context, apr_pool_t *pool, PAI
 		status = CELIX_ENOMEM;
 	} else {
 		*frame = this;
-		GtkBuilder *builder;
 		char *builderFile;
 		BUNDLE bundle;
 		GError *error = NULL;
@@ -103,33 +102,14 @@ celix_status_t paintFrame_create(bundle_context_t context, apr_pool_t *pool, PAI
 		if (status == CELIX_SUCCESS) {
 			status = bundle_getEntry(bundle, "gtktest.glade", mypool, &builderFile);
 			if (status == CELIX_SUCCESS) {
-				g_thread_init(NULL);
+				(*frame)->file = builderFile;
+
 				gdk_threads_init();
 				gtk_init(NULL, NULL);
 
-				builder = gtk_builder_new();
-				gtk_builder_add_from_file(builder, builderFile, NULL);
-
-				(*frame)->window = GTK_WIDGET(gtk_builder_get_object (builder, "window1"));
-				(*frame)->toolbar = GTK_WIDGET(gtk_builder_get_object (builder, "toolbar1"));
-				(*frame)->drawingArea = GTK_WIDGET(gtk_builder_get_object (builder, "drawingarea1"));
-				g_object_unref(G_OBJECT(builder));
-
-				gtk_window_set_title(GTK_WINDOW((*frame)->window), "OSGi in Action, Paint-Example");
-
-				gtk_widget_set_events ((*frame)->drawingArea, GDK_EXPOSURE_MASK | GDK_BUTTON_PRESS_MASK);
-
-				g_signal_connect(G_OBJECT((*frame)->window), "destroy", G_CALLBACK(paintFrame_destroy), (*frame));
-				g_signal_connect(G_OBJECT((*frame)->drawingArea), "expose_event", G_CALLBACK(paintFrame_expose), (*frame));
-				g_signal_connect(G_OBJECT((*frame)->drawingArea), "configure_event", G_CALLBACK(paintFrame_configure), (*frame));
-				g_signal_connect(G_OBJECT((*frame)->drawingArea), "button_press_event", G_CALLBACK(paintFrame_mousePressed), (*frame));
-
-
-				paintFrame_show((*frame));
-				(*frame)->showing = true;
-
 				if( g_thread_supported()) {
-					(*frame)->main = g_thread_create(paintFrame_gtkmain, (*frame), TRUE, &error);
+					(*frame)->main = g_thread_new("main", paintFrame_gtkmain, (*frame));
+					// (*frame)->main = g_thread_create(paintFrame_gtkmain, (*frame), TRUE, &error);
 					if ((*frame)->main == NULL){
 						g_printerr ("Failed to create thread: %s\n", error->message);
 						status = CELIX_BUNDLE_EXCEPTION;
@@ -345,7 +325,31 @@ static celix_status_t paintFrame_redraw(PAINT_FRAME frame, GdkModifierType state
 }
 
 static gpointer paintFrame_gtkmain(gpointer a_data) {
+	GtkBuilder *builder;
+	PAINT_FRAME frame = (PAINT_FRAME) a_data;
+
 	gdk_threads_enter();
+	builder = gtk_builder_new();
+	gtk_builder_add_from_file(builder, frame->file, NULL);
+
+	frame->window = GTK_WIDGET(gtk_builder_get_object (builder, "window1"));
+	frame->toolbar = GTK_WIDGET(gtk_builder_get_object (builder, "toolbar1"));
+	frame->drawingArea = GTK_WIDGET(gtk_builder_get_object (builder, "drawingarea1"));
+	g_object_unref(G_OBJECT(builder));
+
+	gtk_window_set_title(GTK_WINDOW(frame->window), "OSGi in Action, Paint-Example");
+
+	gtk_widget_set_events (frame->drawingArea, GDK_EXPOSURE_MASK | GDK_BUTTON_PRESS_MASK);
+
+	g_signal_connect(G_OBJECT(frame->window), "destroy", G_CALLBACK(paintFrame_destroy), frame);
+	g_signal_connect(G_OBJECT(frame->drawingArea), "expose_event", G_CALLBACK(paintFrame_expose), frame);
+	g_signal_connect(G_OBJECT(frame->drawingArea), "configure_event", G_CALLBACK(paintFrame_configure), frame);
+	g_signal_connect(G_OBJECT(frame->drawingArea), "button_press_event", G_CALLBACK(paintFrame_mousePressed), frame);
+
+
+	paintFrame_show(frame);
+	frame->showing = true;
+
 	gtk_main();
 	gdk_threads_leave();
 
