@@ -129,7 +129,7 @@ static celix_status_t refiningDriver_stopDevice(refining_driver_device_t device)
 static celix_status_t refiningDriver_serviceChanged(SERVICE_LISTENER listener, SERVICE_EVENT event) {
 	celix_status_t status =  CELIX_SUCCESS;
 	refining_driver_device_t device = listener->handle;
-	if (event->type == UNREGISTERING) {
+	if (event->type == SERVICE_EVENT_UNREGISTERING) {
 		bool equal = false;
 		status = serviceReference_equals(device->baseServiceReference, event->reference, &equal);
 		if (status == CELIX_SUCCESS && equal) {

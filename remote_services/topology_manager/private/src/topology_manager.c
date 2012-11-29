@@ -128,12 +128,12 @@ celix_status_t topologyManager_serviceChanged(void *listener, SERVICE_EVENT even
 	char *name = properties_get(props, (char *) OBJECTCLASS);
 	char *export = properties_get(props, (char *) SERVICE_EXPORTED_INTERFACES);
 
-	if (event->type == REGISTERED) {
+	if (event->type == SERVICE_EVENT_REGISTERED) {
 		if (export != NULL) {
 			printf("TOPOLOGY_MANAGER: Service registered: %s\n", name);
 			status = topologyManager_exportService(manager, event->reference);
 		}
-	} else if (event->type == UNREGISTERING) {
+	} else if (event->type == SERVICE_EVENT_UNREGISTERING) {
 		//if (export != NULL) {
 			printf("TOPOLOGY_MANAGER: Service unregistering: %s\n", name);
 			status = topologyManager_removeService(manager, event->reference);
