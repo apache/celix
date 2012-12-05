@@ -129,7 +129,7 @@ ADD_CUSTOM_TARGET(deploy)
 MACRO(deploy)
     PARSE_ARGUMENTS(DEPLOY "BUNDLES" "" ${ARGN})
     LIST(GET DEPLOY_DEFAULT_ARGS 0 DEPLOY_NAME)
-	
+    
 	SET(DEPLOY_COMPONENT deploy_${DEPLOY_NAME})
 	SET(__deployTarget deploy_${DEPLOY_NAME})
 		
@@ -184,6 +184,20 @@ MACRO(deploy)
 	
 	CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/RunConfig.in ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/${DEPLOY_NAME}.launch @ONLY)
 ENDMACRO(deploy)
+
+# macro for scanning subdirectories for deploy.cmake files
+# these files contain the deployment of targets
+MACRO(deploy_targets)
+    FILE(GLOB_RECURSE new_list deploy.cmake)
+    SET(dir_list "")
+    FOREACH(file_path ${new_list})
+        SET(dir_list ${dir_list} ${file_path})
+    ENDFOREACH()
+    LIST(REMOVE_DUPLICATES dir_list)
+    FOREACH(file_path ${dir_list})
+		include(${file_path})
+	ENDFOREACH()
+ENDMACRO()
 
 MACRO(PARSE_ARGUMENTS prefix arg_names option_names)
   SET(DEFAULT_ARGS)

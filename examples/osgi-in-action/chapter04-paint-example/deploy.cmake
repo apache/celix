@@ -14,13 +14,6 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
-find_package(PkgConfig)
 if(PKG_CONFIG_EXECUTABLE)
-	add_subdirectory(circle)
-	add_subdirectory(paint)
-	add_subdirectory(square)
-	add_subdirectory(triangle)
-else(PKG_CONFIG_EXECUTABLE)
-	MESSAGE("No GTK found, not building the Paint Example")	
+	deploy("chapter04-paint-example" BUNDLES chapter04-paint-example circle square triangle shell shell_tui log_service log_writer)
 endif(PKG_CONFIG_EXECUTABLE)

@@ -14,13 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
-find_package(PkgConfig)
-if(PKG_CONFIG_EXECUTABLE)
-	add_subdirectory(circle)
-	add_subdirectory(paint)
-	add_subdirectory(square)
-	add_subdirectory(triangle)
-else(PKG_CONFIG_EXECUTABLE)
-	MESSAGE("No GTK found, not building the Paint Example")	
-endif(PKG_CONFIG_EXECUTABLE)
+is_enabled(REMOTE_SERVICE_ADMIN)
+if (REMOTE_SERVICE_ADMIN)
+	deploy("remote-services" BUNDLES discovery topology_manager remote_service_admin example shell shell_tui log_service log_writer)
+	deploy("remote-services-client" BUNDLES discovery topology_manager remote_service_admin shell shell_tui log_service log_writer calc_shell)
+endif (REMOTE_SERVICE_ADMIN)

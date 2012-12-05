@@ -14,13 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
-find_package(PkgConfig)
-if(PKG_CONFIG_EXECUTABLE)
-	add_subdirectory(circle)
-	add_subdirectory(paint)
-	add_subdirectory(square)
-	add_subdirectory(triangle)
-else(PKG_CONFIG_EXECUTABLE)
-	MESSAGE("No GTK found, not building the Paint Example")	
-endif(PKG_CONFIG_EXECUTABLE)
+is_enabled(DEVICE_ACCESS_EXAMPLE)
+if(DEVICE_ACCESS_EXAMPLE)
+	deploy("device_access_example" BUNDLES device_manager driver_locator shell shell_tui log_service base_driver base_driver word_consumingdriver char_refiningdriver)
+endif(DEVICE_ACCESS_EXAMPLE)

@@ -47,6 +47,4 @@ if (DEPLOYMENT_ADMIN)
     target_link_libraries(deployment_admin celix_framework ${CURL_LIBRARIES})
     
     install(FILES public/include/resource_processor.h DESTINATION include/celix/deployment_admin)
-    
-    # deploy("deployment-admin" BUNDLES deployment_admin shell shell_tui log_service log_writer)
 endif (DEPLOYMENT_ADMIN)

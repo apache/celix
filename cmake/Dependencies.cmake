@@ -33,7 +33,8 @@ MACRO(celix_subproject)
     
     IF (${NAME} OR ${BUILD})
         set(${OPTION_NAME} "ON")
-    
+    	set_property(GLOBAL PROPERTY ${NAME}_INTERNAL "ON")
+    	
         FOREACH (DEP ${OPTION_DEPS})
             string(TOUPPER ${DEP} UC_DEP)
             set(DEP_NAME "BUILD_${UC_DEP}")
@@ -43,3 +44,19 @@ MACRO(celix_subproject)
         set(${OPTION_NAME} "OFF")
     ENDIF (${NAME} OR ${BUILD})
 ENDMACRO(celix_subproject)
+
+MACRO(is_enabled name)
+	string(TOUPPER ${name} UC_NAME)
+    set(NAME "BUILD_${UC_NAME}")
+    
+    get_property(BUILD GLOBAL PROPERTY ${NAME}_INTERNAL)
+    if (NOT DEFINED BUILD)
+        set(BUILD "OFF")
+    endif (NOT DEFINED BUILD)
+    
+    IF (${BUILD})
+        set(${name} "ON")
+    ELSE (${BUILD})
+        set(${name} "OFF")
+    ENDIF (${BUILD})
+ENDMACRO(is_enabled)

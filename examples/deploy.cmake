@@ -14,13 +14,13 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-
-find_package(PkgConfig)
-if(PKG_CONFIG_EXECUTABLE)
-	add_subdirectory(circle)
-	add_subdirectory(paint)
-	add_subdirectory(square)
-	add_subdirectory(triangle)
-else(PKG_CONFIG_EXECUTABLE)
-	MESSAGE("No GTK found, not building the Paint Example")	
-endif(PKG_CONFIG_EXECUTABLE)
+is_enabled(EXAMPLES)
+if (EXAMPLES)
+	deploy(chapter01-greeting-example BUNDLES shell shell_tui log_service chapter01-greeting-example-client chapter01-greeting-example)
+	deploy(chapter04-correct-listener BUNDLES shell shell_tui log_service chapter04-correct-listener)
+	
+	deploy("hello_world" BUNDLES shell shell_tui hello_world log_service)
+	deploy("wb" BUNDLES tracker publisherA publisherB shell shell_tui log_service log_writer)
+	deploy("wb_dp" BUNDLES tracker_depman publisherA publisherB shell shell_tui log_service log_writer)
+	deploy("echo" BUNDLES echo_server echo_client shell shell_tui log_service log_writer)
+endif (EXAMPLES)
