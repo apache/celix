@@ -48,5 +48,5 @@ if (DEPLOYMENT_ADMIN)
     
     install(FILES public/include/resource_processor.h DESTINATION include/celix/deployment_admin)
     
-    deploy("deployment-admin" BUNDLES deployment_admin shell shell_tui log_service log_writer)
+    # deploy("deployment-admin" BUNDLES deployment_admin shell shell_tui log_service log_writer)
 endif (DEPLOYMENT_ADMIN)

@@ -52,3 +52,5 @@ add_subdirectory(dependency_manager)
 add_subdirectory(launcher)
 add_subdirectory(framework)
 add_subdirectory(utils)
+
+deploy("hello_world" BUNDLES shell shell_tui hello_world log_service)
