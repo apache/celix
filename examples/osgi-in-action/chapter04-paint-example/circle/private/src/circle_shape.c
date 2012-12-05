@@ -25,7 +25,7 @@
  */
 #include <stdio.h>
 #include <string.h>
-#include <stdbool.h>
+#include <celixbool.h>
 #include <stdlib.h>
 #include <glib.h>
 #include <gtk/gtk.h>
@@ -57,9 +57,10 @@ celix_status_t circleShape_create(bundle_context_t context, SIMPLE_SHAPE *shape)
 				if (!*shape) {
 					status = CELIX_ENOMEM;
 				} else {
+					celix_status_t status = CELIX_SUCCESS;
 					(*shape)->name = "Circle";
 					(*shape)->icon_path = NULL;
-					celix_status_t status = bundle_getEntry(bundle, CIRCLE_FILE, pool, &(*shape)->icon_path);
+					status = bundle_getEntry(bundle, CIRCLE_FILE, pool, &(*shape)->icon_path);
 					if (status == CELIX_SUCCESS) {
 						(*shape)->simpleShape_draw = circleShape_draw;
 					} else {

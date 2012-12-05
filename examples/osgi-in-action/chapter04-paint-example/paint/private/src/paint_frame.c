@@ -37,7 +37,7 @@
 #include <stdlib.h>
 #include <gtk/gtk.h>
 #include <string.h>
-#include <stdbool.h>
+#include <celixbool.h>
 #include <glib.h>
 #include <gdk/gdk.h>
 #include "bundle_context.h"
@@ -83,10 +83,11 @@ celix_status_t paintFrame_create(bundle_context_t context, apr_pool_t *pool, PAI
 		this = NULL;
 		status = CELIX_ENOMEM;
 	} else {
-		*frame = this;
 		char *builderFile;
 		bundle_t bundle;
 		GError *error = NULL;
+		*frame = this;
+		
 
 		(*frame)->showing = false;
 		(*frame)->pool = mypool;
@@ -108,8 +109,8 @@ celix_status_t paintFrame_create(bundle_context_t context, apr_pool_t *pool, PAI
 				gtk_init(NULL, NULL);
 
 				if( g_thread_supported()) {
-					(*frame)->main = g_thread_new("main", paintFrame_gtkmain, (*frame));
-					// (*frame)->main = g_thread_create(paintFrame_gtkmain, (*frame), TRUE, &error);
+					// (*frame)->main = g_thread_new("main", paintFrame_gtkmain, (*frame));
+					(*frame)->main = g_thread_create(paintFrame_gtkmain, (*frame), TRUE, &error);
 					if ((*frame)->main == NULL){
 						g_printerr ("Failed to create thread: %s\n", error->message);
 						status = CELIX_BUNDLE_EXCEPTION;
@@ -164,12 +165,15 @@ static celix_status_t paintFrame_show(PAINT_FRAME frame) {
  **/
 celix_status_t paintFrame_addShape(PAINT_FRAME frame, bundle_context_t context, SIMPLE_SHAPE shape) {
 	celix_status_t status = CELIX_SUCCESS;
+	GError *gerror = NULL;
+	GtkWidget *button = NULL;
+	GtkWidget *im = NULL;
 
 	gdk_threads_enter();
-	GError *gerror = NULL;
-	GtkWidget *button = gtk_button_new();
+	
+	button = gtk_button_new();
 	gtk_widget_set_name((GtkWidget *) button, shape->name);
-	GtkWidget *im = gtk_image_new_from_file(shape->icon_path);
+	im = gtk_image_new_from_file(shape->icon_path);
 	gtk_button_set_image((GtkButton *) button, im);
 	gtk_toolbar_append_widget((GtkToolbar *) frame->toolbar, (GtkWidget *) button, "", "");
 	g_signal_connect (G_OBJECT (button), "clicked", G_CALLBACK (paintFrame_buttonClicked), frame);
@@ -193,8 +197,9 @@ celix_status_t paintFrame_addShape(PAINT_FRAME frame, bundle_context_t context, 
  **/
 celix_status_t paintFrame_removeShape(PAINT_FRAME frame, SIMPLE_SHAPE sshape) {
 	celix_status_t status = CELIX_SUCCESS;
+	shape_info_t shape = NULL;
 	gdk_threads_enter();
-	shape_info_t shape = (shape_info_t) hashMap_remove(this->m_shapes, sshape->name);
+	shape = (shape_info_t) hashMap_remove(this->m_shapes, sshape->name);
 	if (shape != NULL) {
 		this->m_selected = NULL;
 		gtk_widget_destroy(GTK_WIDGET(shape->button));
@@ -302,6 +307,7 @@ static celix_status_t paintFrame_redraw(PAINT_FRAME frame, GdkModifierType state
 	if (frame->pixMap != NULL && frame->showing) {
 		GdkRectangle update_rect;
 		GtkAllocation allocation;
+		linked_list_iterator_t it = NULL;
 
 		update_rect.x = 0;
 		update_rect.y = 0;
@@ -314,7 +320,7 @@ static celix_status_t paintFrame_redraw(PAINT_FRAME frame, GdkModifierType state
 				update_rect.x, update_rect.y,
 				update_rect.width, update_rect.height);
 		gtk_widget_draw(frame->drawingArea, &update_rect);
-		linked_list_iterator_t it = linkedListIterator_create(this->m_shapeComponents, 0);
+		it = linkedListIterator_create(this->m_shapeComponents, 0);
 		while (linkedListIterator_hasNext(it)) {
 			SHAPE_COMPONENT sc = linkedListIterator_next(it);
 			(*sc->shapeComponent_paintComponent)(sc, this, this->pixMap, frame->drawingArea);

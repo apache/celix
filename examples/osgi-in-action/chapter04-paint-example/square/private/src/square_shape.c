@@ -25,7 +25,7 @@
  */
 #include <stdio.h>
 #include <string.h>
-#include <stdbool.h>
+#include <celixbool.h>
 #include <stdlib.h>
 #include <glib.h>
 #include <gtk/gtk.h>
@@ -43,11 +43,12 @@ SIMPLE_SHAPE squareShape_create(bundle_context_t context) {
 	bundle_t bundle;
 	apr_pool_t *pool;
 	SIMPLE_SHAPE shape = (SIMPLE_SHAPE) malloc(sizeof(*shape));
+	celix_status_t status = CELIX_SUCCESS;
 	bundleContext_getBundle(context, &bundle);
 	bundleContext_getMemoryPool(context, &pool);
 	shape->name = "Square";
 	shape->icon_path = NULL;
-	celix_status_t status = bundle_getEntry(bundle, SQUARE_FILE, pool, &shape->icon_path);
+	status = bundle_getEntry(bundle, SQUARE_FILE, pool, &shape->icon_path);
 	shape->simpleShape_draw = squareShape_draw;
 	if (status == CELIX_SUCCESS) {
 		// no error

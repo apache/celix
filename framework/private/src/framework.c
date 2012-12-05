@@ -374,7 +374,7 @@ celix_status_t fw_init(framework_t framework) {
 	    return status;
 	} else {
 #ifdef _WIN32
-		Hmodule_t this_process;
+		HMODULE this_process;
 #endif
         unsigned int arcIdx;
 		void * handle;
@@ -435,10 +435,10 @@ celix_status_t fw_init(framework_t framework) {
 			bundle_context_t context = NULL;
 			void * userData = NULL;
 #ifdef _WIN32
-			create_function_t create = (create_function_t) GetProcAddress((Hmodule_t) bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_CREATE);
-			start_function_t start = (start_function_t) GetProcAddress((Hmodule_t) bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_START);
-			stop_function_t stop = (stop_function_t) GetProcAddress((Hmodule_t) bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_STOP);
-			destroy_function_t destroy = (destroy_function_t) GetProcAddress((Hmodule_t) bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_DESTROY);
+			create_function_t create = (create_function_t) GetProcAddress((HMODULE) bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_CREATE);
+			start_function_t start = (start_function_t) GetProcAddress((HMODULE) bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_START);
+			stop_function_t stop = (stop_function_t) GetProcAddress((HMODULE) bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_STOP);
+			destroy_function_t destroy = (destroy_function_t) GetProcAddress((HMODULE) bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_DESTROY);
 #else
             create_function_t create = dlsym(bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_CREATE);
             start_function_t start = dlsym(bundle_getHandle(framework->bundle), BUNDLE_ACTIVATOR_START);
@@ -745,10 +745,10 @@ celix_status_t fw_startBundle(framework_t framework, bundle_t bundle, int option
                 bundle_context_t context;
 #ifdef _WIN32
                 
-				create_function_t create = (create_function_t) GetProcAddress((Hmodule_t) bundle_getHandle(bundle), BUNDLE_ACTIVATOR_CREATE);
-				start_function_t start = (start_function_t) GetProcAddress((Hmodule_t) bundle_getHandle(bundle), BUNDLE_ACTIVATOR_START);
-				stop_function_t stop = (stop_function_t) GetProcAddress((Hmodule_t) bundle_getHandle(bundle), BUNDLE_ACTIVATOR_STOP);
-				destroy_function_t destroy = (destroy_function_t) GetProcAddress((Hmodule_t) bundle_getHandle(bundle), BUNDLE_ACTIVATOR_DESTROY);
+				create_function_t create = (create_function_t) GetProcAddress((HMODULE) bundle_getHandle(bundle), BUNDLE_ACTIVATOR_CREATE);
+				start_function_t start = (start_function_t) GetProcAddress((HMODULE) bundle_getHandle(bundle), BUNDLE_ACTIVATOR_START);
+				stop_function_t stop = (stop_function_t) GetProcAddress((HMODULE) bundle_getHandle(bundle), BUNDLE_ACTIVATOR_STOP);
+				destroy_function_t destroy = (destroy_function_t) GetProcAddress((HMODULE) bundle_getHandle(bundle), BUNDLE_ACTIVATOR_DESTROY);
 #else
 				create_function_t create = dlsym(bundle_getHandle(bundle), BUNDLE_ACTIVATOR_CREATE);
                 start_function_t start = dlsym(bundle_getHandle(bundle), BUNDLE_ACTIVATOR_START);

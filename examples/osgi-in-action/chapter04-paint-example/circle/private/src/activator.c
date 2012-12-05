@@ -59,8 +59,10 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t ctx) {
 	struct activator * act = (struct activator *) userData;
 	celix_status_t status = CELIX_SUCCESS;
 	SIMPLE_SHAPE es = NULL;
+	properties_t props = NULL;
+
 	circleShape_create(ctx, &es);
-	properties_t props = properties_create();
+	props = properties_create();
 	properties_set(props, "name", "circle");
     status = bundleContext_registerService(ctx, SIMPLE_SHAPE_SERVICE_NAME, es, props, &act->reg);
 	return status;

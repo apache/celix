@@ -25,6 +25,7 @@ include_directories(
 	../simple/public/include
 )
 
+message(GTK: ${GLIB_INCLUDE_DIRS})
 include_directories(${GTK_INCLUDE_DIRS})
 include_directories(${GLIB_INCLUDE_DIRS})
 include_directories(${GTHR_INCLUDE_DIRS})
