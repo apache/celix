@@ -34,14 +34,14 @@
 struct shell {
 	apr_pool_t *pool;
 	bundle_context_t bundleContext;
-	HASH_MAP commandReferenceMap;
-	HASH_MAP commandNameMap;
+	hash_map_t commandReferenceMap;
+	hash_map_t commandNameMap;
 };
 
 SHELL shell_create();
 char * shell_getCommandUsage(SHELL shell, char * commandName);
 char * shell_getCommandDescription(SHELL shell, char * commandName);
-SERVICE_REFERENCE shell_getCommandReference(SHELL shell, char * command);
+service_reference_t shell_getCommandReference(SHELL shell, char * command);
 void shell_executeCommand(SHELL shell, char * commandLine, void (*out)(char *), void (*error)(char *));
 
 COMMAND shell_getCommand(SHELL shell, char * commandName);

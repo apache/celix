@@ -34,8 +34,8 @@
 struct activator {
 	apr_pool_t *pool;
 
-	SERVICE_REGISTRATION proxy;
-	SERVICE_REGISTRATION service;
+	service_registration_t proxy;
+	service_registration_t service;
 };
 
 celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
@@ -89,7 +89,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 
 	bundleContext_registerService(context, EXAMPLE_SERVICE, exampleService, NULL, &activator->service);
 
-	PROPERTIES props = properties_create();
+	properties_t props = properties_create();
 	properties_set(props, (char *) "proxy.interface", (char *) EXAMPLE_SERVICE);
 	bundleContext_registerService(context, REMOTE_PROXY, exampleProxy, props, &activator->proxy);
 

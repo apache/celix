@@ -36,6 +36,6 @@ celix_status_t driverMatcher_create(apr_pool_t *pool, bundle_context_t context, 
 
 celix_status_t driverMatcher_add(driver_matcher_t matcher, int match, driver_attributes_t attributes);
 
-celix_status_t driverMatcher_getBestMatch(driver_matcher_t matcher, apr_pool_t *pool, SERVICE_REFERENCE reference, match_t *match);
+celix_status_t driverMatcher_getBestMatch(driver_matcher_t matcher, apr_pool_t *pool, service_reference_t reference, match_t *match);
 
 #endif /* DRIVER_MATCHER_H_ */

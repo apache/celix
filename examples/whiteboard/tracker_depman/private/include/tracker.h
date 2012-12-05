@@ -33,19 +33,19 @@
 struct data {
 	SERVICE service;
 	bundle_context_t context;
-	ARRAY_LIST publishers;
+	array_list_t publishers;
 	apr_thread_t *sender;
 	bool running;
 	log_service_t logger;
 };
 
-void tracker_addedServ(void * handle, SERVICE_REFERENCE ref, void * service);
-void tracker_modifiedServ(void * handle, SERVICE_REFERENCE ref, void * service);
-void tracker_removedServ(void * handle, SERVICE_REFERENCE ref, void * service);
+void tracker_addedServ(void * handle, service_reference_t ref, void * service);
+void tracker_modifiedServ(void * handle, service_reference_t ref, void * service);
+void tracker_removedServ(void * handle, service_reference_t ref, void * service);
 
-void tracker_addLog(void * handle, SERVICE_REFERENCE ref, void * service);
-void tracker_modifiedLog(void * handle, SERVICE_REFERENCE ref, void * service);
-void tracker_removeLog(void * handle, SERVICE_REFERENCE ref, void * service);
+void tracker_addLog(void * handle, service_reference_t ref, void * service);
+void tracker_modifiedLog(void * handle, service_reference_t ref, void * service);
+void tracker_removeLog(void * handle, service_reference_t ref, void * service);
 
 
 #endif /* TRACKER_H_ */

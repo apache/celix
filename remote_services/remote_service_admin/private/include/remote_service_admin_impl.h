@@ -35,20 +35,20 @@
 
 struct export_reference {
 	endpoint_description_t endpoint;
-	SERVICE_REFERENCE reference;
+	service_reference_t reference;
 };
 
 struct import_reference {
 	endpoint_description_t endpoint;
-	SERVICE_REFERENCE reference;
+	service_reference_t reference;
 };
 
 struct remote_service_admin {
 	apr_pool_t *pool;
 	bundle_context_t context;
 
-	HASH_MAP exportedServices;
-	HASH_MAP importedServices;
+	hash_map_t exportedServices;
+	hash_map_t importedServices;
 
 	struct mg_context *ctx;
 };
@@ -56,9 +56,9 @@ struct remote_service_admin {
 celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_t context, remote_service_admin_t *admin);
 celix_status_t remoteServiceAdmin_stop(remote_service_admin_t admin);
 
-celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t admin, SERVICE_REFERENCE reference, PROPERTIES properties, ARRAY_LIST *registrations);
-celix_status_t remoteServiceAdmin_getExportedServices(remote_service_admin_t admin, ARRAY_LIST *services);
-celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_admin_t admin, ARRAY_LIST *services);
+celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t admin, service_reference_t reference, properties_t properties, array_list_t *registrations);
+celix_status_t remoteServiceAdmin_getExportedServices(remote_service_admin_t admin, array_list_t *services);
+celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_admin_t admin, array_list_t *services);
 celix_status_t remoteServiceAdmin_importService(remote_service_admin_t admin, endpoint_description_t endpoint, import_registration_t *registration);
 
 

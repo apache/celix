@@ -36,18 +36,18 @@
 
 struct bundle_info {
 	char *path;
-	VERSION version;
+	version_t version;
 	char *symbolicName;
 	bool customizer;
 
-	PROPERTIES attributes;
+	properties_t attributes;
 };
 
 typedef struct bundle_info *bundle_info_t;
 
 struct resource_info {
 	char *path;
-	PROPERTIES attributes;
+	properties_t attributes;
 
 	char *resourceProcessor;
 };
@@ -58,21 +58,21 @@ struct deployment_package {
 	apr_pool_t *pool;
 	bundle_context_t context;
 	MANIFEST manifest;
-	ARRAY_LIST bundleInfos;
-	ARRAY_LIST resourceInfos;
-	HASH_MAP nameToBundleInfo;
-	HASH_MAP pathToEntry;
+	array_list_t bundleInfos;
+	array_list_t resourceInfos;
+	hash_map_t nameToBundleInfo;
+	hash_map_t pathToEntry;
 };
 
 typedef struct deployment_package *deployment_package_t;
 
 celix_status_t deploymentPackage_create(apr_pool_t *pool, bundle_context_t context, MANIFEST manifest, deployment_package_t *package);
 celix_status_t deploymentPackage_getName(deployment_package_t package, char **name);
-celix_status_t deploymentPackage_getBundleInfos(deployment_package_t package, ARRAY_LIST *infos);
+celix_status_t deploymentPackage_getBundleInfos(deployment_package_t package, array_list_t *infos);
 celix_status_t deploymentPackage_getBundleInfoByName(deployment_package_t package, char *name, bundle_info_t *info);
-celix_status_t deploymentPackage_getResourceInfos(deployment_package_t package, ARRAY_LIST *infos);
+celix_status_t deploymentPackage_getResourceInfos(deployment_package_t package, array_list_t *infos);
 celix_status_t deploymentPackage_getResourceInfoByPath(deployment_package_t package, char *path, resource_info_t *info);
-celix_status_t deploymentPackage_getBundle(deployment_package_t package, char *name, BUNDLE *bundle);
-celix_status_t deploymentPackage_getVersion(deployment_package_t package, VERSION *version);
+celix_status_t deploymentPackage_getBundle(deployment_package_t package, char *name, bundle_t *bundle);
+celix_status_t deploymentPackage_getVersion(deployment_package_t package, version_t *version);
 
 #endif /* DEPLOYMENT_PACKAGE_H_ */

@@ -41,11 +41,11 @@ struct bundleArchive {
 	char * location;
 	apr_dir_t * archiveRootDir;
 	char * archiveRoot;
-	LINKED_LIST revisions;
+	linked_list_t revisions;
 	long refreshCount;
 	time_t lastModified;
 
-	BUNDLE_STATE persistentState;
+	bundle_state_e persistentState;
 
 	apr_pool_t *mp;
 };
@@ -59,7 +59,7 @@ static celix_status_t bundleArchive_initialize(bundle_archive_t archive);
 
 static celix_status_t bundleArchive_deleteTree(char * directory, apr_pool_t *mp);
 
-static celix_status_t bundleArchive_createRevisionFromLocation(bundle_archive_t archive, char *location, char *inputFile, long revNr, BUNDLE_REVISION *bundle_revision);
+static celix_status_t bundleArchive_createRevisionFromLocation(bundle_archive_t archive, char *location, char *inputFile, long revNr, bundle_revision_t *bundle_revision);
 static celix_status_t bundleArchive_reviseInternal(bundle_archive_t archive, bool isReload, long revNr, char * location, char *inputFile);
 
 static celix_status_t bundleArchive_readLastModified(bundle_archive_t archive, time_t *time);
@@ -285,7 +285,7 @@ celix_status_t bundleArchive_getArchiveRoot(bundle_archive_t archive, char **arc
 
 celix_status_t bundleArchive_getCurrentRevisionNumber(bundle_archive_t archive, long *revisionNumber) {
 	celix_status_t status = CELIX_SUCCESS;
-	BUNDLE_REVISION revision;
+	bundle_revision_t revision;
 	*revisionNumber = -1;
 	
 	status = bundleArchive_getCurrentRevision(archive, &revision);
@@ -296,17 +296,17 @@ celix_status_t bundleArchive_getCurrentRevisionNumber(bundle_archive_t archive, 
 	return status;
 }
 
-celix_status_t bundleArchive_getCurrentRevision(bundle_archive_t archive, BUNDLE_REVISION *revision) {
+celix_status_t bundleArchive_getCurrentRevision(bundle_archive_t archive, bundle_revision_t *revision) {
 	*revision = linkedList_isEmpty(archive->revisions) ? NULL : linkedList_getLast(archive->revisions);
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleArchive_getRevision(bundle_archive_t archive, long revNr, BUNDLE_REVISION *revision) {
+celix_status_t bundleArchive_getRevision(bundle_archive_t archive, long revNr, bundle_revision_t *revision) {
 	*revision = linkedList_get(archive->revisions, revNr);
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleArchive_getPersistentState(bundle_archive_t archive, BUNDLE_STATE *state) {
+celix_status_t bundleArchive_getPersistentState(bundle_archive_t archive, bundle_state_e *state) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_status_t apr_status;
 
@@ -348,7 +348,7 @@ celix_status_t bundleArchive_getPersistentState(bundle_archive_t archive, BUNDLE
 	return status;
 }
 
-celix_status_t bundleArchive_setPersistentState(bundle_archive_t archive, BUNDLE_STATE state) {
+celix_status_t bundleArchive_setPersistentState(bundle_archive_t archive, bundle_state_e state) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_status_t apr_status;
 	char * persistentStateLocation = NULL;
@@ -551,7 +551,7 @@ celix_status_t bundleArchive_revise(bundle_archive_t archive, char * location, c
 
 static celix_status_t bundleArchive_reviseInternal(bundle_archive_t archive, bool isReload, long revNr, char * location, char *inputFile) {
     celix_status_t status;
-    BUNDLE_REVISION revision = NULL;
+    bundle_revision_t revision = NULL;
 
     if (inputFile != NULL) {
 		location = "inputstream:";
@@ -575,14 +575,14 @@ celix_status_t bundleArchive_rollbackRevise(bundle_archive_t archive, bool *roll
 	return CELIX_SUCCESS;
 }
 
-static celix_status_t bundleArchive_createRevisionFromLocation(bundle_archive_t archive, char *location, char *inputFile, long revNr, BUNDLE_REVISION *bundle_revision) {
+static celix_status_t bundleArchive_createRevisionFromLocation(bundle_archive_t archive, char *location, char *inputFile, long revNr, bundle_revision_t *bundle_revision) {
     celix_status_t status = CELIX_SUCCESS;
     char root[256];
     long refreshCount;
 
     status = bundleArchive_getRefreshCount(archive, &refreshCount);
     if (status == CELIX_SUCCESS) {
-		BUNDLE_REVISION revision = NULL;
+		bundle_revision_t revision = NULL;
 		apr_pool_t *pool = NULL;
 		
 		sprintf(root, "%s/version%ld.%ld", archive->archiveRoot, refreshCount, revNr);

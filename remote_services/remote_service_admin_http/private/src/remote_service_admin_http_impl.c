@@ -100,10 +100,10 @@ void *remoteServiceAdminHttp_callback(enum mg_event event, struct mg_connection 
 			char *reply = NULL;
 			remoteServiceAdmin_handleRequest(rsa, service, request, data, &reply);
 
-			HASH_MAP_ITERATOR iter = hashMapIterator_create(rsa->exportedServices);
+			hash_map_iterator_t iter = hashMapIterator_create(rsa->exportedServices);
 			while (hashMapIterator_hasNext(iter)) {
-				HASH_MAP_ENTRY entry = hashMapIterator_nextEntry(iter);
-				ARRAY_LIST exports = hashMapEntry_getValue(entry);
+				hash_map_entry_t entry = hashMapIterator_nextEntry(iter);
+				array_list_t exports = hashMapEntry_getValue(entry);
 				int expIt = 0;
 				for (expIt = 0; expIt < arrayList_size(exports); expIt++) {
 					export_registration_t export = arrayList_get(exports, expIt);

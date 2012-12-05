@@ -36,10 +36,10 @@ typedef struct shell * SHELL;
 
 struct shellService {
 	SHELL shell;
-	ARRAY_LIST (*getCommands)(SHELL shell);
+	array_list_t (*getCommands)(SHELL shell);
 	char * (*getCommandUsage)(SHELL shell, char * commandName);
 	char * (*getCommandDescription)(SHELL shell, char * commandName);
-	SERVICE_REFERENCE (*getCommandReference)(SHELL shell, char * command);
+	service_reference_t (*getCommandReference)(SHELL shell, char * command);
 	void (*executeCommand)(SHELL shell, char * commandLine, void (*out)(char *), void (*error)(char *));
 };
 

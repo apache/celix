@@ -36,8 +36,8 @@
 
 struct logActivator {
     bundle_context_t bundleContext;
-    SERVICE_REGISTRATION logServiceFactoryReg;
-    SERVICE_REGISTRATION logReaderServiceReg;
+    service_registration_t logServiceFactoryReg;
+    service_registration_t logReaderServiceReg;
 
 };
 

@@ -33,11 +33,11 @@
 #include "array_list.h"
 
 struct log {
-    LINKED_LIST entries;
+    linked_list_t entries;
     apr_thread_mutex_t *lock;
 
-    ARRAY_LIST listeners;
-    ARRAY_LIST listenerEntries;
+    array_list_t listeners;
+    array_list_t listenerEntries;
 
     apr_thread_t *listenerThread;
     bool running;
@@ -123,10 +123,10 @@ celix_status_t log_addEntry(log_t log, log_entry_t entry) {
     return CELIX_SUCCESS;
 }
 
-celix_status_t log_getEntries(log_t log, apr_pool_t *memory_pool, LINKED_LIST *list) {
-    LINKED_LIST entries = NULL;
+celix_status_t log_getEntries(log_t log, apr_pool_t *memory_pool, linked_list_t *list) {
+    linked_list_t entries = NULL;
     if (linkedList_create(memory_pool, &entries) == CELIX_SUCCESS) {
-        LINKED_LIST_ITERATOR iter = NULL;
+        linked_list_iterator_t iter = NULL;
 
         apr_thread_mutex_lock(log->lock);
 
@@ -265,7 +265,7 @@ void * APR_THREAD_FUNC log_listenerThread(apr_thread_t *thread, void *data) {
                     logger->running = false;
                     break;
                 } else {
-                    ARRAY_LIST_ITERATOR it = arrayListIterator_create(logger->listeners);
+                    array_list_iterator_t it = arrayListIterator_create(logger->listeners);
                     while (arrayListIterator_hasNext(it)) {
                         log_listener_t listener = arrayListIterator_next(it);
                         listener->logged(listener, entry);

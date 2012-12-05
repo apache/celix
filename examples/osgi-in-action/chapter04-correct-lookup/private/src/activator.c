@@ -96,8 +96,8 @@ void *APR_THREAD_FUNC LogServiceTest(apr_thread_t *thd, void *argument) {
 	bundle_context_t m_context = ((THREAD_DATA) argument)->m_context;
 	apr_os_thread_t *logThread = NULL;
 	apr_os_thread_get(&logThread, m_logTestThread);
-	while (apr_os_thread_current() == logThread) {
-		SERVICE_REFERENCE logServiceRef = NULL;
+	while (apr_os_thread_current() == *logThread) {
+		service_reference_t logServiceRef = NULL;
 		// lookup the current "best" LogService each time, just before we need to use it
 		status = bundleContext_getServiceReference(m_context, (char *) LOG_SERVICE_NAME, &logServiceRef);
 		// if the service reference is null then we know there's no log service available
@@ -139,13 +139,13 @@ void stopTestThread() {
 
 void pauseTestThread() {
 	// sleep for a bit
-	apr_sleep(5);
+	apr_sleep(5000000);
 }
 
 void alternativeLog(char *message, THREAD_DATA data) {
 	// this provides similar style debug logging output for when the LogService disappears
 	celix_status_t status = CELIX_SUCCESS;
-	BUNDLE bundle = NULL;
+	bundle_t bundle = NULL;
 	char tid[20], bid[20];
 	long bundleId;
 	if (data->m_context != NULL) {

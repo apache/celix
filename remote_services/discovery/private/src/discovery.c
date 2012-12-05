@@ -43,17 +43,17 @@ struct discovery {
 	bundle_context_t context;
 	apr_pool_t *pool;
 
-	HASH_MAP listenerReferences;
+	hash_map_t listenerReferences;
 
 	bool running;
 	apr_thread_t *slpPoll;
 
-	HASH_MAP slpServices;
+	hash_map_t slpServices;
 
 	char *rsaPort;
 
-	ARRAY_LIST handled;
-	ARRAY_LIST registered;
+	array_list_t handled;
+	array_list_t registered;
 };
 
 struct slp_service {
@@ -150,10 +150,10 @@ celix_status_t discovery_removeService(discovery_t discovery, endpoint_descripti
 	printf("DISCOVERY: Remove service (%s)\n", endpoint->service);
 
 	// Inform listeners of new endpoint
-	HASH_MAP_ITERATOR iter = hashMapIterator_create(discovery->listenerReferences);
+	hash_map_iterator_t iter = hashMapIterator_create(discovery->listenerReferences);
 	while (hashMapIterator_hasNext(iter)) {
-		HASH_MAP_ENTRY entry = hashMapIterator_nextEntry(iter);
-		SERVICE_REFERENCE reference = hashMapEntry_getKey(entry);
+		hash_map_entry_t entry = hashMapIterator_nextEntry(iter);
+		service_reference_t reference = hashMapEntry_getKey(entry);
 		endpoint_listener_t listener = NULL;
 		bundleContext_getService(discovery->context, reference, (void**)&listener);
 		discovery_informListenerOfRemoval(discovery, listener, endpoint);
@@ -166,15 +166,15 @@ celix_status_t discovery_addService(discovery_t discovery, endpoint_description_
 	celix_status_t status = CELIX_SUCCESS;
 
 	// Inform listeners of new endpoint
-	HASH_MAP_ITERATOR iter = hashMapIterator_create(discovery->listenerReferences);
+	hash_map_iterator_t iter = hashMapIterator_create(discovery->listenerReferences);
 	while (hashMapIterator_hasNext(iter)) {
-		HASH_MAP_ENTRY entry = hashMapIterator_nextEntry(iter);
-		SERVICE_REFERENCE reference = hashMapEntry_getKey(entry);
+		hash_map_entry_t entry = hashMapIterator_nextEntry(iter);
+		service_reference_t reference = hashMapEntry_getKey(entry);
 		endpoint_listener_t listener = NULL;
 
-		SERVICE_REGISTRATION registration = NULL;
+		service_registration_t registration = NULL;
 		serviceReference_getServiceRegistration(reference, &registration);
-		PROPERTIES serviceProperties = NULL;
+		properties_t serviceProperties = NULL;
 		serviceRegistration_getProperties(registration, &serviceProperties);
 		char *scope = properties_get(serviceProperties, (char *) ENDPOINT_LISTENER_SCOPE);
 		filter_t filter = filter_create(scope, discovery->pool);
@@ -253,9 +253,9 @@ celix_status_t discovery_endpointAdded(void *handle, endpoint_description_t endp
 		status = discovery_constructServiceUrl(discovery, endpoint, &serviceUrl);
 		if (status == CELIX_SUCCESS) {
 			char *attributes = "";
-			HASH_MAP_ITERATOR iter = hashMapIterator_create(endpoint->properties);
+			hash_map_iterator_t iter = hashMapIterator_create(endpoint->properties);
 			while (hashMapIterator_hasNext(iter)) {
-				HASH_MAP_ENTRY entry = hashMapIterator_nextEntry(iter);
+				hash_map_entry_t entry = hashMapIterator_nextEntry(iter);
 				char *key = hashMapEntry_getKey(entry);
 				char *value = hashMapEntry_getValue(entry);
 				if (strlen(attributes) != 0) {
@@ -310,7 +310,7 @@ celix_status_t discovery_endpointRemoved(void *handle, endpoint_description_t en
 	return status;
 }
 
-celix_status_t discovery_endpointListenerAdding(void * handle, SERVICE_REFERENCE reference, void **service) {
+celix_status_t discovery_endpointListenerAdding(void * handle, service_reference_t reference, void **service) {
 	celix_status_t status = CELIX_SUCCESS;
 	discovery_t discovery = handle;
 
@@ -319,13 +319,13 @@ celix_status_t discovery_endpointListenerAdding(void * handle, SERVICE_REFERENCE
 	return status;
 }
 
-celix_status_t discovery_endpointListenerAdded(void * handle, SERVICE_REFERENCE reference, void * service) {
+celix_status_t discovery_endpointListenerAdded(void * handle, service_reference_t reference, void * service) {
 	celix_status_t status = CELIX_SUCCESS;
 	discovery_t discovery = handle;
 
-	SERVICE_REGISTRATION registration = NULL;
+	service_registration_t registration = NULL;
 	serviceReference_getServiceRegistration(reference, &registration);
-	PROPERTIES serviceProperties = NULL;
+	properties_t serviceProperties = NULL;
 	serviceRegistration_getProperties(registration, &serviceProperties);
 	char *discoveryListener = properties_get(serviceProperties, "DISCOVERY");
 
@@ -339,7 +339,7 @@ celix_status_t discovery_endpointListenerAdded(void * handle, SERVICE_REFERENCE 
 	return status;
 }
 
-celix_status_t discovery_endpointListenerModified(void * handle, SERVICE_REFERENCE reference, void * service) {
+celix_status_t discovery_endpointListenerModified(void * handle, service_reference_t reference, void * service) {
 	celix_status_t status = CELIX_SUCCESS;
 	discovery_t discovery = handle;
 
@@ -349,11 +349,11 @@ celix_status_t discovery_endpointListenerModified(void * handle, SERVICE_REFEREN
 	return status;
 }
 
-celix_status_t discovery_updateEndpointListener(discovery_t discovery, SERVICE_REFERENCE reference, endpoint_listener_t service) {
+celix_status_t discovery_updateEndpointListener(discovery_t discovery, service_reference_t reference, endpoint_listener_t service) {
 	celix_status_t status = CELIX_SUCCESS;
 	char *scope = "createScopeHere";
 
-	ARRAY_LIST scopes = hashMap_get(discovery->listenerReferences, reference);
+	array_list_t scopes = hashMap_get(discovery->listenerReferences, reference);
 	if (scopes == NULL) {
 		scopes = NULL;
 		arrayList_create(discovery->pool, &scopes);
@@ -364,9 +364,9 @@ celix_status_t discovery_updateEndpointListener(discovery_t discovery, SERVICE_R
 		arrayList_add(scopes, scope);
 	}
 
-	HASH_MAP_ITERATOR iter = hashMapIterator_create(discovery->slpServices);
+	hash_map_iterator_t iter = hashMapIterator_create(discovery->slpServices);
 	while (hashMapIterator_hasNext(iter)) {
-		HASH_MAP_ENTRY entry = hashMapIterator_nextEntry(iter);
+		hash_map_entry_t entry = hashMapIterator_nextEntry(iter);
 		char *key = hashMapEntry_getKey(entry);
 		endpoint_description_t value = hashMapEntry_getValue(entry);
 		discovery_informListener(discovery, service, value);
@@ -375,7 +375,7 @@ celix_status_t discovery_updateEndpointListener(discovery_t discovery, SERVICE_R
 	return status;
 }
 
-celix_status_t discovery_endpointListenerRemoved(void * handle, SERVICE_REFERENCE reference, void * service) {
+celix_status_t discovery_endpointListenerRemoved(void * handle, service_reference_t reference, void * service) {
 	celix_status_t status = CELIX_SUCCESS;
 	discovery_t discovery = handle;
 
@@ -400,9 +400,9 @@ static void *APR_THREAD_FUNC discovery_pollSLP(apr_thread_t *thd, void *data) {
 			err = SLPFindSrvs(slp, "osgi.remote", 0, 0, discovery_pollSLPCallback, data);
 		}
 
-		HASH_MAP_ITERATOR iter = hashMapIterator_create(discovery->slpServices);
+		hash_map_iterator_t iter = hashMapIterator_create(discovery->slpServices);
 		while (hashMapIterator_hasNext(iter)) {
-			HASH_MAP_ENTRY entry = hashMapIterator_nextEntry(iter);
+			hash_map_entry_t entry = hashMapIterator_nextEntry(iter);
 			char *key = hashMapEntry_getKey(entry);
 			endpoint_description_t value = hashMapEntry_getValue(entry);
 
@@ -450,7 +450,7 @@ SLPBoolean discovery_pollSLPCallback(SLPHandle hslp, const char* srvurl, unsigne
 					err = SLPFindAttrs(handle, srvurl, "", "", discovery_attributesCallback, slpService);
 				}
 
-				PROPERTIES props = properties_create();
+				properties_t props = properties_create();
 				char *track;
 				char *token = apr_strtok(slpService->attributes, ",", &track);
 				while (token != NULL) {

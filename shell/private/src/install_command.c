@@ -34,7 +34,7 @@
 #include "install_command.h"
 
 void installCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *));
-void installCommand_install(COMMAND command, BUNDLE *bundle, char * location, void (*out)(char *), void (*err)(char *));
+void installCommand_install(COMMAND command, bundle_t *bundle, char * location, void (*out)(char *), void (*err)(char *));
 
 COMMAND installCommand_create(bundle_context_t context) {
 	COMMAND command = (COMMAND) malloc(sizeof(*command));
@@ -61,7 +61,7 @@ void installCommand_execute(COMMAND command, char * line, void (*out)(char *), v
 	
 	info[0] = '\0';
 	while (sub != NULL) {
-		BUNDLE bundle = NULL;
+		bundle_t bundle = NULL;
 		installCommand_install(command, &bundle, strdup(sub), out, err);
 		if (bundle != NULL) {
 			long id;
@@ -89,6 +89,6 @@ void installCommand_execute(COMMAND command, char * line, void (*out)(char *), v
 	}
 }
 
-void installCommand_install(COMMAND command, BUNDLE *bundle, char * location, void (*out)(char *), void (*err)(char *)) {
+void installCommand_install(COMMAND command, bundle_t *bundle, char * location, void (*out)(char *), void (*err)(char *)) {
 	bundleContext_installBundle(command->bundleContext, location, bundle);
 }

@@ -58,7 +58,7 @@ void stopCommand_execute(COMMAND command, char * line, void (*out)(char *), void
 		utils_isNumeric(sub, &numeric);
 		if (numeric) {
 			long id = atol(sub);
-			BUNDLE bundle = NULL;
+			bundle_t bundle = NULL;
 			bundleContext_getBundleById(command->bundleContext, id, &bundle);
 			if (bundle != NULL) {
 				bundle_stop(bundle, 0);

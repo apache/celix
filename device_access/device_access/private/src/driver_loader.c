@@ -35,7 +35,7 @@ struct driver_loader {
 	apr_pool_t *pool;
 
 	bundle_context_t context;
-	ARRAY_LIST loadedDrivers;
+	array_list_t loadedDrivers;
 };
 
 static apr_status_t driverLoader_destroy(void *loaderP);
@@ -64,13 +64,13 @@ apr_status_t driverLoader_destroy(void *loaderP) {
 	return APR_SUCCESS;
 }
 
-celix_status_t driverLoader_findDrivers(driver_loader_t loader, apr_pool_t *pool, ARRAY_LIST locators, PROPERTIES properties, ARRAY_LIST *driversIds) {
+celix_status_t driverLoader_findDrivers(driver_loader_t loader, apr_pool_t *pool, array_list_t locators, properties_t properties, array_list_t *driversIds) {
 	celix_status_t status = CELIX_SUCCESS;
 	arrayList_create(pool, driversIds);
 
 	int i;
 	for (i = 0; i < arrayList_size(locators); i++) {
-		ARRAY_LIST drivers;
+		array_list_t drivers;
 		driver_locator_service_t locator = arrayList_get(locators, i);
 
 		apr_pool_t *spool;
@@ -90,7 +90,7 @@ celix_status_t driverLoader_findDrivers(driver_loader_t loader, apr_pool_t *pool
 	return status;
 }
 
-celix_status_t driverLoader_findDriversForLocator(driver_loader_t loader, apr_pool_t *pool, driver_locator_service_t locator, PROPERTIES properties, ARRAY_LIST *driversIds) {
+celix_status_t driverLoader_findDriversForLocator(driver_loader_t loader, apr_pool_t *pool, driver_locator_service_t locator, properties_t properties, array_list_t *driversIds) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	status = locator->findDrivers(locator->locator, pool, properties, driversIds);
@@ -98,13 +98,13 @@ celix_status_t driverLoader_findDriversForLocator(driver_loader_t loader, apr_po
 	return status;
 }
 
-celix_status_t driverLoader_loadDrivers(driver_loader_t loader, apr_pool_t *pool, ARRAY_LIST locators, ARRAY_LIST driverIds, ARRAY_LIST *references) {
+celix_status_t driverLoader_loadDrivers(driver_loader_t loader, apr_pool_t *pool, array_list_t locators, array_list_t driverIds, array_list_t *references) {
 	celix_status_t status = CELIX_SUCCESS;
 	status = arrayList_create(pool, references);
 	if (status == CELIX_SUCCESS) {
 		int i;
 		for (i = 0; i < arrayList_size(driverIds); i++) {
-			ARRAY_LIST refs = NULL;
+			array_list_t refs = NULL;
 			char *id = arrayList_get(driverIds, i);
 
 			apr_pool_t *spool;
@@ -127,13 +127,13 @@ celix_status_t driverLoader_loadDrivers(driver_loader_t loader, apr_pool_t *pool
 	return status;
 }
 
-celix_status_t driverLoader_loadDriver(driver_loader_t loader, apr_pool_t *pool, ARRAY_LIST locators, char *driverId, ARRAY_LIST *references) {
+celix_status_t driverLoader_loadDriver(driver_loader_t loader, apr_pool_t *pool, array_list_t locators, char *driverId, array_list_t *references) {
 	celix_status_t status = CELIX_SUCCESS;
 	status = arrayList_create(pool, references);
 	if (status == CELIX_SUCCESS) {
 		int i;
 		for (i = 0; i < arrayList_size(locators); i++) {
-			ARRAY_LIST refs = NULL;
+			array_list_t refs = NULL;
 			driver_locator_service_t locator = arrayList_get(locators, i);
 
 			apr_pool_t *spool;
@@ -158,7 +158,7 @@ celix_status_t driverLoader_loadDriver(driver_loader_t loader, apr_pool_t *pool,
 	return status;
 }
 
-celix_status_t driverLoader_loadDriverForLocator(driver_loader_t loader, apr_pool_t *pool, driver_locator_service_t locator, char *driverId, ARRAY_LIST *references) {
+celix_status_t driverLoader_loadDriverForLocator(driver_loader_t loader, apr_pool_t *pool, driver_locator_service_t locator, char *driverId, array_list_t *references) {
 	celix_status_t status = CELIX_SUCCESS;
 	arrayList_create(loader->pool, references);
 
@@ -170,7 +170,7 @@ celix_status_t driverLoader_loadDriverForLocator(driver_loader_t loader, apr_poo
 		char *filename = NULL;
 		status = locator->loadDriver(locator->locator, loadPool, driverId, &filename);
 		if (status == CELIX_SUCCESS) {
-			BUNDLE bundle = NULL;
+			bundle_t bundle = NULL;
 			apr_pool_t *bundlePool;
 			status = bundleContext_getMemoryPool(loader->context, &bundlePool);
 			if (status == CELIX_SUCCESS) {
@@ -196,18 +196,18 @@ celix_status_t driverLoader_loadDriverForLocator(driver_loader_t loader, apr_poo
 celix_status_t driverLoader_unloadDrivers(driver_loader_t loader, driver_attributes_t finalDriver) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	SERVICE_REFERENCE finalReference = NULL;
+	service_reference_t finalReference = NULL;
 	if (finalDriver != NULL) {
 		status = driverAttributes_getReference(finalDriver, &finalReference);
 	}
 	if (status == CELIX_SUCCESS) {
 		int i;
 		for (i = 0; i < arrayList_size(loader->loadedDrivers); i++) {
-			SERVICE_REFERENCE reference = arrayList_get(loader->loadedDrivers, i);
+			service_reference_t reference = arrayList_get(loader->loadedDrivers, i);
 			bool equal = false;
 			status = serviceReference_equals(reference, finalReference, &equal);
 			if (status == CELIX_SUCCESS && !equal) {
-				BUNDLE bundle = NULL;
+				bundle_t bundle = NULL;
 				status = serviceReference_getBundle(reference, &bundle);
 				if (status == CELIX_SUCCESS) {
 					bundle_uninstall(bundle); // Ignore status

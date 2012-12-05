@@ -35,7 +35,7 @@ static const char *DEFAULT_LOCATOR_PATH = "drivers";
 struct bundle_instance {
 	driver_locator_service_t service;
 	driver_locator_t locator;
-	SERVICE_REGISTRATION locatorRegistration;
+	service_registration_t locatorRegistration;
 };
 
 typedef struct bundle_instance *bundle_instance_t;

@@ -49,7 +49,7 @@ static celix_status_t deviceManagerBundle_createDriverLocatorTracker(device_mana
 static celix_status_t deviceManagerBundle_createDriverTracker(device_manager_bundle_instance_t bundleData);
 static celix_status_t deviceManagerBundle_createDeviceTracker(device_manager_bundle_instance_t bundleData);
 
-celix_status_t addingService_dummy_func(void * handle, SERVICE_REFERENCE reference, void **service) {
+celix_status_t addingService_dummy_func(void * handle, service_reference_t reference, void **service) {
 	celix_status_t status = CELIX_SUCCESS;
 	device_manager_t dm = handle;
 	bundle_context_t context = NULL;

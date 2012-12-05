@@ -35,12 +35,12 @@ typedef struct driver_loader *driver_loader_t;
 
 celix_status_t driverLoader_create(apr_pool_t *pool, bundle_context_t context, driver_loader_t *loader);
 
-celix_status_t driverLoader_findDrivers(driver_loader_t loader, apr_pool_t *pool, ARRAY_LIST locators, PROPERTIES properties, ARRAY_LIST *driversIds);
-celix_status_t driverLoader_findDriversForLocator(driver_loader_t loader, apr_pool_t *pool, driver_locator_service_t locator, PROPERTIES properties, ARRAY_LIST *driversIds);
+celix_status_t driverLoader_findDrivers(driver_loader_t loader, apr_pool_t *pool, array_list_t locators, properties_t properties, array_list_t *driversIds);
+celix_status_t driverLoader_findDriversForLocator(driver_loader_t loader, apr_pool_t *pool, driver_locator_service_t locator, properties_t properties, array_list_t *driversIds);
 
-celix_status_t driverLoader_loadDrivers(driver_loader_t loader, apr_pool_t *pool, ARRAY_LIST locators, ARRAY_LIST driverIds, ARRAY_LIST *references);
-celix_status_t driverLoader_loadDriver(driver_loader_t loader, apr_pool_t *pool, ARRAY_LIST locators, char *driverId, ARRAY_LIST *references);
-celix_status_t driverLoader_loadDriverForLocator(driver_loader_t loader, apr_pool_t *pool, driver_locator_service_t locator, char *driverId, ARRAY_LIST *references);
+celix_status_t driverLoader_loadDrivers(driver_loader_t loader, apr_pool_t *pool, array_list_t locators, array_list_t driverIds, array_list_t *references);
+celix_status_t driverLoader_loadDriver(driver_loader_t loader, apr_pool_t *pool, array_list_t locators, char *driverId, array_list_t *references);
+celix_status_t driverLoader_loadDriverForLocator(driver_loader_t loader, apr_pool_t *pool, driver_locator_service_t locator, char *driverId, array_list_t *references);
 
 celix_status_t driverLoader_unloadDrivers(driver_loader_t loader, driver_attributes_t finalDriver);
 

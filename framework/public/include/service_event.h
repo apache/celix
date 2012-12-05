@@ -29,8 +29,8 @@
 #ifndef SERVICE_EVENT_H_
 #define SERVICE_EVENT_H_
 
-typedef enum serviceEventType SERVICE_EVENT_TYPE;
-typedef struct serviceEvent * SERVICE_EVENT;
+typedef enum serviceEventType service_event_type_e;
+typedef struct serviceEvent *service_event_t;
 
 #include "service_reference.h"
 
@@ -43,8 +43,8 @@ enum serviceEventType
 };
 
 struct serviceEvent {
-	SERVICE_REFERENCE reference;
-	SERVICE_EVENT_TYPE type;
+	service_reference_t reference;
+	service_event_type_e type;
 };
 
 #endif /* SERVICE_EVENT_H_ */

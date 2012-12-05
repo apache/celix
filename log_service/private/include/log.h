@@ -37,7 +37,7 @@ typedef struct log * log_t;
 
 celix_status_t log_create(apr_pool_t *pool, log_t *logger);
 celix_status_t log_addEntry(log_t log, log_entry_t entry);
-celix_status_t log_getEntries(log_t log, apr_pool_t *memory_pool, LINKED_LIST *list);
+celix_status_t log_getEntries(log_t log, apr_pool_t *memory_pool, linked_list_t *list);
 
 celix_status_t log_addLogListener(log_t logger, log_listener_t listener);
 celix_status_t log_removeLogListener(log_t logger, log_listener_t listener);

@@ -36,13 +36,13 @@
 #include "sqrt_command.h"
 
 struct activator {
-	SERVICE_REGISTRATION addCommand;
+	service_registration_t addCommand;
 	COMMAND addCmd;
 
-	SERVICE_REGISTRATION subCommand;
+	service_registration_t subCommand;
 	COMMAND subCmd;
 
-	SERVICE_REGISTRATION sqrtCommand;
+	service_registration_t sqrtCommand;
 	COMMAND sqrtCmd;
 };
 

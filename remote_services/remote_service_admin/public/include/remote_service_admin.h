@@ -40,9 +40,9 @@ typedef struct remote_service_admin *remote_service_admin_t;
 
 struct remote_service_admin_service {
 	remote_service_admin_t admin;
-	celix_status_t (*exportService)(remote_service_admin_t admin, SERVICE_REFERENCE reference, PROPERTIES properties, ARRAY_LIST *registrations);
-	celix_status_t (*getExportedServices)(remote_service_admin_t admin, ARRAY_LIST *services);
-	celix_status_t (*getImportedEndpoints)(remote_service_admin_t admin, ARRAY_LIST *services);
+	celix_status_t (*exportService)(remote_service_admin_t admin, service_reference_t reference, properties_t properties, array_list_t *registrations);
+	celix_status_t (*getExportedServices)(remote_service_admin_t admin, array_list_t *services);
+	celix_status_t (*getImportedEndpoints)(remote_service_admin_t admin, array_list_t *services);
 	celix_status_t (*importService)(remote_service_admin_t admin, endpoint_description_t endpoint, import_registration_t *registration);
 
 

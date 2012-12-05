@@ -53,7 +53,7 @@ typedef struct bundleCache *bundle_cache_t;
  * 		- CELIX_ILLEGAL_ARGUMENT If <code>bundle_cache</code> not is null.
  * 		- CELIX_ENOMEM If allocating memory for <code>bundle_cache</code> failed.
  */
-celix_status_t bundleCache_create(PROPERTIES configurationMap, apr_pool_t *mp, bundle_cache_t *bundle_cache);
+celix_status_t bundleCache_create(properties_t configurationMap, apr_pool_t *mp, bundle_cache_t *bundle_cache);
 
 /**
  * Recreates and retrieves the list of archives for the given bundle cache.
@@ -68,7 +68,7 @@ celix_status_t bundleCache_create(PROPERTIES configurationMap, apr_pool_t *mp, b
  * 		- CELIX_ENOMEM If allocating memory for <code>archives</code> failed.
  * 		- CELIX_FILE_IO_EXCEPTION If the cache cannot be opened or read.
  */
-celix_status_t bundleCache_getArchives(bundle_cache_t cache, apr_pool_t *pool, ARRAY_LIST *archives);
+celix_status_t bundleCache_getArchives(bundle_cache_t cache, apr_pool_t *pool, array_list_t *archives);
 
 /**
  * Creates a new archive for the given bundle (using the id and location). The archive is created on the supplied bundlePool.

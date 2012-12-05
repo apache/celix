@@ -48,7 +48,7 @@ typedef struct bundle_event *bundle_event_t;
 #include "bundle.h"
 
 struct bundle_event {
-	BUNDLE bundle;
+	bundle_t bundle;
 	bundle_event_type_e type;
 };
 

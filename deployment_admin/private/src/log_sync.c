@@ -141,7 +141,7 @@ static void *APR_THREAD_FUNC logSync_synchronize(apr_thread_t *thd, void *logSyn
 		if (highest >= 0) {
 			int i;
 			for (i = descriptor->high + 1; i <= highest; i++) {
-				ARRAY_LIST events = NULL;
+				array_list_t events = NULL;
 				logStore_getEvents(logSync->logStore, &events);
 				log_event_t event = arrayList_get(events, i);
 //				printf("Event id: %ld\n", event->id);

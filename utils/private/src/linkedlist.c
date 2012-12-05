@@ -30,10 +30,10 @@
 #include "linkedlist.h"
 #include "linked_list_private.h"
 
-celix_status_t linkedList_create(apr_pool_t *pool, LINKED_LIST *list) {
-	LINKED_LIST linked_list = (LINKED_LIST) apr_pcalloc(pool, sizeof(*linked_list));
+celix_status_t linkedList_create(apr_pool_t *pool, linked_list_t *list) {
+	linked_list_t linked_list = (linked_list_t) apr_pcalloc(pool, sizeof(*linked_list));
 	if (linked_list) {
-        linked_list->header = (LINKED_LIST_ENTRY) apr_pcalloc(pool, sizeof(*(linked_list->header)));
+        linked_list->header = (linked_list_entry_t) apr_pcalloc(pool, sizeof(*(linked_list->header)));
         if (linked_list->header) {
             linked_list->header->element = NULL;
             linked_list->header->next = linked_list->header;
@@ -51,7 +51,7 @@ celix_status_t linkedList_create(apr_pool_t *pool, LINKED_LIST *list) {
 	return CELIX_ENOMEM;
 }
 
-celix_status_t linkedList_clone(LINKED_LIST list, apr_pool_t *pool, LINKED_LIST *clone) {
+celix_status_t linkedList_clone(linked_list_t list, apr_pool_t *pool, linked_list_t *clone) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	status = linkedList_create(pool, clone);
@@ -65,56 +65,56 @@ celix_status_t linkedList_clone(LINKED_LIST list, apr_pool_t *pool, LINKED_LIST 
 	return status;
 }
 
-void * linkedList_getFirst(LINKED_LIST list) {
+void * linkedList_getFirst(linked_list_t list) {
 	if (list->size == 0) {
 		return NULL;
 	}
 	return list->header->next->element;
 }
 
-void * linkedList_getLast(LINKED_LIST list) {
+void * linkedList_getLast(linked_list_t list) {
 	if (list->size == 0) {
 		return NULL;
 	}
 	return list->header->previous->element;
 }
 
-void * linkedList_removeFirst(LINKED_LIST list) {
+void * linkedList_removeFirst(linked_list_t list) {
 	return linkedList_removeEntry(list, list->header->next);
 }
 
-void * linkedList_removeLast(LINKED_LIST list) {
+void * linkedList_removeLast(linked_list_t list) {
 	return linkedList_removeEntry(list, list->header->previous);
 }
 
-void linkedList_addFirst(LINKED_LIST list, void * element) {
+void linkedList_addFirst(linked_list_t list, void * element) {
 	linkedList_addBefore(list, element, list->header->next);
 }
 
-void linkedList_addLast(LINKED_LIST list, void * element) {
+void linkedList_addLast(linked_list_t list, void * element) {
 	linkedList_addBefore(list, element, list->header);
 }
 
-bool linkedList_contains(LINKED_LIST list, void * element) {
+bool linkedList_contains(linked_list_t list, void * element) {
 	return linkedList_indexOf(list, element) != 0;
 }
 
-int linkedList_size(LINKED_LIST list) {
+int linkedList_size(linked_list_t list) {
 	return list->size;
 }
 
-bool linkedList_isEmpty(LINKED_LIST list) {
+bool linkedList_isEmpty(linked_list_t list) {
 	return linkedList_size(list) == 0;
 }
 
-bool linkedList_addElement(LINKED_LIST list, void * element) {
+bool linkedList_addElement(linked_list_t list, void * element) {
 	linkedList_addBefore(list, element, list->header);
 	return true;
 }
 
-bool linkedList_removeElement(LINKED_LIST list, void * element) {
+bool linkedList_removeElement(linked_list_t list, void * element) {
 	if (element == NULL) {
-		LINKED_LIST_ENTRY entry;
+		linked_list_entry_t entry;
 		for (entry = list->header->next; entry != list->header; entry = entry->next) {
 			if (entry->element == NULL) {
 				linkedList_removeEntry(list, entry);
@@ -122,7 +122,7 @@ bool linkedList_removeElement(LINKED_LIST list, void * element) {
 			}
 		}
 	} else {
-		LINKED_LIST_ENTRY entry;
+		linked_list_entry_t entry;
 		for (entry = list->header->next; entry != list->header; entry = entry->next) {
 			if (element == entry->element) {
 				linkedList_removeEntry(list, entry);
@@ -133,10 +133,10 @@ bool linkedList_removeElement(LINKED_LIST list, void * element) {
 	return false;
 }
 
-void linkedList_clear(LINKED_LIST list) {
-	LINKED_LIST_ENTRY entry = list->header->next;
+void linkedList_clear(linked_list_t list) {
+	linked_list_entry_t entry = list->header->next;
 	while (entry != list->header) {
-		LINKED_LIST_ENTRY next = entry->next;
+		linked_list_entry_t next = entry->next;
 		entry->next = entry->previous = NULL;
 		// free(entry->element);
 		entry->element = NULL;
@@ -148,26 +148,26 @@ void linkedList_clear(LINKED_LIST list) {
 	list->modificationCount++;
 }
 
-void * linkedList_get(LINKED_LIST list, int index) {
+void * linkedList_get(linked_list_t list, int index) {
 	return linkedList_entry(list, index)->element;
 }
-void * linkedList_set(LINKED_LIST list, int index, void * element) {
-	LINKED_LIST_ENTRY entry = linkedList_entry(list, index);
+void * linkedList_set(linked_list_t list, int index, void * element) {
+	linked_list_entry_t entry = linkedList_entry(list, index);
 	void * old = entry->element;
 	entry->element = element;
 	return old;
 }
 
-void linkedList_addIndex(LINKED_LIST list, int index, void * element) {
+void linkedList_addIndex(linked_list_t list, int index, void * element) {
 	linkedList_addBefore(list, element, (index == list->size ? list->header : linkedList_entry(list, index)));
 }
 
-void * linkedList_removeIndex(LINKED_LIST list, int index) {
+void * linkedList_removeIndex(linked_list_t list, int index) {
 	return linkedList_removeEntry(list, linkedList_entry(list, index));
 }
 
-LINKED_LIST_ENTRY linkedList_entry(LINKED_LIST list, int index) {
-	LINKED_LIST_ENTRY entry;
+linked_list_entry_t linkedList_entry(linked_list_t list, int index) {
+	linked_list_entry_t entry;
 	int i;
 	if (index < 0 || index >= list->size) {
 		return NULL;
@@ -186,10 +186,10 @@ LINKED_LIST_ENTRY linkedList_entry(LINKED_LIST list, int index) {
 	return entry;
 }
 
-int linkedList_indexOf(LINKED_LIST list, void * element) {
+int linkedList_indexOf(linked_list_t list, void * element) {
 	int index = 0;
 	if (element == NULL) {
-		LINKED_LIST_ENTRY entry;
+		linked_list_entry_t entry;
 		for (entry = list->header->next; entry != list->header; entry = entry->next) {
 			if (entry->element == NULL) {
 				return index;
@@ -197,7 +197,7 @@ int linkedList_indexOf(LINKED_LIST list, void * element) {
 			index++;
 		}
 	} else {
-		LINKED_LIST_ENTRY entry;
+		linked_list_entry_t entry;
 		for (entry = list->header->next; entry != list->header; entry = entry->next) {
 			if (element == entry->element) {
 				return index;
@@ -208,12 +208,12 @@ int linkedList_indexOf(LINKED_LIST list, void * element) {
 	return -1;
 }
 
-LINKED_LIST_ENTRY linkedList_addBefore(LINKED_LIST list, void * element, LINKED_LIST_ENTRY entry) {
-    LINKED_LIST_ENTRY new = NULL;
+linked_list_entry_t linkedList_addBefore(linked_list_t list, void * element, linked_list_entry_t entry) {
+    linked_list_entry_t new = NULL;
     apr_pool_t *sub_pool = NULL;
 
     if (apr_pool_create(&sub_pool, list->memory_pool) == APR_SUCCESS) {
-        new = (LINKED_LIST_ENTRY) apr_palloc(sub_pool, sizeof(*new));
+        new = (linked_list_entry_t) apr_palloc(sub_pool, sizeof(*new));
         new->memory_pool = sub_pool;
         new->element = element;
         new->next = entry;
@@ -229,7 +229,7 @@ LINKED_LIST_ENTRY linkedList_addBefore(LINKED_LIST list, void * element, LINKED_
 	return new;
 }
 
-void * linkedList_removeEntry(LINKED_LIST list, LINKED_LIST_ENTRY entry) {
+void * linkedList_removeEntry(linked_list_t list, linked_list_entry_t entry) {
     void * result;
 	if (entry == list->header) {
 		return NULL;

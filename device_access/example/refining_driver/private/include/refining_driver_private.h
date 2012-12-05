@@ -42,12 +42,12 @@ celix_status_t refiningDriver_destroy(refining_driver_t driver);
 
 celix_status_t refiningDriver_createService(refining_driver_t driver, driver_service_t *service);
 
-celix_status_t refiningDriver_createDevice(refining_driver_t driver, SERVICE_REFERENCE reference, base_driver_device_service_t baseDevice, refining_driver_device_t *device);
+celix_status_t refiningDriver_createDevice(refining_driver_t driver, service_reference_t reference, base_driver_device_service_t baseDevice, refining_driver_device_t *device);
 celix_status_t refiningDriver_destroyDevice(refining_driver_device_t device);
 
 
-celix_status_t refiningDriver_attach(void *driver, SERVICE_REFERENCE reference, char **result);
-celix_status_t refiningDriver_match(void *driver, SERVICE_REFERENCE reference, int *value);
+celix_status_t refiningDriver_attach(void *driver, service_reference_t reference, char **result);
+celix_status_t refiningDriver_match(void *driver, service_reference_t reference, int *value);
 
 
 celix_status_t refiningDriverDevice_noDriverFound(device_t device);

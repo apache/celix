@@ -27,7 +27,7 @@
 #ifndef MODULE_H_
 #define MODULE_H_
 
-typedef struct module *MODULE;
+typedef struct module *module_t;
 
 #include "celixbool.h"
 #include "linkedlist.h"
@@ -37,35 +37,35 @@ typedef struct module *MODULE;
 #include "bundle.h"
 #include "framework_exports.h"
 
-MODULE module_create(MANIFEST headerMap, char * moduleId, BUNDLE bundle);
-MODULE module_createFrameworkModule(BUNDLE bundle);
-void module_destroy(MODULE module);
+module_t module_create(MANIFEST headerMap, char * moduleId, bundle_t bundle);
+module_t module_createFrameworkModule(bundle_t bundle);
+void module_destroy(module_t module);
 
 FRAMEWORK_EXPORT unsigned int module_hash(void * module);
 FRAMEWORK_EXPORT int module_equals(void * module, void * compare);
 
-FRAMEWORK_EXPORT WIRE module_getWire(MODULE module, char * serviceName);
+FRAMEWORK_EXPORT wire_t module_getWire(module_t module, char * serviceName);
 
-FRAMEWORK_EXPORT VERSION module_getVersion(MODULE module);
-FRAMEWORK_EXPORT celix_status_t module_getSymbolicName(MODULE module, char **symbolicName);
-FRAMEWORK_EXPORT char * module_getId(MODULE module);
-FRAMEWORK_EXPORT LINKED_LIST module_getWires(MODULE module);
-FRAMEWORK_EXPORT void module_setWires(MODULE module, LINKED_LIST wires);
-FRAMEWORK_EXPORT bool module_isResolved(MODULE module);
-FRAMEWORK_EXPORT void module_setResolved(MODULE module);
-FRAMEWORK_EXPORT BUNDLE module_getBundle(MODULE module);
+FRAMEWORK_EXPORT version_t module_getVersion(module_t module);
+FRAMEWORK_EXPORT celix_status_t module_getSymbolicName(module_t module, char **symbolicName);
+FRAMEWORK_EXPORT char * module_getId(module_t module);
+FRAMEWORK_EXPORT linked_list_t module_getWires(module_t module);
+FRAMEWORK_EXPORT void module_setWires(module_t module, linked_list_t wires);
+FRAMEWORK_EXPORT bool module_isResolved(module_t module);
+FRAMEWORK_EXPORT void module_setResolved(module_t module);
+FRAMEWORK_EXPORT bundle_t module_getBundle(module_t module);
 
-FRAMEWORK_EXPORT LINKED_LIST module_getRequirements(MODULE module);
-FRAMEWORK_EXPORT LINKED_LIST module_getCapabilities(MODULE module);
+FRAMEWORK_EXPORT linked_list_t module_getRequirements(module_t module);
+FRAMEWORK_EXPORT linked_list_t module_getCapabilities(module_t module);
 
-FRAMEWORK_EXPORT ARRAY_LIST module_getDependentImporters(MODULE module);
-FRAMEWORK_EXPORT void module_addDependentImporter(MODULE module, MODULE importer);
-FRAMEWORK_EXPORT void module_removeDependentImporter(MODULE module, MODULE importer);
+FRAMEWORK_EXPORT array_list_t module_getDependentImporters(module_t module);
+FRAMEWORK_EXPORT void module_addDependentImporter(module_t module, module_t importer);
+FRAMEWORK_EXPORT void module_removeDependentImporter(module_t module, module_t importer);
 
-FRAMEWORK_EXPORT ARRAY_LIST module_getDependentRequirers(MODULE module);
-FRAMEWORK_EXPORT void module_addDependentRequirer(MODULE module, MODULE requirer);
-FRAMEWORK_EXPORT void module_removeDependentRequirer(MODULE module, MODULE requirer);
+FRAMEWORK_EXPORT array_list_t module_getDependentRequirers(module_t module);
+FRAMEWORK_EXPORT void module_addDependentRequirer(module_t module, module_t requirer);
+FRAMEWORK_EXPORT void module_removeDependentRequirer(module_t module, module_t requirer);
 
-FRAMEWORK_EXPORT ARRAY_LIST module_getDependents(MODULE module);
+FRAMEWORK_EXPORT array_list_t module_getDependents(module_t module);
 
 #endif /* MODULE_H_ */

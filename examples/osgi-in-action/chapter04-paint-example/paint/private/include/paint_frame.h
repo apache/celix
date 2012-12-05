@@ -38,9 +38,9 @@ struct paint_frame {
 	bool showing;
 
 	char *m_selected;
-	HASH_MAP m_shapes;
+	hash_map_t m_shapes;
 	SIMPLE_SHAPE m_defaultShape;
-	LINKED_LIST m_shapeComponents;
+	linked_list_t m_shapeComponents;
 	bundle_context_t context;
 	GThread *main;
 	char *file;

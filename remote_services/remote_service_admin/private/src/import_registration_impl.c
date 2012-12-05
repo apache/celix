@@ -39,10 +39,10 @@
 #include "bundle_context.h"
 #include "bundle.h"
 
-celix_status_t importRegistration_proxyAdding(void * handle, SERVICE_REFERENCE reference, void **service);
-celix_status_t importRegistration_proxyAdded(void * handle, SERVICE_REFERENCE reference, void *service);
-celix_status_t importRegistration_proxyModified(void * handle, SERVICE_REFERENCE reference, void *service);
-celix_status_t importRegistration_proxyRemoved(void * handle, SERVICE_REFERENCE reference, void *service);
+celix_status_t importRegistration_proxyAdding(void * handle, service_reference_t reference, void **service);
+celix_status_t importRegistration_proxyAdded(void * handle, service_reference_t reference, void *service);
+celix_status_t importRegistration_proxyModified(void * handle, service_reference_t reference, void *service);
+celix_status_t importRegistration_proxyRemoved(void * handle, service_reference_t reference, void *service);
 
 celix_status_t importRegistration_createProxyTracker(import_registration_t registration, service_tracker_t *tracker);
 
@@ -108,7 +108,7 @@ celix_status_t importRegistration_createProxyTracker(import_registration_t regis
 	return status;
 }
 
-celix_status_t importRegistration_proxyAdding(void * handle, SERVICE_REFERENCE reference, void **service) {
+celix_status_t importRegistration_proxyAdding(void * handle, service_reference_t reference, void **service) {
 	celix_status_t status = CELIX_SUCCESS;
 	import_registration_t registration = handle;
 
@@ -117,7 +117,7 @@ celix_status_t importRegistration_proxyAdding(void * handle, SERVICE_REFERENCE r
 	return status;
 }
 
-celix_status_t importRegistration_proxyAdded(void * handle, SERVICE_REFERENCE reference, void *service) {
+celix_status_t importRegistration_proxyAdded(void * handle, service_reference_t reference, void *service) {
 	celix_status_t status = CELIX_SUCCESS;
 	import_registration_t registration = handle;
 
@@ -133,7 +133,7 @@ celix_status_t importRegistration_proxyAdded(void * handle, SERVICE_REFERENCE re
 	return status;
 }
 
-celix_status_t importRegistration_proxyModified(void * handle, SERVICE_REFERENCE reference, void *service) {
+celix_status_t importRegistration_proxyModified(void * handle, service_reference_t reference, void *service) {
 	celix_status_t status = CELIX_SUCCESS;
 	import_registration_t registration = handle;
 
@@ -146,7 +146,7 @@ celix_status_t importRegistration_proxyModified(void * handle, SERVICE_REFERENCE
 	return status;
 }
 
-celix_status_t importRegistration_proxyRemoved(void * handle, SERVICE_REFERENCE reference, void *service) {
+celix_status_t importRegistration_proxyRemoved(void * handle, service_reference_t reference, void *service) {
 	celix_status_t status = CELIX_SUCCESS;
 	import_registration_t registration = handle;
 

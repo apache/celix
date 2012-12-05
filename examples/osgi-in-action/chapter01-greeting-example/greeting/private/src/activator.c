@@ -34,7 +34,7 @@
 #include "service_registration.h"
 
 struct greetingActivator {
-	SERVICE_REGISTRATION reg;
+	service_registration_t reg;
 	apr_pool_t *pool;
 };
 

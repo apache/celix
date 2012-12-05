@@ -30,12 +30,19 @@
 #include "array_list.h"
 #include "array_list_private.h"
 
-celix_status_t arrayList_create(apr_pool_t *pool, ARRAY_LIST *list) {
+static celix_status_t arrayList_elementEquals(void *a, void *b, bool *equals);
+
+celix_status_t arrayList_create(apr_pool_t *pool, array_list_t *list) {
+	return arrayList_createWithEquals(pool, arrayList_elementEquals, list);
+}
+
+ celix_status_t arrayList_createWithEquals(apr_pool_t *pool, arrayListElementEqualsFunction equals, array_list_t *list) {
 	apr_pool_t *mypool;
 	apr_pool_create(&mypool, pool);
-//	*list = (ARRAY_LIST) apr_palloc(mypool, sizeof(**list));
-	*list = (ARRAY_LIST) malloc(sizeof(**list));
+//	*list = (array_list_t) apr_palloc(mypool, sizeof(**list));
+	*list = (array_list_t) malloc(sizeof(**list));
 
+	(*list)->equals = equals;
 	(*list)->size = 0;
 	(*list)->capacity = 10;
 	(*list)->modCount = 0;
@@ -44,7 +51,7 @@ celix_status_t arrayList_create(apr_pool_t *pool, ARRAY_LIST *list) {
 	return CELIX_SUCCESS;
 }
 
-void arrayList_destroy(ARRAY_LIST list) {
+void arrayList_destroy(array_list_t list) {
 	list->size = 0;
 	free(list->elementData);
 	list->elementData = NULL;
@@ -52,7 +59,12 @@ void arrayList_destroy(ARRAY_LIST list) {
 	list = NULL;
 }
 
-void arrayList_trimToSize(ARRAY_LIST list) {
+static celix_status_t arrayList_elementEquals(void *a, void *b, bool *equals) {
+	*equals = (a == b);
+	return CELIX_SUCCESS;
+}
+
+void arrayList_trimToSize(array_list_t list) {
 	unsigned int oldCapacity;
 	list->modCount++;
 	oldCapacity = list->capacity;
@@ -63,7 +75,7 @@ void arrayList_trimToSize(ARRAY_LIST list) {
 	}
 }
 
-void arrayList_ensureCapacity(ARRAY_LIST list, int capacity) {
+void arrayList_ensureCapacity(array_list_t list, int capacity) {
 	void ** newList;
 	int oldCapacity;
 	list->modCount++;
@@ -79,20 +91,20 @@ void arrayList_ensureCapacity(ARRAY_LIST list, int capacity) {
 	}
 }
 
-unsigned int arrayList_size(ARRAY_LIST list) {
+unsigned int arrayList_size(array_list_t list) {
 	return list->size;
 }
 
-bool arrayList_isEmpty(ARRAY_LIST list) {
+bool arrayList_isEmpty(array_list_t list) {
 	return list->size == 0;
 }
 
-bool arrayList_contains(ARRAY_LIST list, void * element) {
+bool arrayList_contains(array_list_t list, void * element) {
 	int index = arrayList_indexOf(list, element);
 	return index >= 0;
 }
 
-int arrayList_indexOf(ARRAY_LIST list, void * element) {
+int arrayList_indexOf(array_list_t list, void * element) {
 	if (element == NULL) {
 		unsigned int i = 0;
 		for (i = 0; i < list->size; i++) {
@@ -103,7 +115,9 @@ int arrayList_indexOf(ARRAY_LIST list, void * element) {
 	} else {
 		unsigned int i = 0;
 		for (i = 0; i < list->size; i++) {
-			if (list->elementData[i] == element) { //equalsFunction?
+			bool equals = false;
+			list->equals(element, list->elementData[i], &equals);
+			if (equals) {
 				return i;
 			}
 		}
@@ -111,7 +125,7 @@ int arrayList_indexOf(ARRAY_LIST list, void * element) {
 	return -1;
 }
 
-int arrayList_lastIndexOf(ARRAY_LIST list, void * element) {
+int arrayList_lastIndexOf(array_list_t list, void * element) {
 	if (element == NULL) {
 		int i = 0;
 		for (i = list->size - 1; i >= 0; i--) {
@@ -122,7 +136,9 @@ int arrayList_lastIndexOf(ARRAY_LIST list, void * element) {
 	} else {
 		int i = 0;
 		for (i = list->size - 1; i >= 0; i--) {
-			if (list->elementData[i] == element) { //equalsFunction?
+			bool equals = false;
+			list->equals(element, list->elementData[i], &equals);
+			if (equals) {
 				return i;
 			}
 		}
@@ -130,7 +146,7 @@ int arrayList_lastIndexOf(ARRAY_LIST list, void * element) {
 	return -1;
 }
 
-void * arrayList_get(ARRAY_LIST list, unsigned int index) {
+void * arrayList_get(array_list_t list, unsigned int index) {
 	if (index >= list->size) {
 		return NULL;
 	}
@@ -138,7 +154,7 @@ void * arrayList_get(ARRAY_LIST list, unsigned int index) {
 	return list->elementData[index];
 }
 
-void * arrayList_set(ARRAY_LIST list, unsigned int index, void * element) {
+void * arrayList_set(array_list_t list, unsigned int index, void * element) {
 	void * oldElement;
 	if (index >= list->size) {
 		return NULL;
@@ -149,13 +165,13 @@ void * arrayList_set(ARRAY_LIST list, unsigned int index, void * element) {
 	return oldElement;
 }
 
-bool arrayList_add(ARRAY_LIST list, void * element) {
+bool arrayList_add(array_list_t list, void * element) {
 	arrayList_ensureCapacity(list, list->size + 1);
 	list->elementData[list->size++] = element;
 	return true;
 }
 
-int arrayList_addIndex(ARRAY_LIST list, unsigned int index, void * element) {
+int arrayList_addIndex(array_list_t list, unsigned int index, void * element) {
 	unsigned int numMoved;
 	if (index > list->size || index < 0) {
 		return -1;
@@ -169,7 +185,7 @@ int arrayList_addIndex(ARRAY_LIST list, unsigned int index, void * element) {
 	return 0;
 }
 
-void * arrayList_remove(ARRAY_LIST list, unsigned int index) {
+void * arrayList_remove(array_list_t list, unsigned int index) {
 	void * oldElement;
 	unsigned int numMoved;
 	if (index >= list->size) {
@@ -185,7 +201,7 @@ void * arrayList_remove(ARRAY_LIST list, unsigned int index) {
 	return oldElement;
 }
 
-void arrayList_fastRemove(ARRAY_LIST list, unsigned int index) {
+void arrayList_fastRemove(array_list_t list, unsigned int index) {
 	unsigned int numMoved;
 	list->modCount++;
 
@@ -194,7 +210,7 @@ void arrayList_fastRemove(ARRAY_LIST list, unsigned int index) {
 	list->elementData[--list->size] = NULL;
 }
 
-bool arrayList_removeElement(ARRAY_LIST list, void * element) {
+bool arrayList_removeElement(array_list_t list, void * element) {
 	if (element == NULL) {
 		unsigned int i = 0;
 		for (i = 0; i < list->size; i++) {
@@ -206,7 +222,9 @@ bool arrayList_removeElement(ARRAY_LIST list, void * element) {
 	} else {
 		unsigned int i = 0;
 		for (i = 0; i < list->size; i++) {
-			if (list->elementData[i] == element) { //equalsFunction?
+			bool equals = false;
+			list->equals(element, list->elementData[i], &equals);
+			if (equals) {
 				arrayList_fastRemove(list, i);
 				return true;
 			}
@@ -215,7 +233,7 @@ bool arrayList_removeElement(ARRAY_LIST list, void * element) {
 	return false;
 }
 
-void arrayList_clear(ARRAY_LIST list) {
+void arrayList_clear(array_list_t list) {
 	unsigned int i;
 	list->modCount++;
 
@@ -226,7 +244,7 @@ void arrayList_clear(ARRAY_LIST list) {
 	list->size = 0;
 }
 
-bool arrayList_addAll(ARRAY_LIST list, ARRAY_LIST toAdd) {
+bool arrayList_addAll(array_list_t list, array_list_t toAdd) {
     unsigned int i;
     unsigned int size = arrayList_size(toAdd);
     arrayList_ensureCapacity(list, list->size + size);
@@ -238,9 +256,9 @@ bool arrayList_addAll(ARRAY_LIST list, ARRAY_LIST toAdd) {
     return size != 0;
 }
 
-ARRAY_LIST arrayList_clone(apr_pool_t *pool, ARRAY_LIST list) {
+array_list_t arrayList_clone(apr_pool_t *pool, array_list_t list) {
 	unsigned int i;
-	ARRAY_LIST new = NULL;
+	array_list_t new = NULL;
 	arrayList_create(pool, &new);
 //	arrayList_ensureCapacity(new, list->size);
 //	memcpy(new->elementData, list->elementData, list->size);
@@ -253,8 +271,8 @@ ARRAY_LIST arrayList_clone(apr_pool_t *pool, ARRAY_LIST list) {
 	return new;
 }
 
-ARRAY_LIST_ITERATOR arrayListIterator_create(ARRAY_LIST list) {
-	ARRAY_LIST_ITERATOR iterator = (ARRAY_LIST_ITERATOR) malloc(sizeof(*iterator));
+array_list_iterator_t arrayListIterator_create(array_list_t list) {
+	array_list_iterator_t iterator = (array_list_iterator_t) malloc(sizeof(*iterator));
 
 	iterator->lastReturned = -1;
 	iterator->cursor = 0;
@@ -264,7 +282,7 @@ ARRAY_LIST_ITERATOR arrayListIterator_create(ARRAY_LIST list) {
 	return iterator;
 }
 
-void arrayListIterator_destroy(ARRAY_LIST_ITERATOR iterator) {
+void arrayListIterator_destroy(array_list_iterator_t iterator) {
 	iterator->lastReturned = -1;
 	iterator->cursor = 0;
 	iterator->expectedModificationCount = 0;
@@ -273,11 +291,11 @@ void arrayListIterator_destroy(ARRAY_LIST_ITERATOR iterator) {
 	iterator = NULL;
 }
 
-bool arrayListIterator_hasNext(ARRAY_LIST_ITERATOR iterator) {
+bool arrayListIterator_hasNext(array_list_iterator_t iterator) {
 	return iterator->cursor != iterator->list->size;
 }
 
-void * arrayListIterator_next(ARRAY_LIST_ITERATOR iterator) {
+void * arrayListIterator_next(array_list_iterator_t iterator) {
 	void * next;
 	if (iterator->expectedModificationCount != iterator->list->modCount) {
 		return NULL;
@@ -287,11 +305,11 @@ void * arrayListIterator_next(ARRAY_LIST_ITERATOR iterator) {
 	return next;
 }
 
-bool arrayListIterator_hasPrevious(ARRAY_LIST_ITERATOR iterator) {
+bool arrayListIterator_hasPrevious(array_list_iterator_t iterator) {
 	return iterator->cursor != 0;
 }
 
-void * arrayListIterator_previous(ARRAY_LIST_ITERATOR iterator) {
+void * arrayListIterator_previous(array_list_iterator_t iterator) {
 	int i;
 	void * previous;
 	if (iterator->expectedModificationCount != iterator->list->modCount) {
@@ -303,7 +321,7 @@ void * arrayListIterator_previous(ARRAY_LIST_ITERATOR iterator) {
 	return previous;
 }
 
-void arrayListIterator_remove(ARRAY_LIST_ITERATOR iterator) {
+void arrayListIterator_remove(array_list_iterator_t iterator) {
 	if (iterator->lastReturned == -1) {
 		return;
 	}

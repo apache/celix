@@ -30,24 +30,24 @@
 #include "log_service.h"
 
 struct log_entry {
-    BUNDLE bundle;
+    bundle_t bundle;
     int errorCode;
     log_level_t level;
     char *message;
-    SERVICE_REFERENCE reference;
+    service_reference_t reference;
     time_t time;
 };
 
 typedef struct log_entry * log_entry_t;
 
-celix_status_t logEntry_create(BUNDLE bundle, SERVICE_REFERENCE reference,
+celix_status_t logEntry_create(bundle_t bundle, service_reference_t reference,
         log_level_t level, char *message, int errorCode,
         apr_pool_t *pool, log_entry_t *entry);
-celix_status_t logEntry_getBundle(log_entry_t entry, BUNDLE *bundle);
+celix_status_t logEntry_getBundle(log_entry_t entry, bundle_t *bundle);
 celix_status_t logEntry_getErrorCode(log_entry_t entry, int *errorCode);
 celix_status_t logEntry_getLevel(log_entry_t entry, log_level_t *level);
 celix_status_t logEntry_getMessage(log_entry_t entry, char **message);
-celix_status_t logEntry_getServiceReference(log_entry_t entry, SERVICE_REFERENCE *reference);
+celix_status_t logEntry_getServiceReference(log_entry_t entry, service_reference_t *reference);
 celix_status_t logEntry_getTime(log_entry_t entry, time_t *time);
 
 #endif /* LOG_ENTRY_H_ */

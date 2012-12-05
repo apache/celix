@@ -33,7 +33,7 @@
 struct activator {
 	apr_pool_t *pool;
 
-	SERVICE_REGISTRATION endpoint;
+	service_registration_t endpoint;
 };
 
 celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {

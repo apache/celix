@@ -32,7 +32,7 @@ typedef struct driver_selector *driver_selector_t;
 
 struct driver_selector_service {
 	driver_selector_t selector;
-	celix_status_t (*driverSelector_select)(driver_selector_t selector, SERVICE_REFERENCE reference, ARRAY_LIST matches, int *select);
+	celix_status_t (*driverSelector_select)(driver_selector_t selector, service_reference_t reference, array_list_t matches, int *select);
 };
 
 typedef struct driver_selector_service *driver_selector_service_t;

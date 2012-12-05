@@ -33,13 +33,13 @@ struct attribute {
 	char * value;
 };
 
-celix_status_t attribute_create(char * key, char * value, apr_pool_t *memory_pool, ATTRIBUTE *attribute) {
+celix_status_t attribute_create(char * key, char * value, apr_pool_t *memory_pool, attribute_t *attribute) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (key == NULL || value == NULL || memory_pool == NULL || *attribute != NULL) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
-		ATTRIBUTE attr = apr_palloc(memory_pool, sizeof(*attr));
+		attribute_t attr = apr_palloc(memory_pool, sizeof(*attr));
 		if (!attr) {
 			status = CELIX_ENOMEM;
 		} else {
@@ -53,12 +53,12 @@ celix_status_t attribute_create(char * key, char * value, apr_pool_t *memory_poo
 	return status;
 }
 
-celix_status_t attribute_getKey(ATTRIBUTE attribute, char **key) {
+celix_status_t attribute_getKey(attribute_t attribute, char **key) {
 	*key = attribute->key;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t attribute_getValue(ATTRIBUTE attribute, char **value) {
+celix_status_t attribute_getValue(attribute_t attribute, char **value) {
 	*value = attribute->value;
 	return CELIX_SUCCESS;
 }

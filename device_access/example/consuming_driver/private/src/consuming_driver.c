@@ -42,7 +42,7 @@
 struct consuming_driver {
 	apr_pool_t *pool;
 	bundle_context_t context;
-	ARRAY_LIST references;
+	array_list_t references;
 };
 
 static apr_status_t consumingDriver_cleanup(void *handler) {
@@ -50,9 +50,9 @@ static apr_status_t consumingDriver_cleanup(void *handler) {
 	consuming_driver_t driver = handler;
 
 	if (driver->references != NULL) {
-		ARRAY_LIST_ITERATOR iterator = arrayListIterator_create(driver->references);
+		array_list_iterator_t iterator = arrayListIterator_create(driver->references);
 		while (arrayListIterator_hasNext(iterator)) {
-			SERVICE_REFERENCE reference = arrayListIterator_next(iterator);
+			service_reference_t reference = arrayListIterator_next(iterator);
 			bool result;
 			bundleContext_ungetService(driver->context, reference, &result);
 		}
@@ -96,7 +96,7 @@ celix_status_t consumingDriver_createService(consuming_driver_t driver, driver_s
 	return status;
 }
 
-celix_status_t consumingDriver_attach(void * driverHandler, SERVICE_REFERENCE reference, char **result) {
+celix_status_t consumingDriver_attach(void * driverHandler, service_reference_t reference, char **result) {
 	printf("CONSUMING_DRIVER: attached called\n");
 	celix_status_t status = CELIX_SUCCESS;
 	consuming_driver_t driver = driverHandler;
@@ -121,14 +121,14 @@ celix_status_t consumingDriver_attach(void * driverHandler, SERVICE_REFERENCE re
 	return status;
 }
 
-celix_status_t consumingDriver_match(void *driverHandler, SERVICE_REFERENCE reference, int *value) {
+celix_status_t consumingDriver_match(void *driverHandler, service_reference_t reference, int *value) {
 	printf("CONSUMING_DRIVER: match called\n");
 	int match=0;
 	celix_status_t status = CELIX_SUCCESS;
 	consuming_driver_t driver = driverHandler;
 
-	SERVICE_REGISTRATION registration = NULL;
-	PROPERTIES properties = NULL;
+	service_registration_t registration = NULL;
+	properties_t properties = NULL;
 	status = serviceReference_getServiceRegistration(reference, &registration);
 	if (status == CELIX_SUCCESS) {
 		status = serviceRegistration_getProperties(registration, &properties);

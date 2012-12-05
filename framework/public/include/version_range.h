@@ -39,12 +39,12 @@
 #include "celix_errno.h"
 
 /**
- * Type definition for the VERSION_RANGE abstract data type.
+ * Type definition for the version_range_t abstract data type.
  */
-typedef struct versionRange * VERSION_RANGE;
+typedef struct versionRange * version_range_t;
 
 /**
- * Creates a new <code>VERSION_RANGE</code>.
+ * Creates a new <code>version_range_t</code>.
  *
  * @param pool The pool in which the version range is created
  * @param low Lower bound version
@@ -56,7 +56,7 @@ typedef struct versionRange * VERSION_RANGE;
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ENOMEM If allocating memory for <code>versionRange</code> failed.
  */
-celix_status_t versionRange_createVersionRange(apr_pool_t *pool, VERSION low, bool isLowInclusive, VERSION high, bool isHighInclusive, VERSION_RANGE *versionRange);
+celix_status_t versionRange_createVersionRange(apr_pool_t *pool, version_t low, bool isLowInclusive, version_t high, bool isHighInclusive, version_range_t *versionRange);
 
 /**
  * Creates an infinite version range using ::version_createEmptyVersion for the low version,
@@ -68,7 +68,7 @@ celix_status_t versionRange_createVersionRange(apr_pool_t *pool, VERSION low, bo
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ENOMEM If allocating memory for <code>range</code> failed.
  */
-celix_status_t versionRange_createInfiniteVersionRange(apr_pool_t *pool, VERSION_RANGE *range);
+celix_status_t versionRange_createInfiniteVersionRange(apr_pool_t *pool, version_range_t *range);
 
 /**
  * Determine if the specified version is part of the version range or not.
@@ -79,7 +79,7 @@ celix_status_t versionRange_createInfiniteVersionRange(apr_pool_t *pool, VERSION
  * @return Status code indication failure or success:
  * 		- CELIX_SUCCESS when no errors are encountered.
  */
-celix_status_t versionRange_isInRange(VERSION_RANGE versionRange, VERSION version, bool *inRange);
+celix_status_t versionRange_isInRange(version_range_t versionRange, version_t version, bool *inRange);
 
 /**
  * Parses a version range from the specified string.
@@ -97,14 +97,14 @@ celix_status_t versionRange_isInRange(VERSION_RANGE versionRange, VERSION versio
  *
  * @param pool The pool in which the range is created.
  * @param rangeStr String representation of the version range.
- * @param range The created VERSION_RANGE.
+ * @param range The created version_range_t.
  * @return Status code indication failure or success:
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ENOMEM If allocating memory for <code>versionRange</code> failed.
  * 		- CELIX_ILLEGAL_ARGUMENT If the numerical components are negative,
  * 		  	the qualifier string is invalid or <code>versionStr</code> is impropertly formatted.
  */
-celix_status_t versionRange_parse(apr_pool_t *pool, char * rangeStr, VERSION_RANGE *range);
+celix_status_t versionRange_parse(apr_pool_t *pool, char * rangeStr, version_range_t *range);
 
 /**
  * @}

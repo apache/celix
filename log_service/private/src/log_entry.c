@@ -28,7 +28,7 @@
 
 #include "log_entry.h"
 
-celix_status_t logEntry_create(BUNDLE bundle, SERVICE_REFERENCE reference,
+celix_status_t logEntry_create(bundle_t bundle, service_reference_t reference,
         log_level_t level, char *message, int errorCode,
         apr_pool_t *pool, log_entry_t *entry) {
     celix_status_t status = CELIX_SUCCESS;
@@ -48,7 +48,7 @@ celix_status_t logEntry_create(BUNDLE bundle, SERVICE_REFERENCE reference,
     return status;
 }
 
-celix_status_t logEntry_getBundle(log_entry_t entry, BUNDLE *bundle) {
+celix_status_t logEntry_getBundle(log_entry_t entry, bundle_t *bundle) {
     *bundle = entry->bundle;
     return CELIX_SUCCESS;
 }
@@ -68,7 +68,7 @@ celix_status_t logEntry_getMessage(log_entry_t entry, char **message) {
     return CELIX_SUCCESS;
 }
 
-celix_status_t logEntry_getServiceReference(log_entry_t entry, SERVICE_REFERENCE *reference) {
+celix_status_t logEntry_getServiceReference(log_entry_t entry, service_reference_t *reference) {
     *reference = entry->reference;
     return CELIX_SUCCESS;
 }

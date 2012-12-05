@@ -44,7 +44,7 @@ celix_status_t bundleActivator_create(bundle_context_t context, void **userData)
 }
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
-	BUNDLE bundle;
+	bundle_t bundle;
 	celix_status_t status = CELIX_SUCCESS;
 	struct userData * data = (struct userData *) userData;
 

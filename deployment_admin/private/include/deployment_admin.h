@@ -40,7 +40,7 @@ struct deployment_admin {
 
 	bool running;
 	char *current;
-	HASH_MAP packages;
+	hash_map_t packages;
 	char *targetIdentification;
 	char *pollUrl;
 };

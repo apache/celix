@@ -74,7 +74,7 @@ void service_destroy(void * userData) {
 
 celix_status_t logListener_logged(log_listener_t listener, log_entry_t entry) {
 	celix_status_t status = CELIX_SUCCESS;
-    MODULE module = NULL;
+    module_t module = NULL;
     char *sName = NULL;
 
     status = bundle_getCurrentModule(entry->bundle, &module);

@@ -38,7 +38,7 @@
 #include "constants.h"
 
 struct bundleCache {
-	PROPERTIES configurationMap;
+	properties_t configurationMap;
 	char * cacheDir;
 	apr_pool_t *mp;
 };
@@ -46,7 +46,7 @@ struct bundleCache {
 static celix_status_t bundleCache_deleteTree(char * directory, apr_pool_t *mp);
 static apr_status_t bundleCache_destroy(void *cacheP);
 
-celix_status_t bundleCache_create(PROPERTIES configurationMap, apr_pool_t *mp, bundle_cache_t *bundle_cache) {
+celix_status_t bundleCache_create(properties_t configurationMap, apr_pool_t *mp, bundle_cache_t *bundle_cache) {
     celix_status_t status;
    bundle_cache_t cache;
 
@@ -85,7 +85,7 @@ celix_status_t bundleCache_delete(bundle_cache_t cache) {
 	return bundleCache_deleteTree(cache->cacheDir, cache->mp);
 }
 
-celix_status_t bundleCache_getArchives(bundle_cache_t cache, apr_pool_t *pool, ARRAY_LIST *archives) {
+celix_status_t bundleCache_getArchives(bundle_cache_t cache, apr_pool_t *pool, array_list_t *archives) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	apr_dir_t *dir;
@@ -97,7 +97,7 @@ celix_status_t bundleCache_getArchives(bundle_cache_t cache, apr_pool_t *pool, A
 	}
 
 	if (aprStatus == APR_SUCCESS) {
-        ARRAY_LIST list = NULL;
+        array_list_t list = NULL;
 		apr_finfo_t dp;
         arrayList_create(pool, &list);
         

@@ -38,7 +38,7 @@
 #include "simple_shape.h"
 
 struct activator {
-	SERVICE_REGISTRATION reg;
+	service_registration_t reg;
 	apr_pool_t *pool;
 };
 
@@ -60,7 +60,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t ctx) {
 	celix_status_t status = CELIX_SUCCESS;
 	SIMPLE_SHAPE es = NULL;
 	circleShape_create(ctx, &es);
-	PROPERTIES props = properties_create();
+	properties_t props = properties_create();
 	properties_set(props, "name", "circle");
     status = bundleContext_registerService(ctx, SIMPLE_SHAPE_SERVICE_NAME, es, props, &act->reg);
 	return status;

@@ -37,7 +37,7 @@
 #include "simple_shape.h"
 
 struct greetingActivator {
-	SERVICE_REGISTRATION reg;
+	service_registration_t reg;
 	apr_pool_t *pool;
 };
 
@@ -61,7 +61,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t ctx) {
 	struct greetingActivator * act = (struct greetingActivator *) userData;
 	celix_status_t status = CELIX_SUCCESS;
 	SIMPLE_SHAPE es = triangleShape_create(ctx);
-	PROPERTIES props = properties_create();
+	properties_t props = properties_create();
 	properties_set(props, "name", "triangle");
     status = bundleContext_registerService(ctx, SIMPLE_SHAPE_SERVICE_NAME, es, props, &act->reg);
 	printf("Triangle activated %d\n", status);

@@ -40,32 +40,32 @@ typedef struct bundleContext *bundle_context_t;
 #include "properties.h"
 #include "array_list.h"
 
-FRAMEWORK_EXPORT celix_status_t bundleContext_create(FRAMEWORK framework, BUNDLE bundle, bundle_context_t *bundle_context);
+FRAMEWORK_EXPORT celix_status_t bundleContext_create(framework_t framework, bundle_t bundle, bundle_context_t *bundle_context);
 FRAMEWORK_EXPORT celix_status_t bundleContext_destroy(bundle_context_t context);
 
-FRAMEWORK_EXPORT celix_status_t bundleContext_getBundle(bundle_context_t context, BUNDLE *bundle);
-FRAMEWORK_EXPORT celix_status_t bundleContext_getFramework(bundle_context_t context, FRAMEWORK *framework);
+FRAMEWORK_EXPORT celix_status_t bundleContext_getBundle(bundle_context_t context, bundle_t *bundle);
+FRAMEWORK_EXPORT celix_status_t bundleContext_getFramework(bundle_context_t context, framework_t *framework);
 FRAMEWORK_EXPORT celix_status_t bundleContext_getMemoryPool(bundle_context_t context, apr_pool_t **memory_pool);
 
-FRAMEWORK_EXPORT celix_status_t bundleContext_installBundle(bundle_context_t context, char * location, BUNDLE *bundle);
-FRAMEWORK_EXPORT celix_status_t bundleContext_installBundle2(bundle_context_t context, char * location, char *inputFile, BUNDLE *bundle);
+FRAMEWORK_EXPORT celix_status_t bundleContext_installBundle(bundle_context_t context, char * location, bundle_t *bundle);
+FRAMEWORK_EXPORT celix_status_t bundleContext_installBundle2(bundle_context_t context, char * location, char *inputFile, bundle_t *bundle);
 
 FRAMEWORK_EXPORT celix_status_t bundleContext_registerService(bundle_context_t context, char * serviceName, void * svcObj,
-        PROPERTIES properties, SERVICE_REGISTRATION *service_registration);
+        properties_t properties, service_registration_t *service_registration);
 FRAMEWORK_EXPORT celix_status_t bundleContext_registerServiceFactory(bundle_context_t context, char * serviceName, service_factory_t factory,
-        PROPERTIES properties, SERVICE_REGISTRATION *service_registration);
+        properties_t properties, service_registration_t *service_registration);
 
-FRAMEWORK_EXPORT celix_status_t bundleContext_getServiceReferences(bundle_context_t context, const char * serviceName, char * filter, ARRAY_LIST *service_references);
-FRAMEWORK_EXPORT celix_status_t bundleContext_getServiceReference(bundle_context_t context, char * serviceName, SERVICE_REFERENCE *service_reference);
+FRAMEWORK_EXPORT celix_status_t bundleContext_getServiceReferences(bundle_context_t context, const char * serviceName, char * filter, array_list_t *service_references);
+FRAMEWORK_EXPORT celix_status_t bundleContext_getServiceReference(bundle_context_t context, char * serviceName, service_reference_t *service_reference);
 
-FRAMEWORK_EXPORT celix_status_t bundleContext_getService(bundle_context_t context, SERVICE_REFERENCE reference, void **service_instance);
-FRAMEWORK_EXPORT celix_status_t bundleContext_ungetService(bundle_context_t context, SERVICE_REFERENCE reference, bool *result);
+FRAMEWORK_EXPORT celix_status_t bundleContext_getService(bundle_context_t context, service_reference_t reference, void **service_instance);
+FRAMEWORK_EXPORT celix_status_t bundleContext_ungetService(bundle_context_t context, service_reference_t reference, bool *result);
 
-FRAMEWORK_EXPORT celix_status_t bundleContext_getBundles(bundle_context_t context, ARRAY_LIST *bundles);
-FRAMEWORK_EXPORT celix_status_t bundleContext_getBundleById(bundle_context_t context, long id, BUNDLE *bundle);
+FRAMEWORK_EXPORT celix_status_t bundleContext_getBundles(bundle_context_t context, array_list_t *bundles);
+FRAMEWORK_EXPORT celix_status_t bundleContext_getBundleById(bundle_context_t context, long id, bundle_t *bundle);
 
-FRAMEWORK_EXPORT celix_status_t bundleContext_addServiceListener(bundle_context_t context, SERVICE_LISTENER listener, char * filter);
-FRAMEWORK_EXPORT celix_status_t bundleContext_removeServiceListener(bundle_context_t context, SERVICE_LISTENER listener);
+FRAMEWORK_EXPORT celix_status_t bundleContext_addServiceListener(bundle_context_t context, service_listener_t listener, char * filter);
+FRAMEWORK_EXPORT celix_status_t bundleContext_removeServiceListener(bundle_context_t context, service_listener_t listener);
 
 FRAMEWORK_EXPORT celix_status_t bundleContext_addBundleListener(bundle_context_t context, bundle_listener_t listener);
 FRAMEWORK_EXPORT celix_status_t bundleContext_removeBundleListener(bundle_context_t context, bundle_listener_t listener);

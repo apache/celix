@@ -55,7 +55,7 @@ void updateCommand_destroy(COMMAND command) {
 
 
 void updateCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *)) {
-    BUNDLE bundle = NULL;
+    bundle_t bundle = NULL;
 	char delims[] = " ";
 	char * sub = NULL;
 	sub = strtok(line, delims);

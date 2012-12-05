@@ -47,8 +47,8 @@ FRAMEWORK_EXPORT celix_status_t bundleArchive_getArchiveRoot(bundle_archive_t ar
 
 FRAMEWORK_EXPORT celix_status_t bundleArchive_revise(bundle_archive_t archive, char * location, char *inputFile);
 FRAMEWORK_EXPORT celix_status_t bundleArchive_rollbackRevise(bundle_archive_t archive, bool *rolledback);
-FRAMEWORK_EXPORT celix_status_t bundleArchive_getRevision(bundle_archive_t archive, long revNr, BUNDLE_REVISION *revision);
-FRAMEWORK_EXPORT celix_status_t bundleArchive_getCurrentRevision(bundle_archive_t archive, BUNDLE_REVISION *revision);
+FRAMEWORK_EXPORT celix_status_t bundleArchive_getRevision(bundle_archive_t archive, long revNr, bundle_revision_t *revision);
+FRAMEWORK_EXPORT celix_status_t bundleArchive_getCurrentRevision(bundle_archive_t archive, bundle_revision_t *revision);
 FRAMEWORK_EXPORT celix_status_t bundleArchive_getCurrentRevisionNumber(bundle_archive_t archive, long *revisionNumber);
 
 FRAMEWORK_EXPORT celix_status_t bundleArchive_getRefreshCount(bundle_archive_t archive, long *refreshCount);
@@ -59,7 +59,7 @@ FRAMEWORK_EXPORT celix_status_t bundleArchive_closeAndDelete(bundle_archive_t ar
 
 FRAMEWORK_EXPORT celix_status_t bundleArchive_setLastModified(bundle_archive_t archive, time_t lastModifiedTime);
 FRAMEWORK_EXPORT celix_status_t bundleArchive_getLastModified(bundle_archive_t archive, time_t *lastModified);
-FRAMEWORK_EXPORT celix_status_t bundleArchive_setPersistentState(bundle_archive_t archive, BUNDLE_STATE state);
-FRAMEWORK_EXPORT celix_status_t bundleArchive_getPersistentState(bundle_archive_t archive, BUNDLE_STATE *state);
+FRAMEWORK_EXPORT celix_status_t bundleArchive_setPersistentState(bundle_archive_t archive, bundle_state_e state);
+FRAMEWORK_EXPORT celix_status_t bundleArchive_getPersistentState(bundle_archive_t archive, bundle_state_e *state);
 
 #endif /* BUNDLE_ARCHIVE_H_ */

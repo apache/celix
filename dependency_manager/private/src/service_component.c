@@ -41,7 +41,7 @@ typedef enum state_state {
 } STATE_STATE;
 
 struct state {
-	ARRAY_LIST dependencies;
+	array_list_t dependencies;
 	STATE_STATE state;
 };
 
@@ -53,7 +53,7 @@ struct executorEntry {
 
 struct executor {
 	struct executorEntry * active;
-	LINKED_LIST workQueue;
+	linked_list_t workQueue;
 
 	apr_thread_mutex_t *mutex;
 };
@@ -221,7 +221,7 @@ void serviceComponent_stop(SERVICE service) {
 	serviceRegistration_unregister(service->serviceRegistration);
 }
 
-SERVICE serviceComponent_setInterface(SERVICE service, char * serviceName, PROPERTIES properties) {
+SERVICE serviceComponent_setInterface(SERVICE service, char * serviceName, properties_t properties) {
 	service->serviceName = serviceName;
 	service->properties = properties;
 
@@ -253,8 +253,8 @@ void serviceComponent_deactivateService(SERVICE service, void * arg) {
 }
 
 void serviceComponent_startTrackingOptional(SERVICE service, STATE state) {
-    ARRAY_LIST deps = arrayList_clone(service->pool, state->dependencies);
-	ARRAY_LIST_ITERATOR i = arrayListIterator_create(deps);
+    array_list_t deps = arrayList_clone(service->pool, state->dependencies);
+	array_list_iterator_t i = arrayListIterator_create(deps);
 	while (arrayListIterator_hasNext(i)) {
 		SERVICE_DEPENDENCY dependency = (SERVICE_DEPENDENCY) arrayListIterator_next(i);
 		if (!dependency->required) {
@@ -266,8 +266,8 @@ void serviceComponent_startTrackingOptional(SERVICE service, STATE state) {
 }
 
 void serviceComponent_stopTrackingOptional(SERVICE service, STATE state) {
-    ARRAY_LIST deps = arrayList_clone(service->pool, state->dependencies);
-	ARRAY_LIST_ITERATOR i = arrayListIterator_create(deps);
+    array_list_t deps = arrayList_clone(service->pool, state->dependencies);
+	array_list_iterator_t i = arrayListIterator_create(deps);
 	while (arrayListIterator_hasNext(i)) {
 		SERVICE_DEPENDENCY dependency = (SERVICE_DEPENDENCY) arrayListIterator_next(i);
 		if (!dependency->required) {
@@ -280,8 +280,8 @@ void serviceComponent_stopTrackingOptional(SERVICE service, STATE state) {
 
 void serviceComponent_startTrackingRequired(SERVICE service, void * arg) {
 	STATE state = (STATE) arg;
-	ARRAY_LIST deps = arrayList_clone(service->pool, state->dependencies);
-    ARRAY_LIST_ITERATOR i = arrayListIterator_create(deps);
+	array_list_t deps = arrayList_clone(service->pool, state->dependencies);
+    array_list_iterator_t i = arrayListIterator_create(deps);
 	while (arrayListIterator_hasNext(i)) {
 		SERVICE_DEPENDENCY dependency = (SERVICE_DEPENDENCY) arrayListIterator_next(i);
 		if (dependency->required) {
@@ -294,8 +294,8 @@ void serviceComponent_startTrackingRequired(SERVICE service, void * arg) {
 
 void serviceComponent_stopTrackingRequired(SERVICE service, void * arg) {
 	STATE state = (STATE) arg;
-	ARRAY_LIST deps = arrayList_clone(service->pool, state->dependencies);
-    ARRAY_LIST_ITERATOR i = arrayListIterator_create(deps);
+	array_list_t deps = arrayList_clone(service->pool, state->dependencies);
+    array_list_iterator_t i = arrayListIterator_create(deps);
 	while (arrayListIterator_hasNext(i)) {
 		SERVICE_DEPENDENCY dependency = (SERVICE_DEPENDENCY) arrayListIterator_next(i);
 		if (dependency->required) {
@@ -310,7 +310,7 @@ void serviceComponent_initService(SERVICE service) {
 }
 
 void serviceComponent_configureService(SERVICE service, STATE state) {
-	ARRAY_LIST_ITERATOR i = arrayListIterator_create(state->dependencies);
+	array_list_iterator_t i = arrayListIterator_create(state->dependencies);
 	while (arrayListIterator_hasNext(i)) {
 		SERVICE_DEPENDENCY dependency = (SERVICE_DEPENDENCY) arrayListIterator_next(i);
 		if (dependency->autoConfigureField != NULL) {
@@ -324,7 +324,7 @@ void serviceComponent_configureService(SERVICE service, STATE state) {
 }
 
 void serviceComponent_destroyService(SERVICE service, STATE state) {
-	ARRAY_LIST_ITERATOR i = arrayListIterator_create(state->dependencies);
+	array_list_iterator_t i = arrayListIterator_create(state->dependencies);
 	while (arrayListIterator_hasNext(i)) {
 		SERVICE_DEPENDENCY dependency = (SERVICE_DEPENDENCY) arrayListIterator_next(i);
 		if (dependency->required) {
@@ -360,7 +360,7 @@ char * serviceComponent_getName(SERVICE service) {
 	return service->serviceName;
 }
 
-STATE state_create(ARRAY_LIST dependencies, bool active) {
+STATE state_create(array_list_t dependencies, bool active) {
 	STATE state = (STATE) malloc(sizeof(*state));
 	state->dependencies = dependencies;
 	if (active) {
@@ -409,7 +409,7 @@ bool state_isTrackingOptional(STATE state) {
 	return state->state == STATE_TRACKING_OPTIONAL;
 }
 
-ARRAY_LIST state_getDependencies(STATE state) {
+array_list_t state_getDependencies(STATE state) {
 	return state->dependencies;
 }
 

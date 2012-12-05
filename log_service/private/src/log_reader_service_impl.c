@@ -49,7 +49,7 @@ celix_status_t logReaderService_create(log_t log, apr_pool_t *pool, log_reader_d
     return status;
 }
 
-celix_status_t logReaderService_getLog(log_reader_data_t reader, apr_pool_t *memory_pool, LINKED_LIST *list) {
+celix_status_t logReaderService_getLog(log_reader_data_t reader, apr_pool_t *memory_pool, linked_list_t *list) {
     celix_status_t status = CELIX_SUCCESS;
 
     status = log_getEntries(reader->log, memory_pool, list);

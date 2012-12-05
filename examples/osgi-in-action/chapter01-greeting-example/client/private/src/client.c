@@ -37,7 +37,7 @@ celix_status_t bundleActivator_create(bundle_context_t context, void **userData)
 }
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_t ctx) {
-	SERVICE_REFERENCE ref = NULL;
+	service_reference_t ref = NULL;
 	celix_status_t status = bundleContext_getServiceReference(ctx, (char *) GREETING_SERVICE_NAME, &ref);
 	if (status == CELIX_SUCCESS) {
 		if (ref == NULL) {

@@ -39,7 +39,7 @@
 struct base_driver_bundle_instance {
 	bundle_context_t context;
 	apr_pool_t * pool;
-	ARRAY_LIST serviceRegistrations;
+	array_list_t serviceRegistrations;
 };
 
 typedef struct base_driver_bundle_instance *base_driver_bundle_instance_t;
@@ -73,10 +73,10 @@ static celix_status_t bundleActivator_registerBaseDriverDevice(base_driver_bundl
 		base_driver_device_service_t service = NULL;
 		status = baseDriver_createService(device, &service);
 		if (status == CELIX_SUCCESS) {
-			PROPERTIES props = properties_create();
+			properties_t props = properties_create();
 			properties_set(props, DEVICE_CATEGORY, BASE_DRIVER_DEVICE_CATEGORY);
 			properties_set(props, DEVICE_SERIAL, serial);
-			SERVICE_REGISTRATION service_registration = NULL;
+			service_registration_t service_registration = NULL;
 			status = bundleContext_registerService(bi->context, DEVICE_SERVICE_NAME, service, props, &service_registration);
 			if (status == CELIX_SUCCESS) {
 				arrayList_add(bi->serviceRegistrations, service_registration);
@@ -114,9 +114,9 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
 	celix_status_t status = CELIX_SUCCESS;
 	base_driver_bundle_instance_t bundleInstance = userData;
 
-	ARRAY_LIST_ITERATOR iterator = arrayListIterator_create(bundleInstance->serviceRegistrations);
+	array_list_iterator_t iterator = arrayListIterator_create(bundleInstance->serviceRegistrations);
 	while (arrayListIterator_hasNext(iterator)) {
-		SERVICE_REGISTRATION reg = arrayListIterator_next(iterator);
+		service_registration_t reg = arrayListIterator_next(iterator);
 		printf("BASE_DRIVER: unregistering service\n");
 		celix_status_t unregStatus = serviceRegistration_unregister(reg);
 		if (unregStatus != CELIX_SUCCESS) {

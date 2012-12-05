@@ -44,7 +44,7 @@ struct bundle_listener {
 
 
 
-#endif /* SERVICE_LISTENER_H_ */
+#endif /* service_listener_t_H_ */
 
 /**
  * @}

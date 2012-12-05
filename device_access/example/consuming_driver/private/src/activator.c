@@ -38,7 +38,7 @@
 struct consuming_driver_bundle_instance {
 	bundle_context_t context;
 	apr_pool_t * pool;
-	SERVICE_REGISTRATION registration;
+	service_registration_t registration;
 };
 
 typedef struct consuming_driver_bundle_instance *consuming_driver_bundle_instance_t;
@@ -73,7 +73,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 		driver_service_t service = NULL;
 		status = consumingDriver_createService(driver, &service);
 		if (status == CELIX_SUCCESS) {
-			PROPERTIES props = properties_create();
+			properties_t props = properties_create();
 			properties_set(props, "DRIVER_ID", CONSUMING_DRIVER_ID);
 			status = bundleContext_registerService(context, DRIVER_SERVICE_NAME, service, props, &bi->registration);
 		}

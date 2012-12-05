@@ -32,7 +32,7 @@
 #include "utils.h"
 
 int fpeek(FILE *stream);
-celix_status_t manifest_readAttributes(MANIFEST manifest, PROPERTIES properties, FILE *file);
+celix_status_t manifest_readAttributes(MANIFEST manifest, properties_t properties, FILE *file);
 apr_status_t manifest_destroy(void *manifestP);
 
 celix_status_t manifest_create(apr_pool_t *pool, MANIFEST *manifest) {
@@ -78,11 +78,11 @@ void manifest_clear(MANIFEST manifest) {
 
 }
 
-PROPERTIES manifest_getMainAttributes(MANIFEST manifest) {
+properties_t manifest_getMainAttributes(MANIFEST manifest) {
 	return manifest->mainAttributes;
 }
 
-celix_status_t manifest_getEntries(MANIFEST manifest, HASH_MAP *map) {
+celix_status_t manifest_getEntries(MANIFEST manifest, hash_map_t *map) {
 	*map = manifest->attributes;
 	return CELIX_SUCCESS;
 }
@@ -103,7 +103,7 @@ celix_status_t manifest_read(MANIFEST manifest, char *filename) {
 		
 		apr_pool_create(&subpool, manifest->pool);
 		while (fgets(lbuf, sizeof(lbuf), file) != NULL ) {
-			PROPERTIES attributes;
+			properties_t attributes;
 
 			len = strlen(lbuf);
 			if (lbuf[--len] != '\n') {
@@ -191,7 +191,7 @@ int fpeek(FILE *stream) {
 	return c;
 }
 
-celix_status_t manifest_readAttributes(MANIFEST manifest, PROPERTIES properties, FILE *file) {
+celix_status_t manifest_readAttributes(MANIFEST manifest, properties_t properties, FILE *file) {
 	char *name = NULL;
 	char *value = NULL;
 	char *lastLine = NULL;

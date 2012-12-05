@@ -48,14 +48,14 @@ struct activator {
 	topology_manager_t manager;
 
 	service_tracker_t remoteServiceAdminTracker;
-	SERVICE_LISTENER serviceListener;
+	service_listener_t serviceListener;
 
-	SERVICE_REGISTRATION endpointListenerService;
-	SERVICE_REGISTRATION hook;
+	service_registration_t endpointListenerService;
+	service_registration_t hook;
 };
 
 static celix_status_t bundleActivator_createRSATracker(struct activator *activator, service_tracker_t *tracker);
-static celix_status_t bundleActivator_createServiceListener(struct activator *activator, SERVICE_LISTENER *listener);
+static celix_status_t bundleActivator_createServiceListener(struct activator *activator, service_listener_t *listener);
 
 celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -110,7 +110,7 @@ static celix_status_t bundleActivator_createRSATracker(struct activator *activat
 	return status;
 }
 
-static celix_status_t bundleActivator_createServiceListener(struct activator *activator, SERVICE_LISTENER *listener) {
+static celix_status_t bundleActivator_createServiceListener(struct activator *activator, service_listener_t *listener) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_pool_t *pool;
 	apr_pool_create(&pool, activator->pool);
@@ -137,7 +137,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 	endpointListener->endpointAdded = topologyManager_endpointAdded;
 	endpointListener->endpointRemoved = topologyManager_endpointRemoved;
 
-	PROPERTIES props = properties_create();
+	properties_t props = properties_create();
 	char *uuid = NULL;
 	remoteServicesUtils_getUUID(pool, context, &uuid);
 	char *scope = apr_pstrcat(pool, "(&(", OBJECTCLASS, "=*)(!(", ENDPOINT_FRAMEWORK_UUID, "=", uuid, ")))", NULL);

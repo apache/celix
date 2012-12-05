@@ -35,7 +35,7 @@
 struct activator {
 	apr_pool_t *pool;
 	remote_service_admin_t admin;
-	SERVICE_REGISTRATION registration;
+	service_registration_t registration;
 };
 
 celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {

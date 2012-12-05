@@ -41,13 +41,13 @@ FRAMEWORK_EXPORT celix_status_t serviceTracker_createWithFilter(apr_pool_t *pool
 FRAMEWORK_EXPORT celix_status_t serviceTracker_open(service_tracker_t tracker);
 FRAMEWORK_EXPORT celix_status_t serviceTracker_close(service_tracker_t tracker);
 
-FRAMEWORK_EXPORT SERVICE_REFERENCE serviceTracker_getServiceReference(service_tracker_t tracker);
-FRAMEWORK_EXPORT ARRAY_LIST serviceTracker_getServiceReferences(service_tracker_t tracker);
+FRAMEWORK_EXPORT service_reference_t serviceTracker_getServiceReference(service_tracker_t tracker);
+FRAMEWORK_EXPORT array_list_t serviceTracker_getServiceReferences(service_tracker_t tracker);
 
 FRAMEWORK_EXPORT void * serviceTracker_getService(service_tracker_t tracker);
-FRAMEWORK_EXPORT ARRAY_LIST serviceTracker_getServices(service_tracker_t tracker);
-FRAMEWORK_EXPORT void * serviceTracker_getServiceByReference(service_tracker_t tracker, SERVICE_REFERENCE reference);
+FRAMEWORK_EXPORT array_list_t serviceTracker_getServices(service_tracker_t tracker);
+FRAMEWORK_EXPORT void * serviceTracker_getServiceByReference(service_tracker_t tracker, service_reference_t reference);
 
-FRAMEWORK_EXPORT void serviceTracker_serviceChanged(SERVICE_LISTENER listener, SERVICE_EVENT event);
+FRAMEWORK_EXPORT void serviceTracker_serviceChanged(service_listener_t listener, service_event_t event);
 
 #endif /* SERVICE_TRACKER_H_ */

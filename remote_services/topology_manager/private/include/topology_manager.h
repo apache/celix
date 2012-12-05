@@ -35,21 +35,21 @@ typedef struct topology_manager *topology_manager_t;
 
 celix_status_t topologyManager_create(bundle_context_t context, apr_pool_t *pool, topology_manager_t *manager);
 
-celix_status_t topologyManager_rsaAdding(void *handle, SERVICE_REFERENCE reference, void **service);
-celix_status_t topologyManager_rsaAdded(void *handle, SERVICE_REFERENCE reference, void *service);
-celix_status_t topologyManager_rsaModified(void *handle, SERVICE_REFERENCE reference, void *service);
-celix_status_t topologyManager_rsaRemoved(void *handle, SERVICE_REFERENCE reference, void *service);
+celix_status_t topologyManager_rsaAdding(void *handle, service_reference_t reference, void **service);
+celix_status_t topologyManager_rsaAdded(void *handle, service_reference_t reference, void *service);
+celix_status_t topologyManager_rsaModified(void *handle, service_reference_t reference, void *service);
+celix_status_t topologyManager_rsaRemoved(void *handle, service_reference_t reference, void *service);
 
-celix_status_t topologyManager_serviceChanged(void *listener, SERVICE_EVENT event);
+celix_status_t topologyManager_serviceChanged(void *listener, service_event_t event);
 
 celix_status_t topologyManager_endpointAdded(void *handle, endpoint_description_t endpoint, char *machtedFilter);
 celix_status_t topologyManager_endpointRemoved(void *handle, endpoint_description_t endpoint, char *machtedFilter);
 
 celix_status_t topologyManager_importService(topology_manager_t manager, endpoint_description_t endpoint);
-celix_status_t topologyManager_exportService(topology_manager_t manager, SERVICE_REFERENCE reference);
-celix_status_t topologyManager_removeService(topology_manager_t manager, SERVICE_REFERENCE reference);
+celix_status_t topologyManager_exportService(topology_manager_t manager, service_reference_t reference);
+celix_status_t topologyManager_removeService(topology_manager_t manager, service_reference_t reference);
 
-celix_status_t topologyManager_listenerAdded(void *handle, ARRAY_LIST listeners);
-celix_status_t topologyManager_listenerRemoved(void *handle, ARRAY_LIST listeners);
+celix_status_t topologyManager_listenerAdded(void *handle, array_list_t listeners);
+celix_status_t topologyManager_listenerRemoved(void *handle, array_list_t listeners);
 
 #endif /* TOPOLOGY_MANAGER_H_ */

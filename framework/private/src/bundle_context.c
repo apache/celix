@@ -37,7 +37,7 @@ struct bundleContext {
 	apr_pool_t *pool;
 };
 
-celix_status_t bundleContext_create(FRAMEWORK framework, BUNDLE bundle, bundle_context_t *bundle_context) {
+celix_status_t bundleContext_create(framework_t framework, bundle_t bundle, bundle_context_t *bundle_context) {
 	celix_status_t status = CELIX_SUCCESS;
 	bundle_context_t context = NULL;
 
@@ -84,7 +84,7 @@ celix_status_t bundleContext_destroy(bundle_context_t context) {
 	return status;
 }
 
-celix_status_t bundleContext_getBundle(bundle_context_t context, BUNDLE *bundle) {
+celix_status_t bundleContext_getBundle(bundle_context_t context, bundle_t *bundle) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (context == NULL) {
@@ -96,7 +96,7 @@ celix_status_t bundleContext_getBundle(bundle_context_t context, BUNDLE *bundle)
 	return status;
 }
 
-celix_status_t bundleContext_getFramework(bundle_context_t context, FRAMEWORK *framework) {
+celix_status_t bundleContext_getFramework(bundle_context_t context, framework_t *framework) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (context == NULL) {
@@ -120,13 +120,13 @@ celix_status_t bundleContext_getMemoryPool(bundle_context_t context, apr_pool_t 
 	return status;
 }
 
-celix_status_t bundleContext_installBundle(bundle_context_t context, char * location, BUNDLE *bundle) {
+celix_status_t bundleContext_installBundle(bundle_context_t context, char * location, bundle_t *bundle) {
 	return bundleContext_installBundle2(context, location, NULL, bundle);
 }
 
-celix_status_t bundleContext_installBundle2(bundle_context_t context, char * location, char *inputFile, BUNDLE *bundle) {
+celix_status_t bundleContext_installBundle2(bundle_context_t context, char * location, char *inputFile, bundle_t *bundle) {
 	celix_status_t status = CELIX_SUCCESS;
-	BUNDLE b = NULL;
+	bundle_t b = NULL;
 
 	if (context != NULL && *bundle == NULL) {
 		if (fw_installBundle(context->framework, &b, location, inputFile) != CELIX_SUCCESS) {
@@ -142,8 +142,8 @@ celix_status_t bundleContext_installBundle2(bundle_context_t context, char * loc
 }
 
 celix_status_t bundleContext_registerService(bundle_context_t context, char * serviceName, void * svcObj,
-        PROPERTIES properties, SERVICE_REGISTRATION *service_registration) {
-	SERVICE_REGISTRATION registration = NULL;
+        properties_t properties, service_registration_t *service_registration) {
+	service_registration_t registration = NULL;
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (context != NULL && *service_registration == NULL) {
@@ -157,8 +157,8 @@ celix_status_t bundleContext_registerService(bundle_context_t context, char * se
 }
 
 celix_status_t bundleContext_registerServiceFactory(bundle_context_t context, char * serviceName, service_factory_t factory,
-        PROPERTIES properties, SERVICE_REGISTRATION *service_registration) {
-    SERVICE_REGISTRATION registration = NULL;
+        properties_t properties, service_registration_t *service_registration) {
+    service_registration_t registration = NULL;
     celix_status_t status = CELIX_SUCCESS;
 
     if (context != NULL && *service_registration == NULL) {
@@ -171,7 +171,7 @@ celix_status_t bundleContext_registerServiceFactory(bundle_context_t context, ch
     return status;
 }
 
-celix_status_t bundleContext_getServiceReferences(bundle_context_t context, const char * serviceName, char * filter, ARRAY_LIST *service_references) {
+celix_status_t bundleContext_getServiceReferences(bundle_context_t context, const char * serviceName, char * filter, array_list_t *service_references) {
     celix_status_t status = CELIX_SUCCESS;
 
     if (context != NULL && *service_references == NULL) {
@@ -183,9 +183,9 @@ celix_status_t bundleContext_getServiceReferences(bundle_context_t context, cons
 	return status;
 }
 
-celix_status_t bundleContext_getServiceReference(bundle_context_t context, char * serviceName, SERVICE_REFERENCE *service_reference) {
-    SERVICE_REFERENCE reference = NULL;
-    ARRAY_LIST services = NULL;
+celix_status_t bundleContext_getServiceReference(bundle_context_t context, char * serviceName, service_reference_t *service_reference) {
+    service_reference_t reference = NULL;
+    array_list_t services = NULL;
     celix_status_t status = CELIX_SUCCESS;
 
     if (serviceName != NULL) {
@@ -203,7 +203,7 @@ celix_status_t bundleContext_getServiceReference(bundle_context_t context, char 
 	return status;
 }
 
-celix_status_t bundleContext_getService(bundle_context_t context, SERVICE_REFERENCE reference, void **service_instance) {
+celix_status_t bundleContext_getService(bundle_context_t context, service_reference_t reference, void **service_instance) {
     celix_status_t status = CELIX_SUCCESS;
 
     if (context != NULL && reference != NULL && *service_instance == NULL) {
@@ -215,7 +215,7 @@ celix_status_t bundleContext_getService(bundle_context_t context, SERVICE_REFERE
     return status;
 }
 
-celix_status_t bundleContext_ungetService(bundle_context_t context, SERVICE_REFERENCE reference, bool *result) {
+celix_status_t bundleContext_ungetService(bundle_context_t context, service_reference_t reference, bool *result) {
     celix_status_t status = CELIX_SUCCESS;
 
     if (context != NULL && reference != NULL) {
@@ -227,7 +227,7 @@ celix_status_t bundleContext_ungetService(bundle_context_t context, SERVICE_REFE
     return status;
 }
 
-celix_status_t bundleContext_getBundles(bundle_context_t context, ARRAY_LIST *bundles) {
+celix_status_t bundleContext_getBundles(bundle_context_t context, array_list_t *bundles) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (context == NULL || *bundles != NULL) {
@@ -239,7 +239,7 @@ celix_status_t bundleContext_getBundles(bundle_context_t context, ARRAY_LIST *bu
 	return status;
 }
 
-celix_status_t bundleContext_getBundleById(bundle_context_t context, long id, BUNDLE *bundle) {
+celix_status_t bundleContext_getBundleById(bundle_context_t context, long id, bundle_t *bundle) {
     celix_status_t status = CELIX_SUCCESS;
 
     if (context == NULL || *bundle != NULL) {
@@ -251,7 +251,7 @@ celix_status_t bundleContext_getBundleById(bundle_context_t context, long id, BU
 	return status;
 }
 
-celix_status_t bundleContext_addServiceListener(bundle_context_t context, SERVICE_LISTENER listener, char * filter) {
+celix_status_t bundleContext_addServiceListener(bundle_context_t context, service_listener_t listener, char * filter) {
     celix_status_t status = CELIX_SUCCESS;
 
     if (context != NULL && listener != NULL) {
@@ -263,7 +263,7 @@ celix_status_t bundleContext_addServiceListener(bundle_context_t context, SERVIC
     return status;
 }
 
-celix_status_t bundleContext_removeServiceListener(bundle_context_t context, SERVICE_LISTENER listener) {
+celix_status_t bundleContext_removeServiceListener(bundle_context_t context, service_listener_t listener) {
     celix_status_t status = CELIX_SUCCESS;
 
     if (context != NULL && listener != NULL) {

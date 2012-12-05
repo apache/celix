@@ -38,7 +38,7 @@ typedef struct filter * filter_t;
 filter_t filter_create(char * filterString, apr_pool_t *pool);
 void filter_destroy(filter_t filter);
 
-celix_status_t filter_match(filter_t filter, PROPERTIES properties, bool *result);
+celix_status_t filter_match(filter_t filter, properties_t properties, bool *result);
 
 celix_status_t filter_getString(filter_t filter, char **filterStr);
 

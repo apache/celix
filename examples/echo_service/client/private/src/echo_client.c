@@ -37,7 +37,7 @@ static void *APR_THREAD_FUNC trk_send(apr_thread_t *thd, void *handle) {
 		if (service != NULL) {
 			service->echo(service->server, "hi");
 		}
-		apr_sleep(1);
+		apr_sleep(1000000);
 	}
 	apr_thread_exit(thd, APR_SUCCESS);
 	return NULL;

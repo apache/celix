@@ -59,7 +59,7 @@ void addCommand_destroy(COMMAND command) {
 
 void addCommand_execute(COMMAND command, char *line, void (*out)(char *), void (*err)(char *)) {
 	celix_status_t status = CELIX_SUCCESS;
-    SERVICE_REFERENCE exampleService = NULL;
+    service_reference_t exampleService = NULL;
 
     status = bundleContext_getServiceReference(command->bundleContext, (char *) EXAMPLE_SERVICE, &exampleService);
     if (status == CELIX_SUCCESS) {

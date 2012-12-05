@@ -34,18 +34,18 @@ celix_status_t deviceManager_create(apr_pool_t *pool, bundle_context_t context, 
 celix_status_t deviceManager_destroy(device_manager_t manager);
 
 celix_status_t deviceManager_matchAttachDriver(device_manager_t manager, apr_pool_t *attachPool, driver_loader_t loader,
-			ARRAY_LIST driverIds, ARRAY_LIST included, ARRAY_LIST excluded, void *service, SERVICE_REFERENCE reference);
-celix_status_t deviceManager_noDriverFound(device_manager_t manager, void *service, SERVICE_REFERENCE reference);
+			array_list_t driverIds, array_list_t included, array_list_t excluded, void *service, service_reference_t reference);
+celix_status_t deviceManager_noDriverFound(device_manager_t manager, void *service, service_reference_t reference);
 
-celix_status_t deviceManager_locatorAdded(void * handle, SERVICE_REFERENCE ref, void * service);
-celix_status_t deviceManager_locatorModified(void * handle, SERVICE_REFERENCE ref, void * service);
-celix_status_t deviceManager_locatorRemoved(void * handle, SERVICE_REFERENCE ref, void * service);
-celix_status_t deviceManager_deviceAdded(void * handle, SERVICE_REFERENCE ref, void * service);
-celix_status_t deviceManager_deviceModified(void * handle, SERVICE_REFERENCE ref, void * service);
-celix_status_t deviceManager_deviceRemoved(void * handle, SERVICE_REFERENCE ref, void * service);
-celix_status_t deviceManager_driverAdded(void * handle, SERVICE_REFERENCE ref, void * service);
-celix_status_t deviceManager_driverModified(void * handle, SERVICE_REFERENCE ref, void * service);
-celix_status_t deviceManager_driverRemoved(void * handle, SERVICE_REFERENCE ref, void * service);
+celix_status_t deviceManager_locatorAdded(void * handle, service_reference_t ref, void * service);
+celix_status_t deviceManager_locatorModified(void * handle, service_reference_t ref, void * service);
+celix_status_t deviceManager_locatorRemoved(void * handle, service_reference_t ref, void * service);
+celix_status_t deviceManager_deviceAdded(void * handle, service_reference_t ref, void * service);
+celix_status_t deviceManager_deviceModified(void * handle, service_reference_t ref, void * service);
+celix_status_t deviceManager_deviceRemoved(void * handle, service_reference_t ref, void * service);
+celix_status_t deviceManager_driverAdded(void * handle, service_reference_t ref, void * service);
+celix_status_t deviceManager_driverModified(void * handle, service_reference_t ref, void * service);
+celix_status_t deviceManager_driverRemoved(void * handle, service_reference_t ref, void * service);
 
 celix_status_t deviceManager_getBundleContext(device_manager_t manager, bundle_context_t *context);
 

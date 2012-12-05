@@ -85,7 +85,7 @@ celix_status_t paintFrame_create(bundle_context_t context, apr_pool_t *pool, PAI
 	} else {
 		*frame = this;
 		char *builderFile;
-		BUNDLE bundle;
+		bundle_t bundle;
 		GError *error = NULL;
 
 		(*frame)->showing = false;
@@ -226,7 +226,7 @@ SIMPLE_SHAPE paintFrame_getShape(PAINT_FRAME frame, char *name) {
 
 static void paintFrame_destroy(GtkWidget *widget, gpointer data) {
 	PAINT_FRAME frame = data;
-	BUNDLE bundle = NULL;
+	bundle_t bundle = NULL;
 
 	frame->showing = false;
 
@@ -314,7 +314,7 @@ static celix_status_t paintFrame_redraw(PAINT_FRAME frame, GdkModifierType state
 				update_rect.x, update_rect.y,
 				update_rect.width, update_rect.height);
 		gtk_widget_draw(frame->drawingArea, &update_rect);
-		LINKED_LIST_ITERATOR it = linkedListIterator_create(this->m_shapeComponents, 0);
+		linked_list_iterator_t it = linkedListIterator_create(this->m_shapeComponents, 0);
 		while (linkedListIterator_hasNext(it)) {
 			SHAPE_COMPONENT sc = linkedListIterator_next(it);
 			(*sc->shapeComponent_paintComponent)(sc, this, this->pixMap, frame->drawingArea);

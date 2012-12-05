@@ -29,7 +29,7 @@
 #include <service_reference.h>
 
 struct match {
-	SERVICE_REFERENCE reference;
+	service_reference_t reference;
 	int matchValue;
 };
 

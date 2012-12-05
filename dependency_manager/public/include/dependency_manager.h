@@ -32,7 +32,7 @@
 
 struct dependencyManager {
 	bundle_context_t context;
-	ARRAY_LIST services;
+	array_list_t services;
 };
 
 typedef struct dependencyManager * DEPENDENCY_MANAGER;

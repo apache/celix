@@ -33,35 +33,39 @@
 #include "exports.h"
 #include "celix_errno.h"
 
-typedef struct arrayList * ARRAY_LIST;
+typedef struct arrayList * array_list_t;
 
-typedef struct arrayListIterator * ARRAY_LIST_ITERATOR;
+typedef struct arrayListIterator * array_list_iterator_t;
 
-UTILS_EXPORT celix_status_t arrayList_create(apr_pool_t *pool, ARRAY_LIST *list);
-UTILS_EXPORT void arrayList_destroy(ARRAY_LIST list);
-UTILS_EXPORT void arrayList_trimToSize(ARRAY_LIST list);
-UTILS_EXPORT void arrayList_ensureCapacity(ARRAY_LIST list, int capacity);
-UTILS_EXPORT unsigned int arrayList_size(ARRAY_LIST list);
-UTILS_EXPORT bool arrayList_isEmpty(ARRAY_LIST list);
-UTILS_EXPORT bool arrayList_contains(ARRAY_LIST list, void * element);
-UTILS_EXPORT int arrayList_indexOf(ARRAY_LIST list, void * element);
-UTILS_EXPORT int arrayList_lastIndexOf(ARRAY_LIST list, void * element);
-UTILS_EXPORT void * arrayList_get(ARRAY_LIST list, unsigned int index);
-UTILS_EXPORT void * arrayList_set(ARRAY_LIST list, unsigned int index, void * element);
-UTILS_EXPORT bool arrayList_add(ARRAY_LIST list, void * element);
-UTILS_EXPORT int arrayList_addIndex(ARRAY_LIST list, unsigned int index, void * element);
-UTILS_EXPORT bool arrayList_addAll(ARRAY_LIST list, ARRAY_LIST toAdd);
-UTILS_EXPORT void * arrayList_remove(ARRAY_LIST list, unsigned int index);
-UTILS_EXPORT bool arrayList_removeElement(ARRAY_LIST list, void * element);
-UTILS_EXPORT void arrayList_clear(ARRAY_LIST list);
-UTILS_EXPORT ARRAY_LIST arrayList_clone(apr_pool_t *pool, ARRAY_LIST list);
+typedef celix_status_t (*arrayListElementEqualsFunction)(void *, void *, bool *equals);
 
-UTILS_EXPORT ARRAY_LIST_ITERATOR arrayListIterator_create(ARRAY_LIST list);
-UTILS_EXPORT void arrayListIterator_destroy(ARRAY_LIST_ITERATOR iterator);
-UTILS_EXPORT bool arrayListIterator_hasNext(ARRAY_LIST_ITERATOR iterator);
-UTILS_EXPORT void * arrayListIterator_next(ARRAY_LIST_ITERATOR iterator);
-UTILS_EXPORT bool arrayListIterator_hasPrevious(ARRAY_LIST_ITERATOR iterator);
-UTILS_EXPORT void * arrayListIterator_previous(ARRAY_LIST_ITERATOR iterator);
-UTILS_EXPORT void arrayListIterator_remove(ARRAY_LIST_ITERATOR iterator);
+UTILS_EXPORT celix_status_t arrayList_create(apr_pool_t *pool, array_list_t *list);
+UTILS_EXPORT celix_status_t arrayList_createWithEquals(apr_pool_t *pool, arrayListElementEqualsFunction equals, array_list_t *list);
+
+UTILS_EXPORT void arrayList_destroy(array_list_t list);
+UTILS_EXPORT void arrayList_trimToSize(array_list_t list);
+UTILS_EXPORT void arrayList_ensureCapacity(array_list_t list, int capacity);
+UTILS_EXPORT unsigned int arrayList_size(array_list_t list);
+UTILS_EXPORT bool arrayList_isEmpty(array_list_t list);
+UTILS_EXPORT bool arrayList_contains(array_list_t list, void * element);
+UTILS_EXPORT int arrayList_indexOf(array_list_t list, void * element);
+UTILS_EXPORT int arrayList_lastIndexOf(array_list_t list, void * element);
+UTILS_EXPORT void * arrayList_get(array_list_t list, unsigned int index);
+UTILS_EXPORT void * arrayList_set(array_list_t list, unsigned int index, void * element);
+UTILS_EXPORT bool arrayList_add(array_list_t list, void * element);
+UTILS_EXPORT int arrayList_addIndex(array_list_t list, unsigned int index, void * element);
+UTILS_EXPORT bool arrayList_addAll(array_list_t list, array_list_t toAdd);
+UTILS_EXPORT void * arrayList_remove(array_list_t list, unsigned int index);
+UTILS_EXPORT bool arrayList_removeElement(array_list_t list, void * element);
+UTILS_EXPORT void arrayList_clear(array_list_t list);
+UTILS_EXPORT array_list_t arrayList_clone(apr_pool_t *pool, array_list_t list);
+
+UTILS_EXPORT array_list_iterator_t arrayListIterator_create(array_list_t list);
+UTILS_EXPORT void arrayListIterator_destroy(array_list_iterator_t iterator);
+UTILS_EXPORT bool arrayListIterator_hasNext(array_list_iterator_t iterator);
+UTILS_EXPORT void * arrayListIterator_next(array_list_iterator_t iterator);
+UTILS_EXPORT bool arrayListIterator_hasPrevious(array_list_iterator_t iterator);
+UTILS_EXPORT void * arrayListIterator_previous(array_list_iterator_t iterator);
+UTILS_EXPORT void arrayListIterator_remove(array_list_iterator_t iterator);
 
 #endif /* ARRAY_LIST_H_ */

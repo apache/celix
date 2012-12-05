@@ -46,7 +46,7 @@ struct activator {
 	discovery_t discovery;
 
 	service_tracker_t endpointListenerTracker;
-	SERVICE_REGISTRATION endpointListenerService;
+	service_registration_t endpointListenerService;
 };
 
 celix_status_t discoveryActivator_createEPLTracker(struct activator *activator, service_tracker_t *tracker);
@@ -106,7 +106,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 	endpointListener->endpointAdded = discovery_endpointAdded;
 	endpointListener->endpointRemoved = discovery_endpointRemoved;
 
-	PROPERTIES props = properties_create();
+	properties_t props = properties_create();
 	properties_set(props, "DISCOVERY", "true");
 	char *uuid = NULL;
 	discoveryActivator_getUUID(activator, &uuid);

@@ -32,7 +32,7 @@
 #include "module.h"
 #include "bundle.h"
 
-char * psCommand_stateString(BUNDLE_STATE state);
+char * psCommand_stateString(bundle_state_e state);
 void psCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *));
 
 COMMAND psCommand_create(bundle_context_t context) {
@@ -50,7 +50,7 @@ void psCommand_destroy(COMMAND command) {
 }
 
 void psCommand_execute(COMMAND command, char * commandline, void (*out)(char *), void (*err)(char *)) {
-	ARRAY_LIST bundles = NULL;
+	array_list_t bundles = NULL;
 	celix_status_t status = bundleContext_getBundles(command->bundleContext, &bundles);
 
 	if (status == CELIX_SUCCESS) {
@@ -82,12 +82,12 @@ void psCommand_execute(COMMAND command, char * commandline, void (*out)(char *),
 		sprintf(line, "  %-5s %-12s %s\n", "ID", "State", msg);
 		out(line);
 		for (i = 0; i < arrayList_size(bundles); i++) {
-			BUNDLE bundle = (BUNDLE) arrayList_get(bundles, i);
+			bundle_t bundle = (bundle_t) arrayList_get(bundles, i);
 			bundle_archive_t archive = NULL;
 			long id;
-			BUNDLE_STATE state;
+			bundle_state_e state;
 			char * stateString = NULL;
-			MODULE module = NULL;
+			module_t module = NULL;
 			char * name = NULL;
 
 			bundle_getArchive(bundle, &archive);
@@ -111,7 +111,7 @@ void psCommand_execute(COMMAND command, char * commandline, void (*out)(char *),
 	}
 }
 
-char * psCommand_stateString(BUNDLE_STATE state) {
+char * psCommand_stateString(bundle_state_e state) {
 	switch (state) {
 		case BUNDLE_ACTIVE:
 			return "Active      ";

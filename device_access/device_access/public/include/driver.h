@@ -35,8 +35,8 @@
 
 struct driver_service {
 	void *driver;
-	celix_status_t (*attach)(void *driver, SERVICE_REFERENCE reference, char **result);
-	celix_status_t (*match)(void *driver, SERVICE_REFERENCE reference, int *value);
+	celix_status_t (*attach)(void *driver, service_reference_t reference, char **result);
+	celix_status_t (*match)(void *driver, service_reference_t reference, int *value);
 };
 
 typedef struct driver_service *driver_service_t;

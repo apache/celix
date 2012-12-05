@@ -44,7 +44,7 @@ struct refining_driver {
 	apr_pool_t *pool;
 	bundle_context_t context;
 	int deviceCount;
-	ARRAY_LIST devices;
+	array_list_t devices;
 };
 
 struct device {
@@ -56,9 +56,9 @@ struct refining_driver_device {
 	apr_pool_t *pool;
 	base_driver_device_service_t baseDriverDeviceService;
 	refining_driver_t driver;
-	SERVICE_REFERENCE baseServiceReference;
-	SERVICE_REGISTRATION deviceRegistration;
-	SERVICE_LISTENER listener;
+	service_reference_t baseServiceReference;
+	service_registration_t deviceRegistration;
+	service_listener_t listener;
 };
 
 celix_status_t refiningDriver_destroy(refining_driver_t driver) {
@@ -126,7 +126,7 @@ static celix_status_t refiningDriver_stopDevice(refining_driver_device_t device)
 }
 
 
-static celix_status_t refiningDriver_serviceChanged(SERVICE_LISTENER listener, SERVICE_EVENT event) {
+static celix_status_t refiningDriver_serviceChanged(service_listener_t listener, service_event_t event) {
 	celix_status_t status =  CELIX_SUCCESS;
 	refining_driver_device_t device = listener->handle;
 	if (event->type == SERVICE_EVENT_UNREGISTERING) {
@@ -155,7 +155,7 @@ static apr_status_t refining_driver_cleanup_device(void *handler) {
 	return status;
 }
 
-celix_status_t refiningDriver_createDevice(refining_driver_t driver, SERVICE_REFERENCE reference, base_driver_device_service_t baseService, refining_driver_device_t *device) {
+celix_status_t refiningDriver_createDevice(refining_driver_t driver, service_reference_t reference, base_driver_device_service_t baseService, refining_driver_device_t *device) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_pool_t *devicePool = NULL;
 	apr_status_t aprStatus = apr_pool_create(&devicePool, driver->pool);
@@ -171,10 +171,10 @@ celix_status_t refiningDriver_createDevice(refining_driver_t driver, SERVICE_REF
 				(*device)->deviceRegistration=NULL;
 				(*device)->listener=NULL;
 
-				SERVICE_LISTENER listener = apr_palloc(devicePool, sizeof(*listener));
+				service_listener_t listener = apr_palloc(devicePool, sizeof(*listener));
 				listener->pool=devicePool;
 				listener->handle=(void *)(*device);
-				listener->serviceChanged=(celix_status_t (*)(void * listener, SERVICE_EVENT event))refiningDriver_serviceChanged;
+				listener->serviceChanged=(celix_status_t (*)(void * listener, service_event_t event))refiningDriver_serviceChanged;
 				bundleContext_addServiceListener(driver->context, listener, NULL);
 				(*device)->listener=listener;
 
@@ -194,7 +194,7 @@ static celix_status_t refiningDriver_registerDevice(refining_driver_t driver, re
 	refining_driver_device_service_t service = NULL;
 	status = refiningDriverDevice_createService(device, &service);
 	if (status == CELIX_SUCCESS) {
-		PROPERTIES props = properties_create();
+		properties_t props = properties_create();
 		properties_set(props, DEVICE_CATEGORY, REFINING_DRIVER_DEVICE_CATEGORY);
 		properties_set(props, DEVICE_SERIAL, serial);
 		status = bundleContext_registerService(driver->context, DEVICE_SERVICE_NAME, service, props, &device->deviceRegistration);
@@ -206,7 +206,7 @@ static celix_status_t refiningDriver_registerDevice(refining_driver_t driver, re
 	return status;
 }
 
-celix_status_t refiningDriver_attach(void * driverHandler, SERVICE_REFERENCE reference, char **result) {
+celix_status_t refiningDriver_attach(void * driverHandler, service_reference_t reference, char **result) {
 	printf("REFINING_DRIVER: attached called\n");
 	celix_status_t status = CELIX_SUCCESS;
 	refining_driver_t driver = driverHandler;
@@ -227,14 +227,14 @@ celix_status_t refiningDriver_attach(void * driverHandler, SERVICE_REFERENCE ref
 	return status;
 }
 
-celix_status_t refiningDriver_match(void *driverHandler, SERVICE_REFERENCE reference, int *value) {
+celix_status_t refiningDriver_match(void *driverHandler, service_reference_t reference, int *value) {
 	printf("REFINING_DRIVER: match called\n");
 	int match = 0;
 	celix_status_t status = CELIX_SUCCESS;
 	refining_driver_t driver = driverHandler;
 
-	SERVICE_REGISTRATION registration = NULL;
-	PROPERTIES properties = NULL;
+	service_registration_t registration = NULL;
+	properties_t properties = NULL;
 	status = serviceReference_getServiceRegistration(reference, &registration);
 	if (status == CELIX_SUCCESS) {
 		status = serviceRegistration_getProperties(registration, &properties);

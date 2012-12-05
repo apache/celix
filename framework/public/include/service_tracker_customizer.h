@@ -33,10 +33,10 @@
 #include "celix_errno.h"
 #include "framework_exports.h"
 
-typedef celix_status_t (*addingCallback)(void *handle, SERVICE_REFERENCE reference, void **service);
-typedef celix_status_t (*addedCallback)(void * handle, SERVICE_REFERENCE reference, void * service);
-typedef celix_status_t (*modifiedCallback)(void * handle, SERVICE_REFERENCE reference, void * service);
-typedef celix_status_t (*removedCallback)(void * handle, SERVICE_REFERENCE reference, void * service);
+typedef celix_status_t (*addingCallback)(void *handle, service_reference_t reference, void **service);
+typedef celix_status_t (*addedCallback)(void * handle, service_reference_t reference, void * service);
+typedef celix_status_t (*modifiedCallback)(void * handle, service_reference_t reference, void * service);
+typedef celix_status_t (*removedCallback)(void * handle, service_reference_t reference, void * service);
 
 typedef struct serviceTrackerCustomizer *service_tracker_customizer_t;
 

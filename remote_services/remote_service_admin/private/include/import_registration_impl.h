@@ -39,10 +39,10 @@ struct import_registration {
 
 	service_tracker_t proxyTracker;
 
-	SERVICE_REFERENCE reference;
+	service_reference_t reference;
 	remote_proxy_service_t proxy;
 	import_reference_t importReference;
-	BUNDLE bundle;
+	bundle_t bundle;
 
 	bool closed;
 };

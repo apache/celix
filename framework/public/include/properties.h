@@ -30,15 +30,15 @@
 #include "hash_map.h"
 #include "framework_exports.h"
 
-typedef HASH_MAP PROPERTIES;
+typedef hash_map_t properties_t;
 
-FRAMEWORK_EXPORT PROPERTIES properties_create(void);
-FRAMEWORK_EXPORT void properties_destroy(PROPERTIES properties);
-FRAMEWORK_EXPORT PROPERTIES properties_load(char * filename);
-FRAMEWORK_EXPORT void properties_store(PROPERTIES properties, char * file, char * header);
+FRAMEWORK_EXPORT properties_t properties_create(void);
+FRAMEWORK_EXPORT void properties_destroy(properties_t properties);
+FRAMEWORK_EXPORT properties_t properties_load(char * filename);
+FRAMEWORK_EXPORT void properties_store(properties_t properties, char * file, char * header);
 
-FRAMEWORK_EXPORT char * properties_get(PROPERTIES properties, char * key);
-FRAMEWORK_EXPORT char * properties_getWithDefault(PROPERTIES properties, char * key, char * defaultValue);
-FRAMEWORK_EXPORT char * properties_set(PROPERTIES properties, char * key, char * value);
+FRAMEWORK_EXPORT char * properties_get(properties_t properties, char * key);
+FRAMEWORK_EXPORT char * properties_getWithDefault(properties_t properties, char * key, char * defaultValue);
+FRAMEWORK_EXPORT char * properties_set(properties_t properties, char * key, char * value);
 
 #endif /* PROPERTIES_H_ */

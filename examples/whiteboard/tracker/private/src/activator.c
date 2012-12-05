@@ -34,7 +34,7 @@
 struct data {
 	bundle_context_t context;
 	service_tracker_t tracker;
-	ARRAY_LIST publishers;
+	array_list_t publishers;
 	apr_thread_t *sender;
 	bool running;
 };
@@ -47,13 +47,13 @@ static void *APR_THREAD_FUNC trk_send(apr_thread_t *thd, void *handle) {
 			PUBLISHER_SERVICE pub = arrayList_get(data->publishers, i);
 			pub->invoke(pub->publisher, "test");
 		}
-		apr_sleep(1);
+		apr_sleep(1000000);
 	}
 	apr_thread_exit(thd, APR_SUCCESS);
 	return NULL;
 }
 
-celix_status_t addingServ(void * handle, SERVICE_REFERENCE ref, void **service) {
+celix_status_t addingServ(void * handle, service_reference_t ref, void **service) {
     struct data * data = (struct data *) handle;
 
     printf("Adding\n");
@@ -62,20 +62,20 @@ celix_status_t addingServ(void * handle, SERVICE_REFERENCE ref, void **service) 
 	return CELIX_SUCCESS;
 }
 
-celix_status_t addedServ(void * handle, SERVICE_REFERENCE ref, void * service) {
+celix_status_t addedServ(void * handle, service_reference_t ref, void * service) {
 	struct data * data = (struct data *) handle;
 	arrayList_add(data->publishers, service);
 	printf("Added %p\n", service);
 	return CELIX_SUCCESS;
 }
 
-celix_status_t modifiedServ(void * handle, SERVICE_REFERENCE ref, void * service) {
+celix_status_t modifiedServ(void * handle, service_reference_t ref, void * service) {
 	struct data * data = (struct data *) handle;
 	printf("Modified\n");
 	return CELIX_SUCCESS;
 }
 
-celix_status_t removedServ(void * handle, SERVICE_REFERENCE ref, void * service) {
+celix_status_t removedServ(void * handle, service_reference_t ref, void * service) {
 	struct data * data = (struct data *) handle;
 	arrayList_removeElement(data->publishers, service);
 	printf("Removed %p\n", service);

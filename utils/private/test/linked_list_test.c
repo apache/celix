@@ -31,7 +31,7 @@
 #include "linkedlist.h"
 
 apr_pool_t *memory_pool;
-LINKED_LIST list;
+linked_list_t list;
 
 int setup(void) {
     apr_initialize();

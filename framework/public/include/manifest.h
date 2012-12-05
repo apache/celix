@@ -34,8 +34,8 @@
 
 struct manifest {
 	apr_pool_t *pool;
-	PROPERTIES mainAttributes;
-	HASH_MAP attributes;
+	properties_t mainAttributes;
+	hash_map_t attributes;
 };
 
 typedef struct manifest * MANIFEST;
@@ -44,8 +44,8 @@ celix_status_t manifest_create(apr_pool_t *pool, MANIFEST *manifest);
 celix_status_t manifest_createFromFile(apr_pool_t *pool, char *filename, MANIFEST *manifest);
 
 void manifest_clear(MANIFEST manifest);
-PROPERTIES manifest_getMainAttributes(MANIFEST manifest);
-celix_status_t manifest_getEntries(MANIFEST manifest, HASH_MAP *map);
+properties_t manifest_getMainAttributes(MANIFEST manifest);
+celix_status_t manifest_getEntries(MANIFEST manifest, hash_map_t *map);
 
 celix_status_t manifest_read(MANIFEST manifest, char *filename);
 void manifest_write(MANIFEST manifest, char * filename);

@@ -39,7 +39,7 @@ typedef struct executor * EXECUTOR;
 struct service {
 	apr_pool_t *pool;
 
-	ARRAY_LIST dependencies;
+	array_list_t dependencies;
 	void (*init)(void * userData);
 	void (*start)(void * userData);
 	void (*stop)(void * userData);
@@ -47,13 +47,13 @@ struct service {
 
 	char * serviceName;
 	void * impl;
-	PROPERTIES properties;
+	properties_t properties;
 
 	bundle_context_t context;
 	DEPENDENCY_MANAGER manager;
 
-	SERVICE_REGISTRATION registration;
-	SERVICE_REGISTRATION serviceRegistration;
+	service_registration_t registration;
+	service_registration_t serviceRegistration;
 
 	bool registered;
 
@@ -71,7 +71,7 @@ void serviceComponent_dependencyChanged(SERVICE service, SERVICE_DEPENDENCY depe
 void serviceComponent_dependencyUnavailable(SERVICE service, SERVICE_DEPENDENCY dependency);
 void serviceComponent_start(SERVICE service);
 void serviceComponent_stop(SERVICE service);
-SERVICE serviceComponent_setInterface(SERVICE service, char * serviceName, PROPERTIES properties);
+SERVICE serviceComponent_setInterface(SERVICE service, char * serviceName, properties_t properties);
 SERVICE serviceComponent_setImplementation(SERVICE service, void * implementation);
 void serviceComponent_activateService(SERVICE service, void * arg);
 void serviceComponent_deactivateService(SERVICE service, void * arg);
@@ -88,12 +88,12 @@ void serviceComponent_updateInstance(SERVICE service, void * arg);
 char * serviceComponent_getName(SERVICE service);
 
 
-STATE state_create(ARRAY_LIST dependencies, bool active);
+STATE state_create(array_list_t dependencies, bool active);
 void state_destroy(STATE state);
 bool state_isInactive(STATE state);
 bool state_isWaitingForRequired(STATE state);
 bool state_isTrackingOptional(STATE state);
-ARRAY_LIST state_getDependencies(STATE state);
+array_list_t state_getDependencies(STATE state);
 
 EXECUTOR executor_create(apr_pool_t *memory_pool);
 void executor_enqueue(EXECUTOR executor, SERVICE service, void (*function), void * argument);

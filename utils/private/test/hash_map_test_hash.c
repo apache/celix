@@ -32,7 +32,7 @@
 #include "hash_map.h"
 #include "hash_map_private.h"
 
-HASH_MAP map;
+hash_map_t map;
 
 unsigned int test_hashKeyChar(void * k) {
 	char * str = (char *) k;
@@ -155,7 +155,7 @@ void test_hashMap_getEntry(void) {
 	char * getEntryKey;
 	char * key3 = NULL;
 	char * value3 = "value3";	
-	HASH_MAP_ENTRY entry;
+	hash_map_entry_t entry;
 	
 	hashMap_clear(map, false, false);
 

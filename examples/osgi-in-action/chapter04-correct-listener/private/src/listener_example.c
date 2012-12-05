@@ -34,21 +34,25 @@ struct listenerActivator {
 	apr_pool_t *pool;
 
 	bundle_context_t context;
-	SERVICE_LISTENER listener;
+	service_listener_t listener;
 
 	apr_thread_mutex_t *logServiceReferencesLock;
-	ARRAY_LIST logServiceReferences;
+	array_list_t logServiceReferences;
 
 	bool running;
 	apr_thread_t *logger;
 };
 
-void listenerExample_serviceChanged(SERVICE_LISTENER listener, SERVICE_EVENT event);
+void listenerExample_serviceChanged(service_listener_t listener, service_event_t event);
 celix_status_t listenerExample_getLogService(struct listenerActivator *activator, log_service_t *service);
 
 static void *APR_THREAD_FUNC listenerExample_logger(apr_thread_t *thd, void *activator);
 
 celix_status_t listenerExample_alternativeLog(struct listenerActivator *activator, char *message);
+
+celix_status_t ref_equals(void *a, void *b, bool *equals) {
+	return serviceReference_equals(a, b, equals);
+}
 
 celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -68,7 +72,7 @@ celix_status_t bundleActivator_create(bundle_context_t context, void **userData)
 				activator->listener = NULL;
 				apr_thread_mutex_create(&activator->logServiceReferencesLock, 0, subpool);
 				activator->logServiceReferences = NULL;
-				arrayList_create(subpool, &activator->logServiceReferences);
+				arrayList_createWithEquals(subpool, ref_equals, &activator->logServiceReferences);
 				activator->running = false;
 				activator->logger = NULL;
 			}
@@ -83,16 +87,20 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 	celix_status_t status = CELIX_SUCCESS;
 	struct listenerActivator *activator = userData;
 
-	SERVICE_LISTENER listener = apr_palloc(activator->pool, sizeof(struct listenerActivator));
+	service_listener_t listener = apr_palloc(activator->pool, sizeof(struct listenerActivator));
 	if (!listener) {
 		status = CELIX_ENOMEM;
 	} else {
 		char filter[30];
-		ARRAY_LIST logServices = NULL;
+		array_list_t logServices = NULL;
+		apr_pool_t *pool;
 		sprintf(filter, "(objectClass=%s)", LOG_SERVICE_NAME);
+
+		bundleContext_getMemoryPool(context, &pool);
 
 		listener->handle = activator;
 		listener->serviceChanged = (void *) listenerExample_serviceChanged;
+		listener->pool = pool;
 		status = bundleContext_addServiceListener(context, listener, filter);
 		if (status == CELIX_SUCCESS) {
 			activator->listener = listener;
@@ -102,8 +110,8 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 		if (status == CELIX_SUCCESS) {
 			int i;
 			for (i = 0; i < arrayList_size(logServices); i++) {
-				SERVICE_REFERENCE logService = (SERVICE_REFERENCE) arrayList_get(logServices, i);
-				SERVICE_EVENT event = apr_palloc(activator->pool, sizeof(*event));
+				service_reference_t logService = (service_reference_t) arrayList_get(logServices, i);
+				service_event_t event = apr_palloc(activator->pool, sizeof(*event));
 				event->reference = logService;
 				event->type = SERVICE_EVENT_REGISTERED;
 
@@ -138,7 +146,7 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context
 	return status;
 }
 
-void listenerExample_serviceChanged(SERVICE_LISTENER listener, SERVICE_EVENT event) {
+void listenerExample_serviceChanged(service_listener_t listener, service_event_t event) {
 	struct listenerActivator *activator = listener->handle;
 	apr_thread_mutex_lock(activator->logServiceReferencesLock);
 
@@ -164,7 +172,7 @@ celix_status_t listenerExample_getLogService(struct listenerActivator *activator
 
 	apr_thread_mutex_lock(activator->logServiceReferencesLock);
 	if (arrayList_size(activator->logServiceReferences) > 0) {
-		SERVICE_REFERENCE reference = arrayList_get(activator->logServiceReferences, 0);
+		service_reference_t reference = arrayList_get(activator->logServiceReferences, 0);
 		status = bundleContext_getService(activator->context, reference, (void *) service);
 	}
 	apr_thread_mutex_unlock(activator->logServiceReferencesLock);
@@ -183,7 +191,7 @@ static void *APR_THREAD_FUNC listenerExample_logger(apr_thread_t *thd, void *dat
 		} else {
 			listenerExample_alternativeLog(activator, "No LogService available. Printing to standard out.");
 		}
-		apr_sleep(5);
+		apr_sleep(5000000);
 	}
 
 	return NULL;

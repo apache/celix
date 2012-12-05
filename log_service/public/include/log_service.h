@@ -47,7 +47,7 @@ typedef enum log_level log_level_t;
 struct log_service {
     log_service_data_t logger;
     celix_status_t (*log)(log_service_data_t logger, log_level_t level, char * message);
-    celix_status_t (*logSr)(log_service_data_t logger, SERVICE_REFERENCE reference, log_level_t level, char * message);
+    celix_status_t (*logSr)(log_service_data_t logger, service_reference_t reference, log_level_t level, char * message);
 };
 
 typedef struct log_service *log_service_t;

@@ -40,7 +40,7 @@
 void squareShape_draw(SIMPLE_SHAPE shape, GdkPixmap *pixMap, GtkWidget *widget, gdouble x, gdouble y);
 
 SIMPLE_SHAPE squareShape_create(bundle_context_t context) {
-	BUNDLE bundle;
+	bundle_t bundle;
 	apr_pool_t *pool;
 	SIMPLE_SHAPE shape = (SIMPLE_SHAPE) malloc(sizeof(*shape));
 	bundleContext_getBundle(context, &bundle);

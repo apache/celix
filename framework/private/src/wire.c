@@ -29,19 +29,19 @@
 #include "wire.h"
 
 struct wire {
-	MODULE importer;
-	REQUIREMENT requirement;
-	MODULE exporter;
-	CAPABILITY capability;
+	module_t importer;
+	requirement_t requirement;
+	module_t exporter;
+	capability_t capability;
 };
 
 apr_status_t wire_destroy(void *wireP);
 
-celix_status_t wire_create(apr_pool_t *pool, MODULE importer, REQUIREMENT requirement,
-		MODULE exporter, CAPABILITY capability, WIRE *wire) {
+celix_status_t wire_create(apr_pool_t *pool, module_t importer, requirement_t requirement,
+		module_t exporter, capability_t capability, wire_t *wire) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	(*wire) = (WIRE) apr_palloc(pool, sizeof(**wire));
+	(*wire) = (wire_t) apr_palloc(pool, sizeof(**wire));
 	if (!*wire) {
 		status = CELIX_ENOMEM;
 	} else {
@@ -57,7 +57,7 @@ celix_status_t wire_create(apr_pool_t *pool, MODULE importer, REQUIREMENT requir
 }
 
 apr_status_t wire_destroy(void *wireP) {
-	WIRE wire = wireP;
+	wire_t wire = wireP;
 	wire->importer = NULL;
 	wire->requirement = NULL;
 	wire->exporter = NULL;
@@ -65,22 +65,22 @@ apr_status_t wire_destroy(void *wireP) {
 	return APR_SUCCESS;
 }
 
-celix_status_t wire_getCapability(WIRE wire, CAPABILITY *capability) {
+celix_status_t wire_getCapability(wire_t wire, capability_t *capability) {
 	*capability = wire->capability;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t wire_getRequirement(WIRE wire, REQUIREMENT *requirement) {
+celix_status_t wire_getRequirement(wire_t wire, requirement_t *requirement) {
 	*requirement = wire->requirement;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t wire_getImporter(WIRE wire, MODULE *importer) {
+celix_status_t wire_getImporter(wire_t wire, module_t *importer) {
 	*importer = wire->importer;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t wire_getExporter(WIRE wire, MODULE *exporter) {
+celix_status_t wire_getExporter(wire_t wire, module_t *exporter) {
 	*exporter = wire->exporter;
 	return CELIX_SUCCESS;
 }

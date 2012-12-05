@@ -46,11 +46,11 @@ struct topology_manager {
 	apr_pool_t *pool;
 	bundle_context_t context;
 
-	ARRAY_LIST rsaList;
-	HASH_MAP exportedServices;
-	HASH_MAP importedServices;
+	array_list_t rsaList;
+	hash_map_t exportedServices;
+	hash_map_t importedServices;
 
-	HASH_MAP importInterests;
+	hash_map_t importInterests;
 };
 
 struct import_interest {
@@ -58,7 +58,7 @@ struct import_interest {
 	int refs;
 };
 
-celix_status_t topologyManager_notifyListeners(topology_manager_t manager, remote_service_admin_service_t rsa,  ARRAY_LIST registrations);
+celix_status_t topologyManager_notifyListeners(topology_manager_t manager, remote_service_admin_service_t rsa,  array_list_t registrations);
 celix_status_t topologyManager_notifyListenersOfRemoval(topology_manager_t manager, remote_service_admin_service_t rsa,  export_registration_t export);
 
 celix_status_t topologyManager_getUUID(topology_manager_t manager, char **uuidStr);
@@ -82,7 +82,7 @@ celix_status_t topologyManager_create(bundle_context_t context, apr_pool_t *pool
 	return status;
 }
 
-celix_status_t topologyManager_rsaAdding(void * handle, SERVICE_REFERENCE reference, void **service) {
+celix_status_t topologyManager_rsaAdding(void * handle, service_reference_t reference, void **service) {
 	celix_status_t status = CELIX_SUCCESS;
 	topology_manager_t manager = handle;
 
@@ -91,7 +91,7 @@ celix_status_t topologyManager_rsaAdding(void * handle, SERVICE_REFERENCE refere
 	return status;
 }
 
-celix_status_t topologyManager_rsaAdded(void * handle, SERVICE_REFERENCE reference, void * service) {
+celix_status_t topologyManager_rsaAdded(void * handle, service_reference_t reference, void * service) {
 	celix_status_t status = CELIX_SUCCESS;
 	topology_manager_t manager = handle;
 
@@ -101,13 +101,13 @@ celix_status_t topologyManager_rsaAdded(void * handle, SERVICE_REFERENCE referen
 	return status;
 }
 
-celix_status_t topologyManager_rsaModified(void * handle, SERVICE_REFERENCE reference, void * service) {
+celix_status_t topologyManager_rsaModified(void * handle, service_reference_t reference, void * service) {
 	celix_status_t status = CELIX_SUCCESS;
 	topology_manager_t manager = handle;
 	return status;
 }
 
-celix_status_t topologyManager_rsaRemoved(void * handle, SERVICE_REFERENCE reference, void * service) {
+celix_status_t topologyManager_rsaRemoved(void * handle, service_reference_t reference, void * service) {
 	celix_status_t status = CELIX_SUCCESS;
 	topology_manager_t manager = handle;
 
@@ -117,13 +117,13 @@ celix_status_t topologyManager_rsaRemoved(void * handle, SERVICE_REFERENCE refer
 	return status;
 }
 
-celix_status_t topologyManager_serviceChanged(void *listener, SERVICE_EVENT event) {
+celix_status_t topologyManager_serviceChanged(void *listener, service_event_t event) {
 	celix_status_t status = CELIX_SUCCESS;
-	SERVICE_LISTENER listen = listener;
+	service_listener_t listen = listener;
 	topology_manager_t manager = listen->handle;
-	SERVICE_REGISTRATION registration = NULL;
+	service_registration_t registration = NULL;
 	serviceReference_getServiceRegistration(event->reference, &registration);
-	PROPERTIES props = NULL;
+	properties_t props = NULL;
 	serviceRegistration_getProperties(registration, &props);
 	char *name = properties_get(props, (char *) OBJECTCLASS);
 	char *export = properties_get(props, (char *) SERVICE_EXPORTED_INTERFACES);
@@ -159,10 +159,10 @@ celix_status_t topologyManager_endpointRemoved(void *handle, endpoint_descriptio
 	printf("TOPOLOGY_MANAGER: Endpoint removed\n");
 
 	if (hashMap_containsKey(manager->importedServices, endpoint)) {
-		HASH_MAP imports = hashMap_get(manager->importedServices, endpoint);
-		HASH_MAP_ITERATOR iter = hashMapIterator_create(imports);
+		hash_map_t imports = hashMap_get(manager->importedServices, endpoint);
+		hash_map_iterator_t iter = hashMapIterator_create(imports);
 		while (hashMapIterator_hasNext(iter)) {
-			HASH_MAP_ENTRY entry = hashMapIterator_nextEntry(iter);
+			hash_map_entry_t entry = hashMapIterator_nextEntry(iter);
 			remote_service_admin_service_t rsa = hashMapEntry_getKey(entry);
 			import_registration_t import = hashMapEntry_getValue(entry);
 			rsa->importRegistration_close(import);
@@ -172,16 +172,16 @@ celix_status_t topologyManager_endpointRemoved(void *handle, endpoint_descriptio
 	return status;
 }
 
-celix_status_t topologyManager_exportService(topology_manager_t manager, SERVICE_REFERENCE reference) {
+celix_status_t topologyManager_exportService(topology_manager_t manager, service_reference_t reference) {
 	celix_status_t status = CELIX_SUCCESS;
-	HASH_MAP exports = hashMap_create(NULL, NULL, NULL, NULL);
+	hash_map_t exports = hashMap_create(NULL, NULL, NULL, NULL);
 
 	hashMap_put(manager->exportedServices, reference, exports);
 
 	if (arrayList_size(manager->rsaList) == 0) {
 		char *symbolicName = NULL;
-		MODULE module = NULL;
-		BUNDLE bundle = NULL;
+		module_t module = NULL;
+		bundle_t bundle = NULL;
 		serviceReference_getBundle(reference, &bundle);
 		status = bundle_getCurrentModule(bundle, &module);
 		if (status == CELIX_SUCCESS) {
@@ -196,7 +196,7 @@ celix_status_t topologyManager_exportService(topology_manager_t manager, SERVICE
 		for (iter = 0; iter < size; iter++) {
 			remote_service_admin_service_t rsa = arrayList_get(manager->rsaList, iter);
 
-			ARRAY_LIST endpoints = NULL;
+			array_list_t endpoints = NULL;
 			status = rsa->exportService(rsa->admin, reference, NULL, &endpoints);
 			if (status == CELIX_SUCCESS) {
 				hashMap_put(exports, rsa, endpoints);
@@ -208,19 +208,19 @@ celix_status_t topologyManager_exportService(topology_manager_t manager, SERVICE
 	return status;
 }
 
-celix_status_t topologyManager_notifyListeners(topology_manager_t manager, remote_service_admin_service_t rsa,  ARRAY_LIST registrations) {
+celix_status_t topologyManager_notifyListeners(topology_manager_t manager, remote_service_admin_service_t rsa,  array_list_t registrations) {
 	celix_status_t status = CELIX_SUCCESS;
-	ARRAY_LIST endpointListeners = NULL;
+	array_list_t endpointListeners = NULL;
 
 	status = bundleContext_getServiceReferences(manager->context, endpoint_listener_service, NULL, &endpointListeners);
 	if (status == CELIX_SUCCESS) {
 		if (endpointListeners != NULL) {
 			int eplIt;
 			for (eplIt = 0; eplIt < arrayList_size(endpointListeners); eplIt++) {
-				SERVICE_REFERENCE eplRef = arrayList_get(endpointListeners, eplIt);
-				SERVICE_REGISTRATION registration = NULL;
+				service_reference_t eplRef = arrayList_get(endpointListeners, eplIt);
+				service_registration_t registration = NULL;
 				serviceReference_getServiceRegistration(eplRef, &registration);
-				PROPERTIES props = NULL;
+				properties_t props = NULL;
 				serviceRegistration_getProperties(registration, &props);
 				char *scope = properties_get(props, (char *) ENDPOINT_LISTENER_SCOPE);
 				filter_t filter = filter_create(scope, manager->pool);
@@ -254,7 +254,7 @@ celix_status_t topologyManager_notifyListeners(topology_manager_t manager, remot
 
 celix_status_t topologyManager_importService(topology_manager_t manager, endpoint_description_t endpoint) {
 	celix_status_t status = CELIX_SUCCESS;
-	HASH_MAP imports = hashMap_create(NULL, NULL, NULL, NULL);
+	hash_map_t imports = hashMap_create(NULL, NULL, NULL, NULL);
 
 	hashMap_put(manager->importedServices, endpoint, imports);
 
@@ -277,24 +277,24 @@ celix_status_t topologyManager_importService(topology_manager_t manager, endpoin
 	return status;
 }
 
-celix_status_t topologyManager_removeService(topology_manager_t manager, SERVICE_REFERENCE reference) {
+celix_status_t topologyManager_removeService(topology_manager_t manager, service_reference_t reference) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	SERVICE_REGISTRATION registration = NULL;
+	service_registration_t registration = NULL;
 	serviceReference_getServiceRegistration(reference, &registration);
-	PROPERTIES props = NULL;
+	properties_t props = NULL;
 	serviceRegistration_getProperties(registration, &props);
 	char *name = properties_get(props, (char *) OBJECTCLASS);
 
 	printf("TOPOLOGY_MANAGER: Remove Service: %s.\n", name);
 
 	if (hashMap_containsKey(manager->exportedServices, reference)) {
-		HASH_MAP exports = hashMap_get(manager->exportedServices, reference);
-		HASH_MAP_ITERATOR iter = hashMapIterator_create(exports);
+		hash_map_t exports = hashMap_get(manager->exportedServices, reference);
+		hash_map_iterator_t iter = hashMapIterator_create(exports);
 		while (hashMapIterator_hasNext(iter)) {
-			HASH_MAP_ENTRY entry = hashMapIterator_nextEntry(iter);
+			hash_map_entry_t entry = hashMapIterator_nextEntry(iter);
 			remote_service_admin_service_t rsa = hashMapEntry_getKey(entry);
-			ARRAY_LIST exports = hashMapEntry_getValue(entry);
+			array_list_t exports = hashMapEntry_getValue(entry);
 			int exportsIter = 0;
 			for (exportsIter = 0; exportsIter < arrayList_size(exports); exportsIter++) {
 				export_registration_t export = arrayList_get(exports, exportsIter);
@@ -310,14 +310,14 @@ celix_status_t topologyManager_removeService(topology_manager_t manager, SERVICE
 
 celix_status_t topologyManager_notifyListenersOfRemoval(topology_manager_t manager, remote_service_admin_service_t rsa,  export_registration_t export) {
 	celix_status_t status = CELIX_SUCCESS;
-	ARRAY_LIST endpointListeners = NULL;
+	array_list_t endpointListeners = NULL;
 
 	status = bundleContext_getServiceReferences(manager->context, endpoint_listener_service, NULL, &endpointListeners);
 	if (status == CELIX_SUCCESS) {
 		if (endpointListeners != NULL) {
 			int eplIt;
 			for (eplIt = 0; eplIt < arrayList_size(endpointListeners); eplIt++) {
-				SERVICE_REFERENCE eplRef = arrayList_get(endpointListeners, eplIt);
+				service_reference_t eplRef = arrayList_get(endpointListeners, eplIt);
 				endpoint_listener_t epl = NULL;
 				status = bundleContext_getService(manager->context, eplRef, (void **) &epl);
 				if (status == CELIX_SUCCESS) {
@@ -350,7 +350,7 @@ celix_status_t topologyManager_extendFilter(topology_manager_t manager, char *fi
 	return status;
 }
 
-celix_status_t topologyManager_listenerAdded(void *handle, ARRAY_LIST listeners) {
+celix_status_t topologyManager_listenerAdded(void *handle, array_list_t listeners) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	topology_manager_t manager = handle;
@@ -359,7 +359,7 @@ celix_status_t topologyManager_listenerAdded(void *handle, ARRAY_LIST listeners)
 		listener_hook_info_t info = arrayList_get(listeners, i);
 		printf("TOPOLOGY_MANAGER: listener with filter \"%s\" added\n", info->filter);
 
-		BUNDLE bundle, self;
+		bundle_t bundle, self;
 		bundleContext_getBundle(info->context, &bundle);
 		bundleContext_getBundle(manager->context, &self);
 		if (bundle == self) {
@@ -387,7 +387,7 @@ celix_status_t topologyManager_listenerAdded(void *handle, ARRAY_LIST listeners)
 	return status;
 }
 
-celix_status_t topologyManager_listenerRemoved(void *handle, ARRAY_LIST listeners) {
+celix_status_t topologyManager_listenerRemoved(void *handle, array_list_t listeners) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	topology_manager_t manager = handle;

@@ -31,10 +31,10 @@
 #include "bundle_context.h"
 #include "constants.h"
 
-celix_status_t serviceDependency_addingService(void * handle, SERVICE_REFERENCE reference, void **service);
-celix_status_t serviceDependency_addedService(void * handle, SERVICE_REFERENCE reference, void * service);
-celix_status_t serviceDependency_modifiedService(void * handle, SERVICE_REFERENCE reference, void * service);
-celix_status_t serviceDependency_removedService(void * handle, SERVICE_REFERENCE reference, void * service);
+celix_status_t serviceDependency_addingService(void * handle, service_reference_t reference, void **service);
+celix_status_t serviceDependency_addedService(void * handle, service_reference_t reference, void * service);
+celix_status_t serviceDependency_modifiedService(void * handle, service_reference_t reference, void * service);
+celix_status_t serviceDependency_removedService(void * handle, service_reference_t reference, void * service);
 
 SERVICE_DEPENDENCY serviceDependency_create(bundle_context_t context) {
 	SERVICE_DEPENDENCY dependency = (SERVICE_DEPENDENCY) malloc(sizeof(*dependency));
@@ -97,7 +97,7 @@ void serviceDependency_stop(SERVICE_DEPENDENCY dependency, SERVICE service) {
 	serviceTracker_close(dependency->tracker);
 }
 
-celix_status_t serviceDependency_addingService(void * handle, SERVICE_REFERENCE reference, void **service) {
+celix_status_t serviceDependency_addingService(void * handle, service_reference_t reference, void **service) {
 	SERVICE_DEPENDENCY dependency = (SERVICE_DEPENDENCY) handle;
 	bundleContext_getService(dependency->context, reference, service);
 	dependency->reference = reference;
@@ -105,7 +105,7 @@ celix_status_t serviceDependency_addingService(void * handle, SERVICE_REFERENCE 
 	return CELIX_SUCCESS;
 }
 
-celix_status_t serviceDependency_addedService(void * handle, SERVICE_REFERENCE reference, void * service) {
+celix_status_t serviceDependency_addedService(void * handle, service_reference_t reference, void * service) {
 	SERVICE_DEPENDENCY dependency = (SERVICE_DEPENDENCY) handle;
 	if (!dependency->available) {
 		dependency->available = true;
@@ -125,7 +125,7 @@ void serviceDependency_invokeAdded(SERVICE_DEPENDENCY dependency) {
 	}
 }
 
-celix_status_t serviceDependency_modifiedService(void * handle, SERVICE_REFERENCE reference, void * service) {
+celix_status_t serviceDependency_modifiedService(void * handle, service_reference_t reference, void * service) {
 	SERVICE_DEPENDENCY dependency = (SERVICE_DEPENDENCY) handle;
 	dependency->reference = reference;
 	dependency->serviceInstance = service;
@@ -137,7 +137,7 @@ celix_status_t serviceDependency_modifiedService(void * handle, SERVICE_REFERENC
 	return CELIX_SUCCESS;
 }
 
-celix_status_t serviceDependency_removedService(void * handle, SERVICE_REFERENCE reference, void * service) {
+celix_status_t serviceDependency_removedService(void * handle, service_reference_t reference, void * service) {
 	bool result;
 	SERVICE_DEPENDENCY dependency = (SERVICE_DEPENDENCY) handle;
 	if (dependency->available && serviceTracker_getService(dependency->tracker) == NULL) {
@@ -193,9 +193,9 @@ SERVICE_DEPENDENCY serviceDependency_setAutoConfigure(SERVICE_DEPENDENCY depende
 	return dependency;
 }
 
-SERVICE_DEPENDENCY serviceDependency_setCallbacks(SERVICE_DEPENDENCY dependency, void (*added)(void * handle, SERVICE_REFERENCE reference, void *),
-		void (*changed)(void * handle, SERVICE_REFERENCE reference, void *),
-		void (*removed)(void * handle, SERVICE_REFERENCE reference, void *)) {
+SERVICE_DEPENDENCY serviceDependency_setCallbacks(SERVICE_DEPENDENCY dependency, void (*added)(void * handle, service_reference_t reference, void *),
+		void (*changed)(void * handle, service_reference_t reference, void *),
+		void (*removed)(void * handle, service_reference_t reference, void *)) {
 	dependency->added = added;
 	dependency->changed = changed;
 	dependency->removed = removed;

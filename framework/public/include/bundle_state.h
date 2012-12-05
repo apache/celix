@@ -37,6 +37,6 @@ enum bundleState
 	BUNDLE_ACTIVE = 0x00000020,
 };
 
-typedef enum bundleState BUNDLE_STATE;
+typedef enum bundleState bundle_state_e;
 
 #endif /* BUNDLE_STATE_H_ */

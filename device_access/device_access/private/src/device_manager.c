@@ -44,15 +44,15 @@
 struct device_manager {
 	apr_pool_t *pool;
 	bundle_context_t context;
-	HASH_MAP devices;
-	HASH_MAP drivers;
-	ARRAY_LIST locators;
+	hash_map_t devices;
+	hash_map_t drivers;
+	array_list_t locators;
 	driver_selector_service_t selector;
 };
 
-static celix_status_t deviceManager_attachAlgorithm(device_manager_t manager, SERVICE_REFERENCE ref, void *service);
-static celix_status_t deviceManager_getIdleDevices(device_manager_t manager, apr_pool_t *pool, ARRAY_LIST *idleDevices);
-static celix_status_t deviceManager_isDriverBundle(device_manager_t manager, BUNDLE bundle, bool *isDriver);
+static celix_status_t deviceManager_attachAlgorithm(device_manager_t manager, service_reference_t ref, void *service);
+static celix_status_t deviceManager_getIdleDevices(device_manager_t manager, apr_pool_t *pool, array_list_t *idleDevices);
+static celix_status_t deviceManager_isDriverBundle(device_manager_t manager, bundle_t bundle, bool *isDriver);
 
 celix_status_t deviceManager_create(apr_pool_t *pool, bundle_context_t context, device_manager_t *manager) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -88,45 +88,45 @@ celix_status_t deviceManager_destroy(device_manager_t manager) {
 	return status;
 }
 
-celix_status_t deviceManager_selectorAdded(void * handle, SERVICE_REFERENCE ref, void * service) {
+celix_status_t deviceManager_selectorAdded(void * handle, service_reference_t ref, void * service) {
 	printf("DEVICE_MANAGER: Add selector\n");
 	device_manager_t manager = handle;
 	manager->selector = (driver_selector_service_t) service;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t deviceManager_selectorModified(void * handle, SERVICE_REFERENCE ref, void * service) {
+celix_status_t deviceManager_selectorModified(void * handle, service_reference_t ref, void * service) {
 	printf("DEVICE_MANAGER: Modify selector\n");
 	return CELIX_SUCCESS;
 }
 
-celix_status_t deviceManager_selectorRemoved(void * handle, SERVICE_REFERENCE ref, void * service) {
+celix_status_t deviceManager_selectorRemoved(void * handle, service_reference_t ref, void * service) {
 	printf("DEVICE_MANAGER: Remove selector\n");
 	device_manager_t manager = handle;
 	manager->selector = NULL;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t deviceManager_locatorAdded(void * handle, SERVICE_REFERENCE ref, void * service) {
+celix_status_t deviceManager_locatorAdded(void * handle, service_reference_t ref, void * service) {
 	printf("DEVICE_MANAGER: Add locator\n");
 	device_manager_t manager = handle;
 	arrayList_add(manager->locators, service);
 	return CELIX_SUCCESS;
 }
 
-celix_status_t deviceManager_locatorModified(void * handle, SERVICE_REFERENCE ref, void * service) {
+celix_status_t deviceManager_locatorModified(void * handle, service_reference_t ref, void * service) {
 	printf("DEVICE_MANAGER: Modify locator\n");
 	return CELIX_SUCCESS;
 }
 
-celix_status_t deviceManager_locatorRemoved(void * handle, SERVICE_REFERENCE ref, void * service) {
+celix_status_t deviceManager_locatorRemoved(void * handle, service_reference_t ref, void * service) {
 	printf("DEVICE_MANAGER: Remove locator\n");
 	device_manager_t manager = handle;
 	arrayList_removeElement(manager->locators, service);
 	return CELIX_SUCCESS;
 }
 
-celix_status_t deviceManager_deviceAdded(void * handle, SERVICE_REFERENCE ref, void * service) {
+celix_status_t deviceManager_deviceAdded(void * handle, service_reference_t ref, void * service) {
 	celix_status_t status = CELIX_SUCCESS;
 	printf("DEVICE_MANAGER: Add device\n");
 	device_manager_t manager = handle;
@@ -136,7 +136,7 @@ celix_status_t deviceManager_deviceAdded(void * handle, SERVICE_REFERENCE ref, v
 	return status;
 }
 
-static celix_status_t deviceManager_attachAlgorithm(device_manager_t manager, SERVICE_REFERENCE ref, void *service) {
+static celix_status_t deviceManager_attachAlgorithm(device_manager_t manager, service_reference_t ref, void *service) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	apr_pool_t *attachPool = NULL;
@@ -147,10 +147,10 @@ static celix_status_t deviceManager_attachAlgorithm(device_manager_t manager, SE
 		driver_loader_t loader = NULL;
 		status = driverLoader_create(attachPool, manager->context, &loader);
 		if (status == CELIX_SUCCESS) {
-			ARRAY_LIST included = NULL;
-			ARRAY_LIST excluded = NULL;
+			array_list_t included = NULL;
+			array_list_t excluded = NULL;
 
-			ARRAY_LIST driverIds = NULL;
+			array_list_t driverIds = NULL;
 
 			hashMap_put(manager->devices, ref, service);
 
@@ -158,15 +158,15 @@ static celix_status_t deviceManager_attachAlgorithm(device_manager_t manager, SE
 			if (status == CELIX_SUCCESS) {
 				status = arrayList_create(attachPool, &excluded);
 				if (status == CELIX_SUCCESS) {
-					SERVICE_REGISTRATION registration = NULL;
+					service_registration_t registration = NULL;
 					status = serviceReference_getServiceRegistration(ref, &registration);
 					if (status == CELIX_SUCCESS) {
-						PROPERTIES properties = NULL;
+						properties_t properties = NULL;
 						status = serviceRegistration_getProperties(registration, &properties);
 						if (status == CELIX_SUCCESS) {
 							status = driverLoader_findDrivers(loader, attachPool, manager->locators, properties, &driverIds);
 							if (status == CELIX_SUCCESS) {
-								HASH_MAP_ITERATOR iter = hashMapIterator_create(manager->drivers);
+								hash_map_iterator_t iter = hashMapIterator_create(manager->drivers);
 								while (hashMapIterator_hasNext(iter)) {
 									driver_attributes_t driverAttributes = hashMapIterator_nextValue(iter);
 									arrayList_add(included, driverAttributes);
@@ -176,7 +176,7 @@ static celix_status_t deviceManager_attachAlgorithm(device_manager_t manager, SE
 									celix_status_t substatus = driverAttributes_getDriverId(driverAttributes, &id);
 									if (substatus == CELIX_SUCCESS) {
 										// arrayList_removeElement(driverIds, id);
-										ARRAY_LIST_ITERATOR idsIter = arrayListIterator_create(driverIds);
+										array_list_iterator_t idsIter = arrayListIterator_create(driverIds);
 										while (arrayListIterator_hasNext(idsIter)) {
 											char *value = arrayListIterator_next(idsIter);
 											if (strcmp(value, id) == 0) {
@@ -207,10 +207,10 @@ static celix_status_t deviceManager_attachAlgorithm(device_manager_t manager, SE
 }
 
 celix_status_t deviceManager_matchAttachDriver(device_manager_t manager, apr_pool_t *attachPool, driver_loader_t loader,
-		ARRAY_LIST driverIds, ARRAY_LIST included, ARRAY_LIST excluded, void *service, SERVICE_REFERENCE reference) {
+		array_list_t driverIds, array_list_t included, array_list_t excluded, void *service, service_reference_t reference) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	ARRAY_LIST references = NULL;
+	array_list_t references = NULL;
 
 	int i;
 	for (i = 0; i < arrayList_size(excluded); i++) {
@@ -226,7 +226,7 @@ celix_status_t deviceManager_matchAttachDriver(device_manager_t manager, apr_poo
 	status = driverLoader_loadDrivers(loader, attachPool, manager->locators, driverIds, &references);
 	if (status == CELIX_SUCCESS) {
 		for (i = 0; i < arrayList_size(references); i++) {
-			SERVICE_REFERENCE reference = arrayList_get(references, i);
+			service_reference_t reference = arrayList_get(references, i);
 			driver_attributes_t attributes = hashMap_get(manager->drivers, reference);
 			if (attributes != NULL) {
 				arrayList_add(included, attributes);
@@ -258,10 +258,10 @@ celix_status_t deviceManager_matchAttachDriver(device_manager_t manager, apr_poo
 				if (match == NULL) {
 					status = deviceManager_noDriverFound(manager, service, reference);
 				} else {
-					SERVICE_REGISTRATION registration = NULL;
+					service_registration_t registration = NULL;
 					status = serviceReference_getServiceRegistration(match->reference, &registration);
 					if (status == CELIX_SUCCESS) {
-						PROPERTIES properties = NULL;
+						properties_t properties = NULL;
 						status = serviceRegistration_getProperties(registration, &properties);
 						if (status == CELIX_SUCCESS) {
 							char *driverId = properties_get(properties, (char *) DRIVER_ID);
@@ -273,7 +273,7 @@ celix_status_t deviceManager_matchAttachDriver(device_manager_t manager, apr_poo
 								status = driverAttributes_attach(finalAttributes, reference, &newDriverId);
 								if (status == CELIX_SUCCESS) {
 									if (newDriverId != NULL) {
-										ARRAY_LIST ids = NULL;
+										array_list_t ids = NULL;
 										arrayList_create(attachPool, &ids);
 										arrayList_add(ids, newDriverId);
 										arrayList_add(excluded, finalAttributes);
@@ -299,12 +299,12 @@ celix_status_t deviceManager_matchAttachDriver(device_manager_t manager, apr_poo
 	return status;
 }
 
-celix_status_t deviceManager_noDriverFound(device_manager_t manager, void *service, SERVICE_REFERENCE reference) {
+celix_status_t deviceManager_noDriverFound(device_manager_t manager, void *service, service_reference_t reference) {
 	celix_status_t status = CELIX_SUCCESS;
-	SERVICE_REGISTRATION registration = NULL;
+	service_registration_t registration = NULL;
 	status = serviceReference_getServiceRegistration(reference, &registration);
 	if (status == CELIX_SUCCESS) {
-		PROPERTIES properties = NULL;
+		properties_t properties = NULL;
 		status = serviceRegistration_getProperties(registration, &properties);
 		if (status == CELIX_SUCCESS) {
 			char *objectClass = properties_get(properties, (char *) OBJECTCLASS);
@@ -317,7 +317,7 @@ celix_status_t deviceManager_noDriverFound(device_manager_t manager, void *servi
 	return status;
 }
 
-celix_status_t deviceManager_deviceModified(void * handle, SERVICE_REFERENCE ref, void * service) {
+celix_status_t deviceManager_deviceModified(void * handle, service_reference_t ref, void * service) {
 	printf("DEVICE_MANAGER: Modify device\n");
 	// #TODO the device properties could be changed
 	//device_manager_t manager = handle;
@@ -325,14 +325,14 @@ celix_status_t deviceManager_deviceModified(void * handle, SERVICE_REFERENCE ref
 	return CELIX_SUCCESS;
 }
 
-celix_status_t deviceManager_deviceRemoved(void * handle, SERVICE_REFERENCE ref, void * service) {
+celix_status_t deviceManager_deviceRemoved(void * handle, service_reference_t ref, void * service) {
 	printf("DEVICE_MANAGER: Remove device\n");
 	device_manager_t manager = handle;
 	hashMap_remove(manager->devices, ref);
 	return CELIX_SUCCESS;
 }
 
-celix_status_t deviceManager_driverAdded(void * handle, SERVICE_REFERENCE ref, void * service) {
+celix_status_t deviceManager_driverAdded(void * handle, service_reference_t ref, void * service) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	printf("DEVICE_MANAGER: Add driver\n");
@@ -350,13 +350,13 @@ celix_status_t deviceManager_driverAdded(void * handle, SERVICE_REFERENCE ref, v
 	return status;
 }
 
-celix_status_t deviceManager_driverModified(void * handle, SERVICE_REFERENCE ref, void * service) {
+celix_status_t deviceManager_driverModified(void * handle, service_reference_t ref, void * service) {
 	printf("DEVICE_MANAGER: Modify driver\n");
 	// #TODO the driver properties could be changed?
 	return CELIX_SUCCESS;
 }
 
-celix_status_t deviceManager_driverRemoved(void * handle, SERVICE_REFERENCE ref, void * service) {
+celix_status_t deviceManager_driverRemoved(void * handle, service_reference_t ref, void * service) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	printf("DEVICE_MANAGER: Remove driver\n");
@@ -368,18 +368,18 @@ celix_status_t deviceManager_driverRemoved(void * handle, SERVICE_REFERENCE ref,
 	if (aprStatus != APR_SUCCESS) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
-		ARRAY_LIST idleDevices = NULL;
+		array_list_t idleDevices = NULL;
 		status = deviceManager_getIdleDevices(manager, idleCheckPool, &idleDevices);
 		if (status == CELIX_SUCCESS) {
 			int i;
 			for (i = 0; i < arrayList_size(idleDevices); i++) {
 				celix_status_t forStatus = CELIX_SUCCESS;
-				SERVICE_REFERENCE ref = arrayList_get(idleDevices, i);
+				service_reference_t ref = arrayList_get(idleDevices, i);
 				char *bsn = NULL;
-				BUNDLE bundle = NULL;
+				bundle_t bundle = NULL;
 				forStatus = serviceReference_getBundle(ref, &bundle);
 				if (forStatus == CELIX_SUCCESS) {
-					MODULE module = NULL;
+					module_t module = NULL;
 					forStatus = bundle_getCurrentModule(bundle, &module);
 					if (forStatus == CELIX_SUCCESS) {
 						forStatus = module_getSymbolicName(module, &bsn);
@@ -404,7 +404,7 @@ celix_status_t deviceManager_driverRemoved(void * handle, SERVICE_REFERENCE ref,
 			}
 
 
-			HASH_MAP_ITERATOR iter = hashMapIterator_create(manager->drivers);
+			hash_map_iterator_t iter = hashMapIterator_create(manager->drivers);
 			while (hashMapIterator_hasNext(iter)) {
 				driver_attributes_t da = hashMapIterator_nextValue(iter);
 				//driverAttributes_tryUninstall(da);
@@ -421,42 +421,42 @@ celix_status_t deviceManager_driverRemoved(void * handle, SERVICE_REFERENCE ref,
 }
 
 
-celix_status_t deviceManager_getIdleDevices(device_manager_t manager, apr_pool_t *pool, ARRAY_LIST *idleDevices) {
+celix_status_t deviceManager_getIdleDevices(device_manager_t manager, apr_pool_t *pool, array_list_t *idleDevices) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	status = arrayList_create(pool, idleDevices);
 	if (status == CELIX_SUCCESS) {
-		HASH_MAP_ITERATOR iter = hashMapIterator_create(manager->devices);
+		hash_map_iterator_t iter = hashMapIterator_create(manager->devices);
 		while (hashMapIterator_hasNext(iter)) {
 			celix_status_t substatus = CELIX_SUCCESS;
-			SERVICE_REFERENCE ref = hashMapIterator_nextKey(iter);
+			service_reference_t ref = hashMapIterator_nextKey(iter);
 			char *bsn = NULL;
-			MODULE module = NULL;
-			BUNDLE bundle = NULL;
+			module_t module = NULL;
+			bundle_t bundle = NULL;
 			substatus = serviceReference_getBundle(ref, &bundle);
 			if (substatus == CELIX_SUCCESS) {
 				substatus = bundle_getCurrentModule(bundle, &module);
 				if (substatus == CELIX_SUCCESS) {
 					substatus = module_getSymbolicName(module, &bsn);
 					if (substatus == CELIX_SUCCESS) {
-						SERVICE_REGISTRATION registration = NULL;
+						service_registration_t registration = NULL;
 						substatus = serviceReference_getServiceRegistration(ref, &registration);
 						if (substatus == CELIX_SUCCESS) {
-							SERVICE_REGISTRY registry = NULL;
+							service_registry_t registry = NULL;
 							substatus = serviceRegistration_getRegistry(registration, &registry);
 							if (substatus == CELIX_SUCCESS) {
 								printf("DEVICE_MANAGER: Check idle device: %s\n", bsn);
-								ARRAY_LIST bundles = serviceRegistry_getUsingBundles(registry, pool, ref);
+								array_list_t bundles = serviceRegistry_getUsingBundles(registry, pool, ref);
 								bool inUse = false;
 								int i;
 								for (i = 0; i < arrayList_size(bundles); i++) {
-									BUNDLE bundle = arrayList_get(bundles, i);
+									bundle_t bundle = arrayList_get(bundles, i);
 									bool isDriver;
 									celix_status_t sstatus = deviceManager_isDriverBundle(manager, bundle, &isDriver);
 									if (sstatus == CELIX_SUCCESS) {
 										if (isDriver) {
 											char *bsn = NULL;
-											MODULE module = NULL;
+											module_t module = NULL;
 											bundle_getCurrentModule(bundle, &module);
 											module_getSymbolicName(module, &bsn);
 
@@ -485,20 +485,20 @@ celix_status_t deviceManager_getIdleDevices(device_manager_t manager, apr_pool_t
 
 //TODO examply for discussion only, remove after discussion
 #define DO_IF_SUCCESS(status, call_func) ((status) == CELIX_SUCCESS) ? (call_func) : (status)
-celix_status_t deviceManager_getIdleDevices_exmaple(device_manager_t manager, apr_pool_t *pool, ARRAY_LIST *idleDevices) {
+celix_status_t deviceManager_getIdleDevices_exmaple(device_manager_t manager, apr_pool_t *pool, array_list_t *idleDevices) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	status = arrayList_create(pool, idleDevices);
 	if (status == CELIX_SUCCESS) {
-		HASH_MAP_ITERATOR iter = hashMapIterator_create(manager->devices);
+		hash_map_iterator_t iter = hashMapIterator_create(manager->devices);
 		while (hashMapIterator_hasNext(iter)) {
 			celix_status_t substatus = CELIX_SUCCESS;
-			SERVICE_REFERENCE ref = hashMapIterator_nextKey(iter);
+			service_reference_t ref = hashMapIterator_nextKey(iter);
 			char *bsn = NULL;
-			MODULE module = NULL;
-			BUNDLE bundle = NULL;
-			SERVICE_REGISTRATION registration = NULL;
-			SERVICE_REGISTRY registry = NULL;
+			module_t module = NULL;
+			bundle_t bundle = NULL;
+			service_registration_t registration = NULL;
+			service_registry_t registry = NULL;
 			substatus = serviceReference_getBundle(ref, &bundle);
 			substatus = DO_IF_SUCCESS(substatus, bundle_getCurrentModule(bundle, &module));
 			substatus = DO_IF_SUCCESS(substatus, module_getSymbolicName(module, &bsn));
@@ -506,18 +506,18 @@ celix_status_t deviceManager_getIdleDevices_exmaple(device_manager_t manager, ap
 			substatus = DO_IF_SUCCESS(substatus, serviceRegistration_getRegistry(registration, &registry));
 
 			if (substatus == CELIX_SUCCESS) {
-				ARRAY_LIST bundles = serviceRegistry_getUsingBundles(registry, pool, ref);
+				array_list_t bundles = serviceRegistry_getUsingBundles(registry, pool, ref);
 				printf("DEVICE_MANAGER: Check idle device: %s\n", bsn);
 				bool inUse = false;
 				int i;
 				for (i = 0; i < arrayList_size(bundles); i++) {
-					BUNDLE bundle = arrayList_get(bundles, i);
+					bundle_t bundle = arrayList_get(bundles, i);
 					bool isDriver;
 					celix_status_t sstatus = deviceManager_isDriverBundle(manager, bundle, &isDriver);
 					if (sstatus == CELIX_SUCCESS) {
 						if (isDriver) {
 							char *bsn = NULL;
-							MODULE module = NULL;
+							module_t module = NULL;
 							bundle_getCurrentModule(bundle, &module);
 							module_getSymbolicName(module, &bsn);
 
@@ -538,11 +538,11 @@ celix_status_t deviceManager_getIdleDevices_exmaple(device_manager_t manager, ap
 	return status;
 }
 
-celix_status_t deviceManager_isDriverBundle(device_manager_t manager, BUNDLE bundle, bool *isDriver) {
+celix_status_t deviceManager_isDriverBundle(device_manager_t manager, bundle_t bundle, bool *isDriver) {
 	celix_status_t status = CELIX_SUCCESS;
 	(*isDriver) = false;
 
-	ARRAY_LIST refs = NULL;
+	array_list_t refs = NULL;
 	apr_pool_t *pool = NULL;
 	status = bundle_getMemoryPool(bundle, &pool);
 	if (status == CELIX_SUCCESS) {
@@ -552,11 +552,11 @@ celix_status_t deviceManager_isDriverBundle(device_manager_t manager, BUNDLE bun
 				int i;
 				for (i = 0; i < arrayList_size(refs); i++) {
 					celix_status_t substatus = CELIX_SUCCESS;
-					SERVICE_REFERENCE ref = arrayList_get(refs, i);
-					SERVICE_REGISTRATION registration = NULL;
+					service_reference_t ref = arrayList_get(refs, i);
+					service_registration_t registration = NULL;
 					substatus = serviceReference_getServiceRegistration(ref, &registration);
 					if (substatus == CELIX_SUCCESS) {
-						PROPERTIES properties = NULL;
+						properties_t properties = NULL;
 						substatus = serviceRegistration_getProperties(registration, &properties);
 						if (substatus == CELIX_SUCCESS) {
 							char *object = properties_get(properties, (char *) OBJECTCLASS);

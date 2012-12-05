@@ -58,7 +58,7 @@ celix_status_t logFactory_create(apr_pool_t *pool, log_t log, service_factory_t 
     return CELIX_SUCCESS;
 }
 
-celix_status_t logFactory_getService(void *factory, BUNDLE bundle, SERVICE_REGISTRATION registration, void **service) {
+celix_status_t logFactory_getService(void *factory, bundle_t bundle, service_registration_t registration, void **service) {
     log_service_factory_t log_factory = ((service_factory_t) factory)->factory;
     log_service_t log_service = NULL;
     log_service_data_t log_service_data = NULL;
@@ -75,7 +75,7 @@ celix_status_t logFactory_getService(void *factory, BUNDLE bundle, SERVICE_REGIS
     return CELIX_SUCCESS;
 }
 
-celix_status_t logFactory_ungetService(void *factory, BUNDLE bundle, SERVICE_REGISTRATION registration) {
+celix_status_t logFactory_ungetService(void *factory, bundle_t bundle, service_registration_t registration) {
     log_service_factory_t log_factory = ((service_factory_t) factory)->factory;
     return CELIX_SUCCESS;
 }

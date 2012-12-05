@@ -35,7 +35,7 @@ struct activatorData {
     PUBLISHER_SERVICE ps;
     PUBLISHER pub;
 
-    SERVICE_REGISTRATION reg;
+    service_registration_t reg;
 };
 
 celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
@@ -54,7 +54,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
     apr_pool_t *pool;
     status = bundleContext_getMemoryPool(context, &pool);
     if (status == CELIX_SUCCESS) {
-		PROPERTIES props = NULL;
+		properties_t props = NULL;
 
         struct activatorData * data = (struct activatorData *) userData;
         data->ps = apr_pcalloc(pool, sizeof(*(data->ps)));

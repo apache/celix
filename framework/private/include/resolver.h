@@ -31,9 +31,9 @@
 #include "wire.h"
 #include "hash_map.h"
 
-HASH_MAP resolver_resolve(MODULE root);
-void resolver_moduleResolved(MODULE module);
-void resolver_addModule(MODULE module);
-void resolver_removeModule(MODULE module);
+hash_map_t resolver_resolve(module_t root);
+void resolver_moduleResolved(module_t module);
+void resolver_addModule(module_t module);
+void resolver_removeModule(module_t module);
 
 #endif /* RESOLVER_H_ */

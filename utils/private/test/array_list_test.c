@@ -35,7 +35,7 @@
 #include "array_list_private.h"
 
 apr_pool_t *memory_pool;
-ARRAY_LIST list;
+array_list_t list;
 
 int setup(void) {
 	apr_initialize();
@@ -222,12 +222,12 @@ void test_arrayList_addAll(void) {
     char * entry2 = "entry2";
     char * entry3 = "entry3"; 
     char * get;
-	ARRAY_LIST toAdd;
+	array_list_t toAdd;
 	bool changed;
 	
 	arrayList_clear(list);
 
-	arrayList_create(memory_pool, &list);
+	arrayList_create(memory_pool, &toAdd);
     arrayList_add(toAdd, entry);
     arrayList_add(toAdd, entry2);
 

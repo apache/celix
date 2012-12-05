@@ -36,7 +36,7 @@ struct export_registration {
 	bundle_context_t context;
 	remote_service_admin_t rsa;
 	endpoint_description_t endpointDescription;
-	SERVICE_REFERENCE reference;
+	service_reference_t reference;
 
 	service_tracker_t tracker;
 	service_tracker_t endpointTracker;
@@ -44,12 +44,12 @@ struct export_registration {
 	remote_endpoint_service_t endpoint;
 
 	export_reference_t exportReference;
-	BUNDLE bundle;
+	bundle_t bundle;
 
 	bool closed;
 };
 
-celix_status_t exportRegistration_create(apr_pool_t *pool, SERVICE_REFERENCE reference, endpoint_description_t endpoint, remote_service_admin_t rsa, bundle_context_t context, export_registration_t *registration);
+celix_status_t exportRegistration_create(apr_pool_t *pool, service_reference_t reference, endpoint_description_t endpoint, remote_service_admin_t rsa, bundle_context_t context, export_registration_t *registration);
 celix_status_t exportRegistration_open(export_registration_t registration);
 celix_status_t exportRegistration_close(export_registration_t registration);
 celix_status_t exportRegistration_getException(export_registration_t registration);

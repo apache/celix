@@ -34,9 +34,9 @@
 
 struct serviceDependency {
 	char * interface;
-	void (*added)(void * handle, SERVICE_REFERENCE reference, void *);
-	void (*changed)(void * handle, SERVICE_REFERENCE reference, void *);
-	void (*removed)(void * handle, SERVICE_REFERENCE reference, void *);
+	void (*added)(void * handle, service_reference_t reference, void *);
+	void (*changed)(void * handle, service_reference_t reference, void *);
+	void (*removed)(void * handle, service_reference_t reference, void *);
 	void ** autoConfigureField;
 
 	bool started;
@@ -44,7 +44,7 @@ struct serviceDependency {
 	bool required;
 	service_tracker_t tracker;
 	SERVICE service;
-	SERVICE_REFERENCE reference;
+	service_reference_t reference;
 	bundle_context_t context;
 	void * serviceInstance;
 	char * trackedServiceName;
@@ -58,9 +58,9 @@ void * serviceDependency_getService(SERVICE_DEPENDENCY dependency);
 
 SERVICE_DEPENDENCY serviceDependency_setRequired(SERVICE_DEPENDENCY dependency, bool required);
 SERVICE_DEPENDENCY serviceDependency_setService(SERVICE_DEPENDENCY dependency, char * serviceName, char * filter);
-SERVICE_DEPENDENCY serviceDependency_setCallbacks(SERVICE_DEPENDENCY dependency, void (*added)(void * handle, SERVICE_REFERENCE reference, void *),
-		void (*changed)(void * handle, SERVICE_REFERENCE reference, void *),
-		void (*removed)(void * handle, SERVICE_REFERENCE reference, void *));
+SERVICE_DEPENDENCY serviceDependency_setCallbacks(SERVICE_DEPENDENCY dependency, void (*added)(void * handle, service_reference_t reference, void *),
+		void (*changed)(void * handle, service_reference_t reference, void *),
+		void (*removed)(void * handle, service_reference_t reference, void *));
 SERVICE_DEPENDENCY serviceDependency_setAutoConfigure(SERVICE_DEPENDENCY dependency, void ** field);
 
 void serviceDependency_start(SERVICE_DEPENDENCY dependency, SERVICE service);

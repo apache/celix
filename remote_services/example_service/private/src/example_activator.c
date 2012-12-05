@@ -34,7 +34,7 @@
 
 struct activator {
 	apr_pool_t *pool;
-	SERVICE_REGISTRATION exampleReg;
+	service_registration_t exampleReg;
 };
 
 celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
@@ -64,7 +64,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 	struct activator *activator = userData;
 	example_t example = NULL;
 	example_service_t service = NULL;
-	PROPERTIES properties = NULL;
+	properties_t properties = NULL;
 
 	status = example_create(activator->pool, &example);
 	if (status == CELIX_SUCCESS) {

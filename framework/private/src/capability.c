@@ -30,17 +30,17 @@
 
 struct capability {
 	char * serviceName;
-	MODULE module;
-	VERSION version;
-	HASH_MAP attributes;
-	HASH_MAP directives;
+	module_t module;
+	version_t version;
+	hash_map_t attributes;
+	hash_map_t directives;
 };
 
 apr_status_t capability_destroy(void *capabilityP);
 
-celix_status_t capability_create(apr_pool_t *pool, MODULE module, HASH_MAP directives, HASH_MAP attributes, CAPABILITY *capability) {
+celix_status_t capability_create(apr_pool_t *pool, module_t module, hash_map_t directives, hash_map_t attributes, capability_t *capability) {
 	celix_status_t status = CELIX_SUCCESS;
-	*capability = (CAPABILITY) apr_palloc(pool, sizeof(**capability));
+	*capability = (capability_t) apr_palloc(pool, sizeof(**capability));
 	if (!*capability) {
 		status = CELIX_ENOMEM;
 	} else {
@@ -53,11 +53,11 @@ celix_status_t capability_create(apr_pool_t *pool, MODULE module, HASH_MAP direc
 		(*capability)->version = NULL;
 		status = version_createEmptyVersion(pool, &(*capability)->version);
 		if (status == CELIX_SUCCESS) {
-			ATTRIBUTE versionAttribute = NULL;
-			ATTRIBUTE serviceAttribute = (ATTRIBUTE) hashMap_get(attributes, "service");
+			attribute_t versionAttribute = NULL;
+			attribute_t serviceAttribute = (attribute_t) hashMap_get(attributes, "service");
 			status = attribute_getValue(serviceAttribute, &(*capability)->serviceName);
 			if (status == CELIX_SUCCESS) {
-				versionAttribute = (ATTRIBUTE) hashMap_get(attributes, "version");
+				versionAttribute = (attribute_t) hashMap_get(attributes, "version");
 				if (versionAttribute != NULL) {
 					char *versionStr = NULL;
 					attribute_getValue(versionAttribute, &versionStr);
@@ -72,11 +72,11 @@ celix_status_t capability_create(apr_pool_t *pool, MODULE module, HASH_MAP direc
 }
 
 apr_status_t capability_destroy(void *capabilityP) {
-	CAPABILITY capability = capabilityP;
+	capability_t capability = capabilityP;
 
-	HASH_MAP_ITERATOR attrIter = hashMapIterator_create(capability->attributes);
+	hash_map_iterator_t attrIter = hashMapIterator_create(capability->attributes);
 	while (hashMapIterator_hasNext(attrIter)) {
-		ATTRIBUTE attr = hashMapIterator_nextValue(attrIter);
+		attribute_t attr = hashMapIterator_nextValue(attrIter);
 		hashMapIterator_remove(attrIter);
 	}
 	hashMapIterator_destroy(attrIter);
@@ -91,17 +91,17 @@ apr_status_t capability_destroy(void *capabilityP) {
 	return APR_SUCCESS;
 }
 
-celix_status_t capability_getServiceName(CAPABILITY capability, char **serviceName) {
+celix_status_t capability_getServiceName(capability_t capability, char **serviceName) {
 	*serviceName = capability->serviceName;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t capability_getVersion(CAPABILITY capability, VERSION *version) {
+celix_status_t capability_getVersion(capability_t capability, version_t *version) {
 	*version = capability->version;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t capability_getModule(CAPABILITY capability, MODULE *module) {
+celix_status_t capability_getModule(capability_t capability, module_t *module) {
 	*module = capability->module;
 	return CELIX_SUCCESS;
 }

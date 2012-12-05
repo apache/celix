@@ -31,13 +31,13 @@
 #include "properties.h"
 
 struct endpoint_description {
-	ARRAY_LIST configurationTypes;
+	array_list_t configurationTypes;
 	char *frameworkUUID;
 	char *id;
-	// ARRAY_LIST intents;
+	// array_list_t intents;
 	char *service;
 	// HASH_MAP packageVersions;
-	PROPERTIES properties;
+	properties_t properties;
 	long serviceId;
 };
 

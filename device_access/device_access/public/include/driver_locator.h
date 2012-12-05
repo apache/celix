@@ -36,7 +36,7 @@ typedef struct driver_locator *driver_locator_t;
 
 struct driver_locator_service {
 	driver_locator_t locator;
-	celix_status_t(*findDrivers)(driver_locator_t loc, apr_pool_t *pool, PROPERTIES props, ARRAY_LIST *drivers);
+	celix_status_t(*findDrivers)(driver_locator_t loc, apr_pool_t *pool, properties_t props, array_list_t *drivers);
 	celix_status_t(*loadDriver)(driver_locator_t loc, apr_pool_t *pool, char *id, char **driver);
 };
 

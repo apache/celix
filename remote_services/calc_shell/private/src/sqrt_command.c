@@ -59,7 +59,7 @@ void sqrtCommand_destroy(COMMAND command) {
 
 void sqrtCommand_execute(COMMAND command, char *line, void (*out)(char *), void (*err)(char *)) {
 	celix_status_t status = CELIX_SUCCESS;
-    SERVICE_REFERENCE exampleService = NULL;
+    service_reference_t exampleService = NULL;
     apr_pool_t *memory_pool = NULL;
     apr_pool_t *bundle_memory_pool = NULL;
 

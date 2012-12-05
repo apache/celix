@@ -48,7 +48,7 @@ int main(void) {
 	// Set signal handler
 	apr_status_t rv = APR_SUCCESS;
 	apr_status_t s = APR_SUCCESS;
-	PROPERTIES config = NULL;
+	properties_t config = NULL;
 	char *autoStart = NULL;
 
 	
@@ -78,11 +78,11 @@ int main(void) {
     if (apr_pool_create(&pool, memoryPool) == APR_SUCCESS) {
 		char delims[] = " ";
 		char *result = NULL;	
-        LINKED_LIST bundles;
-		ARRAY_LIST installed = NULL;
-		BUNDLE bundle = NULL;
+        linked_list_t bundles;
+		array_list_t installed = NULL;
+		bundle_t bundle = NULL;
 		bundle_context_t context = NULL;
-		LINKED_LIST_ITERATOR iter = NULL;
+		linked_list_iterator_t iter = NULL;
 		unsigned int i;
 
         linkedList_create(pool, &bundles);
@@ -99,7 +99,7 @@ int main(void) {
         bundle_getContext(bundle, &context);
         iter = linkedListIterator_create(bundles, 0);
         while (linkedListIterator_hasNext(iter)) {
-            BUNDLE current = NULL;
+            bundle_t current = NULL;
             char * location = (char *) linkedListIterator_next(iter);
             if (bundleContext_installBundle(context, location, &current) == CELIX_SUCCESS) {
                 // Only add bundle if it is installed correctly
@@ -114,7 +114,7 @@ int main(void) {
         linkedListIterator_destroy(iter);
 
         for (i = 0; i < arrayList_size(installed); i++) {
-            BUNDLE bundle = (BUNDLE) arrayList_get(installed, i);
+            bundle_t bundle = (bundle_t) arrayList_get(installed, i);
             bundle_start(bundle, 0);
         }
 

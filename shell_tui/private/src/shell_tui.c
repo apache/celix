@@ -35,7 +35,7 @@
 struct shellTuiActivator {
 	bundle_context_t context;
 	SHELL_SERVICE shell;
-	SERVICE_REFERENCE reference;
+	service_reference_t reference;
 	struct serviceListener * listener;
 	bool running;
 	apr_thread_t *runnable;
@@ -87,7 +87,7 @@ void shellTui_initializeService(SHELL_TUI_ACTIVATOR activator) {
 	}
 }
 
-void shellTui_serviceChanged(SERVICE_LISTENER listener, SERVICE_EVENT event) {
+void shellTui_serviceChanged(service_listener_t listener, service_event_t event) {
 	bool result = NULL;
     SHELL_TUI_ACTIVATOR act = (SHELL_TUI_ACTIVATOR) listener->handle;
 
@@ -117,7 +117,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 	apr_pool_t *pool = NULL;
 
 	SHELL_TUI_ACTIVATOR act = (SHELL_TUI_ACTIVATOR) userData;
-	SERVICE_LISTENER listener = (SERVICE_LISTENER) malloc(sizeof(*listener));
+	service_listener_t listener = (service_listener_t) malloc(sizeof(*listener));
 
 	act->context = context;
 	act->running = true;

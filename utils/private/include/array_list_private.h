@@ -24,8 +24,8 @@
  *  \copyright	Apache License, Version 2.0
  */
 
-#ifndef ARRAY_LIST_PRIVATE_H_
-#define ARRAY_LIST_PRIVATE_H_
+#ifndef array_list_t_PRIVATE_H_
+#define array_list_t_PRIVATE_H_
 
 #include "array_list.h"
 
@@ -35,16 +35,18 @@ struct arrayList {
 	unsigned int capacity;
 
 	unsigned int modCount;
+
+	arrayListElementEqualsFunction equals;
 };
 
 struct arrayListIterator {
-	ARRAY_LIST list;
+	array_list_t list;
 	unsigned int cursor;
 	int lastReturned;
 	unsigned int expectedModificationCount;
 };
 
-void * arrayList_remove(ARRAY_LIST list, unsigned int index);
+void * arrayList_remove(array_list_t list, unsigned int index);
 
 
-#endif /* ARRAY_LIST_PRIVATE_H_ */
+#endif /* array_list_t_PRIVATE_H_ */

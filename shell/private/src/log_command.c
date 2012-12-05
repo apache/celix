@@ -50,16 +50,16 @@ void logCommand_destroy(COMMAND command) {
 }
 
 void logCommand_execute(COMMAND command, char *line, void (*out)(char *), void (*err)(char *)) {
-    SERVICE_REFERENCE readerService = NULL;
-    SERVICE_REFERENCE logService = NULL;
+    service_reference_t readerService = NULL;
+    service_reference_t logService = NULL;
     apr_pool_t *memory_pool = NULL;
     apr_pool_t *bundle_memory_pool = NULL;
 
     bundleContext_getServiceReference(command->bundleContext, (char *) LOG_READER_SERVICE_NAME, &readerService);
     if (readerService != NULL) {
         char line[256];
-        LINKED_LIST list = NULL;
-        LINKED_LIST_ITERATOR iter = NULL;
+        linked_list_t list = NULL;
+        linked_list_iterator_t iter = NULL;
         log_reader_service_t reader = NULL;
 
         bundleContext_getMemoryPool(command->bundleContext, &bundle_memory_pool);

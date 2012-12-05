@@ -32,8 +32,8 @@
 typedef struct log_service_factory * log_service_factory_t;
 
 celix_status_t logFactory_create(apr_pool_t *pool, log_t log, service_factory_t *factory);
-celix_status_t logFactory_getService(void *factory, BUNDLE bundle, SERVICE_REGISTRATION registration, void **service);
-celix_status_t logFactory_ungetService(void *factory, BUNDLE bundle, SERVICE_REGISTRATION registration);
+celix_status_t logFactory_getService(void *factory, bundle_t bundle, service_registration_t registration, void **service);
+celix_status_t logFactory_ungetService(void *factory, bundle_t bundle, service_registration_t registration);
 
 
 #endif /* LOG_FACTORY_H_ */

@@ -31,7 +31,7 @@
 #include "echo_server_private.h"
 
 struct echoActivator {
-	SERVICE_REGISTRATION reg;
+	service_registration_t reg;
 	ECHO_SERVICE es;
 };
 

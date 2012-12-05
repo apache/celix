@@ -31,7 +31,7 @@
 
 #include <apr_general.h>
 
-typedef struct serviceListener * SERVICE_LISTENER;
+typedef struct serviceListener * service_listener_t;
 
 #include "celix_errno.h"
 #include "service_event.h"
@@ -39,7 +39,7 @@ typedef struct serviceListener * SERVICE_LISTENER;
 struct serviceListener {
 	apr_pool_t *pool;
 	void * handle;
-	celix_status_t (*serviceChanged)(void * listener, SERVICE_EVENT event);
+	celix_status_t (*serviceChanged)(void * listener, service_event_t event);
 };
 
 

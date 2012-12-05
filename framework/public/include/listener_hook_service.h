@@ -44,8 +44,8 @@ struct listener_hook_info {
 
 struct listener_hook_service {
 	void *handle;
-	celix_status_t (*added)(void *hook, ARRAY_LIST listeners);
-	celix_status_t (*removed)(void *hook, ARRAY_LIST listeners);
+	celix_status_t (*added)(void *hook, array_list_t listeners);
+	celix_status_t (*removed)(void *hook, array_list_t listeners);
 };
 
 #endif /* LISTENER_HOOK_SERVICE_H_ */

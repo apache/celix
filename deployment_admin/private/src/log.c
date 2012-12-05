@@ -49,7 +49,7 @@ celix_status_t log_create(apr_pool_t *pool, log_store_t store, log_t *log) {
 	return status;
 }
 
-celix_status_t log_log(log_t log, unsigned int type, PROPERTIES properties) {
+celix_status_t log_log(log_t log, unsigned int type, properties_t properties) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	log_event_t event = NULL;

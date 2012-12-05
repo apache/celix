@@ -29,7 +29,7 @@
 
 #include <apr_general.h>
 
-typedef struct serviceRegistry * SERVICE_REGISTRY;
+typedef struct serviceRegistry * service_registry_t;
 
 #include "properties.h"
 #include "filter.h"
@@ -38,24 +38,24 @@ typedef struct serviceRegistry * SERVICE_REGISTRY;
 #include "array_list.h"
 #include "service_registration.h"
 
-SERVICE_REGISTRY serviceRegistry_create(FRAMEWORK framework, void (*serviceChanged)(FRAMEWORK, SERVICE_EVENT_TYPE, SERVICE_REGISTRATION, PROPERTIES));
-celix_status_t serviceRegistry_destroy(SERVICE_REGISTRY registry);
-celix_status_t serviceRegistry_getRegisteredServices(SERVICE_REGISTRY registry, apr_pool_t *pool, BUNDLE bundle, ARRAY_LIST *services);
-ARRAY_LIST serviceRegistry_getServicesInUse(SERVICE_REGISTRY registry, BUNDLE bundle);
-SERVICE_REGISTRATION serviceRegistry_registerService(SERVICE_REGISTRY registry, BUNDLE bundle, char * serviceName, void * serviceObject, PROPERTIES dictionary);
-SERVICE_REGISTRATION serviceRegistry_registerServiceFactory(SERVICE_REGISTRY registry, BUNDLE bundle, char * serviceName, service_factory_t factory, PROPERTIES dictionary);
-void serviceRegistry_unregisterService(SERVICE_REGISTRY registry, BUNDLE bundle, SERVICE_REGISTRATION registration);
-void serviceRegistry_unregisterServices(SERVICE_REGISTRY registry, BUNDLE bundle);
-celix_status_t serviceRegistry_getServiceReferences(SERVICE_REGISTRY registry, apr_pool_t *pool, const char *serviceName, filter_t filter, ARRAY_LIST *references);
-void * serviceRegistry_getService(SERVICE_REGISTRY registry, BUNDLE bundle, SERVICE_REFERENCE reference);
-bool serviceRegistry_ungetService(SERVICE_REGISTRY registry, BUNDLE bundle, SERVICE_REFERENCE reference);
-void serviceRegistry_ungetServices(SERVICE_REGISTRY registry, BUNDLE bundle);
-ARRAY_LIST serviceRegistry_getUsingBundles(SERVICE_REGISTRY registry, apr_pool_t *pool, SERVICE_REFERENCE reference);
-SERVICE_REGISTRATION serviceRegistry_findRegistration(SERVICE_REGISTRY registry, SERVICE_REFERENCE reference);
-celix_status_t serviceRegistry_createServiceReference(SERVICE_REGISTRY registry, apr_pool_t *pool, SERVICE_REGISTRATION registration, SERVICE_REFERENCE *reference);
+service_registry_t serviceRegistry_create(framework_t framework, void (*serviceChanged)(framework_t, service_event_type_e, service_registration_t, properties_t));
+celix_status_t serviceRegistry_destroy(service_registry_t registry);
+celix_status_t serviceRegistry_getRegisteredServices(service_registry_t registry, apr_pool_t *pool, bundle_t bundle, array_list_t *services);
+array_list_t serviceRegistry_getServicesInUse(service_registry_t registry, bundle_t bundle);
+service_registration_t serviceRegistry_registerService(service_registry_t registry, bundle_t bundle, char * serviceName, void * serviceObject, properties_t dictionary);
+service_registration_t serviceRegistry_registerServiceFactory(service_registry_t registry, bundle_t bundle, char * serviceName, service_factory_t factory, properties_t dictionary);
+void serviceRegistry_unregisterService(service_registry_t registry, bundle_t bundle, service_registration_t registration);
+void serviceRegistry_unregisterServices(service_registry_t registry, bundle_t bundle);
+celix_status_t serviceRegistry_getServiceReferences(service_registry_t registry, apr_pool_t *pool, const char *serviceName, filter_t filter, array_list_t *references);
+void * serviceRegistry_getService(service_registry_t registry, bundle_t bundle, service_reference_t reference);
+bool serviceRegistry_ungetService(service_registry_t registry, bundle_t bundle, service_reference_t reference);
+void serviceRegistry_ungetServices(service_registry_t registry, bundle_t bundle);
+array_list_t serviceRegistry_getUsingBundles(service_registry_t registry, apr_pool_t *pool, service_reference_t reference);
+service_registration_t serviceRegistry_findRegistration(service_registry_t registry, service_reference_t reference);
+celix_status_t serviceRegistry_createServiceReference(service_registry_t registry, apr_pool_t *pool, service_registration_t registration, service_reference_t *reference);
 
-celix_status_t serviceRegistry_getListenerHooks(SERVICE_REGISTRY registry, apr_pool_t *pool, ARRAY_LIST *hooks);
+celix_status_t serviceRegistry_getListenerHooks(service_registry_t registry, apr_pool_t *pool, array_list_t *hooks);
 
-celix_status_t serviceRegistry_servicePropertiesModified(SERVICE_REGISTRY registry, SERVICE_REGISTRATION registration, PROPERTIES oldprops);
+celix_status_t serviceRegistry_servicePropertiesModified(service_registry_t registry, service_registration_t registration, properties_t oldprops);
 
 #endif /* SERVICE_REGISTRY_H_ */

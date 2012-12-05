@@ -38,7 +38,7 @@ struct linkedListEntry {
 
 struct linkedList {
     apr_pool_t *memory_pool;
-	LINKED_LIST_ENTRY header;
+	linked_list_entry_t header;
 	size_t size;
 	int modificationCount;
 };

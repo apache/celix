@@ -43,7 +43,7 @@ void circleShape_draw(SIMPLE_SHAPE shape, GdkPixmap *pixMap, GtkWidget *widget, 
 celix_status_t circleShape_create(bundle_context_t context, SIMPLE_SHAPE *shape) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	BUNDLE bundle;
+	bundle_t bundle;
 	apr_pool_t *pool;
 
 	if (*shape != NULL || context == NULL) {
