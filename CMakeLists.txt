@@ -44,6 +44,7 @@ add_subdirectory(deployment_admin)
 add_subdirectory(remote_services)
 add_subdirectory(shell_tui)
 add_subdirectory(shell)
+add_subdirectory(remote_shell)
 add_subdirectory(log_writer)
 add_subdirectory(log_service)
 

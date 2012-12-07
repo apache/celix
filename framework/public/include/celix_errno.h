@@ -36,6 +36,12 @@
 #include "framework_exports.h"
 
 /*!
+ * Helper macro which check the current status and executes the provided expression if the
+ * status is still CELIX_SUCESS (0)
+ */
+#define CELIX_DO_IF(status, expr) ((status) == CELIX_SUCCESS) ? (expr) : (status)
+
+/*!
  * \defgroup celix_errno Error Codes
  * \ingroup framework
  * \{
