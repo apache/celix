@@ -149,7 +149,7 @@ static void* APR_THREAD_FUNC connection_listener_thread(apr_thread_t *thread, vo
 		apr_strerror(status, error, 64);
     	printf("Error creating and listing on socket: %s\n", error);
     } else {
-    	printf("Remote Shell accepting connections on port %i\n", instance->port);
+    	printf("Remote Shell accepting connections on port %lld\n", instance->port);
     }
 
 	while (status == CELIX_SUCCESS) {
