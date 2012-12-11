@@ -137,16 +137,21 @@ celix_status_t remoteShell_addConnection(remote_shell_t instance, apr_socket_t *
 
 celix_status_t remoteShell_stopConnections(remote_shell_t instance) {
 	celix_status_t status = CELIX_SUCCESS;
+	apr_status_t wakeupStatus = APR_SUCCESS;
+	char error[64];
 
 	apr_thread_mutex_lock(instance->mutex);
 	int length = arrayList_size(instance->connections);
 	for (int i = 0; i < length; i += 1) {
 		connection_t connection = arrayList_get(instance->connections, i);
-		apr_pollset_wakeup(connection->pollset);
+		wakeupStatus = apr_pollset_wakeup(connection->pollset);
+		if (wakeupStatus != APR_SUCCESS) {
+			apr_strerror(wakeupStatus, error, 64);
+			printf("Error waking up connection %i: '%s'\n", i, error);
+		}
 	}
 	apr_thread_mutex_unlock(instance->mutex);
 	apr_thread_pool_tasks_cancel(instance->threadPool,instance);
-
 
 	return status;
 }

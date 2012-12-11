@@ -105,7 +105,7 @@ static void shellMediator_writeOnCurrentSocket(char *buff) {
 }
 
 celix_status_t shellMediator_executeCommand(shell_mediator_t instance, char *command, apr_socket_t *socket) {
-	apr_status_t status;
+	apr_status_t status = CELIX_SUCCESS;
 
 	apr_thread_mutex_lock(instance->mutex);
 	if (instance->shellService != NULL) {

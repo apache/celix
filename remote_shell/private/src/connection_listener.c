@@ -157,7 +157,7 @@ static void* APR_THREAD_FUNC connection_listener_thread(apr_thread_t *thread, vo
 		if (status == APR_SUCCESS) {
 			acceptedSocket = NULL;
 			apr_pool_t *socketPool = NULL;
-			apr_pool_create(&socketPool, NULL);
+			apr_pool_create(&socketPool, instance->pool);
 			apr_status_t socketStatus = apr_socket_accept(&acceptedSocket, listenSocket, socketPool);
 			printf("REMOTE_SHELL: created connection socket\n");
 			if (socketStatus == APR_SUCCESS) {
