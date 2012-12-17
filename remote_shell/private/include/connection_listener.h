@@ -27,14 +27,12 @@
 #ifndef connectionListener_H_
 #define connectionListener_H_
 
-#include "remote_shell.h"
-
 #include <apr_pools.h>
 
 #include <bundle_context.h>
 #include <celix_errno.h>
 
-
+#include "remote_shell.h"
 
 typedef struct connection_listener *connection_listener_t;
 

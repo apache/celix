@@ -24,9 +24,6 @@
  *  \copyright	Apache License, Version 2.0
  */
 
-
-#include "remote_shell.h"
-
 #include <stdlib.h>
 
 #include <apr_pools.h>
@@ -38,13 +35,15 @@
 #include <utils.h>
 #include <array_list.h>
 
+#include "remote_shell.h"
+
 #define COMMAND_BUFF_SIZE (256)
 
-#define PROMPT ("-> ")
-#define WELCOME ("\n---- Apache Celix Remote Shell ----\n---- Type exit to disconnect   ----\n\n-> ")
-#define GOODBYE ("Goobye!\n")
-#define ERROR ("Error executing command!\n")
-#define MAXIMUM_CONNECTIONS_REACHED ("Maximum number of connections  reached. Disconnecting ...\n")
+#define RS_PROMPT ("-> ")
+#define RS_WELCOME ("\n---- Apache Celix Remote Shell ----\n---- Type exit to disconnect   ----\n\n-> ")
+#define RS_GOODBYE ("Goobye!\n")
+#define RS_ERROR ("Error executing command!\n")
+#define RS_MAXIMUM_CONNECTIONS_REACHED ("Maximum number of connections  reached. Disconnecting ...\n")
 
 struct remote_shell {
 	apr_pool_t *pool;
@@ -78,7 +77,7 @@ celix_status_t remoteShell_create(apr_pool_t *pool, shell_mediator_t mediator, a
 	if ((*instance) != NULL) {
 		(*instance)->pool = pool;
 		(*instance)->mediator = mediator;
-		(*instance)->maximumConnections=maximumConnections;
+		(*instance)->maximumConnections = maximumConnections;
 		(*instance)->threadPool = NULL;
 		(*instance)->mutex = NULL;
 		(*instance)->connections = NULL;
@@ -121,7 +120,7 @@ celix_status_t remoteShell_addConnection(remote_shell_t instance, apr_socket_t *
 			status = apr_thread_pool_push(instance->threadPool, remoteShell_connection_run, connection, 0, instance);
 		} else {
 			status = APR_ECONNREFUSED;
-			remoteShell_connection_print(connection, MAXIMUM_CONNECTIONS_REACHED);
+			remoteShell_connection_print(connection, RS_MAXIMUM_CONNECTIONS_REACHED);
 		}
 		apr_thread_mutex_unlock(instance->mutex);
 	} else {
@@ -163,29 +162,31 @@ void * remoteShell_connection_run(apr_thread_t *thread, void *data) {
 	apr_size_t len;
 	char buff[COMMAND_BUFF_SIZE];
 	apr_pollfd_t pfd = { connection->pool, APR_POLL_SOCKET, APR_POLLIN, 0, { NULL }, NULL };
-	pfd.desc.s = connection->socket;
 	apr_int32_t num;
 	const apr_pollfd_t *ret_pfd;
 
+	pfd.desc.s = connection->socket;
+
 	status = CELIX_DO_IF(status, apr_pollset_add(connection->pollset, &pfd));
 
-	remoteShell_connection_print(connection, WELCOME);
+	remoteShell_connection_print(connection, RS_WELCOME);
 	while (status == CELIX_SUCCESS) {
 		status = apr_pollset_poll(connection->pollset, -1, &num, &ret_pfd); //blocks on fd until a connection is made
 		if (status == APR_SUCCESS) {
 			len = COMMAND_BUFF_SIZE -1;
 			status = apr_socket_recv(connection->socket, buff, &len);
 			if (status == APR_SUCCESS && len < COMMAND_BUFF_SIZE) {
+				apr_status_t commandStatus = APR_SUCCESS;
 				buff[len]='\0';
-				apr_status_t commandStatus = remoteShell_connection_execute(connection, buff);
+				commandStatus = remoteShell_connection_execute(connection, buff);
 				if (commandStatus == CELIX_SUCCESS) {
-					remoteShell_connection_print(connection, PROMPT);
+					remoteShell_connection_print(connection, RS_PROMPT);
 				} else if (commandStatus == APR_EOF) {
 					//exit command
 					break;
 				} else { //error
-					remoteShell_connection_print(connection, ERROR);
-					remoteShell_connection_print(connection, PROMPT);
+					remoteShell_connection_print(connection, RS_ERROR);
+					remoteShell_connection_print(connection, RS_PROMPT);
 				}
 
 			} else {
@@ -202,7 +203,7 @@ void * remoteShell_connection_run(apr_thread_t *thread, void *data) {
 			break;
 		}
 	}
-	remoteShell_connection_print(connection, GOODBYE);
+	remoteShell_connection_print(connection, RS_GOODBYE);
 
 	printf("Closing socket\n");
 	apr_thread_mutex_lock(connection->parent->mutex);

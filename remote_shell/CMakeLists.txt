@@ -14,26 +14,24 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-celix_subproject(REMOTE_SHELL "Option to enable building the Remote Shell bundles" OFF DEPS LAUNCHER SHELL)
+celix_subproject(REMOTE_SHELL "Option to enable building the Remote Shell bundles" OFF DEPS LAUNCHER SHELL_TUI)
 if (REMOTE_SHELL)
 
 	SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_remote_shell")
 	SET_HEADERS("Bundle-Name: Apache Celix Remote Shell") 
 	
-
     bundle(remote_shell SOURCES 
     	private/src/activator 
     	private/src/connection_listener 
     	private/src/shell_mediator 
     	private/src/remote_shell
 	)
-    
  
     include_directories("private/include")
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/shell/public/include")
     
-    target_link_libraries(remote_shell celix_framework apr-1 aprutil-1)
+    target_link_libraries(remote_shell celix_framework ${APRUTIL_LIBRARY})
     
     package(remote_shell)
     

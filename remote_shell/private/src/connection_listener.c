@@ -24,13 +24,7 @@
  *  \copyright	Apache License, Version 2.0
  */
 
-
-#include "connection_listener.h"
-
-#include "shell_mediator.h"
-#include "remote_shell.h"
-
-#include <celix_errno.h>
+#include <stdlib.h>
 
 #include <apr_pools.h>
 #include <apr_thread_mutex.h>
@@ -38,6 +32,13 @@
 #include <apr_time.h>
 #include <apr_poll.h>
 #include <apr_thread_pool.h>
+
+#include <celix_errno.h>
+
+#include "connection_listener.h"
+
+#include "shell_mediator.h"
+#include "remote_shell.h"
 
 struct connection_listener {
 	//constant
@@ -58,12 +59,12 @@ celix_status_t connectionListener_create(apr_pool_t *pool, remote_shell_t remote
 	celix_status_t status = CELIX_SUCCESS;
     (*instance) = apr_palloc(pool, sizeof(**instance));
     if ((*instance) != NULL) {
-    	(*instance)->pool=pool;
-    	(*instance)->port=port;
-		(*instance)->mutex=NULL;
-		(*instance)->remoteShell=remoteShell;
-		(*instance)->thread=NULL;
-		(*instance)->pollset=NULL;
+    	(*instance)->pool = pool;
+    	(*instance)->port = port;
+		(*instance)->mutex = NULL;
+		(*instance)->remoteShell = remoteShell;
+		(*instance)->thread = NULL;
+		(*instance)->pollset = NULL;
 		apr_pool_pre_cleanup_register(pool, (*instance), (void *)connectionListener_cleanup);
 
 		status = apr_thread_mutex_create(&(*instance)->mutex, APR_THREAD_MUTEX_DEFAULT, pool);
@@ -91,9 +92,10 @@ celix_status_t connectionListener_start(connection_listener_t instance) {
 
 celix_status_t connectionListener_stop(connection_listener_t instance) {
 	celix_status_t status = CELIX_SUCCESS;
+	apr_thread_t *thread = NULL;
+	apr_pollset_t *pollset = NULL;
+
 	printf("CONNECTION_LISTENER: Stopping thread\n");
-	apr_thread_t *thread;
-	apr_pollset_t *pollset;
 
 	apr_thread_mutex_lock(instance->mutex);
 	thread=instance->thread;
@@ -102,10 +104,14 @@ celix_status_t connectionListener_stop(connection_listener_t instance) {
 	apr_thread_mutex_unlock(instance->mutex);
 
 	if (thread != NULL && pollset != NULL) {
-		printf("Stopping thread by waking poll on listen socket\n");
-		apr_pollset_wakeup(pollset);
+		apr_status_t threadStatus = APR_SUCCESS;
 
-		apr_status_t threadStatus;
+		printf("Stopping thread by waking poll on listen socket\n");
+		apr_status_t stat = apr_pollset_wakeup(pollset);
+		char error[512];
+		apr_strerror(stat, error, 512);
+		printf("Got error %s\n", error);
+
 		apr_thread_join(&threadStatus, thread);
 		printf("Done joining thread\n");
 	} else if (thread != NULL) {
@@ -117,8 +123,7 @@ celix_status_t connectionListener_stop(connection_listener_t instance) {
 	return status;
 }
 
-static void* APR_THREAD_FUNC connection_listener_thread(apr_thread_t *thread, void *data)
-{
+static void* APR_THREAD_FUNC connection_listener_thread(apr_thread_t *thread, void *data) {
 	apr_status_t status = APR_SUCCESS;
 	connection_listener_t instance = data;
 
@@ -144,21 +149,24 @@ static void* APR_THREAD_FUNC connection_listener_thread(apr_thread_t *thread, vo
     instance->pollset=pollset;
     apr_thread_mutex_unlock(instance->mutex);
 
-    if (status != CELIX_SUCCESS) {
+    if (status != APR_SUCCESS) {
     	char error[64];
 		apr_strerror(status, error, 64);
     	printf("Error creating and listing on socket: %s\n", error);
     } else {
-    	printf("Remote Shell accepting connections on port %lld\n", instance->port);
+    	printf("Remote Shell accepting connections on port %li\n", instance->port);
     }
 
-	while (status == CELIX_SUCCESS) {
+	while (status == APR_SUCCESS) {
 		status = apr_pollset_poll(pollset, -1, &num, &ret_pfd); //blocks on fd till a connection is made
 		if (status == APR_SUCCESS) {
-			acceptedSocket = NULL;
+			apr_status_t socketStatus = APR_SUCCESS;
 			apr_pool_t *socketPool = NULL;
+
+			acceptedSocket = NULL;
 			apr_pool_create(&socketPool, instance->pool);
-			apr_status_t socketStatus = apr_socket_accept(&acceptedSocket, listenSocket, socketPool);
+			socketStatus = apr_socket_accept(&acceptedSocket, listenSocket, socketPool);
+
 			printf("REMOTE_SHELL: created connection socket\n");
 			if (socketStatus == APR_SUCCESS) {
 				remoteShell_addConnection(instance->remoteShell, acceptedSocket);

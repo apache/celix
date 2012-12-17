@@ -33,7 +33,6 @@
 #include <bundle_context.h>
 #include <celix_errno.h>
 
-
 typedef struct shell_mediator *shell_mediator_t;
 
 celix_status_t shellMediator_create(apr_pool_t *pool, bundle_context_t context, shell_mediator_t *instance);

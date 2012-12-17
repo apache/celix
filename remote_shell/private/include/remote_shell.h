@@ -27,13 +27,12 @@
 #ifndef REMOTE_SHELL_H_
 #define REMOTE_SHELL_H_
 
-#include "shell_mediator.h"
-
 #include <apr_pools.h>
 
 #include <bundle_context.h>
 #include <celix_errno.h>
 
+#include "shell_mediator.h"
 
 typedef struct remote_shell *remote_shell_t;
 

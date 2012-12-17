@@ -24,9 +24,6 @@
  *  \copyright	Apache License, Version 2.0
  */
 
-
-#include "shell_mediator.h"
-
 #include <stdlib.h>
 
 #include <apr_pools.h>
@@ -36,6 +33,8 @@
 #include <shell.h>
 #include <service_tracker.h>
 #include <command.h>
+
+#include "shell_mediator.h"
 
 struct shell_mediator {
     apr_pool_t *pool;
@@ -65,12 +64,13 @@ celix_status_t shellMediator_create(apr_pool_t *pool, bundle_context_t context, 
 
     (*instance) = apr_palloc(pool, sizeof(**instance));
     if ((*instance) != NULL) {
-    	(*instance)->pool=pool;
-		(*instance)->context=context;
-		(*instance)->tracker=NULL;
-		(*instance)->mutex=NULL;
-		(*instance)->shellService=NULL;
-		apr_pool_pre_cleanup_register(pool, (*instance), (void *)shellMediator_cleanup);
+		apr_pool_pre_cleanup_register(pool, *instance, (void *)shellMediator_cleanup);
+
+    	(*instance)->pool = pool;
+		(*instance)->context = context;
+		(*instance)->tracker = NULL;
+		(*instance)->mutex = NULL;
+		(*instance)->shellService = NULL;
 
 		status = apr_thread_mutex_create(&(*instance)->mutex, APR_THREAD_MUTEX_DEFAULT, pool);
 		status = CELIX_DO_IF(status, serviceTrackerCustomizer_create(pool, (*instance), shellMediator_addingService, shellMediator_addedService,
