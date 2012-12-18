@@ -59,6 +59,7 @@ celix_status_t bundleActivator_create(bundle_context_t context, void **userData)
 	celix_status_t status = CELIX_SUCCESS;
     apr_pool_t *ctxpool;
     apr_pool_t *pool;
+
     status = bundleContext_getMemoryPool(context, &ctxpool);
     apr_pool_create(&pool, ctxpool);
     if (status == CELIX_SUCCESS) {

@@ -40,6 +40,7 @@ building a DLL on windows.
   #endif /* framework_EXPORTS */
 #else /* defined (_WIN32) */
 #define FRAMEWORK_EXPORT __attribute__((visibility("default")))
+#define ACTIVATOR_EXPORT __attribute__((visibility("default")))
 #endif
 
 #endif /* FRAMEWORK_EXPORTS_H_ */
