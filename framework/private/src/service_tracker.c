@@ -102,7 +102,7 @@ celix_status_t serviceTracker_createWithFilter(apr_pool_t *pool, bundle_context_
 }
 
 apr_status_t serviceTracker_destroy(void *trackerP) {
-	service_tracker_t tracker = trackerP;
+	service_tracker_t tracker = (service_tracker_t) trackerP;
 	bundleContext_removeServiceListener(tracker->context, tracker->listener);
 	arrayList_destroy(tracker->tracked);
 

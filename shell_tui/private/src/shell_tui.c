@@ -88,7 +88,7 @@ void shellTui_initializeService(SHELL_TUI_ACTIVATOR activator) {
 }
 
 void shellTui_serviceChanged(service_listener_t listener, service_event_t event) {
-	bool result = NULL;
+	bool result = false;
     SHELL_TUI_ACTIVATOR act = (SHELL_TUI_ACTIVATOR) listener->handle;
 
 	if ((event->type == SERVICE_EVENT_REGISTERED) && (act->reference == NULL)) {

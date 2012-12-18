@@ -180,7 +180,7 @@ celix_status_t bundleArchive_recreate(char * archiveRoot, apr_pool_t *mp, bundle
                 
                 if (apr_dir_open(&dir, archiveRoot, mp) == APR_SUCCESS) {
                     apr_finfo_t dp;
-                    long idx;
+                    long idx = 0;
 					char *location;
 
                     while ((apr_dir_read(&dp, APR_FINFO_DIRENT|APR_FINFO_TYPE, dir)) == APR_SUCCESS) {
