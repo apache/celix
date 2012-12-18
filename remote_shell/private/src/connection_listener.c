@@ -43,7 +43,7 @@
 struct connection_listener {
 	//constant
     apr_pool_t *pool;
-    apr_int64_t port;
+    apr_size_t port;
     remote_shell_t remoteShell;
 	apr_thread_mutex_t *mutex;
 
@@ -55,7 +55,7 @@ struct connection_listener {
 static void* APR_THREAD_FUNC connection_listener_thread(apr_thread_t *thread, void *data);
 static apr_status_t connectionListener_cleanup(connection_listener_t instance);
 
-celix_status_t connectionListener_create(apr_pool_t *pool, remote_shell_t remoteShell, apr_int64_t port, connection_listener_t *instance) {
+celix_status_t connectionListener_create(apr_pool_t *pool, remote_shell_t remoteShell, apr_size_t port, connection_listener_t *instance) {
 	celix_status_t status = CELIX_SUCCESS;
     (*instance) = apr_palloc(pool, sizeof(**instance));
     if ((*instance) != NULL) {
@@ -105,10 +105,12 @@ celix_status_t connectionListener_stop(connection_listener_t instance) {
 
 	if (thread != NULL && pollset != NULL) {
 		apr_status_t threadStatus = APR_SUCCESS;
+		apr_status_t stat = APR_SUCCESS;
+		char error[512];
 
 		printf("Stopping thread by waking poll on listen socket\n");
-		apr_status_t stat = apr_pollset_wakeup(pollset);
-		char error[512];
+		stat = apr_pollset_wakeup(pollset);
+		
 		apr_strerror(stat, error, 512);
 		printf("Got error %s\n", error);
 

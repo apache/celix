@@ -69,9 +69,9 @@ static apr_status_t remoteShell_cleanup(remote_shell_t instance); //gets called 
 
 static celix_status_t remoteShell_connection_print(connection_t connection, char * text);
 static celix_status_t remoteShell_connection_execute(connection_t connection, char *command);
-static void* remoteShell_connection_run(apr_thread_t *thread, void *data);
+static void* APR_THREAD_FUNC remoteShell_connection_run(apr_thread_t *thread, void *data);
 
-celix_status_t remoteShell_create(apr_pool_t *pool, shell_mediator_t mediator, apr_int64_t maximumConnections, remote_shell_t *instance) {
+celix_status_t remoteShell_create(apr_pool_t *pool, shell_mediator_t mediator, apr_size_t maximumConnections, remote_shell_t *instance) {
 	celix_status_t status = CELIX_SUCCESS;
 	(*instance) = apr_palloc(pool, sizeof(**instance));
 	if ((*instance) != NULL) {
@@ -138,10 +138,12 @@ celix_status_t remoteShell_stopConnections(remote_shell_t instance) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_status_t wakeupStatus = APR_SUCCESS;
 	char error[64];
+	int length = 0;
+	int i = 0;
 
 	apr_thread_mutex_lock(instance->mutex);
-	int length = arrayList_size(instance->connections);
-	for (int i = 0; i < length; i += 1) {
+	length = arrayList_size(instance->connections);
+	for (i = 0; i < length; i += 1) {
 		connection_t connection = arrayList_get(instance->connections, i);
 		wakeupStatus = apr_pollset_wakeup(connection->pollset);
 		if (wakeupStatus != APR_SUCCESS) {
@@ -155,7 +157,7 @@ celix_status_t remoteShell_stopConnections(remote_shell_t instance) {
 	return status;
 }
 
-void * remoteShell_connection_run(apr_thread_t *thread, void *data) {
+void *APR_THREAD_FUNC remoteShell_connection_run(apr_thread_t *thread, void *data) {
 	celix_status_t status = CELIX_SUCCESS;
 	connection_t connection = data;
 

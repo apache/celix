@@ -32,6 +32,7 @@ building a DLL on windows.
 // We are using the Visual Studio Compiler and building Shared libraries
 
 #if defined (_WIN32)
+	#define  ACTIVATOR_EXPORT __declspec(dllexport)
   #if defined(celix_framework_EXPORTS)
     #define  FRAMEWORK_EXPORT __declspec(dllexport)
   #else

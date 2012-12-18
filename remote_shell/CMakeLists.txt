@@ -25,6 +25,9 @@ if (REMOTE_SHELL)
     	private/src/connection_listener 
     	private/src/shell_mediator 
     	private/src/remote_shell
+
+		private/include/remote_shell.h
+		private/include/connection_listener.h
 	)
  
     include_directories("private/include")

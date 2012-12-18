@@ -51,9 +51,9 @@ struct bundle_instance {
 
 typedef struct bundle_instance *bundle_instance_t;
 
-static apr_int64_t bundleActivator_getPort(bundle_context_t context);
-static apr_int64_t bundleActivator_getMaximumConnections(bundle_context_t context);
-static apr_int64_t bundleActivator_getProperty(bundle_context_t context, char * propertyName, apr_int64_t defaultValue);
+static apr_size_t bundleActivator_getPort(bundle_context_t context);
+static apr_size_t bundleActivator_getMaximumConnections(bundle_context_t context);
+static apr_size_t bundleActivator_getProperty(bundle_context_t context, char * propertyName, apr_size_t defaultValue);
 
 celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -62,7 +62,7 @@ celix_status_t bundleActivator_create(bundle_context_t context, void **userData)
     status = bundleContext_getMemoryPool(context, &ctxpool);
     apr_pool_create(&pool, ctxpool);
     if (status == CELIX_SUCCESS) {
-    	bundle_instance_t bi = apr_palloc(pool, sizeof(struct bundle_instance));
+    	bundle_instance_t bi = (bundle_instance_t) apr_palloc(pool, sizeof(struct bundle_instance));
         if (userData != NULL) {
         	bi->pool = pool;
         	bi->shellMediator = NULL;
@@ -80,8 +80,8 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
     celix_status_t status = CELIX_SUCCESS;
     bundle_instance_t bi = (bundle_instance_t)userData;
 
-    apr_int64_t port = bundleActivator_getPort(context);
-    apr_int64_t maxConn = bundleActivator_getMaximumConnections(context);
+    apr_size_t port = bundleActivator_getPort(context);
+    apr_size_t maxConn = bundleActivator_getMaximumConnections(context);
 
     status = shellMediator_create(bi->pool, context, &bi->shellMediator);
 	status = CELIX_DO_IF(status, remoteShell_create(bi->pool, bi->shellMediator,  maxConn, &bi->remoteShell));
@@ -105,21 +105,21 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context
     return CELIX_SUCCESS;
 }
 
-static apr_int64_t bundleActivator_getPort(bundle_context_t context) {
+static apr_size_t bundleActivator_getPort(bundle_context_t context) {
 	return bundleActivator_getProperty(context, REMOTE_SHELL_TELNET_PORT_PROPERTY_NAME, DEFAULT_REMOTE_SHELL_TELNET_PORT);
 }
 
-static apr_int64_t bundleActivator_getMaximumConnections(bundle_context_t context) {
+static apr_size_t bundleActivator_getMaximumConnections(bundle_context_t context) {
 	return bundleActivator_getProperty(context, REMOTE_SHELL_TELNET_MAXCONN_PROPERTY_NAME, DEFAULT_REMOTE_SHELL_TELNET_MAXCONN);
 }
 
-static apr_int64_t bundleActivator_getProperty(bundle_context_t context, char * propertyName, apr_int64_t defaultValue) {
-	apr_int64_t value;
+static apr_size_t bundleActivator_getProperty(bundle_context_t context, char * propertyName, apr_size_t defaultValue) {
+	apr_size_t value;
 	char *strValue = NULL;
 
 	bundleContext_getProperty(context, propertyName, &strValue);
 	if (strValue != NULL) {
-		value = apr_strtoi64(strValue, (char **)NULL, 10);
+		value = atoi(strValue);
 		if (errno != 0) {
 			printf("incorrect format for %s\n", propertyName);
 			value = defaultValue;
