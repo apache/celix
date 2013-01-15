@@ -17,14 +17,12 @@
 
 find_package(Slp REQUIRED)
 
-include_directories("/opt/local/include")
+include_directories(${SLP_INCLUDE_DIRS})
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/discovery/private/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
-
-link_directories("/opt/local/lib")
 
 SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_rsa_discovery_slp")
 SET_HEADERS("Bundle-Name: Apache Celix RSA SLP Discovery")
