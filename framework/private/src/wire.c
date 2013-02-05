@@ -35,7 +35,7 @@ struct wire {
 	capability_t capability;
 };
 
-apr_status_t wire_destroy(void *wireP);
+apr_status_t wire_destroy(void *handle);
 
 celix_status_t wire_create(apr_pool_t *pool, module_t importer, requirement_t requirement,
 		module_t exporter, capability_t capability, wire_t *wire) {
@@ -56,8 +56,8 @@ celix_status_t wire_create(apr_pool_t *pool, module_t importer, requirement_t re
 	return status;
 }
 
-apr_status_t wire_destroy(void *wireP) {
-	wire_t wire = wireP;
+apr_status_t wire_destroy(void *handle) {
+	wire_t wire = (wire_t) handle;
 	wire->importer = NULL;
 	wire->requirement = NULL;
 	wire->exporter = NULL;

@@ -24,7 +24,7 @@ ENDIF(NOT CPACK_COMMAND)
 
 find_program(JAR_COMMAND jar)
 if(JAR_COMMAND)
-	message("Using JAR to repack bundles, bundles can be used by Apache ACE")
+	message(STATUS "Using JAR to repack bundles, bundles can be used by Apache ACE")
 else(JAR_COMMAND)
     message("No JAR support, generated bundles are not usable for Apache ACE")
 endif(JAR_COMMAND)
@@ -151,38 +151,54 @@ MACRO(deploy)
     	DEPENDS ${DEPS} celix
     	COMMENT "Deploy target ${DEPLOY_NAME}")
     ADD_DEPENDENCIES(deploy ${__deployTarget})
+    
+    GET_DIRECTORY_PROPERTY(PROPS ADDITIONAL_MAKE_CLEAN_FILES)
+	SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${PROPS};${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/bundles")
 	
 	CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/config.properties.in ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/config.properties @ONLY)
 	
-	set(FW_PATH ${CMAKE_BINARY_DIR}/framework)
-	set(UTILS_PATH ${CMAKE_BINARY_DIR}/utils)
-	set(LAUNCHER ${CMAKE_BINARY_DIR}/launcher/celix)
-	
 	IF(UNIX)
-	  IF(APPLE)
-	    set(LIBRARY_PATH DYLD_LIBRARY_PATH)
-	  ELSE(APPLE)
-	    set(LIBRARY_PATH LD_LIBRARY_PATH)
-	  ENDIF(APPLE)
+		set(FW_PATH ${CMAKE_BINARY_DIR}/framework)
+		set(UTILS_PATH ${CMAKE_BINARY_DIR}/utils)
+		set(LAUNCHER ${CMAKE_BINARY_DIR}/launcher/celix)
+		
+		IF(UNIX)
+		  IF(APPLE)
+		    set(LIBRARY_PATH DYLD_LIBRARY_PATH)
+		  ELSE(APPLE)
+		    set(LIBRARY_PATH LD_LIBRARY_PATH)
+		  ENDIF(APPLE)
+		ENDIF(UNIX)
+	
+		CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/run.sh.in ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/run.sh @ONLY)
+
+		# Generate an Eclipse launch file to be able to run the deployment from Eclipse	
+		# Linux/unix is assumed since we do only support VS on windows
+		string(REPLACE "/" ";" LIST ${PROJECT_BINARY_DIR})
+		list(LENGTH LIST len)
+		MATH(EXPR test "${len} - 1")
+		LIST(GET LIST ${test} last)
+	
+		SET(CONTAINER_NAME ${DEPLOY_NAME})
+		SET(PROGRAM_NAME ${LAUNCHER})
+		SET(PROJECT_ATTR ${last})
+		SET(WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/")
+		
+		CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/RunConfig.in ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/${DEPLOY_NAME}.launch @ONLY)
 	ENDIF(UNIX)
 	
-	CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/run.sh.in ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/run.sh @ONLY)
-	
-	GET_DIRECTORY_PROPERTY(PROPS ADDITIONAL_MAKE_CLEAN_FILES)
-	SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${PROPS};${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/bundles")
-	
-	# Generate an Eclipse launch file to be able to run the deployment from Eclipse	
-	string(REPLACE "/" ";" LIST ${PROJECT_BINARY_DIR})
-	list(LENGTH LIST len)
-	MATH(EXPR test "${len} - 1")
-	LIST(GET LIST ${test} last)
-
-	SET(CONTAINER_NAME ${DEPLOY_NAME})
-	SET(PROGRAM_NAME ${LAUNCHER})
-	SET(PROJECT_ATTR ${last})
-	SET(WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/")
-	
-	CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/RunConfig.in ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/${DEPLOY_NAME}.launch @ONLY)
+	IF(WIN32)
+		GET_FILENAME_COMPONENT(apr_path ${APR_LIBRARY} PATH)
+		GET_FILENAME_COMPONENT(aprutil_path ${APRUTIL_LIBRARY} PATH)
+		GET_FILENAME_COMPONENT(zlib_path ${ZLIB_LIBRARY} PATH)
+		GET_FILENAME_COMPONENT(curl_path ${CURL_LIBRARY} PATH)
+		SET(celixutils_path "${PROJECT_BINARY_DIR}/utils/${CMAKE_BUILD_TYPE}")
+		SET(celixframework_path "${PROJECT_BINARY_DIR}/framework/${CMAKE_BUILD_TYPE}")
+		
+		SET(PATH "%PATH%;${apr_path};${aprutil_path};${zlib_path};${curl_path};${celixutils_path};${celixframework_path}")
+		
+		CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/vcxproj.user.in ${CMAKE_CURRENT_BINARY_DIR}/deploy_${DEPLOY_NAME}.vcxproj.user @ONLY)
+	ENDIF(WIN32)
 ENDMACRO(deploy)
 
 # macro for scanning subdirectories for deploy.cmake files

@@ -311,6 +311,14 @@ typedef void (*start_function_t)(void * handle, bundle_context_t context);
 typedef void (*stop_function_t)(void * handle, bundle_context_t context);
 typedef void (*destroy_function_t)(void * handle, bundle_context_t context);
 
+#ifdef _WIN32
+HMODULE fw_getCurrentModule() {
+	HMODULE hModule = NULL;
+	GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCTSTR)fw_getCurrentModule, &hModule);
+	return hModule;
+}
+#endif
+
 celix_status_t fw_init(framework_t framework) {
 	celix_status_t status = framework_acquireBundleLock(framework, framework->bundle, BUNDLE_INSTALLED|BUNDLE_RESOLVED|BUNDLE_STARTING|BUNDLE_ACTIVE);
 	bundle_state_e state;
@@ -374,10 +382,11 @@ celix_status_t fw_init(framework_t framework) {
 	    return status;
 	} else {
 #ifdef _WIN32
-		HMODULE this_process;
+		HMODULE handle = NULL;
+#else
+		void * handle = NULL;
 #endif
         unsigned int arcIdx;
-		void * handle;
 		bundle_context_t context = NULL;
 		ACTIVATOR activator;
 
@@ -406,8 +415,7 @@ celix_status_t fw_init(framework_t framework) {
         apr_thread_cond_create(&framework->shutdownGate, framework->mp);
 
 #ifdef _WIN32
-		GetModuleHandleEx(0,0,&this_process);
-		handle = GetModuleHandle(0);
+        handle = fw_getCurrentModule();
 #else
         handle = dlopen(NULL, RTLD_LAZY|RTLD_LOCAL);
 #endif

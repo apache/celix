@@ -59,8 +59,9 @@ void echoClient_start(ECHO_CLIENT client) {
 }
 
 void echoClient_stop(ECHO_CLIENT client) {
+	apr_status_t status;
 	client->running = false;
-	apr_thread_join(APR_SUCCESS, client->sender);
+	apr_thread_join(&status, client->sender);
 }
 
 void echoClient_destroy(ECHO_CLIENT client) {

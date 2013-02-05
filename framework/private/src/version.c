@@ -41,7 +41,7 @@ struct version {
 	char *qualifier;
 };
 
-static apr_status_t version_destroy(void *version);
+static apr_status_t version_destroy(void *handle);
 
 celix_status_t version_createVersion(apr_pool_t *pool, int major, int minor, int micro, char * qualifier, version_t *version) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -97,8 +97,8 @@ celix_status_t version_clone(version_t version, apr_pool_t *pool, version_t *clo
 	return version_createVersion(pool, version->major, version->minor, version->micro, version->qualifier, clone);
 }
 
-apr_status_t version_destroy(void *versionP) {
-	version_t version = versionP;
+apr_status_t version_destroy(void *handle) {
+	version_t version = (version_t) handle;
 	version->major = 0;
 	version->minor = 0;
 	version->micro = 0;
