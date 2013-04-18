@@ -93,7 +93,7 @@ celix_status_t driverAttributes_getDriverId(driver_attributes_t driverAttributes
 		if (status == CELIX_SUCCESS) {
 			char *id_prop = properties_get(properties, "DRIVER_ID");
 
-			if (id_prop) {
+			if (!id_prop) {
 				status = CELIX_ENOMEM;
 			} else {
 				*driverId = apr_pstrdup(driverAttributes->pool,id_prop);
