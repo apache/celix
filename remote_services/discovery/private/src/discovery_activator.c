@@ -67,6 +67,7 @@ celix_status_t bundleActivator_create(bundle_context_t context, void **userData)
 		activator->pool = pool;
 		activator->context = context;
 		activator->endpointListenerTracker = NULL;
+		activator->endpointListenerService = NULL;
 
 		discovery_create(pool, context, &activator->discovery);
 
@@ -112,7 +113,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 	discoveryActivator_getUUID(activator, &uuid);
 	char *scope = apr_pstrcat(activator->pool, "(&(", OBJECTCLASS, "=*)(", ENDPOINT_FRAMEWORK_UUID, "=", uuid, "))", NULL);
 	properties_set(props, (char *) ENDPOINT_LISTENER_SCOPE, scope);
-	bundleContext_registerService(context, (char *) endpoint_listener_service, endpointListener, props, &activator->endpointListenerService);
+	status = bundleContext_registerService(context, (char *) endpoint_listener_service, endpointListener, props, &activator->endpointListenerService);
 
 	return status;
 }

@@ -1201,8 +1201,9 @@ celix_status_t fw_registerService(framework_t framework, service_registration_t 
 		bundle_getMemoryPool(bundle, &pool);
 
 		arrayList_create(pool, &infos);
-		for (i = 0; i > arrayList_size(framework->serviceListeners); i++) {
-			fw_service_listener_t listener = (fw_service_listener_t) (framework->serviceListeners, i);
+		for (i = 0; i < arrayList_size(framework->serviceListeners); i++) {
+			fw_service_listener_t listener =(fw_service_listener_t) arrayList_get(framework->serviceListeners, i);
+
 			apr_pool_t *pool;
 			bundle_context_t context;
 			listener_hook_info_t info;
@@ -1210,7 +1211,7 @@ celix_status_t fw_registerService(framework_t framework, service_registration_t 
 
 			bundle_getContext(bundle, &context);
 			bundleContext_getMemoryPool(context, &pool);
-			info = (listener_hook_info_t) (pool, sizeof(*info));
+			info = (listener_hook_info_t) apr_palloc(pool, sizeof(*info));
 
 			bundle_getContext(listener->bundle, &lContext);
 			info->context = lContext;
@@ -1223,7 +1224,7 @@ celix_status_t fw_registerService(framework_t framework, service_registration_t 
 		apr_pool_create(&subpool, pool);
 
 		serviceRegistry_createServiceReference(framework->registry, subpool, *registration, &ref);
-		hook = (listener_hook_service_t) (framework, framework->bundle, ref);
+		hook = (listener_hook_service_t) fw_getService(framework,framework->bundle, ref);
 		hook->added(hook->handle, infos);
 		serviceRegistry_ungetService(framework->registry, framework->bundle, ref);
 
@@ -2001,7 +2002,7 @@ static void *APR_THREAD_FUNC fw_eventDispatcher(apr_thread_t *thd, void *fw) {
 			int size = arrayList_size(request->listeners);
 			for (i = 0; i < size; i++) {
 				if (request->type == BUNDLE_EVENT_TYPE) {
-					fw_bundle_listener_t listener = (fw_bundle_listener_t) (request->listeners, i);
+					fw_bundle_listener_t listener = (fw_bundle_listener_t) arrayList_get(request->listeners, i);
 					bundle_event_t event = (bundle_event_t) apr_palloc(listener->listener->pool, sizeof(*event));
 					event->bundle = request->bundle;
 					event->type = request->type;
