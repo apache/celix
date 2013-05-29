@@ -30,5 +30,5 @@ if (LOG_WRITER)
     include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
     target_link_libraries(log_writer celix_framework dependency_manager)
     
-    INSTALL(FILES ${PROJECT_BINARY_DIR}/bundles/log_writer.zip DESTINATION share/celix/bundles COMPONENT framework)
+    INSTALL(FILES ${PROJECT_BINARY_DIR}/log_writer/log_writer.zip DESTINATION share/celix/bundles COMPONENT framework)
 endif (LOG_WRITER)

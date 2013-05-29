@@ -38,5 +38,5 @@ if (LOG_SERVICE)
     
     FILE(GLOB files public/include/log_service.h)
     INSTALL(FILES ${files} DESTINATION include/celix/log_service COMPONENT framework)
-    INSTALL(FILES ${PROJECT_BINARY_DIR}/bundles/log_service.zip DESTINATION share/celix/bundles COMPONENT framework)
+    INSTALL(FILES ${PROJECT_BINARY_DIR}/log_service/log_service.zip DESTINATION share/celix/bundles COMPONENT framework)
 endif (LOG_SERVICE)
