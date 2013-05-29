@@ -38,7 +38,7 @@ include(cmake/installation.cmake)
 
 include(UseDoxygen)  
 
-set(DEFAULT_VERSION 0.0.1-incubation)
+set(DEFAULT_VERSION 0.0.1.incubation)
 
 ## New sub project must use a buildoption to be able to enable/disable the project using the CMake Editor
 ## Sub projects depending on another sub project automatically enable these dependencies
