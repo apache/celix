@@ -147,8 +147,11 @@ MACRO(deploy)
 	    SET(BUNDLES "${BUNDLES} bundles/${BUNDLE}.zip")
 	    SET(DEPS ${DEPS};${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/bundles/${BUNDLE}.zip)
 	ENDFOREACH(BUNDLE)
+	IF(NOT(CELIX_FOUND)) #celix project
+		set(DEPS ${DEPS};celix)
+	ENDIF()
     ADD_CUSTOM_TARGET(${__deployTarget} 
-    	DEPENDS ${DEPS} celix
+    	DEPENDS ${DEPS}
     	COMMENT "Deploy target ${DEPLOY_NAME}")
     ADD_DEPENDENCIES(deploy ${__deployTarget})
     
@@ -158,9 +161,16 @@ MACRO(deploy)
 	CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/config.properties.in ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/config.properties @ONLY)
 	
 	IF(UNIX)
-		set(FW_PATH ${CMAKE_BINARY_DIR}/framework)
-		set(UTILS_PATH ${CMAKE_BINARY_DIR}/utils)
-		set(LAUNCHER ${CMAKE_BINARY_DIR}/launcher/celix)
+		if(CELIX_FOUND)
+			GET_FILENAME_COMPONENT(FW_PATH ${CELIX_FRAMEWORK_LIBRARY} PATH)
+			GET_FILENAME_COMPONENT(UTILS_PATH ${CELIX_UTILS_LIBRARY} PATH)
+			set(LAUNCHER ${CELIX_LAUNCHER})
+		ELSE(CELIX_FOUND)
+			set(FW_PATH ${CMAKE_BINARY_DIR}/framework)
+			set(UTILS_PATH ${CMAKE_BINARY_DIR}/utils)
+			set(LAUNCHER ${CMAKE_BINARY_DIR}/launcher/celix)
+		ENDIF(CELIX_FOUND)
+		
 		
 		IF(UNIX)
 		  IF(APPLE)
@@ -192,8 +202,14 @@ MACRO(deploy)
 		GET_FILENAME_COMPONENT(aprutil_path ${APRUTIL_LIBRARY} PATH)
 		GET_FILENAME_COMPONENT(zlib_path ${ZLIB_LIBRARY} PATH)
 		GET_FILENAME_COMPONENT(curl_path ${CURL_LIBRARY} PATH)
-		SET(celixutils_path "${PROJECT_BINARY_DIR}/utils/${CMAKE_BUILD_TYPE}")
-		SET(celixframework_path "${PROJECT_BINARY_DIR}/framework/${CMAKE_BUILD_TYPE}")
+		
+		IF(CELIX_FOUND)
+			SET(celixutils_path "${CELIX_FRAMEWORK_LIBRARY}/utils/${CMAKE_BUILD_TYPE}")
+			SET(celixframework_path "${CELIX_FRAMEWORK_LIBRARY}/framework/${CMAKE_BUILD_TYPE}")
+		ELSE(CELIX_FOUND)
+			SET(celixutils_path "${PROJECT_BINARY_DIR}/utils/${CMAKE_BUILD_TYPE}")
+			SET(celixframework_path "${PROJECT_BINARY_DIR}/framework/${CMAKE_BUILD_TYPE}")
+		ENDIF(CELIX_FOUND)
 		
 		SET(PATH "%PATH%;${apr_path};${aprutil_path};${zlib_path};${curl_path};${celixutils_path};${celixframework_path}")
 		
