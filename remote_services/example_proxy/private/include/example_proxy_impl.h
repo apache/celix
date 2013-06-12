@@ -38,14 +38,14 @@
 
 struct example {
 	apr_pool_t *pool;
-	endpoint_description_t endpoint;
+	endpoint_description_pt endpoint;
 };
 
-celix_status_t exampleProxy_create(apr_pool_t *pool, example_t *example);
-celix_status_t exampleProxy_add(example_t example, double a, double b, double *result);
-celix_status_t exampleProxy_sub(example_t example, double a, double b, double *result);
-celix_status_t exampleProxy_sqrt(example_t example, double a, double *result);
+celix_status_t exampleProxy_create(apr_pool_t *pool, example_pt *example);
+celix_status_t exampleProxy_add(example_pt example, double a, double b, double *result);
+celix_status_t exampleProxy_sub(example_pt example, double a, double b, double *result);
+celix_status_t exampleProxy_sqrt(example_pt example, double a, double *result);
 
-celix_status_t exampleProxy_setEndpointDescription(void *proxy, endpoint_description_t endpoint);
+celix_status_t exampleProxy_setEndpointDescription(void *proxy, endpoint_description_pt endpoint);
 
 #endif /* EXAMPLE_PROXY_IMPL_H_ */

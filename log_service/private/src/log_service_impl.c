@@ -30,12 +30,12 @@
 #include "bundle.h"
 
 struct log_service_data {
-    log_t log;
-    bundle_t bundle;
+    log_pt log;
+    bundle_pt bundle;
     apr_pool_t *pool;
 };
 
-celix_status_t logService_create(log_t log, bundle_t bundle, apr_pool_t *pool, log_service_data_t *logger) {
+celix_status_t logService_create(log_pt log, bundle_pt bundle, apr_pool_t *pool, log_service_data_pt *logger) {
     celix_status_t status = CELIX_SUCCESS;
     *logger = apr_palloc(pool, sizeof(struct log_service_data));
     if (*logger == NULL) {
@@ -49,13 +49,13 @@ celix_status_t logService_create(log_t log, bundle_t bundle, apr_pool_t *pool, l
     return status;
 }
 
-celix_status_t logService_log(log_service_data_t logger, log_level_t level, char * message) {
+celix_status_t logService_log(log_service_data_pt logger, log_level_t level, char * message) {
     return logService_logSr(logger, NULL, level, message);
 }
 
-celix_status_t logService_logSr(log_service_data_t logger, service_reference_t reference, log_level_t level, char * message) {
-    log_entry_t entry = NULL;
-    bundle_t bundle = logger->bundle;
+celix_status_t logService_logSr(log_service_data_pt logger, service_reference_pt reference, log_level_t level, char * message) {
+    log_entry_pt entry = NULL;
+    bundle_pt bundle = logger->bundle;
     if (reference != NULL) {
     	serviceReference_getBundle(reference, &bundle);
     }

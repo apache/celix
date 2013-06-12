@@ -36,25 +36,25 @@
 #include "bundle.h"
 
 struct module {
-	linked_list_t capabilities;
-	linked_list_t requirements;
-	linked_list_t wires;
+	linked_list_pt capabilities;
+	linked_list_pt requirements;
+	linked_list_pt wires;
 
-	array_list_t dependentImporters;
+	array_list_pt dependentImporters;
 
-	version_t version;
+	version_pt version;
 	char * symbolicName;
 	bool resolved;
 
-	MANIFEST headerMap;
+	manifest_pt headerMap;
 	char * id;
 
 	struct bundle * bundle;
 };
 
-module_t module_create(MANIFEST headerMap, char * moduleId, bundle_t bundle) {
-    module_t module;
-    manifest_parser_t mp;
+module_pt module_create(manifest_pt headerMap, char * moduleId, bundle_pt bundle) {
+    module_pt module;
+    manifest_parser_pt mp;
     apr_pool_t *pool;
     apr_pool_t *bundlePool = NULL;
 
@@ -64,7 +64,7 @@ module_t module_create(MANIFEST headerMap, char * moduleId, bundle_t bundle) {
     if (headerMap != NULL) {
     	bundle_getMemoryPool(bundle, &bundlePool);
 
-        module = (module_t) apr_palloc(bundlePool, sizeof(*module));
+        module = (module_pt) apr_palloc(bundlePool, sizeof(*module));
         module->headerMap = headerMap;
         module->id = apr_pstrdup(bundlePool, moduleId);
         module->bundle = bundle;
@@ -97,8 +97,8 @@ module_t module_create(MANIFEST headerMap, char * moduleId, bundle_t bundle) {
     return module;
 }
 
-module_t module_createFrameworkModule(bundle_t bundle) {
-    module_t module;
+module_pt module_createFrameworkModule(bundle_pt bundle) {
+    module_pt module;
     apr_pool_t *capabilities_pool;
     apr_pool_t *requirements_pool;
     apr_pool_t *dependentImporters_pool;
@@ -106,7 +106,7 @@ module_t module_createFrameworkModule(bundle_t bundle) {
 
     bundle_getMemoryPool(bundle, &bundlePool);
 
-	module = (module_t) apr_palloc(bundlePool, sizeof(*module));
+	module = (module_pt) apr_palloc(bundlePool, sizeof(*module));
 	if (module) {
 	    if (apr_pool_create(&capabilities_pool, bundlePool) == APR_SUCCESS) {
 	        if (apr_pool_create(&requirements_pool, bundlePool) == APR_SUCCESS) {
@@ -131,20 +131,20 @@ module_t module_createFrameworkModule(bundle_t bundle) {
 	return module;
 }
 
-void module_destroy(module_t module) {
+void module_destroy(module_pt module) {
 	arrayList_destroy(module->dependentImporters);
 
 	module->headerMap = NULL;
 }
 
-wire_t module_getWire(module_t module, char * serviceName) {
-	wire_t wire = NULL;
+wire_pt module_getWire(module_pt module, char * serviceName) {
+	wire_pt wire = NULL;
 	if (module->wires != NULL) {
-		linked_list_iterator_t iterator = linkedListIterator_create(module->wires, 0);
+		linked_list_iterator_pt iterator = linkedListIterator_create(module->wires, 0);
 		while (linkedListIterator_hasNext(iterator)) {
 			char *name;
-			wire_t next = linkedListIterator_next(iterator);
-			capability_t cap = NULL;
+			wire_pt next = linkedListIterator_next(iterator);
+			capability_pt cap = NULL;
 			wire_getCapability(next, &cap);
 			capability_getServiceName(cap, &name);
 			if (strcasecmp(name, serviceName) == 0) {
@@ -156,11 +156,11 @@ wire_t module_getWire(module_t module, char * serviceName) {
 	return wire;
 }
 
-version_t module_getVersion(module_t module) {
+version_pt module_getVersion(module_pt module) {
 	return module->version;
 }
 
-celix_status_t module_getSymbolicName(module_t module, char **symbolicName) {
+celix_status_t module_getSymbolicName(module_pt module, char **symbolicName) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (module == NULL || *symbolicName != NULL) {
@@ -172,19 +172,19 @@ celix_status_t module_getSymbolicName(module_t module, char **symbolicName) {
 	return status;
 }
 
-char * module_getId(module_t module) {
+char * module_getId(module_pt module) {
 	return module->id;
 }
 
-linked_list_t module_getWires(module_t module) {
+linked_list_pt module_getWires(module_pt module) {
 	return module->wires;
 }
 
-void module_setWires(module_t module, linked_list_t wires) {
+void module_setWires(module_pt module, linked_list_pt wires) {
     int i = 0;
     for (i = 0; (module->wires != NULL) && (i < linkedList_size(module->wires)); i++) {
-        wire_t wire = (wire_t) linkedList_get(module->wires, i);
-        module_t exporter = NULL;
+        wire_pt wire = (wire_pt) linkedList_get(module->wires, i);
+        module_pt exporter = NULL;
         wire_getExporter(wire, &exporter);
         module_removeDependentImporter(exporter, module);
     }
@@ -192,49 +192,49 @@ void module_setWires(module_t module, linked_list_t wires) {
 	module->wires = wires;
 
 	for (i = 0; (module->wires != NULL) && (i < linkedList_size(module->wires)); i++) {
-        wire_t wire = (wire_t) linkedList_get(module->wires, i);
-        module_t exporter = NULL;
+        wire_pt wire = (wire_pt) linkedList_get(module->wires, i);
+        module_pt exporter = NULL;
         wire_getExporter(wire, &exporter);
         module_addDependentImporter(exporter, module);
     }
 }
 
-bool module_isResolved(module_t module) {
+bool module_isResolved(module_pt module) {
 	return module->resolved;
 }
 
-void module_setResolved(module_t module) {
+void module_setResolved(module_pt module) {
 	module->resolved = true;
 }
 
-bundle_t module_getBundle(module_t module) {
+bundle_pt module_getBundle(module_pt module) {
 	return module->bundle;
 }
 
-linked_list_t module_getRequirements(module_t module) {
+linked_list_pt module_getRequirements(module_pt module) {
 	return module->requirements;
 }
 
-linked_list_t module_getCapabilities(module_t module) {
+linked_list_pt module_getCapabilities(module_pt module) {
 	return module->capabilities;
 }
 
-array_list_t module_getDependentImporters(module_t module) {
+array_list_pt module_getDependentImporters(module_pt module) {
     return module->dependentImporters;
 }
 
-void module_addDependentImporter(module_t module, module_t importer) {
+void module_addDependentImporter(module_pt module, module_pt importer) {
     if (!arrayList_contains(module->dependentImporters, importer)) {
         arrayList_add(module->dependentImporters, importer);
     }
 }
 
-void module_removeDependentImporter(module_t module, module_t importer) {
+void module_removeDependentImporter(module_pt module, module_pt importer) {
     arrayList_removeElement(module->dependentImporters, importer);
 }
 
-array_list_t module_getDependents(module_t module) {
-    array_list_t dependents = NULL;
+array_list_pt module_getDependents(module_pt module) {
+    array_list_pt dependents = NULL;
     apr_pool_t *bundlePool = NULL;
     bundle_getMemoryPool(module->bundle, &bundlePool);
     arrayList_create(bundlePool, &dependents);

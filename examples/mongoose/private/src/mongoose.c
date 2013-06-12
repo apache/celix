@@ -227,7 +227,7 @@ typedef int SOCKET;
 typedef int socklen_t;
 #endif // NO_SOCKLEN_T
 
-typedef void * (*mg_thread_func_t)(void *);
+typedef void * (*mg_thread_func_pt)(void *);
 
 static const char *http_500_error = "Internal Server Error";
 
@@ -259,7 +259,7 @@ extern void SSL_load_error_strings(void);
 extern int SSL_CTX_use_PrivateKey_file(SSL_CTX *, const char *, int);
 extern int SSL_CTX_use_certificate_file(SSL_CTX *, const char *, int);
 extern int SSL_CTX_use_certificate_chain_file(SSL_CTX *, const char *);
-extern void SSL_CTX_set_default_passwd_cb(SSL_CTX *, mg_callback_t);
+extern void SSL_CTX_set_default_passwd_cb(SSL_CTX *, mg_callback_pt);
 extern void SSL_CTX_free(SSL_CTX *);
 extern unsigned long ERR_get_error(void);
 extern char *ERR_error_string(unsigned long, char *);
@@ -289,7 +289,7 @@ struct ssl_func {
 #define SSL_CTX_use_certificate_file (* (int (*)(SSL_CTX *, \
         const char *, int)) ssl_sw[12].ptr)
 #define SSL_CTX_set_default_passwd_cb \
-  (* (void (*)(SSL_CTX *, mg_callback_t)) ssl_sw[13].ptr)
+  (* (void (*)(SSL_CTX *, mg_callback_pt)) ssl_sw[13].ptr)
 #define SSL_CTX_free (* (void (*)(SSL_CTX *)) ssl_sw[14].ptr)
 #define SSL_load_error_strings (* (void (*)(void)) ssl_sw[15].ptr)
 #define SSL_CTX_use_certificate_chain_file \
@@ -420,7 +420,7 @@ struct mg_context {
   int stop_flag;                // Should we stop event loop
   SSL_CTX *ssl_ctx;             // SSL context
   char *config[NUM_OPTIONS];    // Mongoose configuration parameters
-  mg_callback_t user_callback;  // User-defined callback function
+  mg_callback_pt user_callback;  // User-defined callback function
 
   struct socket *listening_sockets;
 
@@ -1065,7 +1065,7 @@ struct dirent * readdir(DIR *dir) {
 
 #define set_close_on_exec(fd) // No FD_CLOEXEC on Windows
 
-static int start_thread(struct mg_context *ctx, mg_thread_func_t func,
+static int start_thread(struct mg_context *ctx, mg_thread_func_pt func,
                         void *param) {
   HANDLE hThread;
   ctx = NULL; // Unused
@@ -1187,7 +1187,7 @@ static void set_close_on_exec(int fd) {
   (void) fcntl(fd, F_SETFD, FD_CLOEXEC);
 }
 
-static int start_thread(struct mg_context *ctx, mg_thread_func_t func,
+static int start_thread(struct mg_context *ctx, mg_thread_func_pt func,
                         void *param) {
   pthread_t thread_id;
   pthread_attr_t attr;
@@ -3984,7 +3984,7 @@ void mg_stop(struct mg_context *ctx) {
 #endif // _WIN32
 }
 
-struct mg_context *mg_start(mg_callback_t user_callback, const char **options) {
+struct mg_context *mg_start(mg_callback_pt user_callback, const char **options) {
   struct mg_context *ctx;
   const char *name, *value, *default_value;
   int i;
@@ -4051,11 +4051,11 @@ struct mg_context *mg_start(mg_callback_t user_callback, const char **options) {
   (void) pthread_cond_init(&ctx->sq_full, NULL);
 
   // Start master (listening) thread
-  start_thread(ctx, (mg_thread_func_t) master_thread, ctx);
+  start_thread(ctx, (mg_thread_func_pt) master_thread, ctx);
 
   // Start worker threads
   for (i = 0; i < atoi(ctx->config[NUM_THREADS]); i++) {
-    if (start_thread(ctx, (mg_thread_func_t) worker_thread, ctx) != 0) {
+    if (start_thread(ctx, (mg_thread_func_pt) worker_thread, ctx) != 0) {
       cry(fc(ctx), "Cannot start worker thread: %d", ERRNO);
     } else {
       ctx->num_threads++;

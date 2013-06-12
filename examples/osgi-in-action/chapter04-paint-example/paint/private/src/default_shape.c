@@ -39,13 +39,13 @@
 #include "default_shape.h"
 #define DEFAULT_FILE "underc.png"
 
-void defaultShape_draw(SIMPLE_SHAPE shape, GdkPixmap *pixMap, GtkWidget *widget, gdouble x, gdouble y);
+void defaultShape_draw(simple_shape_pt shape, GdkPixmap *pixMap, GtkWidget *widget, gdouble x, gdouble y);
 
-SIMPLE_SHAPE defaultShape_create(bundle_context_t context) {
+simple_shape_pt defaultShape_create(bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
-	bundle_t bundle;
+	bundle_pt bundle;
 	apr_pool_t *pool;
-	SIMPLE_SHAPE shape = (SIMPLE_SHAPE) malloc(sizeof(*shape));
+	simple_shape_pt shape = (simple_shape_pt) malloc(sizeof(*shape));
 	bundleContext_getBundle(context, &bundle);
 	bundleContext_getMemoryPool(context, &pool);
 	shape->icon_path = NULL;
@@ -59,7 +59,7 @@ SIMPLE_SHAPE defaultShape_create(bundle_context_t context) {
 	return shape;
 }
 
-void defaultShape_draw(SIMPLE_SHAPE shape, GdkPixmap *pixMap, GtkWidget *widget, gdouble x, gdouble y){
+void defaultShape_draw(simple_shape_pt shape, GdkPixmap *pixMap, GtkWidget *widget, gdouble x, gdouble y){
 	GdkRectangle update_rect;
 	GdkPixbuf *curr_pix_buf;
 	GError *gerror = NULL;

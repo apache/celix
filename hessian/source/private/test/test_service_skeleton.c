@@ -27,9 +27,9 @@
 
 #include "hessian_2.0_in.h"
 
-void testServiceSkeleton_sayHello(hessian_in_t in);
+void testServiceSkeleton_sayHello(hessian_in_pt in);
 
-void testServiceSkeleton_handleData(hessian_in_t in) {
+void testServiceSkeleton_handleData(hessian_in_pt in) {
 	char *method = NULL;
 	hessian_readCall(in, &method);
 
@@ -42,7 +42,7 @@ void testServiceSkeleton_handleData(hessian_in_t in) {
 	}
 }
 
-void testServiceSkeleton_sayHello(hessian_in_t in) {
+void testServiceSkeleton_sayHello(hessian_in_pt in) {
 	char *message = NULL;
 	int read;
 	hessian_readString(in, &message, &read);

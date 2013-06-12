@@ -34,15 +34,15 @@ static apr_status_t serviceTrackerCustomizer_destroy(void *customizerPointer);
 
 struct serviceTrackerCustomizer {
 	void * handle;
-	celix_status_t (*addingService)(void * handle, service_reference_t reference, void **service);
-	celix_status_t (*addedService)(void * handle, service_reference_t reference, void * service);
-	celix_status_t (*modifiedService)(void * handle, service_reference_t reference, void * service);
-	celix_status_t (*removedService)(void * handle, service_reference_t reference, void * service);
+	celix_status_t (*addingService)(void * handle, service_reference_pt reference, void **service);
+	celix_status_t (*addedService)(void * handle, service_reference_pt reference, void * service);
+	celix_status_t (*modifiedService)(void * handle, service_reference_pt reference, void * service);
+	celix_status_t (*removedService)(void * handle, service_reference_pt reference, void * service);
 };
 
 celix_status_t serviceTrackerCustomizer_create(apr_pool_t *pool, void *handle,
-		addingCallback addingFunction, addedCallback addedFunction,
-		modifiedCallback modifiedFunction, removedCallback removedFunction, service_tracker_customizer_t *customizer) {
+		adding_callback_pt addingFunction, added_callback_pt addedFunction,
+		modified_callback_pt modifiedFunction, removed_callback_pt removedFunction, service_tracker_customizer_pt *customizer) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (pool == NULL || handle == NULL || *customizer != NULL) {
@@ -66,7 +66,7 @@ celix_status_t serviceTrackerCustomizer_create(apr_pool_t *pool, void *handle,
 }
 
 static apr_status_t serviceTrackerCustomizer_destroy(void *customizerPointer) {
-	service_tracker_customizer_t customizer = (service_tracker_customizer_t) customizerPointer;
+	service_tracker_customizer_pt customizer = (service_tracker_customizer_pt) customizerPointer;
 
 	customizer->handle = NULL;
 	customizer->addingService = NULL;
@@ -77,7 +77,7 @@ static apr_status_t serviceTrackerCustomizer_destroy(void *customizerPointer) {
 	return APR_SUCCESS;
 }
 
-celix_status_t serviceTrackerCustomizer_getHandle(service_tracker_customizer_t customizer, void **handle) {
+celix_status_t serviceTrackerCustomizer_getHandle(service_tracker_customizer_pt customizer, void **handle) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*handle = customizer->handle;
@@ -85,7 +85,7 @@ celix_status_t serviceTrackerCustomizer_getHandle(service_tracker_customizer_t c
 	return status;
 }
 
-celix_status_t serviceTrackerCustomizer_getAddingFunction(service_tracker_customizer_t customizer, addingCallback *function) {
+celix_status_t serviceTrackerCustomizer_getAddingFunction(service_tracker_customizer_pt customizer, adding_callback_pt *function) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*function = customizer->addingService;
@@ -93,7 +93,7 @@ celix_status_t serviceTrackerCustomizer_getAddingFunction(service_tracker_custom
 	return status;
 }
 
-celix_status_t serviceTrackerCustomizer_getAddedFunction(service_tracker_customizer_t customizer, addedCallback *function) {
+celix_status_t serviceTrackerCustomizer_getAddedFunction(service_tracker_customizer_pt customizer, added_callback_pt *function) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*function = customizer->addedService;
@@ -101,7 +101,7 @@ celix_status_t serviceTrackerCustomizer_getAddedFunction(service_tracker_customi
 	return status;
 }
 
-celix_status_t serviceTrackerCustomizer_getModifiedFunction(service_tracker_customizer_t customizer, modifiedCallback *function) {
+celix_status_t serviceTrackerCustomizer_getModifiedFunction(service_tracker_customizer_pt customizer, modified_callback_pt *function) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*function = customizer->modifiedService;
@@ -109,7 +109,7 @@ celix_status_t serviceTrackerCustomizer_getModifiedFunction(service_tracker_cust
 	return status;
 }
 
-celix_status_t serviceTrackerCustomizer_getRemovedFunction(service_tracker_customizer_t customizer, removedCallback *function) {
+celix_status_t serviceTrackerCustomizer_getRemovedFunction(service_tracker_customizer_pt customizer, removed_callback_pt *function) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*function = customizer->removedService;

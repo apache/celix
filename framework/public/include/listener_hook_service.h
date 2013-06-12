@@ -28,24 +28,24 @@
 #define LISTENER_HOOK_SERVICE_H_
 
 
-typedef struct listener_hook *listener_hook_t;
-typedef struct listener_hook_info *listener_hook_info_t;
-typedef struct listener_hook_service *listener_hook_service_t;
+typedef struct listener_hook *listener_hook_pt;
+typedef struct listener_hook_info *listener_hook_info_pt;
+typedef struct listener_hook_service *listener_hook_service_pt;
 
 #include "bundle_context.h"
 
 #define listener_hook_service_name "listener_hook_service"
 
 struct listener_hook_info {
-	bundle_context_t context;
+	bundle_context_pt context;
 	char *filter;
 	bool removed;
 };
 
 struct listener_hook_service {
 	void *handle;
-	celix_status_t (*added)(void *hook, array_list_t listeners);
-	celix_status_t (*removed)(void *hook, array_list_t listeners);
+	celix_status_t (*added)(void *hook, array_list_pt listeners);
+	celix_status_t (*removed)(void *hook, array_list_pt listeners);
 };
 
 #endif /* LISTENER_HOOK_SERVICE_H_ */

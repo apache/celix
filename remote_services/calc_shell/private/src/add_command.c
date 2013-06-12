@@ -36,14 +36,14 @@
 #include "example_service.h"
 
 
-void addCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *));
-celix_status_t addCommand_isNumeric(COMMAND command, char *number, bool *ret);
+void addCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *));
+celix_status_t addCommand_isNumeric(command_pt command, char *number, bool *ret);
 
-COMMAND addCommand_create(bundle_context_t context) {
+command_pt addCommand_create(bundle_context_pt context) {
 	apr_pool_t *pool;
 	bundleContext_getMemoryPool(context, &pool);
 
-    COMMAND command = (COMMAND) apr_palloc(pool, sizeof(*command));
+    command_pt command = (command_pt) apr_palloc(pool, sizeof(*command));
     if (command) {
 		command->bundleContext = context;
 		command->name = "add";
@@ -54,12 +54,12 @@ COMMAND addCommand_create(bundle_context_t context) {
     return command;
 }
 
-void addCommand_destroy(COMMAND command) {
+void addCommand_destroy(command_pt command) {
 }
 
-void addCommand_execute(COMMAND command, char *line, void (*out)(char *), void (*err)(char *)) {
+void addCommand_execute(command_pt command, char *line, void (*out)(char *), void (*err)(char *)) {
 	celix_status_t status = CELIX_SUCCESS;
-    service_reference_t exampleService = NULL;
+    service_reference_pt exampleService = NULL;
 
     status = bundleContext_getServiceReference(command->bundleContext, (char *) EXAMPLE_SERVICE, &exampleService);
     if (status == CELIX_SUCCESS) {
@@ -72,7 +72,7 @@ void addCommand_execute(COMMAND command, char *line, void (*out)(char *), void (
 			char *bStr = apr_strtok(NULL, " ", &token);
 			addCommand_isNumeric(command, bStr, &numeric);
 			if (bStr != NULL && numeric) {
-				example_service_t example = NULL;
+				example_service_pt example = NULL;
 				status = bundleContext_getService(command->bundleContext, exampleService, (void *) &example);
 				if (status == CELIX_SUCCESS) {
 					double a = atof(aStr);
@@ -106,7 +106,7 @@ void addCommand_execute(COMMAND command, char *line, void (*out)(char *), void (
     //return status;
 }
 
-celix_status_t addCommand_isNumeric(COMMAND command, char *number, bool *ret) {
+celix_status_t addCommand_isNumeric(command_pt command, char *number, bool *ret) {
 	celix_status_t status = CELIX_SUCCESS;
 	*ret = true;
 	while(*number) {

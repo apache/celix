@@ -38,27 +38,27 @@
 #include "linked_list_iterator.h"
 
 struct manifestParser {
-	module_t owner;
-	MANIFEST manifest;
+	module_pt owner;
+	manifest_pt manifest;
 
-	version_t bundleVersion;
+	version_pt bundleVersion;
 	char * bundleSymbolicName;
-	linked_list_t capabilities;
-	linked_list_t requirements;
+	linked_list_pt capabilities;
+	linked_list_pt requirements;
 };
 
-static linked_list_t manifestParser_parseImportHeader(char * header, apr_pool_t *memory_pool);
-static linked_list_t manifestParser_parseExportHeader(module_t module, char * header, apr_pool_t *memory_pool);
-static linked_list_t manifestParser_parseDelimitedString(char * value, char * delim, apr_pool_t *memory_pool);
-static linked_list_t manifestParser_parseStandardHeaderClause(char * clauseString, apr_pool_t *memory_pool);
-static linked_list_t manifestParser_parseStandardHeader(char * header, apr_pool_t *memory_pool);
+static linked_list_pt manifestParser_parseImportHeader(char * header, apr_pool_t *memory_pool);
+static linked_list_pt manifestParser_parseExportHeader(module_pt module, char * header, apr_pool_t *memory_pool);
+static linked_list_pt manifestParser_parseDelimitedString(char * value, char * delim, apr_pool_t *memory_pool);
+static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseString, apr_pool_t *memory_pool);
+static linked_list_pt manifestParser_parseStandardHeader(char * header, apr_pool_t *memory_pool);
 
-celix_status_t manifestParser_create(module_t owner, MANIFEST manifest, apr_pool_t *memory_pool, manifest_parser_t *manifest_parser) {
+celix_status_t manifestParser_create(module_pt owner, manifest_pt manifest, apr_pool_t *memory_pool, manifest_parser_pt *manifest_parser) {
 	celix_status_t status;
-    manifest_parser_t parser;
+    manifest_parser_pt parser;
 
     status = CELIX_SUCCESS;
-	parser = (manifest_parser_t) apr_pcalloc(memory_pool, sizeof(*parser));
+	parser = (manifest_parser_pt) apr_pcalloc(memory_pool, sizeof(*parser));
 	if (parser) {
 		char * bundleVersion = NULL;
 		char * bundleSymbolicName = NULL;
@@ -91,8 +91,8 @@ celix_status_t manifestParser_create(module_t owner, MANIFEST manifest, apr_pool
 	return status;
 }
 
-static linked_list_t manifestParser_parseDelimitedString(char * value, char * delim, apr_pool_t *memory_pool) {
-    linked_list_t list;
+static linked_list_pt manifestParser_parseDelimitedString(char * value, char * delim, apr_pool_t *memory_pool) {
+    linked_list_pt list;
     apr_pool_t *temp_pool;
 
     if (linkedList_create(memory_pool, &list) == CELIX_SUCCESS) {
@@ -158,11 +158,11 @@ static linked_list_t manifestParser_parseDelimitedString(char * value, char * de
 	return list;
 }
 
-static linked_list_t manifestParser_parseStandardHeaderClause(char * clauseString, apr_pool_t *memory_pool) {
-	linked_list_t paths;
+static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseString, apr_pool_t *memory_pool) {
+	linked_list_pt paths;
 	apr_pool_t *temp_pool;
-    linked_list_t clause;
-    linked_list_t pieces;
+    linked_list_pt clause;
+    linked_list_pt pieces;
 
     clause = NULL;
     pieces = NULL;
@@ -172,8 +172,8 @@ static linked_list_t manifestParser_parseStandardHeaderClause(char * clauseStrin
         if (linkedList_create(memory_pool, &paths) == CELIX_SUCCESS) {
             int pathCount = 0;
             int pieceIdx;
-			hash_map_t dirsMap = NULL;
-			hash_map_t attrsMap = NULL;
+			hash_map_pt dirsMap = NULL;
+			hash_map_pt attrsMap = NULL;
 			char * sepPtr;
             char * sep;
 
@@ -224,7 +224,7 @@ static linked_list_t manifestParser_parseStandardHeaderClause(char * clauseStrin
                 if (strcmp(sep, DIRECTIVE_SEP) == 0) {
                     // Not implemented
                 } else {
-                	attribute_t attr = NULL;
+                	attribute_pt attr = NULL;
 					if (hashMap_containsKey(attrsMap, key)) {
                         return NULL;
                     }
@@ -250,11 +250,11 @@ static linked_list_t manifestParser_parseStandardHeaderClause(char * clauseStrin
 	return clause;
 }
 
-static linked_list_t manifestParser_parseStandardHeader(char * header, apr_pool_t *memory_pool) {
+static linked_list_pt manifestParser_parseStandardHeader(char * header, apr_pool_t *memory_pool) {
     int i;
     char *clauseString;
-    linked_list_t clauseStrings = NULL;
-    linked_list_t completeList = NULL;
+    linked_list_pt clauseStrings = NULL;
+    linked_list_pt completeList = NULL;
 
     if (linkedList_create(memory_pool, &completeList) == CELIX_SUCCESS) {
         if (header != NULL) {
@@ -275,28 +275,28 @@ static linked_list_t manifestParser_parseStandardHeader(char * header, apr_pool_
 	return completeList;
 }
 
-static linked_list_t manifestParser_parseImportHeader(char * header, apr_pool_t *memory_pool) {
+static linked_list_pt manifestParser_parseImportHeader(char * header, apr_pool_t *memory_pool) {
     apr_pool_t *temp_pool;
-    linked_list_t clauses;
-    linked_list_t requirements;
+    linked_list_pt clauses;
+    linked_list_pt requirements;
 
     if (apr_pool_create(&temp_pool, memory_pool) == APR_SUCCESS) {
         int clauseIdx;
-		linked_list_iterator_t iter;
+		linked_list_iterator_pt iter;
 		clauses = manifestParser_parseStandardHeader(header, memory_pool);
         linkedList_create(memory_pool, &requirements);
         
         for (clauseIdx = 0; clauseIdx < linkedList_size(clauses); clauseIdx++) {
-            linked_list_t clause = linkedList_get(clauses, clauseIdx);
+            linked_list_pt clause = linkedList_get(clauses, clauseIdx);
 
-            linked_list_t paths = linkedList_get(clause, 0);
-            hash_map_t directives = linkedList_get(clause, 1);
-            hash_map_t attributes = linkedList_get(clause, 2);
+            linked_list_pt paths = linkedList_get(clause, 0);
+            hash_map_pt directives = linkedList_get(clause, 1);
+            hash_map_pt attributes = linkedList_get(clause, 2);
 
             int pathIdx;
             for (pathIdx = 0; pathIdx < linkedList_size(paths); pathIdx++) {
-            	attribute_t name = NULL;
-				requirement_t req = NULL;
+            	attribute_pt name = NULL;
+				requirement_pt req = NULL;
 				char * path = (char *) linkedList_get(paths, pathIdx);
                 if (strlen(path) == 0) {
                     return NULL;
@@ -315,9 +315,9 @@ static linked_list_t manifestParser_parseImportHeader(char * header, apr_pool_t 
 
         iter = linkedListIterator_create(clauses, 0);
         while(linkedListIterator_hasNext(iter)) {
-            linked_list_t clause = linkedListIterator_next(iter);
+            linked_list_pt clause = linkedListIterator_next(iter);
 
-            linked_list_t paths = linkedList_get(clause, 0);
+            linked_list_pt paths = linkedList_get(clause, 0);
 
             linkedListIterator_remove(iter);
         }
@@ -329,27 +329,27 @@ static linked_list_t manifestParser_parseImportHeader(char * header, apr_pool_t 
 	return requirements;
 }
 
-static linked_list_t manifestParser_parseExportHeader(module_t module, char * header, apr_pool_t *memory_pool) {
-    linked_list_t clauses;
-    linked_list_t capabilities;
+static linked_list_pt manifestParser_parseExportHeader(module_pt module, char * header, apr_pool_t *memory_pool) {
+    linked_list_pt clauses;
+    linked_list_pt capabilities;
 	int clauseIdx;
-	linked_list_iterator_t iter;
+	linked_list_iterator_pt iter;
     clauses = manifestParser_parseStandardHeader(header, memory_pool);
     linkedList_create(memory_pool, &capabilities);
 
     
     for (clauseIdx = 0; clauseIdx < linkedList_size(clauses); clauseIdx++) {
-        linked_list_t clause = linkedList_get(clauses, clauseIdx);
+        linked_list_pt clause = linkedList_get(clauses, clauseIdx);
 
-        linked_list_t paths = linkedList_get(clause, 0);
-        hash_map_t directives = linkedList_get(clause, 1);
-        hash_map_t attributes = linkedList_get(clause, 2);
+        linked_list_pt paths = linkedList_get(clause, 0);
+        hash_map_pt directives = linkedList_get(clause, 1);
+        hash_map_pt attributes = linkedList_get(clause, 2);
 
         int pathIdx;
         for (pathIdx = 0; pathIdx < linkedList_size(paths); pathIdx++) {
             char * path = (char *) linkedList_get(paths, pathIdx);
-            attribute_t name = NULL;
-			capability_t cap = NULL;
+            attribute_pt name = NULL;
+			capability_pt cap = NULL;
 			if (strlen(path) == 0) {
                 return NULL;
             }
@@ -366,9 +366,9 @@ static linked_list_t manifestParser_parseExportHeader(module_t module, char * he
     }
     iter = linkedListIterator_create(clauses, 0);
     while(linkedListIterator_hasNext(iter)) {
-        linked_list_t clause = linkedListIterator_next(iter);
+        linked_list_pt clause = linkedListIterator_next(iter);
 
-        linked_list_t paths = linkedList_get(clause, 0);
+        linked_list_pt paths = linkedList_get(clause, 0);
 
         linkedListIterator_remove(iter);
     }
@@ -377,16 +377,16 @@ static linked_list_t manifestParser_parseExportHeader(module_t module, char * he
 	return capabilities;
 }
 
-celix_status_t manifestParser_getSymbolicName(manifest_parser_t parser, apr_pool_t *pool, char **symbolicName) {
+celix_status_t manifestParser_getSymbolicName(manifest_parser_pt parser, apr_pool_t *pool, char **symbolicName) {
 	*symbolicName = apr_pstrdup(pool, parser->bundleSymbolicName);
 	return CELIX_SUCCESS;
 }
 
-celix_status_t manifestParser_getBundleVersion(manifest_parser_t parser, apr_pool_t *pool, version_t *version) {
+celix_status_t manifestParser_getBundleVersion(manifest_parser_pt parser, apr_pool_t *pool, version_pt *version) {
 	return version_clone(parser->bundleVersion, pool, version);
 }
 
-celix_status_t manifestParser_getCapabilities(manifest_parser_t parser, apr_pool_t *pool, linked_list_t *capabilities) {
+celix_status_t manifestParser_getCapabilities(manifest_parser_pt parser, apr_pool_t *pool, linked_list_pt *capabilities) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	status = linkedList_clone(parser->capabilities, pool, capabilities);
@@ -394,7 +394,7 @@ celix_status_t manifestParser_getCapabilities(manifest_parser_t parser, apr_pool
 	return status;
 }
 
-celix_status_t manifestParser_getRequirements(manifest_parser_t parser, apr_pool_t *pool, linked_list_t *requirements) {
+celix_status_t manifestParser_getRequirements(manifest_parser_pt parser, apr_pool_t *pool, linked_list_pt *requirements) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	status = linkedList_clone(parser->requirements, pool, requirements);

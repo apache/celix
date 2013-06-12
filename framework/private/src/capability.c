@@ -30,17 +30,17 @@
 
 struct capability {
 	char * serviceName;
-	module_t module;
-	version_t version;
-	hash_map_t attributes;
-	hash_map_t directives;
+	module_pt module;
+	version_pt version;
+	hash_map_pt attributes;
+	hash_map_pt directives;
 };
 
 apr_status_t capability_destroy(void *capabilityP);
 
-celix_status_t capability_create(apr_pool_t *pool, module_t module, hash_map_t directives, hash_map_t attributes, capability_t *capability) {
+celix_status_t capability_create(apr_pool_t *pool, module_pt module, hash_map_pt directives, hash_map_pt attributes, capability_pt *capability) {
 	celix_status_t status = CELIX_SUCCESS;
-	*capability = (capability_t) apr_palloc(pool, sizeof(**capability));
+	*capability = (capability_pt) apr_palloc(pool, sizeof(**capability));
 	if (!*capability) {
 		status = CELIX_ENOMEM;
 	} else {
@@ -53,11 +53,11 @@ celix_status_t capability_create(apr_pool_t *pool, module_t module, hash_map_t d
 		(*capability)->version = NULL;
 		status = version_createEmptyVersion(pool, &(*capability)->version);
 		if (status == CELIX_SUCCESS) {
-			attribute_t versionAttribute = NULL;
-			attribute_t serviceAttribute = (attribute_t) hashMap_get(attributes, "service");
+			attribute_pt versionAttribute = NULL;
+			attribute_pt serviceAttribute = (attribute_pt) hashMap_get(attributes, "service");
 			status = attribute_getValue(serviceAttribute, &(*capability)->serviceName);
 			if (status == CELIX_SUCCESS) {
-				versionAttribute = (attribute_t) hashMap_get(attributes, "version");
+				versionAttribute = (attribute_pt) hashMap_get(attributes, "version");
 				if (versionAttribute != NULL) {
 					char *versionStr = NULL;
 					attribute_getValue(versionAttribute, &versionStr);
@@ -72,11 +72,11 @@ celix_status_t capability_create(apr_pool_t *pool, module_t module, hash_map_t d
 }
 
 apr_status_t capability_destroy(void *capabilityP) {
-	capability_t capability = capabilityP;
+	capability_pt capability = capabilityP;
 
-	hash_map_iterator_t attrIter = hashMapIterator_create(capability->attributes);
+	hash_map_iterator_pt attrIter = hashMapIterator_create(capability->attributes);
 	while (hashMapIterator_hasNext(attrIter)) {
-		attribute_t attr = hashMapIterator_nextValue(attrIter);
+		attribute_pt attr = hashMapIterator_nextValue(attrIter);
 		hashMapIterator_remove(attrIter);
 	}
 	hashMapIterator_destroy(attrIter);
@@ -91,17 +91,17 @@ apr_status_t capability_destroy(void *capabilityP) {
 	return APR_SUCCESS;
 }
 
-celix_status_t capability_getServiceName(capability_t capability, char **serviceName) {
+celix_status_t capability_getServiceName(capability_pt capability, char **serviceName) {
 	*serviceName = capability->serviceName;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t capability_getVersion(capability_t capability, version_t *version) {
+celix_status_t capability_getVersion(capability_pt capability, version_pt *version) {
 	*version = capability->version;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t capability_getModule(capability_t capability, module_t *module) {
+celix_status_t capability_getModule(capability_pt capability, module_pt *module) {
 	*module = capability->module;
 	return CELIX_SUCCESS;
 }

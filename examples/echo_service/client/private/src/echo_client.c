@@ -31,9 +31,9 @@
 #include "echo_server.h"
 
 static void *APR_THREAD_FUNC trk_send(apr_thread_t *thd, void *handle) {
-	ECHO_CLIENT client = (ECHO_CLIENT) handle;
+	echo_client_pt client = (echo_client_pt) handle;
 	while (client->running) {
-		ECHO_SERVICE service = (ECHO_SERVICE) serviceTracker_getService(client->tracker);
+		echo_service_pt service = (echo_service_pt) serviceTracker_getService(client->tracker);
 		if (service != NULL) {
 			service->echo(service->server, "hi");
 		}
@@ -43,8 +43,8 @@ static void *APR_THREAD_FUNC trk_send(apr_thread_t *thd, void *handle) {
 	return NULL;
 }
 
-ECHO_CLIENT echoClient_create(service_tracker_t echoServiceTracker, apr_pool_t *pool) {
-	ECHO_CLIENT client = malloc(sizeof(*client));
+echo_client_pt echoClient_create(service_tracker_pt echoServiceTracker, apr_pool_t *pool) {
+	echo_client_pt client = malloc(sizeof(*client));
 
 	client->tracker = echoServiceTracker;
 	client->running = false;
@@ -53,18 +53,18 @@ ECHO_CLIENT echoClient_create(service_tracker_t echoServiceTracker, apr_pool_t *
 	return client;
 }
 
-void echoClient_start(ECHO_CLIENT client) {
+void echoClient_start(echo_client_pt client) {
 	client->running = true;
 	apr_thread_create(&client->sender, NULL, trk_send, client, client->pool);
 }
 
-void echoClient_stop(ECHO_CLIENT client) {
+void echoClient_stop(echo_client_pt client) {
 	apr_status_t status;
 	client->running = false;
 	apr_thread_join(&status, client->sender);
 }
 
-void echoClient_destroy(ECHO_CLIENT client) {
+void echoClient_destroy(echo_client_pt client) {
 	client->tracker = NULL;
 	client->sender = 0;
 	free(client);

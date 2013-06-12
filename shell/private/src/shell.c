@@ -45,53 +45,53 @@
 #include "utils.h"
 
 struct shellServiceActivator {
-	SHELL shell;
-	SHELL_SERVICE shellService;
-	service_registration_t registration;
-	service_listener_t listener;
+	shell_pt shell;
+	shell_service_pt shellService;
+	service_registration_pt registration;
+	service_listener_pt listener;
 
-	service_registration_t psCommand;
-	COMMAND psCmd;
+	service_registration_pt psCommand;
+	command_pt psCmd;
 
-	service_registration_t startCommand;
-	COMMAND startCmd;
+	service_registration_pt startCommand;
+	command_pt startCmd;
 
-	service_registration_t stopCommand;
-	COMMAND stopCmd;
+	service_registration_pt stopCommand;
+	command_pt stopCmd;
 
-	service_registration_t installCommand;
-	COMMAND installCmd;
+	service_registration_pt installCommand;
+	command_pt installCmd;
 
-	service_registration_t uninstallCommand;
-    COMMAND uninstallCmd;
+	service_registration_pt uninstallCommand;
+    command_pt uninstallCmd;
 
-	service_registration_t updateCommand;
-	COMMAND updateCmd;
+	service_registration_pt updateCommand;
+	command_pt updateCmd;
 
-	service_registration_t logCommand;
-    COMMAND logCmd;
+	service_registration_pt logCommand;
+    command_pt logCmd;
 
-    service_registration_t inspectCommand;
-	COMMAND inspectCmd;
+    service_registration_pt inspectCommand;
+	command_pt inspectCmd;
 };
 
-SHELL shell_create(apr_pool_t *pool) {
-	SHELL shell = (SHELL) malloc(sizeof(*shell));
+shell_pt shell_create(apr_pool_t *pool) {
+	shell_pt shell = (shell_pt) malloc(sizeof(*shell));
 	shell->pool = pool;
 	shell->commandNameMap = hashMap_create(string_hash, NULL, string_equals, NULL);
 	shell->commandReferenceMap = hashMap_create(NULL, NULL, NULL, NULL);
 	return shell;
 }
 
-void shell_destroy(SHELL shell) {
+void shell_destroy(shell_pt shell) {
 	hashMap_destroy(shell->commandNameMap, false, false);
 	hashMap_destroy(shell->commandReferenceMap, false, false);
 	free(shell);
 }
 
-array_list_t shell_getCommands(SHELL shell) {
-	array_list_t commands = NULL;
-	hash_map_iterator_t iter = hashMapIterator_create(shell->commandNameMap);
+array_list_pt shell_getCommands(shell_pt shell) {
+	array_list_pt commands = NULL;
+	hash_map_iterator_pt iter = hashMapIterator_create(shell->commandNameMap);
 
 	arrayList_create(shell->pool, &commands);
 	while (hashMapIterator_hasNext(iter)) {
@@ -101,32 +101,32 @@ array_list_t shell_getCommands(SHELL shell) {
 	return commands;
 }
 
-char * shell_getCommandUsage(SHELL shell, char * commandName) {
-	COMMAND command = hashMap_get(shell->commandNameMap, commandName);
+char * shell_getCommandUsage(shell_pt shell, char * commandName) {
+	command_pt command = hashMap_get(shell->commandNameMap, commandName);
 	return (command == NULL) ? NULL : command->usage;
 }
 
-char * shell_getCommandDescription(SHELL shell, char * commandName) {
-	COMMAND command = hashMap_get(shell->commandNameMap, commandName);
+char * shell_getCommandDescription(shell_pt shell, char * commandName) {
+	command_pt command = hashMap_get(shell->commandNameMap, commandName);
 	return (command == NULL) ? NULL : command->shortDescription;
 }
 
-service_reference_t shell_getCommandReference(SHELL shell, char * command) {
-	hash_map_iterator_t iter = hashMapIterator_create(shell->commandReferenceMap);
+service_reference_pt shell_getCommandReference(shell_pt shell, char * command) {
+	hash_map_iterator_pt iter = hashMapIterator_create(shell->commandReferenceMap);
 	while (hashMapIterator_hasNext(iter)) {
-		hash_map_entry_t entry = hashMapIterator_nextEntry(iter);
-		COMMAND cmd = (COMMAND) hashMapEntry_getValue(entry);
+		hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
+		command_pt cmd = (command_pt) hashMapEntry_getValue(entry);
 		if (strcmp(cmd->name, command) == 0) {
-			return (service_reference_t) hashMapEntry_getValue(entry);
+			return (service_reference_pt) hashMapEntry_getValue(entry);
 		}
 	}
 	return NULL;
 }
 
-void shell_executeCommand(SHELL shell, char * commandLine, void (*out)(char *), void (*error)(char *)) {
+void shell_executeCommand(shell_pt shell, char * commandLine, void (*out)(char *), void (*error)(char *)) {
 	unsigned int pos = strcspn(commandLine, " ");
 	char * commandName = (pos != strlen(commandLine)) ? string_ndup((char *)commandLine, pos) : strdup(commandLine);
-	COMMAND command = shell_getCommand(shell, commandName);
+	command_pt command = shell_getCommand(shell, commandName);
 	if (command != NULL) {
 		command->executeCommand(command, commandLine, out, error);
 	} else {
@@ -135,37 +135,37 @@ void shell_executeCommand(SHELL shell, char * commandLine, void (*out)(char *), 
 	free(commandName);
 }
 
-COMMAND shell_getCommand(SHELL shell, char * commandName) {
-	COMMAND command = hashMap_get(shell->commandNameMap, commandName);
+command_pt shell_getCommand(shell_pt shell, char * commandName) {
+	command_pt command = hashMap_get(shell->commandNameMap, commandName);
 	return (command == NULL) ? NULL : command;
 }
 
-void shell_addCommand(SHELL shell, service_reference_t reference) {
-    COMMAND command = NULL;
+void shell_addCommand(shell_pt shell, service_reference_pt reference) {
+    command_pt command = NULL;
 	void *cmd = NULL;
 	bundleContext_getService(shell->bundleContext, reference, &cmd);
-	command = (COMMAND) cmd;
+	command = (command_pt) cmd;
 	hashMap_put(shell->commandNameMap, command->name, command);
 	hashMap_put(shell->commandReferenceMap, reference, command);
 }
 
-void shell_removeCommand(SHELL shell, service_reference_t reference) {
-	COMMAND command = (COMMAND) hashMap_remove(shell->commandReferenceMap, reference);
+void shell_removeCommand(shell_pt shell, service_reference_pt reference) {
+	command_pt command = (command_pt) hashMap_remove(shell->commandReferenceMap, reference);
 	if (command != NULL) {
 		hashMap_remove(shell->commandNameMap, command->name);
 	}
 }
 
-void shell_serviceChanged(service_listener_t listener, service_event_t event) {
-	SHELL shell = (SHELL) listener->handle;
+void shell_serviceChanged(service_listener_pt listener, service_event_pt event) {
+	shell_pt shell = (shell_pt) listener->handle;
 	if (event->type == SERVICE_EVENT_REGISTERED) {
 		shell_addCommand(shell, event->reference);
 	}
 }
 
-celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	apr_pool_t *pool = NULL;
-	SHELL shell = NULL;
+	shell_pt shell = NULL;
 	*userData = malloc(sizeof(struct shellServiceActivator));
 	bundleContext_getMemoryPool(context, &pool);
 	shell = shell_create(pool);
@@ -187,14 +187,14 @@ celix_status_t bundleActivator_create(bundle_context_t context, void **userData)
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
     celix_status_t status;
 	apr_pool_t *pool = NULL;
 
 	struct shellServiceActivator * activator = (struct shellServiceActivator *) userData;
 	activator->shell->bundleContext = context;
 
-	activator->shellService = (SHELL_SERVICE) malloc(sizeof(*activator->shellService));
+	activator->shellService = (shell_service_pt) malloc(sizeof(*activator->shellService));
 	activator->shellService->shell = activator->shell;
 	activator->shellService->getCommands = shell_getCommands;
 	activator->shellService->getCommandDescription = shell_getCommandDescription;
@@ -206,7 +206,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 
 	bundleContext_getMemoryPool(context, &pool);
 	if (status == CELIX_SUCCESS) {
-	    service_listener_t listener = (service_listener_t) malloc(sizeof(*listener));
+	    service_listener_pt listener = (service_listener_pt) malloc(sizeof(*listener));
 	    activator->listener = listener;
 	    listener->pool = pool;
 	    listener->handle = activator->shell;
@@ -243,7 +243,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
     celix_status_t status = CELIX_SUCCESS;
 	struct shellServiceActivator * activator = (struct shellServiceActivator *) userData;
 	serviceRegistration_unregister(activator->registration);
@@ -277,7 +277,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
 	return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	struct shellServiceActivator * activator = (struct shellServiceActivator *) userData;
 	shell_destroy(activator->shell);
 	free(activator);

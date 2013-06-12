@@ -30,12 +30,12 @@
 #include "driver_selector.h"
 #include "driver_attributes.h"
 
-typedef struct driver_matcher *driver_matcher_t;
+typedef struct driver_matcher *driver_matcher_pt;
 
-celix_status_t driverMatcher_create(apr_pool_t *pool, bundle_context_t context, driver_matcher_t *matcher);
+celix_status_t driverMatcher_create(apr_pool_t *pool, bundle_context_pt context, driver_matcher_pt *matcher);
 
-celix_status_t driverMatcher_add(driver_matcher_t matcher, int match, driver_attributes_t attributes);
+celix_status_t driverMatcher_add(driver_matcher_pt matcher, int match, driver_attributes_pt attributes);
 
-celix_status_t driverMatcher_getBestMatch(driver_matcher_t matcher, apr_pool_t *pool, service_reference_t reference, match_t *match);
+celix_status_t driverMatcher_getBestMatch(driver_matcher_pt matcher, apr_pool_t *pool, service_reference_pt reference, match_pt *match);
 
 #endif /* DRIVER_MATCHER_H_ */

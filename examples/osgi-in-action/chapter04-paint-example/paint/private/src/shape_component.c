@@ -40,12 +40,12 @@
 
 static const int BOX = 54;
 
-extern void shapeComponent_paintComponent(SHAPE_COMPONENT shapeComponent, PAINT_FRAME frame,
+extern void shapeComponent_paintComponent(shape_component_pt shapeComponent, paint_frame_pt frame,
 		GdkPixmap *pixMap, GtkWidget *widget);
 
-SHAPE_COMPONENT shapeComponent_create(PAINT_FRAME frame, SIMPLE_SHAPE sshape,
+shape_component_pt shapeComponent_create(paint_frame_pt frame, simple_shape_pt sshape,
 		gdouble x, gdouble y) {
-	SHAPE_COMPONENT shape = malloc(sizeof(*shape));
+	shape_component_pt shape = malloc(sizeof(*shape));
 	shape->m_frame = frame;
 	shape->shapeName = strdup(sshape->name);
 	shape->x = x - BOX /2;
@@ -57,9 +57,9 @@ SHAPE_COMPONENT shapeComponent_create(PAINT_FRAME frame, SIMPLE_SHAPE sshape,
 	return shape;
 }
 
-void shapeComponent_paintComponent(SHAPE_COMPONENT shapeComponent, PAINT_FRAME frame,
+void shapeComponent_paintComponent(shape_component_pt shapeComponent, paint_frame_pt frame,
 		GdkPixmap *pixMap, GtkWidget *widget) {
-	SIMPLE_SHAPE shape = paintFrame_getShape(frame, shapeComponent->shapeName);
+	simple_shape_pt shape = paintFrame_getShape(frame, shapeComponent->shapeName);
 	if (shape == NULL) {
 		g_printerr("cannot find shape %s\n", shapeComponent->shapeName);
 	} else {

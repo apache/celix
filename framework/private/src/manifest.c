@@ -32,10 +32,10 @@
 #include "utils.h"
 
 int fpeek(FILE *stream);
-celix_status_t manifest_readAttributes(MANIFEST manifest, properties_t properties, FILE *file);
+celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt properties, FILE *file);
 apr_status_t manifest_destroy(void *manifestP);
 
-celix_status_t manifest_create(apr_pool_t *pool, MANIFEST *manifest) {
+celix_status_t manifest_create(apr_pool_t *pool, manifest_pt *manifest) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*manifest = apr_palloc(pool, sizeof(**manifest));
@@ -52,7 +52,7 @@ celix_status_t manifest_create(apr_pool_t *pool, MANIFEST *manifest) {
 }
 
 apr_status_t manifest_destroy(void *manifestP) {
-	MANIFEST manifest = manifestP;
+	manifest_pt manifest = manifestP;
 	if (manifest != NULL) {
 		properties_destroy(manifest->mainAttributes);
 		hashMap_destroy(manifest->attributes, false, false);
@@ -63,7 +63,7 @@ apr_status_t manifest_destroy(void *manifestP) {
 	return APR_SUCCESS;
 }
 
-celix_status_t manifest_createFromFile(apr_pool_t *pool, char *filename, MANIFEST *manifest) {
+celix_status_t manifest_createFromFile(apr_pool_t *pool, char *filename, manifest_pt *manifest) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	status = manifest_create(pool, manifest);
@@ -74,20 +74,20 @@ celix_status_t manifest_createFromFile(apr_pool_t *pool, char *filename, MANIFES
 	return status;
 }
 
-void manifest_clear(MANIFEST manifest) {
+void manifest_clear(manifest_pt manifest) {
 
 }
 
-properties_t manifest_getMainAttributes(MANIFEST manifest) {
+properties_pt manifest_getMainAttributes(manifest_pt manifest) {
 	return manifest->mainAttributes;
 }
 
-celix_status_t manifest_getEntries(MANIFEST manifest, hash_map_t *map) {
+celix_status_t manifest_getEntries(manifest_pt manifest, hash_map_pt *map) {
 	*map = manifest->attributes;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t manifest_read(MANIFEST manifest, char *filename) {
+celix_status_t manifest_read(manifest_pt manifest, char *filename) {
     celix_status_t status = CELIX_SUCCESS;
 
 	FILE *file = fopen ( filename, "r" );
@@ -103,7 +103,7 @@ celix_status_t manifest_read(MANIFEST manifest, char *filename) {
 		
 		apr_pool_create(&subpool, manifest->pool);
 		while (fgets(lbuf, sizeof(lbuf), file) != NULL ) {
-			properties_t attributes;
+			properties_pt attributes;
 
 			len = strlen(lbuf);
 			if (lbuf[--len] != '\n') {
@@ -175,11 +175,11 @@ celix_status_t manifest_read(MANIFEST manifest, char *filename) {
 	return status;
 }
 
-void manifest_write(MANIFEST manifest, char * filename) {
+void manifest_write(manifest_pt manifest, char * filename) {
 
 }
 
-char * manifest_getValue(MANIFEST manifest, const char * name) {
+char * manifest_getValue(manifest_pt manifest, const char * name) {
 	char * val = properties_get(manifest->mainAttributes, (char *) name);
 	return val;
 }
@@ -191,7 +191,7 @@ int fpeek(FILE *stream) {
 	return c;
 }
 
-celix_status_t manifest_readAttributes(MANIFEST manifest, properties_t properties, FILE *file) {
+celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt properties, FILE *file) {
 	char *name = NULL;
 	char *value = NULL;
 	char *lastLine = NULL;

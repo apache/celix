@@ -33,30 +33,30 @@
 
 struct export_registration {
 	apr_pool_t *pool;
-	bundle_context_t context;
-	remote_service_admin_t rsa;
-	endpoint_description_t endpointDescription;
-	service_reference_t reference;
+	bundle_context_pt context;
+	remote_service_admin_pt rsa;
+	endpoint_description_pt endpointDescription;
+	service_reference_pt reference;
 
-	service_tracker_t tracker;
-	service_tracker_t endpointTracker;
+	service_tracker_pt tracker;
+	service_tracker_pt endpointTracker;
 
-	remote_endpoint_service_t endpoint;
+	remote_endpoint_service_pt endpoint;
 
-	export_reference_t exportReference;
-	bundle_t bundle;
+	export_reference_pt exportReference;
+	bundle_pt bundle;
 
 	bool closed;
 };
 
-celix_status_t exportRegistration_create(apr_pool_t *pool, service_reference_t reference, endpoint_description_t endpoint, remote_service_admin_t rsa, bundle_context_t context, export_registration_t *registration);
-celix_status_t exportRegistration_open(export_registration_t registration);
-celix_status_t exportRegistration_close(export_registration_t registration);
-celix_status_t exportRegistration_getException(export_registration_t registration);
-celix_status_t exportRegistration_getExportReference(export_registration_t registration, export_reference_t *reference);
+celix_status_t exportRegistration_create(apr_pool_t *pool, service_reference_pt reference, endpoint_description_pt endpoint, remote_service_admin_pt rsa, bundle_context_pt context, export_registration_pt *registration);
+celix_status_t exportRegistration_open(export_registration_pt registration);
+celix_status_t exportRegistration_close(export_registration_pt registration);
+celix_status_t exportRegistration_getException(export_registration_pt registration);
+celix_status_t exportRegistration_getExportReference(export_registration_pt registration, export_reference_pt *reference);
 
-celix_status_t exportRegistration_setEndpointDescription(export_registration_t registration, endpoint_description_t endpointDescription);
-celix_status_t exportRegistration_startTracking(export_registration_t registration);
-celix_status_t exportRegistration_stopTracking(export_registration_t registration);
+celix_status_t exportRegistration_setEndpointDescription(export_registration_pt registration, endpoint_description_pt endpointDescription);
+celix_status_t exportRegistration_startTracking(export_registration_pt registration);
+celix_status_t exportRegistration_stopTracking(export_registration_pt registration);
 
 #endif /* EXPORT_REGISTRATION_IMPL_H_ */

@@ -27,7 +27,7 @@
 #ifndef UNINSTALL_COMMAND_H_
 #define UNINSTALL_COMMAND_H_
 
-COMMAND uninstallCommand_create(bundle_context_t context);
-void uninstallCommand_destroy(COMMAND command);
+command_pt uninstallCommand_create(bundle_context_pt context);
+void uninstallCommand_destroy(command_pt command);
 
 #endif /* UNINSTALL_COMMAND_H_ */

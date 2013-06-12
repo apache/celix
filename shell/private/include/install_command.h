@@ -27,7 +27,7 @@
 #ifndef INSTALL_COMMAND_H_
 #define INSTALL_COMMAND_H_
 
-COMMAND installCommand_create(bundle_context_t context);
-void installCommand_destroy(COMMAND command);
+command_pt installCommand_create(bundle_context_pt context);
+void installCommand_destroy(command_pt command);
 
 #endif /* INSTALL_COMMAND_H_ */

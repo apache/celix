@@ -44,7 +44,7 @@ struct connection_listener {
 	//constant
     apr_pool_t *pool;
     apr_size_t port;
-    remote_shell_t remoteShell;
+    remote_shell_pt remoteShell;
 	apr_thread_mutex_t *mutex;
 
 	//protected by mutex
@@ -53,9 +53,9 @@ struct connection_listener {
 };
 
 static void* APR_THREAD_FUNC connection_listener_thread(apr_thread_t *thread, void *data);
-static apr_status_t connectionListener_cleanup(connection_listener_t instance);
+static apr_status_t connectionListener_cleanup(connection_listener_pt instance);
 
-celix_status_t connectionListener_create(apr_pool_t *pool, remote_shell_t remoteShell, apr_size_t port, connection_listener_t *instance) {
+celix_status_t connectionListener_create(apr_pool_t *pool, remote_shell_pt remoteShell, apr_size_t port, connection_listener_pt *instance) {
 	celix_status_t status = CELIX_SUCCESS;
     (*instance) = apr_palloc(pool, sizeof(**instance));
     if ((*instance) != NULL) {
@@ -74,7 +74,7 @@ celix_status_t connectionListener_create(apr_pool_t *pool, remote_shell_t remote
 	return status;
 }
 
-celix_status_t connectionListener_start(connection_listener_t instance) {
+celix_status_t connectionListener_start(connection_listener_pt instance) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_thread_mutex_lock(instance->mutex);
 
@@ -90,7 +90,7 @@ celix_status_t connectionListener_start(connection_listener_t instance) {
 	return status;
 }
 
-celix_status_t connectionListener_stop(connection_listener_t instance) {
+celix_status_t connectionListener_stop(connection_listener_pt instance) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_thread_t *thread = NULL;
 	apr_pollset_t *pollset = NULL;
@@ -127,7 +127,7 @@ celix_status_t connectionListener_stop(connection_listener_t instance) {
 
 static void* APR_THREAD_FUNC connection_listener_thread(apr_thread_t *thread, void *data) {
 	apr_status_t status = APR_SUCCESS;
-	connection_listener_t instance = data;
+	connection_listener_pt instance = data;
 
 	apr_sockaddr_t *listenAddress = NULL;
 	apr_socket_t *listenSocket = NULL;
@@ -199,7 +199,7 @@ static void* APR_THREAD_FUNC connection_listener_thread(apr_thread_t *thread, vo
     return NULL;
 }
 
-static apr_status_t connectionListener_cleanup(connection_listener_t instance) {
+static apr_status_t connectionListener_cleanup(connection_listener_pt instance) {
         celix_status_t status = CELIX_SUCCESS;
         status = connectionListener_stop(instance);
         return APR_SUCCESS;

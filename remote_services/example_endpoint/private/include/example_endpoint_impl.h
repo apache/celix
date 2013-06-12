@@ -32,14 +32,14 @@
 #include "celix_errno.h"
 #include "remote_endpoint_impl.h"
 
-celix_status_t exampleEndpoint_create(apr_pool_t *pool, remote_endpoint_t *endpoint);
+celix_status_t exampleEndpoint_create(apr_pool_t *pool, remote_endpoint_pt *endpoint);
 
-celix_status_t exampleEndpoint_setService(remote_endpoint_t endpoint, void *service);
+celix_status_t exampleEndpoint_setService(remote_endpoint_pt endpoint, void *service);
 
-celix_status_t exampleEndpoint_handleRequest(remote_endpoint_t ep, char *request, char *data, char **reply);
+celix_status_t exampleEndpoint_handleRequest(remote_endpoint_pt ep, char *request, char *data, char **reply);
 
-celix_status_t exampleEndpoint_add(remote_endpoint_t ep, char *data, char **reply);
-celix_status_t exampleEndpoint_sub(remote_endpoint_t ep, char *data, char **reply);
-celix_status_t exampleEndpoint_sqrt(remote_endpoint_t ep, char *data, char **reply);
+celix_status_t exampleEndpoint_add(remote_endpoint_pt ep, char *data, char **reply);
+celix_status_t exampleEndpoint_sub(remote_endpoint_pt ep, char *data, char **reply);
+celix_status_t exampleEndpoint_sqrt(remote_endpoint_pt ep, char *data, char **reply);
 
 #endif /* EXAMPLE_ENDPOINT_IMPL_H_ */

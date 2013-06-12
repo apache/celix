@@ -35,12 +35,12 @@
 #include "bundle.h"
 #include "update_command.h"
 
-void updateCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *));
-celix_status_t updateCommand_download(COMMAND command, char * url, char **inputFile);
+void updateCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *));
+celix_status_t updateCommand_download(command_pt command, char * url, char **inputFile);
 size_t updateCommand_writeData(void *ptr, size_t size, size_t nmemb, FILE *stream);
 
-COMMAND updateCommand_create(bundle_context_t context) {
-	COMMAND command = (COMMAND) malloc(sizeof(*command));
+command_pt updateCommand_create(bundle_context_pt context) {
+	command_pt command = (command_pt) malloc(sizeof(*command));
 	command->bundleContext = context;
 	command->name = "update";
 	command->shortDescription = "update bundle.";
@@ -49,13 +49,13 @@ COMMAND updateCommand_create(bundle_context_t context) {
 	return command;
 }
 
-void updateCommand_destroy(COMMAND command) {
+void updateCommand_destroy(command_pt command) {
 	free(command);
 }
 
 
-void updateCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *)) {
-    bundle_t bundle = NULL;
+void updateCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *)) {
+    bundle_pt bundle = NULL;
 	char delims[] = " ";
 	char * sub = NULL;
 	sub = strtok(line, delims);
@@ -89,7 +89,7 @@ void updateCommand_execute(COMMAND command, char * line, void (*out)(char *), vo
 	}
 }
 
-celix_status_t updateCommand_download(COMMAND command, char * url, char **inputFile) {
+celix_status_t updateCommand_download(command_pt command, char * url, char **inputFile) {
 	CURL *curl;
 	CURLcode res;
 	curl = curl_easy_init();

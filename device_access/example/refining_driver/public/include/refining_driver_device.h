@@ -32,14 +32,14 @@
 #define REFINING_DRIVER_DEVICE_CATEGORY "word"
 #define REFINING_DRIVER_DEVICE_SERVIC_NAME "refining_driver_device"
 
-typedef struct refining_driver_device *refining_driver_device_t;
+typedef struct refining_driver_device *refining_driver_device_pt;
 
 struct refining_driver_device_service {
 	struct device_service deviceService; /*NOTE: base_driver_device_service is a device_service.*/
-	refining_driver_device_t refiningDriverDevice;
-	celix_status_t (*getNextWord)(refining_driver_device_t refiningDriverDevice, apr_pool_t *pool, char **c);
+	refining_driver_device_pt refiningDriverDevice;
+	celix_status_t (*getNextWord)(refining_driver_device_pt refiningDriverDevice, apr_pool_t *pool, char **c);
 };
 
-typedef struct refining_driver_device_service * refining_driver_device_service_t;
+typedef struct refining_driver_device_service * refining_driver_device_service_pt;
 
 #endif /* REFINING_DRIVER_DEVICE_H_ */

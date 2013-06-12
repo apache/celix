@@ -29,11 +29,11 @@
 
 #define SERVICE_COMPONENT_NAME "ServiceComponent"
 
-typedef struct service * SERVICE;
+typedef struct service * service_pt;
 
 struct serviceComponent {
-	SERVICE handle;
-	char * (*getName)(SERVICE handle);
+	service_pt handle;
+	char * (*getName)(service_pt handle);
 };
 
 #endif /* SERVICE_COMPONENT_H_ */

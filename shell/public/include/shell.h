@@ -32,17 +32,17 @@
 
 static const char * const SHELL_SERVICE_NAME = "shellService";
 
-typedef struct shell * SHELL;
+typedef struct shell * shell_pt;
 
 struct shellService {
-	SHELL shell;
-	array_list_t (*getCommands)(SHELL shell);
-	char * (*getCommandUsage)(SHELL shell, char * commandName);
-	char * (*getCommandDescription)(SHELL shell, char * commandName);
-	service_reference_t (*getCommandReference)(SHELL shell, char * command);
-	void (*executeCommand)(SHELL shell, char * commandLine, void (*out)(char *), void (*error)(char *));
+	shell_pt shell;
+	array_list_pt (*getCommands)(shell_pt shell);
+	char * (*getCommandUsage)(shell_pt shell, char * commandName);
+	char * (*getCommandDescription)(shell_pt shell, char * commandName);
+	service_reference_pt (*getCommandReference)(shell_pt shell, char * command);
+	void (*executeCommand)(shell_pt shell, char * commandLine, void (*out)(char *), void (*error)(char *));
 };
 
-typedef struct shellService * SHELL_SERVICE;
+typedef struct shellService * shell_service_pt;
 
 #endif /* SHELL_H_ */

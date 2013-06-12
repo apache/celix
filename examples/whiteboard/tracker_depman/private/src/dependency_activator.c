@@ -34,7 +34,7 @@
 #include "log_service.h"
 #include "bundle_context.h"
 
-void * dm_create(bundle_context_t context) {
+void * dm_create(bundle_context_pt context) {
 	struct data * data = malloc(sizeof(*data));
 	apr_pool_t *pool = NULL;
 	bundleContext_getMemoryPool(context, &pool);
@@ -48,11 +48,11 @@ void * dm_create(bundle_context_t context) {
 	return data;
 }
 
-void dm_init(void * userData, bundle_context_t context, DEPENDENCY_MANAGER manager) {
+void dm_init(void * userData, bundle_context_pt context, dependency_manager_pt manager) {
 	struct data * data = (struct data *) userData;
-	SERVICE service = NULL;
-	SERVICE_DEPENDENCY dep = NULL;
-	SERVICE_DEPENDENCY dep2 = NULL;
+	service_pt service = NULL;
+	service_dependency_pt dep = NULL;
+	service_dependency_pt dep2 = NULL;
 
 	data->context = context;
 
@@ -75,7 +75,7 @@ void dm_init(void * userData, bundle_context_t context, DEPENDENCY_MANAGER manag
 	dependencyManager_add(manager, service);
 }
 
-void dm_destroy(void * userData, bundle_context_t context, DEPENDENCY_MANAGER manager) {
+void dm_destroy(void * userData, bundle_context_pt context, dependency_manager_pt manager) {
 	struct data * data = (struct data *) userData;
 	dependencyManager_remove(manager, data->service);
 	arrayList_destroy(data->publishers);

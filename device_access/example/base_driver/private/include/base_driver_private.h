@@ -28,11 +28,11 @@
 
 #include "base_driver_device.h"
 
-celix_status_t baseDriver_create(apr_pool_t *pool, base_driver_device_t *service);
-celix_status_t baseDriver_createService(base_driver_device_t device, base_driver_device_service_t *service);
+celix_status_t baseDriver_create(apr_pool_t *pool, base_driver_device_pt *service);
+celix_status_t baseDriver_createService(base_driver_device_pt device, base_driver_device_service_pt *service);
 
-celix_status_t baseDriver_noDriverFound(device_t device);
+celix_status_t baseDriver_noDriverFound(device_pt device);
 
-celix_status_t baseDriver_getNextChar(base_driver_device_t service, char *c);
+celix_status_t baseDriver_getNextChar(base_driver_device_pt service, char *c);
 
 #endif /* BASE_DRIVER_PRIVATE_H_ */

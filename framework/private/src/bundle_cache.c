@@ -38,7 +38,7 @@
 #include "constants.h"
 
 struct bundleCache {
-	properties_t configurationMap;
+	properties_pt configurationMap;
 	char * cacheDir;
 	apr_pool_t *mp;
 };
@@ -46,11 +46,11 @@ struct bundleCache {
 static celix_status_t bundleCache_deleteTree(char * directory, apr_pool_t *mp);
 static apr_status_t bundleCache_destroy(void *cacheP);
 
-celix_status_t bundleCache_create(properties_t configurationMap, apr_pool_t *mp, bundle_cache_t *bundle_cache) {
+celix_status_t bundleCache_create(properties_pt configurationMap, apr_pool_t *mp, bundle_cache_pt *bundle_cache) {
     celix_status_t status;
-   bundle_cache_t cache;
+   bundle_cache_pt cache;
 
-	cache = (bundle_cache_t) apr_palloc(mp, (sizeof(*cache)));
+	cache = (bundle_cache_pt) apr_palloc(mp, (sizeof(*cache)));
     if (cache == NULL) {
         status = CELIX_ENOMEM;
     } else {
@@ -76,16 +76,16 @@ celix_status_t bundleCache_create(properties_t configurationMap, apr_pool_t *mp,
 }
 
 apr_status_t bundleCache_destroy(void *cacheP) {
-	bundle_cache_t cache = (bundle_cache_t) cacheP;
+	bundle_cache_pt cache = (bundle_cache_pt) cacheP;
     properties_destroy(cache->configurationMap);
     return CELIX_SUCCESS;
 }
 
-celix_status_t bundleCache_delete(bundle_cache_t cache) {
+celix_status_t bundleCache_delete(bundle_cache_pt cache) {
 	return bundleCache_deleteTree(cache->cacheDir, cache->mp);
 }
 
-celix_status_t bundleCache_getArchives(bundle_cache_t cache, apr_pool_t *pool, array_list_t *archives) {
+celix_status_t bundleCache_getArchives(bundle_cache_pt cache, apr_pool_t *pool, array_list_pt *archives) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	apr_dir_t *dir;
@@ -97,7 +97,7 @@ celix_status_t bundleCache_getArchives(bundle_cache_t cache, apr_pool_t *pool, a
 	}
 
 	if (aprStatus == APR_SUCCESS) {
-        array_list_t list = NULL;
+        array_list_pt list = NULL;
 		apr_finfo_t dp;
         arrayList_create(pool, &list);
         
@@ -118,7 +118,7 @@ celix_status_t bundleCache_getArchives(bundle_cache_t cache, apr_pool_t *pool, a
                     && (strncmp(dp.name, "bundle", 6) == 0)
                     && (strcmp(dp.name, "bundle0") != 0)) {
 
-                bundle_archive_t archive = NULL;
+                bundle_archive_pt archive = NULL;
                 status = bundleArchive_recreate(apr_pstrdup(cache->mp, archiveRoot), cache->mp, &archive);
                 if (status == CELIX_SUCCESS) {
                     arrayList_add(list, archive);
@@ -139,7 +139,7 @@ celix_status_t bundleCache_getArchives(bundle_cache_t cache, apr_pool_t *pool, a
 	return status;
 }
 
-celix_status_t bundleCache_createArchive(bundle_cache_t cache, apr_pool_t *bundlePool, long id, char * location, char *inputFile, bundle_archive_t *bundle_archive) {
+celix_status_t bundleCache_createArchive(bundle_cache_pt cache, apr_pool_t *bundlePool, long id, char * location, char *inputFile, bundle_archive_pt *bundle_archive) {
 	celix_status_t status = CELIX_SUCCESS;
 	char *archiveRoot = NULL;
 

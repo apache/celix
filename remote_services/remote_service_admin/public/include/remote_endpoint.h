@@ -29,15 +29,15 @@
 
 #define REMOTE_ENDPOINT "remote_endpoint"
 
-typedef struct remote_endpoint *remote_endpoint_t;
+typedef struct remote_endpoint *remote_endpoint_pt;
 
 struct remote_endpoint_service {
-	remote_endpoint_t endpoint;
-	celix_status_t (*setService)(remote_endpoint_t endpoint, void *service);
-	celix_status_t (*handleRequest)(remote_endpoint_t endpoint, char *request, char *data, char **reply);
+	remote_endpoint_pt endpoint;
+	celix_status_t (*setService)(remote_endpoint_pt endpoint, void *service);
+	celix_status_t (*handleRequest)(remote_endpoint_pt endpoint, char *request, char *data, char **reply);
 };
 
-typedef struct remote_endpoint_service *remote_endpoint_service_t;
+typedef struct remote_endpoint_service *remote_endpoint_service_pt;
 
 
 #endif /* REMOTE_ENDPOINT_H_ */

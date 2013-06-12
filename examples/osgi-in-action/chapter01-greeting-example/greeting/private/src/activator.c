@@ -34,15 +34,15 @@
 #include "service_registration.h"
 
 struct greetingActivator {
-	service_registration_t reg;
+	service_registration_pt reg;
 	apr_pool_t *pool;
 };
 
-typedef struct greetingActivator *greeting_activator_t;
+typedef struct greetingActivator *greeting_activator_pt;
 
-celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	apr_pool_t *pool;
-	greeting_activator_t activator;
+	greeting_activator_pt activator;
 	celix_status_t status = bundleContext_getMemoryPool(context, &pool);
 	if (status == CELIX_SUCCESS) {
 		*userData = apr_palloc(pool, sizeof(struct greetingActivator));
@@ -57,12 +57,12 @@ celix_status_t bundleActivator_create(bundle_context_t context, void **userData)
 	return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	greeting_activator_t act = (greeting_activator_t) userData;
+	greeting_activator_pt act = (greeting_activator_pt) userData;
 
-	greeting_service_t greetingService = apr_palloc(act->pool, sizeof(*greetingService));
+	greeting_service_pt greetingService = apr_palloc(act->pool, sizeof(*greetingService));
 
 	if (greetingService) {
 		greetingService->instance = apr_palloc(act->pool, sizeof(*greetingService->instance));
@@ -80,14 +80,14 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
-	greeting_activator_t act = (greeting_activator_t) userData;
+	greeting_activator_pt act = (greeting_activator_pt) userData;
 	serviceRegistration_unregister(act->reg);
 	act->reg = NULL;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	return CELIX_SUCCESS;
 }

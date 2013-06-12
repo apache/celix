@@ -33,13 +33,13 @@
 #include "properties.h"
 #include "celixbool.h"
 
-typedef struct filter * filter_t;
+typedef struct filter * filter_pt;
 
-filter_t filter_create(char * filterString, apr_pool_t *pool);
-void filter_destroy(filter_t filter);
+filter_pt filter_create(char * filterString, apr_pool_t *pool);
+void filter_destroy(filter_pt filter);
 
-celix_status_t filter_match(filter_t filter, properties_t properties, bool *result);
+celix_status_t filter_match(filter_pt filter, properties_pt properties, bool *result);
 
-celix_status_t filter_getString(filter_t filter, char **filterStr);
+celix_status_t filter_getString(filter_pt filter, char **filterStr);
 
 #endif /* FILTER_H_ */

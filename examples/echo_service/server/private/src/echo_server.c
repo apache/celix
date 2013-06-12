@@ -32,17 +32,17 @@ struct echoServer {
 	char * name;
 };
 
-ECHO_SERVER echoServer_create() {
-	ECHO_SERVER server = malloc(sizeof(*server));
+echo_server_pt echoServer_create() {
+	echo_server_pt server = malloc(sizeof(*server));
 	server->name = "MacBook Pro";
 	return server;
 }
 
-void echoServer_echo(ECHO_SERVER server, char * text) {
+void echoServer_echo(echo_server_pt server, char * text) {
 	printf("Server %s says %s\n", server->name, text);
 }
 
-void echoServer_destroy(ECHO_SERVER server) {
+void echoServer_destroy(echo_server_pt server) {
 	server->name = NULL;
 	free(server);
 	server = NULL;

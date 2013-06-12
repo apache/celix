@@ -37,7 +37,7 @@ static void *APR_THREAD_FUNC dp_send(apr_thread_t *thd, void *handle) {
 	while (data->running) {
 		int i;
 		for (i = 0; i < arrayList_size(data->publishers); i++) {
-			PUBLISHER_SERVICE pub = (PUBLISHER_SERVICE) arrayList_get(data->publishers, i);
+			publisher_service_pt pub = (publisher_service_pt) arrayList_get(data->publishers, i);
 			pub->invoke(pub->publisher, "Tracker message");
 			if (data->logger != NULL) {
 				data->logger->log(data->logger->logger, LOG_INFO, "Sending message to publisher");
@@ -72,38 +72,38 @@ void service_destroy(void * userData) {
 
 }
 
-void tracker_addedServ(void * handle, service_reference_t ref, void * service) {
+void tracker_addedServ(void * handle, service_reference_pt ref, void * service) {
 	struct data * data = (struct data *) handle;
 	arrayList_add(data->publishers, service);
 	printf("Service Added\n");
 }
 
-void tracker_modifiedServ(void * handle, service_reference_t ref, void * service) {
+void tracker_modifiedServ(void * handle, service_reference_pt ref, void * service) {
 	struct data * data = (struct data *) handle;
 	printf("Service Changed\n");
 }
 
-void tracker_removedServ(void * handle, service_reference_t ref, void * service) {
+void tracker_removedServ(void * handle, service_reference_pt ref, void * service) {
 	struct data * data = (struct data *) handle;
 	arrayList_removeElement(data->publishers, service);
 	printf("Service Removed\n");
 }
 
-void tracker_addLog(void *handle, service_reference_t ref, void *service) {
+void tracker_addLog(void *handle, service_reference_pt ref, void *service) {
     struct data * data = (struct data *) handle;
     printf("Add log\n");
     data->logger = service;
-    ((log_service_t) service)->log(((log_service_t) service)->logger, LOG_DEBUG, "test");
+    ((log_service_pt) service)->log(((log_service_pt) service)->logger, LOG_DEBUG, "test");
 }
 
-void tracker_modifiedLog(void *handle, service_reference_t ref, void *service) {
+void tracker_modifiedLog(void *handle, service_reference_pt ref, void *service) {
     struct data * data = (struct data *) handle;
     printf("Modify log\n");
     data->logger = service;
-    ((log_service_t) service)->log(((log_service_t) service)->logger, LOG_DEBUG, "test");
+    ((log_service_pt) service)->log(((log_service_pt) service)->logger, LOG_DEBUG, "test");
 }
 
-void tracker_removeLog(void *handle, service_reference_t ref, void *service) {
+void tracker_removeLog(void *handle, service_reference_pt ref, void *service) {
     struct data * data = (struct data *) handle;
     data->logger = NULL;
     printf("Remove log\n");

@@ -35,7 +35,7 @@
 #include "module.h"
 #include "bundle.h"
 
-celix_status_t logWriter_create(apr_pool_t *pool, log_writer_t *writer) {
+celix_status_t logWriter_create(apr_pool_t *pool, log_writer_pt *writer) {
     celix_status_t status = CELIX_SUCCESS;
 
     apr_pool_t *mypool;
@@ -55,14 +55,14 @@ void service_init(void * userData) {
 }
 
 void service_start(void * userData) {
-    log_writer_t writer = (log_writer_t) userData;
+    log_writer_pt writer = (log_writer_pt) userData;
     if (writer->logReader != NULL) {
     	writer->logReader->addLogListener(writer->logReader->reader, writer->logListener);
     }
 }
 
 void service_stop(void * userData) {
-    log_writer_t writer = (log_writer_t) userData;
+    log_writer_pt writer = (log_writer_pt) userData;
 
     if (writer->logReader != NULL) {
     	writer->logReader->removeLogListener(writer->logReader->reader, writer->logListener);
@@ -72,9 +72,9 @@ void service_stop(void * userData) {
 void service_destroy(void * userData) {
 }
 
-celix_status_t logListener_logged(log_listener_t listener, log_entry_t entry) {
+celix_status_t logListener_logged(log_listener_pt listener, log_entry_pt entry) {
 	celix_status_t status = CELIX_SUCCESS;
-    module_t module = NULL;
+    module_pt module = NULL;
     char *sName = NULL;
 
     status = bundle_getCurrentModule(entry->bundle, &module);

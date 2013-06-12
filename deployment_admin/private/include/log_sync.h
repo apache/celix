@@ -29,8 +29,8 @@
 
 #include "log_store.h"
 
-typedef struct log_sync *log_sync_t;
+typedef struct log_sync *log_sync_pt;
 
-celix_status_t logSync_create(apr_pool_t *pool, char *targetId, log_store_t store, log_sync_t *logSync);
+celix_status_t logSync_create(apr_pool_t *pool, char *targetId, log_store_pt store, log_sync_pt *logSync);
 
 #endif /* LOG_SYNC_H_ */

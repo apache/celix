@@ -31,16 +31,16 @@
 
 static int END_OF_DATA = -2;
 
-int hessian_parseChar(hessian_in_t in, char *c);
-int hessian_parseLong(hessian_in_t in, long *value);
-int hessian_parseInt16(hessian_in_t in, int *value);
-int hessian_parseInt(hessian_in_t in, int *value);
+int hessian_parseChar(hessian_in_pt in, char *c);
+int hessian_parseLong(hessian_in_pt in, long *value);
+int hessian_parseInt16(hessian_in_pt in, int *value);
+int hessian_parseInt(hessian_in_pt in, int *value);
 
-char hessian_read(hessian_in_t in) {
+char hessian_read(hessian_in_pt in) {
 	return (in->buffer[in->offset++] & 0xFF);
 }
 
-int hessian_readBoolean(hessian_in_t in, bool *value) {
+int hessian_readBoolean(hessian_in_pt in, bool *value) {
 	char tag = hessian_read(in);
 
 	switch (tag) {
@@ -56,7 +56,7 @@ int hessian_readBoolean(hessian_in_t in, bool *value) {
 	return 0;
 }
 
-int hessian_readInt(hessian_in_t in, int *value) {
+int hessian_readInt(hessian_in_pt in, int *value) {
 	unsigned char tag = hessian_read(in);
 
 	switch (tag) {
@@ -109,7 +109,7 @@ int hessian_readInt(hessian_in_t in, int *value) {
 	return 1;
 }
 
-int hessian_readLong(hessian_in_t in, long *value) {
+int hessian_readLong(hessian_in_pt in, long *value) {
 	unsigned char tag = hessian_read(in);
 
 	switch (tag) {
@@ -149,7 +149,7 @@ int hessian_readLong(hessian_in_t in, long *value) {
 	return 0;
 }
 
-int hessian_readDouble(hessian_in_t in, double *value) {
+int hessian_readDouble(hessian_in_pt in, double *value) {
 	unsigned char tag = hessian_read(in);
 
 	long l;
@@ -185,7 +185,7 @@ int hessian_readDouble(hessian_in_t in, double *value) {
 	return 0;
 }
 
-int hessian_readUTCDate(hessian_in_t in, long *value) {
+int hessian_readUTCDate(hessian_in_pt in, long *value) {
 	unsigned char tag = hessian_read(in);
 
 	if (tag == 'd') {
@@ -195,7 +195,7 @@ int hessian_readUTCDate(hessian_in_t in, long *value) {
 	return 0;
 }
 
-int hessian_readNull(hessian_in_t in) {
+int hessian_readNull(hessian_in_pt in) {
 	unsigned char tag = hessian_read(in);
 
 	switch (tag) {
@@ -208,7 +208,7 @@ int hessian_readNull(hessian_in_t in) {
 	return 0;
 }
 
-int hessian_readChar(hessian_in_t in, char *value) {
+int hessian_readChar(hessian_in_pt in, char *value) {
 	char *readC;
 	unsigned int read;
 	hessian_readNString(in, 0, 1, &readC, &read);
@@ -217,11 +217,11 @@ int hessian_readChar(hessian_in_t in, char *value) {
 	return 0;
 }
 
-int hessian_readString(hessian_in_t in, char **value, unsigned int *readLength) {
+int hessian_readString(hessian_in_pt in, char **value, unsigned int *readLength) {
 	return hessian_readNString(in, 0, -1, value, readLength);
 }
 
-int hessian_readNString(hessian_in_t in, int offset, int length, char **value, unsigned int *readLength) {
+int hessian_readNString(hessian_in_pt in, int offset, int length, char **value, unsigned int *readLength) {
 	*readLength = 0;
 
 	bool done = false;
@@ -331,7 +331,7 @@ int hessian_readNString(hessian_in_t in, int offset, int length, char **value, u
 	return 0;
 }
 
-int hessian_readByte(hessian_in_t in, unsigned char *value) {
+int hessian_readByte(hessian_in_pt in, unsigned char *value) {
 	unsigned char *readC;
 	unsigned int read;
 	hessian_readNBytes(in, 0, 1, &readC, &read);
@@ -340,11 +340,11 @@ int hessian_readByte(hessian_in_t in, unsigned char *value) {
 	return 0;
 }
 
-int hessian_readBytes(hessian_in_t in, unsigned char **value, unsigned int *readLength) {
+int hessian_readBytes(hessian_in_pt in, unsigned char **value, unsigned int *readLength) {
 	return hessian_readNBytes(in, 0, -1, value, readLength);
 }
 
-int hessian_readNBytes(hessian_in_t in, int offset, int length, unsigned char **value, unsigned int *readLength) {
+int hessian_readNBytes(hessian_in_pt in, int offset, int length, unsigned char **value, unsigned int *readLength) {
 	*readLength = 0;
 
 	bool done = false;
@@ -432,7 +432,7 @@ int hessian_readNBytes(hessian_in_t in, int offset, int length, unsigned char **
 	return 0;
 }
 
-int hessian_parseChar(hessian_in_t in, char *c) {
+int hessian_parseChar(hessian_in_pt in, char *c) {
 	unsigned char ch = hessian_read(in);
 
 	if (ch < 0x80) {
@@ -453,7 +453,7 @@ int hessian_parseChar(hessian_in_t in, char *c) {
 	return 0;
 }
 
-int hessian_parseInt16(hessian_in_t in, int *value) {
+int hessian_parseInt16(hessian_in_pt in, int *value) {
 	int b16 = hessian_read(in) & 0xFF;
 	int b8 = hessian_read(in) & 0xFF;
 
@@ -463,7 +463,7 @@ int hessian_parseInt16(hessian_in_t in, int *value) {
 	return 0;
 }
 
-int hessian_parseInt(hessian_in_t in, int *value) {
+int hessian_parseInt(hessian_in_pt in, int *value) {
 	int b32 = hessian_read(in) & 0xFF;
 	int b24 = hessian_read(in) & 0xFF;
 	int b16 = hessian_read(in) & 0xFF;
@@ -477,7 +477,7 @@ int hessian_parseInt(hessian_in_t in, int *value) {
 	return 0;
 }
 
-int hessian_parseLong(hessian_in_t in, long *value) {
+int hessian_parseLong(hessian_in_pt in, long *value) {
 	long b64 = hessian_read(in) & 0xFF;
 	long b56 = hessian_read(in) & 0xFF;
 	long b48 = hessian_read(in) & 0xFF;

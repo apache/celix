@@ -36,20 +36,20 @@
 #include "refining_driver_private.h"
 
 struct refining_driver_bundle_instance {
-	bundle_context_t context;
+	bundle_context_pt context;
 	apr_pool_t * pool;
-	service_registration_t registration;
+	service_registration_pt registration;
 };
 
-typedef struct refining_driver_bundle_instance *refining_driver_bundle_instance_t;
+typedef struct refining_driver_bundle_instance *refining_driver_bundle_instance_pt;
 
-celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	printf("REFINING_DRIVER: creating bundle\n");
 	celix_status_t status = CELIX_SUCCESS;
 	apr_pool_t *pool;
 	status = bundleContext_getMemoryPool(context, &pool);
 	if (status == CELIX_SUCCESS) {
-		refining_driver_bundle_instance_t instance = apr_palloc(pool, sizeof(*instance));
+		refining_driver_bundle_instance_pt instance = apr_palloc(pool, sizeof(*instance));
 		if (instance != NULL) {
 			instance->context = context;
 			instance->pool = pool;
@@ -62,18 +62,18 @@ celix_status_t bundleActivator_create(bundle_context_t context, void **userData)
 	return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
 	printf("REFINING_DRIVER: starting bundle\n");
 	celix_status_t status = CELIX_SUCCESS;
-	refining_driver_bundle_instance_t bi = userData;
+	refining_driver_bundle_instance_pt bi = userData;
 
-	refining_driver_t driver = NULL;
+	refining_driver_pt driver = NULL;
 	status = refiningDriver_create(context, bi->pool, &driver);
 	if (status == CELIX_SUCCESS) {
-		driver_service_t service = NULL;
+		driver_service_pt service = NULL;
 		status = refiningDriver_createService(driver, &service);
 		if (status == CELIX_SUCCESS) {
-			properties_t props = properties_create();
+			properties_pt props = properties_create();
 			properties_set(props, "DRIVER_ID", REFINING_DRIVER_ID);
 			status = bundleContext_registerService(context, DRIVER_SERVICE_NAME, service, props, &bi->registration);
 		}
@@ -88,10 +88,10 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
 	printf("REFINING_DRIVER: stopping bundle\n");
 	celix_status_t status = CELIX_SUCCESS;
-	refining_driver_bundle_instance_t bi = userData;
+	refining_driver_bundle_instance_pt bi = userData;
 
 	if (bi->registration != NULL) {
 		serviceRegistration_unregister(bi->registration);
@@ -101,10 +101,10 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
 	return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	printf("REFINING_DRIVER: destroying bundle\n");
 	celix_status_t status = CELIX_SUCCESS;
-	refining_driver_bundle_instance_t bi = userData;
+	refining_driver_bundle_instance_pt bi = userData;
 	return status;
 }
 

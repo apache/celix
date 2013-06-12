@@ -33,6 +33,6 @@ struct publisher {
 	void *data;
 };
 
-void publisher_invoke(PUBLISHER publisher, char * text);
+void publisher_invoke(publisher_pt publisher, char * text);
 
 #endif /* PUBLISHER_PRIVATE_H_ */

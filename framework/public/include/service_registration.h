@@ -29,27 +29,27 @@
 
 #include "celixbool.h"
 
-typedef struct serviceRegistration * service_registration_t;
+typedef struct serviceRegistration * service_registration_pt;
 
 #include "service_registry.h"
 #include "array_list.h"
 #include "bundle.h"
 #include "framework_exports.h"
 
-service_registration_t serviceRegistration_create(apr_pool_t *pool, service_registry_t registry, bundle_t bundle, char * serviceName, long serviceId, void * serviceObject, properties_t dictionary);
-service_registration_t serviceRegistration_createServiceFactory(apr_pool_t *pool, service_registry_t registry, bundle_t bundle, char * serviceName, long serviceId, void * serviceObject, properties_t dictionary);
-void serviceRegistration_destroy(service_registration_t registration);
+service_registration_pt serviceRegistration_create(apr_pool_t *pool, service_registry_pt registry, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary);
+service_registration_pt serviceRegistration_createServiceFactory(apr_pool_t *pool, service_registry_pt registry, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary);
+void serviceRegistration_destroy(service_registration_pt registration);
 
-FRAMEWORK_EXPORT bool serviceRegistration_isValid(service_registration_t registration);
-FRAMEWORK_EXPORT void serviceRegistration_invalidate(service_registration_t registration);
-FRAMEWORK_EXPORT celix_status_t serviceRegistration_unregister(service_registration_t registration);
+FRAMEWORK_EXPORT bool serviceRegistration_isValid(service_registration_pt registration);
+FRAMEWORK_EXPORT void serviceRegistration_invalidate(service_registration_pt registration);
+FRAMEWORK_EXPORT celix_status_t serviceRegistration_unregister(service_registration_pt registration);
 
-FRAMEWORK_EXPORT celix_status_t serviceRegistration_getService(service_registration_t registration, bundle_t bundle, void **service);
+FRAMEWORK_EXPORT celix_status_t serviceRegistration_getService(service_registration_pt registration, bundle_pt bundle, void **service);
 
-FRAMEWORK_EXPORT celix_status_t serviceRegistration_getProperties(service_registration_t registration, properties_t *properties);
-FRAMEWORK_EXPORT celix_status_t serviceRegistration_getRegistry(service_registration_t registration, service_registry_t *registry);
-FRAMEWORK_EXPORT celix_status_t serviceRegistration_getServiceReferences(service_registration_t registration, array_list_t *references);
-FRAMEWORK_EXPORT celix_status_t serviceRegistration_getBundle(service_registration_t registration, bundle_t *bundle);
-FRAMEWORK_EXPORT celix_status_t serviceRegistration_getServiceName(service_registration_t registration, char **serviceName);
+FRAMEWORK_EXPORT celix_status_t serviceRegistration_getProperties(service_registration_pt registration, properties_pt *properties);
+FRAMEWORK_EXPORT celix_status_t serviceRegistration_getRegistry(service_registration_pt registration, service_registry_pt *registry);
+FRAMEWORK_EXPORT celix_status_t serviceRegistration_getServiceReferences(service_registration_pt registration, array_list_pt *references);
+FRAMEWORK_EXPORT celix_status_t serviceRegistration_getBundle(service_registration_pt registration, bundle_pt *bundle);
+FRAMEWORK_EXPORT celix_status_t serviceRegistration_getServiceName(service_registration_pt registration, char **serviceName);
 
 #endif /* SERVICE_REGISTRATION_H_ */

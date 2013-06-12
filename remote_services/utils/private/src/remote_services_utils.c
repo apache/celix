@@ -32,7 +32,7 @@
 #include "remote_constants.h"
 #include "remote_services_utils.h"
 
-celix_status_t remoteServicesUtils_getUUID(apr_pool_t *pool, bundle_context_t context, char **uuidStr) {
+celix_status_t remoteServicesUtils_getUUID(apr_pool_t *pool, bundle_context_pt context, char **uuidStr) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	status = bundleContext_getProperty(context, ENDPOINT_FRAMEWORK_UUID, uuidStr);

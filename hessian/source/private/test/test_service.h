@@ -27,9 +27,9 @@
 #ifndef TEST_SERVICE_H_
 #define TEST_SERVICE_H_
 
-typedef struct test_service *test_service_t;
+typedef struct test_service *test_service_pt;
 
-void testService_sayHello(test_service_t testService, char *message);
+void testService_sayHello(test_service_pt testService, char *message);
 
 
 #endif /* TEST_SERVICE_H_ */

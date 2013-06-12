@@ -35,9 +35,9 @@ struct log_event {
 	unsigned long id;
 	unsigned long time;
 	unsigned int type;
-	properties_t properties;
+	properties_pt properties;
 };
 
-typedef struct log_event *log_event_t;
+typedef struct log_event *log_event_pt;
 
 #endif /* LOG_EVENT_H_ */

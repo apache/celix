@@ -73,14 +73,14 @@
 //	return oldValue == NULL ? NULL : oldValue->value;
 //}
 
-properties_t properties_create(void) {
+properties_pt properties_create(void) {
 	return hashMap_create(string_hash, string_hash, string_equals, string_equals);
 }
 
-void properties_destroy(properties_t properties) {
-	hash_map_iterator_t iter = hashMapIterator_create(properties);
+void properties_destroy(properties_pt properties) {
+	hash_map_iterator_pt iter = hashMapIterator_create(properties);
 	while (hashMapIterator_hasNext(iter)) {
-		hash_map_entry_t entry = hashMapIterator_nextEntry(iter);
+		hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
 		free(hashMapEntry_getKey(entry));
 		free(hashMapEntry_getValue(entry));
 	}
@@ -88,8 +88,8 @@ void properties_destroy(properties_t properties) {
 	hashMap_destroy(properties, false, false);
 }
 
-properties_t properties_load(char * filename) {
-	properties_t props = properties_create();
+properties_pt properties_load(char * filename) {
+	properties_pt props = properties_create();
 	FILE *file = fopen ( filename, "r" );
 
 	char * cont = strdup("\\");
@@ -142,13 +142,13 @@ properties_t properties_load(char * filename) {
 /**
  * Header is ignored for now, cannot handle comments yet
  */
-void properties_store(properties_t properties, char * filename, char * header) {
+void properties_store(properties_pt properties, char * filename, char * header) {
 	FILE *file = fopen ( filename, "w+" );
 	if (file != NULL) {
 		if (hashMap_size(properties) > 0) {
-			hash_map_iterator_t iterator = hashMapIterator_create(properties);
+			hash_map_iterator_pt iterator = hashMapIterator_create(properties);
 			while (hashMapIterator_hasNext(iterator)) {
-				hash_map_entry_t entry = hashMapIterator_nextEntry(iterator);
+				hash_map_entry_pt entry = hashMapIterator_nextEntry(iterator);
 
 				char * line = strdup(hashMapEntry_getKey(entry));
 				strcat(line, "=");
@@ -163,15 +163,15 @@ void properties_store(properties_t properties, char * filename, char * header) {
 	}
 }
 
-char * properties_get(properties_t properties, char * key) {
+char * properties_get(properties_pt properties, char * key) {
 	return hashMap_get(properties, key);
 }
 
-char * properties_getWithDefault(properties_t properties, char * key, char * defaultValue) {
+char * properties_getWithDefault(properties_pt properties, char * key, char * defaultValue) {
 	char * value = properties_get(properties, key);
 	return value == NULL ? defaultValue : value;
 }
 
-char * properties_set(properties_t properties, char * key, char * value) {
+char * properties_set(properties_pt properties, char * key, char * value) {
 	return hashMap_put(properties, strdup(key), strdup(value));
 }

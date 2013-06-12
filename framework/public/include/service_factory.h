@@ -29,7 +29,7 @@
 
 #include <apr_general.h>
 
-typedef struct service_factory * service_factory_t;
+typedef struct service_factory * service_factory_pt;
 
 #include "celix_errno.h"
 #include "service_registration.h"
@@ -37,8 +37,8 @@ typedef struct service_factory * service_factory_t;
 
 struct service_factory {
     void *factory;
-    celix_status_t (*getService)(void *factory, bundle_t bundle, service_registration_t registration, void **service);
-    celix_status_t (*ungetService)(void *factory, bundle_t bundle, service_registration_t registration);
+    celix_status_t (*getService)(void *factory, bundle_pt bundle, service_registration_pt registration, void **service);
+    celix_status_t (*ungetService)(void *factory, bundle_pt bundle, service_registration_pt registration);
 };
 
 

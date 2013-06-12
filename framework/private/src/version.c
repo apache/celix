@@ -43,10 +43,10 @@ struct version {
 
 static apr_status_t version_destroy(void *handle);
 
-celix_status_t version_createVersion(apr_pool_t *pool, int major, int minor, int micro, char * qualifier, version_t *version) {
+celix_status_t version_createVersion(apr_pool_t *pool, int major, int minor, int micro, char * qualifier, version_pt *version) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	*version = (version_t) apr_palloc(pool, sizeof(**version));
+	*version = (version_pt) apr_palloc(pool, sizeof(**version));
 	if (!*version) {
 		status = CELIX_ENOMEM;
 	} else {
@@ -93,12 +93,12 @@ celix_status_t version_createVersion(apr_pool_t *pool, int major, int minor, int
 	return status;
 }
 
-celix_status_t version_clone(version_t version, apr_pool_t *pool, version_t *clone) {
+celix_status_t version_clone(version_pt version, apr_pool_t *pool, version_pt *clone) {
 	return version_createVersion(pool, version->major, version->minor, version->micro, version->qualifier, clone);
 }
 
 apr_status_t version_destroy(void *handle) {
-	version_t version = (version_t) handle;
+	version_pt version = (version_pt) handle;
 	version->major = 0;
 	version->minor = 0;
 	version->micro = 0;
@@ -106,7 +106,7 @@ apr_status_t version_destroy(void *handle) {
 	return APR_SUCCESS;
 }
 
-celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionStr, version_t *version) {
+celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionStr, version_pt *version) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	int major = 0;
@@ -146,11 +146,11 @@ celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionS
 	return status;
 }
 
-celix_status_t version_createEmptyVersion(apr_pool_t *pool, version_t *version) {
+celix_status_t version_createEmptyVersion(apr_pool_t *pool, version_pt *version) {
 	return version_createVersion(pool, 0, 0, 0, "", version);
 }
 
-celix_status_t version_compareTo(version_t version, version_t compare, int *result) {
+celix_status_t version_compareTo(version_pt version, version_pt compare, int *result) {
 	celix_status_t status = CELIX_SUCCESS;
 	if (compare == version) {
 		*result = 0;
@@ -176,7 +176,7 @@ celix_status_t version_compareTo(version_t version, version_t compare, int *resu
 	return status;
 }
 
-celix_status_t version_toString(version_t version, apr_pool_t *pool, char **string) {
+celix_status_t version_toString(version_pt version, apr_pool_t *pool, char **string) {
 	if (strlen(version->qualifier) > 0) {
 		*string = apr_psprintf(pool, "%d.%d.%d.%s", version->major, version->minor, version->micro, version->qualifier);
 	} else {

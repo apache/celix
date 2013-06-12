@@ -53,15 +53,15 @@ struct filter {
 };
 
 void filter_skipWhiteSpace(char * filterString, int * pos);
-filter_t filter_parseFilter(char * filterString, int * pos, apr_pool_t *pool);
-filter_t filter_parseFilterComp(char * filterString, int * pos, apr_pool_t *pool);
-filter_t filter_parseAnd(char * filterString, int * pos, apr_pool_t *pool);
-filter_t filter_parseOr(char * filterString, int * pos, apr_pool_t *pool);
-filter_t filter_parseNot(char * filterString, int * pos, apr_pool_t *pool);
-filter_t filter_parseItem(char * filterString, int * pos, apr_pool_t *pool);
+filter_pt filter_parseFilter(char * filterString, int * pos, apr_pool_t *pool);
+filter_pt filter_parseFilterComp(char * filterString, int * pos, apr_pool_t *pool);
+filter_pt filter_parseAnd(char * filterString, int * pos, apr_pool_t *pool);
+filter_pt filter_parseOr(char * filterString, int * pos, apr_pool_t *pool);
+filter_pt filter_parseNot(char * filterString, int * pos, apr_pool_t *pool);
+filter_pt filter_parseItem(char * filterString, int * pos, apr_pool_t *pool);
 char * filter_parseAttr(char * filterString, int * pos);
 char * filter_parseValue(char * filterString, int * pos);
-array_list_t filter_parseSubstring(char * filterString, int * pos, apr_pool_t *pool);
+array_list_pt filter_parseSubstring(char * filterString, int * pos, apr_pool_t *pool);
 
 celix_status_t filter_compare(OPERAND operand, char * string, void * value2, bool *result);
 celix_status_t filter_compareString(OPERAND operand, char * string, void * value2, bool *result);
@@ -73,8 +73,8 @@ void filter_skipWhiteSpace(char * filterString, int * pos) {
 	}
 }
 
-filter_t filter_create(char * filterString, apr_pool_t *pool) {
-	filter_t filter = NULL;
+filter_pt filter_create(char * filterString, apr_pool_t *pool) {
+	filter_pt filter = NULL;
 	int pos = 0;
 	filter = filter_parseFilter(filterString, &pos, pool);
 	if (pos != strlen(filterString)) {
@@ -85,7 +85,7 @@ filter_t filter_create(char * filterString, apr_pool_t *pool) {
 	return filter;
 }
 
-void filter_destroy(filter_t filter) {
+void filter_destroy(filter_pt filter) {
 	if (filter != NULL) {
 		if (filter->operand == SUBSTRING) {
 			arrayList_clear(filter->value);
@@ -95,7 +95,7 @@ void filter_destroy(filter_t filter) {
 			int size = arrayList_size(filter->value);
 			int i = 0;
 			for (i = 0; i < size; i++) {
-				filter_t f = arrayList_get(filter->value, i);
+				filter_pt f = arrayList_get(filter->value, i);
 				filter_destroy(f);
 			}
 			arrayList_destroy(filter->value);
@@ -111,8 +111,8 @@ void filter_destroy(filter_t filter) {
 	}
 }
 
-filter_t filter_parseFilter(char * filterString, int * pos, apr_pool_t *pool) {
-	filter_t filter;
+filter_pt filter_parseFilter(char * filterString, int * pos, apr_pool_t *pool) {
+	filter_pt filter;
 	filter_skipWhiteSpace(filterString, pos);
 	if (filterString[*pos] != '(') {
 		printf("Error: Missing '('\n");
@@ -134,7 +134,7 @@ filter_t filter_parseFilter(char * filterString, int * pos, apr_pool_t *pool) {
 	return filter;
 }
 
-filter_t filter_parseFilterComp(char * filterString, int * pos, apr_pool_t *pool) {
+filter_pt filter_parseFilterComp(char * filterString, int * pos, apr_pool_t *pool) {
 	char c;
 	filter_skipWhiteSpace(filterString, pos);
 
@@ -157,9 +157,9 @@ filter_t filter_parseFilterComp(char * filterString, int * pos, apr_pool_t *pool
 	return filter_parseItem(filterString, pos, pool);
 }
 
-filter_t filter_parseAnd(char * filterString, int * pos, apr_pool_t *pool) {
-	filter_t filter = (filter_t) malloc(sizeof(*filter));
-	array_list_t operands = NULL;
+filter_pt filter_parseAnd(char * filterString, int * pos, apr_pool_t *pool) {
+	filter_pt filter = (filter_pt) malloc(sizeof(*filter));
+	array_list_pt operands = NULL;
 	arrayList_create(pool, &operands);
 	filter_skipWhiteSpace(filterString, pos);
 
@@ -169,7 +169,7 @@ filter_t filter_parseAnd(char * filterString, int * pos, apr_pool_t *pool) {
 	}
 
 	while(filterString[*pos] == '(') {
-		filter_t child = filter_parseFilter(filterString, pos, pool);
+		filter_pt child = filter_parseFilter(filterString, pos, pool);
 		arrayList_add(operands, child);
 	}
 
@@ -180,9 +180,9 @@ filter_t filter_parseAnd(char * filterString, int * pos, apr_pool_t *pool) {
 	return filter;
 }
 
-filter_t filter_parseOr(char * filterString, int * pos, apr_pool_t *pool) {
-	filter_t filter = (filter_t) malloc(sizeof(*filter));
-	array_list_t operands = NULL;
+filter_pt filter_parseOr(char * filterString, int * pos, apr_pool_t *pool) {
+	filter_pt filter = (filter_pt) malloc(sizeof(*filter));
+	array_list_pt operands = NULL;
 	arrayList_create(pool, &operands);
 	filter_skipWhiteSpace(filterString, pos);
 
@@ -192,7 +192,7 @@ filter_t filter_parseOr(char * filterString, int * pos, apr_pool_t *pool) {
 	}
 
 	while(filterString[*pos] == '(') {
-		filter_t child = filter_parseFilter(filterString, pos, pool);
+		filter_pt child = filter_parseFilter(filterString, pos, pool);
 		arrayList_add(operands, child);
 	}
 
@@ -203,9 +203,9 @@ filter_t filter_parseOr(char * filterString, int * pos, apr_pool_t *pool) {
 	return filter;
 }
 
-filter_t filter_parseNot(char * filterString, int * pos, apr_pool_t *pool) {
-	filter_t child = NULL;
-	filter_t filter = (filter_t) malloc(sizeof(*filter));
+filter_pt filter_parseNot(char * filterString, int * pos, apr_pool_t *pool) {
+	filter_pt child = NULL;
+	filter_pt filter = (filter_pt) malloc(sizeof(*filter));
 	filter_skipWhiteSpace(filterString, pos);
 
 	if (filterString[*pos] != '(') {
@@ -222,13 +222,13 @@ filter_t filter_parseNot(char * filterString, int * pos, apr_pool_t *pool) {
 	return filter;
 }
 
-filter_t filter_parseItem(char * filterString, int * pos, apr_pool_t *pool) {
+filter_pt filter_parseItem(char * filterString, int * pos, apr_pool_t *pool) {
 	char * attr = filter_parseAttr(filterString, pos);
 	filter_skipWhiteSpace(filterString, pos);
 	switch(filterString[*pos]) {
 		case '~': {
 			if (filterString[*pos + 1] == '=') {
-				filter_t filter = (filter_t) malloc(sizeof(*filter));
+				filter_pt filter = (filter_pt) malloc(sizeof(*filter));
 				*pos += 2;
 				filter->operand = APPROX;
 				filter->attribute = attr;
@@ -239,7 +239,7 @@ filter_t filter_parseItem(char * filterString, int * pos, apr_pool_t *pool) {
 		}
 		case '>': {
 			if (filterString[*pos + 1] == '=') {
-				filter_t filter = (filter_t) malloc(sizeof(*filter));
+				filter_pt filter = (filter_pt) malloc(sizeof(*filter));
 				*pos += 2;
 				filter->operand = GREATER;
 				filter->attribute = attr;
@@ -250,7 +250,7 @@ filter_t filter_parseItem(char * filterString, int * pos, apr_pool_t *pool) {
 		}
 		case '<': {
 			if (filterString[*pos + 1] == '=') {
-				filter_t filter = (filter_t) malloc(sizeof(*filter));
+				filter_pt filter = (filter_pt) malloc(sizeof(*filter));
 				*pos += 2;
 				filter->operand = LESS;
 				filter->attribute = attr;
@@ -260,14 +260,14 @@ filter_t filter_parseItem(char * filterString, int * pos, apr_pool_t *pool) {
 			break;
 		}
 		case '=': {
-			filter_t filter = NULL;
-			array_list_t subs;
+			filter_pt filter = NULL;
+			array_list_pt subs;
 			if (filterString[*pos + 1] == '*') {
 				int oldPos = *pos;
 				*pos += 2;
 				filter_skipWhiteSpace(filterString, pos);
 				if (filterString[*pos] == ')') {
-					filter_t filter = (filter_t) malloc(sizeof(*filter));
+					filter_pt filter = (filter_pt) malloc(sizeof(*filter));
 					filter->operand = PRESENT;
 					filter->attribute = attr;
 					filter->value = NULL;
@@ -275,7 +275,7 @@ filter_t filter_parseItem(char * filterString, int * pos, apr_pool_t *pool) {
 				}
 				*pos = oldPos;
 			}
-			filter = (filter_t) malloc(sizeof(*filter));			
+			filter = (filter_pt) malloc(sizeof(*filter));			
 			(*pos)++;
 			subs = filter_parseSubstring(filterString, pos, pool);
 			if (arrayList_size(subs) == 1) {
@@ -372,9 +372,9 @@ char * filter_parseValue(char * filterString, int * pos) {
 	return value;
 }
 
-array_list_t filter_parseSubstring(char * filterString, int * pos, apr_pool_t *pool) {
+array_list_pt filter_parseSubstring(char * filterString, int * pos, apr_pool_t *pool) {
 	char * sub = (char *) malloc(strlen(filterString));
-	array_list_t operands = NULL;
+	array_list_pt operands = NULL;
 	int keepRunning = 1;
 	int size;
 
@@ -431,13 +431,13 @@ array_list_t filter_parseSubstring(char * filterString, int * pos, apr_pool_t *p
 	return operands;
 }
 
-celix_status_t filter_match(filter_t filter, properties_t properties, bool *result) {
+celix_status_t filter_match(filter_pt filter, properties_pt properties, bool *result) {
 	switch (filter->operand) {
 		case AND: {
-			array_list_t filters = (array_list_t) filter->value;
+			array_list_pt filters = (array_list_pt) filter->value;
 			unsigned int i;
 			for (i = 0; i < arrayList_size(filters); i++) {
-				filter_t sfilter = (filter_t) arrayList_get(filters, i);
+				filter_pt sfilter = (filter_pt) arrayList_get(filters, i);
 				bool mresult;
 				filter_match(sfilter, properties, &mresult);
 				if (!mresult) {
@@ -449,10 +449,10 @@ celix_status_t filter_match(filter_t filter, properties_t properties, bool *resu
 			return CELIX_SUCCESS;
 		}
 		case OR: {
-			array_list_t filters = (array_list_t) filter->value;
+			array_list_pt filters = (array_list_pt) filter->value;
 			unsigned int i;
 			for (i = 0; i < arrayList_size(filters); i++) {
-				filter_t sfilter = (filter_t) arrayList_get(filters, i);
+				filter_pt sfilter = (filter_pt) arrayList_get(filters, i);
 				bool mresult;
 				filter_match(sfilter, properties, &mresult);
 				if (mresult) {
@@ -464,7 +464,7 @@ celix_status_t filter_match(filter_t filter, properties_t properties, bool *resu
 			return CELIX_SUCCESS;
 		}
 		case NOT: {
-			filter_t sfilter = (filter_t) filter->value;
+			filter_pt sfilter = (filter_pt) filter->value;
 			bool mresult;
 			filter_match(sfilter, properties, &mresult);
 			*result = !mresult;
@@ -501,7 +501,7 @@ celix_status_t filter_compare(OPERAND operand, char * string, void * value2, boo
 celix_status_t filter_compareString(OPERAND operand, char * string, void * value2, bool *result) {
 	switch (operand) {
 		case SUBSTRING: {
-			array_list_t subs = (array_list_t) value2;
+			array_list_pt subs = (array_list_pt) value2;
 			int pos = 0;
 			int i;
 			int size = arrayList_size(subs);
@@ -580,7 +580,7 @@ celix_status_t filter_compareString(OPERAND operand, char * string, void * value
 	return CELIX_SUCCESS;
 }
 
-celix_status_t filter_getString(filter_t filter, char **filterStr) {
+celix_status_t filter_getString(filter_pt filter, char **filterStr) {
 	if (filter != NULL) {
 		*filterStr = filter->filterStr;
 	}

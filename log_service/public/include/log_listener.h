@@ -32,11 +32,11 @@
 
 struct log_listener {
     void *handle;
-    celix_status_t (*logged)(struct log_listener *listener, log_entry_t entry);
+    celix_status_t (*logged)(struct log_listener *listener, log_entry_pt entry);
 };
 
-typedef struct log_listener * log_listener_t;
+typedef struct log_listener * log_listener_pt;
 
-celix_status_t logListener_logged(log_listener_t listener, log_entry_t entry);
+celix_status_t logListener_logged(log_listener_pt listener, log_entry_pt entry);
 
 #endif /* LOG_LISTENER_H_ */

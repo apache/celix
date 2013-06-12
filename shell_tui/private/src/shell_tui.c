@@ -33,22 +33,22 @@
 #include "utils.h"
 
 struct shellTuiActivator {
-	bundle_context_t context;
-	SHELL_SERVICE shell;
-	service_reference_t reference;
+	bundle_context_pt context;
+	shell_service_pt shell;
+	service_reference_pt reference;
 	struct serviceListener * listener;
 	bool running;
 	apr_thread_t *runnable;
 };
 
-typedef struct shellTuiActivator * SHELL_TUI_ACTIVATOR;
+typedef struct shellTuiActivator * shell_tui_activator_pt;
 
 void shellTui_write(char * line) {
 	fprintf(stdout, "%s", line);
 }
 
 static void *APR_THREAD_FUNC shellTui_runnable(apr_thread_t *thd, void *data) {
-	SHELL_TUI_ACTIVATOR act = (SHELL_TUI_ACTIVATOR) data;
+	shell_tui_activator_pt act = (shell_tui_activator_pt) data;
 
 	char in[256];
 	bool needPrompt = true;
@@ -76,20 +76,20 @@ static void *APR_THREAD_FUNC shellTui_runnable(apr_thread_t *thd, void *data) {
 	return NULL;
 }
 
-void shellTui_initializeService(SHELL_TUI_ACTIVATOR activator) {
+void shellTui_initializeService(shell_tui_activator_pt activator) {
 	if (activator->shell == NULL) {
 		bundleContext_getServiceReference(activator->context, (char *) SHELL_SERVICE_NAME, &activator->reference);
 		if (activator->reference != NULL) {
 		    void *shell_svc = NULL;
 		    bundleContext_getService(activator->context, activator->reference, &shell_svc);
-		    activator->shell = (SHELL_SERVICE) shell_svc;
+		    activator->shell = (shell_service_pt) shell_svc;
 		}
 	}
 }
 
-void shellTui_serviceChanged(service_listener_t listener, service_event_t event) {
+void shellTui_serviceChanged(service_listener_pt listener, service_event_pt event) {
 	bool result = false;
-    SHELL_TUI_ACTIVATOR act = (SHELL_TUI_ACTIVATOR) listener->handle;
+    shell_tui_activator_pt act = (shell_tui_activator_pt) listener->handle;
 
 	if ((event->type == SERVICE_EVENT_REGISTERED) && (act->reference == NULL)) {
 		shellTui_initializeService(act);
@@ -102,22 +102,22 @@ void shellTui_serviceChanged(service_listener_t listener, service_event_t event)
 	}
 }
 
-celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	apr_pool_t *pool = NULL;
 	celix_status_t status = bundleContext_getMemoryPool(context, &pool);
-	SHELL_TUI_ACTIVATOR activator = (SHELL_TUI_ACTIVATOR) apr_palloc(pool, sizeof(*activator));
-	//SHELL_TUI_ACTIVATOR activator = (SHELL_TUI_ACTIVATOR) malloc(sizeof(*activator));
+	shell_tui_activator_pt activator = (shell_tui_activator_pt) apr_palloc(pool, sizeof(*activator));
+	//shell_tui_activator_pt activator = (shell_tui_activator_pt) malloc(sizeof(*activator));
 	activator->shell = NULL;
 	(*userData) = activator;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
     celix_status_t status;
 	apr_pool_t *pool = NULL;
 
-	SHELL_TUI_ACTIVATOR act = (SHELL_TUI_ACTIVATOR) userData;
-	service_listener_t listener = (service_listener_t) malloc(sizeof(*listener));
+	shell_tui_activator_pt act = (shell_tui_activator_pt) userData;
+	service_listener_pt listener = (service_listener_pt) malloc(sizeof(*listener));
 
 	act->context = context;
 	act->running = true;
@@ -138,9 +138,9 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
     celix_status_t status;
-	SHELL_TUI_ACTIVATOR act = (SHELL_TUI_ACTIVATOR) userData;
+	shell_tui_activator_pt act = (shell_tui_activator_pt) userData;
 	status = bundleContext_removeServiceListener(context, act->listener);
 
 	if (status == CELIX_SUCCESS) {
@@ -154,6 +154,6 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
 	return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	return CELIX_SUCCESS;
 }

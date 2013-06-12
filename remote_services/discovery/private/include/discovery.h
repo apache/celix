@@ -29,20 +29,20 @@
 
 #include "endpoint_listener.h"
 
-typedef struct discovery *discovery_t;
+typedef struct discovery *discovery_pt;
 
-celix_status_t discovery_create(apr_pool_t *pool, bundle_context_t context, discovery_t *discovery);
-celix_status_t discovery_stop(discovery_t discovery);
+celix_status_t discovery_create(apr_pool_t *pool, bundle_context_pt context, discovery_pt *discovery);
+celix_status_t discovery_stop(discovery_pt discovery);
 
-celix_status_t discovery_endpointAdded(void *handle, endpoint_description_t endpoint, char *machtedFilter);
-celix_status_t discovery_endpointRemoved(void *handle, endpoint_description_t endpoint, char *machtedFilter);
+celix_status_t discovery_endpointAdded(void *handle, endpoint_description_pt endpoint, char *machtedFilter);
+celix_status_t discovery_endpointRemoved(void *handle, endpoint_description_pt endpoint, char *machtedFilter);
 
-celix_status_t discovery_endpointListenerAdding(void * handle, service_reference_t reference, void **service);
-celix_status_t discovery_endpointListenerAdded(void * handle, service_reference_t reference, void * service);
-celix_status_t discovery_endpointListenerModified(void * handle, service_reference_t reference, void * service);
-celix_status_t discovery_endpointListenerRemoved(void * handle, service_reference_t reference, void * service);
+celix_status_t discovery_endpointListenerAdding(void * handle, service_reference_pt reference, void **service);
+celix_status_t discovery_endpointListenerAdded(void * handle, service_reference_pt reference, void * service);
+celix_status_t discovery_endpointListenerModified(void * handle, service_reference_pt reference, void * service);
+celix_status_t discovery_endpointListenerRemoved(void * handle, service_reference_pt reference, void * service);
 
-celix_status_t discovery_updateEndpointListener(discovery_t discovery, service_reference_t reference, endpoint_listener_t service);
+celix_status_t discovery_updateEndpointListener(discovery_pt discovery, service_reference_pt reference, endpoint_listener_pt service);
 
 
 #endif /* DISCOVERY_H_ */

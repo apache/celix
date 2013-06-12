@@ -29,13 +29,13 @@
 
 #define ECHO_SERVICE_NAME "echo_server"
 
-typedef struct echoServer * ECHO_SERVER;
+typedef struct echoServer * echo_server_pt;
 
 struct echoService {
-	ECHO_SERVER server;
-	void (*echo)(ECHO_SERVER server, char * text);
+	echo_server_pt server;
+	void (*echo)(echo_server_pt server, char * text);
 };
 
-typedef struct echoService * ECHO_SERVICE;
+typedef struct echoService * echo_service_pt;
 
 #endif /* ECHO_SERVER_H_ */

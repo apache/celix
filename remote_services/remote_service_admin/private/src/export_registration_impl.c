@@ -37,14 +37,14 @@
 #include "bundle.h"
 #include "celix_log.h"
 
-celix_status_t exportRegistration_endpointAdding(void * handle, service_reference_t reference, void **service);
-celix_status_t exportRegistration_endpointAdded(void * handle, service_reference_t reference, void *service);
-celix_status_t exportRegistration_endpointModified(void * handle, service_reference_t reference, void *service);
-celix_status_t exportRegistration_endpointRemoved(void * handle, service_reference_t reference, void *service);
+celix_status_t exportRegistration_endpointAdding(void * handle, service_reference_pt reference, void **service);
+celix_status_t exportRegistration_endpointAdded(void * handle, service_reference_pt reference, void *service);
+celix_status_t exportRegistration_endpointModified(void * handle, service_reference_pt reference, void *service);
+celix_status_t exportRegistration_endpointRemoved(void * handle, service_reference_pt reference, void *service);
 
-celix_status_t exportRegistration_createEndpointTracker(export_registration_t registration, service_tracker_t *tracker);
+celix_status_t exportRegistration_createEndpointTracker(export_registration_pt registration, service_tracker_pt *tracker);
 
-celix_status_t exportRegistration_create(apr_pool_t *pool, service_reference_t reference, endpoint_description_t endpoint, remote_service_admin_t rsa, bundle_context_t context, export_registration_t *registration) {
+celix_status_t exportRegistration_create(apr_pool_t *pool, service_reference_pt reference, endpoint_description_pt endpoint, remote_service_admin_pt rsa, bundle_context_pt context, export_registration_pt *registration) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_pool_t *mypool = NULL;
 	apr_pool_create(&mypool, pool);
@@ -69,7 +69,7 @@ celix_status_t exportRegistration_create(apr_pool_t *pool, service_reference_t r
 	return status;
 }
 
-celix_status_t exportRegistration_startTracking(export_registration_t registration) {
+celix_status_t exportRegistration_startTracking(export_registration_pt registration) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (registration->endpointTracker == NULL) {
@@ -82,7 +82,7 @@ celix_status_t exportRegistration_startTracking(export_registration_t registrati
 	return status;
 }
 
-celix_status_t exportRegistration_stopTracking(export_registration_t registration) {
+celix_status_t exportRegistration_stopTracking(export_registration_pt registration) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (registration->endpointTracker != NULL) {
@@ -101,10 +101,10 @@ celix_status_t exportRegistration_stopTracking(export_registration_t registratio
 	return status;
 }
 
-celix_status_t exportRegistration_createEndpointTracker(export_registration_t registration, service_tracker_t *tracker) {
+celix_status_t exportRegistration_createEndpointTracker(export_registration_pt registration, service_tracker_pt *tracker) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	service_tracker_customizer_t customizer = NULL;
+	service_tracker_customizer_pt customizer = NULL;
 
 	status = serviceTrackerCustomizer_create(registration->pool, registration, exportRegistration_endpointAdding,
 			exportRegistration_endpointAdded, exportRegistration_endpointModified, exportRegistration_endpointRemoved, &customizer);
@@ -116,20 +116,20 @@ celix_status_t exportRegistration_createEndpointTracker(export_registration_t re
 	return status;
 }
 
-celix_status_t exportRegistration_endpointAdding(void * handle, service_reference_t reference, void **service) {
+celix_status_t exportRegistration_endpointAdding(void * handle, service_reference_pt reference, void **service) {
 	celix_status_t status = CELIX_SUCCESS;
-	export_registration_t registration = handle;
+	export_registration_pt registration = handle;
 
 	status = bundleContext_getService(registration->context, reference, service);
 
 	return status;
 }
 
-celix_status_t exportRegistration_endpointAdded(void * handle, service_reference_t reference, void *service) {
+celix_status_t exportRegistration_endpointAdded(void * handle, service_reference_pt reference, void *service) {
 	celix_status_t status = CELIX_SUCCESS;
-	export_registration_t registration = handle;
+	export_registration_pt registration = handle;
 
-	remote_endpoint_service_t endpoint = service;
+	remote_endpoint_service_pt endpoint = service;
 	if (registration->endpoint == NULL) {
 		registration->endpoint = endpoint;
 		void *service = NULL;
@@ -142,18 +142,18 @@ celix_status_t exportRegistration_endpointAdded(void * handle, service_reference
 	return status;
 }
 
-celix_status_t exportRegistration_endpointModified(void * handle, service_reference_t reference, void *service) {
+celix_status_t exportRegistration_endpointModified(void * handle, service_reference_pt reference, void *service) {
 	celix_status_t status = CELIX_SUCCESS;
-	export_registration_t registration = handle;
+	export_registration_pt registration = handle;
 
 	return status;
 }
 
-celix_status_t exportRegistration_endpointRemoved(void * handle, service_reference_t reference, void *service) {
+celix_status_t exportRegistration_endpointRemoved(void * handle, service_reference_pt reference, void *service) {
 	celix_status_t status = CELIX_SUCCESS;
-	export_registration_t registration = handle;
+	export_registration_pt registration = handle;
 
-	remote_endpoint_service_t endpoint = service;
+	remote_endpoint_service_pt endpoint = service;
 	if (registration->endpoint != NULL) {
 		registration->endpoint = NULL;
 		endpoint->setService(endpoint->endpoint, NULL);
@@ -162,7 +162,7 @@ celix_status_t exportRegistration_endpointRemoved(void * handle, service_referen
 	return status;
 }
 
-celix_status_t exportRegistration_open(export_registration_t registration) {
+celix_status_t exportRegistration_open(export_registration_pt registration) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	char *bundleStore = NULL;
@@ -181,7 +181,7 @@ celix_status_t exportRegistration_open(export_registration_t registration) {
 	return status;
 }
 
-celix_status_t exportRegistration_close(export_registration_t registration) {
+celix_status_t exportRegistration_close(export_registration_pt registration) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	exportRegistration_stopTracking(registration);
@@ -192,12 +192,12 @@ celix_status_t exportRegistration_close(export_registration_t registration) {
 	return status;
 }
 
-celix_status_t exportRegistration_getException(export_registration_t registration) {
+celix_status_t exportRegistration_getException(export_registration_pt registration) {
 	celix_status_t status = CELIX_SUCCESS;
 	return status;
 }
 
-celix_status_t exportRegistration_getExportReference(export_registration_t registration, export_reference_t *reference) {
+celix_status_t exportRegistration_getExportReference(export_registration_pt registration, export_reference_pt *reference) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (registration->exportReference == NULL) {
@@ -215,7 +215,7 @@ celix_status_t exportRegistration_getExportReference(export_registration_t regis
 	return status;
 }
 
-celix_status_t exportRegistration_setEndpointDescription(export_registration_t registration, endpoint_description_t endpointDescription) {
+celix_status_t exportRegistration_setEndpointDescription(export_registration_pt registration, endpoint_description_pt endpointDescription) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	registration->endpointDescription = endpointDescription;

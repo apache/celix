@@ -32,9 +32,9 @@
 #include "log_event.h"
 #include "log_store.h"
 
-typedef struct log *log_t;
+typedef struct log *log_pt;
 
-celix_status_t log_create(apr_pool_t *pool, log_store_t store, log_t *log);
-celix_status_t log_log(log_t log, unsigned int type, properties_t properties);
+celix_status_t log_create(apr_pool_t *pool, log_store_pt store, log_pt *log);
+celix_status_t log_log(log_pt log, unsigned int type, properties_pt properties);
 
 #endif /* LOG_H_ */

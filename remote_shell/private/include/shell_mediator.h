@@ -33,10 +33,10 @@
 #include <bundle_context.h>
 #include <celix_errno.h>
 
-typedef struct shell_mediator *shell_mediator_t;
+typedef struct shell_mediator *shell_mediator_pt;
 
-celix_status_t shellMediator_create(apr_pool_t *pool, bundle_context_t context, shell_mediator_t *instance);
+celix_status_t shellMediator_create(apr_pool_t *pool, bundle_context_pt context, shell_mediator_pt *instance);
 
-celix_status_t shellMediator_executeCommand(shell_mediator_t instance, char *command, apr_socket_t *socket);
+celix_status_t shellMediator_executeCommand(shell_mediator_pt instance, char *command, apr_socket_t *socket);
 
 #endif /* shellMediator_H_ */

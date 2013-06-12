@@ -35,23 +35,23 @@
 
 #define REFINING_DRIVER_ID "REFINING_DRIVER"
 
-typedef struct refining_driver *refining_driver_t;
+typedef struct refining_driver *refining_driver_pt;
 
-celix_status_t refiningDriver_create(bundle_context_t context, apr_pool_t *pool, refining_driver_t *driver);
-celix_status_t refiningDriver_destroy(refining_driver_t driver);
+celix_status_t refiningDriver_create(bundle_context_pt context, apr_pool_t *pool, refining_driver_pt *driver);
+celix_status_t refiningDriver_destroy(refining_driver_pt driver);
 
-celix_status_t refiningDriver_createService(refining_driver_t driver, driver_service_t *service);
+celix_status_t refiningDriver_createService(refining_driver_pt driver, driver_service_pt *service);
 
-celix_status_t refiningDriver_createDevice(refining_driver_t driver, service_reference_t reference, base_driver_device_service_t baseDevice, refining_driver_device_t *device);
-celix_status_t refiningDriver_destroyDevice(refining_driver_device_t device);
-
-
-celix_status_t refiningDriver_attach(void *driver, service_reference_t reference, char **result);
-celix_status_t refiningDriver_match(void *driver, service_reference_t reference, int *value);
+celix_status_t refiningDriver_createDevice(refining_driver_pt driver, service_reference_pt reference, base_driver_device_service_pt baseDevice, refining_driver_device_pt *device);
+celix_status_t refiningDriver_destroyDevice(refining_driver_device_pt device);
 
 
-celix_status_t refiningDriverDevice_noDriverFound(device_t device);
-celix_status_t refiningDriverDevice_createService(refining_driver_device_t, refining_driver_device_service_t *service);
-celix_status_t refiningDriverDevice_getNextWord(refining_driver_device_t refiningDriverDevice, apr_pool_t *pool, char **word);
+celix_status_t refiningDriver_attach(void *driver, service_reference_pt reference, char **result);
+celix_status_t refiningDriver_match(void *driver, service_reference_pt reference, int *value);
+
+
+celix_status_t refiningDriverDevice_noDriverFound(device_pt device);
+celix_status_t refiningDriverDevice_createService(refining_driver_device_pt, refining_driver_device_service_pt *service);
+celix_status_t refiningDriverDevice_getNextWord(refining_driver_device_pt refiningDriverDevice, apr_pool_t *pool, char **word);
 
 #endif /* REFINING_DRIVER_PRIVATE_H_ */

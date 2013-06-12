@@ -38,12 +38,12 @@
 
 struct shell_mediator {
     apr_pool_t *pool;
-	bundle_context_t context;
-	service_tracker_t tracker;
+	bundle_context_pt context;
+	service_tracker_pt tracker;
 	apr_thread_mutex_t *mutex;
 
 	//protected by mutex
-	SHELL_SERVICE shellService;
+	shell_service_pt shellService;
 };
 
 //NOTE: multiple instances of shell_mediator are not supported, because we need
@@ -53,16 +53,16 @@ static apr_socket_t *currentOutputSocket = NULL;
 static apr_status_t shellMediator_cleanup(void *handle); //gets called from apr pool cleanup
 static void shellMediator_writeOnCurrentSocket(char *buff);
 
-static celix_status_t shellMediator_addingService(void *handler, service_reference_t reference, void **service);
-static celix_status_t shellMediator_addedService(void *handler, service_reference_t reference, void * service);
-static celix_status_t shellMediator_modifiedService(void *handler, service_reference_t reference, void * service);
-static celix_status_t shellMediator_removedService(void *handler, service_reference_t reference, void * service);
+static celix_status_t shellMediator_addingService(void *handler, service_reference_pt reference, void **service);
+static celix_status_t shellMediator_addedService(void *handler, service_reference_pt reference, void * service);
+static celix_status_t shellMediator_modifiedService(void *handler, service_reference_pt reference, void * service);
+static celix_status_t shellMediator_removedService(void *handler, service_reference_pt reference, void * service);
 
-celix_status_t shellMediator_create(apr_pool_t *pool, bundle_context_t context, shell_mediator_t *instance) {
+celix_status_t shellMediator_create(apr_pool_t *pool, bundle_context_pt context, shell_mediator_pt *instance) {
 	celix_status_t status = CELIX_SUCCESS;
-	service_tracker_customizer_t customizer = NULL;
+	service_tracker_customizer_pt customizer = NULL;
 
-	(*instance) = (shell_mediator_t) (pool, sizeof(**instance));
+	(*instance) = (shell_mediator_pt) (pool, sizeof(**instance));
     if ((*instance) != NULL) {
 		apr_pool_pre_cleanup_register(pool, *instance, shellMediator_cleanup);
 
@@ -90,7 +90,7 @@ celix_status_t shellMediator_create(apr_pool_t *pool, bundle_context_t context, 
 }
 
 static apr_status_t shellMediator_cleanup(void *handle) {
-	shell_mediator_t instance = (shell_mediator_t) handle;
+	shell_mediator_pt instance = (shell_mediator_pt) handle;
     apr_thread_mutex_lock(instance->mutex);
 
     instance->shellService=NULL;
@@ -105,7 +105,7 @@ static void shellMediator_writeOnCurrentSocket(char *buff) {
 	apr_socket_send(currentOutputSocket, buff, &len);
 }
 
-celix_status_t shellMediator_executeCommand(shell_mediator_t instance, char *command, apr_socket_t *socket) {
+celix_status_t shellMediator_executeCommand(shell_mediator_pt instance, char *command, apr_socket_t *socket) {
 	apr_status_t status = CELIX_SUCCESS;
 
 	apr_thread_mutex_lock(instance->mutex);
@@ -119,31 +119,31 @@ celix_status_t shellMediator_executeCommand(shell_mediator_t instance, char *com
 	return status;
 }
 
-static celix_status_t shellMediator_addingService(void *handler, service_reference_t reference, void **service) {
+static celix_status_t shellMediator_addingService(void *handler, service_reference_pt reference, void **service) {
 	celix_status_t status = CELIX_SUCCESS;
-	shell_mediator_t instance = (shell_mediator_t) handler;
+	shell_mediator_pt instance = (shell_mediator_pt) handler;
 	bundleContext_getService(instance->context, reference, service);
 	return status;
 }
 
-static celix_status_t shellMediator_addedService(void *handler, service_reference_t reference, void * service) {
+static celix_status_t shellMediator_addedService(void *handler, service_reference_pt reference, void * service) {
 	celix_status_t status = CELIX_SUCCESS;
-	shell_mediator_t instance = (shell_mediator_t) handler;
+	shell_mediator_pt instance = (shell_mediator_pt) handler;
 	apr_thread_mutex_lock(instance->mutex);
-	instance->shellService = (SHELL_SERVICE) service;
+	instance->shellService = (shell_service_pt) service;
 	apr_thread_mutex_unlock(instance->mutex);
 	return status;
 }
 
-static celix_status_t shellMediator_modifiedService(void *handler, service_reference_t reference, void * service) {
+static celix_status_t shellMediator_modifiedService(void *handler, service_reference_pt reference, void * service) {
 	celix_status_t status = CELIX_SUCCESS;
 	//ignore
 	return status;
 }
 
-static celix_status_t shellMediator_removedService(void *handler, service_reference_t reference, void * service) {
+static celix_status_t shellMediator_removedService(void *handler, service_reference_pt reference, void * service) {
 	celix_status_t status = CELIX_SUCCESS;
-	shell_mediator_t instance = (shell_mediator_t) handler;
+	shell_mediator_pt instance = (shell_mediator_pt) handler;
 	apr_thread_mutex_lock(instance->mutex);
 	instance->shellService = NULL;
 	apr_thread_mutex_unlock(instance->mutex);

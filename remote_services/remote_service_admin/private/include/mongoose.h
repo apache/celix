@@ -76,7 +76,7 @@ enum mg_event {
 //   If callback returns NULL, that means that callback has not processed
 //   the request. Handler must not send any data to the client in this case.
 //   Mongoose proceeds with request handling as if nothing happened.
-typedef void * (*mg_callback_t)(enum mg_event event,
+typedef void * (*mg_callback_pt)(enum mg_event event,
                                 struct mg_connection *conn,
                                 const struct mg_request_info *request_info);
 
@@ -106,7 +106,7 @@ typedef void * (*mg_callback_t)(enum mg_event event,
 //
 // Return:
 //   web server context, or NULL on error.
-struct mg_context *mg_start(mg_callback_t callback, void *user_data,
+struct mg_context *mg_start(mg_callback_pt callback, void *user_data,
                             const char **options);
 
 

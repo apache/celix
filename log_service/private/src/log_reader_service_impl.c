@@ -30,14 +30,14 @@
 #include "celixbool.h"
 
 struct log_reader_data {
-    log_t log;
+    log_pt log;
     apr_pool_t *pool;
 };
 
-celix_status_t logReaderService_create(log_t log, apr_pool_t *pool, log_reader_data_t *reader) {
+celix_status_t logReaderService_create(log_pt log, apr_pool_t *pool, log_reader_data_pt *reader) {
     celix_status_t status = APR_SUCCESS;
 
-    *reader = (log_reader_data_t) apr_palloc(pool, sizeof(**reader));
+    *reader = (log_reader_data_pt) apr_palloc(pool, sizeof(**reader));
 
     if (reader == NULL) {
         status = CELIX_ENOMEM;
@@ -49,7 +49,7 @@ celix_status_t logReaderService_create(log_t log, apr_pool_t *pool, log_reader_d
     return status;
 }
 
-celix_status_t logReaderService_getLog(log_reader_data_t reader, apr_pool_t *memory_pool, linked_list_t *list) {
+celix_status_t logReaderService_getLog(log_reader_data_pt reader, apr_pool_t *memory_pool, linked_list_pt *list) {
     celix_status_t status = CELIX_SUCCESS;
 
     status = log_getEntries(reader->log, memory_pool, list);
@@ -57,15 +57,15 @@ celix_status_t logReaderService_getLog(log_reader_data_t reader, apr_pool_t *mem
     return status;
 }
 
-celix_status_t logReaderService_addLogListener(log_reader_data_t reader, log_listener_t listener) {
+celix_status_t logReaderService_addLogListener(log_reader_data_pt reader, log_listener_pt listener) {
     return log_addLogListener(reader->log, listener);
 }
 
-celix_status_t logReaderService_removeLogListener(log_reader_data_t reader, log_listener_t listener) {
+celix_status_t logReaderService_removeLogListener(log_reader_data_pt reader, log_listener_pt listener) {
     return log_removeLogListener(reader->log, listener);
 }
 
-celix_status_t logReaderService_removeAllLogListener(log_reader_data_t reader) {
+celix_status_t logReaderService_removeAllLogListener(log_reader_data_pt reader) {
     return log_removeAllLogListener(reader->log);
 }
 

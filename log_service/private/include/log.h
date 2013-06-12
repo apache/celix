@@ -33,14 +33,14 @@
 #include "log_entry.h"
 #include "log_listener.h"
 
-typedef struct log * log_t;
+typedef struct log * log_pt;
 
-celix_status_t log_create(apr_pool_t *pool, log_t *logger);
-celix_status_t log_addEntry(log_t log, log_entry_t entry);
-celix_status_t log_getEntries(log_t log, apr_pool_t *memory_pool, linked_list_t *list);
+celix_status_t log_create(apr_pool_t *pool, log_pt *logger);
+celix_status_t log_addEntry(log_pt log, log_entry_pt entry);
+celix_status_t log_getEntries(log_pt log, apr_pool_t *memory_pool, linked_list_pt *list);
 
-celix_status_t log_addLogListener(log_t logger, log_listener_t listener);
-celix_status_t log_removeLogListener(log_t logger, log_listener_t listener);
-celix_status_t log_removeAllLogListener(log_t logger);
+celix_status_t log_addLogListener(log_pt logger, log_listener_pt listener);
+celix_status_t log_removeLogListener(log_pt logger, log_listener_pt listener);
+celix_status_t log_removeAllLogListener(log_pt logger);
 
 #endif /* LOG_H_ */

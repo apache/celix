@@ -33,11 +33,11 @@
 #include "array_list.h"
 
 struct log {
-    linked_list_t entries;
+    linked_list_pt entries;
     apr_thread_mutex_t *lock;
 
-    array_list_t listeners;
-    array_list_t listenerEntries;
+    array_list_pt listeners;
+    array_list_pt listenerEntries;
 
     apr_thread_t *listenerThread;
     bool running;
@@ -49,13 +49,13 @@ struct log {
     apr_pool_t *pool;
 };
 
-celix_status_t log_startListenerThread(log_t logger);
-celix_status_t log_stopListenerThread(log_t logger);
+celix_status_t log_startListenerThread(log_pt logger);
+celix_status_t log_stopListenerThread(log_pt logger);
 
 void * APR_THREAD_FUNC log_listenerThread(apr_thread_t *thread, void *data);
 apr_status_t log_destroy(void *logp);
 
-celix_status_t log_create(apr_pool_t *pool, log_t *logger) {
+celix_status_t log_create(apr_pool_t *pool, log_pt *logger) {
     celix_status_t status = CELIX_SUCCESS;
 
     *logger = apr_palloc(pool, sizeof(**logger));
@@ -97,7 +97,7 @@ celix_status_t log_create(apr_pool_t *pool, log_t *logger) {
 }
 
 apr_status_t log_destroy(void *logp) {
-	log_t log = logp;
+	log_pt log = logp;
 	apr_thread_mutex_destroy(log->listenerLock);
 	apr_thread_mutex_destroy(log->deliverLock);
 	apr_thread_cond_destroy(log->entriesToDeliver);
@@ -108,7 +108,7 @@ apr_status_t log_destroy(void *logp) {
 	return APR_SUCCESS;
 }
 
-celix_status_t log_addEntry(log_t log, log_entry_t entry) {
+celix_status_t log_addEntry(log_pt log, log_entry_pt entry) {
     apr_thread_mutex_lock(log->lock);
     linkedList_addElement(log->entries, entry);
 
@@ -123,10 +123,10 @@ celix_status_t log_addEntry(log_t log, log_entry_t entry) {
     return CELIX_SUCCESS;
 }
 
-celix_status_t log_getEntries(log_t log, apr_pool_t *memory_pool, linked_list_t *list) {
-    linked_list_t entries = NULL;
+celix_status_t log_getEntries(log_pt log, apr_pool_t *memory_pool, linked_list_pt *list) {
+    linked_list_pt entries = NULL;
     if (linkedList_create(memory_pool, &entries) == CELIX_SUCCESS) {
-        linked_list_iterator_t iter = NULL;
+        linked_list_iterator_pt iter = NULL;
 
         apr_thread_mutex_lock(log->lock);
 
@@ -145,7 +145,7 @@ celix_status_t log_getEntries(log_t log, apr_pool_t *memory_pool, linked_list_t 
     }
 }
 
-celix_status_t log_addLogListener(log_t logger, log_listener_t listener) {
+celix_status_t log_addLogListener(log_pt logger, log_listener_pt listener) {
     celix_status_t status = CELIX_SUCCESS;
     apr_status_t apr_status;
 
@@ -168,7 +168,7 @@ celix_status_t log_addLogListener(log_t logger, log_listener_t listener) {
     return status;
 }
 
-celix_status_t log_removeLogListener(log_t logger, log_listener_t listener) {
+celix_status_t log_removeLogListener(log_pt logger, log_listener_pt listener) {
     celix_status_t status = CELIX_SUCCESS;
     apr_status_t apr_status;
 
@@ -190,7 +190,7 @@ celix_status_t log_removeLogListener(log_t logger, log_listener_t listener) {
     return status;
 }
 
-celix_status_t log_removeAllLogListener(log_t logger) {
+celix_status_t log_removeAllLogListener(log_pt logger) {
     celix_status_t status = CELIX_SUCCESS;
 
     apr_status_t apr_status;
@@ -211,7 +211,7 @@ celix_status_t log_removeAllLogListener(log_t logger) {
     return status;
 }
 
-celix_status_t log_startListenerThread(log_t logger) {
+celix_status_t log_startListenerThread(log_pt logger) {
     celix_status_t status = CELIX_SUCCESS;
     apr_status_t apr_status;
 
@@ -224,7 +224,7 @@ celix_status_t log_startListenerThread(log_t logger) {
     return status;
 }
 
-celix_status_t log_stopListenerThread(log_t logger) {
+celix_status_t log_stopListenerThread(log_pt logger) {
     celix_status_t status = CELIX_SUCCESS;
     apr_status_t apr_status = APR_SUCCESS;
 
@@ -250,7 +250,7 @@ celix_status_t log_stopListenerThread(log_t logger) {
 void * APR_THREAD_FUNC log_listenerThread(apr_thread_t *thread, void *data) {
     apr_status_t status = APR_SUCCESS;
 
-    log_t logger = data;
+    log_pt logger = data;
 
     while (logger->running) {
         status = apr_thread_mutex_lock(logger->deliverLock);
@@ -258,16 +258,16 @@ void * APR_THREAD_FUNC log_listenerThread(apr_thread_t *thread, void *data) {
             logger->running = false;
         } else {
             if (!arrayList_isEmpty(logger->listenerEntries)) {
-                log_entry_t entry = (log_entry_t) arrayList_remove(logger->listenerEntries, 0);
+                log_entry_pt entry = (log_entry_pt) arrayList_remove(logger->listenerEntries, 0);
 
                 status = apr_thread_mutex_lock(logger->listenerLock);
                 if (status != APR_SUCCESS) {
                     logger->running = false;
                     break;
                 } else {
-                    array_list_iterator_t it = arrayListIterator_create(logger->listeners);
+                    array_list_iterator_pt it = arrayListIterator_create(logger->listeners);
                     while (arrayListIterator_hasNext(it)) {
-                        log_listener_t listener = arrayListIterator_next(it);
+                        log_listener_pt listener = arrayListIterator_next(it);
                         listener->logged(listener, entry);
                     }
 

@@ -33,20 +33,20 @@
 UTILS_EXPORT unsigned int hashMap_hashCode(void * toHash);
 UTILS_EXPORT int hashMap_equals(void * toCompare, void * compare);
 
-void hashMap_resize(hash_map_t map, int newCapacity);
-void * hashMap_removeEntryForKey(hash_map_t map, void * key);
-UTILS_EXPORT hash_map_entry_t hashMap_removeMapping(hash_map_t map, hash_map_entry_t entry);
-void hashMap_addEntry(hash_map_t map, int hash, void * key, void * value, int bucketIndex);
+void hashMap_resize(hash_map_pt map, int newCapacity);
+void * hashMap_removeEntryForKey(hash_map_pt map, void * key);
+UTILS_EXPORT hash_map_entry_pt hashMap_removeMapping(hash_map_pt map, hash_map_entry_pt entry);
+void hashMap_addEntry(hash_map_pt map, int hash, void * key, void * value, int bucketIndex);
 
 struct hashMapEntry {
 	void * key;
 	void * value;
-	hash_map_entry_t next;
+	hash_map_entry_pt next;
 	unsigned int hash;
 };
 
 struct hashMap {
-	hash_map_entry_t * table;
+	hash_map_entry_pt * table;
 	unsigned int size;
 	unsigned int treshold;
 	unsigned int modificationCount;
@@ -59,23 +59,23 @@ struct hashMap {
 };
 
 struct hashMapIterator {
-	hash_map_t map;
-	hash_map_entry_t next;
-	hash_map_entry_t current;
+	hash_map_pt map;
+	hash_map_entry_pt next;
+	hash_map_entry_pt current;
 	int expectedModCount;
 	int index;
 };
 
 struct hashMapKeySet {
-	hash_map_t map;
+	hash_map_pt map;
 };
 
 struct hashMapValues {
-	hash_map_t map;
+	hash_map_pt map;
 };
 
 struct hashMapEntrySet {
-	hash_map_t map;
+	hash_map_pt map;
 };
 
 

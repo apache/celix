@@ -33,10 +33,10 @@
 #include "bundle.h"
 
 char * psCommand_stateString(bundle_state_e state);
-void psCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *));
+void psCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *));
 
-COMMAND psCommand_create(bundle_context_t context) {
-	COMMAND command = (COMMAND) malloc(sizeof(*command));
+command_pt psCommand_create(bundle_context_pt context) {
+	command_pt command = (command_pt) malloc(sizeof(*command));
 	command->bundleContext = context;
 	command->name = "ps";
 	command->shortDescription = "list installed bundles.";
@@ -45,12 +45,12 @@ COMMAND psCommand_create(bundle_context_t context) {
 	return command;
 }
 
-void psCommand_destroy(COMMAND command) {
+void psCommand_destroy(command_pt command) {
 	free(command);
 }
 
-void psCommand_execute(COMMAND command, char * commandline, void (*out)(char *), void (*err)(char *)) {
-	array_list_t bundles = NULL;
+void psCommand_execute(command_pt command, char * commandline, void (*out)(char *), void (*err)(char *)) {
+	array_list_pt bundles = NULL;
 	celix_status_t status = bundleContext_getBundles(command->bundleContext, &bundles);
 
 	if (status == CELIX_SUCCESS) {
@@ -82,12 +82,12 @@ void psCommand_execute(COMMAND command, char * commandline, void (*out)(char *),
 		sprintf(line, "  %-5s %-12s %s\n", "ID", "State", msg);
 		out(line);
 		for (i = 0; i < arrayList_size(bundles); i++) {
-			bundle_t bundle = (bundle_t) arrayList_get(bundles, i);
-			bundle_archive_t archive = NULL;
+			bundle_pt bundle = (bundle_pt) arrayList_get(bundles, i);
+			bundle_archive_pt archive = NULL;
 			long id;
 			bundle_state_e state;
 			char * stateString = NULL;
-			module_t module = NULL;
+			module_pt module = NULL;
 			char * name = NULL;
 
 			bundle_getArchive(bundle, &archive);

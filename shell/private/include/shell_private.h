@@ -33,18 +33,18 @@
 
 struct shell {
 	apr_pool_t *pool;
-	bundle_context_t bundleContext;
-	hash_map_t commandReferenceMap;
-	hash_map_t commandNameMap;
+	bundle_context_pt bundleContext;
+	hash_map_pt commandReferenceMap;
+	hash_map_pt commandNameMap;
 };
 
-SHELL shell_create();
-char * shell_getCommandUsage(SHELL shell, char * commandName);
-char * shell_getCommandDescription(SHELL shell, char * commandName);
-service_reference_t shell_getCommandReference(SHELL shell, char * command);
-void shell_executeCommand(SHELL shell, char * commandLine, void (*out)(char *), void (*error)(char *));
+shell_pt shell_create();
+char * shell_getCommandUsage(shell_pt shell, char * commandName);
+char * shell_getCommandDescription(shell_pt shell, char * commandName);
+service_reference_pt shell_getCommandReference(shell_pt shell, char * command);
+void shell_executeCommand(shell_pt shell, char * commandLine, void (*out)(char *), void (*error)(char *));
 
-COMMAND shell_getCommand(SHELL shell, char * commandName);
+command_pt shell_getCommand(shell_pt shell, char * commandName);
 
 
 #endif /* SHELL_PRIVATE_H_ */

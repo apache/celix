@@ -28,12 +28,12 @@
 
 #define GREETING_SERVICE_NAME "greeting-service"
 
-typedef struct greeting *greeting_t;
-typedef struct greeting_service *greeting_service_t;
+typedef struct greeting *greeting_pt;
+typedef struct greeting_service *greeting_service_pt;
 
 struct greeting_service {
-	greeting_t instance;
-	void (*greeting_sayHello)(greeting_t instance);
+	greeting_pt instance;
+	void (*greeting_sayHello)(greeting_pt instance);
 };
 
 #endif /* GREETING_H_ */

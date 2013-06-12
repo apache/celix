@@ -30,19 +30,19 @@
 #include "linked_list_private.h"
 
 struct linkedListIterator {
-	linked_list_entry_t lastReturned;
-	linked_list_entry_t next;
+	linked_list_entry_pt lastReturned;
+	linked_list_entry_pt next;
 	int nextIndex;
-	linked_list_t list;
+	linked_list_pt list;
 	int expectedModificationCount;
 };
 
-linked_list_iterator_t linkedListIterator_create(linked_list_t list, unsigned int index) {
-	linked_list_iterator_t iterator;
+linked_list_iterator_pt linkedListIterator_create(linked_list_pt list, unsigned int index) {
+	linked_list_iterator_pt iterator;
 	if (index < 0 || index > list->size) {
 		return NULL;
 	}
-	iterator = (linked_list_iterator_t) malloc(sizeof(*iterator));
+	iterator = (linked_list_iterator_pt) malloc(sizeof(*iterator));
 	iterator->lastReturned = list->header;
 	iterator->list = list;
 	iterator->expectedModificationCount = list->modificationCount;
@@ -60,7 +60,7 @@ linked_list_iterator_t linkedListIterator_create(linked_list_t list, unsigned in
 	return iterator;
 }
 
-void linkedListIterator_destroy(linked_list_iterator_t iterator) {
+void linkedListIterator_destroy(linked_list_iterator_pt iterator) {
 	iterator->expectedModificationCount = 0;
 	iterator->lastReturned = NULL;
 	iterator->list = NULL;
@@ -69,11 +69,11 @@ void linkedListIterator_destroy(linked_list_iterator_t iterator) {
 	free(iterator);
 }
 
-bool linkedListIterator_hasNext(linked_list_iterator_t iterator) {
+bool linkedListIterator_hasNext(linked_list_iterator_pt iterator) {
 	return iterator->nextIndex != iterator->list->size;
 }
 
-void * linkedListIterator_next(linked_list_iterator_t iterator) {
+void * linkedListIterator_next(linked_list_iterator_pt iterator) {
 	if (iterator->list->modificationCount != iterator->expectedModificationCount) {
 		return NULL;
 	}
@@ -86,11 +86,11 @@ void * linkedListIterator_next(linked_list_iterator_t iterator) {
 	return iterator->lastReturned->element;
 }
 
-bool linkedListIterator_hasPrevious(linked_list_iterator_t iterator) {
+bool linkedListIterator_hasPrevious(linked_list_iterator_pt iterator) {
 	return iterator->nextIndex != 0;
 }
 
-void * linkedListIterator_previous(linked_list_iterator_t iterator) {
+void * linkedListIterator_previous(linked_list_iterator_pt iterator) {
 	if (iterator->nextIndex == 0) {
 		return NULL;
 	}
@@ -105,16 +105,16 @@ void * linkedListIterator_previous(linked_list_iterator_t iterator) {
 	return iterator->lastReturned->element;
 }
 
-int linkedListIterator_nextIndex(linked_list_iterator_t iterator) {
+int linkedListIterator_nextIndex(linked_list_iterator_pt iterator) {
 	return iterator->nextIndex;
 }
 
-int linkedListIterator_previousIndex(linked_list_iterator_t iterator) {
+int linkedListIterator_previousIndex(linked_list_iterator_pt iterator) {
 	return iterator->nextIndex-1;
 }
 
-void linkedListIterator_remove(linked_list_iterator_t iterator) {
-	linked_list_entry_t lastNext;
+void linkedListIterator_remove(linked_list_iterator_pt iterator) {
+	linked_list_entry_pt lastNext;
 	if (iterator->list->modificationCount != iterator->expectedModificationCount) {
 		return;
 	}
@@ -131,7 +131,7 @@ void linkedListIterator_remove(linked_list_iterator_t iterator) {
 	iterator->expectedModificationCount++;
 }
 
-void linkedListIterator_set(linked_list_iterator_t iterator, void * element) {
+void linkedListIterator_set(linked_list_iterator_pt iterator, void * element) {
 	if (iterator->lastReturned == iterator->list->header) {
 		return;
 	}
@@ -141,7 +141,7 @@ void linkedListIterator_set(linked_list_iterator_t iterator, void * element) {
 	iterator->lastReturned->element = element;
 }
 
-void linkedListIterator_add(linked_list_iterator_t iterator, void * element) {
+void linkedListIterator_add(linked_list_iterator_pt iterator, void * element) {
 	if (iterator->list->modificationCount != iterator->expectedModificationCount) {
 		return;
 	}

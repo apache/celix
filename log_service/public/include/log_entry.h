@@ -30,24 +30,24 @@
 #include "log_service.h"
 
 struct log_entry {
-    bundle_t bundle;
+    bundle_pt bundle;
     int errorCode;
     log_level_t level;
     char *message;
-    service_reference_t reference;
+    service_reference_pt reference;
     time_t time;
 };
 
-typedef struct log_entry * log_entry_t;
+typedef struct log_entry * log_entry_pt;
 
-celix_status_t logEntry_create(bundle_t bundle, service_reference_t reference,
+celix_status_t logEntry_create(bundle_pt bundle, service_reference_pt reference,
         log_level_t level, char *message, int errorCode,
-        apr_pool_t *pool, log_entry_t *entry);
-celix_status_t logEntry_getBundle(log_entry_t entry, bundle_t *bundle);
-celix_status_t logEntry_getErrorCode(log_entry_t entry, int *errorCode);
-celix_status_t logEntry_getLevel(log_entry_t entry, log_level_t *level);
-celix_status_t logEntry_getMessage(log_entry_t entry, char **message);
-celix_status_t logEntry_getServiceReference(log_entry_t entry, service_reference_t *reference);
-celix_status_t logEntry_getTime(log_entry_t entry, time_t *time);
+        apr_pool_t *pool, log_entry_pt *entry);
+celix_status_t logEntry_getBundle(log_entry_pt entry, bundle_pt *bundle);
+celix_status_t logEntry_getErrorCode(log_entry_pt entry, int *errorCode);
+celix_status_t logEntry_getLevel(log_entry_pt entry, log_level_t *level);
+celix_status_t logEntry_getMessage(log_entry_pt entry, char **message);
+celix_status_t logEntry_getServiceReference(log_entry_pt entry, service_reference_pt *reference);
+celix_status_t logEntry_getTime(log_entry_pt entry, time_t *time);
 
 #endif /* LOG_ENTRY_H_ */

@@ -35,14 +35,14 @@
 #include "celix_errno.h"
 
 /**
- * Typedef for bundle_revision_t.
+ * Typedef for bundle_revision_pt.
  *
  * A bundle revision represents the content of a bundle. A revision is associated with a bundle archive.
  * An archive can have multiple revisions, each update of a bundle results in a new one.
  *
  * In a revision the content of a bundle (ZIP file) is extracted to a specified location inside the archive.
  */
-typedef struct bundleRevision * bundle_revision_t;
+typedef struct bundleRevision * bundle_revision_pt;
 
 /**
  * Creates a new revision for the given inputFile or location.
@@ -60,7 +60,7 @@ typedef struct bundleRevision * bundle_revision_t;
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ENOMEM If allocating memory for <code>bundle_revision</code> failed.
  */
-celix_status_t bundleRevision_create(apr_pool_t *pool, char *root, char *location, long revisionNr, char *inputFile, bundle_revision_t *bundle_revision);
+celix_status_t bundleRevision_create(apr_pool_t *pool, char *root, char *location, long revisionNr, char *inputFile, bundle_revision_pt *bundle_revision);
 
 /**
  * Retrieves the revision number of the given revision.
@@ -72,7 +72,7 @@ celix_status_t bundleRevision_create(apr_pool_t *pool, char *root, char *locatio
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ILLEGAL_ARGUMENT If <code>revision</code> is illegal.
  */
-celix_status_t bundleRevision_getNumber(bundle_revision_t revision, long *revisionNr);
+celix_status_t bundleRevision_getNumber(bundle_revision_pt revision, long *revisionNr);
 
 /**
  * Retrieves the location of the given revision.
@@ -84,7 +84,7 @@ celix_status_t bundleRevision_getNumber(bundle_revision_t revision, long *revisi
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ILLEGAL_ARGUMENT If <code>revision</code> is illegal.
  */
-celix_status_t bundleRevision_getLocation(bundle_revision_t revision, char **location);
+celix_status_t bundleRevision_getLocation(bundle_revision_pt revision, char **location);
 
 /**
  * Retrieves the root of the given revision.
@@ -96,7 +96,7 @@ celix_status_t bundleRevision_getLocation(bundle_revision_t revision, char **loc
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ILLEGAL_ARGUMENT If <code>revision</code> is illegal.
  */
-celix_status_t bundleRevision_getRoot(bundle_revision_t revision, char **root);
+celix_status_t bundleRevision_getRoot(bundle_revision_pt revision, char **root);
 
 #endif /* BUNDLE_REVISION_H_ */
 

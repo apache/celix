@@ -34,11 +34,11 @@
 
 struct activator {
 	apr_pool_t *pool;
-	remote_service_admin_t admin;
-	service_registration_t registration;
+	remote_service_admin_pt admin;
+	service_registration_pt registration;
 };
 
-celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_pool_t *parentPool = NULL;
 	apr_pool_t *pool = NULL;
@@ -65,10 +65,10 @@ celix_status_t bundleActivator_create(bundle_context_t context, void **userData)
 	return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator *activator = userData;
-	remote_service_admin_service_t remoteServiceAdmin = NULL;
+	remote_service_admin_service_pt remoteServiceAdmin = NULL;
 
 	status = remoteServiceAdmin_create(activator->pool, context, &activator->admin);
 	if (status == CELIX_SUCCESS) {
@@ -103,7 +103,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator *activator = userData;
 
@@ -115,7 +115,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
 	return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator *activator = userData;
 	return status;

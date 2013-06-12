@@ -34,11 +34,11 @@
 struct activator {
 	apr_pool_t *pool;
 
-	service_registration_t proxy;
-	service_registration_t service;
+	service_registration_pt proxy;
+	service_registration_pt service;
 };
 
-celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	apr_pool_t *parentPool = NULL;
@@ -66,12 +66,12 @@ celix_status_t bundleActivator_create(bundle_context_t context, void **userData)
 	return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator *activator = userData;
-	example_t example;
-	example_service_t exampleService;
-	remote_proxy_service_t exampleProxy;
+	example_pt example;
+	example_service_pt exampleService;
+	remote_proxy_service_pt exampleProxy;
 
 	exampleProxy_create(activator->pool, &example);
 	exampleService = apr_palloc(activator->pool, sizeof(*exampleService));
@@ -89,14 +89,14 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 
 	bundleContext_registerService(context, EXAMPLE_SERVICE, exampleService, NULL, &activator->service);
 
-	properties_t props = properties_create();
+	properties_pt props = properties_create();
 	properties_set(props, (char *) "proxy.interface", (char *) EXAMPLE_SERVICE);
 	bundleContext_registerService(context, REMOTE_PROXY, exampleProxy, props, &activator->proxy);
 
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator *activator = userData;
 
@@ -108,7 +108,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
 	return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 	return status;
 }

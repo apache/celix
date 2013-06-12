@@ -33,9 +33,9 @@
 #include "log_service.h"
 #include "bundle_context.h"
 
-void * dm_create(bundle_context_t context) {
+void * dm_create(bundle_context_pt context) {
     apr_pool_t *pool;
-	log_writer_t writer = NULL;
+	log_writer_pt writer = NULL;
 
     bundleContext_getMemoryPool(context, &pool);
 
@@ -43,10 +43,10 @@ void * dm_create(bundle_context_t context) {
 	return writer;
 }
 
-void dm_init(void * userData, bundle_context_t context, DEPENDENCY_MANAGER manager) {
-	log_writer_t data = (log_writer_t) userData;
+void dm_init(void * userData, bundle_context_pt context, dependency_manager_pt manager) {
+	log_writer_pt data = (log_writer_pt) userData;
 
-	SERVICE service = dependencyActivatorBase_createService(manager);
+	service_pt service = dependencyActivatorBase_createService(manager);
 	serviceComponent_setImplementation(service, data);
 
 	data->dep = dependencyActivatorBase_createServiceDependency(manager);
@@ -59,8 +59,8 @@ void dm_init(void * userData, bundle_context_t context, DEPENDENCY_MANAGER manag
 	dependencyManager_add(manager, service);
 }
 
-void dm_destroy(void * userData, bundle_context_t context, DEPENDENCY_MANAGER manager) {
-    log_writer_t data = (log_writer_t) userData;
+void dm_destroy(void * userData, bundle_context_pt context, dependency_manager_pt manager) {
+    log_writer_pt data = (log_writer_pt) userData;
 //    serviceComponent_removeServiceDependency(data->service, data->dep);
 	dependencyManager_remove(manager, data->service);
 	//free(data);

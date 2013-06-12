@@ -29,15 +29,15 @@
 
 #define EXAMPLE_SERVICE "example"
 
-typedef struct example *example_t;
+typedef struct example *example_pt;
 
-typedef struct example_service *example_service_t;
+typedef struct example_service *example_service_pt;
 
 struct example_service {
-	example_t example;
-	celix_status_t (*add)(example_t example, double a, double b, double *result);
-	celix_status_t (*sub)(example_t example, double a, double b, double *result);
-	celix_status_t (*sqrt)(example_t example, double a, double *result);
+	example_pt example;
+	celix_status_t (*add)(example_pt example, double a, double b, double *result);
+	celix_status_t (*sub)(example_pt example, double a, double b, double *result);
+	celix_status_t (*sqrt)(example_pt example, double a, double *result);
 };
 
 #endif /* EXAMPLE_SERVICE_H_ */

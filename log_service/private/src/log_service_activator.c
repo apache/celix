@@ -35,13 +35,13 @@
 #include "service_registration.h"
 
 struct logActivator {
-    bundle_context_t bundleContext;
-    service_registration_t logServiceFactoryReg;
-    service_registration_t logReaderServiceReg;
+    bundle_context_pt bundleContext;
+    service_registration_pt logServiceFactoryReg;
+    service_registration_pt logReaderServiceReg;
 
 };
 
-celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
     celix_status_t status = CELIX_SUCCESS;
     apr_pool_t *mp = NULL;
 	struct logActivator * activator = NULL;
@@ -62,15 +62,15 @@ celix_status_t bundleActivator_create(bundle_context_t context, void **userData)
     return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
     struct logActivator * activator = (struct logActivator *) userData;
     celix_status_t status = CELIX_SUCCESS;
     apr_pool_t *mp = NULL;
-    service_factory_t factory = NULL;
-    log_t logger = NULL;
+    service_factory_pt factory = NULL;
+    log_pt logger = NULL;
 
-    log_reader_data_t reader = NULL;
-    log_reader_service_t reader_service = NULL;
+    log_reader_data_pt reader = NULL;
+    log_reader_service_pt reader_service = NULL;
 
     bundleContext_getMemoryPool(context, &mp);
 
@@ -93,7 +93,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
     return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
 	struct logActivator * activator = (struct logActivator *) userData;
 
 	serviceRegistration_unregister(activator->logReaderServiceReg);
@@ -104,6 +104,6 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
     return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
     return CELIX_SUCCESS;
 }

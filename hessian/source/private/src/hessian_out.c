@@ -29,17 +29,17 @@
 
 #include "hessian_2.0.h"
 
-void hessian_ensureCapacity(hessian_out_t obj, int capacity);
+void hessian_ensureCapacity(hessian_out_pt obj, int capacity);
 
-int hessian_printString(hessian_out_t out, char *value);
-int hessian_printNString(hessian_out_t out, char *value, int offset, int length);
+int hessian_printString(hessian_out_pt out, char *value);
+int hessian_printNString(hessian_out_pt out, char *value, int offset, int length);
 
-int hessian_writeType(hessian_out_t out, char *type);
+int hessian_writeType(hessian_out_pt out, char *type);
 
-int hessian_write(hessian_out_t out, unsigned char byte);
-int hessian_writeP(hessian_out_t out, unsigned char *byte);
+int hessian_write(hessian_out_pt out, unsigned char byte);
+int hessian_writeP(hessian_out_pt out, unsigned char *byte);
 
-int hessian_writeBoolean(hessian_out_t out, bool value) {
+int hessian_writeBoolean(hessian_out_pt out, bool value) {
 	hessian_ensureCapacity(out, out->offset + 1);
 
 	if (value) {
@@ -53,7 +53,7 @@ int hessian_writeBoolean(hessian_out_t out, bool value) {
 	return 0;
 }
 
-int hessian_writeInt(hessian_out_t out, int value) {
+int hessian_writeInt(hessian_out_pt out, int value) {
 	hessian_ensureCapacity(out, out->offset + 5);
 
 	if (INT_DIRECT_MIN <= value && value <= INT_DIRECT_MAX)
@@ -76,7 +76,7 @@ int hessian_writeInt(hessian_out_t out, int value) {
 	return 0;
 }
 
-int hessian_writeLong(hessian_out_t out, long value) {
+int hessian_writeLong(hessian_out_pt out, long value) {
 	hessian_ensureCapacity(out, out->offset + 9);
 
 	if (LONG_DIRECT_MIN <= value && value <= LONG_DIRECT_MAX) {
@@ -109,7 +109,7 @@ int hessian_writeLong(hessian_out_t out, long value) {
 	return 0;
 }
 
-int hessian_writeDouble(hessian_out_t out, double value) {
+int hessian_writeDouble(hessian_out_pt out, double value) {
 	hessian_ensureCapacity(out, out->offset + 9);
 
 	int intValue = (int) value;
@@ -157,7 +157,7 @@ int hessian_writeDouble(hessian_out_t out, double value) {
 	return 0;
 }
 
-int hessian_writeUTCDate(hessian_out_t out, long value) {
+int hessian_writeUTCDate(hessian_out_pt out, long value) {
 	hessian_ensureCapacity(out, out->offset + 9);
 
 	hessian_write(out, (int) ('d'));
@@ -173,7 +173,7 @@ int hessian_writeUTCDate(hessian_out_t out, long value) {
 	return 0;
 }
 
-int hessian_writeNull(hessian_out_t out) {
+int hessian_writeNull(hessian_out_pt out) {
 	hessian_ensureCapacity(out, out->offset + 1);
 
 	hessian_write(out, (int) ('N'));
@@ -181,12 +181,12 @@ int hessian_writeNull(hessian_out_t out) {
 	return 0;
 }
 
-int hessian_writeString(hessian_out_t out, char *value) {
+int hessian_writeString(hessian_out_pt out, char *value) {
 	int length = strlen(value);
 	return hessian_writeNString(out, value, 0, length);
 }
 
-int hessian_writeNString(hessian_out_t out, char *value, int offset, int length) {
+int hessian_writeNString(hessian_out_pt out, char *value, int offset, int length) {
 	if (value == NULL) {
 		hessian_writeNull(out);
 	} else {
@@ -229,11 +229,11 @@ int hessian_writeNString(hessian_out_t out, char *value, int offset, int length)
 	return 0;
 }
 
-int hessian_writeBytes(hessian_out_t out, unsigned char value[], int length) {
+int hessian_writeBytes(hessian_out_pt out, unsigned char value[], int length) {
 	return hessian_writeNBytes(out, value, 0, length);
 }
 
-int hessian_writeNBytes(hessian_out_t out, unsigned char value[], int offset, int length) {
+int hessian_writeNBytes(hessian_out_pt out, unsigned char value[], int offset, int length) {
 	if (value == NULL) {
 		hessian_writeNull(out);
 	} else {
@@ -273,7 +273,7 @@ int hessian_writeNBytes(hessian_out_t out, unsigned char value[], int offset, in
 	return 0;
 }
 
-int hessian_writeListBegin(hessian_out_t out, int length, char *type) {
+int hessian_writeListBegin(hessian_out_pt out, int length, char *type) {
 	hessian_ensureCapacity(out, out->offset + 1);
 	if (length < 0) {
 		if (type != NULL) {
@@ -309,14 +309,14 @@ int hessian_writeListBegin(hessian_out_t out, int length, char *type) {
 	return 0;
 }
 
-int hessian_writeListEnd(hessian_out_t out) {
+int hessian_writeListEnd(hessian_out_pt out) {
 	hessian_ensureCapacity(out, out->offset + 1);
 	hessian_write(out, (char) BC_END);
 
 	return 0;
 }
 
-int hessian_writeType(hessian_out_t out, char *type) {
+int hessian_writeType(hessian_out_pt out, char *type) {
 	int len = strlen(type);
 	if (len == 0) {
 		return 1;
@@ -326,7 +326,7 @@ int hessian_writeType(hessian_out_t out, char *type) {
 	return hessian_writeString(out, type);
 }
 
-int hessian_startCall(hessian_out_t out, char *method, int length) {
+int hessian_startCall(hessian_out_pt out, char *method, int length) {
 	hessian_ensureCapacity(out, out->offset + 1);
 	hessian_write(out, 'C');
 
@@ -336,15 +336,15 @@ int hessian_startCall(hessian_out_t out, char *method, int length) {
 	return 0;
 }
 
-int hessian_completeCall(hessian_out_t out) {
+int hessian_completeCall(hessian_out_pt out) {
 	return 0;
 }
 
-int hessian_printString(hessian_out_t out, char *value) {
+int hessian_printString(hessian_out_pt out, char *value) {
 	return hessian_printNString(out, value, 0, strlen(value));
 }
 
-int hessian_printNString(hessian_out_t out, char *value, int offset, int length) {
+int hessian_printNString(hessian_out_pt out, char *value, int offset, int length) {
 	hessian_ensureCapacity(out, out->offset + length);
 
 	for (int i = 0; i < length; i++) {
@@ -371,7 +371,7 @@ int hessian_printNString(hessian_out_t out, char *value, int offset, int length)
 	return 0;
 }
 
-void hessian_ensureCapacity(hessian_out_t obj, int capacity) {
+void hessian_ensureCapacity(hessian_out_pt obj, int capacity) {
 	char *newArray;
 	int oldCapacity;
 	oldCapacity = obj->capacity;
@@ -386,14 +386,14 @@ void hessian_ensureCapacity(hessian_out_t obj, int capacity) {
 	}
 }
 
-int hessian_write(hessian_out_t out, unsigned char byte) {
+int hessian_write(hessian_out_pt out, unsigned char byte) {
 	out->buffer[out->offset++] = byte;
 	out->length++;
 
 	return 0;
 }
 
-int hessian_writeP(hessian_out_t out, unsigned char *byte) {
+int hessian_writeP(hessian_out_pt out, unsigned char *byte) {
 	out->buffer[out->offset++] = *byte;
 	out->length++;
 

@@ -27,14 +27,14 @@
 #ifndef CAPABILITY_H_
 #define CAPABILITY_H_
 
-typedef struct capability *capability_t;
+typedef struct capability *capability_pt;
 
 #include "hash_map.h"
 #include "module.h"
 
-celix_status_t capability_create(apr_pool_t *pool, module_t module, hash_map_t directives, hash_map_t attributes, capability_t *capability);
-celix_status_t capability_getServiceName(capability_t capability, char **serviceName);
-celix_status_t capability_getVersion(capability_t capability, version_t *version);
-celix_status_t capability_getModule(capability_t capability, module_t *module);
+celix_status_t capability_create(apr_pool_t *pool, module_pt module, hash_map_pt directives, hash_map_pt attributes, capability_pt *capability);
+celix_status_t capability_getServiceName(capability_pt capability, char **serviceName);
+celix_status_t capability_getVersion(capability_pt capability, version_pt *version);
+celix_status_t capability_getModule(capability_pt capability, module_pt *module);
 
 #endif /* CAPABILITY_H_ */

@@ -36,43 +36,43 @@
 
 struct bundle_info {
 	char *path;
-	version_t version;
+	version_pt version;
 	char *symbolicName;
 	bool customizer;
 
-	properties_t attributes;
+	properties_pt attributes;
 };
 
-typedef struct bundle_info *bundle_info_t;
+typedef struct bundle_info *bundle_info_pt;
 
 struct resource_info {
 	char *path;
-	properties_t attributes;
+	properties_pt attributes;
 
 	char *resourceProcessor;
 };
 
-typedef struct resource_info *resource_info_t;
+typedef struct resource_info *resource_info_pt;
 
 struct deployment_package {
 	apr_pool_t *pool;
-	bundle_context_t context;
-	MANIFEST manifest;
-	array_list_t bundleInfos;
-	array_list_t resourceInfos;
-	hash_map_t nameToBundleInfo;
-	hash_map_t pathToEntry;
+	bundle_context_pt context;
+	manifest_pt manifest;
+	array_list_pt bundleInfos;
+	array_list_pt resourceInfos;
+	hash_map_pt nameToBundleInfo;
+	hash_map_pt pathToEntry;
 };
 
-typedef struct deployment_package *deployment_package_t;
+typedef struct deployment_package *deployment_package_pt;
 
-celix_status_t deploymentPackage_create(apr_pool_t *pool, bundle_context_t context, MANIFEST manifest, deployment_package_t *package);
-celix_status_t deploymentPackage_getName(deployment_package_t package, char **name);
-celix_status_t deploymentPackage_getBundleInfos(deployment_package_t package, array_list_t *infos);
-celix_status_t deploymentPackage_getBundleInfoByName(deployment_package_t package, char *name, bundle_info_t *info);
-celix_status_t deploymentPackage_getResourceInfos(deployment_package_t package, array_list_t *infos);
-celix_status_t deploymentPackage_getResourceInfoByPath(deployment_package_t package, char *path, resource_info_t *info);
-celix_status_t deploymentPackage_getBundle(deployment_package_t package, char *name, bundle_t *bundle);
-celix_status_t deploymentPackage_getVersion(deployment_package_t package, version_t *version);
+celix_status_t deploymentPackage_create(apr_pool_t *pool, bundle_context_pt context, manifest_pt manifest, deployment_package_pt *package);
+celix_status_t deploymentPackage_getName(deployment_package_pt package, char **name);
+celix_status_t deploymentPackage_getBundleInfos(deployment_package_pt package, array_list_pt *infos);
+celix_status_t deploymentPackage_getBundleInfoByName(deployment_package_pt package, char *name, bundle_info_pt *info);
+celix_status_t deploymentPackage_getResourceInfos(deployment_package_pt package, array_list_pt *infos);
+celix_status_t deploymentPackage_getResourceInfoByPath(deployment_package_pt package, char *path, resource_info_pt *info);
+celix_status_t deploymentPackage_getBundle(deployment_package_pt package, char *name, bundle_pt *bundle);
+celix_status_t deploymentPackage_getVersion(deployment_package_pt package, version_pt *version);
 
 #endif /* DEPLOYMENT_PACKAGE_H_ */

@@ -30,19 +30,19 @@
 #include "version_range.h"
 
 struct versionRange {
-	version_t low;
+	version_pt low;
 	bool isLowInclusive;
-	version_t high;
+	version_pt high;
 	bool isHighInclusive;
 
 };
 
 apr_status_t versionRange_destroy(void *rangeP);
 
-celix_status_t versionRange_createVersionRange(apr_pool_t *pool, version_t low, bool isLowInclusive,
-			version_t high, bool isHighInclusive, version_range_t *range) {
+celix_status_t versionRange_createVersionRange(apr_pool_t *pool, version_pt low, bool isLowInclusive,
+			version_pt high, bool isHighInclusive, version_range_pt *range) {
 	celix_status_t status = CELIX_SUCCESS;
-	*range = (version_range_t) apr_palloc(pool, sizeof(**range));
+	*range = (version_range_pt) apr_palloc(pool, sizeof(**range));
 	if (!*range) {
 		status = CELIX_ENOMEM;
 	} else {
@@ -58,7 +58,7 @@ celix_status_t versionRange_createVersionRange(apr_pool_t *pool, version_t low, 
 }
 
 apr_status_t versionRange_destroy(void *rangeP) {
-	version_range_t range = rangeP;
+	version_range_pt range = rangeP;
 	range->high = NULL;
 	range->isHighInclusive = false;
 	range->low = NULL;
@@ -66,10 +66,10 @@ apr_status_t versionRange_destroy(void *rangeP) {
 	return APR_SUCCESS;
 }
 
-celix_status_t versionRange_createInfiniteVersionRange(apr_pool_t *pool, version_range_t *range) {
+celix_status_t versionRange_createInfiniteVersionRange(apr_pool_t *pool, version_range_pt *range) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	version_t version = NULL;
+	version_pt version = NULL;
 	status = version_createEmptyVersion(pool, &version);
 	if (status == CELIX_SUCCESS) {
 		status = versionRange_createVersionRange(pool, version, true, NULL, true, range);
@@ -78,7 +78,7 @@ celix_status_t versionRange_createInfiniteVersionRange(apr_pool_t *pool, version
 	return status;
 }
 
-celix_status_t versionRange_isInRange(version_range_t versionRange, version_t version, bool *inRange) {
+celix_status_t versionRange_isInRange(version_range_pt versionRange, version_pt version, bool *inRange) {
 	celix_status_t status = CELIX_SUCCESS;
 	if (versionRange->high == NULL) {
 		int cmp;
@@ -127,7 +127,7 @@ celix_status_t versionRange_isInRange(version_range_t versionRange, version_t ve
 	return status;
 }
 
-celix_status_t versionRange_parse(apr_pool_t *pool, char * rangeStr, version_range_t *range) {
+celix_status_t versionRange_parse(apr_pool_t *pool, char * rangeStr, version_range_pt *range) {
 	celix_status_t status = CELIX_SUCCESS;
 	if (strchr(rangeStr, ',') != NULL) {
 		apr_pool_t *spool;
@@ -148,7 +148,7 @@ celix_status_t versionRange_parse(apr_pool_t *pool, char * rangeStr, version_ran
 				if (!vhigh) {
 					status = CELIX_ENOMEM;
 				} else {					
-					version_t versionLow = NULL;
+					version_pt versionLow = NULL;
 					int rangeL = strlen(rangeStr);
 					char start = rangeStr[0];
 					char end = rangeStr[rangeL-1];
@@ -157,7 +157,7 @@ celix_status_t versionRange_parse(apr_pool_t *pool, char * rangeStr, version_ran
 					
 					status = version_createVersionFromString(pool, vlow, &versionLow);
 					if (status == CELIX_SUCCESS) {
-						version_t versionHigh = NULL;
+						version_pt versionHigh = NULL;
 						status = version_createVersionFromString(pool, vhigh, &versionHigh);
 						if (status == CELIX_SUCCESS) {
 							status = versionRange_createVersionRange(pool,
@@ -174,7 +174,7 @@ celix_status_t versionRange_parse(apr_pool_t *pool, char * rangeStr, version_ran
 			apr_pool_destroy(spool);
 		}
 	} else {
-		version_t version = NULL;
+		version_pt version = NULL;
 		status = version_createVersionFromString(pool, rangeStr, &version);
 		if (status == CELIX_SUCCESS) {
 			status = versionRange_createVersionRange(pool, version, true, NULL, false, range);

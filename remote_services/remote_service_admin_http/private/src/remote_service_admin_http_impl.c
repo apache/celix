@@ -28,11 +28,11 @@
 
 #include <celix_errno.h>
 
-typedef struct remote_service_admin_http *remote_service_admin_http_t;
+typedef struct remote_service_admin_http *remote_service_admin_http_pt;
 
 struct remote_service_admin_http {
 	apr_pool_t *pool;
-	bundle_context_t context;
+	bundle_context_pt context;
 
 	struct mg_context *ctx;
 };
@@ -45,7 +45,7 @@ static const char *ajax_reply_start =
 
 void *remoteServiceAdminHttp_callback(enum mg_event event, struct mg_connection *conn, const struct mg_request_info *request_info);
 
-celix_status_t remoteServiceAdminHttp_create(apr_pool_t *pool, bundle_context_t context, remote_service_admin_http_t *httpAdmin) {
+celix_status_t remoteServiceAdminHttp_create(apr_pool_t *pool, bundle_context_pt context, remote_service_admin_http_pt *httpAdmin) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*httpAdmin = apr_palloc(pool, sizeof(**httpAdmin));
@@ -74,7 +74,7 @@ celix_status_t remoteServiceAdminHttp_create(apr_pool_t *pool, bundle_context_t 
 void *remoteServiceAdminHttp_callback(enum mg_event event, struct mg_connection *conn, const struct mg_request_info *request_info) {
 	if (request_info->uri != NULL) {
 		printf("REMOTE_SERVICE_ADMIN: Handle request: %s\n", request_info->uri);
-		remote_service_admin_t rsa = request_info->user_data;
+		remote_service_admin_pt rsa = request_info->user_data;
 
 		if (strncmp(request_info->uri, "/services/", 10) == 0) {
 			// uri = /services/myservice/call
@@ -100,13 +100,13 @@ void *remoteServiceAdminHttp_callback(enum mg_event event, struct mg_connection 
 			char *reply = NULL;
 			remoteServiceAdmin_handleRequest(rsa, service, request, data, &reply);
 
-			hash_map_iterator_t iter = hashMapIterator_create(rsa->exportedServices);
+			hash_map_iterator_pt iter = hashMapIterator_create(rsa->exportedServices);
 			while (hashMapIterator_hasNext(iter)) {
-				hash_map_entry_t entry = hashMapIterator_nextEntry(iter);
-				array_list_t exports = hashMapEntry_getValue(entry);
+				hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
+				array_list_pt exports = hashMapEntry_getValue(entry);
 				int expIt = 0;
 				for (expIt = 0; expIt < arrayList_size(exports); expIt++) {
-					export_registration_t export = arrayList_get(exports, expIt);
+					export_registration_pt export = arrayList_get(exports, expIt);
 					if (strcmp(service, export->endpointDescription->service) == 0) {
 						char *reply = NULL;
 						export->endpoint->handleRequest(export->endpoint->endpoint, request, data, &reply);

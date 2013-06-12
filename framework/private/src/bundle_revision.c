@@ -40,11 +40,11 @@ struct bundleRevision {
 
 static apr_status_t bundleRevision_destroy(void *revisionP);
 
-celix_status_t bundleRevision_create(apr_pool_t *pool, char *root, char *location, long revisionNr, char *inputFile, bundle_revision_t *bundle_revision) {
+celix_status_t bundleRevision_create(apr_pool_t *pool, char *root, char *location, long revisionNr, char *inputFile, bundle_revision_pt *bundle_revision) {
     celix_status_t status = CELIX_SUCCESS;
-	bundle_revision_t revision = NULL;
+	bundle_revision_pt revision = NULL;
 
-	revision = (bundle_revision_t) apr_pcalloc(pool, sizeof(*revision));
+	revision = (bundle_revision_pt) apr_pcalloc(pool, sizeof(*revision));
     if (!revision) {
     	status = CELIX_ENOMEM;
     } else {
@@ -76,11 +76,11 @@ celix_status_t bundleRevision_create(apr_pool_t *pool, char *root, char *locatio
 }
 
 apr_status_t bundleRevision_destroy(void *revisionP) {
-	bundle_revision_t revision = revisionP;
+	bundle_revision_pt revision = revisionP;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleRevision_getNumber(bundle_revision_t revision, long *revisionNr) {
+celix_status_t bundleRevision_getNumber(bundle_revision_pt revision, long *revisionNr) {
 	celix_status_t status = CELIX_SUCCESS;
     if (revision == NULL) {
         status = CELIX_ILLEGAL_ARGUMENT;
@@ -90,7 +90,7 @@ celix_status_t bundleRevision_getNumber(bundle_revision_t revision, long *revisi
 	return status;
 }
 
-celix_status_t bundleRevision_getLocation(bundle_revision_t revision, char **location) {
+celix_status_t bundleRevision_getLocation(bundle_revision_pt revision, char **location) {
 	celix_status_t status = CELIX_SUCCESS;
 	if (revision == NULL) {
 		status = CELIX_ILLEGAL_ARGUMENT;
@@ -100,7 +100,7 @@ celix_status_t bundleRevision_getLocation(bundle_revision_t revision, char **loc
 	return status;
 }
 
-celix_status_t bundleRevision_getRoot(bundle_revision_t revision, char **root) {
+celix_status_t bundleRevision_getRoot(bundle_revision_pt revision, char **root) {
 	celix_status_t status = CELIX_SUCCESS;
 	if (revision == NULL) {
 		status = CELIX_ILLEGAL_ARGUMENT;

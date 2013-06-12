@@ -30,7 +30,7 @@
 
 #include "hessian_2.0_out.h"
 
-hessian_out_t out;
+hessian_out_pt out;
 
 int setup() {
 	out = malloc(sizeof(*out));

@@ -38,14 +38,14 @@
 #include "service_reference.h"
 
 #define SERVICE_TYPE "service"
-#define capability_t "capability"
+#define capability_pt "capability"
 #define REQUIREMENT "requirement"
 
-void inspectCommand_execute(COMMAND command, char * commandline, void (*out)(char *), void (*err)(char *));
-celix_status_t inspectCommand_printExportedServices(COMMAND command, array_list_t ids, void (*out)(char *), void (*err)(char *));
+void inspectCommand_execute(command_pt command, char * commandline, void (*out)(char *), void (*err)(char *));
+celix_status_t inspectCommand_printExportedServices(command_pt command, array_list_pt ids, void (*out)(char *), void (*err)(char *));
 
-COMMAND inspectCommand_create(bundle_context_t context) {
-	COMMAND command = (COMMAND) malloc(sizeof(*command));
+command_pt inspectCommand_create(bundle_context_pt context) {
+	command_pt command = (command_pt) malloc(sizeof(*command));
 	command->bundleContext = context;
 	command->name = "inspect";
 	command->shortDescription = "inspect dependencies";
@@ -54,11 +54,11 @@ COMMAND inspectCommand_create(bundle_context_t context) {
 	return command;
 }
 
-void inspectCommand_destroy(COMMAND command) {
+void inspectCommand_destroy(command_pt command) {
 	free(command);
 }
 
-void inspectCommand_execute(COMMAND command, char * commandline, void (*out)(char *), void (*err)(char *)) {
+void inspectCommand_execute(command_pt command, char * commandline, void (*out)(char *), void (*err)(char *)) {
 	celix_status_t status = CELIX_SUCCESS;
 	char *token;
 	char *commandStr = apr_strtok(commandline, " ", &token);
@@ -67,7 +67,7 @@ void inspectCommand_execute(COMMAND command, char * commandline, void (*out)(cha
 		char *direction = apr_strtok(NULL, " ", &token);
 		if (direction != NULL) {
 			apr_pool_t *pool = NULL;
-			array_list_t ids = NULL;
+			array_list_pt ids = NULL;
 			char *id = apr_strtok(NULL, " ", &token);
 
 			bundleContext_getMemoryPool(command->bundleContext, &pool);
@@ -78,7 +78,7 @@ void inspectCommand_execute(COMMAND command, char * commandline, void (*out)(cha
 			}
 
 			if (strcmp(type, SERVICE_TYPE) == 0) {
-				if (strcmp(direction, capability_t) == 0) {
+				if (strcmp(direction, capability_pt) == 0) {
 					status = inspectCommand_printExportedServices(command, ids, out, err);
 					if (status != CELIX_SUCCESS) {
 						out("INSPECT: Error\n");
@@ -97,9 +97,9 @@ void inspectCommand_execute(COMMAND command, char * commandline, void (*out)(cha
 	}
 }
 
-celix_status_t inspectCommand_printExportedServices(COMMAND command, array_list_t ids, void (*out)(char *), void (*err)(char *)) {
+celix_status_t inspectCommand_printExportedServices(command_pt command, array_list_pt ids, void (*out)(char *), void (*err)(char *)) {
 	celix_status_t status = CELIX_SUCCESS;
-	array_list_t bundles = NULL;
+	array_list_pt bundles = NULL;
 
 	if (arrayList_isEmpty(ids)) {
 		celix_status_t status = bundleContext_getBundles(command->bundleContext, &bundles);
@@ -112,7 +112,7 @@ celix_status_t inspectCommand_printExportedServices(COMMAND command, array_list_
 		for (i = 0; i < arrayList_size(ids); i++) {
 			char *idStr = (char *) arrayList_get(ids, i);
 			long id = atol(idStr);
-			bundle_t b = NULL;
+			bundle_pt b = NULL;
 			celix_status_t st = bundleContext_getBundleById(command->bundleContext, id, &b);
 			if (st == CELIX_SUCCESS) {
 				arrayList_add(bundles, b);
@@ -127,7 +127,7 @@ celix_status_t inspectCommand_printExportedServices(COMMAND command, array_list_
 	if (status == CELIX_SUCCESS) {
 		unsigned int i = 0;
 		for (i = 0; i < arrayList_size(bundles); i++) {
-			bundle_t bundle = (bundle_t) arrayList_get(bundles, i);
+			bundle_pt bundle = (bundle_pt) arrayList_get(bundles, i);
 
 			if (i > 0) {
 				out("\n");
@@ -135,12 +135,12 @@ celix_status_t inspectCommand_printExportedServices(COMMAND command, array_list_
 
 			if (bundle != NULL) {
 				apr_pool_t *pool;
-				array_list_t refs = NULL;
+				array_list_pt refs = NULL;
 
 				bundleContext_getMemoryPool(command->bundleContext, &pool);
 				if (bundle_getRegisteredServices(bundle, pool, &refs) == CELIX_SUCCESS) {
 					char line[256];
-					module_t module = NULL;
+					module_pt module = NULL;
 					char * name = NULL;
 					status = bundle_getCurrentModule(bundle, &module);
 					if (status == CELIX_SUCCESS) {
@@ -155,9 +155,9 @@ celix_status_t inspectCommand_printExportedServices(COMMAND command, array_list_
 							} else {
 								unsigned int j = 0;
 								for (j = 0; j < arrayList_size(refs); j++) {
-									service_reference_t ref = (service_reference_t) arrayList_get(refs, j);
-									service_registration_t reg = NULL;
-									properties_t props = NULL;
+									service_reference_pt ref = (service_reference_pt) arrayList_get(refs, j);
+									service_registration_pt reg = NULL;
+									properties_pt props = NULL;
 									char line[256];
 									char *objectClass = NULL;
 

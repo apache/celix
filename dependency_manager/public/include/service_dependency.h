@@ -34,40 +34,40 @@
 
 struct serviceDependency {
 	char * interface;
-	void (*added)(void * handle, service_reference_t reference, void *);
-	void (*changed)(void * handle, service_reference_t reference, void *);
-	void (*removed)(void * handle, service_reference_t reference, void *);
+	void (*added)(void * handle, service_reference_pt reference, void *);
+	void (*changed)(void * handle, service_reference_pt reference, void *);
+	void (*removed)(void * handle, service_reference_pt reference, void *);
 	void ** autoConfigureField;
 
 	bool started;
 	bool available;
 	bool required;
-	service_tracker_t tracker;
-	SERVICE service;
-	service_reference_t reference;
-	bundle_context_t context;
+	service_tracker_pt tracker;
+	service_pt service;
+	service_reference_pt reference;
+	bundle_context_pt context;
 	void * serviceInstance;
 	char * trackedServiceName;
 	char * trackedServiceFilter;
 };
 
-typedef struct serviceDependency * SERVICE_DEPENDENCY;
+typedef struct serviceDependency * service_dependency_pt;
 
-SERVICE_DEPENDENCY serviceDependency_create(bundle_context_t context);
-void * serviceDependency_getService(SERVICE_DEPENDENCY dependency);
+service_dependency_pt serviceDependency_create(bundle_context_pt context);
+void * serviceDependency_getService(service_dependency_pt dependency);
 
-SERVICE_DEPENDENCY serviceDependency_setRequired(SERVICE_DEPENDENCY dependency, bool required);
-SERVICE_DEPENDENCY serviceDependency_setService(SERVICE_DEPENDENCY dependency, char * serviceName, char * filter);
-SERVICE_DEPENDENCY serviceDependency_setCallbacks(SERVICE_DEPENDENCY dependency, void (*added)(void * handle, service_reference_t reference, void *),
-		void (*changed)(void * handle, service_reference_t reference, void *),
-		void (*removed)(void * handle, service_reference_t reference, void *));
-SERVICE_DEPENDENCY serviceDependency_setAutoConfigure(SERVICE_DEPENDENCY dependency, void ** field);
+service_dependency_pt serviceDependency_setRequired(service_dependency_pt dependency, bool required);
+service_dependency_pt serviceDependency_setService(service_dependency_pt dependency, char * serviceName, char * filter);
+service_dependency_pt serviceDependency_setCallbacks(service_dependency_pt dependency, void (*added)(void * handle, service_reference_pt reference, void *),
+		void (*changed)(void * handle, service_reference_pt reference, void *),
+		void (*removed)(void * handle, service_reference_pt reference, void *));
+service_dependency_pt serviceDependency_setAutoConfigure(service_dependency_pt dependency, void ** field);
 
-void serviceDependency_start(SERVICE_DEPENDENCY dependency, SERVICE service);
-void serviceDependency_stop(SERVICE_DEPENDENCY dependency, SERVICE service);
+void serviceDependency_start(service_dependency_pt dependency, service_pt service);
+void serviceDependency_stop(service_dependency_pt dependency, service_pt service);
 
-void serviceDependency_invokeAdded(SERVICE_DEPENDENCY dependency);
-void serviceDependency_invokeRemoved(SERVICE_DEPENDENCY dependency);
+void serviceDependency_invokeAdded(service_dependency_pt dependency);
+void serviceDependency_invokeRemoved(service_dependency_pt dependency);
 
 
 #endif /* SERVICE_DEPENDENCY_H_ */

@@ -29,14 +29,14 @@
 
 #define PUBLISHER_NAME "Publisher"
 
-typedef struct publisher * PUBLISHER;
+typedef struct publisher * publisher_pt;
 
 struct publisherService {
-	PUBLISHER publisher;
-	void (*invoke)(PUBLISHER pub, char * text);
+	publisher_pt publisher;
+	void (*invoke)(publisher_pt pub, char * text);
 };
 
-typedef struct publisherService * PUBLISHER_SERVICE;
+typedef struct publisherService * publisher_service_pt;
 
 
 #endif /* PUBLISHER_H_ */

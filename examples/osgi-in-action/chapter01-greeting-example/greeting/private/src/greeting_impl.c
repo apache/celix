@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include "greeting_impl.h"
 
-void greeting_sayHello(greeting_t instance){
+void greeting_sayHello(greeting_pt instance){
 	printf("Greetings from %s\n", instance->name);
 }
 

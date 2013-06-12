@@ -37,20 +37,20 @@
 #include "base_driver_device.h"
 
 struct base_driver_bundle_instance {
-	bundle_context_t context;
+	bundle_context_pt context;
 	apr_pool_t * pool;
-	array_list_t serviceRegistrations;
+	array_list_pt serviceRegistrations;
 };
 
-typedef struct base_driver_bundle_instance *base_driver_bundle_instance_t;
+typedef struct base_driver_bundle_instance *base_driver_bundle_instance_pt;
 
-celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	printf("BASE_DRIVER: creating bundle\n");
 	celix_status_t status = CELIX_SUCCESS;
 	apr_pool_t *pool;
 	status = bundleContext_getMemoryPool(context, &pool);
 	if (status == CELIX_SUCCESS) {
-		base_driver_bundle_instance_t instance = apr_palloc(pool, sizeof(*instance));
+		base_driver_bundle_instance_pt instance = apr_palloc(pool, sizeof(*instance));
 		if (instance != NULL) {
 			instance->context = context;
 			instance->pool = pool;
@@ -65,18 +65,18 @@ celix_status_t bundleActivator_create(bundle_context_t context, void **userData)
 	return status;
 }
 
-static celix_status_t bundleActivator_registerBaseDriverDevice(base_driver_bundle_instance_t bi, char *serial) {
+static celix_status_t bundleActivator_registerBaseDriverDevice(base_driver_bundle_instance_pt bi, char *serial) {
 	celix_status_t status = CELIX_SUCCESS;
-	base_driver_device_t device = NULL;
+	base_driver_device_pt device = NULL;
 	status = baseDriver_create(bi->pool, &device);
 	if (status == CELIX_SUCCESS) {
-		base_driver_device_service_t service = NULL;
+		base_driver_device_service_pt service = NULL;
 		status = baseDriver_createService(device, &service);
 		if (status == CELIX_SUCCESS) {
-			properties_t props = properties_create();
+			properties_pt props = properties_create();
 			properties_set(props, DEVICE_CATEGORY, BASE_DRIVER_DEVICE_CATEGORY);
 			properties_set(props, DEVICE_SERIAL, serial);
-			service_registration_t service_registration = NULL;
+			service_registration_pt service_registration = NULL;
 			status = bundleContext_registerService(bi->context, DEVICE_SERVICE_NAME, service, props, &service_registration);
 			if (status == CELIX_SUCCESS) {
 				arrayList_add(bi->serviceRegistrations, service_registration);
@@ -98,10 +98,10 @@ static celix_status_t bundleActivator_registerBaseDriverDevice(base_driver_bundl
 	return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
 	printf("BASE_DRIVER: starting bundle\n");
 	celix_status_t status = CELIX_SUCCESS;
-	base_driver_bundle_instance_t bundleInstance = userData;
+	base_driver_bundle_instance_pt bundleInstance = userData;
 	status = bundleActivator_registerBaseDriverDevice(bundleInstance, "0001");
 //	if (status == CELIX_SUCCESS) {
 //		status = bundleActivator_registerBaseDriverDevice(bundleInstance, "0002");
@@ -109,14 +109,14 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
 	printf("BASE_DRIVER: stopping bundle\n");
 	celix_status_t status = CELIX_SUCCESS;
-	base_driver_bundle_instance_t bundleInstance = userData;
+	base_driver_bundle_instance_pt bundleInstance = userData;
 
-	array_list_iterator_t iterator = arrayListIterator_create(bundleInstance->serviceRegistrations);
+	array_list_iterator_pt iterator = arrayListIterator_create(bundleInstance->serviceRegistrations);
 	while (arrayListIterator_hasNext(iterator)) {
-		service_registration_t reg = arrayListIterator_next(iterator);
+		service_registration_pt reg = arrayListIterator_next(iterator);
 		printf("BASE_DRIVER: unregistering service\n");
 		celix_status_t unregStatus = serviceRegistration_unregister(reg);
 		if (unregStatus != CELIX_SUCCESS) {
@@ -131,10 +131,10 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
 	return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	printf("BASE_DRIVER: destroying bundle\n");
 	celix_status_t status = CELIX_SUCCESS;
-	base_driver_bundle_instance_t bundleInstance = userData;
+	base_driver_bundle_instance_pt bundleInstance = userData;
 
 	arrayList_destroy(bundleInstance->serviceRegistrations);
 	return status;

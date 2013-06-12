@@ -36,21 +36,21 @@
 struct driver_attributes {
 	apr_pool_t *pool;
 
-	bundle_t bundle;
-	service_reference_t reference;
-	driver_service_t driver;
+	bundle_pt bundle;
+	service_reference_pt reference;
+	driver_service_pt driver;
 	bool dynamic;
 };
 
-celix_status_t driverAttributes_create(apr_pool_t *pool, service_reference_t reference, driver_service_t driver, driver_attributes_t *attributes) {
+celix_status_t driverAttributes_create(apr_pool_t *pool, service_reference_pt reference, driver_service_pt driver, driver_attributes_pt *attributes) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*attributes = apr_palloc(pool, sizeof(**attributes));
 	if (!*attributes) {
 		status = CELIX_ENOMEM;
 	} else {
-		bundle_t bundle = NULL;
-		bundle_archive_t bundleArchive = NULL;
+		bundle_pt bundle = NULL;
+		bundle_archive_pt bundleArchive = NULL;
 		status = serviceReference_getBundle(reference, &bundle);
 
 		if (status == CELIX_SUCCESS) {
@@ -75,19 +75,19 @@ celix_status_t driverAttributes_create(apr_pool_t *pool, service_reference_t ref
 	return status;
 }
 
-celix_status_t driverAttributes_getReference(driver_attributes_t driverAttributes, service_reference_t *reference) {
+celix_status_t driverAttributes_getReference(driver_attributes_pt driverAttributes, service_reference_pt *reference) {
 	*reference = driverAttributes->reference;
 
 	return CELIX_SUCCESS;
 }
 
-celix_status_t driverAttributes_getDriverId(driver_attributes_t driverAttributes, char **driverId) {
+celix_status_t driverAttributes_getDriverId(driver_attributes_pt driverAttributes, char **driverId) {
 	celix_status_t status = CELIX_SUCCESS;
-	service_registration_t registration = NULL;
+	service_registration_pt registration = NULL;
 	status = serviceReference_getServiceRegistration(driverAttributes->reference, &registration);
 
 	if (status == CELIX_SUCCESS) {
-		properties_t properties = NULL;
+		properties_pt properties = NULL;
 		status = serviceRegistration_getProperties(registration, &properties);
 
 		if (status == CELIX_SUCCESS) {
@@ -108,7 +108,7 @@ celix_status_t driverAttributes_getDriverId(driver_attributes_t driverAttributes
 	return status;
 }
 
-celix_status_t driverAttributes_match(driver_attributes_t driverAttributes, service_reference_t reference, int *match) {
+celix_status_t driverAttributes_match(driver_attributes_pt driverAttributes, service_reference_pt reference, int *match) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	status = driverAttributes->driver->match(driverAttributes->driver->driver, reference, match);
@@ -116,13 +116,13 @@ celix_status_t driverAttributes_match(driver_attributes_t driverAttributes, serv
 	return status;
 }
 
-celix_status_t static get_property_from_registration(service_reference_t ref, char *key, char **prop_value)  {
+celix_status_t static get_property_from_registration(service_reference_pt ref, char *key, char **prop_value)  {
 	celix_status_t status = CELIX_SUCCESS;
-	service_registration_t registration = NULL;
+	service_registration_pt registration = NULL;
 	status = serviceReference_getServiceRegistration(ref, &registration);
 
 	if (status == CELIX_SUCCESS) {
-		properties_t properties = NULL;
+		properties_pt properties = NULL;
 		status = serviceRegistration_getProperties(registration, &properties);
 
 		if (status == CELIX_SUCCESS) {
@@ -138,10 +138,10 @@ celix_status_t static get_property_from_registration(service_reference_t ref, ch
 }
 
 
-celix_status_t driverAttributes_isInUse(driver_attributes_t driverAttributes, bool *inUse) {
+celix_status_t driverAttributes_isInUse(driver_attributes_pt driverAttributes, bool *inUse) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	array_list_t references = NULL;
+	array_list_pt references = NULL;
 	status = bundle_getServicesInUse(driverAttributes->bundle, &references);
 	if (status == CELIX_SUCCESS) {
 		if (references == NULL || arrayList_size(references) == 0) {
@@ -149,7 +149,7 @@ celix_status_t driverAttributes_isInUse(driver_attributes_t driverAttributes, bo
 		} else {
 			int i;
 			for (i = 0; i < arrayList_size(references); i++) {
-				service_reference_t ref = arrayList_get(references, i);
+				service_reference_pt ref = arrayList_get(references, i);
 				char *object = NULL;
 				status = get_property_from_registration(ref, (char *) OBJECTCLASS, &object);
 
@@ -170,7 +170,7 @@ celix_status_t driverAttributes_isInUse(driver_attributes_t driverAttributes, bo
 	return status;
 }
 
-celix_status_t driverAttributes_attach(driver_attributes_t driverAttributes, service_reference_t reference, char **attach) {
+celix_status_t driverAttributes_attach(driver_attributes_pt driverAttributes, service_reference_pt reference, char **attach) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	status = driverAttributes->driver->attach(driverAttributes->driver->driver, reference, attach);
@@ -178,7 +178,7 @@ celix_status_t driverAttributes_attach(driver_attributes_t driverAttributes, ser
 	return status;
 }
 
-celix_status_t driverAttributes_tryUninstall(driver_attributes_t driverAttributes) {
+celix_status_t driverAttributes_tryUninstall(driver_attributes_pt driverAttributes) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	bool inUse = false;

@@ -32,10 +32,10 @@
 #include "bundle.h"
 #include "uninstall_command.h"
 
-void uninstallCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *));
+void uninstallCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *));
 
-COMMAND uninstallCommand_create(bundle_context_t context) {
-	COMMAND command = (COMMAND) malloc(sizeof(*command));
+command_pt uninstallCommand_create(bundle_context_pt context) {
+	command_pt command = (command_pt) malloc(sizeof(*command));
 	command->bundleContext = context;
 	command->name = "uninstall";
 	command->shortDescription = "uninstall bundle(s).";
@@ -44,19 +44,19 @@ COMMAND uninstallCommand_create(bundle_context_t context) {
 	return command;
 }
 
-void uninstallCommand_destroy(COMMAND command) {
+void uninstallCommand_destroy(command_pt command) {
 	free(command);
 }
 
 
-void uninstallCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *)) {
+void uninstallCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *)) {
 	char delims[] = " ";
 	char * sub = NULL;
 	sub = strtok(line, delims);
 	sub = strtok(NULL, delims);
 	while (sub != NULL) {
 		long id = atol(sub);
-		bundle_t bundle = NULL;
+		bundle_pt bundle = NULL;
 		bundleContext_getBundleById(command->bundleContext, id, &bundle);
 		if (bundle != NULL) {
 		    bundle_uninstall(bundle);

@@ -39,12 +39,12 @@ struct log_store {
 
 	unsigned long storeId;
 
-	array_list_t logEvents;
+	array_list_pt logEvents;
 };
 
-static celix_status_t logStore_getNextID(log_store_t store, unsigned long *id);
+static celix_status_t logStore_getNextID(log_store_pt store, unsigned long *id);
 
-celix_status_t logStore_create(apr_pool_t *pool, log_store_t *store) {
+celix_status_t logStore_create(apr_pool_t *pool, log_store_pt *store) {
 	celix_status_t status = CELIX_SUCCESS;
 	*store = apr_palloc(pool, sizeof(**store));
 	if (!*store) {
@@ -58,7 +58,7 @@ celix_status_t logStore_create(apr_pool_t *pool, log_store_t *store) {
 	return status;
 }
 
-celix_status_t logStore_put(log_store_t store, unsigned int type, properties_t properties, log_event_t *event) {
+celix_status_t logStore_put(log_store_pt store, unsigned int type, properties_pt properties, log_event_pt *event) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*event = apr_palloc(store->pool, sizeof(**event));
@@ -76,22 +76,22 @@ celix_status_t logStore_put(log_store_t store, unsigned int type, properties_t p
 	return status;
 }
 
-celix_status_t logStore_getLogId(log_store_t store, unsigned long *id) {
+celix_status_t logStore_getLogId(log_store_pt store, unsigned long *id) {
 	*id = store->storeId;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t logStore_getEvents(log_store_t store, array_list_t *events) {
+celix_status_t logStore_getEvents(log_store_pt store, array_list_pt *events) {
 	*events = store->logEvents;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t logStore_getHighestId(log_store_t store, long *id) {
+celix_status_t logStore_getHighestId(log_store_pt store, long *id) {
 	*id = ((long) arrayList_size(store->logEvents)) - 1;
 	return CELIX_SUCCESS;
 }
 
-static celix_status_t logStore_getNextID(log_store_t store, unsigned long *id) {
+static celix_status_t logStore_getNextID(log_store_pt store, unsigned long *id) {
 	*id = arrayList_size(store->logEvents);
 	return CELIX_SUCCESS;
 }

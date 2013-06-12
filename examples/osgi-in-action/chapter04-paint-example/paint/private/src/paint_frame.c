@@ -52,29 +52,29 @@
 #include "default_shape.h"
 #include "celix_errno.h"
 
-static PAINT_FRAME this = NULL;
+static paint_frame_pt this = NULL;
 
 struct shape_info {
 	char *name;
-	SIMPLE_SHAPE shape;
+	simple_shape_pt shape;
 	GtkWidget *button;
 };
 
-typedef struct shape_info *shape_info_t;
-static celix_status_t paintFrame_redraw(PAINT_FRAME frame, GdkModifierType state);
-static celix_status_t paintFrame_show(PAINT_FRAME frame);
+typedef struct shape_info *shape_info_pt;
+static celix_status_t paintFrame_redraw(paint_frame_pt frame, GdkModifierType state);
+static celix_status_t paintFrame_show(paint_frame_pt frame);
 static void paintFrame_destroy(GtkWidget *widget, gpointer data);
 static void paintFrame_expose(GtkWidget *widget, GdkEventExpose *event, gpointer data);
 static void paintFrame_configure(GtkWidget *widget, GdkEventConfigure *event, gpointer data);
 static void paintFrame_buttonClicked(GtkWidget *button, gpointer data);
 static gboolean paintFrame_mousePressed( GtkWidget *widget, GdkEventButton *event, gpointer data);
 static gpointer paintFrame_gtkmain(gpointer a_data);
-static void paintFrame_destroyWidgets(PAINT_FRAME frame);
+static void paintFrame_destroyWidgets(paint_frame_pt frame);
 
 /**
  * Default constructor that populates the main window.
  **/
-celix_status_t paintFrame_create(bundle_context_t context, apr_pool_t *pool, PAINT_FRAME *frame) {
+celix_status_t paintFrame_create(bundle_context_pt context, apr_pool_t *pool, paint_frame_pt *frame) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_pool_t *mypool = NULL;
 	apr_pool_create(&mypool, pool);
@@ -84,7 +84,7 @@ celix_status_t paintFrame_create(bundle_context_t context, apr_pool_t *pool, PAI
 		status = CELIX_ENOMEM;
 	} else {
 		char *builderFile;
-		bundle_t bundle;
+		bundle_pt bundle;
 		GError *error = NULL;
 		*frame = this;
 		
@@ -125,7 +125,7 @@ celix_status_t paintFrame_create(bundle_context_t context, apr_pool_t *pool, PAI
 	return status;
 }
 
-celix_status_t paintFrame_exit(PAINT_FRAME frame) {
+celix_status_t paintFrame_exit(paint_frame_pt frame) {
 	frame->showing = false;
 
 	paintFrame_destroyWidgets(frame);
@@ -141,14 +141,14 @@ celix_status_t paintFrame_exit(PAINT_FRAME frame) {
 	return CELIX_SUCCESS;
 }
 
-static celix_status_t shapeInfo_create(PAINT_FRAME frame, char* name, GtkWidget *button, SIMPLE_SHAPE shape, shape_info_t *info){
+static celix_status_t shapeInfo_create(paint_frame_pt frame, char* name, GtkWidget *button, simple_shape_pt shape, shape_info_pt *info){
 	*info = malloc(sizeof(**info));
 	(*info)->shape = shape;
 	(*info)->name = name;
 	(*info)->button = button;
 	return CELIX_SUCCESS;
 }
-static celix_status_t paintFrame_show(PAINT_FRAME frame) {
+static celix_status_t paintFrame_show(paint_frame_pt frame) {
 	gtk_widget_show(frame->drawingArea);
 	gtk_widget_show(frame->toolbar);
 	gtk_widget_show(frame->window);
@@ -163,7 +163,7 @@ static celix_status_t paintFrame_show(PAINT_FRAME frame) {
  * @param icon The icon associated with the injected <tt>SimpleShape</tt>.
  * @param shape The injected <tt>SimpleShape</tt> instance.
  **/
-celix_status_t paintFrame_addShape(PAINT_FRAME frame, bundle_context_t context, SIMPLE_SHAPE shape) {
+celix_status_t paintFrame_addShape(paint_frame_pt frame, bundle_context_pt context, simple_shape_pt shape) {
 	celix_status_t status = CELIX_SUCCESS;
 	GError *gerror = NULL;
 	GtkWidget *button = NULL;
@@ -179,7 +179,7 @@ celix_status_t paintFrame_addShape(PAINT_FRAME frame, bundle_context_t context, 
 	g_signal_connect (G_OBJECT (button), "clicked", G_CALLBACK (paintFrame_buttonClicked), frame);
 	gtk_widget_show(button);
 	if (hashMap_get(frame->m_shapes, shape->name) == NULL) {
-		shape_info_t info = NULL;
+		shape_info_pt info = NULL;
 		shapeInfo_create(frame, shape->name, button, shape, &info);
 		hashMap_put(frame->m_shapes, shape->name, info);
 	}
@@ -195,11 +195,11 @@ celix_status_t paintFrame_addShape(PAINT_FRAME frame, bundle_context_t context, 
  *
  * @param name The name of the <tt>SimpleShape</tt> to remove.
  **/
-celix_status_t paintFrame_removeShape(PAINT_FRAME frame, SIMPLE_SHAPE sshape) {
+celix_status_t paintFrame_removeShape(paint_frame_pt frame, simple_shape_pt sshape) {
 	celix_status_t status = CELIX_SUCCESS;
-	shape_info_t shape = NULL;
+	shape_info_pt shape = NULL;
 	gdk_threads_enter();
-	shape = (shape_info_t) hashMap_remove(this->m_shapes, sshape->name);
+	shape = (shape_info_pt) hashMap_remove(this->m_shapes, sshape->name);
 	if (shape != NULL) {
 		this->m_selected = NULL;
 		gtk_widget_destroy(GTK_WIDGET(shape->button));
@@ -220,8 +220,8 @@ celix_status_t paintFrame_removeShape(PAINT_FRAME frame, SIMPLE_SHAPE sshape) {
  * @return The corresponding <tt>SimpleShape</tt> instance if available or
  *         <tt>null</tt>.
  **/
-SIMPLE_SHAPE paintFrame_getShape(PAINT_FRAME frame, char *name) {
-	shape_info_t info = (shape_info_t) hashMap_get(frame->m_shapes, name);
+simple_shape_pt paintFrame_getShape(paint_frame_pt frame, char *name) {
+	shape_info_pt info = (shape_info_pt) hashMap_get(frame->m_shapes, name);
 	if (info == NULL) {
 		return frame->m_defaultShape;
 	} else {
@@ -230,8 +230,8 @@ SIMPLE_SHAPE paintFrame_getShape(PAINT_FRAME frame, char *name) {
 }
 
 static void paintFrame_destroy(GtkWidget *widget, gpointer data) {
-	PAINT_FRAME frame = data;
-	bundle_t bundle = NULL;
+	paint_frame_pt frame = data;
+	bundle_pt bundle = NULL;
 
 	frame->showing = false;
 
@@ -239,7 +239,7 @@ static void paintFrame_destroy(GtkWidget *widget, gpointer data) {
 //	bundle_stop(bundle, 0);
 }
 
-static void paintFrame_destroyWidgets(PAINT_FRAME frame) {
+static void paintFrame_destroyWidgets(paint_frame_pt frame) {
 	gdk_threads_enter();
 
 	if (frame->pixMap != NULL) {
@@ -264,7 +264,7 @@ static void paintFrame_destroyWidgets(PAINT_FRAME frame) {
 }
 
 static void paintFrame_configure(GtkWidget *widget, GdkEventConfigure *event, gpointer data) {
-	PAINT_FRAME frame = data;
+	paint_frame_pt frame = data;
 	GtkAllocation allocation;
 
 	if (frame->pixMap != NULL) {
@@ -277,7 +277,7 @@ static void paintFrame_configure(GtkWidget *widget, GdkEventConfigure *event, gp
 }
 
 static void paintFrame_expose(GtkWidget *widget, GdkEventExpose *event, gpointer data) {
-	PAINT_FRAME frame = data;
+	paint_frame_pt frame = data;
 	gdk_draw_pixmap(gtk_widget_get_window(widget),
 			gtk_widget_get_style(widget)->fg_gc[gtk_widget_get_state(widget)],
 			frame->pixMap, event->area.x, event->area.y, event->area.x,
@@ -285,17 +285,17 @@ static void paintFrame_expose(GtkWidget *widget, GdkEventExpose *event, gpointer
 }
 
 static void paintFrame_buttonClicked(GtkWidget *button, gpointer data) {
-	PAINT_FRAME frame = data;
+	paint_frame_pt frame = data;
 	frame->m_selected = (char *) gtk_widget_get_name(button);
 }
 
 static gboolean paintFrame_mousePressed( GtkWidget *widget, GdkEventButton *event, gpointer data) {
-	PAINT_FRAME frame = data;
+	paint_frame_pt frame = data;
 	if (event->button == 1 && frame->pixMap != NULL) {
 		if (frame->m_selected == NULL){
 			printf("no button selected yet\n");
 		} else {
-			SHAPE_COMPONENT sc = shapeComponent_create(frame, paintFrame_getShape(frame, frame->m_selected), event->x, event->y);
+			shape_component_pt sc = shapeComponent_create(frame, paintFrame_getShape(frame, frame->m_selected), event->x, event->y);
 			linkedList_addFirst(frame->m_shapeComponents, sc);
 			(*sc->shapeComponent_paintComponent)(sc, frame, frame->pixMap, widget);
 		}
@@ -303,11 +303,11 @@ static gboolean paintFrame_mousePressed( GtkWidget *widget, GdkEventButton *even
 	return TRUE;
 }
 
-static celix_status_t paintFrame_redraw(PAINT_FRAME frame, GdkModifierType state) {
+static celix_status_t paintFrame_redraw(paint_frame_pt frame, GdkModifierType state) {
 	if (frame->pixMap != NULL && frame->showing) {
 		GdkRectangle update_rect;
 		GtkAllocation allocation;
-		linked_list_iterator_t it = NULL;
+		linked_list_iterator_pt it = NULL;
 
 		update_rect.x = 0;
 		update_rect.y = 0;
@@ -322,7 +322,7 @@ static celix_status_t paintFrame_redraw(PAINT_FRAME frame, GdkModifierType state
 		gtk_widget_draw(frame->drawingArea, &update_rect);
 		it = linkedListIterator_create(this->m_shapeComponents, 0);
 		while (linkedListIterator_hasNext(it)) {
-			SHAPE_COMPONENT sc = linkedListIterator_next(it);
+			shape_component_pt sc = linkedListIterator_next(it);
 			(*sc->shapeComponent_paintComponent)(sc, this, this->pixMap, frame->drawingArea);
 		}
 	}
@@ -332,7 +332,7 @@ static celix_status_t paintFrame_redraw(PAINT_FRAME frame, GdkModifierType state
 
 static gpointer paintFrame_gtkmain(gpointer a_data) {
 	GtkBuilder *builder;
-	PAINT_FRAME frame = (PAINT_FRAME) a_data;
+	paint_frame_pt frame = (paint_frame_pt) a_data;
 
 	gdk_threads_enter();
 	builder = gtk_builder_new();

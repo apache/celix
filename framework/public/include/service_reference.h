@@ -27,7 +27,7 @@
 #ifndef SERVICE_REFERENCE_H_
 #define SERVICE_REFERENCE_H_
 
-typedef struct serviceReference * service_reference_t;
+typedef struct serviceReference * service_reference_pt;
 
 #include "celixbool.h"
 #include "array_list.h"
@@ -35,17 +35,17 @@ typedef struct serviceReference * service_reference_t;
 #include "bundle.h"
 #include "framework_exports.h"
 
-celix_status_t serviceReference_create(apr_pool_t *pool, bundle_t bundle, service_registration_t registration, service_reference_t *reference);
+celix_status_t serviceReference_create(apr_pool_t *pool, bundle_pt bundle, service_registration_pt registration, service_reference_pt *reference);
 
-FRAMEWORK_EXPORT celix_status_t serviceReference_invalidate(service_reference_t reference);
+FRAMEWORK_EXPORT celix_status_t serviceReference_invalidate(service_reference_pt reference);
 
-FRAMEWORK_EXPORT celix_status_t serviceReference_getServiceRegistration(service_reference_t reference, service_registration_t *registration);
-FRAMEWORK_EXPORT celix_status_t serviceReference_getBundle(service_reference_t reference, bundle_t *bundle);
+FRAMEWORK_EXPORT celix_status_t serviceReference_getServiceRegistration(service_reference_pt reference, service_registration_pt *registration);
+FRAMEWORK_EXPORT celix_status_t serviceReference_getBundle(service_reference_pt reference, bundle_pt *bundle);
 
-FRAMEWORK_EXPORT bool serviceReference_isAssignableTo(service_reference_t reference, bundle_t requester, char * serviceName);
+FRAMEWORK_EXPORT bool serviceReference_isAssignableTo(service_reference_pt reference, bundle_pt requester, char * serviceName);
 
-FRAMEWORK_EXPORT celix_status_t serviceReference_getUsingBundles(service_reference_t reference, apr_pool_t *pool, array_list_t *bundles);
-FRAMEWORK_EXPORT celix_status_t serviceReference_equals(service_reference_t reference, service_reference_t compareTo, bool *equal);
+FRAMEWORK_EXPORT celix_status_t serviceReference_getUsingBundles(service_reference_pt reference, apr_pool_t *pool, array_list_pt *bundles);
+FRAMEWORK_EXPORT celix_status_t serviceReference_equals(service_reference_pt reference, service_reference_pt compareTo, bool *equal);
 FRAMEWORK_EXPORT unsigned int serviceReference_hashCode(void *referenceP);
 FRAMEWORK_EXPORT int serviceReference_equals2(void *reference1, void *reference2);
 

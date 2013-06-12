@@ -43,7 +43,7 @@
 
 struct log_sync {
 	apr_pool_t *pool;
-	log_store_t logStore;
+	log_store_pt logStore;
 
 	char *targetId;
 	bool running;
@@ -58,13 +58,13 @@ struct log_descriptor {
 	unsigned long high;
 };
 
-typedef struct log_descriptor *log_descriptor_t;
+typedef struct log_descriptor *log_descriptor_pt;
 
-celix_status_t logSync_queryLog(log_sync_t logSync, char *targetId, long logId, char **queryReply);
+celix_status_t logSync_queryLog(log_sync_pt logSync, char *targetId, long logId, char **queryReply);
 static size_t logSync_readQeury(void *contents, size_t size, size_t nmemb, void *userp);
 static void *APR_THREAD_FUNC logSync_synchronize(apr_thread_t *thd, void *logSyncP);
 
-celix_status_t logSync_create(apr_pool_t *pool, char *targetId, log_store_t store, log_sync_t *logSync) {
+celix_status_t logSync_create(apr_pool_t *pool, char *targetId, log_store_pt store, log_sync_pt *logSync) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*logSync = apr_palloc(pool, sizeof(**logSync));
@@ -83,7 +83,7 @@ celix_status_t logSync_create(apr_pool_t *pool, char *targetId, log_store_t stor
 	return status;
 }
 
-celix_status_t logSync_parseLogDescriptor(log_sync_t logSync, char *descriptorString, log_descriptor_t *descriptor) {
+celix_status_t logSync_parseLogDescriptor(log_sync_pt logSync, char *descriptorString, log_descriptor_pt *descriptor) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	printf("Descriptor: %s\n", descriptorString);
@@ -119,7 +119,7 @@ celix_status_t logSync_parseLogDescriptor(log_sync_t logSync, char *descriptorSt
 }
 
 static void *APR_THREAD_FUNC logSync_synchronize(apr_thread_t *thd, void *logSyncP) {
-	log_sync_t logSync = logSyncP;
+	log_sync_pt logSync = logSyncP;
 
 		while (logSync->running) {
 
@@ -129,7 +129,7 @@ static void *APR_THREAD_FUNC logSync_synchronize(apr_thread_t *thd, void *logSyn
 		unsigned long id = 0;
 		logStore_getLogId(logSync->logStore, &id);
 		logSync_queryLog(logSync, logSync->targetId, id, &logDescriptorString);
-		log_descriptor_t descriptor = NULL;
+		log_descriptor_pt descriptor = NULL;
 		logSync_parseLogDescriptor(logSync, logDescriptorString, &descriptor);
 
 		long highest = 0;
@@ -141,9 +141,9 @@ static void *APR_THREAD_FUNC logSync_synchronize(apr_thread_t *thd, void *logSyn
 		if (highest >= 0) {
 			int i;
 			for (i = descriptor->high + 1; i <= highest; i++) {
-				array_list_t events = NULL;
+				array_list_pt events = NULL;
 				logStore_getEvents(logSync->logStore, &events);
-				log_event_t event = arrayList_get(events, i);
+				log_event_pt event = arrayList_get(events, i);
 //				printf("Event id: %ld\n", event->id);
 
 
@@ -162,7 +162,7 @@ struct MemoryStruct {
 	size_t size;
 };
 
-celix_status_t logSync_queryLog(log_sync_t logSync, char *targetId, long logId, char **queryReply) {
+celix_status_t logSync_queryLog(log_sync_pt logSync, char *targetId, long logId, char **queryReply) {
 	// http://localhost:8080/auditlog/query?tid=targetid&logid=logid
 	celix_status_t status = CELIX_SUCCESS;
 

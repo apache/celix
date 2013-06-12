@@ -36,14 +36,14 @@
 #include "example_service.h"
 
 
-void sqrtCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *));
-celix_status_t sqrtCommand_isNumeric(COMMAND command, char *number, bool *ret);
+void sqrtCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *));
+celix_status_t sqrtCommand_isNumeric(command_pt command, char *number, bool *ret);
 
-COMMAND sqrtCommand_create(bundle_context_t context) {
+command_pt sqrtCommand_create(bundle_context_pt context) {
 	apr_pool_t *pool;
 	bundleContext_getMemoryPool(context, &pool);
 
-    COMMAND command = (COMMAND) apr_palloc(pool, sizeof(*command));
+    command_pt command = (command_pt) apr_palloc(pool, sizeof(*command));
     if (command) {
 		command->bundleContext = context;
 		command->name = "sqrt";
@@ -54,12 +54,12 @@ COMMAND sqrtCommand_create(bundle_context_t context) {
     return command;
 }
 
-void sqrtCommand_destroy(COMMAND command) {
+void sqrtCommand_destroy(command_pt command) {
 }
 
-void sqrtCommand_execute(COMMAND command, char *line, void (*out)(char *), void (*err)(char *)) {
+void sqrtCommand_execute(command_pt command, char *line, void (*out)(char *), void (*err)(char *)) {
 	celix_status_t status = CELIX_SUCCESS;
-    service_reference_t exampleService = NULL;
+    service_reference_pt exampleService = NULL;
     apr_pool_t *memory_pool = NULL;
     apr_pool_t *bundle_memory_pool = NULL;
 
@@ -71,7 +71,7 @@ void sqrtCommand_execute(COMMAND command, char *line, void (*out)(char *), void 
 		bool numeric;
 		sqrtCommand_isNumeric(command, aStr, &numeric);
 		if (aStr != NULL && numeric) {
-			example_service_t example = NULL;
+			example_service_pt example = NULL;
 			status = bundleContext_getService(command->bundleContext, exampleService, (void *) &example);
 			if (status == CELIX_SUCCESS) {
 				double a = atof(aStr);
@@ -101,7 +101,7 @@ void sqrtCommand_execute(COMMAND command, char *line, void (*out)(char *), void 
     //return status;
 }
 
-celix_status_t sqrtCommand_isNumeric(COMMAND command, char *number, bool *ret) {
+celix_status_t sqrtCommand_isNumeric(command_pt command, char *number, bool *ret) {
 	celix_status_t status = CELIX_SUCCESS;
 	*ret = true;
 	while(*number) {

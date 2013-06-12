@@ -34,7 +34,7 @@ struct simple_shape {
 	void (*simpleShape_draw) (struct simple_shape *shape, GdkPixmap *pixMap, GtkWidget *widget, gdouble x, gdouble y);
 };
 
-typedef struct simple_shape *SIMPLE_SHAPE;
+typedef struct simple_shape *simple_shape_pt;
 
 #define SIMPLE_SHAPE_SERVICE_NAME "simple_shape"
 

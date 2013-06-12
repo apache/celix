@@ -38,22 +38,22 @@ struct paint_frame {
 	bool showing;
 
 	char *m_selected;
-	hash_map_t m_shapes;
-	SIMPLE_SHAPE m_defaultShape;
-	linked_list_t m_shapeComponents;
-	bundle_context_t context;
+	hash_map_pt m_shapes;
+	simple_shape_pt m_defaultShape;
+	linked_list_pt m_shapeComponents;
+	bundle_context_pt context;
 	GThread *main;
 	char *file;
 };
 
 
-typedef struct paint_frame *PAINT_FRAME;
-celix_status_t paintFrame_create(bundle_context_t context, apr_pool_t *pool, PAINT_FRAME *frame);
-celix_status_t paintFrame_exit(PAINT_FRAME frame);
+typedef struct paint_frame *paint_frame_pt;
+celix_status_t paintFrame_create(bundle_context_pt context, apr_pool_t *pool, paint_frame_pt *frame);
+celix_status_t paintFrame_exit(paint_frame_pt frame);
 
-SIMPLE_SHAPE paintFrame_getShape(PAINT_FRAME frame, char *name);
-celix_status_t paintFrame_addShape(PAINT_FRAME frame, bundle_context_t context, SIMPLE_SHAPE shape);
-celix_status_t paintFrame_removeShape(PAINT_FRAME frame, SIMPLE_SHAPE sshape);
+simple_shape_pt paintFrame_getShape(paint_frame_pt frame, char *name);
+celix_status_t paintFrame_addShape(paint_frame_pt frame, bundle_context_pt context, simple_shape_pt shape);
+celix_status_t paintFrame_removeShape(paint_frame_pt frame, simple_shape_pt sshape);
 
 
 #endif /* PAINT_FRAME_H_ */

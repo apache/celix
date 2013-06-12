@@ -29,7 +29,7 @@
 
 #include "command.h"
 
-COMMAND updateCommand_create(bundle_context_t context);
-void updateCommand_destroy(COMMAND command);
+command_pt updateCommand_create(bundle_context_pt context);
+void updateCommand_destroy(command_pt command);
 
 #endif /* UPDATE_COMMAND_H_ */

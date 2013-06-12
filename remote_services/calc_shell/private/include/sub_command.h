@@ -27,7 +27,7 @@
 #ifndef SUB_COMMAND_H_
 #define SUB_COMMAND_H_
 
-COMMAND subCommand_create(bundle_context_t context);
-void subCommand_destroy(COMMAND command);
+command_pt subCommand_create(bundle_context_pt context);
+void subCommand_destroy(command_pt command);
 
 #endif /* SUB_COMMAND_H_ */

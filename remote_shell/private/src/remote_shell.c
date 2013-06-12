@@ -47,31 +47,31 @@
 
 struct remote_shell {
 	apr_pool_t *pool;
-	shell_mediator_t mediator;
+	shell_mediator_pt mediator;
 	apr_thread_mutex_t *mutex;
 	apr_int64_t maximumConnections;
 
 	//protected by mutex
 	apr_thread_pool_t *threadPool;
-	array_list_t connections;
+	array_list_pt connections;
 };
 
 struct connection {
-	remote_shell_t parent;
+	remote_shell_pt parent;
 	apr_socket_t *socket;
 	apr_pool_t *pool;
 	apr_pollset_t *pollset;
 };
 
-typedef struct connection *connection_t;
+typedef struct connection *connection_pt;
 
-static apr_status_t remoteShell_cleanup(remote_shell_t instance); //gets called from apr pool cleanup
+static apr_status_t remoteShell_cleanup(remote_shell_pt instance); //gets called from apr pool cleanup
 
-static celix_status_t remoteShell_connection_print(connection_t connection, char * text);
-static celix_status_t remoteShell_connection_execute(connection_t connection, char *command);
+static celix_status_t remoteShell_connection_print(connection_pt connection, char * text);
+static celix_status_t remoteShell_connection_execute(connection_pt connection, char *command);
 static void* APR_THREAD_FUNC remoteShell_connection_run(apr_thread_t *thread, void *data);
 
-celix_status_t remoteShell_create(apr_pool_t *pool, shell_mediator_t mediator, apr_size_t maximumConnections, remote_shell_t *instance) {
+celix_status_t remoteShell_create(apr_pool_t *pool, shell_mediator_pt mediator, apr_size_t maximumConnections, remote_shell_pt *instance) {
 	celix_status_t status = CELIX_SUCCESS;
 	(*instance) = apr_palloc(pool, sizeof(**instance));
 	if ((*instance) != NULL) {
@@ -93,7 +93,7 @@ celix_status_t remoteShell_create(apr_pool_t *pool, shell_mediator_t mediator, a
 	return status;
 }
 
-static apr_status_t remoteShell_cleanup(remote_shell_t instance) {
+static apr_status_t remoteShell_cleanup(remote_shell_pt instance) {
 	remoteShell_stopConnections(instance);
 
 	apr_thread_mutex_lock(instance->mutex);
@@ -103,10 +103,10 @@ static apr_status_t remoteShell_cleanup(remote_shell_t instance) {
 	return APR_SUCCESS;
 }
 
-celix_status_t remoteShell_addConnection(remote_shell_t instance, apr_socket_t *socket) {
+celix_status_t remoteShell_addConnection(remote_shell_pt instance, apr_socket_t *socket) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_pool_t *pool = apr_socket_pool_get(socket);
-	connection_t connection = apr_palloc(pool, sizeof(struct connection));
+	connection_pt connection = apr_palloc(pool, sizeof(struct connection));
 	if (connection != NULL) {
 		connection->parent = instance;
 		connection->socket = socket;
@@ -134,7 +134,7 @@ celix_status_t remoteShell_addConnection(remote_shell_t instance, apr_socket_t *
 	return status;
 }
 
-celix_status_t remoteShell_stopConnections(remote_shell_t instance) {
+celix_status_t remoteShell_stopConnections(remote_shell_pt instance) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_status_t wakeupStatus = APR_SUCCESS;
 	char error[64];
@@ -144,7 +144,7 @@ celix_status_t remoteShell_stopConnections(remote_shell_t instance) {
 	apr_thread_mutex_lock(instance->mutex);
 	length = arrayList_size(instance->connections);
 	for (i = 0; i < length; i += 1) {
-		connection_t connection = arrayList_get(instance->connections, i);
+		connection_pt connection = arrayList_get(instance->connections, i);
 		wakeupStatus = apr_pollset_wakeup(connection->pollset);
 		if (wakeupStatus != APR_SUCCESS) {
 			apr_strerror(wakeupStatus, error, 64);
@@ -159,7 +159,7 @@ celix_status_t remoteShell_stopConnections(remote_shell_t instance) {
 
 void *APR_THREAD_FUNC remoteShell_connection_run(apr_thread_t *thread, void *data) {
 	celix_status_t status = CELIX_SUCCESS;
-	connection_t connection = data;
+	connection_pt connection = data;
 
 	apr_size_t len;
 	char buff[COMMAND_BUFF_SIZE];
@@ -220,7 +220,7 @@ void *APR_THREAD_FUNC remoteShell_connection_run(apr_thread_t *thread, void *dat
 	return NULL;
 }
 
-static celix_status_t remoteShell_connection_execute(connection_t connection, char *command) {
+static celix_status_t remoteShell_connection_execute(connection_pt connection, char *command) {
 	celix_status_t status;
 
 	apr_pool_t *workPool = NULL;
@@ -245,7 +245,7 @@ static celix_status_t remoteShell_connection_execute(connection_t connection, ch
 	return status;
 }
 
-celix_status_t remoteShell_connection_print(connection_t connection, char *text) {
+celix_status_t remoteShell_connection_print(connection_pt connection, char *text) {
 	apr_size_t len = strlen(text);
 	return apr_socket_send(connection->socket, text, &len);
 }

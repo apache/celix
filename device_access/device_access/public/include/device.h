@@ -35,13 +35,13 @@
 
 static const int DEVICE_MATCH_NONE	= 0;
 
-typedef struct device * device_t;
+typedef struct device * device_pt;
 
 struct device_service {
-	device_t device;
-	celix_status_t (*noDriverFound)(device_t device);
+	device_pt device;
+	celix_status_t (*noDriverFound)(device_pt device);
 };
 
-typedef struct device_service * device_service_t;
+typedef struct device_service * device_service_pt;
 
 #endif /* DEVICE_H_ */

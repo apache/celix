@@ -30,7 +30,7 @@
 #include "hessian_2.0_in.h"
 
 int main(int argc, char **argv) {
-	hessian_out_t out = malloc(sizeof(*out));
+	hessian_out_pt out = malloc(sizeof(*out));
 
 //	hessian_writeDouble(out, 12.25);
 //	hessian_writeUTCDate(out, 894621091000l);

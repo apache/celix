@@ -32,15 +32,15 @@
 
 #define DRIVER_LOCATOR_SERVICE_NAME "driver_locator"
 
-typedef struct driver_locator *driver_locator_t;
+typedef struct driver_locator *driver_locator_pt;
 
 struct driver_locator_service {
-	driver_locator_t locator;
-	celix_status_t(*findDrivers)(driver_locator_t loc, apr_pool_t *pool, properties_t props, array_list_t *drivers);
-	celix_status_t(*loadDriver)(driver_locator_t loc, apr_pool_t *pool, char *id, char **driver);
+	driver_locator_pt locator;
+	celix_status_t(*findDrivers)(driver_locator_pt loc, apr_pool_t *pool, properties_pt props, array_list_pt *drivers);
+	celix_status_t(*loadDriver)(driver_locator_pt loc, apr_pool_t *pool, char *id, char **driver);
 };
 
-typedef struct driver_locator_service *driver_locator_service_t;
+typedef struct driver_locator_service *driver_locator_service_pt;
 
 
 #endif /* DRIVER_LOCATOR_H_ */

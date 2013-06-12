@@ -36,17 +36,17 @@ struct arrayList {
 
 	unsigned int modCount;
 
-	arrayListElementEqualsFunction equals;
+	array_list_element_equals_pt equals;
 };
 
 struct arrayListIterator {
-	array_list_t list;
+	array_list_pt list;
 	unsigned int cursor;
 	int lastReturned;
 	unsigned int expectedModificationCount;
 };
 
-void * arrayList_remove(array_list_t list, unsigned int index);
+void * arrayList_remove(array_list_pt list, unsigned int index);
 
 
 #endif /* array_list_t_PRIVATE_H_ */

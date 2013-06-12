@@ -35,9 +35,9 @@ struct command {
 	char * usage;
 	char * shortDescription;
 
-	bundle_context_t bundleContext;
+	bundle_context_pt bundleContext;
 
-	void (*executeCommand)(COMMAND command, char * commandLine, void (*out)(char *), void (*error)(char *));
+	void (*executeCommand)(command_pt command, char * commandLine, void (*out)(char *), void (*error)(char *));
 };
 
 

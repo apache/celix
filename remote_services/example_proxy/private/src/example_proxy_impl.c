@@ -46,11 +46,11 @@ struct get {
 	int size;
 };
 
-celix_status_t exampleProxy_postRequest(example_t example, char *url, struct post post, struct get *get);
+celix_status_t exampleProxy_postRequest(example_pt example, char *url, struct post post, struct get *get);
 static size_t read_callback(void *ptr, size_t size, size_t nmemb, void *userp);
 static size_t exampleProxy_write(void *contents, size_t size, size_t nmemb, void *userp);
 
-celix_status_t exampleProxy_create(apr_pool_t *pool, example_t *endpoint) {
+celix_status_t exampleProxy_create(apr_pool_t *pool, example_pt *endpoint) {
 	celix_status_t status = CELIX_SUCCESS;
 	*endpoint = apr_palloc(pool, sizeof(**endpoint));
 	if (!*endpoint) {
@@ -63,7 +63,7 @@ celix_status_t exampleProxy_create(apr_pool_t *pool, example_t *endpoint) {
 	return status;
 }
 
-celix_status_t exampleProxy_add(example_t example, double a, double b, double *result) {
+celix_status_t exampleProxy_add(example_pt example, double a, double b, double *result) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (example->endpoint != NULL) {
@@ -95,7 +95,7 @@ celix_status_t exampleProxy_add(example_t example, double a, double b, double *r
 	return status;
 }
 
-celix_status_t exampleProxy_sub(example_t example, double a, double b, double *result) {
+celix_status_t exampleProxy_sub(example_pt example, double a, double b, double *result) {
 	celix_status_t status = CELIX_SUCCESS;
 	if (example->endpoint != NULL) {
 		printf("CALCULATOR_PROXY: URL: %s\n", example->endpoint->id);
@@ -126,7 +126,7 @@ celix_status_t exampleProxy_sub(example_t example, double a, double b, double *r
 	return status;
 }
 
-celix_status_t exampleProxy_sqrt(example_t example, double a, double *result) {
+celix_status_t exampleProxy_sqrt(example_pt example, double a, double *result) {
 	celix_status_t status = CELIX_SUCCESS;
 	if (example->endpoint != NULL) {
 		printf("CALCULATOR_PROXY: URL: %s\n", example->endpoint->id);
@@ -157,7 +157,7 @@ celix_status_t exampleProxy_sqrt(example_t example, double a, double *result) {
 	return status;
 }
 
-celix_status_t exampleProxy_postRequest(example_t example, char *url, struct post post, struct get *get) {
+celix_status_t exampleProxy_postRequest(example_pt example, char *url, struct post post, struct get *get) {
 	celix_status_t status = CELIX_SUCCESS;
 	CURL *curl;
 	CURLcode res;
@@ -213,10 +213,10 @@ static size_t exampleProxy_write(void *contents, size_t size, size_t nmemb, void
   return realsize;
 }
 
-celix_status_t exampleProxy_setEndpointDescription(void *proxy, endpoint_description_t endpoint) {
+celix_status_t exampleProxy_setEndpointDescription(void *proxy, endpoint_description_pt endpoint) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	example_t example = proxy;
+	example_pt example = proxy;
 	example->endpoint = endpoint;
 
 	return status;

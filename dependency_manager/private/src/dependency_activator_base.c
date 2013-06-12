@@ -31,21 +31,21 @@
 #include "dependency_activator_base.h"
 
 struct dependencyActivatorBase {
-	DEPENDENCY_MANAGER manager;
-	bundle_context_t context;
+	dependency_manager_pt manager;
+	bundle_context_pt context;
 	void * userData;
 };
 
-typedef struct dependencyActivatorBase * DEPENDENCY_ACTIVATOR_BASE;
+typedef struct dependencyActivatorBase * dependency_activator_base_pt;
 
-celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	apr_pool_t *pool;
 	apr_pool_t *npool = NULL;
 	celix_status_t status = bundleContext_getMemoryPool(context, &pool);
 	apr_pool_create(&npool, pool);
 	if (status == CELIX_SUCCESS) {
-		*userData = apr_palloc(npool, sizeof(DEPENDENCY_ACTIVATOR_BASE));
-		((DEPENDENCY_ACTIVATOR_BASE)(*userData))->userData = dm_create(context);;
+		*userData = apr_palloc(npool, sizeof(dependency_activator_base_pt));
+		((dependency_activator_base_pt)(*userData))->userData = dm_create(context);;
 	} else {
 		status = CELIX_START_ERROR;
 	}
@@ -53,10 +53,10 @@ celix_status_t bundleActivator_create(bundle_context_t context, void **userData)
 	return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	DEPENDENCY_ACTIVATOR_BASE data = (DEPENDENCY_ACTIVATOR_BASE) userData;
+	dependency_activator_base_pt data = (dependency_activator_base_pt) userData;
 	data->manager = dependencyManager_create(context);
 	data->context = context;
 	dm_init(data->userData, data->context, data->manager);
@@ -64,10 +64,10 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	DEPENDENCY_ACTIVATOR_BASE data = (DEPENDENCY_ACTIVATOR_BASE) userData;
+	dependency_activator_base_pt data = (dependency_activator_base_pt) userData;
 	dm_destroy(data->userData, data->context, data->manager);
 	data->userData = NULL;
 	data->context = NULL;
@@ -76,16 +76,16 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
 	return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 	return status;
 }
 
-SERVICE dependencyActivatorBase_createService(DEPENDENCY_MANAGER manager) {
+service_pt dependencyActivatorBase_createService(dependency_manager_pt manager) {
 	return serviceComponent_create(manager->context, manager);
 }
 
-SERVICE_DEPENDENCY dependencyActivatorBase_createServiceDependency(DEPENDENCY_MANAGER manager) {
+service_dependency_pt dependencyActivatorBase_createServiceDependency(dependency_manager_pt manager) {
 	return serviceDependency_create(manager->context);
 }
 

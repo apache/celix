@@ -31,8 +31,8 @@
 #include "bundle_context.h"
 #include "service_component_private.h"
 
-DEPENDENCY_MANAGER dependencyManager_create(bundle_context_t context) {
-	DEPENDENCY_MANAGER manager = (DEPENDENCY_MANAGER) malloc(sizeof(*manager));
+dependency_manager_pt dependencyManager_create(bundle_context_pt context) {
+	dependency_manager_pt manager = (dependency_manager_pt) malloc(sizeof(*manager));
 	apr_pool_t *pool = NULL;
 	apr_pool_t *npool = NULL;
 	bundleContext_getMemoryPool(context, &pool);
@@ -43,20 +43,20 @@ DEPENDENCY_MANAGER dependencyManager_create(bundle_context_t context) {
 	return manager;
 }
 
-void dependencyManager_add(DEPENDENCY_MANAGER manager, SERVICE service) {
+void dependencyManager_add(dependency_manager_pt manager, service_pt service) {
 	arrayList_add(manager->services, service);
 	serviceComponent_start(service);
 }
 
-void dependencyManager_remove(DEPENDENCY_MANAGER manager, SERVICE service) {
+void dependencyManager_remove(dependency_manager_pt manager, service_pt service) {
 	serviceComponent_stop(service);
 	arrayList_removeElement(manager->services, service);
 }
 
-SERVICE dependencyManager_createService(DEPENDENCY_MANAGER manager) {
+service_pt dependencyManager_createService(dependency_manager_pt manager) {
 	return serviceComponent_create(manager->context, manager);
 }
 
-SERVICE_DEPENDENCY dependencyManager_createServiceDependency(DEPENDENCY_MANAGER manager) {
+service_dependency_pt dependencyManager_createServiceDependency(dependency_manager_pt manager) {
 	return serviceDependency_create(manager->context);
 }

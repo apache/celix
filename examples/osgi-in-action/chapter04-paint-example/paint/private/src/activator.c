@@ -39,24 +39,24 @@
 #include "service_registration.h"
 
 struct paintFrameActivatorData {
-	service_registration_t reg;
+	service_registration_pt reg;
 	apr_pool_t *pool;
-	service_tracker_t tracker;
-	bundle_context_t context;
-	PAINT_FRAME paint_frame;
+	service_tracker_pt tracker;
+	bundle_context_pt context;
+	paint_frame_pt paint_frame;
 };
-celix_status_t addingServ(void * handle, service_reference_t ref, void **service);
-celix_status_t addedServ(void * handle, service_reference_t reference, void * service);
-celix_status_t modifiedServ(void * handle, service_reference_t reference, void * service);
-celix_status_t removedServ(void * handle, service_reference_t reference, void * service);
+celix_status_t addingServ(void * handle, service_reference_pt ref, void **service);
+celix_status_t addedServ(void * handle, service_reference_pt reference, void * service);
+celix_status_t modifiedServ(void * handle, service_reference_pt reference, void * service);
+celix_status_t removedServ(void * handle, service_reference_pt reference, void * service);
 
-typedef struct paintFrameActivatorData *GREETING_ACTIVATOR;
+typedef struct paintFrameActivatorData *greeting_activator_pt;
 
-celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_pool_t *pool;
-	GREETING_ACTIVATOR activator;
-	service_tracker_customizer_t cust = NULL;
+	greeting_activator_pt activator;
+	service_tracker_customizer_pt cust = NULL;
 	printf("Paint_frame create\n");
 	status = bundleContext_getMemoryPool(context, &pool);
 	if (status == CELIX_SUCCESS) {
@@ -79,34 +79,34 @@ celix_status_t bundleActivator_create(bundle_context_t context, void **userData)
 	return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_t ctx) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_pt ctx) {
 	struct paintFrameActivatorData * act = (struct paintFrameActivatorData *) userData;
 	celix_status_t status = CELIX_SUCCESS;
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
 	struct paintFrameActivatorData * act = (struct paintFrameActivatorData *) userData;
 	serviceTracker_close(act->tracker);
 	paintFrame_exit(act->paint_frame);
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	struct paintFrameActivatorData * act = (struct paintFrameActivatorData *) userData;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t addingServ(void * handle, service_reference_t ref, void **service) {
+celix_status_t addingServ(void * handle, service_reference_pt ref, void **service) {
 	struct paintFrameActivatorData * data = (struct paintFrameActivatorData *) handle;
     bundleContext_getService(data->context, ref, service);
     return CELIX_SUCCESS;
 }
 
-celix_status_t addedServ(void * handle, service_reference_t ref, void * service) {
+celix_status_t addedServ(void * handle, service_reference_pt ref, void * service) {
 	struct paintFrameActivatorData * data = (struct paintFrameActivatorData *) handle;
-	service_registration_t reg = NULL;
-	properties_t props = NULL;
+	service_registration_pt reg = NULL;
+	properties_pt props = NULL;
 	char * serviceName = NULL;
 	serviceReference_getServiceRegistration(ref, &reg);
 	serviceRegistration_getProperties(reg, &props);
@@ -115,10 +115,10 @@ celix_status_t addedServ(void * handle, service_reference_t ref, void * service)
 	return CELIX_SUCCESS;
  }
 
-celix_status_t modifiedServ(void * handle, service_reference_t ref, void * service) {
+celix_status_t modifiedServ(void * handle, service_reference_pt ref, void * service) {
 	struct paintFrameActivatorData * data = (struct paintFrameActivatorData *) handle;
-	service_registration_t reg = NULL;
-	properties_t props = NULL;
+	service_registration_pt reg = NULL;
+	properties_pt props = NULL;
 	char * serviceName = NULL;
 	serviceReference_getServiceRegistration(ref, &reg);
 	serviceRegistration_getProperties(reg, &props);
@@ -126,10 +126,10 @@ celix_status_t modifiedServ(void * handle, service_reference_t ref, void * servi
 	return CELIX_SUCCESS;
 }
 
-celix_status_t removedServ(void * handle, service_reference_t ref, void * service) {
+celix_status_t removedServ(void * handle, service_reference_pt ref, void * service) {
 	struct paintFrameActivatorData * data = (struct paintFrameActivatorData *) handle;
-	service_registration_t reg = NULL;
-	properties_t props = NULL;
+	service_registration_pt reg = NULL;
+	properties_pt props = NULL;
 	char * serviceName = NULL;
 	serviceReference_getServiceRegistration(ref, &reg);
 	serviceRegistration_getProperties(reg, &props);

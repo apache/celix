@@ -32,7 +32,7 @@ struct greeting {
 	char *name;
 };
 
-extern void greeting_sayHello(greeting_t instance);
+extern void greeting_sayHello(greeting_pt instance);
 
 
 #endif /* GREETING_IMPL_H_ */

@@ -42,19 +42,19 @@ struct device {
 };
 
 struct base_driver_device {
-	device_t device;
+	device_pt device;
 	apr_pool_t *pool;
 	char *input;
 	int inputLength;
 	int currentChar;
 };
 
-celix_status_t baseDriver_noDriverFound(device_t device) {
+celix_status_t baseDriver_noDriverFound(device_pt device) {
 	printf("BASE_DRIVER: No driver found\n");
 	return CELIX_SUCCESS;
 }
 
-celix_status_t baseDriver_create(apr_pool_t *pool, base_driver_device_t *baseDriverDevice) {
+celix_status_t baseDriver_create(apr_pool_t *pool, base_driver_device_pt *baseDriverDevice) {
 	celix_status_t status = CELIX_SUCCESS;
 	(*baseDriverDevice) = apr_palloc(pool, sizeof(struct base_driver_device));
 	if (*baseDriverDevice != NULL) {
@@ -72,7 +72,7 @@ celix_status_t baseDriver_create(apr_pool_t *pool, base_driver_device_t *baseDri
 	return status;
 }
 
-celix_status_t baseDriver_createService(base_driver_device_t baseDriverDevice, base_driver_device_service_t *service) {
+celix_status_t baseDriver_createService(base_driver_device_pt baseDriverDevice, base_driver_device_service_pt *service) {
 	celix_status_t status = CELIX_SUCCESS;
 	(*service) = apr_palloc(baseDriverDevice->pool, sizeof(struct base_driver_device_service));
 	if ((*service) != NULL) {
@@ -86,7 +86,7 @@ celix_status_t baseDriver_createService(base_driver_device_t baseDriverDevice, b
 	return status;
 }
 
-celix_status_t baseDriver_getNextChar(base_driver_device_t device, char *c) {
+celix_status_t baseDriver_getNextChar(base_driver_device_pt device, char *c) {
 	(*c) = device->input[device->currentChar];
 	device->currentChar+=1;
 	if (device->currentChar >= device->inputLength) {

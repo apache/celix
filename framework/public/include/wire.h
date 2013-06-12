@@ -27,7 +27,7 @@
 #ifndef WIRE_H_
 #define WIRE_H_
 
-typedef struct wire *wire_t;
+typedef struct wire *wire_pt;
 
 #include "requirement.h"
 #include "capability.h"
@@ -54,8 +54,8 @@ typedef struct wire *wire_t;
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ENOMEM If allocating memory for <code>wire</code> failed.
  */
-celix_status_t wire_create(apr_pool_t *pool, module_t importer, requirement_t requirement,
-		module_t exporter, capability_t capability, wire_t *wire);
+celix_status_t wire_create(apr_pool_t *pool, module_pt importer, requirement_pt requirement,
+		module_pt exporter, capability_pt capability, wire_pt *wire);
 
 /**
  * Getter for the capability of the exporting module.
@@ -65,7 +65,7 @@ celix_status_t wire_create(apr_pool_t *pool, module_t importer, requirement_t re
  * @return Status code indication failure or success:
  * 		- CELIX_SUCCESS when no errors are encountered.
  */
-celix_status_t wire_getCapability(wire_t wire, capability_t *capability);
+celix_status_t wire_getCapability(wire_pt wire, capability_pt *capability);
 
 /**
  * Getter for the requirement of the importing module.
@@ -75,7 +75,7 @@ celix_status_t wire_getCapability(wire_t wire, capability_t *capability);
  * @return Status code indication failure or success:
  * 		- CELIX_SUCCESS when no errors are encountered.
  */
-celix_status_t wire_getRequirement(wire_t wire, requirement_t *requirement);
+celix_status_t wire_getRequirement(wire_pt wire, requirement_pt *requirement);
 
 /**
  * Getter for the importer of the wire.
@@ -85,7 +85,7 @@ celix_status_t wire_getRequirement(wire_t wire, requirement_t *requirement);
  * @return Status code indication failure or success:
  * 		- CELIX_SUCCESS when no errors are encountered.
  */
-celix_status_t wire_getImporter(wire_t wire, module_t *importer);
+celix_status_t wire_getImporter(wire_pt wire, module_pt *importer);
 
 /**
  * Getter for the exporter of the wire.
@@ -95,7 +95,7 @@ celix_status_t wire_getImporter(wire_t wire, module_t *importer);
  * @return Status code indication failure or success:
  * 		- CELIX_SUCCESS when no errors are encountered.
  */
-celix_status_t wire_getExporter(wire_t wire, module_t *exporter);
+celix_status_t wire_getExporter(wire_pt wire, module_pt *exporter);
 
 /**
  * @}

@@ -28,18 +28,18 @@
 
 #include "driver.h"
 
-typedef struct driver_attributes *driver_attributes_t;
+typedef struct driver_attributes *driver_attributes_pt;
 
-celix_status_t driverAttributes_create(apr_pool_t *pool, service_reference_t reference, driver_service_t driver, driver_attributes_t *attributes);
+celix_status_t driverAttributes_create(apr_pool_t *pool, service_reference_pt reference, driver_service_pt driver, driver_attributes_pt *attributes);
 
-celix_status_t driverAttributes_getReference(driver_attributes_t driverAttributes, service_reference_t *reference);
-celix_status_t driverAttributes_getDriverId(driver_attributes_t driverAttributes, char **driverId);
+celix_status_t driverAttributes_getReference(driver_attributes_pt driverAttributes, service_reference_pt *reference);
+celix_status_t driverAttributes_getDriverId(driver_attributes_pt driverAttributes, char **driverId);
 
-celix_status_t driverAttributes_match(driver_attributes_t driverAttributes, service_reference_t reference, int *match);
-celix_status_t driverAttributes_attach(driver_attributes_t driverAttributes, service_reference_t reference, char **attach);
+celix_status_t driverAttributes_match(driver_attributes_pt driverAttributes, service_reference_pt reference, int *match);
+celix_status_t driverAttributes_attach(driver_attributes_pt driverAttributes, service_reference_pt reference, char **attach);
 
-celix_status_t driverAttributes_isInUse(driver_attributes_t driverAttributes, bool *inUse);
+celix_status_t driverAttributes_isInUse(driver_attributes_pt driverAttributes, bool *inUse);
 
-celix_status_t driverAttributes_tryUninstall(driver_attributes_t driverAttributes);
+celix_status_t driverAttributes_tryUninstall(driver_attributes_pt driverAttributes);
 
 #endif /* DRIVER_ATTRIBUTES_H_ */

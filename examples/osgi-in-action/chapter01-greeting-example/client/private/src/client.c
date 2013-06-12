@@ -31,19 +31,19 @@
 #include "greeting_service.h"
 
 
-celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	*userData = NULL;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_t ctx) {
-	service_reference_t ref = NULL;
+celix_status_t bundleActivator_start(void * userData, bundle_context_pt ctx) {
+	service_reference_pt ref = NULL;
 	celix_status_t status = bundleContext_getServiceReference(ctx, (char *) GREETING_SERVICE_NAME, &ref);
 	if (status == CELIX_SUCCESS) {
 		if (ref == NULL) {
 			printf("Greeting service reference not available\n");
 		} else {
-			greeting_service_t greeting = NULL;
+			greeting_service_pt greeting = NULL;
 			bundleContext_getService(ctx, ref, (void *) &greeting);
 			if (greeting == NULL){
 				printf("Greeting service not available\n");
@@ -57,10 +57,10 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t ctx) {
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	return CELIX_SUCCESS;
 }

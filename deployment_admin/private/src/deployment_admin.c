@@ -56,17 +56,17 @@ static void *APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *deplo
 celix_status_t deploymentAdmin_download(char * url, char **inputFile);
 size_t deploymentAdmin_writeData(void *ptr, size_t size, size_t nmemb, FILE *stream);
 static celix_status_t deploymentAdmin_deleteTree(char * directory, apr_pool_t *mp);
-celix_status_t deploymentAdmin_readVersions(deployment_admin_t admin, array_list_t *versions);
+celix_status_t deploymentAdmin_readVersions(deployment_admin_pt admin, array_list_pt *versions);
 
-celix_status_t deploymentAdmin_stopDeploymentPackageBundles(deployment_admin_t admin, deployment_package_t target);
-celix_status_t deploymentAdmin_updateDeploymentPackageBundles(deployment_admin_t admin, deployment_package_t source);
-celix_status_t deploymentAdmin_startDeploymentPackageCustomizerBundles(deployment_admin_t admin, deployment_package_t source, deployment_package_t target);
-celix_status_t deploymentAdmin_processDeploymentPackageResources(deployment_admin_t admin, deployment_package_t source);
-celix_status_t deploymentAdmin_dropDeploymentPackageResources(deployment_admin_t admin, deployment_package_t source, deployment_package_t target);
-celix_status_t deploymentAdmin_dropDeploymentPackageBundles(deployment_admin_t admin, deployment_package_t source, deployment_package_t target);
-celix_status_t deploymentAdmin_startDeploymentPackageBundles(deployment_admin_t admin, deployment_package_t source);
+celix_status_t deploymentAdmin_stopDeploymentPackageBundles(deployment_admin_pt admin, deployment_package_pt target);
+celix_status_t deploymentAdmin_updateDeploymentPackageBundles(deployment_admin_pt admin, deployment_package_pt source);
+celix_status_t deploymentAdmin_startDeploymentPackageCustomizerBundles(deployment_admin_pt admin, deployment_package_pt source, deployment_package_pt target);
+celix_status_t deploymentAdmin_processDeploymentPackageResources(deployment_admin_pt admin, deployment_package_pt source);
+celix_status_t deploymentAdmin_dropDeploymentPackageResources(deployment_admin_pt admin, deployment_package_pt source, deployment_package_pt target);
+celix_status_t deploymentAdmin_dropDeploymentPackageBundles(deployment_admin_pt admin, deployment_package_pt source, deployment_package_pt target);
+celix_status_t deploymentAdmin_startDeploymentPackageBundles(deployment_admin_pt admin, deployment_package_pt source);
 
-celix_status_t deploymentAdmin_create(apr_pool_t *pool, bundle_context_t context, deployment_admin_t *admin) {
+celix_status_t deploymentAdmin_create(apr_pool_t *pool, bundle_context_pt context, deployment_admin_pt *admin) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_pool_t *subpool;
 	apr_pool_create(&subpool, pool);
@@ -95,9 +95,9 @@ celix_status_t deploymentAdmin_create(apr_pool_t *pool, bundle_context_t context
 			} else {
 				(*admin)->pollUrl = apr_pstrcat(subpool, url, (*admin)->targetIdentification, VERSIONS, NULL);
 
-//				log_store_t store = NULL;
-//				log_t log = NULL;
-//				log_sync_t sync = NULL;
+//				log_store_pt store = NULL;
+//				log_pt log = NULL;
+//				log_sync_pt sync = NULL;
 //				logStore_create(subpool, &store);
 //				log_create(subpool, store, &log);
 //				logSync_create(subpool, (*admin)->targetIdentification, store, &sync);
@@ -114,11 +114,11 @@ celix_status_t deploymentAdmin_create(apr_pool_t *pool, bundle_context_t context
 }
 
 static void *APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *deploymentAdmin) {
-	deployment_admin_t admin = deploymentAdmin;
+	deployment_admin_pt admin = deploymentAdmin;
 
 	while (admin->running) {
 		//poll ace
-		array_list_t versions = NULL;
+		array_list_pt versions = NULL;
 		deploymentAdmin_readVersions(admin, &versions);
 
 		char *last = arrayList_get(versions, arrayList_size(versions) - 1);
@@ -149,14 +149,14 @@ static void *APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *deplo
 					// TODO: update to use bundle cache DataFile instead of module entries.
 					unzip_extractDeploymentPackage(test, tmpDir);
 					char *manifest = apr_pstrcat(admin->pool, tmpDir, "/META-INF/MANIFEST.MF", NULL);
-					MANIFEST mf = NULL;
+					manifest_pt mf = NULL;
 					manifest_createFromFile(admin->pool, manifest, &mf);
-					deployment_package_t source = NULL;
+					deployment_package_pt source = NULL;
 					deploymentPackage_create(admin->pool, admin->context, mf, &source);
 					char *name = NULL;
 					deploymentPackage_getName(source, &name);
 
-					bundle_t bundle = NULL;
+					bundle_pt bundle = NULL;
 					bundleContext_getBundle(admin->context, &bundle);
 					char *entry = NULL;
 					bundle_getEntry(bundle, "/", admin->pool, &entry);
@@ -169,7 +169,7 @@ static void *APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *deplo
 						printf("No success\n");
 					}
 
-					deployment_package_t target = hashMap_get(admin->packages, name);
+					deployment_package_pt target = hashMap_get(admin->packages, name);
 					if (target == NULL) {
 //						target = empty package
 					}
@@ -220,7 +220,7 @@ size_t deploymentAdmin_parseVersions(void *contents, size_t size, size_t nmemb, 
 	return realsize;
 }
 
-celix_status_t deploymentAdmin_readVersions(deployment_admin_t admin, array_list_t *versions) {
+celix_status_t deploymentAdmin_readVersions(deployment_admin_pt admin, array_list_pt *versions) {
 	celix_status_t status = CELIX_SUCCESS;
 	arrayList_create(admin->pool, versions);
 	CURL *curl;
@@ -324,16 +324,16 @@ static celix_status_t deploymentAdmin_deleteTree(char * directory, apr_pool_t *m
 	return status;
 }
 
-celix_status_t deploymentAdmin_stopDeploymentPackageBundles(deployment_admin_t admin, deployment_package_t target) {
+celix_status_t deploymentAdmin_stopDeploymentPackageBundles(deployment_admin_pt admin, deployment_package_pt target) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (target != NULL) {
-		array_list_t infos = NULL;
+		array_list_pt infos = NULL;
 		deploymentPackage_getBundleInfos(target, &infos);
 		int i;
 		for (i = 0; i < arrayList_size(infos); i++) {
-			bundle_t bundle = NULL;
-			bundle_info_t info = arrayList_get(infos, i);
+			bundle_pt bundle = NULL;
+			bundle_info_pt info = arrayList_get(infos, i);
 			deploymentPackage_getBundle(target, info->symbolicName, &bundle);
 			if (bundle != NULL) {
 				bundle_stop(bundle, 0);
@@ -346,15 +346,15 @@ celix_status_t deploymentAdmin_stopDeploymentPackageBundles(deployment_admin_t a
 	return status;
 }
 
-celix_status_t deploymentAdmin_updateDeploymentPackageBundles(deployment_admin_t admin, deployment_package_t source) {
+celix_status_t deploymentAdmin_updateDeploymentPackageBundles(deployment_admin_pt admin, deployment_package_pt source) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	array_list_t infos = NULL;
+	array_list_pt infos = NULL;
 	deploymentPackage_getBundleInfos(source, &infos);
 	int i;
 	for (i = 0; i < arrayList_size(infos); i++) {
-		bundle_t bundle = NULL;
-		bundle_info_t info = arrayList_get(infos, i);
+		bundle_pt bundle = NULL;
+		bundle_info_pt info = arrayList_get(infos, i);
 
 		bundleContext_getBundle(admin->context, &bundle);
 		char *entry = NULL;
@@ -364,7 +364,7 @@ celix_status_t deploymentAdmin_updateDeploymentPackageBundles(deployment_admin_t
 		char *bundlePath = apr_pstrcat(admin->pool, entry, "repo/", name, "/", info->path, NULL);
 		char *bsn = apr_pstrcat(admin->pool, "osgi-dp:", info->symbolicName, NULL);
 
-		bundle_t updateBundle = NULL;
+		bundle_pt updateBundle = NULL;
 		deploymentPackage_getBundle(source, info->symbolicName, &updateBundle);
 		if (updateBundle != NULL) {
 			//printf("Update bundle from: %s\n", bundlePath);
@@ -378,12 +378,12 @@ celix_status_t deploymentAdmin_updateDeploymentPackageBundles(deployment_admin_t
 	return status;
 }
 
-celix_status_t deploymentAdmin_startDeploymentPackageCustomizerBundles(deployment_admin_t admin, deployment_package_t source, deployment_package_t target) {
+celix_status_t deploymentAdmin_startDeploymentPackageCustomizerBundles(deployment_admin_pt admin, deployment_package_pt source, deployment_package_pt target) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	apr_pool_t *tmpPool = NULL;
-	array_list_t bundles = NULL;
-	array_list_t sourceInfos = NULL;
+	array_list_pt bundles = NULL;
+	array_list_pt sourceInfos = NULL;
 
 	apr_pool_create(&tmpPool, admin->pool);
 	arrayList_create(tmpPool, &bundles);
@@ -391,9 +391,9 @@ celix_status_t deploymentAdmin_startDeploymentPackageCustomizerBundles(deploymen
 	deploymentPackage_getBundleInfos(source, &sourceInfos);
 	int i;
 	for (i = 0; i < arrayList_size(sourceInfos); i++) {
-		bundle_info_t sourceInfo = arrayList_get(sourceInfos, i);
+		bundle_info_pt sourceInfo = arrayList_get(sourceInfos, i);
 		if (sourceInfo->customizer) {
-			bundle_t bundle = NULL;
+			bundle_pt bundle = NULL;
 			deploymentPackage_getBundle(source, sourceInfo->symbolicName, &bundle);
 			if (bundle != NULL) {
 				arrayList_add(bundles, bundle);
@@ -402,12 +402,12 @@ celix_status_t deploymentAdmin_startDeploymentPackageCustomizerBundles(deploymen
 	}
 
 	if (target != NULL) {
-		array_list_t targetInfos = NULL;
+		array_list_pt targetInfos = NULL;
 		deploymentPackage_getBundleInfos(target, &targetInfos);
 		for (i = 0; i < arrayList_size(targetInfos); i++) {
-			bundle_info_t targetInfo = arrayList_get(targetInfos, i);
+			bundle_info_pt targetInfo = arrayList_get(targetInfos, i);
 			if (targetInfo->customizer) {
-				bundle_t bundle = NULL;
+				bundle_pt bundle = NULL;
 				deploymentPackage_getBundle(target, targetInfo->symbolicName, &bundle);
 				if (bundle != NULL) {
 					arrayList_add(bundles, bundle);
@@ -417,7 +417,7 @@ celix_status_t deploymentAdmin_startDeploymentPackageCustomizerBundles(deploymen
 	}
 
 	for (i = 0; i < arrayList_size(bundles); i++) {
-		bundle_t bundle = arrayList_get(bundles, i);
+		bundle_pt bundle = arrayList_get(bundles, i);
 		bundle_start(bundle, 0);
 	}
 
@@ -426,16 +426,16 @@ celix_status_t deploymentAdmin_startDeploymentPackageCustomizerBundles(deploymen
 	return status;
 }
 
-celix_status_t deploymentAdmin_processDeploymentPackageResources(deployment_admin_t admin, deployment_package_t source) {
+celix_status_t deploymentAdmin_processDeploymentPackageResources(deployment_admin_pt admin, deployment_package_pt source) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	array_list_t infos = NULL;
+	array_list_pt infos = NULL;
 	deploymentPackage_getResourceInfos(source, &infos);
 	int i;
 	for (i = 0; i < arrayList_size(infos); i++) {
-		resource_info_t info = arrayList_get(infos, i);
+		resource_info_pt info = arrayList_get(infos, i);
 		apr_pool_t *tmpPool = NULL;
-		array_list_t services = NULL;
+		array_list_pt services = NULL;
 		char *filter = NULL;
 
 		apr_pool_create(&tmpPool, admin->pool);
@@ -444,17 +444,17 @@ celix_status_t deploymentAdmin_processDeploymentPackageResources(deployment_admi
 		status = bundleContext_getServiceReferences(admin->context, RESOURCE_PROCESSOR_SERVICE, filter, &services);
 		if (status == CELIX_SUCCESS) {
 			if (services != NULL && arrayList_size(services) > 0) {
-				service_reference_t ref = arrayList_get(services, 0);
+				service_reference_pt ref = arrayList_get(services, 0);
 				// In Felix a check is done to assure the processor belongs to the deployment package
 				// Is this according to spec?
 				void *processorP = NULL;
 				status = bundleContext_getService(admin->context, ref, &processorP);
 				if (status == CELIX_SUCCESS) {
-					bundle_t bundle = NULL;
+					bundle_pt bundle = NULL;
 					char *entry = NULL;
 					char *name = NULL;
 					char *packageName = NULL;
-					resource_processor_service_t processor = processorP;
+					resource_processor_service_pt processor = processorP;
 
 					bundleContext_getBundle(admin->context, &bundle);
 					bundle_getEntry(bundle, "/", admin->pool, &entry);
@@ -475,20 +475,20 @@ celix_status_t deploymentAdmin_processDeploymentPackageResources(deployment_admi
 	return status;
 }
 
-celix_status_t deploymentAdmin_dropDeploymentPackageResources(deployment_admin_t admin, deployment_package_t source, deployment_package_t target) {
+celix_status_t deploymentAdmin_dropDeploymentPackageResources(deployment_admin_pt admin, deployment_package_pt source, deployment_package_pt target) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (target != NULL) {
-		array_list_t infos = NULL;
+		array_list_pt infos = NULL;
 		deploymentPackage_getResourceInfos(target, &infos);
 		int i;
 		for (i = 0; i < arrayList_size(infos); i++) {
-			resource_info_t info = arrayList_get(infos, i);
-			resource_info_t sourceInfo = NULL;
+			resource_info_pt info = arrayList_get(infos, i);
+			resource_info_pt sourceInfo = NULL;
 			deploymentPackage_getResourceInfoByPath(source, info->path, &sourceInfo);
 			if (sourceInfo == NULL) {
 				apr_pool_t *tmpPool = NULL;
-				array_list_t services = NULL;
+				array_list_pt services = NULL;
 				char *filter = NULL;
 
 
@@ -498,15 +498,15 @@ celix_status_t deploymentAdmin_dropDeploymentPackageResources(deployment_admin_t
 				status = bundleContext_getServiceReferences(admin->context, RESOURCE_PROCESSOR_SERVICE, filter, &services);
 				if (status == CELIX_SUCCESS) {
 					if (services != NULL && arrayList_size(services) > 0) {
-						service_reference_t ref = arrayList_get(services, 0);
+						service_reference_pt ref = arrayList_get(services, 0);
 						// In Felix a check is done to assure the processor belongs to the deployment package
 						// Is this according to spec?
 						void *processorP = NULL;
 						status = bundleContext_getService(admin->context, ref, &processorP);
 						if (status == CELIX_SUCCESS) {
-							bundle_t bundle = NULL;
+							bundle_pt bundle = NULL;
 							char *packageName = NULL;
-							resource_processor_service_t processor = processorP;
+							resource_processor_service_pt processor = processorP;
 
 							deploymentPackage_getName(source, &packageName);
 							processor->begin(processor->processor, packageName);
@@ -522,20 +522,20 @@ celix_status_t deploymentAdmin_dropDeploymentPackageResources(deployment_admin_t
 	return status;
 }
 
-celix_status_t deploymentAdmin_dropDeploymentPackageBundles(deployment_admin_t admin, deployment_package_t source, deployment_package_t target) {
+celix_status_t deploymentAdmin_dropDeploymentPackageBundles(deployment_admin_pt admin, deployment_package_pt source, deployment_package_pt target) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (target != NULL) {
-		array_list_t targetInfos = NULL;
+		array_list_pt targetInfos = NULL;
 		deploymentPackage_getBundleInfos(target, &targetInfos);
 		int i;
 		for (i = 0; i < arrayList_size(targetInfos); i++) {
-			bundle_info_t targetInfo = arrayList_get(targetInfos, i);
+			bundle_info_pt targetInfo = arrayList_get(targetInfos, i);
 			if (!targetInfo->customizer) {
-				bundle_info_t info = NULL;
+				bundle_info_pt info = NULL;
 				deploymentPackage_getBundleInfoByName(source, targetInfo->symbolicName, &info);
 				if (info == NULL) {
-					bundle_t bundle = NULL;
+					bundle_pt bundle = NULL;
 					deploymentPackage_getBundle(target, targetInfo->symbolicName, &bundle);
 					bundle_uninstall(bundle);
 				}
@@ -546,15 +546,15 @@ celix_status_t deploymentAdmin_dropDeploymentPackageBundles(deployment_admin_t a
 	return status;
 }
 
-celix_status_t deploymentAdmin_startDeploymentPackageBundles(deployment_admin_t admin, deployment_package_t source) {
+celix_status_t deploymentAdmin_startDeploymentPackageBundles(deployment_admin_pt admin, deployment_package_pt source) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	array_list_t infos = NULL;
+	array_list_pt infos = NULL;
 	deploymentPackage_getBundleInfos(source, &infos);
 	int i;
 	for (i = 0; i < arrayList_size(infos); i++) {
-		bundle_t bundle = NULL;
-		bundle_info_t info = arrayList_get(infos, i);
+		bundle_pt bundle = NULL;
+		bundle_info_pt info = arrayList_get(infos, i);
 		if (!info->customizer) {
 			deploymentPackage_getBundle(source, info->symbolicName, &bundle);
 			if (bundle != NULL) {

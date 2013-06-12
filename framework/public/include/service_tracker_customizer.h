@@ -33,22 +33,22 @@
 #include "celix_errno.h"
 #include "framework_exports.h"
 
-typedef celix_status_t (*addingCallback)(void *handle, service_reference_t reference, void **service);
-typedef celix_status_t (*addedCallback)(void * handle, service_reference_t reference, void * service);
-typedef celix_status_t (*modifiedCallback)(void * handle, service_reference_t reference, void * service);
-typedef celix_status_t (*removedCallback)(void * handle, service_reference_t reference, void * service);
+typedef celix_status_t (*adding_callback_pt)(void *handle, service_reference_pt reference, void **service);
+typedef celix_status_t (*added_callback_pt)(void * handle, service_reference_pt reference, void * service);
+typedef celix_status_t (*modified_callback_pt)(void * handle, service_reference_pt reference, void * service);
+typedef celix_status_t (*removed_callback_pt)(void * handle, service_reference_pt reference, void * service);
 
-typedef struct serviceTrackerCustomizer *service_tracker_customizer_t;
+typedef struct serviceTrackerCustomizer *service_tracker_customizer_pt;
 
 FRAMEWORK_EXPORT celix_status_t serviceTrackerCustomizer_create(apr_pool_t *pool, void *handle,
-		addingCallback addingFunction, addedCallback addedFunction,
-		modifiedCallback modifiedFunction, removedCallback removedFunction,
-		service_tracker_customizer_t *customizer);
+		adding_callback_pt addingFunction, added_callback_pt addedFunction,
+		modified_callback_pt modifiedFunction, removed_callback_pt removedFunction,
+		service_tracker_customizer_pt *customizer);
 
-FRAMEWORK_EXPORT celix_status_t serviceTrackerCustomizer_getHandle(service_tracker_customizer_t customizer, void **handle);
-FRAMEWORK_EXPORT celix_status_t serviceTrackerCustomizer_getAddingFunction(service_tracker_customizer_t customizer, addingCallback *function);
-FRAMEWORK_EXPORT celix_status_t serviceTrackerCustomizer_getAddedFunction(service_tracker_customizer_t customizer, addedCallback *function);
-FRAMEWORK_EXPORT celix_status_t serviceTrackerCustomizer_getModifiedFunction(service_tracker_customizer_t customizer, modifiedCallback *function);
-FRAMEWORK_EXPORT celix_status_t serviceTrackerCustomizer_getRemovedFunction(service_tracker_customizer_t customizer, removedCallback *function);
+FRAMEWORK_EXPORT celix_status_t serviceTrackerCustomizer_getHandle(service_tracker_customizer_pt customizer, void **handle);
+FRAMEWORK_EXPORT celix_status_t serviceTrackerCustomizer_getAddingFunction(service_tracker_customizer_pt customizer, adding_callback_pt *function);
+FRAMEWORK_EXPORT celix_status_t serviceTrackerCustomizer_getAddedFunction(service_tracker_customizer_pt customizer, added_callback_pt *function);
+FRAMEWORK_EXPORT celix_status_t serviceTrackerCustomizer_getModifiedFunction(service_tracker_customizer_pt customizer, modified_callback_pt *function);
+FRAMEWORK_EXPORT celix_status_t serviceTrackerCustomizer_getRemovedFunction(service_tracker_customizer_pt customizer, removed_callback_pt *function);
 
 #endif /* service_tracker_customizer_t_H_ */

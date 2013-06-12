@@ -34,22 +34,22 @@
 
 struct manifest {
 	apr_pool_t *pool;
-	properties_t mainAttributes;
-	hash_map_t attributes;
+	properties_pt mainAttributes;
+	hash_map_pt attributes;
 };
 
-typedef struct manifest * MANIFEST;
+typedef struct manifest * manifest_pt;
 
-celix_status_t manifest_create(apr_pool_t *pool, MANIFEST *manifest);
-celix_status_t manifest_createFromFile(apr_pool_t *pool, char *filename, MANIFEST *manifest);
+celix_status_t manifest_create(apr_pool_t *pool, manifest_pt *manifest);
+celix_status_t manifest_createFromFile(apr_pool_t *pool, char *filename, manifest_pt *manifest);
 
-void manifest_clear(MANIFEST manifest);
-properties_t manifest_getMainAttributes(MANIFEST manifest);
-celix_status_t manifest_getEntries(MANIFEST manifest, hash_map_t *map);
+void manifest_clear(manifest_pt manifest);
+properties_pt manifest_getMainAttributes(manifest_pt manifest);
+celix_status_t manifest_getEntries(manifest_pt manifest, hash_map_pt *map);
 
-celix_status_t manifest_read(MANIFEST manifest, char *filename);
-void manifest_write(MANIFEST manifest, char * filename);
+celix_status_t manifest_read(manifest_pt manifest, char *filename);
+void manifest_write(manifest_pt manifest, char * filename);
 
-char * manifest_getValue(MANIFEST manifest, const char * name);
+char * manifest_getValue(manifest_pt manifest, const char * name);
 
 #endif /* MANIFEST_H_ */

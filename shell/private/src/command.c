@@ -28,18 +28,18 @@
 
 #include "command_private.h"
 
-char * command_getName(COMMAND command) {
+char * command_getName(command_pt command) {
 	return command->name;
 }
 
-char * command_getUsage(COMMAND command) {
+char * command_getUsage(command_pt command) {
 	return command->usage;
 }
 
-char * command_getShortDescription(COMMAND command) {
+char * command_getShortDescription(command_pt command) {
 	return command->shortDescription;
 }
 
-void command_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *)) {
+void command_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *)) {
 	command->executeCommand(command, line, out, err);
 }

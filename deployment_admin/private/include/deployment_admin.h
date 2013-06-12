@@ -31,20 +31,20 @@
 
 #include "bundle_context.h"
 
-typedef struct deployment_admin *deployment_admin_t;
+typedef struct deployment_admin *deployment_admin_pt;
 
 struct deployment_admin {
 	apr_pool_t *pool;
 	apr_thread_t *poller;
-	bundle_context_t context;
+	bundle_context_pt context;
 
 	bool running;
 	char *current;
-	hash_map_t packages;
+	hash_map_pt packages;
 	char *targetIdentification;
 	char *pollUrl;
 };
 
-celix_status_t deploymentAdmin_create(apr_pool_t *pool, bundle_context_t context, deployment_admin_t *admin);
+celix_status_t deploymentAdmin_create(apr_pool_t *pool, bundle_context_pt context, deployment_admin_pt *admin);
 
 #endif /* DEPLOYMENT_ADMIN_H_ */

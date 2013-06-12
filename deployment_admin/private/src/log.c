@@ -33,10 +33,10 @@
 #include "log_store.h"
 
 struct log {
-	log_store_t logStore;
+	log_store_pt logStore;
 };
 
-celix_status_t log_create(apr_pool_t *pool, log_store_t store, log_t *log) {
+celix_status_t log_create(apr_pool_t *pool, log_store_pt store, log_pt *log) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*log = apr_palloc(pool, sizeof(**log));
@@ -49,10 +49,10 @@ celix_status_t log_create(apr_pool_t *pool, log_store_t store, log_t *log) {
 	return status;
 }
 
-celix_status_t log_log(log_t log, unsigned int type, properties_t properties) {
+celix_status_t log_log(log_pt log, unsigned int type, properties_pt properties) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	log_event_t event = NULL;
+	log_event_pt event = NULL;
 
 	status = logStore_put(log->logStore, type, properties, &event);
 

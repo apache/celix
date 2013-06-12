@@ -31,21 +31,21 @@
 #include "log_service.h"
 
 struct data {
-	SERVICE service;
-	bundle_context_t context;
-	array_list_t publishers;
+	service_pt service;
+	bundle_context_pt context;
+	array_list_pt publishers;
 	apr_thread_t *sender;
 	bool running;
-	log_service_t logger;
+	log_service_pt logger;
 };
 
-void tracker_addedServ(void * handle, service_reference_t ref, void * service);
-void tracker_modifiedServ(void * handle, service_reference_t ref, void * service);
-void tracker_removedServ(void * handle, service_reference_t ref, void * service);
+void tracker_addedServ(void * handle, service_reference_pt ref, void * service);
+void tracker_modifiedServ(void * handle, service_reference_pt ref, void * service);
+void tracker_removedServ(void * handle, service_reference_pt ref, void * service);
 
-void tracker_addLog(void * handle, service_reference_t ref, void * service);
-void tracker_modifiedLog(void * handle, service_reference_t ref, void * service);
-void tracker_removeLog(void * handle, service_reference_t ref, void * service);
+void tracker_addLog(void * handle, service_reference_pt ref, void * service);
+void tracker_modifiedLog(void * handle, service_reference_pt ref, void * service);
+void tracker_removeLog(void * handle, service_reference_pt ref, void * service);
 
 
 #endif /* TRACKER_H_ */

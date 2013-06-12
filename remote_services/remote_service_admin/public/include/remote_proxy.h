@@ -33,9 +33,9 @@
 
 struct remote_proxy_service {
 	void *proxy;
-	celix_status_t (*setEndpointDescription)(void *proxy, endpoint_description_t service);
+	celix_status_t (*setEndpointDescription)(void *proxy, endpoint_description_pt service);
 };
 
-typedef struct remote_proxy_service *remote_proxy_service_t;
+typedef struct remote_proxy_service *remote_proxy_service_pt;
 
 #endif /* REMOTE_PROXY_H_ */

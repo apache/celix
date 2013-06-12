@@ -36,14 +36,14 @@
 #include "example_service.h"
 
 
-void subCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *));
-celix_status_t subCommand_isNumeric(COMMAND command, char *number, bool *ret);
+void subCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *));
+celix_status_t subCommand_isNumeric(command_pt command, char *number, bool *ret);
 
-COMMAND subCommand_create(bundle_context_t context) {
+command_pt subCommand_create(bundle_context_pt context) {
 	apr_pool_t *pool;
 	bundleContext_getMemoryPool(context, &pool);
 
-    COMMAND command = (COMMAND) apr_palloc(pool, sizeof(*command));
+    command_pt command = (command_pt) apr_palloc(pool, sizeof(*command));
     if (command) {
 		command->bundleContext = context;
 		command->name = "sub";
@@ -54,12 +54,12 @@ COMMAND subCommand_create(bundle_context_t context) {
     return command;
 }
 
-void subCommand_destroy(COMMAND command) {
+void subCommand_destroy(command_pt command) {
 }
 
-void subCommand_execute(COMMAND command, char *line, void (*out)(char *), void (*err)(char *)) {
+void subCommand_execute(command_pt command, char *line, void (*out)(char *), void (*err)(char *)) {
 	celix_status_t status = CELIX_SUCCESS;
-    service_reference_t exampleService = NULL;
+    service_reference_pt exampleService = NULL;
     apr_pool_t *memory_pool = NULL;
     apr_pool_t *bundle_memory_pool = NULL;
 
@@ -74,7 +74,7 @@ void subCommand_execute(COMMAND command, char *line, void (*out)(char *), void (
 			char *bStr = apr_strtok(NULL, " ", &token);
 			subCommand_isNumeric(command, bStr, &numeric);
 			if (bStr != NULL && numeric) {
-				example_service_t example = NULL;
+				example_service_pt example = NULL;
 				status = bundleContext_getService(command->bundleContext, exampleService, (void *) &example);
 				if (status == CELIX_SUCCESS) {
 					double a = atof(aStr);
@@ -108,7 +108,7 @@ void subCommand_execute(COMMAND command, char *line, void (*out)(char *), void (
     //return status;
 }
 
-celix_status_t subCommand_isNumeric(COMMAND command, char *number, bool *ret) {
+celix_status_t subCommand_isNumeric(command_pt command, char *number, bool *ret) {
 	celix_status_t status = CELIX_SUCCESS;
 	*ret = true;
 	while(*number) {

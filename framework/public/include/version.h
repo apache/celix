@@ -38,12 +38,12 @@
  */
 
 /**
- * The definition of the version_t abstract data type.
+ * The definition of the version_pt abstract data type.
  */
-typedef struct version * version_t;
+typedef struct version * version_pt;
 
 /**
- * Creates a new version_t using the supplied arguments.
+ * Creates a new version_pt using the supplied arguments.
  *
  * @param pool The pool to create the version on.
  * @param major Major component of the version identifier.
@@ -52,14 +52,14 @@ typedef struct version * version_t;
  * @param qualifier Qualifier component of the version identifier. If
  *        <code>null</code> is specified, then the qualifier will be set to
  *        the empty string.
- * @param version The created version_t
+ * @param version The created version_pt
  * @return Status code indication failure or success:
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ENOMEM If allocating memory for <code>version</code> failed.
  * 		- CELIX_ILLEGAL_ARGUMENT If the numerical components are negative
  * 		  or the qualifier string is invalid.
  */
-celix_status_t version_createVersion(apr_pool_t *pool, int major, int minor, int micro, char * qualifier, version_t *version);
+celix_status_t version_createVersion(apr_pool_t *pool, int major, int minor, int micro, char * qualifier, version_pt *version);
 
 /**
  * Creates a clone of <code>version</code> allocated on <code>pool</code>.
@@ -73,7 +73,7 @@ celix_status_t version_createVersion(apr_pool_t *pool, int major, int minor, int
  * 		- CELIX_ILLEGAL_ARGUMENT If the numerical components are negative
  * 		  or the qualifier string is invalid.
  */
-celix_status_t version_clone(version_t version, apr_pool_t *pool, version_t *clone);
+celix_status_t version_clone(version_pt version, apr_pool_t *pool, version_pt *clone);
 
 /**
  * Creates a version identifier from the specified string.
@@ -95,27 +95,27 @@ celix_status_t version_clone(version_t version, apr_pool_t *pool, version_t *clo
  *
  * @param pool The pool to create the version on.
  * @param versionStr String representation of the version identifier.
- * @param version The created version_t
+ * @param version The created version_pt
  * @return Status code indication failure or success:
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ENOMEM If allocating memory for <code>version</code> failed.
  * 		- CELIX_ILLEGAL_ARGUMENT If the numerical components are negative,
  * 		  	the qualifier string is invalid or <code>versionStr</code> is impropertly formatted.
  */
-celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionStr, version_t *version);
+celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionStr, version_pt *version);
 
 /**
  * The empty version "0.0.0".
  *
  * @param pool The pool to create the version on.
- * @param version The created version_t
+ * @param version The created version_pt
  * @return Status code indication failure or success:
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ENOMEM If allocating memory for <code>version</code> failed.
  * 		- CELIX_ILLEGAL_ARGUMENT If the numerical components are negative,
  * 		  	the qualifier string is invalid or <code>versionStr</code> is impropertly formatted.
  */
-celix_status_t version_createEmptyVersion(apr_pool_t *pool, version_t *version);
+celix_status_t version_createEmptyVersion(apr_pool_t *pool, version_pt *version);
 
 /**
  * Compares this <code>Version</code> object to another object.
@@ -135,14 +135,14 @@ celix_status_t version_createEmptyVersion(apr_pool_t *pool, version_t *version);
  * major, minor and micro components are equal and the qualifier component
  * is equal (using <code>String.compareTo</code>).
  *
- * @param version The <code>version_t</code> to be compared with <code>compare</code>.
- * @param compare The <code>version_t</code> to be compared with <code>version</code>.
+ * @param version The <code>version_pt</code> to be compared with <code>compare</code>.
+ * @param compare The <code>version_pt</code> to be compared with <code>version</code>.
  * @param result A negative integer, zero, or a positive integer if <code>version</code> is
  *         less than, equal to, or greater than the <code>compare</code>.
  * @return Status code indication failure or success:
  * 		- CELIX_SUCCESS when no errors are encountered.
  */
-celix_status_t version_compareTo(version_t version, version_t compare, int *result);
+celix_status_t version_compareTo(version_pt version, version_pt compare, int *result);
 
 /**
  * Returns the string representation of <code>version</code> identifier.
@@ -153,13 +153,13 @@ celix_status_t version_compareTo(version_t version, version_t compare, int *resu
  * <code>major.minor.micro.qualifier</code> otherwise.
  *
  * @return The string representation of this version identifier.
- * @param version The <code>version_t</code> to get the string representation from.
+ * @param version The <code>version_pt</code> to get the string representation from.
  * @param pool The pool on which the string has to be allocated.
  * @param string Pointer to the string (char *) in which the result will be placed.
  * @return Status code indication failure or success:
  * 		- CELIX_SUCCESS when no errors are encountered.
  */
-celix_status_t version_toString(version_t version, apr_pool_t *pool, char **string);
+celix_status_t version_toString(version_pt version, apr_pool_t *pool, char **string);
 
 /**
  * @}

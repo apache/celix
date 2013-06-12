@@ -41,18 +41,18 @@
 
 struct consuming_driver {
 	apr_pool_t *pool;
-	bundle_context_t context;
-	array_list_t references;
+	bundle_context_pt context;
+	array_list_pt references;
 };
 
 static apr_status_t consumingDriver_cleanup(void *handler) {
 	printf("CONSUMING_DRIVER: cleanup\n");
-	consuming_driver_t driver = handler;
+	consuming_driver_pt driver = handler;
 
 	if (driver->references != NULL) {
-		array_list_iterator_t iterator = arrayListIterator_create(driver->references);
+		array_list_iterator_pt iterator = arrayListIterator_create(driver->references);
 		while (arrayListIterator_hasNext(iterator)) {
-			service_reference_t reference = arrayListIterator_next(iterator);
+			service_reference_pt reference = arrayListIterator_next(iterator);
 			bool result;
 			bundleContext_ungetService(driver->context, reference, &result);
 		}
@@ -66,7 +66,7 @@ static apr_status_t consumingDriver_cleanup(void *handler) {
 	return APR_SUCCESS;
 }
 
-celix_status_t consumingDriver_create(bundle_context_t context, apr_pool_t *pool, consuming_driver_t *driver) {
+celix_status_t consumingDriver_create(bundle_context_pt context, apr_pool_t *pool, consuming_driver_pt *driver) {
 	celix_status_t status = CELIX_SUCCESS;
 	(*driver) = apr_palloc(pool, sizeof(**driver));
 	if ((*driver) != NULL) {
@@ -83,7 +83,7 @@ celix_status_t consumingDriver_create(bundle_context_t context, apr_pool_t *pool
 	return status;
 }
 
-celix_status_t consumingDriver_createService(consuming_driver_t driver, driver_service_t *service) {
+celix_status_t consumingDriver_createService(consuming_driver_pt driver, driver_service_pt *service) {
 	celix_status_t status = CELIX_SUCCESS;
 	(*service) = apr_palloc(driver->pool, sizeof(**service));
 	if ((*service) != NULL) {
@@ -96,12 +96,12 @@ celix_status_t consumingDriver_createService(consuming_driver_t driver, driver_s
 	return status;
 }
 
-celix_status_t consumingDriver_attach(void * driverHandler, service_reference_t reference, char **result) {
+celix_status_t consumingDriver_attach(void * driverHandler, service_reference_pt reference, char **result) {
 	printf("CONSUMING_DRIVER: attached called\n");
 	celix_status_t status = CELIX_SUCCESS;
-	consuming_driver_t driver = driverHandler;
+	consuming_driver_pt driver = driverHandler;
 	(*result) = NULL;
-	refining_driver_device_service_t device_service = NULL;
+	refining_driver_device_service_pt device_service = NULL;
 
 	status = bundleContext_getService(driver->context, reference, (void **)&device_service);
 	if (status == CELIX_SUCCESS) {
@@ -121,14 +121,14 @@ celix_status_t consumingDriver_attach(void * driverHandler, service_reference_t 
 	return status;
 }
 
-celix_status_t consumingDriver_match(void *driverHandler, service_reference_t reference, int *value) {
+celix_status_t consumingDriver_match(void *driverHandler, service_reference_pt reference, int *value) {
 	printf("CONSUMING_DRIVER: match called\n");
 	int match=0;
 	celix_status_t status = CELIX_SUCCESS;
-	consuming_driver_t driver = driverHandler;
+	consuming_driver_pt driver = driverHandler;
 
-	service_registration_t registration = NULL;
-	properties_t properties = NULL;
+	service_registration_pt registration = NULL;
+	properties_pt properties = NULL;
 	status = serviceReference_getServiceRegistration(reference, &registration);
 	if (status == CELIX_SUCCESS) {
 		status = serviceRegistration_getProperties(registration, &properties);

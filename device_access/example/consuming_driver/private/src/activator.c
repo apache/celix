@@ -36,20 +36,20 @@
 #include "consuming_driver_private.h"
 
 struct consuming_driver_bundle_instance {
-	bundle_context_t context;
+	bundle_context_pt context;
 	apr_pool_t * pool;
-	service_registration_t registration;
+	service_registration_pt registration;
 };
 
-typedef struct consuming_driver_bundle_instance *consuming_driver_bundle_instance_t;
+typedef struct consuming_driver_bundle_instance *consuming_driver_bundle_instance_pt;
 
-celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	printf("CONSUMING_DRIVER: creating bundle\n");
 	celix_status_t status = CELIX_SUCCESS;
 	apr_pool_t *pool;
 	status = bundleContext_getMemoryPool(context, &pool);
 	if (status == CELIX_SUCCESS) {
-		consuming_driver_bundle_instance_t instance = apr_palloc(pool, sizeof(*instance));
+		consuming_driver_bundle_instance_pt instance = apr_palloc(pool, sizeof(*instance));
 		if (instance != NULL) {
 			instance->context = context;
 			instance->pool = pool;
@@ -62,18 +62,18 @@ celix_status_t bundleActivator_create(bundle_context_t context, void **userData)
 	return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
 	printf("CONSUMING_DRIVER: starting bundle\n");
 	celix_status_t status = CELIX_SUCCESS;
-	consuming_driver_bundle_instance_t bi = userData;
+	consuming_driver_bundle_instance_pt bi = userData;
 
-	consuming_driver_t driver = NULL;
+	consuming_driver_pt driver = NULL;
 	status = consumingDriver_create(context, bi->pool, &driver);
 	if (status == CELIX_SUCCESS) {
-		driver_service_t service = NULL;
+		driver_service_pt service = NULL;
 		status = consumingDriver_createService(driver, &service);
 		if (status == CELIX_SUCCESS) {
-			properties_t props = properties_create();
+			properties_pt props = properties_create();
 			properties_set(props, "DRIVER_ID", CONSUMING_DRIVER_ID);
 			status = bundleContext_registerService(context, DRIVER_SERVICE_NAME, service, props, &bi->registration);
 		}
@@ -88,10 +88,10 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
 	printf("CONSUMING_DRIVER: stopping bundle\n");
 	celix_status_t status = CELIX_SUCCESS;
-	consuming_driver_bundle_instance_t bi = userData;
+	consuming_driver_bundle_instance_pt bi = userData;
 
 	if (bi->registration != NULL) {
 		serviceRegistration_unregister(bi->registration);
@@ -101,10 +101,10 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
 	return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	printf("CONSUMING_DRIVER: destroying bundle\n");
 	celix_status_t status = CELIX_SUCCESS;
-	consuming_driver_bundle_instance_t bi = userData;
+	consuming_driver_bundle_instance_pt bi = userData;
 	return status;
 }
 

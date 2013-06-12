@@ -33,21 +33,21 @@
 #include "service_tracker_customizer.h"
 #include "framework_exports.h"
 
-typedef struct serviceTracker * service_tracker_t;
+typedef struct serviceTracker * service_tracker_pt;
 
-FRAMEWORK_EXPORT celix_status_t serviceTracker_create(apr_pool_t *pool, bundle_context_t context, char * service, service_tracker_customizer_t customizer, service_tracker_t *tracker);
-FRAMEWORK_EXPORT celix_status_t serviceTracker_createWithFilter(apr_pool_t *pool, bundle_context_t context, char * filter, service_tracker_customizer_t customizer, service_tracker_t *tracker);
+FRAMEWORK_EXPORT celix_status_t serviceTracker_create(apr_pool_t *pool, bundle_context_pt context, char * service, service_tracker_customizer_pt customizer, service_tracker_pt *tracker);
+FRAMEWORK_EXPORT celix_status_t serviceTracker_createWithFilter(apr_pool_t *pool, bundle_context_pt context, char * filter, service_tracker_customizer_pt customizer, service_tracker_pt *tracker);
 
-FRAMEWORK_EXPORT celix_status_t serviceTracker_open(service_tracker_t tracker);
-FRAMEWORK_EXPORT celix_status_t serviceTracker_close(service_tracker_t tracker);
+FRAMEWORK_EXPORT celix_status_t serviceTracker_open(service_tracker_pt tracker);
+FRAMEWORK_EXPORT celix_status_t serviceTracker_close(service_tracker_pt tracker);
 
-FRAMEWORK_EXPORT service_reference_t serviceTracker_getServiceReference(service_tracker_t tracker);
-FRAMEWORK_EXPORT array_list_t serviceTracker_getServiceReferences(service_tracker_t tracker);
+FRAMEWORK_EXPORT service_reference_pt serviceTracker_getServiceReference(service_tracker_pt tracker);
+FRAMEWORK_EXPORT array_list_pt serviceTracker_getServiceReferences(service_tracker_pt tracker);
 
-FRAMEWORK_EXPORT void * serviceTracker_getService(service_tracker_t tracker);
-FRAMEWORK_EXPORT array_list_t serviceTracker_getServices(service_tracker_t tracker);
-FRAMEWORK_EXPORT void * serviceTracker_getServiceByReference(service_tracker_t tracker, service_reference_t reference);
+FRAMEWORK_EXPORT void * serviceTracker_getService(service_tracker_pt tracker);
+FRAMEWORK_EXPORT array_list_pt serviceTracker_getServices(service_tracker_pt tracker);
+FRAMEWORK_EXPORT void * serviceTracker_getServiceByReference(service_tracker_pt tracker, service_reference_pt reference);
 
-FRAMEWORK_EXPORT void serviceTracker_serviceChanged(service_listener_t listener, service_event_t event);
+FRAMEWORK_EXPORT void serviceTracker_serviceChanged(service_listener_pt listener, service_event_pt event);
 
 #endif /* SERVICE_TRACKER_H_ */

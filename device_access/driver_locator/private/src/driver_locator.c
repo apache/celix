@@ -34,7 +34,7 @@
 #include "driver_locator_private.h"
 #include "device.h"
 
-celix_status_t driverLocator_findDrivers(driver_locator_t locator, apr_pool_t *pool, properties_t props, array_list_t *drivers) {
+celix_status_t driverLocator_findDrivers(driver_locator_pt locator, apr_pool_t *pool, properties_pt props, array_list_pt *drivers) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	char *category = properties_get(props, DEVICE_CATEGORY);
@@ -71,7 +71,7 @@ celix_status_t driverLocator_findDrivers(driver_locator_t locator, apr_pool_t *p
 	return status;
 }
 
-celix_status_t driverLocator_loadDriver(driver_locator_t locator, apr_pool_t *pool, char *id, char **stream) {
+celix_status_t driverLocator_loadDriver(driver_locator_pt locator, apr_pool_t *pool, char *id, char **stream) {
 	celix_status_t status = CELIX_SUCCESS;
 	*stream = NULL;
 

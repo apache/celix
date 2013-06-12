@@ -32,17 +32,17 @@
 
 struct log_service_factory {
     apr_pool_t *pool;
-    log_t log;
+    log_pt log;
 };
 
-celix_status_t logFactory_create(apr_pool_t *pool, log_t log, service_factory_t *factory) {
+celix_status_t logFactory_create(apr_pool_t *pool, log_pt log, service_factory_pt *factory) {
     celix_status_t status = CELIX_SUCCESS;
 
     *factory = apr_palloc(pool, sizeof(**factory));
     if (*factory == NULL) {
         status = CELIX_ENOMEM;
     } else {
-        log_service_factory_t factoryData = apr_palloc(pool, sizeof(*factoryData));
+        log_service_factory_pt factoryData = apr_palloc(pool, sizeof(*factoryData));
         if (factoryData == NULL) {
             status = CELIX_ENOMEM;
         } else {
@@ -58,10 +58,10 @@ celix_status_t logFactory_create(apr_pool_t *pool, log_t log, service_factory_t 
     return CELIX_SUCCESS;
 }
 
-celix_status_t logFactory_getService(void *factory, bundle_t bundle, service_registration_t registration, void **service) {
-    log_service_factory_t log_factory = ((service_factory_t) factory)->factory;
-    log_service_t log_service = NULL;
-    log_service_data_t log_service_data = NULL;
+celix_status_t logFactory_getService(void *factory, bundle_pt bundle, service_registration_pt registration, void **service) {
+    log_service_factory_pt log_factory = ((service_factory_pt) factory)->factory;
+    log_service_pt log_service = NULL;
+    log_service_data_pt log_service_data = NULL;
 
     logService_create(log_factory->log, bundle, log_factory->pool, &log_service_data);
 
@@ -75,7 +75,7 @@ celix_status_t logFactory_getService(void *factory, bundle_t bundle, service_reg
     return CELIX_SUCCESS;
 }
 
-celix_status_t logFactory_ungetService(void *factory, bundle_t bundle, service_registration_t registration) {
-    log_service_factory_t log_factory = ((service_factory_t) factory)->factory;
+celix_status_t logFactory_ungetService(void *factory, bundle_pt bundle, service_registration_pt registration) {
+    log_service_factory_pt log_factory = ((service_factory_pt) factory)->factory;
     return CELIX_SUCCESS;
 }

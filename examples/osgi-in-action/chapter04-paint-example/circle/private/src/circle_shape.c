@@ -38,12 +38,12 @@
 
 #define CIRCLE_FILE "circle.png"
 
-void circleShape_draw(SIMPLE_SHAPE shape, GdkPixmap *pixMap, GtkWidget *widget, gdouble x, gdouble y);
+void circleShape_draw(simple_shape_pt shape, GdkPixmap *pixMap, GtkWidget *widget, gdouble x, gdouble y);
 
-celix_status_t circleShape_create(bundle_context_t context, SIMPLE_SHAPE *shape) {
+celix_status_t circleShape_create(bundle_context_pt context, simple_shape_pt *shape) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	bundle_t bundle;
+	bundle_pt bundle;
 	apr_pool_t *pool;
 
 	if (*shape != NULL || context == NULL) {
@@ -53,7 +53,7 @@ celix_status_t circleShape_create(bundle_context_t context, SIMPLE_SHAPE *shape)
 		if (status == CELIX_SUCCESS) {
 			status = bundleContext_getMemoryPool(context, &pool);
 			if (status == CELIX_SUCCESS) {
-				*shape = (SIMPLE_SHAPE) apr_palloc(pool, sizeof(**shape));
+				*shape = (simple_shape_pt) apr_palloc(pool, sizeof(**shape));
 				if (!*shape) {
 					status = CELIX_ENOMEM;
 				} else {
@@ -73,7 +73,7 @@ celix_status_t circleShape_create(bundle_context_t context, SIMPLE_SHAPE *shape)
 	return status;
 }
 
-void circleShape_draw(SIMPLE_SHAPE shape, GdkPixmap *pixMap, GtkWidget *widget, gdouble x, gdouble y){
+void circleShape_draw(simple_shape_pt shape, GdkPixmap *pixMap, GtkWidget *widget, gdouble x, gdouble y){
 	GdkRectangle update_rect;
 	GError *gerror = NULL;
 	gsize rd = 0, wr = 0;

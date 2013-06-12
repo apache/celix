@@ -29,14 +29,14 @@
 
 static const char * const COMMAND_SERVICE_NAME = "commandService";
 
-typedef struct command * COMMAND;
+typedef struct command * command_pt;
 
 struct commandService {
-	COMMAND command;
-	char * (*getName)(COMMAND command);
-	char * (*getUsage)(COMMAND command);
-	char * (*getShortDescription)(COMMAND command);
-	void (*executeCommand)(COMMAND command, char * commandLine, void (*out)(char *), void (*error)(char *));
+	command_pt command;
+	char * (*getName)(command_pt command);
+	char * (*getUsage)(command_pt command);
+	char * (*getShortDescription)(command_pt command);
+	void (*executeCommand)(command_pt command, char * commandLine, void (*out)(char *), void (*error)(char *));
 };
 
 

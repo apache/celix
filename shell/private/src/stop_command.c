@@ -32,10 +32,10 @@
 #include "bundle.h"
 #include "utils.h"
 
-void stopCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *));
+void stopCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *));
 
-COMMAND stopCommand_create(bundle_context_t context) {
-	COMMAND command = (COMMAND) malloc(sizeof(*command));
+command_pt stopCommand_create(bundle_context_pt context) {
+	command_pt command = (command_pt) malloc(sizeof(*command));
 	command->bundleContext = context;
 	command->name = "stop";
 	command->shortDescription = "stop bundle(s).";
@@ -44,11 +44,11 @@ COMMAND stopCommand_create(bundle_context_t context) {
 	return command;
 }
 
-void stopCommand_destroy(COMMAND command) {
+void stopCommand_destroy(command_pt command) {
 	free(command);
 }
 
-void stopCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *)) {
+void stopCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *)) {
     char delims[] = " ";
 	char * sub = NULL;
 	sub = strtok(line, delims);
@@ -58,7 +58,7 @@ void stopCommand_execute(COMMAND command, char * line, void (*out)(char *), void
 		utils_isNumeric(sub, &numeric);
 		if (numeric) {
 			long id = atol(sub);
-			bundle_t bundle = NULL;
+			bundle_pt bundle = NULL;
 			bundleContext_getBundleById(command->bundleContext, id, &bundle);
 			if (bundle != NULL) {
 				bundle_stop(bundle, 0);

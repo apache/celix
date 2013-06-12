@@ -33,10 +33,10 @@
 #include "log_entry.h"
 #include "linked_list_iterator.h"
 
-void logCommand_execute(COMMAND command, char *line, void (*out)(char *), void (*err)(char *));
+void logCommand_execute(command_pt command, char *line, void (*out)(char *), void (*err)(char *));
 
-COMMAND logCommand_create(bundle_context_t context) {
-    COMMAND command = (COMMAND) malloc(sizeof(*command));
+command_pt logCommand_create(bundle_context_pt context) {
+    command_pt command = (command_pt) malloc(sizeof(*command));
     command->bundleContext = context;
     command->name = "log";
     command->shortDescription = "print log";
@@ -45,22 +45,22 @@ COMMAND logCommand_create(bundle_context_t context) {
     return command;
 }
 
-void logCommand_destroy(COMMAND command) {
+void logCommand_destroy(command_pt command) {
     free(command);
 }
 
-void logCommand_execute(COMMAND command, char *line, void (*out)(char *), void (*err)(char *)) {
-    service_reference_t readerService = NULL;
-    service_reference_t logService = NULL;
+void logCommand_execute(command_pt command, char *line, void (*out)(char *), void (*err)(char *)) {
+    service_reference_pt readerService = NULL;
+    service_reference_pt logService = NULL;
     apr_pool_t *memory_pool = NULL;
     apr_pool_t *bundle_memory_pool = NULL;
 
     bundleContext_getServiceReference(command->bundleContext, (char *) LOG_READER_SERVICE_NAME, &readerService);
     if (readerService != NULL) {
         char line[256];
-        linked_list_t list = NULL;
-        linked_list_iterator_t iter = NULL;
-        log_reader_service_t reader = NULL;
+        linked_list_pt list = NULL;
+        linked_list_iterator_pt iter = NULL;
+        log_reader_service_pt reader = NULL;
 
         bundleContext_getMemoryPool(command->bundleContext, &bundle_memory_pool);
         apr_pool_create(&memory_pool, bundle_memory_pool);
@@ -69,7 +69,7 @@ void logCommand_execute(COMMAND command, char *line, void (*out)(char *), void (
             reader->getLog(reader->reader, memory_pool, &list);
             iter = linkedListIterator_create(list, 0);
             while (linkedListIterator_hasNext(iter)) {
-                log_entry_t entry = linkedListIterator_next(iter);
+                log_entry_pt entry = linkedListIterator_next(iter);
                 sprintf(line, "%s\n", entry->message);
                 out(line);
             }

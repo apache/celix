@@ -32,10 +32,10 @@
 
 struct driver_matcher {
 	apr_pool_t *pool;
-	hash_map_t attributes;
-	 array_list_t matches;
+	hash_map_pt attributes;
+	 array_list_pt matches;
 
-	 bundle_context_t context;
+	 bundle_context_pt context;
 };
 
 typedef struct match_key {
@@ -43,8 +43,8 @@ typedef struct match_key {
 } *match_key_t;
 
 static apr_status_t driverMatcher_destroy(void *matcherP);
-static celix_status_t driverMatcher_get(driver_matcher_t matcher, int key, array_list_t *attributesV);
-static celix_status_t driverMatcher_getBestMatchInternal(driver_matcher_t matcher, apr_pool_t *pool, match_t *match);
+static celix_status_t driverMatcher_get(driver_matcher_pt matcher, int key, array_list_pt *attributesV);
+static celix_status_t driverMatcher_getBestMatchInternal(driver_matcher_pt matcher, apr_pool_t *pool, match_pt *match);
 
 unsigned int driverMatcher_matchKeyHash(void * match_key) {
 	match_key_t key = match_key;
@@ -56,7 +56,7 @@ int driverMatcher_matchKeyEquals(void * key, void * toCompare) {
 	return ((match_key_t) key)->matchValue == ((match_key_t) toCompare)->matchValue;
 }
 
-celix_status_t driverMatcher_create(apr_pool_t *pool, bundle_context_t context, driver_matcher_t *matcher) {
+celix_status_t driverMatcher_create(apr_pool_t *pool, bundle_context_pt context, driver_matcher_pt *matcher) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*matcher = apr_palloc(pool, sizeof(**matcher));
@@ -77,11 +77,11 @@ celix_status_t driverMatcher_create(apr_pool_t *pool, bundle_context_t context, 
 }
 
 apr_status_t driverMatcher_destroy(void *matcherP) {
-	driver_matcher_t matcher = matcherP;
+	driver_matcher_pt matcher = matcherP;
 	arrayList_destroy(matcher->matches);
-	hash_map_iterator_t iter = hashMapIterator_create(matcher->attributes);
+	hash_map_iterator_pt iter = hashMapIterator_create(matcher->attributes);
 	while (hashMapIterator_hasNext(iter)) {
-		array_list_t list = hashMapIterator_nextValue(iter);
+		array_list_pt list = hashMapIterator_nextValue(iter);
 		if (list != NULL) {
 			arrayList_destroy(list);
 		}
@@ -91,15 +91,15 @@ apr_status_t driverMatcher_destroy(void *matcherP) {
 	return APR_SUCCESS;
 }
 
-celix_status_t driverMatcher_add(driver_matcher_t matcher, int matchValue, driver_attributes_t attributes) {
+celix_status_t driverMatcher_add(driver_matcher_pt matcher, int matchValue, driver_attributes_pt attributes) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	array_list_t da = NULL;
+	array_list_pt da = NULL;
 	status = driverMatcher_get(matcher, matchValue, &da);
 	if (status == CELIX_SUCCESS) {
 		arrayList_add(da, attributes);
 
-		match_t match = NULL;
+		match_pt match = NULL;
 		match = apr_palloc(matcher->pool, sizeof(*match));
 		if (!match) {
 			status = CELIX_ENOMEM;
@@ -114,7 +114,7 @@ celix_status_t driverMatcher_add(driver_matcher_t matcher, int matchValue, drive
 	return status;
 }
 
-celix_status_t driverMatcher_get(driver_matcher_t matcher, int key, array_list_t *attributes) {
+celix_status_t driverMatcher_get(driver_matcher_pt matcher, int key, array_list_pt *attributes) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	apr_pool_t *spool = NULL;
@@ -136,18 +136,18 @@ celix_status_t driverMatcher_get(driver_matcher_t matcher, int key, array_list_t
 	return status;
 }
 
-celix_status_t driverMatcher_getBestMatch(driver_matcher_t matcher, apr_pool_t *pool, service_reference_t reference, match_t *match) {
+celix_status_t driverMatcher_getBestMatch(driver_matcher_pt matcher, apr_pool_t *pool, service_reference_pt reference, match_pt *match) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (*match != NULL) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
-		service_reference_t selectorRef = NULL;
+		service_reference_pt selectorRef = NULL;
 		status = bundleContext_getServiceReference(matcher->context, DRIVER_SELECTOR_SERVICE_NAME, &selectorRef);
 		if (status == CELIX_SUCCESS) {
 			int index = -1;
 			if (selectorRef != NULL) {
-				driver_selector_service_t selector = NULL;
+				driver_selector_service_pt selector = NULL;
 				status = bundleContext_getService(matcher->context, selectorRef, (void **) &selector);
 				if (status == CELIX_SUCCESS) {
 					if (selector != NULL) {
@@ -171,14 +171,14 @@ celix_status_t driverMatcher_getBestMatch(driver_matcher_t matcher, apr_pool_t *
 	return status;
 }
 
-celix_status_t driverMatcher_getBestMatchInternal(driver_matcher_t matcher, apr_pool_t *pool, match_t *match) {
+celix_status_t driverMatcher_getBestMatchInternal(driver_matcher_pt matcher, apr_pool_t *pool, match_pt *match) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (!hashMap_isEmpty(matcher->attributes)) {
 		match_key_t matchKey = NULL;
-		hash_map_iterator_t iter = hashMapIterator_create(matcher->attributes);
+		hash_map_iterator_pt iter = hashMapIterator_create(matcher->attributes);
 		while (hashMapIterator_hasNext(iter)) {
-			hash_map_entry_t entry = hashMapIterator_nextEntry(iter);
+			hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
 			match_key_t key = hashMapEntry_getKey(entry);
 			if (matchKey == NULL || matchKey->matchValue < key->matchValue) {
 				matchKey = key;
@@ -186,12 +186,12 @@ celix_status_t driverMatcher_getBestMatchInternal(driver_matcher_t matcher, apr_
 		}
 		hashMapIterator_destroy(iter);
 
-		array_list_t das = hashMap_get(matcher->attributes, matchKey);
-		service_reference_t best = NULL;
+		array_list_pt das = hashMap_get(matcher->attributes, matchKey);
+		service_reference_pt best = NULL;
 		int i;
 		for (i = 0; i < arrayList_size(das); i++) {
-			driver_attributes_t attributes = arrayList_get(das, i);
-			service_reference_t reference = NULL;
+			driver_attributes_pt attributes = arrayList_get(das, i);
+			service_reference_pt reference = NULL;
 
 			celix_status_t substatus = driverAttributes_getReference(attributes, &reference);
 			if (substatus == CELIX_SUCCESS) {
@@ -199,10 +199,10 @@ celix_status_t driverMatcher_getBestMatchInternal(driver_matcher_t matcher, apr_
 					printf("DRIVER_MATCHER: Compare ranking\n");
 					char *rank1Str, *rank2Str;
 					int rank1, rank2;
-					service_registration_t registration = NULL;
+					service_registration_pt registration = NULL;
 					substatus = serviceReference_getServiceRegistration(reference, &registration);
 					if (substatus == CELIX_SUCCESS) {
-						properties_t properties = NULL;
+						properties_pt properties = NULL;
 						status = serviceRegistration_getProperties(registration, &properties);
 						if (status == CELIX_SUCCESS) {
 

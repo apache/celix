@@ -32,19 +32,19 @@
 #include "linkedlist.h"
 #include "exports.h"
 
-typedef struct linkedListIterator * linked_list_iterator_t;
+typedef struct linkedListIterator * linked_list_iterator_pt;
 
-UTILS_EXPORT linked_list_iterator_t linkedListIterator_create(linked_list_t list, unsigned int index);
-UTILS_EXPORT void linkedListIterator_destroy(linked_list_iterator_t iterator);
-UTILS_EXPORT bool linkedListIterator_hasNext(linked_list_iterator_t iterator);
-UTILS_EXPORT void * linkedListIterator_next(linked_list_iterator_t iterator);
-UTILS_EXPORT bool linkedListIterator_hasPrevious(linked_list_iterator_t iterator);
-UTILS_EXPORT void * linkedListIterator_previous(linked_list_iterator_t iterator);
-UTILS_EXPORT int linkedListIterator_nextIndex(linked_list_iterator_t iterator);
-UTILS_EXPORT int linkedListIterator_previousIndex(linked_list_iterator_t iterator);
-UTILS_EXPORT void linkedListIterator_remove(linked_list_iterator_t iterator);
-UTILS_EXPORT void linkedListIterator_set(linked_list_iterator_t iterator, void * element);
-UTILS_EXPORT void linkedListIterator_add(linked_list_iterator_t iterator, void * element);
+UTILS_EXPORT linked_list_iterator_pt linkedListIterator_create(linked_list_pt list, unsigned int index);
+UTILS_EXPORT void linkedListIterator_destroy(linked_list_iterator_pt iterator);
+UTILS_EXPORT bool linkedListIterator_hasNext(linked_list_iterator_pt iterator);
+UTILS_EXPORT void * linkedListIterator_next(linked_list_iterator_pt iterator);
+UTILS_EXPORT bool linkedListIterator_hasPrevious(linked_list_iterator_pt iterator);
+UTILS_EXPORT void * linkedListIterator_previous(linked_list_iterator_pt iterator);
+UTILS_EXPORT int linkedListIterator_nextIndex(linked_list_iterator_pt iterator);
+UTILS_EXPORT int linkedListIterator_previousIndex(linked_list_iterator_pt iterator);
+UTILS_EXPORT void linkedListIterator_remove(linked_list_iterator_pt iterator);
+UTILS_EXPORT void linkedListIterator_set(linked_list_iterator_pt iterator, void * element);
+UTILS_EXPORT void linkedListIterator_add(linked_list_iterator_pt iterator, void * element);
 
 
 #endif /* LINKED_LIST_ITERATOR_H_ */

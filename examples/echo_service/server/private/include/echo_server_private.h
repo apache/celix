@@ -29,8 +29,8 @@
 
 #include "echo_server.h"
 
-ECHO_SERVER echoServer_create();
-void echoServer_echo(ECHO_SERVER server, char * text);
-void echoServer_destroy(ECHO_SERVER server);
+echo_server_pt echoServer_create();
+void echoServer_echo(echo_server_pt server, char * text);
+void echoServer_destroy(echo_server_pt server);
 
 #endif /* ECHO_SERVER_PRIVATE_H_ */

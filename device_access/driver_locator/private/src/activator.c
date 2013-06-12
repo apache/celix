@@ -33,19 +33,19 @@
 static const char *DEFAULT_LOCATOR_PATH = "drivers";
 
 struct bundle_instance {
-	driver_locator_service_t service;
-	driver_locator_t locator;
-	service_registration_t locatorRegistration;
+	driver_locator_service_pt service;
+	driver_locator_pt locator;
+	service_registration_pt locatorRegistration;
 };
 
-typedef struct bundle_instance *bundle_instance_t;
+typedef struct bundle_instance *bundle_instance_pt;
 
-celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
     apr_pool_t *pool;
     status = bundleContext_getMemoryPool(context, &pool);
     if (status == CELIX_SUCCESS) {
-    	bundle_instance_t bi = apr_palloc(pool, sizeof(struct bundle_instance));
+    	bundle_instance_pt bi = apr_palloc(pool, sizeof(struct bundle_instance));
         if (userData != NULL) {
         	bi->service=NULL;
         	bi->locator=NULL;
@@ -58,11 +58,11 @@ celix_status_t bundleActivator_create(bundle_context_t context, void **userData)
     return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
     celix_status_t status = CELIX_SUCCESS;
     apr_pool_t *pool;
     status = bundleContext_getMemoryPool(context, &pool);
-    bundle_instance_t bi = (bundle_instance_t)userData;
+    bundle_instance_pt bi = (bundle_instance_pt)userData;
     if (status == CELIX_SUCCESS) {
         struct activatorData * data = (struct activatorData *) userData;
         bi->service = apr_palloc(pool, sizeof(*(bi->service)));
@@ -85,14 +85,14 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
     return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
     celix_status_t status = CELIX_SUCCESS;
-    bundle_instance_t bi = (bundle_instance_t)userData;
+    bundle_instance_pt bi = (bundle_instance_pt)userData;
     serviceRegistration_unregister(bi->locatorRegistration);
     arrayList_destroy(bi->locator->drivers);
     return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
     return CELIX_SUCCESS;
 }

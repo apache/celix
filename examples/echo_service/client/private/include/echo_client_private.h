@@ -30,21 +30,21 @@
 #include <celixbool.h>
 
 struct echoClient {
-	service_tracker_t tracker;
+	service_tracker_pt tracker;
 	bool running;
 	apr_pool_t *pool;
 
 	apr_thread_t *sender;
 };
 
-typedef struct echoClient * ECHO_CLIENT;
+typedef struct echoClient * echo_client_pt;
 
-ECHO_CLIENT echoClient_create(service_tracker_t context, apr_pool_t *pool);
+echo_client_pt echoClient_create(service_tracker_pt context, apr_pool_t *pool);
 
-void echoClient_start(ECHO_CLIENT client);
-void echoClient_stop(ECHO_CLIENT client);
+void echoClient_start(echo_client_pt client);
+void echoClient_stop(echo_client_pt client);
 
-void echoClient_destroy(ECHO_CLIENT client);
+void echoClient_destroy(echo_client_pt client);
 
 
 #endif /* ECHO_CLIENT_PRIVATE_H_ */

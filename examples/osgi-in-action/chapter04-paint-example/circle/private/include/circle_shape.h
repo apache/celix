@@ -28,6 +28,6 @@
 
 #include "celix_errno.h"
 
-celix_status_t circleShape_create(bundle_context_t context, SIMPLE_SHAPE *shape);
+celix_status_t circleShape_create(bundle_context_pt context, simple_shape_pt *shape);
 
 #endif /* CIRCLE_SHAPE_H_ */

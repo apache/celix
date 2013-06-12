@@ -33,13 +33,13 @@
 #include "properties.h"
 #include "dependency_manager.h"
 
-typedef struct state * STATE;
-typedef struct executor * EXECUTOR;
+typedef struct state * state_pt;
+typedef struct executor * executor_pt;
 
 struct service {
 	apr_pool_t *pool;
 
-	array_list_t dependencies;
+	array_list_pt dependencies;
 	void (*init)(void * userData);
 	void (*start)(void * userData);
 	void (*stop)(void * userData);
@@ -47,57 +47,57 @@ struct service {
 
 	char * serviceName;
 	void * impl;
-	properties_t properties;
+	properties_pt properties;
 
-	bundle_context_t context;
-	DEPENDENCY_MANAGER manager;
+	bundle_context_pt context;
+	dependency_manager_pt manager;
 
-	service_registration_t registration;
-	service_registration_t serviceRegistration;
+	service_registration_pt registration;
+	service_registration_pt serviceRegistration;
 
 	bool registered;
 
-	STATE state;
-	EXECUTOR executor;
+	state_pt state;
+	executor_pt executor;
 
 	apr_thread_mutex_t *mutex;
 };
 
-SERVICE serviceComponent_create(bundle_context_t context, DEPENDENCY_MANAGER manager);
-SERVICE serviceComponent_addServiceDependency(SERVICE service, SERVICE_DEPENDENCY dependency);
-SERVICE serviceComponent_removeServiceDependency(SERVICE service, SERVICE_DEPENDENCY dependency);
-void serviceComponent_dependencyAvailable(SERVICE service, SERVICE_DEPENDENCY dependency);
-void serviceComponent_dependencyChanged(SERVICE service, SERVICE_DEPENDENCY dependency);
-void serviceComponent_dependencyUnavailable(SERVICE service, SERVICE_DEPENDENCY dependency);
-void serviceComponent_start(SERVICE service);
-void serviceComponent_stop(SERVICE service);
-SERVICE serviceComponent_setInterface(SERVICE service, char * serviceName, properties_t properties);
-SERVICE serviceComponent_setImplementation(SERVICE service, void * implementation);
-void serviceComponent_activateService(SERVICE service, void * arg);
-void serviceComponent_deactivateService(SERVICE service, void * arg);
-void serviceComponent_startTrackingOptional(SERVICE service, STATE state);
-void serviceComponent_stopTrackingOptional(SERVICE service, STATE state);
-void serviceComponent_startTrackingRequired(SERVICE service, void * arg);
-void serviceComponent_stopTrackingRequired(SERVICE service, void * arg);
-void serviceComponent_initService(SERVICE service);
-void serviceComponent_configureService(SERVICE service, STATE state);
-void serviceComponent_destroyService(SERVICE service, STATE state);
-void serviceComponent_registerService(SERVICE service);
-void serviceComponent_unregisterService(SERVICE service);
-void serviceComponent_updateInstance(SERVICE service, void * arg);
-char * serviceComponent_getName(SERVICE service);
+service_pt serviceComponent_create(bundle_context_pt context, dependency_manager_pt manager);
+service_pt serviceComponent_addServiceDependency(service_pt service, service_dependency_pt dependency);
+service_pt serviceComponent_removeServiceDependency(service_pt service, service_dependency_pt dependency);
+void serviceComponent_dependencyAvailable(service_pt service, service_dependency_pt dependency);
+void serviceComponent_dependencyChanged(service_pt service, service_dependency_pt dependency);
+void serviceComponent_dependencyUnavailable(service_pt service, service_dependency_pt dependency);
+void serviceComponent_start(service_pt service);
+void serviceComponent_stop(service_pt service);
+service_pt serviceComponent_setInterface(service_pt service, char * serviceName, properties_pt properties);
+service_pt serviceComponent_setImplementation(service_pt service, void * implementation);
+void serviceComponent_activateService(service_pt service, void * arg);
+void serviceComponent_deactivateService(service_pt service, void * arg);
+void serviceComponent_startTrackingOptional(service_pt service, state_pt state);
+void serviceComponent_stopTrackingOptional(service_pt service, state_pt state);
+void serviceComponent_startTrackingRequired(service_pt service, void * arg);
+void serviceComponent_stopTrackingRequired(service_pt service, void * arg);
+void serviceComponent_initService(service_pt service);
+void serviceComponent_configureService(service_pt service, state_pt state);
+void serviceComponent_destroyService(service_pt service, state_pt state);
+void serviceComponent_registerService(service_pt service);
+void serviceComponent_unregisterService(service_pt service);
+void serviceComponent_updateInstance(service_pt service, void * arg);
+char * serviceComponent_getName(service_pt service);
 
 
-STATE state_create(array_list_t dependencies, bool active);
-void state_destroy(STATE state);
-bool state_isInactive(STATE state);
-bool state_isWaitingForRequired(STATE state);
-bool state_isTrackingOptional(STATE state);
-array_list_t state_getDependencies(STATE state);
+state_pt state_create(array_list_pt dependencies, bool active);
+void state_destroy(state_pt state);
+bool state_isInactive(state_pt state);
+bool state_isWaitingForRequired(state_pt state);
+bool state_isTrackingOptional(state_pt state);
+array_list_pt state_getDependencies(state_pt state);
 
-EXECUTOR executor_create(apr_pool_t *memory_pool);
-void executor_enqueue(EXECUTOR executor, SERVICE service, void (*function), void * argument);
-void executor_execute(EXECUTOR executor);
-void executor_scheduleNext(EXECUTOR executor);
+executor_pt executor_create(apr_pool_t *memory_pool);
+void executor_enqueue(executor_pt executor, service_pt service, void (*function), void * argument);
+void executor_execute(executor_pt executor);
+void executor_scheduleNext(executor_pt executor);
 
 #endif /* SERVICE_COMPONENT_PRIVATE_H_ */

@@ -32,15 +32,15 @@
 
 static celix_status_t arrayList_elementEquals(void *a, void *b, bool *equals);
 
-celix_status_t arrayList_create(apr_pool_t *pool, array_list_t *list) {
+celix_status_t arrayList_create(apr_pool_t *pool, array_list_pt *list) {
 	return arrayList_createWithEquals(pool, arrayList_elementEquals, list);
 }
 
- celix_status_t arrayList_createWithEquals(apr_pool_t *pool, arrayListElementEqualsFunction equals, array_list_t *list) {
+ celix_status_t arrayList_createWithEquals(apr_pool_t *pool, array_list_element_equals_pt equals, array_list_pt *list) {
 	apr_pool_t *mypool;
 	apr_pool_create(&mypool, pool);
-//	*list = (array_list_t) apr_palloc(mypool, sizeof(**list));
-	*list = (array_list_t) malloc(sizeof(**list));
+//	*list = (array_list_pt) apr_palloc(mypool, sizeof(**list));
+	*list = (array_list_pt) malloc(sizeof(**list));
 
 	(*list)->equals = equals;
 	(*list)->size = 0;
@@ -51,7 +51,7 @@ celix_status_t arrayList_create(apr_pool_t *pool, array_list_t *list) {
 	return CELIX_SUCCESS;
 }
 
-void arrayList_destroy(array_list_t list) {
+void arrayList_destroy(array_list_pt list) {
 	list->size = 0;
 	free(list->elementData);
 	list->elementData = NULL;
@@ -64,7 +64,7 @@ static celix_status_t arrayList_elementEquals(void *a, void *b, bool *equals) {
 	return CELIX_SUCCESS;
 }
 
-void arrayList_trimToSize(array_list_t list) {
+void arrayList_trimToSize(array_list_pt list) {
 	unsigned int oldCapacity;
 	list->modCount++;
 	oldCapacity = list->capacity;
@@ -75,7 +75,7 @@ void arrayList_trimToSize(array_list_t list) {
 	}
 }
 
-void arrayList_ensureCapacity(array_list_t list, int capacity) {
+void arrayList_ensureCapacity(array_list_pt list, int capacity) {
 	void ** newList;
 	int oldCapacity;
 	list->modCount++;
@@ -91,20 +91,20 @@ void arrayList_ensureCapacity(array_list_t list, int capacity) {
 	}
 }
 
-unsigned int arrayList_size(array_list_t list) {
+unsigned int arrayList_size(array_list_pt list) {
 	return list->size;
 }
 
-bool arrayList_isEmpty(array_list_t list) {
+bool arrayList_isEmpty(array_list_pt list) {
 	return list->size == 0;
 }
 
-bool arrayList_contains(array_list_t list, void * element) {
+bool arrayList_contains(array_list_pt list, void * element) {
 	int index = arrayList_indexOf(list, element);
 	return index >= 0;
 }
 
-int arrayList_indexOf(array_list_t list, void * element) {
+int arrayList_indexOf(array_list_pt list, void * element) {
 	if (element == NULL) {
 		unsigned int i = 0;
 		for (i = 0; i < list->size; i++) {
@@ -125,7 +125,7 @@ int arrayList_indexOf(array_list_t list, void * element) {
 	return -1;
 }
 
-int arrayList_lastIndexOf(array_list_t list, void * element) {
+int arrayList_lastIndexOf(array_list_pt list, void * element) {
 	if (element == NULL) {
 		int i = 0;
 		for (i = list->size - 1; i >= 0; i--) {
@@ -146,7 +146,7 @@ int arrayList_lastIndexOf(array_list_t list, void * element) {
 	return -1;
 }
 
-void * arrayList_get(array_list_t list, unsigned int index) {
+void * arrayList_get(array_list_pt list, unsigned int index) {
 	if (index >= list->size) {
 		return NULL;
 	}
@@ -154,7 +154,7 @@ void * arrayList_get(array_list_t list, unsigned int index) {
 	return list->elementData[index];
 }
 
-void * arrayList_set(array_list_t list, unsigned int index, void * element) {
+void * arrayList_set(array_list_pt list, unsigned int index, void * element) {
 	void * oldElement;
 	if (index >= list->size) {
 		return NULL;
@@ -165,13 +165,13 @@ void * arrayList_set(array_list_t list, unsigned int index, void * element) {
 	return oldElement;
 }
 
-bool arrayList_add(array_list_t list, void * element) {
+bool arrayList_add(array_list_pt list, void * element) {
 	arrayList_ensureCapacity(list, list->size + 1);
 	list->elementData[list->size++] = element;
 	return true;
 }
 
-int arrayList_addIndex(array_list_t list, unsigned int index, void * element) {
+int arrayList_addIndex(array_list_pt list, unsigned int index, void * element) {
 	unsigned int numMoved;
 	if (index > list->size || index < 0) {
 		return -1;
@@ -185,7 +185,7 @@ int arrayList_addIndex(array_list_t list, unsigned int index, void * element) {
 	return 0;
 }
 
-void * arrayList_remove(array_list_t list, unsigned int index) {
+void * arrayList_remove(array_list_pt list, unsigned int index) {
 	void * oldElement;
 	unsigned int numMoved;
 	if (index >= list->size) {
@@ -201,7 +201,7 @@ void * arrayList_remove(array_list_t list, unsigned int index) {
 	return oldElement;
 }
 
-void arrayList_fastRemove(array_list_t list, unsigned int index) {
+void arrayList_fastRemove(array_list_pt list, unsigned int index) {
 	unsigned int numMoved;
 	list->modCount++;
 
@@ -210,7 +210,7 @@ void arrayList_fastRemove(array_list_t list, unsigned int index) {
 	list->elementData[--list->size] = NULL;
 }
 
-bool arrayList_removeElement(array_list_t list, void * element) {
+bool arrayList_removeElement(array_list_pt list, void * element) {
 	if (element == NULL) {
 		unsigned int i = 0;
 		for (i = 0; i < list->size; i++) {
@@ -233,7 +233,7 @@ bool arrayList_removeElement(array_list_t list, void * element) {
 	return false;
 }
 
-void arrayList_clear(array_list_t list) {
+void arrayList_clear(array_list_pt list) {
 	unsigned int i;
 	list->modCount++;
 
@@ -244,7 +244,7 @@ void arrayList_clear(array_list_t list) {
 	list->size = 0;
 }
 
-bool arrayList_addAll(array_list_t list, array_list_t toAdd) {
+bool arrayList_addAll(array_list_pt list, array_list_pt toAdd) {
     unsigned int i;
     unsigned int size = arrayList_size(toAdd);
     arrayList_ensureCapacity(list, list->size + size);
@@ -256,9 +256,9 @@ bool arrayList_addAll(array_list_t list, array_list_t toAdd) {
     return size != 0;
 }
 
-array_list_t arrayList_clone(apr_pool_t *pool, array_list_t list) {
+array_list_pt arrayList_clone(apr_pool_t *pool, array_list_pt list) {
 	unsigned int i;
-	array_list_t new = NULL;
+	array_list_pt new = NULL;
 	arrayList_create(pool, &new);
 //	arrayList_ensureCapacity(new, list->size);
 //	memcpy(new->elementData, list->elementData, list->size);
@@ -271,8 +271,8 @@ array_list_t arrayList_clone(apr_pool_t *pool, array_list_t list) {
 	return new;
 }
 
-array_list_iterator_t arrayListIterator_create(array_list_t list) {
-	array_list_iterator_t iterator = (array_list_iterator_t) malloc(sizeof(*iterator));
+array_list_iterator_pt arrayListIterator_create(array_list_pt list) {
+	array_list_iterator_pt iterator = (array_list_iterator_pt) malloc(sizeof(*iterator));
 
 	iterator->lastReturned = -1;
 	iterator->cursor = 0;
@@ -282,7 +282,7 @@ array_list_iterator_t arrayListIterator_create(array_list_t list) {
 	return iterator;
 }
 
-void arrayListIterator_destroy(array_list_iterator_t iterator) {
+void arrayListIterator_destroy(array_list_iterator_pt iterator) {
 	iterator->lastReturned = -1;
 	iterator->cursor = 0;
 	iterator->expectedModificationCount = 0;
@@ -291,11 +291,11 @@ void arrayListIterator_destroy(array_list_iterator_t iterator) {
 	iterator = NULL;
 }
 
-bool arrayListIterator_hasNext(array_list_iterator_t iterator) {
+bool arrayListIterator_hasNext(array_list_iterator_pt iterator) {
 	return iterator->cursor != iterator->list->size;
 }
 
-void * arrayListIterator_next(array_list_iterator_t iterator) {
+void * arrayListIterator_next(array_list_iterator_pt iterator) {
 	void * next;
 	if (iterator->expectedModificationCount != iterator->list->modCount) {
 		return NULL;
@@ -305,11 +305,11 @@ void * arrayListIterator_next(array_list_iterator_t iterator) {
 	return next;
 }
 
-bool arrayListIterator_hasPrevious(array_list_iterator_t iterator) {
+bool arrayListIterator_hasPrevious(array_list_iterator_pt iterator) {
 	return iterator->cursor != 0;
 }
 
-void * arrayListIterator_previous(array_list_iterator_t iterator) {
+void * arrayListIterator_previous(array_list_iterator_pt iterator) {
 	int i;
 	void * previous;
 	if (iterator->expectedModificationCount != iterator->list->modCount) {
@@ -321,7 +321,7 @@ void * arrayListIterator_previous(array_list_iterator_t iterator) {
 	return previous;
 }
 
-void arrayListIterator_remove(array_list_iterator_t iterator) {
+void arrayListIterator_remove(array_list_iterator_pt iterator) {
 	if (iterator->lastReturned == -1) {
 		return;
 	}

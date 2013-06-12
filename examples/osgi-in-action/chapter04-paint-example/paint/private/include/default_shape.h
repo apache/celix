@@ -26,6 +26,6 @@
 #ifndef DEFAULT_SHAPE_H_
 #define DEFAULT_SHAPE_H_
 
-extern SIMPLE_SHAPE defaultShape_create(bundle_context_t context);
+extern simple_shape_pt defaultShape_create(bundle_context_pt context);
 
 #endif /* DEFAULT_SHAPE_H_ */

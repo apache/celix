@@ -27,7 +27,7 @@
 #ifndef ADD_COMMAND_H_
 #define ADD_COMMAND_H_
 
-COMMAND addCommand_create(bundle_context_t context);
-void addCommand_destroy(COMMAND command);
+command_pt addCommand_create(bundle_context_pt context);
+void addCommand_destroy(command_pt command);
 
 #endif /* ADD_COMMAND_H_ */

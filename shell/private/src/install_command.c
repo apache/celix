@@ -33,11 +33,11 @@
 #include "bundle.h"
 #include "install_command.h"
 
-void installCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *));
-void installCommand_install(COMMAND command, bundle_t *bundle, char * location, void (*out)(char *), void (*err)(char *));
+void installCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *));
+void installCommand_install(command_pt command, bundle_pt *bundle, char * location, void (*out)(char *), void (*err)(char *));
 
-COMMAND installCommand_create(bundle_context_t context) {
-	COMMAND command = (COMMAND) malloc(sizeof(*command));
+command_pt installCommand_create(bundle_context_pt context) {
+	command_pt command = (command_pt) malloc(sizeof(*command));
 	command->bundleContext = context;
 	command->name = "install";
 	command->shortDescription = "install bundle(s).";
@@ -46,11 +46,11 @@ COMMAND installCommand_create(bundle_context_t context) {
 	return command;
 }
 
-void installCommand_destroy(COMMAND command) {
+void installCommand_destroy(command_pt command) {
 	free(command);
 }
 
-void installCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *)) {
+void installCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *)) {
 	char delims[] = " ";
 	char * sub = NULL;
 	char info[256];
@@ -61,11 +61,11 @@ void installCommand_execute(COMMAND command, char * line, void (*out)(char *), v
 	
 	info[0] = '\0';
 	while (sub != NULL) {
-		bundle_t bundle = NULL;
+		bundle_pt bundle = NULL;
 		installCommand_install(command, &bundle, strdup(sub), out, err);
 		if (bundle != NULL) {
 			long id;
-			bundle_archive_t archive = NULL;
+			bundle_archive_pt archive = NULL;
 			char bundleId[sizeof(id) + 1];
 
 			if (strlen(info) > 0) {
@@ -89,6 +89,6 @@ void installCommand_execute(COMMAND command, char * line, void (*out)(char *), v
 	}
 }
 
-void installCommand_install(COMMAND command, bundle_t *bundle, char * location, void (*out)(char *), void (*err)(char *)) {
+void installCommand_install(command_pt command, bundle_pt *bundle, char * location, void (*out)(char *), void (*err)(char *)) {
 	bundleContext_installBundle(command->bundleContext, location, bundle);
 }

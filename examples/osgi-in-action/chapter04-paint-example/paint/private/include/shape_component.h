@@ -29,17 +29,17 @@
 
 #include "paint_frame.h"
 
-typedef struct shape_component *SHAPE_COMPONENT;
+typedef struct shape_component *shape_component_pt;
 
 struct shape_component {
 	char *shapeName;
-	PAINT_FRAME m_frame;
+	paint_frame_pt m_frame;
 	gdouble x, y, w, h;
-	void (*shapeComponent_paintComponent)(SHAPE_COMPONENT shapeComponent, PAINT_FRAME frame,
+	void (*shapeComponent_paintComponent)(shape_component_pt shapeComponent, paint_frame_pt frame,
 			GdkPixmap *pixMap, GtkWidget *widget);
 };
 
-extern SHAPE_COMPONENT shapeComponent_create(PAINT_FRAME frame, SIMPLE_SHAPE sshape,
+extern shape_component_pt shapeComponent_create(paint_frame_pt frame, simple_shape_pt sshape,
 		gdouble x, gdouble y);
 
 #endif /* SHAPE_COMPONENT_H_ */

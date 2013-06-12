@@ -32,13 +32,13 @@
 #include "service_registration.h"
 
 struct activatorData {
-    PUBLISHER_SERVICE ps;
-    PUBLISHER pub;
+    publisher_service_pt ps;
+    publisher_pt pub;
 
-    service_registration_t reg;
+    service_registration_pt reg;
 };
 
-celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
     apr_pool_t *pool;
     celix_status_t status = bundleContext_getMemoryPool(context, &pool);
     if (status == CELIX_SUCCESS) {
@@ -49,12 +49,12 @@ celix_status_t bundleActivator_create(bundle_context_t context, void **userData)
     return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
     celix_status_t status = CELIX_SUCCESS;
     apr_pool_t *pool;
     status = bundleContext_getMemoryPool(context, &pool);
     if (status == CELIX_SUCCESS) {
-		properties_t props = NULL;
+		properties_pt props = NULL;
 
         struct activatorData * data = (struct activatorData *) userData;
         data->ps = apr_pcalloc(pool, sizeof(*(data->ps)));
@@ -76,7 +76,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
     return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
     celix_status_t status = CELIX_SUCCESS;
 
     struct activatorData * data = (struct activatorData *) userData;
@@ -85,6 +85,6 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
     return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
     return CELIX_SUCCESS;
 }

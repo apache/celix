@@ -31,22 +31,22 @@
 #include "echo_server_private.h"
 
 struct echoActivator {
-	service_registration_t reg;
-	ECHO_SERVICE es;
+	service_registration_pt reg;
+	echo_service_pt es;
 };
 
-celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	struct echoActivator * act = malloc(sizeof(*act));
 	act->reg = NULL;
 	*userData = act;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
 	struct echoActivator * act = (struct echoActivator *) userData;
 
-	ECHO_SERVICE es = malloc(sizeof(*es));
-	ECHO_SERVER server = echoServer_create();
+	echo_service_pt es = malloc(sizeof(*es));
+	echo_server_pt server = echoServer_create();
 	es->server = server;
 	es->echo = echoServer_echo;
 
@@ -57,7 +57,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
     return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
 	struct echoActivator * act = (struct echoActivator *) userData;
 
 	serviceRegistration_unregister(act->reg);
@@ -66,7 +66,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	struct echoActivator * act = (struct echoActivator *) userData;
 	act->es->echo = NULL;
 	echoServer_destroy(act->es->server);

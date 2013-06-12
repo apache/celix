@@ -31,10 +31,10 @@
 struct driver_locator {
     apr_pool_t *pool;
     char *path;
-    array_list_t drivers;
+    array_list_pt drivers;
 };
 
-celix_status_t driverLocator_findDrivers(driver_locator_t locator, apr_pool_t *pool, properties_t props, array_list_t *drivers);
-celix_status_t driverLocator_loadDriver(driver_locator_t locator, apr_pool_t *pool, char *id, char **driver);
+celix_status_t driverLocator_findDrivers(driver_locator_pt locator, apr_pool_t *pool, properties_pt props, array_list_pt *drivers);
+celix_status_t driverLocator_loadDriver(driver_locator_pt locator, apr_pool_t *pool, char *id, char **driver);
 
 #endif /* DRIVER_LOCATOR_PRIVATE_H_ */

@@ -27,6 +27,6 @@
 #ifndef TRIANGLE_SHAPE_H_
 #define TRIANGLE_SHAPE_H_
 
-extern SIMPLE_SHAPE triangleShape_create(bundle_context_t ctx);
+extern simple_shape_pt triangleShape_create(bundle_context_pt ctx);
 
 #endif /* TRIANGLE_SHAPE_H_ */

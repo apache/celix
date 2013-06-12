@@ -38,11 +38,11 @@
 #include "simple_shape.h"
 
 struct activator {
-	service_registration_t reg;
+	service_registration_pt reg;
 	apr_pool_t *pool;
 };
 
-celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	apr_pool_t *pool;
 	struct activator *activator;
 	celix_status_t status = bundleContext_getMemoryPool(context, &pool);
@@ -55,11 +55,11 @@ celix_status_t bundleActivator_create(bundle_context_t context, void **userData)
 	return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_t ctx) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_pt ctx) {
 	struct activator * act = (struct activator *) userData;
 	celix_status_t status = CELIX_SUCCESS;
-	SIMPLE_SHAPE es = NULL;
-	properties_t props = NULL;
+	simple_shape_pt es = NULL;
+	properties_pt props = NULL;
 
 	circleShape_create(ctx, &es);
 	props = properties_create();
@@ -68,7 +68,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t ctx) {
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator * act = (struct activator *) userData;
 
@@ -77,6 +77,6 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	return CELIX_SUCCESS;
 }

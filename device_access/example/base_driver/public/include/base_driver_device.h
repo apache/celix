@@ -31,14 +31,14 @@
 #define BASE_DRIVER_SERVICE_NAME "base_driver_device_service"
 #define BASE_DRIVER_DEVICE_CATEGORY "char"
 
-typedef struct base_driver_device *base_driver_device_t;
+typedef struct base_driver_device *base_driver_device_pt;
 
 struct base_driver_device_service {
 	struct device_service deviceService; /*NOTE: base_driver_device_service is a device_service.*/
-	base_driver_device_t baseDriverDevice;
-	celix_status_t (*getNextChar)(base_driver_device_t baseDriverDevice, char *c);
+	base_driver_device_pt baseDriverDevice;
+	celix_status_t (*getNextChar)(base_driver_device_pt baseDriverDevice, char *c);
 };
 
-typedef struct base_driver_device_service * base_driver_device_service_t;
+typedef struct base_driver_device_service * base_driver_device_service_pt;
 
 #endif /* BASE_DRIVER_DEVICE_H_ */

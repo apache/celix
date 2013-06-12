@@ -29,10 +29,10 @@
 #include <service_reference.h>
 
 struct match {
-	service_reference_t reference;
+	service_reference_pt reference;
 	int matchValue;
 };
 
-typedef struct match *match_t;
+typedef struct match *match_pt;
 
 #endif /* MATCH_H_ */

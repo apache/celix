@@ -32,15 +32,15 @@
 #include "log_service.h"
 #include "bundle.h"
 
-typedef log_service_t LOG_SERVICE;
+typedef log_service_pt LOG_SERVICE;
 
 struct threadData {
 	char * service;
 	int threadId;
-	bundle_context_t m_context;
+	bundle_context_pt m_context;
 };
 
-typedef struct threadData *THREAD_DATA;
+typedef struct threadData *thread_data_pt;
 
 static apr_thread_t *m_logTestThread;
 
@@ -48,40 +48,40 @@ static apr_thread_t *m_logTestThread;
 //*******************************************************************************
 // function prototypes
 //*******************************************************************************
-void startTestThread(THREAD_DATA data);
+void startTestThread(thread_data_pt data);
 void stopTestThread();
 void pauseTestThread();
-void alternativeLog(char *message, THREAD_DATA data);
+void alternativeLog(char *message, thread_data_pt data);
 //*******************************************************************************
 // global functions
 //*******************************************************************************
 
-celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	apr_pool_t *pool;
 	celix_status_t status = bundleContext_getMemoryPool(context, &pool);
 	if (status == CELIX_SUCCESS) {
 		*userData = apr_palloc(pool, sizeof(struct threadData));
-		((THREAD_DATA)(*userData))->service = "chapter04-correct-lookup";
-		((THREAD_DATA)(*userData))->threadId = 0;
-		((THREAD_DATA)(*userData))->m_context = context;
+		((thread_data_pt)(*userData))->service = "chapter04-correct-lookup";
+		((thread_data_pt)(*userData))->threadId = 0;
+		((thread_data_pt)(*userData))->m_context = context;
 	} else {
 		status = CELIX_START_ERROR;
 	}
 	return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
-	((THREAD_DATA) userData)->m_context = context;
-	startTestThread(((THREAD_DATA) userData));
+celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
+	((thread_data_pt) userData)->m_context = context;
+	startTestThread(((thread_data_pt) userData));
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
 	stopTestThread();
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	return CELIX_SUCCESS;
 }
 
@@ -92,12 +92,12 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context
 // Test LogService by periodically sending a message
 void *APR_THREAD_FUNC LogServiceTest(apr_thread_t *thd, void *argument) {
 	celix_status_t status = CELIX_SUCCESS;
-	THREAD_DATA data = (THREAD_DATA) argument;
-	bundle_context_t m_context = ((THREAD_DATA) argument)->m_context;
+	thread_data_pt data = (thread_data_pt) argument;
+	bundle_context_pt m_context = ((thread_data_pt) argument)->m_context;
 	apr_os_thread_t *logThread = NULL;
 	apr_os_thread_get(&logThread, m_logTestThread);
 	while (apr_os_thread_current() == *logThread) {
-		service_reference_t logServiceRef = NULL;
+		service_reference_pt logServiceRef = NULL;
 		// lookup the current "best" LogService each time, just before we need to use it
 		status = bundleContext_getServiceReference(m_context, (char *) LOG_SERVICE_NAME, &logServiceRef);
 		// if the service reference is null then we know there's no log service available
@@ -120,7 +120,7 @@ void *APR_THREAD_FUNC LogServiceTest(apr_thread_t *thd, void *argument) {
 	return NULL;
 }
 
-void startTestThread(THREAD_DATA data) {
+void startTestThread(thread_data_pt data) {
 	apr_pool_t *pool;
 	int rc;
 	// start separate worker thread to run the actual tests, managed by the bundle lifecycle
@@ -142,10 +142,10 @@ void pauseTestThread() {
 	apr_sleep(5000000);
 }
 
-void alternativeLog(char *message, THREAD_DATA data) {
+void alternativeLog(char *message, thread_data_pt data) {
 	// this provides similar style debug logging output for when the LogService disappears
 	celix_status_t status = CELIX_SUCCESS;
-	bundle_t bundle = NULL;
+	bundle_pt bundle = NULL;
 	char tid[20], bid[20];
 	long bundleId;
 	if (data->m_context != NULL) {

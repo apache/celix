@@ -41,25 +41,25 @@ typedef enum state_state {
 } STATE_STATE;
 
 struct state {
-	array_list_t dependencies;
+	array_list_pt dependencies;
 	STATE_STATE state;
 };
 
 struct executorEntry {
-	SERVICE service;
+	service_pt service;
 	void (*function)(void *, void*);
 	void * argument;
 };
 
 struct executor {
 	struct executorEntry * active;
-	linked_list_t workQueue;
+	linked_list_pt workQueue;
 
 	apr_thread_mutex_t *mutex;
 };
 
-SERVICE serviceComponent_create(bundle_context_t context, DEPENDENCY_MANAGER manager) {
-    SERVICE service;
+service_pt serviceComponent_create(bundle_context_pt context, dependency_manager_pt manager) {
+    service_pt service;
     apr_pool_t *pool;
 	apr_pool_t *mypool;
 
@@ -67,7 +67,7 @@ SERVICE serviceComponent_create(bundle_context_t context, DEPENDENCY_MANAGER man
 	apr_pool_create(&mypool, pool);
 
 	if (mypool) {
-        service = (SERVICE) apr_pcalloc(mypool, sizeof(*service));
+        service = (service_pt) apr_pcalloc(mypool, sizeof(*service));
         service->pool = mypool;
         service->impl = NULL;
         service->serviceName = NULL;
@@ -91,7 +91,7 @@ SERVICE serviceComponent_create(bundle_context_t context, DEPENDENCY_MANAGER man
 	return service;
 }
 
-void serviceComponent_calculateStateChanges(SERVICE service, const STATE old, const STATE new) {
+void serviceComponent_calculateStateChanges(service_pt service, const state_pt old, const state_pt new) {
 	if (state_isWaitingForRequired(old) && state_isTrackingOptional(new)) {
 		executor_enqueue(service->executor, service, serviceComponent_activateService, new);
 	}
@@ -114,8 +114,8 @@ void serviceComponent_calculateStateChanges(SERVICE service, const STATE old, co
 	executor_execute(service->executor);
 }
 
-SERVICE serviceComponent_addServiceDependency(SERVICE service, SERVICE_DEPENDENCY dependency) {
-	STATE old, new;
+service_pt serviceComponent_addServiceDependency(service_pt service, service_dependency_pt dependency) {
+	state_pt old, new;
 	apr_thread_mutex_lock(service->mutex);
 	old = service->state;
 	arrayList_add(service->dependencies, dependency);
@@ -135,8 +135,8 @@ SERVICE serviceComponent_addServiceDependency(SERVICE service, SERVICE_DEPENDENC
 	return service;
 }
 
-SERVICE serviceComponent_removeServiceDependency(SERVICE service, SERVICE_DEPENDENCY dependency) {
-	STATE old, new;
+service_pt serviceComponent_removeServiceDependency(service_pt service, service_dependency_pt dependency) {
+	state_pt old, new;
 	apr_thread_mutex_lock(service->mutex);
 	old = service->state;
 	arrayList_removeElement(service->dependencies, dependency);
@@ -156,8 +156,8 @@ SERVICE serviceComponent_removeServiceDependency(SERVICE service, SERVICE_DEPEND
 	return service;
 }
 
-void serviceComponent_dependencyAvailable(SERVICE service, SERVICE_DEPENDENCY dependency) {
-	STATE old, new;
+void serviceComponent_dependencyAvailable(service_pt service, service_dependency_pt dependency) {
+	state_pt old, new;
 	apr_thread_mutex_lock(service->mutex);
 	old = service->state;
 	new = state_create(arrayList_clone(service->pool, service->dependencies), !state_isInactive(old));
@@ -171,8 +171,8 @@ void serviceComponent_dependencyAvailable(SERVICE service, SERVICE_DEPENDENCY de
 	}
 }
 
-void serviceComponent_dependencyChanged(SERVICE service, SERVICE_DEPENDENCY dependency) {
-	STATE state;
+void serviceComponent_dependencyChanged(service_pt service, service_dependency_pt dependency) {
+	state_pt state;
 	apr_thread_mutex_lock(service->mutex);
 	state = service->state;
 	apr_thread_mutex_unlock(service->mutex);
@@ -182,8 +182,8 @@ void serviceComponent_dependencyChanged(SERVICE service, SERVICE_DEPENDENCY depe
 	}
 }
 
-void serviceComponent_dependencyUnavailable(SERVICE service, SERVICE_DEPENDENCY dependency) {
-	STATE old, new;
+void serviceComponent_dependencyUnavailable(service_pt service, service_dependency_pt dependency) {
+	state_pt old, new;
 	apr_thread_mutex_lock(service->mutex);
 	old = service->state;
 	new = state_create(arrayList_clone(service->pool, service->dependencies), !state_isInactive(old));
@@ -197,8 +197,8 @@ void serviceComponent_dependencyUnavailable(SERVICE service, SERVICE_DEPENDENCY 
 	}
 }
 
-void serviceComponent_start(SERVICE service) {
-	STATE old, new;
+void serviceComponent_start(service_pt service) {
+	state_pt old, new;
 	bundleContext_registerService(service->context, SERVICE_COMPONENT_NAME, service, NULL, &service->serviceRegistration);
 	apr_thread_mutex_lock(service->mutex);
 	old = service->state;
@@ -209,8 +209,8 @@ void serviceComponent_start(SERVICE service) {
 	state_destroy(old);
 }
 
-void serviceComponent_stop(SERVICE service) {
-	STATE old, new;
+void serviceComponent_stop(service_pt service) {
+	state_pt old, new;
 	apr_thread_mutex_lock(service->mutex);
 	old = service->state;
 	new = state_create(arrayList_clone(service->pool, service->dependencies), false);
@@ -221,20 +221,20 @@ void serviceComponent_stop(SERVICE service) {
 	serviceRegistration_unregister(service->serviceRegistration);
 }
 
-SERVICE serviceComponent_setInterface(SERVICE service, char * serviceName, properties_t properties) {
+service_pt serviceComponent_setInterface(service_pt service, char * serviceName, properties_pt properties) {
 	service->serviceName = serviceName;
 	service->properties = properties;
 
 	return service;
 }
 
-SERVICE serviceComponent_setImplementation(SERVICE service, void * implementation) {
+service_pt serviceComponent_setImplementation(service_pt service, void * implementation) {
 	service->impl = implementation;
 	return service;
 }
 
-void serviceComponent_activateService(SERVICE service, void * arg) {
-	STATE state = (STATE) arg;
+void serviceComponent_activateService(service_pt service, void * arg) {
+	state_pt state = (state_pt) arg;
 	serviceComponent_initService(service);
 	service->init(service->impl);
 	serviceComponent_configureService(service, state);
@@ -243,8 +243,8 @@ void serviceComponent_activateService(SERVICE service, void * arg) {
 	serviceComponent_registerService(service);
 }
 
-void serviceComponent_deactivateService(SERVICE service, void * arg) {
-	STATE state = (STATE) arg;
+void serviceComponent_deactivateService(service_pt service, void * arg) {
+	state_pt state = (state_pt) arg;
 	serviceComponent_unregisterService(service);
 	serviceComponent_stopTrackingOptional(service, state);
 	service->stop(service->impl);
@@ -252,11 +252,11 @@ void serviceComponent_deactivateService(SERVICE service, void * arg) {
 	serviceComponent_destroyService(service, state);
 }
 
-void serviceComponent_startTrackingOptional(SERVICE service, STATE state) {
-    array_list_t deps = arrayList_clone(service->pool, state->dependencies);
-	array_list_iterator_t i = arrayListIterator_create(deps);
+void serviceComponent_startTrackingOptional(service_pt service, state_pt state) {
+    array_list_pt deps = arrayList_clone(service->pool, state->dependencies);
+	array_list_iterator_pt i = arrayListIterator_create(deps);
 	while (arrayListIterator_hasNext(i)) {
-		SERVICE_DEPENDENCY dependency = (SERVICE_DEPENDENCY) arrayListIterator_next(i);
+		service_dependency_pt dependency = (service_dependency_pt) arrayListIterator_next(i);
 		if (!dependency->required) {
 			serviceDependency_start(dependency, service);
 		}
@@ -265,11 +265,11 @@ void serviceComponent_startTrackingOptional(SERVICE service, STATE state) {
 	arrayList_destroy(deps);
 }
 
-void serviceComponent_stopTrackingOptional(SERVICE service, STATE state) {
-    array_list_t deps = arrayList_clone(service->pool, state->dependencies);
-	array_list_iterator_t i = arrayListIterator_create(deps);
+void serviceComponent_stopTrackingOptional(service_pt service, state_pt state) {
+    array_list_pt deps = arrayList_clone(service->pool, state->dependencies);
+	array_list_iterator_pt i = arrayListIterator_create(deps);
 	while (arrayListIterator_hasNext(i)) {
-		SERVICE_DEPENDENCY dependency = (SERVICE_DEPENDENCY) arrayListIterator_next(i);
+		service_dependency_pt dependency = (service_dependency_pt) arrayListIterator_next(i);
 		if (!dependency->required) {
 			serviceDependency_stop(dependency, service);
 		}
@@ -278,12 +278,12 @@ void serviceComponent_stopTrackingOptional(SERVICE service, STATE state) {
 	arrayList_destroy(deps);
 }
 
-void serviceComponent_startTrackingRequired(SERVICE service, void * arg) {
-	STATE state = (STATE) arg;
-	array_list_t deps = arrayList_clone(service->pool, state->dependencies);
-    array_list_iterator_t i = arrayListIterator_create(deps);
+void serviceComponent_startTrackingRequired(service_pt service, void * arg) {
+	state_pt state = (state_pt) arg;
+	array_list_pt deps = arrayList_clone(service->pool, state->dependencies);
+    array_list_iterator_pt i = arrayListIterator_create(deps);
 	while (arrayListIterator_hasNext(i)) {
-		SERVICE_DEPENDENCY dependency = (SERVICE_DEPENDENCY) arrayListIterator_next(i);
+		service_dependency_pt dependency = (service_dependency_pt) arrayListIterator_next(i);
 		if (dependency->required) {
 			serviceDependency_start(dependency, service);
 		}
@@ -292,12 +292,12 @@ void serviceComponent_startTrackingRequired(SERVICE service, void * arg) {
 	arrayList_destroy(deps);
 }
 
-void serviceComponent_stopTrackingRequired(SERVICE service, void * arg) {
-	STATE state = (STATE) arg;
-	array_list_t deps = arrayList_clone(service->pool, state->dependencies);
-    array_list_iterator_t i = arrayListIterator_create(deps);
+void serviceComponent_stopTrackingRequired(service_pt service, void * arg) {
+	state_pt state = (state_pt) arg;
+	array_list_pt deps = arrayList_clone(service->pool, state->dependencies);
+    array_list_iterator_pt i = arrayListIterator_create(deps);
 	while (arrayListIterator_hasNext(i)) {
-		SERVICE_DEPENDENCY dependency = (SERVICE_DEPENDENCY) arrayListIterator_next(i);
+		service_dependency_pt dependency = (service_dependency_pt) arrayListIterator_next(i);
 		if (dependency->required) {
 			serviceDependency_stop(dependency, service);
 		}
@@ -306,13 +306,13 @@ void serviceComponent_stopTrackingRequired(SERVICE service, void * arg) {
 	arrayList_destroy(deps);
 }
 
-void serviceComponent_initService(SERVICE service) {
+void serviceComponent_initService(service_pt service) {
 }
 
-void serviceComponent_configureService(SERVICE service, STATE state) {
-	array_list_iterator_t i = arrayListIterator_create(state->dependencies);
+void serviceComponent_configureService(service_pt service, state_pt state) {
+	array_list_iterator_pt i = arrayListIterator_create(state->dependencies);
 	while (arrayListIterator_hasNext(i)) {
-		SERVICE_DEPENDENCY dependency = (SERVICE_DEPENDENCY) arrayListIterator_next(i);
+		service_dependency_pt dependency = (service_dependency_pt) arrayListIterator_next(i);
 		if (dependency->autoConfigureField != NULL) {
 			*dependency->autoConfigureField = serviceDependency_getService(dependency);
 		}
@@ -323,10 +323,10 @@ void serviceComponent_configureService(SERVICE service, STATE state) {
 	arrayListIterator_destroy(i);
 }
 
-void serviceComponent_destroyService(SERVICE service, STATE state) {
-	array_list_iterator_t i = arrayListIterator_create(state->dependencies);
+void serviceComponent_destroyService(service_pt service, state_pt state) {
+	array_list_iterator_pt i = arrayListIterator_create(state->dependencies);
 	while (arrayListIterator_hasNext(i)) {
-		SERVICE_DEPENDENCY dependency = (SERVICE_DEPENDENCY) arrayListIterator_next(i);
+		service_dependency_pt dependency = (service_dependency_pt) arrayListIterator_next(i);
 		if (dependency->required) {
 			serviceDependency_invokeRemoved(dependency);
 		}
@@ -337,37 +337,37 @@ void serviceComponent_destroyService(SERVICE service, STATE state) {
 	arrayList_destroy(service->dependencies);
 }
 
-void serviceComponent_registerService(SERVICE service) {
+void serviceComponent_registerService(service_pt service) {
 	if (service->serviceName != NULL) {
 		bundleContext_registerService(service->context, service->serviceName, service->impl, service->properties, &service->registration);
 	}
 }
 
-void serviceComponent_unregisterService(SERVICE service) {
+void serviceComponent_unregisterService(service_pt service) {
 	if (service->serviceName != NULL) {
 		serviceRegistration_unregister(service->registration);
 	}
 }
 
-void serviceComponent_updateInstance(SERVICE service, void * arg) {
-	SERVICE_DEPENDENCY dependency = (SERVICE_DEPENDENCY) arg;
+void serviceComponent_updateInstance(service_pt service, void * arg) {
+	service_dependency_pt dependency = (service_dependency_pt) arg;
 	if (dependency->autoConfigureField != NULL) {
 		*dependency->autoConfigureField = serviceDependency_getService(dependency);
 	}
 }
 
-char * serviceComponent_getName(SERVICE service) {
+char * serviceComponent_getName(service_pt service) {
 	return service->serviceName;
 }
 
-STATE state_create(array_list_t dependencies, bool active) {
-	STATE state = (STATE) malloc(sizeof(*state));
+state_pt state_create(array_list_pt dependencies, bool active) {
+	state_pt state = (state_pt) malloc(sizeof(*state));
 	state->dependencies = dependencies;
 	if (active) {
 		bool allReqAvail = true;
 		unsigned int i;
 		for (i = 0; i < arrayList_size(dependencies); i++) {
-			SERVICE_DEPENDENCY dependency = arrayList_get(dependencies, i);
+			service_dependency_pt dependency = arrayList_get(dependencies, i);
 			if (dependency->required) {
 				if (!dependency->available) {
 					allReqAvail = false;
@@ -387,7 +387,7 @@ STATE state_create(array_list_t dependencies, bool active) {
 	return state;
 }
 
-void state_destroy(STATE state) {
+void state_destroy(state_pt state) {
 	if (state->dependencies != NULL) {
 		arrayList_destroy(state->dependencies);
 		state->dependencies = NULL;
@@ -397,26 +397,26 @@ void state_destroy(STATE state) {
 	state = NULL;
 }
 
-bool state_isInactive(STATE state) {
+bool state_isInactive(state_pt state) {
 	return state->state == STATE_INACTIVE;
 }
 
-bool state_isWaitingForRequired(STATE state) {
+bool state_isWaitingForRequired(state_pt state) {
 	return state->state == STATE_WAITING_FOR_REQUIRED;
 }
 
-bool state_isTrackingOptional(STATE state) {
+bool state_isTrackingOptional(state_pt state) {
 	return state->state == STATE_TRACKING_OPTIONAL;
 }
 
-array_list_t state_getDependencies(STATE state) {
+array_list_pt state_getDependencies(state_pt state) {
 	return state->dependencies;
 }
 
-EXECUTOR executor_create(apr_pool_t *memory_pool) {
-	EXECUTOR executor;
+executor_pt executor_create(apr_pool_t *memory_pool) {
+	executor_pt executor;
 
-	executor = (EXECUTOR) apr_pcalloc(memory_pool, sizeof(*executor));
+	executor = (executor_pt) apr_pcalloc(memory_pool, sizeof(*executor));
 	if (executor) {
         linkedList_create(memory_pool, &executor->workQueue);
         executor->active = NULL;
@@ -426,7 +426,7 @@ EXECUTOR executor_create(apr_pool_t *memory_pool) {
 	return executor;
 }
 
-void executor_enqueue(EXECUTOR executor, SERVICE service, void (*function), void * argument) {
+void executor_enqueue(executor_pt executor, service_pt service, void (*function), void * argument) {
 	struct executorEntry * entry = NULL;
 	apr_thread_mutex_lock(executor->mutex);
 	entry = (struct executorEntry *) malloc(sizeof(*entry));
@@ -437,7 +437,7 @@ void executor_enqueue(EXECUTOR executor, SERVICE service, void (*function), void
 	apr_thread_mutex_unlock(executor->mutex);
 }
 
-void executor_execute(EXECUTOR executor) {
+void executor_execute(executor_pt executor) {
 	struct executorEntry * active;
 	apr_thread_mutex_lock(executor->mutex);
 	active = executor->active;
@@ -447,7 +447,7 @@ void executor_execute(EXECUTOR executor) {
 	}
 }
 
-void executor_scheduleNext(EXECUTOR executor) {
+void executor_scheduleNext(executor_pt executor) {
 	struct executorEntry * entry = NULL;
 	apr_thread_mutex_lock(executor->mutex);
 	entry = linkedList_removeFirst(executor->workQueue);

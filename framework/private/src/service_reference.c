@@ -34,13 +34,13 @@
 #include "bundle.h"
 
 struct serviceReference {
-	bundle_t bundle;
+	bundle_pt bundle;
 	struct serviceRegistration * registration;
 };
 
 apr_status_t serviceReference_destroy(void *referenceP);
 
-celix_status_t serviceReference_create(apr_pool_t *pool, bundle_t bundle, service_registration_t registration, service_reference_t *reference) {
+celix_status_t serviceReference_create(apr_pool_t *pool, bundle_pt bundle, service_registration_pt registration, service_reference_pt *reference) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*reference = apr_palloc(pool, sizeof(**reference));
@@ -57,36 +57,36 @@ celix_status_t serviceReference_create(apr_pool_t *pool, bundle_t bundle, servic
 }
 
 apr_status_t serviceReference_destroy(void *referenceP) {
-	service_reference_t reference = referenceP;
+	service_reference_pt reference = referenceP;
 	reference->bundle = NULL;
 	reference->registration = NULL;
 	return APR_SUCCESS;
 }
 
-celix_status_t serviceReference_getBundle(service_reference_t reference, bundle_t *bundle) {
+celix_status_t serviceReference_getBundle(service_reference_pt reference, bundle_pt *bundle) {
 	*bundle = reference->bundle;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t serviceReference_getServiceRegistration(service_reference_t reference, service_registration_t *registration) {
+celix_status_t serviceReference_getServiceRegistration(service_reference_pt reference, service_registration_pt *registration) {
 	*registration = reference->registration;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t serviceReference_invalidate(service_reference_t reference) {
+celix_status_t serviceReference_invalidate(service_reference_pt reference) {
 	reference->registration = NULL;
 	return CELIX_SUCCESS;
 }
 
-bool serviceReference_isAssignableTo(service_reference_t reference, bundle_t requester, char * serviceName) {
+bool serviceReference_isAssignableTo(service_reference_pt reference, bundle_pt requester, char * serviceName) {
 	bool allow = true;
 
-	bundle_t provider = reference->bundle;
+	bundle_pt provider = reference->bundle;
 	if (requester == provider) {
 		return allow;
 	}
-//	wire_t providerWire = module_getWire(bundle_getCurrentModule(provider), serviceName);
-//	wire_t requesterWire = module_getWire(bundle_getCurrentModule(requester), serviceName);
+//	wire_pt providerWire = module_getWire(bundle_getCurrentModule(provider), serviceName);
+//	wire_pt requesterWire = module_getWire(bundle_getCurrentModule(requester), serviceName);
 //
 //	if (providerWire == NULL && requesterWire != NULL) {
 //		allow = (bundle_getCurrentModule(provider) == wire_getExporter(requesterWire));
@@ -101,10 +101,10 @@ bool serviceReference_isAssignableTo(service_reference_t reference, bundle_t req
 	return allow;
 }
 
-celix_status_t serviceReference_getUsingBundles(service_reference_t reference, apr_pool_t *pool, array_list_t *bundles) {
+celix_status_t serviceReference_getUsingBundles(service_reference_pt reference, apr_pool_t *pool, array_list_pt *bundles) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	service_registry_t registry = NULL;
+	service_registry_pt registry = NULL;
 	serviceRegistration_getRegistry(reference->registration, &registry);
 
 	*bundles = serviceRegistry_getUsingBundles(registry, pool, reference);
@@ -112,7 +112,7 @@ celix_status_t serviceReference_getUsingBundles(service_reference_t reference, a
 	return status;
 }
 
-celix_status_t serviceReference_equals(service_reference_t reference, service_reference_t compareTo, bool *equal) {
+celix_status_t serviceReference_equals(service_reference_pt reference, service_reference_pt compareTo, bool *equal) {
 	*equal = (reference->registration == compareTo->registration);
 	return CELIX_SUCCESS;
 }
@@ -124,7 +124,7 @@ int serviceReference_equals2(void *reference1, void *reference2) {
 }
 
 unsigned int serviceReference_hashCode(void *referenceP) {
-	service_reference_t reference = referenceP;
+	service_reference_pt reference = referenceP;
 	int prime = 31;
 	int result = 1;
 	result = prime * result;

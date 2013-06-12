@@ -37,15 +37,15 @@
 #include "simple_shape.h"
 
 struct squareActivator {
-	service_registration_t reg;
+	service_registration_pt reg;
 	apr_pool_t *pool;
 };
 
-typedef struct squareActivator *GREETING_ACTIVATOR;
+typedef struct squareActivator *greeting_activator_pt;
 
-celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	apr_pool_t *pool;
-	GREETING_ACTIVATOR activator;
+	greeting_activator_pt activator;
 	celix_status_t status = bundleContext_getMemoryPool(context, &pool);
 	if (status == CELIX_SUCCESS) {
 		*userData = apr_palloc(pool, sizeof(struct squareActivator));
@@ -57,21 +57,21 @@ celix_status_t bundleActivator_create(bundle_context_t context, void **userData)
 	return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_t ctx) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_pt ctx) {
 	struct squareActivator * act = (struct squareActivator *) userData;
 	celix_status_t status = CELIX_SUCCESS;
-	SIMPLE_SHAPE es = squareShape_create(ctx);
-	properties_t props = properties_create();
+	simple_shape_pt es = squareShape_create(ctx);
+	properties_pt props = properties_create();
 	properties_set(props, "name", "square");
     status = bundleContext_registerService(ctx, SIMPLE_SHAPE_SERVICE_NAME, es, props, &act->reg);
 	printf("Square start\n");
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	return CELIX_SUCCESS;
 }

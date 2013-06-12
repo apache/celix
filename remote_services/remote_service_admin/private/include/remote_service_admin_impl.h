@@ -34,38 +34,38 @@
 #define DEFAULT_BUNDLE_STORE "rs_bundles"
 
 struct export_reference {
-	endpoint_description_t endpoint;
-	service_reference_t reference;
+	endpoint_description_pt endpoint;
+	service_reference_pt reference;
 };
 
 struct import_reference {
-	endpoint_description_t endpoint;
-	service_reference_t reference;
+	endpoint_description_pt endpoint;
+	service_reference_pt reference;
 };
 
 struct remote_service_admin {
 	apr_pool_t *pool;
-	bundle_context_t context;
+	bundle_context_pt context;
 
-	hash_map_t exportedServices;
-	hash_map_t importedServices;
+	hash_map_pt exportedServices;
+	hash_map_pt importedServices;
 
 	struct mg_context *ctx;
 };
 
-celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_t context, remote_service_admin_t *admin);
-celix_status_t remoteServiceAdmin_stop(remote_service_admin_t admin);
+celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt context, remote_service_admin_pt *admin);
+celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin);
 
-celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t admin, service_reference_t reference, properties_t properties, array_list_t *registrations);
-celix_status_t remoteServiceAdmin_getExportedServices(remote_service_admin_t admin, array_list_t *services);
-celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_admin_t admin, array_list_t *services);
-celix_status_t remoteServiceAdmin_importService(remote_service_admin_t admin, endpoint_description_t endpoint, import_registration_t *registration);
+celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, service_reference_pt reference, properties_pt properties, array_list_pt *registrations);
+celix_status_t remoteServiceAdmin_getExportedServices(remote_service_admin_pt admin, array_list_pt *services);
+celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_admin_pt admin, array_list_pt *services);
+celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, endpoint_description_pt endpoint, import_registration_pt *registration);
 
 
-celix_status_t exportReference_getExportedEndpoint(export_reference_t reference, endpoint_description_t *endpoint);
-celix_status_t exportReference_getExportedService(export_reference_t reference);
+celix_status_t exportReference_getExportedEndpoint(export_reference_pt reference, endpoint_description_pt *endpoint);
+celix_status_t exportReference_getExportedService(export_reference_pt reference);
 
-celix_status_t importReference_getImportedEndpoint(import_reference_t reference);
-celix_status_t importReference_getImportedService(import_reference_t reference);
+celix_status_t importReference_getImportedEndpoint(import_reference_pt reference);
+celix_status_t importReference_getImportedService(import_reference_pt reference);
 
 #endif /* REMOTE_SERVICE_ADMIN_IMPL_H_ */

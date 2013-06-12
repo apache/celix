@@ -31,7 +31,7 @@
 
 #include "example_service.h"
 
-celix_status_t exampleEndpoint_create(apr_pool_t *pool, remote_endpoint_t *endpoint) {
+celix_status_t exampleEndpoint_create(apr_pool_t *pool, remote_endpoint_pt *endpoint) {
 	celix_status_t status = CELIX_SUCCESS;
 	*endpoint = apr_palloc(pool, sizeof(**endpoint));
 	if (!*endpoint) {
@@ -44,7 +44,7 @@ celix_status_t exampleEndpoint_create(apr_pool_t *pool, remote_endpoint_t *endpo
 	return status;
 }
 
-celix_status_t exampleEndpoint_setService(remote_endpoint_t endpoint, void *service) {
+celix_status_t exampleEndpoint_setService(remote_endpoint_pt endpoint, void *service) {
 	celix_status_t status = CELIX_SUCCESS;
 	endpoint->service = service;
 	return status;
@@ -53,7 +53,7 @@ celix_status_t exampleEndpoint_setService(remote_endpoint_t endpoint, void *serv
 /**
  * Request: http://host:port/services/{service}/{request}
  */
-celix_status_t exampleEndpoint_handleRequest(remote_endpoint_t ep, char *request, char *data, char **reply) {
+celix_status_t exampleEndpoint_handleRequest(remote_endpoint_pt ep, char *request, char *data, char **reply) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	printf("EXAMPLE ENDPOINT: Handle request \"%s\" with data \"%s\"\n", request, data);
@@ -74,7 +74,7 @@ celix_status_t exampleEndpoint_handleRequest(remote_endpoint_t ep, char *request
  * data = { "a" : 1.1, "b" : 2.4 }
  * reply = 3.5
  */
-celix_status_t exampleEndpoint_add(remote_endpoint_t ep, char *data, char **reply) {
+celix_status_t exampleEndpoint_add(remote_endpoint_pt ep, char *data, char **reply) {
 	celix_status_t status = CELIX_SUCCESS;
 	json_error_t jsonError;
 	json_t *root;
@@ -90,7 +90,7 @@ celix_status_t exampleEndpoint_add(remote_endpoint_t ep, char *data, char **repl
 		if (ep->service != NULL) {
 			double result;
 			json_t *resultRoot;
-			example_service_t service = ep->service;
+			example_service_pt service = ep->service;
 			service->add(service->example, a, b, &result);
 			resultRoot = json_pack("{s:f}", "result", result);
 
@@ -105,7 +105,7 @@ celix_status_t exampleEndpoint_add(remote_endpoint_t ep, char *data, char **repl
 	return status;
 }
 
-celix_status_t exampleEndpoint_sub(remote_endpoint_t ep, char *data, char **reply) {
+celix_status_t exampleEndpoint_sub(remote_endpoint_pt ep, char *data, char **reply) {
 	celix_status_t status = CELIX_SUCCESS;
 	json_error_t jsonError;
 	json_t *root;
@@ -121,7 +121,7 @@ celix_status_t exampleEndpoint_sub(remote_endpoint_t ep, char *data, char **repl
 		if (ep->service != NULL) {
 			double result;
 			json_t *resultRoot;
-			example_service_t service = ep->service;
+			example_service_pt service = ep->service;
 			service->sub(service->example, a, b, &result);
 			resultRoot = json_pack("{s:f}", "result", result);
 
@@ -136,7 +136,7 @@ celix_status_t exampleEndpoint_sub(remote_endpoint_t ep, char *data, char **repl
 	return status;
 }
 
-celix_status_t exampleEndpoint_sqrt(remote_endpoint_t ep, char *data, char **reply) {
+celix_status_t exampleEndpoint_sqrt(remote_endpoint_pt ep, char *data, char **reply) {
 	celix_status_t status = CELIX_SUCCESS;
 	json_error_t jsonError;
 	json_t *root;
@@ -151,7 +151,7 @@ celix_status_t exampleEndpoint_sqrt(remote_endpoint_t ep, char *data, char **rep
 		if (ep->service != NULL) {
 			double result;
 			json_t *resultRoot;
-			example_service_t service = ep->service;
+			example_service_pt service = ep->service;
 			service->sqrt(service->example, a, &result);
 			resultRoot = json_pack("{s:f}", "result", result);
 

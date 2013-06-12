@@ -35,24 +35,24 @@
 #include "device_manager.h"
 
 struct device_manager_bundle_instance {
-	bundle_context_t context;
+	bundle_context_pt context;
 	apr_pool_t *pool;
-	device_manager_t deviceManager;
-	service_tracker_t driverLocatorTracker;
-	service_tracker_t driverTracker;
-	service_tracker_t deviceTracker;
+	device_manager_pt deviceManager;
+	service_tracker_pt driverLocatorTracker;
+	service_tracker_pt driverTracker;
+	service_tracker_pt deviceTracker;
 };
 
-typedef struct device_manager_bundle_instance *device_manager_bundle_instance_t;
+typedef struct device_manager_bundle_instance *device_manager_bundle_instance_pt;
 
-static celix_status_t deviceManagerBundle_createDriverLocatorTracker(device_manager_bundle_instance_t bundleData);
-static celix_status_t deviceManagerBundle_createDriverTracker(device_manager_bundle_instance_t bundleData);
-static celix_status_t deviceManagerBundle_createDeviceTracker(device_manager_bundle_instance_t bundleData);
+static celix_status_t deviceManagerBundle_createDriverLocatorTracker(device_manager_bundle_instance_pt bundleData);
+static celix_status_t deviceManagerBundle_createDriverTracker(device_manager_bundle_instance_pt bundleData);
+static celix_status_t deviceManagerBundle_createDeviceTracker(device_manager_bundle_instance_pt bundleData);
 
-celix_status_t addingService_dummy_func(void * handle, service_reference_t reference, void **service) {
+celix_status_t addingService_dummy_func(void * handle, service_reference_pt reference, void **service) {
 	celix_status_t status = CELIX_SUCCESS;
-	device_manager_t dm = handle;
-	bundle_context_t context = NULL;
+	device_manager_pt dm = handle;
+	bundle_context_pt context = NULL;
 	status = deviceManager_getBundleContext(dm, &context);
 	if (status == CELIX_SUCCESS) {
 		status = bundleContext_getService(context, reference, service);
@@ -60,12 +60,12 @@ celix_status_t addingService_dummy_func(void * handle, service_reference_t refer
 	return status;
 }
 
-celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_pool_t *pool;
 	status = bundleContext_getMemoryPool(context, &pool);
 	if (status == CELIX_SUCCESS) {
-		device_manager_bundle_instance_t bi = apr_palloc(pool, sizeof(struct device_manager_bundle_instance));
+		device_manager_bundle_instance_pt bi = apr_palloc(pool, sizeof(struct device_manager_bundle_instance));
 		if (bi == NULL) {
 			status = CELIX_ENOMEM;
 		} else {
@@ -78,9 +78,9 @@ celix_status_t bundleActivator_create(bundle_context_t context, void **userData)
 	return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
-	device_manager_bundle_instance_t bundleData = userData;
+	device_manager_bundle_instance_pt bundleData = userData;
 	apr_pool_t *pool;
 	status = bundleContext_getMemoryPool(context, &pool);
 	if (status == CELIX_SUCCESS) {
@@ -110,16 +110,16 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 	return status;
 }
 
-static celix_status_t deviceManagerBundle_createDriverLocatorTracker(device_manager_bundle_instance_t bundleData) {
+static celix_status_t deviceManagerBundle_createDriverLocatorTracker(device_manager_bundle_instance_pt bundleData) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	service_tracker_customizer_t customizer = NULL;
+	service_tracker_customizer_pt customizer = NULL;
 
 	status = serviceTrackerCustomizer_create(bundleData->pool, bundleData->deviceManager, addingService_dummy_func,
 			deviceManager_locatorAdded, deviceManager_locatorModified, deviceManager_locatorRemoved, &customizer);
 
 	if (status == CELIX_SUCCESS) {
-		service_tracker_t tracker = NULL;
+		service_tracker_pt tracker = NULL;
 		status = serviceTracker_create(bundleData->pool, bundleData->context, "driver_locator", customizer, &tracker);
 		if (status == CELIX_SUCCESS) {
 			bundleData->driverLocatorTracker=tracker;
@@ -130,16 +130,16 @@ static celix_status_t deviceManagerBundle_createDriverLocatorTracker(device_mana
 	return status;
 }
 
-static celix_status_t deviceManagerBundle_createDriverTracker(device_manager_bundle_instance_t bundleData) {
+static celix_status_t deviceManagerBundle_createDriverTracker(device_manager_bundle_instance_pt bundleData) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	service_tracker_customizer_t customizer = NULL;
+	service_tracker_customizer_pt customizer = NULL;
 
 	status = serviceTrackerCustomizer_create(bundleData->pool, bundleData->deviceManager, addingService_dummy_func,
 			deviceManager_locatorAdded, deviceManager_locatorModified, deviceManager_locatorRemoved, &customizer);
 
 	if (status == CELIX_SUCCESS) {
-		service_tracker_t tracker = NULL;
+		service_tracker_pt tracker = NULL;
 		status = serviceTracker_createWithFilter(bundleData->pool, bundleData->context, "(objectClass=driver)", customizer, &tracker);
 		if (status == CELIX_SUCCESS) {
 			bundleData->driverTracker=tracker;
@@ -150,16 +150,16 @@ static celix_status_t deviceManagerBundle_createDriverTracker(device_manager_bun
 	return status;
 }
 
-static celix_status_t deviceManagerBundle_createDeviceTracker(device_manager_bundle_instance_t bundleData) {
+static celix_status_t deviceManagerBundle_createDeviceTracker(device_manager_bundle_instance_pt bundleData) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	service_tracker_customizer_t customizer = NULL;
+	service_tracker_customizer_pt customizer = NULL;
 
 	status = serviceTrackerCustomizer_create(bundleData->pool, bundleData->deviceManager, addingService_dummy_func,
 			deviceManager_locatorAdded, deviceManager_locatorModified, deviceManager_locatorRemoved, &customizer);
 
 	if (status == CELIX_SUCCESS) {
-		service_tracker_t tracker = NULL;
+		service_tracker_pt tracker = NULL;
 		status = serviceTracker_createWithFilter(bundleData->pool, bundleData->context, "(|(objectClass=device)(DEVICE_CATEGORY=*))", customizer, &tracker);
 		if (status == CELIX_SUCCESS) {
 			bundleData->deviceTracker=tracker;
@@ -170,9 +170,9 @@ static celix_status_t deviceManagerBundle_createDeviceTracker(device_manager_bun
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
-	device_manager_bundle_instance_t bundleData = userData;
+	device_manager_bundle_instance_pt bundleData = userData;
 //	status = serviceTracker_close(bundleData->driverLocatorTracker);
 	if (status == CELIX_SUCCESS) {
 		status = serviceTracker_close(bundleData->driverTracker);
@@ -183,9 +183,9 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
 	return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
-	device_manager_bundle_instance_t bundleData = userData;
+	device_manager_bundle_instance_pt bundleData = userData;
 	deviceManager_destroy(bundleData->deviceManager);
 	return CELIX_SUCCESS;
 }

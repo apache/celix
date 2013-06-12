@@ -43,11 +43,11 @@
 
 
 void *remoteServiceAdmin_callback(enum mg_event event, struct mg_connection *conn, const struct mg_request_info *request_info);
-celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_t admin, export_registration_t registration, service_reference_t reference, char *interface);
-celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_t admin, properties_t serviceProperties, properties_t endpointProperties, char *interface, endpoint_description_t *description);
-celix_status_t remoteServiceAdmin_getUUID(remote_service_admin_t rsa, char **uuidStr);
+celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin, export_registration_pt registration, service_reference_pt reference, char *interface);
+celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, properties_pt serviceProperties, properties_pt endpointProperties, char *interface, endpoint_description_pt *description);
+celix_status_t remoteServiceAdmin_getUUID(remote_service_admin_pt rsa, char **uuidStr);
 
-celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_t context, remote_service_admin_t *admin) {
+celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt context, remote_service_admin_pt *admin) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*admin = apr_palloc(pool, sizeof(**admin));
@@ -72,24 +72,24 @@ celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_t cont
 	return status;
 }
 
-celix_status_t remoteServiceAdmin_stop(remote_service_admin_t admin) {
+celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	hash_map_iterator_t iter = hashMapIterator_create(admin->exportedServices);
+	hash_map_iterator_pt iter = hashMapIterator_create(admin->exportedServices);
 	while (hashMapIterator_hasNext(iter)) {
-		array_list_t exports = hashMapIterator_nextValue(iter);
+		array_list_pt exports = hashMapIterator_nextValue(iter);
 		int i;
 		for (i = 0; i < arrayList_size(exports); i++) {
-			export_registration_t export = arrayList_get(exports, i);
+			export_registration_pt export = arrayList_get(exports, i);
 			exportRegistration_stopTracking(export);
 		}
 	}
 	iter = hashMapIterator_create(admin->importedServices);
 	while (hashMapIterator_hasNext(iter)) {
-		array_list_t exports = hashMapIterator_nextValue(iter);
+		array_list_pt exports = hashMapIterator_nextValue(iter);
 		int i;
 		for (i = 0; i < arrayList_size(exports); i++) {
-			import_registration_t export = arrayList_get(exports, i);
+			import_registration_pt export = arrayList_get(exports, i);
 			importRegistration_stopTracking(export);
 		}
 	}
@@ -99,14 +99,14 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_t admin) {
 
 
 
-celix_status_t remoteServiceAdmin_handleRequest(remote_service_admin_t rsa, char *service, char *request, char *data, char **reply) {
-	hash_map_iterator_t iter = hashMapIterator_create(rsa->exportedServices);
+celix_status_t remoteServiceAdmin_handleRequest(remote_service_admin_pt rsa, char *service, char *request, char *data, char **reply) {
+	hash_map_iterator_pt iter = hashMapIterator_create(rsa->exportedServices);
 	while (hashMapIterator_hasNext(iter)) {
-		hash_map_entry_t entry = hashMapIterator_nextEntry(iter);
-		array_list_t exports = hashMapEntry_getValue(entry);
+		hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
+		array_list_pt exports = hashMapEntry_getValue(entry);
 		int expIt = 0;
 		for (expIt = 0; expIt < arrayList_size(exports); expIt++) {
-			export_registration_t export = arrayList_get(exports, expIt);
+			export_registration_pt export = arrayList_get(exports, expIt);
 			if (strcmp(service, export->endpointDescription->service) == 0) {
 				export->endpoint->handleRequest(export->endpoint->endpoint, request, data, reply);
 			}
@@ -115,13 +115,13 @@ celix_status_t remoteServiceAdmin_handleRequest(remote_service_admin_t rsa, char
 	return CELIX_SUCCESS;
 }
 
-celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t admin, service_reference_t reference, properties_t properties, array_list_t *registrations) {
+celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, service_reference_pt reference, properties_pt properties, array_list_pt *registrations) {
 	celix_status_t status = CELIX_SUCCESS;
 	arrayList_create(admin->pool, registrations);
 
-	service_registration_t registration = NULL;
+	service_registration_pt registration = NULL;
 	serviceReference_getServiceRegistration(reference, &registration);
-	properties_t serviceProperties = NULL;
+	properties_pt serviceProperties = NULL;
 	serviceRegistration_getProperties(registration, &serviceProperties);
 	char *exports = properties_get(serviceProperties, (char *) SERVICE_EXPORTED_INTERFACES);
 	char *provided = properties_get(serviceProperties, (char *) OBJECTCLASS);
@@ -130,7 +130,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t admin, se
 		printf("RSA: No Services to export.\n");
 	} else {
 		printf("RSA: Export services (%s)\n", exports);
-		array_list_t interfaces = NULL;
+		array_list_pt interfaces = NULL;
 		arrayList_create(admin->pool, &interfaces);
 		if (strcmp(string_trim(exports), "*") == 0) {
 			char *token;
@@ -160,7 +160,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t admin, se
 			int iter = 0;
 			for (iter = 0; iter < arrayList_size(interfaces); iter++) {
 				char *interface = arrayList_get(interfaces, iter);
-				export_registration_t registration = NULL;
+				export_registration_pt registration = NULL;
 
 				exportRegistration_create(admin->pool, reference, NULL, admin, admin->context, &registration);
 				arrayList_add(*registrations, registration);
@@ -176,19 +176,19 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_t admin, se
 	return status;
 }
 
-celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_t admin, export_registration_t registration, service_reference_t reference, char *interface) {
+celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin, export_registration_pt registration, service_reference_pt reference, char *interface) {
 	celix_status_t status = CELIX_SUCCESS;
-	properties_t endpointProperties = properties_create();
-	properties_t serviceProperties = NULL;
+	properties_pt endpointProperties = properties_create();
+	properties_pt serviceProperties = NULL;
 
-	service_registration_t sRegistration = NULL;
+	service_registration_pt sRegistration = NULL;
 	serviceReference_getServiceRegistration(reference, &sRegistration);
 
 	serviceRegistration_getProperties(sRegistration, &serviceProperties);
 
-	hash_map_iterator_t iter = hashMapIterator_create(serviceProperties);
+	hash_map_iterator_pt iter = hashMapIterator_create(serviceProperties);
 	while (hashMapIterator_hasNext(iter)) {
-		hash_map_entry_t entry = hashMapIterator_nextEntry(iter);
+		hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
 		char *key = (char *) hashMapEntry_getKey(entry);
 		char *value = (char *) hashMapEntry_getValue(entry);
 
@@ -203,15 +203,15 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_t admin, 
 	char *service = "/services/example";
 	properties_set(endpointProperties, (char *) SERVICE_LOCATION, apr_pstrdup(admin->pool, service));
 
-	endpoint_description_t endpointDescription = NULL;
+	endpoint_description_pt endpointDescription = NULL;
 	remoteServiceAdmin_createEndpointDescription(admin, serviceProperties, endpointProperties, interface, &endpointDescription);
 	exportRegistration_setEndpointDescription(registration, endpointDescription);
 
 	return status;
 }
 
-celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_t admin, properties_t serviceProperties,
-		properties_t endpointProperties, char *interface, endpoint_description_t *description) {
+celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, properties_pt serviceProperties,
+		properties_pt endpointProperties, char *interface, endpoint_description_pt *description) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*description = apr_palloc(admin->pool, sizeof(*description));
@@ -233,23 +233,23 @@ celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin
 	return status;
 }
 
-celix_status_t remoteServiceAdmin_getExportedServices(remote_service_admin_t admin, array_list_t *services) {
+celix_status_t remoteServiceAdmin_getExportedServices(remote_service_admin_pt admin, array_list_pt *services) {
 	celix_status_t status = CELIX_SUCCESS;
 	return status;
 }
 
-celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_admin_t admin, array_list_t *services) {
+celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_admin_pt admin, array_list_pt *services) {
 	celix_status_t status = CELIX_SUCCESS;
 	return status;
 }
 
-celix_status_t remoteServiceAdmin_importService(remote_service_admin_t admin, endpoint_description_t endpoint, import_registration_t *registration) {
+celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, endpoint_description_pt endpoint, import_registration_pt *registration) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	printf("RSA: Import service %s\n", endpoint->service);
 	importRegistration_create(admin->pool, endpoint, admin, admin->context, registration);
 
-	array_list_t importedRegs = hashMap_get(admin->importedServices, endpoint);
+	array_list_pt importedRegs = hashMap_get(admin->importedServices, endpoint);
 	if (importedRegs == NULL) {
 		arrayList_create(admin->pool, &importedRegs);
 		hashMap_put(admin->importedServices, endpoint, importedRegs);
@@ -263,7 +263,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_t admin, en
 }
 
 
-celix_status_t exportReference_getExportedEndpoint(export_reference_t reference, endpoint_description_t *endpoint) {
+celix_status_t exportReference_getExportedEndpoint(export_reference_pt reference, endpoint_description_pt *endpoint) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*endpoint = reference->endpoint;
@@ -271,22 +271,22 @@ celix_status_t exportReference_getExportedEndpoint(export_reference_t reference,
 	return status;
 }
 
-celix_status_t exportReference_getExportedService(export_reference_t reference) {
+celix_status_t exportReference_getExportedService(export_reference_pt reference) {
 	celix_status_t status = CELIX_SUCCESS;
 	return status;
 }
 
-celix_status_t importReference_getImportedEndpoint(import_reference_t reference) {
+celix_status_t importReference_getImportedEndpoint(import_reference_pt reference) {
 	celix_status_t status = CELIX_SUCCESS;
 	return status;
 }
 
-celix_status_t importReference_getImportedService(import_reference_t reference) {
+celix_status_t importReference_getImportedService(import_reference_pt reference) {
 	celix_status_t status = CELIX_SUCCESS;
 	return status;
 }
 
-celix_status_t remoteServiceAdmin_getUUID(remote_service_admin_t rsa, char **uuidStr) {
+celix_status_t remoteServiceAdmin_getUUID(remote_service_admin_pt rsa, char **uuidStr) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	status = bundleContext_getProperty(rsa->context, ENDPOINT_FRAMEWORK_UUID, uuidStr);

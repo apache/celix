@@ -30,7 +30,7 @@
 #define SERVICE_EVENT_H_
 
 typedef enum serviceEventType service_event_type_e;
-typedef struct serviceEvent *service_event_t;
+typedef struct serviceEvent *service_event_pt;
 
 #include "service_reference.h"
 
@@ -43,7 +43,7 @@ enum serviceEventType
 };
 
 struct serviceEvent {
-	service_reference_t reference;
+	service_reference_pt reference;
 	service_event_type_e type;
 };
 

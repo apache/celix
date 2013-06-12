@@ -32,9 +32,9 @@
 #include "bundle_context.h"
 
 struct data {
-	bundle_context_t context;
-	service_tracker_t tracker;
-	array_list_t publishers;
+	bundle_context_pt context;
+	service_tracker_pt tracker;
+	array_list_pt publishers;
 	apr_thread_t *sender;
 	bool running;
 };
@@ -44,7 +44,7 @@ static void *APR_THREAD_FUNC trk_send(apr_thread_t *thd, void *handle) {
 	while (data->running) {
 		int i;
 		for (i = 0; i < arrayList_size(data->publishers); i++) {
-			PUBLISHER_SERVICE pub = arrayList_get(data->publishers, i);
+			publisher_service_pt pub = arrayList_get(data->publishers, i);
 			pub->invoke(pub->publisher, "test");
 		}
 		apr_sleep(1000000);
@@ -53,7 +53,7 @@ static void *APR_THREAD_FUNC trk_send(apr_thread_t *thd, void *handle) {
 	return NULL;
 }
 
-celix_status_t addingServ(void * handle, service_reference_t ref, void **service) {
+celix_status_t addingServ(void * handle, service_reference_pt ref, void **service) {
     struct data * data = (struct data *) handle;
 
     printf("Adding\n");
@@ -62,27 +62,27 @@ celix_status_t addingServ(void * handle, service_reference_t ref, void **service
 	return CELIX_SUCCESS;
 }
 
-celix_status_t addedServ(void * handle, service_reference_t ref, void * service) {
+celix_status_t addedServ(void * handle, service_reference_pt ref, void * service) {
 	struct data * data = (struct data *) handle;
 	arrayList_add(data->publishers, service);
 	printf("Added %p\n", service);
 	return CELIX_SUCCESS;
 }
 
-celix_status_t modifiedServ(void * handle, service_reference_t ref, void * service) {
+celix_status_t modifiedServ(void * handle, service_reference_pt ref, void * service) {
 	struct data * data = (struct data *) handle;
 	printf("Modified\n");
 	return CELIX_SUCCESS;
 }
 
-celix_status_t removedServ(void * handle, service_reference_t ref, void * service) {
+celix_status_t removedServ(void * handle, service_reference_pt ref, void * service) {
 	struct data * data = (struct data *) handle;
 	arrayList_removeElement(data->publishers, service);
 	printf("Removed %p\n", service);
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
     apr_pool_t *pool;
     celix_status_t status = bundleContext_getMemoryPool(context, &pool);
     if (status == CELIX_SUCCESS) {
@@ -95,14 +95,14 @@ celix_status_t bundleActivator_create(bundle_context_t context, void **userData)
     return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
     celix_status_t status = CELIX_SUCCESS;
     apr_pool_t *pool;
     status = bundleContext_getMemoryPool(context, &pool);
     if (status == CELIX_SUCCESS) {
         struct data * data = (struct data *) userData;
-		service_tracker_customizer_t cust = NULL;
-		service_tracker_t tracker = NULL;
+		service_tracker_customizer_pt cust = NULL;
+		service_tracker_pt tracker = NULL;
         
 		data->context = context;
 
@@ -121,7 +121,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
     return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
     celix_status_t status = CELIX_SUCCESS;
     struct data * data = (struct data *) userData;
 
@@ -133,7 +133,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
     return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
     celix_status_t status = CELIX_SUCCESS;
     struct data * data = (struct data *) userData;
 

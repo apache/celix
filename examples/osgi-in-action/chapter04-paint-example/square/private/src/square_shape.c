@@ -37,12 +37,12 @@
 #include "square_shape.h"
 #define SQUARE_FILE "square.png"
 
-void squareShape_draw(SIMPLE_SHAPE shape, GdkPixmap *pixMap, GtkWidget *widget, gdouble x, gdouble y);
+void squareShape_draw(simple_shape_pt shape, GdkPixmap *pixMap, GtkWidget *widget, gdouble x, gdouble y);
 
-SIMPLE_SHAPE squareShape_create(bundle_context_t context) {
-	bundle_t bundle;
+simple_shape_pt squareShape_create(bundle_context_pt context) {
+	bundle_pt bundle;
 	apr_pool_t *pool;
-	SIMPLE_SHAPE shape = (SIMPLE_SHAPE) malloc(sizeof(*shape));
+	simple_shape_pt shape = (simple_shape_pt) malloc(sizeof(*shape));
 	celix_status_t status = CELIX_SUCCESS;
 	bundleContext_getBundle(context, &bundle);
 	bundleContext_getMemoryPool(context, &pool);
@@ -58,7 +58,7 @@ SIMPLE_SHAPE squareShape_create(bundle_context_t context) {
 	return shape;
 }
 
-void squareShape_draw(SIMPLE_SHAPE shape, GdkPixmap *pixMap, GtkWidget *widget, gdouble x, gdouble y){
+void squareShape_draw(simple_shape_pt shape, GdkPixmap *pixMap, GtkWidget *widget, gdouble x, gdouble y){
 	GdkRectangle update_rect;
 	GdkPixbuf *curr_pix_buf;
 	GError *gerror = NULL;

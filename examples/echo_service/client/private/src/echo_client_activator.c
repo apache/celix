@@ -33,11 +33,11 @@
 #include "echo_client_private.h"
 
 struct echoActivator {
-	ECHO_CLIENT client;
-	service_tracker_t tracker;
+	echo_client_pt client;
+	service_tracker_pt tracker;
 };
 
-celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	struct echoActivator * act = malloc(sizeof(*act));
 	act->client = NULL;
 	act->tracker = NULL;
@@ -47,12 +47,12 @@ celix_status_t bundleActivator_create(bundle_context_t context, void **userData)
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
 	struct echoActivator * act = (struct echoActivator *) userData;
 
 	apr_pool_t *pool = NULL;
-	service_tracker_t tracker = NULL;
-	ECHO_CLIENT client = NULL;
+	service_tracker_pt tracker = NULL;
+	echo_client_pt client = NULL;
 
 	bundleContext_getMemoryPool(context, &pool);
 	serviceTracker_create(pool, context, ECHO_SERVICE_NAME, NULL, &tracker);
@@ -67,7 +67,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
 	struct echoActivator * act = (struct echoActivator *) userData;
 	serviceTracker_close(act->tracker);
 	echoClient_stop(act->client);
@@ -75,7 +75,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	struct echoActivator * act = (struct echoActivator *) userData;
 	echoClient_destroy(act->client);
 

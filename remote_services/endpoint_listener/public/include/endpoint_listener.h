@@ -31,17 +31,17 @@
 #include "properties.h"
 
 struct endpoint_description {
-	array_list_t configurationTypes;
+	array_list_pt configurationTypes;
 	char *frameworkUUID;
 	char *id;
-	// array_list_t intents;
+	// array_list_pt intents;
 	char *service;
 	// HASH_MAP packageVersions;
-	properties_t properties;
+	properties_pt properties;
 	long serviceId;
 };
 
-typedef struct endpoint_description *endpoint_description_t;
+typedef struct endpoint_description *endpoint_description_pt;
 
 static const char * const endpoint_listener_service = "endpoint_listener";
 
@@ -49,11 +49,11 @@ static const char * const ENDPOINT_LISTENER_SCOPE = "endpoint.listener.scope";
 
 struct endpoint_listener {
 	void *handle;
-	celix_status_t (*endpointAdded)(void *handle, endpoint_description_t endpoint, char *machtedFilter);
-	celix_status_t (*endpointRemoved)(void *handle, endpoint_description_t endpoint, char *machtedFilter);
+	celix_status_t (*endpointAdded)(void *handle, endpoint_description_pt endpoint, char *machtedFilter);
+	celix_status_t (*endpointRemoved)(void *handle, endpoint_description_pt endpoint, char *machtedFilter);
 };
 
-typedef struct endpoint_listener *endpoint_listener_t;
+typedef struct endpoint_listener *endpoint_listener_pt;
 
 
 #endif /* ENDPOINT_LISTENER_H_ */

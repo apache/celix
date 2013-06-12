@@ -44,18 +44,18 @@
 
 struct bundle_instance {
 	apr_pool_t *pool;
-	shell_mediator_t shellMediator;
-	remote_shell_t remoteShell;
-	connection_listener_t connectionListener;
+	shell_mediator_pt shellMediator;
+	remote_shell_pt remoteShell;
+	connection_listener_pt connectionListener;
 };
 
-typedef struct bundle_instance *bundle_instance_t;
+typedef struct bundle_instance *bundle_instance_pt;
 
-static apr_size_t bundleActivator_getPort(bundle_context_t context);
-static apr_size_t bundleActivator_getMaximumConnections(bundle_context_t context);
-static apr_size_t bundleActivator_getProperty(bundle_context_t context, char * propertyName, apr_size_t defaultValue);
+static apr_size_t bundleActivator_getPort(bundle_context_pt context);
+static apr_size_t bundleActivator_getMaximumConnections(bundle_context_pt context);
+static apr_size_t bundleActivator_getProperty(bundle_context_pt context, char * propertyName, apr_size_t defaultValue);
 
-celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
     apr_pool_t *ctxpool;
     apr_pool_t *pool;
@@ -63,7 +63,7 @@ celix_status_t bundleActivator_create(bundle_context_t context, void **userData)
     status = bundleContext_getMemoryPool(context, &ctxpool);
     apr_pool_create(&pool, ctxpool);
     if (status == CELIX_SUCCESS) {
-    	bundle_instance_t bi = (bundle_instance_t) apr_palloc(pool, sizeof(struct bundle_instance));
+    	bundle_instance_pt bi = (bundle_instance_pt) apr_palloc(pool, sizeof(struct bundle_instance));
         if (userData != NULL) {
         	bi->pool = pool;
         	bi->shellMediator = NULL;
@@ -77,9 +77,9 @@ celix_status_t bundleActivator_create(bundle_context_t context, void **userData)
     return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
     celix_status_t status = CELIX_SUCCESS;
-    bundle_instance_t bi = (bundle_instance_t)userData;
+    bundle_instance_pt bi = (bundle_instance_pt)userData;
 
     apr_size_t port = bundleActivator_getPort(context);
     apr_size_t maxConn = bundleActivator_getMaximumConnections(context);
@@ -92,9 +92,9 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
     return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
     celix_status_t status = CELIX_SUCCESS;
-    bundle_instance_t bi = (bundle_instance_t)userData;
+    bundle_instance_pt bi = (bundle_instance_pt)userData;
 
     connectionListener_stop(bi->connectionListener);
     remoteShell_stopConnections(bi->remoteShell);
@@ -102,19 +102,19 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
     return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
     return CELIX_SUCCESS;
 }
 
-static apr_size_t bundleActivator_getPort(bundle_context_t context) {
+static apr_size_t bundleActivator_getPort(bundle_context_pt context) {
 	return bundleActivator_getProperty(context, REMOTE_SHELL_TELNET_PORT_PROPERTY_NAME, DEFAULT_REMOTE_SHELL_TELNET_PORT);
 }
 
-static apr_size_t bundleActivator_getMaximumConnections(bundle_context_t context) {
+static apr_size_t bundleActivator_getMaximumConnections(bundle_context_pt context) {
 	return bundleActivator_getProperty(context, REMOTE_SHELL_TELNET_MAXCONN_PROPERTY_NAME, DEFAULT_REMOTE_SHELL_TELNET_MAXCONN);
 }
 
-static apr_size_t bundleActivator_getProperty(bundle_context_t context, char * propertyName, apr_size_t defaultValue) {
+static apr_size_t bundleActivator_getProperty(bundle_context_pt context, char * propertyName, apr_size_t defaultValue) {
 	apr_size_t value;
 	char *strValue = NULL;
 

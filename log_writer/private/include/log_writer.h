@@ -32,15 +32,15 @@
 #include "log_reader_service.h"
 
 struct log_writer {
-    log_reader_service_t logReader;
-    SERVICE service;
-    SERVICE_DEPENDENCY dep;
-    log_listener_t logListener;
+    log_reader_service_pt logReader;
+    service_pt service;
+    service_dependency_pt dep;
+    log_listener_pt logListener;
 };
 
-typedef struct log_writer *log_writer_t;
+typedef struct log_writer *log_writer_pt;
 
-celix_status_t logWriter_create(apr_pool_t *pool, log_writer_t *writer);
+celix_status_t logWriter_create(apr_pool_t *pool, log_writer_pt *writer);
 
 
 #endif /* LOG_WRITER_H_ */

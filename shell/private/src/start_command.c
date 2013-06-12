@@ -31,10 +31,10 @@
 #include "bundle_context.h"
 #include "bundle.h"
 
-void startCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *));
+void startCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *));
 
-COMMAND startCommand_create(bundle_context_t context) {
-	COMMAND command = (COMMAND) malloc(sizeof(*command));
+command_pt startCommand_create(bundle_context_pt context) {
+	command_pt command = (command_pt) malloc(sizeof(*command));
 	command->bundleContext = context;
 	command->name = "start";
 	command->shortDescription = "start bundle(s).";
@@ -43,19 +43,19 @@ COMMAND startCommand_create(bundle_context_t context) {
 	return command;
 }
 
-void startCommand_destroy(COMMAND command) {
+void startCommand_destroy(command_pt command) {
 	free(command);
 }
 
 
-void startCommand_execute(COMMAND command, char * line, void (*out)(char *), void (*err)(char *)) {
+void startCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *)) {
 	char delims[] = " ";
 	char * sub = NULL;
 	sub = strtok(line, delims);
 	sub = strtok(NULL, delims);
 	while (sub != NULL) {
 		long id = atol(sub);
-        bundle_t bundle = NULL;
+        bundle_pt bundle = NULL;
 		bundleContext_getBundleById(command->bundleContext, id, &bundle);
 		if (bundle != NULL) {
 			bundle_start(bundle, 0);

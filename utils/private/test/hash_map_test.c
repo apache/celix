@@ -32,7 +32,7 @@
 #include "hash_map.h"
 #include "hash_map_private.h"
 
-hash_map_t map;
+hash_map_pt map;
 
 int setup(void) {
 	printf("test\n");
@@ -172,7 +172,7 @@ void test_hashMap_getEntry(void) {
 	char * neKey = "notExisting";
 	char * key3 = NULL;
 	char * value3 = "value3";
-	hash_map_entry_t entry;
+	hash_map_entry_pt entry;
 	
 	hashMap_clear(map, false, false);
 
@@ -322,9 +322,9 @@ void test_hashMap_removeMapping(void) {
 	char * value = "value";
 	char * key2 = NULL;
 	char * value2 = "value2";
-	hash_map_entry_t entry1;
-	hash_map_entry_t entry2;
-	hash_map_entry_t removed;
+	hash_map_entry_pt entry1;
+	hash_map_entry_pt entry2;
+	hash_map_entry_pt removed;
 
 	hashMap_clear(map, false, false);
 
@@ -416,7 +416,7 @@ void test_hashMapValues_toArray(void) {
     char * value2 = "value2";
     char **array;
     int size;
-	hash_map_values_t values;
+	hash_map_values_pt values;
 
 	hashMap_clear(map, false, false);
 

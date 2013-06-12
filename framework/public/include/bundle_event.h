@@ -42,13 +42,13 @@ enum bundle_event_type
 };
 
 typedef enum bundle_event_type bundle_event_type_e;
-typedef struct bundle_event *bundle_event_t;
+typedef struct bundle_event *bundle_event_pt;
 
 #include "service_reference.h"
 #include "bundle.h"
 
 struct bundle_event {
-	bundle_t bundle;
+	bundle_pt bundle;
 	bundle_event_type_e type;
 };
 

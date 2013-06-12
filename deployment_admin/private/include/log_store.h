@@ -32,14 +32,14 @@
 #include "properties.h"
 #include "array_list.h"
 
-typedef struct log_store *log_store_t;
+typedef struct log_store *log_store_pt;
 
-celix_status_t logStore_create(apr_pool_t *pool, log_store_t *store);
-celix_status_t logStore_put(log_store_t store, unsigned int type, properties_t properties, log_event_t *event);
+celix_status_t logStore_create(apr_pool_t *pool, log_store_pt *store);
+celix_status_t logStore_put(log_store_pt store, unsigned int type, properties_pt properties, log_event_pt *event);
 
-celix_status_t logStore_getLogId(log_store_t store, unsigned long *id);
-celix_status_t logStore_getEvents(log_store_t store, array_list_t *events);
+celix_status_t logStore_getLogId(log_store_pt store, unsigned long *id);
+celix_status_t logStore_getEvents(log_store_pt store, array_list_pt *events);
 
-celix_status_t logStore_getHighestId(log_store_t store, long *id);
+celix_status_t logStore_getHighestId(log_store_pt store, long *id);
 
 #endif /* LOG_STORE_H_ */

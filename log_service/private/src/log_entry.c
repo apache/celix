@@ -28,9 +28,9 @@
 
 #include "log_entry.h"
 
-celix_status_t logEntry_create(bundle_t bundle, service_reference_t reference,
+celix_status_t logEntry_create(bundle_pt bundle, service_reference_pt reference,
         log_level_t level, char *message, int errorCode,
-        apr_pool_t *pool, log_entry_t *entry) {
+        apr_pool_t *pool, log_entry_pt *entry) {
     celix_status_t status = CELIX_SUCCESS;
 
     *entry = apr_palloc(pool, sizeof(**entry));
@@ -48,32 +48,32 @@ celix_status_t logEntry_create(bundle_t bundle, service_reference_t reference,
     return status;
 }
 
-celix_status_t logEntry_getBundle(log_entry_t entry, bundle_t *bundle) {
+celix_status_t logEntry_getBundle(log_entry_pt entry, bundle_pt *bundle) {
     *bundle = entry->bundle;
     return CELIX_SUCCESS;
 }
 
-celix_status_t logEntry_getErrorCode(log_entry_t entry, int *errorCode) {
+celix_status_t logEntry_getErrorCode(log_entry_pt entry, int *errorCode) {
     *errorCode = entry->errorCode;
     return CELIX_SUCCESS;
 }
 
-celix_status_t logEntry_getLevel(log_entry_t entry, log_level_t *level) {
+celix_status_t logEntry_getLevel(log_entry_pt entry, log_level_t *level) {
     *level = entry->level;
     return CELIX_SUCCESS;
 }
 
-celix_status_t logEntry_getMessage(log_entry_t entry, char **message) {
+celix_status_t logEntry_getMessage(log_entry_pt entry, char **message) {
     *message = entry->message;
     return CELIX_SUCCESS;
 }
 
-celix_status_t logEntry_getServiceReference(log_entry_t entry, service_reference_t *reference) {
+celix_status_t logEntry_getServiceReference(log_entry_pt entry, service_reference_pt *reference) {
     *reference = entry->reference;
     return CELIX_SUCCESS;
 }
 
-celix_status_t logEntry_getTime(log_entry_t entry, time_t *time) {
+celix_status_t logEntry_getTime(log_entry_pt entry, time_t *time) {
     *time = entry->time;
     return CELIX_SUCCESS;
 }

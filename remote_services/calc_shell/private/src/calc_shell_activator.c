@@ -36,17 +36,17 @@
 #include "sqrt_command.h"
 
 struct activator {
-	service_registration_t addCommand;
-	COMMAND addCmd;
+	service_registration_pt addCommand;
+	command_pt addCmd;
 
-	service_registration_t subCommand;
-	COMMAND subCmd;
+	service_registration_pt subCommand;
+	command_pt subCmd;
 
-	service_registration_t sqrtCommand;
-	COMMAND sqrtCmd;
+	service_registration_pt sqrtCommand;
+	command_pt sqrtCmd;
 };
 
-celix_status_t bundleActivator_create(bundle_context_t context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_pool_t *pool = NULL;
 	status = bundleContext_getMemoryPool(context, &pool);
@@ -68,7 +68,7 @@ celix_status_t bundleActivator_create(bundle_context_t context, void **userData)
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
     celix_status_t status = CELIX_SUCCESS;
 
 	struct activator * activator = (struct activator *) userData;
@@ -85,7 +85,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_t context) 
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
     celix_status_t status = CELIX_SUCCESS;
 	struct activator * activator = (struct activator *) userData;
 	serviceRegistration_unregister(activator->addCommand);
@@ -101,7 +101,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_t context) {
 	return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_t context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	return CELIX_SUCCESS;
 }
 

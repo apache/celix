@@ -34,11 +34,11 @@
 
 #include "remote_shell.h"
 
-typedef struct connection_listener *connection_listener_t;
+typedef struct connection_listener *connection_listener_pt;
 
-celix_status_t connectionListener_create(apr_pool_t *pool, remote_shell_t remoteShell, apr_size_t port, connection_listener_t *instance);
+celix_status_t connectionListener_create(apr_pool_t *pool, remote_shell_pt remoteShell, apr_size_t port, connection_listener_pt *instance);
 
-celix_status_t connectionListener_start(connection_listener_t instance);
-celix_status_t connectionListener_stop(connection_listener_t instance);
+celix_status_t connectionListener_start(connection_listener_pt instance);
+celix_status_t connectionListener_stop(connection_listener_pt instance);
 
 #endif /* connectionListener_H_ */

@@ -28,14 +28,14 @@
 
 #define DRIVER_SELECTOR_SERVICE_NAME "driver_selector"
 
-typedef struct driver_selector *driver_selector_t;
+typedef struct driver_selector *driver_selector_pt;
 
 struct driver_selector_service {
-	driver_selector_t selector;
-	celix_status_t (*driverSelector_select)(driver_selector_t selector, service_reference_t reference, array_list_t matches, int *select);
+	driver_selector_pt selector;
+	celix_status_t (*driverSelector_select)(driver_selector_pt selector, service_reference_pt reference, array_list_pt matches, int *select);
 };
 
-typedef struct driver_selector_service *driver_selector_service_t;
+typedef struct driver_selector_service *driver_selector_service_pt;
 
 
 #endif /* DRIVER_SELECTOR_H_ */
