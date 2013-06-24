@@ -20,7 +20,12 @@ bundle(calc_shell SOURCES
 	private/src/sub_command
 	private/src/sqrt_command
 	private/src/calc_shell_activator
+    
+    private/include/add_command.h
+    private/include/sqrt_command.h
+    private/include/sub_command.h
 )
+
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/calc_shell/private/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/example_service/public/include")

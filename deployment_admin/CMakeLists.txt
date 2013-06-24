@@ -42,6 +42,16 @@ if (DEPLOYMENT_ADMIN)
     	private/src/log
     	private/src/log_store
     	private/src/log_sync
+        
+        private/include/deployment_admin.h
+        private/include/deployment_package.h
+        private/include/ioapi.h
+        private/include/log.h
+        private/include/log_event.h
+        private/include/log_store.h
+        private/include/log_sync.h
+        private/include/miniunz.h
+        private/include/unzip.h
     )
     
     target_link_libraries(deployment_admin celix_framework ${CURL_LIBRARIES})

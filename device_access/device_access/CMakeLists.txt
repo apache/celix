@@ -26,6 +26,11 @@ bundle(device_manager SOURCES
 	private/src/device_manager
 	private/src/driver_loader
 	private/src/driver_matcher
+    
+    private/include/device_manager.h
+    private/include/driver_attributes.h
+    private/include/driver_loader.h
+    private/include/driver_matcher.h
 )
 
 FILE(GLOB SERVICE_HEADERS public/include/*.h)

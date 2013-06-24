@@ -31,7 +31,19 @@ if (SHELL)
     	private/src/update_command
     	private/src/uninstall_command 
     	private/src/log_command
-    	private/src/inspect_command)
+    	private/src/inspect_command
+        
+        private/include/inspect_command.h
+        private/include/install_command.h
+        private/include/log_command.h
+        private/include/ps_command.h
+        private/include/shell_private.h
+        private/include/start_command.h
+        private/include/stop_command.h
+        private/include/uninstall_command.h
+        private/include/update_command.h
+    )
+
 	include_directories("public/include")
 	include_directories("private/include")
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")

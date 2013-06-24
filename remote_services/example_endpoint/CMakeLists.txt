@@ -26,5 +26,8 @@ include_directories("${PROJECT_SOURCE_DIR}/remote_services/example_service/publi
 bundle(example_endpoint SOURCES 
 	private/src/example_endpoint_activator
 	private/src/example_endpoint_impl.c
+    
+    private/include/example_endpoint_impl.h
 )
+
 target_link_libraries(example_endpoint celix_framework ${JANSSON_LIBRARIES})

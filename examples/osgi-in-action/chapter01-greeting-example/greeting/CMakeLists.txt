@@ -15,7 +15,13 @@
 # specific language governing permissions and limitations
 # under the License.
 
-bundle(chapter01-greeting-example SOURCES private/src/activator private/src/greeting_impl)
+bundle(chapter01-greeting-example SOURCES
+    private/src/activator
+    private/src/greeting_impl
+    
+    private/include/greeting_impl.h
+)
+
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("public/include")
 include_directories("private/include")

@@ -29,5 +29,8 @@ include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/pub
 bundle(example_proxy SOURCES 
 	private/src/example_proxy_activator
 	private/src/example_proxy_impl.c
+    
+    private/include/example_proxy_impl.h
 )
+
 target_link_libraries(example_proxy celix_framework ${JANSSON_LIBRARIES} ${CURL_LIBRARIES})

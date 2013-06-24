@@ -23,6 +23,9 @@ include_directories("${PROJECT_SOURCE_DIR}/remote_services/example_service/publi
 
 bundle(example SOURCES 
 	private/src/example_impl
-	private/src/example_activator  
+	private/src/example_activator
+    
+    private/include/example_impl.h
 )
+
 target_link_libraries(example celix_framework)

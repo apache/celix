@@ -17,7 +17,11 @@
 
 bundle(echo_client SOURCES 
 	private/src/echo_client_activator 
-	private/src/echo_client)
+	private/src/echo_client
+
+    private/include/echo_client_private.h
+)
+
 include_directories("private/include")
 include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")

@@ -17,7 +17,11 @@
 
 bundle(echo_server SOURCES 
 	private/src/echo_server_activator 
-	private/src/echo_server)
+	private/src/echo_server
+    
+    private/include/echo_server_private.h
+)
+
 include_directories("private/include")
 include_directories("public/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")

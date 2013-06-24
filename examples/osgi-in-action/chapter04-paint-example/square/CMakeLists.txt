@@ -34,9 +34,12 @@ link_directories(${GTHR_LIBRARY_DIRS})
 bundle(square SOURCES 
  	private/src/activator
  	private/src/square_shape
+    
+    private/include/square_shape.h
  FILES 
  	private/src/square.png
 )
+
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 target_link_libraries(square celix_framework ${GLIB_LIBRARIES} ${GTK_LIBRARIES} ${GTHR_LIBRARIES})

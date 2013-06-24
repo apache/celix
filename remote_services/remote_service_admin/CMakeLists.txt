@@ -33,6 +33,12 @@ bundle(remote_service_admin SOURCES
 	private/src/export_registration_impl
 	private/src/import_registration_impl
 	private/src/remote_service_admin_activator
-	private/src/mongoose.c  
+	private/src/mongoose.c
+
+    private/include/export_registration_impl.h
+    private/include/import_registration_impl.h
+    private/include/mongoose.h
+    private/include/remote_service_admin_impl.h
 )
+
 target_link_libraries(remote_service_admin celix_framework ${APRUTIL_LIBRARY} ${JANSSON_LIBRARIES})

@@ -23,7 +23,10 @@ if (LOG_WRITER)
 
     bundle(log_writer SOURCES 
     	private/src/dependency_activator 
-    	private/src/log_writer)
+    	private/src/log_writer
+    
+        private/include/log_writer.h    
+    )
 	include_directories("private/include")
     include_directories("${PROJECT_SOURCE_DIR}/dependency_manager/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")

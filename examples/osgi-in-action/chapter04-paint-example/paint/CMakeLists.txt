@@ -40,9 +40,14 @@ bundle(chapter04-paint-example SOURCES
 	private/src/default_shape
 	private/src/shape_component
 	private/src/paint_frame
+    
+    private/include/default_shape.h
+    private/include/paint_frame.h
+    private/include/shape_component.h
   FILES
   	private/src/underc.png gtktest.glade
- )
+)
+
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 target_link_libraries(chapter04-paint-example celix_framework ${MODULE_LIBRARIES} ${GLIB_LIBRARIES} ${GTK_LIBRARIES} ${GTHR_LIBRARIES})

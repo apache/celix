@@ -34,9 +34,12 @@ link_directories(${GTHR_LIBRARY_DIRS})
 bundle(triangle SOURCES 
  	private/src/activator
  	private/src/triangle_shape
+    
+    private/include/triangle_shape.h
  FILES 
  	private/src/triangle.png
- )
+)
+
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 target_link_libraries(triangle celix_framework ${GLIB_LIBRARIES} ${GTK_LIBRARIES} ${GTHR_LIBRARIES})

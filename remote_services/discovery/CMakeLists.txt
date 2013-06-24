@@ -30,6 +30,9 @@ SET_HEADERS("Bundle-Name: Apache Celix RSA SLP Discovery")
 bundle(discovery SOURCES 
 	private/src/discovery 
 	private/src/discovery_activator
+    
+    private/include/discovery.h
 )
+
 target_link_libraries(discovery celix_framework ${APRUTIL_LIBRARY} ${SLP_LIBRARIES})
 

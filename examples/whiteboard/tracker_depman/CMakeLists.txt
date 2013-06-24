@@ -15,7 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-bundle(tracker_depman SOURCES private/src/dependency_activator private/src/tracker)
+bundle(tracker_depman SOURCES
+    private/src/dependency_activator
+    private/src/tracker
+    
+    private/include/tracker.h
+)
 include_directories("private/include")
 include_directories("${PROJECT_SOURCE_DIR}/dependency_manager/public/include")
 include_directories("../publisherService/public/include")

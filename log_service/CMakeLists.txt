@@ -28,7 +28,13 @@ if (LOG_SERVICE)
     	private/src/log_service_impl 
     	private/src/log_service_activator
     	private/src/log_reader_service_impl
-    	)
+        
+        private/include/log.h
+        private/include/log_factory.h
+        private/include/log_reader_service_impl.h
+        private/include/log_service_impl.h
+    )
+    
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/log_service/private/include")

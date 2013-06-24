@@ -34,9 +34,12 @@ link_directories(${GTHR_LIBRARY_DIRS})
 bundle(circle SOURCES 
  	private/src/activator
  	private/src/circle_shape
+    
+    private/include/circle_shape.h
  FILES
  	private/src/circle.png
- )
+)
+
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 target_link_libraries(circle celix_framework ${GLIB_LIBRARIES} ${GTK_LIBRARIES} ${GTHR_LIBRARIES})

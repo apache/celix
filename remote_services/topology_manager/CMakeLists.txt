@@ -24,5 +24,11 @@ include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/
 SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_rs_topology_manager")
 SET_HEADERS("Bundle-Name: Apache Celix RS Topology Manager")
 
-bundle(topology_manager SOURCES private/src/topology_manager private/src/activator)
+bundle(topology_manager SOURCES
+    private/src/topology_manager
+    private/src/activator
+    
+    private/include/topology_manager.h
+)
+
 target_link_libraries(topology_manager celix_framework remote_services_utils ${APRUTIL_LIBRARY})
