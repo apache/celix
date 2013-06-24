@@ -30,7 +30,7 @@
 #include <apr_thread_proc.h>
 
 #include "bundle.h"
-#include "framework.h"
+#include "framework_private.h"
 #include "manifest.h"
 #include "module.h"
 #include "version.h"
@@ -293,24 +293,77 @@ celix_status_t bundle_createModule(bundle_pt bundle, module_pt *module) {
 	return status;
 }
 
-celix_status_t bundle_start(bundle_pt bundle, int options) {
+celix_status_t bundle_start(bundle_pt bundle) {
+	return bundle_startWithOptions(bundle, 0);
+}
+
+celix_status_t bundle_startWithOptions(bundle_pt bundle, int options) {
 	celix_status_t status = CELIX_SUCCESS;
     if (bundle != NULL) {
-        status = fw_startBundle(bundle->framework, bundle, options);
+    	bool systemBundle = false;
+    	status = bundle_isSystemBundle(bundle, &systemBundle);
+    	if (status == CELIX_SUCCESS) {
+    		if (systemBundle) {
+    			framework_start(bundle->framework);
+    		} else {
+    			status = fw_startBundle(bundle->framework, bundle, options);
+    		}
+    	}
     }
     return status;
 }
 
 celix_status_t bundle_update(bundle_pt bundle, char *inputFile) {
-	return framework_updateBundle(bundle->framework, bundle, inputFile);
+	celix_status_t status = CELIX_SUCCESS;
+	if (bundle != NULL) {
+		bool systemBundle = false;
+		status = bundle_isSystemBundle(bundle, &systemBundle);
+		if (status == CELIX_SUCCESS) {
+			if (systemBundle) {
+				// #TODO: Support framework update
+				status = CELIX_BUNDLE_EXCEPTION;
+			} else {
+				status = framework_updateBundle(bundle->framework, bundle, inputFile);
+			}
+		}
+	}
+	return status;
 }
 
-celix_status_t bundle_stop(bundle_pt bundle, int options) {
-	return fw_stopBundle(bundle->framework, bundle, ((options & 1) == 0));
+celix_status_t bundle_stop(bundle_pt bundle) {
+	return bundle_stopWithOptions(bundle, 0);
+}
+
+celix_status_t bundle_stopWithOptions(bundle_pt bundle, int options) {
+	celix_status_t status = CELIX_SUCCESS;
+	if (bundle != NULL) {
+		bool systemBundle = false;
+		status = bundle_isSystemBundle(bundle, &systemBundle);
+		if (status == CELIX_SUCCESS) {
+			if (systemBundle) {
+				framework_stop(bundle->framework);
+			} else {
+				status = fw_stopBundle(bundle->framework, bundle, options);
+			}
+		}
+	}
+	return status;
 }
 
 celix_status_t bundle_uninstall(bundle_pt bundle) {
-    return fw_uninstallBundle(bundle->framework, bundle);
+	celix_status_t status = CELIX_SUCCESS;
+	if (bundle != NULL) {
+		bool systemBundle = false;
+		status = bundle_isSystemBundle(bundle, &systemBundle);
+		if (status == CELIX_SUCCESS) {
+			if (systemBundle) {
+				status = CELIX_BUNDLE_EXCEPTION;
+			} else {
+				status = fw_uninstallBundle(bundle->framework, bundle);
+			}
+		}
+	}
+	return status;
 }
 
 celix_status_t bundle_setPersistentStateInactive(bundle_pt bundle) {

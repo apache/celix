@@ -50,9 +50,8 @@ int main(void) {
 	apr_status_t s = APR_SUCCESS;
 	properties_pt config = NULL;
 	char *autoStart = NULL;
-
-	
     apr_pool_t *pool = NULL;
+    bundle_pt fwBundle = NULL;
 
 	(void) signal(SIGINT, launcher_shutdown);
 
@@ -73,7 +72,8 @@ int main(void) {
     fw_init(framework);
 
     // Start the system bundle
-    framework_start(framework);
+    framework_getFrameworkBundle(framework, &fwBundle);
+    bundle_start(fwBundle);
 
     if (apr_pool_create(&pool, memoryPool) == APR_SUCCESS) {
 		char delims[] = " ";
@@ -115,7 +115,7 @@ int main(void) {
 
         for (i = 0; i < arrayList_size(installed); i++) {
             bundle_pt bundle = (bundle_pt) arrayList_get(installed, i);
-            bundle_start(bundle, 0);
+            bundle_startWithOptions(bundle, 0);
         }
 
         arrayList_destroy(installed);
@@ -134,7 +134,9 @@ int main(void) {
 }
 
 void launcher_shutdown(int signal) {
-	framework_stop(framework);
+	bundle_pt fwBundle = NULL;
+	framework_getFrameworkBundle(framework, &fwBundle);
+	bundle_stop(fwBundle);
 //	if (framework_waitForStop(framework) != CELIX_SUCCESS) {
 //		celix_log("Error waiting for stop.");
 //	}

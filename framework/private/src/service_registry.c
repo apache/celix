@@ -33,7 +33,7 @@
 #include "listener_hook_service.h"
 #include "constants.h"
 #include "service_reference.h"
-#include "framework.h"
+#include "framework_private.h"
 
 struct serviceRegistry {
     framework_pt framework;
@@ -114,11 +114,14 @@ void serviceRegistry_flushUsageCount(service_registry_pt registry, bundle_pt bun
 	}
 }
 
-service_registry_pt serviceRegistry_create(framework_pt framework, void (*serviceChanged)(framework_pt, service_event_type_e, service_registration_pt, properties_pt)) {
+// #TODO: Add pool as argument
+service_registry_pt serviceRegistry_create(framework_pt framework, void (*serviceChanged)(framework_t, service_event_type_e, service_registration_t, properties_t)) {
 	service_registry_pt registry;
+	bundle_pt fwBundle = NULL;
 	apr_pool_t *pool = NULL;
 
-	framework_getMemoryPool(framework, &pool);
+	framework_getFrameworkBundle(framework, &fwBundle);
+	bundle_getMemoryPool(fwBundle, &pool);
 	registry = (service_registry_pt) apr_palloc(pool, (sizeof(*registry)));
 	if (registry == NULL) {
 	    // no memory
@@ -246,11 +249,15 @@ void serviceRegistry_unregisterService(service_registry_pt registry, bundle_pt b
 	serviceRegistration_getServiceReferences(registration, &references);
 	for (i = 0; i < arrayList_size(references); i++) {
 		service_reference_pt reference = (service_reference_pt) arrayList_get(references, i);
+		bundle_pt fwBundle = NULL;
 		apr_pool_t *pool = NULL;
 		array_list_pt clients = NULL;
 		unsigned int j;
 
-		framework_getMemoryPool(registry->framework, &pool);
+		framework_getFrameworkBundle(registry->framework, &fwBundle);
+		// #TODO: Replace with subpool, destroy pool after usage
+		bundle_getMemoryPool(fwBundle, &pool);
+
 		clients = serviceRegistry_getUsingBundles(registry, pool, reference);
 		for (j = 0; (clients != NULL) && (j < arrayList_size(clients)); j++) {
 			bundle_pt client = (bundle_pt) arrayList_get(clients, j);

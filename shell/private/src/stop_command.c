@@ -61,7 +61,7 @@ void stopCommand_execute(command_pt command, char * line, void (*out)(char *), v
 			bundle_pt bundle = NULL;
 			bundleContext_getBundleById(command->bundleContext, id, &bundle);
 			if (bundle != NULL) {
-				bundle_stop(bundle, 0);
+				bundle_stopWithOptions(bundle, 0);
 			} else {
 				err("Bundle id is invalid.");
 			}

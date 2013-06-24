@@ -44,7 +44,7 @@
 #endif
 
 
-#include "framework.h"
+#include "framework_private.h"
 #include "filter.h"
 #include "constants.h"
 #include "archive.h"
@@ -189,11 +189,11 @@ celix_status_t framework_create(framework_pt *framework, apr_pool_t *memoryPool,
         } else {
             bundle_pt bundle = NULL;
             apr_pool_t *bundlePool;
-            apr_status_t apr_status = apr_pool_create(&bundlePool, (*framework)->mp);
-            if (apr_status != APR_SUCCESS) {
-                status = CELIX_FRAMEWORK_EXCEPTION;
-            } else {
-                apr_status_t apr_status = bundle_create(&bundle, bundlePool);
+//            apr_status_t apr_status = apr_pool_create(&bundlePool, (*framework)->mp);
+//            if (apr_status != APR_SUCCESS) {
+//                status = CELIX_FRAMEWORK_EXCEPTION;
+//            } else {
+                apr_status_t apr_status = bundle_create(&bundle, (*framework)->mp);
                 if (apr_status != CELIX_SUCCESS) {
                     status = CELIX_FRAMEWORK_EXCEPTION;
                 } else {
@@ -248,7 +248,7 @@ celix_status_t framework_create(framework_pt *framework, apr_pool_t *memoryPool,
 									}
                                 }
                             }
-                        }
+//                        }
                     }
                 }
             }
@@ -1904,18 +1904,6 @@ static void *APR_THREAD_FUNC framework_shutdown(apr_thread_t *thd, void *framewo
 	printf("FRAMEWORK: Shutdown done\n");
 
 	return NULL;
-}
-
-celix_status_t framework_getMemoryPool(framework_pt framework, apr_pool_t **pool) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	if (framework != NULL && *pool == NULL) {
-		*pool = framework->mp;
-	} else {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	return status;
 }
 
 celix_status_t framework_getFrameworkBundle(framework_pt framework, bundle_pt *bundle) {

@@ -58,7 +58,7 @@ void startCommand_execute(command_pt command, char * line, void (*out)(char *), 
         bundle_pt bundle = NULL;
 		bundleContext_getBundleById(command->bundleContext, id, &bundle);
 		if (bundle != NULL) {
-			bundle_start(bundle, 0);
+			bundle_startWithOptions(bundle, 0);
 		} else {
 			err("Bundle id is invalid.");
 		}

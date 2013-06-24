@@ -26,4 +26,6 @@ if (EXAMPLES)
     add_subdirectory(osgi-in-action/chapter04-correct-listener)
     add_subdirectory(osgi-in-action/chapter01-greeting-example)
     add_subdirectory(osgi-in-action/chapter04-paint-example)
+    
+    add_subdirectory(embedding)
 endif(EXAMPLES)

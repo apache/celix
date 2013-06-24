@@ -14,13 +14,11 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-celix_subproject(LAUNCHER "Option to build the launcher" "ON" DEPS UTILS FRAMEWORK)
-if (LAUNCHER) 
-    add_executable(celix private/src/launcher)
-    
-    target_link_libraries(celix celix_framework)
-    include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-    include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
-    
-    install(TARGETS celix RUNTIME DESTINATION bin COMPONENT framework)
-endif (LAUNCHER) 
+
+#SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_examples_embedding")
+#SET_HEADERS("Bundle-Name: Apache Celix Shell TUI") 
+	
+#bundle(hello_world SOURCES private/src/activator)
+add_executable(embedding private/src/main)
+include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+target_link_libraries(embedding celix_framework)

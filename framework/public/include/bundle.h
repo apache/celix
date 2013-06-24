@@ -36,6 +36,8 @@ typedef struct bundle * bundle_pt;
 #include "bundle_state.h"
 #include "bundle_archive.h"
 #include "framework.h"
+#include "wire.h"
+#include "module.h"
 #include "service_reference.h"
 #include "bundle_context.h"
 
@@ -57,9 +59,11 @@ FRAMEWORK_EXPORT celix_status_t bundle_getContext(bundle_pt bundle, bundle_conte
 FRAMEWORK_EXPORT celix_status_t bundle_setContext(bundle_pt bundle, bundle_context_pt context);
 FRAMEWORK_EXPORT celix_status_t bundle_getEntry(bundle_pt bundle, char * name, apr_pool_t *pool, char **entry);
 
-FRAMEWORK_EXPORT celix_status_t bundle_start(bundle_pt bundle, int options);
+FRAMEWORK_EXPORT celix_status_t bundle_start(bundle_pt bundle);
+FRAMEWORK_EXPORT celix_status_t bundle_startWithOptions(bundle_pt bundle, int options);
 FRAMEWORK_EXPORT celix_status_t bundle_update(bundle_pt bundle, char *inputFile);
-FRAMEWORK_EXPORT celix_status_t bundle_stop(bundle_pt bundle, int options);
+FRAMEWORK_EXPORT celix_status_t bundle_stop(bundle_pt bundle);
+FRAMEWORK_EXPORT celix_status_t bundle_stopWithOptions(bundle_pt bundle, int options);
 FRAMEWORK_EXPORT celix_status_t bundle_uninstall(bundle_pt bundle);
 
 FRAMEWORK_EXPORT celix_status_t bundle_setState(bundle_pt bundle, bundle_state_e state);

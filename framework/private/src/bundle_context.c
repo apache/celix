@@ -28,7 +28,7 @@
 #include <string.h>
 
 #include "bundle_context.h"
-#include "framework.h"
+#include "framework_private.h"
 #include "bundle.h"
 
 struct bundleContext {
