@@ -61,8 +61,8 @@ FRAMEWORK_EXPORT celix_status_t fw_registerServiceFactory(framework_t framework,
 FRAMEWORK_EXPORT void fw_unregisterService(service_registration_t registration);
 
 FRAMEWORK_EXPORT celix_status_t fw_getServiceReferences(framework_t framework, array_list_t *references, bundle_t bundle, const char * serviceName, char * filter);
-FRAMEWORK_EXPORT void * fw_getService(framework_t framework, bundle_t bundle, service_reference_t reference);
-FRAMEWORK_EXPORT bool framework_ungetService(framework_t framework, bundle_t bundle, service_reference_t reference);
+FRAMEWORK_EXPORT celix_status_t fw_getService(framework_t framework, bundle_t bundle, service_reference_t reference, void **service);
+FRAMEWORK_EXPORT celix_status_t framework_ungetService(framework_t framework, bundle_t bundle, service_reference_t reference, bool *result);
 FRAMEWORK_EXPORT celix_status_t fw_getBundleRegisteredServices(framework_t framework, apr_pool_t *pool, bundle_t bundle, array_list_t *services);
 FRAMEWORK_EXPORT celix_status_t fw_getBundleServicesInUse(framework_t framework, bundle_t bundle, array_list_t *services);
 

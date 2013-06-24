@@ -292,7 +292,7 @@ celix_status_t framework_destroy(framework_pt framework) {
 
 	hashMap_destroy(framework->installRequestMap, false, false);
 
-	serviceRegistry_destroy(framework->registry);
+//	serviceRegistry_destroy(framework->registry);
 
 	arrayList_destroy(framework->globalLockWaitersList);
 	arrayList_destroy(framework->serviceListeners);
@@ -408,7 +408,8 @@ celix_status_t fw_init(framework_pt framework) {
             }
         }
         arrayList_destroy(archives);
-        framework->registry = serviceRegistry_create(framework, fw_serviceChanged);
+        framework->registry = NULL;
+		serviceRegistry_create(framework->mp, framework, fw_serviceChanged, &framework->registry);
 
         framework_setBundleStateAndNotify(framework, framework->bundle, BUNDLE_STARTING);
 
@@ -1186,7 +1187,7 @@ celix_status_t fw_registerService(framework_pt framework, service_registration_p
 		framework_releaseBundleLock(framework, bundle);
 		return CELIX_ILLEGAL_STATE;
 	}
-	*registration = serviceRegistry_registerService(framework->registry, bundle, serviceName, svcObj, properties);
+	serviceRegistry_registerService(framework->registry, bundle, serviceName, svcObj, properties, registration);
 	framework_releaseBundleLock(framework, bundle);
 
 	// If this is a listener hook, invoke the callback with all current listeners
@@ -1220,13 +1221,14 @@ celix_status_t fw_registerService(framework_pt framework, service_registration_p
 
 			arrayList_add(infos, info);
 		}
+		bool ungetResult = false;
 
 		apr_pool_create(&subpool, pool);
 
 		serviceRegistry_createServiceReference(framework->registry, subpool, *registration, &ref);
-		hook = (listener_hook_service_pt) fw_getService(framework,framework->bundle, ref);
+		celix_status_t status = fw_getService(framework,framework->bundle, ref, (void **) &hook);
 		hook->added(hook->handle, infos);
-		serviceRegistry_ungetService(framework->registry, framework->bundle, ref);
+		serviceRegistry_ungetService(framework->registry, framework->bundle, ref, &ungetResult);
 
 		apr_pool_destroy(subpool);
 	}
@@ -1250,7 +1252,7 @@ celix_status_t fw_registerServiceFactory(framework_pt framework, service_registr
         framework_releaseBundleLock(framework, bundle);
         return CELIX_ILLEGAL_STATE;
     }
-    *registration = serviceRegistry_registerServiceFactory(framework->registry, bundle, serviceName, factory, properties);
+    serviceRegistry_registerServiceFactory(framework->registry, bundle, serviceName, factory, properties, registration);
     framework_releaseBundleLock(framework, bundle);
 
     return CELIX_SUCCESS;
@@ -1290,8 +1292,8 @@ celix_status_t fw_getServiceReferences(framework_pt framework, array_list_pt *re
 	return CELIX_SUCCESS;
 }
 
-void * fw_getService(framework_pt framework, bundle_pt bundle, service_reference_pt reference) {
-	return serviceRegistry_getService(framework->registry, bundle, reference);
+celix_status_t fw_getService(framework_pt framework, bundle_pt bundle, service_reference_pt reference, void **service) {
+	return serviceRegistry_getService(framework->registry, bundle, reference, service);
 }
 
 celix_status_t fw_getBundleRegisteredServices(framework_pt framework, apr_pool_t *pool, bundle_pt bundle, array_list_pt *services) {
@@ -1300,12 +1302,12 @@ celix_status_t fw_getBundleRegisteredServices(framework_pt framework, apr_pool_t
 
 celix_status_t fw_getBundleServicesInUse(framework_pt framework, bundle_pt bundle, array_list_pt *services) {
 	celix_status_t status = CELIX_SUCCESS;
-	*services = serviceRegistry_getServicesInUse(framework->registry, bundle);
+	status = serviceRegistry_getServicesInUse(framework->registry, bundle, services);
 	return status;
 }
 
-bool framework_ungetService(framework_pt framework, bundle_pt bundle, service_reference_pt reference) {
-	return serviceRegistry_ungetService(framework->registry, bundle, reference);
+celix_status_t framework_ungetService(framework_pt framework, bundle_pt bundle, service_reference_pt reference, bool *result) {
+	return serviceRegistry_ungetService(framework->registry, bundle, reference, result);
 }
 
 void fw_addServiceListener(framework_pt framework, bundle_pt bundle, service_listener_pt listener, char * sfilter) {
@@ -1350,12 +1352,16 @@ void fw_addServiceListener(framework_pt framework, bundle_pt bundle, service_lis
 
 	for (i = 0; i < arrayList_size(listenerHooks); i++) {
 		service_reference_pt ref = (service_reference_pt) arrayList_get(listenerHooks, i);
-		listener_hook_service_pt hook = (listener_hook_service_pt) fw_getService(framework, framework->bundle, ref);
+		listener_hook_service_pt hook = NULL;
 		array_list_pt infos = NULL;
+		bool ungetResult = false;
+
+		celix_status_t status = fw_getService(framework, framework->bundle, ref, (void **) &hook);
+
 		arrayList_create(subpool, &infos);
 		arrayList_add(infos, info);
 		hook->added(hook->handle, infos);
-		serviceRegistry_ungetService(framework->registry, framework->bundle, ref);
+		serviceRegistry_ungetService(framework->registry, framework->bundle, ref, &ungetResult);
 	}
 
 	arrayList_destroy(listenerHooks);
@@ -1405,15 +1411,18 @@ void fw_removeServiceListener(framework_pt framework, bundle_pt bundle, service_
 		
 		for (i = 0; i < arrayList_size(listenerHooks); i++) {
 			service_reference_pt ref = (service_reference_pt) arrayList_get(listenerHooks, i);
-			listener_hook_service_pt hook = (listener_hook_service_pt) fw_getService(framework, framework->bundle, ref);
+			listener_hook_service_pt hook = NULL;
 			array_list_pt infos = NULL;
 			apr_pool_t *pool = NULL;
+			bool ungetResult;
+
+			celix_status_t status = fw_getService(framework, framework->bundle, ref, (void **) &hook);
 
 			bundle_getMemoryPool(bundle, &pool);
 			arrayList_create(pool, &infos);
 			arrayList_add(infos, info);
 			hook->removed(hook->handle, infos);
-			serviceRegistry_ungetService(framework->registry, framework->bundle, ref);
+			serviceRegistry_ungetService(framework->registry, framework->bundle, ref, &ungetResult);
 		}
 
 		arrayList_destroy(listenerHooks);

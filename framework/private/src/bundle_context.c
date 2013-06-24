@@ -207,7 +207,7 @@ celix_status_t bundleContext_getService(bundle_context_pt context, service_refer
     celix_status_t status = CELIX_SUCCESS;
 
     if (context != NULL && reference != NULL && *service_instance == NULL) {
-	    *service_instance = fw_getService(context->framework, context->bundle, reference);
+	    status = fw_getService(context->framework, context->bundle, reference, service_instance);
     } else {
         status = CELIX_ILLEGAL_ARGUMENT;
     }
@@ -219,7 +219,7 @@ celix_status_t bundleContext_ungetService(bundle_context_pt context, service_ref
     celix_status_t status = CELIX_SUCCESS;
 
     if (context != NULL && reference != NULL) {
-        *result = framework_ungetService(context->framework, context->bundle, reference);
+        status = framework_ungetService(context->framework, context->bundle, reference, result);
     } else {
         status = CELIX_ILLEGAL_ARGUMENT;
     }
