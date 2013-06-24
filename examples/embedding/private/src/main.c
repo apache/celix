@@ -56,15 +56,15 @@ int main(void) {
 		return CELIX_START_ERROR;
 	}
 
-	framework_t framework = NULL;
+	framework_pt framework = NULL;
 	framework_create(&framework, memoryPool, NULL);
 	fw_init(framework);
 
-	bundle_t fwBundle = NULL;
+	bundle_pt fwBundle = NULL;
 	framework_getFrameworkBundle(framework, &fwBundle);
 	bundle_start(fwBundle);
 
-	bundle_context_t context = NULL;
+	bundle_context_pt context = NULL;
 	bundle_getContext(fwBundle, &context);
 
 	struct foo *f = apr_palloc(memoryPool, sizeof(*f));
@@ -72,10 +72,10 @@ int main(void) {
 	fs->handle = f;
 	fs->foo = embedded_foo;
 
-	service_registration_t reg = NULL;
+	service_registration_pt reg = NULL;
 	bundleContext_registerService(context, "foo", fs, NULL, &reg);
 
-	service_reference_t ref = NULL;
+	service_reference_pt ref = NULL;
 	bundleContext_getServiceReference(context, "foo", &ref);
 
 	void *fs2 = NULL;
