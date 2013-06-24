@@ -27,7 +27,7 @@
 #include <apr_pools.h>
 #include <stddef.h>
 
-#include <Automated.h>
+#include <CUnit/Automated.h>
 #include "linkedlist.h"
 
 apr_pool_t *memory_pool;

@@ -27,7 +27,7 @@
 #include <string.h>
 #include <stddef.h>
 
-#include <Automated.h>
+#include <CUnit/Automated.h>
 
 #include "hash_map.h"
 #include "hash_map_private.h"

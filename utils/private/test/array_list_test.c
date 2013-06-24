@@ -25,7 +25,7 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
-#include <Automated.h>
+#include <CUnit/Automated.h>
 
 #include <apr_general.h>
 
