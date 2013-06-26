@@ -173,7 +173,7 @@ celix_status_t exportRegistration_open(export_registration_pt registration) {
 	char *name = apr_pstrcat(registration->pool, bundleStore, "/", registration->endpointDescription->service, "_endpoint.zip", NULL);
 	status = bundleContext_installBundle(registration->context, name, &registration->bundle);
 	if (status == CELIX_SUCCESS) {
-		status = bundle_start(registration->bundle, 0);
+		status = bundle_start(registration->bundle);
 		if (status == CELIX_SUCCESS) {
 		}
 	}
@@ -186,7 +186,7 @@ celix_status_t exportRegistration_close(export_registration_pt registration) {
 
 	exportRegistration_stopTracking(registration);
 
-	bundle_stop(registration->bundle, 0);
+	bundle_stop(registration->bundle);
 	bundle_uninstall(registration->bundle);
 
 	return status;

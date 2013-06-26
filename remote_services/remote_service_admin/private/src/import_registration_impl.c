@@ -171,7 +171,7 @@ celix_status_t importRegistration_open(import_registration_pt registration) {
 	char *name = apr_pstrcat(registration->pool, bundleStore, "/", registration->endpointDescription->service, "_proxy.zip", NULL);
 	status = bundleContext_installBundle(registration->context, name, &registration->bundle);
 	if (status == CELIX_SUCCESS) {
-		status = bundle_start(registration->bundle, 0);
+		status = bundle_start(registration->bundle);
 		if (status == CELIX_SUCCESS) {
 		}
 	}
@@ -185,7 +185,7 @@ celix_status_t importRegistration_close(import_registration_pt registration) {
 	importRegistration_stopTracking(registration);
 
 	if (registration->bundle != NULL) {
-		bundle_stop(registration->bundle, 0);
+		bundle_stop(registration->bundle);
 		bundle_uninstall(registration->bundle);
 	}
 

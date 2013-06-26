@@ -336,7 +336,7 @@ celix_status_t deploymentAdmin_stopDeploymentPackageBundles(deployment_admin_pt 
 			bundle_info_pt info = arrayList_get(infos, i);
 			deploymentPackage_getBundle(target, info->symbolicName, &bundle);
 			if (bundle != NULL) {
-				bundle_stop(bundle, 0);
+				bundle_stop(bundle);
 			} else {
 				printf("DEPLOYMENT_ADMIN: Bundle %s not found\n", info->symbolicName);
 			}
@@ -418,7 +418,7 @@ celix_status_t deploymentAdmin_startDeploymentPackageCustomizerBundles(deploymen
 
 	for (i = 0; i < arrayList_size(bundles); i++) {
 		bundle_pt bundle = arrayList_get(bundles, i);
-		bundle_start(bundle, 0);
+		bundle_start(bundle);
 	}
 
 	apr_pool_destroy(tmpPool);
@@ -558,7 +558,7 @@ celix_status_t deploymentAdmin_startDeploymentPackageBundles(deployment_admin_pt
 		if (!info->customizer) {
 			deploymentPackage_getBundle(source, info->symbolicName, &bundle);
 			if (bundle != NULL) {
-				bundle_start(bundle, 0);
+				bundle_start(bundle);
 			} else {
 				printf("DEPLOYMENT_ADMIN: Could not start bundle %s\n", info->symbolicName);
 			}

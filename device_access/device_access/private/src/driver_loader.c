@@ -177,7 +177,7 @@ celix_status_t driverLoader_loadDriverForLocator(driver_loader_pt loader, apr_po
 				char *location = apr_pstrcat(bundlePool, DRIVER_LOCATION_PREFIX, driverId, NULL);
 				status = bundleContext_installBundle2(loader->context, location, filename, &bundle);
 				if (status == CELIX_SUCCESS) {
-					status = bundle_start(bundle, 0);
+					status = bundle_start(bundle);
 					if (status == CELIX_SUCCESS) {
 						status = bundle_getRegisteredServices(bundle, pool, references);
 						if (status == CELIX_SUCCESS) {
