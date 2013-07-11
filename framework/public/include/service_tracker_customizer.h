@@ -28,10 +28,8 @@
 #ifndef service_tracker_customizer_t_H_
 #define service_tracker_customizer_t_H_
 
-#include <apr_general.h>
-
-#include "celix_errno.h"
-#include "framework_exports.h"
+#include <celix_errno.h>
+#include <service_reference.h>
 
 typedef celix_status_t (*adding_callback_pt)(void *handle, service_reference_pt reference, void **service);
 typedef celix_status_t (*added_callback_pt)(void * handle, service_reference_pt reference, void * service);
