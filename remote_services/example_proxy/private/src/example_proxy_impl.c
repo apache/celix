@@ -90,7 +90,7 @@ celix_status_t exampleProxy_add(example_pt example, double a, double b, double *
 			json_unpack(reply, "{s:f}", "result", result);
 		}
 	} else {
-		printf("CALCULATOR_PROXY: No endpoint information available");
+		printf("CALCULATOR_PROXY: No endpoint information available\n");
 	}
 
 	return status;
@@ -121,7 +121,7 @@ celix_status_t exampleProxy_sub(example_pt example, double a, double b, double *
 			json_unpack(reply, "{s:f}", "result", result);
 		}
 	} else {
-		printf("CALCULATOR_PROXY: No endpoint information available");
+		printf("CALCULATOR_PROXY: No endpoint information available\n");
 	}
 
 	return status;
@@ -152,7 +152,7 @@ celix_status_t exampleProxy_sqrt(example_pt example, double a, double *result) {
 			json_unpack(reply, "{s:f}", "result", result);
 		}
 	} else {
-		printf("CALCULATOR_PROXY: No endpoint information available");
+		printf("CALCULATOR_PROXY: No endpoint information available\n");
 	}
 
 	return status;

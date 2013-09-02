@@ -121,7 +121,7 @@ celix_status_t importRegistration_proxyAdded(void * handle, service_reference_pt
 	celix_status_t status = CELIX_SUCCESS;
 	import_registration_pt registration = handle;
 
-	printf("PROXY added called!");
+	printf("PROXY added called!\n");
 	remote_proxy_service_pt proxy = service;
 	if (registration->proxy == NULL) {
 		registration->reference = reference;
