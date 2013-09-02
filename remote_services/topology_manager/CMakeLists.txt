@@ -31,4 +31,4 @@ bundle(topology_manager SOURCES
     private/include/topology_manager.h
 )
 
-target_link_libraries(topology_manager celix_framework remote_services_utils ${APRUTIL_LIBRARY})
+target_link_libraries(topology_manager celix_framework ${APRUTIL_LIBRARY})

@@ -61,8 +61,6 @@ struct import_interest {
 celix_status_t topologyManager_notifyListeners(topology_manager_pt manager, remote_service_admin_service_pt rsa,  array_list_pt registrations);
 celix_status_t topologyManager_notifyListenersOfRemoval(topology_manager_pt manager, remote_service_admin_service_pt rsa,  export_registration_pt export);
 
-celix_status_t topologyManager_getUUID(topology_manager_pt manager, char **uuidStr);
-
 celix_status_t topologyManager_create(bundle_context_pt context, apr_pool_t *pool, topology_manager_pt *manager) {
 	celix_status_t status = CELIX_SUCCESS;
 
@@ -344,7 +342,7 @@ celix_status_t topologyManager_extendFilter(topology_manager_pt manager, char *f
 	apr_pool_create(&pool, manager->pool);
 
 	char *uuid = NULL;
-	topologyManager_getUUID(manager, &uuid);
+	bundleContext_getProperty(manager->context, (char *)FRAMEWORK_UUID, &uuid);
 	*updatedFilter = apr_pstrcat(pool, "(&", filter, "(!(", ENDPOINT_FRAMEWORK_UUID, "=", uuid, ")))", NULL);
 
 	return status;
@@ -416,25 +414,6 @@ celix_status_t topologyManager_listenerRemoved(void *handle, array_list_pt liste
 //					}
 //				}
 			}
-		}
-	}
-
-	return status;
-}
-
-celix_status_t topologyManager_getUUID(topology_manager_pt manager, char **uuidStr) {
-	celix_status_t status = CELIX_SUCCESS;
-	apr_pool_t *pool = NULL;
-	apr_pool_create(&pool, manager->pool);
-
-	status = bundleContext_getProperty(manager->context, ENDPOINT_FRAMEWORK_UUID, uuidStr);
-	if (status == CELIX_SUCCESS) {
-		if (*uuidStr == NULL) {
-			apr_uuid_t uuid;
-			apr_uuid_get(&uuid);
-			*uuidStr = apr_palloc(pool, APR_UUID_FORMATTED_LENGTH + 1);
-			apr_uuid_format(*uuidStr, &uuid);
-			setenv(ENDPOINT_FRAMEWORK_UUID, *uuidStr, 1);
 		}
 	}
 

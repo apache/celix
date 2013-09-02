@@ -45,6 +45,7 @@ static const char * const EXPORT_PACKAGE = "Export-Service";
 static const char * const IMPORT_PACKAGE = "Import-Service";
 
 static const char * const FRAMEWORK_STORAGE = "org.osgi.framework.storage";
+static const char * const FRAMEWORK_UUID = "org.osgi.framework.uuid";
 
 
 #endif /* CONSTANTS_H_ */

@@ -42,7 +42,7 @@ celix_status_t discovery_endpointListenerAdded(void * handle, service_reference_
 celix_status_t discovery_endpointListenerModified(void * handle, service_reference_pt reference, void * service);
 celix_status_t discovery_endpointListenerRemoved(void * handle, service_reference_pt reference, void * service);
 
-celix_status_t discovery_updateEndpointListener(discovery_pt discovery, service_reference_pt reference, endpoint_listener_pt service);
+//celix_status_t discovery_updateEndpointListener(discovery_pt discovery, service_reference_pt reference, endpoint_listener_pt service);
 
 
 #endif /* DISCOVERY_H_ */

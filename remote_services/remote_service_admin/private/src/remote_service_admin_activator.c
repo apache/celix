@@ -111,7 +111,6 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	serviceRegistration_unregister(activator->registration);
 	activator->registration = NULL;
 
-
 	return status;
 }
 

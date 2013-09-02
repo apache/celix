@@ -26,7 +26,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <apr_uuid.h>
 #include <apr_strings.h>
 
 #include "remote_service_admin_impl.h"
@@ -46,10 +45,13 @@ static const char *ajax_reply_start =
   "Content-Type: application/x-javascript\r\n"
   "\r\n";
 
+
+static const char *DEFAULT_PORT = "8888";
+
 void *remoteServiceAdmin_callback(enum mg_event event, struct mg_connection *conn, const struct mg_request_info *request_info);
 celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin, export_registration_pt registration, service_reference_pt reference, char *interface);
 celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, properties_pt serviceProperties, properties_pt endpointProperties, char *interface, endpoint_description_pt *description);
-celix_status_t remoteServiceAdmin_getUUID(remote_service_admin_pt rsa, char **uuidStr);
+static celix_status_t constructServiceUrl(remote_service_admin_pt admin, char *service, char **serviceUrl);
 
 celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt context, remote_service_admin_pt *admin) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -67,7 +69,9 @@ celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt con
 		char *port = NULL;
 		bundleContext_getProperty(context, "RSA_PORT", &port);
 		if (port == NULL) {
-			printf("No RemoteServiceAdmin port set, set it using RSA_PORT!\n");
+			(*admin)->port = DEFAULT_PORT;
+		} else {
+			(*admin)->port = apr_pstrdup(pool, port);
 		}
 		const char *options[] = {"listening_ports", port, NULL};
 		(*admin)->ctx = mg_start(remoteServiceAdmin_callback, (*admin), options);
@@ -252,10 +256,15 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
 	properties_set(endpointProperties, (char *) OBJECTCLASS, interface);
 	properties_set(endpointProperties, (char *) ENDPOINT_SERVICE_ID, serviceId);
 	char *uuid = NULL;
-	remoteServiceAdmin_getUUID(admin, &uuid);
+	bundleContext_getProperty(admin->context, FRAMEWORK_UUID, &uuid);
 	properties_set(endpointProperties, (char *) ENDPOINT_FRAMEWORK_UUID, uuid);
 	char *service = "/services/example";
 	properties_set(endpointProperties, (char *) SERVICE_LOCATION, apr_pstrdup(admin->pool, service));
+    
+    char *url = NULL;
+    constructServiceUrl(admin,interface, &url);
+    printf("url is %s\n", url);
+    properties_set(endpointProperties, "url", url);
 
 	endpoint_description_pt endpointDescription = NULL;
 	remoteServiceAdmin_createEndpointDescription(admin, serviceProperties, endpointProperties, interface, &endpointDescription);
@@ -263,6 +272,39 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
 
 	return status;
 }
+
+static celix_status_t constructServiceUrl(remote_service_admin_pt admin, char *service, char **serviceUrl) {
+	celix_status_t status = CELIX_SUCCESS;
+    
+	if (*serviceUrl != NULL || admin == NULL || service == NULL ) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	} else {
+		char host[APRMAXHOSTLEN + 1];
+		apr_sockaddr_t *sa;
+		char *ip;
+        
+		apr_status_t stat = apr_gethostname(host, APRMAXHOSTLEN + 1, admin->pool); /*TODO mem leak*/
+		if (stat != APR_SUCCESS) {
+			status = CELIX_BUNDLE_EXCEPTION;
+		} else {
+			stat = apr_sockaddr_info_get(&sa, host, APR_INET, 0, 0, admin->pool); /*TODO mem leak*/
+			if (stat != APR_SUCCESS) {
+				status = CELIX_BUNDLE_EXCEPTION;
+			} else {
+				stat = apr_sockaddr_ip_get(&ip, sa);
+				if (stat != APR_SUCCESS) {
+					status = CELIX_BUNDLE_EXCEPTION;
+				} else {
+					*serviceUrl = apr_pstrcat(admin->pool, "http://", ip, ":", admin->port, "/services/", service,	NULL );
+				}
+			}
+		}
+	}
+    
+	return status;
+}
+
+
 
 celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, properties_pt serviceProperties,
 		properties_pt endpointProperties, char *interface, endpoint_description_pt *description) {
@@ -277,7 +319,7 @@ celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin
 		status = CELIX_ENOMEM;
 	} else {
 		char *uuid = NULL;
-		status = bundleContext_getProperty(admin->context, ENDPOINT_FRAMEWORK_UUID, &uuid);
+		status = bundleContext_getProperty(admin->context, (char *)FRAMEWORK_UUID, &uuid);
 		if (status == CELIX_SUCCESS) {
 			(*description)->properties = endpointProperties;
 			(*description)->frameworkUUID = uuid;
@@ -340,22 +382,5 @@ celix_status_t importReference_getImportedEndpoint(import_reference_pt reference
 
 celix_status_t importReference_getImportedService(import_reference_pt reference) {
 	celix_status_t status = CELIX_SUCCESS;
-	return status;
-}
-
-celix_status_t remoteServiceAdmin_getUUID(remote_service_admin_pt rsa, char **uuidStr) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	status = bundleContext_getProperty(rsa->context, ENDPOINT_FRAMEWORK_UUID, uuidStr);
-	if (status == CELIX_SUCCESS) {
-		if (*uuidStr == NULL) {
-			apr_uuid_t uuid;
-			apr_uuid_get(&uuid);
-			*uuidStr = apr_palloc(rsa->pool, APR_UUID_FORMATTED_LENGTH + 1);
-			apr_uuid_format(*uuidStr, &uuid);
-			setenv(ENDPOINT_FRAMEWORK_UUID, *uuidStr, 1);
-		}
-	}
-
 	return status;
 }

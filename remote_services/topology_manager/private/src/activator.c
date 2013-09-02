@@ -39,8 +39,6 @@
 #include "remote_constants.h"
 #include "listener_hook_service.h"
 
-#include "remote_services_utils.h"
-
 struct activator {
 	apr_pool_t *pool;
 	bundle_context_pt context;
@@ -139,8 +137,9 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
 	properties_pt props = properties_create();
 	char *uuid = NULL;
-	remoteServicesUtils_getUUID(pool, context, &uuid);
+	bundleContext_getProperty(activator->context, (char *)FRAMEWORK_UUID, &uuid);
 	char *scope = apr_pstrcat(pool, "(&(", OBJECTCLASS, "=*)(!(", ENDPOINT_FRAMEWORK_UUID, "=", uuid, ")))", NULL);
+	printf("TOPOLOGY_MANAGER: Endpoint listener Scope is %s\n", scope);
 	properties_set(props, (char *) ENDPOINT_LISTENER_SCOPE, scope);
 
 	bundleContext_registerService(context, (char *) endpoint_listener_service, endpointListener, props, &activator->endpointListenerService);

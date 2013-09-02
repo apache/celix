@@ -67,8 +67,9 @@ celix_status_t exampleProxy_add(example_pt example, double a, double b, double *
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (example->endpoint != NULL) {
-		printf("CALCULATOR_PROXY: URL: %s\n", example->endpoint->id);
-		char *url = apr_pstrcat(example->pool, example->endpoint->id, "/add", NULL);
+		char *serviceUrl = properties_get(example->endpoint->properties, "url");
+		printf("CALCULATOR_PROXY: URL: %s\n", serviceUrl);
+		char *url = apr_pstrcat(example->pool, serviceUrl, "/add", NULL);
 
 		json_t *root;
 		root = json_pack("{s:f, s:f}", "a", a, "b", b);

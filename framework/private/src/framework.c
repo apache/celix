@@ -36,6 +36,7 @@
 #include <apr_thread_cond.h>
 #include <apr_thread_mutex.h>
 #include <apr_thread_proc.h>
+#include <apr_uuid.h>
 #ifdef _WIN32
 #include <winbase.h>
 #include <windows.h>
@@ -327,6 +328,14 @@ celix_status_t fw_init(framework_pt framework) {
 	hash_map_pt wires;
 	array_list_pt archives;
 	bundle_archive_pt archive = NULL;
+	char uuid[APR_UUID_FORMATTED_LENGTH+1];
+
+	/*create and store framework uuid*/
+	apr_uuid_t aprUuid;
+	apr_uuid_get(&aprUuid);
+	apr_uuid_format(uuid, &aprUuid);
+	setenv(FRAMEWORK_UUID, uuid, true);
+
 
 	if (status != CELIX_SUCCESS) {
 		framework_releaseBundleLock(framework, framework->bundle);

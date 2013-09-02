@@ -17,7 +17,6 @@
 
 #TODO find_package(DNS-SD REQUIRED)
 
-#TODO include_directories(${SLP_INCLUDE_DIRS})
 include_directories("/usr/include") #TODO check if this has impact on the generated project indexer paths
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include")
@@ -30,8 +29,8 @@ SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_rsa_discovery_bonjour")
 SET_HEADERS("Bundle-Name: Apache Celix RSA BONJOUR Discovery")
 
 bundle(discovery_bonjour SOURCES 
-	private/src/discovery 
-	private/src/discovery_activator
+	private/src/discovery.c
+	private/src/discovery_activator.c
 )
 
 target_link_libraries(discovery_bonjour celix_framework ${APRUTIL_LIBRARY}) # TODO ${SLP_LIBRARIES})

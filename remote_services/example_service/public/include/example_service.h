@@ -40,4 +40,13 @@ struct example_service {
 	celix_status_t (*sqrt)(example_pt example, double a, double *result);
 };
 
+
+/*
+ * interface example_service {
+ * 	double add(double a, double b);
+ * 	double sub(double a, double b);
+ * 	double sqrt(double a);
+ * }
+ */
+
 #endif /* EXAMPLE_SERVICE_H_ */

@@ -58,7 +58,7 @@ if (FRAMEWORK)
 		${IO}
 	 
 	)
-    target_link_libraries(celix_framework celix_utils ${ZLIB_LIBRARY} ${APR_LIBRARY})
+    target_link_libraries(celix_framework celix_utils ${ZLIB_LIBRARY} ${APR_LIBRARY} ${APRUTIL_LIBRARY})
     
     install(TARGETS celix_framework DESTINATION lib COMPONENT framework)
     FILE(GLOB files "public/include/*.h")

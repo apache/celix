@@ -32,12 +32,13 @@
 #define CELIX_ERRNO_H_
 
 #include <errno.h>
+#include <apr_errno.h>
 
 #include "framework_exports.h"
 
 /*!
  * Helper macro which check the current status and executes the provided expression if the
- * status is still CELIX_SUCESS (0)
+ * status is still CELIX_SUCCESS (0)
  */
 #define CELIX_DO_IF(status, expr) ((status) == CELIX_SUCCESS) ? (expr) : (status)
 
@@ -50,7 +51,7 @@
 /*!
  * Status type returned by all functions in Celix
  */
-typedef int celix_status_t;
+typedef apr_status_t celix_status_t;
 
 /*!
  * Return a readable string for the given error code.
@@ -66,7 +67,17 @@ FRAMEWORK_EXPORT char *celix_strerror(celix_status_t errorcode);
 /*!
  * Starting point for Celix errors.
  */
-#define CELIX_START_ERROR 20000
+#define CELIX_START_ERROR APR_OS_START_USERERR
+
+/*!
+ * The range for Celix errors.
+ */
+#define CELIX_ERRSPACE_SIZE 1000
+
+/*!
+ * The start error number user application can use.
+ */
+#define CELIX_START_USERERR (CELIX_START_ERROR + CELIX_ERRSPACE_SIZE)
 
 /*!
  * Exception indicating a problem with a bundle

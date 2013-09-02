@@ -50,7 +50,7 @@ struct discovery {
 
 	hash_map_pt slpServices;
 
-	char *rsaPort;
+	char *discoveryPort;
 
 	array_list_pt handled;
 	array_list_pt registered;
@@ -88,8 +88,8 @@ celix_status_t discovery_create(apr_pool_t *pool, bundle_context_pt context, dis
 		(*discovery)->listenerReferences = hashMap_create(serviceReference_hashCode, NULL, serviceReference_equals2, NULL);
 		(*discovery)->slpServices = hashMap_create(string_hash, NULL, string_equals, NULL);
 		(*discovery)->running = true;
-		(*discovery)->rsaPort = getenv("RSA_PORT");
-		if ((*discovery)->rsaPort == NULL) {
+		(*discovery)->discoveryPort = getenv("RSA_PORT");
+		if ((*discovery)->discoveryPort == NULL) {
 			printf("No RemoteServiceAdmin port set, set it using RSA_PORT!\n");
 		}
 		(*discovery)->handled = NULL;
@@ -224,7 +224,7 @@ celix_status_t discovery_constructServiceUrl(discovery_pt discovery, endpoint_de
 				if (stat != APR_SUCCESS) {
 					status = CELIX_BUNDLE_EXCEPTION;
 				} else {
-					*serviceUrl = apr_pstrcat(discovery->pool, "service:osgi.remote:http://", ip, ":", discovery->rsaPort, "/services/", endpoint->service, NULL);
+					*serviceUrl = apr_pstrcat(discovery->pool, "service:osgi.remote:http://", ip, ":", discovery->discoveryPort, "/services/", endpoint->service, NULL);
 				}
 			}
 		}

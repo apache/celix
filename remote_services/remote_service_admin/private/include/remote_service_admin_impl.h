@@ -50,6 +50,8 @@ struct remote_service_admin {
 	hash_map_pt exportedServices;
 	hash_map_pt importedServices;
 
+	char *port;
+
 	struct mg_context *ctx;
 };
 
