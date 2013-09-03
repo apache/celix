@@ -29,8 +29,6 @@ if (REMOTE_SERVICE_ADMIN)
       endif(CMAKE_UNAME)
     endif(UNIX AND NOT WIN32)
 
-    add_subdirectory(utils)
-    
     add_subdirectory(topology_manager)
     add_subdirectory(remote_service_admin)
     add_subdirectory(discovery_slp)
