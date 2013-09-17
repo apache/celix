@@ -138,6 +138,7 @@ celix_status_t serviceRegistry_create(apr_pool_t *pool, framework_pt framework, 
 
 		apr_pool_pre_cleanup_register(pool, *registry, serviceRegistry_destroy);
 
+		(*registry)->pool=pool;
 		(*registry)->serviceChanged = serviceChanged;
 		(*registry)->inUseMap = hashMap_create(NULL, NULL, NULL, NULL);
 		(*registry)->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
