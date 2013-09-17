@@ -46,8 +46,8 @@ celix_status_t topologyManager_endpointAdded(void *handle, endpoint_description_
 celix_status_t topologyManager_endpointRemoved(void *handle, endpoint_description_pt endpoint, char *machtedFilter);
 
 celix_status_t topologyManager_importService(topology_manager_pt manager, endpoint_description_pt endpoint);
-celix_status_t topologyManager_exportService(topology_manager_pt manager, service_reference_pt reference);
-celix_status_t topologyManager_removeService(topology_manager_pt manager, service_reference_pt reference);
+celix_status_t topologyManager_exportService(topology_manager_pt manager, service_reference_pt reference, char *serviceId);
+celix_status_t topologyManager_removeService(topology_manager_pt manager, service_reference_pt reference, char *serviceId);
 
 celix_status_t topologyManager_listenerAdded(void *handle, array_list_pt listeners);
 celix_status_t topologyManager_listenerRemoved(void *handle, array_list_pt listeners);

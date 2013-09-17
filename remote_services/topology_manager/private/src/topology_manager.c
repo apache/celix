@@ -118,23 +118,25 @@ celix_status_t topologyManager_rsaRemoved(void * handle, service_reference_pt re
 celix_status_t topologyManager_serviceChanged(void *listener, service_event_pt event) {
 	celix_status_t status = CELIX_SUCCESS;
 	service_listener_pt listen = listener;
+
 	topology_manager_pt manager = listen->handle;
 	service_registration_pt registration = NULL;
+	printf("found event reference %p\n", event->reference);
 	serviceReference_getServiceRegistration(event->reference, &registration);
 	properties_pt props = NULL;
 	serviceRegistration_getProperties(registration, &props);
 	char *name = properties_get(props, (char *) OBJECTCLASS);
 	char *export = properties_get(props, (char *) SERVICE_EXPORTED_INTERFACES);
+	char *serviceId = properties_get(props, (char *)SERVICE_ID);
 
 	if (event->type == SERVICE_EVENT_REGISTERED) {
 		if (export != NULL) {
-			printf("TOPOLOGY_MANAGER: Service registered: %s\n", name);
-			status = topologyManager_exportService(manager, event->reference);
+			status = topologyManager_exportService(manager, event->reference, serviceId);
 		}
 	} else if (event->type == SERVICE_EVENT_UNREGISTERING) {
 		//if (export != NULL) {
 			printf("TOPOLOGY_MANAGER: Service unregistering: %s\n", name);
-			status = topologyManager_removeService(manager, event->reference);
+			status = topologyManager_removeService(manager, event->reference, serviceId);
 		//}
 	}
 
@@ -170,7 +172,7 @@ celix_status_t topologyManager_endpointRemoved(void *handle, endpoint_descriptio
 	return status;
 }
 
-celix_status_t topologyManager_exportService(topology_manager_pt manager, service_reference_pt reference) {
+celix_status_t topologyManager_exportService(topology_manager_pt manager, service_reference_pt reference, char *serviceId) {
 	celix_status_t status = CELIX_SUCCESS;
 	hash_map_pt exports = hashMap_create(NULL, NULL, NULL, NULL);
 
@@ -195,7 +197,7 @@ celix_status_t topologyManager_exportService(topology_manager_pt manager, servic
 			remote_service_admin_service_pt rsa = arrayList_get(manager->rsaList, iter);
 
 			array_list_pt endpoints = NULL;
-			status = rsa->exportService(rsa->admin, reference, NULL, &endpoints);
+			status = rsa->exportService(rsa->admin, serviceId, NULL, &endpoints);
 			if (status == CELIX_SUCCESS) {
 				hashMap_put(exports, rsa, endpoints);
 				status = topologyManager_notifyListeners(manager, rsa, endpoints);
@@ -275,7 +277,7 @@ celix_status_t topologyManager_importService(topology_manager_pt manager, endpoi
 	return status;
 }
 
-celix_status_t topologyManager_removeService(topology_manager_pt manager, service_reference_pt reference) {
+celix_status_t topologyManager_removeService(topology_manager_pt manager, service_reference_pt reference, char *serviceId) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	service_registration_pt registration = NULL;

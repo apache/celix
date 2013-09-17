@@ -38,6 +38,7 @@ typedef struct serviceReference * service_reference_pt;
 celix_status_t serviceReference_create(apr_pool_t *pool, bundle_pt bundle, service_registration_pt registration, service_reference_pt *reference);
 
 FRAMEWORK_EXPORT celix_status_t serviceReference_invalidate(service_reference_pt reference);
+FRAMEWORK_EXPORT celix_status_t serviceRefernce_isValid(service_reference_pt reference, bool *result);
 
 FRAMEWORK_EXPORT celix_status_t serviceReference_getServiceRegistration(service_reference_pt reference, service_registration_pt *registration);
 FRAMEWORK_EXPORT celix_status_t serviceReference_getBundle(service_reference_pt reference, bundle_pt *bundle);

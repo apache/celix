@@ -151,7 +151,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
 	bundleContext_registerService(context, (char *) listener_hook_service_name, hook, NULL, &activator->hook);
 
-	bundleContext_addServiceListener(context, activator->serviceListener, NULL);
+	bundleContext_addServiceListener(context, activator->serviceListener, "(service.exported.interfaces=*)");
 	serviceTracker_open(activator->remoteServiceAdminTracker);
 
 	return status;

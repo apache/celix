@@ -78,6 +78,11 @@ celix_status_t serviceReference_invalidate(service_reference_pt reference) {
 	return CELIX_SUCCESS;
 }
 
+celix_status_t serviceRefernce_isValid(service_reference_pt reference, bool *result) {
+	(*result) = reference->registration != NULL;
+	return CELIX_SUCCESS;
+}
+
 bool serviceReference_isAssignableTo(service_reference_pt reference, bundle_pt requester, char * serviceName) {
 	bool allow = true;
 

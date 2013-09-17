@@ -69,7 +69,7 @@ celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt con
 		char *port = NULL;
 		bundleContext_getProperty(context, "RSA_PORT", &port);
 		if (port == NULL) {
-			(*admin)->port = DEFAULT_PORT;
+			(*admin)->port = (char *)DEFAULT_PORT;
 		} else {
 			(*admin)->port = apr_pstrdup(pool, port);
 		}
@@ -173,11 +173,32 @@ celix_status_t remoteServiceAdmin_handleRequest(remote_service_admin_pt rsa, cha
 	return CELIX_SUCCESS;
 }
 
-celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, service_reference_pt reference, properties_pt properties, array_list_pt *registrations) {
+celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, char *serviceId, properties_pt properties, array_list_pt *registrations) {
 	celix_status_t status = CELIX_SUCCESS;
 	arrayList_create(admin->pool, registrations);
-
+	array_list_pt references = NULL;
+	service_reference_pt reference = NULL;
 	service_registration_pt registration = NULL;
+	apr_pool_t *tmpPool = NULL;
+
+	apr_pool_create(&tmpPool, admin->pool);
+	if (tmpPool == NULL) {
+		return CELIX_ENOMEM;
+	} else {
+		char *filter = apr_pstrcat(admin->pool, "(", (char *)SERVICE_ID, "=", serviceId, ")", NULL); /*FIXME memory leak*/
+		bundleContext_getServiceReferences(admin->context, NULL, filter, &references);
+		apr_pool_destroy(tmpPool);
+		if (arrayList_size(references) >= 1) {
+			reference = arrayList_get(references, 0);
+		}
+	}
+
+	if (reference == NULL) {
+		printf("ERROR: expected a reference for service id %s\n", serviceId);
+		return CELIX_ILLEGAL_STATE;
+	}
+
+
 	serviceReference_getServiceRegistration(reference, &registration);
 	properties_pt serviceProperties = NULL;
 	serviceRegistration_getProperties(registration, &serviceProperties);
