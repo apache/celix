@@ -19,10 +19,10 @@ if (NOT WIN32)
 	include(FindCurses)
 endif (NOT WIN32)
 
-FIND_PATH(CUNIT_INCLUDE_DIR Basic.h
-  /usr/local/include/CUnit
-  /usr/include/CUnit
-  /opt/local/include/CUnit  
+FIND_PATH(CUNIT_INCLUDE_DIR CUnit/Basic.h
+  /usr/local/include
+  /usr/include
+  /opt/local/include  
 )
 
 FIND_PATH(CUNIT_SHARE_DIR CUnit-List.dtd
