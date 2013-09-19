@@ -54,38 +54,45 @@ void installCommand_execute(command_pt command, char * line, void (*out)(char *)
 	char delims[] = " ";
 	char * sub = NULL;
 	char info[256];
+	char outString[256];
 
 	// ignore the command
 	sub = strtok(line, delims);
 	sub = strtok(NULL, delims);
 	
-	info[0] = '\0';
-	while (sub != NULL) {
-		bundle_pt bundle = NULL;
-		installCommand_install(command, &bundle, strdup(sub), out, err);
-		if (bundle != NULL) {
-			long id;
-			bundle_archive_pt archive = NULL;
-			char bundleId[sizeof(id) + 1];
+	if (sub == NULL) {
+		err("Incorrect number of arguments.\n");
+		sprintf(outString, "%s\n", command->usage);
+		out(outString);
+	} else {
+		info[0] = '\0';
+		while (sub != NULL) {
+			bundle_pt bundle = NULL;
+			installCommand_install(command, &bundle, strdup(sub), out, err);
+			if (bundle != NULL) {
+				long id;
+				bundle_archive_pt archive = NULL;
+				char bundleId[sizeof(id) + 1];
 
-			if (strlen(info) > 0) {
-				strcat(info, ", ");
+				if (strlen(info) > 0) {
+					strcat(info, ", ");
+				}
+				bundle_getArchive(bundle, &archive);
+				bundleArchive_getId(archive, &id);
+				sprintf(bundleId, "%ld", id);
+				strcat(info, bundleId);
 			}
-			bundle_getArchive(bundle, &archive);
-			bundleArchive_getId(archive, &id);
-			sprintf(bundleId, "%ld", id);
-			strcat(info, bundleId);
+			sub = strtok(NULL, delims);
 		}
-		sub = strtok(NULL, delims);
-	}
-	if (strchr(info, ',') != NULL) {
-		out("Bundle IDs: ");
-		out(info);
-		out("\n");
-	} else if (strlen(info) > 0) {
-		out("Bundle ID: ");
-		out(info);
-		out("\n");
+		if (strchr(info, ',') != NULL) {
+			out("Bundle IDs: ");
+			out(info);
+			out("\n");
+		} else if (strlen(info) > 0) {
+			out("Bundle ID: ");
+			out(info);
+			out("\n");
+		}
 	}
 }
 

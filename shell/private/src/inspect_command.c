@@ -28,7 +28,7 @@
 
 #include <apr_strings.h>
 
-#include "command_private.h"
+#include "command_impl.h"
 #include "array_list.h"
 #include "bundle_context.h"
 #include "bundle.h"
@@ -60,6 +60,7 @@ void inspectCommand_destroy(command_pt command) {
 
 void inspectCommand_execute(command_pt command, char * commandline, void (*out)(char *), void (*err)(char *)) {
 	celix_status_t status = CELIX_SUCCESS;
+	char outString[256];
 	char *token;
 	char *commandStr = apr_strtok(commandline, " ", &token);
 	char *type = apr_strtok(NULL, " ", &token);
@@ -91,9 +92,13 @@ void inspectCommand_execute(command_pt command, char * commandline, void (*out)(
 			}
 		} else {
 			out("INSPECT: Too few arguments\n");
+			sprintf(outString, "%s\n", command->usage);
+			out(outString);
 		}
 	} else {
 		out("INSPECT: Too few arguments\n");
+		sprintf(outString, "%s\n", command->usage);
+		out(outString);
 	}
 }
 

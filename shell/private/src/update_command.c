@@ -58,10 +58,16 @@ void updateCommand_execute(command_pt command, char * line, void (*out)(char *),
     bundle_pt bundle = NULL;
 	char delims[] = " ";
 	char * sub = NULL;
+	char outString[256];
+
 	sub = strtok(line, delims);
-	// Read bundle id
 	sub = strtok(NULL, delims);
-	if (sub != NULL) {
+
+	if (sub == NULL) {
+		err("Incorrect number of arguments.\n");
+		sprintf(outString, "%s\n", command->usage);
+		out(outString);
+	} else {
 		long id = atol(sub);
 		bundleContext_getBundleById(command->bundleContext, id, &bundle);
 		if (bundle != NULL) {

@@ -41,6 +41,7 @@
 #include "update_command.h"
 #include "log_command.h"
 #include "inspect_command.h"
+#include "help_command.h"
 
 #include "utils.h"
 
@@ -81,6 +82,10 @@ struct shellServiceActivator {
     service_registration_pt inspectCommand;
 	command_pt inspectCmd;
 	command_service_pt inspectCmdSrv;
+
+	service_registration_pt helpCommand;
+	command_pt helpCmd;
+	command_service_pt helpCmdSrv;
 };
 
 static celix_status_t shell_createCommandService(apr_pool_t *pool, command_pt command, command_service_pt *commandService);
@@ -190,6 +195,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 	((struct shellServiceActivator *) (*userData))->updateCommand = NULL;
 	((struct shellServiceActivator *) (*userData))->logCommand = NULL;
 	((struct shellServiceActivator *) (*userData))->inspectCommand = NULL;
+	((struct shellServiceActivator *) (*userData))->helpCommand = NULL;
 	((struct shellServiceActivator *) (*userData))->registration = NULL;
 
 	//(*userData) = &(*activator);
@@ -255,6 +261,10 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
             activator->inspectCmd = inspectCommand_create(context);
             shell_createCommandService(pool, activator->inspectCmd, &activator->inspectCmdSrv);
 			bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->inspectCmdSrv, NULL, &activator->inspectCommand);
+
+			activator->helpCmd = helpCommand_create(context);
+			shell_createCommandService(pool, activator->helpCmd, &activator->helpCmdSrv);
+			bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->helpCmdSrv, NULL, &activator->helpCommand);
 	    }
 	}
 
@@ -284,6 +294,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	serviceRegistration_unregister(activator->updateCommand);
 	serviceRegistration_unregister(activator->logCommand);
 	serviceRegistration_unregister(activator->inspectCommand);
+	serviceRegistration_unregister(activator->helpCommand);
 	status = bundleContext_removeServiceListener(context, activator->listener);
 
 	if (status == CELIX_SUCCESS) {
@@ -295,6 +306,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
         updateCommand_destroy(activator->updateCmd);
         logCommand_destroy(activator->logCmd);
         inspectCommand_destroy(activator->inspectCmd);
+        inspectCommand_destroy(activator->helpCmd);
 
         free(activator->shellService);
         activator->shellService = NULL;

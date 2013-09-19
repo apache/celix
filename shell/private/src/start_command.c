@@ -51,17 +51,24 @@ void startCommand_destroy(command_pt command) {
 void startCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *)) {
 	char delims[] = " ";
 	char * sub = NULL;
+	char outString[256];
 	sub = strtok(line, delims);
 	sub = strtok(NULL, delims);
-	while (sub != NULL) {
-		long id = atol(sub);
-        bundle_pt bundle = NULL;
-		bundleContext_getBundleById(command->bundleContext, id, &bundle);
-		if (bundle != NULL) {
-			bundle_startWithOptions(bundle, 0);
-		} else {
-			err("Bundle id is invalid.");
+	if (sub == NULL) {
+		err("Incorrect number of arguments.\n");
+		sprintf(outString, "%s\n", command->usage);
+		out(outString);
+	} else {
+		while (sub != NULL) {
+			long id = atol(sub);
+			bundle_pt bundle = NULL;
+			bundleContext_getBundleById(command->bundleContext, id, &bundle);
+			if (bundle != NULL) {
+				bundle_startWithOptions(bundle, 0);
+			} else {
+				err("Bundle id is invalid.\n");
+			}
+			sub = strtok(NULL, delims);
 		}
-		sub = strtok(NULL, delims);
 	}
 }

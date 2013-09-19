@@ -81,8 +81,39 @@ void psCommand_execute(command_pt command, char * commandline, void (*out)(char 
 
 		sprintf(line, "  %-5s %-12s %s\n", "ID", "State", msg);
 		out(line);
-		for (i = 0; i < arrayList_size(bundles); i++) {
-			bundle_pt bundle = (bundle_pt) arrayList_get(bundles, i);
+
+		unsigned int size = arrayList_size(bundles);
+		bundle_pt bundlesA[size];
+		for (i = 0; i < size; i++) {
+			bundlesA[i] = arrayList_get(bundles, i);
+		}
+
+		int j;
+		for(i=0; i < size - 1; i++) {
+			for(j=i+1; j < size; j++) {
+				bundle_pt first = bundlesA[i];
+				bundle_pt second = bundlesA[j];
+
+				bundle_archive_pt farchive = NULL, sarchive = NULL;
+				long fid, sid;
+
+				bundle_getArchive(first, &farchive);
+				bundleArchive_getId(farchive, &fid);
+				bundle_getArchive(second, &sarchive);
+				bundleArchive_getId(sarchive, &sid);
+
+				if(fid > sid)
+				{
+					 // these three lines swap the elements bundles[i] and bundles[j].
+					 bundle_pt temp = bundlesA[i];
+					 bundlesA[i] = bundlesA[j];
+					 bundlesA[j] = temp;
+				}
+			}
+		}
+		for (i = 0; i < size; i++) {
+			//bundle_pt bundle = (bundle_pt) arrayList_get(bundles, i);
+			bundle_pt bundle = bundlesA[i];
 			bundle_archive_pt archive = NULL;
 			long id;
 			bundle_state_e state;

@@ -33,6 +33,7 @@ if (SHELL)
     	private/src/uninstall_command 
     	private/src/log_command
     	private/src/inspect_command
+    	private/src/help_command
         
         private/include/inspect_command.h
         private/include/install_command.h
@@ -43,6 +44,7 @@ if (SHELL)
         private/include/stop_command.h
         private/include/uninstall_command.h
         private/include/update_command.h
+        private/include/help_command.h
     )
 
 	include_directories("public/include")

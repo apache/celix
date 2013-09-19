@@ -51,23 +51,32 @@ void stopCommand_destroy(command_pt command) {
 void stopCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *)) {
     char delims[] = " ";
 	char * sub = NULL;
+	char outString[256];
+
 	sub = strtok(line, delims);
 	sub = strtok(NULL, delims);
-	while (sub != NULL) {
-		bool numeric;
-		utils_isNumeric(sub, &numeric);
-		if (numeric) {
-			long id = atol(sub);
-			bundle_pt bundle = NULL;
-			bundleContext_getBundleById(command->bundleContext, id, &bundle);
-			if (bundle != NULL) {
-				bundle_stopWithOptions(bundle, 0);
+
+	if (sub == NULL) {
+		err("Incorrect number of arguments.\n");
+		sprintf(outString, "%s\n", command->usage);
+		out(outString);
+	} else {
+		while (sub != NULL) {
+			bool numeric;
+			utils_isNumeric(sub, &numeric);
+			if (numeric) {
+				long id = atol(sub);
+				bundle_pt bundle = NULL;
+				bundleContext_getBundleById(command->bundleContext, id, &bundle);
+				if (bundle != NULL) {
+					bundle_stopWithOptions(bundle, 0);
+				} else {
+					err("Bundle id is invalid.");
+				}
 			} else {
-				err("Bundle id is invalid.");
+				err("Bundle id should be a number (bundle id).\n");
 			}
-		} else {
-			err("Bundle id should be a number (bundle id).\n");
+			sub = strtok(NULL, delims);
 		}
-		sub = strtok(NULL, delims);
 	}
 }
