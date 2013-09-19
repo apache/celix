@@ -144,11 +144,12 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	status = bundleContext_removeServiceListener(context, act->listener);
 
 	if (status == CELIX_SUCCESS) {
+		apr_status_t join;
         free(act->listener);
         act->listener = NULL;
         act->context = NULL;
         act->running = false;
-        apr_thread_detach(act->runnable);
+        apr_thread_join(&join, act->runnable);
 	}
 
 	return status;
