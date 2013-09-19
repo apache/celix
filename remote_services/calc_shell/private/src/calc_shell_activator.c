@@ -29,7 +29,7 @@
 #include "bundle_context.h"
 #include "service_registration.h"
 
-#include "command_private.h"
+#include "command_impl.h"
 
 #include "add_command.h"
 #include "sub_command.h"
@@ -38,13 +38,18 @@
 struct activator {
 	service_registration_pt addCommand;
 	command_pt addCmd;
+	command_service_pt addCmdSrv;
 
 	service_registration_pt subCommand;
 	command_pt subCmd;
+	command_service_pt subCmdSrv;
 
 	service_registration_pt sqrtCommand;
 	command_pt sqrtCmd;
+	command_service_pt sqrtCmdSrv;
 };
+
+static celix_status_t calcShell_createCommandService(apr_pool_t *pool, command_pt command, command_service_pt *commandService);
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -62,6 +67,10 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 			((struct activator *) (*userData))->addCmd = NULL;
 			((struct activator *) (*userData))->subCmd = NULL;
 			((struct activator *) (*userData))->sqrtCmd = NULL;
+
+			((struct activator *) (*userData))->addCmdSrv = NULL;
+			((struct activator *) (*userData))->subCmdSrv = NULL;
+			((struct activator *) (*userData))->sqrtCmdSrv = NULL;
 		}
 	}
 
@@ -71,18 +80,35 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
     celix_status_t status = CELIX_SUCCESS;
 
+	apr_pool_t *pool;
 	struct activator * activator = (struct activator *) userData;
 
+	bundleContext_getMemoryPool(context, &pool);
+
 	activator->addCmd = addCommand_create(context);
-	bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->addCmd, NULL, &activator->addCommand);
+	calcShell_createCommandService(pool, activator->addCmd, &activator->addCmdSrv);
+	bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->addCmdSrv, NULL, &activator->addCommand);
 
 	activator->subCmd = subCommand_create(context);
-	bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->subCmd, NULL, &activator->subCommand);
+	calcShell_createCommandService(pool, activator->subCmd, &activator->subCmdSrv);
+	bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->subCmdSrv, NULL, &activator->subCommand);
 
 	activator->sqrtCmd = sqrtCommand_create(context);
-	bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->sqrtCmd, NULL, &activator->sqrtCommand);
+	calcShell_createCommandService(pool, activator->sqrtCmd, &activator->sqrtCmdSrv);
+	bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->sqrtCmdSrv, NULL, &activator->sqrtCommand);
 
 	return status;
+}
+
+static celix_status_t calcShell_createCommandService(apr_pool_t *pool, command_pt command, command_service_pt *commandService) {
+	*commandService = apr_palloc(pool, sizeof(**commandService));
+	(*commandService)->command = command;
+	(*commandService)->executeCommand = command->executeCommand;
+	(*commandService)->getName = command_getName;
+	(*commandService)->getShortDescription = command_getShortDescription;
+	(*commandService)->getUsage = command_getUsage;
+
+	return CELIX_SUCCESS;
 }
 
 celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {

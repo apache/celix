@@ -17,28 +17,29 @@
  *under the License.
  */
 /*
- * command_private.h
+ * command.c
  *
  *  \date       Aug 13, 2010
  *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
-#ifndef COMMAND_PRIVATE_H_
-#define COMMAND_PRIVATE_H_
+#include <stdio.h>
 
-#include "command.h"
-#include "bundle_context.h"
+#include "command_impl.h"
 
-struct command {
-	char * name;
-	char * usage;
-	char * shortDescription;
+char * command_getName(command_pt command) {
+	return command->name;
+}
 
-	bundle_context_pt bundleContext;
+char * command_getUsage(command_pt command) {
+	return command->usage;
+}
 
-	void (*executeCommand)(command_pt command, char * commandLine, void (*out)(char *), void (*error)(char *));
-};
+char * command_getShortDescription(command_pt command) {
+	return command->shortDescription;
+}
 
-
-#endif /* COMMAND_PRIVATE_H_ */
+void command_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *)) {
+	command->executeCommand(command, line, out, err);
+}

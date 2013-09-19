@@ -31,6 +31,8 @@ static const char * const COMMAND_SERVICE_NAME = "commandService";
 
 typedef struct command * command_pt;
 
+typedef struct commandService * command_service_pt;
+
 struct commandService {
 	command_pt command;
 	char * (*getName)(command_pt command);

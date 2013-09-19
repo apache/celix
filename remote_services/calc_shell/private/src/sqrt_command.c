@@ -29,7 +29,6 @@
 
 #include <apr_strings.h>
 
-#include "command_private.h"
 #include "array_list.h"
 #include "bundle_context.h"
 #include "sqrt_command.h"

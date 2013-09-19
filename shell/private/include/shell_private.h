@@ -44,7 +44,7 @@ char * shell_getCommandDescription(shell_pt shell, char * commandName);
 service_reference_pt shell_getCommandReference(shell_pt shell, char * command);
 void shell_executeCommand(shell_pt shell, char * commandLine, void (*out)(char *), void (*error)(char *));
 
-command_pt shell_getCommand(shell_pt shell, char * commandName);
+command_service_pt shell_getCommand(shell_pt shell, char * commandName);
 
 
 #endif /* SHELL_PRIVATE_H_ */

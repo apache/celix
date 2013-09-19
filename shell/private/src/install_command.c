@@ -25,7 +25,7 @@
  */
 #include <stdlib.h>
 
-#include "command_private.h"
+#include "command_impl.h"
 #include "array_list.h"
 #include "bundle_context.h"
 #include "bundle_archive.h"

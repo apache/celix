@@ -28,7 +28,7 @@
 
 #include "shell_private.h"
 #include "bundle_activator.h"
-#include "command_private.h"
+#include "command_impl.h"
 #include "bundle_context.h"
 #include "service_registration.h"
 #include "service_listener.h"
@@ -52,28 +52,38 @@ struct shellServiceActivator {
 
 	service_registration_pt psCommand;
 	command_pt psCmd;
+	command_service_pt psCmdSrv;
 
 	service_registration_pt startCommand;
 	command_pt startCmd;
+	command_service_pt startCmdSrv;
 
 	service_registration_pt stopCommand;
 	command_pt stopCmd;
+	command_service_pt stopCmdSrv;
 
 	service_registration_pt installCommand;
 	command_pt installCmd;
+	command_service_pt installCmdSrv;
 
 	service_registration_pt uninstallCommand;
     command_pt uninstallCmd;
+    command_service_pt uninstallCmdSrv;
 
 	service_registration_pt updateCommand;
 	command_pt updateCmd;
+	command_service_pt updateCmdSrv;
 
 	service_registration_pt logCommand;
     command_pt logCmd;
+    command_service_pt logCmdSrv;
 
     service_registration_pt inspectCommand;
 	command_pt inspectCmd;
+	command_service_pt inspectCmdSrv;
 };
+
+static celix_status_t shell_createCommandService(apr_pool_t *pool, command_pt command, command_service_pt *commandService);
 
 shell_pt shell_create(apr_pool_t *pool) {
 	shell_pt shell = (shell_pt) malloc(sizeof(*shell));
@@ -102,21 +112,21 @@ array_list_pt shell_getCommands(shell_pt shell) {
 }
 
 char * shell_getCommandUsage(shell_pt shell, char * commandName) {
-	command_pt command = hashMap_get(shell->commandNameMap, commandName);
-	return (command == NULL) ? NULL : command->usage;
+	command_service_pt command = hashMap_get(shell->commandNameMap, commandName);
+	return (command == NULL) ? NULL : command->getUsage(command->command);
 }
 
 char * shell_getCommandDescription(shell_pt shell, char * commandName) {
-	command_pt command = hashMap_get(shell->commandNameMap, commandName);
-	return (command == NULL) ? NULL : command->shortDescription;
+	command_service_pt command = hashMap_get(shell->commandNameMap, commandName);
+	return (command == NULL) ? NULL : command->getShortDescription(command->command);
 }
 
 service_reference_pt shell_getCommandReference(shell_pt shell, char * command) {
 	hash_map_iterator_pt iter = hashMapIterator_create(shell->commandReferenceMap);
 	while (hashMapIterator_hasNext(iter)) {
 		hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-		command_pt cmd = (command_pt) hashMapEntry_getValue(entry);
-		if (strcmp(cmd->name, command) == 0) {
+		command_service_pt cmd = (command_service_pt) hashMapEntry_getValue(entry);
+		if (strcmp(cmd->getName(cmd->command), command) == 0) {
 			return (service_reference_pt) hashMapEntry_getValue(entry);
 		}
 	}
@@ -126,33 +136,33 @@ service_reference_pt shell_getCommandReference(shell_pt shell, char * command) {
 void shell_executeCommand(shell_pt shell, char * commandLine, void (*out)(char *), void (*error)(char *)) {
 	unsigned int pos = strcspn(commandLine, " ");
 	char * commandName = (pos != strlen(commandLine)) ? string_ndup((char *)commandLine, pos) : strdup(commandLine);
-	command_pt command = shell_getCommand(shell, commandName);
+	command_service_pt command = shell_getCommand(shell, commandName);
 	if (command != NULL) {
-		command->executeCommand(command, commandLine, out, error);
+		command->executeCommand(command->command, commandLine, out, error);
 	} else {
 	    error("No such command\n");
 	}
 	free(commandName);
 }
 
-command_pt shell_getCommand(shell_pt shell, char * commandName) {
-	command_pt command = hashMap_get(shell->commandNameMap, commandName);
+command_service_pt shell_getCommand(shell_pt shell, char * commandName) {
+	command_service_pt command = hashMap_get(shell->commandNameMap, commandName);
 	return (command == NULL) ? NULL : command;
 }
 
 void shell_addCommand(shell_pt shell, service_reference_pt reference) {
-    command_pt command = NULL;
+    command_service_pt command = NULL;
 	void *cmd = NULL;
 	bundleContext_getService(shell->bundleContext, reference, &cmd);
-	command = (command_pt) cmd;
-	hashMap_put(shell->commandNameMap, command->name, command);
+	command = (command_service_pt) cmd;
+	hashMap_put(shell->commandNameMap, command->getName(command->command), command);
 	hashMap_put(shell->commandReferenceMap, reference, command);
 }
 
 void shell_removeCommand(shell_pt shell, service_reference_pt reference) {
-	command_pt command = (command_pt) hashMap_remove(shell->commandReferenceMap, reference);
+	command_service_pt command = (command_service_pt) hashMap_remove(shell->commandReferenceMap, reference);
 	if (command != NULL) {
-		hashMap_remove(shell->commandNameMap, command->name);
+		hashMap_remove(shell->commandNameMap, command->getName(command->command));
 	}
 }
 
@@ -215,32 +225,51 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
 	    if (status == CELIX_SUCCESS) {
 	        activator->psCmd = psCommand_create(context);
-	        bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->psCmd, NULL, &activator->psCommand);
+	        shell_createCommandService(pool, activator->psCmd, &activator->psCmdSrv);
+	        bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->psCmdSrv, NULL, &activator->psCommand);
 
 	        activator->startCmd = startCommand_create(context);
-	        bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->startCmd, NULL, &activator->startCommand);
+	        shell_createCommandService(pool, activator->startCmd, &activator->startCmdSrv);
+	        bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->startCmdSrv, NULL, &activator->startCommand);
 
 	        activator->stopCmd = stopCommand_create(context);
-	        bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->stopCmd, NULL, &activator->stopCommand);
+	        shell_createCommandService(pool, activator->stopCmd, &activator->stopCmdSrv);
+	        bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->stopCmdSrv, NULL, &activator->stopCommand);
 
 	        activator->installCmd = installCommand_create(context);
-	        bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->installCmd, NULL, &activator->installCommand);
+	        shell_createCommandService(pool, activator->installCmd, &activator->installCmdSrv);
+	        bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->installCmdSrv, NULL, &activator->installCommand);
 
 	        activator->uninstallCmd = uninstallCommand_create(context);
-	        bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->uninstallCmd, NULL, &activator->uninstallCommand);
+	        shell_createCommandService(pool, activator->uninstallCmd, &activator->uninstallCmdSrv);
+	        bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->uninstallCmdSrv, NULL, &activator->uninstallCommand);
 
 	        activator->updateCmd = updateCommand_create(context);
-	        bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->updateCmd, NULL, &activator->updateCommand);
+	        shell_createCommandService(pool, activator->updateCmd, &activator->updateCmdSrv);
+	        bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->updateCmdSrv, NULL, &activator->updateCommand);
 
 	        activator->logCmd = logCommand_create(context);
-            bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->logCmd, NULL, &activator->logCommand);
+	        shell_createCommandService(pool, activator->logCmd, &activator->logCmdSrv);
+            bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->logCmdSrv, NULL, &activator->logCommand);
 
             activator->inspectCmd = inspectCommand_create(context);
-			bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->inspectCmd, NULL, &activator->inspectCommand);
+            shell_createCommandService(pool, activator->inspectCmd, &activator->inspectCmdSrv);
+			bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->inspectCmdSrv, NULL, &activator->inspectCommand);
 	    }
 	}
 
 	return status;
+}
+
+static celix_status_t shell_createCommandService(apr_pool_t *pool, command_pt command, command_service_pt *commandService) {
+	*commandService = apr_palloc(pool, sizeof(**commandService));
+	(*commandService)->command = command;
+	(*commandService)->executeCommand = command->executeCommand;
+	(*commandService)->getName = command_getName;
+	(*commandService)->getShortDescription = command_getShortDescription;
+	(*commandService)->getUsage = command_getUsage;
+
+	return CELIX_SUCCESS;
 }
 
 celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {

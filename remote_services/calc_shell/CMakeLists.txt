@@ -24,6 +24,7 @@ bundle(calc_shell SOURCES
     private/include/add_command.h
     private/include/sqrt_command.h
     private/include/sub_command.h
+    ${PROJECT_SOURCE_DIR}/shell/public/src/command.c
 )
 
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/calc_shell/private/include")

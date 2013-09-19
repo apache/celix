@@ -26,7 +26,7 @@
 
 #include <stdlib.h>
 
-#include "command_private.h"
+#include "command_impl.h"
 #include "log_command.h"
 #include "bundle_context.h"
 #include "log_reader_service.h"

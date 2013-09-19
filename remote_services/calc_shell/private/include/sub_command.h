@@ -27,6 +27,8 @@
 #ifndef SUB_COMMAND_H_
 #define SUB_COMMAND_H_
 
+#include "command_impl.h"
+
 command_pt subCommand_create(bundle_context_pt context);
 void subCommand_destroy(command_pt command);
 

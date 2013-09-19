@@ -21,9 +21,10 @@ if (SHELL)
 	SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_shell")
 	SET_HEADERS("Bundle-Name: Apache Celix Shell") 
 
-    bundle(shell SOURCES 
+    bundle(shell SOURCES
+    	public/src/command
+     
     	private/src/shell 
-    	private/src/command
     	private/src/ps_command 
     	private/src/start_command 
     	private/src/stop_command
@@ -51,9 +52,9 @@ if (SHELL)
 	include_directories(${CURL_INCLUDE_DIRS})
     target_link_libraries(shell celix_framework ${CURL_LIBRARIES})
     
-    package(shell FILES public/include/shell.h public/include/command.h public/include/command_private.h)
+    package(shell FILES public/include/shell.h public/include/command.h public/include/command_impl.h public/src/command.c)
     
-    FILE(GLOB files public/include/shell.h public/include/command.h public/include/command_private.h)
+    FILE(GLOB files public/include/shell.h public/include/command.h public/include/command_impl.h public/src/command.c)
     INSTALL(FILES ${files} DESTINATION include/celix/shell COMPONENT framework)
     INSTALL(FILES ${PROJECT_BINARY_DIR}/shell/shell.zip DESTINATION share/celix/bundles COMPONENT framework)
 endif (SHELL)
