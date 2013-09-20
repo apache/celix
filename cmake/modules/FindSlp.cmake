@@ -24,7 +24,7 @@
 #  SLP_DEFINITIONS - Compiler switches required for using Slp
 
 find_path(SLP_INCLUDE_DIR slp.h
-          /usr/incluce
+          /usr/include
           /usr/local/include )
 
 find_library(SLP_LIBRARY NAMES slp

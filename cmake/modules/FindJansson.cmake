@@ -24,7 +24,7 @@
 #  JANSSON_DEFINITIONS - Compiler switches required for using Jansson
 
 find_path(JANSSON_INCLUDE_DIR jansson.h
-          /usr/incluce
+          /usr/include
           /usr/local/include )
 
 find_library(JANSSON_LIBRARY NAMES jansson
