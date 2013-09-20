@@ -136,7 +136,7 @@ static celix_status_t deviceManagerBundle_createDriverTracker(device_manager_bun
 	service_tracker_customizer_pt customizer = NULL;
 
 	status = serviceTrackerCustomizer_create(bundleData->pool, bundleData->deviceManager, addingService_dummy_func,
-			deviceManager_locatorAdded, deviceManager_locatorModified, deviceManager_locatorRemoved, &customizer);
+			deviceManager_driverAdded, deviceManager_driverModified, deviceManager_driverRemoved, &customizer);
 
 	if (status == CELIX_SUCCESS) {
 		service_tracker_pt tracker = NULL;
@@ -156,7 +156,7 @@ static celix_status_t deviceManagerBundle_createDeviceTracker(device_manager_bun
 	service_tracker_customizer_pt customizer = NULL;
 
 	status = serviceTrackerCustomizer_create(bundleData->pool, bundleData->deviceManager, addingService_dummy_func,
-			deviceManager_locatorAdded, deviceManager_locatorModified, deviceManager_locatorRemoved, &customizer);
+			deviceManager_deviceAdded, deviceManager_deviceModified, deviceManager_deviceRemoved, &customizer);
 
 	if (status == CELIX_SUCCESS) {
 		service_tracker_pt tracker = NULL;
