@@ -124,6 +124,7 @@ celix_status_t manifest_read(manifest_pt manifest, char *filename) {
 					(tolower(lbuf[2]) == 'm') && (tolower(lbuf[3]) == 'e') &&
 					(lbuf[4] == ':') && (lbuf[5] == ' ')) {
 					name = (char *) apr_palloc(subpool, (len + 1) - 6);
+					name[0] = '\0';
 					name = strncpy(name, lbuf+6, len - 6);
 					name[len - 6] = '\0';
 				} else {
@@ -134,6 +135,7 @@ celix_status_t manifest_read(manifest_pt manifest, char *filename) {
 				if (fpeek(file) == ' ') {
 					int newlen = len - 6;
 					lastline = (char *) apr_palloc(subpool, newlen + 1);
+					lastline[0] = '\0';
 					lastline = strncpy(lastline, lbuf+6, len - 6);
 					lastline[newlen] = '\0';
 					continue;
@@ -141,16 +143,20 @@ celix_status_t manifest_read(manifest_pt manifest, char *filename) {
 			} else {
 				int newlen = strlen(lastline) + len;
 				char * buf = (char *) apr_palloc(subpool, newlen);
+				buf[0] = '\0';
 				strcpy(buf, lastline);
 				strncat(buf, lbuf+1, len - 1);
 				buf[newlen] = '\0';
 
 				if (fpeek(file) == ' ') {
-					lastline = realloc(lastline, strlen(buf) + 1);
+//					lastline = realloc(lastline, strlen(buf) + 1);
+					lastline = (char *) apr_palloc(subpool, strlen(buf) + 1);
+					lastline[0] = '\0';
 					lastline = strcpy(lastline, buf);
 					continue;
 				}
 				name = (char *) apr_palloc(subpool, strlen(buf) + 1);
+				name[0] = '\0';
 				name = strcpy(name, buf);
 				name[strlen(buf)] = '\0';
 				lastline = NULL;
@@ -219,6 +225,7 @@ celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt prope
 		if (lbuf[0] == ' ') {
 			int newlen = strlen(lastLine) + len;
 			char * buf = (char *) apr_palloc(subpool, newlen);
+			buf[0] = '\0';
 
 			// Line continued
 			if (name == NULL) {
@@ -231,11 +238,14 @@ celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt prope
 			strncat(buf, lbuf+1, len - 1);
 
 			if (fpeek(file) == ' ') {
-				lastLine = realloc(lastLine, strlen(buf) + 1);
+//				lastLine = realloc(lastLine, strlen(buf) + 1);
+				lastLine = (char *) apr_palloc(subpool, strlen(buf) + 1);
+				lastLine[0] = '\0';
 				lastLine = strcpy(lastLine, buf);
 				continue;
 			}
 			value = (char *) apr_palloc(subpool, strlen(buf) + 1);
+			value[0] = '\0';
 			value = strcpy(value, buf);
 			lastLine = NULL;
 		} else {
@@ -250,16 +260,19 @@ celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt prope
 				return CELIX_FILE_IO_EXCEPTION;
 			}
 			name = (char *) apr_palloc(subpool, (i + 1) - 2);
+			name[0] = '\0';
 			name = strncpy(name, lbuf, i - 2);
 			name[i - 2] = '\0';
 			if (fpeek(file) == ' ') {
 				int newlen = len - i;
 				lastLine = (char *) apr_palloc(subpool, newlen + 1);
+				lastLine[0] = '\0';
 				lastLine = strncpy(lastLine, lbuf+i, len -i);
 				lastLine[newlen] = '\0';
 				continue;
 			}
 			value = (char *) apr_palloc(subpool, (len + 1) - i);
+			value[0] = '\0';
 			value = strncpy(value, lbuf+i, len - i);
 			value[len - i] = '\0';
 		}
