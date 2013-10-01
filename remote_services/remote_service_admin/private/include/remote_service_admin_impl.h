@@ -28,7 +28,7 @@
 #define REMOTE_SERVICE_ADMIN_IMPL_H_
 
 #include "remote_service_admin.h"
-#include "mongoose.h"
+#include "civetweb.h"
 
 #define BUNDLE_STORE_PROPERTY_NAME "RS_BUNDLE"
 #define DEFAULT_BUNDLE_STORE "rs_bundles"

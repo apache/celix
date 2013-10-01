@@ -48,7 +48,8 @@ static const char *ajax_reply_start =
 
 static const char *DEFAULT_PORT = "8888";
 
-void *remoteServiceAdmin_callback(enum mg_event event, struct mg_connection *conn, const struct mg_request_info *request_info);
+//void *remoteServiceAdmin_callback(enum mg_event event, struct mg_connection *conn, const struct mg_request_info *request_info);
+static int remoteServiceAdmin_callback(struct mg_connection *conn);
 celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin, export_registration_pt registration, service_reference_pt reference, char *interface);
 celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, properties_pt serviceProperties, properties_pt endpointProperties, char *interface, endpoint_description_pt *description);
 static celix_status_t constructServiceUrl(remote_service_admin_pt admin, char *service, char **serviceUrl);
@@ -73,8 +74,16 @@ celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt con
 		} else {
 			(*admin)->port = apr_pstrdup(pool, port);
 		}
-		const char *options[] = {"listening_ports", port, NULL};
-		(*admin)->ctx = mg_start(remoteServiceAdmin_callback, (*admin), options);
+		printf("Start webserver: %s\n", (*admin)->port);
+		const char *options[] = { "listening_ports", (*admin)->port, NULL};
+
+		// Prepare callbacks structure. We have only one callback, the rest are NULL.
+		struct mg_callbacks callbacks;
+		memset(&callbacks, 0, sizeof(callbacks));
+		callbacks.begin_request = remoteServiceAdmin_callback;
+
+		(*admin)->ctx = mg_start(&callbacks, (*admin), options);
+		printf("Start webserver %p\n", (*admin)->ctx);
 	}
 
 	return status;
@@ -108,16 +117,19 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin) {
 /**
  * Request: http://host:port/services/{service}/{request}
  */
-void *remoteServiceAdmin_callback(enum mg_event event, struct mg_connection *conn, const struct mg_request_info *request_info) {
+//void *remoteServiceAdmin_callback(enum mg_event event, struct mg_connection *conn, const struct mg_request_info *request_info) {
+
+static int remoteServiceAdmin_callback(struct mg_connection *conn) {
+	const struct mg_request_info *request_info = mg_get_request_info(conn);
 	if (request_info->uri != NULL) {
 		printf("REMOTE_SERVICE_ADMIN: Handle request: %s\n", request_info->uri);
 		remote_service_admin_pt rsa = request_info->user_data;
 
 		if (strncmp(request_info->uri, "/services/", 10) == 0) {
 			// uri = /services/myservice/call
-			char *uri = request_info->uri;
+			const char *uri = request_info->uri;
 			// rest = myservice/call
-			char *rest = uri+10;
+			const char *rest = uri+10;
 			int length = strlen(rest);
 			char *callStart = strchr(rest, '/');
 			int pos = callStart - rest;
@@ -154,7 +166,7 @@ void *remoteServiceAdmin_callback(enum mg_event event, struct mg_connection *con
 		}
 	}
 
-	return "";
+	return 1;
 }
 
 celix_status_t remoteServiceAdmin_handleRequest(remote_service_admin_pt rsa, char *service, char *request, char *data, char **reply) {

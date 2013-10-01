@@ -163,7 +163,7 @@ celix_status_t discovery_stop(discovery_pt discovery) {
 
 	apr_thread_mutex_lock(discovery->disclosedServicesMutex);
 	hash_map_iterator_pt iter = hashMapIterator_create(discovery->disclosedServices);
-	while (hashMapIterator_nextEntry(iter)) {
+	while (hashMapIterator_hasNext(iter)) {
 		hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
 		disclosed_endpoint_entry_pt endpointEntry = hashMapEntry_getValue(entry);
 		DNSServiceRefDeallocate(endpointEntry->dnsServiceRef);
@@ -368,21 +368,21 @@ static void discovery_browseCallback(DNSServiceRef sdRef, DNSServiceFlags flags,
 		void *context) {
 	discovery_pt discovery = context;
 	if (flags & kDNSServiceFlagsAdd) {
-//		printf("Added service with %s %s %s\n", serviceName, regtype,
-//				replyDomain);
+		printf("Added service with %s %s %s\n", serviceName, regtype,
+				replyDomain);
 		DNSServiceRef resolveRef = NULL;
 		DNSServiceErrorType resolveError = DNSServiceResolve(&resolveRef, 0, 0,
 				serviceName, regtype, replyDomain, discovery_resolveAddCallback,
 				context);
-//		printf("Resolve return with error %i\n", resolveError);
+		printf("Resolve return with error %i\n", resolveError);
 		if (resolveError == kDNSServiceErr_NoError) {
 			DNSServiceProcessResult(resolveRef);
 		} else {
 			//TODO print error / handle error?
 		}
 	} else {
-//		printf("Removed service with %s %s %s\n", serviceName, regtype,
-//				replyDomain);
+		printf("Removed service with %s %s %s\n", serviceName, regtype,
+				replyDomain);
 		DNSServiceRef resolveRef = NULL;
 		DNSServiceErrorType resolveError = DNSServiceResolve(&resolveRef, 0, 0,
 				serviceName, regtype, replyDomain, discovery_resolveRemoveCallback,
@@ -409,7 +409,7 @@ static void discovery_resolveRemoveCallback(DNSServiceRef sdRef,
 	}
 	apr_thread_mutex_unlock(discovery->discoveredServicesMutex);
 	if (entry != NULL) {
-		discovery_informEndpointListeners(discovery, entry->endpointDescription, true);
+		discovery_informEndpointListeners(discovery, entry->endpointDescription, false);
 		properties_destroy(entry->endpointDescription->properties);
 		apr_pool_destroy(entry->pool);
 	} else {
@@ -437,7 +437,7 @@ static void discovery_resolveAddCallback(DNSServiceRef sdRef,
 				&value);
 		memcpy(valueBuf, value, valueSize);
 		valueBuf[valueSize] = '\0';
-//		printf("Found key=value %s=%s\n", key, valueBuf);
+		printf("Found key=value %s=%s\n", key, valueBuf);
 		properties_set(props, key, valueBuf);
 	}
 
@@ -452,10 +452,15 @@ static void discovery_resolveAddCallback(DNSServiceRef sdRef,
 		discovered_endpoint_entry_pt entry = apr_palloc(childPool, sizeof(*entry));
 		endpoint_description_pt endpoint = apr_palloc(childPool, sizeof(*endpoint));
 		//FIXME endpoint id for http should be the url
-		endpoint->id = apr_pstrdup(childPool, fullname);
+//		endpoint->id = apr_pstrdup(childPool, fullname);
+		endpoint->id = properties_get(props, "url");
 		endpoint->serviceId = 0 /*TODO*/;
 		endpoint->service = properties_get(props, "service");
 		endpoint->properties = props;
+
+		entry->pool = childPool;
+		entry->endpointDescription = endpoint;
+
 		apr_thread_mutex_lock(discovery->discoveredServicesMutex);
 		if (discovery->discoveredServices != NULL) {
 			hashMap_put(discovery->discoveredServices, endpoint->id, entry);

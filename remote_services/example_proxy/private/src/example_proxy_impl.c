@@ -177,7 +177,7 @@ celix_status_t exampleProxy_postRequest(example_pt example, char *url, struct po
 		res = curl_easy_perform(curl);
 		curl_easy_cleanup(curl);
 
-		printf("CALCULATOR_PROXY: Data read: \"%s\"\n", get->writeptr);
+		printf("CALCULATOR_PROXY: Data read: \"%s\" %d\n", get->writeptr, res);
 
 	}
 	return status;
