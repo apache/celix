@@ -29,16 +29,12 @@ if (REMOTE_SHELL)
 		private/include/remote_shell.h
 		private/include/connection_listener.h
 	)
+	
+	install_bundle(remote_shell)
  
     include_directories("private/include")
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/shell/public/include")
     
     target_link_libraries(remote_shell celix_framework ${APRUTIL_LIBRARY})
-    
-    package(remote_shell)
-    
-    #INSTALL(FILES ${PROJECT_BINARY_DIR}/bundles/remote_shell.zip DESTINATION share/celix/bundles COMPONENT framework)
-    
-    #deploy("remote_shell" BUNDLES shell remote_shell shell_tui log_service)
 endif (REMOTE_SHELL)

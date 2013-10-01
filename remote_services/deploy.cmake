@@ -16,8 +16,8 @@
 # under the License.
 is_enabled(REMOTE_SERVICE_ADMIN)
 if (REMOTE_SERVICE_ADMIN)
-	#deploy("remote-services" BUNDLES discovery_bonjour topology_manager remote_service_admin example example_endpoint shell shell_tui log_service log_writer)
-	#deploy("remote-services-client" BUNDLES topology_manager remote_service_admin example_proxy shell shell_tui log_service log_writer calc_shell discovery_bonjour)
+	deploy("remote-services-bj" BUNDLES discovery_bonjour topology_manager remote_service_admin example example_endpoint shell shell_tui log_service log_writer)
+	deploy("remote-services-bj-client" BUNDLES topology_manager remote_service_admin example_proxy shell shell_tui log_service log_writer calc_shell discovery_bonjour)
 	
 	deploy("remote-services" BUNDLES discovery_slp topology_manager remote_service_admin example example_endpoint shell shell_tui log_service log_writer)
 	deploy("remote-services-client" BUNDLES topology_manager remote_service_admin example_proxy shell shell_tui log_service log_writer calc_shell discovery_slp)

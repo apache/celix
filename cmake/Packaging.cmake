@@ -22,6 +22,50 @@ IF(NOT CPACK_COMMAND)
 	MESSAGE(FATAL_ERROR "Need CPack!")
 ENDIF(NOT CPACK_COMMAND)
 
+include(CPackComponent)
+
+macro( CELIX_ADD_COMPONENT_GROUP _group )
+  set( _readVariable )
+  set( _parentGroup )
+  foreach( _i ${ARGN} )
+    if( _readVariable )
+      set( ${_readVariable} "${_i}" )
+      break()
+    else( _readVariable )
+      if( "${_i}" STREQUAL PARENT_GROUP )
+        set( _readVariable _parentGroup )
+      endif( "${_i}" STREQUAL PARENT_GROUP )
+    endif( _readVariable )
+  endforeach( _i ${ARGN} )
+
+  cpack_add_component_group( ${_group} ${ARGN} )
+  add_custom_target( install-${_group} )
+  if( _parentGroup )
+    add_dependencies( install-${_parentGroup} install-${_group} )
+  endif( _parentGroup )
+endmacro( CELIX_ADD_COMPONENT_GROUP _group )
+
+macro( CELIX_ADD_COMPONENT _component )
+  set( _readVariable )
+  set( _group )
+  foreach( _i ${ARGN} )
+    if( _readVariable )
+      set( ${_readVariable} "${_i}" )
+      break()
+    else( _readVariable )
+      if( "${_i}" STREQUAL GROUP )
+        set( _readVariable _group )
+      endif( "${_i}" STREQUAL GROUP )
+    endif( _readVariable )
+  endforeach( _i ${ARGN} )
+
+  cpack_add_component( ${_component} ${ARGN} )
+  add_custom_target( install-${_component}
+                     COMMAND ${CMAKE_COMMAND} -DCOMPONENT=${_component} -P
+"${CMAKE_BINARY_DIR}/cmake_install.cmake" )
+  add_dependencies( install-${_group} install-${_component} )
+endmacro( CELIX_ADD_COMPONENT _component _group )
+
 find_program(JAR_COMMAND jar)
 if(JAR_COMMAND)
 	message(STATUS "Using JAR to repack bundles, bundles can be used by Apache ACE")
@@ -30,6 +74,9 @@ else(JAR_COMMAND)
 endif(JAR_COMMAND)
 
 SET(CPACK_GENERATOR "ZIP")
+
+celix_add_component_group(all)
+celix_add_component_group(bundles PARENT_GROUP all)
 
 MACRO(SET_HEADER header content)
 	SET(INT_${header} "${content}")
@@ -42,7 +89,7 @@ MACRO(SET_HEADERS content)
 ENDMACRO(SET_HEADERS)
 
 MACRO(bundle)
-    PARSE_ARGUMENTS(BUNDLE "SOURCES;FILES;DIRECTORIES" "" ${ARGN})
+    PARSE_ARGUMENTS(BUNDLE "SOURCES;FILES;DIRECTORIES;INSTALL_FILES" "INSTALL" ${ARGN})
     LIST(GET BUNDLE_DEFAULT_ARGS 0 INT_BUNDLE_NAME)
     
 	add_library(${INT_BUNDLE_NAME} SHARED ${BUNDLE_SOURCES})
@@ -58,16 +105,18 @@ MACRO(bundle)
 		set(INT_BUNDLE_DESCRIPTION "${INT_BUNDLE_SYMBOLICNAME} bundle")
 	endif (NOT INT_BUNDLE_DESCRIPTION)
 	
+	set(INT_BUNDLE_NAME_INSTALL ${INT_BUNDLE_NAME}_install)
+	
 	SET(__bundleManifest ${CMAKE_CURRENT_BINARY_DIR}/MANIFEST.MF)
     CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/manifest.in ${__bundleManifest} @ONLY)
-	install (FILES ${__bundleManifest} DESTINATION ./META-INF COMPONENT ${INT_BUNDLE_NAME})
+	install (FILES ${__bundleManifest} DESTINATION ./META-INF COMPONENT ${INT_BUNDLE_NAME_INSTALL})
     
-	install (TARGETS ${INT_BUNDLE_NAME} DESTINATION . COMPONENT ${INT_BUNDLE_NAME})
+	install (TARGETS ${INT_BUNDLE_NAME} DESTINATION . COMPONENT ${INT_BUNDLE_NAME_INSTALL})
     if (BUNDLE_FILES)
-	    install (FILES ${BUNDLE_FILES} DESTINATION . COMPONENT ${INT_BUNDLE_NAME})
+	    install (FILES ${BUNDLE_FILES} DESTINATION . COMPONENT ${INT_BUNDLE_NAME_INSTALL})
     endif(BUNDLE_FILES)
     if (BUNDLE_DIRECTORIES)
-	    install (DIRECTORY ${BUNDLE_DIRECTORIES} DESTINATION . COMPONENT ${INT_BUNDLE_NAME})
+	    install (DIRECTORY ${BUNDLE_DIRECTORIES} DESTINATION . COMPONENT ${INT_BUNDLE_NAME_INSTALL})
     endif(BUNDLE_DIRECTORIES)
 
 	SET(__bundleConfig ${CMAKE_CURRENT_BINARY_DIR}/CPackConfig-${INT_BUNDLE_NAME}-bundle.cmake)
@@ -92,8 +141,44 @@ MACRO(bundle)
 		)
 	endif(JAR_COMMAND)
 	
+	if (BUNDLE_INSTALL)
+		CELIX_ADD_COMPONENT(${INT_BUNDLE_NAME}
+	    	DISPLAY_NAME ${INT_BUNDLE_SYMBOLICNAME}
+	        DESCRIPTION ${INT_BUNDLE_DESCRIPTION}
+	        GROUP bundles
+	    )
+	    add_dependencies( install-${INT_BUNDLE_NAME} ${INT_BUNDLE_NAME} )
+	    
+	    if (BUNDLE_INSTALL_FILES)
+		    install (FILES ${BUNDLE_INSTALL_FILES} DESTINATION include/celix/${INT_BUNDLE_NAME} COMPONENT ${INT_BUNDLE_NAME})
+	    endif(BUNDLE_INSTALL_FILES)
+	    
+	    INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${INT_BUNDLE_NAME}.zip DESTINATION share/celix/bundles COMPONENT ${INT_BUNDLE_NAME})
+    endif(BUNDLE_INSTALL)
+	
 	SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES ${CMAKE_CURRENT_BINARY_DIR}/${INT_BUNDLE_NAME}.zip)
 ENDMACRO(bundle)
+
+MACRO(install_bundle)
+    PARSE_ARGUMENTS(BUNDLE "HEADERS;RESOURCES" "" ${ARGN})
+    LIST(GET BUNDLE_DEFAULT_ARGS 0 INT_BUNDLE_NAME)
+    
+	CELIX_ADD_COMPONENT(${INT_BUNDLE_NAME}
+    	DISPLAY_NAME ${INT_BUNDLE_NAME}
+        DESCRIPTION ${INT_BUNDLE_NAME}
+        GROUP bundles
+    )
+    add_dependencies( install-${INT_BUNDLE_NAME} ${INT_BUNDLE_NAME} )
+    
+    if (BUNDLE_HEADERS)
+	    install (FILES ${BUNDLE_HEADERS} DESTINATION include/celix/${INT_BUNDLE_NAME} COMPONENT ${INT_BUNDLE_NAME})
+    endif(BUNDLE_HEADERS)
+    if (BUNDLE_RESOURCES)
+	    install (FILES ${BUNDLE_RESOURCES} DESTINATION share/celix/${INT_BUNDLE_NAME} COMPONENT ${INT_BUNDLE_NAME})
+    endif(BUNDLE_RESOURCES)
+    
+    INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${INT_BUNDLE_NAME}.zip DESTINATION share/celix/bundles COMPONENT ${INT_BUNDLE_NAME})
+ENDMACRO(install_bundle)
 	
 MACRO(package)
     PARSE_ARGUMENTS(PACKAGE "FILES;DIRECTORIES" "" ${ARGN})
@@ -261,5 +346,4 @@ MACRO(PARSE_ARGUMENTS prefix arg_names option_names)
   ENDFOREACH(arg)
   SET(${prefix}_${current_arg_name} ${current_arg_list})
 ENDMACRO(PARSE_ARGUMENTS)
-
 

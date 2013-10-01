@@ -54,7 +54,10 @@ if (DEPLOYMENT_ADMIN)
         private/include/unzip.h
     )
     
-    target_link_libraries(deployment_admin celix_framework ${CURL_LIBRARIES})
+    install_bundle(deployment_admin
+    	HEADERS
+    		public/include/resource_processor.h
+	)
     
-    install(FILES public/include/resource_processor.h DESTINATION include/celix/deployment_admin)
+    target_link_libraries(deployment_admin celix_framework ${CURL_LIBRARIES})
 endif (DEPLOYMENT_ADMIN)

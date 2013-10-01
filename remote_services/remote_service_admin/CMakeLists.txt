@@ -40,5 +40,13 @@ bundle(remote_service_admin SOURCES
     private/include/mongoose.h
     private/include/remote_service_admin_impl.h
 )
+    
+install_bundle(remote_service_admin
+	HEADERS
+	    public/include/remote_endpoint_impl.h
+		public/include/remote_endpoint.h
+		public/include/remote_proxy.h
+		public/include/remote_service_admin.h
+)
 
 target_link_libraries(remote_service_admin celix_framework ${APRUTIL_LIBRARY} ${JANSSON_LIBRARIES})

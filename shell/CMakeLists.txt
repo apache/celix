@@ -46,6 +46,13 @@ if (SHELL)
         private/include/update_command.h
         private/include/help_command.h
     )
+    
+    install_bundle(shell
+    	HEADERS
+    		public/include/shell.h public/include/command.h public/include/command_impl.h
+    	RESOURCES 
+    		public/src/command.c
+	)
 
 	include_directories("public/include")
 	include_directories("private/include")
@@ -53,10 +60,4 @@ if (SHELL)
     include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 	include_directories(${CURL_INCLUDE_DIRS})
     target_link_libraries(shell celix_framework ${CURL_LIBRARIES})
-    
-    package(shell FILES public/include/shell.h public/include/command.h public/include/command_impl.h public/src/command.c)
-    
-    FILE(GLOB files public/include/shell.h public/include/command.h public/include/command_impl.h public/src/command.c)
-    INSTALL(FILES ${files} DESTINATION include/celix/shell COMPONENT framework)
-    INSTALL(FILES ${PROJECT_BINARY_DIR}/shell/shell.zip DESTINATION share/celix/bundles COMPONENT framework)
 endif (SHELL)

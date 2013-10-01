@@ -20,12 +20,14 @@ if (SHELL_TUI)
 	SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_shell_tui")
 	SET_HEADERS("Bundle-Name: Apache Celix Shell TUI") 
 
-    bundle(shell_tui SOURCES private/src/shell_tui)
+    bundle(shell_tui 
+    	SOURCES 
+    		private/src/shell_tui
+	)
+	
+	install_bundle(shell_tui)
+	
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/shell/public/include")
     target_link_libraries(shell_tui celix_framework)
-    
-    package(shell_tui)
-    
-    INSTALL(FILES ${PROJECT_BINARY_DIR}/shell_tui/shell_tui.zip DESTINATION share/celix/bundles COMPONENT framework)
 endif (SHELL_TUI)

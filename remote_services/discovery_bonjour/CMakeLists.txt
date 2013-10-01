@@ -32,6 +32,8 @@ bundle(discovery_bonjour SOURCES
 	private/src/discovery.c
 	private/src/discovery_activator.c
 )
+    
+install_bundle(discovery_bonjour)
 
 target_link_libraries(discovery_bonjour celix_framework ${APRUTIL_LIBRARY}) # TODO ${SLP_LIBRARIES})
 

@@ -33,17 +33,14 @@ bundle(device_manager SOURCES
     private/include/driver_matcher.h
 )
 
-FILE(GLOB SERVICE_HEADERS public/include/*.h)
-
-#bundle_add(device_manager ${SERVICE_HEADERS} DESTINATION services)
-#bundle_add(device_manager 
-#	public/include DESTINATION public/include
-#	PATTERN .svn EXCLUDE)
-
-#bundle_install(device_manager COMPONENT device_access)
-
-install(FILES ${SERVICE_HEADERS} DESTINATION include/celix/device_access)
-
+install_bundle(device_manager
+	HEADERS
+		public/include/device.h
+		public/include/driver_locator.h
+		public/include/driver_selector.h
+		public/include/driver.h
+		public/include/match.h
+)
 
 include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")

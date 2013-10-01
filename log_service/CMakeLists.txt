@@ -21,28 +21,28 @@ if (LOG_SERVICE)
 	SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_log_service")
 	SET_HEADERS("Bundle-Name: Apache Celix Log Service")
 	
-    bundle(log_service SOURCES
-    	private/src/log
-    	private/src/log_entry
-    	private/src/log_factory  
-    	private/src/log_service_impl 
-    	private/src/log_service_activator
-    	private/src/log_reader_service_impl
-        
-        private/include/log.h
-        private/include/log_factory.h
-        private/include/log_reader_service_impl.h
-        private/include/log_service_impl.h
+    bundle(log_service 
+    	SOURCES
+			private/src/log
+			private/src/log_entry
+			private/src/log_factory  
+			private/src/log_service_impl 
+			private/src/log_service_activator
+			private/src/log_reader_service_impl
+		    
+		    private/include/log.h
+		    private/include/log_factory.h
+		    private/include/log_reader_service_impl.h
+		    private/include/log_service_impl.h
+    )
+    
+    install_bundle(log_service
+        HEADERS
+        	public/include/log_service.h
     )
     
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/log_service/private/include")
     target_link_libraries(log_service celix_framework)
-    
-    package(log_service FILES public/include/log_service.h)
-    
-    FILE(GLOB files public/include/log_service.h)
-    INSTALL(FILES ${files} DESTINATION include/celix/log_service COMPONENT framework)
-    INSTALL(FILES ${PROJECT_BINARY_DIR}/log_service/log_service.zip DESTINATION share/celix/bundles COMPONENT framework)
 endif (LOG_SERVICE)

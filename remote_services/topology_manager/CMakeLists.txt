@@ -31,4 +31,6 @@ bundle(topology_manager SOURCES
     private/include/topology_manager.h
 )
 
+install_bundle(topology_manager)
+
 target_link_libraries(topology_manager celix_framework ${APRUTIL_LIBRARY})

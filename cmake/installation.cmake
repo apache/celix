@@ -32,5 +32,4 @@ CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/CPackConfig-Installation.in CPackConf
 ADD_CUSTOM_TARGET(package-release
   ${CPACK_COMMAND} --config "CPackConfig-Installation.cmake"
   )
-ADD_CUSTOM_TARGET(install-release COMMAND ${CMAKE_COMMAND} -DCOMPONENT=framework -P cmake_install.cmake)
   

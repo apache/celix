@@ -25,9 +25,7 @@ bundle(driver_locator SOURCES
 	private/src/driver_locator
 )
 
-#bundle_install(driver_locator COMPONENT device_access)
-
-package(driver_locator)
+install_bundle(driver_locator)
 
 include_directories(${PROJECT_SOURCE_DIR}/device_access/device_access/public/include)
 include_directories(private/include)

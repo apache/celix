@@ -29,6 +29,12 @@ if (DEPENDENCY_MANAGER)
       endif(CMAKE_UNAME)
     endif(UNIX AND NOT WIN32)
     
+    CELIX_ADD_COMPONENT(dependency_manager
+    	DISPLAY_NAME Dependency Manager
+        DESCRIPTION "The Apache Celix dependency manager (static) library"
+        GROUP all
+    )
+    
     add_library(dependency_manager STATIC 
     	private/src/dependency_manager 
     	private/src/dependency_activator_base 
@@ -38,7 +44,17 @@ if (DEPENDENCY_MANAGER)
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     target_link_libraries(dependency_manager celix_framework)
     
-    FILE(GLOB files public/include/dependency_activator_base.h public/include/service.h public/include/dependency_manager.h public/include/service_component_private.h public/include/service_component.h public/include/service_dependency.h)
-    INSTALL(FILES ${files} DESTINATION include/celix/dependency_manager COMPONENT framework)
-    install(TARGETS dependency_manager DESTINATION lib COMPONENT framework)
+    install(
+    	FILES
+    		public/include/dependency_activator_base.h 
+    		public/include/service.h public/include/dependency_manager.h 
+    		public/include/service_component_private.h 
+    		public/include/service_component.h 
+    		public/include/service_dependency.h 
+		DESTINATION 
+			include/celix/dependency_manager 
+		COMPONENT 
+			dependency_manager
+	)
+    install(TARGETS dependency_manager DESTINATION lib COMPONENT dependency_manager)
 endif (DEPENDENCY_MANAGER)

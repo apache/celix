@@ -32,6 +32,8 @@ bundle(discovery_slp SOURCES
 	private/src/discovery 
 	private/src/discovery_activator
 )
+    
+install_bundle(discovery_slp)
 
 target_link_libraries(discovery_slp celix_framework ${APRUTIL_LIBRARY} ${SLP_LIBRARIES})
 

@@ -14,6 +14,9 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-if(PKG_CONFIG_EXECUTABLE)
-	deploy("chapter04-paint-example" BUNDLES chapter04-paint-example circle square triangle shell shell_tui log_service log_writer)
-endif(PKG_CONFIG_EXECUTABLE)
+is_enabled(EXAMPLES)
+if (EXAMPLES)
+	if(PKG_CONFIG_EXECUTABLE)
+		deploy("chapter04-paint-example" BUNDLES chapter04-paint-example circle square triangle shell shell_tui log_service log_writer)
+	endif(PKG_CONFIG_EXECUTABLE)
+endif (EXAMPLES)

@@ -23,10 +23,16 @@ if (FRAMEWORK)
     
     include(CPackComponent)
     
-    cpack_add_component(framework
+    #cpack_add_component(framework
+    #	DISPLAY_NAME Framework
+    #    DESCRIPTION "The Apache Celix framework library"
+    #    REQUIRED
+    #)
+    
+    CELIX_ADD_COMPONENT(framework
     	DISPLAY_NAME Framework
         DESCRIPTION "The Apache Celix framework library"
-        REQUIRED
+        GROUP all
     )
     
     add_definitions(-DUSE_FILE32API)
