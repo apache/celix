@@ -15,10 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
+find_package(APR REQUIRED)
 find_package(Jansson REQUIRED)
 
-link_directories("/opt/local/lib")
-include_directories("/opt/local/include")
+include_directories(${JANSSON_INCLUDE_DIRS})
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")

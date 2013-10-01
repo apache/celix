@@ -18,6 +18,7 @@
 find_package(Jansson REQUIRED)
 find_package(CURL REQUIRED)
 
+include_directories(${CURL_INCLUDE_DIRS})
 include_directories(${JANSSON_INCLUDE_DIRS})
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
