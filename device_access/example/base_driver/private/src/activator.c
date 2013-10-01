@@ -92,8 +92,9 @@ static celix_status_t bundleActivator_registerBaseDriverDevice(base_driver_bundl
 	if (status == CELIX_SUCCESS) {
 		printf("BASE_DRIVER: Successfully registered device service with serial %s.\n", serial);
 	} else {
+		char error[256];
 		printf("BASE_DRIVER: Unsuccessfully registered device service with serial %s. Got error: %s\n",
-				serial, celix_strerror(status));
+				serial, celix_strerror(status, error, 256));
 	}
 	return status;
 }
@@ -120,8 +121,9 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 		printf("BASE_DRIVER: unregistering service\n");
 		celix_status_t unregStatus = serviceRegistration_unregister(reg);
 		if (unregStatus != CELIX_SUCCESS) {
+			char error[256];
 			status = CELIX_ILLEGAL_STATE;
-			fprintf(stderr, "Cannot unregister service. Got error %s\n", celix_strerror(unregStatus));
+			fprintf(stderr, "Cannot unregister service. Got error %s\n", celix_strerror(unregStatus, error, 256));
 		} else {
 			printf("BASE_DRIVER: unregistered base device service\n");
 		}

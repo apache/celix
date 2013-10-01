@@ -68,7 +68,8 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
         status = bundleContext_registerService(context, PUBLISHER_NAME, data->ps, props, &data->reg);
         if (status != CELIX_SUCCESS) {
-        	printf("Error: %s\n", celix_strerror(status));
+        	char error[256];
+        	printf("Error: %s\n", celix_strerror(status, error, 256));
         }
     } else {
         status = CELIX_BUNDLE_EXCEPTION;

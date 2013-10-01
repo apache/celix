@@ -57,7 +57,7 @@ typedef apr_status_t celix_status_t;
  * Return a readable string for the given error code.
  *
  */
-FRAMEWORK_EXPORT char *celix_strerror(celix_status_t errorcode);
+FRAMEWORK_EXPORT char *celix_strerror(celix_status_t errorcode, char *buffer, size_t bufferSize);
 
 /*!
  * Error code indicating successful execution of the function.

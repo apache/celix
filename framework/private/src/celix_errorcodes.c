@@ -23,23 +23,38 @@
  *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
+#include <apr_strings.h>
+
 #include "celix_errno.h"
 
 static char *celix_error_string(celix_status_t statcode) {
-    switch (statcode) {
-    case CELIX_ENOMEM:
-        return "Out off memory";
-    case CELIX_ILLEGAL_ARGUMENT:
-        return "Illegal argument";
-    }
+	switch (statcode) {
+	case CELIX_BUNDLE_EXCEPTION:
+		return "Bundle exception";
+	case CELIX_INVALID_BUNDLE_CONTEXT:
+		return "Invalid bundle context";
+	case CELIX_ILLEGAL_ARGUMENT:
+		return "Illegal argument";
+	case CELIX_INVALID_SYNTAX:
+		return "Invalid syntax";
+	case CELIX_FRAMEWORK_SHUTDOWN:
+		return "Framework shutdown";
+	case CELIX_ILLEGAL_STATE:
+		return "Illegal state";
+	case CELIX_FRAMEWORK_EXCEPTION:
+		return "Framework exception";
+	case CELIX_FILE_IO_EXCEPTION:
+		return "File I/O exception";
+	}
 	return "Unkown code";
 }
 
-char *celix_strerror(celix_status_t errorcode)
-{
+char *celix_strerror(celix_status_t errorcode, char *buffer, size_t bufferSize) {
     if (errorcode < CELIX_START_ERROR) {
-        return "No message";
+    	return apr_strerror(errorcode, buffer, bufferSize);
     } else {
-        return celix_error_string(errorcode);
+    	char * str = celix_error_string(errorcode);
+    	apr_cpystrn(buffer, str, bufferSize);
+        return buffer;
     }
 }
