@@ -229,7 +229,7 @@ static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseStri
                         return NULL;
                     }
                     
-                    if (attribute_create(key, value, memory_pool, &attr) == CELIX_SUCCESS) {
+                    if (attribute_create(memory_pool, key, value, &attr) == CELIX_SUCCESS) {
                         hashMap_put(attrsMap, key, attr);
                     }
                 }
@@ -302,7 +302,7 @@ static linked_list_pt manifestParser_parseImportHeader(char * header, apr_pool_t
                     return NULL;
                 }
                 
-                if (attribute_create(apr_pstrdup(memory_pool, "service"), path, memory_pool, &name) == CELIX_SUCCESS) {
+                if (attribute_create(memory_pool, apr_pstrdup(memory_pool, "service"), path, &name) == CELIX_SUCCESS) {
                 	char *key = NULL;
                 	attribute_getKey(name, &key);
                     hashMap_put(attributes, key, name);
@@ -354,7 +354,7 @@ static linked_list_pt manifestParser_parseExportHeader(module_pt module, char * 
                 return NULL;
             }
 
-            if (attribute_create(apr_pstrdup(memory_pool, "service"), path, memory_pool, &name) == CELIX_SUCCESS) {
+            if (attribute_create(memory_pool, apr_pstrdup(memory_pool, "service"), path, &name) == CELIX_SUCCESS) {
             	char *key = NULL;
 				attribute_getKey(name, &key);
 				hashMap_put(attributes, key, name);

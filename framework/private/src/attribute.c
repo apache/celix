@@ -33,7 +33,7 @@ struct attribute {
 	char * value;
 };
 
-celix_status_t attribute_create(char * key, char * value, apr_pool_t *memory_pool, attribute_pt *attribute) {
+celix_status_t attribute_create(apr_pool_t *memory_pool, char * key, char * value, attribute_pt *attribute) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (key == NULL || value == NULL || memory_pool == NULL || *attribute != NULL) {
