@@ -124,11 +124,12 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
     celix_status_t status = CELIX_SUCCESS;
     struct data * data = (struct data *) userData;
+    apr_status_t stat;
 
 	printf("Stop\n");
     serviceTracker_close(data->tracker);
     data->running = false;
-    apr_thread_join(APR_SUCCESS, data->sender);
+    apr_thread_join(&stat, data->sender);
 
     return status;
 }

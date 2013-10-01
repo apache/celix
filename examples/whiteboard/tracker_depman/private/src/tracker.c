@@ -63,9 +63,10 @@ void service_start(void * userData) {
 }
 
 void service_stop(void * userData) {
+	apr_status_t stat;
 	struct data * data = (struct data *) userData;
 	data->running = false;
-	apr_thread_join(APR_SUCCESS, data->sender);
+	apr_thread_join(&stat, data->sender);
 }
 
 void service_destroy(void * userData) {

@@ -27,20 +27,27 @@
 #ifndef LOG_WRITER_H_
 #define LOG_WRITER_H_
 
-#include "service_component.h"
-#include "service_dependency.h"
 #include "log_reader_service.h"
+
+#include "service_tracker.h"
 
 struct log_writer {
     log_reader_service_pt logReader;
-    service_pt service;
-    service_dependency_pt dep;
     log_listener_pt logListener;
+    apr_pool_t *pool;
+    bundle_context_pt context;
+    service_tracker_pt tracker;
 };
 
 typedef struct log_writer *log_writer_pt;
 
-celix_status_t logWriter_create(apr_pool_t *pool, log_writer_pt *writer);
+celix_status_t logWriter_create(apr_pool_t *pool, bundle_context_pt context, log_writer_pt *writer);
+celix_status_t logWriter_start(log_writer_pt writer);
+celix_status_t logWriter_stop(log_writer_pt writer);
 
+celix_status_t logWriter_addingServ(void * handle, service_reference_pt ref, void **service);
+celix_status_t logWriter_addedServ(void * handle, service_reference_pt ref, void * service);
+celix_status_t logWriter_modifiedServ(void * handle, service_reference_pt ref, void * service);
+celix_status_t logWriter_removedServ(void * handle, service_reference_pt ref, void * service);
 
 #endif /* LOG_WRITER_H_ */
