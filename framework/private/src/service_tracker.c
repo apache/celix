@@ -267,7 +267,9 @@ celix_status_t serviceTracker_track(service_tracker_pt tracker, service_referenc
 				serviceTrackerCustomizer_getHandle(tracker->customizer, &handle);
 				serviceTrackerCustomizer_getAddedFunction(tracker->customizer, &function);
 
-				function(handle, reference, service);
+				if (function != NULL) {
+					function(handle, reference, service);
+				}
 			}
 		}
 
@@ -279,7 +281,9 @@ celix_status_t serviceTracker_track(service_tracker_pt tracker, service_referenc
 			serviceTrackerCustomizer_getHandle(tracker->customizer, &handle);
 			serviceTrackerCustomizer_getModifiedFunction(tracker->customizer, &function);
 
-			function(handle, reference, tracked->service);
+			if (function != NULL) {
+				function(handle, reference, tracked->service);
+			}
 		}
 	}
 
@@ -296,7 +300,11 @@ void * serviceTracker_addingService(service_tracker_pt tracker, service_referenc
 		serviceTrackerCustomizer_getHandle(tracker->customizer, &handle);
 		serviceTrackerCustomizer_getAddingFunction(tracker->customizer, &function);
 
-		function(handle, reference, &svc);
+		if (function != NULL) {
+			function(handle, reference, &svc);
+		} else {
+			bundleContext_getService(tracker->context, reference, &svc);
+		}
 	} else {
 		bundleContext_getService(tracker->context, reference, &svc);
 	}
