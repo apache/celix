@@ -45,7 +45,73 @@ void test_framework_create(void) {
 	framework_create(&framework, memoryPool);
 
 
-	CU_ASSERT(framework == NULL);
+	CU_ASSERT(framework != NULL);
+}
+
+void frameworkTest_startFw() {
+	apr_status_t rv = apr_initialize();
+	if (rv != APR_SUCCESS) {
+		CU_FAIL("Could not initialize APR");
+	} else {
+		apr_pool_t *memoryPool;
+		apr_status_t s = apr_pool_create(&memoryPool, NULL);
+		if (s != APR_SUCCESS) {
+			CU_FAIL("Could not create memory pool");
+		} else {
+			FRAMEWORK framework = NULL;
+			if (framework_create(&framework, memoryPool) == CELIX_SUCCESS) {
+				if (fw_init(framework) == CELIX_SUCCESS) {
+					if (framework_start(framework) == CELIX_SUCCESS) {
+						CU_PASS("Framework started");
+						framework_stop(framework);
+						framework_destroy(framework);
+						apr_pool_destroy(memoryPool);
+						apr_terminate();
+					} else {
+						CU_FAIL("Could not create memory pool");
+					}
+				} else {
+					CU_FAIL("Could not create memory pool");
+				}
+			} else {
+				CU_FAIL("Could not create memory pool");
+			}
+		}
+	}
+}
+
+void frameworkTest_installBundle() {
+	apr_status_t rv = apr_initialize();
+	if (rv != APR_SUCCESS) {
+		CU_FAIL("Could not initialize APR");
+	} else {
+		apr_pool_t *memoryPool;
+		apr_status_t s = apr_pool_create(&memoryPool, NULL);
+		if (s != APR_SUCCESS) {
+			CU_FAIL("Could not create memory pool");
+		} else {
+			FRAMEWORK framework = NULL;
+			if (framework_create(&framework, memoryPool) == CELIX_SUCCESS) {
+				if (fw_init(framework) == CELIX_SUCCESS) {
+					if (framework_start(framework) == CELIX_SUCCESS) {
+
+						// fw_installBundle(); // Needs a fake bundle..
+
+						framework_stop(framework);
+						framework_destroy(framework);
+						apr_pool_destroy(memoryPool);
+						apr_terminate();
+					} else {
+						CU_FAIL("Could not create memory pool");
+					}
+				} else {
+					CU_FAIL("Could not create memory pool");
+				}
+			} else {
+				CU_FAIL("Could not create memory pool");
+			}
+		}
+	}
 }
 
 
@@ -57,7 +123,7 @@ int main (int argc, char** argv) {
 	  return CU_get_error();
 
 	/* add a suite to the registry */
-	pSuite = CU_add_suite("Suite_1", NULL, NULL);
+	pSuite = CU_add_suite("Framework", NULL, NULL);
 	if (NULL == pSuite) {
 	  CU_cleanup_registry();
 	  return CU_get_error();
@@ -66,7 +132,7 @@ int main (int argc, char** argv) {
 	/* add the tests to the suite */
 	if (
 		NULL == CU_add_test(pSuite, "Framework Creation Test", test_framework_create)
-//		|| NULL == CU_add_test(pSuite, "List Add Test", test_linkedList_add)
+		|| NULL == CU_add_test(pSuite, "Start/Stop test", frameworkTest_startFw)
 		)
 	{
 	  CU_cleanup_registry();

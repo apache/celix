@@ -70,4 +70,9 @@ if (FRAMEWORK)
     FILE(GLOB files "public/include/*.h")
     INSTALL(FILES ${files} DESTINATION include/celix COMPONENT framework)
     
+    include_directories(${CUNIT_INCLUDE_DIRS})
+    add_executable(framework_test private/test/framework_test)
+    target_link_libraries(framework_test utils framework ${CUNIT_LIBRARIES})
+    
+    run_test(framework_test)
 endif (FRAMEWORK)
