@@ -72,7 +72,7 @@ if (FRAMEWORK)
     
     include_directories(${CUNIT_INCLUDE_DIRS})
     add_executable(framework_test private/test/framework_test)
-    target_link_libraries(framework_test utils framework ${CUNIT_LIBRARIES})
+    target_link_libraries(framework_test celix_utils celix_framework ${CUNIT_LIBRARIES})
     
     run_test(framework_test)
 endif (FRAMEWORK)

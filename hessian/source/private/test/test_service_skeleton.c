@@ -24,6 +24,7 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <stddef.h>
+#include <stdio.h>
 
 #include "hessian_2.0_in.h"
 

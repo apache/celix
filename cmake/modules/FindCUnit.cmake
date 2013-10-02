@@ -26,7 +26,7 @@ FIND_PATH(CUNIT_INCLUDE_DIR CUnit/Basic.h
 )
 
 FIND_PATH(CUNIT_SHARE_DIR CUnit-List.dtd
-	/usr/local/share/CUnit
+	/usr/local/share/Cunit
   	/usr/share/CUnit
   	/opt/local/share/CUnit
 )

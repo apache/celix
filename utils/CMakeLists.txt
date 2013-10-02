@@ -71,7 +71,7 @@ if (UTILS)
     run_test(hash_map_test_hash)
     run_test(linked_list_test)
     
-    run_unity_test(unity_bla SOURCE private/test/testUnity.c MOCKS public/include/tomock.h)
+    #run_unity_test(unity_bla SOURCE private/test/testUnity.c MOCKS public/include/tomock.h)
     #add_test(unity_bla ${CMAKE_CURRENT_BINARY_DIR}/unity_bla)
     
     #SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -fnested-functions ${CMAKE_C_FLAGS}")
