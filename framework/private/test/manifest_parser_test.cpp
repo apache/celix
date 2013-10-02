@@ -1,4 +1,4 @@
-/*
+/**
  *Licensed to the Apache Software Foundation (ASF) under one
  *or more contributor license agreements.  See the NOTICE file
  *distributed with this work for additional information
@@ -16,42 +16,44 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/**
+/*
+ * manifest_parser_test.cpp
  *
- * @defgroup ServiceListener Service Listener
- * @ingroup framework
- * @{
- *
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
- *  \date      	January 11, 2012
- *  \copyright	Apache License, Version 2.0
+ *  \date       Feb 11, 2013
+ *  \author     <a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
-#ifndef SERVICE_EVENT_H_
-#define SERVICE_EVENT_H_
+#include <stdlib.h>
+#include <stdio.h>
 
-enum serviceEventType
-{
-	SERVICE_EVENT_REGISTERED = 0x00000001,
-	SERVICE_EVENT_MODIFIED = 0x00000002,
-	SERVICE_EVENT_UNREGISTERING = 0x00000004,
-	SERVICE_EVENT_MODIFIED_ENDMATCH = 0x00000008,
+#include "CppUTest/TestHarness.h"
+#include "CppUTest/TestHarness_c.h"
+#include "CppUTest/CommandLineTestRunner.h"
+#include "CppUTestExt/MockSupport.h"
+
+extern "C" {
+#include "manifest_parser.h"
+}
+
+int main(int argc, char** argv) {
+	return RUN_ALL_TESTS(argc, argv);
+}
+
+TEST_GROUP(manifest_parser) {
+	apr_pool_t *pool;
+
+	void setup(void) {
+		apr_initialize();
+		apr_pool_create(&pool, NULL);
+	}
+
+	void teardown() {
+		apr_pool_destroy(pool);
+		mock().checkExpectations();
+		mock().clear();
+	}
 };
 
-typedef enum serviceEventType service_event_type_e;
 
-typedef struct serviceEvent *service_event_pt;
 
-#include "service_reference.h"
 
-#include "service_reference.h"
-
-struct serviceEvent {
-	service_reference_pt reference;
-	service_event_type_e type;
-};
-
-#endif /* SERVICE_EVENT_H_ */
-
-/**
- * @}
- */

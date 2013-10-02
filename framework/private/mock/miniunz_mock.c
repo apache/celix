@@ -1,4 +1,4 @@
-/*
+/**
  *Licensed to the Apache Software Foundation (ASF) under one
  *or more contributor license agreements.  See the NOTICE file
  *distributed with this work for additional information
@@ -16,42 +16,23 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/**
+/*
+ * miniunz_mock.c
  *
- * @defgroup ServiceListener Service Listener
- * @ingroup framework
- * @{
- *
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
- *  \date      	January 11, 2012
- *  \copyright	Apache License, Version 2.0
+ *  \date       Feb 12, 2013
+ *  \author     <a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
-#ifndef SERVICE_EVENT_H_
-#define SERVICE_EVENT_H_
+#include "CppUTestExt/MockSupport_c.h"
 
-enum serviceEventType
-{
-	SERVICE_EVENT_REGISTERED = 0x00000001,
-	SERVICE_EVENT_MODIFIED = 0x00000002,
-	SERVICE_EVENT_UNREGISTERING = 0x00000004,
-	SERVICE_EVENT_MODIFIED_ENDMATCH = 0x00000008,
-};
+#include "archive.h"
 
-typedef enum serviceEventType service_event_type_e;
+celix_status_t extractBundle(char * bundleName, char * revisionRoot) {
+	mock_c()->actualCall("extractBundle")
+			->withStringParameters("bundleName", bundleName)
+			->withStringParameters("revisionRoot", revisionRoot);
+	return mock_c()->returnValue().value.intValue;
+}
 
-typedef struct serviceEvent *service_event_pt;
 
-#include "service_reference.h"
 
-#include "service_reference.h"
-
-struct serviceEvent {
-	service_reference_pt reference;
-	service_event_type_e type;
-};
-
-#endif /* SERVICE_EVENT_H_ */
-
-/**
- * @}
- */

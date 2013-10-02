@@ -1,4 +1,4 @@
-/*
+/**
  *Licensed to the Apache Software Foundation (ASF) under one
  *or more contributor license agreements.  See the NOTICE file
  *distributed with this work for additional information
@@ -16,42 +16,29 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/**
+/*
+ * filter_mock.c
  *
- * @defgroup ServiceListener Service Listener
- * @ingroup framework
- * @{
- *
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
- *  \date      	January 11, 2012
- *  \copyright	Apache License, Version 2.0
+ *  \date       Feb 7, 2013
+ *  \author     <a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
-#ifndef SERVICE_EVENT_H_
-#define SERVICE_EVENT_H_
+#include "CppUTestExt/MockSupport_c.h"
 
-enum serviceEventType
-{
-	SERVICE_EVENT_REGISTERED = 0x00000001,
-	SERVICE_EVENT_MODIFIED = 0x00000002,
-	SERVICE_EVENT_UNREGISTERING = 0x00000004,
-	SERVICE_EVENT_MODIFIED_ENDMATCH = 0x00000008,
-};
+#include "filter.h"
 
-typedef enum serviceEventType service_event_type_e;
+filter_pt filter_create(char * filterString, apr_pool_t *pool) {
+	return mock_c()->returnValue().value.pointerValue;
+}
 
-typedef struct serviceEvent *service_event_pt;
+void filter_destroy(filter_pt filter) {
 
-#include "service_reference.h"
+}
 
-#include "service_reference.h"
+celix_status_t filter_match(filter_pt filter, properties_pt properties, bool *result) {
+	return mock_c()->returnValue().value.intValue;
+}
 
-struct serviceEvent {
-	service_reference_pt reference;
-	service_event_type_e type;
-};
-
-#endif /* SERVICE_EVENT_H_ */
-
-/**
- * @}
- */
+celix_status_t filter_getString(filter_pt filter, char **filterStr) {
+	return mock_c()->returnValue().value.intValue;
+}

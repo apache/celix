@@ -64,7 +64,8 @@ extern "C"
 }
 
 int main(int argc, char** argv) {
-	return RUN_ALL_TESTS(argc, argv);
+	RUN_ALL_TESTS(argc, argv);
+	return 0;
 }
 
 TEST_GROUP(version_range) {
@@ -180,7 +181,8 @@ TEST(version_range, parse) {
 		.withParameter("versionStr", "7.8.9")
 		.andOutputParameter("version", high);
 
-	status = versionRange_parse(pool, "[1.2.3, 7.8.9]", &range);
+	std::string version = "[1.2.3, 7.8.9]";
+	status = versionRange_parse(pool, (char *) version.c_str(), &range);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 }
 
