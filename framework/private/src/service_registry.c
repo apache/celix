@@ -72,6 +72,7 @@ celix_status_t serviceRegistry_getUsageCount(service_registry_pt registry, bundl
 	unsigned int i;
 	for (i = 0; (usages != NULL) && (i < arrayList_size(usages)); i++) {
 		usage_count_pt usage = (usage_count_pt) arrayList_get(usages, i);
+		// @TODO use reference_equals!
 		if (usage->reference == reference) {
 			*usageCount = usage;
 			break;
@@ -191,7 +192,6 @@ celix_status_t serviceRegistry_getRegisteredServices(service_registry_pt registr
 				}
 			}
 		}
-		return status;
 	}
 	return status;
 }

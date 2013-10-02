@@ -53,7 +53,7 @@ struct tracked {
 typedef struct tracked * tracked_pt;
 
 static apr_status_t serviceTracker_destroy(void *trackerP);
-static void * serviceTracker_addingService(service_tracker_pt tracker, service_reference_pt reference);
+static celix_status_t serviceTracker_addingService(service_tracker_pt tracker, service_reference_pt reference, void **service);
 static celix_status_t serviceTracker_track(service_tracker_pt tracker, service_reference_pt reference, service_event_pt event);
 static celix_status_t serviceTracker_untrack(service_tracker_pt tracker, service_reference_pt reference, service_event_pt event);
 
@@ -103,7 +103,9 @@ celix_status_t serviceTracker_createWithFilter(apr_pool_t *pool, bundle_context_
 
 apr_status_t serviceTracker_destroy(void *trackerP) {
 	service_tracker_pt tracker = (service_tracker_pt) trackerP;
-	bundleContext_removeServiceListener(tracker->context, tracker->listener);
+	if (tracker->listener != NULL) {
+		bundleContext_removeServiceListener(tracker->context, tracker->listener);
+	}
 	arrayList_destroy(tracker->tracked);
 
 	return APR_SUCCESS;
@@ -237,7 +239,7 @@ void serviceTracker_serviceChanged(service_listener_pt listener, service_event_p
 	}
 }
 
-celix_status_t serviceTracker_track(service_tracker_pt tracker, service_reference_pt reference, service_event_pt event) {
+static celix_status_t serviceTracker_track(service_tracker_pt tracker, service_reference_pt reference, service_event_pt event) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	tracked_pt tracked = NULL;
@@ -254,25 +256,26 @@ celix_status_t serviceTracker_track(service_tracker_pt tracker, service_referenc
 	}
 
 	if (found) {
-		void * service = serviceTracker_addingService(tracker, reference);
-		if (service != NULL) {
-			tracked = (tracked_pt) malloc(sizeof(*tracked));
-			tracked->reference = reference;
-			tracked->service = service;
-			arrayList_add(tracker->tracked, tracked);
-			if (tracker->customizer != NULL) {
-				void *handle = NULL;
-				added_callback_pt function = NULL;
+		void * service = NULL;
+		status = serviceTracker_addingService(tracker, reference, &service);
+		if (status == CELIX_SUCCESS) {
+			if (service != NULL) {
+				tracked = (tracked_pt) malloc(sizeof(*tracked));
+				tracked->reference = reference;
+				tracked->service = service;
+				arrayList_add(tracker->tracked, tracked);
+				if (tracker->customizer != NULL) {
+					void *handle = NULL;
+					added_callback_pt function = NULL;
 
-				serviceTrackerCustomizer_getHandle(tracker->customizer, &handle);
-				serviceTrackerCustomizer_getAddedFunction(tracker->customizer, &function);
-
-				if (function != NULL) {
-					function(handle, reference, service);
+					serviceTrackerCustomizer_getHandle(tracker->customizer, &handle);
+					serviceTrackerCustomizer_getAddedFunction(tracker->customizer, &function);
+					if (function != NULL) {
+						function(handle, reference, service);
+					}
 				}
 			}
 		}
-
 	} else {
 		if (tracker->customizer != NULL) {
 			void *handle = NULL;
@@ -290,29 +293,32 @@ celix_status_t serviceTracker_track(service_tracker_pt tracker, service_referenc
 	return status;
 }
 
-void * serviceTracker_addingService(service_tracker_pt tracker, service_reference_pt reference) {
-    void *svc = NULL;
+static celix_status_t  serviceTracker_addingService(service_tracker_pt tracker, service_reference_pt reference, void **service) {
+	celix_status_t status = CELIX_SUCCESS;
 
     if (tracker->customizer != NULL) {
     	void *handle = NULL;
 		adding_callback_pt function = NULL;
 
-		serviceTrackerCustomizer_getHandle(tracker->customizer, &handle);
-		serviceTrackerCustomizer_getAddingFunction(tracker->customizer, &function);
-
-		if (function != NULL) {
-			function(handle, reference, &svc);
+		status =  serviceTrackerCustomizer_getHandle(tracker->customizer, &handle);
+		if (status == CELIX_SUCCESS) {
+			status = serviceTrackerCustomizer_getAddingFunction(tracker->customizer, &function);
+			if (status == CELIX_SUCCESS) {
+				if (function != NULL) {
+					status = function(handle, reference, service);
+				}
+			}
 		} else {
-			bundleContext_getService(tracker->context, reference, &svc);
+			status = bundleContext_getService(tracker->context, reference, service);
 		}
 	} else {
-		bundleContext_getService(tracker->context, reference, &svc);
+		status = bundleContext_getService(tracker->context, reference, service);
 	}
 
-    return svc;
+    return status;
 }
 
-celix_status_t serviceTracker_untrack(service_tracker_pt tracker, service_reference_pt reference, service_event_pt event) {
+static celix_status_t serviceTracker_untrack(service_tracker_pt tracker, service_reference_pt reference, service_event_pt event) {
 	celix_status_t status = CELIX_SUCCESS;
 	tracked_pt tracked = NULL;
 	unsigned int i;
@@ -323,10 +329,7 @@ celix_status_t serviceTracker_untrack(service_tracker_pt tracker, service_refere
 		tracked = (tracked_pt) arrayList_get(tracker->tracked, i);
 		serviceReference_equals(reference, tracked->reference, &equals);
 		if (equals) {
-			if (tracked != NULL) {
-				arrayList_remove(tracker->tracked, i);
-				status = bundleContext_ungetService(tracker->context, reference, &result);
-			}
+			arrayList_remove(tracker->tracked, i);
 			if (status == CELIX_SUCCESS) {
 				if (tracker->customizer != NULL) {
 					void *handle = NULL;
@@ -338,10 +341,10 @@ celix_status_t serviceTracker_untrack(service_tracker_pt tracker, service_refere
 					if (function != NULL) {
 						status = function(handle, reference, tracked->service);
 					} else {
-						status = bundleContext_ungetService(tracker->tracker->context, reference, &result);
+						status = bundleContext_ungetService(tracker->context, reference, &result);
 					}
 				} else {
-					status = bundleContext_ungetService(tracker->tracker->context, reference, &result);
+					status = bundleContext_ungetService(tracker->context, reference, &result);
 				}
 				free(tracked);
 				break;

@@ -1213,7 +1213,6 @@ celix_status_t fw_registerService(framework_pt framework, service_registration_p
 		arrayList_create(pool, &infos);
 		for (i = 0; i < arrayList_size(framework->serviceListeners); i++) {
 			fw_service_listener_pt listener =(fw_service_listener_pt) arrayList_get(framework->serviceListeners, i);
-
 			apr_pool_t *pool;
 			bundle_context_pt context;
 			listener_hook_info_pt info;

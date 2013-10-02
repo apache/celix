@@ -536,7 +536,7 @@ celix_status_t bundle_unlock(bundle_pt bundle, bool *unlocked) {
 
 	apr_thread_mutex_lock(bundle->lock);
 
-	if ((bundle->lockCount == 0)) {
+	if (bundle->lockCount == 0) {
 		*unlocked = false;
 	} else {
 		status = thread_equalsSelf(bundle->lockThread, &equals);

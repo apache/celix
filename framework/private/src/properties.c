@@ -30,7 +30,7 @@
 #include "properties.h"
 #include "utils.h"
 
-properties_t properties_create(void) {
+properties_pt properties_create(void) {
 	return hashMap_create(utils_stringHash, utils_stringHash, utils_stringEquals, utils_stringEquals);
 }
 

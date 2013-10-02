@@ -107,8 +107,8 @@ celix_status_t discovery_create(apr_pool_t *pool, bundle_context_pt context, dis
 		(*discovery)->context = context;
 		(*discovery)->pool = pool;
 		(*discovery)->listenerReferences = hashMap_create(serviceReference_hashCode, NULL, serviceReference_equals2, NULL);
-		(*discovery)->discoveredServices = hashMap_create(string_hash, NULL, string_equals, NULL);
-		(*discovery)->disclosedServices = hashMap_create(string_hash, NULL, string_equals, NULL);
+		(*discovery)->discoveredServices = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+		(*discovery)->disclosedServices = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 		(*discovery)->running = true;
 		(*discovery)->browseRef = NULL;
 		(*discovery)->discoveryPort = NULL;

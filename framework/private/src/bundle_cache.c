@@ -48,7 +48,7 @@ static apr_status_t bundleCache_destroy(void *cacheP);
 
 celix_status_t bundleCache_create(properties_pt configurationMap, apr_pool_t *mp, bundle_cache_pt *bundle_cache) {
     celix_status_t status;
-   bundle_cache_pt cache;
+    bundle_cache_pt cache;
 
 	cache = (bundle_cache_pt) apr_palloc(mp, (sizeof(*cache)));
     if (cache == NULL) {

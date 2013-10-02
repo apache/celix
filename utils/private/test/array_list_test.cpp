@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
 }
 
 TEST_GROUP(array_list) {
-	array_list_t list;
+	array_list_pt list;
 	apr_pool_t *pool;
 
 	void setup(void) {
@@ -87,7 +87,7 @@ TEST(array_list, clone) {
 	LONGS_EQUAL(16, list->capacity);
 	LONGS_EQUAL(12, list->size);
 
-	array_list_t clone = NULL;
+	array_list_pt clone = NULL;
 	clone = arrayList_clone(pool, list);
 
 	LONGS_EQUAL(16, clone->capacity);

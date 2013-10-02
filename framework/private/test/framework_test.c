@@ -28,7 +28,7 @@
 
 #include <stddef.h>
 
-#include "Basic.h"
+#include "CUnit/Basic.h"
 #include "framework.h"
 
 void test_framework_create(void) {
@@ -59,7 +59,7 @@ void frameworkTest_startFw() {
 		if (s != APR_SUCCESS) {
 			CU_FAIL("Could not create memory pool");
 		} else {
-			framework_t framework = NULL;
+			framework_pt framework = NULL;
 			if (framework_create(&framework, memoryPool, NULL) == CELIX_SUCCESS) {
 				if (fw_init(framework) == CELIX_SUCCESS) {
 					if (framework_start(framework) == CELIX_SUCCESS) {
@@ -91,7 +91,7 @@ void frameworkTest_installBundle() {
 		if (s != APR_SUCCESS) {
 			CU_FAIL("Could not create memory pool");
 		} else {
-			framework_t framework = NULL;
+			framework_pt framework = NULL;
 			if (framework_create(&framework, memoryPool, NULL) == CELIX_SUCCESS) {
 				if (fw_init(framework) == CELIX_SUCCESS) {
 					if (framework_start(framework) == CELIX_SUCCESS) {

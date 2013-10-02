@@ -53,7 +53,7 @@ TEST_GROUP(version) {
 
 
 TEST(version, create) {
-	version_t version = NULL;
+	version_pt version = NULL;
 	celix_status_t status = CELIX_SUCCESS;
 	std::string str;
 
@@ -89,7 +89,7 @@ TEST(version, create) {
 }
 
 TEST(version, clone) {
-	version_t version = NULL, clone = NULL;
+	version_pt version = NULL, clone = NULL;
 	celix_status_t status = CELIX_SUCCESS;
 	std::string str;
 
@@ -106,7 +106,7 @@ TEST(version, clone) {
 }
 
 TEST(version, createFromString) {
-	version_t version = NULL;
+	version_pt version = NULL;
 	celix_status_t status = CELIX_SUCCESS;
 	std::string str;
 
@@ -185,7 +185,7 @@ TEST(version, createFromString) {
 }
 
 TEST(version, createEmptyVersion) {
-	version_t version = NULL;
+	version_pt version = NULL;
 	celix_status_t status = CELIX_SUCCESS;
 
 	status = version_createEmptyVersion(pool, &version);
@@ -198,7 +198,7 @@ TEST(version, createEmptyVersion) {
 }
 
 TEST(version, getters) {
-	version_t version = NULL;
+	version_pt version = NULL;
 	celix_status_t status = CELIX_SUCCESS;
 	std::string str;
 	int major, minor, micro;
@@ -223,7 +223,7 @@ TEST(version, getters) {
 }
 
 TEST(version, compare) {
-	version_t version = NULL, compare = NULL;
+	version_pt version = NULL, compare = NULL;
 	celix_status_t status = CELIX_SUCCESS;
 	std::string str;
 	int result;
@@ -266,7 +266,7 @@ TEST(version, compare) {
 }
 
 TEST(version, toString) {
-	version_t version = NULL, compare = NULL;
+	version_pt version = NULL, compare = NULL;
 	celix_status_t status = CELIX_SUCCESS;
 	std::string str;
 	char *result = NULL;

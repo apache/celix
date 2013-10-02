@@ -31,9 +31,9 @@
 #include "version_range.h"
 
 struct versionRange {
-	version_t low;
+	version_pt low;
 	bool isLowInclusive;
-	version_t high;
+	version_pt high;
 	bool isHighInclusive;
 
 };

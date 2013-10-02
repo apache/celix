@@ -44,7 +44,7 @@ celix_status_t wire_create(apr_pool_t *pool, module_pt importer, requirement_pt 
 	if (*wire != NULL || pool == NULL) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
-		(*wire) = (wire_t) apr_palloc(pool, sizeof(**wire));
+		(*wire) = (wire_pt) apr_palloc(pool, sizeof(**wire));
 		if (!*wire) {
 			status = CELIX_ENOMEM;
 		} else {

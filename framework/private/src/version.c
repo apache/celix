@@ -39,7 +39,7 @@ celix_status_t version_createVersion(apr_pool_t *pool, int major, int minor, int
 	if (*version != NULL || pool == NULL) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
-		*version = (version_t) apr_palloc(pool, sizeof(**version));
+		*version = (version_pt) apr_palloc(pool, sizeof(**version));
 		if (!*version) {
 			status = CELIX_ENOMEM;
 		} else {
@@ -178,35 +178,31 @@ celix_status_t version_createEmptyVersion(apr_pool_t *pool, version_pt *version)
 	return version_createVersion(pool, 0, 0, 0, "", version);
 }
 
-<<<<<<< HEAD
-celix_status_t version_compareTo(version_pt version, version_pt compare, int *result) {
-=======
-celix_status_t version_getMajor(version_t version, int *major) {
+celix_status_t version_getMajor(version_pt version, int *major) {
 	celix_status_t status = CELIX_SUCCESS;
 	*major = version->major;
 	return status;
 }
 
-celix_status_t version_getMinor(version_t version, int *minor) {
+celix_status_t version_getMinor(version_pt version, int *minor) {
 	celix_status_t status = CELIX_SUCCESS;
 	*minor = version->minor;
 	return status;
 }
 
-celix_status_t version_getMicro(version_t version, int *micro) {
+celix_status_t version_getMicro(version_pt version, int *micro) {
 	celix_status_t status = CELIX_SUCCESS;
 	*micro = version->micro;
 	return status;
 }
 
-celix_status_t version_getQualifier(version_t version, char **qualifier) {
+celix_status_t version_getQualifier(version_pt version, char **qualifier) {
 	celix_status_t status = CELIX_SUCCESS;
 	*qualifier = version->qualifier;
 	return status;
 }
 
-celix_status_t version_compareTo(version_t version, version_t compare, int *result) {
->>>>>>> CELIX-55: Added tests, removed old unused files (test frameworks etc).
+celix_status_t version_compareTo(version_pt version, version_pt compare, int *result) {
 	celix_status_t status = CELIX_SUCCESS;
 	if (compare == version) {
 		*result = 0;

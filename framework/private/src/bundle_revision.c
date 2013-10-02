@@ -107,5 +107,5 @@ celix_status_t bundleRevision_getRoot(bundle_revision_pt revision, char **root) 
 	} else {
 		*root = revision->root;
 	}
-	return CELIX_SUCCESS;
+	return status;
 }

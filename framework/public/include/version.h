@@ -117,10 +117,10 @@ celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionS
  */
 celix_status_t version_createEmptyVersion(apr_pool_t *pool, version_pt *version);
 
-celix_status_t version_getMajor(version_t version, int *major);
-celix_status_t version_getMinor(version_t version, int *minor);
-celix_status_t version_getMicro(version_t version, int *micro);
-celix_status_t version_getQualifier(version_t version, char **qualifier);
+celix_status_t version_getMajor(version_pt version, int *major);
+celix_status_t version_getMinor(version_pt version, int *minor);
+celix_status_t version_getMicro(version_pt version, int *micro);
+celix_status_t version_getQualifier(version_pt version, char **qualifier);
 
 /**
  * Compares this <code>Version</code> object to another object.

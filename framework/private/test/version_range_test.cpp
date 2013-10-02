@@ -38,14 +38,14 @@ extern "C"
 	#include "version_range_private.h"
 	#include "version_private.h"
 
-	celix_status_t version_createEmptyVersion(apr_pool_t *pool, version_t *version) {
+	celix_status_t version_createEmptyVersion(apr_pool_t *pool, version_pt *version) {
 		mock_c()->actualCall("version_createEmptyVersion")
 				->withPointerParameters("pool", pool)
 				->_andPointerOutputParameters("version", (void **) version);
 		return CELIX_SUCCESS;
 	}
 
-	celix_status_t version_compareTo(version_t version, version_t compare, int *result) {
+	celix_status_t version_compareTo(version_pt version, version_pt compare, int *result) {
 //		*result = (int) mock_c()->getData("result").value.intValue;
 		mock_c()->actualCall("version_compareTo")
 			->withPointerParameters("version", version)
@@ -54,7 +54,7 @@ extern "C"
 		return CELIX_SUCCESS;
 	}
 
-	celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionStr, version_t *version) {
+	celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionStr, version_pt *version) {
 		mock_c()->actualCall("version_createVersionFromString")
 			->withPointerParameters("pool", pool)
 			->withStringParameters("versionStr", versionStr)
@@ -84,8 +84,8 @@ TEST_GROUP(version_range) {
 
 TEST(version_range, create) {
 	celix_status_t status = APR_SUCCESS;
-	version_range_t range = NULL;
-	version_t version = (version_t) apr_palloc(pool, sizeof(*version));
+	version_range_pt range = NULL;
+	version_pt version = (version_pt) apr_palloc(pool, sizeof(*version));
 
 	status = versionRange_createVersionRange(pool, version, false, version, true, &range);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
@@ -98,8 +98,8 @@ TEST(version_range, create) {
 
 TEST(version_range, createInfinite) {
 	celix_status_t status = APR_SUCCESS;
-	version_range_t range = NULL;
-	version_t version = (version_t) apr_palloc(pool, sizeof(*version));
+	version_range_pt range = NULL;
+	version_pt version = (version_pt) apr_palloc(pool, sizeof(*version));
 	version->major = 1;
 	version->minor = 2;
 	version->micro = 3;
@@ -119,18 +119,18 @@ TEST(version_range, createInfinite) {
 
 TEST(version_range, isInRange) {
 	celix_status_t status = APR_SUCCESS;
-	version_range_t range = NULL;
-	version_t version = (version_t) apr_palloc(pool, sizeof(*version));
+	version_range_pt range = NULL;
+	version_pt version = (version_pt) apr_palloc(pool, sizeof(*version));
 	version->major = 1;
 	version->minor = 2;
 	version->micro = 3;
 
-	version_t low = (version_t) apr_palloc(pool, sizeof(*low));
+	version_pt low = (version_pt) apr_palloc(pool, sizeof(*low));
 	low->major = 1;
 	low->minor = 2;
 	low->micro = 3;
 
-	version_t high = (version_t) apr_palloc(pool, sizeof(*high));
+	version_pt high = (version_pt) apr_palloc(pool, sizeof(*high));
 	high->major = 1;
 	high->minor = 2;
 	high->micro = 3;
@@ -156,9 +156,9 @@ TEST(version_range, isInRange) {
 
 TEST(version_range, parse) {
 	celix_status_t status = APR_SUCCESS;
-	version_range_t range = NULL;
-	version_t low = (version_t) apr_palloc(pool, sizeof(*low));
-	version_t high = (version_t) apr_palloc(pool, sizeof(*high));
+	version_range_pt range = NULL;
+	version_pt low = (version_pt) apr_palloc(pool, sizeof(*low));
+	version_pt high = (version_pt) apr_palloc(pool, sizeof(*high));
 
 	low->major = 1;
 	low->minor = 2;
