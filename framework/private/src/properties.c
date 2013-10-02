@@ -30,51 +30,8 @@
 #include "properties.h"
 #include "utils.h"
 
-//DEFINE_HASHTABLE_INSERT(prop_insert, struct key, struct value);
-//DEFINE_HASHTABLE_REMOVE(prop_remove, struct key, struct value);
-//DEFINE_HASHTABLE_SEARCH(prop_search, struct key, struct value);
-//
-//static unsigned int hashfromkey(void * ks) {
-//	struct key *k = (struct key *) ks;
-//	unsigned long hash = 5381;
-//	int i;
-//	char * ck = strdup(k->key);
-//	for (i=0; i<strlen(ck); ++i) hash = 33*hash + ck[i];
-//	//int c;
-//	//while (c = *ck++) {
-//	//	hash = ((hash << 5) + hash) + c;
-//	//}
-//	free(ck);
-//	return hash;
-//}
-//
-//static int equalskey(void * k1, void * k2) {
-//	struct key * key1 = (struct key *) k1;
-//	struct key * key2 = (struct key *) k2;
-//	return (strcmp(key1->key, key2->key) == 0);
-//}
-//
-//char * addEntry(HASHTABLE properties, char * k, char * v);
-//char * addEntry(HASHTABLE properties, char * k, char * v) {
-//	struct key * search_key = (struct key *) malloc(sizeof(*search_key));
-//	struct key * s_key = (struct key *) malloc(sizeof(*s_key));
-//	struct value * s_value = (struct value *) malloc(sizeof(*s_value));
-//	struct value * oldValue = NULL;
-//	s_key->key = k;
-//	search_key->key = k;
-//	s_value->value = v;
-//	oldValue = prop_search(properties, search_key);
-//	if (oldValue != NULL) {
-//		prop_remove(properties, search_key);
-//	}
-//	free(search_key);
-//	prop_insert(properties, s_key, s_value);
-//
-//	return oldValue == NULL ? NULL : oldValue->value;
-//}
-
-properties_pt properties_create(void) {
-	return hashMap_create(string_hash, string_hash, string_equals, string_equals);
+properties_t properties_create(void) {
+	return hashMap_create(utils_stringHash, utils_stringHash, utils_stringEquals, utils_stringEquals);
 }
 
 void properties_destroy(properties_pt properties) {
@@ -105,9 +62,9 @@ properties_pt properties_load(char * filename) {
 				unsigned int pos = strcspn(line, "=");
 				if (pos != strlen(line)) {
 					char * ival = NULL;
-					key = string_trim(string_ndup((char *)line, pos));
+					key = utils_stringTrim(string_ndup((char *)line, pos));
 					ival = string_ndup(line+pos+1, strlen(line));
-					value = string_trim(ival);
+					value = utils_stringTrim(ival);
 					if (value != NULL) {
 						char * cmp = string_ndup(value+strlen(value)-1, 1);
 						if (strcmp(cont, cmp) == 0) {
@@ -128,7 +85,7 @@ properties_pt properties_load(char * filename) {
 				} else {
 					char * old = NULL;
 					split = 0;
-					strcat(value, string_trim(line));
+					strcat(value, utils_stringTrim(line));
 					old = hashMap_put(props, strdup(key), strdup(value));
 				}
 			}

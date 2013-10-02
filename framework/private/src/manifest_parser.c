@@ -144,7 +144,7 @@ static linked_list_pt manifestParser_parseDelimitedString(char * value, char * d
                     }
 
                     if (strlen(buffer) > 0) {
-                        linkedList_addElement(list, apr_pstrdup(memory_pool, string_trim(buffer)));
+                        linkedList_addElement(list, apr_pstrdup(memory_pool, utils_stringTrim(buffer)));
                     }
                 }
 
@@ -191,8 +191,8 @@ static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseStri
                 return NULL;
             }
 
-            dirsMap = hashMap_create(string_hash, NULL, string_equals, NULL);
-            attrsMap = hashMap_create(string_hash, NULL, string_equals, NULL);
+            dirsMap = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+            attrsMap = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 
             
             for (pieceIdx = pathCount; pieceIdx < linkedList_size(pieces); pieceIdx++) {

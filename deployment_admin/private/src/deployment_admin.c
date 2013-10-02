@@ -79,7 +79,7 @@ celix_status_t deploymentAdmin_create(apr_pool_t *pool, bundle_context_pt contex
 		(*admin)->running = true;
 		(*admin)->context = context;
 		(*admin)->current = NULL;
-		(*admin)->packages = hashMap_create(string_hash, NULL, string_equals, NULL);
+		(*admin)->packages = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 		(*admin)->targetIdentification = NULL;
 		(*admin)->pollUrl = NULL;
         bundleContext_getProperty(context, IDENTIFICATION_ID, &(*admin)->targetIdentification);

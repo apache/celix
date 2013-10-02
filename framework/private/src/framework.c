@@ -237,7 +237,7 @@ celix_status_t framework_create(framework_pt *framework, apr_pool_t *memoryPool,
 											(*framework)->nextBundleId = 1l;
 											(*framework)->cache = NULL;
 
-											(*framework)->installRequestMap = hashMap_create(string_hash, string_hash, string_equals, string_equals);
+											(*framework)->installRequestMap = hashMap_create(utils_stringHash, utils_stringHash, utils_stringEquals, utils_stringEquals);
 											(*framework)->serviceListeners = NULL;
 											(*framework)->bundleListeners = NULL;
 											(*framework)->requests = NULL;
@@ -365,7 +365,7 @@ celix_status_t fw_init(framework_pt framework) {
 		}
 	}
 
-	framework->installedBundleMap = hashMap_create(string_hash, NULL, string_equals, NULL);
+	framework->installedBundleMap = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 
 	status = bundle_getArchive(framework->bundle, &archive);
 	status = bundleArchive_getLocation(archive, &location);

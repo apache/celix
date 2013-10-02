@@ -228,7 +228,7 @@ static celix_status_t remoteShell_connection_execute(connection_pt connection, c
 
 	if (status == CELIX_SUCCESS) {
 		char *dline = apr_pstrdup(workPool, command);
-		char *line = string_trim(dline);
+		char *line = utils_stringTrim(dline);
 		int len = strlen(line);
 
 		if (len == 0) {

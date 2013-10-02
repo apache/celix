@@ -94,7 +94,7 @@ celix_status_t paintFrame_create(bundle_context_pt context, apr_pool_t *pool, pa
 		(*frame)->pixMap = NULL;
 		(*frame)->m_selected = NULL;
 		(*frame)->context = context;
-		(*frame)->m_shapes = hashMap_create(string_hash, NULL, string_equals, NULL);
+		(*frame)->m_shapes = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 		(*frame)->m_defaultShape = defaultShape_create((*frame)->context);
 		linkedList_create((*frame)->pool, &(*frame)->m_shapeComponents);
 

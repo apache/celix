@@ -93,7 +93,7 @@ static celix_status_t shell_createCommandService(apr_pool_t *pool, command_pt co
 shell_pt shell_create(apr_pool_t *pool) {
 	shell_pt shell = (shell_pt) malloc(sizeof(*shell));
 	shell->pool = pool;
-	shell->commandNameMap = hashMap_create(string_hash, NULL, string_equals, NULL);
+	shell->commandNameMap = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 	shell->commandReferenceMap = hashMap_create(NULL, NULL, NULL, NULL);
 	return shell;
 }

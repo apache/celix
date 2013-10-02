@@ -45,7 +45,7 @@ celix_status_t manifest_create(apr_pool_t *pool, manifest_pt *manifest) {
 		apr_pool_pre_cleanup_register(pool, *manifest, manifest_destroy);
 		(*manifest)->pool = pool;
 		(*manifest)->mainAttributes = properties_create();
-		(*manifest)->attributes = hashMap_create(string_hash, NULL, string_equals, NULL);
+		(*manifest)->attributes = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 	}
 
 	return status;

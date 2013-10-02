@@ -223,11 +223,11 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 		printf("RSA: Export services (%s)\n", exports);
 		array_list_pt interfaces = NULL;
 		arrayList_create(admin->pool, &interfaces);
-		if (strcmp(string_trim(exports), "*") == 0) {
+		if (strcmp(utils_stringTrim(exports), "*") == 0) {
 			char *token;
 			char *interface = apr_strtok(provided, ",", &token);
 			while (interface != NULL) {
-				arrayList_add(interfaces, string_trim(interface));
+				arrayList_add(interfaces, utils_stringTrim(interface));
 				interface = apr_strtok(NULL, ",", &token);
 			}
 		} else {

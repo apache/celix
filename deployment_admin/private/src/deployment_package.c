@@ -53,8 +53,8 @@ celix_status_t deploymentPackage_create(apr_pool_t *pool, bundle_context_pt cont
 		(*package)->manifest = manifest;
 		(*package)->bundleInfos = NULL;
 		(*package)->resourceInfos = NULL;
-		(*package)->nameToBundleInfo = hashMap_create(string_hash, NULL, string_equals, NULL);
-		(*package)->pathToEntry = hashMap_create(string_hash, NULL, string_equals, NULL);
+		(*package)->nameToBundleInfo = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+		(*package)->pathToEntry = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 		status = arrayList_create(pool, &(*package)->bundleInfos);
 		if (status == CELIX_SUCCESS) {
 			status = arrayList_create(pool, &(*package)->resourceInfos);

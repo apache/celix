@@ -34,10 +34,10 @@
 #include "celixbool.h"
 #include "framework_exports.h"
 
-FRAMEWORK_EXPORT unsigned int string_hash(void * string);
-FRAMEWORK_EXPORT int string_equals(void * string, void * toCompare);
+FRAMEWORK_EXPORT unsigned int utils_stringHash(void * string);
+FRAMEWORK_EXPORT int utils_stringEquals(void * string, void * toCompare);
 FRAMEWORK_EXPORT char * string_ndup(const char *s, size_t n);
-FRAMEWORK_EXPORT char * string_trim(char * string);
+FRAMEWORK_EXPORT char * utils_stringTrim(char * string);
 
 FRAMEWORK_EXPORT celix_status_t thread_equalsSelf(apr_os_thread_t thread, bool *equals);
 

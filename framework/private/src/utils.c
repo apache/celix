@@ -29,7 +29,7 @@
 
 #include "utils.h"
 
-unsigned int string_hash(void * string) {
+unsigned int utils_stringHash(void * string) {
 	char * str = (char *) string;
 
 	unsigned int hash = 1315423911;
@@ -44,10 +44,13 @@ unsigned int string_hash(void * string) {
 	return hash;
 }
 
-int string_equals(void * string, void * toCompare) {
+int utils_stringEquals(void * string, void * toCompare) {
 	return strcmp((char *)string, (char *) toCompare) == 0;
 }
 
+/**
+ * \deprecated APR provides a correct alternative: apr_pstrndup
+ */
 char * string_ndup(const char *s, size_t n) {
 	size_t len = strlen(s);
 	char *ret;
@@ -62,7 +65,7 @@ char * string_ndup(const char *s, size_t n) {
 	return ret;
 }
 
-char * string_trim(char * string) {
+char * utils_stringTrim(char * string) {
 	char * copy = string;
 
 	char *end;

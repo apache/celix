@@ -62,7 +62,7 @@ static void *APR_THREAD_FUNC shellTui_runnable(apr_thread_t *thd, void *data) {
 		fgets(in, 256, stdin);
 		needPrompt = true;
 		dline = strdup(in);
-		line = string_trim(dline);
+		line = utils_stringTrim(dline);
 		if (strlen(line) == 0) {
 			continue;
 		}
