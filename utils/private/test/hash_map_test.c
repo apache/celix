@@ -24,6 +24,7 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdio.h>
+#include <stdlib.h>
 #include <CUnit/Automated.h>
 #include <stddef.h>
 

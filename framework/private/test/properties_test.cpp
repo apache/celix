@@ -61,7 +61,7 @@ TEST(properties, create) {
 }
 
 TEST(properties, load) {
-	char propertiesFile[] = "properties.txt";
+	char propertiesFile[] = "../../celix/framework/private/resources-test/properties.txt";
 	properties_pt properties = properties_load(propertiesFile);
 	LONGS_EQUAL(2, hashMap_size(properties));
 

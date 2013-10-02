@@ -50,30 +50,33 @@ if (UTILS)
     FILE(GLOB files "public/include/*.h")
     INSTALL(FILES ${files} DESTINATION include/celix COMPONENT framework)
     
-    include_directories(${CUNIT_INCLUDE_DIRS})
-    include_directories(${CPPUTEST_INCLUDE_DIR})
-    include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-    include_directories("${PROJECT_SOURCE_DIR}/utils/private/include")
-    
-    add_executable(hash_map_test private/test/hash_map_test.c)
-    target_link_libraries(hash_map_test celix_utils ${CUNIT_LIBRARIES})
-    
-    add_executable(hash_map_test_hash private/test/hash_map_test_hash.c)
-    target_link_libraries(hash_map_test_hash celix_utils ${CUNIT_LIBRARIES})
-    
-    add_executable(array_list_test2 private/test/array_list_test.c)
-    target_link_libraries(array_list_test2 celix_utils ${CUNIT_LIBRARIES})
-    
-    add_executable(array_list_test private/test/array_list_test.cpp)
-	target_link_libraries(array_list_test celix_utils ${CPPUTEST_LIBRARY})
-    
-    add_executable(linked_list_test private/test/linked_list_test.c)
-    target_link_libraries(linked_list_test celix_utils ${CUNIT_LIBRARIES})
-    
-    run_test(array_list_test)
-    run_test(hash_map_test)
-    run_test(hash_map_test_hash)
-    run_test(linked_list_test)
-    
-    add_test(array_list_test array_list_test -ojunit)
+    celix_subproject(UTILS-TESTS "Option to build the utilities library" "ON")
+    if (UTILS-TESTS)
+	    include_directories(${CUNIT_INCLUDE_DIRS})
+	    include_directories(${CPPUTEST_INCLUDE_DIR})
+	    include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+	    include_directories("${PROJECT_SOURCE_DIR}/utils/private/include")
+	    
+	    add_executable(hash_map_test private/test/hash_map_test.c)
+	    target_link_libraries(hash_map_test celix_utils ${CUNIT_LIBRARIES})
+	    
+	    add_executable(hash_map_test_hash private/test/hash_map_test_hash.c)
+	    target_link_libraries(hash_map_test_hash celix_utils ${CUNIT_LIBRARIES})
+	    
+	    add_executable(array_list_test2 private/test/array_list_test.c)
+	    target_link_libraries(array_list_test2 celix_utils ${CUNIT_LIBRARIES})
+	    
+	    add_executable(array_list_test private/test/array_list_test.cpp)
+		target_link_libraries(array_list_test celix_utils ${CPPUTEST_LIBRARY})
+	    
+	    add_executable(linked_list_test private/test/linked_list_test.c)
+	    target_link_libraries(linked_list_test celix_utils ${CUNIT_LIBRARIES})
+	    
+	    run_test(array_list_test2)
+	    run_test(hash_map_test)
+	    run_test(hash_map_test_hash)
+	    run_test(linked_list_test)
+	    
+	    ADD_TARGET_FOR_TEST(array_list_test)
+    endif(UTILS-TESTS)
 endif (UTILS)

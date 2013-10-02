@@ -15,6 +15,18 @@
 # specific language governing permissions and limitations
 # under the License.
 
+FUNCTION(ADD_TARGET_FOR_TEST _testrunner)
+	add_test(NAME ${_testrunner} 
+    			COMMAND ${_testrunner} -ojunit)
+    			
+	string(LENGTH ${_testrunner} length)
+	math(EXPR l "${length} - 5")
+	string(SUBSTRING ${_testrunner} 0 ${l} output)
+    		
+	GET_DIRECTORY_PROPERTY(PROPS ADDITIONAL_MAKE_CLEAN_FILES)	
+	SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${PROPS};${CMAKE_CURRENT_BINARY_DIR}/cpputest_${output}.xml")
+ENDFUNCTION() # ADD_TARGET_FOR_TEST
+
 include(FindCUnit)
 
 ADD_CUSTOM_TARGET(test_cunit)
@@ -34,20 +46,3 @@ MACRO(run_test)
 	)
 	ADD_DEPENDENCIES(test_cunit ${__testTarget})
 ENDMACRO(run_test)
-
-include(FindCppUTest)
-ADD_CUSTOM_TARGET(test_cppu)
-MACRO(run_cppu_test)
-    PARSE_ARGUMENTS(TEST "" "" ${ARGN})
-    LIST(GET TEST_DEFAULT_ARGS 0 EXEC)
-	
-	SET(__testTarget test_${EXEC})
-	
-	make_directory(${PROJECT_BINARY_DIR}/test_results)
-		
-	add_custom_target(${__testTarget}
-		${EXEC} "-ojunit" 
-		WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/test_results
-	)
-	ADD_DEPENDENCIES(test_cppu ${__testTarget})
-ENDMACRO(run_cppu_test)
