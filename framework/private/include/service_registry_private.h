@@ -17,33 +17,40 @@
  *under the License.
  */
 /*
- * bundle_private.h
+ * service_registry_private.h
  *
- *  \date       Feb 18, 2011
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
+ *  \date       Feb 7, 2013
+ *  \author     <a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
 
-#ifndef BUNDLE_PRIVATE_H_
-#define BUNDLE_PRIVATE_H_
 
-#include "bundle.h"
+#ifndef SERVICE_REGISTRY_PRIVATE_H_
+#define SERVICE_REGISTRY_PRIVATE_H_
 
-struct bundle {
-	bundle_context_pt context;
-	activator_pt activator;
-	bundle_state_e state;
-	void * handle;
-	bundle_archive_pt archive;
-	array_list_pt modules;
-	manifest_pt manifest;
-	apr_pool_t *memoryPool;
+#include "service_registry.h"
 
-	apr_thread_mutex_t *lock;
-	int lockCount;
-	apr_os_thread_t lockThread;
+struct serviceRegistry {
+	apr_pool_t *pool;
+	framework_pt framework;
+	hash_map_pt serviceRegistrations;
+	hash_map_pt serviceReferences;
+	hash_map_pt inUseMap;
+	serviceChanged_function_pt serviceChanged;
+	long currentServiceId;
 
-	struct framework * framework;
+	array_list_pt listenerHooks;
+
+	apr_thread_mutex_t * mutex;
 };
 
-#endif /* BUNDLE_PRIVATE_H_ */
+struct usageCount {
+	unsigned int count;
+	service_reference_pt reference;
+	void * service;
+	apr_pool_t *pool;
+};
+
+typedef struct usageCount * usage_count_pt;
+
+#endif /* SERVICE_REGISTRY_PRIVATE_H_ */

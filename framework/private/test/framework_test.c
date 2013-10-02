@@ -29,7 +29,7 @@
 #include <stddef.h>
 
 #include "CUnit/Basic.h"
-#include "framework.h"
+#include "framework_private.h"
 
 void test_framework_create(void) {
 	struct framework * framework;

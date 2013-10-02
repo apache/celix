@@ -17,33 +17,35 @@
  *under the License.
  */
 /*
- * bundle_private.h
+ * service_tracker_private.h
  *
- *  \date       Feb 18, 2011
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
+ *  \date       Feb 6, 2013
+ *  \author     <a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
 
-#ifndef BUNDLE_PRIVATE_H_
-#define BUNDLE_PRIVATE_H_
 
-#include "bundle.h"
+#ifndef SERVICE_TRACKER_PRIVATE_H_
+#define SERVICE_TRACKER_PRIVATE_H_
 
-struct bundle {
+#include "service_tracker.h"
+
+struct serviceTracker {
 	bundle_context_pt context;
-	activator_pt activator;
-	bundle_state_e state;
-	void * handle;
-	bundle_archive_pt archive;
-	array_list_pt modules;
-	manifest_pt manifest;
-	apr_pool_t *memoryPool;
+	char * filter;
 
-	apr_thread_mutex_t *lock;
-	int lockCount;
-	apr_os_thread_t lockThread;
-
-	struct framework * framework;
+	apr_pool_t *pool;
+	service_tracker_pt tracker;
+	service_tracker_customizer_pt customizer;
+	service_listener_pt listener;
+	array_list_pt tracked;
 };
 
-#endif /* BUNDLE_PRIVATE_H_ */
+struct tracked {
+	service_reference_pt reference;
+	void * service;
+};
+
+typedef struct tracked * tracked_pt;
+
+#endif /* SERVICE_TRACKER_PRIVATE_H_ */

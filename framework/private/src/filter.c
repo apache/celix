@@ -28,29 +28,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include "filter.h"
+#include "filter_private.h"
 #include "array_list.h"
-
-typedef enum operand
-{
-	EQUAL,
-	APPROX,
-	GREATER,
-	LESS,
-	PRESENT,
-	SUBSTRING,
-	AND,
-	OR,
-	NOT,
-} OPERAND;
-
-struct filter {
-	OPERAND operand;
-	char * attribute;
-	int operands;
-	void * value;
-	char *filterStr;
-};
 
 void filter_skipWhiteSpace(char * filterString, int * pos);
 filter_pt filter_parseFilter(char * filterString, int * pos, apr_pool_t *pool);

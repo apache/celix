@@ -29,8 +29,8 @@
 #include <apr_portable.h>
 #include <apr_thread_proc.h>
 
-#include "bundle.h"
 #include "framework_private.h"
+#include "bundle_private.h"
 #include "manifest.h"
 #include "module.h"
 #include "version.h"
@@ -38,23 +38,6 @@
 #include "bundle_archive.h"
 #include "resolver.h"
 #include "utils.h"
-
-struct bundle {
-	bundle_context_pt context;
-	activator_pt activator;
-	bundle_state_e state;
-	void * handle;
-	bundle_archive_pt archive;
-	array_list_pt modules;
-	manifest_pt manifest;
-	apr_pool_t *memoryPool;
-
-	apr_thread_mutex_t *lock;
-	int lockCount;
-	apr_os_thread_t lockThread;
-
-	struct framework * framework;
-};
 
 celix_status_t bundle_createModule(bundle_pt bundle, module_pt *module);
 celix_status_t bundle_closeRevisions(bundle_pt bundle);

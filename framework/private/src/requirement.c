@@ -25,16 +25,9 @@
  */
 #include <stdlib.h>
 
-#include "requirement.h"
+#include "requirement_private.h"
 #include "version_range.h"
 #include "attribute.h"
-
-struct requirement {
-	char * targetName;
-	version_range_pt versionRange;
-	hash_map_pt attributes;
-	hash_map_pt directives;
-};
 
 apr_status_t requirement_destroy(void *requirementP);
 

@@ -27,15 +27,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "bundle_context.h"
+#include "bundle_context_private.h"
 #include "framework_private.h"
 #include "bundle.h"
-
-struct bundleContext {
-	struct framework * framework;
-	struct bundle * bundle;
-	apr_pool_t *pool;
-};
 
 celix_status_t bundleContext_create(framework_pt framework, bundle_pt bundle, bundle_context_pt *bundle_context) {
 	celix_status_t status = CELIX_SUCCESS;

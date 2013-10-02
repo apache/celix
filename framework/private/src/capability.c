@@ -25,16 +25,8 @@
  */
 #include <stdlib.h>
 
-#include "capability.h"
+#include "capability_private.h"
 #include "attribute.h"
-
-struct capability {
-	char * serviceName;
-	module_pt module;
-	version_pt version;
-	hash_map_pt attributes;
-	hash_map_pt directives;
-};
 
 apr_status_t capability_destroy(void *capabilityP);
 

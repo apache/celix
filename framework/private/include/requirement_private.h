@@ -17,33 +17,24 @@
  *under the License.
  */
 /*
- * bundle_private.h
+ * requirement_private.h
  *
- *  \date       Feb 18, 2011
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
+ *  \date       Feb 11, 2013
+ *  \author     <a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
 
-#ifndef BUNDLE_PRIVATE_H_
-#define BUNDLE_PRIVATE_H_
 
-#include "bundle.h"
+#ifndef REQUIREMENT_PRIVATE_H_
+#define REQUIREMENT_PRIVATE_H_
 
-struct bundle {
-	bundle_context_pt context;
-	activator_pt activator;
-	bundle_state_e state;
-	void * handle;
-	bundle_archive_pt archive;
-	array_list_pt modules;
-	manifest_pt manifest;
-	apr_pool_t *memoryPool;
+#include "requirement.h"
 
-	apr_thread_mutex_t *lock;
-	int lockCount;
-	apr_os_thread_t lockThread;
-
-	struct framework * framework;
+struct requirement {
+	char * targetName;
+	version_range_pt versionRange;
+	hash_map_pt attributes;
+	hash_map_pt directives;
 };
 
-#endif /* BUNDLE_PRIVATE_H_ */
+#endif /* REQUIREMENT_PRIVATE_H_ */

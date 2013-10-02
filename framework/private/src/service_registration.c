@@ -29,34 +29,11 @@
 
 #include <apr_strings.h>
 
-#include "service_registration.h"
+#include "service_registration_private.h"
 #include "constants.h"
 #include "service_factory.h"
 #include "service_reference.h"
 
-struct service {
-	char *name;
-	void *serviceStruct;
-};
-
-struct serviceRegistration {
-	service_registry_pt registry;
-	char * className;
-	array_list_pt references;
-	bundle_pt bundle;
-	properties_pt properties;
-	void * svcObj;
-	long serviceId;
-
-	apr_thread_mutex_t *mutex;
-	bool isUnregistering;
-
-	bool isServiceFactory;
-	void *serviceFactory;
-
-	struct service *services;
-	int nrOfServices;
-};
 
 static celix_status_t serviceRegistration_initializeProperties(service_registration_pt registration, properties_pt properties);
 

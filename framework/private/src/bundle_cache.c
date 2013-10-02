@@ -33,15 +33,9 @@
 #include <apr_file_io.h>
 #include <apr_strings.h>
 
-#include "bundle_cache.h"
+#include "bundle_cache_private.h"
 #include "bundle_archive.h"
 #include "constants.h"
-
-struct bundleCache {
-	properties_pt configurationMap;
-	char * cacheDir;
-	apr_pool_t *mp;
-};
 
 static celix_status_t bundleCache_deleteTree(char * directory, apr_pool_t *mp);
 static apr_status_t bundleCache_destroy(void *cacheP);

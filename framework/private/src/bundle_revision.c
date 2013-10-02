@@ -29,14 +29,8 @@
 #include <apr_strings.h>
 #include <apr_file_io.h>
 
-#include "bundle_revision.h"
+#include "bundle_revision_private.h"
 #include "archive.h"
-
-struct bundleRevision {
-	long revisionNr;
-	char *root;
-	char *location;
-};
 
 static apr_status_t bundleRevision_destroy(void *revisionP);
 

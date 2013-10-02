@@ -17,33 +17,24 @@
  *under the License.
  */
 /*
- * bundle_private.h
+ * bundle_cache_private.h
  *
- *  \date       Feb 18, 2011
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
+ *  \date       Feb 12, 2013
+ *  \author     <a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
 
-#ifndef BUNDLE_PRIVATE_H_
-#define BUNDLE_PRIVATE_H_
 
-#include "bundle.h"
+#ifndef BUNDLE_CACHE_PRIVATE_H_
+#define BUNDLE_CACHE_PRIVATE_H_
 
-struct bundle {
-	bundle_context_pt context;
-	activator_pt activator;
-	bundle_state_e state;
-	void * handle;
-	bundle_archive_pt archive;
-	array_list_pt modules;
-	manifest_pt manifest;
-	apr_pool_t *memoryPool;
+#include "bundle_cache.h"
 
-	apr_thread_mutex_t *lock;
-	int lockCount;
-	apr_os_thread_t lockThread;
-
-	struct framework * framework;
+struct bundleCache {
+	properties_pt configurationMap;
+	char * cacheDir;
+	apr_pool_t *mp;
 };
 
-#endif /* BUNDLE_PRIVATE_H_ */
+
+#endif /* BUNDLE_CACHE_PRIVATE_H_ */

@@ -29,28 +29,10 @@
 
 #include <apr_strings.h>
 
-#include "service_tracker.h"
+#include "service_tracker_private.h"
 #include "bundle_context.h"
 #include "constants.h"
 #include "service_reference.h"
-
-struct serviceTracker {
-	bundle_context_pt context;
-	char * filter;
-
-	apr_pool_t *pool;
-	service_tracker_pt tracker;
-	service_tracker_customizer_pt customizer;
-	service_listener_pt listener;
-	array_list_pt tracked;
-};
-
-struct tracked {
-	service_reference_pt reference;
-	void * service;
-};
-
-typedef struct tracked * tracked_pt;
 
 static apr_status_t serviceTracker_destroy(void *trackerP);
 static celix_status_t serviceTracker_addingService(service_tracker_pt tracker, service_reference_pt reference, void **service);

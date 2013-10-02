@@ -26,7 +26,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "service_registry.h"
+#include "service_registry_private.h"
 #include "service_registration.h"
 #include "module.h"
 #include "bundle.h"
@@ -34,29 +34,6 @@
 #include "constants.h"
 #include "service_reference.h"
 #include "framework_private.h"
-
-struct serviceRegistry {
-	apr_pool_t *pool;
-    framework_pt framework;
-	hash_map_pt serviceRegistrations;
-	hash_map_pt serviceReferences;
-	hash_map_pt inUseMap;
-	serviceChanged_function_pt serviceChanged;
-	long currentServiceId;
-
-	array_list_pt listenerHooks;
-
-	apr_thread_mutex_t * mutex;
-};
-
-struct usageCount {
-	unsigned int count;
-	service_reference_pt reference;
-	void * service;
-	apr_pool_t *pool;
-};
-
-typedef struct usageCount * usage_count_pt;
 
 apr_status_t serviceRegistry_destroy(void *handle);
 

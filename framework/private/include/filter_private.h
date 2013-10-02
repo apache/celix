@@ -17,33 +17,40 @@
  *under the License.
  */
 /*
- * bundle_private.h
+ * filter_private.h
  *
- *  \date       Feb 18, 2011
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
+ *  \date       Feb 13, 2013
+ *  \author     <a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
 
-#ifndef BUNDLE_PRIVATE_H_
-#define BUNDLE_PRIVATE_H_
 
-#include "bundle.h"
+#ifndef FILTER_PRIVATE_H_
+#define FILTER_PRIVATE_H_
 
-struct bundle {
-	bundle_context_pt context;
-	activator_pt activator;
-	bundle_state_e state;
-	void * handle;
-	bundle_archive_pt archive;
-	array_list_pt modules;
-	manifest_pt manifest;
-	apr_pool_t *memoryPool;
+#include "filter.h"
+#include "array_list.h"
 
-	apr_thread_mutex_t *lock;
-	int lockCount;
-	apr_os_thread_t lockThread;
+typedef enum operand
+{
+	EQUAL,
+	APPROX,
+	GREATER,
+	LESS,
+	PRESENT,
+	SUBSTRING,
+	AND,
+	OR,
+	NOT,
+} OPERAND;
 
-	struct framework * framework;
+struct filter {
+	OPERAND operand;
+	char * attribute;
+	int operands;
+	void * value;
+	char *filterStr;
 };
 
-#endif /* BUNDLE_PRIVATE_H_ */
+
+#endif /* FILTER_PRIVATE_H_ */

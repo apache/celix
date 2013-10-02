@@ -26,19 +26,9 @@
 
 #include <stdlib.h>
 
-#include "service_reference.h"
-
-#include "service_tracker_customizer.h"
+#include "service_tracker_customizer_private.h"
 
 static apr_status_t serviceTrackerCustomizer_destroy(void *customizerPointer);
-
-struct serviceTrackerCustomizer {
-	void * handle;
-	celix_status_t (*addingService)(void * handle, service_reference_pt reference, void **service);
-	celix_status_t (*addedService)(void * handle, service_reference_pt reference, void * service);
-	celix_status_t (*modifiedService)(void * handle, service_reference_pt reference, void * service);
-	celix_status_t (*removedService)(void * handle, service_reference_pt reference, void * service);
-};
 
 celix_status_t serviceTrackerCustomizer_create(apr_pool_t *pool, void *handle,
 		adding_callback_pt addingFunction, added_callback_pt addedFunction,

@@ -17,33 +17,41 @@
  *under the License.
  */
 /*
- * bundle_private.h
+ * service_registration_private.h
  *
- *  \date       Feb 18, 2011
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
+ *  \date       Feb 11, 2013
+ *  \author     <a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
 
-#ifndef BUNDLE_PRIVATE_H_
-#define BUNDLE_PRIVATE_H_
 
-#include "bundle.h"
+#ifndef SERVICE_REGISTRATION_PRIVATE_H_
+#define SERVICE_REGISTRATION_PRIVATE_H_
 
-struct bundle {
-	bundle_context_pt context;
-	activator_pt activator;
-	bundle_state_e state;
-	void * handle;
-	bundle_archive_pt archive;
-	array_list_pt modules;
-	manifest_pt manifest;
-	apr_pool_t *memoryPool;
+#include "service_registration.h"
 
-	apr_thread_mutex_t *lock;
-	int lockCount;
-	apr_os_thread_t lockThread;
-
-	struct framework * framework;
+struct service {
+	char *name;
+	void *serviceStruct;
 };
 
-#endif /* BUNDLE_PRIVATE_H_ */
+struct serviceRegistration {
+	service_registry_pt registry;
+	char * className;
+	array_list_pt references;
+	bundle_pt bundle;
+	properties_pt properties;
+	void * svcObj;
+	long serviceId;
+
+	apr_thread_mutex_t *mutex;
+	bool isUnregistering;
+
+	bool isServiceFactory;
+	void *serviceFactory;
+
+	struct service *services;
+	int nrOfServices;
+};
+
+#endif /* SERVICE_REGISTRATION_PRIVATE_H_ */

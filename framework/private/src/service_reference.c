@@ -27,16 +27,11 @@
 #include <stdlib.h>
 
 #include "service_registry.h"
-#include "service_reference.h"
+#include "service_reference_private.h"
 #include "service_registration.h"
 #include "module.h"
 #include "wire.h"
 #include "bundle.h"
-
-struct serviceReference {
-	bundle_pt bundle;
-	struct serviceRegistration * registration;
-};
 
 apr_status_t serviceReference_destroy(void *referenceP);
 

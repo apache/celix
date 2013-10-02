@@ -26,12 +26,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "attribute.h"
-
-struct attribute {
-	char * key;
-	char * value;
-};
+#include "attribute_private.h"
 
 celix_status_t attribute_create(apr_pool_t *memory_pool, char * key, char * value, attribute_pt *attribute) {
 	celix_status_t status = CELIX_SUCCESS;
