@@ -27,66 +27,65 @@
 #include <stdio.h>
 #include <apr_strings.h>
 
-#include "version.h"
 #include "celix_errno.h"
 #include "framework_log.h"
-
-
-struct version {
-	apr_pool_t *pool;
-
-	int major;
-	int minor;
-	int micro;
-	char *qualifier;
-};
+#include "version_private.h"
 
 static apr_status_t version_destroy(void *handle);
 
 celix_status_t version_createVersion(apr_pool_t *pool, int major, int minor, int micro, char * qualifier, version_pt *version) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	*version = (version_pt) apr_palloc(pool, sizeof(**version));
-	if (!*version) {
-		status = CELIX_ENOMEM;
+	if (*version != NULL || pool == NULL) {
+		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
-		unsigned int i;
-		apr_pool_pre_cleanup_register(pool, *version, version_destroy);
+		*version = (version_t) apr_palloc(pool, sizeof(**version));
+		if (!*version) {
+			status = CELIX_ENOMEM;
+		} else {
+			unsigned int i;
+			apr_pool_pre_cleanup_register(pool, *version, version_destroy);
 
-		(*version)->pool = pool;
-		(*version)->major = major;
-		(*version)->minor = minor;
-		(*version)->micro = micro;
-		if (qualifier == NULL) {
-			qualifier = "";
-		}
-		(*version)->qualifier = apr_pstrdup(pool, qualifier);
+			(*version)->pool = pool;
+			(*version)->major = major;
+			(*version)->minor = minor;
+			(*version)->micro = micro;
+			if (qualifier == NULL) {
+				qualifier = "";
+			}
+			(*version)->qualifier = apr_pstrdup(pool, qualifier);
 
-		if (major < 0) {
-			celix_log("Negative major");
-		}
-		if (minor < 0) {
-			celix_log("Negative minor");
-		}
-		if (micro < 0) {
-			celix_log("Negative micro");
-		}
-		
-		for (i = 0; i < strlen(qualifier); i++) {
-			char ch = qualifier[i];
-			if (('A' <= ch) && (ch <= 'Z')) {
-				continue;
+			if (major < 0) {
+				celix_log("Negative major");
+				status = CELIX_ILLEGAL_ARGUMENT;
 			}
-			if (('a' <= ch) && (ch <= 'z')) {
-				continue;
+			if (minor < 0) {
+				celix_log("Negative minor");
+				status = CELIX_ILLEGAL_ARGUMENT;
 			}
-			if (('0' <= ch) && (ch <= '9')) {
-				continue;
+			if (micro < 0) {
+				celix_log("Negative micro");
+				status = CELIX_ILLEGAL_ARGUMENT;
 			}
-			if ((ch == '_') || (ch == '-')) {
-				continue;
+
+			for (i = 0; i < strlen(qualifier); i++) {
+				char ch = qualifier[i];
+				if (('A' <= ch) && (ch <= 'Z')) {
+					continue;
+				}
+				if (('a' <= ch) && (ch <= 'z')) {
+					continue;
+				}
+				if (('0' <= ch) && (ch <= '9')) {
+					continue;
+				}
+				if ((ch == '_') || (ch == '-')) {
+					continue;
+				}
+				celix_log("Invalid qualifier");
+				status = CELIX_ILLEGAL_ARGUMENT;
+				break;
 			}
-			celix_log("Invalid qualifier");
 		}
 	}
 
@@ -116,16 +115,45 @@ celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionS
 
 	char delims[] = ".";
 	char *token = NULL;
-	char *last;
+	char *last = NULL;
+
+	int i = 0;
 
 	token = apr_strtok(versionStr, delims, &last);
 	if (token != NULL) {
+		for (i = 0; i < strlen(token); i++) {
+			char ch = token[i];
+			if (('0' <= ch) && (ch <= '9')) {
+				continue;
+			}
+			celix_log("Invalid format");
+			status = CELIX_ILLEGAL_ARGUMENT;
+			break;
+		}
 		major = atoi(token);
 		token = apr_strtok(NULL, delims, &last);
 		if (token != NULL) {
+			for (i = 0; i < strlen(token); i++) {
+				char ch = token[i];
+				if (('0' <= ch) && (ch <= '9')) {
+					continue;
+				}
+				celix_log("Invalid format");
+				status = CELIX_ILLEGAL_ARGUMENT;
+				break;
+			}
 			minor = atoi(token);
 			token = apr_strtok(NULL, delims, &last);
 			if (token != NULL) {
+				for (i = 0; i < strlen(token); i++) {
+					char ch = token[i];
+					if (('0' <= ch) && (ch <= '9')) {
+						continue;
+					}
+					celix_log("Invalid format");
+					status = CELIX_ILLEGAL_ARGUMENT;
+					break;
+				}
 				micro = atoi(token);
 				token = apr_strtok(NULL, delims, &last);
 				if (token != NULL) {
@@ -150,7 +178,35 @@ celix_status_t version_createEmptyVersion(apr_pool_t *pool, version_pt *version)
 	return version_createVersion(pool, 0, 0, 0, "", version);
 }
 
+<<<<<<< HEAD
 celix_status_t version_compareTo(version_pt version, version_pt compare, int *result) {
+=======
+celix_status_t version_getMajor(version_t version, int *major) {
+	celix_status_t status = CELIX_SUCCESS;
+	*major = version->major;
+	return status;
+}
+
+celix_status_t version_getMinor(version_t version, int *minor) {
+	celix_status_t status = CELIX_SUCCESS;
+	*minor = version->minor;
+	return status;
+}
+
+celix_status_t version_getMicro(version_t version, int *micro) {
+	celix_status_t status = CELIX_SUCCESS;
+	*micro = version->micro;
+	return status;
+}
+
+celix_status_t version_getQualifier(version_t version, char **qualifier) {
+	celix_status_t status = CELIX_SUCCESS;
+	*qualifier = version->qualifier;
+	return status;
+}
+
+celix_status_t version_compareTo(version_t version, version_t compare, int *result) {
+>>>>>>> CELIX-55: Added tests, removed old unused files (test frameworks etc).
 	celix_status_t status = CELIX_SUCCESS;
 	if (compare == version) {
 		*result = 0;

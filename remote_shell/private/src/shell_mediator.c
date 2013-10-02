@@ -62,7 +62,7 @@ celix_status_t shellMediator_create(apr_pool_t *pool, bundle_context_pt context,
 	celix_status_t status = CELIX_SUCCESS;
 	service_tracker_customizer_pt customizer = NULL;
 
-	(*instance) = (shell_mediator_pt) (pool, sizeof(**instance));
+	(*instance) = (shell_mediator_t) apr_palloc(pool, sizeof(**instance));
     if ((*instance) != NULL) {
 		apr_pool_pre_cleanup_register(pool, *instance, shellMediator_cleanup);
 

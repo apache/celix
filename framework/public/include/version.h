@@ -100,7 +100,7 @@ celix_status_t version_clone(version_pt version, apr_pool_t *pool, version_pt *c
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ENOMEM If allocating memory for <code>version</code> failed.
  * 		- CELIX_ILLEGAL_ARGUMENT If the numerical components are negative,
- * 		  	the qualifier string is invalid or <code>versionStr</code> is impropertly formatted.
+ * 		  	the qualifier string is invalid or <code>versionStr</code> is improperly formatted.
  */
 celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionStr, version_pt *version);
 
@@ -113,9 +113,14 @@ celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionS
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ENOMEM If allocating memory for <code>version</code> failed.
  * 		- CELIX_ILLEGAL_ARGUMENT If the numerical components are negative,
- * 		  	the qualifier string is invalid or <code>versionStr</code> is impropertly formatted.
+ * 		  	the qualifier string is invalid or <code>versionStr</code> is improperly formatted.
  */
 celix_status_t version_createEmptyVersion(apr_pool_t *pool, version_pt *version);
+
+celix_status_t version_getMajor(version_t version, int *major);
+celix_status_t version_getMinor(version_t version, int *minor);
+celix_status_t version_getMicro(version_t version, int *micro);
+celix_status_t version_getQualifier(version_t version, char **qualifier);
 
 /**
  * Compares this <code>Version</code> object to another object.

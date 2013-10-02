@@ -32,6 +32,8 @@ IF(WIN32)
 	SET(CMAKE_C_FLAGS "-D_CRT_SECURE_NO_WARNINGS ${CMAKE_C_FLAGS}")
 ENDIF()
 
+enable_testing()
+
 include(cmake/Includes.cmake)
 
 include(cmake/installation.cmake)

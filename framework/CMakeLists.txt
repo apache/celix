@@ -71,8 +71,21 @@ if (FRAMEWORK)
     INSTALL(FILES ${files} DESTINATION include/celix COMPONENT framework)
     
     include_directories(${CUNIT_INCLUDE_DIRS})
+    include_directories(${CPPUTEST_INCLUDE_DIR})
+    include_directories(${CPPUTEST_EXT_INCLUDE_DIR})
+    
     add_executable(framework_test private/test/framework_test)
     target_link_libraries(framework_test celix_utils celix_framework ${CUNIT_LIBRARIES})
     
+    add_executable(version_test private/test/version_test.cpp private/src/version.c)
+	target_link_libraries(version_test ${APR_LIBRARY} ${CPPUTEST_LIBRARY})
+	
+	add_executable(version_range_test private/test/version_range_test.cpp private/src/version_range.c)
+	target_link_libraries(version_range_test ${APR_LIBRARY} ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY})
+    
     run_test(framework_test)
+    
+    add_test(framework_test framework_test -ojunit)
+    add_test(version_test version_test -ojunit)
+    add_test(version_range_test version_range_test -ojunit)
 endif (FRAMEWORK)

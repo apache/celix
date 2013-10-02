@@ -27,15 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "version_range.h"
-
-struct versionRange {
-	version_pt low;
-	bool isLowInclusive;
-	version_pt high;
-	bool isHighInclusive;
-
-};
+#include "version_range_private.h"
 
 apr_status_t versionRange_destroy(void *rangeP);
 

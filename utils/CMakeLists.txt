@@ -51,6 +51,7 @@ if (UTILS)
     INSTALL(FILES ${files} DESTINATION include/celix COMPONENT framework)
     
     include_directories(${CUNIT_INCLUDE_DIRS})
+    include_directories(${CPPUTEST_INCLUDE_DIR})
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/utils/private/include")
     
@@ -60,8 +61,11 @@ if (UTILS)
     add_executable(hash_map_test_hash private/test/hash_map_test_hash.c)
     target_link_libraries(hash_map_test_hash celix_utils ${CUNIT_LIBRARIES})
     
-    add_executable(array_list_test private/test/array_list_test.c)
-    target_link_libraries(array_list_test celix_utils ${CUNIT_LIBRARIES})
+    add_executable(array_list_test2 private/test/array_list_test.c)
+    target_link_libraries(array_list_test2 celix_utils ${CUNIT_LIBRARIES})
+    
+    add_executable(array_list_test private/test/array_list_test.cpp)
+	target_link_libraries(array_list_test celix_utils ${CPPUTEST_LIBRARY})
     
     add_executable(linked_list_test private/test/linked_list_test.c)
     target_link_libraries(linked_list_test celix_utils ${CUNIT_LIBRARIES})
@@ -71,13 +75,5 @@ if (UTILS)
     run_test(hash_map_test_hash)
     run_test(linked_list_test)
     
-    #run_unity_test(unity_bla SOURCE private/test/testUnity.c MOCKS public/include/tomock.h)
-    #add_test(unity_bla ${CMAKE_CURRENT_BINARY_DIR}/unity_bla)
-    
-    #SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -fnested-functions ${CMAKE_C_FLAGS}")
-    
-    #include_directories(${PROJECT_SOURCE_DIR}/cmake/cpputest/include)
-    #link_directories(${PROJECT_SOURCE_DIR}/cmake/cpputest/lib)
-    #add_executable(testcpputest private/test/testcpputest.cpp)
-    #target_link_libraries(testcpputest CppUTest CppUTestExt)
+    add_test(array_list_test array_list_test -ojunit)
 endif (UTILS)

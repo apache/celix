@@ -1,4 +1,0 @@
-:cmock: 
-    :attributes: 
-    - UTILS_EXPORT
-    :mock_path: .

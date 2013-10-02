@@ -41,16 +41,20 @@ celix_status_t wire_create(apr_pool_t *pool, module_pt importer, requirement_pt 
 		module_pt exporter, capability_pt capability, wire_pt *wire) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	(*wire) = (wire_pt) apr_palloc(pool, sizeof(**wire));
-	if (!*wire) {
-		status = CELIX_ENOMEM;
+	if (*wire != NULL || pool == NULL) {
+		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
-		apr_pool_pre_cleanup_register(pool, *wire, wire_destroy);
+		(*wire) = (wire_t) apr_palloc(pool, sizeof(**wire));
+		if (!*wire) {
+			status = CELIX_ENOMEM;
+		} else {
+			apr_pool_pre_cleanup_register(pool, *wire, wire_destroy);
 
-		(*wire)->importer = importer;
-		(*wire)->requirement = requirement;
-		(*wire)->exporter = exporter;
-		(*wire)->capability = capability;
+			(*wire)->importer = importer;
+			(*wire)->requirement = requirement;
+			(*wire)->exporter = exporter;
+			(*wire)->capability = capability;
+		}
 	}
 
 	return status;
