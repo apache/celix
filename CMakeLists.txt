@@ -16,7 +16,7 @@
 # under the License.
 
 cmake_minimum_required (VERSION 2.6)
-project (Celix C)
+project (Celix C CXX)
 
 cmake_policy(SET CMP0012 NEW)
 

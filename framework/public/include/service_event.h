@@ -42,6 +42,8 @@ enum serviceEventType
 	SERVICE_EVENT_MODIFIED_ENDMATCH = 0x00000008,
 };
 
+#include "service_reference.h"
+
 struct serviceEvent {
 	service_reference_pt reference;
 	service_event_type_e type;

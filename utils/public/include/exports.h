@@ -43,7 +43,7 @@ We are using the Visual Studio Compiler and building Shared libraries
     #define  UTILS_EXPORT __declspec(dllimport)
   #endif /* celix_utils_EXPORTS */
 #else /* defined (_WIN32) */
-#define UTILS_EXPORT __attribute__((visibility("default")))
+  #define UTILS_EXPORT __attribute__((visibility("default")))
 #endif
 
 #endif /* EXPORTS_H_ */
