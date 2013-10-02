@@ -70,7 +70,9 @@ if (FRAMEWORK)
     install(TARGETS celix_framework DESTINATION lib COMPONENT framework)
     FILE(GLOB files "public/include/*.h")
     INSTALL(FILES ${files} DESTINATION include/celix COMPONENT framework)
-    
+
+	celix_subproject(FRAMEWORK_TESTS "Option to build the framework tests" "ON" DEPS)
+    if (FRAMEWORK_TESTS)
     #include_directories(${CUNIT_INCLUDE_DIRS})
     include_directories(${CPPUTEST_INCLUDE_DIR})
     include_directories(${CPPUTEST_EXT_INCLUDE_DIR})
@@ -281,5 +283,5 @@ if (FRAMEWORK)
 	SETUP_TARGET_FOR_COVERAGE(bundle_cache_test_c bundle_cache_test ${CMAKE_BINARY_DIR}/coverage/bundle_cache_test)
 	SETUP_TARGET_FOR_COVERAGE(bundle_archive_test_c bundle_archive_test ${CMAKE_BINARY_DIR}/coverage/bundle_archive_test)
 	SETUP_TARGET_FOR_COVERAGE(attribute_test_c attribute_test ${CMAKE_BINARY_DIR}/coverage/attribute_test)
-	
+	endif (FRAMEWORK_TESTS)
 endif (FRAMEWORK)
