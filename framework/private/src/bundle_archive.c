@@ -86,6 +86,7 @@ celix_status_t bundleArchive_createSystemBundleArchive(apr_pool_t *mp, bundle_ar
                     archive->archiveRoot = NULL;
                     archive->archiveRootDir = NULL;
                     archive->refreshCount = -1;
+                    archive->persistentState = BUNDLE_UNKNOWN;
                     time(&archive->lastModified);
 
                     *bundle_archive = archive;
@@ -310,7 +311,7 @@ celix_status_t bundleArchive_getPersistentState(bundle_archive_pt archive, bundl
 	celix_status_t status = CELIX_SUCCESS;
 	apr_status_t apr_status;
 
-	if (archive->persistentState >= 0) {
+	if (archive->persistentState != BUNDLE_UNKNOWN) {
 		*state = archive->persistentState;
 	} else {
 		apr_file_t *persistentStateLocationFile;

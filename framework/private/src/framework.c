@@ -680,6 +680,10 @@ celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int opti
 	bundle_getState(bundle, &state);
 
 	switch (state) {
+		case BUNDLE_UNKNOWN:
+			printf("Cannot start bundle since its state is unknown.");
+			framework_releaseBundleLock(framework, bundle);
+			return CELIX_ILLEGAL_STATE;
 		case BUNDLE_UNINSTALLED:
 			printf("Cannot start bundle since it is uninstalled.");
 			framework_releaseBundleLock(framework, bundle);
@@ -877,6 +881,10 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
 		bundle_getState(bundle, &state);
 
 		switch (state) {
+			case BUNDLE_UNKNOWN:
+				printf("Cannot stop bundle since its state is unknown.");
+				framework_releaseBundleLock(framework, bundle);
+				return CELIX_ILLEGAL_STATE;
 			case BUNDLE_UNINSTALLED:
 				printf("Cannot stop bundle since it is uninstalled.");
 				framework_releaseBundleLock(framework, bundle);
