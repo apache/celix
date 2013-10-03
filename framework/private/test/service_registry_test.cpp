@@ -63,12 +63,6 @@ TEST(service_registry, create) {
 	framework_pt framework = (framework_pt) 0x10;
 	service_registry_pt registry = NULL;
 
-	mock()
-		.expectOneCall("framework_getMemoryPool")
-		.withParameter("framework", framework)
-		.andOutputParameter("pool", pool)
-		.andReturnValue(CELIX_SUCCESS);
-
 	serviceRegistry_create(pool, framework, serviceRegistryTest_serviceChanged, &registry);
 
 	POINTERS_EQUAL(framework, registry->framework);
@@ -268,11 +262,6 @@ TEST(service_registry, unregisterService) {
 		.andOutputParameter("references", references)
 		.andReturnValue(CELIX_SUCCESS);
 	mock()
-		.expectOneCall("framework_getMemoryPool")
-		.withParameter("framework", framework)
-		.andOutputParameter("pool", pool)
-		.andReturnValue(CELIX_SUCCESS);
-	mock()
 		.expectOneCall("serviceReference_invalidate")
 		.withParameter("reference", reference)
 		.andReturnValue(CELIX_SUCCESS);
@@ -466,6 +455,7 @@ TEST(service_registry, ungetService) {
 	arrayList_create(pool, &usages);
 	usage_count_pt usage = (usage_count_pt) malloc(sizeof(*usage));
 	usage->reference = reference;
+	apr_pool_create(&usage->pool, pool);
 	arrayList_add(usages, usage);
 	hashMap_put(registry->inUseMap, bundle, usages);
 
@@ -509,6 +499,7 @@ TEST(service_registry, ungetServivces) {
 	arrayList_create(pool, &usages);
 	usage_count_pt usage = (usage_count_pt) malloc(sizeof(*usage));
 	usage->reference = reference;
+	apr_pool_create(&usage->pool, pool);
 	arrayList_add(usages, usage);
 	hashMap_put(registry->inUseMap, bundle, usages);
 

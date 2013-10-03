@@ -31,8 +31,9 @@ ENDIF() # NOT CMAKE_BUILD_TYPE STREQUAL "Debug"
 
 
 # Setup compiler options
-ADD_DEFINITIONS(-fprofile_rt)
-LINK_LIBRARIES(profile_rt)
+ADD_DEFINITIONS(--coverage)
+set(CMAKE_SHARED_LINKER_FLAGS "--coverage")
+set(CMAKE_EXE_LINKER_FLAGS "--coverage")
 
 
 add_custom_target(coverage

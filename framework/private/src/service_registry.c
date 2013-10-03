@@ -389,14 +389,13 @@ celix_status_t serviceRegistry_getServicesInUse(service_registry_pt registry, bu
 	array_list_pt usages = hashMap_get(registry->inUseMap, bundle);
 	if (usages != NULL) {
 		unsigned int i;
-		array_list_pt references = NULL;
 		apr_pool_t *pool = NULL;
 		bundle_getMemoryPool(bundle, &pool);
 		arrayList_create(pool, services);
 		
 		for (i = 0; i < arrayList_size(usages); i++) {
 			usage_count_pt usage = arrayList_get(usages, i);
-			arrayList_add(references, usage->reference);
+			arrayList_add(*services, usage->reference);
 		}
 	}
 	return CELIX_SUCCESS;

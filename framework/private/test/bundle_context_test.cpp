@@ -321,7 +321,8 @@ TEST(bundle_context, getService) {
 		.withParameter("framework", framework)
 		.withParameter("bundle", bundle)
 		.withParameter("reference", serviceReference)
-		.andReturnValue(service);
+		.andOutputParameter("service", service)
+		.andReturnValue(CELIX_SUCCESS);
 
 	void *actualService = NULL;
 	celix_status_t status = bundleContext_getService(context, serviceReference, &actualService);
@@ -348,7 +349,8 @@ TEST(bundle_context, ungetService) {
 		.withParameter("framework", framework)
 		.withParameter("bundle", bundle)
 		.withParameter("reference", serviceReference)
-		.andReturnValue(result);
+		.andOutputParameter("result", result)
+		.andReturnValue(CELIX_SUCCESS);
 
 	bool actualResult = NULL;
 	celix_status_t status = bundleContext_ungetService(context, serviceReference, &actualResult);

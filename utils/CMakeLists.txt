@@ -50,7 +50,7 @@ if (UTILS)
     FILE(GLOB files "public/include/*.h")
     INSTALL(FILES ${files} DESTINATION include/celix COMPONENT framework)
     
-    celix_subproject(UTILS-TESTS "Option to build the utilities library" "ON")
+    celix_subproject(UTILS-TESTS "Option to build the utilities library tests" "OFF")
     if (UTILS-TESTS)
 	    include_directories(${CUNIT_INCLUDE_DIRS})
 	    include_directories(${CPPUTEST_INCLUDE_DIR})

@@ -22,7 +22,6 @@ if (FRAMEWORK)
     find_package(ZLIB REQUIRED)
     
     include(CPackComponent)
-    include(${CMAKE_SOURCE_DIR}/cmake/CodeCoverage.cmake)
     
     #cpack_add_component(framework
     #	DISPLAY_NAME Framework
@@ -71,8 +70,11 @@ if (FRAMEWORK)
     FILE(GLOB files "public/include/*.h")
     INSTALL(FILES ${files} DESTINATION include/celix COMPONENT framework)
 
-	celix_subproject(FRAMEWORK_TESTS "Option to build the framework tests" "ON" DEPS)
+	celix_subproject(FRAMEWORK_TESTS "Option to build the framework tests" "OFF" DEPS)
     if (FRAMEWORK_TESTS)
+    	include(${CMAKE_SOURCE_DIR}/cmake/CodeCoverage.cmake)
+    	find_package(CppUTest REQUIRED)
+    	
 	    include_directories(${CPPUTEST_INCLUDE_DIR})
 	    include_directories(${CPPUTEST_EXT_INCLUDE_DIR})
 	    
