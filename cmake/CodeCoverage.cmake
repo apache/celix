@@ -31,7 +31,7 @@ ENDIF() # NOT CMAKE_BUILD_TYPE STREQUAL "Debug"
 
 
 # Setup compiler options
-ADD_DEFINITIONS(-fprofile-arcs -ftest-coverage)
+ADD_DEFINITIONS(-fprofile_rt)
 LINK_LIBRARIES(profile_rt)
 
 
