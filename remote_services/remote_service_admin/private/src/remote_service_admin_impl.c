@@ -27,6 +27,7 @@
 #include <stdlib.h>
 
 #include <apr_strings.h>
+#include <apr_uuid.h>
 
 #include "remote_service_admin_impl.h"
 #include "export_registration_impl.h"
@@ -125,20 +126,22 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
 		printf("REMOTE_SERVICE_ADMIN: Handle request: %s\n", request_info->uri);
 		remote_service_admin_pt rsa = request_info->user_data;
 
-		if (strncmp(request_info->uri, "/services/", 10) == 0) {
+		if (strncmp(request_info->uri, "/service/", 9) == 0) {
 			// uri = /services/myservice/call
 			const char *uri = request_info->uri;
 			// rest = myservice/call
-			const char *rest = uri+10;
+			const char *rest = uri+9;
 			int length = strlen(rest);
-			char *callStart = strchr(rest, '/');
-			int pos = callStart - rest;
+			char *interfaceStart = strchr(rest, '/');
+			char *callStart = strchr(interfaceStart+1, '/');
+			int pos = interfaceStart - rest;
 			char service[pos+1];
 			strncpy(service, rest, pos);
 			service[pos] = '\0';
 
-			char request[length - pos];
-			strncpy(request, rest + pos + 1, length - pos);
+//			printf("Got service %s, interfaceStart is %s and callStart is %s\n", service, interfaceStart, callStart);
+
+			char *request = callStart+1;
 
 			const char *lengthStr = mg_get_header(conn, (const char *) "Content-Length");
 			int datalength = apr_atoi64(lengthStr);
@@ -153,7 +156,8 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
 				int expIt = 0;
 				for (expIt = 0; expIt < arrayList_size(exports); expIt++) {
 					export_registration_pt export = arrayList_get(exports, expIt);
-					if (strcmp(service, export->endpointDescription->service) == 0) {
+					long serviceId = atol(service);
+					if (serviceId == export->endpointDescription->serviceId) {
 						char *reply = NULL;
 						export->endpoint->handleRequest(export->endpoint->endpoint, request, data, &reply);
 						if (reply != NULL) {
@@ -286,18 +290,23 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
 		properties_set(endpointProperties, key, value);
 	}
 	char *serviceId = (char *) hashMap_remove(endpointProperties, (void *) SERVICE_ID);
-	properties_set(endpointProperties, (char *) OBJECTCLASS, interface);
-	properties_set(endpointProperties, (char *) ENDPOINT_SERVICE_ID, serviceId);
 	char *uuid = NULL;
 	bundleContext_getProperty(admin->context, FRAMEWORK_UUID, &uuid);
+	properties_set(endpointProperties, (char *) OBJECTCLASS, interface);
+	properties_set(endpointProperties, (char *) ENDPOINT_SERVICE_ID, serviceId);
+	properties_set(endpointProperties, "service.imported", "true");
 	properties_set(endpointProperties, (char *) ENDPOINT_FRAMEWORK_UUID, uuid);
-	char *service = "/services/example";
-	properties_set(endpointProperties, (char *) SERVICE_LOCATION, apr_pstrdup(admin->pool, service));
-    
+
+//    properties_set(endpointProperties, ".ars.path", buf);
+//    properties_set(endpointProperties, ".ars.port", admin->port);
+
+	char buf[512];
+	sprintf(buf, "/service/%s/%s", serviceId, interface);
     char *url = NULL;
-    constructServiceUrl(admin,interface, &url);
-    printf("url is %s\n", url);
-    properties_set(endpointProperties, "url", url);
+    constructServiceUrl(admin,buf, &url);
+    properties_set(endpointProperties, ".ars.alias", url);
+
+    properties_set(endpointProperties, "service.imported.configs", ".ars");
 
 	endpoint_description_pt endpointDescription = NULL;
 	remoteServiceAdmin_createEndpointDescription(admin, serviceProperties, endpointProperties, interface, &endpointDescription);
@@ -328,7 +337,7 @@ static celix_status_t constructServiceUrl(remote_service_admin_pt admin, char *s
 				if (stat != APR_SUCCESS) {
 					status = CELIX_BUNDLE_EXCEPTION;
 				} else {
-					*serviceUrl = apr_pstrcat(admin->pool, "http://", ip, ":", admin->port, "/services/", service,	NULL );
+					*serviceUrl = apr_pstrcat(admin->pool, "http://", ip, ":", admin->port, service, NULL );
 				}
 			}
 		}
@@ -344,7 +353,7 @@ celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin
 	celix_status_t status = CELIX_SUCCESS;
 
 	apr_pool_t *childPool = NULL;
-	apr_pool_create(&childPool, admin->pool);
+	apr_pool_create(&childPool, admin->pool); //TODO pool should be destroyed after when endpoint is removed
 
 	*description = apr_palloc(childPool, sizeof(*description));
 //	*description = malloc(sizeof(*description));
@@ -357,7 +366,7 @@ celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin
 			(*description)->properties = endpointProperties;
 			(*description)->frameworkUUID = uuid;
 			(*description)->serviceId = apr_atoi64(properties_get(serviceProperties, (char *) SERVICE_ID));
-			(*description)->id = properties_get(endpointProperties, (char *) SERVICE_LOCATION);
+			(*description)->id = apr_pstrdup(childPool, "TODO"); // does not work, txt record to big ?? --> apr_pstrcat(childPool, uuid, "-", (*description)->serviceId, NULL);
 			(*description)->service = interface;
 		}
 	}

@@ -27,7 +27,7 @@
 #ifndef EXAMPLE_SERVICE_H_
 #define EXAMPLE_SERVICE_H_
 
-#define EXAMPLE_SERVICE "example"
+#define EXAMPLE_SERVICE "org.example.api.Calculator"
 
 typedef struct example *example_pt;
 

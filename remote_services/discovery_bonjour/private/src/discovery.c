@@ -126,7 +126,7 @@ celix_status_t discovery_create(apr_pool_t *pool, bundle_context_pt context, dis
 		char *port = NULL;
 		bundleContext_getProperty(context, "DISCOVERY_PORT", &port);
 		if (port == NULL) {
-			(*discovery)->discoveryPort = DEFAULT_DISCOVERY_PORT;
+			(*discovery)->discoveryPort = (char *)DEFAULT_DISCOVERY_PORT;
 		} else {
 			(*discovery)->discoveryPort = apr_pstrdup(pool, port);
 		}
@@ -316,6 +316,27 @@ celix_status_t discovery_endpointListenerAdded(void * handle, service_reference_
 		printf("DISCOVERY: EndpointListener Ignored - Discovery listener\n");
 	} else {
 		printf("DISCOVERY: EndpointListener Added - Add Scope\n");
+
+		apr_thread_mutex_lock(discovery->discoveredServicesMutex);
+		if (discovery->discoveredServices != NULL) {
+			hash_map_iterator_pt iter = hashMapIterator_create(discovery->discoveredServices);
+			while (hashMapIterator_hasNext(iter)) {
+				endpoint_description_pt endpoint = hashMapIterator_nextKey(iter);
+				endpoint_listener_pt listener = service;
+
+				char *scope = properties_get(serviceProperties,
+				(char *) ENDPOINT_LISTENER_SCOPE);
+				filter_pt filter = filter_create(scope, discovery->pool); //FIXME memory leak
+				bool matchResult = false;
+				filter_match(filter, endpoint->properties, &matchResult);
+				if (matchResult) {
+					listener->endpointAdded(listener, endpoint, NULL);
+				}
+			}
+			hashMapIterator_destroy(iter);
+		}
+		apr_thread_mutex_unlock(discovery->discoveredServicesMutex);
+
 		apr_thread_mutex_lock(discovery->listenerReferencesMutex);
 		if (discovery->listenerReferences != NULL) {
 			hashMap_put(discovery->listenerReferences, reference, NULL /*TODO is the scope value needed?*/);
@@ -441,21 +462,21 @@ static void discovery_resolveAddCallback(DNSServiceRef sdRef,
 		properties_set(props, key, valueBuf);
 	}
 
-	//check if framework uuid is not this framework uuid
-	char *endpointUuid = properties_get(props, (char *)ENDPOINT_FRAMEWORK_UUID);
+	char *endpointFrameworkUuid = properties_get(props, (char *)ENDPOINT_FRAMEWORK_UUID);
 
-	if (endpointUuid == NULL) {
+	if (endpointFrameworkUuid == NULL) {
 		printf("DISCOVERY: Cannot process endpoint, no %s property\n", ENDPOINT_FRAMEWORK_UUID);
-	} else if (strcmp(endpointUuid, discovery->frameworkUuid) != 0) {
+	} else if (strcmp(endpointFrameworkUuid, discovery->frameworkUuid) != 0) {
 		apr_pool_t *childPool = NULL;
 		apr_pool_create(&childPool, discovery->pool);
 		discovered_endpoint_entry_pt entry = apr_palloc(childPool, sizeof(*entry));
 		endpoint_description_pt endpoint = apr_palloc(childPool, sizeof(*endpoint));
-		//FIXME endpoint id for http should be the url
-//		endpoint->id = apr_pstrdup(childPool, fullname);
-		endpoint->id = properties_get(props, "url");
-		endpoint->serviceId = 0 /*TODO*/;
-		endpoint->service = properties_get(props, "service");
+
+		char *serviceId = properties_get(props, "endpoint.service.id");
+
+		endpoint->id = properties_get(props, "endpoint.id");
+		endpoint->serviceId = serviceId == NULL? 0 : atol(serviceId);
+		endpoint->service = properties_get(props, "objectClass");
 		endpoint->properties = props;
 
 		entry->pool = childPool;

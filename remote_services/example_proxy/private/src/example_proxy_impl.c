@@ -67,12 +67,12 @@ celix_status_t exampleProxy_add(example_pt example, double a, double b, double *
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (example->endpoint != NULL) {
-		char *serviceUrl = properties_get(example->endpoint->properties, "url");
+		char *serviceUrl = properties_get(example->endpoint->properties, ".ars.alias");
 		printf("CALCULATOR_PROXY: URL: %s\n", serviceUrl);
 		char *url = apr_pstrcat(example->pool, serviceUrl, "/add", NULL);
 
 		json_t *root;
-		root = json_pack("{s:f, s:f}", "a", a, "b", b);
+		root = json_pack("{s:f, s:f}", "arg0", a, "arg1", b);
 
 		struct post post;
 		char *data = json_dumps(root, 0);
@@ -87,7 +87,7 @@ celix_status_t exampleProxy_add(example_pt example, double a, double b, double *
 		if (status == CELIX_SUCCESS) {
 			json_error_t jsonError;
 			json_t *reply = json_loads(get.writeptr, 0, &jsonError);
-			json_unpack(reply, "{s:f}", "result", result);
+			json_unpack(reply, "[f]", result);
 		}
 	} else {
 		printf("CALCULATOR_PROXY: No endpoint information available\n");
@@ -103,7 +103,7 @@ celix_status_t exampleProxy_sub(example_pt example, double a, double b, double *
 		char *url = apr_pstrcat(example->pool, example->endpoint->id, "/sub", NULL);
 
 		json_t *root;
-		root = json_pack("{s:f, s:f}", "a", a, "b", b);
+		root = json_pack("{s:f, s:f}", "arg0", a, "arg1", b);
 
 		struct post post;
 		char *data = json_dumps(root, 0);
@@ -118,7 +118,7 @@ celix_status_t exampleProxy_sub(example_pt example, double a, double b, double *
 		if (status == CELIX_SUCCESS) {
 			json_error_t jsonError;
 			json_t *reply = json_loads(get.writeptr, 0, &jsonError);
-			json_unpack(reply, "{s:f}", "result", result);
+			json_unpack(reply, "[f]", "result", result);
 		}
 	} else {
 		printf("CALCULATOR_PROXY: No endpoint information available\n");
@@ -134,7 +134,7 @@ celix_status_t exampleProxy_sqrt(example_pt example, double a, double *result) {
 		char *url = apr_pstrcat(example->pool, example->endpoint->id, "/sqrt", NULL);
 
 		json_t *root;
-		root = json_pack("{s:f}", "a", a);
+		root = json_pack("{s:f}", "arg0", a);
 
 		struct post post;
 		char *data = json_dumps(root, 0);
@@ -149,7 +149,7 @@ celix_status_t exampleProxy_sqrt(example_pt example, double a, double *result) {
 		if (status == CELIX_SUCCESS) {
 			json_error_t jsonError;
 			json_t *reply = json_loads(get.writeptr, 0, &jsonError);
-			json_unpack(reply, "{s:f}", "result", result);
+			json_unpack(reply, "[f]", "result", result);
 		}
 	} else {
 		printf("CALCULATOR_PROXY: No endpoint information available\n");

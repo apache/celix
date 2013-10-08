@@ -85,14 +85,14 @@ celix_status_t exampleEndpoint_add(remote_endpoint_pt ep, char *data, char **rep
 	} else {
 		double a;
 		double b;
-		json_unpack(root, "{s:f, s:f}", "a", &a, "b", &b);
+		json_unpack(root, "{s:f, s:f}", "arg0", &a, "arg1", &b);
 
 		if (ep->service != NULL) {
 			double result;
 			json_t *resultRoot;
 			example_service_pt service = ep->service;
 			service->add(service->example, a, b, &result);
-			resultRoot = json_pack("{s:f}", "result", result);
+			resultRoot = json_pack("[f]", result);
 
 			char *c = json_dumps(resultRoot, JSON_ENCODE_ANY);
 			*reply = c;
@@ -116,14 +116,14 @@ celix_status_t exampleEndpoint_sub(remote_endpoint_pt ep, char *data, char **rep
 	} else {
 		double a;
 		double b;
-		json_unpack(root, "{s:f, s:f}", "a", &a, "b", &b);
+		json_unpack(root, "{s:f, s:f}", "arg0", &a, "arg1", &b);
 
 		if (ep->service != NULL) {
 			double result;
 			json_t *resultRoot;
 			example_service_pt service = ep->service;
 			service->sub(service->example, a, b, &result);
-			resultRoot = json_pack("{s:f}", "result", result);
+			resultRoot = json_pack("[f]", result);
 
 			char *c = json_dumps(resultRoot, JSON_ENCODE_ANY);
 			*reply = c;
@@ -146,14 +146,14 @@ celix_status_t exampleEndpoint_sqrt(remote_endpoint_pt ep, char *data, char **re
 		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
 		double a;
-		json_unpack(root, "{s:f}", "a", &a);
+		json_unpack(root, "{s:f}", "arg0", &a);
 
 		if (ep->service != NULL) {
 			double result;
 			json_t *resultRoot;
 			example_service_pt service = ep->service;
 			service->sqrt(service->example, a, &result);
-			resultRoot = json_pack("{s:f}", "result", result);
+			resultRoot = json_pack("[f]", result);
 
 			char *c = json_dumps(resultRoot, JSON_ENCODE_ANY);
 			*reply = c;
