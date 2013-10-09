@@ -173,7 +173,7 @@ bool arrayList_add(array_list_pt list, void * element) {
 
 int arrayList_addIndex(array_list_pt list, unsigned int index, void * element) {
 	unsigned int numMoved;
-	if (index > list->size || index < 0) {
+	if (index > list->size) {
 		return -1;
 	}
 	arrayList_ensureCapacity(list, list->size+1);

@@ -41,7 +41,7 @@ celix_status_t versionRange_isInRange(version_range_pt versionRange, version_pt 
 	mock_c()->actualCall("versionRange_isInRange")
 			->withPointerParameters("versionRange", versionRange)
 			->withPointerParameters("version", version)
-			->_andIntOutputParameters("inRange", inRange);
+			->_andIntOutputParameters("inRange", (int *) inRange);
 	return mock_c()->returnValue().value.intValue;
 }
 

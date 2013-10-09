@@ -69,7 +69,7 @@ version_pt module_getVersion(module_pt module) {
 celix_status_t module_getSymbolicName(module_pt module, char **symbolicName) {
 	mock_c()->actualCall("module_getSymbolicName")
 		->withPointerParameters("module", module)
-		->_andStringOutputParameters("symbolicName", symbolicName);
+		->_andStringOutputParameters("symbolicName", (const char **) symbolicName);
 	return mock_c()->returnValue().value.intValue;
 }
 

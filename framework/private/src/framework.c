@@ -169,7 +169,7 @@ struct request {
 	event_type_e type;
 	array_list_pt listeners;
 
-	int eventType;
+	bundle_event_type_e eventType;
 	bundle_pt bundle;
 
 	char *filter;
@@ -2018,7 +2018,7 @@ static void *APR_THREAD_FUNC fw_eventDispatcher(apr_thread_t *thd, void *fw) {
 					fw_bundle_listener_pt listener = (fw_bundle_listener_pt) arrayList_get(request->listeners, i);
 					bundle_event_pt event = (bundle_event_pt) apr_palloc(listener->listener->pool, sizeof(*event));
 					event->bundle = request->bundle;
-					event->type = request->type;
+					event->type = request->eventType;
 
 					fw_invokeBundleListener(framework, listener->listener, event, listener->bundle);
 				}

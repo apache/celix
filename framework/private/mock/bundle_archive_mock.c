@@ -56,7 +56,7 @@ celix_status_t bundleArchive_recreate(char * archiveRoot, apr_pool_t *mp, bundle
 celix_status_t bundleArchive_getId(bundle_archive_pt archive, long *id) {
 	mock_c()->actualCall("bundleArchive_getId")
 			->withPointerParameters("archive", archive)
-			->_andIntOutputParameters("id", id);
+			->_andIntOutputParameters("id", (int *) id);
 	return mock_c()->returnValue().value.intValue;
 }
 

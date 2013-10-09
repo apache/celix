@@ -352,12 +352,12 @@ TEST(bundle_context, ungetService) {
 		.andOutputParameter("result", result)
 		.andReturnValue(CELIX_SUCCESS);
 
-	bool actualResult = NULL;
+	bool actualResult = false;
 	celix_status_t status = bundleContext_ungetService(context, serviceReference, &actualResult);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	LONGS_EQUAL(result, actualResult);
 
-	actualResult = NULL;
+	actualResult = false;
 	status = bundleContext_ungetService(context, NULL, &actualResult);
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
 }

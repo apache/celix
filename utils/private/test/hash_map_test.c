@@ -416,7 +416,7 @@ void test_hashMapValues_toArray(void) {
     char * key2 = "key2";
     char * value2 = "value2";
     char **array;
-    int size;
+    unsigned int size;
 	hash_map_values_pt values;
 
 	hashMap_clear(map, false, false);

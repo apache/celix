@@ -39,11 +39,11 @@ TEST(array_list, create) {
 
 TEST(array_list, trimToSize) {
 	bool added;
-	char * entry;
+	std::string entry;
 	arrayList_clear(list);
 
 	entry = "entry";
-	added = arrayList_add(list, entry);
+	added = arrayList_add(list, (char *) entry.c_str());
 	LONGS_EQUAL(list->size, 1);
 	LONGS_EQUAL(list->capacity, 10);
 
@@ -62,8 +62,8 @@ TEST(array_list, ensureCapacity) {
 
 	for (i = 0; i < 100; i++) {
 		bool added;
-		char *entry = "entry";
-		added = arrayList_add(list, entry);
+		std::string entry = "entry";
+		added = arrayList_add(list, (char *) entry.c_str());
 	}
 	LONGS_EQUAL(list->capacity, 133);
 	LONGS_EQUAL(list->size, 100);

@@ -32,21 +32,21 @@ celix_status_t attribute_create(apr_pool_t *memory_pool, char * key, char * valu
 			->withPointerParameters("pool", memory_pool)
 			->withStringParameters("key", key)
 			->withStringParameters("value", value)
-			->_andPointerOutputParameters("attribute", attribute);
+			->_andPointerOutputParameters("attribute", (void **) attribute);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t attribute_getKey(attribute_pt attribute, char **key) {
 	mock_c()->actualCall("attribute_getKey")
 			->withPointerParameters("attribute", attribute)
-			->_andStringOutputParameters("key", key);
+			->_andStringOutputParameters("key", (const char **) key);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t attribute_getValue(attribute_pt attribute, char **value) {
 	mock_c()->actualCall("attribute_getValue")
 			->withPointerParameters("attribute", attribute)
-			->_andStringOutputParameters("value", value);
+			->_andStringOutputParameters("value", (const char **) value);
 	return mock_c()->returnValue().value.intValue;
 }
 

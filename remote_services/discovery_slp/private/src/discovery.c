@@ -69,6 +69,8 @@ celix_status_t discovery_informListenerOfRemoval(discovery_pt discovery, endpoin
 celix_status_t discovery_addService(discovery_pt discovery, endpoint_description_pt endpoint);
 celix_status_t discovery_removeService(discovery_pt discovery, endpoint_description_pt endpoint);
 
+celix_status_t discovery_updateEndpointListener(discovery_pt discovery, service_reference_pt reference, endpoint_listener_pt service);
+
 static void *APR_THREAD_FUNC discovery_pollSLP(apr_thread_t *thd, void *data);
 SLPBoolean discovery_pollSLPCallback(SLPHandle hslp, const char* srvurl, unsigned short lifetime, SLPError errcode, void* cookie);
 SLPBoolean discovery_attributesCallback(SLPHandle hslp, const char *attributes, SLPError error, void *cookie);

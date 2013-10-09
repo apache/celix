@@ -20,7 +20,7 @@
 include_directories("/usr/include") #TODO check if this has impact on the generated project indexer paths
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/remote_services/discovery/private/include")
+include_directories("${PROJECT_SOURCE_DIR}/remote_services/discovery_bonjour/private/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
 include_directories(private/include)

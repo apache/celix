@@ -499,6 +499,7 @@ TEST(service_registry, ungetServivces) {
 	arrayList_create(pool, &usages);
 	usage_count_pt usage = (usage_count_pt) malloc(sizeof(*usage));
 	usage->reference = reference;
+	usage->count = 1;
 	apr_pool_create(&usage->pool, pool);
 	arrayList_add(usages, usage);
 	hashMap_put(registry->inUseMap, bundle, usages);
@@ -513,6 +514,12 @@ TEST(service_registry, ungetServivces) {
 		.withParameter("reference", reference)
 		.andOutputParameter("registration", registration)
 		.andReturnValue(CELIX_SUCCESS);
+//	mock()
+//		.expectOneCall("serviceReference_equals")
+//		.withParameter("reference", reference)
+//		.withParameter("compareTo", reference)
+//		.andOutputParameter("equal", true)
+//		.andReturnValue(CELIX_SUCCESS);
 	mock()
 		.expectOneCall("serviceRegistration_isValid")
 		.withParameter("registration", registration)

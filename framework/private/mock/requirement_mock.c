@@ -32,7 +32,7 @@ celix_status_t requirement_create(apr_pool_t *pool, hash_map_pt directives, hash
 			->withPointerParameters("pool", pool)
 			->withPointerParameters("directives", directives)
 			->withPointerParameters("attributes", attributes)
-			->_andPointerOutputParameters("requirement", requirement);
+			->_andPointerOutputParameters("requirement", (void **) requirement);
 	return mock_c()->returnValue().value.intValue;
 }
 

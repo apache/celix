@@ -43,8 +43,11 @@ celix_status_t serviceRegistry_removeHook(service_registry_pt registry, service_
 
 apr_status_t serviceRegistry_removeReference(void *referenceP);
 
-celix_status_t serviceRegistry_create(apr_pool_t *pool, framework_pt framework, serviceChanged_function_pt serviceChanged, service_registry_pt *registry) {
+celix_status_t serviceRegistry_create(apr_pool_t *ppool, framework_pt framework, serviceChanged_function_pt serviceChanged, service_registry_pt *registry) {
 	celix_status_t status = CELIX_SUCCESS;
+	apr_pool_t *pool = NULL;
+
+	apr_pool_create(&pool, ppool);
 
 	*registry = (service_registry_pt) apr_palloc(pool, (sizeof(**registry)));
 	if (!*registry) {
@@ -96,7 +99,13 @@ celix_status_t serviceRegistry_getUsageCount(service_registry_pt registry, bundl
 	for (i = 0; (usages != NULL) && (i < arrayList_size(usages)); i++) {
 		usage_count_pt usage = (usage_count_pt) arrayList_get(usages, i);
 		// @TODO use reference_equals!
+		bool equals = false;
+//		serviceReference_equals(usage->reference, reference, &equals);
 		if (usage->reference == reference) {
+			*usageCount = usage;
+			break;
+		}
+		if (equals) {
 			*usageCount = usage;
 			break;
 		}

@@ -39,7 +39,7 @@ struct linkedListIterator {
 
 linked_list_iterator_pt linkedListIterator_create(linked_list_pt list, unsigned int index) {
 	linked_list_iterator_pt iterator;
-	if (index < 0 || index > list->size) {
+	if (index > list->size) {
 		return NULL;
 	}
 	iterator = (linked_list_iterator_pt) malloc(sizeof(*iterator));

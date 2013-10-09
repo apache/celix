@@ -128,7 +128,7 @@ celix_status_t static get_property_from_registration(service_reference_pt ref, c
 		if (status == CELIX_SUCCESS) {
 			(*prop_value) = properties_get(properties, key);
 
-			if ((*prop_value == NULL)) {
+			if (*prop_value == NULL) {
 				status = CELIX_ENOMEM;
 			}
 		}

@@ -126,7 +126,7 @@ celix_status_t discovery_create(apr_pool_t *pool, bundle_context_pt context, dis
 		char *port = NULL;
 		bundleContext_getProperty(context, "DISCOVERY_PORT", &port);
 		if (port == NULL) {
-			(*discovery)->discoveryPort = (char *)DEFAULT_DISCOVERY_PORT;
+			(*discovery)->discoveryPort = (char *) DEFAULT_DISCOVERY_PORT;
 		} else {
 			(*discovery)->discoveryPort = apr_pstrdup(pool, port);
 		}

@@ -81,7 +81,7 @@ celix_status_t framework_getBundleEntry(framework_pt framework, bundle_pt bundle
 			->withPointerParameters("bundle", bundle)
 			->withStringParameters("name", name)
 			->withPointerParameters("pool", pool)
-			->_andStringOutputParameters("entry", entry);
+			->_andStringOutputParameters("entry", (const char **) entry);
 		return mock_c()->returnValue().value.intValue;
 }
 
@@ -162,7 +162,7 @@ celix_status_t framework_ungetService(framework_pt framework, bundle_pt bundle, 
 		->withPointerParameters("framework", framework)
 		->withPointerParameters("bundle", bundle)
 		->withPointerParameters("reference", reference)
-		->_andIntOutputParameters("result", result);
+		->_andIntOutputParameters("result", (int *) result);
 		return mock_c()->returnValue().value.intValue;
 }
 

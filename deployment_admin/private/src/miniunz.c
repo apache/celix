@@ -19,7 +19,7 @@
  *   3. This notice may not be removed or altered from any source distribution.
  *
  * ----------------------------------------------------------
-/*
+ */
 /*
    miniunz.c
    Version 1.1, February 14h, 2010
