@@ -17,27 +17,36 @@
  *under the License.
  */
 /*
- * remote_endpoint.h
+ * calculator_service.h
  *
- *  \date       Oct 7, 2011
+ *  \date       Oct 5, 2011
  *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
-#ifndef REMOTE_ENDPOINT_H_
-#define REMOTE_ENDPOINT_H_
+#ifndef CALCULATOR_SERVICE_H_
+#define CALCULATOR_SERVICE_H_
 
-#define REMOTE_ENDPOINT "remote_endpoint"
+#define CALCULATOR_SERVICE "org.example.api.Calculator"
 
-typedef struct remote_endpoint *remote_endpoint_pt;
+typedef struct calculator *calculator_pt;
 
-struct remote_endpoint_service {
-	remote_endpoint_pt endpoint;
-	celix_status_t (*setService)(remote_endpoint_pt endpoint, void *service);
-	celix_status_t (*handleRequest)(remote_endpoint_pt endpoint, char *request, char *data, char **reply);
+typedef struct calculator_service *calculator_service_pt;
+
+struct calculator_service {
+	calculator_pt calculator;
+	celix_status_t (*add)(calculator_pt calculator, double a, double b, double *result);
+	celix_status_t (*sub)(calculator_pt calculator, double a, double b, double *result);
+	celix_status_t (*sqrt)(calculator_pt calculator, double a, double *result);
 };
 
-typedef struct remote_endpoint_service *remote_endpoint_service_pt;
 
+/*
+ * interface calculator_service {
+ * 	double add(double a, double b);
+ * 	double sub(double a, double b);
+ * 	double sqrt(double a);
+ * }
+ */
 
-#endif /* REMOTE_ENDPOINT_H_ */
+#endif /* CALCULATOR_SERVICE_H_ */

@@ -17,27 +17,35 @@
  *under the License.
  */
 /*
- * remote_endpoint.h
+ * calculator_proxy_impl.h
  *
- *  \date       Oct 7, 2011
+ *  \date       Oct 13, 2011
  *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
-#ifndef REMOTE_ENDPOINT_H_
-#define REMOTE_ENDPOINT_H_
+#ifndef CALCULATOR_PROXY_IMPL_H_
+#define CALCULATOR_PROXY_IMPL_H_
 
-#define REMOTE_ENDPOINT "remote_endpoint"
+#include <apr_general.h>
 
-typedef struct remote_endpoint *remote_endpoint_pt;
+#include "celix_errno.h"
 
-struct remote_endpoint_service {
-	remote_endpoint_pt endpoint;
-	celix_status_t (*setService)(remote_endpoint_pt endpoint, void *service);
-	celix_status_t (*handleRequest)(remote_endpoint_pt endpoint, char *request, char *data, char **reply);
+#include "calculator_service.h"
+#include "remote_proxy.h"
+
+#include "endpoint_listener.h"
+
+struct calculator {
+	apr_pool_t *pool;
+	endpoint_description_pt endpoint;
 };
 
-typedef struct remote_endpoint_service *remote_endpoint_service_pt;
+celix_status_t calculatorProxy_create(apr_pool_t *pool, calculator_pt *calculator);
+celix_status_t calculatorProxy_add(calculator_pt calculator, double a, double b, double *result);
+celix_status_t calculatorProxy_sub(calculator_pt calculator, double a, double b, double *result);
+celix_status_t calculatorProxy_sqrt(calculator_pt calculator, double a, double *result);
 
+celix_status_t calculatorProxy_setEndpointDescription(void *proxy, endpoint_description_pt endpoint);
 
-#endif /* REMOTE_ENDPOINT_H_ */
+#endif /* CALCULATOR_PROXY_IMPL_H_ */

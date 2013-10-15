@@ -31,7 +31,6 @@
 
 #include "export_registration_impl.h"
 #include "remote_service_admin_impl.h"
-#include "remote_endpoint.h"
 #include "service_tracker.h"
 #include "bundle_context.h"
 #include "bundle.h"
