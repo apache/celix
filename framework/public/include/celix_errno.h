@@ -48,6 +48,11 @@
  * \{
  */
 
+struct celix_status {
+    int code;
+    char *error;
+};
+
 /*!
  * Status type returned by all functions in Celix
  */

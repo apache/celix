@@ -194,8 +194,9 @@ struct request {
 
 typedef struct request *request_pt;
 
-celix_status_t framework_create(framework_pt *framework, apr_pool_t *memoryPool, properties_pt config) {
+struct celix_status framework_create(framework_pt *framework, apr_pool_t *memoryPool, properties_pt config) {
     celix_status_t status = CELIX_SUCCESS;
+    char *error = NULL;
 
     *framework = (framework_pt) apr_palloc(memoryPool, sizeof(**framework));
     if (*framework != NULL) {
@@ -240,11 +241,15 @@ celix_status_t framework_create(framework_pt *framework, apr_pool_t *memoryPool,
             fw_logCode(FW_LOG_ERROR, status, "Could not create framework");
         }
     } else {
+        error = "FW exception";
         status = CELIX_FRAMEWORK_EXCEPTION;
         fw_logCode(FW_LOG_ERROR, CELIX_ENOMEM, "Could not create framework");
     }
 
-    return status;
+    struct celix_status stat;
+    stat.code = status;
+    stat.error = error;
+    return stat;
 }
 
 celix_status_t framework_destroy(framework_pt framework) {
@@ -557,22 +562,22 @@ celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, lon
 
         if (status == CELIX_SUCCESS) {
             locked = framework_acquireGlobalLock(framework);
-            if (locked) {
+            if (!locked) {
+                status = CELIX_BUNDLE_EXCEPTION;
+            } else {
                 status = CELIX_DO_IF(status, bundle_createFromArchive(bundle, framework, archive, bundlePool));
-            } else {
-                status = CELIX_BUNDLE_EXCEPTION;
-            }
 
-            status = CELIX_DO_IF(status, framework_releaseGlobalLock(framework));
-            if (status == CELIX_SUCCESS) {
-                hashMap_put(framework->installedBundleMap, location, *bundle);
-            } else {
-                status = CELIX_BUNDLE_EXCEPTION;
-                status = CELIX_DO_IF(status, bundleArchive_closeAndDelete(archive));
-                apr_pool_destroy(bundlePool);
+                framework_releaseGlobalLock(framework);
+                if (status == CELIX_SUCCESS) {
+                    hashMap_put(framework->installedBundleMap, location, *bundle);
+                } else {
+                    status = CELIX_BUNDLE_EXCEPTION;
+                    status = CELIX_DO_IF(status, bundleArchive_closeAndDelete(archive));
+                    apr_pool_destroy(bundlePool);
+                }
             }
-            status = CELIX_DO_IF(status, framework_releaseInstallLock(framework, location));
         }
+        status = CELIX_DO_IF(status, framework_releaseInstallLock(framework, location));
   	}
 
     if (status != CELIX_SUCCESS) {
@@ -1802,6 +1807,7 @@ celix_status_t framework_acquireBundleLock(framework_pt framework, bundle_pt bun
 	bool locked;
 	apr_os_thread_t lockingThread = 0;
 
+	printf("Acq bundle lock\n");
 	int err = apr_thread_mutex_lock(framework->bundleLock);
 	if (err != APR_SUCCESS) {
 		fw_log(FW_LOG_ERROR,  "Failed to lock");
@@ -1862,6 +1868,7 @@ bool framework_releaseBundleLock(framework_pt framework, bundle_pt bundle) {
     bool unlocked;
     apr_os_thread_t lockingThread = 0;
 
+    printf("Rel bundle lock\n");
     apr_thread_mutex_lock(framework->bundleLock);
 
     bundle_unlock(bundle, &unlocked);

@@ -36,7 +36,7 @@ typedef struct framework * framework_pt;
 #include "properties.h"
 
 // #TODO: Move to FrameworkFactory according the OSGi Spec
-FRAMEWORK_EXPORT celix_status_t framework_create(framework_pt *framework, apr_pool_t *memoryPool, properties_pt config);
+FRAMEWORK_EXPORT struct celix_status framework_create(framework_pt *framework, apr_pool_t *memoryPool, properties_pt config);
 // #TODO: Replace with a pool hook when this is possible
 FRAMEWORK_EXPORT celix_status_t framework_destroy(framework_pt framework);
 
