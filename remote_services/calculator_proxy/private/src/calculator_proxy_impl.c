@@ -99,8 +99,9 @@ celix_status_t calculatorProxy_add(calculator_pt calculator, double a, double b,
 celix_status_t calculatorProxy_sub(calculator_pt calculator, double a, double b, double *result) {
 	celix_status_t status = CELIX_SUCCESS;
 	if (calculator->endpoint != NULL) {
-		printf("CALCULATOR_PROXY: URL: %s\n", calculator->endpoint->id);
-		char *url = apr_pstrcat(calculator->pool, calculator->endpoint->id, "/sub", NULL);
+	    char *serviceUrl = properties_get(calculator->endpoint->properties, ".ars.alias");
+		printf("CALCULATOR_PROXY: URL: %s\n", serviceUrl);
+		char *url = apr_pstrcat(calculator->pool, serviceUrl, "/sub", NULL);
 
 		json_t *root;
 		root = json_pack("{s:f, s:f}", "arg0", a, "arg1", b);
@@ -118,7 +119,7 @@ celix_status_t calculatorProxy_sub(calculator_pt calculator, double a, double b,
 		if (status == CELIX_SUCCESS) {
 			json_error_t jsonError;
 			json_t *reply = json_loads(get.writeptr, 0, &jsonError);
-			json_unpack(reply, "[f]", "result", result);
+			json_unpack(reply, "[f]", result);
 		}
 	} else {
 		printf("CALCULATOR_PROXY: No endpoint information available\n");
@@ -130,8 +131,9 @@ celix_status_t calculatorProxy_sub(calculator_pt calculator, double a, double b,
 celix_status_t calculatorProxy_sqrt(calculator_pt calculator, double a, double *result) {
 	celix_status_t status = CELIX_SUCCESS;
 	if (calculator->endpoint != NULL) {
-		printf("CALCULATOR_PROXY: URL: %s\n", calculator->endpoint->id);
-		char *url = apr_pstrcat(calculator->pool, calculator->endpoint->id, "/sqrt", NULL);
+	    char *serviceUrl = properties_get(calculator->endpoint->properties, ".ars.alias");
+		printf("CALCULATOR_PROXY: URL: %s\n", serviceUrl);
+		char *url = apr_pstrcat(calculator->pool, serviceUrl, "/sqrt", NULL);
 
 		json_t *root;
 		root = json_pack("{s:f}", "arg0", a);
@@ -149,7 +151,7 @@ celix_status_t calculatorProxy_sqrt(calculator_pt calculator, double a, double *
 		if (status == CELIX_SUCCESS) {
 			json_error_t jsonError;
 			json_t *reply = json_loads(get.writeptr, 0, &jsonError);
-			json_unpack(reply, "[f]", "result", result);
+			json_unpack(reply, "[f]", result);
 		}
 	} else {
 		printf("CALCULATOR_PROXY: No endpoint information available\n");
