@@ -33,7 +33,7 @@
 #include "constants.h"
 #include "service_factory.h"
 #include "service_reference.h"
-
+#include "celix_log.h"
 
 static celix_status_t serviceRegistration_initializeProperties(service_registration_pt registration, properties_pt properties);
 
@@ -138,6 +138,8 @@ celix_status_t serviceRegistration_unregister(service_registration_pt registrati
 		serviceRegistry_unregisterService(registration->registry, registration->bundle, registration);
 	}
 
+	framework_logIfError(status, NULL, "Cannot unregister service registration");
+
 	return status;
 }
 
@@ -159,6 +161,8 @@ celix_status_t serviceRegistration_getProperties(service_registration_pt registr
 	} else {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	}
+
+	framework_logIfError(status, NULL, "Cannot get registration properties");
 
 	return status;
 }
@@ -182,6 +186,8 @@ celix_status_t serviceRegistration_getRegistry(service_registration_pt registrat
 		status = CELIX_ILLEGAL_ARGUMENT;
 	}
 
+	framework_logIfError(status, NULL, "Cannot get registry");
+
 	return status;
 }
 
@@ -193,6 +199,8 @@ celix_status_t serviceRegistration_getServiceReferences(service_registration_pt 
 	} else {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	}
+
+	framework_logIfError(status, NULL, "Cannot get service reference");
 
 	return status;
 }
@@ -206,6 +214,8 @@ celix_status_t serviceRegistration_getBundle(service_registration_pt registratio
 		status = CELIX_ILLEGAL_ARGUMENT;
 	}
 
+	framework_logIfError(status, NULL, "Cannot get bundle");
+
 	return status;
 }
 
@@ -217,6 +227,8 @@ celix_status_t serviceRegistration_getServiceName(service_registration_pt regist
 	} else {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	}
+
+	framework_logIfError(status, NULL, "Cannot get service name");
 
 	return status;
 }

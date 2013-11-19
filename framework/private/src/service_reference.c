@@ -32,6 +32,7 @@
 #include "module.h"
 #include "wire.h"
 #include "bundle.h"
+#include "celix_log.h"
 
 apr_status_t serviceReference_destroy(void *referenceP);
 
@@ -47,6 +48,8 @@ celix_status_t serviceReference_create(apr_pool_t *pool, bundle_pt bundle, servi
 		(*reference)->bundle = bundle;
 		(*reference)->registration = registration;
 	}
+
+	framework_logIfError(status, NULL, "Cannot create service reference");
 
 	return status;
 }

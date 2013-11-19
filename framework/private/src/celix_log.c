@@ -46,3 +46,4 @@ void framework_logCode(framework_log_level_t level, const char *func, const char
 
     framework_log(level, func, file, line, "%s [%d]: %s", message, code, msg);
 }
+

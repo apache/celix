@@ -28,6 +28,7 @@
 #include <string.h>
 
 #include "version_range_private.h"
+#include "celix_log.h"
 
 apr_status_t versionRange_destroy(void *rangeP);
 
@@ -45,6 +46,8 @@ celix_status_t versionRange_createVersionRange(apr_pool_t *pool, version_pt low,
 		(*range)->high = high;
 		(*range)->isHighInclusive = isHighInclusive;
 	}
+
+	framework_logIfError(status, NULL, "Cannot create version range");
 
 	return status;
 }
@@ -66,6 +69,8 @@ celix_status_t versionRange_createInfiniteVersionRange(apr_pool_t *pool, version
 	if (status == CELIX_SUCCESS) {
 		status = versionRange_createVersionRange(pool, version, true, NULL, true, range);
 	}
+
+	framework_logIfError(status, NULL, "Cannot create infinite range");
 
 	return status;
 }
@@ -115,6 +120,8 @@ celix_status_t versionRange_isInRange(version_range_pt versionRange, version_pt 
 			}
 		}
 	}
+
+	framework_logIfError(status, NULL, "Cannot check if version in in range");
 
 	return status;
 }
@@ -172,6 +179,8 @@ celix_status_t versionRange_parse(apr_pool_t *pool, char * rangeStr, version_ran
 			status = versionRange_createVersionRange(pool, version, true, NULL, false, range);
 		}
 	}
+
+	framework_logIfError(status, NULL, "Cannot parse version range");
 
 	return status;
 }

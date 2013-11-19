@@ -30,6 +30,7 @@
 
 #include "manifest.h"
 #include "utils.h"
+#include "celix_log.h"
 
 int fpeek(FILE *stream);
 celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt properties, FILE *file);
@@ -47,6 +48,8 @@ celix_status_t manifest_create(apr_pool_t *pool, manifest_pt *manifest) {
 		(*manifest)->mainAttributes = properties_create();
 		(*manifest)->attributes = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 	}
+
+	framework_logIfError(status, NULL, "Cannot create manifest");
 
 	return status;
 }
@@ -70,6 +73,8 @@ celix_status_t manifest_createFromFile(apr_pool_t *pool, char *filename, manifes
 	if (status == CELIX_SUCCESS) {
 		manifest_read(*manifest, filename);
 	}
+
+	framework_logIfError(status, NULL, "Cannot create manifest from file");
 
 	return status;
 }
@@ -174,9 +179,10 @@ celix_status_t manifest_read(manifest_pt manifest, char *filename) {
 		apr_pool_destroy(subpool);
 		fclose(file);
 	} else {
-		printf("Could not read manifest file.\n");
 		status = CELIX_FILE_IO_EXCEPTION;
 	}
+
+	framework_logIfError(status, NULL, "Cannot read manifest");
 
 	return status;
 }

@@ -30,6 +30,7 @@
 #include "bundle_context_private.h"
 #include "framework_private.h"
 #include "bundle.h"
+#include "celix_log.h"
 
 celix_status_t bundleContext_create(framework_pt framework, bundle_pt bundle, bundle_context_pt *bundle_context) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -61,6 +62,8 @@ celix_status_t bundleContext_create(framework_pt framework, bundle_pt bundle, bu
 
 	}
 
+	framework_logIfError(status, NULL, "Failed to create context");
+
 	return status;
 }
 
@@ -75,6 +78,8 @@ celix_status_t bundleContext_destroy(bundle_context_pt context) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	}
 
+	framework_logIfError(status, NULL, "Failed to destroy context");
+
 	return status;
 }
 
@@ -86,6 +91,8 @@ celix_status_t bundleContext_getBundle(bundle_context_pt context, bundle_pt *bun
 	} else {
 		*bundle = context->bundle;
 	}
+
+	framework_logIfError(status, NULL, "Failed to get bundle");
 
 	return status;
 }
@@ -99,6 +106,8 @@ celix_status_t bundleContext_getFramework(bundle_context_pt context, framework_p
 		*framework = context->framework;
 	}
 
+	framework_logIfError(status, NULL, "Failed to get framework");
+
 	return status;
 }
 
@@ -110,6 +119,8 @@ celix_status_t bundleContext_getMemoryPool(bundle_context_pt context, apr_pool_t
 	} else {
 		*memory_pool = context->pool;
 	}
+
+	framework_logIfError(status, NULL, "Failed to get memory pool");
 
 	return status;
 }
@@ -132,6 +143,8 @@ celix_status_t bundleContext_installBundle2(bundle_context_pt context, char * lo
         status = CELIX_ILLEGAL_ARGUMENT;
 	}
 
+	framework_logIfError(status, NULL, "Failed to install bundle");
+
 	return status;
 }
 
@@ -146,6 +159,8 @@ celix_status_t bundleContext_registerService(bundle_context_pt context, char * s
 	} else {
 	    status = CELIX_ILLEGAL_ARGUMENT;
 	}
+
+	framework_logIfError(status, NULL, "Failed to register service");
 
 	return status;
 }
@@ -162,6 +177,8 @@ celix_status_t bundleContext_registerServiceFactory(bundle_context_pt context, c
         status = CELIX_ILLEGAL_ARGUMENT;
     }
 
+    framework_logIfError(status, NULL, "Failed to register service factory");
+
     return status;
 }
 
@@ -173,6 +190,8 @@ celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, con
     } else {
         status = CELIX_ILLEGAL_ARGUMENT;
     }
+
+    framework_logIfError(status, NULL, "Failed to get service references");
 
 	return status;
 }
@@ -194,6 +213,8 @@ celix_status_t bundleContext_getServiceReference(bundle_context_pt context, char
         status = CELIX_ILLEGAL_ARGUMENT;
     }
 
+    framework_logIfError(status, NULL, "Failed to get service reference");
+
 	return status;
 }
 
@@ -205,6 +226,8 @@ celix_status_t bundleContext_getService(bundle_context_pt context, service_refer
     } else {
         status = CELIX_ILLEGAL_ARGUMENT;
     }
+
+    framework_logIfError(status, NULL, "Failed to get service");
 
     return status;
 }
@@ -218,6 +241,8 @@ celix_status_t bundleContext_ungetService(bundle_context_pt context, service_ref
         status = CELIX_ILLEGAL_ARGUMENT;
     }
 
+    framework_logIfError(status, NULL, "Failed to unget service");
+
     return status;
 }
 
@@ -229,6 +254,8 @@ celix_status_t bundleContext_getBundles(bundle_context_pt context, array_list_pt
 	} else {
 		*bundles = framework_getBundles(context->framework);
 	}
+
+	framework_logIfError(status, NULL, "Failed to get bundles");
 
 	return status;
 }
@@ -242,6 +269,8 @@ celix_status_t bundleContext_getBundleById(bundle_context_pt context, long id, b
         *bundle = framework_getBundleById(context->framework, id);
     }
 
+    framework_logIfError(status, NULL, "Failed to get bundle [id=%ld]", id);
+
 	return status;
 }
 
@@ -253,6 +282,8 @@ celix_status_t bundleContext_addServiceListener(bundle_context_pt context, servi
     } else {
         status = CELIX_ILLEGAL_ARGUMENT;
     }
+
+    framework_logIfError(status, NULL, "Failed to add service listener");
 
     return status;
 }
@@ -266,6 +297,8 @@ celix_status_t bundleContext_removeServiceListener(bundle_context_pt context, se
         status = CELIX_ILLEGAL_ARGUMENT;
     }
 
+    framework_logIfError(status, NULL, "Failed to remove service listener");
+
     return status;
 }
 
@@ -277,6 +310,8 @@ celix_status_t bundleContext_addBundleListener(bundle_context_pt context, bundle
     } else {
         status = CELIX_ILLEGAL_ARGUMENT;
     }
+
+    framework_logIfError(status, NULL, "Failed to add bundle listener");
 
     return status;
 }
@@ -290,6 +325,8 @@ celix_status_t bundleContext_removeBundleListener(bundle_context_pt context, bun
         status = CELIX_ILLEGAL_ARGUMENT;
     }
 
+    framework_logIfError(status, NULL, "Failed to remove bundle listener");
+
     return status;
 }
 
@@ -301,6 +338,8 @@ celix_status_t bundleContext_addFrameworkListener(bundle_context_pt context, fra
     } else {
         status = CELIX_ILLEGAL_ARGUMENT;
     }
+
+    framework_logIfError(status, NULL, "Failed to add framework listener");
 
     return status;
 }
@@ -314,6 +353,8 @@ celix_status_t bundleContext_removeFrameworkListener(bundle_context_pt context, 
         status = CELIX_ILLEGAL_ARGUMENT;
     }
 
+    framework_logIfError(status, NULL, "Failed to remove framework listener");
+
     return status;
 }
 
@@ -325,6 +366,8 @@ celix_status_t bundleContext_getProperty(bundle_context_pt context, const char *
 	} else {
 		fw_getProperty(context->framework, name, value);
 	}
+
+	framework_logIfError(status, NULL, "Failed to get property [name=%s]", name);
 
 	return status;
 }

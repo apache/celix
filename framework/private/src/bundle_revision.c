@@ -31,6 +31,7 @@
 
 #include "bundle_revision_private.h"
 #include "archive.h"
+#include "celix_log.h"
 
 static apr_status_t bundleRevision_destroy(void *revisionP);
 
@@ -66,6 +67,8 @@ celix_status_t bundleRevision_create(apr_pool_t *pool, char *root, char *locatio
         }
     }
 
+    framework_logIfError(status, NULL, "Failed to create revision");
+
 	return status;
 }
 
@@ -81,6 +84,9 @@ celix_status_t bundleRevision_getNumber(bundle_revision_pt revision, long *revis
     } else {
     	*revisionNr = revision->revisionNr;
     }
+
+    framework_logIfError(status, NULL, "Failed to get revision number");
+
 	return status;
 }
 
@@ -91,6 +97,9 @@ celix_status_t bundleRevision_getLocation(bundle_revision_pt revision, char **lo
 	} else {
 		*location = revision->location;
 	}
+
+	framework_logIfError(status, NULL, "Failed to get revision location");
+
 	return status;
 }
 
@@ -101,5 +110,8 @@ celix_status_t bundleRevision_getRoot(bundle_revision_pt revision, char **root) 
 	} else {
 		*root = revision->root;
 	}
+
+	framework_logIfError(status, NULL, "Failed to get revision root");
+
 	return status;
 }

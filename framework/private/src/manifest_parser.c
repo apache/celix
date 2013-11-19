@@ -36,6 +36,7 @@
 #include "hash_map.h"
 #include "celix_errno.h"
 #include "linked_list_iterator.h"
+#include "celix_log.h"
 
 struct manifestParser {
 	module_pt owner;
@@ -87,6 +88,8 @@ celix_status_t manifestParser_create(module_pt owner, manifest_pt manifest, apr_
 	} else {
         status = CELIX_ENOMEM;
 	}
+
+	framework_logIfError(status, NULL, "Cannot create manifest parser");
 
 	return status;
 }

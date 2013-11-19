@@ -28,6 +28,7 @@
 #include <apr_portable.h>
 
 #include "utils.h"
+#include "celix_log.h"
 
 unsigned int utils_stringHash(void * string) {
 	char * str = (char *) string;

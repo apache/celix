@@ -27,6 +27,7 @@
 
 #include "capability_private.h"
 #include "attribute.h"
+#include "celix_log.h"
 
 apr_status_t capability_destroy(void *capabilityP);
 
@@ -59,6 +60,8 @@ celix_status_t capability_create(apr_pool_t *pool, module_pt module, hash_map_pt
 			}
 		}
 	}
+
+	framework_logIfError(status, NULL, "Failed to create capability");
 
 	return status;
 }

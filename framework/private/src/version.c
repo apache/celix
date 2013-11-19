@@ -30,6 +30,7 @@
 #include "celix_errno.h"
 #include "framework_log.h"
 #include "version_private.h"
+#include "celix_log.h"
 
 static apr_status_t version_destroy(void *handle);
 
@@ -88,6 +89,8 @@ celix_status_t version_createVersion(apr_pool_t *pool, int major, int minor, int
 			}
 		}
 	}
+
+	framework_logIfError(status, NULL, "Cannot create version");
 
 	return status;
 }
@@ -171,6 +174,9 @@ celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionS
 	if (status == CELIX_SUCCESS) {
 		status = version_createVersion(pool, major, minor, micro, qualifier, version);
 	}
+
+	framework_logIfError(status, NULL, "Cannot create version [versionString=%s]", versionStr);
+
 	return status;
 }
 
@@ -224,6 +230,8 @@ celix_status_t version_compareTo(version_pt version, version_pt compare, int *re
 			}
 		}
 	}
+
+	framework_logIfError(status, NULL, "Cannot compare versions");
 
 	return status;
 }

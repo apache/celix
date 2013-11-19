@@ -36,6 +36,7 @@
 #include "bundle_cache_private.h"
 #include "bundle_archive.h"
 #include "constants.h"
+#include "celix_log.h"
 
 static celix_status_t bundleCache_deleteTree(char * directory, apr_pool_t *mp);
 static apr_status_t bundleCache_destroy(void *cacheP);
@@ -65,6 +66,8 @@ celix_status_t bundleCache_create(properties_pt configurationMap, apr_pool_t *mp
             status = CELIX_ILLEGAL_ARGUMENT;
         }
     }
+
+    framework_logIfError(status, NULL, "Failed to create bundle cache");
 
 	return status;
 }
@@ -130,6 +133,8 @@ celix_status_t bundleCache_getArchives(bundle_cache_pt cache, apr_pool_t *pool, 
 	    status = CELIX_FILE_IO_EXCEPTION;
 	}
 
+	framework_logIfError(status, NULL, "Failed to get bundle archives");
+
 	return status;
 }
 
@@ -142,6 +147,8 @@ celix_status_t bundleCache_createArchive(bundle_cache_pt cache, apr_pool_t *bund
 
         status = bundleArchive_create(archiveRoot, id, location, inputFile, bundlePool, bundle_archive);
 	}
+
+	framework_logIfError(status, NULL, "Failed to create archive");
 
 	return status;
 }
@@ -175,6 +182,8 @@ static celix_status_t bundleCache_deleteTree(char * directory, apr_pool_t *mp) {
 	} else {
 	    status = CELIX_ILLEGAL_ARGUMENT;
 	}
+
+	framework_logIfError(status, NULL, "Failed to delete tree");
 
 	return status;
 }

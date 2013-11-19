@@ -33,6 +33,7 @@
 #include "bundle_context.h"
 #include "constants.h"
 #include "service_reference.h"
+#include "celix_log.h"
 
 static apr_status_t serviceTracker_destroy(void *trackerP);
 static celix_status_t serviceTracker_addingService(service_tracker_pt tracker, service_reference_pt reference, void **service);
@@ -56,6 +57,7 @@ celix_status_t serviceTracker_create(apr_pool_t *pool, bundle_context_pt context
 		}
 	}
 
+	framework_logIfError(status, NULL, "Cannot create service tracker");
 
 	return status;
 }
@@ -79,6 +81,8 @@ celix_status_t serviceTracker_createWithFilter(apr_pool_t *pool, bundle_context_
 		(*tracker)->customizer = customizer;
 		(*tracker)->listener = NULL;
 	}
+
+	framework_logIfError(status, NULL, "Cannot create service tracker [filter=%s]", filter);
 
 	return status;
 }
@@ -122,6 +126,8 @@ celix_status_t serviceTracker_open(service_tracker_pt tracker) {
 		}
 	}
 
+	framework_logIfError(status, NULL, "Cannot open tracker");
+
 	return status;
 }
 
@@ -140,6 +146,8 @@ celix_status_t serviceTracker_close(service_tracker_pt tracker) {
 		}
 		arrayList_destroy(refs);
 	}
+
+	framework_logIfError(status, NULL, "Cannot close tracker");
 
 	return status;
 }
@@ -272,6 +280,8 @@ static celix_status_t serviceTracker_track(service_tracker_pt tracker, service_r
 		}
 	}
 
+	framework_logIfError(status, NULL, "Cannot track reference");
+
 	return status;
 }
 
@@ -296,6 +306,8 @@ static celix_status_t  serviceTracker_addingService(service_tracker_pt tracker, 
 	} else {
 		status = bundleContext_getService(tracker->context, reference, service);
 	}
+
+    framework_logIfError(status, NULL, "Cannot handle addingService");
 
     return status;
 }
@@ -333,6 +345,8 @@ static celix_status_t serviceTracker_untrack(service_tracker_pt tracker, service
 			}
 		}
 	}
+
+	framework_logIfError(status, NULL, "Cannot untrack reference");
 
 	return status;
 }

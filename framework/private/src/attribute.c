@@ -48,13 +48,7 @@ celix_status_t attribute_create(apr_pool_t *memory_pool, char * key, char * valu
 		}
 	}
 
-	if (status != CELIX_SUCCESS) {
-        if (error != NULL) {
-            fw_logCode(FW_LOG_ERROR, status, "Could not create attribute: [key=%s;value=%s]; cause: %s", key, value, error);
-        } else {
-            fw_logCode(FW_LOG_ERROR, status, "Could not create attribute: [key=%s;value=%s]", key, value);
-        }
-	}
+	framework_logIfError(status, error, "Could not create attribute: [key=%s;value=%s]", key, value);
 
 	return status;
 }

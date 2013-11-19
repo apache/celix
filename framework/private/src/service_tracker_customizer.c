@@ -27,6 +27,7 @@
 #include <stdlib.h>
 
 #include "service_tracker_customizer_private.h"
+#include "celix_log.h"
 
 static apr_status_t serviceTrackerCustomizer_destroy(void *customizerPointer);
 
@@ -51,6 +52,8 @@ celix_status_t serviceTrackerCustomizer_create(apr_pool_t *pool, void *handle,
 			(*customizer)->removedService = removedFunction;
 		}
 	}
+
+	framework_logIfError(status, NULL, "Cannot create customizer");
 
 	return status;
 }

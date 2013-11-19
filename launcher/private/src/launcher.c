@@ -69,8 +69,8 @@ int main(void) {
     autoStart = properties_get(config, "cosgi.auto.start.1");
     framework = NULL;
     celix_status_t status = CELIX_SUCCESS;
-    struct celix_status stat = framework_create(&framework, memoryPool, config);
-    if (stat.code == CELIX_SUCCESS) {
+    status = framework_create(&framework, memoryPool, config);
+    if (status == CELIX_SUCCESS) {
 		status = fw_init(framework);
 		if (status == CELIX_SUCCESS) {
             // Start the system bundle
@@ -128,8 +128,6 @@ int main(void) {
             framework_destroy(framework);
             properties_destroy(config);
 		}
-    } else {
-        printf("Error: %s,%s\n", stat.error);
     }
 
     if (status != CELIX_SUCCESS) {

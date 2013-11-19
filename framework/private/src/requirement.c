@@ -28,6 +28,7 @@
 #include "requirement_private.h"
 #include "version_range.h"
 #include "attribute.h"
+#include "celix_log.h"
 
 apr_status_t requirement_destroy(void *requirementP);
 
@@ -62,6 +63,8 @@ celix_status_t requirement_create(apr_pool_t *pool, hash_map_pt directives, hash
 			}
 		}
 	}
+
+	framework_logIfError(status, NULL, "Cannot create requirement");
 
 	return status;
 }
@@ -106,6 +109,8 @@ celix_status_t requirement_isSatisfied(requirement_pt requirement, capability_pt
 			status = versionRange_isInRange(range, version, inRange);
 		}
 	}
+
+	framework_logIfError(status, NULL, "Cannot check if requirement is satisfied");
 
 	return status;
 }

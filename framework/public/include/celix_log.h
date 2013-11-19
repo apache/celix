@@ -35,6 +35,14 @@
 #define celix_log(msg) printf("%s\n\tat %s(%s:%d)\n", msg, __func__, __FILE__, __LINE__);
 #define fw_log(level, fmsg, args...) framework_log(level, __func__, __FILE__, __LINE__, fmsg, ## args)
 #define fw_logCode(level, code, fmsg, args...) framework_logCode(level, __func__, __FILE__, __LINE__, code, fmsg, ## args)
+#define framework_logIfError(status, error, fmsg, args...) \
+    if (status != CELIX_SUCCESS) { \
+        if (error != NULL) { \
+            fw_logCode(FW_LOG_ERROR, status, #fmsg"; cause: "#error, ## args); \
+        } else { \
+            fw_logCode(FW_LOG_ERROR, status, #fmsg, ## args); \
+        } \
+    }
 #endif
 
 enum framework_log_level

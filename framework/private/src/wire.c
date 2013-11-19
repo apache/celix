@@ -27,6 +27,7 @@
 #include <string.h>
 
 #include "wire.h"
+#include "celix_log.h"
 
 struct wire {
 	module_pt importer;
@@ -56,6 +57,8 @@ celix_status_t wire_create(apr_pool_t *pool, module_pt importer, requirement_pt 
 			(*wire)->capability = capability;
 		}
 	}
+
+	framework_logIfError(status, NULL, "Cannot create wire");
 
 	return status;
 }
