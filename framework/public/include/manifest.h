@@ -31,6 +31,7 @@
 
 #include "properties.h"
 #include "celix_errno.h"
+#include "framework_exports.h"
 
 struct manifest {
 	apr_pool_t *pool;
@@ -40,16 +41,16 @@ struct manifest {
 
 typedef struct manifest * manifest_pt;
 
-celix_status_t manifest_create(apr_pool_t *pool, manifest_pt *manifest);
-celix_status_t manifest_createFromFile(apr_pool_t *pool, char *filename, manifest_pt *manifest);
+FRAMEWORK_EXPORT celix_status_t manifest_create(apr_pool_t *pool, manifest_pt *manifest);
+FRAMEWORK_EXPORT celix_status_t manifest_createFromFile(apr_pool_t *pool, char *filename, manifest_pt *manifest);
 
-void manifest_clear(manifest_pt manifest);
-properties_pt manifest_getMainAttributes(manifest_pt manifest);
-celix_status_t manifest_getEntries(manifest_pt manifest, hash_map_pt *map);
+FRAMEWORK_EXPORT void manifest_clear(manifest_pt manifest);
+FRAMEWORK_EXPORT properties_pt manifest_getMainAttributes(manifest_pt manifest);
+FRAMEWORK_EXPORT celix_status_t manifest_getEntries(manifest_pt manifest, hash_map_pt *map);
 
-celix_status_t manifest_read(manifest_pt manifest, char *filename);
-void manifest_write(manifest_pt manifest, char * filename);
+FRAMEWORK_EXPORT celix_status_t manifest_read(manifest_pt manifest, char *filename);
+FRAMEWORK_EXPORT void manifest_write(manifest_pt manifest, char * filename);
 
-char * manifest_getValue(manifest_pt manifest, const char * name);
+FRAMEWORK_EXPORT char * manifest_getValue(manifest_pt manifest, const char * name);
 
 #endif /* MANIFEST_H_ */

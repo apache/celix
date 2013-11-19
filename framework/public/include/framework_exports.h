@@ -31,16 +31,35 @@ building a DLL on windows.
 */
 // We are using the Visual Studio Compiler and building Shared libraries
 
-#if defined (_WIN32)
-	#define  ACTIVATOR_EXPORT __declspec(dllexport)
-  #if defined(celix_framework_EXPORTS)
-    #define  FRAMEWORK_EXPORT __declspec(dllexport)
+#if defined _WIN32 || defined __CYGWIN__
+  #ifdef celix_framework_EXPORTS
+    #ifdef __GNUC__
+      #define FRAMEWORK_EXPORT __attribute__ ((dllexport))
+      #define ACTIVATOR_EXPORT __attribute__ ((dllexport))
+    #else
+      #define ACTIVATOR_EXPORT __declspec(dllexport)
+      #define FRAMEWORK_EXPORT __declspec(dllexport) // Note: actually gcc seems to also supports this syntax.
+    #endif
   #else
-    #define  FRAMEWORK_EXPORT __declspec(dllimport)
-  #endif /* framework_EXPORTS */
-#else /* defined (_WIN32) */
-#define FRAMEWORK_EXPORT __attribute__((visibility("default")))
-#define ACTIVATOR_EXPORT __attribute__((visibility("default")))
+    #ifdef __GNUC__
+      #define ACTIVATOR_EXPORT __attribute__ ((dllexport))
+      #define FRAMEWORK_EXPORT __attribute__ ((dllimport))
+    #else
+      #define ACTIVATOR_EXPORT __declspec(dllexport)
+      #define FRAMEWORK_EXPORT __declspec(dllimport) // Note: actually gcc seems to also supports this syntax.
+    #endif
+  #endif
+  #define DLL_LOCAL
+#else
+  #if __GNUC__ >= 4
+    #define ACTIVATOR_EXPORT __attribute__ ((visibility ("default")))
+    #define FRAMEWORK_EXPORT __attribute__ ((visibility ("default")))
+    #define FRAMEWORK_LOCAL  __attribute__ ((visibility ("hidden")))
+  #else
+    #define ACTIVATOR_EXPORT
+    #define FRAMEWORK_EXPORT
+    #define FRAMEWORK_LOCAL
+  #endif
 #endif
 
 #endif /* FRAMEWORK_EXPORTS_H_ */

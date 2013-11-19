@@ -30,6 +30,7 @@
 #include <apr_general.h>
 
 #include "celix_errno.h"
+#include "framework_exports.h"
 
 /**
  * @defgroup Version Version
@@ -59,7 +60,7 @@ typedef struct version * version_pt;
  * 		- CELIX_ILLEGAL_ARGUMENT If the numerical components are negative
  * 		  or the qualifier string is invalid.
  */
-celix_status_t version_createVersion(apr_pool_t *pool, int major, int minor, int micro, char * qualifier, version_pt *version);
+FRAMEWORK_EXPORT celix_status_t version_createVersion(apr_pool_t *pool, int major, int minor, int micro, char * qualifier, version_pt *version);
 
 /**
  * Creates a clone of <code>version</code> allocated on <code>pool</code>.
@@ -73,7 +74,7 @@ celix_status_t version_createVersion(apr_pool_t *pool, int major, int minor, int
  * 		- CELIX_ILLEGAL_ARGUMENT If the numerical components are negative
  * 		  or the qualifier string is invalid.
  */
-celix_status_t version_clone(version_pt version, apr_pool_t *pool, version_pt *clone);
+FRAMEWORK_EXPORT celix_status_t version_clone(version_pt version, apr_pool_t *pool, version_pt *clone);
 
 /**
  * Creates a version identifier from the specified string.
@@ -102,7 +103,7 @@ celix_status_t version_clone(version_pt version, apr_pool_t *pool, version_pt *c
  * 		- CELIX_ILLEGAL_ARGUMENT If the numerical components are negative,
  * 		  	the qualifier string is invalid or <code>versionStr</code> is improperly formatted.
  */
-celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionStr, version_pt *version);
+FRAMEWORK_EXPORT celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionStr, version_pt *version);
 
 /**
  * The empty version "0.0.0".
@@ -115,12 +116,12 @@ celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionS
  * 		- CELIX_ILLEGAL_ARGUMENT If the numerical components are negative,
  * 		  	the qualifier string is invalid or <code>versionStr</code> is improperly formatted.
  */
-celix_status_t version_createEmptyVersion(apr_pool_t *pool, version_pt *version);
+FRAMEWORK_EXPORT celix_status_t version_createEmptyVersion(apr_pool_t *pool, version_pt *version);
 
-celix_status_t version_getMajor(version_pt version, int *major);
-celix_status_t version_getMinor(version_pt version, int *minor);
-celix_status_t version_getMicro(version_pt version, int *micro);
-celix_status_t version_getQualifier(version_pt version, char **qualifier);
+FRAMEWORK_EXPORT celix_status_t version_getMajor(version_pt version, int *major);
+FRAMEWORK_EXPORT celix_status_t version_getMinor(version_pt version, int *minor);
+FRAMEWORK_EXPORT celix_status_t version_getMicro(version_pt version, int *micro);
+FRAMEWORK_EXPORT celix_status_t version_getQualifier(version_pt version, char **qualifier);
 
 /**
  * Compares this <code>Version</code> object to another object.
@@ -147,7 +148,7 @@ celix_status_t version_getQualifier(version_pt version, char **qualifier);
  * @return Status code indication failure or success:
  * 		- CELIX_SUCCESS when no errors are encountered.
  */
-celix_status_t version_compareTo(version_pt version, version_pt compare, int *result);
+FRAMEWORK_EXPORT celix_status_t version_compareTo(version_pt version, version_pt compare, int *result);
 
 /**
  * Returns the string representation of <code>version</code> identifier.
@@ -164,7 +165,7 @@ celix_status_t version_compareTo(version_pt version, version_pt compare, int *re
  * @return Status code indication failure or success:
  * 		- CELIX_SUCCESS when no errors are encountered.
  */
-celix_status_t version_toString(version_pt version, apr_pool_t *pool, char **string);
+FRAMEWORK_EXPORT celix_status_t version_toString(version_pt version, apr_pool_t *pool, char **string);
 
 /**
  * @}

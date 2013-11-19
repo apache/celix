@@ -32,14 +32,15 @@
 #include "celix_errno.h"
 #include "properties.h"
 #include "celixbool.h"
+#include "framework_exports.h"
 
 typedef struct filter * filter_pt;
 
-filter_pt filter_create(char * filterString, apr_pool_t *pool);
-void filter_destroy(filter_pt filter);
+FRAMEWORK_EXPORT filter_pt filter_create(char * filterString, apr_pool_t *pool);
+FRAMEWORK_EXPORT void filter_destroy(filter_pt filter);
 
-celix_status_t filter_match(filter_pt filter, properties_pt properties, bool *result);
+FRAMEWORK_EXPORT celix_status_t filter_match(filter_pt filter, properties_pt properties, bool *result);
 
-celix_status_t filter_getString(filter_pt filter, char **filterStr);
+FRAMEWORK_EXPORT celix_status_t filter_getString(filter_pt filter, char **filterStr);
 
 #endif /* FILTER_H_ */

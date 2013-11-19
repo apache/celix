@@ -439,38 +439,33 @@ celix_status_t deviceManager_getIdleDevices(device_manager_pt manager, apr_pool_
 				if (substatus == CELIX_SUCCESS) {
 					substatus = module_getSymbolicName(module, &bsn);
 					if (substatus == CELIX_SUCCESS) {
-						service_registration_pt registration = NULL;
-						substatus = serviceReference_getServiceRegistration(ref, &registration);
+						printf("DEVICE_MANAGER: Check idle device: %s\n", bsn);
+						array_list_pt bundles = NULL;
+						substatus = serviceReference_getUsingBundles(ref, pool, &bundles);
 						if (substatus == CELIX_SUCCESS) {
-							service_registry_pt registry = NULL;
-							substatus = serviceRegistration_getRegistry(registration, &registry);
-							if (substatus == CELIX_SUCCESS) {
-								printf("DEVICE_MANAGER: Check idle device: %s\n", bsn);
-								array_list_pt bundles = serviceRegistry_getUsingBundles(registry, pool, ref);
-								bool inUse = false;
-								int i;
-								for (i = 0; i < arrayList_size(bundles); i++) {
-									bundle_pt bundle = arrayList_get(bundles, i);
-									bool isDriver;
-									celix_status_t sstatus = deviceManager_isDriverBundle(manager, bundle, &isDriver);
-									if (sstatus == CELIX_SUCCESS) {
-										if (isDriver) {
-											char *bsn = NULL;
-											module_pt module = NULL;
-											bundle_getCurrentModule(bundle, &module);
-											module_getSymbolicName(module, &bsn);
+							bool inUse = false;
+							int i;
+							for (i = 0; i < arrayList_size(bundles); i++) {
+								bundle_pt bundle = arrayList_get(bundles, i);
+								bool isDriver;
+								celix_status_t sstatus = deviceManager_isDriverBundle(manager, bundle, &isDriver);
+								if (sstatus == CELIX_SUCCESS) {
+									if (isDriver) {
+										char *bsn = NULL;
+										module_pt module = NULL;
+										bundle_getCurrentModule(bundle, &module);
+										module_getSymbolicName(module, &bsn);
 
-											printf("DEVICE_MANAGER: Not idle, used by driver: %s\n", bsn);
+										printf("DEVICE_MANAGER: Not idle, used by driver: %s\n", bsn);
 
-											inUse = true;
-											break;
-										}
+										inUse = true;
+										break;
 									}
 								}
+							}
 
-								if (!inUse) {
-									arrayList_add(*idleDevices, ref);
-								}
+							if (!inUse) {
+								arrayList_add(*idleDevices, ref);
 							}
 						}
 					}
@@ -497,16 +492,13 @@ celix_status_t deviceManager_getIdleDevices_exmaple(device_manager_pt manager, a
 			char *bsn = NULL;
 			module_pt module = NULL;
 			bundle_pt bundle = NULL;
-			service_registration_pt registration = NULL;
-			service_registry_pt registry = NULL;
+			array_list_pt bundles = NULL;
 			substatus = serviceReference_getBundle(ref, &bundle);
 			substatus = DO_IF_SUCCESS(substatus, bundle_getCurrentModule(bundle, &module));
 			substatus = DO_IF_SUCCESS(substatus, module_getSymbolicName(module, &bsn));
-			substatus = DO_IF_SUCCESS(substatus, serviceReference_getServiceRegistration(ref, &registration));
-			substatus = DO_IF_SUCCESS(substatus, serviceRegistration_getRegistry(registration, &registry));
+			substatus = DO_IF_SUCCESS(substatus, serviceReference_getUsingBundles(ref, pool, &bundles));
 
 			if (substatus == CELIX_SUCCESS) {
-				array_list_pt bundles = serviceRegistry_getUsingBundles(registry, pool, ref);
 				printf("DEVICE_MANAGER: Check idle device: %s\n", bsn);
 				bool inUse = false;
 				int i;

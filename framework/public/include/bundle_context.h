@@ -40,8 +40,8 @@ typedef struct bundleContext *bundle_context_pt;
 #include "properties.h"
 #include "array_list.h"
 
-FRAMEWORK_EXPORT celix_status_t bundleContext_create(framework_pt framework, bundle_pt bundle, bundle_context_pt *bundle_context);
-FRAMEWORK_EXPORT celix_status_t bundleContext_destroy(bundle_context_pt context);
+celix_status_t bundleContext_create(framework_pt framework, bundle_pt bundle, bundle_context_pt *bundle_context);
+celix_status_t bundleContext_destroy(bundle_context_pt context);
 
 FRAMEWORK_EXPORT celix_status_t bundleContext_getBundle(bundle_context_pt context, bundle_pt *bundle);
 FRAMEWORK_EXPORT celix_status_t bundleContext_getFramework(bundle_context_pt context, framework_pt *framework);
