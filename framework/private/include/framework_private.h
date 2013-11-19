@@ -39,6 +39,7 @@
 #include "bundle_archive.h"
 #include "service_listener.h"
 #include "bundle_listener.h"
+#include "framework_listener.h"
 #include "service_registration.h"
 #include "bundle_context.h"
 
@@ -71,6 +72,9 @@ FRAMEWORK_EXPORT void fw_removeServiceListener(framework_pt framework, bundle_pt
 
 FRAMEWORK_EXPORT celix_status_t fw_addBundleListener(framework_pt framework, bundle_pt bundle, bundle_listener_pt listener);
 FRAMEWORK_EXPORT celix_status_t fw_removeBundleListener(framework_pt framework, bundle_pt bundle, bundle_listener_pt listener);
+
+FRAMEWORK_EXPORT celix_status_t fw_addFrameworkListener(framework_pt framework, bundle_pt bundle, framework_listener_pt listener);
+FRAMEWORK_EXPORT celix_status_t fw_removeFrameworkListener(framework_pt framework, bundle_pt bundle, framework_listener_pt listener);
 
 FRAMEWORK_EXPORT void fw_serviceChanged(framework_pt framework, service_event_type_e eventType, service_registration_pt registration, properties_pt oldprops);
 

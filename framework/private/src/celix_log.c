@@ -17,30 +17,19 @@
  *under the License.
  */
 /*
- * log.h
+ * celix_log.c
  *
- *  \date       Apr 18, 2012
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
+ *  \date       6 Oct 2013
+ *  \author     <a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
 
-#ifndef LOG_H_
-#define LOG_H_
+#include "celix_log.h"
 
-#include <apr_general.h>
-
-#include "log_event.h"
-#include "log_store.h"
-
-#include "bundle_event.h"
-#include "framework_event.h"
-
-typedef struct log *log_pt;
-
-celix_status_t log_create(apr_pool_t *pool, log_store_pt store, log_pt *log);
-celix_status_t log_log(log_pt log, unsigned int type, properties_pt properties);
-
-celix_status_t log_bundleChanged(void * listener, bundle_event_pt event);
-celix_status_t log_frameworkEvent(void * listener, framework_event_pt event);
-
-#endif /* LOG_H_ */
+void framework_log(framework_pt framework, framework_log_level_t level, const char *func, const char *file, int line, char *fmsg, ...) {
+	char msg[512];
+	va_list listPointer;
+	va_start(listPointer, fmsg);
+	vsprintf(msg, fmsg, listPointer);
+	printf("Log write: %s at %s, %s, %d\n", msg, func, file, line);
+}

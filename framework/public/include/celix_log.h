@@ -28,11 +28,25 @@
 #define CELIX_LOG_H_
 
 #include <stdio.h>
+#include "framework.h"
 
 #if defined(WIN32)
 #define celix_log(msg) printf("%s\n", msg);
 #else
 #define celix_log(msg) printf("%s\n\tat %s(%s:%d)\n", msg, __func__, __FILE__, __LINE__);
+#define fw_log(framework, level, fmsg, args...) framework_log(framework, level, __func__, __FILE__, __LINE__, fmsg, ## args)
 #endif
+
+enum framework_log_level
+{
+    FW_LOG_ERROR = 0x00000001,
+    FW_LOG_WARNING = 0x00000002,
+    FW_LOG_INFO = 0x00000003,
+    FW_LOG_DEBUG = 0x00000004,
+};
+
+typedef enum framework_log_level framework_log_level_t;
+
+void framework_log(framework_pt framework, framework_log_level_t level, const char *func, const char *file, int line, char *fmsg, ...);
 
 #endif /* CELIX_LOG_H_ */

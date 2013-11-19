@@ -58,3 +58,11 @@ celix_status_t log_log(log_pt log, unsigned int type, properties_pt properties) 
 
 	return status;
 }
+
+celix_status_t log_bundleChanged(void * listener, bundle_event_pt event) {
+	return CELIX_SUCCESS;
+}
+
+celix_status_t log_frameworkEvent(void * listener, framework_event_pt event) {
+	return CELIX_SUCCESS;
+}

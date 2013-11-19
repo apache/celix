@@ -70,10 +70,11 @@ struct framework {
 	hash_map_pt installRequestMap;
 	array_list_pt serviceListeners;
 	array_list_pt bundleListeners;
+	array_list_pt frameworkListeners;
 
 	long nextBundleId;
 	struct serviceRegistry * registry;
-bundle_cache_pt cache;
+	bundle_cache_pt cache;
 
 	apr_thread_cond_t *shutdownGate;
 	apr_thread_cond_t *condition;
@@ -128,8 +129,11 @@ celix_status_t fw_refreshBundle(framework_pt framework, bundle_pt bundle);
 celix_status_t fw_populateDependentGraph(framework_pt framework, bundle_pt exporter, hash_map_pt *map);
 
 celix_status_t fw_fireBundleEvent(framework_pt framework, bundle_event_type_e, bundle_pt bundle);
+celix_status_t fw_fireFrameworkEvent(framework_pt framework, framework_event_type_e eventType, bundle_pt bundle, celix_status_t errorCode, char *error);
 static void *APR_THREAD_FUNC fw_eventDispatcher(apr_thread_t *thd, void *fw);
+
 celix_status_t fw_invokeBundleListener(framework_pt framework, bundle_listener_pt listener, bundle_event_pt event, bundle_pt bundle);
+celix_status_t fw_invokeFrameworkListener(framework_pt framework, framework_listener_pt listener, framework_event_pt event, bundle_pt bundle);
 
 struct fw_refreshHelper {
     framework_pt framework;
@@ -150,12 +154,18 @@ struct fw_serviceListener {
 typedef struct fw_serviceListener * fw_service_listener_pt;
 
 struct fw_bundleListener {
-	apr_pool_t *pool;
 	bundle_pt bundle;
 	bundle_listener_pt listener;
 };
 
 typedef struct fw_bundleListener * fw_bundle_listener_pt;
+
+struct fw_frameworkListener {
+	bundle_pt bundle;
+	framework_listener_pt listener;
+};
+
+typedef struct fw_frameworkListener * fw_framework_listener_pt;
 
 enum event_type {
 	FRAMEWORK_EVENT_TYPE,
@@ -169,8 +179,10 @@ struct request {
 	event_type_e type;
 	array_list_pt listeners;
 
-	bundle_event_type_e eventType;
+	int eventType;
 	bundle_pt bundle;
+	celix_status_t errorCode;
+	char *error;
 
 	char *filter;
 };
@@ -180,6 +192,9 @@ typedef struct request *request_pt;
 celix_status_t framework_create(framework_pt *framework, apr_pool_t *memoryPool, properties_pt config) {
     celix_status_t status = CELIX_SUCCESS;
 
+    // framework_log(NULL, FW_LOG_INFO, __func__, __FILE__, __LINE__, "Log this message %s\n", "now!");
+    // fw_log(NULL, FW_LOG_INFO, "Log this message %s\n", "now!");
+
 	*framework = (framework_pt) apr_palloc(memoryPool, sizeof(**framework));
 	if (*framework == NULL) {
 		status = CELIX_ENOMEM;
@@ -187,6 +202,7 @@ celix_status_t framework_create(framework_pt *framework, apr_pool_t *memoryPool,
 	    apr_status_t apr_status = apr_pool_create(&(*framework)->mp, memoryPool);
         if (apr_status != APR_SUCCESS) {
             status = CELIX_FRAMEWORK_EXCEPTION;
+            fw_log(NULL, FW_LOG_ERROR,  "Could not create framework memory pool");
         } else {
             bundle_pt bundle = NULL;
             apr_pool_t *bundlePool;
@@ -197,30 +213,37 @@ celix_status_t framework_create(framework_pt *framework, apr_pool_t *memoryPool,
                 apr_status_t apr_status = bundle_create(&bundle, (*framework)->mp);
                 if (apr_status != CELIX_SUCCESS) {
                     status = CELIX_FRAMEWORK_EXCEPTION;
+                    fw_log(NULL, FW_LOG_ERROR,  "Could not create framework bundle");
                 } else {
                     apr_status_t apr_status = apr_thread_cond_create(&(*framework)->condition, (*framework)->mp);
                     if (apr_status != APR_SUCCESS) {
                         status = CELIX_FRAMEWORK_EXCEPTION;
+                        fw_log(NULL, FW_LOG_ERROR,  "Could not create framework condition");
                     } else {
                         apr_status_t apr_status = apr_thread_mutex_create(&(*framework)->mutex, APR_THREAD_MUTEX_UNNESTED, (*framework)->mp);
                         if (apr_status != APR_SUCCESS) {
                             status = CELIX_FRAMEWORK_EXCEPTION;
+                            fw_log(NULL, FW_LOG_ERROR,  "Could not create framework mutex");
                         } else {
                             apr_status_t apr_status = apr_thread_mutex_create(&(*framework)->bundleLock, APR_THREAD_MUTEX_UNNESTED, (*framework)->mp);
                             if (apr_status != APR_SUCCESS) {
                                 status = CELIX_FRAMEWORK_EXCEPTION;
+                                fw_log(NULL, FW_LOG_ERROR,  "Could not create framework bundle lock mutex");
                             } else {
                                 apr_status_t apr_status = apr_thread_mutex_create(&(*framework)->installRequestLock, APR_THREAD_MUTEX_UNNESTED, (*framework)->mp);
                                 if (apr_status != APR_SUCCESS) {
                                     status = CELIX_FRAMEWORK_EXCEPTION;
+                                    fw_log(NULL, FW_LOG_ERROR,  "Could not create framework install request lock mutex");
                                 } else {
                                 	apr_status_t apr_status = apr_thread_mutex_create(&(*framework)->dispatcherLock, APR_THREAD_MUTEX_UNNESTED, (*framework)->mp);
                                 	if (apr_status != CELIX_SUCCESS) {
 										status = CELIX_FRAMEWORK_EXCEPTION;
+										fw_log(NULL, FW_LOG_ERROR,  "Could not create framework dispatcher lock mutex");
 									} else {
 										apr_status_t apr_status = apr_thread_cond_create(&(*framework)->dispatcher, (*framework)->mp);
 										if (apr_status != APR_SUCCESS) {
 											status = CELIX_FRAMEWORK_EXCEPTION;
+											fw_log(NULL, FW_LOG_ERROR,  "Could not create framework dispatcher condition");
 										} else {
 											(*framework)->bundle = bundle;
 
@@ -240,6 +263,7 @@ celix_status_t framework_create(framework_pt *framework, apr_pool_t *memoryPool,
 											(*framework)->installRequestMap = hashMap_create(utils_stringHash, utils_stringHash, utils_stringEquals, utils_stringEquals);
 											(*framework)->serviceListeners = NULL;
 											(*framework)->bundleListeners = NULL;
+											(*framework)->frameworkListeners = NULL;
 											(*framework)->requests = NULL;
 											(*framework)->shutdownGate = NULL;
 											(*framework)->configurationMap = config;
@@ -298,6 +322,7 @@ celix_status_t framework_destroy(framework_pt framework) {
 	arrayList_destroy(framework->globalLockWaitersList);
 	arrayList_destroy(framework->serviceListeners);
 	arrayList_destroy(framework->bundleListeners);
+	arrayList_destroy(framework->frameworkListeners);
 	arrayList_destroy(framework->requests);
 
 	hashMap_destroy(framework->installedBundleMap, false, false);
@@ -338,13 +363,18 @@ celix_status_t fw_init(framework_pt framework) {
 
 
 	if (status != CELIX_SUCCESS) {
+		fw_log(NULL, FW_LOG_ERROR,  "Could not lock framework bundle");
 		framework_releaseBundleLock(framework, framework->bundle);
 		return status;
 	}
 
-	framework->requests = NULL;
+	arrayList_create(framework->mp, &framework->serviceListeners);
+	arrayList_create(framework->mp, &framework->bundleListeners);
+	arrayList_create(framework->mp, &framework->frameworkListeners);
 	arrayList_create(framework->mp, &framework->requests);
+
 	if (apr_thread_create(&framework->dispatcherThread, NULL, fw_eventDispatcher, framework, framework->mp) != APR_SUCCESS) {
+		fw_log(NULL, FW_LOG_ERROR,  "Could not create framework dispatcher thread");
 		return CELIX_FRAMEWORK_EXCEPTION;
 	}
 
@@ -361,6 +391,7 @@ celix_status_t fw_init(framework_pt framework) {
                 // bundleCache_delete(framework->cache);
             }
 		} else {
+			fw_log(NULL, FW_LOG_ERROR,  "Could not create bundle cache");
 		    return status;
 		}
 	}
@@ -373,11 +404,12 @@ celix_status_t fw_init(framework_pt framework) {
 
 	status = bundle_getCurrentModule(framework->bundle, &module);
 	if (status != CELIX_SUCCESS) {
+		fw_log(NULL, FW_LOG_ERROR,  "Could not get framework module");
 		return status;
 	}
 	wires = resolver_resolve(module);
 	if (wires == NULL) {
-		printf("Unresolved constraints in System Bundle\n");
+		fw_log(NULL, FW_LOG_ERROR,  "Unresolved constraints in System Bundle");
 		framework_releaseBundleLock(framework, framework->bundle);
 		return CELIX_BUNDLE_EXCEPTION;
 	} else {
@@ -388,6 +420,7 @@ celix_status_t fw_init(framework_pt framework) {
 	// reload archives from cache
 	status = bundleCache_getArchives(framework->cache, framework->mp, &archives);
 	if (status != CELIX_SUCCESS) {
+		fw_log(NULL, FW_LOG_ERROR,  "Could not get framework archive");
 	    return status;
 	} else {
 #ifdef _WIN32
@@ -435,11 +468,13 @@ celix_status_t fw_init(framework_pt framework) {
 #else
             printf ("%s\n", dlerror());
 #endif
+            fw_log(NULL, FW_LOG_ERROR,  "Could not get handle to framework library");
             framework_releaseBundleLock(framework, framework->bundle);
             return CELIX_START_ERROR;
         }
         
         if (bundleContext_create(framework, framework->bundle, &context) != CELIX_SUCCESS) {
+        	fw_log(NULL, FW_LOG_ERROR,  "Could not create framework bundle context");
             return CELIX_START_ERROR;
         }
         bundle_setContext(framework->bundle, context);
@@ -449,6 +484,7 @@ celix_status_t fw_init(framework_pt framework) {
         activator = (activator_pt) apr_palloc(framework->mp, (sizeof(*activator)));
         if (activator == NULL) {
             status = CELIX_ENOMEM;
+        	fw_log(NULL, FW_LOG_ERROR,  "Could not allocate memory");
         }  else {
 			bundle_context_pt context = NULL;
 			void * userData = NULL;
@@ -479,13 +515,6 @@ celix_status_t fw_init(framework_pt framework) {
                 start(userData, context);
             }
 
-            framework->serviceListeners = NULL;
-            arrayList_create(framework->mp, &framework->serviceListeners);
-            framework->bundleListeners = NULL;
-            arrayList_create(framework->mp, &framework->bundleListeners);
-            framework->requests = NULL;
-            arrayList_create(framework->mp, &framework->requests);
-
             framework_releaseBundleLock(framework, framework->bundle);
 
             status = CELIX_SUCCESS;
@@ -499,7 +528,8 @@ celix_status_t framework_start(framework_pt framework) {
 	bundle_state_e state;
 
 	if (lock != CELIX_SUCCESS) {
-		printf("could not get lock\n");
+		fw_log(NULL, FW_LOG_ERROR,  "Could not lock framework bundle");
+//		fw_fireFrameworkEvent(framework, FRAMEWORK_EVENT_ERROR, framework->bundle, lock, "Could not lock framework bundle");
 		framework_releaseBundleLock(framework, framework->bundle);
 		return lock;
 	}
@@ -518,6 +548,9 @@ celix_status_t framework_start(framework_pt framework) {
 
 	framework_releaseBundleLock(framework, framework->bundle);
 
+	fw_fireBundleEvent(framework, BUNDLE_EVENT_STARTED, framework->bundle);
+	fw_fireFrameworkEvent(framework, FRAMEWORK_EVENT_STARTED, framework->bundle, 0, NULL);
+
 	return CELIX_SUCCESS;
 }
 
@@ -529,7 +562,10 @@ celix_status_t fw_getProperty(framework_pt framework, const char *name, char **v
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (framework == NULL || name == NULL || *value != NULL) {
+		char errMsg[256];
 		status = CELIX_ILLEGAL_ARGUMENT;
+		celix_strerror(status, errMsg, 256);
+		fw_log(NULL, FW_LOG_ERROR,  errMsg);
 	} else {
 		if (framework->configurationMap != NULL) {
 			*value = properties_get(framework->configurationMap, (char *) name);
@@ -554,13 +590,14 @@ celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, lon
 
 	celix_status_t status = framework_acquireInstallLock(framework, location);
     if (status != CELIX_SUCCESS) {
+    	fw_log(NULL, FW_LOG_ERROR,  "Could not acquire install lock");
         return status;
     }
 
     bundle_getState(framework->bundle, &state);
 
 	if (state == BUNDLE_STOPPING || state == BUNDLE_UNINSTALLED) {
-		printf("The framework has been shutdown.\n");
+		fw_log(NULL, FW_LOG_INFO,  "The framework is being shutdown");
 		framework_releaseInstallLock(framework, location);
 		return CELIX_FRAMEWORK_SHUTDOWN;
 	}
@@ -577,6 +614,7 @@ celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, lon
 		status = bundleCache_createArchive(framework->cache, bundlePool, id, location, inputFile, &bundle_archive);
 		if (status != CELIX_SUCCESS) {
 		    framework_releaseInstallLock(framework, location);
+		    fw_log(NULL, FW_LOG_ERROR,  "Could not create bundle archive");
 		    return status;
 		} else {
 		    archive = bundle_archive;
@@ -588,8 +626,8 @@ celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, lon
 
 	locked = framework_acquireGlobalLock(framework);
 	if (!locked) {
-		printf("Unable to acquire the global lock to install the bundle\n");
 		status = CELIX_BUNDLE_EXCEPTION;
+		fw_log(NULL, FW_LOG_ERROR,  "Unable to acquire the global lock to install the bundle");
 	} else {
 	    status = bundle_createFromArchive(bundle, framework, archive, bundlePool);
 	}
@@ -598,11 +636,15 @@ celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, lon
 	if (status == CELIX_SUCCESS) {
         hashMap_put(framework->installedBundleMap, location, *bundle);
 	} else {
-	    printf("Unable to install bundle: %s\n", location);
+		char msg[256];
+		sprintf(msg, "Unable to install bundle: %s", location);
+	    fw_log(NULL, FW_LOG_ERROR,  msg);
 	    bundleArchive_closeAndDelete(bundle_archive);
 	    apr_pool_destroy(bundlePool);
 	}
     framework_releaseInstallLock(framework, location);
+
+    fw_fireBundleEvent(framework, BUNDLE_EVENT_INSTALLED, *bundle);
 
   	return status;
 }
@@ -681,23 +723,23 @@ celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int opti
 
 	switch (state) {
 		case BUNDLE_UNKNOWN:
-			printf("Cannot start bundle since its state is unknown.");
+			printf("Cannot start bundle since its state is unknown.\n");
 			framework_releaseBundleLock(framework, bundle);
 			return CELIX_ILLEGAL_STATE;
 		case BUNDLE_UNINSTALLED:
-			printf("Cannot start bundle since it is uninstalled.");
+			printf("Cannot start bundle since it is uninstalled.\n");
 			framework_releaseBundleLock(framework, bundle);
 			return CELIX_ILLEGAL_STATE;
 		case BUNDLE_STARTING:
-			printf("Cannot start bundle since it is starting.");
+			printf("Cannot start bundle since it is starting.\n");
 			framework_releaseBundleLock(framework, bundle);
 			return CELIX_BUNDLE_EXCEPTION;
 		case BUNDLE_STOPPING:
-			printf("Cannot start bundle since it is stopping.");
+			printf("Cannot start bundle since it is stopping.\n");
 			framework_releaseBundleLock(framework, bundle);
 			return CELIX_ILLEGAL_STATE;
 		case BUNDLE_ACTIVE:
-			printf("Cannot start bundle since it is already active.");
+			printf("Cannot start bundle since it is already active.\n");
 			framework_releaseBundleLock(framework, bundle);
 			return CELIX_SUCCESS;
 		case BUNDLE_INSTALLED:
@@ -787,7 +829,7 @@ celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int opti
 
                 framework_setBundleStateAndNotify(framework, bundle, BUNDLE_STARTING);
 
-                
+                fw_fireBundleEvent(framework, BUNDLE_EVENT_STARTING, bundle);
 
                 bundle_getContext(bundle, &context);
 
@@ -821,7 +863,7 @@ celix_status_t framework_updateBundle(framework_pt framework, bundle_pt bundle, 
 	bundle_archive_pt archive = NULL;
 
 	if (lock != CELIX_SUCCESS) {
-		printf("Cannot update bundle, in wrong state");
+		printf("Cannot update bundle, in wrong state\n");
 		framework_releaseBundleLock(framework, bundle);
 		return lock;
 	}
@@ -848,6 +890,9 @@ celix_status_t framework_updateBundle(framework_pt framework, bundle_pt bundle, 
 	status = bundleArchive_setLastModified(archive, time(NULL));
 	framework_setBundleStateAndNotify(framework, bundle, BUNDLE_INSTALLED);
 
+	fw_fireBundleEvent(framework, BUNDLE_EVENT_UNRESOLVED, bundle);
+	fw_fireBundleEvent(framework, BUNDLE_EVENT_UPDATED, bundle);
+
 	// Refresh packages?
 
 	if (oldState == BUNDLE_ACTIVE) {
@@ -863,7 +908,7 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
 
 	status = framework_acquireBundleLock(framework, bundle, BUNDLE_INSTALLED|BUNDLE_RESOLVED|BUNDLE_STARTING|BUNDLE_ACTIVE);
 	if (status != CELIX_SUCCESS) {
-		printf("Cannot stop bundle");
+		printf("Cannot stop bundle\n");
 		framework_releaseBundleLock(framework, bundle);
 	} else {
 		bundle_state_e state;
@@ -882,19 +927,19 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
 
 		switch (state) {
 			case BUNDLE_UNKNOWN:
-				printf("Cannot stop bundle since its state is unknown.");
+				printf("Cannot stop bundle since its state is unknown.\n");
 				framework_releaseBundleLock(framework, bundle);
 				return CELIX_ILLEGAL_STATE;
 			case BUNDLE_UNINSTALLED:
-				printf("Cannot stop bundle since it is uninstalled.");
+				printf("Cannot stop bundle since it is uninstalled.\n");
 				framework_releaseBundleLock(framework, bundle);
 				return status;
 			case BUNDLE_STARTING:
-				printf("Cannot stop bundle since it is starting.");
+				printf("Cannot stop bundle since it is starting.\n");
 				framework_releaseBundleLock(framework, bundle);
 				return status;
 			case BUNDLE_STOPPING:
-				printf("Cannot stop bundle since it is stopping.");
+				printf("Cannot stop bundle since it is stopping.\n");
 				framework_releaseBundleLock(framework, bundle);
 				return status;
 			case BUNDLE_INSTALLED:
@@ -907,6 +952,7 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
 		}
 
 		framework_setBundleStateAndNotify(framework, bundle, BUNDLE_STOPPING);
+		fw_fireBundleEvent(framework, BUNDLE_EVENT_STOPPING, bundle);
 
 		activator = bundle_getActivator(bundle);
 		
@@ -941,6 +987,8 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
 		framework_setBundleStateAndNotify(framework, bundle, BUNDLE_RESOLVED);
 
 		framework_releaseBundleLock(framework, bundle);
+
+		fw_fireBundleEvent(framework, BUNDLE_EVENT_STOPPED, bundle);
 	}
 
 	return status;
@@ -953,7 +1001,7 @@ celix_status_t fw_uninstallBundle(framework_pt framework, bundle_pt bundle) {
 
     celix_status_t lock = framework_acquireBundleLock(framework, bundle, BUNDLE_INSTALLED|BUNDLE_RESOLVED|BUNDLE_STARTING|BUNDLE_ACTIVE|BUNDLE_STOPPING);
     if (lock != CELIX_SUCCESS) {
-        printf("Cannot stop bundle");
+        printf("Cannot stop bundle\n");
         framework_releaseBundleLock(framework, bundle);
         bundle_getState(bundle, &state);
         if (state == BUNDLE_UNINSTALLED) {
@@ -1101,6 +1149,7 @@ celix_status_t fw_refreshBundle(framework_pt framework, bundle_pt bundle) {
 
         if (fire) {
             framework_setBundleStateAndNotify(framework, bundle, BUNDLE_INSTALLED);
+            fw_fireBundleEvent(framework, BUNDLE_EVENT_UNRESOLVED, bundle);
         }
 
         framework_releaseBundleLock(framework, bundle);
@@ -1458,7 +1507,6 @@ celix_status_t fw_addBundleListener(framework_pt framework, bundle_pt bundle, bu
 	} else {
 		bundleListener->listener = listener;
 		bundleListener->bundle = bundle;
-		bundleListener->pool = pool;
 
 		arrayList_add(framework->bundleListeners, bundleListener);
 	}
@@ -1476,7 +1524,42 @@ celix_status_t fw_removeBundleListener(framework_pt framework, bundle_pt bundle,
 		bundleListener = (fw_bundle_listener_pt) arrayList_get(framework->bundleListeners, i);
 		if (bundleListener->listener == listener && bundleListener->bundle == bundle) {
 			arrayList_remove(framework->bundleListeners, i);
-			apr_pool_destroy(bundleListener->pool);
+		}
+	}
+
+	return status;
+}
+
+celix_status_t fw_addFrameworkListener(framework_pt framework, bundle_pt bundle, framework_listener_pt listener) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	apr_pool_t *pool = NULL;
+	fw_framework_listener_pt frameworkListener = NULL;
+
+	apr_pool_create(&pool, framework->mp);
+	frameworkListener = (fw_framework_listener_pt) apr_palloc(pool, sizeof(*frameworkListener));
+	if (!frameworkListener) {
+		status = CELIX_ENOMEM;
+	} else {
+		frameworkListener->listener = listener;
+		frameworkListener->bundle = bundle;
+
+		arrayList_add(framework->frameworkListeners, frameworkListener);
+	}
+
+	return status;
+}
+
+celix_status_t fw_removeFrameworkListener(framework_pt framework, bundle_pt bundle, framework_listener_pt listener) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	unsigned int i;
+	fw_framework_listener_pt frameworkListener;
+
+	for (i = 0; i < arrayList_size(framework->frameworkListeners); i++) {
+		frameworkListener = (fw_framework_listener_pt) arrayList_get(framework->frameworkListeners, i);
+		if (frameworkListener->listener == listener && frameworkListener->bundle == bundle) {
+			arrayList_remove(framework->frameworkListeners, i);
 		}
 	}
 
@@ -1686,20 +1769,20 @@ celix_status_t framework_setBundleStateAndNotify(framework_pt framework, bundle_
 
 	int err = apr_thread_mutex_lock(framework->bundleLock);
 	if (err != 0) {
-		celix_log("Failed to lock");
+		fw_log(NULL, FW_LOG_ERROR,  "Failed to lock");
 		return CELIX_BUNDLE_EXCEPTION;
 	}
 
 	bundle_setState(bundle, state);
 	err = apr_thread_cond_broadcast(framework->condition);
 	if (err != 0) {
-		celix_log("Failed to broadcast");
+		fw_log(NULL, FW_LOG_ERROR,  "Failed to broadcast");
 		ret = CELIX_BUNDLE_EXCEPTION;
 	}
 
 	err = apr_thread_mutex_unlock(framework->bundleLock);
 	if (err != 0) {
-		celix_log("Failed to unlock");
+		fw_log(NULL, FW_LOG_ERROR,  "Failed to unlock");
 		return CELIX_BUNDLE_EXCEPTION;
 	}
 	return CELIX_SUCCESS;
@@ -1713,7 +1796,7 @@ celix_status_t framework_acquireBundleLock(framework_pt framework, bundle_pt bun
 
 	int err = apr_thread_mutex_lock(framework->bundleLock);
 	if (err != APR_SUCCESS) {
-		celix_log("Failed to lock");
+		fw_log(NULL, FW_LOG_ERROR,  "Failed to lock");
 		status = CELIX_BUNDLE_EXCEPTION;
 	} else {
 		bool lockable = false;
@@ -1825,7 +1908,7 @@ bool framework_acquireGlobalLock(framework_pt framework) {
 celix_status_t framework_releaseGlobalLock(framework_pt framework) {
 	int ret = CELIX_SUCCESS;
 	if (apr_thread_mutex_lock(framework->bundleLock) != 0) {
-		celix_log("Error locking framework bundle lock");
+		fw_log(NULL, FW_LOG_ERROR,  "Error locking framework bundle lock");
 		return CELIX_FRAMEWORK_EXCEPTION;
 	}
 
@@ -1834,7 +1917,7 @@ celix_status_t framework_releaseGlobalLock(framework_pt framework) {
 		if (framework->globalLockCount == 0) {
 			framework->globalLockThread = 0;
 			if (apr_thread_cond_broadcast(framework->condition) != 0) {
-				celix_log("Failed to broadcast global lock release.");
+				fw_log(NULL, FW_LOG_ERROR,  "Failed to broadcast global lock release.");
 				ret = CELIX_FRAMEWORK_EXCEPTION;
 				// still need to unlock before returning
 			}
@@ -1844,7 +1927,7 @@ celix_status_t framework_releaseGlobalLock(framework_pt framework) {
 	}
 
 	if (apr_thread_mutex_unlock(framework->bundleLock) != 0) {
-		celix_log("Error unlocking framework bundle lock");
+		fw_log(NULL, FW_LOG_ERROR,  "Error unlocking framework bundle lock");
 		return CELIX_FRAMEWORK_EXCEPTION;
 	}
 	return ret;
@@ -1852,19 +1935,19 @@ celix_status_t framework_releaseGlobalLock(framework_pt framework) {
 
 celix_status_t framework_waitForStop(framework_pt framework) {
 	if (apr_thread_mutex_lock(framework->mutex) != 0) {
-		celix_log("Error locking the framework, shutdown gate not set.");
+		fw_log(NULL, FW_LOG_ERROR,  "Error locking the framework, shutdown gate not set.");
 		return CELIX_FRAMEWORK_EXCEPTION;
 	}
 	while (!framework->shutdown) {
 		apr_status_t apr_status = apr_thread_cond_wait(framework->shutdownGate, framework->mutex);
 		printf("FRAMEWORK: Gate opened\n");
 		if (apr_status != 0) {
-			celix_log("Error waiting for shutdown gate.");
+			fw_log(NULL, FW_LOG_ERROR,  "Error waiting for shutdown gate.");
 			return CELIX_FRAMEWORK_EXCEPTION;
 		}
 	}
 	if (apr_thread_mutex_unlock(framework->mutex) != 0) {
-		celix_log("Error unlocking the framework.");
+		fw_log(NULL, FW_LOG_ERROR,  "Error unlocking the framework.");
 		return CELIX_FRAMEWORK_EXCEPTION;
 	}
 	printf("FRAMEWORK: Successful shutdown\n");
@@ -1897,7 +1980,7 @@ static void *APR_THREAD_FUNC framework_shutdown(apr_thread_t *thd, void *framewo
 
 	err = apr_thread_mutex_lock(fw->mutex);
 	if (err != 0) {
-		celix_log("Error locking the framework, cannot exit clean.");
+		fw_log(NULL, FW_LOG_ERROR,  "Error locking the framework, cannot exit clean.");
 		apr_thread_exit(thd, APR_ENOLOCK);
 		return NULL;
 	}
@@ -1908,10 +1991,10 @@ static void *APR_THREAD_FUNC framework_shutdown(apr_thread_t *thd, void *framewo
 	printf("FRAMEWORK: BC send\n");
 	if (err != 0) {
 		printf("FRAMEWORK: BC send\n");
-		celix_log("Error waking the shutdown gate, cannot exit clean.");
+		fw_log(NULL, FW_LOG_ERROR,  "Error waking the shutdown gate, cannot exit clean.");
 		err = apr_thread_mutex_unlock(fw->mutex);
 		if (err != 0) {
-			celix_log("Error unlocking the framework, cannot exit clean.");
+			fw_log(NULL, FW_LOG_ERROR,  "Error unlocking the framework, cannot exit clean.");
 		}
 
 		apr_thread_exit(thd, APR_ENOLOCK);
@@ -1920,7 +2003,7 @@ static void *APR_THREAD_FUNC framework_shutdown(apr_thread_t *thd, void *framewo
 	printf("FRAMEWORK: Unlock\n");
 	err = apr_thread_mutex_unlock(fw->mutex);
 	if (err != 0) {
-		celix_log("Error unlocking the framework, cannot exit clean.");
+		fw_log(NULL, FW_LOG_ERROR,  "Error unlocking the framework, cannot exit clean.");
 	}
 
 	printf("FRAMEWORK: Exit thread\n");
@@ -1958,6 +2041,7 @@ celix_status_t fw_fireBundleEvent(framework_pt framework, bundle_event_type_e ev
 			request->filter = NULL;
 			request->listeners = framework->bundleListeners;
 			request->type = BUNDLE_EVENT_TYPE;
+			request->error = NULL;
 
 			arrayList_add(framework->requests, request);
 			if (apr_thread_mutex_lock(framework->dispatcherLock) != APR_SUCCESS) {
@@ -1977,6 +2061,38 @@ celix_status_t fw_fireBundleEvent(framework_pt framework, bundle_event_type_e ev
 	return status;
 }
 
+celix_status_t fw_fireFrameworkEvent(framework_pt framework, framework_event_type_e eventType, bundle_pt bundle, celix_status_t errorCode, char *error) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	request_pt request = (request_pt) malloc(sizeof(*request));
+	if (!request) {
+		status = CELIX_ENOMEM;
+	} else {
+		request->bundle = bundle;
+		request->eventType = eventType;
+		request->filter = NULL;
+		request->listeners = framework->frameworkListeners;
+		request->type = FRAMEWORK_EVENT_TYPE;
+		request->errorCode = errorCode;
+		request->error = error;
+
+		arrayList_add(framework->requests, request);
+		if (apr_thread_mutex_lock(framework->dispatcherLock) != APR_SUCCESS) {
+			status = CELIX_FRAMEWORK_EXCEPTION;
+		} else {
+			if (apr_thread_cond_broadcast(framework->dispatcher)) {
+				status = CELIX_FRAMEWORK_EXCEPTION;
+			} else {
+				if (apr_thread_mutex_unlock(framework->dispatcherLock)) {
+					status = CELIX_FRAMEWORK_EXCEPTION;
+				}
+			}
+		}
+	}
+
+	return status;
+}
+
 static void *APR_THREAD_FUNC fw_eventDispatcher(apr_thread_t *thd, void *fw) {
 	framework_pt framework = (framework_pt) fw;
 	request_pt request = NULL;
@@ -1986,7 +2102,7 @@ static void *APR_THREAD_FUNC fw_eventDispatcher(apr_thread_t *thd, void *fw) {
 		apr_status_t status;
 
 		if (apr_thread_mutex_lock(framework->dispatcherLock) != 0) {
-			celix_log("Error locking the dispatcher");
+			fw_log(NULL, FW_LOG_ERROR,  "Error locking the dispatcher");
 			return NULL;
 		}
 
@@ -2005,7 +2121,7 @@ static void *APR_THREAD_FUNC fw_eventDispatcher(apr_thread_t *thd, void *fw) {
 		request = (request_pt) arrayList_remove(framework->requests, 0);
 
 		if ((status = apr_thread_mutex_unlock(framework->dispatcherLock)) != 0) {
-			celix_log("Error unlocking the dispatcher.");
+			fw_log(NULL, FW_LOG_ERROR,  "Error unlocking the dispatcher.");
 			apr_thread_exit(thd, status);
 			return NULL;
 		}
@@ -2021,6 +2137,15 @@ static void *APR_THREAD_FUNC fw_eventDispatcher(apr_thread_t *thd, void *fw) {
 					event->type = request->eventType;
 
 					fw_invokeBundleListener(framework, listener->listener, event, listener->bundle);
+				} else if (request->type == FRAMEWORK_EVENT_TYPE) {
+					fw_framework_listener_pt listener = (fw_framework_listener_pt) arrayList_get(request->listeners, i);
+					framework_event_pt event = (framework_event_pt) apr_palloc(listener->listener->pool, sizeof(*event));
+					event->bundle = request->bundle;
+					event->type = request->eventType;
+					event->error = request->error;
+					event->errorCode = request->errorCode;
+
+					fw_invokeFrameworkListener(framework, listener->listener, event, listener->bundle);
 				}
 			}
 		}
@@ -2044,6 +2169,16 @@ celix_status_t fw_invokeBundleListener(framework_pt framework, bundle_listener_p
 	return CELIX_SUCCESS;
 }
 
+celix_status_t fw_invokeFrameworkListener(framework_pt framework, framework_listener_pt listener, framework_event_pt event, bundle_pt bundle) {
+	bundle_state_e state;
+	bundle_getState(bundle, &state);
+	if (state == BUNDLE_STARTING || state == BUNDLE_ACTIVE) {
+		listener->frameworkEvent(listener, event);
+	}
+
+	return CELIX_SUCCESS;
+}
+
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
 	// nothing to do
 	return CELIX_SUCCESS;
@@ -2061,7 +2196,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	    if (apr_thread_create(&shutdownThread, NULL, framework_shutdown, framework, framework->mp) == APR_SUCCESS) {
             apr_thread_detach(shutdownThread);
 	    } else {
-            celix_log("Could not create shutdown thread, normal exit not possible.");
+            fw_log(NULL, FW_LOG_ERROR,  "Could not create shutdown thread, normal exit not possible.");
 	        status = CELIX_FRAMEWORK_EXCEPTION;
 	    }
 	} else {

@@ -293,6 +293,30 @@ celix_status_t bundleContext_removeBundleListener(bundle_context_pt context, bun
     return status;
 }
 
+celix_status_t bundleContext_addFrameworkListener(bundle_context_pt context, framework_listener_pt listener) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    if (context != NULL && listener != NULL) {
+        fw_addFrameworkListener(context->framework, context->bundle, listener);
+    } else {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
+
+    return status;
+}
+
+celix_status_t bundleContext_removeFrameworkListener(bundle_context_pt context, framework_listener_pt listener) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    if (context != NULL && listener != NULL) {
+        fw_removeFrameworkListener(context->framework, context->bundle, listener);
+    } else {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
+
+    return status;
+}
+
 celix_status_t bundleContext_getProperty(bundle_context_pt context, const char *name, char **value) {
 	celix_status_t status = CELIX_SUCCESS;
 

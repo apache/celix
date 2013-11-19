@@ -1,4 +1,4 @@
-/**
+/*
  *Licensed to the Apache Software Foundation (ASF) under one
  *or more contributor license agreements.  See the NOTICE file
  *distributed with this work for additional information
@@ -16,34 +16,36 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * logger.h
+/**
  *
- *  \date       Jun 26, 2011
+ * @defgroup FrameworkListener Framework Listener
+ * @ingroup framework
+ * @{
+ *
  *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \date      	Oct 8, 2013
  *  \copyright	Apache License, Version 2.0
  */
-
-#ifndef LOG_H_
-#define LOG_H_
+#ifndef FRAMEWORK_LISTENER_H_
+#define FRAMEWORK_LISTENER_H_
 
 #include <apr_general.h>
 
-#include "linkedlist.h"
-#include "log_entry.h"
-#include "log_listener.h"
+typedef struct framework_listener *framework_listener_pt;
 
-typedef struct log * log_pt;
+#include "celix_errno.h"
+#include "framework_event.h"
 
-celix_status_t log_create(apr_pool_t *pool, log_pt *logger);
-celix_status_t log_addEntry(log_pt log, log_entry_pt entry);
-celix_status_t log_getEntries(log_pt log, apr_pool_t *memory_pool, linked_list_pt *list);
+struct framework_listener {
+	apr_pool_t *pool;
+	void * handle;
+	celix_status_t (*frameworkEvent)(void * listener, framework_event_pt event);
+};
 
-celix_status_t log_bundleChanged(void *listener, bundle_event_pt event);
-celix_status_t log_frameworkEvent(void *listener, framework_event_pt event);
 
-celix_status_t log_addLogListener(log_pt logger, log_listener_pt listener);
-celix_status_t log_removeLogListener(log_pt logger, log_listener_pt listener);
-celix_status_t log_removeAllLogListener(log_pt logger);
 
-#endif /* LOG_H_ */
+#endif /* FRAMEWORK_LISTENER_H_ */
+
+/**
+ * @}
+ */

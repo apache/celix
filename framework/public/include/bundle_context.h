@@ -37,6 +37,7 @@ typedef struct bundleContext *bundle_context_pt;
 #include "service_factory.h"
 #include "service_listener.h"
 #include "bundle_listener.h"
+#include "framework_listener.h"
 #include "properties.h"
 #include "array_list.h"
 
@@ -69,6 +70,9 @@ FRAMEWORK_EXPORT celix_status_t bundleContext_removeServiceListener(bundle_conte
 
 FRAMEWORK_EXPORT celix_status_t bundleContext_addBundleListener(bundle_context_pt context, bundle_listener_pt listener);
 FRAMEWORK_EXPORT celix_status_t bundleContext_removeBundleListener(bundle_context_pt context, bundle_listener_pt listener);
+
+FRAMEWORK_EXPORT celix_status_t bundleContext_addFrameworkListener(bundle_context_pt context, framework_listener_pt listener);
+FRAMEWORK_EXPORT celix_status_t bundleContext_removeFrameworkListener(bundle_context_pt context, framework_listener_pt listener);
 
 FRAMEWORK_EXPORT celix_status_t bundleContext_getProperty(bundle_context_pt context, const char *name, char **value);
 

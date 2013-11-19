@@ -68,68 +68,73 @@ int main(void) {
     config = properties_load("config.properties");
     autoStart = properties_get(config, "cosgi.auto.start.1");
     framework = NULL;
-    framework_create(&framework, memoryPool, config);
-    fw_init(framework);
+    celix_status_t status = framework_create(&framework, memoryPool, config);
+    if (status == CELIX_SUCCESS) {
+		fw_init(framework);
 
-    // Start the system bundle
-    framework_getFrameworkBundle(framework, &fwBundle);
-    bundle_start(fwBundle);
+		// Start the system bundle
+		framework_getFrameworkBundle(framework, &fwBundle);
+		bundle_start(fwBundle);
 
-    if (apr_pool_create(&pool, memoryPool) == APR_SUCCESS) {
-		char delims[] = " ";
-		char *result = NULL;	
-        linked_list_pt bundles;
-		array_list_pt installed = NULL;
-		bundle_pt bundle = NULL;
-		bundle_context_pt context = NULL;
-		linked_list_iterator_pt iter = NULL;
-		unsigned int i;
+		if (apr_pool_create(&pool, memoryPool) == APR_SUCCESS) {
+			char delims[] = " ";
+			char *result = NULL;
+			linked_list_pt bundles;
+			array_list_pt installed = NULL;
+			bundle_pt bundle = NULL;
+			bundle_context_pt context = NULL;
+			linked_list_iterator_pt iter = NULL;
+			unsigned int i;
 
-        linkedList_create(pool, &bundles);
-        result = strtok(autoStart, delims);
-        while (result != NULL) {
-            char * location = apr_pstrdup(memoryPool, result);
-            linkedList_addElement(bundles, location);
-            result = strtok(NULL, delims);
-        }
-        // First install all bundles
-        // Afterwards start them
-        arrayList_create(pool, &installed);
-        framework_getFrameworkBundle(framework, &bundle);
-        bundle_getContext(bundle, &context);
-        iter = linkedListIterator_create(bundles, 0);
-        while (linkedListIterator_hasNext(iter)) {
-            bundle_pt current = NULL;
-            char * location = (char *) linkedListIterator_next(iter);
-            if (bundleContext_installBundle(context, location, &current) == CELIX_SUCCESS) {
-                // Only add bundle if it is installed correctly
-                arrayList_add(installed, current);
-            } else {
-                char error[256];
-                sprintf(error, "Could not install bundle from %s", location);
-                celix_log(error);
-            }
-            linkedListIterator_remove(iter);
-        }
-        linkedListIterator_destroy(iter);
+			linkedList_create(pool, &bundles);
+			result = strtok(autoStart, delims);
+			while (result != NULL) {
+				char * location = apr_pstrdup(memoryPool, result);
+				linkedList_addElement(bundles, location);
+				result = strtok(NULL, delims);
+			}
+			// First install all bundles
+			// Afterwards start them
+			arrayList_create(pool, &installed);
+			framework_getFrameworkBundle(framework, &bundle);
+			bundle_getContext(bundle, &context);
+			iter = linkedListIterator_create(bundles, 0);
+			while (linkedListIterator_hasNext(iter)) {
+				bundle_pt current = NULL;
+				char * location = (char *) linkedListIterator_next(iter);
+				if (bundleContext_installBundle(context, location, &current) == CELIX_SUCCESS) {
+					// Only add bundle if it is installed correctly
+					arrayList_add(installed, current);
+				} else {
+					char error[256];
+					sprintf(error, "Could not install bundle from %s", location);
+					celix_log(error);
+				}
+				linkedListIterator_remove(iter);
+			}
+			linkedListIterator_destroy(iter);
 
-        for (i = 0; i < arrayList_size(installed); i++) {
-            bundle_pt bundle = (bundle_pt) arrayList_get(installed, i);
-            bundle_startWithOptions(bundle, 0);
-        }
+			for (i = 0; i < arrayList_size(installed); i++) {
+				bundle_pt bundle = (bundle_pt) arrayList_get(installed, i);
+				bundle_startWithOptions(bundle, 0);
+			}
 
-        arrayList_destroy(installed);
-        apr_pool_destroy(pool);
+			arrayList_destroy(installed);
+			apr_pool_destroy(pool);
+		}
+
+		framework_waitForStop(framework);
+		framework_destroy(framework);
+		properties_destroy(config);
+    } else {
+    	celix_log("Problem creating framework");
     }
 
-    framework_waitForStop(framework);
-    framework_destroy(framework);
-    properties_destroy(config);
+	apr_pool_destroy(memoryPool);
+	apr_terminate();
 
-    apr_pool_destroy(memoryPool);
-    apr_terminate();
+	printf("LAUNCHER: Exit\n");
 
-    printf("LAUNCHER: Exit\n");
     return 0;
 }
 

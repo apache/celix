@@ -53,6 +53,7 @@ if (FRAMEWORK)
 	 private/src/requirement.c private/src/resolver.c private/src/service_reference.c private/src/service_registration.c 
 	 private/src/service_registry.c private/src/service_tracker.c private/src/service_tracker_customizer.c
 	 private/src/unzip.c private/src/utils.c private/src/version.c private/src/version_range.c private/src/wire.c
+	 private/src/celix_log.c
 
 	 private/include/attribute.h public/include/framework_exports.h
 

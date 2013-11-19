@@ -145,6 +145,56 @@ celix_status_t log_getEntries(log_pt log, apr_pool_t *memory_pool, linked_list_p
     }
 }
 
+celix_status_t log_bundleChanged(void *listener, bundle_event_pt event) {
+	celix_status_t status = CELIX_SUCCESS;
+	log_pt logger = ((bundle_listener_pt) listener)->handle;
+	log_entry_pt entry = NULL;
+
+	int messagesLength = 10;
+	char *messages[] = {
+		"BUNDLE_EVENT_INSTALLED",
+		"BUNDLE_EVENT_STARTED",
+		"BUNDLE_EVENT_STOPPED",
+		"BUNDLE_EVENT_UPDATED",
+		"BUNDLE_EVENT_UNINSTALLED",
+		"BUNDLE_EVENT_RESOLVED",
+		"BUNDLE_EVENT_UNRESOLVED",
+		"BUNDLE_EVENT_STARTING",
+		"BUNDLE_EVENT_STOPPING",
+		"BUNDLE_EVENT_LAZY_ACTIVATION"
+	};
+
+	char *message = NULL;
+	int i = 0;
+	for (i = 0; i < messagesLength; i++) {
+		if (event->type >> i == 1) {
+			message = messages[i];
+		}
+	}
+
+	if (message != NULL) {
+		status = logEntry_create(event->bundle, NULL, LOG_INFO, message, 0, logger->pool, &entry);
+		if (status == CELIX_SUCCESS) {
+			status = log_addEntry(logger, entry);
+		}
+	}
+
+	return status;
+}
+
+celix_status_t log_frameworkEvent(void *listener, framework_event_pt event) {
+	celix_status_t status = CELIX_SUCCESS;
+	log_pt logger = ((framework_listener_pt) listener)->handle;
+	log_entry_pt entry = NULL;
+
+	status = logEntry_create(event->bundle, NULL, (event->type == FRAMEWORK_EVENT_ERROR) ? LOG_ERROR : LOG_INFO, event->error, event->errorCode, logger->pool, &entry);
+	if (status == CELIX_SUCCESS) {
+		status = log_addEntry(logger, entry);
+	}
+
+	return status;
+}
+
 celix_status_t log_addLogListener(log_pt logger, log_listener_pt listener) {
     celix_status_t status = CELIX_SUCCESS;
     apr_status_t apr_status;

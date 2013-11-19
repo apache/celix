@@ -34,6 +34,7 @@
 #include "linked_list_iterator.h"
 
 void logCommand_execute(command_pt command, char *line, void (*out)(char *), void (*err)(char *));
+celix_status_t logCommand_levelAsString(command_pt command, log_level_t level, char **string);
 
 command_pt logCommand_create(bundle_context_pt context) {
     command_pt command = (command_pt) malloc(sizeof(*command));
@@ -70,8 +71,28 @@ void logCommand_execute(command_pt command, char *line, void (*out)(char *), voi
             iter = linkedListIterator_create(list, 0);
             while (linkedListIterator_hasNext(iter)) {
                 log_entry_pt entry = linkedListIterator_next(iter);
-                sprintf(line, "%s\n", entry->message);
-                out(line);
+                char time[20];
+                char *level = NULL;
+                module_pt module = NULL;
+                char *bundleSymbolicName = NULL;
+                char errorString[256];
+
+				celix_status_t status = bundle_getCurrentModule(entry->bundle, &module);
+				if (status == CELIX_SUCCESS) {
+					status = module_getSymbolicName(module, &bundleSymbolicName);
+
+					strftime(time, 20, "%Y-%m-%d %H:%M:%S", localtime(&entry->time));
+					logCommand_levelAsString(command, entry->level, &level);
+
+					if (entry->errorCode > 0) {
+						celix_strerror(entry->errorCode, errorString, 256);
+						sprintf(line, "%s - Bundle: %s - %s - %d %s\n", time, bundleSymbolicName, entry->message, entry->errorCode, errorString);
+						out(line);
+					} else {
+						sprintf(line, "%s - Bundle: %s - %s\n", time, bundleSymbolicName, entry->message);
+						out(line);
+					}
+				}
             }
             apr_pool_destroy(memory_pool);
         } else {
@@ -80,4 +101,24 @@ void logCommand_execute(command_pt command, char *line, void (*out)(char *), voi
     } else {
         out("No log reader available\n");
     }
+}
+
+celix_status_t logCommand_levelAsString(command_pt command, log_level_t level, char **string) {
+	switch (level) {
+	case LOG_ERROR:
+		*string = "ERROR";
+		break;
+	case LOG_WARNING:
+		*string = "WARNING";
+		break;
+	case LOG_INFO:
+		*string = "INFO";
+		break;
+	case LOG_DEBUG:
+	default:
+		*string = "DEBUG";
+		break;
+	}
+
+	return CELIX_SUCCESS;
 }

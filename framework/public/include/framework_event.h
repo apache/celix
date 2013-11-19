@@ -1,4 +1,4 @@
-/**
+/*
  *Licensed to the Apache Software Foundation (ASF) under one
  *or more contributor license agreements.  See the NOTICE file
  *distributed with this work for additional information
@@ -17,33 +17,41 @@
  *under the License.
  */
 /*
- * logger.h
+ * framework_event.h
  *
- *  \date       Jun 26, 2011
+ *  \date       Oct 8, 2013
  *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
-#ifndef LOG_H_
-#define LOG_H_
+#ifndef FRAMEWORK_EVENT_H_
+#define FRAMEWORK_EVENT_H_
 
-#include <apr_general.h>
+enum framework_event_type
+{
+	FRAMEWORK_EVENT_STARTED = 0x00000001,
+	FRAMEWORK_EVENT_ERROR = 0x00000002,
+	FRAMEWORK_EVENT_PACKAGES_REFRESHED = 0x00000004,
+	FRAMEWORK_EVENT_STARTLEVEL_CHANGED = 0x00000008,
+	FRAMEWORK_EVENT_WARNING = 0x00000010,
+	FRAMEWORK_EVENT_INFO = 0x00000020,
+	FRAMEWORK_EVENT_STOPPED = 0x00000040,
+	FRAMEWORK_EVENT_STOPPED_UPDATE = 0x00000080,
+	FRAMEWORK_EVENT_STOPPED_BOOTCLASSPATH_MODIFIED = 0x00000100,
+	FRAMEWORK_EVENT_WAIT_TIMEDOUT = 0x00000200,
+};
 
-#include "linkedlist.h"
-#include "log_entry.h"
-#include "log_listener.h"
+typedef enum framework_event_type framework_event_type_e;
+typedef struct framework_event *framework_event_pt;
 
-typedef struct log * log_pt;
+#include "service_reference.h"
+#include "bundle.h"
 
-celix_status_t log_create(apr_pool_t *pool, log_pt *logger);
-celix_status_t log_addEntry(log_pt log, log_entry_pt entry);
-celix_status_t log_getEntries(log_pt log, apr_pool_t *memory_pool, linked_list_pt *list);
+struct framework_event {
+	bundle_pt bundle;
+	framework_event_type_e type;
+	celix_status_t errorCode;
+	char *error;
+};
 
-celix_status_t log_bundleChanged(void *listener, bundle_event_pt event);
-celix_status_t log_frameworkEvent(void *listener, framework_event_pt event);
-
-celix_status_t log_addLogListener(log_pt logger, log_listener_pt listener);
-celix_status_t log_removeLogListener(log_pt logger, log_listener_pt listener);
-celix_status_t log_removeAllLogListener(log_pt logger);
-
-#endif /* LOG_H_ */
+#endif /* FRAMEWORK_EVENT_H_ */
