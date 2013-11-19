@@ -1044,7 +1044,6 @@ celix_status_t fw_refreshBundles(framework_pt framework, bundle_pt bundles[], in
 
     bool locked = framework_acquireGlobalLock(framework);
     if (!locked) {
-        printf("Unable to acquire the global lock to install the bundle\n");
         framework_releaseGlobalLock(framework);
         status = CELIX_ILLEGAL_STATE;
     } else {
@@ -1960,22 +1959,21 @@ celix_status_t framework_releaseGlobalLock(framework_pt framework) {
 
 celix_status_t framework_waitForStop(framework_pt framework) {
 	if (apr_thread_mutex_lock(framework->mutex) != 0) {
-		fw_log(FW_LOG_ERROR,  "Error locking the framework, shutdown gate not set.");
+		fw_log(FW_LOG_ERROR, "Error locking the framework, shutdown gate not set.");
 		return CELIX_FRAMEWORK_EXCEPTION;
 	}
 	while (!framework->shutdown) {
 		apr_status_t apr_status = apr_thread_cond_wait(framework->shutdownGate, framework->mutex);
-		printf("FRAMEWORK: Gate opened\n");
 		if (apr_status != 0) {
-			fw_log(FW_LOG_ERROR,  "Error waiting for shutdown gate.");
+			fw_log(FW_LOG_ERROR, "Error waiting for shutdown gate.");
 			return CELIX_FRAMEWORK_EXCEPTION;
 		}
 	}
 	if (apr_thread_mutex_unlock(framework->mutex) != 0) {
-		fw_log(FW_LOG_ERROR,  "Error unlocking the framework.");
+		fw_log(FW_LOG_ERROR, "Error unlocking the framework.");
 		return CELIX_FRAMEWORK_EXCEPTION;
 	}
-	printf("FRAMEWORK: Successful shutdown\n");
+	fw_log(FW_LOG_INFO, "FRAMEWORK: Successful shutdown");
 	return CELIX_SUCCESS;
 }
 
@@ -1985,7 +1983,7 @@ static void *APR_THREAD_FUNC framework_shutdown(apr_thread_t *thd, void *framewo
 	hash_map_iterator_pt iterator;
 	int err;
 
-	printf("FRAMEWORK: Shutdown\n");
+	fw_log(FW_LOG_INFO, "FRAMEWORK: Shutdown");
 
 	iterator = hashMapIterator_create(fw->installedBundleMap);
 	while (hashMapIterator_hasNext(iterator)) {
@@ -2010,12 +2008,8 @@ static void *APR_THREAD_FUNC framework_shutdown(apr_thread_t *thd, void *framewo
 		return NULL;
 	}
 	fw->shutdown = true;
-	printf("FRAMEWORK: Open gate\n");
 	err = apr_thread_cond_broadcast(fw->shutdownGate);
-	printf("FRAMEWORK: BC send %d\n", err);
-	printf("FRAMEWORK: BC send\n");
 	if (err != 0) {
-		printf("FRAMEWORK: BC send\n");
 		fw_log(FW_LOG_ERROR,  "Error waking the shutdown gate, cannot exit clean.");
 		err = apr_thread_mutex_unlock(fw->mutex);
 		if (err != 0) {
@@ -2025,16 +2019,14 @@ static void *APR_THREAD_FUNC framework_shutdown(apr_thread_t *thd, void *framewo
 		apr_thread_exit(thd, APR_ENOLOCK);
 		return NULL;
 	}
-	printf("FRAMEWORK: Unlock\n");
 	err = apr_thread_mutex_unlock(fw->mutex);
 	if (err != 0) {
 		fw_log(FW_LOG_ERROR,  "Error unlocking the framework, cannot exit clean.");
 	}
 
-	printf("FRAMEWORK: Exit thread\n");
 	apr_thread_exit(thd, APR_SUCCESS);
 
-	printf("FRAMEWORK: Shutdown done\n");
+	fw_log(FW_LOG_INFO, "FRAMEWORK: Shutdown done\n");
 
 	return NULL;
 }
@@ -2228,7 +2220,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 
 	if (bundleContext_getFramework(context, &framework) == CELIX_SUCCESS) {
 
-		printf("FRAMEWORK: Start shutdownthread\n");
+	    fw_log(FW_LOG_INFO, "FRAMEWORK: Start shutdownthread");
 	    if (apr_thread_create(&shutdownThread, NULL, framework_shutdown, framework, framework->mp) == APR_SUCCESS) {
             apr_thread_detach(shutdownThread);
 	    } else {

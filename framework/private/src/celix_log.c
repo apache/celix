@@ -29,11 +29,33 @@
 #include "celix_log.h"
 
 void framework_log(framework_log_level_t level, const char *func, const char *file, int line, char *fmsg, ...) {
-	char msg[512];
-	va_list listPointer;
-	va_start(listPointer, fmsg);
-	vsprintf(msg, fmsg, listPointer);
-	printf("%s\n\tat %s(%s:%d)\n", msg, func, file, line);
+    char *levelStr = NULL;
+    char msg[512];
+    va_list listPointer;
+    va_start(listPointer, fmsg);
+    vsprintf(msg, fmsg, listPointer);
+    switch (level) {
+        case FW_LOG_ERROR:
+            levelStr = "ERROR";
+            break;
+        case FW_LOG_WARNING:
+            levelStr = "WARNING";
+            break;
+        case FW_LOG_INFO:
+            levelStr = "INFO";
+            break;
+        case FW_LOG_DEBUG:
+        default:
+            levelStr = "DEBUG";
+            break;
+    }
+
+    if (level == FW_LOG_ERROR) {
+        printf("%s: %s\n\tat %s(%s:%d)\n", levelStr, msg, func, file, line);
+    } else {
+        printf("%s: %s\n", levelStr, msg);
+    }
+
 }
 
 void framework_logCode(framework_log_level_t level, const char *func, const char *file, int line, celix_status_t code, char *fmsg, ...) {

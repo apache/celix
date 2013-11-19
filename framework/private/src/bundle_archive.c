@@ -806,7 +806,6 @@ static celix_status_t bundleArchive_deleteTree(char * directory, apr_pool_t *mp)
 	celix_status_t status = CELIX_SUCCESS;
 	apr_status_t stat = apr_dir_open(&dir, directory, mp);
 	if (stat != APR_SUCCESS) {
-	    printf("ERROR opening: %d\n", stat);
 	    status = CELIX_FILE_IO_EXCEPTION;
 	} else {
 		apr_finfo_t dp;

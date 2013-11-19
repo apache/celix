@@ -66,7 +66,6 @@ hash_map_pt resolver_resolve(module_pt root) {
 	hash_map_iterator_pt iter = NULL;
 
 	if (module_isResolved(root)) {
-	    printf("already resolved\n");
 		return NULL;
 	}
 

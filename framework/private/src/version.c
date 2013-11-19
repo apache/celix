@@ -28,7 +28,6 @@
 #include <apr_strings.h>
 
 #include "celix_errno.h"
-#include "framework_log.h"
 #include "version_private.h"
 #include "celix_log.h"
 
@@ -57,15 +56,15 @@ celix_status_t version_createVersion(apr_pool_t *pool, int major, int minor, int
 			(*version)->qualifier = apr_pstrdup(pool, qualifier);
 
 			if (major < 0) {
-				celix_log("Negative major");
+			    fw_log(FW_LOG_ERROR, "Negative major");
 				status = CELIX_ILLEGAL_ARGUMENT;
 			}
 			if (minor < 0) {
-				celix_log("Negative minor");
+			    fw_log(FW_LOG_ERROR, "Negative minor");
 				status = CELIX_ILLEGAL_ARGUMENT;
 			}
 			if (micro < 0) {
-				celix_log("Negative micro");
+			    fw_log(FW_LOG_ERROR, "Negative micro");
 				status = CELIX_ILLEGAL_ARGUMENT;
 			}
 
@@ -83,7 +82,7 @@ celix_status_t version_createVersion(apr_pool_t *pool, int major, int minor, int
 				if ((ch == '_') || (ch == '-')) {
 					continue;
 				}
-				celix_log("Invalid qualifier");
+				fw_log(FW_LOG_ERROR, "Invalid qualifier");
 				status = CELIX_ILLEGAL_ARGUMENT;
 				break;
 			}
@@ -129,7 +128,7 @@ celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionS
 			if (('0' <= ch) && (ch <= '9')) {
 				continue;
 			}
-			celix_log("Invalid format");
+			fw_log(FW_LOG_ERROR, "Invalid format");
 			status = CELIX_ILLEGAL_ARGUMENT;
 			break;
 		}
@@ -141,7 +140,7 @@ celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionS
 				if (('0' <= ch) && (ch <= '9')) {
 					continue;
 				}
-				celix_log("Invalid format");
+				fw_log(FW_LOG_ERROR, "Invalid format");
 				status = CELIX_ILLEGAL_ARGUMENT;
 				break;
 			}
@@ -153,7 +152,7 @@ celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionS
 					if (('0' <= ch) && (ch <= '9')) {
 						continue;
 					}
-					celix_log("Invalid format");
+					fw_log(FW_LOG_ERROR, "Invalid format");
 					status = CELIX_ILLEGAL_ARGUMENT;
 					break;
 				}
