@@ -196,6 +196,8 @@ if (FRAMEWORK)
 			private/mock/bundle_cache_mock.c
 			private/mock/manifest_mock.c
 			private/src/utils.c
+			private/src/celix_errorcodes.c
+			private/src/celix_log.c
 			private/src/framework.c)
 		target_link_libraries(framework_test ${APR_LIBRARY} ${APRUTIL_LIBRARY} ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils)
 		
@@ -246,12 +248,16 @@ if (FRAMEWORK)
 		add_executable(bundle_archive_test 
 			private/test/bundle_archive_test.cpp
 			private/mock/bundle_revision_mock.c
-			private/src/bundle_archive.c)
+			private/src/bundle_archive.c
+			private/src/celix_errorcodes.c
+            private/src/celix_log.c)
 		target_link_libraries(bundle_archive_test ${APR_LIBRARY} ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils)
 		
 		add_executable(attribute_test 
 			private/test/attribute_test.cpp
-			private/src/attribute.c)
+			private/src/attribute.c
+			private/src/celix_errorcodes.c
+            private/src/celix_log.c)
 		target_link_libraries(attribute_test ${APR_LIBRARY} ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils)
 	    
 	    ADD_TARGET_FOR_TEST(version_test)

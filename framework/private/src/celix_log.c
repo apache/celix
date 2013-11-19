@@ -23,13 +23,26 @@
  *  \author     <a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
  *  \copyright  Apache License, Version 2.0
  */
+#include <stdarg.h>
 
+#include "celix_errno.h"
 #include "celix_log.h"
 
-void framework_log(framework_pt framework, framework_log_level_t level, const char *func, const char *file, int line, char *fmsg, ...) {
+void framework_log(framework_log_level_t level, const char *func, const char *file, int line, char *fmsg, ...) {
 	char msg[512];
 	va_list listPointer;
 	va_start(listPointer, fmsg);
 	vsprintf(msg, fmsg, listPointer);
-	printf("Log write: %s at %s, %s, %d\n", msg, func, file, line);
+	printf("%s\n\tat %s(%s:%d)\n", msg, func, file, line);
+}
+
+void framework_logCode(framework_log_level_t level, const char *func, const char *file, int line, celix_status_t code, char *fmsg, ...) {
+    char message[256];
+    celix_strerror(code, message, 256);
+    char msg[512];
+    va_list listPointer;
+    va_start(listPointer, fmsg);
+    vsprintf(msg, fmsg, listPointer);
+
+    framework_log(level, func, file, line, "%s [%d]: %s", message, code, msg);
 }

@@ -27,12 +27,15 @@
 #include <stdio.h>
 
 #include "attribute_private.h"
+#include "celix_log.h"
 
 celix_status_t attribute_create(apr_pool_t *memory_pool, char * key, char * value, attribute_pt *attribute) {
 	celix_status_t status = CELIX_SUCCESS;
+	char *error = NULL;
 
 	if (key == NULL || value == NULL || memory_pool == NULL || *attribute != NULL) {
 		status = CELIX_ILLEGAL_ARGUMENT;
+	    error = "Missing required arguments and/or values";
 	} else {
 		attribute_pt attr = apr_palloc(memory_pool, sizeof(*attr));
 		if (!attr) {
@@ -43,6 +46,14 @@ celix_status_t attribute_create(apr_pool_t *memory_pool, char * key, char * valu
 
 			*attribute = attr;
 		}
+	}
+
+	if (status != CELIX_SUCCESS) {
+        if (error != NULL) {
+            fw_logCode(FW_LOG_ERROR, status, "Could not create attribute: [key=%s;value=%s]; cause: %s", key, value, error);
+        } else {
+            fw_logCode(FW_LOG_ERROR, status, "Could not create attribute: [key=%s;value=%s]", key, value);
+        }
 	}
 
 	return status;
