@@ -16,11 +16,13 @@
 # under the License.
 is_enabled(REMOTE_SERVICE_ADMIN)
 if (REMOTE_SERVICE_ADMIN)
-	deploy("remote-services-bj" BUNDLES discovery_bonjour topology_manager remote_service_admin calculator calculator_endpoint shell shell_tui log_service log_writer)
-	deploy("remote-services-bj-client" BUNDLES topology_manager remote_service_admin calculator_proxy shell shell_tui log_service log_writer calculator_shell discovery_bonjour)
+	deploy("remote-services-bj" BUNDLES discovery_bonjour topology_manager remote_service_admin calculator shell shell_tui log_service log_writer 
+	                            ENDPOINTS org.example.api.Calculator_endpoint)
+	deploy("remote-services-bj-client" BUNDLES topology_manager remote_service_admin shell shell_tui log_service log_writer calculator_shell discovery_bonjour
+	                                   ENDPOINTS org.example.api.Calculator_proxy)
 	
-	deploy("remote-services" BUNDLES discovery_slp topology_manager remote_service_admin calculator calculator_endpoint shell shell_tui log_service log_writer)
-	deploy("remote-services-client" BUNDLES topology_manager remote_service_admin calculator_proxy shell shell_tui log_service log_writer calculator_shell discovery_slp)
+	deploy("remote-services" BUNDLES discovery_slp topology_manager remote_service_admin calculator org.example.api.Calculator_endpoint shell shell_tui log_service log_writer)
+	deploy("remote-services-client" BUNDLES topology_manager remote_service_admin org.example.api.Calculator_proxy shell shell_tui log_service log_writer calculator_shell discovery_slp)
 	
 	#TODO for remote-service-client the discovery should be added as last. If this is not done, 
 	#discovery will discover services before the topology manager is registered as 

@@ -30,8 +30,8 @@
 #include "remote_service_admin.h"
 #include "civetweb.h"
 
-#define BUNDLE_STORE_PROPERTY_NAME "RS_BUNDLE"
-#define DEFAULT_BUNDLE_STORE "rs_bundles"
+#define BUNDLE_STORE_PROPERTY_NAME "ENDPOINTS"
+#define DEFAULT_BUNDLE_STORE "endpoints"
 
 struct export_reference {
 	endpoint_description_pt endpoint;

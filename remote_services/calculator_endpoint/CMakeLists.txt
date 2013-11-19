@@ -23,11 +23,11 @@ include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/calculator_endpoint/private/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/calculator_service/public/include")
 
-bundle(calculator_endpoint SOURCES 
+bundle(org.example.api.Calculator_endpoint SOURCES 
 	private/src/calculator_endpoint_activator
 	private/src/calculator_endpoint_impl.c
     
     private/include/calculator_endpoint_impl.h
 )
 
-target_link_libraries(calculator_endpoint celix_framework ${JANSSON_LIBRARIES})
+target_link_libraries(org.example.api.Calculator_endpoint celix_framework ${JANSSON_LIBRARIES})

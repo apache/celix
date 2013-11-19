@@ -26,11 +26,11 @@ include_directories("${PROJECT_SOURCE_DIR}/remote_services/calculator_proxy/priv
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/calculator_service/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
 
-bundle(calculator_proxy SOURCES 
+bundle(org.example.api.Calculator_proxy SOURCES 
 	private/src/calculator_proxy_activator
 	private/src/calculator_proxy_impl.c
     
     private/include/calculator_proxy_impl.h
 )
 
-target_link_libraries(calculator_proxy celix_framework ${JANSSON_LIBRARIES} ${CURL_LIBRARIES})
+target_link_libraries(org.example.api.Calculator_proxy celix_framework ${JANSSON_LIBRARIES} ${CURL_LIBRARIES})

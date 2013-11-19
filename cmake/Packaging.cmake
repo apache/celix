@@ -212,7 +212,7 @@ ENDMACRO(package)
 
 ADD_CUSTOM_TARGET(deploy)
 MACRO(deploy)
-    PARSE_ARGUMENTS(DEPLOY "BUNDLES" "" ${ARGN})
+    PARSE_ARGUMENTS(DEPLOY "BUNDLES;DRIVERS;ENDPOINTS" "" ${ARGN})
     LIST(GET DEPLOY_DEFAULT_ARGS 0 DEPLOY_NAME)
     
 	SET(DEPLOY_COMPONENT deploy_${DEPLOY_NAME})
@@ -220,6 +220,7 @@ MACRO(deploy)
 		
 	SET(BUNDLES "")
 	SET(DEPS)
+	
 	FOREACH(BUNDLE ${DEPLOY_BUNDLES})
 		SET(DEP_NAME ${DEPLOY_NAME}_${BUNDLE}) 
 		get_property(bundle_file TARGET ${BUNDLE} PROPERTY BUNDLE)
@@ -232,6 +233,31 @@ MACRO(deploy)
 	    SET(BUNDLES "${BUNDLES} bundles/${BUNDLE}.zip")
 	    SET(DEPS ${DEPS};${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/bundles/${BUNDLE}.zip)
 	ENDFOREACH(BUNDLE)
+	FOREACH(BUNDLE ${DEPLOY_DRIVERS})
+        SET(DEP_NAME ${DEPLOY_NAME}_${BUNDLE}) 
+        get_property(bundle_file TARGET ${BUNDLE} PROPERTY BUNDLE)
+        add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/drivers/${BUNDLE}.zip
+            COMMAND ${CMAKE_COMMAND} -E copy ${bundle_file} 
+                ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/drivers/${BUNDLE}.zip
+            DEPENDS ${BUNDLE}
+            COMMENT "Deploying ${BUNDLE} to ${DEPLOY_NAME}"
+        )
+        #SET(BUNDLES "${BUNDLES} drivers/${BUNDLE}.zip")
+        SET(DEPS ${DEPS};${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/drivers/${BUNDLE}.zip)
+    ENDFOREACH(BUNDLE)
+    FOREACH(BUNDLE ${DEPLOY_ENDPOINTS})
+        SET(DEP_NAME ${DEPLOY_NAME}_${BUNDLE}) 
+        get_property(bundle_file TARGET ${BUNDLE} PROPERTY BUNDLE)
+        add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/endpoints/${BUNDLE}.zip
+            COMMAND ${CMAKE_COMMAND} -E copy ${bundle_file} 
+                ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/endpoints/${BUNDLE}.zip
+            DEPENDS ${BUNDLE}
+            COMMENT "Deploying ${BUNDLE} to ${DEPLOY_NAME}"
+        )
+        #SET(BUNDLES "${BUNDLES} drivers/${BUNDLE}.zip")
+        SET(DEPS ${DEPS};${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/endpoints/${BUNDLE}.zip)
+    ENDFOREACH(BUNDLE)
+	
 	IF(NOT(CELIX_FOUND)) #celix project
 		set(DEPS ${DEPS};celix)
 	ENDIF()
@@ -242,6 +268,7 @@ MACRO(deploy)
     
     GET_DIRECTORY_PROPERTY(PROPS ADDITIONAL_MAKE_CLEAN_FILES)
 	SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${PROPS};${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/bundles")
+	SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${PROPS};${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/drivers")
 	
 	CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/config.properties.in ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/config.properties @ONLY)
 	

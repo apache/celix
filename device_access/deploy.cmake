@@ -16,5 +16,6 @@
 # under the License.
 is_enabled(DEVICE_ACCESS_EXAMPLE)
 if(DEVICE_ACCESS_EXAMPLE)
-	deploy("device_access_example" BUNDLES device_manager driver_locator shell shell_tui log_service base_driver base_driver word_consumingdriver char_refiningdriver)
+	deploy("device_access_example" BUNDLES device_manager driver_locator shell shell_tui log_service base_driver
+	                               DRIVERS word_consumingdriver char_refiningdriver)
 endif(DEVICE_ACCESS_EXAMPLE)
