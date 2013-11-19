@@ -49,8 +49,8 @@ struct log {
     apr_pool_t *pool;
 };
 
-celix_status_t log_startListenerThread(log_pt logger);
-celix_status_t log_stopListenerThread(log_pt logger);
+static celix_status_t log_startListenerThread(log_pt logger);
+static celix_status_t log_stopListenerThread(log_pt logger);
 
 void * APR_THREAD_FUNC log_listenerThread(apr_thread_t *thread, void *data);
 apr_status_t log_destroy(void *logp);
@@ -222,6 +222,7 @@ celix_status_t log_removeLogListener(log_pt logger, log_listener_pt listener) {
     celix_status_t status = CELIX_SUCCESS;
     apr_status_t apr_status;
 
+    apr_status = apr_thread_mutex_lock(logger->deliverLock);
     apr_status = apr_thread_mutex_lock(logger->listenerLock);
     if (apr_status != APR_SUCCESS) {
         status = CELIX_INVALID_SYNTAX;
@@ -232,6 +233,7 @@ celix_status_t log_removeLogListener(log_pt logger, log_listener_pt listener) {
         }
 
         apr_status = apr_thread_mutex_unlock(logger->listenerLock);
+        apr_status = apr_thread_mutex_unlock(logger->deliverLock);
         if (apr_status != APR_SUCCESS) {
             status = CELIX_INVALID_SYNTAX;
         }
@@ -261,7 +263,7 @@ celix_status_t log_removeAllLogListener(log_pt logger) {
     return status;
 }
 
-celix_status_t log_startListenerThread(log_pt logger) {
+static celix_status_t log_startListenerThread(log_pt logger) {
     celix_status_t status = CELIX_SUCCESS;
     apr_status_t apr_status;
 
@@ -274,21 +276,19 @@ celix_status_t log_startListenerThread(log_pt logger) {
     return status;
 }
 
-celix_status_t log_stopListenerThread(log_pt logger) {
+static celix_status_t log_stopListenerThread(log_pt logger) {
     celix_status_t status = CELIX_SUCCESS;
     apr_status_t apr_status = APR_SUCCESS;
 
-    apr_status = apr_thread_mutex_lock(logger->deliverLock);
     if (apr_status != APR_SUCCESS) {
         status = CELIX_INVALID_SYNTAX;
     } else {
         logger->running = false;
         apr_thread_cond_signal(logger->entriesToDeliver);
-        status = apr_thread_mutex_unlock(logger->deliverLock);
         if (status != APR_SUCCESS) {
             status = CELIX_INVALID_SYNTAX;
         } else {
-            //apr_thread_join(&stat, logger->listenerThread);
+//            apr_thread_join(&status, logger->listenerThread);
             logger->listenerThread = NULL;
         }
 
