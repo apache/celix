@@ -28,6 +28,8 @@
 #ifndef FRAMEWORK_PRIVATE_H_
 #define FRAMEWORK_PRIVATE_H_
 
+#include <apr_thread_cond.h>
+
 #include "framework.h"
 
 #include "manifest.h"
@@ -42,6 +44,43 @@
 #include "framework_listener.h"
 #include "service_registration.h"
 #include "bundle_context.h"
+#include "bundle_cache.h"
+
+struct framework {
+    struct bundle * bundle;
+    hash_map_pt installedBundleMap;
+    hash_map_pt installRequestMap;
+    array_list_pt serviceListeners;
+    array_list_pt bundleListeners;
+    array_list_pt frameworkListeners;
+
+    long nextBundleId;
+    struct serviceRegistry * registry;
+    bundle_cache_pt cache;
+
+    apr_thread_cond_t *shutdownGate;
+    apr_thread_cond_t *condition;
+
+    apr_thread_mutex_t *installRequestLock;
+    apr_thread_mutex_t *mutex;
+    apr_thread_mutex_t *bundleLock;
+
+    apr_os_thread_t globalLockThread;
+    array_list_pt globalLockWaitersList;
+    int globalLockCount;
+
+    bool interrupted;
+    bool shutdown;
+
+    apr_pool_t *mp;
+
+    properties_pt configurationMap;
+
+    array_list_pt requests;
+    apr_thread_cond_t *dispatcher;
+    apr_thread_mutex_t *dispatcherLock;
+    apr_thread_t *dispatcherThread;
+};
 
 celix_status_t framework_start(framework_pt framework);
 void framework_stop(framework_pt framework);

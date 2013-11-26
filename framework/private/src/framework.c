@@ -33,7 +33,6 @@
 #include <apr_file_io.h>
 #include <apr_general.h>
 #include <apr_strings.h>
-#include <apr_thread_cond.h>
 #include <apr_thread_mutex.h>
 #include <apr_thread_proc.h>
 #include <apr_uuid.h>
@@ -63,42 +62,6 @@
 #include "listener_hook_service.h"
 #include "service_registration.h"
 #include "celix_log.h"
-
-struct framework {
-	struct bundle * bundle;
-	hash_map_pt installedBundleMap;
-	hash_map_pt installRequestMap;
-	array_list_pt serviceListeners;
-	array_list_pt bundleListeners;
-	array_list_pt frameworkListeners;
-
-	long nextBundleId;
-	struct serviceRegistry * registry;
-	bundle_cache_pt cache;
-
-	apr_thread_cond_t *shutdownGate;
-	apr_thread_cond_t *condition;
-
-	apr_thread_mutex_t *installRequestLock;
-	apr_thread_mutex_t *mutex;
-	apr_thread_mutex_t *bundleLock;
-
-	apr_os_thread_t globalLockThread;
-	array_list_pt globalLockWaitersList;
-	int globalLockCount;
-
-	bool interrupted;
-	bool shutdown;
-
-	apr_pool_t *mp;
-
-	properties_pt configurationMap;
-
-	array_list_pt requests;
-	apr_thread_cond_t *dispatcher;
-	apr_thread_mutex_t *dispatcherLock;
-	apr_thread_t *dispatcherThread;
-};
 
 typedef celix_status_t (*create_function_pt)(bundle_context_pt context, void **userData);
 typedef celix_status_t (*start_function_pt)(void * handle, bundle_context_pt context);
@@ -710,7 +673,8 @@ celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int opti
                     if (handle == NULL) {
                         char err[256];
                         sprintf(err, "library could not be opened: %s", fw_getLastError());
-                        error = err;
+                        // #TODO this is wrong
+                        // error = err;
                         status =  CELIX_BUNDLE_EXCEPTION;
                     }
 

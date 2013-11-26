@@ -339,5 +339,7 @@ if (FRAMEWORK)
 		SETUP_TARGET_FOR_COVERAGE(bundle_cache_test_c bundle_cache_test ${CMAKE_BINARY_DIR}/coverage/bundle_cache_test)
 		SETUP_TARGET_FOR_COVERAGE(bundle_archive_test_c bundle_archive_test ${CMAKE_BINARY_DIR}/coverage/bundle_archive_test)
 		SETUP_TARGET_FOR_COVERAGE(attribute_test_c attribute_test ${CMAKE_BINARY_DIR}/coverage/attribute_test)
+		
+		add_subdirectory(private/integration-test)
 	endif (FRAMEWORK_TESTS)
 endif (FRAMEWORK)
