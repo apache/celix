@@ -190,7 +190,9 @@ celix_status_t framework_create(framework_pt *framework, apr_pool_t *memoryPool,
             (*framework)->shutdownGate = NULL;
             (*framework)->configurationMap = config;
 
-            status = CELIX_DO_IF(status, bundle_create(&(*framework)->bundle, (*framework)->mp));
+            apr_pool_t *pool = NULL;
+            apr_pool_create(&pool, (*framework)->mp);
+            status = CELIX_DO_IF(status, bundle_create(&(*framework)->bundle, pool));
             status = CELIX_DO_IF(status, arrayList_create((*framework)->mp, &(*framework)->globalLockWaitersList));
             status = CELIX_DO_IF(status, bundle_setFramework((*framework)->bundle, (*framework)));
             if (status == CELIX_SUCCESS) {
@@ -504,7 +506,7 @@ celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, lon
         }
   	}
 
-  	if (status == CELIX_SUCCESS) {
+    if (status == CELIX_SUCCESS) {
         *bundle = framework_getBundle(framework, location);
         if (*bundle != NULL) {
             framework_releaseInstallLock(framework, location);
@@ -537,11 +539,10 @@ celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, lon
                 }
             }
         }
-        status = CELIX_DO_IF(status, framework_releaseInstallLock(framework, location));
-  	}
+    }
+    status = CELIX_DO_IF(status, framework_releaseInstallLock(framework, location));
 
     if (status != CELIX_SUCCESS) {
-        status = CELIX_DO_IF(status, framework_releaseInstallLock(framework, location));
     	fw_logCode(FW_LOG_ERROR, status, "Could not install bundle");
     } else {
         status = CELIX_DO_IF(status, fw_fireBundleEvent(framework, BUNDLE_EVENT_INSTALLED, *bundle));
@@ -671,10 +672,10 @@ celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int opti
                     // apr_dso_load(&handle, libraryPath, bundle->memoryPool);
                     handle = fw_openLibrary(libraryPath);
                     if (handle == NULL) {
-                        char err[256];
+                        char err[1024];
                         sprintf(err, "library could not be opened: %s", fw_getLastError());
                         // #TODO this is wrong
-                        // error = err;
+                        error = err;
                         status =  CELIX_BUNDLE_EXCEPTION;
                     }
 
@@ -890,7 +891,7 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
                 // #TODO remove listeners for bundle
 
                 // #TODO enable dlclose call
-//              dlclose(bundle_getHandle(bundle));
+              dlclose(bundle_getHandle(bundle));
 
                 if (context != NULL) {
                     status = CELIX_DO_IF(status, bundleContext_destroy(context));
@@ -990,14 +991,14 @@ celix_status_t fw_uninstallBundle(framework_pt framework, bundle_pt bundle) {
 
 
     if (status != CELIX_SUCCESS) {
-        module_pt module = NULL;
-        char *symbolicName = NULL;
-        long id = 0;
-        bundle_getCurrentModule(bundle, &module);
-        module_getSymbolicName(module, &symbolicName);
-        bundle_getBundleId(bundle, &id);
+//        module_pt module = NULL;
+//        char *symbolicName = NULL;
+//        long id = 0;
+//        bundle_getCurrentModule(bundle, &module);
+//        module_getSymbolicName(module, &symbolicName);
+//        bundle_getBundleId(bundle, &id);
 
-        framework_logIfError(status, error, "Cannot uninstall bundle: %s [%ld]", symbolicName, id);
+        framework_logIfError(status, error, "Cannot uninstall bundle");
     }
 
     return status;
@@ -2186,7 +2187,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 
 	    fw_log(FW_LOG_INFO, "FRAMEWORK: Start shutdownthread");
 	    if (apr_thread_create(&shutdownThread, NULL, framework_shutdown, framework, framework->mp) == APR_SUCCESS) {
-            apr_thread_detach(shutdownThread);
+            apr_thread_join(&status, shutdownThread);
 	    } else {
             fw_log(FW_LOG_ERROR,  "Could not create shutdown thread, normal exit not possible.");
 	        status = CELIX_FRAMEWORK_EXCEPTION;

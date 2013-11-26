@@ -109,7 +109,7 @@ celix_status_t bundle_createFromArchive(bundle_pt * bundle, framework_pt framewo
 	status = bundle_createModule(*bundle, &module);
 	if (status == CELIX_SUCCESS) {
         apr_status_t apr_status;
-		
+
 		bundle_addModule(*bundle, module);
         apr_status = apr_thread_mutex_create(&(*bundle)->lock, APR_THREAD_MUTEX_UNNESTED, (*bundle)->memoryPool);
         if (apr_status != APR_SUCCESS) {
@@ -137,6 +137,9 @@ celix_status_t bundle_destroy(bundle_pt bundle) {
 	}
 	arrayListIterator_destroy(iter);
 	arrayList_destroy(bundle->modules);
+	apr_thread_mutex_destroy(bundle->lock);
+
+	apr_pool_destroy(bundle->memoryPool);
 	return CELIX_SUCCESS;
 }
 

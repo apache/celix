@@ -151,11 +151,6 @@ celix_status_t bundleArchive_create(char * archiveRoot, long id, char * location
 static apr_status_t bundleArchive_destroy(void *archiveP) {
     apr_status_t status = APR_SUCCESS;
 	bundle_archive_pt archive = archiveP;
-	if (archive != NULL) {
-		if (archive->archiveRootDir != NULL) {
-			status = apr_dir_close(archive->archiveRootDir);
-		}
-	}
 	archive = NULL;
 
 	framework_logIfError(status, NULL, "Could not create archive");
@@ -748,39 +743,35 @@ static celix_status_t bundleArchive_initialize(bundle_archive_pt archive) {
 		if (apr_dir_make(archive->archiveRoot, APR_UREAD|APR_UWRITE|APR_UEXECUTE, archive->mp) != APR_SUCCESS) {
 			status = CELIX_FILE_IO_EXCEPTION;
 		} else {
-			apr_status_t apr_status = apr_dir_open(&archive->archiveRootDir, archive->archiveRoot, archive->mp);
+            apr_pool_t *spool = NULL;
+
+		    apr_pool_create(&spool, archive->mp);
+			apr_status_t apr_status = apr_dir_open(&archive->archiveRootDir, archive->archiveRoot, spool);
 			if (apr_status != APR_SUCCESS) {
 				status = CELIX_FILE_IO_EXCEPTION;
 			} else {
 				apr_file_t *bundleIdFile;
 				apr_status_t apr_status;
-				apr_pool_t *spool = NULL;
 				char *bundleId = NULL;
 
-				apr_pool_create(&spool, archive->mp);
 				bundleId = (char *)apr_palloc(spool, sizeof(*bundleId) * (strlen(archive->archiveRoot) + 11));
 				bundleId = apr_pstrcat(spool, archive->archiveRoot, "/bundle.id", NULL);
-				
-				apr_status = apr_file_open(&bundleIdFile, bundleId, APR_FOPEN_CREATE|APR_FOPEN_WRITE, APR_OS_DEFAULT, archive->mp);
-				apr_pool_destroy(spool);
 
+				apr_status = apr_file_open(&bundleIdFile, bundleId, APR_FOPEN_CREATE|APR_FOPEN_WRITE, APR_OS_DEFAULT, spool);
 				if (apr_status != APR_SUCCESS) {
 					status = CELIX_FILE_IO_EXCEPTION;
 				} else {
 					char * bundleLocation;
 					apr_file_t *bundleLocationFile;
-					apr_pool_t *subpool = NULL;
 
 					apr_file_printf(bundleIdFile, "%ld", archive->id);
 					// Ignore close status, let it fail if needed again
 					apr_file_close(bundleIdFile);
-					apr_pool_create(&subpool, archive->mp);
 
-					bundleLocation = (char *) apr_palloc(subpool, strlen(archive->archiveRoot) + 17);
-					strcpy(bundleLocation,archive->archiveRoot);
-					strcat(bundleLocation, "/bundle.location");
-					
-					apr_status = apr_file_open(&bundleLocationFile, bundleLocation, APR_FOPEN_CREATE|APR_FOPEN_WRITE, APR_OS_DEFAULT, archive->mp);
+					bundleLocation = (char *) apr_palloc(spool, strlen(archive->archiveRoot) + 17);
+					bundleLocation = apr_pstrcat(spool, archive->archiveRoot, "/bundle.location", NULL);
+
+					apr_status = apr_file_open(&bundleLocationFile, bundleLocation, APR_FOPEN_CREATE|APR_FOPEN_WRITE, APR_OS_DEFAULT, spool);
 					if (apr_status != APR_SUCCESS) {
 						status = CELIX_FILE_IO_EXCEPTION;
 					} else {
@@ -790,9 +781,10 @@ static celix_status_t bundleArchive_initialize(bundle_archive_pt archive) {
 
 						status = bundleArchive_writeLastModified(archive);
 					}
-					apr_pool_destroy(subpool);
 				}
+				status = apr_dir_close(archive->archiveRootDir);
 			}
+            apr_pool_destroy(spool);
 		}
 	}
 

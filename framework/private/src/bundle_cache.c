@@ -144,7 +144,6 @@ celix_status_t bundleCache_createArchive(bundle_cache_pt cache, apr_pool_t *bund
 
 	if (cache && location && bundlePool) {
 		archiveRoot = apr_psprintf(bundlePool, "%s/bundle%ld",  cache->cacheDir, id);
-
         status = bundleArchive_create(archiveRoot, id, location, inputFile, bundlePool, bundle_archive);
 	}
 
