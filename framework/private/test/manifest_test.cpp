@@ -33,6 +33,7 @@
 
 extern "C" {
 #include "manifest.h"
+#include "hash_map.h"
 }
 
 int main(int argc, char** argv) {
@@ -54,5 +55,126 @@ TEST_GROUP(manifest) {
 	}
 };
 
+TEST(manifest, createFromFile) {
+    char *manifestFile = "../../celix/framework/private/resources-test/manifest.txt";
+    manifest_pt manifest = NULL;
+//    properties_pt properties = properties_create();
+    properties_pt properties = (properties_pt) 0x40;
+    void *ov = (void *) 0x00;
 
+    mock()
+        .expectOneCall("properties_create")
+        .andReturnValue(properties);
+    mock()
+        .expectOneCall("properties_set")
+        .withParameter("properties", properties)
+        .withParameter("key", "Bundle-SymbolicName")
+        .withParameter("value", "client")
+        .andReturnValue(ov);
+    mock()
+        .expectOneCall("properties_set")
+        .withParameter("properties", properties)
+        .withParameter("key", "Bundle-Version")
+        .withParameter("value", "1.0.0")
+        .andReturnValue(ov);
+    mock()
+        .expectOneCall("properties_set")
+        .withParameter("properties", properties)
+        .withParameter("key", "library")
+        .withParameter("value", "client")
+        .andReturnValue(ov);
+    mock()
+        .expectOneCall("properties_set")
+        .withParameter("properties", properties)
+        .withParameter("key", "Import-Service")
+        .withParameter("value", "server")
+        .andReturnValue(ov);
+    mock()
+        .expectOneCall("properties_destroy")
+        .withParameter("properties", properties);
+
+    manifest_createFromFile(pool, manifestFile, &manifest);
+}
+
+TEST(manifest, createFromFileWithSections) {
+    char *manifestFile = "../../celix/framework/private/resources-test/manifest_sections.txt";
+    manifest_pt manifest = NULL;
+//    properties_pt properties = properties_create();
+    properties_pt properties = (properties_pt) 0x40;
+    properties_pt properties2 = (properties_pt) 0x41;
+    properties_pt properties3 = (properties_pt) 0x42;
+    void *ov = (void *) 0x00;
+
+    mock()
+        .expectOneCall("properties_create")
+        .andReturnValue(properties);
+    mock()
+        .expectOneCall("properties_set")
+        .withParameter("properties", properties)
+        .withParameter("key", "Bundle-SymbolicName")
+        .withParameter("value", "client")
+        .andReturnValue(ov);
+    mock()
+        .expectOneCall("properties_set")
+        .withParameter("properties", properties)
+        .withParameter("key", "Bundle-Version")
+        .withParameter("value", "1.0.0")
+        .andReturnValue(ov);
+    mock()
+        .expectOneCall("properties_set")
+        .withParameter("properties", properties)
+        .withParameter("key", "library")
+        .withParameter("value", "client")
+        .andReturnValue(ov);
+    mock()
+        .expectOneCall("properties_set")
+        .withParameter("properties", properties)
+        .withParameter("key", "Import-Service")
+        .withParameter("value", "server")
+        .andReturnValue(ov);
+    mock()
+        .expectOneCall("properties_create")
+        .andReturnValue(properties2);
+    mock()
+        .expectOneCall("properties_set")
+        .withParameter("properties", properties2)
+        .withParameter("key", "a")
+        .withParameter("value", "1")
+        .andReturnValue(ov);
+    mock()
+        .expectOneCall("properties_create")
+        .andReturnValue(properties3);
+    mock()
+        .expectOneCall("properties_set")
+        .withParameter("properties", properties3)
+        .withParameter("key", "b")
+        .withParameter("value", "1")
+        .andReturnValue(ov);
+    mock()
+        .expectOneCall("properties_get")
+        .withParameter("properties", properties)
+        .withParameter("key", "Bundle-SymbolicName")
+        .andReturnValue("bsn");
+    mock()
+        .expectOneCall("properties_destroy")
+        .withParameter("properties", properties);
+
+    manifest_createFromFile(pool, manifestFile, &manifest);
+
+    properties_pt main = manifest_getMainAttributes(manifest);
+    POINTERS_EQUAL(properties, main);
+
+    char *name = manifest_getValue(manifest, "Bundle-SymbolicName");
+    STRCMP_EQUAL("bsn", name);
+
+    hash_map_pt map = NULL;
+    manifest_getEntries(manifest, &map);
+    LONGS_EQUAL(2, hashMap_size(map));
+
+    properties_pt actual = (properties_pt) hashMap_get(map, (void *) "a");
+    POINTERS_EQUAL(properties2, actual);
+
+    actual = (properties_pt) hashMap_get(map, (void *) "b");
+    POINTERS_EQUAL(properties3, actual);
+}
 

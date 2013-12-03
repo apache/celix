@@ -1,0 +1,10 @@
+Bundle-SymbolicName: client
+Bundle-Version: 1.0.0
+library: client
+Import-Service: server
+
+Name: a
+a: 1
+
+Name: b
+b: 1

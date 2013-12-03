@@ -174,6 +174,7 @@ celix_status_t manifest_read(manifest_pt manifest, char *filename) {
 			}
 			manifest_readAttributes(manifest, attributes, file);
 
+			name = NULL;
 			skipEmptyLines = true;
 		}
 		apr_pool_destroy(subpool);
