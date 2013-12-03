@@ -284,7 +284,7 @@ TEST(bundle_context, getServiceReference) {
 
 	char serviceName[] = "service";
 	array_list_pt references = NULL;
-	arrayList_create(pool, &references);
+	arrayList_create(&references);
 	service_reference_pt reference = (service_reference_pt) 0x40;
 	arrayList_add(references, reference);
 

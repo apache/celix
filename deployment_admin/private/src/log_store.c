@@ -52,7 +52,7 @@ celix_status_t logStore_create(apr_pool_t *pool, log_store_pt *store) {
 	} else {
 		(*store)->pool = pool;
 		(*store)->storeId = 1;
-		arrayList_create(pool, &(*store)->logEvents);
+		arrayList_create(&(*store)->logEvents);
 	}
 
 	return status;

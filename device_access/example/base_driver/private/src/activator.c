@@ -54,7 +54,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 		if (instance != NULL) {
 			instance->context = context;
 			instance->pool = pool;
-			status = arrayList_create(pool, &instance->serviceRegistrations);
+			status = arrayList_create(&instance->serviceRegistrations);
 			if (status == CELIX_SUCCESS) {
 				(*userData) = instance;
 			}

@@ -71,7 +71,7 @@ celix_status_t topologyManager_create(bundle_context_pt context, apr_pool_t *poo
 		(*manager)->pool = pool;
 		(*manager)->context = context;
 		(*manager)->rsaList = NULL;
-		arrayList_create(pool, &(*manager)->rsaList);
+		arrayList_create(&(*manager)->rsaList);
 		(*manager)->exportedServices = hashMap_create(serviceReference_hashCode, NULL, serviceReference_equals2, NULL);
 		(*manager)->importedServices = hashMap_create(NULL, NULL, NULL, NULL);
 		(*manager)->importInterests = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);

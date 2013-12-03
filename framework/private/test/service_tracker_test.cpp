@@ -115,11 +115,11 @@ TEST(service_tracker, open) {
 	tracker->filter = (char *) filter.c_str();
 	// new tracker->tracked
 	array_list_pt tracked = NULL;
-	arrayList_create(pool, &tracked);
+	arrayList_create(&tracked);
 	tracker->tracked = tracked;
 
 	array_list_pt refs = NULL;
-	arrayList_create(pool, &refs);
+	arrayList_create(&refs);
 
 	mock().strictOrder();
 	mock()
@@ -154,7 +154,7 @@ TEST(service_tracker, open_withRefs) {
 	tracker->filter = (char *) filter.c_str();
 	// new tracker->tracked
 	array_list_pt tracked = NULL;
-	arrayList_create(pool, &tracked);
+	arrayList_create(&tracked);
 	tracker->tracked = tracked;
 //	// add tracked to tracker->tracked
 //	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
@@ -169,7 +169,7 @@ TEST(service_tracker, open_withRefs) {
 //	arrayList_add(tracked, entry2);
 
 	array_list_pt refs = NULL;
-	arrayList_create(pool, &refs);
+	arrayList_create(&refs);
 	service_reference_pt ref = (service_reference_pt) apr_palloc(pool, sizeof(*ref));
 	arrayList_add(refs, ref);
 	void *src = (void *) 0x345;
@@ -213,7 +213,7 @@ TEST(service_tracker, open_withRefsAndTracked) {
 	tracker->filter = (char *) filter.c_str();
 	// new tracker->tracked
 	array_list_pt tracked = NULL;
-	arrayList_create(pool, &tracked);
+	arrayList_create(&tracked);
 	tracker->tracked = tracked;
 	// add tracked to tracker->tracked
 	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
@@ -223,7 +223,7 @@ TEST(service_tracker, open_withRefsAndTracked) {
 	arrayList_add(tracked, entry);
 
 	array_list_pt refs = NULL;
-	arrayList_create(pool, &refs);
+	arrayList_create(&refs);
 	arrayList_add(refs, ref);
 	void *src = (void *) 0x345;
 
@@ -265,7 +265,7 @@ TEST(service_tracker, close) {
 	tracker->listener = (service_listener_pt) listener;
 	// new tracker->tracked
 	array_list_pt tracked = NULL;
-	arrayList_create(pool, &tracked);
+	arrayList_create(&tracked);
 	tracker->tracked = tracked;
 	// add tracked to tracker->tracked
 	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
@@ -300,7 +300,7 @@ TEST(service_tracker, getServiceReference) {
 	service_tracker_pt tracker = (service_tracker_pt) apr_palloc(pool, sizeof(*tracker));
 	// new tracker->tracked
 	array_list_pt tracked = NULL;
-	arrayList_create(pool, &tracked);
+	arrayList_create(&tracked);
 	tracker->tracked = tracked;
 	// add tracked to tracker->tracked
 	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
@@ -323,7 +323,7 @@ TEST(service_tracker, getServiceReferenceNull) {
 	service_tracker_pt tracker = (service_tracker_pt) apr_palloc(pool, sizeof(*tracker));
 	// new tracker->tracked
 	array_list_pt tracked = NULL;
-	arrayList_create(pool, &tracked);
+	arrayList_create(&tracked);
 	tracker->tracked = tracked;
 
 	service_reference_pt reference = serviceTracker_getServiceReference(tracker);
@@ -335,7 +335,7 @@ TEST(service_tracker, getServiceReferences) {
 	service_tracker_pt tracker = (service_tracker_pt) apr_palloc(pool, sizeof(*tracker));
 	// new tracker->tracked
 	array_list_pt tracked = NULL;
-	arrayList_create(pool, &tracked);
+	arrayList_create(&tracked);
 	tracker->tracked = tracked;
 	// add tracked to tracker->tracked
 	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
@@ -360,7 +360,7 @@ TEST(service_tracker, getService) {
 	service_tracker_pt tracker = (service_tracker_pt) apr_palloc(pool, sizeof(*tracker));
 	// new tracker->tracked
 	array_list_pt tracked = NULL;
-	arrayList_create(pool, &tracked);
+	arrayList_create(&tracked);
 	tracker->tracked = tracked;
 	// add tracked to tracker->tracked
 	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
@@ -383,7 +383,7 @@ TEST(service_tracker, getServiceNull) {
 	service_tracker_pt tracker = (service_tracker_pt) apr_palloc(pool, sizeof(*tracker));
 	// new tracker->tracked
 	array_list_pt tracked = NULL;
-	arrayList_create(pool, &tracked);
+	arrayList_create(&tracked);
 	tracker->tracked = tracked;
 
 	void *service = serviceTracker_getService(tracker);
@@ -395,7 +395,7 @@ TEST(service_tracker, getServices) {
 	service_tracker_pt tracker = (service_tracker_pt) apr_palloc(pool, sizeof(*tracker));
 	// new tracker->tracked
 	array_list_pt tracked = NULL;
-	arrayList_create(pool, &tracked);
+	arrayList_create(&tracked);
 	tracker->tracked = tracked;
 	// add tracked to tracker->tracked
 	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
@@ -420,7 +420,7 @@ TEST(service_tracker, getServiceByReference) {
 	service_tracker_pt tracker = (service_tracker_pt) apr_palloc(pool, sizeof(*tracker));
 	// new tracker->tracked
 	array_list_pt tracked = NULL;
-	arrayList_create(pool, &tracked);
+	arrayList_create(&tracked);
 	tracker->tracked = tracked;
 	// add tracked to tracker->tracked
 	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
@@ -445,7 +445,7 @@ TEST(service_tracker, getServiceByReferenceNull) {
 	service_tracker_pt tracker = (service_tracker_pt) apr_palloc(pool, sizeof(*tracker));
 	// new tracker->tracked
 	array_list_pt tracked = NULL;
-	arrayList_create(pool, &tracked);
+	arrayList_create(&tracked);
 	tracker->tracked = tracked;
 	// add tracked to tracker->tracked
 	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
@@ -477,7 +477,7 @@ TEST(service_tracker, serviceChangedRegistered) {
 	tracker->listener = listener;
 	listener->handle = tracker;
 	array_list_pt tracked = NULL;
-	arrayList_create(pool, &tracked);
+	arrayList_create(&tracked);
 	tracker->tracked = tracked;
 
 	service_reference_pt ref = (service_reference_pt) 0x51;
@@ -510,7 +510,7 @@ TEST(service_tracker, serviceChangedModified) {
 
 	// new tracker->tracked
 	array_list_pt tracked = NULL;
-	arrayList_create(pool, &tracked);
+	arrayList_create(&tracked);
 	tracker->tracked = tracked;
 //	// add tracked to tracker->tracked
 	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
@@ -546,7 +546,7 @@ TEST(service_tracker, serviceChangedUnregistering) {
 
 	// new tracker->tracked
 	array_list_pt tracked = NULL;
-	arrayList_create(pool, &tracked);
+	arrayList_create(&tracked);
 	tracker->tracked = tracked;
 //	// add tracked to tracker->tracked
 	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
@@ -587,7 +587,7 @@ TEST(service_tracker, serviceChangedModifiedEndmatch) {
 
 	// new tracker->tracked
 	array_list_pt tracked = NULL;
-	arrayList_create(pool, &tracked);
+	arrayList_create(&tracked);
 	tracker->tracked = tracked;
 //	// add tracked to tracker->tracked
 	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
@@ -625,7 +625,7 @@ TEST(service_tracker, serviceChangedRegisteredCustomizer) {
 	tracker->listener = listener;
 	listener->handle = tracker;
 	array_list_pt tracked = NULL;
-	arrayList_create(pool, &tracked);
+	arrayList_create(&tracked);
 	tracker->tracked = tracked;
 	service_tracker_customizer_pt customizer = (service_tracker_customizer_pt) 0x20;
 	tracker->customizer = customizer;
@@ -684,7 +684,7 @@ TEST(service_tracker, serviceChangedModifiedCustomizer) {
 
 	// new tracker->tracked
 	array_list_pt tracked = NULL;
-	arrayList_create(pool, &tracked);
+	arrayList_create(&tracked);
 	tracker->tracked = tracked;
 //	// add tracked to tracker->tracked
 	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
@@ -739,7 +739,7 @@ TEST(service_tracker, serviceChangedUnregisteringCustomizer) {
 
 	// new tracker->tracked
 	array_list_pt tracked = NULL;
-	arrayList_create(pool, &tracked);
+	arrayList_create(&tracked);
 	tracker->tracked = tracked;
 //	// add tracked to tracker->tracked
 	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
@@ -788,7 +788,7 @@ TEST(service_tracker, serviceChangedUnregisteringCustomizerNoFunc) {
 
 	// new tracker->tracked
 	array_list_pt tracked = NULL;
-	arrayList_create(pool, &tracked);
+	arrayList_create(&tracked);
 	tracker->tracked = tracked;
 //	// add tracked to tracker->tracked
 	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));

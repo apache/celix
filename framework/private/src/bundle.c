@@ -63,7 +63,7 @@ celix_status_t bundle_create(bundle_pt * bundle, apr_pool_t *mp) {
         (*bundle)->framework = NULL;
         (*bundle)->state = BUNDLE_INSTALLED;
         (*bundle)->modules = NULL;
-        arrayList_create(mp, &(*bundle)->modules);
+        arrayList_create(&(*bundle)->modules);
 
         module = module_createFrameworkModule((*bundle));
         bundle_addModule(*bundle, module);
@@ -103,7 +103,7 @@ celix_status_t bundle_createFromArchive(bundle_pt * bundle, framework_pt framewo
 	(*bundle)->framework = framework;
 	(*bundle)->state = BUNDLE_INSTALLED;
 	(*bundle)->modules = NULL;
-	arrayList_create(bundlePool, &(*bundle)->modules);
+	arrayList_create(&(*bundle)->modules);
 
 	
 	status = bundle_createModule(*bundle, &module);

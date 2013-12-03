@@ -55,9 +55,9 @@ celix_status_t deploymentPackage_create(apr_pool_t *pool, bundle_context_pt cont
 		(*package)->resourceInfos = NULL;
 		(*package)->nameToBundleInfo = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 		(*package)->pathToEntry = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
-		status = arrayList_create(pool, &(*package)->bundleInfos);
+		status = arrayList_create(&(*package)->bundleInfos);
 		if (status == CELIX_SUCCESS) {
-			status = arrayList_create(pool, &(*package)->resourceInfos);
+			status = arrayList_create(&(*package)->resourceInfos);
 			if (status == CELIX_SUCCESS) {
 				status = deploymentPackage_processEntries(*package);
 				if (status == CELIX_SUCCESS) {
@@ -84,7 +84,7 @@ celix_status_t deploymentPackage_getName(deployment_package_pt package, char **n
 }
 
 celix_status_t deploymentPackage_getBundleInfos(deployment_package_pt package, array_list_pt *infos) {
-	*infos = arrayList_clone(package->pool, package->bundleInfos);
+	*infos = arrayList_clone(package->bundleInfos);
 	return CELIX_SUCCESS;
 }
 
@@ -115,7 +115,7 @@ celix_status_t deploymentPackage_getBundle(deployment_package_pt package, char *
 }
 
 celix_status_t deploymentPackage_getResourceInfos(deployment_package_pt package, array_list_pt *infos) {
-	*infos = arrayList_clone(package->pool, package->resourceInfos);
+	*infos = arrayList_clone(package->resourceInfos);
 	return CELIX_SUCCESS;
 }
 

@@ -193,7 +193,7 @@ celix_status_t framework_create(framework_pt *framework, apr_pool_t *memoryPool,
             apr_pool_t *pool = NULL;
             apr_pool_create(&pool, (*framework)->mp);
             status = CELIX_DO_IF(status, bundle_create(&(*framework)->bundle, pool));
-            status = CELIX_DO_IF(status, arrayList_create((*framework)->mp, &(*framework)->globalLockWaitersList));
+            status = CELIX_DO_IF(status, arrayList_create(&(*framework)->globalLockWaitersList));
             status = CELIX_DO_IF(status, bundle_setFramework((*framework)->bundle, (*framework)));
             if (status == CELIX_SUCCESS) {
                 //
@@ -298,10 +298,10 @@ celix_status_t fw_init(framework_pt framework) {
 
 	celix_status_t status = CELIX_SUCCESS;
 	status = CELIX_DO_IF(status, framework_acquireBundleLock(framework, framework->bundle, BUNDLE_INSTALLED|BUNDLE_RESOLVED|BUNDLE_STARTING|BUNDLE_ACTIVE));
-	status = CELIX_DO_IF(status, arrayList_create(framework->mp, &framework->serviceListeners));
-	status = CELIX_DO_IF(status, arrayList_create(framework->mp, &framework->bundleListeners));
-	status = CELIX_DO_IF(status, arrayList_create(framework->mp, &framework->frameworkListeners));
-	status = CELIX_DO_IF(status, arrayList_create(framework->mp, &framework->requests));
+	status = CELIX_DO_IF(status, arrayList_create(&framework->serviceListeners));
+	status = CELIX_DO_IF(status, arrayList_create(&framework->bundleListeners));
+	status = CELIX_DO_IF(status, arrayList_create(&framework->frameworkListeners));
+	status = CELIX_DO_IF(status, arrayList_create(&framework->requests));
 	status = CELIX_DO_IF(status, apr_thread_create(&framework->dispatcherThread, NULL, fw_eventDispatcher, framework, framework->mp));
 	status = CELIX_DO_IF(status, bundle_getState(framework->bundle, &state));
 	if (status == CELIX_SUCCESS) {
@@ -890,13 +890,13 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
                 }
                 // #TODO remove listeners for bundle
 
-                // #TODO enable dlclose call
-              dlclose(bundle_getHandle(bundle));
-
                 if (context != NULL) {
                     status = CELIX_DO_IF(status, bundleContext_destroy(context));
                     status = CELIX_DO_IF(status, bundle_setContext(bundle, NULL));
                 }
+
+                // #TODO enable dlclose call
+                dlclose(bundle_getHandle(bundle));
 
                 status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, bundle, BUNDLE_RESOLVED));
             }
@@ -1136,9 +1136,7 @@ celix_status_t fw_getDependentBundles(framework_pt framework, bundle_pt exporter
     if (*list == NULL && exporter != NULL && framework != NULL) {
 		array_list_pt modules;
 		unsigned int modIdx = 0;
-		apr_pool_t *pool = NULL;
-		bundle_getMemoryPool(exporter, &pool);
-        arrayList_create(pool, list);
+        arrayList_create(list);
 
         modules = bundle_getModules(exporter);
         for (modIdx = 0; modIdx < arrayList_size(modules); modIdx++) {
@@ -1211,7 +1209,7 @@ celix_status_t fw_registerService(framework_pt framework, service_registration_p
             apr_pool_t *pool = NULL;
 
             status = CELIX_DO_IF(status, bundle_getMemoryPool(bundle, &pool));
-            status = CELIX_DO_IF(status, arrayList_create(pool, &infos));
+            status = CELIX_DO_IF(status, arrayList_create(&infos));
 
             if (status == CELIX_SUCCESS) {
                 celix_status_t subs = CELIX_SUCCESS;
@@ -1396,7 +1394,7 @@ void fw_addServiceListener(framework_pt framework, bundle_pt bundle, service_lis
 
 		celix_status_t status = fw_getService(framework, framework->bundle, ref, (void **) &hook);
 
-		arrayList_create(subpool, &infos);
+		arrayList_create(&infos);
 		arrayList_add(infos, info);
 		hook->added(hook->handle, infos);
 		serviceRegistry_ungetService(framework->registry, framework->bundle, ref, &ungetResult);
@@ -1451,13 +1449,11 @@ void fw_removeServiceListener(framework_pt framework, bundle_pt bundle, service_
 			service_reference_pt ref = (service_reference_pt) arrayList_get(listenerHooks, i);
 			listener_hook_service_pt hook = NULL;
 			array_list_pt infos = NULL;
-			apr_pool_t *pool = NULL;
 			bool ungetResult;
 
 			celix_status_t status = fw_getService(framework, framework->bundle, ref, (void **) &hook);
 
-			bundle_getMemoryPool(bundle, &pool);
-			arrayList_create(pool, &infos);
+			arrayList_create(&infos);
 			arrayList_add(infos, info);
 			hook->removed(hook->handle, infos);
 			serviceRegistry_ungetService(framework->registry, framework->bundle, ref, &ungetResult);
@@ -1691,7 +1687,7 @@ celix_status_t framework_markBundleResolved(framework_pt framework, module_pt mo
 array_list_pt framework_getBundles(framework_pt framework) {
 	array_list_pt bundles = NULL;
 	hash_map_iterator_pt iterator;
-	arrayList_create(framework->mp, &bundles);
+	arrayList_create(&bundles);
 	iterator = hashMapIterator_create(framework->installedBundleMap);
 	while (hashMapIterator_hasNext(iterator)) {
 		bundle_pt bundle = (bundle_pt) hashMapIterator_nextValue(iterator);

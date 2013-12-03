@@ -95,9 +95,9 @@ celix_status_t discovery_create(apr_pool_t *pool, bundle_context_pt context, dis
 			printf("No RemoteServiceAdmin port set, set it using RSA_PORT!\n");
 		}
 		(*discovery)->handled = NULL;
-		arrayList_create(pool, &(*discovery)->handled);
+		arrayList_create(&(*discovery)->handled);
 		(*discovery)->registered = NULL;
-		arrayList_create(pool, &(*discovery)->registered);
+		arrayList_create(&(*discovery)->registered);
 
 		apr_thread_create(&(*discovery)->slpPoll, NULL, discovery_pollSLP, *discovery, (*discovery)->pool);
 	}
@@ -358,7 +358,7 @@ celix_status_t discovery_updateEndpointListener(discovery_pt discovery, service_
 	array_list_pt scopes = hashMap_get(discovery->listenerReferences, reference);
 	if (scopes == NULL) {
 		scopes = NULL;
-		arrayList_create(discovery->pool, &scopes);
+		arrayList_create(&scopes);
 		hashMap_put(discovery->listenerReferences, reference, scopes);
 	}
 

@@ -126,7 +126,7 @@ TEST(bundle, createFromArchive) {
 		.andReturnValue(CELIX_SUCCESS);
 
 	array_list_pt bundles = NULL;
-	arrayList_create(pool, &bundles);
+	arrayList_create(&bundles);
 	mock().expectOneCall("framework_getBundles")
 		.withParameter("framework", framework)
 		.andReturnValue(bundles);
@@ -175,7 +175,7 @@ TEST(bundle, getCurrentModule) {
 	module_pt module2 = (module_pt) 0x12;
 	module_pt module3 = (module_pt) 0x13;
 	module_pt module4 = (module_pt) 0x14;
-	arrayList_create(pool, &bundle->modules);
+	arrayList_create(&bundle->modules);
 	arrayList_add(bundle->modules, module1);
 	arrayList_add(bundle->modules, module2);
 	arrayList_add(bundle->modules, module3);

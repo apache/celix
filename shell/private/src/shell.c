@@ -108,7 +108,7 @@ array_list_pt shell_getCommands(shell_pt shell) {
 	array_list_pt commands = NULL;
 	hash_map_iterator_pt iter = hashMapIterator_create(shell->commandNameMap);
 
-	arrayList_create(shell->pool, &commands);
+	arrayList_create(&commands);
 	while (hashMapIterator_hasNext(iter)) {
 		char * name = hashMapIterator_nextKey(iter);
 		arrayList_add(commands, name);

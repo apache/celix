@@ -65,7 +65,7 @@ celix_status_t serviceRegistry_create(apr_pool_t *ppool, framework_pt framework,
 		(*registry)->framework = framework;
 		(*registry)->currentServiceId = 1l;
 
-		arrayList_create(pool, &(*registry)->listenerHooks);
+		arrayList_create(&(*registry)->listenerHooks);
 		aprStatus = apr_thread_mutex_create(&(*registry)->mutex, APR_THREAD_MUTEX_NESTED, pool);
 		if (aprStatus != APR_SUCCESS) {
 			status = CELIX_FRAMEWORK_EXCEPTION;
@@ -130,9 +130,7 @@ celix_status_t serviceRegistry_addUsageCount(service_registry_pt registry, bundl
 
 	if (usages == NULL) {
 		module_pt mod = NULL;
-		apr_pool_t *pool = NULL;
-		bundle_getMemoryPool(bundle, &pool);
-		arrayList_create(pool, &usages);
+		arrayList_create(&usages);
 		bundle_getCurrentModule(bundle, &mod);
 	}
 	arrayList_add(usages, usage);
@@ -169,7 +167,7 @@ celix_status_t serviceRegistry_getRegisteredServices(service_registry_pt registr
 	array_list_pt regs = (array_list_pt) hashMap_get(registry->serviceRegistrations, bundle);
 	if (regs != NULL) {
 		unsigned int i;
-		arrayList_create(pool, services);
+		arrayList_create(services);
 		
 		for (i = 0; i < arrayList_size(regs); i++) {
 			service_registration_pt reg = arrayList_get(regs, i);
@@ -214,7 +212,7 @@ celix_status_t serviceRegistry_registerServiceInternal(service_registry_pt regis
 	regs = (array_list_pt) hashMap_get(registry->serviceRegistrations, bundle);
 	if (regs == NULL) {
 		regs = NULL;
-		arrayList_create(pool, &regs);
+		arrayList_create(&regs);
 	}
 	arrayList_add(regs, *registration);
 	hashMap_put(registry->serviceRegistrations, bundle, regs);
@@ -341,7 +339,7 @@ celix_status_t serviceRegistry_getServiceReferences(service_registry_pt registry
 	celix_status_t status = CELIX_SUCCESS;
 	hash_map_values_pt registrations;
 	hash_map_iterator_pt iterator;
-	arrayList_create(pool, references);
+	arrayList_create(references);
 
 	registrations = hashMapValues_create(registry->serviceRegistrations);
 	iterator = hashMapValues_iterator(registrations);
@@ -408,9 +406,7 @@ celix_status_t serviceRegistry_getServicesInUse(service_registry_pt registry, bu
 	array_list_pt usages = hashMap_get(registry->inUseMap, bundle);
 	if (usages != NULL) {
 		unsigned int i;
-		apr_pool_t *pool = NULL;
-		bundle_getMemoryPool(bundle, &pool);
-		arrayList_create(pool, services);
+		arrayList_create(services);
 		
 		for (i = 0; i < arrayList_size(usages); i++) {
 			usage_count_pt usage = arrayList_get(usages, i);
@@ -500,7 +496,7 @@ void serviceRegistry_ungetServices(service_registry_pt registry, bundle_pt bundl
 	}
 
 	// usage arrays?
-	fusages = arrayList_clone(pool, usages);
+	fusages = arrayList_clone(usages);
 	
 	for (i = 0; i < arrayList_size(fusages); i++) {
 		usage_count_pt usage = arrayList_get(fusages, i);
@@ -517,9 +513,7 @@ void serviceRegistry_ungetServices(service_registry_pt registry, bundle_pt bundl
 array_list_pt serviceRegistry_getUsingBundles(service_registry_pt registry, apr_pool_t *pool, service_reference_pt reference) {
 	array_list_pt bundles = NULL;
 	hash_map_iterator_pt iter;
-	apr_pool_t *npool;
-	apr_pool_create(&npool, pool);
-	arrayList_create(npool, &bundles);
+	arrayList_create(&bundles);
 	iter = hashMapIterator_create(registry->inUseMap);
 	while (hashMapIterator_hasNext(iter)) {
 		hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
@@ -567,7 +561,7 @@ celix_status_t serviceRegistry_getListenerHooks(service_registry_pt registry, ap
 	if (registry == NULL || *hooks != NULL) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
-		status = arrayList_create(pool, hooks);
+		status = arrayList_create(hooks);
 		if (status == CELIX_SUCCESS) {
 			unsigned int i;
 			for (i = 0; i < arrayList_size(registry->listenerHooks); i++) {

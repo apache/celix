@@ -139,7 +139,7 @@ filter_pt filter_parseFilterComp(char * filterString, int * pos, apr_pool_t *poo
 filter_pt filter_parseAnd(char * filterString, int * pos, apr_pool_t *pool) {
 	filter_pt filter = (filter_pt) malloc(sizeof(*filter));
 	array_list_pt operands = NULL;
-	arrayList_create(pool, &operands);
+	arrayList_create(&operands);
 	filter_skipWhiteSpace(filterString, pos);
 
 	if (filterString[*pos] != '(') {
@@ -162,7 +162,7 @@ filter_pt filter_parseAnd(char * filterString, int * pos, apr_pool_t *pool) {
 filter_pt filter_parseOr(char * filterString, int * pos, apr_pool_t *pool) {
 	filter_pt filter = (filter_pt) malloc(sizeof(*filter));
 	array_list_pt operands = NULL;
-	arrayList_create(pool, &operands);
+	arrayList_create(&operands);
 	filter_skipWhiteSpace(filterString, pos);
 
 	if (filterString[*pos] != '(') {
@@ -357,7 +357,7 @@ array_list_pt filter_parseSubstring(char * filterString, int * pos, apr_pool_t *
 	int keepRunning = 1;
 	int size;
 
-	arrayList_create(pool, &operands);
+	arrayList_create(&operands);
 	sub[0] = '\0';
 	while (keepRunning) {
 		char c = filterString[*pos];

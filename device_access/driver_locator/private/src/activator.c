@@ -73,7 +73,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
         bi->service->locator = bi->locator;
         bi->locator->pool = pool;
         bi->locator->drivers = NULL;
-        arrayList_create(pool, &bi->locator->drivers);
+        arrayList_create(&bi->locator->drivers);
         bundleContext_getProperty(context, "DRIVER_LOCATOR_PATH", &bi->locator->path);
         if (bi->locator->path == NULL ) {
         	bi->locator->path = (char *)DEFAULT_LOCATOR_PATH;

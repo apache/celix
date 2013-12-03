@@ -105,7 +105,7 @@ TEST(service_reference, getUsingBundle) {
 	service_registry_pt registry = (service_registry_pt) 0x20;
 
 	array_list_pt bundles = NULL;
-	arrayList_create(pool, &bundles);
+	arrayList_create(&bundles);
 	bundle_pt bundle = (bundle_pt) 0x30;
 	arrayList_add(bundles, bundle);
 

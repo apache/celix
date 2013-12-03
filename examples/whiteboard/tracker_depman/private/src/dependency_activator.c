@@ -36,10 +36,8 @@
 
 void * dm_create(bundle_context_pt context) {
 	struct data * data = malloc(sizeof(*data));
-	apr_pool_t *pool = NULL;
-	bundleContext_getMemoryPool(context, &pool);
 	data->publishers = NULL;
-	arrayList_create(pool, &data->publishers);
+	arrayList_create(&data->publishers);
 	data->context = NULL;
 	data->running = false;
 	data->sender = 0;

@@ -222,7 +222,7 @@ size_t deploymentAdmin_parseVersions(void *contents, size_t size, size_t nmemb, 
 
 celix_status_t deploymentAdmin_readVersions(deployment_admin_pt admin, array_list_pt *versions) {
 	celix_status_t status = CELIX_SUCCESS;
-	arrayList_create(admin->pool, versions);
+	arrayList_create(versions);
 	CURL *curl;
 	CURLcode res;
 	curl = curl_easy_init();
@@ -381,12 +381,10 @@ celix_status_t deploymentAdmin_updateDeploymentPackageBundles(deployment_admin_p
 celix_status_t deploymentAdmin_startDeploymentPackageCustomizerBundles(deployment_admin_pt admin, deployment_package_pt source, deployment_package_pt target) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	apr_pool_t *tmpPool = NULL;
 	array_list_pt bundles = NULL;
 	array_list_pt sourceInfos = NULL;
 
-	apr_pool_create(&tmpPool, admin->pool);
-	arrayList_create(tmpPool, &bundles);
+	arrayList_create(&bundles);
 
 	deploymentPackage_getBundleInfos(source, &sourceInfos);
 	int i;
@@ -420,8 +418,6 @@ celix_status_t deploymentAdmin_startDeploymentPackageCustomizerBundles(deploymen
 		bundle_pt bundle = arrayList_get(bundles, i);
 		bundle_start(bundle);
 	}
-
-	apr_pool_destroy(tmpPool);
 
 	return status;
 }

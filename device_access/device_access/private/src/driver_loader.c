@@ -52,7 +52,7 @@ celix_status_t driverLoader_create(apr_pool_t *pool, bundle_context_pt context, 
 		(*loader)->context = context;
 		(*loader)->loadedDrivers = NULL;
 		(*loader)->pool = pool;
-		status = arrayList_create(pool, &(*loader)->loadedDrivers);
+		status = arrayList_create(&(*loader)->loadedDrivers);
 	}
 
 	return status;
@@ -66,7 +66,7 @@ apr_status_t driverLoader_destroy(void *loaderP) {
 
 celix_status_t driverLoader_findDrivers(driver_loader_pt loader, apr_pool_t *pool, array_list_pt locators, properties_pt properties, array_list_pt *driversIds) {
 	celix_status_t status = CELIX_SUCCESS;
-	arrayList_create(pool, driversIds);
+	arrayList_create(driversIds);
 
 	int i;
 	for (i = 0; i < arrayList_size(locators); i++) {
@@ -100,7 +100,7 @@ celix_status_t driverLoader_findDriversForLocator(driver_loader_pt loader, apr_p
 
 celix_status_t driverLoader_loadDrivers(driver_loader_pt loader, apr_pool_t *pool, array_list_pt locators, array_list_pt driverIds, array_list_pt *references) {
 	celix_status_t status = CELIX_SUCCESS;
-	status = arrayList_create(pool, references);
+	status = arrayList_create(references);
 	if (status == CELIX_SUCCESS) {
 		int i;
 		for (i = 0; i < arrayList_size(driverIds); i++) {
@@ -129,7 +129,7 @@ celix_status_t driverLoader_loadDrivers(driver_loader_pt loader, apr_pool_t *poo
 
 celix_status_t driverLoader_loadDriver(driver_loader_pt loader, apr_pool_t *pool, array_list_pt locators, char *driverId, array_list_pt *references) {
 	celix_status_t status = CELIX_SUCCESS;
-	status = arrayList_create(pool, references);
+	status = arrayList_create(references);
 	if (status == CELIX_SUCCESS) {
 		int i;
 		for (i = 0; i < arrayList_size(locators); i++) {
@@ -160,7 +160,7 @@ celix_status_t driverLoader_loadDriver(driver_loader_pt loader, apr_pool_t *pool
 
 celix_status_t driverLoader_loadDriverForLocator(driver_loader_pt loader, apr_pool_t *pool, driver_locator_service_pt locator, char *driverId, array_list_pt *references) {
 	celix_status_t status = CELIX_SUCCESS;
-	arrayList_create(loader->pool, references);
+	arrayList_create(references);
 
 	apr_pool_t *loadPool;
 	apr_status_t aprStatus = apr_pool_create(&loadPool, pool);

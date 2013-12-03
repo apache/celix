@@ -80,7 +80,7 @@ TEST(service_registry, getRegisteredServices) {
 	registry->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
 
 	array_list_pt registrations = NULL;
-	arrayList_create(pool, &registrations);
+	arrayList_create(&registrations);
 	service_registration_pt reg = (service_registration_pt) 0x10;
 	arrayList_add(registrations, reg);
 	bundle_pt bundle = (bundle_pt) 0x20;
@@ -89,7 +89,7 @@ TEST(service_registry, getRegisteredServices) {
 	service_reference_pt ref = (service_reference_pt) 0x30;
 
 	array_list_pt refs = NULL;
-	arrayList_create(pool, &refs);
+	arrayList_create(&refs);
 
 	mock()
 		.expectOneCall("serviceRegistration_isValid")
@@ -135,19 +135,13 @@ TEST(service_registry, getServicesInUse) {
 	registry->inUseMap = hashMap_create(NULL, NULL, NULL, NULL);
 
 	array_list_pt usages = NULL;
-	arrayList_create(pool, &usages);
+	arrayList_create(&usages);
 	bundle_pt bundle = (bundle_pt) 0x10;
 	service_reference_pt ref = (service_reference_pt) 0x20;
 	usage_count_pt usage = (usage_count_pt) apr_palloc(pool, sizeof(*usage));
 	usage->reference = ref;
 	arrayList_add(usages, usage);
 	hashMap_put(registry->inUseMap, bundle, usages);
-
-	mock()
-		.expectOneCall("bundle_getMemoryPool")
-		.withParameter("bundle", bundle)
-		.andOutputParameter("pool", pool)
-		.andReturnValue(CELIX_SUCCESS);
 
 	array_list_pt inUse = NULL;
 	serviceRegistry_getServicesInUse(registry, bundle, &inUse);
@@ -231,7 +225,7 @@ TEST(service_registry, unregisterService) {
 	bundle_pt bundle = (bundle_pt) 0x10;
 	service_registration_pt registration = (service_registration_pt) 0x20;
 	array_list_pt registrations = NULL;
-	arrayList_create(pool, &registrations);
+	arrayList_create(&registrations);
 	arrayList_add(registrations, registration);
 
 	hashMap_put(registry->serviceRegistrations, bundle, registrations);
@@ -239,7 +233,7 @@ TEST(service_registry, unregisterService) {
 	properties_pt properties = (properties_pt) 0x30;
 
 	array_list_pt references = NULL;
-	arrayList_create(pool, &references);
+	arrayList_create(&references);
 	service_reference_pt reference = (service_reference_pt) 0x40;
 	arrayList_add(references, reference);
 
@@ -283,7 +277,7 @@ TEST(service_registry, unregisterServices) {
 	bundle_pt bundle = (bundle_pt) 0x10;
 	service_registration_pt registration = (service_registration_pt) 0x20;
 	array_list_pt registrations = NULL;
-	arrayList_create(pool, &registrations);
+	arrayList_create(&registrations);
 	arrayList_add(registrations, registration);
 
 	hashMap_put(registry->serviceRegistrations, bundle, registrations);
@@ -310,14 +304,14 @@ TEST(service_registry, getServiceReferences) {
 	bundle_pt bundle = (bundle_pt) 0x10;
 	service_registration_pt registration = (service_registration_pt) 0x20;
 	array_list_pt registrations = NULL;
-	arrayList_create(pool, &registrations);
+	arrayList_create(&registrations);
 	arrayList_add(registrations, registration);
 
 	hashMap_put(registry->serviceRegistrations, bundle, registrations);
 
 	properties_pt properties = (properties_pt) 0x30;
 	array_list_pt references = NULL;
-	arrayList_create(pool, &references);
+	arrayList_create(&references);
 	service_reference_pt reference = (service_reference_pt) 0x40;
 	arrayList_add(references, reference);
 
@@ -380,14 +374,14 @@ TEST(service_registry, getService) {
 	bundle_pt bundle = (bundle_pt) 0x10;
 	service_registration_pt registration = (service_registration_pt) 0x20;
 	array_list_pt registrations = NULL;
-	arrayList_create(pool, &registrations);
+	arrayList_create(&registrations);
 	arrayList_add(registrations, registration);
 
 	hashMap_put(registry->serviceRegistrations, bundle, registrations);
 
 	properties_pt properties = (properties_pt) 0x30;
 	array_list_pt references = NULL;
-	arrayList_create(pool, &references);
+	arrayList_create(&references);
 	service_reference_pt reference = (service_reference_pt) 0x40;
 	arrayList_add(references, reference);
 
@@ -404,11 +398,6 @@ TEST(service_registry, getService) {
 		.expectOneCall("serviceRegistration_isValid")
 		.withParameter("registration", registration)
 		.andReturnValue(true);
-	mock()
-		.expectOneCall("bundle_getMemoryPool")
-		.withParameter("bundle", bundle)
-		.andOutputParameter("pool", pool)
-		.andReturnValue(CELIX_SUCCESS);
 	mock()
 		.expectOneCall("bundle_getCurrentModule")
 		.withParameter("bundle", bundle)
@@ -440,19 +429,19 @@ TEST(service_registry, ungetService) {
 	bundle_pt bundle = (bundle_pt) 0x10;
 	service_registration_pt registration = (service_registration_pt) 0x20;
 	array_list_pt registrations = NULL;
-	arrayList_create(pool, &registrations);
+	arrayList_create(&registrations);
 	arrayList_add(registrations, registration);
 
 	hashMap_put(registry->serviceRegistrations, bundle, registrations);
 
 	properties_pt properties = (properties_pt) 0x30;
 	array_list_pt references = NULL;
-	arrayList_create(pool, &references);
+	arrayList_create(&references);
 	service_reference_pt reference = (service_reference_pt) 0x40;
 	arrayList_add(references, reference);
 
 	array_list_pt usages = NULL;
-	arrayList_create(pool, &usages);
+	arrayList_create(&usages);
 	usage_count_pt usage = (usage_count_pt) malloc(sizeof(*usage));
 	usage->reference = reference;
 	apr_pool_create(&usage->pool, pool);
@@ -484,19 +473,19 @@ TEST(service_registry, ungetServivces) {
 	bundle_pt bundle = (bundle_pt) 0x10;
 	service_registration_pt registration = (service_registration_pt) 0x20;
 	array_list_pt registrations = NULL;
-	arrayList_create(pool, &registrations);
+	arrayList_create(&registrations);
 	arrayList_add(registrations, registration);
 
 	hashMap_put(registry->serviceRegistrations, bundle, registrations);
 
 	properties_pt properties = (properties_pt) 0x30;
 	array_list_pt references = NULL;
-	arrayList_create(pool, &references);
+	arrayList_create(&references);
 	service_reference_pt reference = (service_reference_pt) 0x40;
 	arrayList_add(references, reference);
 
 	array_list_pt usages = NULL;
-	arrayList_create(pool, &usages);
+	arrayList_create(&usages);
 	usage_count_pt usage = (usage_count_pt) malloc(sizeof(*usage));
 	usage->reference = reference;
 	usage->count = 1;
@@ -543,19 +532,19 @@ TEST(service_registry, getUsingBundles) {
 	bundle_pt bundle = (bundle_pt) 0x10;
 	service_registration_pt registration = (service_registration_pt) 0x20;
 	array_list_pt registrations = NULL;
-	arrayList_create(pool, &registrations);
+	arrayList_create(&registrations);
 	arrayList_add(registrations, registration);
 
 	hashMap_put(registry->serviceRegistrations, bundle, registrations);
 
 	properties_pt properties = (properties_pt) 0x30;
 	array_list_pt references = NULL;
-	arrayList_create(pool, &references);
+	arrayList_create(&references);
 	service_reference_pt reference = (service_reference_pt) 0x40;
 	arrayList_add(references, reference);
 
 	array_list_pt usages = NULL;
-	arrayList_create(pool, &usages);
+	arrayList_create(&usages);
 	usage_count_pt usage = (usage_count_pt) malloc(sizeof(*usage));
 	usage->reference = reference;
 	arrayList_add(usages, usage);
@@ -576,13 +565,13 @@ TEST(service_registry, createServiceReference) {
 	bundle_pt bundle = (bundle_pt) 0x10;
 	service_registration_pt registration = (service_registration_pt) 0x20;
 //	array_list_pt registrations = NULL;
-//	arrayList_create(pool, &registrations);
+//	arrayList_create(&registrations);
 //	arrayList_add(registrations, registration);
 //
 //	hashMap_put(registry->serviceRegistrations, bundle, registrations);
 
 	array_list_pt references = NULL;
-	arrayList_create(pool, &references);
+	arrayList_create(&references);
 	service_reference_pt reference = (service_reference_pt) 0x40;
 	arrayList_add(references, reference);
 
@@ -623,14 +612,14 @@ TEST(service_registry, createServiceReference) {
 TEST(service_registry, getListenerHooks) {
 	service_registry_pt registry = (service_registry_pt) apr_palloc(pool, sizeof(*registry));
 	registry->listenerHooks = NULL;
-	arrayList_create(pool, &registry->listenerHooks);
+	arrayList_create(&registry->listenerHooks);
 
 	bundle_pt bundle = (bundle_pt) 0x10;
 	service_registration_pt registration = (service_registration_pt) 0x20;
 	arrayList_add(registry->listenerHooks, registration);
 
 	array_list_pt references = NULL;
-	arrayList_create(pool, &references);
+	arrayList_create(&references);
 	service_reference_pt reference = (service_reference_pt) 0x40;
 	arrayList_add(references, reference);
 

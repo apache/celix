@@ -89,7 +89,7 @@ celix_status_t refiningDriver_create(bundle_context_pt context, apr_pool_t *pool
 		(*driver)->deviceCount=0;
 		(*driver)->device = apr_palloc(driverPool, sizeof(*(*driver)->device));
 		(*driver)->devices=NULL;
-		status = arrayList_create(driverPool, &(*driver)->devices);
+		status = arrayList_create(&(*driver)->devices);
 	} else {
 		status = CELIX_ENOMEM;
 	}

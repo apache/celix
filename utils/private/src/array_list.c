@@ -32,19 +32,16 @@
 
 static celix_status_t arrayList_elementEquals(void *a, void *b, bool *equals);
 
-celix_status_t arrayList_create(apr_pool_t *pool, array_list_pt *list) {
-	return arrayList_createWithEquals(pool, arrayList_elementEquals, list);
+celix_status_t arrayList_create(array_list_pt *list) {
+	return arrayList_createWithEquals(arrayList_elementEquals, list);
 }
 
- celix_status_t arrayList_createWithEquals(apr_pool_t *pool, array_list_element_equals_pt equals, array_list_pt *list) {
-	apr_pool_t *mypool;
-	apr_pool_create(&mypool, pool);
-//	*list = (array_list_pt) apr_palloc(mypool, sizeof(**list));
+ celix_status_t arrayList_createWithEquals(array_list_element_equals_pt equals, array_list_pt *list) {
 	*list = (array_list_pt) malloc(sizeof(**list));
 
 	(*list)->equals = equals;
 	(*list)->size = 0;
-	(*list)->capacity = 10;
+	(*list)->capacity = 1000;
 	(*list)->modCount = 0;
 	(*list)->elementData = (void **) malloc(sizeof(void*) * (*list)->capacity);
 
@@ -256,10 +253,10 @@ bool arrayList_addAll(array_list_pt list, array_list_pt toAdd) {
     return size != 0;
 }
 
-array_list_pt arrayList_clone(apr_pool_t *pool, array_list_pt list) {
+array_list_pt arrayList_clone(array_list_pt list) {
 	unsigned int i;
 	array_list_pt new = NULL;
-	arrayList_create(pool, &new);
+	arrayList_create(&new);
 //	arrayList_ensureCapacity(new, list->size);
 //	memcpy(new->elementData, list->elementData, list->size);
 //	new->size = list->size;

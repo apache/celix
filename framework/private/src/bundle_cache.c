@@ -96,7 +96,7 @@ celix_status_t bundleCache_getArchives(bundle_cache_pt cache, apr_pool_t *pool, 
 	if (aprStatus == APR_SUCCESS) {
         array_list_pt list = NULL;
 		apr_finfo_t dp;
-        arrayList_create(pool, &list);
+        arrayList_create(&list);
         
         while ((apr_dir_read(&dp, APR_FINFO_DIRENT|APR_FINFO_TYPE, dir)) == APR_SUCCESS) {
         	apr_pool_t *subpool = NULL;

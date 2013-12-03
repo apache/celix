@@ -73,7 +73,7 @@ service_pt serviceComponent_create(bundle_context_pt context, dependency_manager
         service->serviceName = NULL;
         service->serviceRegistration = NULL;
         service->dependencies = NULL;
-        arrayList_create(mypool, &service->dependencies);
+        arrayList_create(&service->dependencies);
 
         service->init = service_init;
         service->start= service_start;
@@ -82,7 +82,7 @@ service_pt serviceComponent_create(bundle_context_pt context, dependency_manager
 
         service->context = context;
         service->manager = manager;
-        service->state = state_create(arrayList_clone(mypool, service->dependencies), false);
+        service->state = state_create(arrayList_clone(service->dependencies), false);
         service->executor = executor_create(mypool);
 
 		apr_thread_mutex_create(&service->mutex, APR_THREAD_MUTEX_UNNESTED, mypool);
@@ -126,7 +126,7 @@ service_pt serviceComponent_addServiceDependency(service_pt service, service_dep
 	}
 
 	apr_thread_mutex_lock(service->mutex);
-	new = state_create(arrayList_clone(service->pool, service->dependencies), !state_isInactive(old));
+	new = state_create(arrayList_clone(service->dependencies), !state_isInactive(old));
 	service->state = new;
 	apr_thread_mutex_unlock(service->mutex);
 	serviceComponent_calculateStateChanges(service, old, new);
@@ -147,7 +147,7 @@ service_pt serviceComponent_removeServiceDependency(service_pt service, service_
 	}
 
 	apr_thread_mutex_lock(service->mutex);
-	new = state_create(arrayList_clone(service->pool, service->dependencies), !state_isInactive(old));
+	new = state_create(arrayList_clone(service->dependencies), !state_isInactive(old));
 	service->state = new;
 	apr_thread_mutex_unlock(service->mutex);
 	serviceComponent_calculateStateChanges(service, old, new);
@@ -160,7 +160,7 @@ void serviceComponent_dependencyAvailable(service_pt service, service_dependency
 	state_pt old, new;
 	apr_thread_mutex_lock(service->mutex);
 	old = service->state;
-	new = state_create(arrayList_clone(service->pool, service->dependencies), !state_isInactive(old));
+	new = state_create(arrayList_clone(service->dependencies), !state_isInactive(old));
 	service->state = new;
 	apr_thread_mutex_unlock(service->mutex);
 	serviceComponent_calculateStateChanges(service, old, new);
@@ -186,7 +186,7 @@ void serviceComponent_dependencyUnavailable(service_pt service, service_dependen
 	state_pt old, new;
 	apr_thread_mutex_lock(service->mutex);
 	old = service->state;
-	new = state_create(arrayList_clone(service->pool, service->dependencies), !state_isInactive(old));
+	new = state_create(arrayList_clone(service->dependencies), !state_isInactive(old));
 	service->state = new;
 	apr_thread_mutex_unlock(service->mutex);
 	serviceComponent_calculateStateChanges(service, old, new);
@@ -202,7 +202,7 @@ void serviceComponent_start(service_pt service) {
 	bundleContext_registerService(service->context, SERVICE_COMPONENT_NAME, service, NULL, &service->serviceRegistration);
 	apr_thread_mutex_lock(service->mutex);
 	old = service->state;
-	new = state_create(arrayList_clone(service->pool, service->dependencies), true);
+	new = state_create(arrayList_clone(service->dependencies), true);
 	service->state = new;
 	apr_thread_mutex_unlock(service->mutex);
 	serviceComponent_calculateStateChanges(service, old, new);
@@ -213,7 +213,7 @@ void serviceComponent_stop(service_pt service) {
 	state_pt old, new;
 	apr_thread_mutex_lock(service->mutex);
 	old = service->state;
-	new = state_create(arrayList_clone(service->pool, service->dependencies), false);
+	new = state_create(arrayList_clone(service->dependencies), false);
 	service->state = new;
 	apr_thread_mutex_unlock(service->mutex);
 	serviceComponent_calculateStateChanges(service, old, new);
@@ -253,7 +253,7 @@ void serviceComponent_deactivateService(service_pt service, void * arg) {
 }
 
 void serviceComponent_startTrackingOptional(service_pt service, state_pt state) {
-    array_list_pt deps = arrayList_clone(service->pool, state->dependencies);
+    array_list_pt deps = arrayList_clone(state->dependencies);
 	array_list_iterator_pt i = arrayListIterator_create(deps);
 	while (arrayListIterator_hasNext(i)) {
 		service_dependency_pt dependency = (service_dependency_pt) arrayListIterator_next(i);
@@ -266,7 +266,7 @@ void serviceComponent_startTrackingOptional(service_pt service, state_pt state) 
 }
 
 void serviceComponent_stopTrackingOptional(service_pt service, state_pt state) {
-    array_list_pt deps = arrayList_clone(service->pool, state->dependencies);
+    array_list_pt deps = arrayList_clone(state->dependencies);
 	array_list_iterator_pt i = arrayListIterator_create(deps);
 	while (arrayListIterator_hasNext(i)) {
 		service_dependency_pt dependency = (service_dependency_pt) arrayListIterator_next(i);
@@ -280,7 +280,7 @@ void serviceComponent_stopTrackingOptional(service_pt service, state_pt state) {
 
 void serviceComponent_startTrackingRequired(service_pt service, void * arg) {
 	state_pt state = (state_pt) arg;
-	array_list_pt deps = arrayList_clone(service->pool, state->dependencies);
+	array_list_pt deps = arrayList_clone(state->dependencies);
     array_list_iterator_pt i = arrayListIterator_create(deps);
 	while (arrayListIterator_hasNext(i)) {
 		service_dependency_pt dependency = (service_dependency_pt) arrayListIterator_next(i);
@@ -294,7 +294,7 @@ void serviceComponent_startTrackingRequired(service_pt service, void * arg) {
 
 void serviceComponent_stopTrackingRequired(service_pt service, void * arg) {
 	state_pt state = (state_pt) arg;
-	array_list_pt deps = arrayList_clone(service->pool, state->dependencies);
+	array_list_pt deps = arrayList_clone(state->dependencies);
     array_list_iterator_pt i = arrayListIterator_create(deps);
 	while (arrayListIterator_hasNext(i)) {
 		service_dependency_pt dependency = (service_dependency_pt) arrayListIterator_next(i);

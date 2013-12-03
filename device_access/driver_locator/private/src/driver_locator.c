@@ -39,7 +39,7 @@ celix_status_t driverLocator_findDrivers(driver_locator_pt locator, apr_pool_t *
 
 	char *category = properties_get(props, DEVICE_CATEGORY);
 
-	status = arrayList_create(pool, drivers);
+	status = arrayList_create(drivers);
 	if (status == CELIX_SUCCESS) {
 		apr_pool_t *spool;
 		apr_status_t aprStatus = apr_pool_create(&spool, pool);

@@ -27,7 +27,7 @@ TEST_GROUP(array_list) {
 		apr_initialize();
 		apr_pool_create(&pool, NULL);
 
-		arrayList_create(pool, &list);
+		arrayList_create(&list);
 	}
 };
 
@@ -54,7 +54,7 @@ TEST(array_list, trimToSize) {
 
 TEST(array_list, ensureCapacity) {
 	int i;
-	arrayList_create(pool, &list);
+	arrayList_create(&list);
 	arrayList_clear(list);
 
 	LONGS_EQUAL(list->capacity, 10);
@@ -67,12 +67,12 @@ TEST(array_list, ensureCapacity) {
 	}
 	LONGS_EQUAL(list->capacity, 133);
 	LONGS_EQUAL(list->size, 100);
-	arrayList_create(pool, &list);
+	arrayList_create(&list);
 }
 
 TEST(array_list, clone) {
 	int i;
-	arrayList_create(pool, &list);
+	arrayList_create(&list);
 	arrayList_clear(list);
 
 	LONGS_EQUAL(list->capacity, 10);
@@ -88,7 +88,7 @@ TEST(array_list, clone) {
 	LONGS_EQUAL(12, list->size);
 
 	array_list_pt clone = NULL;
-	clone = arrayList_clone(pool, list);
+	clone = arrayList_clone(list);
 
 	LONGS_EQUAL(16, clone->capacity);
 	LONGS_EQUAL(12, clone->size);
@@ -103,5 +103,5 @@ TEST(array_list, clone) {
 		STRCMP_EQUAL((char *) entry, entrys);
 	}
 
-	arrayList_create(pool, &list);
+	arrayList_create(&list);
 }

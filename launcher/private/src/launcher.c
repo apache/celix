@@ -96,7 +96,7 @@ int main(void) {
                 }
                 // First install all bundles
                 // Afterwards start them
-                arrayList_create(pool, &installed);
+                arrayList_create(&installed);
                 framework_getFrameworkBundle(framework, &bundle);
                 bundle_getContext(bundle, &context);
                 iter = linkedListIterator_create(bundles, 0);

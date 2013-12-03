@@ -88,7 +88,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
     if (status == CELIX_SUCCESS) {
         *userData = apr_palloc(pool, sizeof(struct data));
         ((struct data *) (*userData))->publishers = NULL;
-        arrayList_create(pool, &((struct data *) (*userData))->publishers);
+        arrayList_create(&((struct data *) (*userData))->publishers);
     } else {
         status = CELIX_START_ERROR;
     }

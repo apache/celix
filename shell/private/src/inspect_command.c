@@ -72,7 +72,7 @@ void inspectCommand_execute(command_pt command, char * commandline, void (*out)(
 			char *id = apr_strtok(NULL, " ", &token);
 
 			bundleContext_getMemoryPool(command->bundleContext, &pool);
-			arrayList_create(pool, &ids);
+			arrayList_create(&ids);
 			while (id != NULL) {
 				arrayList_add(ids, id);
 				id = apr_strtok(NULL, " ", &token);
@@ -113,7 +113,7 @@ celix_status_t inspectCommand_printExportedServices(command_pt command, array_li
 		unsigned int i;
 
 		bundleContext_getMemoryPool(command->bundleContext, &pool);
-		arrayList_create(pool, &bundles);
+		arrayList_create(&bundles);
 		for (i = 0; i < arrayList_size(ids); i++) {
 			char *idStr = (char *) arrayList_get(ids, i);
 			long id = atol(idStr);

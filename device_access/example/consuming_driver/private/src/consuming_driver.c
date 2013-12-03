@@ -74,7 +74,7 @@ celix_status_t consumingDriver_create(bundle_context_pt context, apr_pool_t *poo
 		(*driver)->context=context;
 		(*driver)->references=NULL;
 
-		status = arrayList_create(pool, &(*driver)->references);
+		status = arrayList_create(&(*driver)->references);
 
 		apr_pool_pre_cleanup_register(pool, (*driver), consumingDriver_cleanup);
 	} else {

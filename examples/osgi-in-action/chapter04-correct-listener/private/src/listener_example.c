@@ -72,7 +72,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 				activator->listener = NULL;
 				apr_thread_mutex_create(&activator->logServiceReferencesLock, 0, subpool);
 				activator->logServiceReferences = NULL;
-				arrayList_createWithEquals(subpool, ref_equals, &activator->logServiceReferences);
+				arrayList_createWithEquals(ref_equals, &activator->logServiceReferences);
 				activator->running = false;
 				activator->logger = NULL;
 			}

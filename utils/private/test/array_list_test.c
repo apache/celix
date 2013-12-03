@@ -40,7 +40,7 @@ array_list_pt list;
 int setup(void) {
 	apr_initialize();
 	apr_pool_create(&memory_pool, NULL);
-	arrayList_create(memory_pool, &list);
+	arrayList_create(&list);
 	if (list == NULL) {
 		return 1;
 	}
@@ -68,7 +68,7 @@ void test_arrayList_trimToSize(void) {
 
 void test_arrayList_ensureCapacity(void) {
 	int i;
-	arrayList_create(memory_pool, &list);
+	arrayList_create(&list);
 	arrayList_clear(list);
 	CU_ASSERT_EQUAL(list->capacity, 10);
 	CU_ASSERT_EQUAL(list->size, 0);
@@ -77,7 +77,7 @@ void test_arrayList_ensureCapacity(void) {
 	}
 	CU_ASSERT_EQUAL(list->capacity, 133);
 	CU_ASSERT_EQUAL(list->size, 100);
-	arrayList_create(memory_pool, &list);
+	arrayList_create(&list);
 }
 
 void test_arrayList_size(void) {
@@ -227,7 +227,7 @@ void test_arrayList_addAll(void) {
 	
 	arrayList_clear(list);
 
-	arrayList_create(memory_pool, &toAdd);
+	arrayList_create(&toAdd);
     arrayList_add(toAdd, entry);
     arrayList_add(toAdd, entry2);
 

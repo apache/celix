@@ -70,9 +70,9 @@ celix_status_t log_create(apr_pool_t *pool, log_pt *logger) {
 
         (*logger)->pool = pool;
         (*logger)->listeners = NULL;
-		arrayList_create(pool, &(*logger)->listeners);
+		arrayList_create(&(*logger)->listeners);
         (*logger)->listenerEntries = NULL;
-        arrayList_create(pool, &(*logger)->listenerEntries);
+        arrayList_create(&(*logger)->listenerEntries);
         (*logger)->listenerThread = NULL;
         (*logger)->running = false;
         apr_status = apr_thread_cond_create(&(*logger)->entriesToDeliver, pool);

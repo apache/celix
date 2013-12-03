@@ -70,7 +70,7 @@ celix_status_t deviceManager_create(apr_pool_t *pool, bundle_context_pt context,
 
 		(*manager)->devices = hashMap_create(serviceReference_hashCode, NULL, serviceReference_equals2, NULL);
 		(*manager)->drivers = hashMap_create(serviceReference_hashCode, NULL, serviceReference_equals2, NULL);
-		status = arrayList_create((*manager)->pool, &(*manager)->locators);
+		status = arrayList_create(&(*manager)->locators);
 	}
 
 	printf("DEVICE_MANAGER: Initialized\n");
@@ -154,9 +154,9 @@ static celix_status_t deviceManager_attachAlgorithm(device_manager_pt manager, s
 
 			hashMap_put(manager->devices, ref, service);
 
-			status = arrayList_create(attachPool, &included);
+			status = arrayList_create(&included);
 			if (status == CELIX_SUCCESS) {
-				status = arrayList_create(attachPool, &excluded);
+				status = arrayList_create(&excluded);
 				if (status == CELIX_SUCCESS) {
 					service_registration_pt registration = NULL;
 					status = serviceReference_getServiceRegistration(ref, &registration);
@@ -274,7 +274,7 @@ celix_status_t deviceManager_matchAttachDriver(device_manager_pt manager, apr_po
 								if (status == CELIX_SUCCESS) {
 									if (newDriverId != NULL) {
 										array_list_pt ids = NULL;
-										arrayList_create(attachPool, &ids);
+										arrayList_create(&ids);
 										arrayList_add(ids, newDriverId);
 										arrayList_add(excluded, finalAttributes);
 										status = deviceManager_matchAttachDriver(manager, attachPool, loader,
@@ -424,7 +424,7 @@ celix_status_t deviceManager_driverRemoved(void * handle, service_reference_pt r
 celix_status_t deviceManager_getIdleDevices(device_manager_pt manager, apr_pool_t *pool, array_list_pt *idleDevices) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	status = arrayList_create(pool, idleDevices);
+	status = arrayList_create(idleDevices);
 	if (status == CELIX_SUCCESS) {
 		hash_map_iterator_pt iter = hashMapIterator_create(manager->devices);
 		while (hashMapIterator_hasNext(iter)) {
@@ -483,7 +483,7 @@ celix_status_t deviceManager_getIdleDevices(device_manager_pt manager, apr_pool_
 celix_status_t deviceManager_getIdleDevices_exmaple(device_manager_pt manager, apr_pool_t *pool, array_list_pt *idleDevices) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	status = arrayList_create(pool, idleDevices);
+	status = arrayList_create(idleDevices);
 	if (status == CELIX_SUCCESS) {
 		hash_map_iterator_pt iter = hashMapIterator_create(manager->devices);
 		while (hashMapIterator_hasNext(iter)) {

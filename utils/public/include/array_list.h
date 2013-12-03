@@ -39,8 +39,8 @@ typedef struct arrayListIterator * array_list_iterator_pt;
 
 typedef celix_status_t (*array_list_element_equals_pt)(void *, void *, bool *equals);
 
-UTILS_EXPORT celix_status_t arrayList_create(apr_pool_t *pool, array_list_pt *list);
-UTILS_EXPORT celix_status_t arrayList_createWithEquals(apr_pool_t *pool, array_list_element_equals_pt equals, array_list_pt *list);
+UTILS_EXPORT celix_status_t arrayList_create(array_list_pt *list);
+UTILS_EXPORT celix_status_t arrayList_createWithEquals(array_list_element_equals_pt equals, array_list_pt *list);
 
 UTILS_EXPORT void arrayList_destroy(array_list_pt list);
 UTILS_EXPORT void arrayList_trimToSize(array_list_pt list);
@@ -58,7 +58,7 @@ UTILS_EXPORT bool arrayList_addAll(array_list_pt list, array_list_pt toAdd);
 UTILS_EXPORT void * arrayList_remove(array_list_pt list, unsigned int index);
 UTILS_EXPORT bool arrayList_removeElement(array_list_pt list, void * element);
 UTILS_EXPORT void arrayList_clear(array_list_pt list);
-UTILS_EXPORT array_list_pt arrayList_clone(apr_pool_t *pool, array_list_pt list);
+UTILS_EXPORT array_list_pt arrayList_clone(array_list_pt list);
 
 UTILS_EXPORT array_list_iterator_pt arrayListIterator_create(array_list_pt list);
 UTILS_EXPORT void arrayListIterator_destroy(array_list_iterator_pt iterator);

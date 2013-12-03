@@ -77,7 +77,7 @@ celix_status_t serviceTracker_createWithFilter(apr_pool_t *pool, bundle_context_
 		(*tracker)->pool = pool;
 		(*tracker)->tracker = *tracker;
 		(*tracker)->tracked = NULL;
-		arrayList_create(pool, &(*tracker)->tracked);
+		arrayList_create(&(*tracker)->tracked);
 		(*tracker)->customizer = customizer;
 		(*tracker)->listener = NULL;
 	}
@@ -167,7 +167,7 @@ array_list_pt serviceTracker_getServiceReferences(service_tracker_pt tracker) {
 	unsigned int i;
 	int size = arrayList_size(tracker->tracked);
 	array_list_pt references = NULL;
-	arrayList_create(tracker->pool, &references);
+	arrayList_create(&references);
 	
 	for (i = 0; i < arrayList_size(tracker->tracked); i++) {
 		tracked = (tracked_pt) arrayList_get(tracker->tracked, i);
@@ -191,7 +191,7 @@ array_list_pt serviceTracker_getServices(service_tracker_pt tracker) {
 	unsigned int i;
 	int size = arrayList_size(tracker->tracked);
 	array_list_pt references = NULL;
-	arrayList_create(tracker->pool, &references);
+	arrayList_create(&references);
 	
 	for (i = 0; i < arrayList_size(tracker->tracked); i++) {
 		tracked = (tracked_pt) arrayList_get(tracker->tracked, i);

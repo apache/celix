@@ -191,7 +191,7 @@ celix_status_t remoteServiceAdmin_handleRequest(remote_service_admin_pt rsa, cha
 
 celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, char *serviceId, properties_pt properties, array_list_pt *registrations) {
 	celix_status_t status = CELIX_SUCCESS;
-	arrayList_create(admin->pool, registrations);
+	arrayList_create(registrations);
 	array_list_pt references = NULL;
 	service_reference_pt reference = NULL;
 	service_registration_pt registration = NULL;
@@ -226,7 +226,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 	} else {
 		printf("RSA: Export services (%s)\n", exports);
 		array_list_pt interfaces = NULL;
-		arrayList_create(admin->pool, &interfaces);
+		arrayList_create(&interfaces);
 		if (strcmp(utils_stringTrim(exports), "*") == 0) {
 			char *token;
 			char *interface = apr_strtok(provided, ",", &token);
@@ -392,7 +392,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, e
 
 	array_list_pt importedRegs = hashMap_get(admin->importedServices, endpoint);
 	if (importedRegs == NULL) {
-		arrayList_create(admin->pool, &importedRegs);
+		arrayList_create(&importedRegs);
 		hashMap_put(admin->importedServices, endpoint, importedRegs);
 	}
 	arrayList_add(importedRegs, *registration);

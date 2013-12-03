@@ -86,7 +86,7 @@ celix_status_t remoteShell_create(apr_pool_t *pool, shell_mediator_pt mediator, 
 
 		status = apr_thread_mutex_create(&(*instance)->mutex, APR_THREAD_MUTEX_DEFAULT, pool);
 		status = apr_thread_pool_create(&(*instance)->threadPool, 0, maximumConnections, pool);
-		status = arrayList_create(pool, &(*instance)->connections);
+		status = arrayList_create(&(*instance)->connections);
 	} else {
 		status = CELIX_ENOMEM;
 	}

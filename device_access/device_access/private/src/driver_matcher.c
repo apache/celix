@@ -70,7 +70,7 @@ celix_status_t driverMatcher_create(apr_pool_t *pool, bundle_context_pt context,
 		(*matcher)->context = context;
 		(*matcher)->attributes = hashMap_create(driverMatcher_matchKeyHash, NULL, driverMatcher_matchKeyEquals, NULL);
 
-		arrayList_create(pool, &(*matcher)->matches);
+		arrayList_create(&(*matcher)->matches);
 	}
 
 	return status;
@@ -125,7 +125,7 @@ celix_status_t driverMatcher_get(driver_matcher_pt matcher, int key, array_list_
 
 	*attributes = hashMap_get(matcher->attributes, matchKeyS);
 	if (*attributes == NULL) {
-		arrayList_create(matcher->pool, attributes);
+		arrayList_create(attributes);
 		match_key_t matchKey = apr_palloc(matcher->pool, sizeof(*matchKey));
 		matchKey->matchValue = key;
 		hashMap_put(matcher->attributes, matchKey, *attributes);
