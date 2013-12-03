@@ -87,13 +87,13 @@ celix_status_t exportRegistration_stopTracking(export_registration_pt registrati
 	if (registration->endpointTracker != NULL) {
 		status = serviceTracker_close(registration->endpointTracker);
 		if (status != CELIX_SUCCESS) {
-			celix_log("EXPORT_REGISTRATION: Could not close endpoint tracker");
+		    fw_log(FW_LOG_ERROR, "EXPORT_REGISTRATION: Could not close endpoint tracker");
 		}
 	}
 	if (registration->tracker != NULL) {
 		status = serviceTracker_close(registration->tracker);
 		if (status != CELIX_SUCCESS) {
-			celix_log("EXPORT_REGISTRATION: Could not close service tracker");
+		    fw_log(FW_LOG_ERROR, "EXPORT_REGISTRATION: Could not close service tracker");
 		}
 	}
 
