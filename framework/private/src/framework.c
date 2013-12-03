@@ -1985,9 +1985,8 @@ static void *APR_THREAD_FUNC framework_shutdown(apr_thread_t *thd, void *framewo
 		fw_log(FW_LOG_ERROR,  "Error unlocking the framework, cannot exit clean.");
 	}
 
-	apr_thread_exit(thd, APR_SUCCESS);
-
 	fw_log(FW_LOG_INFO, "FRAMEWORK: Shutdown done\n");
+	apr_thread_exit(thd, APR_SUCCESS);
 
 	return NULL;
 }
@@ -2183,7 +2182,8 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 
 	    fw_log(FW_LOG_INFO, "FRAMEWORK: Start shutdownthread");
 	    if (apr_thread_create(&shutdownThread, NULL, framework_shutdown, framework, framework->mp) == APR_SUCCESS) {
-            apr_thread_join(&status, shutdownThread);
+//            apr_thread_join(&status, shutdownThread);
+            apr_thread_detach(shutdownThread);
 	    } else {
             fw_log(FW_LOG_ERROR,  "Could not create shutdown thread, normal exit not possible.");
 	        status = CELIX_FRAMEWORK_EXCEPTION;
