@@ -389,7 +389,7 @@ celix_status_t fw_init(framework_pt framework) {
     status = CELIX_DO_IF(status, bundleContext_create(framework, framework->bundle, &context));
     status = CELIX_DO_IF(status, bundle_setContext(framework->bundle, context));
     if (status == CELIX_SUCCESS) {
-        activator_pt activator;
+        activator_pt activator = NULL;
         activator = (activator_pt) apr_palloc(framework->mp, (sizeof(*activator)));
         if (activator != NULL) {
             bundle_context_pt context = NULL;
@@ -605,7 +605,7 @@ celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int opti
 	long refreshCount;
 	char *archiveRoot;
 	long revisionNumber;
-	activator_pt activator;
+	activator_pt activator = NULL;
 	bundle_archive_pt archive = NULL;
 	apr_pool_t *bundlePool = NULL;
 	char *error = NULL;
@@ -810,7 +810,7 @@ celix_status_t framework_updateBundle(framework_pt framework, bundle_pt bundle, 
 celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool record) {
 	celix_status_t status = CELIX_SUCCESS;
 	bundle_state_e state;
-    activator_pt activator;
+    activator_pt activator = NULL;
     bundle_context_pt context = NULL;
     module_pt module = NULL;
     manifest_pt manifest = NULL;
