@@ -53,8 +53,6 @@ FRAMEWORK_EXPORT void * bundle_getHandle(bundle_pt bundle);
 FRAMEWORK_EXPORT void bundle_setHandle(bundle_pt bundle, void * handle);
 FRAMEWORK_EXPORT activator_pt bundle_getActivator(bundle_pt bundle);
 FRAMEWORK_EXPORT celix_status_t bundle_setActivator(bundle_pt bundle, activator_pt activator);
-FRAMEWORK_EXPORT celix_status_t bundle_getManifest(bundle_pt bundle, manifest_pt *manifest);
-FRAMEWORK_EXPORT celix_status_t bundle_setManifest(bundle_pt bundle, manifest_pt manifest);
 FRAMEWORK_EXPORT celix_status_t bundle_getContext(bundle_pt bundle, bundle_context_pt *context);
 FRAMEWORK_EXPORT celix_status_t bundle_setContext(bundle_pt bundle, bundle_context_pt context);
 FRAMEWORK_EXPORT celix_status_t bundle_getEntry(bundle_pt bundle, char * name, apr_pool_t *pool, char **entry);

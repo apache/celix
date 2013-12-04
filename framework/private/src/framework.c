@@ -56,6 +56,7 @@
 #include "service_registry.h"
 #include "bundle_cache.h"
 #include "bundle_archive.h"
+#include "bundle_revision.h"
 #include "bundle_context.h"
 #include "linked_list_iterator.h"
 #include "service_reference.h"
@@ -607,6 +608,7 @@ celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int opti
 	long revisionNumber;
 	activator_pt activator = NULL;
 	bundle_archive_pt archive = NULL;
+	bundle_revision_pt revision = NULL;
 	apr_pool_t *bundlePool = NULL;
 	char *error = NULL;
 
@@ -654,8 +656,8 @@ celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int opti
 
                 status = CELIX_DO_IF(status, bundle_getArchive(bundle, &archive));
                 status = CELIX_DO_IF(status, bundle_getMemoryPool(bundle, &bundlePool));
-                status = CELIX_DO_IF(status, getManifest(archive, bundlePool, &manifest));
-                status = CELIX_DO_IF(status, bundle_setManifest(bundle, manifest));
+                status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
+                status = CELIX_DO_IF(status, bundleRevision_getManifest(revision, &manifest));
                 if (status == CELIX_SUCCESS) {
                     library = manifest_getValue(manifest, HEADER_LIBRARY);
                 }
@@ -1609,36 +1611,6 @@ void fw_serviceChanged(framework_pt framework, service_event_type_e eventType, s
 //
 //	return status;
 //}
-
-celix_status_t getManifest(bundle_archive_pt archive, apr_pool_t *pool, manifest_pt *manifest) {
-	celix_status_t status = CELIX_SUCCESS;
-	char mf[256];
-	long refreshCount;
-	char *archiveRoot;
-	long revisionNumber;
-
-	status = bundleArchive_getRefreshCount(archive, &refreshCount);
-	if (status == CELIX_SUCCESS) {
-		status = bundleArchive_getArchiveRoot(archive, &archiveRoot);
-		if (status == CELIX_SUCCESS) {
-			status = bundleArchive_getCurrentRevisionNumber(archive, &revisionNumber);
-			if (status == CELIX_SUCCESS) {
-				if (status == CELIX_SUCCESS) {
-					sprintf(mf, "%s/version%ld.%ld/META-INF/MANIFEST.MF",
-							archiveRoot,
-							refreshCount,
-							revisionNumber
-							);
-					status = manifest_createFromFile(pool, mf, manifest);
-				}
-			}
-		}
-	}
-
-	framework_logIfError(status, NULL, "Failed to get manifest");
-
-	return status;
-}
 
 long framework_getNextBundleId(framework_pt framework) {
 	long id = framework->nextBundleId;

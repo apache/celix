@@ -47,5 +47,8 @@ celix_status_t bundleRevision_getRoot(bundle_revision_pt revision, char **root) 
 	return mock_c()->returnValue().value.intValue;
 }
 
-
+celix_status_t bundleRevision_getManifest(bundle_revision_pt revision, manifest_pt *manifest) {
+    mock_c()->actualCall("bundle_getCurrentModule");
+    return mock_c()->returnValue().value.intValue;
+}
 

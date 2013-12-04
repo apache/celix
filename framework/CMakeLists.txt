@@ -245,6 +245,7 @@ if (FRAMEWORK)
 			private/mock/framework_mock.c
 			private/mock/module_mock.c
 			private/mock/bundle_archive_mock.c
+			private/mock/bundle_revision_mock.c
 			private/mock/resolver_mock.c
 			private/mock/version_mock.c
 			private/src/utils.c
@@ -256,6 +257,7 @@ if (FRAMEWORK)
 		add_executable(bundle_revision_test 
 			private/test/bundle_revision_test.cpp
 			private/mock/miniunz_mock.c
+			private/mock/manifest_mock.c
 			private/src/bundle_revision.c
 			private/src/celix_errorcodes.c
             private/src/celix_log.c)

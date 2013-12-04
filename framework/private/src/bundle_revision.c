@@ -63,6 +63,9 @@ celix_status_t bundleRevision_create(apr_pool_t *pool, char *root, char *locatio
                 revision->root = apr_pstrdup(pool, root);
                 revision->location = apr_pstrdup(pool, location);
                 *bundle_revision = revision;
+
+                char *manifest = apr_pstrcat(pool, revision->root, "/META-INF/MANIFEST.MF", NULL);
+				status = manifest_createFromFile(pool, manifest, &revision->manifest);
             }
         }
     }
@@ -112,6 +115,19 @@ celix_status_t bundleRevision_getRoot(bundle_revision_pt revision, char **root) 
 	}
 
 	framework_logIfError(status, NULL, "Failed to get revision root");
+
+	return status;
+}
+
+celix_status_t bundleRevision_getManifest(bundle_revision_pt revision, manifest_pt *manifest) {
+	celix_status_t status = CELIX_SUCCESS;
+	if (revision == NULL) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	} else {
+		*manifest = revision->manifest;
+	}
+
+	framework_logIfError(status, NULL, "Failed to get manifest");
 
 	return status;
 }

@@ -34,6 +34,7 @@ struct bundleRevision {
 	long revisionNr;
 	char *root;
 	char *location;
+	manifest_pt manifest;
 };
 
 #endif /* BUNDLE_REVISION_PRIVATE_H_ */

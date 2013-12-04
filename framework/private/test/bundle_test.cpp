@@ -295,27 +295,6 @@ TEST(bundle, setState) {
 	POINTERS_EQUAL(BUNDLE_INSTALLED, bundle->state);
 }
 
-TEST(bundle, getManifest) {
-	bundle_pt bundle = (bundle_pt) apr_palloc(pool, sizeof(*bundle));
-	manifest_pt manifest = (manifest_pt) 0x10;
-	bundle->manifest = manifest;
-
-	manifest_pt actual = NULL;
-	celix_status_t status = bundle_getManifest(bundle, &actual);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
-	POINTERS_EQUAL(manifest, actual);
-}
-
-TEST(bundle, setManifest) {
-	bundle_pt bundle = (bundle_pt) apr_palloc(pool, sizeof(*bundle));
-	bundle->manifest = NULL;
-
-	manifest_pt manifest = (manifest_pt) 0x10;
-	celix_status_t status = bundle_setManifest(bundle, manifest);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
-	POINTERS_EQUAL(manifest, bundle->manifest);
-}
-
 TEST(bundle, start) {
 	bundle_pt bundle = (bundle_pt) apr_palloc(pool, sizeof(*bundle));
 	framework_pt framework = (framework_pt) 0x10;

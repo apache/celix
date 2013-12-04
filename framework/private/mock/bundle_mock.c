@@ -74,14 +74,6 @@ celix_status_t bundle_setActivator(bundle_pt bundle, activator_pt activator) {
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundle_getManifest(bundle_pt bundle, manifest_pt *manifest) {
-	return mock_c()->returnValue().value.intValue;
-}
-
-celix_status_t bundle_setManifest(bundle_pt bundle, manifest_pt manifest) {
-	return mock_c()->returnValue().value.intValue;
-}
-
 celix_status_t bundle_getContext(bundle_pt bundle, bundle_context_pt *context) {
 	return mock_c()->returnValue().value.intValue;
 }

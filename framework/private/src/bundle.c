@@ -36,6 +36,7 @@
 #include "version.h"
 #include "array_list.h"
 #include "bundle_archive.h"
+#include "bundle_revision.h"
 #include "resolver.h"
 #include "utils.h"
 #include "celix_log.h"
@@ -77,8 +78,6 @@ celix_status_t bundle_create(bundle_pt * bundle, apr_pool_t *mp) {
 			(*bundle)->lockThread = 0;
 
 			resolver_addModule(module);
-
-			(*bundle)->manifest = NULL;
         }
 	}
 
@@ -216,20 +215,15 @@ celix_status_t bundle_setState(bundle_pt bundle, bundle_state_e state) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundle_getManifest(bundle_pt bundle, manifest_pt *manifest) {
-	*manifest = bundle->manifest;
-	return CELIX_SUCCESS;
-}
-
-celix_status_t bundle_setManifest(bundle_pt bundle, manifest_pt manifest) {
-	bundle->manifest = manifest;
-	return CELIX_SUCCESS;
-}
-
 celix_status_t bundle_createModule(bundle_pt bundle, module_pt *module) {
 	celix_status_t status = CELIX_SUCCESS;
+	bundle_archive_pt archive = NULL;
+	bundle_revision_pt revision = NULL;
 	manifest_pt headerMap = NULL;
-	status = getManifest(bundle->archive, bundle->memoryPool, &headerMap);
+
+	status = CELIX_DO_IF(status, bundle_getArchive(bundle, &archive));
+	status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
+	status = CELIX_DO_IF(status, bundleRevision_getManifest(revision, &headerMap));
 	if (status == CELIX_SUCCESS) {
         long bundleId;
         status = bundleArchive_getId(bundle->archive, &bundleId);

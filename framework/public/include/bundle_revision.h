@@ -33,6 +33,7 @@
 #include <apr_pools.h>
 
 #include "celix_errno.h"
+#include "manifest.h"
 
 /**
  * Typedef for bundle_revision_pt.
@@ -97,6 +98,18 @@ celix_status_t bundleRevision_getLocation(bundle_revision_pt revision, char **lo
  * 		- CELIX_ILLEGAL_ARGUMENT If <code>revision</code> is illegal.
  */
 celix_status_t bundleRevision_getRoot(bundle_revision_pt revision, char **root);
+
+/**
+ * Retrieves the manifest of the given revision.
+ *
+ * @param revision The revision to get the manifest for.
+ * @param[out] manifest The manifest.
+ *
+ * @return Status code indication failure or success:
+ * 		- CELIX_SUCCESS when no errors are encountered.
+ * 		- CELIX_ILLEGAL_ARGUMENT If <code>revision</code> is illegal.
+ */
+celix_status_t bundleRevision_getManifest(bundle_revision_pt revision, manifest_pt *manifest);
 
 #endif /* BUNDLE_REVISION_H_ */
 

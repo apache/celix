@@ -28,12 +28,17 @@
 #include "manifest.h"
 
 celix_status_t manifest_create(apr_pool_t *pool, manifest_pt *manifest) {
-	mock_c()->actualCall("bundle_getCurrentModule");
+	mock_c()->actualCall("manifest_create")
+        ->withPointerParameters("pool", pool)
+        ->_andPointerOutputParameters("manifest", (void **) manifest);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t manifest_createFromFile(apr_pool_t *pool, char *filename, manifest_pt *manifest) {
-	mock_c()->actualCall("bundle_getCurrentModule");
+    mock_c()->actualCall("manifest_createFromFile")
+        ->withPointerParameters("pool", pool)
+        ->withStringParameters("filename", filename)
+        ->_andPointerOutputParameters("manifest", (void **) manifest);
 	return mock_c()->returnValue().value.intValue;
 }
 
