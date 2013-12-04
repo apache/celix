@@ -25,12 +25,10 @@ if (DEPLOYMENT_ADMIN)
     SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_deployment_admin")
 	SET_HEADERS("Bundle-Name: Apache Celix Deployment Admin") 
     
-    include_directories("/opt/local/include")
+    include_directories("${CURL_INCLUDE_DIR}")
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/deployment_admin/private/include")
     include_directories("${PROJECT_SOURCE_DIR}/deployment_admin/public/include")
-    
-    link_directories("/opt/local/lib")
     
     bundle(deployment_admin SOURCES
     	private/src/deployment_package 
