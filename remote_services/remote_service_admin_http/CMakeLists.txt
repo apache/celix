@@ -23,6 +23,7 @@ include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/include")
+include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin_http/private/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
 
 SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_remote_service_admin")
@@ -34,11 +35,6 @@ bundle(remote_service_admin SOURCES
 	private/src/import_registration_impl
 	private/src/remote_service_admin_activator
 	private/src/civetweb.c
-
-    private/include/export_registration_impl.h
-    private/include/import_registration_impl.h
-    private/include/civetweb.h
-    private/include/remote_service_admin_impl.h
 )
     
 install_bundle(remote_service_admin

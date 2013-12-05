@@ -19,7 +19,7 @@
 /*
  * remote_service_admin_impl.h
  *
- *  \date       Sep 30, 2011
+ *  \date       Dec 5, 2013
  *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
@@ -28,7 +28,6 @@
 #define REMOTE_SERVICE_ADMIN_IMPL_H_
 
 #include "remote_service_admin.h"
-#include "civetweb.h"
 
 #define BUNDLE_STORE_PROPERTY_NAME "ENDPOINTS"
 #define DEFAULT_BUNDLE_STORE "endpoints"
@@ -43,30 +42,15 @@ struct import_reference {
 	service_reference_pt reference;
 };
 
-struct remote_service_admin {
-	apr_pool_t *pool;
-	bundle_context_pt context;
-
-	hash_map_pt exportedServices;
-	hash_map_pt importedServices;
-
-	char *port;
-
-	struct mg_context *ctx;
-};
+celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt context, remote_service_admin_pt *admin);
 
 celix_status_t remoteServiceAdmin_send(remote_service_admin_pt rsa, endpoint_description_pt endpointDescription, char *methodSignature, char *request, char **reply, int* replyStatus);
 
-celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt context, remote_service_admin_pt *admin);
-celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin);
-
 celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, char *serviceId, properties_pt properties, array_list_pt *registrations);
 celix_status_t remoteServiceAdmin_removeExportedService(export_registration_pt registration);
-
 celix_status_t remoteServiceAdmin_getExportedServices(remote_service_admin_pt admin, array_list_pt *services);
 celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_admin_pt admin, array_list_pt *services);
 celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, endpoint_description_pt endpoint, import_registration_pt *registration);
-
 
 celix_status_t exportReference_getExportedEndpoint(export_reference_pt reference, endpoint_description_pt *endpoint);
 celix_status_t exportReference_getExportedService(export_reference_pt reference);

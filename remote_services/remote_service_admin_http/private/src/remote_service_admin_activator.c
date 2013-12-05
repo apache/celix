@@ -28,7 +28,7 @@
 #include "bundle_activator.h"
 #include "service_registration.h"
 
-#include "remote_service_admin_impl.h"
+#include "remote_service_admin_http_impl.h"
 #include "export_registration_impl.h"
 #include "import_registration_impl.h"
 

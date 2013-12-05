@@ -17,21 +17,31 @@
  *under the License.
  */
 /*
- * remote_endpoint_impl.h
+ * remote_service_admin_http_impl.h
  *
- *  \date       Oct 11, 2011
+ *  \date       Sep 30, 2011
  *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
-#ifndef REMOTE_ENDPOINT_IMPL_H_
-#define REMOTE_ENDPOINT_IMPL_H_
+#ifndef REMOTE_SERVICE_ADMIN_HTTP_IMPL_H_
+#define REMOTE_SERVICE_ADMIN_HTTP_IMPL_H_
 
-#include "remote_endpoint.h"
+#include "remote_service_admin_impl.h"
+#include "civetweb.h"
 
-struct remote_endpoint {
-	void *service;
-	apr_pool_t* pool;
+struct remote_service_admin {
+	apr_pool_t *pool;
+	bundle_context_pt context;
+
+	hash_map_pt exportedServices;
+	hash_map_pt importedServices;
+
+	char *port;
+
+	struct mg_context *ctx;
 };
 
-#endif /* REMOTE_ENDPOINT_IMPL_H_ */
+celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin);
+
+#endif /* REMOTE_SERVICE_ADMIN_HTTP_IMPL_H_ */
