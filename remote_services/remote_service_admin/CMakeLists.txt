@@ -16,9 +16,9 @@
 # under the License.
 
 find_package(APR REQUIRED)
-find_package(Jansson REQUIRED)
+find_package(CURL REQUIRED)
 
-include_directories(${JANSSON_INCLUDE_DIRS})
+include_directories(${CURL_INCLUDE_DIRS})
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
@@ -49,4 +49,4 @@ install_bundle(remote_service_admin
 		public/include/remote_service_admin.h
 )
 
-target_link_libraries(remote_service_admin celix_framework ${APRUTIL_LIBRARY} ${JANSSON_LIBRARIES})
+target_link_libraries(remote_service_admin celix_framework ${APRUTIL_LIBRARY} ${CURL_LIBRARIES})

@@ -120,14 +120,15 @@ celix_status_t importRegistration_proxyAdding(void * handle, service_reference_p
 celix_status_t importRegistration_proxyAdded(void * handle, service_reference_pt reference, void *service) {
 	celix_status_t status = CELIX_SUCCESS;
 	import_registration_pt registration = handle;
+	remote_proxy_service_pt proxy = (remote_proxy_service_pt) service;
 
-	printf("PROXY added called!\n");
-	remote_proxy_service_pt proxy = service;
 	if (registration->proxy == NULL) {
 		registration->reference = reference;
 		registration->proxy = proxy;
 		if (registration->endpointDescription != NULL) {
 			proxy->setEndpointDescription(proxy->proxy, registration->endpointDescription);
+			proxy->setHandler(proxy->proxy, registration->rsa);
+			proxy->setCallback(proxy->proxy, (sendToHandle) &remoteServiceAdmin_send);
 		}
 	}
 
@@ -156,6 +157,8 @@ celix_status_t importRegistration_proxyRemoved(void * handle, service_reference_
 		registration->reference = NULL;
 		registration->proxy = NULL;
 		proxy->setEndpointDescription(proxy->proxy, NULL);
+		proxy->setHandler(proxy->proxy, NULL);
+		proxy->setCallback(proxy->proxy, NULL);
 	}
 
 	return status;
@@ -166,17 +169,19 @@ celix_status_t importRegistration_open(import_registration_pt registration) {
 
 	char *bundleStore = NULL;
 	bundleContext_getProperty(registration->context, BUNDLE_STORE_PROPERTY_NAME, &bundleStore);
+
 	if (bundleStore == NULL) {
 		bundleStore = DEFAULT_BUNDLE_STORE;
 	}
+
 	char *name = apr_pstrcat(registration->pool, bundleStore, "/", registration->endpointDescription->service, "_proxy.zip", NULL);
 	status = bundleContext_installBundle(registration->context, name, &registration->bundle);
+
 	if (status == CELIX_SUCCESS) {
 		status = bundle_start(registration->bundle);
 		if (status == CELIX_SUCCESS) {
 		}
 	}
-
 	return status;
 }
 
@@ -226,3 +231,26 @@ celix_status_t importRegistration_setEndpointDescription(import_registration_pt 
 
 	return status;
 }
+
+
+celix_status_t importRegistration_setHandler(import_registration_pt registration, void * handler) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (registration->proxy != NULL) {
+		registration->proxy->setHandler(registration->proxy->proxy, handler);
+	}
+
+	return status;
+}
+
+
+celix_status_t importRegistration_setCallback(import_registration_pt registration, sendToHandle callback) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (registration->proxy != NULL) {
+		registration->proxy->setCallback(registration->proxy->proxy, callback);
+	}
+
+	return status;
+}
+

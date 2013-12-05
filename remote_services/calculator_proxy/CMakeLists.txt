@@ -16,9 +16,7 @@
 # under the License.
 
 find_package(Jansson REQUIRED)
-find_package(CURL REQUIRED)
 
-include_directories(${CURL_INCLUDE_DIRS})
 include_directories(${JANSSON_INCLUDE_DIRS})
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
@@ -33,4 +31,4 @@ bundle(org.example.api.Calculator_proxy SOURCES
     private/include/calculator_proxy_impl.h
 )
 
-target_link_libraries(org.example.api.Calculator_proxy celix_framework ${JANSSON_LIBRARIES} ${CURL_LIBRARIES})
+target_link_libraries(org.example.api.Calculator_proxy celix_framework ${JANSSON_LIBRARIES})

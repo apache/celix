@@ -29,6 +29,8 @@
 #include <apr_strings.h>
 #include <apr_uuid.h>
 
+#include <curl/curl.h>
+
 #include "remote_service_admin_impl.h"
 #include "export_registration_impl.h"
 #include "import_registration_impl.h"
@@ -39,6 +41,16 @@
 #include "bundle.h"
 #include "service_reference.h"
 #include "service_registration.h"
+
+struct post {
+    const char *readptr;
+    int size;
+};
+
+struct get {
+    char *writeptr;
+    int size;
+};
 
 static const char *ajax_reply_start =
   "HTTP/1.1 200 OK\r\n"
@@ -54,6 +66,9 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn);
 celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin, export_registration_pt registration, service_reference_pt reference, char *interface);
 celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, properties_pt serviceProperties, properties_pt endpointProperties, char *interface, endpoint_description_pt *description);
 static celix_status_t constructServiceUrl(remote_service_admin_pt admin, char *service, char **serviceUrl);
+
+static size_t remoteServiceAdmin_readCallback(void *ptr, size_t size, size_t nmemb, void *userp);
+static size_t remoteServiceAdmin_write(void *contents, size_t size, size_t nmemb, void *userp);
 
 celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt context, remote_service_admin_pt *admin) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -266,9 +281,21 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 			}
 			hashMap_put(admin->exportedServices, reference, *registrations);
 		}
+		arrayList_destroy(interfaces);
 	}
 
 	return status;
+}
+
+celix_status_t remoteServiceAdmin_removeExportedService(export_registration_pt registration) {
+    celix_status_t status = CELIX_SUCCESS;
+    remote_service_admin_pt admin = registration->rsa;
+    array_list_pt registrations = NULL;
+
+    registrations = hashMap_remove(admin->exportedServices, registration->reference);
+    // Registrations are allocated on the RSA pool, so there is a "leak" here. Removed services still consume memory
+
+    return CELIX_SUCCESS;
 }
 
 celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin, export_registration_pt registration, service_reference_pt reference, char *interface) {
@@ -401,6 +428,76 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, e
 	importRegistration_startTracking(*registration);
 
 	return status;
+}
+
+celix_status_t remoteServiceAdmin_send(remote_service_admin_pt rsa, endpoint_description_pt endpointDescription, char *methodSignature, char *request, char **reply, int* replyStatus) {
+
+    struct post post;
+    post.readptr = request;
+    post.size = strlen(request);
+
+    struct get get;
+    get.size = 0;
+    get.writeptr = malloc(1);
+
+    char *serviceUrl = properties_get(endpointDescription->properties, ".ars.alias");
+    printf("CALCULATOR_PROXY: URL: %s\n", serviceUrl);
+    char *url = apr_pstrcat(rsa->pool, serviceUrl, "/", methodSignature, NULL);
+
+    celix_status_t status = CELIX_SUCCESS;
+    CURL *curl;
+    CURLcode res;
+
+    curl = curl_easy_init();
+    if(!curl) {
+        status = CELIX_ILLEGAL_STATE;
+    } else {
+        curl_easy_setopt(curl, CURLOPT_URL, url);
+        curl_easy_setopt(curl, CURLOPT_POST, 1L);
+        curl_easy_setopt(curl, CURLOPT_READFUNCTION, remoteServiceAdmin_readCallback);
+        curl_easy_setopt(curl, CURLOPT_READDATA, &post);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, remoteServiceAdmin_write);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&get);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (curl_off_t)post.size);
+        res = curl_easy_perform(curl);
+        curl_easy_cleanup(curl);
+
+        printf("CALCULATOR_PROXY: Data read: \"%s\" %d\n", get.writeptr, res);
+        *reply = get.writeptr;
+
+    }
+    return status;
+}
+
+static size_t remoteServiceAdmin_readCallback(void *ptr, size_t size, size_t nmemb, void *userp) {
+    struct post *post = userp;
+
+    if (post->size) {
+        *(char *) ptr = post->readptr[0];
+        post->readptr++;
+        post->size--;
+        return 1;
+    }
+
+    return 0;
+}
+
+static size_t remoteServiceAdmin_write(void *contents, size_t size, size_t nmemb, void *userp) {
+  size_t realsize = size * nmemb;
+  struct get *mem = (struct get *)userp;
+
+  mem->writeptr = realloc(mem->writeptr, mem->size + realsize + 1);
+  if (mem->writeptr == NULL) {
+    /* out of memory! */
+    printf("not enough memory (realloc returned NULL)\n");
+    exit(EXIT_FAILURE);
+  }
+
+  memcpy(&(mem->writeptr[mem->size]), contents, realsize);
+  mem->size += realsize;
+  mem->writeptr[mem->size] = 0;
+
+  return realsize;
 }
 
 

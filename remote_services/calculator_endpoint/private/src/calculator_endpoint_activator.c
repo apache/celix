@@ -66,8 +66,8 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator *activator = userData;
-	remote_endpoint_pt endpoint;
-	remote_endpoint_service_pt endpointService;
+	remote_endpoint_pt endpoint = NULL;
+	remote_endpoint_service_pt endpointService = NULL;
 
 	calculatorEndpoint_create(activator->pool, &endpoint);
 	endpointService = apr_palloc(activator->pool, sizeof(*endpointService));

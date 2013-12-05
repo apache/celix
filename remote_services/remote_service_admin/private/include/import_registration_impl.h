@@ -54,6 +54,9 @@ celix_status_t importRegistration_getException(import_registration_pt registrati
 celix_status_t importRegistration_getImportReference(import_registration_pt registration, import_reference_pt *reference);
 
 celix_status_t importRegistration_setEndpointDescription(import_registration_pt registration, endpoint_description_pt endpointDescription);
+celix_status_t importRegistration_setHandler(import_registration_pt registration, void * handler);
+celix_status_t importRegistration_setCallback(import_registration_pt registration, sendToHandle callback);
+
 celix_status_t importRegistration_startTracking(import_registration_pt registration);
 celix_status_t importRegistration_stopTracking(import_registration_pt registration);
 

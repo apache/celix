@@ -74,6 +74,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	remote_proxy_service_pt calculatorProxy;
 
 	calculatorProxy_create(activator->pool, &calculator);
+
 	calculatorService = apr_palloc(activator->pool, sizeof(*calculatorService));
 	calculatorService->calculator = calculator;
 	calculatorService->add = calculatorProxy_add;
@@ -82,6 +83,8 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	calculatorProxy = apr_palloc(activator->pool, sizeof(*calculatorProxy));
 	calculatorProxy->proxy = calculator;
 	calculatorProxy->setEndpointDescription = calculatorProxy_setEndpointDescription;
+	calculatorProxy->setHandler = calculatorProxy_setHandler;
+	calculatorProxy->setCallback = calculatorProxy_setCallback;
 
 	char **services = malloc(2);
 	services[0] = CALCULATOR_SERVICE;

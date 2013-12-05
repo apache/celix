@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "bundle_activator.h"
 #include "bundle_context.h"
 #include "service_registration.h"
 

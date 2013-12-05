@@ -36,16 +36,21 @@
 
 #include "endpoint_listener.h"
 
+
 struct calculator {
 	apr_pool_t *pool;
 	endpoint_description_pt endpoint;
+	sendToHandle sendToCallback;
+	void * sendToHandler;
 };
 
-celix_status_t calculatorProxy_create(apr_pool_t *pool, calculator_pt *calculator);
+celix_status_t calculatorProxy_create(apr_pool_t *pool, calculator_pt *endpoint);
 celix_status_t calculatorProxy_add(calculator_pt calculator, double a, double b, double *result);
 celix_status_t calculatorProxy_sub(calculator_pt calculator, double a, double b, double *result);
 celix_status_t calculatorProxy_sqrt(calculator_pt calculator, double a, double *result);
 
 celix_status_t calculatorProxy_setEndpointDescription(void *proxy, endpoint_description_pt endpoint);
+celix_status_t calculatorProxy_setHandler(void *proxy, void *handler);
+celix_status_t calculatorProxy_setCallback(void *proxy, sendToHandle callback);
 
 #endif /* CALCULATOR_PROXY_IMPL_H_ */

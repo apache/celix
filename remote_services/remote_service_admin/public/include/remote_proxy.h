@@ -31,9 +31,13 @@
 
 #define REMOTE_PROXY "remote_proxy"
 
+typedef celix_status_t (*sendToHandle)(void *handler, endpoint_description_pt endpointDescription, char *methodSignature, char *request, char **reply, int* replyStatus);
+
 struct remote_proxy_service {
 	void *proxy;
 	celix_status_t (*setEndpointDescription)(void *proxy, endpoint_description_pt service);
+	celix_status_t (*setHandler)(void *proxy, void *handler);
+	celix_status_t (*setCallback)(void *proxy, sendToHandle callback);
 };
 
 typedef struct remote_proxy_service *remote_proxy_service_pt;
