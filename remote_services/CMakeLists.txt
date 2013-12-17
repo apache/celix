@@ -30,6 +30,7 @@ if (REMOTE_SERVICE_ADMIN)
     endif(UNIX AND NOT WIN32)
 
     add_subdirectory(topology_manager)
+    add_subdirectory(remote_service_admin)
     add_subdirectory(remote_service_admin_http)
     add_subdirectory(discovery_slp)
     add_subdirectory(discovery_bonjour)

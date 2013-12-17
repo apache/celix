@@ -26,10 +26,10 @@ include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin_http/private/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
 
-SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_remote_service_admin")
-SET_HEADERS("Bundle-Name: Apache Celix Remote Service Admin")
+SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_remote_service_admin_http")
+SET_HEADERS("Bundle-Name: Apache Celix Remote Service Admin HTTP")
 
-bundle(remote_service_admin SOURCES 
+bundle(remote_service_admin_http SOURCES 
 	private/src/remote_service_admin_impl
 	private/src/export_registration_impl
 	private/src/import_registration_impl
@@ -37,12 +37,4 @@ bundle(remote_service_admin SOURCES
 	private/src/civetweb.c
 )
     
-install_bundle(remote_service_admin
-	HEADERS
-	    public/include/remote_endpoint_impl.h
-		public/include/remote_endpoint.h
-		public/include/remote_proxy.h
-		public/include/remote_service_admin.h
-)
-
-target_link_libraries(remote_service_admin celix_framework ${APRUTIL_LIBRARY} ${CURL_LIBRARIES})
+target_link_libraries(remote_service_admin_http celix_framework ${APRUTIL_LIBRARY} ${CURL_LIBRARIES})
