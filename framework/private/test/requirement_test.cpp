@@ -33,11 +33,12 @@
 
 extern "C" {
 #include "requirement_private.h"
+#include "attribute.h"
+#include "version_range.h"
 }
 
 int main(int argc, char** argv) {
-	RUN_ALL_TESTS(argc, argv);
-	return 0;
+	return RUN_ALL_TESTS(argc, argv);
 }
 
 TEST_GROUP(requirement) {
@@ -59,10 +60,34 @@ TEST(requirement, create) {
 	hash_map_pt directives = hashMap_create(NULL, NULL, NULL, NULL);
 	hash_map_pt attributes = hashMap_create(NULL, NULL, NULL, NULL);
 
+	attribute_pt serviceAttribute = (attribute_pt) 0x01;
+	hashMap_put(attributes, (void*) "service", serviceAttribute);
+	attribute_pt versionAttribute = (attribute_pt) 0x02;
+	hashMap_put(attributes, (void*) "version", versionAttribute);
+
+	version_range_pt infiniteRange = (version_range_pt) 0x10;
+	version_range_pt parsedRange = (version_range_pt) 0x11;
+
 	mock().expectOneCall("attribute_getValue")
-			// .withParameter("attribute", (void *) 0x0)
-			// .andOutputParameter("value", (char *) 0x0)
-			.andReturnValue(CELIX_SUCCESS);
+        .withParameter("attribute", serviceAttribute)
+        .andOutputParameter("value", (char *) "target")
+        .andReturnValue(CELIX_SUCCESS);
+
+	mock().expectOneCall("versionRange_createInfiniteVersionRange")
+	    .withParameter("pool", pool)
+	    .andOutputParameter("range", infiniteRange)
+        .andReturnValue(CELIX_SUCCESS);
+
+	mock().expectOneCall("attribute_getValue")
+        .withParameter("attribute", versionAttribute)
+        .andOutputParameter("value", (char *) "1.0.0")
+        .andReturnValue(CELIX_SUCCESS);
+
+	mock().expectOneCall("versionRange_parse")
+        .withParameter("pool", pool)
+        .withParameter("rangeStr", (char *) "1.0.0")
+        .andOutputParameter("range", parsedRange)
+        .andReturnValue(CELIX_SUCCESS);
 
 	requirement_pt requirement = NULL;
 	requirement_create(pool, directives, attributes, &requirement);

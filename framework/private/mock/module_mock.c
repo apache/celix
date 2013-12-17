@@ -42,16 +42,16 @@ module_pt module_createFrameworkModule(bundle_pt bundle) {
 }
 
 void module_destroy(module_pt module) {
-	mock_c()->actualCall("requirement_create");
+	mock_c()->actualCall("module_destroy");
 }
 
 unsigned int module_hash(void * module) {
-	mock_c()->actualCall("requirement_create");
+	mock_c()->actualCall("module_hash");
 	return mock_c()->returnValue().value.intValue;
 }
 
 int module_equals(void * module, void * compare) {
-	mock_c()->actualCall("requirement_create");
+	mock_c()->actualCall("module_equals");
 	return mock_c()->returnValue().value.intValue;
 }
 

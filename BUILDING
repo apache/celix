@@ -34,8 +34,22 @@ Quick Start
   
   # To see a list of all available targets
   $ make help
+
   
-  
+Unit testing using CppUTest
+---------------------------
+
+Apache Celix has two build options that enable a set of unit tests. These tests
+are based on CUnit a fork of CppUTest. CUnit can simply be installed and is normally
+found by the CMake scripts, but for CppUTest a fork needs to be build.
+
+The fork can be found on https://github.com/abroekhuis/cpputest. Simply cloning, building
+and updating the build configuration to point to the build files should be enough.
+
+Some background, CppUTest doesn't support output parameters, but Celix's API relies heavily
+on those. The fork adds support for this.
+
+
 Background information
 ----------------------
 

@@ -86,7 +86,9 @@ celix_status_t bundleArchive_getRevision(bundle_archive_pt archive, long revNr, 
 }
 
 celix_status_t bundleArchive_getCurrentRevision(bundle_archive_pt archive, bundle_revision_pt *revision) {
-	mock_c()->actualCall("bundleArchive_getCurrentRevision");
+	mock_c()->actualCall("bundleArchive_getCurrentRevision")
+        ->withPointerParameters("archive", archive)
+        ->_andPointerOutputParameters("revision", (void **) revision);
 	return mock_c()->returnValue().value.intValue;
 }
 

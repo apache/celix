@@ -33,7 +33,9 @@ celix_status_t versionRange_createVersionRange(apr_pool_t *pool, version_pt low,
 }
 
 celix_status_t versionRange_createInfiniteVersionRange(apr_pool_t *pool, version_range_pt *range) {
-	mock_c()->actualCall("versionRange_createInfiniteVersionRange");
+	mock_c()->actualCall("versionRange_createInfiniteVersionRange")
+	        ->withPointerParameters("pool", pool)
+	        ->_andPointerOutputParameters("range", (void **) range);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -46,7 +48,10 @@ celix_status_t versionRange_isInRange(version_range_pt versionRange, version_pt 
 }
 
 celix_status_t versionRange_parse(apr_pool_t *pool, char * rangeStr, version_range_pt *range) {
-	mock_c()->actualCall("versionRange_parse");
+	mock_c()->actualCall("versionRange_parse")
+        ->withPointerParameters("pool", pool)
+        ->withStringParameters("rangeStr", rangeStr)
+        ->_andPointerOutputParameters("range", (void **) range);
 	return mock_c()->returnValue().value.intValue;
 }
 

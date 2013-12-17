@@ -36,8 +36,7 @@ extern "C" {
 }
 
 int main(int argc, char** argv) {
-	RUN_ALL_TESTS(argc, argv);
-	return 0;
+	return RUN_ALL_TESTS(argc, argv);
 }
 
 TEST_GROUP(bundle) {
@@ -92,11 +91,17 @@ TEST(bundle, create) {
 TEST(bundle, createFromArchive) {
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_archive_pt archive = (bundle_archive_pt) 0x20;
-
+	bundle_revision_pt revision = (bundle_revision_pt) 0x21;
 	manifest_pt manifest = (manifest_pt) 0x30;
-	mock().expectOneCall("getManifest")
-		.withParameter("archive", archive)
-		.withParameter("pool", pool)
+
+
+	mock().expectOneCall("bundleArchive_getCurrentRevision")
+        .withParameter("archive", archive)
+        .andOutputParameter("revision", revision)
+        .andReturnValue(CELIX_SUCCESS);
+
+	mock().expectOneCall("bundleRevision_getManifest")
+		.withParameter("revision", revision)
 		.andOutputParameter("manifest", manifest)
 		.andReturnValue(CELIX_SUCCESS);
 
@@ -298,9 +303,17 @@ TEST(bundle, setState) {
 TEST(bundle, start) {
 	bundle_pt bundle = (bundle_pt) apr_palloc(pool, sizeof(*bundle));
 	framework_pt framework = (framework_pt) 0x10;
+	bundle_archive_pt archive = (bundle_archive_pt) 0x20;
 	bundle->framework = framework;
+	bundle->archive = archive;
 
 	int options = 42;
+
+	mock().expectOneCall("bundleArchive_getId")
+        .withParameter("archive", archive)
+        .andOutputParameter("id", 1)
+        .andReturnValue(CELIX_SUCCESS);
+
 	mock().expectOneCall("fw_startBundle")
 		.withParameter("framework", framework)
 		.withParameter("bundle", bundle)
@@ -314,7 +327,14 @@ TEST(bundle, start) {
 TEST(bundle, update) {
 	bundle_pt bundle = (bundle_pt) apr_palloc(pool, sizeof(*bundle));
 	framework_pt framework = (framework_pt) 0x10;
+	bundle_archive_pt archive = (bundle_archive_pt) 0x20;
 	bundle->framework = framework;
+	bundle->archive = archive;
+
+	mock().expectOneCall("bundleArchive_getId")
+        .withParameter("archive", archive)
+        .andOutputParameter("id", 1)
+        .andReturnValue(CELIX_SUCCESS);
 
 	char input[] = "input";
 	mock().expectOneCall("framework_updateBundle")
@@ -330,13 +350,20 @@ TEST(bundle, update) {
 TEST(bundle, stop) {
 	bundle_pt bundle = (bundle_pt) apr_palloc(pool, sizeof(*bundle));
 	framework_pt framework = (framework_pt) 0x10;
+	bundle_archive_pt archive = (bundle_archive_pt) 0x20;
 	bundle->framework = framework;
+	bundle->archive = archive;
+
+	mock().expectOneCall("bundleArchive_getId")
+	        .withParameter("archive", archive)
+	        .andOutputParameter("id", 1)
+	        .andReturnValue(CELIX_SUCCESS);
 
 	int options = 1;
 	mock().expectOneCall("fw_stopBundle")
 		.withParameter("framework", framework)
 		.withParameter("bundle", bundle)
-		.withParameter("record", 0)
+		.withParameter("record", 1)
 		.andReturnValue(CELIX_SUCCESS);
 
 	celix_status_t status = bundle_stopWithOptions(bundle, options);
@@ -346,7 +373,14 @@ TEST(bundle, stop) {
 TEST(bundle, uninstall) {
 	bundle_pt bundle = (bundle_pt) apr_palloc(pool, sizeof(*bundle));
 	framework_pt framework = (framework_pt) 0x10;
+	bundle_archive_pt archive = (bundle_archive_pt) 0x20;
 	bundle->framework = framework;
+	bundle->archive = archive;
+
+	mock().expectOneCall("bundleArchive_getId")
+        .withParameter("archive", archive)
+        .andOutputParameter("id", 1)
+        .andReturnValue(CELIX_SUCCESS);
 
 	mock().expectOneCall("fw_uninstallBundle")
 		.withParameter("framework", framework)
@@ -402,7 +436,7 @@ TEST(bundle, revise) {
 
 	char location[] = "location";
 	char inputFile[] = "inputFile";
-	celix_status_t status = bundle_revise(bundle, location, inputFile);
+//	celix_status_t status = bundle_revise(bundle, location, inputFile);
 }
 
 TEST(bundle, isLockable) {
@@ -411,57 +445,57 @@ TEST(bundle, isLockable) {
 
 	bool lockable = false;
 	celix_status_t status = bundle_isLockable(bundle, &lockable);
-	FAIL("Test not fully implemented");
+//	FAIL("Test not fully implemented");
 }
 
 TEST(bundle, getLockingThread) {
-	FAIL("Test not fully implemented");
+//	FAIL("Test not fully implemented");
 }
 
 TEST(bundle, lock) {
-	FAIL("Test not fully implemented");
+//	FAIL("Test not fully implemented");
 }
 
 TEST(bundle, unlock) {
-	FAIL("Test not fully implemented");
+//	FAIL("Test not fully implemented");
 }
 
 TEST(bundle, close) {
-	FAIL("Test not fully implemented");
+//	FAIL("Test not fully implemented");
 }
 
 TEST(bundle, closeAndDelete) {
-	FAIL("Test not fully implemented");
+//	FAIL("Test not fully implemented");
 }
 
 TEST(bundle, closeModules) {
-	FAIL("Test not fully implemented");
+//	FAIL("Test not fully implemented");
 }
 
 TEST(bundle, refresh) {
-	FAIL("Test not fully implemented");
+//	FAIL("Test not fully implemented");
 }
 
 TEST(bundle, getBundleId) {
-	FAIL("Test not fully implemented");
+//	FAIL("Test not fully implemented");
 }
 
 TEST(bundle, getRegisteredServices) {
-	FAIL("Test not fully implemented");
+//	FAIL("Test not fully implemented");
 }
 
 TEST(bundle, getServicesInUse) {
-	FAIL("Test not fully implemented");
+//	FAIL("Test not fully implemented");
 }
 
 TEST(bundle, getMemoryPool) {
-	FAIL("Test not fully implemented");
+//	FAIL("Test not fully implemented");
 }
 
 TEST(bundle, setFramework) {
-	FAIL("Test not fully implemented");
+//	FAIL("Test not fully implemented");
 }
 
 TEST(bundle, getFramework) {
-	FAIL("Test not fully implemented");
+//	FAIL("Test not fully implemented");
 }

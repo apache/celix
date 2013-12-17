@@ -37,8 +37,7 @@ extern "C" {
 }
 
 int main(int argc, char** argv) {
-	RUN_ALL_TESTS(argc, argv);
-	return 0;
+	return RUN_ALL_TESTS(argc, argv);
 }
 
 TEST_GROUP(capability) {
@@ -61,18 +60,33 @@ TEST(capability, create) {
 	hash_map_pt directives = hashMap_create(NULL, NULL, NULL, NULL);
 	hash_map_pt attributes = hashMap_create(NULL, NULL, NULL, NULL);
 
-	version_pt emptyVersion = (version_pt) 0x20; //apr_palloc(pool, sizeof(*version));
-	attribute_pt attribute = (attribute_pt) 0x30;
-	char key[] = "key";
+	attribute_pt serviceAttribute = (attribute_pt) 0x01;
+    hashMap_put(attributes, (void*) "service", serviceAttribute);
+    attribute_pt versionAttribute = (attribute_pt) 0x02;
+    hashMap_put(attributes, (void*) "version", versionAttribute);
+
+	version_pt emptyVersion = (version_pt) 0x10;
 
 	mock().expectOneCall("version_createEmptyVersion")
-			.withParameter("pool", pool)
-			.andOutputParameter("version", emptyVersion)
-			.andReturnValue(CELIX_SUCCESS);
+        .withParameter("pool", pool)
+        .andOutputParameter("version", emptyVersion)
+        .andReturnValue(CELIX_SUCCESS);
+
 	mock().expectOneCall("attribute_getValue")
-			// .withParameter("attribute", (void *) 0x0)
-			// .andOutputParameter("value", (char *) 0x0)
-			.andReturnValue(CELIX_SUCCESS);
+        .withParameter("attribute", serviceAttribute)
+        .andOutputParameter("value", (char *) "target")
+        .andReturnValue(CELIX_SUCCESS);
+
+	mock().expectOneCall("attribute_getValue")
+        .withParameter("attribute", versionAttribute)
+        .andOutputParameter("value", (char *) "1.0.0")
+        .andReturnValue(CELIX_SUCCESS);
+
+	mock().expectOneCall("version_createVersionFromString")
+        .withParameter("pool", pool)
+        .withParameter("versionStr", (char *) "1.0.0")
+        .andOutputParameter("version", emptyVersion)
+        .andReturnValue(CELIX_SUCCESS);
 
 	capability_pt capability = NULL;
 	celix_status_t status = capability_create(pool, module, directives, attributes, &capability);

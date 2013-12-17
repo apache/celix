@@ -43,21 +43,21 @@ celix_status_t manifest_createFromFile(apr_pool_t *pool, char *filename, manifes
 }
 
 void manifest_clear(manifest_pt manifest) {
-	mock_c()->actualCall("bundle_getCurrentModule");
+	mock_c()->actualCall("manifest_clear");
 }
 
 properties_pt manifest_getMainAttributes(manifest_pt manifest) {
-	mock_c()->actualCall("bundle_getCurrentModule");
+	mock_c()->actualCall("manifest_getMainAttributes");
 	return mock_c()->returnValue().value.pointerValue;
 }
 
 celix_status_t manifest_getEntries(manifest_pt manifest, hash_map_pt *map) {
-	mock_c()->actualCall("bundle_getCurrentModule");
+	mock_c()->actualCall("manifest_getEntries");
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t manifest_read(manifest_pt manifest, char *filename) {
-	mock_c()->actualCall("bundle_getCurrentModule");
+	mock_c()->actualCall("manifest_read");
 	return mock_c()->returnValue().value.intValue;
 }
 

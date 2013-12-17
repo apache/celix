@@ -38,7 +38,10 @@ celix_status_t version_clone(version_pt version, apr_pool_t *pool, version_pt *c
 }
 
 celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionStr, version_pt *version) {
-	mock_c()->actualCall("version_createVersionFromString");
+	mock_c()->actualCall("version_createVersionFromString")
+	        ->withPointerParameters("pool", pool)
+	        ->withStringParameters("versionStr", versionStr)
+	        ->_andPointerOutputParameters("version", (void **) version);
 	return mock_c()->returnValue().value.intValue;
 }
 
