@@ -46,6 +46,8 @@ FRAMEWORK_EXPORT celix_status_t serviceRegistration_unregister(service_registrat
 
 FRAMEWORK_EXPORT celix_status_t serviceRegistration_getService(service_registration_pt registration, bundle_pt bundle, void **service);
 
+FRAMEWORK_EXPORT celix_status_t serviceRegistration_setProperties(service_registration_pt registration, properties_pt properties);
+
 FRAMEWORK_EXPORT celix_status_t serviceRegistration_getProperties(service_registration_pt registration, properties_pt *properties);
 FRAMEWORK_EXPORT celix_status_t serviceRegistration_getRegistry(service_registration_pt registration, service_registry_pt *registry);
 FRAMEWORK_EXPORT celix_status_t serviceRegistration_getServiceReferences(service_registration_pt registration, array_list_pt *references);
