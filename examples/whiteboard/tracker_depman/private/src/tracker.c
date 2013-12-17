@@ -40,7 +40,7 @@ static void *APR_THREAD_FUNC dp_send(apr_thread_t *thd, void *handle) {
 			publisher_service_pt pub = (publisher_service_pt) arrayList_get(data->publishers, i);
 			pub->invoke(pub->publisher, "Tracker message");
 			if (data->logger != NULL) {
-				data->logger->log(data->logger->logger, LOG_INFO, "Sending message to publisher");
+				data->logger->log(data->logger->logger, OSGI_LOGSERVICE_INFO, "Sending message to publisher");
 			}
 		}
 		apr_sleep(1000000);
@@ -94,14 +94,14 @@ void tracker_addLog(void *handle, service_reference_pt ref, void *service) {
     struct data * data = (struct data *) handle;
     printf("Add log\n");
     data->logger = service;
-    ((log_service_pt) service)->log(((log_service_pt) service)->logger, LOG_DEBUG, "test");
+    ((log_service_pt) service)->log(((log_service_pt) service)->logger, OSGI_LOGSERVICE_DEBUG, "test");
 }
 
 void tracker_modifiedLog(void *handle, service_reference_pt ref, void *service) {
     struct data * data = (struct data *) handle;
     printf("Modify log\n");
     data->logger = service;
-    ((log_service_pt) service)->log(((log_service_pt) service)->logger, LOG_DEBUG, "test");
+    ((log_service_pt) service)->log(((log_service_pt) service)->logger, OSGI_LOGSERVICE_DEBUG, "test");
 }
 
 void tracker_removeLog(void *handle, service_reference_pt ref, void *service) {

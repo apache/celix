@@ -27,7 +27,7 @@
 #ifndef REMOTE_ENDPOINT_H_
 #define REMOTE_ENDPOINT_H_
 
-#define REMOTE_ENDPOINT "remote_endpoint"
+#define OSGI_RSA_REMOTE_ENDPOINT "remote_endpoint"
 
 typedef struct remote_endpoint *remote_endpoint_pt;
 

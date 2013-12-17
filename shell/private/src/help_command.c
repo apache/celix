@@ -51,7 +51,7 @@ void helpCommand_destroy(command_pt command) {
 
 void helpCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *)) {
 	service_reference_pt shellService = NULL;
-	bundleContext_getServiceReference(command->bundleContext, (char *) SHELL_SERVICE_NAME, &shellService);
+	bundleContext_getServiceReference(command->bundleContext, (char *) OSGI_SHELL_SERVICE_NAME, &shellService);
 
 	if (shellService != NULL) {
 		shell_service_pt shell = NULL;

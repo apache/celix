@@ -117,7 +117,7 @@ celix_status_t discovery_create(apr_pool_t *pool, bundle_context_pt context, dis
 		(*discovery)->disclosedServicesMutex = NULL;
 		(*discovery)->frameworkUuid = NULL;
 
-		bundleContext_getProperty(context, FRAMEWORK_UUID, &(*discovery)->frameworkUuid);
+		bundleContext_getProperty(context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &(*discovery)->frameworkUuid);
 
 		CELIX_DO_IF(status, status = apr_thread_mutex_create(&(*discovery)->listenerReferencesMutex, APR_THREAD_MUTEX_DEFAULT, pool));
 		CELIX_DO_IF(status, status = apr_thread_mutex_create(&(*discovery)->discoveredServicesMutex, APR_THREAD_MUTEX_DEFAULT, pool));
@@ -325,7 +325,7 @@ celix_status_t discovery_endpointListenerAdded(void * handle, service_reference_
 				endpoint_listener_pt listener = service;
 
 				char *scope = properties_get(serviceProperties,
-				(char *) ENDPOINT_LISTENER_SCOPE);
+				(char *) OSGI_ENDPOINT_LISTENER_SCOPE);
 				filter_pt filter = filter_create(scope, discovery->pool); //FIXME memory leak
 				bool matchResult = false;
 				filter_match(filter, endpoint->properties, &matchResult);
@@ -462,10 +462,10 @@ static void discovery_resolveAddCallback(DNSServiceRef sdRef,
 		properties_set(props, key, valueBuf);
 	}
 
-	char *endpointFrameworkUuid = properties_get(props, (char *)ENDPOINT_FRAMEWORK_UUID);
+	char *endpointFrameworkUuid = properties_get(props, (char *)OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
 
 	if (endpointFrameworkUuid == NULL) {
-		printf("DISCOVERY: Cannot process endpoint, no %s property\n", ENDPOINT_FRAMEWORK_UUID);
+		printf("DISCOVERY: Cannot process endpoint, no %s property\n", OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
 	} else if (strcmp(endpointFrameworkUuid, discovery->frameworkUuid) != 0) {
 		apr_pool_t *childPool = NULL;
 		apr_pool_create(&childPool, discovery->pool);
@@ -512,7 +512,7 @@ static celix_status_t discovery_informEndpointListeners(discovery_pt discovery, 
 			properties_pt serviceProperties = NULL;
 			serviceRegistration_getProperties(registration, &serviceProperties);
 			char *scope = properties_get(serviceProperties,
-					(char *) ENDPOINT_LISTENER_SCOPE);
+					(char *) OSGI_ENDPOINT_LISTENER_SCOPE);
 			filter_pt filter = filter_create(scope, discovery->pool);
 			bool matchResult = false;
 			filter_match(filter, endpoint->properties, &matchResult);

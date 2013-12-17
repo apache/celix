@@ -74,10 +74,10 @@ static celix_status_t bundleActivator_registerBaseDriverDevice(base_driver_bundl
 		status = baseDriver_createService(device, &service);
 		if (status == CELIX_SUCCESS) {
 			properties_pt props = properties_create();
-			properties_set(props, DEVICE_CATEGORY, BASE_DRIVER_DEVICE_CATEGORY);
-			properties_set(props, DEVICE_SERIAL, serial);
+			properties_set(props, OSGI_DEVICEACCESS_DEVICE_CATEGORY, BASE_DRIVER_DEVICE_CATEGORY);
+			properties_set(props, OSGI_DEVICEACCESS_DEVICE_SERIAL, serial);
 			service_registration_pt service_registration = NULL;
-			status = bundleContext_registerService(bi->context, DEVICE_SERVICE_NAME, service, props, &service_registration);
+			status = bundleContext_registerService(bi->context, OSGI_DEVICEACCESS_DEVICE_SERVICE_NAME, service, props, &service_registration);
 			if (status == CELIX_SUCCESS) {
 				arrayList_add(bi->serviceRegistrations, service_registration);
 //				service_registration = NULL;

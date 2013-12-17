@@ -78,7 +78,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
         if (bi->locator->path == NULL ) {
         	bi->locator->path = (char *)DEFAULT_LOCATOR_PATH;
         }
-        bundleContext_registerService(context, DRIVER_LOCATOR_SERVICE_NAME, bi->service, NULL, &bi->locatorRegistration);
+        bundleContext_registerService(context, OSGI_DEVICEACCESS_DRIVER_LOCATOR_SERVICE_NAME, bi->service, NULL, &bi->locatorRegistration);
     } else {
         status = CELIX_START_ERROR;
     }

@@ -435,9 +435,9 @@ celix_status_t deploymentAdmin_processDeploymentPackageResources(deployment_admi
 		char *filter = NULL;
 
 		apr_pool_create(&tmpPool, admin->pool);
-		filter = apr_pstrcat(tmpPool, "(", SERVICE_PID, "=", info->resourceProcessor, ")", NULL);
+		filter = apr_pstrcat(tmpPool, "(", OSGI_FRAMEWORK_SERVICE_PID, "=", info->resourceProcessor, ")", NULL);
 
-		status = bundleContext_getServiceReferences(admin->context, RESOURCE_PROCESSOR_SERVICE, filter, &services);
+		status = bundleContext_getServiceReferences(admin->context, DEPLOYMENTADMIN_RESOURCE_PROCESSOR_SERVICE, filter, &services);
 		if (status == CELIX_SUCCESS) {
 			if (services != NULL && arrayList_size(services) > 0) {
 				service_reference_pt ref = arrayList_get(services, 0);
@@ -489,9 +489,9 @@ celix_status_t deploymentAdmin_dropDeploymentPackageResources(deployment_admin_p
 
 
 				apr_pool_create(&tmpPool, admin->pool);
-				filter = apr_pstrcat(tmpPool, "(", SERVICE_PID, "=", info->resourceProcessor, ")", NULL);
+				filter = apr_pstrcat(tmpPool, "(", OSGI_FRAMEWORK_SERVICE_PID, "=", info->resourceProcessor, ")", NULL);
 
-				status = bundleContext_getServiceReferences(admin->context, RESOURCE_PROCESSOR_SERVICE, filter, &services);
+				status = bundleContext_getServiceReferences(admin->context, DEPLOYMENTADMIN_RESOURCE_PROCESSOR_SERVICE, filter, &services);
 				if (status == CELIX_SUCCESS) {
 					if (services != NULL && arrayList_size(services) > 0) {
 						service_reference_pt ref = arrayList_get(services, 0);

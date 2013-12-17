@@ -129,7 +129,7 @@ static celix_status_t refiningDriver_stopDevice(refining_driver_device_pt device
 static celix_status_t refiningDriver_serviceChanged(service_listener_pt listener, service_event_pt event) {
 	celix_status_t status =  CELIX_SUCCESS;
 	refining_driver_device_pt device = listener->handle;
-	if (event->type == SERVICE_EVENT_UNREGISTERING) {
+	if (event->type == OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING) {
 		bool equal = false;
 		status = serviceReference_equals(device->baseServiceReference, event->reference, &equal);
 		if (status == CELIX_SUCCESS && equal) {
@@ -195,9 +195,9 @@ static celix_status_t refiningDriver_registerDevice(refining_driver_pt driver, r
 	status = refiningDriverDevice_createService(device, &service);
 	if (status == CELIX_SUCCESS) {
 		properties_pt props = properties_create();
-		properties_set(props, DEVICE_CATEGORY, REFINING_DRIVER_DEVICE_CATEGORY);
-		properties_set(props, DEVICE_SERIAL, serial);
-		status = bundleContext_registerService(driver->context, DEVICE_SERVICE_NAME, service, props, &device->deviceRegistration);
+		properties_set(props, OSGI_DEVICEACCESS_DEVICE_CATEGORY, REFINING_DRIVER_DEVICE_CATEGORY);
+		properties_set(props, OSGI_DEVICEACCESS_DEVICE_SERIAL, serial);
+		status = bundleContext_registerService(driver->context, OSGI_DEVICEACCESS_DEVICE_SERVICE_NAME, service, props, &device->deviceRegistration);
 	}
 
 	if (status == CELIX_SUCCESS) {
@@ -239,7 +239,7 @@ celix_status_t refiningDriver_match(void *driverHandler, service_reference_pt re
 	if (status == CELIX_SUCCESS) {
 		status = serviceRegistration_getProperties(registration, &properties);
 		if (status == CELIX_SUCCESS) {
-			char *category = properties_get(properties, DEVICE_CATEGORY);
+			char *category = properties_get(properties, OSGI_DEVICEACCESS_DEVICE_CATEGORY);
 			if (strcmp(category, BASE_DRIVER_DEVICE_CATEGORY) == 0) {
 				match = 10;
 			}

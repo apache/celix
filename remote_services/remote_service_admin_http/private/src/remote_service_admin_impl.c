@@ -216,7 +216,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 	if (tmpPool == NULL) {
 		return CELIX_ENOMEM;
 	} else {
-		char *filter = apr_pstrcat(admin->pool, "(", (char *)SERVICE_ID, "=", serviceId, ")", NULL); /*FIXME memory leak*/
+		char *filter = apr_pstrcat(admin->pool, "(", (char *)OSGI_FRAMEWORK_SERVICE_ID, "=", serviceId, ")", NULL); /*FIXME memory leak*/
 		bundleContext_getServiceReferences(admin->context, NULL, filter, &references);
 		apr_pool_destroy(tmpPool);
 		if (arrayList_size(references) >= 1) {
@@ -233,8 +233,8 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 	serviceReference_getServiceRegistration(reference, &registration);
 	properties_pt serviceProperties = NULL;
 	serviceRegistration_getProperties(registration, &serviceProperties);
-	char *exports = properties_get(serviceProperties, (char *) SERVICE_EXPORTED_INTERFACES);
-	char *provided = properties_get(serviceProperties, (char *) OBJECTCLASS);
+	char *exports = properties_get(serviceProperties, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES);
+	char *provided = properties_get(serviceProperties, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
 
 	if (exports == NULL || provided == NULL) {
 		printf("RSA: No Services to export.\n");
@@ -316,13 +316,13 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
 
 		properties_set(endpointProperties, key, value);
 	}
-	char *serviceId = (char *) hashMap_remove(endpointProperties, (void *) SERVICE_ID);
+	char *serviceId = (char *) hashMap_remove(endpointProperties, (void *) OSGI_FRAMEWORK_SERVICE_ID);
 	char *uuid = NULL;
-	bundleContext_getProperty(admin->context, FRAMEWORK_UUID, &uuid);
-	properties_set(endpointProperties, (char *) OBJECTCLASS, interface);
-	properties_set(endpointProperties, (char *) ENDPOINT_SERVICE_ID, serviceId);
+	bundleContext_getProperty(admin->context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
+	properties_set(endpointProperties, (char *) OSGI_FRAMEWORK_OBJECTCLASS, interface);
+	properties_set(endpointProperties, (char *) OSGI_RSA_ENDPOINT_SERVICE_ID, serviceId);
 	properties_set(endpointProperties, "service.imported", "true");
-	properties_set(endpointProperties, (char *) ENDPOINT_FRAMEWORK_UUID, uuid);
+	properties_set(endpointProperties, (char *) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
 
 //    properties_set(endpointProperties, ".ars.path", buf);
 //    properties_set(endpointProperties, ".ars.port", admin->port);
@@ -388,11 +388,11 @@ celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin
 		status = CELIX_ENOMEM;
 	} else {
 		char *uuid = NULL;
-		status = bundleContext_getProperty(admin->context, (char *)FRAMEWORK_UUID, &uuid);
+		status = bundleContext_getProperty(admin->context, (char *)OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
 		if (status == CELIX_SUCCESS) {
 			(*description)->properties = endpointProperties;
 			(*description)->frameworkUUID = uuid;
-			(*description)->serviceId = apr_atoi64(properties_get(serviceProperties, (char *) SERVICE_ID));
+			(*description)->serviceId = apr_atoi64(properties_get(serviceProperties, (char *) OSGI_FRAMEWORK_SERVICE_ID));
 			(*description)->id = apr_pstrdup(childPool, "TODO"); // does not work, txt record to big ?? --> apr_pstrcat(childPool, uuid, "-", (*description)->serviceId, NULL);
 			(*description)->service = interface;
 		}

@@ -30,7 +30,7 @@
 #include "array_list.h"
 #include "service_reference.h"
 
-static const char * const SHELL_SERVICE_NAME = "shellService";
+static const char * const OSGI_SHELL_SERVICE_NAME = "shellService";
 
 typedef struct shell * shell_pt;
 

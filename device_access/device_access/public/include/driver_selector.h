@@ -26,7 +26,7 @@
 #ifndef DRIVER_SELECTOR_H_
 #define DRIVER_SELECTOR_H_
 
-#define DRIVER_SELECTOR_SERVICE_NAME "driver_selector"
+#define OSGI_DEVICEACCESS_DRIVER_SELECTOR_SERVICE_NAME "driver_selector"
 
 typedef struct driver_selector *driver_selector_pt;
 

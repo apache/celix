@@ -125,15 +125,15 @@ celix_status_t topologyManager_serviceChanged(void *listener, service_event_pt e
 	serviceReference_getServiceRegistration(event->reference, &registration);
 	properties_pt props = NULL;
 	serviceRegistration_getProperties(registration, &props);
-	char *name = properties_get(props, (char *) OBJECTCLASS);
-	char *export = properties_get(props, (char *) SERVICE_EXPORTED_INTERFACES);
-	char *serviceId = properties_get(props, (char *)SERVICE_ID);
+	char *name = properties_get(props, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
+	char *export = properties_get(props, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES);
+	char *serviceId = properties_get(props, (char *)OSGI_FRAMEWORK_SERVICE_ID);
 
-	if (event->type == SERVICE_EVENT_REGISTERED) {
+	if (event->type == OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED) {
 		if (export != NULL) {
 			status = topologyManager_exportService(manager, event->reference, serviceId);
 		}
-	} else if (event->type == SERVICE_EVENT_UNREGISTERING) {
+	} else if (event->type == OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING) {
 		//if (export != NULL) {
 			printf("TOPOLOGY_MANAGER: Service unregistering: %s\n", name);
 			status = topologyManager_removeService(manager, event->reference, serviceId);
@@ -212,7 +212,7 @@ celix_status_t topologyManager_notifyListeners(topology_manager_pt manager, remo
 	celix_status_t status = CELIX_SUCCESS;
 	array_list_pt endpointListeners = NULL;
 
-	status = bundleContext_getServiceReferences(manager->context, endpoint_listener_service, NULL, &endpointListeners);
+	status = bundleContext_getServiceReferences(manager->context, OSGI_ENDPOINT_LISTENER_SERVICE, NULL, &endpointListeners);
 	if (status == CELIX_SUCCESS) {
 		if (endpointListeners != NULL) {
 			int eplIt;
@@ -222,7 +222,7 @@ celix_status_t topologyManager_notifyListeners(topology_manager_pt manager, remo
 				serviceReference_getServiceRegistration(eplRef, &registration);
 				properties_pt props = NULL;
 				serviceRegistration_getProperties(registration, &props);
-				char *scope = properties_get(props, (char *) ENDPOINT_LISTENER_SCOPE);
+				char *scope = properties_get(props, (char *) OSGI_ENDPOINT_LISTENER_SCOPE);
 				filter_pt filter = filter_create(scope, manager->pool);
 				endpoint_listener_pt epl = NULL;
 				status = bundleContext_getService(manager->context, eplRef, (void **) &epl);
@@ -284,7 +284,7 @@ celix_status_t topologyManager_removeService(topology_manager_pt manager, servic
 	serviceReference_getServiceRegistration(reference, &registration);
 	properties_pt props = NULL;
 	serviceRegistration_getProperties(registration, &props);
-	char *name = properties_get(props, (char *) OBJECTCLASS);
+	char *name = properties_get(props, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
 
 	printf("TOPOLOGY_MANAGER: Remove Service: %s.\n", name);
 
@@ -312,7 +312,7 @@ celix_status_t topologyManager_notifyListenersOfRemoval(topology_manager_pt mana
 	celix_status_t status = CELIX_SUCCESS;
 	array_list_pt endpointListeners = NULL;
 
-	status = bundleContext_getServiceReferences(manager->context, endpoint_listener_service, NULL, &endpointListeners);
+	status = bundleContext_getServiceReferences(manager->context, OSGI_ENDPOINT_LISTENER_SERVICE, NULL, &endpointListeners);
 	if (status == CELIX_SUCCESS) {
 		if (endpointListeners != NULL) {
 			int eplIt;
@@ -344,8 +344,8 @@ celix_status_t topologyManager_extendFilter(topology_manager_pt manager, char *f
 	apr_pool_create(&pool, manager->pool);
 
 	char *uuid = NULL;
-	bundleContext_getProperty(manager->context, (char *)FRAMEWORK_UUID, &uuid);
-	*updatedFilter = apr_pstrcat(pool, "(&", filter, "(!(", ENDPOINT_FRAMEWORK_UUID, "=", uuid, ")))", NULL);
+	bundleContext_getProperty(manager->context, (char *)OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
+	*updatedFilter = apr_pstrcat(pool, "(&", filter, "(!(", OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, "=", uuid, ")))", NULL);
 
 	return status;
 }

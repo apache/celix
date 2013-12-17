@@ -94,7 +94,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
     logFactory_create(mp, logger, &factory);
 
-    bundleContext_registerServiceFactory(context, (char *) LOG_SERVICE_NAME, factory, NULL, &activator->logServiceFactoryReg);
+    bundleContext_registerServiceFactory(context, (char *) OSGI_LOGSERVICE_NAME, factory, NULL, &activator->logServiceFactoryReg);
 
     logReaderService_create(logger, mp, &reader);
 
@@ -105,7 +105,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
     reader_service->removeLogListener = logReaderService_removeLogListener;
     reader_service->removeAllLogListener = logReaderService_removeAllLogListener;
 
-    bundleContext_registerService(context, (char *) LOG_READER_SERVICE_NAME, reader_service, NULL, &activator->logReaderServiceReg);
+    bundleContext_registerService(context, (char *) OSGI_LOGSERVICE_READER_SERVICE_NAME, reader_service, NULL, &activator->logReaderServiceReg);
 
     return status;
 }

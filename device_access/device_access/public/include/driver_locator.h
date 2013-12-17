@@ -30,7 +30,7 @@
 #include "properties.h"
 #include "array_list.h"
 
-#define DRIVER_LOCATOR_SERVICE_NAME "driver_locator"
+#define OSGI_DEVICEACCESS_DRIVER_LOCATOR_SERVICE_NAME "driver_locator"
 
 typedef struct driver_locator *driver_locator_pt;
 

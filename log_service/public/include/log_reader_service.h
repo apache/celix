@@ -32,7 +32,7 @@
 #include "linkedlist.h"
 #include "log_listener.h"
 
-static const char * const LOG_READER_SERVICE_NAME = "log_reader_service";
+static const char * const OSGI_LOGSERVICE_READER_SERVICE_NAME = "log_reader_service";
 
 typedef struct log_reader_data * log_reader_data_pt;
 

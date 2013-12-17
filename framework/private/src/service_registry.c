@@ -223,7 +223,7 @@ celix_status_t serviceRegistry_registerServiceInternal(service_registry_pt regis
 //		service_event_pt event = (service_event_pt) malloc(sizeof(*event));
 //		event->type = REGISTERED;
 //		event->reference = (*registration)->reference;
-		registry->serviceChanged(registry->framework, SERVICE_EVENT_REGISTERED, *registration, NULL);
+		registry->serviceChanged(registry->framework, OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED, *registration, NULL);
 //		free(event);
 //		event = NULL;
 	}
@@ -250,7 +250,7 @@ celix_status_t serviceRegistry_unregisterService(service_registry_pt registry, b
 	apr_thread_mutex_unlock(registry->mutex);
 
 	if (registry->serviceChanged != NULL) {
-		registry->serviceChanged(registry->framework, SERVICE_EVENT_UNREGISTERING, registration, NULL);
+		registry->serviceChanged(registry->framework, OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING, registration, NULL);
 	}
 
 	apr_thread_mutex_lock(registry->mutex);
@@ -534,7 +534,7 @@ array_list_pt serviceRegistry_getUsingBundles(service_registry_pt registry, apr_
 celix_status_t serviceRegistry_addHooks(service_registry_pt registry, char *serviceName, void *serviceObject, service_registration_pt registration) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	if (strcmp(listener_hook_service_name, serviceName) == 0) {
+	if (strcmp(OSGI_FRAMEWORK_LISTENER_HOOK_SERVICE_NAME, serviceName) == 0) {
 		arrayList_add(registry->listenerHooks, registration);
 	}
 
@@ -547,8 +547,8 @@ celix_status_t serviceRegistry_removeHook(service_registry_pt registry, service_
 
 	properties_pt props = NULL;
 	serviceRegistration_getProperties(registration, &props);
-	serviceName = properties_get(props, (char *) OBJECTCLASS);
-	if (strcmp(listener_hook_service_name, serviceName) == 0) {
+	serviceName = properties_get(props, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
+	if (strcmp(OSGI_FRAMEWORK_LISTENER_HOOK_SERVICE_NAME, serviceName) == 0) {
 		arrayList_removeElement(registry->listenerHooks, registration);
 	}
 
@@ -580,7 +580,7 @@ celix_status_t serviceRegistry_getListenerHooks(service_registry_pt registry, ap
 
 celix_status_t serviceRegistry_servicePropertiesModified(service_registry_pt registry, service_registration_pt registration, properties_pt oldprops) {
 	if (registry->serviceChanged != NULL) {
-		registry->serviceChanged(registry->framework, SERVICE_EVENT_MODIFIED, registration, oldprops);
+		registry->serviceChanged(registry->framework, OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED, registration, oldprops);
 	}
 
 	return CELIX_SUCCESS;

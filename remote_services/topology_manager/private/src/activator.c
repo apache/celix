@@ -137,19 +137,19 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
 	properties_pt props = properties_create();
 	char *uuid = NULL;
-	bundleContext_getProperty(activator->context, (char *)FRAMEWORK_UUID, &uuid);
-	char *scope = apr_pstrcat(pool, "(&(", OBJECTCLASS, "=*)(!(", ENDPOINT_FRAMEWORK_UUID, "=", uuid, ")))", NULL);
+	bundleContext_getProperty(activator->context, (char *)OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
+	char *scope = apr_pstrcat(pool, "(&(", OSGI_FRAMEWORK_OBJECTCLASS, "=*)(!(", OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, "=", uuid, ")))", NULL);
 	printf("TOPOLOGY_MANAGER: Endpoint listener Scope is %s\n", scope);
-	properties_set(props, (char *) ENDPOINT_LISTENER_SCOPE, scope);
+	properties_set(props, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, scope);
 
-	bundleContext_registerService(context, (char *) endpoint_listener_service, endpointListener, props, &activator->endpointListenerService);
+	bundleContext_registerService(context, (char *) OSGI_ENDPOINT_LISTENER_SERVICE, endpointListener, props, &activator->endpointListenerService);
 
 	listener_hook_service_pt hook = apr_palloc(pool, sizeof(*hook));
 	hook->handle = activator->manager;
 	hook->added = topologyManager_listenerAdded;
 	hook->removed = topologyManager_listenerRemoved;
 
-	bundleContext_registerService(context, (char *) listener_hook_service_name, hook, NULL, &activator->hook);
+	bundleContext_registerService(context, (char *) OSGI_FRAMEWORK_LISTENER_HOOK_SERVICE_NAME, hook, NULL, &activator->hook);
 
 	bundleContext_addServiceListener(context, activator->serviceListener, "(service.exported.interfaces=*)");
 	serviceTracker_open(activator->remoteServiceAdminTracker);

@@ -65,7 +65,7 @@ void dm_init(void * userData, bundle_context_pt context, dependency_manager_pt m
 
 	dep2 = dependencyActivatorBase_createServiceDependency(manager);
     serviceDependency_setRequired(dep2, false);
-    serviceDependency_setService(dep2, (char *) LOG_SERVICE_NAME, NULL);
+    serviceDependency_setService(dep2, (char *) OSGI_LOGSERVICE_NAME, NULL);
     serviceDependency_setCallbacks(dep2, tracker_addLog, tracker_modifiedLog, tracker_removeLog);
     serviceComponent_addServiceDependency(service, dep2);
 

@@ -144,15 +144,15 @@ void psCommand_execute(command_pt command, char * commandline, void (*out)(char 
 
 char * psCommand_stateString(bundle_state_e state) {
 	switch (state) {
-		case BUNDLE_ACTIVE:
+		case OSGI_FRAMEWORK_BUNDLE_ACTIVE:
 			return "Active      ";
-		case BUNDLE_INSTALLED:
+		case OSGI_FRAMEWORK_BUNDLE_INSTALLED:
 			return "Installed   ";
-		case BUNDLE_RESOLVED:
+		case OSGI_FRAMEWORK_BUNDLE_RESOLVED:
 			return "Resolved    ";
-		case BUNDLE_STARTING:
+		case OSGI_FRAMEWORK_BUNDLE_STARTING:
 			return "Starting    ";
-		case BUNDLE_STOPPING:
+		case OSGI_FRAMEWORK_BUNDLE_STOPPING:
 			return "Stopping    ";
 		default:
 			return "Unknown     ";

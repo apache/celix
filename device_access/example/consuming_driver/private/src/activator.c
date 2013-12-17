@@ -75,7 +75,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 		if (status == CELIX_SUCCESS) {
 			properties_pt props = properties_create();
 			properties_set(props, "DRIVER_ID", CONSUMING_DRIVER_ID);
-			status = bundleContext_registerService(context, DRIVER_SERVICE_NAME, service, props, &bi->registration);
+			status = bundleContext_registerService(context, OSGI_DEVICEACCESS_DRIVER_SERVICE_NAME, service, props, &bi->registration);
 		}
 	}
 

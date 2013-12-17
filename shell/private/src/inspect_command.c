@@ -169,7 +169,7 @@ celix_status_t inspectCommand_printExportedServices(command_pt command, array_li
 									serviceReference_getServiceRegistration(ref, &reg);
 									
 									serviceRegistration_getProperties(reg, &props);
-									objectClass = properties_get(props, (char *) OBJECTCLASS);
+									objectClass = properties_get(props, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
 									sprintf(line, "ObjectClass = %s\n", objectClass);
 									out(line);
 									if ((j + 1) < arrayList_size(refs)) {

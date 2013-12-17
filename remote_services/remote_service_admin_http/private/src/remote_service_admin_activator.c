@@ -96,7 +96,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 			remoteServiceAdmin->importRegistration_getException = importRegistration_getException;
 			remoteServiceAdmin->importRegistration_getImportReference = importRegistration_getImportReference;
 
-			status = bundleContext_registerService(context, REMOTE_SERVICE_ADMIN, remoteServiceAdmin, NULL, &activator->registration);
+			status = bundleContext_registerService(context, OSGI_RSA_REMOTE_SERVICE_ADMIN, remoteServiceAdmin, NULL, &activator->registration);
 		}
 	}
 

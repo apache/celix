@@ -199,7 +199,7 @@ void serviceComponent_dependencyUnavailable(service_pt service, service_dependen
 
 void serviceComponent_start(service_pt service) {
 	state_pt old, new;
-	bundleContext_registerService(service->context, SERVICE_COMPONENT_NAME, service, NULL, &service->serviceRegistration);
+	bundleContext_registerService(service->context, DEPENDENCYMANAGER_SERVICE_COMPONENT_NAME, service, NULL, &service->serviceRegistration);
 	apr_thread_mutex_lock(service->mutex);
 	old = service->state;
 	new = state_create(arrayList_clone(service->dependencies), true);

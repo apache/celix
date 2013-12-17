@@ -484,7 +484,7 @@ TEST(service_tracker, serviceChangedRegistered) {
 	void *src = (void *) 0x345;
 
 	service_event_pt event = (service_event_pt) apr_palloc(pool, sizeof(*event));
-	event->type = SERVICE_EVENT_REGISTERED;
+	event->type = OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED;
 	event->reference = ref;
 
 	mock()
@@ -520,7 +520,7 @@ TEST(service_tracker, serviceChangedModified) {
 	arrayList_add(tracked, entry);
 
 	service_event_pt event = (service_event_pt) apr_palloc(pool, sizeof(*event));
-	event->type = SERVICE_EVENT_MODIFIED;
+	event->type = OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED;
 	event->reference = ref;
 
 	mock()
@@ -556,7 +556,7 @@ TEST(service_tracker, serviceChangedUnregistering) {
 	arrayList_add(tracked, entry);
 
 	service_event_pt event = (service_event_pt) apr_palloc(pool, sizeof(*event));
-	event->type = SERVICE_EVENT_UNREGISTERING;
+	event->type = OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING;
 	event->reference = ref;
 
 	mock()
@@ -597,7 +597,7 @@ TEST(service_tracker, serviceChangedModifiedEndmatch) {
 	arrayList_add(tracked, entry);
 
 	service_event_pt event = (service_event_pt) apr_palloc(pool, sizeof(*event));
-	event->type = SERVICE_EVENT_MODIFIED_ENDMATCH;
+	event->type = OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED_ENDMATCH;
 	event->reference = ref;
 
 	serviceTracker_serviceChanged(listener, event);
@@ -636,7 +636,7 @@ TEST(service_tracker, serviceChangedRegisteredCustomizer) {
 	void * handle = (void*) 0x60;
 
 	service_event_pt event = (service_event_pt) apr_palloc(pool, sizeof(*event));
-	event->type = SERVICE_EVENT_REGISTERED;
+	event->type = OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED;
 	event->reference = ref;
 
 	mock()
@@ -694,7 +694,7 @@ TEST(service_tracker, serviceChangedModifiedCustomizer) {
 	arrayList_add(tracked, entry);
 
 	service_event_pt event = (service_event_pt) apr_palloc(pool, sizeof(*event));
-	event->type = SERVICE_EVENT_MODIFIED;
+	event->type = OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED;
 	event->reference = ref;
 
 	void * handle = (void*) 0x60;
@@ -749,7 +749,7 @@ TEST(service_tracker, serviceChangedUnregisteringCustomizer) {
 	arrayList_add(tracked, entry);
 
 	service_event_pt event = (service_event_pt) apr_palloc(pool, sizeof(*event));
-	event->type = SERVICE_EVENT_UNREGISTERING;
+	event->type = OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING;
 	event->reference = ref;
 
 	void * handle = (void*) 0x60;
@@ -798,7 +798,7 @@ TEST(service_tracker, serviceChangedUnregisteringCustomizerNoFunc) {
 	arrayList_add(tracked, entry);
 
 	service_event_pt event = (service_event_pt) apr_palloc(pool, sizeof(*event));
-	event->type = SERVICE_EVENT_UNREGISTERING;
+	event->type = OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING;
 	event->reference = ref;
 
 	void * handle = (void*) 0x60;

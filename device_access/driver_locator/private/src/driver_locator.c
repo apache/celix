@@ -37,7 +37,7 @@
 celix_status_t driverLocator_findDrivers(driver_locator_pt locator, apr_pool_t *pool, properties_pt props, array_list_pt *drivers) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	char *category = properties_get(props, DEVICE_CATEGORY);
+	char *category = properties_get(props, OSGI_DEVICEACCESS_DEVICE_CATEGORY);
 
 	status = arrayList_create(drivers);
 	if (status == CELIX_SUCCESS) {

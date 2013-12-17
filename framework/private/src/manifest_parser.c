@@ -66,7 +66,7 @@ celix_status_t manifestParser_create(module_pt owner, manifest_pt manifest, apr_
         parser->manifest = manifest;
         parser->owner = owner;
 
-        bundleVersion = manifest_getValue(manifest, BUNDLE_VERSION);
+        bundleVersion = manifest_getValue(manifest, OSGI_FRAMEWORK_BUNDLE_VERSION);
         if (bundleVersion != NULL) {
             parser->bundleVersion = NULL;
             version_createVersionFromString(memory_pool, bundleVersion, &parser->bundleVersion);
@@ -74,13 +74,13 @@ celix_status_t manifestParser_create(module_pt owner, manifest_pt manifest, apr_
         	parser->bundleVersion = NULL;
 			version_createEmptyVersion(memory_pool, &parser->bundleVersion);
         }
-        bundleSymbolicName = manifest_getValue(manifest, BUNDLE_SYMBOLICNAME);
+        bundleSymbolicName = manifest_getValue(manifest, OSGI_FRAMEWORK_BUNDLE_SYMBOLICNAME);
         if (bundleSymbolicName != NULL) {
             parser->bundleSymbolicName = bundleSymbolicName;
         }
 
-        parser->capabilities = manifestParser_parseExportHeader(owner, manifest_getValue(manifest, EXPORT_PACKAGE), memory_pool);
-        parser->requirements = manifestParser_parseImportHeader(manifest_getValue(manifest, IMPORT_PACKAGE), memory_pool);
+        parser->capabilities = manifestParser_parseExportHeader(owner, manifest_getValue(manifest, OSGI_FRAMEWORK_EXPORT_PACKAGE), memory_pool);
+        parser->requirements = manifestParser_parseImportHeader(manifest_getValue(manifest, OSGI_FRAMEWORK_IMPORT_PACKAGE), memory_pool);
 
         *manifest_parser = parser;
 

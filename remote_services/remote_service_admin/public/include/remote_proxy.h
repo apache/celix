@@ -29,7 +29,7 @@
 
 #include "endpoint_listener.h"
 
-#define REMOTE_PROXY "remote_proxy"
+#define OSGI_RSA_REMOTE_PROXY "remote_proxy"
 
 typedef celix_status_t (*sendToHandle)(void *handler, endpoint_description_pt endpointDescription, char *methodSignature, char *request, char **reply, int* replyStatus);
 

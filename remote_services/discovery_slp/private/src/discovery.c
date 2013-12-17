@@ -178,7 +178,7 @@ celix_status_t discovery_addService(discovery_pt discovery, endpoint_description
 		serviceReference_getServiceRegistration(reference, &registration);
 		properties_pt serviceProperties = NULL;
 		serviceRegistration_getProperties(registration, &serviceProperties);
-		char *scope = properties_get(serviceProperties, (char *) ENDPOINT_LISTENER_SCOPE);
+		char *scope = properties_get(serviceProperties, (char *) OSGI_ENDPOINT_LISTENER_SCOPE);
 		filter_pt filter = filter_create(scope, discovery->pool);
 		bool matchResult = false;
 		filter_match(filter, endpoint->properties, &matchResult);

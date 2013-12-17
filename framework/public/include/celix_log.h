@@ -36,18 +36,18 @@
 #define framework_logIfError(status, error, fmsg, args...) \
     if (status != CELIX_SUCCESS) { \
         if (error != NULL) { \
-            fw_logCode(FW_LOG_ERROR, status, #fmsg"; cause: "#error, ## args); \
+            fw_logCode(OSGI_FRAMEWORK_LOG_ERROR, status, #fmsg"; cause: "#error, ## args); \
         } else { \
-            fw_logCode(FW_LOG_ERROR, status, #fmsg, ## args); \
+            fw_logCode(OSGI_FRAMEWORK_LOG_ERROR, status, #fmsg, ## args); \
         } \
     }
 
 enum framework_log_level
 {
-    FW_LOG_ERROR = 0x00000001,
-    FW_LOG_WARNING = 0x00000002,
-    FW_LOG_INFO = 0x00000003,
-    FW_LOG_DEBUG = 0x00000004,
+    OSGI_FRAMEWORK_LOG_ERROR = 0x00000001,
+    OSGI_FRAMEWORK_LOG_WARNING = 0x00000002,
+    OSGI_FRAMEWORK_LOG_INFO = 0x00000003,
+    OSGI_FRAMEWORK_LOG_DEBUG = 0x00000004,
 };
 
 typedef enum framework_log_level framework_log_level_t;

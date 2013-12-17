@@ -151,14 +151,14 @@ celix_status_t driverAttributes_isInUse(driver_attributes_pt driverAttributes, b
 			for (i = 0; i < arrayList_size(references); i++) {
 				service_reference_pt ref = arrayList_get(references, i);
 				char *object = NULL;
-				status = get_property_from_registration(ref, (char *) OBJECTCLASS, &object);
+				status = get_property_from_registration(ref, (char *) OSGI_FRAMEWORK_OBJECTCLASS, &object);
 
 				if (status == CELIX_SUCCESS) {
 					char *category = NULL;
 					status = get_property_from_registration(ref, "DEVICE_CATEGORY", &category);
 
 					if (status == CELIX_SUCCESS) {
-						if ((object != NULL && strcmp(object, DEVICE_SERVICE_NAME) == 0) || (category != NULL)) {
+						if ((object != NULL && strcmp(object, OSGI_DEVICEACCESS_DEVICE_SERVICE_NAME) == 0) || (category != NULL)) {
 							*inUse = true;
 						}
 					}

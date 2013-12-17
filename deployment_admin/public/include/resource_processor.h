@@ -29,7 +29,7 @@
 
 #include "celix_errno.h"
 
-#define RESOURCE_PROCESSOR_SERVICE "resource_processor"
+#define DEPLOYMENTADMIN_RESOURCE_PROCESSOR_SERVICE "resource_processor"
 
 typedef struct resource_processor *resource_processor_pt;
 

@@ -27,7 +27,7 @@
 #ifndef COMMAND_H_
 #define COMMAND_H_
 
-static const char * const COMMAND_SERVICE_NAME = "commandService";
+static const char * const OSGI_SHELL_COMMAND_SERVICE_NAME = "commandService";
 
 typedef struct command * command_pt;
 

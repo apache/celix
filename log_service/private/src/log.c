@@ -173,7 +173,7 @@ celix_status_t log_bundleChanged(void *listener, bundle_event_pt event) {
 	}
 
 	if (message != NULL) {
-		status = logEntry_create(event->bundle, NULL, LOG_INFO, message, 0, logger->pool, &entry);
+		status = logEntry_create(event->bundle, NULL, OSGI_LOGSERVICE_INFO, message, 0, logger->pool, &entry);
 		if (status == CELIX_SUCCESS) {
 			status = log_addEntry(logger, entry);
 		}
@@ -187,7 +187,7 @@ celix_status_t log_frameworkEvent(void *listener, framework_event_pt event) {
 	log_pt logger = ((framework_listener_pt) listener)->handle;
 	log_entry_pt entry = NULL;
 
-	status = logEntry_create(event->bundle, NULL, (event->type == FRAMEWORK_EVENT_ERROR) ? LOG_ERROR : LOG_INFO, event->error, event->errorCode, logger->pool, &entry);
+	status = logEntry_create(event->bundle, NULL, (event->type == OSGI_FRAMEWORK_EVENT_ERROR) ? OSGI_LOGSERVICE_ERROR : OSGI_LOGSERVICE_INFO, event->error, event->errorCode, logger->pool, &entry);
 	if (status == CELIX_SUCCESS) {
 		status = log_addEntry(logger, entry);
 	}

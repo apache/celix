@@ -88,13 +88,13 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
 	char **services = malloc(2);
 	services[0] = CALCULATOR_SERVICE;
-	services[1] = REMOTE_PROXY;
+	services[1] = OSGI_RSA_REMOTE_PROXY;
 
 	bundleContext_registerService(context, CALCULATOR_SERVICE, calculatorService, NULL, &activator->service);
 
 	properties_pt props = properties_create();
 	properties_set(props, (char *) "proxy.interface", (char *) CALCULATOR_SERVICE);
-	bundleContext_registerService(context, REMOTE_PROXY, calculatorProxy, props, &activator->proxy);
+	bundleContext_registerService(context, OSGI_RSA_REMOTE_PROXY, calculatorProxy, props, &activator->proxy);
 
 	return status;
 }

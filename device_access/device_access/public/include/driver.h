@@ -29,9 +29,9 @@
 #include "celix_errno.h"
 #include "service_reference.h"
 
-#define DRIVER_SERVICE_NAME "driver"
+#define OSGI_DEVICEACCESS_DRIVER_SERVICE_NAME "driver"
 
-#define DRIVER_ID "DRIVER_ID"
+#define OSGI_DEVICEACCESS_DRIVER_ID "DRIVER_ID"
 
 struct driver_service {
 	void *driver;

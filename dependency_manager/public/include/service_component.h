@@ -27,7 +27,7 @@
 #ifndef SERVICE_COMPONENT_H_
 #define SERVICE_COMPONENT_H_
 
-#define SERVICE_COMPONENT_NAME "ServiceComponent"
+#define DEPENDENCYMANAGER_SERVICE_COMPONENT_NAME "ServiceComponent"
 
 typedef struct service * service_pt;
 

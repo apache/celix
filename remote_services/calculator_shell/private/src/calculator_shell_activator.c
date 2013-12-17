@@ -88,15 +88,15 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
 	activator->addCmd = addCommand_create(context);
 	calculatorShell_createCommandService(pool, activator->addCmd, &activator->addCmdSrv);
-	bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->addCmdSrv, NULL, &activator->addCommand);
+	bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, activator->addCmdSrv, NULL, &activator->addCommand);
 
 	activator->subCmd = subCommand_create(context);
 	calculatorShell_createCommandService(pool, activator->subCmd, &activator->subCmdSrv);
-	bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->subCmdSrv, NULL, &activator->subCommand);
+	bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, activator->subCmdSrv, NULL, &activator->subCommand);
 
 	activator->sqrtCmd = sqrtCommand_create(context);
 	calculatorShell_createCommandService(pool, activator->sqrtCmd, &activator->sqrtCmdSrv);
-	bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->sqrtCmdSrv, NULL, &activator->sqrtCommand);
+	bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, activator->sqrtCmdSrv, NULL, &activator->sqrtCommand);
 
 	return status;
 }

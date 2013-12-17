@@ -94,7 +94,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 		char filter[30];
 		array_list_pt logServices = NULL;
 		apr_pool_t *pool;
-		sprintf(filter, "(objectClass=%s)", LOG_SERVICE_NAME);
+		sprintf(filter, "(objectClass=%s)", OSGI_LOGSERVICE_NAME);
 
 		bundleContext_getMemoryPool(context, &pool);
 
@@ -113,7 +113,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 				service_reference_pt logService = (service_reference_pt) arrayList_get(logServices, i);
 				service_event_pt event = apr_palloc(activator->pool, sizeof(*event));
 				event->reference = logService;
-				event->type = SERVICE_EVENT_REGISTERED;
+				event->type = OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED;
 
 				listenerExample_serviceChanged(listener, event);
 			}
@@ -151,13 +151,13 @@ void listenerExample_serviceChanged(service_listener_pt listener, service_event_
 	apr_thread_mutex_lock(activator->logServiceReferencesLock);
 
 	switch (event->type) {
-	case SERVICE_EVENT_REGISTERED:
+	case OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED:
 		arrayList_add(activator->logServiceReferences, event->reference);
 		break;
 //	case MODIFIED:
 //		// only the service metadata has changed, so no need to do anything here
 //		break;
-	case SERVICE_EVENT_UNREGISTERING:
+	case OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING:
 		arrayList_remove(activator->logServiceReferences,
 				arrayList_indexOf(activator->logServiceReferences, event->reference));
 		break;
@@ -187,7 +187,7 @@ static void *APR_THREAD_FUNC listenerExample_logger(apr_thread_t *thd, void *dat
 		log_service_pt logService = NULL;
 		listenerExample_getLogService(activator, &logService);
 		if (logService != NULL) {
-			(*(logService->log))(logService->logger, LOG_INFO, "ping");
+			(*(logService->log))(logService->logger, OSGI_LOGSERVICE_INFO, "ping");
 		} else {
 			listenerExample_alternativeLog(activator, "No LogService available. Printing to standard out.");
 		}

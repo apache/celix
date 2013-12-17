@@ -75,7 +75,7 @@ celix_status_t shellMediator_create(apr_pool_t *pool, bundle_context_pt context,
 		status = apr_thread_mutex_create(&(*instance)->mutex, APR_THREAD_MUTEX_DEFAULT, pool);
 		status = CELIX_DO_IF(status, serviceTrackerCustomizer_create(pool, (*instance), shellMediator_addingService, shellMediator_addedService,
 				shellMediator_modifiedService, shellMediator_removedService, &customizer));
-		status = CELIX_DO_IF(status, serviceTracker_create(pool, context, (char *)SHELL_SERVICE_NAME, customizer, &(*instance)->tracker));
+		status = CELIX_DO_IF(status, serviceTracker_create(pool, context, (char *)OSGI_SHELL_SERVICE_NAME, customizer, &(*instance)->tracker));
 		if (status == CELIX_SUCCESS) {
 			serviceTracker_open((*instance)->tracker);
 		}

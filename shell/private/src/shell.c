@@ -173,7 +173,7 @@ void shell_removeCommand(shell_pt shell, service_reference_pt reference) {
 
 void shell_serviceChanged(service_listener_pt listener, service_event_pt event) {
 	shell_pt shell = (shell_pt) listener->handle;
-	if (event->type == SERVICE_EVENT_REGISTERED) {
+	if (event->type == OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED) {
 		shell_addCommand(shell, event->reference);
 	}
 }
@@ -218,7 +218,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	activator->shellService->getCommandReference = shell_getCommandReference;
 	activator->shellService->executeCommand = shell_executeCommand;
 
-	status = bundleContext_registerService(context, (char *) SHELL_SERVICE_NAME, activator->shellService, NULL, &activator->registration);
+	status = bundleContext_registerService(context, (char *) OSGI_SHELL_SERVICE_NAME, activator->shellService, NULL, &activator->registration);
 
 	bundleContext_getMemoryPool(context, &pool);
 	if (status == CELIX_SUCCESS) {
@@ -232,39 +232,39 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	    if (status == CELIX_SUCCESS) {
 	        activator->psCmd = psCommand_create(context);
 	        shell_createCommandService(pool, activator->psCmd, &activator->psCmdSrv);
-	        bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->psCmdSrv, NULL, &activator->psCommand);
+	        bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, activator->psCmdSrv, NULL, &activator->psCommand);
 
 	        activator->startCmd = startCommand_create(context);
 	        shell_createCommandService(pool, activator->startCmd, &activator->startCmdSrv);
-	        bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->startCmdSrv, NULL, &activator->startCommand);
+	        bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, activator->startCmdSrv, NULL, &activator->startCommand);
 
 	        activator->stopCmd = stopCommand_create(context);
 	        shell_createCommandService(pool, activator->stopCmd, &activator->stopCmdSrv);
-	        bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->stopCmdSrv, NULL, &activator->stopCommand);
+	        bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, activator->stopCmdSrv, NULL, &activator->stopCommand);
 
 	        activator->installCmd = installCommand_create(context);
 	        shell_createCommandService(pool, activator->installCmd, &activator->installCmdSrv);
-	        bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->installCmdSrv, NULL, &activator->installCommand);
+	        bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, activator->installCmdSrv, NULL, &activator->installCommand);
 
 	        activator->uninstallCmd = uninstallCommand_create(context);
 	        shell_createCommandService(pool, activator->uninstallCmd, &activator->uninstallCmdSrv);
-	        bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->uninstallCmdSrv, NULL, &activator->uninstallCommand);
+	        bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, activator->uninstallCmdSrv, NULL, &activator->uninstallCommand);
 
 	        activator->updateCmd = updateCommand_create(context);
 	        shell_createCommandService(pool, activator->updateCmd, &activator->updateCmdSrv);
-	        bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->updateCmdSrv, NULL, &activator->updateCommand);
+	        bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, activator->updateCmdSrv, NULL, &activator->updateCommand);
 
 	        activator->logCmd = logCommand_create(context);
 	        shell_createCommandService(pool, activator->logCmd, &activator->logCmdSrv);
-            bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->logCmdSrv, NULL, &activator->logCommand);
+            bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, activator->logCmdSrv, NULL, &activator->logCommand);
 
             activator->inspectCmd = inspectCommand_create(context);
             shell_createCommandService(pool, activator->inspectCmd, &activator->inspectCmdSrv);
-			bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->inspectCmdSrv, NULL, &activator->inspectCommand);
+			bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, activator->inspectCmdSrv, NULL, &activator->inspectCommand);
 
 			activator->helpCmd = helpCommand_create(context);
 			shell_createCommandService(pool, activator->helpCmd, &activator->helpCmdSrv);
-			bundleContext_registerService(context, (char *) COMMAND_SERVICE_NAME, activator->helpCmdSrv, NULL, &activator->helpCommand);
+			bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, activator->helpCmdSrv, NULL, &activator->helpCommand);
 	    }
 	}
 

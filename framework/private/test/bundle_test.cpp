@@ -77,7 +77,7 @@ TEST(bundle, create) {
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	POINTERS_EQUAL(NULL, actual->context);
 	POINTERS_EQUAL(NULL, actual->activator);
-	LONGS_EQUAL(BUNDLE_INSTALLED, actual->state);
+	LONGS_EQUAL(OSGI_FRAMEWORK_BUNDLE_INSTALLED, actual->state);
 	POINTERS_EQUAL(NULL, actual->handle);
 	POINTERS_EQUAL(archive, actual->archive);
 	CHECK(actual->modules);
@@ -142,7 +142,7 @@ TEST(bundle, createFromArchive) {
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	POINTERS_EQUAL(NULL, actual->context);
 	POINTERS_EQUAL(NULL, actual->activator);
-	LONGS_EQUAL(BUNDLE_INSTALLED, actual->state);
+	LONGS_EQUAL(OSGI_FRAMEWORK_BUNDLE_INSTALLED, actual->state);
 	POINTERS_EQUAL(NULL, actual->handle);
 	POINTERS_EQUAL(archive, actual->archive);
 	CHECK(actual->modules);
@@ -278,21 +278,21 @@ TEST(bundle, getEntry) {
 
 TEST(bundle, getState) {
 	bundle_pt bundle = (bundle_pt) apr_palloc(pool, sizeof(*bundle));
-	bundle->state = BUNDLE_ACTIVE;
+	bundle->state = OSGI_FRAMEWORK_BUNDLE_ACTIVE;
 
-	bundle_state_e actual = BUNDLE_UNKNOWN;
+	bundle_state_e actual = OSGI_FRAMEWORK_BUNDLE_UNKNOWN;
 	celix_status_t status = bundle_getState(bundle, &actual);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
-	POINTERS_EQUAL(BUNDLE_ACTIVE, actual);
+	POINTERS_EQUAL(OSGI_FRAMEWORK_BUNDLE_ACTIVE, actual);
 }
 
 TEST(bundle, setState) {
 	bundle_pt bundle = (bundle_pt) apr_palloc(pool, sizeof(*bundle));
-	bundle->state = BUNDLE_UNKNOWN;
+	bundle->state = OSGI_FRAMEWORK_BUNDLE_UNKNOWN;
 
-	celix_status_t status = bundle_setState(bundle, BUNDLE_INSTALLED);
+	celix_status_t status = bundle_setState(bundle, OSGI_FRAMEWORK_BUNDLE_INSTALLED);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
-	POINTERS_EQUAL(BUNDLE_INSTALLED, bundle->state);
+	POINTERS_EQUAL(OSGI_FRAMEWORK_BUNDLE_INSTALLED, bundle->state);
 }
 
 TEST(bundle, start) {
@@ -370,7 +370,7 @@ TEST(bundle, setPersistentStateInactive) {
 
 	mock().expectOneCall("bundleArchive_setPersistentState")
 		.withParameter("archive", archive)
-		.withParameter("state", BUNDLE_INSTALLED)
+		.withParameter("state", OSGI_FRAMEWORK_BUNDLE_INSTALLED)
 		.andReturnValue(CELIX_SUCCESS);
 
 	celix_status_t status = bundle_setPersistentStateInactive(bundle);
@@ -390,7 +390,7 @@ TEST(bundle, setPersistentStateUninstalled) {
 
 	mock().expectOneCall("bundleArchive_setPersistentState")
 		.withParameter("archive", archive)
-		.withParameter("state", BUNDLE_UNINSTALLED)
+		.withParameter("state", OSGI_FRAMEWORK_BUNDLE_UNINSTALLED)
 		.andReturnValue(CELIX_SUCCESS);
 
 	celix_status_t status = bundle_setPersistentStateUninstalled(bundle);

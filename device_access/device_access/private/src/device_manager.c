@@ -243,7 +243,7 @@ celix_status_t deviceManager_matchAttachDriver(device_manager_pt manager, apr_po
 				celix_status_t substatus = driverAttributes_match(attributes, reference, &match);
 				if (substatus == CELIX_SUCCESS) {
 					printf("DEVICE_MANAGER: Found match: %d\n", match);
-					if (match <= DEVICE_MATCH_NONE) {
+					if (match <= OSGI_DEVICEACCESS_DEVICE_MATCH_NONE) {
 						continue;
 					}
 					driverMatcher_add(matcher, match, attributes);
@@ -264,7 +264,7 @@ celix_status_t deviceManager_matchAttachDriver(device_manager_pt manager, apr_po
 						properties_pt properties = NULL;
 						status = serviceRegistration_getProperties(registration, &properties);
 						if (status == CELIX_SUCCESS) {
-							char *driverId = properties_get(properties, (char *) DRIVER_ID);
+							char *driverId = properties_get(properties, (char *) OSGI_DEVICEACCESS_DRIVER_ID);
 							driver_attributes_pt finalAttributes = hashMap_get(manager->drivers, match->reference);
 							if (finalAttributes == NULL) {
 								status = deviceManager_noDriverFound(manager, service, reference);
@@ -307,8 +307,8 @@ celix_status_t deviceManager_noDriverFound(device_manager_pt manager, void *serv
 		properties_pt properties = NULL;
 		status = serviceRegistration_getProperties(registration, &properties);
 		if (status == CELIX_SUCCESS) {
-			char *objectClass = properties_get(properties, (char *) OBJECTCLASS);
-			if (strcmp(objectClass, DRIVER_SERVICE_NAME) == 0) {
+			char *objectClass = properties_get(properties, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
+			if (strcmp(objectClass, OSGI_DEVICEACCESS_DRIVER_SERVICE_NAME) == 0) {
 				device_service_pt device = service;
 				status = device->noDriverFound(device->device);
 			}
@@ -551,7 +551,7 @@ celix_status_t deviceManager_isDriverBundle(device_manager_pt manager, bundle_pt
 						properties_pt properties = NULL;
 						substatus = serviceRegistration_getProperties(registration, &properties);
 						if (substatus == CELIX_SUCCESS) {
-							char *object = properties_get(properties, (char *) OBJECTCLASS);
+							char *object = properties_get(properties, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
 																if (strcmp(object, "driver") == 0) {
 																	*isDriver = true;
 																	break;

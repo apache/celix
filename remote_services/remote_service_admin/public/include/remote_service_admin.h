@@ -30,7 +30,7 @@
 #include "endpoint_listener.h"
 #include "service_reference.h"
 
-#define REMOTE_SERVICE_ADMIN "remote_service_admin"
+#define OSGI_RSA_REMOTE_SERVICE_ADMIN "remote_service_admin"
 
 typedef struct export_reference *export_reference_pt;
 typedef struct export_registration *export_registration_pt;

@@ -43,9 +43,9 @@ struct endpoint_description {
 
 typedef struct endpoint_description *endpoint_description_pt;
 
-static const char * const endpoint_listener_service = "endpoint_listener";
+static const char * const OSGI_ENDPOINT_LISTENER_SERVICE = "endpoint_listener";
 
-static const char * const ENDPOINT_LISTENER_SCOPE = "endpoint.listener.scope";
+static const char * const OSGI_ENDPOINT_LISTENER_SCOPE = "endpoint.listener.scope";
 
 struct endpoint_listener {
 	void *handle;

@@ -62,7 +62,7 @@ celix_status_t bundle_create(bundle_pt * bundle, apr_pool_t *mp) {
         (*bundle)->activator = NULL;
         (*bundle)->context = NULL;
         (*bundle)->framework = NULL;
-        (*bundle)->state = BUNDLE_INSTALLED;
+        (*bundle)->state = OSGI_FRAMEWORK_BUNDLE_INSTALLED;
         (*bundle)->modules = NULL;
         arrayList_create(&(*bundle)->modules);
 
@@ -100,7 +100,7 @@ celix_status_t bundle_createFromArchive(bundle_pt * bundle, framework_pt framewo
 	(*bundle)->activator = NULL;
 	(*bundle)->context = NULL;
 	(*bundle)->framework = framework;
-	(*bundle)->state = BUNDLE_INSTALLED;
+	(*bundle)->state = OSGI_FRAMEWORK_BUNDLE_INSTALLED;
 	(*bundle)->modules = NULL;
 	arrayList_create(&(*bundle)->modules);
 
@@ -376,7 +376,7 @@ celix_status_t bundle_setPersistentStateInactive(bundle_pt bundle) {
 	status = bundle_isSystemBundle(bundle, &systemBundle);
 	if (status == CELIX_SUCCESS) {
 		if (!systemBundle) {
-			status = bundleArchive_setPersistentState(bundle->archive, BUNDLE_INSTALLED);
+			status = bundleArchive_setPersistentState(bundle->archive, OSGI_FRAMEWORK_BUNDLE_INSTALLED);
 		}
 	}
 
@@ -392,7 +392,7 @@ celix_status_t bundle_setPersistentStateUninstalled(bundle_pt bundle) {
 	status = bundle_isSystemBundle(bundle, &systemBundle);
 	if (status == CELIX_SUCCESS) {
 		if (!systemBundle) {
-			status = bundleArchive_setPersistentState(bundle->archive, BUNDLE_UNINSTALLED);
+			status = bundleArchive_setPersistentState(bundle->archive, OSGI_FRAMEWORK_BUNDLE_UNINSTALLED);
 		}
 	}
 
@@ -642,7 +642,7 @@ celix_status_t bundle_refresh(bundle_pt bundle) {
 		if (status == CELIX_SUCCESS) {
 			status = bundle_addModule(bundle, module);
 			if (status == CELIX_SUCCESS) {
-				bundle->state = BUNDLE_INSTALLED;
+				bundle->state = OSGI_FRAMEWORK_BUNDLE_INSTALLED;
 			}
 		}
 	}

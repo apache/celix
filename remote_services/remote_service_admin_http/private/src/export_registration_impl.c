@@ -87,13 +87,13 @@ celix_status_t exportRegistration_stopTracking(export_registration_pt registrati
 	if (registration->endpointTracker != NULL) {
 		status = serviceTracker_close(registration->endpointTracker);
 		if (status != CELIX_SUCCESS) {
-		    fw_log(FW_LOG_ERROR, "EXPORT_REGISTRATION: Could not close endpoint tracker");
+		    fw_log(OSGI_FRAMEWORK_LOG_ERROR, "EXPORT_REGISTRATION: Could not close endpoint tracker");
 		}
 	}
 	if (registration->tracker != NULL) {
 		status = serviceTracker_close(registration->tracker);
 		if (status != CELIX_SUCCESS) {
-		    fw_log(FW_LOG_ERROR, "EXPORT_REGISTRATION: Could not close service tracker");
+		    fw_log(OSGI_FRAMEWORK_LOG_ERROR, "EXPORT_REGISTRATION: Could not close service tracker");
 		}
 	}
 
@@ -109,7 +109,7 @@ celix_status_t exportRegistration_createEndpointTracker(export_registration_pt r
 			exportRegistration_endpointAdded, exportRegistration_endpointModified, exportRegistration_endpointRemoved, &customizer);
 
 	if (status == CELIX_SUCCESS) {
-		status = serviceTracker_create(registration->pool, registration->context, REMOTE_ENDPOINT, customizer, tracker);
+		status = serviceTracker_create(registration->pool, registration->context, OSGI_RSA_REMOTE_ENDPOINT, customizer, tracker);
 	}
 
 	return status;

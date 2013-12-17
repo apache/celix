@@ -52,7 +52,7 @@ celix_status_t bundleCache_create(properties_pt configurationMap, apr_pool_t *mp
     	apr_pool_pre_cleanup_register(mp, cache, bundleCache_destroy);
 
 		if (configurationMap != NULL && mp != NULL && *bundle_cache == NULL) {
-            char * cacheDir = properties_get(configurationMap, (char *) FRAMEWORK_STORAGE);
+            char * cacheDir = properties_get(configurationMap, (char *) OSGI_FRAMEWORK_FRAMEWORK_STORAGE);
 			cache->configurationMap = configurationMap;
             if (cacheDir == NULL) {
                 cacheDir = ".cache";

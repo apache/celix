@@ -99,7 +99,7 @@ void *APR_THREAD_FUNC LogServiceTest(apr_thread_t *thd, void *argument) {
 	while (apr_os_thread_current() == *logThread) {
 		service_reference_pt logServiceRef = NULL;
 		// lookup the current "best" LogService each time, just before we need to use it
-		status = bundleContext_getServiceReference(m_context, (char *) LOG_SERVICE_NAME, &logServiceRef);
+		status = bundleContext_getServiceReference(m_context, (char *) OSGI_LOGSERVICE_NAME, &logServiceRef);
 		// if the service reference is null then we know there's no log service available
 		if (status == CELIX_SUCCESS && logServiceRef != NULL) {
 			void *log = NULL;
@@ -108,7 +108,7 @@ void *APR_THREAD_FUNC LogServiceTest(apr_thread_t *thd, void *argument) {
 			logService = (LOG_SERVICE) log;
 			// if the dereferenced instance is null then we know the service has been removed
 			if (logService != NULL) {
-				(*(logService->log))(logService->logger, LOG_INFO, "ping");
+				(*(logService->log))(logService->logger, OSGI_LOGSERVICE_INFO, "ping");
 			} else {
 				alternativeLog("LogService has gone", data);
 			}

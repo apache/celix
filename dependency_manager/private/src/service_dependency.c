@@ -164,10 +164,10 @@ service_dependency_pt serviceDependency_setService(service_dependency_pt depende
 
 	if (filter != NULL) {
 		if (serviceName != NULL) {
-			int len = strlen(serviceName) + strlen(OBJECTCLASS) + strlen(filter) + 7;
+			int len = strlen(serviceName) + strlen(OSGI_FRAMEWORK_OBJECTCLASS) + strlen(filter) + 7;
 			char *nfilter = malloc(sizeof(char) * len);
 			strcpy(nfilter, "(&(");
-			strcat(nfilter, OBJECTCLASS);
+			strcat(nfilter, OSGI_FRAMEWORK_OBJECTCLASS);
 			strcat(nfilter, "=");
 			strcat(nfilter, serviceName);
 			strcat(nfilter, ")");

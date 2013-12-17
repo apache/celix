@@ -35,22 +35,22 @@ void framework_log(framework_log_level_t level, const char *func, const char *fi
     va_start(listPointer, fmsg);
     vsprintf(msg, fmsg, listPointer);
     switch (level) {
-        case FW_LOG_ERROR:
+        case OSGI_FRAMEWORK_LOG_ERROR:
             levelStr = "ERROR";
             break;
-        case FW_LOG_WARNING:
+        case OSGI_FRAMEWORK_LOG_WARNING:
             levelStr = "WARNING";
             break;
-        case FW_LOG_INFO:
+        case OSGI_FRAMEWORK_LOG_INFO:
             levelStr = "INFO";
             break;
-        case FW_LOG_DEBUG:
+        case OSGI_FRAMEWORK_LOG_DEBUG:
         default:
             levelStr = "DEBUG";
             break;
     }
 
-    if (level == FW_LOG_ERROR) {
+    if (level == OSGI_FRAMEWORK_LOG_ERROR) {
         printf("%s: %s\n\tat %s(%s:%d)\n", levelStr, msg, func, file, line);
     } else {
         printf("%s: %s\n", levelStr, msg);

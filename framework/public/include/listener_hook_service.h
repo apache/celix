@@ -34,7 +34,7 @@ typedef struct listener_hook_service *listener_hook_service_pt;
 
 #include "bundle_context.h"
 
-#define listener_hook_service_name "listener_hook_service"
+#define OSGI_FRAMEWORK_LISTENER_HOOK_SERVICE_NAME "listener_hook_service"
 
 struct listener_hook_info {
 	bundle_context_pt context;

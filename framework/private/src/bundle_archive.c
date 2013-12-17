@@ -90,7 +90,7 @@ celix_status_t bundleArchive_createSystemBundleArchive(apr_pool_t *mp, bundle_ar
                 archive->archiveRoot = NULL;
                 archive->archiveRootDir = NULL;
                 archive->refreshCount = -1;
-                archive->persistentState = BUNDLE_UNKNOWN;
+                archive->persistentState = OSGI_FRAMEWORK_BUNDLE_UNKNOWN;
                 time(&archive->lastModified);
 
                 *bundle_archive = archive;
@@ -320,7 +320,7 @@ celix_status_t bundleArchive_getPersistentState(bundle_archive_pt archive, bundl
 	celix_status_t status = CELIX_SUCCESS;
 	apr_status_t apr_status;
 
-	if (archive->persistentState != BUNDLE_UNKNOWN) {
+	if (archive->persistentState != OSGI_FRAMEWORK_BUNDLE_UNKNOWN) {
 		*state = archive->persistentState;
 	} else {
 		apr_file_t *persistentStateLocationFile;
@@ -342,13 +342,13 @@ celix_status_t bundleArchive_getPersistentState(bundle_archive_pt archive, bundl
 
                 if (status == CELIX_SUCCESS) {
                     if (stateString != NULL && (strcmp(stateString, "active") == 0)) {
-                        archive->persistentState = BUNDLE_ACTIVE;
+                        archive->persistentState = OSGI_FRAMEWORK_BUNDLE_ACTIVE;
                     } else if (stateString != NULL && (strcmp(stateString, "starting") == 0)) {
-                        archive->persistentState = BUNDLE_STARTING;
+                        archive->persistentState = OSGI_FRAMEWORK_BUNDLE_STARTING;
                     } else if (stateString != NULL && (strcmp(stateString, "uninstalled") == 0)) {
-                        archive->persistentState = BUNDLE_UNINSTALLED;
+                        archive->persistentState = OSGI_FRAMEWORK_BUNDLE_UNINSTALLED;
                     } else {
-                        archive->persistentState = BUNDLE_INSTALLED;
+                        archive->persistentState = OSGI_FRAMEWORK_BUNDLE_INSTALLED;
                     }
 
                     *state = archive->persistentState;
@@ -382,13 +382,13 @@ celix_status_t bundleArchive_setPersistentState(bundle_archive_pt archive, bundl
             if (status == CELIX_SUCCESS) {
                 char * s;
                 switch (state) {
-                    case BUNDLE_ACTIVE:
+                    case OSGI_FRAMEWORK_BUNDLE_ACTIVE:
                         s = "active";
                         break;
-                    case BUNDLE_STARTING:
+                    case OSGI_FRAMEWORK_BUNDLE_STARTING:
                         s = "starting";
                         break;
-                    case BUNDLE_UNINSTALLED:
+                    case OSGI_FRAMEWORK_BUNDLE_UNINSTALLED:
                         s = "uninstalled";
                         break;
                     default:

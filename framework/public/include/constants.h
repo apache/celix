@@ -27,25 +27,25 @@
 #ifndef CONSTANTS_H_
 #define CONSTANTS_H_
 
-static const char * const OBJECTCLASS = "objectClass";
-static const char * const SERVICE_ID = "service.id";
-static const char * const SERVICE_PID = "service.pid";
-static const char * const SERVICE_RANKING = "service.ranking";
+static const char * const OSGI_FRAMEWORK_OBJECTCLASS = "objectClass";
+static const char * const OSGI_FRAMEWORK_SERVICE_ID = "service.id";
+static const char * const OSGI_FRAMEWORK_SERVICE_PID = "service.pid";
+static const char * const OSGI_FRAMEWORK_SERVICE_RANKING = "service.ranking";
 
-static const char * const BUNDLE_ACTIVATOR_CREATE = "bundleActivator_create";
-static const char * const BUNDLE_ACTIVATOR_START = "bundleActivator_start";
-static const char * const BUNDLE_ACTIVATOR_STOP = "bundleActivator_stop";
-static const char * const BUNDLE_ACTIVATOR_DESTROY = "bundleActivator_destroy";
+static const char * const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_CREATE = "bundleActivator_create";
+static const char * const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_START = "bundleActivator_start";
+static const char * const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_STOP = "bundleActivator_stop";
+static const char * const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_DESTROY = "bundleActivator_destroy";
 
-static const char * const HEADER_LIBRARY = "library";
+static const char * const OSGI_FRAMEWORK_HEADER_LIBRARY = "library";
 
-static const char * const BUNDLE_SYMBOLICNAME = "Bundle-SymbolicName";
-static const char * const BUNDLE_VERSION = "Bundle-Version";
-static const char * const EXPORT_PACKAGE = "Export-Service";
-static const char * const IMPORT_PACKAGE = "Import-Service";
+static const char * const OSGI_FRAMEWORK_BUNDLE_SYMBOLICNAME = "Bundle-SymbolicName";
+static const char * const OSGI_FRAMEWORK_BUNDLE_VERSION = "Bundle-Version";
+static const char * const OSGI_FRAMEWORK_EXPORT_PACKAGE = "Export-Service";
+static const char * const OSGI_FRAMEWORK_IMPORT_PACKAGE = "Import-Service";
 
-static const char * const FRAMEWORK_STORAGE = "org.osgi.framework.storage";
-static const char * const FRAMEWORK_UUID = "org.osgi.framework.uuid";
+static const char * const OSGI_FRAMEWORK_FRAMEWORK_STORAGE = "org.osgi.framework.storage";
+static const char * const OSGI_FRAMEWORK_FRAMEWORK_UUID = "org.osgi.framework.uuid";
 
 
 #endif /* CONSTANTS_H_ */

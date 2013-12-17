@@ -47,8 +47,8 @@ celix_status_t serviceTracker_create(apr_pool_t *pool, bundle_context_pt context
 		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
 		if (status == CELIX_SUCCESS) {
-			int len = strlen(service) + strlen(OBJECTCLASS) + 4;
-			char *filter = apr_pstrcat(pool, "(", OBJECTCLASS, "=", service, ")", NULL);
+			int len = strlen(service) + strlen(OSGI_FRAMEWORK_OBJECTCLASS) + 4;
+			char *filter = apr_pstrcat(pool, "(", OSGI_FRAMEWORK_OBJECTCLASS, "=", service, ")", NULL);
 			if (filter == NULL) {
 				status = CELIX_ENOMEM;
 			} else {
@@ -217,14 +217,14 @@ void *serviceTracker_getServiceByReference(service_tracker_pt tracker, service_r
 void serviceTracker_serviceChanged(service_listener_pt listener, service_event_pt event) {
 	service_tracker_pt tracker = listener->handle;
 	switch (event->type) {
-		case SERVICE_EVENT_REGISTERED:
-		case SERVICE_EVENT_MODIFIED:
+		case OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED:
+		case OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED:
 			serviceTracker_track(tracker, event->reference, event);
 			break;
-		case SERVICE_EVENT_UNREGISTERING:
+		case OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING:
 			serviceTracker_untrack(tracker, event->reference, event);
 			break;
-		case SERVICE_EVENT_MODIFIED_ENDMATCH:
+		case OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED_ENDMATCH:
 			break;
 	}
 }

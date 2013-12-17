@@ -94,7 +94,7 @@ celix_status_t discoveryActivator_createEPLTracker(struct activator *activator,
 
 	if (status == CELIX_SUCCESS) {
 		status = serviceTracker_create(activator->pool, activator->context,
-				(char *) endpoint_listener_service, customizer, tracker);
+				(char *) OSGI_ENDPOINT_LISTENER_SERVICE, customizer, tracker);
 
 		serviceTracker_open(activator->endpointListenerTracker);
 	}
@@ -117,12 +117,12 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	properties_pt props = properties_create();
 	properties_set(props, "DISCOVERY", "true");
 	char *uuid = NULL;
-	bundleContext_getProperty(context, FRAMEWORK_UUID, &uuid);
-	char *scope = apr_pstrcat(activator->pool, "(&(", OBJECTCLASS, "=*)(", ENDPOINT_FRAMEWORK_UUID, "=", uuid, "))", NULL);
+	bundleContext_getProperty(context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
+	char *scope = apr_pstrcat(activator->pool, "(&(", OSGI_FRAMEWORK_OBJECTCLASS, "=*)(", OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, "=", uuid, "))", NULL);
 	printf("DISCOVERY SCOPE IS: %s\n", scope);
-	properties_set(props, (char *) ENDPOINT_LISTENER_SCOPE, scope);
+	properties_set(props, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, scope);
 	status = bundleContext_registerService(context,
-			(char *) endpoint_listener_service, endpointListener, props,
+			(char *) OSGI_ENDPOINT_LISTENER_SERVICE, endpointListener, props,
 			&activator->endpointListenerService);
 
 	return status;

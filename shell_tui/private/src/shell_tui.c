@@ -78,7 +78,7 @@ static void *APR_THREAD_FUNC shellTui_runnable(apr_thread_t *thd, void *data) {
 
 void shellTui_initializeService(shell_tui_activator_pt activator) {
 	if (activator->shell == NULL) {
-		bundleContext_getServiceReference(activator->context, (char *) SHELL_SERVICE_NAME, &activator->reference);
+		bundleContext_getServiceReference(activator->context, (char *) OSGI_SHELL_SERVICE_NAME, &activator->reference);
 		if (activator->reference != NULL) {
 		    void *shell_svc = NULL;
 		    bundleContext_getService(activator->context, activator->reference, &shell_svc);
@@ -91,9 +91,9 @@ void shellTui_serviceChanged(service_listener_pt listener, service_event_pt even
 	bool result = false;
     shell_tui_activator_pt act = (shell_tui_activator_pt) listener->handle;
 
-	if ((event->type == SERVICE_EVENT_REGISTERED) && (act->reference == NULL)) {
+	if ((event->type == OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED) && (act->reference == NULL)) {
 		shellTui_initializeService(act);
-	} else if ((event->type == SERVICE_EVENT_UNREGISTERING) && (act->reference == event->reference)) {
+	} else if ((event->type == OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING) && (act->reference == event->reference)) {
 		bundleContext_ungetService(act->context, act->reference, &result);
 		act->reference = NULL;
 		act->shell = NULL;

@@ -104,8 +104,8 @@ static celix_status_t serviceRegistration_initializeProperties(service_registrat
 	registration->properties = dictionary;
 
 	sprintf(sId, "%ld", registration->serviceId);
-	properties_set(dictionary, (char *) SERVICE_ID, sId);
-	properties_set(dictionary, (char *) OBJECTCLASS, registration->className);
+	properties_set(dictionary, (char *) OSGI_FRAMEWORK_SERVICE_ID, sId);
+	properties_set(dictionary, (char *) OSGI_FRAMEWORK_OBJECTCLASS, registration->className);
 	free(sId);
 
 	return CELIX_SUCCESS;

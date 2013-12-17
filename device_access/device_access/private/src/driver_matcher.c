@@ -143,7 +143,7 @@ celix_status_t driverMatcher_getBestMatch(driver_matcher_pt matcher, apr_pool_t 
 		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
 		service_reference_pt selectorRef = NULL;
-		status = bundleContext_getServiceReference(matcher->context, DRIVER_SELECTOR_SERVICE_NAME, &selectorRef);
+		status = bundleContext_getServiceReference(matcher->context, OSGI_DEVICEACCESS_DRIVER_SELECTOR_SERVICE_NAME, &selectorRef);
 		if (status == CELIX_SUCCESS) {
 			int index = -1;
 			if (selectorRef != NULL) {
@@ -206,8 +206,8 @@ celix_status_t driverMatcher_getBestMatchInternal(driver_matcher_pt matcher, apr
 						status = serviceRegistration_getProperties(registration, &properties);
 						if (status == CELIX_SUCCESS) {
 
-							rank1Str = properties_getWithDefault(properties, (char *) SERVICE_RANKING, "0");
-							rank2Str = properties_getWithDefault(properties, (char *) SERVICE_RANKING, "0");
+							rank1Str = properties_getWithDefault(properties, (char *) OSGI_FRAMEWORK_SERVICE_RANKING, "0");
+							rank2Str = properties_getWithDefault(properties, (char *) OSGI_FRAMEWORK_SERVICE_RANKING, "0");
 
 							rank1 = atoi(rank1Str);
 							rank2 = atoi(rank2Str);
@@ -221,8 +221,8 @@ celix_status_t driverMatcher_getBestMatchInternal(driver_matcher_pt matcher, apr
 								char *id1Str, *id2Str;
 								long id1, id2;
 
-								id1Str = properties_get(properties, (char *) SERVICE_ID);
-								id2Str = properties_get(properties, (char *) SERVICE_ID);
+								id1Str = properties_get(properties, (char *) OSGI_FRAMEWORK_SERVICE_ID);
+								id2Str = properties_get(properties, (char *) OSGI_FRAMEWORK_SERVICE_ID);
 
 								id1 = atol(id1Str);
 								id2 = atol(id2Str);

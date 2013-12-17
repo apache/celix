@@ -78,7 +78,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 			service->sqrt = calculator_sqrt;
 
 			properties = properties_create();
-			properties_set(properties, (char *) SERVICE_EXPORTED_INTERFACES, (char *) CALCULATOR_SERVICE);
+			properties_set(properties, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, (char *) CALCULATOR_SERVICE);
 
 			bundleContext_registerService(context, (char *) CALCULATOR_SERVICE, service, properties, &activator->calculatorReg);
 		}

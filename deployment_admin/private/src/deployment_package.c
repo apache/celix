@@ -146,8 +146,8 @@ celix_status_t deploymentPackage_processEntries(deployment_package_pt package) {
 			bundle_info_pt info = apr_palloc(package->pool, sizeof(*info));
 			info->path = name;
 			info->attributes = values;
-			info->symbolicName = properties_get(values, (char *) BUNDLE_SYMBOLICNAME);
-			char *version = properties_get(values, (char *) BUNDLE_VERSION);
+			info->symbolicName = properties_get(values, (char *) OSGI_FRAMEWORK_BUNDLE_SYMBOLICNAME);
+			char *version = properties_get(values, (char *) OSGI_FRAMEWORK_BUNDLE_VERSION);
 			info->version = NULL;
 			status = version_createVersionFromString(package->pool, version, &info->version);
 			char *customizer = properties_get(values, (char *) DEPLOYMENTPACKAGE_CUSTOMIZER);
@@ -168,7 +168,7 @@ celix_status_t deploymentPackage_processEntries(deployment_package_pt package) {
 }
 
 static celix_status_t deploymentPackage_isBundleResource(properties_pt attributes, bool *isBundleResource) {
-	*isBundleResource = properties_get(attributes, (char *) BUNDLE_SYMBOLICNAME) != NULL;
+	*isBundleResource = properties_get(attributes, (char *) OSGI_FRAMEWORK_BUNDLE_SYMBOLICNAME) != NULL;
 	return CELIX_SUCCESS;
 }
 

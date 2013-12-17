@@ -56,7 +56,7 @@ void logCommand_execute(command_pt command, char *line, void (*out)(char *), voi
     apr_pool_t *memory_pool = NULL;
     apr_pool_t *bundle_memory_pool = NULL;
 
-    bundleContext_getServiceReference(command->bundleContext, (char *) LOG_READER_SERVICE_NAME, &readerService);
+    bundleContext_getServiceReference(command->bundleContext, (char *) OSGI_LOGSERVICE_READER_SERVICE_NAME, &readerService);
     if (readerService != NULL) {
         char line[256];
         linked_list_pt list = NULL;
@@ -105,16 +105,16 @@ void logCommand_execute(command_pt command, char *line, void (*out)(char *), voi
 
 celix_status_t logCommand_levelAsString(command_pt command, log_level_t level, char **string) {
 	switch (level) {
-	case LOG_ERROR:
+	case OSGI_LOGSERVICE_ERROR:
 		*string = "ERROR";
 		break;
-	case LOG_WARNING:
+	case OSGI_LOGSERVICE_WARNING:
 		*string = "WARNING";
 		break;
-	case LOG_INFO:
+	case OSGI_LOGSERVICE_INFO:
 		*string = "INFO";
 		break;
-	case LOG_DEBUG:
+	case OSGI_LOGSERVICE_DEBUG:
 	default:
 		*string = "DEBUG";
 		break;

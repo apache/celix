@@ -28,12 +28,12 @@
 
 #include "celix_errno.h"
 
-#define DEVICE_CATEGORY	"DEVICE_CATEGORY"
-#define DEVICE_SERIAL	"DEVICE_SERIAL"
+#define OSGI_DEVICEACCESS_DEVICE_CATEGORY	"DEVICE_CATEGORY"
+#define OSGI_DEVICEACCESS_DEVICE_SERIAL	"DEVICE_SERIAL"
 
-#define DEVICE_SERVICE_NAME "device"
+#define OSGI_DEVICEACCESS_DEVICE_SERVICE_NAME "device"
 
-static const int DEVICE_MATCH_NONE	= 0;
+static const int OSGI_DEVICEACCESS_DEVICE_MATCH_NONE	= 0;
 
 typedef struct device * device_pt;
 
