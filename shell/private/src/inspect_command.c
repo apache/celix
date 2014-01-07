@@ -36,13 +36,15 @@
 #include "constants.h"
 #include "service_registration.h"
 #include "service_reference.h"
+#include "hash_map.h"
 
 #define SERVICE_TYPE "service"
-#define capability_pt "capability"
+#define CAPABILITY "capability"
 #define REQUIREMENT "requirement"
 
 void inspectCommand_execute(command_pt command, char * commandline, void (*out)(char *), void (*err)(char *));
 celix_status_t inspectCommand_printExportedServices(command_pt command, array_list_pt ids, void (*out)(char *), void (*err)(char *));
+celix_status_t inspectCommand_printImportedServices(command_pt command, array_list_pt ids, void (*out)(char *), void (*err)(char *));
 
 command_pt inspectCommand_create(bundle_context_pt context) {
 	command_pt command = (command_pt) malloc(sizeof(*command));
@@ -79,16 +81,25 @@ void inspectCommand_execute(command_pt command, char * commandline, void (*out)(
 			}
 
 			if (strcmp(type, SERVICE_TYPE) == 0) {
-				if (strcmp(direction, capability_pt) == 0) {
+				if (strcmp(direction, CAPABILITY) == 0) {
 					status = inspectCommand_printExportedServices(command, ids, out, err);
 					if (status != CELIX_SUCCESS) {
 						out("INSPECT: Error\n");
 					}
+				} else if (strcmp(direction, REQUIREMENT) == 0) {
+                    status = inspectCommand_printImportedServices(command, ids, out, err);
+                    if (status != CELIX_SUCCESS) {
+                        out("INSPECT: Error\n");
+                    }
 				} else {
-					out("INSPECT: Not implemented\n");
+				    out("INSPECT: Invalid argument\n");
+                    sprintf(outString, "%s\n", command->usage);
+                    out(outString);
 				}
 			} else {
 				out("INSPECT: Invalid argument\n");
+				sprintf(outString, "%s\n", command->usage);
+                out(outString);
 			}
 		} else {
 			out("INSPECT: Too few arguments\n");
@@ -169,9 +180,15 @@ celix_status_t inspectCommand_printExportedServices(command_pt command, array_li
 									serviceReference_getServiceRegistration(ref, &reg);
 									
 									serviceRegistration_getProperties(reg, &props);
-									objectClass = properties_get(props, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
-									sprintf(line, "ObjectClass = %s\n", objectClass);
-									out(line);
+									hash_map_iterator_pt iter = hashMapIterator_create(props);
+									while (hashMapIterator_hasNext(iter)) {
+									    hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
+									    sprintf(line, "%s = %s\n", hashMapEntry_getKey(entry), hashMapEntry_getValue(entry));
+									    out(line);
+									}
+
+//									objectClass = properties_get(props, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
+//									sprintf(line, "ObjectClass = %s\n", objectClass);
 									if ((j + 1) < arrayList_size(refs)) {
 										out("----\n");
 									}
@@ -186,4 +203,106 @@ celix_status_t inspectCommand_printExportedServices(command_pt command, array_li
 
 
 	return status;
+}
+
+celix_status_t inspectCommand_printImportedServices(command_pt command, array_list_pt ids, void (*out)(char *), void (*err)(char *)) {
+    celix_status_t status = CELIX_SUCCESS;
+    array_list_pt bundles = NULL;
+
+    if (arrayList_isEmpty(ids)) {
+        celix_status_t status = bundleContext_getBundles(command->bundleContext, &bundles);
+    } else {
+        apr_pool_t *pool = NULL;
+        unsigned int i;
+
+        bundleContext_getMemoryPool(command->bundleContext, &pool);
+        arrayList_create(&bundles);
+        for (i = 0; i < arrayList_size(ids); i++) {
+            char *idStr = (char *) arrayList_get(ids, i);
+            long id = atol(idStr);
+            bundle_pt b = NULL;
+            celix_status_t st = bundleContext_getBundleById(command->bundleContext, id, &b);
+            if (st == CELIX_SUCCESS) {
+                arrayList_add(bundles, b);
+            } else {
+                char line[256];
+                sprintf(line, "INSPECT: Invalid bundle ID: %ld\n", id);
+                out(line);
+            }
+        }
+    }
+
+    if (status == CELIX_SUCCESS) {
+        unsigned int i = 0;
+        for (i = 0; i < arrayList_size(bundles); i++) {
+            bundle_pt bundle = (bundle_pt) arrayList_get(bundles, i);
+
+            if (i > 0) {
+                out("\n");
+            }
+
+            if (bundle != NULL) {
+                apr_pool_t *pool;
+                array_list_pt refs = NULL;
+
+                bundleContext_getMemoryPool(command->bundleContext, &pool);
+                if (bundle_getServicesInUse(bundle, &refs) == CELIX_SUCCESS) {
+                    char line[256];
+                    module_pt module = NULL;
+                    char * name = NULL;
+                    status = bundle_getCurrentModule(bundle, &module);
+                    if (status == CELIX_SUCCESS) {
+                        status = module_getSymbolicName(module, &name);
+                        if (status == CELIX_SUCCESS) {
+                            sprintf(line, "%s requires services:\n", name);
+                            out(line);
+                            out("==============\n");
+
+                            if (refs == NULL || arrayList_size(refs) == 0) {
+                                out("Nothing\n");
+                            } else {
+                                unsigned int j = 0;
+                                for (j = 0; j < arrayList_size(refs); j++) {
+                                    service_reference_pt ref = (service_reference_pt) arrayList_get(refs, j);
+                                    service_registration_pt reg = NULL;
+                                    properties_pt props = NULL;
+                                    char line[256];
+                                    bundle_pt usedBundle = NULL;
+                                    module_pt usedModule = NULL;
+                                    char *usedSymbolicName = NULL;
+                                    long usedBundleId;
+
+                                    serviceReference_getBundle(ref, &usedBundle);
+                                    bundle_getBundleId(usedBundle, &usedBundleId);
+                                    bundle_getCurrentModule(usedBundle, &usedModule);
+                                    module_getSymbolicName(usedModule, &usedSymbolicName);
+
+                                    sprintf(line, "%s [%ld]\n", usedSymbolicName, usedBundleId);
+                                    out(line);
+
+                                    serviceReference_getServiceRegistration(ref, &reg);
+                                    serviceRegistration_getProperties(reg, &props);
+                                    hash_map_iterator_pt iter = hashMapIterator_create(props);
+                                    while (hashMapIterator_hasNext(iter)) {
+                                        hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
+                                        sprintf(line, "%s = %s\n", hashMapEntry_getKey(entry), hashMapEntry_getValue(entry));
+                                        out(line);
+                                    }
+
+//                                  objectClass = properties_get(props, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
+//                                  sprintf(line, "ObjectClass = %s\n", objectClass);
+                                    if ((j + 1) < arrayList_size(refs)) {
+                                        out("----\n");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    return status;
 }
