@@ -37,7 +37,9 @@ if (UTILS)
 		public/include/linkedlist.h
 		public/include/linked_list_iterator.h 
 		private/include/linked_list_private.h
-		
+
+		private/src/netstring.c
+		public/include/netstring.h
 		public/include/exports.h
 	)
     
@@ -71,11 +73,16 @@ if (UTILS)
 	    
 	    add_executable(linked_list_test private/test/linked_list_test.c)
 	    target_link_libraries(linked_list_test celix_utils ${CUNIT_LIBRARIES})
+
+	    add_executable(netstring_test private/test/netstring_test.c)
+	    target_link_libraries(netstring_test celix_utils celix_framework ${CUNIT_LIBRARIES})
+		    
 	    
 	    run_test(array_list_test2)
 	    run_test(hash_map_test)
 	    run_test(hash_map_test_hash)
 	    run_test(linked_list_test)
+	    run_test(netstring_test)
 	    
 	    ADD_TARGET_FOR_TEST(array_list_test)
     endif(UTILS-TESTS)

@@ -20,7 +20,7 @@ if (REMOTE_SERVICE_ADMIN)
 	                            ENDPOINTS org.example.api.Calculator_endpoint)
 	deploy("remote-services-bj-client" BUNDLES topology_manager remote_service_admin_http shell shell_tui log_service log_writer calculator_shell discovery_bonjour
 	                                   ENDPOINTS org.example.api.Calculator_proxy)
-	
+	                                   
 	deploy("remote-services" BUNDLES discovery_slp topology_manager remote_service_admin_http calculator org.example.api.Calculator_endpoint shell shell_tui log_service log_writer)
 	deploy("remote-services-client" BUNDLES topology_manager remote_service_admin_http org.example.api.Calculator_proxy shell shell_tui log_service log_writer calculator_shell discovery_slp)
 	
@@ -28,3 +28,14 @@ if (REMOTE_SERVICE_ADMIN)
 	#discovery will discover services before the topology manager is registered as 
 	#endpoint listener and services will be lost. This needs further study.
 endif (REMOTE_SERVICE_ADMIN)
+
+is_enabled(RSA_BUNDLES_REMOTE_SERVICE_ADMIN_SHM)
+if (RSA_BUNDLES_REMOTE_SERVICE_ADMIN_SHM)
+    is_enabled(RSA_BUNDLES_DISCOVERY_SHM)
+    if (RSA_BUNDLES_DISCOVERY_SHM)
+        deploy("remote-services-shm" BUNDLES discovery_shm topology_manager remote_service_admin_shm calculator shell shell_tui log_service log_writer 
+                                     ENDPOINTS org.example.api.Calculator_endpoint)
+        deploy("remote-services-shm-client" BUNDLES topology_manager remote_service_admin_shm shell shell_tui log_service log_writer calculator_shell discovery_shm
+                                            ENDPOINTS org.example.api.Calculator_proxy)
+    endif (RSA_BUNDLES_DISCOVERY_SHM)
+endif (RSA_BUNDLES_REMOTE_SERVICE_ADMIN_SHM)
