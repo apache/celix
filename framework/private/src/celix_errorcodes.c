@@ -45,6 +45,8 @@ static char *celix_error_string(celix_status_t statcode) {
 		return "Framework exception";
 	case CELIX_FILE_IO_EXCEPTION:
 		return "File I/O exception";
+	case CELIX_SERVICE_EXCEPTION:
+        return "Service exception";
 	}
 	return "Unkown code";
 }
