@@ -27,6 +27,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include "celixbool.h"
 #include "properties.h"
 #include "utils.h"
 
@@ -45,7 +46,95 @@ void properties_destroy(properties_pt properties) {
 	hashMap_destroy(properties, false, false);
 }
 
-properties_pt properties_load(char * filename) {
+properties_pt properties_load(char *filename) {
+	properties_pt props = properties_create();
+	FILE *file = fopen ( filename, "r" );
+
+	char line[1024];
+	char key[1024];
+	char value[1024];
+	bool precedingCharIsBackslash = false;
+	bool isComment = false;
+	int valueStart = 0;
+	int linePos = 0;
+	int outputPos = 0;
+	char *output = NULL;
+
+
+	while ( fgets ( line, sizeof line, file ) != NULL ) {
+
+		linePos = 0;
+		precedingCharIsBackslash = false;
+		isComment = false;
+		output = NULL;
+		outputPos = 0;
+		key[0] = '\0';
+		value[0] = '\0';
+
+		while (line[linePos] != '\0') {
+			if (line[linePos] == ' ' || line[linePos] == '\t') {
+				if (output == NULL) {
+					//ignore
+					linePos+=1;
+					continue;
+				} else {
+					output[outputPos++] = line[linePos];
+				}
+			} else {
+				if (output == NULL) {
+					output = key;
+				}
+			}
+			if (line[linePos] == '=' || line[linePos] == ':' || line[linePos] == '#' || line[linePos] == '!') {
+				if (precedingCharIsBackslash) {
+					//escaped special character
+					output[outputPos++] = line[linePos];
+				} else {
+					if (line[linePos] == '#' || line[linePos] == '!') {
+						if (outputPos == 0) {
+							isComment = true;
+							break;
+						} else {
+							output[outputPos++] = line[linePos];
+						}
+					} else { // = or :
+						if (output == value) { //already have a seperator
+							output[outputPos++] =line[linePos];
+						} else {
+							output[outputPos++] = '\0';
+							output = value;
+							outputPos = 0;
+						}
+					}
+				}
+			} else if (line[linePos] == '\\') {
+				if (precedingCharIsBackslash) { //double backslash -> backslash
+						output[outputPos++] = '\\';
+				}
+				precedingCharIsBackslash = !precedingCharIsBackslash;
+			} else { //normal character
+				precedingCharIsBackslash = false;
+				output[outputPos++] = line[linePos];
+			}
+			linePos+=1;
+		}
+		if (output != NULL) {
+			output[outputPos] = '\0';
+		}
+
+		if (!isComment) {
+			printf("putting 'key'/'value' '%s'/'%s' in properties\n", utils_stringTrim(key), utils_stringTrim(value));
+			hashMap_put(props, strdup(utils_stringTrim(key)), strdup(utils_stringTrim(value)));
+		}
+	}
+
+	fclose(file);
+
+	return props;
+}
+
+/*
+properties_pt properties_load_tmp(char * filename) {
 	properties_pt props = properties_create();
 	FILE *file = fopen ( filename, "r" );
 
@@ -95,6 +184,7 @@ properties_pt properties_load(char * filename) {
 	free(cont);
 	return props;
 }
+*/
 
 /**
  * Header is ignored for now, cannot handle comments yet
