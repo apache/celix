@@ -124,7 +124,7 @@ properties_pt properties_load(char *filename) {
 			}
 
 			if (!isComment) {
-				printf("putting 'key'/'value' '%s'/'%s' in properties\n", utils_stringTrim(key), utils_stringTrim(value));
+				//printf("putting 'key'/'value' '%s'/'%s' in properties\n", utils_stringTrim(key), utils_stringTrim(value));
 				hashMap_put(props, strdup(utils_stringTrim(key)), strdup(utils_stringTrim(value)));
 			}
 		}
