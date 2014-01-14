@@ -63,9 +63,6 @@ TEST(bundle_cache, create) {
 		.withParameter("key", "org.osgi.framework.storage")
 		.andReturnValue((char *) NULL);
 
-	mock().expectOneCall("properties_destroy")
-		.withParameter("properties", configuration);
-
 	bundle_cache_pt cache = NULL;
 	celix_status_t status = bundleCache_create(configuration, pool, &cache);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
