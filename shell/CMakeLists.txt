@@ -18,6 +18,7 @@ celix_subproject(SHELL "Option to enable building the Shell bundles" "OFF" DEPS 
 if (SHELL)
 	find_package(CURL REQUIRED)
 	
+	SET_HEADER(BUNDLE_VERSION "1.0.0.incubating")
 	SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_shell")
 	SET_HEADERS("Bundle-Name: Apache Celix Shell") 
 

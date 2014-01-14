@@ -1,0 +1,10 @@
+Release Notes for 1.0.0.incubating
+Remarks:
+ * Components that are 1.0.0 are
+   - Framework
+   - Utils
+   - Shell
+   - Shell TUI
+   - Log Service
+   - Log Writer
+   - Launcher

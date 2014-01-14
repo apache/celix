@@ -18,6 +18,7 @@
 celix_subproject(LOG_WRITER "Option to enable building the Log Writer bundle" "OFF" DEPS FRAMEWORK LOG_SERVICE)
 if (LOG_WRITER)
 
+    SET_HEADER(BUNDLE_VERSION "1.0.0.incubating")
 	SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_log_writer")
 	SET_HEADERS("Bundle-Name: Apache Celix Log Writer")
 

@@ -32,11 +32,11 @@ IF(WIN32)
 	SET(CMAKE_C_FLAGS "-D_CRT_SECURE_NO_WARNINGS ${CMAKE_C_FLAGS}")
 ENDIF()
 
-# Set version for the whole package/release
-SET(CELIX_MAJOR "0")
+# Set version for the framework package/release
+SET(CELIX_MAJOR "1")
 SET(CELIX_MINOR "0")
-SET(CELIX_MICRO "1")
-SET(CELIX_QUALIFIER "incubation")
+SET(CELIX_MICRO "0")
+SET(CELIX_QUALIFIER "incubating")
 
 enable_testing()
 
@@ -45,7 +45,7 @@ include(cmake/installation.cmake)
 include(UseDoxygen)  
 
 # Default bundle version
-set(DEFAULT_VERSION 0.0.1.incubation)
+set(DEFAULT_VERSION 0.0.1.incubating)
 
 ## New sub project must use a buildoption to be able to enable/disable the project using the CMake Editor
 ## Sub projects depending on another sub project automatically enable these dependencies

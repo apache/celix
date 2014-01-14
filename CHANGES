@@ -1,0 +1,64 @@
+Changes for 1.0.0.incubating
+** Bug
+    * [CELIX-28] - celix_strerror in celix_errno.h does not give error correct error strings for errno.h errors
+    * [CELIX-43] - Update bundle creation and deployment
+    * [CELIX-45] - remote_services/discovery does not compile
+    * [CELIX-46] - Add .DS_Store to .gitignore
+    * [CELIX-47] - FindSLP.cmake and FindJansson.cmake include dir location typo
+    * [CELIX-50] - driverAttributes_getDriverId does not return DriverId
+    * [CELIX-58] - BUNDLE_STATE doesn't have an UNKNOWN state
+    * [CELIX-59] - Remote service examples generate segmentation fault on start.
+    * [CELIX-73] - CUint include directory used directly then header included via <CUint/Automated.h> can't be found in Xcode 
+    * [CELIX-74] - The serviceTrackerCustomizer header uses, but does not include, the serviceReference header.
+    * [CELIX-75] - CMake does not install the Deployment Admin bundle
+    * [CELIX-76] - Deployment Admin multiline manifest
+    * [CELIX-78] - CMake does not install the Device Manager bundle 
+    * [CELIX-79] - DeviceManager DriverTracker and DeviceTracker callbacks wrong
+    * [CELIX-82] - segfault when stopping remote services (server)
+    * [CELIX-83] - memory pool bad access issue when starting with cache
+    * [CELIX-84] - Update shell commands to provide better feedback
+    * [CELIX-85] - During shutdown celix sometimes segfaults
+    * [CELIX-86] - missing include
+    * [CELIX-88] - Missing export of endpoint_listener.h
+    * [CELIX-92] - Moving manifest from bundle to bundle_revision
+    * [CELIX-93] - Manifest with multiple files
+    * [CELIX-95] - not initialized variable leads to segFault 
+    * [CELIX-96] - missing include
+    * [CELIX-97] - Inspect command only prints objectClass
+    * [CELIX-98] - Callback method for RSA proxies
+    * [CELIX-99] - Extract common RSA headers
+    * [CELIX-100] - Add release guide to website
+    * [CELIX-103] - log_service segfault on bundle stop/destroy
+    * [CELIX-105] - Fixed array_list_test
+** Improvement
+    * [CELIX-27] - Add create function for the SERVICE_TRACKER_CUSTIMIZER struct
+    * [CELIX-42] - Support Visual Studio
+    * [CELIX-52] - Typedef MANIFEST shall be changed to lower case
+    * [CELIX-53] - Typedef ACTIVATOR shall be lower case
+    * [CELIX-54] - Use one convention for linefeeds
+    * [CELIX-60] - Support framework embedding
+    * [CELIX-62] - rename suffix of pointer type from _t to _pt
+    * [CELIX-64] - Add support for ccputest
+    * [CELIX-66] - Refactor shell service struct
+    * [CELIX-71] - FindAPR does not look in default APR directories
+    * [CELIX-72] - 'Header Files' sub folder not included in all folders in generated Xcode project
+    * [CELIX-87] - Improve framework logging
+    * [CELIX-89] - Align Remote Services with Amdatu Remote Services
+    * [CELIX-91] - exporting serviceRegistration_setProperties(..) 
+    * [CELIX-94] - extend properties support for escaping equals sign
+    * [CELIX-101] - Prefixing public constants
+    * [CELIX-102] - Improve cache options
+    * [CELIX-106] - Add configurable framework logger
+    * [CELIX-107] - Add Apache Rat as make target
+** New Feature
+    * [CELIX-25] - Allow NULL value for the SERVICE_TRACKER_CUSTOMIZER struct
+    * [CELIX-80] - Netstring support
+    * [CELIX-81] - Remote Services - Shared Memory Support
+** Task
+    * [CELIX-40] - Refactor bundle macro to generate Manifest file
+    * [CELIX-67] - Check for dependency manager usage
+    * [CELIX-68] - Check for memory leaks
+    * [CELIX-108] - Prepare 1.0.0 release
+** Wish
+    * [CELIX-51] - Improve maintainability code
+
