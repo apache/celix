@@ -41,7 +41,7 @@ celix_status_t arrayList_create(array_list_pt *list) {
 
 	(*list)->equals = equals;
 	(*list)->size = 0;
-	(*list)->capacity = 1000;
+	(*list)->capacity = 10;
 	(*list)->modCount = 0;
 	(*list)->elementData = (void **) malloc(sizeof(void*) * (*list)->capacity);
 
