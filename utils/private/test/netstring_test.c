@@ -132,7 +132,7 @@ void test_netstring_decodetoHashMap(void)
 {
 	celix_status_t status;
 	char* inNetStr = "31:(key:helloKey=value:helloValue),27:(key:tomKey=value:tomValue),";
-	hash_map_pt outHashMap = hashMap_create(string_hash, string_hash, string_equals, string_equals);
+	hash_map_pt outHashMap = hashMap_create(utils_stringHash, utils_stringHash, utils_stringEquals, utils_stringEquals);
 
 	status = netstring_decodeToHashMap(pool, inNetStr, outHashMap);
 
@@ -150,7 +150,7 @@ void test_netstring_decodetoHashMap(void)
 void test_netstring_encodeFromHashMap(void)
 {
 	celix_status_t status;
-	hash_map_pt inHashMap = hashMap_create(string_hash, string_hash, string_equals, string_equals);
+	hash_map_pt inHashMap = hashMap_create(utils_stringHash, utils_stringHash, utils_stringEquals, utils_stringEquals);
 	char *outNetStr;
 
 	hashMap_put(inHashMap, "helloKey", "helloValue");
@@ -171,7 +171,7 @@ void test_netstring_decodetoArrayList(void)
 	char* inNetStr = "11:(misschien),11:(schrijven),";
 	array_list_pt outArrayList = NULL;
 
-	status = arrayList_create(pool, &outArrayList);
+	status = arrayList_create(&outArrayList);
 	CU_ASSERT_EQUAL(CELIX_SUCCESS, status);
 
 	status = netstring_decodeToArrayList(pool, inNetStr, outArrayList);
@@ -192,7 +192,7 @@ void test_netstring_encodeFromArrayList(void)
 	array_list_pt inArrayList = NULL;
 	char *outNetStr;
 
-	status = arrayList_create(pool, &inArrayList);
+	status = arrayList_create(&inArrayList);
 	CU_ASSERT_EQUAL(CELIX_SUCCESS, status);
 
 	CU_ASSERT_TRUE(arrayList_add(inArrayList, "heel"));
