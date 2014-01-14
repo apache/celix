@@ -74,7 +74,6 @@ celix_status_t bundleCache_create(properties_pt configurationMap, apr_pool_t *mp
 
 apr_status_t bundleCache_destroy(void *cacheP) {
 	bundle_cache_pt cache = (bundle_cache_pt) cacheP;
-    properties_destroy(cache->configurationMap);
     return CELIX_SUCCESS;
 }
 

@@ -45,6 +45,8 @@ static const char * const OSGI_FRAMEWORK_EXPORT_PACKAGE = "Export-Service";
 static const char * const OSGI_FRAMEWORK_IMPORT_PACKAGE = "Import-Service";
 
 static const char * const OSGI_FRAMEWORK_FRAMEWORK_STORAGE = "org.osgi.framework.storage";
+static const char * const OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN = "org.osgi.framework.storage.clean";
+static const char * const OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT = "onFirstInit";
 static const char * const OSGI_FRAMEWORK_FRAMEWORK_UUID = "org.osgi.framework.uuid";
 
 

@@ -308,15 +308,14 @@ celix_status_t fw_init(framework_pt framework) {
 	if (status == CELIX_SUCCESS) {
 	    if ((state == OSGI_FRAMEWORK_BUNDLE_INSTALLED) || (state == OSGI_FRAMEWORK_BUNDLE_RESOLVED)) {
 	        bundle_state_e state;
-	        properties_pt props = properties_create();
-	        properties_set(props, (char *) OSGI_FRAMEWORK_FRAMEWORK_STORAGE, ".cache");
-
-	        status = CELIX_DO_IF(status, bundleCache_create(props, framework->mp, &framework->cache));
+	        status = CELIX_DO_IF(status, bundleCache_create(framework->configurationMap, framework->mp, &framework->cache));
 	        status = CELIX_DO_IF(status, bundle_getState(framework->bundle, &state));
 	        if (status == CELIX_SUCCESS) {
 	            if (state == OSGI_FRAMEWORK_BUNDLE_INSTALLED) {
-	                // clean cache
-	                // bundleCache_delete(framework->cache);
+	                char *clean = properties_get(framework->configurationMap, (char *) OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN);
+	                if (clean != NULL && (strcmp(clean, OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT) == 0)) {
+	                    bundleCache_delete(framework->cache);
+	                }
 	            }
             }
         }
