@@ -16,6 +16,7 @@
  Files having a separate license should be ignored.
  For Celix these include
    - Mongoose
+   - Civetweb
    - Unzip and MiniZip files
    - Doxygen scripts for CMake (Doxyfile.in, UseDoxygen.cmake)
  
@@ -37,8 +38,8 @@ Doxyfile.in
 
 .project
    
-mongoose.c
-mongoose.h
+md5.inl
+
 
 MiniZip64_info.txt
 
@@ -47,5 +48,11 @@ unzip.h
 miniunz.c
 ioapi.c
 ioapi.h
+iowin32.c
+iowin32.h
 
 UseDoxygen.cmake
+CodeCoverage.cmake
+
+manifest_sections.txt
+manifest.txt

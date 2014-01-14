@@ -15,17 +15,16 @@
 # specific language governing permissions and limitations
 # under the License.
 
-bundle(client SOURCES private/src/client_activator private/src/client_impl)
-include_directories("${PROJECT_SOURCE_DIR}/celix")
-include_directories("private/include")
-include_directories("public/include")
-include_directories("../server/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-target_link_libraries(client framework)
+find_package(Java COMPONENTS Runtime)
 
-include_directories("${PROJECT_SOURCE_DIR}/celix")
-include_directories(${PROJECT_SOURCE_DIR}/cmake/cpputest/include)
-link_directories(${PROJECT_SOURCE_DIR}/cmake/cpputest/lib)
-add_executable(client_test private/test/client_test private/src/client_impl)
-target_link_libraries(client_test CppUTest CppUTestExt framework)
-ADD_TARGET_FOR_TEST(client_test)
+if(Java_Runtime_FOUND)
+    set(APACHE_RAT "NOT_FOUND" CACHE FILEPATH "Full path to the Apache RAT JAR file")
+    
+    add_custom_target(rat
+        COMMAND ${Java_JAVA_EXECUTABLE} -jar ${APACHE_RAT} -E rat-excludes.txt -d .
+        
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    )
+else(Java_Runtime_FOUND)
+    MESSAGE(STATUS "Java not found, cannot execute Apache RAT checks")
+endif(Java_Runtime_FOUND)

@@ -15,9 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
-bundle(server SOURCES private/src/server_activator private/src/server_impl)
-include_directories("${PROJECT_SOURCE_DIR}/celix")
-include_directories("private/include")
-include_directories("public/include")
-include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-target_link_libraries(server framework)
+All files in this directory are licensed to the Apache Software Foundation (as included above).
+Normally source/txt files should include this header but for Manifest files this is not possible.
+The following files do not include the header:
+* manifest_sections.txt
+* manifest.txt
+
+This note is added to explicitly mention that the same licensing applies to these files as to any other having the header.  

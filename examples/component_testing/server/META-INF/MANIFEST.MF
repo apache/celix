@@ -1,5 +1,0 @@
-Bundle-SymbolicName: server
-Bundle-Version: 1.0.0
-library: server
-Export-Service: server
-Import-Service: server
