@@ -15,11 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# Set version
-SET(FRAMEWORK_MAJOR "0")
-SET(FRAMEWORK_MINOR "0")
-SET(FRAMEWORK_PATCH "1.incubation")
-
 SET(CMAKE_INSTALL_COMPONENT "Framework")
 GET_FILENAME_COMPONENT(__cmake_path ${CMAKE_COMMAND} PATH)
 FIND_PROGRAM(CPACK_COMMAND cpack ${__cmake_path})
