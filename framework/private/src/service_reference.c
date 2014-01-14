@@ -49,7 +49,7 @@ celix_status_t serviceReference_create(apr_pool_t *pool, bundle_pt bundle, servi
 		(*reference)->registration = registration;
 	}
 
-	framework_logIfError(status, NULL, "Cannot create service reference");
+	framework_logIfError(logger, status, NULL, "Cannot create service reference");
 
 	return status;
 }

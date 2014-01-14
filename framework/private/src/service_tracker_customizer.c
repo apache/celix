@@ -53,7 +53,7 @@ celix_status_t serviceTrackerCustomizer_create(apr_pool_t *pool, void *handle,
 		}
 	}
 
-	framework_logIfError(status, NULL, "Cannot create customizer");
+	framework_logIfError(logger, status, NULL, "Cannot create customizer");
 
 	return status;
 }

@@ -64,7 +64,7 @@ celix_status_t requirement_create(apr_pool_t *pool, hash_map_pt directives, hash
 		}
 	}
 
-	framework_logIfError(status, NULL, "Cannot create requirement");
+	framework_logIfError(logger, status, NULL, "Cannot create requirement");
 
 	return status;
 }
@@ -110,7 +110,7 @@ celix_status_t requirement_isSatisfied(requirement_pt requirement, capability_pt
 		}
 	}
 
-	framework_logIfError(status, NULL, "Cannot check if requirement is satisfied");
+	framework_logIfError(logger, status, NULL, "Cannot check if requirement is satisfied");
 
 	return status;
 }

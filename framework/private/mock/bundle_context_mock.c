@@ -27,9 +27,10 @@
 
 #include "bundle_context.h"
 
-celix_status_t bundleContext_create(framework_pt framework, bundle_pt bundle, bundle_context_pt *bundle_context) {
+celix_status_t bundleContext_create(framework_pt framework, framework_logger_pt logger, bundle_pt bundle, bundle_context_pt *bundle_context) {
 	mock_c()->actualCall("bundleContext_create")
 			->withPointerParameters("framework", framework)
+			->withPointerParameters("logger", logger)
 			->withPointerParameters("bundle", bundle)
 			->_andPointerOutputParameters("bundle_context", (void **) bundle_context);
 	return mock_c()->returnValue().value.intValue;

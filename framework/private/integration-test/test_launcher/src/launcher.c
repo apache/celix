@@ -82,7 +82,7 @@ int main(void) {
     }
 
     if (status != CELIX_SUCCESS) {
-        framework_logIfError(status, NULL, "Failed to run test");
+        printf("Problem creating framework\n");
     }
 
 	apr_pool_destroy(memoryPool);

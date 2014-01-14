@@ -47,7 +47,7 @@ celix_status_t versionRange_createVersionRange(apr_pool_t *pool, version_pt low,
 		(*range)->isHighInclusive = isHighInclusive;
 	}
 
-	framework_logIfError(status, NULL, "Cannot create version range");
+	framework_logIfError(logger, status, NULL, "Cannot create version range");
 
 	return status;
 }
@@ -70,7 +70,7 @@ celix_status_t versionRange_createInfiniteVersionRange(apr_pool_t *pool, version
 		status = versionRange_createVersionRange(pool, version, true, NULL, true, range);
 	}
 
-	framework_logIfError(status, NULL, "Cannot create infinite range");
+	framework_logIfError(logger, status, NULL, "Cannot create infinite range");
 
 	return status;
 }
@@ -121,7 +121,7 @@ celix_status_t versionRange_isInRange(version_range_pt versionRange, version_pt 
 		}
 	}
 
-	framework_logIfError(status, NULL, "Cannot check if version in in range");
+	framework_logIfError(logger, status, NULL, "Cannot check if version in in range");
 
 	return status;
 }
@@ -180,7 +180,7 @@ celix_status_t versionRange_parse(apr_pool_t *pool, char * rangeStr, version_ran
 		}
 	}
 
-	framework_logIfError(status, NULL, "Cannot parse version range");
+	framework_logIfError(logger, status, NULL, "Cannot parse version range");
 
 	return status;
 }

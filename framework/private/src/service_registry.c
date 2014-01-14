@@ -72,7 +72,7 @@ celix_status_t serviceRegistry_create(apr_pool_t *ppool, framework_pt framework,
 		}
 	}
 
-	framework_logIfError(status, NULL, "Cannot create service registry");
+	framework_logIfError(logger, status, NULL, "Cannot create service registry");
 
 	return status;
 }
@@ -181,7 +181,7 @@ celix_status_t serviceRegistry_getRegisteredServices(service_registry_pt registr
 		}
 	}
 
-	framework_logIfError(status, NULL, "Cannot get registered services");
+	framework_logIfError(logger, status, NULL, "Cannot get registered services");
 
 	return status;
 }
@@ -330,7 +330,7 @@ celix_status_t serviceRegistry_createServiceReference(service_registry_pt regist
 	serviceRegistration_getServiceReferences(registration, &references);
 	arrayList_add(references, *reference);
 
-	framework_logIfError(status, NULL, "Cannot create service reference");
+	framework_logIfError(logger, status, NULL, "Cannot create service reference");
 
 	return status;
 }
@@ -383,7 +383,7 @@ celix_status_t serviceRegistry_getServiceReferences(service_registry_pt registry
 	hashMapIterator_destroy(iterator);
 	hashMapValues_destroy(registrations);
 
-	framework_logIfError(status, NULL, "Cannot get service references");
+	framework_logIfError(logger, status, NULL, "Cannot get service references");
 
 	return status;
 }
@@ -573,7 +573,7 @@ celix_status_t serviceRegistry_getListenerHooks(service_registry_pt registry, ap
 		}
 	}
 
-	framework_logIfError(status, NULL, "Cannot get listener hooks");
+	framework_logIfError(logger, status, NULL, "Cannot get listener hooks");
 
 	return status;
 }

@@ -31,17 +31,6 @@
 
 #include "framework_exports.h"
 
-#define fw_log(level, fmsg, args...) framework_log(level, __func__, __FILE__, __LINE__, fmsg, ## args)
-#define fw_logCode(level, code, fmsg, args...) framework_logCode(level, __func__, __FILE__, __LINE__, code, fmsg, ## args)
-#define framework_logIfError(status, error, fmsg, args...) \
-    if (status != CELIX_SUCCESS) { \
-        if (error != NULL) { \
-            fw_logCode(OSGI_FRAMEWORK_LOG_ERROR, status, #fmsg"; cause: "#error, ## args); \
-        } else { \
-            fw_logCode(OSGI_FRAMEWORK_LOG_ERROR, status, #fmsg, ## args); \
-        } \
-    }
-
 enum framework_log_level
 {
     OSGI_FRAMEWORK_LOG_ERROR = 0x00000001,
@@ -52,7 +41,29 @@ enum framework_log_level
 
 typedef enum framework_log_level framework_log_level_t;
 
-FRAMEWORK_EXPORT void framework_log(framework_log_level_t level, const char *func, const char *file, int line, char *fmsg, ...);
-FRAMEWORK_EXPORT void framework_logCode(framework_log_level_t level, const char *func, const char *file, int line, celix_status_t code, char *fmsg, ...);
+typedef struct framework_logger *framework_logger_pt;
+
+extern framework_logger_pt logger;
+
+typedef celix_status_t (*framework_log_function_pt)(framework_log_level_t level, const char *func, const char *file, int line, char *msg);
+
+struct framework_logger {
+    framework_log_function_pt logFunction;
+};
+
+#define fw_log(logger, level, fmsg, args...) framework_log(logger, level, __func__, __FILE__, __LINE__, fmsg, ## args)
+#define fw_logCode(logger, level, code, fmsg, args...) framework_logCode(logger, level, __func__, __FILE__, __LINE__, code, fmsg, ## args)
+#define framework_logIfError(logger, status, error, fmsg, args...) \
+    if (status != CELIX_SUCCESS) { \
+        if (error != NULL) { \
+            fw_logCode(logger, OSGI_FRAMEWORK_LOG_ERROR, status, #fmsg"; cause: "#error, ## args); \
+        } else { \
+            fw_logCode(logger, OSGI_FRAMEWORK_LOG_ERROR, status, #fmsg, ## args); \
+        } \
+    }
+
+FRAMEWORK_EXPORT celix_status_t frameworkLogger_log(framework_log_level_t level, const char *func, const char *file, int line, char *fmsg);
+FRAMEWORK_EXPORT void framework_log(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line, char *fmsg, ...);
+FRAMEWORK_EXPORT void framework_logCode(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line, celix_status_t code, char *fmsg, ...);
 
 #endif /* CELIX_LOG_H_ */

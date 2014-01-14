@@ -58,7 +58,7 @@ celix_status_t wire_create(apr_pool_t *pool, module_pt importer, requirement_pt 
 		}
 	}
 
-	framework_logIfError(status, NULL, "Cannot create wire");
+	framework_logIfError(logger, status, NULL, "Cannot create wire");
 
 	return status;
 }

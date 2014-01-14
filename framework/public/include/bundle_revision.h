@@ -34,6 +34,7 @@
 
 #include "celix_errno.h"
 #include "manifest.h"
+#include "celix_log.h"
 
 /**
  * Typedef for bundle_revision_pt.
@@ -61,7 +62,7 @@ typedef struct bundleRevision * bundle_revision_pt;
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ENOMEM If allocating memory for <code>bundle_revision</code> failed.
  */
-celix_status_t bundleRevision_create(apr_pool_t *pool, char *root, char *location, long revisionNr, char *inputFile, bundle_revision_pt *bundle_revision);
+celix_status_t bundleRevision_create(apr_pool_t *pool, framework_logger_pt logger, char *root, char *location, long revisionNr, char *inputFile, bundle_revision_pt *bundle_revision);
 
 /**
  * Retrieves the revision number of the given revision.

@@ -57,7 +57,7 @@ celix_status_t serviceTracker_create(apr_pool_t *pool, bundle_context_pt context
 		}
 	}
 
-	framework_logIfError(status, NULL, "Cannot create service tracker");
+	framework_logIfError(logger, status, NULL, "Cannot create service tracker");
 
 	return status;
 }
@@ -82,7 +82,7 @@ celix_status_t serviceTracker_createWithFilter(apr_pool_t *pool, bundle_context_
 		(*tracker)->listener = NULL;
 	}
 
-	framework_logIfError(status, NULL, "Cannot create service tracker [filter=%s]", filter);
+	framework_logIfError(logger, status, NULL, "Cannot create service tracker [filter=%s]", filter);
 
 	return status;
 }
@@ -126,7 +126,7 @@ celix_status_t serviceTracker_open(service_tracker_pt tracker) {
 		}
 	}
 
-	framework_logIfError(status, NULL, "Cannot open tracker");
+	framework_logIfError(logger, status, NULL, "Cannot open tracker");
 
 	return status;
 }
@@ -147,7 +147,7 @@ celix_status_t serviceTracker_close(service_tracker_pt tracker) {
 		arrayList_destroy(refs);
 	}
 
-	framework_logIfError(status, NULL, "Cannot close tracker");
+	framework_logIfError(logger, status, NULL, "Cannot close tracker");
 
 	return status;
 }
@@ -280,7 +280,7 @@ static celix_status_t serviceTracker_track(service_tracker_pt tracker, service_r
 		}
 	}
 
-	framework_logIfError(status, NULL, "Cannot track reference");
+	framework_logIfError(logger, status, NULL, "Cannot track reference");
 
 	return status;
 }
@@ -307,7 +307,7 @@ static celix_status_t  serviceTracker_addingService(service_tracker_pt tracker, 
 		status = bundleContext_getService(tracker->context, reference, service);
 	}
 
-    framework_logIfError(status, NULL, "Cannot handle addingService");
+    framework_logIfError(logger, status, NULL, "Cannot handle addingService");
 
     return status;
 }
@@ -346,7 +346,7 @@ static celix_status_t serviceTracker_untrack(service_tracker_pt tracker, service
 		}
 	}
 
-	framework_logIfError(status, NULL, "Cannot untrack reference");
+	framework_logIfError(logger, status, NULL, "Cannot untrack reference");
 
 	return status;
 }

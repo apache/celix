@@ -34,6 +34,9 @@
 extern "C" {
 #include <apr_file_io.h>
 #include "bundle_cache_private.h"
+#include "celix_log.h"
+
+framework_logger_pt logger;
 }
 
 int main(int argc, char** argv) {
@@ -46,6 +49,9 @@ TEST_GROUP(bundle_cache) {
 	void setup(void) {
 		apr_initialize();
 		apr_pool_create(&pool, NULL);
+
+		logger = (framework_logger_pt) apr_palloc(pool, sizeof(*logger));
+        logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
@@ -64,7 +70,7 @@ TEST(bundle_cache, create) {
 		.andReturnValue((char *) NULL);
 
 	bundle_cache_pt cache = NULL;
-	celix_status_t status = bundleCache_create(configuration, pool, &cache);
+	celix_status_t status = bundleCache_create(configuration, pool, logger, &cache);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 }
 
@@ -127,6 +133,7 @@ TEST(bundle_cache, createArchive) {
 	char location[] = "test.zip";
 	bundle_archive_pt archive = (bundle_archive_pt) 0x10;
 	mock().expectOneCall("bundleArchive_create")
+        .withParameter("logger", (void *) NULL)
 		.withParameter("archiveRoot", archiveRoot)
 		.withParameter("id", id)
 		.withParameter("location", location)

@@ -33,6 +33,9 @@
 
 extern "C" {
 #include "bundle_private.h"
+#include "celix_log.h"
+
+framework_logger_pt logger;
 }
 
 int main(int argc, char** argv) {
@@ -45,6 +48,9 @@ TEST_GROUP(bundle) {
 	void setup(void) {
 		apr_initialize();
 		apr_pool_create(&pool, NULL);
+
+		logger = (framework_logger_pt) apr_palloc(pool, sizeof(*logger));
+        logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
@@ -58,6 +64,7 @@ TEST(bundle, create) {
 	bundle_archive_pt archive = (bundle_archive_pt) 0x10;
 	mock().expectOneCall("bundleArchive_createSystemBundleArchive")
 			.withParameter("pool", pool)
+			.withParameter("logger", logger)
 			.andOutputParameter("bundle_archive", archive)
 			.andReturnValue(CELIX_SUCCESS);
 
@@ -72,7 +79,7 @@ TEST(bundle, create) {
 			.withParameter("module", module);
 
 	bundle_pt actual = NULL;
-	celix_status_t status = bundle_create(&actual, pool);
+	celix_status_t status = bundle_create(&actual, logger, pool);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	POINTERS_EQUAL(NULL, actual->context);
 	POINTERS_EQUAL(NULL, actual->activator);

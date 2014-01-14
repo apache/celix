@@ -36,6 +36,7 @@
 #include "properties.h"
 #include "array_list.h"
 #include "bundle_archive.h"
+#include "celix_log.h"
 
 /**
  * Type definition for the bundle_cache_pt abstract data type.
@@ -53,7 +54,7 @@ typedef struct bundleCache *bundle_cache_pt;
  * 		- CELIX_ILLEGAL_ARGUMENT If <code>bundle_cache</code> not is null.
  * 		- CELIX_ENOMEM If allocating memory for <code>bundle_cache</code> failed.
  */
-celix_status_t bundleCache_create(properties_pt configurationMap, apr_pool_t *mp, bundle_cache_pt *bundle_cache);
+celix_status_t bundleCache_create(properties_pt configurationMap, apr_pool_t *mp, framework_logger_pt logger, bundle_cache_pt *bundle_cache);
 
 /**
  * Recreates and retrieves the list of archives for the given bundle cache.

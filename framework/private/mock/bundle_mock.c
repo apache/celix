@@ -27,7 +27,7 @@
 
 #include "bundle_private.h"
 
-celix_status_t bundle_create(bundle_pt * bundle, apr_pool_t *mp) {
+celix_status_t bundle_create(bundle_pt * bundle, framework_logger_pt logger, apr_pool_t *mp) {
 	return mock_c()->returnValue().value.intValue;
 }
 

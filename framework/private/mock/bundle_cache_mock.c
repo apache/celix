@@ -27,7 +27,7 @@
 
 #include "bundle_cache.h"
 
-celix_status_t bundleCache_create(properties_pt configurationMap, apr_pool_t *mp, bundle_cache_pt *bundle_cache) {
+celix_status_t bundleCache_create(properties_pt configurationMap, apr_pool_t *mp, framework_logger_pt logger, bundle_cache_pt *bundle_cache) {
 	mock_c()->actualCall("bundle_getCurrentModule");
 	return mock_c()->returnValue().value.intValue;
 }

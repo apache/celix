@@ -28,12 +28,28 @@
 #include "celix_errno.h"
 #include "celix_log.h"
 
-void framework_log(framework_log_level_t level, const char *func, const char *file, int line, char *fmsg, ...) {
-    char *levelStr = NULL;
+void framework_log(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line, char *fmsg, ...) {
     char msg[512];
     va_list listPointer;
     va_start(listPointer, fmsg);
     vsprintf(msg, fmsg, listPointer);
+
+    logger->logFunction(level, func, file, line, msg);
+}
+
+void framework_logCode(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line, celix_status_t code, char *fmsg, ...) {
+    char message[256];
+    celix_strerror(code, message, 256);
+    char msg[512];
+    va_list listPointer;
+    va_start(listPointer, fmsg);
+    vsprintf(msg, fmsg, listPointer);
+
+    framework_log(logger, level, func, file, line, "%s [%d]: %s", message, code, msg);
+}
+
+celix_status_t frameworkLogger_log(framework_log_level_t level, const char *func, const char *file, int line, char *msg) {
+    char *levelStr = NULL;
     switch (level) {
         case OSGI_FRAMEWORK_LOG_ERROR:
             levelStr = "ERROR";
@@ -56,16 +72,5 @@ void framework_log(framework_log_level_t level, const char *func, const char *fi
         printf("%s: %s\n", levelStr, msg);
     }
 
+    return CELIX_SUCCESS;
 }
-
-void framework_logCode(framework_log_level_t level, const char *func, const char *file, int line, celix_status_t code, char *fmsg, ...) {
-    char message[256];
-    celix_strerror(code, message, 256);
-    char msg[512];
-    va_list listPointer;
-    va_start(listPointer, fmsg);
-    vsprintf(msg, fmsg, listPointer);
-
-    framework_log(level, func, file, line, "%s [%d]: %s", message, code, msg);
-}
-

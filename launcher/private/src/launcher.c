@@ -107,7 +107,7 @@ int main(void) {
                         // Only add bundle if it is installed correctly
                         arrayList_add(installed, current);
                     } else {
-                        fw_logCode(OSGI_FRAMEWORK_LOG_ERROR, CELIX_BUNDLE_EXCEPTION, "Could not install bundle from %s", location);
+                        printf("Could not install bundle from %s\n", location);
                     }
                     linkedListIterator_remove(iter);
                 }
@@ -129,13 +129,13 @@ int main(void) {
     }
 
     if (status != CELIX_SUCCESS) {
-        fw_logCode(OSGI_FRAMEWORK_LOG_ERROR, status, "Problem creating framework");
+        printf("Problem creating framework\n");
     }
 
 	apr_pool_destroy(memoryPool);
 	apr_terminate();
 
-	fw_log(OSGI_FRAMEWORK_LOG_INFO, "Launcher: Exit");
+	printf("Launcher: Exit\n");
 
     return 0;
 }

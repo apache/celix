@@ -35,7 +35,7 @@
 
 static apr_status_t bundleRevision_destroy(void *revisionP);
 
-celix_status_t bundleRevision_create(apr_pool_t *pool, char *root, char *location, long revisionNr, char *inputFile, bundle_revision_pt *bundle_revision) {
+celix_status_t bundleRevision_create(apr_pool_t *pool, framework_logger_pt logger, char *root, char *location, long revisionNr, char *inputFile, bundle_revision_pt *bundle_revision) {
     celix_status_t status = CELIX_SUCCESS;
 	bundle_revision_pt revision = NULL;
 
@@ -62,6 +62,7 @@ celix_status_t bundleRevision_create(apr_pool_t *pool, char *root, char *locatio
                 revision->revisionNr = revisionNr;
                 revision->root = apr_pstrdup(pool, root);
                 revision->location = apr_pstrdup(pool, location);
+                revision->logger = logger;
                 *bundle_revision = revision;
 
                 char *manifest = apr_pstrcat(pool, revision->root, "/META-INF/MANIFEST.MF", NULL);
@@ -70,7 +71,7 @@ celix_status_t bundleRevision_create(apr_pool_t *pool, char *root, char *locatio
         }
     }
 
-    framework_logIfError(status, NULL, "Failed to create revision");
+    framework_logIfError(revision->logger, status, NULL, "Failed to create revision");
 
 	return status;
 }
@@ -88,7 +89,7 @@ celix_status_t bundleRevision_getNumber(bundle_revision_pt revision, long *revis
     	*revisionNr = revision->revisionNr;
     }
 
-    framework_logIfError(status, NULL, "Failed to get revision number");
+    framework_logIfError(logger, status, NULL, "Failed to get revision number");
 
 	return status;
 }
@@ -101,7 +102,7 @@ celix_status_t bundleRevision_getLocation(bundle_revision_pt revision, char **lo
 		*location = revision->location;
 	}
 
-	framework_logIfError(status, NULL, "Failed to get revision location");
+	framework_logIfError(logger, status, NULL, "Failed to get revision location");
 
 	return status;
 }
@@ -114,7 +115,7 @@ celix_status_t bundleRevision_getRoot(bundle_revision_pt revision, char **root) 
 		*root = revision->root;
 	}
 
-	framework_logIfError(status, NULL, "Failed to get revision root");
+	framework_logIfError(logger, status, NULL, "Failed to get revision root");
 
 	return status;
 }
@@ -127,7 +128,7 @@ celix_status_t bundleRevision_getManifest(bundle_revision_pt revision, manifest_
 		*manifest = revision->manifest;
 	}
 
-	framework_logIfError(status, NULL, "Failed to get manifest");
+	framework_logIfError(logger, status, NULL, "Failed to get manifest");
 
 	return status;
 }

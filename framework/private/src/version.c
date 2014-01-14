@@ -56,15 +56,15 @@ celix_status_t version_createVersion(apr_pool_t *pool, int major, int minor, int
 			(*version)->qualifier = apr_pstrdup(pool, qualifier);
 
 			if (major < 0) {
-			    fw_log(OSGI_FRAMEWORK_LOG_ERROR, "Negative major");
+			    fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Negative major");
 				status = CELIX_ILLEGAL_ARGUMENT;
 			}
 			if (minor < 0) {
-			    fw_log(OSGI_FRAMEWORK_LOG_ERROR, "Negative minor");
+			    fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Negative minor");
 				status = CELIX_ILLEGAL_ARGUMENT;
 			}
 			if (micro < 0) {
-			    fw_log(OSGI_FRAMEWORK_LOG_ERROR, "Negative micro");
+			    fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Negative micro");
 				status = CELIX_ILLEGAL_ARGUMENT;
 			}
 
@@ -82,14 +82,14 @@ celix_status_t version_createVersion(apr_pool_t *pool, int major, int minor, int
 				if ((ch == '_') || (ch == '-')) {
 					continue;
 				}
-				fw_log(OSGI_FRAMEWORK_LOG_ERROR, "Invalid qualifier");
+				fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Invalid qualifier");
 				status = CELIX_ILLEGAL_ARGUMENT;
 				break;
 			}
 		}
 	}
 
-	framework_logIfError(status, NULL, "Cannot create version");
+	framework_logIfError(logger, status, NULL, "Cannot create version");
 
 	return status;
 }
@@ -128,7 +128,7 @@ celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionS
 			if (('0' <= ch) && (ch <= '9')) {
 				continue;
 			}
-			fw_log(OSGI_FRAMEWORK_LOG_ERROR, "Invalid format");
+			fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Invalid format");
 			status = CELIX_ILLEGAL_ARGUMENT;
 			break;
 		}
@@ -140,7 +140,7 @@ celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionS
 				if (('0' <= ch) && (ch <= '9')) {
 					continue;
 				}
-				fw_log(OSGI_FRAMEWORK_LOG_ERROR, "Invalid format");
+				fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Invalid format");
 				status = CELIX_ILLEGAL_ARGUMENT;
 				break;
 			}
@@ -152,7 +152,7 @@ celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionS
 					if (('0' <= ch) && (ch <= '9')) {
 						continue;
 					}
-					fw_log(OSGI_FRAMEWORK_LOG_ERROR, "Invalid format");
+					fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Invalid format");
 					status = CELIX_ILLEGAL_ARGUMENT;
 					break;
 				}
@@ -174,7 +174,7 @@ celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionS
 		status = version_createVersion(pool, major, minor, micro, qualifier, version);
 	}
 
-	framework_logIfError(status, NULL, "Cannot create version [versionString=%s]", versionStr);
+	framework_logIfError(logger, status, NULL, "Cannot create version [versionString=%s]", versionStr);
 
 	return status;
 }
@@ -230,7 +230,7 @@ celix_status_t version_compareTo(version_pt version, version_pt compare, int *re
 		}
 	}
 
-	framework_logIfError(status, NULL, "Cannot compare versions");
+	framework_logIfError(logger, status, NULL, "Cannot compare versions");
 
 	return status;
 }

@@ -49,7 +49,7 @@ celix_status_t manifest_create(apr_pool_t *pool, manifest_pt *manifest) {
 		(*manifest)->attributes = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 	}
 
-	framework_logIfError(status, NULL, "Cannot create manifest");
+	framework_logIfError(logger, status, NULL, "Cannot create manifest");
 
 	return status;
 }
@@ -74,7 +74,7 @@ celix_status_t manifest_createFromFile(apr_pool_t *pool, char *filename, manifes
 		manifest_read(*manifest, filename);
 	}
 
-	framework_logIfError(status, NULL, "Cannot create manifest from file");
+	framework_logIfError(logger, status, NULL, "Cannot create manifest from file");
 
 	return status;
 }
@@ -183,7 +183,7 @@ celix_status_t manifest_read(manifest_pt manifest, char *filename) {
 		status = CELIX_FILE_IO_EXCEPTION;
 	}
 
-	framework_logIfError(status, NULL, "Cannot read manifest");
+	framework_logIfError(logger, status, NULL, "Cannot read manifest");
 
 	return status;
 }

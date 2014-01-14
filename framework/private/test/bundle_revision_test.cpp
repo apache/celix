@@ -33,6 +33,9 @@
 
 extern "C" {
 #include "bundle_revision_private.h"
+#include "celix_log.h"
+
+framework_logger_pt logger;
 }
 
 int main(int argc, char** argv) {
@@ -45,6 +48,9 @@ TEST_GROUP(bundle_revision) {
 	void setup(void) {
 		apr_initialize();
 		apr_pool_create(&pool, NULL);
+
+		logger = (framework_logger_pt) apr_palloc(pool, sizeof(*logger));
+        logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
@@ -72,7 +78,7 @@ TEST(bundle_revision, create) {
             .andReturnValue(CELIX_SUCCESS);
 
 	bundle_revision_pt revision = NULL;
-	celix_status_t status = bundleRevision_create(pool, root, location, revisionNr, inputFile, &revision);
+	celix_status_t status = bundleRevision_create(pool, logger, root, location, revisionNr, inputFile, &revision);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	LONGS_EQUAL(revisionNr, revision->revisionNr);
 	STRCMP_EQUAL(root, revision->root);
@@ -98,7 +104,7 @@ TEST(bundle_revision, createWithInput) {
         .andReturnValue(CELIX_SUCCESS);
 
 	bundle_revision_pt revision = NULL;
-	celix_status_t status = bundleRevision_create(pool, root, location, revisionNr, inputFile, &revision);
+	celix_status_t status = bundleRevision_create(pool, logger, root, location, revisionNr, inputFile, &revision);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	LONGS_EQUAL(revisionNr, revision->revisionNr);
 	STRCMP_EQUAL(root, revision->root);

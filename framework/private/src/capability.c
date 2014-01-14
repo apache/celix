@@ -61,7 +61,7 @@ celix_status_t capability_create(apr_pool_t *pool, module_pt module, hash_map_pt
 		}
 	}
 
-	framework_logIfError(status, NULL, "Failed to create capability");
+	framework_logIfError(logger, status, NULL, "Failed to create capability");
 
 	return status;
 }

@@ -38,6 +38,10 @@ extern "C"
 	#include "version_range_private.h"
 	#include "version_private.h"
 
+    #include "celix_log.h"
+
+    framework_logger_pt logger;
+
 	celix_status_t version_createEmptyVersion(apr_pool_t *pool, version_pt *version) {
 		mock_c()->actualCall("version_createEmptyVersion")
 				->withPointerParameters("pool", pool)
@@ -74,6 +78,9 @@ TEST_GROUP(version_range) {
 	void setup(void) {
 		apr_initialize();
 		apr_pool_create(&pool, NULL);
+
+		logger = (framework_logger_pt) apr_palloc(pool, sizeof(*logger));
+        logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {

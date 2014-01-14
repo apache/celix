@@ -32,6 +32,9 @@
 extern "C"
 {
 #include "version_private.h"
+#include "celix_log.h"
+
+framework_logger_pt logger;
 }
 
 int main(int argc, char** argv) {
@@ -44,6 +47,9 @@ TEST_GROUP(version) {
 	void setup(void) {
 		apr_initialize();
 		apr_pool_create(&pool, NULL);
+
+		logger = (framework_logger_pt) apr_palloc(pool, sizeof(*logger));
+        logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {

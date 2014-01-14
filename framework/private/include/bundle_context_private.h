@@ -29,11 +29,13 @@
 #define BUNDLE_CONTEXT_PRIVATE_H_
 
 #include "bundle_context.h"
+#include "celix_log.h"
 
 struct bundleContext {
 	struct framework * framework;
 	struct bundle * bundle;
 	apr_pool_t *pool;
+	framework_logger_pt logger;
 };
 
 

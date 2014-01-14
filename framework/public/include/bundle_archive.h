@@ -34,11 +34,12 @@
 #include "celix_errno.h"
 #include "celixbool.h"
 #include "framework_exports.h"
+#include "celix_log.h"
 
 typedef struct bundleArchive * bundle_archive_pt;
 
-celix_status_t bundleArchive_create(char * archiveRoot, long id, char * location, char *inputFile, apr_pool_t *mp, bundle_archive_pt *bundle_archive);
-celix_status_t bundleArchive_createSystemBundleArchive(apr_pool_t *mp, bundle_archive_pt *bundle_archive);
+celix_status_t bundleArchive_create(framework_logger_pt logger, char * archiveRoot, long id, char * location, char *inputFile, apr_pool_t *mp, bundle_archive_pt *bundle_archive);
+celix_status_t bundleArchive_createSystemBundleArchive(apr_pool_t *mp, framework_logger_pt logger, bundle_archive_pt *bundle_archive);
 celix_status_t bundleArchive_recreate(char * archiveRoot, apr_pool_t *mp, bundle_archive_pt *bundle_archive);
 
 FRAMEWORK_EXPORT celix_status_t bundleArchive_getId(bundle_archive_pt archive, long *id);

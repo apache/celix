@@ -34,6 +34,9 @@
 extern "C" {
 #include "manifest.h"
 #include "hash_map.h"
+#include "celix_log.h"
+
+framework_logger_pt logger;
 }
 
 int main(int argc, char** argv) {
@@ -46,6 +49,9 @@ TEST_GROUP(manifest) {
 	void setup(void) {
 		apr_initialize();
 		apr_pool_create(&pool, NULL);
+
+		logger = (framework_logger_pt) apr_palloc(pool, sizeof(*logger));
+        logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
@@ -56,7 +62,7 @@ TEST_GROUP(manifest) {
 };
 
 TEST(manifest, createFromFile) {
-    char *manifestFile = "../../celix/framework/private/resources-test/manifest.txt";
+    char manifestFile[] = "../../celix/framework/private/resources-test/manifest.txt";
     manifest_pt manifest = NULL;
 //    properties_pt properties = properties_create();
     properties_pt properties = (properties_pt) 0x40;
@@ -97,7 +103,7 @@ TEST(manifest, createFromFile) {
 }
 
 TEST(manifest, createFromFileWithSections) {
-    char *manifestFile = "../../celix/framework/private/resources-test/manifest_sections.txt";
+    char manifestFile[] = "../../celix/framework/private/resources-test/manifest_sections.txt";
     manifest_pt manifest = NULL;
 //    properties_pt properties = properties_create();
     properties_pt properties = (properties_pt) 0x40;

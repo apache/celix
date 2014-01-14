@@ -44,7 +44,7 @@
 celix_status_t bundle_createModule(bundle_pt bundle, module_pt *module);
 celix_status_t bundle_closeRevisions(bundle_pt bundle);
 
-celix_status_t bundle_create(bundle_pt * bundle, apr_pool_t *mp) {
+celix_status_t bundle_create(bundle_pt * bundle, framework_logger_pt logger, apr_pool_t *mp) {
     celix_status_t status = CELIX_SUCCESS;
     bundle_archive_pt archive = NULL;
 
@@ -52,7 +52,7 @@ celix_status_t bundle_create(bundle_pt * bundle, apr_pool_t *mp) {
 	if (*bundle == NULL) {
 		return CELIX_ENOMEM;
 	}
-	status = bundleArchive_createSystemBundleArchive(mp, &archive);
+	status = bundleArchive_createSystemBundleArchive(mp, logger, &archive);
 	if (status == CELIX_SUCCESS) {
         module_pt module;
 		apr_status_t apr_status;
@@ -81,7 +81,7 @@ celix_status_t bundle_create(bundle_pt * bundle, apr_pool_t *mp) {
         }
 	}
 
-	framework_logIfError(status, NULL, "Failed to create bundle");
+	framework_logIfError(logger, status, NULL, "Failed to create bundle");
 
 	return status;
 }
@@ -123,7 +123,7 @@ celix_status_t bundle_createFromArchive(bundle_pt * bundle, framework_pt framewo
 	    status = CELIX_FILE_IO_EXCEPTION;
 	}
 
-	framework_logIfError(status, NULL, "Failed to create bundle");
+	framework_logIfError(framework->logger, status, NULL, "Failed to create bundle");
 
 	return status;
 }
@@ -151,7 +151,7 @@ celix_status_t bundle_getArchive(bundle_pt bundle, bundle_archive_pt *archive) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	}
 
-	framework_logIfError(status, NULL, "Failed to get bundle archive");
+	framework_logIfError(logger, status, NULL, "Failed to get bundle archive");
 
 	return status;
 }
@@ -165,7 +165,7 @@ celix_status_t bundle_getCurrentModule(bundle_pt bundle, module_pt *module) {
 		*module = arrayList_get(bundle->modules, arrayList_size(bundle->modules) - 1);
 	}
 
-	framework_logIfError(status, NULL, "Failed to get bundle module");
+	framework_logIfError(logger, status, NULL, "Failed to get bundle module");
 
 	return status;
 }
@@ -279,7 +279,7 @@ celix_status_t bundle_createModule(bundle_pt bundle, module_pt *module) {
         }
 	}
 
-	framework_logIfError(status, NULL, "Failed to create module");
+	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to create module");
 
 	return status;
 }
@@ -302,7 +302,7 @@ celix_status_t bundle_startWithOptions(bundle_pt bundle, int options) {
     	}
     }
 
-    framework_logIfError(status, NULL, "Failed to start bundle");
+    framework_logIfError(bundle->framework->logger, status, NULL, "Failed to start bundle");
 
     return status;
 }
@@ -322,7 +322,7 @@ celix_status_t bundle_update(bundle_pt bundle, char *inputFile) {
 		}
 	}
 
-	framework_logIfError(status, NULL, "Failed to update bundle");
+	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to update bundle");
 
 	return status;
 }
@@ -345,7 +345,7 @@ celix_status_t bundle_stopWithOptions(bundle_pt bundle, int options) {
 		}
 	}
 
-	framework_logIfError(status, NULL, "Failed to stop bundle");
+	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to stop bundle");
 
 	return status;
 }
@@ -364,7 +364,7 @@ celix_status_t bundle_uninstall(bundle_pt bundle) {
 		}
 	}
 
-	framework_logIfError(status, NULL, "Failed to uninstall bundle");
+	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to uninstall bundle");
 
 	return status;
 }
@@ -380,7 +380,7 @@ celix_status_t bundle_setPersistentStateInactive(bundle_pt bundle) {
 		}
 	}
 
-	framework_logIfError(status, NULL, "Failed to set persistent state to inactive");
+	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to set persistent state to inactive");
 
 	return status;
 }
@@ -396,7 +396,7 @@ celix_status_t bundle_setPersistentStateUninstalled(bundle_pt bundle) {
 		}
 	}
 
-	framework_logIfError(status, NULL, "Failed to set persistent state to uninstalled");
+	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to set persistent state to uninstalled");
 
     return status;
 }
@@ -443,7 +443,7 @@ celix_status_t bundle_revise(bundle_pt bundle, char * location, char *inputFile)
 		}
 	}
 
-	framework_logIfError(status, NULL, "Failed to revise bundle");
+	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to revise bundle");
 
 	return status;
 }
@@ -472,7 +472,7 @@ celix_status_t bundle_isSystemBundle(bundle_pt bundle, bool *systemBundle) {
 		}
 	}
 
-	framework_logIfError(status, NULL, "Failed to check if bundle is the systembundle");
+	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to check if bundle is the systembundle");
 
 	return status;
 }
@@ -497,7 +497,7 @@ celix_status_t bundle_isLockable(bundle_pt bundle, bool *lockable) {
 		}
 	}
 
-	framework_logIfError(status, NULL, "Failed to check if bundle is lockable");
+	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to check if bundle is lockable");
 
 	return status;
 }
@@ -518,7 +518,7 @@ celix_status_t bundle_getLockingThread(bundle_pt bundle, apr_os_thread_t *thread
 		}
 	}
 
-	framework_logIfError(status, NULL, "Failed to get locking thread");
+	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to get locking thread");
 
 	return status;
 }
@@ -542,7 +542,7 @@ celix_status_t bundle_lock(bundle_pt bundle, bool *locked) {
 
 	apr_thread_mutex_unlock(bundle->lock);
 
-	framework_logIfError(status, NULL, "Failed to lock bundle");
+	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to lock bundle");
 
 	return status;
 }
@@ -572,7 +572,7 @@ celix_status_t bundle_unlock(bundle_pt bundle, bool *unlocked) {
 
 	apr_thread_mutex_unlock(bundle->lock);
 
-	framework_logIfError(status, NULL, "Failed to unlock bundle");
+	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to unlock bundle");
 
 	return status;
 }
@@ -589,7 +589,7 @@ celix_status_t bundle_close(bundle_pt bundle) {
 		bundleArchive_close(archive);
     }
 
-    framework_logIfError(status, NULL, "Failed to close bundle");
+    framework_logIfError(bundle->framework->logger, status, NULL, "Failed to close bundle");
 
     return status;
 }
@@ -606,7 +606,7 @@ celix_status_t bundle_closeAndDelete(bundle_pt bundle) {
     	bundleArchive_closeAndDelete(archive);
     }
 
-    framework_logIfError(status, NULL, "Failed to close and delete bundle");
+    framework_logIfError(bundle->framework->logger, status, NULL, "Failed to close and delete bundle");
 
     return status;
 }
@@ -647,7 +647,7 @@ celix_status_t bundle_refresh(bundle_pt bundle) {
 		}
 	}
 
-	framework_logIfError(status, NULL, "Failed to refresh bundle");
+	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to refresh bundle");
 
     return status;
 }
@@ -660,7 +660,7 @@ celix_status_t bundle_getBundleId(bundle_pt bundle, long *id) {
 		status = bundleArchive_getId(archive, id);
 	}
 
-	framework_logIfError(status, NULL, "Failed to get bundle id");
+	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to get bundle id");
 
 	return status;
 }
@@ -670,7 +670,7 @@ celix_status_t bundle_getRegisteredServices(bundle_pt bundle, apr_pool_t *pool, 
 
 	status = fw_getBundleRegisteredServices(bundle->framework, pool, bundle, list);
 
-	framework_logIfError(status, NULL, "Failed to get registered services");
+	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to get registered services");
 
 	return status;
 }
@@ -680,7 +680,7 @@ celix_status_t bundle_getServicesInUse(bundle_pt bundle, array_list_pt *list) {
 
 	status = fw_getBundleServicesInUse(bundle->framework, bundle, list);
 
-	framework_logIfError(status, NULL, "Failed to get in use services");
+	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to get in use services");
 
 	return status;
 }
@@ -694,7 +694,7 @@ celix_status_t bundle_getMemoryPool(bundle_pt bundle, apr_pool_t **pool) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	}
 
-	framework_logIfError(status, NULL, "Failed to get memory pool");
+	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to get memory pool");
 
 	return status;
 }
@@ -708,7 +708,7 @@ celix_status_t bundle_setFramework(bundle_pt bundle, framework_pt framework) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	}
 
-	framework_logIfError(status, NULL, "Failed to set framework");
+	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to set framework");
 
 	return status;
 }
@@ -722,7 +722,7 @@ celix_status_t bundle_getFramework(bundle_pt bundle, framework_pt *framework) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	}
 
-	framework_logIfError(status, NULL, "Failed to get framework");
+	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to get framework");
 
 	return status;
 }

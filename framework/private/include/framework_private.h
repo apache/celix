@@ -45,6 +45,7 @@
 #include "service_registration.h"
 #include "bundle_context.h"
 #include "bundle_cache.h"
+#include "celix_log.h"
 
 struct framework {
     struct bundle * bundle;
@@ -80,6 +81,8 @@ struct framework {
     apr_thread_cond_t *dispatcher;
     apr_thread_mutex_t *dispatcherLock;
     apr_thread_t *dispatcherThread;
+
+    framework_logger_pt logger;
 };
 
 celix_status_t framework_start(framework_pt framework);

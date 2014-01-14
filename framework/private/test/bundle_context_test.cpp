@@ -33,6 +33,9 @@
 
 extern "C" {
 #include "bundle_context_private.h"
+#include "celix_log.h"
+
+framework_logger_pt logger;
 }
 
 int main(int argc, char** argv) {
@@ -45,6 +48,9 @@ TEST_GROUP(bundle_context) {
 	void setup(void) {
 		apr_initialize();
 		apr_pool_create(&pool, NULL);
+
+		logger = (framework_logger_pt) apr_palloc(pool, sizeof(*logger));
+        logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
@@ -64,7 +70,7 @@ TEST(bundle_context, create) {
 		.andReturnValue(CELIX_SUCCESS);
 
 	bundle_context_pt context = NULL;
-	bundleContext_create(framework, bundle, &context);
+	bundleContext_create(framework, logger, bundle, &context);
 	POINTERS_EQUAL(framework, context->framework)
 	POINTERS_EQUAL(bundle, context->bundle)
 	CHECK(context->pool);

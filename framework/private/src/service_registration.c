@@ -138,7 +138,7 @@ celix_status_t serviceRegistration_unregister(service_registration_pt registrati
 		serviceRegistry_unregisterService(registration->registry, registration->bundle, registration);
 	}
 
-	framework_logIfError(status, NULL, "Cannot unregister service registration");
+	framework_logIfError(logger, status, NULL, "Cannot unregister service registration");
 
 	return status;
 }
@@ -162,7 +162,7 @@ celix_status_t serviceRegistration_getProperties(service_registration_pt registr
 		status = CELIX_ILLEGAL_ARGUMENT;
 	}
 
-	framework_logIfError(status, NULL, "Cannot get registration properties");
+	framework_logIfError(logger, status, NULL, "Cannot get registration properties");
 
 	return status;
 }
@@ -186,7 +186,7 @@ celix_status_t serviceRegistration_getRegistry(service_registration_pt registrat
 		status = CELIX_ILLEGAL_ARGUMENT;
 	}
 
-	framework_logIfError(status, NULL, "Cannot get registry");
+	framework_logIfError(logger, status, NULL, "Cannot get registry");
 
 	return status;
 }
@@ -200,7 +200,7 @@ celix_status_t serviceRegistration_getServiceReferences(service_registration_pt 
 		status = CELIX_ILLEGAL_ARGUMENT;
 	}
 
-	framework_logIfError(status, NULL, "Cannot get service reference");
+	framework_logIfError(logger, status, NULL, "Cannot get service reference");
 
 	return status;
 }
@@ -214,7 +214,7 @@ celix_status_t serviceRegistration_getBundle(service_registration_pt registratio
 		status = CELIX_ILLEGAL_ARGUMENT;
 	}
 
-	framework_logIfError(status, NULL, "Cannot get bundle");
+	framework_logIfError(logger, status, NULL, "Cannot get bundle");
 
 	return status;
 }
@@ -228,7 +228,7 @@ celix_status_t serviceRegistration_getServiceName(service_registration_pt regist
 		status = CELIX_ILLEGAL_ARGUMENT;
 	}
 
-	framework_logIfError(status, NULL, "Cannot get service name");
+	framework_logIfError(logger, status, NULL, "Cannot get service name");
 
 	return status;
 }

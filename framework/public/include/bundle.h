@@ -40,8 +40,9 @@ typedef struct bundle * bundle_pt;
 #include "module.h"
 #include "service_reference.h"
 #include "bundle_context.h"
+#include "celix_log.h"
 
-FRAMEWORK_EXPORT celix_status_t bundle_create(bundle_pt * bundle, apr_pool_t *mp);
+FRAMEWORK_EXPORT celix_status_t bundle_create(bundle_pt * bundle, framework_logger_pt logger, apr_pool_t *mp);
 FRAMEWORK_EXPORT celix_status_t bundle_createFromArchive(bundle_pt * bundle, framework_pt framework, bundle_archive_pt archive, apr_pool_t *bundlePool);
 FRAMEWORK_EXPORT celix_status_t bundle_destroy(bundle_pt bundle);
 
