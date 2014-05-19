@@ -24,19 +24,18 @@ include_directories("public/include")
 
 BUNDLE_LIBRARY(org.apache.incubator.celix.helloworld.sub
     SOURCES private/src/test
-    VERSION 0.1
     LINK_LIBRARIES celix_framework
     )
 
 BUNDLE_PRIVATE_LIBRARY(private
     SOURCES private/src/activator
-    LINK_LIBRARIES celix_framework org.apache.incubator.celix.helloworld.sub-0.1
+    LINK_LIBRARIES celix_framework org.apache.incubator.celix.helloworld.sub
     )
     
 BUNDLE(org.apache.incubator.celix.helloworld
-    ACTIVATOR "apache_celix_examples_hello_world-private-0.0.1"
+    ACTIVATOR "apache_celix_examples_hello_world-private"
     PRIVATE_LIBRARIES "private"
-    EXPORT_LIBRARIES org.apache.incubator.celix.helloworld.sub|version="0.1"
+    EXPORT_LIBRARIES org.apache.incubator.celix.helloworld.sub
     )
 
 

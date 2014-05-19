@@ -21,10 +21,10 @@ SET_HEADERS("Bundle-Name: Apache Celix Shell TUI")
     
 bundle(hello_world_test 
     SOURCES private/src/activator 
-    IMPORT_LIBRARIES "org.apache.incubator.celix.helloworld.sub|version=\"[0.0.1,1.0.0)\"")
+    IMPORT_LIBRARIES "org.apache.incubator.celix.helloworld.sub")
     #IMPORT_LIBRARIES "org.apache.incubator.celix.helloworld.sub;version=\"[1.0,2.0\)\"")
 target_link_libraries(hello_world_test celix_framework)
-target_link_libraries(hello_world_test org.apache.incubator.celix.helloworld.sub-0.1)
+target_link_libraries(hello_world_test org.apache.incubator.celix.helloworld.sub)
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/examples/hello_world/public/include")
 include_directories("private/include")
