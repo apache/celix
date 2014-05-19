@@ -24,6 +24,9 @@ cmake_policy(SET CMP0012 NEW)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
 
+set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+set(CMAKE_INSTALL_NAME_DIR "@rpath")
+
 SET(CMAKE_BUILD_TYPE "Debug")
 IF(UNIX)
 	SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 ${CMAKE_C_FLAGS}")
@@ -66,5 +69,7 @@ add_subdirectory(dependency_manager)
 add_subdirectory(launcher)
 add_subdirectory(framework)
 add_subdirectory(utils)
+
+add_subdirectory(libraries)
 
 deploy_targets()
