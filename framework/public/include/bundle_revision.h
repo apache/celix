@@ -35,6 +35,7 @@
 #include "celix_errno.h"
 #include "manifest.h"
 #include "celix_log.h"
+#include "array_list.h"
 
 /**
  * Typedef for bundle_revision_pt.
@@ -111,6 +112,18 @@ celix_status_t bundleRevision_getRoot(bundle_revision_pt revision, char **root);
  * 		- CELIX_ILLEGAL_ARGUMENT If <code>revision</code> is illegal.
  */
 celix_status_t bundleRevision_getManifest(bundle_revision_pt revision, manifest_pt *manifest);
+
+/**
+ * Retrieves the handles of the installed libraries for this revision.
+ *
+ * @param revision The revision to get the manifest for.
+ * @param[out] handles array_list_pt containing the handles.
+ *
+ * @return Status code indication failure or success:
+ *      - CELIX_SUCCESS when no errors are encountered.
+ *      - CELIX_ILLEGAL_ARGUMENT If <code>revision</code> is illegal.
+ */
+celix_status_t bundleRevision_getHandles(bundle_revision_pt revision, array_list_pt *handles);
 
 #endif /* BUNDLE_REVISION_H_ */
 

@@ -17,27 +17,18 @@
  *under the License.
  */
 /*
- * bundle_revision_private.h
+ * test.h
  *
- *  \date       Feb 12, 2013
+ *  \date       12 Feb 2014
  *  \author     <a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
  *  \copyright  Apache License, Version 2.0
  */
 
+#ifndef TEST_H_
+#define TEST_H_
 
-#ifndef BUNDLE_REVISION_PRIVATE_H_
-#define BUNDLE_REVISION_PRIVATE_H_
 
-#include "bundle_revision.h"
+void doo(void);
 
-struct bundleRevision {
-	long revisionNr;
-	char *root;
-	char *location;
-	manifest_pt manifest;
-	framework_logger_pt logger;
 
-	array_list_pt libraryHandles;
-};
-
-#endif /* BUNDLE_REVISION_PRIVATE_H_ */
+#endif /* TEST_H_ */

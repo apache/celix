@@ -79,8 +79,8 @@ celix_status_t manifestParser_create(module_pt owner, manifest_pt manifest, apr_
             parser->bundleSymbolicName = bundleSymbolicName;
         }
 
-        parser->capabilities = manifestParser_parseExportHeader(owner, manifest_getValue(manifest, OSGI_FRAMEWORK_EXPORT_PACKAGE), memory_pool);
-        parser->requirements = manifestParser_parseImportHeader(manifest_getValue(manifest, OSGI_FRAMEWORK_IMPORT_PACKAGE), memory_pool);
+        parser->capabilities = manifestParser_parseExportHeader(owner, manifest_getValue(manifest, OSGI_FRAMEWORK_EXPORT_LIBRARY), memory_pool);
+        parser->requirements = manifestParser_parseImportHeader(manifest_getValue(manifest, OSGI_FRAMEWORK_IMPORT_LIBRARY), memory_pool);
 
         *manifest_parser = parser;
 

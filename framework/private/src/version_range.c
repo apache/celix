@@ -135,15 +135,16 @@ celix_status_t versionRange_parse(apr_pool_t *pool, char * rangeStr, version_ran
 			status = CELIX_ILLEGAL_STATE;
 		} else {
 			int vlowL = strcspn(rangeStr+1, ",");
-			char * vlow = (char *) apr_palloc(spool, sizeof(*vlow * vlowL));
+			char * vlow = (char *) apr_palloc(spool, sizeof(*vlow * (vlowL + 1)));
 			if (!vlow) {
 				status = CELIX_ENOMEM;
 			} else {
 				int vhighL;
 				char * vhigh;
 				vlow = strncpy(vlow, rangeStr+1, vlowL);
+				vlow[vlowL] = '\0';
 				vhighL = strlen(rangeStr+1) - vlowL - 2;
-				vhigh = (char *) apr_palloc(spool, sizeof(*vhigh * vhighL));
+				vhigh = (char *) apr_palloc(spool, sizeof(*vhigh * (vhighL+1)));
 				if (!vhigh) {
 					status = CELIX_ENOMEM;
 				} else {					
@@ -153,7 +154,7 @@ celix_status_t versionRange_parse(apr_pool_t *pool, char * rangeStr, version_ran
 					char end = rangeStr[rangeL-1];
 
 					vhigh = strncpy(vhigh, rangeStr+vlowL+2, vhighL);
-					
+					vhigh[vhighL] = '\0';
 					status = version_createVersionFromString(pool, vlow, &versionLow);
 					if (status == CELIX_SUCCESS) {
 						version_pt versionHigh = NULL;

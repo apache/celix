@@ -41,7 +41,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 	celix_status_t status = bundleContext_getMemoryPool(context, &pool);
 	if (status == CELIX_SUCCESS) {
 		*userData = apr_palloc(pool, sizeof(struct userData));
-		((struct userData *)(*userData))->word = "World";
+		((struct userData *)(*userData))->word = "Import";
 	} else {
 		status = CELIX_START_ERROR;
 	}

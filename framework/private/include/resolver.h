@@ -31,7 +31,13 @@
 #include "wire.h"
 #include "hash_map.h"
 
-hash_map_pt resolver_resolve(module_pt root);
+struct importer_wires {
+    module_pt importer;
+    linked_list_pt wires;
+};
+typedef struct importer_wires *importer_wires_pt;
+
+linked_list_pt resolver_resolve(module_pt root);
 void resolver_moduleResolved(module_pt module);
 void resolver_addModule(module_pt module);
 void resolver_removeModule(module_pt module);

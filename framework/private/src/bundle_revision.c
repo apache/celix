@@ -35,7 +35,7 @@
 
 static apr_status_t bundleRevision_destroy(void *revisionP);
 
-celix_status_t bundleRevision_create(apr_pool_t *pool, framework_logger_pt logger, char *root, char *location, long revisionNr, char *inputFile, bundle_revision_pt *bundle_revision) {
+celix_status_t bundleRevision_create(apr_pool_t *pool, framework_logger_pt loggera, char *root, char *location, long revisionNr, char *inputFile, bundle_revision_pt *bundle_revision) {
     celix_status_t status = CELIX_SUCCESS;
 	bundle_revision_pt revision = NULL;
 
@@ -58,11 +58,15 @@ celix_status_t bundleRevision_create(apr_pool_t *pool, framework_logger_pt logge
                 status = extractBundle(location, root);
             }
 
+            status = CELIX_DO_IF(status, arrayList_create(&(revision->libraryHandles)));
             if (status == CELIX_SUCCESS) {
                 revision->revisionNr = revisionNr;
                 revision->root = apr_pstrdup(pool, root);
                 revision->location = apr_pstrdup(pool, location);
-                revision->logger = logger;
+                revision->logger = loggera;
+
+                arrayList_create(&(revision->libraryHandles));
+
                 *bundle_revision = revision;
 
                 char *manifest = apr_pstrcat(pool, revision->root, "/META-INF/MANIFEST.MF", NULL);
@@ -71,7 +75,7 @@ celix_status_t bundleRevision_create(apr_pool_t *pool, framework_logger_pt logge
         }
     }
 
-    framework_logIfError(revision->logger, status, NULL, "Failed to create revision");
+    framework_logIfError(logger, status, NULL, "Failed to create revision");
 
 	return status;
 }
@@ -131,4 +135,17 @@ celix_status_t bundleRevision_getManifest(bundle_revision_pt revision, manifest_
 	framework_logIfError(logger, status, NULL, "Failed to get manifest");
 
 	return status;
+}
+
+celix_status_t bundleRevision_getHandles(bundle_revision_pt revision, array_list_pt *handles) {
+    celix_status_t status = CELIX_SUCCESS;
+    if (revision == NULL) {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    } else {
+        *handles = revision->libraryHandles;
+    }
+
+    framework_logIfError(logger, status, NULL, "Failed to get handles");
+
+    return status;
 }

@@ -104,6 +104,10 @@ static void *APR_THREAD_FUNC fw_eventDispatcher(apr_thread_t *thd, void *fw);
 celix_status_t fw_invokeBundleListener(framework_pt framework, bundle_listener_pt listener, bundle_event_pt event, bundle_pt bundle);
 celix_status_t fw_invokeFrameworkListener(framework_pt framework, framework_listener_pt listener, framework_event_pt event, bundle_pt bundle);
 
+static celix_status_t framework_loadBundleLibraries(framework_pt framework, bundle_pt bundle);
+static celix_status_t framework_loadLibraries(framework_pt framework, char *libraries, char *activator, bundle_archive_pt archive, void **activatorHandle);
+static celix_status_t framework_loadLibrary(framework_pt framework, char *library, bundle_archive_pt archive, void **handle);
+
 struct fw_refreshHelper {
     framework_pt framework;
     bundle_pt bundle;
@@ -302,7 +306,7 @@ celix_status_t fw_init(framework_pt framework) {
 	bundle_state_e state;
 	char *location;
 	module_pt module = NULL;
-	hash_map_pt wires;
+	linked_list_pt wires;
 	array_list_pt archives;
 	bundle_archive_pt archive = NULL;
 	char uuid[APR_UUID_FORMATTED_LENGTH+1];
@@ -351,7 +355,6 @@ celix_status_t fw_init(framework_pt framework) {
         wires = resolver_resolve(module);
         if (wires != NULL) {
             framework_markResolvedModules(framework, wires);
-            hashMap_destroy(wires, false, false);
         } else {
             status = CELIX_BUNDLE_EXCEPTION;
             fw_logCode(framework->logger, OSGI_FRAMEWORK_LOG_ERROR, status, "Unresolved constraints in System Bundle");
@@ -593,34 +596,14 @@ celix_status_t framework_getBundleEntry(framework_pt framework, bundle_pt bundle
 celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int options) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	hash_map_pt wires = NULL;
-	handle_t handle;
+	linked_list_pt wires = NULL;
 	bundle_context_pt context = NULL;
 	bundle_state_e state;
 	module_pt module = NULL;
-	manifest_pt manifest = NULL;
-	char *library;
-	#ifdef __linux__
-			 char * library_prefix = "lib";
-			 char * library_extension = ".so";
-	#elif __APPLE__
-			 char * library_prefix = "lib";
-			 char * library_extension = ".dylib";
-	#elif WIN32
-			 char * library_prefix = "";
-			 char * library_extension = ".dll";
-	#endif
-
-	char libraryPath[256];
-	long refreshCount;
-	char *archiveRoot;
-	long revisionNumber;
 	activator_pt activator = NULL;
-	bundle_archive_pt archive = NULL;
-	bundle_revision_pt revision = NULL;
 	apr_pool_t *bundlePool = NULL;
 	char *error = NULL;
-
+	char *name = NULL;
 
 	status = CELIX_DO_IF(status, framework_acquireBundleLock(framework, bundle, OSGI_FRAMEWORK_BUNDLE_INSTALLED|OSGI_FRAMEWORK_BUNDLE_RESOLVED|OSGI_FRAMEWORK_BUNDLE_STARTING|OSGI_FRAMEWORK_BUNDLE_ACTIVE));
 	status = CELIX_DO_IF(status, bundle_getState(bundle, &state));
@@ -647,6 +630,7 @@ celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int opti
                 break;
             case OSGI_FRAMEWORK_BUNDLE_INSTALLED:
                 bundle_getCurrentModule(bundle, &module);
+                module_getSymbolicName(module, &name);
                 if (!module_isResolved(module)) {
                     wires = resolver_resolve(module);
                     if (wires == NULL) {
@@ -654,83 +638,57 @@ celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int opti
                         return CELIX_BUNDLE_EXCEPTION;
                     }
                     framework_markResolvedModules(framework, wires);
-                }
-                if (wires != NULL) {
-                    hashMap_destroy(wires, false, false);
+
                 }
                 /* no break */
             case OSGI_FRAMEWORK_BUNDLE_RESOLVED:
+                module = NULL;
+                name = NULL;
+                bundle_getCurrentModule(bundle, &module);
+                module_getSymbolicName(module, &name);
                 status = CELIX_DO_IF(status, bundleContext_create(framework, framework->logger, bundle, &context));
                 status = CELIX_DO_IF(status, bundle_setContext(bundle, context));
-
-                status = CELIX_DO_IF(status, bundle_getArchive(bundle, &archive));
                 status = CELIX_DO_IF(status, bundle_getMemoryPool(bundle, &bundlePool));
-                status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
-                status = CELIX_DO_IF(status, bundleRevision_getManifest(revision, &manifest));
-                if (status == CELIX_SUCCESS) {
-                    library = manifest_getValue(manifest, OSGI_FRAMEWORK_HEADER_LIBRARY);
-                }
-
-                status = CELIX_DO_IF(status, bundleArchive_getRefreshCount(archive, &refreshCount));
-                status = CELIX_DO_IF(status, bundleArchive_getArchiveRoot(archive, &archiveRoot));
-                status = CELIX_DO_IF(status, bundleArchive_getCurrentRevisionNumber(archive, &revisionNumber));
 
                 if (status == CELIX_SUCCESS) {
-                    sprintf(libraryPath, "%s/version%ld.%ld/%s%s%s", archiveRoot, refreshCount, revisionNumber, library_prefix, library, library_extension);
+                    activator = (activator_pt) apr_palloc(bundlePool, (sizeof(*activator)));
+                    if (activator == NULL) {
+                        status = CELIX_ENOMEM;
+                    } else {
+                        void * userData = NULL;
+                        bundle_context_pt context;
+                        create_function_pt create = (create_function_pt) fw_getSymbol((handle_t) bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_CREATE);
+                        start_function_pt start = (start_function_pt) fw_getSymbol((handle_t) bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_START);
+                        stop_function_pt stop = (stop_function_pt) fw_getSymbol((handle_t) bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_STOP);
+                        destroy_function_pt destroy = (destroy_function_pt) fw_getSymbol((handle_t) bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_DESTROY);
 
-                    // BUG: Can't use apr_dso_load, apr assumes RTLD_GLOBAL for loading libraries.
-                    // apr_dso_handle_t *handle;
-                    // apr_dso_load(&handle, libraryPath, bundle->memoryPool);
-                    handle = fw_openLibrary(libraryPath);
-                    if (handle == NULL) {
-                        char err[1024];
-                        sprintf(err, "library could not be opened: %s", fw_getLastError());
-                        // #TODO this is wrong
-                        error = err;
-                        status =  CELIX_BUNDLE_EXCEPTION;
-                    }
+                        activator->start = start;
+                        activator->stop = stop;
+                        activator->destroy = destroy;
+                        status = CELIX_DO_IF(status, bundle_setActivator(bundle, activator));
 
-                    if (status == CELIX_SUCCESS) {
-                        bundle_setHandle(bundle, handle);
+                        status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, bundle, OSGI_FRAMEWORK_BUNDLE_STARTING));
+                        status = CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_STARTING, bundle));
 
-                        activator = (activator_pt) apr_palloc(bundlePool, (sizeof(*activator)));
-                        if (activator == NULL) {
-                            status = CELIX_ENOMEM;
-                        } else {
-                            void * userData = NULL;
-                            bundle_context_pt context;
-                            create_function_pt create = (create_function_pt) fw_getSymbol((handle_t) bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_CREATE);
-                            start_function_pt start = (start_function_pt) fw_getSymbol((handle_t) bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_START);
-                            stop_function_pt stop = (stop_function_pt) fw_getSymbol((handle_t) bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_STOP);
-                            destroy_function_pt destroy = (destroy_function_pt) fw_getSymbol((handle_t) bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_DESTROY);
+                        status = CELIX_DO_IF(status, bundle_getContext(bundle, &context));
 
-                            activator->start = start;
-                            activator->stop = stop;
-                            activator->destroy = destroy;
-                            status = CELIX_DO_IF(status, bundle_setActivator(bundle, activator));
-
-                            status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, bundle, OSGI_FRAMEWORK_BUNDLE_STARTING));
-                            status = CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_STARTING, bundle));
-
-                            status = CELIX_DO_IF(status, bundle_getContext(bundle, &context));
-
-                            if (status == CELIX_SUCCESS) {
-                                if (create != NULL) {
-                                    status = CELIX_DO_IF(status, create(context, &userData));
-                                    if (status == CELIX_SUCCESS) {
-                                        activator->userData = userData;
-                                    }
+                        if (status == CELIX_SUCCESS) {
+                            if (create != NULL) {
+                                status = CELIX_DO_IF(status, create(context, &userData));
+                                if (status == CELIX_SUCCESS) {
+                                    activator->userData = userData;
                                 }
                             }
-                            if (status == CELIX_SUCCESS) {
-                                if (start != NULL) {
-                                    status = CELIX_DO_IF(status, start(userData, context));
-                                }
-                            }
-
-                            status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, bundle, OSGI_FRAMEWORK_BUNDLE_ACTIVE));
-                            status = CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_STARTED, bundle));
                         }
+                        if (status == CELIX_SUCCESS) {
+                            if (start != NULL) {
+
+                                status = CELIX_DO_IF(status, start(userData, context));
+                            }
+                        }
+
+                        status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, bundle, OSGI_FRAMEWORK_BUNDLE_ACTIVE));
+                        status = CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_STARTED, bundle));
                     }
                 }
 
@@ -787,6 +745,17 @@ celix_status_t framework_updateBundle(framework_pt framework, bundle_pt bundle, 
 
 	status = CELIX_DO_IF(status, bundleArchive_setLastModified(archive, time(NULL)));
 	status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, bundle, OSGI_FRAMEWORK_BUNDLE_INSTALLED));
+
+	// TODO Unload all libraries for transition to unresolved
+	bundle_revision_pt revision = NULL;
+	array_list_pt handles = NULL;
+	status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
+    status = CELIX_DO_IF(status, bundleRevision_getHandles(revision, &handles));
+    for (int i = arrayList_size(handles) - 1; i >= 0; i--) {
+        void *handle = arrayList_get(handles, i);
+        fw_closeLibrary(handle);
+    }
+
 
 	status = CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_UNRESOLVED, bundle));
 	status = CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_UPDATED, bundle));
@@ -906,9 +875,6 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
                     status = CELIX_DO_IF(status, bundle_setContext(bundle, NULL));
                 }
 
-                // #TODO enable dlclose call
-                dlclose(bundle_getHandle(bundle));
-
                 status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, bundle, OSGI_FRAMEWORK_BUNDLE_RESOLVED));
             }
 	    }
@@ -975,6 +941,9 @@ celix_status_t fw_uninstallBundle(framework_pt framework, bundle_pt bundle) {
     }
 
     status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, bundle, OSGI_FRAMEWORK_BUNDLE_INSTALLED));
+
+    // TODO Unload all libraries for transition to unresolved
+    dlclose(bundle_getHandle(bundle));
 
     status = CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_UNRESOLVED, bundle));
 
@@ -1627,38 +1596,114 @@ long framework_getNextBundleId(framework_pt framework) {
 	return id;
 }
 
-celix_status_t framework_markResolvedModules(framework_pt framework, hash_map_pt resolvedModuleWireMap) {
+celix_status_t framework_markResolvedModules(framework_pt framework, linked_list_pt resolvedModuleWireMap) {
 	if (resolvedModuleWireMap != NULL) {
-		hash_map_iterator_pt iterator = hashMapIterator_create(resolvedModuleWireMap);
-		while (hashMapIterator_hasNext(iterator)) {
-			hash_map_entry_pt entry = hashMapIterator_nextEntry(iterator);
-			module_pt module = (module_pt) hashMapEntry_getKey(entry);
-			linked_list_pt wires = (linked_list_pt) hashMapEntry_getValue(entry);
+		// hash_map_iterator_pt iterator = hashMapIterator_create(resolvedModuleWireMap);
+		linked_list_iterator_pt iterator = linkedListIterator_create(resolvedModuleWireMap, linkedList_size(resolvedModuleWireMap));
+		while (linkedListIterator_hasPrevious(iterator)) {
+		    importer_wires_pt iw = linkedListIterator_previous(iterator);
+			// hash_map_entry_pt entry = hashMapIterator_nextEntry(iterator);
+			module_pt module = iw->importer;
+
+//			bundle_pt bundle = module_getBundle(module);
+//			bundle_archive_pt archive = NULL;
+//			bundle_getArchive(bundle, &archive);
+//			bundle_revision_pt revision = NULL;
+//			bundleArchive_getCurrentRevision(archive, &revision);
+//			char *root = NULL;
+//			bundleRevision_getRoot(revision, &root);
+//			manifest_pt manifest = NULL;
+//			bundleRevision_getManifest(revision, &manifest);
+//
+//			char *private = manifest_getValue(manifest, OSGI_FRAMEWORK_PRIVATE_LIBRARY);
+//			char *export = manifest_getValue(manifest, OSGI_FRAMEWORK_EXPORT_LIBRARY);
+//
+//			printf("Root %s\n", root);
+
+			// for each library update the reference to the wires, if there are any
+
+			linked_list_pt wires = iw->wires;
+
+//			linked_list_iterator_pt wit = linkedListIterator_create(wires, 0);
+//			while (linkedListIterator_hasNext(wit)) {
+//			    wire_pt wire = linkedListIterator_next(wit);
+//			    module_pt importer = NULL;
+//			    requirement_pt requirement = NULL;
+//			    module_pt exporter = NULL;
+//                capability_pt capability = NULL;
+//			    wire_getImporter(wire, &importer);
+//			    wire_getRequirement(wire, &requirement);
+//
+//			    wire_getExporter(wire, &exporter);
+//			    wire_getCapability(wire, &capability);
+//
+//			    char *importerName = NULL;
+//			    module_getSymbolicName(importer, &importerName);
+//
+//			    char *exporterName = NULL;
+//                module_getSymbolicName(exporter, &exporterName);
+//
+//                version_pt version = NULL;
+//                char *name = NULL;
+//                capability_getServiceName(capability, &name);
+//                capability_getVersion(capability, &version);
+//                char *versionString = NULL;
+//                version_toString(version, framework->mp, &versionString);
+//
+//                printf("Module %s imports library %s:%s from %s\n", importerName, name, versionString, exporterName);
+//			}
 
 			module_setWires(module, wires);
 
 			module_setResolved(module);
 			resolver_moduleResolved(module);
+
+			char *mname = NULL;
+			module_getSymbolicName(module, &mname);
 			framework_markBundleResolved(framework, module);
 		}
-		hashMapIterator_destroy(iterator);
+		linkedListIterator_destroy(iterator);
 	}
 	return CELIX_SUCCESS;
 }
 
 celix_status_t framework_markBundleResolved(framework_pt framework, module_pt module) {
+    celix_status_t status = CELIX_SUCCESS;
 	bundle_pt bundle = module_getBundle(module);
 	bundle_state_e state;
+	char *error = NULL;
 
 	if (bundle != NULL) {
 		framework_acquireBundleLock(framework, bundle, OSGI_FRAMEWORK_BUNDLE_INSTALLED|OSGI_FRAMEWORK_BUNDLE_RESOLVED|OSGI_FRAMEWORK_BUNDLE_ACTIVE);
 		bundle_getState(bundle, &state);
 		if (state != OSGI_FRAMEWORK_BUNDLE_INSTALLED) {
 			printf("Trying to resolve a resolved bundle");
+			status = CELIX_ILLEGAL_STATE;
 		} else {
-			framework_setBundleStateAndNotify(framework, bundle, OSGI_FRAMEWORK_BUNDLE_RESOLVED);
-			// framework_fireBundleEvent(BUNDLE_EVENT_RESOLVED, bundle);
+		    // Load libraries of this module
+		    bool isSystemBundle = false;
+		    bundle_isSystemBundle(bundle, &isSystemBundle);
+		    if (!isSystemBundle) {
+                status = CELIX_DO_IF(status, framework_loadBundleLibraries(framework, bundle));
+		    }
+
+		    status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, bundle, OSGI_FRAMEWORK_BUNDLE_RESOLVED));
+			status = CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_RESOLVED, bundle));
 		}
+
+		if (status != CELIX_SUCCESS) {
+            module_pt module = NULL;
+            char *symbolicName = NULL;
+            long id = 0;
+            module_getSymbolicName(module, &symbolicName);
+            bundle_getBundleId(bundle, &id);
+            if (error != NULL) {
+                fw_logCode(framework->logger, OSGI_FRAMEWORK_LOG_ERROR, status, "Could not start bundle: %s [%ld]; cause: %s", symbolicName, id, error);
+            } else {
+                fw_logCode(framework->logger, OSGI_FRAMEWORK_LOG_ERROR, status, "Could not start bundle: %s [%ld]", symbolicName, id);
+            }
+        }
+
 		framework_releaseBundleLock(framework, bundle);
 	}
 
@@ -2180,4 +2225,153 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	return CELIX_SUCCESS;
+}
+
+
+static celix_status_t framework_loadBundleLibraries(framework_pt framework, bundle_pt bundle) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    handle_t handle;
+    bundle_archive_pt archive = NULL;
+    bundle_revision_pt revision = NULL;
+    manifest_pt manifest = NULL;
+
+    #ifdef __linux__
+             char * library_prefix = "lib";
+             char * library_extension = ".so";
+    #elif __APPLE__
+             char * library_prefix = "lib";
+             char * library_extension = ".dylib";
+    #elif WIN32
+             char * library_prefix = "";
+             char * library_extension = ".dll";
+    #endif
+
+    status = CELIX_DO_IF(status, bundle_getArchive(bundle, &archive));
+    status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
+    status = CELIX_DO_IF(status, bundleRevision_getManifest(revision, &manifest));
+    if (status == CELIX_SUCCESS) {
+        char *library = NULL;
+        char *privateLibraries = NULL;
+        char *exportLibraries = NULL;
+        char *activator = NULL;
+
+        library = manifest_getValue(manifest, OSGI_FRAMEWORK_HEADER_LIBRARY);
+        privateLibraries = manifest_getValue(manifest, OSGI_FRAMEWORK_PRIVATE_LIBRARY);
+        exportLibraries = manifest_getValue(manifest, OSGI_FRAMEWORK_EXPORT_LIBRARY);
+        activator = manifest_getValue(manifest, OSGI_FRAMEWORK_BUNDLE_ACTIVATOR);
+
+        if (exportLibraries != NULL) {
+            status = CELIX_DO_IF(status, framework_loadLibraries(framework, exportLibraries, activator, archive, &handle));
+        }
+
+        if (privateLibraries != NULL) {
+            status = CELIX_DO_IF(status, framework_loadLibraries(framework, privateLibraries, activator, archive, &handle));
+        }
+
+        if (library != NULL) {
+            status = CELIX_DO_IF(status, framework_loadLibrary(framework, library, archive, &handle));
+        }
+
+        if (status == CELIX_SUCCESS) {
+            bundle_setHandle(bundle, handle);
+        }
+    }
+
+    framework_logIfError(framework->logger, status, NULL, "Could not load all bundle libraries");
+
+    return status;
+}
+
+// TODO Store all handles for unloading!
+static celix_status_t framework_loadLibraries(framework_pt framework, char *libraries, char *activator, bundle_archive_pt archive, void **activatorHandle) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    char *last;
+    char *token = apr_strtok(libraries, ",", &last);
+    while (token != NULL) {
+        void *handle = NULL;
+        char lib[strlen(token)];
+
+        char *path;
+        char *pathToken = apr_strtok(token, ";", &path);
+        strcpy(lib, pathToken);
+        pathToken = apr_strtok(NULL, ";", &path);
+
+        while (pathToken != NULL) {
+            if (strncmp(pathToken, "version", 7) == 0) {
+                char *ver = strdup(pathToken);
+                char version[strlen(ver) - 9];
+                strncpy(version, ver+9, strlen(ver) - 10);
+                version[strlen(ver) - 10] = '\0';
+
+                strcat(lib, "-");
+                strcat(lib, version);
+            }
+            pathToken = apr_strtok(NULL, ";", &path);
+        }
+
+        status = framework_loadLibrary(framework, lib, archive, &handle);
+
+        if (status == CELIX_SUCCESS) {
+            if (activator != NULL) {
+                if (strcmp(lib, activator) == 0) {
+                    *activatorHandle = handle;
+                }
+            }
+        }
+
+        token = apr_strtok(NULL, ",", &last);
+    }
+
+    framework_logIfError(framework->logger, status, NULL, "Could not load all libraries");
+
+    return status;
+}
+
+static celix_status_t framework_loadLibrary(framework_pt framework, char *library, bundle_archive_pt archive, void **handle) {
+    celix_status_t status = CELIX_SUCCESS;
+    char *error = NULL;
+
+    #ifdef __linux__
+        char * library_prefix = "lib";
+        char * library_extension = ".so";
+    #elif __APPLE__
+        char * library_prefix = "lib";
+        char * library_extension = ".dylib";
+    #elif WIN32
+        char * library_prefix = "";
+        char * library_extension = ".dll";
+    #endif
+
+    char libraryPath[256];
+    long refreshCount;
+    char *archiveRoot;
+    long revisionNumber;
+
+    status = CELIX_DO_IF(status, bundleArchive_getRefreshCount(archive, &refreshCount));
+    status = CELIX_DO_IF(status, bundleArchive_getArchiveRoot(archive, &archiveRoot));
+    status = CELIX_DO_IF(status, bundleArchive_getCurrentRevisionNumber(archive, &revisionNumber));
+
+    sprintf(libraryPath, "%s/version%ld.%ld/%s%s%s", archiveRoot, refreshCount, revisionNumber, library_prefix, library, library_extension);
+
+    *handle = fw_openLibrary(libraryPath);
+    if (*handle == NULL) {
+        char err[1024];
+        error = fw_getLastError();
+        // #TODO this is wrong
+        status =  CELIX_BUNDLE_EXCEPTION;
+    } else {
+        bundle_revision_pt revision = NULL;
+        array_list_pt handles = NULL;
+
+        status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
+        status = CELIX_DO_IF(status, bundleRevision_getHandles(revision, &handles));
+
+        arrayList_add(handles, handle);
+    }
+
+    framework_logIfError(framework->logger, status, error, "Could not load library: %s", libraryPath);
+
+    return status;
 }

@@ -14,9 +14,17 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-is_enabled(EXAMPLES)
-if (EXAMPLES)
-	if(PKG_CONFIG_EXECUTABLE)
-		#deploy("chapter04-paint-example" BUNDLES chapter04-paint-example circle square triangle shell shell_tui log_service log_writer)
-	endif(PKG_CONFIG_EXECUTABLE)
-endif (EXAMPLES)
+
+SET(BUNDLE_SYMBOLICNAME "apache_celix_examples_hello_world_test")
+SET(BUNDLE_VERSION "0.0.1")
+SET_HEADERS("Bundle-Name: Apache Celix Shell TUI") 
+    
+bundle(hello_world_test 
+    SOURCES private/src/activator 
+    IMPORT_LIBRARIES "org.apache.incubator.celix.helloworld.sub|version=\"[0.0.1,1.0.0)\"")
+    #IMPORT_LIBRARIES "org.apache.incubator.celix.helloworld.sub;version=\"[1.0,2.0\)\"")
+target_link_libraries(hello_world_test celix_framework)
+target_link_libraries(hello_world_test org.apache.incubator.celix.helloworld.sub-0.1)
+include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+include_directories("${PROJECT_SOURCE_DIR}/examples/hello_world/public/include")
+include_directories("private/include")

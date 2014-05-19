@@ -57,12 +57,12 @@ linked_list_pt m_resolvedServices = NULL;
 int resolver_populateCandidatesMap(hash_map_pt candidatesMap, module_pt targetModule);
 capability_list_pt resolver_getCapabilityList(linked_list_pt list, char * name);
 void resolver_removeInvalidCandidate(module_pt module, hash_map_pt candidates, linked_list_pt invalid);
-hash_map_pt resolver_populateWireMap(hash_map_pt candidates, module_pt importer, hash_map_pt wireMap);
+linked_list_pt resolver_populateWireMap(hash_map_pt candidates, module_pt importer, linked_list_pt wireMap);
 
-hash_map_pt resolver_resolve(module_pt root) {
+linked_list_pt resolver_resolve(module_pt root) {
 	hash_map_pt candidatesMap = NULL;
-	hash_map_pt wireMap = NULL;
-	hash_map_pt resolved = NULL;
+	linked_list_pt wireMap = NULL;
+	linked_list_pt resolved = NULL;
 	hash_map_iterator_pt iter = NULL;
 
 	if (module_isResolved(root)) {
@@ -93,7 +93,10 @@ hash_map_pt resolver_resolve(module_pt root) {
 		return NULL;
 	}
 
-	wireMap = hashMap_create(NULL,NULL,NULL,NULL);
+	bundle_pt bundle = module_getBundle(root);
+	apr_pool_t *pool = NULL;
+	bundle_getMemoryPool(bundle, &pool);
+	linkedList_create(pool, &wireMap);
 	resolved = resolver_populateWireMap(candidatesMap, root, wireMap);
 	iter = hashMapIterator_create(candidatesMap);
 	while (hashMapIterator_hasNext(iter)) {
@@ -417,7 +420,7 @@ capability_list_pt resolver_getCapabilityList(linked_list_pt list, char * name) 
 	return capabilityList;
 }
 
-hash_map_pt resolver_populateWireMap(hash_map_pt candidates, module_pt importer, hash_map_pt wireMap) {
+linked_list_pt resolver_populateWireMap(hash_map_pt candidates, module_pt importer, linked_list_pt wireMap) {
     linked_list_pt serviceWires;
     apr_pool_t *serviceWires_pool;
     linked_list_pt emptyWires;
@@ -430,9 +433,16 @@ hash_map_pt resolver_populateWireMap(hash_map_pt candidates, module_pt importer,
 
     if (candidates && importer && wireMap) {
         linked_list_pt candSetList = NULL;
-		if (module_isResolved(importer) || (hashMap_get(wireMap, importer))) {
+		if (module_isResolved(importer)) {
             return wireMap;
         }
+		linked_list_iterator_pt wit = linkedListIterator_create(wireMap, 0);
+		while (linkedListIterator_hasNext(wit)) {
+		    importer_wires_pt iw = linkedListIterator_next(wit);
+		    if (iw->importer == importer) {
+		        return wireMap;
+		    }
+		}
 
         candSetList = (linked_list_pt) hashMap_get(candidates, importer);
 
@@ -442,7 +452,15 @@ hash_map_pt resolver_populateWireMap(hash_map_pt candidates, module_pt importer,
                     if (linkedList_create(emptyWires_pool, &emptyWires) == APR_SUCCESS) {
                         int candSetIdx = 0;
 						
-						hashMap_put(wireMap, importer, emptyWires);
+						// hashMap_put(wireMap, importer, emptyWires);
+
+                        char *mname = NULL;
+                        module_getSymbolicName(importer, &mname);
+
+						importer_wires_pt importerWires = apr_palloc(bundlePool, sizeof(*importerWires));
+						importerWires->importer = importer;
+						importerWires->wires = emptyWires;
+						linkedList_addElement(wireMap, importerWires);
                         
                         for (candSetIdx = 0; candSetIdx < linkedList_size(candSetList); candSetIdx++) {
                             candidate_set_pt cs = (candidate_set_pt) linkedList_get(candSetList, candSetIdx);
@@ -462,7 +480,8 @@ hash_map_pt resolver_populateWireMap(hash_map_pt candidates, module_pt importer,
                                     wireMap);
                         }
 
-                        hashMap_put(wireMap, importer, serviceWires);
+                        importerWires->wires = serviceWires;
+                        // hashMap_put(wireMap, importer, serviceWires);
                     }
                 }
             }

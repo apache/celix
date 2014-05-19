@@ -130,7 +130,7 @@ FRAMEWORK_EXPORT bundle_pt findBundle(bundle_context_pt context);
 FRAMEWORK_EXPORT service_registration_pt findRegistration(service_reference_pt reference);
 
 FRAMEWORK_EXPORT service_reference_pt listToArray(array_list_pt list);
-FRAMEWORK_EXPORT celix_status_t framework_markResolvedModules(framework_pt framework, hash_map_pt wires);
+FRAMEWORK_EXPORT celix_status_t framework_markResolvedModules(framework_pt framework, linked_list_pt wires);
 
 FRAMEWORK_EXPORT array_list_pt framework_getBundles(framework_pt framework);
 FRAMEWORK_EXPORT bundle_pt framework_getBundle(framework_pt framework, char * location);

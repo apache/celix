@@ -1,5 +1,2 @@
-Bundle-SymbolicName: @INT_BUNDLE_SYMBOLICNAME@
-Bundle-Description: @INT_BUNDLE_DESCRIPTION@
-Bundle-Version: @INT_BUNDLE_VERSION@
-library: @INT_BUNDLE_NAME@
+Bundle-SymbolicName: @BUNDLE_SYMBOLICNAME@
 @INT_BUNDLE_EXTRAHEADER@

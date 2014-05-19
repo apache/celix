@@ -15,9 +15,28 @@
 # specific language governing permissions and limitations
 # under the License.
 
-SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_examples_hello_world")
-SET_HEADERS("Bundle-Name: Apache Celix Shell TUI") 
-	
-bundle(hello_world SOURCES private/src/activator)
+SET(BUNDLE_SYMBOLICNAME "apache_celix_examples_hello_world")
+SET(BUNDLE_VERSION "0.0.1")
+SET(BUNDLE_NAME "Apache Celix Shell TUI")
+
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-target_link_libraries(hello_world celix_framework)
+include_directories("public/include")
+
+BUNDLE_LIBRARY(org.apache.incubator.celix.helloworld.sub
+    SOURCES private/src/test
+    VERSION 0.1
+    LINK_LIBRARIES celix_framework
+    )
+
+BUNDLE_PRIVATE_LIBRARY(private
+    SOURCES private/src/activator
+    LINK_LIBRARIES celix_framework org.apache.incubator.celix.helloworld.sub-0.1
+    )
+    
+BUNDLE(org.apache.incubator.celix.helloworld
+    ACTIVATOR "apache_celix_examples_hello_world-private-0.0.1"
+    PRIVATE_LIBRARIES "private"
+    EXPORT_LIBRARIES org.apache.incubator.celix.helloworld.sub|version="0.1"
+    )
+
+
