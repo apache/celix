@@ -21,6 +21,9 @@ include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/calculator_service/private/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/calculator_service/public/include")
 
+SET(BUNDLE_SYMBOLICNAME "apache_celix_remoting_calculator")
+SET(BUNDLE_VERSION "0.0.1")
+
 bundle(calculator SOURCES 
 	private/src/calculator_impl
 	private/src/calculator_activator

@@ -24,6 +24,9 @@ include_directories("${PROJECT_SOURCE_DIR}/remote_services/calculator_proxy/priv
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/calculator_service/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
 
+SET(BUNDLE_SYMBOLICNAME "apache_celix_remoting_calculator_proxy")
+SET(BUNDLE_VERSION "0.0.1")
+
 bundle(org.example.api.Calculator_proxy SOURCES 
 	private/src/calculator_proxy_activator
 	private/src/calculator_proxy_impl.c

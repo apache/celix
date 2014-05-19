@@ -54,3 +54,10 @@ celix_status_t bundleRevision_getManifest(bundle_revision_pt revision, manifest_
     return mock_c()->returnValue().value.intValue;
 }
 
+celix_status_t bundleRevision_getHandles(bundle_revision_pt revision, array_list_pt *handles) {
+    mock_c()->actualCall("bundleRevision_getHandles")
+        ->withPointerParameters("revision", revision)
+        ->_andPointerOutputParameters("handles", (void **) handles);
+    return mock_c()->returnValue().value.intValue;
+}
+

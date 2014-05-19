@@ -27,7 +27,7 @@
 
 #include "resolver.h"
 
-hash_map_pt resolver_resolve(module_pt root) {
+linked_list_pt resolver_resolve(module_pt root) {
 	mock_c()->actualCall("resolver_resolve")
 			->withPointerParameters("module", root);
 	return mock_c()->returnValue().value.pointerValue;

@@ -15,6 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
+SET(BUNDLE_SYMBOLICNAME "apache_celix_remoting_calculator_shell")
+SET(BUNDLE_VERSION "0.0.1")
+
 bundle(calculator_shell SOURCES
 	private/src/add_command 
 	private/src/sub_command

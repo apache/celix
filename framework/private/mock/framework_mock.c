@@ -265,7 +265,7 @@ service_reference_pt listToArray(array_list_pt list) {
 		return mock_c()->returnValue().value.pointerValue;
 }
 
-celix_status_t framework_markResolvedModules(framework_pt framework, hash_map_pt wires) {
+celix_status_t framework_markResolvedModules(framework_pt framework, linked_list_pt wires) {
 	mock_c()->actualCall("framework_markResolvedModules");
 		return mock_c()->returnValue().value.intValue;
 }
