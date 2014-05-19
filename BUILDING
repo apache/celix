@@ -18,6 +18,9 @@ Quick Start
   $ mkdir celix-build; cd celix-build
   $ ccmake ../celix
   
+  # When this is the first time the CMake cache is created, a configuration has to be created
+  # This is done by running Configure (c) in CMake.
+  
   # Enable/Disable the required sub projects (BUILD_{NAME} entries)
   # Optionally, enable advanced mode (t) and change CMAKE_INSTALL_PREFIX
   # Run Configure (might be needed multiple times)
