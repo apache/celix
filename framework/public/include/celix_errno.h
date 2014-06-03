@@ -31,7 +31,9 @@
 #ifndef CELIX_ERRNO_H_
 #define CELIX_ERRNO_H_
 
+#include <stddef.h>
 #include <errno.h>
+
 #include <apr_errno.h>
 
 #include "framework_exports.h"

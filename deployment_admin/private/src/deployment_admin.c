@@ -23,14 +23,22 @@
  *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
+
+#include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+
 #include <curl/curl.h>
 #include <curl/easy.h>
-#include <apr_strings.h>
 
+#include <apr_thread_proc.h>
+#include <apr_strings.h>
+#include <apr_time.h>
+#include <apr_uuid.h>
+
+#include "celixbool.h"
 #include "deployment_admin.h"
 #include "celix_errno.h"
 #include "bundle_context.h"
@@ -52,7 +60,7 @@
 
 #define VERSIONS "/versions"
 
-static void *APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *deploymentAdmin);
+static void* deploymentAdmin_poll(apr_thread_t *thd, void *deploymentAdmin);
 celix_status_t deploymentAdmin_download(char * url, char **inputFile);
 size_t deploymentAdmin_writeData(void *ptr, size_t size, size_t nmemb, FILE *stream);
 static celix_status_t deploymentAdmin_deleteTree(char * directory, apr_pool_t *mp);
@@ -65,6 +73,7 @@ celix_status_t deploymentAdmin_processDeploymentPackageResources(deployment_admi
 celix_status_t deploymentAdmin_dropDeploymentPackageResources(deployment_admin_pt admin, deployment_package_pt source, deployment_package_pt target);
 celix_status_t deploymentAdmin_dropDeploymentPackageBundles(deployment_admin_pt admin, deployment_package_pt source, deployment_package_pt target);
 celix_status_t deploymentAdmin_startDeploymentPackageBundles(deployment_admin_pt admin, deployment_package_pt source);
+static celix_status_t deploymentAdmin_updateAuditPool(deployment_admin_pt admin, DEPLOYMENT_ADMIN_AUDIT_EVENT auditEvent);
 
 celix_status_t deploymentAdmin_create(apr_pool_t *pool, bundle_context_pt context, deployment_admin_pt *admin) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -82,7 +91,12 @@ celix_status_t deploymentAdmin_create(apr_pool_t *pool, bundle_context_pt contex
 		(*admin)->packages = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 		(*admin)->targetIdentification = NULL;
 		(*admin)->pollUrl = NULL;
+		(*admin)->auditlogUrl = NULL;
+
         bundleContext_getProperty(context, IDENTIFICATION_ID, &(*admin)->targetIdentification);
+        (*admin)->auditlogId = apr_time_now();
+        (*admin)->aditlogSeqNr = 0;
+
 		if ((*admin)->targetIdentification == NULL ) {
 			printf("Target name must be set using \"deployment_admin_identification\"\n");
 			status = CELIX_ILLEGAL_ARGUMENT;
@@ -93,7 +107,8 @@ celix_status_t deploymentAdmin_create(apr_pool_t *pool, bundle_context_pt contex
 				printf("URL must be set using \"deployment_admin_url\"\n");
 				status = CELIX_ILLEGAL_ARGUMENT;
 			} else {
-				(*admin)->pollUrl = apr_pstrcat(subpool, url, (*admin)->targetIdentification, VERSIONS, NULL);
+				(*admin)->pollUrl = apr_pstrcat(subpool, url, "/deployment/", (*admin)->targetIdentification, VERSIONS, NULL);
+				(*admin)->auditlogUrl = apr_pstrcat(subpool, url, "/auditlog", NULL);
 
 //				log_store_pt store = NULL;
 //				log_pt log = NULL;
@@ -113,8 +128,47 @@ celix_status_t deploymentAdmin_create(apr_pool_t *pool, bundle_context_pt contex
 	return status;
 }
 
-static void *APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *deploymentAdmin) {
+static celix_status_t deploymentAdmin_updateAuditPool(deployment_admin_pt admin, DEPLOYMENT_ADMIN_AUDIT_EVENT auditEvent) {
+	celix_status_t status = CELIX_SUCCESS;
+
+
+	CURL *curl;
+	CURLcode res;
+	curl = curl_easy_init();
+
+	if (!curl) {
+		status = CELIX_BUNDLE_EXCEPTION;
+		printf("Error initializing curl\n");
+	}
+
+	char url[strlen(admin->auditlogUrl)+6];
+	sprintf(url, "%s/send", admin->auditlogUrl);
+	char entry[512];
+	int entrySize = snprintf(entry, 512, "%s,%i,%i,0,%i\n", admin->targetIdentification, admin->auditlogId, admin->aditlogSeqNr++, auditEvent);
+	if (entrySize >= 512) {
+		status = CELIX_BUNDLE_EXCEPTION;
+		printf("Error, entry buffer is too small\n");
+	}
+
+	if (status == CELIX_SUCCESS) {
+			curl_easy_setopt(curl, CURLOPT_URL, url);
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, entry);
+			res = curl_easy_perform(curl);
+
+			if (res != CURLE_OK ) {
+				status = CELIX_BUNDLE_EXCEPTION;
+				printf("Error sending auditlog, got curl error code %i\n", res);
+			}
+	}
+
+	return status;
+}
+
+static void * deploymentAdmin_poll(apr_thread_t *thd, void *deploymentAdmin) {
 	deployment_admin_pt admin = deploymentAdmin;
+
+	/*first poll send framework started audit event, note this will register the target in Apache ACE*/
+	deploymentAdmin_updateAuditPool(admin, DEPLOYMENT_ADMIN_AUDIT_EVENT__FRAMEWORK_STARTED);
 
 	while (admin->running) {
 		//poll ace
@@ -134,16 +188,23 @@ static void *APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *deplo
 					request = apr_pstrcat(admin->pool, admin->pollUrl, "/", last, NULL);
 				}
 
-				char inputFile[MAXNAMLEN];
+				char inputFile[256];
 				inputFile[0] = '\0';
 				char *test = inputFile;
 				celix_status_t status = deploymentAdmin_download(request, &test);
 				if (status == CELIX_SUCCESS) {
-					// Handle file
-					char tmpDir[MAXNAMLEN];
-					tmpDir[0] = '\0';
-					tmpnam(tmpDir);
+					bundle_pt bundle = NULL;
+					bundleContext_getBundle(admin->context, &bundle);
+					char *entry = NULL;
+					bundle_getEntry(bundle, "/", admin->pool, &entry);
 
+					// Handle file
+					char tmpDir[256];
+					char uuidStr[128];
+                    apr_uuid_t tmpUuid;
+                    apr_uuid_get(&tmpUuid);
+                    apr_uuid_format(uuidStr, &tmpUuid);
+                    sprintf(tmpDir, "%s%s", entry, uuidStr);
 					apr_dir_make(tmpDir, APR_UREAD|APR_UWRITE|APR_UEXECUTE, admin->pool);
 
 					// TODO: update to use bundle cache DataFile instead of module entries.
@@ -156,10 +217,6 @@ static void *APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *deplo
 					char *name = NULL;
 					deploymentPackage_getName(source, &name);
 
-					bundle_pt bundle = NULL;
-					bundleContext_getBundle(admin->context, &bundle);
-					char *entry = NULL;
-					bundle_getEntry(bundle, "/", admin->pool, &entry);
 					char *repoDir = apr_pstrcat(admin->pool, entry, "repo", NULL);
 					apr_dir_make(repoDir, APR_UREAD|APR_UWRITE|APR_UEXECUTE, admin->pool);
 					char *repoCache = apr_pstrcat(admin->pool, entry, "repo/", name, NULL);

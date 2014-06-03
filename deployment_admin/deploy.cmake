@@ -16,5 +16,9 @@
 # under the License.
 is_enabled(DEPLOYMENT_ADMIN)
 if (DEPLOYMENT_ADMIN)
-	deploy("deployment-admin" BUNDLES deployment_admin shell shell_tui log_service log_writer)
+	deploy("deployment-admin" BUNDLES deployment_admin shell shell_tui log_service log_writer PROPERTIES 
+		"deployment_admin_url=http://localhost:8080"
+		"deployment_admin_identification=celix"
+		"org.osgi.framework.storage.clean=onFirstInit"
+	)
 endif (DEPLOYMENT_ADMIN)

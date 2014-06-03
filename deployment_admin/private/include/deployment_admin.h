@@ -43,7 +43,14 @@ struct deployment_admin {
 	hash_map_pt packages;
 	char *targetIdentification;
 	char *pollUrl;
+	char *auditlogUrl;
+	apr_time_t auditlogId;
+	unsigned int aditlogSeqNr;
 };
+
+typedef enum {
+	DEPLOYMENT_ADMIN_AUDIT_EVENT__FRAMEWORK_STARTED = 1005
+} DEPLOYMENT_ADMIN_AUDIT_EVENT;
 
 celix_status_t deploymentAdmin_create(apr_pool_t *pool, bundle_context_pt context, deployment_admin_pt *admin);
 
