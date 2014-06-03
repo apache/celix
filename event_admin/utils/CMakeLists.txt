@@ -15,8 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 find_package(APR REQUIRED)
-find_package(CELIX REQUIRED)
-include_directories("${CELIX_INCLUDE_DIRS}")
+
+include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/event_admin/event_admin/public/include")
 include_directories(public/include)
 

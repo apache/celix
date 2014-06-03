@@ -16,11 +16,10 @@
 # under the License.
 
 find_package(APR REQUIRED)
-find_package(CELIX REQUIRED)
 
+include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories(private/include)
 include_directories(${PROJECT_SOURCE_DIR}/event_admin/event_admin/public/include)
-include_directories("${CELIX_INCLUDE_DIRS}")
 
 SET_HEADER(BUNDLE_SYMBOLICNAME "event_publisher")
 SET_HEADERS("Bundle-Name: Event Publisher")
