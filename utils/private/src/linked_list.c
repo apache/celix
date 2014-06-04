@@ -50,6 +50,27 @@ celix_status_t linkedList_create(linked_list_pt *list) {
 	return CELIX_ENOMEM;
 }
 
+UTILS_EXPORT celix_status_t linkedList_destroy(linked_list_pt list) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	linked_list_entry_pt current = NULL;
+	linked_list_entry_pt next = NULL;
+
+	current = list->header;
+	list->header = NULL;
+	list->size = 0;
+
+	while (current != NULL) {
+		next = current->next;
+		free(current);
+		current = next;
+	}
+
+	free(list);
+
+	return status;
+}
+
 celix_status_t linkedList_clone(linked_list_pt list, linked_list_pt *clone) {
 	celix_status_t status = CELIX_SUCCESS;
 
