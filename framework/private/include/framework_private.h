@@ -47,6 +47,8 @@
 #include "bundle_cache.h"
 #include "celix_log.h"
 
+#include "celix_threads.h"
+
 struct framework {
     struct bundle * bundle;
     hash_map_pt installedBundleMap;
@@ -80,7 +82,7 @@ struct framework {
     array_list_pt requests;
     apr_thread_cond_t *dispatcher;
     apr_thread_mutex_t *dispatcherLock;
-    apr_thread_t *dispatcherThread;
+    celix_thread_t dispatcherThread;
 
     framework_logger_pt logger;
 };

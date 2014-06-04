@@ -41,6 +41,8 @@ if (UTILS)
 		private/src/netstring.c
 		public/include/netstring.h
 		public/include/exports.h
+		
+		private/src/celix_threads.c
 	)
     
     IF(UNIX)

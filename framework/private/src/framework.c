@@ -64,6 +64,8 @@
 #include "service_registration.h"
 #include "celix_log.h"
 
+#include "celix_threads.h"
+
 typedef celix_status_t (*create_function_pt)(bundle_context_pt context, void **userData);
 typedef celix_status_t (*start_function_pt)(void * handle, bundle_context_pt context);
 typedef celix_status_t (*stop_function_pt)(void * handle, bundle_context_pt context);
@@ -99,7 +101,7 @@ celix_status_t fw_populateDependentGraph(framework_pt framework, bundle_pt expor
 
 celix_status_t fw_fireBundleEvent(framework_pt framework, bundle_event_type_e, bundle_pt bundle);
 celix_status_t fw_fireFrameworkEvent(framework_pt framework, framework_event_type_e eventType, bundle_pt bundle, celix_status_t errorCode);
-static void *APR_THREAD_FUNC fw_eventDispatcher(apr_thread_t *thd, void *fw);
+static void *fw_eventDispatcher(void *fw);
 
 celix_status_t fw_invokeBundleListener(framework_pt framework, bundle_listener_pt listener, bundle_event_pt event, bundle_pt bundle);
 celix_status_t fw_invokeFrameworkListener(framework_pt framework, framework_listener_pt listener, framework_event_pt event, bundle_pt bundle);
@@ -317,7 +319,7 @@ celix_status_t fw_init(framework_pt framework) {
 	status = CELIX_DO_IF(status, arrayList_create(&framework->bundleListeners));
 	status = CELIX_DO_IF(status, arrayList_create(&framework->frameworkListeners));
 	status = CELIX_DO_IF(status, arrayList_create(&framework->requests));
-	status = CELIX_DO_IF(status, apr_thread_create(&framework->dispatcherThread, NULL, fw_eventDispatcher, framework, framework->mp));
+	status = CELIX_DO_IF(status, celixThread_create(&framework->dispatcherThread, NULL, fw_eventDispatcher, framework));
 	status = CELIX_DO_IF(status, bundle_getState(framework->bundle, &state));
 	if (status == CELIX_SUCCESS) {
 	    if ((state == OSGI_FRAMEWORK_BUNDLE_INSTALLED) || (state == OSGI_FRAMEWORK_BUNDLE_RESOLVED)) {
@@ -2107,7 +2109,7 @@ celix_status_t fw_fireFrameworkEvent(framework_pt framework, framework_event_typ
 	return status;
 }
 
-static void *APR_THREAD_FUNC fw_eventDispatcher(apr_thread_t *thd, void *fw) {
+static void *fw_eventDispatcher(void *fw) {
 	framework_pt framework = (framework_pt) fw;
 	request_pt request = NULL;
 
@@ -2117,6 +2119,7 @@ static void *APR_THREAD_FUNC fw_eventDispatcher(apr_thread_t *thd, void *fw) {
 
 		if (apr_thread_mutex_lock(framework->dispatcherLock) != 0) {
 			fw_log(framework->logger, OSGI_FRAMEWORK_LOG_ERROR,  "Error locking the dispatcher");
+			celixThread_exit(NULL);
 			return NULL;
 		}
 
@@ -2128,7 +2131,7 @@ static void *APR_THREAD_FUNC fw_eventDispatcher(apr_thread_t *thd, void *fw) {
 		}
 
 		if (size == 0 && framework->shutdown) {
-			apr_thread_exit(thd, APR_SUCCESS);
+			celixThread_exit(NULL);
 			return NULL;
 		}
 		
@@ -2136,7 +2139,7 @@ static void *APR_THREAD_FUNC fw_eventDispatcher(apr_thread_t *thd, void *fw) {
 
 		if ((status = apr_thread_mutex_unlock(framework->dispatcherLock)) != 0) {
 			fw_log(framework->logger, OSGI_FRAMEWORK_LOG_ERROR,  "Error unlocking the dispatcher.");
-			apr_thread_exit(thd, status);
+			celixThread_exit(NULL);
 			return NULL;
 		}
 
@@ -2165,7 +2168,7 @@ static void *APR_THREAD_FUNC fw_eventDispatcher(apr_thread_t *thd, void *fw) {
 		}
 	}
 
-	apr_thread_exit(thd, APR_SUCCESS);
+	celixThread_exit(NULL);
 
 	return NULL;
 
