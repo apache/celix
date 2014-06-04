@@ -44,7 +44,7 @@ struct serviceRegistration {
 	void * svcObj;
 	long serviceId;
 
-	apr_thread_mutex_t *mutex;
+	celix_thread_mutex_t mutex;
 	bool isUnregistering;
 
 	bool isServiceFactory;

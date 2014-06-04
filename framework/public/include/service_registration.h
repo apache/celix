@@ -36,9 +36,9 @@ typedef struct serviceRegistration * service_registration_pt;
 #include "bundle.h"
 #include "framework_exports.h"
 
-service_registration_pt serviceRegistration_create(apr_pool_t *pool, service_registry_pt registry, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary);
-service_registration_pt serviceRegistration_createServiceFactory(apr_pool_t *pool, service_registry_pt registry, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary);
-void serviceRegistration_destroy(service_registration_pt registration);
+service_registration_pt serviceRegistration_create(service_registry_pt registry, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary);
+service_registration_pt serviceRegistration_createServiceFactory(service_registry_pt registry, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary);
+celix_status_t serviceRegistration_destroy(service_registration_pt registration);
 
 FRAMEWORK_EXPORT bool serviceRegistration_isValid(service_registration_pt registration);
 FRAMEWORK_EXPORT void serviceRegistration_invalidate(service_registration_pt registration);

@@ -200,9 +200,9 @@ celix_status_t serviceRegistry_registerServiceInternal(service_registry_pt regis
 	bundle_getMemoryPool(bundle, &pool);
 
 	if (isFactory) {
-	    *registration = serviceRegistration_createServiceFactory(pool, registry, bundle, serviceName, ++registry->currentServiceId, serviceObject, dictionary);
+	    *registration = serviceRegistration_createServiceFactory(registry, bundle, serviceName, ++registry->currentServiceId, serviceObject, dictionary);
 	} else {
-	    *registration = serviceRegistration_create(pool, registry, bundle, serviceName, ++registry->currentServiceId, serviceObject, dictionary);
+	    *registration = serviceRegistration_create(registry, bundle, serviceName, ++registry->currentServiceId, serviceObject, dictionary);
 	}
 
 	serviceRegistry_addHooks(registry, serviceName, serviceObject, *registration);

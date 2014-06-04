@@ -29,7 +29,6 @@
 
 service_registration_pt serviceRegistration_create(service_registry_pt registry, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary) {
 	mock_c()->actualCall("serviceRegistration_create")
-		->withPointerParameters("pool", pool)
 		->withPointerParameters("registry", registry)
 		->withPointerParameters("bundle", bundle)
 		->withStringParameters("serviceName", serviceName)
@@ -39,9 +38,8 @@ service_registration_pt serviceRegistration_create(service_registry_pt registry,
 	return mock_c()->returnValue().value.pointerValue;
 }
 
-service_registration_pt serviceRegistration_createServiceFactory(apr_pool_t *pool, service_registry_pt registry, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary) {
+service_registration_pt serviceRegistration_createServiceFactory(service_registry_pt registry, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary) {
 	mock_c()->actualCall("serviceRegistration_createServiceFactory")
-		->withPointerParameters("pool", pool)
 		->withPointerParameters("registry", registry)
 		->withPointerParameters("bundle", bundle)
 		->withStringParameters("serviceName", serviceName)
@@ -51,7 +49,8 @@ service_registration_pt serviceRegistration_createServiceFactory(apr_pool_t *poo
 	return mock_c()->returnValue().value.pointerValue;
 }
 
-void serviceRegistration_destroy(service_registration_pt registration) {
+celix_status_t serviceRegistration_destroy(service_registration_pt registration) {
+	return mock_c()->returnValue().value.intValue;
 }
 
 
