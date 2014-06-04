@@ -14,7 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-celix_subproject(EXAMPLES "Option to enable building the Examples" "OFF" DEPS FRAMEWORK LAUNCHER SHELL_TUI LOG_WRITER DEPENDENCY_MANAGER)
+celix_subproject(EXAMPLES "Option to enable building the Examples" "OFF" DEPS FRAMEWORK LAUNCHER SHELL_TUI)
 if (EXAMPLES)
     add_subdirectory(hello_world)
     add_subdirectory(hello_world_test)

@@ -147,13 +147,13 @@ celix_status_t bundleArchive_create(framework_logger_pt logger, char * archiveRo
 static apr_status_t bundleArchive_destroy(void *archiveP) {
     apr_status_t status = APR_SUCCESS;
 	bundle_archive_pt archive = archiveP;
-	archive = NULL;
 
 	if (archive->revisions != NULL) {
 		linkedList_destroy(archive->revisions);
 	}
+	archive = NULL;
 
-	framework_logIfError(archive->logger, status, NULL, "Could not create archive");
+	framework_logIfError(logger, status, NULL, "Could not create archive");
 
 	return status;
 }

@@ -87,7 +87,7 @@ int main(void) {
                 linked_list_iterator_pt iter = NULL;
                 unsigned int i;
 
-                linkedList_create(pool, &bundles);
+                linkedList_create(&bundles);
                 result = strtok(autoStart, delims);
                 while (result != NULL) {
                     char * location = apr_pstrdup(memoryPool, result);
@@ -112,6 +112,7 @@ int main(void) {
                     linkedListIterator_remove(iter);
                 }
                 linkedListIterator_destroy(iter);
+                linkedList_destroy(bundles);
 
                 for (i = 0; i < arrayList_size(installed); i++) {
                     bundle_pt bundle = (bundle_pt) arrayList_get(installed, i);

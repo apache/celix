@@ -30,7 +30,6 @@
 #include <sys/types.h>
 #include "celixbool.h"
 #include <math.h>
-#include <apr_file_io.h>
 #include <apr_general.h>
 #include <apr_strings.h>
 #include <apr_uuid.h>

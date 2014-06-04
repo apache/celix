@@ -65,7 +65,7 @@ celix_status_t log_create(apr_pool_t *pool, log_pt *logger) {
         apr_status_t apr_status;
 
         apr_pool_pre_cleanup_register(pool, *logger, log_destroy);
-        linkedList_create(pool, &(*logger)->entries);
+        linkedList_create(&(*logger)->entries);
         apr_thread_mutex_create(&(*logger)->lock, APR_THREAD_MUTEX_UNNESTED, pool);
 
         (*logger)->pool = pool;
@@ -103,6 +103,7 @@ apr_status_t log_destroy(void *logp) {
 	apr_thread_cond_destroy(log->entriesToDeliver);
 	arrayList_destroy(log->listenerEntries);
 	arrayList_destroy(log->listeners);
+	linkedList_destroy(log->entries);
 	apr_thread_mutex_destroy(log->lock);
 
 	return APR_SUCCESS;
@@ -125,7 +126,7 @@ celix_status_t log_addEntry(log_pt log, log_entry_pt entry) {
 
 celix_status_t log_getEntries(log_pt log, apr_pool_t *memory_pool, linked_list_pt *list) {
     linked_list_pt entries = NULL;
-    if (linkedList_create(memory_pool, &entries) == CELIX_SUCCESS) {
+    if (linkedList_create(&entries) == CELIX_SUCCESS) {
         linked_list_iterator_pt iter = NULL;
 
         apr_thread_mutex_lock(log->lock);
