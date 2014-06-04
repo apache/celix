@@ -33,7 +33,7 @@
 #include <gdk/gdk.h>
 #include "bundle_context.h"
 #include "utils.h"
-#include "linkedlist.h"
+#include "linked_list.h"
 #include "hash_map.h"
 #include "simple_shape.h"
 #include "shape_component.h"

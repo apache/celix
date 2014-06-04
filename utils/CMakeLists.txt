@@ -32,9 +32,9 @@ if (UTILS)
 		public/include/hash_map.h 
 		private/include/hash_map_private.h
 
-		private/src/linkedlist.c
+		private/src/linked_list.c
 		private/src/linked_list_iterator.c
-		public/include/linkedlist.h
+		public/include/linked_list.h
 		public/include/linked_list_iterator.h 
 		private/include/linked_list_private.h
 

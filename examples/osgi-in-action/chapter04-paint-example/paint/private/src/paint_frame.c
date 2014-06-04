@@ -46,7 +46,7 @@
 #include "hash_map.h"
 #include "simple_shape.h"
 #include "linked_list_iterator.h"
-#include "linkedlist.h"
+#include "linked_list.h"
 #include "paint_frame.h"
 #include "shape_component.h"
 #include "default_shape.h"

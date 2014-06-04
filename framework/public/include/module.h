@@ -30,7 +30,7 @@
 typedef struct module *module_pt;
 
 #include "celixbool.h"
-#include "linkedlist.h"
+#include "linked_list.h"
 #include "manifest.h"
 #include "version.h"
 #include "array_list.h"

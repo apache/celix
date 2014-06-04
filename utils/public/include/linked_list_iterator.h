@@ -29,7 +29,7 @@
 
 #include "celixbool.h"
 
-#include "linkedlist.h"
+#include "linked_list.h"
 #include "exports.h"
 
 typedef struct linkedListIterator * linked_list_iterator_pt;

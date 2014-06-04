@@ -27,17 +27,15 @@
 #ifndef LINKED_LIST_PRIVATE_H_
 #define LINKED_LIST_PRIVATE_H_
 
-#include "linkedlist.h"
+#include "linked_list.h"
 
-struct linkedListEntry {
-    apr_pool_t *memory_pool; // this is the (sub)memory pool specific for this linked list entry
+struct linked_list_entry {
 	void * element;
-	struct linkedListEntry * next;
-	struct linkedListEntry * previous;
+	struct linked_list_entry * next;
+	struct linked_list_entry * previous;
 };
 
-struct linkedList {
-    apr_pool_t *memory_pool;
+struct linked_list {
 	linked_list_entry_pt header;
 	size_t size;
 	int modificationCount;

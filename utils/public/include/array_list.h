@@ -27,8 +27,6 @@
 #ifndef ARRAY_LIST_H_
 #define ARRAY_LIST_H_
 
-#include <apr_general.h>
-
 #include "celixbool.h"
 #include "exports.h"
 #include "celix_errno.h"

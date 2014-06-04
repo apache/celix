@@ -32,7 +32,7 @@ typedef struct wire *wire_pt;
 #include "requirement.h"
 #include "capability.h"
 #include "module.h"
-#include "linkedlist.h"
+#include "linked_list.h"
 #include "module.h"
 
 /**

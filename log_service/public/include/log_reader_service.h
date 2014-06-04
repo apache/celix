@@ -29,7 +29,7 @@
 
 #include <apr_general.h>
 #include "celix_errno.h"
-#include "linkedlist.h"
+#include "linked_list.h"
 #include "log_listener.h"
 
 static const char * const OSGI_LOGSERVICE_READER_SERVICE_NAME = "log_reader_service";
