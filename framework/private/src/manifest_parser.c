@@ -261,7 +261,7 @@ static linked_list_pt manifestParser_parseStandardHeader(char * header, apr_pool
     linked_list_pt clauseStrings = NULL;
     linked_list_pt completeList = NULL;
 
-    if (linkedList_create(completeList) == CELIX_SUCCESS) {
+    if (linkedList_create(&completeList) == CELIX_SUCCESS) {
         if (header != NULL) {
             if (strlen(header) == 0) {
                 return NULL;

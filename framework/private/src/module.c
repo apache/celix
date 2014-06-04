@@ -99,8 +99,6 @@ module_pt module_create(manifest_pt headerMap, char * moduleId, bundle_pt bundle
 
 module_pt module_createFrameworkModule(bundle_pt bundle) {
     module_pt module;
-    apr_pool_t *capabilities_pool;
-    apr_pool_t *requirements_pool;
     apr_pool_t *dependentImporters_pool;
     apr_pool_t *bundlePool = NULL;
 
@@ -108,31 +106,30 @@ module_pt module_createFrameworkModule(bundle_pt bundle) {
 
 	module = (module_pt) apr_palloc(bundlePool, sizeof(*module));
 	if (module) {
-	    if (apr_pool_create(&capabilities_pool, bundlePool) == APR_SUCCESS) {
-	        if (apr_pool_create(&requirements_pool, bundlePool) == APR_SUCCESS) {
-	            if (apr_pool_create(&dependentImporters_pool, bundlePool) == APR_SUCCESS) {
-                    module->id = apr_pstrdup(bundlePool, "0");
-                    module->symbolicName = apr_pstrdup(bundlePool, "framework");
-                    module->version = NULL;
-                    version_createVersion(bundlePool, 1, 0, 0, "", &module->version);
+		if (apr_pool_create(&dependentImporters_pool, bundlePool) == APR_SUCCESS) {
+			module->id = apr_pstrdup(bundlePool, "0");
+			module->symbolicName = apr_pstrdup(bundlePool, "framework");
+			module->version = NULL;
+			version_createVersion(bundlePool, 1, 0, 0, "", &module->version);
 
-                    linkedList_create(capabilities_pool, &module->capabilities);
-                    linkedList_create(requirements_pool, &module->requirements);
-                    module->dependentImporters = NULL;
-                    arrayList_create(&module->dependentImporters);
-                    module->wires = NULL;
-                    module->headerMap = NULL;
-                    module->resolved = false;
-                    module->bundle = bundle;
-	            }
-	        }
-	    }
+			linkedList_create(&module->capabilities);
+			linkedList_create(&module->requirements);
+			module->dependentImporters = NULL;
+			arrayList_create(&module->dependentImporters);
+			module->wires = NULL;
+			module->headerMap = NULL;
+			module->resolved = false;
+			module->bundle = bundle;
+		}
 	}
 	return module;
 }
 
 void module_destroy(module_pt module) {
 	arrayList_destroy(module->dependentImporters);
+
+	linkedList_destroy(module->capabilities);
+	linkedList_destroy(module->requirements);
 
 	module->headerMap = NULL;
 }

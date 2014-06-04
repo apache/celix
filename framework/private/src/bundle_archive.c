@@ -150,7 +150,7 @@ static apr_status_t bundleArchive_destroy(void *archiveP) {
 	archive = NULL;
 
 	if (archive->revisions != NULL) {
-		free(archive->revisions);
+		linkedListIterator_destroy(archive->revisions)
 	}
 
 	framework_logIfError(archive->logger, status, NULL, "Could not create archive");
