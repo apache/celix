@@ -38,12 +38,24 @@ typedef void *(*celix_thread_start_t)(void*);
 
 celix_status_t celixThread_create(celix_thread_t *new_thread, celix_thread_attr_t *attr, celix_thread_start_t func, void *data);
 celix_status_t celixThread_exit(void *exitStatus);
+celix_status_t celixThread_detach(celix_thread_t thread);
+celix_status_t celixThread_detach(celix_thread_t thread, void **status);
+celix_thread_t celixThread_self();
 
 typedef pthread_mutex_t celix_thread_mutex_t;
 typedef pthread_mutexattr_t celix_thread_mutexattr_t;
 
-celix_status_t celixThreadMutext_create(celix_thread_mutex_t *mutex, celix_thread_mutexattr_t *attr);
+celix_status_t celixThreadMutex_create(celix_thread_mutex_t *mutex, celix_thread_mutexattr_t *attr);
+celix_status_t celixThreadMutex_lock(celix_thread_mutex_t *mutex);
+celix_status_t celixThreadMutex_unlock(celix_thread_mutex_t *mutex);
 
+typedef pthread_cond_t celix_thread_cond_t;
+typedef pthread_condattr_t celix_thread_condattr_t;
 
+celix_status_t celixThreadCondition_init(celix_thread_cond_t *condition, celix_thread_condattr_t *attr);
+celix_status_t celixThreadCondition_wait(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex);
+celix_status_t celixThreadCondition_broadcast(celix_thread_cond_t *cond);
+celix_status_t celixThreadCondition_signal(celix_thread_cond_t *cond);
+celix_status_t celixThreadCondition_signalThreadNp(celix_thread_cond_t *cond, celix_thread_t *thread);
 
 #endif /* CELIX_THREADS_H_ */

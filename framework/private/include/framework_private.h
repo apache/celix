@@ -28,8 +28,6 @@
 #ifndef FRAMEWORK_PRIVATE_H_
 #define FRAMEWORK_PRIVATE_H_
 
-#include <apr_thread_cond.h>
-
 #include "framework.h"
 
 #include "manifest.h"
@@ -61,14 +59,14 @@ struct framework {
     struct serviceRegistry * registry;
     bundle_cache_pt cache;
 
-    apr_thread_cond_t *shutdownGate;
-    apr_thread_cond_t *condition;
+    celix_thread_cond_t *shutdownGate;
+    celix_thread_cond_t *condition;
 
-    apr_thread_mutex_t *installRequestLock;
-    apr_thread_mutex_t *mutex;
-    apr_thread_mutex_t *bundleLock;
+    celix_thread_mutex_t *installRequestLock;
+    celix_thread_mutex_t *mutex;
+    celix_thread_mutex_t *bundleLock;
 
-    apr_os_thread_t globalLockThread;
+    celix_thread_t globalLockThread;
     array_list_pt globalLockWaitersList;
     int globalLockCount;
 
@@ -80,8 +78,8 @@ struct framework {
     properties_pt configurationMap;
 
     array_list_pt requests;
-    apr_thread_cond_t *dispatcher;
-    apr_thread_mutex_t *dispatcherLock;
+    celix_thread_cond_t dispatcher;
+    celix_thread_mutex_t dispatcherLock;
     celix_thread_t dispatcherThread;
 
     framework_logger_pt logger;

@@ -83,7 +83,7 @@ char * utils_stringTrim(char * string) {
 	return copy;
 }
 
-celix_status_t thread_equalsSelf(apr_os_thread_t thread, bool *equals) {
+celix_status_t thread_equalsSelf(celix_thread_t thread, bool *equals) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	apr_os_thread_t self = apr_os_thread_current();
