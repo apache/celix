@@ -122,8 +122,7 @@ celix_status_t bundleArchive_create(framework_logger_pt logger, char * archiveRo
 		    status = CELIX_ENOMEM;
 		} else {
 			apr_pool_pre_cleanup_register(mp, archive, bundleArchive_destroy);
-			status = CELIX_DO_IF(status, apr_pool_create(&revisions_pool, mp));
-			status = CELIX_DO_IF(status, linkedList_create(revisions_pool, &archive->revisions));
+			status = linkedList_create(&archive->revisions));
 			if (status == CELIX_SUCCESS) {
                 archive->id = id;
                 archive->location = location;
@@ -140,9 +139,7 @@ celix_status_t bundleArchive_create(framework_logger_pt logger, char * archiveRo
                 bundleArchive_revise(archive, location, inputFile);
 
                 *bundle_archive = archive;
-            } else {
-                apr_pool_destroy(revisions_pool);
-			}
+            }
 		}
     }
 
@@ -155,6 +152,9 @@ static apr_status_t bundleArchive_destroy(void *archiveP) {
     apr_status_t status = APR_SUCCESS;
 	bundle_archive_pt archive = archiveP;
 	archive = NULL;
+	if (archive->revisions != NULL) {
+		free(archive->revisions)
+	}
 
 	framework_logIfError(archive->logger, status, NULL, "Could not create archive");
 

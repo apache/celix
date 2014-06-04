@@ -17,27 +17,27 @@
  *under the License.
  */
 /*
- * linkedlist.h
+ * linked_list.h
  *
  *  \date       Jul 16, 2010
  *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
-#ifndef LINKEDLIST_H_
-#define LINKEDLIST_H_
+#ifndef LINKED_LIST_H_
+#define LINKED_LIST_H_
 
-#include <apr_pools.h>
 
 #include "celixbool.h"
 #include "celix_errno.h"
 #include "exports.h"
 
-typedef struct linkedListEntry * linked_list_entry_pt;
-typedef struct linkedList * linked_list_pt;
+typedef struct linked_list_entry * linked_list_entry_pt;
+typedef struct linked_list * linked_list_pt;
 
-UTILS_EXPORT celix_status_t linkedList_create(apr_pool_t *pool, linked_list_pt *list);
-UTILS_EXPORT celix_status_t linkedList_clone(linked_list_pt list, apr_pool_t *pool, linked_list_pt *clone);
+UTILS_EXPORT celix_status_t linkedList_create(linked_list_pt *list);
+UTILS_EXPORT celix_status_t linkedList_destroy(linked_list_pt list);
+UTILS_EXPORT celix_status_t linkedList_clone(linked_list_pt list, linked_list_pt *clone);
 UTILS_EXPORT void * linkedList_getFirst(linked_list_pt list);
 UTILS_EXPORT void * linkedList_getLast(linked_list_pt list);
 UTILS_EXPORT void * linkedList_removeFirst(linked_list_pt list);
@@ -49,7 +49,7 @@ UTILS_EXPORT int linkedList_size(linked_list_pt list);
 UTILS_EXPORT bool linkedList_isEmpty(linked_list_pt list);
 UTILS_EXPORT bool linkedList_addElement(linked_list_pt list, void * element);
 UTILS_EXPORT bool linkedList_removeElement(linked_list_pt list, void * element);
-UTILS_EXPORT void linkedList_clear(linked_list_pt list);
+UTILS_EXPORT void linkedlist_clear(linked_list_pt list);
 UTILS_EXPORT void * linkedList_get(linked_list_pt list, int index);
 UTILS_EXPORT void * linkedList_set(linked_list_pt list, int index, void * element);
 UTILS_EXPORT void linkedList_addIndex(linked_list_pt list, int index, void * element);
@@ -60,4 +60,4 @@ UTILS_EXPORT linked_list_entry_pt linkedList_addBefore(linked_list_pt list, void
 UTILS_EXPORT void * linkedList_removeEntry(linked_list_pt list, linked_list_entry_pt entry);
 
 
-#endif /* LINKEDLIST_H_ */
+#endif /* LINKED_LIST_H_ */
