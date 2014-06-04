@@ -31,7 +31,6 @@
 #include "service_registry.h"
 
 struct serviceRegistry {
-	apr_pool_t *pool;
 	framework_pt framework;
 	hash_map_pt serviceRegistrations;
 	hash_map_pt serviceReferences;
@@ -41,14 +40,14 @@ struct serviceRegistry {
 
 	array_list_pt listenerHooks;
 
-	apr_thread_mutex_t * mutex;
+	celix_thread_mutex_t mutex;
+	celix_thread_mutexattr_t mutexAttr;
 };
 
 struct usageCount {
 	unsigned int count;
 	service_reference_pt reference;
 	void * service;
-	apr_pool_t *pool;
 };
 
 typedef struct usageCount * usage_count_pt;

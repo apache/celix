@@ -382,7 +382,7 @@ celix_status_t fw_init(framework_pt framework) {
         arrayList_destroy(archives);
     }
 
-    status = CELIX_DO_IF(status, serviceRegistry_create(framework->mp, framework, fw_serviceChanged, &framework->registry));
+    status = CELIX_DO_IF(status, serviceRegistry_create(framework, fw_serviceChanged, &framework->registry));
     status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, framework->bundle, OSGI_FRAMEWORK_BUNDLE_STARTING));
     status = CELIX_DO_IF(status, celixThreadCondition_init(&framework->shutdownGate, NULL));
     if (status == CELIX_SUCCESS) {
@@ -1226,12 +1226,13 @@ celix_status_t fw_registerService(framework_pt framework, service_registration_p
 
                 status = CELIX_DO_IF(status, apr_pool_create(&subpool, pool));
 
-                status = CELIX_DO_IF(status, serviceRegistry_createServiceReference(framework->registry, subpool, *registration, &ref));
+                status = CELIX_DO_IF(status, serviceRegistry_createServiceReference(framework->registry, *registration, &ref));
                 status = CELIX_DO_IF(status, fw_getService(framework,framework->bundle, ref, (void **) &hook));
                 if (status == CELIX_SUCCESS) {
                     hook->added(hook->handle, infos);
                 }
                 status = CELIX_DO_IF(status, serviceRegistry_ungetService(framework->registry, framework->bundle, ref, &ungetResult));
+                status = CELIX_DO_IF(status, serviceRegistry_removeReference(ref));  //NOTE: should this not be done in the serviceRegistry_ungetService??
 
                 apr_pool_destroy(subpool);
              }
@@ -1277,7 +1278,7 @@ celix_status_t fw_getServiceReferences(framework_pt framework, array_list_pt *re
         }
 	}
 
-	status = CELIX_DO_IF(status, serviceRegistry_getServiceReferences(framework->registry, pool, serviceName, filter, references));
+	status = CELIX_DO_IF(status, serviceRegistry_getServiceReferences(framework->registry, serviceName, filter, references));
 
 	if (filter != NULL) {
 		filter_destroy(filter);
@@ -1311,7 +1312,7 @@ celix_status_t fw_getService(framework_pt framework, bundle_pt bundle, service_r
 }
 
 celix_status_t fw_getBundleRegisteredServices(framework_pt framework, apr_pool_t *pool, bundle_pt bundle, array_list_pt *services) {
-	return serviceRegistry_getRegisteredServices(framework->registry, pool, bundle, services);
+	return serviceRegistry_getRegisteredServices(framework->registry, bundle, services);
 }
 
 celix_status_t fw_getBundleServicesInUse(framework_pt framework, bundle_pt bundle, array_list_pt *services) {
@@ -1354,7 +1355,7 @@ void fw_addServiceListener(framework_pt framework, bundle_pt bundle, service_lis
 	arrayList_add(framework->serviceListeners, fwListener);
 
 	apr_pool_create(&subpool, listener->pool);
-	serviceRegistry_getListenerHooks(framework->registry, subpool, &listenerHooks);
+	serviceRegistry_getListenerHooks(framework->registry, &listenerHooks);
 
 	info = (listener_hook_info_pt) apr_palloc(subpool, sizeof(*info));
 
@@ -1421,7 +1422,7 @@ void fw_removeServiceListener(framework_pt framework, bundle_pt bundle, service_
 	if (info != NULL) {
 		unsigned int i;
 		array_list_pt listenerHooks = NULL;
-		serviceRegistry_getListenerHooks(framework->registry, pool, &listenerHooks);
+		serviceRegistry_getListenerHooks(framework->registry, &listenerHooks);
 		
 		for (i = 0; i < arrayList_size(listenerHooks); i++) {
 			service_reference_pt ref = (service_reference_pt) arrayList_get(listenerHooks, i);
@@ -1544,12 +1545,15 @@ void fw_serviceChanged(framework_pt framework, service_event_type_e eventType, s
 
 				event = (service_event_pt) apr_palloc(spool, sizeof(*event));
 
-				serviceRegistry_createServiceReference(framework->registry, spool, registration, &reference);
+				serviceRegistry_createServiceReference(framework->registry, registration, &reference);
 
 				event->type = eventType;
 				event->reference = reference;
 
 				element->listener->serviceChanged(element->listener, event);
+
+				//TODO cleanup service reference
+
 			} else if (eventType == OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED) {
 				bool matchResult = false;
 				int matched = 0;
@@ -1561,11 +1565,13 @@ void fw_serviceChanged(framework_pt framework, service_event_type_e eventType, s
 					service_reference_pt reference = NULL;
 					service_event_pt endmatch = (service_event_pt) malloc(sizeof(*endmatch));
 
-					serviceRegistry_createServiceReference(framework->registry, element->listener->pool, registration, &reference);
+					serviceRegistry_createServiceReference(framework->registry, registration, &reference);
 
 					endmatch->reference = reference;
 					endmatch->type = OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED_ENDMATCH;
 					element->listener->serviceChanged(element->listener, endmatch);
+
+					//TODO clean up serviceReference after serviceChanged update
 				}
 			}
 		}
