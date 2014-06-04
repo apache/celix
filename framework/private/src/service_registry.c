@@ -42,8 +42,6 @@ celix_status_t serviceRegistry_registerServiceInternal(service_registry_pt regis
 celix_status_t serviceRegistry_addHooks(service_registry_pt registry, char *serviceName, void *serviceObject, service_registration_pt registration);
 celix_status_t serviceRegistry_removeHook(service_registry_pt registry, service_registration_pt registration);
 
-apr_status_t serviceRegistry_removeReference(void *referenceP);
-
 celix_status_t serviceRegistry_create(apr_pool_t *ppool, framework_pt framework, serviceChanged_function_pt serviceChanged, service_registry_pt *registry) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_pool_t *pool = NULL;
@@ -264,7 +262,7 @@ celix_status_t serviceRegistry_unregisterService(service_registry_pt registry, b
 		unsigned int j;
 
 		apr_pool_create(&pool, registry->pool);
-		clients = serviceRegistry_getUsingBundles(registry, pool, reference);
+		clients = serviceRegistry_getUsingBundles(registry, reference);
 		for (j = 0; (clients != NULL) && (j < arrayList_size(clients)); j++) {
 			bundle_pt client = (bundle_pt) arrayList_get(clients, j);
 			bool ungetResult = true;
@@ -313,19 +311,15 @@ celix_status_t serviceRegistry_unregisterServices(service_registry_pt registry, 
 	return CELIX_SUCCESS;
 }
 
+
 celix_status_t serviceRegistry_createServiceReference(service_registry_pt registry, apr_pool_t *pool, service_registration_pt registration, service_reference_pt *reference) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	bundle_pt bundle = NULL;
 	array_list_pt references = NULL;
 
-	apr_pool_t *spool = NULL;
-	apr_pool_create(&spool, pool);
-
 	serviceRegistration_getBundle(registration, &bundle);
-	serviceReference_create(spool, bundle, registration, reference);
-
-	apr_pool_pre_cleanup_register(spool, *reference, serviceRegistry_removeReference);
+	serviceReference_create(bundle, registration, reference);
 
 	serviceRegistration_getServiceReferences(registration, &references);
 	arrayList_add(references, *reference);
@@ -388,8 +382,7 @@ celix_status_t serviceRegistry_getServiceReferences(service_registry_pt registry
 	return status;
 }
 
-apr_status_t serviceRegistry_removeReference(void *referenceP) {
-	service_reference_pt reference = referenceP;
+apr_status_t serviceRegistry_removeReference(service_reference_pt reference) {
 	service_registration_pt registration = NULL;
 	serviceReference_getServiceRegistration(reference, &registration);
 
@@ -510,7 +503,7 @@ void serviceRegistry_ungetServices(service_registry_pt registry, bundle_pt bundl
 	arrayList_destroy(fusages);
 }
 
-array_list_pt serviceRegistry_getUsingBundles(service_registry_pt registry, apr_pool_t *pool, service_reference_pt reference) {
+array_list_pt serviceRegistry_getUsingBundles(service_registry_pt registry, service_reference_pt reference) {
 	array_list_pt bundles = NULL;
 	hash_map_iterator_pt iter;
 	arrayList_create(&bundles);

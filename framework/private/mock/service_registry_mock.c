@@ -27,7 +27,7 @@
 
 #include "service_registry.h"
 
-celix_status_t serviceRegistry_create(apr_pool_t *pool, framework_pt framework, serviceChanged_function_pt serviceChanged, service_registry_pt *registry) {
+celix_status_t serviceRegistry_create(framework_pt framework, serviceChanged_function_pt serviceChanged, service_registry_pt *registry) {
 	mock_c()->actualCall("serviceRegistry_create");
 	return mock_c()->returnValue().value.intValue;
 }
@@ -89,10 +89,9 @@ void serviceRegistry_ungetServices(service_registry_pt registry, bundle_pt bundl
 	mock_c()->actualCall("serviceRegistry_ungetServices");
 }
 
-array_list_pt serviceRegistry_getUsingBundles(service_registry_pt registry, apr_pool_t *pool, service_reference_pt reference) {
+array_list_pt serviceRegistry_getUsingBundles(service_registry_pt registry, service_reference_pt reference) {
 	mock_c()->actualCall("serviceRegistry_getUsingBundles")
 			->withPointerParameters("registry", registry)
-			->withPointerParameters("pool", pool)
 			->withPointerParameters("reference", reference);
 	return mock_c()->returnValue().value.pointerValue;
 }

@@ -27,8 +27,6 @@
 #ifndef FILTER_H_
 #define FILTER_H_
 
-#include <apr_general.h>
-
 #include "celix_errno.h"
 #include "properties.h"
 #include "celixbool.h"
@@ -36,7 +34,7 @@
 
 typedef struct filter * filter_pt;
 
-FRAMEWORK_EXPORT filter_pt filter_create(char * filterString, apr_pool_t *pool);
+FRAMEWORK_EXPORT filter_pt filter_create(char * filterString);
 FRAMEWORK_EXPORT void filter_destroy(filter_pt filter);
 
 FRAMEWORK_EXPORT celix_status_t filter_match(filter_pt filter, properties_pt properties, bool *result);

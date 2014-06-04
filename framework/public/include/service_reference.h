@@ -35,7 +35,8 @@ typedef struct serviceReference * service_reference_pt;
 #include "bundle.h"
 #include "framework_exports.h"
 
-celix_status_t serviceReference_create(apr_pool_t *pool, bundle_pt bundle, service_registration_pt registration, service_reference_pt *reference);
+celix_status_t serviceReference_create(bundle_pt bundle, service_registration_pt registration, service_reference_pt *reference);
+celix_status_t serviceReference_destroy(service_reference_pt reference);
 
 FRAMEWORK_EXPORT celix_status_t serviceReference_invalidate(service_reference_pt reference);
 FRAMEWORK_EXPORT celix_status_t serviceRefernce_isValid(service_reference_pt reference, bool *result);
@@ -45,7 +46,7 @@ FRAMEWORK_EXPORT celix_status_t serviceReference_getBundle(service_reference_pt 
 
 FRAMEWORK_EXPORT bool serviceReference_isAssignableTo(service_reference_pt reference, bundle_pt requester, char * serviceName);
 
-FRAMEWORK_EXPORT celix_status_t serviceReference_getUsingBundles(service_reference_pt reference, apr_pool_t *pool, array_list_pt *bundles);
+FRAMEWORK_EXPORT celix_status_t serviceReference_getUsingBundles(service_reference_pt reference, array_list_pt *bundles);
 FRAMEWORK_EXPORT celix_status_t serviceReference_equals(service_reference_pt reference, service_reference_pt compareTo, bool *equal);
 FRAMEWORK_EXPORT unsigned int serviceReference_hashCode(void *referenceP);
 FRAMEWORK_EXPORT int serviceReference_equals2(void *reference1, void *reference2);

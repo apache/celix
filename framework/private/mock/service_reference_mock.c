@@ -27,12 +27,18 @@
 
 #include "service_reference_private.h"
 
-celix_status_t serviceReference_create(apr_pool_t *pool, bundle_pt bundle, service_registration_pt registration, service_reference_pt *reference) {
+celix_status_t serviceReference_create(bundle_pt bundle, service_registration_pt registration, service_reference_pt *reference) {
 	mock_c()->actualCall("serviceReference_create")
 			->withPointerParameters("pool", pool)
 			->withPointerParameters("bundle", bundle)
 			->withPointerParameters("registration", registration)
 			->_andPointerOutputParameters("reference", (void **) reference);
+	return mock_c()->returnValue().value.intValue;
+}
+
+celix_status_t serviceReference_destroy(service_reference_pt reference) {
+	mock_c()->actualCall("serviceReference_destroy")
+			->withPointerParameters("reference", reference)
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -59,7 +65,7 @@ bool serviceReference_isAssignableTo(service_reference_pt reference, bundle_pt r
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t serviceReference_getUsingBundles(service_reference_pt reference, apr_pool_t *pool, array_list_pt *bundles) {
+celix_status_t serviceReference_getUsingBundles(service_reference_pt reference, array_list_pt *bundles) {
 	mock_c()->actualCall("serviceReference_getUsingBundles");
 	return mock_c()->returnValue().value.intValue;
 }

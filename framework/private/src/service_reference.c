@@ -26,6 +26,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "service_reference.h"
+
 #include "service_registry.h"
 #include "service_reference_private.h"
 #include "service_registration.h"
@@ -34,16 +36,14 @@
 #include "bundle.h"
 #include "celix_log.h"
 
-apr_status_t serviceReference_destroy(void *referenceP);
 
-celix_status_t serviceReference_create(apr_pool_t *pool, bundle_pt bundle, service_registration_pt registration, service_reference_pt *reference) {
+celix_status_t serviceReference_create(bundle_pt bundle, service_registration_pt registration, service_reference_pt *reference) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	*reference = apr_palloc(pool, sizeof(**reference));
+	*reference = malloc(sizeof(**reference));
 	if (!*reference) {
 		status = CELIX_ENOMEM;
 	} else {
-		apr_pool_pre_cleanup_register(pool, *reference, serviceReference_destroy);
 
 		(*reference)->bundle = bundle;
 		(*reference)->registration = registration;
@@ -54,10 +54,11 @@ celix_status_t serviceReference_create(apr_pool_t *pool, bundle_pt bundle, servi
 	return status;
 }
 
-apr_status_t serviceReference_destroy(void *referenceP) {
-	service_reference_pt reference = referenceP;
+apr_status_t serviceReference_destroy(service_reference_pt reference) {
+	serviceRegistry_removeReference(reference);
 	reference->bundle = NULL;
 	reference->registration = NULL;
+	free(reference);
 	return APR_SUCCESS;
 }
 
@@ -104,13 +105,13 @@ bool serviceReference_isAssignableTo(service_reference_pt reference, bundle_pt r
 	return allow;
 }
 
-celix_status_t serviceReference_getUsingBundles(service_reference_pt reference, apr_pool_t *pool, array_list_pt *bundles) {
+celix_status_t serviceReference_getUsingBundles(service_reference_pt reference, array_list_pt *bundles) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	service_registry_pt registry = NULL;
 	serviceRegistration_getRegistry(reference->registration, &registry);
 
-	*bundles = serviceRegistry_getUsingBundles(registry, pool, reference);
+	*bundles = serviceRegistry_getUsingBundles(registry, reference);
 
 	return status;
 }

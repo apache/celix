@@ -27,7 +27,7 @@
 
 #include "service_registration.h"
 
-service_registration_pt serviceRegistration_create(apr_pool_t *pool, service_registry_pt registry, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary) {
+service_registration_pt serviceRegistration_create(service_registry_pt registry, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary) {
 	mock_c()->actualCall("serviceRegistration_create")
 		->withPointerParameters("pool", pool)
 		->withPointerParameters("registry", registry)

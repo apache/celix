@@ -1277,7 +1277,7 @@ celix_status_t fw_getServiceReferences(framework_pt framework, array_list_pt *re
 	status = CELIX_DO_IF(status, bundle_getMemoryPool(bundle, &pool));
 	if (status == CELIX_SUCCESS) {
         if (sfilter != NULL) {
-            filter = filter_create(sfilter, pool);
+            filter = filter_create(sfilter);
         }
 	}
 
@@ -1349,7 +1349,7 @@ void fw_addServiceListener(framework_pt framework, bundle_pt bundle, service_lis
 
 	fwListener->bundle = bundle;
 	if (sfilter != NULL) {
-		filter_pt filter = filter_create(sfilter, pool);
+		filter_pt filter = filter_create(sfilter);
 		fwListener->filter = filter;
 	} else {
 		fwListener->filter = NULL;
