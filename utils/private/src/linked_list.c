@@ -56,16 +56,15 @@ UTILS_EXPORT celix_status_t linkedList_destroy(linked_list_pt list) {
 	linked_list_entry_pt current = NULL;
 	linked_list_entry_pt next = NULL;
 
-	current = list->header;
-	list->header = NULL;
-	list->size = 0;
+	current = list->header->next;
 
-	while (current != NULL) {
+	while (current != list->header) {
 		next = current->next;
 		free(current);
 		current = next;
 	}
 
+	free(list->header);
 	free(list);
 
 	return status;
