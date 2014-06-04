@@ -38,6 +38,8 @@
 #include "linked_list_iterator.h"
 #include "celix_log.h"
 
+//FIXME the manifest parser has no destroy function and as result contains memory leaks.
+
 struct manifestParser {
 	module_pt owner;
 	manifest_pt manifest;
@@ -98,7 +100,7 @@ static linked_list_pt manifestParser_parseDelimitedString(char * value, char * d
     linked_list_pt list;
     apr_pool_t *temp_pool;
 
-    if (linkedList_create(memory_pool, &list) == CELIX_SUCCESS) {
+    if (linkedList_create(&list) == CELIX_SUCCESS) {
         if (value != NULL) {
             if (apr_pool_create(&temp_pool, NULL) == APR_SUCCESS) {
                 int CHAR = 1;
@@ -172,7 +174,7 @@ static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseStri
     if (apr_pool_create(&temp_pool, memory_pool) == APR_SUCCESS) {
         pieces = manifestParser_parseDelimitedString(clauseString, ";", temp_pool);
 
-        if (linkedList_create(memory_pool, &paths) == CELIX_SUCCESS) {
+        if (linkedList_create(&paths) == CELIX_SUCCESS) {
             int pathCount = 0;
             int pieceIdx;
 			hash_map_pt dirsMap = NULL;
@@ -238,7 +240,7 @@ static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseStri
                 }
             }
 
-            if (linkedList_create(memory_pool, &clause) == CELIX_SUCCESS) {
+            if (linkedList_create(&clause) == CELIX_SUCCESS) {
                 linkedList_addElement(clause, paths);
                 linkedList_addElement(clause, dirsMap);
                 linkedList_addElement(clause, attrsMap);
@@ -259,7 +261,7 @@ static linked_list_pt manifestParser_parseStandardHeader(char * header, apr_pool
     linked_list_pt clauseStrings = NULL;
     linked_list_pt completeList = NULL;
 
-    if (linkedList_create(memory_pool, &completeList) == CELIX_SUCCESS) {
+    if (linkedList_create(completeList) == CELIX_SUCCESS) {
         if (header != NULL) {
             if (strlen(header) == 0) {
                 return NULL;
@@ -287,7 +289,7 @@ static linked_list_pt manifestParser_parseImportHeader(char * header, apr_pool_t
         int clauseIdx;
 		linked_list_iterator_pt iter;
 		clauses = manifestParser_parseStandardHeader(header, memory_pool);
-        linkedList_create(memory_pool, &requirements);
+        linkedList_create(&requirements);
         
         for (clauseIdx = 0; clauseIdx < linkedList_size(clauses); clauseIdx++) {
             linked_list_pt clause = linkedList_get(clauses, clauseIdx);
@@ -338,7 +340,7 @@ static linked_list_pt manifestParser_parseExportHeader(module_pt module, char * 
 	int clauseIdx;
 	linked_list_iterator_pt iter;
     clauses = manifestParser_parseStandardHeader(header, memory_pool);
-    linkedList_create(memory_pool, &capabilities);
+    linkedList_create(&capabilities);
 
     
     for (clauseIdx = 0; clauseIdx < linkedList_size(clauses); clauseIdx++) {
@@ -392,7 +394,7 @@ celix_status_t manifestParser_getBundleVersion(manifest_parser_pt parser, apr_po
 celix_status_t manifestParser_getCapabilities(manifest_parser_pt parser, apr_pool_t *pool, linked_list_pt *capabilities) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	status = linkedList_clone(parser->capabilities, pool, capabilities);
+	status = linkedList_clone(parser->capabilities, capabilities);
 
 	return status;
 }
@@ -400,7 +402,7 @@ celix_status_t manifestParser_getCapabilities(manifest_parser_pt parser, apr_poo
 celix_status_t manifestParser_getRequirements(manifest_parser_pt parser, apr_pool_t *pool, linked_list_pt *requirements) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	status = linkedList_clone(parser->requirements, pool, requirements);
+	status = linkedList_clone(parser->requirements, requirements);
 
 	return status;
 }
