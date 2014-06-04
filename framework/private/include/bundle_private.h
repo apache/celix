@@ -39,9 +39,9 @@ struct bundle {
 	manifest_pt manifest;
 	apr_pool_t *memoryPool;
 
-	apr_thread_mutex_t *lock;
+	celix_thread_mutex_t lock;
 	int lockCount;
-	apr_os_thread_t lockThread;
+	celix_thread_t lockThread;
 
 	struct framework * framework;
 };

@@ -59,12 +59,12 @@ struct framework {
     struct serviceRegistry * registry;
     bundle_cache_pt cache;
 
-    celix_thread_cond_t *shutdownGate;
-    celix_thread_cond_t *condition;
+    celix_thread_cond_t shutdownGate;
+    celix_thread_cond_t condition;
 
-    celix_thread_mutex_t *installRequestLock;
-    celix_thread_mutex_t *mutex;
-    celix_thread_mutex_t *bundleLock;
+    celix_thread_mutex_t installRequestLock;
+    celix_thread_mutex_t mutex;
+    celix_thread_mutex_t bundleLock;
 
     celix_thread_t globalLockThread;
     array_list_pt globalLockWaitersList;

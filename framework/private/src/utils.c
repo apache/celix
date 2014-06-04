@@ -29,6 +29,7 @@
 
 #include "utils.h"
 #include "celix_log.h"
+#include "celix_threads.h"
 
 unsigned int utils_stringHash(void * string) {
 	char * str = (char *) string;
@@ -86,9 +87,9 @@ char * utils_stringTrim(char * string) {
 celix_status_t thread_equalsSelf(celix_thread_t thread, bool *equals) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	apr_os_thread_t self = apr_os_thread_current();
+	celix_thread_t self = celixThread_self();
 	if (status == CELIX_SUCCESS) {
-		*equals = apr_os_thread_equal(self, thread);
+		*equals = celixThread_equals(self, thread);
 	}
 
 	return status;

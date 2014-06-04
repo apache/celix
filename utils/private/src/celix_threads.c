@@ -40,7 +40,7 @@ celix_status_t celixThread_detach(celix_thread_t thread) {
     return pthread_detach(thread);
 }
 
-celix_status_t celixThread_detach(celix_thread_t thread, void **status) {
+celix_status_t celixThread_join(celix_thread_t thread, void **status) {
     return pthread_join(thread, status);
 }
 
@@ -48,8 +48,16 @@ celix_thread_t celixThread_self() {
     return pthread_self();
 }
 
+int celixThread_equals(celix_thread_t thread1, celix_thread_t thread2) {
+    return pthread_equal(thread1, thread2);
+}
+
 celix_status_t celixThreadMutex_create(celix_thread_mutex_t *mutex, celix_thread_mutexattr_t *attr) {
     return pthread_mutex_init(mutex, attr);
+}
+
+celix_status_t celixThreadMutex_destroy(celix_thread_mutex_t *mutex) {
+    return pthread_mutex_destroy(mutex);
 }
 
 celix_status_t celixThreadMutex_lock(celix_thread_mutex_t *mutex) {
@@ -76,6 +84,6 @@ celix_status_t celixThreadCondition_signal(celix_thread_cond_t *cond) {
     return pthread_cond_signal(cond);
 }
 
-celix_status_t celixThreadCondition_signalThreadNp(celix_thread_cond_t *cond, celix_thread_t *thread) {
+celix_status_t celixThreadCondition_signalThreadNp(celix_thread_cond_t *cond, celix_thread_t thread) {
     return pthread_cond_signal_thread_np(cond, thread);
 }

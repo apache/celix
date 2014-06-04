@@ -26,8 +26,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <apr_strings.h>
-#include <apr_portable.h>
-#include <apr_thread_proc.h>
 
 #include "framework_private.h"
 #include "bundle_private.h"
@@ -70,7 +68,7 @@ celix_status_t bundle_create(bundle_pt * bundle, framework_logger_pt logger, apr
         bundle_addModule(*bundle, module);
         // (*bundle)->module = module;
 
-        apr_status = apr_thread_mutex_create(&(*bundle)->lock, APR_THREAD_MUTEX_UNNESTED, (*bundle)->memoryPool);
+        apr_status = celixThreadMutex_create(&(*bundle)->lock, NULL);
         if (apr_status != APR_SUCCESS) {
         	status = CELIX_ILLEGAL_STATE;
         } else {
@@ -110,7 +108,7 @@ celix_status_t bundle_createFromArchive(bundle_pt * bundle, framework_pt framewo
         apr_status_t apr_status;
 
 		bundle_addModule(*bundle, module);
-        apr_status = apr_thread_mutex_create(&(*bundle)->lock, APR_THREAD_MUTEX_UNNESTED, (*bundle)->memoryPool);
+        apr_status = celixThreadMutex_create(&(*bundle)->lock, NULL);
         if (apr_status != APR_SUCCESS) {
 			status = CELIX_ILLEGAL_STATE;
 		} else {
@@ -136,7 +134,7 @@ celix_status_t bundle_destroy(bundle_pt bundle) {
 	}
 	arrayListIterator_destroy(iter);
 	arrayList_destroy(bundle->modules);
-	apr_thread_mutex_destroy(bundle->lock);
+	celixThreadMutex_destroy(&bundle->lock);
 
 	apr_pool_destroy(bundle->memoryPool);
 	return CELIX_SUCCESS;
@@ -482,7 +480,7 @@ celix_status_t bundle_isLockable(bundle_pt bundle, bool *lockable) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_status_t apr_status;
 
-	apr_status = apr_thread_mutex_lock(bundle->lock);
+	apr_status = celixThreadMutex_lock(&bundle->lock);
 	if (apr_status != APR_SUCCESS) {
 		status = CELIX_BUNDLE_EXCEPTION;
 	} else {
@@ -492,7 +490,7 @@ celix_status_t bundle_isLockable(bundle_pt bundle, bool *lockable) {
 			*lockable = (bundle->lockCount == 0) || (equals);
 		}
 
-		apr_status = apr_thread_mutex_unlock(bundle->lock);
+		apr_status = celixThreadMutex_unlock(&bundle->lock);
 		if (apr_status != APR_SUCCESS) {
 			status = CELIX_BUNDLE_EXCEPTION;
 		}
@@ -503,17 +501,17 @@ celix_status_t bundle_isLockable(bundle_pt bundle, bool *lockable) {
 	return status;
 }
 
-celix_status_t bundle_getLockingThread(bundle_pt bundle, apr_os_thread_t *thread) {
+celix_status_t bundle_getLockingThread(bundle_pt bundle, celix_thread_t *thread) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_status_t apr_status;
 
-	apr_status = apr_thread_mutex_lock(bundle->lock);
+	apr_status = celixThreadMutex_lock(&bundle->lock);
 	if (apr_status != APR_SUCCESS) {
 		status = CELIX_BUNDLE_EXCEPTION;
 	} else {
 		*thread = bundle->lockThread;
 
-		apr_status = apr_thread_mutex_unlock(bundle->lock);
+		apr_status = celixThreadMutex_unlock(&bundle->lock);
 		if (apr_status != APR_SUCCESS) {
 			status = CELIX_BUNDLE_EXCEPTION;
 		}
@@ -528,7 +526,7 @@ celix_status_t bundle_lock(bundle_pt bundle, bool *locked) {
 	celix_status_t status = CELIX_SUCCESS;
 	bool equals;
 
-	apr_thread_mutex_lock(bundle->lock);
+	celixThreadMutex_lock(&bundle->lock);
 
 	status = thread_equalsSelf(bundle->lockThread, &equals);
 	if (status == CELIX_SUCCESS) {
@@ -536,12 +534,12 @@ celix_status_t bundle_lock(bundle_pt bundle, bool *locked) {
 			*locked = false;
 		} else {
 			bundle->lockCount++;
-			bundle->lockThread = apr_os_thread_current();
+			bundle->lockThread = celixThread_self();
 			*locked = true;
 		}
 	}
 
-	apr_thread_mutex_unlock(bundle->lock);
+	celixThreadMutex_unlock(&bundle->lock);
 
 	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to lock bundle");
 
@@ -553,7 +551,7 @@ celix_status_t bundle_unlock(bundle_pt bundle, bool *unlocked) {
 
 	bool equals;
 
-	apr_thread_mutex_lock(bundle->lock);
+	celixThreadMutex_lock(&bundle->lock);
 
 	if (bundle->lockCount == 0) {
 		*unlocked = false;
@@ -571,7 +569,7 @@ celix_status_t bundle_unlock(bundle_pt bundle, bool *unlocked) {
 		}
 	}
 
-	apr_thread_mutex_unlock(bundle->lock);
+	celixThreadMutex_unlock(&bundle->lock);
 
 	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to unlock bundle");
 

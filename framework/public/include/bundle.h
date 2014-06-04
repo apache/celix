@@ -28,7 +28,6 @@
 #define BUNDLE_H_
 
 #include <apr_general.h>
-#include <apr_portable.h>
 
 typedef struct bundle * bundle_pt;
 
@@ -41,6 +40,7 @@ typedef struct bundle * bundle_pt;
 #include "service_reference.h"
 #include "bundle_context.h"
 #include "celix_log.h"
+#include "celix_threads.h"
 
 FRAMEWORK_EXPORT celix_status_t bundle_create(bundle_pt * bundle, framework_logger_pt logger, apr_pool_t *mp);
 FRAMEWORK_EXPORT celix_status_t bundle_createFromArchive(bundle_pt * bundle, framework_pt framework, bundle_archive_pt archive, apr_pool_t *bundlePool);
@@ -82,7 +82,7 @@ FRAMEWORK_EXPORT int compareTo(service_reference_pt a, service_reference_pt b);
 
 FRAMEWORK_EXPORT celix_status_t bundle_getState(bundle_pt bundle, bundle_state_e *state);
 FRAMEWORK_EXPORT celix_status_t bundle_isLockable(bundle_pt bundle, bool *lockable);
-FRAMEWORK_EXPORT celix_status_t bundle_getLockingThread(bundle_pt bundle, apr_os_thread_t *thread);
+FRAMEWORK_EXPORT celix_status_t bundle_getLockingThread(bundle_pt bundle, celix_thread_t *thread);
 FRAMEWORK_EXPORT celix_status_t bundle_lock(bundle_pt bundle, bool *locked);
 FRAMEWORK_EXPORT celix_status_t bundle_unlock(bundle_pt bundle, bool *unlocked);
 
