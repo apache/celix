@@ -71,10 +71,10 @@ celix_status_t manifestParser_create(module_pt owner, manifest_pt manifest, apr_
         bundleVersion = manifest_getValue(manifest, OSGI_FRAMEWORK_BUNDLE_VERSION);
         if (bundleVersion != NULL) {
             parser->bundleVersion = NULL;
-            version_createVersionFromString(memory_pool, bundleVersion, &parser->bundleVersion);
+            version_createVersionFromString(bundleVersion, &parser->bundleVersion);
         } else {
         	parser->bundleVersion = NULL;
-			version_createEmptyVersion(memory_pool, &parser->bundleVersion);
+			version_createEmptyVersion(&parser->bundleVersion);
         }
         bundleSymbolicName = manifest_getValue(manifest, OSGI_FRAMEWORK_BUNDLE_SYMBOLICNAME);
         if (bundleSymbolicName != NULL) {
@@ -234,7 +234,7 @@ static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseStri
                         return NULL;
                     }
                     
-                    if (attribute_create(memory_pool, key, value, &attr) == CELIX_SUCCESS) {
+                    if (attribute_create(key, value, &attr) == CELIX_SUCCESS) {
                         hashMap_put(attrsMap, key, attr);
                     }
                 }
@@ -307,13 +307,13 @@ static linked_list_pt manifestParser_parseImportHeader(char * header, apr_pool_t
                     return NULL;
                 }
                 
-                if (attribute_create(memory_pool, apr_pstrdup(memory_pool, "service"), path, &name) == CELIX_SUCCESS) {
+                if (attribute_create(apr_pstrdup(memory_pool, "service"), path, &name) == CELIX_SUCCESS) {
                 	char *key = NULL;
                 	attribute_getKey(name, &key);
                     hashMap_put(attributes, key, name);
                 }
 
-                requirement_create(memory_pool, directives, attributes, &req);
+                requirement_create(directives, attributes, &req);
                 linkedList_addElement(requirements, req);
             }
         }
@@ -359,13 +359,13 @@ static linked_list_pt manifestParser_parseExportHeader(module_pt module, char * 
                 return NULL;
             }
 
-            if (attribute_create(memory_pool, apr_pstrdup(memory_pool, "service"), path, &name) == CELIX_SUCCESS) {
+            if (attribute_create(apr_pstrdup(memory_pool, "service"), path, &name) == CELIX_SUCCESS) {
             	char *key = NULL;
 				attribute_getKey(name, &key);
 				hashMap_put(attributes, key, name);
             }
 
-            capability_create(memory_pool, module, directives, attributes, &cap);
+            capability_create(module, directives, attributes, &cap);
             linkedList_addElement(capabilities, cap);
         }
     }
@@ -388,7 +388,7 @@ celix_status_t manifestParser_getSymbolicName(manifest_parser_pt parser, apr_poo
 }
 
 celix_status_t manifestParser_getBundleVersion(manifest_parser_pt parser, apr_pool_t *pool, version_pt *version) {
-	return version_clone(parser->bundleVersion, pool, version);
+	return version_clone(parser->bundleVersion, version);
 }
 
 celix_status_t manifestParser_getCapabilities(manifest_parser_pt parser, apr_pool_t *pool, linked_list_pt *capabilities) {

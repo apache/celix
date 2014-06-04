@@ -27,7 +27,7 @@
 
 #include "wire.h"
 
-celix_status_t wire_create(apr_pool_t *pool, module_pt importer, requirement_pt requirement,
+celix_status_t wire_create(module_pt importer, requirement_pt requirement,
 		module_pt exporter, capability_pt capability, wire_pt *wire) {
 	mock_c()->actualCall("requirement_create");
 	return mock_c()->returnValue().value.intValue;

@@ -110,7 +110,7 @@ module_pt module_createFrameworkModule(bundle_pt bundle) {
 			module->id = apr_pstrdup(bundlePool, "0");
 			module->symbolicName = apr_pstrdup(bundlePool, "framework");
 			module->version = NULL;
-			version_createVersion(bundlePool, 1, 0, 0, "", &module->version);
+			version_createVersion(1, 0, 0, "", &module->version);
 
 			linkedList_create(&module->capabilities);
 			linkedList_create(&module->requirements);

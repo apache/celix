@@ -36,21 +36,17 @@ struct wire {
 	capability_pt capability;
 };
 
-apr_status_t wire_destroy(void *handle);
-
-celix_status_t wire_create(apr_pool_t *pool, module_pt importer, requirement_pt requirement,
+celix_status_t wire_create(module_pt importer, requirement_pt requirement,
 		module_pt exporter, capability_pt capability, wire_pt *wire) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	if (*wire != NULL || pool == NULL) {
+	if (*wire != NULL) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
-		(*wire) = (wire_pt) apr_palloc(pool, sizeof(**wire));
+		(*wire) = (wire_pt) malloc(sizeof(**wire));
 		if (!*wire) {
 			status = CELIX_ENOMEM;
 		} else {
-			apr_pool_pre_cleanup_register(pool, *wire, wire_destroy);
-
 			(*wire)->importer = importer;
 			(*wire)->requirement = requirement;
 			(*wire)->exporter = exporter;
@@ -63,13 +59,12 @@ celix_status_t wire_create(apr_pool_t *pool, module_pt importer, requirement_pt 
 	return status;
 }
 
-apr_status_t wire_destroy(void *handle) {
-	wire_pt wire = (wire_pt) handle;
+celix_status_t wire_destroy(wire_pt wire) {
 	wire->importer = NULL;
 	wire->requirement = NULL;
 	wire->exporter = NULL;
 	wire->capability = NULL;
-	return APR_SUCCESS;
+	return CELIX_SUCCESS;
 }
 
 celix_status_t wire_getCapability(wire_pt wire, capability_pt *capability) {

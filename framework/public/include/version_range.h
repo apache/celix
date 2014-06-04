@@ -46,7 +46,6 @@ typedef struct versionRange * version_range_pt;
 /**
  * Creates a new <code>version_range_pt</code>.
  *
- * @param pool The pool in which the version range is created
  * @param low Lower bound version
  * @param isLowInclusive True if lower bound should be included in the range
  * @param high Upper bound version
@@ -56,19 +55,20 @@ typedef struct versionRange * version_range_pt;
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ENOMEM If allocating memory for <code>versionRange</code> failed.
  */
-celix_status_t versionRange_createVersionRange(apr_pool_t *pool, version_pt low, bool isLowInclusive, version_pt high, bool isHighInclusive, version_range_pt *versionRange);
+celix_status_t versionRange_createVersionRange(version_pt low, bool isLowInclusive, version_pt high, bool isHighInclusive, version_range_pt *versionRange);
 
 /**
  * Creates an infinite version range using ::version_createEmptyVersion for the low version,
  * 	NULL for the high version and high and low inclusive set to true.
  *
- * @param pool The pool in which the version range is created
  * @param range The created range
  * @return Status code indication failure or success:
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ENOMEM If allocating memory for <code>range</code> failed.
  */
-celix_status_t versionRange_createInfiniteVersionRange(apr_pool_t *pool, version_range_pt *range);
+celix_status_t versionRange_createInfiniteVersionRange(version_range_pt *range);
+
+celix_status_t versionRange_destroy(version_range_pt range);
 
 /**
  * Determine if the specified version is part of the version range or not.
@@ -95,7 +95,6 @@ celix_status_t versionRange_isInRange(version_range_pt versionRange, version_pt 
  * ceiling ::= version
  * </pre>
  *
- * @param pool The pool in which the range is created.
  * @param rangeStr String representation of the version range.
  * @param range The created version_range_pt.
  * @return Status code indication failure or success:
@@ -104,7 +103,7 @@ celix_status_t versionRange_isInRange(version_range_pt versionRange, version_pt 
  * 		- CELIX_ILLEGAL_ARGUMENT If the numerical components are negative,
  * 		  	the qualifier string is invalid or <code>versionStr</code> is impropertly formatted.
  */
-celix_status_t versionRange_parse(apr_pool_t *pool, char * rangeStr, version_range_pt *range);
+celix_status_t versionRange_parse(char * rangeStr, version_range_pt *range);
 
 /**
  * @}

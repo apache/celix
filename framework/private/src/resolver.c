@@ -94,9 +94,7 @@ linked_list_pt resolver_resolve(module_pt root) {
 	}
 
 	bundle_pt bundle = module_getBundle(root);
-	apr_pool_t *pool = NULL;
-	bundle_getMemoryPool(bundle, &pool);
-	linkedList_create(pool, &wireMap);
+	linkedList_create(&wireMap);
 	resolved = resolver_populateWireMap(candidatesMap, root, wireMap);
 	iter = hashMapIterator_create(candidatesMap);
 	while (hashMapIterator_hasNext(iter)) {
@@ -120,21 +118,15 @@ linked_list_pt resolver_resolve(module_pt root) {
 
 int resolver_populateCandidatesMap(hash_map_pt candidatesMap, module_pt targetModule) {
     linked_list_pt candSetList;
-	apr_pool_t *candSetList_pool;
     linked_list_pt candidates;
-    apr_pool_t *candidates_pool;
     linked_list_pt invalid;
-    apr_pool_t *invalid_pool;
     int i;
     int c;
     requirement_pt req;
     capability_list_pt capList;
-    apr_pool_t *bundlePool = NULL;
     bundle_pt bundle = NULL;
 
     bundle = module_getBundle(targetModule);
-    bundle_getMemoryPool(bundle, &bundlePool);
-
 
 	if (hashMap_containsKey(candidatesMap, targetModule)) {
 		return 0;
@@ -142,16 +134,14 @@ int resolver_populateCandidatesMap(hash_map_pt candidatesMap, module_pt targetMo
 
 	hashMap_put(candidatesMap, targetModule, NULL);
 
-	if (apr_pool_create(&candSetList_pool, bundlePool) == APR_SUCCESS) {
-	    if (linkedList_create(candSetList_pool, &candSetList) == CELIX_SUCCESS) {
+	    if (linkedList_create(&candSetList) == CELIX_SUCCESS) {
             for (i = 0; i < linkedList_size(module_getRequirements(targetModule)); i++) {
             	char *targetName = NULL;
                 req = (requirement_pt) linkedList_get(module_getRequirements(targetModule), i);
                 requirement_getTargetName(req, &targetName);
                 capList = resolver_getCapabilityList(m_resolvedServices, targetName);
 
-                if (apr_pool_create(&candidates_pool, bundlePool) == APR_SUCCESS) {
-                    if (linkedList_create(candidates_pool, &candidates) == CELIX_SUCCESS) {
+                    if (linkedList_create(&candidates) == CELIX_SUCCESS) {
                         for (c = 0; (capList != NULL) && (c < linkedList_size(capList->capabilities)); c++) {
                             capability_pt cap = (capability_pt) linkedList_get(capList->capabilities, c);
                             bool satisfied = false;
@@ -186,17 +176,13 @@ int resolver_populateCandidatesMap(hash_map_pt candidatesMap, module_pt targetMo
                         }
 
                         if (linkedList_size(candidates) == 0) {
-                            if (apr_pool_create(&invalid_pool, bundlePool) == APR_SUCCESS) {
-                                if (linkedList_create(invalid_pool, &invalid) == CELIX_SUCCESS) {
+                                if (linkedList_create(&invalid) == CELIX_SUCCESS) {
 									char *name = NULL;
                                     resolver_removeInvalidCandidate(targetModule, candidatesMap, invalid);
-                                    apr_pool_destroy(invalid_pool);
-                                    apr_pool_destroy(candidates_pool);
                                     
                                     module_getSymbolicName(targetModule, &name);
 
                                     printf("Unable to resolve: %s, %s\n", name, targetName);
-                                }
                             }
                             return -1;
                         } else if (linkedList_size(candidates) > 0) {
@@ -207,12 +193,10 @@ int resolver_populateCandidatesMap(hash_map_pt candidatesMap, module_pt targetMo
                             linkedList_addElement(candSetList, cs);
                         }
 
-                    }
                 }
             }
             hashMap_put(candidatesMap, targetModule, candSetList);
 	    }
-	}
 	return 0;
 }
 
@@ -258,29 +242,17 @@ void resolver_removeInvalidCandidate(module_pt invalidModule, hash_map_pt candid
 }
 
 void resolver_addModule(module_pt module) {
-    apr_pool_t *modules_pool;
-    apr_pool_t *unresolvedServices_pool;
-    apr_pool_t *resolvedServices_pool;
     int i;
     capability_pt cap;
     capability_list_pt list;
-    apr_pool_t *capabilities_pool;
-    apr_pool_t *bundlePool = NULL;
 	bundle_pt bundle = NULL;
 
 	bundle = module_getBundle(module);
-	bundle_getMemoryPool(bundle, &bundlePool);
 
 	if (m_modules == NULL) {
-	    if (apr_pool_create(&modules_pool, bundlePool) == APR_SUCCESS) {
-	        if (apr_pool_create(&unresolvedServices_pool, bundlePool) == APR_SUCCESS) {
-	            if (apr_pool_create(&resolvedServices_pool, bundlePool) == APR_SUCCESS) {
-	                linkedList_create(modules_pool, &m_modules);
-	                linkedList_create(unresolvedServices_pool, &m_unresolvedServices);
-	                linkedList_create(resolvedServices_pool, &m_resolvedServices);
-	            }
-	        }
-	    }
+	                linkedList_create(&m_modules);
+	                linkedList_create(&m_unresolvedServices);
+	                linkedList_create(&m_resolvedServices);
 	}
 
 	if (m_modules != NULL && m_unresolvedServices != NULL) {
@@ -292,13 +264,11 @@ void resolver_addModule(module_pt module) {
             capability_getServiceName(cap, &serviceName);
             list = resolver_getCapabilityList(m_unresolvedServices, serviceName);
             if (list == NULL) {
-                if (apr_pool_create(&capabilities_pool, bundlePool) == APR_SUCCESS) {
-                    list = (capability_list_pt) apr_palloc(capabilities_pool, sizeof(*list));
-                    if (list != NULL) {
-                        list->serviceName = apr_pstrdup(capabilities_pool, serviceName);
-                        if (linkedList_create(capabilities_pool, &list->capabilities) == APR_SUCCESS) {
-                            linkedList_addElement(m_unresolvedServices, list);
-                        }
+                list = (capability_list_pt) malloc(sizeof(*list));
+                if (list != NULL) {
+                    list->serviceName = strdup(serviceName);
+                    if (linkedList_create(&list->capabilities) == APR_SUCCESS) {
+                        linkedList_addElement(m_unresolvedServices, list);
                     }
                 }
             }
@@ -334,17 +304,12 @@ void resolver_removeModule(module_pt module) {
 void resolver_moduleResolved(module_pt module) {
     int capIdx;
     linked_list_pt capsCopy;
-    apr_pool_t *capsCopy_pool;
-    apr_pool_t *capabilities_pool;
-    apr_pool_t *bundlePool = NULL;
 	bundle_pt bundle = NULL;
 
 	bundle = module_getBundle(module);
-	bundle_getMemoryPool(bundle, &bundlePool);
 
 	if (module_isResolved(module)) {
-	    if (apr_pool_create(&capsCopy_pool, bundlePool) == APR_SUCCESS) {
-	        if (linkedList_create(capsCopy_pool, &capsCopy) == APR_SUCCESS) {
+	        if (linkedList_create(&capsCopy) == APR_SUCCESS) {
                 linked_list_pt wires = NULL;
 
 				for (capIdx = 0; (module_getCapabilities(module) != NULL) && (capIdx < linkedList_size(module_getCapabilities(module))); capIdx++) {
@@ -386,22 +351,18 @@ void resolver_moduleResolved(module_pt module) {
 
                         list = resolver_getCapabilityList(m_resolvedServices, serviceName);
                         if (list == NULL) {
-                            if (apr_pool_create(&capabilities_pool, bundlePool) == APR_SUCCESS) {
-                                list = (capability_list_pt) apr_palloc(capabilities_pool, sizeof(*list));
+                                list = (capability_list_pt) malloc(sizeof(*list));
                                 if (list != NULL) {
-                                    list->serviceName = apr_pstrdup(capabilities_pool, serviceName);
-                                    if (linkedList_create(capabilities_pool, &list->capabilities) == APR_SUCCESS) {
+                                    list->serviceName = strdup(serviceName);
+                                    if (linkedList_create(&list->capabilities) == APR_SUCCESS) {
                                         linkedList_addElement(m_resolvedServices, list);
                                     }
                                 }
-                            }
                         }
                         linkedList_addElement(list->capabilities, cap);
                     }
                 }
 
-                apr_pool_destroy(capsCopy_pool);
-	        }
 	    }
 	}
 }
@@ -422,14 +383,10 @@ capability_list_pt resolver_getCapabilityList(linked_list_pt list, char * name) 
 
 linked_list_pt resolver_populateWireMap(hash_map_pt candidates, module_pt importer, linked_list_pt wireMap) {
     linked_list_pt serviceWires;
-    apr_pool_t *serviceWires_pool;
     linked_list_pt emptyWires;
-    apr_pool_t *emptyWires_pool;
-    apr_pool_t *bundlePool = NULL;
 	bundle_pt bundle = NULL;
 
 	bundle = module_getBundle(importer);
-	bundle_getMemoryPool(bundle, &bundlePool);
 
     if (candidates && importer && wireMap) {
         linked_list_pt candSetList = NULL;
@@ -446,10 +403,8 @@ linked_list_pt resolver_populateWireMap(hash_map_pt candidates, module_pt import
 
         candSetList = (linked_list_pt) hashMap_get(candidates, importer);
 
-        if (apr_pool_create(&serviceWires_pool, bundlePool) == APR_SUCCESS) {
-            if (apr_pool_create(&emptyWires_pool, bundlePool) == APR_SUCCESS) {
-                if (linkedList_create(serviceWires_pool, &serviceWires) == APR_SUCCESS) {
-                    if (linkedList_create(emptyWires_pool, &emptyWires) == APR_SUCCESS) {
+                if (linkedList_create(&serviceWires) == APR_SUCCESS) {
+                    if (linkedList_create(&emptyWires) == APR_SUCCESS) {
                         int candSetIdx = 0;
 						
 						// hashMap_put(wireMap, importer, emptyWires);
@@ -457,7 +412,7 @@ linked_list_pt resolver_populateWireMap(hash_map_pt candidates, module_pt import
                         char *mname = NULL;
                         module_getSymbolicName(importer, &mname);
 
-						importer_wires_pt importerWires = apr_palloc(bundlePool, sizeof(*importerWires));
+						importer_wires_pt importerWires = malloc(sizeof(*importerWires));
 						importerWires->importer = importer;
 						importerWires->wires = emptyWires;
 						linkedList_addElement(wireMap, importerWires);
@@ -469,8 +424,7 @@ linked_list_pt resolver_populateWireMap(hash_map_pt candidates, module_pt import
                             capability_getModule(((capability_pt) linkedList_get(cs->candidates, 0)), &module);
                             if (importer != module) {
                                 wire_pt wire = NULL;
-                                wire_create(serviceWires_pool, importer, cs->requirement,
-                                        module,
+                                wire_create(importer, cs->requirement, module,
                                         ((capability_pt) linkedList_get(cs->candidates, 0)), &wire);
                                 linkedList_addElement(serviceWires, wire);
                             }
@@ -483,8 +437,6 @@ linked_list_pt resolver_populateWireMap(hash_map_pt candidates, module_pt import
                         importerWires->wires = serviceWires;
                         // hashMap_put(wireMap, importer, serviceWires);
                     }
-                }
-            }
         }
     }
 

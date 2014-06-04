@@ -30,17 +30,13 @@
 #include "version_range_private.h"
 #include "celix_log.h"
 
-apr_status_t versionRange_destroy(void *rangeP);
-
-celix_status_t versionRange_createVersionRange(apr_pool_t *pool, version_pt low, bool isLowInclusive,
+celix_status_t versionRange_createVersionRange(version_pt low, bool isLowInclusive,
 			version_pt high, bool isHighInclusive, version_range_pt *range) {
 	celix_status_t status = CELIX_SUCCESS;
-	*range = (version_range_pt) apr_palloc(pool, sizeof(**range));
+	*range = (version_range_pt) malloc(sizeof(**range));
 	if (!*range) {
 		status = CELIX_ENOMEM;
 	} else {
-		apr_pool_pre_cleanup_register(pool, *range, versionRange_destroy);
-
 		(*range)->low = low;
 		(*range)->isLowInclusive = isLowInclusive;
 		(*range)->high = high;
@@ -52,8 +48,7 @@ celix_status_t versionRange_createVersionRange(apr_pool_t *pool, version_pt low,
 	return status;
 }
 
-apr_status_t versionRange_destroy(void *rangeP) {
-	version_range_pt range = rangeP;
+celix_status_t versionRange_destroy(version_range_pt range) {
 	range->high = NULL;
 	range->isHighInclusive = false;
 	range->low = NULL;
@@ -61,13 +56,13 @@ apr_status_t versionRange_destroy(void *rangeP) {
 	return APR_SUCCESS;
 }
 
-celix_status_t versionRange_createInfiniteVersionRange(apr_pool_t *pool, version_range_pt *range) {
+celix_status_t versionRange_createInfiniteVersionRange(version_range_pt *range) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	version_pt version = NULL;
-	status = version_createEmptyVersion(pool, &version);
+	status = version_createEmptyVersion(&version);
 	if (status == CELIX_SUCCESS) {
-		status = versionRange_createVersionRange(pool, version, true, NULL, true, range);
+		status = versionRange_createVersionRange(version, true, NULL, true, range);
 	}
 
 	framework_logIfError(logger, status, NULL, "Cannot create infinite range");
@@ -126,16 +121,11 @@ celix_status_t versionRange_isInRange(version_range_pt versionRange, version_pt 
 	return status;
 }
 
-celix_status_t versionRange_parse(apr_pool_t *pool, char * rangeStr, version_range_pt *range) {
+celix_status_t versionRange_parse(char * rangeStr, version_range_pt *range) {
 	celix_status_t status = CELIX_SUCCESS;
 	if (strchr(rangeStr, ',') != NULL) {
-		apr_pool_t *spool;
-		apr_status_t aprStatus = apr_pool_create(&spool, pool);
-		if (aprStatus != APR_SUCCESS) {
-			status = CELIX_ILLEGAL_STATE;
-		} else {
 			int vlowL = strcspn(rangeStr+1, ",");
-			char * vlow = (char *) apr_palloc(spool, sizeof(*vlow * (vlowL + 1)));
+			char * vlow = (char *) malloc(sizeof(*vlow * (vlowL + 1)));
 			if (!vlow) {
 				status = CELIX_ENOMEM;
 			} else {
@@ -144,7 +134,7 @@ celix_status_t versionRange_parse(apr_pool_t *pool, char * rangeStr, version_ran
 				vlow = strncpy(vlow, rangeStr+1, vlowL);
 				vlow[vlowL] = '\0';
 				vhighL = strlen(rangeStr+1) - vlowL - 2;
-				vhigh = (char *) apr_palloc(spool, sizeof(*vhigh * (vhighL+1)));
+				vhigh = (char *) malloc(sizeof(*vhigh * (vhighL+1)));
 				if (!vhigh) {
 					status = CELIX_ENOMEM;
 				} else {					
@@ -155,12 +145,12 @@ celix_status_t versionRange_parse(apr_pool_t *pool, char * rangeStr, version_ran
 
 					vhigh = strncpy(vhigh, rangeStr+vlowL+2, vhighL);
 					vhigh[vhighL] = '\0';
-					status = version_createVersionFromString(pool, vlow, &versionLow);
+					status = version_createVersionFromString(vlow, &versionLow);
 					if (status == CELIX_SUCCESS) {
 						version_pt versionHigh = NULL;
-						status = version_createVersionFromString(pool, vhigh, &versionHigh);
+						status = version_createVersionFromString(vhigh, &versionHigh);
 						if (status == CELIX_SUCCESS) {
-							status = versionRange_createVersionRange(pool,
+							status = versionRange_createVersionRange(
 									versionLow,
 									start == '[',
 									versionHigh,
@@ -170,14 +160,12 @@ celix_status_t versionRange_parse(apr_pool_t *pool, char * rangeStr, version_ran
 						}
 					}
 				}
-			}
-			apr_pool_destroy(spool);
 		}
 	} else {
 		version_pt version = NULL;
-		status = version_createVersionFromString(pool, rangeStr, &version);
+		status = version_createVersionFromString(rangeStr, &version);
 		if (status == CELIX_SUCCESS) {
-			status = versionRange_createVersionRange(pool, version, true, NULL, false, range);
+			status = versionRange_createVersionRange(version, true, NULL, false, range);
 		}
 	}
 

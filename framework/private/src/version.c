@@ -31,29 +31,25 @@
 #include "version_private.h"
 #include "celix_log.h"
 
-static apr_status_t version_destroy(void *handle);
-
-celix_status_t version_createVersion(apr_pool_t *pool, int major, int minor, int micro, char * qualifier, version_pt *version) {
+celix_status_t version_createVersion(int major, int minor, int micro, char * qualifier, version_pt *version) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	if (*version != NULL || pool == NULL) {
+	if (*version != NULL) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
-		*version = (version_pt) apr_palloc(pool, sizeof(**version));
+		*version = (version_pt) malloc(sizeof(**version));
 		if (!*version) {
 			status = CELIX_ENOMEM;
 		} else {
 			unsigned int i;
-			apr_pool_pre_cleanup_register(pool, *version, version_destroy);
 
-			(*version)->pool = pool;
 			(*version)->major = major;
 			(*version)->minor = minor;
 			(*version)->micro = micro;
 			if (qualifier == NULL) {
 				qualifier = "";
 			}
-			(*version)->qualifier = apr_pstrdup(pool, qualifier);
+			(*version)->qualifier = strdup(qualifier);
 
 			if (major < 0) {
 			    fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Negative major");
@@ -94,20 +90,20 @@ celix_status_t version_createVersion(apr_pool_t *pool, int major, int minor, int
 	return status;
 }
 
-celix_status_t version_clone(version_pt version, apr_pool_t *pool, version_pt *clone) {
-	return version_createVersion(pool, version->major, version->minor, version->micro, version->qualifier, clone);
+celix_status_t version_clone(version_pt version, version_pt *clone) {
+	return version_createVersion(version->major, version->minor, version->micro, version->qualifier, clone);
 }
 
-apr_status_t version_destroy(void *handle) {
-	version_pt version = (version_pt) handle;
+celix_status_t version_destroy(version_pt version) {
 	version->major = 0;
 	version->minor = 0;
 	version->micro = 0;
+	free(version->qualifier);
 	version->qualifier = NULL;
-	return APR_SUCCESS;
+	return CELIX_SUCCESS;
 }
 
-celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionStr, version_pt *version) {
+celix_status_t version_createVersionFromString(char * versionStr, version_pt *version) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	int major = 0;
@@ -159,7 +155,7 @@ celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionS
 				micro = atoi(token);
 				token = apr_strtok(NULL, delims, &last);
 				if (token != NULL) {
-					qualifier = apr_pstrdup(pool, token);
+					qualifier = strdup(token);
 					token = apr_strtok(NULL, delims, &last);
 					if (token != NULL) {
 						printf("invalid format");
@@ -171,7 +167,7 @@ celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionS
 		}
 	}
 	if (status == CELIX_SUCCESS) {
-		status = version_createVersion(pool, major, minor, micro, qualifier, version);
+		status = version_createVersion(major, minor, micro, qualifier, version);
 	}
 
 	framework_logIfError(logger, status, NULL, "Cannot create version [versionString=%s]", versionStr);
@@ -179,8 +175,8 @@ celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionS
 	return status;
 }
 
-celix_status_t version_createEmptyVersion(apr_pool_t *pool, version_pt *version) {
-	return version_createVersion(pool, 0, 0, 0, "", version);
+celix_status_t version_createEmptyVersion(version_pt *version) {
+	return version_createVersion(0, 0, 0, "", version);
 }
 
 celix_status_t version_getMajor(version_pt version, int *major) {
@@ -235,11 +231,22 @@ celix_status_t version_compareTo(version_pt version, version_pt compare, int *re
 	return status;
 }
 
-celix_status_t version_toString(version_pt version, apr_pool_t *pool, char **string) {
+celix_status_t version_toString(version_pt version, char **string) {
+    celix_status_t status = CELIX_SUCCESS;
 	if (strlen(version->qualifier) > 0) {
-		*string = apr_psprintf(pool, "%d.%d.%d.%s", version->major, version->minor, version->micro, version->qualifier);
+	    char str[512];
+	    int written = snprintf(str, 512, "%d.%d.%d.%s", version->major, version->minor, version->micro, version->qualifier);
+	    if (written >= 512 || written < 0) {
+	        status = CELIX_BUNDLE_EXCEPTION;
+	    }
+	    *string = str;
 	} else {
-		*string = apr_psprintf(pool, "%d.%d.%d", version->major, version->minor, version->micro);
+	    char str[512];
+        int written = snprintf(str, 512, "%d.%d.%d", version->major, version->minor, version->micro);
+        if (written >= 512 || written < 0) {
+            status = CELIX_BUNDLE_EXCEPTION;
+        }
+        *string = str;
 	}
-	return CELIX_SUCCESS;
+	return status;
 }

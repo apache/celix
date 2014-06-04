@@ -33,7 +33,8 @@ typedef struct requirement *requirement_pt;
 #include "hash_map.h"
 #include "version_range.h"
 
-celix_status_t requirement_create(apr_pool_t *pool, hash_map_pt directives, hash_map_pt attributes, requirement_pt *requirement);
+celix_status_t requirement_create(hash_map_pt directives, hash_map_pt attributes, requirement_pt *requirement);
+celix_status_t requirement_destroy(requirement_pt requirement);
 celix_status_t requirement_getVersionRange(requirement_pt requirement, version_range_pt *range);
 celix_status_t requirement_getTargetName(requirement_pt requirement, char **targetName);
 

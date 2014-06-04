@@ -44,7 +44,6 @@ typedef struct wire *wire_pt;
 /**
  * Create a wire between two modules using a requirement and capability.
  *
- * @param pool The pool in which the wire is created.
  * @param importer The importer module of the wire.
  * @param requirement The requirement of the importer.
  * @param exporter The exporter module of the wire.
@@ -54,8 +53,18 @@ typedef struct wire *wire_pt;
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ENOMEM If allocating memory for <code>wire</code> failed.
  */
-celix_status_t wire_create(apr_pool_t *pool, module_pt importer, requirement_pt requirement,
+celix_status_t wire_create(module_pt importer, requirement_pt requirement,
 		module_pt exporter, capability_pt capability, wire_pt *wire);
+
+/**
+ * Getter for the capability of the exporting module.
+ *
+ * @param wire The wire to get the capability from.
+ * @param capability The capability
+ * @return Status code indication failure or success:
+ *      - CELIX_SUCCESS when no errors are encountered.
+ */
+celix_status_t wire_destroy(wire_pt wire);
 
 /**
  * Getter for the capability of the exporting module.

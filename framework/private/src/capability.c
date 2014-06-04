@@ -29,22 +29,18 @@
 #include "attribute.h"
 #include "celix_log.h"
 
-apr_status_t capability_destroy(void *capabilityP);
-
-celix_status_t capability_create(apr_pool_t *pool, module_pt module, hash_map_pt directives, hash_map_pt attributes, capability_pt *capability) {
+celix_status_t capability_create(module_pt module, hash_map_pt directives, hash_map_pt attributes, capability_pt *capability) {
 	celix_status_t status = CELIX_SUCCESS;
-	*capability = (capability_pt) apr_palloc(pool, sizeof(**capability));
+	*capability = (capability_pt) malloc(sizeof(**capability));
 	if (!*capability) {
 		status = CELIX_ENOMEM;
 	} else {
-		apr_pool_pre_cleanup_register(pool, *capability, capability_destroy);
-
 		(*capability)->module = module;
 		(*capability)->attributes = attributes;
 		(*capability)->directives = directives;
 
 		(*capability)->version = NULL;
-		status = version_createEmptyVersion(pool, &(*capability)->version);
+		status = version_createEmptyVersion(&(*capability)->version);
 		if (status == CELIX_SUCCESS) {
 			attribute_pt versionAttribute = NULL;
 			attribute_pt serviceAttribute = (attribute_pt) hashMap_get(attributes, "service");
@@ -55,7 +51,7 @@ celix_status_t capability_create(apr_pool_t *pool, module_pt module, hash_map_pt
 					char *versionStr = NULL;
 					attribute_getValue(versionAttribute, &versionStr);
 					(*capability)->version = NULL;
-					status = version_createVersionFromString(pool, versionStr, &(*capability)->version);
+					status = version_createVersionFromString(versionStr, &(*capability)->version);
 				}
 			}
 		}
@@ -66,9 +62,7 @@ celix_status_t capability_create(apr_pool_t *pool, module_pt module, hash_map_pt
 	return status;
 }
 
-apr_status_t capability_destroy(void *capabilityP) {
-	capability_pt capability = capabilityP;
-
+celix_status_t capability_destroy(capability_pt capability) {
 	hash_map_iterator_pt attrIter = hashMapIterator_create(capability->attributes);
 	while (hashMapIterator_hasNext(attrIter)) {
 		attribute_pt attr = hashMapIterator_nextValue(attrIter);
@@ -81,9 +75,11 @@ apr_status_t capability_destroy(void *capabilityP) {
 	capability->attributes = NULL;
 	capability->directives = NULL;
 	capability->module = NULL;
+
+	version_destroy(capability->version);
 	capability->version = NULL;
 
-	return APR_SUCCESS;
+	return CELIX_SUCCESS;
 }
 
 celix_status_t capability_getServiceName(capability_pt capability, char **serviceName) {

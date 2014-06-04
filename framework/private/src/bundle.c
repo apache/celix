@@ -264,8 +264,9 @@ celix_status_t bundle_createModule(bundle_pt bundle, module_pt *module) {
 								if ((symName != NULL) && (sym != NULL) && !strcmp(symName, sym) &&
 										!cmp) {
 									char *versionString = NULL;
-									version_toString(version, bundle->memoryPool, &versionString);
+									version_toString(version, &versionString);
 									printf("Bundle symbolic name and version are not unique: %s:%s\n", sym, versionString);
+									free(versionString);
 									status = CELIX_BUNDLE_EXCEPTION;
 									break;
 								}

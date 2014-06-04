@@ -29,15 +29,15 @@
 #include "attribute_private.h"
 #include "celix_log.h"
 
-celix_status_t attribute_create(apr_pool_t *memory_pool, char * key, char * value, attribute_pt *attribute) {
+celix_status_t attribute_create(char * key, char * value, attribute_pt *attribute) {
 	celix_status_t status = CELIX_SUCCESS;
 	char *error = NULL;
 
-	if (key == NULL || value == NULL || memory_pool == NULL || *attribute != NULL) {
+	if (key == NULL || value == NULL || *attribute != NULL) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	    error = "Missing required arguments and/or values";
 	} else {
-		attribute_pt attr = apr_palloc(memory_pool, sizeof(*attr));
+		attribute_pt attr = malloc(sizeof(*attr));
 		if (!attr) {
 			status = CELIX_ENOMEM;
 		} else {

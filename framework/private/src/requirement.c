@@ -30,19 +30,15 @@
 #include "attribute.h"
 #include "celix_log.h"
 
-apr_status_t requirement_destroy(void *requirementP);
-
-celix_status_t requirement_create(apr_pool_t *pool, hash_map_pt directives, hash_map_pt attributes, requirement_pt *requirement) {
+celix_status_t requirement_create(hash_map_pt directives, hash_map_pt attributes, requirement_pt *requirement) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	*requirement = (requirement_pt) apr_palloc(pool, sizeof(**requirement));
+	*requirement = (requirement_pt) malloc(sizeof(**requirement));
 	if (!*requirement) {
 		status = CELIX_ENOMEM;
 	} else {
 		attribute_pt serviceAttribute = NULL;
 		attribute_pt versionAttribute = NULL;
-
-		apr_pool_pre_cleanup_register(pool, *requirement, requirement_destroy);
 
 		(*requirement)->attributes = attributes;
 		(*requirement)->directives = directives;
@@ -51,14 +47,14 @@ celix_status_t requirement_create(apr_pool_t *pool, hash_map_pt directives, hash
 		status = attribute_getValue(serviceAttribute, &(*requirement)->targetName);
 		if (status == CELIX_SUCCESS) {
 			(*requirement)->versionRange = NULL;
-			status = versionRange_createInfiniteVersionRange(pool, &(*requirement)->versionRange);
+			status = versionRange_createInfiniteVersionRange(&(*requirement)->versionRange);
 			if (status == CELIX_SUCCESS) {
 				versionAttribute = (attribute_pt) hashMap_get(attributes, "version");
 				if (versionAttribute != NULL) {
 					char *versionStr = NULL;
 					attribute_getValue(versionAttribute, &versionStr);
 					(*requirement)->versionRange = NULL;
-					status = versionRange_parse(pool, versionStr, &(*requirement)->versionRange);
+					status = versionRange_parse(versionStr, &(*requirement)->versionRange);
 				}
 			}
 		}
@@ -69,8 +65,7 @@ celix_status_t requirement_create(apr_pool_t *pool, hash_map_pt directives, hash
 	return status;
 }
 
-apr_status_t requirement_destroy(void *requirementP) {
-	requirement_pt requirement = requirementP;
+celix_status_t requirement_destroy(requirement_pt requirement) {
 	hash_map_iterator_pt attrIter = hashMapIterator_create(requirement->attributes);
 	while (hashMapIterator_hasNext(attrIter)) {
 		attribute_pt attr = hashMapIterator_nextValue(attrIter);
@@ -84,7 +79,7 @@ apr_status_t requirement_destroy(void *requirementP) {
 	requirement->directives = NULL;
 	requirement->versionRange = NULL;
 
-	return APR_SUCCESS;
+	return CELIX_SUCCESS;
 }
 
 celix_status_t requirement_getVersionRange(requirement_pt requirement, version_range_pt *range) {
