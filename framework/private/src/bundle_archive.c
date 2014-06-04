@@ -71,7 +71,6 @@ celix_status_t bundleArchive_createSystemBundleArchive(apr_pool_t *mp, framework
     celix_status_t status = CELIX_SUCCESS;
     char *error = NULL;
 	bundle_archive_pt archive;
-	apr_pool_t *revisions_pool;
 
 	if (mp == NULL || *bundle_archive != NULL) {
 	    status = CELIX_ILLEGAL_ARGUMENT;
@@ -82,8 +81,7 @@ celix_status_t bundleArchive_createSystemBundleArchive(apr_pool_t *mp, framework
             status = CELIX_ENOMEM;
         } else {
         	apr_pool_pre_cleanup_register(mp, archive, bundleArchive_destroy);
-        	status = CELIX_DO_IF(status, apr_pool_create(&revisions_pool, mp));
-        	status = CELIX_DO_IF(status, linkedList_create(revisions_pool, &archive->revisions));
+        	status = linkedList_create(&archive->revisions);
         	if (status == CELIX_SUCCESS) {
                 archive->id = 0l;
                 archive->location = "System Bundle";
@@ -96,8 +94,6 @@ celix_status_t bundleArchive_createSystemBundleArchive(apr_pool_t *mp, framework
                 time(&archive->lastModified);
 
                 *bundle_archive = archive;
-            } else {
-                apr_pool_destroy(revisions_pool);
             }
         }
 	}
@@ -122,7 +118,7 @@ celix_status_t bundleArchive_create(framework_logger_pt logger, char * archiveRo
 		    status = CELIX_ENOMEM;
 		} else {
 			apr_pool_pre_cleanup_register(mp, archive, bundleArchive_destroy);
-			status = linkedList_create(&archive->revisions));
+			status = linkedList_create(&archive->revisions);
 			if (status == CELIX_SUCCESS) {
                 archive->id = id;
                 archive->location = location;
@@ -152,8 +148,9 @@ static apr_status_t bundleArchive_destroy(void *archiveP) {
     apr_status_t status = APR_SUCCESS;
 	bundle_archive_pt archive = archiveP;
 	archive = NULL;
+
 	if (archive->revisions != NULL) {
-		free(archive->revisions)
+		free(archive->revisions);
 	}
 
 	framework_logIfError(archive->logger, status, NULL, "Could not create archive");
@@ -165,7 +162,6 @@ celix_status_t bundleArchive_recreate(char * archiveRoot, apr_pool_t *mp, bundle
     celix_status_t status = CELIX_SUCCESS;
     char *errpr = NULL;
 
-    apr_pool_t *revisions_pool;
     bundle_archive_pt archive;
 
 	archive = (bundle_archive_pt) apr_pcalloc(mp, sizeof(*archive));
@@ -174,8 +170,7 @@ celix_status_t bundleArchive_recreate(char * archiveRoot, apr_pool_t *mp, bundle
  	} else {
         apr_dir_t *dir;
 		apr_pool_pre_cleanup_register(mp, archive, bundleArchive_destroy);
-		status = CELIX_DO_IF(status, apr_pool_create(&revisions_pool, mp));
-		status = CELIX_DO_IF(status, linkedList_create(revisions_pool, &archive->revisions));
+		status = linkedList_create(&archive->revisions);
 		if (status == CELIX_SUCCESS) {
             archive->archiveRoot = archiveRoot;
             apr_dir_open(&archive->archiveRootDir, archiveRoot, mp);
@@ -205,10 +200,6 @@ celix_status_t bundleArchive_recreate(char * archiveRoot, apr_pool_t *mp, bundle
                 *bundle_archive = archive;
             }
 		}
-
-		if (status != CELIX_SUCCESS) {
-            apr_pool_destroy(revisions_pool);
-        }
 	}
 
 	framework_logIfError(archive->logger, status, NULL, "Could not create archive");
