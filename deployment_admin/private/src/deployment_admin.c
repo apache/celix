@@ -33,6 +33,7 @@
 #include <curl/curl.h>
 #include <curl/easy.h>
 
+#include <apr.h>
 #include <apr_thread_proc.h>
 #include <apr_strings.h>
 #include <apr_time.h>
@@ -60,7 +61,7 @@
 
 #define VERSIONS "/versions"
 
-static void* deploymentAdmin_poll(apr_thread_t *thd, void *deploymentAdmin);
+static void* APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *deploymentAdmin);
 celix_status_t deploymentAdmin_download(char * url, char **inputFile);
 size_t deploymentAdmin_writeData(void *ptr, size_t size, size_t nmemb, FILE *stream);
 static celix_status_t deploymentAdmin_deleteTree(char * directory, apr_pool_t *mp);
@@ -164,7 +165,7 @@ static celix_status_t deploymentAdmin_updateAuditPool(deployment_admin_pt admin,
 	return status;
 }
 
-static void * deploymentAdmin_poll(apr_thread_t *thd, void *deploymentAdmin) {
+static void * APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *deploymentAdmin) {
 	deployment_admin_pt admin = deploymentAdmin;
 
 	/*first poll send framework started audit event, note this will register the target in Apache ACE*/
