@@ -64,7 +64,6 @@ celix_status_t celixThreadMutexAttr_create(celix_thread_mutexattr_t *attr);
 celix_status_t celixThreadMutexAttr_destroy(celix_thread_mutexattr_t *attr);
 celix_status_t celixThreadMutexAttr_settype(celix_thread_mutexattr_t *attr, int type);
 
-
 typedef pthread_cond_t celix_thread_cond_t;
 typedef pthread_condattr_t celix_thread_condattr_t;
 

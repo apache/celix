@@ -34,15 +34,14 @@
 #include "framework_exports.h"
 
 struct manifest {
-	apr_pool_t *pool;
 	properties_pt mainAttributes;
 	hash_map_pt attributes;
 };
 
 typedef struct manifest * manifest_pt;
 
-FRAMEWORK_EXPORT celix_status_t manifest_create(apr_pool_t *pool, manifest_pt *manifest);
-FRAMEWORK_EXPORT celix_status_t manifest_createFromFile(apr_pool_t *pool, char *filename, manifest_pt *manifest);
+FRAMEWORK_EXPORT celix_status_t manifest_create(manifest_pt *manifest);
+FRAMEWORK_EXPORT celix_status_t manifest_createFromFile(char *filename, manifest_pt *manifest);
 
 FRAMEWORK_EXPORT void manifest_clear(manifest_pt manifest);
 FRAMEWORK_EXPORT properties_pt manifest_getMainAttributes(manifest_pt manifest);

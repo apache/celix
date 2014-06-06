@@ -50,7 +50,7 @@ celix_status_t bundle_create(bundle_pt * bundle, framework_logger_pt logger, apr
 	if (*bundle == NULL) {
 		return CELIX_ENOMEM;
 	}
-	status = bundleArchive_createSystemBundleArchive(mp, logger, &archive);
+	status = bundleArchive_createSystemBundleArchive(logger, &archive);
 	if (status == CELIX_SUCCESS) {
         module_pt module;
 		apr_status_t apr_status;

@@ -27,8 +27,6 @@
 #ifndef BUNDLE_ARCHIVE_H_
 #define BUNDLE_ARCHIVE_H_
 
-#include <apr_general.h>
-
 #include "bundle_revision.h"
 #include "bundle_state.h"
 #include "celix_errno.h"
@@ -38,9 +36,11 @@
 
 typedef struct bundleArchive * bundle_archive_pt;
 
-celix_status_t bundleArchive_create(framework_logger_pt logger, char * archiveRoot, long id, char * location, char *inputFile, apr_pool_t *mp, bundle_archive_pt *bundle_archive);
-celix_status_t bundleArchive_createSystemBundleArchive(apr_pool_t *mp, framework_logger_pt logger, bundle_archive_pt *bundle_archive);
-celix_status_t bundleArchive_recreate(char * archiveRoot, apr_pool_t *mp, bundle_archive_pt *bundle_archive);
+celix_status_t bundleArchive_create(framework_logger_pt logger, char * archiveRoot, long id, char * location, char *inputFile, bundle_archive_pt *bundle_archive);
+celix_status_t bundleArchive_createSystemBundleArchive(framework_logger_pt logger, bundle_archive_pt *bundle_archive);
+celix_status_t bundleArchive_recreate(char * archiveRoot, bundle_archive_pt *bundle_archive);
+
+celix_status_t bundleArchive_destroy(bundle_archive_pt archive);
 
 FRAMEWORK_EXPORT celix_status_t bundleArchive_getId(bundle_archive_pt archive, long *id);
 FRAMEWORK_EXPORT celix_status_t bundleArchive_getLocation(bundle_archive_pt archive, char **location);

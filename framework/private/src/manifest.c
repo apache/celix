@@ -34,17 +34,14 @@
 
 int fpeek(FILE *stream);
 celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt properties, FILE *file);
-apr_status_t manifest_destroy(void *manifestP);
 
-celix_status_t manifest_create(apr_pool_t *pool, manifest_pt *manifest) {
+celix_status_t manifest_create(manifest_pt *manifest) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	*manifest = apr_palloc(pool, sizeof(**manifest));
+	*manifest = malloc(sizeof(**manifest));
 	if (!*manifest) {
 		status = CELIX_ENOMEM;
 	} else {
-		apr_pool_pre_cleanup_register(pool, *manifest, manifest_destroy);
-		(*manifest)->pool = pool;
 		(*manifest)->mainAttributes = properties_create();
 		(*manifest)->attributes = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 	}
@@ -54,8 +51,7 @@ celix_status_t manifest_create(apr_pool_t *pool, manifest_pt *manifest) {
 	return status;
 }
 
-apr_status_t manifest_destroy(void *manifestP) {
-	manifest_pt manifest = manifestP;
+celix_status_t manifest_destroy(manifest_pt manifest) {
 	if (manifest != NULL) {
 		properties_destroy(manifest->mainAttributes);
 		hashMap_destroy(manifest->attributes, false, false);
@@ -66,10 +62,10 @@ apr_status_t manifest_destroy(void *manifestP) {
 	return APR_SUCCESS;
 }
 
-celix_status_t manifest_createFromFile(apr_pool_t *pool, char *filename, manifest_pt *manifest) {
+celix_status_t manifest_createFromFile(char *filename, manifest_pt *manifest) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	status = manifest_create(pool, manifest);
+	status = manifest_create(manifest);
 	if (status == CELIX_SUCCESS) {
 		manifest_read(*manifest, filename);
 	}
@@ -99,14 +95,12 @@ celix_status_t manifest_read(manifest_pt manifest, char *filename) {
 	if (file != NULL) {
 		char lbuf[512];
 		int len;
-		char * name = NULL;
+		char name[512];
 		bool skipEmptyLines = true;
-		char * lastline = NULL;
-		apr_pool_t *subpool;
+		char lastline[512];
 
 		manifest_readAttributes(manifest, manifest->mainAttributes, file);
 		
-		apr_pool_create(&subpool, manifest->pool);
 		while (fgets(lbuf, sizeof(lbuf), file) != NULL ) {
 			properties_pt attributes;
 
@@ -123,14 +117,13 @@ celix_status_t manifest_read(manifest_pt manifest, char *filename) {
 			}
 			skipEmptyLines = false;
 
-			if (name == NULL) {
+			if (strlen(name) == 0) {
 				
 				if ((tolower(lbuf[0]) == 'n') && (tolower(lbuf[1]) == 'a') &&
 					(tolower(lbuf[2]) == 'm') && (tolower(lbuf[3]) == 'e') &&
 					(lbuf[4] == ':') && (lbuf[5] == ' ')) {
-					name = (char *) apr_palloc(subpool, (len + 1) - 6);
 					name[0] = '\0';
-					name = strncpy(name, lbuf+6, len - 6);
+					strncpy(name, lbuf+6, len - 6);
 					name[len - 6] = '\0';
 				} else {
 					printf("MANIFEST: Invalid manifest format\n");
@@ -139,15 +132,14 @@ celix_status_t manifest_read(manifest_pt manifest, char *filename) {
 
 				if (fpeek(file) == ' ') {
 					int newlen = len - 6;
-					lastline = (char *) apr_palloc(subpool, newlen + 1);
 					lastline[0] = '\0';
-					lastline = strncpy(lastline, lbuf+6, len - 6);
+					strncpy(lastline, lbuf+6, len - 6);
 					lastline[newlen] = '\0';
 					continue;
 				}
 			} else {
 				int newlen = strlen(lastline) + len;
-				char * buf = (char *) apr_palloc(subpool, newlen);
+				char buf[512];
 				buf[0] = '\0';
 				strcpy(buf, lastline);
 				strncat(buf, lbuf+1, len - 1);
@@ -155,16 +147,13 @@ celix_status_t manifest_read(manifest_pt manifest, char *filename) {
 
 				if (fpeek(file) == ' ') {
 //					lastline = realloc(lastline, strlen(buf) + 1);
-					lastline = (char *) apr_palloc(subpool, strlen(buf) + 1);
 					lastline[0] = '\0';
-					lastline = strcpy(lastline, buf);
+					strcpy(lastline, buf);
 					continue;
 				}
-				name = (char *) apr_palloc(subpool, strlen(buf) + 1);
 				name[0] = '\0';
-				name = strcpy(name, buf);
+				strcpy(name, buf);
 				name[strlen(buf)] = '\0';
-				lastline = NULL;
 			}
 
 			attributes = hashMap_get(manifest->attributes, name);
@@ -174,10 +163,8 @@ celix_status_t manifest_read(manifest_pt manifest, char *filename) {
 			}
 			manifest_readAttributes(manifest, attributes, file);
 
-			name = NULL;
 			skipEmptyLines = true;
 		}
-		apr_pool_destroy(subpool);
 		fclose(file);
 	} else {
 		status = CELIX_FILE_IO_EXCEPTION;
@@ -205,14 +192,12 @@ int fpeek(FILE *stream) {
 }
 
 celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt properties, FILE *file) {
-	char *name = NULL;
-	char *value = NULL;
-	char *lastLine = NULL;
+	char name[512];
+	char value[512];
+	char lastLine[512];
 	char lbuf[512];
 
 	int len;
-	apr_pool_t *subpool;
-	apr_pool_create(&subpool, manifest->pool);
 	while (fgets(lbuf, sizeof(lbuf), file ) != NULL ) {
 
 		bool lineContinued = false;
@@ -231,7 +216,7 @@ celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt prope
 		
 		if (lbuf[0] == ' ') {
 			int newlen = strlen(lastLine) + len;
-			char * buf = (char *) apr_palloc(subpool, newlen);
+			char buf[512];
 			buf[0] = '\0';
 
 			// Line continued
@@ -246,15 +231,12 @@ celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt prope
 
 			if (fpeek(file) == ' ') {
 //				lastLine = realloc(lastLine, strlen(buf) + 1);
-				lastLine = (char *) apr_palloc(subpool, strlen(buf) + 1);
 				lastLine[0] = '\0';
-				lastLine = strcpy(lastLine, buf);
+				strcpy(lastLine, buf);
 				continue;
 			}
-			value = (char *) apr_palloc(subpool, strlen(buf) + 1);
 			value[0] = '\0';
-			value = strcpy(value, buf);
-			lastLine = NULL;
+			strcpy(value, buf);
 		} else {
 			while (lbuf[i++] != ':') {
 				if (i >= len) {
@@ -266,29 +248,25 @@ celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt prope
 				printf("MANIFEST: Invalid header\n");
 				return CELIX_FILE_IO_EXCEPTION;
 			}
-			name = (char *) apr_palloc(subpool, (i + 1) - 2);
 			name[0] = '\0';
-			name = strncpy(name, lbuf, i - 2);
+			strncpy(name, lbuf, i - 2);
 			name[i - 2] = '\0';
 			if (fpeek(file) == ' ') {
 				int newlen = len - i;
-				lastLine = (char *) apr_palloc(subpool, newlen + 1);
 				lastLine[0] = '\0';
-				lastLine = strncpy(lastLine, lbuf+i, len -i);
+				strncpy(lastLine, lbuf+i, len -i);
 				lastLine[newlen] = '\0';
 				continue;
 			}
-			value = (char *) apr_palloc(subpool, (len + 1) - i);
 			value[0] = '\0';
-			value = strncpy(value, lbuf+i, len - i);
+			strncpy(value, lbuf+i, len - i);
 			value[len - i] = '\0';
 		}
 
-		if ((properties_set(properties, name, value) != NULL) && (!lineContinued)) {
+		if ((properties_set(properties, strdup(name), strdup(value)) != NULL) && (!lineContinued)) {
 			printf("Duplicate entry: %s", name);
 		}
 	}
-	apr_pool_destroy(subpool);
 
 	return CELIX_SUCCESS;
 }

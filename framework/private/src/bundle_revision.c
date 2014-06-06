@@ -26,28 +26,25 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <apr_strings.h>
-#include <apr_file_io.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <unistd.h>
 
 #include "bundle_revision_private.h"
 #include "archive.h"
 #include "celix_log.h"
 
-static apr_status_t bundleRevision_destroy(void *revisionP);
-
-celix_status_t bundleRevision_create(apr_pool_t *pool, framework_logger_pt loggera, char *root, char *location, long revisionNr, char *inputFile, bundle_revision_pt *bundle_revision) {
+celix_status_t bundleRevision_create(framework_logger_pt loggera, char *root, char *location, long revisionNr, char *inputFile, bundle_revision_pt *bundle_revision) {
     celix_status_t status = CELIX_SUCCESS;
 	bundle_revision_pt revision = NULL;
 
-	revision = (bundle_revision_pt) apr_pcalloc(pool, sizeof(*revision));
+	revision = (bundle_revision_pt) malloc(sizeof(*revision));
     if (!revision) {
     	status = CELIX_ENOMEM;
     } else {
-		apr_status_t apr_status;
-    	apr_pool_pre_cleanup_register(pool, revision, bundleRevision_destroy);
     	// TODO: This overwrites an existing revision, is this supposed to happen?
-    	apr_status = apr_dir_make(root, APR_UREAD|APR_UWRITE|APR_UEXECUTE, pool);
-        if ((apr_status != APR_SUCCESS) && (!APR_STATUS_IS_EEXIST(apr_status))) {
+        int state = mkdir(root, S_IRWXU);
+        if ((state != 0) && (errno != EEXIST)) {
             status = CELIX_FILE_IO_EXCEPTION;
         } else {
             if (inputFile != NULL) {
@@ -61,16 +58,17 @@ celix_status_t bundleRevision_create(apr_pool_t *pool, framework_logger_pt logge
             status = CELIX_DO_IF(status, arrayList_create(&(revision->libraryHandles)));
             if (status == CELIX_SUCCESS) {
                 revision->revisionNr = revisionNr;
-                revision->root = apr_pstrdup(pool, root);
-                revision->location = apr_pstrdup(pool, location);
+                revision->root = strdup(root);
+                revision->location = strdup(location);
                 revision->logger = loggera;
 
                 arrayList_create(&(revision->libraryHandles));
 
                 *bundle_revision = revision;
 
-                char *manifest = apr_pstrcat(pool, revision->root, "/META-INF/MANIFEST.MF", NULL);
-				status = manifest_createFromFile(pool, manifest, &revision->manifest);
+                char manifest[512];
+                snprintf(manifest, sizeof(manifest), "%s/META-INF/MANIFEST.MF", revision->root);
+				status = manifest_createFromFile(manifest, &revision->manifest);
             }
         }
     }
@@ -80,8 +78,7 @@ celix_status_t bundleRevision_create(apr_pool_t *pool, framework_logger_pt logge
 	return status;
 }
 
-apr_status_t bundleRevision_destroy(void *revisionP) {
-	bundle_revision_pt revision = revisionP;
+celix_status_t bundleRevision_destroy(celix_status_t *revision) {
 	return CELIX_SUCCESS;
 }
 

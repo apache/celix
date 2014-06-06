@@ -80,10 +80,10 @@ celix_status_t celixThreadMutexAttr_settype(celix_thread_mutexattr_t *attr, int 
 	celix_status_t status = CELIX_SUCCESS;
 	switch(type) {
 		case CELIX_THREAD_MUTEX_NORMAL :
-			status =pthread_mutexattr_settype(attr, PTHREAD_MUTEX_NORMAL);
+			status = pthread_mutexattr_settype(attr, PTHREAD_MUTEX_NORMAL);
 			break;
 		case CELIX_THREAD_MUTEX_RECURSIVE :
-			status= pthread_mutexattr_settype(attr, PTHREAD_MUTEX_RECURSIVE);
+			status = pthread_mutexattr_settype(attr, PTHREAD_MUTEX_RECURSIVE);
 			break;
 		case CELIX_THREAD_MUTEX_ERRORCHECK :
 			status = pthread_mutexattr_settype(attr, PTHREAD_MUTEX_ERRORCHECK);
@@ -93,7 +93,9 @@ celix_status_t celixThreadMutexAttr_settype(celix_thread_mutexattr_t *attr, int 
 			break;
 		default:
 			status = pthread_mutexattr_settype(attr, PTHREAD_MUTEX_DEFAULT);
-	}
+			break;
+    }
+	return status;
 }
 
 celix_status_t celixThreadCondition_init(celix_thread_cond_t *condition, celix_thread_condattr_t *attr) {

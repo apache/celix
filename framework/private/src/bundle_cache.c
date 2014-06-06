@@ -23,42 +23,35 @@
  *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
-#ifndef _WIN32
-#include <dirent.h>
-#endif
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#include <apr_file_io.h>
-#include <apr_strings.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <unistd.h>
 
 #include "bundle_cache_private.h"
 #include "bundle_archive.h"
 #include "constants.h"
 #include "celix_log.h"
 
-static celix_status_t bundleCache_deleteTree(bundle_cache_pt cache, char * directory, apr_pool_t *mp);
-static apr_status_t bundleCache_destroy(void *cacheP);
+static celix_status_t bundleCache_deleteTree(bundle_cache_pt cache, char * directory);
 
-celix_status_t bundleCache_create(properties_pt configurationMap, apr_pool_t *mp, framework_logger_pt logger, bundle_cache_pt *bundle_cache) {
+celix_status_t bundleCache_create(properties_pt configurationMap, framework_logger_pt logger, bundle_cache_pt *bundle_cache) {
     celix_status_t status;
     bundle_cache_pt cache;
 
-	cache = (bundle_cache_pt) apr_palloc(mp, (sizeof(*cache)));
+	cache = (bundle_cache_pt) malloc((sizeof(*cache)));
     if (cache == NULL) {
         status = CELIX_ENOMEM;
     } else {
-    	apr_pool_pre_cleanup_register(mp, cache, bundleCache_destroy);
-
-		if (configurationMap != NULL && mp != NULL && *bundle_cache == NULL) {
+		if (configurationMap != NULL && *bundle_cache == NULL) {
             char * cacheDir = properties_get(configurationMap, (char *) OSGI_FRAMEWORK_FRAMEWORK_STORAGE);
 			cache->configurationMap = configurationMap;
             if (cacheDir == NULL) {
                 cacheDir = ".cache";
             }
             cache->cacheDir = cacheDir;
-            cache->mp = mp;
             cache->logger = logger;
 
             *bundle_cache = cache;
@@ -73,58 +66,50 @@ celix_status_t bundleCache_create(properties_pt configurationMap, apr_pool_t *mp
 	return status;
 }
 
-apr_status_t bundleCache_destroy(void *cacheP) {
-	bundle_cache_pt cache = (bundle_cache_pt) cacheP;
+celix_status_t bundleCache_destroy(bundle_cache_pt *cache) {
     return CELIX_SUCCESS;
 }
 
 celix_status_t bundleCache_delete(bundle_cache_pt cache) {
-	return bundleCache_deleteTree(cache, cache->cacheDir, cache->mp);
+	return bundleCache_deleteTree(cache, cache->cacheDir);
 }
 
-celix_status_t bundleCache_getArchives(bundle_cache_pt cache, apr_pool_t *pool, array_list_pt *archives) {
+celix_status_t bundleCache_getArchives(bundle_cache_pt cache, array_list_pt *archives) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	apr_dir_t *dir;
-	apr_status_t aprStatus = apr_dir_open(&dir, cache->cacheDir, pool);
+	DIR *dir;
+	dir = opendir(cache->cacheDir);
 
-	if (APR_STATUS_IS_ENOENT(aprStatus)) {
-		apr_dir_make(cache->cacheDir, APR_UREAD|APR_UWRITE|APR_UEXECUTE, cache->mp);
-		aprStatus = apr_dir_open(&dir, cache->cacheDir, pool);
+	if (dir == NULL && errno == ENOENT) {
+		mkdir(cache->cacheDir, S_IRWXU);
+		dir = opendir(cache->cacheDir);
 	}
 
-	if (aprStatus == APR_SUCCESS) {
+	if (dir != NULL) {
         array_list_pt list = NULL;
-		apr_finfo_t dp;
+		struct dirent *dp;
         arrayList_create(&list);
         
-        while ((apr_dir_read(&dp, APR_FINFO_DIRENT|APR_FINFO_TYPE, dir)) == APR_SUCCESS) {
-        	apr_pool_t *subpool = NULL;
-			char *archiveRoot = NULL;
+        while ((dp = readdir(dir)) != NULL) {
+			char archiveRoot[512];
 
-        	apr_pool_create(&subpool, pool);
-        	archiveRoot = (char *)apr_palloc(subpool, strlen(cache->cacheDir) + strlen(dp.name) + 2);
+			snprintf(archiveRoot, sizeof(archiveRoot), "%s/%s", cache->cacheDir, dp->d_name);
 
-            strcpy(archiveRoot, cache->cacheDir);
-            strcat(archiveRoot, "/");
-            strcat(archiveRoot, dp.name);
-
-            if (dp.filetype == APR_DIR
-                    && (strcmp((dp.name), ".") != 0)
-                    && (strcmp((dp.name), "..") != 0)
-                    && (strncmp(dp.name, "bundle", 6) == 0)
-                    && (strcmp(dp.name, "bundle0") != 0)) {
+            if (dp->d_type == DT_DIR
+                    && (strcmp((dp->d_name), ".") != 0)
+                    && (strcmp((dp->d_name), "..") != 0)
+                    && (strncmp(dp->d_name, "bundle", 6) == 0)
+                    && (strcmp(dp->d_name, "bundle0") != 0)) {
 
                 bundle_archive_pt archive = NULL;
-                status = bundleArchive_recreate(apr_pstrdup(cache->mp, archiveRoot), cache->mp, &archive);
+                status = bundleArchive_recreate(strdup(archiveRoot), &archive);
                 if (status == CELIX_SUCCESS) {
                     arrayList_add(list, archive);
                 }
             }
-			apr_pool_destroy(subpool);
         }
 
-        apr_dir_close(dir);
+        closedir(dir);
 
         *archives = list;
 
@@ -138,13 +123,13 @@ celix_status_t bundleCache_getArchives(bundle_cache_pt cache, apr_pool_t *pool, 
 	return status;
 }
 
-celix_status_t bundleCache_createArchive(bundle_cache_pt cache, apr_pool_t *bundlePool, long id, char * location, char *inputFile, bundle_archive_pt *bundle_archive) {
+celix_status_t bundleCache_createArchive(bundle_cache_pt cache, long id, char * location, char *inputFile, bundle_archive_pt *bundle_archive) {
 	celix_status_t status = CELIX_SUCCESS;
-	char *archiveRoot = NULL;
+	char archiveRoot[512];
 
-	if (cache && location && bundlePool) {
-		archiveRoot = apr_psprintf(bundlePool, "%s/bundle%ld",  cache->cacheDir, id);
-        status = bundleArchive_create(cache->logger, archiveRoot, id, location, inputFile, bundlePool, bundle_archive);
+	if (cache && location) {
+		snprintf(archiveRoot, sizeof(archiveRoot), "%s/bundle%ld",  cache->cacheDir, id);
+        status = bundleArchive_create(cache->logger, strdup(archiveRoot), id, location, inputFile, bundle_archive);
 	}
 
 	framework_logIfError(cache->logger, status, NULL, "Failed to create archive");
@@ -152,37 +137,42 @@ celix_status_t bundleCache_createArchive(bundle_cache_pt cache, apr_pool_t *bund
 	return status;
 }
 
-static celix_status_t bundleCache_deleteTree(bundle_cache_pt cache, char * directory, apr_pool_t *mp) {
+static celix_status_t bundleCache_deleteTree(bundle_cache_pt cache, char * directory) {
+    DIR *dir;
     celix_status_t status = CELIX_SUCCESS;
-	apr_dir_t *dir;
+    dir = opendir(directory);
+    if (dir == NULL) {
+        status = CELIX_FILE_IO_EXCEPTION;
+    } else {
+        struct dirent *dp;
+        while ((dp = readdir(dir)) != NULL) {
+            if ((strcmp((dp->d_name), ".") != 0) && (strcmp((dp->d_name), "..") != 0)) {
+                apr_pool_t *subpool;
+                char subdir[512];
+                snprintf(subdir, sizeof(subdir), "%s/%s", directory, dp->d_name);
 
-	if (directory && mp) {
-        if (apr_dir_open(&dir, directory, mp) == APR_SUCCESS) {
-            apr_finfo_t dp;
-            while ((apr_dir_read(&dp, APR_FINFO_DIRENT|APR_FINFO_TYPE, dir)) == APR_SUCCESS) {
-                if ((strcmp((dp.name), ".") != 0) && (strcmp((dp.name), "..") != 0)) {
-                    char *subdir = (char *) apr_palloc(mp, sizeof(*subdir) * (strlen(directory) + strlen(dp.name) + 2));
-                    strcpy(subdir, directory);
-                    strcat(subdir, "/");
-                    strcat(subdir, dp.name);
-
-                    if (dp.filetype == APR_DIR) {
-                        bundleCache_deleteTree(cache, subdir, mp);
-                    } else {
-                    	apr_file_remove(subdir, mp);
+                if (dp->d_type == DT_DIR) {
+                    status = bundleCache_deleteTree(cache, subdir);
+                } else {
+                    if (rmdir(subdir) != 0) {
+                        status = CELIX_FILE_IO_EXCEPTION;
+                        break;
                     }
                 }
             }
-            apr_dir_close(dir);
-            apr_dir_remove(directory, mp);
-        } else {
+        }
+
+        if (closedir(dir) != 0) {
             status = CELIX_FILE_IO_EXCEPTION;
         }
-	} else {
-	    status = CELIX_ILLEGAL_ARGUMENT;
-	}
+        if (status == CELIX_SUCCESS) {
+            if (rmdir(directory) != 0) {
+                status = CELIX_FILE_IO_EXCEPTION;
+            }
+        }
+    }
 
-	framework_logIfError(cache->logger, status, NULL, "Failed to delete tree");
+    framework_logIfError(logger, status, NULL, "Failed to delete tree");
 
-	return status;
+    return status;
 }
