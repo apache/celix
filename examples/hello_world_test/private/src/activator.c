@@ -38,9 +38,9 @@ struct userData {
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	apr_pool_t *pool;
-	celix_status_t status = bundleContext_getMemoryPool(context, &pool);
-	if (status == CELIX_SUCCESS) {
-		*userData = apr_palloc(pool, sizeof(struct userData));
+	celix_status_t status = CELIX_SUCCESS;
+    *userData = malloc(sizeof(struct userData));
+    if (userData != NULL) {
 		((struct userData *)(*userData))->word = "Import";
 	} else {
 		status = CELIX_START_ERROR;
@@ -64,5 +64,6 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
+    free(userData);
 	return CELIX_SUCCESS;
 }

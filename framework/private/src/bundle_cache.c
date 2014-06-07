@@ -147,7 +147,6 @@ static celix_status_t bundleCache_deleteTree(bundle_cache_pt cache, char * direc
         struct dirent *dp;
         while ((dp = readdir(dir)) != NULL) {
             if ((strcmp((dp->d_name), ".") != 0) && (strcmp((dp->d_name), "..") != 0)) {
-                apr_pool_t *subpool;
                 char subdir[512];
                 snprintf(subdir, sizeof(subdir), "%s/%s", directory, dp->d_name);
 

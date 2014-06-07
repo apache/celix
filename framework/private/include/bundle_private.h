@@ -37,7 +37,6 @@ struct bundle {
 	bundle_archive_pt archive;
 	array_list_pt modules;
 	manifest_pt manifest;
-	apr_pool_t *memoryPool;
 
 	celix_thread_mutex_t lock;
 	int lockCount;

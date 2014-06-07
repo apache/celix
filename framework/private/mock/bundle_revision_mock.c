@@ -27,7 +27,7 @@
 
 #include "bundle_revision.h"
 
-celix_status_t bundleRevision_create(apr_pool_t *pool, framework_logger_pt logger, char *root, char *location, long revisionNr, char *inputFile, bundle_revision_pt *bundle_revision) {
+celix_status_t bundleRevision_create(framework_logger_pt logger, char *root, char *location, long revisionNr, char *inputFile, bundle_revision_pt *bundle_revision) {
 	mock_c()->actualCall("bundleRevision_create");
 	return mock_c()->returnValue().value.intValue;
 }

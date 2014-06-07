@@ -39,12 +39,8 @@ int main(int argc, char** argv) {
 
 TEST_GROUP(array_list) {
 	array_list_pt list;
-	apr_pool_t *pool;
 
 	void setup(void) {
-		apr_initialize();
-		apr_pool_create(&pool, NULL);
-
 		arrayList_create(&list);
 	}
 };

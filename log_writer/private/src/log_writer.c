@@ -58,9 +58,9 @@ celix_status_t logWriter_start(log_writer_pt writer) {
 	service_tracker_customizer_pt cust = NULL;
 	service_tracker_pt tracker = NULL;
 
-	status = serviceTrackerCustomizer_create(writer->pool, writer, logWriter_addingServ, logWriter_addedServ, logWriter_modifiedServ, logWriter_removedServ, &cust);
+	status = serviceTrackerCustomizer_create(writer, logWriter_addingServ, logWriter_addedServ, logWriter_modifiedServ, logWriter_removedServ, &cust);
 	if (status == CELIX_SUCCESS) {
-		status = serviceTracker_create(writer->pool, writer->context, (char *) OSGI_LOGSERVICE_READER_SERVICE_NAME, cust, &tracker);
+		status = serviceTracker_create(writer->context, (char *) OSGI_LOGSERVICE_READER_SERVICE_NAME, cust, &tracker);
 		if (status == CELIX_SUCCESS) {
 			writer->tracker = tracker;
 			status = serviceTracker_open(tracker);

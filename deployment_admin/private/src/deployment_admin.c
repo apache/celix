@@ -197,7 +197,7 @@ static void * APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *depl
 					bundle_pt bundle = NULL;
 					bundleContext_getBundle(admin->context, &bundle);
 					char *entry = NULL;
-					bundle_getEntry(bundle, "/", admin->pool, &entry);
+					bundle_getEntry(bundle, "/", &entry);
 
 					// Handle file
 					char tmpDir[256];
@@ -212,7 +212,7 @@ static void * APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *depl
 					unzip_extractDeploymentPackage(test, tmpDir);
 					char *manifest = apr_pstrcat(admin->pool, tmpDir, "/META-INF/MANIFEST.MF", NULL);
 					manifest_pt mf = NULL;
-					manifest_createFromFile(admin->pool, manifest, &mf);
+					manifest_createFromFile(manifest, &mf);
 					deployment_package_pt source = NULL;
 					deploymentPackage_create(admin->pool, admin->context, mf, &source);
 					char *name = NULL;
@@ -416,7 +416,7 @@ celix_status_t deploymentAdmin_updateDeploymentPackageBundles(deployment_admin_p
 
 		bundleContext_getBundle(admin->context, &bundle);
 		char *entry = NULL;
-		bundle_getEntry(bundle, "/", admin->pool, &entry);
+		bundle_getEntry(bundle, "/", &entry);
 		char *name = NULL;
 		deploymentPackage_getName(source, &name);
 		char *bundlePath = apr_pstrcat(admin->pool, entry, "repo/", name, "/", info->path, NULL);
@@ -511,7 +511,7 @@ celix_status_t deploymentAdmin_processDeploymentPackageResources(deployment_admi
 					resource_processor_service_pt processor = processorP;
 
 					bundleContext_getBundle(admin->context, &bundle);
-					bundle_getEntry(bundle, "/", admin->pool, &entry);
+					bundle_getEntry(bundle, "/", &entry);
 					deploymentPackage_getName(source, &name);
 
 					char *resourcePath = apr_pstrcat(admin->pool, entry, "repo/", name, "/", info->path, NULL);

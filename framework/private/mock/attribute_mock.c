@@ -27,9 +27,8 @@
 
 #include "attribute.h"
 
-celix_status_t attribute_create(apr_pool_t *memory_pool, char * key, char * value, attribute_pt *attribute) {
+celix_status_t attribute_create(char * key, char * value, attribute_pt *attribute) {
 	mock_c()->actualCall("attribute_create")
-			->withPointerParameters("pool", memory_pool)
 			->withStringParameters("key", key)
 			->withStringParameters("value", value)
 			->_andPointerOutputParameters("attribute", (void **) attribute);

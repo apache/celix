@@ -37,11 +37,6 @@ celix_status_t serviceRegistry_destroy(service_registry_pt registry) {
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t serviceRegistry_destroy(service_registry_pt registry) {
-	mock_c()->actualCall("serviceRegistry_destroy");
-	return mock_c()->returnValue().value.intValue;
-}
-
 celix_status_t serviceRegistry_getRegisteredServices(service_registry_pt registry, bundle_pt bundle, array_list_pt *services) {
 	mock_c()->actualCall("serviceRegistry_getRegisteredServices");
 	return mock_c()->returnValue().value.intValue;
@@ -119,5 +114,10 @@ celix_status_t serviceRegistry_getListenerHooks(service_registry_pt registry, ar
 celix_status_t serviceRegistry_servicePropertiesModified(service_registry_pt registry, service_registration_pt registration, properties_pt oldprops) {
 	mock_c()->actualCall("serviceRegistry_servicePropertiesModified");
 	return mock_c()->returnValue().value.intValue;
+}
+
+celix_status_t serviceRegistry_removeReference(service_reference_pt reference) {
+    mock_c()->actualCall("serviceRegistry_removeReference");
+    return mock_c()->returnValue().value.intValue;
 }
 

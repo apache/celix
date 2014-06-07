@@ -38,10 +38,11 @@ typedef celix_status_t (*removed_callback_pt)(void * handle, service_reference_p
 
 typedef struct serviceTrackerCustomizer *service_tracker_customizer_pt;
 
-FRAMEWORK_EXPORT celix_status_t serviceTrackerCustomizer_create(apr_pool_t *pool, void *handle,
+FRAMEWORK_EXPORT celix_status_t serviceTrackerCustomizer_create(void *handle,
 		adding_callback_pt addingFunction, added_callback_pt addedFunction,
 		modified_callback_pt modifiedFunction, removed_callback_pt removedFunction,
 		service_tracker_customizer_pt *customizer);
+FRAMEWORK_EXPORT celix_status_t serviceTrackerCustomizer_destroy(service_tracker_customizer_pt customizer);
 
 FRAMEWORK_EXPORT celix_status_t serviceTrackerCustomizer_getHandle(service_tracker_customizer_pt customizer, void **handle);
 FRAMEWORK_EXPORT celix_status_t serviceTrackerCustomizer_getAddingFunction(service_tracker_customizer_pt customizer, adding_callback_pt *function);

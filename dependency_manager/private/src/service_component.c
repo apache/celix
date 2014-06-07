@@ -418,7 +418,7 @@ executor_pt executor_create(apr_pool_t *memory_pool) {
 
 	executor = (executor_pt) apr_pcalloc(memory_pool, sizeof(*executor));
 	if (executor) {
-        linkedList_create(memory_pool, &executor->workQueue);
+        linkedList_create(&executor->workQueue);
         executor->active = NULL;
 		apr_thread_mutex_create(&executor->mutex, APR_THREAD_MUTEX_UNNESTED, memory_pool);
 	}

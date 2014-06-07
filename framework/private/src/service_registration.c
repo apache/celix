@@ -27,8 +27,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <apr_strings.h>
-
 #include "service_registration_private.h"
 #include "constants.h"
 #include "service_factory.h"

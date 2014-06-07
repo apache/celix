@@ -84,8 +84,8 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	if(status == CELIX_SUCCESS) {
 		service_tracker_customizer_pt customizer = NULL;
 		service_tracker_pt tracker = NULL;
-		serviceTrackerCustomizer_create(pool, activator->event_handler_service->event_handler,  eventHandlerAddingService, eventHandlerAddedService, eventHandlerModifiedService, eventHandlerRemovedService, &customizer);
-		serviceTracker_create(pool, context, (char *) EVENT_ADMIN_NAME, customizer,
+		serviceTrackerCustomizer_create(activator->event_handler_service->event_handler,  eventHandlerAddingService, eventHandlerAddedService, eventHandlerModifiedService, eventHandlerRemovedService, &customizer);
+		serviceTracker_create(context, (char *) EVENT_ADMIN_NAME, customizer,
 									&tracker);
 		activator->eventAdminTracker = tracker;
 		serviceTracker_open(tracker);

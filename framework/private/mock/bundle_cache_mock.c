@@ -27,17 +27,17 @@
 
 #include "bundle_cache.h"
 
-celix_status_t bundleCache_create(properties_pt configurationMap, apr_pool_t *mp, framework_logger_pt logger, bundle_cache_pt *bundle_cache) {
+celix_status_t bundleCache_create(properties_pt configurationMap, framework_logger_pt logger, bundle_cache_pt *bundle_cache) {
 	mock_c()->actualCall("bundle_getCurrentModule");
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundleCache_getArchives(bundle_cache_pt cache, apr_pool_t *pool, array_list_pt *archives) {
+celix_status_t bundleCache_getArchives(bundle_cache_pt cache, array_list_pt *archives) {
 	mock_c()->actualCall("bundle_getCurrentModule");
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundleCache_createArchive(bundle_cache_pt cache, apr_pool_t *bundlePool, long id, char * location, char *inputFile, bundle_archive_pt *archive) {
+celix_status_t bundleCache_createArchive(bundle_cache_pt cache, long id, char * location, char *inputFile, bundle_archive_pt *archive) {
 	mock_c()->actualCall("bundle_getCurrentModule");
 	return mock_c()->returnValue().value.intValue;
 }

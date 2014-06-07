@@ -28,6 +28,8 @@
 #include <apr_strings.h>
 #include <slp.h>
 #include <unistd.h>
+#include <apr_thread_proc.h>
+#include <apr_network_io.h>
 
 #include "bundle_context.h"
 #include "array_list.h"
@@ -179,7 +181,7 @@ celix_status_t discovery_addService(discovery_pt discovery, endpoint_description
 		properties_pt serviceProperties = NULL;
 		serviceRegistration_getProperties(registration, &serviceProperties);
 		char *scope = properties_get(serviceProperties, (char *) OSGI_ENDPOINT_LISTENER_SCOPE);
-		filter_pt filter = filter_create(scope, discovery->pool);
+		filter_pt filter = filter_create(scope);
 		bool matchResult = false;
 		filter_match(filter, endpoint->properties, &matchResult);
 		if (matchResult) {

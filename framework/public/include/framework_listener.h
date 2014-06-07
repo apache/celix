@@ -29,15 +29,12 @@
 #ifndef FRAMEWORK_LISTENER_H_
 #define FRAMEWORK_LISTENER_H_
 
-#include <apr_general.h>
-
 typedef struct framework_listener *framework_listener_pt;
 
 #include "celix_errno.h"
 #include "framework_event.h"
 
 struct framework_listener {
-	apr_pool_t *pool;
 	void * handle;
 	celix_status_t (*frameworkEvent)(void * listener, framework_event_pt event);
 };

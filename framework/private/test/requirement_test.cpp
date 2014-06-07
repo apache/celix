@@ -96,7 +96,7 @@ TEST(requirement, create) {
         .andReturnValue(CELIX_SUCCESS);
 
 	requirement_pt requirement = NULL;
-	requirement_create(pool, directives, attributes, &requirement);
+	requirement_create(directives, attributes, &requirement);
 }
 
 TEST(requirement, getVersionRange) {

@@ -692,7 +692,6 @@ static celix_status_t bundleArchive_deleteTree(bundle_archive_pt archive, char *
 		struct dirent *dp;
 		while ((dp = readdir(dir)) != NULL) {
 		    if ((strcmp((dp->d_name), ".") != 0) && (strcmp((dp->d_name), "..") != 0)) {
-                apr_pool_t *subpool;
                 char subdir[512];
                 snprintf(subdir, sizeof(subdir), "%s/%s", directory, dp->d_name);
 

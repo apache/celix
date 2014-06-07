@@ -27,10 +27,8 @@
 #ifndef LISTENER_HOOK_INFO_IMPL_H_
 #define LISTENER_HOOK_INFO_IMPL_H_
 
-#include <apr_general.h>
-
 #include "celix_errno.h"
 
-celix_status_t listenerHookInfo_create(apr_pool_t *pool);
+celix_status_t listenerHookInfo_create();
 
 #endif /* LISTENER_HOOK_INFO_IMPL_H_ */

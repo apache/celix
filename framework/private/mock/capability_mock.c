@@ -27,7 +27,7 @@
 
 #include "capability.h"
 
-celix_status_t capability_create(apr_pool_t *pool, module_pt module, hash_map_pt directives, hash_map_pt attributes, capability_pt *capability) {
+celix_status_t capability_create(module_pt module, hash_map_pt directives, hash_map_pt attributes, capability_pt *capability) {
 	mock_c()->actualCall("capability_create");
 	return mock_c()->returnValue().value.intValue;
 }

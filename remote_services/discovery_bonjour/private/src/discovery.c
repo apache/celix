@@ -28,6 +28,7 @@
 #include <apr_strings.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include <apr_thread_proc.h>
 
 #include <dns_sd.h>
 
@@ -326,7 +327,7 @@ celix_status_t discovery_endpointListenerAdded(void * handle, service_reference_
 
 				char *scope = properties_get(serviceProperties,
 				(char *) OSGI_ENDPOINT_LISTENER_SCOPE);
-				filter_pt filter = filter_create(scope, discovery->pool); //FIXME memory leak
+				filter_pt filter = filter_create(scope); //FIXME memory leak
 				bool matchResult = false;
 				filter_match(filter, endpoint->properties, &matchResult);
 				if (matchResult) {
@@ -513,7 +514,7 @@ static celix_status_t discovery_informEndpointListeners(discovery_pt discovery, 
 			serviceRegistration_getProperties(registration, &serviceProperties);
 			char *scope = properties_get(serviceProperties,
 					(char *) OSGI_ENDPOINT_LISTENER_SCOPE);
-			filter_pt filter = filter_create(scope, discovery->pool);
+			filter_pt filter = filter_create(scope);
 			bool matchResult = false;
 			filter_match(filter, endpoint->properties, &matchResult);
 			if (matchResult) {

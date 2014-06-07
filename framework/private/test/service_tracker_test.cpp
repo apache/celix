@@ -67,13 +67,12 @@ TEST(service_tracker, create) {
 	service_tracker_pt tracker = NULL;
 	bundle_context_pt ctx = (bundle_context_pt) 0x123;
 	std::string service = "service";
-	status = serviceTracker_create(pool, ctx, (char *) service.c_str(), NULL, &tracker);
+	status = serviceTracker_create(ctx, (char *) service.c_str(), NULL, &tracker);
 
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	POINTERS_EQUAL(ctx, tracker->context);
 	POINTERS_EQUAL(NULL, tracker->customizer);
 	POINTERS_EQUAL(NULL, tracker->listener);
-	POINTERS_EQUAL(pool, tracker->pool);
 	POINTERS_EQUAL(tracker, tracker->tracker);
 	STRCMP_EQUAL("(objectClass=service)", tracker->filter);
 }
@@ -83,13 +82,12 @@ TEST(service_tracker, createWithFilter) {
 	service_tracker_pt tracker = NULL;
 	bundle_context_pt ctx = (bundle_context_pt) 0x123;
 	std::string filter = "(objectClass=test)";
-	status = serviceTracker_createWithFilter(pool, ctx, (char *) filter.c_str(), NULL, &tracker);
+	status = serviceTracker_createWithFilter(ctx, (char *) filter.c_str(), NULL, &tracker);
 
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	POINTERS_EQUAL(ctx, tracker->context);
 	POINTERS_EQUAL(NULL, tracker->customizer);
 	POINTERS_EQUAL(NULL, tracker->listener);
-	POINTERS_EQUAL(pool, tracker->pool);
 	POINTERS_EQUAL(tracker, tracker->tracker);
 	STRCMP_EQUAL("(objectClass=test)", tracker->filter);
 }
@@ -99,7 +97,7 @@ TEST(service_tracker, destroy) {
 	service_tracker_pt tracker = NULL;
 	bundle_context_pt ctx = (bundle_context_pt) 0x123;
 	std::string filter = "(objectClass=test)";
-	status = serviceTracker_createWithFilter(pool, ctx, (char *) filter.c_str(), NULL, &tracker);
+	status = serviceTracker_createWithFilter(ctx, (char *) filter.c_str(), NULL, &tracker);
 	service_listener_pt listener = (service_listener_pt) 0x20;
 	tracker->listener = listener;
 
@@ -114,7 +112,6 @@ TEST(service_tracker, open) {
 	// Without initial services and no customizer
 	// new tracker
 	service_tracker_pt tracker = (service_tracker_pt) apr_palloc(pool, sizeof(*tracker));
-	tracker->pool = pool;
 	bundle_context_pt ctx = (bundle_context_pt) 0x10;
 	tracker->context = ctx;
 	std::string filter = "(objectClass=service)";
@@ -152,7 +149,6 @@ TEST(service_tracker, open_withRefs) {
 	// With one initial service
 	// new tracker
 	service_tracker_pt tracker = (service_tracker_pt) apr_palloc(pool, sizeof(*tracker));
-	tracker->pool = pool;
 	tracker->customizer = NULL;
 	bundle_context_pt ctx = (bundle_context_pt) 0x10;
 	tracker->context = ctx;
@@ -211,7 +207,6 @@ TEST(service_tracker, open_withRefsAndTracked) {
 	// With one initial service
 	// new tracker
 	service_tracker_pt tracker = (service_tracker_pt) apr_palloc(pool, sizeof(*tracker));
-	tracker->pool = pool;
 	tracker->customizer = NULL;
 	bundle_context_pt ctx = (bundle_context_pt) 0x10;
 	tracker->context = ctx;
@@ -475,7 +470,6 @@ TEST(service_tracker, serviceChangedRegistered) {
 	// With one initial service
 	// new tracker
 	service_tracker_pt tracker = (service_tracker_pt) apr_palloc(pool, sizeof(*tracker));
-	tracker->pool = pool;
 	tracker->customizer = NULL;
 	bundle_context_pt ctx = (bundle_context_pt) 0x10;
 	tracker->context = ctx;
@@ -506,7 +500,6 @@ TEST(service_tracker, serviceChangedModified) {
 	// With one initial service
 	// new tracker
 	service_tracker_pt tracker = (service_tracker_pt) apr_palloc(pool, sizeof(*tracker));
-	tracker->pool = pool;
 	tracker->customizer = NULL;
 	bundle_context_pt ctx = (bundle_context_pt) 0x10;
 	tracker->context = ctx;
@@ -542,7 +535,6 @@ TEST(service_tracker, serviceChangedUnregistering) {
 	// With one initial service
 	// new tracker
 	service_tracker_pt tracker = (service_tracker_pt) apr_palloc(pool, sizeof(*tracker));
-	tracker->pool = pool;
 	tracker->customizer = NULL;
 	bundle_context_pt ctx = (bundle_context_pt) 0x10;
 	tracker->context = ctx;
@@ -584,7 +576,6 @@ TEST(service_tracker, serviceChangedModifiedEndmatch) {
 	// With one initial service
 	// new tracker
 	service_tracker_pt tracker = (service_tracker_pt) apr_palloc(pool, sizeof(*tracker));
-	tracker->pool = pool;
 	bundle_context_pt ctx = (bundle_context_pt) 0x10;
 	tracker->context = ctx;
 	service_listener_pt listener = (service_listener_pt) apr_palloc(pool, sizeof(*listener));
@@ -624,7 +615,6 @@ TEST(service_tracker, serviceChangedRegisteredCustomizer) {
 	// With one initial service
 	// new tracker
 	service_tracker_pt tracker = (service_tracker_pt) apr_palloc(pool, sizeof(*tracker));
-	tracker->pool = pool;
 	bundle_context_pt ctx = (bundle_context_pt) 0x10;
 	tracker->context = ctx;
 	service_listener_pt listener = (service_listener_pt) apr_palloc(pool, sizeof(*listener));
@@ -679,7 +669,6 @@ TEST(service_tracker, serviceChangedModifiedCustomizer) {
 	// With one initial service
 	// new tracker
 	service_tracker_pt tracker = (service_tracker_pt) apr_palloc(pool, sizeof(*tracker));
-	tracker->pool = pool;
 	bundle_context_pt ctx = (bundle_context_pt) 0x10;
 	tracker->context = ctx;
 	service_listener_pt listener = (service_listener_pt) apr_palloc(pool, sizeof(*listener));
@@ -734,7 +723,6 @@ TEST(service_tracker, serviceChangedUnregisteringCustomizer) {
 	// With one initial service
 	// new tracker
 	service_tracker_pt tracker = (service_tracker_pt) apr_palloc(pool, sizeof(*tracker));
-	tracker->pool = pool;
 	bundle_context_pt ctx = (bundle_context_pt) 0x10;
 	tracker->context = ctx;
 	service_listener_pt listener = (service_listener_pt) apr_palloc(pool, sizeof(*listener));
@@ -783,7 +771,6 @@ TEST(service_tracker, serviceChangedUnregisteringCustomizerNoFunc) {
 	// With one initial service
 	// new tracker
 	service_tracker_pt tracker = (service_tracker_pt) apr_palloc(pool, sizeof(*tracker));
-	tracker->pool = pool;
 	bundle_context_pt ctx = (bundle_context_pt) 0x10;
 	tracker->context = ctx;
 	service_listener_pt listener = (service_listener_pt) apr_palloc(pool, sizeof(*listener));

@@ -27,8 +27,6 @@
 #ifndef SERVICE_FACTORY_H_
 #define SERVICE_FACTORY_H_
 
-#include <apr_general.h>
-
 typedef struct service_factory * service_factory_pt;
 
 #include "celix_errno.h"

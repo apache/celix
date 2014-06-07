@@ -31,8 +31,6 @@
 #include "version.h"
 
 struct version {
-	apr_pool_t *pool;
-
 	int major;
 	int minor;
 	int micro;

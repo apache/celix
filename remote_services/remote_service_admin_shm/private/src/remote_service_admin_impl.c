@@ -31,6 +31,7 @@
 #include <unistd.h>
 #include <apr_uuid.h>
 #include <apr_strings.h>
+#include <apr_thread_proc.h>
 
 #include "remote_service_admin_shm.h"
 #include "remote_service_admin_shm_impl.h"

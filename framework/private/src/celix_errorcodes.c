@@ -23,7 +23,7 @@
  *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
-#include <apr_strings.h>
+#include <string.h>
 
 #include "celix_errno.h"
 
@@ -53,10 +53,10 @@ static char *celix_error_string(celix_status_t statcode) {
 
 char *celix_strerror(celix_status_t errorcode, char *buffer, size_t bufferSize) {
     if (errorcode < CELIX_START_ERROR) {
-    	return apr_strerror(errorcode, buffer, bufferSize);
+    	return strerror(errorcode);
     } else {
     	char * str = celix_error_string(errorcode);
-    	apr_cpystrn(buffer, str, bufferSize);
+    	strncpy(buffer, str, bufferSize);
         return buffer;
     }
 }

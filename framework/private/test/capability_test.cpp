@@ -95,7 +95,7 @@ TEST(capability, create) {
         .andReturnValue(CELIX_SUCCESS);
 
 	capability_pt capability = NULL;
-	celix_status_t status = capability_create(pool, module, directives, attributes, &capability);
+	celix_status_t status = capability_create(module, directives, attributes, &capability);
 }
 
 TEST(capability, getServiceName) {

@@ -97,8 +97,8 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 		service_tracker_pt tracker = NULL;
 		data->context = context;
 
-		serviceTrackerCustomizer_create(pool, data->event_admin_service->eventAdmin, eventAdmin_addingService, eventAdmin_addedService, eventAdmin_modifiedService, eventAdmin_removedService, &cust);
-		serviceTracker_create(pool, context, (char *) EVENT_HANDLER_SERVICE, cust, &tracker);
+		serviceTrackerCustomizer_create(data->event_admin_service->eventAdmin, eventAdmin_addingService, eventAdmin_addedService, eventAdmin_modifiedService, eventAdmin_removedService, &cust);
+		serviceTracker_create(context, (char *) EVENT_HANDLER_SERVICE, cust, &tracker);
 
 		data->tracker = tracker;
 

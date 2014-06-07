@@ -65,7 +65,7 @@ TEST(service_reference, create) {
 	service_registration_pt registration = (service_registration_pt) 0x20;
 
 	service_reference_pt reference = NULL;
-	serviceReference_create(pool, bundle, registration, &reference);
+	serviceReference_create(bundle, registration, &reference);
 
 	POINTERS_EQUAL(bundle, reference->bundle);
 	POINTERS_EQUAL(registration, reference->registration);
@@ -125,7 +125,7 @@ TEST(service_reference, getUsingBundle) {
 		.andReturnValue(bundles);
 
 	array_list_pt actual = NULL;
-	celix_status_t status = serviceReference_getUsingBundles(reference, pool, &actual);
+	celix_status_t status = serviceReference_getUsingBundles(reference, &actual);
 	POINTERS_EQUAL(bundles, actual);
 	LONGS_EQUAL(1, arrayList_size(actual));
 	POINTERS_EQUAL(bundle, arrayList_get(actual, 0));

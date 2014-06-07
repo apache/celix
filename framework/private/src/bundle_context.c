@@ -32,35 +32,24 @@
 #include "bundle.h"
 #include "celix_log.h"
 
-celix_status_t bundleContext_create(framework_pt framework, framework_logger_pt logger, bundle_pt bundle, bundle_context_pt *bundle_context) {
+celix_status_t bundleContext_create(apr_pool_t *pool, framework_pt framework, framework_logger_pt logger, bundle_pt bundle, bundle_context_pt *bundle_context) {
 	celix_status_t status = CELIX_SUCCESS;
 	bundle_context_pt context = NULL;
 
 	if (*bundle_context != NULL && framework == NULL && bundle == NULL) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
-		apr_pool_t *pool = NULL;
+        context = malloc(sizeof(*context));
+        if (!context) {
+            status = CELIX_ENOMEM;
+        } else {
+            context->pool = pool;
+            context->framework = framework;
+            context->bundle = bundle;
+            context->logger = logger;
 
-		status = bundle_getMemoryPool(bundle, &pool);
-		if (status == CELIX_SUCCESS) {
-			apr_pool_t *contextPool = NULL;
-			if (apr_pool_create(&contextPool, pool) != APR_SUCCESS) {
-				status = CELIX_ENOMEM;
-			} else {
-				context = apr_palloc(contextPool, sizeof(*context));
-				if (!context) {
-					status = CELIX_ENOMEM;
-				} else {
-					context->pool = contextPool;
-					context->framework = framework;
-					context->bundle = bundle;
-					context->logger = logger;
-
-					*bundle_context = context;
-				}
-			}
-		}
-
+            *bundle_context = context;
+        }
 	}
 
 	framework_logIfError(logger, status, NULL, "Failed to create context");
@@ -72,8 +61,6 @@ celix_status_t bundleContext_destroy(bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (context != NULL) {
-		apr_pool_t *contextPool = context->pool;
-		apr_pool_destroy(context->pool);
 		context = NULL;
 	} else {
 		status = CELIX_ILLEGAL_ARGUMENT;

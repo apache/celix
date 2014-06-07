@@ -30,14 +30,10 @@
 #include <CUnit/Automated.h>
 #include "linked_list.h"
 
-apr_pool_t *memory_pool;
 linked_list_pt list;
 
 int setup(void) {
-    apr_initialize();
-    apr_pool_create(&memory_pool, NULL);
-
-    linkedList_create(memory_pool, &list);
+    linkedList_create(&list);
     if (list) {
         return 0;
     } else {
@@ -47,8 +43,6 @@ int setup(void) {
 }
 
 int teardown(void) {
-    apr_pool_destroy(memory_pool);
-    apr_terminate();
     return 0;
 }
 

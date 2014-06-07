@@ -25,8 +25,7 @@
  */
 
 #include <stdlib.h>
-
-#include <apr_strings.h>
+#include <string.h>
 
 #include "command_impl.h"
 #include "array_list.h"
@@ -64,20 +63,18 @@ void inspectCommand_execute(command_pt command, char * commandline, void (*out)(
 	celix_status_t status = CELIX_SUCCESS;
 	char outString[256];
 	char *token;
-	char *commandStr = apr_strtok(commandline, " ", &token);
-	char *type = apr_strtok(NULL, " ", &token);
+	char *commandStr = strtok_r(commandline, " ", &token);
+	char *type = strtok_r(NULL, " ", &token);
 	if (type != NULL) {
-		char *direction = apr_strtok(NULL, " ", &token);
+		char *direction = strtok_r(NULL, " ", &token);
 		if (direction != NULL) {
-			apr_pool_t *pool = NULL;
 			array_list_pt ids = NULL;
-			char *id = apr_strtok(NULL, " ", &token);
+			char *id = strtok_r(NULL, " ", &token);
 
-			bundleContext_getMemoryPool(command->bundleContext, &pool);
 			arrayList_create(&ids);
 			while (id != NULL) {
 				arrayList_add(ids, id);
-				id = apr_strtok(NULL, " ", &token);
+				id = strtok_r(NULL, " ", &token);
 			}
 
 			if (strcmp(type, SERVICE_TYPE) == 0) {
@@ -120,10 +117,8 @@ celix_status_t inspectCommand_printExportedServices(command_pt command, array_li
 	if (arrayList_isEmpty(ids)) {
 		celix_status_t status = bundleContext_getBundles(command->bundleContext, &bundles);
 	} else {
-		apr_pool_t *pool = NULL;
 		unsigned int i;
 
-		bundleContext_getMemoryPool(command->bundleContext, &pool);
 		arrayList_create(&bundles);
 		for (i = 0; i < arrayList_size(ids); i++) {
 			char *idStr = (char *) arrayList_get(ids, i);
@@ -150,11 +145,9 @@ celix_status_t inspectCommand_printExportedServices(command_pt command, array_li
 			}
 
 			if (bundle != NULL) {
-				apr_pool_t *pool;
 				array_list_pt refs = NULL;
 
-				bundleContext_getMemoryPool(command->bundleContext, &pool);
-				if (bundle_getRegisteredServices(bundle, pool, &refs) == CELIX_SUCCESS) {
+				if (bundle_getRegisteredServices(bundle, &refs) == CELIX_SUCCESS) {
 					char line[256];
 					module_pt module = NULL;
 					char * name = NULL;
@@ -212,10 +205,8 @@ celix_status_t inspectCommand_printImportedServices(command_pt command, array_li
     if (arrayList_isEmpty(ids)) {
         celix_status_t status = bundleContext_getBundles(command->bundleContext, &bundles);
     } else {
-        apr_pool_t *pool = NULL;
         unsigned int i;
 
-        bundleContext_getMemoryPool(command->bundleContext, &pool);
         arrayList_create(&bundles);
         for (i = 0; i < arrayList_size(ids); i++) {
             char *idStr = (char *) arrayList_get(ids, i);
@@ -242,10 +233,8 @@ celix_status_t inspectCommand_printImportedServices(command_pt command, array_li
             }
 
             if (bundle != NULL) {
-                apr_pool_t *pool;
                 array_list_pt refs = NULL;
 
-                bundleContext_getMemoryPool(command->bundleContext, &pool);
                 if (bundle_getServicesInUse(bundle, &refs) == CELIX_SUCCESS) {
                     char line[256];
                     module_pt module = NULL;

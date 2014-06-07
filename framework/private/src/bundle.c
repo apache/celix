@@ -25,7 +25,6 @@
  */
 #include <stdlib.h>
 #include <string.h>
-#include <apr_strings.h>
 
 #include "framework_private.h"
 #include "bundle_private.h"
@@ -42,20 +41,18 @@
 celix_status_t bundle_createModule(bundle_pt bundle, module_pt *module);
 celix_status_t bundle_closeRevisions(bundle_pt bundle);
 
-celix_status_t bundle_create(bundle_pt * bundle, framework_logger_pt logger, apr_pool_t *mp) {
+celix_status_t bundle_create(bundle_pt * bundle, framework_logger_pt logger) {
     celix_status_t status = CELIX_SUCCESS;
     bundle_archive_pt archive = NULL;
 
-	*bundle = (bundle_pt) apr_palloc(mp, sizeof(**bundle));
+	*bundle = (bundle_pt) malloc(sizeof(**bundle));
 	if (*bundle == NULL) {
 		return CELIX_ENOMEM;
 	}
 	status = bundleArchive_createSystemBundleArchive(logger, &archive);
 	if (status == CELIX_SUCCESS) {
         module_pt module;
-		apr_status_t apr_status;
 
-		(*bundle)->memoryPool = mp;
         (*bundle)->archive = archive;
         (*bundle)->activator = NULL;
         (*bundle)->context = NULL;
@@ -68,8 +65,8 @@ celix_status_t bundle_create(bundle_pt * bundle, framework_logger_pt logger, apr
         bundle_addModule(*bundle, module);
         // (*bundle)->module = module;
 
-        apr_status = celixThreadMutex_create(&(*bundle)->lock, NULL);
-        if (apr_status != APR_SUCCESS) {
+        status = celixThreadMutex_create(&(*bundle)->lock, NULL);
+        if (status != CELIX_SUCCESS) {
         	status = CELIX_ILLEGAL_STATE;
         } else {
 			(*bundle)->lockCount = 0;
@@ -84,16 +81,15 @@ celix_status_t bundle_create(bundle_pt * bundle, framework_logger_pt logger, apr
 	return status;
 }
 
-celix_status_t bundle_createFromArchive(bundle_pt * bundle, framework_pt framework, bundle_archive_pt archive, apr_pool_t *bundlePool) {
+celix_status_t bundle_createFromArchive(bundle_pt * bundle, framework_pt framework, bundle_archive_pt archive) {
     module_pt module;
 	
 	celix_status_t status = CELIX_SUCCESS;
 
-	*bundle = (bundle_pt) apr_pcalloc(bundlePool, sizeof(**bundle));
+	*bundle = (bundle_pt) malloc(sizeof(**bundle));
 	if (*bundle == NULL) {
 		return CELIX_ENOMEM;
 	}
-	(*bundle)->memoryPool = bundlePool;
 	(*bundle)->archive = archive;
 	(*bundle)->activator = NULL;
 	(*bundle)->context = NULL;
@@ -101,15 +97,12 @@ celix_status_t bundle_createFromArchive(bundle_pt * bundle, framework_pt framewo
 	(*bundle)->state = OSGI_FRAMEWORK_BUNDLE_INSTALLED;
 	(*bundle)->modules = NULL;
 	arrayList_create(&(*bundle)->modules);
-
 	
 	status = bundle_createModule(*bundle, &module);
 	if (status == CELIX_SUCCESS) {
-        apr_status_t apr_status;
-
 		bundle_addModule(*bundle, module);
-        apr_status = celixThreadMutex_create(&(*bundle)->lock, NULL);
-        if (apr_status != APR_SUCCESS) {
+        status = celixThreadMutex_create(&(*bundle)->lock, NULL);
+        if (status != CELIX_SUCCESS) {
 			status = CELIX_ILLEGAL_STATE;
 		} else {
 			(*bundle)->lockCount = 0;
@@ -136,7 +129,6 @@ celix_status_t bundle_destroy(bundle_pt bundle) {
 	arrayList_destroy(bundle->modules);
 	celixThreadMutex_destroy(&bundle->lock);
 
-	apr_pool_destroy(bundle->memoryPool);
 	return CELIX_SUCCESS;
 }
 
@@ -199,8 +191,8 @@ celix_status_t bundle_setContext(bundle_pt bundle, bundle_context_pt context) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundle_getEntry(bundle_pt bundle, char * name, apr_pool_t *pool, char **entry) {
-	return framework_getBundleEntry(bundle->framework, bundle, name, pool, entry);
+celix_status_t bundle_getEntry(bundle_pt bundle, char * name, char **entry) {
+	return framework_getBundleEntry(bundle->framework, bundle, name, entry);
 }
 
 celix_status_t bundle_getState(bundle_pt bundle, bundle_state_e *state) {
@@ -227,15 +219,11 @@ celix_status_t bundle_createModule(bundle_pt bundle, module_pt *module) {
         status = bundleArchive_getId(bundle->archive, &bundleId);
         if (status == CELIX_SUCCESS) {
 			int revision = 0;
-			char *moduleId = NULL;
-			apr_pool_t *pool = NULL;
+			char moduleId[512];
 
+			snprintf(moduleId, sizeof(moduleId), "%ld.%d", bundleId, revision);
 
-			apr_pool_create(&pool, bundle->memoryPool);
-			moduleId = (char *) apr_palloc(pool, sizeof(bundleId) + sizeof(revision) +2);
-			sprintf(moduleId, "%ld.%d", bundleId, revision);
-
-			*module = module_create(headerMap, apr_pstrdup(bundle->memoryPool, moduleId), bundle);
+			*module = module_create(headerMap, strdup(moduleId), bundle);
 
 			if (*module != NULL) {
 				version_pt bundleVersion = module_getVersion(*module);
@@ -274,7 +262,6 @@ celix_status_t bundle_createModule(bundle_pt bundle, module_pt *module) {
 					arrayList_destroy(bundles);
 				}
 			}
-			apr_pool_destroy(pool);
         }
 	}
 
@@ -478,10 +465,9 @@ celix_status_t bundle_isSystemBundle(bundle_pt bundle, bool *systemBundle) {
 
 celix_status_t bundle_isLockable(bundle_pt bundle, bool *lockable) {
 	celix_status_t status = CELIX_SUCCESS;
-	apr_status_t apr_status;
 
-	apr_status = celixThreadMutex_lock(&bundle->lock);
-	if (apr_status != APR_SUCCESS) {
+	status = celixThreadMutex_lock(&bundle->lock);
+	if (status != 0) {
 		status = CELIX_BUNDLE_EXCEPTION;
 	} else {
 		bool equals;
@@ -490,8 +476,8 @@ celix_status_t bundle_isLockable(bundle_pt bundle, bool *lockable) {
 			*lockable = (bundle->lockCount == 0) || (equals);
 		}
 
-		apr_status = celixThreadMutex_unlock(&bundle->lock);
-		if (apr_status != APR_SUCCESS) {
+		status = celixThreadMutex_unlock(&bundle->lock);
+		if (status != 0) {
 			status = CELIX_BUNDLE_EXCEPTION;
 		}
 	}
@@ -503,16 +489,15 @@ celix_status_t bundle_isLockable(bundle_pt bundle, bool *lockable) {
 
 celix_status_t bundle_getLockingThread(bundle_pt bundle, celix_thread_t *thread) {
 	celix_status_t status = CELIX_SUCCESS;
-	apr_status_t apr_status;
 
-	apr_status = celixThreadMutex_lock(&bundle->lock);
-	if (apr_status != APR_SUCCESS) {
+	status = celixThreadMutex_lock(&bundle->lock);
+	if (status != 0) {
 		status = CELIX_BUNDLE_EXCEPTION;
 	} else {
 		*thread = bundle->lockThread;
 
-		apr_status = celixThreadMutex_unlock(&bundle->lock);
-		if (apr_status != APR_SUCCESS) {
+		status = celixThreadMutex_unlock(&bundle->lock);
+		if (status != 0) {
 			status = CELIX_BUNDLE_EXCEPTION;
 		}
 	}
@@ -664,10 +649,10 @@ celix_status_t bundle_getBundleId(bundle_pt bundle, long *id) {
 	return status;
 }
 
-celix_status_t bundle_getRegisteredServices(bundle_pt bundle, apr_pool_t *pool, array_list_pt *list) {
+celix_status_t bundle_getRegisteredServices(bundle_pt bundle, array_list_pt *list) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	status = fw_getBundleRegisteredServices(bundle->framework, pool, bundle, list);
+	status = fw_getBundleRegisteredServices(bundle->framework, bundle, list);
 
 	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to get registered services");
 
@@ -680,20 +665,6 @@ celix_status_t bundle_getServicesInUse(bundle_pt bundle, array_list_pt *list) {
 	status = fw_getBundleServicesInUse(bundle->framework, bundle, list);
 
 	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to get in use services");
-
-	return status;
-}
-
-celix_status_t bundle_getMemoryPool(bundle_pt bundle, apr_pool_t **pool) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	if (bundle != NULL && *pool == NULL) {
-		*pool = bundle->memoryPool;
-	} else {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	framework_logIfError(bundle->framework->logger, status, NULL, "Failed to get memory pool");
 
 	return status;
 }

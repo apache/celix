@@ -35,6 +35,7 @@
 #include "service_registration.h"
 
 struct logActivator {
+    apr_pool_t *pool;
     bundle_context_pt bundleContext;
     service_registration_pt logServiceFactoryReg;
     service_registration_pt logReaderServiceReg;
@@ -49,7 +50,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
     apr_pool_t *mp = NULL;
 	struct logActivator * activator = NULL;
 
-    bundleContext_getMemoryPool(context, &mp);
+    apr_pool_create(&mp, NULL);
     activator = (struct logActivator *) apr_palloc(mp, sizeof(struct logActivator));
 
 
@@ -59,6 +60,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 		activator->bundleContext = context;
 		activator->logServiceFactoryReg = NULL;
 		activator->logReaderServiceReg = NULL;
+		activator->pool = mp;
         *userData = activator;
     }
 
@@ -68,37 +70,33 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
     struct logActivator * activator = (struct logActivator *) userData;
     celix_status_t status = CELIX_SUCCESS;
-    apr_pool_t *mp = NULL;
     service_factory_pt factory = NULL;
     log_pt logger = NULL;
 
     log_reader_data_pt reader = NULL;
     log_reader_service_pt reader_service = NULL;
 
-    bundleContext_getMemoryPool(context, &mp);
 
-    log_create(mp, &logger);
+    log_create(activator->pool, &logger);
 
     // Add logger as Bundle- and FrameworkEvent listener
-    activator->bundleListener = apr_palloc(mp, sizeof(*activator->bundleListener));
-    activator->bundleListener->pool = mp;
+    activator->bundleListener = apr_palloc(activator->pool, sizeof(*activator->bundleListener));
     activator->bundleListener->handle = logger;
     activator->bundleListener->bundleChanged = log_bundleChanged;
     bundleContext_addBundleListener(context, activator->bundleListener);
 
-    activator->frameworkListener = apr_palloc(mp, sizeof(*activator->frameworkListener));
-    activator->frameworkListener->pool = mp;
+    activator->frameworkListener = apr_palloc(activator->pool, sizeof(*activator->frameworkListener));
     activator->frameworkListener->handle = logger;
     activator->frameworkListener->frameworkEvent = log_frameworkEvent;
     bundleContext_addFrameworkListener(context, activator->frameworkListener);
 
-    logFactory_create(mp, logger, &factory);
+    logFactory_create(activator->pool, logger, &factory);
 
     bundleContext_registerServiceFactory(context, (char *) OSGI_LOGSERVICE_NAME, factory, NULL, &activator->logServiceFactoryReg);
 
-    logReaderService_create(logger, mp, &reader);
+    logReaderService_create(logger, activator->pool, &reader);
 
-    reader_service = apr_palloc(mp, sizeof(*reader_service));
+    reader_service = apr_palloc(activator->pool, sizeof(*reader_service));
     reader_service->reader = reader;
     reader_service->getLog = logReaderService_getLog;
     reader_service->addLogListener = logReaderService_addLogListener;

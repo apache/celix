@@ -75,12 +75,11 @@ celix_status_t fw_uninstallBundle(framework_pt framework, bundle_pt bundle) {
 		return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t framework_getBundleEntry(framework_pt framework, bundle_pt bundle, char *name, apr_pool_t *pool, char **entry) {
+celix_status_t framework_getBundleEntry(framework_pt framework, bundle_pt bundle, char *name, char **entry) {
 	mock_c()->actualCall("framework_getBundleEntry")
 			->withPointerParameters("framework", framework)
 			->withPointerParameters("bundle", bundle)
 			->withStringParameters("name", name)
-			->withPointerParameters("pool", pool)
 			->_andStringOutputParameters("entry", (const char **) entry);
 		return mock_c()->returnValue().value.intValue;
 }
@@ -166,7 +165,7 @@ celix_status_t framework_ungetService(framework_pt framework, bundle_pt bundle, 
 		return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t fw_getBundleRegisteredServices(framework_pt framework, apr_pool_t *pool, bundle_pt bundle, array_list_pt *services) {
+celix_status_t fw_getBundleRegisteredServices(framework_pt framework, bundle_pt bundle, array_list_pt *services) {
 	mock_c()->actualCall("fw_getBundleRegisteredServices");
 		return mock_c()->returnValue().value.intValue;
 }
@@ -240,10 +239,9 @@ celix_status_t fw_isServiceAssignable(framework_pt fw, bundle_pt requester, serv
 
 //void revise(bundle_archive_t archive, char * location) {
 
-celix_status_t getManifest(bundle_archive_pt archive, apr_pool_t *pool, manifest_pt *manifest) {
+celix_status_t getManifest(bundle_archive_pt archive, manifest_pt *manifest) {
 	mock_c()->actualCall("getManifest")
 			->withPointerParameters("archive", archive)
-			->withPointerParameters("pool", pool)
 			->_andPointerOutputParameters("manifest", (void **) manifest);
 		return mock_c()->returnValue().value.intValue;
 }

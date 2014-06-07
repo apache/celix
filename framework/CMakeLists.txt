@@ -65,7 +65,7 @@ if (FRAMEWORK)
 		${IO}
 	 
 	)
-    target_link_libraries(celix_framework celix_utils ${ZLIB_LIBRARY} ${APR_LIBRARY} ${APRUTIL_LIBRARY})
+    target_link_libraries(celix_framework celix_utils ${ZLIB_LIBRARY} ${APR_LIBRARY})
     
     install(TARGETS celix_framework DESTINATION lib COMPONENT framework)
     FILE(GLOB files "public/include/*.h")
@@ -93,8 +93,10 @@ if (FRAMEWORK)
             private/src/celix_log.c)
 		target_link_libraries(version_range_test ${APR_LIBRARY} ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY})
 		
-		add_executable(utils_test private/test/utils_test.cpp private/src/utils.c)
-		target_link_libraries(utils_test ${APR_LIBRARY} ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY})
+		add_executable(utils_test 
+		  private/test/utils_test.cpp private/src/utils.c
+		  )
+		target_link_libraries(utils_test ${APR_LIBRARY} ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils)
 		
 		add_executable(service_tracker_test 
 			private/test/service_tracker_test.cpp 

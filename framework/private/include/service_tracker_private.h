@@ -34,7 +34,6 @@ struct serviceTracker {
 	bundle_context_pt context;
 	char * filter;
 
-	apr_pool_t *pool;
 	service_tracker_pt tracker;
 	service_tracker_customizer_pt customizer;
 	service_listener_pt listener;

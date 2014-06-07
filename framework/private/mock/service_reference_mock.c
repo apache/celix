@@ -29,7 +29,6 @@
 
 celix_status_t serviceReference_create(bundle_pt bundle, service_registration_pt registration, service_reference_pt *reference) {
 	mock_c()->actualCall("serviceReference_create")
-			->withPointerParameters("pool", pool)
 			->withPointerParameters("bundle", bundle)
 			->withPointerParameters("registration", registration)
 			->_andPointerOutputParameters("reference", (void **) reference);
@@ -38,7 +37,7 @@ celix_status_t serviceReference_create(bundle_pt bundle, service_registration_pt
 
 celix_status_t serviceReference_destroy(service_reference_pt reference) {
 	mock_c()->actualCall("serviceReference_destroy")
-			->withPointerParameters("reference", reference)
+			->withPointerParameters("reference", reference);
 	return mock_c()->returnValue().value.intValue;
 }
 

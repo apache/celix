@@ -26,6 +26,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <apr_general.h>
+
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/TestHarness_c.h"
 #include "CppUTest/CommandLineTestRunner.h"
@@ -99,7 +101,7 @@ TEST(manifest, createFromFile) {
         .expectOneCall("properties_destroy")
         .withParameter("properties", properties);
 
-    manifest_createFromFile(pool, manifestFile, &manifest);
+    manifest_createFromFile(manifestFile, &manifest);
 }
 
 TEST(manifest, createFromFileWithSections) {
@@ -165,7 +167,7 @@ TEST(manifest, createFromFileWithSections) {
         .expectOneCall("properties_destroy")
         .withParameter("properties", properties);
 
-    manifest_createFromFile(pool, manifestFile, &manifest);
+    manifest_createFromFile(manifestFile, &manifest);
 
     properties_pt main = manifest_getMainAttributes(manifest);
     POINTERS_EQUAL(properties, main);

@@ -69,14 +69,14 @@ TEST(service_registry, create) {
 	framework_pt framework = (framework_pt) 0x10;
 	service_registry_pt registry = NULL;
 
-	serviceRegistry_create(pool, framework, serviceRegistryTest_serviceChanged, &registry);
+	serviceRegistry_create(framework, serviceRegistryTest_serviceChanged, &registry);
 
 	POINTERS_EQUAL(framework, registry->framework);
 	POINTERS_EQUAL(serviceRegistryTest_serviceChanged, registry->serviceChanged);
 	LONGS_EQUAL(1l, registry->currentServiceId);
 	CHECK(registry->inUseMap != NULL);
 	CHECK(registry->listenerHooks != NULL);
-	CHECK(registry->mutex != NULL);
+	//CHECK(registry->mutex != NULL);
 	CHECK(registry->serviceReferences == NULL);
 	CHECK(registry->serviceRegistrations != NULL);
 }
@@ -131,7 +131,7 @@ TEST(service_registry, getRegisteredServices) {
 		.andReturnValue(CELIX_SUCCESS);
 
 	array_list_pt services = NULL;
-	serviceRegistry_getRegisteredServices(registry, pool, bundle, &services);
+	serviceRegistry_getRegisteredServices(registry, bundle, &services);
 	LONGS_EQUAL(1, arrayList_size(services));
 	POINTERS_EQUAL(ref, arrayList_get(services, 0));
 }
@@ -158,7 +158,9 @@ TEST(service_registry, getServicesInUse) {
 TEST(service_registry, registerServiceNoProps) {
 	service_registry_pt registry = (service_registry_pt) apr_palloc(pool, sizeof(*registry));
 	registry->inUseMap = hashMap_create(NULL, NULL, NULL, NULL);
-	apr_thread_mutex_create(&registry->mutex, APR_THREAD_MUTEX_NESTED, pool);
+	celixThreadMutexAttr_create(&registry->mutexAttr);
+    celixThreadMutexAttr_settype(&registry->mutexAttr, CELIX_THREAD_MUTEX_RECURSIVE);
+    celixThreadMutex_create(&registry->mutex, &registry->mutexAttr);
 	registry->currentServiceId = 1l;
 	registry->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
 
@@ -191,7 +193,9 @@ TEST(service_registry, registerServiceNoProps) {
 TEST(service_registry, registerServiceFactoryNoProps) {
 	service_registry_pt registry = (service_registry_pt) apr_palloc(pool, sizeof(*registry));
 	registry->inUseMap = hashMap_create(NULL, NULL, NULL, NULL);
-	apr_thread_mutex_create(&registry->mutex, APR_THREAD_MUTEX_NESTED, pool);
+	celixThreadMutexAttr_create(&registry->mutexAttr);
+    celixThreadMutexAttr_settype(&registry->mutexAttr, CELIX_THREAD_MUTEX_RECURSIVE);
+    celixThreadMutex_create(&registry->mutex, &registry->mutexAttr);
 	registry->currentServiceId = 1l;
 	registry->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
 
@@ -224,7 +228,9 @@ TEST(service_registry, registerServiceFactoryNoProps) {
 TEST(service_registry, unregisterService) {
 	service_registry_pt registry = (service_registry_pt) apr_palloc(pool, sizeof(*registry));
 	registry->inUseMap = hashMap_create(NULL, NULL, NULL, NULL);
-	apr_thread_mutex_create(&registry->mutex, APR_THREAD_MUTEX_NESTED, pool);
+	celixThreadMutexAttr_create(&registry->mutexAttr);
+    celixThreadMutexAttr_settype(&registry->mutexAttr, CELIX_THREAD_MUTEX_RECURSIVE);
+    celixThreadMutex_create(&registry->mutex, &registry->mutexAttr);
 	registry->currentServiceId = 1l;
 	registry->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
 
@@ -276,7 +282,9 @@ TEST(service_registry, unregisterService) {
 TEST(service_registry, unregisterServices) {
 	service_registry_pt registry = (service_registry_pt) apr_palloc(pool, sizeof(*registry));
 	registry->inUseMap = hashMap_create(NULL, NULL, NULL, NULL);
-	apr_thread_mutex_create(&registry->mutex, APR_THREAD_MUTEX_NESTED, pool);
+	celixThreadMutexAttr_create(&registry->mutexAttr);
+    celixThreadMutexAttr_settype(&registry->mutexAttr, CELIX_THREAD_MUTEX_RECURSIVE);
+    celixThreadMutex_create(&registry->mutex, &registry->mutexAttr);
 	registry->currentServiceId = 1l;
 	registry->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
 
@@ -303,7 +311,9 @@ TEST(service_registry, unregisterServices) {
 TEST(service_registry, getServiceReferences) {
 	service_registry_pt registry = (service_registry_pt) apr_palloc(pool, sizeof(*registry));
 	registry->inUseMap = hashMap_create(NULL, NULL, NULL, NULL);
-	apr_thread_mutex_create(&registry->mutex, APR_THREAD_MUTEX_NESTED, pool);
+	celixThreadMutexAttr_create(&registry->mutexAttr);
+    celixThreadMutexAttr_settype(&registry->mutexAttr, CELIX_THREAD_MUTEX_RECURSIVE);
+    celixThreadMutex_create(&registry->mutex, &registry->mutexAttr);
 	registry->currentServiceId = 1l;
 	registry->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
 
@@ -365,7 +375,7 @@ TEST(service_registry, getServiceReferences) {
 		.andReturnValue(CELIX_SUCCESS);
 
 	array_list_pt actual  = NULL;
-	serviceRegistry_getServiceReferences(registry, pool, "test", NULL, &actual);
+	serviceRegistry_getServiceReferences(registry, "test", NULL, &actual);
 	LONGS_EQUAL(1, arrayList_size(actual));
 	POINTERS_EQUAL(reference, arrayList_get(actual, 0));
 }
@@ -373,7 +383,9 @@ TEST(service_registry, getServiceReferences) {
 TEST(service_registry, getService) {
 	service_registry_pt registry = (service_registry_pt) apr_palloc(pool, sizeof(*registry));
 	registry->inUseMap = hashMap_create(NULL, NULL, NULL, NULL);
-	apr_thread_mutex_create(&registry->mutex, APR_THREAD_MUTEX_NESTED, pool);
+	celixThreadMutexAttr_create(&registry->mutexAttr);
+    celixThreadMutexAttr_settype(&registry->mutexAttr, CELIX_THREAD_MUTEX_RECURSIVE);
+    celixThreadMutex_create(&registry->mutex, &registry->mutexAttr);
 	registry->currentServiceId = 1l;
 	registry->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
 
@@ -428,7 +440,9 @@ TEST(service_registry, getService) {
 TEST(service_registry, ungetService) {
 	service_registry_pt registry = (service_registry_pt) apr_palloc(pool, sizeof(*registry));
 	registry->inUseMap = hashMap_create(NULL, NULL, NULL, NULL);
-	apr_thread_mutex_create(&registry->mutex, APR_THREAD_MUTEX_NESTED, pool);
+	celixThreadMutexAttr_create(&registry->mutexAttr);
+    celixThreadMutexAttr_settype(&registry->mutexAttr, CELIX_THREAD_MUTEX_RECURSIVE);
+    celixThreadMutex_create(&registry->mutex, &registry->mutexAttr);
 	registry->currentServiceId = 1l;
 	registry->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
 
@@ -450,7 +464,6 @@ TEST(service_registry, ungetService) {
 	arrayList_create(&usages);
 	usage_count_pt usage = (usage_count_pt) malloc(sizeof(*usage));
 	usage->reference = reference;
-	apr_pool_create(&usage->pool, pool);
 	arrayList_add(usages, usage);
 	hashMap_put(registry->inUseMap, bundle, usages);
 
@@ -472,7 +485,9 @@ TEST(service_registry, ungetService) {
 TEST(service_registry, ungetServivces) {
 	service_registry_pt registry = (service_registry_pt) apr_palloc(pool, sizeof(*registry));
 	registry->inUseMap = hashMap_create(NULL, NULL, NULL, NULL);
-	apr_thread_mutex_create(&registry->mutex, APR_THREAD_MUTEX_NESTED, pool);
+	celixThreadMutexAttr_create(&registry->mutexAttr);
+    celixThreadMutexAttr_settype(&registry->mutexAttr, CELIX_THREAD_MUTEX_RECURSIVE);
+    celixThreadMutex_create(&registry->mutex, &registry->mutexAttr);
 	registry->currentServiceId = 1l;
 	registry->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
 
@@ -495,7 +510,6 @@ TEST(service_registry, ungetServivces) {
 	usage_count_pt usage = (usage_count_pt) malloc(sizeof(*usage));
 	usage->reference = reference;
 	usage->count = 1;
-	apr_pool_create(&usage->pool, pool);
 	arrayList_add(usages, usage);
 	hashMap_put(registry->inUseMap, bundle, usages);
 
@@ -531,7 +545,9 @@ TEST(service_registry, ungetServivces) {
 TEST(service_registry, getUsingBundles) {
 	service_registry_pt registry = (service_registry_pt) apr_palloc(pool, sizeof(*registry));
 	registry->inUseMap = hashMap_create(NULL, NULL, NULL, NULL);
-	apr_thread_mutex_create(&registry->mutex, APR_THREAD_MUTEX_NESTED, pool);
+	celixThreadMutexAttr_create(&registry->mutexAttr);
+    celixThreadMutexAttr_settype(&registry->mutexAttr, CELIX_THREAD_MUTEX_RECURSIVE);
+    celixThreadMutex_create(&registry->mutex, &registry->mutexAttr);
 	registry->currentServiceId = 1l;
 	registry->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
 
@@ -556,7 +572,7 @@ TEST(service_registry, getUsingBundles) {
 	arrayList_add(usages, usage);
 	hashMap_put(registry->inUseMap, bundle, usages);
 
-	array_list_pt actual = serviceRegistry_getUsingBundles(registry, pool, reference);
+	array_list_pt actual = serviceRegistry_getUsingBundles(registry, reference);
 	LONGS_EQUAL(1, arrayList_size(actual));
 	POINTERS_EQUAL(bundle, arrayList_get(actual, 0));
 }
@@ -564,7 +580,9 @@ TEST(service_registry, getUsingBundles) {
 TEST(service_registry, createServiceReference) {
 	service_registry_pt registry = (service_registry_pt) apr_palloc(pool, sizeof(*registry));
 	registry->inUseMap = hashMap_create(NULL, NULL, NULL, NULL);
-	apr_thread_mutex_create(&registry->mutex, APR_THREAD_MUTEX_NESTED, pool);
+	celixThreadMutexAttr_create(&registry->mutexAttr);
+    celixThreadMutexAttr_settype(&registry->mutexAttr, CELIX_THREAD_MUTEX_RECURSIVE);
+	celixThreadMutex_create(&registry->mutex, &registry->mutexAttr);
 	registry->currentServiceId = 1l;
 	registry->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
 
@@ -611,7 +629,7 @@ TEST(service_registry, createServiceReference) {
 		.andReturnValue(CELIX_SUCCESS);
 
 	service_reference_pt actual  = NULL;
-	serviceRegistry_createServiceReference(registry, pool, registration, &actual);
+	serviceRegistry_createServiceReference(registry, registration, &actual);
 	POINTERS_EQUAL(reference, actual);
 }
 
@@ -659,7 +677,7 @@ TEST(service_registry, getListenerHooks) {
 		.andReturnValue(CELIX_SUCCESS);
 
 	array_list_pt hooks = NULL;
-	celix_status_t status = serviceRegistry_getListenerHooks(registry, pool, &hooks);
+	celix_status_t status = serviceRegistry_getListenerHooks(registry, &hooks);
 	LONGS_EQUAL(1, arrayList_size(hooks));
 	POINTERS_EQUAL(reference, arrayList_get(hooks, 0));
 }

@@ -33,6 +33,8 @@
 
 extern "C" {
 #include "bundle_archive.h"
+
+framework_logger_pt logger;
 }
 
 int main(int argc, char** argv) {
@@ -40,15 +42,12 @@ int main(int argc, char** argv) {
 }
 
 TEST_GROUP(bundle_archive) {
-	apr_pool_t *pool;
-
 	void setup(void) {
-		apr_initialize();
-		apr_pool_create(&pool, NULL);
+	    logger = (framework_logger_pt) malloc(sizeof(*logger));
+        logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
-		apr_pool_destroy(pool);
 		mock().checkExpectations();
 		mock().clear();
 	}

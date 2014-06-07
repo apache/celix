@@ -96,13 +96,13 @@ celix_status_t importRegistration_createProxyTracker(import_registration_pt regi
 
 	service_tracker_customizer_pt customizer = NULL;
 
-	status = serviceTrackerCustomizer_create(registration->pool, registration, importRegistration_proxyAdding,
+	status = serviceTrackerCustomizer_create(registration, importRegistration_proxyAdding,
 			importRegistration_proxyAdded, importRegistration_proxyModified, importRegistration_proxyRemoved, &customizer);
 
 	if (status == CELIX_SUCCESS) {
 		char *filter = apr_pstrcat(registration->pool, "(&(", OSGI_FRAMEWORK_OBJECTCLASS, "=", OSGI_RSA_REMOTE_PROXY,
 				")(proxy.interface=", registration->endpointDescription->service, "))", NULL);
-		status = serviceTracker_createWithFilter(registration->pool, registration->context, filter, customizer, tracker);
+		status = serviceTracker_createWithFilter(registration->context, filter, customizer, tracker);
 	}
 
 	return status;

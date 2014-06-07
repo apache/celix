@@ -223,7 +223,7 @@ celix_status_t topologyManager_notifyListeners(topology_manager_pt manager, remo
 				properties_pt props = NULL;
 				serviceRegistration_getProperties(registration, &props);
 				char *scope = properties_get(props, (char *) OSGI_ENDPOINT_LISTENER_SCOPE);
-				filter_pt filter = filter_create(scope, manager->pool);
+				filter_pt filter = filter_create(scope);
 				endpoint_listener_pt epl = NULL;
 				status = bundleContext_getService(manager->context, eplRef, (void **) &epl);
 				if (status == CELIX_SUCCESS) {

@@ -29,22 +29,18 @@
 #include "service_tracker_customizer_private.h"
 #include "celix_log.h"
 
-static apr_status_t serviceTrackerCustomizer_destroy(void *customizerPointer);
-
-celix_status_t serviceTrackerCustomizer_create(apr_pool_t *pool, void *handle,
+celix_status_t serviceTrackerCustomizer_create(void *handle,
 		adding_callback_pt addingFunction, added_callback_pt addedFunction,
 		modified_callback_pt modifiedFunction, removed_callback_pt removedFunction, service_tracker_customizer_pt *customizer) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	if (pool == NULL || handle == NULL || *customizer != NULL) {
+	if (handle == NULL || *customizer != NULL) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
-		*customizer = apr_palloc(pool, sizeof(**customizer));
+		*customizer = malloc(sizeof(**customizer));
 		if (!*customizer) {
 			status = CELIX_ENOMEM;
 		} else {
-			apr_pool_pre_cleanup_register(pool, *customizer, serviceTrackerCustomizer_destroy);
-
 			(*customizer)->handle = handle;
 			(*customizer)->addingService = addingFunction;
 			(*customizer)->addedService = addedFunction;
@@ -58,16 +54,14 @@ celix_status_t serviceTrackerCustomizer_create(apr_pool_t *pool, void *handle,
 	return status;
 }
 
-static apr_status_t serviceTrackerCustomizer_destroy(void *customizerPointer) {
-	service_tracker_customizer_pt customizer = (service_tracker_customizer_pt) customizerPointer;
-
+celix_status_t serviceTrackerCustomizer_destroy(service_tracker_customizer_pt customizer) {
 	customizer->handle = NULL;
 	customizer->addingService = NULL;
 	customizer->addedService = NULL;
 	customizer->modifiedService = NULL;
 	customizer->removedService = NULL;
 
-	return APR_SUCCESS;
+	return CELIX_SUCCESS;
 }
 
 celix_status_t serviceTrackerCustomizer_getHandle(service_tracker_customizer_pt customizer, void **handle) {

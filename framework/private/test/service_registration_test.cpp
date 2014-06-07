@@ -81,7 +81,7 @@ TEST(service_registration, create) {
 		.withParameter("value", "service")
 		.andReturnValue((char *) NULL);
 
-	service_registration_pt registration = serviceRegistration_create(pool, registry, bundle, (char *) serviceName.c_str(), serviceId, service, NULL);
+	service_registration_pt registration = serviceRegistration_create(registry, bundle, (char *) serviceName.c_str(), serviceId, service, NULL);
 
 	POINTERS_EQUAL(registry, registration->registry);
 	STRCMP_EQUAL("service", registration->className);
@@ -91,7 +91,7 @@ TEST(service_registration, create) {
 	POINTERS_EQUAL(properties, registration->properties);
 	POINTERS_EQUAL(service, registration->svcObj);
 	LONGS_EQUAL(serviceId, registration->serviceId);
-	CHECK(registration->mutex);
+//	CHECK(registration->mutex);
 	LONGS_EQUAL(0, registration->isUnregistering);
 	LONGS_EQUAL(0, registration->isServiceFactory);
 	POINTERS_EQUAL(NULL, registration->serviceFactory);
@@ -120,7 +120,7 @@ TEST(service_registration, createServiceFactory) {
 		.withParameter("value", "service")
 		.andReturnValue((char *) NULL);
 
-	service_registration_pt registration = serviceRegistration_createServiceFactory(pool, registry, bundle, (char *) serviceName.c_str(), serviceId, service, NULL);
+	service_registration_pt registration = serviceRegistration_createServiceFactory(registry, bundle, (char *) serviceName.c_str(), serviceId, service, NULL);
 
 	POINTERS_EQUAL(registry, registration->registry);
 	STRCMP_EQUAL("service", registration->className);
@@ -130,7 +130,7 @@ TEST(service_registration, createServiceFactory) {
 	POINTERS_EQUAL(properties, registration->properties);
 	POINTERS_EQUAL(service, registration->svcObj);
 	LONGS_EQUAL(serviceId, registration->serviceId);
-	CHECK(registration->mutex);
+//	CHECK(registration->mutex);
 	LONGS_EQUAL(0, registration->isUnregistering);
 	LONGS_EQUAL(1, registration->isServiceFactory);
 	POINTERS_EQUAL(service, registration->serviceFactory);
@@ -159,7 +159,7 @@ TEST(service_registration, isValidFalse) {
 
 TEST(service_registration, invalidate) {
 	service_registration_pt registration = (service_registration_pt) apr_palloc(pool, sizeof(*registration));
-	apr_thread_mutex_create(&registration->mutex, 0, pool);
+	celixThreadMutex_create(&registration->mutex, NULL);
 	void *service = (void *) 0x30;
 	registration->svcObj = service;
 
@@ -174,7 +174,7 @@ TEST(service_registration, unregisterValid) {
 	service_registration_pt registration = (service_registration_pt) apr_palloc(pool, sizeof(*registration));
 	registration->registry = registry;
 	registration->bundle = bundle;
-	apr_thread_mutex_create(&registration->mutex, 0, pool);
+	celixThreadMutex_create(&registration->mutex, NULL);
 	void *service = (void *) 0x30;
 	registration->svcObj = service;
 
@@ -195,7 +195,7 @@ TEST(service_registration, unregisterInvalid) {
 	service_registration_pt registration = (service_registration_pt) apr_palloc(pool, sizeof(*registration));
 	registration->registry = registry;
 	registration->bundle = bundle;
-	apr_thread_mutex_create(&registration->mutex, 0, pool);
+	celixThreadMutex_create(&registration->mutex, NULL);
 	registration->svcObj = NULL;
 
 	celix_status_t status = serviceRegistration_unregister(registration);

@@ -53,7 +53,7 @@ celix_status_t versionRange_destroy(version_range_pt range) {
 	range->isHighInclusive = false;
 	range->low = NULL;
 	range->isLowInclusive = false;
-	return APR_SUCCESS;
+	return CELIX_SUCCESS;
 }
 
 celix_status_t versionRange_createInfiniteVersionRange(version_range_pt *range) {

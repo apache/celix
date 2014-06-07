@@ -27,11 +27,11 @@
 
 #include "bundle_private.h"
 
-celix_status_t bundle_create(bundle_pt * bundle, framework_logger_pt logger, apr_pool_t *mp) {
+celix_status_t bundle_create(bundle_pt * bundle, framework_logger_pt logger) {
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundle_createFromArchive(bundle_pt * bundle, framework_pt framework, bundle_archive_pt archive, apr_pool_t *bundlePool) {
+celix_status_t bundle_createFromArchive(bundle_pt * bundle, framework_pt framework, bundle_archive_pt archive) {
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -82,7 +82,7 @@ celix_status_t bundle_setContext(bundle_pt bundle, bundle_context_pt context) {
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundle_getEntry(bundle_pt bundle, char * name, apr_pool_t *pool, char **entry) {
+celix_status_t bundle_getEntry(bundle_pt bundle, char * name, char **entry) {
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -160,7 +160,7 @@ celix_status_t bundle_isLockable(bundle_pt bundle, bool *lockable) {
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundle_getLockingThread(bundle_pt bundle, apr_os_thread_t *thread) {
+celix_status_t bundle_getLockingThread(bundle_pt bundle, celix_thread_t *thread) {
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -191,7 +191,7 @@ celix_status_t bundle_getBundleId(bundle_pt bundle, long *id) {
 }
 
 
-celix_status_t bundle_getRegisteredServices(bundle_pt bundle, apr_pool_t *pool, array_list_pt *list) {
+celix_status_t bundle_getRegisteredServices(bundle_pt bundle, array_list_pt *list) {
 	return mock_c()->returnValue().value.intValue;
 }
 

@@ -28,18 +28,18 @@
 #define UTILS_H_
 
 #include <ctype.h>
-#include <apr_portable.h>
 
 #include "celix_errno.h"
 #include "celixbool.h"
 #include "framework_exports.h"
+#include "celix_threads.h"
 
 FRAMEWORK_EXPORT unsigned int utils_stringHash(void * string);
 FRAMEWORK_EXPORT int utils_stringEquals(void * string, void * toCompare);
 FRAMEWORK_EXPORT char * string_ndup(const char *s, size_t n);
 FRAMEWORK_EXPORT char * utils_stringTrim(char * string);
 
-FRAMEWORK_EXPORT celix_status_t thread_equalsSelf(apr_os_thread_t thread, bool *equals);
+FRAMEWORK_EXPORT celix_status_t thread_equalsSelf(celix_thread_t thread, bool *equals);
 
 FRAMEWORK_EXPORT celix_status_t utils_isNumeric(char *number, bool *ret);
 

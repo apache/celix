@@ -77,14 +77,14 @@ void serviceDependency_start(service_dependency_pt dependency, service_pt servic
 
 	bundleContext_getMemoryPool(dependency->context, &pool);
 
-	serviceTrackerCustomizer_create(pool, dependency, serviceDependency_addingService,
+	serviceTrackerCustomizer_create(dependency, serviceDependency_addingService,
 			serviceDependency_addedService, serviceDependency_modifiedService,
 			serviceDependency_removedService, &cust);
 
 	if (dependency->trackedServiceFilter != NULL) {
-		serviceTracker_createWithFilter(pool, dependency->context, dependency->trackedServiceFilter, cust, &dependency->tracker);
+		serviceTracker_createWithFilter(dependency->context, dependency->trackedServiceFilter, cust, &dependency->tracker);
 	} else if (dependency->trackedServiceName != NULL) {
-		serviceTracker_create(pool, dependency->context, dependency->trackedServiceName, cust, &dependency->tracker);
+		serviceTracker_create(dependency->context, dependency->trackedServiceName, cust, &dependency->tracker);
 	} else {
 
 	}

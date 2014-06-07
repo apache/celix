@@ -179,7 +179,7 @@ celix_status_t driverLoader_loadDriverForLocator(driver_loader_pt loader, apr_po
 				if (status == CELIX_SUCCESS) {
 					status = bundle_start(bundle);
 					if (status == CELIX_SUCCESS) {
-						status = bundle_getRegisteredServices(bundle, pool, references);
+						status = bundle_getRegisteredServices(bundle, references);
 						if (status == CELIX_SUCCESS) {
 							arrayList_addAll(loader->loadedDrivers, *references);
 						}

@@ -105,11 +105,11 @@ celix_status_t exportRegistration_createEndpointTracker(export_registration_pt r
 
 	service_tracker_customizer_pt customizer = NULL;
 
-	status = serviceTrackerCustomizer_create(registration->pool, registration, exportRegistration_endpointAdding,
+	status = serviceTrackerCustomizer_create(registration, exportRegistration_endpointAdding,
 			exportRegistration_endpointAdded, exportRegistration_endpointModified, exportRegistration_endpointRemoved, &customizer);
 
 	if (status == CELIX_SUCCESS) {
-		status = serviceTracker_create(registration->pool, registration->context, OSGI_RSA_REMOTE_ENDPOINT, customizer, tracker);
+		status = serviceTracker_create(registration->context, OSGI_RSA_REMOTE_ENDPOINT, customizer, tracker);
 	}
 
 	return status;

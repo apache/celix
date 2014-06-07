@@ -28,6 +28,7 @@
 
 #include <apr_strings.h>
 #include <apr_uuid.h>
+#include <apr_network_io.h>
 
 #include <curl/curl.h>
 

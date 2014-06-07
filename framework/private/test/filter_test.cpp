@@ -25,6 +25,7 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
+#include <apr_general.h>
 
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/TestHarness_c.h"
@@ -56,7 +57,7 @@ TEST_GROUP(filter) {
 
 TEST(filter, create) {
 	char filterStr[] = "(key=value)";
-	filter_pt filter = filter_create(filterStr, pool);
+	filter_pt filter = filter_create(filterStr);
 
 	STRCMP_EQUAL(filterStr, filter->filterStr);
 }

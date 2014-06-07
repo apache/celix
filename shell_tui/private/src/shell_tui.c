@@ -27,6 +27,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <apr_general.h>
+#include <apr_thread_proc.h>
+
 #include "bundle_context.h"
 #include "bundle_activator.h"
 #include "shell.h"
@@ -39,6 +42,7 @@ struct shellTuiActivator {
 	struct serviceListener * listener;
 	bool running;
 	apr_thread_t *runnable;
+	apr_pool_t *pool;
 };
 
 typedef struct shellTuiActivator * shell_tui_activator_pt;
@@ -104,17 +108,17 @@ void shellTui_serviceChanged(service_listener_pt listener, service_event_pt even
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	apr_pool_t *pool = NULL;
-	celix_status_t status = bundleContext_getMemoryPool(context, &pool);
+	apr_pool_create(&pool, NULL);
 	shell_tui_activator_pt activator = (shell_tui_activator_pt) apr_palloc(pool, sizeof(*activator));
 	//shell_tui_activator_pt activator = (shell_tui_activator_pt) malloc(sizeof(*activator));
 	activator->shell = NULL;
+	activator->pool = pool;
 	(*userData) = activator;
 	return CELIX_SUCCESS;
 }
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
     celix_status_t status;
-	apr_pool_t *pool = NULL;
 
 	shell_tui_activator_pt act = (shell_tui_activator_pt) userData;
 	service_listener_pt listener = (service_listener_pt) malloc(sizeof(*listener));
@@ -122,17 +126,14 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	act->context = context;
 	act->running = true;
 
-	
-	bundleContext_getMemoryPool(context, &pool);
 	act->listener = listener;
-	act->listener->pool = pool;
 	act->listener->handle = act;
 	act->listener->serviceChanged = (void *) shellTui_serviceChanged;
 	status = bundleContext_addServiceListener(context, act->listener, "(objectClass=shellService)");
 
 	if (status == CELIX_SUCCESS) {
         shellTui_initializeService(act);
-		apr_thread_create(&act->runnable, NULL, shellTui_runnable, act, pool);
+		apr_thread_create(&act->runnable, NULL, shellTui_runnable, act, act->pool);
 	}
 
 	return status;
@@ -156,5 +157,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
+    shell_tui_activator_pt act = (shell_tui_activator_pt) userData;
+    apr_pool_destroy(act->pool);
 	return CELIX_SUCCESS;
 }

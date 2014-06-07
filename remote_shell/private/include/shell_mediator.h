@@ -29,6 +29,7 @@
 #define shellMediator_H_
 
 #include <apr_pools.h>
+#include <apr_network_io.h>
 
 #include <bundle_context.h>
 #include <celix_errno.h>

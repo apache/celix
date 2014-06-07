@@ -25,6 +25,7 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "service_registry_private.h"
 #include "service_registration.h"
@@ -68,7 +69,7 @@ celix_status_t serviceRegistry_create(framework_pt framework, serviceChanged_fun
 	return status;
 }
 
-apr_status_t serviceRegistry_destroy(service_registry_pt registry) {
+celix_status_t serviceRegistry_destroy(service_registry_pt registry) {
     hashMap_destroy(registry->inUseMap, false, false);
     hashMap_destroy(registry->serviceRegistrations, false, false);
     arrayList_destroy(registry->listenerHooks);
@@ -180,10 +181,7 @@ celix_status_t serviceRegistry_registerServiceFactory(service_registry_pt regist
 
 celix_status_t serviceRegistry_registerServiceInternal(service_registry_pt registry, bundle_pt bundle, char * serviceName, void * serviceObject, properties_pt dictionary, bool isFactory, service_registration_pt *registration) {
 	array_list_pt regs;
-	apr_pool_t *pool = NULL;
 	celixThreadMutex_lock(&registry->mutex);
-
-	bundle_getMemoryPool(bundle, &pool);
 
 	if (isFactory) {
 	    *registration = serviceRegistration_createServiceFactory(registry, bundle, serviceName, ++registry->currentServiceId, serviceObject, dictionary);
@@ -365,7 +363,7 @@ celix_status_t serviceRegistry_getServiceReferences(service_registry_pt registry
 	return status;
 }
 
-apr_status_t serviceRegistry_removeReference(service_reference_pt reference) {
+celix_status_t serviceRegistry_removeReference(service_reference_pt reference) {
 	service_registration_pt registration = NULL;
 	serviceReference_getServiceRegistration(reference, &registration);
 
@@ -375,7 +373,7 @@ apr_status_t serviceRegistry_removeReference(service_reference_pt reference) {
 		arrayList_removeElement(references, reference);
 	}
 
-	return APR_SUCCESS;
+	return CELIX_SUCCESS;
 }
 
 celix_status_t serviceRegistry_getServicesInUse(service_registry_pt registry, bundle_pt bundle, array_list_pt *services) {
@@ -459,9 +457,6 @@ void serviceRegistry_ungetServices(service_registry_pt registry, bundle_pt bundl
 	array_list_pt fusages;
 	array_list_pt usages;
 	unsigned int i;
-
-	apr_pool_t *pool = NULL;
-	bundle_getMemoryPool(bundle, &pool);
 
 	celixThreadMutex_lock(&registry->mutex);
 	usages = hashMap_get(registry->inUseMap, bundle);

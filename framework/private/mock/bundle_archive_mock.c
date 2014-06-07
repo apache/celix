@@ -27,30 +27,27 @@
 
 #include "bundle_archive.h"
 
-celix_status_t bundleArchive_create(framework_logger_pt logger, char * archiveRoot, long id, char * location, char *inputFile, apr_pool_t *mp, bundle_archive_pt *bundle_archive) {
+celix_status_t bundleArchive_create(framework_logger_pt logger, char * archiveRoot, long id, char * location, char *inputFile, bundle_archive_pt *bundle_archive) {
 	mock_c()->actualCall("bundleArchive_create")
             ->withPointerParameters("logger", logger)
 			->withStringParameters("archiveRoot", archiveRoot)
 			->withIntParameters("id", id)
 			->withStringParameters("location", location)
 			->withStringParameters("inputFile", inputFile)
-			->withPointerParameters("mp", mp)
 			->_andPointerOutputParameters("bundle_archive", (void **) bundle_archive);
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundleArchive_createSystemBundleArchive(apr_pool_t *mp, framework_logger_pt logger, bundle_archive_pt *bundle_archive) {
+celix_status_t bundleArchive_createSystemBundleArchive(framework_logger_pt logger, bundle_archive_pt *bundle_archive) {
 	mock_c()->actualCall("bundleArchive_createSystemBundleArchive")
-			->withPointerParameters("pool", mp)
 			->withPointerParameters("logger", logger)
 			->_andPointerOutputParameters("bundle_archive", (void **) bundle_archive);
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundleArchive_recreate(char * archiveRoot, apr_pool_t *mp, bundle_archive_pt *bundle_archive) {
+celix_status_t bundleArchive_recreate(char * archiveRoot, bundle_archive_pt *bundle_archive) {
 	mock_c()->actualCall("bundleArchive_recreate")
 			->withStringParameters("archiveRoot", archiveRoot)
-			->withPointerParameters("mp", mp)
 			->_andPointerOutputParameters("bundle_archive", (void **) bundle_archive);
 	return mock_c()->returnValue().value.intValue;
 }

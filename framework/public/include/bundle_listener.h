@@ -29,15 +29,12 @@
 #ifndef BUNDLE_LISTENER_H_
 #define BUNDLE_LISTENER_H_
 
-#include <apr_general.h>
-
 typedef struct bundle_listener *bundle_listener_pt;
 
 #include "celix_errno.h"
 #include "bundle_event.h"
 
 struct bundle_listener {
-	apr_pool_t *pool;
 	void * handle;
 	celix_status_t (*bundleChanged)(void * listener, bundle_event_pt event);
 };

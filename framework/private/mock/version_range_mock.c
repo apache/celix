@@ -27,14 +27,13 @@
 
 #include "version_range.h"
 
-celix_status_t versionRange_createVersionRange(apr_pool_t *pool, version_pt low, bool isLowInclusive, version_pt high, bool isHighInclusive, version_range_pt *versionRange) {
+celix_status_t versionRange_createVersionRange(version_pt low, bool isLowInclusive, version_pt high, bool isHighInclusive, version_range_pt *versionRange) {
 	mock_c()->actualCall("versionRange_createVersionRange");
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t versionRange_createInfiniteVersionRange(apr_pool_t *pool, version_range_pt *range) {
+celix_status_t versionRange_createInfiniteVersionRange(version_range_pt *range) {
 	mock_c()->actualCall("versionRange_createInfiniteVersionRange")
-	        ->withPointerParameters("pool", pool)
 	        ->_andPointerOutputParameters("range", (void **) range);
 	return mock_c()->returnValue().value.intValue;
 }
@@ -47,9 +46,8 @@ celix_status_t versionRange_isInRange(version_range_pt versionRange, version_pt 
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t versionRange_parse(apr_pool_t *pool, char * rangeStr, version_range_pt *range) {
+celix_status_t versionRange_parse(char * rangeStr, version_range_pt *range) {
 	mock_c()->actualCall("versionRange_parse")
-        ->withPointerParameters("pool", pool)
         ->withStringParameters("rangeStr", rangeStr)
         ->_andPointerOutputParameters("range", (void **) range);
 	return mock_c()->returnValue().value.intValue;

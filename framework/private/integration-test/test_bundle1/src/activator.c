@@ -56,7 +56,6 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	bundleContext_getMemoryPool(context, &pool);
 
 	activator->listener = apr_palloc(pool, sizeof(*activator->listener));
-    activator->listener->pool = pool;
     activator->listener->handle = activator;
     activator->listener->frameworkEvent = test_frameworkEvent;
     bundleContext_addFrameworkListener(context, activator->listener);

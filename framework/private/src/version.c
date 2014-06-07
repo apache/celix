@@ -25,7 +25,7 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
-#include <apr_strings.h>
+#include <string.h>
 
 #include "celix_errno.h"
 #include "version_private.h"
@@ -117,7 +117,7 @@ celix_status_t version_createVersionFromString(char * versionStr, version_pt *ve
 
 	int i = 0;
 
-	token = apr_strtok(versionStr, delims, &last);
+	token = strtok_r(versionStr, delims, &last);
 	if (token != NULL) {
 		for (i = 0; i < strlen(token); i++) {
 			char ch = token[i];
@@ -129,7 +129,7 @@ celix_status_t version_createVersionFromString(char * versionStr, version_pt *ve
 			break;
 		}
 		major = atoi(token);
-		token = apr_strtok(NULL, delims, &last);
+		token = strtok_r(NULL, delims, &last);
 		if (token != NULL) {
 			for (i = 0; i < strlen(token); i++) {
 				char ch = token[i];
@@ -141,7 +141,7 @@ celix_status_t version_createVersionFromString(char * versionStr, version_pt *ve
 				break;
 			}
 			minor = atoi(token);
-			token = apr_strtok(NULL, delims, &last);
+			token = strtok_r(NULL, delims, &last);
 			if (token != NULL) {
 				for (i = 0; i < strlen(token); i++) {
 					char ch = token[i];
@@ -153,10 +153,10 @@ celix_status_t version_createVersionFromString(char * versionStr, version_pt *ve
 					break;
 				}
 				micro = atoi(token);
-				token = apr_strtok(NULL, delims, &last);
+				token = strtok_r(NULL, delims, &last);
 				if (token != NULL) {
 					qualifier = strdup(token);
-					token = apr_strtok(NULL, delims, &last);
+					token = strtok_r(NULL, delims, &last);
 					if (token != NULL) {
 						printf("invalid format");
 						*version = NULL;

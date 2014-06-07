@@ -26,7 +26,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <apr_strings.h>
 
 #include "module.h"
 #include "manifest_parser.h"
@@ -53,44 +52,33 @@ struct module {
 };
 
 module_pt module_create(manifest_pt headerMap, char * moduleId, bundle_pt bundle) {
-    module_pt module;
+    module_pt module = NULL;
     manifest_parser_pt mp;
-    apr_pool_t *pool;
-    apr_pool_t *bundlePool = NULL;
-
-    module = NULL;
-    pool = NULL;
 
     if (headerMap != NULL) {
-    	bundle_getMemoryPool(bundle, &bundlePool);
-
-        module = (module_pt) apr_palloc(bundlePool, sizeof(*module));
+        module = (module_pt) malloc(sizeof(*module));
         module->headerMap = headerMap;
-        module->id = apr_pstrdup(bundlePool, moduleId);
+        module->id = strdup(moduleId);
         module->bundle = bundle;
         module->resolved = false;
 
         module->dependentImporters = NULL;
         arrayList_create(&module->dependentImporters);
 
-        if (apr_pool_create(&pool, bundlePool) == APR_SUCCESS) {
-            if (manifestParser_create(module, headerMap, pool, &mp) == CELIX_SUCCESS) {
-            	module->symbolicName = NULL;
-            	manifestParser_getSymbolicName(mp, bundlePool, &module->symbolicName);
+        if (manifestParser_create(module, headerMap, &mp) == CELIX_SUCCESS) {
+            module->symbolicName = NULL;
+            manifestParser_getSymbolicName(mp, &module->symbolicName);
 
-                module->version = NULL;
-                manifestParser_getBundleVersion(mp, bundlePool, &module->version);
+            module->version = NULL;
+            manifestParser_getBundleVersion(mp, &module->version);
 
-                module->capabilities = NULL;
-                manifestParser_getCapabilities(mp, bundlePool, &module->capabilities);
+            module->capabilities = NULL;
+            manifestParser_getCapabilities(mp, &module->capabilities);
 
-                module->requirements = NULL;
-                manifestParser_getRequirements(mp, bundlePool, &module->requirements);
+            module->requirements = NULL;
+            manifestParser_getRequirements(mp, &module->requirements);
 
-                module->wires = NULL;
-            } else {
-                apr_pool_destroy(pool);
-            }
+            module->wires = NULL;
         }
     }
 
@@ -99,28 +87,22 @@ module_pt module_create(manifest_pt headerMap, char * moduleId, bundle_pt bundle
 
 module_pt module_createFrameworkModule(bundle_pt bundle) {
     module_pt module;
-    apr_pool_t *dependentImporters_pool;
-    apr_pool_t *bundlePool = NULL;
 
-    bundle_getMemoryPool(bundle, &bundlePool);
-
-	module = (module_pt) apr_palloc(bundlePool, sizeof(*module));
+	module = (module_pt) malloc(sizeof(*module));
 	if (module) {
-		if (apr_pool_create(&dependentImporters_pool, bundlePool) == APR_SUCCESS) {
-			module->id = apr_pstrdup(bundlePool, "0");
-			module->symbolicName = apr_pstrdup(bundlePool, "framework");
-			module->version = NULL;
-			version_createVersion(1, 0, 0, "", &module->version);
+        module->id = strdup("0");
+        module->symbolicName = strdup("framework");
+        module->version = NULL;
+        version_createVersion(1, 0, 0, "", &module->version);
 
-			linkedList_create(&module->capabilities);
-			linkedList_create(&module->requirements);
-			module->dependentImporters = NULL;
-			arrayList_create(&module->dependentImporters);
-			module->wires = NULL;
-			module->headerMap = NULL;
-			module->resolved = false;
-			module->bundle = bundle;
-		}
+        linkedList_create(&module->capabilities);
+        linkedList_create(&module->requirements);
+        module->dependentImporters = NULL;
+        arrayList_create(&module->dependentImporters);
+        module->wires = NULL;
+        module->headerMap = NULL;
+        module->resolved = false;
+        module->bundle = bundle;
 	}
 	return module;
 }

@@ -35,8 +35,8 @@
 
 typedef struct serviceTracker * service_tracker_pt;
 
-FRAMEWORK_EXPORT celix_status_t serviceTracker_create(apr_pool_t *pool, bundle_context_pt context, char * service, service_tracker_customizer_pt customizer, service_tracker_pt *tracker);
-FRAMEWORK_EXPORT celix_status_t serviceTracker_createWithFilter(apr_pool_t *pool, bundle_context_pt context, char * filter, service_tracker_customizer_pt customizer, service_tracker_pt *tracker);
+FRAMEWORK_EXPORT celix_status_t serviceTracker_create(bundle_context_pt context, char * service, service_tracker_customizer_pt customizer, service_tracker_pt *tracker);
+FRAMEWORK_EXPORT celix_status_t serviceTracker_createWithFilter(bundle_context_pt context, char * filter, service_tracker_customizer_pt customizer, service_tracker_pt *tracker);
 
 FRAMEWORK_EXPORT celix_status_t serviceTracker_open(service_tracker_pt tracker);
 FRAMEWORK_EXPORT celix_status_t serviceTracker_close(service_tracker_pt tracker);

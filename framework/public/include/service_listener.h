@@ -29,15 +29,12 @@
 #ifndef SERVICE_LISTENER_H_
 #define SERVICE_LISTENER_H_
 
-#include <apr_general.h>
-
 typedef struct serviceListener * service_listener_pt;
 
 #include "celix_errno.h"
 #include "service_event.h"
 
 struct serviceListener {
-	apr_pool_t *pool;
 	void * handle;
 	celix_status_t (*serviceChanged)(void * listener, service_event_pt event);
 };

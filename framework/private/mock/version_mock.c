@@ -27,27 +27,30 @@
 
 #include "version.h"
 
-celix_status_t version_createVersion(apr_pool_t *pool, int major, int minor, int micro, char * qualifier, version_pt *version) {
+celix_status_t version_createVersion(int major, int minor, int micro, char * qualifier, version_pt *version) {
 	mock_c()->actualCall("version_createVersion");
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t version_clone(version_pt version, apr_pool_t *pool, version_pt *clone) {
+celix_status_t version_destroy(version_pt version) {
+    mock_c()->actualCall("version_destroy");
+    return mock_c()->returnValue().value.intValue;
+}
+
+celix_status_t version_clone(version_pt version, version_pt *clone) {
 	mock_c()->actualCall("version_clone");
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionStr, version_pt *version) {
+celix_status_t version_createVersionFromString(char * versionStr, version_pt *version) {
 	mock_c()->actualCall("version_createVersionFromString")
-	        ->withPointerParameters("pool", pool)
 	        ->withStringParameters("versionStr", versionStr)
 	        ->_andPointerOutputParameters("version", (void **) version);
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t version_createEmptyVersion(apr_pool_t *pool, version_pt *version) {
+celix_status_t version_createEmptyVersion(version_pt *version) {
 	mock_c()->actualCall("version_createEmptyVersion")
-			->withPointerParameters("pool", pool)
 			->_andPointerOutputParameters("version", (void **) version);
 	return mock_c()->returnValue().value.intValue;
 }
@@ -77,7 +80,7 @@ celix_status_t version_compareTo(version_pt version, version_pt compare, int *re
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t version_toString(version_pt version, apr_pool_t *pool, char **string) {
+celix_status_t version_toString(version_pt version, char **string) {
 	mock_c()->actualCall("version_toString");
 	return mock_c()->returnValue().value.intValue;
 }

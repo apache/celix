@@ -26,7 +26,6 @@
 #ifndef ATTRIBUTE_H_
 #define ATTRIBUTE_H_
 
-#include <apr_general.h>
 #include "celix_errno.h"
 
 typedef struct attribute *attribute_pt;

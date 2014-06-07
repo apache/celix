@@ -34,8 +34,6 @@
 #include <stddef.h>
 #include <errno.h>
 
-#include <apr_errno.h>
-
 #include "framework_exports.h"
 
 /*!
@@ -58,7 +56,7 @@ struct celix_status {
 /*!
  * Status type returned by all functions in Celix
  */
-typedef apr_status_t celix_status_t;
+typedef int celix_status_t;
 
 /*!
  * Return a readable string for the given error code.
@@ -74,7 +72,7 @@ FRAMEWORK_EXPORT char *celix_strerror(celix_status_t errorcode, char *buffer, si
 /*!
  * Starting point for Celix errors.
  */
-#define CELIX_START_ERROR APR_OS_START_USERERR
+#define CELIX_START_ERROR 70000
 
 /*!
  * The range for Celix errors.

@@ -27,8 +27,6 @@
 #ifndef MANIFEST_H_
 #define MANIFEST_H_
 
-#include <apr_general.h>
-
 #include "properties.h"
 #include "celix_errno.h"
 #include "framework_exports.h"

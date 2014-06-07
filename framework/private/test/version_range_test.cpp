@@ -42,9 +42,8 @@ extern "C"
 
     framework_logger_pt logger;
 
-	celix_status_t version_createEmptyVersion(apr_pool_t *pool, version_pt *version) {
+	celix_status_t version_createEmptyVersion(version_pt *version) {
 		mock_c()->actualCall("version_createEmptyVersion")
-				->withPointerParameters("pool", pool)
 				->_andPointerOutputParameters("version", (void **) version);
 		return CELIX_SUCCESS;
 	}
@@ -58,9 +57,8 @@ extern "C"
 		return CELIX_SUCCESS;
 	}
 
-	celix_status_t version_createVersionFromString(apr_pool_t *pool, char * versionStr, version_pt *version) {
+	celix_status_t version_createVersionFromString(char * versionStr, version_pt *version) {
 		mock_c()->actualCall("version_createVersionFromString")
-			->withPointerParameters("pool", pool)
 			->withStringParameters("versionStr", versionStr)
 			->_andPointerOutputParameters("version", (void **) version);
 		return CELIX_SUCCESS;
@@ -95,7 +93,7 @@ TEST(version_range, create) {
 	version_range_pt range = NULL;
 	version_pt version = (version_pt) apr_palloc(pool, sizeof(*version));
 
-	status = versionRange_createVersionRange(pool, version, false, version, true, &range);
+	status = versionRange_createVersionRange(version, false, version, true, &range);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	CHECK_C((range != NULL));
 	LONGS_EQUAL(true, range->isHighInclusive);
@@ -116,7 +114,7 @@ TEST(version_range, createInfinite) {
 		.expectOneCall("version_createEmptyVersion")
 		.withParameter("pool", pool)
 		.andOutputParameter("version", version);
-	status = versionRange_createInfiniteVersionRange(pool, &range);
+	status = versionRange_createInfiniteVersionRange(&range);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	CHECK_C(range != NULL);
 	LONGS_EQUAL(true, range->isHighInclusive);
@@ -143,7 +141,7 @@ TEST(version_range, isInRange) {
 	high->minor = 2;
 	high->micro = 3;
 
-	versionRange_createVersionRange(pool, low, true, high, true, &range);
+	versionRange_createVersionRange(low, true, high, true, &range);
 
 	mock()
 		.expectOneCall("version_compareTo")
@@ -189,7 +187,7 @@ TEST(version_range, parse) {
 		.andOutputParameter("version", high);
 
 	std::string version = "[1.2.3, 7.8.9]";
-	status = versionRange_parse(pool, (char *) version.c_str(), &range);
+	status = versionRange_parse((char *) version.c_str(), &range);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 }
 

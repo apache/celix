@@ -27,6 +27,8 @@
 #ifndef BUNDLE_ARCHIVE_H_
 #define BUNDLE_ARCHIVE_H_
 
+#include <time.h>
+
 #include "bundle_revision.h"
 #include "bundle_state.h"
 #include "celix_errno.h"

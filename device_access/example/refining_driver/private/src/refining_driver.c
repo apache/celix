@@ -172,7 +172,6 @@ celix_status_t refiningDriver_createDevice(refining_driver_pt driver, service_re
 				(*device)->listener=NULL;
 
 				service_listener_pt listener = apr_palloc(devicePool, sizeof(*listener));
-				listener->pool=devicePool;
 				listener->handle=(void *)(*device);
 				listener->serviceChanged=(celix_status_t (*)(void * listener, service_event_pt event))refiningDriver_serviceChanged;
 				bundleContext_addServiceListener(driver->context, listener, NULL);

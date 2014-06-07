@@ -79,7 +79,7 @@ TEST(bundle, create) {
 			.withParameter("module", module);
 
 	bundle_pt actual = NULL;
-	celix_status_t status = bundle_create(&actual, logger, pool);
+	celix_status_t status = bundle_create(&actual, logger);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	POINTERS_EQUAL(NULL, actual->context);
 	POINTERS_EQUAL(NULL, actual->activator);
@@ -88,8 +88,7 @@ TEST(bundle, create) {
 	POINTERS_EQUAL(archive, actual->archive);
 	CHECK(actual->modules);
 	POINTERS_EQUAL(NULL, actual->manifest);
-	POINTERS_EQUAL(pool, actual->memoryPool);
-	CHECK(actual->lock)
+//	CHECK(actual->lock)
 	LONGS_EQUAL(0, actual->lockCount);
 	POINTERS_EQUAL(NULL, actual->lockThread);
 	POINTERS_EQUAL(NULL, actual->framework);
@@ -150,7 +149,7 @@ TEST(bundle, createFromArchive) {
 		.withParameter("module", module);
 
 	bundle_pt actual = NULL;
-	celix_status_t status = bundle_createFromArchive(&actual, framework, archive, pool);
+	celix_status_t status = bundle_createFromArchive(&actual, framework, archive);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	POINTERS_EQUAL(NULL, actual->context);
 	POINTERS_EQUAL(NULL, actual->activator);
@@ -159,8 +158,7 @@ TEST(bundle, createFromArchive) {
 	POINTERS_EQUAL(archive, actual->archive);
 	CHECK(actual->modules);
 	POINTERS_EQUAL(NULL, actual->manifest);
-	POINTERS_EQUAL(pool, actual->memoryPool);
-	CHECK(actual->lock)
+//	CHECK(actual->lock)
 	LONGS_EQUAL(0, actual->lockCount);
 	POINTERS_EQUAL(NULL, actual->lockThread);
 	POINTERS_EQUAL(framework, actual->framework);
@@ -278,12 +276,11 @@ TEST(bundle, getEntry) {
 		.withParameter("framework", framework)
 		.withParameter("bundle", bundle)
 		.withParameter("name", name)
-		.withParameter("pool", pool)
 		.andOutputParameter("entry", expected)
 		.andReturnValue(CELIX_SUCCESS);
 
 	char *actual = NULL;
-	celix_status_t status = bundle_getEntry(bundle, name, pool, &actual);
+	celix_status_t status = bundle_getEntry(bundle, name, &actual);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	POINTERS_EQUAL(expected, actual);
 }
@@ -448,7 +445,7 @@ TEST(bundle, revise) {
 
 TEST(bundle, isLockable) {
 	bundle_pt bundle = (bundle_pt) apr_palloc(pool, sizeof(*bundle));
-	apr_thread_mutex_create(&bundle->lock, APR_THREAD_MUTEX_UNNESTED, pool);
+	celixThreadMutex_create(&bundle->lock, NULL);
 
 	bool lockable = false;
 	celix_status_t status = bundle_isLockable(bundle, &lockable);

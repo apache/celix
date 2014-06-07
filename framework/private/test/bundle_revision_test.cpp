@@ -43,18 +43,12 @@ int main(int argc, char** argv) {
 }
 
 TEST_GROUP(bundle_revision) {
-	apr_pool_t *pool;
-
 	void setup(void) {
-		apr_initialize();
-		apr_pool_create(&pool, NULL);
-
-		logger = (framework_logger_pt) apr_palloc(pool, sizeof(*logger));
+		logger = (framework_logger_pt) malloc(sizeof(*logger));
         logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
-		apr_pool_destroy(pool);
 		mock().checkExpectations();
 		mock().clear();
 	}
@@ -72,13 +66,12 @@ TEST(bundle_revision, create) {
 			.withParameter("revisionRoot", root)
 			.andReturnValue(CELIX_SUCCESS);
 	mock().expectOneCall("manifest_createFromFile")
-            .withParameter("pool", pool)
             .withParameter("filename", "bundle_revision_test/META-INF/MANIFEST.MF")
             .andOutputParameter("manifest", manifest)
             .andReturnValue(CELIX_SUCCESS);
 
 	bundle_revision_pt revision = NULL;
-	celix_status_t status = bundleRevision_create(pool, logger, root, location, revisionNr, inputFile, &revision);
+	celix_status_t status = bundleRevision_create(logger, root, location, revisionNr, inputFile, &revision);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	LONGS_EQUAL(revisionNr, revision->revisionNr);
 	STRCMP_EQUAL(root, revision->root);
@@ -98,13 +91,12 @@ TEST(bundle_revision, createWithInput) {
         .andReturnValue(CELIX_SUCCESS);
 
 	mock().expectOneCall("manifest_createFromFile")
-        .withParameter("pool", pool)
         .withParameter("filename", "bundle_revision_test/META-INF/MANIFEST.MF")
         .andOutputParameter("manifest", manifest)
         .andReturnValue(CELIX_SUCCESS);
 
 	bundle_revision_pt revision = NULL;
-	celix_status_t status = bundleRevision_create(pool, logger, root, location, revisionNr, inputFile, &revision);
+	celix_status_t status = bundleRevision_create(logger, root, location, revisionNr, inputFile, &revision);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	LONGS_EQUAL(revisionNr, revision->revisionNr);
 	STRCMP_EQUAL(root, revision->root);
@@ -112,7 +104,7 @@ TEST(bundle_revision, createWithInput) {
 }
 
 TEST(bundle_revision, getters) {
-	bundle_revision_pt revision = (bundle_revision_pt) apr_palloc(pool, sizeof(*revision));
+	bundle_revision_pt revision = (bundle_revision_pt) malloc(sizeof(*revision));
 	char root[] = "bundle_revision_test";
 	char location[] = "test_bundle.zip";
 	long revisionNr = 1l;

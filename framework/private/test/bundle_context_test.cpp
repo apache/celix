@@ -70,7 +70,7 @@ TEST(bundle_context, create) {
 		.andReturnValue(CELIX_SUCCESS);
 
 	bundle_context_pt context = NULL;
-	bundleContext_create(framework, logger, bundle, &context);
+	bundleContext_create(pool, framework, logger, bundle, &context);
 	POINTERS_EQUAL(framework, context->framework)
 	POINTERS_EQUAL(bundle, context->bundle)
 	CHECK(context->pool);

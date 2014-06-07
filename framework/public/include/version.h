@@ -27,8 +27,6 @@
 #ifndef VERSION_H_
 #define VERSION_H_
 
-#include <apr_general.h>
-
 #include "celix_errno.h"
 #include "framework_exports.h"
 

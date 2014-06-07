@@ -27,27 +27,27 @@
 
 #include "manifest_parser.h"
 
-celix_status_t manifestParser_create(module_pt owner, manifest_pt manifest, apr_pool_t *memory_pool, manifest_parser_pt *manifest_parser) {
+celix_status_t manifestParser_create(module_pt owner, manifest_pt manifest, manifest_parser_pt *manifest_parser) {
 	mock_c()->actualCall("bundle_getCurrentModule");
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t manifestParser_getSymbolicName(manifest_parser_pt parser, apr_pool_t *pool, char **symbolicName) {
+celix_status_t manifestParser_getSymbolicName(manifest_parser_pt parser, char **symbolicName) {
 	mock_c()->actualCall("bundle_getCurrentModule");
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t manifestParser_getBundleVersion(manifest_parser_pt parser, apr_pool_t *pool, version_pt *version) {
+celix_status_t manifestParser_getBundleVersion(manifest_parser_pt parser, version_pt *version) {
 	mock_c()->actualCall("bundle_getCurrentModule");
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t manifestParser_getCapabilities(manifest_parser_pt parser, apr_pool_t *pool, linked_list_pt *capabilities) {
+celix_status_t manifestParser_getCapabilities(manifest_parser_pt parser, linked_list_pt *capabilities) {
 	mock_c()->actualCall("bundle_getCurrentModule");
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t manifestParser_getRequirements(manifest_parser_pt parser, apr_pool_t *pool, linked_list_pt *requirements) {
+celix_status_t manifestParser_getRequirements(manifest_parser_pt parser, linked_list_pt *requirements) {
 	mock_c()->actualCall("bundle_getCurrentModule");
 	return mock_c()->returnValue().value.intValue;
 }

@@ -27,9 +27,8 @@
 
 #include "requirement.h"
 
-celix_status_t requirement_create(apr_pool_t *pool, hash_map_pt directives, hash_map_pt attributes, requirement_pt *requirement) {
+celix_status_t requirement_create(hash_map_pt directives, hash_map_pt attributes, requirement_pt *requirement) {
 	mock_c()->actualCall("requirement_create")
-			->withPointerParameters("pool", pool)
 			->withPointerParameters("directives", directives)
 			->withPointerParameters("attributes", attributes)
 			->_andPointerOutputParameters("requirement", (void **) requirement);

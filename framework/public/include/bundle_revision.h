@@ -30,7 +30,6 @@
 #define BUNDLE_REVISION_H_
 
 #include <stdio.h>
-#include <apr_pools.h>
 
 #include "celix_errno.h"
 #include "manifest.h"

@@ -98,11 +98,11 @@ static celix_status_t bundleActivator_createRSATracker(struct activator *activat
 
 	service_tracker_customizer_pt customizer = NULL;
 
-	status = serviceTrackerCustomizer_create(activator->pool, activator->manager, topologyManager_rsaAdding,
+	status = serviceTrackerCustomizer_create(activator->manager, topologyManager_rsaAdding,
 			topologyManager_rsaAdded, topologyManager_rsaModified, topologyManager_rsaRemoved, &customizer);
 
 	if (status == CELIX_SUCCESS) {
-		status = serviceTracker_create(activator->pool, activator->context, "remote_service_admin", customizer, tracker);
+		status = serviceTracker_create(activator->context, "remote_service_admin", customizer, tracker);
 	}
 
 	return status;
@@ -116,7 +116,6 @@ static celix_status_t bundleActivator_createServiceListener(struct activator *ac
 	if (!*listener) {
 		status = CELIX_ENOMEM;
 	} else {
-		(*listener)->pool = pool;
 		(*listener)->handle = activator->manager;
 		(*listener)->serviceChanged = topologyManager_serviceChanged;
 	}

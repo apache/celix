@@ -43,18 +43,12 @@ int main(int argc, char** argv) {
 }
 
 TEST_GROUP(attribute) {
-	apr_pool_t *pool;
-
 	void setup(void) {
-		apr_initialize();
-		apr_pool_create(&pool, NULL);
-
-		logger = (framework_logger_pt) apr_palloc(pool, sizeof(*logger));
+		logger = (framework_logger_pt) malloc(sizeof(*logger));
 		logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
-		apr_pool_destroy(pool);
 		mock().checkExpectations();
 		mock().clear();
 	}
@@ -65,7 +59,7 @@ TEST(attribute, create) {
 	char value[] = "value";
 
 	attribute_pt attribute = NULL;
-	celix_status_t status = attribute_create(pool, key, value, &attribute);
+	celix_status_t status = attribute_create(key, value, &attribute);
 	STRCMP_EQUAL(key, attribute->key);
 	STRCMP_EQUAL(value, attribute->value);
 }
@@ -74,7 +68,7 @@ TEST(attribute, getKey) {
 	char key[] = "key";
 	char value[] = "value";
 
-	attribute_pt attribute = (attribute_pt) apr_palloc(pool, sizeof(*attribute));
+	attribute_pt attribute = (attribute_pt) malloc(sizeof(*attribute));
 	attribute->key = key;
 	attribute->value = value;
 
@@ -87,7 +81,7 @@ TEST(attribute, getValue) {
 	char key[] = "key";
 	char value[] = "value";
 
-	attribute_pt attribute = (attribute_pt) apr_palloc(pool, sizeof(*attribute));
+	attribute_pt attribute = (attribute_pt) malloc(sizeof(*attribute));
 	attribute->key = key;
 	attribute->value = value;
 

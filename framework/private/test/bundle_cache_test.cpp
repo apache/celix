@@ -70,7 +70,7 @@ TEST(bundle_cache, create) {
 		.andReturnValue((char *) NULL);
 
 	bundle_cache_pt cache = NULL;
-	celix_status_t status = bundleCache_create(configuration, pool, logger, &cache);
+	celix_status_t status = bundleCache_create(configuration, logger, &cache);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 }
 
@@ -79,7 +79,6 @@ TEST(bundle_cache, deleteTree) {
 	char cacheDir[] = "bundle_cache_test_directory";
 	char cacheFile[] = "bundle_cache_test_directory/temp";
 	cache->cacheDir = cacheDir;
-	cache->mp = pool;
 
 	apr_dir_make(cacheDir, APR_UREAD|APR_UWRITE|APR_UEXECUTE, pool);
 	apr_file_t *file;
@@ -95,7 +94,6 @@ TEST(bundle_cache, getArchive) {
 	bundle_cache_pt cache = (bundle_cache_pt) apr_palloc(pool, sizeof(*cache));
 	char cacheDir[] = "bundle_cache_test_directory";
 	cache->cacheDir = cacheDir;
-	cache->mp = pool;
 
 	char bundle0[] = "bundle_cache_test_directory/bundle0";
 	char bundle1[] = "bundle_cache_test_directory/bundle1";
@@ -111,7 +109,7 @@ TEST(bundle_cache, getArchive) {
 		.andReturnValue(CELIX_SUCCESS);
 
 	array_list_pt archives = NULL;
-	celix_status_t status = bundleCache_getArchives(cache, pool, &archives);
+	celix_status_t status = bundleCache_getArchives(cache, &archives);
 
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	CHECK(archives);
@@ -143,6 +141,6 @@ TEST(bundle_cache, createArchive) {
 		.andReturnValue(CELIX_SUCCESS);
 
 	bundle_archive_pt actual;
-	bundleCache_createArchive(cache, pool, 1l, location, NULL, &actual);
+	bundleCache_createArchive(cache, 1l, location, NULL, &actual);
 	POINTERS_EQUAL(archive, actual);
 }

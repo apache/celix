@@ -25,7 +25,6 @@
  */
 #include <stdlib.h>
 #include <string.h>
-#include <apr_portable.h>
 
 #include "utils.h"
 #include "celix_log.h"
@@ -50,9 +49,6 @@ int utils_stringEquals(void * string, void * toCompare) {
 	return strcmp((char *)string, (char *) toCompare) == 0;
 }
 
-/**
- * \deprecated APR provides a correct alternative: apr_pstrndup
- */
 char * string_ndup(const char *s, size_t n) {
 	size_t len = strlen(s);
 	char *ret;

@@ -441,7 +441,7 @@ celix_status_t deviceManager_getIdleDevices(device_manager_pt manager, apr_pool_
 					if (substatus == CELIX_SUCCESS) {
 						printf("DEVICE_MANAGER: Check idle device: %s\n", bsn);
 						array_list_pt bundles = NULL;
-						substatus = serviceReference_getUsingBundles(ref, pool, &bundles);
+						substatus = serviceReference_getUsingBundles(ref, &bundles);
 						if (substatus == CELIX_SUCCESS) {
 							bool inUse = false;
 							int i;
@@ -496,7 +496,7 @@ celix_status_t deviceManager_getIdleDevices_exmaple(device_manager_pt manager, a
 			substatus = serviceReference_getBundle(ref, &bundle);
 			substatus = DO_IF_SUCCESS(substatus, bundle_getCurrentModule(bundle, &module));
 			substatus = DO_IF_SUCCESS(substatus, module_getSymbolicName(module, &bsn));
-			substatus = DO_IF_SUCCESS(substatus, serviceReference_getUsingBundles(ref, pool, &bundles));
+			substatus = DO_IF_SUCCESS(substatus, serviceReference_getUsingBundles(ref, &bundles));
 
 			if (substatus == CELIX_SUCCESS) {
 				printf("DEVICE_MANAGER: Check idle device: %s\n", bsn);
@@ -535,10 +535,7 @@ celix_status_t deviceManager_isDriverBundle(device_manager_pt manager, bundle_pt
 	(*isDriver) = false;
 
 	array_list_pt refs = NULL;
-	apr_pool_t *pool = NULL;
-	status = bundle_getMemoryPool(bundle, &pool);
-	if (status == CELIX_SUCCESS) {
-		status = bundle_getRegisteredServices(bundle, pool, &refs);
+		status = bundle_getRegisteredServices(bundle, &refs);
 		if (status == CELIX_SUCCESS) {
 			if (refs != NULL) {
 				int i;
@@ -563,8 +560,6 @@ celix_status_t deviceManager_isDriverBundle(device_manager_pt manager, bundle_pt
 				arrayList_destroy(refs);
 			}
 		}
-
-	}
 
 	return status;
 }

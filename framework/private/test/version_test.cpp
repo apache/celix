@@ -64,11 +64,11 @@ TEST(version, create) {
 	std::string str;
 
 	str = "abc";
-	status = version_createVersion(NULL, 1, 2, 3, apr_pstrdup(pool, (const char *) str.c_str()), &version);
+	status = version_createVersion(1, 2, 3, apr_pstrdup(pool, (const char *) str.c_str()), &version);
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
 
 	str = "abc";
-	status = version_createVersion(pool, 1, 2, 3, apr_pstrdup(pool, (const char *) str.c_str()), &version);
+	status = version_createVersion(1, 2, 3, apr_pstrdup(pool, (const char *) str.c_str()), &version);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	CHECK_C(version != NULL);
     LONGS_EQUAL(1, version->major);
@@ -77,7 +77,7 @@ TEST(version, create) {
 	STRCMP_EQUAL("abc", version->qualifier);
 
 	version = NULL;
-	status = version_createVersion(pool, 1, 2, 3, NULL, &version);
+	status = version_createVersion(1, 2, 3, NULL, &version);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	CHECK_C(version != NULL);
 	LONGS_EQUAL(1, version->major);
@@ -86,11 +86,11 @@ TEST(version, create) {
 	STRCMP_EQUAL("", version->qualifier);
 
 	str = "abc";
-	status = version_createVersion(pool, 1, -2, 3, apr_pstrdup(pool, (const char *) str.c_str()), &version);
+	status = version_createVersion(1, -2, 3, apr_pstrdup(pool, (const char *) str.c_str()), &version);
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
 
 	str = "abc|xyz";
-	status = version_createVersion(pool, 1, 2, 3, apr_pstrdup(pool, (const char *) str.c_str()), &version);
+	status = version_createVersion(1, 2, 3, apr_pstrdup(pool, (const char *) str.c_str()), &version);
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
 }
 
@@ -100,9 +100,9 @@ TEST(version, clone) {
 	std::string str;
 
 	str = "abc";
-	status = version_createVersion(pool, 1, 2, 3, apr_pstrdup(pool, (const char *) str.c_str()), &version);
+	status = version_createVersion(1, 2, 3, apr_pstrdup(pool, (const char *) str.c_str()), &version);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
-	status = version_clone(version, pool, &clone);
+	status = version_clone(version, &clone);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	CHECK_C(version != NULL);
     LONGS_EQUAL(1, clone->major);
@@ -117,30 +117,30 @@ TEST(version, createFromString) {
 	std::string str;
 
 	str = "1";
-	status = version_createVersionFromString(pool, apr_pstrdup(pool, (const char *) str.c_str()), &version);
+	status = version_createVersionFromString(apr_pstrdup(pool, (const char *) str.c_str()), &version);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	CHECK_C(version != NULL);
 	LONGS_EQUAL(1, version->major);
 
 	str = "a";
-	status = version_createVersionFromString(pool, apr_pstrdup(pool, (const char *) str.c_str()), &version);
+	status = version_createVersionFromString(apr_pstrdup(pool, (const char *) str.c_str()), &version);
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
 
 	str = "1.a";
-	status = version_createVersionFromString(pool, apr_pstrdup(pool, (const char *) str.c_str()), &version);
+	status = version_createVersionFromString(apr_pstrdup(pool, (const char *) str.c_str()), &version);
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
 
 	str = "1.1.a";
-	status = version_createVersionFromString(pool, apr_pstrdup(pool, (const char *) str.c_str()), &version);
+	status = version_createVersionFromString(apr_pstrdup(pool, (const char *) str.c_str()), &version);
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
 
 	str = "-1";
-	status = version_createVersionFromString(pool, apr_pstrdup(pool, (const char *) str.c_str()), &version);
+	status = version_createVersionFromString(apr_pstrdup(pool, (const char *) str.c_str()), &version);
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
 
 	str = "1.2";
 	version = NULL;
-	status = version_createVersionFromString(pool, apr_pstrdup(pool, (const char *) str.c_str()), &version);
+	status = version_createVersionFromString(apr_pstrdup(pool, (const char *) str.c_str()), &version);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	CHECK_C(version != NULL);
 	LONGS_EQUAL(1, version->major);
@@ -148,7 +148,7 @@ TEST(version, createFromString) {
 
 	str = "1.2.3";
 	version = NULL;
-	status = version_createVersionFromString(pool, apr_pstrdup(pool, (const char *) str.c_str()), &version);
+	status = version_createVersionFromString(apr_pstrdup(pool, (const char *) str.c_str()), &version);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	CHECK_C(version != NULL);
 	LONGS_EQUAL(1, version->major);
@@ -157,7 +157,7 @@ TEST(version, createFromString) {
 
 	str = "1.2.3.abc";
 	version = NULL;
-	status = version_createVersionFromString(pool, apr_pstrdup(pool, (const char *) str.c_str()), &version);
+	status = version_createVersionFromString(apr_pstrdup(pool, (const char *) str.c_str()), &version);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	CHECK_C(version != NULL);
     LONGS_EQUAL(1, version->major);
@@ -167,7 +167,7 @@ TEST(version, createFromString) {
 
 	str = "1.2.3.abc_xyz";
 	version = NULL;
-	status = version_createVersionFromString(pool, apr_pstrdup(pool, (const char *) str.c_str()), &version);
+	status = version_createVersionFromString(apr_pstrdup(pool, (const char *) str.c_str()), &version);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	CHECK_C(version != NULL);
     LONGS_EQUAL(1, version->major);
@@ -177,7 +177,7 @@ TEST(version, createFromString) {
 
 	str = "1.2.3.abc-xyz";
 	version = NULL;
-	status = version_createVersionFromString(pool, apr_pstrdup(pool, (const char *) str.c_str()), &version);
+	status = version_createVersionFromString(apr_pstrdup(pool, (const char *) str.c_str()), &version);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	CHECK_C(version != NULL);
     LONGS_EQUAL(1, version->major);
@@ -186,7 +186,7 @@ TEST(version, createFromString) {
 	STRCMP_EQUAL("abc-xyz", version->qualifier);
 
 	str = "1.2.3.abc|xyz";
-	status = version_createVersionFromString(pool, apr_pstrdup(pool, (const char *) str.c_str()), &version);
+	status = version_createVersionFromString(apr_pstrdup(pool, (const char *) str.c_str()), &version);
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
 }
 
@@ -194,7 +194,7 @@ TEST(version, createEmptyVersion) {
 	version_pt version = NULL;
 	celix_status_t status = CELIX_SUCCESS;
 
-	status = version_createEmptyVersion(pool, &version);
+	status = version_createEmptyVersion(&version);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	CHECK_C(version != NULL);
     LONGS_EQUAL(0, version->major);
@@ -211,7 +211,7 @@ TEST(version, getters) {
 	char *qualifier;
 
 	str = "abc";
-	status = version_createVersion(pool, 1, 2, 3, apr_pstrdup(pool, (const char *) str.c_str()), &version);
+	status = version_createVersion(1, 2, 3, apr_pstrdup(pool, (const char *) str.c_str()), &version);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	CHECK_C(version != NULL);
 
@@ -236,14 +236,14 @@ TEST(version, compare) {
 
 	// Base version to compare
 	str = "abc";
-	status = version_createVersion(pool, 1, 2, 3, apr_pstrdup(pool, (const char *) str.c_str()), &version);
+	status = version_createVersion(1, 2, 3, apr_pstrdup(pool, (const char *) str.c_str()), &version);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	CHECK_C(version != NULL);
 
 	// Compare equality
 	str = "abc";
 	compare = NULL;
-	status = version_createVersion(pool, 1, 2, 3, apr_pstrdup(pool, (const char *) str.c_str()), &compare);
+	status = version_createVersion(1, 2, 3, apr_pstrdup(pool, (const char *) str.c_str()), &compare);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	CHECK_C(version != NULL);
 	status = version_compareTo(version, compare, &result);
@@ -253,7 +253,7 @@ TEST(version, compare) {
 	// Compare against a higher version
 	str = "bcd";
 	compare = NULL;
-	status = version_createVersion(pool, 1, 2, 3, apr_pstrdup(pool, (const char *) str.c_str()), &compare);
+	status = version_createVersion(1, 2, 3, apr_pstrdup(pool, (const char *) str.c_str()), &compare);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	CHECK_C(version != NULL);
 	status = version_compareTo(version, compare, &result);
@@ -263,7 +263,7 @@ TEST(version, compare) {
 	// Compare againts a lower version
 	str = "abc";
 	compare = NULL;
-	status = version_createVersion(pool, 1, 1, 3, apr_pstrdup(pool, (const char *) str.c_str()), &compare);
+	status = version_createVersion(1, 1, 3, apr_pstrdup(pool, (const char *) str.c_str()), &compare);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	CHECK_C(version != NULL);
 	status = version_compareTo(version, compare, &result);
@@ -278,21 +278,21 @@ TEST(version, toString) {
 	char *result = NULL;
 
 	str = "abc";
-	status = version_createVersion(pool, 1, 2, 3, apr_pstrdup(pool, (const char *) str.c_str()), &version);
+	status = version_createVersion(1, 2, 3, apr_pstrdup(pool, (const char *) str.c_str()), &version);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	CHECK_C(version != NULL);
 
-	status = version_toString(version, pool, &result);
+	status = version_toString(version, &result);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	CHECK_C(result != NULL);
 	STRCMP_EQUAL("1.2.3.abc", result);
 
 	version = NULL;
-	status = version_createVersion(pool, 1, 2, 3, NULL, &version);
+	status = version_createVersion(1, 2, 3, NULL, &version);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	CHECK_C(version != NULL);
 
-	status = version_toString(version, pool, &result);
+	status = version_toString(version, &result);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	CHECK_C(result != NULL);
 	STRCMP_EQUAL("1.2.3", result);

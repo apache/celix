@@ -81,7 +81,7 @@ extern "C" {
 TEST(service_tracker_customizer, create) {
 	void *handle = (void *) 0x10;
 	service_tracker_customizer_pt customizer = NULL;
-	celix_status_t status = serviceTrackerCustomizer_create(pool,
+	celix_status_t status = serviceTrackerCustomizer_create(
 			handle,
 			serviceTrackerCustomizerTest_addingService,
 			serviceTrackerCustomizerTest_addedService,
@@ -99,7 +99,7 @@ TEST(service_tracker_customizer, create) {
 TEST(service_tracker_customizer, createIllegalArgument) {
 	void *handle = (void *) 0x10;
 	service_tracker_customizer_pt customizer = NULL;
-	celix_status_t status = serviceTrackerCustomizer_create(pool,
+	celix_status_t status = serviceTrackerCustomizer_create(
 			NULL,
 			serviceTrackerCustomizerTest_addingService,
 			serviceTrackerCustomizerTest_addedService,

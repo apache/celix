@@ -87,13 +87,13 @@ celix_status_t discoveryActivator_createEPLTracker(struct activator *activator,
 
 	service_tracker_customizer_pt customizer = NULL;
 
-	status = serviceTrackerCustomizer_create(activator->pool,
+	status = serviceTrackerCustomizer_create(
 			activator->discovery, discovery_endpointListenerAdding,
 			discovery_endpointListenerAdded, discovery_endpointListenerModified,
 			discovery_endpointListenerRemoved, &customizer);
 
 	if (status == CELIX_SUCCESS) {
-		status = serviceTracker_create(activator->pool, activator->context,
+		status = serviceTracker_create(activator->context,
 				(char *) OSGI_ENDPOINT_LISTENER_SERVICE, customizer, tracker);
 
 		serviceTracker_open(activator->endpointListenerTracker);

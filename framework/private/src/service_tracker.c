@@ -27,33 +27,26 @@
 #include <string.h>
 #include <stdio.h>
 
-#include <apr_strings.h>
-
 #include "service_tracker_private.h"
 #include "bundle_context.h"
 #include "constants.h"
 #include "service_reference.h"
 #include "celix_log.h"
 
-static apr_status_t serviceTracker_destroy(void *trackerP);
 static celix_status_t serviceTracker_addingService(service_tracker_pt tracker, service_reference_pt reference, void **service);
 static celix_status_t serviceTracker_track(service_tracker_pt tracker, service_reference_pt reference, service_event_pt event);
 static celix_status_t serviceTracker_untrack(service_tracker_pt tracker, service_reference_pt reference, service_event_pt event);
 
-celix_status_t serviceTracker_create(apr_pool_t *pool, bundle_context_pt context, char * service, service_tracker_customizer_pt customizer, service_tracker_pt *tracker) {
+celix_status_t serviceTracker_create(bundle_context_pt context, char * service, service_tracker_customizer_pt customizer, service_tracker_pt *tracker) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (service == NULL || *tracker != NULL) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
 		if (status == CELIX_SUCCESS) {
-			int len = strlen(service) + strlen(OSGI_FRAMEWORK_OBJECTCLASS) + 4;
-			char *filter = apr_pstrcat(pool, "(", OSGI_FRAMEWORK_OBJECTCLASS, "=", service, ")", NULL);
-			if (filter == NULL) {
-				status = CELIX_ENOMEM;
-			} else {
-				serviceTracker_createWithFilter(pool, context, filter, customizer, tracker);
-			}
+			char filter[512];
+			snprintf(filter, sizeof(filter), "(%s=%s)", OSGI_FRAMEWORK_OBJECTCLASS, service);
+            serviceTracker_createWithFilter(context, filter, customizer, tracker);
 		}
 	}
 
@@ -62,19 +55,16 @@ celix_status_t serviceTracker_create(apr_pool_t *pool, bundle_context_pt context
 	return status;
 }
 
-celix_status_t serviceTracker_createWithFilter(apr_pool_t *pool, bundle_context_pt context, char * filter, service_tracker_customizer_pt customizer, service_tracker_pt *tracker) {
+celix_status_t serviceTracker_createWithFilter(bundle_context_pt context, char * filter, service_tracker_customizer_pt customizer, service_tracker_pt *tracker) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	*tracker = (service_tracker_pt) apr_palloc(pool, sizeof(**tracker));
+	*tracker = (service_tracker_pt) malloc(sizeof(**tracker));
 	if (!*tracker) {
 		status = CELIX_ENOMEM;
 	} else {
-		apr_pool_pre_cleanup_register(pool, *tracker, serviceTracker_destroy);
-
 		(*tracker)->context = context;
-		(*tracker)->filter = apr_pstrdup(pool,filter);
+		(*tracker)->filter = strdup(filter);
 
-		(*tracker)->pool = pool;
 		(*tracker)->tracker = *tracker;
 		(*tracker)->tracked = NULL;
 		arrayList_create(&(*tracker)->tracked);
@@ -87,28 +77,26 @@ celix_status_t serviceTracker_createWithFilter(apr_pool_t *pool, bundle_context_
 	return status;
 }
 
-apr_status_t serviceTracker_destroy(void *trackerP) {
-	service_tracker_pt tracker = (service_tracker_pt) trackerP;
+celix_status_t serviceTracker_destroy(service_tracker_pt tracker) {
 	if (tracker->listener != NULL) {
 		bundleContext_removeServiceListener(tracker->context, tracker->listener);
 	}
 	arrayList_destroy(tracker->tracked);
 
-	return APR_SUCCESS;
+	return CELIX_SUCCESS;
 }
 
 celix_status_t serviceTracker_open(service_tracker_pt tracker) {
 	service_listener_pt listener;
 	array_list_pt initial = NULL;
 	celix_status_t status = CELIX_SUCCESS;
-	listener = (service_listener_pt) apr_palloc(tracker->pool, sizeof(*listener));
+	listener = (service_listener_pt) malloc(sizeof(*listener));
 	
 	status = bundleContext_getServiceReferences(tracker->context, NULL, tracker->filter, &initial);
 	if (status == CELIX_SUCCESS) {
 		service_reference_pt initial_reference;
 		unsigned int i;
 
-		listener->pool = tracker->pool;
 		listener->handle = tracker;
 		listener->serviceChanged = (void *) serviceTracker_serviceChanged;
 		status = bundleContext_addServiceListener(tracker->context, listener, tracker->filter);

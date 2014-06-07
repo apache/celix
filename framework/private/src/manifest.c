@@ -59,7 +59,7 @@ celix_status_t manifest_destroy(manifest_pt manifest) {
 		manifest->attributes = NULL;
 		manifest = NULL;
 	}
-	return APR_SUCCESS;
+	return CELIX_SUCCESS;
 }
 
 celix_status_t manifest_createFromFile(char *filename, manifest_pt *manifest) {

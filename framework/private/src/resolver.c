@@ -26,7 +26,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <apr_strings.h>
 
 #include "resolver.h"
 #include "linked_list_iterator.h"
@@ -267,7 +266,7 @@ void resolver_addModule(module_pt module) {
                 list = (capability_list_pt) malloc(sizeof(*list));
                 if (list != NULL) {
                     list->serviceName = strdup(serviceName);
-                    if (linkedList_create(&list->capabilities) == APR_SUCCESS) {
+                    if (linkedList_create(&list->capabilities) == CELIX_SUCCESS) {
                         linkedList_addElement(m_unresolvedServices, list);
                     }
                 }
@@ -309,7 +308,7 @@ void resolver_moduleResolved(module_pt module) {
 	bundle = module_getBundle(module);
 
 	if (module_isResolved(module)) {
-	        if (linkedList_create(&capsCopy) == APR_SUCCESS) {
+	        if (linkedList_create(&capsCopy) == CELIX_SUCCESS) {
                 linked_list_pt wires = NULL;
 
 				for (capIdx = 0; (module_getCapabilities(module) != NULL) && (capIdx < linkedList_size(module_getCapabilities(module))); capIdx++) {
@@ -354,7 +353,7 @@ void resolver_moduleResolved(module_pt module) {
                                 list = (capability_list_pt) malloc(sizeof(*list));
                                 if (list != NULL) {
                                     list->serviceName = strdup(serviceName);
-                                    if (linkedList_create(&list->capabilities) == APR_SUCCESS) {
+                                    if (linkedList_create(&list->capabilities) == CELIX_SUCCESS) {
                                         linkedList_addElement(m_resolvedServices, list);
                                     }
                                 }
@@ -403,8 +402,8 @@ linked_list_pt resolver_populateWireMap(hash_map_pt candidates, module_pt import
 
         candSetList = (linked_list_pt) hashMap_get(candidates, importer);
 
-                if (linkedList_create(&serviceWires) == APR_SUCCESS) {
-                    if (linkedList_create(&emptyWires) == APR_SUCCESS) {
+                if (linkedList_create(&serviceWires) == CELIX_SUCCESS) {
+                    if (linkedList_create(&emptyWires) == CELIX_SUCCESS) {
                         int candSetIdx = 0;
 						
 						// hashMap_put(wireMap, importer, emptyWires);

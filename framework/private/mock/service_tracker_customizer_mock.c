@@ -27,7 +27,7 @@
 
 #include "service_tracker_customizer_private.h"
 
-celix_status_t serviceTrackerCustomizer_create(apr_pool_t *pool, void *handle,
+celix_status_t serviceTrackerCustomizer_create(void *handle,
 		adding_callback_pt addingFunction, added_callback_pt addedFunction,
 		modified_callback_pt modifiedFunction, removed_callback_pt removedFunction,
 		service_tracker_customizer_pt *customizer) {

@@ -54,7 +54,6 @@ void logCommand_execute(command_pt command, char *line, void (*out)(char *), voi
     service_reference_pt readerService = NULL;
     service_reference_pt logService = NULL;
     apr_pool_t *memory_pool = NULL;
-    apr_pool_t *bundle_memory_pool = NULL;
 
     bundleContext_getServiceReference(command->bundleContext, (char *) OSGI_LOGSERVICE_READER_SERVICE_NAME, &readerService);
     if (readerService != NULL) {
@@ -63,8 +62,7 @@ void logCommand_execute(command_pt command, char *line, void (*out)(char *), voi
         linked_list_iterator_pt iter = NULL;
         log_reader_service_pt reader = NULL;
 
-        bundleContext_getMemoryPool(command->bundleContext, &bundle_memory_pool);
-        apr_pool_create(&memory_pool, bundle_memory_pool);
+        apr_pool_create(&memory_pool, NULL);
         if (memory_pool) {
             bundleContext_getService(command->bundleContext, readerService, (void **) &reader);
             reader->getLog(reader->reader, memory_pool, &list);
@@ -77,22 +75,22 @@ void logCommand_execute(command_pt command, char *line, void (*out)(char *), voi
                 char *bundleSymbolicName = NULL;
                 char errorString[256];
 
-				celix_status_t status = bundle_getCurrentModule(entry->bundle, &module);
-				if (status == CELIX_SUCCESS) {
-					status = module_getSymbolicName(module, &bundleSymbolicName);
+                celix_status_t status = bundle_getCurrentModule(entry->bundle, &module);
+                if (status == CELIX_SUCCESS) {
+                    status = module_getSymbolicName(module, &bundleSymbolicName);
 
-					strftime(time, 20, "%Y-%m-%d %H:%M:%S", localtime(&entry->time));
-					logCommand_levelAsString(command, entry->level, &level);
+                    strftime(time, 20, "%Y-%m-%d %H:%M:%S", localtime(&entry->time));
+                    logCommand_levelAsString(command, entry->level, &level);
 
-					if (entry->errorCode > 0) {
-						celix_strerror(entry->errorCode, errorString, 256);
-						sprintf(line, "%s - Bundle: %s - %s - %d %s\n", time, bundleSymbolicName, entry->message, entry->errorCode, errorString);
-						out(line);
-					} else {
-						sprintf(line, "%s - Bundle: %s - %s\n", time, bundleSymbolicName, entry->message);
-						out(line);
-					}
-				}
+                    if (entry->errorCode > 0) {
+                        celix_strerror(entry->errorCode, errorString, 256);
+                        sprintf(line, "%s - Bundle: %s - %s - %d %s\n", time, bundleSymbolicName, entry->message, entry->errorCode, errorString);
+                        out(line);
+                    } else {
+                        sprintf(line, "%s - Bundle: %s - %s\n", time, bundleSymbolicName, entry->message);
+                        out(line);
+                    }
+                }
             }
             apr_pool_destroy(memory_pool);
         } else {

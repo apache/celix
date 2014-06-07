@@ -46,6 +46,7 @@
 #include "utils.h"
 
 struct shellServiceActivator {
+    apr_pool_t *pool;
 	shell_pt shell;
 	shell_service_pt shellService;
 	service_registration_pt registration;
@@ -182,7 +183,9 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 	apr_pool_t *pool = NULL;
 	shell_pt shell = NULL;
 	*userData = malloc(sizeof(struct shellServiceActivator));
-	bundleContext_getMemoryPool(context, &pool);
+
+	apr_pool_create(&pool, NULL);
+
 	shell = shell_create(pool);
 //	struct shellServiceActivator * activator = (struct shellServiceActivator *) (*userData);
 	((struct shellServiceActivator *) (*userData))->shell = shell;
@@ -197,6 +200,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 	((struct shellServiceActivator *) (*userData))->inspectCommand = NULL;
 	((struct shellServiceActivator *) (*userData))->helpCommand = NULL;
 	((struct shellServiceActivator *) (*userData))->registration = NULL;
+	((struct shellServiceActivator *) (*userData))->pool = pool;
 
 	//(*userData) = &(*activator);
 
@@ -205,7 +209,6 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
     celix_status_t status;
-	apr_pool_t *pool = NULL;
 
 	struct shellServiceActivator * activator = (struct shellServiceActivator *) userData;
 	activator->shell->bundleContext = context;
@@ -220,50 +223,48 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
 	status = bundleContext_registerService(context, (char *) OSGI_SHELL_SERVICE_NAME, activator->shellService, NULL, &activator->registration);
 
-	bundleContext_getMemoryPool(context, &pool);
 	if (status == CELIX_SUCCESS) {
 	    service_listener_pt listener = (service_listener_pt) malloc(sizeof(*listener));
 	    activator->listener = listener;
-	    listener->pool = pool;
 	    listener->handle = activator->shell;
 	    listener->serviceChanged = (void *) shell_serviceChanged;
 	    status = bundleContext_addServiceListener(context, listener, "(objectClass=commandService)");
 
 	    if (status == CELIX_SUCCESS) {
 	        activator->psCmd = psCommand_create(context);
-	        shell_createCommandService(pool, activator->psCmd, &activator->psCmdSrv);
+	        shell_createCommandService(activator->pool, activator->psCmd, &activator->psCmdSrv);
 	        bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, activator->psCmdSrv, NULL, &activator->psCommand);
 
 	        activator->startCmd = startCommand_create(context);
-	        shell_createCommandService(pool, activator->startCmd, &activator->startCmdSrv);
+	        shell_createCommandService(activator->pool, activator->startCmd, &activator->startCmdSrv);
 	        bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, activator->startCmdSrv, NULL, &activator->startCommand);
 
 	        activator->stopCmd = stopCommand_create(context);
-	        shell_createCommandService(pool, activator->stopCmd, &activator->stopCmdSrv);
+	        shell_createCommandService(activator->pool, activator->stopCmd, &activator->stopCmdSrv);
 	        bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, activator->stopCmdSrv, NULL, &activator->stopCommand);
 
 	        activator->installCmd = installCommand_create(context);
-	        shell_createCommandService(pool, activator->installCmd, &activator->installCmdSrv);
+	        shell_createCommandService(activator->pool, activator->installCmd, &activator->installCmdSrv);
 	        bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, activator->installCmdSrv, NULL, &activator->installCommand);
 
 	        activator->uninstallCmd = uninstallCommand_create(context);
-	        shell_createCommandService(pool, activator->uninstallCmd, &activator->uninstallCmdSrv);
+	        shell_createCommandService(activator->pool, activator->uninstallCmd, &activator->uninstallCmdSrv);
 	        bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, activator->uninstallCmdSrv, NULL, &activator->uninstallCommand);
 
 	        activator->updateCmd = updateCommand_create(context);
-	        shell_createCommandService(pool, activator->updateCmd, &activator->updateCmdSrv);
+	        shell_createCommandService(activator->pool, activator->updateCmd, &activator->updateCmdSrv);
 	        bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, activator->updateCmdSrv, NULL, &activator->updateCommand);
 
 	        activator->logCmd = logCommand_create(context);
-	        shell_createCommandService(pool, activator->logCmd, &activator->logCmdSrv);
+	        shell_createCommandService(activator->pool, activator->logCmd, &activator->logCmdSrv);
             bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, activator->logCmdSrv, NULL, &activator->logCommand);
 
             activator->inspectCmd = inspectCommand_create(context);
-            shell_createCommandService(pool, activator->inspectCmd, &activator->inspectCmdSrv);
+            shell_createCommandService(activator->pool, activator->inspectCmd, &activator->inspectCmdSrv);
 			bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, activator->inspectCmdSrv, NULL, &activator->inspectCommand);
 
 			activator->helpCmd = helpCommand_create(context);
-			shell_createCommandService(pool, activator->helpCmd, &activator->helpCmdSrv);
+			shell_createCommandService(activator->pool, activator->helpCmd, &activator->helpCmdSrv);
 			bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, activator->helpCmdSrv, NULL, &activator->helpCommand);
 	    }
 	}

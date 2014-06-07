@@ -126,7 +126,7 @@ celix_status_t deploymentPackage_getResourceInfoByPath(deployment_package_pt pac
 
 celix_status_t deploymentPackage_getVersion(deployment_package_pt package, version_pt *version) {
 	char *versionStr = manifest_getValue(package->manifest, "DeploymentPackage-Version");
-	return version_createVersionFromString(package->pool, versionStr, version);
+	return version_createVersionFromString(versionStr, version);
 }
 
 celix_status_t deploymentPackage_processEntries(deployment_package_pt package) {
@@ -149,7 +149,7 @@ celix_status_t deploymentPackage_processEntries(deployment_package_pt package) {
 			info->symbolicName = properties_get(values, (char *) OSGI_FRAMEWORK_BUNDLE_SYMBOLICNAME);
 			char *version = properties_get(values, (char *) OSGI_FRAMEWORK_BUNDLE_VERSION);
 			info->version = NULL;
-			status = version_createVersionFromString(package->pool, version, &info->version);
+			status = version_createVersionFromString(version, &info->version);
 			char *customizer = properties_get(values, (char *) DEPLOYMENTPACKAGE_CUSTOMIZER);
 			deploymentPackage_parseBooleanHeader(customizer, &info->customizer);
 
