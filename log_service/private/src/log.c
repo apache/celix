@@ -285,14 +285,10 @@ static celix_status_t log_stopListenerThread(log_pt logger) {
     celix_status_t status = CELIX_SUCCESS;
     apr_status_t apr_status = APR_SUCCESS;
 
-    if (apr_status != APR_SUCCESS) {
+    logger->running = false;
+    status = apr_thread_cond_signal(logger->entriesToDeliver);
+    if (status != APR_SUCCESS) {
         status = CELIX_SERVICE_EXCEPTION;
-    } else {
-        logger->running = false;
-        status = apr_thread_cond_signal(logger->entriesToDeliver);
-        if (status != APR_SUCCESS) {
-            status = CELIX_SERVICE_EXCEPTION;
-        }
     }
 
     return status;
@@ -330,7 +326,7 @@ void * APR_THREAD_FUNC log_listenerThread(apr_thread_t *thread, void *data) {
                 }
             }
 
-            if (arrayList_isEmpty(logger->listenerEntries)) {
+            if (arrayList_isEmpty(logger->listenerEntries) && logger->running) {
                 apr_thread_cond_wait(logger->entriesToDeliver, logger->deliverLock);
             }
 
