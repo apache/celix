@@ -22,10 +22,12 @@
  *  Created on: Jun 6, 2012
  *      Author: alexander
  */
+#include <stdio.h>
+#include <stdlib.h>
 
-#include "CPPUTest/TestHarness.h"
-#include "CPPUTest/TestHarness_c.h"
-#include "CPPUTest/CommandLineTestRunner.h"
+#include "CppUTest/TestHarness.h"
+#include "CppUTest/TestHarness_c.h"
+#include "CppUTest/CommandLineTestRunner.h"
 
 extern "C"
 {
@@ -42,6 +44,9 @@ TEST_GROUP(array_list) {
 
 	void setup(void) {
 		arrayList_create(&list);
+	}
+	void teardown() {
+		arrayList_destroy(list);
 	}
 };
 
@@ -68,7 +73,6 @@ TEST(array_list, trimToSize) {
 
 TEST(array_list, ensureCapacity) {
 	int i;
-	arrayList_create(&list);
 	arrayList_clear(list);
 
 	LONGS_EQUAL(list->capacity, 10);
@@ -81,12 +85,10 @@ TEST(array_list, ensureCapacity) {
 	}
 	LONGS_EQUAL(list->capacity, 133);
 	LONGS_EQUAL(list->size, 100);
-	arrayList_create(&list);
 }
 
 TEST(array_list, clone) {
 	int i;
-	arrayList_create(&list);
 	arrayList_clear(list);
 
 	LONGS_EQUAL(list->capacity, 10);
@@ -96,7 +98,7 @@ TEST(array_list, clone) {
 		bool added;
 		char entry[11];
 		sprintf(entry, "|%s|%d|", "entry", i);
-		added = arrayList_add(list, strdup(entry));
+		added = arrayList_add(list, entry);
 	}
 	LONGS_EQUAL(16, list->capacity);
 	LONGS_EQUAL(12, list->size);
@@ -117,5 +119,5 @@ TEST(array_list, clone) {
 		STRCMP_EQUAL((char *) entry, entrys);
 	}
 
-	arrayList_create(&list);
+	arrayList_destroy(clone);
 }
