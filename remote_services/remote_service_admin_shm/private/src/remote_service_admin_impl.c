@@ -25,6 +25,8 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <dirent.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/sem.h>
 #include <sys/shm.h>
@@ -56,6 +58,11 @@ celix_status_t remoteServiceAdmin_wait(int semId, int semNr);
 
 
 celix_status_t remoteServiceAdmin_createOrAttachShm(hash_map_pt ipcSegment, remote_service_admin_pt admin, endpoint_description_pt endpointDescription, bool createIfNotFound);
+
+celix_status_t remoteServiceAdmin_getSharedIdentifierFile(char *fwUuid, char* servicename, char* outFile);
+celix_status_t remoteServiceAdmin_removeSharedIdentityFile(char *fwUuid, char* servicename);
+celix_status_t remoteServiceAdmin_removeSharedIdentityFiles(char* fwUuid);
+
 celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt context, remote_service_admin_pt *admin)
 {
     celix_status_t status = CELIX_SUCCESS;
@@ -81,6 +88,19 @@ celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt con
 }
 
 
+celix_status_t remoteServiceAdmin_destroy(remote_service_admin_pt admin)
+{
+	celix_status_t status = CELIX_SUCCESS;
+
+	hashMap_destroy(admin->exportedServices, false, false);
+	hashMap_destroy(admin->importedServices, false, false);
+	hashMap_destroy(admin->exportedIpcSegment, false, false);
+	hashMap_destroy(admin->importedIpcSegment, false, false);
+	hashMap_destroy(admin->pollThread, false, false);
+	hashMap_destroy(admin->pollThreadRunning, false, false);
+
+	return status;
+}
 
 
 celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin)
@@ -98,6 +118,7 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin)
             importRegistration_stopTracking(export);
         }
     }
+    hashMapIterator_destroy(iter);
 
     // set stop-thread-variable
     iter = hashMapIterator_create(admin->pollThreadRunning);
@@ -106,14 +127,16 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin)
         bool *pollThreadRunning = hashMapIterator_nextValue(iter);
         *pollThreadRunning = false;
     }
+    hashMapIterator_destroy(iter);
 
     // release lock
     iter = hashMapIterator_create(admin->exportedIpcSegment);
     while (hashMapIterator_hasNext(iter))
     {
         ipc_segment_pt ipc = hashMapIterator_nextValue(iter);
-        remoteServiceAdmin_unlock(ipc->semId, 0);
+        remoteServiceAdmin_unlock(ipc->semId, 1);
     }
+    hashMapIterator_destroy(iter);
 
     // wait till threads has stopped
     iter = hashMapIterator_create(admin->pollThread);
@@ -139,6 +162,7 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin)
         ipc_segment_pt ipc = hashMapIterator_nextValue(iter);
         shmdt(ipc->shmBaseAdress);
     }
+    hashMapIterator_destroy(iter);
 
 
     iter = hashMapIterator_create(admin->exportedIpcSegment);
@@ -149,6 +173,12 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin)
         semctl(ipc->semId, 1 /*ignored*/, IPC_RMID);
         shmctl(ipc->shmId, IPC_RMID, 0);
     }
+    hashMapIterator_destroy(iter);
+    
+    char *fwUuid = NULL;
+    bundleContext_getProperty(admin->context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &fwUuid);
+
+    remoteServiceAdmin_removeSharedIdentityFiles(fwUuid);
 
     return status;
 }
@@ -250,11 +280,12 @@ celix_status_t remoteServiceAdmin_send(remote_service_admin_pt admin, endpoint_d
             char *fncCallReply = NULL;
             char *fncCallReplyStatus = CELIX_SUCCESS;
 
+            remoteServiceAdmin_lock(semid, 0);
+
             strcpy(ipc->shmBaseAdress, encFncCallProps);
 
-            remoteServiceAdmin_unlock(semid, 0);//sem0: 0 -> 1
-            remoteServiceAdmin_wait(semid, 2);//sem2: when 0 continue
-            remoteServiceAdmin_lock(semid, 1);//sem1: 1 -> 0
+            remoteServiceAdmin_unlock(semid, 1);
+            remoteServiceAdmin_lock(semid, 2);
 
             if ((status = netstring_decodeToHashMap(admin->pool, ipc->shmBaseAdress, fncCallProps)) == CELIX_SUCCESS)
             {
@@ -271,8 +302,8 @@ celix_status_t remoteServiceAdmin_send(remote_service_admin_pt admin, endpoint_d
             {
             	*replyStatus = apr_atoi64(fncCallReplyStatus);
             }
+            remoteServiceAdmin_unlock(semid, 0);
         }
-
         hashMap_destroy(fncCallProps, false, false);
     }
     else
@@ -301,20 +332,19 @@ static void *APR_THREAD_FUNC remoteServiceAdmin_receiveFromSharedMemory(apr_thre
 
         while (*pollThreadRunning == true)
         {
-            // wait on semaphore 3 //sem3: when 0 continue
-            if ((remoteServiceAdmin_wait(ipc->semId, 3) != CELIX_SUCCESS))
-            {
-                printf("RSA : Error waiting on semaphore 3");
-            }
-            // acquire READ semaphore //sem0: 1 -> 0
-            else if (((status = remoteServiceAdmin_lock(ipc->semId, 0)) == CELIX_SUCCESS) && (*pollThreadRunning == true))
-            {
-                hash_map_pt receivedMethodCall = hashMap_create(utils_stringHash, utils_stringHash, utils_stringEquals, utils_stringEquals);
+            if (((status = remoteServiceAdmin_lock(ipc->semId, 1)) == CELIX_SUCCESS) && (*pollThreadRunning == true))
+			{
+				apr_pool_t *pool = NULL;
+				hash_map_pt receivedMethodCall = hashMap_create(utils_stringHash, utils_stringHash, utils_stringEquals, utils_stringEquals);
 
-                if ((status = netstring_decodeToHashMap(admin->pool, ipc->shmBaseAdress, receivedMethodCall)) != CELIX_SUCCESS)
-                {
-                    printf("DISCOVERY : receiveFromSharedMemory : decoding data to Properties\n");
-                }
+				if (apr_pool_create(&pool, admin->pool) != APR_SUCCESS)
+				{
+					status = CELIX_BUNDLE_EXCEPTION;
+				}
+				else if ((status = netstring_decodeToHashMap(pool, ipc->shmBaseAdress, receivedMethodCall)) != CELIX_SUCCESS)
+				{
+					printf("DISCOVERY : receiveFromSharedMemory : decoding data to Properties\n");
+				}
                 else
                 {
                     char *method = hashMap_get(receivedMethodCall, RSA_FUNCTIONCALL_METHOD_PROPERTYNAME);
@@ -375,11 +405,14 @@ static void *APR_THREAD_FUNC remoteServiceAdmin_receiveFromSharedMemory(apr_thre
                                 }
                             }
                         }
+						hashMapIterator_destroy(iter);
 
-                        remoteServiceAdmin_unlock(ipc->semId, 1); //sem1: 0 -> 1
                     }
                 }
-                hashMap_destroy(receivedMethodCall, false, false);
+				hashMap_destroy(receivedMethodCall, false, false);
+				remoteServiceAdmin_unlock(ipc->semId, 2);
+
+				apr_pool_destroy(pool);
             }
         }
     }
@@ -390,7 +423,93 @@ static void *APR_THREAD_FUNC remoteServiceAdmin_receiveFromSharedMemory(apr_thre
 
 
 
+celix_status_t remoteServiceAdmin_getSharedIdentifierFile(char *fwUuid, char* servicename, char* outFile) {
+	celix_status_t status = CELIX_SUCCESS;
+	snprintf(outFile, RSA_FILEPATH_LENGTH, "%s/%s/%s", P_tmpdir, fwUuid, servicename);
 
+	if (access(outFile, F_OK) != 0) {
+		char tmpDir[RSA_FILEPATH_LENGTH];
+
+		snprintf(tmpDir, sizeof(tmpDir), "%s/%s", P_tmpdir, fwUuid);
+
+		// we call, even if it already exists (and just don't care about the return value)
+		mkdir(tmpDir, 0755);
+		if (fopen(outFile, "wb") == NULL) {
+			printf("RSA: error while creating shared identifier file %s (%s)", outFile, strerror(errno));
+			status = CELIX_FILE_IO_EXCEPTION;
+		} else {
+			printf("RSA:create shared identifier file %s", outFile);
+		}
+	} else {
+		printf("RSA: shared identifier file %s already exists", outFile);
+	}
+
+	return status;
+}
+
+celix_status_t remoteServiceAdmin_removeSharedIdentityFile(char *fwUuid, char* servicename) {
+	celix_status_t status = CELIX_SUCCESS;
+	char tmpPath[RSA_FILEPATH_LENGTH];
+
+	snprintf(tmpPath, sizeof(tmpPath), "%s/%s/%s", P_tmpdir, fwUuid, servicename);
+
+	if (access(tmpPath, F_OK) == 0) {
+		printf("RSA: removing shared identifier file %s", tmpPath);
+		unlink(tmpPath);
+	}
+	else
+	{
+		printf("RSA: cannot remove shared identifier file %s", tmpPath);
+	}
+
+	return status;
+}
+
+celix_status_t remoteServiceAdmin_removeSharedIdentityFiles(char* fwUuid) {
+	char tmpDir[RSA_FILEPATH_LENGTH];
+
+	snprintf(tmpDir, sizeof(tmpDir), "%s/%s", P_tmpdir, fwUuid);
+
+	DIR *d = opendir(tmpDir);
+	size_t path_len = strlen(tmpDir);
+	int retVal = 0;
+
+
+	if (d) {
+		struct dirent *p;
+
+		while (!retVal && (p = readdir(d))) {
+			char* f_name;
+			size_t len;
+
+			if (!strcmp(p->d_name, ".") || !strcmp(p->d_name, "..")) {
+				continue;
+			}
+
+			len = path_len + strlen(p->d_name) + 2;
+			f_name = (char*) calloc(len, 1);
+
+			if (f_name) {
+				struct stat statbuf;
+
+				snprintf(f_name, len, "%s/%s", tmpDir, p->d_name);
+
+				if (!stat(f_name, &statbuf)) {
+					printf("RSA: removing shared identifier file %s (unproper clean-up?)", f_name);
+					retVal = unlink(f_name);
+				}
+			}
+			free(f_name);
+		}
+	}
+
+	closedir(d);
+
+	if (!retVal)
+		rmdir(tmpDir);
+
+	return retVal;
+}
 
 
 
@@ -420,6 +539,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
         {
             reference = arrayList_get(references, 0);
         }
+        arrayList_destroy(references);
     }
 
     if (reference == NULL)
@@ -519,6 +639,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 
             hashMap_put(admin->exportedServices, reference, *registrations);
         }
+        arrayList_destroy(interfaces);
     }
 
     return status;
@@ -542,7 +663,7 @@ celix_status_t remoteServiceAdmin_removeExportedService(export_registration_pt r
 
     if ((ipc = hashMap_get(admin->exportedIpcSegment, registration->endpointDescription->service)) != NULL)
     {
-        remoteServiceAdmin_unlock(ipc->semId, 0);
+        remoteServiceAdmin_unlock(ipc->semId, 1);
 
         if ( (pollThread = hashMap_get(admin->pollThread, registration->endpointDescription)) != NULL)
         {
@@ -573,10 +694,6 @@ celix_status_t remoteServiceAdmin_removeExportedService(export_registration_pt r
 celix_status_t remoteServiceAdmin_createOrAttachShm(hash_map_pt ipcSegment, remote_service_admin_pt admin, endpoint_description_pt endpointDescription, bool createIfNotFound)
 {
     celix_status_t status = CELIX_SUCCESS;
-
-    apr_pool_t *pool = admin->pool;
-    apr_pool_t *shmPool = NULL;
-
     apr_status_t aprStatus = 0;
 
     /* setup ipc sehment */
@@ -653,15 +770,14 @@ celix_status_t remoteServiceAdmin_createOrAttachShm(hash_map_pt ipcSegment, remo
     {
         key_t semkey = ftok(semPath, atoi(semFtokId));
         int semflg = (createIfNotFound == true) ? (0666 | IPC_CREAT) : (0666);
-        int semid = semget(semkey, 4, semflg);
+        int semid = semget(semkey, 3, semflg);
 
         if (semid != -1)
         {
-            // only reset semaphores if a create was supposed
-            if ((createIfNotFound == true) && ((semctl (semid, 0, SETVAL, (int) 0) == -1) || (semctl (semid, 1, SETVAL, (int) 0) == -1) || (semctl (semid, 2, SETVAL, (int) 0) == -1) || (semctl (semid, 3, SETVAL, (int) 0) == -1)))
-            {
-                printf("RSA : error while initialize semaphores \n");
-            }
+  			// only reset semaphores if a create was supposed
+			if ((createIfNotFound == true) && ((semctl(semid, 0, SETVAL, (int) 1) == -1) || (semctl(semid, 1, SETVAL, (int) 0) == -1) || (semctl(semid, 2, SETVAL, (int) 0) == -1))) {
+				printf("RSA : error while initialize semaphores \n");
+			}
 
             printf("RSA : semaphores w/ key %s and id %i added \n", endpointDescription->service, semid);
             ipc->semId = semid;
@@ -708,18 +824,28 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
     bundleContext_getProperty(admin->context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
     properties_set(endpointProperties, (char *) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
     properties_set(endpointProperties, (char *) OSGI_RSA_SERVICE_LOCATION, apr_pstrdup(admin->pool, interface));
-    if (properties_get(endpointProperties, (char *) RSA_SHM_PATH_PROPERTYNAME) == NULL)
-    {
-        properties_set(endpointProperties, (char *) RSA_SHM_PATH_PROPERTYNAME, apr_pstrdup(admin->pool, (char *) RSA_SHM_DEFAULTPATH));
-    }
+	if (properties_get(endpointProperties, (char *) RSA_SHM_PATH_PROPERTYNAME) == NULL) {
+		char sharedIdentifierFile[RSA_FILEPATH_LENGTH];
+
+		if (remoteServiceAdmin_getSharedIdentifierFile(uuid, interface, sharedIdentifierFile) == CELIX_SUCCESS) {
+			properties_set(endpointProperties, (char *) RSA_SHM_PATH_PROPERTYNAME, sharedIdentifierFile);
+		} else {
+			properties_set(endpointProperties, (char *) RSA_SHM_PATH_PROPERTYNAME, apr_pstrdup(admin->pool, (char *) RSA_SHM_DEFAULTPATH));
+		}
+	}
     if (properties_get(endpointProperties, (char *) RSA_SHM_FTOK_ID_PROPERTYNAME) == NULL)
     {
         properties_set(endpointProperties, (char *) RSA_SHM_FTOK_ID_PROPERTYNAME, apr_pstrdup(admin->pool, (char *) RSA_SHM_DEFAULT_FTOK_ID));
     }
-    if (properties_get(endpointProperties, (char *) RSA_SEM_PATH_PROPERTYNAME) == NULL)
-    {
-        properties_set(endpointProperties, (char *) RSA_SEM_PATH_PROPERTYNAME, apr_pstrdup(admin->pool, RSA_SEM_DEFAULTPATH));
-    }
+	if (properties_get(endpointProperties, (char *) RSA_SEM_PATH_PROPERTYNAME) == NULL) {
+		char sharedIdentifierFile[RSA_FILEPATH_LENGTH];
+
+		if (remoteServiceAdmin_getSharedIdentifierFile(uuid, interface, sharedIdentifierFile) == CELIX_SUCCESS) {
+			properties_set(endpointProperties, (char *) RSA_SEM_PATH_PROPERTYNAME, sharedIdentifierFile);
+		} else {
+			properties_set(endpointProperties, (char *) RSA_SEM_PATH_PROPERTYNAME, apr_pstrdup(admin->pool, (char *) RSA_SEM_DEFAULTPATH));
+		}
+	}
     if (properties_get(endpointProperties, (char *) RSA_SEM_FTOK_ID_PROPERTYNAME) == NULL)
     {
         properties_set(endpointProperties, (char *) RSA_SEM_FTOK_ID_PROPERTYNAME, apr_pstrdup(admin->pool, (char *) RSA_SEM_DEFAULT_FTOK_ID));

@@ -39,6 +39,14 @@
 #define RSA_SHM_DEFAULT_FTOK_ID "52"
 #define RSA_SEM_DEFAULT_FTOK_ID "54"
 
+#define RSA_FILEPATH_LENGTH 255
+
+/** Define P_tmpdir if not defined (this is normally a POSIX symbol) */
+#ifndef P_tmpdir
+	#define P_tmpdir "/tmp"
+#endif
+
+
 struct recv_shm_thread
 {
 	remote_service_admin_pt admin;
