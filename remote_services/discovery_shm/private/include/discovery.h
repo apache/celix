@@ -33,6 +33,12 @@
 #define DISCOVERY_SEM_FILENAME "/dev/null"
 #define DISCOVERY_SEM_FTOK_ID 52
 
+#define DISCOVERY_SHM_FW_SERVICES "fw.services"
+#define DISCOVERY_SHM_SRVC_PROPERTIES "srvc.props"
+
+
+#include <apr_strings.h>
+#include <apr_thread_proc.h>
 #include "endpoint_listener.h"
 
 
@@ -42,6 +48,24 @@ struct ipc_shmData
 	int numListeners;
 	char data[DISCOVERY_SHM_MEMSIZE - (2* (sizeof(int) + sizeof(key_t)))];
 };
+
+struct discovery {
+	bundle_context_pt context;
+	apr_pool_t *pool;
+
+	hash_map_pt listenerReferences;
+
+	bool running;
+
+	int  shmId;
+	void *shmBaseAdress;
+	apr_thread_t *shmPollThread;
+
+	hash_map_pt shmServices;
+
+	array_list_pt registered;
+};
+
 
 typedef struct discovery *discovery_pt;
 typedef struct ipc_shmData *ipc_shmData_pt;
