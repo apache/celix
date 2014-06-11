@@ -56,6 +56,9 @@ if (UTILS)
     
     celix_subproject(UTILS-TESTS "Option to build the utilities library tests" "OFF")
     if (UTILS-TESTS)
+    	include(${CMAKE_SOURCE_DIR}/cmake/CodeCoverage.cmake)
+    	find_package(CppUTest REQUIRED)
+
 	    include_directories(${CUNIT_INCLUDE_DIRS})
 	    include_directories(${CPPUTEST_INCLUDE_DIR})
 	    include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
@@ -87,5 +90,6 @@ if (UTILS)
 	    run_test(netstring_test)
 	    
 	    ADD_TARGET_FOR_TEST(array_list_test)
+        SETUP_TARGET_FOR_COVERAGE(array_list_test_c array_list_test ${CMAKE_BINARY_DIR}/coverage/array_list_test)
     endif(UTILS-TESTS)
 endif (UTILS)

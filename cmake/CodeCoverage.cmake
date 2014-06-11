@@ -62,21 +62,26 @@ IF ( NOT CMAKE_BUILD_TYPE STREQUAL "Debug" )
   MESSAGE( WARNING "Code coverage results with an optimised (non-Debug) build may be misleading" )
 ENDIF() # NOT CMAKE_BUILD_TYPE STREQUAL "Debug"
 
-
 # Setup compiler options
 ADD_DEFINITIONS(--coverage)
 set(CMAKE_SHARED_LINKER_FLAGS "--coverage")
 set(CMAKE_EXE_LINKER_FLAGS "--coverage")
 
+GET_TARGET_PROPERTY(coverage_def coverage COVERAGE_TARGET_ADDED)
+IF(${coverage_def} MATCHES NOTFOUND)
 
-add_custom_target(coverage
-	COMMAND ${CMAKE_COMMAND} -E make_directory coverage_results
-	COMMAND ${GENHTML_PATH} -o coverage_results coverage/*.info.cleaned
-	COMMAND ${CMAKE_COMMAND} -E remove_directory coverage
+
+    add_custom_target(coverage
+	    COMMAND ${CMAKE_COMMAND} -E make_directory coverage_results
+	    COMMAND ${GENHTML_PATH} -o coverage_results coverage/*.info.cleaned
+	    COMMAND ${CMAKE_COMMAND} -E remove_directory coverage
 	
-	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-	COMMENT "Generating report.\nOpen ./${_outputname}/index.html in your browser to view the coverage report."
-)
+	    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+	    COMMENT "Generating report.\nOpen ./${_outputname}/index.html in your browser to view the coverage report."
+    )
+
+    SET_TARGET_PROPERTIES(coverage PROPERTIES COVERAGE_TARGET_ADDED "")
+ENDIF()
 
 # Param _targetname     The name of new the custom make target
 # Param _testrunner     The name of the target which runs the tests
