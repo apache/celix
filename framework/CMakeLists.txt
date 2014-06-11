@@ -20,7 +20,8 @@ if (FRAMEWORK)
     cmake_minimum_required(VERSION 2.6)
     
     find_package(ZLIB REQUIRED)
-    
+    find_package(UUID REQUIRED)
+
     include(CPackComponent)
     
     #cpack_add_component(framework
@@ -37,6 +38,7 @@ if (FRAMEWORK)
     
     add_definitions(-DUSE_FILE32API)
     include_directories(${ZLIB_INCLUDE_DIR})
+    include_directories(${UUID_INCLUDE_DIR})
     include_directories("private/include")
     include_directories("public/include")
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
@@ -65,7 +67,7 @@ if (FRAMEWORK)
 		${IO}
 	 
 	)
-    target_link_libraries(celix_framework celix_utils ${ZLIB_LIBRARY} ${APR_LIBRARY})
+    target_link_libraries(celix_framework celix_utils ${UUID_LIBRARY} ${ZLIB_LIBRARY} ${APR_LIBRARY})
     
     install(TARGETS celix_framework DESTINATION lib COMPONENT framework)
     FILE(GLOB files "public/include/*.h")
@@ -225,7 +227,7 @@ if (FRAMEWORK)
 			private/src/celix_errorcodes.c
 			private/src/celix_log.c
 			private/src/framework.c)
-		target_link_libraries(framework_test ${APR_LIBRARY} ${APRUTIL_LIBRARY} ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils)
+		target_link_libraries(framework_test ${APR_LIBRARY} ${APRUTIL_LIBRARY} ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} ${UUID_LIBRARY} celix_utils)
 		
 		add_executable(filter_test 
 			private/test/filter_test.cpp
