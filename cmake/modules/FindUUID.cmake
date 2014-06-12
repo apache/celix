@@ -24,8 +24,14 @@ find_library(UUID_LIBRARY NAMES uuid
              PATHS /usr/lib /usr/local/lib /usr/lib64 /usr/local/lib64 /lib/i386-linux-gnu /lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu)
 
 include(FindPackageHandleStandardArgs)
+if (APPLE)
+find_package_handle_standard_args(UUID  DEFAULT_MSG
+                                  UUID_INCLUDE_DIR)
+else ()
 find_package_handle_standard_args(UUID  DEFAULT_MSG
                                   UUID_LIBRARY UUID_INCLUDE_DIR)
+endif ()
+
 
 mark_as_advanced(UUID_INCLUDE_DIR UUID_LIBRARY)
 

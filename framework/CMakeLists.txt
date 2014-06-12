@@ -67,7 +67,10 @@ if (FRAMEWORK)
 		${IO}
 	 
 	)
-    target_link_libraries(celix_framework celix_utils ${UUID_LIBRARY} ${ZLIB_LIBRARY} ${APR_LIBRARY})
+	if(NOT APPLE)
+      set(UUID ${UUID_LIBRARY})
+    endif()
+    target_link_libraries(celix_framework celix_utils ${UUID} ${ZLIB_LIBRARY} ${APR_LIBRARY})
     
     install(TARGETS celix_framework DESTINATION lib COMPONENT framework)
     FILE(GLOB files "public/include/*.h")
