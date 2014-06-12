@@ -138,6 +138,12 @@ celix_status_t bundleArchive_destroy(bundle_archive_pt archive) {
     celix_status_t status = CELIX_SUCCESS;
 
 	if (archive->revisions != NULL) {
+	    linked_list_iterator_pt iter = linkedListIterator_create(archive->revisions, 0);
+	    while(linkedListIterator_hasNext(iter)) {
+            bundle_revision_pt rev = linkedListIterator_next(iter);
+            bundleRevision_destroy(rev);
+	    }
+
 		linkedList_destroy(archive->revisions);
 	}
 	archive = NULL;

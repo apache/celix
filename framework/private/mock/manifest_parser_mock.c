@@ -28,22 +28,27 @@
 #include "manifest_parser.h"
 
 celix_status_t manifestParser_create(module_pt owner, manifest_pt manifest, manifest_parser_pt *manifest_parser) {
-	mock_c()->actualCall("bundle_getCurrentModule");
+	mock_c()->actualCall("manifestParser_create");
 	return mock_c()->returnValue().value.intValue;
 }
 
+celix_status_t manifestParser_destroy(manifest_parser_pt manifest_parser) {
+    mock_c()->actualCall("manifestParser_destroy");
+    return mock_c()->returnValue().value.intValue;
+}
+
 celix_status_t manifestParser_getSymbolicName(manifest_parser_pt parser, char **symbolicName) {
-	mock_c()->actualCall("bundle_getCurrentModule");
+	mock_c()->actualCall("manifestParser_getSymbolicName");
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t manifestParser_getBundleVersion(manifest_parser_pt parser, version_pt *version) {
-	mock_c()->actualCall("bundle_getCurrentModule");
+	mock_c()->actualCall("manifestParser_getBundleVersion");
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t manifestParser_getCapabilities(manifest_parser_pt parser, linked_list_pt *capabilities) {
-	mock_c()->actualCall("bundle_getCurrentModule");
+	mock_c()->actualCall("manifestParser_getCapabilities");
 	return mock_c()->returnValue().value.intValue;
 }
 

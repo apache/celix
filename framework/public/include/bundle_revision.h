@@ -64,6 +64,8 @@ typedef struct bundleRevision * bundle_revision_pt;
  */
 celix_status_t bundleRevision_create(framework_logger_pt logger, char *root, char *location, long revisionNr, char *inputFile, bundle_revision_pt *bundle_revision);
 
+celix_status_t bundleRevision_destroy(bundle_revision_pt revision);
+
 /**
  * Retrieves the revision number of the given revision.
  *

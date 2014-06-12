@@ -245,9 +245,9 @@ celix_status_t framework_destroy(framework_pt framework) {
 			linkedListIterator_destroy(iter);
 		}
 
-//		if (bundle_getArchive(bundle, &archive) == CELIX_SUCCESS) {
-//			bundleArchive_destroy(archive);
-//		}
+		if (bundle_getArchive(bundle, &archive) == CELIX_SUCCESS) {
+			bundleArchive_destroy(archive);
+		}
 		bundle_destroy(bundle);
 		hashMapIterator_remove(iterator);
 	}

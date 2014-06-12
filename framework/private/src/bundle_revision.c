@@ -78,7 +78,8 @@ celix_status_t bundleRevision_create(framework_logger_pt loggera, char *root, ch
 	return status;
 }
 
-celix_status_t bundleRevision_destroy(celix_status_t *revision) {
+celix_status_t bundleRevision_destroy(bundle_revision_pt revision) {
+    arrayList_destroy(revision->libraryHandles);
 	return CELIX_SUCCESS;
 }
 

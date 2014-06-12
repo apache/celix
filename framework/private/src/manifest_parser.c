@@ -95,6 +95,22 @@ celix_status_t manifestParser_create(module_pt owner, manifest_pt manifest, mani
 	return status;
 }
 
+celix_status_t manifestParser_destroy(manifest_parser_pt mp) {
+    linkedList_destroy(mp->capabilities);
+    mp->capabilities = NULL;
+    linkedList_destroy(mp->requirements);
+    mp->requirements = NULL;
+    mp->bundleSymbolicName = NULL;
+    version_destroy(mp->bundleVersion);
+    mp->bundleVersion = NULL;
+    mp->manifest = NULL;
+    mp->owner = NULL;
+
+    free(mp);
+
+    return CELIX_SUCCESS;
+}
+
 static linked_list_pt manifestParser_parseDelimitedString(char * value, char * delim) {
     linked_list_pt list;
 
@@ -303,10 +319,13 @@ static linked_list_pt manifestParser_parseImportHeader(char * header) {
             linked_list_pt clause = linkedListIterator_next(iter);
 
             linked_list_pt paths = linkedList_get(clause, 0);
+            linkedList_destroy(paths);
 
             linkedListIterator_remove(iter);
+            linkedList_destroy(clause);
         }
         linkedListIterator_destroy(iter);
+        linkedList_destroy(clauses);
 
 	return requirements;
 }
@@ -351,10 +370,13 @@ static linked_list_pt manifestParser_parseExportHeader(module_pt module, char * 
         linked_list_pt clause = linkedListIterator_next(iter);
 
         linked_list_pt paths = linkedList_get(clause, 0);
+        linkedList_destroy(paths);
 
         linkedListIterator_remove(iter);
+        linkedList_destroy(clause);
     }
     linkedListIterator_destroy(iter);
+    linkedList_destroy(clauses);
 
 	return capabilities;
 }

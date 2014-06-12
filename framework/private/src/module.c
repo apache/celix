@@ -79,6 +79,8 @@ module_pt module_create(manifest_pt headerMap, char * moduleId, bundle_pt bundle
             manifestParser_getRequirements(mp, &module->requirements);
 
             module->wires = NULL;
+
+            manifestParser_destroy(mp);
         }
     }
 
