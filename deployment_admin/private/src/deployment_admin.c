@@ -523,6 +523,10 @@ celix_status_t deploymentAdmin_processDeploymentPackageResources(deployment_admi
 			}
 		}
 
+		if(services!=NULL){
+			arrayList_destroy(services);
+		}
+
 
 	}
 
@@ -568,6 +572,10 @@ celix_status_t deploymentAdmin_dropDeploymentPackageResources(deployment_admin_p
 						}
 					}
 				}
+
+		if(services!=NULL){
+			arrayList_destroy(services);
+		}
 
 			}
 		}

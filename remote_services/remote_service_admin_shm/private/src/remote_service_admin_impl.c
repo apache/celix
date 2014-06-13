@@ -155,6 +155,7 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin)
             }
         }
     }
+	hashMapIterator_destroy(iter);
 
     iter = hashMapIterator_create(admin->importedIpcSegment);
     while (hashMapIterator_hasNext(iter))
@@ -539,6 +540,9 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
         {
             reference = arrayList_get(references, 0);
         }
+    }
+
+    if(references!=NULL){
         arrayList_destroy(references);
     }
 
@@ -654,6 +658,9 @@ celix_status_t remoteServiceAdmin_removeExportedService(export_registration_pt r
     ipc_segment_pt ipc = NULL;
     apr_thread_t *pollThread = NULL;
 
+	if(admin==NULL){
+		return CELIX_BUNDLE_EXCEPTION;
+	}
     hashMap_remove(admin->exportedServices, registration->reference);
 
     if ((pollThreadRunning = hashMap_get(admin->pollThreadRunning, registration->endpointDescription)) != NULL)
@@ -816,6 +823,8 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
 
         properties_set(endpointProperties, key, value);
     }
+	hashMapIterator_destroy(iter);
+
     char *serviceId = (char *) hashMap_remove(endpointProperties, (void *) OSGI_FRAMEWORK_SERVICE_ID);
     properties_set(endpointProperties, (char *) OSGI_FRAMEWORK_OBJECTCLASS, interface);
     properties_set(endpointProperties, (char *) OSGI_RSA_ENDPOINT_SERVICE_ID, serviceId);

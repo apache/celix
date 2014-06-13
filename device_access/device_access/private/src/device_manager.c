@@ -468,6 +468,10 @@ celix_status_t deviceManager_getIdleDevices(device_manager_pt manager, apr_pool_
 								arrayList_add(*idleDevices, ref);
 							}
 						}
+
+						if(bundles!=NULL){
+							arrayList_destroy(bundles);
+						}
 					}
 				}
 			}
@@ -526,6 +530,7 @@ celix_status_t deviceManager_getIdleDevices_exmaple(device_manager_pt manager, a
 				}
 			}
 		}
+		hashMapIterator_destroy(iter);
 	}
 	return status;
 }

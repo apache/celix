@@ -29,7 +29,7 @@
 
 #include "remote_service_admin_impl.h"
 
-#define RSA_SHM_MEMSIZE 327680
+#define RSA_SHM_MEMSIZE 1310720
 #define RSA_SHM_PATH_PROPERTYNAME "shmPath"
 #define RSA_SEM_PATH_PROPERTYNAME "semPath"
 #define RSA_SHM_FTOK_ID_PROPERTYNAME "shmFtokId"

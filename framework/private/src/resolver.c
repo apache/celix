@@ -227,10 +227,12 @@ void resolver_removeInvalidCandidate(module_pt invalidModule, hash_map_pt candid
 						break;
 					}
 				}
+				linkedListIterator_destroy(candIter);
 			}
+			linkedListIterator_destroy(itCandSetList);
 		}
 	}
-	free(iterator);
+	hashMapIterator_destroy(iterator);
 
 	if (linkedList_size(invalid) > 0) {
 		while (!linkedList_isEmpty(invalid)) {

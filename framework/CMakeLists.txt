@@ -230,7 +230,7 @@ if (FRAMEWORK)
 			private/src/celix_errorcodes.c
 			private/src/celix_log.c
 			private/src/framework.c)
-		target_link_libraries(framework_test ${APR_LIBRARY} ${APRUTIL_LIBRARY} ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} ${UUID_LIBRARY} celix_utils)
+		target_link_libraries(framework_test ${APR_LIBRARY} ${APRUTIL_LIBRARY} ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} ${UUID} celix_utils)
 		
 		add_executable(filter_test 
 			private/test/filter_test.cpp

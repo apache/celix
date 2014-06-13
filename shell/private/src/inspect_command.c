@@ -179,6 +179,7 @@ celix_status_t inspectCommand_printExportedServices(command_pt command, array_li
 									    sprintf(line, "%s = %s\n", hashMapEntry_getKey(entry), hashMapEntry_getValue(entry));
 									    out(line);
 									}
+									hashMapIterator_destroy(iter);
 
 //									objectClass = properties_get(props, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
 //									sprintf(line, "ObjectClass = %s\n", objectClass);
@@ -277,6 +278,7 @@ celix_status_t inspectCommand_printImportedServices(command_pt command, array_li
                                         sprintf(line, "%s = %s\n", hashMapEntry_getKey(entry), hashMapEntry_getValue(entry));
                                         out(line);
                                     }
+									hashMapIterator_destroy(iter);
 
 //                                  objectClass = properties_get(props, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
 //                                  sprintf(line, "ObjectClass = %s\n", objectClass);

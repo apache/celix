@@ -98,6 +98,7 @@ static apr_status_t remoteShell_cleanup(remote_shell_pt instance) {
 
 	apr_thread_mutex_lock(instance->mutex);
 	arrayList_destroy(instance->connections);
+	apr_thread_pool_destroy(instance->threadPool);
 	apr_thread_mutex_unlock(instance->mutex);
 
 	return APR_SUCCESS;

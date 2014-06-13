@@ -72,6 +72,7 @@ typedef struct ipc_shmData *ipc_shmData_pt;
 
 celix_status_t discovery_create(apr_pool_t *pool, bundle_context_pt context, discovery_pt *discovery);
 celix_status_t discovery_stop(discovery_pt discovery);
+celix_status_t discovery_destroy(discovery_pt discovery);
 
 celix_status_t discovery_endpointAdded(void *handle, endpoint_description_pt endpoint, char *machtedFilter);
 celix_status_t discovery_endpointRemoved(void *handle, endpoint_description_pt endpoint, char *machtedFilter);

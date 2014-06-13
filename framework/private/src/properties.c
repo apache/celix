@@ -170,6 +170,7 @@ void properties_store(properties_pt properties, char * filename, char * header) 
 				fputc('\n', file);
 
 			}
+			hashMapIterator_destroy(iterator);
 		}
 		fclose(file);
 	} else {

@@ -145,10 +145,12 @@ celix_status_t driverLoader_loadDriver(driver_loader_pt loader, apr_pool_t *pool
 				if (status == CELIX_SUCCESS) {
 					arrayList_addAll(*references, refs);
 				}
+			}
+
 				if (refs != NULL) {
 					arrayList_destroy(refs);
 				}
-			}
+
 			apr_pool_destroy(spool);
 
 
@@ -160,7 +162,8 @@ celix_status_t driverLoader_loadDriver(driver_loader_pt loader, apr_pool_t *pool
 
 celix_status_t driverLoader_loadDriverForLocator(driver_loader_pt loader, apr_pool_t *pool, driver_locator_service_pt locator, char *driverId, array_list_pt *references) {
 	celix_status_t status = CELIX_SUCCESS;
-	arrayList_create(references);
+	//The list is created in the bundle_getRegisteredServices chain
+	//arrayList_create(references);
 
 	apr_pool_t *loadPool;
 	apr_status_t aprStatus = apr_pool_create(&loadPool, pool);

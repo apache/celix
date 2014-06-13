@@ -118,6 +118,7 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin) {
 			exportRegistration_stopTracking(export);
 		}
 	}
+    hashMapIterator_destroy(iter);
 	iter = hashMapIterator_create(admin->importedServices);
 	while (hashMapIterator_hasNext(iter)) {
 		array_list_pt exports = hashMapIterator_nextValue(iter);
@@ -127,6 +128,7 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin) {
 			importRegistration_stopTracking(export);
 		}
 	}
+    hashMapIterator_destroy(iter);
 
 	return status;
 }
@@ -183,6 +185,7 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
 					}
 				}
 			}
+            hashMapIterator_destroy(iter);
 		}
 	}
 
@@ -202,6 +205,7 @@ celix_status_t remoteServiceAdmin_handleRequest(remote_service_admin_pt rsa, cha
 			}
 		}
 	}
+    hashMapIterator_destroy(iter);
 	return CELIX_SUCCESS;
 }
 
@@ -224,6 +228,10 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 			reference = arrayList_get(references, 0);
 		}
 	}
+
+    if(references!=NULL){
+        arrayList_destroy(references);
+    }
 
 	if (reference == NULL) {
 		printf("ERROR: expected a reference for service id %s\n", serviceId);
@@ -317,6 +325,8 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
 
 		properties_set(endpointProperties, key, value);
 	}
+    hashMapIterator_destroy(iter);
+
 	char *serviceId = (char *) hashMap_remove(endpointProperties, (void *) OSGI_FRAMEWORK_SERVICE_ID);
 	char *uuid = NULL;
 	bundleContext_getProperty(admin->context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);

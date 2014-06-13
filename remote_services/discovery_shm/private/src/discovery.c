@@ -192,6 +192,7 @@ celix_status_t discovery_addService(discovery_pt discovery, endpoint_description
 			bundleContext_getService(discovery->context, reference, (void**) &listener);
 			discovery_informListener(discovery, listener, endpoint);
 		}
+		filter_destroy(filter);
 	}
 	hashMapIterator_destroy(iter);
 
@@ -639,6 +640,7 @@ celix_status_t discovery_endpointRemoved(void *handle, endpoint_description_pt e
 			char *url = arrayList_get(discovery->registered, i);
 			if (strcmp(url, endpoint->service) == 0) {
 				arrayList_remove(discovery->registered, i);
+				free(url);
 			}
 		}
 	}

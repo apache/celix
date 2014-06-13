@@ -32,6 +32,11 @@ celix_status_t bundleRevision_create(framework_logger_pt logger, char *root, cha
 	return mock_c()->returnValue().value.intValue;
 }
 
+celix_status_t bundleRevision_destroy(bundle_revision_pt revision) {
+    mock_c()->actualCall("bundleRevision_destroy");
+    return mock_c()->returnValue().value.intValue;
+}
+
 celix_status_t bundleRevision_getNumber(bundle_revision_pt revision, long *revisionNr) {
 	mock_c()->actualCall("bundleRevision_getNumber");
 	return mock_c()->returnValue().value.intValue;

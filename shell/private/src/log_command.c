@@ -92,6 +92,7 @@ void logCommand_execute(command_pt command, char *line, void (*out)(char *), voi
                     }
                 }
             }
+            linkedListIterator_destroy(iter);
             apr_pool_destroy(memory_pool);
         } else {
             out("Log reader service: out of memory!\n");

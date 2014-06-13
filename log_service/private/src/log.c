@@ -111,7 +111,7 @@ apr_status_t log_destroy(void *logp) {
 
 celix_status_t log_addEntry(log_pt log, log_entry_pt entry) {
     apr_thread_mutex_lock(log->lock);
-    linkedList_addElement(log->entries, entry);
+    //linkedList_addElement(log->entries, entry);
 
     // notify any listeners
     if (log->listenerThread != NULL)
@@ -135,6 +135,7 @@ celix_status_t log_getEntries(log_pt log, apr_pool_t *memory_pool, linked_list_p
         while (linkedListIterator_hasNext(iter)) {
             linkedList_addElement(entries, linkedListIterator_next(iter));
         }
+		linkedListIterator_destroy(iter);
 
         *list = entries;
 
@@ -222,6 +223,7 @@ celix_status_t log_addLogListener(log_pt logger, log_listener_pt listener) {
 celix_status_t log_removeLogListener(log_pt logger, log_listener_pt listener) {
     celix_status_t status = CELIX_SUCCESS;
     celix_status_t threadStatus = CELIX_SUCCESS;
+	bool last=false;
 
     status = CELIX_DO_IF(status, apr_thread_mutex_lock(logger->deliverLock));
     status = CELIX_DO_IF(status, apr_thread_mutex_lock(logger->listenerLock));
@@ -229,11 +231,16 @@ celix_status_t log_removeLogListener(log_pt logger, log_listener_pt listener) {
         arrayList_removeElement(logger->listeners, listener);
         if (arrayList_size(logger->listeners) == 0) {
             status = log_stopListenerThread(logger);
+			last=true;
         }
 
         status = CELIX_DO_IF(status, apr_thread_mutex_unlock(logger->listenerLock));
         status = CELIX_DO_IF(status, apr_thread_mutex_unlock(logger->deliverLock));
+
+		if(last){
         status = CELIX_DO_IF(status, apr_thread_join(&threadStatus, logger->listenerThread));
+		}
+
         if (status == CELIX_SUCCESS) {
             logger->listenerThread = NULL;
         }
@@ -283,11 +290,9 @@ static celix_status_t log_startListenerThread(log_pt logger) {
 
 static celix_status_t log_stopListenerThread(log_pt logger) {
     celix_status_t status = CELIX_SUCCESS;
-    apr_status_t apr_status = APR_SUCCESS;
 
     logger->running = false;
-    status = apr_thread_cond_signal(logger->entriesToDeliver);
-    if (status != APR_SUCCESS) {
+	if( apr_thread_cond_signal(logger->entriesToDeliver) != APR_SUCCESS){
         status = CELIX_SERVICE_EXCEPTION;
     }
 
@@ -317,6 +322,7 @@ void * APR_THREAD_FUNC log_listenerThread(apr_thread_t *thread, void *data) {
                         log_listener_pt listener = arrayListIterator_next(it);
                         listener->logged(listener, entry);
                     }
+					arrayListIterator_destroy(it);
 
                     status = apr_thread_mutex_unlock(logger->listenerLock);
                     if (status != APR_SUCCESS) {

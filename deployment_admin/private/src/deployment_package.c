@@ -163,6 +163,7 @@ celix_status_t deploymentPackage_processEntries(deployment_package_pt package) {
 			arrayList_add(package->resourceInfos, info);
 		}
 	}
+	hashMapIterator_destroy(iter);
 
 	return status;
 }

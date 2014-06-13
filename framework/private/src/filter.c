@@ -70,7 +70,7 @@ void filter_destroy(filter_pt filter) {
 			arrayList_clear(filter->value);
 			arrayList_destroy(filter->value);
 			filter->value = NULL;
-		} else if (filter->operand == OR) {
+		} else if ( (filter->operand == OR) || (filter->operand == AND) ) {
 			int size = arrayList_size(filter->value);
 			int i = 0;
 			for (i = 0; i < size; i++) {

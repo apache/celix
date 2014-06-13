@@ -169,6 +169,12 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
-	celix_status_t status = CELIX_SUCCESS;
-	return status;
+
+	struct activator *activator = userData;
+	if(activator==NULL || activator->manager==NULL){
+		return CELIX_BUNDLE_EXCEPTION;
+	}
+
+	return topologyManager_destroy(activator->manager);
+
 }

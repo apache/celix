@@ -328,9 +328,10 @@ static celix_status_t serviceTracker_untrack(service_tracker_pt tracker, service
 				} else {
 					status = bundleContext_ungetService(tracker->context, reference, &result);
 				}
-				free(tracked);
-				break;
+				
+                //break;
 			}
+			free(tracked);
 		}
 	}
 

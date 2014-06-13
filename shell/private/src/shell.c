@@ -114,6 +114,7 @@ array_list_pt shell_getCommands(shell_pt shell) {
 		char * name = hashMapIterator_nextKey(iter);
 		arrayList_add(commands, name);
 	}
+	hashMapIterator_destroy(iter);
 	return commands;
 }
 
@@ -136,6 +137,7 @@ service_reference_pt shell_getCommandReference(shell_pt shell, char * command) {
 			return (service_reference_pt) hashMapEntry_getValue(entry);
 		}
 	}
+	hashMapIterator_destroy(iter);
 	return NULL;
 }
 

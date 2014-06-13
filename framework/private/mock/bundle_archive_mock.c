@@ -52,6 +52,11 @@ celix_status_t bundleArchive_recreate(char * archiveRoot, bundle_archive_pt *bun
 	return mock_c()->returnValue().value.intValue;
 }
 
+celix_status_t bundleArchive_destroy(bundle_archive_pt archive) {
+    mock_c()->actualCall("bundleArchive_destroy");
+    return mock_c()->returnValue().value.intValue;
+}
+
 celix_status_t bundleArchive_getId(bundle_archive_pt archive, long *id) {
 	mock_c()->actualCall("bundleArchive_getId")
 			->withPointerParameters("archive", archive)

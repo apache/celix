@@ -162,6 +162,7 @@ celix_status_t discovery_removeService(discovery_pt discovery, endpoint_descript
 		bundleContext_getService(discovery->context, reference, (void**)&listener);
 		discovery_informListenerOfRemoval(discovery, listener, endpoint);
 	}
+    hashMapIterator_destroy(iter);
 
 	return status;
 }
@@ -190,6 +191,7 @@ celix_status_t discovery_addService(discovery_pt discovery, endpoint_description
 			discovery_informListener(discovery, listener, endpoint);
 		}
 	}
+    hashMapIterator_destroy(iter);
 
 	return status;
 }
@@ -267,6 +269,7 @@ celix_status_t discovery_endpointAdded(void *handle, endpoint_description_pt end
 				}
 				attributes = apr_pstrcat(discovery->pool, attributes, "(", key, "=", value, ")", NULL);
 			}
+            hashMapIterator_destroy(iter);
 			err = SLPReg(slp, serviceUrl, SLP_LIFETIME_MAXIMUM, 0, attributes, SLP_TRUE, discovery_registrationReport, &callbackerr);
 			if ((err != SLP_OK) || (callbackerr != SLP_OK)) {
 				status = CELIX_ILLEGAL_STATE;
@@ -375,6 +378,7 @@ celix_status_t discovery_updateEndpointListener(discovery_pt discovery, service_
 		endpoint_description_pt value = hashMapEntry_getValue(entry);
 		discovery_informListener(discovery, service, value);
 	}
+    hashMapIterator_destroy(iter);
 
 	return status;
 }
@@ -426,6 +430,7 @@ static void *APR_THREAD_FUNC discovery_pollSLP(apr_thread_t *thd, void *data) {
 				hashMapIterator_remove(iter);
 			}
 		}
+        hashMapIterator_destroy(iter);
 
 		sleep(1);
 	}

@@ -149,13 +149,12 @@ celix_status_t bundle_getArchive(bundle_pt bundle, bundle_archive_pt *archive) {
 celix_status_t bundle_getCurrentModule(bundle_pt bundle, module_pt *module) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	if (bundle == NULL || *module != NULL) {
+	if (bundle == NULL || *module != NULL || arrayList_size(bundle->modules)==0 ) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
 		*module = arrayList_get(bundle->modules, arrayList_size(bundle->modules) - 1);
 	}
 
-	framework_logIfError(logger, status, NULL, "Failed to get bundle module");
 
 	return status;
 }
@@ -196,6 +195,10 @@ celix_status_t bundle_getEntry(bundle_pt bundle, char * name, char **entry) {
 }
 
 celix_status_t bundle_getState(bundle_pt bundle, bundle_state_e *state) {
+	if(bundle==NULL){
+		*state = OSGI_FRAMEWORK_BUNDLE_UNKNOWN;
+		return CELIX_BUNDLE_EXCEPTION;
+	}
 	*state = bundle->state;
 	return CELIX_SUCCESS;
 }
