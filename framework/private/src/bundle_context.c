@@ -60,6 +60,8 @@ celix_status_t bundleContext_create(apr_pool_t *pool, framework_pt framework, fr
 celix_status_t bundleContext_destroy(bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 
+	free(context);
+
 	if (context != NULL) {
 		context = NULL;
 	} else {

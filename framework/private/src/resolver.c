@@ -81,10 +81,12 @@ linked_list_pt resolver_resolve(module_pt root) {
 				linked_list_iterator_pt candSetIter = linkedListIterator_create(value, 0);
 				while (linkedListIterator_hasNext(candSetIter)) {
 					candidate_set_pt set = linkedListIterator_next(candSetIter);
+					linkedList_destroy(set->candidates);
 					free(set);
 					linkedListIterator_remove(candSetIter);
 				}
 				linkedListIterator_destroy(candSetIter);
+				linkedList_destroy(value);
 			}
 		}
 		hashMapIterator_destroy(iter);
@@ -105,9 +107,12 @@ linked_list_pt resolver_resolve(module_pt root) {
 			linked_list_iterator_pt candSetIter = linkedListIterator_create(value, 0);
 			while (linkedListIterator_hasNext(candSetIter)) {
 				candidate_set_pt set = linkedListIterator_next(candSetIter);
+				linkedList_destroy(set->candidates);
 				free(set);
+				linkedListIterator_remove(candSetIter);
 			}
 			linkedListIterator_destroy(candSetIter);
+			linkedList_destroy(value);
 		}
 	}
 	hashMapIterator_destroy(iter);
@@ -175,14 +180,15 @@ int resolver_populateCandidatesMap(hash_map_pt candidatesMap, module_pt targetMo
                         }
 
                         if (linkedList_size(candidates) == 0) {
-                                if (linkedList_create(&invalid) == CELIX_SUCCESS) {
-									char *name = NULL;
-                                    resolver_removeInvalidCandidate(targetModule, candidatesMap, invalid);
-                                    
-                                    module_getSymbolicName(targetModule, &name);
+                            if (linkedList_create(&invalid) == CELIX_SUCCESS) {
+                                char *name = NULL;
+                                resolver_removeInvalidCandidate(targetModule, candidatesMap, invalid);
 
-                                    printf("Unable to resolve: %s, %s\n", name, targetName);
+                                module_getSymbolicName(targetModule, &name);
+
+                                printf("Unable to resolve: %s, %s\n", name, targetName);
                             }
+                            linkedList_destroy(candidates);
                             return -1;
                         } else if (linkedList_size(candidates) > 0) {
                             candidate_set_pt cs = (candidate_set_pt) malloc(sizeof(*cs));
@@ -364,6 +370,7 @@ void resolver_moduleResolved(module_pt module) {
                     }
                 }
 
+                linkedList_destroy(capsCopy);
 	    }
 	}
 }
@@ -386,37 +393,45 @@ linked_list_pt resolver_populateWireMap(hash_map_pt candidates, module_pt import
     linked_list_pt serviceWires;
     linked_list_pt emptyWires;
 	bundle_pt bundle = NULL;
+	bool resolved = false;
 
 	bundle = module_getBundle(importer);
 
     if (candidates && importer && wireMap) {
         linked_list_pt candSetList = NULL;
 		if (module_isResolved(importer)) {
-            return wireMap;
+		    // already resolved
+		    resolved = true;
         }
-		linked_list_iterator_pt wit = linkedListIterator_create(wireMap, 0);
-		while (linkedListIterator_hasNext(wit)) {
-		    importer_wires_pt iw = linkedListIterator_next(wit);
-		    if (iw->importer == importer) {
-		        return wireMap;
-		    }
-		}
+		if (!resolved) {
+		    bool self = false;
+            linked_list_iterator_pt wit = linkedListIterator_create(wireMap, 0);
+            while (linkedListIterator_hasNext(wit)) {
+                importer_wires_pt iw = linkedListIterator_next(wit);
+                if (iw->importer == importer) {
+                    // Do not resolve yourself
+                    self = true;
+                    break;
+                }
+            }
+            linkedListIterator_destroy(wit);
 
-        candSetList = (linked_list_pt) hashMap_get(candidates, importer);
+            if (!self) {
+                candSetList = (linked_list_pt) hashMap_get(candidates, importer);
 
                 if (linkedList_create(&serviceWires) == CELIX_SUCCESS) {
-                    if (linkedList_create(&emptyWires) == CELIX_SUCCESS) {
+//                    if (linkedList_create(&emptyWires) == CELIX_SUCCESS) {
                         int candSetIdx = 0;
-						
-						// hashMap_put(wireMap, importer, emptyWires);
+
+                        // hashMap_put(wireMap, importer, emptyWires);
 
                         char *mname = NULL;
                         module_getSymbolicName(importer, &mname);
 
-						importer_wires_pt importerWires = malloc(sizeof(*importerWires));
-						importerWires->importer = importer;
-						importerWires->wires = emptyWires;
-						linkedList_addElement(wireMap, importerWires);
+                        importer_wires_pt importerWires = malloc(sizeof(*importerWires));
+                        importerWires->importer = importer;
+                        importerWires->wires = NULL;
+                        linkedList_addElement(wireMap, importerWires);
                         
                         for (candSetIdx = 0; candSetIdx < linkedList_size(candSetList); candSetIdx++) {
                             candidate_set_pt cs = (candidate_set_pt) linkedList_get(candSetList, candSetIdx);
@@ -437,8 +452,10 @@ linked_list_pt resolver_populateWireMap(hash_map_pt candidates, module_pt import
 
                         importerWires->wires = serviceWires;
                         // hashMap_put(wireMap, importer, serviceWires);
-                    }
-        }
+//                    }
+                }
+            }
+		}
     }
 
     return wireMap;

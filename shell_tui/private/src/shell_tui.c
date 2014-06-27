@@ -68,9 +68,11 @@ static void *APR_THREAD_FUNC shellTui_runnable(apr_thread_t *thd, void *data) {
 		dline = strdup(in);
 		line = utils_stringTrim(dline);
 		if (strlen(line) == 0) {
+		    free(dline);
 			continue;
 		}
 		if (act->shell == NULL) {
+		    free(dline);
 			continue;
 		}
 		act->shell->executeCommand(act->shell->shell, line, shellTui_write, shellTui_write);
@@ -99,6 +101,7 @@ void shellTui_serviceChanged(service_listener_pt listener, service_event_pt even
 		shellTui_initializeService(act);
 	} else if ((event->type == OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING) && (act->reference == event->reference)) {
 		bundleContext_ungetService(act->context, act->reference, &result);
+        serviceReference_destroy(act->reference);
 		act->reference = NULL;
 		act->shell = NULL;
 

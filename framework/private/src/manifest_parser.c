@@ -193,6 +193,7 @@ static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseStri
                 linkedList_addElement(paths, strdup(piece));
                 pathCount++;
             }
+            free(piece);
         }
 
         if (pathCount == 0) {
@@ -250,6 +251,8 @@ static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseStri
         }
     }
 
+    linkedList_destroy(pieces);
+
 	return clause;
 }
 
@@ -265,12 +268,16 @@ static linked_list_pt manifestParser_parseStandardHeader(char * header) {
                 return NULL;
             }
 
-            clauseStrings = manifestParser_parseDelimitedString(strdup(header), ",");
+            char *hdr = strdup(header);
+            clauseStrings = manifestParser_parseDelimitedString(hdr, ",");
+            free(hdr);
             if (clauseStrings != NULL) {
                 for (i = 0; i < linkedList_size(clauseStrings); i++) {
                     clauseString = (char *) linkedList_get(clauseStrings, i);
                     linkedList_addElement(completeList, manifestParser_parseStandardHeaderClause(clauseString));
+                    free(clauseString);
                 }
+                linkedList_destroy(clauseStrings);
             }
 		}
 	}

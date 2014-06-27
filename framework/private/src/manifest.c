@@ -53,10 +53,11 @@ celix_status_t manifest_create(manifest_pt *manifest) {
 
 celix_status_t manifest_destroy(manifest_pt manifest) {
 	if (manifest != NULL) {
-		properties_destroy(manifest->mainAttributes);
-		hashMap_destroy(manifest->attributes, false, false);
+	    hashMap_destroy(manifest->mainAttributes, true, true);
+		hashMap_destroy(manifest->attributes, true, false);
 		manifest->mainAttributes = NULL;
 		manifest->attributes = NULL;
+		free(manifest);
 		manifest = NULL;
 	}
 	return CELIX_SUCCESS;

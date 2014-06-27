@@ -476,6 +476,7 @@ void serviceRegistry_ungetServices(service_registry_pt registry, bundle_pt bundl
 		while (ungetResult) {
 			serviceRegistry_ungetService(registry, bundle, reference, &ungetResult);
 		}
+		serviceReference_destroy(reference);
 	}
 
 	arrayList_destroy(fusages);

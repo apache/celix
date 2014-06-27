@@ -114,8 +114,22 @@ void module_destroy(module_pt module) {
 
 	linkedList_destroy(module->capabilities);
 	linkedList_destroy(module->requirements);
+	version_destroy(module->version);
+
+	linked_list_iterator_pt iter = linkedListIterator_create(module->wires, 0);
+	while (linkedListIterator_hasNext(iter)) {
+	    wire_pt next = linkedListIterator_next(iter);
+	    linkedListIterator_remove(iter);
+	    wire_destroy(next);
+	}
+	linkedListIterator_destroy(iter);
+	linkedList_destroy(module->wires);
 
 	module->headerMap = NULL;
+
+	free(module->id);
+	free(module->symbolicName);
+	free(module);
 }
 
 wire_pt module_getWire(module_pt module, char * serviceName) {

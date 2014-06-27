@@ -129,6 +129,8 @@ celix_status_t bundle_destroy(bundle_pt bundle) {
 	arrayList_destroy(bundle->modules);
 	celixThreadMutex_destroy(&bundle->lock);
 
+	free(bundle);
+
 	return CELIX_SUCCESS;
 }
 
@@ -223,10 +225,12 @@ celix_status_t bundle_createModule(bundle_pt bundle, module_pt *module) {
         if (status == CELIX_SUCCESS) {
 			int revision = 0;
 			char moduleId[512];
+			char *mId;
 
 			snprintf(moduleId, sizeof(moduleId), "%ld.%d", bundleId, revision);
-
-			*module = module_create(headerMap, strdup(moduleId), bundle);
+			mId = strdup(moduleId);
+			*module = module_create(headerMap, mId, bundle);
+			free(mId);
 
 			if (*module != NULL) {
 				version_pt bundleVersion = module_getVersion(*module);

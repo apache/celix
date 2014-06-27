@@ -80,6 +80,10 @@ celix_status_t bundleRevision_create(framework_logger_pt loggera, char *root, ch
 
 celix_status_t bundleRevision_destroy(bundle_revision_pt revision) {
     arrayList_destroy(revision->libraryHandles);
+    manifest_destroy(revision->manifest);
+    free(revision->root);
+    free(revision->location);
+    free(revision);
 	return CELIX_SUCCESS;
 }
 

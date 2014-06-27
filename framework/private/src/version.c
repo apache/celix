@@ -100,6 +100,7 @@ celix_status_t version_destroy(version_pt version) {
 	version->micro = 0;
 	free(version->qualifier);
 	version->qualifier = NULL;
+	free(version);
 	return CELIX_SUCCESS;
 }
 
@@ -109,7 +110,7 @@ celix_status_t version_createVersionFromString(char * versionStr, version_pt *ve
 	int major = 0;
 	int minor = 0;
 	int micro = 0;
-	char * qualifier = "";
+	char * qualifier = NULL;
 
 	char delims[] = ".";
 	char *token = NULL;
@@ -169,6 +170,11 @@ celix_status_t version_createVersionFromString(char * versionStr, version_pt *ve
 	if (status == CELIX_SUCCESS) {
 		status = version_createVersion(major, minor, micro, qualifier, version);
 	}
+
+	if (qualifier != NULL) {
+	    free(qualifier);
+	}
+
 
 	framework_logIfError(logger, status, NULL, "Cannot create version [versionString=%s]", versionStr);
 

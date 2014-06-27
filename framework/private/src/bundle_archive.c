@@ -143,9 +143,10 @@ celix_status_t bundleArchive_destroy(bundle_archive_pt archive) {
             bundle_revision_pt rev = linkedListIterator_next(iter);
             bundleRevision_destroy(rev);
 	    }
-
+	    linkedListIterator_destroy(iter);
 		linkedList_destroy(archive->revisions);
 	}
+	free(archive);
 	archive = NULL;
 
 	framework_logIfError(logger, status, NULL, "Could not create archive");
@@ -190,9 +191,11 @@ celix_status_t bundleArchive_recreate(char * archiveRoot, bundle_archive_pt *bun
 
             status = CELIX_DO_IF(status, bundleArchive_getRevisionLocation(archive, 0, &location));
             status = CELIX_DO_IF(status, bundleArchive_reviseInternal(archive, true, idx, location, NULL));
+            free(location);
             if (status == CELIX_SUCCESS) {
                 *bundle_archive = archive;
             }
+            closedir(archive->archiveRootDir);
 		}
 	}
 

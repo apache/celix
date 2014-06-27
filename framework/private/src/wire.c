@@ -64,6 +64,7 @@ celix_status_t wire_destroy(wire_pt wire) {
 	wire->requirement = NULL;
 	wire->exporter = NULL;
 	wire->capability = NULL;
+	free(wire);
 	return CELIX_SUCCESS;
 }
 

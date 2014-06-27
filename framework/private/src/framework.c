@@ -271,7 +271,12 @@ celix_status_t framework_destroy(framework_pt framework) {
 	arrayList_destroy(framework->frameworkListeners);
 	}
 	if(framework->requests){
-	arrayList_destroy(framework->requests);
+	    int i;
+	    for (i = 0; i < arrayList_size(framework->requests); i++) {
+	        request_pt request = arrayList_get(framework->requests, i);
+	        free(request);
+	    }
+	    arrayList_destroy(framework->requests);
 	}
 	if(framework->installedBundleMap!=NULL){
 	hashMap_destroy(framework->installedBundleMap, false, false);
@@ -854,24 +859,31 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
                     status = CELIX_DO_IF(status, activator->destroy(activator->userData, context));
                 }
 	        }
-	    }
+//	    }
 
-	    status = CELIX_DO_IF(status, bundle_getCurrentModule(bundle, &module));
-	    if (status == CELIX_SUCCESS) {
-            if (strcmp(module_getId(module), "0") != 0) {
-                if (activator != NULL) {
-                    activator->start = NULL;
-                    activator->stop = NULL;
-                    activator->userData = NULL;
-                    //free(activator);
-                    status = CELIX_DO_IF(status, bundle_setActivator(bundle, NULL));
-                }
+//	    status = CELIX_DO_IF(status, bundle_getCurrentModule(bundle, &module));
+//	    if (status == CELIX_SUCCESS) {
+//            if (strcmp(module_getId(module), "0") != 0) {
+//                if (activator != NULL) {
+//                    activator->start = NULL;
+//                    activator->stop = NULL;
+//                    activator->userData = NULL;
+//                    //free(activator);
+////                    status = CELIX_DO_IF(status, bundle_setActivator(bundle, NULL));
+//                }
 
+            if (id != 0) {
                 status = CELIX_DO_IF(status, serviceRegistry_unregisterServices(framework->registry, bundle));
                 if (status == CELIX_SUCCESS) {
                     serviceRegistry_ungetServices(framework->registry, bundle);
                 }
                 // #TODO remove listeners for bundle
+
+//                if (wasActive) {
+//                    if (activator->destroy != NULL) {
+//                        status = CELIX_DO_IF(status, activator->destroy(activator->userData, context));
+//                    }
+//                }
 
                 if (context != NULL) {
                     status = CELIX_DO_IF(status, bundleContext_destroy(context));
@@ -880,6 +892,17 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
 
                 status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, bundle, OSGI_FRAMEWORK_BUNDLE_RESOLVED));
             }
+	    }
+
+//	    if (id == 0) {
+//            if (activator->destroy != NULL) {
+//                status = CELIX_DO_IF(status, activator->destroy(activator->userData, context));
+//            }
+//        }
+
+	    if (activator != NULL) {
+	        bundle_setActivator(bundle, NULL);
+	        free(activator);
 	    }
 	}
 
@@ -1367,6 +1390,9 @@ void fw_addServiceListener(framework_pt framework, bundle_pt bundle, service_lis
 		arrayList_destroy(infos);
 	}
 
+	if (info->filter != NULL) {
+	    free(info->filter);
+	}
 	free(info);
 
 	arrayList_destroy(listenerHooks);
@@ -1427,6 +1453,7 @@ void fw_removeServiceListener(framework_pt framework, bundle_pt bundle, service_
 		}
 
 		arrayList_destroy(listenerHooks);
+        free(info);
 	}
 }
 
@@ -1540,6 +1567,7 @@ void fw_serviceChanged(framework_pt framework, service_event_type_e eventType, s
 
 				element->listener->serviceChanged(element->listener, event);
 
+				serviceReference_destroy(event->reference);
 				free(event);
 				//TODO cleanup service reference
 
@@ -1654,8 +1682,11 @@ celix_status_t framework_markResolvedModules(framework_pt framework, linked_list
 			char *mname = NULL;
 			module_getSymbolicName(module, &mname);
 			framework_markBundleResolved(framework, module);
+			linkedListIterator_remove(iterator);
+			free(iw);
 		}
 		linkedListIterator_destroy(iterator);
+		linkedList_destroy(resolvedModuleWireMap);
 	}
 	return CELIX_SUCCESS;
 }
@@ -2153,6 +2184,8 @@ static void *fw_eventDispatcher(void *fw) {
 					event->type = request->eventType;
 
 					fw_invokeBundleListener(framework, listener->listener, event, listener->bundle);
+
+					free(event);
 				} else if (request->type == FRAMEWORK_EVENT_TYPE) {
 					fw_framework_listener_pt listener = (fw_framework_listener_pt) arrayList_get(request->listeners, i);
 					framework_event_pt event = (framework_event_pt) malloc(sizeof(*event));
@@ -2162,6 +2195,8 @@ static void *fw_eventDispatcher(void *fw) {
 					event->errorCode = request->errorCode;
 
 					fw_invokeFrameworkListener(framework, listener->listener, event, listener->bundle);
+
+					free(event);
 				}
 			}
 		}

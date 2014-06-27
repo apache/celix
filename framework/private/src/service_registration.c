@@ -86,6 +86,7 @@ celix_status_t serviceRegistration_createInternal(service_registry_pt registry, 
 }
 
 celix_status_t serviceRegistration_destroy(service_registration_pt registration) {
+    free(registration->className);
 	registration->className = NULL;
 	registration->registry = NULL;
 
@@ -94,7 +95,6 @@ celix_status_t serviceRegistration_destroy(service_registration_pt registration)
 
 	celixThreadMutex_destroy(&registration->mutex);
 
-	free(registration->className);
 	free(registration);
 
 	return CELIX_SUCCESS;
