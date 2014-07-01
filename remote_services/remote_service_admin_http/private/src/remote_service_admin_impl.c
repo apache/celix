@@ -405,6 +405,9 @@ celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin
 			(*description)->frameworkUUID = uuid;
 			(*description)->serviceId = apr_atoi64(properties_get(serviceProperties, (char *) OSGI_FRAMEWORK_SERVICE_ID));
 			(*description)->id = apr_pstrdup(childPool, "TODO"); // does not work, txt record to big ?? --> apr_pstrcat(childPool, uuid, "-", (*description)->serviceId, NULL);
+//			char *id = apr_pstrcat(childPool, uuid, "-", properties_get(serviceProperties, (char *) OSGI_FRAMEWORK_SERVICE_ID), NULL);
+//			printf("ID %s\n", id);
+//            (*description)->id = id;
 			(*description)->service = interface;
 		}
 	}

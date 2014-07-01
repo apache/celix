@@ -116,14 +116,16 @@ void module_destroy(module_pt module) {
 	linkedList_destroy(module->requirements);
 	version_destroy(module->version);
 
-	linked_list_iterator_pt iter = linkedListIterator_create(module->wires, 0);
-	while (linkedListIterator_hasNext(iter)) {
-	    wire_pt next = linkedListIterator_next(iter);
-	    linkedListIterator_remove(iter);
-	    wire_destroy(next);
+	if (module->wires != NULL) {
+        linked_list_iterator_pt iter = linkedListIterator_create(module->wires, 0);
+        while (linkedListIterator_hasNext(iter)) {
+            wire_pt next = linkedListIterator_next(iter);
+            linkedListIterator_remove(iter);
+            wire_destroy(next);
+        }
+        linkedListIterator_destroy(iter);
+        linkedList_destroy(module->wires);
 	}
-	linkedListIterator_destroy(iter);
-	linkedList_destroy(module->wires);
 
 	module->headerMap = NULL;
 

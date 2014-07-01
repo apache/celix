@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <apr_general.h>
+#include <apr_thread_proc.h>
 
 #include "bundle_activator.h"
 #include "log_service.h"
@@ -100,7 +101,6 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
 		listener->handle = activator;
 		listener->serviceChanged = (void *) listenerExample_serviceChanged;
-		listener->pool = pool;
 		status = bundleContext_addServiceListener(context, listener, filter);
 		if (status == CELIX_SUCCESS) {
 			activator->listener = listener;

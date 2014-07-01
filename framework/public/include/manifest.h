@@ -40,6 +40,7 @@ typedef struct manifest * manifest_pt;
 
 FRAMEWORK_EXPORT celix_status_t manifest_create(manifest_pt *manifest);
 FRAMEWORK_EXPORT celix_status_t manifest_createFromFile(char *filename, manifest_pt *manifest);
+FRAMEWORK_EXPORT celix_status_t manifest_destroy(manifest_pt manifest);
 
 FRAMEWORK_EXPORT void manifest_clear(manifest_pt manifest);
 FRAMEWORK_EXPORT properties_pt manifest_getMainAttributes(manifest_pt manifest);

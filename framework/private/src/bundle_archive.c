@@ -707,7 +707,7 @@ static celix_status_t bundleArchive_deleteTree(bundle_archive_pt archive, char *
                 if (dp->d_type == DT_DIR) {
                     status = bundleArchive_deleteTree(archive, subdir);
                 } else {
-                    if (rmdir(subdir) != 0) {
+                    if (remove(subdir) != 0) {
                         status = CELIX_FILE_IO_EXCEPTION;
                         break;
                     }

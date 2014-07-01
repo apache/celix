@@ -40,6 +40,11 @@ celix_status_t manifest_createFromFile(char *filename, manifest_pt *manifest) {
 	return mock_c()->returnValue().value.intValue;
 }
 
+celix_status_t manifest_destroy(manifest_pt manifest) {
+    mock_c()->actualCall("manifest_destroy");
+    return mock_c()->returnValue().value.intValue;
+}
+
 void manifest_clear(manifest_pt manifest) {
 	mock_c()->actualCall("manifest_clear");
 }

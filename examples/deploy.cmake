@@ -16,8 +16,8 @@
 # under the License.
 is_enabled(EXAMPLES)
 if (EXAMPLES)
-	#deploy(chapter01-greeting-example BUNDLES shell shell_tui log_service chapter01-greeting-example-client chapter01-greeting-example)
-	#deploy(chapter04-correct-listener BUNDLES shell shell_tui log_service chapter04-correct-listener)
+	deploy(chapter01-greeting-example BUNDLES shell shell_tui log_service chapter01-greeting-example-client chapter01-greeting-example)
+	deploy(chapter04-correct-listener BUNDLES shell shell_tui log_service chapter04-correct-listener)
 	
 	deploy("hello_world" BUNDLES shell shell_tui org.apache.incubator.celix.helloworld hello_world_test log_service)
 	#deploy("wb" BUNDLES tracker publisherA publisherB shell shell_tui log_service log_writer)

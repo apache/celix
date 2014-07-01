@@ -444,6 +444,7 @@ celix_status_t serviceRegistry_ungetService(service_registry_pt registry, bundle
 	if ((serviceRegistration_isValid(registration)) || (usage->count <= 0)) {
 		usage->service = NULL;
 		serviceRegistry_flushUsageCount(registry, bundle, reference);
+		serviceReference_destroy(reference);
 	}
 
 	celixThreadMutex_unlock(&registry->mutex);
@@ -476,7 +477,6 @@ void serviceRegistry_ungetServices(service_registry_pt registry, bundle_pt bundl
 		while (ungetResult) {
 			serviceRegistry_ungetService(registry, bundle, reference, &ungetResult);
 		}
-		serviceReference_destroy(reference);
 	}
 
 	arrayList_destroy(fusages);

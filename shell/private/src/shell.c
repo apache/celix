@@ -170,7 +170,9 @@ void shell_addCommand(shell_pt shell, service_reference_pt reference) {
 void shell_removeCommand(shell_pt shell, service_reference_pt reference) {
 	command_service_pt command = (command_service_pt) hashMap_remove(shell->commandReferenceMap, reference);
 	if (command != NULL) {
+	    bool result = false;
 		hashMap_remove(shell->commandNameMap, command->getName(command->command));
+		bundleContext_ungetService(shell->bundleContext, reference, &result);
 	}
 }
 
@@ -178,6 +180,8 @@ void shell_serviceChanged(service_listener_pt listener, service_event_pt event) 
 	shell_pt shell = (shell_pt) listener->handle;
 	if (event->type == OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED) {
 		shell_addCommand(shell, event->reference);
+	} else if (event->type == OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING) {
+	    shell_removeCommand(shell, event->reference);
 	}
 }
 

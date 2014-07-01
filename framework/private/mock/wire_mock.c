@@ -33,6 +33,11 @@ celix_status_t wire_create(module_pt importer, requirement_pt requirement,
 	return mock_c()->returnValue().value.intValue;
 }
 
+celix_status_t wire_destroy(wire_pt wire) {
+    mock_c()->actualCall("wire_destroy");
+    return mock_c()->returnValue().value.intValue;
+}
+
 celix_status_t wire_getCapability(wire_pt wire, capability_pt *capability) {
 	mock_c()->actualCall("requirement_create");
 	return mock_c()->returnValue().value.intValue;

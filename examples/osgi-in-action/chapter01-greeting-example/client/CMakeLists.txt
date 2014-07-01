@@ -15,6 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
+SET(BUNDLE_SYMBOLICNAME "apache_celix_examples_chapter01_greeting_example_client")
+SET(BUNDLE_VERSION "0.0.1")
+
 bundle(chapter01-greeting-example-client SOURCES private/src/client)
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("../greeting/public/include")
