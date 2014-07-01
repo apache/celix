@@ -153,7 +153,7 @@ static celix_status_t bundleCache_deleteTree(bundle_cache_pt cache, char * direc
                 if (dp->d_type == DT_DIR) {
                     status = bundleCache_deleteTree(cache, subdir);
                 } else {
-                    if (rmdir(subdir) != 0) {
+                    if (remove(subdir) != 0) {
                         status = CELIX_FILE_IO_EXCEPTION;
                         break;
                     }
