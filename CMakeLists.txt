@@ -22,7 +22,7 @@ cmake_policy(SET CMP0012 NEW)
 
 #SET(CMAKE_VERBOSE_MAKEFILE ON)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/modules/")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 set(CMAKE_INSTALL_NAME_DIR "@rpath")
@@ -43,8 +43,8 @@ SET(CELIX_QUALIFIER "incubating")
 
 enable_testing()
 
-include(cmake/Includes.cmake)
-include(cmake/installation.cmake)
+include(CMakeCelix)
+include(cmake_celix/installation)
 include(UseDoxygen)  
 
 # Default bundle version

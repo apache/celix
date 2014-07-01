@@ -217,7 +217,7 @@ MACRO(bundle)
     endif()
     
     SET(__bundleManifest ${CMAKE_CURRENT_BINARY_DIR}/MANIFEST.MF)
-    CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/manifest.in ${__bundleManifest} @ONLY)
+    CONFIGURE_FILE(${CELIX_CMAKE_DIRECTORY}/cmake_celix/manifest.in ${__bundleManifest} @ONLY)
     install (FILES ${__bundleManifest} DESTINATION ./META-INF COMPONENT ${_BUNDLE_NAME_INSTALL})
     
     if(_BUNDLE_SOURCES)
@@ -233,7 +233,7 @@ MACRO(bundle)
 
     SET(__bundleConfig ${CMAKE_CURRENT_BINARY_DIR}/CPackConfig-${_BUNDLE_NAME}-bundle.cmake)
     SET(BUNDLE_BIN_DIR ${CMAKE_CURRENT_BINARY_DIR})
-    CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/CPackConfig.in ${__bundleConfig} @ONLY)
+    CONFIGURE_FILE(${CELIX_CMAKE_DIRECTORY}/cmake_celix/CPackConfig.in ${__bundleConfig} @ONLY)
 
     if(JAR_COMMAND)
         ADD_CUSTOM_COMMAND(TARGET ${_BUNDLE_NAME}
@@ -389,7 +389,7 @@ MACRO(deploy)
 	SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${PROPS};${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/bundles")
 	SET_DIRECTORY_PROPERTIES(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${PROPS};${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/drivers")
 	
-	CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/config.properties.in ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/config.properties @ONLY)
+	CONFIGURE_FILE(${CELIX_CMAKE_DIRECTORY}/cmake_celix/config.properties.in ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/config.properties @ONLY)
 	
 	IF(UNIX)
 		if(CELIX_FOUND)
@@ -411,7 +411,7 @@ MACRO(deploy)
 		  ENDIF(APPLE)
 		ENDIF(UNIX)
 	
-		CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/run.sh.in ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/run.sh @ONLY)
+		CONFIGURE_FILE(${CELIX_CMAKE_DIRECTORY}/cmake_celix/run.sh.in ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/run.sh @ONLY)
 
 		# Generate an Eclipse launch file to be able to run the deployment from Eclipse	
 		# Linux/unix is assumed since we do only support VS on windows
@@ -425,7 +425,7 @@ MACRO(deploy)
 		SET(PROJECT_ATTR ${last})
 		SET(WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/")
 		
-		CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/RunConfig.in ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/${DEPLOY_NAME}.launch @ONLY)
+		CONFIGURE_FILE(${CELIX_CMAKE_DIRECTORY}/cmake_celix/RunConfig.in ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/${DEPLOY_NAME}.launch @ONLY)
 	ENDIF(UNIX)
 	
 	IF(WIN32)

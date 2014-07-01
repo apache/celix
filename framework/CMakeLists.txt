@@ -75,6 +75,7 @@ if (FRAMEWORK)
     install(TARGETS celix_framework DESTINATION lib COMPONENT framework)
     FILE(GLOB files "public/include/*.h")
     INSTALL(FILES ${files} DESTINATION include/celix COMPONENT framework)
+    INSTALL(DIRECTORY "${PROJECT_SOURCE_DIR}/cmake/" DESTINATION share/celix/cmake/modules COMPONENT framework) 
 
 	celix_subproject(FRAMEWORK_TESTS "Option to build the framework tests" "OFF" DEPS)
     if (FRAMEWORK_TESTS)

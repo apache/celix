@@ -15,16 +15,16 @@
 # specific language governing permissions and limitations
 # under the License.
 
-SET(CMAKE_INSTALL_COMPONENT "Framework")
-GET_FILENAME_COMPONENT(__cmake_path ${CMAKE_COMMAND} PATH)
-FIND_PROGRAM(CPACK_COMMAND cpack ${__cmake_path})
-MESSAGE(STATUS "Found CPack at: ${CPACK_COMMAND}")
-IF(NOT CPACK_COMMAND)
-	MESSAGE(FATAL_ERROR "Need CPack!")
-ENDIF(NOT CPACK_COMMAND)
 
-CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/CPackConfig-Installation.in CPackConfig-Installation.cmake @ONLY)
-ADD_CUSTOM_TARGET(package-release
-  ${CPACK_COMMAND} --config "CPackConfig-Installation.cmake"
-  )
-  
+set(CELIX_CMAKE_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
+
+find_package(APR REQUIRED)
+
+include_directories(${APR_INCLUDE_DIR})
+include_directories(${APRUTIL_INCLUDE_DIR})
+include_directories("framework/public/include")
+
+include(cmake_celix/Dependencies)
+include(cmake_celix/Packaging)
+include(cmake_celix/Test)
+include(cmake_celix/ApacheRat)

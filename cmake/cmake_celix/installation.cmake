@@ -15,15 +15,16 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(APR REQUIRED)
+SET(CMAKE_INSTALL_COMPONENT "Framework")
+GET_FILENAME_COMPONENT(__cmake_path ${CMAKE_COMMAND} PATH)
+FIND_PROGRAM(CPACK_COMMAND cpack ${__cmake_path})
+MESSAGE(STATUS "Found CPack at: ${CPACK_COMMAND}")
+IF(NOT CPACK_COMMAND)
+	MESSAGE(FATAL_ERROR "Need CPack!")
+ENDIF(NOT CPACK_COMMAND)
 
-include_directories(${APR_INCLUDE_DIR})
-include_directories(${APRUTIL_INCLUDE_DIR})
-#include_directories("framework/private/include")
-include_directories("framework/public/include")
-
-include(cmake/Dependencies.cmake)
-include(cmake/Packaging.cmake)
-#include(cmake/Bundling.cmake)
-include(cmake/Test.cmake)
-include(cmake/ApacheRat.cmake)
+CONFIGURE_FILE(${CMAKE_CURRENT_LIST_DIR}/CPackConfig-Installation.in CPackConfig-Installation.cmake @ONLY)
+ADD_CUSTOM_TARGET(package-release
+  ${CPACK_COMMAND} --config "CPackConfig-Installation.cmake"
+  )
+  
