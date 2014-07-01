@@ -40,8 +40,8 @@ MACRO(run_test)
 		
 	add_custom_target(${__testTarget}
 		${EXEC} ${EXEC} 
-		COMMAND if [ -e ${PROJECT_BINARY_DIR}/test_results/${EXEC}-Results.xml ]\; then xsltproc --path ${CUNIT_SHARE_DIR} ${CUNIT_SHARE_DIR}/CUnit-Run.xsl ${PROJECT_BINARY_DIR}/test_results/${EXEC}-Results.xml > ${EXEC}-Results.html \; fi
-		COMMAND if [ -e ${PROJECT_BINARY_DIR}/test_results/${EXEC}-Listing.xml ]\; then xsltproc --path ${CUNIT_SHARE_DIR} ${CUNIT_SHARE_DIR}/CUnit-List.xsl ${PROJECT_BINARY_DIR}/test_results/${EXEC}-Listing.xml > ${EXEC}-Listing.html \; fi
+		COMMAND if \[ -e ${PROJECT_BINARY_DIR}/test_results/${EXEC}-Results.xml \]\; then xsltproc --path ${CUNIT_SHARE_DIR} ${CUNIT_SHARE_DIR}/CUnit-Run.xsl ${PROJECT_BINARY_DIR}/test_results/${EXEC}-Results.xml > ${EXEC}-Results.html \; fi
+		COMMAND if \[ -e ${PROJECT_BINARY_DIR}/test_results/${EXEC}-Listing.xml \]\; then xsltproc --path ${CUNIT_SHARE_DIR} ${CUNIT_SHARE_DIR}/CUnit-List.xsl ${PROJECT_BINARY_DIR}/test_results/${EXEC}-Listing.xml > ${EXEC}-Listing.html \; fi
 		WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/test_results
 	)
 	ADD_DEPENDENCIES(test_cunit ${__testTarget})
