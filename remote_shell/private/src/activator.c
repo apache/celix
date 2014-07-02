@@ -120,8 +120,10 @@ static apr_size_t bundleActivator_getProperty(bundle_context_pt context, char * 
 
 	bundleContext_getProperty(context, propertyName, &strValue);
 	if (strValue != NULL) {
-		value = atoi(strValue);
-		if (errno != 0) {
+        	char* endptr = strValue;
+        	errno = 0;
+        	value = (apr_size_t) strtol(strValue, &endptr, 10);
+        	if (*endptr || errno != 0) { 
 			printf("incorrect format for %s\n", propertyName);
 			value = defaultValue;
 		}
