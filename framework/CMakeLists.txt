@@ -79,7 +79,6 @@ if (FRAMEWORK)
 
 	celix_subproject(FRAMEWORK_TESTS "Option to build the framework tests" "OFF" DEPS)
     if (FRAMEWORK_TESTS)
-    	include(${CMAKE_SOURCE_DIR}/cmake/CodeCoverage.cmake)
     	find_package(CppUTest REQUIRED)
     	
 	    include_directories(${CPPUTEST_INCLUDE_DIR})

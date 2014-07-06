@@ -56,7 +56,6 @@ if (UTILS)
     
     celix_subproject(UTILS-TESTS "Option to build the utilities library tests" "OFF")
     if (UTILS-TESTS)
-    	include(${CMAKE_SOURCE_DIR}/cmake/CodeCoverage.cmake)
     	find_package(CppUTest REQUIRED)
 
 	    include_directories(${CUNIT_INCLUDE_DIRS})
