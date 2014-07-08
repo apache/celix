@@ -119,15 +119,24 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin) {
 		}
 	}
     hashMapIterator_destroy(iter);
-	iter = hashMapIterator_create(admin->importedServices);
-	while (hashMapIterator_hasNext(iter)) {
-		array_list_pt exports = hashMapIterator_nextValue(iter);
-		int i;
-		for (i = 0; i < arrayList_size(exports); i++) {
-			import_registration_pt export = arrayList_get(exports, i);
-			importRegistration_stopTracking(export);
-		}
-	}
+    iter = hashMapIterator_create(admin->importedServices);
+    while (hashMapIterator_hasNext(iter))
+    {
+    	import_registration_factory_pt importFactory = hashMapIterator_nextValue(iter);
+        int i;
+        for (i = 0; i < arrayList_size(importFactory->registrations); i++)
+        {
+            import_registration_pt importRegistration = arrayList_get(importFactory->registrations, i);
+
+			if (importFactory->trackedFactory != NULL)
+			{
+				importFactory->trackedFactory->unregisterProxyService(importFactory->trackedFactory, importRegistration->endpointDescription);
+			}
+        }
+
+        serviceTracker_close(importFactory->proxyFactoryTracker);
+        importRegistrationFactory_close(importFactory);
+    }
     hashMapIterator_destroy(iter);
 
 	return status;
@@ -330,10 +339,10 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
 	char *serviceId = (char *) hashMap_remove(endpointProperties, (void *) OSGI_FRAMEWORK_SERVICE_ID);
 	char *uuid = NULL;
 	bundleContext_getProperty(admin->context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
+	properties_set(endpointProperties, (char *) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
 	properties_set(endpointProperties, (char *) OSGI_FRAMEWORK_OBJECTCLASS, interface);
 	properties_set(endpointProperties, (char *) OSGI_RSA_ENDPOINT_SERVICE_ID, serviceId);
 	properties_set(endpointProperties, "service.imported", "true");
-	properties_set(endpointProperties, (char *) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
 
 //    properties_set(endpointProperties, ".ars.path", buf);
 //    properties_set(endpointProperties, ".ars.port", admin->port);
@@ -425,24 +434,73 @@ celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_admin_pt a
 	return status;
 }
 
-celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, endpoint_description_pt endpoint, import_registration_pt *registration) {
+
+
+celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, endpoint_description_pt endpointDescription, import_registration_pt *registration) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	printf("RSA: Import service %s\n", endpoint->service);
-	importRegistration_create(admin->pool, endpoint, admin, admin->context, registration);
+	printf("RSA: Import service %s\n", endpointDescription->service);
 
-	array_list_pt importedRegs = hashMap_get(admin->importedServices, endpoint);
-	if (importedRegs == NULL) {
-		arrayList_create(&importedRegs);
-		hashMap_put(admin->importedServices, endpoint, importedRegs);
+   import_registration_factory_pt registration_factory = (import_registration_factory_pt) hashMap_get(admin->importedServices, endpointDescription->service);
+
+	// check whether we already have a registration_factory
+	if (registration_factory == NULL)
+	{
+		importRegistrationFactory_install(admin->pool, endpointDescription->service, admin->context, &registration_factory);
+		hashMap_put(admin->importedServices, endpointDescription->service, registration_factory);
 	}
-	arrayList_add(importedRegs, *registration);
 
-	importRegistration_open(*registration);
-	importRegistration_startTracking(*registration);
+	 // factory available
+	if (status != CELIX_SUCCESS || (registration_factory->trackedFactory == NULL))
+	{
+		printf("RSA: no proxyFactory available.\n");
+	}
+	else
+	{
+		// we create an importRegistration per imported service
+		importRegistration_create(admin->pool, endpointDescription, admin, (sendToHandle) &remoteServiceAdmin_send, admin->context, registration);
+		registration_factory->trackedFactory->registerProxyService(registration_factory->trackedFactory,  endpointDescription, admin, (sendToHandle) &remoteServiceAdmin_send);
+
+		arrayList_add(registration_factory->registrations, *registration);
+	}
 
 	return status;
 }
+
+
+celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_pt admin, import_registration_pt registration) {
+	celix_status_t status = CELIX_SUCCESS;
+	endpoint_description_pt endpointDescription = (endpoint_description_pt) registration->endpointDescription;
+	import_registration_factory_pt registration_factory = (import_registration_factory_pt) hashMap_get(admin->importedServices, endpointDescription->service);
+
+    // factory available
+    if ((registration_factory == NULL) || (registration_factory->trackedFactory == NULL))
+    {
+    	printf("RSA: Error while retrieving registration factory for imported service %s\n", endpointDescription->service);
+    }
+    else
+    {
+		registration_factory->trackedFactory->unregisterProxyService(registration_factory->trackedFactory, endpointDescription);
+		arrayList_removeElement(registration_factory->registrations, registration);
+		importRegistration_destroy(registration);
+
+		if (arrayList_isEmpty(registration_factory->registrations))
+		{
+			printf("RSA: closing proxy\n");
+
+			serviceTracker_close(registration_factory->proxyFactoryTracker);
+			importRegistrationFactory_close(registration_factory);
+
+			hashMap_remove(admin->importedServices, endpointDescription->service);
+			importRegistrationFactory_destroy(&registration_factory);
+		}
+    }
+
+	return status;
+}
+
+
+
 
 celix_status_t remoteServiceAdmin_send(remote_service_admin_pt rsa, endpoint_description_pt endpointDescription, char *methodSignature, char *request, char **reply, int* replyStatus) {
 

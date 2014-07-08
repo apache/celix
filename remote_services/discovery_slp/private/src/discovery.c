@@ -270,11 +270,14 @@ celix_status_t discovery_endpointAdded(void *handle, endpoint_description_pt end
 				attributes = apr_pstrcat(discovery->pool, attributes, "(", key, "=", value, ")", NULL);
 			}
             hashMapIterator_destroy(iter);
+
+
 			err = SLPReg(slp, serviceUrl, SLP_LIFETIME_MAXIMUM, 0, attributes, SLP_TRUE, discovery_registrationReport, &callbackerr);
 			if ((err != SLP_OK) || (callbackerr != SLP_OK)) {
 				status = CELIX_ILLEGAL_STATE;
 				printf("DISCOVERY: Error registering service (%s) with slp %i\n", serviceUrl, err);
 			}
+
 			arrayList_add(discovery->registered, serviceUrl);
 		}
 		SLPClose(slp);
@@ -477,8 +480,9 @@ SLPBoolean discovery_pollSLPCallback(SLPHandle hslp, const char* srvurl, unsigne
 				endpoint->serviceId = 42;
 				endpoint->service = apr_pstrdup(discovery->pool, srv);
 				endpoint->properties = props;
-				discovery_addService(discovery, endpoint);
+				endpoint->frameworkUUID = properties_get(props, "endpoint.framework.uuid");
 
+				discovery_addService(discovery, endpoint);
 				hashMap_put(discovery->slpServices, apr_pstrdup(discovery->pool, srvurl), endpoint);
 			}
 		}

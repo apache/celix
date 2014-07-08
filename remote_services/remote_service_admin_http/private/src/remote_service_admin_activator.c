@@ -92,7 +92,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 			remoteServiceAdmin->importReference_getImportedEndpoint = importReference_getImportedEndpoint;
 			remoteServiceAdmin->importReference_getImportedService = importReference_getImportedService;
 
-			remoteServiceAdmin->importRegistration_close = importRegistration_close;
+			remoteServiceAdmin->importRegistration_close = remoteServiceAdmin_removeImportedService;
 			remoteServiceAdmin->importRegistration_getException = importRegistration_getException;
 			remoteServiceAdmin->importRegistration_getImportReference = importRegistration_getImportReference;
 

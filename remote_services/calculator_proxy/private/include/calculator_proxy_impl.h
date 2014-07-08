@@ -33,24 +33,29 @@
 
 #include "calculator_service.h"
 #include "remote_proxy.h"
+#include "constants.h"
+#include "bundle_context.h"
+#include "hash_map.h"
 
 #include "endpoint_listener.h"
 
 
 struct calculator {
 	apr_pool_t *pool;
+	bundle_context_pt context;
+
 	endpoint_description_pt endpoint;
 	sendToHandle sendToCallback;
 	void * sendToHandler;
 };
 
-celix_status_t calculatorProxy_create(apr_pool_t *pool, calculator_pt *endpoint);
+
+celix_status_t calculatorProxy_create(apr_pool_t *pool, bundle_context_pt context, calculator_pt *endpoint);
 celix_status_t calculatorProxy_add(calculator_pt calculator, double a, double b, double *result);
 celix_status_t calculatorProxy_sub(calculator_pt calculator, double a, double b, double *result);
 celix_status_t calculatorProxy_sqrt(calculator_pt calculator, double a, double *result);
 
-celix_status_t calculatorProxy_setEndpointDescription(void *proxy, endpoint_description_pt endpoint);
-celix_status_t calculatorProxy_setHandler(void *proxy, void *handler);
-celix_status_t calculatorProxy_setCallback(void *proxy, sendToHandle callback);
+celix_status_t calculatorProxy_registerProxyService(void* proxyFactoryService, endpoint_description_pt endpoint, void* handler, sendToHandle callback);
+celix_status_t calculatorProxy_unregisterProxyService(void* proxyFactoryService, endpoint_description_pt endpoint);
 
 #endif /* CALCULATOR_PROXY_IMPL_H_ */

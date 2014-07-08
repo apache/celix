@@ -28,18 +28,23 @@
 #define REMOTE_PROXY_H_
 
 #include "endpoint_listener.h"
+#include "remote_service_admin.h"
 
-#define OSGI_RSA_REMOTE_PROXY "remote_proxy"
+#define OSGI_RSA_REMOTE_PROXY_FACTORY 	"remote_proxy_factory"
 
 typedef celix_status_t (*sendToHandle)(void *handler, endpoint_description_pt endpointDescription, char *methodSignature, char *request, char **reply, int* replyStatus);
 
-struct remote_proxy_service {
-	void *proxy;
-	celix_status_t (*setEndpointDescription)(void *proxy, endpoint_description_pt service);
-	celix_status_t (*setHandler)(void *proxy, void *handler);
-	celix_status_t (*setCallback)(void *proxy, sendToHandle callback);
+typedef struct remote_proxy_service *remote_proxy_service_pt;
+
+struct remote_proxy_factory_service {
+	void* context;
+	void* pool;
+	hash_map_pt proxy_registrations;
+	celix_status_t (*registerProxyService)(void* proxyFactoryService, endpoint_description_pt endpoint, void* handler, sendToHandle callback);
+	celix_status_t (*unregisterProxyService)(void* proxyFactoryService, endpoint_description_pt endpoint);
 };
 
-typedef struct remote_proxy_service *remote_proxy_service_pt;
+typedef struct remote_proxy_factory_service *remote_proxy_factory_service_pt;
+
 
 #endif /* REMOTE_PROXY_H_ */

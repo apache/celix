@@ -34,30 +34,49 @@
 struct import_registration {
 	apr_pool_t *pool;
 	bundle_context_pt context;
-	remote_service_admin_pt rsa;
 	endpoint_description_pt endpointDescription;
 
-	service_tracker_pt proxyTracker;
-
 	service_reference_pt reference;
-	remote_proxy_service_pt proxy;
 	import_reference_pt importReference;
-	bundle_pt bundle;
+
+	remote_service_admin_pt rsa;
+	sendToHandle sendToCallback;
 
 	bool closed;
 };
 
-celix_status_t importRegistration_create(apr_pool_t *pool, endpoint_description_pt endpoint, remote_service_admin_pt rsa, bundle_context_pt context, import_registration_pt *registration);
-celix_status_t importRegistration_open(import_registration_pt registration);
-celix_status_t importRegistration_close(import_registration_pt registration);
-celix_status_t importRegistration_getException(import_registration_pt registration);
-celix_status_t importRegistration_getImportReference(import_registration_pt registration, import_reference_pt *reference);
+
+
+struct import_registration_factory
+{
+	apr_pool_t *pool;
+	char* serviceName;
+	remote_proxy_factory_service_pt trackedFactory;
+	service_tracker_pt proxyFactoryTracker;
+	bundle_context_pt context;
+	array_list_pt registrations;
+	bundle_pt bundle;
+};
+
+
+celix_status_t importRegistration_create(apr_pool_t *pool, endpoint_description_pt endpoint, remote_service_admin_pt rsa, sendToHandle callback, bundle_context_pt context, import_registration_pt *registration);
+celix_status_t importRegistration_destroy(import_registration_pt registration);
 
 celix_status_t importRegistration_setEndpointDescription(import_registration_pt registration, endpoint_description_pt endpointDescription);
 celix_status_t importRegistration_setHandler(import_registration_pt registration, void * handler);
 celix_status_t importRegistration_setCallback(import_registration_pt registration, sendToHandle callback);
 
-celix_status_t importRegistration_startTracking(import_registration_pt registration);
-celix_status_t importRegistration_stopTracking(import_registration_pt registration);
+celix_status_t importRegistration_getException(import_registration_pt registration);
+celix_status_t importRegistration_getImportReference(import_registration_pt registration, import_reference_pt *reference);
+
+celix_status_t importRegistration_createProxyFactoryTracker(import_registration_factory_pt registration_factory, service_tracker_pt *tracker);
+
+//celix_status_t importRegistrationFactory_create(apr_pool_t *pool, char* serviceName, bundle_context_pt context, import_registration_factory_pt *registration_factory);
+celix_status_t importRegistrationFactory_destroy(import_registration_factory_pt* registration_factory);
+//celix_status_t importRegistrationFactory_open(import_registration_factory_pt registration_factory);
+celix_status_t importRegistrationFactory_close(import_registration_factory_pt registration_factory);
+celix_status_t importRegistrationFactory_install(apr_pool_t *pool, char* serviceName, bundle_context_pt context, import_registration_factory_pt *registration_factory);
+
+
 
 #endif /* IMPORT_REGISTRATION_IMPL_H_ */

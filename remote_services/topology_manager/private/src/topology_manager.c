@@ -81,10 +81,10 @@ celix_status_t topologyManager_create(bundle_context_pt context, apr_pool_t *poo
 }
 
 celix_status_t topologyManager_destroy(topology_manager_pt manager) {
+
 	celix_status_t status = CELIX_SUCCESS;
 
 	arrayList_destroy(manager->rsaList);
-
 	hashMap_destroy(manager->exportedServices,false,false);
 	hashMap_destroy(manager->importedServices,false,false);
 	hashMap_destroy(manager->importInterests,false,false);
@@ -174,12 +174,14 @@ celix_status_t topologyManager_endpointRemoved(void *handle, endpoint_descriptio
 	if (hashMap_containsKey(manager->importedServices, endpoint)) {
 		hash_map_pt imports = hashMap_get(manager->importedServices, endpoint);
 		hash_map_iterator_pt iter = hashMapIterator_create(imports);
+
 		while (hashMapIterator_hasNext(iter)) {
 			hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
 			remote_service_admin_service_pt rsa = hashMapEntry_getKey(entry);
 			import_registration_pt import = hashMapEntry_getValue(entry);
-			rsa->importRegistration_close(import);
+			rsa->importRegistration_close(rsa->admin, import);
 		}
+
 		hashMapIterator_destroy(iter);
 	}
 
@@ -260,11 +262,11 @@ celix_status_t topologyManager_notifyListeners(topology_manager_pt manager, remo
 					}
 				}
 				filter_destroy(filter);
-			}
-			}
+	 		}
 		}
+	 }
 
-	if(endpointListeners!=NULL){
+	if(endpointListeners != NULL) {
 		arrayList_destroy(endpointListeners);
 	}
 
@@ -320,7 +322,6 @@ celix_status_t topologyManager_removeService(topology_manager_pt manager, servic
 				rsa->exportRegistration_close(export);
 				topologyManager_notifyListenersOfRemoval(manager, rsa, export);
 			}
-
 		}
 		hashMapIterator_destroy(iter);
 	}
@@ -355,7 +356,7 @@ celix_status_t topologyManager_notifyListenersOfRemoval(topology_manager_pt mana
 		}
 	}
 
-	if(endpointListeners!=NULL){
+	if(endpointListeners != NULL) {
 		arrayList_destroy(endpointListeners);
 	}
 

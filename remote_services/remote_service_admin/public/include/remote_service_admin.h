@@ -36,6 +36,7 @@ typedef struct export_reference *export_reference_pt;
 typedef struct export_registration *export_registration_pt;
 typedef struct import_reference *import_reference_pt;
 typedef struct import_registration *import_registration_pt;
+typedef struct import_registration_factory *import_registration_factory_pt;
 typedef struct remote_service_admin *remote_service_admin_pt;
 
 struct remote_service_admin_service {
@@ -44,7 +45,6 @@ struct remote_service_admin_service {
 	celix_status_t (*getExportedServices)(remote_service_admin_pt admin, array_list_pt *services);
 	celix_status_t (*getImportedEndpoints)(remote_service_admin_pt admin, array_list_pt *services);
 	celix_status_t (*importService)(remote_service_admin_pt admin, endpoint_description_pt endpoint, import_registration_pt *registration);
-
 
 	celix_status_t (*exportReference_getExportedEndpoint)(export_reference_pt reference, endpoint_description_pt *endpoint);
 	celix_status_t (*exportReference_getExportedService)(export_reference_pt reference);
@@ -56,7 +56,7 @@ struct remote_service_admin_service {
 	celix_status_t (*importReference_getImportedEndpoint)(import_reference_pt reference);
 	celix_status_t (*importReference_getImportedService)(import_reference_pt reference);
 
-	celix_status_t (*importRegistration_close)(import_registration_pt registration);
+	celix_status_t (*importRegistration_close)(remote_service_admin_pt admin, import_registration_pt registration);
 	celix_status_t (*importRegistration_getException)(import_registration_pt registration);
 	celix_status_t (*importRegistration_getImportReference)(import_registration_pt registration, import_reference_pt *reference);
 
