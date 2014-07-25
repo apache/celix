@@ -51,17 +51,21 @@ celix_status_t calculatorEndpoint_setService(remote_endpoint_pt endpoint, void *
 }
 
 /**
- * Request: http://host:port/services/{service}/{request}
+ * Request: http://host:port/services/{service}
  */
-celix_status_t calculatorEndpoint_handleRequest(remote_endpoint_pt endpoint, char *request, char *data, char **reply) {
+celix_status_t calculatorEndpoint_handleRequest(remote_endpoint_pt endpoint, char *data, char **reply) {
 	celix_status_t status = CELIX_SUCCESS;
+	json_error_t jsonError;
+    json_t *root = json_loads(data, 0, &jsonError);
+    const char *sig;
+    json_unpack(root, "{s:s}", "m", &sig);
 
-	printf("CALCULATOR_ENDPOINT: Handle request \"%s\" with data \"%s\"\n", request, data);
-	if (strcmp(request, "add") == 0) {
+	printf("CALCULATOR_ENDPOINT: Handle request \"%s\" with data \"%s\"\n", sig, data);
+	if (strcmp(sig, "add(DD)D") == 0) {
 		calculatorEndpoint_add(endpoint, data, reply);
-	} else if (strcmp(request, "sub") == 0) {
+	} else if (strcmp(sig, "sub(DD)D") == 0) {
 		calculatorEndpoint_sub(endpoint, data, reply);
-	} else if (strcmp(request, "sqrt") == 0) {
+	} else if (strcmp(sig, "sqrt(D)D") == 0) {
 		calculatorEndpoint_sqrt(endpoint, data, reply);
 	} else {
 		status = CELIX_ILLEGAL_ARGUMENT;
@@ -70,10 +74,6 @@ celix_status_t calculatorEndpoint_handleRequest(remote_endpoint_pt endpoint, cha
 	return status;
 }
 
-/**
- * data = { "a" : 1.1, "b" : 2.4 }
- * reply = 3.5
- */
 celix_status_t calculatorEndpoint_add(remote_endpoint_pt endpoint, char *data, char **reply) {
 	celix_status_t status = CELIX_SUCCESS;
 	json_error_t jsonError;
@@ -85,7 +85,7 @@ celix_status_t calculatorEndpoint_add(remote_endpoint_pt endpoint, char *data, c
 	} else {
 		double a;
 		double b;
-		json_unpack(root, "{s:f, s:f}", "arg0", &a, "arg1", &b);
+		json_unpack(root, "{s:[ff]}", "a", &a, &b);
 
 		if (endpoint->service != NULL) {
 			double result;
@@ -116,7 +116,7 @@ celix_status_t calculatorEndpoint_sub(remote_endpoint_pt endpoint, char *data, c
 	} else {
 		double a;
 		double b;
-		json_unpack(root, "{s:f, s:f}", "arg0", &a, "arg1", &b);
+		json_unpack(root, "{s:[ff]}", "a", &a, &b);
 
 		if (endpoint->service != NULL) {
 			double result;
@@ -146,7 +146,7 @@ celix_status_t calculatorEndpoint_sqrt(remote_endpoint_pt endpoint, char *data, 
 		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
 		double a;
-		json_unpack(root, "{s:f}", "arg0", &a);
+		json_unpack(root, "{s:[f]}", "a", &a);
 
 		if (endpoint->service != NULL) {
 			double result;

@@ -56,18 +56,21 @@ celix_status_t calculatorProxy_create(apr_pool_t *pool, bundle_context_pt contex
 	return status;
 }
 
+// { "m": "" "a":["arg1", "arg2"] }
 celix_status_t calculatorProxy_add(calculator_pt calculator, double a, double b, double *result) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (calculator->endpoint != NULL) {
 		json_t *root;
-		root = json_pack("{s:f, s:f}", "arg0", a, "arg1", b);
+		root = json_pack("{s:s, s:[ff]}", "m", "add(DD)D", "a", a, b);
 
 		char *data = json_dumps(root, 0);
 		char *reply = calloc(128, sizeof(char));
 		int replyStatus = 0;
 
-		calculator->sendToCallback(calculator->sendToHandler, calculator->endpoint, "add", data, &reply, &replyStatus);
+		printf("Send: %s\n", data);
+
+		calculator->sendToCallback(calculator->sendToHandler, calculator->endpoint, data, &reply, &replyStatus);
 
 		if (status == CELIX_SUCCESS) {
 			json_error_t jsonError;
@@ -86,13 +89,13 @@ celix_status_t calculatorProxy_sub(calculator_pt calculator, double a, double b,
 	celix_status_t status = CELIX_SUCCESS;
 	if (calculator->endpoint != NULL) {
 		json_t *root;
-		root = json_pack("{s:f, s:f}", "arg0", a, "arg1", b);
+		root = json_pack("{s:s, s:[ff]}", "m", "sub(DD)D", "a", a, b);
 
 		char *data = json_dumps(root, 0);
 		char *reply = calloc(128, sizeof(char));
 		int replyStatus = 0;
 
-		calculator->sendToCallback(calculator->sendToHandler, calculator->endpoint, "sub", data, &reply, &replyStatus);
+		calculator->sendToCallback(calculator->sendToHandler, calculator->endpoint, data, &reply, &replyStatus);
 
 		if (status == CELIX_SUCCESS) {
 			json_error_t jsonError;
@@ -110,13 +113,13 @@ celix_status_t calculatorProxy_sqrt(calculator_pt calculator, double a, double *
 	celix_status_t status = CELIX_SUCCESS;
 	if (calculator->endpoint != NULL) {
 		json_t *root;
-		root = json_pack("{s:f}", "arg0", a);
+		root = json_pack("{s:s, s:[f]}", "m", "sqrt(D)D", "a", a);
 
 		char *data = json_dumps(root, 0);
 		char *reply = calloc(128, sizeof(char));
 		int replyStatus;
 
-		calculator->sendToCallback(calculator->sendToHandler, calculator->endpoint, "sqrt", data, &reply, &replyStatus);
+		calculator->sendToCallback(calculator->sendToHandler, calculator->endpoint, data, &reply, &replyStatus);
 
 		if (status == CELIX_SUCCESS) {
 			json_error_t jsonError;

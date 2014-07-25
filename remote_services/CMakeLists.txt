@@ -35,6 +35,7 @@ if (REMOTE_SERVICE_ADMIN)
     add_subdirectory(remote_service_admin_shm)   
     add_subdirectory(discovery_slp)
     add_subdirectory(discovery_bonjour)
+    add_subdirectory(discovery_configured)
     add_subdirectory(discovery_shm)
     
     add_subdirectory(calculator_service)

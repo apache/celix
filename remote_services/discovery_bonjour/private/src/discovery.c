@@ -479,6 +479,7 @@ static void discovery_resolveAddCallback(DNSServiceRef sdRef,
 		endpoint->serviceId = serviceId == NULL? 0 : atol(serviceId);
 		endpoint->service = properties_get(props, "objectClass");
 		endpoint->properties = props;
+		endpoint->frameworkUUID = endpointFrameworkUuid;
 
 		entry->pool = childPool;
 		entry->endpointDescription = endpoint;

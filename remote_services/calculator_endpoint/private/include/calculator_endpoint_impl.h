@@ -36,7 +36,7 @@ celix_status_t calculatorEndpoint_create(apr_pool_t *pool, remote_endpoint_pt *e
 
 celix_status_t calculatorEndpoint_setService(remote_endpoint_pt endpoint, void *service);
 
-celix_status_t calculatorEndpoint_handleRequest(remote_endpoint_pt endpoint, char *request, char *data, char **reply);
+celix_status_t calculatorEndpoint_handleRequest(remote_endpoint_pt endpoint, char *data, char **reply);
 
 celix_status_t calculatorEndpoint_add(remote_endpoint_pt endpoint, char *data, char **reply);
 celix_status_t calculatorEndpoint_sub(remote_endpoint_pt endpoint, char *data, char **reply);

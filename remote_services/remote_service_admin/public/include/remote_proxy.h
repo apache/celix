@@ -32,7 +32,7 @@
 
 #define OSGI_RSA_REMOTE_PROXY_FACTORY 	"remote_proxy_factory"
 
-typedef celix_status_t (*sendToHandle)(void *handler, endpoint_description_pt endpointDescription, char *methodSignature, char *request, char **reply, int* replyStatus);
+typedef celix_status_t (*sendToHandle)(void *handler, endpoint_description_pt endpointDescription, char *request, char **reply, int* replyStatus);
 
 typedef struct remote_proxy_service *remote_proxy_service_pt;
 
