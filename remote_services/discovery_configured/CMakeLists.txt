@@ -45,7 +45,16 @@ install_bundle(discovery_configured)
 
 target_link_libraries(discovery_configured celix_framework ${CURL_LIBRARIES} ${APRUTIL_LIBRARY})
 
-add_executable(descparser private/src/endpoint_description_reader.c)
+add_executable(descparser 
+    private/src/endpoint_descriptor_reader.c
+    ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c)
     
-target_link_libraries(descparser ${LIBXML2_LIBRARIES} celix_utils)
+target_link_libraries(descparser ${LIBXML2_LIBRARIES} celix_framework celix_utils)
+
+
+add_executable(descwriter 
+    private/src/endpoint_descriptor_writer.c
+    ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c)
+    
+target_link_libraries(descwriter ${LIBXML2_LIBRARIES} celix_framework celix_utils)
 

@@ -17,32 +17,34 @@
  *under the License.
  */
 /*
- * endpoint_listener.h
+ * endpoint_description.h
  *
- *  \date       Sep 29, 2011
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
+ *  \date       25 Jul 2014
+ *  \author     <a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
 
-#ifndef ENDPOINT_LISTENER_H_
-#define ENDPOINT_LISTENER_H_
+#ifndef ENDPOINT_DESCRIPTION_H_
+#define ENDPOINT_DESCRIPTION_H_
 
-#include "array_list.h"
 #include "properties.h"
+#include "array_list.h"
 
-#include "endpoint_description.h"
-
-static const char * const OSGI_ENDPOINT_LISTENER_SERVICE = "endpoint_listener";
-
-static const char * const OSGI_ENDPOINT_LISTENER_SCOPE = "endpoint.listener.scope";
-
-struct endpoint_listener {
-	void *handle;
-	celix_status_t (*endpointAdded)(void *handle, endpoint_description_pt endpoint, char *machtedFilter);
-	celix_status_t (*endpointRemoved)(void *handle, endpoint_description_pt endpoint, char *machtedFilter);
+struct endpoint_description {
+    array_list_pt configurationTypes;
+    char *frameworkUUID;
+    char *id;
+    // array_list_pt intents;
+    char *service;
+    // HASH_MAP packageVersions;
+    properties_pt properties;
+    long serviceId;
 };
 
-typedef struct endpoint_listener *endpoint_listener_pt;
+typedef struct endpoint_description *endpoint_description_pt;
+
+celix_status_t endpointDescription_create(properties_pt properties, endpoint_description_pt *endpointDescription);
+celix_status_t endpointDescription_destroy(endpoint_description_pt description);
 
 
-#endif /* ENDPOINT_LISTENER_H_ */
+#endif /* ENDPOINT_DESCRIPTION_H_ */

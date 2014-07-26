@@ -17,32 +17,23 @@
  *under the License.
  */
 /*
- * endpoint_listener.h
+ * endpoint_descriptor_reader.h
  *
- *  \date       Sep 29, 2011
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
+ *  \date       26 Jul 2014
+ *  \author     <a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
 
-#ifndef ENDPOINT_LISTENER_H_
-#define ENDPOINT_LISTENER_H_
+#ifndef ENDPOINT_DESCRIPTOR_READER_H_
+#define ENDPOINT_DESCRIPTOR_READER_H_
 
+#include "celix_errno.h"
 #include "array_list.h"
-#include "properties.h"
 
-#include "endpoint_description.h"
+typedef struct endpoint_descriptor_reader *endpoint_descriptor_reader_pt;
 
-static const char * const OSGI_ENDPOINT_LISTENER_SERVICE = "endpoint_listener";
-
-static const char * const OSGI_ENDPOINT_LISTENER_SCOPE = "endpoint.listener.scope";
-
-struct endpoint_listener {
-	void *handle;
-	celix_status_t (*endpointAdded)(void *handle, endpoint_description_pt endpoint, char *machtedFilter);
-	celix_status_t (*endpointRemoved)(void *handle, endpoint_description_pt endpoint, char *machtedFilter);
-};
-
-typedef struct endpoint_listener *endpoint_listener_pt;
+celix_status_t endpointDescriptorReader_create(endpoint_descriptor_reader_pt *reader);
+celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader_pt reader, char *document, array_list_pt *endpoints);
 
 
-#endif /* ENDPOINT_LISTENER_H_ */
+#endif /* ENDPOINT_DESCRIPTOR_READER_H_ */

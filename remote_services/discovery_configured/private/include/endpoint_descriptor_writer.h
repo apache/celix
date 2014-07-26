@@ -17,32 +17,23 @@
  *under the License.
  */
 /*
- * endpoint_listener.h
+ * endpoint_descriptor_writer.h
  *
- *  \date       Sep 29, 2011
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
+ *  \date       26 Jul 2014
+ *  \author     <a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
  */
 
-#ifndef ENDPOINT_LISTENER_H_
-#define ENDPOINT_LISTENER_H_
+#ifndef ENDPOINT_DESCRIPTOR_WRITER_H_
+#define ENDPOINT_DESCRIPTOR_WRITER_H_
 
+#include "celix_errno.h"
 #include "array_list.h"
-#include "properties.h"
 
-#include "endpoint_description.h"
+typedef struct endpoint_descriptor_writer *endpoint_descriptor_writer_pt;
 
-static const char * const OSGI_ENDPOINT_LISTENER_SERVICE = "endpoint_listener";
+celix_status_t endpointDescriptorWriter_create(endpoint_descriptor_writer_pt *writer);
+celix_status_t endpointDescriptorWriter_destroy(endpoint_descriptor_writer_pt writer);
+celix_status_t endpointDescriptorWriter_writeDocument(endpoint_descriptor_writer_pt writer, array_list_pt endpoints, char **document);
 
-static const char * const OSGI_ENDPOINT_LISTENER_SCOPE = "endpoint.listener.scope";
-
-struct endpoint_listener {
-	void *handle;
-	celix_status_t (*endpointAdded)(void *handle, endpoint_description_pt endpoint, char *machtedFilter);
-	celix_status_t (*endpointRemoved)(void *handle, endpoint_description_pt endpoint, char *machtedFilter);
-};
-
-typedef struct endpoint_listener *endpoint_listener_pt;
-
-
-#endif /* ENDPOINT_LISTENER_H_ */
+#endif /* ENDPOINT_DESCRIPTOR_WRITER_H_ */
