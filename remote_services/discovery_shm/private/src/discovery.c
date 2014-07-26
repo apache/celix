@@ -370,7 +370,6 @@ celix_status_t discovery_decShmMapDiscoveryInstance(discovery_pt discovery, char
 			}
 
 			hashMapIterator_destroy(shmItr);
-
 			hashMap_put(outRegServices, DISCOVERY_SHM_FW_SERVICES, fwServices);
 		}
 	}
@@ -488,11 +487,41 @@ celix_status_t discovery_encShmMap(discovery_pt discovery, hash_map_pt inRegDisc
 	hashMapIterator_destroy(regDiscoveryInstancesItr);
 
 	if ((status == CELIX_SUCCESS) && ((status = netstring_encodeFromHashMap(discovery->pool, inRegDiscInstances, outEncMap)) != CELIX_SUCCESS))
-			{
+	{
 		printf("DISCOVERY: discovery_encShmMapDiscoveryInstance : encode shm map failed\n");
 	}
 
 	return status;
+}
+
+
+celix_status_t discovery_freeShmMap(discovery_pt discovery, hash_map_pt inSrcMap)
+{
+	hash_map_iterator_pt regDiscoveryInstancesItr = hashMapIterator_create(inSrcMap);
+
+	while (hashMapIterator_hasNext(regDiscoveryInstancesItr) == true)
+	{
+		hash_map_pt regDiscoveryInstance = hashMapIterator_nextValue(regDiscoveryInstancesItr);
+
+		if (regDiscoveryInstance  != NULL)
+		{
+			hash_map_iterator_pt regDiscoveryServiceItr = hashMapIterator_create(regDiscoveryInstance);
+
+			while (hashMapIterator_hasNext(regDiscoveryServiceItr) == true)
+			{
+				hash_map_pt regDiscoveryService = hashMapIterator_nextValue(regDiscoveryServiceItr);
+				hashMap_destroy(regDiscoveryService, false, false);
+			}
+
+			hashMapIterator_destroy(regDiscoveryServiceItr);
+
+		}
+		hashMap_destroy(regDiscoveryInstance, false, false);
+	}
+
+	hashMapIterator_destroy(regDiscoveryInstancesItr);
+
+	return CELIX_SUCCESS;
 }
 
 celix_status_t discovery_updateSHMServices(discovery_pt discovery, endpoint_description_pt endpoint, bool addService)
@@ -977,6 +1006,7 @@ celix_status_t discovery_updateLocalSHMServices(discovery_pt discovery)
 
 			hashMapIterator_destroy(lclFwItr);
 
+			discovery_freeShmMap(discovery, regDiscoveryInstances);
 		}
 		hashMap_destroy(regDiscoveryInstances, false, false);
 		discovery_unlock(shmData->semId, 0);

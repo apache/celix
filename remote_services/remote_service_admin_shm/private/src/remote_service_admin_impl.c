@@ -270,7 +270,7 @@ celix_status_t remoteServiceAdmin_wait(int semId, int semNr)
 }
 
 
-celix_status_t remoteServiceAdmin_send(remote_service_admin_pt admin, endpoint_description_pt recpEndpoint, char *method, char *data, char **reply, int *replyStatus)
+celix_status_t remoteServiceAdmin_send(remote_service_admin_pt admin, endpoint_description_pt recpEndpoint, char *data, char **reply, int *replyStatus)
 {
 
     celix_status_t status = CELIX_SUCCESS;
@@ -283,7 +283,6 @@ celix_status_t remoteServiceAdmin_send(remote_service_admin_pt admin, endpoint_d
         int semid = ipc->semId;
 
         /* write method and data */
-        hashMap_put(fncCallProps, RSA_FUNCTIONCALL_METHOD_PROPERTYNAME, method);
         hashMap_put(fncCallProps, RSA_FUNCTIONCALL_DATA_PROPERTYNAME, data);
 
         if ((status = netstring_encodeFromHashMap(admin->pool, fncCallProps, &encFncCallProps)) == CELIX_SUCCESS)
@@ -358,67 +357,60 @@ static void *APR_THREAD_FUNC remoteServiceAdmin_receiveFromSharedMemory(apr_thre
 				}
 				else
                 {
-                    char *method = hashMap_get(receivedMethodCall, RSA_FUNCTIONCALL_METHOD_PROPERTYNAME);
                     char *data = hashMap_get(receivedMethodCall, RSA_FUNCTIONCALL_DATA_PROPERTYNAME);
 
-                    if (method == NULL)
-                    {
-                    	fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "RSA : receiveFromSharedMemory : no method found.");
-                    }
-                    else
-                    {
-                        hash_map_iterator_pt iter = hashMapIterator_create(admin->exportedServices);
+					hash_map_iterator_pt iter = hashMapIterator_create(admin->exportedServices);
 
-                        while (hashMapIterator_hasNext(iter))
-                        {
-                            hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-                            array_list_pt exports = hashMapEntry_getValue(entry);
-                            int expIt = 0;
+					while (hashMapIterator_hasNext(iter))
+					{
+						hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
+						array_list_pt exports = hashMapEntry_getValue(entry);
+						int expIt = 0;
 
-                            for (expIt = 0; expIt < arrayList_size(exports); expIt++)
-                            {
-                                export_registration_pt export = arrayList_get(exports, expIt);
+						for (expIt = 0; expIt < arrayList_size(exports); expIt++)
+						{
+							export_registration_pt export = arrayList_get(exports, expIt);
 
-                                if ( (strcmp(exportedEndpointDesc->service, export->endpointDescription->service) == 0) && (export->endpoint != NULL))
-                                {
-                                    char *reply = NULL;
-                                    char *encReply = NULL;
+							if ( (strcmp(exportedEndpointDesc->service, export->endpointDescription->service) == 0) && (export->endpoint != NULL))
+							{
+								char *reply = NULL;
+								char *encReply = NULL;
 
-                                    celix_status_t replyStatus = export->endpoint->handleRequest(export->endpoint->endpoint, method, data, &reply);
-                                    hashMap_put(receivedMethodCall, RSA_FUNCTIONCALL_RETURNSTATUS_PROPERTYNAME, apr_itoa(admin->pool, replyStatus));
+								celix_status_t replyStatus = export->endpoint->handleRequest(export->endpoint->endpoint, data, &reply);
+								hashMap_put(receivedMethodCall, RSA_FUNCTIONCALL_RETURNSTATUS_PROPERTYNAME, apr_itoa(admin->pool, replyStatus));
 
-                                    if (reply != NULL)
-                                    {
-                                        hashMap_put(receivedMethodCall, RSA_FUNCTIONCALL_RETURN_PROPERTYNAME, reply);
+								if (reply != NULL)
+								{
+									hashMap_put(receivedMethodCall, RSA_FUNCTIONCALL_RETURN_PROPERTYNAME, reply);
 
-                                        // write back
-                                        if ((status = netstring_encodeFromHashMap(admin->pool, receivedMethodCall, &encReply)) == CELIX_SUCCESS)
-                                        {
+									// write back
+									if ((status = netstring_encodeFromHashMap(admin->pool, receivedMethodCall, &encReply)) == CELIX_SUCCESS)
+									{
 
-                                            if ((strlen(encReply) * sizeof(char)) >= RSA_SHM_MEMSIZE)
-                                            {
-                                            	fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "RSA : receiveFromSharedMemory : size of message bigger than shared memory message. NOT SENDING.");
-                                            }
-                                            else
-                                            {
-                                                strcpy(ipc->shmBaseAdress, encReply);
-                                            }
-                                        }
-                                        else
-                                        {
-                                        	fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "RSA : receiveFromSharedMemory : encoding of reply failed");
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    printf("RSA : receiveFromSharedMemory : No endpoint set for %s\n", export->endpointDescription->service );
-                                }
-                            }
-                        }
-						hashMapIterator_destroy(iter);
+										if ((strlen(encReply) * sizeof(char)) >= RSA_SHM_MEMSIZE)
+										{
+											fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "RSA : receiveFromSharedMemory : size of message bigger than shared memory message. NOT SENDING.");
+										}
+										else
+										{
+											strcpy(ipc->shmBaseAdress, encReply);
+										}
+									}
+									else
+									{
+										fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "RSA : receiveFromSharedMemory : encoding of reply failed");
+									}
+								}
+							}
+							else
+							{
+								printf("RSA : receiveFromSharedMemory : No endpoint set for %s\n", export->endpointDescription->service );
+							}
+						}
+					}
+					hashMapIterator_destroy(iter);
 
-                    }
+
                 }
 				hashMap_destroy(receivedMethodCall, false, false);
 				remoteServiceAdmin_unlock(ipc->semId, 2);
