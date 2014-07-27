@@ -21,6 +21,7 @@ if (RSA_BUNDLES_DISCOVERY_SHM)
 	include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include")
 	include_directories("${PROJECT_SOURCE_DIR}/remote_services/discovery_shm/private/include")
 	include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
+	include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
 	include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin_shm/public/include")
 	include_directories("private/include")
 
