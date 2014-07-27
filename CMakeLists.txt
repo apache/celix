@@ -39,7 +39,7 @@ ENDIF()
 SET(CELIX_MAJOR "1")
 SET(CELIX_MINOR "0")
 SET(CELIX_MICRO "0")
-SET(CELIX_QUALIFIER "incubating")
+SET(CELIX_QUALIFIER "")
 
 enable_testing()
 
@@ -48,7 +48,7 @@ include(cmake_celix/installation)
 include(UseDoxygen)  
 
 # Default bundle version
-set(DEFAULT_VERSION 0.0.1.incubating)
+set(DEFAULT_VERSION 1.0.0)
 
 ## New sub project must use a buildoption to be able to enable/disable the project using the CMake Editor
 ## Sub projects depending on another sub project automatically enable these dependencies

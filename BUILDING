@@ -1,4 +1,4 @@
-APACHE CELIX INCUBATION - BUILDING AND INSTALLATION OVERVIEW
+APACHE CELIX - BUILDING AND INSTALLATION OVERVIEW
 
 Notes
 -----
@@ -6,9 +6,9 @@ Notes
 * Currently Apache Celix only builds and works on Unix/Linux like systems
   (including MacOSX).
 * Apache Celix requires CMake for building, other requirements/dependencies are 
-  listed per subproject on http://incubator.apache.org/celix/subprojects.html
+  listed per subproject on http://celix.apache.org/subprojects.html
 * More information about the build system, and how to extend it, can be found at
-  the website: http://incubator.apache.org/celix/documentation.html
+  the website: http://celix.apache.org/documentation.html
 	
 	
 Quick Start
@@ -71,7 +71,7 @@ deployment and installation.
   Since Apache Celix provides a modular framework, it makes sense to provide the
   available components as modules as well. To enable/disable these modules cmake
   is used. In the GUI or console there are settings named BUILD_{NAME} which can
-  be switched on or off. On http://incubator.apache.org/celix/subprojects.html a
+  be switched on or off. On http://celix.apache.org/subprojects.html a
   list of all subprojects is given.
 * Apache Celix deployment/installation
   With a modular system it doesn't make sense to simply install everything to
