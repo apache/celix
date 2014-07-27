@@ -39,6 +39,8 @@
 #include "event_constants.h"
 #include <apr.h>
 #include <apr_pools.h>
+#include <apr_thread_proc.h>
+
 typedef struct event_publisher *event_publisher_pt;
 struct event_publisher {
 	apr_pool_t *pool;

@@ -24,6 +24,7 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdlib.h>
+#include <apr_thread_proc.h>
 
 
 #include "event_publisher_impl.h"
@@ -70,9 +71,8 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 		service_tracker_customizer_pt cust = NULL;
 		service_tracker_pt tracker = NULL;
 		data->context = context;
-		serviceTrackerCustomizer_create(pool, data->event_publisher,  eventPublisherAddingService, eventPublisherAddedService, eventPublisherModifiedService, eventPublisherRemovedService, &cust);
-		serviceTracker_create(pool, context, (char *) EVENT_ADMIN_NAME, cust,
-							&tracker);
+		serviceTrackerCustomizer_create(data->event_publisher, eventPublisherAddingService, eventPublisherAddedService, eventPublisherModifiedService, eventPublisherRemovedService, &cust);
+		serviceTracker_create(context, (char *) EVENT_ADMIN_NAME, cust, &tracker);
 		data->tracker = tracker;
 
 		serviceTracker_open(tracker);

@@ -31,67 +31,65 @@ struct event_handler {
 	bundle_context_pt context;
 };
 
-celix_status_t eventHandlerCreate(apr_pool_t *pool, bundle_context_pt context,  event_handler_pt *event_handler){
+celix_status_t eventHandlerCreate(apr_pool_t *pool, bundle_context_pt context, event_handler_pt *event_handler){
 	celix_status_t status = CELIX_SUCCESS;
 	*event_handler = apr_palloc(pool, sizeof(**event_handler));
-	if(!*event_handler){
-			status = CELIX_ENOMEM;
-	}else {
-			(*event_handler)->pool = pool;
-			(*event_handler)->event_admin_service = NULL;
-			(*event_handler)->context = context;
+	if (!*event_handler) {
+        status = CELIX_ENOMEM;
+	} else {
+        (*event_handler)->pool = pool;
+        (*event_handler)->event_admin_service = NULL;
+        (*event_handler)->context = context;
 	}
 	return status;
 }
 
 celix_status_t eventHandlerHandleEvent(event_handler_pt *event_handler, event_pt event) {
 	celix_status_t status = CELIX_SUCCESS;
-	printf("handle event called in first handler\n");
-	if(event != NULL){
+	if (event != NULL) {
 		char *topic = NULL;
-		status = (*event_handler)->event_admin_service->getTopic(&event,&topic);
-		printf("topic of event: %s\n",topic);
+		status = (*event_handler)->event_admin_service->getTopic(&event, &topic);
+		printf("[SUB] topic of event: %s\n", topic);
+
 		array_list_pt propertyNames;
 		arrayList_create(&propertyNames);
-		status = (*event_handler)->event_admin_service->getPropertyNames(&event,&propertyNames);
+		status = (*event_handler)->event_admin_service->getPropertyNames(&event, &propertyNames);
+
 		array_list_iterator_pt propertyIter = arrayListIterator_create(propertyNames);
-		while(arrayListIterator_hasNext(propertyIter)){
+		while (arrayListIterator_hasNext(propertyIter)) {
 			char *key = arrayListIterator_next(propertyIter);
 			char *value = NULL;
 			(*event_handler)->event_admin_service->getProperty(&event,key,&value);
-			//getProperty(&event,key,&value);
-			printf("Key: %s value: %s\n",key,value);
+
+			printf("[SUB] Key: %s value: %s\n",key,value);
 		}
 	}
 	return status;
 }
 
 
-celix_status_t  eventHandlerAddingService(void * handle, service_reference_pt ref, void **service) {
+celix_status_t eventHandlerAddingService(void * handle, service_reference_pt ref, void **service) {
 	celix_status_t status = CELIX_SUCCESS;
-	printf("event handler adding service \n");
 	event_handler_pt event_handler = handle;
 	status = bundleContext_getService(event_handler->context, ref, service);
 	return status;
 }
 
-celix_status_t  eventHandlerAddedService(void * handle, service_reference_pt ref, void * service) {
-	printf("Event handler Added service \n");
-	event_handler_pt  data =  handle;
-	event_admin_service_pt event_admin_service = NULL;
-	event_admin_service = (event_admin_service_pt ) service;
-	data->event_admin_service = event_admin_service;
+celix_status_t eventHandlerAddedService(void * handle, service_reference_pt ref, void * service) {
+	printf("[SUB] Event admin added...\n");
+	event_handler_pt data = handle;
+	data->event_admin_service = (event_admin_service_pt) service;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t  eventHandlerModifiedService(void * handle, service_reference_pt ref, void * service) {
-	struct data * data = (struct data *) handle;
-	printf("Event admin Modified\n");
+celix_status_t eventHandlerModifiedService(void * handle, service_reference_pt ref, void * service) {
+	printf("[SUB] Event admin modified...\n");
 	return CELIX_SUCCESS;
 }
 
-celix_status_t  eventHandlerRemovedService(void * handle, service_reference_pt ref, void * service) {
-	struct data * data = (struct data *) handle;
-	printf("Event admin Removed %p\n", service);
+celix_status_t eventHandlerRemovedService(void * handle, service_reference_pt ref, void * service) {
+	printf("[SUB] Event admin removed...\n");
+	event_handler_pt data = handle;
+	data->event_admin_service = NULL;
 	return CELIX_SUCCESS;
 }
