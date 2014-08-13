@@ -111,22 +111,22 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 	return status;
 }
 
-celix_status_t endpointDiscoveryServer_destroy(endpoint_discovery_server_pt *server) {
+celix_status_t endpointDiscoveryServer_destroy(endpoint_discovery_server_pt server) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	// stop & block until the actual server is shut down...
-	mg_stop((*server)->ctx);
-	(*server)->ctx = NULL;
+	mg_stop(server->ctx);
+	server->ctx = NULL;
 
-	status = celixThreadMutex_lock(&(*server)->serverLock);
+	status = celixThreadMutex_lock(&server->serverLock);
 
-	hashMap_destroy((*server)->entries, true /* freeKeys */, false /* freeValues */);
+	hashMap_destroy(server->entries, true /* freeKeys */, false /* freeValues */);
 
-	status = celixThreadMutex_unlock(&(*server)->serverLock);
-	status = celixThreadMutex_destroy(&(*server)->serverLock);
+	status = celixThreadMutex_unlock(&server->serverLock);
+	status = celixThreadMutex_destroy(&server->serverLock);
 
-	free((void*) (*server)->path);
-	free(*server);
+	free((void*) server->path);
+	free(server);
 
 	return status;
 }

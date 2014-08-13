@@ -129,6 +129,9 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 		status = discovery_start(activator->discovery);
 	}
 
+	// We can release the scope, as properties_set makes a copy of the key & value...
+	free(scope);
+
 	return status;
 }
 
@@ -159,6 +162,8 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt contex
 	activator->endpointListenerService = NULL;
 	activator->discovery = NULL;
 	activator->context = NULL;
+
+	free(activator);
 
 	return status;
 }

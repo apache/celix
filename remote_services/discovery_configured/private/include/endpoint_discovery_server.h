@@ -45,10 +45,10 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 /**
  * Stops and destroys a given instance of an endpoint discovery server.
  *
- * @param server [out] the pointer to the instance to destroy.
+ * @param server [in] the pointer to the instance to destroy.
  * @return CELIX_SUCCESS when successful.
  */
-celix_status_t endpointDiscoveryServer_destroy(endpoint_discovery_server_pt *server);
+celix_status_t endpointDiscoveryServer_destroy(endpoint_discovery_server_pt server);
 
 /**
  * Adds a given endpoint description to expose through the given discovery server.

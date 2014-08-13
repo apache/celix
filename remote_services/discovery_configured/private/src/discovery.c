@@ -100,12 +100,12 @@ celix_status_t discovery_start(discovery_pt discovery) {
 celix_status_t discovery_stop(discovery_pt discovery) {
 	celix_status_t status;
 
-	status = endpointDiscoveryServer_destroy(&discovery->server);
+	status = endpointDiscoveryServer_destroy(discovery->server);
 	if (status != CELIX_SUCCESS) {
 		return CELIX_BUNDLE_EXCEPTION;
 	}
 
-	status = endpointDiscoveryPoller_destroy(&discovery->poller);
+	status = endpointDiscoveryPoller_destroy(discovery->poller);
 	if (status != CELIX_SUCCESS) {
 		return CELIX_BUNDLE_EXCEPTION;
 	}

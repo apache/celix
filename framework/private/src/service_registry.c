@@ -254,7 +254,9 @@ celix_status_t serviceRegistry_unregisterService(service_registry_pt registry, b
 		}
 		arrayList_destroy(clients);
 
-		// Disabled for now, since a reference can already be destroyed here.
+		// Disabled since a reference normally already is destroyed here.
+		// Compared to Java OSGi, this might result in crashes, since the references for the service are all destroyed
+		// Anyone still holding a pointer to such a reference is in risk, hence, always use a service tracker or similar!
 //		serviceReference_invalidate(reference);
 	}
 	serviceRegistration_invalidate(registration);

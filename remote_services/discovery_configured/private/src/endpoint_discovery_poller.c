@@ -124,23 +124,23 @@ celix_status_t endpointDiscoveryPoller_create(discovery_pt discovery, bundle_con
 /**
  * Destroys and frees up memory for a given endpoint_discovery_poller struct.
  */
-celix_status_t endpointDiscoveryPoller_destroy(endpoint_discovery_poller_pt *poller) {
+celix_status_t endpointDiscoveryPoller_destroy(endpoint_discovery_poller_pt poller) {
     celix_status_t status = CELIX_SUCCESS;
 
-    (*poller)->running = false;
+    poller->running = false;
 
-    celixThread_join((*poller)->pollerThread, NULL);
+    celixThread_join(poller->pollerThread, NULL);
 
-    status = celixThreadMutex_lock(&(*poller)->pollerLock);
+    status = celixThreadMutex_lock(&poller->pollerLock);
     if (status != CELIX_SUCCESS) {
         return CELIX_BUNDLE_EXCEPTION;
     }
 
-	hashMap_destroy((*poller)->entries, true, false);
+	hashMap_destroy(poller->entries, true, false);
 
-    status = celixThreadMutex_unlock(&(*poller)->pollerLock);
+    status = celixThreadMutex_unlock(&poller->pollerLock);
 
-    free(*poller);
+    free(poller);
 
 	return status;
 }
