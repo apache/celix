@@ -31,7 +31,8 @@ static const char * const OSGI_RSA_SERVICE_EXPORTED_INTERFACES = "service.export
 static const char * const OSGI_RSA_ENDPOINT_FRAMEWORK_UUID = "endpoint.framework.uuid";
 static const char * const OSGI_RSA_ENDPOINT_SERVICE_ID = "endpoint.service.id";
 static const char * const OSGI_RSA_ENDPOINT_ID = "endpoint.id";
-
+static const char * const OSGI_RSA_SERVICE_IMPORTED = "service.imported";
+static const char * const OSGI_RSA_SERVICE_IMPORTED_CONFIGS = "service.imported.configs";
 static const char * const OSGI_RSA_SERVICE_LOCATION = "service.location";
 
 #endif /* REMOTE_CONSTANTS_H_ */

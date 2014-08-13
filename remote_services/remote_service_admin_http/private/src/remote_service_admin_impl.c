@@ -54,17 +54,20 @@ struct get {
     int size;
 };
 
-static const char *ajax_reply_start =
+static const char *response_headers =
   "HTTP/1.1 200 OK\r\n"
   "Cache: no-cache\r\n"
-  "Content-Type: application/x-javascript\r\n"
+  "Content-Type: application/json\r\n"
   "\r\n";
 
+// TODO do we need to specify a non-Amdatu specific configuration type?!
+static const char * const CONFIGURATION_TYPE = "org.amdatu.remote.admin.http";
+static const char * const ENDPOINT_URL = "org.amdatu.remote.admin.http.url";
 
 static const char *DEFAULT_PORT = "8888";
 
-//void *remoteServiceAdmin_callback(enum mg_event event, struct mg_connection *conn, const struct mg_request_info *request_info);
 static int remoteServiceAdmin_callback(struct mg_connection *conn);
+
 celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin, export_registration_pt registration, service_reference_pt reference, char *interface);
 celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, properties_pt serviceProperties, properties_pt endpointProperties, char *interface, endpoint_description_pt *description);
 static celix_status_t constructServiceUrl(remote_service_admin_pt admin, char *service, char **serviceUrl);
@@ -149,12 +152,13 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin) {
 //void *remoteServiceAdmin_callback(enum mg_event event, struct mg_connection *conn, const struct mg_request_info *request_info) {
 
 static int remoteServiceAdmin_callback(struct mg_connection *conn) {
+	int result = 0; // zero means: let civetweb handle it further, any non-zero value means it is handled by us...
+
 	const struct mg_request_info *request_info = mg_get_request_info(conn);
 	if (request_info->uri != NULL) {
-		printf("REMOTE_SERVICE_ADMIN: Handle request: %s\n", request_info->uri);
 		remote_service_admin_pt rsa = request_info->user_data;
 
-		if (strncmp(request_info->uri, "/service/", 9) == 0) {
+		if (strncmp(request_info->uri, "/service/", 9) == 0 && strcmp("POST", request_info->request_method) == 0) {
 			// uri = /services/myservice/call
 			const char *uri = request_info->uri;
 			// rest = myservice/call
@@ -167,18 +171,6 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
 			strncpy(service, rest, pos);
 			service[pos] = '\0';
 
-			printf("Got service %s, interfaceStart is %s and callStart is %s\n", service, interfaceStart, callStart);
-
-//			char *request = callStart+1;
-
-			const char *lengthStr = mg_get_header(conn, (const char *) "Content-Length");
-			int datalength = apr_atoi64(lengthStr);
-			char data[datalength+1];
-			mg_read(conn, data, datalength);
-			data[datalength] = '\0';
-
-			printf("%s\n", data);
-
 			hash_map_iterator_pt iter = hashMapIterator_create(rsa->exportedServices);
 			while (hashMapIterator_hasNext(iter)) {
 				hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
@@ -188,12 +180,22 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
 					export_registration_pt export = arrayList_get(exports, expIt);
 					long serviceId = atol(service);
 					if (serviceId == export->endpointDescription->serviceId) {
-						char *reply = NULL;
-						export->endpoint->handleRequest(export->endpoint->endpoint, data, &reply);
-						if (reply != NULL) {
-							mg_printf(conn, "%s", ajax_reply_start);
-							mg_printf(conn, "%s", reply);
+						uint64_t datalength = request_info->content_length;
+						char* data = malloc(datalength + 1);
+						mg_read(conn, data, datalength);
+						data[datalength] = '\0';
+
+						char *response = NULL;
+						export->endpoint->handleRequest(export->endpoint->endpoint, data, &response);
+
+						if (response != NULL) {
+							mg_write(conn, response_headers, strlen(response_headers));
+							mg_write(conn, response, strlen(response));
+
+							result = 1;
 						}
+
+						free(data);
 					}
 				}
 			}
@@ -201,7 +203,7 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
 		}
 	}
 
-	return 1;
+	return result;
 }
 
 celix_status_t remoteServiceAdmin_handleRequest(remote_service_admin_pt rsa, char *service, char *data, char **reply) {
@@ -341,22 +343,25 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
 
 	char *serviceId = (char *) hashMap_remove(endpointProperties, (void *) OSGI_FRAMEWORK_SERVICE_ID);
 	char *uuid = NULL;
-	bundleContext_getProperty(admin->context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
-	properties_set(endpointProperties, (char *) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
-	properties_set(endpointProperties, (char *) OSGI_FRAMEWORK_OBJECTCLASS, interface);
-	properties_set(endpointProperties, (char *) OSGI_RSA_ENDPOINT_SERVICE_ID, serviceId);
-	properties_set(endpointProperties, "service.imported", "true");
-
-//    properties_set(endpointProperties, ".ars.path", buf);
-//    properties_set(endpointProperties, ".ars.port", admin->port);
 
 	char buf[512];
 	sprintf(buf, "/service/%s/%s", serviceId, interface);
     char *url = NULL;
     constructServiceUrl(admin,buf, &url);
-    properties_set(endpointProperties, ".ars.alias", url);
 
-    properties_set(endpointProperties, "service.imported.configs", ".ars");
+	uuid_t endpoint_uid;
+	uuid_generate(endpoint_uid);
+	char endpoint_uuid[37];
+	uuid_unparse_lower(endpoint_uid, endpoint_uuid);
+
+	bundleContext_getProperty(admin->context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
+	properties_set(endpointProperties, (char*) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
+	properties_set(endpointProperties, (char*) OSGI_FRAMEWORK_OBJECTCLASS, interface);
+	properties_set(endpointProperties, (char*) OSGI_RSA_ENDPOINT_SERVICE_ID, serviceId);
+	properties_set(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID, endpoint_uuid);
+	properties_set(endpointProperties, (char*) OSGI_RSA_SERVICE_IMPORTED, "true");
+    properties_set(endpointProperties, (char*) OSGI_RSA_SERVICE_IMPORTED_CONFIGS, (char*) CONFIGURATION_TYPE);
+    properties_set(endpointProperties, (char*) ENDPOINT_URL, url);
 
 	endpoint_description_pt endpointDescription = NULL;
 	remoteServiceAdmin_createEndpointDescription(admin, serviceProperties, endpointProperties, interface, &endpointDescription);
@@ -396,8 +401,6 @@ static celix_status_t constructServiceUrl(remote_service_admin_pt admin, char *s
 	return status;
 }
 
-
-
 celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, properties_pt serviceProperties,
 		properties_pt endpointProperties, char *interface, endpoint_description_pt *description) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -409,22 +412,11 @@ celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin
 	if (!*description) {
 		status = CELIX_ENOMEM;
 	} else {
-		char *uuid = NULL;
-		status = bundleContext_getProperty(admin->context, (char *)OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
-		if (status == CELIX_SUCCESS) {
-//		    char uuid[37];
-//		    uuid_t uid;
-//            uuid_generate(uid);
-//            uuid_unparse(uid, uuid);
-//
-//            printf("%s\n", uuid);
-
-			(*description)->properties = endpointProperties;
-			(*description)->frameworkUUID = uuid;
-			(*description)->serviceId = apr_atoi64(properties_get(serviceProperties, (char *) OSGI_FRAMEWORK_SERVICE_ID));
-			(*description)->id = apr_pstrdup(childPool, properties_get(serviceProperties, (char *) OSGI_FRAMEWORK_SERVICE_ID)); // Should be uuid
-			(*description)->service = interface;
-		}
+		(*description)->id = properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID);
+		(*description)->serviceId = apr_atoi64(properties_get(serviceProperties, (char*) OSGI_FRAMEWORK_SERVICE_ID));
+		(*description)->frameworkUUID = properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
+		(*description)->service = interface;
+		(*description)->properties = endpointProperties;
 	}
 
 	return status;
@@ -506,8 +498,6 @@ celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_pt 
 }
 
 
-
-
 celix_status_t remoteServiceAdmin_send(remote_service_admin_pt rsa, endpoint_description_pt endpointDescription, char *request, char **reply, int* replyStatus) {
 
     struct post post;
@@ -518,8 +508,7 @@ celix_status_t remoteServiceAdmin_send(remote_service_admin_pt rsa, endpoint_des
     get.size = 0;
     get.writeptr = malloc(1);
 
-    char *serviceUrl = properties_get(endpointDescription->properties, ".ars.alias");
-    printf("CALCULATOR_PROXY: URL: %s\n", serviceUrl);
+    char *serviceUrl = properties_get(endpointDescription->properties, (char*) ENDPOINT_URL);
     char *url = apr_pstrcat(rsa->pool, serviceUrl, NULL);
 
     celix_status_t status = CELIX_SUCCESS;
@@ -540,10 +529,10 @@ celix_status_t remoteServiceAdmin_send(remote_service_admin_pt rsa, endpoint_des
         res = curl_easy_perform(curl);
         curl_easy_cleanup(curl);
 
-        printf("CALCULATOR_PROXY: Data read: \"%s\" %d\n", get.writeptr, res);
         *reply = get.writeptr;
-
+        *replyStatus = res;
     }
+
     return status;
 }
 

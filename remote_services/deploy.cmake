@@ -17,13 +17,20 @@
 is_enabled(REMOTE_SERVICE_ADMIN)
 if (REMOTE_SERVICE_ADMIN)
 	deploy("remote-services-bj" BUNDLES discovery_bonjour topology_manager remote_service_admin_http calculator shell shell_tui log_service log_writer 
-	                            ENDPOINTS org.example.api.Calculator_endpoint)
+	                            ENDPOINTS org.apache.celix.calc.api.Calculator_endpoint)
 	deploy("remote-services-bj-client" BUNDLES topology_manager remote_service_admin_http shell shell_tui log_service log_writer calculator_shell discovery_bonjour
-	                                   ENDPOINTS org.example.api.Calculator_proxy)
-	                                   
-	deploy("remote-services" BUNDLES discovery_slp topology_manager remote_service_admin_http calculator org.example.api.Calculator_endpoint shell shell_tui log_service log_writer)
-	deploy("remote-services-client" BUNDLES topology_manager remote_service_admin_http org.example.api.Calculator_proxy shell shell_tui log_service log_writer calculator_shell discovery_slp)
-	
+	                                   ENDPOINTS org.apache.celix.calc.api.Calculator_proxy)
+
+	deploy("remote-services-slp" BUNDLES discovery_slp topology_manager remote_service_admin_http calculator shell shell_tui log_service log_writer
+	                             ENDPOINTS org.apache.celix.calc.api.Calculator_endpoint)
+	deploy("remote-services-slp-client" BUNDLES topology_manager remote_service_admin_http shell shell_tui log_service log_writer calculator_shell discovery_slp
+	                                    ENDPOINTS org.apache.celix.calc.api.Calculator_proxy)
+
+    deploy("remote-services-cfg" BUNDLES discovery_configured topology_manager remote_service_admin_http calculator shell shell_tui log_service log_writer
+                                 ENDPOINTS org.apache.celix.calc.api.Calculator_endpoint)
+    deploy("remote-services-cfg-client" BUNDLES topology_manager remote_service_admin_http shell shell_tui log_service log_writer calculator_shell discovery_configured
+                                        ENDPOINTS org.apache.celix.calc.api.Calculator_proxy)
+
 	#TODO for remote-service-client the discovery should be added as last. If this is not done, 
 	#discovery will discover services before the topology manager is registered as 
 	#endpoint listener and services will be lost. This needs further study.
@@ -34,8 +41,8 @@ if (RSA_BUNDLES_REMOTE_SERVICE_ADMIN_SHM)
     is_enabled(RSA_BUNDLES_DISCOVERY_SHM)
     if (RSA_BUNDLES_DISCOVERY_SHM)
         deploy("remote-services-shm" BUNDLES discovery_shm topology_manager remote_service_admin_shm calculator shell shell_tui log_service log_writer 
-                                     ENDPOINTS org.example.api.Calculator_endpoint)
+                                     ENDPOINTS org.apache.celix.calc.api.Calculator_endpoint)
         deploy("remote-services-shm-client" BUNDLES topology_manager remote_service_admin_shm shell shell_tui log_service log_writer calculator_shell discovery_shm
-                                            ENDPOINTS org.example.api.Calculator_proxy)
+                                            ENDPOINTS org.apache.celix.calc.api.Calculator_proxy)
     endif (RSA_BUNDLES_DISCOVERY_SHM)
 endif (RSA_BUNDLES_REMOTE_SERVICE_ADMIN_SHM)

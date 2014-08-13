@@ -40,6 +40,7 @@ FRAMEWORK_EXPORT celix_status_t serviceTracker_createWithFilter(bundle_context_p
 
 FRAMEWORK_EXPORT celix_status_t serviceTracker_open(service_tracker_pt tracker);
 FRAMEWORK_EXPORT celix_status_t serviceTracker_close(service_tracker_pt tracker);
+FRAMEWORK_EXPORT celix_status_t serviceTracker_destroy(service_tracker_pt tracker);
 
 FRAMEWORK_EXPORT service_reference_pt serviceTracker_getServiceReference(service_tracker_pt tracker);
 FRAMEWORK_EXPORT array_list_pt serviceTracker_getServiceReferences(service_tracker_pt tracker);

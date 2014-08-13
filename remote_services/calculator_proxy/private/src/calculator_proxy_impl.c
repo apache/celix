@@ -50,7 +50,6 @@ celix_status_t calculatorProxy_create(apr_pool_t *pool, bundle_context_pt contex
 		(*calculator)->endpoint = NULL;
 		(*calculator)->sendToCallback=NULL;
 		(*calculator)->sendToHandler=NULL;
-
 	}
 
 	return status;
@@ -65,21 +64,27 @@ celix_status_t calculatorProxy_add(calculator_pt calculator, double a, double b,
 		root = json_pack("{s:s, s:[ff]}", "m", "add(DD)D", "a", a, b);
 
 		char *data = json_dumps(root, 0);
-		char *reply = calloc(128, sizeof(char));
+		char *reply = malloc(256);
 		int replyStatus = 0;
-
-		printf("Send: %s\n", data);
 
 		calculator->sendToCallback(calculator->sendToHandler, calculator->endpoint, data, &reply, &replyStatus);
 
 		if (status == CELIX_SUCCESS) {
-			json_error_t jsonError;
-			json_t *js_reply = json_loads(reply, 0, &jsonError);
-            json_unpack(js_reply, "[f]", result);
+			json_error_t error;
+			json_t *js_reply = json_loads(reply, JSON_DECODE_ANY, &error);
+			if (js_reply) {
+				json_unpack(js_reply, "f", result);
+			} else {
+				printf("PROXY: got error '%s' for '%s'\n", error.text, reply);
+				status = CELIX_BUNDLE_EXCEPTION;
+			}
 		}
 
+		free(data);
+		free(reply);
 	} else {
 		printf("CALCULATOR_PROXY: No endpoint information available\n");
+		status = CELIX_BUNDLE_EXCEPTION;
 	}
 
 	return status;
@@ -92,18 +97,27 @@ celix_status_t calculatorProxy_sub(calculator_pt calculator, double a, double b,
 		root = json_pack("{s:s, s:[ff]}", "m", "sub(DD)D", "a", a, b);
 
 		char *data = json_dumps(root, 0);
-		char *reply = calloc(128, sizeof(char));
+		char *reply = malloc(128);
 		int replyStatus = 0;
 
 		calculator->sendToCallback(calculator->sendToHandler, calculator->endpoint, data, &reply, &replyStatus);
 
 		if (status == CELIX_SUCCESS) {
-			json_error_t jsonError;
-			json_t *js_reply = json_loads(reply, 0, &jsonError);
-			json_unpack(js_reply, "[f]", result);
+			json_error_t error;
+			json_t *js_reply = json_loads(reply, JSON_DECODE_ANY, &error);
+			if (js_reply) {
+				json_unpack(js_reply, "f", result);
+			} else {
+				printf("PROXY: got error '%s' for '%s'\n", error.text, reply);
+				status = CELIX_BUNDLE_EXCEPTION;
+			}
 		}
+
+		free(data);
+		free(reply);
 	} else {
 		printf("CALCULATOR_PROXY: No endpoint information available\n");
+		status = CELIX_BUNDLE_EXCEPTION;
 	}
 
 	return status;
@@ -116,18 +130,27 @@ celix_status_t calculatorProxy_sqrt(calculator_pt calculator, double a, double *
 		root = json_pack("{s:s, s:[f]}", "m", "sqrt(D)D", "a", a);
 
 		char *data = json_dumps(root, 0);
-		char *reply = calloc(128, sizeof(char));
+		char *reply = malloc(128);
 		int replyStatus;
 
 		calculator->sendToCallback(calculator->sendToHandler, calculator->endpoint, data, &reply, &replyStatus);
 
 		if (status == CELIX_SUCCESS) {
-			json_error_t jsonError;
-			json_t *js_reply = json_loads(reply, 0, &jsonError);
-			json_unpack(js_reply, "[f]", result);
+			json_error_t error;
+			json_t *js_reply = json_loads(reply, JSON_DECODE_ANY, &error);
+			if (js_reply) {
+				json_unpack(js_reply, "f", result);
+			} else {
+				printf("PROXY: got error '%s' for '%s'\n", error.text, reply);
+				status = CELIX_BUNDLE_EXCEPTION;
+			}
 		}
+
+		free(data);
+		free(reply);
 	} else {
 		printf("CALCULATOR_PROXY: No endpoint information available\n");
+		status = CELIX_BUNDLE_EXCEPTION;
 	}
 
 	return status;

@@ -25,10 +25,14 @@
  */
 
 #include <stdbool.h>
-#include <libxml/xmlreader.h>
 #include <string.h>
+#include <libxml/xmlreader.h>
+
+#include "constants.h"
+#include "remote_constants.h"
 
 #include "endpoint_description.h"
+#include "endpoint_descriptor_common.h"
 #include "endpoint_descriptor_reader.h"
 #include "properties.h"
 #include "utils.h"
@@ -36,21 +40,6 @@
 struct endpoint_descriptor_reader {
     xmlTextReaderPtr reader;
 };
-
-typedef enum {
-    VALUE_TYPE_STRING,
-    VALUE_TYPE_LONG,
-    VALUE_TYPE_DOUBLE,
-    VALUE_TYPE_FLOAT,
-    VALUE_TYPE_INTEGER,
-    VALUE_TYPE_BYTE,
-    VALUE_TYPE_CHAR,
-    VALUE_TYPE_BOOLEAN,
-    VALUE_TYPE_SHORT,
-} valueType;
-
-
-static valueType getValueType(char *name);
 
 celix_status_t endpointDescriptorReader_create(endpoint_descriptor_reader_pt *reader) {
     celix_status_t status = CELIX_SUCCESS;
@@ -73,6 +62,28 @@ celix_status_t endpointDescriptorReader_destroy(endpoint_descriptor_reader_pt re
     return status;
 }
 
+void endpointDescriptorReader_addSingleValuedProperty(properties_pt properties, const xmlChar* name, const xmlChar* value) {
+	properties_set(properties, strdup((char *) name), strdup((char *) value));
+}
+
+void endpointDescriptorReader_addMultiValuedProperty(properties_pt properties, const xmlChar* name, array_list_pt values) {
+	char *value = malloc(256);
+	if (value) {
+		int i, size = arrayList_size(values);
+		for (i = 0; i < size; i++) {
+			char* item = (char*) arrayList_get(values, i);
+			if (i > 0) {
+				value = strcat(value, ",");
+			}
+			value = strcat(value, item);
+		}
+
+		properties_set(properties, strdup((char *) name), strdup(value));
+
+		free(value);
+	}
+}
+
 celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader_pt reader, char *document, array_list_pt *endpoints) {
     celix_status_t status = CELIX_SUCCESS;
 
@@ -88,26 +99,32 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
         bool inValue = false;
 
         const xmlChar *propertyName = NULL;
-        const xmlChar *propertyType = NULL;
         const xmlChar *propertyValue = NULL;
-        const xmlChar *value = NULL;
+        valueType propertyType = VALUE_TYPE_STRING;
         xmlChar *valueBuffer = xmlMalloc(256);
         valueBuffer[0] = '\0';
         unsigned int currentSize = 255;
 
-//        array_list_pt propertyValues = NULL;
-//        arrayList_create(&propertyValues);
+        array_list_pt propertyValues = NULL;
+        arrayList_create(&propertyValues);
 
         array_list_pt endpointDescriptions = NULL;
-        arrayList_create(&endpointDescriptions);
+        if (*endpoints) {
+        	// use the given arraylist...
+        	endpointDescriptions = *endpoints;
+        } else {
+			arrayList_create(&endpointDescriptions);
+			// return the read endpoints...
+			*endpoints = endpointDescriptions;
+        }
 
         properties_pt endpointProperties = NULL;
 
         int read = xmlTextReaderRead(reader->reader);
-        while (read == 1) {
+        while (read == XML_TEXTREADER_MODE_INTERACTIVE) {
             int type = xmlTextReaderNodeType(reader->reader);
 
-            if (type == 1) {
+            if (type == XML_READER_TYPE_ELEMENT) {
                 const xmlChar *localname = xmlTextReaderConstLocalName(reader->reader);
 
                 if (inXml) {
@@ -129,113 +146,92 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
                     }
 
                     valueBuffer = xmlStrcat(valueBuffer, BAD_CAST ">");
-//                    read = xmlTextReaderRead(reader);
-//                    continue;
-                } else if (xmlStrcmp(localname, BAD_CAST "endpoint-description") == 0) {
+                } else if (xmlStrcmp(localname, ENDPOINT_DESCRIPTION) == 0) {
                     endpointProperties = properties_create();
-                } else if (xmlStrcmp(localname, BAD_CAST "property") == 0) {
+                } else if (xmlStrcmp(localname, PROPERTY) == 0) {
                     inProperty = true;
-                    propertyName = xmlTextReaderGetAttribute(reader->reader, BAD_CAST "name");
-//                    propertyType = getValueType((const char *) xmlTextReaderGetAttribute(reader, "value-type"));
-//                    propertyType = xmlTextReaderGetAttribute(reader->reader, BAD_CAST "value-type");
-                    propertyValue = xmlTextReaderGetAttribute(reader->reader, BAD_CAST "value");
-//                    arrayList_clear(propertyValues);
+
+                    propertyName = xmlTextReaderGetAttribute(reader->reader, NAME);
+                    propertyValue = xmlTextReaderGetAttribute(reader->reader, VALUE);
+                    xmlChar* type = xmlTextReaderGetAttribute(reader->reader, VALUE_TYPE);
+                    propertyType = valueTypeFromString((char*) type);
+                    arrayList_clear(propertyValues);
 
                     if (xmlTextReaderIsEmptyElement(reader->reader)) {
                         inProperty = false;
 
                         if (propertyValue != NULL) {
-                            printf("Only string support\n");
-    //                        m_endpointProperties.put(m_propertyName, m_propertyType.parse(m_propertyValue));
-                            properties_set(endpointProperties, (char *) propertyName, (char *) propertyValue);
+                        	if (propertyType != VALUE_TYPE_STRING && strcmp(OSGI_RSA_ENDPOINT_SERVICE_ID, (char*) propertyName)) {
+                        		printf("ENDPOINT_DESCRIPTOR_READER: Only single-valued string supported for %s\n", propertyName);
+                        	}
+                        	endpointDescriptorReader_addSingleValuedProperty(endpointProperties, propertyName, propertyValue);
                         }
 
-                        free((void *) propertyName);
-                        free((void *) propertyValue);
+                        xmlFree((void *) propertyName);
+                        xmlFree((void *) propertyValue);
+                        xmlFree((void *) type);
                     }
-
-                    //                    read = xmlTextReaderRead(reader);
-//                    continue;
                 } else {
-                    valueBuffer[0] = '\0';
-                    value = NULL;
-                    inArray |= inProperty && xmlStrcmp(localname, BAD_CAST "array") == 0;
-                    inList |= inProperty && xmlStrcmp(localname, BAD_CAST "list") == 0;
-                    inSet |= inProperty && xmlStrcmp(localname, BAD_CAST "set") == 0;
-                    inXml |= inProperty && xmlStrcmp(localname, BAD_CAST "xml") == 0;
-                    inValue |= inProperty && xmlStrcmp(localname, BAD_CAST "value") == 0;
-                }
-            }
-
-            if (type == 15) {
-                const xmlChar *localname = xmlTextReaderConstLocalName(reader->reader);
+                    valueBuffer[0] = 0;
+                    inArray |= inProperty && xmlStrcmp(localname, ARRAY) == 0;
+                    inList |= inProperty && xmlStrcmp(localname, LIST) == 0;
+                    inSet |= inProperty && xmlStrcmp(localname, SET) == 0;
+                    inXml |= inProperty && xmlStrcmp(localname, XML) == 0;
+                    inValue |= inProperty && xmlStrcmp(localname, VALUE) == 0;
+				}
+			} else if (type == XML_READER_TYPE_END_ELEMENT) {
+				const xmlChar *localname = xmlTextReaderConstLocalName(reader->reader);
 
                 if (inXml) {
-                    if (xmlStrcmp(localname, BAD_CAST "xml") != 0)  {
-                        xmlStrcmp(valueBuffer, BAD_CAST "</");
-                        xmlStrcmp(valueBuffer, localname);
-                        xmlStrcmp(valueBuffer, BAD_CAST ">");
+                    if (xmlStrcmp(localname, XML) != 0)  {
+                    	valueBuffer = xmlStrcat(valueBuffer, BAD_CAST "</");
+                    	valueBuffer = xmlStrcat(valueBuffer, localname);
+                    	valueBuffer = xmlStrcat(valueBuffer, BAD_CAST ">");
                     }
                     else {
                         inXml = false;
                     }
-//                    read = xmlTextReaderRead(reader);
-//                    continue;
-                } else if (xmlStrcmp(localname, BAD_CAST "endpoint-description") == 0) {
+                } else if (xmlStrcmp(localname, ENDPOINT_DESCRIPTION) == 0) {
                     endpoint_description_pt endpointDescription = NULL;
+                    // Completely parsed endpoint description, add it to our list of results...
                     endpointDescription_create(endpointProperties, &endpointDescription);
                     arrayList_add(endpointDescriptions, endpointDescription);
-//                    endpointProperties = properties_create();
-//                    hashMap_clear(endpointProperties, false, false);
-//                    read = xmlTextReaderRead(reader);
-//                    continue;
-                } else if (xmlStrcmp(localname, BAD_CAST "property") == 0) {
+
+                    endpointProperties = properties_create();
+                } else if (xmlStrcmp(localname, PROPERTY) == 0) {
                     inProperty = false;
 
-                    if (inArray) {
-                        printf("No array support\n");
-//                        m_endpointProperties.put(m_propertyName, getPropertyValuesArray());
-                    }
-                    else if (inList) {
-                        printf("No list support\n");
-//                        m_endpointProperties.put(m_propertyName, getPropertyValuesList());
-                    }
-                    else if (inSet) {
-                        printf("No set support\n");
-//                        m_endpointProperties.put(m_propertyName, getPropertyValuesSet());
+                    if (inArray || inList || inSet) {
+						endpointDescriptorReader_addMultiValuedProperty(endpointProperties, propertyName, propertyValues);
                     }
                     else if (propertyValue != NULL) {
-                        printf("Only string support\n");
-//                        m_endpointProperties.put(m_propertyName, m_propertyType.parse(m_propertyValue));
-                        properties_set(endpointProperties, (char *) propertyName, (char *) propertyValue);
+                    	if (propertyType != VALUE_TYPE_STRING) {
+                    		printf("ENDPOINT_DESCRIPTOR_READER: Only string support for %s\n", propertyName);
+                    	}
+                    	endpointDescriptorReader_addSingleValuedProperty(endpointProperties, propertyName, propertyValue);
 
-                        free((void *) propertyValue);
+                        xmlFree((void *) propertyValue);
                     }
                     else {
-                        properties_set(endpointProperties, (char *) propertyName, (char *) valueBuffer);
+                    	endpointDescriptorReader_addSingleValuedProperty(endpointProperties, propertyName, valueBuffer);
                     }
 
-                    free((void *) propertyName);
+                    xmlFree((void *) propertyName);
+                    arrayList_clear(propertyValues);
 
+                    propertyType = VALUE_TYPE_STRING;
                     inArray = false;
                     inList = false;
                     inSet = false;
                     inXml = false;
-//                    read = xmlTextReaderRead(reader);
-//                    continue;
-                } else if (xmlStrcmp(localname, BAD_CAST "value") == 0) {
-//                    m_propertyValues.add(m_propertyType.parse(m_valueBuffer.toString()));
-//                    arrayList_add(propertyValues, valueBuffer);
+                } else if (xmlStrcmp(localname, VALUE) == 0) {
+                    arrayList_add(propertyValues, strdup((char*) valueBuffer));
+                    valueBuffer[0] = 0;
                     inValue = false;
-//                    read = xmlTextReaderRead(reader);
-//                    continue;
                 }
-            }
-
-            if (type == 3) {
+            } else if (type == XML_READER_TYPE_TEXT) {
                 if (inValue || inXml) {
                     const xmlChar *value = xmlTextReaderValue(reader->reader);
-                    printf("Value: %s\n", value);
                     valueBuffer = xmlStrcat(valueBuffer, value);
                     xmlFree((void *)value);
                 }
@@ -243,61 +239,61 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
 
             read = xmlTextReaderRead(reader->reader);
         }
-        *endpoints = endpointDescriptions;
 
-//        arrayList_destroy(propertyValues);
-        free(valueBuffer);
+        arrayList_destroy(propertyValues);
+        xmlFree(valueBuffer);
+
         xmlFreeTextReader(reader->reader);
     }
 
     return status;
 }
 
-//static valueType getValueType(char *name) {
-//    if (name == NULL || strcmp(name, "") == 0) {
-//        return VALUE_TYPE_STRING;
-//    }
-//    if (strcmp(name, "String") == 0) {
-//        return VALUE_TYPE_STRING;
-//    } else if (strcmp(name, "long") == 0 || strcmp(name, "Long") == 0) {
-//        return VALUE_TYPE_LONG;
-//    } else if (strcmp(name, "double") == 0 || strcmp(name, "Double") == 0) {
-//        return VALUE_TYPE_DOUBLE;
-//    } else if (strcmp(name, "float") == 0 || strcmp(name, "Float") == 0) {
-//        return VALUE_TYPE_FLOAT;
-//    } else if (strcmp(name, "integer") == 0 || strcmp(name, "Integer") == 0) {
-//        return VALUE_TYPE_INTEGER;
-//    } else if (strcmp(name, "short") == 0 || strcmp(name, "Short") == 0) {
-//        return VALUE_TYPE_SHORT;
-//    } else if (strcmp(name, "byte") == 0 || strcmp(name, "Byte") == 0) {
-//        return VALUE_TYPE_BYTE;
-//    } else if (strcmp(name, "char") == 0 || strcmp(name, "Character") == 0) {
-//        return VALUE_TYPE_CHAR;
-//    } else if (strcmp(name, "boolean") == 0 || strcmp(name, "Boolean") == 0) {
-//        return VALUE_TYPE_BOOLEAN;
-//    } else {
-//        return VALUE_TYPE_STRING;
-//    }
-//}
+static valueType valueTypeFromString(char *name) {
+    if (name == NULL || strcmp(name, "") == 0 || strcmp(name, "String") == 0) {
+        return VALUE_TYPE_STRING;
+    } else if (strcmp(name, "long") == 0 || strcmp(name, "Long") == 0) {
+        return VALUE_TYPE_LONG;
+    } else if (strcmp(name, "double") == 0 || strcmp(name, "Double") == 0) {
+        return VALUE_TYPE_DOUBLE;
+    } else if (strcmp(name, "float") == 0 || strcmp(name, "Float") == 0) {
+        return VALUE_TYPE_FLOAT;
+    } else if (strcmp(name, "int") == 0 || strcmp(name, "integer") == 0 || strcmp(name, "Integer") == 0) {
+        return VALUE_TYPE_INTEGER;
+    } else if (strcmp(name, "short") == 0 || strcmp(name, "Short") == 0) {
+        return VALUE_TYPE_SHORT;
+    } else if (strcmp(name, "byte") == 0 || strcmp(name, "Byte") == 0) {
+        return VALUE_TYPE_BYTE;
+    } else if (strcmp(name, "char") == 0 || strcmp(name, "Character") == 0) {
+        return VALUE_TYPE_CHAR;
+    } else if (strcmp(name, "boolean") == 0 || strcmp(name, "Boolean") == 0) {
+        return VALUE_TYPE_BOOLEAN;
+    } else {
+        return VALUE_TYPE_STRING;
+    }
+}
 
+#ifdef RSA_ENDPOINT_TEST_READER
 int main() {
     array_list_pt list = NULL;
     endpoint_descriptor_reader_pt reader = NULL;
-    endpointDescriptorReader_create(&reader);
 
     char *doc = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
 "<endpoint-descriptions xmlns=\"http://www.osgi.org/xmlns/rsa/v1.0.0\">"
     "<endpoint-description>"
+    	"<property name=\"endpoint.service.id\" value-type=\"long\" value=\"6\"/>"
+		"<property name=\"endpoint.framework.uuid\" value=\"2983D849-93B1-4C2C-AC6D-5BCDA93ACB96\"/>"
         "<property name=\"service.intents\">"
             "<list>"
                 "<value>SOAP</value>"
                 "<value>HTTP</value>"
             "</list>"
         "</property>"
-        "<property name=\"endpoint.id\" value=\"http://ws.acme.com:9000/hello\" />"
-        "<property name=\"objectClass\" value=\"com.acme.Foo\" />"
+        "<property name=\"endpoint.id\" value=\"11111111-1111-1111-1111-111111111111\" />"
+        "<property name=\"objectClass\"><array><value>com.acme.Foo</value></array></property>"
         "<property name=\"endpoint.package.version.com.acme\" value=\"4.2\" />"
         "<property name=\"service.imported.configs\" value=\"com.acme\" />"
+    	"<property name=\"service.imported\" value=\"true\"/>"
         "<property name=\"com.acme.ws.xml\">"
             "<xml>"
                 "<config xmlns=\"http://acme.com/defs\">"
@@ -307,44 +303,67 @@ int main() {
             "</xml>"
         "</property>"
     "</endpoint-description>"
-            "<endpoint-description>"
-                    "<property name=\"service.intents\">"
-                        "<list>"
-                            "<value>SOAP</value>"
-                            "<value>HTTP</value>"
-                        "</list>"
-                    "</property>"
-                    "<property name=\"endpoint.id\" value=\"http://ws.acme.com:9000/goodbye\" />"
-                    "<property name=\"objectClass\" value=\"com.acme.Doo\" />"
-                    "<property name=\"endpoint.package.version.com.acme\" value=\"4.2\" />"
-                    "<property name=\"service.imported.configs\" value=\"com.acme\" />"
-                    "<property name=\"com.acme.ws.xml\">"
-                        "<xml>"
-                            "<config xmlns=\"http://acme.com/defs\">"
-                                "<port>1029</port>"
-                                "<host>www.acme.com</host>"
-                            "</config>"
-                        "</xml>"
-                    "</property>"
-                "</endpoint-description>"
-"</endpoint-descriptions>";
+		"<endpoint-description>"
+        	"<property name=\"endpoint.service.id\" value-type=\"long\" value=\"5\"/>"
+    		"<property name=\"endpoint.framework.uuid\" value=\"2983D849-93B1-4C2C-AC6D-5BCDA93ACB96\"/>"
+			"<property name=\"service.intents\">"
+				"<list>"
+					"<value>SOAP</value>"
+					"<value>HTTP</value>"
+				"</list>"
+			"</property>"
+			"<property name=\"endpoint.id\" value=\"22222222-2222-2222-2222-222222222222\" />"
+            "<property name=\"objectClass\"><array><value>com.acme.Bar</value></array></property>"
+			"<property name=\"endpoint.package.version.com.acme\" value=\"4.2\" />"
+			"<property name=\"service.imported.configs\" value=\"com.acme\" />"
+			"<property name=\"com.acme.ws.xml\">"
+				"<xml>"
+					"<config xmlns=\"http://acme.com/defs\">"
+						"<port>1029</port>"
+						"<host>www.acme.com</host>"
+					"</config>"
+				"</xml>"
+			"</property>"
+		"</endpoint-description>"
+	"</endpoint-descriptions>";
 
-    endpointDescriptorReader_parseDocument(reader, doc, &list);
+	endpointDescriptorReader_create(&reader);
 
-    int i;
-    for (i = 0; i < arrayList_size(list); i++) {
-        endpoint_description_pt edp = arrayList_get(list, i);
-        printf("Service: %s\n", edp->service);
-        printf("Id: %s\n", edp->id);
+	endpointDescriptorReader_parseDocument(reader, doc, &list);
 
-        endpointDescription_destroy(edp);
-    }
+	int i;
+	for (i = 0; i < arrayList_size(list); i++) {
+		printf("\nEndpoint description #%d:\n", (i+1));
+		endpoint_description_pt edp = arrayList_get(list, i);
+		printf("Id: %s\n", edp->id);
+		printf("Service Id: %ld\n", edp->serviceId);
+		printf("Framework UUID: %s\n", edp->frameworkUUID);
+		printf("Service: %s\n", edp->service);
 
-    if (list != NULL) {
-        arrayList_destroy(list);
-    }
+		properties_pt props = edp->properties;
+		if (props) {
+			printf("Service properties:\n");
+			hash_map_iterator_pt iter = hashMapIterator_create(props);
+			while (hashMapIterator_hasNext(iter)) {
+				hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
 
-    endpointDescriptorReader_destroy(reader);
+				printf("- %s => '%s'\n", hashMapEntry_getKey(entry), hashMapEntry_getValue(entry));
+			}
+			hashMapIterator_destroy(iter);
+		} else {
+			printf("No service properties...\n");
+		}
+
+
+		endpointDescription_destroy(edp);
+	}
+
+	if (list != NULL) {
+		arrayList_destroy(list);
+	}
+
+	endpointDescriptorReader_destroy(reader);
 
     return 0;
 }
+#endif

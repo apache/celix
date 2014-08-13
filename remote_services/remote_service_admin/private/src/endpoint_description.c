@@ -24,6 +24,7 @@
  *  \copyright  Apache License, Version 2.0
  */
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "celix_errno.h"
 
@@ -31,21 +32,31 @@
 #include "remote_constants.h"
 #include "constants.h"
 
-static celix_status_t endpointDescription_verifyLongProperty(endpoint_description_pt description, char *propertyName, long *longProperty);
+static celix_status_t endpointDescription_verifyLongProperty(properties_pt properties, char *propertyName, long *longProperty);
 
 celix_status_t endpointDescription_create(properties_pt properties, endpoint_description_pt *endpointDescription) {
+	celix_status_t status = CELIX_SUCCESS;
 
     *endpointDescription = malloc(sizeof(**endpointDescription));
 
-    (*endpointDescription)->properties = properties;
+    long serviceId = 0L;
+    status = endpointDescription_verifyLongProperty(properties, (char *) OSGI_RSA_ENDPOINT_SERVICE_ID, &serviceId);
+    if (status != CELIX_SUCCESS) {
+    	return status;
+    }
 
-    (*endpointDescription)->frameworkUUID = NULL;
-    endpointDescription_verifyLongProperty(*endpointDescription, (char *) OSGI_RSA_ENDPOINT_SERVICE_ID, &(*endpointDescription)->serviceId);
+    (*endpointDescription)->properties = properties;
+    (*endpointDescription)->frameworkUUID = properties_get(properties, (char *) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
     (*endpointDescription)->id = properties_get(properties, (char *) OSGI_RSA_ENDPOINT_ID);
     (*endpointDescription)->service = properties_get(properties, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
+    (*endpointDescription)->serviceId = serviceId;
 
+    if (!(*endpointDescription)->frameworkUUID || !(*endpointDescription)->id || !(*endpointDescription)->service) {
+    	printf("ENDPOINT_DESCRIPTION: incomplete description!\n");
+    	status = CELIX_BUNDLE_EXCEPTION;
+    }
 
-    return CELIX_SUCCESS;
+    return status;
 }
 
 celix_status_t endpointDescription_destroy(endpoint_description_pt description) {
@@ -54,10 +65,10 @@ celix_status_t endpointDescription_destroy(endpoint_description_pt description) 
     return CELIX_SUCCESS;
 }
 
-static celix_status_t endpointDescription_verifyLongProperty(endpoint_description_pt description, char *propertyName, long *longProperty) {
+static celix_status_t endpointDescription_verifyLongProperty(properties_pt properties, char *propertyName, long *longProperty) {
     celix_status_t status = CELIX_SUCCESS;
 
-    char *value = properties_get(description->properties, propertyName);
+    char *value = properties_get(properties, propertyName);
     if (value == NULL) {
         *longProperty = 0l;
     } else {

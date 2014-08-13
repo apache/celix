@@ -33,6 +33,8 @@
 typedef struct endpoint_descriptor_reader *endpoint_descriptor_reader_pt;
 
 celix_status_t endpointDescriptorReader_create(endpoint_descriptor_reader_pt *reader);
+celix_status_t endpointDescriptorReader_destroy(endpoint_descriptor_reader_pt reader);
+
 celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader_pt reader, char *document, array_list_pt *endpoints);
 
 

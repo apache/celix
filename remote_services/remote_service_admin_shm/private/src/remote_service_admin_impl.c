@@ -929,7 +929,7 @@ celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin
             (*description)->properties = endpointProperties;
             (*description)->frameworkUUID = uuid;
             (*description)->serviceId = apr_atoi64(properties_get(serviceProperties, (char *) OSGI_FRAMEWORK_SERVICE_ID));
-            (*description)->id = properties_get(endpointProperties, (char *) OSGI_RSA_SERVICE_LOCATION);
+            (*description)->id = properties_get(endpointProperties, (char *) OSGI_RSA_SERVICE_LOCATION); // TODO this should be a UUID!
             (*description)->service = interface;
         }
     }

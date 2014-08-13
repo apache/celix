@@ -25,9 +25,14 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <libxml/xmlwriter.h>
 
+#include "constants.h"
+#include "remote_constants.h"
+
 #include "endpoint_description.h"
+#include "endpoint_descriptor_common.h"
 #include "endpoint_descriptor_writer.h"
 
 struct endpoint_descriptor_writer {
@@ -73,7 +78,7 @@ celix_status_t endpointDescriptorWriter_writeDocument(endpoint_descriptor_writer
     if (rc < 0) {
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
-        rc = xmlTextWriterStartElementNS(writer->writer, NULL, BAD_CAST "endpoint-descriptions", BAD_CAST "http://www.osgi.org/xmlns/rsa/v1.0.0");
+        rc = xmlTextWriterStartElementNS(writer->writer, NULL, ENDPOINT_DESCRIPTIONS, XMLNS);
         if (rc < 0) {
             status = CELIX_BUNDLE_EXCEPTION;
         } else {
@@ -101,20 +106,58 @@ celix_status_t endpointDescriptorWriter_writeDocument(endpoint_descriptor_writer
     return status;
 }
 
+static celix_status_t endpointDescriptorWriter_writeArrayValue(xmlTextWriterPtr writer, const xmlChar* value) {
+    xmlTextWriterStartElement(writer, ARRAY);
+    xmlTextWriterStartElement(writer, VALUE);
+    xmlTextWriterWriteString(writer, value);
+    xmlTextWriterEndElement(writer); // value
+    xmlTextWriterEndElement(writer); // array
+
+	return CELIX_SUCCESS;
+}
+
+static celix_status_t endpointDescriptorWriter_writeTypedValue(xmlTextWriterPtr writer, valueType type, const xmlChar* value) {
+	xmlTextWriterWriteAttribute(writer, VALUE_TYPE, (const xmlChar*) valueTypeToString(type));
+	xmlTextWriterWriteAttribute(writer, VALUE, value);
+
+	return CELIX_SUCCESS;
+}
+
+static celix_status_t endpointDescriptorWriter_writeUntypedValue(xmlTextWriterPtr writer, const xmlChar* value) {
+	xmlTextWriterWriteAttribute(writer, VALUE, value);
+
+	return CELIX_SUCCESS;
+}
+
 static celix_status_t endpointDescriptorWriter_writeEndpoint(endpoint_descriptor_writer_pt writer, endpoint_description_pt endpoint) {
     celix_status_t status = CELIX_SUCCESS;
 
     if (endpoint == NULL || writer == NULL) {
         status = CELIX_ILLEGAL_ARGUMENT;
     } else {
-        xmlTextWriterStartElement(writer->writer, BAD_CAST "endpoint-description");
+        xmlTextWriterStartElement(writer->writer, ENDPOINT_DESCRIPTION);
 
         hash_map_iterator_pt iter = hashMapIterator_create(endpoint->properties);
         while (hashMapIterator_hasNext(iter)) {
             hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-            xmlTextWriterStartElement(writer->writer, BAD_CAST "property");
-            xmlTextWriterWriteAttribute(writer->writer, BAD_CAST "name", hashMapEntry_getKey(entry));
-            xmlTextWriterWriteAttribute(writer->writer, BAD_CAST "value", hashMapEntry_getValue(entry));
+
+            void* propertyName = hashMapEntry_getKey(entry);
+			const xmlChar* propertyValue = (const xmlChar*) hashMapEntry_getValue(entry);
+
+            xmlTextWriterStartElement(writer->writer, PROPERTY);
+            xmlTextWriterWriteAttribute(writer->writer, NAME, propertyName);
+
+            if (strcmp(OSGI_FRAMEWORK_OBJECTCLASS, (char*) propertyName) == 0) {
+            	// objectClass *must* be represented as array of string values...
+            	endpointDescriptorWriter_writeArrayValue(writer->writer, propertyValue);
+            } else if (strcmp(OSGI_RSA_ENDPOINT_SERVICE_ID, (char*) propertyName) == 0) {
+            	// endpoint.service.id *must* be represented as long value...
+            	endpointDescriptorWriter_writeTypedValue(writer->writer, VALUE_TYPE_LONG, propertyValue);
+            } else {
+            	// represent all other values as plain string values...
+            	endpointDescriptorWriter_writeUntypedValue(writer->writer, propertyValue);
+            }
+
             xmlTextWriterEndElement(writer->writer);
         }
         hashMapIterator_destroy(iter);
@@ -126,6 +169,32 @@ static celix_status_t endpointDescriptorWriter_writeEndpoint(endpoint_descriptor
 }
 
 
+static char* valueTypeToString(valueType type) {
+	switch (type) {
+		case VALUE_TYPE_BOOLEAN:
+			return "boolean";
+		case VALUE_TYPE_BYTE:
+			return "byte";
+		case VALUE_TYPE_CHAR:
+			return "char";
+		case VALUE_TYPE_DOUBLE:
+			return "double";
+		case VALUE_TYPE_FLOAT:
+			return "float";
+		case VALUE_TYPE_INTEGER:
+			return "int";
+		case VALUE_TYPE_LONG:
+			return "long";
+		case VALUE_TYPE_SHORT:
+			return "short";
+		case VALUE_TYPE_STRING:
+			// FALL-THROUGH!
+		default:
+			return "string";
+	}
+}
+
+#ifdef RSA_ENDPOINT_TEST_WRITER
 int main() {
     endpoint_descriptor_writer_pt writer = NULL;
     endpointDescriptorWriter_create(&writer);
@@ -133,13 +202,19 @@ int main() {
     arrayList_create(&list);
 
     properties_pt props = properties_create();
-    properties_set(props, "a", "b");
+    properties_set(props, "objectClass", "com.acme.Foo");
+    properties_set(props, "endpoint.service.id", "3");
+    properties_set(props, "endpoint.id", "abcdefghijklmnopqrstuvwxyz");
+    properties_set(props, "endpoint.framework.uuid", "2983D849-93B1-4C2C-AC6D-5BCDA93ACB96");
     endpoint_description_pt epd = NULL;
     endpointDescription_create(props, &epd);
     arrayList_add(list, epd);
 
     properties_pt props2 = properties_create();
-    properties_set(props2, "a", "b");
+    properties_set(props2, "objectClass", "com.acme.Bar");
+    properties_set(props, "endpoint.service.id", "4");
+    properties_set(props, "endpoint.id", "abcdefghijklmnopqrstuvwxyz");
+    properties_set(props, "endpoint.framework.uuid", "2983D849-93B1-4C2C-AC6D-5BCDA93ACB96");
     endpoint_description_pt epd2 = NULL;
     endpointDescription_create(props2, &epd2);
     arrayList_add(list, epd2);
@@ -154,3 +229,4 @@ int main() {
 
     printf("%s\n", buffer);
 }
+#endif

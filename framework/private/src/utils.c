@@ -68,14 +68,16 @@ char * utils_stringTrim(char * string) {
 
 	char *end;
 	// Trim leading space
-	while(isspace(*copy)) copy++;
+	while (isspace(*copy)) {
+		copy++;
+	}
 
 	// Trim trailing space
 	end = copy + strlen(copy) - 1;
-	while(end > copy && isspace(*end)) end--;
-
-	// Write new null terminator
-	*(end+1) = 0;
+	while(end > copy && isspace(*end)) {
+		*(end) = 0;
+		end--;
+	}
 
 	return copy;
 }

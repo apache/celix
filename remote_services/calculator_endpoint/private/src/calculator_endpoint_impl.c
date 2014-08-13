@@ -92,7 +92,7 @@ celix_status_t calculatorEndpoint_add(remote_endpoint_pt endpoint, char *data, c
 			json_t *resultRoot;
 			calculator_service_pt service = endpoint->service;
 			service->add(service->calculator, a, b, &result);
-			resultRoot = json_pack("[f]", result);
+			resultRoot = json_pack("f", result);
 
 			char *c = json_dumps(resultRoot, JSON_ENCODE_ANY);
 			*reply = c;
@@ -123,7 +123,7 @@ celix_status_t calculatorEndpoint_sub(remote_endpoint_pt endpoint, char *data, c
 			json_t *resultRoot;
 			calculator_service_pt service = endpoint->service;
 			service->sub(service->calculator, a, b, &result);
-			resultRoot = json_pack("[f]", result);
+			resultRoot = json_pack("f", result);
 
 			char *c = json_dumps(resultRoot, JSON_ENCODE_ANY);
 			*reply = c;
@@ -153,7 +153,7 @@ celix_status_t calculatorEndpoint_sqrt(remote_endpoint_pt endpoint, char *data, 
 			json_t *resultRoot;
 			calculator_service_pt service = endpoint->service;
 			service->sqrt(service->calculator, a, &result);
-			resultRoot = json_pack("[f]", result);
+			resultRoot = json_pack("f", result);
 
 			char *c = json_dumps(resultRoot, JSON_ENCODE_ANY);
 			*reply = c;

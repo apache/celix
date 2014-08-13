@@ -17,7 +17,7 @@
 
 find_package(Jansson REQUIRED)
 
-include_directories(${JANSSON_INCLUDE_DIRS})
+include_directories("${JANSSON_INCLUDE_DIRS}")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/calculator_proxy/private/include")
@@ -27,11 +27,11 @@ include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/pub
 SET(BUNDLE_SYMBOLICNAME "apache_celix_remoting_calculator_proxy")
 SET(BUNDLE_VERSION "0.0.1")
 
-bundle(org.example.api.Calculator_proxy SOURCES 
+bundle(org.apache.celix.calc.api.Calculator_proxy SOURCES 
 	private/src/calculator_proxy_activator
 	private/src/calculator_proxy_impl.c
     
     private/include/calculator_proxy_impl.h
 )
 
-target_link_libraries(org.example.api.Calculator_proxy celix_framework ${JANSSON_LIBRARIES})
+target_link_libraries(org.apache.celix.calc.api.Calculator_proxy celix_framework ${JANSSON_LIBRARIES})

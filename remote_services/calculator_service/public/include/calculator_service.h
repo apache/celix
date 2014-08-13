@@ -27,12 +27,21 @@
 #ifndef CALCULATOR_SERVICE_H_
 #define CALCULATOR_SERVICE_H_
 
-#define CALCULATOR_SERVICE "org.example.api.Calculator"
+#define CALCULATOR_SERVICE "org.apache.celix.calc.api.Calculator"
 
 typedef struct calculator *calculator_pt;
 
 typedef struct calculator_service *calculator_service_pt;
 
+/*
+ * The calculator service definition corresponds to the following Java interface:
+ *
+ * interface Calculator {
+ * 	 double add(double a, double b);
+ * 	 double sub(double a, double b);
+ * 	 double sqrt(double a);
+ * }
+ */
 struct calculator_service {
 	calculator_pt calculator;
 	celix_status_t (*add)(calculator_pt calculator, double a, double b, double *result);
@@ -41,12 +50,5 @@ struct calculator_service {
 };
 
 
-/*
- * interface calculator_service {
- * 	double add(double a, double b);
- * 	double sub(double a, double b);
- * 	double sqrt(double a);
- * }
- */
 
 #endif /* CALCULATOR_SERVICE_H_ */

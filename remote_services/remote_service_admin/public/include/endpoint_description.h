@@ -31,7 +31,6 @@
 #include "array_list.h"
 
 struct endpoint_description {
-    array_list_pt configurationTypes;
     char *frameworkUUID;
     char *id;
     // array_list_pt intents;

@@ -49,7 +49,6 @@ struct topology_manager {
 	array_list_pt rsaList;
 	hash_map_pt exportedServices;
 	hash_map_pt importedServices;
-
 	hash_map_pt importInterests;
 };
 
@@ -85,9 +84,9 @@ celix_status_t topologyManager_destroy(topology_manager_pt manager) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	arrayList_destroy(manager->rsaList);
-	hashMap_destroy(manager->exportedServices,false,false);
-	hashMap_destroy(manager->importedServices,false,false);
-	hashMap_destroy(manager->importInterests,false,false);
+	hashMap_destroy(manager->exportedServices, false, false);
+	hashMap_destroy(manager->importedServices, false, false);
+	hashMap_destroy(manager->importInterests, false, false);
 
 	return status;
 }
@@ -108,6 +107,7 @@ celix_status_t topologyManager_rsaAdded(void * handle, service_reference_pt refe
 
 	printf("TOPOLOGY_MANAGER: Added RSA\n");
 	arrayList_add(manager->rsaList, service);
+	// TODO add the imported/exported services to the given RSA...
 
 	return status;
 }
@@ -124,6 +124,7 @@ celix_status_t topologyManager_rsaRemoved(void * handle, service_reference_pt re
 
 	printf("TOPOLOGY_MANAGER: Removed RSA\n");
 	arrayList_removeElement(manager->rsaList, service);
+	// TODO remove the imported/exported services from the given RSA...
 
 	return status;
 }
@@ -131,11 +132,13 @@ celix_status_t topologyManager_rsaRemoved(void * handle, service_reference_pt re
 celix_status_t topologyManager_serviceChanged(void *listener, service_event_pt event) {
 	celix_status_t status = CELIX_SUCCESS;
 	service_listener_pt listen = listener;
-
 	topology_manager_pt manager = listen->handle;
+
+	printf("TOPOLOGY_MANAGER: found event reference %p\n", event->reference);
+
 	service_registration_pt registration = NULL;
-	printf("found event reference %p\n", event->reference);
 	serviceReference_getServiceRegistration(event->reference, &registration);
+
 	properties_pt props = NULL;
 	serviceRegistration_getProperties(registration, &props);
 	char *name = properties_get(props, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
@@ -144,13 +147,12 @@ celix_status_t topologyManager_serviceChanged(void *listener, service_event_pt e
 
 	if (event->type == OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED) {
 		if (export != NULL) {
+			printf("TOPOLOGY_MANAGER: Service registering: %s\n", name);
 			status = topologyManager_exportService(manager, event->reference, serviceId);
 		}
 	} else if (event->type == OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING) {
-		//if (export != NULL) {
-			printf("TOPOLOGY_MANAGER: Service unregistering: %s\n", name);
-			status = topologyManager_removeService(manager, event->reference, serviceId);
-		//}
+		printf("TOPOLOGY_MANAGER: Service unregistering: %s\n", name);
+		status = topologyManager_removeService(manager, event->reference, serviceId);
 	}
 
 	return status;
@@ -159,7 +161,7 @@ celix_status_t topologyManager_serviceChanged(void *listener, service_event_pt e
 celix_status_t topologyManager_endpointAdded(void *handle, endpoint_description_pt endpoint, char *machtedFilter) {
 	celix_status_t status = CELIX_SUCCESS;
 	topology_manager_pt manager = handle;
-	printf("TOPOLOGY_MANAGER: Endpoint added\n");
+	printf("TOPOLOGY_MANAGER: Endpoint (%s; %s) added...\n", endpoint->service, endpoint->id);
 
 	status = topologyManager_importService(manager, endpoint);
 
@@ -169,7 +171,7 @@ celix_status_t topologyManager_endpointAdded(void *handle, endpoint_description_
 celix_status_t topologyManager_endpointRemoved(void *handle, endpoint_description_pt endpoint, char *machtedFilter) {
 	celix_status_t status = CELIX_SUCCESS;
 	topology_manager_pt manager = handle;
-	printf("TOPOLOGY_MANAGER: Endpoint removed\n");
+	printf("TOPOLOGY_MANAGER: Endpoint (%s; %s) removed...\n", endpoint->service, endpoint->id);
 
 	if (hashMap_containsKey(manager->importedServices, endpoint)) {
 		hash_map_pt imports = hashMap_get(manager->importedServices, endpoint);

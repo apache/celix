@@ -15,14 +15,19 @@
 # specific language governing permissions and limitations
 # under the License.
 
+include_directories("${PROJECT_SOURCE_DIR}/remote_services/calculator_shell/private/include")
+include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+include_directories("${PROJECT_SOURCE_DIR}/remote_services/calculator_service/public/include")
+include_directories("${PROJECT_SOURCE_DIR}/shell/public/include")
+
 SET(BUNDLE_SYMBOLICNAME "apache_celix_remoting_calculator_shell")
 SET(BUNDLE_VERSION "0.0.1")
 
 bundle(calculator_shell SOURCES
-	private/src/add_command 
-	private/src/sub_command
-	private/src/sqrt_command
-	private/src/calculator_shell_activator
+    private/src/add_command 
+    private/src/sub_command
+    private/src/sqrt_command
+    private/src/calculator_shell_activator
     
     private/include/add_command.h
     private/include/sqrt_command.h
@@ -30,9 +35,4 @@ bundle(calculator_shell SOURCES
     ${PROJECT_SOURCE_DIR}/shell/public/src/command.c
 )
 
-include_directories("${PROJECT_SOURCE_DIR}/remote_services/calculator_shell/private/include")
-include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/remote_services/calculator_service/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/shell/public/include")
 target_link_libraries(calculator_shell celix_framework)
-

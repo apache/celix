@@ -77,7 +77,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	properties_pt props = properties_create();
 	properties_set(props, (char *) "proxy.interface", (char *) CALCULATOR_SERVICE);
 
-	if (bundleContext_registerService(context, OSGI_RSA_REMOTE_PROXY_FACTORY, calculatorProxyFactoryService, props, &activator->proxyFactoryService) == CELIX_SUCCESS);
+	if (bundleContext_registerService(context, OSGI_RSA_REMOTE_PROXY_FACTORY, calculatorProxyFactoryService, props, &activator->proxyFactoryService) == CELIX_SUCCESS)
 	{
 		printf("CALCULATOR_PROXY: Proxy registered OSGI_RSA_REMOTE_PROXY_FACTORY (%s)\n", OSGI_RSA_REMOTE_PROXY_FACTORY);
 	}

@@ -27,16 +27,18 @@
 #ifndef DISCOVERY_H_
 #define DISCOVERY_H_
 
-#include <apr_general.h>
-
 #include "bundle_context.h"
 #include "service_reference.h"
 
+#include "endpoint_description.h"
 #include "endpoint_listener.h"
 
 typedef struct discovery *discovery_pt;
 
-celix_status_t discovery_create(apr_pool_t *pool, bundle_context_pt context, discovery_pt *discovery);
+celix_status_t discovery_create(bundle_context_pt context, discovery_pt *discovery);
+celix_status_t discovery_destroy(discovery_pt *discovery);
+
+celix_status_t discovery_start(discovery_pt discovery);
 celix_status_t discovery_stop(discovery_pt discovery);
 
 celix_status_t discovery_endpointAdded(void *handle, endpoint_description_pt endpoint, char *machtedFilter);
@@ -49,5 +51,7 @@ celix_status_t discovery_endpointListenerRemoved(void * handle, service_referenc
 
 celix_status_t discovery_updateEndpointListener(discovery_pt discovery, service_reference_pt reference, endpoint_listener_pt service);
 
+celix_status_t discovery_addDiscoveredEndpoint(discovery_pt discovery, endpoint_description_pt endpoint);
+celix_status_t discovery_removeDiscoveredEndpoint(discovery_pt discovery, endpoint_description_pt endpoint);
 
 #endif /* DISCOVERY_H_ */

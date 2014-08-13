@@ -2502,7 +2502,8 @@ static int authorize(struct mg_connection *conn, struct file *filep)
     // Loop over passwords file
     p = (char *) filep->membuf;
     while (mg_fgets(line, sizeof(line), filep, &p) != NULL) {
-        if (sscanf(line, "%[^:]:%[^:]:%s", f_user, f_domain, ha1) != 3) {
+    	// JaWi - limit the sizes to up to 255 characters...
+        if (sscanf(line, "%255[^:]:%255[^:]:%255s", f_user, f_domain, ha1) != 3) {
             continue;
         }
 
@@ -5445,6 +5446,8 @@ static int getreq(struct mg_connection *conn, char *ebuf, size_t ebuf_len)
         } else {
             conn->content_len = 0;
         }
+        // JaWi: expose content length to request info for generic use...
+        conn->request_info.content_length = conn->content_len;
         conn->birth_time = time(NULL);
     }
     return ebuf[0] == '\0';
