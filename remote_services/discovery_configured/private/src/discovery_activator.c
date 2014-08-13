@@ -151,7 +151,7 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt contex
 
 	status = serviceTracker_destroy(activator->endpointListenerTracker);
 
-	status = serviceRegistration_destroy(activator->endpointListenerService);
+//	status = serviceRegistration_destroy(activator->endpointListenerService);
 
 	status = discovery_destroy(activator->discovery);
 

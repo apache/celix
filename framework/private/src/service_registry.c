@@ -254,7 +254,8 @@ celix_status_t serviceRegistry_unregisterService(service_registry_pt registry, b
 		}
 		arrayList_destroy(clients);
 
-		serviceReference_invalidate(reference);
+		// Disabled for now, since a reference can already be destroyed here.
+//		serviceReference_invalidate(reference);
 	}
 	serviceRegistration_invalidate(registration);
 

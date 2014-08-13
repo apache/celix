@@ -128,33 +128,33 @@ celix_status_t discovery_stop(discovery_pt discovery) {
 	return status;
 }
 
-celix_status_t discovery_destroy(discovery_pt *discovery) {
+celix_status_t discovery_destroy(discovery_pt discovery) {
 	celix_status_t status = CELIX_SUCCESS;
 	hash_map_iterator_pt iter;
 
-	(*discovery)->context = NULL;
-	(*discovery)->poller = NULL;
-	(*discovery)->server = NULL;
+	discovery->context = NULL;
+	discovery->poller = NULL;
+	discovery->server = NULL;
 
-	celixThreadMutex_lock(&(*discovery)->discoveredServicesMutex);
+	celixThreadMutex_lock(&discovery->discoveredServicesMutex);
 
-	hashMap_destroy((*discovery)->discoveredServices, false, false);
-	(*discovery)->discoveredServices = NULL;
+	hashMap_destroy(discovery->discoveredServices, false, false);
+	discovery->discoveredServices = NULL;
 
-	celixThreadMutex_unlock(&(*discovery)->discoveredServicesMutex);
+	celixThreadMutex_unlock(&discovery->discoveredServicesMutex);
 
-	celixThreadMutex_destroy(&(*discovery)->discoveredServicesMutex);
+	celixThreadMutex_destroy(&discovery->discoveredServicesMutex);
 
-	celixThreadMutex_lock(&(*discovery)->listenerReferencesMutex);
+	celixThreadMutex_lock(&discovery->listenerReferencesMutex);
 
-	hashMap_destroy((*discovery)->listenerReferences, false, false);
-	(*discovery)->listenerReferences = NULL;
+	hashMap_destroy(discovery->listenerReferences, false, false);
+	discovery->listenerReferences = NULL;
 
-	celixThreadMutex_unlock(&(*discovery)->listenerReferencesMutex);
+	celixThreadMutex_unlock(&discovery->listenerReferencesMutex);
 
-	celixThreadMutex_destroy(&(*discovery)->listenerReferencesMutex);
+	celixThreadMutex_destroy(&discovery->listenerReferencesMutex);
 
-	free(*discovery);
+	free(discovery);
 
 	return status;
 }

@@ -36,7 +36,7 @@
 typedef struct discovery *discovery_pt;
 
 celix_status_t discovery_create(bundle_context_pt context, discovery_pt *discovery);
-celix_status_t discovery_destroy(discovery_pt *discovery);
+celix_status_t discovery_destroy(discovery_pt discovery);
 
 celix_status_t discovery_start(discovery_pt discovery);
 celix_status_t discovery_stop(discovery_pt discovery);
