@@ -16,8 +16,12 @@
 # under the License.
 
 FUNCTION(ADD_TARGET_FOR_TEST _testrunner)
-	add_test(NAME ${_testrunner} 
-    			COMMAND ${_testrunner} -ojunit)
+	#add_test(NAME ${_testrunner} 
+    #			COMMAND ${_testrunner} -ojunit)
+    			
+    ADD_TEST(ctest_build_${_testrunner} "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target ${_testrunner})
+    ADD_TEST(ctest_run_${_testrunner} ${_testrunner} -ojunit)
+    SET_TESTS_PROPERTIES ( ctest_run_${_testrunner} PROPERTIES DEPENDS ctest_build_${_testrunner})
     			
 	string(LENGTH ${_testrunner} length)
 	math(EXPR l "${length} - 5")

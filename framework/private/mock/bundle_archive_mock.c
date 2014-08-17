@@ -34,21 +34,21 @@ celix_status_t bundleArchive_create(framework_logger_pt logger, char * archiveRo
 			->withIntParameters("id", id)
 			->withStringParameters("location", location)
 			->withStringParameters("inputFile", inputFile)
-			->_andPointerOutputParameters("bundle_archive", (void **) bundle_archive);
+			->withOutputParameter("bundle_archive", (void **) bundle_archive);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t bundleArchive_createSystemBundleArchive(framework_logger_pt logger, bundle_archive_pt *bundle_archive) {
 	mock_c()->actualCall("bundleArchive_createSystemBundleArchive")
 			->withPointerParameters("logger", logger)
-			->_andPointerOutputParameters("bundle_archive", (void **) bundle_archive);
+			->withOutputParameter("bundle_archive", (void **) bundle_archive);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t bundleArchive_recreate(char * archiveRoot, bundle_archive_pt *bundle_archive) {
 	mock_c()->actualCall("bundleArchive_recreate")
 			->withStringParameters("archiveRoot", archiveRoot)
-			->_andPointerOutputParameters("bundle_archive", (void **) bundle_archive);
+			->withOutputParameter("bundle_archive", (void **) bundle_archive);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -60,7 +60,7 @@ celix_status_t bundleArchive_destroy(bundle_archive_pt archive) {
 celix_status_t bundleArchive_getId(bundle_archive_pt archive, long *id) {
 	mock_c()->actualCall("bundleArchive_getId")
 			->withPointerParameters("archive", archive)
-			->_andIntOutputParameters("id", (int *) id);
+			->withOutputParameter("id", id);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -92,7 +92,7 @@ celix_status_t bundleArchive_getRevision(bundle_archive_pt archive, long revNr, 
 celix_status_t bundleArchive_getCurrentRevision(bundle_archive_pt archive, bundle_revision_pt *revision) {
 	mock_c()->actualCall("bundleArchive_getCurrentRevision")
         ->withPointerParameters("archive", archive)
-        ->_andPointerOutputParameters("revision", (void **) revision);
+        ->withOutputParameter("revision", (void **) revision);
 	return mock_c()->returnValue().value.intValue;
 }
 

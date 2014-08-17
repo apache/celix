@@ -40,15 +40,10 @@ int main(int argc, char** argv) {
 }
 
 TEST_GROUP(resolver) {
-	apr_pool_t *pool;
-
 	void setup(void) {
-		apr_initialize();
-		apr_pool_create(&pool, NULL);
 	}
 
 	void teardown() {
-		apr_pool_destroy(pool);
 		mock().checkExpectations();
 		mock().clear();
 	}

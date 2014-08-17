@@ -67,7 +67,7 @@ TEST(bundle_revision, create) {
 			.andReturnValue(CELIX_SUCCESS);
 	mock().expectOneCall("manifest_createFromFile")
             .withParameter("filename", "bundle_revision_test/META-INF/MANIFEST.MF")
-            .andOutputParameter("manifest", manifest)
+            .withOutputParameterReturning("manifest", &manifest, sizeof(manifest))
             .andReturnValue(CELIX_SUCCESS);
 
 	bundle_revision_pt revision = NULL;
@@ -92,7 +92,7 @@ TEST(bundle_revision, createWithInput) {
 
 	mock().expectOneCall("manifest_createFromFile")
         .withParameter("filename", "bundle_revision_test/META-INF/MANIFEST.MF")
-        .andOutputParameter("manifest", manifest)
+        .withOutputParameterReturning("manifest", &manifest, sizeof(manifest))
         .andReturnValue(CELIX_SUCCESS);
 
 	bundle_revision_pt revision = NULL;

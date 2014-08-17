@@ -40,7 +40,7 @@ celix_status_t capability_getServiceName(capability_pt capability, char **servic
 celix_status_t capability_getVersion(capability_pt capability, version_pt *version) {
 	mock_c()->actualCall("capability_getVersion")
 			->withPointerParameters("capability", capability)
-			->_andPointerOutputParameters("version", (void **) version);
+			->withOutputParameter("version", (void **) version);
 	return mock_c()->returnValue().value.intValue;
 }
 

@@ -60,6 +60,8 @@ celix_status_t bundle_create(bundle_pt * bundle, framework_logger_pt logger) {
         (*bundle)->state = OSGI_FRAMEWORK_BUNDLE_INSTALLED;
         (*bundle)->modules = NULL;
         arrayList_create(&(*bundle)->modules);
+        (*bundle)->handle = NULL;
+        (*bundle)->manifest = NULL;
 
         module = module_createFrameworkModule((*bundle));
         bundle_addModule(*bundle, module);

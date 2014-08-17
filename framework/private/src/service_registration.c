@@ -57,6 +57,8 @@ celix_status_t serviceRegistration_createInternal(service_registry_pt registry, 
 
     *registration = malloc(sizeof(**registration));
     if (*registration) {
+        (*registration)->services = NULL;
+        (*registration)->nrOfServices = 0;
 		(*registration)->isServiceFactory = isFactory;
 		(*registration)->registry = registry;
 		(*registration)->className = strdup(serviceName);

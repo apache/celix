@@ -43,18 +43,12 @@ int main(int argc, char** argv) {
 }
 
 TEST_GROUP(bundle_context) {
-	apr_pool_t *pool;
-
 	void setup(void) {
-		apr_initialize();
-		apr_pool_create(&pool, NULL);
-
-		logger = (framework_logger_pt) apr_palloc(pool, sizeof(*logger));
+		logger = (framework_logger_pt) malloc(sizeof(*logger));
         logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
-		apr_pool_destroy(pool);
 		mock().checkExpectations();
 		mock().clear();
 	}
@@ -64,27 +58,19 @@ TEST(bundle_context, create) {
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
 
-	mock().expectOneCall("bundle_getMemoryPool")
-		.withParameter("bundle", bundle)
-		.andOutputParameter("pool", pool)
-		.andReturnValue(CELIX_SUCCESS);
-
 	bundle_context_pt context = NULL;
-	bundleContext_create(pool, framework, logger, bundle, &context);
+	bundleContext_create(NULL, framework, logger, bundle, &context);
 	POINTERS_EQUAL(framework, context->framework)
 	POINTERS_EQUAL(bundle, context->bundle)
-	CHECK(context->pool);
+//	CHECK(context->pool);
 }
 
 TEST(bundle_context, destroy) {
-	bundle_context_pt context = (bundle_context_pt) apr_palloc(pool, sizeof(*context));
+	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
-	apr_pool_t *spool = NULL;
-	apr_pool_create(&spool, pool);
 	context->framework = framework;
 	context->bundle = bundle;
-	context->pool = spool;
 
 	celix_status_t status = bundleContext_destroy(context);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
@@ -94,7 +80,7 @@ TEST(bundle_context, destroy) {
 }
 
 TEST(bundle_context, getBundle) {
-	bundle_context_pt context = (bundle_context_pt) apr_palloc(pool, sizeof(*context));
+	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
 	apr_pool_t *pool = (apr_pool_t *) 0x30;
@@ -132,7 +118,7 @@ TEST(bundle_context, getBundle) {
 }
 
 TEST(bundle_context, installBundle) {
-	bundle_context_pt context = (bundle_context_pt) apr_palloc(pool, sizeof(*context));
+	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
 	apr_pool_t *pool = (apr_pool_t *) 0x30;
@@ -146,7 +132,7 @@ TEST(bundle_context, installBundle) {
 		.withParameter("framework", framework)
 		.withParameter("location", location)
 		.withParameter("inputFile", (char *) NULL)
-		.andOutputParameter("bundle", installedBundle)
+		.withOutputParameterReturning("bundle", &installedBundle, sizeof(installedBundle))
 		.andReturnValue(CELIX_SUCCESS);
 
 	bundle_pt actualInstalledBundle = NULL;
@@ -156,13 +142,11 @@ TEST(bundle_context, installBundle) {
 }
 
 TEST(bundle_context, installBundle2) {
-	bundle_context_pt context = (bundle_context_pt) apr_palloc(pool, sizeof(*context));
+	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
-	apr_pool_t *pool = (apr_pool_t *) 0x30;
 	context->framework = framework;
 	context->bundle = bundle;
-	context->pool = pool;
 
 	char location[] = "test.zip";
 	char inputFile[] = "input.zip";
@@ -171,7 +155,7 @@ TEST(bundle_context, installBundle2) {
 		.withParameter("framework", framework)
 		.withParameter("location", location)
 		.withParameter("inputFile", inputFile)
-		.andOutputParameter("bundle", installedBundle)
+		.withOutputParameterReturning("bundle", &installedBundle, sizeof(installedBundle))
 		.andReturnValue(CELIX_SUCCESS);
 
 	bundle_pt actualInstalledBundle = NULL;
@@ -185,13 +169,11 @@ TEST(bundle_context, installBundle2) {
 }
 
 TEST(bundle_context, registerService) {
-	bundle_context_pt context = (bundle_context_pt) apr_palloc(pool, sizeof(*context));
+	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
-	apr_pool_t *pool = (apr_pool_t *) 0x30;
 	context->framework = framework;
 	context->bundle = bundle;
-	context->pool = pool;
 
 	char serviceName[] = "service";
 	void *service = (void *) 0x40;
@@ -204,7 +186,7 @@ TEST(bundle_context, registerService) {
 		.withParameter("serviceName", serviceName)
 		.withParameter("service", service)
 		.withParameter("properties", properties)
-		.andOutputParameter("registration", registration)
+		.withOutputParameterReturning("registration", &registration, sizeof(registration))
 		.andReturnValue(CELIX_SUCCESS);
 
 	service_registration_pt actualRegistration = NULL;
@@ -218,13 +200,11 @@ TEST(bundle_context, registerService) {
 }
 
 TEST(bundle_context, registerServiceFactory) {
-	bundle_context_pt context = (bundle_context_pt) apr_palloc(pool, sizeof(*context));
+	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
-	apr_pool_t *pool = (apr_pool_t *) 0x30;
 	context->framework = framework;
 	context->bundle = bundle;
-	context->pool = pool;
 
 	char serviceName[] = "service";
 	service_factory_pt serviceFactory = (service_factory_pt) 0x40;
@@ -237,7 +217,7 @@ TEST(bundle_context, registerServiceFactory) {
 		.withParameter("serviceName", serviceName)
 		.withParameter("serviceFactory", serviceFactory)
 		.withParameter("properties", properties)
-		.andOutputParameter("registration", registration)
+		.withOutputParameterReturning("registration", &registration, sizeof(registration))
 		.andReturnValue(CELIX_SUCCESS);
 
 	service_registration_pt actualRegistration = NULL;
@@ -251,13 +231,11 @@ TEST(bundle_context, registerServiceFactory) {
 }
 
 TEST(bundle_context, getServiceReferences) {
-	bundle_context_pt context = (bundle_context_pt) apr_palloc(pool, sizeof(*context));
+	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
-	apr_pool_t *pool = (apr_pool_t *) 0x30;
 	context->framework = framework;
 	context->bundle = bundle;
-	context->pool = pool;
 
 	char serviceName[] = "service";
 	char filter[] = "";
@@ -268,7 +246,7 @@ TEST(bundle_context, getServiceReferences) {
 		.withParameter("bundle", bundle)
 		.withParameter("serviceName", serviceName)
 		.withParameter("filter", filter)
-		.andOutputParameter("references", references)
+		.withOutputParameterReturning("references", &references, sizeof(references))
 		.andReturnValue(CELIX_SUCCESS);
 
 	array_list_pt actualReferences = NULL;
@@ -282,7 +260,7 @@ TEST(bundle_context, getServiceReferences) {
 }
 
 TEST(bundle_context, getServiceReference) {
-	bundle_context_pt context = (bundle_context_pt) apr_palloc(pool, sizeof(*context));
+	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
 	context->framework = framework;
@@ -299,7 +277,7 @@ TEST(bundle_context, getServiceReference) {
 		.withParameter("bundle", bundle)
 		.withParameter("serviceName", serviceName)
 		.withParameter("filter", (char *) NULL)
-		.andOutputParameter("references", references)
+		.withOutputParameterReturning("references", &references, sizeof(references))
 		.andReturnValue(CELIX_SUCCESS);
 
 	service_reference_pt actualReference = NULL;
@@ -313,7 +291,7 @@ TEST(bundle_context, getServiceReference) {
 }
 
 TEST(bundle_context, getService) {
-	bundle_context_pt context = (bundle_context_pt) apr_palloc(pool, sizeof(*context));
+	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
 	context->framework = framework;
@@ -327,7 +305,7 @@ TEST(bundle_context, getService) {
 		.withParameter("framework", framework)
 		.withParameter("bundle", bundle)
 		.withParameter("reference", serviceReference)
-		.andOutputParameter("service", service)
+		.withOutputParameterReturning("service", &service, sizeof(service))
 		.andReturnValue(CELIX_SUCCESS);
 
 	void *actualService = NULL;
@@ -341,7 +319,7 @@ TEST(bundle_context, getService) {
 }
 
 TEST(bundle_context, ungetService) {
-	bundle_context_pt context = (bundle_context_pt) apr_palloc(pool, sizeof(*context));
+	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
 	context->framework = framework;
@@ -355,7 +333,7 @@ TEST(bundle_context, ungetService) {
 		.withParameter("framework", framework)
 		.withParameter("bundle", bundle)
 		.withParameter("reference", serviceReference)
-		.andOutputParameter("result", result)
+		.withOutputParameterReturning("result", &result, sizeof(result))
 		.andReturnValue(CELIX_SUCCESS);
 
 	bool actualResult = false;
@@ -369,7 +347,7 @@ TEST(bundle_context, ungetService) {
 }
 
 TEST(bundle_context, getBundles) {
-	bundle_context_pt context = (bundle_context_pt) apr_palloc(pool, sizeof(*context));
+	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
 	context->framework = framework;
@@ -392,7 +370,7 @@ TEST(bundle_context, getBundles) {
 }
 
 TEST(bundle_context, getBundleById) {
-	bundle_context_pt context = (bundle_context_pt) apr_palloc(pool, sizeof(*context));
+	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
 	context->framework = framework;
@@ -417,7 +395,7 @@ TEST(bundle_context, getBundleById) {
 }
 
 TEST(bundle_context, addServiceListener) {
-	bundle_context_pt context = (bundle_context_pt) apr_palloc(pool, sizeof(*context));
+	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
 	context->framework = framework;
@@ -442,7 +420,7 @@ TEST(bundle_context, addServiceListener) {
 }
 
 TEST(bundle_context, removeServiceListener) {
-	bundle_context_pt context = (bundle_context_pt) apr_palloc(pool, sizeof(*context));
+	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
 	context->framework = framework;
@@ -465,7 +443,7 @@ TEST(bundle_context, removeServiceListener) {
 }
 
 TEST(bundle_context, addBundleListener) {
-	bundle_context_pt context = (bundle_context_pt) apr_palloc(pool, sizeof(*context));
+	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
 	context->framework = framework;
@@ -488,7 +466,7 @@ TEST(bundle_context, addBundleListener) {
 }
 
 TEST(bundle_context, removeBundleListener) {
-	bundle_context_pt context = (bundle_context_pt) apr_palloc(pool, sizeof(*context));
+	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
 	context->framework = framework;
@@ -511,18 +489,18 @@ TEST(bundle_context, removeBundleListener) {
 }
 
 TEST(bundle_context, getProperty) {
-	bundle_context_pt context = (bundle_context_pt) apr_palloc(pool, sizeof(*context));
+	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
 	context->framework = framework;
 	context->bundle = bundle;
 
-	char name[] = "property";
-	char value[] = "value";
+	char *name = (char *) "property";
+	char *value = (char *) "value";
 	mock().expectOneCall("fw_getProperty")
 		.withParameter("framework", framework)
 		.withParameter("name", name)
-		.withParameter("value", value)
+		.withOutputParameterReturning("value", &value, sizeof(value))
 		.andReturnValue(CELIX_SUCCESS);
 
 	char *actualValue = NULL;

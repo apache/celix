@@ -245,14 +245,14 @@ celix_status_t version_toString(version_pt version, char **string) {
 	    if (written >= 512 || written < 0) {
 	        status = CELIX_BUNDLE_EXCEPTION;
 	    }
-	    *string = str;
+	    *string = strdup(str);
 	} else {
 	    char str[512];
         int written = snprintf(str, 512, "%d.%d.%d", version->major, version->minor, version->micro);
         if (written >= 512 || written < 0) {
             status = CELIX_BUNDLE_EXCEPTION;
         }
-        *string = str;
+        *string = strdup(str);
 	}
 	return status;
 }

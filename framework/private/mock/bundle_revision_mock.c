@@ -55,14 +55,14 @@ celix_status_t bundleRevision_getRoot(bundle_revision_pt revision, char **root) 
 celix_status_t bundleRevision_getManifest(bundle_revision_pt revision, manifest_pt *manifest) {
     mock_c()->actualCall("bundleRevision_getManifest")
         ->withPointerParameters("revision", revision)
-        ->_andPointerOutputParameters("manifest", (void **) manifest);
+        ->withOutputParameter("manifest", (void **) manifest);
     return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t bundleRevision_getHandles(bundle_revision_pt revision, array_list_pt *handles) {
     mock_c()->actualCall("bundleRevision_getHandles")
         ->withPointerParameters("revision", revision)
-        ->_andPointerOutputParameters("handles", (void **) handles);
+        ->withOutputParameter("handles", (void **) handles);
     return mock_c()->returnValue().value.intValue;
 }
 

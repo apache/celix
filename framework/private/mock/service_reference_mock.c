@@ -31,7 +31,7 @@ celix_status_t serviceReference_create(bundle_pt bundle, service_registration_pt
 	mock_c()->actualCall("serviceReference_create")
 			->withPointerParameters("bundle", bundle)
 			->withPointerParameters("registration", registration)
-			->_andPointerOutputParameters("reference", (void **) reference);
+			->withOutputParameter("reference", (void **) reference);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -50,7 +50,7 @@ celix_status_t serviceReference_invalidate(service_reference_pt reference) {
 celix_status_t serviceReference_getServiceRegistration(service_reference_pt reference, service_registration_pt *registration) {
 	mock_c()->actualCall("serviceReference_getServiceRegistration")
 			->withPointerParameters("reference", reference)
-			->_andPointerOutputParameters("registration", (void **) registration);
+			->withOutputParameter("registration", (void **) registration);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -73,7 +73,7 @@ celix_status_t serviceReference_equals(service_reference_pt reference, service_r
 	mock_c()->actualCall("serviceReference_equals")
 		->withPointerParameters("reference", reference)
 		->withPointerParameters("compareTo", compareTo)
-		->_andIntOutputParameters("equal", (int *) equal);
+		->withOutputParameter("equal", equal);
 	return mock_c()->returnValue().value.intValue;
 }
 

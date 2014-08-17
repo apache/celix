@@ -43,18 +43,12 @@ int main(int argc, char** argv) {
 }
 
 TEST_GROUP(service_reference) {
-	apr_pool_t *pool;
-
 	void setup(void) {
-		apr_initialize();
-		apr_pool_create(&pool, NULL);
-
-		logger = (framework_logger_pt) apr_palloc(pool, sizeof(*logger));
+		logger = (framework_logger_pt) malloc(sizeof(*logger));
         logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
-		apr_pool_destroy(pool);
 		mock().checkExpectations();
 		mock().clear();
 	}
@@ -72,7 +66,7 @@ TEST(service_reference, create) {
 }
 
 TEST(service_reference, getBundle) {
-	service_reference_pt reference = (service_reference_pt) apr_palloc(pool, sizeof(*reference));
+	service_reference_pt reference = (service_reference_pt) malloc(sizeof(*reference));
 	bundle_pt bundle = (bundle_pt) 0x10;
 	reference->bundle = bundle;
 
@@ -83,7 +77,7 @@ TEST(service_reference, getBundle) {
 }
 
 TEST(service_reference, getServiceRegistration) {
-	service_reference_pt reference = (service_reference_pt) apr_palloc(pool, sizeof(*reference));
+	service_reference_pt reference = (service_reference_pt) malloc(sizeof(*reference));
 	service_registration_pt registration = (service_registration_pt) 0x10;
 	reference->registration = registration;
 
@@ -94,7 +88,7 @@ TEST(service_reference, getServiceRegistration) {
 }
 
 TEST(service_reference, invalidate) {
-	service_reference_pt reference = (service_reference_pt) apr_palloc(pool, sizeof(*reference));
+	service_reference_pt reference = (service_reference_pt) malloc(sizeof(*reference));
 	service_registration_pt registration = (service_registration_pt) 0x10;
 	reference->registration = registration;
 
@@ -104,7 +98,7 @@ TEST(service_reference, invalidate) {
 }
 
 TEST(service_reference, getUsingBundle) {
-	service_reference_pt reference = (service_reference_pt) apr_palloc(pool, sizeof(*reference));
+	service_reference_pt reference = (service_reference_pt) malloc(sizeof(*reference));
 	service_registration_pt registration = (service_registration_pt) 0x10;
 	reference->registration = registration;
 
@@ -117,10 +111,9 @@ TEST(service_reference, getUsingBundle) {
 
 	mock().expectOneCall("serviceRegistration_getRegistry")
 		.withParameter("registration", registration)
-		.andOutputParameter("registry", registry);
+		.withOutputParameterReturning("registry", &registry, sizeof(registry));
 	mock().expectOneCall("serviceRegistry_getUsingBundles")
 		.withParameter("registry", registry)
-		.withParameter("pool", pool)
 		.withParameter("reference", reference)
 		.andReturnValue(bundles);
 
@@ -132,13 +125,13 @@ TEST(service_reference, getUsingBundle) {
 }
 
 TEST(service_reference, equals) {
-	service_reference_pt reference = (service_reference_pt) apr_palloc(pool, sizeof(*reference));
+	service_reference_pt reference = (service_reference_pt) malloc(sizeof(*reference));
 	service_registration_pt registration = (service_registration_pt) 0x10;
 	reference->registration = registration;
 	bundle_pt bundle = (bundle_pt) 0x20;
 	reference->bundle = bundle;
 
-	service_reference_pt toCompare = (service_reference_pt) apr_palloc(pool, sizeof(*reference));
+	service_reference_pt toCompare = (service_reference_pt) malloc(sizeof(*reference));
 	registration = (service_registration_pt) 0x10;
 	toCompare->registration = registration;
 	bundle = (bundle_pt) 0x30;
@@ -149,7 +142,7 @@ TEST(service_reference, equals) {
 	LONGS_EQUAL(CELIX_SUCCESS, status)
 	LONGS_EQUAL(true, equal);
 
-	toCompare = (service_reference_pt) apr_palloc(pool, sizeof(*reference));
+	toCompare = (service_reference_pt) malloc(sizeof(*reference));
 	registration = (service_registration_pt) 0x11;
 	toCompare->registration = registration;
 	bundle = (bundle_pt) 0x30;
@@ -162,13 +155,13 @@ TEST(service_reference, equals) {
 }
 
 TEST(service_reference, equals2) {
-	service_reference_pt reference = (service_reference_pt) apr_palloc(pool, sizeof(*reference));
+	service_reference_pt reference = (service_reference_pt) malloc(sizeof(*reference));
 	service_registration_pt registration = (service_registration_pt) 0x10;
 	reference->registration = registration;
 	bundle_pt bundle = (bundle_pt) 0x20;
 	reference->bundle = bundle;
 
-	service_reference_pt toCompare = (service_reference_pt) apr_palloc(pool, sizeof(*reference));
+	service_reference_pt toCompare = (service_reference_pt) malloc(sizeof(*reference));
 	registration = (service_registration_pt) 0x10;
 	toCompare->registration = registration;
 	bundle = (bundle_pt) 0x30;
@@ -177,7 +170,7 @@ TEST(service_reference, equals2) {
 	bool equal = serviceReference_equals2(reference, toCompare);
 	LONGS_EQUAL(true, equal);
 
-	toCompare = (service_reference_pt) apr_palloc(pool, sizeof(*reference));
+	toCompare = (service_reference_pt) malloc(sizeof(*reference));
 	registration = (service_registration_pt) 0x11;
 	toCompare->registration = registration;
 	bundle = (bundle_pt) 0x30;
@@ -188,7 +181,7 @@ TEST(service_reference, equals2) {
 }
 
 TEST(service_reference, hashCode) {
-	service_reference_pt reference = (service_reference_pt) apr_palloc(pool, sizeof(*reference));
+	service_reference_pt reference = (service_reference_pt) malloc(sizeof(*reference));
 	service_registration_pt registration = (service_registration_pt) 0x10;
 	reference->registration = registration;
 	bundle_pt bundle = (bundle_pt) 0x20;

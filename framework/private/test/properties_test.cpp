@@ -32,7 +32,6 @@
 #include "CppUTestExt/MockSupport.h"
 
 extern "C" {
-#include <apr_general.h>
 #include "properties.h"
 }
 
@@ -41,15 +40,11 @@ int main(int argc, char** argv) {
 }
 
 TEST_GROUP(properties) {
-	apr_pool_t *pool;
 
 	void setup(void) {
-		apr_initialize();
-		apr_pool_create(&pool, NULL);
 	}
 
 	void teardown() {
-		apr_pool_destroy(pool);
 		mock().checkExpectations();
 		mock().clear();
 	}

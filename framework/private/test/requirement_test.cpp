@@ -45,18 +45,12 @@ int main(int argc, char** argv) {
 }
 
 TEST_GROUP(requirement) {
-	apr_pool_t *pool;
-
 	void setup(void) {
-		apr_initialize();
-		apr_pool_create(&pool, NULL);
-
-		logger = (framework_logger_pt) apr_palloc(pool, sizeof(*logger));
+		logger = (framework_logger_pt) malloc(sizeof(*logger));
         logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
-		apr_pool_destroy(pool);
 		mock().checkExpectations();
 		mock().clear();
 	}
@@ -74,25 +68,22 @@ TEST(requirement, create) {
 	version_range_pt infiniteRange = (version_range_pt) 0x10;
 	version_range_pt parsedRange = (version_range_pt) 0x11;
 
+	char *value1 = (char *) "target";
 	mock().expectOneCall("attribute_getValue")
         .withParameter("attribute", serviceAttribute)
-        .andOutputParameter("value", (char *) "target")
+        .withOutputParameterReturning("value", &value1, sizeof(value1))
         .andReturnValue(CELIX_SUCCESS);
-
 	mock().expectOneCall("versionRange_createInfiniteVersionRange")
-	    .withParameter("pool", pool)
-	    .andOutputParameter("range", infiniteRange)
+	    .withOutputParameterReturning("range", &infiniteRange, sizeof(infiniteRange))
         .andReturnValue(CELIX_SUCCESS);
-
+	char *value2 = (char *) "1.0.0";
 	mock().expectOneCall("attribute_getValue")
         .withParameter("attribute", versionAttribute)
-        .andOutputParameter("value", (char *) "1.0.0")
+        .withOutputParameterReturning("value", &value2, sizeof(value2))
         .andReturnValue(CELIX_SUCCESS);
-
 	mock().expectOneCall("versionRange_parse")
-        .withParameter("pool", pool)
         .withParameter("rangeStr", (char *) "1.0.0")
-        .andOutputParameter("range", parsedRange)
+        .withOutputParameterReturning("range", &parsedRange, sizeof(parsedRange))
         .andReturnValue(CELIX_SUCCESS);
 
 	requirement_pt requirement = NULL;
@@ -100,7 +91,7 @@ TEST(requirement, create) {
 }
 
 TEST(requirement, getVersionRange) {
-	requirement_pt requirement = (requirement_pt) apr_palloc(pool, sizeof(*requirement));
+	requirement_pt requirement = (requirement_pt) malloc(sizeof(*requirement));
 	version_range_pt versionRange = (version_range_pt) 0x10;
 	requirement->versionRange = versionRange;
 
@@ -110,7 +101,7 @@ TEST(requirement, getVersionRange) {
 }
 
 TEST(requirement, getTargetName) {
-	requirement_pt requirement = (requirement_pt) apr_palloc(pool, sizeof(*requirement));
+	requirement_pt requirement = (requirement_pt) malloc(sizeof(*requirement));
 	char targetName[] = "target";
 	requirement->targetName = targetName;
 
@@ -120,7 +111,7 @@ TEST(requirement, getTargetName) {
 }
 
 TEST(requirement, isSatisfied) {
-	requirement_pt requirement = (requirement_pt) apr_palloc(pool, sizeof(*requirement));
+	requirement_pt requirement = (requirement_pt) malloc(sizeof(*requirement));
 	version_range_pt versionRange = (version_range_pt) 0x10;
 	requirement->versionRange = versionRange;
 
@@ -129,13 +120,14 @@ TEST(requirement, isSatisfied) {
 
 	mock().expectOneCall("capability_getVersion")
 			.withParameter("capability", capability)
-			.andOutputParameter("version", version);
+			.withOutputParameterReturning("version", &version, sizeof(version));
+	bool inRange1 = true;
 	mock().expectOneCall("versionRange_isInRange")
 		.withParameter("versionRange", versionRange)
 		.withParameter("version", version)
-		.andOutputParameter("inRange", true);
+		.withOutputParameterReturning("inRange", &inRange1, sizeof(inRange1));
 
-	bool inRange = false;
-	requirement_isSatisfied(requirement, capability, &inRange);
-	CHECK(inRange);
+	bool inRange2 = false;
+	requirement_isSatisfied(requirement, capability, &inRange2);
+	CHECK(inRange2);
 }

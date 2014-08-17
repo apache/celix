@@ -54,6 +54,7 @@ celix_status_t serviceRegistry_create(framework_pt framework, serviceChanged_fun
 		(*registry)->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
 		(*registry)->framework = framework;
 		(*registry)->currentServiceId = 1l;
+		(*registry)->serviceReferences = NULL;
 
 		arrayList_create(&(*registry)->listenerHooks);
 

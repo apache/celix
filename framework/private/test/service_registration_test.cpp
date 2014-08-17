@@ -43,18 +43,12 @@ int main(int argc, char** argv) {
 }
 
 TEST_GROUP(service_registration) {
-	apr_pool_t *pool;
-
 	void setup(void) {
-		apr_initialize();
-		apr_pool_create(&pool, NULL);
-
-		logger = (framework_logger_pt) apr_palloc(pool, sizeof(*logger));
+		logger = (framework_logger_pt) malloc(sizeof(*logger));
         logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
-		apr_pool_destroy(pool);
 		mock().checkExpectations();
 		mock().clear();
 	}
@@ -139,7 +133,7 @@ TEST(service_registration, createServiceFactory) {
 }
 
 TEST(service_registration, isValidTrue) {
-	service_registration_pt registration = (service_registration_pt) apr_palloc(pool, sizeof(*registration));
+	service_registration_pt registration = (service_registration_pt) malloc(sizeof(*registration));
 	void *service = (void *) 0x30;
 	registration->svcObj = service;
 
@@ -149,7 +143,7 @@ TEST(service_registration, isValidTrue) {
 }
 
 TEST(service_registration, isValidFalse) {
-	service_registration_pt registration = (service_registration_pt) apr_palloc(pool, sizeof(*registration));
+	service_registration_pt registration = (service_registration_pt) malloc(sizeof(*registration));
 	registration->svcObj = NULL;
 
 	bool valid = serviceRegistration_isValid(registration);
@@ -158,7 +152,7 @@ TEST(service_registration, isValidFalse) {
 }
 
 TEST(service_registration, invalidate) {
-	service_registration_pt registration = (service_registration_pt) apr_palloc(pool, sizeof(*registration));
+	service_registration_pt registration = (service_registration_pt) malloc(sizeof(*registration));
 	celixThreadMutex_create(&registration->mutex, NULL);
 	void *service = (void *) 0x30;
 	registration->svcObj = service;
@@ -171,7 +165,7 @@ TEST(service_registration, invalidate) {
 TEST(service_registration, unregisterValid) {
 	service_registry_pt registry = (service_registry_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
-	service_registration_pt registration = (service_registration_pt) apr_palloc(pool, sizeof(*registration));
+	service_registration_pt registration = (service_registration_pt) malloc(sizeof(*registration));
 	registration->registry = registry;
 	registration->bundle = bundle;
 	celixThreadMutex_create(&registration->mutex, NULL);
@@ -192,7 +186,7 @@ TEST(service_registration, unregisterValid) {
 TEST(service_registration, unregisterInvalid) {
 	service_registry_pt registry = (service_registry_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
-	service_registration_pt registration = (service_registration_pt) apr_palloc(pool, sizeof(*registration));
+	service_registration_pt registration = (service_registration_pt) malloc(sizeof(*registration));
 	registration->registry = registry;
 	registration->bundle = bundle;
 	celixThreadMutex_create(&registration->mutex, NULL);
@@ -203,7 +197,7 @@ TEST(service_registration, unregisterInvalid) {
 }
 
 TEST(service_registration, getService) {
-	service_registration_pt registration = (service_registration_pt) apr_palloc(pool, sizeof(*registration));
+	service_registration_pt registration = (service_registration_pt) malloc(sizeof(*registration));
 	bundle_pt bundle = (bundle_pt) 0x10;
 	registration->bundle = bundle;
 	void *service = (void *) 0x20;
@@ -222,10 +216,10 @@ celix_status_t serviceRegistrationTest_getService(void *factory, bundle_pt bundl
 }
 
 TEST(service_registration, getServiceFromFactory) {
-	service_registration_pt registration = (service_registration_pt) apr_palloc(pool, sizeof(*registration));
+	service_registration_pt registration = (service_registration_pt) malloc(sizeof(*registration));
 	bundle_pt bundle = (bundle_pt) 0x10;
 	registration->bundle = bundle;
-	service_factory_pt factory = (service_factory_pt) apr_palloc(pool, sizeof(*factory));
+	service_factory_pt factory = (service_factory_pt) malloc(sizeof(*factory));
 	factory->getService = serviceRegistrationTest_getService;
 	registration->svcObj = factory;
 	registration->serviceFactory = factory;
@@ -238,7 +232,7 @@ TEST(service_registration, getServiceFromFactory) {
 }
 
 TEST(service_registration, getProperties) {
-	service_registration_pt registration = (service_registration_pt) apr_palloc(pool, sizeof(*registration));
+	service_registration_pt registration = (service_registration_pt) malloc(sizeof(*registration));
 	properties_pt properties = (properties_pt) 0x10;
 	registration->properties = properties;
 
@@ -249,7 +243,7 @@ TEST(service_registration, getProperties) {
 }
 
 TEST(service_registration, getPropertiesIllegalArgument) {
-	service_registration_pt registration = (service_registration_pt) apr_palloc(pool, sizeof(*registration));
+	service_registration_pt registration = (service_registration_pt) malloc(sizeof(*registration));
 	registration->properties = NULL;
 
 	properties_pt actual = (properties_pt) 0x01;
@@ -258,7 +252,7 @@ TEST(service_registration, getPropertiesIllegalArgument) {
 }
 
 TEST(service_registration, getRegistry) {
-	service_registration_pt registration = (service_registration_pt) apr_palloc(pool, sizeof(*registration));
+	service_registration_pt registration = (service_registration_pt) malloc(sizeof(*registration));
 	service_registry_pt registry = (service_registry_pt) 0x10;
 	registration->registry = registry;
 
@@ -269,7 +263,7 @@ TEST(service_registration, getRegistry) {
 }
 
 TEST(service_registration, getRegistryIllegalArgument) {
-	service_registration_pt registration = (service_registration_pt) apr_palloc(pool, sizeof(*registration));
+	service_registration_pt registration = (service_registration_pt) malloc(sizeof(*registration));
 	registration->registry = NULL;
 
 	service_registry_pt actual = (service_registry_pt) 0x01;
@@ -278,7 +272,7 @@ TEST(service_registration, getRegistryIllegalArgument) {
 }
 
 TEST(service_registration, getServiceReferences) {
-	service_registration_pt registration = (service_registration_pt) apr_palloc(pool, sizeof(*registration));
+	service_registration_pt registration = (service_registration_pt) malloc(sizeof(*registration));
 	array_list_pt references = (array_list_pt) 0x10;
 	registration->references = references;
 
@@ -289,7 +283,7 @@ TEST(service_registration, getServiceReferences) {
 }
 
 TEST(service_registration, getServiceReferencesIllegalArgument) {
-	service_registration_pt registration = (service_registration_pt) apr_palloc(pool, sizeof(*registration));
+	service_registration_pt registration = (service_registration_pt) malloc(sizeof(*registration));
 	registration->registry = NULL;
 
 	array_list_pt actual = (array_list_pt) 0x01;
@@ -298,7 +292,7 @@ TEST(service_registration, getServiceReferencesIllegalArgument) {
 }
 
 TEST(service_registration, getServiceName) {
-	service_registration_pt registration = (service_registration_pt) apr_palloc(pool, sizeof(*registration));
+	service_registration_pt registration = (service_registration_pt) malloc(sizeof(*registration));
 	std::string serviceName = "service";
 	registration->className = (char *) serviceName.c_str();
 
@@ -309,7 +303,7 @@ TEST(service_registration, getServiceName) {
 }
 
 TEST(service_registration, getServiceNameIllegalArgument) {
-	service_registration_pt registration = (service_registration_pt) apr_palloc(pool, sizeof(*registration));
+	service_registration_pt registration = (service_registration_pt) malloc(sizeof(*registration));
 	registration->className = NULL;
 
 	char *actual = (char *) 0x01;
@@ -318,7 +312,7 @@ TEST(service_registration, getServiceNameIllegalArgument) {
 }
 
 TEST(service_registration, getBundle) {
-	service_registration_pt registration = (service_registration_pt) apr_palloc(pool, sizeof(*registration));
+	service_registration_pt registration = (service_registration_pt) malloc(sizeof(*registration));
 	bundle_pt bundle = (bundle_pt) 0x10;
 	registration->bundle = bundle;
 
@@ -329,7 +323,7 @@ TEST(service_registration, getBundle) {
 }
 
 TEST(service_registration, getBundleIllegalArgument) {
-	service_registration_pt registration = (service_registration_pt) apr_palloc(pool, sizeof(*registration));
+	service_registration_pt registration = (service_registration_pt) malloc(sizeof(*registration));
 	registration->bundle = NULL;
 
 	bundle_pt actual = (bundle_pt) 0x01;

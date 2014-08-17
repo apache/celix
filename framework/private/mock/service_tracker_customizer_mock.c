@@ -38,35 +38,35 @@ celix_status_t serviceTrackerCustomizer_create(void *handle,
 celix_status_t serviceTrackerCustomizer_getHandle(service_tracker_customizer_pt customizer, void **handle) {
 	mock_c()->actualCall("serviceTrackerCustomizer_getHandle")
 			->withPointerParameters("customizer", customizer)
-			->_andPointerOutputParameters("handle", handle);
+			->withOutputParameter("handle", handle);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t serviceTrackerCustomizer_getAddingFunction(service_tracker_customizer_pt customizer, adding_callback_pt *function) {
 	mock_c()->actualCall("serviceTrackerCustomizer_getAddingFunction")
 		->withPointerParameters("customizer", customizer)
-		->_andPointerOutputParameters("function", (void **) function);
+		->withOutputParameter("function", (void **) function);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t serviceTrackerCustomizer_getAddedFunction(service_tracker_customizer_pt customizer, added_callback_pt *function) {
 	mock_c()->actualCall("serviceTrackerCustomizer_getAddedFunction")
 		->withPointerParameters("customizer", customizer)
-		->_andPointerOutputParameters("function", (void **) function);
+		->withOutputParameter("function", (void **) function);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t serviceTrackerCustomizer_getModifiedFunction(service_tracker_customizer_pt customizer, modified_callback_pt *function) {
 	mock_c()->actualCall("serviceTrackerCustomizer_getModifiedFunction")
 			->withPointerParameters("customizer", customizer)
-			->_andPointerOutputParameters("function", (void **) function);
+			->withOutputParameter("function", (void **) function);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t serviceTrackerCustomizer_getRemovedFunction(service_tracker_customizer_pt customizer, removed_callback_pt *function) {
 	mock_c()->actualCall("serviceTrackerCustomizer_getRemovedFunction")
 			->withPointerParameters("customizer", customizer)
-			->_andPointerOutputParameters("function", (void **) function);
+			->withOutputParameter("function", (void **) function);
 	return mock_c()->returnValue().value.intValue;
 }
 

@@ -51,7 +51,7 @@ celix_status_t bundle_getArchive(bundle_pt bundle, bundle_archive_pt *archive) {
 celix_status_t bundle_getCurrentModule(bundle_pt bundle, module_pt *module) {
 	mock_c()->actualCall("bundle_getCurrentModule")
 		->withPointerParameters("bundle", bundle)
-		->_andPointerOutputParameters("module", (void **) module);
+		->withOutputParameter("module", (void **) module);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -203,7 +203,7 @@ celix_status_t bundle_getServicesInUse(bundle_pt bundle, array_list_pt *list) {
 celix_status_t bundle_getMemoryPool(bundle_pt bundle, apr_pool_t **pool) {
 	mock_c()->actualCall("bundle_getMemoryPool")
 			->withPointerParameters("bundle", bundle)
-			->_andPointerOutputParameters("pool", (void **) pool);
+			->withOutputParameter("pool", (void **) pool);
 	return mock_c()->returnValue().value.intValue;
 }
 

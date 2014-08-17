@@ -29,14 +29,14 @@
 
 celix_status_t manifest_create(manifest_pt *manifest) {
 	mock_c()->actualCall("manifest_create")
-        ->_andPointerOutputParameters("manifest", (void **) manifest);
+        ->withOutputParameter("manifest", (void **) manifest);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t manifest_createFromFile(char *filename, manifest_pt *manifest) {
     mock_c()->actualCall("manifest_createFromFile")
         ->withStringParameters("filename", filename)
-        ->_andPointerOutputParameters("manifest", (void **) manifest);
+        ->withOutputParameter("manifest", (void **) manifest);
 	return mock_c()->returnValue().value.intValue;
 }
 

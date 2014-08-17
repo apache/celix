@@ -46,18 +46,12 @@ int main(int argc, char** argv) {
 }
 
 TEST_GROUP(service_tracker_customizer) {
-	apr_pool_t *pool;
-
 	void setup(void) {
-		apr_initialize();
-		apr_pool_create(&pool, NULL);
-
-		logger = (framework_logger_pt) apr_palloc(pool, sizeof(*logger));
+		logger = (framework_logger_pt) malloc(sizeof(*logger));
         logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
-		apr_pool_destroy(pool);
 //		mock().checkExpectations();
 //		mock().clear();
 	}
@@ -110,7 +104,7 @@ TEST(service_tracker_customizer, createIllegalArgument) {
 }
 
 TEST(service_tracker_customizer, getHandle) {
-	service_tracker_customizer_pt customizer = (service_tracker_customizer_pt) apr_palloc(pool, sizeof(*customizer));
+	service_tracker_customizer_pt customizer = (service_tracker_customizer_pt) malloc(sizeof(*customizer));
 	void *handle = (void *) 0x10;
 	customizer->handle = handle;
 
@@ -121,7 +115,7 @@ TEST(service_tracker_customizer, getHandle) {
 }
 
 TEST(service_tracker_customizer, getAddingFunction) {
-	service_tracker_customizer_pt customizer = (service_tracker_customizer_pt) apr_palloc(pool, sizeof(*customizer));
+	service_tracker_customizer_pt customizer = (service_tracker_customizer_pt) malloc(sizeof(*customizer));
 	adding_callback_pt adding = (adding_callback_pt) 0x11;
 	customizer->addingService = adding;
 
@@ -132,7 +126,7 @@ TEST(service_tracker_customizer, getAddingFunction) {
 }
 
 TEST(service_tracker_customizer, getAddedFunction) {
-	service_tracker_customizer_pt customizer = (service_tracker_customizer_pt) apr_palloc(pool, sizeof(*customizer));
+	service_tracker_customizer_pt customizer = (service_tracker_customizer_pt) malloc(sizeof(*customizer));
 	added_callback_pt added = (added_callback_pt) 0x11;
 	customizer->addedService = added;
 
@@ -143,7 +137,7 @@ TEST(service_tracker_customizer, getAddedFunction) {
 }
 
 TEST(service_tracker_customizer, getModifiedFunction) {
-	service_tracker_customizer_pt customizer = (service_tracker_customizer_pt) apr_palloc(pool, sizeof(*customizer));
+	service_tracker_customizer_pt customizer = (service_tracker_customizer_pt) malloc(sizeof(*customizer));
 	modified_callback_pt modified = (modified_callback_pt) 0x11;
 	customizer->modifiedService = modified;
 
@@ -154,7 +148,7 @@ TEST(service_tracker_customizer, getModifiedFunction) {
 }
 
 TEST(service_tracker_customizer, getRemovedFunction) {
-	service_tracker_customizer_pt customizer = (service_tracker_customizer_pt) apr_palloc(pool, sizeof(*customizer));
+	service_tracker_customizer_pt customizer = (service_tracker_customizer_pt) malloc(sizeof(*customizer));
 	removed_callback_pt removed = (removed_callback_pt) 0x11;
 	customizer->removedService = removed;
 

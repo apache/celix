@@ -31,21 +31,21 @@ celix_status_t attribute_create(char * key, char * value, attribute_pt *attribut
 	mock_c()->actualCall("attribute_create")
 			->withStringParameters("key", key)
 			->withStringParameters("value", value)
-			->_andPointerOutputParameters("attribute", (void **) attribute);
+			->withOutputParameter("attribute", (void **) attribute);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t attribute_getKey(attribute_pt attribute, char **key) {
 	mock_c()->actualCall("attribute_getKey")
 			->withPointerParameters("attribute", attribute)
-			->_andStringOutputParameters("key", (const char **) key);
+			->withOutputParameter("key", (const char **) key);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t attribute_getValue(attribute_pt attribute, char **value) {
 	mock_c()->actualCall("attribute_getValue")
 			->withPointerParameters("attribute", attribute)
-			->_andStringOutputParameters("value", (const char **) value);
+			->withOutputParameter("value", (const char **) value);
 	return mock_c()->returnValue().value.intValue;
 }
 

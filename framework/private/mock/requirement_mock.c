@@ -31,7 +31,8 @@ celix_status_t requirement_create(hash_map_pt directives, hash_map_pt attributes
 	mock_c()->actualCall("requirement_create")
 			->withPointerParameters("directives", directives)
 			->withPointerParameters("attributes", attributes)
-			->_andPointerOutputParameters("requirement", (void **) requirement);
+			->withOutputParameter("requirement", (void **) requirement);
+//			->_andPointerOutputParameters("requirement", (void **) requirement);
 	return mock_c()->returnValue().value.intValue;
 }
 

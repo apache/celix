@@ -25,6 +25,8 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/TestHarness_c.h"
@@ -32,7 +34,6 @@
 #include "CppUTestExt/MockSupport.h"
 
 extern "C" {
-#include <apr_file_io.h>
 #include "bundle_cache_private.h"
 #include "celix_log.h"
 
@@ -44,18 +45,12 @@ int main(int argc, char** argv) {
 }
 
 TEST_GROUP(bundle_cache) {
-	apr_pool_t *pool;
-
 	void setup(void) {
-		apr_initialize();
-		apr_pool_create(&pool, NULL);
-
-		logger = (framework_logger_pt) apr_palloc(pool, sizeof(*logger));
+		logger = (framework_logger_pt) malloc(sizeof(*logger));
         logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
-		apr_pool_destroy(pool);
 		mock().checkExpectations();
 		mock().clear();
 	}
@@ -75,14 +70,13 @@ TEST(bundle_cache, create) {
 }
 
 TEST(bundle_cache, deleteTree) {
-	bundle_cache_pt cache = (bundle_cache_pt) apr_palloc(pool, sizeof(*cache));
+	bundle_cache_pt cache = (bundle_cache_pt) malloc(sizeof(*cache));
 	char cacheDir[] = "bundle_cache_test_directory";
 	char cacheFile[] = "bundle_cache_test_directory/temp";
 	cache->cacheDir = cacheDir;
 
-	apr_dir_make(cacheDir, APR_UREAD|APR_UWRITE|APR_UEXECUTE, pool);
-	apr_file_t *file;
-	apr_file_mktemp(&file, cacheFile, APR_UREAD|APR_UWRITE, pool);
+	mkdir(cacheDir, S_IRWXU);
+	mktemp(cacheFile);
 
 	celix_status_t status = bundleCache_delete(cache);
 
@@ -91,21 +85,20 @@ TEST(bundle_cache, deleteTree) {
 }
 
 TEST(bundle_cache, getArchive) {
-	bundle_cache_pt cache = (bundle_cache_pt) apr_palloc(pool, sizeof(*cache));
+	bundle_cache_pt cache = (bundle_cache_pt) malloc(sizeof(*cache));
 	char cacheDir[] = "bundle_cache_test_directory";
 	cache->cacheDir = cacheDir;
 
 	char bundle0[] = "bundle_cache_test_directory/bundle0";
 	char bundle1[] = "bundle_cache_test_directory/bundle1";
-	apr_dir_make(cacheDir, APR_UREAD|APR_UWRITE|APR_UEXECUTE, pool);
-	apr_dir_make(bundle0, APR_UREAD|APR_UWRITE|APR_UEXECUTE, pool);
-	apr_dir_make(bundle1, APR_UREAD|APR_UWRITE|APR_UEXECUTE, pool);
+	mkdir(cacheDir, S_IRWXU);
+	mkdir(bundle0, S_IRWXU);
+	mkdir(bundle1, S_IRWXU);
 
 	bundle_archive_pt archive = (bundle_archive_pt) 0x10;
 	mock().expectOneCall("bundleArchive_recreate")
 		.withParameter("archiveRoot", bundle1)
-		.withParameter("mp", pool)
-		.andOutputParameter("bundle_archive", archive)
+		.withOutputParameterReturning("bundle_archive", &archive, sizeof(archive))
 		.andReturnValue(CELIX_SUCCESS);
 
 	array_list_pt archives = NULL;
@@ -116,13 +109,13 @@ TEST(bundle_cache, getArchive) {
 	LONGS_EQUAL(1, arrayList_size(archives));
 	POINTERS_EQUAL(archive, arrayList_get(archives, 0));
 
-	apr_dir_remove(bundle0, pool);
-	apr_dir_remove(bundle1, pool);
-	apr_dir_remove(cacheDir, pool);
+	rmdir(bundle0);
+	rmdir(bundle1);
+	rmdir(cacheDir);
 }
 
 TEST(bundle_cache, createArchive) {
-	bundle_cache_pt cache = (bundle_cache_pt) apr_palloc(pool, sizeof(*cache));
+	bundle_cache_pt cache = (bundle_cache_pt) malloc(sizeof(*cache));
 	char cacheDir[] = "bundle_cache_test_directory";
 	cache->cacheDir = cacheDir;
 
@@ -136,8 +129,7 @@ TEST(bundle_cache, createArchive) {
 		.withParameter("id", id)
 		.withParameter("location", location)
 		.withParameter("inputFile", (char *) NULL)
-		.withParameter("mp", pool)
-		.andOutputParameter("bundle_archive", archive)
+		.withOutputParameterReturning("bundle_archive", &archive, sizeof(archive))
 		.andReturnValue(CELIX_SUCCESS);
 
 	bundle_archive_pt actual;

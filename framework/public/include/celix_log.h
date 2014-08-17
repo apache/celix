@@ -29,6 +29,7 @@
 
 #include <stdio.h>
 
+#include "celix_errno.h"
 #include "framework_exports.h"
 
 enum framework_log_level

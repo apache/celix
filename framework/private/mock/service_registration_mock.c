@@ -76,7 +76,7 @@ celix_status_t serviceRegistration_getService(service_registration_pt registrati
 	mock_c()->actualCall("serviceRegistration_getService")
 		->withPointerParameters("registration", registration)
 		->withPointerParameters("bundle", bundle)
-		->_andPointerOutputParameters("service", (void **) service);
+		->withOutputParameter("service", (void **) service);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -84,35 +84,35 @@ celix_status_t serviceRegistration_getService(service_registration_pt registrati
 celix_status_t serviceRegistration_getProperties(service_registration_pt registration, properties_pt *properties) {
 	mock_c()->actualCall("serviceRegistration_getProperties")
 			->withPointerParameters("registration", registration)
-			->_andPointerOutputParameters("properties", (void **) properties);
+			->withOutputParameter("properties", (void **) properties);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t serviceRegistration_getRegistry(service_registration_pt registration, service_registry_pt *registry) {
 	mock_c()->actualCall("serviceRegistration_getRegistry")
 			->withPointerParameters("registration", registration)
-			->_andPointerOutputParameters("registry", (void **) registry);
+			->withOutputParameter("registry", (void **) registry);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t serviceRegistration_getServiceReferences(service_registration_pt registration, array_list_pt *references) {
 	mock_c()->actualCall("serviceRegistration_getServiceReferences")
 			->withPointerParameters("registration", registration)
-			->_andPointerOutputParameters("references", (void **) references);
+			->withOutputParameter("references", references);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t serviceRegistration_getBundle(service_registration_pt registration, bundle_pt *bundle) {
 	mock_c()->actualCall("serviceRegistration_getBundle")
 			->withPointerParameters("registration", registration)
-			->_andPointerOutputParameters("bundle", (void **) bundle);
+			->withOutputParameter("bundle", (void **) bundle);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t serviceRegistration_getServiceName(service_registration_pt registration, char **serviceName) {
 	mock_c()->actualCall("serviceRegistration_getServiceName")
 			->withPointerParameters("registration", registration)
-			->_andStringOutputParameters("serviceName", (const char **) serviceName);
+			->withOutputParameter("serviceName", (const char **) serviceName);
 	return mock_c()->returnValue().value.intValue;
 }
 

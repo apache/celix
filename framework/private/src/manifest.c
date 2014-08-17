@@ -53,7 +53,7 @@ celix_status_t manifest_create(manifest_pt *manifest) {
 
 celix_status_t manifest_destroy(manifest_pt manifest) {
 	if (manifest != NULL) {
-	    hashMap_destroy(manifest->mainAttributes, true, true);
+	    properties_destroy(manifest->mainAttributes);
 		hashMap_destroy(manifest->attributes, true, false);
 		manifest->mainAttributes = NULL;
 		manifest->attributes = NULL;
@@ -99,6 +99,7 @@ celix_status_t manifest_read(manifest_pt manifest, char *filename) {
 		char name[512];
 		bool skipEmptyLines = true;
 		char lastline[512];
+		name[0] = '\0';
 
 		manifest_readAttributes(manifest, manifest->mainAttributes, file);
 		
@@ -164,6 +165,7 @@ celix_status_t manifest_read(manifest_pt manifest, char *filename) {
 			}
 			manifest_readAttributes(manifest, attributes, file);
 
+			name[0] = '\0';
 			skipEmptyLines = true;
 		}
 		fclose(file);

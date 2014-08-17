@@ -17,37 +17,59 @@
  *under the License.
  */
 /*
- * module_test.cpp
+ * version_test.cpp
  *
- *  \date       Feb 11, 2013
+ *  \date       Dec 18, 2012
  *  \author     <a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
  *  \copyright  Apache License, Version 2.0
  */
-#include <stdlib.h>
-#include <stdio.h>
-
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/TestHarness_c.h"
 #include "CppUTest/CommandLineTestRunner.h"
-#include "CppUTestExt/MockSupport.h"
 
-extern "C" {
+extern "C"
+{
+#include "celix_log.h"
+#include "celix_errno.h"
+
+#include "wire.h"
 #include "module.h"
+#include "requirement.h"
+#include "capability.h"
+
+framework_logger_pt logger;
 }
 
 int main(int argc, char** argv) {
 	return RUN_ALL_TESTS(argc, argv);
 }
 
-TEST_GROUP(module) {
+TEST_GROUP(wire) {
+
 	void setup(void) {
+	    logger = (framework_logger_pt) malloc(sizeof(*logger));
+        logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
-		mock().checkExpectations();
-		mock().clear();
+	    free(logger);
 	}
 };
+
+
+TEST(wire, create) {
+    module_pt module = (module_pt) 0x01;
+    capability_pt cap = (capability_pt) 0x02;
+    requirement_pt req = (requirement_pt) 0x03;
+
+    wire_pt wire = NULL;
+
+    wire_create(module, req, module, cap, &wire);
+
+	LONGS_EQUAL(1, 1);
+
+	wire_destroy(wire);
+}
 
 
 

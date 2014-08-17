@@ -55,7 +55,7 @@ celix_status_t fw_getProperty(framework_pt framework, const char *name, char **v
 	mock_c()->actualCall("fw_getProperty")
 			->withPointerParameters("framework", framework)
 			->withStringParameters("name", name)
-			->_andStringOutputParameters("value", (const char **) value);
+			->withOutputParameter("value", (const char **) value);
 		return mock_c()->returnValue().value.intValue;
 }
 
@@ -64,7 +64,7 @@ celix_status_t fw_installBundle(framework_pt framework, bundle_pt * bundle, char
 			->withPointerParameters("framework", framework)
 			->withStringParameters("location", location)
 			->withStringParameters("inputFile", inputFile)
-			->_andPointerOutputParameters("bundle", (void **) bundle);
+			->withOutputParameter("bundle", (void **) bundle);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -80,7 +80,7 @@ celix_status_t framework_getBundleEntry(framework_pt framework, bundle_pt bundle
 			->withPointerParameters("framework", framework)
 			->withPointerParameters("bundle", bundle)
 			->withStringParameters("name", name)
-			->_andStringOutputParameters("entry", (const char **) entry);
+			->withOutputParameter("entry", (const char **) entry);
 		return mock_c()->returnValue().value.intValue;
 }
 
@@ -117,7 +117,7 @@ celix_status_t fw_registerService(framework_pt framework, service_registration_p
 		->withStringParameters("serviceName", serviceName)
 		->withPointerParameters("service", svcObj)
 		->withPointerParameters("properties", properties)
-		->_andPointerOutputParameters("registration", (void **) registration);
+		->withOutputParameter("registration", (void **) registration);
 		return mock_c()->returnValue().value.intValue;
 }
 
@@ -128,7 +128,7 @@ celix_status_t fw_registerServiceFactory(framework_pt framework, service_registr
 		->withStringParameters("serviceName", serviceName)
 		->withPointerParameters("serviceFactory", factory)
 		->withPointerParameters("properties", properties)
-		->_andPointerOutputParameters("registration", (void **) registration);
+		->withOutputParameter("registration", (void **) registration);
 		return mock_c()->returnValue().value.intValue;
 }
 
@@ -143,7 +143,7 @@ celix_status_t fw_getServiceReferences(framework_pt framework, array_list_pt *re
 		->withPointerParameters("bundle", bundle)
 		->withStringParameters("serviceName", serviceName)
 		->withStringParameters("filter", filter)
-		->_andPointerOutputParameters("references", (void **) references);
+		->withOutputParameter("references", (void **) references);
 		return mock_c()->returnValue().value.intValue;
 }
 
@@ -152,7 +152,7 @@ celix_status_t fw_getService(framework_pt framework, bundle_pt bundle, service_r
 		->withPointerParameters("framework", framework)
 		->withPointerParameters("bundle", bundle)
 		->withPointerParameters("reference", reference)
-		->_andPointerOutputParameters("service", service);
+		->withOutputParameter("service", service);
 		return mock_c()->returnValue().value.intValue;
 }
 
@@ -161,7 +161,7 @@ celix_status_t framework_ungetService(framework_pt framework, bundle_pt bundle, 
 		->withPointerParameters("framework", framework)
 		->withPointerParameters("bundle", bundle)
 		->withPointerParameters("reference", reference)
-		->_andIntOutputParameters("result", (int *) result);
+		->withOutputParameter("result", (int *) result);
 		return mock_c()->returnValue().value.intValue;
 }
 
@@ -242,7 +242,7 @@ celix_status_t fw_isServiceAssignable(framework_pt fw, bundle_pt requester, serv
 celix_status_t getManifest(bundle_archive_pt archive, manifest_pt *manifest) {
 	mock_c()->actualCall("getManifest")
 			->withPointerParameters("archive", archive)
-			->_andPointerOutputParameters("manifest", (void **) manifest);
+			->withOutputParameter("manifest", (void **) manifest);
 		return mock_c()->returnValue().value.intValue;
 }
 
@@ -291,14 +291,6 @@ bundle_pt framework_getBundleById(framework_pt framework, long id) {
 		->withPointerParameters("framework", framework)
 		->withIntParameters("id", id);
 	return mock_c()->returnValue().value.pointerValue;
-}
-
-
-celix_status_t framework_getMemoryPool(framework_pt framework, apr_pool_t **pool) {
-	mock_c()->actualCall("framework_getMemoryPool")
-			->withPointerParameters("framework", framework)
-			->_andPointerOutputParameters("pool", (void **) pool);
-	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t framework_getFrameworkBundle(framework_pt framework, bundle_pt *bundle) {

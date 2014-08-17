@@ -26,8 +26,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include <apr_general.h>
-
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/TestHarness_c.h"
 #include "CppUTest/CommandLineTestRunner.h"
@@ -46,18 +44,12 @@ int main(int argc, char** argv) {
 }
 
 TEST_GROUP(manifest) {
-	apr_pool_t *pool;
-
 	void setup(void) {
-		apr_initialize();
-		apr_pool_create(&pool, NULL);
-
-		logger = (framework_logger_pt) apr_palloc(pool, sizeof(*logger));
+		logger = (framework_logger_pt) malloc(sizeof(*logger));
         logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
-		apr_pool_destroy(pool);
 		mock().checkExpectations();
 		mock().clear();
 	}
@@ -102,6 +94,7 @@ TEST(manifest, createFromFile) {
         .withParameter("properties", properties);
 
     manifest_createFromFile(manifestFile, &manifest);
+    manifest_destroy(manifest);
 }
 
 TEST(manifest, createFromFileWithSections) {
@@ -184,5 +177,7 @@ TEST(manifest, createFromFileWithSections) {
 
     actual = (properties_pt) hashMap_get(map, (void *) "b");
     POINTERS_EQUAL(properties3, actual);
+
+    manifest_destroy(manifest);
 }
 

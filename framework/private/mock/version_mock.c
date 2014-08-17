@@ -45,13 +45,13 @@ celix_status_t version_clone(version_pt version, version_pt *clone) {
 celix_status_t version_createVersionFromString(char * versionStr, version_pt *version) {
 	mock_c()->actualCall("version_createVersionFromString")
 	        ->withStringParameters("versionStr", versionStr)
-	        ->_andPointerOutputParameters("version", (void **) version);
+	        ->withOutputParameter("version", (void **) version);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t version_createEmptyVersion(version_pt *version) {
 	mock_c()->actualCall("version_createEmptyVersion")
-			->_andPointerOutputParameters("version", (void **) version);
+			->withOutputParameter("version", (void **) version);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -76,9 +76,13 @@ celix_status_t version_getQualifier(version_pt version, char **qualifier) {
 }
 
 celix_status_t version_compareTo(version_pt version, version_pt compare, int *result) {
-	mock_c()->actualCall("version_compareTo");
-	return mock_c()->returnValue().value.intValue;
+    mock_c()->actualCall("version_compareTo")
+        ->withPointerParameters("version", version)
+        ->withPointerParameters("compare", compare)
+        ->withOutputParameter("result", result);
+    return CELIX_SUCCESS;
 }
+
 
 celix_status_t version_toString(version_pt version, char **string) {
 	mock_c()->actualCall("version_toString");

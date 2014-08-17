@@ -44,18 +44,12 @@ int main(int argc, char** argv) {
 }
 
 TEST_GROUP(capability) {
-	apr_pool_t *pool;
-
 	void setup(void) {
-		apr_initialize();
-		apr_pool_create(&pool, NULL);
-
-		logger = (framework_logger_pt) apr_palloc(pool, sizeof(*logger));
+		logger = (framework_logger_pt) malloc(sizeof(*logger));
         logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
-		apr_pool_destroy(pool);
 		mock().checkExpectations();
 		mock().clear();
 	}
@@ -74,24 +68,24 @@ TEST(capability, create) {
 	version_pt emptyVersion = (version_pt) 0x10;
 
 	mock().expectOneCall("version_createEmptyVersion")
-        .withParameter("pool", pool)
-        .andOutputParameter("version", emptyVersion)
+        .withOutputParameterReturning("version", &emptyVersion, sizeof(emptyVersion))
         .andReturnValue(CELIX_SUCCESS);
 
+	char *value1 = (char *) "target";
 	mock().expectOneCall("attribute_getValue")
         .withParameter("attribute", serviceAttribute)
-        .andOutputParameter("value", (char *) "target")
+        .withOutputParameterReturning("value", &value1, sizeof(value1))
         .andReturnValue(CELIX_SUCCESS);
 
+	char *value2 = (char *) "1.0.0";
 	mock().expectOneCall("attribute_getValue")
         .withParameter("attribute", versionAttribute)
-        .andOutputParameter("value", (char *) "1.0.0")
+        .withOutputParameterReturning("value", &value2, sizeof(value2))
         .andReturnValue(CELIX_SUCCESS);
 
 	mock().expectOneCall("version_createVersionFromString")
-        .withParameter("pool", pool)
         .withParameter("versionStr", (char *) "1.0.0")
-        .andOutputParameter("version", emptyVersion)
+        .withOutputParameterReturning("version", &emptyVersion, sizeof(emptyVersion))
         .andReturnValue(CELIX_SUCCESS);
 
 	capability_pt capability = NULL;
@@ -99,7 +93,7 @@ TEST(capability, create) {
 }
 
 TEST(capability, getServiceName) {
-	capability_pt capability = (capability_pt) apr_palloc(pool, sizeof(*capability));
+	capability_pt capability = (capability_pt) malloc(sizeof(*capability));
 	char serviceName[] = "service";
 	capability->serviceName = serviceName;
 
@@ -109,7 +103,7 @@ TEST(capability, getServiceName) {
 }
 
 TEST(capability, getVersion) {
-	capability_pt capability = (capability_pt) apr_palloc(pool, sizeof(*capability));
+	capability_pt capability = (capability_pt) malloc(sizeof(*capability));
 	version_pt version = (version_pt) 0x10;
 	capability->version = version;
 
@@ -119,7 +113,7 @@ TEST(capability, getVersion) {
 }
 
 TEST(capability, getModule) {
-	capability_pt capability = (capability_pt) apr_palloc(pool, sizeof(*capability));
+	capability_pt capability = (capability_pt) malloc(sizeof(*capability));
 	module_pt module = (module_pt) 0x10;
 	capability->module = module;
 
