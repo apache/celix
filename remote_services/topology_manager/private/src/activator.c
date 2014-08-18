@@ -27,8 +27,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <apr_strings.h>
-
 #include "constants.h"
 #include "bundle_activator.h"
 #include "service_tracker.h"
@@ -40,7 +38,6 @@
 #include "listener_hook_service.h"
 
 struct activator {
-	apr_pool_t *pool;
 	bundle_context_pt context;
 
 	topology_manager_pt manager;
@@ -57,35 +54,27 @@ static celix_status_t bundleActivator_createServiceListener(struct activator *ac
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
-	apr_pool_t *parentPool = NULL;
-	apr_pool_t *pool = NULL;
 	struct activator *activator = NULL;
 
-	bundleContext_getMemoryPool(context, &parentPool);
-	if (apr_pool_create(&pool, parentPool) != APR_SUCCESS) {
-		status = CELIX_BUNDLE_EXCEPTION;
-	} else {
-		activator = apr_palloc(pool, sizeof(*activator));
-		if (!activator) {
-			status = CELIX_ENOMEM;
-		} else {
-			activator->pool = pool;
-			activator->context = context;
-			activator->endpointListenerService = NULL;
-			activator->hook = NULL;
-			activator->manager = NULL;
-			activator->remoteServiceAdminTracker = NULL;
-			activator->serviceListener = NULL;
+	activator = malloc(sizeof(struct activator));
+	if (!activator) {
+		return CELIX_ENOMEM;
+	}
 
-			status = topologyManager_create(context, pool, &activator->manager);
+	activator->context = context;
+	activator->endpointListenerService = NULL;
+	activator->hook = NULL;
+	activator->manager = NULL;
+	activator->remoteServiceAdminTracker = NULL;
+	activator->serviceListener = NULL;
+
+	status = topologyManager_create(context, &activator->manager);
+	if (status == CELIX_SUCCESS) {
+		status = bundleActivator_createRSATracker(activator, &activator->remoteServiceAdminTracker);
+		if (status == CELIX_SUCCESS) {
+			status = bundleActivator_createServiceListener(activator, &activator->serviceListener);
 			if (status == CELIX_SUCCESS) {
-				status = bundleActivator_createRSATracker(activator, &activator->remoteServiceAdminTracker);
-				if (status == CELIX_SUCCESS) {
-					status = bundleActivator_createServiceListener(activator, &activator->serviceListener);
-					if (status == CELIX_SUCCESS) {
-						*userData = activator;
-					}
-				}
+				*userData = activator;
 			}
 		}
 	}
@@ -110,15 +99,14 @@ static celix_status_t bundleActivator_createRSATracker(struct activator *activat
 
 static celix_status_t bundleActivator_createServiceListener(struct activator *activator, service_listener_pt *listener) {
 	celix_status_t status = CELIX_SUCCESS;
-	apr_pool_t *pool;
-	apr_pool_create(&pool, activator->pool);
-	*listener = apr_palloc(pool, sizeof(*listener));
+
+	*listener = malloc(sizeof(*listener));
 	if (!*listener) {
-		status = CELIX_ENOMEM;
-	} else {
-		(*listener)->handle = activator->manager;
-		(*listener)->serviceChanged = topologyManager_serviceChanged;
+		return CELIX_ENOMEM;
 	}
+
+	(*listener)->handle = activator->manager;
+	(*listener)->serviceChanged = topologyManager_serviceChanged;
 
 	return status;
 }
@@ -126,24 +114,39 @@ static celix_status_t bundleActivator_createServiceListener(struct activator *ac
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator *activator = userData;
-	apr_pool_t *pool = NULL;
-	apr_pool_create(&pool, activator->pool);
 
-	endpoint_listener_pt endpointListener = apr_palloc(pool, sizeof(*endpointListener));
+	endpoint_listener_pt endpointListener = malloc(sizeof(*endpointListener));
 	endpointListener->handle = activator->manager;
-	endpointListener->endpointAdded = topologyManager_endpointAdded;
-	endpointListener->endpointRemoved = topologyManager_endpointRemoved;
+	endpointListener->endpointAdded = topologyManager_addImportedService;
+	endpointListener->endpointRemoved = topologyManager_removeImportedService;
+
+	char *uuid = NULL;
+	status = bundleContext_getProperty(activator->context, (char *)OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
+	if (!uuid) {
+		printf("TOPOLOGY_MANAGER: no framework UUID defined?!\n");
+		return CELIX_ILLEGAL_STATE;
+	}
+
+	size_t len = 14 + strlen(OSGI_FRAMEWORK_OBJECTCLASS) + strlen(OSGI_RSA_ENDPOINT_FRAMEWORK_UUID) + strlen(uuid);
+	char *scope = malloc(len);
+	if (!scope) {
+		return CELIX_ENOMEM;
+	}
+
+	sprintf(scope, "(&(%s=*)(!(%s=%s)))", OSGI_FRAMEWORK_OBJECTCLASS, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
+	scope[len] = 0;
+
+	printf("TOPOLOGY_MANAGER: endpoint listener scope is %s\n", scope);
 
 	properties_pt props = properties_create();
-	char *uuid = NULL;
-	bundleContext_getProperty(activator->context, (char *)OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
-	char *scope = apr_pstrcat(pool, "(&(", OSGI_FRAMEWORK_OBJECTCLASS, "=*)(!(", OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, "=", uuid, ")))", NULL);
-	printf("TOPOLOGY_MANAGER: Endpoint listener Scope is %s\n", scope);
 	properties_set(props, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, scope);
+
+	// We can release the scope, as properties_set makes a copy of the key & value...
+	free(scope);
 
 	bundleContext_registerService(context, (char *) OSGI_ENDPOINT_LISTENER_SERVICE, endpointListener, props, &activator->endpointListenerService);
 
-	listener_hook_service_pt hook = apr_palloc(pool, sizeof(*hook));
+	listener_hook_service_pt hook = malloc(sizeof(*hook));
 	hook->handle = activator->manager;
 	hook->added = topologyManager_listenerAdded;
 	hook->removed = topologyManager_listenerRemoved;
@@ -161,7 +164,9 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	struct activator *activator = userData;
 
 	serviceTracker_close(activator->remoteServiceAdminTracker);
+
 	bundleContext_removeServiceListener(context, activator->serviceListener);
+
 	serviceRegistration_unregister(activator->hook);
 	serviceRegistration_unregister(activator->endpointListenerService);
 
@@ -169,12 +174,10 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
-
 	struct activator *activator = userData;
-	if(activator==NULL || activator->manager==NULL){
+	if (!activator || !activator->manager) {
 		return CELIX_BUNDLE_EXCEPTION;
 	}
 
 	return topologyManager_destroy(activator->manager);
-
 }

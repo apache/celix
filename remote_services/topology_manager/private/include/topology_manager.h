@@ -33,7 +33,7 @@
 
 typedef struct topology_manager *topology_manager_pt;
 
-celix_status_t topologyManager_create(bundle_context_pt context, apr_pool_t *pool, topology_manager_pt *manager);
+celix_status_t topologyManager_create(bundle_context_pt context, topology_manager_pt *manager);
 celix_status_t topologyManager_destroy(topology_manager_pt manager);
 
 celix_status_t topologyManager_rsaAdding(void *handle, service_reference_pt reference, void **service);
@@ -43,12 +43,11 @@ celix_status_t topologyManager_rsaRemoved(void *handle, service_reference_pt ref
 
 celix_status_t topologyManager_serviceChanged(void *listener, service_event_pt event);
 
-celix_status_t topologyManager_endpointAdded(void *handle, endpoint_description_pt endpoint, char *machtedFilter);
-celix_status_t topologyManager_endpointRemoved(void *handle, endpoint_description_pt endpoint, char *machtedFilter);
+celix_status_t topologyManager_addImportedService(void *handle, endpoint_description_pt endpoint, char *matchedFilter);
+celix_status_t topologyManager_removeImportedService(void *handle, endpoint_description_pt endpoint, char *matchedFilter);
 
-celix_status_t topologyManager_importService(topology_manager_pt manager, endpoint_description_pt endpoint);
-celix_status_t topologyManager_exportService(topology_manager_pt manager, service_reference_pt reference, char *serviceId);
-celix_status_t topologyManager_removeService(topology_manager_pt manager, service_reference_pt reference, char *serviceId);
+celix_status_t topologyManager_addExportedService(topology_manager_pt manager, service_reference_pt reference, char *serviceId);
+celix_status_t topologyManager_removeExportedService(topology_manager_pt manager, service_reference_pt reference, char *serviceId);
 
 celix_status_t topologyManager_listenerAdded(void *handle, array_list_pt listeners);
 celix_status_t topologyManager_listenerRemoved(void *handle, array_list_pt listeners);
