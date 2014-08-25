@@ -29,8 +29,6 @@
 
 #include "calculator_endpoint_impl.h"
 
-#include "calculator_service.h"
-
 celix_status_t calculatorEndpoint_create(apr_pool_t *pool, remote_endpoint_pt *endpoint) {
 	celix_status_t status = CELIX_SUCCESS;
 	*endpoint = apr_palloc(pool, sizeof(**endpoint));
@@ -39,7 +37,6 @@ celix_status_t calculatorEndpoint_create(apr_pool_t *pool, remote_endpoint_pt *e
 	} else {
 		(*endpoint)->service = NULL;
 	}
-
 
 	return status;
 }

@@ -32,6 +32,8 @@
 #include "celix_errno.h"
 #include "remote_endpoint_impl.h"
 
+#include "calculator_service.h"
+
 celix_status_t calculatorEndpoint_create(apr_pool_t *pool, remote_endpoint_pt *endpoint);
 
 celix_status_t calculatorEndpoint_setService(remote_endpoint_pt endpoint, void *service);

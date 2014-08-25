@@ -27,6 +27,8 @@
 
 #include <apr_strings.h>
 
+#include "constants.h"
+
 #include "celix_errno.h"
 
 #include "export_registration_impl.h"
@@ -109,7 +111,8 @@ celix_status_t exportRegistration_createEndpointTracker(export_registration_pt r
 			exportRegistration_endpointAdded, exportRegistration_endpointModified, exportRegistration_endpointRemoved, &customizer);
 
 	if (status == CELIX_SUCCESS) {
-		status = serviceTracker_create(registration->context, OSGI_RSA_REMOTE_ENDPOINT, customizer, tracker);
+		char *filter = apr_pstrcat(registration->pool, "(&(", OSGI_FRAMEWORK_OBJECTCLASS, "=", OSGI_RSA_REMOTE_ENDPOINT, ")(remote.interface=", registration->endpointDescription->service, "))", NULL);
+		status = serviceTracker_createWithFilter(registration->context, filter, customizer, tracker);
 	}
 
 	return status;
