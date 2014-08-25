@@ -111,7 +111,7 @@ apr_status_t log_destroy(void *logp) {
 
 celix_status_t log_addEntry(log_pt log, log_entry_pt entry) {
     apr_thread_mutex_lock(log->lock);
-    //linkedList_addElement(log->entries, entry);
+    linkedList_addElement(log->entries, entry);
 
     // notify any listeners
     if (log->listenerThread != NULL)

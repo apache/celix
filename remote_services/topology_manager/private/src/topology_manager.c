@@ -482,7 +482,7 @@ celix_status_t topologyManager_listenerAdded(void *handle, array_list_pt listene
 	for (int i = 0; i < arrayList_size(listeners); i++) {
 		listener_hook_info_pt info = arrayList_get(listeners, i);
 
-		bundle_pt bundle, self;
+		bundle_pt bundle = NULL, self = NULL;
 		bundleContext_getBundle(info->context, &bundle);
 		bundleContext_getBundle(manager->context, &self);
 		if (bundle == self) {
@@ -520,7 +520,7 @@ celix_status_t topologyManager_listenerRemoved(void *handle, array_list_pt liste
 	for (int i = 0; i < arrayList_size(listeners); i++) {
 		listener_hook_info_pt info = arrayList_get(listeners, i);
 
-		bundle_pt bundle, self;
+		bundle_pt bundle = NULL, self = NULL;
 		bundleContext_getBundle(info->context, &bundle);
 		bundleContext_getBundle(manager->context, &self);
 		if (bundle == self) {

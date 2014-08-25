@@ -1413,7 +1413,7 @@ void fw_removeServiceListener(framework_pt framework, bundle_pt bundle, service_
 
 			info = (listener_hook_info_pt) malloc(sizeof(*info));
 
-			bundle_getContext(element->bundle, &context);
+			bundle_getContext(element->bundle, &lContext);
 			info->context = lContext;
 
 			// TODO Filter toString;
