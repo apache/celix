@@ -444,8 +444,6 @@ celix_status_t serviceRegistry_ungetService(service_registry_pt registry, bundle
 
 	usage->count--;
 
-	serviceRegistry_removeReference(reference);
-
 	if ((serviceRegistration_isValid(registration)) || (usage->count <= 0)) {
 		usage->service = NULL;
 		serviceRegistry_flushUsageCount(registry, bundle, reference);
