@@ -469,8 +469,7 @@ celix_status_t topologyManager_extendFilter(bundle_context_pt context, char *fil
 		return CELIX_ENOMEM;
 	}
 
-	sprintf(*updatedFilter, "(&%s(!(%s=%s)))", filter, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
-	(*updatedFilter)[len] = 0;
+	snprintf(*updatedFilter, len, "(&%s(!(%s=%s)))", filter, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
 
 	return status;
 }

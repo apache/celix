@@ -100,7 +100,7 @@ static celix_status_t bundleActivator_createRSATracker(struct activator *activat
 static celix_status_t bundleActivator_createServiceListener(struct activator *activator, service_listener_pt *listener) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	*listener = malloc(sizeof(*listener));
+	*listener = malloc(sizeof(**listener));
 	if (!*listener) {
 		return CELIX_ENOMEM;
 	}
@@ -133,8 +133,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 		return CELIX_ENOMEM;
 	}
 
-	sprintf(scope, "(&(%s=*)(!(%s=%s)))", OSGI_FRAMEWORK_OBJECTCLASS, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
-	scope[len] = 0;
+	snprintf(scope, 14, "(&(%s=*)(!(%s=%s)))", OSGI_FRAMEWORK_OBJECTCLASS, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
 
 	printf("TOPOLOGY_MANAGER: endpoint listener scope is %s\n", scope);
 

@@ -1253,7 +1253,6 @@ celix_status_t fw_registerService(framework_pt framework, service_registration_p
                     hook->added(hook->handle, infos);
                 }
                 status = CELIX_DO_IF(status, serviceRegistry_ungetService(framework->registry, framework->bundle, ref, &ungetResult));
-                status = CELIX_DO_IF(status, serviceRegistry_removeReference(ref));  //NOTE: should this not be done in the serviceRegistry_ungetService??
 
                 int i = 0;
                 for (i = 0; i < arrayList_size(infos); i++) {
