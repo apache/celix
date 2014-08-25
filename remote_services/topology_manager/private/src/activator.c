@@ -133,7 +133,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 		return CELIX_ENOMEM;
 	}
 
-	snprintf(scope, 14, "(&(%s=*)(!(%s=%s)))", OSGI_FRAMEWORK_OBJECTCLASS, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
+	snprintf(scope, len, "(&(%s=*)(!(%s=%s)))", OSGI_FRAMEWORK_OBJECTCLASS, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
 
 	printf("TOPOLOGY_MANAGER: endpoint listener scope is %s\n", scope);
 
