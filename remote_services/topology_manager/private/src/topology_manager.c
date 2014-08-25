@@ -50,6 +50,8 @@ struct topology_manager {
 
 	celix_thread_mutex_t importedServicesLock;
 	hash_map_pt importedServices;
+
+	celix_thread_mutex_t importInterestsLock;
 	hash_map_pt importInterests;
 };
 
@@ -76,6 +78,7 @@ celix_status_t topologyManager_create(bundle_context_pt context, topology_manage
 	status = celixThreadMutex_create(&(*manager)->rsaListLock, NULL);
 	status = celixThreadMutex_create(&(*manager)->exportedServicesLock, NULL);
 	status = celixThreadMutex_create(&(*manager)->importedServicesLock, NULL);
+	status = celixThreadMutex_create(&(*manager)->importInterestsLock, NULL);
 
 	(*manager)->exportedServices = hashMap_create(serviceReference_hashCode, NULL, serviceReference_equals2, NULL);
 	(*manager)->importedServices = hashMap_create(NULL, NULL, NULL, NULL);
@@ -104,10 +107,16 @@ celix_status_t topologyManager_destroy(topology_manager_pt manager) {
 	status = celixThreadMutex_lock(&manager->importedServicesLock);
 
 	hashMap_destroy(manager->importedServices, false, false);
-	hashMap_destroy(manager->importInterests, false, false);
 
 	status = celixThreadMutex_unlock(&manager->importedServicesLock);
 	status = celixThreadMutex_destroy(&manager->importedServicesLock);
+
+	status = celixThreadMutex_lock(&manager->importInterestsLock);
+
+	hashMap_destroy(manager->importInterests, false, false);
+
+	status = celixThreadMutex_unlock(&manager->importInterestsLock);
+	status = celixThreadMutex_destroy(&manager->importInterestsLock);
 
 	free(manager);
 
@@ -135,7 +144,6 @@ celix_status_t topologyManager_rsaAdded(void * handle, service_reference_pt refe
 	status = celixThreadMutex_unlock(&manager->rsaListLock);
 
 	// TODO add the imported/exported services to the given RSA...
-	manager->exportedServices;
 
 	return status;
 }
@@ -487,7 +495,7 @@ celix_status_t topologyManager_listenerAdded(void *handle, array_list_pt listene
 		char *filter = NULL;
 		topologyManager_extendFilter(manager->context, info->filter, &filter);
 
-		status = celixThreadMutex_lock(&manager->importedServicesLock);
+		status = celixThreadMutex_lock(&manager->importInterestsLock);
 
 		struct import_interest *interest = hashMap_get(manager->importInterests, filter);
 		if (interest) {
@@ -499,7 +507,7 @@ celix_status_t topologyManager_listenerAdded(void *handle, array_list_pt listene
 			hashMap_put(manager->importInterests, filter, interest);
 		}
 
-		status = celixThreadMutex_unlock(&manager->importedServicesLock);
+		status = celixThreadMutex_unlock(&manager->importInterestsLock);
 	}
 
 	return status;
@@ -525,7 +533,7 @@ celix_status_t topologyManager_listenerRemoved(void *handle, array_list_pt liste
 		char *filter = NULL;
 		topologyManager_extendFilter(manager->context, info->filter, &filter);
 
-		status = celixThreadMutex_lock(&manager->importedServicesLock);
+		status = celixThreadMutex_lock(&manager->importInterestsLock);
 
 		struct import_interest *interest = hashMap_get(manager->importInterests, filter);
 		if (interest != NULL && interest->refs-- <= 0) {
@@ -533,7 +541,7 @@ celix_status_t topologyManager_listenerRemoved(void *handle, array_list_pt liste
 			interest = hashMap_remove(manager->importInterests, filter);
 		}
 
-		status = celixThreadMutex_unlock(&manager->importedServicesLock);
+		status = celixThreadMutex_unlock(&manager->importInterestsLock);
 	}
 
 	return status;
