@@ -151,7 +151,6 @@ static celix_status_t serviceRegistry_flushUsageCount(service_registry_pt regist
 celix_status_t serviceRegistry_getRegisteredServices(service_registry_pt registry, bundle_pt bundle, array_list_pt *services) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	printf("Reg Lock\n");
 	celixThreadMutex_lock(&registry->mutex);
 	array_list_pt regs = (array_list_pt) hashMap_get(registry->serviceRegistrations, bundle);
 	if (regs != NULL) {
@@ -169,7 +168,6 @@ celix_status_t serviceRegistry_getRegisteredServices(service_registry_pt registr
 			}
 		}
 	}
-	printf("Reg Unlock\n");
 	celixThreadMutex_unlock(&registry->mutex);
 
 	framework_logIfError(logger, status, NULL, "Cannot get registered services");
@@ -187,7 +185,6 @@ celix_status_t serviceRegistry_registerServiceFactory(service_registry_pt regist
 
 celix_status_t serviceRegistry_registerServiceInternal(service_registry_pt registry, bundle_pt bundle, char * serviceName, void * serviceObject, properties_pt dictionary, bool isFactory, service_registration_pt *registration) {
 	array_list_pt regs;
-	printf("Reg Lock\n");
 	celixThreadMutex_lock(&registry->mutex);
 
 	if (isFactory) {
@@ -206,7 +203,6 @@ celix_status_t serviceRegistry_registerServiceInternal(service_registry_pt regis
 	arrayList_add(regs, *registration);
 	hashMap_put(registry->serviceRegistrations, bundle, regs);
 
-	printf("Reg Unlock\n");
 	celixThreadMutex_unlock(&registry->mutex);
 
 	if (registry->serviceChanged != NULL) {
@@ -227,7 +223,6 @@ celix_status_t serviceRegistry_unregisterService(service_registry_pt registry, b
 	array_list_pt regs;
 	array_list_pt references = NULL;
 
-	printf("Reg Lock\n");
 	celixThreadMutex_lock(&registry->mutex);
 
 	serviceRegistry_removeHook(registry, registration);
@@ -238,14 +233,12 @@ celix_status_t serviceRegistry_unregisterService(service_registry_pt registry, b
 		hashMap_put(registry->serviceRegistrations, bundle, regs);
 	}
 
-	printf("Reg Unlock\n");
 	celixThreadMutex_unlock(&registry->mutex);
 
 	if (registry->serviceChanged != NULL) {
 		registry->serviceChanged(registry->framework, OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING, registration, NULL);
 	}
 
-	printf("Reg Lock\n");
 	celixThreadMutex_lock(&registry->mutex);
 	// unget service
 
@@ -274,7 +267,6 @@ celix_status_t serviceRegistry_unregisterService(service_registry_pt registry, b
 
 	serviceRegistration_destroy(registration);
 
-	printf("Reg Unock\n");
 	celixThreadMutex_unlock(&registry->mutex);
 
 	return CELIX_SUCCESS;
@@ -283,10 +275,8 @@ celix_status_t serviceRegistry_unregisterService(service_registry_pt registry, b
 celix_status_t serviceRegistry_unregisterServices(service_registry_pt registry, bundle_pt bundle) {
 	array_list_pt regs = NULL;
 	unsigned int i;
-	printf("Reg Lock\n");
 	celixThreadMutex_lock(&registry->mutex);
 	regs = (array_list_pt) hashMap_get(registry->serviceRegistrations, bundle);
-	printf("Reg Unlock\n");
 	celixThreadMutex_unlock(&registry->mutex);
 	
 	for (i = 0; (regs != NULL) && i < arrayList_size(regs); i++) {
@@ -304,10 +294,8 @@ celix_status_t serviceRegistry_unregisterServices(service_registry_pt registry, 
 		removed = NULL;
 	}
 
-	printf("Reg Lock\n");
 	celixThreadMutex_lock(&registry->mutex);
 	hashMap_remove(registry->serviceRegistrations, bundle);
-	printf("Reg Unock\n");
 	celixThreadMutex_unlock(&registry->mutex);
 
 	return CELIX_SUCCESS;
@@ -323,7 +311,6 @@ celix_status_t serviceRegistry_createServiceReference(service_registry_pt regist
 	serviceReference_create(bundle, registration, reference);
 
 	// Lock
-	printf("Reg Lock\n");
 	celixThreadMutex_lock(&registry->referencesMapMutex);
 	array_list_pt references = hashMap_get(registry->serviceReferences, owner);
 	if (references == NULL) {
@@ -333,7 +320,6 @@ celix_status_t serviceRegistry_createServiceReference(service_registry_pt regist
 	hashMap_put(registry->serviceReferences, owner, references);
 
 	// Unlock
-	printf("Reg Unlock\n");
 	celixThreadMutex_unlock(&registry->referencesMapMutex);
 
 	framework_logIfError(logger, status, NULL, "Cannot create service reference");
@@ -382,7 +368,6 @@ celix_status_t serviceRegistry_getServiceReferences(service_registry_pt registry
 	hash_map_iterator_pt iterator;
 	arrayList_create(references);
 
-	printf("Reg Lock\n");
 	celixThreadMutex_lock(&registry->mutex);
 	registrations = hashMapValues_create(registry->serviceRegistrations);
 	iterator = hashMapValues_iterator(registrations);
@@ -425,7 +410,6 @@ celix_status_t serviceRegistry_getServiceReferences(service_registry_pt registry
 	}
 	hashMapIterator_destroy(iterator);
 	hashMapValues_destroy(registrations);
-	printf("Reg Unlock\n");
 	celixThreadMutex_unlock(&registry->mutex);
 
 	framework_logIfError(logger, status, NULL, "Cannot get service references");
@@ -483,7 +467,6 @@ celix_status_t serviceRegistry_ungetServiceReferences(service_registry_pt regist
 }
 
 celix_status_t serviceRegistry_getServicesInUse(service_registry_pt registry, bundle_pt bundle, array_list_pt *services) {
-    printf("Reg Lock\n");
     celixThreadMutex_lock(&registry->mutex);
 	array_list_pt usages = hashMap_get(registry->inUseMap, bundle);
 	if (usages != NULL) {
@@ -495,7 +478,6 @@ celix_status_t serviceRegistry_getServicesInUse(service_registry_pt registry, bu
 			arrayList_add(*services, usage->reference);
 		}
 	}
-	printf("Reg Unlock\n");
 	celixThreadMutex_unlock(&registry->mutex);
 	return CELIX_SUCCESS;
 }
@@ -507,7 +489,6 @@ celix_status_t serviceRegistry_getService(service_registry_pt registry, bundle_p
 	usage_count_pt usage = NULL;
 	serviceReference_getServiceRegistration(reference, &registration);
 	
-	printf("Reg Lock\n");
 	celixThreadMutex_lock(&registry->mutex);
 
 	if (serviceRegistration_isValid(registration)) {
@@ -518,20 +499,17 @@ celix_status_t serviceRegistry_getService(service_registry_pt registry, bundle_p
 		usage->count++;
 		*service = usage->service;
 	}
-	printf("Reg Unlock\n");
 	celixThreadMutex_unlock(&registry->mutex);
 
 	if ((usage != NULL) && (*service == NULL)) {
 		serviceRegistration_getService(registration, bundle, service);
 	}
-	printf("Reg Lock\n");
 	celixThreadMutex_lock(&registry->mutex);
 	if ((!serviceRegistration_isValid(registration)) || (*service == NULL)) {
 		serviceRegistry_flushUsageCount(registry, bundle, reference);
 	} else {
 		usage->service = *service;
 	}
-	printf("Reg Unlock\n");
 	celixThreadMutex_unlock(&registry->mutex);
 
 	return CELIX_SUCCESS;
@@ -543,12 +521,10 @@ celix_status_t serviceRegistry_ungetService(service_registry_pt registry, bundle
 	usage_count_pt usage = NULL;
 	serviceReference_getServiceRegistration(reference, &registration);
 	
-	printf("Reg Lock\n");
 	celixThreadMutex_lock(&registry->mutex);
 
 	status = serviceRegistry_getUsageCount(registry, bundle, reference, &usage);
 	if (usage == NULL) {
-	    printf("Reg Unlock\n");
 		celixThreadMutex_unlock(&registry->mutex);
 		*result = false;
 		return CELIX_SUCCESS;
@@ -561,7 +537,6 @@ celix_status_t serviceRegistry_ungetService(service_registry_pt registry, bundle
 		serviceRegistry_flushUsageCount(registry, bundle, reference);
 	}
 
-	printf("Reg Unlock\n");
 	celixThreadMutex_unlock(&registry->mutex);
 
 	*result = true;
@@ -574,10 +549,8 @@ void serviceRegistry_ungetServices(service_registry_pt registry, bundle_pt bundl
 	array_list_pt usages;
 	unsigned int i;
 
-	printf("Reg Lock\n");
 	celixThreadMutex_lock(&registry->mutex);
 	usages = hashMap_get(registry->inUseMap, bundle);
-	printf("Reg Unlock\n");
 	celixThreadMutex_unlock(&registry->mutex);
 
 	if (usages == NULL || arrayList_isEmpty(usages)) {
@@ -604,7 +577,6 @@ array_list_pt serviceRegistry_getUsingBundles(service_registry_pt registry, serv
 	hash_map_iterator_pt iter;
 	arrayList_create(&bundles);
 
-	printf("Reg Lock\n");
 	celixThreadMutex_lock(&registry->mutex);
 	iter = hashMapIterator_create(registry->inUseMap);
 	while (hashMapIterator_hasNext(iter)) {
@@ -622,7 +594,6 @@ array_list_pt serviceRegistry_getUsingBundles(service_registry_pt registry, serv
 		}
 	}
 	hashMapIterator_destroy(iter);
-	printf("Reg Unlock\n");
 	celixThreadMutex_unlock(&registry->mutex);
 	return bundles;
 }
