@@ -92,8 +92,8 @@ celix_status_t serviceRegistration_destroy(service_registration_pt registration)
 
 	celixThreadMutex_destroy(&registration->mutex);
 
-	registration = NULL;
 	free(registration);
+	registration = NULL;
 
 	return CELIX_SUCCESS;
 }

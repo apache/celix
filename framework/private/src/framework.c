@@ -249,6 +249,13 @@ celix_status_t framework_destroy(framework_pt framework) {
 		if (bundle_getArchive(bundle, &archive) == CELIX_SUCCESS) {
 			bundleArchive_destroy(archive);
 		}
+		bool systemBundle = false;
+		bundle_isSystemBundle(bundle, &systemBundle);
+		if (systemBundle) {
+		    bundle_context_pt context = NULL;
+            bundle_getContext(framework->bundle, &context);
+            bundleContext_destroy(context);
+		}
 		bundle_destroy(bundle);
 		hashMapIterator_remove(iterator);
 	}
@@ -257,7 +264,7 @@ celix_status_t framework_destroy(framework_pt framework) {
 
 	hashMap_destroy(framework->installRequestMap, false, false);
 
-//	serviceRegistry_destroy(framework->registry);
+	serviceRegistry_destroy(framework->registry);
 
 	arrayList_destroy(framework->globalLockWaitersList);
 
@@ -270,6 +277,7 @@ celix_status_t framework_destroy(framework_pt framework) {
 	if(framework->frameworkListeners){
 	arrayList_destroy(framework->frameworkListeners);
 	}
+
 	if(framework->requests){
 	    int i;
 	    for (i = 0; i < arrayList_size(framework->requests); i++) {

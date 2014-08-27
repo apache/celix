@@ -117,6 +117,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
 				listenerExample_serviceChanged(listener, event);
 			}
+			arrayList_destroy(logServices);
 		}
 
 		activator->running = true;

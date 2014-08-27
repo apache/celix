@@ -79,7 +79,7 @@ celix_status_t bundleArchive_createSystemBundleArchive(framework_logger_pt logge
         	status = linkedList_create(&archive->revisions);
         	if (status == CELIX_SUCCESS) {
                 archive->id = 0l;
-                archive->location = "System Bundle";
+                archive->location = strdup("System Bundle");
                 archive->archiveRoot = NULL;
                 archive->archiveRootDir = NULL;
                 archive->refreshCount = -1;
@@ -146,6 +146,13 @@ celix_status_t bundleArchive_destroy(bundle_archive_pt archive) {
 	    linkedListIterator_destroy(iter);
 		linkedList_destroy(archive->revisions);
 	}
+	if (archive->archiveRoot != NULL) {
+	    free(archive->archiveRoot);
+	}
+	if (archive->location != NULL) {
+        free(archive->location);
+    }
+
 	free(archive);
 	archive = NULL;
 
@@ -233,14 +240,14 @@ celix_status_t bundleArchive_getLocation(bundle_archive_pt archive, char **locat
 	if (archive->location == NULL) {
 		FILE *bundleLocationFile;
 		char bundleLocation[512];
-        char location[256];
+        char loc[256];
 
         snprintf(bundleLocation, sizeof(bundleLocation), "%s/bundle.location", archive->archiveRoot);
 
         bundleLocationFile = fopen(bundleLocation, "r");
-        fgets(location, sizeof(location), bundleLocationFile);
+        fgets(loc, sizeof(loc), bundleLocationFile);
         fclose(bundleLocationFile);
-        archive->location = strdup(location);
+        archive->location = strdup(loc);
 	}
 
 	if (status == CELIX_SUCCESS) {

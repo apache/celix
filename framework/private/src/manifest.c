@@ -266,7 +266,7 @@ celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt prope
 			value[len - i] = '\0';
 		}
 
-		if ((properties_set(properties, strdup(name), strdup(value)) != NULL) && (!lineContinued)) {
+		if ((properties_set(properties, name, value) != NULL) && (!lineContinued)) {
 			printf("Duplicate entry: %s", name);
 		}
 	}

@@ -62,8 +62,6 @@ celix_status_t bundleRevision_create(framework_logger_pt loggera, char *root, ch
                 revision->location = strdup(location);
                 revision->logger = loggera;
 
-                arrayList_create(&(revision->libraryHandles));
-
                 *bundle_revision = revision;
 
                 char manifest[512];
