@@ -208,6 +208,20 @@ celix_status_t bundleContext_getServiceReference(bundle_context_pt context, char
 	return status;
 }
 
+celix_status_t bundleContext_ungetServiceReference(bundle_context_pt context, service_reference_pt reference) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    if (context != NULL && reference != NULL) {
+        status = framework_ungetServiceReference(context->framework, context->bundle, reference);
+    } else {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
+
+    framework_logIfError(logger, status, NULL, "Failed to unget service_reference");
+
+    return status;
+}
+
 celix_status_t bundleContext_getService(bundle_context_pt context, service_reference_pt reference, void **service_instance) {
     celix_status_t status = CELIX_SUCCESS;
 

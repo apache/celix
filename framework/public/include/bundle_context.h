@@ -58,6 +58,7 @@ FRAMEWORK_EXPORT celix_status_t bundleContext_registerServiceFactory(bundle_cont
 
 FRAMEWORK_EXPORT celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, const char * serviceName, char * filter, array_list_pt *service_references);
 FRAMEWORK_EXPORT celix_status_t bundleContext_getServiceReference(bundle_context_pt context, char * serviceName, service_reference_pt *service_reference);
+FRAMEWORK_EXPORT celix_status_t bundleContext_ungetServiceReference(bundle_context_pt context, service_reference_pt reference);
 
 FRAMEWORK_EXPORT celix_status_t bundleContext_getService(bundle_context_pt context, service_reference_pt reference, void **service_instance);
 FRAMEWORK_EXPORT celix_status_t bundleContext_ungetService(bundle_context_pt context, service_reference_pt reference, bool *result);

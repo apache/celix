@@ -93,10 +93,13 @@ void logCommand_execute(command_pt command, char *line, void (*out)(char *), voi
                 }
             }
             linkedListIterator_destroy(iter);
+            bool result = true;
+            bundleContext_ungetService(command->bundleContext, readerService, &result);
             apr_pool_destroy(memory_pool);
         } else {
             out("Log reader service: out of memory!\n");
         }
+        bundleContext_ungetServiceReference(command->bundleContext, readerService);
     } else {
         out("No log reader available\n");
     }

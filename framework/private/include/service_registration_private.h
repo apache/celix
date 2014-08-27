@@ -38,7 +38,6 @@ struct service {
 struct serviceRegistration {
 	service_registry_pt registry;
 	char * className;
-	array_list_pt references;
 	bundle_pt bundle;
 	properties_pt properties;
 	void * svcObj;

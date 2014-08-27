@@ -96,10 +96,13 @@ void shellTui_initializeService(shell_tui_activator_pt activator) {
 void shellTui_serviceChanged(service_listener_pt listener, service_event_pt event) {
 	bool result = false;
     shell_tui_activator_pt act = (shell_tui_activator_pt) listener->handle;
+    bool equals = false;
+
+    serviceReference_equals(act->reference, event->reference, &equals);
 
 	if ((event->type == OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED) && (act->reference == NULL)) {
 		shellTui_initializeService(act);
-	} else if ((event->type == OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING) && (act->reference == event->reference)) {
+	} else if ((event->type == OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING) && (equals)) {
 		bundleContext_ungetService(act->context, act->reference, &result);
 		act->reference = NULL;
 		act->shell = NULL;

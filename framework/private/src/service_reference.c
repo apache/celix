@@ -55,7 +55,6 @@ celix_status_t serviceReference_create(bundle_pt bundle, service_registration_pt
 }
 
 celix_status_t serviceReference_destroy(service_reference_pt reference) {
-	serviceRegistry_removeReference(reference);
 	reference->bundle = NULL;
 	reference->registration = NULL;
 	free(reference);

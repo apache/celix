@@ -42,6 +42,8 @@ struct serviceRegistry {
 
 	celix_thread_mutex_t mutex;
 	celix_thread_mutexattr_t mutexAttr;
+
+	celix_thread_mutex_t referencesMapMutex;
 };
 
 struct usageCount {

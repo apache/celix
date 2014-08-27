@@ -63,8 +63,6 @@ celix_status_t serviceRegistration_createInternal(service_registry_pt registry, 
 		(*registration)->registry = registry;
 		(*registration)->className = strdup(serviceName);
 		(*registration)->bundle = bundle;
-		(*registration)->references = NULL;
-		arrayList_create(&(*registration)->references);
 
 		(*registration)->serviceId = serviceId;
 		(*registration)->svcObj = serviceObject;
@@ -73,8 +71,6 @@ celix_status_t serviceRegistration_createInternal(service_registry_pt registry, 
 		} else {
 			(*registration)->serviceFactory = NULL;
 		}
-
-		//	serviceReference_create(pool, bundle, *registration, &(*registration)->reference);
 
 		(*registration)->isUnregistering = false;
 		celixThreadMutex_create(&(*registration)->mutex, NULL);
@@ -93,7 +89,6 @@ celix_status_t serviceRegistration_destroy(service_registration_pt registration)
 	registration->registry = NULL;
 
 	properties_destroy(registration->properties);
-	arrayList_destroy(registration->references);
 
 	celixThreadMutex_destroy(&registration->mutex);
 
@@ -141,8 +136,6 @@ celix_status_t serviceRegistration_unregister(service_registration_pt registrati
 	}
 	celixThreadMutex_unlock(&registration->mutex);
 
-//	bundle_pt bundle = NULL;
-//	status = serviceReference_getBundle(registration->reference, &bundle);
 	if (status == CELIX_SUCCESS) {
 		serviceRegistry_unregisterService(registration->registry, registration->bundle, registration);
 	}
@@ -204,7 +197,7 @@ celix_status_t serviceRegistration_getServiceReferences(service_registration_pt 
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (registration != NULL && *references == NULL) {
-		*references = registration->references;
+	    serviceRegistry_getServiceReferencesForRegistration(registration->registry, registration, references);
 	} else {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	}
