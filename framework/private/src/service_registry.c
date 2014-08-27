@@ -312,7 +312,7 @@ celix_status_t serviceRegistry_createServiceReference(service_registry_pt regist
 	if (references == NULL) {
 	    arrayList_create(&references);
 	}
-	arrayList_add(references, reference);
+	arrayList_add(references, *reference);
 	hashMap_put(registry->serviceReferences, bundle, references);
 
 	// Unlock
@@ -340,9 +340,13 @@ celix_status_t serviceRegistry_getServiceReferencesForRegistration(service_regis
         for (refIdx = 0; (refs != NULL) && refIdx < arrayList_size(refs); refIdx++) {
             service_registration_pt reg = NULL;
             service_reference_pt reference = (service_reference_pt) arrayList_get(refs, refIdx);
-            serviceReference_getServiceRegistration(reference, &reg);
-            if (reg == registration) {
-                arrayList_add(*references, reference);
+            bool valid = false;
+            serviceRefernce_isValid(reference, &valid);
+            if (valid) {
+                serviceReference_getServiceRegistration(reference, &reg);
+                if (reg == registration) {
+                    arrayList_add(*references, reference);
+                }
             }
         }
     }
@@ -422,6 +426,7 @@ celix_status_t serviceRegistry_ungetServiceReference(service_registry_pt registr
     array_list_pt references = hashMap_get(registry->serviceReferences, owner);
     if (references != NULL) {
         arrayList_removeElement(references, reference);
+        serviceReference_destroy(reference);
         if (arrayList_size(references) > 0) {
             hashMap_put(registry->serviceReferences, owner, references);
         } else {
