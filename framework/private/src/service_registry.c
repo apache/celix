@@ -312,7 +312,6 @@ celix_status_t serviceRegistry_createServiceReference(service_registry_pt regist
 	if (references == NULL) {
 	    arrayList_create(&references);
 	}
-	printf("Registry reference add %p, bundle %p\n", *reference, owner);
 	arrayList_add(references, *reference);
 	hashMap_put(registry->serviceReferences, owner, references);
 
