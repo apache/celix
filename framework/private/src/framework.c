@@ -1554,7 +1554,6 @@ void fw_serviceChanged(framework_pt framework, service_event_type_e eventType, s
 
 				element->listener->serviceChanged(element->listener, event);
 
-//				serviceReference_destroy(event->reference);
 				free(event);
 				//TODO cleanup service reference
 

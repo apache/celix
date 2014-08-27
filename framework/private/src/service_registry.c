@@ -308,12 +308,13 @@ celix_status_t serviceRegistry_createServiceReference(service_registry_pt regist
 
 	// Lock
 	celixThreadMutex_lock(&registry->referencesMapMutex);
-	array_list_pt references = hashMap_get(registry->serviceReferences, bundle);
+	array_list_pt references = hashMap_get(registry->serviceReferences, owner);
 	if (references == NULL) {
 	    arrayList_create(&references);
 	}
+	printf("Registry reference add %p, bundle %p\n", *reference, owner);
 	arrayList_add(references, *reference);
-	hashMap_put(registry->serviceReferences, bundle, references);
+	hashMap_put(registry->serviceReferences, owner, references);
 
 	// Unlock
 	celixThreadMutex_unlock(&registry->referencesMapMutex);
