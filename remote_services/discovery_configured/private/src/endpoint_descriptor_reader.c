@@ -67,21 +67,18 @@ void endpointDescriptorReader_addSingleValuedProperty(properties_pt properties, 
 }
 
 void endpointDescriptorReader_addMultiValuedProperty(properties_pt properties, const xmlChar* name, array_list_pt values) {
-	char *value = malloc(256);
-	if (value) {
-		int i, size = arrayList_size(values);
-		for (i = 0; i < size; i++) {
-			char* item = (char*) arrayList_get(values, i);
-			if (i > 0) {
-				value = strcat(value, ",");
-			}
-			value = strcat(value, item);
-		}
+	char value[256];
+	value[0] = '\0';
+    int i, size = arrayList_size(values);
+    for (i = 0; i < size; i++) {
+        char* item = (char*) arrayList_get(values, i);
+        if (i > 0) {
+            strcat(value, ",");
+        }
+        strcat(value, item);
+    }
 
-		properties_set(properties, strdup((char *) name), strdup(value));
-
-		free(value);
-	}
+    properties_set(properties, strdup((char *) name), strdup(value));
 }
 
 celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader_pt reader, char *document, array_list_pt *endpoints) {
