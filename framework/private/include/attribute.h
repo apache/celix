@@ -31,6 +31,7 @@
 typedef struct attribute *attribute_pt;
 
 celix_status_t attribute_create(char * key, char * value, attribute_pt *attribute);
+celix_status_t attribute_destroy(attribute_pt attribute);
 
 celix_status_t attribute_getKey(attribute_pt attribute, char **key);
 celix_status_t attribute_getValue(attribute_pt attribute, char **value);

@@ -70,6 +70,7 @@ celix_status_t requirement_destroy(requirement_pt requirement) {
 	while (hashMapIterator_hasNext(attrIter)) {
 		attribute_pt attr = hashMapIterator_nextValue(attrIter);
 		hashMapIterator_remove(attrIter);
+		attribute_destroy(attr);
 	}
 	hashMapIterator_destroy(attrIter);
 	hashMap_destroy(requirement->attributes, false, false);
@@ -77,7 +78,11 @@ celix_status_t requirement_destroy(requirement_pt requirement) {
 
 	requirement->attributes = NULL;
 	requirement->directives = NULL;
+
+	versionRange_destroy(requirement->versionRange);
 	requirement->versionRange = NULL;
+
+	free(requirement);
 
 	return CELIX_SUCCESS;
 }

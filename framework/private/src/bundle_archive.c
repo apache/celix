@@ -113,7 +113,7 @@ celix_status_t bundleArchive_create(framework_logger_pt logger, char * archiveRo
 			status = linkedList_create(&archive->revisions);
 			if (status == CELIX_SUCCESS) {
                 archive->id = id;
-                archive->location = location;
+                archive->location = strdup(location);
                 archive->archiveRootDir = NULL;
                 archive->archiveRoot = archiveRoot;
                 archive->refreshCount = -1;

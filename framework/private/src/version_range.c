@@ -49,10 +49,20 @@ celix_status_t versionRange_createVersionRange(version_pt low, bool isLowInclusi
 }
 
 celix_status_t versionRange_destroy(version_range_pt range) {
+    if (range->high != NULL) {
+        version_destroy(range->high);
+    }
+    if (range->low != NULL) {
+        version_destroy(range->low);
+    }
+
 	range->high = NULL;
 	range->isHighInclusive = false;
 	range->low = NULL;
 	range->isLowInclusive = false;
+
+	free(range);
+
 	return CELIX_SUCCESS;
 }
 

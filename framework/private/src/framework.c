@@ -233,19 +233,6 @@ celix_status_t framework_destroy(framework_pt framework) {
 		char *location = (char *) hashMapEntry_getKey(entry);
 		bundle_archive_pt archive = NULL;
 
-		// for each installed bundle, clean up memory
-		module_pt mod = NULL;
-		bundle_getCurrentModule(bundle, &mod);
-		wires = module_getWires(mod);
-		if (wires != NULL) {
-			linked_list_iterator_pt iter = linkedListIterator_create(wires, 0);
-			while (linkedListIterator_hasNext(iter)) {
-				wire_pt wire = (wire_pt) linkedListIterator_next(iter);
-				linkedListIterator_remove(iter);
-			}
-			linkedListIterator_destroy(iter);
-		}
-
 		if (bundle_getArchive(bundle, &archive) == CELIX_SUCCESS) {
 			bundleArchive_destroy(archive);
 		}
@@ -2098,6 +2085,7 @@ celix_status_t fw_fireFrameworkEvent(framework_pt framework, framework_event_typ
 		request->listeners = framework->frameworkListeners;
 		request->type = FRAMEWORK_EVENT_TYPE;
 		request->errorCode = errorCode;
+		request->error = "";
 
 		if (errorCode != CELIX_SUCCESS) {
 		    char message[256];

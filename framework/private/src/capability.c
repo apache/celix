@@ -67,6 +67,7 @@ celix_status_t capability_destroy(capability_pt capability) {
 	while (hashMapIterator_hasNext(attrIter)) {
 		attribute_pt attr = hashMapIterator_nextValue(attrIter);
 		hashMapIterator_remove(attrIter);
+		attribute_destroy(attr);
 	}
 	hashMapIterator_destroy(attrIter);
 	hashMap_destroy(capability->attributes, false, false);
@@ -78,6 +79,8 @@ celix_status_t capability_destroy(capability_pt capability) {
 
 	version_destroy(capability->version);
 	capability->version = NULL;
+
+	free(capability);
 
 	return CELIX_SUCCESS;
 }

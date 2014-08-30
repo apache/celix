@@ -112,8 +112,6 @@ module_pt module_createFrameworkModule(bundle_pt bundle) {
 void module_destroy(module_pt module) {
 	arrayList_destroy(module->dependentImporters);
 
-	linkedList_destroy(module->capabilities);
-	linkedList_destroy(module->requirements);
 	version_destroy(module->version);
 
 	if (module->wires != NULL) {
@@ -126,6 +124,28 @@ void module_destroy(module_pt module) {
         linkedListIterator_destroy(iter);
         linkedList_destroy(module->wires);
 	}
+
+	if (module->requirements != NULL) {
+	    linked_list_iterator_pt iter = linkedListIterator_create(module->requirements, 0);
+        while (linkedListIterator_hasNext(iter)) {
+            requirement_pt next = linkedListIterator_next(iter);
+            linkedListIterator_remove(iter);
+            requirement_destroy(next);
+        }
+        linkedListIterator_destroy(iter);
+        linkedList_destroy(module->requirements);
+	}
+
+	if (module->capabilities != NULL) {
+	    linked_list_iterator_pt iter = linkedListIterator_create(module->capabilities, 0);
+        while (linkedListIterator_hasNext(iter)) {
+            capability_pt next = linkedListIterator_next(iter);
+            linkedListIterator_remove(iter);
+            capability_destroy(next);
+        }
+        linkedListIterator_destroy(iter);
+        linkedList_destroy(module->capabilities);
+    }
 
 	module->headerMap = NULL;
 

@@ -53,6 +53,13 @@ celix_status_t attribute_create(char * key, char * value, attribute_pt *attribut
 	return status;
 }
 
+celix_status_t attribute_destroy(attribute_pt attribute) {
+    free(attribute->key);
+    free(attribute->value);
+    free(attribute);
+    return CELIX_SUCCESS;
+}
+
 celix_status_t attribute_getKey(attribute_pt attribute, char **key) {
 	*key = attribute->key;
 	return CELIX_SUCCESS;
