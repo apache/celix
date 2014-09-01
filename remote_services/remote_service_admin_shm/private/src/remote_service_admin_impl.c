@@ -29,6 +29,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/sem.h>
+#include <sys/ipc.h>
 #include <sys/shm.h>
 #include <unistd.h>
 #include <apr_uuid.h>
@@ -49,13 +50,13 @@
 #include "service_registration.h"
 #include "netstring.h"
 
+
+static celix_status_t remoteServiceAdmin_lock(int semId, int semNr);
+static celix_status_t remoteServiceAdmin_unlock(int semId, int semNr);
+static int remoteServiceAdmin_getCount(int semId, int semNr);
+
 celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin, export_registration_pt registration, service_reference_pt reference, char *interface);
 celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, properties_pt serviceProperties, properties_pt endpointProperties, char *interface, endpoint_description_pt *description);
-
-celix_status_t remoteServiceAdmin_lock(int semId, int semNr);
-celix_status_t remoteServiceAdmin_unlock(int semId, int semNr);
-celix_status_t remoteServiceAdmin_wait(int semId, int semNr);
-
 
 celix_status_t remoteServiceAdmin_createOrAttachShm(hash_map_pt ipcSegment, remote_service_admin_pt admin, endpoint_description_pt endpointDescription, bool createIfNotFound);
 celix_status_t remoteServiceAdmin_getIpcSegment(remote_service_admin_pt admin, endpoint_description_pt endpointDescription, ipc_segment_pt* ipc);
@@ -65,6 +66,8 @@ celix_status_t remoteServiceAdmin_deleteIpcSegment(ipc_segment_pt ipc);
 celix_status_t remoteServiceAdmin_getSharedIdentifierFile(char *fwUuid, char* servicename, char* outFile);
 celix_status_t remoteServiceAdmin_removeSharedIdentityFile(char *fwUuid, char* servicename);
 celix_status_t remoteServiceAdmin_removeSharedIdentityFiles(char* fwUuid);
+
+static bool lockHolder[3];
 
 celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt context, remote_service_admin_pt *admin)
 {
@@ -195,7 +198,24 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin)
 }
 
 
-celix_status_t remoteServiceAdmin_lock(int semId, int semNr)
+static int remoteServiceAdmin_getCount(int semId, int semNr)
+{
+	int token = -1;
+	unsigned short semVals[3];
+	union semun semArg;
+
+	semArg.array = semVals;
+
+	if(semctl(semId,0,GETALL,semArg) == 0)
+	{
+		token = semArg.array[semNr];
+	}
+
+	return token;
+}
+
+
+static celix_status_t remoteServiceAdmin_lock(int semId, int semNr)
 {
     celix_status_t status = CELIX_SUCCESS;
     int semOpStatus = 0;
@@ -221,7 +241,7 @@ celix_status_t remoteServiceAdmin_lock(int semId, int semNr)
 }
 
 
-celix_status_t remoteServiceAdmin_unlock(int semId, int semNr)
+static celix_status_t remoteServiceAdmin_unlock(int semId, int semNr)
 {
     celix_status_t status = CELIX_SUCCESS;
     int semOpStatus = 0;
@@ -229,30 +249,6 @@ celix_status_t remoteServiceAdmin_unlock(int semId, int semNr)
 
     semOperation.sem_num = semNr;
     semOperation.sem_op = 1;
-    semOperation.sem_flg = 0;
-
-    do
-    {
-        status = CELIX_SUCCESS;
-
-        if ((semOpStatus = semop(semId, &semOperation, 1)) != 0)
-        {
-            status = CELIX_BUNDLE_EXCEPTION;
-        }
-    }
-    while (semOpStatus == -1 && errno == EINTR);
-
-    return status;
-}
-
-celix_status_t remoteServiceAdmin_wait(int semId, int semNr)
-{
-    celix_status_t status = CELIX_SUCCESS;
-    int semOpStatus = 0;
-    struct sembuf semOperation;
-
-    semOperation.sem_num = semNr;
-    semOperation.sem_op = 0;
     semOperation.sem_flg = 0;
 
     do
@@ -290,12 +286,26 @@ celix_status_t remoteServiceAdmin_send(remote_service_admin_pt admin, endpoint_d
             char *fncCallReply = NULL;
             char *fncCallReplyStatus = CELIX_SUCCESS;
 
+            /* lock critical area */
             remoteServiceAdmin_lock(semid, 0);
 
-            strcpy(ipc->shmBaseAdress, encFncCallProps);
+			strcpy(ipc->shmBaseAdress, encFncCallProps);
 
-            remoteServiceAdmin_unlock(semid, 1);
-            remoteServiceAdmin_lock(semid, 2);
+			/* Check the status of the send-receive semaphore and reset them if not correct */
+			if (remoteServiceAdmin_getCount(ipc->semId,1) > 0)
+			{
+				semctl(semid, 1, SETVAL, (int) 0);
+			}
+			if (remoteServiceAdmin_getCount(ipc->semId,2) > 0)
+			{
+				semctl(semid, 2, SETVAL, (int) 0);
+			}
+
+			/* Inform receiver we are invoking the remote service */
+			remoteServiceAdmin_unlock(semid, 1);
+
+			/* Wait until the receiver finished his operations */
+			remoteServiceAdmin_lock(semid, 2);
 
             if ((status = netstring_decodeToHashMap(admin->pool, ipc->shmBaseAdress, fncCallProps)) == CELIX_SUCCESS)
             {
@@ -312,6 +322,8 @@ celix_status_t remoteServiceAdmin_send(remote_service_admin_pt admin, endpoint_d
             {
             	*replyStatus = apr_atoi64(fncCallReplyStatus);
             }
+
+            /* release critical area */
             remoteServiceAdmin_unlock(semid, 0);
         }
         hashMap_destroy(fncCallProps, false, false);
