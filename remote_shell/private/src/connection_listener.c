@@ -95,7 +95,7 @@ celix_status_t connectionListener_stop(connection_listener_pt instance) {
 	apr_thread_t *thread = NULL;
 	apr_pollset_t *pollset = NULL;
 
-	printf("CONNECTION_LISTENER: Stopping thread\n");
+	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "CONNECTION_LISTENER: Stopping thread\n");
 
 	apr_thread_mutex_lock(instance->mutex);
 	thread=instance->thread;
@@ -108,18 +108,18 @@ celix_status_t connectionListener_stop(connection_listener_pt instance) {
 		apr_status_t stat = APR_SUCCESS;
 		char error[512];
 
-		printf("Stopping thread by waking poll on listen socket\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Stopping thread by waking poll on listen socket\n");
 		stat = apr_pollset_wakeup(pollset);
 		
 		apr_strerror(stat, error, 512);
-		printf("Got error %s\n", error);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Got error %s.", error);
 
 		apr_thread_join(&threadStatus, thread);
-		printf("Done joining thread\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Done joining thread.");
 	} else if (thread != NULL) {
-		printf("Cannot stop thread\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Cannot stop thread.");
 	} else {
-		printf("No running thread\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "No running thread.");
 	}
 
 	return status;
@@ -154,9 +154,9 @@ static void* APR_THREAD_FUNC connection_listener_thread(apr_thread_t *thread, vo
     if (status != APR_SUCCESS) {
     	char error[64];
 		apr_strerror(status, error, 64);
-    	printf("Error creating and listing on socket: %s\n", error);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error creating and listing on socket: %s.", error);
     } else {
-    	printf("Remote Shell accepting connections on port %li\n", instance->port);
+    	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Remote Shell accepting connections on port %ld", instance->port);
     }
 
 	while (status == APR_SUCCESS) {
@@ -169,19 +169,19 @@ static void* APR_THREAD_FUNC connection_listener_thread(apr_thread_t *thread, vo
 			apr_pool_create(&socketPool, instance->pool);
 			socketStatus = apr_socket_accept(&acceptedSocket, listenSocket, socketPool);
 
-			printf("REMOTE_SHELL: created connection socket\n");
+			fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "REMOTE_SHELL: created connection socket.");
 			if (socketStatus == APR_SUCCESS) {
 				remoteShell_addConnection(instance->remoteShell, acceptedSocket);
 			} else {
 				apr_pool_destroy(socketPool);
-				printf("Could not accept connection\n");
+				fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "REMOTE_SHELL: Could not accept connection.");
 			}
 		} else if (status == APR_EINTR) {
-			printf("Poll interrupted\n");
+			fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "REMOTE_SHELL: Poll interrupted.");
 		} else /*error*/ {
 			char error[64];
 			apr_strerror(status, error, 64);
-			printf("Got error %s\n", error);
+			fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "REMOTE_SHELL: Got error %s.", error);
 			break;
 		}
 	}

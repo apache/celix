@@ -201,7 +201,7 @@ celix_status_t discovery_endpointAdded(void *handle, endpoint_description_pt end
 	celix_status_t status = CELIX_SUCCESS;
 	discovery_pt discovery = handle;
 
-	printf("DISCOVERY: Endpoint for %s, with filter \"%s\" added\n", endpoint->service, machtedFilter);
+	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY: Endpoint for %s, with filter \"%s\" added.", endpoint->service, machtedFilter);
 	disclosed_endpoint_entry_pt entry = NULL;
 	apr_pool_t *childPool = NULL;
 	status = apr_pool_create(&childPool, discovery->pool);
@@ -314,9 +314,9 @@ celix_status_t discovery_endpointListenerAdded(void * handle, service_reference_
 	char *discoveryListener = properties_get(serviceProperties, "DISCOVERY");
 
 	if (discoveryListener != NULL && strcmp(discoveryListener, "true") == 0) {
-		printf("DISCOVERY: EndpointListener Ignored - Discovery listener\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY: EndpointListener Ignored - Discovery listener.");
 	} else {
-		printf("DISCOVERY: EndpointListener Added - Add Scope\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY: EndpointListener Added - Add Scope.");
 
 		apr_thread_mutex_lock(discovery->discoveredServicesMutex);
 		if (discovery->discoveredServices != NULL) {
@@ -363,7 +363,7 @@ celix_status_t discovery_endpointListenerRemoved(void * handle, service_referenc
 	celix_status_t status = CELIX_SUCCESS;
 	discovery_pt discovery = handle;
 
-	printf("DISCOVERY: EndpointListener Removed\n");
+	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY: EndpointListener Removed");
 	apr_thread_mutex_lock(discovery->listenerReferencesMutex);
 	if (discovery->listenerReferences != NULL) {
 		hashMap_remove(discovery->listenerReferences, reference);
@@ -390,20 +390,20 @@ static void discovery_browseCallback(DNSServiceRef sdRef, DNSServiceFlags flags,
 		void *context) {
 	discovery_pt discovery = context;
 	if (flags & kDNSServiceFlagsAdd) {
-		printf("Added service with %s %s %s\n", serviceName, regtype,
+		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Added service with %s %s %s.", serviceName, regtype,
 				replyDomain);
 		DNSServiceRef resolveRef = NULL;
 		DNSServiceErrorType resolveError = DNSServiceResolve(&resolveRef, 0, 0,
 				serviceName, regtype, replyDomain, discovery_resolveAddCallback,
 				context);
-		printf("Resolve return with error %i\n", resolveError);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Resolve return with error %d.", resolveError);
 		if (resolveError == kDNSServiceErr_NoError) {
 			DNSServiceProcessResult(resolveRef);
 		} else {
 			//TODO print error / handle error?
 		}
 	} else {
-		printf("Removed service with %s %s %s\n", serviceName, regtype,
+		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Removed service with %s %s %s.", serviceName, regtype,
 				replyDomain);
 		DNSServiceRef resolveRef = NULL;
 		DNSServiceErrorType resolveError = DNSServiceResolve(&resolveRef, 0, 0,
@@ -459,14 +459,14 @@ static void discovery_resolveAddCallback(DNSServiceRef sdRef,
 				&value);
 		memcpy(valueBuf, value, valueSize);
 		valueBuf[valueSize] = '\0';
-		printf("Found key=value %s=%s\n", key, valueBuf);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Found key=value %s=%s.", key, valueBuf);
 		properties_set(props, key, valueBuf);
 	}
 
 	char *endpointFrameworkUuid = properties_get(props, (char *)OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
 
 	if (endpointFrameworkUuid == NULL) {
-		printf("DISCOVERY: Cannot process endpoint, no %s property\n", OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "DISCOVERY: Cannot process endpoint, no %s property.", OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
 	} else if (strcmp(endpointFrameworkUuid, discovery->frameworkUuid) != 0) {
 		apr_pool_t *childPool = NULL;
 		apr_pool_create(&childPool, discovery->pool);
@@ -492,7 +492,7 @@ static void discovery_resolveAddCallback(DNSServiceRef sdRef,
 		discovery_informEndpointListeners(discovery, endpoint, true);
 	} else {
 		//ignore self disclosed endpoints!
-		printf("DISCOVERY: Ignoring own endpoint, with service %s!\n", properties_get(props, "service"));
+		fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DISCOVERY: Ignoring own endpoint, with service %s!", properties_get(props, "service"));
 		properties_destroy(props);
 	}
 }
@@ -519,7 +519,7 @@ static celix_status_t discovery_informEndpointListeners(discovery_pt discovery, 
 			bool matchResult = false;
 			filter_match(filter, endpoint->properties, &matchResult);
 			if (matchResult) {
-				printf("DISCOVERY: Add service (%s)\n", endpoint->service);
+				fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY: Add service (%s)", endpoint->service);
 				bundleContext_getService(discovery->context, reference,
 						(void**) &listener);
 				if (endpointAdded) {

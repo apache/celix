@@ -176,7 +176,7 @@ celix_status_t inspectCommand_printExportedServices(command_pt command, array_li
 									hash_map_iterator_pt iter = hashMapIterator_create(props);
 									while (hashMapIterator_hasNext(iter)) {
 									    hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-									    sprintf(line, "%s = %s\n", hashMapEntry_getKey(entry), hashMapEntry_getValue(entry));
+									    sprintf(line, "%s = %s\n", (char*) hashMapEntry_getKey(entry), (char*) hashMapEntry_getValue(entry));
 									    out(line);
 									}
 									hashMapIterator_destroy(iter);
@@ -275,7 +275,7 @@ celix_status_t inspectCommand_printImportedServices(command_pt command, array_li
                                     hash_map_iterator_pt iter = hashMapIterator_create(props);
                                     while (hashMapIterator_hasNext(iter)) {
                                         hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-                                        sprintf(line, "%s = %s\n", hashMapEntry_getKey(entry), hashMapEntry_getValue(entry));
+                                        sprintf(line, "%s = %s\n", (char*) hashMapEntry_getKey(entry), (char*) hashMapEntry_getValue(entry));
                                         out(line);
                                     }
 									hashMapIterator_destroy(iter);

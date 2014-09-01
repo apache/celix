@@ -34,6 +34,11 @@
 #include "array_list.h"
 #include "calculator_proxy_impl.h"
 
+/* Allows the use of Jansson < 2.3 */
+#ifndef JSON_DECODE_ANY
+#define JSON_DECODE_ANY 0
+#endif
+
 celix_status_t calculatorProxy_setEndpointDescription(void *proxy, endpoint_description_pt endpoint);
 celix_status_t calculatorProxy_setHandler(void *proxy, void *handler);
 celix_status_t calculatorProxy_setCallback(void *proxy, sendToHandle callback);

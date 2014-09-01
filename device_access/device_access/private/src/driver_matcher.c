@@ -196,7 +196,7 @@ celix_status_t driverMatcher_getBestMatchInternal(driver_matcher_pt matcher, apr
 			celix_status_t substatus = driverAttributes_getReference(attributes, &reference);
 			if (substatus == CELIX_SUCCESS) {
 				if (best != NULL) {
-					printf("DRIVER_MATCHER: Compare ranking\n");
+					fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DRIVER_MATCHER: Compare ranking");
 					char *rank1Str, *rank2Str;
 					int rank1, rank2;
 					service_registration_pt registration = NULL;
@@ -217,7 +217,7 @@ celix_status_t driverMatcher_getBestMatchInternal(driver_matcher_pt matcher, apr
 									best = reference;
 								}
 							} else {
-								printf("DRIVER_MATCHER: Compare id's\n");
+								fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DRIVER_MATCHER: Compare id's");
 								char *id1Str, *id2Str;
 								long id1, id2;
 

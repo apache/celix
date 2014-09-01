@@ -54,7 +54,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 			event_admin_pt event_admin = NULL;
 			event_admin_service_pt event_admin_service = NULL;
 			status = eventAdmin_create(activator->pool,context, &event_admin);
-			printf("event admin activator pointer: %p\n",event_admin);
+			fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "event admin activator pointer: %p ",event_admin);
 			if(status == CELIX_SUCCESS){
 				activator->event_admin = event_admin;
 				event_admin_service = apr_palloc(activator->pool, sizeof(event_admin_service));
@@ -78,7 +78,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 				}
 			}
 			activator->event_admin_service = event_admin_service;
-			printf("event admin service pointer: %p\n",event_admin_service);
+			fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "event admin service pointer: %p ",event_admin_service);
 		}
 	}
 

@@ -126,13 +126,13 @@ celix_status_t importRegistrationFactory_open(import_registration_factory_pt reg
 	if (status == CELIX_SUCCESS) {
 		status = bundle_start(registration_factory->bundle);
 		if (status == CELIX_SUCCESS) {
-			printf("%s sucessfully started\n", name);
+			fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "%s sucessfully started.", name);
 		}
 	}
 	else
 	{
 
-		printf("%s could not be installed.\n", name);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "%s could not be installed.", name);
 	}
 
 	return status;
@@ -213,17 +213,17 @@ celix_status_t importRegistrationFactory_install(apr_pool_t *pool, char* service
 
 	if ( (status = importRegistrationFactory_create(pool, serviceName, context, registration_factory)) != CELIX_SUCCESS)
 	{
-		printf("remoteServiceAdmin_importService: error while creating importRegistrationFactory\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "remoteServiceAdmin_importService: error while creating importRegistrationFactory.");
 	}
 	else if ((status = importRegistrationFactory_open(*registration_factory)) != CELIX_SUCCESS)
 	{
-		printf("remoteServiceAdmin_importService: cannot open registration_factory for %s \n  ", serviceName);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "remoteServiceAdmin_importService: cannot open registration_factory for %s.", serviceName);
 		importRegistrationFactory_destroy(registration_factory);
 	}
 	else
 	{
 		importRegistration_createProxyFactoryTracker(*registration_factory, &((*registration_factory)->proxyFactoryTracker));
-		printf("remoteServiceAdmin_importService: new registration_factory added for %s at %p\n  ", serviceName, (*registration_factory)->proxyFactoryTracker);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "remoteServiceAdmin_importService: new registration_factory added for %s at %p.", serviceName, (*registration_factory)->proxyFactoryTracker);
 	}
 
 	return status;

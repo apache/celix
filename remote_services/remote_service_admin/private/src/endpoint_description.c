@@ -27,6 +27,7 @@
 #include <stdio.h>
 
 #include "celix_errno.h"
+#include "celix_log.h"
 
 #include "endpoint_description.h"
 #include "remote_constants.h"
@@ -52,7 +53,7 @@ celix_status_t endpointDescription_create(properties_pt properties, endpoint_des
     (*endpointDescription)->serviceId = serviceId;
 
     if (!(*endpointDescription)->frameworkUUID || !(*endpointDescription)->id || !(*endpointDescription)->service) {
-    	printf("ENDPOINT_DESCRIPTION: incomplete description!\n");
+    	fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "ENDPOINT_DESCRIPTION: incomplete description!.");
     	status = CELIX_BUNDLE_EXCEPTION;
     }
 

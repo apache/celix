@@ -36,6 +36,7 @@
 #include <curl/easy.h>
 
 #include "celix_errno.h"
+#include "celix_log.h"
 #include "celixbool.h"
 
 #include "log_sync.h"
@@ -86,7 +87,7 @@ celix_status_t logSync_create(apr_pool_t *pool, char *targetId, log_store_pt sto
 celix_status_t logSync_parseLogDescriptor(log_sync_pt logSync, char *descriptorString, log_descriptor_pt *descriptor) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	printf("Descriptor: %s\n", descriptorString);
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Descriptor: %s", descriptorString);
 	char *last = NULL;
 	char *targetId = apr_strtok(descriptorString, ",", &last);
 	char *logIdStr = apr_strtok(NULL, ",", &last);
@@ -95,7 +96,7 @@ celix_status_t logSync_parseLogDescriptor(log_sync_pt logSync, char *descriptorS
 		logId = atol(logIdStr);
 	}
 	char *range = apr_strtok(NULL, ",", &last);
-	printf("Range: %s\n", range);
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Range: %s", range);
 
 	long low = 0;
 	long high = 0;
@@ -183,7 +184,7 @@ celix_status_t logSync_queryLog(log_sync_pt logSync, char *targetId, long logId,
 		if (res != CURLE_OK) {
 			status = CELIX_BUNDLE_EXCEPTION;
 		}
-		printf("Error: %d\n", res);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error: %d", res);
 		/* always cleanup */
 		curl_easy_cleanup(curl);
 
@@ -199,9 +200,9 @@ static size_t logSync_readQeury(void *contents, size_t size, size_t nmemb, void 
 
 	mem->memory = realloc(mem->memory, mem->size + realsize + 1);
 	if (mem->memory == NULL) {
-	/* out of memory! */
-	printf("not enough memory (realloc returned NULL)\n");
-	exit(EXIT_FAILURE);
+		/* out of memory! */
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "not enough memory (realloc returned NULL)");
+		exit(EXIT_FAILURE);
 	}
 
 	memcpy(&(mem->memory[mem->size]), contents, realsize);

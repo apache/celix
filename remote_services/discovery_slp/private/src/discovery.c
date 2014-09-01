@@ -94,7 +94,7 @@ celix_status_t discovery_create(apr_pool_t *pool, bundle_context_pt context, dis
 		(*discovery)->running = true;
 		(*discovery)->discoveryPort = getenv("RSA_PORT");
 		if ((*discovery)->discoveryPort == NULL) {
-			printf("No RemoteServiceAdmin port set, set it using RSA_PORT!\n");
+			fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "No RemoteServiceAdmin port set, set it using RSA_PORT!");
 		}
 		(*discovery)->handled = NULL;
 		arrayList_create(&(*discovery)->handled);
@@ -109,7 +109,7 @@ celix_status_t discovery_create(apr_pool_t *pool, bundle_context_pt context, dis
 
 celix_status_t discovery_deregisterEndpoint(discovery_pt discovery, const char *serviceUrl) {
 	celix_status_t status = CELIX_SUCCESS;
-	printf("DISCOVERY: Remove endpoint: %s\n", serviceUrl);
+	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY: Remove endpoint: %s.", serviceUrl);
 
 	SLPError err;
 	SLPError callbackerr;
@@ -121,7 +121,7 @@ celix_status_t discovery_deregisterEndpoint(discovery_pt discovery, const char *
 	} else {
 		err = SLPDereg(slp, serviceUrl, discovery_deregistrationReport, &callbackerr);
 		if ((err != SLP_OK) || (callbackerr != SLP_OK)) {
-			printf("DISCOVERY: Error deregistering service (%s) with slp %i\n", serviceUrl, err);
+			fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY: Error deregistering service (%s) with slp %d.", serviceUrl, err);
 			status = CELIX_BUNDLE_EXCEPTION;
 		}
 		SLPClose(slp);
@@ -151,7 +151,7 @@ celix_status_t discovery_stop(discovery_pt discovery) {
 
 celix_status_t discovery_removeService(discovery_pt discovery, endpoint_description_pt endpoint) {
 	celix_status_t status = CELIX_SUCCESS;
-	printf("DISCOVERY: Remove service (%s)\n", endpoint->service);
+	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY: Remove service (%s).", endpoint->service);
 
 	// Inform listeners of new endpoint
 	hash_map_iterator_pt iter = hashMapIterator_create(discovery->listenerReferences);
@@ -186,7 +186,7 @@ celix_status_t discovery_addService(discovery_pt discovery, endpoint_description
 		bool matchResult = false;
 		filter_match(filter, endpoint->properties, &matchResult);
 		if (matchResult) {
-			printf("DISCOVERY: Add service (%s)\n", endpoint->service);
+			fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY: Add service (%s)", endpoint->service);
 			bundleContext_getService(discovery->context, reference, (void**)&listener);
 			discovery_informListener(discovery, listener, endpoint);
 		}
@@ -245,7 +245,7 @@ void discovery_registrationReport(SLPHandle hslp, SLPError errcode, void* cookie
 
 celix_status_t discovery_endpointAdded(void *handle, endpoint_description_pt endpoint, char *machtedFilter) {
 	celix_status_t status = CELIX_SUCCESS;
-	printf("DISCOVERY: Endpoint for %s, with filter \"%s\" added\n", endpoint->service, machtedFilter);
+	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY: Endpoint for %s, with filter \"%s\" added.", endpoint->service, machtedFilter);
 	discovery_pt discovery = handle;
 	SLPError err;
 	SLPError callbackerr;
@@ -275,7 +275,7 @@ celix_status_t discovery_endpointAdded(void *handle, endpoint_description_pt end
 			err = SLPReg(slp, serviceUrl, SLP_LIFETIME_MAXIMUM, 0, attributes, SLP_TRUE, discovery_registrationReport, &callbackerr);
 			if ((err != SLP_OK) || (callbackerr != SLP_OK)) {
 				status = CELIX_ILLEGAL_STATE;
-				printf("DISCOVERY: Error registering service (%s) with slp %i\n", serviceUrl, err);
+				fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "DISCOVERY: Error registering service (%s) with slp %d", serviceUrl, err);
 			}
 
 			arrayList_add(discovery->registered, serviceUrl);
@@ -292,7 +292,7 @@ void discovery_deregistrationReport(SLPHandle hslp, SLPError errcode, void* cook
 
 celix_status_t discovery_endpointRemoved(void *handle, endpoint_description_pt endpoint, char *machtedFilter) {
 	celix_status_t status = CELIX_SUCCESS;
-	printf("DISCOVERY: Endpoint for %s, with filter \"%s\" removed\n", endpoint->service, machtedFilter);
+	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY: Endpoint for %s, with filter \"%s\" removed.", endpoint->service, machtedFilter);
 
 	discovery_pt discovery = handle;
 	SLPError err;
@@ -340,9 +340,9 @@ celix_status_t discovery_endpointListenerAdded(void * handle, service_reference_
 	char *discoveryListener = properties_get(serviceProperties, "DISCOVERY");
 
 	if (discoveryListener != NULL && strcmp(discoveryListener, "true") == 0) {
-		printf("DISCOVERY: EndpointListener Ignored - Discovery listener\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DISCOVERY: EndpointListener Ignored - Discovery listener.");
 	} else {
-		printf("DISCOVERY: EndpointListener Added - Add Scope\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DISCOVERY: EndpointListener Added - Add Scope.");
 		discovery_updateEndpointListener(discovery, reference, (endpoint_listener_pt) service);
 	}
 
@@ -353,7 +353,7 @@ celix_status_t discovery_endpointListenerModified(void * handle, service_referen
 	celix_status_t status = CELIX_SUCCESS;
 	discovery_pt discovery = handle;
 
-	printf("DISCOVERY: EndpointListener Modified - Update Scope\n");
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DISCOVERY: EndpointListener Modified - Update Scope");
 	discovery_updateEndpointListener(discovery, reference, (endpoint_listener_pt) service);
 
 	return status;
@@ -390,7 +390,7 @@ celix_status_t discovery_endpointListenerRemoved(void * handle, service_referenc
 	celix_status_t status = CELIX_SUCCESS;
 	discovery_pt discovery = handle;
 
-	printf("DISCOVERY: EndpointListener Removed\n");
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DISCOVERY: EndpointListener Removed.");
 	hashMap_remove(discovery->listenerReferences, reference);
 
 	return status;

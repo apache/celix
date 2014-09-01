@@ -40,6 +40,7 @@
 #include "array_list.h"
 #include "utils.h"
 #include "celix_errno.h"
+#include "celix_log.h"
 #include "filter.h"
 #include "service_reference.h"
 #include "service_registration.h"
@@ -70,7 +71,7 @@ celix_status_t discovery_stopOrDetachShm(discovery_pt discovery);
 celix_status_t discovery_create(apr_pool_t *pool, bundle_context_pt context, discovery_pt *discovery) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	printf("DISCOVERY started.\n");
+	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY_SHM started.");
 
 	*discovery = apr_palloc(pool, sizeof(**discovery));
 	if (!*discovery) {
@@ -90,7 +91,7 @@ celix_status_t discovery_create(apr_pool_t *pool, bundle_context_pt context, dis
 
 		if ((status = discovery_createOrAttachShm(*discovery)) != CELIX_SUCCESS)
 		{
-			printf("DISCOVERY: Shared Memory initialization failed.");
+			fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "DISCOVERY_SHM: Shared Memory initialization failed.");
 		}
 		else
 		{
@@ -126,17 +127,17 @@ celix_status_t discovery_stop(discovery_pt discovery) {
 
 		if (stat != APR_SUCCESS && tstat != APR_SUCCESS)
 				{
-			printf("DISCOVERY: An error occured while stopping the SHM polling thread.\n");
+			fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "DISCOVERY_SHM: An error occured while stopping the SHM polling thread.");
 			status = CELIX_BUNDLE_EXCEPTION;
 		}
 		else
 		{
-			printf("DISCOVERY: SHM polling thread sucessfully stopped.\n");
+			fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DISCOVERY_SHM: SHM polling thread sucessfully stopped.");
 			int i;
 			for (i = 0; i < arrayList_size(discovery->registered); i++) {
 
 				endpoint_description_pt endpoint = (endpoint_description_pt) arrayList_get(discovery->registered, i);
-				printf("DISCOVERY: deregistering service %s.\n", endpoint->service);
+				fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY_SHM: deregistering service %s.", endpoint->service);
 				status = discovery_deregisterSHMService(discovery, endpoint);
 			}
 
@@ -150,7 +151,7 @@ celix_status_t discovery_stop(discovery_pt discovery) {
 
 celix_status_t discovery_removeService(discovery_pt discovery, endpoint_description_pt endpoint) {
 	celix_status_t status = CELIX_SUCCESS;
-	printf("DISCOVERY: Remove service (%s)\n", endpoint->service);
+	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY_SHM: Remove service (%s).", endpoint->service);
 
 	// Inform listeners of new endpoint
 	hash_map_iterator_pt iter = hashMapIterator_create(discovery->listenerReferences);
@@ -172,7 +173,7 @@ celix_status_t discovery_addService(discovery_pt discovery, endpoint_description
 	// Inform listeners of new endpoint
 	hash_map_iterator_pt iter = hashMapIterator_create(discovery->listenerReferences);
 
-	printf("DISCOVERY: Add service (%s)\n", endpoint->service);
+	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY_SHM: Add service (%s).", endpoint->service);
 
 	while (hashMapIterator_hasNext(iter)) {
 		hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
@@ -188,7 +189,7 @@ celix_status_t discovery_addService(discovery_pt discovery, endpoint_description
 		bool matchResult = false;
 		filter_match(filter, endpoint->properties, &matchResult);
 		if (matchResult) {
-			printf("DISCOVERY: Add service (%s)\n", endpoint->service);
+			fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY_SHM: Add service (%s).", endpoint->service);
 			bundleContext_getService(discovery->context, reference, (void**) &listener);
 			discovery_informListener(discovery, listener, endpoint);
 		}
@@ -287,7 +288,7 @@ celix_status_t discovery_decShmMapService(discovery_pt discovery, char* encServi
 
 	if ((status = netstring_decodeToHashMap(discovery->pool, encServiceMap, outShmMap)) != CELIX_SUCCESS)
 	{
-		printf("DISCOVERY: discovery_decShmMapService : decoding service data to hashmap failed\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DISCOVERY_SHM: discovery_decShmMapService : decoding service data to hashmap failed.");
 	}
 	else
 	{
@@ -297,7 +298,7 @@ celix_status_t discovery_decShmMapService(discovery_pt discovery, char* encServi
 
 		if ((status = netstring_decodeToHashMap(discovery->pool, encServiceProps, props)) != CELIX_SUCCESS)
 		{
-			printf("DISCOVERY: discovery_decShmMapService : Decoding of endpointProperties failed\n");
+			fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DISCOVERY_SHM: discovery_decShmMapService : Decoding of endpointProperties failed.");
 		}
 
 		hashMap_put(outShmMap, DISCOVERY_SHM_SRVC_PROPERTIES, props);
@@ -316,7 +317,7 @@ celix_status_t discovery_encShmMapService(discovery_pt discovery, hash_map_pt in
 
 	if ((status = netstring_encodeFromHashMap(discovery->pool, props, &encServiceProps)) != CELIX_SUCCESS)
 	{
-		printf("DISCOVERY: discovery_encShmMapService : encoding of endpointProperties failed\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DISCOVERY_SHM: discovery_encShmMapService : encoding of endpointProperties failed.");
 	}
 	else
 	{
@@ -324,7 +325,7 @@ celix_status_t discovery_encShmMapService(discovery_pt discovery, hash_map_pt in
 
 		if ((status = netstring_encodeFromHashMap(discovery->pool, inShmMap, outEncServiceMap)) != CELIX_SUCCESS)
 		{
-			printf("DISCOVERY: discovery_encShmMapService : encoding service data to hashmap failed\n");
+			fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DISCOVERY_SHM: discovery_encShmMapService : encoding service data to hashmap failed.");
 		}
 	}
 
@@ -340,7 +341,7 @@ celix_status_t discovery_decShmMapDiscoveryInstance(discovery_pt discovery, char
 
 	if ((status = netstring_decodeToHashMap(discovery->pool, encDiscInstance, outRegServices)) != CELIX_SUCCESS)
 	{
-		printf("DISCOVERY: discovery_decShmMapDiscoveryInstance : decoding data to properties failed\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DISCOVERY_SHM: discovery_decShmMapDiscoveryInstance : decoding data to properties failed.");
 	}
 	else {
 
@@ -349,7 +350,7 @@ celix_status_t discovery_decShmMapDiscoveryInstance(discovery_pt discovery, char
 
 		if ((status = netstring_decodeToHashMap(discovery->pool, encServices, fwServices)) != CELIX_SUCCESS)
 		{
-			printf("DISCOVERY: discovery_decShmMapDiscoveryInstance : decoding services failed\n");
+			fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DISCOVERY_SHM: discovery_decShmMapDiscoveryInstance : decoding services failed");
 		}
 		else
 		{
@@ -410,7 +411,7 @@ celix_status_t discovery_encShmMapDiscoveryInstance(discovery_pt discovery, hash
 
 		if ((status = netstring_encodeFromHashMap(discovery->pool, inRegServices, &outEncServices)) != CELIX_SUCCESS)
 		{
-			printf("DISCOVERY: discovery_encShmMapDiscoveryInstance : encode services failed\n");
+			fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DISCOVERY_SHM: discovery_encShmMapDiscoveryInstance : encode services failed.");
 		}
 		else
 		{
@@ -418,7 +419,7 @@ celix_status_t discovery_encShmMapDiscoveryInstance(discovery_pt discovery, hash
 
 			if ((status = netstring_encodeFromHashMap(discovery->pool, inFwAttr, outEncDiscoveryInstance)) != CELIX_SUCCESS)
 			{
-				printf("DISCOVERY: discovery_encShmMapDiscoveryInstance : encode discovery instances failed\n");
+				fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DISCOVERY_SHM: discovery_encShmMapDiscoveryInstance : encode discovery instances failed.");
 			}
 
 		}
@@ -435,7 +436,7 @@ celix_status_t discovery_decShmMap(discovery_pt discovery, char* encMap, hash_ma
 
 	if ((status = netstring_decodeToHashMap(discovery->pool, encMap, outRegDiscInstances)) != CELIX_SUCCESS)
 	{
-		printf("DISCOVERY: discovery_updateLocalSHMServices : decoding data to properties failed\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DISCOVERY_SHM: discovery_updateLocalSHMServices : decoding data to properties failed.");
 	}
 	else
 	{
@@ -488,7 +489,7 @@ celix_status_t discovery_encShmMap(discovery_pt discovery, hash_map_pt inRegDisc
 
 	if ((status == CELIX_SUCCESS) && ((status = netstring_encodeFromHashMap(discovery->pool, inRegDiscInstances, outEncMap)) != CELIX_SUCCESS))
 	{
-		printf("DISCOVERY: discovery_encShmMapDiscoveryInstance : encode shm map failed\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DISCOVERY_SHM: discovery_encShmMapDiscoveryInstance : encode shm map failed.");
 	}
 
 	return status;
@@ -530,7 +531,7 @@ celix_status_t discovery_updateSHMServices(discovery_pt discovery, endpoint_desc
 
 	if ((discovery->shmId < 0) || (discovery->shmBaseAdress == NULL))
 			{
-		printf("DISCOVERY : shared memory not initialized.\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "DISCOVERY : shared memory not initialized.");
 		status = CELIX_BUNDLE_EXCEPTION;
 	}
 	else
@@ -543,7 +544,7 @@ celix_status_t discovery_updateSHMServices(discovery_pt discovery, endpoint_desc
 
 			if ((status = discovery_decShmMap(discovery, &(shmData->data[0]), regDiscoveryInstances)) != CELIX_SUCCESS)
 			{
-				printf("DISCOVERY : discovery_registerSHMService : decoding data to Properties failed\n");
+				fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "DISCOVERY : discovery_registerSHMService : decoding data failed.");
 			}
 			else
 			{
@@ -589,7 +590,7 @@ celix_status_t discovery_updateSHMServices(discovery_pt discovery, endpoint_desc
 				}
 				else
 				{
-					printf("remove Services %s\n", endpoint->service);
+					fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "remove Services %s.", endpoint->service);
 
 					hashMap_remove(ownServices, endpoint->service);
 
@@ -598,7 +599,7 @@ celix_status_t discovery_updateSHMServices(discovery_pt discovery, endpoint_desc
 					// the structure but the process with the pid does not live anymore)
 					if (hashMap_size(ownServices) == 0)
 							{
-						printf("removing framework w/ uuid %s\n", uuid);
+						fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "removing framework w/ uuid %s.", uuid);
 
 						hashMap_remove(ownFramework, DISCOVERY_SHM_FW_SERVICES);
 						hashMap_remove(regDiscoveryInstances, uuid);
@@ -615,7 +616,7 @@ celix_status_t discovery_updateSHMServices(discovery_pt discovery, endpoint_desc
 				}
 				else
 				{
-					printf("DISCOVERY : discovery_registerSHMService : encoding data from HashMap failed\n");
+					fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DISCOVERY : discovery_registerSHMService : encoding data from HashMap failed.");
 				}
 			}
 
@@ -640,14 +641,14 @@ celix_status_t discovery_deregisterSHMService(discovery_pt discovery, endpoint_d
 
 celix_status_t discovery_endpointAdded(void *handle, endpoint_description_pt endpoint, char *machtedFilter) {
 	celix_status_t status = CELIX_SUCCESS;
-	printf("DISCOVERY: Endpoint for %s, with filter \"%s\" added\n", endpoint->service, machtedFilter);
+	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY_SHM: Endpoint for %s, with filter \"%s\" added.", endpoint->service, machtedFilter);
 	discovery_pt discovery = handle;
 
 	if (status == CELIX_SUCCESS) {
 
 		if ((status = discovery_registerSHMService(discovery, endpoint)) != CELIX_SUCCESS)
 		{
-			printf("DISCOVERY: Error registering service (%s) within shared memory \n", endpoint->service);
+			fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "DISCOVERY_SHM: Error registering service (%s) within shared memory.", endpoint->service);
 		}
 
 		arrayList_add(discovery->registered, endpoint);
@@ -658,7 +659,7 @@ celix_status_t discovery_endpointAdded(void *handle, endpoint_description_pt end
 
 celix_status_t discovery_endpointRemoved(void *handle, endpoint_description_pt endpoint, char *machtedFilter) {
 	celix_status_t status = CELIX_SUCCESS;
-	printf("DISCOVERY: Endpoint for %s, with filter \"%s\" removed\n", endpoint->service, machtedFilter);
+	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY_SHM: Endpoint for %s, with filter \"%s\" removed", endpoint->service, machtedFilter);
 
 	discovery_pt discovery = handle;
 
@@ -697,7 +698,7 @@ celix_status_t discovery_endpointListenerAdded(void * handle, service_reference_
 	char *discoveryListener = properties_get(serviceProperties, "DISCOVERY");
 
 	if (discoveryListener != NULL && strcmp(discoveryListener, "true") == 0) {
-		printf("DISCOVERY: EndpointListener Ignored - Discovery listener\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DISCOVERY_SHM: EndpointListener Ignored - Discovery listener.");
 	} else {
 		discovery_updateEndpointListener(discovery, reference, (endpoint_listener_pt) service);
 	}
@@ -753,7 +754,7 @@ celix_status_t discovery_endpointListenerRemoved(void * handle, service_referenc
 	celix_status_t status = CELIX_SUCCESS;
 	discovery_pt discovery = handle;
 
-	printf("DISCOVERY: EndpointListener Removed\n");
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DISCOVERY_SHM: EndpointListener Removed");
 	hashMap_remove(discovery->listenerReferences, reference);
 
 	return status;
@@ -766,18 +767,18 @@ celix_status_t discovery_createOrAttachShm(discovery_pt discovery)
 	key_t shmKey = ftok(DISCOVERY_SHM_FILENAME, DISCOVERY_SHM_FTOK_ID);
 
 	if ((discovery->shmId = shmget(shmKey, DISCOVERY_SHM_MEMSIZE, 0666)) < 0)
-			{
-		printf("DISCOVERY : Could not attach to shared memory. Trying to create shared memory segment. \n");
+	{
+		fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DISCOVERY : Could not attach to shared memory. Trying to create shared memory segment.");
 
 		// trying to create shared memory
 		if ((discovery->shmId = shmget(shmKey, DISCOVERY_SHM_MEMSIZE, IPC_CREAT | 0666)) < 0)
-				{
-			printf("DISCOVERY : Creation of shared memory segment failed\n");
+		{
+			fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "DISCOVERY : Creation of shared memory segment failed.");
 			status = CELIX_BUNDLE_EXCEPTION;
 		}
 		else if ((discovery->shmBaseAdress = shmat(discovery->shmId, 0, 0)) == (char*) -1)
-				{
-			printf("DISCOVERY : Attaching of shared memory segment failed\n");
+		{
+			fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "DISCOVERY : Attaching of shared memory segment failed.");
 			status = CELIX_BUNDLE_EXCEPTION;
 		}
 		else
@@ -785,40 +786,39 @@ celix_status_t discovery_createOrAttachShm(discovery_pt discovery)
 			int semId = -1;
 			key_t semKey = -1;
 			ipc_shmData_pt shmData = NULL;
-			printf("DISCOVERY : Shared memory segment successfully created at %p\n", discovery->shmBaseAdress);
+			fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DISCOVERY : Shared memory segment successfully created at %p", discovery->shmBaseAdress);
 
 			// create structure
 			shmData = calloc(1, sizeof(*shmData));
 			semKey = ftok(DISCOVERY_SEM_FILENAME, DISCOVERY_SEM_FTOK_ID);
 
 			if ((semId = semget(semKey, 2, 0666 | IPC_CREAT)) == -1)
-					{
-				printf("DISCOVERY : Creation of semaphores failed %i\n", semId);
+			{
+				fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "DISCOVERY : Creation of semaphores failed %d.", semId);
 			}
 			else
 			{
 				// set
 				if (semctl(semId, 0, SETVAL, (int) 1) < 0)
-						{
-					printf(" DISCOVERY : error while initializing semaphore 0 \n");
+				{
+					fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "DISCOVERY : error while initializing semaphore 0.");
 				}
 				else
 				{
-					printf(" DISCOVERY : semaphore 0 initialized w/ %d\n", semctl(semId, 0, GETVAL, 0));
+					fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, " DISCOVERY : semaphore 0 initialized w/ %d", semctl(semId, 0, GETVAL, 0));
 				}
 
 				if (semctl(semId, 1, SETVAL, (int) 0) < 0)
-						{
-					printf(" DISCOVERY : error while initializing semaphore 1\n");
+				{
+					fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "DISCOVERY : error while initializing semaphore 1.");
 				}
 				else
 				{
-					printf(" DISCOVERY : semaphore 1 initialized w/ %d\n", semctl(semId, 1, GETVAL, 0));
+					fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, " DISCOVERY : semaphore 1 initialized w/ %d.", semctl(semId, 1, GETVAL, 0));
 				}
 
 				shmData->semId = semId;
 				shmData->numListeners = 1;
-				printf(" numListeners is initalized: %d \n", shmData->numListeners);
 
 				memcpy(discovery->shmBaseAdress, shmData, sizeof(*shmData));
 			}
@@ -828,7 +828,7 @@ celix_status_t discovery_createOrAttachShm(discovery_pt discovery)
 	}
 	else if ((discovery->shmBaseAdress = shmat(discovery->shmId, 0, 0)) < 0)
 			{
-		printf("DISCOVERY : Attaching of shared memory segment failed\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "DISCOVERY : Attaching of shared memory segment failed.");
 		status = CELIX_BUNDLE_EXCEPTION;
 	}
 	else
@@ -850,7 +850,7 @@ celix_status_t discovery_stopOrDetachShm(discovery_pt discovery)
 
 	if ((discovery->shmId < 0) || (discovery->shmBaseAdress == NULL))
 			{
-		printf("DISCOVERY : discovery_addNewEntry : shared memory not initialized.\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "DISCOVERY : discovery_addNewEntry : shared memory not initialized.");
 		status = CELIX_BUNDLE_EXCEPTION;
 	}
 	else
@@ -860,22 +860,22 @@ celix_status_t discovery_stopOrDetachShm(discovery_pt discovery)
 
 		discovery_lock(shmData->semId, 0);
 		shmData->numListeners--;
-		printf(" numListeners decreased: %d \n", shmData->numListeners);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DISCOVERY_SHM: numListeners decreased: %d", shmData->numListeners);
 		discovery_unlock(shmData->semId, 0);
 
 		if (shmData->numListeners > 0)
-				{
-			printf("DISCOVERY: Detaching from Shared memory\n");
+		{
+			fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DISCOVERY_SHM: Detaching from Shared memory\n");
 			shmdt(discovery->shmBaseAdress);
 		}
 		else
 		{
-			printf("DISCOVERY: Removing semaphore w/ id \n");
+			fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DISCOVERY_SHM: Removing semaphore w/ id.");
 			ipc_shmData_pt shmData = (ipc_shmData_pt) discovery->shmBaseAdress;
 			semctl(shmData->semId, 0, IPC_RMID);
-			printf("DISCOVERY: Detaching from Shared memory\n");
+			fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DISCOVERY_SHM: Detaching from Shared memory.");
 			shmdt(discovery->shmBaseAdress);
-			printf("DISCOVERY: Destroying Shared memory\n");
+			fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DISCOVERY_SHM: Destroying Shared memory.");
 			shmctl(discovery->shmId, IPC_RMID, 0);
 		}
 	}
@@ -890,7 +890,7 @@ celix_status_t discovery_updateLocalSHMServices(discovery_pt discovery)
 
 	if ((status = discovery_lock(shmData->semId, 0)) != CELIX_SUCCESS)
 	{
-		printf("cannot acquire semaphore");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "DISCOVERY_SHM: cannot acquire semaphore");
 	}
 	else
 	{
@@ -928,7 +928,7 @@ celix_status_t discovery_updateLocalSHMServices(discovery_pt discovery)
 
 					if (hashMap_get(fwServices, srvcName) != NULL)
 					{
-						printf("DISCOVERY : discovery_updateLocalSHMServices : service with url %s from %s already registered", srvcName, uuid);
+						fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY : discovery_updateLocalSHMServices : service with url %s from %s already registered", srvcName, uuid);
 					}
 					else
 					{
@@ -958,7 +958,7 @@ celix_status_t discovery_updateLocalSHMServices(discovery_pt discovery)
 
 					if (hashMap_get(services, fwurl) == NULL)
 					{
-						printf("DISCOVERY: service with url %s from %s already unregistered", fwurl, uuid);
+						fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY_SHM: service with url %s from %s already unregistered", fwurl, uuid);
 						endpoint_description_pt endpoint = hashMap_get(fwServices, fwurl);
 						discovery_removeService(discovery, endpoint);
 						hashMap_remove(fwServices, fwurl);
@@ -984,7 +984,7 @@ celix_status_t discovery_updateLocalSHMServices(discovery_pt discovery)
 
 					if ((lclFwServices = (hash_map_pt) hashMapEntry_getValue(lclFwEntry)) == NULL)
 					{
-						printf("UUID %s does not have any services, but a structure\n", fwUUID);
+						fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "UUID %s does not have any services, but a structure?", fwUUID);
 					}
 					else
 					{
@@ -1022,7 +1022,7 @@ static void *APR_THREAD_FUNC discovery_pollSHMServices(apr_thread_t *thd, void *
 
 	if ((discovery->shmId < 0) || (discovery->shmBaseAdress == NULL))
 	{
-		printf( "DISCOVERY: shared memory not initialized.");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "DISCOVERY_SHM: shared memory not initialized.");
 		status = CELIX_BUNDLE_EXCEPTION;
 	}
 	else
@@ -1033,7 +1033,7 @@ static void *APR_THREAD_FUNC discovery_pollSHMServices(apr_thread_t *thd, void *
 		{
 			if(((status = discovery_lock(shmData->semId, 1)) != CELIX_SUCCESS) && (discovery->running == true))
 			{
-				printf( "DISCOVERY: cannot acquire semaphore. Breaking main poll cycle.");
+				fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR,  "DISCOVERY_SHM: cannot acquire semaphore. Breaking main poll cycle.");
 				break;
 			}
 			else

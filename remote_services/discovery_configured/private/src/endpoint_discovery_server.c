@@ -23,7 +23,9 @@
  * \author		<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
  * \copyright	Apache License, Version 2.0
  */
+
 #include <stdlib.h>
+#include <stdint.h>
 
 #include "civetweb.h"
 #include "celix_errno.h"
@@ -106,7 +108,7 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 
 	(*server)->ctx = mg_start(&callbacks, (*server), options);
 
-	printf("CONFIGURED_DISCOVERY: Starting discovery server on port %s...\n", port);
+	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "CONFIGURED_DISCOVERY: Starting discovery server on port %s.", port);
 
 	return status;
 }
@@ -143,7 +145,7 @@ celix_status_t endpointDiscoveryServer_addEndpoint(endpoint_discovery_server_pt 
 	char* endpointId = strdup(endpoint->id);
 	endpoint_description_pt cur_value = hashMap_get(server->entries, endpointId);
 	if (!cur_value) {
-		printf("CONFIGURED_DISCOVERY: exposing new endpoint \"%s\"...\n", endpointId);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "CONFIGURED_DISCOVERY: exposing new endpoint \"%s\".", endpointId);
 
 		hashMap_put(server->entries, endpointId, endpoint);
 	}
@@ -168,7 +170,7 @@ celix_status_t endpointDiscoveryServer_removeEndpoint(endpoint_discovery_server_
 	if (entry) {
 		char* key = hashMapEntry_getKey(entry);
 
-		printf("CONFIGURED_DISCOVERY: removing endpoint \"%s\"...\n", key);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "CONFIGURED_DISCOVERY: removing endpoint \"%s\".", key);
 
 		hashMap_remove(server->entries, key);
 

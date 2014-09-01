@@ -28,6 +28,7 @@
 #include <string.h>
 #include <libxml/xmlreader.h>
 
+#include "celix_log.h"
 #include "constants.h"
 #include "remote_constants.h"
 
@@ -159,7 +160,7 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
 
                         if (propertyValue != NULL) {
                         	if (propertyType != VALUE_TYPE_STRING && strcmp(OSGI_RSA_ENDPOINT_SERVICE_ID, (char*) propertyName)) {
-                        		printf("ENDPOINT_DESCRIPTOR_READER: Only single-valued string supported for %s\n", propertyName);
+                        		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "ENDPOINT_DESCRIPTOR_READER: Only single-valued string supported for %s", propertyName);
                         	}
                         	endpointDescriptorReader_addSingleValuedProperty(endpointProperties, propertyName, propertyValue);
                         }
@@ -203,7 +204,7 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
                     }
                     else if (propertyValue != NULL) {
                     	if (propertyType != VALUE_TYPE_STRING) {
-                    		printf("ENDPOINT_DESCRIPTOR_READER: Only string support for %s\n", propertyName);
+                    		fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "ENDPOINT_DESCRIPTOR_READER: Only string support for %s", propertyName);
                     	}
                     	endpointDescriptorReader_addSingleValuedProperty(endpointProperties, propertyName, propertyValue);
 

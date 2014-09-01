@@ -149,7 +149,7 @@ celix_status_t remoteShell_stopConnections(remote_shell_pt instance) {
 		wakeupStatus = apr_pollset_wakeup(connection->pollset);
 		if (wakeupStatus != APR_SUCCESS) {
 			apr_strerror(wakeupStatus, error, 64);
-			printf("Error waking up connection %i: '%s'\n", i, error);
+			fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "REMOTE_SHELLE: Error waking up connection %i: '%s'", i, error);
 		}
 	}
 	apr_thread_mutex_unlock(instance->mutex);
@@ -195,20 +195,20 @@ void *APR_THREAD_FUNC remoteShell_connection_run(apr_thread_t *thread, void *dat
 			} else {
 				char error[64];
 				apr_strerror(status, error, 64);
-				printf("Got error %s\n", error);
+				fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "REMOTE_SHELL: Got error %s", error);
 			}
 		} else if (status == APR_EINTR) {
-			printf("Poll interrupted\n");
+			fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "REMOTE_SHELL: Poll interrupted.");
 		} else /*error*/ {
 			char error[64];
 			apr_strerror(status, error, 64);
-			printf("Got error %s\n", error);
+			fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "REMOTE_SHELL: Got error %s", error);
 			break;
 		}
 	}
 	remoteShell_connection_print(connection, RS_GOODBYE);
 
-	printf("Closing socket\n");
+	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "REMOTE_SHELL: Closing socket");
 	apr_thread_mutex_lock(connection->parent->mutex);
 	arrayList_removeElement(connection->parent->connections, connection);
 	apr_thread_mutex_unlock(connection->parent->mutex);

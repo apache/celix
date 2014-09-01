@@ -73,14 +73,14 @@ celix_status_t deviceManager_create(apr_pool_t *pool, bundle_context_pt context,
 		status = arrayList_create(&(*manager)->locators);
 	}
 
-	printf("DEVICE_MANAGER: Initialized\n");
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DEVICE_MANAGER: Initialized");
 	return status;
 }
 
 celix_status_t deviceManager_destroy(device_manager_pt manager) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	printf("DEVICE_MANAGER: Stop\n");
+	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DEVICE_MANAGER: Stop");
 	hashMap_destroy(manager->devices, false, false);
 	hashMap_destroy(manager->drivers, false, false);
 	arrayList_destroy(manager->locators);
@@ -89,38 +89,38 @@ celix_status_t deviceManager_destroy(device_manager_pt manager) {
 }
 
 celix_status_t deviceManager_selectorAdded(void * handle, service_reference_pt ref, void * service) {
-	printf("DEVICE_MANAGER: Add selector\n");
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DEVICE_MANAGER: Add selector");
 	device_manager_pt manager = handle;
 	manager->selector = (driver_selector_service_pt) service;
 	return CELIX_SUCCESS;
 }
 
 celix_status_t deviceManager_selectorModified(void * handle, service_reference_pt ref, void * service) {
-	printf("DEVICE_MANAGER: Modify selector\n");
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DEVICE_MANAGER: Modify selector");
 	return CELIX_SUCCESS;
 }
 
 celix_status_t deviceManager_selectorRemoved(void * handle, service_reference_pt ref, void * service) {
-	printf("DEVICE_MANAGER: Remove selector\n");
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DEVICE_MANAGER: Remove selector");
 	device_manager_pt manager = handle;
 	manager->selector = NULL;
 	return CELIX_SUCCESS;
 }
 
 celix_status_t deviceManager_locatorAdded(void * handle, service_reference_pt ref, void * service) {
-	printf("DEVICE_MANAGER: Add locator\n");
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DEVICE_MANAGER: Add locator");
 	device_manager_pt manager = handle;
 	arrayList_add(manager->locators, service);
 	return CELIX_SUCCESS;
 }
 
 celix_status_t deviceManager_locatorModified(void * handle, service_reference_pt ref, void * service) {
-	printf("DEVICE_MANAGER: Modify locator\n");
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DEVICE_MANAGER: Modify locator");
 	return CELIX_SUCCESS;
 }
 
 celix_status_t deviceManager_locatorRemoved(void * handle, service_reference_pt ref, void * service) {
-	printf("DEVICE_MANAGER: Remove locator\n");
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DEVICE_MANAGER: Remove locator");
 	device_manager_pt manager = handle;
 	arrayList_removeElement(manager->locators, service);
 	return CELIX_SUCCESS;
@@ -128,7 +128,7 @@ celix_status_t deviceManager_locatorRemoved(void * handle, service_reference_pt 
 
 celix_status_t deviceManager_deviceAdded(void * handle, service_reference_pt ref, void * service) {
 	celix_status_t status = CELIX_SUCCESS;
-	printf("DEVICE_MANAGER: Add device\n");
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DEVICE_MANAGER: Add device");
 	device_manager_pt manager = handle;
 
 	status = deviceManager_attachAlgorithm(manager, ref, service);
@@ -220,7 +220,7 @@ celix_status_t deviceManager_matchAttachDriver(device_manager_pt manager, apr_po
 
 	for (i = 0; i < arrayList_size(driverIds); i++) {
 		char *id = arrayList_get(driverIds, i);
-		printf("DEVICE_MANAGER: Driver found: %s\n", id);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DEVICE_MANAGER: Driver found: %s", id);
 	}
 
 	status = driverLoader_loadDrivers(loader, attachPool, manager->locators, driverIds, &references);
@@ -242,7 +242,7 @@ celix_status_t deviceManager_matchAttachDriver(device_manager_pt manager, apr_po
 				int match = 0;
 				celix_status_t substatus = driverAttributes_match(attributes, reference, &match);
 				if (substatus == CELIX_SUCCESS) {
-					printf("DEVICE_MANAGER: Found match: %d\n", match);
+					fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DEVICE_MANAGER: Found match: %d", match);
 					if (match <= OSGI_DEVICEACCESS_DEVICE_MATCH_NONE) {
 						continue;
 					}
@@ -318,7 +318,7 @@ celix_status_t deviceManager_noDriverFound(device_manager_pt manager, void *serv
 }
 
 celix_status_t deviceManager_deviceModified(void * handle, service_reference_pt ref, void * service) {
-	printf("DEVICE_MANAGER: Modify device\n");
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DEVICE_MANAGER: Modify device");
 	// #TODO the device properties could be changed
 	//device_manager_pt manager = handle;
 	//hashMap_put(manager->devices, ref, service);
@@ -326,7 +326,7 @@ celix_status_t deviceManager_deviceModified(void * handle, service_reference_pt 
 }
 
 celix_status_t deviceManager_deviceRemoved(void * handle, service_reference_pt ref, void * service) {
-	printf("DEVICE_MANAGER: Remove device\n");
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DEVICE_MANAGER: Remove device");
 	device_manager_pt manager = handle;
 	hashMap_remove(manager->devices, ref);
 	return CELIX_SUCCESS;
@@ -335,7 +335,7 @@ celix_status_t deviceManager_deviceRemoved(void * handle, service_reference_pt r
 celix_status_t deviceManager_driverAdded(void * handle, service_reference_pt ref, void * service) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	printf("DEVICE_MANAGER: Add driver\n");
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DEVICE_MANAGER: Add driver");
 	device_manager_pt manager = handle;
 	apr_pool_t *pool = NULL;
 	driver_attributes_pt attributes = NULL;
@@ -351,7 +351,7 @@ celix_status_t deviceManager_driverAdded(void * handle, service_reference_pt ref
 }
 
 celix_status_t deviceManager_driverModified(void * handle, service_reference_pt ref, void * service) {
-	printf("DEVICE_MANAGER: Modify driver\n");
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DEVICE_MANAGER: Modify driver");
 	// #TODO the driver properties could be changed?
 	return CELIX_SUCCESS;
 }
@@ -359,7 +359,7 @@ celix_status_t deviceManager_driverModified(void * handle, service_reference_pt 
 celix_status_t deviceManager_driverRemoved(void * handle, service_reference_pt ref, void * service) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	printf("DEVICE_MANAGER: Remove driver\n");
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DEVICE_MANAGER: Remove driver");
 	device_manager_pt manager = handle;
 	hashMap_remove(manager->drivers, ref);
 
@@ -384,7 +384,7 @@ celix_status_t deviceManager_driverRemoved(void * handle, service_reference_pt r
 					if (forStatus == CELIX_SUCCESS) {
 						forStatus = module_getSymbolicName(module, &bsn);
 						if (forStatus == CELIX_SUCCESS) {
-							printf("DEVICE_MANAGER: IDLE: %s\n", bsn);
+							fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DEVICE_MANAGER: IDLE: %s", bsn);
 							// #TODO attachDriver (idle device)
 							// #TODO this can result in a loop?
 							//		Locate and install a driver
@@ -439,7 +439,7 @@ celix_status_t deviceManager_getIdleDevices(device_manager_pt manager, apr_pool_
 				if (substatus == CELIX_SUCCESS) {
 					substatus = module_getSymbolicName(module, &bsn);
 					if (substatus == CELIX_SUCCESS) {
-						printf("DEVICE_MANAGER: Check idle device: %s\n", bsn);
+						fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DEVICE_MANAGER: Check idle device: %s", bsn);
 						array_list_pt bundles = NULL;
 						substatus = serviceReference_getUsingBundles(ref, &bundles);
 						if (substatus == CELIX_SUCCESS) {
@@ -456,7 +456,7 @@ celix_status_t deviceManager_getIdleDevices(device_manager_pt manager, apr_pool_
 										bundle_getCurrentModule(bundle, &module);
 										module_getSymbolicName(module, &bsn);
 
-										printf("DEVICE_MANAGER: Not idle, used by driver: %s\n", bsn);
+										fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DEVICE_MANAGER: Not idle, used by driver: %s", bsn);
 
 										inUse = true;
 										break;
@@ -503,7 +503,7 @@ celix_status_t deviceManager_getIdleDevices_exmaple(device_manager_pt manager, a
 			substatus = DO_IF_SUCCESS(substatus, serviceReference_getUsingBundles(ref, &bundles));
 
 			if (substatus == CELIX_SUCCESS) {
-				printf("DEVICE_MANAGER: Check idle device: %s\n", bsn);
+				fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DEVICE_MANAGER: Check idle device: %s", bsn);
 				bool inUse = false;
 				int i;
 				for (i = 0; i < arrayList_size(bundles); i++) {
@@ -517,7 +517,7 @@ celix_status_t deviceManager_getIdleDevices_exmaple(device_manager_pt manager, a
 							bundle_getCurrentModule(bundle, &module);
 							module_getSymbolicName(module, &bsn);
 
-							printf("DEVICE_MANAGER: Not idle, used by driver: %s\n", bsn);
+							fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DEVICE_MANAGER: Not idle, used by driver: %s", bsn);
 
 							inUse = true;
 							break;

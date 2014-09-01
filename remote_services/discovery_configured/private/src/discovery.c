@@ -163,7 +163,7 @@ celix_status_t discovery_endpointAdded(void *handle, endpoint_description_pt end
 	celix_status_t status = CELIX_SUCCESS;
 	discovery_pt discovery = handle;
 
-	printf("DISCOVERY_CONFIGURED: Endpoint for %s, with filter \"%s\" added...\n", endpoint->service, matchedFilter);
+	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY_CONFIGURED: Endpoint for %s, with filter \"%s\" added.", endpoint->service, matchedFilter);
 
 	status = endpointDiscoveryServer_addEndpoint(discovery->server, endpoint);
 
@@ -174,7 +174,7 @@ celix_status_t discovery_endpointRemoved(void *handle, endpoint_description_pt e
 	celix_status_t status = CELIX_SUCCESS;
 	discovery_pt discovery = handle;
 
-	printf("DISCOVERY_CONFIGURED: Endpoint for %s, with filter \"%s\" removed...\n", endpoint->service, matchedFilter);
+	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY_CONFIGURED: Endpoint for %s, with filter \"%s\" removed.", endpoint->service, matchedFilter);
 
 	status = endpointDiscoveryServer_removeEndpoint(discovery->server, endpoint);
 
@@ -205,7 +205,7 @@ celix_status_t discovery_endpointListenerAdded(void* handle, service_reference_p
 	filter_pt filter = filter_create(scope);
 
 	if (discoveryListener != NULL && strcmp(discoveryListener, "true") == 0) {
-		printf("DISCOVERY: EndpointListener Ignored - Discovery listener\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY: EndpointListener Ignored - Discovery listener.");
 	} else {
 		celixThreadMutex_lock(&discovery->discoveredServicesMutex);
 
@@ -218,7 +218,7 @@ celix_status_t discovery_endpointListenerAdded(void* handle, service_reference_p
 			if (matchResult) {
 				endpoint_listener_pt listener = service;
 
-				printf("DISCOVERY: EndpointListener Added - Add Scope\n");
+				fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY: EndpointListener Added - Add Scope.");
 
 				listener->endpointAdded(listener, endpoint, NULL);
 			}
@@ -257,7 +257,7 @@ celix_status_t discovery_endpointListenerRemoved(void * handle, service_referenc
 
 	if (discovery->listenerReferences != NULL) {
 		if (hashMap_remove(discovery->listenerReferences, reference)) {
-			printf("DISCOVERY: EndpointListener Removed\n");
+			fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY: EndpointListener Removed.");
 		}
 	}
 

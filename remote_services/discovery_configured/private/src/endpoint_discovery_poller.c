@@ -206,7 +206,7 @@ static void *endpointDiscoveryPoller_poll(void *data) {
 
         celix_status_t status = celixThreadMutex_lock(&poller->pollerLock);
         if (status != CELIX_SUCCESS) {
-        	printf("ENDPOINT_POLLER: failed to obtain lock; retrying...\n");
+        	fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "ENDPOINT_POLLER: failed to obtain lock; retrying..");
         	continue;
         }
 
@@ -248,7 +248,7 @@ static void *endpointDiscoveryPoller_poll(void *data) {
 
 		status = celixThreadMutex_unlock(&poller->pollerLock);
 		if (status != CELIX_SUCCESS) {
-        	printf("ENDPOINT_POLLER: failed to release lock; retrying...\n");
+			fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "ENDPOINT_POLLER: failed to release lock; retrying.");
 		}
     }
 
@@ -266,7 +266,7 @@ static size_t endpointDiscoveryPoller_writeMemory(void *contents, size_t size, s
 
     mem->memory = realloc(mem->memory, mem->size + realsize + 1);
     if(mem->memory == NULL) {
-        printf("ENDPOINT_POLLER: not enough memory (realloc returned NULL)!\n");
+    	fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "ENDPOINT_POLLER: not enough memory (realloc returned NULL)!");
         return 0;
     }
 
@@ -312,7 +312,7 @@ static celix_status_t endpointDiscoveryPoller_getEndpoints(endpoint_discovery_po
 			endpointDescriptorReader_destroy(reader);
     	}
     } else {
-    	printf("ENDPOINT_POLLER: unable to read endpoints, reason: %s\n", curl_easy_strerror(res));
+    	fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "ENDPOINT_POLLER: unable to read endpoints, reason: %s", curl_easy_strerror(res));
     }
 
     // clean up endpoints file

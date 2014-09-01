@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+#include "celix_log.h"
 #include "filter_private.h"
 #include "array_list.h"
 
@@ -57,7 +58,7 @@ filter_pt filter_create(char * filterString) {
 	int pos = 0;
 	filter = filter_parseFilter(filterString, &pos);
 	if (pos != strlen(filterString)) {
-		printf("Error: Extraneous trailing characters\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR,  "Error: Extraneous trailing characters.");
 		return NULL;
 	}
 	filter->filterStr = filterString;
@@ -94,7 +95,7 @@ filter_pt filter_parseFilter(char * filterString, int * pos) {
 	filter_pt filter;
 	filter_skipWhiteSpace(filterString, pos);
 	if (filterString[*pos] != '(') {
-		printf("Error: Missing '('\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error: Missing '('.");
 		return NULL;
 	}
 	(*pos)++;
@@ -104,7 +105,7 @@ filter_pt filter_parseFilter(char * filterString, int * pos) {
 	filter_skipWhiteSpace(filterString, pos);
 
 	if (filterString[*pos] != ')') {
-		printf("Error: Missing ')'\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error: Missing ')'.");
 		return NULL;
 	}
 	(*pos)++;
@@ -143,7 +144,7 @@ filter_pt filter_parseAnd(char * filterString, int * pos) {
 	filter_skipWhiteSpace(filterString, pos);
 
 	if (filterString[*pos] != '(') {
-		printf("Error: Missing '('\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error: Missing '('.");
 		return NULL;
 	}
 
@@ -166,7 +167,7 @@ filter_pt filter_parseOr(char * filterString, int * pos) {
 	filter_skipWhiteSpace(filterString, pos);
 
 	if (filterString[*pos] != '(') {
-		printf("Error: Missing '('\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error: Missing '('.");
 		return NULL;
 	}
 
@@ -188,7 +189,7 @@ filter_pt filter_parseNot(char * filterString, int * pos) {
 	filter_skipWhiteSpace(filterString, pos);
 
 	if (filterString[*pos] != '(') {
-		printf("Error: Missing '('\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error: Missing '('.");
 		return NULL;
 	}
 
@@ -276,7 +277,7 @@ filter_pt filter_parseItem(char * filterString, int * pos) {
 			return filter;
 		}
 	}
-	printf("Invalid operator\n");
+	fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Invalid operator.");
 	return NULL;
 }
 
@@ -302,7 +303,7 @@ char * filter_parseAttr(char * filterString, int * pos) {
 	length = end - begin;
 
 	if (length == 0) {
-		printf("Missing attr");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Missing attr.");
 		return NULL;
 	} else {
 		char * attr = (char *) malloc(length+1);
@@ -325,7 +326,7 @@ char * filter_parseValue(char * filterString, int * pos) {
 				break;
 			}
 			case '(': {
-				printf("Invalid value");
+				fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Invalid value.");
 				return NULL;
 			}
 			case '\\': {
@@ -345,7 +346,7 @@ char * filter_parseValue(char * filterString, int * pos) {
 	}
 
 	if (strlen(value) == 0) {
-		printf("Missing value");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Missing value.");
 		return NULL;
 	}
 	return value;
@@ -372,7 +373,7 @@ array_list_pt filter_parseSubstring(char * filterString, int * pos) {
 				break;
 			}
 			case '(': {
-				printf("Invalid value");
+				fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Invalid value.");
 				return NULL;
 			}
 			case '*': {
@@ -403,7 +404,7 @@ array_list_pt filter_parseSubstring(char * filterString, int * pos) {
 	size = arrayList_size(operands);
 
 	if (size == 0) {
-		printf("Missing value");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Missing value.");
 		return NULL;
 	}
 

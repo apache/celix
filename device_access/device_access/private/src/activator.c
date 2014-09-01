@@ -103,10 +103,10 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	}
 
 	if (status != CELIX_SUCCESS) {
-		printf("DEVICE_MANAGER: Error while starting bundle got error num %i\n", status);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "DEVICE_MANAGER: Error while starting bundle got error num %d", status);
 	}
 
-	printf("DEVICE_MANAGER: Started\n");
+	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DEVICE_MANAGER: Started");
 	return status;
 }
 

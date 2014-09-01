@@ -99,13 +99,13 @@ celix_status_t deploymentAdmin_create(apr_pool_t *pool, bundle_context_pt contex
         (*admin)->aditlogSeqNr = 0;
 
 		if ((*admin)->targetIdentification == NULL ) {
-			printf("Target name must be set using \"deployment_admin_identification\"\n");
+		    fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Target name must be set using \"deployment_admin_identification\"");
 			status = CELIX_ILLEGAL_ARGUMENT;
 		} else {
 			char *url = NULL;
 			bundleContext_getProperty(context, DISCOVERY_URL, &url);
 			if (url == NULL) {
-				printf("URL must be set using \"deployment_admin_url\"\n");
+			    fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "URL must be set using \"deployment_admin_url\"\n");
 				status = CELIX_ILLEGAL_ARGUMENT;
 			} else {
 				(*admin)->pollUrl = apr_pstrcat(subpool, url, "/deployment/", (*admin)->targetIdentification, VERSIONS, NULL);
@@ -139,7 +139,8 @@ static celix_status_t deploymentAdmin_updateAuditPool(deployment_admin_pt admin,
 
 	if (!curl) {
 		status = CELIX_BUNDLE_EXCEPTION;
-		printf("Error initializing curl\n");
+
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error initializing curl.");
 	}
 
 	char url[strlen(admin->auditlogUrl)+6];
@@ -148,7 +149,7 @@ static celix_status_t deploymentAdmin_updateAuditPool(deployment_admin_pt admin,
 	int entrySize = snprintf(entry, 512, "%s,%i,%i,0,%i\n", admin->targetIdentification, admin->auditlogId, admin->aditlogSeqNr++, auditEvent);
 	if (entrySize >= 512) {
 		status = CELIX_BUNDLE_EXCEPTION;
-		printf("Error, entry buffer is too small\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error, entry buffer is too small");
 	}
 
 	if (status == CELIX_SUCCESS) {
@@ -158,7 +159,7 @@ static celix_status_t deploymentAdmin_updateAuditPool(deployment_admin_pt admin,
 
 			if (res != CURLE_OK ) {
 				status = CELIX_BUNDLE_EXCEPTION;
-				printf("Error sending auditlog, got curl error code %i\n", res);
+				fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error sending auditlog, got curl error code %d", res);
 			}
 	}
 
@@ -224,7 +225,7 @@ static void * APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *depl
 					deploymentAdmin_deleteTree(repoCache, admin->pool);
 					apr_status_t stat = apr_file_rename(tmpDir, repoCache, admin->pool);
 					if (stat != APR_SUCCESS) {
-						printf("No success\n");
+						fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "No success");
 					}
 
 					deployment_package_pt target = hashMap_get(admin->packages, name);
@@ -266,9 +267,9 @@ size_t deploymentAdmin_parseVersions(void *contents, size_t size, size_t nmemb, 
 
 	mem->memory = realloc(mem->memory, mem->size + realsize + 1);
 	if (mem->memory == NULL) {
-	/* out of memory! */
-	printf("not enough memory (realloc returned NULL)\n");
-	exit(EXIT_FAILURE);
+		/* out of memory! */
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "not enough memory (realloc returned NULL)");
+		exit(EXIT_FAILURE);
 	}
 
 	memcpy(&(mem->memory[mem->size]), contents, realsize);
@@ -396,7 +397,7 @@ celix_status_t deploymentAdmin_stopDeploymentPackageBundles(deployment_admin_pt 
 			if (bundle != NULL) {
 				bundle_stop(bundle);
 			} else {
-				printf("DEPLOYMENT_ADMIN: Bundle %s not found\n", info->symbolicName);
+				fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "DEPLOYMENT_ADMIN: Bundle %s not found", info->symbolicName);
 			}
 		}
 	}
@@ -622,7 +623,7 @@ celix_status_t deploymentAdmin_startDeploymentPackageBundles(deployment_admin_pt
 			if (bundle != NULL) {
 				bundle_start(bundle);
 			} else {
-				printf("DEPLOYMENT_ADMIN: Could not start bundle %s\n", info->symbolicName);
+				fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "DEPLOYMENT_ADMIN: Could not start bundle %s", info->symbolicName);
 			}
 		}
 	}

@@ -111,7 +111,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	char *uuid = NULL;
 	bundleContext_getProperty(context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
 	char *scope = apr_pstrcat(activator->pool, "(&(", OSGI_FRAMEWORK_OBJECTCLASS, "=*)(", OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, "=", uuid, "))", NULL);
-	printf("DISCOVERY SCOPE IS: %s\n", scope);
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DISCOVERY SCOPE IS: %s.", scope);
 	properties_set(props, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, scope);
 	status = bundleContext_registerService(context, (char *) OSGI_ENDPOINT_LISTENER_SERVICE, endpointListener, props, &activator->endpointListenerService);
 

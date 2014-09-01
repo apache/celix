@@ -30,6 +30,7 @@
 #include "event_handler.h"
 #include "hash_map.h"
 #include "utils.h"
+#include "celix_log.h"
 
 
 celix_status_t eventAdmin_create(apr_pool_t *pool, bundle_context_pt context, event_admin_pt *event_admin){
@@ -65,7 +66,7 @@ celix_status_t eventAdmin_postEvent(event_admin_pt event_admin, event_pt event) 
 	array_list_iterator_pt handlers_iterator = arrayListIterator_create(event_handlers);
 	while (arrayListIterator_hasNext(handlers_iterator)) {
 		event_handler_service_pt event_handler_service = (event_handler_service_pt) arrayListIterator_next(handlers_iterator);
-		printf("handler found (POST EVENT) for %s\n", topic);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "handler found (POST EVENT) for %s", topic);
 		event_handler_service->handle_event(&event_handler_service->event_handler, event);
 	}
 	eventAdmin_releaseHandersList(event_admin, topic);
@@ -85,7 +86,7 @@ celix_status_t eventAdmin_sendEvent(event_admin_pt event_admin, event_pt event) 
 	array_list_iterator_pt handlers_iterator = arrayListIterator_create(event_handlers);
 	while (arrayListIterator_hasNext(handlers_iterator)) {
 		event_handler_service_pt event_handler_service = (event_handler_service_pt) arrayListIterator_next(handlers_iterator);
-		printf("handler found (SEND EVENT) for %s\n", topic);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "handler found (SEND EVENT) for %s", topic);
 		event_handler_service->handle_event(&event_handler_service->event_handler, event);
 	}
 	eventAdmin_releaseHandersList(event_admin, topic);
@@ -96,7 +97,7 @@ celix_status_t eventAdmin_findHandlersByTopic(hash_map_pt channels, char *topic,
 	celix_status_t status = CELIX_SUCCESS;
     channel_t channel = hashMap_get(channels, topic);
 	if (channel != NULL) {
-		printf("found channel: %s\n", topic);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "found channel: %s", topic);
 		if (channel->eventHandlers != NULL && !hashMap_isEmpty(channel->eventHandlers)) {
 			// iterate throught the handlers and add them to the array list for result.
 			hash_map_iterator_pt hashmap_iterator =  hashMapIterator_create(channel->eventHandlers);
@@ -105,7 +106,7 @@ celix_status_t eventAdmin_findHandlersByTopic(hash_map_pt channels, char *topic,
 			}
 		}
 	} else {
-		printf("no such channel: %s\n", topic);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "no such channel: %s", topic);
 	}
 	return status;
 }
@@ -115,7 +116,7 @@ celix_status_t eventAdmin_createEventChannels(event_admin_pt *event_admin, char 
     channel_t channel = hashMap_get((*event_admin)->channels, topic);
 	if (channel == NULL) {
 		//create channel
-        printf("Creating channel: %s\n", topic);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Creating channel: %s", topic);
 
         apr_pool_t *subPool = NULL;
         apr_pool_create(&subPool, (*event_admin)->pool);
@@ -183,7 +184,7 @@ celix_status_t eventAdmin_lockHandlersList(event_admin_pt event_admin, char *top
         do {
             status = apr_thread_mutex_trylock(channel->channelLock);
         } while (status != 0 && !APR_STATUS_IS_EBUSY(status));
-        printf("LOCK: %s!\n", topic);
+        fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "LOCK: %s!", topic);
     }
 	return status;
 }
@@ -194,7 +195,7 @@ celix_status_t eventAdmin_releaseHandersList(event_admin_pt event_admin, char *t
 	if (channel != NULL) {
         // TODO check the result value...
         apr_status_t status = apr_thread_mutex_unlock(channel->channelLock);
-        printf("UNLOCK: %s!\n", topic);
+        fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "UNLOCK: %s!", topic);
     }
 	return status;
 }
@@ -216,19 +217,19 @@ celix_status_t eventAdmin_addedService(void * handle, service_reference_pt ref, 
 	properties_pt props = NULL;
 	serviceRegistration_getProperties(registration, &props);
 	char *topic = properties_get(props, (char*)EVENT_TOPIC);
-	printf("Original TOPIC: %s\n", topic);
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Original TOPIC: %s", topic);
 	eventAdmin_createEventChannels(&event_admin,topic,event_handler_service);
 	return status;
 }
 
 celix_status_t eventAdmin_modifiedService(void * handle, service_reference_pt ref, void * service) {
 	struct data * data = (struct data *) handle;
-	printf("Event admin Modified\n");
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Event admin Modified");
 	return CELIX_SUCCESS;
 }
 
 celix_status_t eventAdmin_removedService(void * handle, service_reference_pt ref, void * service) {
 	struct data * data = (struct data *) handle;
-	printf("Event admin Removed %p\n", service);
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Event admin Removed %p", service);
 	return CELIX_SUCCESS;
 }

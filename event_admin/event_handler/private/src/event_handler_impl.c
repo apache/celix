@@ -49,7 +49,7 @@ celix_status_t eventHandlerHandleEvent(event_handler_pt *event_handler, event_pt
 	if (event != NULL) {
 		char *topic = NULL;
 		status = (*event_handler)->event_admin_service->getTopic(&event, &topic);
-		printf("[SUB] topic of event: %s\n", topic);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "[SUB] topic of event: %s.", topic);
 
 		array_list_pt propertyNames;
 		arrayList_create(&propertyNames);
@@ -61,7 +61,7 @@ celix_status_t eventHandlerHandleEvent(event_handler_pt *event_handler, event_pt
 			char *value = NULL;
 			(*event_handler)->event_admin_service->getProperty(&event,key,&value);
 
-			printf("[SUB] Key: %s value: %s\n",key,value);
+			fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "[SUB] Key: %s value: %s.", key, value);
 		}
 	}
 	return status;
@@ -76,19 +76,19 @@ celix_status_t eventHandlerAddingService(void * handle, service_reference_pt ref
 }
 
 celix_status_t eventHandlerAddedService(void * handle, service_reference_pt ref, void * service) {
-	printf("[SUB] Event admin added...\n");
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "[SUB] Event admin added.");
 	event_handler_pt data = handle;
 	data->event_admin_service = (event_admin_service_pt) service;
 	return CELIX_SUCCESS;
 }
 
 celix_status_t eventHandlerModifiedService(void * handle, service_reference_pt ref, void * service) {
-	printf("[SUB] Event admin modified...\n");
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG,"" [SUB] Event admin modified.");
 	return CELIX_SUCCESS;
 }
 
 celix_status_t eventHandlerRemovedService(void * handle, service_reference_pt ref, void * service) {
-	printf("[SUB] Event admin removed...\n");
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "[SUB] Event admin removed.");
 	event_handler_pt data = handle;
 	data->event_admin_service = NULL;
 	return CELIX_SUCCESS;

@@ -91,7 +91,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	char *uuid = NULL;
 	status = bundleContext_getProperty(context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
 	if (!uuid) {
-		printf("DISCOVERY_CONFIGURED: no framework UUID defined?!\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "DISCOVERY_CONFIGURED: no framework UUID defined?!");
 		return CELIX_ILLEGAL_STATE;
 	}
 
@@ -103,7 +103,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
 	snprintf(scope, len, "(&(%s=*)(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
 
-	printf("DISCOVERY_CONFIGURED: using scope %s.\n", scope);
+	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY_CONFIGURED: using scope %s.", scope);
 
 	endpoint_listener_pt endpointListener = malloc(sizeof(struct endpoint_listener));
 	if (!endpointListener) {
