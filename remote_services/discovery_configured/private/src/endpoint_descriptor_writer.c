@@ -227,6 +227,6 @@ int main() {
     endpointDescription_destroy(epd2);
     endpointDescriptorWriter_destroy(writer);
 
-    printf("%s\n", buffer);
+    fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "%s", buffer);
 }
 #endif

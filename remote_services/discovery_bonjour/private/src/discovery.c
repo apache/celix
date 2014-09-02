@@ -41,6 +41,7 @@
 #include "service_reference.h"
 #include "service_registration.h"
 #include "remote_constants.h"
+#include "celix_log.h"
 
 #include "discovery.h"
 
@@ -256,7 +257,6 @@ celix_status_t discovery_endpointAdded(void *handle, endpoint_description_pt end
 
 		if (error != kDNSServiceErr_NoError) {
 			status = CELIX_ILLEGAL_STATE;
-//			printf("Registered record in dns-sd got error code %i\n", error);
 		} else {
 			//entry->txtRecord=txtRecord; TODO
 			entry->dnsServiceRef = sdRef;
@@ -351,8 +351,6 @@ celix_status_t discovery_endpointListenerAdded(void * handle, service_reference_
 celix_status_t discovery_endpointListenerModified(void * handle, service_reference_pt reference, void * service) {
 	celix_status_t status = CELIX_SUCCESS;
 	discovery_pt discovery = handle;
-
-//	printf("DISCOVERY: EndpointListener Modified - Update Scope TODO\n");
 
 	return status;
 }
@@ -449,7 +447,7 @@ static void discovery_resolveAddCallback(DNSServiceRef sdRef,
 
 	properties_pt props = properties_create();
 	int length = TXTRecordGetCount(txtLen, txtRecord);
-//	printf("Found txt record with item count %i\n|", length);
+
 	for (int i = 0; i < length; i += 1) {
 		char key[256];
 		char valueBuf[257]; //max uint8 + 1

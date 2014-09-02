@@ -40,6 +40,7 @@
 #include "service_reference.h"
 #include "service_registration.h"
 #include "remote_constants.h"
+#include "celix_log.h"
 
 #include "discovery.h"
 #include "endpoint_discovery_poller.h"
@@ -294,11 +295,11 @@ static celix_status_t discovery_informEndpointListeners(discovery_pt discovery, 
 			if (matchResult) {
 				bundleContext_getService(discovery->context, reference, (void**) &listener);
 				if (endpointAdded) {
-					printf("DISCOVERY_CONFIGURED: Adding service (%s)\n", endpoint->service);
+					fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY_CONFIGURED: Adding service (%s)", endpoint->service);
 
 					listener->endpointAdded(listener->handle, endpoint, scope);
 				} else {
-					printf("DISCOVERY_CONFIGURED: Removing service (%s)\n", endpoint->service);
+					fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY_CONFIGURED: Removing service (%s)", endpoint->service);
 
 					listener->endpointRemoved(listener->handle, endpoint, scope);
 				}

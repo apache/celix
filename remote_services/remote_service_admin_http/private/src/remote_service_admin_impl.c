@@ -43,6 +43,7 @@
 #include "bundle.h"
 #include "service_reference.h"
 #include "service_registration.h"
+#include "celix_log.h"
 
 struct post {
     const char *readptr;
@@ -95,7 +96,7 @@ celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt con
 		} else {
 			(*admin)->port = apr_pstrdup(pool, port);
 		}
-		printf("Start webserver: %s\n", (*admin)->port);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "RSA: Start webserver: %s", (*admin)->port);
 		const char *options[] = { "listening_ports", (*admin)->port, NULL};
 
 		// Prepare callbacks structure. We have only one callback, the rest are NULL.
@@ -104,7 +105,7 @@ celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt con
 		callbacks.begin_request = remoteServiceAdmin_callback;
 
 		(*admin)->ctx = mg_start(&callbacks, (*admin), options);
-		printf("Start webserver %p\n", (*admin)->ctx);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "RSA: Start webserver %p", (*admin)->ctx);
 	}
 
 	return status;
@@ -248,7 +249,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
     }
 
 	if (reference == NULL) {
-		printf("ERROR: expected a reference for service id %s\n", serviceId);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "ERROR: expected a reference for service id %s.", serviceId);
 		return CELIX_ILLEGAL_STATE;
 	}
 
@@ -260,9 +261,9 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 	char *provided = properties_get(serviceProperties, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
 
 	if (exports == NULL || provided == NULL) {
-		printf("RSA: No Services to export.\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "RSA: No Services to export.");
 	} else {
-		printf("RSA: Export services (%s)\n", exports);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "RSA: Export services (%s)", exports);
 		array_list_pt interfaces = NULL;
 		arrayList_create(&interfaces);
 		if (strcmp(utils_stringTrim(exports), "*") == 0) {
@@ -437,7 +438,7 @@ celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_admin_pt a
 celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, endpoint_description_pt endpointDescription, import_registration_pt *registration) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	printf("RSA: Import service %s\n", endpointDescription->service);
+	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "RSA: Import service %s", endpointDescription->service);
 
    import_registration_factory_pt registration_factory = (import_registration_factory_pt) hashMap_get(admin->importedServices, endpointDescription->service);
 
@@ -451,7 +452,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, e
 	 // factory available
 	if (status != CELIX_SUCCESS || (registration_factory->trackedFactory == NULL))
 	{
-		printf("RSA: no proxyFactory available.\n");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "RSA: no proxyFactory available.");
 	}
 	else
 	{
@@ -474,7 +475,7 @@ celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_pt 
     // factory available
     if ((registration_factory == NULL) || (registration_factory->trackedFactory == NULL))
     {
-    	printf("RSA: Error while retrieving registration factory for imported service %s\n", endpointDescription->service);
+    	fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "RSA: Error while retrieving registration factory for imported service %s", endpointDescription->service);
     }
     else
     {
@@ -484,7 +485,7 @@ celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_pt 
 
 		if (arrayList_isEmpty(registration_factory->registrations))
 		{
-			printf("RSA: closing proxy\n");
+			fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "RSA: closing proxy");
 
 			serviceTracker_close(registration_factory->proxyFactoryTracker);
 			importRegistrationFactory_close(registration_factory);
@@ -556,7 +557,7 @@ static size_t remoteServiceAdmin_write(void *contents, size_t size, size_t nmemb
   mem->writeptr = realloc(mem->writeptr, mem->size + realsize + 1);
   if (mem->writeptr == NULL) {
     /* out of memory! */
-    printf("not enough memory (realloc returned NULL)\n");
+	  fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "not enough memory (realloc returned NULL)");
     exit(EXIT_FAILURE);
   }
 

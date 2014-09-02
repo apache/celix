@@ -331,25 +331,25 @@ int main() {
 
 	int i;
 	for (i = 0; i < arrayList_size(list); i++) {
-		printf("\nEndpoint description #%d:\n", (i+1));
+		fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Endpoint description #%d:", (i+1));
 		endpoint_description_pt edp = arrayList_get(list, i);
-		printf("Id: %s\n", edp->id);
-		printf("Service Id: %ld\n", edp->serviceId);
-		printf("Framework UUID: %s\n", edp->frameworkUUID);
-		printf("Service: %s\n", edp->service);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Id: %s", edp->id);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Service Id: %ld", edp->serviceId);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Framework UUID: %s", edp->frameworkUUID);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Service: %s", edp->service);
 
 		properties_pt props = edp->properties;
 		if (props) {
-			printf("Service properties:\n");
+			fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Service properties:");
 			hash_map_iterator_pt iter = hashMapIterator_create(props);
 			while (hashMapIterator_hasNext(iter)) {
 				hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
 
-				printf("- %s => '%s'\n", hashMapEntry_getKey(entry), hashMapEntry_getValue(entry));
+				fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "- %s => '%s'", hashMapEntry_getKey(entry), hashMapEntry_getValue(entry));
 			}
 			hashMapIterator_destroy(iter);
 		} else {
-			printf("No service properties...\n");
+			fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "No service properties.");
 		}
 
 
