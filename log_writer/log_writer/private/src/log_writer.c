@@ -105,19 +105,3 @@ celix_status_t logWriter_removedServ(void * handle, service_reference_pt ref, vo
 
 	return CELIX_SUCCESS;
 }
-
-celix_status_t logListener_logged(log_listener_pt listener, log_entry_pt entry) {
-	celix_status_t status = CELIX_SUCCESS;
-    module_pt module = NULL;
-    char *sName = NULL;
-
-    status = bundle_getCurrentModule(entry->bundle, &module);
-    if (status == CELIX_SUCCESS) {
-		status = module_getSymbolicName(module, &sName);
-		if (status == CELIX_SUCCESS) {
-			printf("LogWriter: %s from %s\n", entry->message, sName);
-		}
-    }
-
-    return status;
-}

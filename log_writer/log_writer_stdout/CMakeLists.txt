@@ -15,8 +15,22 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(LOG_WRITER "Option to enable building the Log Writer bundles" "OFF" DEPS FRAMEWORK LOG_SERVICE)
-if (LOG_WRITER)
-    add_subdirectory(log_writer_stdout)
-  	add_subdirectory(log_writer_syslog) 
-endif (LOG_WRITER)
+SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_log_writer")
+SET_HEADERS("Bundle-Name: Apache Celix Log Writer")
+SET_HEADER(BUNDLE_VERSION "1.0.0")
+
+bundle(log_writer SOURCES 
+	${PROJECT_SOURCE_DIR}/log_writer/log_writer/private/src/log_writer_activator
+	${PROJECT_SOURCE_DIR}/log_writer/log_writer/private/src/log_writer
+	${PROJECT_SOURCE_DIR}/log_writer/log_writer/private/include/log_writer.h
+
+	private/src/log_writer_stdout
+)
+
+install_bundle(log_writer)
+    
+target_link_libraries(log_writer celix_framework)
+    
+include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
+include_directories("${PROJECT_SOURCE_DIR}/log_writer/log_writer/private/include")

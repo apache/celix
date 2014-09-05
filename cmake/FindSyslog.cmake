@@ -15,8 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(LOG_WRITER "Option to enable building the Log Writer bundles" "OFF" DEPS FRAMEWORK LOG_SERVICE)
-if (LOG_WRITER)
-    add_subdirectory(log_writer_stdout)
-  	add_subdirectory(log_writer_syslog) 
-endif (LOG_WRITER)
+
+find_path(SYSLOG_INCLUDE_DIR syslog.h /usr/include)
+
+include(FindPackageHandleStandardArgs)
+
+find_package_handle_standard_args(Syslog DEFAULT_MSG
+                                  SYSLOG_INCLUDE_DIR)
+
+mark_as_advanced(SYSLOG_INCLUDE_DIR)
