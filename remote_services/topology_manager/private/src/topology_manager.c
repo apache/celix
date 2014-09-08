@@ -158,18 +158,46 @@ celix_status_t topologyManager_rsaModified(void * handle, service_reference_pt r
 }
 
 celix_status_t topologyManager_rsaRemoved(void * handle, service_reference_pt reference, void * service) {
-	celix_status_t status = CELIX_SUCCESS;
-	topology_manager_pt manager = handle;
+    celix_status_t status = CELIX_SUCCESS;
+    topology_manager_pt manager = handle;
 
-	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "TOPOLOGY_MANAGER: Removed RSA");
+    fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "TOPOLOGY_MANAGER: Removed RSA");
 
-	status = celixThreadMutex_lock(&manager->rsaListLock);
-	arrayList_removeElement(manager->rsaList, service);
-	status = celixThreadMutex_unlock(&manager->rsaListLock);
+    remote_service_admin_service_pt rsa = (remote_service_admin_service_pt) service;
 
-	// TODO remove the imported/exported services from the given RSA...
+    status = celixThreadMutex_lock(&manager->exportedServicesLock);
 
-	return status;
+    hash_map_iterator_pt iter = hashMapIterator_create(manager->exportedServices);
+
+    while (hashMapIterator_hasNext(iter)) {
+        int exportsIter = 0;
+
+        hash_map_pt exports = hashMapIterator_nextValue(iter);
+        array_list_pt exports_list = hashMap_get(exports, rsa);
+
+        if (exports_list != NULL) {
+            for (exportsIter = 0; exportsIter < arrayList_size(exports_list); exportsIter++) {
+                export_registration_pt export = arrayList_get(exports_list, exportsIter);
+                rsa->exportRegistration_close(export);
+                topologyManager_notifyListenersEndpointRemoved(manager, rsa, export);
+            }
+
+            arrayList_destroy(exports_list);
+            exports_list = NULL;
+        }
+
+        hashMap_remove(exports, rsa);
+        rsa = NULL;
+    }
+    status = celixThreadMutex_unlock(&manager->exportedServicesLock);
+
+    fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "TOPOLOGY_MANAGER: Removed RSA");
+
+    status = celixThreadMutex_lock(&manager->rsaListLock);
+    arrayList_removeElement(manager->rsaList, rsa);
+    status = celixThreadMutex_unlock(&manager->rsaListLock);
+
+    return status;
 }
 
 celix_status_t topologyManager_getRSAs(topology_manager_pt manager, array_list_pt *rsaList) {
@@ -341,6 +369,8 @@ celix_status_t topologyManager_removeExportedService(topology_manager_pt manager
 
 				topologyManager_notifyListenersEndpointRemoved(manager, rsa, export);
 			}
+			arrayList_destroy(exports);
+			exports = NULL;
 		}
 		hashMapIterator_destroy(iter);
 	}
