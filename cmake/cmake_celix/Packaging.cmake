@@ -336,15 +336,25 @@ MACRO(deploy)
 	
 	FOREACH(BUNDLE ${DEPLOY_BUNDLES})
 		SET(DEP_NAME ${DEPLOY_NAME}_${BUNDLE}) 
-		get_property(bundle_file TARGET ${BUNDLE} PROPERTY BUNDLE)
-		add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/bundles/${BUNDLE}.zip
-      		COMMAND ${CMAKE_COMMAND} -E copy ${bundle_file} 
-      			${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/bundles/${BUNDLE}.zip
-  			DEPENDS ${BUNDLE}
-  			COMMENT "Deploying ${BUNDLE} to ${DEPLOY_NAME}"
-      	)
-	    SET(BUNDLES "${BUNDLES} bundles/${BUNDLE}.zip")
-	    SET(DEPS ${DEPS};${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/bundles/${BUNDLE}.zip)
+		IF(EXISTS ${BUNDLE})  #it is a full path not a bundle name (e.g. a target)
+			get_filename_component(BUNDLE_NAME ${BUNDLE} NAME_WE)	
+			add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/bundles/${BUNDLE_NAME}.zip
+				COMMAND ${CMAKE_COMMAND} -E copy ${BUNDLE} 
+				${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/bundles/${BUNDLE_NAME}.zip
+				COMMENT "Deploying ${BUNDLE} to ${DEPLOY_NAME}"
+			)
+		ELSE()
+			set(BUNDLE_NAME ${BUNDLE})
+			get_property(bundle_file TARGET ${BUNDLE} PROPERTY BUNDLE)
+			add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/bundles/${BUNDLE}.zip
+				COMMAND ${CMAKE_COMMAND} -E copy ${bundle_file} 
+				${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/bundles/${BUNDLE}.zip
+				DEPENDS ${BUNDLE}
+				COMMENT "Deploying ${BUNDLE} to ${DEPLOY_NAME}"
+			)
+		ENDIF()
+	    	SET(BUNDLES "${BUNDLES} bundles/${BUNDLE_NAME}.zip")
+	    	SET(DEPS ${DEPS};${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/bundles/${BUNDLE_NAME}.zip)
 	ENDFOREACH(BUNDLE)
 
 	FOREACH(BUNDLE ${DEPLOY_DRIVERS})
