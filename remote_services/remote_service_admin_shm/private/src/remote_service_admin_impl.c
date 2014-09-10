@@ -935,14 +935,12 @@ celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin
     }
     else
     {
-        char *uuid = NULL;
-        status = bundleContext_getProperty(admin->context, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, &uuid);
         if (status == CELIX_SUCCESS)
         {
             (*description)->properties = endpointProperties;
-            (*description)->frameworkUUID = uuid;
+            (*description)->frameworkUUID = properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
             (*description)->serviceId = apr_atoi64(properties_get(serviceProperties, (char *) OSGI_FRAMEWORK_SERVICE_ID));
-            (*description)->id = properties_get(endpointProperties, (char *) OSGI_RSA_SERVICE_LOCATION); // TODO this should be a UUID!
+            (*description)->id = properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID);
             (*description)->service = interface;
         }
     }
