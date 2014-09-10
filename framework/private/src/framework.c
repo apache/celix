@@ -1971,14 +1971,18 @@ celix_status_t framework_waitForStop(framework_pt framework) {
 
 static void *framework_shutdown(void *framework) {
 	framework_pt fw = (framework_pt) framework;
-	hash_map_iterator_pt iterator;
+	hash_map_values_pt values = NULL;
+    bundle_pt **installedBundleArray;
+    unsigned int size;
 	int err;
+    int i;
 
 	fw_log(fw->logger, OSGI_FRAMEWORK_LOG_INFO, "FRAMEWORK: Shutdown");
+    values = hashMapValues_create(fw->installedBundleMap);
+    hashMapValues_toArray(values, (void*) &installedBundleArray, &size);
 
-	iterator = hashMapIterator_create(fw->installedBundleMap);
-	while (hashMapIterator_hasNext(iterator)) {
-		bundle_pt bundle = (bundle_pt) hashMapIterator_nextValue(iterator);
+    for(i = 0; i < size; i++) {
+	    bundle_pt bundle = (bundle_pt) installedBundleArray[i];
 		bundle_state_e state;
 		bundle_getState(bundle, &state);
 		if (state == OSGI_FRAMEWORK_BUNDLE_ACTIVE || state == OSGI_FRAMEWORK_BUNDLE_STARTING) {
@@ -1990,7 +1994,6 @@ static void *framework_shutdown(void *framework) {
 			fw_stopBundle(fw, bundle, 0);
 		}
 	}
-	hashMapIterator_destroy(iterator);
 
 	err = celixThreadMutex_lock(&fw->mutex);
 	if (err != 0) {
