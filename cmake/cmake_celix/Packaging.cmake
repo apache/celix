@@ -336,7 +336,7 @@ MACRO(deploy)
 	
 	FOREACH(BUNDLE ${DEPLOY_BUNDLES})
 		SET(DEP_NAME ${DEPLOY_NAME}_${BUNDLE}) 
-		IF(EXISTS ${BUNDLE})  #it is a full path not a bundle name (e.g. a target)
+		IF(IS_ABSOLUTE ${BUNDLE} AND EXISTS ${BUNDLE})  #it is a full path not a bundle name (e.g. a target)
 			get_filename_component(BUNDLE_NAME ${BUNDLE} NAME_WE)	
 			add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/deploy/${DEPLOY_NAME}/bundles/${BUNDLE_NAME}.zip
 				COMMAND ${CMAKE_COMMAND} -E copy ${BUNDLE} 
