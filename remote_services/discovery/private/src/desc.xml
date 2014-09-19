@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<endpoint-descriptions xmlns="http://www.osgi.org/xmlns/rsa/v1.0.0">
+	<endpoint-description>
+		<property name="service.intents">
+			<list>
+				<value>SOAP</value>
+				<value>HTTP</value>
+			</list>
+		</property>
+		<property name="endpoint.id" value="http://ws.acme.com:9000/hello" />
+		<property name="objectClass" value="com.acme.Foo" />
+		<property name="endpoint.package.version.com.acme" value="4.2" />
+		<property name="service.imported.configs" value="com.acme" />
+		<property name="com.acme.ws.xml">
+			<xml>
+				<config xmlns="http://acme.com/defs">
+					<port>1029</port>
+					<host>www.acme.com</host>
+				</config>
+			</xml>
+		</property>
+	</endpoint-description>
+</endpoint-descriptions>

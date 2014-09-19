@@ -46,3 +46,11 @@ if (RSA_BUNDLES_REMOTE_SERVICE_ADMIN_SHM)
                                             ENDPOINTS org.apache.celix.calc.api.Calculator_proxy)
     endif (RSA_BUNDLES_DISCOVERY_SHM)
 endif (RSA_BUNDLES_REMOTE_SERVICE_ADMIN_SHM)
+
+is_enabled(RSA_BUNDLES_DISCOVERY_ETCD)
+if (RSA_BUNDLES_DISCOVERY_ETCD)
+    deploy("remote-services-etcd" BUNDLES discovery_etcd topology_manager remote_service_admin_http calculator shell shell_tui log_service log_writer
+                                 ENDPOINTS org.apache.celix.calc.api.Calculator_endpoint)
+    deploy("remote-services-etcd-client" BUNDLES topology_manager remote_service_admin_http shell shell_tui log_service log_writer calculator_shell discovery_etcd
+                                        ENDPOINTS org.apache.celix.calc.api.Calculator_proxy)
+endif (RSA_BUNDLES_DISCOVERY_ETCD)

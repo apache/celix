@@ -33,8 +33,11 @@
 
 #include "hash_map.h"
 #include "array_list.h"
+#include "celix_log.h"
 #include "celix_threads.h"
 #include "utils.h"
+
+#include "discovery_impl.h"
 
 #include "endpoint_listener.h"
 #include "endpoint_discovery_poller.h"
@@ -50,9 +53,6 @@ struct endpoint_discovery_poller {
     unsigned int poll_interval;
     volatile bool running;
 };
-
-#define DISCOVERY_POLL_ENDPOINTS "DISCOVERY_CFG_POLL_ENDPOINTS"
-#define DEFAULT_POLL_ENDPOINTS "http://localhost:9999/org.apache.celix.discovery.configured"
 
 #define DISCOVERY_POLL_INTERVAL "DISCOVERY_CFG_POLL_INTERVAL"
 #define DEFAULT_POLL_INTERVAL "10"
@@ -206,7 +206,7 @@ static void *endpointDiscoveryPoller_poll(void *data) {
 
         celix_status_t status = celixThreadMutex_lock(&poller->pollerLock);
         if (status != CELIX_SUCCESS) {
-        	fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "ENDPOINT_POLLER: failed to obtain lock; retrying..");
+        	fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "ENDPOINT_POLLER: failed to obtain lock; retrying...");
         	continue;
         }
 
@@ -248,7 +248,7 @@ static void *endpointDiscoveryPoller_poll(void *data) {
 
 		status = celixThreadMutex_unlock(&poller->pollerLock);
 		if (status != CELIX_SUCCESS) {
-			fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "ENDPOINT_POLLER: failed to release lock; retrying.");
+			fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "ENDPOINT_POLLER: failed to release lock; retrying...");
 		}
     }
 

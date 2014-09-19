@@ -34,6 +34,7 @@
 #include "service_tracker.h"
 #include "service_registration.h"
 #include "constants.h"
+#include "celix_log.h"
 
 #include "discovery.h"
 #include "endpoint_listener.h"

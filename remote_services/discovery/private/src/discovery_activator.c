@@ -32,6 +32,7 @@
 #include "service_registration.h"
 #include "constants.h"
 
+#include "celix_log.h"
 #include "discovery.h"
 #include "endpoint_listener.h"
 #include "remote_constants.h"
@@ -91,7 +92,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	char *uuid = NULL;
 	status = bundleContext_getProperty(context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
 	if (!uuid) {
-		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "DISCOVERY_CONFIGURED: no framework UUID defined?!");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "no framework UUID defined?!");
 		return CELIX_ILLEGAL_STATE;
 	}
 
@@ -101,9 +102,10 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 		return CELIX_ENOMEM;
 	}
 
-	snprintf(scope, len, "(&(%s=*)(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
+	sprintf(scope, "(&(%s=*)(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
+	scope[len] = 0;
 
-	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY_CONFIGURED: using scope %s.", scope);
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "using scope %s.", scope);
 
 	endpoint_listener_pt endpointListener = malloc(sizeof(struct endpoint_listener));
 	if (!endpointListener) {

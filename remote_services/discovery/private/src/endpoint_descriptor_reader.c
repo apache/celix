@@ -68,18 +68,21 @@ void endpointDescriptorReader_addSingleValuedProperty(properties_pt properties, 
 }
 
 void endpointDescriptorReader_addMultiValuedProperty(properties_pt properties, const xmlChar* name, array_list_pt values) {
-	char value[256];
-	value[0] = '\0';
-    int i, size = arrayList_size(values);
-    for (i = 0; i < size; i++) {
-        char* item = (char*) arrayList_get(values, i);
-        if (i > 0) {
-            strcat(value, ",");
-        }
-        strcat(value, item);
-    }
+	char *value = calloc(256, sizeof(*value));
+	if (value) {
+		int i, size = arrayList_size(values);
+		for (i = 0; i < size; i++) {
+			char* item = (char*) arrayList_get(values, i);
+			if (i > 0) {
+				value = strcat(value, ",");
+			}
+			value = strcat(value, item);
+		}
 
-    properties_set(properties, strdup((char *) name), strdup(value));
+		properties_set(properties, strdup((char *) name), strdup(value));
+
+		free(value);
+	}
 }
 
 celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader_pt reader, char *document, array_list_pt *endpoints) {
@@ -160,7 +163,7 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
 
                         if (propertyValue != NULL) {
                         	if (propertyType != VALUE_TYPE_STRING && strcmp(OSGI_RSA_ENDPOINT_SERVICE_ID, (char*) propertyName)) {
-                        		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "ENDPOINT_DESCRIPTOR_READER: Only single-valued string supported for %s", propertyName);
+                        		fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "ENDPOINT_DESCRIPTOR_READER: Only single-valued string supported for %s\n", propertyName);
                         	}
                         	endpointDescriptorReader_addSingleValuedProperty(endpointProperties, propertyName, propertyValue);
                         }
@@ -204,7 +207,7 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
                     }
                     else if (propertyValue != NULL) {
                     	if (propertyType != VALUE_TYPE_STRING) {
-                    		fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "ENDPOINT_DESCRIPTOR_READER: Only string support for %s", propertyName);
+                    		fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "ENDPOINT_DESCRIPTOR_READER: Only string support for %s\n", propertyName);
                     	}
                     	endpointDescriptorReader_addSingleValuedProperty(endpointProperties, propertyName, propertyValue);
 
@@ -331,25 +334,25 @@ int main() {
 
 	int i;
 	for (i = 0; i < arrayList_size(list); i++) {
-		fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Endpoint description #%d:", (i+1));
+		printf("\nEndpoint description #%d:\n", (i+1));
 		endpoint_description_pt edp = arrayList_get(list, i);
-		fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Id: %s", edp->id);
-		fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Service Id: %ld", edp->serviceId);
-		fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Framework UUID: %s", edp->frameworkUUID);
-		fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Service: %s", edp->service);
+		printf("Id: %s\n", edp->id);
+		printf("Service Id: %ld\n", edp->serviceId);
+		printf("Framework UUID: %s\n", edp->frameworkUUID);
+		printf("Service: %s\n", edp->service);
 
 		properties_pt props = edp->properties;
 		if (props) {
-			fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Service properties:");
+			printf("Service properties:\n");
 			hash_map_iterator_pt iter = hashMapIterator_create(props);
 			while (hashMapIterator_hasNext(iter)) {
 				hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
 
-				fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "- %s => '%s'", hashMapEntry_getKey(entry), hashMapEntry_getValue(entry));
+				printf("- %s => '%s'\n", hashMapEntry_getKey(entry), hashMapEntry_getValue(entry));
 			}
 			hashMapIterator_destroy(iter);
 		} else {
-			fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "No service properties.");
+			printf("No service properties...\n");
 		}
 
 

@@ -33,8 +33,14 @@
 #include "endpoint_description.h"
 #include "endpoint_listener.h"
 
+#define DISCOVERY_SERVER_PORT 		"DISCOVERY_CFG_SERVER_PORT"
+#define DISCOVERY_SERVER_PATH 		"DISCOVERY_CFG_SERVER_PATH"
+#define DISCOVERY_POLL_ENDPOINTS 	"DISCOVERY_CFG_POLL_ENDPOINTS"
+
 typedef struct discovery *discovery_pt;
 
+
+/* those one could be put into a general discovery.h - file */
 celix_status_t discovery_create(bundle_context_pt context, discovery_pt *discovery);
 celix_status_t discovery_destroy(discovery_pt discovery);
 
@@ -49,6 +55,7 @@ celix_status_t discovery_endpointListenerAdded(void * handle, service_reference_
 celix_status_t discovery_endpointListenerModified(void * handle, service_reference_pt reference, void * service);
 celix_status_t discovery_endpointListenerRemoved(void * handle, service_reference_pt reference, void * service);
 
+celix_status_t discovery_informEndpointListeners(discovery_pt discovery, endpoint_description_pt endpoint, bool endpointAdded);
 celix_status_t discovery_updateEndpointListener(discovery_pt discovery, service_reference_pt reference, endpoint_listener_pt service);
 
 celix_status_t discovery_addDiscoveredEndpoint(discovery_pt discovery, endpoint_description_pt endpoint);

@@ -23,24 +23,21 @@
  * \author		<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
  * \copyright	Apache License, Version 2.0
  */
-
 #include <stdlib.h>
 #include <stdint.h>
 
 #include "civetweb.h"
 #include "celix_errno.h"
 #include "utils.h"
+#include "celix_log.h"
+#include "discovery.h"
+#include "discovery_impl.h"
 
 #include "endpoint_descriptor_writer.h"
 #include "endpoint_discovery_server.h"
 
-#define DISCOVERY_SERVER_PORT "DISCOVERY_CFG_SERVER_PORT"
-#define DEFAULT_SERVER_PORT "9999"
 
-#define DISCOVERY_SERVER_PATH "DISCOVERY_CFG_SERVER_PATH"
-#define DEFAULT_SERVER_PATH "/org.apache.celix.discovery.configured"
-
-#define DEFAULT_SERVER_THREADS "10"
+#define DEFAULT_SERVER_THREADS "1"
 
 #define CIVETWEB_REQUEST_NOT_HANDLED 0
 #define CIVETWEB_REQUEST_HANDLED 1
@@ -108,7 +105,7 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 
 	(*server)->ctx = mg_start(&callbacks, (*server), options);
 
-	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "CONFIGURED_DISCOVERY: Starting discovery server on port %s.", port);
+	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Starting discovery server on port %s...", port);
 
 	return status;
 }
@@ -117,8 +114,10 @@ celix_status_t endpointDiscoveryServer_destroy(endpoint_discovery_server_pt serv
 	celix_status_t status = CELIX_SUCCESS;
 
 	// stop & block until the actual server is shut down...
-	mg_stop(server->ctx);
-	server->ctx = NULL;
+	if (server->ctx != NULL) {
+		mg_stop(server->ctx);
+		server->ctx = NULL;
+	}
 
 	status = celixThreadMutex_lock(&server->serverLock);
 
@@ -145,7 +144,7 @@ celix_status_t endpointDiscoveryServer_addEndpoint(endpoint_discovery_server_pt 
 	char* endpointId = strdup(endpoint->id);
 	endpoint_description_pt cur_value = hashMap_get(server->entries, endpointId);
 	if (!cur_value) {
-		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "CONFIGURED_DISCOVERY: exposing new endpoint \"%s\".", endpointId);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "exposing new endpoint \"%s\"...", endpointId);
 
 		hashMap_put(server->entries, endpointId, endpoint);
 	}
@@ -170,7 +169,7 @@ celix_status_t endpointDiscoveryServer_removeEndpoint(endpoint_discovery_server_
 	if (entry) {
 		char* key = hashMapEntry_getKey(entry);
 
-		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "CONFIGURED_DISCOVERY: removing endpoint \"%s\".", key);
+		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "removing endpoint \"%s\"...\n", key);
 
 		hashMap_remove(server->entries, key);
 

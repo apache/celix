@@ -23,6 +23,7 @@ include_directories("${LIBXML2_INCLUDE_DIR}")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/private/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include")
+include_directories("${PROJECT_SOURCE_DIR}/remote_services/discovery/private/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/discovery_configured/private/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
@@ -32,12 +33,13 @@ SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_rsa_discovery_configured")
 SET_HEADERS("Bundle-Name: Apache Celix RSA Configured Discovery")
 
 bundle(discovery_configured SOURCES 
-	private/src/discovery.c
-	private/src/discovery_activator.c
-    private/src/endpoint_descriptor_reader.c
-    private/src/endpoint_descriptor_writer.c
-	private/src/endpoint_discovery_poller.c
-    private/src/endpoint_discovery_server.c
+	private/src/discovery_impl.c
+	${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/discovery_activator.c
+	${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/discovery.c
+	${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_descriptor_reader.c
+	${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_descriptor_writer.c
+	${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_discovery_poller.c
+	${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_discovery_server.c
     ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c
     ${PROJECT_SOURCE_DIR}/remote_services/utils/private/src/civetweb.c
 )
@@ -48,7 +50,7 @@ target_link_libraries(discovery_configured celix_framework ${CURL_LIBRARIES} ${L
 
 if (RSA_ENDPOINT_TEST_READER)
     add_executable(descparser 
-        private/src/endpoint_descriptor_reader.c
+        ${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_descriptor_reader.c
         ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c)
         
     target_link_libraries(descparser ${LIBXML2_LIBRARIES} celix_framework celix_utils)
@@ -56,7 +58,7 @@ endif (RSA_ENDPOINT_TEST_READER)
 
 if (RSA_ENDPOINT_TEST_WRITER)
     add_executable(descwriter 
-        private/src/endpoint_descriptor_writer.c
+        ${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_descriptor_writer.c
         ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c)
         
     target_link_libraries(descwriter ${LIBXML2_LIBRARIES} celix_framework celix_utils)
