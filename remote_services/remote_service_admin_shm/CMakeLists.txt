@@ -40,10 +40,10 @@ if (RSA_BUNDLES_REMOTE_SERVICE_ADMIN_SHM)
 
 	install_bundle(remote_service_admin_shm
 		HEADERS
-			public/include/remote_endpoint_impl.h
-			public/include/remote_endpoint.h
-			public/include/remote_proxy.h
-			public/include/remote_service_admin.h
+			${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include/remote_endpoint_impl.h
+			${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include/remote_endpoint.h
+			${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include/remote_proxy.h
+			${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include/remote_service_admin.h
 	)
 
 	target_link_libraries(remote_service_admin_shm celix_framework ${APRUTIL_LIBRARY})
