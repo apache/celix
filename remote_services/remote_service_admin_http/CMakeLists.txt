@@ -37,5 +37,7 @@ bundle(remote_service_admin_http SOURCES
 	private/src/remote_service_admin_activator
 	${PROJECT_SOURCE_DIR}/remote_services/utils/private/src/civetweb.c
 )
+
+install_bundle(remote_service_admin_http)
     
 target_link_libraries(remote_service_admin_http celix_framework ${APRUTIL_LIBRARY} ${CURL_LIBRARIES})

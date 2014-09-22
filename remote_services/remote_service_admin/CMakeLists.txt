@@ -26,6 +26,8 @@ install (FILES
         public/include/remote_proxy.h
         public/include/remote_service_admin.h
         public/include/endpoint_description.h
+        ../endpoint_listener/public/include/endpoint_listener.h
+        ../utils/public/include/remote_constants.h
     DESTINATION 
         include/celix/remote_service_admin 
     COMPONENT 
