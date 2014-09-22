@@ -236,6 +236,15 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	    listener->serviceChanged = (void *) shell_serviceChanged;
 	    status = bundleContext_addServiceListener(context, listener, "(objectClass=commandService)");
 
+	    array_list_pt references = NULL;
+	    status = bundleContext_getServiceReferences(context, "commandService", NULL, &references);
+	    if (status == CELIX_SUCCESS) {
+	        int i = 0;
+	        for (i = 0; i < arrayList_size(references); i++) {
+	            shell_addCommand(activator->shell, arrayList_get(references, i));
+	        }
+	    }
+
 	    if (status == CELIX_SUCCESS) {
 	        activator->psCmd = psCommand_create(context);
 	        shell_createCommandService(activator->pool, activator->psCmd, &activator->psCmdSrv);

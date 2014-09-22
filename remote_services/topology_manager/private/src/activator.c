@@ -155,6 +155,23 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	bundleContext_addServiceListener(context, activator->serviceListener, "(service.exported.interfaces=*)");
 	serviceTracker_open(activator->remoteServiceAdminTracker);
 
+	array_list_pt references = NULL;
+	bundleContext_getServiceReferences(context, NULL, "(service.exported.interfaces=*)", &references);
+	int i;
+	for (i = 0; i < arrayList_size(references); i++) {
+	    service_reference_pt reference = arrayList_get(references, i);
+
+	    service_registration_pt registration = NULL;
+        serviceReference_getServiceRegistration(reference, &registration);
+	    properties_pt props = NULL;
+        serviceRegistration_getProperties(registration, &props);
+        char *serviceId = properties_get(props, (char *)OSGI_FRAMEWORK_SERVICE_ID);
+
+	    status = topologyManager_addExportedService(activator->manager, reference, serviceId);
+	}
+
+
+
 	return status;
 }
 

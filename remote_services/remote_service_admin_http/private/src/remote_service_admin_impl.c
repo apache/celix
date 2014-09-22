@@ -316,8 +316,8 @@ celix_status_t remoteServiceAdmin_removeExportedService(export_registration_pt r
     remote_service_admin_pt admin = registration->rsa;
     array_list_pt registrations = NULL;
 
+    printf("Remote export %p\n", registration->reference);
     registrations = hashMap_remove(admin->exportedServices, registration->reference);
-    // Registrations are allocated on the RSA pool, so there is a "leak" here. Removed services still consume memory
 
     return CELIX_SUCCESS;
 }
@@ -445,8 +445,10 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, e
 	// check whether we already have a registration_factory
 	if (registration_factory == NULL)
 	{
-		importRegistrationFactory_install(admin->pool, endpointDescription->service, admin->context, &registration_factory);
-		hashMap_put(admin->importedServices, endpointDescription->service, registration_factory);
+		status = importRegistrationFactory_install(admin->pool, endpointDescription->service, admin->context, &registration_factory);
+		if (status == CELIX_SUCCESS) {
+		    hashMap_put(admin->importedServices, endpointDescription->service, registration_factory);
+		}
 	}
 
 	 // factory available

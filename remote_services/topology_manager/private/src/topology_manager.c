@@ -291,24 +291,31 @@ celix_status_t topologyManager_removeImportedService(void *handle, endpoint_desc
 
 	status = celixThreadMutex_lock(&manager->importedServicesLock);
 
-	if (hashMap_containsKey(manager->importedServices, endpoint)) {
-		hash_map_pt imports = hashMap_get(manager->importedServices, endpoint);
-		hash_map_iterator_pt iter = hashMapIterator_create(imports);
+	hash_map_iterator_pt iter = hashMapIterator_create(manager->importedServices);
+	while (hashMapIterator_hasNext(iter)) {
+	    hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
+	    endpoint_description_pt ep = hashMapEntry_getKey(entry);
+	    hash_map_pt imports = hashMapEntry_getValue(entry);
 
-		while (hashMapIterator_hasNext(iter)) {
-			hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
+	    if (strcmp(endpoint->id, ep->id) == 0) {
+	        hash_map_iterator_pt importsIter = hashMapIterator_create(imports);
 
-			remote_service_admin_service_pt rsa = hashMapEntry_getKey(entry);
-			import_registration_pt import = hashMapEntry_getValue(entry);
+            while (hashMapIterator_hasNext(importsIter)) {
+                hash_map_entry_pt entry = hashMapIterator_nextEntry(importsIter);
 
-			status = rsa->importRegistration_close(rsa->admin, import);
-			if (status == CELIX_SUCCESS) {
-				hashMap_remove(imports, rsa);
-			}
-		}
+                remote_service_admin_service_pt rsa = hashMapEntry_getKey(entry);
+                import_registration_pt import = hashMapEntry_getValue(entry);
 
-		hashMapIterator_destroy(iter);
+                status = rsa->importRegistration_close(rsa->admin, import);
+                if (status == CELIX_SUCCESS) {
+                    hashMap_remove(imports, rsa);
+                }
+            }
+
+            hashMapIterator_destroy(importsIter);
+	    }
 	}
+	hashMapIterator_destroy(iter);
 
 	status = celixThreadMutex_unlock(&manager->importedServicesLock);
 

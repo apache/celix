@@ -120,9 +120,14 @@ celix_status_t bundleArchive_create(framework_logger_pt logger, char * archiveRo
                 archive->logger = logger;
                 time(&archive->lastModified);
 
-                bundleArchive_initialize(archive);
+                status = bundleArchive_initialize(archive);
+                if (status == CELIX_SUCCESS) {
+                    status = bundleArchive_revise(archive, location, inputFile);
 
-                bundleArchive_revise(archive, location, inputFile);
+                    if (status != CELIX_SUCCESS) {
+                        bundleArchive_closeAndDelete(archive);
+                    }
+                }
 
                 *bundle_archive = archive;
             }
@@ -188,7 +193,7 @@ celix_status_t bundleArchive_recreate(char * archiveRoot, bundle_archive_pt *bun
 		} else {
 		    struct dirent *dent;
             long idx = 0;
-            char *location;
+            char *location = NULL;
 
             while ((dent = readdir(archive->archiveRootDir)) != NULL) {
                 if (dent->d_type == DT_DIR && (strncmp(dent->d_name, "version", 7) == 0)) {
@@ -198,7 +203,9 @@ celix_status_t bundleArchive_recreate(char * archiveRoot, bundle_archive_pt *bun
 
             status = CELIX_DO_IF(status, bundleArchive_getRevisionLocation(archive, 0, &location));
             status = CELIX_DO_IF(status, bundleArchive_reviseInternal(archive, true, idx, location, NULL));
-            free(location);
+            if (location) {
+                free(location);
+            }
             if (status == CELIX_SUCCESS) {
                 *bundle_archive = archive;
             }

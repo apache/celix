@@ -81,6 +81,9 @@ celix_status_t serviceTracker_destroy(service_tracker_pt tracker) {
 	if (tracker->listener != NULL) {
 		bundleContext_removeServiceListener(tracker->context, tracker->listener);
 	}
+	if (tracker->customizer != NULL) {
+	    serviceTrackerCustomizer_destroy(tracker->customizer);
+	}
 	arrayList_destroy(tracker->tracked);
 
 	return CELIX_SUCCESS;
@@ -286,10 +289,10 @@ static celix_status_t  serviceTracker_addingService(service_tracker_pt tracker, 
 			if (status == CELIX_SUCCESS) {
 				if (function != NULL) {
 					status = function(handle, reference, service);
+				} else {
+                    status = bundleContext_getService(tracker->context, reference, service);
 				}
 			}
-		} else {
-			status = bundleContext_getService(tracker->context, reference, service);
 		}
 	} else {
 		status = bundleContext_getService(tracker->context, reference, service);
