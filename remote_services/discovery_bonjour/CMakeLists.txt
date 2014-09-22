@@ -14,26 +14,28 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+celix_subproject(RSA_BUNDLES_DISCOVERY_BONJOUR "Option to enable building the Discovery BONJOUR bundle" ON DEPS LAUNCHER topology_manager remote_service_admin)
+if (RSA_BUNDLES_DISCOVERY_BONJOUR)
+	#TODO find_package(DNS-SD REQUIRED)
 
-#TODO find_package(DNS-SD REQUIRED)
+	include_directories("/usr/include") #TODO check if this has impact on the generated project indexer paths
+	include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+	include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include")
+	include_directories("${PROJECT_SOURCE_DIR}/remote_services/discovery_bonjour/private/include")
+	include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
+	include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
+	include_directories(private/include)
 
-include_directories("/usr/include") #TODO check if this has impact on the generated project indexer paths
-include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/remote_services/discovery_bonjour/private/include")
-include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
-include_directories(private/include)
+	SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_rsa_discovery_bonjour")
+	SET_HEADERS("Bundle-Name: Apache Celix RSA BONJOUR Discovery")
 
-SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_rsa_discovery_bonjour")
-SET_HEADERS("Bundle-Name: Apache Celix RSA BONJOUR Discovery")
+	bundle(discovery_bonjour SOURCES 
+		private/src/discovery.c
+		private/src/discovery_activator.c
+	)
+	    
+	install_bundle(discovery_bonjour)
 
-bundle(discovery_bonjour SOURCES 
-	private/src/discovery.c
-	private/src/discovery_activator.c
-)
-    
-install_bundle(discovery_bonjour)
+	target_link_libraries(discovery_bonjour celix_framework ${APRUTIL_LIBRARY}) # TODO ${SLP_LIBRARIES})
 
-target_link_libraries(discovery_bonjour celix_framework ${APRUTIL_LIBRARY}) # TODO ${SLP_LIBRARIES})
-
+endif (RSA_BUNDLES_DISCOVERY_BONJOUR)

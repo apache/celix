@@ -15,25 +15,28 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(Slp REQUIRED)
+celix_subproject(RSA_BUNDLES_DISCOVERY_SLP "Option to enable building the Discovery SLP bundle" ON DEPS LAUNCHER topology_manager remote_service_admin)
+if (RSA_BUNDLES_DISCOVERY_SLP)
+	find_package(Slp REQUIRED)
 
-include_directories(${SLP_INCLUDE_DIRS})
-include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/remote_services/discovery_slp/private/include")
-include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
-include_directories("private/include")
+	include_directories(${SLP_INCLUDE_DIRS})
+	include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+	include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include")
+	include_directories("${PROJECT_SOURCE_DIR}/remote_services/discovery_slp/private/include")
+	include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
+	include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
+	include_directories("private/include")
 
-SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_rsa_discovery_slp")
-SET_HEADERS("Bundle-Name: Apache Celix RSA SLP Discovery")
+	SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_rsa_discovery_slp")
+	SET_HEADERS("Bundle-Name: Apache Celix RSA SLP Discovery")
 
-bundle(discovery_slp SOURCES 
-	private/src/discovery 
-	private/src/discovery_activator
-)
-    
-install_bundle(discovery_slp)
+	bundle(discovery_slp SOURCES 
+		private/src/discovery 
+		private/src/discovery_activator
+	)
+	    
+	install_bundle(discovery_slp)
 
-target_link_libraries(discovery_slp celix_framework ${APRUTIL_LIBRARY} ${SLP_LIBRARIES})
+	target_link_libraries(discovery_slp celix_framework ${APRUTIL_LIBRARY} ${SLP_LIBRARIES})
 
+endif (RSA_BUNDLES_DISCOVERY_SLP)
