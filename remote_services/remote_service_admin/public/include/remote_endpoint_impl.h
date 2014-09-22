@@ -31,7 +31,7 @@
 
 struct remote_endpoint {
 	void *service;
-	apr_pool_t* pool;
+//	apr_pool_t* pool;
 };
 
 #endif /* REMOTE_ENDPOINT_IMPL_H_ */
