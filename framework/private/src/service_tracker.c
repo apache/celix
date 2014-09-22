@@ -329,6 +329,8 @@ static celix_status_t serviceTracker_untrack(service_tracker_pt tracker, service
 					status = bundleContext_ungetService(tracker->context, reference, &result);
 				}
 				
+				// ungetServiceReference
+				bundleContext_ungetServiceReference(tracker->context, reference);
                 //break;
 			}
 			free(tracked);
