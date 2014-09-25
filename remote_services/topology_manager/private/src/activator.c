@@ -135,7 +135,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
 	snprintf(scope, len, "(&(%s=*)(!(%s=%s)))", OSGI_FRAMEWORK_OBJECTCLASS, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
 
-	fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "TOPOLOGY_MANAGER: endpoint listener scope is %s", scope);
+	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "TOPOLOGY_MANAGER: endpoint listener scope is %s", scope);
 
 	properties_pt props = properties_create();
 	properties_set(props, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, scope);
