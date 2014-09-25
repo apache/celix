@@ -5,16 +5,17 @@
 #include <curl/curl.h>
 #include <jansson.h>
 
-
-
 #include "etcd.h"
+
+#define DEFAULT_CURL_TIMEOUT          10
+#define DEFAULT_CURL_CONECTTIMEOUT    10
 
 typedef enum {
 	GET, PUT, DELETE
 } request_t;
 
 static char* etcd_server = NULL;
-static int etcd_port = NULL;
+static int etcd_port = 0;
 
 struct MemoryStruct {
 	char *memory;
@@ -44,8 +45,8 @@ static int performRequest(char* url, request_t request, void* callback, void* re
 	CURLcode res = 0;
 
 	curl = curl_easy_init();
-	curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10);
-	curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10);
+	curl_easy_setopt(curl, CURLOPT_TIMEOUT, DEFAULT_CURL_TIMEOUT);
+	curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, DEFAULT_CURL_CONECTTIMEOUT);
 	curl_easy_setopt(curl, CURLOPT_URL, url);
 	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, callback);
@@ -175,7 +176,7 @@ bool etcd_getNodes(char* directory, char** nodeNames, int* size) {
 }
 
 //set
-bool etcd_set(char* key, char* value) {
+bool etcd_set(char* key, char* value, int ttl) {
 	json_error_t error;
 	json_t* js_root;
 	json_t* js_node;
@@ -190,7 +191,11 @@ bool etcd_set(char* key, char* value) {
 	reply.size = 0; /* no data at this point */
 
 	snprintf(url, MAX_URL_LENGTH, "http://%s:%d/v2/keys/%s", etcd_server, etcd_port, key);
-	snprintf(request, MAX_CONTENT_LENGTH, "value=%s", value);
+
+	if (ttl > 0)
+	    snprintf(request, MAX_CONTENT_LENGTH, "value=%s", value);
+	else
+	    snprintf(request, MAX_CONTENT_LENGTH, "value=%s;ttl=%d", value, ttl);
 
 	res = performRequest(url, PUT, WriteMemoryCallback, request, (void*) &reply);
 	if (res == CURLE_OPERATION_TIMEDOUT) {

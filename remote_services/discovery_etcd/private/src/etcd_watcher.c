@@ -53,6 +53,10 @@ struct etcd_watcher {
 #define CFG_ETCD_SERVER_PORT	"DISCOVERY_ETCD_SERVER_PORT"
 #define DEFAULT_ETCD_SERVER_PORT 4001
 
+// be careful - this should be higher than the curl timeout
+#define CFG_ETCD_TTL   "DISCOVERY_ETCD_TTL"
+#define DEFAULT_ETCD_TTL 30
+
 
 // note that the rootNode shouldn't have a leading slash
 static celix_status_t etcdWatcher_getRootPath(char* rootNode) {
@@ -132,6 +136,49 @@ static celix_status_t etcdWatcher_addAlreadyExistingWatchpoints(endpoint_discove
 	return status;
 }
 
+
+static celix_status_t etcdWatcher_addOwnFramework(bundle_context_pt context)
+{
+    celix_status_t status = CELIX_BUNDLE_EXCEPTION;
+    char localNodePath[MAX_LOCALNODE_LENGTH];
+    char* endpoints = NULL;
+    char* ttlStr = NULL;
+    int ttl;
+
+    // register own framework
+    if ((status = etcdWatcher_getLocalNodePath(context, &localNodePath[0])) != CELIX_SUCCESS) {
+        return status;
+    }
+
+    if ((bundleContext_getProperty(context, DISCOVERY_POLL_ENDPOINTS, &endpoints) != CELIX_SUCCESS) || !endpoints) {
+        endpoints = DEFAULT_POLL_ENDPOINTS;
+    }
+
+    if ((bundleContext_getProperty(context, CFG_ETCD_TTL, &ttlStr) != CELIX_SUCCESS) || !ttlStr) {
+        ttl = DEFAULT_ETCD_TTL;
+    }
+    else
+    {
+        char* endptr = ttlStr;
+        errno = 0;
+        ttl =  strtol(ttlStr, &endptr, 10);
+        if (*endptr || errno != 0) {
+            ttl = DEFAULT_ETCD_TTL;
+        }
+    }
+
+    if (etcd_set(localNodePath, endpoints, ttl) == false)
+    {
+        fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Cannot register local discovery");
+    }
+    else
+    {
+        status = CELIX_SUCCESS;
+    }
+
+    return status;
+}
+
 /*
  * performs (blocking) etcd_watch calls to check for
  * changing discovery endpoint information within etcd.
@@ -161,6 +208,8 @@ static void* etcdWatcher_run(void* data) {
 				fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Unexpected action: %s", action);
 			}
 		}
+		// update own framework uuid in any case;
+	    etcdWatcher_addOwnFramework(watcher->context);
 	}
 
 	return NULL;
@@ -174,11 +223,10 @@ celix_status_t etcdWatcher_create(endpoint_discovery_poller_pt poller, bundle_co
 		etcd_watcher_pt *watcher)
 {
 	celix_status_t status = CELIX_SUCCESS;
-	char localNodePath[MAX_LOCALNODE_LENGTH];
+
 	char* etcd_server = NULL;
 	char* etcd_port_string = NULL;
-	int etcd_port = NULL;
-	char* endpoints = NULL;
+	int etcd_port = 0;
 
 	if (poller == NULL) {
 		return CELIX_BUNDLE_EXCEPTION;
@@ -211,9 +259,6 @@ celix_status_t etcdWatcher_create(endpoint_discovery_poller_pt poller, bundle_co
 		}
 	}
 
-	if ((bundleContext_getProperty(context, DISCOVERY_POLL_ENDPOINTS, &endpoints) != CELIX_SUCCESS) || !endpoints) {
-		endpoints = DEFAULT_POLL_ENDPOINTS;
-	}
 
 
 	if (etcd_init(etcd_server, etcd_port) == false)
@@ -221,17 +266,7 @@ celix_status_t etcdWatcher_create(endpoint_discovery_poller_pt poller, bundle_co
 		return CELIX_BUNDLE_EXCEPTION;
 	}
 
-	// register own framework
-	if ((status = etcdWatcher_getLocalNodePath(context, &localNodePath[0])) != CELIX_SUCCESS) {
-		return status;
-	}
-
-	if (etcd_set(localNodePath, endpoints) == false)
-	{
-		fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Cannot register local discovery");
-	}
-
-
+	etcdWatcher_addOwnFramework(context);
 
 	if ((status = celixThreadMutex_create(&(*watcher)->watcherLock, NULL)) != CELIX_SUCCESS) {
 		return status;
