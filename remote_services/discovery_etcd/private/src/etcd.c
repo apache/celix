@@ -192,7 +192,7 @@ bool etcd_set(char* key, char* value, int ttl) {
 
 	snprintf(url, MAX_URL_LENGTH, "http://%s:%d/v2/keys/%s", etcd_server, etcd_port, key);
 
-	if (ttl > 0)
+	if (ttl <= 0)
 	    snprintf(request, MAX_CONTENT_LENGTH, "value=%s", value);
 	else
 	    snprintf(request, MAX_CONTENT_LENGTH, "value=%s;ttl=%d", value, ttl);
