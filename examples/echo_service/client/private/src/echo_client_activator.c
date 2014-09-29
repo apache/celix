@@ -41,7 +41,6 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 	struct echoActivator * act = malloc(sizeof(*act));
 	act->client = NULL;
 	act->tracker = NULL;
-
 	*userData = act;
 
 	return CELIX_SUCCESS;
@@ -50,15 +49,14 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
 	struct echoActivator * act = (struct echoActivator *) userData;
 
-	apr_pool_t *pool = NULL;
 	service_tracker_pt tracker = NULL;
 	echo_client_pt client = NULL;
 
-	bundleContext_getMemoryPool(context, &pool);
-	serviceTracker_create(pool, context, ECHO_SERVICE_NAME, NULL, &tracker);
+	serviceTracker_create(context, ECHO_SERVICE_NAME, NULL, &tracker);
+
 	act->tracker = tracker;
 
-	client = echoClient_create(tracker, pool);
+	client = echoClient_create(tracker);
 	act->client = client;
 
 	echoClient_start(act->client);

@@ -32,14 +32,13 @@
 struct echoClient {
 	service_tracker_pt tracker;
 	bool running;
-	apr_pool_t *pool;
-
-	apr_thread_t *sender;
+	pthread_t sender_thread;
+	char *ident;
 };
 
 typedef struct echoClient * echo_client_pt;
 
-echo_client_pt echoClient_create(service_tracker_pt context, apr_pool_t *pool);
+echo_client_pt echoClient_create(service_tracker_pt context);
 
 void echoClient_start(echo_client_pt client);
 void echoClient_stop(echo_client_pt client);

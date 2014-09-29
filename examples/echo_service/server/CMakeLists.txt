@@ -15,6 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
+SET(BUNDLE_SYMBOLICNAME "apache_celix_examples_echo_server")
+SET(BUNDLE_VERSION "0.0.1")
+SET(BUNDLE_NAME "Apache Celix Echo Server")
+
 bundle(echo_server SOURCES 
 	private/src/echo_server_activator 
 	private/src/echo_server

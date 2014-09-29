@@ -15,6 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
+SET(BUNDLE_SYMBOLICNAME "apache_celix_examples_echo_client")
+SET(BUNDLE_VERSION "0.0.1")
+SET(BUNDLE_NAME "Apache Celix Echo Client")
+
 bundle(echo_client SOURCES 
 	private/src/echo_client_activator 
 	private/src/echo_client

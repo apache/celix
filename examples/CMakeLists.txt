@@ -21,7 +21,7 @@ if (EXAMPLES)
     #add_subdirectory(mongoose)
     
     #add_subdirectory(whiteboard)
-    #add_subdirectory(echo_service)
+    add_subdirectory(echo_service)
     
     add_subdirectory(osgi-in-action/chapter04-correct-lookup)
     add_subdirectory(osgi-in-action/chapter04-correct-listener)

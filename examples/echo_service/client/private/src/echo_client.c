@@ -24,49 +24,54 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdlib.h>
+#include <pthread.h>
+#include <unistd.h>
 
 #include "service_tracker.h"
 
 #include "echo_client_private.h"
 #include "echo_server.h"
 
-static void *APR_THREAD_FUNC trk_send(apr_thread_t *thd, void *handle) {
+static void *trk_send(void *handle) {
+
 	echo_client_pt client = (echo_client_pt) handle;
+
 	while (client->running) {
 		echo_service_pt service = (echo_service_pt) serviceTracker_getService(client->tracker);
 		if (service != NULL) {
-			service->echo(service->server, "hi");
+			service->echo(service->server, client->ident);
 		}
-		apr_sleep(1000000);
+		sleep(1);
 	}
-	apr_thread_exit(thd, APR_SUCCESS);
+
+	pthread_exit(NULL);
+
 	return NULL;
 }
 
-echo_client_pt echoClient_create(service_tracker_pt echoServiceTracker, apr_pool_t *pool) {
+echo_client_pt echoClient_create(service_tracker_pt echoServiceTracker) {
 	echo_client_pt client = malloc(sizeof(*client));
 
 	client->tracker = echoServiceTracker;
 	client->running = false;
-	client->pool = pool;
+	client->ident = "OSX rules";
 
 	return client;
 }
 
 void echoClient_start(echo_client_pt client) {
 	client->running = true;
-	apr_thread_create(&client->sender, NULL, trk_send, client, client->pool);
+	pthread_create(&client->sender_thread, NULL, trk_send, client);
 }
 
 void echoClient_stop(echo_client_pt client) {
-	apr_status_t status;
 	client->running = false;
-	apr_thread_join(&status, client->sender);
+	pthread_join(client->sender_thread, NULL);
 }
 
 void echoClient_destroy(echo_client_pt client) {
 	client->tracker = NULL;
-	client->sender = 0;
+	client->sender_thread = 0;
 	free(client);
 	client = NULL;
 }
