@@ -85,7 +85,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	greeting_activator_pt act = (greeting_activator_pt) userData;
 	serviceRegistration_unregister(act->reg);
 	act->reg = NULL;
-	return CELIX_SUCCESS;
+	return status;
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {

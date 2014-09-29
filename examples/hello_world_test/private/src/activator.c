@@ -37,7 +37,6 @@ struct userData {
 };
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
-	apr_pool_t *pool;
 	celix_status_t status = CELIX_SUCCESS;
     *userData = malloc(sizeof(struct userData));
     if (userData != NULL) {

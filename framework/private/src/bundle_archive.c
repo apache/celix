@@ -168,7 +168,6 @@ celix_status_t bundleArchive_destroy(bundle_archive_pt archive) {
 
 celix_status_t bundleArchive_recreate(char * archiveRoot, bundle_archive_pt *bundle_archive) {
     celix_status_t status = CELIX_SUCCESS;
-    char *errpr = NULL;
 
     bundle_archive_pt archive;
 

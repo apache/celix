@@ -197,7 +197,6 @@ celix_status_t endpointDiscoveryPoller_removeDiscoveryEndpoint(endpoint_discover
 
 static void *endpointDiscoveryPoller_poll(void *data) {
     endpoint_discovery_poller_pt poller = (endpoint_discovery_poller_pt) data;
-    discovery_pt discovery = poller->discovery;
 
     useconds_t interval = poller->poll_interval * 1000000L;
 
@@ -280,8 +279,8 @@ static size_t endpointDiscoveryPoller_writeMemory(void *contents, size_t size, s
 static celix_status_t endpointDiscoveryPoller_getEndpoints(endpoint_discovery_poller_pt poller, char *url, array_list_pt *updatedEndpoints) {
     celix_status_t status = CELIX_SUCCESS;
 
-    CURL *curl;
-    CURLcode res;
+    CURL *curl = NULL;
+    CURLcode res = 0;
 
     struct MemoryStruct chunk;
     chunk.memory = malloc(1);

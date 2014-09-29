@@ -264,7 +264,6 @@ celix_status_t deviceManager_matchAttachDriver(device_manager_pt manager, apr_po
 						properties_pt properties = NULL;
 						status = serviceRegistration_getProperties(registration, &properties);
 						if (status == CELIX_SUCCESS) {
-							char *driverId = properties_get(properties, (char *) OSGI_DEVICEACCESS_DRIVER_ID);
 							driver_attributes_pt finalAttributes = hashMap_get(manager->drivers, match->reference);
 							if (finalAttributes == NULL) {
 								status = deviceManager_noDriverFound(manager, service, reference);
@@ -406,7 +405,7 @@ celix_status_t deviceManager_driverRemoved(void * handle, service_reference_pt r
 
 			hash_map_iterator_pt iter = hashMapIterator_create(manager->drivers);
 			while (hashMapIterator_hasNext(iter)) {
-				driver_attributes_pt da = hashMapIterator_nextValue(iter);
+				//driver_attributes_pt da = hashMapIterator_nextValue(iter);
 				//driverAttributes_tryUninstall(da);
 			}
 			hashMapIterator_destroy(iter);

@@ -26,6 +26,7 @@ if (RSA_BUNDLES_DISCOVERY_SHM)
 	include_directories("private/include")
 
 	SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_rsa_discovery_shm")
+	SET(BUNDLE_VERSION "0.0.1")
 	SET_HEADERS("Bundle-Name: Apache Celix RSA Discovery SHM")
 
 	bundle(discovery_shm SOURCES 

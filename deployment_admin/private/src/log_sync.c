@@ -136,18 +136,11 @@ static void *APR_THREAD_FUNC logSync_synchronize(apr_thread_t *thd, void *logSyn
 		long highest = 0;
 		logStore_getHighestId(logSync->logStore, &highest);
 
-//		printf("Highest local: %ld\n", highest);
-//		printf("Highest remote: %ld\n", descriptor->high);
-
 		if (highest >= 0) {
 			int i;
 			for (i = descriptor->high + 1; i <= highest; i++) {
 				array_list_pt events = NULL;
 				logStore_getEvents(logSync->logStore, &events);
-				log_event_pt event = arrayList_get(events, i);
-//				printf("Event id: %ld\n", event->id);
-
-
 			}
 		}
 		sleep(10);

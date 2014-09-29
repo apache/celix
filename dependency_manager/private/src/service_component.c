@@ -59,9 +59,9 @@ struct executor {
 };
 
 service_pt serviceComponent_create(bundle_context_pt context, dependency_manager_pt manager) {
-    service_pt service;
-    apr_pool_t *pool;
-	apr_pool_t *mypool;
+    service_pt service = NULL;
+    apr_pool_t *pool = NULL;
+	apr_pool_t *mypool = NULL;
 
 	bundleContext_getMemoryPool(context, &pool);
 	apr_pool_create(&mypool, pool);

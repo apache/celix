@@ -350,7 +350,6 @@ celix_status_t discovery_endpointListenerAdded(void * handle, service_reference_
 
 celix_status_t discovery_endpointListenerModified(void * handle, service_reference_pt reference, void * service) {
 	celix_status_t status = CELIX_SUCCESS;
-	discovery_pt discovery = handle;
 
 	return status;
 }
@@ -386,7 +385,6 @@ static void discovery_browseCallback(DNSServiceRef sdRef, DNSServiceFlags flags,
 		uint32_t interfaceIndex, DNSServiceErrorType errorCode,
 		const char *serviceName, const char *regtype, const char *replyDomain,
 		void *context) {
-	discovery_pt discovery = context;
 	if (flags & kDNSServiceFlagsAdd) {
 		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Added service with %s %s %s.", serviceName, regtype,
 				replyDomain);

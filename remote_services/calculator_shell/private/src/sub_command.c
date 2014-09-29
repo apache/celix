@@ -59,13 +59,11 @@ void subCommand_destroy(command_pt command) {
 void subCommand_execute(command_pt command, char *line, void (*out)(char *), void (*err)(char *)) {
 	celix_status_t status = CELIX_SUCCESS;
     service_reference_pt calculatorService = NULL;
-    apr_pool_t *memory_pool = NULL;
-    apr_pool_t *bundle_memory_pool = NULL;
 
     status = bundleContext_getServiceReference(command->bundleContext, (char *) CALCULATOR_SERVICE, &calculatorService);
     if (status == CELIX_SUCCESS) {
     	char *token;
-		char *commandStr = apr_strtok(line, " ", &token);
+		apr_strtok(line, " ", &token);
 		char *aStr = apr_strtok(NULL, " ", &token);
 		bool numeric;
 		subCommand_isNumeric(command, aStr, &numeric);
@@ -97,9 +95,6 @@ void subCommand_execute(command_pt command, char *line, void (*out)(char *), voi
 			out("SUB: Requires 2 numerical parameter\n");
 			status = CELIX_ILLEGAL_ARGUMENT;
 		}
-
-        double a;
-        double b;
     } else {
         out("No calc service available\n");
     }

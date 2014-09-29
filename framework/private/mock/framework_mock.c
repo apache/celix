@@ -147,6 +147,14 @@ celix_status_t fw_getServiceReferences(framework_pt framework, array_list_pt *re
 		return mock_c()->returnValue().value.intValue;
 }
 
+celix_status_t framework_ungetServiceReference(framework_pt framework, bundle_pt bundle, service_reference_pt reference) {
+    mock_c()->actualCall("framework_ungetServiceReference")
+        ->withPointerParameters("framework", framework)
+        ->withPointerParameters("bundle", bundle)
+        ->withPointerParameters("reference", reference);
+    return mock_c()->returnValue().value.intValue;
+}
+
 celix_status_t fw_getService(framework_pt framework, bundle_pt bundle, service_reference_pt reference, void **service) {
 	mock_c()->actualCall("fw_getService")
 		->withPointerParameters("framework", framework)

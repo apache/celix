@@ -55,7 +55,6 @@ properties_pt properties_load(char *filename) {
 	char value[1024];
 	bool precedingCharIsBackslash = false;
 	bool isComment = false;
-	int valueStart = 0;
 	int linePos = 0;
 	int outputPos = 0;
 	char *output = NULL;
@@ -141,7 +140,6 @@ properties_pt properties_load(char *filename) {
  */
 void properties_store(properties_pt properties, char * filename, char * header) {
 	FILE *file = fopen ( filename, "w+" );
-	int i;
 	char *str;
 
 	if (file != NULL) {

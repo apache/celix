@@ -43,10 +43,6 @@ typedef enum {
     VALUE_TYPE_SHORT,
 } valueType;
 
-
-static valueType valueTypeFromString(char *name);
-static char* valueTypeToString(valueType type);
-
 static const xmlChar* XML = (const xmlChar*) "xml";
 static const xmlChar* XMLNS = (const xmlChar*) "http://www.osgi.org/xmlns/rsa/v1.0.0";
 

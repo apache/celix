@@ -164,9 +164,7 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
 			const char *uri = request_info->uri;
 			// rest = myservice/call
 			const char *rest = uri+9;
-			int length = strlen(rest);
 			char *interfaceStart = strchr(rest, '/');
-			char *callStart = strchr(interfaceStart+1, '/');
 			int pos = interfaceStart - rest;
 			char service[pos+1];
 			strncpy(service, rest, pos);
@@ -319,7 +317,7 @@ celix_status_t remoteServiceAdmin_removeExportedService(export_registration_pt r
     printf("Remote export %p\n", registration->reference);
     registrations = hashMap_remove(admin->exportedServices, registration->reference);
 
-    return CELIX_SUCCESS;
+    return status;
 }
 
 celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin, export_registration_pt registration, service_reference_pt reference, char *interface) {

@@ -64,7 +64,6 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
     status = bundleContext_getMemoryPool(context, &pool);
     bundle_instance_pt bi = (bundle_instance_pt)userData;
     if (status == CELIX_SUCCESS) {
-        struct activatorData * data = (struct activatorData *) userData;
         bi->service = apr_palloc(pool, sizeof(*(bi->service)));
         bi->service->findDrivers = driverLocator_findDrivers;
         bi->service->loadDriver = driverLocator_loadDriver;

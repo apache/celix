@@ -76,6 +76,5 @@ celix_status_t logFactory_getService(void *factory, bundle_pt bundle, service_re
 }
 
 celix_status_t logFactory_ungetService(void *factory, bundle_pt bundle, service_registration_pt registration) {
-    log_service_factory_pt log_factory = ((service_factory_pt) factory)->factory;
     return CELIX_SUCCESS;
 }

@@ -38,13 +38,13 @@ struct event {
 	properties_pt properties;
 };
 
-celix_status_t eventAdmin_createEvent(event_admin_pt *event_admin, char *topic, properties_pt properties, event_pt *event){
+celix_status_t eventAdmin_createEvent(event_admin_pt event_admin, char *topic, properties_pt properties, event_pt *event){
 	celix_status_t status = CELIX_SUCCESS;
 
-	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "create event event admin pointer: %p",(*event_admin));
-	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "pool create event: %p",(*event_admin)->pool);
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "create event event admin pointer: %p",event_admin);
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "pool create event: %p",event_admin->pool);
 
-	*event = apr_palloc((*event_admin)->pool,sizeof(**event));
+	*event = apr_palloc(event_admin->pool,sizeof(**event));
 	if(!*event){
 	       status = CELIX_ENOMEM;
 	       fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "No MEM");

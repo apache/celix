@@ -125,7 +125,6 @@ celix_status_t consumingDriver_match(void *driverHandler, service_reference_pt r
 	printf("CONSUMING_DRIVER: match called\n");
 	int match=0;
 	celix_status_t status = CELIX_SUCCESS;
-	consuming_driver_pt driver = driverHandler;
 
 	service_registration_pt registration = NULL;
 	properties_pt properties = NULL;

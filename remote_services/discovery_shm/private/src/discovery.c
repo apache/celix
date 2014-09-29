@@ -855,7 +855,6 @@ celix_status_t discovery_stopOrDetachShm(discovery_pt discovery)
 	}
 	else
 	{
-		int listener = 0;
 		ipc_shmData_pt shmData = (ipc_shmData_pt) discovery->shmBaseAdress;
 
 		discovery_lock(shmData->semId, 0);

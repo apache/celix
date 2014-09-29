@@ -29,6 +29,7 @@ if (RSA_BUNDLES_REMOTE_SERVICE_ADMIN_SHM)
 	include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
 
 	SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_remote_service_admin_shm")
+	SET(BUNDLE_VERSION "0.0.1")
 	SET_HEADERS("Bundle-Name: Apache Celix Remote Service Admin SHM")
 
 	bundle(remote_service_admin_shm SOURCES 

@@ -40,9 +40,9 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 	celix_status_t status = CELIX_SUCCESS;
 	apr_pool_t *pool = NULL;
 	apr_pool_t *parentPool;
-	struct activator *activator;
+	struct activator *activator = NULL;
 	status = bundleContext_getMemoryPool(context, &parentPool);
-	if( status == CELIX_SUCCESS ) {
+	if(status == CELIX_SUCCESS) {
 		if(apr_pool_create(&pool,parentPool) != APR_SUCCESS) {
 			status = CELIX_BUNDLE_EXCEPTION;
 		}else {
@@ -51,14 +51,13 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 			activator->context = context;
 			*userData = activator;
 		}
+		event_publisher_pt eventpublisher;
+        status = eventPublisherCreate(activator->pool,context,&eventpublisher);
+        if(status == CELIX_SUCCESS) {
+            activator->event_publisher = eventpublisher;
+        }
 	}
-	event_publisher_pt eventpublisher;
-	status = eventPublisherCreate(activator->pool,context,&eventpublisher);
-	if(status == CELIX_SUCCESS) {
 
-		activator->event_publisher = eventpublisher;
-
-	}
 	return status;
 }
 

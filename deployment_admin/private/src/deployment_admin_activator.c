@@ -63,15 +63,12 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator = userData;
-
 
 	return status;
 }
 
 celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator = userData;
 
 	return status;
 }

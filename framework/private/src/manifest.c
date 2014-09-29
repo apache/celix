@@ -218,7 +218,6 @@ celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt prope
 		}
 		
 		if (lbuf[0] == ' ') {
-			int newlen = strlen(lastLine) + len;
 			char buf[512];
 			buf[0] = '\0';
 

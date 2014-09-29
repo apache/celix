@@ -22,6 +22,7 @@ include_directories(private/include)
 include_directories(${PROJECT_SOURCE_DIR}/event_admin/event_admin/public/include)
 
 SET_HEADER(BUNDLE_SYMBOLICNAME "event_publisher")
+SET(BUNDLE_VERSION "0.0.1")
 SET_HEADERS("Bundle-Name: Event Publisher")
 
 

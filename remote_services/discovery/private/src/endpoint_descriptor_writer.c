@@ -42,6 +42,8 @@ struct endpoint_descriptor_writer {
 
 static celix_status_t endpointDescriptorWriter_writeEndpoint(endpoint_descriptor_writer_pt writer, endpoint_description_pt endpoint);
 
+static char* valueTypeToString(valueType type);
+
 celix_status_t endpointDescriptorWriter_create(endpoint_descriptor_writer_pt *writer) {
     celix_status_t status = CELIX_SUCCESS;
 

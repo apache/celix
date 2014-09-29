@@ -26,6 +26,8 @@
 
 #include "event_publisher_impl.h"
 
+static void *APR_THREAD_FUNC eventPublisherSendEventThread(apr_thread_t *thd, void *handle);
+
 celix_status_t eventPublisherCreate(apr_pool_t *pool, bundle_context_pt context, event_publisher_pt *event_publisher) {
     celix_status_t status = CELIX_SUCCESS;
     *event_publisher = apr_palloc(pool, sizeof(**event_publisher));

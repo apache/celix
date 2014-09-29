@@ -23,6 +23,7 @@ include_directories(private/include)
 #include_directories(../utils/public/include)
 
 SET_HEADER(BUNDLE_SYMBOLICNAME "eventadmin")
+SET(BUNDLE_VERSION "0.0.1")
 SET_HEADERS("Bundle-Name: Event admin")
 
 

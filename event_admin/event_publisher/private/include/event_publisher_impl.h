@@ -62,12 +62,7 @@ celix_status_t eventPublisherCreate(apr_pool_t *pool, bundle_context_pt context,
  * @param event_publisher_pt *event_publisher the publisher to start
  */
 celix_status_t eventPublisherStart(event_publisher_pt *event_publisher);
-/**
- * @desc the thread sending events.
- * @param apr_thread_t *thd a pointer to the thread
- * @param void *handle. Pointer to the event publisher
- */
-static void *APR_THREAD_FUNC eventPublisherSendEventThread(apr_thread_t *thd, void *handle);
+
 /**
  * @desc functions used by the event admin tracker
  * @param void *handle, pointer to the event publisher

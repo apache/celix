@@ -92,7 +92,6 @@ celix_status_t logWriter_addedServ(void * handle, service_reference_pt ref, void
 }
 
 celix_status_t logWriter_modifiedServ(void * handle, service_reference_pt ref, void * service) {
-	log_writer_pt writer = (log_writer_pt) handle;
 	return CELIX_SUCCESS;
 }
 

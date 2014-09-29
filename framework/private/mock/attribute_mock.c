@@ -35,6 +35,11 @@ celix_status_t attribute_create(char * key, char * value, attribute_pt *attribut
 	return mock_c()->returnValue().value.intValue;
 }
 
+celix_status_t attribute_destroy(attribute_pt attribute) {
+    mock_c()->actualCall("attribute_destroy");
+    return mock_c()->returnValue().value.intValue;
+}
+
 celix_status_t attribute_getKey(attribute_pt attribute, char **key) {
 	mock_c()->actualCall("attribute_getKey")
 			->withPointerParameters("attribute", attribute)

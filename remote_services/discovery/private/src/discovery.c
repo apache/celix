@@ -129,7 +129,6 @@ celix_status_t discovery_endpointListenerAdded(void* handle, service_reference_p
 
 celix_status_t discovery_endpointListenerModified(void * handle, service_reference_pt reference, void * service) {
 	celix_status_t status = CELIX_SUCCESS;
-	discovery_pt discovery = handle;
 
 	status = discovery_endpointListenerRemoved(handle, reference, service);
 	status = discovery_endpointListenerAdded(handle, reference, service);

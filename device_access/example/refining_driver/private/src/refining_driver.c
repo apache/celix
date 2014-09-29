@@ -80,7 +80,7 @@ static apr_status_t refiningDriver_cleanup(void *handler) {
 celix_status_t refiningDriver_create(bundle_context_pt context, apr_pool_t *pool, refining_driver_pt *driver) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_pool_t *driverPool = NULL;
-	apr_status_t aprStatus = apr_pool_create(&driverPool, pool);
+	apr_pool_create(&driverPool, pool);
 	(*driver) = apr_palloc(driverPool, sizeof(**driver));
 	if ((*driver) != NULL) {
 		apr_pool_pre_cleanup_register(driverPool, (*driver), refiningDriver_cleanup);
@@ -210,7 +210,6 @@ celix_status_t refiningDriver_attach(void * driverHandler, service_reference_pt 
 	celix_status_t status = CELIX_SUCCESS;
 	refining_driver_pt driver = driverHandler;
 	(*result) = NULL;
-	device_service_pt device = NULL;
 	base_driver_device_service_pt device_service = NULL;
 	status = bundleContext_getService(driver->context, reference, (void **)&device_service);
 	if (status == CELIX_SUCCESS) {
@@ -230,7 +229,6 @@ celix_status_t refiningDriver_match(void *driverHandler, service_reference_pt re
 	printf("REFINING_DRIVER: match called\n");
 	int match = 0;
 	celix_status_t status = CELIX_SUCCESS;
-	refining_driver_pt driver = driverHandler;
 
 	service_registration_pt registration = NULL;
 	properties_pt properties = NULL;

@@ -63,7 +63,7 @@ void inspectCommand_execute(command_pt command, char * commandline, void (*out)(
 	celix_status_t status = CELIX_SUCCESS;
 	char outString[256];
 	char *token;
-	char *commandStr = strtok_r(commandline, " ", &token);
+	strtok_r(commandline, " ", &token);
 	char *type = strtok_r(NULL, " ", &token);
 	if (type != NULL) {
 		char *direction = strtok_r(NULL, " ", &token);
@@ -115,7 +115,7 @@ celix_status_t inspectCommand_printExportedServices(command_pt command, array_li
 	array_list_pt bundles = NULL;
 
 	if (arrayList_isEmpty(ids)) {
-		celix_status_t status = bundleContext_getBundles(command->bundleContext, &bundles);
+		status = bundleContext_getBundles(command->bundleContext, &bundles);
 	} else {
 		unsigned int i;
 
@@ -168,7 +168,6 @@ celix_status_t inspectCommand_printExportedServices(command_pt command, array_li
 									service_registration_pt reg = NULL;
 									properties_pt props = NULL;
 									char line[256];
-									char *objectClass = NULL;
 
 									serviceReference_getServiceRegistration(ref, &reg);
 									
@@ -204,7 +203,7 @@ celix_status_t inspectCommand_printImportedServices(command_pt command, array_li
     array_list_pt bundles = NULL;
 
     if (arrayList_isEmpty(ids)) {
-        celix_status_t status = bundleContext_getBundles(command->bundleContext, &bundles);
+        status = bundleContext_getBundles(command->bundleContext, &bundles);
     } else {
         unsigned int i;
 

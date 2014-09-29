@@ -125,7 +125,6 @@ bool etcd_getNodes(char* directory, char** nodeNames, int* size) {
 	json_t* js_root;
 	json_t* js_node;
 	json_t* js_nodes;
-	json_t* js_value;
 	json_error_t error;
 	int res;
 	struct MemoryStruct reply;
@@ -224,7 +223,6 @@ bool etcd_del(char* key) {
 	json_error_t error;
 	json_t* js_root;
 	json_t* js_node;
-	json_t* js_value;
 	bool retVal = false;
 	char url[MAX_URL_LENGTH];
 	char request[MAX_CONTENT_LENGTH];
@@ -266,7 +264,6 @@ bool etcd_watch(char* key, int index, char* action, char* prevValue, char* value
 	json_t* js_prevValue;
 	bool retVal = false;
 	char url[MAX_URL_LENGTH];
-	char request[MAX_CONTENT_LENGTH];
 	int res;
 	struct MemoryStruct reply;
 

@@ -119,7 +119,6 @@ celix_status_t discovery_stop(discovery_pt discovery) {
 
 celix_status_t discovery_destroy(discovery_pt discovery) {
 	celix_status_t status = CELIX_SUCCESS;
-	hash_map_iterator_pt iter;
 
 	discovery->context = NULL;
 	discovery->poller = NULL;

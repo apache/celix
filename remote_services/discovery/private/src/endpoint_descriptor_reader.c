@@ -42,6 +42,8 @@ struct endpoint_descriptor_reader {
     xmlTextReaderPtr reader;
 };
 
+static valueType valueTypeFromString(char *name);
+
 celix_status_t endpointDescriptorReader_create(endpoint_descriptor_reader_pt *reader) {
     celix_status_t status = CELIX_SUCCESS;
 
@@ -104,7 +106,6 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
         valueType propertyType = VALUE_TYPE_STRING;
         xmlChar *valueBuffer = xmlMalloc(256);
         valueBuffer[0] = '\0';
-        unsigned int currentSize = 255;
 
         array_list_pt propertyValues = NULL;
         arrayList_create(&propertyValues);

@@ -96,24 +96,27 @@ void updateCommand_execute(command_pt command, char * line, void (*out)(char *),
 }
 
 celix_status_t updateCommand_download(command_pt command, char * url, char **inputFile) {
-	CURL *curl;
-	CURLcode res;
+	CURL *curl = NULL;
+	CURLcode res = 0;
 	curl = curl_easy_init();
 	if (curl) {
 		FILE *fp = NULL;
-		tmpnam(*inputFile);
-		printf("Temp file: %s\n", *inputFile);
-		fp = fopen(*inputFile, "wb+");
-		curl_easy_setopt(curl, CURLOPT_URL, url);
-		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, updateCommand_writeData);
-		curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
-		//curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0);
-		//curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, updateCommand_downloadProgress);
-		res = curl_easy_perform(curl);
-		printf("Error: %d\n", res);
-		/* always cleanup */
-		curl_easy_cleanup(curl);
-		fclose(fp);
+		*inputFile = "updateXXXXXX";
+		int fd = mkstemp(*inputFile);
+		if (fd) {
+		    fp = fopen(*inputFile, "wb+");
+            printf("Temp file: %s\n", *inputFile);
+            curl_easy_setopt(curl, CURLOPT_URL, url);
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, updateCommand_writeData);
+            curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
+            //curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0);
+            //curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, updateCommand_downloadProgress);
+            res = curl_easy_perform(curl);
+            printf("Error: %d\n", res);
+            /* always cleanup */
+            curl_easy_cleanup(curl);
+            fclose(fp);
+		}
 	}
 	if (res != CURLE_OK) {
 		*inputFile[0] = '\0';

@@ -150,7 +150,6 @@ celix_status_t topologyManager_rsaAdded(void * handle, service_reference_pt refe
 
 celix_status_t topologyManager_rsaModified(void * handle, service_reference_pt reference, void * service) {
 	celix_status_t status = CELIX_SUCCESS;
-	topology_manager_pt manager = handle;
 
 	// Nop...
 
@@ -225,7 +224,6 @@ celix_status_t topologyManager_serviceChanged(void *listener, service_event_pt e
 
 	properties_pt props = NULL;
 	serviceRegistration_getProperties(registration, &props);
-	char *name = properties_get(props, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
 	char *export = properties_get(props, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES);
 	char *serviceId = properties_get(props, (char *)OSGI_FRAMEWORK_SERVICE_ID);
 

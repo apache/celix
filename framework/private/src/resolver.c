@@ -74,7 +74,6 @@ linked_list_pt resolver_resolve(module_pt root) {
 		hash_map_iterator_pt iter = hashMapIterator_create(candidatesMap);
 		while (hashMapIterator_hasNext(iter)) {
 			hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-			module_pt key = hashMapEntry_getKey(entry);
 			linked_list_pt value = hashMapEntry_getValue(entry);
 			hashMapIterator_remove(iter);
 			if (value != NULL) {
@@ -94,13 +93,11 @@ linked_list_pt resolver_resolve(module_pt root) {
 		return NULL;
 	}
 
-	bundle_pt bundle = module_getBundle(root);
 	linkedList_create(&wireMap);
 	resolved = resolver_populateWireMap(candidatesMap, root, wireMap);
 	iter = hashMapIterator_create(candidatesMap);
 	while (hashMapIterator_hasNext(iter)) {
 		hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-		module_pt key = hashMapEntry_getKey(entry);
 		linked_list_pt value = hashMapEntry_getValue(entry);
 		hashMapIterator_remove(iter);
 		if (value != NULL) {
@@ -211,7 +208,6 @@ void resolver_removeInvalidCandidate(module_pt invalidModule, hash_map_pt candid
 	
 	for (iterator = hashMapIterator_create(candidates); hashMapIterator_hasNext(iterator); ) {
 		hash_map_entry_pt entry = hashMapIterator_nextEntry(iterator);
-		module_pt module = (module_pt) hashMapEntry_getKey(entry);
 		linked_list_pt candSetList = (linked_list_pt) hashMapEntry_getValue(entry);
 		if (candSetList != NULL) {
 			linked_list_iterator_pt itCandSetList;
@@ -391,7 +387,6 @@ capability_list_pt resolver_getCapabilityList(linked_list_pt list, char * name) 
 
 linked_list_pt resolver_populateWireMap(hash_map_pt candidates, module_pt importer, linked_list_pt wireMap) {
     linked_list_pt serviceWires;
-    linked_list_pt emptyWires;
 	bundle_pt bundle = NULL;
 	bool resolved = false;
 

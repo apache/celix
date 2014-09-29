@@ -18,6 +18,7 @@
 find_package(APR REQUIRED)
 
 SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_device_manager")
+SET(BUNDLE_VERSION "0.0.1")
 SET_HEADERS("Bundle-Name: Apache Celix Device Access Device Manager") 
 
 bundle(device_manager SOURCES 

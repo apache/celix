@@ -83,7 +83,7 @@ celix_status_t eventHandlerAddedService(void * handle, service_reference_pt ref,
 }
 
 celix_status_t eventHandlerModifiedService(void * handle, service_reference_pt ref, void * service) {
-	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG,"" [SUB] Event admin modified.");
+	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "[SUB] Event admin modified.");
 	return CELIX_SUCCESS;
 }
 

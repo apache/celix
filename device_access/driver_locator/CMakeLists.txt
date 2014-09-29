@@ -18,6 +18,7 @@
 find_package(APR REQUIRED)
 
 SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_driver_locator")
+SET(BUNDLE_VERSION "0.0.1")
 SET_HEADERS("Bundle-Name: Apache Celix Device Access Driver Locator")
 
 bundle(driver_locator SOURCES 

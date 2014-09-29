@@ -146,7 +146,7 @@ static celix_status_t deploymentAdmin_updateAuditPool(deployment_admin_pt admin,
 	char url[strlen(admin->auditlogUrl)+6];
 	sprintf(url, "%s/send", admin->auditlogUrl);
 	char entry[512];
-	int entrySize = snprintf(entry, 512, "%s,%i,%i,0,%i\n", admin->targetIdentification, admin->auditlogId, admin->aditlogSeqNr++, auditEvent);
+	int entrySize = snprintf(entry, 512, "%s,%lld,%u,0,%i\n", admin->targetIdentification, admin->auditlogId, admin->aditlogSeqNr++, auditEvent);
 	if (entrySize >= 512) {
 		status = CELIX_BUNDLE_EXCEPTION;
 		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error, entry buffer is too small");
@@ -316,25 +316,28 @@ celix_status_t deploymentAdmin_readVersions(deployment_admin_pt admin, array_lis
 
 celix_status_t deploymentAdmin_download(char * url, char **inputFile) {
 	celix_status_t status = CELIX_SUCCESS;
-	CURL *curl;
-	CURLcode res;
+	CURL *curl = NULL;
+	CURLcode res = 0;
 	curl = curl_easy_init();
 	if (curl) {
-		tmpnam(*inputFile);
-		FILE *fp = fopen(*inputFile, "wb+");
-		curl_easy_setopt(curl, CURLOPT_URL, url);
-		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, deploymentAdmin_writeData);
-		curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
-		curl_easy_setopt(curl, CURLOPT_FAILONERROR, true);
-		//curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0);
-		//curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, updateCommand_downloadProgress);
-		res = curl_easy_perform(curl);
-		if (res != CURLE_OK) {
-			status = CELIX_BUNDLE_EXCEPTION;
-		}
-		/* always cleanup */
-		curl_easy_cleanup(curl);
-		fclose(fp);
+	    *inputFile = "updateXXXXXX";
+        int fd = mkstemp(*inputFile);
+        if (fd) {
+            FILE *fp = fopen(*inputFile, "wb+");
+            curl_easy_setopt(curl, CURLOPT_URL, url);
+            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, deploymentAdmin_writeData);
+            curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
+            curl_easy_setopt(curl, CURLOPT_FAILONERROR, true);
+            //curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0);
+            //curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, updateCommand_downloadProgress);
+            res = curl_easy_perform(curl);
+            if (res != CURLE_OK) {
+                status = CELIX_BUNDLE_EXCEPTION;
+            }
+            /* always cleanup */
+            curl_easy_cleanup(curl);
+            fclose(fp);
+        }
 	}
 	if (res != CURLE_OK) {
 		*inputFile[0] = '\0';
@@ -563,7 +566,6 @@ celix_status_t deploymentAdmin_dropDeploymentPackageResources(deployment_admin_p
 						void *processorP = NULL;
 						status = bundleContext_getService(admin->context, ref, &processorP);
 						if (status == CELIX_SUCCESS) {
-							bundle_pt bundle = NULL;
 							char *packageName = NULL;
 							resource_processor_service_pt processor = processorP;
 

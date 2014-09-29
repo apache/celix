@@ -52,7 +52,6 @@ void logCommand_destroy(command_pt command) {
 
 void logCommand_execute(command_pt command, char *line, void (*out)(char *), void (*err)(char *)) {
     service_reference_pt readerService = NULL;
-    service_reference_pt logService = NULL;
     apr_pool_t *memory_pool = NULL;
 
     bundleContext_getServiceReference(command->bundleContext, (char *) OSGI_LOGSERVICE_READER_SERVICE_NAME, &readerService);

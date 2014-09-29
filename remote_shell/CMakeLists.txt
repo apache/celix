@@ -18,6 +18,7 @@ celix_subproject(REMOTE_SHELL "Option to enable building the Remote Shell bundle
 if (REMOTE_SHELL)
 
 	SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_remote_shell")
+	SET(BUNDLE_VERSION "0.0.1")
 	SET_HEADERS("Bundle-Name: Apache Celix Remote Shell") 
 	
     bundle(remote_shell SOURCES 

@@ -156,7 +156,6 @@ service_reference_pt serviceTracker_getServiceReference(service_tracker_pt track
 array_list_pt serviceTracker_getServiceReferences(service_tracker_pt tracker) {
 	tracked_pt tracked;
 	unsigned int i;
-	int size = arrayList_size(tracker->tracked);
 	array_list_pt references = NULL;
 	arrayList_create(&references);
 	
@@ -180,7 +179,6 @@ void *serviceTracker_getService(service_tracker_pt tracker) {
 array_list_pt serviceTracker_getServices(service_tracker_pt tracker) {
 	tracked_pt tracked;
 	unsigned int i;
-	int size = arrayList_size(tracker->tracked);
 	array_list_pt references = NULL;
 	arrayList_create(&references);
 	

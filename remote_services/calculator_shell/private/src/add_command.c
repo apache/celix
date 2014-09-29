@@ -63,7 +63,7 @@ void addCommand_execute(command_pt command, char *line, void (*out)(char *), voi
     status = bundleContext_getServiceReference(command->bundleContext, (char *) CALCULATOR_SERVICE, &calculatorService);
     if (status == CELIX_SUCCESS) {
     	char *token;
-		char *commandStr = apr_strtok(line, " ", &token);
+		apr_strtok(line, " ", &token);
 		char *aStr = apr_strtok(NULL, " ", &token);
 		bool numeric;
 		addCommand_isNumeric(command, aStr, &numeric);
@@ -95,9 +95,6 @@ void addCommand_execute(command_pt command, char *line, void (*out)(char *), voi
 			out("ADD: Requires 2 numerical parameter\n");
 			status = CELIX_ILLEGAL_ARGUMENT;
 		}
-
-        double a;
-        double b;
     } else {
         out("No calc service available\n");
     }

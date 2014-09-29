@@ -194,7 +194,7 @@ celix_status_t eventAdmin_releaseHandersList(event_admin_pt event_admin, char *t
     channel_t channel = hashMap_get(event_admin->channels, topic);
 	if (channel != NULL) {
         // TODO check the result value...
-        apr_status_t status = apr_thread_mutex_unlock(channel->channelLock);
+        apr_thread_mutex_unlock(channel->channelLock);
         fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "UNLOCK: %s!", topic);
     }
 	return status;
@@ -223,13 +223,11 @@ celix_status_t eventAdmin_addedService(void * handle, service_reference_pt ref, 
 }
 
 celix_status_t eventAdmin_modifiedService(void * handle, service_reference_pt ref, void * service) {
-	struct data * data = (struct data *) handle;
 	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Event admin Modified");
 	return CELIX_SUCCESS;
 }
 
 celix_status_t eventAdmin_removedService(void * handle, service_reference_pt ref, void * service) {
-	struct data * data = (struct data *) handle;
 	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Event admin Removed %p", service);
 	return CELIX_SUCCESS;
 }

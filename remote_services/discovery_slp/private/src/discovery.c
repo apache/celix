@@ -296,7 +296,6 @@ celix_status_t discovery_endpointRemoved(void *handle, endpoint_description_pt e
 
 	discovery_pt discovery = handle;
 	SLPError err;
-	SLPError callbackerr;
 	SLPHandle slp;
 	char *serviceUrl = NULL;
 
@@ -377,7 +376,6 @@ celix_status_t discovery_updateEndpointListener(discovery_pt discovery, service_
 	hash_map_iterator_pt iter = hashMapIterator_create(discovery->slpServices);
 	while (hashMapIterator_hasNext(iter)) {
 		hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-		char *key = hashMapEntry_getKey(entry);
 		endpoint_description_pt value = hashMapEntry_getValue(entry);
 		discovery_informListener(discovery, service, value);
 	}
@@ -404,8 +402,7 @@ static void *APR_THREAD_FUNC discovery_pollSLP(apr_thread_t *thd, void *data) {
 	err = SLPOpen("en", SLP_FALSE, &slp);
 
 	while (discovery->running) {
-		SLPError err = SLP_TRUE;
-		SLPError callbackerr;
+		SLPError err = SLP_OK;
 		arrayList_clear(discovery->handled);
 		while (err == SLP_TRUE) {
 			err = SLPFindSrvs(slp, "osgi.remote", 0, 0, discovery_pollSLPCallback, data);
@@ -456,9 +453,9 @@ SLPBoolean discovery_pollSLPCallback(SLPHandle hslp, const char* srvurl, unsigne
 
 				SLPHandle handle = NULL;
 				SLPError err = SLPOpen("en", SLP_FALSE, &handle);
-				err = SLP_TRUE;
+				err = SLP_OK;
 				slp_service_pt slpService = apr_palloc(discovery->pool, sizeof(*slpService));
-				while (err == SLP_TRUE) {
+				while (err == SLP_OK) {
 					err = SLPFindAttrs(handle, srvurl, "", "", discovery_attributesCallback, slpService);
 				}
 

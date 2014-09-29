@@ -49,8 +49,6 @@ celix_status_t logListener_logged(log_listener_pt listener, log_entry_pt entry)
 		if (status == CELIX_SUCCESS) {
 
 			int sysLogLvl = -1;
-			int strLen_message = 0;
-			char* sysLog_message = NULL;
 
 			switch(entry->level)
 			{
@@ -71,13 +69,7 @@ celix_status_t logListener_logged(log_listener_pt listener, log_entry_pt entry)
 					break;
 			}
 
-			strLen_message = strlen(sName) + strlen(entry->message) + 6;//"[]: (\n)" -> 6
-			sysLog_message = calloc(strLen_message, sizeof(char));
-			snprintf(sysLog_message, strLen_message, "[%s]: %s", sName, entry->message);
-
-			syslog(sysLogLvl, sysLog_message);
-
-			free(sysLog_message);
+			syslog(sysLogLvl, "[%s]: %s", sName, entry->message);
 		}
     }
 

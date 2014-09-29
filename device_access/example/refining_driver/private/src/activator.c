@@ -105,7 +105,6 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	printf("REFINING_DRIVER: destroying bundle\n");
 	celix_status_t status = CELIX_SUCCESS;
-	refining_driver_bundle_instance_pt bi = userData;
 	return status;
 }
 

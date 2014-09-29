@@ -227,10 +227,8 @@ celix_status_t framework_destroy(framework_pt framework) {
 	if(framework->installedBundleMap!=NULL){
 	hash_map_iterator_pt iterator = hashMapIterator_create(framework->installedBundleMap);
 	while (hashMapIterator_hasNext(iterator)) {
-		linked_list_pt wires;
 	    hash_map_entry_pt entry = hashMapIterator_nextEntry(iterator);
 		bundle_pt bundle = (bundle_pt) hashMapEntry_getValue(entry);
-		char *location = (char *) hashMapEntry_getKey(entry);
 		bundle_archive_pt archive = NULL;
 
 		if (bundle_getArchive(bundle, &archive) == CELIX_SUCCESS) {
@@ -795,8 +793,6 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
 	bundle_state_e state;
     activator_pt activator = NULL;
     bundle_context_pt context = NULL;
-    module_pt module = NULL;
-    manifest_pt manifest = NULL;
     bool wasActive = false;
     long id = 0;
     char *error = NULL;
@@ -908,7 +904,6 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
 
 celix_status_t fw_uninstallBundle(framework_pt framework, bundle_pt bundle) {
     celix_status_t status = CELIX_SUCCESS;
-    bundle_state_e state;
     bool locked;
     bundle_archive_pt archive = NULL;
     char * location;
@@ -1363,7 +1358,7 @@ void fw_addServiceListener(framework_pt framework, bundle_pt bundle, service_lis
 		array_list_pt infos = NULL;
 		bool ungetResult = false;
 
-		celix_status_t status = fw_getService(framework, framework->bundle, ref, (void **) &hook);
+		fw_getService(framework, framework->bundle, ref, (void **) &hook);
 
 		arrayList_create(&infos);
 		arrayList_add(infos, info);
@@ -1425,7 +1420,7 @@ void fw_removeServiceListener(framework_pt framework, bundle_pt bundle, service_
 			array_list_pt infos = NULL;
 			bool ungetResult;
 
-			celix_status_t status = fw_getService(framework, framework->bundle, ref, (void **) &hook);
+			fw_getService(framework, framework->bundle, ref, (void **) &hook);
 
 			arrayList_create(&infos);
 			arrayList_add(infos, info);
@@ -2132,7 +2127,7 @@ static void *fw_eventDispatcher(void *fw) {
 
 		size = arrayList_size(framework->requests);
 		while (size == 0 && !framework->shutdown) {
-			celix_status_t status = celixThreadCondition_wait(&framework->dispatcher, &framework->dispatcherLock);
+			celixThreadCondition_wait(&framework->dispatcher, &framework->dispatcherLock);
 			// Ignore status and just keep waiting
 			size = arrayList_size(framework->requests);
 		}
@@ -2258,17 +2253,6 @@ static celix_status_t framework_loadBundleLibraries(framework_pt framework, bund
     bundle_revision_pt revision = NULL;
     manifest_pt manifest = NULL;
 
-    #ifdef __linux__
-             char * library_prefix = "lib";
-             char * library_extension = ".so";
-    #elif __APPLE__
-             char * library_prefix = "lib";
-             char * library_extension = ".dylib";
-    #elif WIN32
-             char * library_prefix = "";
-             char * library_extension = ".dll";
-    #endif
-
     status = CELIX_DO_IF(status, bundle_getArchive(bundle, &archive));
     status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
     status = CELIX_DO_IF(status, bundleRevision_getManifest(revision, &manifest));
@@ -2367,9 +2351,9 @@ static celix_status_t framework_loadLibrary(framework_pt framework, char *librar
     #endif
 
     char libraryPath[256];
-    long refreshCount;
-    char *archiveRoot;
-    long revisionNumber;
+    long refreshCount = 0;
+    char *archiveRoot = NULL;
+    long revisionNumber = 0;
 
     status = CELIX_DO_IF(status, bundleArchive_getRefreshCount(archive, &refreshCount));
     status = CELIX_DO_IF(status, bundleArchive_getArchiveRoot(archive, &archiveRoot));
@@ -2379,7 +2363,6 @@ static celix_status_t framework_loadLibrary(framework_pt framework, char *librar
 
     *handle = fw_openLibrary(libraryPath);
     if (*handle == NULL) {
-        char err[1024];
         error = fw_getLastError();
         // #TODO this is wrong
         status =  CELIX_BUNDLE_EXCEPTION;

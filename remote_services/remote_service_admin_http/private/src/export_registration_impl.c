@@ -146,7 +146,6 @@ celix_status_t exportRegistration_endpointAdded(void * handle, service_reference
 
 celix_status_t exportRegistration_endpointModified(void * handle, service_reference_pt reference, void *service) {
 	celix_status_t status = CELIX_SUCCESS;
-	export_registration_pt registration = handle;
 
 	return status;
 }

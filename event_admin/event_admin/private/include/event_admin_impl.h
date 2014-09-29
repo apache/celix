@@ -120,7 +120,7 @@ celix_status_t eventAdmin_releaseHandersList(event_admin_pt event_admin, char *t
  * @param char *topic. String containing the topic
  * @param properties_pt properties.
  */
-celix_status_t eventAdmin_createEvent(event_admin_pt *event_admin, char *topic, properties_pt properties, event_pt *event);
+celix_status_t eventAdmin_createEvent(event_admin_pt event_admin, char *topic, properties_pt properties, event_pt *event);
 /**
  * @desc checks if an event contains the property
  * @param event_pt *event. the event to check
