@@ -22,6 +22,7 @@ include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/pub
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
 
 SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_rs_topology_manager")
+SET(BUNDLE_VERSION "0.0.1")
 SET_HEADERS("Bundle-Name: Apache Celix RS Topology Manager")
 
 bundle(topology_manager SOURCES

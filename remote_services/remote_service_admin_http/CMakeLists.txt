@@ -28,6 +28,7 @@ include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin_
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
 
 SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_remote_service_admin_http")
+SET(BUNDLE_VERSION "0.0.1")
 SET_HEADERS("Bundle-Name: Apache Celix Remote Service Admin HTTP")
 
 bundle(remote_service_admin_http SOURCES 

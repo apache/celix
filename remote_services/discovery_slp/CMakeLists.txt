@@ -28,6 +28,7 @@ if (RSA_BUNDLES_DISCOVERY_SLP)
 	include_directories("private/include")
 
 	SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_rsa_discovery_slp")
+    SET(BUNDLE_VERSION "0.0.1")
 	SET_HEADERS("Bundle-Name: Apache Celix RSA SLP Discovery")
 
 	bundle(discovery_slp SOURCES 

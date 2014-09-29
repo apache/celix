@@ -30,6 +30,7 @@ include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/
 include_directories(private/include)
 
 SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_rsa_discovery_configured")
+SET(BUNDLE_VERSION "0.0.1")
 SET_HEADERS("Bundle-Name: Apache Celix RSA Configured Discovery")
 
 bundle(discovery_configured SOURCES 

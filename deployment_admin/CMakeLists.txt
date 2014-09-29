@@ -23,6 +23,7 @@ if (DEPLOYMENT_ADMIN)
     add_definitions(-DUSE_FILE32API)
     
     SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_deployment_admin")
+    SET(BUNDLE_VERSION "0.0.1")
 	SET_HEADERS("Bundle-Name: Apache Celix Deployment Admin") 
     
     include_directories("${CURL_INCLUDE_DIR}")

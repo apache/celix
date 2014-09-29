@@ -27,6 +27,7 @@ if (RSA_BUNDLES_DISCOVERY_BONJOUR)
 	include_directories(private/include)
 
 	SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_rsa_discovery_bonjour")
+	SET(BUNDLE_VERSION "0.0.1")
 	SET_HEADERS("Bundle-Name: Apache Celix RSA BONJOUR Discovery")
 
 	bundle(discovery_bonjour SOURCES 
