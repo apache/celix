@@ -142,6 +142,11 @@ celix_status_t importRegistrationFactory_close(import_registration_factory_pt re
 {
 	celix_status_t status = CELIX_SUCCESS;
 
+
+	if (registration_factory->proxyFactoryTracker != NULL) {
+		serviceTracker_close(registration_factory->proxyFactoryTracker);
+	}
+
 	if (registration_factory->bundle != NULL) {
 		bundle_stop(registration_factory->bundle);
 		bundle_uninstall(registration_factory->bundle);
@@ -214,19 +219,24 @@ celix_status_t importRegistrationFactory_install(apr_pool_t *pool, char* service
 	{
 		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "remoteServiceAdmin_importService: error while creating importRegistrationFactory.");
 	}
-	else if ((status = importRegistrationFactory_open(*registration_factory)) != CELIX_SUCCESS)
-	{
-		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "remoteServiceAdmin_importService: cannot open registration_factory for %s.", serviceName);
-		importRegistrationFactory_destroy(registration_factory);
-	}
 	else
 	{
+		// starting the proxy tracker first allows us to pick up already available proxy factories
 		importRegistration_createProxyFactoryTracker(*registration_factory, &((*registration_factory)->proxyFactoryTracker));
 		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "remoteServiceAdmin_importService: new registration_factory added for %s at %p", serviceName, (*registration_factory)->proxyFactoryTracker);
-	}
 
+		// check whether factory is available
+		if (((*registration_factory)->trackedFactory == NULL) && ((status = importRegistrationFactory_open(*registration_factory)) != CELIX_SUCCESS))
+		{
+			fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "remoteServiceAdmin_importService: cannot open registration_factory for %s.", serviceName);
+			importRegistrationFactory_destroy(registration_factory);
+			serviceTracker_close((*registration_factory)->proxyFactoryTracker);
+		}
+	}
 	return status;
 }
+
+
 
 
 celix_status_t importRegistration_getException(import_registration_pt registration) {

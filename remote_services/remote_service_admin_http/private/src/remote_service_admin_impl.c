@@ -434,7 +434,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, e
 
    import_registration_factory_pt registration_factory = (import_registration_factory_pt) hashMap_get(admin->importedServices, endpointDescription->service);
 
-	// check whether we already have a registration_factory
+	// check whether we already have a registration_factory registered in the hashmap
 	if (registration_factory == NULL)
 	{
 		status = importRegistrationFactory_install(admin->pool, endpointDescription->service, admin->context, &registration_factory);
