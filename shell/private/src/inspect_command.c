@@ -165,20 +165,18 @@ celix_status_t inspectCommand_printExportedServices(command_pt command, array_li
 								unsigned int j = 0;
 								for (j = 0; j < arrayList_size(refs); j++) {
 									service_reference_pt ref = (service_reference_pt) arrayList_get(refs, j);
-									service_registration_pt reg = NULL;
-									properties_pt props = NULL;
-									char line[256];
+									unsigned int size = 0;
+									char **keys;
 
-									serviceReference_getServiceRegistration(ref, &reg);
-									
-									serviceRegistration_getProperties(reg, &props);
-									hash_map_iterator_pt iter = hashMapIterator_create(props);
-									while (hashMapIterator_hasNext(iter)) {
-									    hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-									    sprintf(line, "%s = %s\n", (char*) hashMapEntry_getKey(entry), (char*) hashMapEntry_getValue(entry));
-									    out(line);
+									serviceReference_getPropertyKeys(ref, &keys, &size);
+									for (int i = 0; i < size; i++) {
+									    char *key = keys[i];
+									    char *value = NULL;
+									    serviceReference_getProperty(ref, key, &value);
+
+									    sprintf(line, "%s = %s\n", key, value);
+                                        out(line);
 									}
-									hashMapIterator_destroy(iter);
 
 //									objectClass = properties_get(props, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
 //									sprintf(line, "ObjectClass = %s\n", objectClass);
@@ -253,8 +251,6 @@ celix_status_t inspectCommand_printImportedServices(command_pt command, array_li
                                 unsigned int j = 0;
                                 for (j = 0; j < arrayList_size(refs); j++) {
                                     service_reference_pt ref = (service_reference_pt) arrayList_get(refs, j);
-                                    service_registration_pt reg = NULL;
-                                    properties_pt props = NULL;
                                     char line[256];
                                     bundle_pt usedBundle = NULL;
                                     module_pt usedModule = NULL;
@@ -269,15 +265,18 @@ celix_status_t inspectCommand_printImportedServices(command_pt command, array_li
                                     sprintf(line, "%s [%ld]\n", usedSymbolicName, usedBundleId);
                                     out(line);
 
-                                    serviceReference_getServiceRegistration(ref, &reg);
-                                    serviceRegistration_getProperties(reg, &props);
-                                    hash_map_iterator_pt iter = hashMapIterator_create(props);
-                                    while (hashMapIterator_hasNext(iter)) {
-                                        hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-                                        sprintf(line, "%s = %s\n", (char*) hashMapEntry_getKey(entry), (char*) hashMapEntry_getValue(entry));
+                                    unsigned int size = 0;
+                                    char **keys;
+
+                                    serviceReference_getPropertyKeys(ref, &keys, &size);
+                                    for (int i = 0; i < size; i++) {
+                                        char *key = keys[i];
+                                        char *value = NULL;
+                                        serviceReference_getProperty(ref, key, &value);
+
+                                        sprintf(line, "%s = %s\n", key, value);
                                         out(line);
                                     }
-									hashMapIterator_destroy(iter);
 
 //                                  objectClass = properties_get(props, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
 //                                  sprintf(line, "ObjectClass = %s\n", objectClass);

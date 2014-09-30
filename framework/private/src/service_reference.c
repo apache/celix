@@ -30,7 +30,7 @@
 
 #include "service_registry.h"
 #include "service_reference_private.h"
-#include "service_registration.h"
+#include "service_registration_private.h"
 #include "module.h"
 #include "wire.h"
 #include "bundle.h"
@@ -69,6 +69,36 @@ celix_status_t serviceReference_getBundle(service_reference_pt reference, bundle
 celix_status_t serviceReference_getServiceRegistration(service_reference_pt reference, service_registration_pt *registration) {
 	*registration = reference->registration;
 	return CELIX_SUCCESS;
+}
+
+celix_status_t serviceReference_getProperty(service_reference_pt reference, char *key, char **value) {
+    celix_status_t status = CELIX_SUCCESS;
+    properties_pt props = NULL;
+
+    serviceRegistration_getProperties(reference->registration, &props);
+    *value = properties_get(props, key);
+
+    return status;
+}
+
+FRAMEWORK_EXPORT celix_status_t serviceReference_getPropertyKeys(service_reference_pt reference, char **keys[], unsigned int *size) {
+    celix_status_t status = CELIX_SUCCESS;
+    properties_pt props = NULL;
+
+    serviceRegistration_getProperties(reference->registration, &props);
+    hash_map_iterator_pt it;
+    int i = 0;
+    int vsize = hashMap_size(props);
+    *size = vsize;
+    *keys = malloc(vsize * sizeof(*keys));
+    it = hashMapIterator_create(props);
+    while (hashMapIterator_hasNext(it)) {
+        (*keys)[i] = hashMapIterator_nextKey(it);
+        i++;
+    }
+    hashMapIterator_destroy(it);
+
+    return status;
 }
 
 celix_status_t serviceReference_invalidate(service_reference_pt reference) {

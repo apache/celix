@@ -160,17 +160,10 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	int i;
 	for (i = 0; i < arrayList_size(references); i++) {
 	    service_reference_pt reference = arrayList_get(references, i);
-
-	    service_registration_pt registration = NULL;
-        serviceReference_getServiceRegistration(reference, &registration);
-	    properties_pt props = NULL;
-        serviceRegistration_getProperties(registration, &props);
-        char *serviceId = properties_get(props, (char *)OSGI_FRAMEWORK_SERVICE_ID);
-
-	    status = topologyManager_addExportedService(activator->manager, reference, serviceId);
+        char *serviceId = NULL;
+        status = CELIX_DO_IF(status, serviceReference_getProperty(reference, (char *)OSGI_FRAMEWORK_SERVICE_ID, &serviceId));
+        status = CELIX_DO_IF(status, topologyManager_addExportedService(activator->manager, reference, serviceId));
 	}
-
-
 
 	return status;
 }

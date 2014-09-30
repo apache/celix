@@ -212,11 +212,8 @@ celix_status_t eventAdmin_addedService(void * handle, service_reference_pt ref, 
 	event_admin_pt event_admin = handle;
 	event_handler_service_pt event_handler_service = NULL;
 	event_handler_service = (event_handler_service_pt) service;
-	service_registration_pt registration = NULL;
-	serviceReference_getServiceRegistration(ref,&registration);
-	properties_pt props = NULL;
-	serviceRegistration_getProperties(registration, &props);
-	char *topic = properties_get(props, (char*)EVENT_TOPIC);
+	char *topic = NULL;
+	serviceReference_getProperty(ref, (char*)EVENT_TOPIC, &topic);
 	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Original TOPIC: %s", topic);
 	eventAdmin_createEventChannels(&event_admin,topic,event_handler_service);
 	return status;

@@ -70,7 +70,7 @@ static const char *DEFAULT_PORT = "8888";
 static int remoteServiceAdmin_callback(struct mg_connection *conn);
 
 celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin, export_registration_pt registration, service_reference_pt reference, char *interface);
-celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, properties_pt serviceProperties, properties_pt endpointProperties, char *interface, endpoint_description_pt *description);
+celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, service_reference_pt reference, properties_pt endpointProperties, char *interface, endpoint_description_pt *description);
 static celix_status_t constructServiceUrl(remote_service_admin_pt admin, char *service, char **serviceUrl);
 
 static size_t remoteServiceAdmin_readCallback(void *ptr, size_t size, size_t nmemb, void *userp);
@@ -227,7 +227,6 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 	arrayList_create(registrations);
 	array_list_pt references = NULL;
 	service_reference_pt reference = NULL;
-	service_registration_pt registration = NULL;
 	apr_pool_t *tmpPool = NULL;
 
 	apr_pool_create(&tmpPool, admin->pool);
@@ -251,12 +250,10 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 		return CELIX_ILLEGAL_STATE;
 	}
 
-
-	serviceReference_getServiceRegistration(reference, &registration);
-	properties_pt serviceProperties = NULL;
-	serviceRegistration_getProperties(registration, &serviceProperties);
-	char *exports = properties_get(serviceProperties, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES);
-	char *provided = properties_get(serviceProperties, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
+	char *exports = NULL;
+	char *provided = NULL;
+	serviceReference_getProperty(reference, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, &exports);
+	serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_OBJECTCLASS, &provided);
 
 	if (exports == NULL || provided == NULL) {
 		fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "RSA: No Services to export.");
@@ -323,22 +320,17 @@ celix_status_t remoteServiceAdmin_removeExportedService(export_registration_pt r
 celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin, export_registration_pt registration, service_reference_pt reference, char *interface) {
 	celix_status_t status = CELIX_SUCCESS;
 	properties_pt endpointProperties = properties_create();
-	properties_pt serviceProperties = NULL;
 
-	service_registration_pt sRegistration = NULL;
-	serviceReference_getServiceRegistration(reference, &sRegistration);
+	unsigned int size = 0;
+    char **keys;
 
-	serviceRegistration_getProperties(sRegistration, &serviceProperties);
-
-	hash_map_iterator_pt iter = hashMapIterator_create(serviceProperties);
-	while (hashMapIterator_hasNext(iter)) {
-		hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-		char *key = (char *) hashMapEntry_getKey(entry);
-		char *value = (char *) hashMapEntry_getValue(entry);
+    serviceReference_getPropertyKeys(reference, &keys, &size);
+    for (int i = 0; i < size; i++) {
+        char *key = keys[i];
+        char *value = NULL;
 
 		properties_set(endpointProperties, key, value);
 	}
-    hashMapIterator_destroy(iter);
 
 	char *serviceId = (char *) hashMap_remove(endpointProperties, (void *) OSGI_FRAMEWORK_SERVICE_ID);
 	char *uuid = NULL;
@@ -363,7 +355,7 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
     properties_set(endpointProperties, (char*) ENDPOINT_URL, url);
 
 	endpoint_description_pt endpointDescription = NULL;
-	remoteServiceAdmin_createEndpointDescription(admin, serviceProperties, endpointProperties, interface, &endpointDescription);
+	remoteServiceAdmin_createEndpointDescription(admin, reference, endpointProperties, interface, &endpointDescription);
 	exportRegistration_setEndpointDescription(registration, endpointDescription);
 
 	return status;
@@ -400,7 +392,7 @@ static celix_status_t constructServiceUrl(remote_service_admin_pt admin, char *s
 	return status;
 }
 
-celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, properties_pt serviceProperties,
+celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, service_reference_pt reference,
 		properties_pt endpointProperties, char *interface, endpoint_description_pt *description) {
 	celix_status_t status = CELIX_SUCCESS;
 
@@ -412,7 +404,9 @@ celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin
 		status = CELIX_ENOMEM;
 	} else {
 		(*description)->id = properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID);
-		(*description)->serviceId = apr_atoi64(properties_get(serviceProperties, (char*) OSGI_FRAMEWORK_SERVICE_ID));
+		char *serviceId = NULL;
+		serviceReference_getProperty(reference, (char*) OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
+		(*description)->serviceId = apr_atoi64(serviceId);
 		(*description)->frameworkUUID = properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
 		(*description)->service = interface;
 		(*description)->properties = endpointProperties;

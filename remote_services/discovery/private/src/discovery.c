@@ -82,14 +82,11 @@ celix_status_t discovery_endpointListenerAdded(void* handle, service_reference_p
 	celix_status_t status = CELIX_SUCCESS;
 	discovery_pt discovery = handle;
 
-	service_registration_pt registration = NULL;
-	serviceReference_getServiceRegistration(reference, &registration);
+	char *discoveryListener = NULL;
+	serviceReference_getProperty(reference, "DISCOVERY", &discoveryListener);
+	char *scope = NULL;
+	serviceReference_getProperty(reference, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
 
-	properties_pt serviceProperties = NULL;
-	serviceRegistration_getProperties(registration, &serviceProperties);
-
-	char *discoveryListener = properties_get(serviceProperties, "DISCOVERY");
-	char *scope = properties_get(serviceProperties, (char *) OSGI_ENDPOINT_LISTENER_SCOPE);
 	filter_pt filter = filter_create(scope);
 
 	if (discoveryListener != NULL && strcmp(discoveryListener, "true") == 0) {
@@ -167,12 +164,8 @@ celix_status_t discovery_informEndpointListeners(discovery_pt discovery, endpoin
 			service_reference_pt reference = hashMapEntry_getKey(entry);
 			endpoint_listener_pt listener = NULL;
 
-			service_registration_pt registration = NULL;
-			serviceReference_getServiceRegistration(reference, &registration);
-
-			properties_pt serviceProperties = NULL;
-			serviceRegistration_getProperties(registration, &serviceProperties);
-			char *scope = properties_get(serviceProperties, (char *) OSGI_ENDPOINT_LISTENER_SCOPE);
+			char *scope = NULL;
+			serviceReference_getProperty(reference, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
 
 			filter_pt filter = filter_create(scope);
 			bool matchResult = false;

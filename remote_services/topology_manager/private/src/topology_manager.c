@@ -219,13 +219,10 @@ celix_status_t topologyManager_serviceChanged(void *listener, service_event_pt e
 	service_listener_pt listen = listener;
 	topology_manager_pt manager = listen->handle;
 
-	service_registration_pt registration = NULL;
-	serviceReference_getServiceRegistration(event->reference, &registration);
-
-	properties_pt props = NULL;
-	serviceRegistration_getProperties(registration, &props);
-	char *export = properties_get(props, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES);
-	char *serviceId = properties_get(props, (char *)OSGI_FRAMEWORK_SERVICE_ID);
+	char *export = NULL;
+	char *serviceId = NULL;
+	serviceReference_getProperty(event->reference, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, &export);
+	serviceReference_getProperty(event->reference, (char *)OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
 
 	if (!export) {
 		// Nothing needs to be done: we're not interested...

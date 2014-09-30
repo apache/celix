@@ -28,12 +28,12 @@
 #include <string.h>
 
 #include "service_registry_private.h"
-#include "service_registration.h"
+#include "service_registration_private.h"
 #include "module.h"
 #include "bundle.h"
 #include "listener_hook_service.h"
 #include "constants.h"
-#include "service_reference.h"
+#include "service_reference_private.h"
 #include "framework_private.h"
 #include "celix_log.h"
 

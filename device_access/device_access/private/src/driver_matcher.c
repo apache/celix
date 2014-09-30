@@ -199,39 +199,34 @@ celix_status_t driverMatcher_getBestMatchInternal(driver_matcher_pt matcher, apr
 					fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DRIVER_MATCHER: Compare ranking");
 					char *rank1Str, *rank2Str;
 					int rank1, rank2;
-					service_registration_pt registration = NULL;
-					substatus = serviceReference_getServiceRegistration(reference, &registration);
-					if (substatus == CELIX_SUCCESS) {
-						properties_pt properties = NULL;
-						status = serviceRegistration_getProperties(registration, &properties);
-						if (status == CELIX_SUCCESS) {
+                    rank1Str = "0";
+                    rank2Str = "0";
+                    serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_RANKING, &rank1Str);
+                    serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_RANKING, &rank2Str);
 
-							rank1Str = properties_getWithDefault(properties, (char *) OSGI_FRAMEWORK_SERVICE_RANKING, "0");
-							rank2Str = properties_getWithDefault(properties, (char *) OSGI_FRAMEWORK_SERVICE_RANKING, "0");
+                    rank1 = atoi(rank1Str);
+                    rank2 = atoi(rank2Str);
 
-							rank1 = atoi(rank1Str);
-							rank2 = atoi(rank2Str);
+                    if (rank1 != rank2) {
+                        if (rank1 > rank2) {
+                            best = reference;
+                        }
+                    } else {
+                        fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DRIVER_MATCHER: Compare id's");
+                        char *id1Str, *id2Str;
+                        long id1, id2;
 
-							if (rank1 != rank2) {
-								if (rank1 > rank2) {
-									best = reference;
-								}
-							} else {
-								fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "DRIVER_MATCHER: Compare id's");
-								char *id1Str, *id2Str;
-								long id1, id2;
+                        id1Str = NULL;
+                        id2Str = NULL;
+                        serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_ID, &id1Str);
+                        serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_ID, &id2Str);
 
-								id1Str = properties_get(properties, (char *) OSGI_FRAMEWORK_SERVICE_ID);
-								id2Str = properties_get(properties, (char *) OSGI_FRAMEWORK_SERVICE_ID);
+                        id1 = atol(id1Str);
+                        id2 = atol(id2Str);
 
-								id1 = atol(id1Str);
-								id2 = atol(id2Str);
-
-								if (id1 < id2) {
-									best = reference;
-								}
-							}
-						}
+                        if (id1 < id2) {
+                            best = reference;
+                        }
 					}
 				} else {
 					best = reference;

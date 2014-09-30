@@ -83,24 +83,17 @@ celix_status_t driverAttributes_getReference(driver_attributes_pt driverAttribut
 
 celix_status_t driverAttributes_getDriverId(driver_attributes_pt driverAttributes, char **driverId) {
 	celix_status_t status = CELIX_SUCCESS;
-	service_registration_pt registration = NULL;
-	status = serviceReference_getServiceRegistration(driverAttributes->reference, &registration);
 
-	if (status == CELIX_SUCCESS) {
-		properties_pt properties = NULL;
-		status = serviceRegistration_getProperties(registration, &properties);
+    char *id_prop = NULL;
+    status = serviceReference_getProperty(driverAttributes->reference, "DRIVER_ID", &id_prop);
+    if (status == CELIX_SUCCESS) {
+        if (!id_prop) {
+            status = CELIX_ENOMEM;
+        } else {
+            *driverId = apr_pstrdup(driverAttributes->pool,id_prop);
 
-		if (status == CELIX_SUCCESS) {
-			char *id_prop = properties_get(properties, "DRIVER_ID");
-
-			if (!id_prop) {
-				status = CELIX_ENOMEM;
-			} else {
-				*driverId = apr_pstrdup(driverAttributes->pool,id_prop);
-
-				if (*driverId == NULL) {
-					status = CELIX_ENOMEM;
-				}
+            if (*driverId == NULL) {
+                status = CELIX_ENOMEM;
 			}
 		}
 	}
@@ -116,28 +109,6 @@ celix_status_t driverAttributes_match(driver_attributes_pt driverAttributes, ser
 	return status;
 }
 
-celix_status_t static get_property_from_registration(service_reference_pt ref, char *key, char **prop_value)  {
-	celix_status_t status = CELIX_SUCCESS;
-	service_registration_pt registration = NULL;
-	status = serviceReference_getServiceRegistration(ref, &registration);
-
-	if (status == CELIX_SUCCESS) {
-		properties_pt properties = NULL;
-		status = serviceRegistration_getProperties(registration, &properties);
-
-		if (status == CELIX_SUCCESS) {
-			(*prop_value) = properties_get(properties, key);
-
-			if (*prop_value == NULL) {
-				status = CELIX_ENOMEM;
-			}
-		}
-	}
-
-	return status;
-}
-
-
 celix_status_t driverAttributes_isInUse(driver_attributes_pt driverAttributes, bool *inUse) {
 	celix_status_t status = CELIX_SUCCESS;
 
@@ -151,11 +122,11 @@ celix_status_t driverAttributes_isInUse(driver_attributes_pt driverAttributes, b
 			for (i = 0; i < arrayList_size(references); i++) {
 				service_reference_pt ref = arrayList_get(references, i);
 				char *object = NULL;
-				status = get_property_from_registration(ref, (char *) OSGI_FRAMEWORK_OBJECTCLASS, &object);
+				status = serviceReference_getProperty(ref, (char *) OSGI_FRAMEWORK_OBJECTCLASS, &object);
 
 				if (status == CELIX_SUCCESS) {
 					char *category = NULL;
-					status = get_property_from_registration(ref, "DEVICE_CATEGORY", &category);
+					status = serviceReference_getProperty(ref, "DEVICE_CATEGORY", &category);
 
 					if (status == CELIX_SUCCESS) {
 						if ((object != NULL && strcmp(object, OSGI_DEVICEACCESS_DEVICE_SERVICE_NAME) == 0) || (category != NULL)) {

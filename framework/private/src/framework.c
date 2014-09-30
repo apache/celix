@@ -53,9 +53,9 @@
 #include "bundle_revision.h"
 #include "bundle_context.h"
 #include "linked_list_iterator.h"
-#include "service_reference.h"
+#include "service_reference_private.h"
 #include "listener_hook_service.h"
-#include "service_registration.h"
+#include "service_registration_private.h"
 #include "celix_log.h"
 
 #include "celix_threads.h"

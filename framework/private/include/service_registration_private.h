@@ -53,4 +53,17 @@ struct serviceRegistration {
 	int nrOfServices;
 };
 
+service_registration_pt serviceRegistration_create(service_registry_pt registry, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary);
+service_registration_pt serviceRegistration_createServiceFactory(service_registry_pt registry, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary);
+celix_status_t serviceRegistration_destroy(service_registration_pt registration);
+
+bool serviceRegistration_isValid(service_registration_pt registration);
+void serviceRegistration_invalidate(service_registration_pt registration);
+
+celix_status_t serviceRegistration_getService(service_registration_pt registration, bundle_pt bundle, void **service);
+celix_status_t serviceRegistration_getProperties(service_registration_pt registration, properties_pt *properties);
+celix_status_t serviceRegistration_getRegistry(service_registration_pt registration, service_registry_pt *registry);
+celix_status_t serviceRegistration_getBundle(service_registration_pt registration, bundle_pt *bundle);
+celix_status_t serviceRegistration_getServiceName(service_registration_pt registration, char **serviceName);
+
 #endif /* SERVICE_REGISTRATION_PRIVATE_H_ */

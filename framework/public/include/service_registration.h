@@ -36,22 +36,10 @@ typedef struct serviceRegistration * service_registration_pt;
 #include "bundle.h"
 #include "framework_exports.h"
 
-service_registration_pt serviceRegistration_create(service_registry_pt registry, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary);
-service_registration_pt serviceRegistration_createServiceFactory(service_registry_pt registry, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary);
-celix_status_t serviceRegistration_destroy(service_registration_pt registration);
 
-FRAMEWORK_EXPORT bool serviceRegistration_isValid(service_registration_pt registration);
-FRAMEWORK_EXPORT void serviceRegistration_invalidate(service_registration_pt registration);
 FRAMEWORK_EXPORT celix_status_t serviceRegistration_unregister(service_registration_pt registration);
 
-FRAMEWORK_EXPORT celix_status_t serviceRegistration_getService(service_registration_pt registration, bundle_pt bundle, void **service);
-
 FRAMEWORK_EXPORT celix_status_t serviceRegistration_setProperties(service_registration_pt registration, properties_pt properties);
-
-FRAMEWORK_EXPORT celix_status_t serviceRegistration_getProperties(service_registration_pt registration, properties_pt *properties);
-FRAMEWORK_EXPORT celix_status_t serviceRegistration_getRegistry(service_registration_pt registration, service_registry_pt *registry);
 FRAMEWORK_EXPORT celix_status_t serviceRegistration_getServiceReferences(service_registration_pt registration, array_list_pt *references);
-FRAMEWORK_EXPORT celix_status_t serviceRegistration_getBundle(service_registration_pt registration, bundle_pt *bundle);
-FRAMEWORK_EXPORT celix_status_t serviceRegistration_getServiceName(service_registration_pt registration, char **serviceName);
 
 #endif /* SERVICE_REGISTRATION_H_ */

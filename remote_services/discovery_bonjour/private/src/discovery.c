@@ -307,11 +307,8 @@ celix_status_t discovery_endpointListenerAdded(void * handle, service_reference_
 	celix_status_t status = CELIX_SUCCESS;
 	discovery_pt discovery = handle;
 
-	service_registration_pt registration = NULL;
-	serviceReference_getServiceRegistration(reference, &registration);
-	properties_pt serviceProperties = NULL;
-	serviceRegistration_getProperties(registration, &serviceProperties);
-	char *discoveryListener = properties_get(serviceProperties, "DISCOVERY");
+	char *discoveryListener = NULL;
+	serviceReference_getProperty(reference, "DISCOVERY", &discoveryListener);
 
 	if (discoveryListener != NULL && strcmp(discoveryListener, "true") == 0) {
 		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DISCOVERY: EndpointListener Ignored - Discovery listener.");
@@ -325,8 +322,8 @@ celix_status_t discovery_endpointListenerAdded(void * handle, service_reference_
 				endpoint_description_pt endpoint = hashMapIterator_nextKey(iter);
 				endpoint_listener_pt listener = service;
 
-				char *scope = properties_get(serviceProperties,
-				(char *) OSGI_ENDPOINT_LISTENER_SCOPE);
+				char *scope = NULL;
+				serviceReference_getProperty(reference, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
 				filter_pt filter = filter_create(scope); //FIXME memory leak
 				bool matchResult = false;
 				filter_match(filter, endpoint->properties, &matchResult);
@@ -505,12 +502,8 @@ static celix_status_t discovery_informEndpointListeners(discovery_pt discovery, 
 			service_reference_pt reference = hashMapEntry_getKey(entry);
 			endpoint_listener_pt listener = NULL;
 
-			service_registration_pt registration = NULL;
-			serviceReference_getServiceRegistration(reference, &registration);
-			properties_pt serviceProperties = NULL;
-			serviceRegistration_getProperties(registration, &serviceProperties);
-			char *scope = properties_get(serviceProperties,
-					(char *) OSGI_ENDPOINT_LISTENER_SCOPE);
+			char *scope = NULL;
+            serviceReference_getProperty(reference, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
 			filter_pt filter = filter_create(scope);
 			bool matchResult = false;
 			filter_match(filter, endpoint->properties, &matchResult);
