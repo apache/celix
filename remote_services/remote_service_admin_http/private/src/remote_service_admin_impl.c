@@ -309,10 +309,9 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 celix_status_t remoteServiceAdmin_removeExportedService(export_registration_pt registration) {
     celix_status_t status = CELIX_SUCCESS;
     remote_service_admin_pt admin = registration->rsa;
-    array_list_pt registrations = NULL;
 
     printf("Remote export %p\n", registration->reference);
-    registrations = hashMap_remove(admin->exportedServices, registration->reference);
+    hashMap_remove(admin->exportedServices, registration->reference);
 
     return status;
 }
