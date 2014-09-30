@@ -67,10 +67,7 @@ ADD_DEFINITIONS(--coverage)
 set(CMAKE_SHARED_LINKER_FLAGS "--coverage")
 set(CMAKE_EXE_LINKER_FLAGS "--coverage")
 
-GET_TARGET_PROPERTY(coverage_def coverage COVERAGE_TARGET_ADDED)
-IF(${coverage_def} MATCHES NOTFOUND)
-
-
+IF(NOT TARGET coverage)
     add_custom_target(coverage
 	    COMMAND ${CMAKE_COMMAND} -E make_directory coverage_results
 	    COMMAND ${GENHTML_PATH} -o coverage_results coverage/*.info.cleaned
