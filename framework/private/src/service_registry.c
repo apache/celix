@@ -512,7 +512,7 @@ celix_status_t serviceRegistry_getService(service_registry_pt registry, bundle_p
 	}
 	celixThreadMutex_unlock(&registry->mutex);
 
-	return CELIX_SUCCESS;
+	return status;
 }
 
 celix_status_t serviceRegistry_ungetService(service_registry_pt registry, bundle_pt bundle, service_reference_pt reference, bool *result) {
@@ -541,7 +541,7 @@ celix_status_t serviceRegistry_ungetService(service_registry_pt registry, bundle
 
 	*result = true;
 
-	return CELIX_SUCCESS;
+	return status;
 }
 
 void serviceRegistry_ungetServices(service_registry_pt registry, bundle_pt bundle) {

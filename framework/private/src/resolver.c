@@ -125,9 +125,6 @@ int resolver_populateCandidatesMap(hash_map_pt candidatesMap, module_pt targetMo
     int c;
     requirement_pt req;
     capability_list_pt capList;
-    bundle_pt bundle = NULL;
-
-    bundle = module_getBundle(targetModule);
 
 	if (hashMap_containsKey(candidatesMap, targetModule)) {
 		return 0;
@@ -248,9 +245,6 @@ void resolver_addModule(module_pt module) {
     int i;
     capability_pt cap;
     capability_list_pt list;
-	bundle_pt bundle = NULL;
-
-	bundle = module_getBundle(module);
 
 	if (m_modules == NULL) {
 	                linkedList_create(&m_modules);
@@ -307,9 +301,6 @@ void resolver_removeModule(module_pt module) {
 void resolver_moduleResolved(module_pt module) {
     int capIdx;
     linked_list_pt capsCopy;
-	bundle_pt bundle = NULL;
-
-	bundle = module_getBundle(module);
 
 	if (module_isResolved(module)) {
 	        if (linkedList_create(&capsCopy) == CELIX_SUCCESS) {
@@ -387,10 +378,7 @@ capability_list_pt resolver_getCapabilityList(linked_list_pt list, char * name) 
 
 linked_list_pt resolver_populateWireMap(hash_map_pt candidates, module_pt importer, linked_list_pt wireMap) {
     linked_list_pt serviceWires;
-	bundle_pt bundle = NULL;
 	bool resolved = false;
-
-	bundle = module_getBundle(importer);
 
     if (candidates && importer && wireMap) {
         linked_list_pt candSetList = NULL;

@@ -162,7 +162,6 @@ framework_logger_pt logger;
 
 celix_status_t framework_create(framework_pt *framework, apr_pool_t *pool, properties_pt config) {
     celix_status_t status = CELIX_SUCCESS;
-    char *error = NULL;
 
     logger = hashMap_get(config, "logger");
     if (logger == NULL) {
@@ -213,7 +212,6 @@ celix_status_t framework_create(framework_pt *framework, apr_pool_t *pool, prope
             fw_logCode((*framework)->logger, OSGI_FRAMEWORK_LOG_ERROR, status, "Could not create framework");
         }
     } else {
-        error = "FW exception";
         status = CELIX_FRAMEWORK_EXCEPTION;
         fw_logCode(logger, OSGI_FRAMEWORK_LOG_ERROR, CELIX_ENOMEM, "Could not create framework");
     }
@@ -1794,7 +1792,7 @@ celix_status_t framework_setBundleStateAndNotify(framework_pt framework, bundle_
 		fw_log(framework->logger, OSGI_FRAMEWORK_LOG_ERROR,  "Failed to unlock");
 		return CELIX_BUNDLE_EXCEPTION;
 	}
-	return CELIX_SUCCESS;
+	return ret;
 }
 
 celix_status_t framework_acquireBundleLock(framework_pt framework, bundle_pt bundle, int desiredStates) {
