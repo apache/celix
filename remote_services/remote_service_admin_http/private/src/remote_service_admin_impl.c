@@ -369,23 +369,30 @@ static celix_status_t constructServiceUrl(remote_service_admin_pt admin, char *s
 	} else {
 		char host[APRMAXHOSTLEN + 1];
 		apr_sockaddr_t *sa;
-		char *ip;
+		char *ip = NULL;
         
-		apr_status_t stat = apr_gethostname(host, APRMAXHOSTLEN + 1, admin->pool); /*TODO mem leak*/
-		if (stat != APR_SUCCESS) {
-			status = CELIX_BUNDLE_EXCEPTION;
-		} else {
-			stat = apr_sockaddr_info_get(&sa, host, APR_INET, 0, 0, admin->pool); /*TODO mem leak*/
+		bundleContext_getProperty(admin->context, "RSA_IP", &ip);
+
+		if (ip == NULL) {
+			apr_status_t stat = apr_gethostname(host, APRMAXHOSTLEN + 1, admin->pool); /*TODO mem leak*/
 			if (stat != APR_SUCCESS) {
 				status = CELIX_BUNDLE_EXCEPTION;
 			} else {
-				stat = apr_sockaddr_ip_get(&ip, sa);
+				stat = apr_sockaddr_info_get(&sa, host, APR_INET, 0, 0, admin->pool); /*TODO mem leak*/
 				if (stat != APR_SUCCESS) {
 					status = CELIX_BUNDLE_EXCEPTION;
 				} else {
-					*serviceUrl = apr_pstrcat(admin->pool, "http://", ip, ":", admin->port, service, NULL );
+					stat = apr_sockaddr_ip_get(&ip, sa);
+					if (stat != APR_SUCCESS) {
+						status = CELIX_BUNDLE_EXCEPTION;
+					} else {
+						*serviceUrl = apr_pstrcat(admin->pool, "http://", ip, ":", admin->port, service, NULL );
+					}
 				}
 			}
+		}
+		else {
+			*serviceUrl = apr_pstrcat(admin->pool, "http://", ip, ":", admin->port, service, NULL );
 		}
 	}
     
