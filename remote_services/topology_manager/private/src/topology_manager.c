@@ -409,12 +409,8 @@ celix_status_t topologyManager_notifyListenersEndpointAdded(topology_manager_pt 
 	for (int eplIt = 0; eplIt < eplSize; eplIt++) {
 		service_reference_pt eplRef = arrayList_get(endpointListeners, eplIt);
 
-		service_registration_pt registration = NULL;
-		serviceReference_getServiceRegistration(eplRef, &registration);
-
-		properties_pt props = NULL;
-		serviceRegistration_getProperties(registration, &props);
-		char *scope = properties_get(props, (char *) OSGI_ENDPOINT_LISTENER_SCOPE);
+		char *scope = NULL;
+		serviceReference_getProperty(eplRef, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
 
 		endpoint_listener_pt epl = NULL;
 		status = bundleContext_getService(manager->context, eplRef, (void **) &epl);

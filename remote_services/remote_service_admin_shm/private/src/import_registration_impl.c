@@ -143,7 +143,6 @@ celix_status_t importRegistrationFactory_close(import_registration_factory_pt re
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (registration_factory->bundle != NULL) {
-		bundle_stop(registration_factory->bundle);
 		bundle_uninstall(registration_factory->bundle);
 	}
 

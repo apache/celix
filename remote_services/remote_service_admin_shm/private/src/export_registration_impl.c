@@ -184,7 +184,6 @@ celix_status_t exportRegistration_close(export_registration_pt registration) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	exportRegistration_stopTracking(registration);
-	bundle_stop(registration->bundle);
 	bundle_uninstall(registration->bundle);
 	remoteServiceAdmin_removeExportedService(registration);
 
