@@ -1,0 +1,3 @@
+Bundle-SymbolicName: scr
+Bundle-Version: 1.0.0
+library: scr

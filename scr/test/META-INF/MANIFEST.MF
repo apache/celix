@@ -1,0 +1,4 @@
+Bundle-SymbolicName: scr_test
+Bundle-Version: 1.0.0
+Service-Component: test.xml
+library: scr_test

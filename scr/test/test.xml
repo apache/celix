@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scr:component enabled="true" name="example.activator" xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0">
+	<implementation class="{componentName}_{createName}">
+		<!-- 
+			class points to the constructor function of the component. 
+			It's signature has to be: celix_status_t {compontenName_create}(void **instance);
+			In this function {instance} is a return pointer to some data object representing the instance of the component.
+			This pointer will be supplied as first argument to all calls made to the component.
+		-->
+	</implementation>
+	<property name="{propName}">{textValue}</property>
+	<service>
+		<provide interface="{ServiceName1}" getter="{componentName}_{serviceGetter}"/>
+		<provide interface="{ServiceName2}" getter="{componentName}_{serviceGetter}"/>
+		<provide interface="{ServiceName3}" getter="{componentName}_{serviceGetter}"/>
+		<provide interface="{ServiceName4}" getter="{componentName}_{serviceGetter}"/>
+			<!-- 
+				This is where we have a problem. Within Celix a service isn't simply an interface that can be registered.
+				The user has to create a struct instance with function pointers.
+				A possible solution is to let the user implement a function which return this struct instance.
+			-->
+	</service>
+	<reference 
+		name="{ReferenceName}" 	
+		interface="{ServiceName1}" 
+		target="{someFilter}"
+		bind="{componentName}_{bindName}"
+		unbind="myComponent_{unbindName}"/>
+		<reference 
+		name="{ReferenceName}" 	
+		interface="{ServiceName2}" 
+		target="{someFilter}"
+		bind="{componentName}_{bindName}"
+		unbind="myComponent_{unbindName}"/>
+		<reference 
+		name="{ReferenceName}" 	
+		interface="{ServiceName3}" 
+		target="{someFilter}"
+		bind="{componentName}_{bindName}"
+		unbind="myComponent_{unbindName}"/>
+</scr:component>
+	
