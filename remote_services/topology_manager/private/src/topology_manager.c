@@ -136,14 +136,54 @@ celix_status_t topologyManager_rsaAdding(void * handle, service_reference_pt ref
 celix_status_t topologyManager_rsaAdded(void * handle, service_reference_pt reference, void * service) {
 	celix_status_t status = CELIX_SUCCESS;
 	topology_manager_pt manager = handle;
-
+	remote_service_admin_service_pt rsa = (remote_service_admin_service_pt) service;
 	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "TOPOLOGY_MANAGER: Added RSA");
 
 	status = celixThreadMutex_lock(&manager->rsaListLock);
-	arrayList_add(manager->rsaList, service);
+	arrayList_add(manager->rsaList, rsa);
 	status = celixThreadMutex_unlock(&manager->rsaListLock);
 
-	// TODO add the imported/exported services to the given RSA...
+	// add already imported services to new rsa
+	status = celixThreadMutex_lock(&manager->importedServicesLock);
+	hash_map_iterator_pt importedServicesIterator = hashMapIterator_create(manager->importedServices);
+
+    while (hashMapIterator_hasNext(importedServicesIterator)) {
+	    hash_map_entry_pt entry = hashMapIterator_nextEntry(importedServicesIterator);
+	    endpoint_description_pt endpoint = hashMapEntry_getKey(entry);
+		import_registration_pt import = NULL;
+
+		status = rsa->importService(rsa->admin, endpoint, &import);
+
+		if (status == CELIX_SUCCESS) {
+		    hash_map_pt imports = hashMapEntry_getValue(entry);
+			hashMap_put(imports, service, import);
+		}
+	}
+
+	status = celixThreadMutex_unlock(&manager->importedServicesLock);
+
+	// add already exported services to new rsa
+	status = celixThreadMutex_lock(&manager->exportedServicesLock);
+    hash_map_iterator_pt exportedServicesIterator = hashMapIterator_create(manager->exportedServices);
+
+    while (hashMapIterator_hasNext(exportedServicesIterator)) {
+	    hash_map_entry_pt entry = hashMapIterator_nextEntry(exportedServicesIterator);
+	    service_reference_pt reference = hashMapEntry_getKey(entry);
+	    char *serviceId = NULL;
+
+	    serviceReference_getProperty(reference, (char *)OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
+
+	    array_list_pt endpoints = NULL;
+		status = rsa->exportService(rsa->admin, serviceId, NULL, &endpoints);
+
+		if (status == CELIX_SUCCESS) {
+			hash_map_pt exports = hashMapEntry_getValue(entry);
+			hashMap_put(exports, rsa, endpoints);
+			status = topologyManager_notifyListenersEndpointAdded(manager, rsa, endpoints);
+		}
+    }
+
+	status = celixThreadMutex_unlock(&manager->exportedServicesLock);
 
 	return status;
 }
@@ -332,6 +372,10 @@ celix_status_t topologyManager_addExportedService(topology_manager_pt manager, s
 	hashMap_put(manager->exportedServices, reference, exports);
 
 	int size = arrayList_size(localRSAs);
+	if (size == 0) {
+		fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "TOPOLOGY_MANAGER: No RSA available yet.");
+	}
+
 	for (int iter = 0; iter < size; iter++) {
 		remote_service_admin_service_pt rsa = arrayList_get(localRSAs, iter);
 
