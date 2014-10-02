@@ -74,6 +74,7 @@ static const char * const CONFIGURATION_TYPE = "org.amdatu.remote.admin.http";
 static const char * const ENDPOINT_URL = "org.amdatu.remote.admin.http.url";
 
 static const char *DEFAULT_PORT = "8888";
+static const char *DEFAULT_IP = "127.0.0.1";
 
 static int remoteServiceAdmin_callback(struct mg_connection *conn);
 
@@ -114,7 +115,7 @@ celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt con
 
 			bundleContext_getProperty(context, "RSA_INTERFACE", &interface);
 			if ((interface != NULL) && (remoteServiceAdmin_getIpAdress(interface, &ip) != CELIX_SUCCESS)) {
-				fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "RSA: Could not retrieve IP adress for interface %s\n", interface);
+				fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "RSA: Could not retrieve IP adress for interface %s", interface);
 			}
 
 			if (ip == NULL) {
@@ -127,7 +128,8 @@ celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt con
 			(*admin)->ip = apr_pstrdup(pool, ip);
 		}
 		else {
-			fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "RSA: No IP address for service annunciation set.");
+			fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "RSA: No IP address for service annunciation set. Using %s", DEFAULT_IP);
+			(*admin)->ip = (char*) DEFAULT_IP;
 		}
 
 
@@ -403,16 +405,12 @@ static celix_status_t remoteServiceAdmin_getIpAdress(char* interface, char** ip)
 
     if (getifaddrs(&ifaddr) != -1)
     {
-		for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
+		for (ifa = ifaddr; ifa != NULL && status != CELIX_SUCCESS; ifa = ifa->ifa_next)
 		{
 			if (ifa->ifa_addr == NULL)
 				continue;
 
-			printf("ITERATE\n");
-
 			if ((getnameinfo(ifa->ifa_addr,sizeof(struct sockaddr_in), host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST) == 0) && (ifa->ifa_addr->sa_family == AF_INET)) {
-			     printf("\tInterface : <%s>\n",ifa->ifa_name );
-			            printf("\t  Address : <%s>\n", host);
 				if (interface == NULL) {
 					*ip = strdup(host);
 					status = CELIX_SUCCESS;
