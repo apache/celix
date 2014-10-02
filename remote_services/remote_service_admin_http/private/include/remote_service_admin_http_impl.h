@@ -38,6 +38,7 @@ struct remote_service_admin {
 	hash_map_pt importedServices;
 
 	char *port;
+	char *ip;
 
 	struct mg_context *ctx;
 };

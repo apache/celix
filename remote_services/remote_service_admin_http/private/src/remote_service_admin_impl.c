@@ -26,6 +26,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <ifaddrs.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
 #include <apr_strings.h>
 #include <apr_uuid.h>
 #include <uuid/uuid.h>
@@ -71,7 +79,8 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn);
 
 celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin, export_registration_pt registration, service_reference_pt reference, char *interface);
 celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, service_reference_pt reference, properties_pt endpointProperties, char *interface, endpoint_description_pt *description);
-static celix_status_t constructServiceUrl(remote_service_admin_pt admin, char *service, char **serviceUrl);
+
+static celix_status_t remoteServiceAdmin_getIpAdress(char* interface, char** ip);
 
 static size_t remoteServiceAdmin_readCallback(void *ptr, size_t size, size_t nmemb, void *userp);
 static size_t remoteServiceAdmin_write(void *contents, size_t size, size_t nmemb, void *userp);
@@ -90,12 +99,38 @@ celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt con
 
 		// Start webserver
 		char *port = NULL;
+		char *ip = NULL;
+
 		bundleContext_getProperty(context, "RSA_PORT", &port);
 		if (port == NULL) {
 			(*admin)->port = (char *)DEFAULT_PORT;
 		} else {
 			(*admin)->port = apr_pstrdup(pool, port);
 		}
+
+		bundleContext_getProperty(context, "RSA_IP", &ip);
+		if (ip == NULL) {
+			char *interface = NULL;
+
+			bundleContext_getProperty(context, "RSA_INTERFACE", &interface);
+			if ((interface != NULL) && (remoteServiceAdmin_getIpAdress(interface, &ip) != CELIX_SUCCESS)) {
+				fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "RSA: Could not retrieve IP adress for interface %s\n", interface);
+			}
+
+			if (ip == NULL) {
+				remoteServiceAdmin_getIpAdress(NULL, &ip);
+			}
+		}
+
+		if (ip != NULL) {
+			fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "RSA: Using %s for service annunciation", ip);
+			(*admin)->ip = apr_pstrdup(pool, ip);
+		}
+		else {
+			fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "RSA: No IP address for service annunciation set.");
+		}
+
+
 		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "RSA: Start webserver: %s", (*admin)->port);
 		const char *options[] = { "listening_ports", (*admin)->port, NULL};
 
@@ -337,8 +372,7 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
 
 	char buf[512];
 	sprintf(buf, "/service/%s/%s", serviceId, interface);
-    char *url = NULL;
-    constructServiceUrl(admin,buf, &url);
+    char *url = apr_pstrcat(admin->pool, "http://", admin->ip, ":", admin->port, buf, NULL);
 
 	uuid_t endpoint_uid;
 	uuid_generate(endpoint_uid);
@@ -361,43 +395,41 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
 	return status;
 }
 
-static celix_status_t constructServiceUrl(remote_service_admin_pt admin, char *service, char **serviceUrl) {
-	celix_status_t status = CELIX_SUCCESS;
-    
-	if (*serviceUrl != NULL || admin == NULL || service == NULL ) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	} else {
-		char host[APRMAXHOSTLEN + 1];
-		apr_sockaddr_t *sa;
-		char *ip = NULL;
-        
-		bundleContext_getProperty(admin->context, "RSA_IP", &ip);
+static celix_status_t remoteServiceAdmin_getIpAdress(char* interface, char** ip) {
+	celix_status_t status = CELIX_BUNDLE_EXCEPTION;
 
-		if (ip == NULL) {
-			apr_status_t stat = apr_gethostname(host, APRMAXHOSTLEN + 1, admin->pool); /*TODO mem leak*/
-			if (stat != APR_SUCCESS) {
-				status = CELIX_BUNDLE_EXCEPTION;
-			} else {
-				stat = apr_sockaddr_info_get(&sa, host, APR_INET, 0, 0, admin->pool); /*TODO mem leak*/
-				if (stat != APR_SUCCESS) {
-					status = CELIX_BUNDLE_EXCEPTION;
-				} else {
-					stat = apr_sockaddr_ip_get(&ip, sa);
-					if (stat != APR_SUCCESS) {
-						status = CELIX_BUNDLE_EXCEPTION;
-					} else {
-						*serviceUrl = apr_pstrcat(admin->pool, "http://", ip, ":", admin->port, service, NULL );
-					}
+	struct ifaddrs *ifaddr, *ifa;
+    char host[NI_MAXHOST];
+
+    if (getifaddrs(&ifaddr) != -1)
+    {
+		for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
+		{
+			if (ifa->ifa_addr == NULL)
+				continue;
+
+			printf("ITERATE\n");
+
+			if ((getnameinfo(ifa->ifa_addr,sizeof(struct sockaddr_in), host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST) == 0) && (ifa->ifa_addr->sa_family == AF_INET)) {
+			     printf("\tInterface : <%s>\n",ifa->ifa_name );
+			            printf("\t  Address : <%s>\n", host);
+				if (interface == NULL) {
+					*ip = strdup(host);
+					status = CELIX_SUCCESS;
+				}
+				else if (strcmp(ifa->ifa_name, interface) == 0) {
+					*ip = strdup(host);
+					status = CELIX_SUCCESS;
 				}
 			}
 		}
-		else {
-			*serviceUrl = apr_pstrcat(admin->pool, "http://", ip, ":", admin->port, service, NULL );
-		}
-	}
-    
-	return status;
+
+		freeifaddrs(ifaddr);
+    }
+
+    return status;
 }
+
 
 celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, service_reference_pt reference,
 		properties_pt endpointProperties, char *interface, endpoint_description_pt *description) {
