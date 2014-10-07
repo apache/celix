@@ -174,8 +174,9 @@ bool etcd_getNodes(char* directory, char** nodeNames, int* size) {
 	return retVal;
 }
 
-//set
-bool etcd_set(char* key, char* value, int ttl) {
+
+
+bool etcd_set(char* key, char* value, int ttl, bool prevExist) {
 	json_error_t error;
 	json_t* js_root;
 	json_t* js_node;
@@ -183,6 +184,7 @@ bool etcd_set(char* key, char* value, int ttl) {
 	bool retVal = false;
 	char url[MAX_URL_LENGTH];
 	char request[MAX_CONTENT_LENGTH];
+	char* cur = request;
 	int res;
 	struct MemoryStruct reply;
 
@@ -190,11 +192,13 @@ bool etcd_set(char* key, char* value, int ttl) {
 	reply.size = 0; /* no data at this point */
 
 	snprintf(url, MAX_URL_LENGTH, "http://%s:%d/v2/keys/%s", etcd_server, etcd_port, key);
+	cur += snprintf(cur, MAX_CONTENT_LENGTH, "value=%s", value);
 
-	if (ttl <= 0)
-	    snprintf(request, MAX_CONTENT_LENGTH, "value=%s", value);
-	else
-	    snprintf(request, MAX_CONTENT_LENGTH, "value=%s;ttl=%d", value, ttl);
+	if (ttl > 0)
+	    cur += snprintf(cur, MAX_CONTENT_LENGTH, ";ttl=%d", ttl);
+
+	if (prevExist)
+	    cur += snprintf(cur, MAX_CONTENT_LENGTH, ";prevExist=true");
 
 	res = performRequest(url, PUT, WriteMemoryCallback, request, (void*) &reply);
 	if (res == CURLE_OPERATION_TIMEDOUT) {
@@ -217,6 +221,8 @@ bool etcd_set(char* key, char* value, int ttl) {
 
 	return retVal;
 }
+
+
 
 //delete
 bool etcd_del(char* key) {

@@ -1,6 +1,8 @@
 #ifndef ETCD_H_
 #define ETCD_H_
 
+#include <stdbool.h>
+
 #define MAX_NODES			256
 
 #define MAX_KEY_LENGTH		256
@@ -21,7 +23,7 @@
 bool etcd_init(char* server, int port);
 bool etcd_get(char* key, char* value, char*action, int* modifiedIndex);
 bool etcd_getNodes(char* directory, char** nodeNames, int* size);
-bool etcd_set(char* key, char* value, int ttl);
+bool etcd_set(char* key, char* value, int ttl, bool prevExist);
 bool etcd_del(char* key);
 bool etcd_watch(char* key, int index, char* action, char* prevValue, char* value);
 

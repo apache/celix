@@ -141,6 +141,9 @@ static celix_status_t etcdWatcher_addOwnFramework(bundle_context_pt context)
 {
     celix_status_t status = CELIX_BUNDLE_EXCEPTION;
     char localNodePath[MAX_LOCALNODE_LENGTH];
+    char value[MAX_VALUE_LENGTH];
+    char action[MAX_VALUE_LENGTH];
+    int modIndex;
     char* endpoints = NULL;
     char* ttlStr = NULL;
     int ttl;
@@ -167,12 +170,13 @@ static celix_status_t etcdWatcher_addOwnFramework(bundle_context_pt context)
         }
     }
 
-    if (etcd_set(localNodePath, endpoints, ttl) == false)
-    {
+	if (etcd_get(localNodePath, &value[0], &action[0], &modIndex) != true) {
+		etcd_set(localNodePath, endpoints, ttl, false);
+	}
+	else if (etcd_set(localNodePath, endpoints, ttl, true) == false)  {
         fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Cannot register local discovery");
     }
-    else
-    {
+    else {
         status = CELIX_SUCCESS;
     }
 
