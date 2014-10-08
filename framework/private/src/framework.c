@@ -796,7 +796,6 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
     char *error = NULL;
 
 	status = CELIX_DO_IF(status, framework_acquireBundleLock(framework, bundle, OSGI_FRAMEWORK_BUNDLE_INSTALLED|OSGI_FRAMEWORK_BUNDLE_RESOLVED|OSGI_FRAMEWORK_BUNDLE_STARTING|OSGI_FRAMEWORK_BUNDLE_ACTIVE));
-	printf("Stop status: %d\n", status);
 
 	if (record) {
 	    status = CELIX_DO_IF(status, bundle_setPersistentStateInactive(bundle));
@@ -922,7 +921,6 @@ celix_status_t fw_uninstallBundle(framework_pt framework, bundle_pt bundle) {
     status = CELIX_DO_IF(status, bundle_getArchive(bundle, &archive));
     status = CELIX_DO_IF(status, bundleArchive_getLocation(archive, &location));
     if (status == CELIX_SUCCESS) {
-        printf("Uninstall %s\n", location);
         // TODO sync issues?
         target = (bundle_pt) hashMap_remove(framework->installedBundleMap, location);
 
@@ -962,7 +960,6 @@ celix_status_t fw_uninstallBundle(framework_pt framework, bundle_pt bundle) {
             if (refreshStatus != CELIX_SUCCESS) {
                 printf("Could not refresh bundle");
             } else {
-                printf("destroy bundle: %s %p\n", location, bundle);
                 status = CELIX_DO_IF(status, bundle_destroy(bundle));
             }
 
@@ -1842,12 +1839,10 @@ celix_status_t framework_acquireBundleLock(framework_pt framework, bundle_pt bun
 			bundle_state_e state;
 			bundle_getState(bundle, &state);
 			if ((desiredStates & state) == 0) {
-			    printf("Lock failed - state %d\n", state);
 				status = CELIX_ILLEGAL_STATE;
 			} else {
 				if (bundle_lock(bundle, &locked)) {
 					if (!locked) {
-					    printf("Lock failed\n");
 						status = CELIX_ILLEGAL_STATE;
 					}
 				}
@@ -1969,19 +1964,13 @@ celix_status_t framework_waitForStop(framework_pt framework) {
 
 static void *framework_shutdown(void *framework) {
 	framework_pt fw = (framework_pt) framework;
-//	hash_map_values_pt values = NULL;
-//    bundle_pt **installedBundleArray;
-//    unsigned int size;
 	int err;
-//    int i;
 
 	fw_log(fw->logger, OSGI_FRAMEWORK_LOG_INFO, "FRAMEWORK: Shutdown");
 
 	hash_map_iterator_pt iter = hashMapIterator_create(fw->installedBundleMap);
 	bundle_pt bundle = NULL;
 	while ((bundle = hashMapIterator_nextValue(iter)) != NULL) {
-	    printf("Bundle: %p\n", bundle);
-//        bundle_pt bundle = (bundle_pt) installedBundleArray[i];
         bundle_state_e state;
         bundle_getState(bundle, &state);
         if (state == OSGI_FRAMEWORK_BUNDLE_ACTIVE || state == OSGI_FRAMEWORK_BUNDLE_STARTING) {
@@ -1990,27 +1979,6 @@ static void *framework_shutdown(void *framework) {
             iter = hashMapIterator_create(fw->installedBundleMap);
         }
 	}
-
-
-//    values = hashMapValues_create(fw->installedBundleMap);
-//    hashMapValues_toArray(values, (void*) &installedBundleArray, &size);
-//
-//    for(i = 0; i < size; i++) {
-//	    bundle_pt bundle = (bundle_pt) installedBundleArray[i];
-//		bundle_state_e state;
-//		bundle_getState(bundle, &state);
-//		if (state == OSGI_FRAMEWORK_BUNDLE_ACTIVE || state == OSGI_FRAMEWORK_BUNDLE_STARTING) {
-//			char *location;
-//			bundle_archive_pt archive = NULL;
-//
-//			bundle_getArchive(bundle, &archive);
-//			bundleArchive_getLocation(archive, &location);
-//
-//
-//
-//			fw_stopBundle(fw, bundle, 0);
-//		}
-//	}
 
 	err = celixThreadMutex_lock(&fw->mutex);
 	if (err != 0) {

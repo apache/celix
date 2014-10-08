@@ -347,7 +347,6 @@ celix_status_t remoteServiceAdmin_removeExportedService(export_registration_pt r
     celix_status_t status = CELIX_SUCCESS;
     remote_service_admin_pt admin = registration->rsa;
 
-    printf("Remote export %p\n", registration->reference);
     hashMap_remove(admin->exportedServices, registration->reference);
 
     return status;
