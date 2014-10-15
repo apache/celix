@@ -82,7 +82,7 @@ add_custom_target(bundles ALL)
 
 MACRO(CHECK_HEADERS)
     if (NOT BUNDLE_SYMBOLICNAME)
-        MESSAGE(FATAL_ERROR "Bundle Symbolic Name not set, please set it using \"SET(BUNDLE_SYMBOLIC_NAME \"bundle_symbolic_name\")\".")
+        MESSAGE(FATAL_ERROR "Bundle Symbolic Name not set, please set it using \"SET(BUNDLE_SYMBOLICNAME \"bundle_symbolic_name\")\".")
     endif (NOT BUNDLE_SYMBOLICNAME)
     
     if (NOT BUNDLE_VERSION)
@@ -163,6 +163,11 @@ MACRO(bundle)
     CHECK_HEADERS()
     
     PROCESS_MANIFEST_HEADERS()
+    
+    if (NOT _BUNDLE_NAME)
+      message(STATUS "NO bundle name set, using symbolic name")
+      SET(_BUNDLE_NAME ${BUNDLE_SYMBOLICNAME})
+    endif(NOT _BUNDLE_NAME)
     
     set(_BUNDLE_NAME_INSTALL ${_BUNDLE_NAME}_install)
     

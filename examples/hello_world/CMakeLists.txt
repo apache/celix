@@ -32,7 +32,7 @@ BUNDLE_PRIVATE_LIBRARY(private
     LINK_LIBRARIES celix_framework org.apache.incubator.celix.helloworld.sub
     )
     
-BUNDLE(org.apache.incubator.celix.helloworld
+BUNDLE(
     ACTIVATOR "apache_celix_examples_hello_world-private"
     PRIVATE_LIBRARIES "private"
     EXPORT_LIBRARIES org.apache.incubator.celix.helloworld.sub
