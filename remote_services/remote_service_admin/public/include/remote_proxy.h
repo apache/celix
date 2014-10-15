@@ -40,6 +40,7 @@ struct remote_proxy_factory_service {
 	void* context;
 	void* pool;
 	hash_map_pt proxy_registrations;
+	hash_map_pt proxy_instances;
 	celix_status_t (*registerProxyService)(void* proxyFactoryService, endpoint_description_pt endpoint, void* handler, sendToHandle callback);
 	celix_status_t (*unregisterProxyService)(void* proxyFactoryService, endpoint_description_pt endpoint);
 };
