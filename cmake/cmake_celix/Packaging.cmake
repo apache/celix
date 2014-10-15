@@ -153,6 +153,9 @@ MACRO(PROCESS_MANIFEST_HEADERS)
     IF(BUNDLE_NAME)
         SET_HEADERS("Bundle-Name: ${BUNDLE_NAME}")
     ENDIF()
+
+    SET_HEADERS("Manifest-Version: 1.0")
+
 ENDMACRO()
 
 
