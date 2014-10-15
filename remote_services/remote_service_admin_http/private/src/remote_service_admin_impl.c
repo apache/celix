@@ -53,6 +53,9 @@
 #include "service_registration.h"
 #include "celix_log.h"
 
+// defines how often the webserver is restarted (with an increased port number)
+#define MAX_NUMBER_OF_RESTARTS 	5
+
 struct post {
     const char *readptr;
     int size;
@@ -76,6 +79,7 @@ static const char * const ENDPOINT_URL = "org.amdatu.remote.admin.http.url";
 static const char *DEFAULT_PORT = "8888";
 static const char *DEFAULT_IP = "127.0.0.1";
 
+
 static int remoteServiceAdmin_callback(struct mg_connection *conn);
 
 celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin, export_registration_pt registration, service_reference_pt reference, char *interface);
@@ -93,20 +97,18 @@ celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt con
 	if (!*admin) {
 		status = CELIX_ENOMEM;
 	} else {
+		unsigned int port_counter = 0;
+		char *port = NULL;
+		char *ip = NULL;
+
 		(*admin)->pool = pool;
 		(*admin)->context = context;
 		(*admin)->exportedServices = hashMap_create(NULL, NULL, NULL, NULL);
 		(*admin)->importedServices = hashMap_create(NULL, NULL, NULL, NULL);
 
-		// Start webserver
-		char *port = NULL;
-		char *ip = NULL;
-
 		bundleContext_getProperty(context, "RSA_PORT", &port);
 		if (port == NULL) {
-			(*admin)->port = (char *)DEFAULT_PORT;
-		} else {
-			(*admin)->port = apr_pstrdup(pool, port);
+			port = (char *)DEFAULT_PORT;
 		}
 
 		bundleContext_getProperty(context, "RSA_IP", &ip);
@@ -132,19 +134,38 @@ celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt con
 			(*admin)->ip = (char*) DEFAULT_IP;
 		}
 
-
-		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "RSA: Start webserver: %s", (*admin)->port);
-		const char *options[] = { "listening_ports", (*admin)->port, NULL};
-
 		// Prepare callbacks structure. We have only one callback, the rest are NULL.
 		struct mg_callbacks callbacks;
 		memset(&callbacks, 0, sizeof(callbacks));
 		callbacks.begin_request = remoteServiceAdmin_callback;
 
-		(*admin)->ctx = mg_start(&callbacks, (*admin), options);
-		fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "RSA: Start webserver %p", (*admin)->ctx);
-	}
+		do {
+			const char *options[] = { "listening_ports", port, NULL};
 
+			(*admin)->ctx = mg_start(&callbacks, (*admin), options);
+
+			if ((*admin)->ctx != NULL) {
+				fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "RSA: Start webserver: %s", port);
+				(*admin)->port = port;
+			}
+			else {
+				errno = 0;
+				char* newPort = calloc(10, sizeof(*newPort));
+		        char* endptr = port;
+		        int currentPort = strtol(port, &endptr, 10);
+
+		        if (*endptr || errno != 0) {
+		            currentPort = strtol(DEFAULT_PORT, NULL, 10);
+		        }
+
+		        port_counter++;
+				snprintf(newPort, 6,  "%d", (currentPort+1));
+
+				fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error while starting rsa server on port %s - retrying on port %s...", port, newPort);
+				port = newPort;
+			}
+		} while(((*admin)->ctx == NULL) && (port_counter < MAX_NUMBER_OF_RESTARTS));
+	}
 	return status;
 }
 
