@@ -36,6 +36,7 @@ struct command {
 	char * shortDescription;
 
 	bundle_context_pt bundleContext;
+	void *handle;
 
 	void (*executeCommand)(command_pt command, char * commandLine, void (*out)(char *), void (*error)(char *));
 };
