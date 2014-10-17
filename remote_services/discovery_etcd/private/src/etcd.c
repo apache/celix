@@ -103,7 +103,7 @@ bool etcd_get(char* key, char* value, char* action, int* modifiedIndex) {
 	} else if ((js_root = json_loads(reply.memory, 0, &error)) == NULL) {
 		printf("error while parsing json data\n");
 	} else if ((js_node = json_object_get(js_root, ETCD_JSON_NODE)) == NULL) {
-		printf("error while retrieving expected node object\n");
+		printf("error while retrieving expected node object %s\n", json_dumps(js_root, 0));
 	} else if (((js_value = json_object_get(js_node, ETCD_JSON_VALUE)) == NULL) || ((js_value = json_object_get(js_node, ETCD_JSON_VALUE)) == NULL) || ((js_modifiedIndex = json_object_get(js_node, ETCD_JSON_MODIFIEDINDEX)) == NULL)) {
 		printf("error while retrieving expected objects\n");
 	}
@@ -208,7 +208,7 @@ bool etcd_set(char* key, char* value, int ttl, bool prevExist) {
 	} else if ((js_root = json_loads(reply.memory, 0, &error)) == NULL) {
 		printf("error while parsing json data\n");
 	} else if ((js_node = json_object_get(js_root, ETCD_JSON_NODE)) == NULL) {
-		printf("error while retrieving expected node object\n");
+		printf("error while retrieving expected node object %s\n", json_dumps(js_root, 0));
 	} else if ((js_value = json_object_get(js_node, ETCD_JSON_VALUE)) == NULL) {
 		printf("error while retrieving expected value object\n");
 	} else if (json_is_string(js_value)) {
@@ -247,7 +247,7 @@ bool etcd_del(char* key) {
 	} else if ((js_root = json_loads(reply.memory, 0, &error)) == NULL) {
 		printf("error while parsing json data\n");
 	} else if ((js_node = json_object_get(js_root, ETCD_JSON_NODE)) == NULL) {
-		printf("error while retrieving expected node object\n");
+		printf("error while retrieving expected node object %s\n", json_dumps(js_root, 0));
 	} else {
 		retVal = true;
 	}
@@ -277,10 +277,10 @@ bool etcd_watch(char* key, int index, char* action, char* prevValue, char* value
 	reply.size = 0; /* no data at this point */
 
 	if (index != 0)
-		snprintf(url, MAX_URL_LENGTH, "http://%s:%d/v2/keys/%s?wait=true&waitIndex=%d", etcd_server, etcd_port, key,
+		snprintf(url, MAX_URL_LENGTH, "http://%s:%d/v2/keys/%s?wait=true&recursive=true&waitIndex=%d", etcd_server, etcd_port, key,
 				index);
 	else
-		snprintf(url, MAX_URL_LENGTH, "http://%s:%d/v2/keys/%s?wait=true", etcd_server, etcd_port, key);
+		snprintf(url, MAX_URL_LENGTH, "http://%s:%d/v2/keys/%s?wait=true&recursive=true", etcd_server, etcd_port, key);
 
 	res = performRequest(url, GET, WriteMemoryCallback, NULL, (void*) &reply);
 
@@ -290,18 +290,24 @@ bool etcd_watch(char* key, int index, char* action, char* prevValue, char* value
 		printf("error while performing curl w/ %s\n", url);
 	} else if ((js_root = json_loads(reply.memory, 0, &error)) == NULL) {
 		printf("error while parsing json data\n");
-	} else if (((js_action = json_object_get(js_root, ETCD_JSON_ACTION)) == NULL) ||
-			((js_node = json_object_get(js_root, ETCD_JSON_NODE)) == NULL) ||
-			((js_prevNode = json_object_get(js_root, ETCD_JSON_PREVNODE)) == NULL)) {
-		printf("error while retrieving expected node object\n");
-	} else if (((js_value = json_object_get(js_node, ETCD_JSON_VALUE)) == NULL) ||
-			((js_prevValue = json_object_get(js_prevNode, ETCD_JSON_VALUE)) == NULL)) {
-		printf("error while retrieving expected value objects\n");
-	} else if (json_is_string(js_value) && json_is_string(js_prevValue) && json_is_string(js_action)) {
-		strncpy(value, json_string_value(js_value), MAX_VALUE_LENGTH);
-		strncpy(prevValue, json_string_value(js_prevValue), MAX_VALUE_LENGTH);
-		strncpy(action, json_string_value(js_action), MAX_ACTION_LENGTH);
-		retVal = true;
+	} else {
+		js_action = json_object_get(js_root, ETCD_JSON_ACTION);
+		js_node = json_object_get(js_root, ETCD_JSON_NODE);
+		js_prevNode = json_object_get(js_root, ETCD_JSON_PREVNODE);
+	
+		if (js_action == NULL || js_node == NULL) {
+			printf("error while retrieving expected node object %s\n", json_dumps(js_root, 0));
+		} else if ((js_value = json_object_get(js_node, ETCD_JSON_VALUE)) == NULL) {
+			printf("error while retrieving expected value objects\n");
+		}
+		else if (json_is_string(js_value) && json_is_string(js_action)) {
+			if ((js_prevNode != NULL) && ((js_prevValue = json_object_get(js_prevNode, ETCD_JSON_VALUE)) != NULL) && (json_is_string(js_prevValue))) {
+				strncpy(prevValue, json_string_value(js_prevValue), MAX_VALUE_LENGTH);
+			}
+			strncpy(value, json_string_value(js_value), MAX_VALUE_LENGTH);
+			strncpy(action, json_string_value(js_action), MAX_ACTION_LENGTH);
+			retVal = true;
+		}
 	}
 
 	if (reply.memory) {

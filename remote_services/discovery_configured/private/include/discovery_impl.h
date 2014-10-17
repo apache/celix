@@ -37,7 +37,7 @@
 #include "endpoint_discovery_server.h"
 
 
-
+#define DEFAULT_SERVER_IP 	"127.0.0.1"
 #define DEFAULT_SERVER_PORT "9999"
 #define DEFAULT_SERVER_PATH "/org.apache.celix.discovery.configured"
 #define DEFAULT_POLL_ENDPOINTS "http://localhost:9999/org.apache.celix.discovery.configured"

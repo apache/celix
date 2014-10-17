@@ -68,4 +68,14 @@ celix_status_t endpointDiscoveryServer_addEndpoint(endpoint_discovery_server_pt 
  */
 celix_status_t endpointDiscoveryServer_removeEndpoint( endpoint_discovery_server_pt server, endpoint_description_pt endpoint);
 
+/**
+ * Removes the url, which is used by the discovery server to announce the endpoints
+ *
+ * @param server [in] the endpoint discovery server to retrieve the url from
+ * @param url [out] url which is used to announce the endpoints.
+ * @return CELIX_SUCCESS when successful.
+ */
+celix_status_t endpointDiscoveryServer_getUrl(endpoint_discovery_server_pt server, char* url);
+
+
 #endif /* ENDPOINT_DISCOVERY_SERVER_H_ */

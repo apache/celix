@@ -25,7 +25,10 @@
  */
 #include <stdlib.h>
 #include <stdint.h>
-
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <ifaddrs.h>
 #include "civetweb.h"
 #include "celix_errno.h"
 #include "utils.h"
@@ -36,7 +39,8 @@
 #include "endpoint_descriptor_writer.h"
 #include "endpoint_discovery_server.h"
 
-
+// defines how often the webserver is restarted (with an increased port number)
+#define MAX_NUMBER_OF_RESTARTS 	5
 #define DEFAULT_SERVER_THREADS "1"
 
 #define CIVETWEB_REQUEST_NOT_HANDLED 0
@@ -54,15 +58,22 @@ struct endpoint_discovery_server {
     celix_thread_mutex_t serverLock;
 
     const char* path;
+    const char *port;
+    const char* ip;
     struct mg_context* ctx;
 };
 
 // Forward declarations...
 static int endpointDiscoveryServer_callback(struct mg_connection *conn);
 static char* format_path(char* path);
+static celix_status_t endpointDiscoveryServer_getIpAdress(char* interface, char** ip);
 
 celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_context_pt context, endpoint_discovery_server_pt *server) {
 	celix_status_t status = CELIX_SUCCESS;
+
+	char *port = 0;
+	char *ip = NULL;
+	char *path = NULL;
 
 	*server = malloc(sizeof(struct endpoint_discovery_server));
 	if (!*server) {
@@ -79,13 +90,34 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 		return CELIX_BUNDLE_EXCEPTION;
 	}
 
-	char *port = NULL;
+	bundleContext_getProperty(context, DISCOVERY_SERVER_IP, &ip);
+	if (ip == NULL) {
+		char *interface = NULL;
+
+		bundleContext_getProperty(context, DISCOVERY_SERVER_INTERFACE, &interface);
+		if ((interface != NULL) && (endpointDiscoveryServer_getIpAdress(interface, &ip) != CELIX_SUCCESS)) {
+			fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Could not retrieve IP adress for interface %s", interface);
+		}
+
+		if (ip == NULL) {
+			endpointDiscoveryServer_getIpAdress(NULL, &ip);
+		}
+	}
+
+	if (ip != NULL) {
+		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Using %s for service annunciation", ip);
+		(*server)->ip = strdup(ip);
+	}
+	else {
+		fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "No IP address for service annunciation set. Using %s", DEFAULT_SERVER_IP);
+		(*server)->ip = (char*) DEFAULT_SERVER_IP;
+	}
+
 	bundleContext_getProperty(context, DISCOVERY_SERVER_PORT, &port);
 	if (port == NULL) {
 		port = DEFAULT_SERVER_PORT;
 	}
 
-	char *path = NULL;
 	bundleContext_getProperty(context, DISCOVERY_SERVER_PATH, &path);
 	if (path == NULL) {
 		path = DEFAULT_SERVER_PATH;
@@ -93,19 +125,56 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 
 	(*server)->path = format_path(path);
 
-	const char *options[] = {
-		"listening_ports", port,
-		"num_threads", DEFAULT_SERVER_THREADS,
-		NULL
-	};
-
 	const struct mg_callbacks callbacks = {
 		.begin_request = endpointDiscoveryServer_callback,
 	};
 
-	(*server)->ctx = mg_start(&callbacks, (*server), options);
+	unsigned int port_counter = 0;
 
-	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Starting discovery server on port %s...", port);
+	do {
+		const char *options[] = {
+			"listening_ports", port,
+			"num_threads", DEFAULT_SERVER_THREADS,
+			NULL
+		};
+
+		(*server)->ctx = mg_start(&callbacks, (*server), options);
+
+		if ((*server)->ctx != NULL)
+		{
+			fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Starting discovery server on port %s...", port);
+			(*server)->port = port;
+		}
+		else {
+			errno = 0;
+			char* newPort = calloc(10, sizeof(*newPort));
+	        char* endptr = port;
+	        int currentPort = strtol(port, &endptr, 10);
+
+	        if (*endptr || errno != 0) {
+	            currentPort = strtol(DEFAULT_SERVER_PORT, NULL, 10);
+	        }
+
+	        port_counter++;
+			snprintf(newPort, 6,  "%d", (currentPort+1));
+
+			fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error while starting discovery server on port %s - retrying on port %s...", port, newPort);
+			port = newPort;
+		}
+
+	} while(((*server)->ctx == NULL) && (port_counter < MAX_NUMBER_OF_RESTARTS));
+
+	return status;
+}
+
+celix_status_t endpointDiscoveryServer_getUrl(endpoint_discovery_server_pt server, char* url)
+{
+	celix_status_t status = CELIX_BUNDLE_EXCEPTION;
+
+	if (server->ip && server->port && server->path) {
+		sprintf(url, "http://%s:%s/%s", server->ip, server->port, server->path);
+		status = CELIX_SUCCESS;
+	}
 
 	return status;
 }
@@ -127,6 +196,9 @@ celix_status_t endpointDiscoveryServer_destroy(endpoint_discovery_server_pt serv
 	status = celixThreadMutex_destroy(&server->serverLock);
 
 	free((void*) server->path);
+	free((void*) server->port);
+	free((void*) server->ip);
+
 	free(server);
 
 	return status;
@@ -307,4 +379,35 @@ static int endpointDiscoveryServer_callback(struct mg_connection* conn) {
 	}
 
 	return status;
+}
+
+static celix_status_t endpointDiscoveryServer_getIpAdress(char* interface, char** ip) {
+	celix_status_t status = CELIX_BUNDLE_EXCEPTION;
+
+	struct ifaddrs *ifaddr, *ifa;
+    char host[NI_MAXHOST];
+
+    if (getifaddrs(&ifaddr) != -1)
+    {
+		for (ifa = ifaddr; ifa != NULL && status != CELIX_SUCCESS; ifa = ifa->ifa_next)
+		{
+			if (ifa->ifa_addr == NULL)
+				continue;
+
+			if ((getnameinfo(ifa->ifa_addr,sizeof(struct sockaddr_in), host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST) == 0) && (ifa->ifa_addr->sa_family == AF_INET)) {
+				if (interface == NULL) {
+					*ip = strdup(host);
+					status = CELIX_SUCCESS;
+				}
+				else if (strcmp(ifa->ifa_name, interface) == 0) {
+					*ip = strdup(host);
+					status = CELIX_SUCCESS;
+				}
+			}
+		}
+
+		freeifaddrs(ifaddr);
+    }
+
+    return status;
 }

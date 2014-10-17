@@ -145,25 +145,31 @@ static celix_status_t etcdWatcher_addAlreadyExistingWatchpoints(discovery_pt dis
 }
 
 
-static celix_status_t etcdWatcher_addOwnFramework(bundle_context_pt context)
+static celix_status_t etcdWatcher_addOwnFramework(etcd_watcher_pt watcher)
 {
     celix_status_t status = CELIX_BUNDLE_EXCEPTION;
     char localNodePath[MAX_LOCALNODE_LENGTH];
     char value[MAX_VALUE_LENGTH];
     char action[MAX_VALUE_LENGTH];
+ 	char url[MAX_VALUE_LENGTH];
     int modIndex;
     char* endpoints = NULL;
     char* ttlStr = NULL;
     int ttl;
+
+	bundle_context_pt context = watcher->discovery->context;
+	endpoint_discovery_server_pt server = watcher->discovery->server;
 
     // register own framework
     if ((status = etcdWatcher_getLocalNodePath(context, &localNodePath[0])) != CELIX_SUCCESS) {
         return status;
     }
 
-    if ((bundleContext_getProperty(context, DISCOVERY_POLL_ENDPOINTS, &endpoints) != CELIX_SUCCESS) || !endpoints) {
-        endpoints = DEFAULT_POLL_ENDPOINTS;
-    }
+	if (endpointDiscoveryServer_getUrl(server, &url[0]) != CELIX_SUCCESS) {
+		snprintf(url, MAX_VALUE_LENGTH, "http://%s:%s/%s", DEFAULT_SERVER_IP, DEFAULT_SERVER_PORT, DEFAULT_SERVER_PATH);
+	}
+
+	endpoints = &url[0];
 
     if ((bundleContext_getProperty(context, CFG_ETCD_TTL, &ttlStr) != CELIX_SUCCESS) || !ttlStr) {
         ttl = DEFAULT_ETCD_TTL;
@@ -212,19 +218,21 @@ static void* etcdWatcher_run(void* data) {
 		char preValue[MAX_VALUE_LENGTH];
 		char action[MAX_ACTION_LENGTH];
 
-		if (etcd_watch(rootPath, highestModified + 1, &action[0], &preValue[0], &value[0]) == true) {
+		if (etcd_watch(rootPath, 0, &action[0], &preValue[0], &value[0]) == true) {
 
 			if (strcmp(action, "set") == 0) {
-				endpointDiscoveryPoller_removeDiscoveryEndpoint(poller, &preValue[0]);
 				endpointDiscoveryPoller_addDiscoveryEndpoint(poller, &value[0]);
 			} else if (strcmp(action, "delete") == 0) {
 				endpointDiscoveryPoller_removeDiscoveryEndpoint(poller, &preValue[0]);
+			} else if (strcmp(action, "update") == 0) {
+				// TODO
 			} else {
 				fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Unexpected action: %s", action);
 			}
 		}
+
 		// update own framework uuid in any case;
-	    etcdWatcher_addOwnFramework(context);
+	    etcdWatcher_addOwnFramework(watcher);
 	}
 
 	return NULL;
@@ -278,7 +286,7 @@ celix_status_t etcdWatcher_create(discovery_pt discovery, bundle_context_pt cont
 		return CELIX_BUNDLE_EXCEPTION;
 	}
 
-	etcdWatcher_addOwnFramework(context);
+	etcdWatcher_addOwnFramework((*watcher));
 
 	if ((status = celixThreadMutex_create(&(*watcher)->watcherLock, NULL)) != CELIX_SUCCESS) {
 		return status;
