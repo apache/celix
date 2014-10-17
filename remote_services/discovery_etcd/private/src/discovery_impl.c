@@ -124,12 +124,12 @@ celix_status_t discovery_start(discovery_pt discovery) {
     	return CELIX_BUNDLE_EXCEPTION;
     }
 
-    status = etcdWatcher_create(discovery->poller, discovery->context, &discovery->watcher);
+    status = endpointDiscoveryServer_create(discovery, discovery->context, &discovery->server);
     if (status != CELIX_SUCCESS) {
-    	return CELIX_BUNDLE_EXCEPTION;
+		return CELIX_BUNDLE_EXCEPTION;
     }
 
-    status = endpointDiscoveryServer_create(discovery, discovery->context, &discovery->server);
+    status = etcdWatcher_create(discovery, discovery->context, &discovery->watcher);
     if (status != CELIX_SUCCESS) {
     	return CELIX_BUNDLE_EXCEPTION;
     }
@@ -140,12 +140,12 @@ celix_status_t discovery_start(discovery_pt discovery) {
 celix_status_t discovery_stop(discovery_pt discovery) {
 	celix_status_t status;
 
-	status = endpointDiscoveryServer_destroy(discovery->server);
+	status = etcdWatcher_destroy(discovery->watcher);
 	if (status != CELIX_SUCCESS) {
 		return CELIX_BUNDLE_EXCEPTION;
 	}
 
-	status = etcdWatcher_destroy(discovery->watcher);
+	status = endpointDiscoveryServer_destroy(discovery->server);
 	if (status != CELIX_SUCCESS) {
 		return CELIX_BUNDLE_EXCEPTION;
 	}
