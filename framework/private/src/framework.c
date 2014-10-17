@@ -550,7 +550,7 @@ celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, lon
             }
         }
     }
-    status = CELIX_DO_IF(status, framework_releaseInstallLock(framework, location));
+    framework_releaseInstallLock(framework, location);
 
     if (status != CELIX_SUCCESS) {
     	fw_logCode(framework->logger, OSGI_FRAMEWORK_LOG_ERROR, status, "Could not install bundle");

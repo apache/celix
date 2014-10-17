@@ -17,7 +17,9 @@
 is_enabled(REMOTE_SERVICE_ADMIN)
 if (REMOTE_SERVICE_ADMIN)
     deploy("remote-services-cfg" BUNDLES discovery_configured topology_manager remote_service_admin_http calculator shell shell_tui log_service log_writer
-                                 ENDPOINTS org.apache.celix.calc.api.Calculator_endpoint)
+                                 ENDPOINTS 
+                                    org.apache.celix.calc.api.Calculator_endpoint
+                                    org.apache.celix.calc.api.Calculator2_endpoint)
     deploy("remote-services-cfg-client" BUNDLES topology_manager remote_service_admin_http shell shell_tui log_service log_writer calculator_shell discovery_configured
                                         ENDPOINTS org.apache.celix.calc.api.Calculator_proxy)
 
