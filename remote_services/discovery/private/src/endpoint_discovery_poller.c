@@ -93,6 +93,7 @@ celix_status_t endpointDiscoveryPoller_create(discovery_pt discovery, bundle_con
 
 	(*poller)->poll_interval = atoi(interval);
 	(*poller)->discovery = discovery;
+	(*poller)->running = false;
 	(*poller)->entries = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 
 	const char* sep = ",";

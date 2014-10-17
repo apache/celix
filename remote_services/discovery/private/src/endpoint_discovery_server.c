@@ -143,11 +143,10 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 		if ((*server)->ctx != NULL)
 		{
 			fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Starting discovery server on port %s...", port);
-			(*server)->port = port;
 		}
 		else {
 			errno = 0;
-			char* newPort = calloc(10, sizeof(*newPort));
+			char newPort[10];
 	        char* endptr = port;
 	        int currentPort = strtol(port, &endptr, 10);
 
@@ -156,13 +155,16 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 	        }
 
 	        port_counter++;
-			snprintf(newPort, 6,  "%d", (currentPort+1));
+			snprintf(&newPort[0], 10,  "%d", (currentPort+1));
 
 			fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error while starting discovery server on port %s - retrying on port %s...", port, newPort);
 			port = newPort;
+
 		}
 
 	} while(((*server)->ctx == NULL) && (port_counter < MAX_NUMBER_OF_RESTARTS));
+
+	(*server)->port = strdup(port);
 
 	return status;
 }
