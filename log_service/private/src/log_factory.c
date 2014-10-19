@@ -55,7 +55,7 @@ celix_status_t logFactory_create(apr_pool_t *pool, log_pt log, service_factory_p
         }
     }
 
-    return CELIX_SUCCESS;
+    return status;
 }
 
 celix_status_t logFactory_getService(void *factory, bundle_pt bundle, service_registration_pt registration, void **service) {

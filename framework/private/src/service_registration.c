@@ -80,7 +80,7 @@ celix_status_t serviceRegistration_createInternal(service_registry_pt registry, 
     	status = CELIX_ENOMEM;
     }
 
-	return CELIX_SUCCESS;
+	return status;
 }
 
 celix_status_t serviceRegistration_destroy(service_registration_pt registration) {

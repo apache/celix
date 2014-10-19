@@ -124,11 +124,10 @@ void *APR_THREAD_FUNC LogServiceTest(apr_thread_t *thd, void *argument) {
 
 void startTestThread(thread_data_pt data) {
 	apr_pool_t *pool;
-	int rc;
 	// start separate worker thread to run the actual tests, managed by the bundle lifecycle
 	bundleContext_getMemoryPool(data->m_context, &pool);
 	data->threadId++;
-	rc = apr_thread_create(&m_logTestThread, NULL, LogServiceTest, data, pool);
+	apr_thread_create(&m_logTestThread, NULL, LogServiceTest, data, pool);
 }
 
 void stopTestThread() {

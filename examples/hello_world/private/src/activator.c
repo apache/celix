@@ -44,7 +44,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 	} else {
 		status = CELIX_START_ERROR;
 	}
-	return CELIX_SUCCESS;
+	return status;
 }
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
