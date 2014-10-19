@@ -203,7 +203,7 @@ static celix_status_t etcdWatcher_addOwnFramework(etcd_watcher_pt watcher)
  */
 static void* etcdWatcher_run(void* data) {
 	etcd_watcher_pt watcher = (etcd_watcher_pt) data;
-
+	time_t timeBeforeWatch = time(NULL);
 	static char rootPath[MAX_ROOTNODE_LENGTH];
 	int highestModified = 0;
 
@@ -218,7 +218,6 @@ static void* etcdWatcher_run(void* data) {
 		char preValue[MAX_VALUE_LENGTH];
 		char action[MAX_ACTION_LENGTH];
 
-		time_t timeBeforeWatch = time(NULL);
 
 		if (etcd_watch(rootPath, 0, &action[0], &preValue[0], &value[0]) == true) {
 
@@ -236,6 +235,7 @@ static void* etcdWatcher_run(void* data) {
 		// update own framework uuid
 		if (time(NULL) - timeBeforeWatch > (DEFAULT_ETCD_TTL/2)) {
 			etcdWatcher_addOwnFramework(watcher);
+			timeBeforeWatch = time(NULL);
 		}
 	}
 
