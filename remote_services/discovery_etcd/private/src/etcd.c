@@ -79,10 +79,10 @@ bool etcd_init(char* server, int port) {
 
 // get
 bool etcd_get(char* key, char* value, char* action, int* modifiedIndex) {
-	json_t* js_root;
-	json_t* js_node;
-	json_t* js_value;
-	json_t* js_modifiedIndex;
+	json_t* js_root = NULL;
+	json_t* js_node = NULL;
+	json_t* js_value = NULL;
+	json_t* js_modifiedIndex = NULL;
 	json_error_t error;
 	int res;
 	struct MemoryStruct reply;
@@ -96,35 +96,38 @@ bool etcd_get(char* key, char* value, char* action, int* modifiedIndex) {
 
 	res = performRequest(url, GET, WriteMemoryCallback, NULL, (void*) &reply);
 
-	if (res == CURLE_OPERATION_TIMEDOUT) {
-		//printf("error while performing curl w/ %s\n", url);
-	} else if (res != CURLE_OK) {
-		printf("error while performing curl\n");
-	} else if ((js_root = json_loads(reply.memory, 0, &error)) == NULL) {
-		printf("error while parsing json data\n");
-	} else if ((js_node = json_object_get(js_root, ETCD_JSON_NODE)) == NULL) {
-		printf("error while retrieving expected node object %s\n", json_dumps(js_root, 0));
-	} else if (((js_value = json_object_get(js_node, ETCD_JSON_VALUE)) == NULL) || ((js_value = json_object_get(js_node, ETCD_JSON_VALUE)) == NULL) || ((js_modifiedIndex = json_object_get(js_node, ETCD_JSON_MODIFIEDINDEX)) == NULL)) {
-		printf("error while retrieving expected objects\n");
-	}
-	else {
-		*modifiedIndex = json_integer_value(js_modifiedIndex);
-		strncpy(value, json_string_value(js_value), MAX_VALUE_LENGTH);
-		retVal = true;
+	if (res == CURLE_OK) {
+		js_root = json_loads(reply.memory, 0, &error);
+
+		if (js_root != NULL) {
+			js_node = json_object_get(js_root, ETCD_JSON_NODE);
+		}
+		if (js_node != NULL) {
+			js_value = json_object_get(js_node, ETCD_JSON_VALUE);
+			js_modifiedIndex = json_object_get(js_node, ETCD_JSON_MODIFIEDINDEX);
+
+			*modifiedIndex = json_integer_value(js_modifiedIndex);
+			strncpy(value, json_string_value(js_value), MAX_VALUE_LENGTH);
+			retVal = true;
+		}
+		if (js_root != NULL) {
+			json_decref(js_root);
+		}
 	}
 
 	if (reply.memory) {
 		free(reply.memory);
 	}
 
+
 	return retVal;
 }
 
 // getNodes
 bool etcd_getNodes(char* directory, char** nodeNames, int* size) {
-	json_t* js_root;
-	json_t* js_node;
-	json_t* js_nodes;
+	json_t* js_root = NULL;
+	json_t* js_node = NULL;
+	json_t* js_nodes = NULL;
 	json_error_t error;
 	int res;
 	struct MemoryStruct reply;
@@ -137,34 +140,37 @@ bool etcd_getNodes(char* directory, char** nodeNames, int* size) {
 	snprintf(url, MAX_URL_LENGTH, "http://%s:%d/v2/keys/%s", etcd_server, etcd_port, directory);
 
 	res = performRequest(url, GET, WriteMemoryCallback, NULL, (void*) &reply);
-	if (res == CURLE_OPERATION_TIMEDOUT) {
-		//printf("error while performing curl w/ %s\n", url);
-	} else if (res != CURLE_OK) {
-		printf("error while performing curl\n");
-	} else if ((js_root = json_loads(reply.memory, 0, &error)) == NULL) {
-		printf("error while parsing json data\n");
-	} else if ((js_node = json_object_get(js_root, ETCD_JSON_NODE)) == NULL) {
-		printf("error while retrieving expected nodes object\n");
-	} else if ((js_nodes = json_object_get(js_node, ETCD_JSON_NODES)) == NULL) {
-		printf("error while retrieving expected nodes object\n");
-	} else if (json_is_array(js_nodes)) {
 
-		int i = 0;
+	if (res == CURLE_OK) {
+		js_root = json_loads(reply.memory, 0, &error);
 
-		retVal = true;
-
-		for (i = 0; i < json_array_size(js_nodes) && i < MAX_NODES; i++) {
-			json_t* js_node = json_array_get(js_nodes, i);
-
-			if (!json_is_object(js_node)) {
-				retVal = false;
-			} else {
-				json_t* js_key = json_object_get(js_node, ETCD_JSON_KEY);
-				strncpy(nodeNames[i], json_string_value(js_key), MAX_KEY_LENGTH);
-			}
+		if (js_root != NULL) {
+			js_node = json_object_get(js_root, ETCD_JSON_NODE);
 		}
-		*size = i;
+		if (js_root != NULL) {
+			js_nodes = json_object_get(js_node, ETCD_JSON_NODES);
+		}
 
+
+		if (js_nodes != NULL && json_is_array(js_nodes)) {
+			int i = 0;
+			retVal = true;
+
+			for (i = 0; i < json_array_size(js_nodes) && i < MAX_NODES; i++) {
+				json_t* js_node = json_array_get(js_nodes, i);
+
+				if (!json_is_object(js_node)) {
+					retVal = false;
+				} else {
+					json_t* js_key = json_object_get(js_node, ETCD_JSON_KEY);
+					strncpy(nodeNames[i], json_string_value(js_key), MAX_KEY_LENGTH);
+				}
+			}
+			*size = i;
+		}
+		if (js_root != NULL) {
+			json_decref(js_root);
+		}
 	}
 
 	if (reply.memory) {
@@ -178,9 +184,9 @@ bool etcd_getNodes(char* directory, char** nodeNames, int* size) {
 
 bool etcd_set(char* key, char* value, int ttl, bool prevExist) {
 	json_error_t error;
-	json_t* js_root;
-	json_t* js_node;
-	json_t* js_value;
+	json_t* js_root = NULL;
+	json_t* js_node = NULL;
+	json_t* js_value = NULL;
 	bool retVal = false;
 	char url[MAX_URL_LENGTH];
 	char request[MAX_CONTENT_LENGTH];
@@ -201,18 +207,22 @@ bool etcd_set(char* key, char* value, int ttl, bool prevExist) {
 	    cur += snprintf(cur, MAX_CONTENT_LENGTH, ";prevExist=true");
 
 	res = performRequest(url, PUT, WriteMemoryCallback, request, (void*) &reply);
-	if (res == CURLE_OPERATION_TIMEDOUT) {
-		//printf("error while performing curl w/ %s\n", url);
-	} else if (res != CURLE_OK) {
-		printf("error while performing curl\n");
-	} else if ((js_root = json_loads(reply.memory, 0, &error)) == NULL) {
-		printf("error while parsing json data\n");
-	} else if ((js_node = json_object_get(js_root, ETCD_JSON_NODE)) == NULL) {
-		printf("error while retrieving expected node object %s\n", json_dumps(js_root, 0));
-	} else if ((js_value = json_object_get(js_node, ETCD_JSON_VALUE)) == NULL) {
-		printf("error while retrieving expected value object\n");
-	} else if (json_is_string(js_value)) {
-		retVal = (strcmp(json_string_value(js_value), value) == 0);
+
+	if (res == CURLE_OK) {
+		js_root = json_loads(reply.memory, 0, &error);
+
+		if (js_root != NULL) {
+			js_node = json_object_get(js_root, ETCD_JSON_NODE);
+		}
+		if (js_node != NULL) {
+			js_value = json_object_get(js_node, ETCD_JSON_VALUE);
+		}
+		if (js_value != NULL && json_is_string(js_value)) {
+			retVal = (strcmp(json_string_value(js_value), value) == 0);
+		}
+		if (js_root != NULL) {
+			json_decref(js_root);
+		}
 	}
 
 	if (reply.memory) {
@@ -227,8 +237,8 @@ bool etcd_set(char* key, char* value, int ttl, bool prevExist) {
 //delete
 bool etcd_del(char* key) {
 	json_error_t error;
-	json_t* js_root;
-	json_t* js_node;
+	json_t* js_root = NULL;
+	json_t* js_node = NULL;
 	bool retVal = false;
 	char url[MAX_URL_LENGTH];
 	char request[MAX_CONTENT_LENGTH];
@@ -240,21 +250,25 @@ bool etcd_del(char* key) {
 
 	snprintf(url, MAX_URL_LENGTH, "http://%s:%d/v2/keys/%s", etcd_server, etcd_port, key);
 	res = performRequest(url, DELETE, WriteMemoryCallback, request, (void*) &reply);
-	if (res == CURLE_OPERATION_TIMEDOUT) {
-		//printf("error while performing curl w/ %s\n", url);
-	} else if (res != CURLE_OK) {
-		printf("error while performing curl\n");
-	} else if ((js_root = json_loads(reply.memory, 0, &error)) == NULL) {
-		printf("error while parsing json data\n");
-	} else if ((js_node = json_object_get(js_root, ETCD_JSON_NODE)) == NULL) {
-		printf("error while retrieving expected node object %s\n", json_dumps(js_root, 0));
-	} else {
-		retVal = true;
+
+	if (res == CURLE_OK) {
+		js_root = json_loads(reply.memory, 0, &error);
+
+		if (js_root != NULL) {
+			js_node = json_object_get(js_root, ETCD_JSON_NODE);
+		}
+
+		retVal = (js_node != NULL);
+
+		if (js_root != NULL) {
+			json_decref(js_root);
+		}
 	}
 
 	if (reply.memory) {
 		free(reply.memory);
 	}
+
 
 	return retVal;
 }
@@ -262,12 +276,12 @@ bool etcd_del(char* key) {
 ///watch
 bool etcd_watch(char* key, int index, char* action, char* prevValue, char* value) {
 	json_error_t error;
-	json_t* js_root;
-	json_t* js_node;
-	json_t* js_prevNode;
-	json_t* js_action;
-	json_t* js_value;
-	json_t* js_prevValue;
+	json_t* js_root = NULL;
+	json_t* js_node = NULL;
+	json_t* js_prevNode = NULL;
+	json_t* js_action = NULL;
+	json_t* js_value = NULL;
+	json_t* js_prevValue = NULL;
 	bool retVal = false;
 	char url[MAX_URL_LENGTH];
 	int res;
@@ -284,29 +298,34 @@ bool etcd_watch(char* key, int index, char* action, char* prevValue, char* value
 
 	res = performRequest(url, GET, WriteMemoryCallback, NULL, (void*) &reply);
 
-	if (res == CURLE_OPERATION_TIMEDOUT) {
-		//printf("error while performing curl w/ %s\n", url);
-	} else if (res != CURLE_OK) {
-		printf("error while performing curl w/ %s\n", url);
-	} else if ((js_root = json_loads(reply.memory, 0, &error)) == NULL) {
-		printf("error while parsing json data\n");
-	} else {
-		js_action = json_object_get(js_root, ETCD_JSON_ACTION);
-		js_node = json_object_get(js_root, ETCD_JSON_NODE);
-		js_prevNode = json_object_get(js_root, ETCD_JSON_PREVNODE);
-	
-		if (js_action == NULL || js_node == NULL) {
-			printf("error while retrieving expected node object %s\n", json_dumps(js_root, 0));
-		} else if ((js_value = json_object_get(js_node, ETCD_JSON_VALUE)) == NULL) {
-			printf("error while retrieving expected value objects\n");
+	if (res == CURLE_OK) {
+		js_root = json_loads(reply.memory, 0, &error);
+
+		if (js_root != NULL) {
+			js_action = json_object_get(js_root, ETCD_JSON_ACTION);
+			js_node = json_object_get(js_root, ETCD_JSON_NODE);
+			js_prevNode = json_object_get(js_root, ETCD_JSON_PREVNODE);
 		}
-		else if (json_is_string(js_value) && json_is_string(js_action)) {
-			if ((js_prevNode != NULL) && ((js_prevValue = json_object_get(js_prevNode, ETCD_JSON_VALUE)) != NULL) && (json_is_string(js_prevValue))) {
-				strncpy(prevValue, json_string_value(js_prevValue), MAX_VALUE_LENGTH);
-			}
+		if (js_prevNode != NULL) {
+			js_prevValue = json_object_get(js_prevNode, ETCD_JSON_VALUE);
+		}
+		if (js_node != NULL) {
+			js_value = json_object_get(js_node, ETCD_JSON_VALUE);
+		}
+		if (js_prevNode != NULL) {
+			js_prevValue = json_object_get(js_prevNode, ETCD_JSON_VALUE);
+		}
+		if ((js_prevValue != NULL) && (json_is_string(js_prevValue))) {
+			strncpy(prevValue, json_string_value(js_prevValue), MAX_VALUE_LENGTH);
+		}
+		if ((js_value != NULL) && (js_action != NULL) && (json_is_string(js_value)) && (json_is_string(js_action))) {
 			strncpy(value, json_string_value(js_value), MAX_VALUE_LENGTH);
 			strncpy(action, json_string_value(js_action), MAX_ACTION_LENGTH);
+
 			retVal = true;
+		}
+		if (js_root != NULL) {
+			json_decref(js_root);
 		}
 	}
 

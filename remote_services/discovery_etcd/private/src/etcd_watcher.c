@@ -125,7 +125,7 @@ static celix_status_t etcdWatcher_addAlreadyExistingWatchpoints(discovery_pt dis
 			int modIndex;
 
 			if (etcd_get(key, &value[0], &action[0], &modIndex) == true) {
-				// check that this is not equals to the local endpoint
+				// TODO: check that this is not equals to the local endpoint
 				endpointDiscoveryPoller_addDiscoveryEndpoint(discovery->poller, strdup(&value[0]));
 
 				if (modIndex > *highestModified) {
@@ -218,10 +218,12 @@ static void* etcdWatcher_run(void* data) {
 		char preValue[MAX_VALUE_LENGTH];
 		char action[MAX_ACTION_LENGTH];
 
+		time_t timeBeforeWatch = time(NULL);
+
 		if (etcd_watch(rootPath, 0, &action[0], &preValue[0], &value[0]) == true) {
 
 			if (strcmp(action, "set") == 0) {
-				endpointDiscoveryPoller_addDiscoveryEndpoint(poller, &value[0]);
+				endpointDiscoveryPoller_addDiscoveryEndpoint(poller, strdup(&value[0]));
 			} else if (strcmp(action, "delete") == 0) {
 				endpointDiscoveryPoller_removeDiscoveryEndpoint(poller, &preValue[0]);
 			} else if (strcmp(action, "update") == 0) {
@@ -231,8 +233,10 @@ static void* etcdWatcher_run(void* data) {
 			}
 		}
 
-		// update own framework uuid in any case;
-	    etcdWatcher_addOwnFramework(watcher);
+		// update own framework uuid
+		if (time(NULL) - timeBeforeWatch > (DEFAULT_ETCD_TTL/2)) {
+			etcdWatcher_addOwnFramework(watcher);
+		}
 	}
 
 	return NULL;
