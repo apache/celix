@@ -246,6 +246,8 @@ static void *endpointDiscoveryPoller_poll(void *data) {
 			}
 		}
 
+		hashMapIterator_destroy(iterator);
+
 		status = celixThreadMutex_unlock(&poller->pollerLock);
 		if (status != CELIX_SUCCESS) {
 			fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "ENDPOINT_POLLER: failed to release lock; retrying...");

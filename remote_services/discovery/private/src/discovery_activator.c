@@ -97,7 +97,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	}
 
 	size_t len = 11 + strlen(OSGI_FRAMEWORK_OBJECTCLASS) + strlen(OSGI_RSA_ENDPOINT_FRAMEWORK_UUID) + strlen(uuid);
-	char *scope = malloc(len);
+	char *scope = malloc(len+1);
 	if (!scope) {
 		return CELIX_ENOMEM;
 	}
