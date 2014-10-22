@@ -202,6 +202,12 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin) {
     }
     hashMapIterator_destroy(iter);
 
+	if (admin->ctx != NULL) {
+		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "RSA: Stopping webserver...");
+		mg_stop(admin->ctx);
+		admin->ctx = NULL;
+	}
+
 	return status;
 }
 
