@@ -21,7 +21,7 @@ if (SHELL_BONJOUR)
 	find_package(LibXml2 REQUIRED)
 	
 	#TODO create/add FindDNS_SD.cmake and use it (with required)
-	find_library(DNS_SD_LIB NAMES dns_sd)
+	find_library(DNS_SD_LIB NAMES dns_sd dns_services)
 	
 	set(BUNDLE_SYMBOLICNAME "bonjour_shell")
 	set(BUNDLE_VERSION "0.1.0")
@@ -38,7 +38,7 @@ if (SHELL_BONJOUR)
 		 	private/src/bonjour_shell.c
 	)
 	
-	target_link_libraries(bonjour_shell ${CELIX_LIBRARIES} ${APR_LIBRARIES} ${LIBXML2_LIBRARIES} ${DNS_SD_LIB})
+	target_link_libraries(bonjour_shell celix_framework celix_utils ${LIBXML2_LIBRARIES} ${DNS_SD_LIB})
 
 endif (SHELL_BONJOUR)
 
