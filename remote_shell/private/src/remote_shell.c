@@ -26,12 +26,7 @@
 
 #include <stdlib.h>
 
-#include <apr_pools.h>
-#include <apr_thread_mutex.h>
-#include <apr_thread_pool.h>
-#include <apr_strings.h>
-#include <apr_poll.h>
-
+#include <unistd.h>
 #include <utils.h>
 #include <array_list.h>
 
@@ -45,47 +40,39 @@
 #define RS_ERROR ("Error executing command!\n")
 #define RS_MAXIMUM_CONNECTIONS_REACHED ("Maximum number of connections  reached. Disconnecting ...\n")
 
-struct remote_shell {
-	apr_pool_t *pool;
-	shell_mediator_pt mediator;
-	apr_thread_mutex_t *mutex;
-	apr_int64_t maximumConnections;
+#define CONNECTION_LISTENER_TIMEOUT_SEC		5
 
-	//protected by mutex
-	apr_thread_pool_t *threadPool;
+struct remote_shell {
+	shell_mediator_pt mediator;
+	celix_thread_mutex_t mutex;
+	int maximumConnections;
+
 	array_list_pt connections;
 };
 
 struct connection {
 	remote_shell_pt parent;
-	apr_socket_t *socket;
-	apr_pool_t *pool;
-	apr_pollset_t *pollset;
+	int socket;
+	fd_set pollset;
+	bool threadRunning;
 };
 
 typedef struct connection *connection_pt;
 
-static apr_status_t remoteShell_cleanup(remote_shell_pt instance); //gets called from apr pool cleanup
-
 static celix_status_t remoteShell_connection_print(connection_pt connection, char * text);
 static celix_status_t remoteShell_connection_execute(connection_pt connection, char *command);
-static void* APR_THREAD_FUNC remoteShell_connection_run(apr_thread_t *thread, void *data);
+static void* remoteShell_connection_run(void *data);
 
-celix_status_t remoteShell_create(apr_pool_t *pool, shell_mediator_pt mediator, apr_size_t maximumConnections, remote_shell_pt *instance) {
+
+celix_status_t remoteShell_create( shell_mediator_pt mediator, int maximumConnections, remote_shell_pt *instance) {
 	celix_status_t status = CELIX_SUCCESS;
-	(*instance) = apr_palloc(pool, sizeof(**instance));
+	(*instance) = calloc(1, sizeof(**instance));
 	if ((*instance) != NULL) {
-		(*instance)->pool = pool;
 		(*instance)->mediator = mediator;
 		(*instance)->maximumConnections = maximumConnections;
-		(*instance)->threadPool = NULL;
-		(*instance)->mutex = NULL;
 		(*instance)->connections = NULL;
 
-		apr_pool_pre_cleanup_register(pool, (*instance), (void *)remoteShell_cleanup);
-
-		status = apr_thread_mutex_create(&(*instance)->mutex, APR_THREAD_MUTEX_DEFAULT, pool);
-		status = apr_thread_pool_create(&(*instance)->threadPool, 0, maximumConnections, pool);
+		status = celixThreadMutex_create(&(*instance)->mutex, NULL);
 		status = arrayList_create(&(*instance)->connections);
 	} else {
 		status = CELIX_ENOMEM;
@@ -93,98 +80,100 @@ celix_status_t remoteShell_create(apr_pool_t *pool, shell_mediator_pt mediator, 
 	return status;
 }
 
-static apr_status_t remoteShell_cleanup(remote_shell_pt instance) {
+celix_status_t remoteShell_destroy(remote_shell_pt instance) {
 	remoteShell_stopConnections(instance);
 
-	apr_thread_mutex_lock(instance->mutex);
+	celixThreadMutex_lock(&instance->mutex);
 	arrayList_destroy(instance->connections);
-	apr_thread_pool_destroy(instance->threadPool);
-	apr_thread_mutex_unlock(instance->mutex);
+	celixThreadMutex_unlock(&instance->mutex);
 
-	return APR_SUCCESS;
+	return CELIX_SUCCESS;
 }
 
-celix_status_t remoteShell_addConnection(remote_shell_pt instance, apr_socket_t *socket) {
+celix_status_t remoteShell_addConnection(remote_shell_pt instance, int socket) {
 	celix_status_t status = CELIX_SUCCESS;
-	apr_pool_t *pool = apr_socket_pool_get(socket);
-	connection_pt connection = apr_palloc(pool, sizeof(struct connection));
+	connection_pt connection = calloc(1, sizeof(struct connection));
+
 	if (connection != NULL) {
 		connection->parent = instance;
 		connection->socket = socket;
-		connection->pool = pool;
-		connection->pollset = NULL;
+		connection->threadRunning = false;
 
-		apr_pollset_create(&connection->pollset, 1, connection->pool, APR_POLLSET_WAKEABLE);
-		apr_thread_mutex_lock(instance->mutex);
-		if (apr_thread_pool_busy_count(instance->threadPool) < instance->maximumConnections) {
+		celixThreadMutex_lock(&instance->mutex);
+
+		if (arrayList_size(instance->connections) < instance->maximumConnections) {
+			celix_thread_t connectionRunThread = NULL;
 			arrayList_add(instance->connections, connection);
-			status = apr_thread_pool_push(instance->threadPool, remoteShell_connection_run, connection, 0, instance);
+		    status = celixThread_create(&connectionRunThread, NULL, &remoteShell_connection_run, connection);
 		} else {
-			status = APR_ECONNREFUSED;
+			status = CELIX_BUNDLE_EXCEPTION;
 			remoteShell_connection_print(connection, RS_MAXIMUM_CONNECTIONS_REACHED);
 		}
-		apr_thread_mutex_unlock(instance->mutex);
+		celixThreadMutex_unlock(&instance->mutex);
 	} else {
 		status = CELIX_ENOMEM;
 	}
 
 	if (status != CELIX_SUCCESS) {
-		apr_socket_close(socket);
-		apr_pool_destroy(pool);
+		close(connection->socket);
+		free(connection);
 	}
+
 	return status;
 }
 
 celix_status_t remoteShell_stopConnections(remote_shell_pt instance) {
 	celix_status_t status = CELIX_SUCCESS;
-	apr_status_t wakeupStatus = APR_SUCCESS;
-	char error[64];
 	int length = 0;
 	int i = 0;
 
-	apr_thread_mutex_lock(instance->mutex);
+	celixThreadMutex_lock(&instance->mutex);
 	length = arrayList_size(instance->connections);
+
 	for (i = 0; i < length; i += 1) {
 		connection_pt connection = arrayList_get(instance->connections, i);
-		wakeupStatus = apr_pollset_wakeup(connection->pollset);
-		if (wakeupStatus != APR_SUCCESS) {
-			apr_strerror(wakeupStatus, error, 64);
-			fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "REMOTE_SHELLE: Error waking up connection %i: '%s'", i, error);
-		}
+		connection->threadRunning = false;
 	}
-	apr_thread_mutex_unlock(instance->mutex);
-	apr_thread_pool_tasks_cancel(instance->threadPool,instance);
+
+	celixThreadMutex_unlock(&instance->mutex);
 
 	return status;
 }
 
-void *APR_THREAD_FUNC remoteShell_connection_run(apr_thread_t *thread, void *data) {
+void *remoteShell_connection_run(void *data) {
 	celix_status_t status = CELIX_SUCCESS;
 	connection_pt connection = data;
+	size_t len;
+	int result;
+	struct timeval timeout;  /* Timeout for select */
 
-	apr_size_t len;
-	char buff[COMMAND_BUFF_SIZE];
-	apr_pollfd_t pfd = { connection->pool, APR_POLL_SOCKET, APR_POLLIN, 0, { NULL }, NULL };
-	apr_int32_t num;
-	const apr_pollfd_t *ret_pfd;
+	connection->threadRunning = true;
+	status = remoteShell_connection_print(connection, RS_WELCOME);
 
-	pfd.desc.s = connection->socket;
+	while (status == CELIX_SUCCESS && connection->threadRunning == true) {
+		do {
+			timeout.tv_sec = CONNECTION_LISTENER_TIMEOUT_SEC;
+			timeout.tv_usec = 0;
 
-	status = CELIX_DO_IF(status, apr_pollset_add(connection->pollset, &pfd));
+			FD_ZERO(&connection->pollset);
+			FD_SET(connection->socket, &connection->pollset);
+			result = select(connection->socket + 1, &connection->pollset, NULL, NULL, &timeout);
+		} while (result == -1 && errno == EINTR && connection->threadRunning == true);
 
-	remoteShell_connection_print(connection, RS_WELCOME);
-	while (status == CELIX_SUCCESS) {
-		status = apr_pollset_poll(connection->pollset, -1, &num, &ret_pfd); //blocks on fd until a connection is made
-		if (status == APR_SUCCESS) {
-			len = COMMAND_BUFF_SIZE -1;
-			status = apr_socket_recv(connection->socket, buff, &len);
-			if (status == APR_SUCCESS && len < COMMAND_BUFF_SIZE) {
-				apr_status_t commandStatus = APR_SUCCESS;
+		/* The socket_fd has data available to be read */
+		if (result > 0 && FD_ISSET(connection->socket, &connection->pollset)) {
+			char buff[COMMAND_BUFF_SIZE];
+
+			len = recv(connection->socket, buff, COMMAND_BUFF_SIZE-1, 0);
+			if (len < COMMAND_BUFF_SIZE) {
+				celix_status_t commandStatus = CELIX_SUCCESS;
 				buff[len]='\0';
+
 				commandStatus = remoteShell_connection_execute(connection, buff);
+
 				if (commandStatus == CELIX_SUCCESS) {
 					remoteShell_connection_print(connection, RS_PROMPT);
-				} else if (commandStatus == APR_EOF) {
+				} else if (commandStatus == CELIX_FILE_IO_EXCEPTION) {
 					//exit command
 					break;
 				} else { //error
@@ -193,60 +182,46 @@ void *APR_THREAD_FUNC remoteShell_connection_run(apr_thread_t *thread, void *dat
 				}
 
 			} else {
-				char error[64];
-				apr_strerror(status, error, 64);
-				fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "REMOTE_SHELL: Got error %s", error);
+				fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "REMOTE_SHELL: Error while retrieving data");
 			}
-		} else if (status == APR_EINTR) {
-			fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "REMOTE_SHELL: Poll interrupted.");
-		} else /*error*/ {
-			char error[64];
-			apr_strerror(status, error, 64);
-			fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "REMOTE_SHELL: Got error %s", error);
-			break;
 		}
 	}
+
 	remoteShell_connection_print(connection, RS_GOODBYE);
 
 	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "REMOTE_SHELL: Closing socket");
-	apr_thread_mutex_lock(connection->parent->mutex);
+	celixThreadMutex_lock(&connection->parent->mutex);
 	arrayList_removeElement(connection->parent->connections, connection);
-	apr_thread_mutex_unlock(connection->parent->mutex);
+	celixThreadMutex_unlock(&connection->parent->mutex);
 
-	apr_socket_shutdown(connection->socket, APR_SHUTDOWN_READWRITE);
-	apr_pollset_destroy(connection->pollset);
-	apr_socket_close(connection->socket);
-	apr_pool_destroy(connection->pool);
+	close(connection->socket);
 
 	return NULL;
 }
 
 static celix_status_t remoteShell_connection_execute(connection_pt connection, char *command) {
-	celix_status_t status;
-
-	apr_pool_t *workPool = NULL;
-	status = apr_pool_create(&workPool,  connection->pool);
+	celix_status_t status = CELIX_SUCCESS;
 
 	if (status == CELIX_SUCCESS) {
-		char *dline = apr_pstrdup(workPool, command);
+		char *dline = strdup(command);
 		char *line = utils_stringTrim(dline);
 		int len = strlen(line);
 
 		if (len == 0) {
 			//ignore
 		} else if (len == 4 && strncmp("exit", line, 4) == 0) {
-			status = APR_EOF;
+			status = CELIX_FILE_IO_EXCEPTION;
 		} else {
 			status = shellMediator_executeCommand(connection->parent->mediator, line, connection->socket);
 		}
 
-		apr_pool_destroy(workPool);
+		free(dline);
 	}
 
 	return status;
 }
 
 celix_status_t remoteShell_connection_print(connection_pt connection, char *text) {
-	apr_size_t len = strlen(text);
-	return apr_socket_send(connection->socket, text, &len);
+	size_t len = strlen(text);
+	return (send(connection->socket, text, len, 0) > 0) ? CELIX_SUCCESS : CELIX_FILE_IO_EXCEPTION;
 }

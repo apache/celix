@@ -37,5 +37,5 @@ if (REMOTE_SHELL)
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/shell/public/include")
     
-    target_link_libraries(remote_shell celix_framework ${APRUTIL_LIBRARY})
+    target_link_libraries(remote_shell celix_framework)
 endif (REMOTE_SHELL)
