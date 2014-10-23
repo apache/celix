@@ -63,8 +63,7 @@ static celix_status_t remoteShell_connection_print(connection_pt connection, cha
 static celix_status_t remoteShell_connection_execute(connection_pt connection, char *command);
 static void* remoteShell_connection_run(void *data);
 
-
-celix_status_t remoteShell_create( shell_mediator_pt mediator, int maximumConnections, remote_shell_pt *instance) {
+celix_status_t remoteShell_create(shell_mediator_pt mediator, int maximumConnections, remote_shell_pt *instance) {
 	celix_status_t status = CELIX_SUCCESS;
 	(*instance) = calloc(1, sizeof(**instance));
 	if ((*instance) != NULL) {
@@ -104,7 +103,7 @@ celix_status_t remoteShell_addConnection(remote_shell_pt instance, int socket) {
 		if (arrayList_size(instance->connections) < instance->maximumConnections) {
 			celix_thread_t connectionRunThread = NULL;
 			arrayList_add(instance->connections, connection);
-		    status = celixThread_create(&connectionRunThread, NULL, &remoteShell_connection_run, connection);
+			status = celixThread_create(&connectionRunThread, NULL, &remoteShell_connection_run, connection);
 		} else {
 			status = CELIX_BUNDLE_EXCEPTION;
 			remoteShell_connection_print(connection, RS_MAXIMUM_CONNECTIONS_REACHED);
@@ -145,7 +144,7 @@ void *remoteShell_connection_run(void *data) {
 	connection_pt connection = data;
 	size_t len;
 	int result;
-	struct timeval timeout;  /* Timeout for select */
+	struct timeval timeout; /* Timeout for select */
 
 	connection->threadRunning = true;
 	status = remoteShell_connection_print(connection, RS_WELCOME);
@@ -164,10 +163,10 @@ void *remoteShell_connection_run(void *data) {
 		if (result > 0 && FD_ISSET(connection->socket, &connection->pollset)) {
 			char buff[COMMAND_BUFF_SIZE];
 
-			len = recv(connection->socket, buff, COMMAND_BUFF_SIZE-1, 0);
+			len = recv(connection->socket, buff, COMMAND_BUFF_SIZE - 1, 0);
 			if (len < COMMAND_BUFF_SIZE) {
 				celix_status_t commandStatus = CELIX_SUCCESS;
-				buff[len]='\0';
+				buff[len] = '\0';
 
 				commandStatus = remoteShell_connection_execute(connection, buff);
 

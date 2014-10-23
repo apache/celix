@@ -58,54 +58,54 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 
 	bundle_instance_pt bi = (bundle_instance_pt) calloc(1, sizeof(struct bundle_instance));
 
-    if (!bi)
-    {
-    	status = CELIX_ENOMEM;
-    }
-    else if (userData != NULL) {
-        	bi->shellMediator = NULL;
-        	bi->remoteShell = NULL;
-        	bi->connectionListener = NULL;
-        	(*userData) = bi;
-    } else {
-    	status = CELIX_ILLEGAL_ARGUMENT;
-    	free(bi);
-    }
+	if (!bi)
+	{
+		status = CELIX_ENOMEM;
+	}
+	else if (userData != NULL) {
+		bi->shellMediator = NULL;
+		bi->remoteShell = NULL;
+		bi->connectionListener = NULL;
+		(*userData) = bi;
+	} else {
+		status = CELIX_ILLEGAL_ARGUMENT;
+		free(bi);
+	}
 
-    return status;
+	return status;
 }
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
-    celix_status_t status = CELIX_SUCCESS;
-    bundle_instance_pt bi = (bundle_instance_pt)userData;
+	celix_status_t status = CELIX_SUCCESS;
+	bundle_instance_pt bi = (bundle_instance_pt) userData;
 
-    int port = bundleActivator_getPort(context);
-    int maxConn = bundleActivator_getMaximumConnections(context);
+	int port = bundleActivator_getPort(context);
+	int maxConn = bundleActivator_getMaximumConnections(context);
 
-    status = shellMediator_create(context, &bi->shellMediator);
-	status = CELIX_DO_IF(status, remoteShell_create(bi->shellMediator,  maxConn, &bi->remoteShell));
+	status = shellMediator_create(context, &bi->shellMediator);
+	status = CELIX_DO_IF(status, remoteShell_create(bi->shellMediator, maxConn, &bi->remoteShell));
 	status = CELIX_DO_IF(status, connectionListener_create(bi->remoteShell, port, &bi->connectionListener));
-    status = CELIX_DO_IF(status, connectionListener_start(bi->connectionListener));
+	status = CELIX_DO_IF(status, connectionListener_start(bi->connectionListener));
 
-    return status;
+	return status;
 }
 
 celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
-    celix_status_t status = CELIX_SUCCESS;
-    bundle_instance_pt bi = (bundle_instance_pt)userData;
+	celix_status_t status = CELIX_SUCCESS;
+	bundle_instance_pt bi = (bundle_instance_pt) userData;
 
-    shellMediator_destroy(bi->shellMediator);
-    connectionListener_stop(bi->connectionListener);
-    remoteShell_stopConnections(bi->remoteShell);
+	shellMediator_destroy(bi->shellMediator);
+	connectionListener_stop(bi->connectionListener);
+	remoteShell_stopConnections(bi->remoteShell);
 
-    return status;
+	return status;
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
-    bundle_instance_pt bi = (bundle_instance_pt)userData;
-    connectionListener_destroy(bi->connectionListener);
+	bundle_instance_pt bi = (bundle_instance_pt) userData;
+	connectionListener_destroy(bi->connectionListener);
 
-    return CELIX_SUCCESS;
+	return CELIX_SUCCESS;
 }
 
 static int bundleActivator_getPort(bundle_context_pt context) {
@@ -123,14 +123,14 @@ static int bundleActivator_getProperty(bundle_context_pt context, char* property
 
 	bundleContext_getProperty(context, propertyName, &strValue);
 	if (strValue != NULL) {
-    	char* endptr = strValue;
+		char* endptr = strValue;
 
-    	errno = 0;
-        value = strtol(strValue, &endptr, 10);
-        if (*endptr || errno != 0) {
+		errno = 0;
+		value = strtol(strValue, &endptr, 10);
+		if (*endptr || errno != 0) {
 			printf("incorrect format for %s\n", propertyName);
 			value = defaultValue;
-        }
+		}
 	}
 	else {
 		value = defaultValue;

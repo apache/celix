@@ -59,7 +59,7 @@ celix_status_t shellMediator_create(bundle_context_pt context, shell_mediator_pt
 	service_tracker_customizer_pt customizer = NULL;
 
 	(*instance) = (shell_mediator_pt) calloc(1, sizeof(**instance));
-    if ((*instance) != NULL) {
+	if ((*instance) != NULL) {
 
 		(*instance)->context = context;
 		(*instance)->tracker = NULL;
@@ -69,7 +69,7 @@ celix_status_t shellMediator_create(bundle_context_pt context, shell_mediator_pt
 
 		status = CELIX_DO_IF(status, serviceTrackerCustomizer_create((*instance), shellMediator_addingService, shellMediator_addedService,
 				shellMediator_modifiedService, shellMediator_removedService, &customizer));
-		status = CELIX_DO_IF(status, serviceTracker_create(context, (char *)OSGI_SHELL_SERVICE_NAME, customizer, &(*instance)->tracker));
+		status = CELIX_DO_IF(status, serviceTracker_create(context, (char * )OSGI_SHELL_SERVICE_NAME, customizer, &(*instance)->tracker));
 
 		if (status == CELIX_SUCCESS) {
 			serviceTracker_open((*instance)->tracker);
@@ -78,21 +78,20 @@ celix_status_t shellMediator_create(bundle_context_pt context, shell_mediator_pt
 		status = CELIX_ENOMEM;
 	}
 
-    if (status != CELIX_SUCCESS) {
-    	printf("Error creating shell_mediator, error code is %i\n", status);
-    }
+	if (status != CELIX_SUCCESS) {
+		printf("Error creating shell_mediator, error code is %i\n", status);
+	}
 	return status;
 }
 
-
 celix_status_t shellMediator_destroy(shell_mediator_pt instance) {
-    celixThreadMutex_lock(&instance->mutex);
+	celixThreadMutex_lock(&instance->mutex);
 
-    instance->shellService=NULL;
-    serviceTracker_close(instance->tracker);
-    celixThreadMutex_unlock(&instance->mutex);
+	instance->shellService = NULL;
+	serviceTracker_close(instance->tracker);
+	celixThreadMutex_unlock(&instance->mutex);
 
-    return CELIX_SUCCESS;
+	return CELIX_SUCCESS;
 }
 
 static void shellMediator_writeOnCurrentSocket(char *buff) {
@@ -107,9 +106,9 @@ celix_status_t shellMediator_executeCommand(shell_mediator_pt instance, char *co
 	celixThreadMutex_lock(&instance->mutex);
 
 	if (instance->shellService != NULL) {
-		currentOutputSocket=socket;
+		currentOutputSocket = socket;
 		instance->shellService->executeCommand(instance->shellService->shell, command, shellMediator_writeOnCurrentSocket, shellMediator_writeOnCurrentSocket);
-		currentOutputSocket=-1;
+		currentOutputSocket = -1;
 	}
 
 	celixThreadMutex_unlock(&instance->mutex);
