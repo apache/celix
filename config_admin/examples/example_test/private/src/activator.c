@@ -44,17 +44,17 @@
 #include "example_managed_service_impl.h"
 
 
-static void test_debugConfiguration(configuration_t configuration, char* pid);
+static void test_debugConfiguration(configuration_pt configuration, char* pid);
 
 
-celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	*userData = NULL;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT ctx) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_pt ctx) {
 
-	SERVICE_REFERENCE ref = NULL;
+	service_reference_pt ref = NULL;
 	celix_status_t status = bundleContext_getServiceReference(ctx, (char *) CONFIGURATION_ADMIN_SERVICE_NAME, &ref);
 
 	if (status == CELIX_SUCCESS) {
@@ -67,7 +67,7 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT ctx) {
 
 			printf("------------------- DEMO ---------------------- \n");
 
-			configuration_admin_service_t confAdminServ = NULL;
+			configuration_admin_service_pt confAdminServ = NULL;
 			bundleContext_getService(ctx, ref, (void *) &confAdminServ);
 
 			if (confAdminServ == NULL){
@@ -84,7 +84,7 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT ctx) {
 
 				printf("------------------- TEST01 -------------------- \n");
 				printf("[ TEST ]: getConfiguration(pid=%s) - It's new \n",pid);
-				configuration_t configuration;
+				configuration_pt configuration;
 				(*confAdminServ->getConfiguration)(confAdminServ->configAdmin,pid, &configuration);
 
 				test_debugConfiguration(configuration, pid);
@@ -95,7 +95,7 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT ctx) {
 
 				printf("------------------- TEST02--------------------- \n");
 				printf("[ TEST ]: getConfiguration(pid=%s) - Looking for it in Cache \n",pid2);
-				configuration_t configuration2;
+				configuration_pt configuration2;
 				(*confAdminServ->getConfiguration)(confAdminServ->configAdmin,pid2, &configuration2);
 
 				test_debugConfiguration(configuration2, pid2);
@@ -106,13 +106,13 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT ctx) {
 				printf("[ TEST ]: register ManagedService(pid=%s) \n",pid);
 
 
-				managed_service_t instance;
+				managed_service_pt instance;
 				status = managedServiceImpl_create(ctx, &instance);
 				if (status != CELIX_SUCCESS){
 					return status;
 				}
 
-				managed_service_service_t managedService;
+				managed_service_service_pt managedService;
 				status = managedService_create(ctx, &managedService);
 				if (status != CELIX_SUCCESS){
 					return status;
@@ -121,9 +121,9 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT ctx) {
 				managedService->managedService = instance;
 				managedService->updated = managedServiceImpl_updated;
 
-				PROPERTIES dictionary;
+				properties_pt dictionary;
 				dictionary = properties_create();
-				properties_set(dictionary, (char *) SERVICE_PID, pid);
+				properties_set(dictionary, (char *) OSGI_FRAMEWORK_SERVICE_PID, pid);
 
 				status = bundleContext_registerService(ctx, (char *) MANAGED_SERVICE_SERVICE_NAME,
 						managedService, dictionary, &instance->registration);
@@ -146,7 +146,7 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT ctx) {
 				printf("[ TEST ]: configuration update New Properties \n");
 				char *prop1 = "type";
 				char *value1 = "printer";
-				PROPERTIES properties = properties_create();
+				properties_pt properties = properties_create();
 				properties_set(properties, prop1, value1);
 				configuration_update(configuration , properties);
 
@@ -155,10 +155,10 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT ctx) {
 				printf("------------------- TEST06 -------------------- \n");
 				printf("[ TEST ]: configuration get properties \n");
 
-				PROPERTIES propsRx = properties_create();
+				properties_pt propsRx = properties_create();
 				configuration_getProperties(configuration, &propsRx);
 
-				printf("[ TEST ]: PROP=%s - VALUE=%s \n", (char*)SERVICE_PID, properties_get(propsRx,(char*)SERVICE_PID));
+				printf("[ TEST ]: PROP=%s - VALUE=%s \n", (char*)OSGI_FRAMEWORK_SERVICE_PID, properties_get(propsRx,(char*)OSGI_FRAMEWORK_SERVICE_PID));
 				printf("[ TEST ]: PROP=%s - VALUE=%s \n", prop1, properties_get(propsRx,prop1));
 
 				printf("/////////////////// END TESTS ///////////////// \n");
@@ -169,15 +169,15 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT ctx) {
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	return CELIX_SUCCESS;
 }
 
-void test_debugConfiguration(configuration_t configuration, char* pid){
+void test_debugConfiguration(configuration_pt configuration, char* pid){
 
 	if (configuration == NULL){
 		printf("[ TEST ]: Configuration(pid=%s) is NULL \n", pid);

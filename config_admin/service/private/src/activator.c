@@ -122,7 +122,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 
 	bi->configAdminFactoryReg = NULL;
 
-	return CELIX_SUCCESS;
+	return status;
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {

@@ -77,8 +77,6 @@ static celix_status_t configurationStore_parseDataConfigurationFile(char *data, 
 
 celix_status_t configurationStore_create(apr_pool_t *pool, bundle_context_pt context, configuration_admin_factory_pt factory, configuration_store_pt *store){
 
-	celix_status_t status;
-
 	*store = apr_palloc(pool, sizeof(**store));
 
 	if (!*store){

@@ -92,9 +92,6 @@ celix_status_t configurationAdmin_createFactoryConfiguration2(configuration_admi
 }
 
 celix_status_t configurationAdmin_getConfiguration(configuration_admin_pt configAdmin, char *pid, configuration_pt *configuration){
-
-	celix_status_t status;
-
 	configuration_pt config;
 
 	char *configAdminBundleLocation;
@@ -139,7 +136,7 @@ celix_status_t configurationAdmin_getConfiguration(configuration_admin_pt config
 	// (4) config.getBundleLocation != NULL ?
 	if ( configuration_getBundleLocation2(config,false,&configBundleLocation) == CELIX_SUCCESS ){
 
-		if ( string_equals(configAdminBundleLocation,configBundleLocation) != 1 ){
+		if ( strcmp(configAdminBundleLocation,configBundleLocation) != 0 ){
 
 			if ( configurationAdminFactory_checkConfigurationPermission(configAdmin->configurationAdminFactory) != CELIX_SUCCESS ){
 				printf("[ ERROR ]: ConfigAdmin - Config. Permission \n");

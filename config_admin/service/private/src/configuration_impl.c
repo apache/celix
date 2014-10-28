@@ -350,7 +350,7 @@ celix_status_t configuration_bind(configuration_pt configuration, bundle_pt bund
 			}
 
 			// (3): bundle and configuration have the same location?
-			if ( string_equals(configuration->bundleLocation, bundleLocation) ){ // (3): Yes
+			if ( strcmp(configuration->bundleLocation, bundleLocation) == 0 ){ // (3): Yes
 				// bind up configuration with bundle
 				configuration->boundBundle = bundle;
 				printf("[ DEBUG ]: Configuration{PID=%s} - bind (bound with Bundle{%s}) \n",configuration->pid,bundleLocation);

@@ -42,6 +42,7 @@
 #include "constants.h"
 #include "properties.h"
 #include "utils.h"
+#include "service_reference.h"
 /* celix.framework.Patch*/
 #include "framework_patch.h"
 /* celix.config_admin.public */
@@ -166,29 +167,22 @@ celix_status_t managedServiceTracker_createHandle(apr_pool_t *pool, bundle_conte
 
 celix_status_t managedServiceTracker_createCustomized(apr_pool_t *pool, bundle_context_pt context,
 													  	  	 managed_service_tracker_t trackerHandle, service_tracker_pt *tracker){
-
 	celix_status_t status = CELIX_SUCCESS;
 
-	//TODO use create
-	//serviceTrackerCustomizer_create
-
-	service_tracker_customizer_pt customizer = apr_palloc(pool, sizeof(struct serviceTrackerCustomizer));
+	service_tracker_customizer_pt customizer = NULL;
 	service_tracker_pt managedServiceTracker = NULL;
 
+	status  = serviceTrackerCustomizer_create(trackerHandle, managedServiceTracker_addingService, managedServiceTracker_addedService,
+			managedServiceTracker_modifiedService, managedServiceTracker_removedService, &customizer);
 
-	if(!customizer){
+	if(status != CELIX_SUCCESS){
 		printf("[ ERROR ]: TrackerCustomized - Not initialized(ENOMEM) \n");
 		*tracker = NULL;
 		return CELIX_ENOMEM;
 	}
 
-	customizer->handle= trackerHandle;
-	customizer->addingService=managedServiceTracker_addingService;
-	customizer->addedService=managedServiceTracker_addedService;
-	customizer->modifiedService=managedServiceTracker_modifiedService;
-	customizer->removedService=managedServiceTracker_removedService;
+	serviceTracker_create(context, (char *) MANAGED_SERVICE_SERVICE_NAME, customizer, &managedServiceTracker);
 
-	status = serviceTracker_create(pool, context, (char *) MANAGED_SERVICE_SERVICE_NAME, customizer, &managedServiceTracker);
 	if (status != CELIX_SUCCESS) {
 		printf("[ ERROR ]: TrackerCustomized - Not created \n");
 		*tracker = NULL;
@@ -210,7 +204,7 @@ celix_status_t managedServiceTracker_addingService(void * handle, service_refere
 
 	celix_status_t status;
 
-	void *pid = NULL;
+	char *pid = NULL;
 
 	bundle_context_pt context = NULL;
 
@@ -219,7 +213,8 @@ celix_status_t managedServiceTracker_addingService(void * handle, service_refere
 
 	// (1) reference.getPid
 
-	if ( serviceReference_getProperty(reference, (char *)SERVICE_PID, &pid) != CELIX_SUCCESS || pid == NULL){
+	status = serviceReference_getProperty(reference, (char *)OSGI_FRAMEWORK_SERVICE_ID, &pid);
+	if (status != CELIX_SUCCESS || pid == NULL){
 		*service = NULL;
 		printf(" [ ERROR ]: Tracker - PID is NULL \n");
 		return CELIX_ILLEGAL_ARGUMENT;

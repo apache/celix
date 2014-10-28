@@ -28,14 +28,14 @@
 #include "configuration.h"
 
 
-celix_status_t bundleActivator_create(BUNDLE_CONTEXT context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	*userData = NULL;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT ctx) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_pt ctx) {
 
-	SERVICE_REFERENCE ref = NULL;
+	service_reference_pt ref = NULL;
 	celix_status_t status = bundleContext_getServiceReference(ctx, (char *) CONFIGURATION_ADMIN_SERVICE_NAME, &ref);
 
 	if (status == CELIX_SUCCESS) {
@@ -46,7 +46,7 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT ctx) {
 
 		} else {
 
-			configuration_admin_service_t confAdminServ = NULL;
+			configuration_admin_service_pt confAdminServ = NULL;
 			bundleContext_getService(ctx, ref, (void *) &confAdminServ);
 
 			if (confAdminServ == NULL){
@@ -57,7 +57,7 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT ctx) {
 
 				char *pid = "base.device1";
 
-				configuration_t configuration;
+				configuration_pt configuration;
 				char *configurationLocation;
 
 				/* ------------------ get Configuration -------------------*/
@@ -83,11 +83,11 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT ctx) {
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	return CELIX_SUCCESS;
 }
 

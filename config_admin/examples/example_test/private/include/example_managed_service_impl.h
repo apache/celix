@@ -43,14 +43,14 @@
 struct managed_service{
 
 	apr_pool_t 				*pool;
-	BUNDLE_CONTEXT 			context;
+	bundle_context_pt 			context;
 
-	SERVICE_REGISTRATION 	registration;
-	PROPERTIES 				properties;
+	service_registration_pt 	registration;
+	properties_pt 				properties;
 
 };
 
-celix_status_t managedServiceImpl_create(BUNDLE_CONTEXT context, managed_service_t *instance);
-celix_status_t managedServiceImpl_updated(managed_service_t instance, PROPERTIES properties);
+celix_status_t managedServiceImpl_create(bundle_context_pt context, managed_service_pt *instance);
+celix_status_t managedServiceImpl_updated(managed_service_pt instance, properties_pt properties);
 
 #endif /* MANAGED_SERVICE_IMPL_H_ */

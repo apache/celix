@@ -45,9 +45,9 @@
 #include "example_managed_service_impl.h"
 
 
-celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT ctx) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_pt ctx) {
 
-	SERVICE_REFERENCE ref = NULL;
+	service_reference_pt ref = NULL;
 	celix_status_t status = bundleContext_getServiceReference(ctx, (char *) CONFIGURATION_ADMIN_SERVICE_NAME, &ref);
 
 	if (status == CELIX_SUCCESS) {
@@ -60,7 +60,7 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT ctx) {
 
 			printf("------------------- DEMO ---------------------- \n");
 
-			configuration_admin_service_t confAdminServ = NULL;
+			configuration_admin_service_pt confAdminServ = NULL;
 			bundleContext_getService(ctx, ref, (void *) &confAdminServ);
 
 			if (confAdminServ == NULL){
@@ -75,13 +75,13 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT ctx) {
 				printf("[ BUNDLE example_managed_service ]: register ManagedService(pid=%s) \n",pid);
 
 
-				managed_service_t instance;
+				managed_service_pt instance;
 				status = managedServiceImpl_create(ctx, &instance);
 				if (status != CELIX_SUCCESS){
 					return status;
 				}
 
-				managed_service_service_t managedService;
+				managed_service_service_pt managedService;
 				status = managedService_create(ctx, &managedService);
 				if (status != CELIX_SUCCESS){
 					return status;
@@ -90,9 +90,9 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT ctx) {
 				managedService->managedService = instance;
 				managedService->updated = managedServiceImpl_updated;
 
-				PROPERTIES dictionary;
+				properties_pt dictionary;
 				dictionary = properties_create();
-				properties_set(dictionary, (char *) SERVICE_PID, pid);
+				properties_set(dictionary, (char *) OSGI_FRAMEWORK_SERVICE_PID, pid);
 
 				status = bundleContext_registerService(ctx, (char *) MANAGED_SERVICE_SERVICE_NAME,
 						managedService, dictionary, &instance->registration);
@@ -109,11 +109,11 @@ celix_status_t bundleActivator_start(void * userData, BUNDLE_CONTEXT ctx) {
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, BUNDLE_CONTEXT context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	return CELIX_SUCCESS;
 }
 
