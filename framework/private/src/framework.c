@@ -272,8 +272,6 @@ celix_status_t framework_destroy(framework_pt framework) {
 		hashMap_destroy(framework->installedBundleMap, true, false);
 	}
 
-	free(framework);
-
 	return status;
 }
 
