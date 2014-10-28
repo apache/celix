@@ -229,9 +229,6 @@ celix_status_t framework_destroy(framework_pt framework) {
 		bundle_pt bundle = (bundle_pt) hashMapEntry_getValue(entry);
 		bundle_archive_pt archive = NULL;
 
-		if (bundle_getArchive(bundle, &archive) == CELIX_SUCCESS) {
-			bundleArchive_destroy(archive);
-		}
 		bool systemBundle = false;
 		bundle_isSystemBundle(bundle, &systemBundle);
 		if (systemBundle) {
@@ -239,8 +236,10 @@ celix_status_t framework_destroy(framework_pt framework) {
             bundle_getContext(framework->bundle, &context);
             bundleContext_destroy(context);
 		}
+		if (bundle_getArchive(bundle, &archive) == CELIX_SUCCESS) {
+			bundleArchive_destroy(archive);
+		}
 		bundle_destroy(bundle);
-		hashMapIterator_remove(iterator);
 	}
 	hashMapIterator_destroy(iterator);
 	}
@@ -270,8 +269,10 @@ celix_status_t framework_destroy(framework_pt framework) {
 	    arrayList_destroy(framework->requests);
 	}
 	if(framework->installedBundleMap!=NULL){
-	hashMap_destroy(framework->installedBundleMap, false, false);
+		hashMap_destroy(framework->installedBundleMap, true, false);
 	}
+
+	free(framework);
 
 	return status;
 }
@@ -346,7 +347,7 @@ celix_status_t fw_init(framework_pt framework) {
     status = CELIX_DO_IF(status, bundle_getArchive(framework->bundle, &archive));
     status = CELIX_DO_IF(status, bundleArchive_getLocation(archive, &location));
     if (status == CELIX_SUCCESS) {
-        hashMap_put(framework->installedBundleMap, location, framework->bundle);
+        hashMap_put(framework->installedBundleMap, strdup(location), framework->bundle);
     }
     status = CELIX_DO_IF(status, bundle_getCurrentModule(framework->bundle, &module));
     if (status == CELIX_SUCCESS) {
@@ -527,6 +528,7 @@ celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, lon
 
         if (archive == NULL) {
             id = framework_getNextBundleId(framework);
+
             status = CELIX_DO_IF(status, bundleCache_createArchive(framework->cache, id, location, inputFile, &archive));
         } else {
             // purge revision
@@ -542,7 +544,7 @@ celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, lon
 
                 framework_releaseGlobalLock(framework);
                 if (status == CELIX_SUCCESS) {
-                    hashMap_put(framework->installedBundleMap, location, *bundle);
+                    hashMap_put(framework->installedBundleMap, strdup(location), *bundle);
                 } else {
                     status = CELIX_BUNDLE_EXCEPTION;
                     status = CELIX_DO_IF(status, bundleArchive_closeAndDelete(archive));
@@ -550,6 +552,7 @@ celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, lon
             }
         }
     }
+
     framework_releaseInstallLock(framework, location);
 
     if (status != CELIX_SUCCESS) {
@@ -1979,6 +1982,8 @@ static void *framework_shutdown(void *framework) {
             iter = hashMapIterator_create(fw->installedBundleMap);
         }
 	}
+
+    hashMapIterator_destroy(iter);
 
 	err = celixThreadMutex_lock(&fw->mutex);
 	if (err != 0) {
