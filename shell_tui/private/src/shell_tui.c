@@ -26,6 +26,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
+#include <sys/select.h>
 
 #include <apr_general.h>
 #include <apr_thread_proc.h>
@@ -55,28 +57,38 @@ static void *APR_THREAD_FUNC shellTui_runnable(apr_thread_t *thd, void *data) {
 	shell_tui_activator_pt act = (shell_tui_activator_pt) data;
 
 	char in[256];
+	char dline[256];
 	bool needPrompt = true;
+
+	fd_set rfds;
+	struct timeval tv;
+
 	while (act->running) {
-		char * dline = NULL;
 		char * line = NULL;
 		if (needPrompt) {
 			printf("-> ");
+			fflush(stdout);
 			needPrompt = false;
 		}
-		fgets(in, 256, stdin);
-		needPrompt = true;
-		dline = strdup(in);
-		line = utils_stringTrim(dline);
-		if (strlen(line) == 0) {
-		    free(dline);
-			continue;
+		FD_ZERO(&rfds);
+		FD_SET(0, &rfds);
+
+		tv.tv_sec = 1;
+		tv.tv_usec = 0;
+
+		if(select(1, &rfds, NULL, NULL, &tv)){
+			fgets(in, 256, stdin);
+			needPrompt = true;
+			memset(dline,0,256);
+			strncpy(dline,in,256);
+
+			line = utils_stringTrim(dline);
+			if ( (strlen(line) == 0) || (act->shell == NULL) ){
+				continue;
+			}
+
+			act->shell->executeCommand(act->shell->shell, line, shellTui_write, shellTui_write);
 		}
-		if (act->shell == NULL) {
-		    free(dline);
-			continue;
-		}
-		act->shell->executeCommand(act->shell->shell, line, shellTui_write, shellTui_write);
-		free(dline);
 	}
 	apr_thread_exit(thd, APR_SUCCESS);
 	return NULL;
