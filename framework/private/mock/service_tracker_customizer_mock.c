@@ -35,6 +35,12 @@ celix_status_t serviceTrackerCustomizer_create(void *handle,
 	return mock_c()->returnValue().value.intValue;
 }
 
+celix_status_t serviceTrackerCustomizer_destroy(service_tracker_customizer_pt customizer) {
+	mock_c()->actualCall("serviceTrackerCustomizer_destroy")
+			->withPointerParameters("customizer", customizer);
+	return mock_c()->returnValue().value.intValue;
+}
+
 celix_status_t serviceTrackerCustomizer_getHandle(service_tracker_customizer_pt customizer, void **handle) {
 	mock_c()->actualCall("serviceTrackerCustomizer_getHandle")
 			->withPointerParameters("customizer", customizer)

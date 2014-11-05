@@ -23,6 +23,8 @@
  *  \author     <a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
  *  \copyright  Apache License, Version 2.0
  */
+#include <string.h>
+
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/TestHarness_c.h"
 #include "CppUTest/CommandLineTestRunner.h"

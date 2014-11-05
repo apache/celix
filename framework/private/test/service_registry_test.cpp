@@ -337,7 +337,8 @@ TEST(service_registry, getServiceReferences) {
 		.andReturnValue(CELIX_SUCCESS);
 
 	array_list_pt actual  = NULL;
-	serviceRegistry_getServiceReferences(registry, "test", NULL, &actual);
+
+	serviceRegistry_getServiceReferences(registry, NULL, "test", NULL, &actual);
 	LONGS_EQUAL(1, arrayList_size(actual));
 	POINTERS_EQUAL(reference, arrayList_get(actual, 0));
 }
@@ -584,7 +585,7 @@ TEST(service_registry, createServiceReference) {
 		.andReturnValue(CELIX_SUCCESS);
 
 	service_reference_pt actual  = NULL;
-	serviceRegistry_createServiceReference(registry, registration, &actual);
+	serviceRegistry_createServiceReference(registry, NULL, registration, &actual);
 	POINTERS_EQUAL(reference, actual);
 }
 
@@ -622,7 +623,7 @@ TEST(service_registry, getListenerHooks) {
 		.andReturnValue(CELIX_SUCCESS);
 
 	array_list_pt hooks = NULL;
-	celix_status_t status = serviceRegistry_getListenerHooks(registry, &hooks);
+	celix_status_t status = serviceRegistry_getListenerHooks(registry, NULL, &hooks);
 	LONGS_EQUAL(1, arrayList_size(hooks));
 	POINTERS_EQUAL(reference, arrayList_get(hooks, 0));
 }

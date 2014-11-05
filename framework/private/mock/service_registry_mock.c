@@ -70,7 +70,7 @@ celix_status_t serviceRegistry_unregisterServices(service_registry_pt registry, 
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t serviceRegistry_getServiceReferences(service_registry_pt registry, const char *serviceName, filter_pt filter, array_list_pt *references) {
+celix_status_t serviceRegistry_getServiceReferences(service_registry_pt registry, bundle_pt bundle, const char *serviceName, filter_pt filter, array_list_pt *references) {
 	mock_c()->actualCall("serviceRegistry_getServiceReferences");
 	return mock_c()->returnValue().value.intValue;
 }
@@ -101,12 +101,17 @@ service_registration_pt serviceRegistry_findRegistration(service_registry_pt reg
 	return mock_c()->returnValue().value.pointerValue;
 }
 
-celix_status_t serviceRegistry_createServiceReference(service_registry_pt registry, service_registration_pt registration, service_reference_pt *reference) {
+celix_status_t serviceRegistry_createServiceReference(service_registry_pt registry, bundle_pt bundle, service_registration_pt registration, service_reference_pt *reference) {
 	mock_c()->actualCall("serviceRegistry_createServiceReference");
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t serviceRegistry_getListenerHooks(service_registry_pt registry, array_list_pt *hooks) {
+celix_status_t serviceRegistry_getServiceReferencesForRegistration(service_registry_pt registry, service_registration_pt registration, array_list_pt *references) {
+	mock_c()->actualCall("serviceRegistry_getServiceReferencesForRegistration");
+	return mock_c()->returnValue().value.intValue;
+}
+
+celix_status_t serviceRegistry_getListenerHooks(service_registry_pt registry, bundle_pt bundle, array_list_pt *hooks) {
 	mock_c()->actualCall("serviceRegistry_getListenerHooks");
 	return mock_c()->returnValue().value.intValue;
 }
