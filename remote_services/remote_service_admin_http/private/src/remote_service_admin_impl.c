@@ -256,6 +256,7 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
 							mg_write(conn, response, strlen(response));
 
 							result = 1;
+							free(response);
 						}
 
 						free(data);
