@@ -66,11 +66,14 @@ struct get {
     int size;
 };
 
-static const char *response_headers =
+static const char *data_response_headers =
   "HTTP/1.1 200 OK\r\n"
   "Cache: no-cache\r\n"
   "Content-Type: application/json\r\n"
   "\r\n";
+
+static const char *no_content_response_headers =
+  "HTTP/1.1 204 OK\r\n";
 
 // TODO do we need to specify a non-Amdatu specific configuration type?!
 static const char * const CONFIGURATION_TYPE = "org.amdatu.remote.admin.http";
@@ -252,12 +255,14 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
 						export->endpoint->handleRequest(export->endpoint->endpoint, data, &response);
 
 						if (response != NULL) {
-							mg_write(conn, response_headers, strlen(response_headers));
+						    mg_write(conn, data_response_headers, strlen(data_response_headers));
 							mg_write(conn, response, strlen(response));
 
-							result = 1;
 							free(response);
+						} else {
+						    mg_write(conn, no_content_response_headers, strlen(no_content_response_headers));
 						}
+                        result = 1;
 
 						free(data);
 					}
