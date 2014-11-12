@@ -32,6 +32,14 @@
 
 #include "shell_mediator.h"
 
+struct remote_shell {
+	log_helper_pt* loghelper;
+	shell_mediator_pt mediator;
+	celix_thread_mutex_t mutex;
+	int maximumConnections;
+
+	array_list_pt connections;
+};
 typedef struct remote_shell *remote_shell_pt;
 
 celix_status_t remoteShell_create(shell_mediator_pt mediator, int maximumConnections, remote_shell_pt *instance);

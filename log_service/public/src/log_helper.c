@@ -1,0 +1,175 @@
+
+#include <stdlib.h>
+#include <stdarg.h>
+
+
+#include "bundle_context.h"
+#include "service_tracker.h"
+#include "celix_threads.h"
+#include "array_list.h"
+
+#include "celix_errno.h"
+#include "log_service.h"
+
+#include "log_helper.h"
+
+struct log_helper {
+	bundle_context_pt bundleContext;
+    service_tracker_pt logServiceTracker;
+	celix_thread_mutex_t logListLock;
+	array_list_pt logServices;
+};
+
+celix_status_t logHelper_logServiceAdded(void *handle, service_reference_pt reference, void *service);
+celix_status_t logHelper_logServiceRemoved(void *handle, service_reference_pt reference, void *service);
+
+
+celix_status_t logHelper_create(bundle_context_pt context, log_helper_pt* loghelper)
+{
+	celix_status_t status = CELIX_SUCCESS;
+
+	(*loghelper) = calloc(1, sizeof(**loghelper));
+
+	if (!(*loghelper))
+	{
+		status = CELIX_ENOMEM;
+	}
+	else
+	{
+		(*loghelper)->bundleContext = context;
+		(*loghelper)->logServiceTracker = NULL;
+
+		pthread_mutex_init(&(*loghelper)->logListLock, NULL);
+        arrayList_create(&(*loghelper)->logServices);
+	}
+
+	return status;
+}
+
+celix_status_t logHelper_start(log_helper_pt loghelper)
+{
+	celix_status_t status = CELIX_SUCCESS;
+	service_tracker_customizer_pt logTrackerCustomizer = NULL;
+
+	status = serviceTrackerCustomizer_create(loghelper, NULL, logHelper_logServiceAdded, NULL, logHelper_logServiceRemoved, &logTrackerCustomizer);
+
+	if (status == CELIX_SUCCESS) {
+		status = serviceTracker_create(loghelper->bundleContext, (char*) OSGI_LOGSERVICE_NAME, logTrackerCustomizer, &loghelper->logServiceTracker);
+	}
+
+	if (status == CELIX_SUCCESS) {
+		status = serviceTracker_open(loghelper->logServiceTracker);
+	}
+
+	return status;
+}
+
+
+
+celix_status_t logHelper_logServiceAdded(void *handle, service_reference_pt reference, void *service)
+{
+	log_helper_pt loghelper = handle;
+
+	pthread_mutex_lock(&loghelper->logListLock);
+	arrayList_add(loghelper->logServices, service);
+	pthread_mutex_unlock(&loghelper->logListLock);
+
+	return CELIX_SUCCESS;
+}
+
+celix_status_t logHelper_logServiceRemoved(void *handle, service_reference_pt reference, void *service)
+{
+	log_helper_pt loghelper = handle;
+
+	pthread_mutex_lock(&loghelper->logListLock);
+	arrayList_removeElement(loghelper->logServices, service);
+	pthread_mutex_unlock(&loghelper->logListLock);
+
+	return CELIX_SUCCESS;
+}
+
+
+celix_status_t logHelper_stop(log_helper_pt loghelper) {
+	celix_status_t status = CELIX_SUCCESS;
+
+    status = serviceTracker_close(loghelper->logServiceTracker);
+
+    return status;
+}
+
+celix_status_t logHelper_destroy(log_helper_pt* loghelper) {
+        celix_status_t status = CELIX_SUCCESS;
+
+        serviceTracker_destroy((*loghelper)->logServiceTracker);
+
+        pthread_mutex_lock(&(*loghelper)->logListLock);
+        arrayList_destroy((*loghelper)->logServices);
+    	pthread_mutex_unlock(&(*loghelper)->logListLock);
+
+        pthread_mutex_destroy(&(*loghelper)->logListLock);
+
+        free(*loghelper);
+        *loghelper = NULL;
+        return status;
+}
+
+
+
+
+celix_status_t logHelper_log(log_helper_pt loghelper, log_level_t level, char* message, ... )
+{
+    celix_status_t status = CELIX_SUCCESS;
+	va_list listPointer;
+    char msg[512];
+    bool logged = false;
+
+	va_start(listPointer, message);
+	vsprintf(msg, message, listPointer);
+
+	if (loghelper != NULL) {
+		pthread_mutex_lock(&loghelper->logListLock);
+
+		if (arrayList_size(loghelper->logServices) > 0) {
+			int i = 0;
+
+			for (; i < arrayList_size(loghelper->logServices); i++) {
+
+				log_service_pt logService = arrayList_get(loghelper->logServices, i);
+
+				if (logService != NULL) {
+					(logService->log)(logService->logger, level, message);
+					logged = true;
+				}
+			}
+
+		}
+
+		pthread_mutex_unlock(&loghelper->logListLock);
+	}
+
+
+    if (!logged) {
+        char *levelStr = NULL;
+
+        switch (level) {
+            case OSGI_FRAMEWORK_LOG_ERROR:
+                levelStr = "ERROR";
+                break;
+            case OSGI_FRAMEWORK_LOG_WARNING:
+                levelStr = "WARNING";
+                break;
+            case OSGI_FRAMEWORK_LOG_INFO:
+                levelStr = "INFO";
+                break;
+            case OSGI_FRAMEWORK_LOG_DEBUG:
+            default:
+                levelStr = "DEBUG";
+                break;
+        }
+
+        printf("%s: %s\n", levelStr, msg);
+    }
+
+
+	return status;
+}

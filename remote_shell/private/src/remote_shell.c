@@ -30,6 +30,9 @@
 #include <utils.h>
 #include <array_list.h>
 
+#include "log_helper.h"
+
+#include "log_service.h"
 #include "remote_shell.h"
 
 #define COMMAND_BUFF_SIZE (256)
@@ -42,13 +45,7 @@
 
 #define CONNECTION_LISTENER_TIMEOUT_SEC		5
 
-struct remote_shell {
-	shell_mediator_pt mediator;
-	celix_thread_mutex_t mutex;
-	int maximumConnections;
 
-	array_list_pt connections;
-};
 
 struct connection {
 	remote_shell_pt parent;
@@ -70,9 +67,13 @@ celix_status_t remoteShell_create(shell_mediator_pt mediator, int maximumConnect
 		(*instance)->mediator = mediator;
 		(*instance)->maximumConnections = maximumConnections;
 		(*instance)->connections = NULL;
+		(*instance)->loghelper = &mediator->loghelper;
 
 		status = celixThreadMutex_create(&(*instance)->mutex, NULL);
-		status = arrayList_create(&(*instance)->connections);
+
+		if (status == CELIX_SUCCESS) {
+			status = arrayList_create(&(*instance)->connections);
+		}
 	} else {
 		status = CELIX_ENOMEM;
 	}
@@ -80,13 +81,15 @@ celix_status_t remoteShell_create(shell_mediator_pt mediator, int maximumConnect
 }
 
 celix_status_t remoteShell_destroy(remote_shell_pt instance) {
+	celix_status_t status = CELIX_SUCCESS;
+
 	remoteShell_stopConnections(instance);
 
 	celixThreadMutex_lock(&instance->mutex);
 	arrayList_destroy(instance->connections);
 	celixThreadMutex_unlock(&instance->mutex);
 
-	return CELIX_SUCCESS;
+	return status;
 }
 
 celix_status_t remoteShell_addConnection(remote_shell_pt instance, int socket) {
@@ -181,14 +184,14 @@ void *remoteShell_connection_run(void *data) {
 				}
 
 			} else {
-				fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "REMOTE_SHELL: Error while retrieving data");
+				logHelper_log(*connection->parent->loghelper, OSGI_FRAMEWORK_LOG_ERROR, "REMOTE_SHELL: Error while retrieving data");
 			}
 		}
 	}
 
 	remoteShell_connection_print(connection, RS_GOODBYE);
 
-	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "REMOTE_SHELL: Closing socket");
+	logHelper_log(*connection->parent->loghelper, OSGI_FRAMEWORK_LOG_INFO, "REMOTE_SHELL: Closing socket");
 	celixThreadMutex_lock(&connection->parent->mutex);
 	arrayList_removeElement(connection->parent->connections, connection);
 	celixThreadMutex_unlock(&connection->parent->mutex);

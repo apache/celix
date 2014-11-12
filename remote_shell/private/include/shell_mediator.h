@@ -29,8 +29,21 @@
 #define shellMediator_H_
 
 #include <bundle_context.h>
+#include <service_tracker.h>
 #include <celix_errno.h>
 
+#include <shell.h>
+
+struct shell_mediator {
+
+	log_helper_pt loghelper;
+	bundle_context_pt context;
+	service_tracker_pt tracker;
+	celix_thread_mutex_t mutex;
+
+	//protected by mutex
+	shell_service_pt shellService;
+};
 typedef struct shell_mediator *shell_mediator_pt;
 
 celix_status_t shellMediator_create(bundle_context_pt context, shell_mediator_pt *instance);

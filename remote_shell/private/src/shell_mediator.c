@@ -31,17 +31,9 @@
 #include <service_tracker.h>
 #include <command.h>
 
+#include "log_helper.h"
+#include "log_service.h"
 #include "shell_mediator.h"
-
-struct shell_mediator {
-
-	bundle_context_pt context;
-	service_tracker_pt tracker;
-	celix_thread_mutex_t mutex;
-
-	//protected by mutex
-	shell_service_pt shellService;
-};
 
 //NOTE: multiple instances of shell_mediator are not supported, because we need
 // 		a non ADT - shared between instances - variable.
@@ -65,13 +57,16 @@ celix_status_t shellMediator_create(bundle_context_pt context, shell_mediator_pt
 		(*instance)->tracker = NULL;
 		(*instance)->shellService = NULL;
 
-		status = celixThreadMutex_create(&(*instance)->mutex, NULL);
+		status = logHelper_create(context, &(*instance)->loghelper);
+
+		status = CELIX_DO_IF(status, celixThreadMutex_create(&(*instance)->mutex, NULL));
 
 		status = CELIX_DO_IF(status, serviceTrackerCustomizer_create((*instance), shellMediator_addingService, shellMediator_addedService,
 				shellMediator_modifiedService, shellMediator_removedService, &customizer));
 		status = CELIX_DO_IF(status, serviceTracker_create(context, (char * )OSGI_SHELL_SERVICE_NAME, customizer, &(*instance)->tracker));
 
 		if (status == CELIX_SUCCESS) {
+			logHelper_start((*instance)->loghelper);
 			serviceTracker_open((*instance)->tracker);
 		}
 	} else {
@@ -79,19 +74,25 @@ celix_status_t shellMediator_create(bundle_context_pt context, shell_mediator_pt
 	}
 
 	if (status != CELIX_SUCCESS) {
-		printf("Error creating shell_mediator, error code is %i\n", status);
+		logHelper_log((*instance)->loghelper, OSGI_LOGSERVICE_ERROR, "Error creating shell_mediator, error code is %i\n", status);
 	}
 	return status;
 }
 
 celix_status_t shellMediator_destroy(shell_mediator_pt instance) {
+	celix_status_t status = CELIX_SUCCESS;
+
 	celixThreadMutex_lock(&instance->mutex);
 
 	instance->shellService = NULL;
 	serviceTracker_close(instance->tracker);
 	celixThreadMutex_unlock(&instance->mutex);
 
-	return CELIX_SUCCESS;
+	logHelper_stop(instance->loghelper);
+
+	status = logHelper_destroy(&instance->loghelper);
+
+	return status;
 }
 
 static void shellMediator_writeOnCurrentSocket(char *buff) {

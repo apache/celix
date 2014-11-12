@@ -31,6 +31,7 @@
 #include "bundle_activator.h"
 #include "bundle_context.h"
 
+#include "log_helper.h"
 #include "connection_listener.h"
 #include "shell_mediator.h"
 #include "remote_shell.h"
@@ -42,6 +43,7 @@
 #define DEFAULT_REMOTE_SHELL_TELNET_MAXCONN 		2
 
 struct bundle_instance {
+	log_helper_pt loghelper;
 	shell_mediator_pt shellMediator;
 	remote_shell_pt remoteShell;
 	connection_listener_pt connectionListener;
@@ -49,9 +51,9 @@ struct bundle_instance {
 
 typedef struct bundle_instance *bundle_instance_pt;
 
-static int bundleActivator_getPort(bundle_context_pt context);
-static int bundleActivator_getMaximumConnections(bundle_context_pt context);
-static int bundleActivator_getProperty(bundle_context_pt context, char * propertyName, int defaultValue);
+static int bundleActivator_getPort(bundle_instance_pt bi, bundle_context_pt context);
+static int bundleActivator_getMaximumConnections(bundle_instance_pt bi, bundle_context_pt context);
+static int bundleActivator_getProperty(bundle_instance_pt bi, bundle_context_pt context, char * propertyName, int defaultValue);
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -66,6 +68,9 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 		bi->shellMediator = NULL;
 		bi->remoteShell = NULL;
 		bi->connectionListener = NULL;
+
+		status = logHelper_create(context, &bi->loghelper);
+
 		(*userData) = bi;
 	} else {
 		status = CELIX_ILLEGAL_ARGUMENT;
@@ -79,10 +84,12 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	celix_status_t status = CELIX_SUCCESS;
 	bundle_instance_pt bi = (bundle_instance_pt) userData;
 
-	int port = bundleActivator_getPort(context);
-	int maxConn = bundleActivator_getMaximumConnections(context);
+	int port = bundleActivator_getPort(bi, context);
+	int maxConn = bundleActivator_getMaximumConnections(bi, context);
 
-	status = shellMediator_create(context, &bi->shellMediator);
+	status = logHelper_start(bi->loghelper);
+
+	status = CELIX_DO_IF(status, shellMediator_create(context, &bi->shellMediator));
 	status = CELIX_DO_IF(status, remoteShell_create(bi->shellMediator, maxConn, &bi->remoteShell));
 	status = CELIX_DO_IF(status, connectionListener_create(bi->remoteShell, port, &bi->connectionListener));
 	status = CELIX_DO_IF(status, connectionListener_start(bi->connectionListener));
@@ -95,29 +102,34 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	bundle_instance_pt bi = (bundle_instance_pt) userData;
 
 	shellMediator_destroy(bi->shellMediator);
+
 	connectionListener_stop(bi->connectionListener);
 	remoteShell_stopConnections(bi->remoteShell);
+
+	status = logHelper_stop(bi->loghelper);
 
 	return status;
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
+	celix_status_t status = CELIX_SUCCESS;
 	bundle_instance_pt bi = (bundle_instance_pt) userData;
+
 	connectionListener_destroy(bi->connectionListener);
+	status = logHelper_destroy(&bi->loghelper);
 
-	return CELIX_SUCCESS;
+	return status;
 }
 
-static int bundleActivator_getPort(bundle_context_pt context) {
-	return bundleActivator_getProperty(context, REMOTE_SHELL_TELNET_PORT_PROPERTY_NAME, DEFAULT_REMOTE_SHELL_TELNET_PORT);
+static int bundleActivator_getPort(bundle_instance_pt bi, bundle_context_pt context) {
+	return bundleActivator_getProperty(bi, context, REMOTE_SHELL_TELNET_PORT_PROPERTY_NAME, DEFAULT_REMOTE_SHELL_TELNET_PORT);
 }
 
-static int bundleActivator_getMaximumConnections(bundle_context_pt context) {
-	return bundleActivator_getProperty(context, REMOTE_SHELL_TELNET_MAXCONN_PROPERTY_NAME, DEFAULT_REMOTE_SHELL_TELNET_MAXCONN);
+static int bundleActivator_getMaximumConnections(bundle_instance_pt bi, bundle_context_pt context) {
+	return bundleActivator_getProperty(bi, context, REMOTE_SHELL_TELNET_MAXCONN_PROPERTY_NAME, DEFAULT_REMOTE_SHELL_TELNET_MAXCONN);
 }
 
-static int bundleActivator_getProperty(bundle_context_pt context, char* propertyName, int defaultValue) {
-
+static int bundleActivator_getProperty(bundle_instance_pt bi, bundle_context_pt context, char* propertyName, int defaultValue) {
 	char *strValue = NULL;
 	int value;
 
@@ -128,7 +140,7 @@ static int bundleActivator_getProperty(bundle_context_pt context, char* property
 		errno = 0;
 		value = strtol(strValue, &endptr, 10);
 		if (*endptr || errno != 0) {
-			printf("incorrect format for %s\n", propertyName);
+			logHelper_log(bi->loghelper, OSGI_LOGSERVICE_WARNING, "incorrect format for %s", propertyName);
 			value = defaultValue;
 		}
 	}
