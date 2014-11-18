@@ -129,19 +129,16 @@ celix_status_t logHelper_log(log_helper_pt loghelper, log_level_t level, char* m
 	if (loghelper != NULL) {
 		pthread_mutex_lock(&loghelper->logListLock);
 
-		if (arrayList_size(loghelper->logServices) > 0) {
-			int i = 0;
+		int i = 0;
 
-			for (; i < arrayList_size(loghelper->logServices); i++) {
+		for (; i < arrayList_size(loghelper->logServices); i++) {
 
-				log_service_pt logService = arrayList_get(loghelper->logServices, i);
+			log_service_pt logService = arrayList_get(loghelper->logServices, i);
 
-				if (logService != NULL) {
-					(logService->log)(logService->logger, level, message);
-					logged = true;
-				}
+			if (logService != NULL) {
+				(logService->log)(logService->logger, level, message);
+				logged = true;
 			}
-
 		}
 
 		pthread_mutex_unlock(&loghelper->logListLock);
