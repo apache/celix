@@ -69,7 +69,7 @@ celix_status_t logHelper_create(bundle_context_pt context, log_helper_pt* loghel
 		(*loghelper)->logServiceTracker = NULL;
 		(*loghelper)->stdOutFallback = false;
 
-		bundleContext_getProperty(context, CELIX_LOG_ENABLE_STDOUT_FALLBACK_PROPERTY_NAME, &stdOutFallbackStr);
+		bundleContext_getProperty(context, LOGHELPER_ENABLE_STDOUT_FALLBACK_PROPERTY_NAME, &stdOutFallbackStr);
 
 		if (stdOutFallbackStr != NULL) {
 			(*loghelper)->stdOutFallback = true;
