@@ -66,7 +66,7 @@ celix_status_t endpointDescriptorReader_destroy(endpoint_descriptor_reader_pt re
 }
 
 void endpointDescriptorReader_addSingleValuedProperty(properties_pt properties, const xmlChar* name, const xmlChar* value) {
-	properties_set(properties, strdup((char *) name), strdup((char *) value));
+	properties_set(properties, (char *) name, (char*) value);
 }
 
 void endpointDescriptorReader_addMultiValuedProperty(properties_pt properties, const xmlChar* name, array_list_pt values) {
@@ -81,7 +81,7 @@ void endpointDescriptorReader_addMultiValuedProperty(properties_pt properties, c
 			value = strcat(value, item);
 		}
 
-		properties_set(properties, strdup((char *) name), strdup(value));
+		properties_set(properties, (char *) name, value);
 
 		free(value);
 	}
@@ -166,6 +166,7 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
                         	if (propertyType != VALUE_TYPE_STRING && strcmp(OSGI_RSA_ENDPOINT_SERVICE_ID, (char*) propertyName)) {
                         		fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "ENDPOINT_DESCRIPTOR_READER: Only single-valued string supported for %s\n", propertyName);
                         	}
+
                         	endpointDescriptorReader_addSingleValuedProperty(endpointProperties, propertyName, propertyValue);
                         }
 
@@ -219,6 +220,10 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
                     }
 
                     xmlFree((void *) propertyName);
+					int k=0;
+					for(;k<arrayList_size(propertyValues);k++){
+						free(arrayList_get(propertyValues,k));
+					}
                     arrayList_clear(propertyValues);
 
                     propertyType = VALUE_TYPE_STRING;
@@ -242,6 +247,14 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
             read = xmlTextReaderRead(reader->reader);
         }
 
+		if(endpointProperties!=NULL){
+			properties_destroy(endpointProperties);
+		}
+
+		int k=0;
+		for(;k<arrayList_size(propertyValues);k++){
+			free(arrayList_get(propertyValues,k));
+		}
         arrayList_destroy(propertyValues);
         xmlFree(valueBuffer);
 
