@@ -134,6 +134,15 @@ celix_status_t deploymentAdmin_create(apr_pool_t *pool, bundle_context_pt contex
 celix_status_t deploymentAdmin_destroy(deployment_admin_pt admin) {
 	celix_status_t status = CELIX_SUCCESS;
 
+	hash_map_iterator_pt iter = hashMapIterator_create(admin->packages);
+
+	while (hashMapIterator_hasNext(iter)) {
+		deployment_package_pt target = (deployment_package_pt) hashMapIterator_nextValue(iter);
+		deploymentPackage_destroy(target);
+	}
+
+	hashMapIterator_destroy(iter);
+
 	hashMap_destroy(admin->packages, false, false);
 
 	if (admin->current != NULL) {

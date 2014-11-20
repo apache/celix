@@ -78,6 +78,18 @@ celix_status_t deploymentPackage_create(apr_pool_t *pool, bundle_context_pt cont
 	return status;
 }
 
+celix_status_t deploymentPackage_destroy(deployment_package_pt package) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	hashMap_destroy(package->nameToBundleInfo, false, false);
+	hashMap_destroy(package->pathToEntry, false, false);
+
+	arrayList_destroy(package->bundleInfos);
+	arrayList_destroy(package->resourceInfos);
+
+	return status;
+}
+
 celix_status_t deploymentPackage_getName(deployment_package_pt package, char **name) {
 	*name = manifest_getValue(package->manifest, "DeploymentPackage-SymbolicName");
 	return CELIX_SUCCESS;
