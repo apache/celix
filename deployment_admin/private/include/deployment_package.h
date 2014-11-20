@@ -67,6 +67,7 @@ struct deployment_package {
 typedef struct deployment_package *deployment_package_pt;
 
 celix_status_t deploymentPackage_create(apr_pool_t *pool, bundle_context_pt context, manifest_pt manifest, deployment_package_pt *package);
+celix_status_t deploymentPackage_destroy(deployment_package_pt package);
 celix_status_t deploymentPackage_getName(deployment_package_pt package, char **name);
 celix_status_t deploymentPackage_getBundleInfos(deployment_package_pt package, array_list_pt *infos);
 celix_status_t deploymentPackage_getBundleInfoByName(deployment_package_pt package, char *name, bundle_info_pt *info);

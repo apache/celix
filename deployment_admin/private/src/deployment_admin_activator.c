@@ -33,12 +33,14 @@ struct activator {
 	deployment_admin_pt admin;
 };
 
+typedef struct activator* activator_pt;
+
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	apr_pool_t *parentPool = NULL;
 	apr_pool_t *pool = NULL;
-	struct activator *activator;
+	activator_pt activator = NULL;
 
 	status = bundleContext_getMemoryPool(context, &parentPool);
 	if (status == CELIX_SUCCESS) {
@@ -75,6 +77,11 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
+
+	activator_pt activator = (activator_pt) userData;
+
+	status = deploymentAdmin_destroy(activator->admin);
+
 	return status;
 }
 

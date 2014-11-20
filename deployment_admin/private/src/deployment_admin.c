@@ -129,6 +129,20 @@ celix_status_t deploymentAdmin_create(apr_pool_t *pool, bundle_context_pt contex
 	return status;
 }
 
+
+
+celix_status_t deploymentAdmin_destroy(deployment_admin_pt admin) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	hashMap_destroy(admin->packages, false, false);
+
+	if (admin->current != NULL) {
+		free(admin->current);
+	}
+
+	return status;
+}
+
 static celix_status_t deploymentAdmin_updateAuditPool(deployment_admin_pt admin, DEPLOYMENT_ADMIN_AUDIT_EVENT auditEvent) {
 	celix_status_t status = CELIX_SUCCESS;
 
