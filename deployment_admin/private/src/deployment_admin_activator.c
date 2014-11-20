@@ -28,19 +28,19 @@
 #include "bundle_activator.h"
 #include "deployment_admin.h"
 
-struct activator {
+struct bundle_activator {
 	apr_pool_t *pool;
 	deployment_admin_pt admin;
 };
 
-typedef struct activator* activator_pt;
+typedef struct bundle_activator* bundle_activator_pt;
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	apr_pool_t *parentPool = NULL;
 	apr_pool_t *pool = NULL;
-	activator_pt activator = NULL;
+	bundle_activator_pt activator = NULL;
 
 	status = bundleContext_getMemoryPool(context, &parentPool);
 	if (status == CELIX_SUCCESS) {
@@ -78,7 +78,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	activator_pt activator = (activator_pt) userData;
+	bundle_activator_pt activator = (bundle_activator_pt) userData;
 
 	status = deploymentAdmin_destroy(activator->admin);
 
