@@ -36,7 +36,7 @@
 #include "service_tracker.h"
 #include "bundle_context.h"
 #include "bundle.h"
-#include "celix_log.h"
+#include "log_helper.h"
 
 celix_status_t exportRegistration_endpointAdding(void * handle, service_reference_pt reference, void **service);
 celix_status_t exportRegistration_endpointAdded(void * handle, service_reference_pt reference, void *service);
@@ -65,10 +65,12 @@ celix_status_t exportRegistration_create(apr_pool_t *pool, service_reference_pt 
 		(*registration)->endpointTracker = NULL;
 		(*registration)->exportReference = NULL;
 		(*registration)->bundle = NULL;
+		(*registration)->loghelper = NULL;
 	}
 
 	return status;
 }
+
 
 celix_status_t exportRegistration_startTracking(export_registration_pt registration) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -89,13 +91,13 @@ celix_status_t exportRegistration_stopTracking(export_registration_pt registrati
 	if (registration->endpointTracker != NULL) {
 		status = serviceTracker_close(registration->endpointTracker);
 		if (status != CELIX_SUCCESS) {
-		    fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "EXPORT_REGISTRATION: Could not close endpoint tracker");
+		    logHelper_log(registration->loghelper, OSGI_FRAMEWORK_LOG_ERROR, "EXPORT_REGISTRATION: Could not close endpoint tracker");
 		}
 	}
 	if (registration->tracker != NULL) {
 		status = serviceTracker_close(registration->tracker);
 		if (status != CELIX_SUCCESS) {
-		    fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "EXPORT_REGISTRATION: Could not close service tracker");
+			logHelper_log(registration->loghelper, OSGI_FRAMEWORK_LOG_ERROR, "EXPORT_REGISTRATION: Could not close service tracker");
 		}
 	}
 
@@ -165,9 +167,14 @@ celix_status_t exportRegistration_endpointRemoved(void * handle, service_referen
 
 celix_status_t exportRegistration_open(export_registration_pt registration) {
 	celix_status_t status = CELIX_SUCCESS;
-
 	char *bundleStore = NULL;
+
+	if(logHelper_create(registration->context, &registration->loghelper) == CELIX_SUCCESS) {
+		logHelper_start(registration->loghelper);
+	}
+
 	bundleContext_getProperty(registration->context, BUNDLE_STORE_PROPERTY_NAME, &bundleStore);
+
 	if (bundleStore == NULL) {
 		bundleStore = DEFAULT_BUNDLE_STORE;
 	}
@@ -189,6 +196,9 @@ celix_status_t exportRegistration_close(export_registration_pt registration) {
 
 	bundle_uninstall(registration->bundle);
 	remoteServiceAdmin_removeExportedService(registration);
+
+	logHelper_stop(registration->loghelper);
+	logHelper_destroy(&registration->loghelper);
 
 	return status;
 }

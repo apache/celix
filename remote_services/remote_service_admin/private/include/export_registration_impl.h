@@ -30,6 +30,7 @@
 #include "remote_service_admin.h"
 #include "remote_endpoint.h"
 #include "service_tracker.h"
+#include "log_helper.h"
 
 struct export_registration {
 	apr_pool_t *pool;
@@ -37,6 +38,7 @@ struct export_registration {
 	remote_service_admin_pt rsa;
 	endpoint_description_pt endpointDescription;
 	service_reference_pt reference;
+	log_helper_pt loghelper;
 
 	service_tracker_pt tracker;
 	service_tracker_pt endpointTracker;

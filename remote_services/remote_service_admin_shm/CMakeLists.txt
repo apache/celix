@@ -19,6 +19,7 @@ if (RSA_BUNDLES_REMOTE_SERVICE_ADMIN_SHM)
 	link_directories("/opt/local/lib")
 	include_directories("/opt/local/include")
 	include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+	include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 	include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
 	include_directories("${PROJECT_SOURCE_DIR}/framework/private/include")
 	include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include")
@@ -37,6 +38,7 @@ if (RSA_BUNDLES_REMOTE_SERVICE_ADMIN_SHM)
 		private/src/export_registration_impl
 		private/src/import_registration_impl
 		private/src/remote_service_admin_activator
+		${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
 	)
 
 	install_bundle(remote_service_admin_shm

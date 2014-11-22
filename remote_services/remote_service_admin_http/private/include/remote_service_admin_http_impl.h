@@ -28,11 +28,13 @@
 #define REMOTE_SERVICE_ADMIN_HTTP_IMPL_H_
 
 #include "remote_service_admin_impl.h"
+#include "log_helper.h"
 #include "civetweb.h"
 
 struct remote_service_admin {
 	apr_pool_t *pool;
 	bundle_context_pt context;
+	log_helper_pt loghelper;
 
 	hash_map_pt exportedServices;
 	hash_map_pt importedServices;

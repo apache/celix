@@ -30,6 +30,7 @@
 #include "remote_service_admin.h"
 #include "remote_proxy.h"
 #include "service_tracker.h"
+#include "log_helper.h"
 
 struct import_registration {
 	apr_pool_t *pool;
@@ -51,6 +52,7 @@ struct import_registration_factory
 {
 	apr_pool_t *pool;
 	char* serviceName;
+	log_helper_pt loghelper;
 	remote_proxy_factory_service_pt trackedFactory;
 	service_tracker_pt proxyFactoryTracker;
 	bundle_context_pt context;

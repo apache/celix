@@ -109,6 +109,10 @@ celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt con
 		(*admin)->exportedServices = hashMap_create(NULL, NULL, NULL, NULL);
 		(*admin)->importedServices = hashMap_create(NULL, NULL, NULL, NULL);
 
+		if (logHelper_create(context, &(*admin)->loghelper) == CELIX_SUCCESS) {
+			logHelper_start((*admin)->loghelper);
+		}
+
 		bundleContext_getProperty(context, "RSA_PORT", &port);
 		if (port == NULL) {
 			port = (char *)DEFAULT_PORT;
@@ -120,7 +124,7 @@ celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt con
 
 			bundleContext_getProperty(context, "RSA_INTERFACE", &interface);
 			if ((interface != NULL) && (remoteServiceAdmin_getIpAdress(interface, &ip) != CELIX_SUCCESS)) {
-				fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "RSA: Could not retrieve IP adress for interface %s", interface);
+				logHelper_log((*admin)->loghelper, OSGI_FRAMEWORK_LOG_WARNING, "RSA: Could not retrieve IP adress for interface %s", interface);
 			}
 
 			if (ip == NULL) {
@@ -129,11 +133,11 @@ celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt con
 		}
 
 		if (ip != NULL) {
-			fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "RSA: Using %s for service annunciation", ip);
+			logHelper_log((*admin)->loghelper, OSGI_FRAMEWORK_LOG_INFO, "RSA: Using %s for service annunciation", ip);
 			(*admin)->ip = apr_pstrdup(pool, ip);
 		}
 		else {
-			fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "RSA: No IP address for service annunciation set. Using %s", DEFAULT_IP);
+			logHelper_log((*admin)->loghelper, OSGI_FRAMEWORK_LOG_WARNING, "RSA: No IP address for service annunciation set. Using %s", DEFAULT_IP);
 			(*admin)->ip = (char*) DEFAULT_IP;
 		}
 
@@ -148,7 +152,7 @@ celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt con
 			(*admin)->ctx = mg_start(&callbacks, (*admin), options);
 
 			if ((*admin)->ctx != NULL) {
-				fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "RSA: Start webserver: %s", port);
+				logHelper_log((*admin)->loghelper, OSGI_FRAMEWORK_LOG_INFO, "RSA: Start webserver: %s", port);
 				(*admin)->port = port;
 			}
 			else {
@@ -164,7 +168,7 @@ celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt con
 		        port_counter++;
 				snprintf(newPort, 6,  "%d", (currentPort+1));
 
-				fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error while starting rsa server on port %s - retrying on port %s...", port, newPort);
+				logHelper_log((*admin)->loghelper, OSGI_FRAMEWORK_LOG_ERROR, "Error while starting rsa server on port %s - retrying on port %s...", port, newPort);
 				port = newPort;
 			}
 		} while(((*admin)->ctx == NULL) && (port_counter < MAX_NUMBER_OF_RESTARTS));
@@ -206,10 +210,13 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin) {
     hashMapIterator_destroy(iter);
 
 	if (admin->ctx != NULL) {
-		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "RSA: Stopping webserver...");
+		logHelper_log(admin->loghelper, OSGI_FRAMEWORK_LOG_INFO, "RSA: Stopping webserver...");
 		mg_stop(admin->ctx);
 		admin->ctx = NULL;
 	}
+
+	logHelper_stop(admin->loghelper);
+	logHelper_destroy(&admin->loghelper);
 
 	return status;
 }
@@ -316,7 +323,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
     }
 
 	if (reference == NULL) {
-		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "ERROR: expected a reference for service id %s.", serviceId);
+		logHelper_log(admin->loghelper, OSGI_FRAMEWORK_LOG_ERROR, "ERROR: expected a reference for service id %s.", serviceId);
 		return CELIX_ILLEGAL_STATE;
 	}
 
@@ -326,9 +333,9 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 	serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_OBJECTCLASS, &provided);
 
 	if (exports == NULL || provided == NULL) {
-		fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "RSA: No Services to export.");
+		logHelper_log(admin->loghelper, OSGI_FRAMEWORK_LOG_WARNING, "RSA: No Services to export.");
 	} else {
-		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "RSA: Export services (%s)", exports);
+		logHelper_log(admin->loghelper, OSGI_FRAMEWORK_LOG_INFO, "RSA: Export services (%s)", exports);
 		array_list_pt interfaces = NULL;
 		arrayList_create(&interfaces);
 		if (strcmp(utils_stringTrim(exports), "*") == 0) {
@@ -499,7 +506,7 @@ celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_admin_pt a
 celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, endpoint_description_pt endpointDescription, import_registration_pt *registration) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "RSA: Import service %s", endpointDescription->service);
+	logHelper_log(admin->loghelper, OSGI_FRAMEWORK_LOG_INFO, "RSA: Import service %s", endpointDescription->service);
 
    import_registration_factory_pt registration_factory = (import_registration_factory_pt) hashMap_get(admin->importedServices, endpointDescription->service);
 
@@ -515,7 +522,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, e
 	 // factory available
 	if (status != CELIX_SUCCESS || (registration_factory->trackedFactory == NULL))
 	{
-		fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "RSA: no proxyFactory available.");
+		logHelper_log(admin->loghelper, OSGI_FRAMEWORK_LOG_WARNING, "RSA: no proxyFactory available.");
 	}
 	else
 	{
@@ -538,7 +545,7 @@ celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_pt 
     // factory available
     if ((registration_factory == NULL) || (registration_factory->trackedFactory == NULL))
     {
-    	fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "RSA: Error while retrieving registration factory for imported service %s", endpointDescription->service);
+    	logHelper_log(admin->loghelper, OSGI_FRAMEWORK_LOG_ERROR, "RSA: Error while retrieving registration factory for imported service %s", endpointDescription->service);
     }
     else
     {
@@ -548,7 +555,7 @@ celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_pt 
 
 		if (arrayList_isEmpty(registration_factory->registrations))
 		{
-			fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "RSA: closing proxy");
+			logHelper_log(admin->loghelper, OSGI_FRAMEWORK_LOG_INFO, "RSA: closing proxy.");
 
 			serviceTracker_close(registration_factory->proxyFactoryTracker);
 			importRegistrationFactory_close(registration_factory);
@@ -620,7 +627,7 @@ static size_t remoteServiceAdmin_write(void *contents, size_t size, size_t nmemb
   mem->writeptr = realloc(mem->writeptr, mem->size + realsize + 1);
   if (mem->writeptr == NULL) {
     /* out of memory! */
-	  fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "not enough memory (realloc returned NULL)");
+	printf("not enough memory (realloc returned NULL)");
     exit(EXIT_FAILURE);
   }
 
