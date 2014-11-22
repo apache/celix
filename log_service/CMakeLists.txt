@@ -38,10 +38,14 @@ if (LOG_SERVICE)
     )
     
     install_bundle(log_service
-		HEADERS
-       		public/include/log_service.h public/include/log_helper.h
-		RESOURCES
-       		public/src/log_helper.c
+        HEADERS
+        	public/include/log_service.h
+        	public/include/log_reader_service.h
+        	public/include/log_listener.h
+        	public/include/log_entry.h
+        	public/include/log_helper.h
+        RESOURCES
+            public/src/log_helper.c
     )
     
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
