@@ -185,16 +185,16 @@ celix_status_t logHelper_log(log_helper_pt loghelper, log_level_t level, char* m
         char *levelStr = NULL;
 
         switch (level) {
-            case OSGI_FRAMEWORK_LOG_ERROR:
+            case OSGI_LOGSERVICE_ERROR:
                 levelStr = "ERROR";
                 break;
-            case OSGI_FRAMEWORK_LOG_WARNING:
+            case OSGI_LOGSERVICE_WARNING:
                 levelStr = "WARNING";
                 break;
-            case OSGI_FRAMEWORK_LOG_INFO:
+            case OSGI_LOGSERVICE_INFO:
                 levelStr = "INFO";
                 break;
-            case OSGI_FRAMEWORK_LOG_DEBUG:
+            case OSGI_LOGSERVICE_DEBUG:
             default:
                 levelStr = "DEBUG";
                 break;
