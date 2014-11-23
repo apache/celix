@@ -135,11 +135,11 @@ celix_status_t importRegistrationFactory_open(import_registration_factory_pt reg
 	if (status == CELIX_SUCCESS) {
 		status = bundle_start(registration_factory->bundle);
 		if (status == CELIX_SUCCESS) {
-			logHelper_log(registration_factory->loghelper, OSGI_FRAMEWORK_LOG_INFO, "%s successfully started.", name);
+			logHelper_log(registration_factory->loghelper, OSGI_LOGSERVICE_INFO, "%s successfully started.", name);
 		}
 	}
 	else {
-		logHelper_log(registration_factory->loghelper, OSGI_FRAMEWORK_LOG_ERROR, "%s could not be installed.", name);
+		logHelper_log(registration_factory->loghelper, OSGI_LOGSERVICE_ERROR, "%s could not be installed.", name);
 	}
 
 	return status;
@@ -224,11 +224,11 @@ celix_status_t importRegistrationFactory_install(apr_pool_t *pool, char* service
 	if ( (status = importRegistrationFactory_create(pool, serviceName, context, registration_factory)) == CELIX_SUCCESS) {
 		// starting the proxy tracker first allows us to pick up already available proxy factories
 		importRegistration_createProxyFactoryTracker(*registration_factory, &((*registration_factory)->proxyFactoryTracker));
-		logHelper_log((*registration_factory)->loghelper, OSGI_FRAMEWORK_LOG_INFO, "remoteServiceAdmin_importService: new registration_factory added for %s at %p", serviceName, (*registration_factory)->proxyFactoryTracker);
+		logHelper_log((*registration_factory)->loghelper, OSGI_LOGSERVICE_INFO, "remoteServiceAdmin_importService: new registration_factory added for %s at %p", serviceName, (*registration_factory)->proxyFactoryTracker);
 
 		// check whether factory is available
 		if (((*registration_factory)->trackedFactory == NULL) && ((status = importRegistrationFactory_open(*registration_factory)) != CELIX_SUCCESS)) {
-			logHelper_log((*registration_factory)->loghelper, OSGI_FRAMEWORK_LOG_ERROR, "remoteServiceAdmin_importService: cannot open registration_factory for %s.", serviceName);
+			logHelper_log((*registration_factory)->loghelper, OSGI_LOGSERVICE_ERROR, "remoteServiceAdmin_importService: cannot open registration_factory for %s.", serviceName);
 			importRegistrationFactory_destroy(registration_factory);
 			serviceTracker_close((*registration_factory)->proxyFactoryTracker);
 		}
