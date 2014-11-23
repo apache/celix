@@ -96,7 +96,7 @@ celix_status_t connectionListener_stop(connection_listener_pt instance) {
 	instance->running = false;
 	FD_ZERO(&pollset);
 
-	logHelper_log(*instance->loghelper, OSGI_FRAMEWORK_LOG_INFO, "CONNECTION_LISTENER: Stopping thread\n");
+	logHelper_log(*instance->loghelper, OSGI_LOGSERVICE_INFO, "CONNECTION_LISTENER: Stopping thread\n");
 
 	celixThreadMutex_lock(&instance->mutex);
 	thread = instance->thread;
@@ -146,16 +146,16 @@ static void* connection_listener_thread(void *data) {
 		/* Create socket */
 		listenSocket = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
 		if (listenSocket < 0) {
-			logHelper_log(*instance->loghelper, OSGI_FRAMEWORK_LOG_ERROR, "Error creating socket: %s", strerror(errno));
+			logHelper_log(*instance->loghelper, OSGI_LOGSERVICE_ERROR, "Error creating socket: %s", strerror(errno));
 		}
 		else if (setsockopt(listenSocket, SOL_SOCKET, SO_REUSEADDR, (char *) &on, sizeof(on)) < 0) {
-			logHelper_log(*instance->loghelper, OSGI_FRAMEWORK_LOG_ERROR, "cannot set socket option: %s", strerror(errno));
+			logHelper_log(*instance->loghelper, OSGI_LOGSERVICE_ERROR, "cannot set socket option: %s", strerror(errno));
 		}
 		else if (bind(listenSocket, rp->ai_addr, rp->ai_addrlen) < 0) {
-			logHelper_log(*instance->loghelper, OSGI_FRAMEWORK_LOG_ERROR, "cannot bind: %s", strerror(errno));
+			logHelper_log(*instance->loghelper, OSGI_LOGSERVICE_ERROR, "cannot bind: %s", strerror(errno));
 		}
 		else if (listen(listenSocket, 5) < 0) {
-			logHelper_log(*instance->loghelper, OSGI_FRAMEWORK_LOG_ERROR, "listen failed: %s", strerror(errno));
+			logHelper_log(*instance->loghelper, OSGI_LOGSERVICE_ERROR, "listen failed: %s", strerror(errno));
 		}
 		else {
 			status = CELIX_SUCCESS;
@@ -164,7 +164,7 @@ static void* connection_listener_thread(void *data) {
 
 	if (status == CELIX_SUCCESS) {
 
-		logHelper_log(*instance->loghelper, OSGI_FRAMEWORK_LOG_INFO, "Remote Shell accepting connections on port %d", instance->port);
+		logHelper_log(*instance->loghelper, OSGI_LOGSERVICE_INFO, "Remote Shell accepting connections on port %d", instance->port);
 
 		celixThreadMutex_lock(&instance->mutex);
 		instance->pollset = active_fd_set;
@@ -184,7 +184,7 @@ static void* connection_listener_thread(void *data) {
 				selectRet = select(listenSocket + 1, &active_fd_set, NULL, NULL, &timeout);
 			} while (selectRet == -1 && errno == EINTR && instance->running == true);
 			if (selectRet < 0) {
-				logHelper_log(*instance->loghelper, OSGI_FRAMEWORK_LOG_ERROR, "select on listenSocket failed: %s", strerror(errno));
+				logHelper_log(*instance->loghelper, OSGI_LOGSERVICE_ERROR, "select on listenSocket failed: %s", strerror(errno));
 				status = CELIX_BUNDLE_EXCEPTION;
 			}
 			else if (selectRet == 0) {
@@ -194,16 +194,16 @@ static void* connection_listener_thread(void *data) {
 				int acceptedSocket = accept(listenSocket, NULL, NULL);
 
 				if (acceptedSocket < 0) {
-					logHelper_log(*instance->loghelper, OSGI_FRAMEWORK_LOG_ERROR, "REMOTE_SHELL: accept failed: %s.", strerror(errno));
+					logHelper_log(*instance->loghelper, OSGI_LOGSERVICE_ERROR, "REMOTE_SHELL: accept failed: %s.", strerror(errno));
 					status = CELIX_BUNDLE_EXCEPTION;
 				}
 				else {
-					logHelper_log(*instance->loghelper, OSGI_FRAMEWORK_LOG_INFO, "REMOTE_SHELL: connection established.");
+					logHelper_log(*instance->loghelper, OSGI_LOGSERVICE_INFO, "REMOTE_SHELL: connection established.");
 					remoteShell_addConnection(instance->remoteShell, acceptedSocket);
 				}
 			}
 			else {
-				logHelper_log(*instance->loghelper, OSGI_FRAMEWORK_LOG_DEBUG, "REMOTE_SHELL: received data on a not-expected file-descriptor?");
+				logHelper_log(*instance->loghelper, OSGI_LOGSERVICE_DEBUG, "REMOTE_SHELL: received data on a not-expected file-descriptor?");
 			}
 		}
 	}

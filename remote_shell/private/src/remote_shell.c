@@ -184,14 +184,14 @@ void *remoteShell_connection_run(void *data) {
 				}
 
 			} else {
-				logHelper_log(*connection->parent->loghelper, OSGI_FRAMEWORK_LOG_ERROR, "REMOTE_SHELL: Error while retrieving data");
+				logHelper_log(*connection->parent->loghelper, OSGI_LOGSERVICE_ERROR, "REMOTE_SHELL: Error while retrieving data");
 			}
 		}
 	}
 
 	remoteShell_connection_print(connection, RS_GOODBYE);
 
-	logHelper_log(*connection->parent->loghelper, OSGI_FRAMEWORK_LOG_INFO, "REMOTE_SHELL: Closing socket");
+	logHelper_log(*connection->parent->loghelper, OSGI_LOGSERVICE_INFO, "REMOTE_SHELL: Closing socket");
 	celixThreadMutex_lock(&connection->parent->mutex);
 	arrayList_removeElement(connection->parent->connections, connection);
 	celixThreadMutex_unlock(&connection->parent->mutex);
