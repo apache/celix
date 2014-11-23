@@ -27,26 +27,26 @@
 #ifndef SHELL_PRIVATE_H_
 #define SHELL_PRIVATE_H_
 
-#include <apr_general.h>
-
+#include "bundle_context.h"
 #include "shell.h"
 #include "hash_map.h"
 #include "command.h"
 
 struct shell {
-	apr_pool_t *pool;
 	bundle_context_pt bundleContext;
 	hash_map_pt commandReferenceMap;
 	hash_map_pt commandNameMap;
 };
 
-shell_pt shell_create();
+celix_status_t shell_create(bundle_context_pt, shell_service_pt* shellService);
+celix_status_t shell_destroy(shell_service_pt* shellService);
+celix_status_t shell_addCommand(shell_pt shell, service_reference_pt reference);
+
+
 char * shell_getCommandUsage(shell_pt shell, char * commandName);
 char * shell_getCommandDescription(shell_pt shell, char * commandName);
 service_reference_pt shell_getCommandReference(shell_pt shell, char * command);
 void shell_executeCommand(shell_pt shell, char * commandLine, void (*out)(char *), void (*error)(char *));
-
-command_service_pt shell_getCommand(shell_pt shell, char * commandName);
-
+void shell_serviceChanged(service_listener_pt listener, service_event_pt event);
 
 #endif /* SHELL_PRIVATE_H_ */

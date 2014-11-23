@@ -24,7 +24,8 @@ if (SHELL)
 
     bundle(shell SOURCES
     	public/src/command
-     
+    	
+     	private/src/activator
     	private/src/shell 
     	private/src/ps_command 
     	private/src/start_command 
