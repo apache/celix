@@ -37,7 +37,7 @@
 
 //NOTE: multiple instances of shell_mediator are not supported, because we need
 // 		a non ADT - shared between instances - variable.
-static int currentOutputSocket = NULL;
+static int currentOutputSocket = -1;
 
 static void shellMediator_writeOnCurrentSocket(char *buff);
 
