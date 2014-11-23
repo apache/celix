@@ -172,7 +172,7 @@ celix_status_t logHelper_log(log_helper_pt loghelper, log_level_t level, char* m
 			log_service_pt logService = arrayList_get(loghelper->logServices, i);
 
 			if (logService != NULL) {
-				(logService->log)(logService->logger, level, message);
+				(logService->log)(logService->logger, level, msg);
 				logged = true;
 			}
 		}
