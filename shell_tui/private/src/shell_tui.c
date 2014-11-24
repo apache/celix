@@ -29,9 +29,6 @@
 #include <sys/time.h>
 #include <sys/select.h>
 
-#include <apr_general.h>
-#include <apr_thread_proc.h>
-
 #include "bundle_context.h"
 #include "bundle_activator.h"
 #include "shell.h"
@@ -43,8 +40,7 @@ struct shellTuiActivator {
 	service_reference_pt reference;
 	struct serviceListener * listener;
 	bool running;
-	apr_thread_t *runnable;
-	apr_pool_t *pool;
+	celix_thread_t runnable;
 };
 
 typedef struct shellTuiActivator * shell_tui_activator_pt;
@@ -53,7 +49,7 @@ void shellTui_write(char * line) {
 	fprintf(stdout, "%s", line);
 }
 
-static void *APR_THREAD_FUNC shellTui_runnable(apr_thread_t *thd, void *data) {
+static void* shellTui_runnable(void *data) {
 	shell_tui_activator_pt act = (shell_tui_activator_pt) data;
 
 	char in[256];
@@ -76,21 +72,21 @@ static void *APR_THREAD_FUNC shellTui_runnable(apr_thread_t *thd, void *data) {
 		tv.tv_sec = 1;
 		tv.tv_usec = 0;
 
-		if(select(1, &rfds, NULL, NULL, &tv)){
+		if (select(1, &rfds, NULL, NULL, &tv)) {
 			fgets(in, 256, stdin);
 			needPrompt = true;
-			memset(dline,0,256);
-			strncpy(dline,in,256);
+			memset(dline, 0, 256);
+			strncpy(dline, in, 256);
 
 			line = utils_stringTrim(dline);
-			if ( (strlen(line) == 0) || (act->shell == NULL) ){
+			if ((strlen(line) == 0) || (act->shell == NULL)) {
 				continue;
 			}
 
 			act->shell->executeCommand(act->shell->shell, line, shellTui_write, shellTui_write);
 		}
 	}
-	apr_thread_exit(thd, APR_SUCCESS);
+
 	return NULL;
 }
 
@@ -98,19 +94,19 @@ void shellTui_initializeService(shell_tui_activator_pt activator) {
 	if (activator->shell == NULL) {
 		bundleContext_getServiceReference(activator->context, (char *) OSGI_SHELL_SERVICE_NAME, &activator->reference);
 		if (activator->reference != NULL) {
-		    void *shell_svc = NULL;
-		    bundleContext_getService(activator->context, activator->reference, &shell_svc);
-		    activator->shell = (shell_service_pt) shell_svc;
+			void *shell_svc = NULL;
+			bundleContext_getService(activator->context, activator->reference, &shell_svc);
+			activator->shell = (shell_service_pt) shell_svc;
 		}
 	}
 }
 
 void shellTui_serviceChanged(service_listener_pt listener, service_event_pt event) {
 	bool result = false;
-    shell_tui_activator_pt act = (shell_tui_activator_pt) listener->handle;
-    bool equals = false;
+	shell_tui_activator_pt act = (shell_tui_activator_pt) listener->handle;
+	bool equals = false;
 
-    serviceReference_equals(act->reference, event->reference, &equals);
+	serviceReference_equals(act->reference, event->reference, &equals);
 
 	if ((event->type == OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED) && (act->reference == NULL)) {
 		shellTui_initializeService(act);
@@ -124,18 +120,23 @@ void shellTui_serviceChanged(service_listener_pt listener, service_event_pt even
 }
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
-	apr_pool_t *pool = NULL;
-	apr_pool_create(&pool, NULL);
-	shell_tui_activator_pt activator = (shell_tui_activator_pt) apr_palloc(pool, sizeof(*activator));
-	//shell_tui_activator_pt activator = (shell_tui_activator_pt) malloc(sizeof(*activator));
-	activator->shell = NULL;
-	activator->pool = pool;
-	(*userData) = activator;
-	return CELIX_SUCCESS;
+	celix_status_t status = CELIX_SUCCESS;
+
+	shell_tui_activator_pt activator = (shell_tui_activator_pt) calloc(1, sizeof(*activator));
+
+	if (activator) {
+		activator->shell = NULL;
+		(*userData) = activator;
+	}
+	else {
+		status = CELIX_ENOMEM;
+	}
+
+	return status;
 }
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
-    celix_status_t status;
+	celix_status_t status;
 
 	shell_tui_activator_pt act = (shell_tui_activator_pt) userData;
 	service_listener_pt listener = (service_listener_pt) malloc(sizeof(*listener));
@@ -149,32 +150,36 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	status = bundleContext_addServiceListener(context, act->listener, "(objectClass=shellService)");
 
 	if (status == CELIX_SUCCESS) {
-        shellTui_initializeService(act);
-		apr_thread_create(&act->runnable, NULL, shellTui_runnable, act, act->pool);
+		shellTui_initializeService(act);
+		celixThread_create(&act->runnable, NULL, shellTui_runnable, act);
 	}
 
 	return status;
 }
 
 celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
-    celix_status_t status;
-	shell_tui_activator_pt act = (shell_tui_activator_pt) userData;
-	status = bundleContext_removeServiceListener(context, act->listener);
+	celix_status_t status;
+	shell_tui_activator_pt activator = (shell_tui_activator_pt) userData;
+	status = bundleContext_removeServiceListener(context, activator->listener);
 
 	if (status == CELIX_SUCCESS) {
-		apr_status_t join;
-        free(act->listener);
-        act->listener = NULL;
-        act->context = NULL;
-        act->running = false;
-        apr_thread_join(&join, act->runnable);
+		free(activator->listener);
+
+		activator->running = false;
+		activator->listener = NULL;
+		activator->context = NULL;
+		activator->running = false;
+
+		celixThread_join(activator->runnable, NULL);
 	}
 
 	return status;
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
-    shell_tui_activator_pt act = (shell_tui_activator_pt) userData;
-    apr_pool_destroy(act->pool);
+	shell_tui_activator_pt activator = (shell_tui_activator_pt) userData;
+
+	free(activator);
+
 	return CELIX_SUCCESS;
 }
