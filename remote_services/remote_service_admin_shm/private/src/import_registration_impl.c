@@ -189,14 +189,12 @@ celix_status_t importRegistration_proxyFactoryAdded(void * handle, service_refer
 
 celix_status_t importRegistration_proxyFactoryModified(void * handle, service_reference_pt reference, void *service) {
 	celix_status_t status = CELIX_SUCCESS;
-	import_registration_factory_pt registration_factory = (import_registration_factory_pt) handle;
 
 	return status;
 }
 
 celix_status_t importRegistration_proxyFactoryRemoved(void * handle, service_reference_pt reference, void *service) {
 	celix_status_t status = CELIX_SUCCESS;
-	import_registration_pt registration = handle;
 
 	import_registration_factory_pt registration_factory = (import_registration_factory_pt) handle;
 	registration_factory->trackedFactory = NULL;

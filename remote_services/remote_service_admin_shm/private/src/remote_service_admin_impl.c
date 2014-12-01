@@ -67,7 +67,6 @@ celix_status_t remoteServiceAdmin_getSharedIdentifierFile(char *fwUuid, char* se
 celix_status_t remoteServiceAdmin_removeSharedIdentityFile(char *fwUuid, char* servicename);
 celix_status_t remoteServiceAdmin_removeSharedIdentityFiles(char* fwUuid);
 
-static bool lockHolder[3];
 
 celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt context, remote_service_admin_pt *admin)
 {
@@ -747,7 +746,6 @@ celix_status_t remoteServiceAdmin_deleteIpcSegment(ipc_segment_pt ipc)
 celix_status_t remoteServiceAdmin_createOrAttachShm(hash_map_pt ipcSegment, remote_service_admin_pt admin, endpoint_description_pt endpointDescription, bool createIfNotFound)
 {
     celix_status_t status = CELIX_SUCCESS;
-    apr_status_t aprStatus = 0;
 
     /* setup ipc sehment */
     ipc_segment_pt ipc = NULL;
