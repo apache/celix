@@ -27,12 +27,13 @@
 #ifndef ENDPOINT_DESCRIPTOR_READER_H_
 #define ENDPOINT_DESCRIPTOR_READER_H_
 
+#include "endpoint_discovery_poller.h"
 #include "celix_errno.h"
 #include "array_list.h"
 
 typedef struct endpoint_descriptor_reader *endpoint_descriptor_reader_pt;
 
-celix_status_t endpointDescriptorReader_create(endpoint_descriptor_reader_pt *reader);
+celix_status_t endpointDescriptorReader_create(endpoint_discovery_poller_pt poller, endpoint_descriptor_reader_pt *reader);
 celix_status_t endpointDescriptorReader_destroy(endpoint_descriptor_reader_pt reader);
 
 celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader_pt reader, char *document, array_list_pt *endpoints);

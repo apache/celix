@@ -27,7 +27,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include "celix_log.h"
+#include "log_helper.h"
+#include "log_service.h"
 #include "constants.h"
 #include "discovery.h"
 #include "discovery_impl.h"
@@ -39,6 +40,7 @@
 
 struct etcd_watcher {
     discovery_pt discovery;
+    log_helper_pt* loghelper;
 
 	celix_thread_mutex_t watcherLock;
 	celix_thread_t watcherThread;
@@ -188,7 +190,7 @@ static celix_status_t etcdWatcher_addOwnFramework(etcd_watcher_pt watcher)
 		etcd_set(localNodePath, endpoints, ttl, false);
 	}
 	else if (etcd_set(localNodePath, endpoints, ttl, true) == false)  {
-        fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Cannot register local discovery");
+		logHelper_log(*watcher->loghelper, OSGI_LOGSERVICE_WARNING, "Cannot register local discovery");
     }
     else {
         status = CELIX_SUCCESS;
@@ -228,7 +230,7 @@ static void* etcdWatcher_run(void* data) {
 			} else if (strcmp(action, "update") == 0) {
 				// TODO
 			} else {
-				fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Unexpected action: %s", action);
+				logHelper_log(*watcher->loghelper, OSGI_LOGSERVICE_INFO, "Unexpected action: %s", action);
 			}
 			highestModified++;
 		}
@@ -260,6 +262,7 @@ celix_status_t etcdWatcher_create(discovery_pt discovery, bundle_context_pt cont
 		return CELIX_BUNDLE_EXCEPTION;
 	}
 
+
 	(*watcher) = calloc(1, sizeof(struct etcd_watcher));
 	if (!watcher) {
 		return CELIX_ENOMEM;
@@ -267,6 +270,7 @@ celix_status_t etcdWatcher_create(discovery_pt discovery, bundle_context_pt cont
 	else
 	{
 		(*watcher)->discovery = discovery;
+		(*watcher)->loghelper = discovery->loghelper;
 	}
 
 	if ((bundleContext_getProperty(context, CFG_ETCD_SERVER_IP, &etcd_server) != CELIX_SUCCESS) || !etcd_server) {
@@ -327,8 +331,10 @@ celix_status_t etcdWatcher_destroy(etcd_watcher_pt watcher) {
 
 	if (status != CELIX_SUCCESS || etcd_del(localNodePath) == false)
 	{
-		fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Cannot remove local discovery registration.");
+		logHelper_log(*watcher->loghelper, OSGI_LOGSERVICE_WARNING, "Cannot remove local discovery registration.");
 	}
+
+	watcher->loghelper = NULL;
 
 	free(watcher);
 

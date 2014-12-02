@@ -30,6 +30,18 @@
 #include "celix_errno.h"
 #include "discovery.h"
 
+struct endpoint_discovery_poller {
+    discovery_pt discovery;
+    hash_map_pt entries;
+    log_helper_pt* loghelper;
+
+    celix_thread_mutex_t pollerLock;
+    celix_thread_t pollerThread;
+
+    unsigned int poll_interval;
+    volatile bool running;
+};
+
 typedef struct endpoint_discovery_poller *endpoint_discovery_poller_pt;
 
 celix_status_t endpointDiscoveryPoller_create(discovery_pt discovery, bundle_context_pt context, endpoint_discovery_poller_pt *poller);

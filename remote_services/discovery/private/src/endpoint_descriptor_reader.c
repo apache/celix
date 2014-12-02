@@ -28,23 +28,26 @@
 #include <string.h>
 #include <libxml/xmlreader.h>
 
-#include "celix_log.h"
+#include "log_helper.h"
+#include "log_service.h"
 #include "constants.h"
 #include "remote_constants.h"
 
 #include "endpoint_description.h"
 #include "endpoint_descriptor_common.h"
 #include "endpoint_descriptor_reader.h"
+#include "endpoint_discovery_poller.h"
 #include "properties.h"
 #include "utils.h"
 
 struct endpoint_descriptor_reader {
     xmlTextReaderPtr reader;
+    log_helper_pt* loghelper;
 };
 
 static valueType valueTypeFromString(char *name);
 
-celix_status_t endpointDescriptorReader_create(endpoint_descriptor_reader_pt *reader) {
+celix_status_t endpointDescriptorReader_create(endpoint_discovery_poller_pt poller, endpoint_descriptor_reader_pt *reader) {
     celix_status_t status = CELIX_SUCCESS;
 
     *reader = malloc(sizeof(**reader));
@@ -52,6 +55,7 @@ celix_status_t endpointDescriptorReader_create(endpoint_descriptor_reader_pt *re
         status = CELIX_ENOMEM;
     } else {
         (*reader)->reader = NULL;
+        (*reader)->loghelper = poller->loghelper;
     }
 
     return status;
@@ -59,6 +63,8 @@ celix_status_t endpointDescriptorReader_create(endpoint_descriptor_reader_pt *re
 
 celix_status_t endpointDescriptorReader_destroy(endpoint_descriptor_reader_pt reader) {
     celix_status_t status = CELIX_SUCCESS;
+
+    reader->loghelper = NULL;
 
     free(reader);
 
@@ -164,7 +170,7 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
 
                         if (propertyValue != NULL) {
                         	if (propertyType != VALUE_TYPE_STRING && strcmp(OSGI_RSA_ENDPOINT_SERVICE_ID, (char*) propertyName)) {
-                        		fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "ENDPOINT_DESCRIPTOR_READER: Only single-valued string supported for %s\n", propertyName);
+                        		logHelper_log(*reader->loghelper, OSGI_LOGSERVICE_WARNING, "ENDPOINT_DESCRIPTOR_READER: Only single-valued string supported for %s\n", propertyName);
                         	}
 
                         	endpointDescriptorReader_addSingleValuedProperty(endpointProperties, propertyName, propertyValue);
@@ -209,7 +215,7 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
                     }
                     else if (propertyValue != NULL) {
                     	if (propertyType != VALUE_TYPE_STRING) {
-                    		fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "ENDPOINT_DESCRIPTOR_READER: Only string support for %s\n", propertyName);
+                    		logHelper_log(*reader->loghelper, OSGI_LOGSERVICE_WARNING, "ENDPOINT_DESCRIPTOR_READER: Only string support for %s\n", propertyName);
                     	}
                     	endpointDescriptorReader_addSingleValuedProperty(endpointProperties, propertyName, propertyValue);
 

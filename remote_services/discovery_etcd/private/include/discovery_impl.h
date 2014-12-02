@@ -60,6 +60,8 @@ struct discovery {
 	etcd_watcher_pt watcher;
 	endpoint_discovery_poller_pt poller;
 	endpoint_discovery_server_pt server;
+
+	log_helper_pt loghelper;
 };
 
 #endif /* DISCOVERY_H_ */

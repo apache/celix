@@ -40,7 +40,7 @@
 #include "service_reference.h"
 #include "service_registration.h"
 #include "remote_constants.h"
-#include "celix_log.h"
+#include "log_helper.h"
 
 #include "discovery.h"
 #include "discovery_impl.h"
@@ -54,24 +54,29 @@ celix_status_t discovery_create(bundle_context_pt context, discovery_pt *discove
 
 	*discovery = malloc(sizeof(struct discovery));
 	if (!*discovery) {
-		return CELIX_ENOMEM;
+		status = CELIX_ENOMEM;
 	}
+	else {
+		(*discovery)->context = context;
+		(*discovery)->poller = NULL;
+		(*discovery)->server = NULL;
 
-	(*discovery)->context = context;
-	(*discovery)->poller = NULL;
-	(*discovery)->server = NULL;
+		(*discovery)->listenerReferences = hashMap_create(serviceReference_hashCode, NULL, serviceReference_equals2, NULL);
+		(*discovery)->discoveredServices = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 
-	(*discovery)->listenerReferences = hashMap_create(serviceReference_hashCode, NULL, serviceReference_equals2, NULL);
-	(*discovery)->discoveredServices = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+		status = celixThreadMutex_create(&(*discovery)->listenerReferencesMutex, NULL);
+		status = celixThreadMutex_create(&(*discovery)->discoveredServicesMutex, NULL);
 
-	status = celixThreadMutex_create(&(*discovery)->listenerReferencesMutex, NULL);
-	status = celixThreadMutex_create(&(*discovery)->discoveredServicesMutex, NULL);
+		logHelper_create(context, &(*discovery)->loghelper);
+	}
 
 	return status;
 }
 
 celix_status_t discovery_start(discovery_pt discovery) {
     celix_status_t status = CELIX_SUCCESS;
+
+	logHelper_start(discovery->loghelper);
 
     status = endpointDiscoveryPoller_create(discovery, discovery->context, &discovery->poller);
     if (status != CELIX_SUCCESS) {
@@ -114,6 +119,8 @@ celix_status_t discovery_stop(discovery_pt discovery) {
 
 	celixThreadMutex_unlock(&discovery->discoveredServicesMutex);
 
+	logHelper_stop(discovery->loghelper);
+
 	return status;
 }
 
@@ -141,6 +148,8 @@ celix_status_t discovery_destroy(discovery_pt discovery) {
 	celixThreadMutex_unlock(&discovery->listenerReferencesMutex);
 
 	celixThreadMutex_destroy(&discovery->listenerReferencesMutex);
+
+	logHelper_destroy(&discovery->loghelper);
 
 	free(discovery);
 

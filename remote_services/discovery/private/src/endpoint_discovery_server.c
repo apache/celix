@@ -32,7 +32,8 @@
 #include "civetweb.h"
 #include "celix_errno.h"
 #include "utils.h"
-#include "celix_log.h"
+#include "log_helper.h"
+#include "log_service.h"
 #include "discovery.h"
 #include "discovery_impl.h"
 
@@ -53,6 +54,7 @@ static const char *response_headers =
   "\r\n";
 
 struct endpoint_discovery_server {
+	log_helper_pt* loghelper;
     hash_map_pt entries; // key = endpointId, value = endpoint_descriptor_pt
 
     celix_thread_mutex_t serverLock;
@@ -80,6 +82,8 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 		return CELIX_ENOMEM;
 	}
 
+	(*server)->loghelper = &discovery->loghelper;
+
 	(*server)->entries = hashMap_create(&utils_stringHash, NULL, &utils_stringEquals, NULL);
 	if (!(*server)->entries) {
 		return CELIX_ENOMEM;
@@ -96,7 +100,7 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 
 		bundleContext_getProperty(context, DISCOVERY_SERVER_INTERFACE, &interface);
 		if ((interface != NULL) && (endpointDiscoveryServer_getIpAdress(interface, &ip) != CELIX_SUCCESS)) {
-			fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Could not retrieve IP adress for interface %s", interface);
+			logHelper_log(*(*server)->loghelper, OSGI_LOGSERVICE_WARNING, "Could not retrieve IP adress for interface %s", interface);
 		}
 
 		if (ip == NULL) {
@@ -105,11 +109,11 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 	}
 
 	if (ip != NULL) {
-		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Using %s for service annunciation", ip);
+		logHelper_log(*(*server)->loghelper, OSGI_LOGSERVICE_INFO, "Using %s for service annunciation", ip);
 		(*server)->ip = strdup(ip);
 	}
 	else {
-		fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "No IP address for service annunciation set. Using %s", DEFAULT_SERVER_IP);
+		logHelper_log(*(*server)->loghelper, OSGI_LOGSERVICE_WARNING, "No IP address for service annunciation set. Using %s", DEFAULT_SERVER_IP);
 		(*server)->ip = (char*) DEFAULT_SERVER_IP;
 	}
 
@@ -142,7 +146,7 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 
 		if ((*server)->ctx != NULL)
 		{
-			fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Starting discovery server on port %s...", port);
+			logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_INFO, "Starting discovery server on port %s...", port);
 		}
 		else {
 			errno = 0;
@@ -157,7 +161,7 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 	        port_counter++;
 			snprintf(&newPort[0], 10,  "%d", (currentPort+1));
 
-			fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error while starting discovery server on port %s - retrying on port %s...", port, newPort);
+			logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_ERROR, "Error while starting discovery server on port %s - retrying on port %s...", port, newPort);
 			port = newPort;
 
 		}
@@ -218,7 +222,7 @@ celix_status_t endpointDiscoveryServer_addEndpoint(endpoint_discovery_server_pt 
 	char* endpointId = strdup(endpoint->id);
 	endpoint_description_pt cur_value = hashMap_get(server->entries, endpointId);
 	if (!cur_value) {
-		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "exposing new endpoint \"%s\"...", endpointId);
+		logHelper_log(*server->loghelper, OSGI_LOGSERVICE_INFO, "exposing new endpoint \"%s\"...", endpointId);
 
 		hashMap_put(server->entries, endpointId, endpoint);
 	}
@@ -243,7 +247,7 @@ celix_status_t endpointDiscoveryServer_removeEndpoint(endpoint_discovery_server_
 	if (entry) {
 		char* key = hashMapEntry_getKey(entry);
 
-		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "removing endpoint \"%s\"...\n", key);
+		logHelper_log(*server->loghelper, OSGI_LOGSERVICE_INFO, "removing endpoint \"%s\"...\n", key);
 
 		hashMap_remove(server->entries, key);
 

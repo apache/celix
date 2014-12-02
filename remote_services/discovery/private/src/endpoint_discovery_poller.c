@@ -31,9 +31,10 @@
 
 #include <curl/curl.h>
 
+#include "bundle_context.h"
 #include "hash_map.h"
 #include "array_list.h"
-#include "celix_log.h"
+#include "log_helper.h"
 #include "celix_threads.h"
 #include "utils.h"
 
@@ -43,16 +44,6 @@
 #include "endpoint_discovery_poller.h"
 #include "endpoint_descriptor_reader.h"
 
-struct endpoint_discovery_poller {
-    discovery_pt discovery;
-    hash_map_pt entries;
-
-    celix_thread_mutex_t pollerLock;
-    celix_thread_t pollerThread;
-
-    unsigned int poll_interval;
-    volatile bool running;
-};
 
 #define DISCOVERY_POLL_INTERVAL "DISCOVERY_CFG_POLL_INTERVAL"
 #define DEFAULT_POLL_INTERVAL "10"
@@ -71,6 +62,8 @@ celix_status_t endpointDiscoveryPoller_create(discovery_pt discovery, bundle_con
     if (!poller) {
         return CELIX_ENOMEM;
     }
+
+    (*poller)->loghelper = &discovery->loghelper;
 
 	status = celixThreadMutex_create(&(*poller)->pollerLock, NULL);
 	if (status != CELIX_SUCCESS) {
@@ -141,6 +134,8 @@ celix_status_t endpointDiscoveryPoller_destroy(endpoint_discovery_poller_pt poll
 
     status = celixThreadMutex_unlock(&poller->pollerLock);
 
+    poller->loghelper = NULL;
+
     free(poller);
 
 	return status;
@@ -206,7 +201,7 @@ static void *endpointDiscoveryPoller_poll(void *data) {
 
         celix_status_t status = celixThreadMutex_lock(&poller->pollerLock);
         if (status != CELIX_SUCCESS) {
-        	fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "ENDPOINT_POLLER: failed to obtain lock; retrying...");
+        	logHelper_log(*poller->loghelper, OSGI_LOGSERVICE_WARNING, "ENDPOINT_POLLER: failed to obtain lock; retrying...");
         	continue;
         }
 
@@ -250,7 +245,7 @@ static void *endpointDiscoveryPoller_poll(void *data) {
 
 		status = celixThreadMutex_unlock(&poller->pollerLock);
 		if (status != CELIX_SUCCESS) {
-			fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "ENDPOINT_POLLER: failed to release lock; retrying...");
+			logHelper_log(*poller->loghelper, OSGI_LOGSERVICE_WARNING, "ENDPOINT_POLLER: failed to release lock; retrying...");
 		}
     }
 
@@ -268,7 +263,7 @@ static size_t endpointDiscoveryPoller_writeMemory(void *contents, size_t size, s
 
     mem->memory = realloc(mem->memory, mem->size + realsize + 1);
     if(mem->memory == NULL) {
-    	fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "ENDPOINT_POLLER: not enough memory (realloc returned NULL)!");
+    	printf("ENDPOINT_POLLER: not enough memory (realloc returned NULL)!");
         return 0;
     }
 
@@ -305,7 +300,7 @@ static celix_status_t endpointDiscoveryPoller_getEndpoints(endpoint_discovery_po
     if (res == CURLE_OK) {
         endpoint_descriptor_reader_pt reader = NULL;
 
-    	status = endpointDescriptorReader_create(&reader);
+    	status = endpointDescriptorReader_create(poller, &reader);
     	if (status == CELIX_SUCCESS) {
 			status = endpointDescriptorReader_parseDocument(reader, chunk.memory, updatedEndpoints);
     	}
@@ -314,7 +309,7 @@ static celix_status_t endpointDiscoveryPoller_getEndpoints(endpoint_discovery_po
 			endpointDescriptorReader_destroy(reader);
     	}
     } else {
-    	fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "ENDPOINT_POLLER: unable to read endpoints, reason: %s", curl_easy_strerror(res));
+    	logHelper_log(*poller->loghelper, OSGI_LOGSERVICE_ERROR, "ENDPOINT_POLLER: unable to read endpoints, reason: %s", curl_easy_strerror(res));
     }
 
     // clean up endpoints file
