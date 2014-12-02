@@ -29,6 +29,7 @@
 
 #include "celix_errno.h"
 #include "discovery.h"
+#include "log_helper.h"
 
 struct endpoint_discovery_poller {
     discovery_pt discovery;
