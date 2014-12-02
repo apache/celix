@@ -43,6 +43,10 @@ struct logActivator {
     bundle_listener_pt bundleListener;
     framework_listener_pt frameworkListener;
 
+    log_pt logger;
+    service_factory_pt factory;
+    log_reader_data_pt reader;
+    log_reader_service_pt reader_service;
 };
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
@@ -61,6 +65,12 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 		activator->logServiceFactoryReg = NULL;
 		activator->logReaderServiceReg = NULL;
 		activator->pool = mp;
+
+		activator->logger = NULL;
+		activator->factory = NULL;
+		activator->reader = NULL;
+		activator->reader_service = NULL;
+
         *userData = activator;
     }
 
@@ -70,40 +80,34 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
     struct logActivator * activator = (struct logActivator *) userData;
     celix_status_t status = CELIX_SUCCESS;
-    service_factory_pt factory = NULL;
-    log_pt logger = NULL;
 
-    log_reader_data_pt reader = NULL;
-    log_reader_service_pt reader_service = NULL;
-
-
-    log_create(activator->pool, &logger);
+    log_create(activator->pool, &activator->logger);
 
     // Add logger as Bundle- and FrameworkEvent listener
     activator->bundleListener = apr_palloc(activator->pool, sizeof(*activator->bundleListener));
-    activator->bundleListener->handle = logger;
+    activator->bundleListener->handle = activator->logger;
     activator->bundleListener->bundleChanged = log_bundleChanged;
     bundleContext_addBundleListener(context, activator->bundleListener);
 
     activator->frameworkListener = apr_palloc(activator->pool, sizeof(*activator->frameworkListener));
-    activator->frameworkListener->handle = logger;
+    activator->frameworkListener->handle = activator->logger;
     activator->frameworkListener->frameworkEvent = log_frameworkEvent;
     bundleContext_addFrameworkListener(context, activator->frameworkListener);
 
-    logFactory_create(activator->pool, logger, &factory);
+    logFactory_create(activator->pool, activator->logger, &activator->factory);
 
-    bundleContext_registerServiceFactory(context, (char *) OSGI_LOGSERVICE_NAME, factory, NULL, &activator->logServiceFactoryReg);
+    bundleContext_registerServiceFactory(context, (char *) OSGI_LOGSERVICE_NAME, activator->factory, NULL, &activator->logServiceFactoryReg);
 
-    logReaderService_create(logger, activator->pool, &reader);
+    logReaderService_create(activator->logger, activator->pool, &activator->reader);
 
-    reader_service = apr_palloc(activator->pool, sizeof(*reader_service));
-    reader_service->reader = reader;
-    reader_service->getLog = logReaderService_getLog;
-    reader_service->addLogListener = logReaderService_addLogListener;
-    reader_service->removeLogListener = logReaderService_removeLogListener;
-    reader_service->removeAllLogListener = logReaderService_removeAllLogListener;
+    activator->reader_service = apr_palloc(activator->pool, sizeof(*activator->reader_service));
+    activator->reader_service->reader = activator->reader;
+    activator->reader_service->getLog = logReaderService_getLog;
+    activator->reader_service->addLogListener = logReaderService_addLogListener;
+    activator->reader_service->removeLogListener = logReaderService_removeLogListener;
+    activator->reader_service->removeAllLogListener = logReaderService_removeAllLogListener;
 
-    bundleContext_registerService(context, (char *) OSGI_LOGSERVICE_READER_SERVICE_NAME, reader_service, NULL, &activator->logReaderServiceReg);
+    bundleContext_registerService(context, (char *) OSGI_LOGSERVICE_READER_SERVICE_NAME, activator->reader_service, NULL, &activator->logReaderServiceReg);
 
     return status;
 }
@@ -116,8 +120,15 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	serviceRegistration_unregister(activator->logServiceFactoryReg);
 	activator->logServiceFactoryReg = NULL;
 
+	// logReaderService_destroy(activator->reader);
+	// free(activator->reader_service);
+
+	// logFactory_destroy(activator->factory);
+
 	bundleContext_removeBundleListener(context, activator->bundleListener);
 	bundleContext_removeFrameworkListener(context, activator->frameworkListener);
+
+	// log_destroy(activator->logger);
 
     return CELIX_SUCCESS;
 }

@@ -103,6 +103,11 @@ apr_status_t log_destroy(void *logp) {
 	apr_thread_cond_destroy(log->entriesToDeliver);
 	arrayList_destroy(log->listenerEntries);
 	arrayList_destroy(log->listeners);
+	linked_list_iterator_pt iter = linkedListIterator_create(log->entries, 0);
+	while (linkedListIterator_hasNext(iter)) {
+	    log_entry_pt entry = linkedListIterator_next(iter);
+	    logEntry_destroy(&entry);
+	}
 	linkedList_destroy(log->entries);
 	apr_thread_mutex_destroy(log->lock);
 
@@ -175,7 +180,7 @@ celix_status_t log_bundleChanged(void *listener, bundle_event_pt event) {
 	}
 
 	if (message != NULL) {
-		status = logEntry_create(event->bundle, NULL, OSGI_LOGSERVICE_INFO, message, 0, logger->pool, &entry);
+		status = logEntry_create(event->bundle, NULL, OSGI_LOGSERVICE_INFO, message, 0, &entry);
 		if (status == CELIX_SUCCESS) {
 			status = log_addEntry(logger, entry);
 		}
@@ -189,7 +194,7 @@ celix_status_t log_frameworkEvent(void *listener, framework_event_pt event) {
 	log_pt logger = ((framework_listener_pt) listener)->handle;
 	log_entry_pt entry = NULL;
 
-	status = logEntry_create(event->bundle, NULL, (event->type == OSGI_FRAMEWORK_EVENT_ERROR) ? OSGI_LOGSERVICE_ERROR : OSGI_LOGSERVICE_INFO, event->error, event->errorCode, logger->pool, &entry);
+	status = logEntry_create(event->bundle, NULL, (event->type == OSGI_FRAMEWORK_EVENT_ERROR) ? OSGI_LOGSERVICE_ERROR : OSGI_LOGSERVICE_INFO, event->error, event->errorCode, &entry);
 	if (status == CELIX_SUCCESS) {
 		status = log_addEntry(logger, entry);
 	}
@@ -312,22 +317,24 @@ void * APR_THREAD_FUNC log_listenerThread(apr_thread_t *thread, void *data) {
             if (!arrayList_isEmpty(logger->listenerEntries)) {
                 log_entry_pt entry = (log_entry_pt) arrayList_remove(logger->listenerEntries, 0);
 
-                status = apr_thread_mutex_lock(logger->listenerLock);
-                if (status != APR_SUCCESS) {
-                    logger->running = false;
-                    break;
-                } else {
-                    array_list_iterator_pt it = arrayListIterator_create(logger->listeners);
-                    while (arrayListIterator_hasNext(it)) {
-                        log_listener_pt listener = arrayListIterator_next(it);
-                        listener->logged(listener, entry);
-                    }
-					arrayListIterator_destroy(it);
-
-                    status = apr_thread_mutex_unlock(logger->listenerLock);
+                if (entry) {
+                    status = apr_thread_mutex_lock(logger->listenerLock);
                     if (status != APR_SUCCESS) {
                         logger->running = false;
                         break;
+                    } else {
+                        array_list_iterator_pt it = arrayListIterator_create(logger->listeners);
+                        while (arrayListIterator_hasNext(it)) {
+                            log_listener_pt listener = arrayListIterator_next(it);
+                            listener->logged(listener, entry);
+                        }
+                        arrayListIterator_destroy(it);
+
+                        status = apr_thread_mutex_unlock(logger->listenerLock);
+                        if (status != APR_SUCCESS) {
+                            logger->running = false;
+                            break;
+                        }
                     }
                 }
             }

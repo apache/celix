@@ -44,7 +44,8 @@ typedef struct log_entry * log_entry_pt;
 
 celix_status_t logEntry_create(bundle_pt bundle, service_reference_pt reference,
         log_level_t level, char *message, int errorCode,
-        apr_pool_t *pool, log_entry_pt *entry);
+        log_entry_pt *entry);
+celix_status_t logEntry_destroy(log_entry_pt *entry);
 celix_status_t logEntry_getBundle(log_entry_pt entry, bundle_pt *bundle);
 celix_status_t logEntry_getErrorCode(log_entry_pt entry, int *errorCode);
 celix_status_t logEntry_getLevel(log_entry_pt entry, log_level_t *level);

@@ -25,27 +25,37 @@
  */
 
 #include <stddef.h>
+#include <stdlib.h>
 
 #include "log_entry.h"
 
 celix_status_t logEntry_create(bundle_pt bundle, service_reference_pt reference,
         log_level_t level, char *message, int errorCode,
-        apr_pool_t *pool, log_entry_pt *entry) {
+        log_entry_pt *entry) {
     celix_status_t status = CELIX_SUCCESS;
 
-    *entry = apr_palloc(pool, sizeof(**entry));
-    if (entry == NULL) {
+    *entry = malloc(sizeof(**entry));
+    if (*entry == NULL) {
         status = CELIX_ENOMEM;
     } else {
         (*entry)->bundle = bundle;
         (*entry)->reference = reference;
         (*entry)->level = level;
-        (*entry)->message = message;
+        (*entry)->message = strdup(message);
         (*entry)->errorCode = errorCode;
         (*entry)->time = time(NULL);
     }
 
     return status;
+}
+
+celix_status_t logEntry_destroy(log_entry_pt *entry) {
+    if (*entry) {
+        free((*entry)->message);
+        free(*entry);
+        *entry = NULL;
+    }
+    return CELIX_SUCCESS;
 }
 
 celix_status_t logEntry_getBundle(log_entry_pt entry, bundle_pt *bundle) {

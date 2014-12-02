@@ -59,7 +59,7 @@ celix_status_t logService_logSr(log_service_data_pt logger, service_reference_pt
     if (reference != NULL) {
     	serviceReference_getBundle(reference, &bundle);
     }
-    logEntry_create(bundle, reference, level, message, 0, logger->pool, &entry);
+    logEntry_create(bundle, reference, level, message, 0, &entry);
     log_addEntry(logger->log, entry);
 
     return CELIX_SUCCESS;
