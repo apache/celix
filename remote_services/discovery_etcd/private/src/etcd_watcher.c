@@ -270,7 +270,7 @@ celix_status_t etcdWatcher_create(discovery_pt discovery, bundle_context_pt cont
 	else
 	{
 		(*watcher)->discovery = discovery;
-		(*watcher)->loghelper = discovery->loghelper;
+		(*watcher)->loghelper = &discovery->loghelper;
 	}
 
 	if ((bundleContext_getProperty(context, CFG_ETCD_SERVER_IP, &etcd_server) != CELIX_SUCCESS) || !etcd_server) {
