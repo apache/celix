@@ -143,6 +143,7 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 	unsigned int port_counter = 0;
 
 	do {
+		char newPort[10];
 		const char *options[] = {
 			"listening_ports", port,
 			"num_threads", DEFAULT_SERVER_THREADS,
@@ -157,7 +158,6 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 		}
 		else {
 			errno = 0;
-			char newPort[10];
 	        char* endptr = port;
 	        int currentPort = strtol(port, &endptr, 10);
 

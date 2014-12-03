@@ -156,31 +156,34 @@ celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt con
 		callbacks.begin_request = remoteServiceAdmin_callback;
 
 		do {
+			char newPort[10];
 			const char *options[] = { "listening_ports", port, NULL};
 
 			(*admin)->ctx = mg_start(&callbacks, (*admin), options);
 
 			if ((*admin)->ctx != NULL) {
 				logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_INFO, "RSA: Start webserver: %s", port);
-				(*admin)->port = port;
+				(*admin)->port = apr_pstrdup(pool, port);
+
 			}
 			else {
-				errno = 0;
-				char* newPort = calloc(10, sizeof(*newPort));
 		        char* endptr = port;
 		        int currentPort = strtol(port, &endptr, 10);
+
+				errno = 0;
 
 		        if (*endptr || errno != 0) {
 		            currentPort = strtol(DEFAULT_PORT, NULL, 10);
 		        }
 
 		        port_counter++;
-				snprintf(newPort, 6,  "%d", (currentPort+1));
+				snprintf(&newPort[0], 6,  "%d", (currentPort+1));
 
 				logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_ERROR, "Error while starting rsa server on port %s - retrying on port %s...", port, newPort);
 				port = newPort;
 			}
 		} while(((*admin)->ctx == NULL) && (port_counter < MAX_NUMBER_OF_RESTARTS));
+
 	}
 	return status;
 }
