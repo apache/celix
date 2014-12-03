@@ -105,6 +105,7 @@ celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt con
 		unsigned int port_counter = 0;
 		char *port = NULL;
 		char *ip = NULL;
+		char *detectedIp = NULL;
 
 		(*admin)->pool = pool;
 		(*admin)->context = context;
@@ -125,13 +126,15 @@ celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt con
 			char *interface = NULL;
 
 			bundleContext_getProperty(context, "RSA_INTERFACE", &interface);
-			if ((interface != NULL) && (remoteServiceAdmin_getIpAdress(interface, &ip) != CELIX_SUCCESS)) {
+			if ((interface != NULL) && (remoteServiceAdmin_getIpAdress(interface, &detectedIp) != CELIX_SUCCESS)) {
 				logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_WARNING, "RSA: Could not retrieve IP adress for interface %s", interface);
 			}
 
 			if (ip == NULL) {
-				remoteServiceAdmin_getIpAdress(NULL, &ip);
+				remoteServiceAdmin_getIpAdress(NULL, &detectedIp);
 			}
+
+			ip = detectedIp;
 		}
 
 		if (ip != NULL) {
@@ -141,6 +144,10 @@ celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt con
 		else {
 			logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_WARNING, "RSA: No IP address for service annunciation set. Using %s", DEFAULT_IP);
 			(*admin)->ip = (char*) DEFAULT_IP;
+		}
+
+		if (detectedIp != NULL) {
+			free(detectedIp);
 		}
 
 		// Prepare callbacks structure. We have only one callback, the rest are NULL.

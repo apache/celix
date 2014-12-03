@@ -75,6 +75,7 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 
 	char *port = 0;
 	char *ip = NULL;
+	char *detectedIp = NULL;
 	char *path = NULL;
 
 	*server = malloc(sizeof(struct endpoint_discovery_server));
@@ -99,13 +100,15 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 		char *interface = NULL;
 
 		bundleContext_getProperty(context, DISCOVERY_SERVER_INTERFACE, &interface);
-		if ((interface != NULL) && (endpointDiscoveryServer_getIpAdress(interface, &ip) != CELIX_SUCCESS)) {
+		if ((interface != NULL) && (endpointDiscoveryServer_getIpAdress(interface, &detectedIp) != CELIX_SUCCESS)) {
 			logHelper_log(*(*server)->loghelper, OSGI_LOGSERVICE_WARNING, "Could not retrieve IP adress for interface %s", interface);
 		}
 
-		if (ip == NULL) {
-			endpointDiscoveryServer_getIpAdress(NULL, &ip);
+		if (detectedIp == NULL) {
+			endpointDiscoveryServer_getIpAdress(NULL, &detectedIp);
 		}
+
+		ip = detectedIp;
 	}
 
 	if (ip != NULL) {
@@ -115,6 +118,10 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 	else {
 		logHelper_log(*(*server)->loghelper, OSGI_LOGSERVICE_WARNING, "No IP address for service annunciation set. Using %s", DEFAULT_SERVER_IP);
 		(*server)->ip = (char*) DEFAULT_SERVER_IP;
+	}
+
+	if (detectedIp != NULL) {
+		free(detectedIp);
 	}
 
 	bundleContext_getProperty(context, DISCOVERY_SERVER_PORT, &port);
