@@ -18,6 +18,7 @@
 find_package(APR REQUIRED)
 find_package(CURL REQUIRED)
 
+
 include_directories(${CURL_INCLUDE_DIRS})
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
@@ -43,4 +44,4 @@ bundle(remote_service_admin_http SOURCES
 
 install_bundle(remote_service_admin_http)
     
-target_link_libraries(remote_service_admin_http celix_framework ${APRUTIL_LIBRARY} ${CURL_LIBRARIES})
+target_link_libraries(remote_service_admin_http celix_framework  ${APRUTIL_LIBRARY} ${CURL_LIBRARIES})

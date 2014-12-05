@@ -158,6 +158,7 @@ celix_status_t exportRegistration_endpointRemoved(void * handle, service_referen
 
 	remote_endpoint_service_pt endpoint = service;
 	if (registration->endpoint != NULL) {
+		remoteServiceAdmin_removeExportedService(registration);
 		registration->endpoint = NULL;
 		endpoint->setService(endpoint->endpoint, NULL);
 	}

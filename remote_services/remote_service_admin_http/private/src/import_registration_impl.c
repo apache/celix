@@ -229,8 +229,8 @@ celix_status_t importRegistrationFactory_install(apr_pool_t *pool, char* service
 		// check whether factory is available
 		if (((*registration_factory)->trackedFactory == NULL) && ((status = importRegistrationFactory_open(*registration_factory)) != CELIX_SUCCESS)) {
 			logHelper_log((*registration_factory)->loghelper, OSGI_LOGSERVICE_ERROR, "remoteServiceAdmin_importService: cannot open registration_factory for %s.", serviceName);
-			importRegistrationFactory_destroy(registration_factory);
 			serviceTracker_close((*registration_factory)->proxyFactoryTracker);
+			importRegistrationFactory_destroy(registration_factory);
 		}
 	}
 

@@ -28,10 +28,11 @@
 #define REMOTE_ENDPOINT_IMPL_H_
 
 #include "remote_endpoint.h"
+#include "celix_threads.h"
 
 struct remote_endpoint {
+	celix_thread_mutex_t serviceLock;
 	void *service;
-//	apr_pool_t* pool;
 };
 
 #endif /* REMOTE_ENDPOINT_IMPL_H_ */

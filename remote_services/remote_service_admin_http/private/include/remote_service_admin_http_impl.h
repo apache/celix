@@ -36,7 +36,10 @@ struct remote_service_admin {
 	bundle_context_pt context;
 	log_helper_pt loghelper;
 
+	celix_thread_mutex_t exportedServicesLock;
 	hash_map_pt exportedServices;
+
+	celix_thread_mutex_t importedServicesLock;
 	hash_map_pt importedServices;
 
 	char *port;
