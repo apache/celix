@@ -125,10 +125,22 @@ celix_status_t endpointDiscoveryPoller_destroy(endpoint_discovery_poller_pt poll
 
     celixThread_join(poller->pollerThread, NULL);
 
-    status = celixThreadMutex_lock(&poller->pollerLock);
-    if (status != CELIX_SUCCESS) {
-        return CELIX_BUNDLE_EXCEPTION;
-    }
+    hash_map_iterator_pt iterator = hashMapIterator_create(poller->entries);
+	while (hashMapIterator_hasNext(iterator)) {
+		hash_map_entry_pt entry = hashMapIterator_nextEntry(iterator);
+
+		if ( endpointDiscoveryPoller_removeDiscoveryEndpoint(poller, (char*) hashMapEntry_getKey(entry)) == CELIX_SUCCESS) {
+			hashMapIterator_destroy(iterator);
+			iterator = hashMapIterator_create(poller->entries);
+		}
+	}
+	hashMapIterator_destroy(iterator);
+
+	status = celixThreadMutex_lock(&poller->pollerLock);
+
+	if (status != CELIX_SUCCESS) {
+		return CELIX_BUNDLE_EXCEPTION;
+	}
 
 	hashMap_destroy(poller->entries, true, false);
 
