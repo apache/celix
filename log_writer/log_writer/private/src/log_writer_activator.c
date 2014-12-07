@@ -29,12 +29,9 @@
 #include "bundle_activator.h"
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
-	apr_pool_t *pool;
 	log_writer_pt writer = NULL;
 
-	bundleContext_getMemoryPool(context, &pool);
-
-	logWriter_create(pool, context, &writer);
+	logWriter_create(context, &writer);
 
 	*userData = writer;
 
@@ -42,15 +39,19 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 }
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
-	logWriter_start(userData);
-	return CELIX_SUCCESS;
+	log_writer_pt writer = (log_writer_pt) userData;
+
+	return logWriter_start(writer);
 }
 
 celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
-	logWriter_stop(userData);
-	return CELIX_SUCCESS;
+	log_writer_pt writer = (log_writer_pt) userData;
+
+	return logWriter_stop(writer);
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
-    return CELIX_SUCCESS;
+	log_writer_pt writer = (log_writer_pt) userData;
+
+	return logWriter_destroy(&writer);
 }
