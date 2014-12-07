@@ -23,7 +23,7 @@
  *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
-#include <apr_general.h>
+
 #include <stdlib.h>
 
 #include "bundle_activator.h"
@@ -35,7 +35,6 @@
 #include "service_registration.h"
 
 struct logActivator {
-    apr_pool_t *pool;
     bundle_context_pt bundleContext;
     service_registration_pt logServiceFactoryReg;
     service_registration_pt logReaderServiceReg;
@@ -51,12 +50,9 @@ struct logActivator {
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
     celix_status_t status = CELIX_SUCCESS;
-    apr_pool_t *mp = NULL;
 	struct logActivator * activator = NULL;
 
-    apr_pool_create(&mp, NULL);
-    activator = (struct logActivator *) apr_palloc(mp, sizeof(struct logActivator));
-
+    activator = (struct logActivator *) calloc(1, sizeof(struct logActivator));
 
     if (activator == NULL) {
         status = CELIX_ENOMEM;
@@ -64,7 +60,6 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 		activator->bundleContext = context;
 		activator->logServiceFactoryReg = NULL;
 		activator->logReaderServiceReg = NULL;
-		activator->pool = mp;
 
 		activator->logger = NULL;
 		activator->factory = NULL;
@@ -81,26 +76,27 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
     struct logActivator * activator = (struct logActivator *) userData;
     celix_status_t status = CELIX_SUCCESS;
 
-    log_create(activator->pool, &activator->logger);
+
+    log_create(&activator->logger);
 
     // Add logger as Bundle- and FrameworkEvent listener
-    activator->bundleListener = apr_palloc(activator->pool, sizeof(*activator->bundleListener));
+    activator->bundleListener = calloc(1, sizeof(*activator->bundleListener));
     activator->bundleListener->handle = activator->logger;
     activator->bundleListener->bundleChanged = log_bundleChanged;
     bundleContext_addBundleListener(context, activator->bundleListener);
 
-    activator->frameworkListener = apr_palloc(activator->pool, sizeof(*activator->frameworkListener));
+    activator->frameworkListener = calloc(1, sizeof(*activator->frameworkListener));
     activator->frameworkListener->handle = activator->logger;
     activator->frameworkListener->frameworkEvent = log_frameworkEvent;
     bundleContext_addFrameworkListener(context, activator->frameworkListener);
 
-    logFactory_create(activator->pool, activator->logger, &activator->factory);
+    logFactory_create(activator->logger, &activator->factory);
 
     bundleContext_registerServiceFactory(context, (char *) OSGI_LOGSERVICE_NAME, activator->factory, NULL, &activator->logServiceFactoryReg);
 
-    logReaderService_create(activator->logger, activator->pool, &activator->reader);
+    logReaderService_create(activator->logger, &activator->reader);
 
-    activator->reader_service = apr_palloc(activator->pool, sizeof(*activator->reader_service));
+    activator->reader_service = calloc(1, sizeof(*activator->reader_service));
     activator->reader_service->reader = activator->reader;
     activator->reader_service->getLog = logReaderService_getLog;
     activator->reader_service->addLogListener = logReaderService_addLogListener;
@@ -120,8 +116,8 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	serviceRegistration_unregister(activator->logServiceFactoryReg);
 	activator->logServiceFactoryReg = NULL;
 
-	// logReaderService_destroy(activator->reader);
-	// free(activator->reader_service);
+    logReaderService_destroy(&activator->reader);
+	free(activator->reader_service);
 
 	// logFactory_destroy(activator->factory);
 
@@ -134,5 +130,9 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
+	struct logActivator * activator = (struct logActivator *) userData;
+
+	free(activator);
+
     return CELIX_SUCCESS;
 }

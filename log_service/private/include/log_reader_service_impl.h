@@ -30,9 +30,10 @@
 #include "log_reader_service.h"
 #include "log.h"
 
-celix_status_t logReaderService_create(log_pt log, apr_pool_t *pool, log_reader_data_pt *reader);
+celix_status_t logReaderService_create(log_pt log, log_reader_data_pt *reader);
+celix_status_t logReaderService_destroy(log_reader_data_pt *reader);
 
-celix_status_t logReaderService_getLog(log_reader_data_pt reader, apr_pool_t *memory_pool, linked_list_pt *list);
+celix_status_t logReaderService_getLog(log_reader_data_pt reader, linked_list_pt *list);
 
 celix_status_t logReaderService_addLogListener(log_reader_data_pt reader, log_listener_pt listener);
 celix_status_t logReaderService_removeLogListener(log_reader_data_pt reader, log_listener_pt listener);

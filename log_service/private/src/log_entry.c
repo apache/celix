@@ -27,6 +27,8 @@
 #include <stddef.h>
 #include <stdlib.h>
 
+#include "celix_errno.h"
+#include "log_service.h"
 #include "log_entry.h"
 
 celix_status_t logEntry_create(bundle_pt bundle, service_reference_pt reference,

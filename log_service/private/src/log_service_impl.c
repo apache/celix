@@ -32,19 +32,26 @@
 struct log_service_data {
     log_pt log;
     bundle_pt bundle;
-    apr_pool_t *pool;
 };
 
-celix_status_t logService_create(log_pt log, bundle_pt bundle, apr_pool_t *pool, log_service_data_pt *logger) {
+celix_status_t logService_create(log_pt log, bundle_pt bundle, log_service_data_pt *logger) {
     celix_status_t status = CELIX_SUCCESS;
-    *logger = apr_palloc(pool, sizeof(struct log_service_data));
+    *logger = calloc(1, sizeof(struct log_service_data));
     if (*logger == NULL) {
         status = CELIX_ENOMEM;
     } else {
         (*logger)->bundle = bundle;
         (*logger)->log = log;
-        (*logger)->pool = pool;
     }
+
+    return status;
+}
+
+celix_status_t logService_destroy(log_service_data_pt *logger) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    free(*logger);
+    logger = NULL;
 
     return status;
 }

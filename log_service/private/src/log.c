@@ -24,83 +24,74 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdlib.h>
-#include <apr_thread_cond.h>
-#include <apr_thread_mutex.h>
-#include <apr_thread_proc.h>
 
 #include "log.h"
 #include "linked_list_iterator.h"
 #include "array_list.h"
 
 struct log {
-    linked_list_pt entries;
-    apr_thread_mutex_t *lock;
+	linked_list_pt entries;
+	celix_thread_mutex_t lock;
 
-    array_list_pt listeners;
-    array_list_pt listenerEntries;
+	array_list_pt listeners;
+	array_list_pt listenerEntries;
 
-    apr_thread_t *listenerThread;
-    bool running;
+	celix_thread_t listenerThread;
+	bool running;
 
-    apr_thread_cond_t *entriesToDeliver;
-    apr_thread_mutex_t *deliverLock;
-    apr_thread_mutex_t *listenerLock;
-
-    apr_pool_t *pool;
+	celix_thread_cond_t entriesToDeliver;
+	celix_thread_mutex_t deliverLock;
+	celix_thread_mutex_t listenerLock;
 };
 
 static celix_status_t log_startListenerThread(log_pt logger);
 static celix_status_t log_stopListenerThread(log_pt logger);
 
-void * APR_THREAD_FUNC log_listenerThread(apr_thread_t *thread, void *data);
-apr_status_t log_destroy(void *logp);
 
-celix_status_t log_create(apr_pool_t *pool, log_pt *logger) {
-    celix_status_t status = CELIX_SUCCESS;
+static void *log_listenerThread(void *data);
 
-    *logger = apr_palloc(pool, sizeof(**logger));
-    if (*logger == NULL) {
-        status = CELIX_ENOMEM;
-    } else {
-        apr_status_t apr_status;
+celix_status_t log_create(log_pt *logger) {
+	celix_status_t status = CELIX_ENOMEM;
 
-        apr_pool_pre_cleanup_register(pool, *logger, log_destroy);
-        linkedList_create(&(*logger)->entries);
-        apr_thread_mutex_create(&(*logger)->lock, APR_THREAD_MUTEX_UNNESTED, pool);
+	*logger = calloc(1, sizeof(**logger));
 
-        (*logger)->pool = pool;
-        (*logger)->listeners = NULL;
+	if (*logger != NULL) {
+		linkedList_create(&(*logger)->entries);
+
+		status = celixThreadMutex_create(&(*logger)->lock, NULL);
+
+		(*logger)->listeners = NULL;
+		(*logger)->listenerEntries = NULL;
+		(*logger)->listenerThread = -1;
+		(*logger)->running = false;
+
 		arrayList_create(&(*logger)->listeners);
-        (*logger)->listenerEntries = NULL;
-        arrayList_create(&(*logger)->listenerEntries);
-        (*logger)->listenerThread = NULL;
-        (*logger)->running = false;
-        apr_status = apr_thread_cond_create(&(*logger)->entriesToDeliver, pool);
-        if (apr_status != APR_SUCCESS) {
-            status = CELIX_INVALID_SYNTAX;
-        } else {
-            apr_status = apr_thread_mutex_create(&(*logger)->deliverLock, 0, pool);
-            if (apr_status != APR_SUCCESS) {
-                status = CELIX_INVALID_SYNTAX;
-            } else {
-                apr_status = apr_thread_mutex_create(&(*logger)->listenerLock, 0, pool);
-                if (apr_status != APR_SUCCESS) {
-                    status = CELIX_INVALID_SYNTAX;
-                } else {
-                    // done
-                }
-            }
-        }
-    }
+		arrayList_create(&(*logger)->listenerEntries);
 
-    return status;
+		if (celixThreadCondition_init(&(*logger)->entriesToDeliver, NULL) != CELIX_SUCCESS) {
+			status = CELIX_INVALID_SYNTAX;
+		}
+		else if (celixThreadMutex_create(&(*logger)->deliverLock, NULL) != CELIX_SUCCESS) {
+			status = CELIX_INVALID_SYNTAX;
+		}
+		else if (celixThreadMutex_create(&(*logger)->listenerLock, NULL) != CELIX_SUCCESS) {
+			status = CELIX_INVALID_SYNTAX;
+		}
+		else {
+			status = CELIX_SUCCESS;
+		}
+	}
+
+	return status;
 }
 
-apr_status_t log_destroy(void *logp) {
+celix_status_t log_destroy(void *logp) {
+	celix_status_t status = CELIX_SUCCESS;
 	log_pt log = logp;
-	apr_thread_mutex_destroy(log->listenerLock);
-	apr_thread_mutex_destroy(log->deliverLock);
-	apr_thread_cond_destroy(log->entriesToDeliver);
+
+	celixThreadMutex_destroy(&log->listenerLock);
+	celixThreadMutex_destroy(&log->deliverLock);
+
 	arrayList_destroy(log->listenerEntries);
 	arrayList_destroy(log->listeners);
 	linked_list_iterator_pt iter = linkedListIterator_create(log->entries, 0);
@@ -109,47 +100,44 @@ apr_status_t log_destroy(void *logp) {
 	    logEntry_destroy(&entry);
 	}
 	linkedList_destroy(log->entries);
-	apr_thread_mutex_destroy(log->lock);
 
-	return APR_SUCCESS;
+	celixThreadMutex_destroy(&log->lock);
+
+	return status;
 }
 
 celix_status_t log_addEntry(log_pt log, log_entry_pt entry) {
-    apr_thread_mutex_lock(log->lock);
-    linkedList_addElement(log->entries, entry);
+	celixThreadMutex_lock(&log->lock);
+	linkedList_addElement(log->entries, entry);
 
-    // notify any listeners
-    if (log->listenerThread != NULL)
-    {
-        arrayList_add(log->listenerEntries, entry);
-        apr_thread_cond_signal(log->entriesToDeliver);
-    }
+	arrayList_add(log->listenerEntries, entry);
+	celixThreadCondition_signal(&log->entriesToDeliver);
 
-    apr_thread_mutex_unlock(log->lock);
-    return CELIX_SUCCESS;
+	celixThreadMutex_unlock(&log->lock);
+	return CELIX_SUCCESS;
 }
 
-celix_status_t log_getEntries(log_pt log, apr_pool_t *memory_pool, linked_list_pt *list) {
-    linked_list_pt entries = NULL;
-    if (linkedList_create(&entries) == CELIX_SUCCESS) {
-        linked_list_iterator_pt iter = NULL;
+celix_status_t log_getEntries(log_pt log, linked_list_pt *list) {
+	linked_list_pt entries = NULL;
+	if (linkedList_create(&entries) == CELIX_SUCCESS) {
+		linked_list_iterator_pt iter = NULL;
 
-        apr_thread_mutex_lock(log->lock);
+		celixThreadMutex_lock(&log->lock);
 
-        iter = linkedListIterator_create(log->entries, 0);
-        while (linkedListIterator_hasNext(iter)) {
-            linkedList_addElement(entries, linkedListIterator_next(iter));
-        }
+		iter = linkedListIterator_create(log->entries, 0);
+		while (linkedListIterator_hasNext(iter)) {
+			linkedList_addElement(entries, linkedListIterator_next(iter));
+		}
 		linkedListIterator_destroy(iter);
 
-        *list = entries;
+		*list = entries;
 
-        apr_thread_mutex_unlock(log->lock);
+		celixThreadMutex_unlock(&log->lock);
 
-        return CELIX_SUCCESS;
-    } else {
-        return CELIX_ENOMEM;
-    }
+		return CELIX_SUCCESS;
+	} else {
+		return CELIX_ENOMEM;
+	}
 }
 
 celix_status_t log_bundleChanged(void *listener, bundle_event_pt event) {
@@ -203,154 +191,129 @@ celix_status_t log_frameworkEvent(void *listener, framework_event_pt event) {
 }
 
 celix_status_t log_addLogListener(log_pt logger, log_listener_pt listener) {
-    celix_status_t status = CELIX_SUCCESS;
-    apr_status_t apr_status;
+	celix_status_t status = CELIX_SUCCESS;
 
-    apr_status = apr_thread_mutex_lock(logger->listenerLock);
-    if (apr_status != APR_SUCCESS) {
-        status = CELIX_INVALID_SYNTAX;
-    } else {
-        arrayList_add(logger->listeners, listener);
+	celixThreadMutex_lock(&logger->listenerLock);
 
-        if (logger->listenerThread == NULL) {
-            log_startListenerThread(logger);
-        }
+	arrayList_add(logger->listeners, listener);
+	log_startListenerThread(logger);
 
-        apr_status = apr_thread_mutex_unlock(logger->listenerLock);
-        if (apr_status != APR_SUCCESS) {
-            status = CELIX_INVALID_SYNTAX;
-        }
-    }
+	celixThreadMutex_unlock(&logger->listenerLock);
 
-    return status;
+	return status;
 }
 
 celix_status_t log_removeLogListener(log_pt logger, log_listener_pt listener) {
-    celix_status_t status = CELIX_SUCCESS;
-    celix_status_t threadStatus = CELIX_SUCCESS;
-	bool last=false;
+	celix_status_t status = CELIX_SUCCESS;
+	bool last = false;
 
-    status = CELIX_DO_IF(status, apr_thread_mutex_lock(logger->deliverLock));
-    status = CELIX_DO_IF(status, apr_thread_mutex_lock(logger->listenerLock));
-    if (status == CELIX_SUCCESS) {
-        arrayList_removeElement(logger->listeners, listener);
-        if (arrayList_size(logger->listeners) == 0) {
-            status = log_stopListenerThread(logger);
-			last=true;
-        }
+	celixThreadMutex_lock(&logger->deliverLock);
+	celixThreadMutex_lock(&logger->listenerLock);
 
-        status = CELIX_DO_IF(status, apr_thread_mutex_unlock(logger->listenerLock));
-        status = CELIX_DO_IF(status, apr_thread_mutex_unlock(logger->deliverLock));
-
-		if(last){
-        status = CELIX_DO_IF(status, apr_thread_join(&threadStatus, logger->listenerThread));
+	if (status == CELIX_SUCCESS) {
+		arrayList_removeElement(logger->listeners, listener);
+		if (arrayList_size(logger->listeners) == 0) {
+			status = log_stopListenerThread(logger);
+			last = true;
 		}
 
-        if (status == CELIX_SUCCESS) {
-            logger->listenerThread = NULL;
-        }
-        status = threadStatus;
-    }
+		celixThreadMutex_unlock(&logger->listenerLock);
+		celixThreadMutex_unlock(&logger->deliverLock);
 
-    if (status != CELIX_SUCCESS) {
-        status = CELIX_SERVICE_EXCEPTION;
-    }
+		if (last) {
+			celixThread_join(logger->listenerThread, NULL);
+		}
 
-    return status;
+		if (status == CELIX_SUCCESS) {
+			logger->listenerThread = -1;
+		}
+	}
+
+	if (status != CELIX_SUCCESS) {
+		status = CELIX_SERVICE_EXCEPTION;
+	}
+
+	return status;
 }
 
 celix_status_t log_removeAllLogListener(log_pt logger) {
-    celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status = CELIX_SUCCESS;
 
-    apr_status_t apr_status;
+	celixThreadMutex_lock(&logger->listenerLock);
 
-    apr_status = apr_thread_mutex_lock(logger->listenerLock);
-    if (apr_status != APR_SUCCESS) {
-        status = CELIX_INVALID_SYNTAX;
-    } else {
-        arrayList_clear(logger->listeners);
+	arrayList_clear(logger->listeners);
 
+	celixThreadMutex_unlock(&logger->listenerLock);
 
-        apr_status = apr_thread_mutex_unlock(logger->listenerLock);
-        if (apr_status != APR_SUCCESS) {
-            status = CELIX_INVALID_SYNTAX;
-        }
-    }
-
-    return status;
+	return status;
 }
 
 static celix_status_t log_startListenerThread(log_pt logger) {
-    celix_status_t status = CELIX_SUCCESS;
-    apr_status_t apr_status;
+	celix_status_t status = CELIX_SUCCESS;
 
-    logger->running = true;
-    apr_status = apr_thread_create(&logger->listenerThread, NULL, log_listenerThread, logger, logger->pool);
-    if (apr_status != APR_SUCCESS) {
-        status = CELIX_INVALID_SYNTAX;
-    }
+	logger->running = true;
 
-    return status;
+	status = celixThread_create(&logger->listenerThread, NULL, &log_listenerThread, logger);
+
+	return status;
 }
 
 static celix_status_t log_stopListenerThread(log_pt logger) {
-    celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status = CELIX_SUCCESS;
 
-    logger->running = false;
-	if( apr_thread_cond_signal(logger->entriesToDeliver) != APR_SUCCESS){
-        status = CELIX_SERVICE_EXCEPTION;
-    }
+	logger->running = false;
 
-    return status;
+	status = celixThreadCondition_signal(&logger->entriesToDeliver);
+
+	return status;
 }
 
-void * APR_THREAD_FUNC log_listenerThread(apr_thread_t *thread, void *data) {
-    apr_status_t status = APR_SUCCESS;
+static void * log_listenerThread(void *data) {
+	celix_status_t status = CELIX_SUCCESS;
 
-    log_pt logger = data;
+	log_pt logger = data;
 
-    while (logger->running) {
-        status = apr_thread_mutex_lock(logger->deliverLock);
-        if (status != APR_SUCCESS) {
-            logger->running = false;
-        } else {
-            if (!arrayList_isEmpty(logger->listenerEntries)) {
-                log_entry_pt entry = (log_entry_pt) arrayList_remove(logger->listenerEntries, 0);
+	while (logger->running) {
 
-                if (entry) {
-                    status = apr_thread_mutex_lock(logger->listenerLock);
-                    if (status != APR_SUCCESS) {
-                        logger->running = false;
-                        break;
-                    } else {
-                        array_list_iterator_pt it = arrayListIterator_create(logger->listeners);
-                        while (arrayListIterator_hasNext(it)) {
-                            log_listener_pt listener = arrayListIterator_next(it);
-                            listener->logged(listener, entry);
-                        }
-                        arrayListIterator_destroy(it);
+		status = celixThreadMutex_lock(&logger->deliverLock);
 
-                        status = apr_thread_mutex_unlock(logger->listenerLock);
-                        if (status != APR_SUCCESS) {
-                            logger->running = false;
-                            break;
-                        }
-                    }
-                }
-            }
+		if ( status != CELIX_SUCCESS) {
+			logger->running = false;
+		}
+		else {
+			if (!arrayList_isEmpty(logger->listenerEntries)) {
+				log_entry_pt entry = (log_entry_pt) arrayList_remove(logger->listenerEntries, 0);
 
-            if (arrayList_isEmpty(logger->listenerEntries) && logger->running) {
-                apr_thread_cond_wait(logger->entriesToDeliver, logger->deliverLock);
-            }
+				status = celixThreadMutex_lock(&logger->listenerLock);
+				if (status != CELIX_SUCCESS) {
+					logger->running = false;
+				} else {
+					array_list_iterator_pt it = arrayListIterator_create(logger->listeners);
+					while (arrayListIterator_hasNext(it)) {
+						log_listener_pt listener = arrayListIterator_next(it);
+						listener->logged(listener, entry);
+					}
+					arrayListIterator_destroy(it);
 
-            status = apr_thread_mutex_unlock(logger->deliverLock);
-            if (status != APR_SUCCESS) {
-                logger->running = false;
-                break;
-            }
-        }
-    }
+					status = celixThreadMutex_unlock(&logger->listenerLock);
+					if (status != CELIX_SUCCESS) {
+						logger->running = false;
+						break;
+					}
+				}
+			}
 
-    apr_thread_exit(thread, status);
-    return NULL;
+			if (arrayList_isEmpty(logger->listenerEntries) && logger->running) {
+				celixThreadCondition_wait(&logger->entriesToDeliver, &logger->deliverLock);
+			}
+
+			status = celixThreadMutex_unlock(&logger->deliverLock);
+
+			if (status != CELIX_SUCCESS) {
+				logger->running = false;
+			}
+		}
+
+	}
+	return NULL;
 }
