@@ -233,14 +233,14 @@ static void *endpointDiscoveryPoller_poll(void *data) {
 				continue;
 			}
 
-			for (int i = 0; i < arrayList_size(currentEndpoints); i++) {
-				endpoint_description_pt endpoint = arrayList_get(currentEndpoints, i);
+			for (int i = arrayList_size(currentEndpoints); i > 0  ; i--) {
+				endpoint_description_pt endpoint = arrayList_remove(currentEndpoints, 0);
 				if (!arrayList_contains(updatedEndpoints, endpoint)) {
 					status = discovery_removeDiscoveredEndpoint(poller->discovery, endpoint);
 				}
+				endpointDescription_destroy(endpoint);
 			}
 
-			arrayList_clear(currentEndpoints);
 			if (updatedEndpoints) {
 				arrayList_addAll(currentEndpoints, updatedEndpoints);
 				arrayList_destroy(updatedEndpoints);
