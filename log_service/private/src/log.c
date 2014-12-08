@@ -85,23 +85,26 @@ celix_status_t log_create(log_pt *logger) {
 	return status;
 }
 
-celix_status_t log_destroy(void *logp) {
+celix_status_t log_destroy(log_pt logger) {
 	celix_status_t status = CELIX_SUCCESS;
-	log_pt log = logp;
 
-	celixThreadMutex_destroy(&log->listenerLock);
-	celixThreadMutex_destroy(&log->deliverLock);
+	celixThreadMutex_destroy(&logger->listenerLock);
+	celixThreadMutex_destroy(&logger->deliverLock);
 
-	arrayList_destroy(log->listenerEntries);
-	arrayList_destroy(log->listeners);
-	linked_list_iterator_pt iter = linkedListIterator_create(log->entries, 0);
+	arrayList_destroy(logger->listenerEntries);
+	arrayList_destroy(logger->listeners);
+	linked_list_iterator_pt iter = linkedListIterator_create(logger->entries, 0);
 	while (linkedListIterator_hasNext(iter)) {
 	    log_entry_pt entry = linkedListIterator_next(iter);
 	    logEntry_destroy(&entry);
 	}
-	linkedList_destroy(log->entries);
+	linkedListIterator_destroy(iter);
 
-	celixThreadMutex_destroy(&log->lock);
+	linkedList_destroy(logger->entries);
+
+	celixThreadMutex_destroy(&logger->lock);
+
+	free(logger);
 
 	return status;
 }

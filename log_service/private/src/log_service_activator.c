@@ -119,12 +119,15 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
     logReaderService_destroy(&activator->reader);
 	free(activator->reader_service);
 
-	// logFactory_destroy(activator->factory);
+	logFactory_destroy(&activator->factory);
 
 	bundleContext_removeBundleListener(context, activator->bundleListener);
 	bundleContext_removeFrameworkListener(context, activator->frameworkListener);
 
-	// log_destroy(activator->logger);
+	free(activator->bundleListener);
+	free(activator->frameworkListener);
+
+	log_destroy(activator->logger);
 
     return CELIX_SUCCESS;
 }

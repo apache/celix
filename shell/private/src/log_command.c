@@ -90,9 +90,9 @@ void logCommand_execute(command_pt command, char *line, void (*out)(char *), voi
 			}
 		}
 		linkedListIterator_destroy(iter);
+		linkedList_destroy(list);
 		bool result = true;
 		bundleContext_ungetService(command->bundleContext, readerService, &result);
-
         bundleContext_ungetServiceReference(command->bundleContext, readerService);
     } else {
         out("No log reader available\n");

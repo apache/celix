@@ -78,7 +78,16 @@ celix_status_t logWriter_start(log_writer_pt writer) {
 }
 
 celix_status_t logWriter_stop(log_writer_pt writer) {
-	return serviceTracker_close(writer->tracker);
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (serviceTracker_close(writer->tracker) != CELIX_SUCCESS) {
+		status = CELIX_BUNDLE_EXCEPTION;
+	}
+	if (serviceTracker_destroy(writer->tracker) != CELIX_SUCCESS) {
+		status = CELIX_BUNDLE_EXCEPTION;
+	}
+
+	return status;
 }
 
 celix_status_t logWriter_addingServ(void * handle, service_reference_pt ref, void **service) {
