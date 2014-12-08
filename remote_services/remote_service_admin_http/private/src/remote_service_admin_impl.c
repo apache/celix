@@ -194,6 +194,8 @@ celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt con
 celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin) {
 	celix_status_t status = CELIX_SUCCESS;
 
+    celixThreadMutex_lock(&admin->exportedServicesLock);
+
 	hash_map_iterator_pt iter = hashMapIterator_create(admin->exportedServices);
 	while (hashMapIterator_hasNext(iter)) {
 		array_list_pt exports = hashMapIterator_nextValue(iter);
@@ -204,6 +206,7 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin) {
 		}
 	}
     hashMapIterator_destroy(iter);
+    celixThreadMutex_unlock(&admin->exportedServicesLock);
 
     celixThreadMutex_lock(&admin->importedServicesLock);
 
@@ -233,6 +236,9 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin) {
 		mg_stop(admin->ctx);
 		admin->ctx = NULL;
 	}
+
+	hashMap_destroy(admin->exportedServices, false, false);
+	hashMap_destroy(admin->importedServices, false, false);
 
 	logHelper_stop(admin->loghelper);
 	logHelper_destroy(&admin->loghelper);
