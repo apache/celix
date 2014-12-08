@@ -201,7 +201,7 @@ celix_status_t discovery_addDiscoveredEndpoint(discovery_pt discovery, endpoint_
 	char* endpointId = endpoint->id;
 	bool exists = hashMap_get(discovery->discoveredServices, endpointId) != NULL;
 	if (!exists) {
-		hashMap_put(discovery->discoveredServices, strdup(endpointId), endpoint);
+		hashMap_put(discovery->discoveredServices, endpointId, endpoint);
 	}
 
 	status = celixThreadMutex_unlock(&discovery->discoveredServicesMutex);
