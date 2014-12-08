@@ -86,6 +86,13 @@ celix_status_t serviceTracker_destroy(service_tracker_pt tracker) {
 	}
 	arrayList_destroy(tracker->tracked);
 
+	if (tracker->listener != NULL) {
+		free (tracker->listener);
+	}
+
+	free(tracker->filter);
+	free(tracker);
+
 	return CELIX_SUCCESS;
 }
 
