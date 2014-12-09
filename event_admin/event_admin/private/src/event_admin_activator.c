@@ -27,6 +27,8 @@
 #include <stdlib.h>
 
 #include "event_admin_impl.h"
+#include "log_helper.h"
+#include "log_service.h"
 
 struct activator {
 	apr_pool_t *pool;
@@ -35,6 +37,7 @@ struct activator {
 	service_registration_pt registration;
 	service_tracker_pt tracker;
 	bundle_context_pt context;
+	log_helper_pt loghelper;
 };
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
@@ -50,11 +53,12 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 			activator = apr_palloc(pool,sizeof(*activator));
 			activator->pool = pool;
 			activator->registration = NULL;
+			logHelper_create(context, &activator->loghelper);
+
 			*userData = activator;
 			event_admin_pt event_admin = NULL;
 			event_admin_service_pt event_admin_service = NULL;
 			status = eventAdmin_create(activator->pool,context, &event_admin);
-			fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "event admin activator pointer: %p ",event_admin);
 			if(status == CELIX_SUCCESS){
 				activator->event_admin = event_admin;
 				event_admin_service = apr_palloc(activator->pool, sizeof(event_admin_service));
@@ -62,6 +66,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 					status = CELIX_ENOMEM;
 				} else {
 					event_admin->context = context;
+					event_admin->loghelper = &activator->loghelper;
 					event_admin_service->eventAdmin = event_admin;
 					event_admin_service->postEvent = eventAdmin_postEvent;
 					event_admin_service->sendEvent = eventAdmin_sendEvent;
@@ -78,7 +83,6 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 				}
 			}
 			activator->event_admin_service = event_admin_service;
-			fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "event admin service pointer: %p ",event_admin_service);
 		}
 	}
 
@@ -108,7 +112,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 		event_admin_service = activator->event_admin_service;
 		//printf("pointer of event admin service %p\n",event_admin_service);
 		bundleContext_registerService(context, (char *) EVENT_ADMIN_NAME, event_admin_service, properties, &activator->registration);
-
+		logHelper_start(activator->loghelper);
 	}
 	return status;
 }
@@ -116,13 +120,19 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator * data =  userData;
-		serviceTracker_close(data->tracker);
+
+	serviceTracker_close(data->tracker);
+	status = logHelper_stop(data->loghelper);
+
 	return status;
 }
 
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
+	struct activator * data =  userData;
+
+	status = logHelper_destroy(&data->loghelper);
 
 	return status;
 }

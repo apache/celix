@@ -48,6 +48,7 @@ struct event_admin {
         hash_map_pt channels;
         array_list_pt event_handlers;
         bundle_context_pt context;
+        log_helper_pt *loghelper;
 };
 typedef struct channel *channel_t;
 struct channel {

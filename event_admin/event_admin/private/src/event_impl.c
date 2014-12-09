@@ -33,6 +33,7 @@
 #include "stddef.h"
 #include <apr.h>
 #include <apr_pools.h>
+
 struct event {
 	char *topic;
 	properties_pt properties;
@@ -41,15 +42,15 @@ struct event {
 celix_status_t eventAdmin_createEvent(event_admin_pt event_admin, char *topic, properties_pt properties, event_pt *event){
 	celix_status_t status = CELIX_SUCCESS;
 
-	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "create event event admin pointer: %p",event_admin);
-	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "pool create event: %p",event_admin->pool);
+	logHelper_log(event_admin->loghelper, OSGI_LOGSERVICE_DEBUG, "create event event admin pointer: %p",event_admin);
+	logHelper_log(event_admin->loghelper, OSGI_LOGSERVICE_DEBUG, "pool create event: %p",event_admin->pool);
 
 	*event = apr_palloc(event_admin->pool,sizeof(**event));
 	if(!*event){
 	       status = CELIX_ENOMEM;
-	       fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "No MEM");
+	       logHelper_log(event_admin->loghelper, OSGI_LOGSERVICE_ERROR, "No MEM");
 	}else {
-		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Event created : %s", topic);
+		logHelper_log(event_admin->loghelper, OSGI_LOGSERVICE_INFO, "Event created : %s", topic);
 		(*event)->topic = topic;
 		(*event)->properties = properties;
 		properties_set((*event)->properties, (char *)EVENT_TOPIC, topic);

@@ -24,11 +24,15 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include "event_handler.h"
+#include "log_helper.h"
+#include "log_service.h"
 
 struct event_handler {
 	apr_pool_t *pool;
 	event_admin_service_pt event_admin_service;
 	bundle_context_pt context;
+	log_helper_pt loghelper;
+
 };
 
 celix_status_t eventHandlerCreate(apr_pool_t *pool, bundle_context_pt context, event_handler_pt *event_handler){
@@ -40,6 +44,10 @@ celix_status_t eventHandlerCreate(apr_pool_t *pool, bundle_context_pt context, e
         (*event_handler)->pool = pool;
         (*event_handler)->event_admin_service = NULL;
         (*event_handler)->context = context;
+
+        if (logHelper_create(context, &(*event_handler)->loghelper) == CELIX_SUCCESS) {
+        	logHelper_start((*event_handler)->loghelper);
+        }
 	}
 	return status;
 }
@@ -49,7 +57,7 @@ celix_status_t eventHandlerHandleEvent(event_handler_pt *event_handler, event_pt
 	if (event != NULL) {
 		char *topic = NULL;
 		status = (*event_handler)->event_admin_service->getTopic(&event, &topic);
-		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "[SUB] topic of event: %s.", topic);
+		logHelper_log((*event_handler)->loghelper, OSGI_LOGSERVICE_INFO, "[SUB] topic of event: %s.", topic);
 
 		array_list_pt propertyNames;
 		arrayList_create(&propertyNames);
@@ -61,7 +69,7 @@ celix_status_t eventHandlerHandleEvent(event_handler_pt *event_handler, event_pt
 			char *value = NULL;
 			(*event_handler)->event_admin_service->getProperty(&event,key,&value);
 
-			fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "[SUB] Key: %s value: %s.", key, value);
+			logHelper_log((*event_handler)->loghelper, OSGI_LOGSERVICE_INFO, "[SUB] Key: %s value: %s.", key, value);
 		}
 	}
 	return status;
@@ -76,20 +84,21 @@ celix_status_t eventHandlerAddingService(void * handle, service_reference_pt ref
 }
 
 celix_status_t eventHandlerAddedService(void * handle, service_reference_pt ref, void * service) {
-	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "[SUB] Event admin added.");
-	event_handler_pt data = handle;
+	event_handler_pt data = (event_handler_pt) handle;
+	logHelper_log(data->loghelper, OSGI_LOGSERVICE_DEBUG, "[SUB] Event admin added.");
 	data->event_admin_service = (event_admin_service_pt) service;
 	return CELIX_SUCCESS;
 }
 
 celix_status_t eventHandlerModifiedService(void * handle, service_reference_pt ref, void * service) {
-	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "[SUB] Event admin modified.");
+	event_handler_pt data = (event_handler_pt) handle;
+	logHelper_log(data->loghelper, OSGI_LOGSERVICE_DEBUG, "[SUB] Event admin modified.");
 	return CELIX_SUCCESS;
 }
 
 celix_status_t eventHandlerRemovedService(void * handle, service_reference_pt ref, void * service) {
-	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "[SUB] Event admin removed.");
-	event_handler_pt data = handle;
+	event_handler_pt data = (event_handler_pt) handle;
+logHelper_log(data->loghelper, OSGI_LOGSERVICE_DEBUG, "[SUB] Event admin removed.");
 	data->event_admin_service = NULL;
 	return CELIX_SUCCESS;
 }
