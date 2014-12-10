@@ -190,17 +190,16 @@ celix_status_t endpointDiscoveryPoller_removeDiscoveryEndpoint(endpoint_discover
         return CELIX_BUNDLE_EXCEPTION;
     }
 
-    hash_map_entry_pt endpointEntry = hashMap_remove(poller->entries, url);
-
-    free(hashMapEntry_getKey(endpointEntry));
-    array_list_pt entries = hashMapEntry_getValue(endpointEntry);
+    array_list_pt entries = hashMap_remove(poller->entries, url);
 
 	for (int i = 0; i < arrayList_size(entries); i++) {
 		endpoint_description_pt endpoint = arrayList_get(entries, i);
-
 		discovery_removeDiscoveredEndpoint(poller->discovery, endpoint);
 	}
-	arrayList_destroy(entries);
+
+	if (entries != NULL) {
+		arrayList_destroy(entries);
+	}
 
 	status = celixThreadMutex_unlock(&poller->pollerLock);
 

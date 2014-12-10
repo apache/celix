@@ -57,6 +57,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 	struct activator *activator = NULL;
 
 	activator = malloc(sizeof(struct activator));
+
 	if (!activator) {
 		return CELIX_ENOMEM;
 	}
@@ -173,6 +174,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	struct activator *activator = userData;
 
 	serviceTracker_close(activator->remoteServiceAdminTracker);
+	serviceTracker_destroy(activator->remoteServiceAdminTracker);
 
 	bundleContext_removeServiceListener(context, activator->serviceListener);
 
@@ -183,10 +185,16 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
+	celix_status_t status = CELIX_SUCCESS;
+
 	struct activator *activator = userData;
 	if (!activator || !activator->manager) {
-		return CELIX_BUNDLE_EXCEPTION;
+		status = CELIX_BUNDLE_EXCEPTION;
+	}
+	else {
+		status = topologyManager_destroy(activator->manager);
+		free(activator);
 	}
 
-	return topologyManager_destroy(activator->manager);
+	return status;
 }
