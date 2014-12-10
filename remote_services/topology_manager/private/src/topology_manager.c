@@ -160,6 +160,8 @@ celix_status_t topologyManager_rsaAdded(void * handle, service_reference_pt refe
 		}
 	}
 
+    hashMapIterator_destroy(importedServicesIterator);
+
 	status = celixThreadMutex_unlock(&manager->importedServicesLock);
 
 	// add already exported services to new rsa
@@ -182,6 +184,8 @@ celix_status_t topologyManager_rsaAdded(void * handle, service_reference_pt refe
 			status = topologyManager_notifyListenersEndpointAdded(manager, rsa, endpoints);
 		}
     }
+
+    hashMapIterator_destroy(exportedServicesIterator);
 
 	status = celixThreadMutex_unlock(&manager->exportedServicesLock);
 
@@ -227,6 +231,9 @@ celix_status_t topologyManager_rsaRemoved(void * handle, service_reference_pt re
 
         hashMap_remove(exports, rsa);
     }
+
+    hashMapIterator_destroy(iter);
+
     status = celixThreadMutex_unlock(&manager->exportedServicesLock);
 
     fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "TOPOLOGY_MANAGER: Removed RSA");
@@ -387,6 +394,8 @@ celix_status_t topologyManager_addExportedService(topology_manager_pt manager, s
 		}
 	}
 
+	arrayList_destroy(localRSAs);
+
 	status = celixThreadMutex_unlock(&manager->exportedServicesLock);
 
 	return status;
@@ -424,6 +433,10 @@ celix_status_t topologyManager_removeExportedService(topology_manager_pt manager
 		}
 		hashMapIterator_destroy(iter);
 	}
+    exports = hashMap_remove(manager->exportedServices, reference);
+    if (exports != NULL) {
+        hashMap_destroy(exports, false, false);
+    }
 
 	status = celixThreadMutex_unlock(&manager->exportedServicesLock);
 
@@ -611,10 +624,18 @@ celix_status_t topologyManager_listenerRemoved(void *handle, array_list_pt liste
 		status = celixThreadMutex_lock(&manager->importInterestsLock);
 
 		struct import_interest *interest = hashMap_get(manager->importInterests, filter);
-		if (interest != NULL && interest->refs-- <= 0) {
-			// last reference, remove from scope
-			interest = hashMap_remove(manager->importInterests, filter);
-		}
+        if (interest != NULL && --interest->refs <= 0) {
+            // last reference, remove from scope
+            hash_map_entry_pt entry = hashMap_getEntry(manager->importInterests, filter);
+            char* key = (char*) hashMapEntry_getKey(entry);
+            interest = hashMap_remove(manager->importInterests, filter);
+            free(key);
+            free(interest);
+        }
+
+        if (filter != NULL) {
+            free(filter);
+        }
 
 		status = celixThreadMutex_unlock(&manager->importInterestsLock);
 	}
