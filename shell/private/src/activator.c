@@ -207,6 +207,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 			shell_createCommandService(bi->helpCmd, &bi->helpCmdSrv);
 			bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, bi->helpCmdSrv, NULL, &bi->helpCommand);
 		}
+		arrayList_destroy(references);
 	}
 
 	return status;
