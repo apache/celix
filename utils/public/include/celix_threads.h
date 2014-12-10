@@ -68,6 +68,7 @@ typedef pthread_cond_t celix_thread_cond_t;
 typedef pthread_condattr_t celix_thread_condattr_t;
 
 celix_status_t celixThreadCondition_init(celix_thread_cond_t *condition, celix_thread_condattr_t *attr);
+celix_status_t celixThreadCondition_destroy(celix_thread_cond_t *condition);
 celix_status_t celixThreadCondition_wait(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex);
 celix_status_t celixThreadCondition_broadcast(celix_thread_cond_t *cond);
 celix_status_t celixThreadCondition_signal(celix_thread_cond_t *cond);

@@ -102,6 +102,10 @@ celix_status_t celixThreadCondition_init(celix_thread_cond_t *condition, celix_t
     return pthread_cond_init(condition, attr);
 }
 
+celix_status_t celixThreadCondition_destroy(celix_thread_cond_t *condition) {
+    return pthread_cond_destroy(condition);
+}
+
 celix_status_t celixThreadCondition_wait(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex) {
     return pthread_cond_wait(cond, mutex);
 }
