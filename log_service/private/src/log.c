@@ -62,7 +62,7 @@ celix_status_t log_create(log_pt *logger) {
 
 		(*logger)->listeners = NULL;
 		(*logger)->listenerEntries = NULL;
-		(*logger)->listenerThread = -1;
+		(*logger)->listenerThread = NULL;
 		(*logger)->running = false;
 
 		arrayList_create(&(*logger)->listeners);
@@ -211,7 +211,6 @@ celix_status_t log_addLogListener(log_pt logger, log_listener_pt listener) {
 
 celix_status_t log_removeLogListener(log_pt logger, log_listener_pt listener) {
 	celix_status_t status = CELIX_SUCCESS;
-    celix_status_t threadStatus = CELIX_SUCCESS;
 	bool last = false;
 
     status = CELIX_DO_IF(status, celixThreadMutex_lock(&logger->deliverLock));
@@ -228,11 +227,11 @@ celix_status_t log_removeLogListener(log_pt logger, log_listener_pt listener) {
         status = CELIX_DO_IF(status, celixThreadMutex_unlock(&logger->deliverLock));
 
 		if (last) {
-		    status = CELIX_DO_IF(status, celixThread_join(logger->listenerThread, &threadStatus));
+		    status = CELIX_DO_IF(status, celixThread_join(logger->listenerThread, NULL));
 		}
 
 		if (status == CELIX_SUCCESS) {
-			logger->listenerThread = -1;
+			logger->listenerThread = NULL;
 		}
 	}
 
@@ -329,6 +328,6 @@ static void * log_listenerThread(void *data) {
 
 	}
 
-    celixThread_exit(status);
+    celixThread_exit(NULL);
     return NULL;
 }

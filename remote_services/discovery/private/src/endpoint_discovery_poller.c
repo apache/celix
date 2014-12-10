@@ -190,7 +190,7 @@ celix_status_t endpointDiscoveryPoller_removeDiscoveryEndpoint(endpoint_discover
         return CELIX_BUNDLE_EXCEPTION;
     }
 
-    hash_map_entry_pt endpointEntry = hashMap_removeEntryForKey(poller->entries, url);
+    hash_map_entry_pt endpointEntry = hashMap_remove(poller->entries, url);
 
     free(hashMapEntry_getKey(endpointEntry));
     array_list_pt entries = hashMapEntry_getValue(endpointEntry);
