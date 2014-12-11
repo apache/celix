@@ -166,6 +166,8 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
         status = CELIX_DO_IF(status, topologyManager_addExportedService(activator->manager, reference, serviceId));
 	}
 
+	arrayList_destroy(references);
+
 	return status;
 }
 
