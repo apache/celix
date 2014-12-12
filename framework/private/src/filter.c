@@ -80,6 +80,9 @@ void filter_destroy(filter_pt filter) {
 			}
 			arrayList_destroy(filter->value);
 			filter->value = NULL;
+		} else  if (filter->operand == NOT) {
+			filter_destroy(filter->value);
+			filter->value = NULL;
 		} else {
 			free(filter->value);
 			filter->value = NULL;
