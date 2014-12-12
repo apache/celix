@@ -45,7 +45,10 @@ struct activator {
 	service_tracker_pt remoteServiceAdminTracker;
 	service_listener_pt serviceListener;
 
+	endpoint_listener_pt endpointListener;
 	service_registration_pt endpointListenerService;
+
+	listener_hook_service_pt hookService;
 	service_registration_pt hook;
 };
 
@@ -120,6 +123,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	endpointListener->handle = activator->manager;
 	endpointListener->endpointAdded = topologyManager_addImportedService;
 	endpointListener->endpointRemoved = topologyManager_removeImportedService;
+	activator->endpointListener = endpointListener;
 
 	char *uuid = NULL;
 	status = bundleContext_getProperty(activator->context, (char *)OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
@@ -146,12 +150,13 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
 	bundleContext_registerService(context, (char *) OSGI_ENDPOINT_LISTENER_SERVICE, endpointListener, props, &activator->endpointListenerService);
 
-	listener_hook_service_pt hook = malloc(sizeof(*hook));
-	hook->handle = activator->manager;
-	hook->added = topologyManager_listenerAdded;
-	hook->removed = topologyManager_listenerRemoved;
+	listener_hook_service_pt hookService = malloc(sizeof(*hookService));
+	hookService->handle = activator->manager;
+	hookService->added = topologyManager_listenerAdded;
+	hookService->removed = topologyManager_listenerRemoved;
+	activator->hookService = hookService;
 
-	bundleContext_registerService(context, (char *) OSGI_FRAMEWORK_LISTENER_HOOK_SERVICE_NAME, hook, NULL, &activator->hook);
+	bundleContext_registerService(context, (char *) OSGI_FRAMEWORK_LISTENER_HOOK_SERVICE_NAME, hookService, NULL, &activator->hook);
 
 	bundleContext_addServiceListener(context, activator->serviceListener, "(service.exported.interfaces=*)");
 	serviceTracker_open(activator->remoteServiceAdminTracker);
@@ -179,9 +184,13 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	serviceTracker_destroy(activator->remoteServiceAdminTracker);
 
 	bundleContext_removeServiceListener(context, activator->serviceListener);
+	free(activator->serviceListener);
 
 	serviceRegistration_unregister(activator->hook);
+	free(activator->hookService);
+
 	serviceRegistration_unregister(activator->endpointListenerService);
+	free(activator->endpointListener);
 
 	return status;
 }

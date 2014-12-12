@@ -44,6 +44,7 @@ struct activator {
 	log_helper_pt loghelper;
 
 	service_tracker_pt endpointListenerTracker;
+	endpoint_listener_pt endpointListener;
 	service_registration_pt endpointListenerService;
 };
 
@@ -78,6 +79,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 
 	activator->context = context;
 	activator->endpointListenerTracker = NULL;
+	activator->endpointListener = NULL;
 	activator->endpointListenerService = NULL;
 
 	logHelper_create(context, &activator->loghelper);
@@ -114,6 +116,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	logHelper_log(activator->loghelper, OSGI_LOGSERVICE_DEBUG, "using scope %s.", scope);
 
 	endpoint_listener_pt endpointListener = malloc(sizeof(struct endpoint_listener));
+
 	if (!endpointListener) {
 		return CELIX_ENOMEM;
 	}
@@ -127,6 +130,8 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	properties_set(props, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, scope);
 
 	status = bundleContext_registerService(context, (char *) OSGI_ENDPOINT_LISTENER_SERVICE, endpointListener, props, &activator->endpointListenerService);
+
+	activator->endpointListener = endpointListener;
 
 	if (status == CELIX_SUCCESS) {
 		status = serviceTracker_open(activator->endpointListenerTracker);
@@ -145,10 +150,10 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator *activator = userData;
-
 	status = serviceTracker_close(activator->endpointListenerTracker);
 
 	status = serviceRegistration_unregister(activator->endpointListenerService);
+	free(activator->endpointListener);
 
 	status = discovery_stop(activator->discovery);
 
