@@ -113,21 +113,7 @@ celix_status_t topologyManager_destroy(topology_manager_pt manager) {
 
 	status = celixThreadMutex_lock(&manager->importInterestsLock);
 
-	hash_map_iterator_pt iterator = hashMapIterator_create(manager->importInterests);
-
-	while (hashMapIterator_hasNext(iterator)) {
-		hash_map_entry_pt entry = hashMapIterator_nextEntry(iterator);
-		char* key = (char*) hashMapEntry_getKey(entry);
-		struct import_interest *interest = hashMap_remove(manager->importInterests, key);
-
-		free(key);
-		free(interest);
-
-		hashMapIterator_destroy(iterator);
-		iterator = hashMapIterator_create(manager->importInterests);
-	}
-	hashMapIterator_destroy(iterator);
-	hashMap_destroy(manager->importInterests, false, false);
+	hashMap_destroy(manager->importInterests, true, true);
 
 	status = celixThreadMutex_unlock(&manager->importInterestsLock);
 	status = celixThreadMutex_destroy(&manager->importInterestsLock);
@@ -602,6 +588,7 @@ celix_status_t topologyManager_listenerAdded(void *handle, array_list_pt listene
 		struct import_interest *interest = hashMap_get(manager->importInterests, filter);
 		if (interest) {
 			interest->refs++;
+			free(filter);
 		} else {
 			interest = malloc(sizeof(*interest));
 			interest->filter = filter;
