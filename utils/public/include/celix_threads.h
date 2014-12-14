@@ -28,13 +28,24 @@
 #define CELIX_THREADS_H_
 
 #include <pthread.h>
+#include <stdbool.h>
 
 #include "celix_errno.h"
 
-typedef pthread_t celix_thread_t;
+
+struct celix_thread {
+	bool threadInitialized;
+	pthread_t thread;
+};
+
+
+typedef struct celix_thread celix_thread_t;
 typedef pthread_attr_t celix_thread_attr_t;
 
 typedef void *(*celix_thread_start_t)(void*);
+
+static const celix_thread_t celix_thread_default = { .threadInitialized = false };
+
 
 celix_status_t celixThread_create(celix_thread_t *new_thread, celix_thread_attr_t *attr, celix_thread_start_t func, void *data);
 celix_status_t celixThread_exit(void *exitStatus);
@@ -42,6 +53,8 @@ celix_status_t celixThread_detach(celix_thread_t thread);
 celix_status_t celixThread_join(celix_thread_t thread, void **status);
 celix_thread_t celixThread_self();
 int celixThread_equals(celix_thread_t thread1, celix_thread_t thread2);
+bool celixThread_initalized(celix_thread_t thread);
+
 
 typedef pthread_mutex_t celix_thread_mutex_t;
 typedef pthread_mutexattr_t celix_thread_mutexattr_t;

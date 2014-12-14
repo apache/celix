@@ -186,7 +186,7 @@ celix_status_t framework_create(framework_pt *framework, apr_pool_t *pool, prope
             (*framework)->shutdown = false;
             (*framework)->globalLockWaitersList = NULL;
             (*framework)->globalLockCount = 0;
-            (*framework)->globalLockThread = 0;
+            (*framework)->globalLockThread = celix_thread_default;
             (*framework)->nextBundleId = 1l;
             (*framework)->cache = NULL;
             (*framework)->installRequestMap = hashMap_create(utils_stringHash, utils_stringHash, utils_stringEquals, utils_stringEquals);
@@ -1797,7 +1797,7 @@ celix_status_t framework_acquireBundleLock(framework_pt framework, bundle_pt bun
 	celix_status_t status = CELIX_SUCCESS;
 
 	bool locked;
-	celix_thread_t lockingThread = 0;
+	celix_thread_t lockingThread = celix_thread_default;
 
 	int err = celixThreadMutex_lock(&framework->bundleLock);
 	if (err != CELIX_SUCCESS) {
@@ -1811,7 +1811,7 @@ celix_status_t framework_acquireBundleLock(framework_pt framework, bundle_pt bun
 		thread_equalsSelf(framework->globalLockThread, &isSelf);
 
 		while (!lockable
-				|| ((framework->globalLockThread != 0)
+				|| (( celixThread_initalized(framework->globalLockThread) == true)
 				&& !isSelf)) {
 			bundle_state_e state;
 			bundle_getState(bundle, &state);
@@ -1821,7 +1821,7 @@ celix_status_t framework_acquireBundleLock(framework_pt framework, bundle_pt bun
 			} else
 				bundle_getLockingThread(bundle, &lockingThread);
 				if (isSelf
-					&& (lockingThread != 0)
+					&& (celixThread_initalized(lockingThread) == true)
 					&& arrayList_contains(framework->globalLockWaitersList, &lockingThread)) {
 				framework->interrupted = true;
 //				celixThreadCondition_signal_thread_np(&framework->condition, bundle_getLockingThread(bundle));
@@ -1859,7 +1859,7 @@ celix_status_t framework_acquireBundleLock(framework_pt framework, bundle_pt bun
 
 bool framework_releaseBundleLock(framework_pt framework, bundle_pt bundle) {
     bool unlocked;
-    celix_thread_t lockingThread = 0;
+    celix_thread_t lockingThread = celix_thread_default;
 
     celixThreadMutex_lock(&framework->bundleLock);
 
@@ -1869,7 +1869,7 @@ bool framework_releaseBundleLock(framework_pt framework, bundle_pt bundle) {
 		return false;
 	}
 	bundle_getLockingThread(bundle, &lockingThread);
-	if (lockingThread == 0) {
+	if (celixThread_initalized(lockingThread) == false) {
 	    celixThreadCondition_broadcast(&framework->condition);
 	}
 
@@ -1887,7 +1887,7 @@ bool framework_acquireGlobalLock(framework_pt framework) {
 	thread_equalsSelf(framework->globalLockThread, &isSelf);
 
 	while (!interrupted
-			&& (framework->globalLockThread != 0)
+			&& (celixThread_initalized(framework->globalLockThread) == true)
 			&& (!isSelf)) {
 		celix_thread_t currentThread = celixThread_self();
 		arrayList_add(framework->globalLockWaitersList, &currentThread);
@@ -1919,11 +1919,11 @@ celix_status_t framework_releaseGlobalLock(framework_pt framework) {
 		return CELIX_FRAMEWORK_EXCEPTION;
 	}
 
-	if (framework->globalLockThread == celixThread_self()) {
+	if (celixThread_equals(framework->globalLockThread, celixThread_self())) {
 		framework->globalLockCount--;
 		if (framework->globalLockCount == 0) {
-			framework->globalLockThread = 0;
-			if (celixThreadCondition_broadcast(&framework->condition) != 0) {
+			framework->globalLockThread = celix_thread_default;
+ 			if (celixThreadCondition_broadcast(&framework->condition) != 0) {
 				fw_log(framework->logger, OSGI_FRAMEWORK_LOG_ERROR,  "Failed to broadcast global lock release.");
 				status = CELIX_FRAMEWORK_EXCEPTION;
 				// still need to unlock before returning

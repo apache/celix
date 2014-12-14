@@ -104,7 +104,7 @@ celix_status_t remoteShell_addConnection(remote_shell_pt instance, int socket) {
 		celixThreadMutex_lock(&instance->mutex);
 
 		if (arrayList_size(instance->connections) < instance->maximumConnections) {
-			celix_thread_t connectionRunThread = NULL;
+			celix_thread_t connectionRunThread = celix_thread_default;
 			arrayList_add(instance->connections, connection);
 			status = celixThread_create(&connectionRunThread, NULL, &remoteShell_connection_run, connection);
 		} else {

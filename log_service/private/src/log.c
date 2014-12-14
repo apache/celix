@@ -62,7 +62,7 @@ celix_status_t log_create(log_pt *logger) {
 
 		(*logger)->listeners = NULL;
 		(*logger)->listenerEntries = NULL;
-		(*logger)->listenerThread = NULL;
+		(*logger)->listenerThread = celix_thread_default;
 		(*logger)->running = false;
 
 		arrayList_create(&(*logger)->listeners);
@@ -228,10 +228,6 @@ celix_status_t log_removeLogListener(log_pt logger, log_listener_pt listener) {
 
 		if (last) {
 		    status = CELIX_DO_IF(status, celixThread_join(logger->listenerThread, NULL));
-		}
-
-		if (status == CELIX_SUCCESS) {
-			logger->listenerThread = NULL;
 		}
 	}
 
