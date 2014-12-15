@@ -33,6 +33,7 @@
 
 #include "driver_locator.h"
 #include "device_manager.h"
+#include "log_service.h"
 #include "log_helper.h"
 
 struct device_manager_bundle_instance {
@@ -111,10 +112,10 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	}
 
 	if (status != CELIX_SUCCESS) {
-		logHelper_log(bundleData->loghelper, OSGI_FRAMEWORK_LOG_ERROR, "DEVICE_MANAGER: Error while starting bundle got error num %d", status);
+		logHelper_log(bundleData->loghelper, OSGI_LOGSERVICE_ERROR, "DEVICE_MANAGER: Error while starting bundle got error num %d", status);
 	}
 
-	logHelper_log(bundleData->loghelper, OSGI_FRAMEWORK_LOG_INFO, "DEVICE_MANAGER: Started");
+	logHelper_log(bundleData->loghelper, OSGI_LOGSERVICE_INFO, "DEVICE_MANAGER: Started");
 
 	return status;
 }
