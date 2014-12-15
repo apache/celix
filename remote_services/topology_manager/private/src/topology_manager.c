@@ -38,6 +38,9 @@
 #include "utils.h"
 #include "service_reference.h"
 #include "service_registration.h"
+#include "log_service.h"
+#include "log_helper.h"
+
 
 struct topology_manager {
 	bundle_context_pt context;
@@ -53,6 +56,8 @@ struct topology_manager {
 
 	celix_thread_mutex_t importInterestsLock;
 	hash_map_pt importInterests;
+
+	log_helper_pt loghelper;
 };
 
 struct import_interest {
@@ -83,6 +88,10 @@ celix_status_t topologyManager_create(bundle_context_pt context, topology_manage
 	(*manager)->exportedServices = hashMap_create(serviceReference_hashCode, NULL, serviceReference_equals2, NULL);
 	(*manager)->importedServices = hashMap_create(NULL, NULL, NULL, NULL);
 	(*manager)->importInterests = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+
+	if (logHelper_create(context, &(*manager)->loghelper) == CELIX_SUCCESS) {
+		logHelper_start((*manager)->loghelper);
+	}
 
 	return status;
 }
@@ -118,6 +127,10 @@ celix_status_t topologyManager_destroy(topology_manager_pt manager) {
 	status = celixThreadMutex_unlock(&manager->importInterestsLock);
 	status = celixThreadMutex_destroy(&manager->importInterestsLock);
 
+	if (logHelper_stop(manager->loghelper) == CELIX_SUCCESS) {
+		logHelper_destroy(&manager->loghelper);
+	}
+
 	free(manager);
 
 	return status;
@@ -137,7 +150,7 @@ celix_status_t topologyManager_rsaAdded(void * handle, service_reference_pt refe
 	celix_status_t status = CELIX_SUCCESS;
 	topology_manager_pt manager = handle;
 	remote_service_admin_service_pt rsa = (remote_service_admin_service_pt) service;
-	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "TOPOLOGY_MANAGER: Added RSA");
+	logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: Added RSA");
 
 	status = celixThreadMutex_lock(&manager->rsaListLock);
 	arrayList_add(manager->rsaList, rsa);
@@ -204,7 +217,7 @@ celix_status_t topologyManager_rsaRemoved(void * handle, service_reference_pt re
     celix_status_t status = CELIX_SUCCESS;
     topology_manager_pt manager = handle;
 
-    fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "TOPOLOGY_MANAGER: Removed RSA");
+    logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: Removed RSA");
 
     remote_service_admin_service_pt rsa = (remote_service_admin_service_pt) service;
 
@@ -236,7 +249,7 @@ celix_status_t topologyManager_rsaRemoved(void * handle, service_reference_pt re
 
     status = celixThreadMutex_unlock(&manager->exportedServicesLock);
 
-    fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "TOPOLOGY_MANAGER: Removed RSA");
+    logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: Removed RSA");
 
     status = celixThreadMutex_lock(&manager->rsaListLock);
     arrayList_removeElement(manager->rsaList, rsa);
@@ -297,7 +310,7 @@ celix_status_t topologyManager_addImportedService(void *handle, endpoint_descrip
 	celix_status_t status = CELIX_SUCCESS;
 	topology_manager_pt manager = handle;
 
-	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "TOPOLOGY_MANAGER: Add imported service (%s; %s).", endpoint->service, endpoint->id);
+	logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: Add imported service (%s; %s).", endpoint->service, endpoint->id);
 
 	// Create a local copy of the current list of RSAs, to ensure we do not run into threading issues...
 	array_list_pt localRSAs = NULL;
@@ -328,7 +341,7 @@ celix_status_t topologyManager_removeImportedService(void *handle, endpoint_desc
 	celix_status_t status = CELIX_SUCCESS;
 	topology_manager_pt manager = handle;
 
-	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "TOPOLOGY_MANAGER: Remove imported service (%s; %s).", endpoint->service, endpoint->id);
+	logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: Remove imported service (%s; %s).", endpoint->service, endpoint->id);
 
 	status = celixThreadMutex_lock(&manager->importedServicesLock);
 
@@ -366,7 +379,7 @@ celix_status_t topologyManager_removeImportedService(void *handle, endpoint_desc
 celix_status_t topologyManager_addExportedService(topology_manager_pt manager, service_reference_pt reference, char *serviceId) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "TOPOLOGY_MANAGER: Add exported service (%s).", serviceId);
+	logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: Add exported service (%s).", serviceId);
 
 	// Create a local copy of the current list of RSAs, to ensure we do not run into threading issues...
 	array_list_pt localRSAs = NULL;
@@ -379,7 +392,7 @@ celix_status_t topologyManager_addExportedService(topology_manager_pt manager, s
 
 	int size = arrayList_size(localRSAs);
 	if (size == 0) {
-		fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "TOPOLOGY_MANAGER: No RSA available yet.");
+		logHelper_log(manager->loghelper, OSGI_LOGSERVICE_WARNING, "TOPOLOGY_MANAGER: No RSA available yet.");
 	}
 
 	for (int iter = 0; iter < size; iter++) {
@@ -404,7 +417,7 @@ celix_status_t topologyManager_addExportedService(topology_manager_pt manager, s
 celix_status_t topologyManager_removeExportedService(topology_manager_pt manager, service_reference_pt reference, char *serviceId) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "TOPOLOGY_MANAGER: Remove exported service (%s).", serviceId);
+	logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: Remove exported service (%s).", serviceId);
 
 	status = celixThreadMutex_lock(&manager->exportedServicesLock);
 
@@ -542,13 +555,14 @@ celix_status_t topologyManager_notifyListenersEndpointRemoved(topology_manager_p
 	return status;
 }
 
-celix_status_t topologyManager_extendFilter(bundle_context_pt context, char *filter, char **updatedFilter) {
+celix_status_t topologyManager_extendFilter(topology_manager_pt manager, char *filter, char **updatedFilter) {
 	celix_status_t status = CELIX_SUCCESS;
-
+	bundle_context_pt context = manager->context;
 	char* uuid = NULL;
+
 	status = bundleContext_getProperty(context, (char *)OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
 	if (!uuid) {
-		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "TOPOLOGY_MANAGER: no framework UUID defined?!");
+		logHelper_log(manager->loghelper, OSGI_LOGSERVICE_ERROR, "TOPOLOGY_MANAGER: no framework UUID defined?!");
 		return CELIX_BUNDLE_EXCEPTION;
 	}
 
@@ -574,14 +588,14 @@ celix_status_t topologyManager_listenerAdded(void *handle, array_list_pt listene
 		bundleContext_getBundle(info->context, &bundle);
 		bundleContext_getBundle(manager->context, &self);
 		if (bundle == self) {
-			fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "TOPOLOGY_MANAGER: Ignore myself.");
+			logHelper_log(manager->loghelper, OSGI_LOGSERVICE_DEBUG, "TOPOLOGY_MANAGER: Ignore myself.");
 			continue;
 		}
 
-		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "TOPOLOGY_MANAGER: listener with filter \"%s\" added", info->filter);
+		logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: listener with filter \"%s\" added", info->filter);
 
 		char *filter = NULL;
-		topologyManager_extendFilter(manager->context, info->filter, &filter);
+		topologyManager_extendFilter(manager, info->filter, &filter);
 
 		status = celixThreadMutex_lock(&manager->importInterestsLock);
 
@@ -613,14 +627,14 @@ celix_status_t topologyManager_listenerRemoved(void *handle, array_list_pt liste
 		bundleContext_getBundle(info->context, &bundle);
 		bundleContext_getBundle(manager->context, &self);
 		if (bundle == self) {
-			fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "TOPOLOGY_MANAGER: Ignore myself.");
+			logHelper_log(manager->loghelper, OSGI_LOGSERVICE_DEBUG, "TOPOLOGY_MANAGER: Ignore myself.");
 			continue;
 		}
 
-		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "TOPOLOGY_MANAGER: listener with filter \"%s\" removed.", info->filter);
+		logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: listener with filter \"%s\" removed.", info->filter);
 
 		char *filter = NULL;
-		topologyManager_extendFilter(manager->context, info->filter, &filter);
+		topologyManager_extendFilter(manager, info->filter, &filter);
 
 		status = celixThreadMutex_lock(&manager->importInterestsLock);
 
