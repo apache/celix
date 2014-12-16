@@ -184,6 +184,8 @@ celix_status_t discovery_informEndpointListeners(discovery_pt discovery, endpoin
 					listener->endpointRemoved(listener->handle, endpoint, scope);
 				}
 			}
+
+			filter_destroy(filter);
 		}
 		hashMapIterator_destroy(iter);
 	}
