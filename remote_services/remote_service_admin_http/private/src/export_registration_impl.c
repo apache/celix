@@ -93,11 +93,17 @@ celix_status_t exportRegistration_stopTracking(export_registration_pt registrati
 		if (status != CELIX_SUCCESS) {
 		    logHelper_log(registration->loghelper, OSGI_LOGSERVICE_ERROR, "EXPORT_REGISTRATION: Could not close endpoint tracker");
 		}
+		else {
+			status = serviceTracker_destroy(registration->endpointTracker);
+		}
 	}
 	if (registration->tracker != NULL) {
 		status = serviceTracker_close(registration->tracker);
 		if (status != CELIX_SUCCESS) {
 			logHelper_log(registration->loghelper, OSGI_LOGSERVICE_ERROR, "EXPORT_REGISTRATION: Could not close service tracker");
+		}
+		else {
+			status = serviceTracker_destroy(registration->tracker);
 		}
 	}
 
