@@ -50,7 +50,7 @@ celix_status_t exportRegistration_create(apr_pool_t *pool, service_reference_pt 
 	apr_pool_t *mypool = NULL;
 	apr_pool_create(&mypool, pool);
 
-	*registration = apr_palloc(mypool, sizeof(**registration));
+	*registration = calloc(1, sizeof(**registration));
 	if (!*registration) {
 		status = CELIX_ENOMEM;
 	} else {
@@ -71,6 +71,14 @@ celix_status_t exportRegistration_create(apr_pool_t *pool, service_reference_pt 
 	return status;
 }
 
+celix_status_t exportRegistration_destroy(export_registration_pt *registration) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	remoteServiceAdmin_destroyEndpointDescription(&(*registration)->endpointDescription);
+	free(*registration);
+
+	return status;
+}
 
 celix_status_t exportRegistration_startTracking(export_registration_pt registration) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -206,6 +214,8 @@ celix_status_t exportRegistration_close(export_registration_pt registration) {
 
 	logHelper_stop(registration->loghelper);
 	logHelper_destroy(&registration->loghelper);
+
+	exportRegistration_destroy(&registration);
 
 	return status;
 }

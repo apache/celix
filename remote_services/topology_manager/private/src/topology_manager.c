@@ -234,8 +234,8 @@ celix_status_t topologyManager_rsaRemoved(void * handle, service_reference_pt re
         if (exports_list != NULL) {
             for (exportsIter = 0; exportsIter < arrayList_size(exports_list); exportsIter++) {
                 export_registration_pt export = arrayList_get(exports_list, exportsIter);
-                rsa->exportRegistration_close(export);
                 topologyManager_notifyListenersEndpointRemoved(manager, rsa, export);
+                rsa->exportRegistration_close(export);
             }
 
             arrayList_destroy(exports_list);
@@ -432,9 +432,8 @@ celix_status_t topologyManager_removeExportedService(topology_manager_pt manager
 
 			for (int exportsIter = 0; exportsIter < arrayList_size(exportRegistrations); exportsIter++) {
 				export_registration_pt export = arrayList_get(exportRegistrations, exportsIter);
-				rsa->exportRegistration_close(export);
-
 				topologyManager_notifyListenersEndpointRemoved(manager, rsa, export);
+				rsa->exportRegistration_close(export);
 			}
 			arrayList_destroy(exportRegistrations);
 			exportRegistrations = NULL;

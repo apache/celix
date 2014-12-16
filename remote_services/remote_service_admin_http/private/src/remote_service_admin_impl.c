@@ -430,6 +430,7 @@ celix_status_t remoteServiceAdmin_removeExportedService(export_registration_pt r
     celixThreadMutex_lock(&admin->exportedServicesLock);
 
     hashMap_remove(admin->exportedServices, registration->reference);
+
     celixThreadMutex_unlock(&admin->exportedServicesLock);
 
     return status;
@@ -516,10 +517,7 @@ celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin
 		properties_pt endpointProperties, char *interface, endpoint_description_pt *description) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	apr_pool_t *childPool = NULL;
-	apr_pool_create(&childPool, admin->pool); //TODO pool should be destroyed after when endpoint is removed
-
-	*description = apr_palloc(childPool, sizeof(*description));
+	*description = calloc(1, sizeof(**description));
 	if (!*description) {
 		status = CELIX_ENOMEM;
 	} else {
@@ -534,6 +532,18 @@ celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin
 
 	return status;
 }
+
+
+celix_status_t remoteServiceAdmin_destroyEndpointDescription(endpoint_description_pt *description)
+{
+	celix_status_t status = CELIX_SUCCESS;
+
+	properties_destroy((*description)->properties);
+	free(*description);
+
+	return status;
+}
+
 
 celix_status_t remoteServiceAdmin_getExportedServices(remote_service_admin_pt admin, array_list_pt *services) {
 	celix_status_t status = CELIX_SUCCESS;

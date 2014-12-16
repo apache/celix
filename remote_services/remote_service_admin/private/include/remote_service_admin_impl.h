@@ -61,4 +61,6 @@ celix_status_t exportReference_getExportedService(export_reference_pt reference)
 celix_status_t importReference_getImportedEndpoint(import_reference_pt reference);
 celix_status_t importReference_getImportedService(import_reference_pt reference);
 
+celix_status_t remoteServiceAdmin_destroyEndpointDescription(endpoint_description_pt *description);
+
 #endif /* REMOTE_SERVICE_ADMIN_IMPL_H_ */
