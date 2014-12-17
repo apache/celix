@@ -454,6 +454,9 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
         }
 	}
 
+	hash_map_entry_pt entry = hashMap_getEntry(endpointProperties, (void *) OSGI_FRAMEWORK_SERVICE_ID);
+
+	char* key = hashMapEntry_getKey(entry);
 	char *serviceId = (char *) hashMap_remove(endpointProperties, (void *) OSGI_FRAMEWORK_SERVICE_ID);
 	char *uuid = NULL;
 
@@ -478,6 +481,10 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
 	endpoint_description_pt endpointDescription = NULL;
 	remoteServiceAdmin_createEndpointDescription(admin, reference, endpointProperties, interface, &endpointDescription);
 	exportRegistration_setEndpointDescription(registration, endpointDescription);
+
+	free(key);
+	free(serviceId);
+	free(keys);
 
 	return status;
 }
