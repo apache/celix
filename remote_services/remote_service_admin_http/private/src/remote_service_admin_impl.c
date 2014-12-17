@@ -449,8 +449,9 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
         char *key = keys[i];
         char *value = NULL;
 
-        if (serviceReference_getProperty(reference, key, &value) == CELIX_SUCCESS)
+        if (serviceReference_getProperty(reference, key, &value) == CELIX_SUCCESS && strcmp(key, (char*) OSGI_FRAMEWORK_OBJECTCLASS) != 0) {
         	properties_set(endpointProperties, key, value);
+        }
 	}
 
 	char *serviceId = (char *) hashMap_remove(endpointProperties, (void *) OSGI_FRAMEWORK_SERVICE_ID);
