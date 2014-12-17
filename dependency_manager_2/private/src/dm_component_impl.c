@@ -65,8 +65,8 @@ static celix_status_t component_handleChange(dm_component_pt component);
 static celix_status_t component_startDependencies(dm_component_pt component, array_list_pt dependencies);
 
 static celix_status_t component_addTask(dm_component_pt component, array_list_pt dependencies);
-static celix_status_t component_startTask(dm_component_pt component, dm_service_dependency_pt dependency);
-static celix_status_t component_stopTask(dm_component_pt component, dm_service_dependency_pt dependency);
+static celix_status_t component_startTask(dm_component_pt component, void* data);
+static celix_status_t component_stopTask(dm_component_pt component, void* data);
 static celix_status_t component_removeTask(dm_component_pt component, dm_service_dependency_pt dependency);
 
 celix_status_t component_create(bundle_context_pt context, dm_dependency_manager_pt manager, dm_component_pt *component) {
@@ -171,15 +171,15 @@ celix_status_t component_removeTask(dm_component_pt component, dm_service_depend
     return status;
 }
 
-celix_status_t component_start(dm_component_pt component, dm_service_dependency_pt dependency) {
+celix_status_t component_start(dm_component_pt component) {
     celix_status_t status = CELIX_SUCCESS;
 
-    executor_executeTask(component->executor, component, component_startTask, dependency);
+    executor_executeTask(component->executor, component, component_startTask, NULL);
 
     return status;
 }
 
-celix_status_t component_startTask(dm_component_pt component, dm_service_dependency_pt dependency) {
+celix_status_t component_startTask(dm_component_pt component, void* data) {
     celix_status_t status = CELIX_SUCCESS;
 
     component->isStarted = true;
@@ -188,15 +188,15 @@ celix_status_t component_startTask(dm_component_pt component, dm_service_depende
     return status;
 }
 
-celix_status_t component_stop(dm_component_pt component, dm_service_dependency_pt dependency) {
+celix_status_t component_stop(dm_component_pt component) {
     celix_status_t status = CELIX_SUCCESS;
 
-    executor_executeTask(component->executor, component, component_stopTask, dependency);
+    executor_executeTask(component->executor, component, component_stopTask, NULL);
 
     return status;
 }
 
-celix_status_t component_stopTask(dm_component_pt component, dm_service_dependency_pt dependency) {
+celix_status_t component_stopTask(dm_component_pt component, void* data) {
     celix_status_t status = CELIX_SUCCESS;
 
     component->isStarted = false;

@@ -27,8 +27,18 @@
 #ifndef DM_DEPENDENCY_MANAGER_H_
 #define DM_DEPENDENCY_MANAGER_H_
 
+#include "bundle_context.h"
+#include "celix_errno.h"
+#include "array_list.h"
+#include "dm_component.h"
+
 typedef struct dm_dependency_manager *dm_dependency_manager_pt;
 
+celix_status_t dependencyManager_create(bundle_context_pt context, dm_dependency_manager_pt *manager);
+celix_status_t dependencyManager_destroy(dm_dependency_manager_pt *manager);
 
+celix_status_t dependencyManager_add(dm_dependency_manager_pt manager, dm_component_pt component);
+celix_status_t dependencyManager_remove(dm_dependency_manager_pt manager, dm_component_pt component);
+celix_status_t dependencyManager_getComponents(dm_dependency_manager_pt manager, array_list_pt* components);
 
 #endif /* DM_DEPENDENCY_MANAGER_H_ */

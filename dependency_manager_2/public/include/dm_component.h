@@ -30,5 +30,7 @@
 typedef struct dm_component *dm_component_pt;
 
 
+celix_status_t component_start(dm_component_pt component);
+celix_status_t component_stop(dm_component_pt component);
 
 #endif /* COMPONENT_H_ */
