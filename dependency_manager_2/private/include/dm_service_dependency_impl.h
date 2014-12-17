@@ -17,18 +17,29 @@
  *under the License.
  */
 /*
- * dm_dependency_manager.h
+ * dm_service_dependency.h
  *
- *  \date       22 Feb 2014
+ *  \date       8 Oct 2014
  *  \author     <a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
  *  \copyright  Apache License, Version 2.0
  */
 
-#ifndef DM_DEPENDENCY_MANAGER_H_
-#define DM_DEPENDENCY_MANAGER_H_
+#ifndef DM_SERVICE_DEPENDENCY_IMPL_H_
+#define DM_SERVICE_DEPENDENCY_IMPL_H_
+
+#include "dm_service_dependency.h"
+
+struct dm_service_dependency {
+
+};
+
+celix_status_t serviceDependency_setRequired(dm_service_dependency_pt dependency, bool required);
+celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency, char *serviceName, char *filter);
+celix_status_t serviceDependency_setCallbacks(dm_service_dependency_pt dependency,
+        void (*added)(void *handle, service_reference_pt reference, void *service),
+        void (*changed)(void *handle, service_reference_pt reference, void *service),
+        void (*removed)(void *handle, service_reference_pt reference, void *service));
+celix_status_t serviceDependency_setAutoConfigure(dm_service_dependency_pt dependency, void **field);
 
 
-
-
-
-#endif /* DM_DEPENDENCY_MANAGER_H_ */
+#endif /* DM_SERVICE_DEPENDENCY_IMPL_H_ */

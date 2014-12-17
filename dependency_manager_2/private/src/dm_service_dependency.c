@@ -17,18 +17,15 @@
  *under the License.
  */
 /*
- * component.h
+ * dm_service_dependency.c
  *
- *  \date       22 Feb 2014
+ *  \date       17 Oct 2014
  *  \author     <a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
  *  \copyright  Apache License, Version 2.0
  */
 
-#ifndef COMPONENT_H_
-#define COMPONENT_H_
+#include "dm_service_dependency.h"
 
-typedef struct dm_component *dm_component_pt;
+celix_status_t serviceDependency_start(dm_service_dependency_pt dependency) {
 
-
-
-#endif /* COMPONENT_H_ */
+}
