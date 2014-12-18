@@ -195,9 +195,11 @@ celix_status_t endpointDiscoveryPoller_removeDiscoveryEndpoint(endpoint_discover
 
     array_list_pt entries = hashMap_remove(poller->entries, url);
 
-	for (int i = 0; i < arrayList_size(entries); i++) {
-		endpoint_description_pt endpoint = arrayList_get(entries, i);
+	for (int i = arrayList_size(entries); i > 0  ; i--) {
+		endpoint_description_pt endpoint = arrayList_get(entries, i-1);
 		discovery_removeDiscoveredEndpoint(poller->discovery, endpoint);
+		arrayList_remove(entries, i-1);
+		endpointDescription_destroy(endpoint);
 	}
 
 	if (entries != NULL) {

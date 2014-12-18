@@ -155,6 +155,10 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
 
                     valueBuffer = xmlStrcat(valueBuffer, BAD_CAST ">");
                 } else if (xmlStrcmp(localname, ENDPOINT_DESCRIPTION) == 0) {
+
+                	if (endpointProperties != NULL)
+                		properties_destroy(endpointProperties);
+
                     endpointProperties = properties_create();
                 } else if (xmlStrcmp(localname, PROPERTY) == 0) {
                     inProperty = true;
