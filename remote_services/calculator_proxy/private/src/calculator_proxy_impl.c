@@ -26,8 +26,6 @@
 #include <jansson.h>
 
 #include <string.h>
-#include <apr_strings.h>
-
 #include <stddef.h>
 
 #include "celix_errno.h"
@@ -44,18 +42,27 @@ celix_status_t calculatorProxy_setHandler(void *proxy, void *handler);
 celix_status_t calculatorProxy_setCallback(void *proxy, sendToHandle callback);
 
 
-celix_status_t calculatorProxy_create(apr_pool_t *pool, bundle_context_pt context, calculator_pt *calculator)  {
+celix_status_t calculatorProxy_create(bundle_context_pt context, calculator_pt *calculator)  {
 	celix_status_t status = CELIX_SUCCESS;
-	*calculator = apr_palloc(pool, sizeof(**calculator));
+	*calculator = calloc(1, sizeof(**calculator));
 	if (!*calculator) {
 		status = CELIX_ENOMEM;
 	} else {
-		(*calculator)->pool = pool;
 		(*calculator)->context = context;
 		(*calculator)->endpoint = NULL;
 		(*calculator)->sendToCallback=NULL;
 		(*calculator)->sendToHandler=NULL;
 	}
+
+	return status;
+}
+
+
+celix_status_t calculatorProxy_destroy(calculator_pt *calculator)  {
+	celix_status_t status = CELIX_SUCCESS;
+
+	free(*calculator);
+	*calculator = NULL;
 
 	return status;
 }
@@ -179,8 +186,8 @@ celix_status_t calculatorProxy_registerProxyService(void* proxyFactoryService, e
 	calculator_pt calculator = NULL;
 	calculator_service_pt calculatorService = NULL;
 
-	calculatorProxy_create(calculatorProxyFactoryService->pool, calculatorProxyFactoryService->context, &calculator);
-	calculatorService = apr_palloc(calculatorProxyFactoryService->pool, sizeof(*calculatorService));
+	calculatorProxy_create(calculatorProxyFactoryService->context, &calculator);
+	calculatorService = calloc(1, sizeof(*calculatorService));
 	calculatorService->calculator = calculator;
 	calculatorService->add = calculatorProxy_add;
 	calculatorService->sub = calculatorProxy_sub;
@@ -202,7 +209,7 @@ celix_status_t calculatorProxy_registerProxyService(void* proxyFactoryService, e
 	}
 
 	hashMap_put(calculatorProxyFactoryService->proxy_registrations, endpointDescription, proxyReg);
-
+	hashMap_put(calculatorProxyFactoryService->proxy_instances, endpointDescription, calculatorService);
 
 	return status;
 }
@@ -213,10 +220,15 @@ celix_status_t calculatorProxy_unregisterProxyService(void* proxyFactoryService,
 
 	remote_proxy_factory_service_pt calculatorProxyFactoryService = (remote_proxy_factory_service_pt) proxyFactoryService;
 	service_registration_pt proxyReg = hashMap_get(calculatorProxyFactoryService->proxy_registrations, endpointDescription);
+	calculator_service_pt calculatorService = hashMap_get(calculatorProxyFactoryService->proxy_instances, endpointDescription);
 
-	if (proxyReg != NULL)
-	{
+	if (proxyReg != NULL) {
 		serviceRegistration_unregister(proxyReg);
+	}
+
+	if (calculatorService != NULL) {
+		free(calculatorService->calculator);
+		free(calculatorService);
 	}
 
 	return status;

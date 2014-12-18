@@ -24,19 +24,28 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <jansson.h>
+#include <string.h>
 
 #include "celix_errno.h"
 
 #include "calculator_endpoint_impl.h"
 
-celix_status_t calculatorEndpoint_create(apr_pool_t *pool, remote_endpoint_pt *endpoint) {
+celix_status_t calculatorEndpoint_create(remote_endpoint_pt *endpoint) {
 	celix_status_t status = CELIX_SUCCESS;
-	*endpoint = apr_palloc(pool, sizeof(**endpoint));
+	*endpoint = calloc(1, sizeof(**endpoint));
 	if (!*endpoint) {
 		status = CELIX_ENOMEM;
 	} else {
 		(*endpoint)->service = NULL;
 	}
+
+	return status;
+}
+
+celix_status_t calculatorEndpoint_destroy(remote_endpoint_pt *endpoint) {
+	celix_status_t status = CELIX_SUCCESS;
+	free(*endpoint);
+	*endpoint = NULL;
 
 	return status;
 }
@@ -68,6 +77,8 @@ celix_status_t calculatorEndpoint_handleRequest(remote_endpoint_pt endpoint, cha
 		status = CELIX_ILLEGAL_ARGUMENT;
 	}
 
+	json_decref(root);
+
 	return status;
 }
 
@@ -93,10 +104,13 @@ celix_status_t calculatorEndpoint_add(remote_endpoint_pt endpoint, char *data, c
 
 			char *c = json_dumps(resultRoot, 0);
 			*reply = c;
+
+			json_decref(resultRoot);
 		} else {
 			printf("CALCULATOR_ENDPOINT: No service available");
 			status = CELIX_BUNDLE_EXCEPTION;
 		}
+		json_decref(root);
 	}
 
 	return status;
@@ -124,10 +138,13 @@ celix_status_t calculatorEndpoint_sub(remote_endpoint_pt endpoint, char *data, c
 
 			char *c = json_dumps(resultRoot, JSON_ENCODE_ANY);
 			*reply = c;
+
+			json_decref(resultRoot);
 		} else {
 			printf("CALCULATOR_ENDPOINT: No service available");
 			status = CELIX_BUNDLE_EXCEPTION;
 		}
+		json_decref(root);
 	}
 
 	return status;
@@ -154,10 +171,13 @@ celix_status_t calculatorEndpoint_sqrt(remote_endpoint_pt endpoint, char *data, 
 
 			char *c = json_dumps(resultRoot, JSON_ENCODE_ANY);
 			*reply = c;
+
+			json_decref(resultRoot);
 		} else {
 			printf("CALCULATOR_ENDPOINT: No service available");
 			status = CELIX_BUNDLE_EXCEPTION;
 		}
+		json_decref(root);
 	}
 
 	return status;

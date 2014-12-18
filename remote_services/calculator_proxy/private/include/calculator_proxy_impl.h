@@ -27,8 +27,6 @@
 #ifndef CALCULATOR_PROXY_IMPL_H_
 #define CALCULATOR_PROXY_IMPL_H_
 
-#include <apr_general.h>
-
 #include "celix_errno.h"
 
 #include "calculator_service.h"
@@ -41,7 +39,6 @@
 
 
 struct calculator {
-	apr_pool_t *pool;
 	bundle_context_pt context;
 
 	endpoint_description_pt endpoint;
@@ -50,7 +47,8 @@ struct calculator {
 };
 
 
-celix_status_t calculatorProxy_create(apr_pool_t *pool, bundle_context_pt context, calculator_pt *endpoint);
+celix_status_t calculatorProxy_create(bundle_context_pt context, calculator_pt *endpoint);
+celix_status_t calculatorProxy_destroy(calculator_pt *endpoint);
 celix_status_t calculatorProxy_add(calculator_pt calculator, double a, double b, double *result);
 celix_status_t calculatorProxy_sub(calculator_pt calculator, double a, double b, double *result);
 celix_status_t calculatorProxy_sqrt(calculator_pt calculator, double a, double *result);
