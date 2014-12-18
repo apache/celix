@@ -69,7 +69,7 @@ celix_status_t calculatorProxy_add(calculator_pt calculator, double a, double b,
 		root = json_pack("{s:s, s:[ff]}", "m", "add(DD)D", "a", a, b);
 
 		char *data = json_dumps(root, 0);
-		char *reply = malloc(256);
+		char *reply = NULL;
 		int replyStatus = 0;
 
 		calculator->sendToCallback(calculator->sendToHandler, calculator->endpoint, data, &reply, &replyStatus);
@@ -80,11 +80,13 @@ celix_status_t calculatorProxy_add(calculator_pt calculator, double a, double b,
 			json_t *js_reply = json_loads(reply, 0, &error);
 			if (js_reply) {
 				json_unpack(js_reply, "{s:f}", "r", result);
+				json_decref(js_reply);
 			} else {
 				printf("PROXY: got error '%s' for '%s'\n", error.text, reply);
 				status = CELIX_BUNDLE_EXCEPTION;
 			}
 		}
+		json_decref(root);
 
 		free(data);
 		free(reply);
@@ -103,7 +105,7 @@ celix_status_t calculatorProxy_sub(calculator_pt calculator, double a, double b,
 		root = json_pack("{s:s, s:[ff]}", "m", "sub(DD)D", "a", a, b);
 
 		char *data = json_dumps(root, 0);
-		char *reply = malloc(128);
+		char *reply = NULL;
 		int replyStatus = 0;
 
 		calculator->sendToCallback(calculator->sendToHandler, calculator->endpoint, data, &reply, &replyStatus);
@@ -113,11 +115,14 @@ celix_status_t calculatorProxy_sub(calculator_pt calculator, double a, double b,
 			json_t *js_reply = json_loads(reply, 0, &error);
 			if (js_reply) {
 			    json_unpack(js_reply, "{s:f}", "r", result);
+			    json_decref(js_reply);
 			} else {
 				printf("PROXY: got error '%s' for '%s'\n", error.text, reply);
 				status = CELIX_BUNDLE_EXCEPTION;
 			}
 		}
+
+		json_decref(root);
 
 		free(data);
 		free(reply);
@@ -136,7 +141,7 @@ celix_status_t calculatorProxy_sqrt(calculator_pt calculator, double a, double *
 		root = json_pack("{s:s, s:[f]}", "m", "sqrt(D)D", "a", a);
 
 		char *data = json_dumps(root, 0);
-		char *reply = malloc(128);
+		char *reply = NULL;
 		int replyStatus;
 
 		calculator->sendToCallback(calculator->sendToHandler, calculator->endpoint, data, &reply, &replyStatus);
@@ -146,11 +151,14 @@ celix_status_t calculatorProxy_sqrt(calculator_pt calculator, double a, double *
 			json_t *js_reply = json_loads(reply, JSON_DECODE_ANY, &error);
 			if (js_reply) {
 			    json_unpack(js_reply, "{s:f}", "r", result);
+			    json_decref(js_reply);
 			} else {
 				printf("PROXY: got error '%s' for '%s'\n", error.text, reply);
 				status = CELIX_BUNDLE_EXCEPTION;
 			}
 		}
+
+		json_decref(root);
 
 		free(data);
 		free(reply);
