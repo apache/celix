@@ -27,12 +27,27 @@
 #ifndef DM_EVENT_H_
 #define DM_EVENT_H_
 
+enum dm_event_type {
+	DM_EVENT_ADDED,
+	DM_EVENT_CHANGED,
+	DM_EVENT_REMOVED,
+	DM_EVENT_SWAPPED,
+};
+
+typedef enum dm_event_type dm_event_type_e;
 
 struct dm_event {
-
+	void *service;
+	service_reference_pt reference;
+	bundle_context_pt context;
+	bundle_pt bundle;
+	dm_event_type_e event_type;
 };
 
 typedef struct dm_event *dm_event_pt;
+
+
+celix_status_t event_create(dm_event_type_e event_type, bundle_pt bundle, bundle_context_pt context, service_reference_pt reference, void *service, dm_event_pt *event);
 
 
 #endif /* DM_EVENT_H_ */

@@ -27,15 +27,18 @@
 #ifndef DM_SERVICE_DEPENDENCY_H_
 #define DM_SERVICE_DEPENDENCY_H_
 
+#include "celix_errno.h"
+
 #include "dm_event.h"
+#include "dm_component.h"
 
 typedef struct dm_service_dependency *dm_service_dependency_pt;
 
+celix_status_t serviceDependency_setComponent(dm_service_dependency_pt dependency, dm_component_pt component);
+//celix_status_t serviceDependency_removeComponent(dm_service_dependency_pt dependency, dm_component_pt component);
+
 celix_status_t serviceDependency_start(dm_service_dependency_pt dependency);
 celix_status_t serviceDependency_stop(dm_service_dependency_pt dependency);
-
-celix_status_t serviceDependency_add(dm_service_dependency_pt dependency, dm_component_pt component);
-celix_status_t serviceDependency_remove(dm_service_dependency_pt dependency, dm_component_pt component);
 celix_status_t serviceDependency_setInstanceBound(dm_service_dependency_pt dependency, bool instanceBound);
 celix_status_t serviceDependency_setAvailable(dm_service_dependency_pt dependency, bool available);
 

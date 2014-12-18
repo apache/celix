@@ -24,8 +24,410 @@
  *  \copyright  Apache License, Version 2.0
  */
 
-#include "dm_service_dependency.h"
+#include "dm_service_dependency_impl.h"
+
+celix_status_t serviceDependency_create(dm_service_dependency_pt *dependency_ptr) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	*dependency_ptr = calloc(1, sizeof(**dependency_ptr));
+	if (!*dependency_ptr) {
+		status = CELIX_ENOMEM;
+	} else {
+		(*dependency_ptr)->component = NULL;
+		(*dependency_ptr)->available = false;
+		(*dependency_ptr)->instanceBound = false;
+		(*dependency_ptr)->required = false;
+
+		(*dependency_ptr)->add = NULL;
+		(*dependency_ptr)->change = NULL;
+		(*dependency_ptr)->remove = NULL;
+
+		(*dependency_ptr)->autoConfigure = false;
+
+		(*dependency_ptr)->isStarted = false;
+
+		(*dependency_ptr)->tracked_service_name = NULL;
+		(*dependency_ptr)->tracked_filter_unmodified = NULL;
+		(*dependency_ptr)->tracked_filter = NULL;
+	}
+
+	return status;
+}
+
+celix_status_t serviceDependency_setRequired(dm_service_dependency_pt dependency, bool required) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (!dependency) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		dependency->required = required;
+	}
+
+	return status;
+}
+
+celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency, char *serviceName, char *filter) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (!dependency) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		if (serviceName != NULL) {
+			dependency->tracked_service_name = strdup(serviceName);
+		}
+		if (filter != NULL) {
+			dependency->tracked_filter_unmodified = strdup(filter);
+			if (serviceName == NULL) {
+				dependency->tracked_filter = strdup(filter);
+			} else {
+				int len = strlen(serviceName) + strlen(OSGI_FRAMEWORK_OBJECTCLASS) + strlen(filter) + 7;
+				char *nfilter[len];
+				snprintf(nfilter, len, "(&(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, filter);
+				dependency->tracked_filter = strdup(nfilter);
+			}
+		} else {
+			dependency->tracked_filter_unmodified = NULL;
+			dependency->tracked_filter = NULL;
+		}
+	}
+
+	return status;
+}
+
+celix_status_t serviceDependency_setCallbacks(dm_service_dependency_pt dependency, service_add_fpt add, service_change_fpt change, service_remove_fpt remove) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (!dependency) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		dependency->add = add;
+		dependency->change = change;
+		dependency->remove = remove;
+	}
+
+	return status;
+}
+
+celix_status_t serviceDependency_setAutoConfigure(dm_service_dependency_pt dependency, void **field) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (!dependency) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		dependency->autoConfigure = field;
+	}
+
+	return status;
+}
+
+celix_status_t serviceDependency_setComponent(dm_service_dependency_pt dependency, dm_component_pt component) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (!dependency) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		dependency->component = component;
+	}
+
+	return status;
+}
 
 celix_status_t serviceDependency_start(dm_service_dependency_pt dependency) {
+	celix_status_t status = CELIX_SUCCESS;
+	bundle_context_pt context;
 
+	if (!dependency || !dependency->component || (!dependency->tracked_service_name && !dependency->tracked_filter)) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		status = component_getBundleContext(dependency->component, &context);
+		if (!context) {
+			status = CELIX_BUNDLE_EXCEPTION;
+		}
+	}
+
+	if (status == CELIX_SUCCESS) {
+		status = serviceTrackerCustomizer_create(dependency, NULL, serviceDependency_addedService, serviceDependency_modifiedService,
+				serviceDependency_removedService, &dependency->tracker_customizer);
+	}
+
+	if (status == CELIX_SUCCESS) {
+		if (dependency->tracked_filter) {
+			status = serviceTracker_createWithFilter(context, dependency->tracked_filter, dependency->tracker_customizer, &dependency->tracker);
+		} else if (dependency->tracked_service_name) {
+			status = serviceTracker_create(context, dependency->tracked_service_name, dependency->tracker_customizer, &dependency->tracker);
+		}
+	}
+
+	if (status == CELIX_SUCCESS) {
+		status = serviceTracker_open(dependency->tracker);
+	}
+
+	if (status == CELIX_SUCCESS) {
+		dependency->isStarted = true;
+	}
+
+	return status;
+}
+
+celix_status_t serviceDependency_stop(dm_service_dependency_pt dependency) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (!dependency) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		if (dependency->tracker) {
+			status = serviceTracker_close(dependency->tracker);
+		}
+	}
+
+	if (status == CELIX_SUCCESS) {
+		dependency->isStarted = false;
+	}
+
+	return status;
+}
+
+celix_status_t serviceDependency_setInstanceBound(dm_service_dependency_pt dependency, bool instanceBound) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (!dependency) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		dependency->instanceBound = instanceBound;
+	}
+
+	return status;
+}
+
+celix_status_t serviceDependency_setAvailable(dm_service_dependency_pt dependency, bool available) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (!dependency) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		dependency->available = available;
+	}
+
+	return status;
+}
+
+celix_status_t serviceDependency_invokeAdd(dm_service_dependency_pt dependency, dm_event_pt event) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (!dependency) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		dependency->add(dependency->component->implementation, event->reference, event->service);
+	}
+
+	return status;
+}
+
+celix_status_t serviceDependency_invokeChange(dm_service_dependency_pt dependency, dm_event_pt event) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (!dependency) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		dependency->change(dependency->component->implementation, event->reference, event->service);
+	}
+
+	return status;
+}
+
+celix_status_t serviceDependency_invokeRemove(dm_service_dependency_pt dependency, dm_event_pt event) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (!dependency) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		dependency->remove(dependency->component->implementation, event->reference, event->service);
+	}
+
+	return status;
+}
+
+celix_status_t serviceDependency_invokeSwap(dm_service_dependency_pt dependency, dm_event_pt event) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (!dependency) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		dependency->swap(dependency->component->implementation, event->reference, event->service);
+	}
+
+	return status;
+}
+
+celix_status_t serviceDependency_isAvailable(dm_service_dependency_pt dependency, bool *available) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (!dependency) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		*available = dependency->available;
+	}
+
+	return status;
+}
+
+celix_status_t serviceDependency_isRequired(dm_service_dependency_pt dependency, bool *required) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (!dependency) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		*required = dependency->required;
+	}
+
+	return status;
+}
+
+celix_status_t serviceDependency_isInstanceBound(dm_service_dependency_pt dependency, bool *instanceBound) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (!dependency) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		*instanceBound = dependency->instanceBound;
+	}
+
+	return status;
+}
+
+celix_status_t serviceDependency_addedService(dm_service_dependency_pt dependency, service_reference_pt reference, void *service) {
+	celix_status_t status = CELIX_SUCCESS;
+	bundle_context_pt context = NULL;
+	bundle_pt bundle = NULL;
+	dm_event_pt event = NULL;
+
+	if (!dependency || !reference || !service) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		status = component_getBundleContext(dependency->component, &context);
+		if (!context) {
+			status = CELIX_BUNDLE_EXCEPTION;
+		}
+	}
+
+	if (status == CELIX_SUCCESS) {
+		status = bundleContext_getBundle(context, &bundle);
+		if (!bundle) {
+			status = CELIX_BUNDLE_EXCEPTION;
+		}
+	}
+
+	if (status == CELIX_SUCCESS) {
+		status = event_create(DM_EVENT_ADDED, bundle, context, reference, service, &event);
+	}
+
+	if (status == CELIX_SUCCESS) {
+		component_handleEvent(dependency->component, dependency, event);
+	}
+
+	return status;
+}
+
+celix_status_t serviceDependency_modifiedService(dm_service_dependency_pt dependency, service_reference_pt reference, void *service) {
+	celix_status_t status = CELIX_SUCCESS;
+	bundle_context_pt context = NULL;
+	bundle_pt bundle = NULL;
+	dm_event_pt event = NULL;
+
+	if (!dependency || !reference || !service) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		status = component_getBundleContext(dependency->component, &context);
+		if (!context) {
+			status = CELIX_BUNDLE_EXCEPTION;
+		}
+	}
+
+	if (status == CELIX_SUCCESS) {
+		status = bundleContext_getBundle(context, &bundle);
+		if (!bundle) {
+			status = CELIX_BUNDLE_EXCEPTION;
+		}
+	}
+
+	if (status == CELIX_SUCCESS) {
+		status = event_create(DM_EVENT_CHANGED, bundle, context, reference, service, &event);
+	}
+
+	if (status == CELIX_SUCCESS) {
+		component_handleEvent(dependency->component, dependency, event);
+	}
+
+	return status;
+}
+
+celix_status_t serviceDependency_removedService(dm_service_dependency_pt dependency, service_reference_pt reference, void *service) {
+	celix_status_t status = CELIX_SUCCESS;
+	bundle_context_pt context = NULL;
+	bundle_pt bundle = NULL;
+	dm_event_pt event = NULL;
+
+	if (!dependency || !reference || !service) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		status = component_getBundleContext(dependency->component, &context);
+		if (!context) {
+			status = CELIX_BUNDLE_EXCEPTION;
+		}
+	}
+
+	if (status == CELIX_SUCCESS) {
+		status = bundleContext_getBundle(context, &bundle);
+		if (!bundle) {
+			status = CELIX_BUNDLE_EXCEPTION;
+		}
+	}
+
+	if (status == CELIX_SUCCESS) {
+		status = event_create(DM_EVENT_REMOVED, bundle, context, reference, service, &event);
+	}
+
+	if (status == CELIX_SUCCESS) {
+		component_handleEvent(dependency->component, dependency, event);
+	}
+
+	return status;
 }

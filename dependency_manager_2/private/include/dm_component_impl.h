@@ -83,4 +83,8 @@ celix_status_t component_setImplementation(dm_component_pt component, void *impl
 
 celix_status_t component_addServiceDependency(dm_component_pt component, ...);
 
+celix_status_t component_getBundleContext(dm_component_pt component, bundle_context_pt *context);
+
+celix_status_t component_handleEvent(dm_component_pt component, dm_service_dependency_pt dependency, dm_event_pt event);
+
 #endif /* COMPONENT_IMPL_H_ */

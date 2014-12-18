@@ -27,18 +27,41 @@
 #ifndef DM_SERVICE_DEPENDENCY_IMPL_H_
 #define DM_SERVICE_DEPENDENCY_IMPL_H_
 
+#include <stdbool.h>
+
 #include "dm_service_dependency.h"
 
-struct dm_service_dependency {
+typedef celix_status_t (*service_add_fpt)(void *handle, service_reference_pt reference, void *service);
+typedef celix_status_t (*service_change_fpt)(void *handle, service_reference_pt reference, void *service);
+typedef celix_status_t (*service_remove_fpt)(void *handle, service_reference_pt reference, void *service);
+typedef celix_status_t (*service_swap_fpt)(void *handle, service_reference_pt oldReference, void *oldService, service_reference_pt newReference, void *newService);
 
+struct dm_service_dependency {
+	dm_component_pt component;
+	bool available;
+	bool instanceBound;
+	bool required;
+
+	service_add_fpt add;
+	service_change_fpt change;
+	service_remove_fpt remove;
+	service_swap_fpt swap;
+
+	void **autoConfigure;
+
+	bool isStarted;
+
+	char *tracked_service_name;
+	char *tracked_filter_unmodified;
+	char *tracked_filter;
+
+	service_tracker_pt tracker;
+	service_tracker_customizer_pt tracker_customizer;
 };
 
 celix_status_t serviceDependency_setRequired(dm_service_dependency_pt dependency, bool required);
 celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency, char *serviceName, char *filter);
-celix_status_t serviceDependency_setCallbacks(dm_service_dependency_pt dependency,
-        void (*added)(void *handle, service_reference_pt reference, void *service),
-        void (*changed)(void *handle, service_reference_pt reference, void *service),
-        void (*removed)(void *handle, service_reference_pt reference, void *service));
+celix_status_t serviceDependency_setCallbacks(dm_service_dependency_pt dependency, service_add_fpt add, service_change_fpt change, service_remove_fpt remove, service_swap_fpt swap);
 celix_status_t serviceDependency_setAutoConfigure(dm_service_dependency_pt dependency, void **field);
 
 

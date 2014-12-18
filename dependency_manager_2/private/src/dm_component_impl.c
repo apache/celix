@@ -42,6 +42,14 @@ struct dm_executor_task {
     void *data;
 };
 
+struct dm_handle_event_type {
+	dm_service_dependency_pt dependency;
+	dm_event_pt event;
+	dm_event_pt newEvent;
+};
+
+typedef struct dm_handle_event_type *dm_handle_event_type_pt;
+
 static celix_status_t executor_runTasks(dm_executor_pt executor, pthread_t currentThread);
 static celix_status_t executor_execute(dm_executor_pt executor);
 static celix_status_t executor_executeTask(dm_executor_pt executor, dm_component_pt component, void (*command), void *data);
@@ -68,6 +76,12 @@ static celix_status_t component_addTask(dm_component_pt component, array_list_pt
 static celix_status_t component_startTask(dm_component_pt component, void* data);
 static celix_status_t component_stopTask(dm_component_pt component, void* data);
 static celix_status_t component_removeTask(dm_component_pt component, dm_service_dependency_pt dependency);
+static celix_status_t component_handleEventTask(dm_component_pt component, dm_handle_event_type_pt data);
+
+static celix_status_t component_handleAdded(dm_component_pt component, dm_service_dependency_pt dependency, dm_event_pt event);
+static celix_status_t component_handleChanged(dm_component_pt component, dm_service_dependency_pt dependency, dm_event_pt event);
+static celix_status_t component_handleRemoved(dm_component_pt component, dm_service_dependency_pt dependency, dm_event_pt event);
+static celix_status_t component_handleSwapped(dm_component_pt component, dm_service_dependency_pt dependency, dm_event_pt event, dm_event_pt newEvent);
 
 celix_status_t component_create(bundle_context_pt context, dm_dependency_manager_pt manager, dm_component_pt *component) {
     celix_status_t status = CELIX_SUCCESS;
@@ -135,7 +149,7 @@ celix_status_t component_addTask(dm_component_pt component, array_list_pt depend
         arrayList_add(component->dependencies, dependency);
         pthread_mutex_unlock(&component->mutex);
 
-        serviceDependency_add(dependency, component);
+        serviceDependency_setComponent(dependency, component);
         if (!(component->state == DM_CMP_STATE_INACTIVE)) {
             serviceDependency_setInstanceBound(dependency, true);
             arrayList_add(bounds, dependency);
@@ -165,7 +179,7 @@ celix_status_t component_removeTask(dm_component_pt component, dm_service_depend
     if (!(component->state == DM_CMP_STATE_INACTIVE)) {
         serviceDependency_stop(dependency);
     }
-    serviceDependency_remove(dependency, component);
+//    serviceDependency_remove(dependency, component);
     component_handleChange(component);
 
     return status;
@@ -217,6 +231,42 @@ celix_status_t component_setInterface(dm_component_pt component, char *serviceNa
     }
 
     return status;
+}
+
+celix_status_t component_handleEvent(dm_component_pt component, dm_service_dependency_pt dependency, dm_event_pt event) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	dm_handle_event_type_pt data = calloc(1, sizeof(*data));
+	data->dependency = dependency;
+	data->event = event;
+	data->newEvent = NULL;
+
+	status = executor_executeTask(component->executor, component, component_handleEventTask, data);
+
+	return status;
+}
+
+celix_status_t component_handleEventTask(dm_component_pt component, dm_handle_event_type_pt data) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	switch (data->event->event_type) {
+		case DM_EVENT_ADDED:
+			component_handleAdded(component,data->dependency, data->event);
+			break;
+		case DM_EVENT_CHANGED:
+			component_handleChanged(component,data->dependency, data->event);
+			break;
+		case DM_EVENT_REMOVED:
+			component_handleRemoved(component,data->dependency, data->event);
+			break;
+		case DM_EVENT_SWAPPED:
+			component_handleSwapped(component,data->dependency, data->event, data->newEvent);
+			break;
+		default:
+			break;
+	}
+
+	return status;
 }
 
 celix_status_t component_handleAdded(dm_component_pt component, dm_service_dependency_pt dependency, dm_event_pt event) {
@@ -779,6 +829,19 @@ celix_status_t component_setImplementation(dm_component_pt component, void *impl
     return CELIX_SUCCESS;
 }
 
+celix_status_t component_getBundleContext(dm_component_pt component, bundle_context_pt *context) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (!component) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		*context = component->context;
+	}
+
+	return status;
+}
 
 
 celix_status_t executor_create(dm_component_pt component, dm_executor_pt *executor) {
@@ -829,6 +892,7 @@ celix_status_t executor_executeTask(dm_executor_pt executor, dm_component_pt com
     // For now, just schedule.
 
     executor_schedule(executor, component, command, data);
+    executor_execute(executor);
 
     return status;
 }
@@ -862,6 +926,8 @@ celix_status_t executor_runTasks(dm_executor_pt executor, pthread_t currentThrea
             pthread_mutex_unlock(&executor->mutex);
 
             entry->command(entry->component, entry->data);
+
+            pthread_mutex_lock(&executor->mutex);
         }
         executor->runningThread = NULL;
         pthread_mutex_unlock(&executor->mutex);
