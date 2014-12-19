@@ -45,6 +45,7 @@ celix_status_t bundleRevision_create(framework_logger_pt loggera, char *root, ch
     	// TODO: This overwrites an existing revision, is this supposed to happen?
         int state = mkdir(root, S_IRWXU);
         if ((state != 0) && (errno != EEXIST)) {
+            free(revision);
             status = CELIX_FILE_IO_EXCEPTION;
         } else {
             if (inputFile != NULL) {
@@ -68,6 +69,10 @@ celix_status_t bundleRevision_create(framework_logger_pt loggera, char *root, ch
                 snprintf(manifest, sizeof(manifest), "%s/META-INF/MANIFEST.MF", revision->root);
 				status = manifest_createFromFile(manifest, &revision->manifest);
             }
+            else {
+            	free(revision);
+            }
+
         }
     }
 

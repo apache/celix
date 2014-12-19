@@ -528,6 +528,10 @@ celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, lon
             id = framework_getNextBundleId(framework);
 
             status = CELIX_DO_IF(status, bundleCache_createArchive(framework->cache, id, location, inputFile, &archive));
+
+            if (status != CELIX_SUCCESS) {
+            	bundleArchive_destroy(archive);
+            }
         } else {
             // purge revision
             // multiple revisions not yet implemented
