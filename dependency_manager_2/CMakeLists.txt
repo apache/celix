@@ -36,7 +36,11 @@ if (DEPENDENCY_MANAGER2)
     )
     
     add_library(dependency_manager2 STATIC 
-    	private/src/dm_activator_base private/src/dm_component_impl private/src/dm_dependency_manager_impl)
+    	private/src/dm_activator_base 
+    	private/src/dm_component_impl 
+    	private/src/dm_service_dependency
+    	private/src/dm_event
+    	private/src/dm_dependency_manager_impl)
    	include_directories("public/include")
    	include_directories("private/include")
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")

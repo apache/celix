@@ -29,6 +29,9 @@
 
 #include <stdbool.h>
 
+#include "service_tracker.h"
+#include "service_tracker_customizer.h"
+
 #include "dm_service_dependency.h"
 
 typedef celix_status_t (*service_add_fpt)(void *handle, service_reference_pt reference, void *service);

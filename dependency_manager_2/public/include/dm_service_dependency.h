@@ -34,6 +34,8 @@
 
 typedef struct dm_service_dependency *dm_service_dependency_pt;
 
+celix_status_t serviceDependency_create(dm_service_dependency_pt *dependency_ptr);
+
 celix_status_t serviceDependency_setComponent(dm_service_dependency_pt dependency, dm_component_pt component);
 //celix_status_t serviceDependency_removeComponent(dm_service_dependency_pt dependency, dm_component_pt component);
 

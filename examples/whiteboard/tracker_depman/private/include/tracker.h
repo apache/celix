@@ -27,25 +27,30 @@
 #ifndef TRACKER_H_
 #define TRACKER_H_
 
-#include "service_component.h"
+#include "dm_component.h"
 #include "log_service.h"
 
 struct data {
-	service_pt service;
+	dm_component_pt service;
 	bundle_context_pt context;
 	array_list_pt publishers;
-	apr_thread_t *sender;
+	pthread_t sender;
 	bool running;
 	log_service_pt logger;
 };
 
-void tracker_addedServ(void * handle, service_reference_pt ref, void * service);
-void tracker_modifiedServ(void * handle, service_reference_pt ref, void * service);
-void tracker_removedServ(void * handle, service_reference_pt ref, void * service);
+celix_status_t tracker_addedServ(void * handle, service_reference_pt ref, void * service);
+celix_status_t tracker_modifiedServ(void * handle, service_reference_pt ref, void * service);
+celix_status_t tracker_removedServ(void * handle, service_reference_pt ref, void * service);
 
-void tracker_addLog(void * handle, service_reference_pt ref, void * service);
-void tracker_modifiedLog(void * handle, service_reference_pt ref, void * service);
-void tracker_removeLog(void * handle, service_reference_pt ref, void * service);
+celix_status_t tracker_addLog(void * handle, service_reference_pt ref, void * service);
+celix_status_t tracker_modifiedLog(void * handle, service_reference_pt ref, void * service);
+celix_status_t tracker_removeLog(void * handle, service_reference_pt ref, void * service);
+
+celix_status_t service_init(void * userData);
+celix_status_t service_start(void * userData);
+celix_status_t service_stop(void * userData);
+celix_status_t service_destroy(void * userData);
 
 
 #endif /* TRACKER_H_ */

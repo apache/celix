@@ -1,6 +1,7 @@
-#include "dm_activator_base.h"
-
 #include <stdlib.h>
+
+#include "bundle_activator.h"
+#include "dm_activator_base.h"
 
 
 struct dm_dependency_activator_base {
@@ -35,7 +36,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	status = dependencyManager_create(dependency_activator->context, &dependency_activator->manager);
 
 	if (status == CELIX_SUCCESS) {
-		dm_init(dependency_activator->manager, context, dependency_activator->userData);
+		dm_init(dependency_activator->userData, context, dependency_activator->manager);
 	}
 
 	return status;
@@ -45,7 +46,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	celix_status_t status = CELIX_SUCCESS;
 	dependency_activator_base_pt dependency_activator = (dependency_activator_base_pt) userData;
 
-	dm_destroy(dependency_activator->manager, dependency_activator->context, dependency_activator->userData);
+	dm_destroy(dependency_activator->userData, dependency_activator->context, dependency_activator->manager);
 
 	dependency_activator->userData = NULL;
 	dependency_activator->manager = NULL;

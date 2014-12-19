@@ -24,7 +24,18 @@
  *  \copyright  Apache License, Version 2.0
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "constants.h"
+
 #include "dm_service_dependency_impl.h"
+#include "dm_component_impl.h"
+#include "dm_event.h"
+
+static celix_status_t serviceDependency_addedService(void *_ptr, service_reference_pt reference, void *service);
+static celix_status_t serviceDependency_modifiedService(void *_ptr, service_reference_pt reference, void *service);
+static celix_status_t serviceDependency_removedService(void *_ptr, service_reference_pt reference, void *service);
 
 celix_status_t serviceDependency_create(dm_service_dependency_pt *dependency_ptr) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -49,6 +60,9 @@ celix_status_t serviceDependency_create(dm_service_dependency_pt *dependency_ptr
 		(*dependency_ptr)->tracked_service_name = NULL;
 		(*dependency_ptr)->tracked_filter_unmodified = NULL;
 		(*dependency_ptr)->tracked_filter = NULL;
+
+		(*dependency_ptr)->tracker = NULL;
+		(*dependency_ptr)->tracker_customizer = NULL;
 	}
 
 	return status;
@@ -85,7 +99,7 @@ celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency,
 				dependency->tracked_filter = strdup(filter);
 			} else {
 				int len = strlen(serviceName) + strlen(OSGI_FRAMEWORK_OBJECTCLASS) + strlen(filter) + 7;
-				char *nfilter[len];
+				char nfilter[len];
 				snprintf(nfilter, len, "(&(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, filter);
 				dependency->tracked_filter = strdup(nfilter);
 			}
@@ -98,7 +112,7 @@ celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency,
 	return status;
 }
 
-celix_status_t serviceDependency_setCallbacks(dm_service_dependency_pt dependency, service_add_fpt add, service_change_fpt change, service_remove_fpt remove) {
+celix_status_t serviceDependency_setCallbacks(dm_service_dependency_pt dependency, service_add_fpt add, service_change_fpt change, service_remove_fpt remove, service_swap_fpt swap) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (!dependency) {
@@ -109,6 +123,7 @@ celix_status_t serviceDependency_setCallbacks(dm_service_dependency_pt dependenc
 		dependency->add = add;
 		dependency->change = change;
 		dependency->remove = remove;
+		dependency->swap = swap;
 	}
 
 	return status;
@@ -158,6 +173,7 @@ celix_status_t serviceDependency_start(dm_service_dependency_pt dependency) {
 	}
 
 	if (status == CELIX_SUCCESS) {
+		dependency->tracker_customizer = NULL;
 		status = serviceTrackerCustomizer_create(dependency, NULL, serviceDependency_addedService, serviceDependency_modifiedService,
 				serviceDependency_removedService, &dependency->tracker_customizer);
 	}
@@ -271,7 +287,7 @@ celix_status_t serviceDependency_invokeRemove(dm_service_dependency_pt dependenc
 	return status;
 }
 
-celix_status_t serviceDependency_invokeSwap(dm_service_dependency_pt dependency, dm_event_pt event) {
+celix_status_t serviceDependency_invokeSwap(dm_service_dependency_pt dependency, dm_event_pt event, dm_event_pt newEvent) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (!dependency) {
@@ -279,7 +295,7 @@ celix_status_t serviceDependency_invokeSwap(dm_service_dependency_pt dependency,
 	}
 
 	if (status == CELIX_SUCCESS) {
-		dependency->swap(dependency->component->implementation, event->reference, event->service);
+		dependency->swap(dependency->component->implementation, event->reference, event->service, newEvent->reference, newEvent->service);
 	}
 
 	return status;
@@ -327,11 +343,12 @@ celix_status_t serviceDependency_isInstanceBound(dm_service_dependency_pt depend
 	return status;
 }
 
-celix_status_t serviceDependency_addedService(dm_service_dependency_pt dependency, service_reference_pt reference, void *service) {
+celix_status_t serviceDependency_addedService(void *_ptr, service_reference_pt reference, void *service) {
 	celix_status_t status = CELIX_SUCCESS;
 	bundle_context_pt context = NULL;
 	bundle_pt bundle = NULL;
 	dm_event_pt event = NULL;
+	dm_service_dependency_pt dependency = _ptr;
 
 	if (!dependency || !reference || !service) {
 		status = CELIX_ILLEGAL_ARGUMENT;
@@ -362,11 +379,12 @@ celix_status_t serviceDependency_addedService(dm_service_dependency_pt dependenc
 	return status;
 }
 
-celix_status_t serviceDependency_modifiedService(dm_service_dependency_pt dependency, service_reference_pt reference, void *service) {
+celix_status_t serviceDependency_modifiedService(void *_ptr, service_reference_pt reference, void *service) {
 	celix_status_t status = CELIX_SUCCESS;
 	bundle_context_pt context = NULL;
 	bundle_pt bundle = NULL;
 	dm_event_pt event = NULL;
+	dm_service_dependency_pt dependency = _ptr;
 
 	if (!dependency || !reference || !service) {
 		status = CELIX_ILLEGAL_ARGUMENT;
@@ -397,11 +415,12 @@ celix_status_t serviceDependency_modifiedService(dm_service_dependency_pt depend
 	return status;
 }
 
-celix_status_t serviceDependency_removedService(dm_service_dependency_pt dependency, service_reference_pt reference, void *service) {
+celix_status_t serviceDependency_removedService(void *_ptr, service_reference_pt reference, void *service) {
 	celix_status_t status = CELIX_SUCCESS;
 	bundle_context_pt context = NULL;
 	bundle_pt bundle = NULL;
 	dm_event_pt event = NULL;
+	dm_service_dependency_pt dependency = _ptr;
 
 	if (!dependency || !reference || !service) {
 		status = CELIX_ILLEGAL_ARGUMENT;

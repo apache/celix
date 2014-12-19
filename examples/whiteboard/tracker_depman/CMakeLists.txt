@@ -15,6 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
+SET(BUNDLE_SYMBOLICNAME "apache_celix_examples_tracker_dm")
+SET(BUNDLE_VERSION "0.0.1")
+
 bundle(tracker_depman SOURCES
     private/src/dependency_activator
     private/src/tracker
@@ -22,8 +25,9 @@ bundle(tracker_depman SOURCES
     private/include/tracker.h
 )
 include_directories("private/include")
-include_directories("${PROJECT_SOURCE_DIR}/dependency_manager/public/include")
+include_directories("${PROJECT_SOURCE_DIR}/dependency_manager_2/public/include")
+include_directories("${PROJECT_SOURCE_DIR}/dependency_manager_2/private/include")
 include_directories("../publisherService/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
-target_link_libraries(tracker_depman celix_framework dependency_manager)
+target_link_libraries(tracker_depman celix_framework -Wl,-all_load dependency_manager2)

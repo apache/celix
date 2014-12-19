@@ -27,6 +27,10 @@
 #ifndef DM_EVENT_H_
 #define DM_EVENT_H_
 
+#include "service_reference.h"
+#include "bundle_context.h"
+#include "bundle.h"
+
 enum dm_event_type {
 	DM_EVENT_ADDED,
 	DM_EVENT_CHANGED,

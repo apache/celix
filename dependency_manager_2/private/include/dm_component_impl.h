@@ -87,4 +87,6 @@ celix_status_t component_getBundleContext(dm_component_pt component, bundle_cont
 
 celix_status_t component_handleEvent(dm_component_pt component, dm_service_dependency_pt dependency, dm_event_pt event);
 
+celix_status_t component_setCallbacks(dm_component_pt component, init_fpt init, start_fpt start, stop_fpt, destroy_fpt);
+
 #endif /* COMPONENT_IMPL_H_ */

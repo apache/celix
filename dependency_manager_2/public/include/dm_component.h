@@ -27,6 +27,8 @@
 #ifndef COMPONENT_H_
 #define COMPONENT_H_
 
+#include "celix_errno.h"
+
 typedef struct dm_component *dm_component_pt;
 
 
