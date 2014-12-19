@@ -48,15 +48,14 @@ if (DEPENDENCY_MANAGER2)
     
     install(
     	FILES
-    		public/include/dependency_activator_base.h 
-    		public/include/service.h public/include/dependency_manager.h 
-    		public/include/service_component_private.h 
-    		public/include/service_component.h 
-    		public/include/service_dependency.h 
+    	    public/include/dm_activator_base.h
+            public/include/dm_component.h
+            public/include/dm_dependency_manager.h
+            public/include/dm_service_dependency.h
 		DESTINATION 
-			include/celix/dependency_manager 
+			include/celix/dependency_manager_2
 		COMPONENT 
 			dependency_manager2
 	)
-    install(TARGETS dependency_manager2 DESTINATION lib COMPONENT dependency_manager)
+    install(TARGETS dependency_manager2 DESTINATION lib COMPONENT dependency_manager2)
 endif (DEPENDENCY_MANAGER2)

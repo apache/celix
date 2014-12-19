@@ -4,7 +4,7 @@
 #include "bundle_context.h"
 #include "celix_errno.h"
 #include "array_list.h"
-#include "dm_component.h"
+#include "dm_component_impl.h"
 #include "dm_dependency_manager.h"
 
 struct dm_dependency_manager {

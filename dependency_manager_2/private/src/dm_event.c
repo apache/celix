@@ -28,3 +28,17 @@ celix_status_t event_create(dm_event_type_e event_type, bundle_pt bundle, bundle
 	return status;
 }
 
+celix_status_t event_destroy(dm_event_pt *event) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (!*event) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		free(*event);
+		*event = NULL;
+	}
+
+	return status;
+}

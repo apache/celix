@@ -30,9 +30,10 @@
 #include "bundle_context.h"
 #include "celix_errno.h"
 #include "array_list.h"
-#include "dm_component.h"
 
 typedef struct dm_dependency_manager *dm_dependency_manager_pt;
+
+#include "dm_component.h"
 
 celix_status_t dependencyManager_create(bundle_context_pt context, dm_dependency_manager_pt *manager);
 celix_status_t dependencyManager_destroy(dm_dependency_manager_pt *manager);

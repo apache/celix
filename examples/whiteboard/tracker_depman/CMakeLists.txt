@@ -26,7 +26,7 @@ bundle(tracker_depman SOURCES
 )
 include_directories("private/include")
 include_directories("${PROJECT_SOURCE_DIR}/dependency_manager_2/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/dependency_manager_2/private/include")
+#include_directories("${PROJECT_SOURCE_DIR}/dependency_manager_2/private/include")
 include_directories("../publisherService/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")

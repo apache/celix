@@ -29,8 +29,7 @@
 
 #include "dm_activator_base.h"
 #include "dm_service_dependency.h"
-#include "dm_service_dependency_impl.h"
-#include "dm_component_impl.h"
+#include "dm_component.h"
 #include "publisher.h"
 #include "tracker.h"
 #include "log_service.h"
