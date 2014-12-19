@@ -31,6 +31,7 @@
 
 struct dm_executor {
     pthread_t runningThread;
+    bool runningThreadSet;
     linked_list_pt workQueue;
 
     pthread_mutex_t mutex;
@@ -973,15 +974,15 @@ celix_status_t executor_executeTask(dm_executor_pt executor, dm_component_pt com
     celix_status_t status = CELIX_SUCCESS;
 
     // Check thread and executor thread, if the same, execute immediately.
-    bool execute = false;
-    pthread_mutex_lock(&executor->mutex);
-    pthread_t currentThread = pthread_self();
-    if (pthread_equal(executor->runningThread, currentThread)) {
-        execute = true;
-    }
-    pthread_mutex_unlock(&executor->mutex);
-    // For now, just schedule.
+//    bool execute = false;
+//    pthread_mutex_lock(&executor->mutex);
+//    pthread_t currentThread = pthread_self();
+//    if (pthread_equal(executor->runningThread, currentThread)) {
+//        execute = true;
+//    }
+//    pthread_mutex_unlock(&executor->mutex);
 
+    // For now, just schedule.
     executor_schedule(executor, component, command, data);
     executor_execute(executor);
 
@@ -994,8 +995,9 @@ celix_status_t executor_execute(dm_executor_pt executor) {
 
     pthread_mutex_lock(&executor->mutex);
     bool execute = false;
-    if (executor->runningThread == NULL) {
+    if (!executor->runningThreadSet) {
         executor->runningThread = currentThread;
+        executor->runningThreadSet = true;
         execute = true;
     }
     pthread_mutex_unlock(&executor->mutex);
@@ -1020,7 +1022,7 @@ celix_status_t executor_runTasks(dm_executor_pt executor, pthread_t currentThrea
 
             pthread_mutex_lock(&executor->mutex);
         }
-        executor->runningThread = NULL;
+        executor->runningThreadSet = false;
         pthread_mutex_unlock(&executor->mutex);
 
 //        pthread_mutex_lock(&executor->mutex);
