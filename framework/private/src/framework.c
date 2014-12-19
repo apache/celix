@@ -236,6 +236,7 @@ celix_status_t framework_destroy(framework_pt framework) {
             bundle_getContext(framework->bundle, &context);
             bundleContext_destroy(context);
 		}
+
 		if (bundle_getArchive(bundle, &archive) == CELIX_SUCCESS) {
 			bundleArchive_destroy(archive);
 		}
@@ -926,9 +927,13 @@ celix_status_t fw_uninstallBundle(framework_pt framework, bundle_pt bundle) {
     status = CELIX_DO_IF(status, bundle_getArchive(bundle, &archive));
     status = CELIX_DO_IF(status, bundleArchive_getLocation(archive, &location));
     if (status == CELIX_SUCCESS) {
-        // TODO sync issues?
-        target = (bundle_pt) hashMap_remove(framework->installedBundleMap, location);
 
+    	// TODO sync issues?
+        hash_map_entry_pt entry = hashMap_getEntry(framework->installedBundleMap, location);
+        char* entryLocation = hashMapEntry_getKey(entry);
+
+        target = (bundle_pt) hashMap_remove(framework->installedBundleMap, location);
+        free(entryLocation);
         if (target != NULL) {
             status = CELIX_DO_IF(status, bundle_setPersistentStateUninstalled(target));
             // fw_rememberUninstalledBundle(framework, target);
@@ -965,6 +970,7 @@ celix_status_t fw_uninstallBundle(framework_pt framework, bundle_pt bundle) {
             if (refreshStatus != CELIX_SUCCESS) {
                 printf("Could not refresh bundle");
             } else {
+                bundleArchive_destroy(archive);
                 status = CELIX_DO_IF(status, bundle_destroy(bundle));
             }
 
