@@ -110,6 +110,7 @@ celix_status_t importRegistrationFactory_destroy(import_registration_factory_pt*
 		free((*registration_factory)->serviceName);
 		arrayList_destroy((*registration_factory)->registrations);
 
+		serviceTracker_destroy((*registration_factory)->proxyFactoryTracker);
 		free(*registration_factory);
 	}
 
@@ -229,7 +230,8 @@ celix_status_t importRegistrationFactory_install(apr_pool_t *pool, char* service
 		// check whether factory is available
 		if (((*registration_factory)->trackedFactory == NULL) && ((status = importRegistrationFactory_open(*registration_factory)) != CELIX_SUCCESS)) {
 			logHelper_log((*registration_factory)->loghelper, OSGI_LOGSERVICE_ERROR, "remoteServiceAdmin_importService: cannot open registration_factory for %s.", serviceName);
-			serviceTracker_close((*registration_factory)->proxyFactoryTracker);
+
+			importRegistrationFactory_close(*registration_factory);
 			importRegistrationFactory_destroy(registration_factory);
 		}
 	}

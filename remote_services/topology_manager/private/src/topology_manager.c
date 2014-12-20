@@ -169,6 +169,11 @@ celix_status_t topologyManager_rsaAdded(void * handle, service_reference_pt refe
 
 		if (status == CELIX_SUCCESS) {
 		    hash_map_pt imports = hashMapEntry_getValue(entry);
+
+			if (imports == NULL) {
+				imports = hashMap_create(NULL, NULL, NULL, NULL);
+			}
+
 			hashMap_put(imports, service, import);
 		}
 	}
@@ -225,6 +230,7 @@ celix_status_t topologyManager_rsaRemoved(void * handle, service_reference_pt re
     logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: Removed RSA");
 
     remote_service_admin_service_pt rsa = (remote_service_admin_service_pt) service;
+
 
     status = celixThreadMutex_lock(&manager->exportedServicesLock);
 
@@ -350,6 +356,8 @@ celix_status_t topologyManager_addImportedService(void *handle, endpoint_descrip
 		}
 	}
 
+	arrayList_destroy(localRSAs);
+
 	status = celixThreadMutex_unlock(&manager->importedServicesLock);
 
 	return status;
@@ -384,6 +392,13 @@ celix_status_t topologyManager_removeImportedService(void *handle, endpoint_desc
                 }
             }
             hashMapIterator_destroy(importsIter);
+
+        	imports = hashMap_remove(manager->importedServices, ep);
+
+        	if (imports != NULL) {
+        		hashMap_destroy(imports, false, false);
+        	}
+
 	    }
 	}
 	hashMapIterator_destroy(iter);
@@ -462,9 +477,11 @@ celix_status_t topologyManager_removeExportedService(topology_manager_pt manager
 		}
 		hashMapIterator_destroy(iter);
 	}
-    exports = hashMap_remove(manager->exportedServices, reference);
-    if (exports != NULL) {
-        hashMap_destroy(exports, false, false);
+
+	exports = hashMap_remove(manager->exportedServices, reference);
+
+	if (exports != NULL) {
+		hashMap_destroy(exports, false, false);
     }
 
 	status = celixThreadMutex_unlock(&manager->exportedServicesLock);
