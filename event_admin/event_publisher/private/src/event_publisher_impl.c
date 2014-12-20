@@ -92,7 +92,7 @@ celix_status_t eventPublisherAddingService(void * handle, service_reference_pt r
 
 celix_status_t eventPublisherAddedService(void * handle, service_reference_pt ref, void * service) {
     event_publisher_pt data = (event_publisher_pt) handle;
-	loghelper_log(data->loghelper, OSGI_LOGSERVICE_DEBUG, "[PUB] Event admin added.");
+	logHelper_log(data->loghelper, OSGI_LOGSERVICE_DEBUG, "[PUB] Event admin added.");
 
     data->event_admin_service = (event_admin_service_pt) service;
     data->eventAdminAdded = true;
@@ -101,13 +101,13 @@ celix_status_t eventPublisherAddedService(void * handle, service_reference_pt re
 
 celix_status_t eventPublisherModifiedService(void * handle, service_reference_pt ref, void * service) {
 	event_publisher_pt data = (event_publisher_pt) handle;
-	loghelper_log(data->loghelper, OSGI_LOGSERVICE_DEBUG, "[PUB] Event admin modified.");
+	logHelper_log(data->loghelper, OSGI_LOGSERVICE_DEBUG, "[PUB] Event admin modified.");
 	return CELIX_SUCCESS;
 }
 
 celix_status_t eventPublisherRemovedService(void * handle, service_reference_pt ref, void * service) {
 	event_publisher_pt data = (event_publisher_pt) handle;
-	loghelper_log(data->loghelper, OSGI_LOGSERVICE_DEBUG, "[PUB] Event admin removed.");
+	logHelper_log(data->loghelper, OSGI_LOGSERVICE_DEBUG, "[PUB] Event admin removed.");
 
     data->event_admin_service = NULL;
     data->eventAdminAdded = false;

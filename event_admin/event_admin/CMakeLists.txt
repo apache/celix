@@ -17,10 +17,10 @@
 
 find_package(APR REQUIRED)
 
-include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories(public/include)
 include_directories(private/include)
-#include_directories(../utils/public/include)
+include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 
 SET_HEADER(BUNDLE_SYMBOLICNAME "eventadmin")
 SET(BUNDLE_VERSION "0.0.1")
@@ -35,6 +35,7 @@ bundle(event_admin
 		public/include/event_admin.h
 		public/include/event_handler.h
 		private/include/event_admin_impl.h
+		${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
 )
 
 install_bundle(event_admin
