@@ -75,13 +75,26 @@ celix_status_t dm_init(void * userData, bundle_context_pt context, dm_dependency
     component_addServiceDependency(service, dep2, NULL);
 
 	data->service = service;
+	data->dep = dep;
+	data->dep2 = dep2;
+
 	dependencyManager_add(manager, service);
+
 	return CELIX_SUCCESS;
 }
 
 celix_status_t dm_destroy(void * userData, bundle_context_pt context, dm_dependency_manager_pt manager) {
 	struct data * data = (struct data *) userData;
 	dependencyManager_remove(manager, data->service);
+
+	component_removeServiceDependency(data->service, data->dep);
+	serviceDependency_destroy(&data->dep);
+
+	component_removeServiceDependency(data->service, data->dep2);
+	serviceDependency_destroy(&data->dep2);
+
+	component_destroy(&data->service);
+
 	arrayList_destroy(data->publishers);
 	data->publishers = NULL;
 	free(data);

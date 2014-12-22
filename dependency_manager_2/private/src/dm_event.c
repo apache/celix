@@ -42,3 +42,19 @@ celix_status_t event_destroy(dm_event_pt *event) {
 
 	return status;
 }
+
+celix_status_t event_equals(void *a, void *b, bool *equals) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (!a || !b) {
+		*equals = false;
+	} else {
+		dm_event_pt a_ptr = a;
+		dm_event_pt b_ptr = b;
+
+		status = serviceReference_equals(a_ptr->reference, b_ptr->reference, equals);
+	}
+
+	return status;
+
+}

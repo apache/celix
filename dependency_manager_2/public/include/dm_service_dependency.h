@@ -29,9 +29,9 @@
 
 #include "celix_errno.h"
 
-#include "dm_component.h"
-
 typedef struct dm_service_dependency *dm_service_dependency_pt;
+
+#include "dm_component.h"
 
 typedef celix_status_t (*service_add_fpt)(void *handle, service_reference_pt reference, void *service);
 typedef celix_status_t (*service_change_fpt)(void *handle, service_reference_pt reference, void *service);
@@ -39,6 +39,7 @@ typedef celix_status_t (*service_remove_fpt)(void *handle, service_reference_pt 
 typedef celix_status_t (*service_swap_fpt)(void *handle, service_reference_pt oldReference, void *oldService, service_reference_pt newReference, void *newService);
 
 celix_status_t serviceDependency_create(dm_service_dependency_pt *dependency_ptr);
+celix_status_t serviceDependency_destroy(dm_service_dependency_pt *dependency_ptr);
 
 celix_status_t serviceDependency_setRequired(dm_service_dependency_pt dependency, bool required);
 celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency, char *serviceName, char *filter);

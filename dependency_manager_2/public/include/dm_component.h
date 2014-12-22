@@ -33,6 +33,7 @@
 typedef struct dm_component *dm_component_pt;
 
 #include "dm_dependency_manager.h"
+#include "dm_service_dependency.h"
 
 typedef celix_status_t (*init_fpt)(void *userData);
 typedef celix_status_t (*start_fpt)(void *userData);
@@ -40,11 +41,12 @@ typedef celix_status_t (*stop_fpt)(void *userData);
 typedef celix_status_t (*destroy_fpt)(void *userData);
 
 celix_status_t component_create(bundle_context_pt context, dm_dependency_manager_pt manager, dm_component_pt *component);
-celix_status_t component_destroy(dm_component_pt component);
+celix_status_t component_destroy(dm_component_pt *component);
 
 celix_status_t component_setImplementation(dm_component_pt component, void *implementation);
 
 celix_status_t component_addServiceDependency(dm_component_pt component, ...);
+celix_status_t component_removeServiceDependency(dm_component_pt component, dm_service_dependency_pt dependency);
 
 celix_status_t component_setCallbacks(dm_component_pt component, init_fpt init, start_fpt start, stop_fpt, destroy_fpt);
 

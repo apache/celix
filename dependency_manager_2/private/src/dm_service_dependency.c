@@ -68,6 +68,21 @@ celix_status_t serviceDependency_create(dm_service_dependency_pt *dependency_ptr
 	return status;
 }
 
+celix_status_t serviceDependency_destroy(dm_service_dependency_pt *dependency_ptr) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (!*dependency_ptr) {
+		status = CELIX_ENOMEM;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		free(*dependency_ptr);
+		*dependency_ptr = NULL;
+	}
+
+	return status;
+}
+
 celix_status_t serviceDependency_setRequired(dm_service_dependency_pt dependency, bool required) {
 	celix_status_t status = CELIX_SUCCESS;
 
@@ -207,6 +222,7 @@ celix_status_t serviceDependency_stop(dm_service_dependency_pt dependency) {
 	if (status == CELIX_SUCCESS) {
 		if (dependency->tracker) {
 			status = serviceTracker_close(dependency->tracker);
+			status = serviceTracker_destroy(dependency->tracker);
 		}
 	}
 

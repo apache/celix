@@ -54,5 +54,7 @@ typedef struct dm_event *dm_event_pt;
 celix_status_t event_create(dm_event_type_e event_type, bundle_pt bundle, bundle_context_pt context, service_reference_pt reference, void *service, dm_event_pt *event);
 celix_status_t event_destroy(dm_event_pt *event);
 
+celix_status_t event_equals(void *a, void *b, bool *equals);
+
 
 #endif /* DM_EVENT_H_ */

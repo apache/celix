@@ -32,6 +32,8 @@
 
 struct data {
 	dm_component_pt service;
+	dm_service_dependency_pt dep;
+	dm_service_dependency_pt dep2;
 	bundle_context_pt context;
 	array_list_pt publishers;
 	pthread_t sender;
