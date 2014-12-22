@@ -37,11 +37,6 @@
 #define JSON_DECODE_ANY 0
 #endif
 
-celix_status_t calculatorProxy_setEndpointDescription(void *proxy, endpoint_description_pt endpoint);
-celix_status_t calculatorProxy_setHandler(void *proxy, void *handler);
-celix_status_t calculatorProxy_setCallback(void *proxy, sendToHandle callback);
-
-
 celix_status_t calculatorProxy_create(bundle_context_pt context, calculator_pt *calculator)  {
 	celix_status_t status = CELIX_SUCCESS;
 	*calculator = calloc(1, sizeof(**calculator));
@@ -176,91 +171,3 @@ celix_status_t calculatorProxy_sqrt(calculator_pt calculator, double a, double *
 
 	return status;
 }
-
-
-
-celix_status_t calculatorProxy_registerProxyService(void* proxyFactoryService, endpoint_description_pt endpointDescription, void* rsa, sendToHandle sendToCallback) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	remote_proxy_factory_service_pt calculatorProxyFactoryService = (remote_proxy_factory_service_pt) proxyFactoryService;
-	calculator_pt calculator = NULL;
-	calculator_service_pt calculatorService = NULL;
-
-	calculatorProxy_create(calculatorProxyFactoryService->context, &calculator);
-	calculatorService = calloc(1, sizeof(*calculatorService));
-	calculatorService->calculator = calculator;
-	calculatorService->add = calculatorProxy_add;
-	calculatorService->sub = calculatorProxy_sub;
-	calculatorService->sqrt = calculatorProxy_sqrt;
-
-	properties_pt srvcProps = properties_create();
-	properties_set(srvcProps, (char *) "proxy.interface", (char *) CALCULATOR_SERVICE);
-	properties_set(srvcProps, (char *) "endpoint.framework.uuid", (char *) endpointDescription->frameworkUUID);
-
-	service_registration_pt proxyReg = NULL;
-
-	calculatorProxy_setEndpointDescription(calculator, endpointDescription);
-	calculatorProxy_setHandler(calculator, rsa);
-	calculatorProxy_setCallback(calculator, sendToCallback);
-
-	if (bundleContext_registerService(calculatorProxyFactoryService->context, CALCULATOR_SERVICE, calculatorService, srvcProps, &proxyReg) != CELIX_SUCCESS)
-	{
-		printf("CALCULATOR_PROXY: error while registering calculator service\n");
-	}
-
-	hashMap_put(calculatorProxyFactoryService->proxy_registrations, endpointDescription, proxyReg);
-	hashMap_put(calculatorProxyFactoryService->proxy_instances, endpointDescription, calculatorService);
-
-	return status;
-}
-
-
-celix_status_t calculatorProxy_unregisterProxyService(void* proxyFactoryService, endpoint_description_pt endpointDescription) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	remote_proxy_factory_service_pt calculatorProxyFactoryService = (remote_proxy_factory_service_pt) proxyFactoryService;
-	service_registration_pt proxyReg = hashMap_get(calculatorProxyFactoryService->proxy_registrations, endpointDescription);
-	calculator_service_pt calculatorService = hashMap_get(calculatorProxyFactoryService->proxy_instances, endpointDescription);
-
-	if (proxyReg != NULL) {
-		serviceRegistration_unregister(proxyReg);
-	}
-
-	if (calculatorService != NULL) {
-		free(calculatorService->calculator);
-		free(calculatorService);
-	}
-
-	return status;
-}
-
-
-celix_status_t calculatorProxy_setEndpointDescription(void *proxy, endpoint_description_pt endpoint) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	calculator_pt calculator = proxy;
-	calculator->endpoint = endpoint;
-
-	return status;
-}
-
-
-celix_status_t calculatorProxy_setHandler(void *proxy, void *handler) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	calculator_pt calculator = proxy;
-	calculator->sendToHandler = handler;
-
-	return status;
-}
-
-
-celix_status_t calculatorProxy_setCallback(void *proxy, sendToHandle callback) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	calculator_pt calculator = proxy;
-	calculator->sendToCallback = callback;
-
-	return status;
-}
-

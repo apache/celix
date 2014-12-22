@@ -157,6 +157,7 @@ celix_status_t logHelper_log(log_helper_pt loghelper, log_level_t level, char* m
     celix_status_t status = CELIX_SUCCESS;
 	va_list listPointer;
     char msg[512];
+    msg[0] = '\0';
     bool logged = false;
 
 	va_start(listPointer, message);

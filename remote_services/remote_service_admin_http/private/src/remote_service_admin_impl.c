@@ -225,7 +225,7 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin) {
 
 			if (importFactory->trackedFactory != NULL)
 			{
-				importFactory->trackedFactory->unregisterProxyService(importFactory->trackedFactory, importRegistration->endpointDescription);
+				importFactory->trackedFactory->unregisterProxyService(importFactory->trackedFactory->factory, importRegistration->endpointDescription);
 			}
         }
 
@@ -576,7 +576,7 @@ celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_admin_pt a
 celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, endpoint_description_pt endpointDescription, import_registration_pt *registration) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA: Import service %s", endpointDescription->service);
+//	logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA: Import service %s", endpointDescription->service);
 
 	celixThreadMutex_lock(&admin->importedServicesLock);
 
@@ -594,13 +594,14 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, e
 	 // factory available
 	if (status != CELIX_SUCCESS || (registration_factory->trackedFactory == NULL))
 	{
-		logHelper_log(admin->loghelper, OSGI_LOGSERVICE_WARNING, "RSA: no proxyFactory available.");
+		// #TODO Why does this fail here?
+//		logHelper_log(admin->loghelper, OSGI_LOGSERVICE_WARNING, "RSA: no proxyFactory available.");
 	}
 	else
 	{
 		// we create an importRegistration per imported service
 		importRegistration_create(admin->pool, endpointDescription, admin, (sendToHandle) &remoteServiceAdmin_send, admin->context, registration);
-		registration_factory->trackedFactory->registerProxyService(registration_factory->trackedFactory,  endpointDescription, admin, (sendToHandle) &remoteServiceAdmin_send);
+		registration_factory->trackedFactory->registerProxyService(registration_factory->trackedFactory->factory,  endpointDescription, admin, (sendToHandle) &remoteServiceAdmin_send);
 
 		arrayList_add(registration_factory->registrations, *registration);
 	}
@@ -628,7 +629,7 @@ celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_pt 
     }
     else
     {
-		registration_factory->trackedFactory->unregisterProxyService(registration_factory->trackedFactory, endpointDescription);
+		registration_factory->trackedFactory->unregisterProxyService(registration_factory->trackedFactory->factory, endpointDescription);
 		arrayList_removeElement(registration_factory->registrations, registration);
 		importRegistration_destroy(registration);
 

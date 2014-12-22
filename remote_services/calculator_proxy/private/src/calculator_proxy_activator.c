@@ -27,13 +27,17 @@
 
 #include "bundle_activator.h"
 #include "service_registration.h"
+#include "remote_proxy.h"
 
 #include "calculator_proxy_impl.h"
 
 struct activator {
-	service_registration_pt proxyFactoryServiceRegistration;
-	remote_proxy_factory_service_pt proxyFactoryService;
+	bundle_context_pt context;
+	remote_proxy_factory_pt factory_ptr;
 };
+
+static celix_status_t calculatorProxyFactory_create(void *handle, endpoint_description_pt endpointDescription, remote_service_admin_pt rsa, sendToHandle sendToCallback, properties_pt properties, void **service);
+static celix_status_t calculatorProxyFactory_destroy(void *handle, void *service);
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -44,8 +48,8 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 	if (!activator) {
 		status = CELIX_ENOMEM;
 	} else {
-		activator->proxyFactoryServiceRegistration = NULL;
-		activator->proxyFactoryService = NULL;
+		activator->factory_ptr = NULL;
+		activator->context = context;
 
 		*userData = activator;
 	}
@@ -56,24 +60,11 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator *activator = userData;
-	remote_proxy_factory_service_pt calculatorProxyFactoryService;
 
-	calculatorProxyFactoryService = calloc(1, sizeof(*calculatorProxyFactoryService));
-	calculatorProxyFactoryService->context = context;
-	calculatorProxyFactoryService->proxy_registrations = hashMap_create(NULL, NULL, NULL, NULL);
-	calculatorProxyFactoryService->proxy_instances = hashMap_create(NULL, NULL, NULL, NULL);
-	calculatorProxyFactoryService->registerProxyService = calculatorProxy_registerProxyService;
-	calculatorProxyFactoryService->unregisterProxyService = calculatorProxy_unregisterProxyService;
-
-	properties_pt props = properties_create();
-	properties_set(props, (char *) "proxy.interface", (char *) CALCULATOR_SERVICE);
-
-	if (bundleContext_registerService(context, OSGI_RSA_REMOTE_PROXY_FACTORY, calculatorProxyFactoryService, props, &activator->proxyFactoryServiceRegistration) == CELIX_SUCCESS)
-	{
-		printf("CALCULATOR_PROXY: Proxy registered OSGI_RSA_REMOTE_PROXY_FACTORY (%s)\n", OSGI_RSA_REMOTE_PROXY_FACTORY);
-	}
-
-	activator->proxyFactoryService = calculatorProxyFactoryService;
+	remoteProxyFactory_create(context, (char *) CALCULATOR_SERVICE, activator,
+			calculatorProxyFactory_create, calculatorProxyFactory_destroy,
+			&activator->factory_ptr);
+	remoteProxyFactory_register(activator->factory_ptr);
 
 	return status;
 }
@@ -82,28 +73,8 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator *activator = userData;
 
-	// TODO: unregister proxy registrations
-	serviceRegistration_unregister(activator->proxyFactoryServiceRegistration);
-	activator->proxyFactoryServiceRegistration = NULL;
-
-	hashMap_destroy(activator->proxyFactoryService->proxy_registrations, false, false);
-
-	hash_map_iterator_pt iter = hashMapIterator_create(activator->proxyFactoryService->proxy_instances);
-
-	while(hashMapIterator_hasNext(iter)) {
-		calculator_service_pt calculatorService = (calculator_service_pt) hashMapIterator_nextValue(iter);
-
-		if (calculatorService != NULL) {
-			free(calculatorService->calculator);
-			free(calculatorService);
-		}
-	}
-
-	hashMapIterator_destroy((iter));
-
-	hashMap_destroy(activator->proxyFactoryService->proxy_instances, false, false);
-
-	free(activator->proxyFactoryService);
+	remoteProxyFactory_unregister(activator->factory_ptr);
+	remoteProxyFactory_destroy(&activator->factory_ptr);
 
 	return status;
 }
@@ -113,6 +84,42 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt contex
 	struct activator *activator = userData;
 
 	free(activator);
+
+	return status;
+}
+
+static celix_status_t calculatorProxyFactory_create(void *handle, endpoint_description_pt endpointDescription, remote_service_admin_pt rsa, sendToHandle sendToCallback, properties_pt properties, void **service) {
+	celix_status_t status = CELIX_SUCCESS;
+	struct activator *activator = handle;
+
+	calculator_service_pt calculatorService = calloc(1, sizeof(*calculatorService));
+	calculatorProxy_create(activator->context, &calculatorService->calculator);
+	calculatorService->add = calculatorProxy_add;
+	calculatorService->sub = calculatorProxy_sub;
+	calculatorService->sqrt = calculatorProxy_sqrt;
+
+	calculatorService->calculator->endpoint = endpointDescription;
+	calculatorService->calculator->sendToHandler = rsa;
+	calculatorService->calculator->sendToCallback = sendToCallback;
+
+	*service = calculatorService;
+
+	return status;
+}
+
+static celix_status_t calculatorProxyFactory_destroy(void *handle, void *service) {
+	celix_status_t status = CELIX_SUCCESS;
+	struct activator *activator = handle;
+	calculator_service_pt calculatorService = service;
+
+	if (!calculatorService) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		calculatorProxy_destroy(&calculatorService->calculator);
+		free(calculatorService);
+	}
 
 	return status;
 }
