@@ -48,6 +48,8 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 
 	dm_destroy(dependency_activator->userData, dependency_activator->context, dependency_activator->manager);
 
+	dependencyManager_destroy(&dependency_activator->manager);
+
 	dependency_activator->userData = NULL;
 	dependency_activator->manager = NULL;
 

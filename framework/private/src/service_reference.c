@@ -54,10 +54,11 @@ celix_status_t serviceReference_create(bundle_pt bundle, service_registration_pt
 	return status;
 }
 
-celix_status_t serviceReference_destroy(service_reference_pt reference) {
-	reference->bundle = NULL;
-	reference->registration = NULL;
-	free(reference);
+celix_status_t serviceReference_destroy(service_reference_pt *reference) {
+	(*reference)->bundle = NULL;
+	(*reference)->registration = NULL;
+	free(*reference);
+	*reference = NULL;
 	return CELIX_SUCCESS;
 }
 

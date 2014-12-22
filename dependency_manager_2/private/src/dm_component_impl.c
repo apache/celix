@@ -161,7 +161,8 @@ celix_status_t component_addServiceDependency(dm_component_pt component, ...) {
 
     va_end(dependencies);
 
-	executor_executeTask(component->executor, component, component_addTask, dependenciesList);
+//	executor_executeTask(component->executor, component, component_addTask, dependenciesList);
+    component_addTask(component, dependenciesList);
 
     return status;
 }
@@ -192,13 +193,17 @@ celix_status_t component_addTask(dm_component_pt component, array_list_pt depend
         component_handleChange(component);
     }
 
+    arrayList_destroy(bounds);
+    arrayList_destroy(dependencies);
+
     return status;
 }
 
 celix_status_t component_removeServiceDependency(dm_component_pt component, dm_service_dependency_pt dependency) {
     celix_status_t status = CELIX_SUCCESS;
 
-    executor_executeTask(component->executor, component, component_removeTask, dependency);
+//    executor_executeTask(component->executor, component, component_removeTask, dependency);
+    component_removeTask(component, dependency);
 
     return status;
 }
@@ -232,7 +237,8 @@ celix_status_t component_start(dm_component_pt component) {
     celix_status_t status = CELIX_SUCCESS;
 
     component->active = true;
-    executor_executeTask(component->executor, component, component_startTask, NULL);
+//    executor_executeTask(component->executor, component, component_startTask, NULL);
+    component_startTask(component, NULL);
 
     return status;
 }
@@ -250,7 +256,8 @@ celix_status_t component_stop(dm_component_pt component) {
     celix_status_t status = CELIX_SUCCESS;
 
     component->active = false;
-    executor_executeTask(component->executor, component, component_stopTask, NULL);
+//    executor_executeTask(component->executor, component, component_stopTask, NULL);
+    component_stopTask(component, NULL);
 
     return status;
 }
@@ -286,7 +293,8 @@ celix_status_t component_handleEvent(dm_component_pt component, dm_service_depen
 	data->event = event;
 	data->newEvent = NULL;
 
-	status = executor_executeTask(component->executor, component, component_handleEventTask, data);
+//	status = executor_executeTask(component->executor, component, component_handleEventTask, data);
+	component_handleEventTask(component, data);
 
 	return status;
 }
@@ -310,6 +318,8 @@ celix_status_t component_handleEventTask(dm_component_pt component, dm_handle_ev
 		default:
 			break;
 	}
+
+	free(data);
 
 	return status;
 }
@@ -506,6 +516,9 @@ celix_status_t component_startDependencies(dm_component_pt component, array_list
         dm_service_dependency_pt dependency = arrayList_get(requiredDeps, i);
         serviceDependency_start(dependency);
     }
+
+    arrayList_destroy(requiredDeps);
+
     return status;
 }
 
@@ -515,7 +528,9 @@ celix_status_t component_stopDependencies(dm_component_pt component) {
     pthread_mutex_lock(&component->mutex);
     for (int i = 0; i < arrayList_size(component->dependencies); i++) {
         dm_service_dependency_pt dependency = arrayList_get(component->dependencies, i);
+        pthread_mutex_unlock(&component->mutex);
         serviceDependency_stop(dependency);
+        pthread_mutex_lock(&component->mutex);
     }
     pthread_mutex_unlock(&component->mutex);
 
@@ -975,6 +990,7 @@ celix_status_t executor_create(dm_component_pt component, dm_executor_pt *execut
     } else {
         linkedList_create(&(*executor)->workQueue);
         pthread_mutex_init(&(*executor)->mutex, NULL);
+        (*executor)->runningThreadSet = false;
     }
 
     return status;

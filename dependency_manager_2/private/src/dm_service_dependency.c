@@ -76,6 +76,9 @@ celix_status_t serviceDependency_destroy(dm_service_dependency_pt *dependency_pt
 	}
 
 	if (status == CELIX_SUCCESS) {
+		free((*dependency_ptr)->tracked_service_name);
+		free((*dependency_ptr)->tracked_filter);
+		free((*dependency_ptr)->tracked_filter_unmodified);
 		free(*dependency_ptr);
 		*dependency_ptr = NULL;
 	}

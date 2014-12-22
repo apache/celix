@@ -88,6 +88,13 @@ celix_status_t logFactory_getService(void *factory, bundle_pt bundle, service_re
     return CELIX_SUCCESS;
 }
 
-celix_status_t logFactory_ungetService(void *factory, bundle_pt bundle, service_registration_pt registration) {
+celix_status_t logFactory_ungetService(void *factory, bundle_pt bundle, service_registration_pt registration, void **service) {
+	log_service_pt log_service = *service;
+
+	logService_destroy(&log_service->logger);
+
+	free(*service);
+	*service = NULL;
+
     return CELIX_SUCCESS;
 }

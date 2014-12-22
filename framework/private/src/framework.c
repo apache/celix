@@ -273,6 +273,9 @@ celix_status_t framework_destroy(framework_pt framework) {
 		hashMap_destroy(framework->installedBundleMap, true, false);
 	}
 
+	unsetenv(OSGI_FRAMEWORK_FRAMEWORK_UUID);
+	free(framework);
+
 	return status;
 }
 
@@ -338,6 +341,7 @@ celix_status_t fw_init(framework_pt framework) {
 	    uuid_t uid;
         uuid_generate(uid);
         uuid_unparse(uid, uuid);
+        // #TODO setenv has a memory leak
         setenv(OSGI_FRAMEWORK_FRAMEWORK_UUID, uuid, true);
 
         framework->installedBundleMap = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
