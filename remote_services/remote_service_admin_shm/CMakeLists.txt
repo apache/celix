@@ -35,10 +35,10 @@ if (RSA_BUNDLES_REMOTE_SERVICE_ADMIN_SHM)
 
 	bundle(remote_service_admin_shm SOURCES 
 		private/src/remote_service_admin_impl
-		private/src/export_registration_impl
-		private/src/import_registration_impl
-		private/src/remote_service_admin_activator
-		${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
+        private/src/remote_service_admin_activator
+        ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/export_registration_impl
+        ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/import_registration_impl
+        ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
 	)
 
 	install_bundle(remote_service_admin_shm
