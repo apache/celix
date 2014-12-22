@@ -273,6 +273,8 @@ celix_status_t framework_destroy(framework_pt framework) {
 		hashMap_destroy(framework->installedBundleMap, true, false);
 	}
 
+	bundleCache_destroy(&framework->cache);
+
 	unsetenv(OSGI_FRAMEWORK_FRAMEWORK_UUID);
 	free(framework);
 

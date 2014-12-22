@@ -57,6 +57,15 @@ typedef struct bundleCache *bundle_cache_pt;
 celix_status_t bundleCache_create(properties_pt configurationMap, framework_logger_pt logger, bundle_cache_pt *bundle_cache);
 
 /**
+ * Frees the bundle_cache memory allocated in bundleCache_create
+ *
+ * @param bundle_cache Output parameter for the created cache
+ * @return Status code indication failure or success:
+ *      - CELIX_SUCCESS when no errors are encountered.
+ */
+celix_status_t bundleCache_destroy(bundle_cache_pt *cache);
+
+/**
  * Recreates and retrieves the list of archives for the given bundle cache.
  * Archives are recreated on the bundle cache memory pool, the list for the results is created on the suplied pool, and is owned by the caller.
  *
