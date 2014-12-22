@@ -45,7 +45,7 @@ celix_status_t exportRegistration_endpointRemoved(void * handle, service_referen
 
 celix_status_t exportRegistration_createEndpointTracker(export_registration_pt registration, service_tracker_pt *tracker);
 
-celix_status_t exportRegistration_create(apr_pool_t *pool, service_reference_pt reference, endpoint_description_pt endpoint, remote_service_admin_pt rsa, bundle_context_pt context, export_registration_pt *registration) {
+celix_status_t exportRegistration_create(apr_pool_t *pool, log_helper_pt helper, service_reference_pt reference, endpoint_description_pt endpoint, remote_service_admin_pt rsa, bundle_context_pt context, export_registration_pt *registration) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_pool_t *mypool = NULL;
 	apr_pool_create(&mypool, pool);
@@ -65,7 +65,7 @@ celix_status_t exportRegistration_create(apr_pool_t *pool, service_reference_pt 
 		(*registration)->endpointTracker = NULL;
 		(*registration)->exportReference = NULL;
 		(*registration)->bundle = NULL;
-		(*registration)->loghelper = NULL;
+		(*registration)->loghelper = helper;
 	}
 
 	return status;
@@ -184,10 +184,6 @@ celix_status_t exportRegistration_open(export_registration_pt registration) {
 	celix_status_t status = CELIX_SUCCESS;
 	char *bundleStore = NULL;
 
-	if(logHelper_create(registration->context, &registration->loghelper) == CELIX_SUCCESS) {
-		logHelper_start(registration->loghelper);
-	}
-
 	bundleContext_getProperty(registration->context, BUNDLE_STORE_PROPERTY_NAME, &bundleStore);
 
 	if (bundleStore == NULL) {
@@ -211,9 +207,6 @@ celix_status_t exportRegistration_close(export_registration_pt registration) {
 
 	bundle_uninstall(registration->bundle);
 	remoteServiceAdmin_removeExportedService(registration);
-
-	logHelper_stop(registration->loghelper);
-	logHelper_destroy(&registration->loghelper);
 
 	exportRegistration_destroy(&registration);
 

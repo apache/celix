@@ -110,6 +110,7 @@ celix_status_t remoteProxyFactory_unregister(remote_proxy_factory_pt remote_prox
 	if (status == CELIX_SUCCESS) {
 		if (remote_proxy_factory_ptr->registration) {
 			status = serviceRegistration_unregister(remote_proxy_factory_ptr->registration);
+			remote_proxy_factory_ptr->properties = NULL;
 		}
 		if (remote_proxy_factory_ptr->properties) {
 			properties_destroy(remote_proxy_factory_ptr->properties);

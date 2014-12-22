@@ -73,7 +73,7 @@ celix_status_t importRegistration_destroy(import_registration_pt registration)
 }
 
 
-celix_status_t importRegistrationFactory_create(apr_pool_t *pool, char* serviceName, bundle_context_pt context, import_registration_factory_pt *registration_factory) {
+celix_status_t importRegistrationFactory_create(apr_pool_t *pool, log_helper_pt helper, char* serviceName, bundle_context_pt context, import_registration_factory_pt *registration_factory) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_pool_t *mypool = NULL;
 	apr_pool_create(&mypool, pool);
@@ -86,12 +86,9 @@ celix_status_t importRegistrationFactory_create(apr_pool_t *pool, char* serviceN
 		(*registration_factory)->pool = mypool;
 		(*registration_factory)->context = context;
 		(*registration_factory)->bundle = NULL;
+		(*registration_factory)->loghelper = helper;
 
 		arrayList_create(&(*registration_factory)->registrations);
-
-		if (logHelper_create(context, &(*registration_factory)->loghelper) == CELIX_SUCCESS) {
-			logHelper_start((*registration_factory)->loghelper);
-		}
 	}
 
 	return status;
@@ -101,9 +98,6 @@ celix_status_t importRegistrationFactory_create(apr_pool_t *pool, char* serviceN
 
 celix_status_t importRegistrationFactory_destroy(import_registration_factory_pt* registration_factory) {
 	celix_status_t status = CELIX_SUCCESS;
-
-	logHelper_stop((*registration_factory)->loghelper);
-	logHelper_destroy(&(*registration_factory)->loghelper);
 
 	if (*registration_factory != NULL)
 	{
@@ -218,11 +212,11 @@ celix_status_t importRegistration_proxyFactoryRemoved(void * handle, service_ref
 
 
 
-celix_status_t importRegistrationFactory_install(apr_pool_t *pool, char* serviceName, bundle_context_pt context, import_registration_factory_pt *registration_factory)
+celix_status_t importRegistrationFactory_install(apr_pool_t *pool, log_helper_pt helper, char* serviceName, bundle_context_pt context, import_registration_factory_pt *registration_factory)
 {
 	celix_status_t status = CELIX_BUNDLE_EXCEPTION;
 
-	if ( (status = importRegistrationFactory_create(pool, serviceName, context, registration_factory)) == CELIX_SUCCESS) {
+	if ( (status = importRegistrationFactory_create(pool, helper, serviceName, context, registration_factory)) == CELIX_SUCCESS) {
 		// starting the proxy tracker first allows us to pick up already available proxy factories
 		importRegistration_createProxyFactoryTracker(*registration_factory, &((*registration_factory)->proxyFactoryTracker));
 		logHelper_log((*registration_factory)->loghelper, OSGI_LOGSERVICE_INFO, "remoteServiceAdmin_importService: new registration_factory added for %s at %p", serviceName, (*registration_factory)->proxyFactoryTracker);

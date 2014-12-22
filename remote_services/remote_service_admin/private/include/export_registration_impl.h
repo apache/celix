@@ -51,7 +51,7 @@ struct export_registration {
 	bool closed;
 };
 
-celix_status_t exportRegistration_create(apr_pool_t *pool, service_reference_pt reference, endpoint_description_pt endpoint, remote_service_admin_pt rsa, bundle_context_pt context, export_registration_pt *registration);
+celix_status_t exportRegistration_create(apr_pool_t *pool, log_helper_pt helper, service_reference_pt reference, endpoint_description_pt endpoint, remote_service_admin_pt rsa, bundle_context_pt context, export_registration_pt *registration);
 celix_status_t exportRegistration_destroy(export_registration_pt *registration);
 celix_status_t exportRegistration_open(export_registration_pt registration);
 celix_status_t exportRegistration_close(export_registration_pt registration);

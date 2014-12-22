@@ -413,7 +413,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 				char *interface = arrayList_get(interfaces, iter);
 				export_registration_pt registration = NULL;
 
-				exportRegistration_create(admin->pool, reference, NULL, admin, admin->context, &registration);
+				exportRegistration_create(admin->pool, admin->loghelper, reference, NULL, admin, admin->context, &registration);
 				arrayList_add(*registrations, registration);
 
 				remoteServiceAdmin_installEndpoint(admin, registration, reference, interface);
@@ -576,7 +576,7 @@ celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_admin_pt a
 celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, endpoint_description_pt endpointDescription, import_registration_pt *registration) {
 	celix_status_t status = CELIX_SUCCESS;
 
-//	logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA: Import service %s", endpointDescription->service);
+	logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA: Import service %s", endpointDescription->service);
 
 	celixThreadMutex_lock(&admin->importedServicesLock);
 
@@ -585,7 +585,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, e
 	// check whether we already have a registration_factory registered in the hashmap
 	if (registration_factory == NULL)
 	{
-		status = importRegistrationFactory_install(admin->pool, endpointDescription->service, admin->context, &registration_factory);
+		status = importRegistrationFactory_install(admin->pool, admin->loghelper, endpointDescription->service, admin->context, &registration_factory);
 		if (status == CELIX_SUCCESS) {
 		    hashMap_put(admin->importedServices, endpointDescription->service, registration_factory);
 		}
@@ -594,8 +594,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, e
 	 // factory available
 	if (status != CELIX_SUCCESS || (registration_factory->trackedFactory == NULL))
 	{
-		// #TODO Why does this fail here?
-//		logHelper_log(admin->loghelper, OSGI_LOGSERVICE_WARNING, "RSA: no proxyFactory available.");
+		logHelper_log(admin->loghelper, OSGI_LOGSERVICE_WARNING, "RSA: no proxyFactory available.");
 	}
 	else
 	{

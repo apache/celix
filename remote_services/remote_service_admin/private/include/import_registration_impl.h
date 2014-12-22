@@ -77,7 +77,7 @@ celix_status_t importRegistration_createProxyFactoryTracker(import_registration_
 celix_status_t importRegistrationFactory_destroy(import_registration_factory_pt* registration_factory);
 //celix_status_t importRegistrationFactory_open(import_registration_factory_pt registration_factory);
 celix_status_t importRegistrationFactory_close(import_registration_factory_pt registration_factory);
-celix_status_t importRegistrationFactory_install(apr_pool_t *pool, char* serviceName, bundle_context_pt context, import_registration_factory_pt *registration_factory);
+celix_status_t importRegistrationFactory_install(apr_pool_t *pool, log_helper_pt helper, char* serviceName, bundle_context_pt context, import_registration_factory_pt *registration_factory);
 
 
 
