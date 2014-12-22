@@ -43,7 +43,8 @@ celix_status_t exportRegistration_endpointRemoved(void * handle, service_referen
 
 celix_status_t exportRegistration_createEndpointTracker(export_registration_pt registration, service_tracker_pt *tracker);
 
-celix_status_t exportRegistration_create(apr_pool_t *pool, service_reference_pt reference, endpoint_description_pt endpoint, remote_service_admin_pt rsa, bundle_context_pt context, export_registration_pt *registration) {
+celix_status_t exportRegistration_create(apr_pool_t *pool, log_helper_pt helper, service_reference_pt reference, endpoint_description_pt endpoint, remote_service_admin_pt rsa, bundle_context_pt context, export_registration_pt *registration) {
+
 	celix_status_t status = CELIX_SUCCESS;
 	apr_pool_t *mypool = NULL;
 	apr_pool_create(&mypool, pool);

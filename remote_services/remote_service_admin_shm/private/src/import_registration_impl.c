@@ -73,7 +73,7 @@ celix_status_t importRegistration_destroy(import_registration_pt registration)
 }
 
 
-celix_status_t importRegistrationFactory_create(apr_pool_t *pool, char* serviceName, bundle_context_pt context, import_registration_factory_pt *registration_factory) {
+celix_status_t importRegistrationFactory_create(apr_pool_t *pool, log_helper_pt helper, char* serviceName, bundle_context_pt context, import_registration_factory_pt *registration_factory) {
 	celix_status_t status = CELIX_SUCCESS;
 	apr_pool_t *mypool = NULL;
 	apr_pool_create(&mypool, pool);
@@ -204,11 +204,12 @@ celix_status_t importRegistration_proxyFactoryRemoved(void * handle, service_ref
 }
 
 
-celix_status_t importRegistrationFactory_install(apr_pool_t *pool, char* serviceName, bundle_context_pt context, import_registration_factory_pt *registration_factory)
+celix_status_t importRegistrationFactory_install(apr_pool_t *pool, log_helper_pt helper, char* serviceName, bundle_context_pt context, import_registration_factory_pt *registration_factory)
 {
 	celix_status_t status = CELIX_SUCCESS;
 
-	if ( (status = importRegistrationFactory_create(pool, serviceName, context, registration_factory)) != CELIX_SUCCESS)
+	// TODO: add logHelper
+	if ( (status = importRegistrationFactory_create(pool, NULL, serviceName, context, registration_factory)) != CELIX_SUCCESS)
 	{
 		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "remoteServiceAdmin_importService: error while creating importRegistrationFactory.");
 	}
