@@ -33,7 +33,6 @@
 #include "log_helper.h"
 
 struct import_registration {
-	apr_pool_t *pool;
 	bundle_context_pt context;
 	endpoint_description_pt endpointDescription;
 
@@ -50,7 +49,6 @@ struct import_registration {
 
 struct import_registration_factory
 {
-	apr_pool_t *pool;
 	char* serviceName;
 	log_helper_pt loghelper;
 	remote_proxy_factory_service_pt trackedFactory;
@@ -61,7 +59,7 @@ struct import_registration_factory
 };
 
 
-celix_status_t importRegistration_create(apr_pool_t *pool, endpoint_description_pt endpoint, remote_service_admin_pt rsa, sendToHandle callback, bundle_context_pt context, import_registration_pt *registration);
+celix_status_t importRegistration_create(endpoint_description_pt endpoint, remote_service_admin_pt rsa, sendToHandle callback, bundle_context_pt context, import_registration_pt *registration);
 celix_status_t importRegistration_destroy(import_registration_pt registration);
 
 celix_status_t importRegistration_setEndpointDescription(import_registration_pt registration, endpoint_description_pt endpointDescription);
@@ -77,7 +75,7 @@ celix_status_t importRegistration_createProxyFactoryTracker(import_registration_
 celix_status_t importRegistrationFactory_destroy(import_registration_factory_pt* registration_factory);
 //celix_status_t importRegistrationFactory_open(import_registration_factory_pt registration_factory);
 celix_status_t importRegistrationFactory_close(import_registration_factory_pt registration_factory);
-celix_status_t importRegistrationFactory_install(apr_pool_t *pool, log_helper_pt helper, char* serviceName, bundle_context_pt context, import_registration_factory_pt *registration_factory);
+celix_status_t importRegistrationFactory_install(log_helper_pt helper, char* serviceName, bundle_context_pt context, import_registration_factory_pt *registration_factory);
 
 
 

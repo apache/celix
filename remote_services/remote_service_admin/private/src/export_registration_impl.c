@@ -25,8 +25,6 @@
  */
 #include <stdlib.h>
 
-#include <apr_strings.h>
-
 #include "constants.h"
 
 #include "celix_errno.h"
@@ -45,16 +43,13 @@ celix_status_t exportRegistration_endpointRemoved(void * handle, service_referen
 
 celix_status_t exportRegistration_createEndpointTracker(export_registration_pt registration, service_tracker_pt *tracker);
 
-celix_status_t exportRegistration_create(apr_pool_t *pool, log_helper_pt helper, service_reference_pt reference, endpoint_description_pt endpoint, remote_service_admin_pt rsa, bundle_context_pt context, export_registration_pt *registration) {
+celix_status_t exportRegistration_create(log_helper_pt helper, service_reference_pt reference, endpoint_description_pt endpoint, remote_service_admin_pt rsa, bundle_context_pt context, export_registration_pt *registration) {
 	celix_status_t status = CELIX_SUCCESS;
-	apr_pool_t *mypool = NULL;
-	apr_pool_create(&mypool, pool);
 
 	*registration = calloc(1, sizeof(**registration));
 	if (!*registration) {
 		status = CELIX_ENOMEM;
 	} else {
-		(*registration)->pool = mypool;
 		(*registration)->context = context;
 		(*registration)->closed = false;
 		(*registration)->endpointDescription = endpoint;
@@ -127,7 +122,9 @@ celix_status_t exportRegistration_createEndpointTracker(export_registration_pt r
 			exportRegistration_endpointAdded, exportRegistration_endpointModified, exportRegistration_endpointRemoved, &customizer);
 
 	if (status == CELIX_SUCCESS) {
-		char *filter = apr_pstrcat(registration->pool, "(&(", OSGI_FRAMEWORK_OBJECTCLASS, "=", OSGI_RSA_REMOTE_ENDPOINT, ")(remote.interface=", registration->endpointDescription->service, "))", NULL);
+		char filter[512];
+
+		snprintf(filter, 512, "(&(%s=%s)(remote.interface=%s))", (char*) OSGI_FRAMEWORK_OBJECTCLASS, (char*) OSGI_RSA_REMOTE_ENDPOINT, registration->endpointDescription->service);
 		status = serviceTracker_createWithFilter(registration->context, filter, customizer, tracker);
 	}
 
@@ -173,7 +170,7 @@ celix_status_t exportRegistration_endpointRemoved(void * handle, service_referen
 	remote_endpoint_service_pt endpoint = service;
 	if (registration->endpoint != NULL) {
 		remoteServiceAdmin_removeExportedService(registration);
-		registration->endpoint = NULL;
+//		registration->endpoint = NULL;
 		endpoint->setService(endpoint->endpoint, NULL);
 	}
 
@@ -189,7 +186,10 @@ celix_status_t exportRegistration_open(export_registration_pt registration) {
 	if (bundleStore == NULL) {
 		bundleStore = DEFAULT_BUNDLE_STORE;
 	}
-	char *name = apr_pstrcat(registration->pool, bundleStore, "/", registration->endpointDescription->service, "_endpoint.zip", NULL);
+	char name[256];
+
+	snprintf(name, 256, "%s/%s_endpoint.zip", bundleStore, registration->endpointDescription->service);
+
 	status = bundleContext_installBundle(registration->context, name, &registration->bundle);
 	if (status == CELIX_SUCCESS) {
 		status = bundle_start(registration->bundle);
@@ -222,7 +222,7 @@ celix_status_t exportRegistration_getExportReference(export_registration_pt regi
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (registration->exportReference == NULL) {
-		registration->exportReference = apr_palloc(registration->pool, sizeof(*registration->exportReference));
+		registration->exportReference = calloc(1, sizeof(*registration->exportReference));
 		if (registration->exportReference == NULL) {
 			status = CELIX_ENOMEM;
 		} else {

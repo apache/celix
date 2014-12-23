@@ -32,7 +32,6 @@
 #include "civetweb.h"
 
 struct remote_service_admin {
-	apr_pool_t *pool;
 	bundle_context_pt context;
 	log_helper_pt loghelper;
 

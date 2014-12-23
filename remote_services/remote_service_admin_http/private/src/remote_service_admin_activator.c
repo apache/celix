@@ -33,33 +33,22 @@
 #include "import_registration_impl.h"
 
 struct activator {
-	apr_pool_t *pool;
 	remote_service_admin_pt admin;
 	service_registration_pt registration;
 };
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
-	apr_pool_t *parentPool = NULL;
-	apr_pool_t *pool = NULL;
 	struct activator *activator;
 
-	status = bundleContext_getMemoryPool(context, &parentPool);
-	if (status == CELIX_SUCCESS) {
-		if (apr_pool_create(&pool, parentPool) != APR_SUCCESS) {
-			status = CELIX_BUNDLE_EXCEPTION;
-		} else {
-			activator = apr_palloc(pool, sizeof(*activator));
-			if (!activator) {
-				status = CELIX_ENOMEM;
-			} else {
-				activator->pool = pool;
-				activator->admin = NULL;
-				activator->registration = NULL;
+	activator = calloc(1, sizeof(*activator));
+	if (!activator) {
+		status = CELIX_ENOMEM;
+	} else {
+		activator->admin = NULL;
+		activator->registration = NULL;
 
-				*userData = activator;
-			}
-		}
+		*userData = activator;
 	}
 
 	return status;
@@ -70,14 +59,16 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	struct activator *activator = userData;
 	remote_service_admin_service_pt remoteServiceAdmin = NULL;
 
-	status = remoteServiceAdmin_create(activator->pool, context, &activator->admin);
+	status = remoteServiceAdmin_create(context, &activator->admin);
 	if (status == CELIX_SUCCESS) {
-		remoteServiceAdmin = apr_palloc(activator->pool, sizeof(*remoteServiceAdmin));
+		// TODO: free
+		remoteServiceAdmin = calloc(1, sizeof(*remoteServiceAdmin));
 		if (!remoteServiceAdmin) {
 			status = CELIX_ENOMEM;
 		} else {
 			remoteServiceAdmin->admin = activator->admin;
 			remoteServiceAdmin->exportService = remoteServiceAdmin_exportService;
+
 			remoteServiceAdmin->getExportedServices = remoteServiceAdmin_getExportedServices;
 			remoteServiceAdmin->getImportedEndpoints = remoteServiceAdmin_getImportedEndpoints;
 			remoteServiceAdmin->importService = remoteServiceAdmin_importService;
@@ -111,11 +102,16 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	serviceRegistration_unregister(activator->registration);
 	activator->registration = NULL;
 
+
 	return status;
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
+	struct activator *activator = userData;
+
+	free(activator);
+
 	return status;
 }
 

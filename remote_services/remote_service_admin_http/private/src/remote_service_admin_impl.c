@@ -34,10 +34,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <apr_strings.h>
-#include <apr_uuid.h>
 #include <uuid/uuid.h>
-#include <apr_network_io.h>
 
 #include <curl/curl.h>
 
@@ -95,10 +92,10 @@ static celix_status_t remoteServiceAdmin_getIpAdress(char* interface, char** ip)
 static size_t remoteServiceAdmin_readCallback(void *ptr, size_t size, size_t nmemb, void *userp);
 static size_t remoteServiceAdmin_write(void *contents, size_t size, size_t nmemb, void *userp);
 
-celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt context, remote_service_admin_pt *admin) {
+celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_service_admin_pt *admin) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	*admin = apr_palloc(pool, sizeof(**admin));
+	*admin = calloc(1, sizeof(**admin));
 	if (!*admin) {
 		status = CELIX_ENOMEM;
 	} else {
@@ -106,8 +103,6 @@ celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt con
 		char *port = NULL;
 		char *ip = NULL;
 		char *detectedIp = NULL;
-
-		(*admin)->pool = pool;
 		(*admin)->context = context;
 		(*admin)->exportedServices = hashMap_create(NULL, NULL, NULL, NULL);
 		(*admin)->importedServices = hashMap_create(NULL, NULL, NULL, NULL);
@@ -142,7 +137,7 @@ celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt con
 
 		if (ip != NULL) {
 			logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_INFO, "RSA: Using %s for service annunciation", ip);
-			(*admin)->ip = apr_pstrdup(pool, ip);
+			(*admin)->ip = strdup(ip);
 		}
 		else {
 			logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_WARNING, "RSA: No IP address for service annunciation set. Using %s", DEFAULT_IP);
@@ -166,7 +161,7 @@ celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt con
 
 			if ((*admin)->ctx != NULL) {
 				logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_INFO, "RSA: Start webserver: %s", port);
-				(*admin)->port = apr_pstrdup(pool, port);
+				(*admin)->port = strdup(port);
 
 			}
 			else {
@@ -188,6 +183,17 @@ celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt con
 		} while(((*admin)->ctx == NULL) && (port_counter < MAX_NUMBER_OF_RESTARTS));
 
 	}
+	return status;
+}
+
+
+celix_status_t remoteServiceAdmin_destroy(remote_service_admin_pt *admin)
+{
+	celix_status_t status = CELIX_SUCCESS;
+
+	free(*admin);
+	*admin = NULL;
+
 	return status;
 }
 
@@ -349,18 +355,14 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 	arrayList_create(registrations);
 	array_list_pt references = NULL;
 	service_reference_pt reference = NULL;
-	apr_pool_t *tmpPool = NULL;
+	char filter [256];
 
-	apr_pool_create(&tmpPool, admin->pool);
-	if (tmpPool == NULL) {
-		return CELIX_ENOMEM;
-	} else {
-		char *filter = apr_pstrcat(admin->pool, "(", (char *)OSGI_FRAMEWORK_SERVICE_ID, "=", serviceId, ")", NULL); /*FIXME memory leak*/
-		bundleContext_getServiceReferences(admin->context, NULL, filter, &references);
-		apr_pool_destroy(tmpPool);
-		if (arrayList_size(references) >= 1) {
-			reference = arrayList_get(references, 0);
-		}
+	snprintf(filter, 256, "(%s=%s)", (char *)OSGI_FRAMEWORK_SERVICE_ID, serviceId);
+
+	bundleContext_getServiceReferences(admin->context, NULL, filter, &references);
+
+	if (arrayList_size(references) >= 1) {
+		reference = arrayList_get(references, 0);
 	}
 
     if(references!=NULL){
@@ -384,26 +386,22 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 		array_list_pt interfaces = NULL;
 		arrayList_create(&interfaces);
 		if (strcmp(utils_stringTrim(exports), "*") == 0) {
-			char *token;
-			char *interface = apr_strtok(provided, ",", &token);
+			char *interface = strtok(provided, ",");
 			while (interface != NULL) {
 				arrayList_add(interfaces, utils_stringTrim(interface));
-				interface = apr_strtok(NULL, ",", &token);
+				interface = strtok(NULL, ",");
 			}
 		} else {
-			char *exportToken;
-			char *providedToken;
-
-			char *pinterface = apr_strtok(provided, ",", &providedToken);
+			char *pinterface = strtok(provided, ",");
 			while (pinterface != NULL) {
-				char *einterface = apr_strtok(exports, ",", &exportToken);
+				char *einterface = strtok(exports, ",");
 				while (einterface != NULL) {
 					if (strcmp(einterface, pinterface) == 0) {
 						arrayList_add(interfaces, einterface);
 					}
-					einterface = apr_strtok(NULL, ",", &exportToken);
+					einterface = strtok(NULL, ",");
 				}
-				pinterface = apr_strtok(NULL, ",", &providedToken);
+				pinterface = strtok(NULL, ",");
 			}
 		}
 
@@ -413,7 +411,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 				char *interface = arrayList_get(interfaces, iter);
 				export_registration_pt registration = NULL;
 
-				exportRegistration_create(admin->pool, admin->loghelper, reference, NULL, admin, admin->context, &registration);
+				exportRegistration_create(admin->loghelper, reference, NULL, admin, admin->context, &registration);
 				arrayList_add(*registrations, registration);
 
 				remoteServiceAdmin_installEndpoint(admin, registration, reference, interface);
@@ -469,8 +467,10 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
 	char *uuid = NULL;
 
 	char buf[512];
-	sprintf(buf, "/service/%s/%s", serviceId, interface);
-    char *url = apr_pstrcat(admin->pool, "http://", admin->ip, ":", admin->port, buf, NULL);
+	snprintf(buf, 512,  "/service/%s/%s", serviceId, interface);
+
+	char url[1024];
+	snprintf(url, 1024, "http://%s:%s%s", admin->ip, admin->port, buf);
 
 	uuid_t endpoint_uid;
 	uuid_generate(endpoint_uid);
@@ -540,7 +540,7 @@ celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin
 		(*description)->id = properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID);
 		char *serviceId = NULL;
 		serviceReference_getProperty(reference, (char*) OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
-		(*description)->serviceId = apr_atoi64(serviceId);
+		(*description)->serviceId = strtoull(serviceId, NULL, 0);
 		(*description)->frameworkUUID = properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
 		(*description)->service = interface;
 		(*description)->properties = endpointProperties;
@@ -585,7 +585,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, e
 	// check whether we already have a registration_factory registered in the hashmap
 	if (registration_factory == NULL)
 	{
-		status = importRegistrationFactory_install(admin->pool, admin->loghelper, endpointDescription->service, admin->context, &registration_factory);
+		status = importRegistrationFactory_install(admin->loghelper, endpointDescription->service, admin->context, &registration_factory);
 		if (status == CELIX_SUCCESS) {
 		    hashMap_put(admin->importedServices, endpointDescription->service, registration_factory);
 		}
@@ -599,7 +599,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, e
 	else
 	{
 		// we create an importRegistration per imported service
-		importRegistration_create(admin->pool, endpointDescription, admin, (sendToHandle) &remoteServiceAdmin_send, admin->context, registration);
+		importRegistration_create(endpointDescription, admin, (sendToHandle) &remoteServiceAdmin_send, admin->context, registration);
 		registration_factory->trackedFactory->registerProxyService(registration_factory->trackedFactory->factory,  endpointDescription, admin, (sendToHandle) &remoteServiceAdmin_send);
 
 		arrayList_add(registration_factory->registrations, *registration);
@@ -662,7 +662,8 @@ celix_status_t remoteServiceAdmin_send(remote_service_admin_pt rsa, endpoint_des
     get.writeptr = malloc(1);
 
     char *serviceUrl = properties_get(endpointDescription->properties, (char*) ENDPOINT_URL);
-    char *url = apr_pstrcat(rsa->pool, serviceUrl, NULL);
+    char url[256];
+    snprintf(url, 256, "%s", serviceUrl);
 
     celix_status_t status = CELIX_SUCCESS;
     CURL *curl;
@@ -672,9 +673,7 @@ celix_status_t remoteServiceAdmin_send(remote_service_admin_pt rsa, endpoint_des
     if(!curl) {
         status = CELIX_ILLEGAL_STATE;
     } else {
-
-
-        curl_easy_setopt(curl, CURLOPT_URL, url);
+        curl_easy_setopt(curl, CURLOPT_URL, &url[0]);
         curl_easy_setopt(curl, CURLOPT_POST, 1L);
         curl_easy_setopt(curl, CURLOPT_READFUNCTION, remoteServiceAdmin_readCallback);
         curl_easy_setopt(curl, CURLOPT_READDATA, &post);

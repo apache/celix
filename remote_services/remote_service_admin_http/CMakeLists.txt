@@ -15,9 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(APR REQUIRED)
-find_package(CURL REQUIRED)
 
+find_package(CURL REQUIRED)
 
 include_directories(${CURL_INCLUDE_DIRS})
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
@@ -44,4 +43,4 @@ bundle(remote_service_admin_http SOURCES
 
 install_bundle(remote_service_admin_http)
     
-target_link_libraries(remote_service_admin_http celix_framework  ${APRUTIL_LIBRARY} ${CURL_LIBRARIES})
+target_link_libraries(remote_service_admin_http celix_framework ${CURL_LIBRARIES})

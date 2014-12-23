@@ -42,8 +42,8 @@ struct import_reference {
 	service_reference_pt reference;
 };
 
-celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt context, remote_service_admin_pt *admin);
-celix_status_t remoteServiceAdmin_destroy(remote_service_admin_pt admin);
+celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_service_admin_pt *admin);
+celix_status_t remoteServiceAdmin_destroy(remote_service_admin_pt *admin);
 
 celix_status_t remoteServiceAdmin_send(remote_service_admin_pt rsa, endpoint_description_pt endpointDescription, char *methodSignature, char **reply, int* replyStatus);
 
