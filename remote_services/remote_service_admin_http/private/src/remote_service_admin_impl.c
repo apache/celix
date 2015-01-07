@@ -238,7 +238,7 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin) {
         serviceTracker_close(importFactory->proxyFactoryTracker);
         importRegistrationFactory_close(importFactory);
 
-		hashMap_remove(admin->importedServices, service);
+        hashMapIterator_remove(iter);
 		importRegistrationFactory_destroy(&importFactory);
 
     }
