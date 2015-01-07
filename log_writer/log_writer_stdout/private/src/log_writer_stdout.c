@@ -43,13 +43,7 @@ celix_status_t logListener_logged(log_listener_pt listener, log_entry_pt entry) 
     if (!entry) {
         status = CELIX_ILLEGAL_ARGUMENT;
     } else {
-        status = bundle_getCurrentModule(entry->bundle, &module);
-        if (status == CELIX_SUCCESS) {
-            status = module_getSymbolicName(module, &sName);
-            if (status == CELIX_SUCCESS) {
-                printf("LogWriter: %s from %s\n", entry->message, sName);
-            }
-        }
+		printf("LogWriter: %s from %s\n", entry->message, entry->bundleSymbolicName);
     }
 
     return status;

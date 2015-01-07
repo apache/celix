@@ -40,12 +40,25 @@ celix_status_t logEntry_create(bundle_pt bundle, service_reference_pt reference,
     if (*entry == NULL) {
         status = CELIX_ENOMEM;
     } else {
-        (*entry)->bundle = bundle;
-        (*entry)->reference = reference;
         (*entry)->level = level;
         (*entry)->message = strdup(message);
         (*entry)->errorCode = errorCode;
         (*entry)->time = time(NULL);
+
+        (*entry)->bundleSymbolicName = NULL;
+        (*entry)->bundleId = 0;
+    }
+
+    if (status == CELIX_SUCCESS) {
+        status = bundle_getBundleId(bundle, &(*entry)->bundleId);
+    }
+
+    if (status == CELIX_SUCCESS) {
+    	module_pt module = NULL;
+        status = bundle_getCurrentModule(bundle, &module);
+		if (status == CELIX_SUCCESS) {
+			status = module_getSymbolicName(module, &(*entry)->bundleSymbolicName);
+		}
     }
 
     return status;
@@ -60,8 +73,13 @@ celix_status_t logEntry_destroy(log_entry_pt *entry) {
     return CELIX_SUCCESS;
 }
 
-celix_status_t logEntry_getBundle(log_entry_pt entry, bundle_pt *bundle) {
-    *bundle = entry->bundle;
+celix_status_t logEntry_getBundleSymbolicName(log_entry_pt entry, char **bundleSymbolicName) {
+    *bundleSymbolicName = entry->bundleSymbolicName;
+    return CELIX_SUCCESS;
+}
+
+celix_status_t logEntry_getBundleId(log_entry_pt entry, long *bundleId) {
+    *bundleId = entry->bundleId;
     return CELIX_SUCCESS;
 }
 
@@ -77,11 +95,6 @@ celix_status_t logEntry_getLevel(log_entry_pt entry, log_level_t *level) {
 
 celix_status_t logEntry_getMessage(log_entry_pt entry, char **message) {
     *message = entry->message;
-    return CELIX_SUCCESS;
-}
-
-celix_status_t logEntry_getServiceReference(log_entry_pt entry, service_reference_pt *reference) {
-    *reference = entry->reference;
     return CELIX_SUCCESS;
 }
 

@@ -43,35 +43,28 @@ celix_status_t logListener_logged(log_listener_pt listener, log_entry_pt entry)
     module_pt module = NULL;
     char *sName = NULL;
 
-    status = bundle_getCurrentModule(entry->bundle, &module);
-    if (status == CELIX_SUCCESS) {
-		status = module_getSymbolicName(module, &sName);
-		if (status == CELIX_SUCCESS) {
+	int sysLogLvl = -1;
 
-			int sysLogLvl = -1;
+	switch(entry->level)
+	{
+		case 0x00000001: /*OSGI_LOGSERVICE_ERROR */
+			sysLogLvl = LOG_MAKEPRI(LOG_FAC(LOG_USER), LOG_ERR);
+			break;
+		case 0x00000002: /* OSGI_LOGSERVICE_WARNING */
+			sysLogLvl = LOG_MAKEPRI(LOG_FAC(LOG_USER), LOG_WARNING);
+			break;
+		case 0x00000003: /* OSGI_LOGSERVICE_INFO */
+			sysLogLvl = LOG_MAKEPRI(LOG_FAC(LOG_USER), LOG_INFO);
+			break;
+		case 0x00000004: /* OSGI_LOGSERVICE_DEBUG */
+			sysLogLvl = LOG_MAKEPRI(LOG_FAC(LOG_USER), LOG_DEBUG);
+			break;
+		default:		/* OSGI_LOGSERVICE_INFO */
+			sysLogLvl = LOG_MAKEPRI(LOG_FAC(LOG_USER), LOG_INFO);
+			break;
+	}
 
-			switch(entry->level)
-			{
-				case 0x00000001: /*OSGI_LOGSERVICE_ERROR */
-					sysLogLvl = LOG_MAKEPRI(LOG_FAC(LOG_USER), LOG_ERR);
-					break;
-				case 0x00000002: /* OSGI_LOGSERVICE_WARNING */
-					sysLogLvl = LOG_MAKEPRI(LOG_FAC(LOG_USER), LOG_WARNING);
-					break;
-				case 0x00000003: /* OSGI_LOGSERVICE_INFO */
-					sysLogLvl = LOG_MAKEPRI(LOG_FAC(LOG_USER), LOG_INFO);
-					break;
-				case 0x00000004: /* OSGI_LOGSERVICE_DEBUG */
-					sysLogLvl = LOG_MAKEPRI(LOG_FAC(LOG_USER), LOG_DEBUG);
-					break;
-				default:		/* OSGI_LOGSERVICE_INFO */
-					sysLogLvl = LOG_MAKEPRI(LOG_FAC(LOG_USER), LOG_INFO);
-					break;
-			}
-
-			syslog(sysLogLvl, "[%s]: %s", sName, entry->message);
-		}
-    }
+	syslog(sysLogLvl, "[%s]: %s", entry->bundleSymbolicName, entry->message);
 
     return status;
 }

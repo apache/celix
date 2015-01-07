@@ -68,25 +68,18 @@ void logCommand_execute(command_pt command, char *line, void (*out)(char *), voi
 			log_entry_pt entry = linkedListIterator_next(iter);
 			char time[20];
 			char *level = NULL;
-			module_pt module = NULL;
-			char *bundleSymbolicName = NULL;
 			char errorString[256];
 
-			celix_status_t status = bundle_getCurrentModule(entry->bundle, &module);
-			if (status == CELIX_SUCCESS) {
-				status = module_getSymbolicName(module, &bundleSymbolicName);
+			strftime(time, 20, "%Y-%m-%d %H:%M:%S", localtime(&entry->time));
+			logCommand_levelAsString(command, entry->level, &level);
 
-				strftime(time, 20, "%Y-%m-%d %H:%M:%S", localtime(&entry->time));
-				logCommand_levelAsString(command, entry->level, &level);
-
-				if (entry->errorCode > 0) {
-					celix_strerror(entry->errorCode, errorString, 256);
-					sprintf(line, "%s - Bundle: %s - %s - %d %s\n", time, bundleSymbolicName, entry->message, entry->errorCode, errorString);
-					out(line);
-				} else {
-					sprintf(line, "%s - Bundle: %s - %s\n", time, bundleSymbolicName, entry->message);
-					out(line);
-				}
+			if (entry->errorCode > 0) {
+				celix_strerror(entry->errorCode, errorString, 256);
+				sprintf(line, "%s - Bundle: %s - %s - %d %s\n", time, entry->bundleSymbolicName, entry->message, entry->errorCode, errorString);
+				out(line);
+			} else {
+				sprintf(line, "%s - Bundle: %s - %s\n", time, entry->bundleSymbolicName, entry->message);
+				out(line);
 			}
 		}
 		linkedListIterator_destroy(iter);
