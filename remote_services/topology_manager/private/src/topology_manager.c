@@ -388,12 +388,12 @@ celix_status_t topologyManager_removeImportedService(void *handle, endpoint_desc
 
                 status = rsa->importRegistration_close(rsa->admin, import);
                 if (status == CELIX_SUCCESS) {
-                    hashMap_remove(imports, rsa);
+                    hashMapIterator_remove(importsIter);
                 }
             }
             hashMapIterator_destroy(importsIter);
 
-        	imports = hashMap_remove(manager->importedServices, ep);
+        	hashMapIterator_remove(iter);
 
         	if (imports != NULL) {
         		hashMap_destroy(imports, false, false);

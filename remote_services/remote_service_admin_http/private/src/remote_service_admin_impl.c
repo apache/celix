@@ -455,7 +455,9 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
         char *key = keys[i];
         char *value = NULL;
 
-        if (serviceReference_getProperty(reference, key, &value) == CELIX_SUCCESS && strcmp(key, (char*) OSGI_FRAMEWORK_OBJECTCLASS) != 0) {
+        if (serviceReference_getProperty(reference, key, &value) == CELIX_SUCCESS
+        		&& strcmp(key, (char*) OSGI_RSA_SERVICE_EXPORTED_INTERFACES) != 0
+        		&& strcmp(key, (char*) OSGI_FRAMEWORK_OBJECTCLASS) != 0) {
         	properties_set(endpointProperties, key, value);
         }
 	}
@@ -595,6 +597,9 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, e
 	if (status != CELIX_SUCCESS || (registration_factory->trackedFactory == NULL))
 	{
 		logHelper_log(admin->loghelper, OSGI_LOGSERVICE_WARNING, "RSA: no proxyFactory available.");
+		if (status == CELIX_SUCCESS) {
+			status = CELIX_SERVICE_EXCEPTION;
+		}
 	}
 	else
 	{

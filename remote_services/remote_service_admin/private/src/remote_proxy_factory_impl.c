@@ -151,9 +151,14 @@ static celix_status_t remoteProxyFactory_registerProxyService(remote_proxy_facto
 
 	if (status == CELIX_SUCCESS) {
 		properties_set(proxy_instance_ptr->properties, "proxy.interface", remote_proxy_factory_ptr->service);
-		properties_set(proxy_instance_ptr->properties, "endpoint.framework.uuid", (char *) endpointDescription->frameworkUUID);
 
-		// #TODO Copy properties from the endpoint
+		hash_map_iterator_pt iter = hashMapIterator_create(endpointDescription->properties);
+		while (hashMapIterator_hasNext(iter)) {
+			hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
+			char *key = hashMapEntry_getKey(entry);
+			char *value = hashMapEntry_getValue(entry);
+			properties_set(proxy_instance_ptr->properties, key, value);
+		}
 	}
 
 	if (status == CELIX_SUCCESS) {

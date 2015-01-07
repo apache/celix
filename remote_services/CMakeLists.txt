@@ -43,6 +43,7 @@ if (REMOTE_SERVICE_ADMIN)
     add_subdirectory(calculator_endpoint)
     add_subdirectory(calculator_endpoint2)
     add_subdirectory(calculator_proxy)
+    add_subdirectory(calculator_proxy2)
     add_subdirectory(calculator_shell)
 endif (REMOTE_SERVICE_ADMIN)
 
