@@ -57,7 +57,11 @@ celix_status_t logEntry_create(bundle_pt bundle, service_reference_pt reference,
     	module_pt module = NULL;
         status = bundle_getCurrentModule(bundle, &module);
 		if (status == CELIX_SUCCESS) {
-			status = module_getSymbolicName(module, &(*entry)->bundleSymbolicName);
+			char *symbolicName = NULL;
+			status = module_getSymbolicName(module, &symbolicName);
+			if (status == CELIX_SUCCESS) {
+				(*entry)->bundleSymbolicName = strdup(symbolicName);
+			}
 		}
     }
 
@@ -66,6 +70,7 @@ celix_status_t logEntry_create(bundle_pt bundle, service_reference_pt reference,
 
 celix_status_t logEntry_destroy(log_entry_pt *entry) {
     if (*entry) {
+    	free((*entry)->bundleSymbolicName);
         free((*entry)->message);
         free(*entry);
         *entry = NULL;
