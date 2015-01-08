@@ -55,7 +55,6 @@ void logCommand_execute(command_pt command, char *line, void (*out)(char *), voi
 
     bundleContext_getServiceReference(command->bundleContext, (char *) OSGI_LOGSERVICE_READER_SERVICE_NAME, &readerService);
     if (readerService != NULL) {
-        char line[256];
         linked_list_pt list = NULL;
         linked_list_iterator_pt iter = NULL;
         log_reader_service_pt reader = NULL;
@@ -70,15 +69,19 @@ void logCommand_execute(command_pt command, char *line, void (*out)(char *), voi
 			char *level = NULL;
 			char errorString[256];
 
-			strftime(time, 20, "%Y-%m-%d %H:%M:%S", localtime(&entry->time));
+			size_t timeLength = strftime(time, 20, "%Y-%m-%d %H:%M:%S", localtime(&entry->time));
 			logCommand_levelAsString(command, entry->level, &level);
 
 			if (entry->errorCode > 0) {
 				celix_strerror(entry->errorCode, errorString, 256);
-				sprintf(line, "%s - Bundle: %s - %s - %d %s\n", time, entry->bundleSymbolicName, entry->message, entry->errorCode, errorString);
+				size_t length = timeLength + strlen(entry->bundleSymbolicName) + strlen(entry->message) + strlen(errorString) + 40;
+		        char line[length];
+				snprintf(line, length, "%s - Bundle: %s - %s - %d %s\n", time, entry->bundleSymbolicName, entry->message, entry->errorCode, errorString);
 				out(line);
 			} else {
-				sprintf(line, "%s - Bundle: %s - %s\n", time, entry->bundleSymbolicName, entry->message);
+				size_t length = timeLength + strlen(entry->bundleSymbolicName) + strlen(entry->message) + 20;
+				char line[length];
+				snprintf(line, length, "%s - Bundle: %s - %s\n", time, entry->bundleSymbolicName, entry->message);
 				out(line);
 			}
 		}

@@ -109,7 +109,6 @@ static celix_status_t calculatorProxyFactory_create(void *handle, endpoint_descr
 
 static celix_status_t calculatorProxyFactory_destroy(void *handle, void *service) {
 	celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator = handle;
 	calculator_service_pt calculatorService = service;
 
 	if (!calculatorService) {

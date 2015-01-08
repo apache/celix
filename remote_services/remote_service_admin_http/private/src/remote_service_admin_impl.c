@@ -221,7 +221,6 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin) {
     {
     	hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
 
-    	char* service = hashMapEntry_getKey(entry);
     	import_registration_factory_pt importFactory = hashMapEntry_getValue(entry);
 
         int i;
