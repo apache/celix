@@ -68,7 +68,7 @@ struct import_interest {
 celix_status_t topologyManager_notifyListenersEndpointAdded(topology_manager_pt manager, remote_service_admin_service_pt rsa,  array_list_pt registrations);
 celix_status_t topologyManager_notifyListenersEndpointRemoved(topology_manager_pt manager, remote_service_admin_service_pt rsa,  export_registration_pt export);
 
-celix_status_t topologyManager_create(bundle_context_pt context, topology_manager_pt *manager) {
+celix_status_t topologyManager_create(bundle_context_pt context, log_helper_pt logHelper, topology_manager_pt *manager) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*manager = malloc(sizeof(**manager));
@@ -89,9 +89,7 @@ celix_status_t topologyManager_create(bundle_context_pt context, topology_manage
 	(*manager)->importedServices = hashMap_create(NULL, NULL, NULL, NULL);
 	(*manager)->importInterests = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 
-	if (logHelper_create(context, &(*manager)->loghelper) == CELIX_SUCCESS) {
-		logHelper_start((*manager)->loghelper);
-	}
+	(*manager)->loghelper = logHelper;
 
 	return status;
 }
@@ -127,11 +125,47 @@ celix_status_t topologyManager_destroy(topology_manager_pt manager) {
 	status = celixThreadMutex_unlock(&manager->importInterestsLock);
 	status = celixThreadMutex_destroy(&manager->importInterestsLock);
 
-	if (logHelper_stop(manager->loghelper) == CELIX_SUCCESS) {
-		logHelper_destroy(&manager->loghelper);
-	}
-
 	free(manager);
+
+	return status;
+}
+
+celix_status_t topologyManager_closeImports(topology_manager_pt manager) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	status = celixThreadMutex_lock(&manager->importedServicesLock);
+
+	hash_map_iterator_pt iter = hashMapIterator_create(manager->importedServices);
+	while (hashMapIterator_hasNext(iter)) {
+		hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
+		endpoint_description_pt ep = hashMapEntry_getKey(entry);
+		hash_map_pt imports = hashMapEntry_getValue(entry);
+
+		logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: Remove imported service (%s; %s).", ep->service, ep->id);
+		hash_map_iterator_pt importsIter = hashMapIterator_create(imports);
+
+		while (hashMapIterator_hasNext(importsIter)) {
+			hash_map_entry_pt entry = hashMapIterator_nextEntry(importsIter);
+
+			remote_service_admin_service_pt rsa = hashMapEntry_getKey(entry);
+			import_registration_pt import = hashMapEntry_getValue(entry);
+
+			status = rsa->importRegistration_close(rsa->admin, import);
+			if (status == CELIX_SUCCESS) {
+				hashMapIterator_remove(importsIter);
+			}
+		}
+		hashMapIterator_destroy(importsIter);
+
+		hashMapIterator_remove(iter);
+
+		if (imports != NULL) {
+			hashMap_destroy(imports, false, false);
+		}
+	}
+	hashMapIterator_destroy(iter);
+
+	status = celixThreadMutex_unlock(&manager->importedServicesLock);
 
 	return status;
 }

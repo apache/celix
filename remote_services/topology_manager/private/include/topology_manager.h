@@ -30,11 +30,13 @@
 #include "endpoint_listener.h"
 #include "service_reference.h"
 #include "bundle_context.h"
+#include "log_helper.h"
 
 typedef struct topology_manager *topology_manager_pt;
 
-celix_status_t topologyManager_create(bundle_context_pt context, topology_manager_pt *manager);
+celix_status_t topologyManager_create(bundle_context_pt context, log_helper_pt logHelper, topology_manager_pt *manager);
 celix_status_t topologyManager_destroy(topology_manager_pt manager);
+celix_status_t topologyManager_closeImports(topology_manager_pt manager);
 
 celix_status_t topologyManager_rsaAdding(void *handle, service_reference_pt reference, void **service);
 celix_status_t topologyManager_rsaAdded(void *handle, service_reference_pt reference, void *service);

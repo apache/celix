@@ -276,6 +276,7 @@ celix_status_t framework_destroy(framework_pt framework) {
 	bundleCache_destroy(&framework->cache);
 
 	unsetenv(OSGI_FRAMEWORK_FRAMEWORK_UUID);
+
 	free(framework);
 
 	return status;
@@ -1999,6 +2000,9 @@ static void *framework_shutdown(void *framework) {
 
     hashMapIterator_destroy(iter);
 
+    pthread_cancel(fw->dispatcherThread.thread);
+    celixThread_join(fw->dispatcherThread, NULL);
+
 	err = celixThreadMutex_lock(&fw->mutex);
 	if (err != 0) {
 		fw_log(fw->logger, OSGI_FRAMEWORK_LOG_ERROR,  "Error locking the framework, cannot exit clean.");
@@ -2019,10 +2023,10 @@ static void *framework_shutdown(void *framework) {
 	}
 	err = celixThreadMutex_unlock(&fw->mutex);
 	if (err != 0) {
-		fw_log(fw->logger, OSGI_FRAMEWORK_LOG_ERROR,  "Error unlocking the framework, cannot exit clean.");
+//		fw_log(fw->logger, OSGI_FRAMEWORK_LOG_ERROR,  "Error unlocking the framework, cannot exit clean.");
 	}
 
-	fw_log(fw->logger, OSGI_FRAMEWORK_LOG_INFO, "FRAMEWORK: Shutdown done\n");
+//	fw_log(fw->logger, OSGI_FRAMEWORK_LOG_INFO, "FRAMEWORK: Shutdown done\n");
 	celixThread_exit((void *) CELIX_SUCCESS);
 
 	return NULL;

@@ -77,8 +77,9 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 	activator->serviceListener = NULL;
 
 	logHelper_create(context, &activator->loghelper);
+	logHelper_start(activator->loghelper);
 
-	status = topologyManager_create(context, &activator->manager);
+	status = topologyManager_create(context, activator->loghelper, &activator->manager);
 	if (status == CELIX_SUCCESS) {
 		status = bundleActivator_createRSATracker(activator, &activator->remoteServiceAdminTracker);
 		if (status == CELIX_SUCCESS) {
@@ -124,8 +125,6 @@ static celix_status_t bundleActivator_createServiceListener(struct activator *ac
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator *activator = userData;
-
-	logHelper_start(activator->loghelper);
 
 	endpoint_listener_pt endpointListener = malloc(sizeof(*endpointListener));
 	endpointListener->handle = activator->manager;
@@ -200,7 +199,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	serviceRegistration_unregister(activator->endpointListenerService);
 	free(activator->endpointListener);
 
-	logHelper_stop(activator->loghelper);
+	topologyManager_closeImports(activator->manager);
 
 	return status;
 }
@@ -213,6 +212,7 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt contex
 		status = CELIX_BUNDLE_EXCEPTION;
 	}
 	else {
+		logHelper_stop(activator->loghelper);
 		logHelper_destroy(&activator->loghelper);
 
 		status = topologyManager_destroy(activator->manager);

@@ -97,7 +97,7 @@ celix_status_t discovery_endpointListenerAdded(void* handle, service_reference_p
 
 		hash_map_iterator_pt iter = hashMapIterator_create(discovery->discoveredServices);
 		while (hashMapIterator_hasNext(iter)) {
-			endpoint_description_pt endpoint = hashMapIterator_nextKey(iter);
+			endpoint_description_pt endpoint = hashMapIterator_nextValue(iter);
 
 			bool matchResult = false;
 			filter_match(filter, endpoint->properties, &matchResult);
@@ -106,7 +106,7 @@ celix_status_t discovery_endpointListenerAdded(void* handle, service_reference_p
 
 				logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_INFO, "EndpointListener Added - Add Scope");
 
-				listener->endpointAdded(listener, endpoint, NULL);
+				listener->endpointAdded(listener->handle, endpoint, NULL);
 			}
 		}
 		hashMapIterator_destroy(iter);
@@ -200,6 +200,8 @@ celix_status_t discovery_addDiscoveredEndpoint(discovery_pt discovery, endpoint_
 
 	status = celixThreadMutex_lock(&discovery->discoveredServicesMutex);
 
+	printf("Add new endpoint: %p\n", endpoint);
+
 	char* endpointId = endpoint->id;
 	bool exists = hashMap_get(discovery->discoveredServices, endpointId) != NULL;
 	if (!exists) {
@@ -220,6 +222,8 @@ celix_status_t discovery_removeDiscoveredEndpoint(discovery_pt discovery, endpoi
 	celix_status_t status = CELIX_SUCCESS;
 
 	status = celixThreadMutex_lock(&discovery->discoveredServicesMutex);
+
+	printf("Remove endpoint: %p\n", endpoint);
 
 	char* endpointId = endpoint->id;
 	void* oldValue = hashMap_remove(discovery->discoveredServices, endpointId);
