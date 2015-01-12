@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(RSA_BUNDLES_DISCOVERY_SHM "Option to enable building the Discovery (SHM) bundle" ON DEPS LAUNCHER topology_manager remote_service_admin)
+celix_subproject(RSA_BUNDLES_DISCOVERY_SHM "Option to enable building the Discovery (SHM) bundle" OFF DEPS LAUNCHER topology_manager remote_service_admin)
 if (RSA_BUNDLES_DISCOVERY_SHM)
 	include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 	include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include")

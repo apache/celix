@@ -14,7 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-celix_subproject(RSA_BUNDLES_DISCOVERY_BONJOUR "Option to enable building the Discovery BONJOUR bundle" ON DEPS LAUNCHER topology_manager remote_service_admin)
+celix_subproject(RSA_BUNDLES_DISCOVERY_BONJOUR "Option to enable building the Discovery BONJOUR bundle" OFF DEPS LAUNCHER topology_manager remote_service_admin)
 if (RSA_BUNDLES_DISCOVERY_BONJOUR)
 	#TODO find_package(DNS-SD REQUIRED)
 

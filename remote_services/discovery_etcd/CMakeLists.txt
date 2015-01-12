@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(RSA_BUNDLES_DISCOVERY_ETCD "Option to enable building the Discovery (ETCD) bundle" ON DEPS LAUNCHER topology_manager remote_service_admin)
+celix_subproject(RSA_BUNDLES_DISCOVERY_ETCD "Option to enable building the Discovery (ETCD) bundle" OFF DEPS LAUNCHER topology_manager remote_service_admin)
 if (RSA_BUNDLES_DISCOVERY_ETCD)
 	find_package(CURL REQUIRED)
 	find_package(LibXml2 REQUIRED)

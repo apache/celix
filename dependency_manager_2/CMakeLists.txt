@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(DEPENDENCY_MANAGER2 "Option to build the dependency manager static library" "ON" DEPS framework)
+celix_subproject(DEPENDENCY_MANAGER2 "Option to build the dependency manager static library" "OFF" DEPS framework)
 if (DEPENDENCY_MANAGER2) 
     # Add -fPIC for x86_64 Unix platforms; this lib will be linked to a shared lib
     if(UNIX AND NOT WIN32)
