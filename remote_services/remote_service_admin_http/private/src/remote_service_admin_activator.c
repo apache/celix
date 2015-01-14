@@ -34,6 +34,7 @@
 
 struct activator {
 	remote_service_admin_pt admin;
+	remote_service_admin_service_pt adminService;
 	service_registration_pt registration;
 };
 
@@ -61,7 +62,6 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
 	status = remoteServiceAdmin_create(context, &activator->admin);
 	if (status == CELIX_SUCCESS) {
-		// TODO: free
 		remoteServiceAdmin = calloc(1, sizeof(*remoteServiceAdmin));
 		if (!remoteServiceAdmin) {
 			status = CELIX_ENOMEM;
@@ -88,6 +88,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 			remoteServiceAdmin->importRegistration_getImportReference = importRegistration_getImportReference;
 
 			status = bundleContext_registerService(context, OSGI_RSA_REMOTE_SERVICE_ADMIN, remoteServiceAdmin, NULL, &activator->registration);
+			activator->adminService = remoteServiceAdmin;
 		}
 	}
 
@@ -102,6 +103,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	serviceRegistration_unregister(activator->registration);
 	activator->registration = NULL;
 
+	free(activator->adminService);
 
 	return status;
 }
