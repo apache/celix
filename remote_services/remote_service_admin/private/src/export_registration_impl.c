@@ -221,16 +221,15 @@ celix_status_t exportRegistration_getException(export_registration_pt registrati
 celix_status_t exportRegistration_getExportReference(export_registration_pt registration, export_reference_pt *reference) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	if (registration->exportReference == NULL) {
-		registration->exportReference = calloc(1, sizeof(*registration->exportReference));
-		if (registration->exportReference == NULL) {
-			status = CELIX_ENOMEM;
-		} else {
-			registration->exportReference->endpoint = registration->endpointDescription;
-			registration->exportReference->reference = registration->reference;
-		}
-	}
+	registration->exportReference = calloc(1, sizeof(*registration->exportReference));
 
+	if (registration->exportReference == NULL) {
+		status = CELIX_ENOMEM;
+	} else {
+		registration->exportReference->endpoint = registration->endpointDescription;
+		registration->exportReference->reference = registration->reference;
+	}
+	
 	*reference = registration->exportReference;
 
 	return status;

@@ -528,11 +528,12 @@ celix_status_t topologyManager_getEndpointDescriptionForExportRegistration(remot
 
 	export_reference_pt reference = NULL;
 	status = rsa->exportRegistration_getExportReference(export, &reference);
-	if (status != CELIX_SUCCESS) {
-		return status;
+
+	if (status == CELIX_SUCCESS) {
+	    status = rsa->exportReference_getExportedEndpoint(reference, endpoint);
 	}
 
-	status = rsa->exportReference_getExportedEndpoint(reference, endpoint);
+	free(reference);
 
 	return status;
 }
