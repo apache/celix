@@ -33,7 +33,7 @@
 
 typedef struct log * log_pt;
 
-celix_status_t log_create(log_pt *logger);
+celix_status_t log_create(int max_size, bool store_debug, log_pt *logger);
 celix_status_t log_destroy(log_pt logger);
 celix_status_t log_addEntry(log_pt log, log_entry_pt entry);
 celix_status_t log_getEntries(log_pt log, linked_list_pt *list);

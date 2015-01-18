@@ -42,6 +42,9 @@ struct log {
 	celix_thread_cond_t entriesToDeliver;
 	celix_thread_mutex_t deliverLock;
 	celix_thread_mutex_t listenerLock;
+
+	int max_size;
+	bool store_debug;
 };
 
 static celix_status_t log_startListenerThread(log_pt logger);
@@ -50,7 +53,7 @@ static celix_status_t log_stopListenerThread(log_pt logger);
 
 static void *log_listenerThread(void *data);
 
-celix_status_t log_create(log_pt *logger) {
+celix_status_t log_create(int max_size, bool store_debug, log_pt *logger) {
 	celix_status_t status = CELIX_ENOMEM;
 
 	*logger = calloc(1, sizeof(**logger));
@@ -64,6 +67,9 @@ celix_status_t log_create(log_pt *logger) {
 		(*logger)->listenerEntries = NULL;
 		(*logger)->listenerThread = celix_thread_default;
 		(*logger)->running = false;
+
+		(*logger)->max_size = max_size;
+		(*logger)->store_debug = store_debug;
 
 		arrayList_create(&(*logger)->listeners);
 		arrayList_create(&(*logger)->listenerEntries);
@@ -112,7 +118,21 @@ celix_status_t log_destroy(log_pt logger) {
 
 celix_status_t log_addEntry(log_pt log, log_entry_pt entry) {
 	celixThreadMutex_lock(&log->lock);
-	linkedList_addElement(log->entries, entry);
+
+	if (log->max_size != 0) {
+		if (log->store_debug || entry->level != OSGI_LOGSERVICE_DEBUG) {
+			linkedList_addElement(log->entries, entry);
+		}
+
+		if (log->max_size != -1) {
+			if (linkedList_size(log->entries) > log->max_size) {
+				log_entry_pt entry = linkedList_removeFirst(log->entries);
+				if (entry) {
+					logEntry_destroy(&entry);
+				}
+			}
+		}
+	}
 
 	arrayList_add(log->listenerEntries, entry);
 	celixThreadCondition_signal(&log->entriesToDeliver);

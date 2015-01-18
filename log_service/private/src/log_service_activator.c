@@ -34,6 +34,12 @@
 #include "log_reader_service_impl.h"
 #include "service_registration.h"
 
+#define DEFAULT_MAX_SIZE 100
+#define DEFAULT_STORE_DEBUG false
+
+#define MAX_SIZE_PROPERTY "CELIX_LOG_MAX_SIZE"
+#define STORE_DEBUG_PROPERTY "CELIX_LOG_STORE_DEBUG"
+
 struct logActivator {
     bundle_context_pt bundleContext;
     service_registration_pt logServiceFactoryReg;
@@ -47,6 +53,9 @@ struct logActivator {
     log_reader_data_pt reader;
     log_reader_service_pt reader_service;
 };
+
+static celix_status_t bundleActivator_getMaxSize(struct logActivator *activator, int *max_size);
+static celix_status_t bundleActivator_getStoreDebug(struct logActivator *activator, bool *store_debug);
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
     celix_status_t status = CELIX_SUCCESS;
@@ -76,8 +85,13 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
     struct logActivator * activator = (struct logActivator *) userData;
     celix_status_t status = CELIX_SUCCESS;
 
+    int max_size = 0;
+    bool store_debug = false;
 
-    log_create(&activator->logger);
+    bundleActivator_getMaxSize(activator, &max_size);
+    bundleActivator_getStoreDebug(activator, &store_debug);
+
+    log_create(max_size, store_debug, &activator->logger);
 
     // Add logger as Bundle- and FrameworkEvent listener
     activator->bundleListener = calloc(1, sizeof(*activator->bundleListener));
@@ -138,4 +152,38 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt contex
 	free(activator);
 
     return CELIX_SUCCESS;
+}
+
+static celix_status_t bundleActivator_getMaxSize(struct logActivator *activator, int *max_size) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	char *max_size_str = NULL;
+
+	*max_size = DEFAULT_MAX_SIZE;
+
+	bundleContext_getProperty(activator->bundleContext, MAX_SIZE_PROPERTY, &max_size_str);
+	if (max_size_str) {
+		*max_size = atoi(max_size_str);
+	}
+
+	return status;
+}
+
+static celix_status_t bundleActivator_getStoreDebug(struct logActivator *activator, bool *store_debug) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	char *store_debug_str = NULL;
+
+	*store_debug = DEFAULT_STORE_DEBUG;
+
+	bundleContext_getProperty(activator->bundleContext, STORE_DEBUG_PROPERTY, &store_debug_str);
+	if (store_debug_str) {
+		if (strcasecmp(store_debug_str, "true") == 0) {
+			*store_debug = true;
+		} else if (strcasecmp(store_debug_str, "false") == 0) {
+			*store_debug = false;
+		}
+	}
+
+	return status;
 }
