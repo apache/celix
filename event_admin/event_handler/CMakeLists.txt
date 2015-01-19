@@ -20,6 +20,7 @@ find_package(APR REQUIRED)
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories(private/include)
 include_directories(${PROJECT_SOURCE_DIR}/event_admin/event_admin/public/include)
+include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 
 SET_HEADER(BUNDLE_SYMBOLICNAME "eventhandler")
 SET(BUNDLE_VERSION "0.0.1")
@@ -30,6 +31,7 @@ bundle(event_handler
 	SOURCES 
 		private/src/event_handler_activator.c
 		private/src/event_handler_impl.c
+		${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
 )
 
 install_bundle(event_handler)

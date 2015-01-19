@@ -31,9 +31,10 @@
 
 #include <curl/curl.h>
 
+#include "bundle_context.h"
 #include "hash_map.h"
 #include "array_list.h"
-#include "celix_log.h"
+#include "log_helper.h"
 #include "celix_threads.h"
 #include "utils.h"
 
@@ -43,16 +44,6 @@
 #include "endpoint_discovery_poller.h"
 #include "endpoint_descriptor_reader.h"
 
-struct endpoint_discovery_poller {
-    discovery_pt discovery;
-    hash_map_pt entries;
-
-    celix_thread_mutex_t pollerLock;
-    celix_thread_t pollerThread;
-
-    unsigned int poll_interval;
-    volatile bool running;
-};
 
 #define DISCOVERY_POLL_INTERVAL "DISCOVERY_CFG_POLL_INTERVAL"
 #define DEFAULT_POLL_INTERVAL "10"
@@ -71,6 +62,8 @@ celix_status_t endpointDiscoveryPoller_create(discovery_pt discovery, bundle_con
     if (!poller) {
         return CELIX_ENOMEM;
     }
+
+    (*poller)->loghelper = &discovery->loghelper;
 
 	status = celixThreadMutex_create(&(*poller)->pollerLock, NULL);
 	if (status != CELIX_SUCCESS) {
@@ -132,14 +125,28 @@ celix_status_t endpointDiscoveryPoller_destroy(endpoint_discovery_poller_pt poll
 
     celixThread_join(poller->pollerThread, NULL);
 
-    status = celixThreadMutex_lock(&poller->pollerLock);
-    if (status != CELIX_SUCCESS) {
-        return CELIX_BUNDLE_EXCEPTION;
-    }
+    hash_map_iterator_pt iterator = hashMapIterator_create(poller->entries);
+	while (hashMapIterator_hasNext(iterator)) {
+		hash_map_entry_pt entry = hashMapIterator_nextEntry(iterator);
+
+		if ( endpointDiscoveryPoller_removeDiscoveryEndpoint(poller, (char*) hashMapEntry_getKey(entry)) == CELIX_SUCCESS) {
+			hashMapIterator_destroy(iterator);
+			iterator = hashMapIterator_create(poller->entries);
+		}
+	}
+	hashMapIterator_destroy(iterator);
+
+	status = celixThreadMutex_lock(&poller->pollerLock);
+
+	if (status != CELIX_SUCCESS) {
+		return CELIX_BUNDLE_EXCEPTION;
+	}
 
 	hashMap_destroy(poller->entries, true, false);
 
     status = celixThreadMutex_unlock(&poller->pollerLock);
+
+    poller->loghelper = NULL;
 
     free(poller);
 
@@ -183,14 +190,24 @@ celix_status_t endpointDiscoveryPoller_removeDiscoveryEndpoint(endpoint_discover
         return CELIX_BUNDLE_EXCEPTION;
     }
 
-	array_list_pt entries = hashMap_remove(poller->entries, url);
-	for (int i = 0; i < arrayList_size(entries); i++) {
-		endpoint_description_pt endpoint = arrayList_get(entries, i);
+    hash_map_entry_pt entry  = hashMap_getEntry(poller->entries, url);
+    char* origKey = hashMapEntry_getKey(entry);
 
+    array_list_pt entries = hashMap_remove(poller->entries, url);
+
+	for (int i = arrayList_size(entries); i > 0  ; i--) {
+		endpoint_description_pt endpoint = arrayList_get(entries, i-1);
 		discovery_removeDiscoveredEndpoint(poller->discovery, endpoint);
+		arrayList_remove(entries, i-1);
+		endpointDescription_destroy(endpoint);
 	}
-	arrayList_destroy(entries);
 
+	if (entries != NULL) {
+		arrayList_destroy(entries);
+	}
+
+
+	free(origKey);
 	status = celixThreadMutex_unlock(&poller->pollerLock);
 
     return status;
@@ -206,7 +223,7 @@ static void *endpointDiscoveryPoller_poll(void *data) {
 
         celix_status_t status = celixThreadMutex_lock(&poller->pollerLock);
         if (status != CELIX_SUCCESS) {
-        	fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "ENDPOINT_POLLER: failed to obtain lock; retrying...");
+        	logHelper_log(*poller->loghelper, OSGI_LOGSERVICE_WARNING, "ENDPOINT_POLLER: failed to obtain lock; retrying...");
         	continue;
         }
 
@@ -226,31 +243,39 @@ static void *endpointDiscoveryPoller_poll(void *data) {
 				continue;
 			}
 
-			for (int i = 0; i < arrayList_size(currentEndpoints); i++) {
-				endpoint_description_pt endpoint = arrayList_get(currentEndpoints, i);
+			for (int i = arrayList_size(currentEndpoints); i > 0  ; i--) {
+				endpoint_description_pt endpoint = arrayList_get(currentEndpoints, i-1);
 				if (!arrayList_contains(updatedEndpoints, endpoint)) {
 					status = discovery_removeDiscoveredEndpoint(poller->discovery, endpoint);
+					arrayList_remove(currentEndpoints, i-1);
+					endpointDescription_destroy(endpoint);
 				}
 			}
 
-			arrayList_clear(currentEndpoints);
+			for (int i = arrayList_size(updatedEndpoints); i > 0  ; i--) {
+				endpoint_description_pt endpoint = arrayList_remove(updatedEndpoints, 0);
+
+				if (!arrayList_contains(currentEndpoints, endpoint)) {
+					arrayList_add(currentEndpoints, endpoint);
+					status = discovery_addDiscoveredEndpoint(poller->discovery, endpoint);
+				}
+				else {
+					endpointDescription_destroy(endpoint);
+
+				}
+			}
+
 			if (updatedEndpoints) {
-				arrayList_addAll(currentEndpoints, updatedEndpoints);
 				arrayList_destroy(updatedEndpoints);
 			}
 
-			for (int i = 0; i < arrayList_size(currentEndpoints); i++) {
-				endpoint_description_pt endpoint = arrayList_get(currentEndpoints, i);
-
-				status = discovery_addDiscoveredEndpoint(poller->discovery, endpoint);
-			}
 		}
 
 		hashMapIterator_destroy(iterator);
 
 		status = celixThreadMutex_unlock(&poller->pollerLock);
 		if (status != CELIX_SUCCESS) {
-			fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "ENDPOINT_POLLER: failed to release lock; retrying...");
+			logHelper_log(*poller->loghelper, OSGI_LOGSERVICE_WARNING, "ENDPOINT_POLLER: failed to release lock; retrying...");
 		}
     }
 
@@ -268,7 +293,7 @@ static size_t endpointDiscoveryPoller_writeMemory(void *contents, size_t size, s
 
     mem->memory = realloc(mem->memory, mem->size + realsize + 1);
     if(mem->memory == NULL) {
-    	fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "ENDPOINT_POLLER: not enough memory (realloc returned NULL)!");
+    	printf("ENDPOINT_POLLER: not enough memory (realloc returned NULL)!");
         return 0;
     }
 
@@ -305,7 +330,7 @@ static celix_status_t endpointDiscoveryPoller_getEndpoints(endpoint_discovery_po
     if (res == CURLE_OK) {
         endpoint_descriptor_reader_pt reader = NULL;
 
-    	status = endpointDescriptorReader_create(&reader);
+    	status = endpointDescriptorReader_create(poller, &reader);
     	if (status == CELIX_SUCCESS) {
 			status = endpointDescriptorReader_parseDocument(reader, chunk.memory, updatedEndpoints);
     	}
@@ -314,7 +339,7 @@ static celix_status_t endpointDiscoveryPoller_getEndpoints(endpoint_discovery_po
 			endpointDescriptorReader_destroy(reader);
     	}
     } else {
-    	fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "ENDPOINT_POLLER: unable to read endpoints, reason: %s", curl_easy_strerror(res));
+    	logHelper_log(*poller->loghelper, OSGI_LOGSERVICE_ERROR, "ENDPOINT_POLLER: unable to read endpoints, reason: %s", curl_easy_strerror(res));
     }
 
     // clean up endpoints file

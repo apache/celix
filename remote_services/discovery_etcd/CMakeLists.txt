@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(RSA_BUNDLES_DISCOVERY_ETCD "Option to enable building the Discovery (ETCD) bundle" ON DEPS LAUNCHER topology_manager remote_service_admin)
+celix_subproject(RSA_BUNDLES_DISCOVERY_ETCD "Option to enable building the Discovery (ETCD) bundle" OFF DEPS LAUNCHER topology_manager remote_service_admin)
 if (RSA_BUNDLES_DISCOVERY_ETCD)
 	find_package(CURL REQUIRED)
 	find_package(LibXml2 REQUIRED)
@@ -31,6 +31,7 @@ if (RSA_BUNDLES_DISCOVERY_ETCD)
 	include_directories("${PROJECT_SOURCE_DIR}/remote_services/discovery_etcd/private/include")
 	include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
 	include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
+	include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 	include_directories("private/include")
 
 	SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_rsa_discovery_etcd")
@@ -50,6 +51,8 @@ if (RSA_BUNDLES_DISCOVERY_ETCD)
 		${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_discovery_server.c
 	    ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c
 	    ${PROJECT_SOURCE_DIR}/remote_services/utils/private/src/civetweb.c
+	    
+	    ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
 	)
 
 	install_bundle(discovery_etcd)

@@ -23,7 +23,7 @@
  *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
-#include <apr_general.h>
+
 #include <stdlib.h>
 
 #include "bundle_activator.h"
@@ -34,8 +34,13 @@
 #include "log_reader_service_impl.h"
 #include "service_registration.h"
 
+#define DEFAULT_MAX_SIZE 100
+#define DEFAULT_STORE_DEBUG false
+
+#define MAX_SIZE_PROPERTY "CELIX_LOG_MAX_SIZE"
+#define STORE_DEBUG_PROPERTY "CELIX_LOG_STORE_DEBUG"
+
 struct logActivator {
-    apr_pool_t *pool;
     bundle_context_pt bundleContext;
     service_registration_pt logServiceFactoryReg;
     service_registration_pt logReaderServiceReg;
@@ -43,16 +48,20 @@ struct logActivator {
     bundle_listener_pt bundleListener;
     framework_listener_pt frameworkListener;
 
+    log_pt logger;
+    service_factory_pt factory;
+    log_reader_data_pt reader;
+    log_reader_service_pt reader_service;
 };
+
+static celix_status_t bundleActivator_getMaxSize(struct logActivator *activator, int *max_size);
+static celix_status_t bundleActivator_getStoreDebug(struct logActivator *activator, bool *store_debug);
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
     celix_status_t status = CELIX_SUCCESS;
-    apr_pool_t *mp = NULL;
 	struct logActivator * activator = NULL;
 
-    apr_pool_create(&mp, NULL);
-    activator = (struct logActivator *) apr_palloc(mp, sizeof(struct logActivator));
-
+    activator = (struct logActivator *) calloc(1, sizeof(struct logActivator));
 
     if (activator == NULL) {
         status = CELIX_ENOMEM;
@@ -60,7 +69,12 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 		activator->bundleContext = context;
 		activator->logServiceFactoryReg = NULL;
 		activator->logReaderServiceReg = NULL;
-		activator->pool = mp;
+
+		activator->logger = NULL;
+		activator->factory = NULL;
+		activator->reader = NULL;
+		activator->reader_service = NULL;
+
         *userData = activator;
     }
 
@@ -70,40 +84,40 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
     struct logActivator * activator = (struct logActivator *) userData;
     celix_status_t status = CELIX_SUCCESS;
-    service_factory_pt factory = NULL;
-    log_pt logger = NULL;
 
-    log_reader_data_pt reader = NULL;
-    log_reader_service_pt reader_service = NULL;
+    int max_size = 0;
+    bool store_debug = false;
 
+    bundleActivator_getMaxSize(activator, &max_size);
+    bundleActivator_getStoreDebug(activator, &store_debug);
 
-    log_create(activator->pool, &logger);
+    log_create(max_size, store_debug, &activator->logger);
 
     // Add logger as Bundle- and FrameworkEvent listener
-    activator->bundleListener = apr_palloc(activator->pool, sizeof(*activator->bundleListener));
-    activator->bundleListener->handle = logger;
+    activator->bundleListener = calloc(1, sizeof(*activator->bundleListener));
+    activator->bundleListener->handle = activator->logger;
     activator->bundleListener->bundleChanged = log_bundleChanged;
     bundleContext_addBundleListener(context, activator->bundleListener);
 
-    activator->frameworkListener = apr_palloc(activator->pool, sizeof(*activator->frameworkListener));
-    activator->frameworkListener->handle = logger;
+    activator->frameworkListener = calloc(1, sizeof(*activator->frameworkListener));
+    activator->frameworkListener->handle = activator->logger;
     activator->frameworkListener->frameworkEvent = log_frameworkEvent;
     bundleContext_addFrameworkListener(context, activator->frameworkListener);
 
-    logFactory_create(activator->pool, logger, &factory);
+    logFactory_create(activator->logger, &activator->factory);
 
-    bundleContext_registerServiceFactory(context, (char *) OSGI_LOGSERVICE_NAME, factory, NULL, &activator->logServiceFactoryReg);
+    bundleContext_registerServiceFactory(context, (char *) OSGI_LOGSERVICE_NAME, activator->factory, NULL, &activator->logServiceFactoryReg);
 
-    logReaderService_create(logger, activator->pool, &reader);
+    logReaderService_create(activator->logger, &activator->reader);
 
-    reader_service = apr_palloc(activator->pool, sizeof(*reader_service));
-    reader_service->reader = reader;
-    reader_service->getLog = logReaderService_getLog;
-    reader_service->addLogListener = logReaderService_addLogListener;
-    reader_service->removeLogListener = logReaderService_removeLogListener;
-    reader_service->removeAllLogListener = logReaderService_removeAllLogListener;
+    activator->reader_service = calloc(1, sizeof(*activator->reader_service));
+    activator->reader_service->reader = activator->reader;
+    activator->reader_service->getLog = logReaderService_getLog;
+    activator->reader_service->addLogListener = logReaderService_addLogListener;
+    activator->reader_service->removeLogListener = logReaderService_removeLogListener;
+    activator->reader_service->removeAllLogListener = logReaderService_removeAllLogListener;
 
-    bundleContext_registerService(context, (char *) OSGI_LOGSERVICE_READER_SERVICE_NAME, reader_service, NULL, &activator->logReaderServiceReg);
+    bundleContext_registerService(context, (char *) OSGI_LOGSERVICE_READER_SERVICE_NAME, activator->reader_service, NULL, &activator->logReaderServiceReg);
 
     return status;
 }
@@ -116,12 +130,60 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	serviceRegistration_unregister(activator->logServiceFactoryReg);
 	activator->logServiceFactoryReg = NULL;
 
+    logReaderService_destroy(&activator->reader);
+	free(activator->reader_service);
+
+	logFactory_destroy(&activator->factory);
+
 	bundleContext_removeBundleListener(context, activator->bundleListener);
 	bundleContext_removeFrameworkListener(context, activator->frameworkListener);
+
+	free(activator->bundleListener);
+	free(activator->frameworkListener);
+
+	log_destroy(activator->logger);
 
     return CELIX_SUCCESS;
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
+	struct logActivator * activator = (struct logActivator *) userData;
+
+	free(activator);
+
     return CELIX_SUCCESS;
+}
+
+static celix_status_t bundleActivator_getMaxSize(struct logActivator *activator, int *max_size) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	char *max_size_str = NULL;
+
+	*max_size = DEFAULT_MAX_SIZE;
+
+	bundleContext_getProperty(activator->bundleContext, MAX_SIZE_PROPERTY, &max_size_str);
+	if (max_size_str) {
+		*max_size = atoi(max_size_str);
+	}
+
+	return status;
+}
+
+static celix_status_t bundleActivator_getStoreDebug(struct logActivator *activator, bool *store_debug) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	char *store_debug_str = NULL;
+
+	*store_debug = DEFAULT_STORE_DEBUG;
+
+	bundleContext_getProperty(activator->bundleContext, STORE_DEBUG_PROPERTY, &store_debug_str);
+	if (store_debug_str) {
+		if (strcasecmp(store_debug_str, "true") == 0) {
+			*store_debug = true;
+		} else if (strcasecmp(store_debug_str, "false") == 0) {
+			*store_debug = false;
+		}
+	}
+
+	return status;
 }

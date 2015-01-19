@@ -36,7 +36,7 @@ struct serviceReference {
 };
 
 celix_status_t serviceReference_create(bundle_pt bundle, service_registration_pt registration, service_reference_pt *reference);
-celix_status_t serviceReference_destroy(service_reference_pt reference);
+celix_status_t serviceReference_destroy(service_reference_pt *reference);
 
 celix_status_t serviceReference_invalidate(service_reference_pt reference);
 celix_status_t serviceRefernce_isValid(service_reference_pt reference, bool *result);

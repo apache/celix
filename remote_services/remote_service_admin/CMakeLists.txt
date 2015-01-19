@@ -33,6 +33,13 @@ install (FILES
     COMPONENT 
         remote_service_admin
 )
+install (FILES
+        private/src/remote_proxy_factory_impl.c
+    DESTINATION
+        share/celix/remote_service_admin
+    COMPONENT
+        remote_service_admin
+)
 install (FILES 
         ${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include/endpoint_listener.h
     DESTINATION 

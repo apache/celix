@@ -53,5 +53,6 @@ typedef enum {
 } DEPLOYMENT_ADMIN_AUDIT_EVENT;
 
 celix_status_t deploymentAdmin_create(apr_pool_t *pool, bundle_context_pt context, deployment_admin_pt *admin);
+celix_status_t deploymentAdmin_destroy(deployment_admin_pt admin);
 
 #endif /* DEPLOYMENT_ADMIN_H_ */

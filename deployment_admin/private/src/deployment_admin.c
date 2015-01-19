@@ -129,6 +129,29 @@ celix_status_t deploymentAdmin_create(apr_pool_t *pool, bundle_context_pt contex
 	return status;
 }
 
+
+
+celix_status_t deploymentAdmin_destroy(deployment_admin_pt admin) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	hash_map_iterator_pt iter = hashMapIterator_create(admin->packages);
+
+	while (hashMapIterator_hasNext(iter)) {
+		deployment_package_pt target = (deployment_package_pt) hashMapIterator_nextValue(iter);
+		deploymentPackage_destroy(target);
+	}
+
+	hashMapIterator_destroy(iter);
+
+	hashMap_destroy(admin->packages, false, false);
+
+	if (admin->current != NULL) {
+		free(admin->current);
+	}
+
+	return status;
+}
+
 static celix_status_t deploymentAdmin_updateAuditPool(deployment_admin_pt admin, DEPLOYMENT_ADMIN_AUDIT_EVENT auditEvent) {
 	celix_status_t status = CELIX_SUCCESS;
 
@@ -190,10 +213,8 @@ static void * APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *depl
 					request = apr_pstrcat(admin->pool, admin->pollUrl, "/", last, NULL);
 				}
 
-				char inputFile[256];
-				inputFile[0] = '\0';
-				char *test = inputFile;
-				celix_status_t status = deploymentAdmin_download(request, &test);
+				char *inputFilename = NULL;
+				celix_status_t status = deploymentAdmin_download(request, &inputFilename);
 				if (status == CELIX_SUCCESS) {
 					bundle_pt bundle = NULL;
 					bundleContext_getBundle(admin->context, &bundle);
@@ -210,7 +231,7 @@ static void * APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *depl
 					apr_dir_make(tmpDir, APR_UREAD|APR_UWRITE|APR_UEXECUTE, admin->pool);
 
 					// TODO: update to use bundle cache DataFile instead of module entries.
-					unzip_extractDeploymentPackage(test, tmpDir);
+					unzip_extractDeploymentPackage(inputFilename, tmpDir);
 					char *manifest = apr_pstrcat(admin->pool, tmpDir, "/META-INF/MANIFEST.MF", NULL);
 					manifest_pt mf = NULL;
 					manifest_createFromFile(manifest, &mf);
@@ -243,9 +264,12 @@ static void * APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *depl
 
 					deploymentAdmin_deleteTree(repoCache, admin->pool);
 					deploymentAdmin_deleteTree(tmpDir, admin->pool);
-					remove(test);
+					remove(inputFilename);
 					admin->current = strdup(last);
 					hashMap_put(admin->packages, name, source);
+				}
+				if (inputFilename != NULL) {
+					free(inputFilename);
 				}
 			}
 		}
@@ -320,7 +344,7 @@ celix_status_t deploymentAdmin_download(char * url, char **inputFile) {
 	CURLcode res = 0;
 	curl = curl_easy_init();
 	if (curl) {
-	    *inputFile = "updateXXXXXX";
+	    *inputFile = strdup("updateXXXXXX");
         int fd = mkstemp(*inputFile);
         if (fd) {
             FILE *fp = fopen(*inputFile, "wb+");

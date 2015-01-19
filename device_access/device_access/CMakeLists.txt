@@ -28,6 +28,8 @@ bundle(device_manager SOURCES
 	private/src/driver_loader
 	private/src/driver_matcher
     
+    ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
+    
     private/include/device_manager.h
     private/include/driver_attributes.h
     private/include/driver_loader.h
@@ -45,6 +47,7 @@ install_bundle(device_manager
 
 include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 
 include_directories("public/include")
 include_directories("private/include")

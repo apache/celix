@@ -40,12 +40,15 @@ celix_status_t eventPublisherCreate(apr_pool_t *pool, bundle_context_pt context,
         (*event_publisher)->running = false;
         (*event_publisher)->pool = pool;
         (*event_publisher)->context = context;
+
+        logHelper_create(context, &(*event_publisher)->loghelper);
     }
     return status;
 }
 
 celix_status_t eventPublisherStart(event_publisher_pt *event_publisher) {
 	(*event_publisher)->running = true;
+    logHelper_start((*event_publisher)->loghelper);
 	apr_thread_create(&(*event_publisher)->sender, NULL, eventPublisherSendEventThread, event_publisher, (*event_publisher)->pool);
 	return CELIX_SUCCESS;
 }
@@ -54,6 +57,8 @@ celix_status_t eventPublisherStop(event_publisher_pt *event_publisher) {
 	(*event_publisher)->running = false;
 	apr_status_t status;
 	apr_thread_join(&status,(*event_publisher)->sender);
+	logHelper_stop((*event_publisher)->loghelper);
+	logHelper_destroy(&(*event_publisher)->loghelper);
 	return CELIX_SUCCESS;
 }
 
@@ -86,21 +91,24 @@ celix_status_t eventPublisherAddingService(void * handle, service_reference_pt r
 }
 
 celix_status_t eventPublisherAddedService(void * handle, service_reference_pt ref, void * service) {
-	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "[PUB] Event admin added.");
-    event_publisher_pt data = handle;
+    event_publisher_pt data = (event_publisher_pt) handle;
+	logHelper_log(data->loghelper, OSGI_LOGSERVICE_DEBUG, "[PUB] Event admin added.");
+
     data->event_admin_service = (event_admin_service_pt) service;
     data->eventAdminAdded = true;
 	return CELIX_SUCCESS;
 }
 
 celix_status_t eventPublisherModifiedService(void * handle, service_reference_pt ref, void * service) {
-	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "[PUB] Event admin modified.");
+	event_publisher_pt data = (event_publisher_pt) handle;
+	logHelper_log(data->loghelper, OSGI_LOGSERVICE_DEBUG, "[PUB] Event admin modified.");
 	return CELIX_SUCCESS;
 }
 
 celix_status_t eventPublisherRemovedService(void * handle, service_reference_pt ref, void * service) {
-	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "[PUB] Event admin removed.");
-    event_publisher_pt data = handle;
+	event_publisher_pt data = (event_publisher_pt) handle;
+	logHelper_log(data->loghelper, OSGI_LOGSERVICE_DEBUG, "[PUB] Event admin removed.");
+
     data->event_admin_service = NULL;
     data->eventAdminAdded = false;
 	return CELIX_SUCCESS;

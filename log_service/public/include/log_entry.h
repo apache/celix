@@ -27,29 +27,29 @@
 #ifndef LOG_ENTRY_H_
 #define LOG_ENTRY_H_
 
-#include <apr_general.h>
-
 #include "log_service.h"
 
 struct log_entry {
-    bundle_pt bundle;
     int errorCode;
     log_level_t level;
     char *message;
-    service_reference_pt reference;
     time_t time;
+
+    char *bundleSymbolicName;
+    long bundleId;
 };
 
 typedef struct log_entry * log_entry_pt;
 
 celix_status_t logEntry_create(bundle_pt bundle, service_reference_pt reference,
         log_level_t level, char *message, int errorCode,
-        apr_pool_t *pool, log_entry_pt *entry);
-celix_status_t logEntry_getBundle(log_entry_pt entry, bundle_pt *bundle);
+        log_entry_pt *entry);
+celix_status_t logEntry_destroy(log_entry_pt *entry);
+celix_status_t logEntry_getBundleSymbolicName(log_entry_pt entry, char **bundleSymbolicName);
+celix_status_t logEntry_getBundleId(log_entry_pt entry, long *bundleId);
 celix_status_t logEntry_getErrorCode(log_entry_pt entry, int *errorCode);
 celix_status_t logEntry_getLevel(log_entry_pt entry, log_level_t *level);
 celix_status_t logEntry_getMessage(log_entry_pt entry, char **message);
-celix_status_t logEntry_getServiceReference(log_entry_pt entry, service_reference_pt *reference);
 celix_status_t logEntry_getTime(log_entry_pt entry, time_t *time);
 
 #endif /* LOG_ENTRY_H_ */

@@ -24,6 +24,7 @@
  *  \copyright	Apache License, Version 2.0
  */
 
+#include <stdlib.h>
 #include <stddef.h>
 
 #include "log_reader_service_impl.h"
@@ -31,28 +32,37 @@
 
 struct log_reader_data {
     log_pt log;
-    apr_pool_t *pool;
 };
 
-celix_status_t logReaderService_create(log_pt log, apr_pool_t *pool, log_reader_data_pt *reader) {
-    celix_status_t status = APR_SUCCESS;
+celix_status_t logReaderService_create(log_pt log, log_reader_data_pt *reader) {
+    celix_status_t status = CELIX_SUCCESS;
 
-    *reader = (log_reader_data_pt) apr_palloc(pool, sizeof(**reader));
+    *reader = (log_reader_data_pt) calloc(1, sizeof(**reader));
 
     if (reader == NULL) {
         status = CELIX_ENOMEM;
     } else {
         (*reader)->log = log;
-        (*reader)->pool = pool;
     }
 
     return status;
 }
 
-celix_status_t logReaderService_getLog(log_reader_data_pt reader, apr_pool_t *memory_pool, linked_list_pt *list) {
+celix_status_t logReaderService_destroy(log_reader_data_pt *reader) {
     celix_status_t status = CELIX_SUCCESS;
 
-    status = log_getEntries(reader->log, memory_pool, list);
+    free(*reader);
+    reader = NULL;
+
+    return status;
+}
+
+
+
+celix_status_t logReaderService_getLog(log_reader_data_pt reader, linked_list_pt *list) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    status = log_getEntries(reader->log, list);
 
     return status;
 }

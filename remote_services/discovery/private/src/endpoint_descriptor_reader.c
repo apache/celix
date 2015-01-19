@@ -28,23 +28,26 @@
 #include <string.h>
 #include <libxml/xmlreader.h>
 
-#include "celix_log.h"
+#include "log_helper.h"
+#include "log_service.h"
 #include "constants.h"
 #include "remote_constants.h"
 
 #include "endpoint_description.h"
 #include "endpoint_descriptor_common.h"
 #include "endpoint_descriptor_reader.h"
+#include "endpoint_discovery_poller.h"
 #include "properties.h"
 #include "utils.h"
 
 struct endpoint_descriptor_reader {
     xmlTextReaderPtr reader;
+    log_helper_pt* loghelper;
 };
 
 static valueType valueTypeFromString(char *name);
 
-celix_status_t endpointDescriptorReader_create(endpoint_descriptor_reader_pt *reader) {
+celix_status_t endpointDescriptorReader_create(endpoint_discovery_poller_pt poller, endpoint_descriptor_reader_pt *reader) {
     celix_status_t status = CELIX_SUCCESS;
 
     *reader = malloc(sizeof(**reader));
@@ -52,6 +55,7 @@ celix_status_t endpointDescriptorReader_create(endpoint_descriptor_reader_pt *re
         status = CELIX_ENOMEM;
     } else {
         (*reader)->reader = NULL;
+        (*reader)->loghelper = poller->loghelper;
     }
 
     return status;
@@ -60,13 +64,15 @@ celix_status_t endpointDescriptorReader_create(endpoint_descriptor_reader_pt *re
 celix_status_t endpointDescriptorReader_destroy(endpoint_descriptor_reader_pt reader) {
     celix_status_t status = CELIX_SUCCESS;
 
+    reader->loghelper = NULL;
+
     free(reader);
 
     return status;
 }
 
 void endpointDescriptorReader_addSingleValuedProperty(properties_pt properties, const xmlChar* name, const xmlChar* value) {
-	properties_set(properties, strdup((char *) name), strdup((char *) value));
+	properties_set(properties, (char *) name, (char*) value);
 }
 
 void endpointDescriptorReader_addMultiValuedProperty(properties_pt properties, const xmlChar* name, array_list_pt values) {
@@ -81,7 +87,7 @@ void endpointDescriptorReader_addMultiValuedProperty(properties_pt properties, c
 			value = strcat(value, item);
 		}
 
-		properties_set(properties, strdup((char *) name), strdup(value));
+		properties_set(properties, (char *) name, value);
 
 		free(value);
 	}
@@ -149,6 +155,10 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
 
                     valueBuffer = xmlStrcat(valueBuffer, BAD_CAST ">");
                 } else if (xmlStrcmp(localname, ENDPOINT_DESCRIPTION) == 0) {
+
+                	if (endpointProperties != NULL)
+                		properties_destroy(endpointProperties);
+
                     endpointProperties = properties_create();
                 } else if (xmlStrcmp(localname, PROPERTY) == 0) {
                     inProperty = true;
@@ -164,8 +174,9 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
 
                         if (propertyValue != NULL) {
                         	if (propertyType != VALUE_TYPE_STRING && strcmp(OSGI_RSA_ENDPOINT_SERVICE_ID, (char*) propertyName)) {
-                        		fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "ENDPOINT_DESCRIPTOR_READER: Only single-valued string supported for %s\n", propertyName);
+                        		logHelper_log(*reader->loghelper, OSGI_LOGSERVICE_WARNING, "ENDPOINT_DESCRIPTOR_READER: Only single-valued string supported for %s\n", propertyName);
                         	}
+
                         	endpointDescriptorReader_addSingleValuedProperty(endpointProperties, propertyName, propertyValue);
                         }
 
@@ -208,7 +219,7 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
                     }
                     else if (propertyValue != NULL) {
                     	if (propertyType != VALUE_TYPE_STRING) {
-                    		fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "ENDPOINT_DESCRIPTOR_READER: Only string support for %s\n", propertyName);
+                    		logHelper_log(*reader->loghelper, OSGI_LOGSERVICE_WARNING, "ENDPOINT_DESCRIPTOR_READER: Only string support for %s\n", propertyName);
                     	}
                     	endpointDescriptorReader_addSingleValuedProperty(endpointProperties, propertyName, propertyValue);
 
@@ -219,6 +230,10 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
                     }
 
                     xmlFree((void *) propertyName);
+					int k=0;
+					for(;k<arrayList_size(propertyValues);k++){
+						free(arrayList_get(propertyValues,k));
+					}
                     arrayList_clear(propertyValues);
 
                     propertyType = VALUE_TYPE_STRING;
@@ -242,6 +257,14 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
             read = xmlTextReaderRead(reader->reader);
         }
 
+		if(endpointProperties!=NULL){
+			properties_destroy(endpointProperties);
+		}
+
+		int k=0;
+		for(;k<arrayList_size(propertyValues);k++){
+			free(arrayList_get(propertyValues,k));
+		}
         arrayList_destroy(propertyValues);
         xmlFree(valueBuffer);
 

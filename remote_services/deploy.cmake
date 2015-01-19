@@ -21,7 +21,7 @@ if (REMOTE_SERVICE_ADMIN)
                                     org.apache.celix.calc.api.Calculator_endpoint
                                     org.apache.celix.calc.api.Calculator2_endpoint)
     deploy("remote-services-cfg-client" BUNDLES topology_manager remote_service_admin_http shell shell_tui log_service log_writer calculator_shell discovery_configured
-                                        ENDPOINTS org.apache.celix.calc.api.Calculator_proxy)
+                                        ENDPOINTS org.apache.celix.calc.api.Calculator_proxy org.apache.celix.calc.api.Calculator2_proxy)
 
 	#TODO for remote-service-client the discovery should be added as last. If this is not done, 
 	#discovery will discover services before the topology manager is registered as 

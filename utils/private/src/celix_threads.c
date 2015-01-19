@@ -23,11 +23,21 @@
  *  \author     <a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
  *  \copyright  Apache License, Version 2.0
  */
-
+#include <stdlib.h>
 #include "celix_threads.h"
 
+
 celix_status_t celixThread_create(celix_thread_t *new_thread, celix_thread_attr_t *attr, celix_thread_start_t func, void *data) {
-    return pthread_create(new_thread, attr, func, data);
+    celix_status_t status = CELIX_SUCCESS;
+
+	if (pthread_create(&(*new_thread).thread, attr, func, data) != 0) {
+		status = CELIX_BUNDLE_EXCEPTION;
+	}
+	else {
+		(*new_thread).threadInitialized = true;
+	}
+
+	return status;
 }
 
 celix_status_t celixThread_exit(void *exitStatus) {
@@ -37,20 +47,38 @@ celix_status_t celixThread_exit(void *exitStatus) {
 }
 
 celix_status_t celixThread_detach(celix_thread_t thread) {
-    return pthread_detach(thread);
+    return pthread_detach(thread.thread);
 }
 
-celix_status_t celixThread_join(celix_thread_t thread, void **status) {
-    return pthread_join(thread, status);
+celix_status_t celixThread_join(celix_thread_t thread, void **retVal) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (pthread_join(thread.thread, retVal) != 0) {
+		status = CELIX_BUNDLE_EXCEPTION;
+	}
+
+	thread.threadInitialized = false;
+
+    return status;
 }
 
 celix_thread_t celixThread_self() {
-    return pthread_self();
+	celix_thread_t thread;
+
+	thread.thread = pthread_self();
+	thread.threadInitialized = true;
+
+	return thread;
 }
 
 int celixThread_equals(celix_thread_t thread1, celix_thread_t thread2) {
-    return pthread_equal(thread1, thread2);
+    return pthread_equal(thread1.thread, thread2.thread);
 }
+
+bool celixThread_initalized(celix_thread_t thread) {
+    return thread.threadInitialized;
+}
+
 
 celix_status_t celixThreadMutex_create(celix_thread_mutex_t *mutex, celix_thread_mutexattr_t *attr) {
     return pthread_mutex_init(mutex, attr);
@@ -100,6 +128,10 @@ celix_status_t celixThreadMutexAttr_settype(celix_thread_mutexattr_t *attr, int 
 
 celix_status_t celixThreadCondition_init(celix_thread_cond_t *condition, celix_thread_condattr_t *attr) {
     return pthread_cond_init(condition, attr);
+}
+
+celix_status_t celixThreadCondition_destroy(celix_thread_cond_t *condition) {
+    return pthread_cond_destroy(condition);
 }
 
 celix_status_t celixThreadCondition_wait(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex) {

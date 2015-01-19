@@ -47,6 +47,14 @@ celix_status_t serviceReference_invalidate(service_reference_pt reference) {
 	return mock_c()->returnValue().value.intValue;
 }
 
+celix_status_t serviceRefernce_isValid(service_reference_pt reference, bool *result) {
+	mock_c()->actualCall("serviceRefernce_isValid")
+			->withPointerParameters("reference", reference)
+			->withOutputParameter("result", result);
+	return mock_c()->returnValue().value.intValue;
+}
+
+
 celix_status_t serviceReference_getServiceRegistration(service_reference_pt reference, service_registration_pt *registration) {
 	mock_c()->actualCall("serviceReference_getServiceRegistration")
 			->withPointerParameters("reference", reference)

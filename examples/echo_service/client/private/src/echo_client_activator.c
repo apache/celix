@@ -75,7 +75,10 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	struct echoActivator * act = (struct echoActivator *) userData;
+	serviceTracker_destroy(act->tracker);
 	echoClient_destroy(act->client);
+
+	free(act);
 
 	return CELIX_SUCCESS;
 }

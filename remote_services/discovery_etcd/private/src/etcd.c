@@ -318,8 +318,10 @@ bool etcd_watch(char* key, int index, char* action, char* prevValue, char* value
 		if ((js_prevValue != NULL) && (json_is_string(js_prevValue))) {
 			strncpy(prevValue, json_string_value(js_prevValue), MAX_VALUE_LENGTH);
 		}
-		if ((js_value != NULL) && (js_action != NULL) && (json_is_string(js_value)) && (json_is_string(js_action))) {
+		if ((js_value != NULL) && (json_is_string(js_value))) {
 			strncpy(value, json_string_value(js_value), MAX_VALUE_LENGTH);
+		}
+		if ((js_action != NULL) && (json_is_string(js_action))) {
 			strncpy(action, json_string_value(js_action), MAX_ACTION_LENGTH);
 
 			retVal = true;

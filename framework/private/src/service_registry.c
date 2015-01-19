@@ -433,7 +433,7 @@ celix_status_t serviceRegistry_ungetServiceReference(service_registry_pt registr
     array_list_pt references = hashMap_get(registry->serviceReferences, owner);
     if (references != NULL) {
         arrayList_removeElement(references, reference);
-        serviceReference_destroy(reference);
+        serviceReference_destroy(&reference);
         if (arrayList_size(references) > 0) {
             hashMap_put(registry->serviceReferences, owner, references);
         } else {
@@ -528,6 +528,10 @@ celix_status_t serviceRegistry_ungetService(service_registry_pt registry, bundle
 		celixThreadMutex_unlock(&registry->mutex);
 		*result = false;
 		return CELIX_SUCCESS;
+	}
+
+	if (usage->count == 1) {
+		serviceRegistration_ungetService(registration, bundle, &usage->service);
 	}
 
 	usage->count--;

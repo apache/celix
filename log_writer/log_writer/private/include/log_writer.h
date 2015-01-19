@@ -34,14 +34,15 @@
 struct log_writer {
     log_reader_service_pt logReader;
     log_listener_pt logListener;
-    apr_pool_t *pool;
+
     bundle_context_pt context;
     service_tracker_pt tracker;
 };
 
 typedef struct log_writer *log_writer_pt;
 
-celix_status_t logWriter_create(apr_pool_t *pool, bundle_context_pt context, log_writer_pt *writer);
+celix_status_t logWriter_create(bundle_context_pt context, log_writer_pt *writer);
+celix_status_t logWriter_destroy(log_writer_pt *writer);
 celix_status_t logWriter_start(log_writer_pt writer);
 celix_status_t logWriter_stop(log_writer_pt writer);
 

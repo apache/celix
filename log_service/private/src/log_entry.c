@@ -25,31 +25,66 @@
  */
 
 #include <stddef.h>
+#include <stdlib.h>
 
+#include "celix_errno.h"
+#include "log_service.h"
 #include "log_entry.h"
 
 celix_status_t logEntry_create(bundle_pt bundle, service_reference_pt reference,
         log_level_t level, char *message, int errorCode,
-        apr_pool_t *pool, log_entry_pt *entry) {
+        log_entry_pt *entry) {
     celix_status_t status = CELIX_SUCCESS;
 
-    *entry = apr_palloc(pool, sizeof(**entry));
-    if (entry == NULL) {
+    *entry = malloc(sizeof(**entry));
+    if (*entry == NULL) {
         status = CELIX_ENOMEM;
     } else {
-        (*entry)->bundle = bundle;
-        (*entry)->reference = reference;
         (*entry)->level = level;
-        (*entry)->message = message;
+        (*entry)->message = strdup(message);
         (*entry)->errorCode = errorCode;
         (*entry)->time = time(NULL);
+
+        (*entry)->bundleSymbolicName = NULL;
+        (*entry)->bundleId = 0;
+    }
+
+    if (status == CELIX_SUCCESS) {
+        status = bundle_getBundleId(bundle, &(*entry)->bundleId);
+    }
+
+    if (status == CELIX_SUCCESS) {
+    	module_pt module = NULL;
+        status = bundle_getCurrentModule(bundle, &module);
+		if (status == CELIX_SUCCESS) {
+			char *symbolicName = NULL;
+			status = module_getSymbolicName(module, &symbolicName);
+			if (status == CELIX_SUCCESS) {
+				(*entry)->bundleSymbolicName = strdup(symbolicName);
+			}
+		}
     }
 
     return status;
 }
 
-celix_status_t logEntry_getBundle(log_entry_pt entry, bundle_pt *bundle) {
-    *bundle = entry->bundle;
+celix_status_t logEntry_destroy(log_entry_pt *entry) {
+    if (*entry) {
+    	free((*entry)->bundleSymbolicName);
+        free((*entry)->message);
+        free(*entry);
+        *entry = NULL;
+    }
+    return CELIX_SUCCESS;
+}
+
+celix_status_t logEntry_getBundleSymbolicName(log_entry_pt entry, char **bundleSymbolicName) {
+    *bundleSymbolicName = entry->bundleSymbolicName;
+    return CELIX_SUCCESS;
+}
+
+celix_status_t logEntry_getBundleId(log_entry_pt entry, long *bundleId) {
+    *bundleId = entry->bundleId;
     return CELIX_SUCCESS;
 }
 
@@ -65,11 +100,6 @@ celix_status_t logEntry_getLevel(log_entry_pt entry, log_level_t *level) {
 
 celix_status_t logEntry_getMessage(log_entry_pt entry, char **message) {
     *message = entry->message;
-    return CELIX_SUCCESS;
-}
-
-celix_status_t logEntry_getServiceReference(log_entry_pt entry, service_reference_pt *reference) {
-    *reference = entry->reference;
     return CELIX_SUCCESS;
 }
 

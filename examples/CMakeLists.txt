@@ -20,7 +20,7 @@ if (EXAMPLES)
     add_subdirectory(hello_world_test)
     #add_subdirectory(mongoose)
     
-    #add_subdirectory(whiteboard)
+    add_subdirectory(whiteboard)
     add_subdirectory(echo_service)
     
     add_subdirectory(osgi-in-action/chapter04-correct-lookup)

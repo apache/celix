@@ -20,6 +20,7 @@ find_package(APR REQUIRED)
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories(private/include)
 include_directories(${PROJECT_SOURCE_DIR}/event_admin/event_admin/public/include)
+include_directories(${PROJECT_SOURCE_DIR}/log_service/public/include)
 
 SET_HEADER(BUNDLE_SYMBOLICNAME "event_publisher")
 SET(BUNDLE_VERSION "0.0.1")
@@ -29,6 +30,7 @@ SET_HEADERS("Bundle-Name: Event Publisher")
 bundle(event_publisher SOURCES 
 	private/src/event_publisher_activator.c
 	private/src/event_publisher_impl.c
+	${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c	
 )
 
 install_bundle(event_publisher)

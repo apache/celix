@@ -34,24 +34,31 @@
 #include "module.h"
 #include "bundle.h"
 
-celix_status_t logWriter_create(apr_pool_t *pool, bundle_context_pt context, log_writer_pt *writer) {
-    celix_status_t status = CELIX_SUCCESS;
+celix_status_t logWriter_create(bundle_context_pt context, log_writer_pt *writer) {
+	celix_status_t status = CELIX_SUCCESS;
 
-    apr_pool_t *mypool;
-    apr_pool_create(&mypool, pool);
+	*writer = calloc(1, sizeof(**writer));
+	(*writer)->logListener = calloc(1, sizeof(*(*writer)->logListener));
+	(*writer)->logListener->handle = *writer;
+	(*writer)->logListener->logged = logListener_logged;
+	(*writer)->logReader = NULL;
+	(*writer)->context = context;
+	(*writer)->tracker = NULL;
 
-    *writer = apr_pcalloc(mypool, sizeof(**writer));
-    (*writer)->logListener = apr_pcalloc(mypool, sizeof(*(*writer)->logListener));
-    (*writer)->logListener->handle = *writer;
-    (*writer)->logListener->logged = logListener_logged;
-    (*writer)->logReader = NULL;
-    (*writer)->pool = mypool;
-    (*writer)->context = context;
-    (*writer)->tracker = NULL;
-
-    return status;
+	return status;
 }
 
+
+celix_status_t logWriter_destroy(log_writer_pt *writer) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	free((*writer)->logListener);
+	free(*writer);
+
+	writer = NULL;
+
+	return status;
+}
 celix_status_t logWriter_start(log_writer_pt writer) {
 	celix_status_t status = CELIX_SUCCESS;
 
@@ -71,7 +78,16 @@ celix_status_t logWriter_start(log_writer_pt writer) {
 }
 
 celix_status_t logWriter_stop(log_writer_pt writer) {
-	return serviceTracker_close(writer->tracker);
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (serviceTracker_close(writer->tracker) != CELIX_SUCCESS) {
+		status = CELIX_BUNDLE_EXCEPTION;
+	}
+	if (serviceTracker_destroy(writer->tracker) != CELIX_SUCCESS) {
+		status = CELIX_BUNDLE_EXCEPTION;
+	}
+
+	return status;
 }
 
 celix_status_t logWriter_addingServ(void * handle, service_reference_pt ref, void **service) {

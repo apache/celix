@@ -25,28 +25,28 @@
  */
 
 #include <stddef.h>
+#include <stdlib.h>
+
 
 #include "service_factory.h"
 #include "log_factory.h"
 #include "log_service_impl.h"
 
 struct log_service_factory {
-    apr_pool_t *pool;
     log_pt log;
 };
 
-celix_status_t logFactory_create(apr_pool_t *pool, log_pt log, service_factory_pt *factory) {
+celix_status_t logFactory_create(log_pt log, service_factory_pt *factory) {
     celix_status_t status = CELIX_SUCCESS;
 
-    *factory = apr_palloc(pool, sizeof(**factory));
+    *factory = calloc(1, sizeof(**factory));
     if (*factory == NULL) {
         status = CELIX_ENOMEM;
     } else {
-        log_service_factory_pt factoryData = apr_palloc(pool, sizeof(*factoryData));
+        log_service_factory_pt factoryData = calloc(1, sizeof(*factoryData));
         if (factoryData == NULL) {
             status = CELIX_ENOMEM;
         } else {
-            factoryData->pool = pool;
             factoryData->log = log;
 
             (*factory)->factory = factoryData;
@@ -58,14 +58,27 @@ celix_status_t logFactory_create(apr_pool_t *pool, log_pt log, service_factory_p
     return status;
 }
 
+celix_status_t logFactory_destroy(service_factory_pt *factory) {
+    celix_status_t status = CELIX_SUCCESS;
+
+
+    free((*factory)->factory);
+    free(*factory);
+
+    factory = NULL;
+
+    return status;
+}
+
+
 celix_status_t logFactory_getService(void *factory, bundle_pt bundle, service_registration_pt registration, void **service) {
     log_service_factory_pt log_factory = ((service_factory_pt) factory)->factory;
     log_service_pt log_service = NULL;
     log_service_data_pt log_service_data = NULL;
 
-    logService_create(log_factory->log, bundle, log_factory->pool, &log_service_data);
+    logService_create(log_factory->log, bundle, &log_service_data);
 
-    log_service = apr_palloc(log_factory->pool, sizeof(*log_service));
+    log_service = calloc(1, sizeof(*log_service));
     log_service->logger = log_service_data;
     log_service->log = logService_log;
     log_service->logSr = logService_logSr;
@@ -75,6 +88,13 @@ celix_status_t logFactory_getService(void *factory, bundle_pt bundle, service_re
     return CELIX_SUCCESS;
 }
 
-celix_status_t logFactory_ungetService(void *factory, bundle_pt bundle, service_registration_pt registration) {
+celix_status_t logFactory_ungetService(void *factory, bundle_pt bundle, service_registration_pt registration, void **service) {
+	log_service_pt log_service = *service;
+
+	logService_destroy(&log_service->logger);
+
+	free(*service);
+	*service = NULL;
+
     return CELIX_SUCCESS;
 }

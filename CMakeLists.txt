@@ -67,6 +67,7 @@ add_subdirectory(log_service)
 
 add_subdirectory(event_admin)
 add_subdirectory(dependency_manager)
+add_subdirectory(dependency_manager_2)
 
 add_subdirectory(launcher)
 add_subdirectory(framework)

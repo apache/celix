@@ -61,6 +61,8 @@ celix_status_t serviceTrackerCustomizer_destroy(service_tracker_customizer_pt cu
 	customizer->modifiedService = NULL;
 	customizer->removedService = NULL;
 
+	free(customizer);
+
 	return CELIX_SUCCESS;
 }
 

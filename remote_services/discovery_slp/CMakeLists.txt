@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(RSA_BUNDLES_DISCOVERY_SLP "Option to enable building the Discovery SLP bundle" ON DEPS LAUNCHER topology_manager remote_service_admin)
+celix_subproject(RSA_BUNDLES_DISCOVERY_SLP "Option to enable building the Discovery SLP bundle" OFF DEPS LAUNCHER topology_manager remote_service_admin)
 if (RSA_BUNDLES_DISCOVERY_SLP)
 	find_package(Slp REQUIRED)
 

@@ -20,6 +20,7 @@ include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include"
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/topology_manager/private/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
+include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 
 SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_rs_topology_manager")
 SET(BUNDLE_VERSION "0.0.1")
@@ -28,6 +29,8 @@ SET_HEADERS("Bundle-Name: Apache Celix RS Topology Manager")
 bundle(topology_manager SOURCES
     private/src/topology_manager
     private/src/activator
+    
+    ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
     
     private/include/topology_manager.h
 )

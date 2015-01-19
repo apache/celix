@@ -67,6 +67,10 @@ celix_status_t bundleCache_create(properties_pt configurationMap, framework_logg
 }
 
 celix_status_t bundleCache_destroy(bundle_cache_pt *cache) {
+
+    free(*cache);
+    *cache = NULL;
+
     return CELIX_SUCCESS;
 }
 

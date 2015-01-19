@@ -75,8 +75,6 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 		data->tracker = tracker;
 
 		serviceTracker_open(tracker);
-		properties_pt properties = NULL;
-		properties = properties_create();
 	}
 	eventPublisherStart(&data->event_publisher);
 	return status;

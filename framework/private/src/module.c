@@ -206,6 +206,10 @@ void module_setWires(module_pt module, linked_list_pt wires) {
         module_removeDependentImporter(exporter, module);
     }
 
+    if (module->wires != NULL) {
+    	linkedList_destroy(module->wires);
+    }
+
 	module->wires = wires;
 
 	for (i = 0; (module->wires != NULL) && (i < linkedList_size(module->wires)); i++) {

@@ -27,17 +27,16 @@
 #ifndef LOG_H_
 #define LOG_H_
 
-#include <apr_general.h>
-
 #include "linked_list.h"
 #include "log_entry.h"
 #include "log_listener.h"
 
 typedef struct log * log_pt;
 
-celix_status_t log_create(apr_pool_t *pool, log_pt *logger);
+celix_status_t log_create(int max_size, bool store_debug, log_pt *logger);
+celix_status_t log_destroy(log_pt logger);
 celix_status_t log_addEntry(log_pt log, log_entry_pt entry);
-celix_status_t log_getEntries(log_pt log, apr_pool_t *memory_pool, linked_list_pt *list);
+celix_status_t log_getEntries(log_pt log, linked_list_pt *list);
 
 celix_status_t log_bundleChanged(void *listener, bundle_event_pt event);
 celix_status_t log_frameworkEvent(void *listener, framework_event_pt event);

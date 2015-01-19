@@ -27,8 +27,6 @@
 #ifndef connectionListener_H_
 #define connectionListener_H_
 
-#include <apr_pools.h>
-
 #include <bundle_context.h>
 #include <celix_errno.h>
 
@@ -36,8 +34,8 @@
 
 typedef struct connection_listener *connection_listener_pt;
 
-celix_status_t connectionListener_create(apr_pool_t *pool, remote_shell_pt remoteShell, apr_size_t port, connection_listener_pt *instance);
-
+celix_status_t connectionListener_create(remote_shell_pt remoteShell, int port, connection_listener_pt *instance);
+celix_status_t connectionListener_destroy(connection_listener_pt instance);
 celix_status_t connectionListener_start(connection_listener_pt instance);
 celix_status_t connectionListener_stop(connection_listener_pt instance);
 

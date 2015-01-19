@@ -120,10 +120,13 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt contex
 	struct activator *activator = userData;
 
 	if(activator==NULL || activator->admin==NULL){
-		return CELIX_BUNDLE_EXCEPTION;
+		status = CELIX_BUNDLE_EXCEPTION;
+	}
+	else {
+		status = remoteServiceAdmin_destroy(activator->admin);
 	}
 
-	return remoteServiceAdmin_destroy(activator->admin);
+	return status;
 }
 
 

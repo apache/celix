@@ -37,6 +37,9 @@
 #include "service_listener.h"
 #include "service_registration.h"
 #include "event_constants.h"
+#include "log_helper.h"
+#include "log_service.h"
+
 #include <apr.h>
 #include <apr_pools.h>
 #include <apr_thread_proc.h>
@@ -49,6 +52,7 @@ struct event_publisher {
 	bool eventAdminAdded;
 	apr_thread_t *sender;
 	bundle_context_pt context;
+	log_helper_pt loghelper;
 };
 /**
  * @desc create the event publisher

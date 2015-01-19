@@ -40,7 +40,8 @@
 #include "service_reference.h"
 #include "service_registration.h"
 #include "remote_constants.h"
-#include "celix_log.h"
+#include "log_helper.h"
+#include "log_service.h"
 #include "discovery.h"
 #include "discovery_impl.h"
 #include "endpoint_discovery_poller.h"
@@ -51,7 +52,7 @@ celix_status_t discovery_endpointAdded(void *handle, endpoint_description_pt end
 	celix_status_t status = CELIX_SUCCESS;
 	discovery_pt discovery = handle;
 
-	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Endpoint for %s, with filter \"%s\" added...", endpoint->service, matchedFilter);
+	logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_INFO, "Endpoint for %s, with filter \"%s\" added...", endpoint->service, matchedFilter);
 
 	status = endpointDiscoveryServer_addEndpoint(discovery->server, endpoint);
 
@@ -62,7 +63,7 @@ celix_status_t discovery_endpointRemoved(void *handle, endpoint_description_pt e
 	celix_status_t status = CELIX_SUCCESS;
 	discovery_pt discovery = handle;
 
-	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Endpoint for %s, with filter \"%s\" removed...", endpoint->service, matchedFilter);
+	logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_INFO, "Endpoint for %s, with filter \"%s\" removed...", endpoint->service, matchedFilter);
 
 	status = endpointDiscoveryServer_removeEndpoint(discovery->server, endpoint);
 
@@ -90,22 +91,22 @@ celix_status_t discovery_endpointListenerAdded(void* handle, service_reference_p
 	filter_pt filter = filter_create(scope);
 
 	if (discoveryListener != NULL && strcmp(discoveryListener, "true") == 0) {
-		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "EndpointListener Ignored - Discovery listener");
+		logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_INFO, "EndpointListener Ignored - Discovery listener");
 	} else {
 		celixThreadMutex_lock(&discovery->discoveredServicesMutex);
 
 		hash_map_iterator_pt iter = hashMapIterator_create(discovery->discoveredServices);
 		while (hashMapIterator_hasNext(iter)) {
-			endpoint_description_pt endpoint = hashMapIterator_nextKey(iter);
+			endpoint_description_pt endpoint = hashMapIterator_nextValue(iter);
 
 			bool matchResult = false;
 			filter_match(filter, endpoint->properties, &matchResult);
 			if (matchResult) {
 				endpoint_listener_pt listener = service;
 
-				fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "EndpointListener Added - Add Scope");
+				logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_INFO, "EndpointListener Added - Add Scope");
 
-				listener->endpointAdded(listener, endpoint, NULL);
+				listener->endpointAdded(listener->handle, endpoint, NULL);
 			}
 		}
 		hashMapIterator_destroy(iter);
@@ -141,7 +142,7 @@ celix_status_t discovery_endpointListenerRemoved(void * handle, service_referenc
 
 	if (discovery->listenerReferences != NULL) {
 		if (hashMap_remove(discovery->listenerReferences, reference)) {
-			fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "EndpointListener Removed");
+			logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_INFO, "EndpointListener Removed");
 		}
 	}
 
@@ -174,15 +175,17 @@ celix_status_t discovery_informEndpointListeners(discovery_pt discovery, endpoin
 			if (matchResult) {
 				bundleContext_getService(discovery->context, reference, (void**) &listener);
 				if (endpointAdded) {
-					fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Adding service (%s)", endpoint->service);
+					logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_INFO, "Adding service (%s)", endpoint->service);
 
 					listener->endpointAdded(listener->handle, endpoint, scope);
 				} else {
-					fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Removing service (%s)", endpoint->service);
+					logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_INFO, "Removing service (%s)", endpoint->service);
 
 					listener->endpointRemoved(listener->handle, endpoint, scope);
 				}
 			}
+
+			filter_destroy(filter);
 		}
 		hashMapIterator_destroy(iter);
 	}

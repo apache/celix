@@ -27,19 +27,24 @@
 #ifndef REMOTE_SHELL_H_
 #define REMOTE_SHELL_H_
 
-#include <apr_pools.h>
-
 #include <bundle_context.h>
 #include <celix_errno.h>
 
 #include "shell_mediator.h"
 
+struct remote_shell {
+	log_helper_pt* loghelper;
+	shell_mediator_pt mediator;
+	celix_thread_mutex_t mutex;
+	int maximumConnections;
+
+	array_list_pt connections;
+};
 typedef struct remote_shell *remote_shell_pt;
 
-celix_status_t remoteShell_create(apr_pool_t *pool, shell_mediator_pt mediator, apr_size_t maximumConnections, remote_shell_pt *instance);
-
-celix_status_t remoteShell_addConnection(remote_shell_pt instance, apr_socket_t *socket);
-
+celix_status_t remoteShell_create(shell_mediator_pt mediator, int maximumConnections, remote_shell_pt *instance);
+celix_status_t remoteShell_destroy(remote_shell_pt instance);
+celix_status_t remoteShell_addConnection(remote_shell_pt instance, int socket);
 celix_status_t remoteShell_stopConnections(remote_shell_pt instance);
 
 #endif /* REMOTE_SHELL_H_ */

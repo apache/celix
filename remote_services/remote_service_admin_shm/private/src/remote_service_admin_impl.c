@@ -67,7 +67,6 @@ celix_status_t remoteServiceAdmin_getSharedIdentifierFile(char *fwUuid, char* se
 celix_status_t remoteServiceAdmin_removeSharedIdentityFile(char *fwUuid, char* servicename);
 celix_status_t remoteServiceAdmin_removeSharedIdentityFiles(char* fwUuid);
 
-static bool lockHolder[3];
 
 celix_status_t remoteServiceAdmin_create(apr_pool_t *pool, bundle_context_pt context, remote_service_admin_pt *admin)
 {
@@ -124,7 +123,7 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin)
 
 			if (importFactory->trackedFactory != NULL)
 			{
-				importFactory->trackedFactory->unregisterProxyService(importFactory->trackedFactory, importRegistration->endpointDescription);
+				importFactory->trackedFactory->unregisterProxyService(importFactory->trackedFactory->factory, importRegistration->endpointDescription);
 			}
         }
 
@@ -633,7 +632,8 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
                 char *interface = arrayList_get(interfaces, iter);
                 export_registration_pt registration = NULL;
 
-                exportRegistration_create(admin->pool, reference, NULL, admin, admin->context, &registration);
+                // TODO: add logHelper reference
+                exportRegistration_create(admin->pool, NULL, reference, NULL, admin, admin->context, &registration);
 
                 arrayList_add(*registrations, registration);
 
@@ -747,7 +747,6 @@ celix_status_t remoteServiceAdmin_deleteIpcSegment(ipc_segment_pt ipc)
 celix_status_t remoteServiceAdmin_createOrAttachShm(hash_map_pt ipcSegment, remote_service_admin_pt admin, endpoint_description_pt endpointDescription, bool createIfNotFound)
 {
     celix_status_t status = CELIX_SUCCESS;
-    apr_status_t aprStatus = 0;
 
     /* setup ipc sehment */
     ipc_segment_pt ipc = NULL;
@@ -971,7 +970,8 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, e
 	// check whether we already have a registration_factory
 	if (registration_factory == NULL)
 	{
-		importRegistrationFactory_install(admin->pool, endpointDescription->service, admin->context, &registration_factory);
+	    // TODO: Add logHelper
+		importRegistrationFactory_install(admin->pool, NULL, endpointDescription->service, admin->context, &registration_factory);
 		hashMap_put(admin->importedServices, endpointDescription->service, registration_factory);
 	}
 
@@ -984,7 +984,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, e
 	{
 		// we create an importRegistration per imported service
 		importRegistration_create(admin->pool, endpointDescription, admin, (sendToHandle) &remoteServiceAdmin_send, admin->context, registration);
-		registration_factory->trackedFactory->registerProxyService(registration_factory->trackedFactory,  endpointDescription, admin, (sendToHandle) &remoteServiceAdmin_send);
+		registration_factory->trackedFactory->registerProxyService(registration_factory->trackedFactory->factory,  endpointDescription, admin, (sendToHandle) &remoteServiceAdmin_send);
 
 		arrayList_add(registration_factory->registrations, *registration);
 		remoteServiceAdmin_createOrAttachShm(admin->importedIpcSegment, admin, endpointDescription, false);
@@ -1022,7 +1022,7 @@ celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_pt 
 		}
 		else
 		{
-			registration_factory->trackedFactory->unregisterProxyService(registration_factory->trackedFactory, endpointDescription);
+			registration_factory->trackedFactory->unregisterProxyService(registration_factory->trackedFactory->factory, endpointDescription);
 			arrayList_removeElement(registration_factory->registrations, registration);
 			importRegistration_destroy(registration);
 

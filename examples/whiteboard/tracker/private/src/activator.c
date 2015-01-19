@@ -24,6 +24,8 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdlib.h>
+#include <unistd.h>
+
 #include "celixbool.h"
 
 #include "bundle_activator.h"
@@ -35,11 +37,11 @@ struct data {
 	bundle_context_pt context;
 	service_tracker_pt tracker;
 	array_list_pt publishers;
-	apr_thread_t *sender;
+	pthread_t sender;
 	bool running;
 };
 
-static void *APR_THREAD_FUNC trk_send(apr_thread_t *thd, void *handle) {
+static void *trk_send(void *handle) {
 	struct data * data = (struct data *) handle;
 	while (data->running) {
 		int i;
@@ -47,9 +49,9 @@ static void *APR_THREAD_FUNC trk_send(apr_thread_t *thd, void *handle) {
 			publisher_service_pt pub = arrayList_get(data->publishers, i);
 			pub->invoke(pub->publisher, "test");
 		}
-		apr_sleep(1000000);
+		usleep(1000000);
 	}
-	apr_thread_exit(thd, APR_SUCCESS);
+	pthread_exit(NULL);
 	return NULL;
 }
 
@@ -70,7 +72,6 @@ celix_status_t addedServ(void * handle, service_reference_pt ref, void * service
 }
 
 celix_status_t modifiedServ(void * handle, service_reference_pt ref, void * service) {
-	struct data * data = (struct data *) handle;
 	printf("Modified\n");
 	return CELIX_SUCCESS;
 }
@@ -83,10 +84,9 @@ celix_status_t removedServ(void * handle, service_reference_pt ref, void * servi
 }
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
-    apr_pool_t *pool;
-    celix_status_t status = bundleContext_getMemoryPool(context, &pool);
+    celix_status_t status = CELIX_SUCCESS;
     if (status == CELIX_SUCCESS) {
-        *userData = apr_palloc(pool, sizeof(struct data));
+        *userData = calloc(1, sizeof(struct data));
         ((struct data *) (*userData))->publishers = NULL;
         arrayList_create(&((struct data *) (*userData))->publishers);
     } else {
@@ -97,8 +97,6 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
     celix_status_t status = CELIX_SUCCESS;
-    apr_pool_t *pool;
-    status = bundleContext_getMemoryPool(context, &pool);
     if (status == CELIX_SUCCESS) {
         struct data * data = (struct data *) userData;
 		service_tracker_customizer_pt cust = NULL;
@@ -106,15 +104,15 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
         
 		data->context = context;
 
-        serviceTrackerCustomizer_create(pool, data, addingServ, addedServ, modifiedServ, removedServ, &cust);
-        serviceTracker_create(pool, context, (char *) PUBLISHER_NAME, cust, &tracker);
+        serviceTrackerCustomizer_create(data, addingServ, addedServ, modifiedServ, removedServ, &cust);
+        serviceTracker_create(context, (char *) PUBLISHER_NAME, cust, &tracker);
 
         data->tracker = tracker;
 
         serviceTracker_open(tracker);
 
         data->running = true;
-        apr_thread_create(&data->sender, NULL, trk_send, data, pool);
+        pthread_create(&data->sender, NULL, trk_send, data);
     } else {
         status = CELIX_START_ERROR;
     }
@@ -124,12 +122,11 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
     celix_status_t status = CELIX_SUCCESS;
     struct data * data = (struct data *) userData;
-    apr_status_t stat;
 
 	printf("Stop\n");
     serviceTracker_close(data->tracker);
     data->running = false;
-    apr_thread_join(&stat, data->sender);
+    pthread_join(data->sender, NULL);
 
     return status;
 }

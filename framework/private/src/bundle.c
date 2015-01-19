@@ -72,7 +72,7 @@ celix_status_t bundle_create(bundle_pt * bundle, framework_logger_pt logger) {
         	status = CELIX_ILLEGAL_STATE;
         } else {
 			(*bundle)->lockCount = 0;
-			(*bundle)->lockThread = 0;
+			(*bundle)->lockThread = celix_thread_default;
 
 			resolver_addModule(module);
         }
@@ -108,7 +108,7 @@ celix_status_t bundle_createFromArchive(bundle_pt * bundle, framework_pt framewo
 			status = CELIX_ILLEGAL_STATE;
 		} else {
 			(*bundle)->lockCount = 0;
-			(*bundle)->lockThread = 0;
+			(*bundle)->lockThread = celix_thread_default;
 
 			resolver_addModule(module);
 		}
@@ -557,7 +557,7 @@ celix_status_t bundle_unlock(bundle_pt bundle, bool *unlocked) {
 			}
 			bundle->lockCount--;
 			if (bundle->lockCount == 0) {
-				bundle->lockThread = 0;
+				bundle->lockThread = celix_thread_default;
 			}
 			*unlocked = true;
 		}

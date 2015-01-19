@@ -27,7 +27,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include "celix_log.h"
+#include "log_helper.h"
+#include "log_service.h"
 #include "constants.h"
 #include "discovery.h"
 #include "discovery_impl.h"
@@ -39,6 +40,7 @@
 
 struct etcd_watcher {
     discovery_pt discovery;
+    log_helper_pt* loghelper;
 
 	celix_thread_mutex_t watcherLock;
 	celix_thread_t watcherThread;
@@ -188,7 +190,7 @@ static celix_status_t etcdWatcher_addOwnFramework(etcd_watcher_pt watcher)
 		etcd_set(localNodePath, endpoints, ttl, false);
 	}
 	else if (etcd_set(localNodePath, endpoints, ttl, true) == false)  {
-        fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Cannot register local discovery");
+		logHelper_log(*watcher->loghelper, OSGI_LOGSERVICE_WARNING, "Cannot register local discovery");
     }
     else {
         status = CELIX_SUCCESS;
@@ -218,18 +220,19 @@ static void* etcdWatcher_run(void* data) {
 		char preValue[MAX_VALUE_LENGTH];
 		char action[MAX_ACTION_LENGTH];
 
-
-		if (etcd_watch(rootPath, 0, &action[0], &preValue[0], &value[0]) == true) {
-
+		if (etcd_watch(rootPath, highestModified+1, &action[0], &preValue[0], &value[0]) == true) {
 			if (strcmp(action, "set") == 0) {
 				endpointDiscoveryPoller_addDiscoveryEndpoint(poller, strdup(&value[0]));
 			} else if (strcmp(action, "delete") == 0) {
 				endpointDiscoveryPoller_removeDiscoveryEndpoint(poller, &preValue[0]);
+			} else if (strcmp(action, "expire") == 0) {
+				endpointDiscoveryPoller_removeDiscoveryEndpoint(poller, &preValue[0]);
 			} else if (strcmp(action, "update") == 0) {
 				// TODO
 			} else {
-				fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Unexpected action: %s", action);
+				logHelper_log(*watcher->loghelper, OSGI_LOGSERVICE_INFO, "Unexpected action: %s", action);
 			}
+			highestModified++;
 		}
 
 		// update own framework uuid
@@ -259,6 +262,7 @@ celix_status_t etcdWatcher_create(discovery_pt discovery, bundle_context_pt cont
 		return CELIX_BUNDLE_EXCEPTION;
 	}
 
+
 	(*watcher) = calloc(1, sizeof(struct etcd_watcher));
 	if (!watcher) {
 		return CELIX_ENOMEM;
@@ -266,6 +270,7 @@ celix_status_t etcdWatcher_create(discovery_pt discovery, bundle_context_pt cont
 	else
 	{
 		(*watcher)->discovery = discovery;
+		(*watcher)->loghelper = &discovery->loghelper;
 	}
 
 	if ((bundleContext_getProperty(context, CFG_ETCD_SERVER_IP, &etcd_server) != CELIX_SUCCESS) || !etcd_server) {
@@ -290,7 +295,7 @@ celix_status_t etcdWatcher_create(discovery_pt discovery, bundle_context_pt cont
 		return CELIX_BUNDLE_EXCEPTION;
 	}
 
-	etcdWatcher_addOwnFramework((*watcher));
+	etcdWatcher_addOwnFramework(*watcher);
 
 	if ((status = celixThreadMutex_create(&(*watcher)->watcherLock, NULL)) != CELIX_SUCCESS) {
 		return status;
@@ -322,15 +327,14 @@ celix_status_t etcdWatcher_destroy(etcd_watcher_pt watcher) {
 	celixThread_join(watcher->watcherThread, NULL);
 
 	// register own framework
-	if ((status = etcdWatcher_getLocalNodePath(
-			watcher->discovery->context, &localNodePath[0])) != CELIX_SUCCESS) {
-		return status;
+	status = etcdWatcher_getLocalNodePath(watcher->discovery->context, &localNodePath[0]);
+
+	if (status != CELIX_SUCCESS || etcd_del(localNodePath) == false)
+	{
+		logHelper_log(*watcher->loghelper, OSGI_LOGSERVICE_WARNING, "Cannot remove local discovery registration.");
 	}
 
-	if (etcd_del(localNodePath) == false)
-	{
-		fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Cannot remove local discovery registration.");
-	}
+	watcher->loghelper = NULL;
 
 	free(watcher);
 

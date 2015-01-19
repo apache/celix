@@ -238,6 +238,7 @@ if (FRAMEWORK)
 	    
         add_executable(service_reference_test 
             private/test/service_reference_test.cpp
+            private/mock/properties_mock.c
             private/mock/service_registration_mock.c
             private/mock/service_registry_mock.c
             private/src/service_reference.c

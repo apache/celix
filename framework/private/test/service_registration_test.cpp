@@ -79,8 +79,6 @@ TEST(service_registration, create) {
 
 	POINTERS_EQUAL(registry, registration->registry);
 	STRCMP_EQUAL("service", registration->className);
-	CHECK(registration->references);
-	LONGS_EQUAL(0, arrayList_size(registration->references));
 	POINTERS_EQUAL(bundle, registration->bundle);
 	POINTERS_EQUAL(properties, registration->properties);
 	POINTERS_EQUAL(service, registration->svcObj);
@@ -118,8 +116,6 @@ TEST(service_registration, createServiceFactory) {
 
 	POINTERS_EQUAL(registry, registration->registry);
 	STRCMP_EQUAL("service", registration->className);
-	CHECK(registration->references);
-	LONGS_EQUAL(0, arrayList_size(registration->references));
 	POINTERS_EQUAL(bundle, registration->bundle);
 	POINTERS_EQUAL(properties, registration->properties);
 	POINTERS_EQUAL(service, registration->svcObj);
@@ -270,7 +266,7 @@ TEST(service_registration, getRegistryIllegalArgument) {
 	celix_status_t status = serviceRegistration_getRegistry(registration, &actual);
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
 }
-
+ 
 TEST(service_registration, getServiceReferences) {
 	service_registration_pt registration = (service_registration_pt) malloc(sizeof(*registration));
 	array_list_pt references = (array_list_pt) 0x10;

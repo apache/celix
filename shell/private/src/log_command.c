@@ -52,52 +52,43 @@ void logCommand_destroy(command_pt command) {
 
 void logCommand_execute(command_pt command, char *line, void (*out)(char *), void (*err)(char *)) {
     service_reference_pt readerService = NULL;
-    apr_pool_t *memory_pool = NULL;
 
     bundleContext_getServiceReference(command->bundleContext, (char *) OSGI_LOGSERVICE_READER_SERVICE_NAME, &readerService);
     if (readerService != NULL) {
-        char line[256];
         linked_list_pt list = NULL;
         linked_list_iterator_pt iter = NULL;
         log_reader_service_pt reader = NULL;
 
-        apr_pool_create(&memory_pool, NULL);
-        if (memory_pool) {
-            bundleContext_getService(command->bundleContext, readerService, (void **) &reader);
-            reader->getLog(reader->reader, memory_pool, &list);
-            iter = linkedListIterator_create(list, 0);
-            while (linkedListIterator_hasNext(iter)) {
-                log_entry_pt entry = linkedListIterator_next(iter);
-                char time[20];
-                char *level = NULL;
-                module_pt module = NULL;
-                char *bundleSymbolicName = NULL;
-                char errorString[256];
 
-                celix_status_t status = bundle_getCurrentModule(entry->bundle, &module);
-                if (status == CELIX_SUCCESS) {
-                    status = module_getSymbolicName(module, &bundleSymbolicName);
+		bundleContext_getService(command->bundleContext, readerService, (void **) &reader);
+		reader->getLog(reader->reader, &list);
+		iter = linkedListIterator_create(list, 0);
+		while (linkedListIterator_hasNext(iter)) {
+			log_entry_pt entry = linkedListIterator_next(iter);
+			char time[20];
+			char *level = NULL;
+			char errorString[256];
 
-                    strftime(time, 20, "%Y-%m-%d %H:%M:%S", localtime(&entry->time));
-                    logCommand_levelAsString(command, entry->level, &level);
+			size_t timeLength = strftime(time, 20, "%Y-%m-%d %H:%M:%S", localtime(&entry->time));
+			logCommand_levelAsString(command, entry->level, &level);
 
-                    if (entry->errorCode > 0) {
-                        celix_strerror(entry->errorCode, errorString, 256);
-                        sprintf(line, "%s - Bundle: %s - %s - %d %s\n", time, bundleSymbolicName, entry->message, entry->errorCode, errorString);
-                        out(line);
-                    } else {
-                        sprintf(line, "%s - Bundle: %s - %s\n", time, bundleSymbolicName, entry->message);
-                        out(line);
-                    }
-                }
-            }
-            linkedListIterator_destroy(iter);
-            bool result = true;
-            bundleContext_ungetService(command->bundleContext, readerService, &result);
-            apr_pool_destroy(memory_pool);
-        } else {
-            out("Log reader service: out of memory!\n");
-        }
+			if (entry->errorCode > 0) {
+				celix_strerror(entry->errorCode, errorString, 256);
+				size_t length = timeLength + strlen(entry->bundleSymbolicName) + strlen(entry->message) + strlen(errorString) + 40;
+		        char line[length];
+				snprintf(line, length, "%s - Bundle: %s - %s - %d %s\n", time, entry->bundleSymbolicName, entry->message, entry->errorCode, errorString);
+				out(line);
+			} else {
+				size_t length = timeLength + strlen(entry->bundleSymbolicName) + strlen(entry->message) + 20;
+				char line[length];
+				snprintf(line, length, "%s - Bundle: %s - %s\n", time, entry->bundleSymbolicName, entry->message);
+				out(line);
+			}
+		}
+		linkedListIterator_destroy(iter);
+		linkedList_destroy(list);
+		bool result = true;
+		bundleContext_ungetService(command->bundleContext, readerService, &result);
         bundleContext_ungetServiceReference(command->bundleContext, readerService);
     } else {
         out("No log reader available\n");

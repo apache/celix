@@ -25,16 +25,18 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
+
 #include "celixbool.h"
 
-#include "service.h"
 #include "publisher.h"
 #include "tracker.h"
 #include "log_service.h"
 
-static void *APR_THREAD_FUNC dp_send(apr_thread_t *thd, void *handle) {
+static void *dp_send(void *handle) {
 	struct data * data = (struct data *) handle;
 	while (data->running) {
+		printf("Running\n");
 		int i;
 		for (i = 0; i < arrayList_size(data->publishers); i++) {
 			publisher_service_pt pub = (publisher_service_pt) arrayList_get(data->publishers, i);
@@ -43,69 +45,74 @@ static void *APR_THREAD_FUNC dp_send(apr_thread_t *thd, void *handle) {
 				data->logger->log(data->logger->logger, OSGI_LOGSERVICE_INFO, "Sending message to publisher");
 			}
 		}
-		apr_sleep(1000000);
+		usleep(1000000);
 	}
-	apr_thread_exit(thd, APR_SUCCESS);
+	pthread_exit(NULL);
 	return NULL;
 }
 
-void service_init(void * userData) {
-
+celix_status_t service_init(void * userData) {
+	return CELIX_SUCCESS;
 }
 
-void service_start(void * userData) {
+celix_status_t service_start(void * userData) {
 	struct data * data = (struct data *) userData;
-	apr_pool_t *pool = NULL;
 
 	data->running = true;
-	bundleContext_getMemoryPool(data->context, &pool);
-	apr_thread_create(&data->sender, NULL, dp_send, data, pool);
+	pthread_create(&data->sender, NULL, dp_send, data);
+	return CELIX_SUCCESS;
 }
 
-void service_stop(void * userData) {
-	apr_status_t stat;
+celix_status_t service_stop(void * userData) {
 	struct data * data = (struct data *) userData;
 	data->running = false;
-	apr_thread_join(&stat, data->sender);
+	pthread_join(data->sender, NULL);
+	return CELIX_SUCCESS;
 }
 
-void service_destroy(void * userData) {
-
+celix_status_t service_destroy(void * userData) {
+	return CELIX_SUCCESS;
 }
 
-void tracker_addedServ(void * handle, service_reference_pt ref, void * service) {
+celix_status_t tracker_addedServ(void * handle, service_reference_pt ref, void * service) {
 	struct data * data = (struct data *) handle;
 	arrayList_add(data->publishers, service);
-	printf("Service Added\n");
+	printf("Service Added %p\n", service);
+	return CELIX_SUCCESS;
 }
 
-void tracker_modifiedServ(void * handle, service_reference_pt ref, void * service) {
+celix_status_t tracker_modifiedServ(void * handle, service_reference_pt ref, void * service) {
 	struct data * data = (struct data *) handle;
 	printf("Service Changed\n");
+	return CELIX_SUCCESS;
 }
 
-void tracker_removedServ(void * handle, service_reference_pt ref, void * service) {
+celix_status_t tracker_removedServ(void * handle, service_reference_pt ref, void * service) {
 	struct data * data = (struct data *) handle;
 	arrayList_removeElement(data->publishers, service);
 	printf("Service Removed\n");
+	return CELIX_SUCCESS;
 }
 
-void tracker_addLog(void *handle, service_reference_pt ref, void *service) {
+celix_status_t tracker_addLog(void *handle, service_reference_pt ref, void *service) {
     struct data * data = (struct data *) handle;
     printf("Add log\n");
     data->logger = service;
     ((log_service_pt) service)->log(((log_service_pt) service)->logger, OSGI_LOGSERVICE_DEBUG, "test");
+    return CELIX_SUCCESS;
 }
 
-void tracker_modifiedLog(void *handle, service_reference_pt ref, void *service) {
+celix_status_t tracker_modifiedLog(void *handle, service_reference_pt ref, void *service) {
     struct data * data = (struct data *) handle;
     printf("Modify log\n");
     data->logger = service;
     ((log_service_pt) service)->log(((log_service_pt) service)->logger, OSGI_LOGSERVICE_DEBUG, "test");
+    return CELIX_SUCCESS;
 }
 
-void tracker_removeLog(void *handle, service_reference_pt ref, void *service) {
+celix_status_t tracker_removeLog(void *handle, service_reference_pt ref, void *service) {
     struct data * data = (struct data *) handle;
     data->logger = NULL;
     printf("Remove log\n");
+    return CELIX_SUCCESS;
 }

@@ -93,8 +93,6 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 		serviceTracker_create(context, (char *) EVENT_ADMIN_NAME, customizer, &tracker);
 		activator->eventAdminTracker = tracker;
 		serviceTracker_open(tracker);
-		properties_pt properties = NULL;
-		properties = properties_create();
 	}
 	return status;
 }

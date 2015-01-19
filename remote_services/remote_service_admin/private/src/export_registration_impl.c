@@ -25,8 +25,6 @@
  */
 #include <stdlib.h>
 
-#include <apr_strings.h>
-
 #include "constants.h"
 
 #include "celix_errno.h"
@@ -36,7 +34,7 @@
 #include "service_tracker.h"
 #include "bundle_context.h"
 #include "bundle.h"
-#include "celix_log.h"
+#include "log_helper.h"
 
 celix_status_t exportRegistration_endpointAdding(void * handle, service_reference_pt reference, void **service);
 celix_status_t exportRegistration_endpointAdded(void * handle, service_reference_pt reference, void *service);
@@ -45,16 +43,13 @@ celix_status_t exportRegistration_endpointRemoved(void * handle, service_referen
 
 celix_status_t exportRegistration_createEndpointTracker(export_registration_pt registration, service_tracker_pt *tracker);
 
-celix_status_t exportRegistration_create(apr_pool_t *pool, service_reference_pt reference, endpoint_description_pt endpoint, remote_service_admin_pt rsa, bundle_context_pt context, export_registration_pt *registration) {
+celix_status_t exportRegistration_create(log_helper_pt helper, service_reference_pt reference, endpoint_description_pt endpoint, remote_service_admin_pt rsa, bundle_context_pt context, export_registration_pt *registration) {
 	celix_status_t status = CELIX_SUCCESS;
-	apr_pool_t *mypool = NULL;
-	apr_pool_create(&mypool, pool);
 
-	*registration = apr_palloc(mypool, sizeof(**registration));
+	*registration = calloc(1, sizeof(**registration));
 	if (!*registration) {
 		status = CELIX_ENOMEM;
 	} else {
-		(*registration)->pool = mypool;
 		(*registration)->context = context;
 		(*registration)->closed = false;
 		(*registration)->endpointDescription = endpoint;
@@ -65,7 +60,17 @@ celix_status_t exportRegistration_create(apr_pool_t *pool, service_reference_pt 
 		(*registration)->endpointTracker = NULL;
 		(*registration)->exportReference = NULL;
 		(*registration)->bundle = NULL;
+		(*registration)->loghelper = helper;
 	}
+
+	return status;
+}
+
+celix_status_t exportRegistration_destroy(export_registration_pt *registration) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	remoteServiceAdmin_destroyEndpointDescription(&(*registration)->endpointDescription);
+	free(*registration);
 
 	return status;
 }
@@ -89,13 +94,19 @@ celix_status_t exportRegistration_stopTracking(export_registration_pt registrati
 	if (registration->endpointTracker != NULL) {
 		status = serviceTracker_close(registration->endpointTracker);
 		if (status != CELIX_SUCCESS) {
-		    fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "EXPORT_REGISTRATION: Could not close endpoint tracker");
+		    logHelper_log(registration->loghelper, OSGI_LOGSERVICE_ERROR, "EXPORT_REGISTRATION: Could not close endpoint tracker");
+		}
+		else {
+			status = serviceTracker_destroy(registration->endpointTracker);
 		}
 	}
 	if (registration->tracker != NULL) {
 		status = serviceTracker_close(registration->tracker);
 		if (status != CELIX_SUCCESS) {
-		    fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "EXPORT_REGISTRATION: Could not close service tracker");
+			logHelper_log(registration->loghelper, OSGI_LOGSERVICE_ERROR, "EXPORT_REGISTRATION: Could not close service tracker");
+		}
+		else {
+			status = serviceTracker_destroy(registration->tracker);
 		}
 	}
 
@@ -111,7 +122,9 @@ celix_status_t exportRegistration_createEndpointTracker(export_registration_pt r
 			exportRegistration_endpointAdded, exportRegistration_endpointModified, exportRegistration_endpointRemoved, &customizer);
 
 	if (status == CELIX_SUCCESS) {
-		char *filter = apr_pstrcat(registration->pool, "(&(", OSGI_FRAMEWORK_OBJECTCLASS, "=", OSGI_RSA_REMOTE_ENDPOINT, ")(remote.interface=", registration->endpointDescription->service, "))", NULL);
+		char filter[512];
+
+		snprintf(filter, 512, "(&(%s=%s)(remote.interface=%s))", (char*) OSGI_FRAMEWORK_OBJECTCLASS, (char*) OSGI_RSA_REMOTE_ENDPOINT, registration->endpointDescription->service);
 		status = serviceTracker_createWithFilter(registration->context, filter, customizer, tracker);
 	}
 
@@ -156,7 +169,8 @@ celix_status_t exportRegistration_endpointRemoved(void * handle, service_referen
 
 	remote_endpoint_service_pt endpoint = service;
 	if (registration->endpoint != NULL) {
-		registration->endpoint = NULL;
+		remoteServiceAdmin_removeExportedService(registration);
+//		registration->endpoint = NULL;
 		endpoint->setService(endpoint->endpoint, NULL);
 	}
 
@@ -165,13 +179,17 @@ celix_status_t exportRegistration_endpointRemoved(void * handle, service_referen
 
 celix_status_t exportRegistration_open(export_registration_pt registration) {
 	celix_status_t status = CELIX_SUCCESS;
-
 	char *bundleStore = NULL;
+
 	bundleContext_getProperty(registration->context, BUNDLE_STORE_PROPERTY_NAME, &bundleStore);
+
 	if (bundleStore == NULL) {
 		bundleStore = DEFAULT_BUNDLE_STORE;
 	}
-	char *name = apr_pstrcat(registration->pool, bundleStore, "/", registration->endpointDescription->service, "_endpoint.zip", NULL);
+	char name[256];
+
+	snprintf(name, 256, "%s/%s_endpoint.zip", bundleStore, registration->endpointDescription->service);
+
 	status = bundleContext_installBundle(registration->context, name, &registration->bundle);
 	if (status == CELIX_SUCCESS) {
 		status = bundle_start(registration->bundle);
@@ -190,6 +208,8 @@ celix_status_t exportRegistration_close(export_registration_pt registration) {
 	bundle_uninstall(registration->bundle);
 	remoteServiceAdmin_removeExportedService(registration);
 
+	exportRegistration_destroy(&registration);
+
 	return status;
 }
 
@@ -201,16 +221,15 @@ celix_status_t exportRegistration_getException(export_registration_pt registrati
 celix_status_t exportRegistration_getExportReference(export_registration_pt registration, export_reference_pt *reference) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	if (registration->exportReference == NULL) {
-		registration->exportReference = apr_palloc(registration->pool, sizeof(*registration->exportReference));
-		if (registration->exportReference == NULL) {
-			status = CELIX_ENOMEM;
-		} else {
-			registration->exportReference->endpoint = registration->endpointDescription;
-			registration->exportReference->reference = registration->reference;
-		}
-	}
+	registration->exportReference = calloc(1, sizeof(*registration->exportReference));
 
+	if (registration->exportReference == NULL) {
+		status = CELIX_ENOMEM;
+	} else {
+		registration->exportReference->endpoint = registration->endpointDescription;
+		registration->exportReference->reference = registration->reference;
+	}
+	
 	*reference = registration->exportReference;
 
 	return status;

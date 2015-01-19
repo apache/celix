@@ -80,6 +80,9 @@ void filter_destroy(filter_pt filter) {
 			}
 			arrayList_destroy(filter->value);
 			filter->value = NULL;
+		} else  if (filter->operand == NOT) {
+			filter_destroy(filter->value);
+			filter->value = NULL;
 		} else {
 			free(filter->value);
 			filter->value = NULL;
@@ -314,7 +317,7 @@ char * filter_parseAttr(char * filterString, int * pos) {
 }
 
 char * filter_parseValue(char * filterString, int * pos) {
-	char * value = strdup("");
+	char *value = calloc(strlen(filterString) + 1, sizeof(*value));
 	int keepRunning = 1;
 
 	while (keepRunning) {
@@ -353,13 +356,12 @@ char * filter_parseValue(char * filterString, int * pos) {
 }
 
 array_list_pt filter_parseSubstring(char * filterString, int * pos) {
-	char * sub = (char *) malloc(strlen(filterString));
+	char *sub = calloc(strlen(filterString) + 1, sizeof(*sub));
 	array_list_pt operands = NULL;
 	int keepRunning = 1;
 	int size;
 
 	arrayList_create(&operands);
-	sub[0] = '\0';
 	while (keepRunning) {
 		char c = filterString[*pos];
 		

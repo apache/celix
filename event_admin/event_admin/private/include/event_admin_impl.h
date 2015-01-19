@@ -42,12 +42,14 @@
 #include "service_registration.h"
 #include "listener_hook_service.h"
 #include "event_admin.h"
+#include "log_helper.h"
 
 struct event_admin {
         apr_pool_t *pool;
         hash_map_pt channels;
         array_list_pt event_handlers;
         bundle_context_pt context;
+        log_helper_pt *loghelper;
 };
 typedef struct channel *channel_t;
 struct channel {
@@ -98,7 +100,7 @@ celix_status_t eventAdmin_removedService(void * handle, service_reference_pt ref
  * @param char *topic, the topic string.
  * @param array_list_pt event_handlers. The array list to contain the interested handlers.
  */
-celix_status_t eventAdmin_findHandlersByTopic(hash_map_pt channels, char *topic , array_list_pt event_handlers);
+celix_status_t eventAdmin_findHandlersByTopic(event_admin_pt event_admin, char *topic , array_list_pt event_handlers);
 /**
  * @desc create the needed event channels for an event handler.
  * @desc apr_pool_t *pool. a memory pool pointer.

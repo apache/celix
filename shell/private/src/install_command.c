@@ -69,7 +69,7 @@ void installCommand_execute(command_pt command, char * line, void (*out)(char *)
 		info[0] = '\0';
 		while (sub != NULL) {
 			bundle_pt bundle = NULL;
-			installCommand_install(command, &bundle, strdup(sub), out, err);
+			installCommand_install(command, &bundle, sub, out, err);
 			if (bundle != NULL) {
 				long id;
 				bundle_archive_pt archive = NULL;

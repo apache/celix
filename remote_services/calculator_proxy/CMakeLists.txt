@@ -30,6 +30,7 @@ SET(BUNDLE_VERSION "0.0.1")
 bundle(org.apache.celix.calc.api.Calculator_proxy SOURCES 
 	private/src/calculator_proxy_activator
 	private/src/calculator_proxy_impl.c
+    ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/remote_proxy_factory_impl.c
     
     private/include/calculator_proxy_impl.h
 )

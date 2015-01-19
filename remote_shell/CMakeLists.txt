@@ -27,6 +27,8 @@ if (REMOTE_SHELL)
     	private/src/shell_mediator 
     	private/src/remote_shell
 
+		${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
+		
 		private/include/remote_shell.h
 		private/include/connection_listener.h
 	)
@@ -36,6 +38,7 @@ if (REMOTE_SHELL)
     include_directories("private/include")
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/shell/public/include")
+    include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
     
-    target_link_libraries(remote_shell celix_framework ${APRUTIL_LIBRARY})
+    target_link_libraries(remote_shell celix_framework)
 endif (REMOTE_SHELL)

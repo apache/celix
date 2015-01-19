@@ -33,8 +33,11 @@
 
 #include "driver_locator.h"
 #include "device_manager.h"
+#include "log_service.h"
+#include "log_helper.h"
 
 struct device_manager_bundle_instance {
+	log_helper_pt loghelper;
 	bundle_context_pt context;
 	apr_pool_t *pool;
 	device_manager_pt deviceManager;
@@ -72,6 +75,9 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 			(*userData) = bi;
 			bi->context = context;
 			bi->pool = pool;
+
+			logHelper_create(context, &bi->loghelper);
+
 			status = deviceManager_create(pool, context, &bi->deviceManager);
 		}
 	}
@@ -82,6 +88,9 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	celix_status_t status = CELIX_SUCCESS;
 	device_manager_bundle_instance_pt bundleData = userData;
 	apr_pool_t *pool;
+
+	logHelper_start(bundleData->loghelper);
+
 	status = bundleContext_getMemoryPool(context, &pool);
 	if (status == CELIX_SUCCESS) {
 		status = deviceManagerBundle_createDriverLocatorTracker(bundleData);
@@ -103,10 +112,11 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	}
 
 	if (status != CELIX_SUCCESS) {
-		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "DEVICE_MANAGER: Error while starting bundle got error num %d", status);
+		logHelper_log(bundleData->loghelper, OSGI_LOGSERVICE_ERROR, "DEVICE_MANAGER: Error while starting bundle got error num %d", status);
 	}
 
-	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "DEVICE_MANAGER: Started");
+	logHelper_log(bundleData->loghelper, OSGI_LOGSERVICE_INFO, "DEVICE_MANAGER: Started");
+
 	return status;
 }
 
@@ -180,6 +190,9 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 			status = serviceTracker_close(bundleData->deviceTracker);
 		}
 	}
+
+	logHelper_stop(bundleData->loghelper);
+
 	return status;
 }
 
@@ -187,5 +200,8 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt contex
 	celix_status_t status = CELIX_SUCCESS;
 	device_manager_bundle_instance_pt bundleData = userData;
 	status = deviceManager_destroy(bundleData->deviceManager);
+
+	logHelper_destroy(&bundleData->loghelper);
+
 	return status;
 }

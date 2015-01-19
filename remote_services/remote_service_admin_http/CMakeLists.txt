@@ -15,11 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(APR REQUIRED)
+
 find_package(CURL REQUIRED)
 
 include_directories(${CURL_INCLUDE_DIRS})
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/private/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
@@ -33,12 +34,13 @@ SET_HEADERS("Bundle-Name: Apache Celix Remote Service Admin HTTP")
 
 bundle(remote_service_admin_http SOURCES 
 	private/src/remote_service_admin_impl
-	private/src/export_registration_impl
-	private/src/import_registration_impl
 	private/src/remote_service_admin_activator
+    ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/export_registration_impl
+    ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/import_registration_impl
 	${PROJECT_SOURCE_DIR}/remote_services/utils/private/src/civetweb.c
+	${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
 )
 
 install_bundle(remote_service_admin_http)
     
-target_link_libraries(remote_service_admin_http celix_framework ${APRUTIL_LIBRARY} ${CURL_LIBRARIES})
+target_link_libraries(remote_service_admin_http celix_framework ${CURL_LIBRARIES})

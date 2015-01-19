@@ -15,6 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
+SET(BUNDLE_SYMBOLICNAME "apache_celix_examples_tracker")
+SET(BUNDLE_VERSION "0.0.1")
+
 bundle(tracker SOURCES private/src/activator)
 include_directories("../publisherService/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")

@@ -20,7 +20,7 @@ find_package(Jansson REQUIRED)
 include_directories("${JANSSON_INCLUDE_DIRS}")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/remote_services/calculator_endpoint/private/include")
+include_directories("${PROJECT_SOURCE_DIR}/remote_services/calculator_endpoint2/private/include")
 include_directories("${PROJECT_SOURCE_DIR}/remote_services/calculator_service/public/include")
 
 SET(BUNDLE_SYMBOLICNAME "apache_celix_remoting_calculator2_endpoint")

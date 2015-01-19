@@ -56,17 +56,18 @@ celix_status_t eventAdmin_postEvent(event_admin_pt event_admin, event_pt event) 
 	celix_status_t status = CELIX_SUCCESS;
 
 	char *topic;
+
     eventAdmin_getTopic(&event, &topic);
 
 	array_list_pt event_handlers;
 	arrayList_create(&event_handlers);
 	eventAdmin_lockHandlersList(event_admin, topic);
-	eventAdmin_findHandlersByTopic(event_admin->channels, topic, event_handlers);
+	eventAdmin_findHandlersByTopic(event_admin, topic, event_handlers);
     // TODO make this async!
 	array_list_iterator_pt handlers_iterator = arrayListIterator_create(event_handlers);
 	while (arrayListIterator_hasNext(handlers_iterator)) {
 		event_handler_service_pt event_handler_service = (event_handler_service_pt) arrayListIterator_next(handlers_iterator);
-		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "handler found (POST EVENT) for %s", topic);
+		logHelper_log(*event_admin->loghelper, OSGI_LOGSERVICE_INFO, "handler found (POST EVENT) for %s", topic);
 		event_handler_service->handle_event(&event_handler_service->event_handler, event);
 	}
 	eventAdmin_releaseHandersList(event_admin, topic);
@@ -82,22 +83,23 @@ celix_status_t eventAdmin_sendEvent(event_admin_pt event_admin, event_pt event) 
 	array_list_pt event_handlers;
 	arrayList_create(&event_handlers);
 	eventAdmin_lockHandlersList(event_admin, topic);
-	eventAdmin_findHandlersByTopic(event_admin->channels, topic, event_handlers);
+	eventAdmin_findHandlersByTopic(event_admin, topic, event_handlers);
 	array_list_iterator_pt handlers_iterator = arrayListIterator_create(event_handlers);
 	while (arrayListIterator_hasNext(handlers_iterator)) {
 		event_handler_service_pt event_handler_service = (event_handler_service_pt) arrayListIterator_next(handlers_iterator);
-		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "handler found (SEND EVENT) for %s", topic);
+		logHelper_log(*event_admin->loghelper, OSGI_LOGSERVICE_INFO, "handler found (SEND EVENT) for %s", topic);
 		event_handler_service->handle_event(&event_handler_service->event_handler, event);
 	}
 	eventAdmin_releaseHandersList(event_admin, topic);
 	return status;
 }
 
-celix_status_t eventAdmin_findHandlersByTopic(hash_map_pt channels, char *topic, array_list_pt event_handlers) {
+celix_status_t eventAdmin_findHandlersByTopic(event_admin_pt event_admin, char *topic, array_list_pt event_handlers) {
 	celix_status_t status = CELIX_SUCCESS;
+	hash_map_pt channels = event_admin->channels;
     channel_t channel = hashMap_get(channels, topic);
 	if (channel != NULL) {
-		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "found channel: %s", topic);
+		logHelper_log(*event_admin->loghelper, OSGI_LOGSERVICE_INFO, "found channel: %s", topic);
 		if (channel->eventHandlers != NULL && !hashMap_isEmpty(channel->eventHandlers)) {
 			// iterate throught the handlers and add them to the array list for result.
 			hash_map_iterator_pt hashmap_iterator =  hashMapIterator_create(channel->eventHandlers);
@@ -106,7 +108,7 @@ celix_status_t eventAdmin_findHandlersByTopic(hash_map_pt channels, char *topic,
 			}
 		}
 	} else {
-		fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "no such channel: %s", topic);
+		logHelper_log(*event_admin->loghelper, OSGI_LOGSERVICE_WARNING, "no such channel: %s", topic);
 	}
 	return status;
 }
@@ -116,7 +118,7 @@ celix_status_t eventAdmin_createEventChannels(event_admin_pt *event_admin, char 
     channel_t channel = hashMap_get((*event_admin)->channels, topic);
 	if (channel == NULL) {
 		//create channel
-		fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Creating channel: %s", topic);
+		logHelper_log(*(*event_admin)->loghelper, OSGI_LOGSERVICE_INFO, "Creating channel: %s", topic);
 
         apr_pool_t *subPool = NULL;
         apr_pool_create(&subPool, (*event_admin)->pool);
@@ -184,7 +186,7 @@ celix_status_t eventAdmin_lockHandlersList(event_admin_pt event_admin, char *top
         do {
             status = apr_thread_mutex_trylock(channel->channelLock);
         } while (status != 0 && !APR_STATUS_IS_EBUSY(status));
-        fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "LOCK: %s!", topic);
+        logHelper_log(*event_admin->loghelper, OSGI_LOGSERVICE_DEBUG, "LOCK: %s!", topic);
     }
 	return status;
 }
@@ -195,7 +197,7 @@ celix_status_t eventAdmin_releaseHandersList(event_admin_pt event_admin, char *t
 	if (channel != NULL) {
         // TODO check the result value...
         apr_thread_mutex_unlock(channel->channelLock);
-        fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "UNLOCK: %s!", topic);
+        logHelper_log(*event_admin->loghelper, OSGI_LOGSERVICE_DEBUG, "UNLOCK: %s!", topic);
     }
 	return status;
 }
@@ -214,17 +216,19 @@ celix_status_t eventAdmin_addedService(void * handle, service_reference_pt ref, 
 	event_handler_service = (event_handler_service_pt) service;
 	char *topic = NULL;
 	serviceReference_getProperty(ref, (char*)EVENT_TOPIC, &topic);
-	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Original TOPIC: %s", topic);
+	logHelper_log(*event_admin->loghelper, OSGI_LOGSERVICE_DEBUG, "Original TOPIC: %s", topic);
 	eventAdmin_createEventChannels(&event_admin,topic,event_handler_service);
 	return status;
 }
 
 celix_status_t eventAdmin_modifiedService(void * handle, service_reference_pt ref, void * service) {
-	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Event admin Modified");
+	event_admin_pt event_admin = (event_admin_pt) handle;
+	logHelper_log(*event_admin->loghelper, OSGI_LOGSERVICE_DEBUG, "Event admin Modified");
 	return CELIX_SUCCESS;
 }
 
 celix_status_t eventAdmin_removedService(void * handle, service_reference_pt ref, void * service) {
-	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Event admin Removed %p", service);
+	event_admin_pt event_admin = (event_admin_pt) handle;
+	logHelper_log(*event_admin->loghelper, OSGI_LOGSERVICE_DEBUG, "Event admin Removed %p", service);
 	return CELIX_SUCCESS;
 }
