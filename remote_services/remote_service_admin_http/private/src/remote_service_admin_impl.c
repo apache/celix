@@ -223,23 +223,24 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin) {
 
     	import_registration_factory_pt importFactory = hashMapEntry_getValue(entry);
 
-        int i;
-        for (i = 0; i < arrayList_size(importFactory->registrations); i++)
-        {
-            import_registration_pt importRegistration = arrayList_get(importFactory->registrations, i);
+        if (importFactory != NULL) {
+            int i;
+            for (i = 0; i < arrayList_size(importFactory->registrations); i++)
+            {
+                import_registration_pt importRegistration = arrayList_get(importFactory->registrations, i);
 
-			if (importFactory->trackedFactory != NULL)
-			{
-				importFactory->trackedFactory->unregisterProxyService(importFactory->trackedFactory->factory, importRegistration->endpointDescription);
-			}
-        }
+                if (importFactory->trackedFactory != NULL)
+                {
+                    importFactory->trackedFactory->unregisterProxyService(importFactory->trackedFactory->factory, importRegistration->endpointDescription);
+                }
+            }
 
-        serviceTracker_close(importFactory->proxyFactoryTracker);
-        importRegistrationFactory_close(importFactory);
+            serviceTracker_close(importFactory->proxyFactoryTracker);
+            importRegistrationFactory_close(importFactory);
 
-        hashMapIterator_remove(iter);
-		importRegistrationFactory_destroy(&importFactory);
-
+            hashMapIterator_remove(iter);
+            importRegistrationFactory_destroy(&importFactory);
+            }
     }
     hashMapIterator_destroy(iter);
     celixThreadMutex_unlock(&admin->importedServicesLock);

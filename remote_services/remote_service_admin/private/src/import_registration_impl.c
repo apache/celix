@@ -98,6 +98,8 @@ celix_status_t importRegistrationFactory_destroy(import_registration_factory_pt*
 
 		serviceTracker_destroy((*registration_factory)->proxyFactoryTracker);
 		free(*registration_factory);
+
+		*registration_factory = NULL;
 	}
 
 
