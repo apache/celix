@@ -28,6 +28,7 @@
 #define REMOTE_SERVICE_ADMIN_SHM_IMPL_H_
 
 #include "remote_service_admin_impl.h"
+#include "log_helper.h"
 
 #define RSA_SHM_MEMSIZE 1310720
 #define RSA_SHM_PATH_PROPERTYNAME "shmPath"
@@ -43,48 +44,49 @@
 
 /** Define P_tmpdir if not defined (this is normally a POSIX symbol) */
 #ifndef P_tmpdir
-	#define P_tmpdir "/tmp"
+#define P_tmpdir "/tmp"
 #endif
 
 union semun {
-	int              val;    /* Value for SETVAL */
-	struct semid_ds *buf;    /* Buffer for IPC_STAT, IPC_SET */
-	unsigned short  *array;  /* Array for GETALL, SETALL */
-	struct seminfo  *__buf;  /* Buffer for IPC_INFO */
+    int val; /* Value for SETVAL */
+    struct semid_ds *buf; /* Buffer for IPC_STAT, IPC_SET */
+    unsigned short *array; /* Array for GETALL, SETALL */
+    struct seminfo *__buf; /* Buffer for IPC_INFO */
 };
 
-struct recv_shm_thread
-{
-	remote_service_admin_pt admin;
-	endpoint_description_pt endpointDescription;
+struct recv_shm_thread {
+    remote_service_admin_pt admin;
+    endpoint_description_pt endpointDescription;
 };
 
-struct ipc_segment
-{
-	int semId;
-	int shmId;
-	void *shmBaseAdress;
+struct ipc_segment {
+    int semId;
+    int shmId;
+    void *shmBaseAdress;
 };
 
 struct remote_service_admin {
-	apr_pool_t *pool;
-	bundle_context_pt context;
+    bundle_context_pt context;
+    log_helper_pt loghelper;
 
-	hash_map_pt exportedServices;
-	hash_map_pt importedServices;
-	hash_map_pt exportedIpcSegment;
-	hash_map_pt importedIpcSegment;
+    celix_thread_mutex_t exportedServicesLock;
+    hash_map_pt exportedServices;
 
-	hash_map_pt pollThread;
-	hash_map_pt pollThreadRunning;
+    celix_thread_mutex_t importedServicesLock;
+    hash_map_pt importedServices;
 
-	struct mg_context *ctx;
+    hash_map_pt exportedIpcSegment;
+    hash_map_pt importedIpcSegment;
+
+    hash_map_pt pollThread;
+    hash_map_pt pollThreadRunning;
+
+    struct mg_context *ctx;
 };
 
 typedef struct recv_shm_thread *recv_shm_thread_pt;
 typedef struct ipc_segment *ipc_segment_pt;
 
 celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin);
-
 
 #endif /* REMOTE_SERVICE_ADMIN_SHM_IMPL_H_ */
