@@ -240,28 +240,31 @@ static void *endpointDiscoveryPoller_poll(void *data) {
 
 			status = endpointDiscoveryPoller_getEndpoints(poller, url, &updatedEndpoints);
 			if (status != CELIX_SUCCESS) {
+				status = celixThreadMutex_unlock(&poller->pollerLock);
 				continue;
 			}
 
-			for (int i = arrayList_size(currentEndpoints); i > 0  ; i--) {
-				endpoint_description_pt endpoint = arrayList_get(currentEndpoints, i-1);
-				if (!arrayList_contains(updatedEndpoints, endpoint)) {
-					status = discovery_removeDiscoveredEndpoint(poller->discovery, endpoint);
-					arrayList_remove(currentEndpoints, i-1);
-					endpointDescription_destroy(endpoint);
+			if (updatedEndpoints) {
+				for (int i = arrayList_size(currentEndpoints); i > 0  ; i--) {
+					endpoint_description_pt endpoint = arrayList_get(currentEndpoints, i-1);
+					if (!arrayList_contains(updatedEndpoints, endpoint)) {
+						status = discovery_removeDiscoveredEndpoint(poller->discovery, endpoint);
+						arrayList_remove(currentEndpoints, i-1);
+						endpointDescription_destroy(endpoint);
+					}
 				}
-			}
 
-			for (int i = arrayList_size(updatedEndpoints); i > 0  ; i--) {
-				endpoint_description_pt endpoint = arrayList_remove(updatedEndpoints, 0);
+				for (int i = arrayList_size(updatedEndpoints); i > 0  ; i--) {
+					endpoint_description_pt endpoint = arrayList_remove(updatedEndpoints, 0);
 
-				if (!arrayList_contains(currentEndpoints, endpoint)) {
-					arrayList_add(currentEndpoints, endpoint);
-					status = discovery_addDiscoveredEndpoint(poller->discovery, endpoint);
-				}
-				else {
-					endpointDescription_destroy(endpoint);
+					if (!arrayList_contains(currentEndpoints, endpoint)) {
+						arrayList_add(currentEndpoints, endpoint);
+						status = discovery_addDiscoveredEndpoint(poller->discovery, endpoint);
+					}
+					else {
+						endpointDescription_destroy(endpoint);
 
+					}
 				}
 			}
 
