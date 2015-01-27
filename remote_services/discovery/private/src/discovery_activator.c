@@ -150,12 +150,13 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator *activator = userData;
+
+	status = discovery_stop(activator->discovery);
+
 	status = serviceTracker_close(activator->endpointListenerTracker);
 
 	status = serviceRegistration_unregister(activator->endpointListenerService);
 	free(activator->endpointListener);
-
-	status = discovery_stop(activator->discovery);
 
 	logHelper_stop(activator->loghelper);
 

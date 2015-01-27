@@ -95,29 +95,7 @@ celix_status_t discovery_stop(discovery_pt discovery) {
 	celix_status_t status;
 
 	status = endpointDiscoveryServer_destroy(discovery->server);
-	if (status != CELIX_SUCCESS) {
-		return CELIX_BUNDLE_EXCEPTION;
-	}
-
 	status = endpointDiscoveryPoller_destroy(discovery->poller);
-	if (status != CELIX_SUCCESS) {
-		return CELIX_BUNDLE_EXCEPTION;
-	}
-
-	hash_map_iterator_pt iter;
-
-	celixThreadMutex_lock(&discovery->discoveredServicesMutex);
-
-	iter = hashMapIterator_create(discovery->discoveredServices);
-	while (hashMapIterator_hasNext(iter)) {
-		hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-		endpoint_description_pt endpoint = hashMapEntry_getValue(entry);
-
-		discovery_informEndpointListeners(discovery, endpoint, false);
-	}
-	hashMapIterator_destroy(iter);
-
-	celixThreadMutex_unlock(&discovery->discoveredServicesMutex);
 
 	logHelper_stop(discovery->loghelper);
 
