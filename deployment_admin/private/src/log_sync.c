@@ -28,10 +28,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <apr_general.h>
-#include <apr_thread_proc.h>
-#include <apr_strings.h>
-
 #include <curl/curl.h>
 #include <curl/easy.h>
 
@@ -39,17 +35,18 @@
 #include "celix_log.h"
 #include "celixbool.h"
 
+#include "celix_threads.h"
+
 #include "log_sync.h"
 #include "log_event.h"
 
 struct log_sync {
-	apr_pool_t *pool;
 	log_store_pt logStore;
 
 	char *targetId;
 	bool running;
 
-	apr_thread_t *syncTask;
+	celix_thread_t syncTask;
 };
 
 struct log_descriptor {
@@ -63,22 +60,21 @@ typedef struct log_descriptor *log_descriptor_pt;
 
 celix_status_t logSync_queryLog(log_sync_pt logSync, char *targetId, long logId, char **queryReply);
 static size_t logSync_readQeury(void *contents, size_t size, size_t nmemb, void *userp);
-static void *APR_THREAD_FUNC logSync_synchronize(apr_thread_t *thd, void *logSyncP);
+static void *logSync_synchronize(void *logSyncP);
 
-celix_status_t logSync_create(apr_pool_t *pool, char *targetId, log_store_pt store, log_sync_pt *logSync) {
+celix_status_t logSync_create(char *targetId, log_store_pt store, log_sync_pt *logSync) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	*logSync = apr_palloc(pool, sizeof(**logSync));
+	*logSync = calloc(1, sizeof(**logSync));
 	if (!*logSync) {
 		status = CELIX_ENOMEM;
 	} else {
-		(*logSync)->pool = pool;
 		(*logSync)->logStore = store;
 		(*logSync)->targetId = targetId;
-		(*logSync)->syncTask = NULL;
+		(*logSync)->syncTask = celix_thread_default;
 		(*logSync)->running = true;
 
-		apr_thread_create(&(*logSync)->syncTask, NULL, logSync_synchronize, *logSync, pool);
+		celixThread_create(&(*logSync)->syncTask, NULL, logSync_synchronize, *logSync);
 	}
 
 	return status;
@@ -89,24 +85,24 @@ celix_status_t logSync_parseLogDescriptor(log_sync_pt logSync, char *descriptorS
 
 	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Descriptor: %s", descriptorString);
 	char *last = NULL;
-	char *targetId = apr_strtok(descriptorString, ",", &last);
-	char *logIdStr = apr_strtok(NULL, ",", &last);
+	char *targetId = strtok_r(descriptorString, ",", &last);
+	char *logIdStr = strtok_r(NULL, ",", &last);
 	long logId = 0;
 	if (logIdStr != NULL) {
 		logId = atol(logIdStr);
 	}
-	char *range = apr_strtok(NULL, ",", &last);
+	char *range = strtok_r(NULL, ",", &last);
 	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Range: %s", range);
 
 	long low = 0;
 	long high = 0;
 	if (range != NULL) {
 		char *rangeToken = NULL;
-		low = atol(apr_strtok(range, "-", &rangeToken));
-		high = atol(apr_strtok(NULL, "-", &rangeToken));
+		low = atol(strtok_r(range, "-", &rangeToken));
+		high = atol(strtok_r(NULL, "-", &rangeToken));
 	}
 
-	*descriptor = apr_palloc(logSync->pool, sizeof(**descriptor));
+	*descriptor = calloc(1, sizeof(**descriptor));
 	if (!*descriptor) {
 		status = CELIX_ENOMEM;
 	} else {
@@ -119,7 +115,7 @@ celix_status_t logSync_parseLogDescriptor(log_sync_pt logSync, char *descriptorS
 	return status;
 }
 
-static void *APR_THREAD_FUNC logSync_synchronize(apr_thread_t *thd, void *logSyncP) {
+static void *logSync_synchronize(void *logSyncP) {
 	log_sync_pt logSync = logSyncP;
 
 		while (logSync->running) {
@@ -147,7 +143,7 @@ static void *APR_THREAD_FUNC logSync_synchronize(apr_thread_t *thd, void *logSyn
 	}
 
 
-	apr_thread_exit(thd, APR_SUCCESS);
+	celixThread_exit(NULL);
 	return NULL;
 }
 
@@ -159,8 +155,9 @@ struct MemoryStruct {
 celix_status_t logSync_queryLog(log_sync_pt logSync, char *targetId, long logId, char **queryReply) {
 	// http://localhost:8080/auditlog/query?tid=targetid&logid=logid
 	celix_status_t status = CELIX_SUCCESS;
-
-	char *query = apr_pstrcat(logSync->pool, "http://localhost:8080/auditlog/query?tid=", targetId, "&logid=1", NULL);
+	int length = strlen(targetId) + 60;
+	char query[length];
+	snprintf(query, length, "http://localhost:8080/auditlog/query?tid=%s&logid=1", targetId);
 
 	CURL *curl;
 	CURLcode res;
@@ -181,7 +178,7 @@ celix_status_t logSync_queryLog(log_sync_pt logSync, char *targetId, long logId,
 		/* always cleanup */
 		curl_easy_cleanup(curl);
 
-		*queryReply = apr_pstrdup(logSync->pool, chunk.memory);
+		*queryReply = strdup(chunk.memory);
 	}
 
 	return status;

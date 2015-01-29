@@ -27,15 +27,12 @@
 #ifndef DEPLOYMENT_ADMIN_H_
 #define DEPLOYMENT_ADMIN_H_
 
-#include <apr_thread_proc.h>
-
 #include "bundle_context.h"
 
 typedef struct deployment_admin *deployment_admin_pt;
 
 struct deployment_admin {
-	apr_pool_t *pool;
-	apr_thread_t *poller;
+	celix_thread_t poller;
 	bundle_context_pt context;
 
 	bool running;
@@ -44,7 +41,7 @@ struct deployment_admin {
 	char *targetIdentification;
 	char *pollUrl;
 	char *auditlogUrl;
-	apr_time_t auditlogId;
+	unsigned long long auditlogId;
 	unsigned int aditlogSeqNr;
 };
 
@@ -52,7 +49,7 @@ typedef enum {
 	DEPLOYMENT_ADMIN_AUDIT_EVENT__FRAMEWORK_STARTED = 1005
 } DEPLOYMENT_ADMIN_AUDIT_EVENT;
 
-celix_status_t deploymentAdmin_create(apr_pool_t *pool, bundle_context_pt context, deployment_admin_pt *admin);
+celix_status_t deploymentAdmin_create(bundle_context_pt context, deployment_admin_pt *admin);
 celix_status_t deploymentAdmin_destroy(deployment_admin_pt admin);
 
 #endif /* DEPLOYMENT_ADMIN_H_ */

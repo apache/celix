@@ -31,6 +31,6 @@
 
 typedef struct log_sync *log_sync_pt;
 
-celix_status_t logSync_create(apr_pool_t *pool, char *targetId, log_store_pt store, log_sync_pt *logSync);
+celix_status_t logSync_create(char *targetId, log_store_pt store, log_sync_pt *logSync);
 
 #endif /* LOG_SYNC_H_ */

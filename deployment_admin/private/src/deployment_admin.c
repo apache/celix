@@ -30,14 +30,14 @@
 #include <unistd.h>
 #include <string.h>
 
+#include <dirent.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #include <curl/curl.h>
 #include <curl/easy.h>
 
-#include <apr.h>
-#include <apr_thread_proc.h>
-#include <apr_strings.h>
-#include <apr_time.h>
-#include <apr_uuid.h>
+#include <uuid/uuid.h>
 
 #include "celixbool.h"
 #include "deployment_admin.h"
@@ -61,10 +61,10 @@
 
 #define VERSIONS "/versions"
 
-static void* APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *deploymentAdmin);
+static void* deploymentAdmin_poll(void *deploymentAdmin);
 celix_status_t deploymentAdmin_download(char * url, char **inputFile);
 size_t deploymentAdmin_writeData(void *ptr, size_t size, size_t nmemb, FILE *stream);
-static celix_status_t deploymentAdmin_deleteTree(char * directory, apr_pool_t *mp);
+static celix_status_t deploymentAdmin_deleteTree(char * directory);
 celix_status_t deploymentAdmin_readVersions(deployment_admin_pt admin, array_list_pt *versions);
 
 celix_status_t deploymentAdmin_stopDeploymentPackageBundles(deployment_admin_pt admin, deployment_package_pt target);
@@ -76,16 +76,13 @@ celix_status_t deploymentAdmin_dropDeploymentPackageBundles(deployment_admin_pt 
 celix_status_t deploymentAdmin_startDeploymentPackageBundles(deployment_admin_pt admin, deployment_package_pt source);
 static celix_status_t deploymentAdmin_updateAuditPool(deployment_admin_pt admin, DEPLOYMENT_ADMIN_AUDIT_EVENT auditEvent);
 
-celix_status_t deploymentAdmin_create(apr_pool_t *pool, bundle_context_pt context, deployment_admin_pt *admin) {
+celix_status_t deploymentAdmin_create(bundle_context_pt context, deployment_admin_pt *admin) {
 	celix_status_t status = CELIX_SUCCESS;
-	apr_pool_t *subpool;
-	apr_pool_create(&subpool, pool);
 
-	*admin = apr_palloc(subpool, sizeof(**admin));
+	*admin = calloc(1, sizeof(**admin));
 	if (!*admin) {
 		status = CELIX_ENOMEM;
 	} else {
-		(*admin)->pool = subpool;
 		(*admin)->running = true;
 		(*admin)->context = context;
 		(*admin)->current = NULL;
@@ -95,7 +92,10 @@ celix_status_t deploymentAdmin_create(apr_pool_t *pool, bundle_context_pt contex
 		(*admin)->auditlogUrl = NULL;
 
         bundleContext_getProperty(context, IDENTIFICATION_ID, &(*admin)->targetIdentification);
-        (*admin)->auditlogId = apr_time_now();
+
+        struct timeval tv;
+		gettimeofday(&tv,NULL);
+		(*admin)->auditlogId =  tv.tv_sec*(uint64_t)1000000+tv.tv_usec;
         (*admin)->aditlogSeqNr = 0;
 
 		if ((*admin)->targetIdentification == NULL ) {
@@ -108,8 +108,17 @@ celix_status_t deploymentAdmin_create(apr_pool_t *pool, bundle_context_pt contex
 			    fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "URL must be set using \"deployment_admin_url\"\n");
 				status = CELIX_ILLEGAL_ARGUMENT;
 			} else {
-				(*admin)->pollUrl = apr_pstrcat(subpool, url, "/deployment/", (*admin)->targetIdentification, VERSIONS, NULL);
-				(*admin)->auditlogUrl = apr_pstrcat(subpool, url, "/auditlog", NULL);
+				int pollUrlLength = strlen(url) + strlen((*admin)->targetIdentification) + strlen(VERSIONS) + 13;
+				int auditlogUrlLength = strlen(url) + 10;
+
+				char pollUrl[pollUrlLength];
+				char auditlogUrl[auditlogUrlLength];
+
+				snprintf(pollUrl, pollUrlLength, "%s/deployment/%s%s", url, (*admin)->targetIdentification, VERSIONS);
+				snprintf(auditlogUrl, auditlogUrlLength, "%s/auditlog", url);
+
+				(*admin)->pollUrl = strdup(pollUrl);
+				(*admin)->auditlogUrl = strdup(auditlogUrl);
 
 //				log_store_pt store = NULL;
 //				log_pt log = NULL;
@@ -121,7 +130,7 @@ celix_status_t deploymentAdmin_create(apr_pool_t *pool, bundle_context_pt contex
 //				log_log(log, 20000, NULL);
 
 
-				apr_thread_create(&(*admin)->poller, NULL, deploymentAdmin_poll, *admin, subpool);
+				celixThread_create(&(*admin)->poller, NULL, deploymentAdmin_poll, *admin);
 			}
 		}
 	}
@@ -149,6 +158,11 @@ celix_status_t deploymentAdmin_destroy(deployment_admin_pt admin) {
 		free(admin->current);
 	}
 
+	free(admin->pollUrl);
+	free(admin->auditlogUrl);
+
+	free(admin);
+
 	return status;
 }
 
@@ -169,7 +183,7 @@ static celix_status_t deploymentAdmin_updateAuditPool(deployment_admin_pt admin,
 	char url[strlen(admin->auditlogUrl)+6];
 	sprintf(url, "%s/send", admin->auditlogUrl);
 	char entry[512];
-	int entrySize = snprintf(entry, 512, "%s,%lld,%u,0,%i\n", admin->targetIdentification, admin->auditlogId, admin->aditlogSeqNr++, auditEvent);
+	int entrySize = snprintf(entry, 512, "%s,%llu,%u,0,%i\n", admin->targetIdentification, admin->auditlogId, admin->aditlogSeqNr++, auditEvent);
 	if (entrySize >= 512) {
 		status = CELIX_BUNDLE_EXCEPTION;
 		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error, entry buffer is too small");
@@ -189,7 +203,7 @@ static celix_status_t deploymentAdmin_updateAuditPool(deployment_admin_pt admin,
 	return status;
 }
 
-static void * APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *deploymentAdmin) {
+static void *deploymentAdmin_poll(void *deploymentAdmin) {
 	deployment_admin_pt admin = deploymentAdmin;
 
 	/*first poll send framework started audit event, note this will register the target in Apache ACE*/
@@ -204,13 +218,16 @@ static void * APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *depl
 
 		if (last != NULL) {
 			if (admin->current == NULL || strcmp(last, admin->current) > 0) {
-				char *request = NULL;
+				int length = strlen(admin->pollUrl) + strlen(last) + 2;
+				char request[length];
 				if (admin->current == NULL) {
-					request = apr_pstrcat(admin->pool, admin->pollUrl, "/", last, NULL);
+					snprintf(request, length, "%s/%s", admin->pollUrl, last);
 				} else {
-					// We do not yet support fix packages
-					//request = apr_pstrcat(admin->pool, VERSIONS, "/", last, "?current=", admin->current, NULL);
-					request = apr_pstrcat(admin->pool, admin->pollUrl, "/", last, NULL);
+					// TODO
+					//      We do not yet support fix packages
+					//		Check string lenght!
+					// snprintf(request, length, "%s/%s?current=%s", admin->pollUrl, last, admin->current);
+					snprintf(request, length, "%s/%s", admin->pollUrl, last);
 				}
 
 				char *inputFilename = NULL;
@@ -223,29 +240,36 @@ static void * APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *depl
 
 					// Handle file
 					char tmpDir[256];
-					char uuidStr[128];
-                    apr_uuid_t tmpUuid;
-                    apr_uuid_get(&tmpUuid);
-                    apr_uuid_format(uuidStr, &tmpUuid);
-                    sprintf(tmpDir, "%s%s", entry, uuidStr);
-					apr_dir_make(tmpDir, APR_UREAD|APR_UWRITE|APR_UEXECUTE, admin->pool);
+					char uuid[37];
+					uuid_t uid;
+					uuid_generate(uid);
+					uuid_unparse(uid, uuid);
+                    snprintf(tmpDir, 256, "%s%s", entry, uuid);
+                    mkdir(tmpDir, S_IRWXU);
 
 					// TODO: update to use bundle cache DataFile instead of module entries.
 					unzip_extractDeploymentPackage(inputFilename, tmpDir);
-					char *manifest = apr_pstrcat(admin->pool, tmpDir, "/META-INF/MANIFEST.MF", NULL);
+					int length = strlen(tmpDir + 22);
+					char manifest[length];
+					snprintf(manifest, length, "%s/META-INF/MANIFEST.MF", tmpDir);
 					manifest_pt mf = NULL;
 					manifest_createFromFile(manifest, &mf);
 					deployment_package_pt source = NULL;
-					deploymentPackage_create(admin->pool, admin->context, mf, &source);
+					deploymentPackage_create(admin->context, mf, &source);
 					char *name = NULL;
 					deploymentPackage_getName(source, &name);
 
-					char *repoDir = apr_pstrcat(admin->pool, entry, "repo", NULL);
-					apr_dir_make(repoDir, APR_UREAD|APR_UWRITE|APR_UEXECUTE, admin->pool);
-					char *repoCache = apr_pstrcat(admin->pool, entry, "repo/", name, NULL);
-					deploymentAdmin_deleteTree(repoCache, admin->pool);
-					apr_status_t stat = apr_file_rename(tmpDir, repoCache, admin->pool);
-					if (stat != APR_SUCCESS) {
+					int repoDirLength = strlen(entry) + 5;
+					char repoDir[repoDirLength];
+					snprintf(repoDir, repoDirLength, "%srepo", entry);
+					mkdir(repoDir, S_IRWXU);
+
+					int repoCacheLength = strlen(entry) + strlen(name) + 6;
+					char repoCache[repoCacheLength];
+					snprintf(repoCache, repoCacheLength, "%srepo/%s", entry, name);
+					deploymentAdmin_deleteTree(repoCache);
+					int stat = rename(tmpDir, repoCache);
+					if (stat != 0) {
 						fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "No success");
 					}
 
@@ -262,8 +286,8 @@ static void * APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *depl
 					deploymentAdmin_dropDeploymentPackageBundles(admin, source, target);
 					deploymentAdmin_startDeploymentPackageBundles(admin, source);
 
-					deploymentAdmin_deleteTree(repoCache, admin->pool);
-					deploymentAdmin_deleteTree(tmpDir, admin->pool);
+					deploymentAdmin_deleteTree(repoCache);
+					deploymentAdmin_deleteTree(tmpDir);
 					remove(inputFilename);
 					admin->current = strdup(last);
 					hashMap_put(admin->packages, name, source);
@@ -276,7 +300,7 @@ static void * APR_THREAD_FUNC deploymentAdmin_poll(apr_thread_t *thd, void *depl
 		sleep(5);
 	}
 
-	apr_thread_exit(thd, APR_SUCCESS);
+	celixThread_exit(NULL);
 	return NULL;
 }
 
@@ -325,10 +349,10 @@ celix_status_t deploymentAdmin_readVersions(deployment_admin_pt admin, array_lis
 		curl_easy_cleanup(curl);
 
 		char *last;
-		char *token = apr_strtok(chunk.memory, "\n", &last);
+		char *token = strtok_r(chunk.memory, "\n", &last);
 		while (token != NULL) {
-			arrayList_add(*versions, apr_pstrdup(admin->pool, token));
-			token = apr_strtok(NULL, "\n", &last);
+			arrayList_add(*versions, strdup(token));
+			token = strtok_r(NULL, "\n", &last);
 		}
 	}
 
@@ -378,34 +402,42 @@ size_t deploymentAdmin_writeData(void *ptr, size_t size, size_t nmemb, FILE *str
     return written;
 }
 
-static celix_status_t deploymentAdmin_deleteTree(char * directory, apr_pool_t *mp) {
-    celix_status_t status = CELIX_SUCCESS;
-	apr_dir_t *dir;
 
-	if (directory && mp) {
-        if (apr_dir_open(&dir, directory, mp) == APR_SUCCESS) {
-            apr_finfo_t dp;
-            while ((apr_dir_read(&dp, APR_FINFO_DIRENT|APR_FINFO_TYPE, dir)) == APR_SUCCESS) {
-                if ((strcmp((dp.name), ".") != 0) && (strcmp((dp.name), "..") != 0)) {
-                    char subdir[strlen(directory) + strlen(dp.name) + 2];
-                    strcpy(subdir, directory);
-                    strcat(subdir, "/");
-                    strcat(subdir, dp.name);
+static celix_status_t deploymentAdmin_deleteTree(char * directory) {
+	DIR *dir;
+	celix_status_t status = CELIX_SUCCESS;
+	dir = opendir(directory);
+	if (dir == NULL) {
+	    status = CELIX_FILE_IO_EXCEPTION;
+	} else {
+		struct dirent *dp;
+		while ((dp = readdir(dir)) != NULL) {
+		    if ((strcmp((dp->d_name), ".") != 0) && (strcmp((dp->d_name), "..") != 0)) {
+                char subdir[512];
+                snprintf(subdir, sizeof(subdir), "%s/%s", directory, dp->d_name);
 
-                    if (dp.filetype == APR_DIR) {
-                    	deploymentAdmin_deleteTree(subdir, mp);
-                    } else {
-                        remove(subdir);
+                if (dp->d_type == DT_DIR) {
+                    status = deploymentAdmin_deleteTree(subdir);
+                } else {
+                    if (remove(subdir) != 0) {
+                        status = CELIX_FILE_IO_EXCEPTION;
+                        break;
                     }
                 }
-            }
-            remove(directory);
-        } else {
-            status = CELIX_FILE_IO_EXCEPTION;
-        }
-	} else {
-	    status = CELIX_ILLEGAL_ARGUMENT;
+		    }
+		}
+
+		if (closedir(dir) != 0) {
+			status = CELIX_FILE_IO_EXCEPTION;
+		}
+		if (status == CELIX_SUCCESS) {
+            if (rmdir(directory) != 0) {
+				status = CELIX_FILE_IO_EXCEPTION;
+			}
+		}
 	}
+
+	framework_logIfError(logger, status, NULL, "Failed to delete tree");
 
 	return status;
 }
@@ -447,8 +479,15 @@ celix_status_t deploymentAdmin_updateDeploymentPackageBundles(deployment_admin_p
 		bundle_getEntry(bundle, "/", &entry);
 		char *name = NULL;
 		deploymentPackage_getName(source, &name);
-		char *bundlePath = apr_pstrcat(admin->pool, entry, "repo/", name, "/", info->path, NULL);
-		char *bsn = apr_pstrcat(admin->pool, "osgi-dp:", info->symbolicName, NULL);
+
+		int bundlePathLength = strlen(entry) + strlen(name) + strlen(info->path) + 7;
+		int bsnLength = strlen(info->symbolicName) + 9;
+
+		char bundlePath[bundlePathLength];
+		snprintf(bundlePath, bundlePathLength, "%srepo/%s/%s", entry, name, info->path);
+
+		char bsn[bsnLength];
+		snprintf(bsn, bsnLength, "osgi-dp:%s", info->symbolicName);
 
 		bundle_pt updateBundle = NULL;
 		deploymentPackage_getBundle(source, info->symbolicName, &updateBundle);
@@ -516,12 +555,11 @@ celix_status_t deploymentAdmin_processDeploymentPackageResources(deployment_admi
 	int i;
 	for (i = 0; i < arrayList_size(infos); i++) {
 		resource_info_pt info = arrayList_get(infos, i);
-		apr_pool_t *tmpPool = NULL;
 		array_list_pt services = NULL;
-		char *filter = NULL;
+		int length = strlen(OSGI_FRAMEWORK_SERVICE_PID) + strlen(info->resourceProcessor) + 4;
+		char filter[length];
 
-		apr_pool_create(&tmpPool, admin->pool);
-		filter = apr_pstrcat(tmpPool, "(", OSGI_FRAMEWORK_SERVICE_PID, "=", info->resourceProcessor, ")", NULL);
+		snprintf(filter, length, "(%s=%s)", OSGI_FRAMEWORK_SERVICE_PID, info->resourceProcessor);
 
 		status = bundleContext_getServiceReferences(admin->context, DEPLOYMENTADMIN_RESOURCE_PROCESSOR_SERVICE, filter, &services);
 		if (status == CELIX_SUCCESS) {
@@ -542,7 +580,9 @@ celix_status_t deploymentAdmin_processDeploymentPackageResources(deployment_admi
 					bundle_getEntry(bundle, "/", &entry);
 					deploymentPackage_getName(source, &name);
 
-					char *resourcePath = apr_pstrcat(admin->pool, entry, "repo/", name, "/", info->path, NULL);
+					int length = strlen(entry) + strlen(name) + strlen(info->path) + 7;
+					char resourcePath[length];
+					snprintf(resourcePath, length, "%srepo/%s/%s", entry, name, info->path, NULL);
 					deploymentPackage_getName(source, &packageName);
 
 					processor->begin(processor->processor, packageName);
@@ -573,14 +613,11 @@ celix_status_t deploymentAdmin_dropDeploymentPackageResources(deployment_admin_p
 			resource_info_pt sourceInfo = NULL;
 			deploymentPackage_getResourceInfoByPath(source, info->path, &sourceInfo);
 			if (sourceInfo == NULL) {
-				apr_pool_t *tmpPool = NULL;
 				array_list_pt services = NULL;
-				char *filter = NULL;
+				int length = strlen(OSGI_FRAMEWORK_SERVICE_PID) + strlen(info->resourceProcessor) + 4;
+				char filter[length];
 
-
-				apr_pool_create(&tmpPool, admin->pool);
-				filter = apr_pstrcat(tmpPool, "(", OSGI_FRAMEWORK_SERVICE_PID, "=", info->resourceProcessor, ")", NULL);
-
+				snprintf(filter, length, "(%s=%s)", OSGI_FRAMEWORK_SERVICE_PID, info->resourceProcessor);
 				status = bundleContext_getServiceReferences(admin->context, DEPLOYMENTADMIN_RESOURCE_PROCESSOR_SERVICE, filter, &services);
 				if (status == CELIX_SUCCESS) {
 					if (services != NULL && arrayList_size(services) > 0) {

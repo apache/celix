@@ -27,8 +27,6 @@
 #ifndef LOG_H_
 #define LOG_H_
 
-#include <apr_general.h>
-
 #include "log_event.h"
 #include "log_store.h"
 
@@ -37,7 +35,7 @@
 
 typedef struct log *log_pt;
 
-celix_status_t log_create(apr_pool_t *pool, log_store_pt store, log_pt *log);
+celix_status_t log_create(log_store_pt store, log_pt *log);
 celix_status_t log_log(log_pt log, unsigned int type, properties_pt properties);
 
 celix_status_t log_bundleChanged(void * listener, bundle_event_pt event);

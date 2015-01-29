@@ -27,8 +27,6 @@
 #ifndef DEPLOYMENT_PACKAGE_H_
 #define DEPLOYMENT_PACKAGE_H_
 
-#include <apr_general.h>
-
 #include "version.h"
 #include "bundle_context.h"
 
@@ -55,7 +53,6 @@ struct resource_info {
 typedef struct resource_info *resource_info_pt;
 
 struct deployment_package {
-	apr_pool_t *pool;
 	bundle_context_pt context;
 	manifest_pt manifest;
 	array_list_pt bundleInfos;
@@ -66,7 +63,7 @@ struct deployment_package {
 
 typedef struct deployment_package *deployment_package_pt;
 
-celix_status_t deploymentPackage_create(apr_pool_t *pool, bundle_context_pt context, manifest_pt manifest, deployment_package_pt *package);
+celix_status_t deploymentPackage_create(bundle_context_pt context, manifest_pt manifest, deployment_package_pt *package);
 celix_status_t deploymentPackage_destroy(deployment_package_pt package);
 celix_status_t deploymentPackage_getName(deployment_package_pt package, char **name);
 celix_status_t deploymentPackage_getBundleInfos(deployment_package_pt package, array_list_pt *infos);

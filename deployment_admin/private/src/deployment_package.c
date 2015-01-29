@@ -41,14 +41,13 @@ celix_status_t deploymentPackage_processEntries(deployment_package_pt package);
 static celix_status_t deploymentPackage_isBundleResource(properties_pt attributes, bool *isBundleResource);
 static celix_status_t deploymentPackage_parseBooleanHeader(char *value, bool *boolValue);
 
-celix_status_t deploymentPackage_create(apr_pool_t *pool, bundle_context_pt context, manifest_pt manifest, deployment_package_pt *package) {
+celix_status_t deploymentPackage_create(bundle_context_pt context, manifest_pt manifest, deployment_package_pt *package) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	*package = apr_palloc(pool, sizeof(**package));
+	*package = calloc(1, sizeof(**package));
 	if (!package) {
 		status = CELIX_ENOMEM;
 	} else {
-		(*package)->pool = pool;
 		(*package)->context = context;
 		(*package)->manifest = manifest;
 		(*package)->bundleInfos = NULL;
@@ -86,6 +85,8 @@ celix_status_t deploymentPackage_destroy(deployment_package_pt package) {
 
 	arrayList_destroy(package->bundleInfos);
 	arrayList_destroy(package->resourceInfos);
+
+	free(package);
 
 	return status;
 }
@@ -155,7 +156,7 @@ celix_status_t deploymentPackage_processEntries(deployment_package_pt package) {
 		bool isBundleResource;
 		deploymentPackage_isBundleResource(values, &isBundleResource);
 		if (isBundleResource) {
-			bundle_info_pt info = apr_palloc(package->pool, sizeof(*info));
+			bundle_info_pt info = calloc(1, sizeof(*info));
 			info->path = name;
 			info->attributes = values;
 			info->symbolicName = properties_get(values, (char *) OSGI_FRAMEWORK_BUNDLE_SYMBOLICNAME);
@@ -167,7 +168,7 @@ celix_status_t deploymentPackage_processEntries(deployment_package_pt package) {
 
 			arrayList_add(package->bundleInfos, info);
 		} else {
-			resource_info_pt info = apr_palloc(package->pool, sizeof(*info));
+			resource_info_pt info = calloc(1, sizeof(*info));
 			info->path = name;
 			info->attributes = values;
 			info->resourceProcessor = properties_get(values, (char *) RESOURCE_PROCESSOR);

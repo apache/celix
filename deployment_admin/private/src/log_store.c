@@ -24,7 +24,6 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdlib.h>
-#include <apr_general.h>
 
 #include <time.h>
 
@@ -35,8 +34,6 @@
 #include "log.h"
 
 struct log_store {
-	apr_pool_t *pool;
-
 	unsigned long storeId;
 
 	array_list_pt logEvents;
@@ -44,13 +41,12 @@ struct log_store {
 
 static celix_status_t logStore_getNextID(log_store_pt store, unsigned long *id);
 
-celix_status_t logStore_create(apr_pool_t *pool, log_store_pt *store) {
+celix_status_t logStore_create(log_store_pt *store) {
 	celix_status_t status = CELIX_SUCCESS;
-	*store = apr_palloc(pool, sizeof(**store));
+	*store = calloc(1, sizeof(**store));
 	if (!*store) {
 		status = CELIX_ENOMEM;
 	} else {
-		(*store)->pool = pool;
 		(*store)->storeId = 1;
 		arrayList_create(&(*store)->logEvents);
 	}
@@ -61,7 +57,7 @@ celix_status_t logStore_create(apr_pool_t *pool, log_store_pt *store) {
 celix_status_t logStore_put(log_store_pt store, unsigned int type, properties_pt properties, log_event_pt *event) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	*event = apr_palloc(store->pool, sizeof(**event));
+	*event = calloc(1, sizeof(**event));
 	(*event)->targetId = NULL;
 	(*event)->logId = store->storeId;
 	(*event)->id = 0;

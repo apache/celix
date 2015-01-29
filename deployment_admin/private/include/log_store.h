@@ -34,7 +34,7 @@
 
 typedef struct log_store *log_store_pt;
 
-celix_status_t logStore_create(apr_pool_t *pool, log_store_pt *store);
+celix_status_t logStore_create(log_store_pt *store);
 celix_status_t logStore_put(log_store_pt store, unsigned int type, properties_pt properties, log_event_pt *event);
 
 celix_status_t logStore_getLogId(log_store_pt store, unsigned long *id);
