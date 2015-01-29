@@ -25,21 +25,25 @@
  */
 #include <math.h>
 
+#include <stdlib.h>
 #include <stdio.h>
 
 #include "calculator_impl.h"
 
-celix_status_t calculator_create(apr_pool_t *pool, calculator_pt *calculator) {
+celix_status_t calculator_create(calculator_pt *calculator) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	*calculator = apr_palloc(pool, sizeof(**calculator));
+	*calculator = calloc(1, sizeof(**calculator));
 	if (!*calculator) {
 		status = CELIX_ENOMEM;
-	} else {
-		(*calculator)->pool = pool;
 	}
 
 	return status;
+}
+
+celix_status_t calculator_destroy(calculator_pt *calculator) {
+	free(*calculator);
+	return CELIX_SUCCESS;
 }
 
 celix_status_t calculator_add(calculator_pt calculator, double a, double b, double *result) {

@@ -27,7 +27,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <apr_strings.h>
 #include <apr_uuid.h>
 
 #include "bundle_activator.h"

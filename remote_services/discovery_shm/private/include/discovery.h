@@ -37,7 +37,6 @@
 #define DISCOVERY_SHM_SRVC_PROPERTIES "srvc.props"
 
 
-#include <apr_strings.h>
 #include <apr_thread_proc.h>
 #include "endpoint_listener.h"
 

@@ -27,17 +27,15 @@
 #ifndef CALCULATOR_IMPL_H_
 #define CALCULATOR_IMPL_H_
 
-#include <apr_general.h>
-
 #include "celix_errno.h"
 
 #include "calculator_service.h"
 
 struct calculator {
-	apr_pool_t *pool;
 };
 
-celix_status_t calculator_create(apr_pool_t *pool, calculator_pt *calcuator);
+celix_status_t calculator_create(calculator_pt *calcuator);
+celix_status_t calculator_destroy(calculator_pt *calcuator);
 celix_status_t calculator_add(calculator_pt calcuator, double a, double b, double *result);
 celix_status_t calculator_sub(calculator_pt calcuator, double a, double b, double *result);
 celix_status_t calculator_sqrt(calculator_pt calcuator, double a, double *result);

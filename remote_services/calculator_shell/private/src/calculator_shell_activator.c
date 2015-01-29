@@ -50,14 +50,12 @@ struct activator {
 	command_service_pt sqrtCmdSrv;
 };
 
-static celix_status_t calculatorShell_createCommandService(apr_pool_t *pool, command_pt command, command_service_pt *commandService);
+static celix_status_t calculatorShell_createCommandService(command_pt command, command_service_pt *commandService);
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
-	apr_pool_t *pool = NULL;
-	status = bundleContext_getMemoryPool(context, &pool);
 	if (status == CELIX_SUCCESS) {
-		*userData = apr_palloc(pool, sizeof(struct activator));
+		*userData = calloc(1, sizeof(struct activator));
 		if (!*userData) {
 			status = CELIX_ENOMEM;
 		} else {
@@ -81,28 +79,25 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
     celix_status_t status = CELIX_SUCCESS;
 
-	apr_pool_t *pool;
 	struct activator * activator = (struct activator *) userData;
 
-	bundleContext_getMemoryPool(context, &pool);
-
 	activator->addCmd = addCommand_create(context);
-	calculatorShell_createCommandService(pool, activator->addCmd, &activator->addCmdSrv);
+	calculatorShell_createCommandService(activator->addCmd, &activator->addCmdSrv);
 	bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, activator->addCmdSrv, NULL, &activator->addCommand);
 
 	activator->subCmd = subCommand_create(context);
-	calculatorShell_createCommandService(pool, activator->subCmd, &activator->subCmdSrv);
+	calculatorShell_createCommandService(activator->subCmd, &activator->subCmdSrv);
 	bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, activator->subCmdSrv, NULL, &activator->subCommand);
 
 	activator->sqrtCmd = sqrtCommand_create(context);
-	calculatorShell_createCommandService(pool, activator->sqrtCmd, &activator->sqrtCmdSrv);
+	calculatorShell_createCommandService(activator->sqrtCmd, &activator->sqrtCmdSrv);
 	bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, activator->sqrtCmdSrv, NULL, &activator->sqrtCommand);
 
 	return status;
 }
 
-static celix_status_t calculatorShell_createCommandService(apr_pool_t *pool, command_pt command, command_service_pt *commandService) {
-	*commandService = apr_palloc(pool, sizeof(**commandService));
+static celix_status_t calculatorShell_createCommandService(command_pt command, command_service_pt *commandService) {
+	*commandService = calloc(1, sizeof(**commandService));
 	(*commandService)->command = command;
 	(*commandService)->executeCommand = command->executeCommand;
 	(*commandService)->getName = command_getName;
@@ -119,6 +114,10 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	serviceRegistration_unregister(activator->subCommand);
 	serviceRegistration_unregister(activator->sqrtCommand);
 
+	free(activator->addCmdSrv);
+	free(activator->subCmdSrv);
+	free(activator->sqrtCmdSrv);
+
 	if (status == CELIX_SUCCESS) {
         addCommand_destroy(activator->addCmd);
         subCommand_destroy(activator->subCmd);
@@ -129,6 +128,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
+	free(userData);
 	return CELIX_SUCCESS;
 }
 

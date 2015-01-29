@@ -28,7 +28,6 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <apr_general.h>
-#include <apr_strings.h>
 #include <unistd.h>
 
 #include "framework_private.h"

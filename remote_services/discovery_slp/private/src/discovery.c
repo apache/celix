@@ -455,15 +455,15 @@ SLPBoolean discovery_pollSLPCallback(SLPHandle hslp, const char* srvurl, unsigne
 
 				properties_pt props = properties_create();
 				char *track;
-				char *token = apr_strtok(slpService->attributes, ",", &track);
+				char *token = strtok_r(slpService->attributes, ",", &track);
 				while (token != NULL) {
 					char *track2;
-					char *token2 = apr_strtok(token, "=", &track2);
-					char *token3 = apr_strtok(NULL, "=", &track2);
+					char *token2 = strtok_r(token, "=", &track2);
+					char *token3 = strtok_r(NULL, "=", &track2);
 					char *key = apr_pstrdup(discovery->pool, token2+1);
 					char *value = apr_pstrndup(discovery->pool, token3, strlen(token3) - 1);
 					properties_set(props, key, value);
-					token = apr_strtok(NULL, ",", &track);
+					token = strtok_r(NULL, ",", &track);
 				}
 
 				endpoint_description_pt endpoint = apr_palloc(discovery->pool, sizeof(*endpoint));

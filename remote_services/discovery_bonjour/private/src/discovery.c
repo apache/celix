@@ -25,7 +25,6 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
-#include <apr_strings.h>
 #include <unistd.h>
 #include <stdbool.h>
 #include <apr_thread_proc.h>

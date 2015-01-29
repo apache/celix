@@ -27,19 +27,14 @@
 #include <stdlib.h>
 #include <CUnit/Automated.h>
 
-#include <apr_general.h>
-
 #include "celixbool.h"
 
 #include "array_list.h"
 #include "array_list_private.h"
 
-apr_pool_t *memory_pool;
 array_list_pt list;
 
 int setup(void) {
-	apr_initialize();
-	apr_pool_create(&memory_pool, NULL);
 	arrayList_create(&list);
 	if (list == NULL) {
 		return 1;

@@ -24,7 +24,6 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdio.h>
-#include <apr_pools.h>
 #include <stddef.h>
 
 #include <CUnit/Automated.h>

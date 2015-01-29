@@ -33,29 +33,25 @@
 #include "remote_constants.h"
 
 struct activator {
-	apr_pool_t *pool;
+	calculator_pt calculator;
+	calculator_service_pt service;
+
 	service_registration_pt calculatorReg;
 	service_registration_pt calculatorReg2;
 };
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
-	apr_pool_t *parentpool = NULL;
-	apr_pool_t *pool = NULL;
 	struct activator *activator;
 
-	status = bundleContext_getMemoryPool(context, &parentpool);
-	if (status == CELIX_SUCCESS) {
-		if (apr_pool_create(&pool, parentpool) != APR_SUCCESS) {
-			status = CELIX_BUNDLE_EXCEPTION;
-		} else {
-			activator = apr_palloc(pool, sizeof(*activator));
-			activator->pool = pool;
-			activator->calculatorReg = NULL;
-			activator->calculatorReg2 = NULL;
+	activator = calloc(1, sizeof(*activator));
+	if (!activator) {
+		status = CELIX_ENOMEM;
+	} else {
+		activator->calculatorReg = NULL;
+		activator->calculatorReg2 = NULL;
 
-			*userData = activator;
-		}
+		*userData = activator;
 	}
 
 	return status;
@@ -64,29 +60,27 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator *activator = userData;
-	calculator_pt calculator = NULL;
-	calculator_service_pt service = NULL;
 	properties_pt properties = NULL;
 
-	status = calculator_create(activator->pool, &calculator);
+	status = calculator_create(&activator->calculator);
 	if (status == CELIX_SUCCESS) {
-		service = apr_palloc(activator->pool, sizeof(*service));
-		if (!service) {
+		activator->service = calloc(1, sizeof(*activator->service));
+		if (!activator->service) {
 			status = CELIX_ENOMEM;
 		} else {
-			service->calculator = calculator;
-			service->add = calculator_add;
-			service->sub = calculator_sub;
-			service->sqrt = calculator_sqrt;
+			activator->service->calculator = activator->calculator;
+			activator->service->add = calculator_add;
+			activator->service->sub = calculator_sub;
+			activator->service->sqrt = calculator_sqrt;
 
 			properties = properties_create();
 			properties_set(properties, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, (char *) CALCULATOR_SERVICE);
 
-			bundleContext_registerService(context, (char *) CALCULATOR_SERVICE, service, properties, &activator->calculatorReg);
+			bundleContext_registerService(context, (char *) CALCULATOR_SERVICE, activator->service, properties, &activator->calculatorReg);
 
 			properties_pt properties2 = properties_create();
             properties_set(properties2, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, (char *) "org.apache.celix.calc.api.Calculator2");
-			bundleContext_registerService(context, "org.apache.celix.calc.api.Calculator2", service, properties2, &activator->calculatorReg2);
+			bundleContext_registerService(context, "org.apache.celix.calc.api.Calculator2", activator->service, properties2, &activator->calculatorReg2);
 		}
 	}
 
@@ -100,11 +94,17 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	serviceRegistration_unregister(activator->calculatorReg);
 	serviceRegistration_unregister(activator->calculatorReg2);
 
+	free(activator->service);
+
+	calculator_destroy(&activator->calculator);
+
 	return status;
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
+
+	free(userData);
 
 	return status;
 }

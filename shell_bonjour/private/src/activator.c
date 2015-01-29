@@ -27,7 +27,6 @@
 #include <celix_errno.h>
 
 #include <stdlib.h>
-#include <apr_strings.h>
 #include <apr_pools.h>
 
 #include "bundle_activator.h"

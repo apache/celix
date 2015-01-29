@@ -28,7 +28,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include <apr_strings.h>
 #include <apr_thread_proc.h>
 
 #include <sys/types.h>

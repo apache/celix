@@ -27,8 +27,6 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include <apr_strings.h>
-
 #include "array_list.h"
 #include "bundle_context.h"
 #include "sub_command.h"
@@ -39,10 +37,7 @@ void subCommand_execute(command_pt command, char * line, void (*out)(char *), vo
 celix_status_t subCommand_isNumeric(command_pt command, char *number, bool *ret);
 
 command_pt subCommand_create(bundle_context_pt context) {
-	apr_pool_t *pool;
-	bundleContext_getMemoryPool(context, &pool);
-
-    command_pt command = (command_pt) apr_palloc(pool, sizeof(*command));
+    command_pt command = (command_pt) calloc(1, sizeof(*command));
     if (command) {
 		command->bundleContext = context;
 		command->name = "sub";
@@ -54,6 +49,7 @@ command_pt subCommand_create(bundle_context_pt context) {
 }
 
 void subCommand_destroy(command_pt command) {
+	free(command);
 }
 
 void subCommand_execute(command_pt command, char *line, void (*out)(char *), void (*err)(char *)) {
@@ -63,12 +59,12 @@ void subCommand_execute(command_pt command, char *line, void (*out)(char *), voi
     status = bundleContext_getServiceReference(command->bundleContext, (char *) CALCULATOR_SERVICE, &calculatorService);
     if (status == CELIX_SUCCESS) {
     	char *token;
-		apr_strtok(line, " ", &token);
-		char *aStr = apr_strtok(NULL, " ", &token);
+    	strtok_r(line, " ", &token);
+		char *aStr = strtok_r(NULL, " ", &token);
 		bool numeric;
 		subCommand_isNumeric(command, aStr, &numeric);
 		if (aStr != NULL && numeric) {
-			char *bStr = apr_strtok(NULL, " ", &token);
+			char *bStr = strtok_r(NULL, " ", &token);
 			subCommand_isNumeric(command, bStr, &numeric);
 			if (bStr != NULL && numeric) {
 				calculator_service_pt calculator = NULL;
