@@ -18,17 +18,24 @@
 add_library(mongoose STATIC private/src/mongoose.c)
 SET_TARGET_PROPERTIES(mongoose PROPERTIES COMPILE_FLAGS -fPIC)
 
+SET(BUNDLE_SYMBOLICNAME "apache_celix_examples_mongoose")
+SET(BUNDLE_VERSION "0.0.1")
+
 include_directories("private/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-bundle(celix.mongoose SOURCES
-    private/src/activator
-    
-    private/include/mongoose.h
-    DIRECTORIES root
-)
 
-target_link_libraries(celix.mongoose celix_framework mongoose)
 if(WIN32)
-	target_link_libraries(celix.mongoose wsock32)
+	  set(LIBS wsock32)
 endif(WIN32)
 
+bundle(
+    SOURCES
+        private/src/activator
+    
+        private/include/mongoose.h
+    DIRECTORIES 
+        root
+    LINK_LIBRARIES
+        celix_framework mongoose ${LIBS}
+        
+)

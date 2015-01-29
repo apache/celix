@@ -67,8 +67,8 @@ int main(void) {
 	bundle_context_pt context = NULL;
 	bundle_getContext(fwBundle, &context);
 
-	struct foo *f = apr_palloc(memoryPool, sizeof(*f));
-	struct fooSrv *fs = apr_palloc(memoryPool, sizeof(*fs));
+	struct foo *f = calloc(1, sizeof(*f));
+	struct fooSrv *fs = calloc(1, sizeof(*fs));
 	fs->handle = f;
 	fs->foo = embedded_foo;
 

@@ -25,7 +25,6 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
-#include <apr_general.h>
 
 #include "bundle_activator.h"
 #include "bundle_context.h"
@@ -37,9 +36,7 @@ struct userData {
 };
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
-	apr_pool_t *pool;
-	celix_status_t status = bundleContext_getMemoryPool(context, &pool);
-	*userData = apr_palloc(pool, sizeof(struct userData));
+	*userData = calloc(1, sizeof(struct userData));
 	return CELIX_SUCCESS;
 }
 
@@ -49,23 +46,21 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	struct userData * data = (struct userData *) userData;
 
 	if (bundleContext_getBundle(context, &bundle) == CELIX_SUCCESS) {
-	    apr_pool_t *pool;
-	    celix_status_t status = bundleContext_getMemoryPool(context, &pool);
-	    if (status == CELIX_SUCCESS) {
-			char *entry = NULL;
-			const char *options[] = {
-                "document_root", entry,
-                "listening_ports", "8081",
-                NULL
-            };
-            bundle_getEntry(bundle, "root", pool, &entry);
+		char *entry = NULL;
+		bundle_getEntry(bundle, "root", &entry);
+		const char *options[] = {
+			"document_root", entry,
+			"listening_ports", "8081",
+			NULL
+		};
 
-            data->ctx = mg_start(NULL, options);
+		printf("entry %p\n", entry);
 
-            printf("Mongoose started on: %s\n", mg_get_option(data->ctx, "listening_ports"));
-	    } else {
-	        status = CELIX_BUNDLE_EXCEPTION;
-	    }
+		data->ctx = mg_start(NULL, options);
+
+		if (data->ctx) {
+			printf("Mongoose started on: %s\n", mg_get_option(data->ctx, "listening_ports"));
+		}
 	} else {
 		status = CELIX_START_ERROR;
 	}
@@ -81,5 +76,6 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
+	free(userData);
 	return CELIX_SUCCESS;
 }

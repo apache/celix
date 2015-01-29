@@ -25,7 +25,6 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
-#include <apr_general.h>
 
 #include "bundle_activator.h"
 #include "bundle_context.h"
@@ -35,24 +34,20 @@
 
 struct greetingActivator {
 	service_registration_pt reg;
-	apr_pool_t *pool;
+	greeting_service_pt greetingService;
 };
 
 typedef struct greetingActivator *greeting_activator_pt;
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
-	apr_pool_t *pool;
+	celix_status_t status = CELIX_SUCCESS;
 	greeting_activator_pt activator;
-	celix_status_t status = bundleContext_getMemoryPool(context, &pool);
-	if (status == CELIX_SUCCESS) {
-		*userData = apr_palloc(pool, sizeof(struct greetingActivator));
-		if (userData) {
-			activator = *userData;
-			activator->reg = NULL;
-			activator->pool = pool;
-		} else {
-			status = CELIX_ENOMEM;
-		}
+	*userData = calloc(1, sizeof(struct greetingActivator));
+	if (userData) {
+		activator = *userData;
+		activator->reg = NULL;
+	} else {
+		status = CELIX_ENOMEM;
 	}
 	return status;
 }
@@ -62,15 +57,15 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
 	greeting_activator_pt act = (greeting_activator_pt) userData;
 
-	greeting_service_pt greetingService = apr_palloc(act->pool, sizeof(*greetingService));
+	act->greetingService = calloc(1, sizeof(*act->greetingService));
 
-	if (greetingService) {
-		greetingService->instance = apr_palloc(act->pool, sizeof(*greetingService->instance));
-		if (greetingService->instance) {
-			greetingService->instance->name = GREETING_SERVICE_NAME;
-			greetingService->greeting_sayHello = greeting_sayHello;
+	if (act->greetingService) {
+		act->greetingService->instance = calloc(1, sizeof(*act->greetingService->instance));
+		if (act->greetingService->instance) {
+			act->greetingService->instance->name = GREETING_SERVICE_NAME;
+			act->greetingService->greeting_sayHello = greeting_sayHello;
 
-			status = bundleContext_registerService(context, GREETING_SERVICE_NAME, greetingService, NULL, &act->reg);
+			status = bundleContext_registerService(context, GREETING_SERVICE_NAME, act->greetingService, NULL, &act->reg);
 		} else {
 			status = CELIX_ENOMEM;
 		}
@@ -82,12 +77,19 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
 celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
+
 	greeting_activator_pt act = (greeting_activator_pt) userData;
+
 	serviceRegistration_unregister(act->reg);
 	act->reg = NULL;
+
+	free(act->greetingService->instance);
+	free(act->greetingService);
+
 	return status;
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
+	free(userData);
 	return CELIX_SUCCESS;
 }

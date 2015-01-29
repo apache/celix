@@ -18,7 +18,7 @@ celix_subproject(EXAMPLES "Option to enable building the Examples" "OFF" DEPS FR
 if (EXAMPLES)
     add_subdirectory(hello_world)
     add_subdirectory(hello_world_test)
-    #add_subdirectory(mongoose)
+    add_subdirectory(mongoose)
     
     add_subdirectory(whiteboard)
     add_subdirectory(echo_service)

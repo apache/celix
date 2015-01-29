@@ -39,41 +39,30 @@ struct activatorData {
 };
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
-    apr_pool_t *pool;
-    celix_status_t status = bundleContext_getMemoryPool(context, &pool);
-    if (status == CELIX_SUCCESS) {
-        *userData = apr_palloc(pool, sizeof(struct activatorData));
-    } else {
-        status = CELIX_START_ERROR;
-    }
+	*userData = calloc(1, sizeof(struct activatorData));
     return CELIX_SUCCESS;
 }
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
     celix_status_t status = CELIX_SUCCESS;
-    apr_pool_t *pool;
-    status = bundleContext_getMemoryPool(context, &pool);
-    if (status == CELIX_SUCCESS) {
-		properties_pt props = NULL;
+	properties_pt props = NULL;
 
-        struct activatorData * data = (struct activatorData *) userData;
-        data->ps = apr_pcalloc(pool, sizeof(*(data->ps)));
-        data->pub = apr_pcalloc(pool, sizeof(*(data->pub)));
-        data->ps->invoke = publisher_invoke;
-        data->ps->publisher = data->pub;
-        data->reg = NULL;
+	struct activatorData * data = (struct activatorData *) userData;
+	data->ps = calloc(1, sizeof(*(data->ps)));
+	data->pub = calloc(1, sizeof(*(data->pub)));
+	data->ps->invoke = publisher_invoke;
+	data->ps->publisher = data->pub;
+	data->reg = NULL;
 
-        props = properties_create();
-        properties_set(props, "id", "A");
+	props = properties_create();
+	properties_set(props, "id", "A");
 
-        status = bundleContext_registerService(context, PUBLISHER_NAME, data->ps, props, &data->reg);
-        if (status != CELIX_SUCCESS) {
-        	char error[256];
-        	printf("Error: %s\n", celix_strerror(status, error, 256));
-        }
-    } else {
-        status = CELIX_BUNDLE_EXCEPTION;
-    }
+	status = bundleContext_registerService(context, PUBLISHER_NAME, data->ps, props, &data->reg);
+	if (status != CELIX_SUCCESS) {
+		char error[256];
+		printf("Error: %s\n", celix_strerror(status, error, 256));
+	}
+
     return status;
 }
 
@@ -83,9 +72,13 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
     struct activatorData * data = (struct activatorData *) userData;
     serviceRegistration_unregister(data->reg);
 
+    free(data->ps);
+    free(data->pub);
+
     return status;
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
+	free(userData);
     return CELIX_SUCCESS;
 }
