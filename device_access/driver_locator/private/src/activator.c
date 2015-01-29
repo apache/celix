@@ -24,7 +24,6 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdlib.h>
-#include <apr_strings.h>
 
 #include "bundle_activator.h"
 #include "bundle_context.h"
@@ -42,35 +41,28 @@ typedef struct bundle_instance *bundle_instance_pt;
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
-    apr_pool_t *pool;
-    status = bundleContext_getMemoryPool(context, &pool);
-    if (status == CELIX_SUCCESS) {
-    	bundle_instance_pt bi = apr_palloc(pool, sizeof(struct bundle_instance));
-        if (userData != NULL) {
-        	bi->service=NULL;
-        	bi->locator=NULL;
-        	bi->locatorRegistration=NULL;
-        	(*userData)=bi;
-        } else {
-        	status = CELIX_ENOMEM;
-        }
+	bundle_instance_pt bi = calloc(1, sizeof(struct bundle_instance));
+	if (userData != NULL) {
+		bi->service=NULL;
+		bi->locator=NULL;
+		bi->locatorRegistration=NULL;
+		(*userData)=bi;
+	} else {
+		status = CELIX_ENOMEM;
     }
     return status;
 }
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
     celix_status_t status = CELIX_SUCCESS;
-    apr_pool_t *pool;
-    status = bundleContext_getMemoryPool(context, &pool);
     bundle_instance_pt bi = (bundle_instance_pt)userData;
     if (status == CELIX_SUCCESS) {
-        bi->service = apr_palloc(pool, sizeof(*(bi->service)));
+        bi->service = calloc(1, sizeof(*(bi->service)));
         bi->service->findDrivers = driverLocator_findDrivers;
         bi->service->loadDriver = driverLocator_loadDriver;
 
-        bi->locator = apr_pcalloc(pool, sizeof(*(bi->locator)));
+        bi->locator = calloc(1, sizeof(*(bi->locator)));
         bi->service->locator = bi->locator;
-        bi->locator->pool = pool;
         bi->locator->drivers = NULL;
         arrayList_create(&bi->locator->drivers);
         bundleContext_getProperty(context, "DRIVER_LOCATOR_PATH", &bi->locator->path);

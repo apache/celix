@@ -37,7 +37,7 @@ typedef struct refining_driver_device *refining_driver_device_pt;
 struct refining_driver_device_service {
 	struct device_service deviceService; /*NOTE: base_driver_device_service is a device_service.*/
 	refining_driver_device_pt refiningDriverDevice;
-	celix_status_t (*getNextWord)(refining_driver_device_pt refiningDriverDevice, apr_pool_t *pool, char **c);
+	celix_status_t (*getNextWord)(refining_driver_device_pt refiningDriverDevice, char **c);
 };
 
 typedef struct refining_driver_device_service * refining_driver_device_service_pt;

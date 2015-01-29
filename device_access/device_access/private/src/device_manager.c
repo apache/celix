@@ -25,7 +25,6 @@
  */
 #include <stdlib.h>
 #include <constants.h>
-#include <apr_general.h>
 
 #include "device_manager.h"
 #include "driver_locator.h"
@@ -34,7 +33,6 @@
 #include "driver_loader.h"
 #include "driver.h"
 #include "device.h"
-#include "log_helper.h"
 #include "log_service.h"
 
 
@@ -45,7 +43,6 @@
 #include <service_reference.h>
 
 struct device_manager {
-	apr_pool_t *pool;
 	bundle_context_pt context;
 	hash_map_pt devices;
 	hash_map_pt drivers;
@@ -55,17 +52,16 @@ struct device_manager {
 };
 
 static celix_status_t deviceManager_attachAlgorithm(device_manager_pt manager, service_reference_pt ref, void *service);
-static celix_status_t deviceManager_getIdleDevices(device_manager_pt manager, apr_pool_t *pool, array_list_pt *idleDevices);
+static celix_status_t deviceManager_getIdleDevices(device_manager_pt manager, array_list_pt *idleDevices);
 static celix_status_t deviceManager_isDriverBundle(device_manager_pt manager, bundle_pt bundle, bool *isDriver);
 
-celix_status_t deviceManager_create(apr_pool_t *pool, bundle_context_pt context, device_manager_pt *manager) {
+celix_status_t deviceManager_create(bundle_context_pt context, log_helper_pt logHelper, device_manager_pt *manager) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	*manager = apr_palloc(pool, sizeof(**manager));
+	*manager = calloc(1, sizeof(**manager));
 	if (!*manager) {
 		status = CELIX_ENOMEM;
 	} else {
-		(*manager)->pool = pool;
 		(*manager)->context = context;
 		(*manager)->devices = NULL;
 		(*manager)->drivers = NULL;
@@ -75,11 +71,9 @@ celix_status_t deviceManager_create(apr_pool_t *pool, bundle_context_pt context,
 		(*manager)->devices = hashMap_create(serviceReference_hashCode, NULL, serviceReference_equals2, NULL);
 		(*manager)->drivers = hashMap_create(serviceReference_hashCode, NULL, serviceReference_equals2, NULL);
 
-		status = arrayList_create(&(*manager)->locators);
+		(*manager)->loghelper = logHelper;
 
-		if(logHelper_create(context, &(*manager)->loghelper) == CELIX_SUCCESS) {
-			logHelper_start((*manager)->loghelper);
-		}
+		status = arrayList_create(&(*manager)->locators);
 	}
 
 	logHelper_log((*manager)->loghelper, OSGI_LOGSERVICE_DEBUG, "DEVICE_MANAGER: Initialized");
@@ -91,8 +85,6 @@ celix_status_t deviceManager_destroy(device_manager_pt manager) {
 
 	logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "DEVICE_MANAGER: Stop");
 
-	logHelper_stop(manager->loghelper);
-	logHelper_destroy(&manager->loghelper);
 	hashMap_destroy(manager->devices, false, false);
 	hashMap_destroy(manager->drivers, false, false);
 	arrayList_destroy(manager->locators);
@@ -153,80 +145,73 @@ celix_status_t deviceManager_deviceAdded(void * handle, service_reference_pt ref
 static celix_status_t deviceManager_attachAlgorithm(device_manager_pt manager, service_reference_pt ref, void *service) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	apr_pool_t *attachPool = NULL;
-	apr_status_t aprStatus = apr_pool_create(&attachPool, manager->pool);
-	if (aprStatus != APR_SUCCESS) {
-		status = CELIX_ILLEGAL_STATE;
-	} else {
-		driver_loader_pt loader = NULL;
-		status = driverLoader_create(attachPool, manager->context, &loader);
+	driver_loader_pt loader = NULL;
+	status = driverLoader_create(manager->context, &loader);
+	if (status == CELIX_SUCCESS) {
+		array_list_pt included = NULL;
+		array_list_pt excluded = NULL;
+
+		array_list_pt driverIds = NULL;
+
+		hashMap_put(manager->devices, ref, service);
+
+		status = arrayList_create(&included);
 		if (status == CELIX_SUCCESS) {
-			array_list_pt included = NULL;
-			array_list_pt excluded = NULL;
-
-			array_list_pt driverIds = NULL;
-
-			hashMap_put(manager->devices, ref, service);
-
-			status = arrayList_create(&included);
+			status = arrayList_create(&excluded);
 			if (status == CELIX_SUCCESS) {
-				status = arrayList_create(&excluded);
-				if (status == CELIX_SUCCESS) {
-                    properties_pt properties = properties_create();
+				properties_pt properties = properties_create();
 
-                    unsigned int size = 0;
-                    char **keys;
+				unsigned int size = 0;
+				char **keys;
 
-                    serviceReference_getPropertyKeys(ref, &keys, &size);
-                    for (int i = 0; i < size; i++) {
-                        char *key = keys[i];
-                        char *value = NULL;
-                        serviceReference_getProperty(ref, key, &value);
-                        properties_set(properties, key, value);
-                    }
-
-                    status = driverLoader_findDrivers(loader, attachPool, manager->locators, properties, &driverIds);
-                    if (status == CELIX_SUCCESS) {
-                        hash_map_iterator_pt iter = hashMapIterator_create(manager->drivers);
-                        while (hashMapIterator_hasNext(iter)) {
-                            driver_attributes_pt driverAttributes = hashMapIterator_nextValue(iter);
-                            arrayList_add(included, driverAttributes);
-
-                            // Each driver that already is installed can be removed from the list
-                            char *id = NULL;
-                            celix_status_t substatus = driverAttributes_getDriverId(driverAttributes, &id);
-                            if (substatus == CELIX_SUCCESS) {
-                                // arrayList_removeElement(driverIds, id);
-                                array_list_iterator_pt idsIter = arrayListIterator_create(driverIds);
-                                while (arrayListIterator_hasNext(idsIter)) {
-                                    char *value = arrayListIterator_next(idsIter);
-                                    if (strcmp(value, id) == 0) {
-                                        arrayListIterator_remove(idsIter);
-                                    }
-                                }
-                                arrayListIterator_destroy(idsIter);
-                            } else {
-                                // Ignore
-                            }
-                        }
-                        hashMapIterator_destroy(iter);
-
-                        status = deviceManager_matchAttachDriver(manager, attachPool, loader, driverIds, included, excluded, service, ref);
-                        arrayList_destroy(driverIds);
-                    }
-                    properties_destroy(properties);
-					arrayList_destroy(excluded);
+				serviceReference_getPropertyKeys(ref, &keys, &size);
+				for (int i = 0; i < size; i++) {
+					char *key = keys[i];
+					char *value = NULL;
+					serviceReference_getProperty(ref, key, &value);
+					properties_set(properties, key, value);
 				}
-				arrayList_destroy(included);
-			}
 
+				status = driverLoader_findDrivers(loader, manager->locators, properties, &driverIds);
+				if (status == CELIX_SUCCESS) {
+					hash_map_iterator_pt iter = hashMapIterator_create(manager->drivers);
+					while (hashMapIterator_hasNext(iter)) {
+						driver_attributes_pt driverAttributes = hashMapIterator_nextValue(iter);
+						arrayList_add(included, driverAttributes);
+
+						// Each driver that already is installed can be removed from the list
+						char *id = NULL;
+						celix_status_t substatus = driverAttributes_getDriverId(driverAttributes, &id);
+						if (substatus == CELIX_SUCCESS) {
+							// arrayList_removeElement(driverIds, id);
+							array_list_iterator_pt idsIter = arrayListIterator_create(driverIds);
+							while (arrayListIterator_hasNext(idsIter)) {
+								char *value = arrayListIterator_next(idsIter);
+								if (strcmp(value, id) == 0) {
+									arrayListIterator_remove(idsIter);
+								}
+							}
+							arrayListIterator_destroy(idsIter);
+						} else {
+							// Ignore
+						}
+					}
+					hashMapIterator_destroy(iter);
+
+					status = deviceManager_matchAttachDriver(manager, loader, driverIds, included, excluded, service, ref);
+					arrayList_destroy(driverIds);
+				}
+				properties_destroy(properties);
+				arrayList_destroy(excluded);
+			}
+			arrayList_destroy(included);
 		}
-		apr_pool_destroy(attachPool);
+
 	}
 	return status;
 }
 
-celix_status_t deviceManager_matchAttachDriver(device_manager_pt manager, apr_pool_t *attachPool, driver_loader_pt loader,
+celix_status_t deviceManager_matchAttachDriver(device_manager_pt manager, driver_loader_pt loader,
 		array_list_pt driverIds, array_list_pt included, array_list_pt excluded, void *service, service_reference_pt reference) {
 	celix_status_t status = CELIX_SUCCESS;
 
@@ -243,7 +228,7 @@ celix_status_t deviceManager_matchAttachDriver(device_manager_pt manager, apr_po
 		logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "DEVICE_MANAGER: Driver found: %s", id);
 	}
 
-	status = driverLoader_loadDrivers(loader, attachPool, manager->locators, driverIds, &references);
+	status = driverLoader_loadDrivers(loader, manager->locators, driverIds, &references);
 	if (status == CELIX_SUCCESS) {
 		for (i = 0; i < arrayList_size(references); i++) {
 			service_reference_pt reference = arrayList_get(references, i);
@@ -254,7 +239,7 @@ celix_status_t deviceManager_matchAttachDriver(device_manager_pt manager, apr_po
 		}
 
 		driver_matcher_pt matcher = NULL;
-		status = driverMatcher_create(attachPool, manager->context, &matcher);
+		status = driverMatcher_create(manager->context, &matcher);
 		if (status == CELIX_SUCCESS) {
 			for (i = 0; i < arrayList_size(included); i++) {
 				driver_attributes_pt attributes = arrayList_get(included, i);
@@ -273,7 +258,7 @@ celix_status_t deviceManager_matchAttachDriver(device_manager_pt manager, apr_po
 			}
 
 			match_pt match = NULL;
-			status = driverMatcher_getBestMatch(matcher, attachPool, reference, &match);
+			status = driverMatcher_getBestMatch(matcher, reference, &match);
 			if (status == CELIX_SUCCESS) {
 				if (match == NULL) {
 					status = deviceManager_noDriverFound(manager, service, reference);
@@ -290,7 +275,7 @@ celix_status_t deviceManager_matchAttachDriver(device_manager_pt manager, apr_po
                                 arrayList_create(&ids);
                                 arrayList_add(ids, newDriverId);
                                 arrayList_add(excluded, finalAttributes);
-                                status = deviceManager_matchAttachDriver(manager, attachPool, loader,
+                                status = deviceManager_matchAttachDriver(manager, loader,
                                         ids, included, excluded, service, reference);
                             } else {
                                 // Attached, unload unused drivers
@@ -341,15 +326,11 @@ celix_status_t deviceManager_driverAdded(void * handle, service_reference_pt ref
 
 	device_manager_pt manager = handle;
 	logHelper_log(manager->loghelper, OSGI_LOGSERVICE_DEBUG, "DEVICE_MANAGER: Add driver");
-	apr_pool_t *pool = NULL;
 	driver_attributes_pt attributes = NULL;
 
-	status = apr_pool_create(&pool, manager->pool);
+	status = driverAttributes_create(ref, service, &attributes);
 	if (status == CELIX_SUCCESS) {
-		status = driverAttributes_create(pool, ref, service, &attributes);
-		if (status == CELIX_SUCCESS) {
-			hashMap_put(manager->drivers, ref, attributes);
-		}
+		hashMap_put(manager->drivers, ref, attributes);
 	}
 	return status;
 }
@@ -369,65 +350,60 @@ celix_status_t deviceManager_driverRemoved(void * handle, service_reference_pt r
 
 	hashMap_remove(manager->drivers, ref);
 
-	apr_pool_t *idleCheckPool;
-	apr_status_t aprStatus = apr_pool_create(&idleCheckPool, manager->pool);
-	if (aprStatus != APR_SUCCESS) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	} else {
-		array_list_pt idleDevices = NULL;
-		status = deviceManager_getIdleDevices(manager, idleCheckPool, &idleDevices);
-		if (status == CELIX_SUCCESS) {
-			int i;
-			for (i = 0; i < arrayList_size(idleDevices); i++) {
-				celix_status_t forStatus = CELIX_SUCCESS;
-				service_reference_pt ref = arrayList_get(idleDevices, i);
-				char *bsn = NULL;
-				bundle_pt bundle = NULL;
-				forStatus = serviceReference_getBundle(ref, &bundle);
+	array_list_pt idleDevices = NULL;
+	status = deviceManager_getIdleDevices(manager, &idleDevices);
+	if (status == CELIX_SUCCESS) {
+		int i;
+		for (i = 0; i < arrayList_size(idleDevices); i++) {
+			celix_status_t forStatus = CELIX_SUCCESS;
+			service_reference_pt ref = arrayList_get(idleDevices, i);
+			char *bsn = NULL;
+			bundle_pt bundle = NULL;
+			forStatus = serviceReference_getBundle(ref, &bundle);
+			if (forStatus == CELIX_SUCCESS) {
+				module_pt module = NULL;
+				forStatus = bundle_getCurrentModule(bundle, &module);
 				if (forStatus == CELIX_SUCCESS) {
-					module_pt module = NULL;
-					forStatus = bundle_getCurrentModule(bundle, &module);
+					forStatus = module_getSymbolicName(module, &bsn);
 					if (forStatus == CELIX_SUCCESS) {
-						forStatus = module_getSymbolicName(module, &bsn);
-						if (forStatus == CELIX_SUCCESS) {
-							logHelper_log(manager->loghelper, OSGI_LOGSERVICE_DEBUG, "DEVICE_MANAGER: IDLE: %s", bsn);
-							// #TODO attachDriver (idle device)
-							// #TODO this can result in a loop?
-							//		Locate and install a driver
-							//		Let the match fail, the device is idle
-							//		The driver is removed, idle check is performed
-							//		Attach is tried again
-							//		.. loop ..
-							void *device = hashMap_get(manager->devices, ref);
-							forStatus = deviceManager_attachAlgorithm(manager, ref, device);
-						}
+						logHelper_log(manager->loghelper, OSGI_LOGSERVICE_DEBUG, "DEVICE_MANAGER: IDLE: %s", bsn);
+						// #TODO attachDriver (idle device)
+						// #TODO this can result in a loop?
+						//		Locate and install a driver
+						//		Let the match fail, the device is idle
+						//		The driver is removed, idle check is performed
+						//		Attach is tried again
+						//		.. loop ..
+						void *device = hashMap_get(manager->devices, ref);
+						forStatus = deviceManager_attachAlgorithm(manager, ref, device);
 					}
 				}
-
-				if (forStatus != CELIX_SUCCESS) {
-					break; //Got error, stop loop and return status
-				}
 			}
 
-
-			hash_map_iterator_pt iter = hashMapIterator_create(manager->drivers);
-			while (hashMapIterator_hasNext(iter)) {
-				//driver_attributes_pt da = hashMapIterator_nextValue(iter);
-				//driverAttributes_tryUninstall(da);
+			if (forStatus != CELIX_SUCCESS) {
+				break; //Got error, stop loop and return status
 			}
-			hashMapIterator_destroy(iter);
 		}
 
-		if (idleDevices != NULL) {
-			arrayList_destroy(idleDevices);
+
+		hash_map_iterator_pt iter = hashMapIterator_create(manager->drivers);
+		while (hashMapIterator_hasNext(iter)) {
+			hashMapIterator_nextValue(iter);
+//			driver_attributes_pt da = hashMapIterator_nextValue(iter);
+//			driverAttributes_tryUninstall(da);
 		}
+		hashMapIterator_destroy(iter);
+	}
+
+	if (idleDevices != NULL) {
+		arrayList_destroy(idleDevices);
 	}
 
 	return status;
 }
 
 
-celix_status_t deviceManager_getIdleDevices(device_manager_pt manager, apr_pool_t *pool, array_list_pt *idleDevices) {
+celix_status_t deviceManager_getIdleDevices(device_manager_pt manager, array_list_pt *idleDevices) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	status = arrayList_create(idleDevices);
@@ -490,7 +466,7 @@ celix_status_t deviceManager_getIdleDevices(device_manager_pt manager, apr_pool_
 
 //TODO examply for discussion only, remove after discussion
 #define DO_IF_SUCCESS(status, call_func) ((status) == CELIX_SUCCESS) ? (call_func) : (status)
-celix_status_t deviceManager_getIdleDevices_exmaple(device_manager_pt manager, apr_pool_t *pool, array_list_pt *idleDevices) {
+celix_status_t deviceManager_getIdleDevices_exmaple(device_manager_pt manager, array_list_pt *idleDevices) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	status = arrayList_create(idleDevices);

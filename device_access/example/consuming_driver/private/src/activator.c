@@ -24,8 +24,6 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdlib.h>
-#include <apr_strings.h>
-#include <apr_pools.h>
 
 #include <celix_errno.h>
 #include <bundle_activator.h>
@@ -37,7 +35,6 @@
 
 struct consuming_driver_bundle_instance {
 	bundle_context_pt context;
-	apr_pool_t * pool;
 	service_registration_pt registration;
 };
 
@@ -46,18 +43,13 @@ typedef struct consuming_driver_bundle_instance *consuming_driver_bundle_instanc
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	printf("CONSUMING_DRIVER: creating bundle\n");
 	celix_status_t status = CELIX_SUCCESS;
-	apr_pool_t *pool;
-	status = bundleContext_getMemoryPool(context, &pool);
-	if (status == CELIX_SUCCESS) {
-		consuming_driver_bundle_instance_pt instance = apr_palloc(pool, sizeof(*instance));
-		if (instance != NULL) {
-			instance->context = context;
-			instance->pool = pool;
-			instance->registration = NULL;
-			(*userData) = instance;
-		} else {
-			status = CELIX_ENOMEM;
-		}
+	consuming_driver_bundle_instance_pt instance = calloc(1, sizeof(*instance));
+	if (instance != NULL) {
+		instance->context = context;
+		instance->registration = NULL;
+		(*userData) = instance;
+	} else {
+		status = CELIX_ENOMEM;
 	}
 	return status;
 }
@@ -68,7 +60,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	consuming_driver_bundle_instance_pt bi = userData;
 
 	consuming_driver_pt driver = NULL;
-	status = consumingDriver_create(context, bi->pool, &driver);
+	status = consumingDriver_create(context, &driver);
 	if (status == CELIX_SUCCESS) {
 		driver_service_pt service = NULL;
 		status = consumingDriver_createService(driver, &service);

@@ -24,7 +24,6 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdlib.h>
-#include <apr_strings.h>
 
 #include <bundle_activator.h>
 #include <bundle_context.h>
@@ -39,7 +38,6 @@
 struct device_manager_bundle_instance {
 	log_helper_pt loghelper;
 	bundle_context_pt context;
-	apr_pool_t *pool;
 	device_manager_pt deviceManager;
 	service_tracker_pt driverLocatorTracker;
 	service_tracker_pt driverTracker;
@@ -65,21 +63,17 @@ celix_status_t addingService_dummy_func(void * handle, service_reference_pt refe
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
-	apr_pool_t *pool;
-	status = bundleContext_getMemoryPool(context, &pool);
-	if (status == CELIX_SUCCESS) {
-		device_manager_bundle_instance_pt bi = apr_palloc(pool, sizeof(struct device_manager_bundle_instance));
-		if (bi == NULL) {
-			status = CELIX_ENOMEM;
-		} else {
-			(*userData) = bi;
-			bi->context = context;
-			bi->pool = pool;
+	device_manager_bundle_instance_pt bi = calloc(1, sizeof(struct device_manager_bundle_instance));
+	if (bi == NULL) {
+		status = CELIX_ENOMEM;
+	} else {
+		(*userData) = bi;
+		bi->context = context;
 
-			logHelper_create(context, &bi->loghelper);
+		logHelper_create(context, &bi->loghelper);
+		logHelper_start(bi->loghelper);
 
-			status = deviceManager_create(pool, context, &bi->deviceManager);
-		}
+		status = deviceManager_create(context, bi->loghelper, &bi->deviceManager);
 	}
 	return status;
 }
@@ -87,27 +81,21 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 	device_manager_bundle_instance_pt bundleData = userData;
-	apr_pool_t *pool;
 
-	logHelper_start(bundleData->loghelper);
-
-	status = bundleContext_getMemoryPool(context, &pool);
+	status = deviceManagerBundle_createDriverLocatorTracker(bundleData);
 	if (status == CELIX_SUCCESS) {
-		status = deviceManagerBundle_createDriverLocatorTracker(bundleData);
+		status = deviceManagerBundle_createDriverTracker(bundleData);
 		if (status == CELIX_SUCCESS) {
-			status = deviceManagerBundle_createDriverTracker(bundleData);
-			if (status == CELIX_SUCCESS) {
-					status = deviceManagerBundle_createDeviceTracker(bundleData);
+				status = deviceManagerBundle_createDeviceTracker(bundleData);
+				if (status == CELIX_SUCCESS) {
+					status = serviceTracker_open(bundleData->driverLocatorTracker);
 					if (status == CELIX_SUCCESS) {
-						status = serviceTracker_open(bundleData->driverLocatorTracker);
+						status = serviceTracker_open(bundleData->driverTracker);
 						if (status == CELIX_SUCCESS) {
-							status = serviceTracker_open(bundleData->driverTracker);
-							if (status == CELIX_SUCCESS) {
-								status = serviceTracker_open(bundleData->deviceTracker);
-							}
+							status = serviceTracker_open(bundleData->deviceTracker);
 						}
 					}
-			}
+				}
 		}
 	}
 
@@ -191,8 +179,6 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 		}
 	}
 
-	logHelper_stop(bundleData->loghelper);
-
 	return status;
 }
 
@@ -201,6 +187,7 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt contex
 	device_manager_bundle_instance_pt bundleData = userData;
 	status = deviceManager_destroy(bundleData->deviceManager);
 
+	logHelper_stop(bundleData->loghelper);
 	logHelper_destroy(&bundleData->loghelper);
 
 	return status;

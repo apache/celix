@@ -24,8 +24,6 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdlib.h>
-#include <apr_strings.h>
-#include <apr_pools.h>
 
 #include <celix_errno.h>
 #include <bundle_activator.h>
@@ -38,7 +36,6 @@
 
 struct base_driver_bundle_instance {
 	bundle_context_pt context;
-	apr_pool_t * pool;
 	array_list_pt serviceRegistrations;
 };
 
@@ -47,13 +44,9 @@ typedef struct base_driver_bundle_instance *base_driver_bundle_instance_pt;
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	printf("BASE_DRIVER: creating bundle\n");
 	celix_status_t status = CELIX_SUCCESS;
-	apr_pool_t *pool;
-	status = bundleContext_getMemoryPool(context, &pool);
-	if (status == CELIX_SUCCESS) {
-		base_driver_bundle_instance_pt instance = apr_palloc(pool, sizeof(*instance));
+		base_driver_bundle_instance_pt instance = calloc(1, sizeof(*instance));
 		if (instance != NULL) {
 			instance->context = context;
-			instance->pool = pool;
 			status = arrayList_create(&instance->serviceRegistrations);
 			if (status == CELIX_SUCCESS) {
 				(*userData) = instance;
@@ -61,14 +54,13 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 		} else {
 			status = CELIX_ENOMEM;
 		}
-	}
 	return status;
 }
 
 static celix_status_t bundleActivator_registerBaseDriverDevice(base_driver_bundle_instance_pt bi, char *serial) {
 	celix_status_t status = CELIX_SUCCESS;
 	base_driver_device_pt device = NULL;
-	status = baseDriver_create(bi->pool, &device);
+	status = baseDriver_create(&device);
 	if (status == CELIX_SUCCESS) {
 		base_driver_device_service_pt service = NULL;
 		status = baseDriver_createService(device, &service);

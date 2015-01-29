@@ -34,7 +34,7 @@
 
 typedef struct consuming_driver *consuming_driver_pt;
 
-celix_status_t consumingDriver_create(bundle_context_pt context, apr_pool_t *pool, consuming_driver_pt *driver);
+celix_status_t consumingDriver_create(bundle_context_pt context, consuming_driver_pt *driver);
 celix_status_t consumingDriver_createService(consuming_driver_pt driver, driver_service_pt *service);
 
 celix_status_t consumingDriver_attach(void *driver, service_reference_pt reference, char **result);

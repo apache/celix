@@ -24,7 +24,6 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdlib.h>
-#include <apr_strings.h>
 
 #include <celix_errno.h>
 #include <bundle_activator.h>
@@ -43,7 +42,6 @@ struct device {
 
 struct base_driver_device {
 	device_pt device;
-	apr_pool_t *pool;
 	char *input;
 	int inputLength;
 	int currentChar;
@@ -54,15 +52,14 @@ celix_status_t baseDriver_noDriverFound(device_pt device) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t baseDriver_create(apr_pool_t *pool, base_driver_device_pt *baseDriverDevice) {
+celix_status_t baseDriver_create(base_driver_device_pt *baseDriverDevice) {
 	celix_status_t status = CELIX_SUCCESS;
-	(*baseDriverDevice) = apr_palloc(pool, sizeof(struct base_driver_device));
+	(*baseDriverDevice) = calloc(1, sizeof(struct base_driver_device));
 	if (*baseDriverDevice != NULL) {
-		(*baseDriverDevice)->pool=pool;
 		(*baseDriverDevice)->currentChar = 0;
 		(*baseDriverDevice)->input = (char *)INPUT_STRING;
 		(*baseDriverDevice)->inputLength=strlen(INPUT_STRING);
-		(*baseDriverDevice)->device = apr_palloc(pool, sizeof(*(*baseDriverDevice)->device));
+		(*baseDriverDevice)->device = calloc(1, sizeof(*(*baseDriverDevice)->device));
 		if ((*baseDriverDevice)->device == NULL) {
 			status = CELIX_ENOMEM;
 		}
@@ -74,7 +71,7 @@ celix_status_t baseDriver_create(apr_pool_t *pool, base_driver_device_pt *baseDr
 
 celix_status_t baseDriver_createService(base_driver_device_pt baseDriverDevice, base_driver_device_service_pt *service) {
 	celix_status_t status = CELIX_SUCCESS;
-	(*service) = apr_palloc(baseDriverDevice->pool, sizeof(struct base_driver_device_service));
+	(*service) = calloc(1, sizeof(struct base_driver_device_service));
 	if ((*service) != NULL) {
 		(*service)->deviceService.noDriverFound = baseDriver_noDriverFound;
 		(*service)->deviceService.device = baseDriverDevice->device;

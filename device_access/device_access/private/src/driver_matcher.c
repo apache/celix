@@ -34,7 +34,6 @@
 
 
 struct driver_matcher {
-	apr_pool_t *pool;
 	hash_map_pt attributes;
 	array_list_pt matches;
 	log_helper_pt loghelper;
@@ -46,9 +45,8 @@ typedef struct match_key {
 	int matchValue;
 }*match_key_t;
 
-static apr_status_t driverMatcher_destroy(void *matcherP);
 static celix_status_t driverMatcher_get(driver_matcher_pt matcher, int key, array_list_pt *attributesV);
-static celix_status_t driverMatcher_getBestMatchInternal(driver_matcher_pt matcher, apr_pool_t *pool, match_pt *match);
+static celix_status_t driverMatcher_getBestMatchInternal(driver_matcher_pt matcher, match_pt *match);
 
 unsigned int driverMatcher_matchKeyHash(void * match_key) {
 	match_key_t key = match_key;
@@ -60,16 +58,13 @@ int driverMatcher_matchKeyEquals(void * key, void * toCompare) {
 	return ((match_key_t) key)->matchValue == ((match_key_t) toCompare)->matchValue;
 }
 
-celix_status_t driverMatcher_create(apr_pool_t *pool, bundle_context_pt context, driver_matcher_pt *matcher) {
+celix_status_t driverMatcher_create(bundle_context_pt context, driver_matcher_pt *matcher) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	*matcher = apr_palloc(pool, sizeof(**matcher));
+	*matcher = calloc(1, sizeof(**matcher));
 	if (!*matcher) {
 		status = CELIX_ENOMEM;
 	} else {
-		apr_pool_pre_cleanup_register(pool, *matcher, driverMatcher_destroy);
-
-		(*matcher)->pool = pool;
 		(*matcher)->matches = NULL;
 		(*matcher)->context = context;
 		(*matcher)->attributes = hashMap_create(driverMatcher_matchKeyHash, NULL, driverMatcher_matchKeyEquals, NULL);
@@ -85,10 +80,9 @@ celix_status_t driverMatcher_create(apr_pool_t *pool, bundle_context_pt context,
 	return status;
 }
 
-apr_status_t driverMatcher_destroy(void *matcherP) {
-	driver_matcher_pt matcher = matcherP;
-	arrayList_destroy(matcher->matches);
-	hash_map_iterator_pt iter = hashMapIterator_create(matcher->attributes);
+celix_status_t driverMatcher_destroy(driver_matcher_pt *matcher) {
+	arrayList_destroy((*matcher)->matches);
+	hash_map_iterator_pt iter = hashMapIterator_create((*matcher)->attributes);
 	while (hashMapIterator_hasNext(iter)) {
 		array_list_pt list = hashMapIterator_nextValue(iter);
 		if (list != NULL) {
@@ -96,12 +90,14 @@ apr_status_t driverMatcher_destroy(void *matcherP) {
 		}
 	}
 	hashMapIterator_destroy(iter);
-	hashMap_destroy(matcher->attributes, false, false);
+	hashMap_destroy((*matcher)->attributes, false, false);
 
-	logHelper_stop(matcher->loghelper);
-	logHelper_destroy(&matcher->loghelper);
+	logHelper_stop((*matcher)->loghelper);
+	logHelper_destroy(&(*matcher)->loghelper);
 
-	return APR_SUCCESS;
+	free(*matcher);
+
+	return CELIX_SUCCESS;
 }
 
 celix_status_t driverMatcher_add(driver_matcher_pt matcher, int matchValue, driver_attributes_pt attributes) {
@@ -113,7 +109,7 @@ celix_status_t driverMatcher_add(driver_matcher_pt matcher, int matchValue, driv
 		arrayList_add(da, attributes);
 
 		match_pt match = NULL;
-		match = apr_palloc(matcher->pool, sizeof(*match));
+		match = calloc(1, sizeof(*match));
 		if (!match) {
 			status = CELIX_ENOMEM;
 		} else {
@@ -130,26 +126,21 @@ celix_status_t driverMatcher_add(driver_matcher_pt matcher, int matchValue, driv
 celix_status_t driverMatcher_get(driver_matcher_pt matcher, int key, array_list_pt *attributes) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	apr_pool_t *spool = NULL;
-	apr_pool_create(&spool, matcher->pool);
-
-	match_key_t matchKeyS = apr_palloc(spool, sizeof(*matchKeyS));
+	match_key_t matchKeyS = calloc(1, sizeof(*matchKeyS));
 	matchKeyS->matchValue = key;
 
 	*attributes = hashMap_get(matcher->attributes, matchKeyS);
 	if (*attributes == NULL) {
 		arrayList_create(attributes);
-		match_key_t matchKey = apr_palloc(matcher->pool, sizeof(*matchKey));
+		match_key_t matchKey = calloc(1, sizeof(*matchKey));
 		matchKey->matchValue = key;
 		hashMap_put(matcher->attributes, matchKey, *attributes);
 	}
 
-	apr_pool_destroy(spool);
-
 	return status;
 }
 
-celix_status_t driverMatcher_getBestMatch(driver_matcher_pt matcher, apr_pool_t *pool, service_reference_pt reference, match_pt *match) {
+celix_status_t driverMatcher_getBestMatch(driver_matcher_pt matcher, service_reference_pt reference, match_pt *match) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (*match != NULL) {
@@ -176,7 +167,7 @@ celix_status_t driverMatcher_getBestMatch(driver_matcher_pt matcher, apr_pool_t 
 				}
 			}
 			if (status == CELIX_SUCCESS && *match == NULL) {
-				status = driverMatcher_getBestMatchInternal(matcher, pool, match);
+				status = driverMatcher_getBestMatchInternal(matcher, match);
 			}
 		}
 	}
@@ -184,7 +175,7 @@ celix_status_t driverMatcher_getBestMatch(driver_matcher_pt matcher, apr_pool_t 
 	return status;
 }
 
-celix_status_t driverMatcher_getBestMatchInternal(driver_matcher_pt matcher, apr_pool_t *pool, match_pt *match) {
+celix_status_t driverMatcher_getBestMatchInternal(driver_matcher_pt matcher, match_pt *match) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (!hashMap_isEmpty(matcher->attributes)) {
@@ -253,7 +244,7 @@ celix_status_t driverMatcher_getBestMatchInternal(driver_matcher_pt matcher, apr
 
 		}
 
-		*match = apr_palloc(pool, sizeof(**match));
+		*match = calloc(1, sizeof(**match));
 		if (!*match) {
 			status = CELIX_ENOMEM;
 		} else {

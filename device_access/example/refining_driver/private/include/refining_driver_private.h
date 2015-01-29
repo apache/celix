@@ -37,7 +37,7 @@
 
 typedef struct refining_driver *refining_driver_pt;
 
-celix_status_t refiningDriver_create(bundle_context_pt context, apr_pool_t *pool, refining_driver_pt *driver);
+celix_status_t refiningDriver_create(bundle_context_pt context, refining_driver_pt *driver);
 celix_status_t refiningDriver_destroy(refining_driver_pt driver);
 
 celix_status_t refiningDriver_createService(refining_driver_pt driver, driver_service_pt *service);
@@ -52,6 +52,6 @@ celix_status_t refiningDriver_match(void *driver, service_reference_pt reference
 
 celix_status_t refiningDriverDevice_noDriverFound(device_pt device);
 celix_status_t refiningDriverDevice_createService(refining_driver_device_pt, refining_driver_device_service_pt *service);
-celix_status_t refiningDriverDevice_getNextWord(refining_driver_device_pt refiningDriverDevice, apr_pool_t *pool, char **word);
+celix_status_t refiningDriverDevice_getNextWord(refining_driver_device_pt refiningDriverDevice, char **word);
 
 #endif /* REFINING_DRIVER_PRIVATE_H_ */

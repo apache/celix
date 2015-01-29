@@ -26,78 +26,66 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include <apr_general.h>
-#include <apr_strings.h>
-#include <apr_file_info.h>
+#include <dirent.h>
 
 #include "driver_locator_private.h"
 #include "device.h"
 
-celix_status_t driverLocator_findDrivers(driver_locator_pt locator, apr_pool_t *pool, properties_pt props, array_list_pt *drivers) {
+celix_status_t driverLocator_findDrivers(driver_locator_pt locator, properties_pt props, array_list_pt *drivers) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	char *category = properties_get(props, OSGI_DEVICEACCESS_DEVICE_CATEGORY);
 
 	status = arrayList_create(drivers);
 	if (status == CELIX_SUCCESS) {
-		apr_pool_t *spool;
-		apr_status_t aprStatus = apr_pool_create(&spool, pool);
-		if (aprStatus != APR_SUCCESS) {
-			status = CELIX_ENOMEM;
+		DIR *dir;
+		dir = opendir(locator->path);
+		if (!dir) {
+			status = CELIX_FILE_IO_EXCEPTION;
 		} else {
-			apr_dir_t *dir;
-			aprStatus = apr_dir_open(&dir, locator->path, spool);
-			if (aprStatus != APR_SUCCESS) {
-				status = CELIX_FILE_IO_EXCEPTION;
-			} else {
-				apr_finfo_t dd;
-				while ((apr_dir_read(&dd, APR_FINFO_TYPE, dir)) == APR_SUCCESS) {
-					char str1[256], str2[256], str3[256];
-					if (sscanf(dd.name, "%[^_]_%[^.].%s", str1, str2, str3) == 3 &&
-						strcmp(str1, category) == 0 &&
-						strcmp(str3, "zip") == 0) {
-						char *driver = apr_psprintf(pool, "%s_%s", str1, str2);
-						if (driver != NULL) {
-							arrayList_add(*drivers, driver);
-						}
+			struct dirent *dp;
+			while ((dp = readdir(dir)) != NULL) {
+				char str1[256], str2[256], str3[256];
+				if (sscanf(dp->d_name, "%[^_]_%[^.].%s", str1, str2, str3) == 3 &&
+					strcmp(str1, category) == 0 &&
+					strcmp(str3, "zip") == 0) {
+					int length = strlen(str1) + strlen(str2) + 2;
+					char driver[length];
+					snprintf(driver, length, "%s_%s", str1, str2);
+					if (driver != NULL) {
+						arrayList_add(*drivers, strdup(driver));
 					}
 				}
-				apr_dir_close(dir);
 			}
-			apr_pool_destroy(spool);
+			closedir(dir);
 		}
 	}
 	return status;
 }
 
-celix_status_t driverLocator_loadDriver(driver_locator_pt locator, apr_pool_t *pool, char *id, char **stream) {
+celix_status_t driverLocator_loadDriver(driver_locator_pt locator, char *id, char **stream) {
 	celix_status_t status = CELIX_SUCCESS;
 	*stream = NULL;
 
-	apr_pool_t *spool;
-	apr_status_t aprStatus = apr_pool_create(&spool, pool);
-	if (aprStatus != APR_SUCCESS) {
-		status = CELIX_ENOMEM;
+	DIR *dir;
+	dir = opendir(locator->path);
+	if (!dir) {
+		status = CELIX_FILE_IO_EXCEPTION;
 	} else {
-		apr_dir_t *dir;
-		aprStatus = apr_dir_open(&dir, locator->path, spool);
-		if (aprStatus != APR_SUCCESS) {
-			status = CELIX_FILE_IO_EXCEPTION;
-		} else {
-			apr_finfo_t dd;
-			while ((apr_dir_read(&dd, APR_FINFO_TYPE, dir)) == APR_SUCCESS) {
-				char str1[256], str2[256];
-				if (sscanf(dd.name, "%[^.].%s", str1, str2) == 2 &&
-					strcmp(str1, id) == 0 &&
-					strcmp(str2, "zip") == 0) {
-					*stream = apr_psprintf(pool, "%s/%s", locator->path, dd.name);
-					break;
-				}
+		struct dirent *dp;
+		while ((dp = readdir(dir)) != NULL) {
+			char str1[256], str2[256];
+			if (sscanf(dp->d_name, "%[^.].%s", str1, str2) == 2 &&
+				strcmp(str1, id) == 0 &&
+				strcmp(str2, "zip") == 0) {
+				int length = strlen(locator->path) + strlen(dp->d_name) + 2;
+				char stream_str[length];
+				snprintf(stream_str, length, "%s/%s", locator->path, dp->d_name);
+				*stream = strdup(stream_str);
+				break;
 			}
-			apr_dir_close(dir);
 		}
-		apr_pool_destroy(spool);
+		closedir(dir);
 	}
 
 	return status;

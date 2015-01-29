@@ -32,10 +32,11 @@
 
 typedef struct driver_matcher *driver_matcher_pt;
 
-celix_status_t driverMatcher_create(apr_pool_t *pool, bundle_context_pt context, driver_matcher_pt *matcher);
+celix_status_t driverMatcher_create(bundle_context_pt context, driver_matcher_pt *matcher);
+celix_status_t driverMatcher_destroy(driver_matcher_pt *matcher);
 
 celix_status_t driverMatcher_add(driver_matcher_pt matcher, int match, driver_attributes_pt attributes);
 
-celix_status_t driverMatcher_getBestMatch(driver_matcher_pt matcher, apr_pool_t *pool, service_reference_pt reference, match_pt *match);
+celix_status_t driverMatcher_getBestMatch(driver_matcher_pt matcher, service_reference_pt reference, match_pt *match);
 
 #endif /* DRIVER_MATCHER_H_ */

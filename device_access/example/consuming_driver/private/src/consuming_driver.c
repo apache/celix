@@ -24,11 +24,6 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdlib.h>
-#include <apr_strings.h>
-#include <apr_pools.h>
-#include <apr_thread_proc.h>
-#include <apr_thread_cond.h>
-#include <apr_thread_mutex.h>
 
 #include <device.h>
 #include <service_tracker.h>
@@ -40,15 +35,12 @@
 
 
 struct consuming_driver {
-	apr_pool_t *pool;
 	bundle_context_pt context;
 	array_list_pt references;
 };
 
-static apr_status_t consumingDriver_cleanup(void *handler) {
+celix_status_t consumingDriver_destroy(consuming_driver_pt driver) {
 	printf("CONSUMING_DRIVER: cleanup\n");
-	consuming_driver_pt driver = handler;
-
 	if (driver->references != NULL) {
 		array_list_iterator_pt iterator = arrayListIterator_create(driver->references);
 		while (arrayListIterator_hasNext(iterator)) {
@@ -63,20 +55,17 @@ static apr_status_t consumingDriver_cleanup(void *handler) {
 	}
 
 
-	return APR_SUCCESS;
+	return CELIX_SUCCESS;
 }
 
-celix_status_t consumingDriver_create(bundle_context_pt context, apr_pool_t *pool, consuming_driver_pt *driver) {
+celix_status_t consumingDriver_create(bundle_context_pt context, consuming_driver_pt *driver) {
 	celix_status_t status = CELIX_SUCCESS;
-	(*driver) = apr_palloc(pool, sizeof(**driver));
+	(*driver) = calloc(1, sizeof(**driver));
 	if ((*driver) != NULL) {
-		(*driver)->pool=pool;
 		(*driver)->context=context;
 		(*driver)->references=NULL;
 
 		status = arrayList_create(&(*driver)->references);
-
-		apr_pool_pre_cleanup_register(pool, (*driver), consumingDriver_cleanup);
 	} else {
 		status = CELIX_ENOMEM;
 	}
@@ -85,7 +74,7 @@ celix_status_t consumingDriver_create(bundle_context_pt context, apr_pool_t *poo
 
 celix_status_t consumingDriver_createService(consuming_driver_pt driver, driver_service_pt *service) {
 	celix_status_t status = CELIX_SUCCESS;
-	(*service) = apr_palloc(driver->pool, sizeof(**service));
+	(*service) = calloc(1, sizeof(**service));
 	if ((*service) != NULL) {
 		(*service)->driver = driver;
 		(*service)->attach = consumingDriver_attach;
@@ -107,15 +96,10 @@ celix_status_t consumingDriver_attach(void * driverHandler, service_reference_pt
 	if (status == CELIX_SUCCESS) {
 		arrayList_add(driver->references, reference);
 		//consume the device
-		apr_pool_t *strpool = NULL;
-		apr_status_t aprStatus = apr_pool_create(&strpool, driver->pool);
-		if (aprStatus == APR_SUCCESS) {
-			for (int i=0; i<15; i++) {
-				char *str = NULL;
-				device_service->getNextWord(device_service->refiningDriverDevice, strpool, &str);
-				printf("CONSUMING_DEVICE: Word Device result is %s\n", str);
-			}
-			apr_pool_destroy(strpool);
+		for (int i=0; i<15; i++) {
+			char *str = NULL;
+			device_service->getNextWord(device_service->refiningDriverDevice, &str);
+			printf("CONSUMING_DEVICE: Word Device result is %s\n", str);
 		}
 	}
 	return status;

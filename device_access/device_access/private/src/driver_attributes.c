@@ -24,7 +24,6 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdlib.h>
-#include <apr_strings.h>
 
 #include "driver_attributes.h"
 #include "bundle.h"
@@ -34,18 +33,16 @@
 #include "constants.h"
 
 struct driver_attributes {
-	apr_pool_t *pool;
-
 	bundle_pt bundle;
 	service_reference_pt reference;
 	driver_service_pt driver;
 	bool dynamic;
 };
 
-celix_status_t driverAttributes_create(apr_pool_t *pool, service_reference_pt reference, driver_service_pt driver, driver_attributes_pt *attributes) {
+celix_status_t driverAttributes_create(service_reference_pt reference, driver_service_pt driver, driver_attributes_pt *attributes) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	*attributes = apr_palloc(pool, sizeof(**attributes));
+	*attributes = calloc(1, sizeof(**attributes));
 	if (!*attributes) {
 		status = CELIX_ENOMEM;
 	} else {
@@ -57,7 +54,6 @@ celix_status_t driverAttributes_create(apr_pool_t *pool, service_reference_pt re
 			status = bundle_getArchive(bundle, &bundleArchive);
 
 			if (status == CELIX_SUCCESS) {
-				(*attributes)->pool = pool;
 				(*attributes)->reference = reference;
 				(*attributes)->driver = driver;
 				(*attributes)->bundle = bundle;
@@ -90,7 +86,7 @@ celix_status_t driverAttributes_getDriverId(driver_attributes_pt driverAttribute
         if (!id_prop) {
             status = CELIX_ENOMEM;
         } else {
-            *driverId = apr_pstrdup(driverAttributes->pool,id_prop);
+            *driverId = strdup(id_prop);
 
             if (*driverId == NULL) {
                 status = CELIX_ENOMEM;

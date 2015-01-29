@@ -24,47 +24,37 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdlib.h>
-#include <apr_general.h>
-#include <apr_strings.h>
 
 #include "driver_loader.h"
 #include "bundle_context.h"
 #include "bundle.h"
 
 struct driver_loader {
-	apr_pool_t *pool;
-
 	bundle_context_pt context;
 	array_list_pt loadedDrivers;
 };
 
-static apr_status_t driverLoader_destroy(void *loaderP);
-
-celix_status_t driverLoader_create(apr_pool_t *pool, bundle_context_pt context, driver_loader_pt *loader) {
+celix_status_t driverLoader_create(bundle_context_pt context, driver_loader_pt *loader) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	*loader = apr_palloc(pool, sizeof(**loader));
+	*loader = calloc(1, sizeof(**loader));
 	if (!*loader) {
 		status = CELIX_ENOMEM;
 	} else {
-		apr_pool_pre_cleanup_register(pool, *loader, driverLoader_destroy);
-
 		(*loader)->context = context;
 		(*loader)->loadedDrivers = NULL;
-		(*loader)->pool = pool;
 		status = arrayList_create(&(*loader)->loadedDrivers);
 	}
 
 	return status;
 }
 
-apr_status_t driverLoader_destroy(void *loaderP) {
-	driver_loader_pt matcher = loaderP;
-	arrayList_destroy(matcher->loadedDrivers);
-	return APR_SUCCESS;
+celix_status_t driverLoader_destroy(driver_loader_pt *loader) {
+	arrayList_destroy((*loader)->loadedDrivers);
+	return CELIX_SUCCESS;
 }
 
-celix_status_t driverLoader_findDrivers(driver_loader_pt loader, apr_pool_t *pool, array_list_pt locators, properties_pt properties, array_list_pt *driversIds) {
+celix_status_t driverLoader_findDrivers(driver_loader_pt loader, array_list_pt locators, properties_pt properties, array_list_pt *driversIds) {
 	celix_status_t status = CELIX_SUCCESS;
 	arrayList_create(driversIds);
 
@@ -73,32 +63,25 @@ celix_status_t driverLoader_findDrivers(driver_loader_pt loader, apr_pool_t *poo
 		array_list_pt drivers;
 		driver_locator_service_pt locator = arrayList_get(locators, i);
 
-		apr_pool_t *spool;
-		apr_status_t aprStatus = apr_pool_create(&spool, pool);
-		if (aprStatus != APR_SUCCESS) {
-			status = CELIX_ENOMEM;
-		} else {
-			status = driverLoader_findDriversForLocator(loader, spool, locator, properties, &drivers);
-			if (status == CELIX_SUCCESS) {
-				arrayList_addAll(*driversIds, drivers);
-			}
-			arrayList_destroy(drivers);
-			apr_pool_destroy(spool);
+		status = driverLoader_findDriversForLocator(loader, locator, properties, &drivers);
+		if (status == CELIX_SUCCESS) {
+			arrayList_addAll(*driversIds, drivers);
 		}
+		arrayList_destroy(drivers);
 	}
 
 	return status;
 }
 
-celix_status_t driverLoader_findDriversForLocator(driver_loader_pt loader, apr_pool_t *pool, driver_locator_service_pt locator, properties_pt properties, array_list_pt *driversIds) {
+celix_status_t driverLoader_findDriversForLocator(driver_loader_pt loader, driver_locator_service_pt locator, properties_pt properties, array_list_pt *driversIds) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	status = locator->findDrivers(locator->locator, pool, properties, driversIds);
+	status = locator->findDrivers(locator->locator, properties, driversIds);
 
 	return status;
 }
 
-celix_status_t driverLoader_loadDrivers(driver_loader_pt loader, apr_pool_t *pool, array_list_pt locators, array_list_pt driverIds, array_list_pt *references) {
+celix_status_t driverLoader_loadDrivers(driver_loader_pt loader, array_list_pt locators, array_list_pt driverIds, array_list_pt *references) {
 	celix_status_t status = CELIX_SUCCESS;
 	status = arrayList_create(references);
 	if (status == CELIX_SUCCESS) {
@@ -107,19 +90,12 @@ celix_status_t driverLoader_loadDrivers(driver_loader_pt loader, apr_pool_t *poo
 			array_list_pt refs = NULL;
 			char *id = arrayList_get(driverIds, i);
 
-			apr_pool_t *spool;
-			apr_status_t aprStatus = apr_pool_create(&spool, pool);
-			if (aprStatus != APR_SUCCESS) {
-				status = CELIX_ENOMEM;
-			} else {
-				status = driverLoader_loadDriver(loader, pool, locators, id, &refs);
-				if (status == CELIX_SUCCESS) {
-					arrayList_addAll(*references, refs);
-				}
-				if (refs != NULL) {
-					arrayList_destroy(refs);
-				}
-				apr_pool_destroy(spool);
+			status = driverLoader_loadDriver(loader, locators, id, &refs);
+			if (status == CELIX_SUCCESS) {
+				arrayList_addAll(*references, refs);
+			}
+			if (refs != NULL) {
+				arrayList_destroy(refs);
 			}
 		}
 	}
@@ -127,7 +103,7 @@ celix_status_t driverLoader_loadDrivers(driver_loader_pt loader, apr_pool_t *poo
 	return status;
 }
 
-celix_status_t driverLoader_loadDriver(driver_loader_pt loader, apr_pool_t *pool, array_list_pt locators, char *driverId, array_list_pt *references) {
+celix_status_t driverLoader_loadDriver(driver_loader_pt loader, array_list_pt locators, char *driverId, array_list_pt *references) {
 	celix_status_t status = CELIX_SUCCESS;
 	status = arrayList_create(references);
 	if (status == CELIX_SUCCESS) {
@@ -136,61 +112,42 @@ celix_status_t driverLoader_loadDriver(driver_loader_pt loader, apr_pool_t *pool
 			array_list_pt refs = NULL;
 			driver_locator_service_pt locator = arrayList_get(locators, i);
 
-			apr_pool_t *spool;
-			apr_status_t aprStatus = apr_pool_create(&spool, pool);
-			if (aprStatus != APR_SUCCESS) {
-				status = CELIX_ENOMEM;
-			} else {
-				status = driverLoader_loadDriverForLocator(loader, pool, locator, driverId, &refs);
-				if (status == CELIX_SUCCESS) {
-					arrayList_addAll(*references, refs);
-				}
+			status = driverLoader_loadDriverForLocator(loader, locator, driverId, &refs);
+			if (status == CELIX_SUCCESS) {
+				arrayList_addAll(*references, refs);
 			}
 
-				if (refs != NULL) {
-					arrayList_destroy(refs);
-				}
-
-			apr_pool_destroy(spool);
-
-
+			if (refs != NULL) {
+				arrayList_destroy(refs);
+			}
 		}
 	}
 
 	return status;
 }
 
-celix_status_t driverLoader_loadDriverForLocator(driver_loader_pt loader, apr_pool_t *pool, driver_locator_service_pt locator, char *driverId, array_list_pt *references) {
+celix_status_t driverLoader_loadDriverForLocator(driver_loader_pt loader, driver_locator_service_pt locator, char *driverId, array_list_pt *references) {
 	celix_status_t status = CELIX_SUCCESS;
 	//The list is created in the bundle_getRegisteredServices chain
 	//arrayList_create(references);
 
-	apr_pool_t *loadPool;
-	apr_status_t aprStatus = apr_pool_create(&loadPool, pool);
-	if (aprStatus != APR_SUCCESS) {
-		status = CELIX_ENOMEM;
-	} else {
-		char *filename = NULL;
-		status = locator->loadDriver(locator->locator, loadPool, driverId, &filename);
+	char *filename = NULL;
+	status = locator->loadDriver(locator->locator, driverId, &filename);
+	if (status == CELIX_SUCCESS) {
+		bundle_pt bundle = NULL;
+		int length = strlen(DRIVER_LOCATION_PREFIX) + strlen(driverId);
+		char location[length];
+		snprintf(location, length, "%s%s", DRIVER_LOCATION_PREFIX, driverId);
+		status = bundleContext_installBundle2(loader->context, location, filename, &bundle);
 		if (status == CELIX_SUCCESS) {
-			bundle_pt bundle = NULL;
-			apr_pool_t *bundlePool;
-			status = bundleContext_getMemoryPool(loader->context, &bundlePool);
+			status = bundle_start(bundle);
 			if (status == CELIX_SUCCESS) {
-				char *location = apr_pstrcat(bundlePool, DRIVER_LOCATION_PREFIX, driverId, NULL);
-				status = bundleContext_installBundle2(loader->context, location, filename, &bundle);
+				status = bundle_getRegisteredServices(bundle, references);
 				if (status == CELIX_SUCCESS) {
-					status = bundle_start(bundle);
-					if (status == CELIX_SUCCESS) {
-						status = bundle_getRegisteredServices(bundle, references);
-						if (status == CELIX_SUCCESS) {
-							arrayList_addAll(loader->loadedDrivers, *references);
-						}
-					}
+					arrayList_addAll(loader->loadedDrivers, *references);
 				}
 			}
 		}
-		apr_pool_destroy(loadPool);
 	}
 
 	return status;

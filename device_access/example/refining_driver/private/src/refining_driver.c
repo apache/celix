@@ -24,11 +24,6 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdlib.h>
-#include <apr_strings.h>
-#include <apr_pools.h>
-#include <apr_thread_proc.h>
-#include <apr_thread_cond.h>
-#include <apr_thread_mutex.h>
 
 #include <device.h>
 #include <bundle_context.h>
@@ -41,7 +36,6 @@ static const int MAX_BUFF_SIZE = 1024;
 
 struct refining_driver {
 	device_pt device;
-	apr_pool_t *pool;
 	bundle_context_pt context;
 	int deviceCount;
 	array_list_pt devices;
@@ -53,7 +47,6 @@ struct device {
 
 struct refining_driver_device {
 	device_pt device;
-	apr_pool_t *pool;
 	base_driver_device_service_pt baseDriverDeviceService;
 	refining_driver_pt driver;
 	service_reference_pt baseServiceReference;
@@ -62,12 +55,6 @@ struct refining_driver_device {
 };
 
 celix_status_t refiningDriver_destroy(refining_driver_pt driver) {
-	apr_pool_destroy(driver->pool);
-	return CELIX_SUCCESS;
-}
-
-static apr_status_t refiningDriver_cleanup(void *handler) {
-	refining_driver_pt driver = handler;
 	if (driver != NULL) {
 		if (driver->devices != NULL) {
 			arrayList_destroy(driver->devices);
@@ -77,17 +64,13 @@ static apr_status_t refiningDriver_cleanup(void *handler) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t refiningDriver_create(bundle_context_pt context, apr_pool_t *pool, refining_driver_pt *driver) {
+celix_status_t refiningDriver_create(bundle_context_pt context, refining_driver_pt *driver) {
 	celix_status_t status = CELIX_SUCCESS;
-	apr_pool_t *driverPool = NULL;
-	apr_pool_create(&driverPool, pool);
-	(*driver) = apr_palloc(driverPool, sizeof(**driver));
+	(*driver) = calloc(1, sizeof(**driver));
 	if ((*driver) != NULL) {
-		apr_pool_pre_cleanup_register(driverPool, (*driver), refiningDriver_cleanup);
-		(*driver)->pool=driverPool;
 		(*driver)->context=context;
 		(*driver)->deviceCount=0;
-		(*driver)->device = apr_palloc(driverPool, sizeof(*(*driver)->device));
+		(*driver)->device = calloc(1, sizeof(*(*driver)->device));
 		(*driver)->devices=NULL;
 		status = arrayList_create(&(*driver)->devices);
 	} else {
@@ -98,7 +81,7 @@ celix_status_t refiningDriver_create(bundle_context_pt context, apr_pool_t *pool
 
 celix_status_t refiningDriver_createService(refining_driver_pt driver, driver_service_pt *service) {
 	celix_status_t status = CELIX_SUCCESS;
-	(*service) = apr_palloc(driver->pool, sizeof(**service));
+	(*service) = calloc(1, sizeof(**service));
 	if ((*service) != NULL) {
 		(*service)->driver = driver;
 		(*service)->attach = refiningDriver_attach;
@@ -121,7 +104,6 @@ static celix_status_t refiningDriver_stopDevice(refining_driver_device_pt device
 	}
 
 	arrayList_removeElement(device->driver->devices, device);
-	apr_pool_destroy(device->pool);
 	return status;
 }
 
@@ -140,12 +122,11 @@ static celix_status_t refiningDriver_serviceChanged(service_listener_pt listener
 }
 
 celix_status_t refiningDriver_destroyDevice(refining_driver_device_pt device) {
-	apr_pool_destroy(device->pool);
 	return CELIX_SUCCESS;
 }
 
-static apr_status_t refining_driver_cleanup_device(void *handler) {
-	apr_status_t status = APR_SUCCESS;
+celix_status_t refining_driver_cleanup_device(refining_driver_device_pt handler) {
+	celix_status_t status = CELIX_SUCCESS;;
 	refining_driver_device_pt device = handler;
 	if (device != NULL) {
 		if (device->listener != NULL) {
@@ -157,33 +138,26 @@ static apr_status_t refining_driver_cleanup_device(void *handler) {
 
 celix_status_t refiningDriver_createDevice(refining_driver_pt driver, service_reference_pt reference, base_driver_device_service_pt baseService, refining_driver_device_pt *device) {
 	celix_status_t status = CELIX_SUCCESS;
-	apr_pool_t *devicePool = NULL;
-	apr_status_t aprStatus = apr_pool_create(&devicePool, driver->pool);
 
-	if (aprStatus == APR_SUCCESS) {
-		(*device) = apr_palloc(devicePool, sizeof(**device));
-			if ((*device) != NULL) {
-				apr_pool_pre_cleanup_register(devicePool, (*device), refining_driver_cleanup_device);
-				(*device)->driver=driver;
-				(*device)->pool=devicePool;
-				(*device)->baseDriverDeviceService=baseService;
-				(*device)->baseServiceReference=reference;
-				(*device)->deviceRegistration=NULL;
-				(*device)->listener=NULL;
+	(*device) = calloc(1, sizeof(**device));
+	if ((*device) != NULL) {
+		(*device)->driver=driver;
+		(*device)->baseDriverDeviceService=baseService;
+		(*device)->baseServiceReference=reference;
+		(*device)->deviceRegistration=NULL;
+		(*device)->listener=NULL;
 
-				service_listener_pt listener = apr_palloc(devicePool, sizeof(*listener));
-				listener->handle=(void *)(*device);
-				listener->serviceChanged=(celix_status_t (*)(void * listener, service_event_pt event))refiningDriver_serviceChanged;
-				bundleContext_addServiceListener(driver->context, listener, NULL);
-				(*device)->listener=listener;
+		service_listener_pt listener = calloc(1, sizeof(*listener));
+		listener->handle=(void *)(*device);
+		listener->serviceChanged=(celix_status_t (*)(void * listener, service_event_pt event))refiningDriver_serviceChanged;
+		bundleContext_addServiceListener(driver->context, listener, NULL);
+		(*device)->listener=listener;
 
-				arrayList_add(driver->devices, (*device));
-			} else {
-				status = CELIX_ENOMEM;
-			}
+		arrayList_add(driver->devices, (*device));
 	} else {
 		status = CELIX_ENOMEM;
 	}
+
 	return status;
 }
 
@@ -244,9 +218,9 @@ celix_status_t refiningDriver_match(void *driverHandler, service_reference_pt re
 
 celix_status_t refiningDriverDevice_createService(refining_driver_device_pt device, refining_driver_device_service_pt *service) {
 	celix_status_t status = CELIX_SUCCESS;
-	(*service) = apr_palloc(device->pool, sizeof(**service));
+	(*service) = calloc(1, sizeof(**service));
 	if ((*service) != NULL) {
-		(*service)->deviceService.device=apr_palloc(device->pool, sizeof(*(*service)->deviceService.device));
+		(*service)->deviceService.device=calloc(1, sizeof(*(*service)->deviceService.device));
 		if ((*service)->deviceService.device != NULL) {
 			(*service)->deviceService.noDriverFound=refiningDriverDevice_noDriverFound;
 			(*service)->refiningDriverDevice=device;
@@ -260,7 +234,7 @@ celix_status_t refiningDriverDevice_createService(refining_driver_device_pt devi
 	return status;
 }
 
-celix_status_t refiningDriverDevice_getNextWord(refining_driver_device_pt refiningDriverDevice, apr_pool_t *pool, char **word) {
+celix_status_t refiningDriverDevice_getNextWord(refining_driver_device_pt refiningDriverDevice, char **word) {
 	celix_status_t status = CELIX_SUCCESS;
 	base_driver_device_pt baseDevice = refiningDriverDevice->baseDriverDeviceService->baseDriverDevice;
 	char buff[MAX_BUFF_SIZE];
@@ -272,7 +246,7 @@ celix_status_t refiningDriverDevice_getNextWord(refining_driver_device_pt refini
 	}
 	if (status == CELIX_SUCCESS) {
 		buff[i] = '\0';
-		char *copy = apr_palloc(pool, (i+1));
+		char *copy = calloc(1, (i+1));
 		if (copy != NULL) {
 			strcpy(copy, buff);
 			(*word)=copy;

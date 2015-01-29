@@ -26,14 +26,16 @@
 #ifndef DEVICE_MANAGER_H_
 #define DEVICE_MANAGER_H_
 
+#include "log_helper.h"
+
 #include "driver_loader.h"
 
 typedef struct device_manager *device_manager_pt;
 
-celix_status_t deviceManager_create(apr_pool_t *pool, bundle_context_pt context, device_manager_pt *manager);
+celix_status_t deviceManager_create(bundle_context_pt context, log_helper_pt logHelper, device_manager_pt *manager);
 celix_status_t deviceManager_destroy(device_manager_pt manager);
 
-celix_status_t deviceManager_matchAttachDriver(device_manager_pt manager, apr_pool_t *attachPool, driver_loader_pt loader,
+celix_status_t deviceManager_matchAttachDriver(device_manager_pt manager, driver_loader_pt loader,
 			array_list_pt driverIds, array_list_pt included, array_list_pt excluded, void *service, service_reference_pt reference);
 celix_status_t deviceManager_noDriverFound(device_manager_pt manager, void *service, service_reference_pt reference);
 
