@@ -81,6 +81,7 @@ static const char * const ENDPOINT_URL = "org.amdatu.remote.admin.http.url";
 static const char *DEFAULT_PORT = "8888";
 static const char *DEFAULT_IP = "127.0.0.1";
 
+static const unsigned int DEFAULT_TIMEOUT = 0;
 
 static int remoteServiceAdmin_callback(struct mg_connection *conn);
 
@@ -674,6 +675,22 @@ celix_status_t remoteServiceAdmin_send(remote_service_admin_pt rsa, endpoint_des
     char url[256];
     snprintf(url, 256, "%s", serviceUrl);
 
+    // assume the default timeout
+    int timeout = DEFAULT_TIMEOUT;
+
+    char *timeoutStr = NULL;
+    // Check if the endpoint has a timeout, if so, use it.
+	timeoutStr = properties_get(endpointDescription->properties, (char*) OSGI_RSA_REMOTE_PROXY_TIMEOUT);
+    if (timeoutStr == NULL) {
+    	// If not, get the global variable and use that one.
+    	bundleContext_getProperty(rsa->context, (char*) OSGI_RSA_REMOTE_PROXY_TIMEOUT, &timeoutStr);
+    }
+
+    // Update timeout if a property is used to set it.
+    if (timeoutStr != NULL) {
+    	timeout = atoi(timeoutStr);
+    }
+
     celix_status_t status = CELIX_SUCCESS;
     CURL *curl;
     CURLcode res;
@@ -682,6 +699,7 @@ celix_status_t remoteServiceAdmin_send(remote_service_admin_pt rsa, endpoint_des
     if(!curl) {
         status = CELIX_ILLEGAL_STATE;
     } else {
+    	curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
         curl_easy_setopt(curl, CURLOPT_URL, &url[0]);
         curl_easy_setopt(curl, CURLOPT_POST, 1L);
         curl_easy_setopt(curl, CURLOPT_READFUNCTION, remoteServiceAdmin_readCallback);
