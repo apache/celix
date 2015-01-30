@@ -96,16 +96,18 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 }
 
 celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator = userData;
+    celix_status_t status = CELIX_SUCCESS;
+    struct activator *activator = userData;
 
-	remoteServiceAdmin_stop(activator->admin);
-	serviceRegistration_unregister(activator->registration);
-	activator->registration = NULL;
+    remoteServiceAdmin_stop(activator->admin);
+    serviceRegistration_unregister(activator->registration);
+    activator->registration = NULL;
 
-	free(activator->adminService);
+    remoteServiceAdmin_destroy(&activator->admin);
 
-	return status;
+    free(activator->adminService);
+
+    return status;
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {

@@ -96,6 +96,7 @@ celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_servi
 	celix_status_t status = CELIX_SUCCESS;
 
 	*admin = calloc(1, sizeof(**admin));
+
 	if (!*admin) {
 		status = CELIX_ENOMEM;
 	} else {
@@ -189,12 +190,15 @@ celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_servi
 
 celix_status_t remoteServiceAdmin_destroy(remote_service_admin_pt *admin)
 {
-	celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status = CELIX_SUCCESS;
 
-	free(*admin);
-	*admin = NULL;
+    free((*admin)->ip);
+    free((*admin)->port);
+    free(*admin);
 
-	return status;
+    *admin = NULL;
+
+    return status;
 }
 
 celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin) {
