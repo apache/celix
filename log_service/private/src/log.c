@@ -134,21 +134,30 @@ celix_status_t log_addEntry(log_pt log, log_entry_pt entry) {
 		if (log->store_debug || entry->level != OSGI_LOGSERVICE_DEBUG) {
 			linkedList_addElement(log->entries, entry);
 		}
+	}
 
+	celixThreadMutex_lock(&log->deliverLock);
+	arrayList_add(log->listenerEntries, entry);
+	celixThreadMutex_unlock(&log->deliverLock);
+
+	celixThreadCondition_signal(&log->entriesToDeliver);
+
+	if (log->max_size != 0) {
 		if (log->max_size != -1) {
 			if (linkedList_size(log->entries) > log->max_size) {
-				log_entry_pt entry = linkedList_removeFirst(log->entries);
-				if (entry) {
-					logEntry_destroy(&entry);
+				log_entry_pt rentry = linkedList_removeFirst(log->entries);
+				if (rentry) {
+					celixThreadMutex_lock(&log->deliverLock);
+					arrayList_removeElement(log->listenerEntries, rentry);
+					logEntry_destroy(&rentry);
+					celixThreadMutex_unlock(&log->deliverLock);
 				}
 			}
 		}
 	}
 
-	arrayList_add(log->listenerEntries, entry);
-	celixThreadCondition_signal(&log->entriesToDeliver);
-
 	celixThreadMutex_unlock(&log->lock);
+
 	return CELIX_SUCCESS;
 }
 
@@ -333,9 +342,9 @@ static void * log_listenerThread(void *data) {
 						arrayListIterator_destroy(it);
 
 						// destroy not-stored entries
-	                    			if (!(logger->store_debug || entry->level != OSGI_LOGSERVICE_DEBUG)) {
-	                            			logEntry_destroy(&entry);
-	                     			}
+						if (!(logger->store_debug || entry->level != OSGI_LOGSERVICE_DEBUG)) {
+							logEntry_destroy(&entry);
+						}
 
 						status = celixThreadMutex_unlock(&logger->listenerLock);
 						if (status != CELIX_SUCCESS) {
