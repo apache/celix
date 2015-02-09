@@ -58,10 +58,11 @@ void updateCommand_execute(command_pt command, char * line, void (*out)(char *),
     bundle_pt bundle = NULL;
 	char delims[] = " ";
 	char * sub = NULL;
+	char *save_ptr = NULL;
 	char outString[256];
 
-	sub = strtok(line, delims);
-	sub = strtok(NULL, delims);
+	sub = strtok_r(line, delims, &save_ptr);
+	sub = strtok_r(NULL, delims, &save_ptr);
 
 	if (sub == NULL) {
 		err("Incorrect number of arguments.\n");
@@ -72,7 +73,7 @@ void updateCommand_execute(command_pt command, char * line, void (*out)(char *),
 		bundleContext_getBundleById(command->bundleContext, id, &bundle);
 		if (bundle != NULL) {
 			char inputFile[256];
-			sub = strtok(NULL, delims);
+			sub = strtok_r(NULL, delims, &save_ptr);
 			inputFile[0] = '\0';
 			if (sub != NULL) {
 				char *test = inputFile;

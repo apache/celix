@@ -64,8 +64,9 @@ void psCommand_execute(command_pt command, char * commandline, void (*out)(char 
 
 		char delims[] = " ";
 		char * sub = NULL;
-		sub = strtok(commandline, delims);
-		sub = strtok(NULL, delims);
+		char *save_ptr = NULL;
+		sub = strtok_r(commandline, delims, &save_ptr);
+		sub = strtok_r(NULL, delims, &save_ptr);
 		while (sub != NULL) {
 			if (strcmp(sub, "-l") == 0) {
 				showLocation = true;
@@ -77,7 +78,7 @@ void psCommand_execute(command_pt command, char * commandline, void (*out)(char 
 				showUpdateLocation = true;
 				msg = "Update location";
 			}
-			sub = strtok(NULL, delims);
+			sub = strtok_r(NULL, delims, &save_ptr);
 		}
 
 		sprintf(line, "  %-5s %-12s %s\n", "ID", "State", msg);

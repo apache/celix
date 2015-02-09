@@ -484,22 +484,25 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
         array_list_pt interfaces = NULL;
         arrayList_create(&interfaces);
         if (strcmp(utils_stringTrim(exports), "*") == 0) {
-            char *interface = strtok(provided, ",");
+        	char *provided_save_ptr = NULL;
+            char *interface = strtok_r(provided, ",", &provided_save_ptr);
             while (interface != NULL) {
                 arrayList_add(interfaces, utils_stringTrim(interface));
-                interface = strtok(NULL, ",");
+                interface = strtok_r(NULL, ",", &provided_save_ptr);
             }
         } else {
-            char *pinterface = strtok(provided, ",");
+        	char *provided_save_ptr = NULL;
+            char *pinterface = strtok_r(provided, ",", &provided_save_ptr);
             while (pinterface != NULL) {
-                char *einterface = strtok(exports, ",");
+            	char *exports_save_ptr = NULL;
+                char *einterface = strtok_r(exports, ",", &exports_save_ptr);
                 while (einterface != NULL) {
                     if (strcmp(einterface, pinterface) == 0) {
                         arrayList_add(interfaces, einterface);
                     }
-                    einterface = strtok(NULL, ",");
+                    einterface = strtok_r(NULL, ",", &exports_save_ptr);
                 }
-                pinterface = strtok(NULL, ",");
+                pinterface = strtok_r(NULL, ",", &provided_save_ptr);
             }
         }
 

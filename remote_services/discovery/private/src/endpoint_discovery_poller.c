@@ -90,10 +90,11 @@ celix_status_t endpointDiscoveryPoller_create(discovery_pt discovery, bundle_con
 	(*poller)->entries = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 
 	const char* sep = ",";
-	char* tok = strtok(endpoints, sep);
+	char *save_ptr = NULL;
+	char* tok = strtok_r(endpoints, sep, &save_ptr);
 	while (tok) {
 		endpointDiscoveryPoller_addDiscoveryEndpoint(*poller, strdup(utils_stringTrim(tok)));
-		tok = strtok(NULL, sep);
+		tok = strtok_r(NULL, sep, &save_ptr);
 	}
 	// Clean up after ourselves...
 	free(endpoints);

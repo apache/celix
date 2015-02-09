@@ -112,6 +112,7 @@ int main(int argc, char *argv[]) {
             if (apr_pool_create(&pool, memoryPool) == APR_SUCCESS) {
                 char delims[] = " ";
                 char *result = NULL;
+                char *save_ptr = NULL;
                 linked_list_pt bundles;
                 array_list_pt installed = NULL;
                 bundle_pt bundle = NULL;
@@ -120,11 +121,11 @@ int main(int argc, char *argv[]) {
                 unsigned int i;
 
                 linkedList_create(&bundles);
-                result = strtok(autoStart, delims);
+                result = strtok_r(autoStart, delims, &save_ptr);
                 while (result != NULL) {
                     char * location = apr_pstrdup(memoryPool, result);
                     linkedList_addElement(bundles, location);
-                    result = strtok(NULL, delims);
+                    result = strtok_r(NULL, delims, &save_ptr);
                 }
                 // First install all bundles
                 // Afterwards start them

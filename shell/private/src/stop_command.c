@@ -51,10 +51,11 @@ void stopCommand_destroy(command_pt command) {
 void stopCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *)) {
     char delims[] = " ";
 	char * sub = NULL;
+	char *save_ptr = NULL;
 	char outString[256];
 
-	sub = strtok(line, delims);
-	sub = strtok(NULL, delims);
+	sub = strtok_r(line, delims, &save_ptr);
+	sub = strtok_r(NULL, delims, &save_ptr);
 
 	if (sub == NULL) {
 		err("Incorrect number of arguments.\n");
@@ -76,7 +77,7 @@ void stopCommand_execute(command_pt command, char * line, void (*out)(char *), v
 			} else {
 				err("Bundle id should be a number (bundle id).\n");
 			}
-			sub = strtok(NULL, delims);
+			sub = strtok_r(NULL, delims, &save_ptr);
 		}
 	}
 }

@@ -144,7 +144,7 @@ celix_status_t eventAdmin_createEventChannels(event_admin_pt *event_admin, char 
      apr_pool_create(&subPool,(*event_admin)->pool);
      char delims[] = "/";
      char *result = NULL;
-     result = strtok( topic, delims );
+     result = strtok_r( topic, delims );
      if(result != NULL){
      strcpy(complete_channel_name, result);
      }
@@ -166,7 +166,7 @@ celix_status_t eventAdmin_createEventChannels(event_admin_pt *event_admin, char 
      apr_thread_mutex_create(&channel->channelLock,APR_THREAD_MUTEX_NESTED, subPool);
      }
      }
-     result = strtok( NULL, delims );
+     result = strtok_r( NULL, delims );
      if(result != NULL && status == CELIX_SUCCESS){
      strcat(complete_channel_name, "/");
      strcat(complete_channel_name, result);

@@ -54,12 +54,13 @@ void installCommand_destroy(command_pt command) {
 void installCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *)) {
 	char delims[] = " ";
 	char * sub = NULL;
+	char *save_ptr = NULL;
 	char info[256];
 	char outString[256];
 
 	// ignore the command
-	sub = strtok(line, delims);
-	sub = strtok(NULL, delims);
+	sub = strtok_r(line, delims, &save_ptr);
+	sub = strtok_r(NULL, delims, &save_ptr);
 	
 	if (sub == NULL) {
 		err("Incorrect number of arguments.\n");
@@ -83,7 +84,7 @@ void installCommand_execute(command_pt command, char * line, void (*out)(char *)
 				sprintf(bundleId, "%ld", id);
 				strcat(info, bundleId);
 			}
-			sub = strtok(NULL, delims);
+			sub = strtok_r(NULL, delims, &save_ptr);
 		}
 		if (strchr(info, ',') != NULL) {
 			out("Bundle IDs: ");
