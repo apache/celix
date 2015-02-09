@@ -31,7 +31,6 @@
 
 #include "dm_service_dependency_impl.h"
 #include "dm_component_impl.h"
-#include "dm_event.h"
 
 static celix_status_t serviceDependency_addedService(void *_ptr, service_reference_pt reference, void *service);
 static celix_status_t serviceDependency_modifiedService(void *_ptr, service_reference_pt reference, void *service);
@@ -116,10 +115,10 @@ celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency,
 			if (serviceName == NULL) {
 				dependency->tracked_filter = strdup(filter);
 			} else {
-				int len = strlen(serviceName) + strlen(OSGI_FRAMEWORK_OBJECTCLASS) + strlen(filter) + 7;
-				char nfilter[len];
-				snprintf(nfilter, len, "(&(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, filter);
-				dependency->tracked_filter = strdup(nfilter);
+				size_t len = strlen(serviceName) + strlen(OSGI_FRAMEWORK_OBJECTCLASS) + strlen(filter) + 7;
+				char new_filter[len];
+				snprintf(new_filter, len, "(&(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName, filter);
+				dependency->tracked_filter = strdup(new_filter);
 			}
 		} else {
 			dependency->tracked_filter_unmodified = NULL;
@@ -177,7 +176,7 @@ celix_status_t serviceDependency_setComponent(dm_service_dependency_pt dependenc
 
 celix_status_t serviceDependency_start(dm_service_dependency_pt dependency) {
 	celix_status_t status = CELIX_SUCCESS;
-	bundle_context_pt context;
+	bundle_context_pt context = NULL;
 
 	if (!dependency || !dependency->component || (!dependency->tracked_service_name && !dependency->tracked_filter)) {
 		status = CELIX_ILLEGAL_ARGUMENT;
@@ -217,6 +216,7 @@ celix_status_t serviceDependency_start(dm_service_dependency_pt dependency) {
 
 celix_status_t serviceDependency_stop(dm_service_dependency_pt dependency) {
 	celix_status_t status = CELIX_SUCCESS;
+    celix_status_t tmp_status;
 
 	if (!dependency) {
 		status = CELIX_ILLEGAL_ARGUMENT;
@@ -224,8 +224,14 @@ celix_status_t serviceDependency_stop(dm_service_dependency_pt dependency) {
 
 	if (status == CELIX_SUCCESS) {
 		if (dependency->tracker) {
-			status = serviceTracker_close(dependency->tracker);
-			status = serviceTracker_destroy(dependency->tracker);
+            tmp_status = serviceTracker_close(dependency->tracker);
+            if (tmp_status != CELIX_SUCCESS) {
+                status = tmp_status;
+            }
+			tmp_status = serviceTracker_destroy(dependency->tracker);
+            if (tmp_status != CELIX_SUCCESS && status == CELIX_SUCCESS) {
+                status = tmp_status;
+            }
 		}
 	}
 

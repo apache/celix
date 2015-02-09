@@ -43,6 +43,7 @@ typedef celix_status_t (*destroy_fpt)(void *userData);
 celix_status_t component_create(bundle_context_pt context, dm_dependency_manager_pt manager, dm_component_pt *component);
 celix_status_t component_destroy(dm_component_pt *component);
 
+celix_status_t component_setInterface(dm_component_pt component, char *serviceName, properties_pt properties);
 celix_status_t component_setImplementation(dm_component_pt component, void *implementation);
 
 celix_status_t component_addServiceDependency(dm_component_pt component, ...);

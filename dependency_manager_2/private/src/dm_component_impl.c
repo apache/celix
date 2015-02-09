@@ -1,4 +1,4 @@
-/**
+#include <sys/cdefs.h>/**
  *Licensed to the Apache Software Foundation (ASF) under one
  *or more contributor license agreements.  See the NOTICE file
  *distributed with this work for additional information
@@ -39,7 +39,7 @@ struct dm_executor {
 
 struct dm_executor_task {
     dm_component_pt component;
-    void (*command)(void *command, void *data);
+    void (*command)(void *command_ptr, void *data);
     void *data;
 };
 
@@ -51,11 +51,11 @@ struct dm_handle_event_type {
 
 typedef struct dm_handle_event_type *dm_handle_event_type_pt;
 
-static celix_status_t executor_runTasks(dm_executor_pt executor, pthread_t currentThread);
+static celix_status_t executor_runTasks(dm_executor_pt executor, pthread_t  __unused currentThread);
 static celix_status_t executor_execute(dm_executor_pt executor);
 static celix_status_t executor_executeTask(dm_executor_pt executor, dm_component_pt component, void (*command), void *data);
 static celix_status_t executor_schedule(dm_executor_pt executor, dm_component_pt component, void (*command), void *data);
-static celix_status_t executor_create(dm_component_pt component, dm_executor_pt *executor);
+static celix_status_t executor_create(dm_component_pt  __unused component, dm_executor_pt *executor);
 static celix_status_t executor_destroy(dm_executor_pt *executor);
 
 static celix_status_t component_destroyComponent(dm_component_pt component);
@@ -72,11 +72,11 @@ static celix_status_t component_allRequiredAvailable(dm_component_pt component, 
 static celix_status_t component_performTransition(dm_component_pt component, dm_component_state_pt oldState, dm_component_state_pt newState, bool *transition);
 static celix_status_t component_calculateNewState(dm_component_pt component, dm_component_state_pt currentState, dm_component_state_pt *newState);
 static celix_status_t component_handleChange(dm_component_pt component);
-static celix_status_t component_startDependencies(dm_component_pt component, array_list_pt dependencies);
+static celix_status_t component_startDependencies(dm_component_pt  __unused component, array_list_pt dependencies);
 
 static celix_status_t component_addTask(dm_component_pt component, array_list_pt dependencies);
-static celix_status_t component_startTask(dm_component_pt component, void* data);
-static celix_status_t component_stopTask(dm_component_pt component, void* data);
+static celix_status_t component_startTask(dm_component_pt component, void __unused * data);
+static celix_status_t component_stopTask(dm_component_pt component, void __unused * data);
 static celix_status_t component_removeTask(dm_component_pt component, dm_service_dependency_pt dependency);
 static celix_status_t component_handleEventTask(dm_component_pt component, dm_handle_event_type_pt data);
 
@@ -173,7 +173,7 @@ celix_status_t component_addTask(dm_component_pt component, array_list_pt depend
 
     array_list_pt bounds = NULL;
     arrayList_create(&bounds);
-    for (int i = 0; i < arrayList_size(dependencies); i++) {
+    for (unsigned int i = 0; i < arrayList_size(dependencies); i++) {
         dm_service_dependency_pt dependency = arrayList_get(dependencies, i);
 
         pthread_mutex_lock(&component->mutex);
@@ -185,7 +185,7 @@ celix_status_t component_addTask(dm_component_pt component, array_list_pt depend
         pthread_mutex_unlock(&component->mutex);
 
         serviceDependency_setComponent(dependency, component);
-        if (!(component->state == DM_CMP_STATE_INACTIVE)) {
+        if (component->state != DM_CMP_STATE_INACTIVE) {
             serviceDependency_setInstanceBound(dependency, true);
             arrayList_add(bounds, dependency);
         }
@@ -215,13 +215,13 @@ celix_status_t component_removeTask(dm_component_pt component, dm_service_depend
     arrayList_removeElement(component->dependencies, dependency);
     pthread_mutex_unlock(&component->mutex);
 
-    if (!(component->state == DM_CMP_STATE_INACTIVE)) {
+    if (component->state != DM_CMP_STATE_INACTIVE) {
         serviceDependency_stop(dependency);
     }
 
     pthread_mutex_lock(&component->mutex);
     array_list_pt events = hashMap_remove(component->dependencyEvents, dependency);
-    for (int i = arrayList_size(events); i > 0; i--) {
+    for (unsigned int i = arrayList_size(events); i > 0; i--) {
     	dm_event_pt event = arrayList_remove(events, i - 1);
     	event_destroy(&event);
     }
@@ -243,7 +243,7 @@ celix_status_t component_start(dm_component_pt component) {
     return status;
 }
 
-celix_status_t component_startTask(dm_component_pt component, void* data) {
+celix_status_t component_startTask(dm_component_pt component, void __unused *data) {
     celix_status_t status = CELIX_SUCCESS;
 
     component->isStarted = true;
@@ -262,7 +262,7 @@ celix_status_t component_stop(dm_component_pt component) {
     return status;
 }
 
-celix_status_t component_stopTask(dm_component_pt component, void* data) {
+celix_status_t component_stopTask(dm_component_pt component, void __unused *data) {
     celix_status_t status = CELIX_SUCCESS;
 
     component->isStarted = false;
@@ -379,29 +379,33 @@ celix_status_t component_handleChanged(dm_component_pt component, dm_service_dep
     pthread_mutex_lock(&component->mutex);
     array_list_pt events = hashMap_get(component->dependencyEvents, dependency);
     int index = arrayList_indexOf(events, event);
-    dm_event_pt old = arrayList_remove(events, index);
-    arrayList_add(events, event);
-    pthread_mutex_unlock(&component->mutex);
+    if (index < 0) {
+        status = CELIX_BUNDLE_EXCEPTION;
+    } else {
+        dm_event_pt old = arrayList_remove(events, (unsigned int) index);
+        arrayList_add(events, event);
+        pthread_mutex_unlock(&component->mutex);
 
-    switch (component->state) {
-        case DM_CMP_STATE_TRACKING_OPTIONAL:
-            serviceDependency_invokeChange(dependency, event);
-            // updateInstance
-            break;
-        case DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED: {
-            bool instanceBound = false;
-            serviceDependency_isInstanceBound(dependency, &instanceBound);
-            if (!instanceBound) {
+        switch (component->state) {
+            case DM_CMP_STATE_TRACKING_OPTIONAL:
                 serviceDependency_invokeChange(dependency, event);
                 // updateInstance
+                break;
+            case DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED: {
+                bool instanceBound = false;
+                serviceDependency_isInstanceBound(dependency, &instanceBound);
+                if (!instanceBound) {
+                    serviceDependency_invokeChange(dependency, event);
+                    // updateInstance
+                }
+                break;
             }
-            break;
+            default:
+                break;
         }
-        default:
-            break;
-    }
 
-    event_destroy(&old);
+        event_destroy(&old);
+    }
 
     return status;
 }
@@ -421,34 +425,38 @@ celix_status_t component_handleRemoved(dm_component_pt component, dm_service_dep
 
     pthread_mutex_lock(&component->mutex);
     int index = arrayList_indexOf(events, event);
-	dm_event_pt old = arrayList_remove(events, index);
-	pthread_mutex_unlock(&component->mutex);
+    if (index < 0) {
+        status = CELIX_BUNDLE_EXCEPTION;
+    } else {
+        dm_event_pt old = arrayList_remove(events, (unsigned int) index);
+        pthread_mutex_unlock(&component->mutex);
 
-    switch (component->state) {
-        case DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED: {
-            bool instanceBound = false;
-            serviceDependency_isInstanceBound(dependency, &instanceBound);
-            if (!instanceBound) {
-                bool required = false;
-                serviceDependency_isRequired(dependency, &required);
-                if (required) {
-                    serviceDependency_invokeRemove(dependency, event);
+        switch (component->state) {
+            case DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED: {
+                bool instanceBound = false;
+                serviceDependency_isInstanceBound(dependency, &instanceBound);
+                if (!instanceBound) {
+                    bool required = false;
+                    serviceDependency_isRequired(dependency, &required);
+                    if (required) {
+                        serviceDependency_invokeRemove(dependency, event);
+                    }
+                    // updateInstance
                 }
-                // updateInstance
+                break;
             }
-            break;
+            case DM_CMP_STATE_TRACKING_OPTIONAL:
+                serviceDependency_invokeRemove(dependency, event);
+                // updateInstance
+                break;
+            default:
+                break;
         }
-        case DM_CMP_STATE_TRACKING_OPTIONAL:
-            serviceDependency_invokeRemove(dependency, event);
-            // updateInstance
-            break;
-        default:
-            break;
-    }
 
-    event_destroy(&event);
-    if (old) {
-    	event_destroy(&old);
+        event_destroy(&event);
+        if (old) {
+            event_destroy(&old);
+        }
     }
 
     return status;
@@ -460,64 +468,67 @@ celix_status_t component_handleSwapped(dm_component_pt component, dm_service_dep
     pthread_mutex_lock(&component->mutex);
     array_list_pt events = hashMap_get(component->dependencyEvents, dependency);
     int index = arrayList_indexOf(events, event);
-	dm_event_pt old = arrayList_remove(events, index);
-    arrayList_add(events, newEvent);
-    pthread_mutex_unlock(&component->mutex);
+    if (index < 0) {
+        status = CELIX_BUNDLE_EXCEPTION;
+    } else {
+        dm_event_pt old = arrayList_remove(events, (unsigned int) index);
+        arrayList_add(events, newEvent);
+        pthread_mutex_unlock(&component->mutex);
 
-    switch (component->state) {
-        case DM_CMP_STATE_WAITING_FOR_REQUIRED:
-            break;
-        case DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED:
-        {
-            bool instanceBound = false;
-            serviceDependency_isInstanceBound(dependency, &instanceBound);
-            if (!instanceBound) {
-                bool required = false;
-                serviceDependency_isRequired(dependency, &required);
-                if (required) {
-                    serviceDependency_invokeSwap(dependency, event, newEvent);
+        switch (component->state) {
+            case DM_CMP_STATE_WAITING_FOR_REQUIRED:
+                break;
+            case DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED: {
+                bool instanceBound = false;
+                serviceDependency_isInstanceBound(dependency, &instanceBound);
+                if (!instanceBound) {
+                    bool required = false;
+                    serviceDependency_isRequired(dependency, &required);
+                    if (required) {
+                        serviceDependency_invokeSwap(dependency, event, newEvent);
+                    }
                 }
+                break;
             }
-            break;
+            case DM_CMP_STATE_TRACKING_OPTIONAL:
+                serviceDependency_invokeSwap(dependency, event, newEvent);
+                break;
+            default:
+                break;
         }
-        case DM_CMP_STATE_TRACKING_OPTIONAL:
-            serviceDependency_invokeSwap(dependency, event, newEvent);
-            break;
-        default:
-            break;
-    }
 
-    event_destroy(&event);
-	if (old) {
-		event_destroy(&old);
-	}
+        event_destroy(&event);
+        if (old) {
+            event_destroy(&old);
+        }
+    }
 
     return status;
 }
 
-celix_status_t component_startDependencies(dm_component_pt component, array_list_pt dependencies) {
+celix_status_t component_startDependencies(dm_component_pt __unused component, array_list_pt dependencies) {
     celix_status_t status = CELIX_SUCCESS;
-    array_list_pt requiredDeps = NULL;
-    arrayList_create(&requiredDeps);
+    array_list_pt required_dependencies = NULL;
+    arrayList_create(&required_dependencies);
 
-    for (int i = 0; i < arrayList_size(dependencies); i++) {
+    for (unsigned int i = 0; i < arrayList_size(dependencies); i++) {
         dm_service_dependency_pt dependency = arrayList_get(dependencies, i);
         bool required = false;
         serviceDependency_isRequired(dependency, &required);
         if (required) {
-            arrayList_add(requiredDeps, dependency);
+            arrayList_add(required_dependencies, dependency);
             continue;
         }
 
         serviceDependency_start(dependency);
     }
 
-    for (int i = 0; i < arrayList_size(requiredDeps); i++) {
-        dm_service_dependency_pt dependency = arrayList_get(requiredDeps, i);
+    for (unsigned int i = 0; i < arrayList_size(required_dependencies); i++) {
+        dm_service_dependency_pt dependency = arrayList_get(required_dependencies, i);
         serviceDependency_start(dependency);
     }
 
-    arrayList_destroy(requiredDeps);
+    arrayList_destroy(required_dependencies);
 
     return status;
 }
@@ -526,7 +537,7 @@ celix_status_t component_stopDependencies(dm_component_pt component) {
     celix_status_t status = CELIX_SUCCESS;
 
     pthread_mutex_lock(&component->mutex);
-    for (int i = 0; i < arrayList_size(component->dependencies); i++) {
+    for (unsigned int i = 0; i < arrayList_size(component->dependencies); i++) {
         dm_service_dependency_pt dependency = arrayList_get(component->dependencies, i);
         pthread_mutex_unlock(&component->mutex);
         serviceDependency_stop(dependency);
@@ -678,11 +689,11 @@ celix_status_t component_performTransition(dm_component_pt component, dm_compone
         component_invokeRemoveRequiredDependencies(component);
 //            #TODO Add listener support
 //        notifyListeners(newState);
-        bool needInstance = false;
+//        bool needInstance = false;
 //        component_someDependenciesNeedInstance(component, &needInstance);
-        if (!needInstance) {
+//        if (!needInstance) {
             component_destroyComponent(component);
-        }
+//        }
         *transition = true;
         return status;
     }
@@ -705,7 +716,7 @@ celix_status_t component_allRequiredAvailable(dm_component_pt component, bool *a
 
     pthread_mutex_lock(&component->mutex);
     *available = true;
-    for (int i = 0; i < arrayList_size(component->dependencies); i++) {
+    for (unsigned int i = 0; i < arrayList_size(component->dependencies); i++) {
         dm_service_dependency_pt dependency = arrayList_get(component->dependencies, i);
         bool required = false;
         bool instanceBound = false;
@@ -732,7 +743,7 @@ celix_status_t component_allInstanceBoundAvailable(dm_component_pt component, bo
 
     pthread_mutex_lock(&component->mutex);
     *available = true;
-    for (int i = 0; i < arrayList_size(component->dependencies); i++) {
+    for (unsigned int i = 0; i < arrayList_size(component->dependencies); i++) {
         dm_service_dependency_pt dependency = arrayList_get(component->dependencies, i);
         bool required = false;
         bool instanceBound = false;
@@ -758,7 +769,7 @@ celix_status_t component_invokeAddRequiredDependencies(dm_component_pt component
     celix_status_t status = CELIX_SUCCESS;
 
     pthread_mutex_lock(&component->mutex);
-    for (int i = 0; i < arrayList_size(component->dependencies); i++) {
+    for (unsigned int i = 0; i < arrayList_size(component->dependencies); i++) {
         dm_service_dependency_pt dependency = arrayList_get(component->dependencies, i);
 
         bool required = false;
@@ -770,8 +781,8 @@ celix_status_t component_invokeAddRequiredDependencies(dm_component_pt component
         if (required && !instanceBound) {
             array_list_pt events = hashMap_get(component->dependencyEvents, dependency);
             if (events) {
-				for (int i = 0; i < arrayList_size(events); i++) {
-					dm_event_pt event = arrayList_get(events, i);
+				for (unsigned int j = 0; j < arrayList_size(events); j++) {
+					dm_event_pt event = arrayList_get(events, j);
 					serviceDependency_invokeAdd(dependency, event);
 				}
             }
@@ -786,7 +797,7 @@ celix_status_t component_invokeAddRequiredInstanceBoundDependencies(dm_component
     celix_status_t status = CELIX_SUCCESS;
 
     pthread_mutex_lock(&component->mutex);
-    for (int i = 0; i < arrayList_size(component->dependencies); i++) {
+    for (unsigned int i = 0; i < arrayList_size(component->dependencies); i++) {
         dm_service_dependency_pt dependency = arrayList_get(component->dependencies, i);
 
         bool required = false;
@@ -798,8 +809,8 @@ celix_status_t component_invokeAddRequiredInstanceBoundDependencies(dm_component
         if (instanceBound && required) {
             array_list_pt events = hashMap_get(component->dependencyEvents, dependency);
             if (events) {
-				for (int i = 0; i < arrayList_size(events); i++) {
-					dm_event_pt event = arrayList_get(events, i);
+				for (unsigned int j = 0; j < arrayList_size(events); j++) {
+					dm_event_pt event = arrayList_get(events, j);
 					serviceDependency_invokeAdd(dependency, event);
 				}
             }
@@ -814,7 +825,7 @@ celix_status_t component_invokeAddOptionalDependencies(dm_component_pt component
     celix_status_t status = CELIX_SUCCESS;
 
     pthread_mutex_lock(&component->mutex);
-    for (int i = 0; i < arrayList_size(component->dependencies); i++) {
+    for (unsigned int i = 0; i < arrayList_size(component->dependencies); i++) {
         dm_service_dependency_pt dependency = arrayList_get(component->dependencies, i);
 
         bool required = false;
@@ -824,8 +835,8 @@ celix_status_t component_invokeAddOptionalDependencies(dm_component_pt component
         if (!required) {
             array_list_pt events = hashMap_get(component->dependencyEvents, dependency);
             if (events) {
-				for (int i = 0; i < arrayList_size(events); i++) {
-					dm_event_pt event = arrayList_get(events, i);
+				for (unsigned int j = 0; j < arrayList_size(events); j++) {
+					dm_event_pt event = arrayList_get(events, j);
 					serviceDependency_invokeAdd(dependency, event);
 				}
             }
@@ -840,7 +851,7 @@ celix_status_t component_invokeRemoveOptionalDependencies(dm_component_pt compon
     celix_status_t status = CELIX_SUCCESS;
 
     pthread_mutex_lock(&component->mutex);
-    for (int i = 0; i < arrayList_size(component->dependencies); i++) {
+    for (unsigned int i = 0; i < arrayList_size(component->dependencies); i++) {
         dm_service_dependency_pt dependency = arrayList_get(component->dependencies, i);
 
         bool required = false;
@@ -850,8 +861,8 @@ celix_status_t component_invokeRemoveOptionalDependencies(dm_component_pt compon
         if (!required) {
             array_list_pt events = hashMap_get(component->dependencyEvents, dependency);
             if (events) {
-				for (int i = 0; i < arrayList_size(events); i++) {
-					dm_event_pt event = arrayList_get(events, i);
+				for (unsigned int j = 0; j < arrayList_size(events); j++) {
+					dm_event_pt event = arrayList_get(events, j);
 					serviceDependency_invokeRemove(dependency, event);
 				}
             }
@@ -866,7 +877,7 @@ celix_status_t component_invokeRemoveInstanceBoundDependencies(dm_component_pt c
     celix_status_t status = CELIX_SUCCESS;
 
     pthread_mutex_lock(&component->mutex);
-    for (int i = 0; i < arrayList_size(component->dependencies); i++) {
+    for (unsigned int i = 0; i < arrayList_size(component->dependencies); i++) {
         dm_service_dependency_pt dependency = arrayList_get(component->dependencies, i);
 
         bool instanceBound = false;
@@ -876,8 +887,8 @@ celix_status_t component_invokeRemoveInstanceBoundDependencies(dm_component_pt c
         if (instanceBound) {
             array_list_pt events = hashMap_get(component->dependencyEvents, dependency);
             if (events) {
-				for (int i = 0; i < arrayList_size(events); i++) {
-					dm_event_pt event = arrayList_get(events, i);
+				for (unsigned int j = 0; j < arrayList_size(events); j++) {
+					dm_event_pt event = arrayList_get(events, j);
 					serviceDependency_invokeRemove(dependency, event);
 				}
             }
@@ -892,7 +903,7 @@ celix_status_t component_invokeRemoveRequiredDependencies(dm_component_pt compon
     celix_status_t status = CELIX_SUCCESS;
 
     pthread_mutex_lock(&component->mutex);
-    for (int i = 0; i < arrayList_size(component->dependencies); i++) {
+    for (unsigned int i = 0; i < arrayList_size(component->dependencies); i++) {
         dm_service_dependency_pt dependency = arrayList_get(component->dependencies, i);
 
         bool required = false;
@@ -904,8 +915,8 @@ celix_status_t component_invokeRemoveRequiredDependencies(dm_component_pt compon
         if (!instanceBound && required) {
             array_list_pt events = hashMap_get(component->dependencyEvents, dependency);
             if (events) {
-				for (int i = 0; i < arrayList_size(events); i++) {
-					dm_event_pt event = arrayList_get(events, i);
+				for (unsigned int j = 0; j < arrayList_size(events); j++) {
+					dm_event_pt event = arrayList_get(events, j);
 					serviceDependency_invokeRemove(dependency, event);
 				}
             }
@@ -981,7 +992,7 @@ celix_status_t component_getBundleContext(dm_component_pt component, bundle_cont
 }
 
 
-celix_status_t executor_create(dm_component_pt component, dm_executor_pt *executor) {
+celix_status_t executor_create(dm_component_pt __unused component, dm_executor_pt *executor) {
     celix_status_t status = CELIX_SUCCESS;
 
     *executor = malloc(sizeof(**executor));
@@ -1072,7 +1083,7 @@ celix_status_t executor_execute(dm_executor_pt executor) {
     return status;
 }
 
-celix_status_t executor_runTasks(dm_executor_pt executor, pthread_t currentThread) {
+celix_status_t executor_runTasks(dm_executor_pt executor, pthread_t __unused currentThread) {
     celix_status_t status = CELIX_SUCCESS;
 //    bool execute = false;
 
