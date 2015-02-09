@@ -153,6 +153,25 @@ celix_status_t endpointDiscoveryPoller_destroy(endpoint_discovery_poller_pt poll
 	return status;
 }
 
+
+celix_status_t endpointDiscoveryPoller_getDiscoveryEndpoints(endpoint_discovery_poller_pt poller, array_list_pt urls) {
+    celixThreadMutex_lock(&(poller)->pollerLock);
+
+    hash_map_iterator_pt iterator = hashMapIterator_create(poller->entries);
+
+    while(hashMapIterator_hasNext(iterator))  {
+        hash_map_entry_pt entry = hashMapIterator_nextEntry(iterator);
+        char* toAdd = strdup((char*) hashMapEntry_getKey(entry));
+        arrayList_add(urls, toAdd);
+    }
+
+    hashMapIterator_destroy(iterator);
+
+    celixThreadMutex_unlock(&(poller)->pollerLock);
+
+    return CELIX_SUCCESS;
+}
+
 /**
  * Adds a new endpoint URL to the list of polled endpoints.
  */
