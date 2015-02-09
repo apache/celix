@@ -15,27 +15,45 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(RSA_BUNDLES_DISCOVERY_SHM "Option to enable building the Discovery (SHM) bundle" OFF DEPS LAUNCHER topology_manager remote_service_admin)
+celix_subproject(RSA_BUNDLES_DISCOVERY_SHM "Option to enable building the Discovery (SHM) bundle" ON DEPS LAUNCHER topology_manager remote_service_admin)
 if (RSA_BUNDLES_DISCOVERY_SHM)
+find_package(CURL REQUIRED)
+	find_package(LibXml2 REQUIRED)
+	find_package(Jansson REQUIRED)
+	
+	include_directories("${CURL_INCLUDE_DIR}")
+	include_directories("${JANSSON_INCLUDE_DIR}")
+	include_directories("${LIBXML2_INCLUDE_DIR}")
 	include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+	include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/private/include")
 	include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include")
+	include_directories("${PROJECT_SOURCE_DIR}/remote_services/discovery/private/include")
 	include_directories("${PROJECT_SOURCE_DIR}/remote_services/discovery_shm/private/include")
 	include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
 	include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
-	include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin_shm/public/include")
+	include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 	include_directories("private/include")
 
 	SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_rsa_discovery_shm")
-	SET(BUNDLE_VERSION "0.0.1")
 	SET_HEADERS("Bundle-Name: Apache Celix RSA Discovery SHM")
 
 	bundle(discovery_shm SOURCES 
-		private/src/discovery 
-		private/src/discovery_activator
+		private/src/shm
+		private/src/shm_watcher
+		private/src/discovery_impl
+		${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/discovery_activator.c
+		${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/discovery.c
+		${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_descriptor_reader.c
+		${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_descriptor_writer.c
+		${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_discovery_poller.c
+		${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_discovery_server.c
+	    ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c
+	    ${PROJECT_SOURCE_DIR}/remote_services/utils/private/src/civetweb.c
+	    ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
 	)
 
 	install_bundle(discovery_shm)
 		
-	target_link_libraries(discovery_shm celix_framework ${APRUTIL_LIBRARY})
+	target_link_libraries(discovery_shm celix_framework ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES} ${JANSSON_LIBRARIES})
 
 endif (RSA_BUNDLES_DISCOVERY_SHM)
