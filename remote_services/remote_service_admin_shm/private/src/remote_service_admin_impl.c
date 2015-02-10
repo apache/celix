@@ -46,7 +46,6 @@
 #include "bundle.h"
 #include "service_reference.h"
 #include "service_registration.h"
-#include "netstring.h"
 
 static celix_status_t remoteServiceAdmin_lock(int semId, int semNr);
 static celix_status_t remoteServiceAdmin_unlock(int semId, int semNr);
