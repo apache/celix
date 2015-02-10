@@ -958,7 +958,14 @@ celix_status_t fw_uninstallBundle(framework_pt framework, bundle_pt bundle) {
     status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, bundle, OSGI_FRAMEWORK_BUNDLE_INSTALLED));
 
     // TODO Unload all libraries for transition to unresolved
-    dlclose(bundle_getHandle(bundle));
+    bundle_revision_pt revision = NULL;
+	array_list_pt handles = NULL;
+	status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
+	status = CELIX_DO_IF(status, bundleRevision_getHandles(revision, &handles));
+	for (int i = arrayList_size(handles) - 1; i >= 0; i--) {
+		void *handle = arrayList_get(handles, i);
+		fw_closeLibrary(handle);
+	}
 
     status = CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_UNRESOLVED, bundle));
 
@@ -2389,7 +2396,7 @@ static celix_status_t framework_loadLibrary(framework_pt framework, char *librar
         status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
         status = CELIX_DO_IF(status, bundleRevision_getHandles(revision, &handles));
 
-        arrayList_add(handles, handle);
+        arrayList_add(handles, *handle);
     }
 
     framework_logIfError(framework->logger, status, error, "Could not load library: %s", libraryPath);
