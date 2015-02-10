@@ -1243,6 +1243,7 @@ celix_status_t fw_registerService(framework_pt framework, service_registration_p
                     hook->added(hook->handle, infos);
                 }
                 status = CELIX_DO_IF(status, serviceRegistry_ungetService(framework->registry, framework->bundle, ref, &ungetResult));
+                status = CELIX_DO_IF(status, serviceRegistry_ungetServiceReference(framework->registry, framework->bundle, ref));
 
                 int i = 0;
                 for (i = 0; i < arrayList_size(infos); i++) {
@@ -1380,6 +1381,7 @@ void fw_addServiceListener(framework_pt framework, bundle_pt bundle, service_lis
 		arrayList_add(infos, info);
 		hook->added(hook->handle, infos);
 		serviceRegistry_ungetService(framework->registry, framework->bundle, ref, &ungetResult);
+		serviceRegistry_ungetServiceReference(framework->registry, framework->bundle, ref);
 		arrayList_destroy(infos);
 	}
 
@@ -1442,6 +1444,7 @@ void fw_removeServiceListener(framework_pt framework, bundle_pt bundle, service_
 			arrayList_add(infos, info);
 			hook->removed(hook->handle, infos);
 			serviceRegistry_ungetService(framework->registry, framework->bundle, ref, &ungetResult);
+			serviceRegistry_ungetServiceReference(framework->registry, framework->bundle, ref);
 			arrayList_destroy(infos);
 		}
 
