@@ -337,7 +337,6 @@ static celix_status_t endpointDiscoveryPoller_getEndpoints(endpoint_discovery_po
     chunk.memory = malloc(1);
     chunk.size = 0;
 
-    curl_global_init(CURL_GLOBAL_ALL);
     curl = curl_easy_init();
     if (!curl) {
         status = CELIX_ILLEGAL_STATE;
@@ -370,7 +369,6 @@ static celix_status_t endpointDiscoveryPoller_getEndpoints(endpoint_discovery_po
         free(chunk.memory);
     }
 
-    curl_global_cleanup();
     return status;
 }
 

@@ -2,6 +2,7 @@
 #define ETCD_H_
 
 #include <stdbool.h>
+#include <celix_errno.h>
 
 #define MAX_NODES			256
 
@@ -20,7 +21,7 @@
 #define ETCD_JSON_VALUE			"value"
 #define ETCD_JSON_MODIFIEDINDEX	"modifiedIndex"
 
-bool etcd_init(char* server, int port);
+celix_status_t etcd_init(char* server, int port);
 bool etcd_get(char* key, char* value, char*action, int* modifiedIndex);
 bool etcd_getNodes(char* directory, char** nodeNames, int* size);
 bool etcd_set(char* key, char* value, int ttl, bool prevExist);

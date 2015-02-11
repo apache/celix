@@ -290,9 +290,10 @@ celix_status_t etcdWatcher_create(discovery_pt discovery, bundle_context_pt cont
 		}
 	}
 
-	if (etcd_init(etcd_server, etcd_port) == false)
+	status = etcd_init(etcd_server, etcd_port);
+	if (status != CELIX_SUCCESS)
 	{
-		return CELIX_BUNDLE_EXCEPTION;
+		return status;
 	}
 
 	etcdWatcher_addOwnFramework(*watcher);

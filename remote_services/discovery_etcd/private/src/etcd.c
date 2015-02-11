@@ -70,11 +70,13 @@ static int performRequest(char* url, request_t request, void* callback, void* re
 }
 
 // open
-bool etcd_init(char* server, int port) {
+celix_status_t etcd_init(char* server, int port) {
+	celix_status_t status = CELIX_SUCCESS;
+
 	etcd_server = server;
 	etcd_port = port;
 
-	return curl_global_init(CURL_GLOBAL_ALL) == 0;
+	return status;
 }
 
 // get
