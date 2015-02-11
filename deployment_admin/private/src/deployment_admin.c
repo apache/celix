@@ -249,7 +249,7 @@ static void *deploymentAdmin_poll(void *deploymentAdmin) {
 
 					// TODO: update to use bundle cache DataFile instead of module entries.
 					unzip_extractDeploymentPackage(inputFilename, tmpDir);
-					int length = strlen(tmpDir + 22);
+					int length = strlen(tmpDir) + 22;
 					char manifest[length];
 					snprintf(manifest, length, "%s/META-INF/MANIFEST.MF", tmpDir);
 					manifest_pt mf = NULL;
