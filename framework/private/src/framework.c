@@ -2394,21 +2394,26 @@ static celix_status_t framework_loadLibrary(framework_pt framework, char *librar
     status = CELIX_DO_IF(status, bundleArchive_getArchiveRoot(archive, &archiveRoot));
     status = CELIX_DO_IF(status, bundleArchive_getCurrentRevisionNumber(archive, &revisionNumber));
 
-    sprintf(libraryPath, "%s/version%ld.%ld/%s%s%s", archiveRoot, refreshCount, revisionNumber, library_prefix, library, library_extension);
+    int written = snprintf(libraryPath, 256, "%s/version%ld.%ld/%s%s%s", archiveRoot, refreshCount, revisionNumber, library_prefix, library, library_extension);
 
-    *handle = fw_openLibrary(libraryPath);
-    if (*handle == NULL) {
-        error = fw_getLastError();
-        // #TODO this is wrong
-        status =  CELIX_BUNDLE_EXCEPTION;
+    if (written >= 256) {
+    	error = "library path is too long";
+    	status = CELIX_FRAMEWORK_EXCEPTION;
     } else {
-        bundle_revision_pt revision = NULL;
-        array_list_pt handles = NULL;
+		*handle = fw_openLibrary(libraryPath);
+		if (*handle == NULL) {
+			error = fw_getLastError();
+			// #TODO this is wrong
+			status =  CELIX_BUNDLE_EXCEPTION;
+		} else {
+			bundle_revision_pt revision = NULL;
+			array_list_pt handles = NULL;
 
-        status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
-        status = CELIX_DO_IF(status, bundleRevision_getHandles(revision, &handles));
+			status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
+			status = CELIX_DO_IF(status, bundleRevision_getHandles(revision, &handles));
 
-        arrayList_add(handles, *handle);
+			arrayList_add(handles, *handle);
+		}
     }
 
     framework_logIfError(framework->logger, status, error, "Could not load library: %s", libraryPath);
