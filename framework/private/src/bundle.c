@@ -65,7 +65,6 @@ celix_status_t bundle_create(bundle_pt * bundle, framework_logger_pt logger) {
 
         module = module_createFrameworkModule((*bundle));
         bundle_addModule(*bundle, module);
-        // (*bundle)->module = module;
 
         status = celixThreadMutex_create(&(*bundle)->lock, NULL);
         if (status != CELIX_SUCCESS) {
@@ -73,8 +72,6 @@ celix_status_t bundle_create(bundle_pt * bundle, framework_logger_pt logger) {
         } else {
 			(*bundle)->lockCount = 0;
 			(*bundle)->lockThread = celix_thread_default;
-
-			resolver_addModule(module);
         }
 	}
 
@@ -109,8 +106,6 @@ celix_status_t bundle_createFromArchive(bundle_pt * bundle, framework_pt framewo
 		} else {
 			(*bundle)->lockCount = 0;
 			(*bundle)->lockThread = celix_thread_default;
-
-			resolver_addModule(module);
 		}
 	} else {
 	    status = CELIX_FILE_IO_EXCEPTION;

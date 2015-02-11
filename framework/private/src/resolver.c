@@ -296,6 +296,14 @@ void resolver_removeModule(module_pt module) {
             }
         }
     }
+    if (linkedList_isEmpty(m_modules)) {
+    	linkedList_destroy(m_modules);
+    	m_modules = NULL;
+    	linkedList_destroy(m_unresolvedServices);
+    	m_unresolvedServices = NULL;
+    	linkedList_destroy(m_resolvedServices);
+    	m_resolvedServices = NULL;
+    }
 }
 
 void resolver_moduleResolved(module_pt module) {

@@ -160,6 +160,30 @@ typedef struct request *request_pt;
 
 framework_logger_pt logger;
 
+#ifdef _WIN32
+    #define handle_t HMODULE
+    #define fw_getSystemLibrary() fw_getCurrentModule()
+    #define fw_openLibrary(path) LoadLibrary(path)
+    #define fw_closeLibrary(handle) FreeLibrary(handle)
+
+    #define fw_getSymbol(handle, name) GetProcAddress(handle, name)
+
+    #define fw_getLastError() GetLastError()
+
+    HMODULE fw_getCurrentModule() {
+        HMODULE hModule = NULL;
+        GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCTSTR)fw_getCurrentModule, &hModule);
+        return hModule;
+    }
+#else
+    #define handle_t void *
+    #define fw_getSystemLibrary() dlopen(NULL, RTLD_LAZY|RTLD_LOCAL)
+    #define fw_openLibrary(path) dlopen(path, RTLD_LAZY|RTLD_LOCAL)
+    #define fw_closeLibrary(handle) dlclose(handle)
+    #define fw_getSymbol(handle, name) dlsym(handle, name)
+    #define fw_getLastError() dlerror()
+#endif
+
 celix_status_t framework_create(framework_pt *framework, apr_pool_t *pool, properties_pt config) {
     celix_status_t status = CELIX_SUCCESS;
 
@@ -227,6 +251,7 @@ celix_status_t framework_destroy(framework_pt framework) {
 	while (hashMapIterator_hasNext(iterator)) {
 	    hash_map_entry_pt entry = hashMapIterator_nextEntry(iterator);
 		bundle_pt bundle = (bundle_pt) hashMapEntry_getValue(entry);
+		char * key = hashMapEntry_getKey(entry);
 		bundle_archive_pt archive = NULL;
 
 		bool systemBundle = false;
@@ -238,9 +263,22 @@ celix_status_t framework_destroy(framework_pt framework) {
 		}
 
 		if (bundle_getArchive(bundle, &archive) == CELIX_SUCCESS) {
+			if (!systemBundle) {
+				bundle_revision_pt revision = NULL;
+				array_list_pt handles = NULL;
+				status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
+				status = CELIX_DO_IF(status, bundleRevision_getHandles(revision, &handles));
+				for (int i = arrayList_size(handles) - 1; i >= 0; i--) {
+					void *handle = arrayList_get(handles, i);
+					fw_closeLibrary(handle);
+				}
+			}
+
 			bundleArchive_destroy(archive);
 		}
 		bundle_destroy(bundle);
+		hashMapIterator_remove(iterator);
+		free(key);
 	}
 	hashMapIterator_destroy(iterator);
 	}
@@ -293,30 +331,6 @@ celix_status_t framework_destroy(framework_pt framework) {
 
 	return status;
 }
-
-#ifdef _WIN32
-    #define handle_t HMODULE
-    #define fw_getSystemLibrary() fw_getCurrentModule()
-    #define fw_openLibrary(path) LoadLibrary(path)
-    #define fw_closeLibrary(handle) FreeLibrary(handle)
-
-    #define fw_getSymbol(handle, name) GetProcAddress(handle, name)
-
-    #define fw_getLastError() GetLastError()
-
-    HMODULE fw_getCurrentModule() {
-        HMODULE hModule = NULL;
-        GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS, (LPCTSTR)fw_getCurrentModule, &hModule);
-        return hModule;
-    }
-#else
-    #define handle_t void *
-    #define fw_getSystemLibrary() dlopen(NULL, RTLD_LAZY|RTLD_LOCAL)
-    #define fw_openLibrary(path) dlopen(path, RTLD_LAZY|RTLD_LOCAL)
-    #define fw_closeLibrary(handle) dlclose(handle)
-    #define fw_getSymbol(handle, name) dlsym(handle, name)
-    #define fw_getLastError() dlerror()
-#endif
 
 celix_status_t fw_init(framework_pt framework) {
 	bundle_state_e state;
@@ -2019,8 +2033,14 @@ static void *framework_shutdown(void *framework) {
             iter = hashMapIterator_create(fw->installedBundleMap);
         }
 	}
-
     hashMapIterator_destroy(iter);
+
+    iter = hashMapIterator_create(fw->installedBundleMap);
+	bundle = NULL;
+	while ((bundle = hashMapIterator_nextValue(iter)) != NULL) {
+		bundle_close(bundle);
+	}
+	hashMapIterator_destroy(iter);
 
     pthread_cancel(fw->dispatcherThread.thread);
     celixThread_join(fw->dispatcherThread, NULL);

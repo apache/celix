@@ -153,7 +153,7 @@ hash_map_entry_pt hashMap_getEntry(hash_map_pt map, void * key) {
 void * hashMap_put(hash_map_pt map, void * key, void * value) {
 	unsigned int hash;
 	int i;
-	hash_map_entry_pt entry;
+	hash_map_entry_pt entry = NULL;
 	if (key == NULL) {
 		hash_map_entry_pt entry;
 		for (entry = map->table[0]; entry != NULL; entry = entry->next) {
