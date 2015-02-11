@@ -391,26 +391,6 @@ celix_status_t bundle_setPersistentStateUninstalled(bundle_pt bundle) {
     return status;
 }
 
-celix_status_t bundle_isUsed(bundle_pt bundle, bool *used) {
-	bool unresolved = true;
-	array_list_iterator_pt iter = arrayListIterator_create(bundle->modules);
-	while (arrayListIterator_hasNext(iter)) {
-		module_pt module = arrayListIterator_next(iter);
-		if (module_isResolved(module)) {
-			unresolved = false;
-		}
-	}
-	arrayListIterator_destroy(iter);
-	*used = false;
-	iter = arrayListIterator_create(bundle->modules);
-	while (arrayListIterator_hasNext(iter) && !unresolved && !*used) {
-		module_pt module = arrayListIterator_next(iter);
-		module_getDependents(module);
-	}
-	arrayListIterator_destroy(iter);
-	return CELIX_SUCCESS;
-}
-
 celix_status_t bundle_revise(bundle_pt bundle, char * location, char *inputFile) {
 	celix_status_t status = CELIX_SUCCESS;
 
