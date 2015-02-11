@@ -281,6 +281,14 @@ celix_status_t framework_destroy(framework_pt framework) {
 	if (logger == NULL) {
 		free(framework->logger);
 	}
+
+	celixThreadCondition_destroy(&framework->dispatcher);
+	celixThreadMutex_destroy(&framework->dispatcherLock);
+	celixThreadMutex_destroy(&framework->installRequestLock);
+	celixThreadMutex_destroy(&framework->bundleLock);
+	celixThreadMutex_destroy(&framework->mutex);
+	celixThreadCondition_destroy(&framework->condition);
+
 	free(framework);
 
 	return status;
