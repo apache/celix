@@ -277,6 +277,10 @@ celix_status_t framework_destroy(framework_pt framework) {
 
 	unsetenv(OSGI_FRAMEWORK_FRAMEWORK_UUID);
 
+	logger = hashMap_get(framework->configurationMap, "logger");
+	if (logger == NULL) {
+		free(framework->logger);
+	}
 	free(framework);
 
 	return status;
