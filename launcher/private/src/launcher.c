@@ -30,6 +30,7 @@
 #include <libgen.h>
 #include <apr_general.h>
 #include <apr_strings.h>
+#include <curl/curl.h>
 
 #include "framework.h"
 #include "properties.h"
@@ -59,6 +60,9 @@ int main(int argc, char *argv[]) {
     bundle_pt fwBundle = NULL;
 
 	(void) signal(SIGINT, launcher_shutdown);
+
+	// Before doing anything else, let's setup Curl
+	curl_global_init(CURL_GLOBAL_NOTHING);
 
 	rv = apr_initialize();
     if (rv != APR_SUCCESS) {
@@ -168,6 +172,9 @@ int main(int argc, char *argv[]) {
 
 	apr_pool_destroy(memoryPool);
 	apr_terminate();
+
+	// Cleanup Curl
+	curl_global_cleanup();
 
 	printf("Launcher: Exit\n");
 
