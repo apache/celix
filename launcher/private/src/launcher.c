@@ -96,8 +96,9 @@ int main(int argc, char *argv[]) {
 
     config = properties_load(config_file);
 	// Make sure we've read it and that nothing went wrong with the file access...
-	if (errno) {
+	if (config == NULL) {
 		printf("Error: invalid or non-existing configuration file: \"%s\"!\n", config_file);
+		perror(NULL);
 		show_usage(argv[0]);
 		return CELIX_START_ERROR;
 	}

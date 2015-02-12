@@ -47,7 +47,7 @@ void properties_destroy(properties_pt properties) {
 }
 
 properties_pt properties_load(char *filename) {
-	properties_pt props = properties_create();
+	properties_pt props = NULL;
 	FILE *file = fopen ( filename, "r" );
 
 	char line[1024];
@@ -60,6 +60,7 @@ properties_pt properties_load(char *filename) {
 	char *output = NULL;
 
 	if (file != NULL ) {
+		props = properties_create();
 		while ( fgets ( line, sizeof line, file ) != NULL ) {
 
 			linePos = 0;
