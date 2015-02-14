@@ -17,7 +17,7 @@
  *under the License.
  */
 /*
- * test_sercice_skeleton.c
+ * test_service_skeleton.c
  *
  *  \date       Aug 5, 2011
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>

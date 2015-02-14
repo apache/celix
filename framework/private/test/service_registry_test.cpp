@@ -17,7 +17,7 @@
  *under the License.
  */
 /*
- * service_registry_test.c
+ * service_registry_test.cpp
  *
  *  \date       Feb 7, 2013
  *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>

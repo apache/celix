@@ -17,7 +17,7 @@
  * under the License.
  */
 /*
- * endpoint_discovery_watcher.c
+ * etcd_watcher.c
  *
  * \date       16 Sep 2014
  * \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>

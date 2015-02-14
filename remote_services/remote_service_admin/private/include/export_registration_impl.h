@@ -17,7 +17,7 @@
  *under the License.
  */
 /*
- * export_registration.h
+ * export_registration_impl.h
  *
  *  \date       Oct 6, 2011
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>

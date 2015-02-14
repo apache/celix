@@ -17,7 +17,7 @@
  *under the License.
  */
 /*
- * version_test.cpp
+ * wire_test.cpp
  *
  *  \date       Dec 18, 2012
  *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>

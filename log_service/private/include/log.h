@@ -17,7 +17,7 @@
  *under the License.
  */
 /*
- * logger.h
+ * log.h
  *
  *  \date       Jun 26, 2011
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>

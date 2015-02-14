@@ -17,7 +17,7 @@
  *under the License.
  */
 /*
- * default_shape.h
+ * triangle_shape.h
  *
  *  \date       Aug 22, 2011
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>

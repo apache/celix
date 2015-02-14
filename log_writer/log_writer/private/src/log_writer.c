@@ -17,7 +17,7 @@
  *under the License.
  */
 /*
- * tracker.c
+ * log_writer.c
  *
  *  \date       Mar 7, 2011
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>

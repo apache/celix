@@ -17,7 +17,7 @@
  *under the License.
  */
 /*
- * endpoint_description_reader.c
+ * endpoint_descriptor_reader.c
  *
  *  \date       24 Jul 2014
  *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>

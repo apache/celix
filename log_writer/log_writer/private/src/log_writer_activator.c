@@ -17,7 +17,7 @@
  *under the License.
  */
 /*
- * activator.c
+ * log_writer_activator.c
  *
  *  \date       Oct 1, 2013
  *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>

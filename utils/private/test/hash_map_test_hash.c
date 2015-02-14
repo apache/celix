@@ -17,7 +17,7 @@
  *under the License.
  */
 /*
- * hash_map_test.c
+ * hash_map_test_hash.c
  *
  *  \date       Jul 25, 2010
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>

@@ -17,7 +17,7 @@
  *under the License.
  */
 /*
- * component.h
+ * dm_component_impl.h
  *
  *  \date       22 Feb 2014
  *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>

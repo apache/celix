@@ -17,7 +17,7 @@
  *under the License.
  */
 /*
- * driver_locator.h
+ * driver_locator.c
  *
  *  \date       Jun 20, 2011
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>

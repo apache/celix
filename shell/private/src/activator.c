@@ -17,7 +17,7 @@
  *under the License.
  */
 /*
- * shell.c
+ * activator.c
  *
  *  \date       Aug 13, 2010
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>

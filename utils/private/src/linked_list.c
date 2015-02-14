@@ -17,7 +17,7 @@
  *under the License.
  */
 /*
- * linkedlist.c
+ * linked_list.c
  *
  *  \date       Jul 16, 2010
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>

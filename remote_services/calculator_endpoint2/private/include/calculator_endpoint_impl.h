@@ -17,7 +17,7 @@
  *under the License.
  */
 /*
- * calculator_endpoint.h
+ * calculator_endpoint_impl.h
  *
  *  \date       Oct 7, 2011
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>

@@ -17,7 +17,7 @@
  *under the License.
  */
 /*
- * low_writer.h
+ * log_writer.h
  *
  *  \date       Jul 4, 2011
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>

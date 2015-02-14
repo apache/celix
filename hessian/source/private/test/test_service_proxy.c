@@ -17,7 +17,7 @@
  *under the License.
  */
 /*
- * test_encoder.c
+ * test_service_proxy.c
  *
  *  \date       Aug 5, 2011
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>

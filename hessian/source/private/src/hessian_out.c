@@ -17,7 +17,7 @@
  *under the License.
  */
 /*
- * hessian.c
+ * hessian_out.c
  *
  *  \date       Jul 31, 2011
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>

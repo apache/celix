@@ -17,7 +17,7 @@
  *under the License.
  */
 /*
- * test.c
+ * framework_test.c
  *
  *  \date       Jul 16, 2010
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>

@@ -17,7 +17,7 @@
  *under the License.
  */
 /*
- * echo_server_activator.c
+ * echo_client_activator.c
  *
  *  \date       Sep 21, 2010
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>

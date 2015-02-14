@@ -17,7 +17,7 @@
  *under the License.
  */
 /*
- * topology_manager.h
+ * discovery.h
  *
  *  \date       Sep 29, 2011
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>

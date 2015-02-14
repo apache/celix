@@ -17,7 +17,7 @@
  *under the License.
  */
 /*
- * start_command.h
+ * update_command.h
  *
  *  \date       Aug 20, 2010
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
