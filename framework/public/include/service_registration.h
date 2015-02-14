@@ -20,7 +20,7 @@
  * service_registration.h
  *
  *  \date       Aug 6, 2010
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 

@@ -22,7 +22,7 @@
  * @ingroup framework
  * @{
  *
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \date      	Oct 8, 2013
  *  \copyright	Apache License, Version 2.0
  */

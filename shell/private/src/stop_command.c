@@ -20,7 +20,7 @@
  * stop_command.c
  *
  *  \date       Aug 20, 2010
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdlib.h>

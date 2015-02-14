@@ -20,7 +20,7 @@
  * log_reader_service.h
  *
  *  \date       Jun 26, 2011
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 

@@ -30,7 +30,7 @@
  * 				to be stopped. The same applies to the bundleActivator_create() and
  * 				bundleActivator_destroy() functions.
  * 				The Framework must not concurrently call the activator functions.
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \date      	March 18, 2010
  *  \copyright	Apache License, Version 2.0
  */

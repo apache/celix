@@ -20,7 +20,7 @@
  * version_range_mock.c
  *
  *  \date       Feb 11, 2013
- *  \author     <a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright  Apache License, Version 2.0
  */
 #include "CppUTestExt/MockSupport_c.h"
