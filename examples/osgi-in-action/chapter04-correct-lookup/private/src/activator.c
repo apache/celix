@@ -25,9 +25,7 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
-#include <apr_general.h>
-#include <apr_thread_proc.h>
-#include <apr_portable.h>
+#include <unistd.h>
 
 #include "bundle_activator.h"
 #include "bundle_context.h"
@@ -37,15 +35,15 @@
 typedef log_service_pt LOG_SERVICE;
 
 struct threadData {
-	char * service;
-	int threadId;
-	bundle_context_pt m_context;
+    char * service;
+    int threadId;
+    bundle_context_pt m_context;
+    bool running;
 };
 
 typedef struct threadData *thread_data_pt;
 
-static apr_thread_t *m_logTestThread;
-
+static celix_thread_t m_logTestThread;
 
 //*******************************************************************************
 // function prototypes
@@ -59,32 +57,50 @@ void alternativeLog(char *message, thread_data_pt data);
 //*******************************************************************************
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
-	apr_pool_t *pool;
-	celix_status_t status = bundleContext_getMemoryPool(context, &pool);
-	if (status == CELIX_SUCCESS) {
-		*userData = apr_palloc(pool, sizeof(struct threadData));
-		((thread_data_pt)(*userData))->service = "chapter04-correct-lookup";
-		((thread_data_pt)(*userData))->threadId = 0;
-		((thread_data_pt)(*userData))->m_context = context;
-	} else {
-		status = CELIX_START_ERROR;
-	}
-	return status;
+    celix_status_t status = CELIX_SUCCESS;
+
+    *userData = calloc(1, sizeof(struct threadData));
+
+    if (!userData) {
+        status = CELIX_ENOMEM;
+    } else {
+        ((thread_data_pt) (*userData))->service = "chapter04-correct-lookup";
+        ((thread_data_pt) (*userData))->threadId = 0;
+        ((thread_data_pt) (*userData))->m_context = context;
+        ((thread_data_pt) (*userData))->running = false;
+    }
+
+    return status;
 }
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
-	((thread_data_pt) userData)->m_context = context;
-	startTestThread(((thread_data_pt) userData));
-	return CELIX_SUCCESS;
+
+    thread_data_pt thread_data = (thread_data_pt) userData;
+
+    thread_data->m_context = context;
+    thread_data->running = true;
+
+    startTestThread(thread_data);
+
+    return CELIX_SUCCESS;
 }
 
 celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
-	stopTestThread();
-	return CELIX_SUCCESS;
+
+    thread_data_pt thread_data = (thread_data_pt) userData;
+
+    thread_data->running = false;
+
+    stopTestThread();
+
+    return CELIX_SUCCESS;
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
-	return CELIX_SUCCESS;
+
+    free(userData);
+
+    return CELIX_SUCCESS;
 }
 
 //------------------------------------------------------------------------------------------
@@ -92,78 +108,74 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt contex
 //------------------------------------------------------------------------------------------
 
 // Test LogService by periodically sending a message
-void *APR_THREAD_FUNC LogServiceTest(apr_thread_t *thd, void *argument) {
-	celix_status_t status = CELIX_SUCCESS;
-	thread_data_pt data = (thread_data_pt) argument;
-	bundle_context_pt m_context = ((thread_data_pt) argument)->m_context;
-	apr_os_thread_t *logThread = NULL;
-	apr_os_thread_get(&logThread, m_logTestThread);
-	while (apr_os_thread_current() == *logThread) {
-		service_reference_pt logServiceRef = NULL;
-		// lookup the current "best" LogService each time, just before we need to use it
-		status = bundleContext_getServiceReference(m_context, (char *) OSGI_LOGSERVICE_NAME, &logServiceRef);
-		// if the service reference is null then we know there's no log service available
-		if (status == CELIX_SUCCESS && logServiceRef != NULL) {
-			void *log = NULL;
-			LOG_SERVICE logService = NULL;
-			bundleContext_getService(m_context, logServiceRef, &log);
-			logService = (LOG_SERVICE) log;
-			// if the dereferenced instance is null then we know the service has been removed
-			if (logService != NULL) {
-				(*(logService->log))(logService->logger, OSGI_LOGSERVICE_INFO, "ping");
-			} else {
-				alternativeLog("LogService has gone", data);
-			}
-		} else {
-			alternativeLog("LogService has gone", data);
-		}
-		pauseTestThread();
-	}
-	return NULL;
+
+static void* LogServiceTest(void* argument) {
+    celix_status_t status = CELIX_SUCCESS;
+    thread_data_pt data = (thread_data_pt) argument;
+    bundle_context_pt m_context = data ->m_context;
+
+    while (data->running == true) {
+        service_reference_pt logServiceRef = NULL;
+        // lookup the current "best" LogService each time, just before we need to use it
+        status = bundleContext_getServiceReference(m_context, (char *) OSGI_LOGSERVICE_NAME, &logServiceRef);
+        // if the service reference is null then we know there's no log service available
+        if (status == CELIX_SUCCESS && logServiceRef != NULL) {
+            void *log = NULL;
+            LOG_SERVICE logService = NULL;
+            bundleContext_getService(m_context, logServiceRef, &log);
+            logService = (LOG_SERVICE) log;
+            // if the dereferenced instance is null then we know the service has been removed
+            if (logService != NULL) {
+                (*(logService->log))(logService->logger, OSGI_LOGSERVICE_INFO, "ping");
+            } else {
+                alternativeLog("LogService has gone", data);
+            }
+        } else {
+            alternativeLog("LogService has gone", data);
+        }
+        pauseTestThread();
+    }
+
+    return NULL;
 }
 
 void startTestThread(thread_data_pt data) {
-	apr_pool_t *pool;
-	// start separate worker thread to run the actual tests, managed by the bundle lifecycle
-	bundleContext_getMemoryPool(data->m_context, &pool);
-	data->threadId++;
-	apr_thread_create(&m_logTestThread, NULL, LogServiceTest, data, pool);
+    // start separate worker thread to run the actual tests, managed by the bundle lifecycle
+    data->threadId++;
+
+    celixThread_create(&m_logTestThread, NULL, LogServiceTest, data);
 }
 
 void stopTestThread() {
-	// thread should cooperatively shutdown on the next iteration, because field is now null
-	apr_thread_t *testThread = m_logTestThread;
-	// pthread_cancel(testThread);
-	apr_thread_join(APR_SUCCESS, testThread);
-	m_logTestThread = 0;
+    celixThread_join(m_logTestThread, NULL);
 }
 
 void pauseTestThread() {
-	// sleep for a bit
-	apr_sleep(5000000);
+    // sleep for a bit
+    sleep(5);
 }
 
 void alternativeLog(char *message, thread_data_pt data) {
-	// this provides similar style debug logging output for when the LogService disappears
-	celix_status_t status = CELIX_SUCCESS;
-	bundle_pt bundle = NULL;
-	char tid[20], bid[20];
-	long bundleId;
-	if (data->m_context != NULL) {
-		status = bundleContext_getBundle(data->m_context, &bundle);
-		if (status == CELIX_SUCCESS) {
-			status = bundle_getBundleId(bundle, &bundleId);
-			if (status == CELIX_SUCCESS) {
-				sprintf(tid, "thread=%d", data->threadId);
-				sprintf(bid, "bundle=%ld", bundleId);
-				printf("<--> %s, %s : %s\n", tid, bid, message);
-			} else {
-				printf("%s:%s:%d:getBundleId failed:  %s\n", __FILE__, __FUNCTION__, __LINE__, message);
-			}
-		} else {
-			printf("%s:%s:%d:getBundle failed: %s\n", __FILE__, __FUNCTION__, __LINE__, message);
-		}
-	} else {
-		printf("%s:%s:%d:bundle context NULL:  %s\n", __FILE__, __FUNCTION__, __LINE__, message);
-	}
+    // this provides similar style debug logging output for when the LogService disappears
+    celix_status_t status = CELIX_SUCCESS;
+    bundle_pt bundle = NULL;
+    char tid[20], bid[20];
+    long bundleId;
+    if (data->m_context != NULL) {
+        status = bundleContext_getBundle(data->m_context, &bundle);
+        if (status == CELIX_SUCCESS) {
+            status = bundle_getBundleId(bundle, &bundleId);
+            if (status == CELIX_SUCCESS) {
+                sprintf(tid, "thread=%d", data->threadId);
+                sprintf(bid, "bundle=%ld", bundleId);
+                printf("<--> %s, %s : %s\n", tid, bid, message);
+            } else {
+                printf("%s:%s:%d:getBundleId failed:  %s\n", __FILE__, __FUNCTION__, __LINE__, message);
+            }
+        } else {
+            printf("%s:%s:%d:getBundle failed: %s\n", __FILE__, __FUNCTION__, __LINE__, message);
+        }
+    } else {
+        printf("%s:%s:%d:bundle context NULL:  %s\n", __FILE__, __FUNCTION__, __LINE__, message);
+    }
 }

@@ -17,6 +17,7 @@
 is_enabled(EXAMPLES)
 if (EXAMPLES)
 	deploy(chapter01-greeting-example BUNDLES shell shell_tui log_service chapter01-greeting-example-client chapter01-greeting-example)
+	deploy(chapter04-correct-lookup BUNDLES shell shell_tui log_service chapter04-correct-lookup)
 	deploy(chapter04-correct-listener BUNDLES shell shell_tui log_service chapter04-correct-listener)
 	
 	deploy("hello_world" BUNDLES shell shell_tui apache_celix_examples_hello_world hello_world_test log_service log_writer)
