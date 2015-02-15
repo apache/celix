@@ -25,184 +25,172 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
-#include <apr_general.h>
-#include <apr_thread_proc.h>
+#include <unistd.h>
 
 #include "bundle_activator.h"
 #include "log_service.h"
 
 struct listenerActivator {
-	apr_pool_t *pool;
+    bundle_context_pt context;
+    service_listener_pt listener;
 
-	bundle_context_pt context;
-	service_listener_pt listener;
+    celix_thread_t logger;
+    celix_thread_mutex_t logServiceReferencesLock;
 
-	apr_thread_mutex_t *logServiceReferencesLock;
-	array_list_pt logServiceReferences;
+    array_list_pt logServiceReferences;
 
-	bool running;
-	apr_thread_t *logger;
+    bool running;
 };
 
 void listenerExample_serviceChanged(service_listener_pt listener, service_event_pt event);
 celix_status_t listenerExample_getLogService(struct listenerActivator *activator, log_service_pt *service);
 
-static void *APR_THREAD_FUNC listenerExample_logger(apr_thread_t *thd, void *activator);
+static void* listenerExample_logger(void* data);
 
 celix_status_t listenerExample_alternativeLog(struct listenerActivator *activator, char *message);
 
 celix_status_t ref_equals(void *a, void *b, bool *equals) {
-	return serviceReference_equals(a, b, equals);
+    return serviceReference_equals(a, b, equals);
 }
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
-	celix_status_t status = CELIX_SUCCESS;
-	apr_pool_t *pool;
-	apr_pool_t *subpool;
+    celix_status_t status = CELIX_SUCCESS;
 
-	status = bundleContext_getMemoryPool(context, &pool);
-	if (status == CELIX_SUCCESS) {
-		if (apr_pool_create(&subpool, pool) == APR_SUCCESS) {
-			*userData = apr_palloc(subpool, sizeof(struct listenerActivator));
-			if (!userData) {
-				status = CELIX_ENOMEM;
-			} else {
-				struct listenerActivator *activator = (*userData);
-				activator->pool = subpool;
-				activator->context = context;
-				activator->listener = NULL;
-				apr_thread_mutex_create(&activator->logServiceReferencesLock, 0, subpool);
-				activator->logServiceReferences = NULL;
-				arrayList_createWithEquals(ref_equals, &activator->logServiceReferences);
-				activator->running = false;
-				activator->logger = NULL;
-			}
-		} else {
-			status = CELIX_BUNDLE_EXCEPTION;
-		}
-	}
-	return status;
+    *userData = calloc(1, sizeof(struct listenerActivator));
+    if (!userData) {
+        status = CELIX_ENOMEM;
+    } else {
+        struct listenerActivator *activator = (*userData);
+        activator->context = context;
+        activator->listener = NULL;
+        activator->logServiceReferences = NULL;
+        arrayList_createWithEquals(ref_equals, &activator->logServiceReferences);
+        activator->running = false;
+
+        status = celixThreadMutex_create(&activator->logServiceReferencesLock, NULL);
+    }
+
+    return status;
 }
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct listenerActivator *activator = userData;
+    celix_status_t status = CELIX_SUCCESS;
+    struct listenerActivator *activator = userData;
 
-	service_listener_pt listener = apr_palloc(activator->pool, sizeof(struct listenerActivator));
-	if (!listener) {
-		status = CELIX_ENOMEM;
-	} else {
-		char filter[30];
-		array_list_pt logServices = NULL;
-		apr_pool_t *pool;
-		sprintf(filter, "(objectClass=%s)", OSGI_LOGSERVICE_NAME);
+    service_listener_pt listener = calloc(1, sizeof(struct listenerActivator));
+    if (!listener) {
+        status = CELIX_ENOMEM;
+    } else {
+        char filter[30];
+        array_list_pt logServices = NULL;
+        sprintf(filter, "(objectClass=%s)", OSGI_LOGSERVICE_NAME);
 
-		bundleContext_getMemoryPool(context, &pool);
+        listener->handle = activator;
+        listener->serviceChanged = (void *) listenerExample_serviceChanged;
+        status = bundleContext_addServiceListener(context, listener, filter);
+        if (status == CELIX_SUCCESS) {
+            activator->listener = listener;
+        }
 
-		listener->handle = activator;
-		listener->serviceChanged = (void *) listenerExample_serviceChanged;
-		status = bundleContext_addServiceListener(context, listener, filter);
-		if (status == CELIX_SUCCESS) {
-			activator->listener = listener;
-		}
+        status = bundleContext_getServiceReferences(context, NULL, filter, &logServices);
+        if (status == CELIX_SUCCESS) {
+            int i;
+            for (i = 0; i < arrayList_size(logServices); i++) {
+                service_reference_pt logService = (service_reference_pt) arrayList_get(logServices, i);
+                service_event_pt event = calloc(1, sizeof(*event));
+                event->reference = logService;
+                event->type = OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED;
 
-		status = bundleContext_getServiceReferences(context, NULL, filter, &logServices);
-		if (status == CELIX_SUCCESS) {
-			int i;
-			for (i = 0; i < arrayList_size(logServices); i++) {
-				service_reference_pt logService = (service_reference_pt) arrayList_get(logServices, i);
-				service_event_pt event = apr_palloc(activator->pool, sizeof(*event));
-				event->reference = logService;
-				event->type = OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED;
+                listenerExample_serviceChanged(listener, event);
+            }
+            arrayList_destroy(logServices);
+        }
 
-				listenerExample_serviceChanged(listener, event);
-			}
-			arrayList_destroy(logServices);
-		}
+        activator->running = true;
 
-		activator->running = true;
-		apr_thread_create(&activator->logger, NULL, listenerExample_logger, activator, activator->pool);
-	}
+        status = celixThread_create(&activator->logger, NULL, listenerExample_logger, activator);
+    }
 
-	return status;
+    return status;
 }
 
 celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct listenerActivator *activator = userData;
-	apr_status_t stat;
+    celix_status_t status = CELIX_SUCCESS;
+    struct listenerActivator *activator = userData;
 
-	activator->running = false;
-	apr_thread_join(&stat, activator->logger);
+    activator->running = false;
+    celixThread_join(activator->logger, NULL);
 
-	bundleContext_removeServiceListener(context, activator->listener);
+    bundleContext_removeServiceListener(context, activator->listener);
 
-	return status;
+    return status;
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct listenerActivator *activator = userData;
-	arrayList_destroy(activator->logServiceReferences);
-	return status;
+    celix_status_t status = CELIX_SUCCESS;
+    struct listenerActivator *activator = userData;
+    arrayList_destroy(activator->logServiceReferences);
+    return status;
 }
 
 void listenerExample_serviceChanged(service_listener_pt listener, service_event_pt event) {
-	struct listenerActivator *activator = listener->handle;
-	apr_thread_mutex_lock(activator->logServiceReferencesLock);
+    struct listenerActivator *activator = listener->handle;
+    celixThreadMutex_lock(&activator->logServiceReferencesLock);
 
-	switch (event->type) {
-	case OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED:
-		arrayList_add(activator->logServiceReferences, event->reference);
-		break;
+    switch (event->type) {
+    case OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED:
+        arrayList_add(activator->logServiceReferences, event->reference);
+        break;
 //	case MODIFIED:
 //		// only the service metadata has changed, so no need to do anything here
 //		break;
-	case OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING:
-		arrayList_remove(activator->logServiceReferences,
-				arrayList_indexOf(activator->logServiceReferences, event->reference));
-		break;
-	default:
-		break;
-	}
-	apr_thread_mutex_unlock(activator->logServiceReferencesLock);
+    case OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING:
+        arrayList_remove(activator->logServiceReferences, arrayList_indexOf(activator->logServiceReferences, event->reference));
+        break;
+    default:
+        break;
+    }
+
+    celixThreadMutex_unlock(&activator->logServiceReferencesLock);
 }
 
 celix_status_t listenerExample_getLogService(struct listenerActivator *activator, log_service_pt *service) {
-	celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status = CELIX_SUCCESS;
 
-	apr_thread_mutex_lock(activator->logServiceReferencesLock);
-	if (arrayList_size(activator->logServiceReferences) > 0) {
-		service_reference_pt reference = arrayList_get(activator->logServiceReferences, 0);
-		status = bundleContext_getService(activator->context, reference, (void *) service);
-	}
-	apr_thread_mutex_unlock(activator->logServiceReferencesLock);
+    celixThreadMutex_lock(&activator->logServiceReferencesLock);
 
-	return status;
+    if (arrayList_size(activator->logServiceReferences) > 0) {
+        service_reference_pt reference = arrayList_get(activator->logServiceReferences, 0);
+        status = bundleContext_getService(activator->context, reference, (void *) service);
+    }
+    celixThreadMutex_unlock(&activator->logServiceReferencesLock);
+
+    return status;
 }
 
-static void *APR_THREAD_FUNC listenerExample_logger(apr_thread_t *thd, void *data) {
-	struct listenerActivator *activator = data;
+static void* listenerExample_logger(void* data) {
+    struct listenerActivator *activator = data;
 
-	while (activator->running) {
-		log_service_pt logService = NULL;
-		listenerExample_getLogService(activator, &logService);
-		if (logService != NULL) {
-			(*(logService->log))(logService->logger, OSGI_LOGSERVICE_INFO, "ping");
-		} else {
-			listenerExample_alternativeLog(activator, "No LogService available. Printing to standard out.");
-		}
-		apr_sleep(5000000);
-	}
+    while (activator->running) {
+        log_service_pt logService = NULL;
+        listenerExample_getLogService(activator, &logService);
+        if (logService != NULL) {
+            (*(logService->log))(logService->logger, OSGI_LOGSERVICE_INFO, "ping");
+        } else {
+            listenerExample_alternativeLog(activator, "No LogService available. Printing to standard out.");
+        }
 
-	return NULL;
+        sleep(5);
+    }
+
+    return NULL;
 }
 
 celix_status_t listenerExample_alternativeLog(struct listenerActivator *activator, char *message) {
-	celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status = CELIX_SUCCESS;
 
-	printf("%s\n", message);
+    printf("%s\n", message);
 
-	return status;
+    return status;
 }
 
