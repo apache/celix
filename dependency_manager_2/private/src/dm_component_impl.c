@@ -51,11 +51,11 @@ struct dm_handle_event_type {
 
 typedef struct dm_handle_event_type *dm_handle_event_type_pt;
 
-static celix_status_t executor_runTasks(dm_executor_pt executor, pthread_t  __unused currentThread);
+static celix_status_t executor_runTasks(dm_executor_pt executor, pthread_t  currentThread __attribute__((unused)));
 static celix_status_t executor_execute(dm_executor_pt executor);
 static celix_status_t executor_executeTask(dm_executor_pt executor, dm_component_pt component, void (*command), void *data);
 static celix_status_t executor_schedule(dm_executor_pt executor, dm_component_pt component, void (*command), void *data);
-static celix_status_t executor_create(dm_component_pt  __unused component, dm_executor_pt *executor);
+static celix_status_t executor_create(dm_component_pt component __attribute__((unused)), dm_executor_pt *executor);
 static celix_status_t executor_destroy(dm_executor_pt *executor);
 
 static celix_status_t component_destroyComponent(dm_component_pt component);
@@ -72,11 +72,11 @@ static celix_status_t component_allRequiredAvailable(dm_component_pt component, 
 static celix_status_t component_performTransition(dm_component_pt component, dm_component_state_pt oldState, dm_component_state_pt newState, bool *transition);
 static celix_status_t component_calculateNewState(dm_component_pt component, dm_component_state_pt currentState, dm_component_state_pt *newState);
 static celix_status_t component_handleChange(dm_component_pt component);
-static celix_status_t component_startDependencies(dm_component_pt  __unused component, array_list_pt dependencies);
+static celix_status_t component_startDependencies(dm_component_pt component __attribute__((unused)), array_list_pt dependencies);
 
 static celix_status_t component_addTask(dm_component_pt component, array_list_pt dependencies);
-static celix_status_t component_startTask(dm_component_pt component, void __unused * data);
-static celix_status_t component_stopTask(dm_component_pt component, void __unused * data);
+static celix_status_t component_startTask(dm_component_pt component, void * data __attribute__((unused)));
+static celix_status_t component_stopTask(dm_component_pt component, void * data __attribute__((unused)));
 static celix_status_t component_removeTask(dm_component_pt component, dm_service_dependency_pt dependency);
 static celix_status_t component_handleEventTask(dm_component_pt component, dm_handle_event_type_pt data);
 
@@ -243,7 +243,7 @@ celix_status_t component_start(dm_component_pt component) {
     return status;
 }
 
-celix_status_t component_startTask(dm_component_pt component, void __unused *data) {
+celix_status_t component_startTask(dm_component_pt component, void  *data __attribute__((unused))) {
     celix_status_t status = CELIX_SUCCESS;
 
     component->isStarted = true;
@@ -262,7 +262,7 @@ celix_status_t component_stop(dm_component_pt component) {
     return status;
 }
 
-celix_status_t component_stopTask(dm_component_pt component, void __unused *data) {
+celix_status_t component_stopTask(dm_component_pt component, void *data __attribute__((unused))) {
     celix_status_t status = CELIX_SUCCESS;
 
     component->isStarted = false;
@@ -506,7 +506,7 @@ celix_status_t component_handleSwapped(dm_component_pt component, dm_service_dep
     return status;
 }
 
-celix_status_t component_startDependencies(dm_component_pt __unused component, array_list_pt dependencies) {
+celix_status_t component_startDependencies(dm_component_pt component __attribute__((unused)), array_list_pt dependencies) {
     celix_status_t status = CELIX_SUCCESS;
     array_list_pt required_dependencies = NULL;
     arrayList_create(&required_dependencies);
@@ -992,7 +992,7 @@ celix_status_t component_getBundleContext(dm_component_pt component, bundle_cont
 }
 
 
-celix_status_t executor_create(dm_component_pt __unused component, dm_executor_pt *executor) {
+celix_status_t executor_create(dm_component_pt component __attribute__((unused)), dm_executor_pt *executor) {
     celix_status_t status = CELIX_SUCCESS;
 
     *executor = malloc(sizeof(**executor));
@@ -1083,7 +1083,7 @@ celix_status_t executor_execute(dm_executor_pt executor) {
     return status;
 }
 
-celix_status_t executor_runTasks(dm_executor_pt executor, pthread_t __unused currentThread) {
+celix_status_t executor_runTasks(dm_executor_pt executor, pthread_t currentThread __attribute__((unused))) {
     celix_status_t status = CELIX_SUCCESS;
 //    bool execute = false;
 

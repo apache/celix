@@ -38,7 +38,7 @@ struct dm_dependency_manager {
 	pthread_mutex_t mutex;
 };
 
-celix_status_t dependencyManager_create(bundle_context_pt __unused context, dm_dependency_manager_pt *manager) {
+celix_status_t dependencyManager_create(bundle_context_pt context __attribute__((unused)), dm_dependency_manager_pt *manager) {
 	celix_status_t status = CELIX_ENOMEM;
 
 	(*manager) = calloc(1, sizeof(**manager));

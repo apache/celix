@@ -70,7 +70,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_pt __unused context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context __attribute__((unused))) {
 	celix_status_t status = CELIX_SUCCESS;
 	dependency_activator_base_pt dependency_activator = (dependency_activator_base_pt) userData;
 
@@ -84,7 +84,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt __unused 
 	return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt __unused context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context __attribute__((unused))) {
 	celix_status_t status = CELIX_SUCCESS;
 	dependency_activator_base_pt dependency_activator = (dependency_activator_base_pt) userData;
 
