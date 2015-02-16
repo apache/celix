@@ -14,20 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-celix_subproject(EXAMPLES "Option to enable building the Examples" "OFF" DEPS FRAMEWORK LAUNCHER SHELL_TUI LOG_WRITER)
-if (EXAMPLES)
-    add_subdirectory(hello_world)
-    add_subdirectory(hello_world_test)
-    add_subdirectory(mongoose)
-    
-    add_subdirectory(whiteboard)
-    add_subdirectory(echo_service)
-    add_subdirectory(producer_consumer)
-    
-    add_subdirectory(osgi-in-action/chapter04-correct-lookup)
-    add_subdirectory(osgi-in-action/chapter04-correct-listener)
-    add_subdirectory(osgi-in-action/chapter01-greeting-example)
-    #add_subdirectory(osgi-in-action/chapter04-paint-example)
-    
-    #add_subdirectory(embedding)
-endif(EXAMPLES)
+
+add_subdirectory(database)
+add_subdirectory(producer)
+add_subdirectory(consumer)
