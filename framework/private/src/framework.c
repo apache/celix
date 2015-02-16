@@ -2414,6 +2414,7 @@ static celix_status_t framework_loadLibrary(framework_pt framework, char *librar
     status = CELIX_DO_IF(status, bundleArchive_getArchiveRoot(archive, &archiveRoot));
     status = CELIX_DO_IF(status, bundleArchive_getCurrentRevisionNumber(archive, &revisionNumber));
 
+    memset(libraryPath, 0, sizeof(libraryPath));
     int written = snprintf(libraryPath, 256, "%s/version%ld.%ld/%s%s%s", archiveRoot, refreshCount, revisionNumber, library_prefix, library, library_extension);
 
     if (written >= 256) {
