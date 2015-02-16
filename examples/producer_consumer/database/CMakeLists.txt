@@ -30,5 +30,5 @@ bundle(database
 		private/src/reader
 )
 
-target_link_libraries(database pthread ${CELIX_LIBRARIES})
+target_link_libraries(database celix_framework)
 

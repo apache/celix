@@ -28,4 +28,4 @@ bundle(consumer
 	 	private/src/activator.c
 )
 
-target_link_libraries(consumer ${CELIX_LIBRARIES})
+target_link_libraries(consumer celix_framework)

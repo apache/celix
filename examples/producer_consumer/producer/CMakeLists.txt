@@ -28,4 +28,4 @@ bundle(producer
 	 	private/src/activator.c
 )
 
-target_link_libraries(producer ${CELIX_LIBRARIES})
+target_link_libraries(producer celix_framework)
