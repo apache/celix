@@ -36,6 +36,11 @@ celix_status_t requirement_create(hash_map_pt directives, hash_map_pt attributes
 	return mock_c()->returnValue().value.intValue;
 }
 
+celix_status_t requirement_destroy(requirement_pt requirement) {
+	mock_c()->actualCall("requirement_destroy");
+	return mock_c()->returnValue().value.intValue;
+}
+
 celix_status_t requirement_getVersionRange(requirement_pt requirement, version_range_pt *range) {
 	mock_c()->actualCall("requirement_create");
 	return mock_c()->returnValue().value.intValue;

@@ -32,6 +32,11 @@ celix_status_t versionRange_createVersionRange(version_pt low, bool isLowInclusi
 	return mock_c()->returnValue().value.intValue;
 }
 
+celix_status_t versionRange_destroy(version_range_pt range) {
+	mock_c()->actualCall("versionRange_destroy");
+	return mock_c()->returnValue().value.intValue;
+}
+
 celix_status_t versionRange_createInfiniteVersionRange(version_range_pt *range) {
 	mock_c()->actualCall("versionRange_createInfiniteVersionRange")
 	        ->withOutputParameter("range", (void **) range);

@@ -269,13 +269,17 @@ TEST(service_registration, getRegistryIllegalArgument) {
  
 TEST(service_registration, getServiceReferences) {
 	service_registration_pt registration = (service_registration_pt) malloc(sizeof(*registration));
-	array_list_pt references = (array_list_pt) 0x10;
-	registration->references = references;
+	array_list_pt references = NULL;
+	service_registry_pt registry = (service_registry_pt) 0x10;
+	bundle_pt bundle = (bundle_pt) 0x20;
 
-	array_list_pt actual = NULL;
-	celix_status_t status = serviceRegistration_getServiceReferences(registration, &actual);
+	mock().expectOneCall("serviceRegistry_getServiceReferencesForRegistration")
+			.withParameter("registry", registry)
+			.withParameter("registration", registration)
+			.withOutputParameterReturning("references", &references, sizeof(references));
+
+	celix_status_t status = serviceRegistration_getServiceReferences(registration, &references);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
-	POINTERS_EQUAL(references, actual);
 }
 
 TEST(service_registration, getServiceReferencesIllegalArgument) {

@@ -80,6 +80,14 @@ celix_status_t serviceRegistration_getService(service_registration_pt registrati
 	return mock_c()->returnValue().value.intValue;
 }
 
+celix_status_t serviceRegistration_ungetService(service_registration_pt registration, bundle_pt bundle, void **service) {
+	mock_c()->actualCall("serviceRegistration_ungetService")
+			->withPointerParameters("registration", registration)
+			->withPointerParameters("bundle", bundle)
+			->withPointerParameters("service", *service);
+	return mock_c()->returnValue().value.intValue;
+}
+
 
 celix_status_t serviceRegistration_getProperties(service_registration_pt registration, properties_pt *properties) {
 	mock_c()->actualCall("serviceRegistration_getProperties")

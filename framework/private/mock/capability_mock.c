@@ -32,6 +32,11 @@ celix_status_t capability_create(module_pt module, hash_map_pt directives, hash_
 	return mock_c()->returnValue().value.intValue;
 }
 
+celix_status_t capability_destroy(capability_pt capability) {
+	mock_c()->actualCall("capability_destroy");
+	return mock_c()->returnValue().value.intValue;
+}
+
 celix_status_t capability_getServiceName(capability_pt capability, char **serviceName) {
 	mock_c()->actualCall("capability_getServiceName");
 	return mock_c()->returnValue().value.intValue;

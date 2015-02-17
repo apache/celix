@@ -152,7 +152,9 @@ if (FRAMEWORK)
         add_executable(filter_test 
             private/test/filter_test.cpp
             private/mock/properties_mock.c
-            private/src/filter.c)
+            private/src/filter.c
+            private/src/celix_errorcodes.c
+            private/src/celix_log.c)
         target_link_libraries(filter_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils)
 	    
         add_executable(framework_test 
@@ -205,6 +207,7 @@ if (FRAMEWORK)
             private/mock/manifest_mock.c
             private/mock/manifest_parser_mock.c
             private/mock/capability_mock.c
+            private/mock/requirement_mock.c
             private/mock/wire_mock.c
             private/src/module.c)
         target_link_libraries(module_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils)

@@ -35,9 +35,9 @@ celix_status_t serviceReference_create(bundle_pt bundle, service_registration_pt
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t serviceReference_destroy(service_reference_pt reference) {
+celix_status_t serviceReference_destroy(service_reference_pt *reference) {
 	mock_c()->actualCall("serviceReference_destroy")
-			->withPointerParameters("reference", reference);
+			->withPointerParameters("reference", *reference);
 	return mock_c()->returnValue().value.intValue;
 }
 

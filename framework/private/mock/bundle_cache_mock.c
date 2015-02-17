@@ -32,6 +32,11 @@ celix_status_t bundleCache_create(properties_pt configurationMap, framework_logg
 	return mock_c()->returnValue().value.intValue;
 }
 
+celix_status_t bundleCache_destroy(bundle_cache_pt *cache) {
+	mock_c()->actualCall("bundleCache_destroy");
+	return mock_c()->returnValue().value.intValue;
+}
+
 celix_status_t bundleCache_getArchives(bundle_cache_pt cache, array_list_pt *archives) {
 	mock_c()->actualCall("bundle_getCurrentModule");
 	return mock_c()->returnValue().value.intValue;

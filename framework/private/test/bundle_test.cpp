@@ -83,7 +83,7 @@ TEST(bundle, create) {
 	POINTERS_EQUAL(NULL, actual->manifest);
 //	CHECK(actual->lock)
 	LONGS_EQUAL(0, actual->lockCount);
-	POINTERS_EQUAL(NULL, actual->lockThread);
+	POINTERS_EQUAL(NULL, actual->lockThread.thread);
 	POINTERS_EQUAL(NULL, actual->framework);
 }
 
@@ -153,7 +153,7 @@ TEST(bundle, createFromArchive) {
 	POINTERS_EQUAL(NULL, actual->manifest);
 //	CHECK(actual->lock)
 	LONGS_EQUAL(0, actual->lockCount);
-	POINTERS_EQUAL(NULL, actual->lockThread);
+	POINTERS_EQUAL(NULL, actual->lockThread.thread);
 	POINTERS_EQUAL(framework, actual->framework);
 }
 
