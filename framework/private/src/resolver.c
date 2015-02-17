@@ -289,24 +289,41 @@ void resolver_removeModule(module_pt module) {
             list = resolver_getCapabilityList(m_unresolvedServices, serviceName);
             if (list != NULL) {
                 linkedList_removeElement(list->capabilities, cap);
-                linkedList_destroy(list->capabilities);
-                free(list->serviceName);
-                free(list);
+
+                if (linkedList_isEmpty(list->capabilities)) {
+					linkedList_removeElement(m_unresolvedServices, list);
+					linkedList_destroy(list->capabilities);
+					free(list->serviceName);
+					free(list);
+				}
             }
             list = resolver_getCapabilityList(m_resolvedServices, serviceName);
             if (list != NULL) {
                 linkedList_removeElement(list->capabilities, cap);
-                linkedList_destroy(list->capabilities);
-                free(list->serviceName);
-				free(list);
+
+                if (linkedList_isEmpty(list->capabilities)) {
+					linkedList_removeElement(m_resolvedServices, list);
+					linkedList_destroy(list->capabilities);
+					free(list->serviceName);
+					free(list);
+				}
             }
         }
     }
     if (linkedList_isEmpty(m_modules)) {
     	linkedList_destroy(m_modules);
     	m_modules = NULL;
+
+    	if (!linkedList_isEmpty(m_unresolvedServices)) {
+    		// #TODO: Something is wrong, not all modules have been removed from the resolver
+    		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Unexpected entries in unresolved module list");
+    	}
     	linkedList_destroy(m_unresolvedServices);
     	m_unresolvedServices = NULL;
+    	if (!linkedList_isEmpty(m_resolvedServices)) {
+			// #TODO: Something is wrong, not all modules have been removed from the resolver
+    		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Unexpected entries in resolved module list");
+		}
     	linkedList_destroy(m_resolvedServices);
     	m_resolvedServices = NULL;
     }
