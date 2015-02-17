@@ -207,8 +207,15 @@ void module_setWires(module_pt module, linked_list_pt wires) {
     }
 
     if (module->wires != NULL) {
-    	linkedList_destroy(module->wires);
-    }
+		linked_list_iterator_pt iter = linkedListIterator_create(module->wires, 0);
+		while (linkedListIterator_hasNext(iter)) {
+			wire_pt next = linkedListIterator_next(iter);
+			linkedListIterator_remove(iter);
+			wire_destroy(next);
+		}
+		linkedListIterator_destroy(iter);
+		linkedList_destroy(module->wires);
+	}
 
 	module->wires = wires;
 

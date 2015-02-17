@@ -289,10 +289,16 @@ void resolver_removeModule(module_pt module) {
             list = resolver_getCapabilityList(m_unresolvedServices, serviceName);
             if (list != NULL) {
                 linkedList_removeElement(list->capabilities, cap);
+                linkedList_destroy(list->capabilities);
+                free(list->serviceName);
+                free(list);
             }
             list = resolver_getCapabilityList(m_resolvedServices, serviceName);
             if (list != NULL) {
                 linkedList_removeElement(list->capabilities, cap);
+                linkedList_destroy(list->capabilities);
+                free(list->serviceName);
+				free(list);
             }
         }
     }
