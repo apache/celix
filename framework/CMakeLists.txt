@@ -236,7 +236,9 @@ if (FRAMEWORK)
             private/mock/capability_mock.c
             private/mock/module_mock.c
             private/mock/wire_mock.c
-            private/src/resolver.c)
+            private/src/resolver.c
+            private/src/celix_errorcodes.c
+            private/src/celix_log.c)
         target_link_libraries(resolver_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils)
 	    
         add_executable(service_reference_test 

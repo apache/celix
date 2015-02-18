@@ -33,6 +33,9 @@
 
 extern "C" {
 #include "resolver.h"
+#include "celix_log.h"
+
+framework_logger_pt logger;
 }
 
 int main(int argc, char** argv) {
@@ -41,6 +44,8 @@ int main(int argc, char** argv) {
 
 TEST_GROUP(resolver) {
 	void setup(void) {
+		logger = (framework_logger_pt) malloc(sizeof(*logger));
+		logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
