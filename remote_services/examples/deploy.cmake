@@ -23,9 +23,17 @@ if (RSA_EXAMPLES)
             deploy("remote-services-cfg" BUNDLES discovery_configured topology_manager remote_service_admin_http calculator shell shell_tui log_service log_writer
                                          ENDPOINTS
                                             org.apache.celix.calc.api.Calculator_endpoint
-                                            org.apache.celix.calc.api.Calculator2_endpoint)
+                                            org.apache.celix.calc.api.Calculator2_endpoint
+                                         PROPERTIES
+                                            RSA_PORT=8001
+                                            DISCOVERY_CFG_POLL_ENDPOINTS=http://localhost:8082/org.apache.celix.discovery.configured
+                                            DISCOVERY_CFG_SERVER_PORT=8081)
             deploy("remote-services-cfg-client" BUNDLES topology_manager remote_service_admin_http shell shell_tui log_service log_writer calculator_shell discovery_configured
-                                                ENDPOINTS org.apache.celix.calc.api.Calculator_proxy org.apache.celix.calc.api.Calculator2_proxy)
+                                                ENDPOINTS org.apache.celix.calc.api.Calculator_proxy org.apache.celix.calc.api.Calculator2_proxy
+                                            PROPERTIES
+                                                RSA_PORT=8002
+                                                DISCOVERY_CFG_POLL_ENDPOINTS=http://localhost:8081/org.apache.celix.discovery.configured
+                                                DISCOVERY_CFG_SERVER_PORT=8082)
         endif ()
     endif ()
 
