@@ -15,24 +15,24 @@
 # specific language governing permissions and limitations
 # under the License.
 
-include_directories("${PROJECT_SOURCE_DIR}/remote_services/calculator_shell/private/include")
-include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/remote_services/calculator_service/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/shell/public/include")
+find_package(Jansson REQUIRED)
 
-SET(BUNDLE_SYMBOLICNAME "apache_celix_remoting_calculator_shell")
+include_directories("${JANSSON_INCLUDE_DIRS}")
+include_directories("../../../utils/public/include")
+include_directories("../../remote_service_admin/public/include")
+include_directories("private/include")
+include_directories("../calculator_service/public/include")
+include_directories("../../endpoint_listener/public/include")
+
+SET(BUNDLE_SYMBOLICNAME "apache_celix_remoting_calculator_proxy")
 SET(BUNDLE_VERSION "0.0.1")
 
-bundle(calculator_shell SOURCES
-    private/src/add_command 
-    private/src/sub_command
-    private/src/sqrt_command
-    private/src/calculator_shell_activator
+bundle(org.apache.celix.calc.api.Calculator_proxy SOURCES 
+	private/src/calculator_proxy_activator
+	private/src/calculator_proxy_impl.c
+    ../../remote_service_admin/private/src/remote_proxy_factory_impl.c
     
-    private/include/add_command.h
-    private/include/sqrt_command.h
-    private/include/sub_command.h
-    ${PROJECT_SOURCE_DIR}/shell/public/src/command.c
+    private/include/calculator_proxy_impl.h
 )
 
-target_link_libraries(calculator_shell celix_framework)
+target_link_libraries(org.apache.celix.calc.api.Calculator_proxy celix_framework ${JANSSON_LIBRARIES})

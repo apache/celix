@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(REMOTE_SERVICE_ADMIN "Option to enable building the Remote Service Admin Service bundles" OFF DEPS LAUNCHER shell_tui log_writer)
+celix_subproject(REMOTE_SERVICE_ADMIN "Option to enable building the Remote Service Admin Service bundles" OFF)
 if (REMOTE_SERVICE_ADMIN)
     # Add -fPIC for x86_64 Unix platforms; this lib will be linked to a shared lib
     if(UNIX AND NOT WIN32)
@@ -29,20 +29,19 @@ if (REMOTE_SERVICE_ADMIN)
       endif(CMAKE_UNAME)
     endif(UNIX AND NOT WIN32)
 
+    add_subdirectory(examples)
+
     add_subdirectory(topology_manager)
+
     add_subdirectory(remote_service_admin)
     add_subdirectory(remote_service_admin_http)
     add_subdirectory(remote_service_admin_shm)   
+
     add_subdirectory(discovery_configured)
     add_subdirectory(discovery_etcd)
     add_subdirectory(discovery_shm)
     
-    add_subdirectory(calculator_service)
-    add_subdirectory(calculator_endpoint)
-    add_subdirectory(calculator_endpoint2)
-    add_subdirectory(calculator_proxy)
-    add_subdirectory(calculator_proxy2)
-    add_subdirectory(calculator_shell)
+
 endif (REMOTE_SERVICE_ADMIN)
 
 

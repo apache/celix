@@ -14,8 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-celix_subproject(RSA_BUNDLES_REMOTE_SERVICE_ADMIN_SHM "Option to enable	building the Remote Service Admin Service SHM bundle" OFF DEPS LAUNCHER topology_manager remote_service_admin)
-if (RSA_BUNDLES_REMOTE_SERVICE_ADMIN_SHM)
+celix_subproject(RSA_REMOTE_SERVICE_ADMIN_SHM "Option to enable building the Remote Service Admin Service SHM bundle" OFF)
+if (RSA_REMOTE_SERVICE_ADMIN_SHM)
 	link_directories("/opt/local/lib")
 	include_directories("/opt/local/include")
 	include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
@@ -47,5 +47,5 @@ if (RSA_BUNDLES_REMOTE_SERVICE_ADMIN_SHM)
 	)
 
 	target_link_libraries(remote_service_admin_shm celix_framework ${APRUTIL_LIBRARY})
-endif (RSA_BUNDLES_REMOTE_SERVICE_ADMIN_SHM)
+endif (RSA_REMOTE_SERVICE_ADMIN_SHM)
 

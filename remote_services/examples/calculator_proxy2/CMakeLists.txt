@@ -18,19 +18,21 @@
 find_package(Jansson REQUIRED)
 
 include_directories("${JANSSON_INCLUDE_DIRS}")
-include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/remote_services/calculator_endpoint2/private/include")
-include_directories("${PROJECT_SOURCE_DIR}/remote_services/calculator_service/public/include")
+include_directories("../../../utils/public/include")
+include_directories("../../remote_service_admin/public/include")
+include_directories("private/include")
+include_directories("../calculator_service/public/include")
+include_directories("../../endpoint_listener/public/include")
 
-SET(BUNDLE_SYMBOLICNAME "apache_celix_remoting_calculator2_endpoint")
+SET(BUNDLE_SYMBOLICNAME "apache_celix_remoting_calculator2_proxy")
 SET(BUNDLE_VERSION "0.0.1")
 
-bundle(org.apache.celix.calc.api.Calculator2_endpoint SOURCES 
-	private/src/calculator_endpoint_activator
-	private/src/calculator_endpoint_impl.c
+bundle(org.apache.celix.calc.api.Calculator2_proxy SOURCES 
+	private/src/calculator_proxy_activator
+	private/src/calculator_proxy_impl.c
+    ../../remote_service_admin/private/src/remote_proxy_factory_impl.c
     
-    private/include/calculator_endpoint_impl.h
+    private/include/calculator_proxy_impl.h
 )
 
-target_link_libraries(org.apache.celix.calc.api.Calculator2_endpoint celix_framework ${JANSSON_LIBRARIES})
+target_link_libraries(org.apache.celix.calc.api.Calculator2_proxy celix_framework ${JANSSON_LIBRARIES})

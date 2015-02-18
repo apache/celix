@@ -15,8 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(RSA_BUNDLES_DISCOVERY_SHM "Option to enable building the Discovery (SHM) bundle" ON DEPS LAUNCHER topology_manager remote_service_admin)
-if (RSA_BUNDLES_DISCOVERY_SHM)
+celix_subproject(RSA_DISCOVERY_SHM "Option to enable building the Discovery (SHM) bundle" OFF)
+if (RSA_DISCOVERY_SHM)
 find_package(CURL REQUIRED)
 	find_package(LibXml2 REQUIRED)
 	find_package(Jansson REQUIRED)
@@ -56,4 +56,4 @@ find_package(CURL REQUIRED)
 		
 	target_link_libraries(discovery_shm celix_framework ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES} ${JANSSON_LIBRARIES})
 
-endif (RSA_BUNDLES_DISCOVERY_SHM)
+endif (RSA_DISCOVERY_SHM)
