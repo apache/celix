@@ -27,24 +27,6 @@ if (REMOTE_SERVICE_ADMIN)
 	#discovery will discover services before the topology manager is registered as 
 	#endpoint listener and services will be lost. This needs further study.
 
-    is_enabled(RSA_BUNDLES_DISCOVERY_BONJOUR)
-    if (RSA_BUNDLES_DISCOVERY_BONJOUR)
-        deploy("remote-services-bj" BUNDLES discovery_bonjour topology_manager remote_service_admin_http calculator shell shell_tui log_service log_writer 
-                                    ENDPOINTS org.apache.celix.calc.api.Calculator_endpoint)
-        deploy("remote-services-bj-client" BUNDLES topology_manager remote_service_admin_http shell shell_tui log_service log_writer calculator_shell discovery_bonjour
-                                           ENDPOINTS org.apache.celix.calc.api.Calculator_proxy)
-    endif (RSA_BUNDLES_DISCOVERY_BONJOUR)
-
-
-    is_enabled(RSA_BUNDLES_DISCOVERY_SLP)
-    if (RSA_BUNDLES_DISCOVERY_SLP)
-        deploy("remote-services-slp" BUNDLES discovery_slp topology_manager remote_service_admin_http calculator shell shell_tui log_service log_writer
-                                     ENDPOINTS org.apache.celix.calc.api.Calculator_endpoint)
-        deploy("remote-services-slp-client" BUNDLES topology_manager remote_service_admin_http shell shell_tui log_service log_writer calculator_shell discovery_slp
-                                            ENDPOINTS org.apache.celix.calc.api.Calculator_proxy)
-    endif (RSA_BUNDLES_DISCOVERY_SLP)
-
-
     is_enabled(RSA_BUNDLES_REMOTE_SERVICE_ADMIN_SHM)
     if (RSA_BUNDLES_REMOTE_SERVICE_ADMIN_SHM)
         is_enabled(RSA_BUNDLES_DISCOVERY_SHM)
