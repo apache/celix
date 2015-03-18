@@ -30,7 +30,6 @@
 
 #include "celix_log.h"
 #include "filter_private.h"
-#include "array_list.h"
 
 void filter_skipWhiteSpace(char * filterString, int * pos);
 filter_pt filter_parseFilter(char * filterString, int * pos);
@@ -73,7 +72,7 @@ void filter_destroy(filter_pt filter) {
 			filter->value = NULL;
 		} else if ( (filter->operand == OR) || (filter->operand == AND) ) {
 			int size = arrayList_size(filter->value);
-			int i = 0;
+			unsigned int i = 0;
 			for (i = 0; i < size; i++) {
 				filter_pt f = arrayList_get(filter->value, i);
 				filter_destroy(f);
@@ -459,7 +458,7 @@ celix_status_t filter_match(filter_pt filter, properties_pt properties, bool *re
 		case APPROX : {
 			char * value = (properties == NULL) ? NULL: properties_get(properties, filter->attribute);
 
-			return filter_compare(filter->operand, (char *) value, filter->value, result);
+			return filter_compare(filter->operand, value, filter->value, result);
 		}
 		case PRESENT: {
 			char * value = (properties == NULL) ? NULL: properties_get(properties, filter->attribute);
@@ -485,7 +484,7 @@ celix_status_t filter_compareString(OPERAND operand, char * string, void * value
 		case SUBSTRING: {
 			array_list_pt subs = (array_list_pt) value2;
 			int pos = 0;
-			int i;
+			unsigned int i;
 			int size = arrayList_size(subs);
 			for (i = 0; i < size; i++) {
 				char * substr = (char *) arrayList_get(subs, i);

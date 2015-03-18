@@ -27,8 +27,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <string.h>
-#include <stdint.h>
 
 #include "hash_map.h"
 #include "hash_map_private.h"
@@ -70,7 +68,7 @@ static unsigned int hashMap_indexFor(unsigned int h, unsigned int length) {
 hash_map_pt hashMap_create(unsigned int (*keyHash)(void *), unsigned int (*valueHash)(void *),
 		int (*keyEquals)(void *, void *), int (*valueEquals)(void *, void *)) {
 	hash_map_pt map = (hash_map_pt) malloc(sizeof(*map));
-	map->treshold = (int) (DEFAULT_INITIAL_CAPACITY * DEFAULT_LOAD_FACTOR);
+	map->treshold = (unsigned int) (DEFAULT_INITIAL_CAPACITY * DEFAULT_LOAD_FACTOR);
 	map->table = (hash_map_entry_pt *) calloc(DEFAULT_INITIAL_CAPACITY, sizeof(hash_map_entry_pt));
 	map->size = 0;
 	map->modificationCount = 0;
@@ -100,7 +98,6 @@ void hashMap_destroy(hash_map_pt map, bool freeKeys, bool freeValues) {
 	hashMap_clear(map, freeKeys, freeValues);
 	free(map->table);
 	free(map);
-	map = NULL;
 }
 
 int hashMap_size(hash_map_pt map) {
@@ -113,9 +110,8 @@ bool hashMap_isEmpty(hash_map_pt map) {
 
 void * hashMap_get(hash_map_pt map, void * key) {
 	unsigned int hash;
-	hash_map_entry_pt entry;
 	if (key == NULL) {
-		hash_map_entry_pt entry = map->table[0];
+		hash_map_entry_pt entry;
 		for (entry = map->table[0]; entry != NULL; entry = entry->next) {
 			if (entry->key == NULL) {
 				return entry->value;
@@ -125,7 +121,7 @@ void * hashMap_get(hash_map_pt map, void * key) {
 	}
 
 	hash = hashMap_hash(map->hashKey(key));
-	entry = NULL;
+    hash_map_entry_pt entry = NULL;
 	for (entry = map->table[hashMap_indexFor(hash, map->tablelength)]; entry != NULL; entry = entry->next) {
 		if (entry->hash == hash && (entry->key == key || map->equalsKey(key, entry->key))) {
 			return entry->value;
@@ -153,7 +149,6 @@ hash_map_entry_pt hashMap_getEntry(hash_map_pt map, void * key) {
 void * hashMap_put(hash_map_pt map, void * key, void * value) {
 	unsigned int hash;
 	int i;
-	hash_map_entry_pt entry = NULL;
 	if (key == NULL) {
 		hash_map_entry_pt entry;
 		for (entry = map->table[0]; entry != NULL; entry = entry->next) {
@@ -169,7 +164,8 @@ void * hashMap_put(hash_map_pt map, void * key, void * value) {
 	}
 	hash = hashMap_hash(map->hashKey(key));
 	i = hashMap_indexFor(hash, map->tablelength);
-	
+
+    hash_map_entry_pt entry;
 	for (entry = map->table[i]; entry != NULL; entry = entry->next) {
 		if (entry->hash == hash && (entry->key == key || map->equalsKey(key, entry->key))) {
 			void * oldValue = entry->value;
@@ -217,8 +213,7 @@ void * hashMap_remove(hash_map_pt map, void * key) {
 		entry->key = NULL;
 		entry->value = NULL;
 		free(entry);
-		entry = NULL;
-	}
+    }
 	return value;
 }
 
@@ -359,7 +354,6 @@ void hashMapIterator_destroy(hash_map_iterator_pt iterator) {
 	iterator->map = NULL;
 	iterator->next = NULL;
 	free(iterator);
-	iterator = NULL;
 }
 
 bool hashMapIterator_hasNext(hash_map_iterator_pt iterator) {
@@ -473,7 +467,6 @@ hash_map_values_pt hashMapValues_create(hash_map_pt map) {
 void hashMapValues_destroy(hash_map_values_pt values) {
 	values->map = NULL;
 	free(values);
-	values = NULL;
 }
 
 hash_map_iterator_pt hashMapValues_iterator(hash_map_values_pt values) {
@@ -495,7 +488,6 @@ void hashMapValues_toArray(hash_map_values_pt values, void* *array[], unsigned i
     *size = vsize;
     *array = malloc(vsize * sizeof(*array));
     it = hashMapValues_iterator(values);
-    i = 0;
     for (i = 0; i < vsize; i++) {
         if (!hashMapIterator_hasNext(it)) {
             return;

@@ -27,7 +27,6 @@
 #include <stdio.h>
 
 #include "bundle_activator.h"
-#include "bundle_context.h"
 
 #include "test.h"
 
@@ -38,7 +37,7 @@ struct userData {
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
     *userData = malloc(sizeof(struct userData));
-    if (userData != NULL) {
+    if (*userData != NULL) {
 		((struct userData *)(*userData))->word = "World";
 	} else {
 		status = CELIX_START_ERROR;

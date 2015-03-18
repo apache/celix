@@ -29,16 +29,11 @@
 #include <libxml/xmlreader.h>
 
 #include "log_helper.h"
-#include "log_service.h"
-#include "constants.h"
 #include "remote_constants.h"
 
 #include "endpoint_description.h"
 #include "endpoint_descriptor_common.h"
 #include "endpoint_descriptor_reader.h"
-#include "endpoint_discovery_poller.h"
-#include "properties.h"
-#include "utils.h"
 
 struct endpoint_descriptor_reader {
     xmlTextReaderPtr reader;
@@ -51,7 +46,7 @@ celix_status_t endpointDescriptorReader_create(endpoint_discovery_poller_pt poll
     celix_status_t status = CELIX_SUCCESS;
 
     *reader = malloc(sizeof(**reader));
-    if (!reader) {
+    if (!*reader) {
         status = CELIX_ENOMEM;
     } else {
         (*reader)->reader = NULL;
@@ -78,8 +73,9 @@ void endpointDescriptorReader_addSingleValuedProperty(properties_pt properties, 
 void endpointDescriptorReader_addMultiValuedProperty(properties_pt properties, const xmlChar* name, array_list_pt values) {
 	char *value = calloc(256, sizeof(*value));
 	if (value) {
-		int i, size = arrayList_size(values);
-		for (i = 0; i < size; i++) {
+		unsigned int size = arrayList_size(values);
+        unsigned int i;
+        for (i = 0; i < size; i++) {
 			char* item = (char*) arrayList_get(values, i);
 			if (i > 0) {
 				value = strcat(value, ",");
@@ -96,8 +92,8 @@ void endpointDescriptorReader_addMultiValuedProperty(properties_pt properties, c
 celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader_pt reader, char *document, array_list_pt *endpoints) {
     celix_status_t status = CELIX_SUCCESS;
 
-    reader->reader = xmlReaderForMemory(document, strlen(document), NULL, "UTF-8", 0);
-    if (reader == NULL) {
+    reader->reader = xmlReaderForMemory(document, (int) strlen(document), NULL, "UTF-8", 0);
+    if (reader->reader == NULL) {
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
         bool inProperty = false;
@@ -165,8 +161,8 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
 
                     propertyName = xmlTextReaderGetAttribute(reader->reader, NAME);
                     propertyValue = xmlTextReaderGetAttribute(reader->reader, VALUE);
-                    xmlChar* type = xmlTextReaderGetAttribute(reader->reader, VALUE_TYPE);
-                    propertyType = valueTypeFromString((char*) type);
+                    xmlChar *vtype = xmlTextReaderGetAttribute(reader->reader, VALUE_TYPE);
+                    propertyType = valueTypeFromString((char*) vtype);
                     arrayList_clear(propertyValues);
 
                     if (xmlTextReaderIsEmptyElement(reader->reader)) {
@@ -182,7 +178,7 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
 
                         xmlFree((void *) propertyName);
                         xmlFree((void *) propertyValue);
-                        xmlFree((void *) type);
+                        xmlFree((void *) vtype);
                     }
                 } else {
                     valueBuffer[0] = 0;
@@ -230,7 +226,7 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
                     }
 
                     xmlFree((void *) propertyName);
-					int k=0;
+					unsigned int k=0;
 					for(;k<arrayList_size(propertyValues);k++){
 						free(arrayList_get(propertyValues,k));
 					}
@@ -261,7 +257,7 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
 			properties_destroy(endpointProperties);
 		}
 
-		int k=0;
+		unsigned int k=0;
 		for(;k<arrayList_size(propertyValues);k++){
 			free(arrayList_get(propertyValues,k));
 		}

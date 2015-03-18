@@ -1,4 +1,4 @@
-/**
+#include <sys/cdefs.h>/**
  *Licensed to the Apache Software Foundation (ASF) under one
  *or more contributor license agreements.  See the NOTICE file
  *distributed with this work for additional information
@@ -27,16 +27,15 @@
 #include <stdio.h>
 
 #include "bundle_activator.h"
-#include "bundle_context.h"
 #include "greeting_service.h"
 
 
-celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt  __attribute__((unused)) context, void **userData) {
 	*userData = NULL;
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_pt ctx) {
+celix_status_t bundleActivator_start(void __attribute__((unused)) * userData, bundle_context_pt ctx) {
 	service_reference_pt ref = NULL;
 	celix_status_t status = bundleContext_getServiceReference(ctx, (char *) GREETING_SERVICE_NAME, &ref);
 	if (status == CELIX_SUCCESS) {
@@ -57,10 +56,10 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt ctx) {
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_stop(void __attribute__((unused)) * userData, bundle_context_pt  __attribute__((unused)) context) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_destroy(void __attribute__((unused)) * userData, bundle_context_pt  __attribute__((unused)) context) {
 	return CELIX_SUCCESS;
 }

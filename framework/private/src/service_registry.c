@@ -520,13 +520,15 @@ celix_status_t serviceRegistry_ungetService(service_registry_pt registry, bundle
 	service_registration_pt registration = NULL;
 	usage_count_pt usage = NULL;
 	serviceReference_getServiceRegistration(reference, &registration);
-	
+
 	celixThreadMutex_lock(&registry->mutex);
 
 	status = serviceRegistry_getUsageCount(registry, bundle, reference, &usage);
 	if (usage == NULL) {
 		celixThreadMutex_unlock(&registry->mutex);
-		*result = false;
+		if (result) {
+			*result = false;
+		}
 		return CELIX_SUCCESS;
 	}
 
@@ -543,7 +545,9 @@ celix_status_t serviceRegistry_ungetService(service_registry_pt registry, bundle
 
 	celixThreadMutex_unlock(&registry->mutex);
 
-	*result = true;
+	if (result) {
+		*result = true;
+	}
 
 	return status;
 }

@@ -1,4 +1,4 @@
-/**
+#include <sys/cdefs.h>/**
  *Licensed to the Apache Software Foundation (ASF) under one
  *or more contributor license agreements.  See the NOTICE file
  *distributed with this work for additional information
@@ -26,7 +26,6 @@
 #include <stdlib.h>
 
 #include "bundle_activator.h"
-#include "bundle_context.h"
 #include "service_tracker.h"
 
 #include "echo_server.h"
@@ -37,7 +36,7 @@ struct echoActivator {
 	service_tracker_pt tracker;
 };
 
-celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt __attribute__((unused)) context, void **userData) {
 	struct echoActivator * act = malloc(sizeof(*act));
 	act->client = NULL;
 	act->tracker = NULL;
@@ -65,7 +64,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt __attribute__((unused)) context) {
 	struct echoActivator * act = (struct echoActivator *) userData;
 	serviceTracker_close(act->tracker);
 	echoClient_stop(act->client);
@@ -73,7 +72,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt  __attribute__((unused)) context) {
 	struct echoActivator * act = (struct echoActivator *) userData;
 	serviceTracker_destroy(act->tracker);
 	echoClient_destroy(act->client);

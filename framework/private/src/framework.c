@@ -334,10 +334,10 @@ celix_status_t framework_destroy(framework_pt framework) {
 
 celix_status_t fw_init(framework_pt framework) {
 	bundle_state_e state;
-	char *location;
+	char *location = NULL;
 	module_pt module = NULL;
-	linked_list_pt wires;
-	array_list_pt archives;
+	linked_list_pt wires = NULL;
+	array_list_pt archives = NULL;
 	bundle_archive_pt archive = NULL;
 	char uuid[37];
 
@@ -478,7 +478,7 @@ celix_status_t fw_init(framework_pt framework) {
 
 celix_status_t framework_start(framework_pt framework) {
 	celix_status_t status = CELIX_SUCCESS;
-	bundle_state_e state;
+	bundle_state_e state = OSGI_FRAMEWORK_BUNDLE_UNKNOWN;
 
 	status = CELIX_DO_IF(status, framework_acquireBundleLock(framework, framework->bundle, OSGI_FRAMEWORK_BUNDLE_INSTALLED|OSGI_FRAMEWORK_BUNDLE_RESOLVED|OSGI_FRAMEWORK_BUNDLE_STARTING|OSGI_FRAMEWORK_BUNDLE_ACTIVE));
 	status = CELIX_DO_IF(status, bundle_getState(framework->bundle, &state));
@@ -538,7 +538,7 @@ celix_status_t fw_installBundle(framework_pt framework, bundle_pt * bundle, char
 celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, long id, char * location, char *inputFile, bundle_archive_pt archive) {
     celix_status_t status = CELIX_SUCCESS;
 //    bundle_archive_pt bundle_archive = NULL;
-    bundle_state_e state;
+    bundle_state_e state = OSGI_FRAMEWORK_BUNDLE_UNKNOWN;
   	bool locked;
 
   	status = CELIX_DO_IF(status, framework_acquireInstallLock(framework, location));
@@ -943,8 +943,8 @@ celix_status_t fw_uninstallBundle(framework_pt framework, bundle_pt bundle) {
     celix_status_t status = CELIX_SUCCESS;
     bool locked;
     bundle_archive_pt archive = NULL;
-    char * location;
-    bundle_pt target;
+    char * location = NULL;
+    bundle_pt target = NULL;
     char *error = NULL;
 
     status = CELIX_DO_IF(status, framework_acquireBundleLock(framework, bundle, OSGI_FRAMEWORK_BUNDLE_INSTALLED|OSGI_FRAMEWORK_BUNDLE_RESOLVED|OSGI_FRAMEWORK_BUNDLE_STARTING|OSGI_FRAMEWORK_BUNDLE_ACTIVE|OSGI_FRAMEWORK_BUNDLE_STOPPING));
@@ -1233,7 +1233,7 @@ celix_status_t fw_registerService(framework_pt framework, service_registration_p
             unsigned int i;
             array_list_pt infos = NULL;
             service_reference_pt ref = NULL;
-            listener_hook_service_pt hook;
+            listener_hook_service_pt hook = NULL;
 
             status = CELIX_DO_IF(status, arrayList_create(&infos));
 

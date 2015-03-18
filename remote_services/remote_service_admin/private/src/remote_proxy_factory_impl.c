@@ -218,9 +218,7 @@ static celix_status_t remoteProxyFactory_unregisterProxyService(remote_proxy_fac
 		if (proxy_instance_ptr->properties) {
 			properties_destroy(proxy_instance_ptr->properties);
 		}
-		if (proxy_instance_ptr) {
-			free(proxy_instance_ptr);
-		}
+        free(proxy_instance_ptr);
 	}
 
 	return status;

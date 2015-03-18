@@ -1,4 +1,4 @@
-/**
+#include <sys/cdefs.h>/**
  *Licensed to the Apache Software Foundation (ASF) under one
  *or more contributor license agreements.  See the NOTICE file
  *distributed with this work for additional information
@@ -27,15 +27,13 @@
 #include <stdio.h>
 
 #include "bundle_activator.h"
-#include "bundle_context.h"
 #include "mongoose.h"
-#include "bundle.h"
 
 struct userData {
 	struct mg_context *ctx;
 };
 
-celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt  __attribute__((unused)) context, void **userData) {
 	*userData = calloc(1, sizeof(struct userData));
 	return CELIX_SUCCESS;
 }
@@ -54,7 +52,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 			NULL
 		};
 
-		printf("entry %p\n", entry);
+		printf("entry %s\n", entry);
 
 		data->ctx = mg_start(NULL, options);
 
@@ -68,14 +66,14 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt  __attribute__((unused)) context) {
 	struct userData * data = (struct userData *) userData;
 	mg_stop(data->ctx);
 	printf("Mongoose stopped\n");
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt  __attribute__((unused)) context) {
 	free(userData);
 	return CELIX_SUCCESS;
 }

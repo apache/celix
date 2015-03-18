@@ -28,9 +28,7 @@
 #include <unistd.h>
 
 #include "bundle_activator.h"
-#include "bundle_context.h"
 #include "log_service.h"
-#include "bundle.h"
 
 typedef log_service_pt LOG_SERVICE;
 

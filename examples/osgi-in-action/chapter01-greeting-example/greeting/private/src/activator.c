@@ -1,4 +1,4 @@
-/**
+#include <sys/cdefs.h>/**
  *Licensed to the Apache Software Foundation (ASF) under one
  *or more contributor license agreements.  See the NOTICE file
  *distributed with this work for additional information
@@ -24,13 +24,9 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdlib.h>
-#include <stdio.h>
 
 #include "bundle_activator.h"
-#include "bundle_context.h"
 #include "greeting_impl.h"
-#include "greeting_service.h"
-#include "service_registration.h"
 
 struct greetingActivator {
 	service_registration_pt reg;
@@ -39,11 +35,11 @@ struct greetingActivator {
 
 typedef struct greetingActivator *greeting_activator_pt;
 
-celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt  __attribute__((unused)) context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
 	greeting_activator_pt activator;
 	*userData = calloc(1, sizeof(struct greetingActivator));
-	if (userData) {
+	if (*userData) {
 		activator = *userData;
 		activator->reg = NULL;
 	} else {
@@ -53,7 +49,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 }
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	greeting_activator_pt act = (greeting_activator_pt) userData;
 
@@ -75,7 +71,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt  __attribute__((unused)) context) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	greeting_activator_pt act = (greeting_activator_pt) userData;
@@ -89,7 +85,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt  __attribute__((unused)) context) {
 	free(userData);
 	return CELIX_SUCCESS;
 }

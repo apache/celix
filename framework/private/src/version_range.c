@@ -67,7 +67,7 @@ celix_status_t versionRange_destroy(version_range_pt range) {
 }
 
 celix_status_t versionRange_createInfiniteVersionRange(version_range_pt *range) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	version_pt version = NULL;
 	status = version_createEmptyVersion(&version);
@@ -81,7 +81,7 @@ celix_status_t versionRange_createInfiniteVersionRange(version_range_pt *range) 
 }
 
 celix_status_t versionRange_isInRange(version_range_pt versionRange, version_pt version, bool *inRange) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 	if (versionRange->high == NULL) {
 		int cmp;
 		status = version_compareTo(version, versionRange->low, &cmp);
@@ -132,7 +132,7 @@ celix_status_t versionRange_isInRange(version_range_pt versionRange, version_pt 
 }
 
 celix_status_t versionRange_parse(char * rangeStr, version_range_pt *range) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 	if (strchr(rangeStr, ',') != NULL) {
 			int vlowL = strcspn(rangeStr+1, ",");
 			char * vlow = (char *) malloc(sizeof(*vlow * (vlowL + 1)));

@@ -71,7 +71,7 @@ UTILS_EXPORT celix_status_t linkedList_destroy(linked_list_pt list) {
 }
 
 celix_status_t linkedList_clone(linked_list_pt list, linked_list_pt *clone) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	status = linkedList_create(clone);
 	if (status == CELIX_SUCCESS) {

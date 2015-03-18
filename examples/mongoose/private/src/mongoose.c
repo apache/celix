@@ -40,7 +40,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <limits.h>
-#include <stddef.h>
 #include <stdio.h>
 
 #if defined(_WIN32)  // Windows specific #includes and #defines
@@ -160,14 +159,11 @@ typedef struct DIR {
 } DIR;
 
 #else    // UNIX  specific
-#include <sys/wait.h>
+
 #include <sys/socket.h>
 #include <sys/select.h>
-#include <sys/mman.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <sys/time.h>
-#include <stdint.h>
 #include <inttypes.h>
 #include <netdb.h>
 

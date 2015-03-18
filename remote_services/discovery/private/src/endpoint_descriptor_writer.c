@@ -24,7 +24,6 @@
  *  \copyright  Apache License, Version 2.0
  */
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <libxml/xmlwriter.h>
 
@@ -48,7 +47,7 @@ celix_status_t endpointDescriptorWriter_create(endpoint_descriptor_writer_pt *wr
     celix_status_t status = CELIX_SUCCESS;
 
     *writer = malloc(sizeof(**writer));
-    if (!writer) {
+    if (!*writer) {
         status = CELIX_ENOMEM;
     } else {
         (*writer)->buffer = xmlBufferCreate();
@@ -84,7 +83,7 @@ celix_status_t endpointDescriptorWriter_writeDocument(endpoint_descriptor_writer
         if (rc < 0) {
             status = CELIX_BUNDLE_EXCEPTION;
         } else {
-            int i;
+            unsigned int i;
             for (i = 0; i < arrayList_size(endpoints); i++) {
                 endpoint_description_pt endpoint = arrayList_get(endpoints, i);
                 status = endpointDescriptorWriter_writeEndpoint(writer, endpoint);

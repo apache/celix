@@ -30,10 +30,6 @@
 #include "module.h"
 #include "manifest_parser.h"
 #include "linked_list_iterator.h"
-#include "capability.h"
-#include "requirement.h"
-#include "wire.h"
-#include "bundle.h"
 
 struct module {
 	linked_list_pt capabilities;

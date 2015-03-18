@@ -24,10 +24,8 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdlib.h>
-#include <string.h>
 
 #include "wire.h"
-#include "celix_log.h"
 
 struct wire {
 	module_pt importer;

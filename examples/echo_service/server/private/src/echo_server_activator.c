@@ -26,8 +26,6 @@
 #include <stdlib.h>
 
 #include "bundle_activator.h"
-#include "bundle_context.h"
-#include "service_registration.h"
 #include "echo_server_private.h"
 
 struct echoActivator {

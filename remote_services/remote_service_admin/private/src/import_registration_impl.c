@@ -32,10 +32,6 @@
 
 #include "import_registration_impl.h"
 #include "remote_service_admin_impl.h"
-#include "remote_proxy.h"
-#include "service_tracker.h"
-#include "bundle_context.h"
-#include "bundle.h"
 
 
 celix_status_t importRegistration_proxyFactoryAdding(void * handle, service_reference_pt reference, void **service);
@@ -109,7 +105,7 @@ celix_status_t importRegistrationFactory_destroy(import_registration_factory_pt*
 
 celix_status_t importRegistrationFactory_open(import_registration_factory_pt registration_factory)
 {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	char *bundleStore = NULL;
 	bundleContext_getProperty(registration_factory->context, BUNDLE_STORE_PROPERTY_NAME, &bundleStore);
@@ -154,7 +150,7 @@ celix_status_t importRegistrationFactory_close(import_registration_factory_pt re
 
 
 celix_status_t importRegistration_createProxyFactoryTracker(import_registration_factory_pt registration_factory, service_tracker_pt *tracker) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 	service_tracker_customizer_pt customizer = NULL;
 
 	status = serviceTrackerCustomizer_create(registration_factory, importRegistration_proxyFactoryAdding, importRegistration_proxyFactoryAdded, importRegistration_proxyFactoryModified, importRegistration_proxyFactoryRemoved, &customizer);
@@ -212,7 +208,7 @@ celix_status_t importRegistration_proxyFactoryRemoved(void * handle, service_ref
 
 celix_status_t importRegistrationFactory_install(log_helper_pt helper, char* serviceName, bundle_context_pt context, import_registration_factory_pt *registration_factory)
 {
-	celix_status_t status = CELIX_BUNDLE_EXCEPTION;
+	celix_status_t status;
 
 	if ( (status = importRegistrationFactory_create(helper, serviceName, context, registration_factory)) == CELIX_SUCCESS) {
 		// starting the proxy tracker first allows us to pick up already available proxy factories

@@ -24,7 +24,6 @@
  *  \copyright  Apache License, Version 2.0
  */
 #include <stdlib.h>
-#include <stdio.h>
 
 #include "celix_errno.h"
 #include "celix_log.h"
@@ -36,7 +35,7 @@
 static celix_status_t endpointDescription_verifyLongProperty(properties_pt properties, char *propertyName, long *longProperty);
 
 celix_status_t endpointDescription_create(properties_pt properties, endpoint_description_pt *endpointDescription) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
     *endpointDescription = malloc(sizeof(**endpointDescription));
 

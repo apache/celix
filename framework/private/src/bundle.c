@@ -28,21 +28,14 @@
 
 #include "framework_private.h"
 #include "bundle_private.h"
-#include "manifest.h"
-#include "module.h"
-#include "version.h"
-#include "array_list.h"
-#include "bundle_archive.h"
-#include "bundle_revision.h"
 #include "resolver.h"
 #include "utils.h"
-#include "celix_log.h"
 
 celix_status_t bundle_createModule(bundle_pt bundle, module_pt *module);
 celix_status_t bundle_closeRevisions(bundle_pt bundle);
 
 celix_status_t bundle_create(bundle_pt * bundle, framework_logger_pt logger) {
-    celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status;
     bundle_archive_pt archive = NULL;
 
 	*bundle = (bundle_pt) malloc(sizeof(**bundle));
@@ -83,7 +76,7 @@ celix_status_t bundle_create(bundle_pt * bundle, framework_logger_pt logger) {
 celix_status_t bundle_createFromArchive(bundle_pt * bundle, framework_pt framework, bundle_archive_pt archive) {
     module_pt module;
 	
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	*bundle = (bundle_pt) malloc(sizeof(**bundle));
 	if (*bundle == NULL) {
@@ -360,7 +353,7 @@ celix_status_t bundle_uninstall(bundle_pt bundle) {
 }
 
 celix_status_t bundle_setPersistentStateInactive(bundle_pt bundle) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 	bool systemBundle;
 
 	status = bundle_isSystemBundle(bundle, &systemBundle);
@@ -376,7 +369,7 @@ celix_status_t bundle_setPersistentStateInactive(bundle_pt bundle) {
 }
 
 celix_status_t bundle_setPersistentStateUninstalled(bundle_pt bundle) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 	bool systemBundle;
 
 	status = bundle_isSystemBundle(bundle, &systemBundle);
@@ -392,7 +385,7 @@ celix_status_t bundle_setPersistentStateUninstalled(bundle_pt bundle) {
 }
 
 celix_status_t bundle_revise(bundle_pt bundle, char * location, char *inputFile) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	bundle_archive_pt archive = NULL;
 	status = bundle_getArchive(bundle, &archive);
@@ -430,7 +423,7 @@ celix_status_t bundle_addModule(bundle_pt bundle, module_pt module) {
 }
 
 celix_status_t bundle_isSystemBundle(bundle_pt bundle, bool *systemBundle) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 	long bundleId;
 	bundle_archive_pt archive = NULL;
 
@@ -448,7 +441,7 @@ celix_status_t bundle_isSystemBundle(bundle_pt bundle, bool *systemBundle) {
 }
 
 celix_status_t bundle_isLockable(bundle_pt bundle, bool *lockable) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	status = celixThreadMutex_lock(&bundle->lock);
 	if (status != 0) {
@@ -472,7 +465,7 @@ celix_status_t bundle_isLockable(bundle_pt bundle, bool *lockable) {
 }
 
 celix_status_t bundle_getLockingThread(bundle_pt bundle, celix_thread_t *thread) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	status = celixThreadMutex_lock(&bundle->lock);
 	if (status != 0) {
@@ -492,7 +485,7 @@ celix_status_t bundle_getLockingThread(bundle_pt bundle, celix_thread_t *thread)
 }
 
 celix_status_t bundle_lock(bundle_pt bundle, bool *locked) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 	bool equals;
 
 	celixThreadMutex_lock(&bundle->lock);
@@ -548,7 +541,7 @@ celix_status_t bundle_unlock(bundle_pt bundle, bool *unlocked) {
 celix_status_t bundle_close(bundle_pt bundle) {
 	bundle_archive_pt archive = NULL;
 	
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
     bundle_closeModules(bundle);
     bundle_closeRevisions(bundle);
@@ -563,7 +556,7 @@ celix_status_t bundle_close(bundle_pt bundle) {
 }
 
 celix_status_t bundle_closeAndDelete(bundle_pt bundle) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	bundle_archive_pt archive = NULL;
 
@@ -600,7 +593,7 @@ celix_status_t bundle_closeModules(bundle_pt bundle) {
 }
 
 celix_status_t bundle_refresh(bundle_pt bundle) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 	module_pt module;
 
 	status = bundle_closeModules(bundle);
@@ -621,7 +614,7 @@ celix_status_t bundle_refresh(bundle_pt bundle) {
 }
 
 celix_status_t bundle_getBundleId(bundle_pt bundle, long *id) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 	bundle_archive_pt archive = NULL;
 	status = bundle_getArchive(bundle, &archive);
 	if (status == CELIX_SUCCESS) {
@@ -634,7 +627,7 @@ celix_status_t bundle_getBundleId(bundle_pt bundle, long *id) {
 }
 
 celix_status_t bundle_getRegisteredServices(bundle_pt bundle, array_list_pt *list) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	status = fw_getBundleRegisteredServices(bundle->framework, bundle, list);
 
@@ -644,7 +637,7 @@ celix_status_t bundle_getRegisteredServices(bundle_pt bundle, array_list_pt *lis
 }
 
 celix_status_t bundle_getServicesInUse(bundle_pt bundle, array_list_pt *list) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	status = fw_getBundleServicesInUse(bundle->framework, bundle, list);
 

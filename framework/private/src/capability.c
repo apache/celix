@@ -30,7 +30,7 @@
 #include "celix_log.h"
 
 celix_status_t capability_create(module_pt module, hash_map_pt directives, hash_map_pt attributes, capability_pt *capability) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 	*capability = (capability_pt) malloc(sizeof(**capability));
 	if (!*capability) {
 		status = CELIX_ENOMEM;

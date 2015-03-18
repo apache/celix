@@ -32,16 +32,11 @@
 #include <curl/curl.h>
 
 #include "bundle_context.h"
-#include "hash_map.h"
-#include "array_list.h"
 #include "log_helper.h"
-#include "celix_threads.h"
 #include "utils.h"
 
 #include "discovery_impl.h"
 
-#include "endpoint_listener.h"
-#include "endpoint_discovery_poller.h"
 #include "endpoint_descriptor_reader.h"
 
 
@@ -56,10 +51,10 @@ static celix_status_t endpointDiscoveryPoller_endpointDescriptionEquals(void *en
  * Allocates memory and initializes a new endpoint_discovery_poller instance.
  */
 celix_status_t endpointDiscoveryPoller_create(discovery_pt discovery, bundle_context_pt context, endpoint_discovery_poller_pt *poller) {
-    celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status;
 
     *poller = malloc(sizeof(struct endpoint_discovery_poller));
-    if (!poller) {
+    if (!*poller) {
         return CELIX_ENOMEM;
     }
 
@@ -120,7 +115,7 @@ celix_status_t endpointDiscoveryPoller_create(discovery_pt discovery, bundle_con
  * Destroys and frees up memory for a given endpoint_discovery_poller struct.
  */
 celix_status_t endpointDiscoveryPoller_destroy(endpoint_discovery_poller_pt poller) {
-    celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status;
 
     poller->running = false;
 
@@ -177,7 +172,7 @@ celix_status_t endpointDiscoveryPoller_getDiscoveryEndpoints(endpoint_discovery_
  * Adds a new endpoint URL to the list of polled endpoints.
  */
 celix_status_t endpointDiscoveryPoller_addDiscoveryEndpoint(endpoint_discovery_poller_pt poller, char *url) {
-    celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status;
 
     status = celixThreadMutex_lock(&(poller)->pollerLock);
     if (status != CELIX_SUCCESS) {
@@ -203,7 +198,7 @@ celix_status_t endpointDiscoveryPoller_addDiscoveryEndpoint(endpoint_discovery_p
  * Removes an endpoint URL from the list of polled endpoints.
  */
 celix_status_t endpointDiscoveryPoller_removeDiscoveryEndpoint(endpoint_discovery_poller_pt poller, char *url) {
-    celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status;
 
     status = celixThreadMutex_lock(&poller->pollerLock);
     if (status != CELIX_SUCCESS) {
@@ -215,7 +210,7 @@ celix_status_t endpointDiscoveryPoller_removeDiscoveryEndpoint(endpoint_discover
 
     array_list_pt entries = hashMap_remove(poller->entries, url);
 
-	for (int i = arrayList_size(entries); i > 0  ; i--) {
+	for (unsigned int i = arrayList_size(entries); i > 0  ; i--) {
 		endpoint_description_pt endpoint = arrayList_get(entries, i-1);
 		discovery_removeDiscoveredEndpoint(poller->discovery, endpoint);
 		arrayList_remove(entries, i-1);
@@ -236,7 +231,7 @@ celix_status_t endpointDiscoveryPoller_removeDiscoveryEndpoint(endpoint_discover
 static void *endpointDiscoveryPoller_poll(void *data) {
     endpoint_discovery_poller_pt poller = (endpoint_discovery_poller_pt) data;
 
-    useconds_t interval = poller->poll_interval * 1000000L;
+    useconds_t interval = (useconds_t) (poller->poll_interval * 1000000L);
 
     while (poller->running) {
     	usleep(interval);
@@ -265,7 +260,7 @@ static void *endpointDiscoveryPoller_poll(void *data) {
 			}
 
 			if (updatedEndpoints) {
-				for (int i = arrayList_size(currentEndpoints); i > 0  ; i--) {
+				for (unsigned int i = arrayList_size(currentEndpoints); i > 0  ; i--) {
 					endpoint_description_pt endpoint = arrayList_get(currentEndpoints, i-1);
 					if (!arrayList_contains(updatedEndpoints, endpoint)) {
 						status = discovery_removeDiscoveredEndpoint(poller->discovery, endpoint);
@@ -331,7 +326,7 @@ static celix_status_t endpointDiscoveryPoller_getEndpoints(endpoint_discovery_po
     celix_status_t status = CELIX_SUCCESS;
 
     CURL *curl = NULL;
-    CURLcode res = 0;
+    CURLcode res = CURLE_OK;
 
     struct MemoryStruct chunk;
     chunk.memory = malloc(1);

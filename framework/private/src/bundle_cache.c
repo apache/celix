@@ -79,7 +79,7 @@ celix_status_t bundleCache_delete(bundle_cache_pt cache) {
 }
 
 celix_status_t bundleCache_getArchives(bundle_cache_pt cache, array_list_pt *archives) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	DIR *dir;
 	dir = opendir(cache->cacheDir);

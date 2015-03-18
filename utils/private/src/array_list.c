@@ -53,7 +53,6 @@ void arrayList_destroy(array_list_pt list) {
 	free(list->elementData);
 	list->elementData = NULL;
 	free(list);
-	list = NULL;
 }
 
 static celix_status_t arrayList_elementEquals(void *a, void *b, bool *equals) {
@@ -74,11 +73,11 @@ void arrayList_trimToSize(array_list_pt list) {
 
 void arrayList_ensureCapacity(array_list_pt list, int capacity) {
 	void ** newList;
-	int oldCapacity;
+	unsigned int oldCapacity;
 	list->modCount++;
 	oldCapacity = list->capacity;
 	if (capacity > oldCapacity) {
-		int newCapacity = (oldCapacity * 3) / 2 + 1;
+		unsigned int newCapacity = (oldCapacity * 3) / 2 + 1;
 		if (newCapacity < capacity) {
 			newCapacity = capacity;
 		}
@@ -285,7 +284,6 @@ void arrayListIterator_destroy(array_list_iterator_pt iterator) {
 	iterator->expectedModificationCount = 0;
 	iterator->list = NULL;
 	free(iterator);
-	iterator = NULL;
 }
 
 bool arrayListIterator_hasNext(array_list_iterator_pt iterator) {

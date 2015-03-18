@@ -24,32 +24,18 @@
  * \copyright	Apache License, Version 2.0
  */
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include <stdbool.h>
 #include <netdb.h>
-#include <netinet/in.h>
 
-#include "constants.h"
 #include "celix_threads.h"
 #include "bundle_context.h"
-#include "array_list.h"
-#include "utils.h"
-#include "celix_errno.h"
-#include "filter.h"
-#include "service_reference.h"
-#include "service_registration.h"
-#include "remote_constants.h"
 #include "log_helper.h"
-#include "log_service.h"
 #include "discovery.h"
 #include "discovery_impl.h"
-#include "endpoint_discovery_poller.h"
-#include "endpoint_discovery_server.h"
 
 
 celix_status_t discovery_endpointAdded(void *handle, endpoint_description_pt endpoint, char *matchedFilter) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 	discovery_pt discovery = handle;
 
 	logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_INFO, "Endpoint for %s, with filter \"%s\" added...", endpoint->service, matchedFilter);
@@ -60,7 +46,7 @@ celix_status_t discovery_endpointAdded(void *handle, endpoint_description_pt end
 }
 
 celix_status_t discovery_endpointRemoved(void *handle, endpoint_description_pt endpoint, char *matchedFilter) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 	discovery_pt discovery = handle;
 
 	logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_INFO, "Endpoint for %s, with filter \"%s\" removed...", endpoint->service, matchedFilter);
@@ -126,109 +112,121 @@ celix_status_t discovery_endpointListenerAdded(void* handle, service_reference_p
 }
 
 celix_status_t discovery_endpointListenerModified(void * handle, service_reference_pt reference, void * service) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	status = discovery_endpointListenerRemoved(handle, reference, service);
-	status = discovery_endpointListenerAdded(handle, reference, service);
+	if (status == CELIX_SUCCESS) {
+        status = discovery_endpointListenerAdded(handle, reference, service);
+	}
 
 	return status;
 }
 
 celix_status_t discovery_endpointListenerRemoved(void * handle, service_reference_pt reference, void * service) {
-	celix_status_t status = CELIX_SUCCESS;
-	discovery_pt discovery = handle;
+    celix_status_t status;
+    discovery_pt discovery = handle;
 
-	status = celixThreadMutex_lock(&discovery->listenerReferencesMutex);
+    status = celixThreadMutex_lock(&discovery->listenerReferencesMutex);
 
-	if (discovery->listenerReferences != NULL) {
-		if (hashMap_remove(discovery->listenerReferences, reference)) {
-			logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_INFO, "EndpointListener Removed");
-		}
-	}
+    if (status == CELIX_SUCCESS) {
+        if (discovery->listenerReferences != NULL) {
+            if (hashMap_remove(discovery->listenerReferences, reference)) {
+                logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_INFO, "EndpointListener Removed");
+            }
+        }
 
-	status = celixThreadMutex_unlock(&discovery->listenerReferencesMutex);
+        status = celixThreadMutex_unlock(&discovery->listenerReferencesMutex);
+    }
 
 	return status;
 }
 
 celix_status_t discovery_informEndpointListeners(discovery_pt discovery, endpoint_description_pt endpoint, bool endpointAdded) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	// Inform listeners of new endpoint
 	status = celixThreadMutex_lock(&discovery->listenerReferencesMutex);
 
-	if (discovery->listenerReferences != NULL) {
-		hash_map_iterator_pt iter = hashMapIterator_create(discovery->listenerReferences);
-		while (hashMapIterator_hasNext(iter)) {
-			hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
+    if (status == CELIX_SUCCESS) {
+        if (discovery->listenerReferences != NULL) {
+            hash_map_iterator_pt iter = hashMapIterator_create(discovery->listenerReferences);
+            while (hashMapIterator_hasNext(iter)) {
+                hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
 
-			service_reference_pt reference = hashMapEntry_getKey(entry);
-			endpoint_listener_pt listener = NULL;
+                service_reference_pt reference = hashMapEntry_getKey(entry);
+                endpoint_listener_pt listener = NULL;
 
-			char *scope = NULL;
-			serviceReference_getProperty(reference, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
+                char *scope = NULL;
+                serviceReference_getProperty(reference, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
 
-			filter_pt filter = filter_create(scope);
-			bool matchResult = false;
+                filter_pt filter = filter_create(scope);
+                bool matchResult = false;
 
-			status = filter_match(filter, endpoint->properties, &matchResult);
-			if (matchResult) {
-				bundleContext_getService(discovery->context, reference, (void**) &listener);
-				if (endpointAdded) {
-					logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_INFO, "Adding service (%s)", endpoint->service);
+                status = filter_match(filter, endpoint->properties, &matchResult);
+                if (status == CELIX_SUCCESS) {
+                    if (matchResult) {
+                        bundleContext_getService(discovery->context, reference, (void **) &listener);
+                        if (endpointAdded) {
+                            logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_INFO, "Adding service (%s)", endpoint->service);
 
-					listener->endpointAdded(listener->handle, endpoint, scope);
-				} else {
-					logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_INFO, "Removing service (%s)", endpoint->service);
+                            listener->endpointAdded(listener->handle, endpoint, scope);
+                        } else {
+                            logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_INFO, "Removing service (%s)", endpoint->service);
 
-					listener->endpointRemoved(listener->handle, endpoint, scope);
-				}
-			}
+                            listener->endpointRemoved(listener->handle, endpoint, scope);
+                        }
+                    }
 
-			filter_destroy(filter);
-		}
-		hashMapIterator_destroy(iter);
-	}
+                    filter_destroy(filter);
+                }
+            }
+            hashMapIterator_destroy(iter);
+        }
 
-	status = celixThreadMutex_unlock(&discovery->listenerReferencesMutex);
+        status = celixThreadMutex_unlock(&discovery->listenerReferencesMutex);
+    }
 
 	return status;
 }
 
 celix_status_t discovery_addDiscoveredEndpoint(discovery_pt discovery, endpoint_description_pt endpoint) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	status = celixThreadMutex_lock(&discovery->discoveredServicesMutex);
 
-	char* endpointId = endpoint->id;
-	bool exists = hashMap_get(discovery->discoveredServices, endpointId) != NULL;
-	if (!exists) {
-		hashMap_put(discovery->discoveredServices, endpointId, endpoint);
-	}
+    if (status == CELIX_SUCCESS) {
+        char *endpointId = endpoint->id;
+        bool exists = hashMap_get(discovery->discoveredServices, endpointId) != NULL;
+        if (!exists) {
+            hashMap_put(discovery->discoveredServices, endpointId, endpoint);
+        }
 
-	status = celixThreadMutex_unlock(&discovery->discoveredServicesMutex);
+        status = celixThreadMutex_unlock(&discovery->discoveredServicesMutex);
 
-	if (!exists) {
-		// notify our listeners that a new endpoint is available...
-		discovery_informEndpointListeners(discovery, endpoint, true /* addingService */);
-	}
+        if (!exists) {
+            // notify our listeners that a new endpoint is available...
+            discovery_informEndpointListeners(discovery, endpoint, true /* addingService */);
+        }
+    }
 
 	return status;
 }
 
 celix_status_t discovery_removeDiscoveredEndpoint(discovery_pt discovery, endpoint_description_pt endpoint) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	status = celixThreadMutex_lock(&discovery->discoveredServicesMutex);
 
-	char* endpointId = endpoint->id;
-	void* oldValue = hashMap_remove(discovery->discoveredServices, endpointId);
+    if (status == CELIX_SUCCESS) {
+        char *endpointId = endpoint->id;
+        void *oldValue = hashMap_remove(discovery->discoveredServices, endpointId);
 
-	status = celixThreadMutex_unlock(&discovery->discoveredServicesMutex);
+        status = celixThreadMutex_unlock(&discovery->discoveredServicesMutex);
 
-	if (oldValue) {
-		status = discovery_informEndpointListeners(discovery, endpoint, false /* addingService */);
-	}
+        if (oldValue) {
+            status = discovery_informEndpointListeners(discovery, endpoint, false /* addingService */);
+        }
+    }
 
 	return status;
 }

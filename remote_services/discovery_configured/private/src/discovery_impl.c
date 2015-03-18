@@ -25,32 +25,20 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <stdbool.h>
 #include <netdb.h>
-#include <netinet/in.h>
 
-#include "constants.h"
 #include "celix_threads.h"
 #include "bundle_context.h"
-#include "array_list.h"
 #include "utils.h"
-#include "celix_errno.h"
-#include "filter.h"
-#include "service_reference.h"
-#include "service_registration.h"
-#include "remote_constants.h"
 #include "log_helper.h"
 
 #include "discovery.h"
 #include "discovery_impl.h"
-#include "endpoint_discovery_poller.h"
-#include "endpoint_discovery_server.h"
-
 
 
 celix_status_t discovery_create(bundle_context_pt context, discovery_pt *discovery) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	*discovery = malloc(sizeof(struct discovery));
 	if (!*discovery) {
@@ -74,7 +62,7 @@ celix_status_t discovery_create(bundle_context_pt context, discovery_pt *discove
 }
 
 celix_status_t discovery_start(discovery_pt discovery) {
-    celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status;
 
 	logHelper_start(discovery->loghelper);
 

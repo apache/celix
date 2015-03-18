@@ -27,8 +27,6 @@
 #include <string.h>
 
 #include "utils.h"
-#include "celix_log.h"
-#include "celix_threads.h"
 
 unsigned int utils_stringHash(void * string) {
 	char * str = (char *) string;

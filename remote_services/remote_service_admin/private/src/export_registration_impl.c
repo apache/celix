@@ -31,10 +31,6 @@
 
 #include "export_registration_impl.h"
 #include "remote_service_admin_impl.h"
-#include "service_tracker.h"
-#include "bundle_context.h"
-#include "bundle.h"
-#include "log_helper.h"
 
 celix_status_t exportRegistration_endpointAdding(void * handle, service_reference_pt reference, void **service);
 celix_status_t exportRegistration_endpointAdded(void * handle, service_reference_pt reference, void *service);
@@ -114,7 +110,7 @@ celix_status_t exportRegistration_stopTracking(export_registration_pt registrati
 }
 
 celix_status_t exportRegistration_createEndpointTracker(export_registration_pt registration, service_tracker_pt *tracker) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	service_tracker_customizer_pt customizer = NULL;
 
@@ -132,7 +128,7 @@ celix_status_t exportRegistration_createEndpointTracker(export_registration_pt r
 }
 
 celix_status_t exportRegistration_endpointAdding(void * handle, service_reference_pt reference, void **service) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 	export_registration_pt registration = handle;
 
 	status = bundleContext_getService(registration->context, reference, service);
@@ -140,11 +136,11 @@ celix_status_t exportRegistration_endpointAdding(void * handle, service_referenc
 	return status;
 }
 
-celix_status_t exportRegistration_endpointAdded(void * handle, service_reference_pt reference, void *service) {
+celix_status_t exportRegistration_endpointAdded(void * handle, service_reference_pt reference, void *endpoint_service) {
 	celix_status_t status = CELIX_SUCCESS;
 	export_registration_pt registration = handle;
 
-	remote_endpoint_service_pt endpoint = service;
+	remote_endpoint_service_pt endpoint = endpoint_service;
 	if (registration->endpoint == NULL) {
 		registration->endpoint = endpoint;
 		void *service = NULL;
@@ -178,7 +174,7 @@ celix_status_t exportRegistration_endpointRemoved(void * handle, service_referen
 }
 
 celix_status_t exportRegistration_open(export_registration_pt registration) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 	char *bundleStore = NULL;
 
 	bundleContext_getProperty(registration->context, BUNDLE_STORE_PROPERTY_NAME, &bundleStore);

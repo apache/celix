@@ -48,7 +48,7 @@ static const celix_thread_t celix_thread_default = { .threadInitialized = false 
 
 
 celix_status_t celixThread_create(celix_thread_t *new_thread, celix_thread_attr_t *attr, celix_thread_start_t func, void *data);
-celix_status_t celixThread_exit(void *exitStatus);
+void celixThread_exit(void *exitStatus);
 celix_status_t celixThread_detach(celix_thread_t thread);
 celix_status_t celixThread_join(celix_thread_t thread, void **status);
 celix_thread_t celixThread_self();

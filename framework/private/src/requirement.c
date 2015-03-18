@@ -31,7 +31,7 @@
 #include "celix_log.h"
 
 celix_status_t requirement_create(hash_map_pt directives, hash_map_pt attributes, requirement_pt *requirement) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	*requirement = (requirement_pt) malloc(sizeof(**requirement));
 	if (!*requirement) {
@@ -98,7 +98,7 @@ celix_status_t requirement_getTargetName(requirement_pt requirement, char **targ
 }
 
 celix_status_t requirement_isSatisfied(requirement_pt requirement, capability_pt capability, bool *inRange) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 	version_pt version = NULL;
 	version_range_pt range = NULL;
 

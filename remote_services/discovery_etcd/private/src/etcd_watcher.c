@@ -264,7 +264,7 @@ celix_status_t etcdWatcher_create(discovery_pt discovery, bundle_context_pt cont
 
 
 	(*watcher) = calloc(1, sizeof(struct etcd_watcher));
-	if (!watcher) {
+	if (!*watcher) {
 		return CELIX_ENOMEM;
 	}
 	else

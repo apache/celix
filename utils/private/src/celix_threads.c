@@ -40,10 +40,9 @@ celix_status_t celixThread_create(celix_thread_t *new_thread, celix_thread_attr_
 	return status;
 }
 
-celix_status_t celixThread_exit(void *exitStatus) {
-    celix_status_t status = CELIX_SUCCESS;
+// Returns void, since pthread_exit does exit the thread and never returns.
+void celixThread_exit(void *exitStatus) {
     pthread_exit(exitStatus);
-    return status;
 }
 
 celix_status_t celixThread_detach(celix_thread_t thread) {
@@ -57,7 +56,8 @@ celix_status_t celixThread_join(celix_thread_t thread, void **retVal) {
 		status = CELIX_BUNDLE_EXCEPTION;
 	}
 
-	thread.threadInitialized = false;
+    // #TODO make thread a pointer? Now this statement has no effect
+	// thread.threadInitialized = false;
 
     return status;
 }
@@ -105,7 +105,7 @@ celix_status_t celixThreadMutexAttr_destroy(celix_thread_mutexattr_t *attr) {
 }
 
 celix_status_t celixThreadMutexAttr_settype(celix_thread_mutexattr_t *attr, int type) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 	switch(type) {
 		case CELIX_THREAD_MUTEX_NORMAL :
 			status = pthread_mutexattr_settype(attr, PTHREAD_MUTEX_NORMAL);

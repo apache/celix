@@ -24,21 +24,17 @@
  * \copyright	Apache License, Version 2.0
  */
 #include <stdlib.h>
-#include <stdint.h>
 #include <arpa/inet.h>
-#include <sys/socket.h>
 #include <netdb.h>
 #include <ifaddrs.h>
 #include "civetweb.h"
 #include "celix_errno.h"
 #include "utils.h"
 #include "log_helper.h"
-#include "log_service.h"
 #include "discovery.h"
 #include "discovery_impl.h"
 
 #include "endpoint_descriptor_writer.h"
-#include "endpoint_discovery_server.h"
 
 // defines how often the webserver is restarted (with an increased port number)
 #define MAX_NUMBER_OF_RESTARTS 	5
@@ -71,7 +67,7 @@ static char* format_path(char* path);
 static celix_status_t endpointDiscoveryServer_getIpAdress(char* interface, char** ip);
 
 celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_context_pt context, endpoint_discovery_server_pt *server) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	char *port = 0;
 	char *ip = NULL;
@@ -159,14 +155,14 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 		else {
 			errno = 0;
 	        char* endptr = port;
-	        int currentPort = strtol(port, &endptr, 10);
+	        long currentPort = strtol(port, &endptr, 10);
 
 	        if (*endptr || errno != 0) {
 	            currentPort = strtol(DEFAULT_SERVER_PORT, NULL, 10);
 	        }
 
 	        port_counter++;
-			snprintf(&newPort[0], 10,  "%d", (currentPort+1));
+			snprintf(&newPort[0], 10,  "%ld", (currentPort+1));
 
 			logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_ERROR, "Error while starting discovery server on port %s - retrying on port %s...", port, newPort);
 			port = newPort;
@@ -193,7 +189,7 @@ celix_status_t endpointDiscoveryServer_getUrl(endpoint_discovery_server_pt serve
 }
 
 celix_status_t endpointDiscoveryServer_destroy(endpoint_discovery_server_pt server) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	// stop & block until the actual server is shut down...
 	if (server->ctx != NULL) {
@@ -218,7 +214,7 @@ celix_status_t endpointDiscoveryServer_destroy(endpoint_discovery_server_pt serv
 }
 
 celix_status_t endpointDiscoveryServer_addEndpoint(endpoint_discovery_server_pt server, endpoint_description_pt endpoint) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	status = celixThreadMutex_lock(&server->serverLock);
 	if (status != CELIX_SUCCESS) {
@@ -243,7 +239,7 @@ celix_status_t endpointDiscoveryServer_addEndpoint(endpoint_discovery_server_pt 
 }
 
 celix_status_t endpointDiscoveryServer_removeEndpoint(endpoint_discovery_server_pt server, endpoint_description_pt endpoint) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	status = celixThreadMutex_lock(&server->serverLock);
 	if (status != CELIX_SUCCESS) {
@@ -284,7 +280,7 @@ static char* format_path(char* path) {
 }
 
 static celix_status_t endpointDiscoveryServer_getEndpoints(endpoint_discovery_server_pt server, const char* the_endpoint_id, array_list_pt *endpoints) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	status = arrayList_create(endpoints);
 	if (status != CELIX_SUCCESS) {
@@ -318,7 +314,7 @@ static celix_status_t endpointDiscoveryServer_getEndpoints(endpoint_discovery_se
 }
 
 static int endpointDiscoveryServer_writeEndpoints(struct mg_connection* conn, array_list_pt endpoints) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
     endpoint_descriptor_writer_pt writer = NULL;
     status = endpointDescriptorWriter_create(&writer);

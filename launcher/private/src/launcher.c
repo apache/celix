@@ -26,18 +26,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <signal.h>
 #include <libgen.h>
 #include <apr_general.h>
 #include <apr_strings.h>
 #include <curl/curl.h>
 
 #include "framework.h"
-#include "properties.h"
-#include "bundle_context.h"
-#include "bundle.h"
 #include "linked_list_iterator.h"
-#include "celix_log.h"
 
 #define DEFAULT_CONFIG_FILE "config.properties"
 

@@ -1,4 +1,4 @@
-/**
+#include <sys/cdefs.h>/**
  *Licensed to the Apache Software Foundation (ASF) under one
  *or more contributor license agreements.  See the NOTICE file
  *distributed with this work for additional information
@@ -27,7 +27,6 @@
 #include <stdio.h>
 
 #include "bundle_activator.h"
-#include "bundle_context.h"
 
 #include "test.h"
 
@@ -35,10 +34,10 @@ struct userData {
 	char * word;
 };
 
-celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
+celix_status_t bundleActivator_create(bundle_context_pt __attribute__((unused)) context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
     *userData = malloc(sizeof(struct userData));
-    if (userData != NULL) {
+    if (*userData != NULL) {
 		((struct userData *)(*userData))->word = "Import";
 	} else {
 		status = CELIX_START_ERROR;
@@ -46,7 +45,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 	return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_pt __attribute__((unused)) context) {
 	struct userData * data = (struct userData *) userData;
 	printf("Hello %s\n", data->word);
 
@@ -55,13 +54,13 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt __attribute__((unused)) context) {
 	struct userData * data = (struct userData *) userData;
 	printf("Goodbye %s\n", data->word);
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt __attribute__((unused)) context) {
     free(userData);
 	return CELIX_SUCCESS;
 }

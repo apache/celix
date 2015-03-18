@@ -29,13 +29,10 @@
 
 #include "bundle_activator.h"
 #include "service_tracker.h"
-#include "service_registration.h"
 #include "constants.h"
 
 #include "log_helper.h"
-#include "log_service.h"
 #include "discovery.h"
-#include "endpoint_listener.h"
 #include "remote_constants.h"
 
 struct activator {
@@ -49,7 +46,7 @@ struct activator {
 };
 
 celix_status_t bundleActivator_createEPLTracker(struct activator *activator, service_tracker_pt *tracker) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	service_tracker_customizer_pt customizer = NULL;
 
@@ -65,7 +62,7 @@ celix_status_t bundleActivator_createEPLTracker(struct activator *activator, ser
 }
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	struct activator* activator = malloc(sizeof(struct activator));
 	if (!activator) {
@@ -92,7 +89,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 }
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 	struct activator *activator = userData;
 	char *uuid = NULL;
 
@@ -148,7 +145,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 }
 
 celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 	struct activator *activator = userData;
 
 	status = discovery_stop(activator->discovery);
@@ -164,12 +161,10 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 	struct activator *activator = userData;
 
 	status = serviceTracker_destroy(activator->endpointListenerTracker);
-
-//	status = serviceRegistration_destroy(activator->endpointListenerService);
 
 	status = discovery_destroy(activator->discovery);
 

@@ -173,7 +173,7 @@ celix_status_t shmWatcher_create(endpoint_discovery_poller_pt poller, bundle_con
     }
 
     (*watcher) = calloc(1, sizeof(struct shm_watcher));
-    if (!watcher) {
+    if (!*watcher) {
         return CELIX_ENOMEM;
     } else {
         (*watcher)->poller = poller;
