@@ -25,6 +25,7 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <constants.h>
 
 #include "service_reference.h"
 
@@ -155,6 +156,47 @@ int serviceReference_equals2(void *reference1, void *reference2) {
 	bool equal;
 	serviceReference_equals(reference1, reference2, &equal);
 	return equal;
+}
+
+celix_status_t serviceReference_compareTo(service_reference_pt reference, service_reference_pt compareTo, int *compare) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	long id, other_id;
+	char *id_str, *other_id_str;
+	serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_ID, &id_str);
+	serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_ID, &other_id_str);
+
+	id = atol(id_str);
+	other_id = atol(other_id_str);
+
+	if (id == other_id) {
+		*compare = 0;
+	} else {
+		int rank, other_rank;
+		char *rank_str, *other_rank_str;
+		serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_RANKING, &rank_str);
+		serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_RANKING, &other_rank_str);
+
+		if (rank_str == NULL) {
+			rank_str = "0";
+		}
+		if (other_rank_str == NULL) {
+			other_rank_str = "0";
+		}
+
+		rank = atoi(rank_str);
+		other_rank = atoi(other_rank_str);
+
+		if (rank < other_rank) {
+			*compare = -1;
+		} else if (rank > other_rank) {
+			*compare = 1;
+		} else {
+			*compare = id < other_id ? 1 : -1;
+		}
+	}
+
+	return status;
 }
 
 unsigned int serviceReference_hashCode(void *referenceP) {
