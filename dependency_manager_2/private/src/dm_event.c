@@ -76,5 +76,17 @@ celix_status_t event_equals(void *a, void *b, bool *equals) {
 	}
 
 	return status;
+}
 
+celix_status_t event_compareTo(dm_event_pt event, dm_event_pt compareTo, int *compare) {
+	celix_status_t status;
+
+	status = serviceReference_compareTo(event->reference, compareTo->reference, compare);
+
+	return status;
+}
+
+celix_status_t event_getService(dm_event_pt event, void **service) {
+	*service = event->service;
+	return CELIX_SUCCESS;
 }

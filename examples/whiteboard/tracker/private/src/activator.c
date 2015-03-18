@@ -31,7 +31,6 @@
 #include "bundle_activator.h"
 #include "publisher.h"
 #include "service_tracker.h"
-#include "bundle_context.h"
 
 struct data {
 	bundle_context_pt context;
@@ -84,38 +83,24 @@ celix_status_t removedServ(void * handle, service_reference_pt ref, void * servi
 }
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
-    celix_status_t status = CELIX_SUCCESS;
-    if (status == CELIX_SUCCESS) {
-        *userData = calloc(1, sizeof(struct data));
-        ((struct data *) (*userData))->publishers = NULL;
-        arrayList_create(&((struct data *) (*userData))->publishers);
-    } else {
-        status = CELIX_START_ERROR;
-    }
+    *userData = calloc(1, sizeof(struct data));
+    ((struct data *) (*userData))->publishers = NULL;
+    arrayList_create(&((struct data *) (*userData))->publishers);
     return CELIX_SUCCESS;
 }
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
     celix_status_t status = CELIX_SUCCESS;
-    if (status == CELIX_SUCCESS) {
-        struct data * data = (struct data *) userData;
-		service_tracker_customizer_pt cust = NULL;
-		service_tracker_pt tracker = NULL;
-        
-		data->context = context;
-
-        serviceTrackerCustomizer_create(data, addingServ, addedServ, modifiedServ, removedServ, &cust);
-        serviceTracker_create(context, (char *) PUBLISHER_NAME, cust, &tracker);
-
-        data->tracker = tracker;
-
-        serviceTracker_open(tracker);
-
-        data->running = true;
-        pthread_create(&data->sender, NULL, trk_send, data);
-    } else {
-        status = CELIX_START_ERROR;
-    }
+    struct data * data = (struct data *) userData;
+    service_tracker_customizer_pt cust = NULL;
+    service_tracker_pt tracker = NULL;
+    data->context = context;
+    serviceTrackerCustomizer_create(data, addingServ, addedServ, modifiedServ, removedServ, &cust);
+    serviceTracker_create(context, (char *) PUBLISHER_NAME, cust, &tracker);
+    data->tracker = tracker;
+    serviceTracker_open(tracker);
+    data->running = true;
+    pthread_create(&data->sender, NULL, trk_send, data);
     return status;
 }
 

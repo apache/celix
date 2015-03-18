@@ -28,12 +28,8 @@
 #include "celixbool.h"
 
 #include "dm_activator_base.h"
-#include "dm_service_dependency.h"
-#include "dm_component.h"
 #include "publisher.h"
 #include "tracker.h"
-#include "log_service.h"
-#include "bundle_context.h"
 
 celix_status_t dm_create(bundle_context_pt context, void **userData) {
 	printf("Create\n");
@@ -71,7 +67,8 @@ celix_status_t dm_init(void * userData, bundle_context_pt context, dm_dependency
 	serviceDependency_create(&dep2);
     serviceDependency_setRequired(dep2, false);
     serviceDependency_setService(dep2, (char *) OSGI_LOGSERVICE_NAME, NULL);
-    serviceDependency_setCallbacks(dep2, tracker_addLog, tracker_modifiedLog, tracker_removeLog, NULL);
+//    serviceDependency_setCallbacks(dep2, tracker_addLog, tracker_modifiedLog, tracker_removeLog, NULL);
+	serviceDependency_setAutoConfigure(dep2, &data->logger_lock, (void **) &data->logger);
     component_addServiceDependency(service, dep2, NULL);
 
 	data->service = service;
@@ -102,3 +99,27 @@ celix_status_t dm_destroy(void * userData, bundle_context_pt context, dm_depende
 	return CELIX_SUCCESS;
 }
 
+//int count;
+//
+//void lock(int state) {
+//	pthread_mutex_t lock;
+//	if (state == 1) {
+//		if (count > 0) {
+//			count++;
+//		} else {
+//			pthread_mutex_lock(&lock);
+//		}
+//	} else {
+//		pthread_mutex_lock(&lock);
+//	}
+//}
+//
+//void unlcok(int state) {
+//	if (state == 1) {
+//		if (count-- == 0) {
+//			pthread_mutex_unlock(&lock);
+//		}
+//	} else {
+//		pthread_mutex_unlock(&lock);
+//	}
+//}

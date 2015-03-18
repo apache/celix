@@ -1,4 +1,4 @@
-#include <sys/cdefs.h>/**
+/**
  *Licensed to the Apache Software Foundation (ASF) under one
  *or more contributor license agreements.  See the NOTICE file
  *distributed with this work for additional information
@@ -28,6 +28,7 @@
 #include <stdlib.h>
 
 #include "dm_component_impl.h"
+#include "../../../framework/private/include/framework_private.h"
 
 struct dm_executor {
     pthread_t runningThread;
@@ -67,12 +68,17 @@ static celix_status_t component_unregisterService(dm_component_pt component);
 static celix_status_t component_invokeAddOptionalDependencies(dm_component_pt component);
 static celix_status_t component_invokeAddRequiredInstanceBoundDependencies(dm_component_pt component);
 static celix_status_t component_invokeAddRequiredDependencies(dm_component_pt component);
+static celix_status_t component_invokeAutoConfigInstanceBoundDependencies(dm_component_pt component);
+static celix_status_t component_invokeAutoConfigDependencies(dm_component_pt component);
+static celix_status_t component_configureImplementation(dm_component_pt component, dm_service_dependency_pt dependency);
 static celix_status_t component_allInstanceBoundAvailable(dm_component_pt component, bool *available);
 static celix_status_t component_allRequiredAvailable(dm_component_pt component, bool *available);
 static celix_status_t component_performTransition(dm_component_pt component, dm_component_state_pt oldState, dm_component_state_pt newState, bool *transition);
 static celix_status_t component_calculateNewState(dm_component_pt component, dm_component_state_pt currentState, dm_component_state_pt *newState);
 static celix_status_t component_handleChange(dm_component_pt component);
 static celix_status_t component_startDependencies(dm_component_pt component __attribute__((unused)), array_list_pt dependencies);
+static celix_status_t component_getDependencyEvent(dm_component_pt component, dm_service_dependency_pt dependency, dm_event_pt *event_pptr);
+static celix_status_t component_updateInstance(dm_component_pt component, dm_service_dependency_pt dependency, dm_event_pt event, bool update, bool add);
 
 static celix_status_t component_addTask(dm_component_pt component, array_list_pt dependencies);
 static celix_status_t component_startTask(dm_component_pt component, void * data __attribute__((unused)));
@@ -352,7 +358,9 @@ celix_status_t component_handleAdded(dm_component_pt component, dm_service_depen
                 if (required) {
                     serviceDependency_invokeAdd(dependency, event);
                 }
-                // updateInstance
+                dm_event_pt event = NULL;
+                component_getDependencyEvent(component, dependency, &event);
+                component_updateInstance(component, dependency, event, false, true);
             } else {
                 bool required = false;
                 serviceDependency_isRequired(dependency, &required);
@@ -364,7 +372,9 @@ celix_status_t component_handleAdded(dm_component_pt component, dm_service_depen
         }
         case DM_CMP_STATE_TRACKING_OPTIONAL:
             serviceDependency_invokeAdd(dependency, event);
-            // updateInstance
+            dm_event_pt event = NULL;
+            component_getDependencyEvent(component, dependency, &event);
+            component_updateInstance(component, dependency, event, false, true);
             break;
         default:
             break;
@@ -389,14 +399,18 @@ celix_status_t component_handleChanged(dm_component_pt component, dm_service_dep
         switch (component->state) {
             case DM_CMP_STATE_TRACKING_OPTIONAL:
                 serviceDependency_invokeChange(dependency, event);
-                // updateInstance
+                dm_event_pt hevent = NULL;
+                component_getDependencyEvent(component, dependency, &hevent);
+                component_updateInstance(component, dependency, hevent, true, false);
                 break;
             case DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED: {
                 bool instanceBound = false;
                 serviceDependency_isInstanceBound(dependency, &instanceBound);
                 if (!instanceBound) {
                     serviceDependency_invokeChange(dependency, event);
-                    // updateInstance
+                    dm_event_pt hevent = NULL;
+                    component_getDependencyEvent(component, dependency, &hevent);
+                    component_updateInstance(component, dependency, hevent, true, false);
                 }
                 break;
             }
@@ -441,13 +455,17 @@ celix_status_t component_handleRemoved(dm_component_pt component, dm_service_dep
                     if (required) {
                         serviceDependency_invokeRemove(dependency, event);
                     }
-                    // updateInstance
+                    dm_event_pt hevent = NULL;
+                    component_getDependencyEvent(component, dependency, &hevent);
+                    component_updateInstance(component, dependency, hevent, false, false);
                 }
                 break;
             }
             case DM_CMP_STATE_TRACKING_OPTIONAL:
                 serviceDependency_invokeRemove(dependency, event);
-                // updateInstance
+                dm_event_pt hevent = NULL;
+                component_getDependencyEvent(component, dependency, &hevent);
+                component_updateInstance(component, dependency, hevent, false, false);
                 break;
             default:
                 break;
@@ -501,6 +519,29 @@ celix_status_t component_handleSwapped(dm_component_pt component, dm_service_dep
         if (old) {
             event_destroy(&old);
         }
+    }
+
+    return status;
+}
+
+celix_status_t component_updateInstance(dm_component_pt component, dm_service_dependency_pt dependency, dm_event_pt event, bool update, bool add) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    bool autoConfig = false;
+
+    serviceDependency_isAutoConfig(dependency, &autoConfig);
+
+    if (autoConfig) {
+        void *service = NULL;
+        void **field = NULL;
+
+        if (event != NULL) {
+            event_getService(event, &service);
+        }
+        serviceDependency_getAutoConfig(dependency, &field);
+        serviceDependency_lock(dependency);
+        *field = service;
+        serviceDependency_unlock(dependency);
     }
 
     return status;
@@ -643,7 +684,7 @@ celix_status_t component_performTransition(dm_component_pt component, dm_compone
         // #TODO Remove
 //        component_instantiateComponent(component);
         component_invokeAddRequiredDependencies(component);
-//        component_invokeAutoConfigDependencies(component);
+        component_invokeAutoConfigDependencies(component);
         dm_component_state_pt stateBeforeCallingInit = component->state;
         if (component->callbackInit) {
         	component->callbackInit(component->implementation);
@@ -658,7 +699,7 @@ celix_status_t component_performTransition(dm_component_pt component, dm_compone
 
     if (oldState == DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED && newState == DM_CMP_STATE_TRACKING_OPTIONAL) {
         component_invokeAddRequiredInstanceBoundDependencies(component);
-//        component_invokeAutoConfigInstanceBoundDependencies(component);
+        component_invokeAutoConfigInstanceBoundDependencies(component);
         if (component->callbackStart) {
         	component->callbackStart(component->implementation);
         }
@@ -786,6 +827,50 @@ celix_status_t component_invokeAddRequiredDependencies(dm_component_pt component
 					serviceDependency_invokeAdd(dependency, event);
 				}
             }
+        }
+    }
+    pthread_mutex_unlock(&component->mutex);
+
+    return status;
+}
+
+celix_status_t component_invokeAutoConfigDependencies(dm_component_pt component) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    pthread_mutex_lock(&component->mutex);
+    for (unsigned int i = 0; i < arrayList_size(component->dependencies); i++) {
+        dm_service_dependency_pt dependency = arrayList_get(component->dependencies, i);
+
+        bool autoConfig = false;
+        bool instanceBound = false;
+
+        serviceDependency_isAutoConfig(dependency, &autoConfig);
+        serviceDependency_isInstanceBound(dependency, &instanceBound);
+
+        if (autoConfig && !instanceBound) {
+            component_configureImplementation(component, dependency);
+        }
+    }
+    pthread_mutex_unlock(&component->mutex);
+
+    return status;
+}
+
+celix_status_t component_invokeAutoConfigInstanceBoundDependencies(dm_component_pt component) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    pthread_mutex_lock(&component->mutex);
+    for (unsigned int i = 0; i < arrayList_size(component->dependencies); i++) {
+        dm_service_dependency_pt dependency = arrayList_get(component->dependencies, i);
+
+        bool autoConfig = false;
+        bool instanceBound = false;
+
+        serviceDependency_isAutoConfig(dependency, &autoConfig);
+        serviceDependency_isInstanceBound(dependency, &instanceBound);
+
+        if (autoConfig && instanceBound) {
+            component_configureImplementation(component, dependency);
         }
     }
     pthread_mutex_unlock(&component->mutex);
@@ -923,6 +1008,52 @@ celix_status_t component_invokeRemoveRequiredDependencies(dm_component_pt compon
         }
     }
     pthread_mutex_unlock(&component->mutex);
+
+    return status;
+}
+
+celix_status_t component_getDependencyEvent(dm_component_pt component, dm_service_dependency_pt dependency, dm_event_pt *event_pptr) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    array_list_pt events = hashMap_get(component->dependencyEvents, dependency);
+    *event_pptr = NULL;
+
+    if (events) {
+        for (unsigned int j = 0; j < arrayList_size(events); j++) {
+            dm_event_pt event_ptr = arrayList_get(events, j);
+            if (*event_pptr != NULL) {
+                int compare = 0;
+                event_compareTo(event_ptr, *event_pptr, &compare);
+                if (compare > 0) {
+                    *event_pptr = event_ptr;
+                }
+            } else {
+                *event_pptr = event_ptr;
+            }
+        }
+    }
+
+    return status;
+}
+
+celix_status_t component_configureImplementation(dm_component_pt component, dm_service_dependency_pt dependency) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    void **field = NULL;
+
+    array_list_pt events = hashMap_get(component->dependencyEvents, dependency);
+    if (events) {
+        void *service = NULL;
+        dm_event_pt event = NULL;
+        component_getDependencyEvent(component, dependency, &event);
+        if (event != NULL) {
+            event_getService(event, &service);
+            serviceDependency_getAutoConfig(dependency, &field);
+            serviceDependency_lock(dependency);
+            *field = service;
+            serviceDependency_unlock(dependency);
+        }
+    }
 
     return status;
 }

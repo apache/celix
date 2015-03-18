@@ -56,5 +56,8 @@ celix_status_t event_destroy(dm_event_pt *event);
 
 celix_status_t event_equals(void *a, void *b, bool *equals);
 
+celix_status_t event_getService(dm_event_pt event, void **service);
+celix_status_t event_compareTo(dm_event_pt event, dm_event_pt compareTo, int *compare);
+
 
 #endif /* DM_EVENT_H_ */

@@ -39,6 +39,9 @@ struct data {
 	pthread_t sender;
 	bool running;
 	log_service_pt logger;
+
+	celix_thread_mutex_t logger_lock;
+	celix_thread_mutex_t publisher_lock;
 };
 
 celix_status_t tracker_addedServ(void * handle, service_reference_pt ref, void * service);

@@ -31,20 +31,24 @@
 
 #include "publisher.h"
 #include "tracker.h"
-#include "log_service.h"
 
 static void *dp_send(void *handle) {
 	struct data * data = (struct data *) handle;
 	while (data->running) {
 		printf("Running\n");
 		int i;
+		// lock
 		for (i = 0; i < arrayList_size(data->publishers); i++) {
 			publisher_service_pt pub = (publisher_service_pt) arrayList_get(data->publishers, i);
 			pub->invoke(pub->publisher, "Tracker message");
+			celixThreadMutex_lock(&data->logger_lock);
+			printf("%p\n", data->logger);
 			if (data->logger != NULL) {
 				data->logger->log(data->logger->logger, OSGI_LOGSERVICE_INFO, "Sending message to publisher");
 			}
+			celixThreadMutex_unlock(&data->logger_lock);
 		}
+		// lock
 		usleep(1000000);
 	}
 	pthread_exit(NULL);
@@ -82,8 +86,7 @@ celix_status_t tracker_addedServ(void * handle, service_reference_pt ref, void *
 }
 
 celix_status_t tracker_modifiedServ(void * handle, service_reference_pt ref, void * service) {
-	struct data * data = (struct data *) handle;
-	printf("Service Changed\n");
+    printf("Service Changed\n");
 	return CELIX_SUCCESS;
 }
 
@@ -94,25 +97,25 @@ celix_status_t tracker_removedServ(void * handle, service_reference_pt ref, void
 	return CELIX_SUCCESS;
 }
 
-celix_status_t tracker_addLog(void *handle, service_reference_pt ref, void *service) {
-    struct data * data = (struct data *) handle;
-    printf("Add log\n");
-    data->logger = service;
-    ((log_service_pt) service)->log(((log_service_pt) service)->logger, OSGI_LOGSERVICE_DEBUG, "test");
-    return CELIX_SUCCESS;
-}
-
-celix_status_t tracker_modifiedLog(void *handle, service_reference_pt ref, void *service) {
-    struct data * data = (struct data *) handle;
-    printf("Modify log\n");
-    data->logger = service;
-    ((log_service_pt) service)->log(((log_service_pt) service)->logger, OSGI_LOGSERVICE_DEBUG, "test");
-    return CELIX_SUCCESS;
-}
-
-celix_status_t tracker_removeLog(void *handle, service_reference_pt ref, void *service) {
-    struct data * data = (struct data *) handle;
-    data->logger = NULL;
-    printf("Remove log\n");
-    return CELIX_SUCCESS;
-}
+//celix_status_t tracker_addLog(void *handle, service_reference_pt ref, void *service) {
+//    struct data * data = (struct data *) handle;
+//    printf("Add log\n");
+//    data->logger = service;
+//    ((log_service_pt) service)->log(((log_service_pt) service)->logger, OSGI_LOGSERVICE_DEBUG, "test");
+//    return CELIX_SUCCESS;
+//}
+//
+//celix_status_t tracker_modifiedLog(void *handle, service_reference_pt ref, void *service) {
+//    struct data * data = (struct data *) handle;
+//    printf("Modify log\n");
+//    data->logger = service;
+//    ((log_service_pt) service)->log(((log_service_pt) service)->logger, OSGI_LOGSERVICE_DEBUG, "test");
+//    return CELIX_SUCCESS;
+//}
+//
+//celix_status_t tracker_removeLog(void *handle, service_reference_pt ref, void *service) {
+//    struct data * data = (struct data *) handle;
+//    data->logger = NULL;
+//    printf("Remove log\n");
+//    return CELIX_SUCCESS;
+//}

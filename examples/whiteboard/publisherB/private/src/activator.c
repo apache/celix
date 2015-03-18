@@ -26,9 +26,7 @@
 #include <stdlib.h>
 
 #include "bundle_activator.h"
-#include "bundle_context.h"
 #include "publisher_private.h"
-#include "service_registration.h"
 
 struct activatorData {
 	publisher_service_pt ps;

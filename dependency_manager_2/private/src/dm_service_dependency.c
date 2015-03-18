@@ -52,7 +52,7 @@ celix_status_t serviceDependency_create(dm_service_dependency_pt *dependency_ptr
 		(*dependency_ptr)->change = NULL;
 		(*dependency_ptr)->remove = NULL;
 
-		(*dependency_ptr)->autoConfigure = false;
+		(*dependency_ptr)->autoConfigure = NULL;
 
 		(*dependency_ptr)->isStarted = false;
 
@@ -83,6 +83,16 @@ celix_status_t serviceDependency_destroy(dm_service_dependency_pt *dependency_pt
 	}
 
 	return status;
+}
+
+celix_status_t serviceDependency_lock(dm_service_dependency_pt dependency) {
+	celixThreadMutex_lock(&dependency->lock);
+	return CELIX_SUCCESS;
+}
+
+celix_status_t serviceDependency_unlock(dm_service_dependency_pt dependency) {
+	celixThreadMutex_unlock(&dependency->lock);
+	return CELIX_SUCCESS;
 }
 
 celix_status_t serviceDependency_setRequired(dm_service_dependency_pt dependency, bool required) {
@@ -146,8 +156,10 @@ celix_status_t serviceDependency_setCallbacks(dm_service_dependency_pt dependenc
 	return status;
 }
 
-celix_status_t serviceDependency_setAutoConfigure(dm_service_dependency_pt dependency, void **field) {
+celix_status_t serviceDependency_setAutoConfigure(dm_service_dependency_pt dependency, celix_thread_mutex_t *service_lock, void **field) {
 	celix_status_t status = CELIX_SUCCESS;
+
+	celix_thread_mutex_t lock;
 
 	if (!dependency) {
 		status = CELIX_ILLEGAL_ARGUMENT;
@@ -155,6 +167,9 @@ celix_status_t serviceDependency_setAutoConfigure(dm_service_dependency_pt depen
 
 	if (status == CELIX_SUCCESS) {
 		dependency->autoConfigure = field;
+		celixThreadMutex_create(&lock, NULL);
+		*service_lock = lock;
+		dependency->lock = lock;
 	}
 
 	return status;
@@ -278,7 +293,9 @@ celix_status_t serviceDependency_invokeAdd(dm_service_dependency_pt dependency, 
 	}
 
 	if (status == CELIX_SUCCESS) {
-		dependency->add(dependency->component->implementation, event->reference, event->service);
+		if (dependency->add) {
+			dependency->add(dependency->component->implementation, event->reference, event->service);
+		}
 	}
 
 	return status;
@@ -292,7 +309,9 @@ celix_status_t serviceDependency_invokeChange(dm_service_dependency_pt dependenc
 	}
 
 	if (status == CELIX_SUCCESS) {
-		dependency->change(dependency->component->implementation, event->reference, event->service);
+		if (dependency->change) {
+			dependency->change(dependency->component->implementation, event->reference, event->service);
+		}
 	}
 
 	return status;
@@ -306,7 +325,9 @@ celix_status_t serviceDependency_invokeRemove(dm_service_dependency_pt dependenc
 	}
 
 	if (status == CELIX_SUCCESS) {
-		dependency->remove(dependency->component->implementation, event->reference, event->service);
+		if (dependency->remove) {
+			dependency->remove(dependency->component->implementation, event->reference, event->service);
+		}
 	}
 
 	return status;
@@ -320,7 +341,11 @@ celix_status_t serviceDependency_invokeSwap(dm_service_dependency_pt dependency,
 	}
 
 	if (status == CELIX_SUCCESS) {
-		dependency->swap(dependency->component->implementation, event->reference, event->service, newEvent->reference, newEvent->service);
+		if (dependency->swap) {
+			dependency
+					->swap(dependency->component->implementation, event->reference, event->service, newEvent->reference,
+							newEvent->service);
+		}
 	}
 
 	return status;
@@ -363,6 +388,34 @@ celix_status_t serviceDependency_isInstanceBound(dm_service_dependency_pt depend
 
 	if (status == CELIX_SUCCESS) {
 		*instanceBound = dependency->instanceBound;
+	}
+
+	return status;
+}
+
+celix_status_t serviceDependency_isAutoConfig(dm_service_dependency_pt dependency, bool *autoConfig) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (!dependency) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		*autoConfig = dependency->autoConfigure != NULL;
+	}
+
+	return status;
+}
+
+celix_status_t serviceDependency_getAutoConfig(dm_service_dependency_pt dependency, void ***autoConfigure) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (!dependency) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		*autoConfigure = dependency->autoConfigure;
 	}
 
 	return status;

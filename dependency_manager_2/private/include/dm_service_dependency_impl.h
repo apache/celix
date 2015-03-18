@@ -47,6 +47,7 @@ struct dm_service_dependency {
 	service_swap_fpt swap;
 
 	void **autoConfigure;
+	celix_thread_mutex_t lock;
 
 	bool isStarted;
 
@@ -61,6 +62,7 @@ struct dm_service_dependency {
 celix_status_t serviceDependency_start(dm_service_dependency_pt dependency);
 celix_status_t serviceDependency_stop(dm_service_dependency_pt dependency);
 celix_status_t serviceDependency_setInstanceBound(dm_service_dependency_pt dependency, bool instanceBound);
+celix_status_t serviceDependency_setAutoConfig(dm_service_dependency_pt dependency, void **autoConfigure);
 celix_status_t serviceDependency_setAvailable(dm_service_dependency_pt dependency, bool available);
 
 celix_status_t serviceDependency_setComponent(dm_service_dependency_pt dependency, dm_component_pt component);
@@ -73,6 +75,11 @@ celix_status_t serviceDependency_invokeSwap(dm_service_dependency_pt dependency,
 celix_status_t serviceDependency_isAvailable(dm_service_dependency_pt dependency, bool *available);
 celix_status_t serviceDependency_isRequired(dm_service_dependency_pt dependency, bool *required);
 celix_status_t serviceDependency_isInstanceBound(dm_service_dependency_pt dependency, bool *instanceBound);
+celix_status_t serviceDependency_isAutoConfig(dm_service_dependency_pt dependency, bool *autoConfig);
+
+celix_status_t serviceDependency_getAutoConfig(dm_service_dependency_pt dependency, void ***autoConfigure);
+celix_status_t serviceDependency_unlock(dm_service_dependency_pt dependency);
+celix_status_t serviceDependency_lock(dm_service_dependency_pt dependency);
 
 
 #endif /* DM_SERVICE_DEPENDENCY_IMPL_H_ */

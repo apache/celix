@@ -44,6 +44,6 @@ celix_status_t serviceDependency_destroy(dm_service_dependency_pt *dependency_pt
 celix_status_t serviceDependency_setRequired(dm_service_dependency_pt dependency, bool required);
 celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency, char *serviceName, char *filter);
 celix_status_t serviceDependency_setCallbacks(dm_service_dependency_pt dependency, service_add_fpt add, service_change_fpt change, service_remove_fpt remove, service_swap_fpt swap);
-celix_status_t serviceDependency_setAutoConfigure(dm_service_dependency_pt dependency, void **field);
+celix_status_t serviceDependency_setAutoConfigure(dm_service_dependency_pt dependency, celix_thread_mutex_t *service_lock, void **field);
 
 #endif /* DM_SERVICE_DEPENDENCY_H_ */
