@@ -102,6 +102,7 @@ celix_status_t component_create(bundle_context_pt context, dm_dependency_manager
         (*component)->manager = manager;
 
         (*component)->serviceName = NULL;
+        (*component)->service = NULL;
         (*component)->implementation = NULL;
         (*component)->properties = NULL;
         (*component)->registration = NULL;
@@ -167,8 +168,8 @@ celix_status_t component_addServiceDependency(dm_component_pt component, ...) {
 
     va_end(dependencies);
 
-//	executor_executeTask(component->executor, component, component_addTask, dependenciesList);
-    component_addTask(component, dependenciesList);
+	executor_executeTask(component->executor, component, component_addTask, dependenciesList);
+//    component_addTask(component, dependenciesList);
 
     return status;
 }
@@ -208,8 +209,8 @@ celix_status_t component_addTask(dm_component_pt component, array_list_pt depend
 celix_status_t component_removeServiceDependency(dm_component_pt component, dm_service_dependency_pt dependency) {
     celix_status_t status = CELIX_SUCCESS;
 
-//    executor_executeTask(component->executor, component, component_removeTask, dependency);
-    component_removeTask(component, dependency);
+    executor_executeTask(component->executor, component, component_removeTask, dependency);
+//    component_removeTask(component, dependency);
 
     return status;
 }
@@ -243,8 +244,8 @@ celix_status_t component_start(dm_component_pt component) {
     celix_status_t status = CELIX_SUCCESS;
 
     component->active = true;
-//    executor_executeTask(component->executor, component, component_startTask, NULL);
-    component_startTask(component, NULL);
+    executor_executeTask(component->executor, component, component_startTask, NULL);
+//    component_startTask(component, NULL);
 
     return status;
 }
@@ -262,8 +263,8 @@ celix_status_t component_stop(dm_component_pt component) {
     celix_status_t status = CELIX_SUCCESS;
 
     component->active = false;
-//    executor_executeTask(component->executor, component, component_stopTask, NULL);
-    component_stopTask(component, NULL);
+    executor_executeTask(component->executor, component, component_stopTask, NULL);
+//    component_stopTask(component, NULL);
 
     return status;
 }
@@ -278,13 +279,14 @@ celix_status_t component_stopTask(dm_component_pt component, void *data __attrib
     return status;
 }
 
-celix_status_t component_setInterface(dm_component_pt component, char *serviceName, properties_pt properties) {
+celix_status_t component_setInterface(dm_component_pt component, char *serviceName, void *service, properties_pt properties) {
     celix_status_t status = CELIX_SUCCESS;
 
     if (component->active) {
         return CELIX_ILLEGAL_STATE;
     } else {
         component->serviceName = serviceName;
+        component->service = service;
         component->properties = properties;
     }
 
@@ -299,8 +301,8 @@ celix_status_t component_handleEvent(dm_component_pt component, dm_service_depen
 	data->event = event;
 	data->newEvent = NULL;
 
-//	status = executor_executeTask(component->executor, component, component_handleEventTask, data);
-	component_handleEventTask(component, data);
+	status = executor_executeTask(component->executor, component, component_handleEventTask, data);
+//	component_handleEventTask(component, data);
 
 	return status;
 }
@@ -1070,7 +1072,7 @@ celix_status_t component_registerService(dm_component_pt component) {
     celix_status_t status = CELIX_SUCCESS;
 
     if (component->context && component->serviceName) {
-        bundleContext_registerService(component->context, component->serviceName, component->implementation, component->properties, &component->registration);
+        bundleContext_registerService(component->context, component->serviceName, component->service, component->properties, &component->registration);
     }
 
     return status;

@@ -47,6 +47,7 @@ struct dm_component {
     dm_dependency_manager_pt manager;
 
     char *serviceName;
+    void *service;
     void *implementation;
     properties_pt properties;
     service_registration_pt registration;
