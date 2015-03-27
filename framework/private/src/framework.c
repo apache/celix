@@ -184,7 +184,11 @@ framework_logger_pt logger;
     #define fw_getLastError() dlerror()
 #endif
 
+#ifdef WITH_APR
 celix_status_t framework_create(framework_pt *framework, apr_pool_t *pool, properties_pt config) {
+#else
+celix_status_t framework_create(framework_pt *framework, properties_pt config) {
+#endif
     celix_status_t status = CELIX_SUCCESS;
 
     logger = hashMap_get(config, "logger");
@@ -202,7 +206,9 @@ celix_status_t framework_create(framework_pt *framework, apr_pool_t *pool, prope
         status = CELIX_DO_IF(status, celixThreadMutex_create(&(*framework)->dispatcherLock, NULL));
         status = CELIX_DO_IF(status, celixThreadCondition_init(&(*framework)->dispatcher, NULL));
         if (status == CELIX_SUCCESS) {
+#ifdef WITH_APR
             (*framework)->pool = pool;
+#endif
             (*framework)->bundle = NULL;
             (*framework)->installedBundleMap = NULL;
             (*framework)->registry = NULL;
@@ -430,9 +436,13 @@ celix_status_t fw_init(framework_pt framework) {
     }
 
     bundle_context_pt context = NULL;
+#ifdef WITH_APR
     apr_pool_t *bundlePool = NULL;
     apr_pool_create(&bundlePool, framework->pool);
     status = CELIX_DO_IF(status, bundleContext_create(bundlePool, framework, framework->logger, framework->bundle, &context));
+#else
+    status = CELIX_DO_IF(status, bundleContext_create(framework, framework->logger, framework->bundle, &context));
+#endif
     status = CELIX_DO_IF(status, bundle_setContext(framework->bundle, context));
     if (status == CELIX_SUCCESS) {
         activator_pt activator = NULL;
@@ -683,9 +693,13 @@ celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int opti
                 name = NULL;
                 bundle_getCurrentModule(bundle, &module);
                 module_getSymbolicName(module, &name);
+#ifdef WITH_APR
                 apr_pool_t *bundlePool = NULL;
                 apr_pool_create(&bundlePool, framework->pool);
                 status = CELIX_DO_IF(status, bundleContext_create(bundlePool, framework, framework->logger, bundle, &context));
+#else
+                status = CELIX_DO_IF(status, bundleContext_create(framework, framework->logger, bundle, &context));
+#endif
                 status = CELIX_DO_IF(status, bundle_setContext(bundle, context));
 
                 if (status == CELIX_SUCCESS) {

@@ -17,7 +17,9 @@
 
 celix_subproject(SHELL_BONJOUR "Option to enable building the Bonjour Shell (shell access by chat clients)" OFF DEPS LAUNCHER shell)
 if (SHELL_BONJOUR)
-
+	if(NOT ${WITH_APR})
+		message(FATAL_ERROR "SHELL_BONJOUR requires APR, enable WITH_APR option.")
+	endif()
 	find_package(LibXml2 REQUIRED)
 	
 	#TODO create/add FindDNS_SD.cmake and use it (with required)
@@ -26,9 +28,9 @@ if (SHELL_BONJOUR)
 	set(BUNDLE_SYMBOLICNAME "bonjour_shell")
 	set(BUNDLE_VERSION "0.1.0")
 	set(BUNDLE_NAME "bonjour_shell")
-	
-    	include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-    	include_directories("${PROJECT_SOURCE_DIR}/shell/public/include")
+
+	include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+	include_directories("${PROJECT_SOURCE_DIR}/shell/public/include")
 	include_directories("${LIBXML2_INCLUDE_DIR}")
 	include_directories("private/include")
 	

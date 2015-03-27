@@ -17,6 +17,9 @@
 
 celix_subproject(EVENT_ADMIN "Option to enable building the Event Admin Service bundles" OFF DEPS LAUNCHER LOG_SERVICE SHELL shell_tui)
 if(EVENT_ADMIN)
+	if(NOT ${WITH_APR})
+		message(FATAL_ERROR "EVENT_ADMIN requires APR, enable WITH_APR option.")
+	endif()
 	#add_subdirectory(utils)
 	add_subdirectory(event_admin)
 	add_subdirectory(event_handler)

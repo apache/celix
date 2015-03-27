@@ -25,6 +25,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "command_impl.h"
 #include "log_command.h"

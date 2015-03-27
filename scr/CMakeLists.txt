@@ -15,7 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 celix_subproject(SCR "Option to build the SCR static library" OFF DEPS LAUNCHER FRAMEWORK SHELL SHELL_TUI)
-if (SCR) 
+if (SCR)
+    if(NOT ${WITH_APR})
+		message(FATAL_ERROR "SCR requires APR, enable WITH_APR option.")
+	endif()
     add_subdirectory(scr)
     add_subdirectory(test)
     

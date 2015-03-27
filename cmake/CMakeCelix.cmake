@@ -18,11 +18,8 @@
 
 set(CELIX_CMAKE_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
 
-find_package(APR REQUIRED)
-
-include_directories(${APR_INCLUDE_DIR})
-include_directories(${APRUTIL_INCLUDE_DIR})
 include_directories("framework/public/include")
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 include(cmake_celix/Dependencies)
 include(cmake_celix/Packaging)

@@ -50,6 +50,16 @@ include(UseDoxygen)
 # Default bundle version
 set(DEFAULT_VERSION 1.0.0)
 
+option("WITH_APR" "Build Celix with APR support" "OFF")
+if(${WITH_APR})
+	find_package(APR REQUIRED)
+
+	include_directories(${APR_INCLUDE_DIR})
+	include_directories(${APRUTIL_INCLUDE_DIR})
+endif()
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
+               ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+
 ## New sub project must use a buildoption to be able to enable/disable the project using the CMake Editor
 ## Sub projects depending on another sub project automatically enable these dependencies
 ## For this to work, the order off "add_subdirectory" has to be correct (ie backwards)
