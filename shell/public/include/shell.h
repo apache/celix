@@ -39,7 +39,6 @@ struct shellService {
 	array_list_pt (*getCommands)(shell_pt shell);
 	char * (*getCommandUsage)(shell_pt shell, char * commandName);
 	char * (*getCommandDescription)(shell_pt shell, char * commandName);
-	service_reference_pt (*getCommandReference)(shell_pt shell, char * command);
 	void (*executeCommand)(shell_pt shell, char * commandLine, void (*out)(char *), void (*error)(char *));
 };
 

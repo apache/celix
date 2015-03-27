@@ -30,20 +30,9 @@
 
 #include "shell_private.h"
 #include "bundle_activator.h"
-#include "command_impl.h"
 #include "bundle_context.h"
 #include "service_registration.h"
 #include "service_listener.h"
-
-#include "ps_command.h"
-#include "start_command.h"
-#include "stop_command.h"
-#include "install_command.h"
-#include "uninstall_command.h"
-#include "update_command.h"
-#include "log_command.h"
-#include "inspect_command.h"
-#include "help_command.h"
 
 #include "utils.h"
 
@@ -65,7 +54,6 @@ celix_status_t shell_create(bundle_context_pt context, shell_service_pt* shellSe
 		lclService->getCommands = shell_getCommands;
 		lclService->getCommandDescription = shell_getCommandDescription;
 		lclService->getCommandUsage = shell_getCommandUsage;
-		lclService->getCommandReference = shell_getCommandReference;
 		lclService->executeCommand = shell_executeCommand;
 
 		*shellService = lclService;
@@ -92,10 +80,18 @@ celix_status_t shell_addCommand(shell_pt shell, service_reference_pt reference) 
 
 	command_service_pt command = NULL;
 	void *cmd = NULL;
+    char *name = NULL;
 	bundleContext_getService(shell->bundleContext, reference, &cmd);
+  serviceReference_getProperty(reference, "command.name", &name);
 	command = (command_service_pt) cmd;
-	hashMap_put(shell->commandNameMap, command->getName(command->command), command);
-	hashMap_put(shell->commandReferenceMap, reference, command);
+    if (name != NULL) {
+	    hashMap_put(shell->commandNameMap, name, command);
+	    hashMap_put(shell->commandReferenceMap, reference, command);
+    } else {
+            status = CELIX_ILLEGAL_ARGUMENT;
+            fprintf(stderr, "TODO\n");
+            //TODO log to log service
+    }
 
 	return status;
 }
@@ -104,11 +100,13 @@ celix_status_t shell_removeCommand(shell_pt shell, service_reference_pt referenc
 	celix_status_t status = CELIX_SUCCESS;
 
 	command_service_pt command = (command_service_pt) hashMap_remove(shell->commandReferenceMap, reference);
-	if (command != NULL) {
+    char *name = NULL;
+    serviceReference_getProperty(reference, "command.name", &name);
+	if (command != NULL && name != NULL) {
 		bool result = false;
-		hashMap_remove(shell->commandNameMap, command->getName(command->command));
+		hashMap_remove(shell->commandNameMap, name);
 		bundleContext_ungetService(shell->bundleContext, reference, &result);
-	}
+	} 
 
 	return status;
 }
@@ -127,26 +125,21 @@ array_list_pt shell_getCommands(shell_pt shell) {
 }
 
 char * shell_getCommandUsage(shell_pt shell, char * commandName) {
-	command_service_pt command = hashMap_get(shell->commandNameMap, commandName);
-	return (command == NULL) ? NULL : command->getUsage(command->command);
+	//command_service_pt command = hashMap_get(shell->commandNameMap, commandName);
+  //  char *usage = NULL;
+  //  bundleContext_getProperty(shell->bundleContext, "command.usage", &usage);
+	//return (command == NULL || usage == NULL) ? NULL : usage;
+  return "TODO";
 }
 
 char * shell_getCommandDescription(shell_pt shell, char * commandName) {
+        /*
 	command_service_pt command = hashMap_get(shell->commandNameMap, commandName);
-	return (command == NULL) ? NULL : command->getShortDescription(command->command);
-}
-
-service_reference_pt shell_getCommandReference(shell_pt shell, char * command) {
-	hash_map_iterator_pt iter = hashMapIterator_create(shell->commandReferenceMap);
-	while (hashMapIterator_hasNext(iter)) {
-		hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-		command_service_pt cmd = (command_service_pt) hashMapEntry_getValue(entry);
-		if (strcmp(cmd->getName(cmd->command), command) == 0) {
-			return (service_reference_pt) hashMapEntry_getValue(entry);
-		}
-	}
-	hashMapIterator_destroy(iter);
-	return NULL;
+    char *desc = NULL;
+    bundleContext_getProperty(shell->bundleContext, "command.description", &desc);
+	return (command == NULL || desc == NULL) ? NULL : desc;
+  */
+  return "TODO";
 }
 
 void shell_executeCommand(shell_pt shell, char * commandLine, void (*out)(char *), void (*error)(char *)) {
@@ -154,7 +147,10 @@ void shell_executeCommand(shell_pt shell, char * commandLine, void (*out)(char *
 	char * commandName = (pos != strlen(commandLine)) ? string_ndup((char *) commandLine, pos) : strdup(commandLine);
 	command_service_pt command = shell_getCommand(shell, commandName);
 	if (command != NULL) {
-		command->executeCommand(command->command, commandLine, out, error);
+            printf("TODO\n");
+            //FIXME udpate shell_executeCommand with FILE
+		    //command->executeCommand(command->command, commandLine, out, error);
+            command->executeCommand(command->handle, commandLine, stdout, stderr);
 	} else {
 		error("No such command\n");
 	}

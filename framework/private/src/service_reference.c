@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <constants.h>
+#include <stdint.h>
 
 #include "service_reference.h"
 
@@ -36,7 +37,6 @@
 #include "wire.h"
 #include "bundle.h"
 #include "celix_log.h"
-
 
 celix_status_t serviceReference_create(bundle_pt bundle, service_registration_pt registration, service_reference_pt *reference) {
 	celix_status_t status = CELIX_SUCCESS;

@@ -27,18 +27,15 @@
 #ifndef COMMAND_H_
 #define COMMAND_H_
 
-static const char * const OSGI_SHELL_COMMAND_SERVICE_NAME = "commandService";
+#include "celix_errno.h"
 
-typedef struct command * command_pt;
+static const char * const OSGI_SHELL_COMMAND_SERVICE_NAME = "commandService";
 
 typedef struct commandService * command_service_pt;
 
 struct commandService {
-	command_pt command;
-	char * (*getName)(command_pt command);
-	char * (*getUsage)(command_pt command);
-	char * (*getShortDescription)(command_pt command);
-	void (*executeCommand)(command_pt command, char * commandLine, void (*out)(char *), void (*error)(char *));
+	void *handle;
+	celix_status_t (*executeCommand)(void *handle, char * commandLine, FILE *outStream, FILE *errorStream);
 };
 
 

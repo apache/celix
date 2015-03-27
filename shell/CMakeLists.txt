@@ -23,30 +23,18 @@ if (SHELL)
 	SET_HEADERS("Bundle-Name: Apache Celix Shell") 
 
     bundle(shell SOURCES
-    	public/src/command
     	
      	private/src/activator
     	private/src/shell 
     	private/src/ps_command 
-    	private/src/start_command 
-    	private/src/stop_command
-    	private/src/install_command 
-    	private/src/update_command
-    	private/src/uninstall_command 
-    	private/src/log_command
-    	private/src/inspect_command
-    	private/src/help_command
-        
-        private/include/inspect_command.h
-        private/include/install_command.h
-        private/include/log_command.h
-        private/include/ps_command.h
-        private/include/shell_private.h
-        private/include/start_command.h
-        private/include/stop_command.h
-        private/include/uninstall_command.h
-        private/include/update_command.h
-        private/include/help_command.h
+      #	private/src/start_command 
+      #private/src/stop_command
+      #private/src/install_command 
+      #private/src/update_command
+      #private/src/uninstall_command 
+      #private/src/log_command
+      #private/src/inspect_command
+      #private/src/help_command
     )
     
     install_bundle(shell
