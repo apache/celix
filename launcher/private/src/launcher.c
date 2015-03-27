@@ -27,6 +27,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <libgen.h>
+#include <signal.h>
 
 #include <curl/curl.h>
 

@@ -46,7 +46,6 @@ if (UTILS)
     IF(UNIX)
     	target_link_libraries(celix_utils m)
     ENDIF(UNIX)
-    target_link_libraries(celix_utils ${APR_LIBRARY})
     
     install(TARGETS celix_utils DESTINATION lib COMPONENT framework)
     FILE(GLOB files "public/include/*.h")

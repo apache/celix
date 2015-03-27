@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <constants.h>
+#include <stdint.h>
 
 #include "service_reference.h"
 

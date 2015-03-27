@@ -52,4 +52,4 @@ include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 include_directories("public/include")
 include_directories("private/include")
 
-target_link_libraries(device_manager celix_framework celix_utils ${APR_LIBRARY})
+target_link_libraries(device_manager celix_framework celix_utils)

@@ -33,4 +33,4 @@ include_directories(public/include)
 include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 
-target_link_libraries(char_refiningdriver celix_utils celix_framework ${APR_LIBRARY})
+target_link_libraries(char_refiningdriver celix_utils celix_framework)
