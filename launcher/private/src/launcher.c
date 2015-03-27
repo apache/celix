@@ -27,8 +27,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <libgen.h>
-#include <apr_general.h>
-#include <apr_strings.h>
+
 #include <curl/curl.h>
 
 #include "framework.h"
@@ -41,17 +40,20 @@ void launcher_shutdown(int signal);
 int running = 0;
 
 struct framework * framework;
+#ifdef WITH_APR
 apr_pool_t *memoryPool;
+#endif
 
 void show_usage(char* prog_name);
 
 int main(int argc, char *argv[]) {
 	// Set signal handler
-	apr_status_t rv = APR_SUCCESS;
-	apr_status_t s = APR_SUCCESS;
-	properties_pt config = NULL;
-	char *autoStart = NULL;
-    apr_pool_t *pool = NULL;
+#ifdef WITH_APR
+    apr_status_t rv;
+    apr_status_t s;
+#endif
+    properties_pt config = NULL;
+    char *autoStart = NULL;
     bundle_pt fwBundle = NULL;
 
 	(void) signal(SIGINT, launcher_shutdown);
@@ -59,6 +61,7 @@ int main(int argc, char *argv[]) {
 	// Before doing anything else, let's setup Curl
 	curl_global_init(CURL_GLOBAL_NOTHING);
 
+#ifdef WITH_APR
 	rv = apr_initialize();
     if (rv != APR_SUCCESS) {
         return CELIX_START_ERROR;
@@ -68,6 +71,7 @@ int main(int argc, char *argv[]) {
     if (s != APR_SUCCESS) {
         return CELIX_START_ERROR;
     }
+#endif
 
 	// Perform some minimal command-line option parsing...
 	char* opt = NULL;
@@ -100,8 +104,12 @@ int main(int argc, char *argv[]) {
 
     autoStart = properties_get(config, "cosgi.auto.start.1");
     framework = NULL;
-    celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status;
+#ifdef WITH_APR
     status = framework_create(&framework, memoryPool, config);
+#else
+    status = framework_create(&framework, config);
+#endif
     if (status == CELIX_SUCCESS) {
 		status = fw_init(framework);
 		if (status == CELIX_SUCCESS) {
@@ -109,52 +117,50 @@ int main(int argc, char *argv[]) {
             framework_getFrameworkBundle(framework, &fwBundle);
             bundle_start(fwBundle);
 
-            if (apr_pool_create(&pool, memoryPool) == APR_SUCCESS) {
-                char delims[] = " ";
-                char *result = NULL;
-                char *save_ptr = NULL;
-                linked_list_pt bundles;
-                array_list_pt installed = NULL;
-                bundle_pt bundle = NULL;
-                bundle_context_pt context = NULL;
-                linked_list_iterator_pt iter = NULL;
-                unsigned int i;
+            char delims[] = " ";
+            char *result = NULL;
+            char *save_ptr = NULL;
+            linked_list_pt bundles;
+            array_list_pt installed = NULL;
+            bundle_pt bundle = NULL;
+            bundle_context_pt context = NULL;
+            linked_list_iterator_pt iter = NULL;
+            unsigned int i;
 
-                linkedList_create(&bundles);
-                result = strtok_r(autoStart, delims, &save_ptr);
-                while (result != NULL) {
-                    char * location = apr_pstrdup(memoryPool, result);
-                    linkedList_addElement(bundles, location);
-                    result = strtok_r(NULL, delims, &save_ptr);
-                }
-                // First install all bundles
-                // Afterwards start them
-                arrayList_create(&installed);
-                framework_getFrameworkBundle(framework, &bundle);
-                bundle_getContext(bundle, &context);
-                iter = linkedListIterator_create(bundles, 0);
-                while (linkedListIterator_hasNext(iter)) {
-                    bundle_pt current = NULL;
-                    char * location = (char *) linkedListIterator_next(iter);
-                    if (bundleContext_installBundle(context, location, &current) == CELIX_SUCCESS) {
-                        // Only add bundle if it is installed correctly
-                        arrayList_add(installed, current);
-                    } else {
-                        printf("Could not install bundle from %s\n", location);
-                    }
-                    linkedListIterator_remove(iter);
-                }
-                linkedListIterator_destroy(iter);
-                linkedList_destroy(bundles);
-
-                for (i = 0; i < arrayList_size(installed); i++) {
-                    bundle_pt bundle = (bundle_pt) arrayList_get(installed, i);
-                    bundle_startWithOptions(bundle, 0);
-                }
-
-                arrayList_destroy(installed);
-                apr_pool_destroy(pool);
+            linkedList_create(&bundles);
+            result = strtok_r(autoStart, delims, &save_ptr);
+            while (result != NULL) {
+                char * location = strdup(result);
+                linkedList_addElement(bundles, location);
+                result = strtok_r(NULL, delims, &save_ptr);
             }
+            // First install all bundles
+            // Afterwards start them
+            arrayList_create(&installed);
+            framework_getFrameworkBundle(framework, &bundle);
+            bundle_getContext(bundle, &context);
+            iter = linkedListIterator_create(bundles, 0);
+            while (linkedListIterator_hasNext(iter)) {
+                bundle_pt current = NULL;
+                char * location = (char *) linkedListIterator_next(iter);
+                if (bundleContext_installBundle(context, location, &current) == CELIX_SUCCESS) {
+                    // Only add bundle if it is installed correctly
+                    arrayList_add(installed, current);
+                } else {
+                    printf("Could not install bundle from %s\n", location);
+                }
+                linkedListIterator_remove(iter);
+                free(location);
+            }
+            linkedListIterator_destroy(iter);
+            linkedList_destroy(bundles);
+
+            for (i = 0; i < arrayList_size(installed); i++) {
+                bundle_pt installedBundle = (bundle_pt) arrayList_get(installed, i);
+                bundle_startWithOptions(installedBundle, 0);
+            }
+
+            arrayList_destroy(installed);
 
             framework_waitForStop(framework);
             framework_destroy(framework);
@@ -166,8 +172,10 @@ int main(int argc, char *argv[]) {
         printf("Problem creating framework\n");
     }
 
+#ifdef WITH_APR
 	apr_pool_destroy(memoryPool);
 	apr_terminate();
+#endif
 
 	// Cleanup Curl
 	curl_global_cleanup();

@@ -41,12 +41,18 @@ typedef struct bundleContext *bundle_context_pt;
 #include "properties.h"
 #include "array_list.h"
 
+#ifdef WITH_APR
 celix_status_t bundleContext_create(apr_pool_t *pool, framework_pt framework, framework_logger_pt, bundle_pt bundle, bundle_context_pt *bundle_context);
+#else
+celix_status_t bundleContext_create(framework_pt framework, framework_logger_pt, bundle_pt bundle, bundle_context_pt *bundle_context);
+#endif
 celix_status_t bundleContext_destroy(bundle_context_pt context);
 
 FRAMEWORK_EXPORT celix_status_t bundleContext_getBundle(bundle_context_pt context, bundle_pt *bundle);
 FRAMEWORK_EXPORT celix_status_t bundleContext_getFramework(bundle_context_pt context, framework_pt *framework);
+#ifdef WITH_APR
 FRAMEWORK_EXPORT celix_status_t bundleContext_getMemoryPool(bundle_context_pt context, apr_pool_t **memory_pool);
+#endif
 
 FRAMEWORK_EXPORT celix_status_t bundleContext_installBundle(bundle_context_pt context, char * location, bundle_pt *bundle);
 FRAMEWORK_EXPORT celix_status_t bundleContext_installBundle2(bundle_context_pt context, char * location, char *inputFile, bundle_pt *bundle);

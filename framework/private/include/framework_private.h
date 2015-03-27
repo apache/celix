@@ -48,7 +48,9 @@
 #include "celix_threads.h"
 
 struct framework {
+#ifdef WITH_APR
     apr_pool_t *pool;
+#endif
     struct bundle * bundle;
     hash_map_pt installedBundleMap;
     hash_map_pt installRequestMap;

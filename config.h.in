@@ -17,28 +17,15 @@
  *under the License.
  */
 /*
- * bundle_context_private.h
+ * framework.h
  *
- *  \date       Feb 12, 2013
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
+ *  \date       Mar 27, 2015
+ *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
+ *  \copyright	Apache License, Version 2.0
  */
+#ifndef CELIX_CONFIG_H
+#define CELIX_CONFIG_H
 
+#cmakedefine WITH_APR
 
-#ifndef BUNDLE_CONTEXT_PRIVATE_H_
-#define BUNDLE_CONTEXT_PRIVATE_H_
-
-#include "bundle_context.h"
-#include "celix_log.h"
-
-struct bundleContext {
-#ifdef WITH_APR
-    apr_pool_t *pool;
-#endif
-	struct framework * framework;
-	struct bundle * bundle;
-	framework_logger_pt logger;
-};
-
-
-#endif /* BUNDLE_CONTEXT_PRIVATE_H_ */
+#endif //CELIX_CONFIG_H

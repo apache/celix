@@ -32,7 +32,11 @@
 #include "bundle.h"
 #include "celix_log.h"
 
+#ifdef WITH_APR
 celix_status_t bundleContext_create(apr_pool_t *pool, framework_pt framework, framework_logger_pt logger, bundle_pt bundle, bundle_context_pt *bundle_context) {
+#else
+celix_status_t bundleContext_create(framework_pt framework, framework_logger_pt logger, bundle_pt bundle, bundle_context_pt *bundle_context) {
+#endif
 	celix_status_t status = CELIX_SUCCESS;
 	bundle_context_pt context = NULL;
 
@@ -43,7 +47,9 @@ celix_status_t bundleContext_create(apr_pool_t *pool, framework_pt framework, fr
         if (!context) {
             status = CELIX_ENOMEM;
         } else {
+#ifdef WITH_APR
             context->pool = pool;
+#endif
             context->framework = framework;
             context->bundle = bundle;
             context->logger = logger;
@@ -100,6 +106,7 @@ celix_status_t bundleContext_getFramework(bundle_context_pt context, framework_p
 	return status;
 }
 
+#ifdef WITH_APR
 celix_status_t bundleContext_getMemoryPool(bundle_context_pt context, apr_pool_t **memory_pool) {
 	celix_status_t status = CELIX_SUCCESS;
 
@@ -113,6 +120,7 @@ celix_status_t bundleContext_getMemoryPool(bundle_context_pt context, apr_pool_t
 
 	return status;
 }
+#endif
 
 celix_status_t bundleContext_installBundle(bundle_context_pt context, char * location, bundle_pt *bundle) {
 	return bundleContext_installBundle2(context, location, NULL, bundle);

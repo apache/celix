@@ -15,6 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
+if(NOT ${WITH_APR})
+	message(FATAL_ERROR "Paint example requires APR, enable WITH_APR option.")
+endif()
 find_package(PkgConfig)
 if(PKG_CONFIG_EXECUTABLE)
 	add_subdirectory(circle)
