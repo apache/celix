@@ -47,6 +47,7 @@ struct command {
 
 static struct command std_commands[] = {
         {psCommand_execute, "ps", "list installed bundles.", "ps [-l | -s | -u]", NULL, NULL, NULL},
+        {startCommand_execute, "start", "start bundle(s).", "start <id> [<id> ...]", NULL, NULL, NULL},
         {NULL, NULL, NULL, NULL, NULL, NULL, NULL} /*marker for last element*/ 
 };
 
@@ -56,15 +57,8 @@ struct bundle_instance {
 	service_registration_pt registration;
 	service_listener_pt listener;
 
-  service_registration_pt commandRegistrations;
-  command_service_pt commandServices;
-  properties_pt commandProperties;
-
     /*
     ps
-	service_registration_pt startCommand;
-	command_pt startCmd;
-	command_service_pt startCmdSrv;
 
 	service_registration_pt stopCommand;
 	command_pt stopCmd;
@@ -180,6 +174,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
                     if (status != CELIX_SUCCESS) {
                             break;
                     }
+                    i += 1;
             }
 
 		}
@@ -198,7 +193,9 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
             while (std_commands[i].exec != NULL) {
                     if (std_commands[i].reg!= NULL) {
                             serviceRegistration_unregister(std_commands[i].reg);
+                            std_commands[i].reg = NULL;
                     }
+                    i += 1;
             }
 
 	status = bundleContext_removeServiceListener(context, bi->listener);
@@ -218,6 +215,10 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt contex
                   free(std_commands[i].service);
           }
           i += 1;
+  }
+
+  if (bi != NULL) {
+    free(bi);
   }
 
 	return CELIX_SUCCESS;

@@ -25,51 +25,40 @@
  */
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
-#include "command_impl.h"
+#include "celix_errno.h"
+#include "std_commands.h"
 #include "array_list.h"
 #include "bundle_context.h"
 #include "bundle.h"
 
-void startCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *));
+celix_status_t startCommand_execute(void *handle, char * line, FILE *outStream, FILE *errStream) {
+  celix_status_t status = CELIX_SUCCESS;
+  bundle_context_pt context = handle;
 
-command_pt startCommand_create(bundle_context_pt context) {
-	command_pt command = (command_pt) malloc(sizeof(*command));
-	command->bundleContext = context;
-	command->name = "start";
-	command->shortDescription = "start bundle(s).";
-	command->usage = "start <id> [<id> ...]";
-	command->executeCommand = startCommand_execute;
-	return command;
-}
-
-void startCommand_destroy(command_pt command) {
-	free(command);
-}
-
-
-void startCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *)) {
 	char delims[] = " ";
 	char * sub = NULL;
 	char *save_ptr = NULL;
-	char outString[256];
 	sub = strtok_r(line, delims, &save_ptr);
 	sub = strtok_r(NULL, delims, &save_ptr);
 	if (sub == NULL) {
-		err("Incorrect number of arguments.\n");
-		sprintf(outString, "%s\n", command->usage);
-		out(outString);
+		fprintf(outStream, "Incorrect number of arguments.\n");
 	} else {
 		while (sub != NULL) {
 			long id = atol(sub);
 			bundle_pt bundle = NULL;
-			bundleContext_getBundleById(command->bundleContext, id, &bundle);
+			bundleContext_getBundleById(context, id, &bundle);
 			if (bundle != NULL) {
 				bundle_startWithOptions(bundle, 0);
 			} else {
-				err("Bundle id is invalid.\n");
+        fprintf(errStream, "Bundle id '%li' is invalid\n", id);
+        status = CELIX_ILLEGAL_ARGUMENT;
+        break;
 			}
 			sub = strtok_r(NULL, delims, &save_ptr);
 		}
 	}
+
+  return status;
 }

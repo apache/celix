@@ -27,7 +27,7 @@ if (SHELL)
      	private/src/activator
     	private/src/shell 
     	private/src/ps_command 
-      #	private/src/start_command 
+      private/src/start_command 
       #private/src/stop_command
       #private/src/install_command 
       #private/src/update_command
