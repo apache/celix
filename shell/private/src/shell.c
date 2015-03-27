@@ -54,6 +54,7 @@ celix_status_t shell_create(bundle_context_pt context, shell_service_pt* shellSe
 		lclService->getCommands = shell_getCommands;
 		lclService->getCommandDescription = shell_getCommandDescription;
 		lclService->getCommandUsage = shell_getCommandUsage;
+		lclService->getCommandReference = shell_getCommandReference;
 		lclService->executeCommand = shell_executeCommand;
 
 		*shellService = lclService;
@@ -125,21 +126,51 @@ array_list_pt shell_getCommands(shell_pt shell) {
 }
 
 char * shell_getCommandUsage(shell_pt shell, char * commandName) {
-	//command_service_pt command = hashMap_get(shell->commandNameMap, commandName);
-  //  char *usage = NULL;
-  //  bundleContext_getProperty(shell->bundleContext, "command.usage", &usage);
-	//return (command == NULL || usage == NULL) ? NULL : usage;
-  return "TODO";
+	char *usage = NULL;
+	service_reference_pt reference = NULL;
+	shell_getCommandReference(shell, commandName, &reference);
+	if (reference) {
+		serviceReference_getProperty(reference, "command.usage", &usage);
+	}
+
+	return usage;
 }
 
 char * shell_getCommandDescription(shell_pt shell, char * commandName) {
-        /*
-	command_service_pt command = hashMap_get(shell->commandNameMap, commandName);
-    char *desc = NULL;
-    bundleContext_getProperty(shell->bundleContext, "command.description", &desc);
-	return (command == NULL || desc == NULL) ? NULL : desc;
-  */
-  return "TODO";
+	char *description = NULL;
+	service_reference_pt reference = NULL;
+	shell_getCommandReference(shell, commandName, &reference);
+	if (reference) {
+		serviceReference_getProperty(reference, "command.description", &description);
+	}
+
+	return description;
+}
+
+celix_status_t shell_getCommandReference(shell_pt shell_ptr, char *command_name_str, service_reference_pt *command_reference_ptr) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (!shell_ptr || !command_name_str || !command_reference_ptr) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		*command_reference_ptr = NULL;
+		hash_map_iterator_pt iter = hashMapIterator_create(shell_ptr->commandReferenceMap);
+		while (hashMapIterator_hasNext(iter)) {
+			hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
+			service_reference_pt reference = hashMapEntry_getKey(entry);
+			char *name_str = NULL;
+			serviceReference_getProperty(reference, "command.name", &name_str);
+			if (strcmp(name_str, command_name_str) == 0) {
+				*command_reference_ptr = (service_reference_pt) hashMapEntry_getKey(entry);
+				break;
+			}
+		}
+		hashMapIterator_destroy(iter);
+	}
+
+	return status;
 }
 
 void shell_executeCommand(shell_pt shell, char * commandLine, void (*out)(char *), void (*error)(char *)) {

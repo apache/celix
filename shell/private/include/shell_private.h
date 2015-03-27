@@ -45,7 +45,7 @@ celix_status_t shell_addCommand(shell_pt shell, service_reference_pt reference);
 
 char * shell_getCommandUsage(shell_pt shell, char * commandName);
 char * shell_getCommandDescription(shell_pt shell, char * commandName);
-service_reference_pt shell_getCommandReference(shell_pt shell, char * command);
+celix_status_t shell_getCommandReference(shell_pt shell_ptr, char *command_name_str, service_reference_pt *command_reference_ptr);
 void shell_executeCommand(shell_pt shell, char * commandLine, void (*out)(char *), void (*error)(char *));
 void shell_serviceChanged(service_listener_pt listener, service_event_pt event);
 

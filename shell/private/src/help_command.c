@@ -26,42 +26,23 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "command_impl.h"
 #include "array_list.h"
 #include "bundle_context.h"
-#include "bundle.h"
 #include "shell.h"
 
-void helpCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *));
-
-command_pt helpCommand_create(bundle_context_pt context) {
-	command_pt command = (command_pt) malloc(sizeof(*command));
-	command->bundleContext = context;
-	command->name = "help";
-	command->shortDescription = "display available command usage and description.";
-	command->usage = "start [<command> ...]";
-	command->executeCommand = helpCommand_execute;
-	return command;
-}
-
-void helpCommand_destroy(command_pt command) {
-	free(command);
-}
-
-
-void helpCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *)) {
+celix_status_t helpCommand_execute(void *handle, char * line, FILE *outStream, FILE *errStream) {
+	bundle_context_pt context = handle;
 	service_reference_pt shellService = NULL;
-	bundleContext_getServiceReference(command->bundleContext, (char *) OSGI_SHELL_SERVICE_NAME, &shellService);
+	bundleContext_getServiceReference(context, (char *) OSGI_SHELL_SERVICE_NAME, &shellService);
 
 	if (shellService != NULL) {
 		shell_service_pt shell = NULL;
-		bundleContext_getService(command->bundleContext, shellService, (void **) &shell);
+		bundleContext_getService(context, shellService, (void **) &shell);
 
 		if (shell != NULL) {
 			char delims[] = " ";
 			char * sub = NULL;
 			char *save_ptr = NULL;
-			char outString[256];
 
 			sub = strtok_r(line, delims, &save_ptr);
 			sub = strtok_r(NULL, delims, &save_ptr);
@@ -71,10 +52,9 @@ void helpCommand_execute(command_pt command, char * line, void (*out)(char *), v
 				array_list_pt commands = shell->getCommands(shell->shell);
 				for (i = 0; i < arrayList_size(commands); i++) {
 					char *name = arrayList_get(commands, i);
-					sprintf(outString, "%s\n", name);
-					out(outString);
+					fprintf(outStream, "%s\n", name);
 				}
-				out("\nUse 'help <command-name>' for more information.\n");
+				fprintf(outStream, "\nUse 'help <command-name>' for more information.\n");
 			} else {
 				bool found = false;
 				while (sub != NULL) {
@@ -87,15 +67,12 @@ void helpCommand_execute(command_pt command, char * line, void (*out)(char *), v
 							char *usage = shell->getCommandUsage(shell->shell, name);
 
 							if (found) {
-								out("---\n");
+								fprintf(outStream, "---\n");
 							}
 							found = true;
-							sprintf(outString, "Command     : %s\n", name);
-							out(outString);
-							sprintf(outString, "Usage       : %s\n", usage);
-							out(outString);
-							sprintf(outString, "Description : %s\n", desc);
-							out(outString);
+							fprintf(outStream, "Command     : %s\n", name);
+							fprintf(outStream, "Usage       : %s\n", usage);
+							fprintf(outStream, "Description : %s\n", desc);
 						}
 					}
 					sub = strtok_r(NULL, delims, &save_ptr);
@@ -103,4 +80,5 @@ void helpCommand_execute(command_pt command, char * line, void (*out)(char *), v
 			}
 		}
 	}
+	return CELIX_SUCCESS;
 }

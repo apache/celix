@@ -39,6 +39,7 @@ struct shellService {
 	array_list_pt (*getCommands)(shell_pt shell);
 	char * (*getCommandUsage)(shell_pt shell, char * commandName);
 	char * (*getCommandDescription)(shell_pt shell, char * commandName);
+	celix_status_t (*getCommandReference)(shell_pt shell_ptr, char *command_name_str, service_reference_pt *command_reference_ptr);
 	void (*executeCommand)(shell_pt shell, char * commandLine, void (*out)(char *), void (*error)(char *));
 };
 

@@ -26,41 +26,23 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "command_impl.h"
 #include "array_list.h"
 #include "bundle_context.h"
 #include "bundle.h"
 #include "utils.h"
 
-void stopCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *));
-
-command_pt stopCommand_create(bundle_context_pt context) {
-	command_pt command = (command_pt) malloc(sizeof(*command));
-	command->bundleContext = context;
-	command->name = "stop";
-	command->shortDescription = "stop bundle(s).";
-	command->usage = "start <id> [<id> ...]";
-	command->executeCommand = stopCommand_execute;
-	return command;
-}
-
-void stopCommand_destroy(command_pt command) {
-	free(command);
-}
-
-void stopCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *)) {
+celix_status_t stopCommand_execute(void *handle, char *line, FILE *outStream, FILE *errStream) {
+	celix_status_t status = CELIX_SUCCESS;
+	bundle_context_pt context = handle;
     char delims[] = " ";
 	char * sub = NULL;
 	char *save_ptr = NULL;
-	char outString[256];
 
 	sub = strtok_r(line, delims, &save_ptr);
 	sub = strtok_r(NULL, delims, &save_ptr);
 
 	if (sub == NULL) {
-		err("Incorrect number of arguments.\n");
-		sprintf(outString, "%s\n", command->usage);
-		out(outString);
+		fprintf(outStream, "Incorrect number of arguments.\n");
 	} else {
 		while (sub != NULL) {
 			bool numeric;
@@ -68,16 +50,18 @@ void stopCommand_execute(command_pt command, char * line, void (*out)(char *), v
 			if (numeric) {
 				long id = atol(sub);
 				bundle_pt bundle = NULL;
-				bundleContext_getBundleById(command->bundleContext, id, &bundle);
+				bundleContext_getBundleById(context, id, &bundle);
 				if (bundle != NULL) {
 					bundle_stopWithOptions(bundle, 0);
 				} else {
-					err("Bundle id is invalid.");
+					fprintf(outStream, "Bundle id is invalid.");
 				}
 			} else {
-				err("Bundle id should be a number (bundle id).\n");
+				fprintf(outStream, "Bundle id should be a number (bundle id).\n");
 			}
 			sub = strtok_r(NULL, delims, &save_ptr);
 		}
 	}
+
+	return status;
 }

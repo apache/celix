@@ -28,9 +28,8 @@
 
 #include "array_list.h"
 #include "bundle_context.h"
-#include "bundle_archive.h"
-#include "module.h"
-#include "bundle.h"
+
+#include "std_commands.h"
 
 static char * psCommand_stateString(bundle_state_e state); 
 

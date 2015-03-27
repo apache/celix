@@ -28,13 +28,13 @@ if (SHELL)
     	private/src/shell 
     	private/src/ps_command 
       private/src/start_command 
-      #private/src/stop_command
-      #private/src/install_command 
-      #private/src/update_command
-      #private/src/uninstall_command 
-      #private/src/log_command
-      #private/src/inspect_command
-      #private/src/help_command
+      private/src/stop_command
+      private/src/install_command
+      private/src/update_command
+      private/src/uninstall_command
+      private/src/log_command
+      private/src/inspect_command
+      private/src/help_command
     )
     
     install_bundle(shell
