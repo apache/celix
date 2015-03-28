@@ -52,7 +52,8 @@ void logCommand_execute(bundle_context_pt context, char *line, FILE *outStream, 
 			char *level = NULL;
 			char errorString[256];
 
-			logCommand_levelAsString(context, entry->level, &level);
+            strftime(time, 20, "%Y-%m-%d %H:%M:%S", localtime(&entry->time));
+            logCommand_levelAsString(context, entry->level, &level);
 
 			if (entry->errorCode > 0) {
 				celix_strerror(entry->errorCode, errorString, 256);

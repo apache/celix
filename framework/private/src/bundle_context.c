@@ -278,6 +278,9 @@ celix_status_t bundleContext_getBundleById(bundle_context_pt context, long id, b
         status = CELIX_ILLEGAL_ARGUMENT;
     } else {
         *bundle = framework_getBundleById(context->framework, id);
+        if (*bundle == NULL) {
+            status = CELIX_BUNDLE_EXCEPTION;
+        }
     }
 
     framework_logIfError(logger, status, NULL, "Failed to get bundle [id=%ld]", id);

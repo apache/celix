@@ -27,38 +27,58 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "celix_errno.h"
 #include "std_commands.h"
-#include "array_list.h"
 #include "bundle_context.h"
-#include "bundle.h"
 
-celix_status_t startCommand_execute(void *handle, char * line, FILE *outStream, FILE *errStream) {
-  celix_status_t status = CELIX_SUCCESS;
-  bundle_context_pt context = handle;
+celix_status_t startCommand_execute(void *_ptr, char *command_line_str, FILE *out_ptr, FILE *err_ptr) {
+    celix_status_t status = CELIX_SUCCESS;
 
-	char delims[] = " ";
-	char * sub = NULL;
-	char *save_ptr = NULL;
-	sub = strtok_r(line, delims, &save_ptr);
-	sub = strtok_r(NULL, delims, &save_ptr);
-	if (sub == NULL) {
-		fprintf(outStream, "Incorrect number of arguments.\n");
-	} else {
-		while (sub != NULL) {
-			long id = atol(sub);
-			bundle_pt bundle = NULL;
-			bundleContext_getBundleById(context, id, &bundle);
-			if (bundle != NULL) {
-				bundle_startWithOptions(bundle, 0);
-			} else {
-        fprintf(errStream, "Bundle id '%li' is invalid\n", id);
+    bundle_context_pt context_ptr = _ptr;
+
+    if (!context_ptr || !command_line_str || !out_ptr || !err_ptr) {
         status = CELIX_ILLEGAL_ARGUMENT;
-        break;
-			}
-			sub = strtok_r(NULL, delims, &save_ptr);
-		}
-	}
+    }
 
-  return status;
+    if (status == CELIX_SUCCESS) {
+        char *sub_str = NULL;
+        char *save_ptr = NULL;
+
+        strtok_r(command_line_str, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
+        sub_str = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
+
+        if (sub_str == NULL) {
+            fprintf(out_ptr, "Incorrect number of arguments.\n");
+        } else {
+            while (sub_str != NULL) {
+                celix_status_t sub_status = CELIX_SUCCESS;
+
+                bundle_pt bundle_ptr = NULL;
+
+                char *end_str = NULL;
+                long id = strtol(sub_str, &end_str, 10);
+                if (*end_str) {
+                    sub_status = CELIX_ILLEGAL_ARGUMENT;
+                    fprintf(err_ptr, "Bundle id '%s' is invalid, problem at %s\n", sub_str, end_str);
+                }
+
+                if (sub_status == CELIX_SUCCESS) {
+                    sub_status = bundleContext_getBundleById(context_ptr, id, &bundle_ptr);
+                }
+
+                if (sub_status == CELIX_SUCCESS) {
+                    bundle_startWithOptions(bundle_ptr, 0);
+                }
+
+                if (sub_status != CELIX_SUCCESS) {
+                    status = sub_status;
+                    break;
+                }
+
+                sub_str = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
+            }
+        }
+
+    }
+
+    return status;
 }

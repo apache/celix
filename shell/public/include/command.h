@@ -29,6 +29,10 @@
 
 #include "celix_errno.h"
 
+#define OSGI_SHELL_COMMAND_NAME "command.name"
+#define OSGI_SHELL_COMMAND_USAGE "command.usage"
+#define OSGI_SHELL_COMMAND_DESCRIPTION "command.description"
+
 static const char * const OSGI_SHELL_COMMAND_SERVICE_NAME = "commandService";
 
 typedef struct commandService * command_service_pt;

@@ -33,112 +33,149 @@
 
 static char * psCommand_stateString(bundle_state_e state); 
 
-celix_status_t psCommand_execute(void *handle, char * commandline, FILE *outStream, FILE *errStream) {
-        celix_status_t status = CELIX_SUCCESS;
-        array_list_pt bundles = NULL;
-        bundle_context_pt context = handle;
+celix_status_t psCommand_execute(void *_ptr, char *command_line_str, FILE *out_ptr, FILE *err_ptr) {
+    celix_status_t status = CELIX_SUCCESS;
 
-        status = bundleContext_getBundles(context, &bundles);
+    bundle_context_pt context_ptr = _ptr;
+    array_list_pt bundles_ptr     = NULL;
 
-        bool showLocation = false;
-        bool showSymbolicName = false;
-        bool showUpdateLocation = false;
-        char * msg = "Name";
-        unsigned int i;
+    bool show_location        = false;
+    bool show_symbolic_name   = false;
+    bool show_update_location = false;
+    char *message_str         = "Name";
 
-        char delims[] = " ";
-        char * sub = NULL;
+    if (!context_ptr || !command_line_str || !out_ptr || !err_ptr) {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
+
+    if (status == CELIX_SUCCESS) {
+        status = bundleContext_getBundles(context_ptr, &bundles_ptr);
+    }
+
+    if (status == CELIX_SUCCESS) {
+        char *sub_str = NULL;
         char *save_ptr = NULL;
-        sub = strtok_r(commandline, delims, &save_ptr);
-        sub = strtok_r(NULL, delims, &save_ptr);
-        while (sub != NULL) {
-                if (strcmp(sub, "-l") == 0) {
-                        showLocation = true;
-                        msg = "Location";
-                } else if (strcmp(sub, "-s") == 0) {
-                        showSymbolicName = true;
-                        msg = "Symbolic name";
-                } else if (strcmp(sub, "-u") == 0) {
-                        showUpdateLocation = true;
-                        msg = "Update location";
+
+        strtok_r(command_line_str, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
+        sub_str = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
+        while (sub_str != NULL) {
+            if (strcmp(sub_str, "-l") == 0) {
+                show_location = true;
+                message_str = "Location";
+            } else if (strcmp(sub_str, "-s") == 0) {
+                show_symbolic_name = true;
+                message_str = "Symbolic name";
+            } else if (strcmp(sub_str, "-u") == 0) {
+                show_update_location = true;
+                message_str = "Update location";
+            }
+            sub_str = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
+        }
+
+        fprintf(out_ptr, "  %-5s %-12s %s\n", "ID", "State", message_str);
+
+        unsigned int size = arrayList_size(bundles_ptr);
+        bundle_pt bundles_array_ptr[size];
+
+        for (unsigned int i = 0; i < size; i++) {
+            bundles_array_ptr[i] = arrayList_get(bundles_ptr, i);
+        }
+
+        for (unsigned int i = 0; i < size - 1; i++) {
+            for (unsigned int j = i + 1; j < size; j++) {
+                bundle_pt first_ptr = bundles_array_ptr[i];
+                bundle_pt second_ptr = bundles_array_ptr[j];
+
+                bundle_archive_pt first_archive_ptr = NULL;
+                bundle_archive_pt second_archive_ptr = NULL;
+
+                long first_id;
+                long second_id;
+
+                bundle_getArchive(first_ptr, &first_archive_ptr);
+                bundle_getArchive(second_ptr, &second_archive_ptr);
+
+                bundleArchive_getId(first_archive_ptr, &first_id);
+                bundleArchive_getId(second_archive_ptr, &second_id);
+
+                if (first_id > second_id) {
+                    bundle_pt temp_ptr = bundles_array_ptr[i];
+                    bundles_array_ptr[i] = bundles_array_ptr[j];
+                    bundles_array_ptr[j] = temp_ptr;
                 }
-                sub = strtok_r(NULL, delims, &save_ptr);
+            }
         }
 
-        fprintf(outStream, "  %-5s %-12s %s\n", "ID", "State", msg);
+        for (unsigned int i = 0; i < size - 1; i++) {
+            celix_status_t sub_status;
 
-        unsigned int size = arrayList_size(bundles);
-        bundle_pt bundlesA[size];
-        for (i = 0; i < size; i++) {
-                bundlesA[i] = arrayList_get(bundles, i);
-        }
+            bundle_pt bundle_ptr = bundles_array_ptr[i];
 
-        int j;
-        for(i=0; i < size - 1; i++) {
-                for(j=i+1; j < size; j++) {
-                        bundle_pt first = bundlesA[i];
-                        bundle_pt second = bundlesA[j];
+            bundle_archive_pt archive_ptr = NULL;
+            long id = 0;
+            bundle_state_e state = OSGI_FRAMEWORK_BUNDLE_UNKNOWN;
+            char *state_str = NULL;
+            module_pt module_ptr = NULL;
+            char *name_str = NULL;
 
-                        bundle_archive_pt farchive = NULL, sarchive = NULL;
-                        long fid, sid;
+            sub_status = bundle_getArchive(bundle_ptr, &archive_ptr);
+            if (sub_status == CELIX_SUCCESS) {
+                sub_status = bundleArchive_getId(archive_ptr, &id);
+            }
 
-                        bundle_getArchive(first, &farchive);
-                        bundleArchive_getId(farchive, &fid);
-                        bundle_getArchive(second, &sarchive);
-                        bundleArchive_getId(sarchive, &sid);
+            if (sub_status == CELIX_SUCCESS) {
+                sub_status = bundle_getState(bundle_ptr, &state);
+            }
 
-                        if(fid > sid)
-                        {
-                                // these three lines swap the elements bundles[i] and bundles[j].
-                                bundle_pt temp = bundlesA[i];
-                                bundlesA[i] = bundlesA[j];
-                                bundlesA[j] = temp;
-                        }
+            if (sub_status == CELIX_SUCCESS) {
+                state_str = psCommand_stateString(state);
+
+                sub_status = bundle_getCurrentModule(bundle_ptr, &module_ptr);
+            }
+
+            if (sub_status == CELIX_SUCCESS) {
+                sub_status = module_getSymbolicName(module_ptr, &name_str);
+            }
+
+            if (sub_status == CELIX_SUCCESS) {
+                if (show_location) {
+                    sub_status = bundleArchive_getLocation(archive_ptr, &name_str);
+                } else if (show_symbolic_name) {
+                    // do nothing
+                } else if (show_update_location) {
+                    sub_status = bundleArchive_getLocation(archive_ptr, &name_str);
                 }
-        }
-        for (i = 0; i < size; i++) {
-                //bundle_pt bundle = (bundle_pt) arrayList_get(bundles, i);
-                bundle_pt bundle = bundlesA[i];
-                bundle_archive_pt archive = NULL;
-                long id;
-                bundle_state_e state;
-                char * stateString = NULL;
-                module_pt module = NULL;
-                char * name = NULL;
+            }
 
-                bundle_getArchive(bundle, &archive);
-                bundleArchive_getId(archive, &id);
-                bundle_getState(bundle, &state);
-                stateString = psCommand_stateString(state);
-                bundle_getCurrentModule(bundle, &module);
-                module_getSymbolicName(module, &name);
-                if (showLocation) {
-                        bundleArchive_getLocation(archive, &name);
-                } else if (showSymbolicName) {
-                        // do nothing
-                } else if (showUpdateLocation) {
-                        bundleArchive_getLocation(archive, &name);
-                }
+            if (sub_status == CELIX_SUCCESS) {
+                fprintf(out_ptr, "  %-5ld %-12s %s\n", id, state_str, name_str);
+            }
 
-                fprintf(outStream, "  %-5ld %-12s %s\n", id, stateString, name);
+            if (sub_status != CELIX_SUCCESS) {
+                status = sub_status;
+                break;
+            }
         }
-        arrayList_destroy(bundles);
-        return status;
+
+        arrayList_destroy(bundles_ptr);
+    }
+
+    return status;
 }
 
 static char * psCommand_stateString(bundle_state_e state) {
-	switch (state) {
-		case OSGI_FRAMEWORK_BUNDLE_ACTIVE:
-			return "Active      ";
-		case OSGI_FRAMEWORK_BUNDLE_INSTALLED:
-			return "Installed   ";
-		case OSGI_FRAMEWORK_BUNDLE_RESOLVED:
-			return "Resolved    ";
-		case OSGI_FRAMEWORK_BUNDLE_STARTING:
-			return "Starting    ";
-		case OSGI_FRAMEWORK_BUNDLE_STOPPING:
-			return "Stopping    ";
-		default:
-			return "Unknown     ";
-	}
+    switch (state) {
+        case OSGI_FRAMEWORK_BUNDLE_ACTIVE:
+            return "Active      ";
+        case OSGI_FRAMEWORK_BUNDLE_INSTALLED:
+            return "Installed   ";
+        case OSGI_FRAMEWORK_BUNDLE_RESOLVED:
+            return "Resolved    ";
+        case OSGI_FRAMEWORK_BUNDLE_STARTING:
+            return "Starting    ";
+        case OSGI_FRAMEWORK_BUNDLE_STOPPING:
+            return "Stopping    ";
+        default:
+            return "Unknown     ";
+    }
 }
