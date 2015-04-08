@@ -68,6 +68,8 @@ celix_status_t discovery_create(bundle_context_pt context, discovery_pt *discove
 	status = celixThreadMutex_create(&(*discovery)->listenerReferencesMutex, NULL);
 	status = celixThreadMutex_create(&(*discovery)->discoveredServicesMutex, NULL);
 
+	logHelper_create(context, &(*discovery)->loghelper);
+
 	return status;
 }
 
@@ -98,6 +100,8 @@ celix_status_t discovery_destroy(discovery_pt discovery) {
 
 	celixThreadMutex_destroy(&discovery->listenerReferencesMutex);
 
+	logHelper_destroy(&discovery->loghelper);
+
 	free(discovery);
 
 	return status;
@@ -108,6 +112,7 @@ celix_status_t discovery_start(discovery_pt discovery) {
 	char *port = NULL;
 	char *path = NULL;
 
+	logHelper_start(discovery->loghelper);
 
 	bundleContext_getProperty(discovery->context, DISCOVERY_SERVER_PORT, &port);
 	if (port == NULL) {
@@ -169,6 +174,9 @@ celix_status_t discovery_stop(discovery_pt discovery) {
 	hashMapIterator_destroy(iter);
 
 	celixThreadMutex_unlock(&discovery->discoveredServicesMutex);
+
+
+	logHelper_stop(discovery->loghelper);
 
 	return status;
 }
