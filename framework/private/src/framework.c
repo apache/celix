@@ -2230,6 +2230,10 @@ static void *fw_eventDispatcher(void *fw) {
 			if (celixThreadMutex_lock(&framework->bundleListenerLock) != CELIX_SUCCESS) {
 				status = CELIX_FRAMEWORK_EXCEPTION;
 			}
+			else if (celixThreadMutex_lock(&framework->bundleLock) != CELIX_SUCCESS) {
+				celixThreadMutex_unlock(&framework->bundleListenerLock);
+				status = CELIX_FRAMEWORK_EXCEPTION;
+			}
 			else {
 				int i;
 				int size = arrayList_size(request->listeners);
@@ -2255,6 +2259,10 @@ static void *fw_eventDispatcher(void *fw) {
 
 						free(event);
 					}
+				}
+
+				if (celixThreadMutex_unlock(&framework->bundleLock)) {
+					status = CELIX_FRAMEWORK_EXCEPTION;
 				}
 
 				if (celixThreadMutex_unlock(&framework->bundleListenerLock)) {
