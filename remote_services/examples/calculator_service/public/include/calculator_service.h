@@ -33,6 +33,31 @@ typedef struct calculator *calculator_pt;
 
 typedef struct calculator_service *calculator_service_pt;
 
+#define CALC_SCHEMA "[\"add(DD)D\",\"sub(DD)D\",\"sqrt(D)D\"]"
+
+/*
+purpose different schema setup
+{
+  "methods" : [ "add(DD)D", "sub(DD)D", "sqrt(D)D", abc(Labc_input;)D", sum([D)D" ],
+  "types" : {
+    "abc_input" : "DDD a b c"
+  }
+} 
+
+struct abc_input {
+    double a;
+    double b;
+    double c;
+}
+
+//for [D the following struct layout will be assumed
+struct double_sequence {
+    size_t _max;
+    size_t _length;
+    double *buffer;
+};
+*/
+
 /*
  * The calculator service definition corresponds to the following Java interface:
  *
@@ -44,9 +69,9 @@ typedef struct calculator_service *calculator_service_pt;
  */
 struct calculator_service {
 	calculator_pt calculator;
-	celix_status_t (*add)(calculator_pt calculator, double a, double b, double *result);
-	celix_status_t (*sub)(calculator_pt calculator, double a, double b, double *result);
-	celix_status_t (*sqrt)(calculator_pt calculator, double a, double *result);
+	int (*add)(calculator_pt calculator, double a, double b, double *result);
+	int (*sub)(calculator_pt calculator, double a, double b, double *result);
+  int (*sqrt)(calculator_pt calculator, double a, double *result);
 };
 
 

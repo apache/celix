@@ -25,6 +25,7 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "topology_manager.h"
 #include "bundle_context.h"
@@ -228,6 +229,7 @@ celix_status_t topologyManager_rsaAdded(void * handle, service_reference_pt refe
 	    serviceReference_getProperty(reference, (char *)OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
 
 	    array_list_pt endpoints = NULL;
+
 		status = rsa->exportService(rsa->admin, serviceId, NULL, &endpoints);
 
 		if (status == CELIX_SUCCESS) {
@@ -465,6 +467,7 @@ celix_status_t topologyManager_addExportedService(topology_manager_pt manager, s
 		remote_service_admin_service_pt rsa = arrayList_get(localRSAs, iter);
 
 		array_list_pt endpoints = NULL;
+    
 		status = rsa->exportService(rsa->admin, serviceId, NULL, &endpoints);
 
 		if (status == CELIX_SUCCESS) {
@@ -529,6 +532,7 @@ celix_status_t topologyManager_getEndpointDescriptionForExportRegistration(remot
 	export_reference_pt reference = NULL;
 	status = rsa->exportRegistration_getExportReference(export, &reference);
 
+
 	if (status == CELIX_SUCCESS) {
 	    status = rsa->exportReference_getExportedEndpoint(reference, endpoint);
 	}
@@ -570,8 +574,7 @@ celix_status_t topologyManager_notifyListenersEndpointAdded(topology_manager_pt 
 			status = topologyManager_getEndpointDescriptionForExportRegistration(rsa, export, &endpoint);
 			if (status != CELIX_SUCCESS || !endpoint) {
 				continue;
-			}
-
+			} 
 			bool matchResult = false;
 			filter_match(filter, endpoint->properties, &matchResult);
 			if (matchResult) {

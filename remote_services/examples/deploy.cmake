@@ -16,44 +16,10 @@
 # under the License.
 is_enabled(RSA_EXAMPLES)
 if (RSA_EXAMPLES)
-    is_enabled(RSA_REMOTE_SERVICE_ADMIN_HTTP)
-    if (RSA_REMOTE_SERVICE_ADMIN_HTTP)
-        is_enabled(RSA_DISCOVERY_CONFIGURED)
-        if (RSA_DISCOVERY_CONFIGURED)
-            deploy("remote-services-cfg" BUNDLES discovery_configured topology_manager remote_service_admin_http calculator shell shell_tui log_service log_writer
-                                         ENDPOINTS
-                                            org.apache.celix.calc.api.Calculator_endpoint
-                                            org.apache.celix.calc.api.Calculator2_endpoint
-                                         PROPERTIES
-                                            RSA_PORT=8001
-                                            DISCOVERY_CFG_POLL_ENDPOINTS=http://localhost:8082/org.apache.celix.discovery.configured
-                                            DISCOVERY_CFG_SERVER_PORT=8081)
-            deploy("remote-services-cfg-client" BUNDLES topology_manager remote_service_admin_http shell shell_tui log_service log_writer calculator_shell discovery_configured
-                                                ENDPOINTS org.apache.celix.calc.api.Calculator_proxy org.apache.celix.calc.api.Calculator2_proxy
-                                            PROPERTIES
-                                                RSA_PORT=8002
-                                                DISCOVERY_CFG_POLL_ENDPOINTS=http://localhost:8081/org.apache.celix.discovery.configured
-                                                DISCOVERY_CFG_SERVER_PORT=8082)
-        endif ()
-    endif ()
-
-    is_enabled(RSA_REMOTE_SERVICE_ADMIN_SHM)
-    if (RSA_REMOTE_SERVICE_ADMIN_SHM)
-        is_enabled(RSA_DISCOVERY_SHM)
-        if (RSA_DISCOVERY_SHM)
-            deploy("remote-services-shm" BUNDLES discovery_shm topology_manager remote_service_admin_shm calculator shell shell_tui log_service log_writer 
-                                         ENDPOINTS org.apache.celix.calc.api.Calculator_endpoint)
-            deploy("remote-services-shm-client" BUNDLES topology_manager remote_service_admin_shm shell shell_tui log_service log_writer calculator_shell discovery_shm
-                                                ENDPOINTS org.apache.celix.calc.api.Calculator_proxy)
-        endif ()
-    endif ()
-
     is_enabled(RSA_DISCOVERY_ETCD)
     if (RSA_DISCOVERY_ETCD)
-        deploy("remote-services-etcd" BUNDLES discovery_etcd topology_manager remote_service_admin_http calculator shell shell_tui log_service log_writer
-                                     ENDPOINTS org.apache.celix.calc.api.Calculator_endpoint)
-        deploy("remote-services-etcd-client" BUNDLES topology_manager remote_service_admin_http shell shell_tui log_service log_writer calculator_shell discovery_etcd
-                                            ENDPOINTS org.apache.celix.calc.api.Calculator_proxy)
+        deploy("remote-services-etcd" BUNDLES discovery_etcd topology_manager remote_service_admin_http calculator shell shell_tui log_service log_writer)
+        deploy("remote-services-etcd-client" BUNDLES topology_manager remote_service_admin_http shell shell_tui log_service log_writer calculator_shell discovery_etcd)
     endif ()
 
 endif (RSA_EXAMPLES)
