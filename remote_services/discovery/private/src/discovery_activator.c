@@ -112,23 +112,11 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
 	logHelper_log(activator->loghelper, OSGI_LOGSERVICE_DEBUG, "using scope %s.", scope);
 
-	endpoint_listener_pt endpointListener = malloc(sizeof(struct endpoint_listener));
-
-	if (!endpointListener) {
-		return CELIX_ENOMEM;
-	}
-
-	endpointListener->handle = activator->discovery;
-	endpointListener->endpointAdded = discovery_endpointAdded;
-	endpointListener->endpointRemoved = discovery_endpointRemoved;
 
 	properties_pt props = properties_create();
 	properties_set(props, "DISCOVERY", "true");
 	properties_set(props, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, scope);
 
-	status = bundleContext_registerService(context, (char *) OSGI_ENDPOINT_LISTENER_SERVICE, endpointListener, props, &activator->endpointListenerService);
-
-	activator->endpointListener = endpointListener;
 
 	if (status == CELIX_SUCCESS) {
 		status = serviceTracker_open(activator->endpointListenerTracker);
@@ -138,6 +126,21 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 		status = discovery_start(activator->discovery);
 	}
 
+	if (status == CELIX_SUCCESS) {
+	    endpoint_listener_pt endpointListener = calloc(1, sizeof(struct endpoint_listener));
+
+	    if (endpointListener) {
+            endpointListener->handle = activator->discovery;
+            endpointListener->endpointAdded = discovery_endpointAdded;
+            endpointListener->endpointRemoved = discovery_endpointRemoved;
+
+            status = bundleContext_registerService(context, (char *) OSGI_ENDPOINT_LISTENER_SERVICE, endpointListener, props, &activator->endpointListenerService);
+
+            if (status == CELIX_SUCCESS) {
+                activator->endpointListener = endpointListener;
+            }
+        }
+    }
 	// We can release the scope, as properties_set makes a copy of the key & value...
 	free(scope);
 
