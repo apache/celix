@@ -73,7 +73,7 @@ celix_status_t topologyManager_notifyListenersEndpointRemoved(topology_manager_p
 celix_status_t topologyManager_create(bundle_context_pt context, log_helper_pt logHelper, topology_manager_pt *manager) {
     celix_status_t status = CELIX_SUCCESS;
 
-    *manager = malloc(sizeof(**manager));
+    *manager = calloc(1, sizeof(**manager));
     if (!*manager) {
         return CELIX_ENOMEM;
     }
@@ -88,7 +88,7 @@ celix_status_t topologyManager_create(bundle_context_pt context, log_helper_pt l
     status = celixThreadMutex_create(&(*manager)->importInterestsLock, NULL);
     status = celixThreadMutex_create(&(*manager)->listenerListLock, NULL);
 
-    (*manager)->listenerListLock = hashMap_create(serviceReference_hashCode, NULL, serviceReference_equals2, NULL);
+    (*manager)->listenerList = hashMap_create(serviceReference_hashCode, NULL, serviceReference_equals2, NULL);
     (*manager)->exportedServices = hashMap_create(serviceReference_hashCode, NULL, serviceReference_equals2, NULL);
     (*manager)->importedServices = hashMap_create(NULL, NULL, NULL, NULL);
     (*manager)->importInterests = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
@@ -101,39 +101,40 @@ celix_status_t topologyManager_create(bundle_context_pt context, log_helper_pt l
 celix_status_t topologyManager_destroy(topology_manager_pt manager) {
     celix_status_t status = CELIX_SUCCESS;
 
-    status = celixThreadMutex_lock(&manager->listenerListLock);
+    celixThreadMutex_lock(&manager->listenerListLock);
 
-    hashMap_destroy(manager->listenerListLock, false, false);
+    hashMap_destroy(manager->listenerList, false, false);
 
-    status = celixThreadMutex_unlock(&manager->listenerListLock);
+    celixThreadMutex_unlock(&manager->listenerListLock);
+    celixThreadMutex_destroy(&manager->listenerListLock);
 
-    status = celixThreadMutex_lock(&manager->rsaListLock);
+    celixThreadMutex_lock(&manager->rsaListLock);
 
     arrayList_destroy(manager->rsaList);
 
-    status = celixThreadMutex_unlock(&manager->rsaListLock);
-    status = celixThreadMutex_destroy(&manager->rsaListLock);
+    celixThreadMutex_unlock(&manager->rsaListLock);
+    celixThreadMutex_destroy(&manager->rsaListLock);
 
-    status = celixThreadMutex_lock(&manager->exportedServicesLock);
+    celixThreadMutex_lock(&manager->exportedServicesLock);
 
     hashMap_destroy(manager->exportedServices, false, false);
 
-    status = celixThreadMutex_unlock(&manager->exportedServicesLock);
-    status = celixThreadMutex_destroy(&manager->exportedServicesLock);
+    celixThreadMutex_unlock(&manager->exportedServicesLock);
+    celixThreadMutex_destroy(&manager->exportedServicesLock);
 
-    status = celixThreadMutex_lock(&manager->importedServicesLock);
+    celixThreadMutex_lock(&manager->importedServicesLock);
 
     hashMap_destroy(manager->importedServices, false, false);
 
-    status = celixThreadMutex_unlock(&manager->importedServicesLock);
-    status = celixThreadMutex_destroy(&manager->importedServicesLock);
+    celixThreadMutex_unlock(&manager->importedServicesLock);
+    celixThreadMutex_destroy(&manager->importedServicesLock);
 
-    status = celixThreadMutex_lock(&manager->importInterestsLock);
+    celixThreadMutex_lock(&manager->importInterestsLock);
 
     hashMap_destroy(manager->importInterests, true, true);
 
-    status = celixThreadMutex_unlock(&manager->importInterestsLock);
-    status = celixThreadMutex_destroy(&manager->importInterestsLock);
+    celixThreadMutex_unlock(&manager->importInterestsLock);
+    celixThreadMutex_destroy(&manager->importInterestsLock);
 
     free(manager);
 
