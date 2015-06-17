@@ -31,7 +31,10 @@
  *
  *
  * ComplexTypes
- * {[Type]+} [(Name)(SPACE)]+
+ * {[Type]+ [(Name)(SPACE)]+}
+ *
+ * NOTE MAYBE SUPPORT STRUCT BY VALUE ->
+ * <[Type]+ [(Name)(SPACE)]+>
  *
  * SequenceType
  * [(Type)
@@ -48,6 +51,29 @@
 #define DYN_TYPE_SEQUENCE 3
 
 typedef struct _dyn_type dyn_type;
+
+/* TODO MOVE TO PRIVATE HEADER */
+struct _dyn_type {
+    int type;
+    union {
+        struct {
+            ffi_type *ffiType;
+        } simple;
+
+        struct {
+            ffi_type ffiType;
+            char **names; 
+            dyn_type **nested_types; 
+        } complex;
+
+        struct {
+            ffi_type seqStruct;
+            dyn_type *dynType; //set if sequence is of a complex type
+            ffi_type *simpleType; //set if sequence is of a simple type
+        } sequence;
+    };
+};
+
 
 int dynType_create(const char *schema, dyn_type **type);
 int dynType_destroy(dyn_type *type);

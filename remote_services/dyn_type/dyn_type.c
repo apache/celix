@@ -16,26 +16,6 @@ struct generic_sequence {
     void *buf;
 };
 
-struct _dyn_type {
-    int type;
-    union {
-        struct {
-            ffi_type *ffiType;
-        } simple;
-
-        struct {
-            ffi_type ffiType;
-            char **names; 
-            dyn_type **nested_types; 
-        } complex;
-
-        struct {
-            ffi_type seqStruct;
-            dyn_type *dynType; //set if sequence is of a complex type
-            ffi_type *simpleType; //set if sequence is of a simple type
-        } sequence;
-    };
-};
 
 static char dynType_schemaType(dyn_type *dynType, ffi_type *ffiType);
 
@@ -105,12 +85,15 @@ static int dynType_simple_create(char t, dyn_type **result) {
     ffi_type *ffiType = dynType_ffiType_for(t); 
     dyn_type *simple = NULL;
     if (ffiType != NULL) {
-        dyn_type *simple = calloc(1,sizeof(*simple));
+        simple = calloc(1,sizeof(*simple));
         simple->type = DYN_TYPE_SIMPLE;
         simple->simple.ffiType = ffiType;
     }
     if (ffiType != NULL && simple != NULL) {
         *result = simple;
+    } else {
+        printf("Error creating simple dyn type for '%c'\n", t);
+        status = 1;
     }
     return status;
 }
@@ -203,6 +186,7 @@ static int dynType_complex_create(char *schema, dyn_type **result) {
                 memcpy(nested, schema + start + 1, len);
                 nested[len] = '\0';
                 dyn_type *nestedType = NULL;
+                //TODO catch nested problem
                 dynType_complex_create(nested, &nestedType); //TODO use status result
                 type->complex.nested_types[index] = nestedType;
                 type->complex.ffiType.elements[index] = &ffi_type_pointer;
