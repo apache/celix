@@ -40,8 +40,6 @@
 celix_status_t logListener_logged(log_listener_pt listener, log_entry_pt entry)
 {
 	celix_status_t status = CELIX_SUCCESS;
-    module_pt module = NULL;
-    char *sName = NULL;
 
 	int sysLogLvl = -1;
 
