@@ -63,12 +63,12 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	endpointService = calloc(1, sizeof(*endpointService));
 	endpointService->endpoint = endpoint;
 	endpointService->handleRequest = calculatorEndpoint_handleRequest;
-	endpointService->setService = calculatorEndpoint_setService;
+        endpointService->setService = calculatorEndpoint_setService;
 
-	properties_pt props = properties_create();
-	properties_set(props, (char *) "remote.interface", (char *) CALCULATOR_SERVICE);
+        properties_pt props = properties_create();
+        properties_set(props, (char *) "remote.interface", (char *) CALCULATOR2_SERVICE);
 
-	bundleContext_registerService(context, OSGI_RSA_REMOTE_ENDPOINT, endpointService, props, &activator->endpointServiceRegistration);
+        bundleContext_registerService(context, OSGI_RSA_REMOTE_ENDPOINT, endpointService, props, &activator->endpointServiceRegistration);
 
 	activator->endpointService = endpointService;
 

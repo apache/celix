@@ -58,13 +58,13 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 }
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator = userData;
+        celix_status_t status = CELIX_SUCCESS;
+        struct activator *activator = userData;
 
-	remoteProxyFactory_create(context, "org.apache.celix.calc.api.Calculator2", activator,
-			calculatorProxyFactory_create, calculatorProxyFactory_destroy,
-			&activator->factory_ptr);
-	remoteProxyFactory_register(activator->factory_ptr);
+        remoteProxyFactory_create(context, CALCULATOR2_SERVICE, activator,
+                        calculatorProxyFactory_create, calculatorProxyFactory_destroy,
+                        &activator->factory_ptr);
+        remoteProxyFactory_register(activator->factory_ptr);
 
 	return status;
 }
