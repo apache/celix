@@ -25,6 +25,7 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "topology_manager.h"
 #include "bundle_context.h"

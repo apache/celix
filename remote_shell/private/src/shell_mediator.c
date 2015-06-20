@@ -25,11 +25,12 @@
  */
 
 #include <stdlib.h>
-
+#include <string.h>
 #include <utils.h>
 #include <shell.h>
 #include <service_tracker.h>
 #include <command.h>
+#include <sys/socket.h>
 
 #include "log_helper.h"
 #include "log_service.h"

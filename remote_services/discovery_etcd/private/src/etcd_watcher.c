@@ -26,6 +26,7 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "log_helper.h"
 #include "log_service.h"

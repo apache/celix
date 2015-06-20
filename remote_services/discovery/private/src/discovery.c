@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <netdb.h>
+#include <string.h>
 
 #include "celix_threads.h"
 #include "bundle_context.h"

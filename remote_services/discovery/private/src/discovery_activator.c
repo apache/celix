@@ -26,6 +26,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
 
 #include "bundle_activator.h"
 #include "service_tracker.h"

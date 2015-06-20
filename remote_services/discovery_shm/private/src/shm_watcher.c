@@ -27,6 +27,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 
 #include "celix_log.h"
 #include "constants.h"
