@@ -207,17 +207,31 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin) {
 
     celixThreadMutex_lock(&admin->exportedServicesLock);
 
+    array_list_pt exportRegistrationList = NULL;
+
+    arrayList_create(&exportRegistrationList);
+
 	hash_map_iterator_pt iter = hashMapIterator_create(admin->exportedServices);
 	while (hashMapIterator_hasNext(iter)) {
 		array_list_pt exports = hashMapIterator_nextValue(iter);
 		int i;
+
 		for (i = 0; i < arrayList_size(exports); i++) {
 			export_registration_pt export = arrayList_get(exports, i);
-			exportRegistration_stopTracking(export);
+			arrayList_add(exportRegistrationList, export);
 		}
 	}
     hashMapIterator_destroy(iter);
     celixThreadMutex_unlock(&admin->exportedServicesLock);
+
+	int i;
+
+	for (i = 0; i < arrayList_size(exportRegistrationList); i++) {
+		export_registration_pt export = arrayList_get(exportRegistrationList, i);
+		exportRegistration_stopTracking(export);
+	}
+
+	arrayList_destroy(exportRegistrationList);
 
     celixThreadMutex_lock(&admin->importedServicesLock);
 
