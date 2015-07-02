@@ -1,3 +1,6 @@
+/*
+ * Licensed under Apache License v2. See LICENSE for more information.
+ */
 #include "dyn_function.h"
 
 #include <stdio.h>
@@ -9,6 +12,9 @@
 #include <ffi.h>
 
 #include "dyn_type.h"
+#include "dfi_log_util.h"
+
+DFI_SETUP_LOG(dynFunction)
 
 struct _dyn_function_type {
     dyn_type *arguments;
@@ -29,21 +35,22 @@ struct _dyn_closure_type {
 
 
 static int dynFunction_initCif(ffi_cif *cif, dyn_type *arguments, dyn_type  *funcReturn);
-static int dynFunction_parseSchema(const char *schema, dyn_type **arguments, dyn_type **funcReturn);
+static int dynFunction_parseDescriptor(const char *functionDescriptor, dyn_type **arguments, dyn_type **funcReturn);
 static void dynClosure_ffiBind(ffi_cif *cif, void *ret, void *args[], void *userData); 
 
-int dynFunction_create(const char *schema, void (*fn)(void), dyn_function_type **out)  {
+int dynFunction_create(const char *descriptor, void (*fn)(void), dyn_function_type **out)  {
     int status = 0;
     dyn_function_type *dynFunc = NULL;
+    LOG_DEBUG("Creating dyn function for descriptor '%s'\n", descriptor);
     
     dynFunc = calloc(1, sizeof(*dynFunc));
 
     if (dynFunc != NULL) {
         dynFunc->fn = fn;
-        status = dynFunction_parseSchema(schema, &dynFunc->arguments, &dynFunc->funcReturn);
-            if (status == 0) {
-                status = dynFunction_initCif(&dynFunc->cif, dynFunc->arguments, dynFunc->funcReturn);
-            }
+        status = dynFunction_parseDescriptor(descriptor, &dynFunc->arguments, &dynFunc->funcReturn);
+        if (status == 0) {
+            status = dynFunction_initCif(&dynFunc->cif, dynFunc->arguments, dynFunc->funcReturn);
+        }
     } else {
         status = 2;
     }
@@ -52,66 +59,39 @@ int dynFunction_create(const char *schema, void (*fn)(void), dyn_function_type *
         *out = dynFunc;
     } else {
         if (status == 1) {
-            printf("Cannot parse func schema '%s'\n", schema);
+            LOG_ERROR("Cannot parse func descriptor '%s'\n", descriptor);
         } else {
-            printf("Cannot allocate memory for dyn function\n");
+            LOG_ERROR("Cannot allocate memory for dyn function\n");
         }
     }
     return status;
 }
 
-static int dynFunction_parseSchema(const char *schema, dyn_type **arguments, dyn_type **funcReturn) {
+static int dynFunction_parseDescriptor(const char *descriptor, dyn_type **arguments, dyn_type **funcReturn) {
     int status = 0;
-    //FIXME white space parsing is missing. Note move parsing to lex/bison?
-    //TODO move to parse schema function
-    char *startPos = index(schema, '(');
-    char *endPos = index(schema, ')');
+    char *startPos = index(descriptor, '(');
+    char *endPos = index(descriptor, ')');
 
     if (startPos != NULL && endPos != NULL) {
-        int nrOfArgs = 0;
         int len = endPos - startPos - 1;
 
-        char *pos = startPos + 1;
-        while (*pos != ')') {
-            nrOfArgs += 1;
-            if (*pos == '{') { //embedded struct
-                while (*pos != '}' && *pos != '\0') {
-                    pos += 1;
-                }
-            }
-            pos += 1;
-        }
+        //TODO add names (arg001, arg002, etc)
+        char argDesc[len+3];
+        argDesc[0] = '{';
+        argDesc[len+1] = '}';
+        memcpy(argDesc+1, startPos +1, len);
+        argDesc[len+2] = '\0';
+        LOG_DEBUG("argDesc is '%s'\n", argDesc);
 
-        printf("nrOfAgrs is %i\n", nrOfArgs);
+        len = strlen(endPos);
+        char returnDesc[len+1];
+        memcpy(returnDesc, endPos + 1, len);
+        returnDesc[len] = '\0';
+        LOG_DEBUG("returnDesc is '%s'\n", returnDesc);
 
-        //length needed is len args +2 -> {DD}
-        //+ 7 per arg e.g. {DD arg001 arg002}
-        //+ 1 x \0
-        //--> len args + 3 + 7 * nrArgs
-        int argLength = 3 + len + 7 * nrOfArgs;
-
-        char argSchema[argLength];
-        argSchema[0] = '{';
-        memcpy(argSchema + 1, startPos + 1, len);
-        pos += len + 1;
-        int i;
-        for (i = 0 ; i < nrOfArgs; i += 1) {
-            sprintf(argSchema + 1 + len + 7 * i, " arg%03d", i);
-            pos += 7;
-        }
-        argSchema[argLength -2] = '}';
-        argSchema[argLength -1] = '\0';
-        printf("arg schema is '%s'\n", argSchema);
-
-        size_t returnLen = strlen(endPos + 1);
-        char returnSchema[returnLen + 1];
-        memcpy(returnSchema, endPos +1, returnLen);
-        returnSchema[returnLen] = '\0';
-        printf("return schema is '%s'\n", returnSchema);
-
-        status = dynType_create(argSchema, arguments);
+        status = dynType_create(argDesc, arguments);
         if (status == 0) {
-            status = dynType_create(returnSchema, funcReturn);
+            status = dynType_create(returnDesc, funcReturn);
         } 
     } else {
         status = 1;
@@ -125,16 +105,12 @@ static int dynFunction_initCif(ffi_cif *cif, dyn_type *arguments, dyn_type *retu
 
     int count = 0;
     int i;
-    for (i = 0; arguments->complex.ffiType.elements[i] != NULL; i += 1) {
+    for (i = 0; arguments->ffiType->elements[i] != NULL; i += 1) {
         count += 1;
     }
 
-    ffi_type **args = arguments->complex.ffiType.elements;
-    ffi_type *returnType = &ffi_type_pointer;
-    if (returnType->type == DYN_TYPE_SIMPLE) {
-        returnType = returnValue->simple.ffiType;
-    }
-
+    ffi_type **args = arguments->ffiType->elements;
+    ffi_type *returnType = returnValue->ffiType;
 
     int ffiResult = ffi_prep_cif(cif, FFI_DEFAULT_ABI, count, returnType, args);
     if (ffiResult != FFI_OK) {
@@ -146,7 +122,7 @@ static int dynFunction_initCif(ffi_cif *cif, dyn_type *arguments, dyn_type *retu
 
 int dynFunction_destroy(dyn_function_type *dynFunc) {
     int result = 0;
-    printf("TODO destroy dyn dync\n");
+    LOG_WARNING("TODO destroy dyn dync\n");
     return result;
 }
 
@@ -160,13 +136,13 @@ static void dynClosure_ffiBind(ffi_cif *cif, void *ret, void *args[], void *user
     dynClosure->bind(dynClosure->userData, args, ret);
 }
 
-int dynClosure_create(const char *schema, void (*bind)(void *, void **, void*), void *userData, dyn_closure_type **out) {
+int dynClosure_create(const char *descriptor, void (*bind)(void *, void **, void*), void *userData, dyn_closure_type **out) {
     int status = 0;
     dyn_closure_type *dynClosure = calloc(1, sizeof(*dynClosure));
     if (dynClosure != NULL) {
         dynClosure->bind = bind;
         dynClosure->userData = userData;
-        status = dynFunction_parseSchema(schema, &dynClosure->arguments, &dynClosure->funcReturn);
+        status = dynFunction_parseDescriptor(descriptor, &dynClosure->arguments, &dynClosure->funcReturn);
         if (status == 0) {
             status = dynFunction_initCif(&dynClosure->cif, dynClosure->arguments, dynClosure->funcReturn);
             if (status == 0) {
@@ -204,6 +180,6 @@ int dynClosure_getFnPointer(dyn_closure_type *dynClosure, void (**fn)(void)) {
 
 int dynClosure_destroy(dyn_closure_type *dynClosure) {
     int result = 0;
-    printf("TODO destroy closure\n");
+    LOG_WARNING("TODO destroy closure\n");
     return result;
 }

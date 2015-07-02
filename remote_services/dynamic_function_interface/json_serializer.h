@@ -1,3 +1,6 @@
+/**
+ * Licensed under Apache License v2. See LICENSE for more information.
+ */
 #ifndef __JSON_SERIALIZER_H_
 #define __JSON_SERIALIZER_H_
 

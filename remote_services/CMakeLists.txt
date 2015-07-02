@@ -42,7 +42,7 @@ if (REMOTE_SERVICE_ADMIN)
     add_subdirectory(discovery_etcd)
     #add_subdirectory(discovery_shm)
 
-    add_subdirectory(dyn_type)
+    add_subdirectory(dynamic_function_interface)
     
 
 endif (REMOTE_SERVICE_ADMIN)

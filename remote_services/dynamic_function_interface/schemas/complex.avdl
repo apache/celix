@@ -1,0 +1,11 @@
+protocol Complex {
+
+  record StatResult {
+    double sum;
+    double min;
+    double max;
+    array<double> input;
+  }
+
+  StatResult stats(array<double> input);
+}
