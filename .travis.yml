@@ -11,7 +11,7 @@ matrix:
 
 before_script:  
     - git clone https://github.com/cpputest/cpputest.git cpputest-build 
-    - mkdir cpputest-build/build
+    - mkdir -p cpputest-build/build
     - cd cpputest-build/build
     - cmake .. && make
     - sudo make install 
