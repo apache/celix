@@ -78,7 +78,10 @@ extern "C" {
         CHECK_EQUAL(0, rc);
 
         int32_t arg1 = 2;
-        struct example2_arg arg2 = { .val1 = 2, .val2 = 3, .val3 = 4.1 };
+        struct example2_arg arg2;
+        arg2.val1 = 2;
+        arg2.val2 = 3;
+        arg2.val3 = 4.1;
         double arg3 = 8.1;
         double returnVal = 0;
         void *values[3];
