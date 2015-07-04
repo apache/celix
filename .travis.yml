@@ -11,14 +11,13 @@ matrix:
 
 before_script:  
     - git clone https://github.com/cpputest/cpputest.git cpputest-build 
-    - mkdir -p cpputest-build/build
-    - cd cpputest-build/build
-    - cmake .. && make
+    - cd cpputest-build
+    - cmake . && make
     - sudo make install 
-    - cd ../..
+    - cd ..
     - git clone https://github.com/akheron/jansson.git jansson-build
     - cd jansson-build
-    - ./configure && make
+    - cmake . && make
     - sudo make install
     - cd ..
     - mkdir build install
