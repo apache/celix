@@ -5,8 +5,9 @@ find_package(Jansson REQUIRED)
 find_package(CppUTest REQUIRED)
 
 #set(FFI_LIB /lib64/libffi.so) #TODO add findPackag for lib ffi
-set(FFI_LIB /opt/local/lib/libffi.dylib) 
-set(FFI_INCLUDE /opt/local/lib/libffi-3.2.1/include)
+#set(FFI_LIB /opt/local/lib/libffi.dylib) 
+#set(FFI_INCLUDE /opt/local/lib/libffi-3.2.1/include)
+set(FFI_LIB /lib/libffi.so)
 
 include_directories( 
     ${CPPUTEST_INCLUDE_DIR}
