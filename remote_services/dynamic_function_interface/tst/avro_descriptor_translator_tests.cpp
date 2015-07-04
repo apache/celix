@@ -12,6 +12,11 @@ extern "C" {
 
 #include "descriptor_translator.h"
 
+#if defined(BSD) || defined(__APPLE__) 
+#include "open_memstream.h"
+#include "fmemopen.h"
+#endif
+
 void test1(void) {
     //TODO split up
     size_t size = 0;

@@ -11,6 +11,13 @@
 
 #include <ffi.h>
 
+#include "dfi_log_util.h"
+
+#if defined(BSD) || defined(__APPLE__) 
+#include "open_memstream.h"
+#include "fmemopen.h"
+#endif
+
 /* Description string
  *
  * Type = [TypeDef]* (SimpleType | ComplexType | SequenceType | TypedPointer | PointerReference ) [TypeDef]*
@@ -108,7 +115,7 @@ struct nested_entry {
 
 
 //logging
-void dynType_setupLogger(void (*logf)(void *handle, int level, const char *file, int line, const char *msgFormat, ...), void *handle);
+DFI_SETUP_LOG_HEADER(dynType);
 
 //generic
 int dynType_create(const char *descriptor, dyn_type **type);

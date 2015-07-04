@@ -10,7 +10,16 @@ extern "C" {
     
     #include "dyn_type.h"
 
-    void runTest(const char *descriptorStr, const char *exName) {
+	static void stdLog(void *handle, int level, const char *file, int line, const char *msg, ...) {
+	    va_list ap;
+	    const char *levels[5] = {"NIL", "ERROR", "WARNING", "INFO", "DEBUG"};
+	    fprintf(stderr, "%s: FILE:%s, LINE:%i, MSG:",levels[level], file, line);
+	    va_start(ap, msg);
+	    vfprintf(stderr, msg, ap);
+	    fprintf(stderr, "\n");
+	}
+
+    static void runTest(const char *descriptorStr, const char *exName) {
         dyn_type *type;
         int i;
         type = NULL;
@@ -26,6 +35,9 @@ extern "C" {
 }
 
 TEST_GROUP(DynTypeTests) {
+	void setup() {
+	    dynType_logSetup(stdLog, NULL, 4);
+	}
 };
 
 #define EX1 "{BbJjIiSsDFNN arg1 arg2 arg3 arg4 arg5 arg6 arg7 arg8 arg9 arg10 arg11 arg12}"
@@ -99,29 +111,6 @@ TEST(DynTypeTests, ParseRandomGarbageTest) {
             dynType_destroy(type);
         }
     }
-}
-
-extern "C" {
-    static int logCount = 0;
-    static void logf_test(void *handle, int level, const char *file, int line, const char *msg, ...) {
-        logCount += 1;
-        
-        /*
-        va_list ap;
-        const char *levels[5] = {"NIL", "ERROR", "WARNING", "INFO", "DEBUG"};
-        printf("%s: FILE:%s, LINE:%i, MSG:",levels[level], file, line);
-        va_start(ap, msg);
-        vprintf(msg, ap);
-        printf("\n");
-        */
-    }
-}
-
-TEST(DynTypeTests, DynTypeLoggerTest) {
-    dyn_type *type = NULL;
-    dynType_setupLogger(logf_test, NULL);
-    dynType_create("*", &type);
-    CHECK_EQUAL(1, logCount);
 }
 
 TEST(DynTypeTests, AssignTest1) {

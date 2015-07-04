@@ -10,6 +10,11 @@
 
 #include <jansson.h>
 
+#if defined(BSD) || defined(__APPLE__) 
+#include "open_memstream.h"
+#include "fmemopen.h"
+#endif
+
 static const int OK = 0;
 static const int MEM_ERROR = 1;
 static const int PARSE_ERROR = 2;

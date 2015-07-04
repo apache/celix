@@ -13,6 +13,8 @@
 #include <assert.h>
 #include <errno.h>
 
+DFI_SETUP_LOG(dynType)
+
 static int dynType_createWithStream(FILE *stream, dyn_type *parent, dyn_type **type);
 static void dynType_clear(dyn_type *type);
 static void dynType_clearComplex(dyn_type *type);
@@ -55,22 +57,6 @@ static const int DT_ERROR = 1;
 static const int DT_MEM_ERROR = 2;
 static const int DT_PARSE_ERROR = 3;
 
-#define DT_LOG_ERROR    1
-#define DT_LOG_WARNING  2
-#define DT_LOG_INFO     3
-#define DT_LOG_DEBUG    4
-#define DT_LOG(lvl, msg, ...) if(g_logf != NULL) { \
-    g_logf(g_logHandle, (lvl), __FILE__, __LINE__, (msg),  ##__VA_ARGS__);  \
-}
-
-static void (*g_logf)(void *handle, int level, const char *file, int line, const char *msgFormat, ...) = NULL;
-static void *g_logHandle = NULL;
-
-void dynType_setupLogger(void (*logf)(void *handle, int level, const char *file, int line, const char *msgFormat, ...), void *handle) {
-    g_logHandle = handle;
-    g_logf = logf;
-}
-
 int dynType_create(const char *descriptor, dyn_type **type) {
     int status = DT_OK;
     FILE *stream = fmemopen((char *)descriptor, strlen(descriptor), "r");
@@ -80,13 +66,13 @@ int dynType_create(const char *descriptor, dyn_type **type) {
             int c = fgetc(stream);
             if (c != '\0' && c != EOF) {
                 status = DT_PARSE_ERROR;
-                DT_LOG(DT_LOG_ERROR, "Expected EOF got %c", c);
+                LOG_ERROR("Expected EOF got %c", c);
             }
         } 
         fclose(stream);
     } else {
         status = DT_ERROR;
-        DT_LOG(DT_LOG_ERROR, "Error creating mem stream for descriptor string. %s", strerror(errno)); 
+        LOG_ERROR("Error creating mem stream for descriptor string. %s", strerror(errno)); 
     }
     return status;
 }
@@ -106,7 +92,7 @@ static int dynType_createWithStream(FILE *stream, dyn_type *parent, dyn_type **r
         }
     } else {
         status = DT_MEM_ERROR;
-        DT_LOG(DT_LOG_ERROR, "Error allocating memory for type");
+        LOG_ERROR("Error allocating memory for type");
     }
     return status;
 }
@@ -165,7 +151,7 @@ static int dynType_parseComplex(FILE *stream, dyn_type *type) {
             status = dynType_parse(stream, &entry->type);
         } else {
             status = DT_MEM_ERROR;
-            DT_LOG(DT_LOG_ERROR, "Error allocating memory for type");
+            LOG_ERROR("Error allocating memory for type");
         }
         c = fgetc(stream);
     }
@@ -212,7 +198,7 @@ static int dynType_parseComplex(FILE *stream, dyn_type *type) {
             }
         } else {
             status = DT_MEM_ERROR;
-            DT_LOG(DT_LOG_ERROR, "Error allocating memory for type")
+            LOG_ERROR("Error allocating memory for type")
         }
     }
 
@@ -243,7 +229,7 @@ static int dynType_parseName(FILE *stream, char **result) {
         ungetc(c, stream);
     } else {
         status = DT_ERROR;
-        DT_LOG(DT_LOG_ERROR, "Error creating mem stream for name. %s", strerror(errno));
+        LOG_ERROR("Error creating mem stream for name. %s", strerror(errno));
     }
 
     return status;
@@ -270,7 +256,7 @@ static int dynType_parseNestedType(FILE *stream, dyn_type *type) {
         int c = fgetc(stream);
         if (c != '=') {
             status = DT_PARSE_ERROR;
-            DT_LOG(DT_LOG_ERROR, "Error parsing nested type expected '=' got '%c'", c);
+            LOG_ERROR("Error parsing nested type expected '=' got '%c'", c);
         }
     }
 
@@ -279,7 +265,7 @@ static int dynType_parseNestedType(FILE *stream, dyn_type *type) {
         int c = fgetc(stream);
         if (c != ';') {
             status = DT_PARSE_ERROR;
-            DT_LOG(DT_LOG_ERROR, "Expected ';' got '%c'\n", c);
+            LOG_ERROR("Expected ';' got '%c'\n", c);
         }
     }
 
@@ -304,7 +290,7 @@ static int dynType_parseReference(FILE *stream, dyn_type *type) {
         status = dynType_parseRefByValue(stream, subType);
     } else {
         status = DT_MEM_ERROR;
-        DT_LOG(DT_LOG_ERROR, "Error allocating memory for subtype\n");
+        LOG_ERROR("Error allocating memory for subtype\n");
     }
 
     return status;
@@ -324,7 +310,7 @@ static int dynType_parseRefByValue(FILE *stream, dyn_type *type) {
             type->ref.ref = ref;
         } else {
             status = DT_PARSE_ERROR;
-            DT_LOG(DT_LOG_ERROR, "Error cannot find type '%s'", name);
+            LOG_ERROR("Error cannot find type '%s'", name);
         }
     } 
 
@@ -332,7 +318,7 @@ static int dynType_parseRefByValue(FILE *stream, dyn_type *type) {
         int c = fgetc(stream);
         if (c != ';') {
             status = DT_PARSE_ERROR;
-            DT_LOG(DT_LOG_ERROR, "Error expected ';' got '%c'", c);
+            LOG_ERROR("Error expected ';' got '%c'", c);
         } 
     }
 
@@ -366,7 +352,7 @@ static int dynType_parseSimple(int c, dyn_type *type) {
         type->ffiType = ffiType;
     } else {
         status = DT_PARSE_ERROR;
-        DT_LOG(DT_LOG_ERROR, "Error unsupported type '%c'", c);
+        LOG_ERROR("Error unsupported type '%c'", c);
     }
 
     return status;
@@ -531,11 +517,11 @@ int dynType_sequence_alloc(dyn_type *type, void *inst, int cap, void **out) {
         } else {
             seq->cap = 0;
             status = DT_MEM_ERROR;
-            DT_LOG(DT_LOG_ERROR, "Error allocating memory for buf")
+            LOG_ERROR("Error allocating memory for buf")
         }
     } else {
             status = DT_MEM_ERROR;
-            DT_LOG(DT_LOG_ERROR, "Error allocating memory for seq")
+            LOG_ERROR("Error allocating memory for seq")
     }
     return status;
 }
@@ -554,7 +540,7 @@ int dynType_sequence_append(dyn_type *type, void *inst, void *in) {
         memcpy(buf + offset, in, elSize);
     } else {
         status = DT_ERROR;
-        DT_LOG(DT_LOG_ERROR, "Sequence out of capacity")
+        LOG_ERROR("Sequence out of capacity")
     }
     return status;
 }
