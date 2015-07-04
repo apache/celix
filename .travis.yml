@@ -11,10 +11,11 @@ matrix:
 
 before_script:  
     - git clone https://github.com/cpputest/cpputest.git cpputest-build 
-    - cd cpputest-build
-    - ./configure && make
+    - mkdir cpputest-build/build
+    - cd cpputest-build/build
+    - cmake .. && make
     - sudo make install 
-    - cd ..
+    - cd ../..
     - mkdir build install
     - cd build
     - cmake -DENABLE_CODE_COVERAGE=ON -DBUILD_DEPLOYMENT_ADMIN=ON -DBUILD_EXAMPLES=ON -DBUILD_LOG_SERVICE=ON -DBUILD_LOG_WRITER=ON -DBUILD_REMOTE_SERVICE_ADMIN=ON -DBUILD_RSA_DISCOVERY_CONFIGURED=ON -DBUILD_RSA_DISCOVERY_ETCD=ON -DBUILD_RSA_DISCOVERY_SHM=ON -DBUILD_RSA_EXAMPLES=ON -DBUILD_RSA_REMOTE_SERVICE_ADMIN_SHM=ON -DBUILD_RSA_REMOTE_SERVICE_ADMIN_HTTP=ON -DBUILD_REMOTE_SHELL=ON -DBUILD_SHELL=ON -DBUILD_SHELL_TUI=ON -DCMAKE_INSTALL_PREFIX=../install ..
