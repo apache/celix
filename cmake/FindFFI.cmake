@@ -24,12 +24,12 @@
 #  FFI_LIBRARIES - The libraries needed to use this package
 
 find_path(FFI_INCLUDE_DIR ffi.h
-		PATHS $ENV{FFI_DIR} ${FFI_DIR} /usr /usr/local /opt/local
-          	PATH_SUFFIXES include include/ffi)
+		PATHS $ENV{FFI_DIR} ${FFI_DIR} /usr /usr/local /opt/local 
+        PATH_SUFFIXES include include/ffi include/x86_64-linux-gnu) 
 
 find_library(FFI_LIBRARY NAMES ffi
              	PATHS $ENV{FFI_DIR} ${FFI_DIR} /usr /usr/local /opt/local
-             	PATH_SUFFIXES lib lib64)
+             	PATH_SUFFIXES lib lib64 lib/x86_64-linux-gnu)
 
 
 include(FindPackageHandleStandardArgs)
