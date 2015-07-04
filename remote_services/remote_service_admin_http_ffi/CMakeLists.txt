@@ -18,13 +18,9 @@ celix_subproject(RSA_REMOTE_SERVICE_ADMIN_HTTP "Option to enable building the Re
 if (RSA_REMOTE_SERVICE_ADMIN_HTTP)
     find_package(CURL REQUIRED)
     find_package(Jansson REQUIRED)
+    find_package(FFI REQUIRED)
     
-    #TODO add findPackage for libffi
-    #set(FFI_INCLUDE /opt/local/lib/libffi-3.2.1/include)
-    #set(FFI_LIB /opt/local/lib/libffi.dylib) 
-    set(FFI_LIB /lib/libffi.so)
-     
-    include_directories(${FFI_INCLUDE})
+    include_directories(${FFI_INCLUDE_DIRS})
     include_directories(${CURL_INCLUDE_DIRS})
     include_directories(${JANSSON_INCLUDE_DIRS})
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
@@ -51,5 +47,5 @@ if (RSA_REMOTE_SERVICE_ADMIN_HTTP)
 
 	install_bundle(remote_service_admin_http)
 
-  target_link_libraries(remote_service_admin_http celix_framework ${CURL_LIBRARIES} ${JANSSON_LIBRARIES} ${FFI_LIB}) 
+  target_link_libraries(remote_service_admin_http celix_framework ${CURL_LIBRARIES} ${JANSSON_LIBRARIES} ${FFI_LIBRARIES}) 
 endif (RSA_REMOTE_SERVICE_ADMIN_HTTP)

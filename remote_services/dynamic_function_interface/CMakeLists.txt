@@ -3,17 +3,13 @@
 #
 find_package(Jansson REQUIRED)
 find_package(CppUTest REQUIRED)
-
-#set(FFI_LIB /lib64/libffi.so) #TODO add findPackag for lib ffi
-#set(FFI_LIB /opt/local/lib/libffi.dylib) 
-#set(FFI_INCLUDE /opt/local/lib/libffi-3.2.1/include)
-set(FFI_LIB /lib/libffi.so)
+find_package(FFI REQUIRED)
 
 include_directories( 
     ${CPPUTEST_INCLUDE_DIR}
     ${JANSSON_INCLUDE_DIRS}
     ${CMAKE_CURRENT_LIST_DIR}
-    ${FFI_INCLUDE}
+    ${FFI_INCLUDE_DIRS}
     memstream
 )
 
@@ -29,7 +25,7 @@ add_library(dfi
     avro_descriptor_translator.c
     ${MEMSTREAM_SOURCES}
 )
-target_link_libraries(dfi ${FFI_LIB} ${JANSSON_LIBRARY})
+target_link_libraries(dfi ${FFI_LIBRARIES} ${JANSSON_LIBRARY})
 
 
 #if (FRAMEWORK_TESTS)
@@ -41,7 +37,7 @@ target_link_libraries(dfi ${FFI_LIB} ${JANSSON_LIBRARY})
 	    tst/avro_descriptor_translator_tests.cpp
 	    tst/run_tests.cpp
 	)
-	target_link_libraries(dfi_tests dfi ${FFI_LIB} ${CPPUTEST_LIBRARY} ${JANSSON_LIBRARY}) 
+	target_link_libraries(dfi_tests dfi ${FFI_LIBRARIES} ${CPPUTEST_LIBRARY} ${JANSSON_LIBRARY}) 
 
 	add_custom_target(copy-input 
 	    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_LIST_DIR}/schemas schemas
