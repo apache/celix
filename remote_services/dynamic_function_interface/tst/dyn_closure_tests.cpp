@@ -100,7 +100,10 @@ static void tests() {
         double (*func)(int32_t a, struct example2_arg2 b, int32_t c) = NULL;
         rc = dynClosure_getFnPointer(dynClosure, (void(**)(void))&func);
         CHECK_EQUAL(0, rc);
-        struct example2_arg2 b = { .val1 = 1.0, .val2 = 1.5, .val3 = 2.0 };
+        struct example2_arg2 b;
+        b.val1 = 1.0;
+        b.val2 = 1.5;
+        b.val3 = 2.0;
         double ret = func(2,b,4);
         printf("Return value for example2 is %f\n", ret);
         CHECK_EQUAL(2, g_count);
