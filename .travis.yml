@@ -10,14 +10,14 @@ matrix:
     - compiler: clang
 
 before_script:  
-    - git clone https://github.com/cpputest/cpputest.git cpputest-build 
+    - git clone -b 3.7.2 --single-branch https://github.com/cpputest/cpputest.git cpputest-build
     - cd cpputest-build
     - cmake . && make
     - sudo make install 
     - cd ..
-    - git clone https://github.com/akheron/jansson.git jansson-build
+    - git clone -b 2.7 --single-branch https://github.com/akheron/jansson.git jansson-build
     - cd jansson-build
-    - cmake . && make
+    - cmake -DJANSSON_BUILD_SHARED_LIBS=ON . && make
     - sudo make install
     - cd ..
     - mkdir build install
