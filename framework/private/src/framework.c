@@ -204,6 +204,7 @@ celix_status_t framework_create(framework_pt *framework, properties_pt config) {
         status = CELIX_DO_IF(status, celixThreadMutex_create(&(*framework)->bundleLock, NULL));
         status = CELIX_DO_IF(status, celixThreadMutex_create(&(*framework)->installRequestLock, NULL));
         status = CELIX_DO_IF(status, celixThreadMutex_create(&(*framework)->dispatcherLock, NULL));
+        status = CELIX_DO_IF(status, celixThreadMutex_create(&(*framework)->bundleListenerLock, NULL));
         status = CELIX_DO_IF(status, celixThreadCondition_init(&(*framework)->dispatcher, NULL));
         if (status == CELIX_SUCCESS) {
 #ifdef WITH_APR
@@ -327,6 +328,7 @@ celix_status_t framework_destroy(framework_pt framework) {
 	}
 
 	celixThreadCondition_destroy(&framework->dispatcher);
+	celixThreadMutex_destroy(&framework->bundleListenerLock);
 	celixThreadMutex_destroy(&framework->dispatcherLock);
 	celixThreadMutex_destroy(&framework->installRequestLock);
 	celixThreadMutex_destroy(&framework->bundleLock);
@@ -1511,7 +1513,15 @@ celix_status_t fw_addBundleListener(framework_pt framework, bundle_pt bundle, bu
 		bundleListener->listener = listener;
 		bundleListener->bundle = bundle;
 
-		arrayList_add(framework->bundleListeners, bundleListener);
+		if (celixThreadMutex_lock(&framework->bundleListenerLock) != CELIX_SUCCESS) {
+			status = CELIX_FRAMEWORK_EXCEPTION;
+		} else {
+			arrayList_add(framework->bundleListeners, bundleListener);
+
+			if (celixThreadMutex_unlock(&framework->bundleListenerLock)) {
+				status = CELIX_FRAMEWORK_EXCEPTION;
+			}
+		}
 	}
 
 	framework_logIfError(framework->logger, status, NULL, "Failed to add bundle listener");
@@ -1525,14 +1535,22 @@ celix_status_t fw_removeBundleListener(framework_pt framework, bundle_pt bundle,
 	unsigned int i;
 	fw_bundle_listener_pt bundleListener;
 
-	for (i = 0; i < arrayList_size(framework->bundleListeners); i++) {
-		bundleListener = (fw_bundle_listener_pt) arrayList_get(framework->bundleListeners, i);
-		if (bundleListener->listener == listener && bundleListener->bundle == bundle) {
-			arrayList_remove(framework->bundleListeners, i);
+	if (celixThreadMutex_lock(&framework->bundleListenerLock) != CELIX_SUCCESS) {
+		status = CELIX_FRAMEWORK_EXCEPTION;
+	}
+	else {
+		for (i = 0; i < arrayList_size(framework->bundleListeners); i++) {
+			bundleListener = (fw_bundle_listener_pt) arrayList_get(framework->bundleListeners, i);
+			if (bundleListener->listener == listener && bundleListener->bundle == bundle) {
+				arrayList_remove(framework->bundleListeners, i);
 
-			bundleListener->bundle = NULL;
-			bundleListener->listener = NULL;
-			free(bundleListener);
+				bundleListener->bundle = NULL;
+				bundleListener->listener = NULL;
+				free(bundleListener);
+			}
+		}
+		if (celixThreadMutex_unlock(&framework->bundleListenerLock)) {
+			status = CELIX_FRAMEWORK_EXCEPTION;
 		}
 	}
 
@@ -2223,29 +2241,46 @@ static void *fw_eventDispatcher(void *fw) {
 		}
 
 		if (validReq) {
-			int i;
-			int size = arrayList_size(request->listeners);
-			for (i = 0; i < size; i++) {
-				if (request->type == BUNDLE_EVENT_TYPE) {
-					fw_bundle_listener_pt listener = (fw_bundle_listener_pt) arrayList_get(request->listeners, i);
-					bundle_event_pt event = (bundle_event_pt) malloc(sizeof(*event));
-					event->bundle = request->bundle;
-					event->type = request->eventType;
+			if (celixThreadMutex_lock(&framework->bundleListenerLock) != CELIX_SUCCESS) {
+				status = CELIX_FRAMEWORK_EXCEPTION;
+			}
+			else if (celixThreadMutex_lock(&framework->bundleLock) != CELIX_SUCCESS) {
+				celixThreadMutex_unlock(&framework->bundleListenerLock);
+				status = CELIX_FRAMEWORK_EXCEPTION;
+			}
+			else {
+				int i;
+				int size = arrayList_size(request->listeners);
+				for (i = 0; i < size; i++) {
+					if (request->type == BUNDLE_EVENT_TYPE) {
+						fw_bundle_listener_pt listener = (fw_bundle_listener_pt) arrayList_get(request->listeners, i);
+						bundle_event_pt event = (bundle_event_pt) malloc(sizeof(*event));
+						event->bundle = request->bundle;
+						event->type = request->eventType;
 
-					fw_invokeBundleListener(framework, listener->listener, event, listener->bundle);
+						fw_invokeBundleListener(framework, listener->listener, event, listener->bundle);
 
-					free(event);
-				} else if (request->type == FRAMEWORK_EVENT_TYPE) {
-					fw_framework_listener_pt listener = (fw_framework_listener_pt) arrayList_get(request->listeners, i);
-					framework_event_pt event = (framework_event_pt) malloc(sizeof(*event));
-					event->bundle = request->bundle;
-					event->type = request->eventType;
-					event->error = request->error;
-					event->errorCode = request->errorCode;
+						free(event);
+					} else if (request->type == FRAMEWORK_EVENT_TYPE) {
+						fw_framework_listener_pt listener = (fw_framework_listener_pt) arrayList_get(request->listeners, i);
+						framework_event_pt event = (framework_event_pt) malloc(sizeof(*event));
+						event->bundle = request->bundle;
+						event->type = request->eventType;
+						event->error = request->error;
+						event->errorCode = request->errorCode;
 
-					fw_invokeFrameworkListener(framework, listener->listener, event, listener->bundle);
+						fw_invokeFrameworkListener(framework, listener->listener, event, listener->bundle);
 
-					free(event);
+						free(event);
+					}
+				}
+
+				if (celixThreadMutex_unlock(&framework->bundleLock)) {
+					status = CELIX_FRAMEWORK_EXCEPTION;
+				}
+
+				if (celixThreadMutex_unlock(&framework->bundleListenerLock)) {
+					status = CELIX_FRAMEWORK_EXCEPTION;
 				}
 			}
 		}

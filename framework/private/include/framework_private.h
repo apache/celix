@@ -55,8 +55,10 @@ struct framework {
     hash_map_pt installedBundleMap;
     hash_map_pt installRequestMap;
     array_list_pt serviceListeners;
-    array_list_pt bundleListeners;
     array_list_pt frameworkListeners;
+
+    array_list_pt bundleListeners;
+    celix_thread_mutex_t bundleListenerLock;
 
     long nextBundleId;
     struct serviceRegistry * registry;

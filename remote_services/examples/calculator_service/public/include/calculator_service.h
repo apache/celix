@@ -28,6 +28,8 @@
 #define CALCULATOR_SERVICE_H_
 
 #define CALCULATOR_SERVICE "org.apache.celix.calc.api.Calculator"
+#define CALCULATOR2_SERVICE "org.apache.celix.calc.api.Calculator2"
+
 
 typedef struct calculator *calculator_pt;
 

@@ -43,6 +43,11 @@ celix_status_t topologyManager_rsaAdded(void *handle, service_reference_pt refer
 celix_status_t topologyManager_rsaModified(void *handle, service_reference_pt reference, void *service);
 celix_status_t topologyManager_rsaRemoved(void *handle, service_reference_pt reference, void *service);
 
+celix_status_t topologyManager_endpointListenerAdding(void* handle, service_reference_pt reference, void** service);
+celix_status_t topologyManager_endpointListenerAdded(void* handle, service_reference_pt reference, void* service);
+celix_status_t topologyManager_endpointListenerModified(void * handle, service_reference_pt reference, void* service);
+celix_status_t topologyManager_endpointListenerRemoved(void * handle, service_reference_pt reference, void* service);
+
 celix_status_t topologyManager_serviceChanged(void *listener, service_event_pt event);
 
 celix_status_t topologyManager_addImportedService(void *handle, endpoint_description_pt endpoint, char *matchedFilter);

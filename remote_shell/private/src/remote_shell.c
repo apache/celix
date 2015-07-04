@@ -25,10 +25,11 @@
  */
 
 #include <stdlib.h>
-
+#include <string.h>
 #include <unistd.h>
 #include <utils.h>
 #include <array_list.h>
+#include <sys/socket.h>
 
 #include "log_helper.h"
 

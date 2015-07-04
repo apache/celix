@@ -24,6 +24,7 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdlib.h>
+#include <string.h>
 
 #include "driver_attributes.h"
 #include "bundle.h"

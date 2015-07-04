@@ -26,6 +26,7 @@
 
 #include <stdlib.h>
 #include <ctype.h>
+#include <string.h>
 
 #include "array_list.h"
 #include "bundle_context.h"
