@@ -16,34 +16,40 @@
 # under the License.
 celix_subproject(RSA_REMOTE_SERVICE_ADMIN_HTTP "Option to enable building the Remote Service Admin Service HTTP ffi" OFF)
 if (RSA_REMOTE_SERVICE_ADMIN_HTTP)
-	find_package(CURL REQUIRED)
-  find_package(Jansson REQUIRED)
-
-	include_directories(${CURL_INCLUDE_DIRS})
-  include_directories(${Jansson})
-	include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-	include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
-	include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/private/include")
-	include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include")
-	include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
-	include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/include")
-	include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin_http/private/include")
-	include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
-
-	SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_remote_service_admin_http_ffi")
-	SET(BUNDLE_VERSION "0.0.1")
-  SET_HEADERS("Bundle-Name: Apache Celix Remote Service Admin HTTP for ffi")
-
-	bundle(remote_service_admin_http SOURCES
-	private/src/remote_service_admin_impl
-	private/src/remote_service_admin_activator
-	${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/export_registration_impl
-	${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/import_registration_impl
-	${PROJECT_SOURCE_DIR}/remote_services/utils/private/src/civetweb.c
-	${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
-  )
+    find_package(CURL REQUIRED)
+    find_package(Jansson REQUIRED)
+    
+    #TODO add findPackage for libffi
+    #set(FFI_INCLUDE /opt/local/lib/libffi-3.2.1/include)
+    #set(FFI_LIB /opt/local/lib/libffi.dylib) 
+    set(FFI_LIB /lib/libffi.so)
+     
+    include_directories(${FFI_INCLUDE})
+    include_directories(${CURL_INCLUDE_DIRS})
+    include_directories(${JANSSON_INCLUDE_DIRS})
+    include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+    include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
+    include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/private/include")
+    include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include")
+    include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
+    include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/include")
+    include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin_http/private/include")
+    include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
+    
+    SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_remote_service_admin_http_ffi")
+    SET(BUNDLE_VERSION "0.0.1")
+    SET_HEADERS("Bundle-Name: Apache Celix Remote Service Admin HTTP for ffi")
+    
+    bundle(remote_service_admin_http SOURCES
+    private/src/remote_service_admin_impl
+    private/src/remote_service_admin_activator
+    ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/export_registration_impl
+    ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/import_registration_impl
+    ${PROJECT_SOURCE_DIR}/remote_services/utils/private/src/civetweb.c
+    ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
+    )
 
 	install_bundle(remote_service_admin_http)
 
-  target_link_libraries(remote_service_admin_http celix_framework ${CURL_LIBRARIES} ${JANSSON_LIBRARIES} /lib64/libffi.so ) 
+  target_link_libraries(remote_service_admin_http celix_framework ${CURL_LIBRARIES} ${JANSSON_LIBRARIES} ${FFI_LIB}) 
 endif (RSA_REMOTE_SERVICE_ADMIN_HTTP)
