@@ -459,7 +459,6 @@ int dynType_alloc(dyn_type *type, void **bufLoc) {
 
 
 int dynType_complex_indexForName(dyn_type *type, const char *name) {
-    printf("descriptor is %c\n", type->descriptor);
     assert(type->type == DYN_TYPE_COMPLEX);
     int i = 0;
     int index = -1;
