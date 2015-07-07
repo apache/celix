@@ -1,6 +1,4 @@
 /*
- * Licensed under Apache License v2. See LICENSE for more information.
- *
  * fmem.c : fmemopen() on top of BSD's funopen()
  * 20081017 AF
  */

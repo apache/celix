@@ -1,7 +1,3 @@
-/*
- * Licensed under Apache License v2. See LICENSE for more information.
- *
- */
 #ifndef OPEN_MEMSTREAM_H_
 #define OPEN_MEMSTREAM_H_
 

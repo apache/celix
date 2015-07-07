@@ -1,8 +1,4 @@
-/*
- * Licensed under Apache License v2. See LICENSE for more information.
- *
- * Use funopen(3) to provide open_memstream(3) like functionality. 
- */
+/* Use funopen(3) to provide open_memstream(3) like functionality. */
 
 #include <stdio.h>
 #include <stdlib.h>
