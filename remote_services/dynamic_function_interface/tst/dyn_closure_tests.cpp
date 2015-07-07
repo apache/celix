@@ -47,7 +47,7 @@ void example2_binding(void *userData, void* args[], void *out) {
     int32_t a = *((int32_t *)args[0]);
     struct example2_arg2 b =  *((struct example2_arg2 *)args[1]);
     int32_t c = *((int32_t *)args[2]);
-    int32_t *ret = (int32_t *)out;
+    double *ret = (double *)out;
     *ret = a + b.val1 + b.val2 + b.val3 + c;
     g_count += 1;
 }
@@ -79,7 +79,7 @@ static void example3_binding(void *userData, void* args[], void *out) {
 
 static void tests() {
     dyn_closure_type *dynClosure = NULL;
-    int rc;
+    int rc = 0;
 
     {
         rc = dynClosure_create(EXAMPLE1_SCHEMA, example1_binding, NULL, &dynClosure);
@@ -88,8 +88,9 @@ static void tests() {
         int rc = dynClosure_getFnPointer(dynClosure, (void(**)(void))&func);
         CHECK_EQUAL(0, rc);
         int32_t ret = func(2,3,4);
-        printf("Return value for example1 is %i\n", ret);
+        //printf("Return value for example1 is %i\n", ret);
         CHECK_EQUAL(1, g_count);
+	CHECK_EQUAL(9, ret);
         dynClosure_destroy(dynClosure);
     }
 
@@ -105,8 +106,9 @@ static void tests() {
         b.val2 = 1.5;
         b.val3 = 2.0;
         double ret = func(2,b,4);
-        printf("Return value for example2 is %f\n", ret);
+        //printf("Return value for example2 is %f\n", ret);
         CHECK_EQUAL(2, g_count);
+	CHECK_EQUAL(10.5, ret);
         dynClosure_destroy(dynClosure);
     }
 
@@ -118,8 +120,9 @@ static void tests() {
         rc = dynClosure_getFnPointer(dynClosure, (void(**)(void))&func);
         CHECK_EQUAL(0, rc);
         struct example3_ret *ret = func(2,8,4);
-        printf("Return value for example3 is {sum:%i, max:%i, min:%i}\n", ret->sum, ret->max, ret->min);
+        //printf("Return value for example3 is {sum:%i, max:%i, min:%i}\n", ret->sum, ret->max, ret->min);
         CHECK_EQUAL(3, g_count);
+	CHECK_EQUAL(14, ret->sum);
         dynClosure_destroy(dynClosure);
         free(ret);
     }

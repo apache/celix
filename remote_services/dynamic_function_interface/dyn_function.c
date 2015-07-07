@@ -30,7 +30,7 @@ struct _dyn_closure_type {
     ffi_closure *ffiClosure;
     void (*fn)(void);
     void (*bind)(void *userData, void *args[], void *ret);
-    void *userData;
+    void *userData; //for bind
 };
 
 
@@ -122,7 +122,15 @@ static int dynFunction_initCif(ffi_cif *cif, dyn_type *arguments, dyn_type *retu
 
 int dynFunction_destroy(dyn_function_type *dynFunc) {
     int result = 0;
-    LOG_WARNING("TODO destroy dyn dync\n");
+    if (dynFunc != NULL) {
+        if (dynFunc->arguments != NULL) {
+	    dynType_destroy(dynFunc->arguments);
+	}
+        if (dynFunc->funcReturn != NULL) {
+	    dynType_destroy(dynFunc->funcReturn);
+	}
+	free(dynFunc);
+    }
     return result;
 }
 
@@ -180,6 +188,17 @@ int dynClosure_getFnPointer(dyn_closure_type *dynClosure, void (**fn)(void)) {
 
 int dynClosure_destroy(dyn_closure_type *dynClosure) {
     int result = 0;
-    LOG_WARNING("TODO destroy closure\n");
+    if (dynClosure != NULL) {
+        if (dynClosure->arguments != NULL) {
+	    dynType_destroy(dynClosure->arguments);
+	}
+        if (dynClosure->funcReturn != NULL) {
+	    dynType_destroy(dynClosure->funcReturn);
+	}
+	if (dynClosure->ffiClosure != NULL) {
+	    ffi_closure_free(dynClosure->ffiClosure);
+	}
+	free(dynClosure);
+    }
     return result;
 }
