@@ -23,14 +23,14 @@ extern "C" {
         dyn_type *type;
         int i;
         type = NULL;
-        printf("\n-- example %s with descriptor string '%s' --\n", exName, descriptorStr);
+        //printf("\n-- example %s with descriptor string '%s' --\n", exName, descriptorStr);
         int status = dynType_create(descriptorStr, &type);
         CHECK_EQUAL(0, status);
         if (status == 0) {
-            dynType_print(type);
+            //dynType_print(type);
             dynType_destroy(type);
         }
-        printf("--\n\n");
+        //printf("--\n\n");
     }
 }
 
