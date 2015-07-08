@@ -120,8 +120,7 @@ static int dynFunction_initCif(ffi_cif *cif, dyn_type *arguments, dyn_type *retu
     return result;
 }
 
-int dynFunction_destroy(dyn_function_type *dynFunc) {
-    int result = 0;
+void dynFunction_destroy(dyn_function_type *dynFunc) {
     if (dynFunc != NULL) {
         if (dynFunc->arguments != NULL) {
 	    dynType_destroy(dynFunc->arguments);
@@ -131,7 +130,6 @@ int dynFunction_destroy(dyn_function_type *dynFunc) {
 	}
 	free(dynFunc);
     }
-    return result;
 }
 
 int dynFunction_call(dyn_function_type *dynFunc, void *returnValue, void **argValues) {
@@ -186,8 +184,7 @@ int dynClosure_getFnPointer(dyn_closure_type *dynClosure, void (**fn)(void)) {
 }
 
 
-int dynClosure_destroy(dyn_closure_type *dynClosure) {
-    int result = 0;
+void dynClosure_destroy(dyn_closure_type *dynClosure) {
     if (dynClosure != NULL) {
         if (dynClosure->arguments != NULL) {
 	    dynType_destroy(dynClosure->arguments);
@@ -200,5 +197,4 @@ int dynClosure_destroy(dyn_closure_type *dynClosure) {
 	}
 	free(dynClosure);
     }
-    return result;
 }

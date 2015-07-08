@@ -21,6 +21,7 @@ endif()
 add_library(dfi
     dyn_type.c
     dyn_function.c
+    dyn_interface.c
     json_serializer.c
     avro_descriptor_translator.c
     ${MEMSTREAM_SOURCES}

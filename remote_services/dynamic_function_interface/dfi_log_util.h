@@ -4,8 +4,6 @@
 #ifndef _DFI_LOG_UTIL_H_
 #define _DFI_LOG_UTIL_H_
 
-#define DFI_TEST(cmp) printf("%s", cmp);
-
 typedef void (*logf_ft)(void *handle, int level, const char *file, int line, const char *format, ...); 
 
 #define DFI_SETUP_LOG_HEADER(cmp) \

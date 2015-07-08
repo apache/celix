@@ -4,25 +4,15 @@
 #ifndef __DESCRIPTOR_TRANSLATOR_H_
 #define __DESCRIPTOR_TRANSLATOR_H_
 
+#include <stdio.h>
 #include  <sys/queue.h>
 
-typedef struct _interface_descriptor_type interface_descriptor_type;
+#include "dfi_log_util.h"
+#include "dyn_interface.h"
 
-struct _interface_descriptor_type {
-    TAILQ_HEAD(, _method_descriptor_type) methodDescriptors;
-};
+//logging
+DFI_SETUP_LOG_HEADER(descriptorTranslator);
 
-typedef struct _method_descriptor_type method_descriptor_type;
-
-struct _method_descriptor_type {
-    int identifier;
-    char *strIdentifier;
-    char *descriptor;
-    char *name;
-    TAILQ_ENTRY(_method_descriptor_type) entries; 
-};
-
-int descriptorTranslator_create(const char *schemaStr, interface_descriptor_type **out);
-int descriptorTranslator_destroy(interface_descriptor_type *desc);
+int descriptorTranslator_translate(const char *schemaStr, dyn_interface_type **out);
 
 #endif

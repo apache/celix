@@ -27,7 +27,6 @@ static void stdLog(void *handle, int level, const char *file, int line, const ch
 
 #define EXAMPLE1_DESCRIPTOR "example(III)I"
 static void example1_binding(void *userData, void* args[], void *out) {
-    printf("example1 closure called\n");
     int32_t a = *((int32_t *)args[0]);
     int32_t b = *((int32_t *)args[1]);
     int32_t c = *((int32_t *)args[2]);
@@ -43,7 +42,6 @@ struct example2_arg2 {
     double val3;
 };
 void example2_binding(void *userData, void* args[], void *out) {
-    printf("example2 closure called\n");
     int32_t a = *((int32_t *)args[0]);
     struct example2_arg2 b =  *((struct example2_arg2 *)args[1]);
     int32_t c = *((int32_t *)args[2]);
@@ -61,7 +59,6 @@ struct example3_ret {
 };
 
 static void example3_binding(void *userData, void* args[], void *out) {
-    printf("example closure called\n");
     int32_t a = *((int32_t *)args[0]);
     int32_t b = *((int32_t *)args[1]);
     int32_t c = *((int32_t *)args[2]);
@@ -88,7 +85,6 @@ static void tests() {
         int rc = dynClosure_getFnPointer(dynClosure, (void(**)(void))&func);
         CHECK_EQUAL(0, rc);
         int32_t ret = func(2,3,4);
-        //printf("Return value for example1 is %i\n", ret);
         CHECK_EQUAL(1, g_count);
 	CHECK_EQUAL(9, ret);
         dynClosure_destroy(dynClosure);
@@ -106,7 +102,6 @@ static void tests() {
         b.val2 = 1.5;
         b.val3 = 2.0;
         double ret = func(2,b,4);
-        //printf("Return value for example2 is %f\n", ret);
         CHECK_EQUAL(2, g_count);
 	CHECK_EQUAL(10.5, ret);
         dynClosure_destroy(dynClosure);
@@ -120,7 +115,6 @@ static void tests() {
         rc = dynClosure_getFnPointer(dynClosure, (void(**)(void))&func);
         CHECK_EQUAL(0, rc);
         struct example3_ret *ret = func(2,8,4);
-        //printf("Return value for example3 is {sum:%i, max:%i, min:%i}\n", ret->sum, ret->max, ret->min);
         CHECK_EQUAL(3, g_count);
 	CHECK_EQUAL(14, ret->sum);
         dynClosure_destroy(dynClosure);
