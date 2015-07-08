@@ -89,9 +89,9 @@ static int dynFunction_parseDescriptor(const char *descriptor, dyn_type **argume
         returnDesc[len] = '\0';
         LOG_DEBUG("returnDesc is '%s'\n", returnDesc);
 
-        status = dynType_create(argDesc, arguments);
+        status = dynType_create(argDesc, NULL, arguments);
         if (status == 0) {
-            status = dynType_create(returnDesc, funcReturn);
+            status = dynType_create(returnDesc, NULL, funcReturn);
         } 
     } else {
         status = 1;

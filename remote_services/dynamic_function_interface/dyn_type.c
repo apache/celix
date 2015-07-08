@@ -15,7 +15,7 @@
 
 DFI_SETUP_LOG(dynType)
 
-static int dynType_createWithStream(FILE *stream, dyn_type *parent, dyn_type **type);
+static int dynType_createWithStream(FILE *stream, dyn_type *parent, struct dyn_type_list_head *typeReferences, dyn_type **result);
 static void dynType_clear(dyn_type *type);
 static void dynType_clearComplex(dyn_type *type);
 static void dynType_clearSequence(dyn_type *type);
@@ -57,11 +57,11 @@ static const int DT_ERROR = 1;
 static const int DT_MEM_ERROR = 2;
 static const int DT_PARSE_ERROR = 3;
 
-int dynType_create(const char *descriptor, dyn_type **type) {
+int dynType_create(const char *descriptor, struct dyn_type_list_head *typeReferences, dyn_type **type) {
     int status = DT_OK;
     FILE *stream = fmemopen((char *)descriptor, strlen(descriptor), "r");
     if (stream != NULL) {
-        status = dynType_createWithStream(stream, NULL, type);
+        status = dynType_createWithStream(stream, NULL, typeReferences, type);
         if (status == DT_OK) {
             int c = fgetc(stream);
             if (c != '\0' && c != EOF) {
@@ -77,12 +77,13 @@ int dynType_create(const char *descriptor, dyn_type **type) {
     return status;
 }
 
-static int dynType_createWithStream(FILE *stream, dyn_type *parent, dyn_type **result) {
+static int dynType_createWithStream(FILE *stream, dyn_type *parent, struct dyn_type_list_head *typeReferences, dyn_type **result) {
     int status = DT_OK;
     dyn_type *type = calloc(1, sizeof(*type));
     if (type != NULL) {
         type->parent = parent;
         type->type = DYN_TYPE_INVALID;
+        type->typeReferences = typeReferences;
         TAILQ_INIT(&type->nestedTypesHead);
         status = dynType_parse(stream, type);        
         if (status == DT_OK) {
@@ -333,7 +334,7 @@ static int dynType_parseSequence(FILE *stream, dyn_type *type) {
     type->descriptor = '[';
 
     type->sequence.seqType.elements = seq_types;
-    status = dynType_createWithStream(stream, type, &type->sequence.itemType);
+    status = dynType_createWithStream(stream, type, NULL, &type->sequence.itemType);
 
     if (status == DT_OK) {
         type->ffiType = &type->sequence.seqType;
@@ -364,7 +365,7 @@ static int dynType_parseTypedPointer(FILE *stream, dyn_type *type) {
     type->descriptor = '*';
     type->ffiType = &ffi_type_pointer;
 
-    status = dynType_createWithStream(stream, type, &type->typedPointer.typedType);
+    status = dynType_createWithStream(stream, type, NULL, &type->typedPointer.typedType);
 
     return status;
 }
@@ -604,8 +605,17 @@ static ffi_type * dynType_ffiTypeFor(int c) {
 
 static dyn_type * dynType_findType(dyn_type *type, char *name) {
     dyn_type *result = NULL;
-
     struct nested_entry *entry = NULL;
+
+    if (type->typeReferences != NULL) {
+        TAILQ_FOREACH(entry, type->typeReferences, entries) {
+            if (strcmp(name, entry->type.name) == 0) {
+                result = &entry->type;
+                break;
+            }
+        }
+    }
+
     TAILQ_FOREACH(entry, &type->nestedTypesHead, entries) {
         if (strcmp(name, entry->type.name) == 0) {
             result = &entry->type;

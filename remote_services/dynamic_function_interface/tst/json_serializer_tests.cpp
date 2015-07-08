@@ -136,7 +136,7 @@ static void tests() {
 
     type = NULL;
     inst = NULL;
-    rc = dynType_create(example1_descriptor, &type);    
+    rc = dynType_create(example1_descriptor, NULL, &type);    
     CHECK_EQUAL(0, rc);
     rc = json_deserialize(type, example1_input, &inst); 
     CHECK_EQUAL(0, rc);
@@ -146,7 +146,7 @@ static void tests() {
 
     type = NULL;
     inst = NULL;
-    rc = dynType_create(example2_descriptor, &type);
+    rc = dynType_create(example2_descriptor, NULL, &type);
     CHECK_EQUAL(0, rc);
     rc = json_deserialize(type, example2_input, &inst); 
     CHECK_EQUAL(0, rc);
@@ -155,7 +155,7 @@ static void tests() {
 
     type = NULL;
     inst = NULL;
-    rc = dynType_create(example3_descriptor, &type);
+    rc = dynType_create(example3_descriptor, NULL, &type);
     CHECK_EQUAL(0, rc);
     rc = json_deserialize(type, example3_input, &inst); 
     CHECK_EQUAL(0, rc);
@@ -163,7 +163,7 @@ static void tests() {
 
     type = NULL;
     inst = NULL;
-    rc = dynType_create(example4_descriptor, &type);
+    rc = dynType_create(example4_descriptor, NULL, &type);
     CHECK_EQUAL(0, rc);
     rc = json_deserialize(type, example4_input, &inst); 
     CHECK_EQUAL(0, rc);

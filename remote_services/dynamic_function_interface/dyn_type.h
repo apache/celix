@@ -76,13 +76,16 @@
 
 typedef struct _dyn_type dyn_type;
 
+TAILQ_HEAD(dyn_type_list_head, nested_entry); 
+
 struct _dyn_type {
     char *name;
     char descriptor;
     int type;
     ffi_type *ffiType;
     dyn_type *parent;
-    TAILQ_HEAD(, nested_entry) nestedTypesHead;
+    struct dyn_type_list_head *typeReferences; //NOTE: not owned
+    struct dyn_type_list_head nestedTypesHead;
     union {
         struct {
             TAILQ_HEAD(, complex_type_entry) entriesHead;
@@ -108,8 +111,6 @@ struct complex_type_entry {
     TAILQ_ENTRY(complex_type_entry) entries;
 };
 
-TAILQ_HEAD(dyn_type_list_head, nested_entry); 
-
 struct nested_entry {
     dyn_type type;
     TAILQ_ENTRY(nested_entry) entries;
@@ -120,7 +121,7 @@ struct nested_entry {
 DFI_SETUP_LOG_HEADER(dynType);
 
 //generic
-int dynType_create(const char *descriptor, dyn_type **type);
+int dynType_create(const char *descriptor, struct dyn_type_list_head *typeReferences, dyn_type **type);
 void dynType_destroy(dyn_type *type);
 int dynType_alloc(dyn_type *type, void **bufLoc);
 void dynType_print(dyn_type *type);
