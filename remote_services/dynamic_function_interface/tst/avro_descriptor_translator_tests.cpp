@@ -78,22 +78,22 @@ extern "C" {
         return count;
     }
 
-    static void test1(void) {
+    static void simple(void) {
         //first argument void *handle, last argument output pointer for result and return int with status for exception handling
         //sum(DD)D -> sum(PDD*D)N 
         //sub(DD)D -> sub(PDD*D)N
         //sqrt(D)D -> sqrt(PD*D)N
 
-        dyn_interface_type *ift = createInterfaceInfo("schemas/simple.avpr");
+        dyn_interface_type *intf = createInterfaceInfo("schemas/simple.avpr");
 
-        int count = countMethodInfos(ift);
+        int count = countMethodInfos(intf);
         CHECK_EQUAL(3, count);
 
-        count = countTypeInfos(ift);
+        count = countTypeInfos(intf);
         CHECK_EQUAL(0, count);
 
         method_info_type *mInfo = NULL;
-        TAILQ_FOREACH(mInfo, &ift->methodInfos, entries) {
+        TAILQ_FOREACH(mInfo, &intf->methodInfos, entries) {
             if (strcmp("sum", mInfo->name) == 0) {
                 STRCMP_EQUAL("sum(PDD*D)N", mInfo->descriptor);
             } else if (strcmp("add", mInfo->name) == 0) {
@@ -102,37 +102,61 @@ extern "C" {
                 STRCMP_EQUAL("sqrt(PD*D)N", mInfo->descriptor);
             }
         }
+
+        dynInterface_destroy(intf);
     }
 
-    static void test2(void) {
-        dyn_interface_type *ift = createInterfaceInfo("schemas/complex.avpr");
+    static void complex(void) {
+        dyn_interface_type *intf = createInterfaceInfo("schemas/complex.avpr");
 
-        int count = countMethodInfos(ift);
+        int count = countMethodInfos(intf);
         CHECK_EQUAL(1, count);
 
-        method_info_type *mInfo = TAILQ_FIRST(&ift->methodInfos);
+        method_info_type *mInfo = TAILQ_FIRST(&intf->methodInfos);
+        STRCMP_EQUAL("stats", mInfo->name);
         STRCMP_EQUAL("stats(P[D*LStatResult;)N", mInfo->descriptor);
 
-        count = countTypeInfos(ift);
+        count = countTypeInfos(intf);
         CHECK_EQUAL(1, count);
 
-        type_info_type *tInfo = TAILQ_FIRST(&ift->typeInfos);
+        type_info_type *tInfo = TAILQ_FIRST(&intf->typeInfos);
         STRCMP_EQUAL("StatResult", tInfo->name);
         STRCMP_EQUAL("{DDD[D sum min max input}", tInfo->descriptor);
+
+        dynInterface_destroy(intf);
     }
 
+    static void invalid(const char *file) {
+        char *schema = readSchema(file);
+        dyn_interface_type *ift= NULL;
+
+        int status = descriptorTranslator_translate(schema, &ift);
+        CHECK(status != 0);
+        
+        free(schema);
+    }
 }
 
 TEST_GROUP(AvroDescTranslatorTest) {
     void setup() {
-        descriptorTranslator_logSetup(stdLog, NULL, 4);
+        descriptorTranslator_logSetup(stdLog, NULL, 3);
+        dynInterface_logSetup(stdLog, NULL, 3);
+        dynType_logSetup(stdLog, NULL, 3);
     }
 };
 
-TEST(AvroDescTranslatorTest, Test1) {
-    test1();
+TEST(AvroDescTranslatorTest, simple) {
+    simple();
 }
 
-TEST(AvroDescTranslatorTest, Test2) {
-    test2();
+TEST(AvroDescTranslatorTest, complex) {
+    complex();
+}
+
+TEST(AvroDescTranslatorTest, invalid1) {
+    invalid("schemas/invalid1.avpr");
+}
+
+TEST(AvroDescTranslatorTest, invalid2) {
+    invalid("schemas/invalid2.avpr");
 }

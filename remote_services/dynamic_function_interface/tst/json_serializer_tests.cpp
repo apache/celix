@@ -173,6 +173,7 @@ static void tests() {
 
 TEST_GROUP(JsonSerializerTests) {
     void setup() {
+        dynType_logSetup(stdLog, NULL, 3);
     }
 };
 

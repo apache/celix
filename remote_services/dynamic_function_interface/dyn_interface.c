@@ -32,16 +32,49 @@ void dynInterface_destroy(dyn_interface_type *intf) {
         if (intf->name != NULL) {
             free(intf->name);
         }
-        type_info_type *tInfo = NULL;
-        TAILQ_FOREACH(tInfo, &intf->typeInfos, entries) {
-            LOG_WARNING("TODO");
-            //TODO add destroy func for type_info
+
+        type_info_type *tmp = NULL;
+        type_info_type *tInfo = TAILQ_FIRST(&intf->typeInfos);
+        while (tInfo != NULL) {
+            tmp = tInfo;
+            tInfo = TAILQ_NEXT(tInfo, entries);
+
+            if (tmp->name != NULL) {
+                free(tmp->name);
+            }
+            if (tmp->descriptor != NULL) {
+                free(tmp->descriptor);
+            }
+
+            free(tmp);
         }
-        method_info_type *mInfo = NULL;
-        TAILQ_FOREACH(mInfo, &intf->typeInfos, entries) {
-            LOG_WARNING("TODO");
-            //TODO add destroy func for method
+
+        method_info_type *mTmp = NULL;
+        method_info_type *mInfo = TAILQ_FIRST(&intf->methodInfos);
+        while (mInfo != NULL) {
+            mTmp = mInfo;
+            mInfo = TAILQ_NEXT(mInfo, entries);
+            
+            if (mTmp->strIdentifier != NULL) {
+                free(mTmp->strIdentifier);
+            }
+            if (mTmp->descriptor != NULL) {
+                free(mTmp->descriptor);
+            }
+            if (mTmp->name != NULL) {
+                free(mTmp->name);
+            }
+            if (mTmp->dynFunc != NULL) {
+                dynFunction_destroy(mTmp->dynFunc);
+            }
+            if (mTmp->dynClosure != NULL) {
+                dynClosure_destroy(mTmp->dynClosure);
+            }
+
+            free(mTmp);
         }
+
+        free(intf);
     } 
 }
 

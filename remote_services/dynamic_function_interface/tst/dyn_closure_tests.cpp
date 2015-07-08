@@ -127,7 +127,8 @@ static void tests() {
 
 TEST_GROUP(DynClosureTests) {
     void setup() {
-        dynFunction_logSetup(stdLog, NULL, 4);
+        dynFunction_logSetup(stdLog, NULL, 3);
+        dynType_logSetup(stdLog, NULL, 3);
         //TODO dynType_logSetup(stdLog, NULL, 4);
         g_count = 0;
     }

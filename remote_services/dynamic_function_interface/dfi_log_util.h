@@ -26,22 +26,22 @@ typedef void (*logf_ft)(void *handle, int level, const char *file, int line, con
 #define LOG_LVL_DEBUG    4
 
 #define LOG_ERROR(msg, ...) \
-    if (g_logf != NULL && g_currentLogLevel <= LOG_LVL_ERROR) { \
+    if (g_logf != NULL && g_currentLogLevel >= LOG_LVL_ERROR) { \
         g_logf(g_logHandle, LOG_LVL_ERROR, __FILE__, __LINE__, (msg), ##__VA_ARGS__); \
     } 
 
 #define LOG_WARNING(msg, ...) \
-    if (g_logf != NULL && g_currentLogLevel <= LOG_LVL_WARNING) { \
+    if (g_logf != NULL && g_currentLogLevel >= LOG_LVL_WARNING) { \
         g_logf(g_logHandle, LOG_LVL_WARNING, __FILE__, __LINE__, (msg), ##__VA_ARGS__); \
     } 
 
 #define LOG_INFO(msg, ...) \
-    if (g_logf != NULL && g_currentLogLevel <= LOG_LVL_INFO) { \
+    if (g_logf != NULL && g_currentLogLevel >= LOG_LVL_INFO) { \
         g_logf(g_logHandle, LOG_LVL_INFO, __FILE__, __LINE__, (msg), ##__VA_ARGS__); \
     } 
 
 #define LOG_DEBUG(msg, ...) \
-    if (g_logf != NULL && g_currentLogLevel <= LOG_LVL_DEBUG) { \
+    if (g_logf != NULL && g_currentLogLevel >= LOG_LVL_DEBUG) { \
         g_logf(g_logHandle, LOG_LVL_DEBUG, __FILE__, __LINE__, (msg), ##__VA_ARGS__); \
     } 
 

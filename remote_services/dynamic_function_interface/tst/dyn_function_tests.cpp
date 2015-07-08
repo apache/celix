@@ -98,8 +98,8 @@ extern "C" {
 
 TEST_GROUP(DynFunctionTests) {
     void setup() {
-        dynFunction_logSetup(stdLog, NULL, 4);
-        //TODO dynType_logSetup(stdLog, NULL, 4);
+        dynFunction_logSetup(stdLog, NULL, 3);
+        dynType_logSetup(stdLog, NULL, 3);
     }
 };
 

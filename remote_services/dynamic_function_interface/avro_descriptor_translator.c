@@ -32,7 +32,7 @@ int descriptorTranslator_translate(const char *schemaStr, dyn_interface_type **o
     int status = OK;
 
     dyn_interface_type *intf = NULL;
-    status = dynInterface_create("TODO", &intf);
+    status = dynInterface_create("TODO", &intf); //TODO parse json first retreive 'Protocol' string value
     if (status == 0) {
         json_error_t error;
         json_t *schema = json_loads(schemaStr, JSON_DECODE_ANY, &error);
@@ -43,24 +43,25 @@ int descriptorTranslator_translate(const char *schemaStr, dyn_interface_type **o
                 json_t *type = NULL;
                 int index = 0;
                 json_array_foreach(types, index, type) {
-                    descriptorTranslator_parseType(intf, type);
+                    status = descriptorTranslator_parseType(intf, type);
+                    if (status != OK) { 
+                        break;
+                    }
                 }
-
             }
             json_t *messages = json_object_get(schema, "messages");
-            if (messages != NULL) {
+            if (status == OK && messages != NULL) {
                 const char *name;
                 json_t *message;
-                int rc = 0;
                 int index = 0;
                 json_object_foreach(messages, name, message) {
-                   rc = descriptorTranslator_createMethodInfo(intf, schema, name, index++, message); 
-                   if (rc != OK) {
+                   status = descriptorTranslator_createMethodInfo(intf, schema, name, index++, message); 
+                   if (status != OK) {
                        break;
                    }
                 }
             }
-            //json_decref(schema);
+            json_decref(schema);
         } else {
             status = PARSE_ERROR;
             printf("AVRO_DESCRIPTOR_TRANSLATOR: error parsing json input '%s'. Error is %s\n", schemaStr, error.text);
@@ -143,7 +144,7 @@ static int descriptorTranslator_parseMessage(json_t *schema, const char *name, j
                 if (type != NULL) {
                     status = descriptorTranslator_parseArgument(memStream, type);
                 } else {
-                    printf("expected type for request argument %zu for message %s\n", index, name);
+                    LOG_ERROR("expected json object with name value for request argument %zu for message/method %s\n", index, name);
                     status = PARSE_ERROR;
                 }
                 if (status != OK) { 
@@ -152,7 +153,7 @@ static int descriptorTranslator_parseMessage(json_t *schema, const char *name, j
             }
         } else {
             status = PARSE_ERROR;
-            printf("Expected request for message %s\n", name);    
+            LOG_ERROR("Expected request for message %s\n", name);    
         }
 
         json_t *response = json_object_get(message, "response");
@@ -229,7 +230,7 @@ static int descriptorTranslator_parseArgument(FILE *stream, json_t *type) {
             fputc('[', stream);
             descriptorTranslator_parseArgument(stream, items);
         } else {
-            printf("sub type %s not supported\n", json_string_value(subType));
+            LOG_ERROR("sub type %s not supported\n", json_string_value(subType));
             status = PARSE_ERROR;
         }
     }
