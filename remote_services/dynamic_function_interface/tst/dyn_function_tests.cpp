@@ -22,7 +22,7 @@ extern "C" {
         fprintf(stderr, "\n");
     }
 
-    #define EXAMPLE1_SCHEMA "example(III)I"
+    #define EXAMPLE1_DESCRIPTOR "example(III)I"
     int32_t example1(int32_t a, int32_t b, int32_t c) {
         CHECK_EQUAL(2, a);
         CHECK_EQUAL(4, b);
@@ -35,7 +35,7 @@ extern "C" {
         int rc;
         void (*fp)(void) = (void (*)(void)) example1;
 
-        rc = dynFunction_create(EXAMPLE1_SCHEMA, fp, &dynFunc);
+        rc = dynFunction_create(EXAMPLE1_DESCRIPTOR, NULL, fp, &dynFunc);
         CHECK_EQUAL(0, rc);
 
         int32_t a = 2;
@@ -53,7 +53,7 @@ extern "C" {
         dynFunction_destroy(dynFunc);
     }
 
-    #define EXAMPLE2_SCHEMA "example(I{IID val1 val2 val3}D)D"
+    #define EXAMPLE2_DESCRIPTOR "example(I{IID val1 val2 val3}D)D"
     struct example2_arg {
         int32_t val1;
         int32_t val2;
@@ -74,7 +74,7 @@ extern "C" {
         int rc;
         void (*fp)(void) = (void (*)(void)) example2;
 
-        rc = dynFunction_create(EXAMPLE2_SCHEMA, fp, &dynFunc);
+        rc = dynFunction_create(EXAMPLE2_DESCRIPTOR, NULL, fp, &dynFunc);
         CHECK_EQUAL(0, rc);
 
         int32_t arg1 = 2;

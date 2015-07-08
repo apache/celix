@@ -15,7 +15,7 @@
 
 DFI_SETUP_LOG(dynType)
 
-static int dynType_createWithStream(FILE *stream, dyn_type *parent, struct dyn_type_list_head *typeReferences, dyn_type **result);
+static int dynType_createWithStream(FILE *stream, dyn_type *parent, dyn_type_list_type *typeReferences, dyn_type **result);
 static void dynType_clear(dyn_type *type);
 static void dynType_clearComplex(dyn_type *type);
 static void dynType_clearSequence(dyn_type *type);
@@ -57,7 +57,7 @@ static const int DT_ERROR = 1;
 static const int DT_MEM_ERROR = 2;
 static const int DT_PARSE_ERROR = 3;
 
-int dynType_create(const char *descriptor, struct dyn_type_list_head *typeReferences, dyn_type **type) {
+int dynType_create(const char *descriptor, dyn_type_list_type *typeReferences, dyn_type **type) {
     int status = DT_OK;
     FILE *stream = fmemopen((char *)descriptor, strlen(descriptor), "r");
     if (stream != NULL) {
@@ -77,7 +77,7 @@ int dynType_create(const char *descriptor, struct dyn_type_list_head *typeRefere
     return status;
 }
 
-static int dynType_createWithStream(FILE *stream, dyn_type *parent, struct dyn_type_list_head *typeReferences, dyn_type **result) {
+static int dynType_createWithStream(FILE *stream, dyn_type *parent, dyn_type_list_type *typeReferences, dyn_type **result) {
     int status = DT_OK;
     dyn_type *type = calloc(1, sizeof(*type));
     if (type != NULL) {

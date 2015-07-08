@@ -35,10 +35,10 @@ struct _dyn_closure_type {
 
 
 static int dynFunction_initCif(ffi_cif *cif, dyn_type *arguments, dyn_type  *funcReturn);
-static int dynFunction_parseDescriptor(const char *functionDescriptor, dyn_type **arguments, dyn_type **funcReturn);
+static int dynFunction_parseDescriptor(const char *functionDescriptor, dyn_type_list_type *typeReferences, dyn_type **arguments, dyn_type **funcReturn);
 static void dynClosure_ffiBind(ffi_cif *cif, void *ret, void *args[], void *userData); 
 
-int dynFunction_create(const char *descriptor, void (*fn)(void), dyn_function_type **out)  {
+int dynFunction_create(const char *descriptor, dyn_type_list_type *typeReferences, void (*fn)(void), dyn_function_type **out)  {
     int status = 0;
     dyn_function_type *dynFunc = NULL;
     LOG_DEBUG("Creating dyn function for descriptor '%s'\n", descriptor);
@@ -47,7 +47,7 @@ int dynFunction_create(const char *descriptor, void (*fn)(void), dyn_function_ty
 
     if (dynFunc != NULL) {
         dynFunc->fn = fn;
-        status = dynFunction_parseDescriptor(descriptor, &dynFunc->arguments, &dynFunc->funcReturn);
+        status = dynFunction_parseDescriptor(descriptor, typeReferences, &dynFunc->arguments, &dynFunc->funcReturn);
         if (status == 0) {
             status = dynFunction_initCif(&dynFunc->cif, dynFunc->arguments, dynFunc->funcReturn);
         }
@@ -67,7 +67,7 @@ int dynFunction_create(const char *descriptor, void (*fn)(void), dyn_function_ty
     return status;
 }
 
-static int dynFunction_parseDescriptor(const char *descriptor, dyn_type **arguments, dyn_type **funcReturn) {
+static int dynFunction_parseDescriptor(const char *descriptor, dyn_type_list_type *typeReferences, dyn_type **arguments, dyn_type **funcReturn) {
     int status = 0;
     char *startPos = index(descriptor, '(');
     char *endPos = index(descriptor, ')');
@@ -89,9 +89,9 @@ static int dynFunction_parseDescriptor(const char *descriptor, dyn_type **argume
         returnDesc[len] = '\0';
         LOG_DEBUG("returnDesc is '%s'\n", returnDesc);
 
-        status = dynType_create(argDesc, NULL, arguments);
+        status = dynType_create(argDesc, typeReferences, arguments);
         if (status == 0) {
-            status = dynType_create(returnDesc, NULL, funcReturn);
+            status = dynType_create(returnDesc, typeReferences, funcReturn);
         } 
     } else {
         status = 1;
@@ -144,13 +144,13 @@ static void dynClosure_ffiBind(ffi_cif *cif, void *ret, void *args[], void *user
     dynClosure->bind(dynClosure->userData, args, ret);
 }
 
-int dynClosure_create(const char *descriptor, void (*bind)(void *, void **, void*), void *userData, dyn_closure_type **out) {
+int dynClosure_create(const char *descriptor, dyn_type_list_type *typeReferences, void (*bind)(void *, void **, void*), void *userData, dyn_closure_type **out) {
     int status = 0;
     dyn_closure_type *dynClosure = calloc(1, sizeof(*dynClosure));
     if (dynClosure != NULL) {
         dynClosure->bind = bind;
         dynClosure->userData = userData;
-        status = dynFunction_parseDescriptor(descriptor, &dynClosure->arguments, &dynClosure->funcReturn);
+        status = dynFunction_parseDescriptor(descriptor, typeReferences, &dynClosure->arguments, &dynClosure->funcReturn);
         if (status == 0) {
             status = dynFunction_initCif(&dynClosure->cif, dynClosure->arguments, dynClosure->funcReturn);
             if (status == 0) {

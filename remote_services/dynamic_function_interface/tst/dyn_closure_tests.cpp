@@ -25,7 +25,7 @@ static void stdLog(void *handle, int level, const char *file, int line, const ch
     fprintf(stderr, "\n");
 }
 
-#define EXAMPLE1_SCHEMA "example(III)I"
+#define EXAMPLE1_DESCRIPTOR "example(III)I"
 static void example1_binding(void *userData, void* args[], void *out) {
     printf("example1 closure called\n");
     int32_t a = *((int32_t *)args[0]);
@@ -36,7 +36,7 @@ static void example1_binding(void *userData, void* args[], void *out) {
     g_count += 1;
 }
 
-#define EXAMPLE2_SCHEMA "example(I{DDD val1 val2 val3}I)D"
+#define EXAMPLE2_DESCRIPTOR "example(I{DDD val1 val2 val3}I)D"
 struct example2_arg2 {
     double val1;
     double val2;
@@ -53,7 +53,7 @@ void example2_binding(void *userData, void* args[], void *out) {
 }
 
 
-#define EXAMPLE3_SCHEMA "example(III){III sum max min}"
+#define EXAMPLE3_DESCRIPTOR "example(III){III sum max min}"
 struct example3_ret {
     int32_t sum;
     int32_t max;
@@ -82,7 +82,7 @@ static void tests() {
     int rc = 0;
 
     {
-        rc = dynClosure_create(EXAMPLE1_SCHEMA, example1_binding, NULL, &dynClosure);
+        rc = dynClosure_create(EXAMPLE1_DESCRIPTOR, NULL, example1_binding, NULL, &dynClosure);
         CHECK_EQUAL(0, rc);
         int32_t (*func)(int32_t a, int32_t b, int32_t c) = NULL;
         int rc = dynClosure_getFnPointer(dynClosure, (void(**)(void))&func);
@@ -96,7 +96,7 @@ static void tests() {
 
     {
         dynClosure = NULL;
-        rc = dynClosure_create(EXAMPLE2_SCHEMA, example2_binding, NULL, &dynClosure);
+        rc = dynClosure_create(EXAMPLE2_DESCRIPTOR, NULL, example2_binding, NULL, &dynClosure);
         CHECK_EQUAL(0, rc);
         double (*func)(int32_t a, struct example2_arg2 b, int32_t c) = NULL;
         rc = dynClosure_getFnPointer(dynClosure, (void(**)(void))&func);
@@ -114,7 +114,7 @@ static void tests() {
 
     {
         dynClosure = NULL;
-        rc = dynClosure_create(EXAMPLE3_SCHEMA, example3_binding, NULL, &dynClosure);
+        rc = dynClosure_create(EXAMPLE3_DESCRIPTOR, NULL, example3_binding, NULL, &dynClosure);
         CHECK_EQUAL(0, rc);
         struct example3_ret * (*func)(int32_t a, int32_t b, int32_t c) = NULL;
         rc = dynClosure_getFnPointer(dynClosure, (void(**)(void))&func);
