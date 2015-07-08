@@ -44,6 +44,6 @@ target_link_libraries(dfi ${FFI_LIBRARIES} ${JANSSON_LIBRARY})
 	)
 	add_dependencies(dfi_tests copy-input)
 
-	ADD_TARGET_FOR_TEST(dfi_tests)
+    add_test(NAME run_dfi_tests COMMAND dfi_tests)
 	SETUP_TARGET_FOR_COVERAGE(dfi_tests_cov dfi_tests ${CMAKE_BINARY_DIR}/coverage/dfi)
 #endif()

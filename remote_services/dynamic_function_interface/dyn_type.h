@@ -108,6 +108,8 @@ struct complex_type_entry {
     TAILQ_ENTRY(complex_type_entry) entries;
 };
 
+TAILQ_HEAD(dyn_type_list_head, nested_entry); 
+
 struct nested_entry {
     dyn_type type;
     TAILQ_ENTRY(nested_entry) entries;
