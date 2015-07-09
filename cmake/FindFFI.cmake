@@ -32,11 +32,9 @@ find_library(FFI_LIBRARY NAMES ffi
 
 #NOTE on OSX ffi.h from macport is located at /opt/local/lib/libffi-<version>/ffi.h 
 #Using FFI_LIBRARY location as hint to find it
-get_filename_component(FFI_LIB_DIR ${FFI_LIBRARY} DIRECTORY)
 find_path(FFI_INCLUDE_DIR ffi.h
-		HINTS ${FFI_LIB_DIR}/*
+		HINTS /opt/local/lib/*
         PATH_SUFFIXES include include/ffi) 
-unset(FFI_LIB_DIR)
 
 find_path(FFI_INCLUDE_DIR ffi.h
 		PATHS $ENV{FFI_DIR} ${FFI_DIR} /usr /usr/local /opt/local 
