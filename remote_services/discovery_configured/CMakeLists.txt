@@ -36,17 +36,17 @@ if (RSA_DISCOVERY_CONFIGURED)
     SET_HEADERS("Bundle-Name: Apache Celix RSA Configured Discovery")
 
     bundle(discovery_configured SOURCES
-        private/src/discovery_impl.c
-        ${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/discovery_activator.c
-        ${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/discovery.c
-        ${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_descriptor_reader.c
-        ${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_descriptor_writer.c
-        ${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_discovery_poller.c
-        ${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_discovery_server.c
-        ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c
-        ${PROJECT_SOURCE_DIR}/remote_services/utils/private/src/civetweb.c
+	private/src/discovery_impl.c
+	${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/discovery_activator.c
+	${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/discovery.c
+	${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_descriptor_reader.c
+	${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_descriptor_writer.c
+	${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_discovery_poller.c
+	${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_discovery_server.c
+	${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c
+	${PROJECT_SOURCE_DIR}/remote_services/utils/private/src/civetweb.c
 
-        ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
+	${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
     )
 
     install_bundle(discovery_configured)

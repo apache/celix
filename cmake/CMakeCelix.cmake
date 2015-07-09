@@ -18,6 +18,10 @@
 
 set(CELIX_CMAKE_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
 
+if (ANDROID)
+	add_definitions( -DANDROID )
+endif ()
+
 include_directories("framework/public/include")
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
