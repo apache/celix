@@ -1,5 +1,18 @@
-FROM ubuntu:14.04
+#
+# Licensed under Apache License v2. See LICENSE for more information.
+#
 
+# Celix android builder
+# 
+# Howto:
+# Build docker image -> docker build -t celix-android-builder <path-to-this-dockerfile>
+# Run docker image -> docker run --name builder celix-android-builder
+# Extract filesystem -> docker export builder > fs.tar
+# Extract /build dir from tar -> tar xf fs.tar build/output/celix
+#
+#
+
+FROM ubuntu:14.04
 MAINTAINER Bjoern Petri <bjoern.petri@sundevil.de>
 
 ENV ARCH armv7
@@ -91,9 +104,11 @@ RUN curl -L -O http://xmlsoft.org/sources/libxml2-2.7.2.tar.gz && \
 	make && make install
 
 
-# finally celix
+# finally add celix src
+ADD . celix
+#Or do git clone -> RUN git clone https://github.com/apache/celix.git celix
 
-RUN git clone https://github.com/apache/celix.git --single-branch --branch feature/CELIX-247_android_support celix && mkdir celix/build && cd celix/build && cmake -DANDROID=TRUE -DBUILD_EXAMPLES=ON -DBUILD_REMOTE_SERVICE_ADMIN=ON -DBUILD_REMOTE_SHELL=ON -DBUILD_RSA_DISCOVERY_CONFIGURED=ON -DBUILD_RSA_DISCOVERY_ETCD=ON -DBUILD_RSA_EXAMPLES=ON -DBUILD_RSA_REMOTE_SERVICE_ADMIN_HTTP=ON -DBUILD_RSA_TOPOLOGY_MANAGER=ON -DJANSSON_LIBRARY=/build/output/jansson/lib/libjansson.a -DJANSSON_INCLUDE_DIR=/build/output/jansson/include -DCURL_LIBRARY=/build/output/curl/lib/libcurl.a -DCURL_INCLUDE_DIR=/build/output/curl/include -DLIBXML2_LIBRARIES=/build/output/libxml2/lib/libxml2.a -DLIBXML2_INCLUDE_DIR=/build/output/libxml2/include/libxml2 -DZLIB_LIBRARY=/build/output/zlib/lib/libz.a -DZLIB_INCLUDE_DIR=/build/output/zlib/include -DUUID_LIBRARY=/build/output/uuid/lib/libuuid.a -DUUID_INCLUDE_DIR=/build/output/uuid/include -DCMAKE_INSTALL_PREFIX:PATH=/build/output/celix .. && make && make install 
-
+CMD mkdir -p celix/build-android && cd celix/build-android && cmake -DANDROID=TRUE -DBUILD_EXAMPLES=ON -DBUILD_REMOTE_SERVICE_ADMIN=ON -DBUILD_REMOTE_SHELL=ON -DBUILD_RSA_DISCOVERY_CONFIGURED=ON -DBUILD_RSA_DISCOVERY_ETCD=ON -DBUILD_RSA_EXAMPLES=ON -DBUILD_RSA_REMOTE_SERVICE_ADMIN_HTTP=ON -DBUILD_RSA_TOPOLOGY_MANAGER=ON -DJANSSON_LIBRARY=/build/output/jansson/lib/libjansson.a -DJANSSON_INCLUDE_DIR=/build/output/jansson/include -DCURL_LIBRARY=/build/output/curl/lib/libcurl.a -DCURL_INCLUDE_DIR=/build/output/curl/include -DLIBXML2_LIBRARIES=/build/output/libxml2/lib/libxml2.a -DLIBXML2_INCLUDE_DIR=/build/output/libxml2/include/libxml2 -DZLIB_LIBRARY=/build/output/zlib/lib/libz.a -DZLIB_INCLUDE_DIR=/build/output/zlib/include -DUUID_LIBRARY=/build/output/uuid/lib/libuuid.a -DUUID_INCLUDE_DIR=/build/output/uuid/include -DCMAKE_INSTALL_PREFIX:PATH=/build/output/celix .. && make && make install-all
 
 # done
+
