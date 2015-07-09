@@ -23,13 +23,24 @@
 #  FFI_INCLUDE_DIRS - The package include directories
 #  FFI_LIBRARIES - The libraries needed to use this package
 
+find_library(FFI_LIBRARY NAMES ffi
+             	PATHS $ENV{FFI_DIR} ${FFI_DIR} /usr/local /opt/local ENV FFI_DIR
+             	PATH_SUFFIXES lib lib/x86_64-linux-gnu NO_DEFAULT_PATH)
+
+find_library(FFI_LIBRARY NAMES ffi
+             	PATH_SUFFIXES lib)
+
+#NOTE on OSX ffi.h from macport is located at /opt/local/lib/libffi-<version>/ffi.h 
+#Using FFI_LIBRARY location as hint to find it
+get_filename_component(FFI_LIB_DIR ${FFI_LIBRARY} DIRECTORY)
+find_path(FFI_INCLUDE_DIR ffi.h
+		HINTS ${FFI_LIB_DIR}/*
+        PATH_SUFFIXES include include/ffi) 
+unset(FFI_LIB_DIR)
+
 find_path(FFI_INCLUDE_DIR ffi.h
 		PATHS $ENV{FFI_DIR} ${FFI_DIR} /usr /usr/local /opt/local 
         PATH_SUFFIXES include include/ffi include/x86_64-linux-gnu) 
-
-find_library(FFI_LIBRARY NAMES ffi
-             	PATHS $ENV{FFI_DIR} ${FFI_DIR} /usr /usr/local /opt/local
-             	PATH_SUFFIXES lib lib64 lib/x86_64-linux-gnu)
 
 
 include(FindPackageHandleStandardArgs)
