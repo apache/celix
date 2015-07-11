@@ -38,7 +38,12 @@ static int dynFunction_initCif(ffi_cif *cif, dyn_type *arguments, dyn_type  *fun
 static int dynFunction_parseDescriptor(const char *functionDescriptor, dyn_type_list_type *typeReferences, dyn_type **arguments, dyn_type **funcReturn);
 static void dynClosure_ffiBind(ffi_cif *cif, void *ret, void *args[], void *userData); 
 
-int dynFunction_create(const char *descriptor, dyn_type_list_type *typeReferences, void (*fn)(void), dyn_function_type **out)  {
+int dynFunction_create(FILE *descriptorStream, dyn_type_list_type *typeReferences, void (*fn)(void), dyn_function_type **dynFunc) {
+    //TODO
+    return 0;
+}
+
+int dynFunction_createWithStr(const char *descriptor, dyn_type_list_type *typeReferences, void (*fn)(void), dyn_function_type **out)  {
     int status = 0;
     dyn_function_type *dynFunc = NULL;
     LOG_DEBUG("Creating dyn function for descriptor '%s'\n", descriptor);
@@ -89,9 +94,9 @@ static int dynFunction_parseDescriptor(const char *descriptor, dyn_type_list_typ
         returnDesc[len] = '\0';
         LOG_DEBUG("returnDesc is '%s'\n", returnDesc);
 
-        status = dynType_create(argDesc, typeReferences, arguments);
+        status = dynType_createWithStr(argDesc, NULL, typeReferences, arguments);
         if (status == 0) {
-            status = dynType_create(returnDesc, typeReferences, funcReturn);
+            status = dynType_createWithStr(returnDesc, NULL, typeReferences, funcReturn);
         } 
     } else {
         status = 1;
@@ -142,7 +147,12 @@ static void dynClosure_ffiBind(ffi_cif *cif, void *ret, void *args[], void *user
     dynClosure->bind(dynClosure->userData, args, ret);
 }
 
-int dynClosure_create(const char *descriptor, dyn_type_list_type *typeReferences, void (*bind)(void *, void **, void*), void *userData, dyn_closure_type **out) {
+int dynClosure_create(FILE *descriptorStream, dyn_type_list_type *typeReferences, void (*bind)(void *, void **, void*), void *userData, dyn_closure_type **out) {
+	//TODO
+	return 0;
+}
+
+int dynClosure_createWithStr(const char *descriptor, dyn_type_list_type *typeReferences, void (*bind)(void *, void **, void*), void *userData, dyn_closure_type **out) {
     int status = 0;
     dyn_closure_type *dynClosure = calloc(1, sizeof(*dynClosure));
     if (dynClosure != NULL) {

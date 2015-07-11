@@ -35,7 +35,7 @@ extern "C" {
         int rc;
         void (*fp)(void) = (void (*)(void)) example1;
 
-        rc = dynFunction_create(EXAMPLE1_DESCRIPTOR, NULL, fp, &dynFunc);
+        rc = dynFunction_createWithStr(EXAMPLE1_DESCRIPTOR, NULL, fp, &dynFunc);
         CHECK_EQUAL(0, rc);
 
         int32_t a = 2;
@@ -74,7 +74,7 @@ extern "C" {
         int rc;
         void (*fp)(void) = (void (*)(void)) example2;
 
-        rc = dynFunction_create(EXAMPLE2_DESCRIPTOR, NULL, fp, &dynFunc);
+        rc = dynFunction_createWithStr(EXAMPLE2_DESCRIPTOR, NULL, fp, &dynFunc);
         CHECK_EQUAL(0, rc);
 
         int32_t arg1 = 2;

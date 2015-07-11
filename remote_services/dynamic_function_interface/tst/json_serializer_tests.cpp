@@ -47,7 +47,7 @@ struct example1 {
 
 static void print_example1(void *data) {
     struct example1 *ex = (struct example1 *)data;
-    printf("example1: a:%f, b:%li, c:%i, d:%i, e:%f\n", ex->a, ex->b, ex->c, ex->d, ex->e);
+    printf("example1: a:%f, b:%li, c:%i, d:%i, e:%f\n", ex->a, (long)ex->b, ex->c, ex->d, ex->e);
 }
 
 /*********** example 2 ************************/
@@ -73,7 +73,7 @@ struct example2 {
 
 static void print_example2(void *data) {
     struct example2 *ex = (struct example2 *)data;
-    printf("example2: byte:%i, long1:%li, long2:%li, double1:%f, float1:%f, double2:%f\n", ex->byte, ex->long1, ex->long2, ex->double1, ex->float1, ex->double2);
+    printf("example2: byte:%i, long1:%li, long2:%li, double1:%f, float1:%f, double2:%f\n", ex->byte, (long)ex->long1, (long)ex->long2, ex->double1, ex->float1, ex->double2);
 }
 
 
@@ -136,7 +136,7 @@ static void tests() {
 
     type = NULL;
     inst = NULL;
-    rc = dynType_create(example1_descriptor, NULL, &type);    
+    rc = dynType_createWithStr(example1_descriptor, NULL, NULL, &type);    
     CHECK_EQUAL(0, rc);
     rc = json_deserialize(type, example1_input, &inst); 
     CHECK_EQUAL(0, rc);
@@ -146,7 +146,7 @@ static void tests() {
 
     type = NULL;
     inst = NULL;
-    rc = dynType_create(example2_descriptor, NULL, &type);
+    rc = dynType_createWithStr(example2_descriptor, NULL, NULL, &type);
     CHECK_EQUAL(0, rc);
     rc = json_deserialize(type, example2_input, &inst); 
     CHECK_EQUAL(0, rc);
@@ -155,7 +155,7 @@ static void tests() {
 
     type = NULL;
     inst = NULL;
-    rc = dynType_create(example3_descriptor, NULL, &type);
+    rc = dynType_createWithStr(example3_descriptor, NULL, NULL, &type);
     CHECK_EQUAL(0, rc);
     rc = json_deserialize(type, example3_input, &inst); 
     CHECK_EQUAL(0, rc);
@@ -163,7 +163,7 @@ static void tests() {
 
     type = NULL;
     inst = NULL;
-    rc = dynType_create(example4_descriptor, NULL, &type);
+    rc = dynType_createWithStr(example4_descriptor, NULL, NULL, &type);
     CHECK_EQUAL(0, rc);
     rc = json_deserialize(type, example4_input, &inst); 
     CHECK_EQUAL(0, rc);

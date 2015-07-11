@@ -79,7 +79,7 @@ static void tests() {
     int rc = 0;
 
     {
-        rc = dynClosure_create(EXAMPLE1_DESCRIPTOR, NULL, example1_binding, NULL, &dynClosure);
+        rc = dynClosure_createWithStr(EXAMPLE1_DESCRIPTOR, NULL, example1_binding, NULL, &dynClosure);
         CHECK_EQUAL(0, rc);
         int32_t (*func)(int32_t a, int32_t b, int32_t c) = NULL;
         int rc = dynClosure_getFnPointer(dynClosure, (void(**)(void))&func);
@@ -92,7 +92,7 @@ static void tests() {
 
     {
         dynClosure = NULL;
-        rc = dynClosure_create(EXAMPLE2_DESCRIPTOR, NULL, example2_binding, NULL, &dynClosure);
+        rc = dynClosure_createWithStr(EXAMPLE2_DESCRIPTOR, NULL, example2_binding, NULL, &dynClosure);
         CHECK_EQUAL(0, rc);
         double (*func)(int32_t a, struct example2_arg2 b, int32_t c) = NULL;
         rc = dynClosure_getFnPointer(dynClosure, (void(**)(void))&func);
@@ -109,7 +109,7 @@ static void tests() {
 
     {
         dynClosure = NULL;
-        rc = dynClosure_create(EXAMPLE3_DESCRIPTOR, NULL, example3_binding, NULL, &dynClosure);
+        rc = dynClosure_createWithStr(EXAMPLE3_DESCRIPTOR, NULL, example3_binding, NULL, &dynClosure);
         CHECK_EQUAL(0, rc);
         struct example3_ret * (*func)(int32_t a, int32_t b, int32_t c) = NULL;
         rc = dynClosure_getFnPointer(dynClosure, (void(**)(void))&func);

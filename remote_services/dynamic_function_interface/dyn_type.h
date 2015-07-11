@@ -20,7 +20,7 @@
 
 /* Description string
  *
- * Type = [TypeDef]* (SimpleType | ComplexType | SequenceType | TypedPointer | PointerReference ) [TypeDef]*
+ * Type = [TypeDef]* (SimpleType | ComplexType | SequenceType | TypedPointer | PointerReference ) [TypeDef]* [Annotation]*
  * Name = alpha[(alpha|numeric)*]
  * SPACE = ' ' 
  *
@@ -30,16 +30,16 @@
  * C (not supported)
  * D double
  * F float
- * I int //TODO use int32_t instead?
- * J long //TODO use int64_t intead?
- * S short //TODO use int16_t instead?
+ * I int32_t 
+ * J int64_t 
+ * S int16_t 
  * V void
  * Z boolean
  * //Extended
  * b unsigned char
- * i unsigned int (see I)
- * j unsigned long (see J)
- * s unsigned short (see S)
+ * i uint32_t
+ * j uint62_t
+ * s uint64_t
  * P pointer
  * t char* string
  * N native int
@@ -60,9 +60,12 @@
  * SequenceType
  * [(Type)
  *
+ * Annotation TODO
+ * <(Name)=(Value)>
+ *
  * examples
  * "{DDII a b c d}" -> struct { double a; double b; int c; int d; }; 
- * "{DD{FF c1 c2} a b c" -> struct { double a; double b; struct c { float c1; float c2; }; }; 
+ * "{DD{FF c1 c2} a b c}" -> struct { double a; double b; struct c { float c1; float c2; }; }; 
  *
  *
  */
@@ -122,8 +125,10 @@ struct nested_entry {
 DFI_SETUP_LOG_HEADER(dynType);
 
 //generic
-int dynType_create(const char *descriptor, dyn_type_list_type *typeReferences, dyn_type **type);
+int dynType_create(FILE *descriptorStream, const char *name, dyn_type_list_type *typeReferences, dyn_type **type);
+int dynType_createWithStr(const char *descriptor, const char *name, dyn_type_list_type *typeReferences, dyn_type **type);
 void dynType_destroy(dyn_type *type);
+
 int dynType_alloc(dyn_type *type, void **bufLoc);
 void dynType_print(dyn_type *type);
 size_t dynType_size(dyn_type *type);
