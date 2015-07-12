@@ -11,6 +11,8 @@ extern "C" {
     #include <string.h>
     #include <ctype.h>
 
+
+    #include "dyn_common.h"
     #include "dyn_function.h"
 
     static void stdLog(void *handle, int level, const char *file, int line, const char *msg, ...) {
@@ -35,7 +37,7 @@ extern "C" {
         int rc;
         void (*fp)(void) = (void (*)(void)) example1;
 
-        rc = dynFunction_createWithStr(EXAMPLE1_DESCRIPTOR, NULL, fp, &dynFunc);
+        rc = dynFunction_parseWithStr(EXAMPLE1_DESCRIPTOR, NULL, &dynFunc);
         CHECK_EQUAL(0, rc);
 
         int32_t a = 2;
@@ -47,7 +49,7 @@ extern "C" {
         values[1] = &b;
         values[2] = &c;
 
-        rc = dynFunction_call(dynFunc, &rVal, values);
+        rc = dynFunction_call(dynFunc, fp, &rVal, values);
         CHECK_EQUAL(0, rc);
         CHECK_EQUAL(1, rVal);
         dynFunction_destroy(dynFunc);
@@ -74,7 +76,7 @@ extern "C" {
         int rc;
         void (*fp)(void) = (void (*)(void)) example2;
 
-        rc = dynFunction_createWithStr(EXAMPLE2_DESCRIPTOR, NULL, fp, &dynFunc);
+        rc = dynFunction_parseWithStr(EXAMPLE2_DESCRIPTOR, NULL, &dynFunc);
         CHECK_EQUAL(0, rc);
 
         int32_t arg1 = 2;
@@ -89,7 +91,7 @@ extern "C" {
         values[1] = &arg2;
         values[2] = &arg3;
 
-        rc = dynFunction_call(dynFunc, &returnVal, values);
+        rc = dynFunction_call(dynFunc, fp, &returnVal, values);
         CHECK_EQUAL(0, rc);
         CHECK_EQUAL(2.2, returnVal);
         dynFunction_destroy(dynFunc);
@@ -100,6 +102,7 @@ TEST_GROUP(DynFunctionTests) {
     void setup() {
         dynFunction_logSetup(stdLog, NULL, 3);
         dynType_logSetup(stdLog, NULL, 3);
+        dynCommon_logSetup(stdLog, NULL, 3);
     }
 };
 

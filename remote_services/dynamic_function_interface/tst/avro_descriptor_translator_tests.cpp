@@ -10,6 +10,7 @@ extern "C" {
 #include <assert.h>
 #include <string.h>
 
+#include "dyn_common.h"
 #include "descriptor_translator.h"
 
 #if defined(BSD) || defined(__APPLE__) 
@@ -142,6 +143,7 @@ TEST_GROUP(AvroDescTranslatorTest) {
         descriptorTranslator_logSetup(stdLog, NULL, 3);
         dynInterface_logSetup(stdLog, NULL, 3);
         dynType_logSetup(stdLog, NULL, 3);
+        dynCommon_logSetup(stdLog, NULL, 3);
     }
 };
 

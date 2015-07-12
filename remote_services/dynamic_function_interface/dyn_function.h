@@ -19,14 +19,13 @@ typedef struct _dyn_closure_type dyn_closure_type;
 
 DFI_SETUP_LOG_HEADER(dynFunction);
 
-int dynFunction_create(FILE *descriptorStream, dyn_type_list_type *typeReferences, void (*fn)(void), dyn_function_type **dynFunc);
-int dynFunction_createWithStr(const char *descriptor, dyn_type_list_type *typeReferences, void (*fn)(void), dyn_function_type **dynFunc);
-void dynFunction_destroy(dyn_function_type *dynFunc);
-int dynFunction_call(dyn_function_type *dynFunc, void *returnValue, void **argValues);
+int dynFunction_parse(FILE *descriptorStream, dyn_type_list_type *typeReferences, dyn_function_type **dynFunc);
+int dynFunction_parseWithStr(const char *descriptor, dyn_type_list_type *typeReferences, dyn_function_type **dynFunc);
 
-int dynClosure_create(FILE *descriptorStream, dyn_type_list_type *typeReferences, void (*bind)(void *, void **, void*), void *userData, dyn_closure_type **out);
-int dynClosure_createWithStr(const char *descriptor, dyn_type_list_type *typeReferences, void (*bind)(void *, void **, void*), void *userData, dyn_closure_type **out);
-int dynClosure_getFnPointer(dyn_closure_type *dynClosure, void(**fn)(void));
-void dynClosure_destroy(dyn_closure_type *dynClosure);
+void dynFunction_destroy(dyn_function_type *dynFunc);
+int dynFunction_call(dyn_function_type *dynFunc, void(*fn)(void), void *returnValue, void **argValues);
+
+int dynFunction_createClosure(dyn_function_type *func, void (*bind)(void *, void **, void*), void *userData, void(**fn)(void));
+int dynFunction_getFnPointer(dyn_function_type *func, void (**fn)(void));
 
 #endif

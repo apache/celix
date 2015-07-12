@@ -11,53 +11,61 @@
 
 #include <ffi.h>
 
+#include "dyn_common.h"
 #include "dyn_type.h"
 #include "dfi_log_util.h"
 
 DFI_SETUP_LOG(dynFunction)
 
 struct _dyn_function_type {
-    dyn_type *arguments;
+    char *name;
+    dyn_type_list_type *refTypes; //NOTE not owned
+    TAILQ_HEAD(,_dyn_function_argument_type) arguments;
+    ffi_type **ffiArguments;
     dyn_type *funcReturn;
-    void (*fn)(void);
     ffi_cif cif;
-};
 
-struct _dyn_closure_type {
-    dyn_type *arguments;
-    dyn_type *funcReturn;
-    ffi_cif cif;
+    //closure part
     ffi_closure *ffiClosure;
     void (*fn)(void);
+    void *userData;
     void (*bind)(void *userData, void *args[], void *ret);
-    void *userData; //for bind
 };
 
+typedef struct _dyn_function_argument_type dyn_function_argument_type;
+struct _dyn_function_argument_type {
+    int index;
+    char *name;
+    dyn_type *type;
+    TAILQ_ENTRY(_dyn_function_argument_type) entries;
+};
 
-static int dynFunction_initCif(ffi_cif *cif, dyn_type *arguments, dyn_type  *funcReturn);
-static int dynFunction_parseDescriptor(const char *functionDescriptor, dyn_type_list_type *typeReferences, dyn_type **arguments, dyn_type **funcReturn);
-static void dynClosure_ffiBind(ffi_cif *cif, void *ret, void *args[], void *userData); 
+static const int OK = 0;
+static const int MEM_ERROR = 1;
+static const int PARSE_ERROR = 2;
 
-int dynFunction_create(FILE *descriptorStream, dyn_type_list_type *typeReferences, void (*fn)(void), dyn_function_type **dynFunc) {
-    //TODO
-    return 0;
-}
+static int dynFunction_initCif(dyn_function_type *dynFunc);
+static int dynFunction_parseDescriptor(dyn_function_type *dynFunc, FILE *descriptor);
+static void dynFunction_ffiBind(ffi_cif *cif, void *ret, void *args[], void *userData); 
 
-int dynFunction_createWithStr(const char *descriptor, dyn_type_list_type *typeReferences, void (*fn)(void), dyn_function_type **out)  {
-    int status = 0;
+int dynFunction_parse(FILE *descriptor, dyn_type_list_type *typeReferences, dyn_function_type **out) {
+    int status = OK;
     dyn_function_type *dynFunc = NULL;
-    LOG_DEBUG("Creating dyn function for descriptor '%s'\n", descriptor);
+    LOG_DEBUG("Creating dyn function", descriptor);
     
     dynFunc = calloc(1, sizeof(*dynFunc));
 
     if (dynFunc != NULL) {
-        dynFunc->fn = fn;
-        status = dynFunction_parseDescriptor(descriptor, typeReferences, &dynFunc->arguments, &dynFunc->funcReturn);
+        TAILQ_INIT(&dynFunc->arguments);
+        dynFunc->refTypes = typeReferences;
+        status = dynFunction_parseDescriptor(dynFunc, descriptor);
         if (status == 0) {
-            status = dynFunction_initCif(&dynFunc->cif, dynFunc->arguments, dynFunc->funcReturn);
+            int rc = dynFunction_initCif(dynFunc);
+            status = rc != 0 ? rc : 0;
         }
     } else {
-        status = 2;
+        LOG_ERROR("Error allocationg memory for dyn functipn\n");
+        status = MEM_ERROR;
     }
     
     if (status == 0) {
@@ -72,121 +80,161 @@ int dynFunction_createWithStr(const char *descriptor, dyn_type_list_type *typeRe
     return status;
 }
 
-static int dynFunction_parseDescriptor(const char *descriptor, dyn_type_list_type *typeReferences, dyn_type **arguments, dyn_type **funcReturn) {
-    int status = 0;
-    char *startPos = index(descriptor, '(');
-    char *endPos = index(descriptor, ')');
-
-    if (startPos != NULL && endPos != NULL) {
-        int len = endPos - startPos - 1;
-
-        //TODO add names (arg001, arg002, etc)
-        char argDesc[len+3];
-        argDesc[0] = '{';
-        argDesc[len+1] = '}';
-        memcpy(argDesc+1, startPos +1, len);
-        argDesc[len+2] = '\0';
-        LOG_DEBUG("argDesc is '%s'\n", argDesc);
-
-        len = strlen(endPos);
-        char returnDesc[len+1];
-        memcpy(returnDesc, endPos + 1, len);
-        returnDesc[len] = '\0';
-        LOG_DEBUG("returnDesc is '%s'\n", returnDesc);
-
-        status = dynType_createWithStr(argDesc, NULL, typeReferences, arguments);
-        if (status == 0) {
-            status = dynType_createWithStr(returnDesc, NULL, typeReferences, funcReturn);
-        } 
+int dynFunction_parseWithStr(const char *descriptor, dyn_type_list_type *typeReferences, dyn_function_type **out)  {
+    int status = OK;
+    FILE *stream = fmemopen((char *)descriptor, strlen(descriptor), "r");
+    if (stream != NULL) {
+        status = dynFunction_parse(stream, typeReferences, out);
+        fclose(stream);
     } else {
-        status = 1;
+        status = MEM_ERROR;
+        LOG_ERROR("Error creating mem stream for descriptor string. %s", strerror(errno)); 
+    }
+    return status;
+}
+
+static int dynFunction_parseDescriptor(dyn_function_type *dynFunc, FILE *descriptor) {
+    int status = OK;
+    char *name = NULL;
+
+    status = dynCommon_parseName(descriptor, &name);
+
+    if (status == OK) {
+        dynFunc->name = name;
+    }
+
+    if (status == OK) {
+        int c = fgetc(descriptor);
+        if ( c != '(') {
+            status = PARSE_ERROR;
+            LOG_ERROR("Expected '(' token got '%c'", c);
+        }
+    }
+
+    int nextChar = fgetc(descriptor);
+    int index = 0;
+    dyn_type *type = NULL;
+    while (nextChar != ')' && status == 0)  {
+        type = NULL;
+        ungetc(nextChar, descriptor);
+        status = dynType_parse(descriptor, NULL, dynFunc->refTypes, &type); 
+        if (status == 0) {
+            dyn_function_argument_type *arg = calloc(1, sizeof(*arg));
+            arg->index = index++;
+            arg->type = type;
+            arg->name = NULL; //TODO
+            if (arg != NULL) {
+                TAILQ_INSERT_TAIL(&dynFunc->arguments, arg, entries);
+            } else {
+                LOG_ERROR("Error allocating memory");
+                status = MEM_ERROR;
+            }
+        } 
+        nextChar = fgetc(descriptor);
+    }
+
+    if (status == 0) {
+        status = dynType_parse(descriptor, NULL, dynFunc->refTypes, &dynFunc->funcReturn); 
     }
     
     return status;
 }
 
-static int dynFunction_initCif(ffi_cif *cif, dyn_type *arguments, dyn_type *returnValue) {
-    int result = 0;
+static int dynFunction_initCif(dyn_function_type *dynFunc) {
+    int status = 0;
 
     int count = 0;
-    int i;
-    for (i = 0; arguments->ffiType->elements[i] != NULL; i += 1) {
-        count += 1;
+    dyn_function_argument_type *entry = NULL;
+    TAILQ_FOREACH(entry, &dynFunc->arguments, entries) {
+        count +=1;
     }
 
-    ffi_type **args = arguments->ffiType->elements;
-    ffi_type *returnType = returnValue->ffiType;
+    dynFunc->ffiArguments = calloc(count, sizeof(ffi_type));
 
-    int ffiResult = ffi_prep_cif(cif, FFI_DEFAULT_ABI, count, returnType, args);
+    TAILQ_FOREACH(entry, &dynFunc->arguments, entries) {
+        dynFunc->ffiArguments[entry->index] = entry->type->ffiType;
+    }
+    
+    ffi_type **args = dynFunc->ffiArguments;
+    ffi_type *returnType = dynFunc->funcReturn->ffiType;
+
+    int ffiResult = ffi_prep_cif(&dynFunc->cif, FFI_DEFAULT_ABI, count, returnType, args);
     if (ffiResult != FFI_OK) {
-        result = 1;
+        status = 1;
     }
 
-    return result;
+    return status;
 }
 
 void dynFunction_destroy(dyn_function_type *dynFunc) {
     if (dynFunc != NULL) {
-        if (dynFunc->arguments != NULL) {
-	    dynType_destroy(dynFunc->arguments);
-	}
         if (dynFunc->funcReturn != NULL) {
-	    dynType_destroy(dynFunc->funcReturn);
-	}
-	free(dynFunc);
+            dynType_destroy(dynFunc->funcReturn);
+        }
+        if (dynFunc->ffiClosure != NULL) {
+            ffi_closure_free(dynFunc->ffiClosure);
+        }
+        if (dynFunc->name != NULL) {
+            free(dynFunc->name);
+        }
+        if (dynFunc->ffiArguments != NULL) {
+            free(dynFunc->ffiArguments);
+        }
+        
+        dyn_function_argument_type *entry = NULL;
+        dyn_function_argument_type *tmp = NULL;
+        entry = TAILQ_FIRST(&dynFunc->arguments); 
+        while (entry != NULL) {
+            if (entry->name != NULL) {
+                free(entry->name);
+            }
+            dynType_destroy(entry->type);
+            tmp = entry;
+            entry = TAILQ_NEXT(entry, entries);
+            free(tmp);
+        }
+
+        free(dynFunc);
     }
 }
 
-int dynFunction_call(dyn_function_type *dynFunc, void *returnValue, void **argValues) {
-    ffi_call(&dynFunc->cif, dynFunc->fn, returnValue, argValues);    
+int dynFunction_call(dyn_function_type *dynFunc, void(*fn)(void), void *returnValue, void **argValues) {
+    //TODO check dynFunc arg
+    ffi_call(&dynFunc->cif, fn, returnValue, argValues);    
     return 0;
 }
 
-static void dynClosure_ffiBind(ffi_cif *cif, void *ret, void *args[], void *userData) {
-    dyn_closure_type *dynClosure = userData;
-    dynClosure->bind(dynClosure->userData, args, ret);
+static void dynFunction_ffiBind(ffi_cif *cif, void *ret, void *args[], void *userData) {
+    dyn_function_type *dynFunc = userData;
+    dynFunc->bind(dynFunc->userData, args, ret);
 }
 
-int dynClosure_create(FILE *descriptorStream, dyn_type_list_type *typeReferences, void (*bind)(void *, void **, void*), void *userData, dyn_closure_type **out) {
-	//TODO
-	return 0;
-}
-
-int dynClosure_createWithStr(const char *descriptor, dyn_type_list_type *typeReferences, void (*bind)(void *, void **, void*), void *userData, dyn_closure_type **out) {
+int dynFunction_createClosure(dyn_function_type *dynFunc, void (*bind)(void *, void **, void*), void *userData, void(**out)(void)) {
     int status = 0;
-    dyn_closure_type *dynClosure = calloc(1, sizeof(*dynClosure));
-    if (dynClosure != NULL) {
-        dynClosure->bind = bind;
-        dynClosure->userData = userData;
-        status = dynFunction_parseDescriptor(descriptor, typeReferences, &dynClosure->arguments, &dynClosure->funcReturn);
-        if (status == 0) {
-            status = dynFunction_initCif(&dynClosure->cif, dynClosure->arguments, dynClosure->funcReturn);
-            if (status == 0) {
-                dynClosure->ffiClosure = ffi_closure_alloc(sizeof(ffi_closure), (void **)&dynClosure->fn);
-                if (dynClosure->ffiClosure != NULL) {
-                    int rc = ffi_prep_closure_loc(dynClosure->ffiClosure, &dynClosure->cif, dynClosure_ffiBind, dynClosure, dynClosure->fn);
-                    if (rc != FFI_OK) {
-                        status = 1;
-                    }
-                } else {
-                    status = 2;
-                }
-            }
+    void (*fn)(void);
+    dynFunc->ffiClosure = ffi_closure_alloc(sizeof(ffi_closure), (void **)&fn);
+    if (dynFunc->ffiClosure != NULL) {
+        int rc = ffi_prep_closure_loc(dynFunc->ffiClosure, &dynFunc->cif, dynFunction_ffiBind, dynFunc, fn);
+        if (rc != FFI_OK) {
+            status = 1;
         }
     } else {
         status = 2;
     }
 
     if (status == 0) {
-        *out = dynClosure;
+        dynFunc->bind = bind;
+        dynFunc->fn = fn;
+        *out =fn;
     }
+
     return status;
 }
 
-int dynClosure_getFnPointer(dyn_closure_type *dynClosure, void (**fn)(void)) {
+int dynClosure_getFnPointer(dyn_function_type *dynFunc, void (**fn)(void)) {
     int status = 0;
-    if (dynClosure != NULL) {
-        (*fn) = dynClosure->fn;
+    if (dynFunc != NULL && dynFunc->fn != NULL) {
+        (*fn) = dynFunc->fn;
     } else {
         status = 1;
     }
@@ -194,17 +242,3 @@ int dynClosure_getFnPointer(dyn_closure_type *dynClosure, void (**fn)(void)) {
 }
 
 
-void dynClosure_destroy(dyn_closure_type *dynClosure) {
-    if (dynClosure != NULL) {
-        if (dynClosure->arguments != NULL) {
-	    dynType_destroy(dynClosure->arguments);
-	}
-        if (dynClosure->funcReturn != NULL) {
-	    dynType_destroy(dynClosure->funcReturn);
-	}
-	if (dynClosure->ffiClosure != NULL) {
-	    ffi_closure_free(dynClosure->ffiClosure);
-	}
-	free(dynClosure);
-    }
-}

@@ -13,9 +13,11 @@
 #include <assert.h>
 #include <errno.h>
 
+#include "dyn_common.h"
+
 DFI_SETUP_LOG(dynType)
 
-static int dynType_createWithStream(FILE *stream, const char *name, dyn_type *parent, dyn_type_list_type *typeReferences, dyn_type **result);
+static int dynType_parseWithStream(FILE *stream, const char *name, dyn_type *parent, dyn_type_list_type *typeReferences, dyn_type **result);
 static void dynType_clear(dyn_type *type);
 static void dynType_clearComplex(dyn_type *type);
 static void dynType_clearSequence(dyn_type *type);
@@ -23,9 +25,8 @@ static void dynType_clearTypedPointer(dyn_type *type);
 
 static ffi_type * dynType_ffiTypeFor(int c);
 static dyn_type * dynType_findType(dyn_type *type, char *name);
-static int dynType_parse(FILE *stream, dyn_type *type);
+static int dynType_parseAny(FILE *stream, dyn_type *type);
 static int dynType_parseComplex(FILE *stream, dyn_type *type);
-static int dynType_parseName(FILE *stream, char **name);
 static int dynType_parseNestedType(FILE *stream, dyn_type *type);
 static int dynType_parseReference(FILE *stream, dyn_type *type);
 static int dynType_parseRefByValue(FILE *stream, dyn_type *type);
@@ -57,15 +58,15 @@ static const int DT_ERROR = 1;
 static const int DT_MEM_ERROR = 2;
 static const int DT_PARSE_ERROR = 3;
 
-int dynType_create(FILE *descriptorStream, const char *name, dyn_type_list_type *typeReferences, dyn_type **type) {
-    return dynType_createWithStream(descriptorStream, name, NULL, typeReferences, type);
+int dynType_parse(FILE *descriptorStream, const char *name, dyn_type_list_type *typeReferences, dyn_type **type) {
+    return dynType_parseWithStream(descriptorStream, name, NULL, typeReferences, type);
 }
 
-int dynType_createWithStr(const char *descriptor, const char *name, dyn_type_list_type *typeReferences, dyn_type **type) {
+int dynType_parseWithStr(const char *descriptor, const char *name, dyn_type_list_type *typeReferences, dyn_type **type) {
     int status = DT_OK;
     FILE *stream = fmemopen((char *)descriptor, strlen(descriptor), "r");
     if (stream != NULL) {
-        status = dynType_createWithStream(stream, name, NULL, typeReferences, type);
+        status = dynType_parseWithStream(stream, name, NULL, typeReferences, type);
         if (status == DT_OK) {
             int c = fgetc(stream);
             if (c != '\0' && c != EOF) {
@@ -81,7 +82,7 @@ int dynType_createWithStr(const char *descriptor, const char *name, dyn_type_lis
     return status;
 }
 
-static int dynType_createWithStream(FILE *stream, const char *name, dyn_type *parent, dyn_type_list_type *typeReferences, dyn_type **result) {
+static int dynType_parseWithStream(FILE *stream, const char *name, dyn_type *parent, dyn_type_list_type *typeReferences, dyn_type **result) {
     int status = DT_OK;
     dyn_type *type = calloc(1, sizeof(*type));
     if (type != NULL) {
@@ -97,7 +98,7 @@ static int dynType_createWithStream(FILE *stream, const char *name, dyn_type *pa
             } 
         }
         if (status == DT_OK) {
-            status = dynType_parse(stream, type);        
+            status = dynType_parseAny(stream, type);        
         }
         if (status == DT_OK) {
             *result = type;
@@ -111,7 +112,7 @@ static int dynType_createWithStream(FILE *stream, const char *name, dyn_type *pa
     return status;
 }
 
-static int dynType_parse(FILE *stream, dyn_type *type) {
+static int dynType_parseAny(FILE *stream, dyn_type *type) {
     int status = DT_OK;
 
     int c = fgetc(stream);
@@ -119,7 +120,7 @@ static int dynType_parse(FILE *stream, dyn_type *type) {
         case 'T' :
             status = dynType_parseNestedType(stream, type);
             if (status == DT_OK) {
-                status = dynType_parse(stream, type);
+                status = dynType_parseAny(stream, type);
             } 
             break;
         case 'L' :
@@ -162,7 +163,7 @@ static int dynType_parseComplex(FILE *stream, dyn_type *type) {
             entry->type.type = DYN_TYPE_INVALID;
             TAILQ_INIT(&entry->type.nestedTypesHead);
             TAILQ_INSERT_TAIL(&type->complex.entriesHead, entry, entries);
-            status = dynType_parse(stream, &entry->type);
+            status = dynType_parseAny(stream, &entry->type);
         } else {
             status = DT_MEM_ERROR;
             LOG_ERROR("Error allocating memory for type");
@@ -173,7 +174,7 @@ static int dynType_parseComplex(FILE *stream, dyn_type *type) {
     entry = TAILQ_FIRST(&type->complex.entriesHead);
     char *name = NULL;
     while (c == ' ' && entry != NULL) {
-        status = dynType_parseName(stream, &name);
+        status = dynCommon_parseName(stream, &name);
         if (status == DT_OK) {
             entry->name = name;
             entry = TAILQ_NEXT(entry, entries);
@@ -224,31 +225,6 @@ static int dynType_parseComplex(FILE *stream, dyn_type *type) {
     return status;
 }
 
-static int dynType_parseName(FILE *stream, char **result) {
-    int status = DT_OK;
-
-    char *buf = NULL;
-    size_t size = 0;
-    FILE *name = open_memstream(&buf, &size);
-
-    if (name != NULL) { 
-        int c = getc(stream);
-        while (isalnum(c) || c == '_') {
-            fputc(c, name); 
-            c = getc(stream);
-        }
-        fflush(name);
-        fclose(name);
-        *result = buf;
-        ungetc(c, stream);
-    } else {
-        status = DT_ERROR;
-        LOG_ERROR("Error creating mem stream for name. %s", strerror(errno));
-    }
-
-    return status;
-}
-
 static int dynType_parseNestedType(FILE *stream, dyn_type *type) {
     int status = DT_OK;
     char *name = NULL;
@@ -260,7 +236,7 @@ static int dynType_parseNestedType(FILE *stream, dyn_type *type) {
         entry->type.type = DYN_TYPE_INVALID;
         TAILQ_INIT(&entry->type.nestedTypesHead);
         TAILQ_INSERT_TAIL(&type->nestedTypesHead, entry, entries);
-        status = dynType_parseName(stream, &name);
+        status = dynCommon_parseName(stream, &name);
         entry->type.name = name;
     } else {
         status = DT_MEM_ERROR;  
@@ -275,7 +251,7 @@ static int dynType_parseNestedType(FILE *stream, dyn_type *type) {
     }
 
     if (status == DT_OK) {
-        status = dynType_parse(stream, &entry->type);
+        status = dynType_parseAny(stream, &entry->type);
         int c = fgetc(stream);
         if (c != ';') {
             status = DT_PARSE_ERROR;
@@ -316,7 +292,7 @@ static int dynType_parseRefByValue(FILE *stream, dyn_type *type) {
     type->descriptor = 'l';
 
     char *name = NULL;
-    status = dynType_parseName(stream, &name);
+    status = dynCommon_parseName(stream, &name);
     if (status == DT_OK) {
         dyn_type *ref = dynType_findType(type, name);
         free(name);
@@ -347,7 +323,7 @@ static int dynType_parseSequence(FILE *stream, dyn_type *type) {
     type->descriptor = '[';
 
     type->sequence.seqType.elements = seq_types;
-    status = dynType_createWithStream(stream, NULL, type, NULL, &type->sequence.itemType);
+    status = dynType_parseWithStream(stream, NULL, type, NULL, &type->sequence.itemType);
 
     if (status == DT_OK) {
         type->ffiType = &type->sequence.seqType;
@@ -378,7 +354,7 @@ static int dynType_parseTypedPointer(FILE *stream, dyn_type *type) {
     type->descriptor = '*';
     type->ffiType = &ffi_type_pointer;
 
-    status = dynType_createWithStream(stream, NULL, type, NULL, &type->typedPointer.typedType);
+    status = dynType_parseWithStream(stream, NULL, type, NULL, &type->typedPointer.typedType);
 
     return status;
 }

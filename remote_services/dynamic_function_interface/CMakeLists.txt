@@ -19,11 +19,12 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 endif()
 
 add_library(dfi
+    dyn_common.c
     dyn_type.c
     dyn_function.c
     dyn_interface.c
     json_serializer.c
-    avro_descriptor_translator.c
+#    avro_descriptor_translator.c
     ${MEMSTREAM_SOURCES}
 )
 target_link_libraries(dfi ${FFI_LIBRARIES} ${JANSSON_LIBRARY})
@@ -35,7 +36,7 @@ target_link_libraries(dfi ${FFI_LIBRARIES} ${JANSSON_LIBRARY})
 	    tst/dyn_function_tests.cpp
 	    tst/dyn_closure_tests.cpp
 	    tst/json_serializer_tests.cpp
-	    tst/avro_descriptor_translator_tests.cpp
+#	    tst/avro_descriptor_translator_tests.cpp
 	    tst/run_tests.cpp
 	)
 	target_link_libraries(dfi_tests dfi ${FFI_LIBRARIES} ${CPPUTEST_LIBRARY} ${JANSSON_LIBRARY}) 

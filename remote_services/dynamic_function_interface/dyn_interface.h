@@ -14,32 +14,39 @@ typedef struct _dyn_interface_type dyn_interface_type;
 
 struct _dyn_interface_type {
     char *name;
-    TAILQ_HEAD(, _type_info_type) typeInfos;
-    TAILQ_HEAD(, _method_info_type) methodInfos;
+    int versionMajor;
+    int versionMinor;
+    int versionMicro;
+    TAILQ_HEAD(, _interface_annotation_type) annotations;
+    TAILQ_HEAD(, _interface_type_type) types;
+    TAILQ_HEAD(, _interface_method_type) methods;
 };
 
-typedef struct _method_info_type method_info_type;
-struct _method_info_type {
+typedef struct _interface_annotation_type interface_annotation_type;
+struct _interface_annotation_type {
+    char *name;
+    char *value;
+    TAILQ_ENTRY(_interface_annotation_type) entries;
+};
+
+typedef struct _interface_method_type interface_method_type;
+struct _interface_method_type {
     int identifier;
     char *strIdentifier;
-    char *descriptor;
     char *name;
 
     dyn_function_type *dynFunc;
-    dyn_closure_type *dynClosure;
 
-    TAILQ_ENTRY(_method_info_type) entries; 
+    TAILQ_ENTRY(_interface_method_type) entries; 
 };
 
-typedef struct _type_info_type type_info_type;
-struct _type_info_type {
+typedef struct _interface_type_type interface_type_type;
+struct _interface_type_type {
     char *name;
-    char *descriptor;
-    TAILQ_ENTRY(_type_info_type) entries;
+    TAILQ_ENTRY(_interface_type_type) entries;
 };
 
-
-int dynInterface_create(const char *name, dyn_interface_type **out);
+int dynInterface_parse(const FILE *descriptor, dyn_interface_type **out);
 void dynInterface_destroy(dyn_interface_type *intf);
 
 

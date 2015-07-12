@@ -20,8 +20,8 @@ int dynInterface_create(const char *name, dyn_interface_type **out) {
     }
 
     if (status == 0) {
-        TAILQ_INIT(&inft->typeInfos);
-        TAILQ_INIT(&inft->methodInfos);
+        TAILQ_INIT(&inft->types);
+        TAILQ_INIT(&inft->methods);
     }
     *out = inft;
     return status;
@@ -33,8 +33,8 @@ void dynInterface_destroy(dyn_interface_type *intf) {
             free(intf->name);
         }
 
-        type_info_type *tmp = NULL;
-        type_info_type *tInfo = TAILQ_FIRST(&intf->typeInfos);
+        interface_type_type *tmp = NULL;
+        interface_type_type *tInfo = TAILQ_FIRST(&intf->types);
         while (tInfo != NULL) {
             tmp = tInfo;
             tInfo = TAILQ_NEXT(tInfo, entries);
@@ -42,15 +42,12 @@ void dynInterface_destroy(dyn_interface_type *intf) {
             if (tmp->name != NULL) {
                 free(tmp->name);
             }
-            if (tmp->descriptor != NULL) {
-                free(tmp->descriptor);
-            }
 
             free(tmp);
         }
 
-        method_info_type *mTmp = NULL;
-        method_info_type *mInfo = TAILQ_FIRST(&intf->methodInfos);
+        interface_method_type *mTmp = NULL;
+        interface_method_type *mInfo = TAILQ_FIRST(&intf->methods);
         while (mInfo != NULL) {
             mTmp = mInfo;
             mInfo = TAILQ_NEXT(mInfo, entries);
@@ -58,19 +55,12 @@ void dynInterface_destroy(dyn_interface_type *intf) {
             if (mTmp->strIdentifier != NULL) {
                 free(mTmp->strIdentifier);
             }
-            if (mTmp->descriptor != NULL) {
-                free(mTmp->descriptor);
-            }
             if (mTmp->name != NULL) {
                 free(mTmp->name);
             }
             if (mTmp->dynFunc != NULL) {
                 dynFunction_destroy(mTmp->dynFunc);
             }
-            if (mTmp->dynClosure != NULL) {
-                dynClosure_destroy(mTmp->dynClosure);
-            }
-
             free(mTmp);
         }
 

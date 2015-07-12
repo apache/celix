@@ -13,6 +13,7 @@ extern "C" {
 
 #include <ffi.h>
 
+#include "dyn_common.h"
 #include "dyn_type.h"
 #include "json_serializer.h"
 
@@ -136,7 +137,7 @@ static void tests() {
 
     type = NULL;
     inst = NULL;
-    rc = dynType_createWithStr(example1_descriptor, NULL, NULL, &type);    
+    rc = dynType_parseWithStr(example1_descriptor, NULL, NULL, &type);    
     CHECK_EQUAL(0, rc);
     rc = json_deserialize(type, example1_input, &inst); 
     CHECK_EQUAL(0, rc);
@@ -146,7 +147,7 @@ static void tests() {
 
     type = NULL;
     inst = NULL;
-    rc = dynType_createWithStr(example2_descriptor, NULL, NULL, &type);
+    rc = dynType_parseWithStr(example2_descriptor, NULL, NULL, &type);
     CHECK_EQUAL(0, rc);
     rc = json_deserialize(type, example2_input, &inst); 
     CHECK_EQUAL(0, rc);
@@ -155,7 +156,7 @@ static void tests() {
 
     type = NULL;
     inst = NULL;
-    rc = dynType_createWithStr(example3_descriptor, NULL, NULL, &type);
+    rc = dynType_parseWithStr(example3_descriptor, NULL, NULL, &type);
     CHECK_EQUAL(0, rc);
     rc = json_deserialize(type, example3_input, &inst); 
     CHECK_EQUAL(0, rc);
@@ -163,7 +164,7 @@ static void tests() {
 
     type = NULL;
     inst = NULL;
-    rc = dynType_createWithStr(example4_descriptor, NULL, NULL, &type);
+    rc = dynType_parseWithStr(example4_descriptor, NULL, NULL, &type);
     CHECK_EQUAL(0, rc);
     rc = json_deserialize(type, example4_input, &inst); 
     CHECK_EQUAL(0, rc);
@@ -174,6 +175,7 @@ static void tests() {
 TEST_GROUP(JsonSerializerTests) {
     void setup() {
         dynType_logSetup(stdLog, NULL, 3);
+        dynCommon_logSetup(stdLog, NULL, 3);
     }
 };
 

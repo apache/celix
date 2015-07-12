@@ -8,6 +8,7 @@ extern "C" {
     #include <string.h>
     #include <stdarg.h>
     
+    #include "dyn_common.h"
     #include "dyn_type.h"
 
 	static void stdLog(void *handle, int level, const char *file, int line, const char *msg, ...) {
@@ -24,7 +25,7 @@ extern "C" {
         int i;
         type = NULL;
         printf("\n-- example %s with descriptor string '%s' --\n", exName, descriptorStr);
-        int status = dynType_createWithStr(descriptorStr, exName, NULL, &type);
+        int status = dynType_parseWithStr(descriptorStr, exName, NULL, &type);
         CHECK_EQUAL(0, status);
         if (status == 0) {
             dynType_print(type);
@@ -106,7 +107,7 @@ TEST(DynTypeTests, ParseRandomGarbageTest) {
 
         //printf("ParseRandomGarbageTest iteration %i with descriptor string '%s'\n", k, descriptorStr); 
         dyn_type *type = NULL;	
-        int status = dynType_createWithStr(descriptorStr, NULL, NULL, &type);
+        int status = dynType_parseWithStr(descriptorStr, NULL, NULL, &type);
         if (status == 0) {
             dynType_destroy(type);
         }
@@ -122,7 +123,7 @@ TEST(DynTypeTests, AssignTest1) {
     struct ex1 inst;
     const char *desc = "{III a b c}";
     dyn_type *type = NULL;
-    int status = dynType_createWithStr(desc, NULL, NULL, &type);
+    int status = dynType_parseWithStr(desc, NULL, NULL, &type);
     CHECK_EQUAL(0, status);
     int32_t val1 = 2;
     int32_t val2 = 4;
@@ -133,6 +134,8 @@ TEST(DynTypeTests, AssignTest1) {
     CHECK_EQUAL(4, inst.b);
     dynType_complex_setValueAt(type, 2,  &inst, &val3);
     CHECK_EQUAL(8, inst.c);
+
+    dynType_destroy(type);
 }
 
 TEST(DynTypeTests, AssignTest2) {
@@ -146,7 +149,7 @@ TEST(DynTypeTests, AssignTest2) {
     struct ex inst;
     const char *desc = "{I{DD a b} a b}";
     dyn_type *type = NULL;
-    int status = dynType_createWithStr(desc, NULL, NULL,  &type);
+    int status = dynType_parseWithStr(desc, NULL, NULL,  &type);
     CHECK_EQUAL(0, status);
     int32_t a = 2;
     double b_a = 1.1;
@@ -165,6 +168,8 @@ TEST(DynTypeTests, AssignTest2) {
 
     dynType_complex_setValueAt(subType, 1, &inst.b, &b_b);
     CHECK_EQUAL(1.2, inst.b.b);
+
+    dynType_destroy(type);
 }
 
 

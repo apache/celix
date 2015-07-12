@@ -12,6 +12,7 @@ extern "C" {
 #include <string.h>
 #include <ctype.h>
 
+#include "dyn_common.h"
 #include "dyn_function.h"
 
 static int g_count;
@@ -75,27 +76,27 @@ static void example3_binding(void *userData, void* args[], void *out) {
 }
 
 static void tests() {
-    dyn_closure_type *dynClosure = NULL;
+    dyn_function_type *dynFunction = NULL;
     int rc = 0;
 
     {
-        rc = dynClosure_createWithStr(EXAMPLE1_DESCRIPTOR, NULL, example1_binding, NULL, &dynClosure);
-        CHECK_EQUAL(0, rc);
         int32_t (*func)(int32_t a, int32_t b, int32_t c) = NULL;
-        int rc = dynClosure_getFnPointer(dynClosure, (void(**)(void))&func);
+        rc = dynFunction_parseWithStr(EXAMPLE1_DESCRIPTOR, NULL, &dynFunction);
+        CHECK_EQUAL(0, rc);
+        rc = dynFunction_createClosure(dynFunction, example1_binding, NULL, (void(**)(void))&func);
         CHECK_EQUAL(0, rc);
         int32_t ret = func(2,3,4);
         CHECK_EQUAL(1, g_count);
-	CHECK_EQUAL(9, ret);
-        dynClosure_destroy(dynClosure);
+        CHECK_EQUAL(9, ret);
+        dynFunction_destroy(dynFunction);
     }
 
     {
-        dynClosure = NULL;
-        rc = dynClosure_createWithStr(EXAMPLE2_DESCRIPTOR, NULL, example2_binding, NULL, &dynClosure);
-        CHECK_EQUAL(0, rc);
         double (*func)(int32_t a, struct example2_arg2 b, int32_t c) = NULL;
-        rc = dynClosure_getFnPointer(dynClosure, (void(**)(void))&func);
+        dynFunction = NULL;
+        rc = dynFunction_parseWithStr(EXAMPLE2_DESCRIPTOR, NULL, &dynFunction);
+        CHECK_EQUAL(0, rc);
+        rc = dynFunction_createClosure(dynFunction, example2_binding, NULL, (void(**)(void))&func);
         CHECK_EQUAL(0, rc);
         struct example2_arg2 b;
         b.val1 = 1.0;
@@ -103,21 +104,21 @@ static void tests() {
         b.val3 = 2.0;
         double ret = func(2,b,4);
         CHECK_EQUAL(2, g_count);
-	CHECK_EQUAL(10.5, ret);
-        dynClosure_destroy(dynClosure);
+        CHECK_EQUAL(10.5, ret);
+        dynFunction_destroy(dynFunction);
     }
 
     {
-        dynClosure = NULL;
-        rc = dynClosure_createWithStr(EXAMPLE3_DESCRIPTOR, NULL, example3_binding, NULL, &dynClosure);
-        CHECK_EQUAL(0, rc);
         struct example3_ret * (*func)(int32_t a, int32_t b, int32_t c) = NULL;
-        rc = dynClosure_getFnPointer(dynClosure, (void(**)(void))&func);
+        dynFunction = NULL;
+        rc = dynFunction_parseWithStr(EXAMPLE3_DESCRIPTOR, NULL, &dynFunction);
+        CHECK_EQUAL(0, rc);
+        rc = dynFunction_createClosure(dynFunction, example3_binding, NULL, (void(**)(void))&func);
         CHECK_EQUAL(0, rc);
         struct example3_ret *ret = func(2,8,4);
         CHECK_EQUAL(3, g_count);
-	CHECK_EQUAL(14, ret->sum);
-        dynClosure_destroy(dynClosure);
+        CHECK_EQUAL(14, ret->sum);
+        dynFunction_destroy(dynFunction);
         free(ret);
     }
 }
@@ -130,6 +131,7 @@ TEST_GROUP(DynClosureTests) {
         dynFunction_logSetup(stdLog, NULL, 3);
         dynType_logSetup(stdLog, NULL, 3);
         //TODO dynType_logSetup(stdLog, NULL, 4);
+        dynCommon_logSetup(stdLog, NULL, 3);
         g_count = 0;
     }
 };

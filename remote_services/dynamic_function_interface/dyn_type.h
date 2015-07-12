@@ -125,8 +125,8 @@ struct nested_entry {
 DFI_SETUP_LOG_HEADER(dynType);
 
 //generic
-int dynType_create(FILE *descriptorStream, const char *name, dyn_type_list_type *typeReferences, dyn_type **type);
-int dynType_createWithStr(const char *descriptor, const char *name, dyn_type_list_type *typeReferences, dyn_type **type);
+int dynType_parse(FILE *descriptorStream, const char *name, dyn_type_list_type *typeReferences, dyn_type **type);
+int dynType_parseWithStr(const char *descriptor, const char *name, dyn_type_list_type *typeReferences, dyn_type **type);
 void dynType_destroy(dyn_type *type);
 
 int dynType_alloc(dyn_type *type, void **bufLoc);
