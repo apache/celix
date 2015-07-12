@@ -35,6 +35,7 @@ target_link_libraries(dfi ${FFI_LIBRARIES} ${JANSSON_LIBRARY})
 	    tst/dyn_type_tests.cpp
 	    tst/dyn_function_tests.cpp
 	    tst/dyn_closure_tests.cpp
+        tst/dyn_interface_tests.cpp
 	    tst/json_serializer_tests.cpp
 #	    tst/avro_descriptor_translator_tests.cpp
 	    tst/run_tests.cpp
@@ -43,6 +44,7 @@ target_link_libraries(dfi ${FFI_LIBRARIES} ${JANSSON_LIBRARY})
 
 	add_custom_target(copy-input 
 	    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_LIST_DIR}/schemas schemas
+	    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_LIST_DIR}/descriptors descriptors
 	)
 	add_dependencies(dfi_tests copy-input)
 

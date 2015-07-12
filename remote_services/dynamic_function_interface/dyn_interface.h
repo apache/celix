@@ -10,23 +10,29 @@
 
 DFI_SETUP_LOG_HEADER(dynInterface);
 
+/* Description string
+ *
+ * Descriptor = [Section]*
+ * Section = SecionHeader | Body
+ * SectionHeader = ':' (Name)
+ * SectionBody = subDescriptor '\n\
+ *
+ * expected sections: header, types & mehods
+ */
+
 typedef struct _dyn_interface_type dyn_interface_type;
 
 struct _dyn_interface_type {
-    char *name;
-    int versionMajor;
-    int versionMinor;
-    int versionMicro;
-    TAILQ_HEAD(, _interface_annotation_type) annotations;
+    TAILQ_HEAD(, _interface_namval_type) annotations;
     TAILQ_HEAD(, _interface_type_type) types;
     TAILQ_HEAD(, _interface_method_type) methods;
 };
 
-typedef struct _interface_annotation_type interface_annotation_type;
-struct _interface_annotation_type {
+typedef struct _interface_namval_type interface_namval_type;
+struct _interface_namval_type {
     char *name;
     char *value;
-    TAILQ_ENTRY(_interface_annotation_type) entries;
+    TAILQ_ENTRY(_interface_namval_type) entries;
 };
 
 typedef struct _interface_method_type interface_method_type;
@@ -46,8 +52,10 @@ struct _interface_type_type {
     TAILQ_ENTRY(_interface_type_type) entries;
 };
 
-int dynInterface_parse(const FILE *descriptor, dyn_interface_type **out);
+int dynInterface_parse(FILE *descriptor, dyn_interface_type **out);
 void dynInterface_destroy(dyn_interface_type *intf);
+
+int dynInterface_getName(dyn_interface_type *intf, char **name);
 
 
 #endif

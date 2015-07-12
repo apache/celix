@@ -24,8 +24,8 @@ struct _dyn_annotation_type {
 };
 
 int dynCommon_parseName(FILE *stream, char **result);
-//TODO int dynCommon_parseNameValue(FILE *stream, char **name, char **value);
-//TODO int dynCommon_parseAnnotation(FILE *stream, 
+int dynCommon_parseNameValue(FILE *stream, char **name, char **value);
+int dynCommon_eatChar(FILE *stream, int c);
 
 
 #endif 
