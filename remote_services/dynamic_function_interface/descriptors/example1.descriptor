@@ -1,0 +1,14 @@
+:annotations
+type=interface
+name=calculator
+major_version=1
+minor_version=0
+micro_version=0
+:types
+StatResult={DDD[D average min max input}
+:methods
+add(PDD*D)N
+sub(PDD*D)N
+sqrt(PD*D)N
+stats(P[D*LStatsResult;)N
+
