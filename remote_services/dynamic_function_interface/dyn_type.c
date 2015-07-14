@@ -17,7 +17,7 @@
 
 DFI_SETUP_LOG(dynType)
 
-static int dynType_parseWithStream(FILE *stream, const char *name, dyn_type *parent, dyn_type_list_type *typeReferences, dyn_type **result);
+static int dynType_parseWithStream(FILE *stream, const char *name, dyn_type *parent, struct reference_types_head *refTypes, dyn_type **result);
 static void dynType_clear(dyn_type *type);
 static void dynType_clearComplex(dyn_type *type);
 static void dynType_clearSequence(dyn_type *type);
@@ -58,15 +58,15 @@ static const int DT_ERROR = 1;
 static const int DT_MEM_ERROR = 2;
 static const int DT_PARSE_ERROR = 3;
 
-int dynType_parse(FILE *descriptorStream, const char *name, dyn_type_list_type *typeReferences, dyn_type **type) {
-    return dynType_parseWithStream(descriptorStream, name, NULL, typeReferences, type);
+int dynType_parse(FILE *descriptorStream, const char *name, struct reference_types_head *refTypes, dyn_type **type) {
+    return dynType_parseWithStream(descriptorStream, name, NULL, refTypes, type);
 }
 
-int dynType_parseWithStr(const char *descriptor, const char *name, dyn_type_list_type *typeReferences, dyn_type **type) {
+int dynType_parseWithStr(const char *descriptor, const char *name, struct reference_types_head *refTypes, dyn_type **type) {
     int status = DT_OK;
     FILE *stream = fmemopen((char *)descriptor, strlen(descriptor), "r");
     if (stream != NULL) {
-        status = dynType_parseWithStream(stream, name, NULL, typeReferences, type);
+        status = dynType_parseWithStream(stream, name, NULL, refTypes, type);
         if (status == DT_OK) {
             int c = fgetc(stream);
             if (c != '\0' && c != EOF) {
@@ -82,13 +82,13 @@ int dynType_parseWithStr(const char *descriptor, const char *name, dyn_type_list
     return status;
 }
 
-static int dynType_parseWithStream(FILE *stream, const char *name, dyn_type *parent, dyn_type_list_type *typeReferences, dyn_type **result) {
+static int dynType_parseWithStream(FILE *stream, const char *name, dyn_type *parent, struct reference_types_head *refTypes, dyn_type **result) {
     int status = DT_OK;
     dyn_type *type = calloc(1, sizeof(*type));
     if (type != NULL) {
         type->parent = parent;
         type->type = DYN_TYPE_INVALID;
-        type->typeReferences = typeReferences;
+        type->referenceTypes = refTypes;
         TAILQ_INIT(&type->nestedTypesHead);
         if (name != NULL) {
             type->name = strdup(name);
@@ -295,13 +295,13 @@ static int dynType_parseRefByValue(FILE *stream, dyn_type *type) {
     status = dynCommon_parseName(stream, &name);
     if (status == DT_OK) {
         dyn_type *ref = dynType_findType(type, name);
-        free(name);
         if (ref != NULL) {
             type->ref.ref = ref;
         } else {
             status = DT_PARSE_ERROR;
             LOG_ERROR("Error cannot find type '%s'", name);
         }
+        free(name);
     } 
 
     if (status == DT_OK) {
@@ -594,21 +594,26 @@ static ffi_type * dynType_ffiTypeFor(int c) {
 
 static dyn_type * dynType_findType(dyn_type *type, char *name) {
     dyn_type *result = NULL;
-    struct nested_entry *entry = NULL;
 
-    if (type->typeReferences != NULL) {
-        TAILQ_FOREACH(entry, type->typeReferences, entries) {
-            if (strcmp(name, entry->type.name) == 0) {
-                result = &entry->type;
+    struct type_entry *entry = NULL;
+    if (type->referenceTypes != NULL) {
+        TAILQ_FOREACH(entry, type->referenceTypes, entries) {
+            LOG_DEBUG("checking ref type '%s' with name '%s'", entry->type->name, name);
+            if (strcmp(name, entry->type->name) == 0) {
+                result = entry->type;
                 break;
             }
         }
     }
 
-    TAILQ_FOREACH(entry, &type->nestedTypesHead, entries) {
-        if (strcmp(name, entry->type.name) == 0) {
-            result = &entry->type;
-            break;
+    if (result == NULL) {
+        struct nested_entry *nEntry = NULL;
+        TAILQ_FOREACH(nEntry, &type->nestedTypesHead, entries) {
+            LOG_DEBUG("checking nested type '%s' with name '%s'", nEntry->type.name, name);
+            if (strcmp(name, nEntry->type.name) == 0) {
+                result = &nEntry->type;
+                break;
+            }
         }
     }
 

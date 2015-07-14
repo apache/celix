@@ -20,36 +20,33 @@ DFI_SETUP_LOG_HEADER(dynInterface);
  * expected sections: header, types & mehods
  */
 
+TAILQ_HEAD(namvals_head, namval_entry);
+TAILQ_HEAD(methods_head, method_entry);
+//struct reference_types_head in dyn_type.h
+
 typedef struct _dyn_interface_type dyn_interface_type;
 
 struct _dyn_interface_type {
-    TAILQ_HEAD(, _interface_namval_type) annotations;
-    TAILQ_HEAD(, _interface_type_type) types;
-    TAILQ_HEAD(, _interface_method_type) methods;
+    struct namvals_head annotations;
+    struct reference_types_head types;
+    struct methods_head methods;
 };
 
-typedef struct _interface_namval_type interface_namval_type;
-struct _interface_namval_type {
+//TODO move to dynCommon
+struct namval_entry {
     char *name;
     char *value;
-    TAILQ_ENTRY(_interface_namval_type) entries;
+    TAILQ_ENTRY(namval_entry) entries;
 };
 
-typedef struct _interface_method_type interface_method_type;
-struct _interface_method_type {
-    int identifier;
-    char *strIdentifier;
+struct method_entry {
+    int index;
+    char *id;
     char *name;
 
     dyn_function_type *dynFunc;
 
-    TAILQ_ENTRY(_interface_method_type) entries; 
-};
-
-typedef struct _interface_type_type interface_type_type;
-struct _interface_type_type {
-    char *name;
-    TAILQ_ENTRY(_interface_type_type) entries;
+    TAILQ_ENTRY(method_entry) entries; 
 };
 
 int dynInterface_parse(FILE *descriptor, dyn_interface_type **out);

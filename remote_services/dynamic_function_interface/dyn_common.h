@@ -14,6 +14,7 @@
 //logging
 DFI_SETUP_LOG_HEADER(dynCommon);
 
+/*
 typedef struct _dyn_annotation_list_type annotation_list_type;
 TAILQ_HEAD(_dyn_annotation_list_type, _dyn_annotation_type);
 
@@ -22,8 +23,10 @@ struct _dyn_annotation_type {
     char *name;
     char *value;
 };
+*/
 
 int dynCommon_parseName(FILE *stream, char **result);
+int dynCommon_parseNameAlsoAccept(FILE *stream, const char *acceptedChars, char **result);
 int dynCommon_parseNameValue(FILE *stream, char **name, char **value);
 int dynCommon_eatChar(FILE *stream, int c);
 

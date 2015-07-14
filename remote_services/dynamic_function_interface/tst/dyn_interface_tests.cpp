@@ -50,9 +50,11 @@ extern "C" {
 
 TEST_GROUP(DynInterfaceTests) {
     void setup() {
-        dynCommon_logSetup(stdLog, NULL, 4);
-        dynType_logSetup(stdLog, NULL, 4);
-        dynFunction_logSetup(stdLog, NULL, 4);
+        int level = 3;
+        dynCommon_logSetup(stdLog, NULL, level);
+        dynType_logSetup(stdLog, NULL, level);
+        dynFunction_logSetup(stdLog, NULL, level);
+        dynInterface_logSetup(stdLog, NULL, level);
     }
 };
 

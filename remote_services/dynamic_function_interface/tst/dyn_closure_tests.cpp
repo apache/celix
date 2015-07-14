@@ -93,11 +93,15 @@ static void tests() {
 
     {
         double (*func)(int32_t a, struct example2_arg2 b, int32_t c) = NULL;
+        double (*func2)(int32_t a, struct example2_arg2 b, int32_t c) = NULL;
         dynFunction = NULL;
         rc = dynFunction_parseWithStr(EXAMPLE2_DESCRIPTOR, NULL, &dynFunction);
         CHECK_EQUAL(0, rc);
         rc = dynFunction_createClosure(dynFunction, example2_binding, NULL, (void(**)(void))&func);
         CHECK_EQUAL(0, rc);
+        rc = dynFunction_getFnPointer(dynFunction, (void(**)(void))&func2);
+        CHECK_EQUAL(0, rc);
+        CHECK(func == func2);
         struct example2_arg2 b;
         b.val1 = 1.0;
         b.val2 = 1.5;

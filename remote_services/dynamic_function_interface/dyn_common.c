@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <stdbool.h>
 
 #if defined(BSD) || defined(__APPLE__) 
 #include "open_memstream.h"
@@ -17,7 +18,13 @@ static const int ERROR = 1;
 
 DFI_SETUP_LOG(dynCommon)
 
+static bool dynCommon_charIn(int c, const char *acceptedChars);
+
 int dynCommon_parseName(FILE *stream, char **result) {
+    return dynCommon_parseNameAlsoAccept(stream, NULL, result);
+}
+
+int dynCommon_parseNameAlsoAccept(FILE *stream, const char *acceptedChars, char **result) {
     int status = OK;
 
     char *buf = NULL;
@@ -27,7 +34,7 @@ int dynCommon_parseName(FILE *stream, char **result) {
 
     if (name != NULL) { 
         int c = getc(stream);
-        while (isalnum(c) || c == '_') {
+        while (isalnum(c) || c == '_' || dynCommon_charIn(c, acceptedChars)) {
             fputc(c, name); 
             c = getc(stream);
             strLen += 1;
@@ -83,12 +90,27 @@ int dynCommon_parseNameValue(FILE *stream, char **outName, char **outValue) {
     return status;
 }
 
-int dynCommon_eatChar(FILE *stream, int expected) {
+inline int dynCommon_eatChar(FILE *stream, int expected) {
     int status = OK;
     int c = fgetc(stream);
     if (c != expected) {
         status = ERROR;
         LOG_ERROR("Error parsing, expected token '%c' got '%c'", expected, c);
     }
+    return status;
+}
+
+static bool dynCommon_charIn(int c, const char *acceptedChars) {
+    bool status = false;
+    if (acceptedChars != NULL) {
+        int i;
+        for (i = 0; acceptedChars[i] != '\0'; i += 1) {
+            if (c == acceptedChars[i]) {
+                status = true;
+                break;
+            }
+        }
+    }
+
     return status;
 }

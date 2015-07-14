@@ -79,8 +79,8 @@
 
 typedef struct _dyn_type dyn_type;
 
-TAILQ_HEAD(_dyn_type_list_type, nested_entry); 
-typedef struct _dyn_type_list_type dyn_type_list_type;
+TAILQ_HEAD(reference_types_head, type_entry); 
+TAILQ_HEAD(nested_types_head, nested_entry); 
 
 struct _dyn_type {
     char *name;
@@ -88,8 +88,8 @@ struct _dyn_type {
     int type;
     ffi_type *ffiType;
     dyn_type *parent;
-    dyn_type_list_type *typeReferences; //NOTE: not owned
-    dyn_type_list_type  nestedTypesHead;
+    struct reference_types_head *referenceTypes; //NOTE: not owned
+    struct nested_types_head  nestedTypesHead;
     union {
         struct {
             TAILQ_HEAD(, complex_type_entry) entriesHead;
@@ -115,18 +115,22 @@ struct complex_type_entry {
     TAILQ_ENTRY(complex_type_entry) entries;
 };
 
+struct type_entry {
+    dyn_type *type;
+    TAILQ_ENTRY(type_entry) entries;
+};
+
 struct nested_entry {
     dyn_type type;
     TAILQ_ENTRY(nested_entry) entries;
 };
 
-
 //logging
 DFI_SETUP_LOG_HEADER(dynType);
 
 //generic
-int dynType_parse(FILE *descriptorStream, const char *name, dyn_type_list_type *typeReferences, dyn_type **type);
-int dynType_parseWithStr(const char *descriptor, const char *name, dyn_type_list_type *typeReferences, dyn_type **type);
+int dynType_parse(FILE *descriptorStream, const char *name, struct reference_types_head *refTypes, dyn_type **type);
+int dynType_parseWithStr(const char *descriptor, const char *name, struct reference_types_head *refTypes, dyn_type **type);
 void dynType_destroy(dyn_type *type);
 
 int dynType_alloc(dyn_type *type, void **bufLoc);

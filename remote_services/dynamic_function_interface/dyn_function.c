@@ -19,7 +19,7 @@ DFI_SETUP_LOG(dynFunction)
 
 struct _dyn_function_type {
     char *name;
-    dyn_type_list_type *refTypes; //NOTE not owned
+    struct reference_types_head *refTypes; //NOTE not owned
     TAILQ_HEAD(,_dyn_function_argument_type) arguments;
     ffi_type **ffiArguments;
     dyn_type *funcReturn;
@@ -43,12 +43,13 @@ struct _dyn_function_argument_type {
 static const int OK = 0;
 static const int MEM_ERROR = 1;
 static const int PARSE_ERROR = 2;
+static const int ERROR = 2;
 
 static int dynFunction_initCif(dyn_function_type *dynFunc);
 static int dynFunction_parseDescriptor(dyn_function_type *dynFunc, FILE *descriptor);
 static void dynFunction_ffiBind(ffi_cif *cif, void *ret, void *args[], void *userData); 
 
-int dynFunction_parse(FILE *descriptor, dyn_type_list_type *typeReferences, dyn_function_type **out) {
+int dynFunction_parse(FILE *descriptor, struct reference_types_head *refTypes, dyn_function_type **out) {
     int status = OK;
     dyn_function_type *dynFunc = NULL;
     LOG_DEBUG("Creating dyn function", descriptor);
@@ -57,11 +58,14 @@ int dynFunction_parse(FILE *descriptor, dyn_type_list_type *typeReferences, dyn_
 
     if (dynFunc != NULL) {
         TAILQ_INIT(&dynFunc->arguments);
-        dynFunc->refTypes = typeReferences;
+        dynFunc->refTypes = refTypes;
         status = dynFunction_parseDescriptor(dynFunc, descriptor);
         if (status == 0) {
             int rc = dynFunction_initCif(dynFunc);
-            status = rc != 0 ? rc : 0;
+            if (rc != 0) {
+                LOG_ERROR("Error initializing cif");
+                status = ERROR;
+            }
         }
     } else {
         LOG_ERROR("Error allocationg memory for dyn functipn\n");
@@ -70,21 +74,16 @@ int dynFunction_parse(FILE *descriptor, dyn_type_list_type *typeReferences, dyn_
     
     if (status == 0) {
         *out = dynFunc;
-    } else {
-        if (status == 1) {
-            LOG_ERROR("Cannot parse func descriptor '%s'\n", descriptor);
-        } else {
-            LOG_ERROR("Cannot allocate memory for dyn function\n");
-        }
-    }
+    }     
+    
     return status;
 }
 
-int dynFunction_parseWithStr(const char *descriptor, dyn_type_list_type *typeReferences, dyn_function_type **out)  {
+int dynFunction_parseWithStr(const char *descriptor, struct reference_types_head *refTypes, dyn_function_type **out)  {
     int status = OK;
     FILE *stream = fmemopen((char *)descriptor, strlen(descriptor), "r");
     if (stream != NULL) {
-        status = dynFunction_parse(stream, typeReferences, out);
+        status = dynFunction_parse(stream, refTypes, out);
         fclose(stream);
     } else {
         status = MEM_ERROR;
@@ -231,7 +230,7 @@ int dynFunction_createClosure(dyn_function_type *dynFunc, void (*bind)(void *, v
     return status;
 }
 
-int dynClosure_getFnPointer(dyn_function_type *dynFunc, void (**fn)(void)) {
+int dynFunction_getFnPointer(dyn_function_type *dynFunc, void (**fn)(void)) {
     int status = 0;
     if (dynFunc != NULL && dynFunc->fn != NULL) {
         (*fn) = dynFunc->fn;

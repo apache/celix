@@ -19,8 +19,8 @@ typedef struct _dyn_closure_type dyn_closure_type;
 
 DFI_SETUP_LOG_HEADER(dynFunction);
 
-int dynFunction_parse(FILE *descriptorStream, dyn_type_list_type *typeReferences, dyn_function_type **dynFunc);
-int dynFunction_parseWithStr(const char *descriptor, dyn_type_list_type *typeReferences, dyn_function_type **dynFunc);
+int dynFunction_parse(FILE *descriptorStream, struct reference_types_head *refTypes, dyn_function_type **dynFunc);
+int dynFunction_parseWithStr(const char *descriptor, struct reference_types_head *refTypes, dyn_function_type **dynFunc);
 
 void dynFunction_destroy(dyn_function_type *dynFunc);
 int dynFunction_call(dyn_function_type *dynFunc, void(*fn)(void), void *returnValue, void **argValues);

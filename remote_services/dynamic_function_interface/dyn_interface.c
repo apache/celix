@@ -15,6 +15,7 @@ DFI_SETUP_LOG(dynInterface);
 const int OK = 0;
 const int ERROR = 1;
 
+static int dynInterface_parseSection(dyn_interface_type *intf, FILE *stream);
 static int dynInterface_parseAnnotations(dyn_interface_type *intf, FILE *stream);
 static int dynInterface_parseTypes(dyn_interface_type *intf, FILE *stream);
 static int dynInterface_parseMethods(dyn_interface_type *intf, FILE *stream);
@@ -28,12 +29,19 @@ int dynInterface_parse(FILE *descriptor, dyn_interface_type **out) {
         TAILQ_INIT(&intf->types);
         TAILQ_INIT(&intf->methods);
 
-        status = dynInterface_parseAnnotations(intf, descriptor);
-        if (status == OK) {
-            status =dynInterface_parseTypes(intf, descriptor);
+        char peek = fgetc(descriptor);
+        while (peek == ':') {
+            ungetc(peek, descriptor);
+            status = dynInterface_parseSection(intf, descriptor);
+            if (status == OK) {
+                peek = fgetc(descriptor);
+            } else {
+                break;
+            }
         }
+
         if (status == OK) {
-            status = dynInterface_parseMethods(intf, descriptor);
+            status = dynCommon_eatChar(descriptor, EOF);
         }
     } else {
         status = ERROR;
@@ -48,7 +56,7 @@ int dynInterface_parse(FILE *descriptor, dyn_interface_type **out) {
     return status;
 }
 
-static int dynInterface_parseAnnotations(dyn_interface_type *intf, FILE *stream) {
+static int dynInterface_parseSection(dyn_interface_type *intf, FILE *stream) {
     int status = OK;
     char *sectionName = NULL;
 
@@ -63,72 +71,187 @@ static int dynInterface_parseAnnotations(dyn_interface_type *intf, FILE *stream)
     }
 
     if (status == OK) {
-        if (strcmp("annotations", sectionName) == 0) {
-            LOG_DEBUG("Parsed annotations section header");
+        if (strcmp("annotations", sectionName) ==0) {
+                status = dynInterface_parseAnnotations(intf, stream);
+        } else if (strcmp("types", sectionName) == 0) {
+                status =dynInterface_parseTypes(intf, stream);
+        } else if (strcmp("methods", sectionName) == 0) {
+                status =dynInterface_parseMethods(intf, stream);
         } else {
             status = ERROR;
-            LOG_ERROR("Expected annotations section, got '%s'", sectionName);
+            LOG_ERROR("unsupported section '%s'", sectionName);
         }
     }
 
-    if (status == OK) {
-        int peek = fgetc(stream);
-        while (peek != ':' && peek != EOF) {
-            ungetc(peek, stream);
+    return status;
+}
 
-            char *name;
-            char *value;
-            status = dynCommon_parseNameValue(stream, &name, &value);
+static int dynInterface_parseAnnotations(dyn_interface_type *intf, FILE *stream) {
+    int status = OK;
 
-            if (status == OK) {
-                status = dynCommon_eatChar(stream, '\n');
-            }
-
-            if (status == OK) {
-                interface_namval_type *entry = calloc(1, sizeof(*entry));
-                if (entry != NULL) {
-                    entry->name = name;
-                    entry->value = value;
-                    TAILQ_INSERT_TAIL(&intf->annotations, entry, entries);
-                } else {
-                    status = ERROR;
-                    LOG_ERROR("Error allocating memory for namval entry");
-                }
-            }
-
-            if (status != OK) {
-                if (name != NULL) {
-                    free(name);
-                }
-                if (value != NULL) {
-                    free(value);
-                }
-                break;
-            }
-            peek = fgetc(stream);
-        }
+    int peek = fgetc(stream);
+    while (peek != ':' && peek != EOF) {
         ungetc(peek, stream);
+
+        char *name;
+        char *value;
+        status = dynCommon_parseNameValue(stream, &name, &value);
+
+        if (status == OK) {
+            status = dynCommon_eatChar(stream, '\n');
+        }
+
+        struct namval_entry *entry = NULL;
+        if (status == OK) {
+            entry = calloc(1, sizeof(*entry));
+            if (entry != NULL) {
+                entry->name = name;
+                entry->value = value;
+                TAILQ_INSERT_TAIL(&intf->annotations, entry, entries);
+            } else {
+                status = ERROR;
+                LOG_ERROR("Error allocating memory for namval entry");
+            }
+        }
+
+        if (status != OK) {
+            if (name != NULL) {
+                free(name);
+            }
+            if (value != NULL) {
+                free(value);
+            }
+            if (entry != NULL) {
+                free(entry);
+            }
+            break;
+        }
+        peek = fgetc(stream);
     }
+    ungetc(peek, stream);
     
     return status;
 }
 
 static int dynInterface_parseTypes(dyn_interface_type *intf, FILE *stream) {
     int status = OK;
-    //TODO implement -> extract section parse part  from parseAnnotations first?
+
+    //expected input (Name)=<Type>\n
+    int peek = fgetc(stream);
+    while (peek != ':' && peek != EOF) {
+        ungetc(peek, stream);
+
+        char *name;
+        status = dynCommon_parseName(stream, &name);
+
+        if (status == OK) {
+            status = dynCommon_eatChar(stream, '=');
+        }
+
+        dyn_type *type = NULL;
+        if (status == OK) {
+            dynType_parse(stream, name, &intf->types, &type);
+        }
+        if (name != NULL) {
+            free(name);
+        }
+
+        if (status == OK) {
+            status = dynCommon_eatChar(stream, '\n');
+        }
+
+        struct type_entry *entry = NULL;
+        if (status == OK) {
+            entry = calloc(1, sizeof(*entry));
+            if (entry != NULL) {
+                entry->type = type;
+                TAILQ_INSERT_TAIL(&intf->types, entry, entries);
+            } else {
+                status = ERROR;
+                LOG_ERROR("Error allocating memory for type entry");
+            }
+        }
+
+        if (status != OK) {
+            if (type != NULL) {
+                dynType_destroy(type);
+            }
+            if (entry != NULL) {
+                free(entry);
+            }
+            break;
+        }
+        peek = fgetc(stream);
+    }
+    ungetc(peek, stream);
+
     return status;
 }
 
 static int dynInterface_parseMethods(dyn_interface_type *intf, FILE *stream) {
     int status = OK;
-    //TODO refactor
+
+    //expected input (Name)=<Method>\n
+    int peek = fgetc(stream);
+    int index = 0;
+    while (peek != ':' && peek != EOF) {
+        ungetc(peek, stream);
+
+        char *id;
+        status = dynCommon_parseNameAlsoAccept(stream, "();[{}", &id);
+
+        if (status == OK) {
+            status = dynCommon_eatChar(stream, '=');
+        }
+
+
+        dyn_function_type *func = NULL;
+        if (status == OK) {
+            status = dynFunction_parse(stream, &intf->types, &func);
+        }
+
+        if (status == OK) {
+            status = dynCommon_eatChar(stream, '\n');
+        }
+
+        struct method_entry *entry = NULL;
+        if (status == OK) {
+            entry = calloc(1, sizeof(*entry));
+            if (entry != NULL) {
+                entry->index = index++;
+                entry->id = id;
+                entry->dynFunc = func;
+                TAILQ_INSERT_TAIL(&intf->methods, entry, entries);
+            } else {
+                status = ERROR;
+                LOG_ERROR("Error allocating memory for method entry");
+            }
+        }
+
+        if (status != OK) {
+            if (id != NULL) {
+                free(id);
+            }
+            if (func != NULL) {
+                dynFunction_destroy(func);
+                //TODO free strIdentier, name
+            }
+            if (entry != NULL) {
+                free(entry);
+            }
+            break;
+        }
+        peek = fgetc(stream);
+    }
+    ungetc(peek, stream);
+
     return status;
 }
 
 void dynInterface_destroy(dyn_interface_type *intf) {
     if (intf != NULL) {
-        interface_namval_type *nTmp = NULL;
-        interface_namval_type *nEntry = TAILQ_FIRST(&intf->annotations);
+        struct namval_entry *nTmp = NULL;
+        struct namval_entry *nEntry = TAILQ_FIRST(&intf->annotations);
         while (nEntry != NULL) {
             nTmp = nEntry;
             nEntry = TAILQ_NEXT(nEntry, entries);
@@ -141,27 +264,23 @@ void dynInterface_destroy(dyn_interface_type *intf) {
             free(nTmp);
         }
 
-        interface_type_type *tmp = NULL;
-        interface_type_type *tInfo = TAILQ_FIRST(&intf->types);
+        struct type_entry *tmp = NULL;
+        struct type_entry *tInfo = TAILQ_FIRST(&intf->types);
         while (tInfo != NULL) {
             tmp = tInfo;
             tInfo = TAILQ_NEXT(tInfo, entries);
-
-            if (tmp->name != NULL) {
-                free(tmp->name);
-            }
-
+            dynType_destroy(tmp->type);
             free(tmp);
         }
 
-        interface_method_type *mTmp = NULL;
-        interface_method_type *mInfo = TAILQ_FIRST(&intf->methods);
+        struct method_entry *mTmp = NULL;
+        struct method_entry *mInfo = TAILQ_FIRST(&intf->methods);
         while (mInfo != NULL) {
             mTmp = mInfo;
             mInfo = TAILQ_NEXT(mInfo, entries);
             
-            if (mTmp->strIdentifier != NULL) {
-                free(mTmp->strIdentifier);
+            if (mTmp->id != NULL) {
+                free(mTmp->id);
             }
             if (mTmp->name != NULL) {
                 free(mTmp->name);
@@ -180,7 +299,7 @@ void dynInterface_destroy(dyn_interface_type *intf) {
 int dynInterface_getName(dyn_interface_type *intf, char **out) {
     int status = OK;
     char *name = NULL;
-    interface_namval_type *entry = NULL;
+    struct namval_entry *entry = NULL;
     TAILQ_FOREACH(entry, &intf->annotations, entries) {
         if (strcmp("name", entry->name) == 0) {
             name = entry->value;

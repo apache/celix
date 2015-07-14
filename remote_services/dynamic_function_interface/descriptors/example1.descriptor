@@ -5,10 +5,9 @@ major_version=1
 minor_version=0
 micro_version=0
 :types
-StatResult={DDD[D average min max input}
+StatsResult={DDD[D average min max input}
 :methods
-add(PDD*D)N
-sub(PDD*D)N
-sqrt(PD*D)N
-stats(P[D*LStatsResult;)N
-
+add(DD)D=add(PDD*D)N
+sub(DD)D=sub(PDD*D)N
+sqrt(D)D=sqrt(PD*D)N
+stats([D)LStatsResult;=stats(P[D*LStatsResult;)N
