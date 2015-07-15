@@ -583,7 +583,7 @@ celix_status_t deploymentAdmin_processDeploymentPackageResources(deployment_admi
 
 					int length = strlen(entry) + strlen(name) + strlen(info->path) + 7;
 					char resourcePath[length];
-					snprintf(resourcePath, length, "%srepo/%s/%s", entry, name, info->path, NULL);
+					snprintf(resourcePath, length, "%srepo/%s/%s", entry, name, info->path);
 					deploymentPackage_getName(source, &packageName);
 
 					processor->begin(processor->processor, packageName);
