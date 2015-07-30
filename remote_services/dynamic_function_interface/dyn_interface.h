@@ -4,6 +4,7 @@
 #ifndef __DYN_INTERFACE_H_
 #define __DYN_INTERFACE_H_
 
+#include "dyn_common.h"
 #include "dyn_type.h"
 #include "dyn_function.h"
 #include "dfi_log_util.h"
@@ -22,7 +23,7 @@ DFI_SETUP_LOG_HEADER(dynInterface);
  *
  */
 
-TAILQ_HEAD(namvals_head, namval_entry);
+//struct namvals_head in dyn_common.h
 TAILQ_HEAD(methods_head, method_entry);
 //struct reference_types_head in dyn_type.h
 
@@ -33,13 +34,6 @@ struct _dyn_interface_type {
     struct namvals_head annotations;
     struct reference_types_head types;
     struct methods_head methods;
-};
-
-//TODO move to dynCommon
-struct namval_entry {
-    char *name;
-    char *value;
-    TAILQ_ENTRY(namval_entry) entries;
 };
 
 struct method_entry {

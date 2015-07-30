@@ -110,16 +110,20 @@ static int dynInterface_parseSection(dyn_interface_type *intf, FILE *stream) {
     if (status == OK) {
         if (strcmp("header", sectionName) == 0) {
             status = dynInterface_parseHeader(intf, stream);
-        } else if (strcmp("annotations", sectionName) ==0) {
+        } else if (strcmp("annotations", sectionName) == 0) {
             status = dynInterface_parseAnnotations(intf, stream);
         } else if (strcmp("types", sectionName) == 0) {
-            status =dynInterface_parseTypes(intf, stream);
+            status = dynInterface_parseTypes(intf, stream);
         } else if (strcmp("methods", sectionName) == 0) {
-            status =dynInterface_parseMethods(intf, stream);
+            status = dynInterface_parseMethods(intf, stream);
         } else {
             status = ERROR;
             LOG_ERROR("unsupported section '%s'", sectionName);
         }
+    }
+
+    if (sectionName != NULL) {
+        free(sectionName);
     }
 
     return status;
@@ -297,19 +301,8 @@ static int dynInterface_parseMethods(dyn_interface_type *intf, FILE *stream) {
 
 void dynInterface_destroy(dyn_interface_type *intf) {
     if (intf != NULL) {
-        struct namval_entry *nTmp = NULL;
-        struct namval_entry *nEntry = TAILQ_FIRST(&intf->annotations);
-        while (nEntry != NULL) {
-            nTmp = nEntry;
-            nEntry = TAILQ_NEXT(nEntry, entries);
-            if (nTmp->name != NULL) {
-                free(nTmp->name);
-            }
-            if (nTmp->value != NULL) {
-                free(nTmp->value);
-            }
-            free(nTmp);
-        }
+        dynCommon_clearNamValHead(&intf->header);
+        dynCommon_clearNamValHead(&intf->annotations);
 
         struct type_entry *tmp = NULL;
         struct type_entry *tInfo = TAILQ_FIRST(&intf->types);

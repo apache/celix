@@ -51,6 +51,11 @@ extern "C" {
         status = dynInterface_getAnnotationEntry(dynIntf, "classname", &annVal);
         CHECK_EQUAL(0, status);
         STRCMP_EQUAL("org.example.Calculator", annVal);
+
+        char *nonExist = NULL;
+        status = dynInterface_getHeaderEntry(dynIntf, "nonExisting", &nonExist);
+        CHECK(status != 0);
+        CHECK(nonExist == NULL);
         
         dynInterface_destroy(dynIntf);
     }

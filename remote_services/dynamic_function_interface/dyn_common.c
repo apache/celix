@@ -51,14 +51,15 @@ int dynCommon_parseNameAlsoAccept(FILE *stream, const char *acceptedChars, char 
         if (strLen == 0) {
             status = ERROR;
             LOG_ERROR("Parsed empty name");
-            free(buf);
         }
     }
 
     if (status == OK) {
        LOG_DEBUG("Parsed name '%s'", buf);
        *result = buf;
-    } 
+    } else if (buf != NULL) {
+        free(buf);
+    }
 
     return status;
 }
@@ -115,4 +116,21 @@ static bool dynCommon_charIn(int c, const char *acceptedChars) {
     }
 
     return status;
+}
+
+void dynCommon_clearNamValHead(struct namvals_head *head) {
+    struct namval_entry *tmp = NULL;
+    struct namval_entry *entry = TAILQ_FIRST(head);
+    while (entry != NULL) {
+        tmp = entry;
+
+        if (entry->name != NULL) {
+            free(entry->name);
+        }
+        if (entry->value != NULL) {
+            free(entry->value);
+        }
+        entry = TAILQ_NEXT(entry, entries);
+        free(tmp);
+    }
 }
