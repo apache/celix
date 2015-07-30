@@ -1,9 +1,9 @@
-:annotations
+:header
 type=interface
 name=calculator
-major_version=1
-minor_version=0
-micro_version=0
+version=1.0.0
+:annotations
+classname=org.example.Calculator
 :types
 StatsResult={DDD[D average min max input}
 :methods

@@ -30,5 +30,4 @@ int dynCommon_parseNameAlsoAccept(FILE *stream, const char *acceptedChars, char 
 int dynCommon_parseNameValue(FILE *stream, char **name, char **value);
 int dynCommon_eatChar(FILE *stream, int c);
 
-
 #endif 

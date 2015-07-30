@@ -67,13 +67,14 @@ int dynCommon_parseNameValue(FILE *stream, char **outName, char **outValue) {
     int status = OK;
     char *name = NULL;
     char *value = NULL;
+    const char *valueAcceptedChars = ".<>{}[]?;:~!@#$%^&*()_+-=,./\\'\"";
 
     status = dynCommon_parseName(stream, &name);
     if (status == OK) {
         status = dynCommon_eatChar(stream, '=');
     }
     if (status == OK) {
-        status = dynCommon_parseName(stream, &value); //TODO use different more lenient function?
+        status = dynCommon_parseNameAlsoAccept(stream, valueAcceptedChars, &value); //NOTE use different more lenient function e.g. only stop at '\n' ?
     }
 
     if (status == OK) {
@@ -90,12 +91,13 @@ int dynCommon_parseNameValue(FILE *stream, char **outName, char **outValue) {
     return status;
 }
 
-inline int dynCommon_eatChar(FILE *stream, int expected) {
+int dynCommon_eatChar(FILE *stream, int expected) {
     int status = OK;
+    long loc = ftell(stream);
     int c = fgetc(stream);
     if (c != expected) {
         status = ERROR;
-        LOG_ERROR("Error parsing, expected token '%c' got '%c'", expected, c);
+        LOG_ERROR("Error parsing, expected token '%c' got '%c' at position %li", expected, loc);
     }
     return status;
 }

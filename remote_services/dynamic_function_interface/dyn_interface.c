@@ -19,12 +19,17 @@ static int dynInterface_parseSection(dyn_interface_type *intf, FILE *stream);
 static int dynInterface_parseAnnotations(dyn_interface_type *intf, FILE *stream);
 static int dynInterface_parseTypes(dyn_interface_type *intf, FILE *stream);
 static int dynInterface_parseMethods(dyn_interface_type *intf, FILE *stream);
+static int dynInterface_parseHeader(dyn_interface_type *intf, FILE *stream);
+static int dynInterface_parseNameValueSection(dyn_interface_type *intf, FILE *stream, struct namvals_head *head);
+static int dynInterface_checkInterface(dyn_interface_type *intf);
+static int dynInterface_getEntryForHead(struct namvals_head *head, const char *name, char **value);
 
 int dynInterface_parse(FILE *descriptor, dyn_interface_type **out) {
     int status = OK;
 
     dyn_interface_type *intf = calloc(1, sizeof(*intf));
     if (intf != NULL) {
+        TAILQ_INIT(&intf->header);
         TAILQ_INIT(&intf->annotations);
         TAILQ_INIT(&intf->types);
         TAILQ_INIT(&intf->methods);
@@ -43,6 +48,10 @@ int dynInterface_parse(FILE *descriptor, dyn_interface_type **out) {
         if (status == OK) {
             status = dynCommon_eatChar(descriptor, EOF);
         }
+
+        if (status == OK) {
+            status = dynInterface_checkInterface(intf);
+        }
     } else {
         status = ERROR;
         LOG_ERROR("Error allocating memory for dynamic interface\n");
@@ -53,6 +62,34 @@ int dynInterface_parse(FILE *descriptor, dyn_interface_type **out) {
     } else if (intf != NULL) {
         dynInterface_destroy(intf);
     }
+    return status;
+}
+
+static int dynInterface_checkInterface(dyn_interface_type *intf) {
+    int status = OK;
+
+    //check header section
+    if (status == OK) {
+        bool foundType = false;
+        bool foundVersion = false;
+        bool foundName = false;
+        struct namval_entry *entry = NULL;
+        TAILQ_FOREACH(entry, &intf->header, entries) {
+            if (strcmp(entry->name, "type") == 0) {
+                foundType = true;
+            } else if (strcmp(entry->name, "version") == 0) {
+                foundVersion = true;
+            } else if (strcmp(entry->name, "name") == 0) {
+                foundName = true;
+            }
+        }
+
+        if (!foundType || !foundVersion || !foundName) {
+            status = ERROR;
+            LOG_ERROR("Parse Error. There must be a header section with a type, version and name entry");
+        }
+    }
+
     return status;
 }
 
@@ -71,12 +108,14 @@ static int dynInterface_parseSection(dyn_interface_type *intf, FILE *stream) {
     }
 
     if (status == OK) {
-        if (strcmp("annotations", sectionName) ==0) {
-                status = dynInterface_parseAnnotations(intf, stream);
+        if (strcmp("header", sectionName) == 0) {
+            status = dynInterface_parseHeader(intf, stream);
+        } else if (strcmp("annotations", sectionName) ==0) {
+            status = dynInterface_parseAnnotations(intf, stream);
         } else if (strcmp("types", sectionName) == 0) {
-                status =dynInterface_parseTypes(intf, stream);
+            status =dynInterface_parseTypes(intf, stream);
         } else if (strcmp("methods", sectionName) == 0) {
-                status =dynInterface_parseMethods(intf, stream);
+            status =dynInterface_parseMethods(intf, stream);
         } else {
             status = ERROR;
             LOG_ERROR("unsupported section '%s'", sectionName);
@@ -86,7 +125,15 @@ static int dynInterface_parseSection(dyn_interface_type *intf, FILE *stream) {
     return status;
 }
 
+static int dynInterface_parseHeader(dyn_interface_type *intf, FILE *stream) {
+    return dynInterface_parseNameValueSection(intf, stream, &intf->header);
+}
+
 static int dynInterface_parseAnnotations(dyn_interface_type *intf, FILE *stream) {
+    return dynInterface_parseNameValueSection(intf, stream, &intf->annotations);
+}
+
+static int dynInterface_parseNameValueSection(dyn_interface_type *intf, FILE *stream, struct namvals_head *head) {
     int status = OK;
 
     int peek = fgetc(stream);
@@ -107,7 +154,7 @@ static int dynInterface_parseAnnotations(dyn_interface_type *intf, FILE *stream)
             if (entry != NULL) {
                 entry->name = name;
                 entry->value = value;
-                TAILQ_INSERT_TAIL(&intf->annotations, entry, entries);
+                TAILQ_INSERT_TAIL(head, entry, entries);
             } else {
                 status = ERROR;
                 LOG_ERROR("Error allocating memory for namval entry");
@@ -129,7 +176,7 @@ static int dynInterface_parseAnnotations(dyn_interface_type *intf, FILE *stream)
         peek = fgetc(stream);
     }
     ungetc(peek, stream);
-    
+
     return status;
 }
 
@@ -295,23 +342,37 @@ void dynInterface_destroy(dyn_interface_type *intf) {
     } 
 }
 
-//TODO refactor using a dynInterface_findAnnotation method
 int dynInterface_getName(dyn_interface_type *intf, char **out) {
+    return dynInterface_getEntryForHead(&intf->header, "name", out);
+}
+
+int dynInterface_getVersion(dyn_interface_type *intf, char **version) {
+    return dynInterface_getEntryForHead(&intf->header, "version", version);
+}
+
+int dynInterface_getHeaderEntry(dyn_interface_type *intf, const char *name, char **value) {
+    return dynInterface_getEntryForHead(&intf->header, name, value);
+}
+
+int dynInterface_getAnnotationEntry(dyn_interface_type *intf, const char *name, char **value) {
+    return dynInterface_getEntryForHead(&intf->annotations, name, value);
+}
+
+static int dynInterface_getEntryForHead(struct namvals_head *head, const char *name, char **out) {
     int status = OK;
-    char *name = NULL;
+    char *value = NULL;
     struct namval_entry *entry = NULL;
-    TAILQ_FOREACH(entry, &intf->annotations, entries) {
-        if (strcmp("name", entry->name) == 0) {
-            name = entry->value;
+    TAILQ_FOREACH(entry, head, entries) {
+        if (strcmp(name, entry->name) == 0) {
+            value = entry->value;
             break;
         }
     }
-
-    if (name != NULL) {
-        *out = name;
+    if (value != NULL) {
+        *out = value;
     } else {
         status = ERROR;
-        LOG_WARNING("Cannot find 'name' in dyn interface annotations");
+        LOG_WARNING("Cannot find '%s' in list", name);
     }
     return status;
 }

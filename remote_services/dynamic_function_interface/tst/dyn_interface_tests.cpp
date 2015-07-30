@@ -40,7 +40,17 @@ extern "C" {
         char *name = NULL;
         status = dynInterface_getName(dynIntf, &name);
         CHECK_EQUAL(0, status);
-        STRCMP_EQUAL("calculator", name); 
+        STRCMP_EQUAL("calculator", name);
+
+        char *version = NULL;
+        status = dynInterface_getVersion(dynIntf, &version);
+        CHECK_EQUAL(0, status);
+        STRCMP_EQUAL("1.0.0", version);
+
+        char *annVal = NULL;
+        status = dynInterface_getAnnotationEntry(dynIntf, "classname", &annVal);
+        CHECK_EQUAL(0, status);
+        STRCMP_EQUAL("org.example.Calculator", annVal);
         
         dynInterface_destroy(dynIntf);
     }
