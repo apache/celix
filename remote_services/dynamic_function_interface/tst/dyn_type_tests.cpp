@@ -27,10 +27,10 @@ extern "C" {
         printf("\n-- example %s with descriptor string '%s' --\n", exName, descriptorStr);
         int status = dynType_parseWithStr(descriptorStr, exName, NULL, &type);
         CHECK_EQUAL(0, status);
-        if (status == 0) {
-            dynType_print(type);
-            dynType_destroy(type);
-        }
+
+        FILE *stream = fopen("/dev/null", "w");
+        dynType_print(type, stream);
+        dynType_destroy(type);
         printf("--\n\n");
     }
 }

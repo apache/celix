@@ -98,7 +98,7 @@ struct _dyn_type {
         } complex;
         struct {
             ffi_type seqType; //dyn_type.ffiType points to this
-            dyn_type *itemType; 
+            dyn_type *itemType;
         } sequence;
         struct {
             dyn_type *typedType;
@@ -134,7 +134,9 @@ int dynType_parseWithStr(const char *descriptor, const char *name, struct refere
 void dynType_destroy(dyn_type *type);
 
 int dynType_alloc(dyn_type *type, void **bufLoc);
-void dynType_print(dyn_type *type);
+void dynType_free(dyn_type *type, void *loc);
+
+void dynType_print(dyn_type *type, FILE *stream);
 size_t dynType_size(dyn_type *type);
 int dynType_type(dyn_type *type);
 int dynType_descriptorType(dyn_type *type);

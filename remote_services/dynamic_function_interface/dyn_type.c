@@ -36,16 +36,16 @@ static int dynType_parseTypedPointer(FILE *stream, dyn_type *type);
 static void dynType_prepCif(ffi_type *type);
 static unsigned short dynType_getOffset(dyn_type *type, int index);
 
-static void dynType_printAny(char *name, dyn_type *type, int depth);
-static void dynType_printComplex(char *name, dyn_type *type, int depth);
-static void dynType_printSequence(char *name, dyn_type *type, int depth);
-static void dynType_printSimple(char *name, dyn_type *type, int depth);
-static void dynType_printTypedPointer(char *name, dyn_type *type, int depth);
-static void printDepth(int depth);
+static void dynType_printAny(char *name, dyn_type *type, int depth, FILE *stream);
+static void dynType_printComplex(char *name, dyn_type *type, int depth, FILE *stream);
+static void dynType_printSequence(char *name, dyn_type *type, int depth, FILE *stream);
+static void dynType_printSimple(char *name, dyn_type *type, int depth, FILE *stream);
+static void dynType_printTypedPointer(char *name, dyn_type *type, int depth, FILE *stream);
+static void dynType_printDepth(int depth, FILE *stream);
 
-static void dynType_printTypes(dyn_type *type);
-static void dynType_printComplexType(dyn_type *type);
-static void dynType_printSimpleType(dyn_type *type);
+static void dynType_printTypes(dyn_type *type, FILE *stream);
+static void dynType_printComplexType(dyn_type *type, FILE *stream);
+static void dynType_printSimpleType(dyn_type *type, FILE *stream);
 
 struct generic_sequence {
     uint32_t cap;
@@ -442,7 +442,7 @@ int dynType_alloc(dyn_type *type, void **bufLoc) {
         *bufLoc = inst;
     } else {
         status = DT_MEM_ERROR;
-        //TODO log
+        LOG_ERROR("Error allocating memory for type '%c'", type->descriptor);
     }
     return status;
 }
@@ -513,6 +513,11 @@ int dynType_sequence_alloc(dyn_type *type, void *inst, int cap, void **out) {
             LOG_ERROR("Error allocating memory for seq")
     }
     return status;
+}
+
+void dynType_free(dyn_type *type, void *loc) {
+    //TODO
+    LOG_INFO("TODO");
 }
 
 int dynType_sequence_append(dyn_type *type, void *inst, void *in) {
@@ -653,99 +658,99 @@ int dynType_type(dyn_type *type) {
     return type->type;
 }
 
-void dynType_print(dyn_type *type) {
+void dynType_print(dyn_type *type, FILE *stream) {
     if (type != NULL) {
-        dynType_printTypes(type);
+        dynType_printTypes(type, stream);
 
-        printf("main type:\n");
-        dynType_printAny("root", type, 0);
+        fprintf(stream, "main type:\n");
+        dynType_printAny("root", type, 0, stream);
     } else {
-        printf("invalid type\n");
+        fprintf(stream, "invalid type\n");
     }
 }
 
-static void printDepth(int depth) {
+static void dynType_printDepth(int depth, FILE *stream) {
     int i;
     for (i = 0; i < depth; i +=1 ) {
-        printf("\t");
+        fprintf(stream, "\t");
     }
 }
 
-static void dynType_printAny(char *name, dyn_type *type, int depth) {
+static void dynType_printAny(char *name, dyn_type *type, int depth, FILE *stream) {
     dyn_type *toPrint = type;
     if (toPrint->type == DYN_TYPE_REF) {
         toPrint = toPrint->ref.ref;
     }
     switch(toPrint->type) {
         case DYN_TYPE_COMPLEX :
-            dynType_printComplex(name, toPrint, depth);
+            dynType_printComplex(name, toPrint, depth, stream);
             break;
         case DYN_TYPE_SIMPLE :
-            dynType_printSimple(name, toPrint, depth);
+            dynType_printSimple(name, toPrint, depth, stream);
             break;
         case DYN_TYPE_SEQUENCE :
-            dynType_printSequence(name, toPrint, depth);
+            dynType_printSequence(name, toPrint, depth, stream);
             break;
         case DYN_TYPE_TYPED_POINTER :
-            dynType_printTypedPointer(name, toPrint, depth);
+            dynType_printTypedPointer(name, toPrint, depth, stream);
             break;
         default :
-            printf("TODO Unsupported type %i\n", toPrint->type);
+            fprintf(stream, "TODO Unsupported type %i\n", toPrint->type);
             break;
     }
 }
 
-static void dynType_printComplex(char *name, dyn_type *type, int depth) {
+static void dynType_printComplex(char *name, dyn_type *type, int depth, FILE *stream) {
     if (type->name == NULL) {
-        printDepth(depth);
-        printf("%s: complex type (anon), size is %zu, alignment is %i, descriptor is '%c'. fields:\n", name,  type->ffiType->size, type->ffiType->alignment, type->descriptor); 
+        dynType_printDepth(depth, stream);
+        fprintf(stream, "%s: complex type (anon), size is %zu, alignment is %i, descriptor is '%c'. fields:\n", name,  type->ffiType->size, type->ffiType->alignment, type->descriptor);
 
         struct complex_type_entry *entry = NULL;
         TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
-            dynType_printAny(entry->name, &entry->type, depth + 1);
+            dynType_printAny(entry->name, &entry->type, depth + 1, stream);
         }
 
-        printDepth(depth);
+        dynType_printDepth(depth, stream);
         printf("}\n");
     } else {
-        printDepth(depth);
-        printf("%s: complex type ('%s'), size is %zu, alignment is %i, descriptor is '%c'.\n", name, type->name, type->ffiType->size, type->ffiType->alignment, type->descriptor); 
+        dynType_printDepth(depth, stream);
+        fprintf(stream, "%s: complex type ('%s'), size is %zu, alignment is %i, descriptor is '%c'.\n", name, type->name, type->ffiType->size, type->ffiType->alignment, type->descriptor);
     }
 }
 
-static void dynType_printSequence(char *name, dyn_type *type, int depth) {
-        printDepth(depth);
-        printf("sequence, size is %zu, alignment is %i, descriptor is '%c'. fields:\n", type->ffiType->size, type->ffiType->alignment, type->descriptor); 
+static void dynType_printSequence(char *name, dyn_type *type, int depth, FILE *stream) {
+    dynType_printDepth(depth, stream);
+    fprintf(stream, "sequence, size is %zu, alignment is %i, descriptor is '%c'. fields:\n", type->ffiType->size, type->ffiType->alignment, type->descriptor);
 
-        printDepth(depth + 1);
-        printf("cap: simple type, size is %zu, alignment is %i.\n", type->sequence.seqType.elements[0]->size, type->sequence.seqType.elements[0]->alignment);
+    dynType_printDepth(depth + 1, stream);
+    fprintf(stream, "cap: simple type, size is %zu, alignment is %i.\n", type->sequence.seqType.elements[0]->size, type->sequence.seqType.elements[0]->alignment);
 
-        printDepth(depth + 1);
-        printf("len: simple type, size is %zu, alignment is %i.\n", type->sequence.seqType.elements[1]->size, type->sequence.seqType.elements[1]->alignment);
+    dynType_printDepth(depth + 1, stream);
+    fprintf(stream, "len: simple type, size is %zu, alignment is %i.\n", type->sequence.seqType.elements[1]->size, type->sequence.seqType.elements[1]->alignment);
 
-        printDepth(depth + 1);
-        printf("buf: array, size is %zu, alignment is %i. points to ->\n", type->sequence.seqType.elements[2]->size, type->sequence.seqType.elements[2]->alignment);
-        dynType_printAny("element", type->sequence.itemType, depth + 1);
+    dynType_printDepth(depth + 1, stream);
+    fprintf(stream, "buf: array, size is %zu, alignment is %i. points to ->\n", type->sequence.seqType.elements[2]->size, type->sequence.seqType.elements[2]->alignment);
+    dynType_printAny("element", type->sequence.itemType, depth + 1, stream);
 }
 
-static void dynType_printSimple(char *name, dyn_type *type, int depth) {
-    printDepth(depth);
-    printf("%s: simple type, size is %zu, alignment is %i, descriptor is '%c'.\n", name, type->ffiType->size, type->ffiType->alignment, type->descriptor);
+static void dynType_printSimple(char *name, dyn_type *type, int depth, FILE *stream) {
+    dynType_printDepth(depth, stream);
+    fprintf(stream, "%s: simple type, size is %zu, alignment is %i, descriptor is '%c'.\n", name, type->ffiType->size, type->ffiType->alignment, type->descriptor);
 }
 
-static void dynType_printTypedPointer(char *name, dyn_type *type, int depth) {
-    printDepth(depth);
-    printf("%s: typed pointer, size is %zu, alignment is %i, points to ->\n", name, type->ffiType->size, type->ffiType->alignment);
+static void dynType_printTypedPointer(char *name, dyn_type *type, int depth, FILE *stream) {
+    dynType_printDepth(depth, stream);
+    fprintf(stream, "%s: typed pointer, size is %zu, alignment is %i, points to ->\n", name, type->ffiType->size, type->ffiType->alignment);
     char *subName = NULL;
     if (name != NULL) {
         char buf[128];
         snprintf(buf, 128, "*%s", name);
         subName = buf;
     }
-    dynType_printAny(subName, type->typedPointer.typedType, depth + 1);
+    dynType_printAny(subName, type->typedPointer.typedType, depth + 1, stream);
 }
 
-static void dynType_printTypes(dyn_type *type) {
+static void dynType_printTypes(dyn_type *type, FILE *stream) {
 
     dyn_type *parent = type->parent;
     struct nested_entry *pentry = NULL;
@@ -767,10 +772,10 @@ static void dynType_printTypes(dyn_type *type) {
 
         switch(toPrint->type) {
             case DYN_TYPE_COMPLEX :
-                dynType_printComplexType(toPrint);
+                dynType_printComplexType(toPrint, stream);
                 break;
             case DYN_TYPE_SIMPLE :
-                dynType_printSimpleType(toPrint);
+                dynType_printSimpleType(toPrint, stream);
                 break;
             default :
                 printf("TODO Print Type\n");
@@ -783,29 +788,29 @@ static void dynType_printTypes(dyn_type *type) {
     switch(type->type) {
         case DYN_TYPE_COMPLEX :
             TAILQ_FOREACH(centry, &type->complex.entriesHead, entries) {
-                dynType_printTypes(&centry->type);
+                dynType_printTypes(&centry->type, stream);
             }
             break;
         case DYN_TYPE_SEQUENCE :
-            dynType_printTypes(type->sequence.itemType);
+            dynType_printTypes(type->sequence.itemType, stream);
             break;
         case DYN_TYPE_TYPED_POINTER :
-            dynType_printTypes(type->typedPointer.typedType);
+            dynType_printTypes(type->typedPointer.typedType, stream);
             break;
     }
 }
 
-static void dynType_printComplexType(dyn_type *type) {
-    printf("type '%s': complex type, size is %zu, alignment is %i, descriptor is '%c'. fields:\n", type->name,  type->ffiType->size, type->ffiType->alignment, type->descriptor); 
+static void dynType_printComplexType(dyn_type *type, FILE *stream) {
+    fprintf(stream, "type '%s': complex type, size is %zu, alignment is %i, descriptor is '%c'. fields:\n", type->name,  type->ffiType->size, type->ffiType->alignment, type->descriptor);
 
     struct complex_type_entry *entry = NULL;
     TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
-        dynType_printAny(entry->name, &entry->type, 2);
+        dynType_printAny(entry->name, &entry->type, 2, stream);
     }
 
-    printf("}\n");
+    fprintf(stream, "}\n");
 }
 
-static void dynType_printSimpleType(dyn_type *type) {
-    printf("\ttype '%s': simple type, size is %zu, alignment is %i, descriptor is '%c'\n", type->name, type->ffiType->size, type->ffiType->alignment, type->descriptor);
+static void dynType_printSimpleType(dyn_type *type, FILE *stream) {
+    fprintf(stream, "\ttype '%s': simple type, size is %zu, alignment is %i, descriptor is '%c'\n", type->name, type->ffiType->size, type->ffiType->alignment, type->descriptor);
 }
