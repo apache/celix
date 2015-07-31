@@ -36,6 +36,7 @@ extern "C" {
         assert(desc != NULL);
         status = dynInterface_parse(desc, &dynIntf);
         CHECK_EQUAL(0, status);
+        fclose(desc);
 
         char *name = NULL;
         status = dynInterface_getName(dynIntf, &name);
@@ -65,7 +66,7 @@ extern "C" {
 
 TEST_GROUP(DynInterfaceTests) {
     void setup() {
-        int level = 3;
+        int level = 1;
         dynCommon_logSetup(stdLog, NULL, level);
         dynType_logSetup(stdLog, NULL, level);
         dynFunction_logSetup(stdLog, NULL, level);

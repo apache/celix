@@ -198,7 +198,6 @@ static void check_example5(void *data) {
 }
 
 static void parseTests(void) {
-    printf("Starting json serializer tests\n");
     dyn_type *type;
     void *inst;
     int rc;
@@ -210,6 +209,8 @@ static void parseTests(void) {
     rc = jsonSerializer_deserialize(type, example1_input, &inst);
     CHECK_EQUAL(0, rc);
     check_example1(inst);
+    dynType_free(type, inst);
+    dynType_destroy(type);
 
     type = NULL;
     inst = NULL;
@@ -218,6 +219,8 @@ static void parseTests(void) {
     rc = jsonSerializer_deserialize(type, example2_input, &inst);
     CHECK_EQUAL(0, rc);
     check_example2(inst);
+    dynType_free(type, inst);
+    dynType_destroy(type);
 
     type = NULL;
     inst = NULL;
@@ -226,6 +229,8 @@ static void parseTests(void) {
     rc = jsonSerializer_deserialize(type, example3_input, &inst);
     CHECK_EQUAL(0, rc);
     check_example3(inst);
+    dynType_free(type, inst);
+    dynType_destroy(type);
 
     type = NULL;
     inst = NULL;
@@ -234,6 +239,8 @@ static void parseTests(void) {
     rc = jsonSerializer_deserialize(type, example4_input, &inst);
     CHECK_EQUAL(0, rc);
     check_example4(inst);
+    dynType_free(type, inst);
+    dynType_destroy(type);
 
     type = NULL;
     inst = NULL;
@@ -242,6 +249,8 @@ static void parseTests(void) {
     rc = jsonSerializer_deserialize(type, example5_input, &inst);
     CHECK_EQUAL(0, rc);
     check_example5(inst);
+    dynType_free(type, inst);
+    dynType_destroy(type);
 }
 
 const char *write_example1_descriptor = "{BSIJsijFDN a b c d e f g h i j}";
@@ -278,6 +287,8 @@ void writeTest1(void) {
     STRCMP_CONTAINS("\"i\":9.9", result);
     STRCMP_CONTAINS("\"j\":10", result);
     //printf("example 1 result: '%s'\n", result);
+    dynType_destroy(type);
+    free(result);
 }
 
 const char *write_example2_descriptor = "{*{JJ a b}{SS c d} sub1 sub2}";
@@ -312,6 +323,8 @@ void writeTest2(void) {
     STRCMP_CONTAINS("\"c\":3", result);
     STRCMP_CONTAINS("\"d\":4", result);
     //printf("example 2 result: '%s'\n", result);
+    dynType_destroy(type);
+    free(result);
 }
 
 const char *write_example3_descriptor = "Tperson={ti name age};[Lperson;";
@@ -351,13 +364,16 @@ void writeTest3(void) {
     STRCMP_CONTAINS("\"age\":55", result);
     STRCMP_CONTAINS("\"age\":66", result);
     //printf("example 3 result: '%s'\n", result);
+    free(seq.buf);
+    dynType_destroy(type);
+    free(result);
 }
 
 }
 
 TEST_GROUP(JsonSerializerTests) {
     void setup() {
-        int lvl = 3;
+        int lvl = 1;
         dynCommon_logSetup(stdLog, NULL, lvl);
         dynType_logSetup(stdLog, NULL,lvl);
         jsonSerializer_logSetup(stdLog, NULL, lvl);

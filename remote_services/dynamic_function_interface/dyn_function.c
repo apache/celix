@@ -19,7 +19,7 @@ DFI_SETUP_LOG(dynFunction)
 
 struct _dyn_function_type {
     char *name;
-    struct reference_types_head *refTypes; //NOTE not owned
+    struct types_head *refTypes; //NOTE not owned
     TAILQ_HEAD(,_dyn_function_argument_type) arguments;
     ffi_type **ffiArguments;
     dyn_type *funcReturn;
@@ -49,7 +49,7 @@ static int dynFunction_initCif(dyn_function_type *dynFunc);
 static int dynFunction_parseDescriptor(dyn_function_type *dynFunc, FILE *descriptor);
 static void dynFunction_ffiBind(ffi_cif *cif, void *ret, void *args[], void *userData); 
 
-int dynFunction_parse(FILE *descriptor, struct reference_types_head *refTypes, dyn_function_type **out) {
+int dynFunction_parse(FILE *descriptor, struct types_head *refTypes, dyn_function_type **out) {
     int status = OK;
     dyn_function_type *dynFunc = NULL;
     LOG_DEBUG("Creating dyn function", descriptor);
@@ -79,7 +79,7 @@ int dynFunction_parse(FILE *descriptor, struct reference_types_head *refTypes, d
     return status;
 }
 
-int dynFunction_parseWithStr(const char *descriptor, struct reference_types_head *refTypes, dyn_function_type **out)  {
+int dynFunction_parseWithStr(const char *descriptor, struct types_head *refTypes, dyn_function_type **out)  {
     int status = OK;
     FILE *stream = fmemopen((char *)descriptor, strlen(descriptor), "r");
     if (stream != NULL) {
@@ -151,11 +151,11 @@ static int dynFunction_initCif(dyn_function_type *dynFunc) {
     dynFunc->ffiArguments = calloc(count, sizeof(ffi_type));
 
     TAILQ_FOREACH(entry, &dynFunc->arguments, entries) {
-        dynFunc->ffiArguments[entry->index] = entry->type->ffiType;
+        dynFunc->ffiArguments[entry->index] = dynType_ffiType(entry->type);
     }
     
     ffi_type **args = dynFunc->ffiArguments;
-    ffi_type *returnType = dynFunc->funcReturn->ffiType;
+    ffi_type *returnType = dynType_ffiType(dynFunc->funcReturn);
 
     int ffiResult = ffi_prep_cif(&dynFunc->cif, FFI_DEFAULT_ABI, count, returnType, args);
     if (ffiResult != FFI_OK) {

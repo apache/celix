@@ -17,11 +17,13 @@
 
 DFI_SETUP_LOG(dynType)
 
-static int dynType_parseWithStream(FILE *stream, const char *name, dyn_type *parent, struct reference_types_head *refTypes, dyn_type **result);
+static int dynType_parseWithStream(FILE *stream, const char *name, dyn_type *parent, struct types_head *refTypes, dyn_type **result);
 static void dynType_clear(dyn_type *type);
 static void dynType_clearComplex(dyn_type *type);
 static void dynType_clearSequence(dyn_type *type);
 static void dynType_clearTypedPointer(dyn_type *type);
+
+static struct type_entry *dynType_allocTypeEntry(void);
 
 static ffi_type * dynType_ffiTypeFor(int c);
 static dyn_type * dynType_findType(dyn_type *type, char *name);
@@ -48,6 +50,9 @@ static void dynType_printComplexType(dyn_type *type, FILE *stream);
 static void dynType_printSimpleType(dyn_type *type, FILE *stream);
 
 static int dynType_parseText(FILE *stream, dyn_type *type);
+void dynType_freeComplexType(dyn_type *type, void *loc);
+void dynType_deepFree(dyn_type *type, void *loc, bool alsoDeleteSelf);
+void dynType_freeSequenceType(dyn_type *type, void *seqLoc);
 
 struct generic_sequence {
     uint32_t cap;
@@ -55,16 +60,43 @@ struct generic_sequence {
     void *buf;
 };
 
+struct _dyn_type {
+    char *name;
+    char descriptor;
+    int type;
+    ffi_type *ffiType;
+    dyn_type *parent;
+    struct types_head *referenceTypes; //NOTE: not owned
+    struct types_head nestedTypesHead;
+    union {
+        struct {
+            struct complex_type_entries_head entriesHead;
+            ffi_type structType; //dyn_type.ffiType points to this
+            dyn_type **types; //based on entriesHead for fast access
+        } complex;
+        struct {
+            ffi_type seqType; //dyn_type.ffiType points to this
+            dyn_type *itemType;
+        } sequence;
+        struct {
+            dyn_type *typedType;
+        } typedPointer;
+        struct {
+            dyn_type *ref;
+        } ref;
+    };
+};
+
 static const int OK = 0;
 static const int ERROR = 1;
 static const int MEM_ERROR = 2;
 static const int PARSE_ERROR = 3;
 
-int dynType_parse(FILE *descriptorStream, const char *name, struct reference_types_head *refTypes, dyn_type **type) {
+int dynType_parse(FILE *descriptorStream, const char *name, struct types_head *refTypes, dyn_type **type) {
     return dynType_parseWithStream(descriptorStream, name, NULL, refTypes, type);
 }
 
-int dynType_parseWithStr(const char *descriptor, const char *name, struct reference_types_head *refTypes, dyn_type **type) {
+int dynType_parseWithStr(const char *descriptor, const char *name, struct types_head *refTypes, dyn_type **type) {
     int status = OK;
     FILE *stream = fmemopen((char *)descriptor, strlen(descriptor), "r");
     if (stream != NULL) {
@@ -84,7 +116,7 @@ int dynType_parseWithStr(const char *descriptor, const char *name, struct refere
     return status;
 }
 
-static int dynType_parseWithStream(FILE *stream, const char *name, dyn_type *parent, struct reference_types_head *refTypes, dyn_type **result) {
+static int dynType_parseWithStream(FILE *stream, const char *name, dyn_type *parent, struct types_head *refTypes, dyn_type **result) {
     int status = OK;
     dyn_type *type = calloc(1, sizeof(*type));
     if (type != NULL) {
@@ -172,12 +204,18 @@ static int dynType_parseComplex(FILE *stream, dyn_type *type) {
         ungetc(c,stream);
         entry = calloc(1, sizeof(*entry));
         if (entry != NULL) {
-            entry->type.parent = type;
-            entry->type.type = DYN_TYPE_INVALID;
-            TAILQ_INIT(&entry->type.nestedTypesHead);
+            entry->type = calloc(1, sizeof(*entry->type));
+        }
+        if (entry != NULL && entry->type != NULL) {
+            entry->type->parent = type;
+            entry->type->type = DYN_TYPE_INVALID;
+            TAILQ_INIT(&entry->type->nestedTypesHead);
             TAILQ_INSERT_TAIL(&type->complex.entriesHead, entry, entries);
-            status = dynType_parseAny(stream, &entry->type);
+            status = dynType_parseAny(stream, entry->type);
         } else {
+            if (entry != NULL) {
+                free(entry);
+            }
             status = MEM_ERROR;
             LOG_ERROR("Error allocating memory for type");
         }
@@ -209,7 +247,7 @@ static int dynType_parseComplex(FILE *stream, dyn_type *type) {
         if (type->complex.structType.elements != NULL) {
             int index = 0;
             TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
-                type->complex.structType.elements[index++] = entry->type.ffiType;
+                type->complex.structType.elements[index++] = entry->type->ffiType;
             }
         } else {
             status = MEM_ERROR;
@@ -222,7 +260,7 @@ static int dynType_parseComplex(FILE *stream, dyn_type *type) {
         if (type != NULL) {
             int index = 0;
             TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
-                type->complex.types[index++] = &entry->type;
+                type->complex.types[index++] = entry->type;
             }
         } else {
             status = MEM_ERROR;
@@ -241,18 +279,19 @@ static int dynType_parseComplex(FILE *stream, dyn_type *type) {
 static int dynType_parseNestedType(FILE *stream, dyn_type *type) {
     int status = OK;
     char *name = NULL;
-    struct nested_entry *entry = NULL; 
+    struct type_entry *entry = NULL;
 
-    entry = calloc(1, sizeof(*entry));
+    entry = dynType_allocTypeEntry();
     if (entry != NULL) {
-        entry->type.parent = type;
-        entry->type.type = DYN_TYPE_INVALID;
-        TAILQ_INIT(&entry->type.nestedTypesHead);
+        entry->type->parent = type;
+        entry->type->type = DYN_TYPE_INVALID;
+        TAILQ_INIT(&entry->type->nestedTypesHead);
         TAILQ_INSERT_TAIL(&type->nestedTypesHead, entry, entries);
         status = dynCommon_parseName(stream, &name);
-        entry->type.name = name;
+        entry->type->name = name;
     } else {
         status = MEM_ERROR;
+        LOG_ERROR("Error allocating entry");
     }     
 
     if (status == OK) {
@@ -264,7 +303,7 @@ static int dynType_parseNestedType(FILE *stream, dyn_type *type) {
     }
 
     if (status == OK) {
-        status = dynType_parseAny(stream, &entry->type);
+        status = dynType_parseAny(stream, entry->type);
         int c = fgetc(stream);
         if (c != ';') {
             status = PARSE_ERROR;
@@ -328,6 +367,18 @@ static int dynType_parseRefByValue(FILE *stream, dyn_type *type) {
     return status;
 }
 
+static struct type_entry *dynType_allocTypeEntry(void) {
+    struct type_entry *entry = calloc(1, sizeof(*entry));
+    if (entry != NULL) {
+        entry->type = calloc(1, sizeof(*entry->type));
+        if (entry->type == NULL) {
+            free(entry);
+            entry = NULL;
+        }
+    }
+    return entry;
+}
+
 static ffi_type *seq_types[] = {&ffi_type_uint32, &ffi_type_uint32, &ffi_type_pointer, NULL};
 
 static int dynType_parseSequence(FILE *stream, dyn_type *type) {
@@ -387,12 +438,15 @@ void dynType_destroy(dyn_type *type) {
 }
 
 static void dynType_clear(dyn_type *type) {
-    struct nested_entry *entry = TAILQ_FIRST(&type->nestedTypesHead);
-    struct nested_entry *tmp = NULL;
+    struct type_entry *entry = TAILQ_FIRST(&type->nestedTypesHead);
+    struct type_entry *tmp = NULL;
     while (entry != NULL) {
         tmp = entry;
         entry = TAILQ_NEXT(entry, entries);
-        dynType_clear(&tmp->type);
+        if (tmp->type != NULL) {
+            dynType_destroy(tmp->type);
+            tmp->type = NULL;
+        }
         free(tmp);
     }
 
@@ -418,7 +472,7 @@ static void dynType_clearComplex(dyn_type *type) {
     struct complex_type_entry *entry = TAILQ_FIRST(&type->complex.entriesHead);
     struct complex_type_entry *tmp = NULL;
     while (entry != NULL) {
-        dynType_clear(&entry->type);
+        dynType_destroy(entry->type);
         if (entry->name != NULL) {
             free(entry->name);
         }
@@ -512,7 +566,7 @@ int dynType_complex_entries(dyn_type *type, struct complex_type_entries_head **e
 }
 
 //sequence
-int dynType_sequence_alloc(dyn_type *type, void *inst, int cap, void **out) {
+int dynType_sequence_alloc(dyn_type *type, void *inst, uint32_t cap) {
     assert(type->type == DYN_TYPE_SEQUENCE);
     int status = OK;
     struct generic_sequence *seq = inst;
@@ -521,8 +575,7 @@ int dynType_sequence_alloc(dyn_type *type, void *inst, int cap, void **out) {
         seq->buf = calloc(cap, size);
         if (seq->buf != NULL) {
             seq->cap = cap;
-            seq->len = 0;
-            *out = seq->buf;
+            seq->len = 0;;
         } else {
             seq->cap = 0;
             status = MEM_ERROR;
@@ -536,9 +589,58 @@ int dynType_sequence_alloc(dyn_type *type, void *inst, int cap, void **out) {
 }
 
 void dynType_free(dyn_type *type, void *loc) {
-    //TODO
-    LOG_INFO("TODO dynType_free");
+    dynType_deepFree(type, loc, true);
 }
+
+void dynType_deepFree(dyn_type *type, void *loc, bool alsoDeleteSelf) {
+    if (loc != NULL) {
+        dyn_type *subType = NULL;
+        const char *text = NULL;
+        switch (type->type) {
+            case DYN_TYPE_COMPLEX :
+                dynType_freeComplexType(type, loc);
+                break;
+            case DYN_TYPE_SEQUENCE :
+                dynType_freeSequenceType(type, loc);
+                break;
+            case DYN_TYPE_TYPED_POINTER:
+                dynType_typedPointer_getTypedType(type, &subType);
+                dynType_deepFree(subType, *(void **)loc, true);
+                break;
+            case DYN_TYPE_TEXT :
+                text = *(const char **)loc;
+                free(text);
+                break;
+        }
+
+        if (alsoDeleteSelf) {
+            free(loc);
+        }
+    }
+}
+
+void dynType_freeSequenceType(dyn_type *type, void *seqLoc) {
+    struct generic_sequence *seq = seqLoc;
+    dyn_type *itemType = dynType_sequence_itemType(type);
+    void *itemLoc = NULL;
+    int i;
+    for (i = 0; i < seq->len; i += 1) {
+        dynType_sequence_locForIndex(type, seqLoc, i, &itemLoc);
+        dynType_deepFree(itemType, itemLoc, false);
+    }
+    free(seq->buf);
+}
+
+void dynType_freeComplexType(dyn_type *type, void *loc) {
+    struct complex_type_entry *entry = NULL;
+    int index = 0;
+    void *entryLoc = NULL;
+    TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
+        dynType_complex_valLocAt(type, index++, loc, &entryLoc);
+        dynType_deepFree(entry->type, entryLoc, false);
+    }
+}
+
 
 uint32_t dynType_sequence_length(void *seqLoc) {
     struct generic_sequence *seq = seqLoc;
@@ -616,6 +718,13 @@ int dynType_descriptorType(dyn_type *type) {
     return type->descriptor;
 }
 
+ffi_type *dynType_ffiType(dyn_type *type) {
+    if (type->type == DYN_TYPE_REF) {
+        return type->ref.ref->ffiType;
+    }
+    return type->ffiType;
+}
+
 static ffi_type * dynType_ffiTypeFor(int c) {
     ffi_type *type = NULL;
     switch (c) {
@@ -674,11 +783,11 @@ static dyn_type * dynType_findType(dyn_type *type, char *name) {
     }
 
     if (result == NULL) {
-        struct nested_entry *nEntry = NULL;
+        struct type_entry *nEntry = NULL;
         TAILQ_FOREACH(nEntry, &type->nestedTypesHead, entries) {
-            LOG_DEBUG("checking nested type '%s' with name '%s'", nEntry->type.name, name);
-            if (strcmp(name, nEntry->type.name) == 0) {
-                result = &nEntry->type;
+            LOG_DEBUG("checking nested type '%s' with name '%s'", nEntry->type->name, name);
+            if (strcmp(name, nEntry->type->name) == 0) {
+                result = nEntry->type;
                 break;
             }
         }
@@ -736,6 +845,7 @@ int dynType_typedPointer_getTypedType(dyn_type *type, dyn_type **out) {
 
 
 int dynType_text_allocAndInit(dyn_type *type, void *textLoc, const char *value) {
+    assert(type->type == DYN_TYPE_TEXT);
     int status = 0;
     const char *str = strdup(value);
     char const **loc = textLoc;
@@ -811,7 +921,7 @@ static void dynType_printComplex(char *name, dyn_type *type, int depth, FILE *st
 
         struct complex_type_entry *entry = NULL;
         TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
-            dynType_printAny(entry->name, &entry->type, depth + 1, stream);
+            dynType_printAny(entry->name, entry->type, depth + 1, stream);
         }
 
         dynType_printDepth(depth, stream);
@@ -857,19 +967,19 @@ static void dynType_printTypedPointer(char *name, dyn_type *type, int depth, FIL
 static void dynType_printTypes(dyn_type *type, FILE *stream) {
 
     dyn_type *parent = type->parent;
-    struct nested_entry *pentry = NULL;
+    struct type_entry *pentry = NULL;
     while (parent != NULL) {
         TAILQ_FOREACH(pentry, &parent->nestedTypesHead, entries) {
-            if (&pentry->type == type) {
+            if (pentry->type == type) {
                 return;
             }
         }
         parent = parent->parent;
     }
 
-    struct nested_entry *entry = NULL;
+    struct type_entry *entry = NULL;
     TAILQ_FOREACH(entry, &type->nestedTypesHead, entries) {
-        dyn_type *toPrint = &entry->type;
+        dyn_type *toPrint = entry->type;
         if (toPrint->type == DYN_TYPE_REF) {
             toPrint = toPrint->ref.ref;
         }
@@ -892,7 +1002,7 @@ static void dynType_printTypes(dyn_type *type, FILE *stream) {
     switch(type->type) {
         case DYN_TYPE_COMPLEX :
             TAILQ_FOREACH(centry, &type->complex.entriesHead, entries) {
-                dynType_printTypes(&centry->type, stream);
+                dynType_printTypes(centry->type, stream);
             }
             break;
         case DYN_TYPE_SEQUENCE :
@@ -909,7 +1019,7 @@ static void dynType_printComplexType(dyn_type *type, FILE *stream) {
 
     struct complex_type_entry *entry = NULL;
     TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
-        dynType_printAny(entry->name, &entry->type, 2, stream);
+        dynType_printAny(entry->name, entry->type, 2, stream);
     }
 
     fprintf(stream, "}\n");

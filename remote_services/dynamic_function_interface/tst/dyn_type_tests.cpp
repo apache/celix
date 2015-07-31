@@ -24,20 +24,21 @@ extern "C" {
         dyn_type *type;
         int i;
         type = NULL;
-        printf("\n-- example %s with descriptor string '%s' --\n", exName, descriptorStr);
+        //printf("\n-- example %s with descriptor string '%s' --\n", exName, descriptorStr);
         int status = dynType_parseWithStr(descriptorStr, exName, NULL, &type);
         CHECK_EQUAL(0, status);
 
         FILE *stream = fopen("/dev/null", "w");
         dynType_print(type, stream);
+        fclose(stream);
         dynType_destroy(type);
-        printf("--\n\n");
+        //printf("--\n\n");
     }
 }
 
 TEST_GROUP(DynTypeTests) {
 	void setup() {
-	    dynType_logSetup(stdLog, NULL, 3);
+	    dynType_logSetup(stdLog, NULL, 0);
 	}
 };
 
@@ -77,14 +78,14 @@ CREATE_EXAMPLES_TEST(EX13)
 CREATE_EXAMPLES_TEST(EX14)
 
 TEST(DynTypeTests, ParseRandomGarbageTest) {
-    return; //TODO enable
+    /*
     unsigned int seed = 4148;
     char *testRandom = getenv("DYN_TYPE_TEST_RANDOM");
     if (testRandom != NULL && strcmp("true", testRandom) == 0) {
         seed = (unsigned int) time(NULL);
     } 
     srandom(seed);
-    size_t nrOfTests = 10000;
+    size_t nrOfTests = 100;
 
     printf("\nStarting test with random seed %i and nrOfTests %zu.\n", seed, nrOfTests);
 
@@ -112,6 +113,7 @@ TEST(DynTypeTests, ParseRandomGarbageTest) {
             dynType_destroy(type);
         }
     }
+     */
 }
 
 TEST(DynTypeTests, AssignTest1) {
@@ -171,8 +173,3 @@ TEST(DynTypeTests, AssignTest2) {
 
     dynType_destroy(type);
 }
-
-
-//TODO allocating / freeing
-
-//TODO sequences 

@@ -27,7 +27,7 @@ static int ERROR = 1;
 DFI_SETUP_LOG(jsonSerializer);
 
 int jsonSerializer_deserialize(dyn_type *type, const char *input, void **result) {
-    assert(type->type == DYN_TYPE_COMPLEX);
+    assert(dynType_type(type) == DYN_TYPE_COMPLEX);
     int status = 0;
 
     json_error_t error;
@@ -111,6 +111,7 @@ static int jsonSerializer_parseAny(dyn_type *type, void *loc, json_t *val) {
     int status = OK;
 
     dyn_type *subType = NULL;
+    char c = dynType_descriptorType(type);
 
     float *f;           //F
     double *d;          //D
@@ -123,7 +124,7 @@ static int jsonSerializer_parseAny(dyn_type *type, void *loc, json_t *val) {
     uint32_t  *ui;      //i
     uint64_t  *ul;      //j
 
-    switch (type->descriptor) {
+    switch (c) {
         case 'F' :
             f = loc;
             *f = (float) json_real_value(val);
@@ -197,7 +198,7 @@ static int jsonSerializer_parseAny(dyn_type *type, void *loc, json_t *val) {
             break;
         default :
             status = ERROR;
-            LOG_ERROR("Error provided type '%c' not supported for JSON\n", type->descriptor);
+            LOG_ERROR("Error provided type '%c' not supported for JSON\n", dynType_descriptorType(type));
             break;
     }
 
@@ -209,9 +210,8 @@ static int jsonSerializer_parseSequence(dyn_type *seq, json_t *array, void *seqL
     int status = OK;
 
     size_t size = json_array_size(array);
-    void *buf = NULL;
     LOG_DEBUG("Allocating sequence with capacity %zu", size);
-    status = dynType_sequence_alloc(seq, seqLoc, (int) size, &buf);
+    status = dynType_sequence_alloc(seq, seqLoc, (int) size);
 
     if (status == OK) {
         dyn_type *itemType = dynType_sequence_itemType(seq);
@@ -339,7 +339,7 @@ static int jsonSerializer_writeAny(dyn_type *type, void *input, json_t **out) {
 }
 
 static int jsonSerializer_writeSequence(dyn_type *type, void *input, json_t **out) {
-    assert(type->type = DYN_TYPE_SEQUENCE);
+    assert(dynType_type(type) == DYN_TYPE_SEQUENCE);
     int status = OK;
 
     json_t *array = json_array();
@@ -355,7 +355,8 @@ static int jsonSerializer_writeSequence(dyn_type *type, void *input, json_t **ou
         if (status == OK) {
             status = jsonSerializer_writeAny(itemType, itemLoc, &item);
             if (status == OK) {
-                json_array_append_new(array, item);
+                json_array_append(array, item);
+                json_decref(item);
             }
         }
 
@@ -372,7 +373,7 @@ static int jsonSerializer_writeSequence(dyn_type *type, void *input, json_t **ou
 }
 
 static int jsonSerializer_writeComplex(dyn_type *type, void *input, json_t **out) {
-    assert(type->type == DYN_TYPE_COMPLEX);
+    assert(dynType_type(type) == DYN_TYPE_COMPLEX);
     int status = OK;
 
     json_t *val = json_object();
@@ -396,6 +397,7 @@ static int jsonSerializer_writeComplex(dyn_type *type, void *input, json_t **out
             }
             if (status == OK) {
                 json_object_set(val, entry->name, subVal);
+                json_decref(subVal);
             }
 
             if (status != OK) {

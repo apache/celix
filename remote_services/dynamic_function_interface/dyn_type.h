@@ -83,59 +83,26 @@
 
 typedef struct _dyn_type dyn_type;
 
-TAILQ_HEAD(reference_types_head, type_entry); 
-TAILQ_HEAD(nested_types_head, nested_entry);
-TAILQ_HEAD(complex_type_entries_head, complex_type_entry);
-
-struct _dyn_type {
-    char *name;
-    char descriptor;
-    int type;
-    ffi_type *ffiType;
-    dyn_type *parent;
-    struct reference_types_head *referenceTypes; //NOTE: not owned
-    struct nested_types_head  nestedTypesHead;
-    union {
-        struct {
-            struct complex_type_entries_head entriesHead;
-            ffi_type structType; //dyn_type.ffiType points to this
-            dyn_type **types; //based on entriesHead for fast access
-        } complex;
-        struct {
-            ffi_type seqType; //dyn_type.ffiType points to this
-            dyn_type *itemType;
-        } sequence;
-        struct {
-            dyn_type *typedType;
-        } typedPointer;
-        struct {
-            dyn_type *ref;
-        } ref;
-    };
-};
-
-struct complex_type_entry {
-    dyn_type type;
-    char *name;
-    TAILQ_ENTRY(complex_type_entry) entries;
-};
-
+//TODO rename
+TAILQ_HEAD(types_head, type_entry);
 struct type_entry {
     dyn_type *type;
     TAILQ_ENTRY(type_entry) entries;
 };
 
-struct nested_entry {
-    dyn_type type;
-    TAILQ_ENTRY(nested_entry) entries;
+TAILQ_HEAD(complex_type_entries_head, complex_type_entry);
+struct complex_type_entry {
+    dyn_type *type;
+    char *name;
+    TAILQ_ENTRY(complex_type_entry) entries;
 };
 
 //logging
 DFI_SETUP_LOG_HEADER(dynType);
 
 //generic
-int dynType_parse(FILE *descriptorStream, const char *name, struct reference_types_head *refTypes, dyn_type **type);
-int dynType_parseWithStr(const char *descriptor, const char *name, struct reference_types_head *refTypes, dyn_type **type);
+int dynType_parse(FILE *descriptorStream, const char *name, struct types_head *refTypes, dyn_type **type);
+int dynType_parseWithStr(const char *descriptor, const char *name, struct types_head *refTypes, dyn_type **type);
 void dynType_destroy(dyn_type *type);
 
 int dynType_alloc(dyn_type *type, void **bufLoc);
@@ -145,6 +112,7 @@ void dynType_print(dyn_type *type, FILE *stream);
 size_t dynType_size(dyn_type *type);
 int dynType_type(dyn_type *type);
 int dynType_descriptorType(dyn_type *type);
+ffi_type *dynType_ffiType(dyn_type *type);
 
 //complexType
 int dynType_complex_indexForName(dyn_type *type, const char *name);
@@ -154,7 +122,7 @@ int dynType_complex_valLocAt(dyn_type *type, int index, void *inst, void **valLo
 int dynType_complex_entries(dyn_type *type, struct complex_type_entries_head **entries);
 
 //sequence
-int dynType_sequence_alloc(dyn_type *type, void *inst, int cap, void **buf);
+int dynType_sequence_alloc(dyn_type *type, void *inst, uint32_t cap);
 int dynType_sequence_locForIndex(dyn_type *type, void *seqLoc, int index, void **valLoc);
 int dynType_sequence_increaseLengthAndReturnLastLoc(dyn_type *type, void *seqLoc, void **valLoc);
 dyn_type * dynType_sequence_itemType(dyn_type *type);

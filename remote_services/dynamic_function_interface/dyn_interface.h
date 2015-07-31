@@ -32,7 +32,7 @@ typedef struct _dyn_interface_type dyn_interface_type;
 struct _dyn_interface_type {
     struct namvals_head header;
     struct namvals_head annotations;
-    struct reference_types_head types;
+    struct types_head types;
     struct methods_head methods;
 };
 
