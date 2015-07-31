@@ -35,15 +35,12 @@ if (REMOTE_SERVICE_ADMIN)
 
     add_subdirectory(remote_service_admin)
     add_subdirectory(remote_service_admin_http)
-    #add_subdirectory(remote_service_admin_http_ffi)
+    add_subdirectory(remote_service_admin_dfi)
     add_subdirectory(remote_service_admin_shm)
 
     add_subdirectory(discovery_configured)
     add_subdirectory(discovery_etcd)
     add_subdirectory(discovery_shm)
-
-    add_subdirectory(dynamic_function_interface)
-    
 
 endif (REMOTE_SERVICE_ADMIN)
 
