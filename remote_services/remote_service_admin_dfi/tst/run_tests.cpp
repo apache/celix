@@ -4,15 +4,26 @@
 #include <CppUTest/TestHarness.h>
 #include "CppUTest/CommandLineTestRunner.h"
 
-#include <stdio.h>
 
-#include "launcher.h"
+extern "C" {
+    #include <stdio.h>
 
+    #include "launcher.h"
+    #include "framework.h"
+
+    static int startCelix(void) {
+        celixLauncher_launch("config.properties");
+    }
+
+    static int stopCelix(void) {
+        celixLauncher_stop();
+        celixLauncher_waitForShutdown();
+    }
+}
 
 int main(int argc, char** argv) {
-    celixLauncher_launch("config.properties");
+    startCelix();
     int rc = RUN_ALL_TESTS(argc, argv);
-    framework_stop((celixLauncher_getFramework()));
-    celixLauncher_waitForShutdown();
+    stopCelix();
     return rc;
 }

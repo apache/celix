@@ -32,6 +32,7 @@
 
 int celixLauncher_launch(const char *configFile);
 int celixLauncher_launchWithStream(FILE *config);
+void celixLauncher_stop(void);
 void celixLauncher_waitForShutdown(void);
 struct framework *celixLauncher_getFramework(void);
 

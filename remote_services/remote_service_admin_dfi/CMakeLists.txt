@@ -46,7 +46,9 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
         ${PROJECT_SOURCE_DIR}/remote_services/utils/private/src/civetweb.c
         ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
     )
-    target_link_libraries(remote_service_admin_dfi celix_framework ${CURL_LIBRARIES} ${JANSSON_LIBRARIES} ${FFI_LIBRARIES} dfi)
+    target_link_libraries(remote_service_admin_dfi celix_framework celix_utils ${CURL_LIBRARIES} ${JANSSON_LIBRARIES} ${FFI_LIBRARIES} dfi)
 
     install_bundle(remote_service_admin_dfi)
+
+    add_subdirectory(tst)
 endif (RSA_REMOTE_SERVICE_ADMIN_DFI)

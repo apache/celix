@@ -183,15 +183,18 @@ void celixLauncher_waitForShutdown(void) {
     properties_destroy(config);
 }
 
+void celixLauncher_stop(void) {
+    bundle_pt fwBundle = NULL;
+    framework_getFrameworkBundle(framework, &fwBundle);
+    bundle_stop(fwBundle);
+}
 
 struct framework *celixLauncher_getFramework(void) {
     return framework;
 }
 
 static void launcher_shutdown(int signal) {
-    bundle_pt fwBundle = NULL;
-    framework_getFrameworkBundle(framework, &fwBundle);
-    bundle_stop(fwBundle);
+    celixLauncher_stop();
 //	if (framework_waitForStop(framework) != CELIX_SUCCESS) {
 //		celix_log("Error waiting for stop.");
 //	}
