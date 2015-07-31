@@ -18,7 +18,7 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 	set(MEMSTREAM_SOURCES memstream/open_memstream.c memstream/fmemopen.c)
 endif()
 
-add_library(dfi
+add_library(dfi STATIC
     dyn_common.c
     dyn_type.c
     dyn_function.c
@@ -30,14 +30,13 @@ add_library(dfi
 target_link_libraries(dfi ${FFI_LIBRARIES} ${JANSSON_LIBRARY})
 
 
-#if (FRAMEWORK_TESTS)
+#if (FRAMEWORK_TESTS) TODO
 	add_executable(dfi_tests
 	    tst/dyn_type_tests.cpp
 	    tst/dyn_function_tests.cpp
 	    tst/dyn_closure_tests.cpp
         tst/dyn_interface_tests.cpp
 	    tst/json_serializer_tests.cpp
-#	    tst/avro_descriptor_translator_tests.cpp
 	    tst/run_tests.cpp
 	)
 	target_link_libraries(dfi_tests dfi ${FFI_LIBRARIES} ${CPPUTEST_LIBRARY} ${JANSSON_LIBRARY}) 

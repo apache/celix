@@ -34,19 +34,19 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
     include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin_http/private/include")
     include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
     
-    #SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_remote_service_admin_dfi")
-    #SET(BUNDLE_VERSION "0.0.1")
-    #SET_HEADERS("Bundle-Name: Apache Celix Remote Service Admin HTTP for dynamic function interface")
+    SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_remote_service_admin_dfi")
+    SET(BUNDLE_VERSION "0.0.1")
+    SET_HEADERS("Bundle-Name: Apache Celix Remote Service Admin HTTP for dynamic function interface")
     
-    #bundle(remote_service_admin_dfi SOURCES
-    #    private/src/remote_service_admin_impl
-    #    private/src/remote_service_admin_activator
-    #    ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/export_registration_impl
-    #    ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/import_registration_impl
-    #    ${PROJECT_SOURCE_DIR}/remote_services/utils/private/src/civetweb.c
-    #    ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
-    #)
-    #target_link_libraries(remote_service_admin_dfi celix_framework ${CURL_LIBRARIES} ${JANSSON_LIBRARIES} ${FFI_LIBRARIES})
+    bundle(remote_service_admin_dfi SOURCES
+        private/src/remote_service_admin_impl
+        private/src/remote_service_admin_activator
+        ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/export_registration_impl
+        ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/import_registration_impl
+        ${PROJECT_SOURCE_DIR}/remote_services/utils/private/src/civetweb.c
+        ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
+    )
+    target_link_libraries(remote_service_admin_dfi celix_framework ${CURL_LIBRARIES} ${JANSSON_LIBRARIES} ${FFI_LIBRARIES} dfi)
 
-    #install_bundle(remote_service_admin_dfi)
+    install_bundle(remote_service_admin_dfi)
 endif (RSA_REMOTE_SERVICE_ADMIN_DFI)
