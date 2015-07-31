@@ -17,31 +17,19 @@
  *under the License.
  */
 /*
- * properties.h
+ * launcher.h
  *
- *  \date       Apr 27, 2010
+ *  \date       Jul 30, 2015
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
-#ifndef PROPERTIES_H_
-#define PROPERTIES_H_
+#ifndef CELIX_LAUNCHER_H
+#define CELIX_LAUNCHER_H
 
 #include <stdio.h>
 
-#include "hash_map.h"
-#include "framework_exports.h"
+int celixLauncher_launch(const char *configFile);
+int celixLauncher_launchWithStream(FILE *config);
 
-typedef hash_map_pt properties_pt;
-
-FRAMEWORK_EXPORT properties_pt properties_create(void);
-FRAMEWORK_EXPORT void properties_destroy(properties_pt properties);
-FRAMEWORK_EXPORT properties_pt properties_load(char * filename);
-FRAMEWORK_EXPORT properties_pt properties_loadWithStream(FILE *stream);
-FRAMEWORK_EXPORT void properties_store(properties_pt properties, char * file, char * header);
-
-FRAMEWORK_EXPORT char * properties_get(properties_pt properties, char * key);
-FRAMEWORK_EXPORT char * properties_getWithDefault(properties_pt properties, char * key, char * defaultValue);
-FRAMEWORK_EXPORT char * properties_set(properties_pt properties, char * key, char * value);
-
-#endif /* PROPERTIES_H_ */
+#endif //CELIX_LAUNCHER_H

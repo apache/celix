@@ -17,31 +17,46 @@
  *under the License.
  */
 /*
- * properties.h
+ * main.c
  *
- *  \date       Apr 27, 2010
+ *  \date       Jul 30, 2015
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
-#ifndef PROPERTIES_H_
-#define PROPERTIES_H_
+#include <string.h>
+#include <curl/curl.h>
+#include <signal.h>
+#include "launcher.h"
 
-#include <stdio.h>
+static void show_usage(char* prog_name);
 
-#include "hash_map.h"
-#include "framework_exports.h"
+#define DEFAULT_CONFIG_FILE "config.properties"
 
-typedef hash_map_pt properties_pt;
+int main(int argc, char *argv[]) {
+    // Perform some minimal command-line option parsing...
+    char *opt = NULL;
+    if (argc > 1) {
+        opt = argv[1];
+    }
 
-FRAMEWORK_EXPORT properties_pt properties_create(void);
-FRAMEWORK_EXPORT void properties_destroy(properties_pt properties);
-FRAMEWORK_EXPORT properties_pt properties_load(char * filename);
-FRAMEWORK_EXPORT properties_pt properties_loadWithStream(FILE *stream);
-FRAMEWORK_EXPORT void properties_store(properties_pt properties, char * file, char * header);
+    char *config_file = NULL;
 
-FRAMEWORK_EXPORT char * properties_get(properties_pt properties, char * key);
-FRAMEWORK_EXPORT char * properties_getWithDefault(properties_pt properties, char * key, char * defaultValue);
-FRAMEWORK_EXPORT char * properties_set(properties_pt properties, char * key, char * value);
+    if (opt) {
+        // Check whether the user wants some help...
+        if (strcmp("-h", opt) == 0 || strcmp("-help", opt) == 0) {
+            show_usage(argv[0]);
+            return 0;
+        } else {
+            config_file = opt;
+        }
+    } else {
+        config_file = DEFAULT_CONFIG_FILE;
+    }
 
-#endif /* PROPERTIES_H_ */
+    celixLauncher_launch(config_file);
+}
+
+static void show_usage(char* prog_name) {
+    printf("Usage:\n  %s [path/to/config.properties]\n\n", basename(prog_name));
+}
