@@ -173,3 +173,18 @@ TEST(DynTypeTests, AssignTest2) {
 
     dynType_destroy(type);
 }
+
+TEST(DynTypeTests, AssignTest3) {
+    int simple = 1;
+    dyn_type *type = NULL;
+    int rc = dynType_parseWithStr("N", NULL, NULL, &type);
+    CHECK_EQUAL(0, rc);
+
+    int newValue = 42;
+    void *loc = &simple;
+    void *input = &newValue;
+    dynType_simple_setValue(type, loc, input);
+    CHECK_EQUAL(42, simple);
+    dynType_destroy(type);
+}
+

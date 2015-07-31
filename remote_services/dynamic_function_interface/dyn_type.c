@@ -595,7 +595,7 @@ void dynType_free(dyn_type *type, void *loc) {
 void dynType_deepFree(dyn_type *type, void *loc, bool alsoDeleteSelf) {
     if (loc != NULL) {
         dyn_type *subType = NULL;
-        const char *text = NULL;
+        char *text = NULL;
         switch (type->type) {
             case DYN_TYPE_COMPLEX :
                 dynType_freeComplexType(type, loc);
@@ -608,7 +608,7 @@ void dynType_deepFree(dyn_type *type, void *loc, bool alsoDeleteSelf) {
                 dynType_deepFree(subType, *(void **)loc, true);
                 break;
             case DYN_TYPE_TEXT :
-                text = *(const char **)loc;
+                text = *(char **)loc;
                 free(text);
                 break;
         }

@@ -128,8 +128,10 @@ int dynType_sequence_increaseLengthAndReturnLastLoc(dyn_type *type, void *seqLoc
 dyn_type * dynType_sequence_itemType(dyn_type *type);
 uint32_t dynType_sequence_length(void *seqLoc);
 
+//typed pointer
 int dynType_typedPointer_getTypedType(dyn_type *type, dyn_type **typedType);
 
+//text
 int dynType_text_allocAndInit(dyn_type *type, void *textLoc, const char *value);
 
 //simple
