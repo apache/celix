@@ -478,13 +478,6 @@ int dynType_complex_indexForName(dyn_type *type, const char *name) {
     return index;
 }
 
-char dynType_complex_descriptorTypeAt(dyn_type *type, int index) {
-    assert(type->type == DYN_TYPE_COMPLEX);
-
-    dyn_type *item = type->complex.types[index];
-    return item->descriptor;
-}
-
 int dynType_complex_dynTypeAt(dyn_type *type, int index, dyn_type **result) {
     assert(type->type == DYN_TYPE_COMPLEX);
     dyn_type *sub = type->complex.types[index];

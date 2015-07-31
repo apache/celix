@@ -148,7 +148,6 @@ int dynType_descriptorType(dyn_type *type);
 
 //complexType
 int dynType_complex_indexForName(dyn_type *type, const char *name);
-char dynType_complex_descriptorTypeAt(dyn_type *type, int index);
 int dynType_complex_dynTypeAt(dyn_type *type, int index, dyn_type **subType);
 int dynType_complex_setValueAt(dyn_type *type, int index, void *inst, void *in);
 int dynType_complex_valLocAt(dyn_type *type, int index, void *inst, void **valLoc);
