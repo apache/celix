@@ -10,6 +10,7 @@
 #include <stdbool.h>
 
 #include <ffi.h>
+#include <stdint.h>
 
 #include "dfi_log_util.h"
 
@@ -40,25 +41,27 @@
  * i uint32_t
  * j uint62_t
  * s uint64_t
- * P pointer
+ * P untyped pointer (void *)
  * t char* string
  * N native int
- *
  *
  * ComplexTypes (Struct)
  * {[Type]+ [(Name)(SPACE)]+}
  *
- * PointerReference
- * L(Name);
- *
  * ReferenceByValue
  * l(name);
+ *
+ * PointerReference -> note shortcut for *l(name);
+ * L(Name);
  *
  * TypeDef 
  * T(Name)=Type;
  *
  * SequenceType
  * [(Type)
+ *
+ * TypedPointer
+ * *(Type)
  *
  * Annotation TODO
  * <(Name)=(Value)>
@@ -75,12 +78,14 @@
 #define DYN_TYPE_COMPLEX 2
 #define DYN_TYPE_SEQUENCE 3
 #define DYN_TYPE_TYPED_POINTER 4
-#define DYN_TYPE_REF 5
+#define DYN_TYPE_TEXT 5
+#define DYN_TYPE_REF 6
 
 typedef struct _dyn_type dyn_type;
 
 TAILQ_HEAD(reference_types_head, type_entry); 
-TAILQ_HEAD(nested_types_head, nested_entry); 
+TAILQ_HEAD(nested_types_head, nested_entry);
+TAILQ_HEAD(complex_type_entries_head, complex_type_entry);
 
 struct _dyn_type {
     char *name;
@@ -92,7 +97,7 @@ struct _dyn_type {
     struct nested_types_head  nestedTypesHead;
     union {
         struct {
-            TAILQ_HEAD(, complex_type_entry) entriesHead;
+            struct complex_type_entries_head entriesHead;
             ffi_type structType; //dyn_type.ffiType points to this
             dyn_type **types; //based on entriesHead for fast access
         } complex;
@@ -147,11 +152,18 @@ char dynType_complex_descriptorTypeAt(dyn_type *type, int index);
 int dynType_complex_dynTypeAt(dyn_type *type, int index, dyn_type **subType);
 int dynType_complex_setValueAt(dyn_type *type, int index, void *inst, void *in);
 int dynType_complex_valLocAt(dyn_type *type, int index, void *inst, void **valLoc);
+int dynType_complex_entries(dyn_type *type, struct complex_type_entries_head **entries);
 
 //sequence
 int dynType_sequence_alloc(dyn_type *type, void *inst, int cap, void **buf);
-int dynType_sequence_append(dyn_type *type, void *seq, void *in);
+int dynType_sequence_locForIndex(dyn_type *type, void *seqLoc, int index, void **valLoc);
+int dynType_sequence_increaseLengthAndReturnLastLoc(dyn_type *type, void *seqLoc, void **valLoc);
 dyn_type * dynType_sequence_itemType(dyn_type *type);
+uint32_t dynType_sequence_length(void *seqLoc);
+
+int dynType_typedPointer_getTypedType(dyn_type *type, dyn_type **typedType);
+
+int dynType_text_allocAndInit(dyn_type *type, void *textLoc, const char *value);
 
 //simple
 void dynType_simple_setValue(dyn_type *type, void *inst, void *in);

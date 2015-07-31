@@ -4,9 +4,13 @@
 #ifndef __JSON_SERIALIZER_H_
 #define __JSON_SERIALIZER_H_
 
+#include "dfi_log_util.h"
 #include "dyn_type.h"
 
-int json_deserialize(dyn_type *type, const char *input, void **result);
-int json_serialize(dyn_type *type, void *input, char **output, size_t *size);
+//logging
+DFI_SETUP_LOG_HEADER(jsonSerializer);
+
+int jsonSerializer_deserialize(dyn_type *type, const char *input, void **result);
+int jsonSerializer_serialize(dyn_type *type, void *input, char **output);
 
 #endif

@@ -46,9 +46,13 @@ struct example1 {
     float e;    //4
 };
 
-static void print_example1(void *data) {
+static void check_example1(void *data) {
     struct example1 *ex = (struct example1 *)data;
-    printf("example1: a:%f, b:%li, c:%i, d:%i, e:%f\n", ex->a, (long)ex->b, ex->c, ex->d, ex->e);
+    CHECK_EQUAL(1.0, ex->a);
+    CHECK_EQUAL(22, ex->b);
+    CHECK_EQUAL(32, ex->c);
+    CHECK_EQUAL(42, ex->d);
+    CHECK_EQUAL(4.4f, ex->e);
 }
 
 /*********** example 2 ************************/
@@ -72,9 +76,14 @@ struct example2 {
     double double2; //5
 };
 
-static void print_example2(void *data) {
+static void check_example2(void *data) {
     struct example2 *ex = (struct example2 *)data;
-    printf("example2: byte:%i, long1:%li, long2:%li, double1:%f, float1:%f, double2:%f\n", ex->byte, (long)ex->long1, (long)ex->long2, ex->double1, ex->float1, ex->double2);
+    CHECK_EQUAL(42, ex->byte);
+    CHECK_EQUAL(232, ex->long1);
+    CHECK_EQUAL(242, ex->long2);
+    CHECK_EQUAL(4.2, ex->double1);
+    CHECK_EQUAL(3.2f, ex->float1);
+    CHECK_EQUAL(4.4, ex->double2);
 }
 
 
@@ -88,24 +97,22 @@ const char *example3_input = "{ \
 
 struct example3 {
     struct {
-        uint32_t _cap;
-        uint32_t _len;
+        uint32_t cap;
+        uint32_t len;
         int32_t *buf;
     } numbers;
 };
 
-static void print_example3(void *data) {
+static void check_example3(void *data) {
     struct example3 *ex = (struct example3 *)data;
-    printf("example3: numbers length is %u and cap is %u and pointer buf is %p\n", ex->numbers._len, ex->numbers._cap, ex->numbers.buf);
-    int i;
-    for (i = 0; i < ex->numbers._len; i += 1) {
-        printf("\telement %i : %i\n", i, ex->numbers.buf[i]);
-    }
+    CHECK_EQUAL(3, ex->numbers.len);
+    CHECK_EQUAL(22, ex->numbers.buf[0]);
+    CHECK_EQUAL(32, ex->numbers.buf[1]);
+    CHECK_EQUAL(42, ex->numbers.buf[2]);
 }
 
 /*********** example 4 ************************/
 /** structs within a struct (by reference)*******/
-//TODO think about references in descriptor e.g "{Lleaf;Lleaf; left right}\nleaf{IDD index val1 val2}"
 const char *example4_descriptor = "{{IDD index val1 val2}{IDD index val1 val2} left right}";
 
 static const char *example4_input =  "{ \
@@ -113,23 +120,84 @@ static const char *example4_input =  "{ \
     \"right\" : {\"index\":2, \"val1\":5.0, \"val2\":4.0 } \
 }";
 
-struct leaf {
+struct ex4_leaf {
     int32_t index;
     double val1;
     double val2;
 };
 
 struct example4 {
-    struct leaf left;
-    struct leaf right;
+    struct ex4_leaf left;
+    struct ex4_leaf right;
 };
 
-static void print_example4(void *data) {
+static void check_example4(void *data) {
     struct example4 *ex = (struct example4 *)data;
-    printf("example4: left { index:%i, val1:%f, val2:%f }, right { index;%i, val1:%f, val2:%f }\n", ex->left.index, ex->left.val1, ex->left.val2, ex->right.index, ex->right.val1, ex->right.val2);
+    CHECK_EQUAL(1, ex->left.index);
+    CHECK_EQUAL(1.0, ex->left.val1);
+    CHECK_EQUAL(2.0, ex->left.val2);
+    CHECK_EQUAL(2, ex->right.index);
+    CHECK_EQUAL(5.0, ex->right.val1);
+    CHECK_EQUAL(4.0, ex->right.val2);
 }
 
-static void tests() {
+
+/*********** example 4 ************************/
+/** structs within a struct (by reference)*******/
+const char *example5_descriptor = "Tleaf={ts name age};Tnode={Lnode;Lnode;Lleaf; left right value};{Lnode; head}";
+
+static const char *example5_input =  "{ \
+    \"head\" : {\
+        \"left\" : {\
+            \"value\" : {\
+                \"name\" : \"John\",\
+                \"age\" : 44 \
+            }\
+        },\
+        \"right\" : {\
+            \"value\" : {\
+                \"name\" : \"Peter\", \
+                \"age\" : 55 \
+            }\
+        }\
+    }\
+}";
+
+struct leaf {
+    const char *name;
+    uint16_t age;
+};
+
+struct node {
+    struct node *left;
+    struct node *right;
+    struct leaf *value;
+};
+
+struct example5 {
+    struct node *head;
+};
+
+static void check_example5(void *data) {
+    struct example5 *ex = (struct example5 *)data;
+    CHECK_TRUE(ex->head != NULL);
+
+    CHECK(ex->head->left != NULL);
+    CHECK(ex->head->left->value != NULL);
+    STRCMP_EQUAL("John", ex->head->left->value->name);
+    CHECK_EQUAL(44, ex->head->left->value->age);
+    CHECK(ex->head->left->left == NULL);
+    CHECK(ex->head->left->right == NULL);
+
+    CHECK(ex->head->right != NULL);
+    CHECK(ex->head->right->value != NULL);
+    STRCMP_EQUAL("Peter", ex->head->right->value->name);
+    CHECK_EQUAL(55, ex->head->right->value->age);
+    CHECK(ex->head->right->left == NULL);
+    CHECK(ex->head->right->right == NULL);
+}
+
+static void parseTests(void) {
     printf("Starting json serializer tests\n");
     dyn_type *type;
     void *inst;
@@ -139,47 +207,176 @@ static void tests() {
     inst = NULL;
     rc = dynType_parseWithStr(example1_descriptor, NULL, NULL, &type);    
     CHECK_EQUAL(0, rc);
-    rc = json_deserialize(type, example1_input, &inst); 
+    rc = jsonSerializer_deserialize(type, example1_input, &inst);
     CHECK_EQUAL(0, rc);
-    print_example1(inst);
-    printf("--\n\n");
-
+    check_example1(inst);
 
     type = NULL;
     inst = NULL;
     rc = dynType_parseWithStr(example2_descriptor, NULL, NULL, &type);
     CHECK_EQUAL(0, rc);
-    rc = json_deserialize(type, example2_input, &inst); 
+    rc = jsonSerializer_deserialize(type, example2_input, &inst);
     CHECK_EQUAL(0, rc);
-    print_example2(inst);
-    printf("--\n\n");
+    check_example2(inst);
 
     type = NULL;
     inst = NULL;
     rc = dynType_parseWithStr(example3_descriptor, NULL, NULL, &type);
     CHECK_EQUAL(0, rc);
-    rc = json_deserialize(type, example3_input, &inst); 
+    rc = jsonSerializer_deserialize(type, example3_input, &inst);
     CHECK_EQUAL(0, rc);
-    print_example3(inst);
+    check_example3(inst);
 
     type = NULL;
     inst = NULL;
     rc = dynType_parseWithStr(example4_descriptor, NULL, NULL, &type);
     CHECK_EQUAL(0, rc);
-    rc = json_deserialize(type, example4_input, &inst); 
+    rc = jsonSerializer_deserialize(type, example4_input, &inst);
     CHECK_EQUAL(0, rc);
-    print_example4(inst);
+    check_example4(inst);
+
+    type = NULL;
+    inst = NULL;
+    rc = dynType_parseWithStr(example5_descriptor, NULL, NULL, &type);
+    CHECK_EQUAL(0, rc);
+    rc = jsonSerializer_deserialize(type, example5_input, &inst);
+    CHECK_EQUAL(0, rc);
+    check_example5(inst);
 }
+
+const char *write_example1_descriptor = "{BSIJsijFDN a b c d e f g h i j}";
+
+struct write_example1 {
+    char a;
+    int16_t b;
+    int32_t c;
+    int64_t d;
+    uint16_t e;
+    uint32_t f;
+    uint64_t g;
+    float h;
+    double i;
+    int j;
+};
+
+void writeTest1(void) {
+    struct write_example1 ex1 = {.a=1, .b=2, .c=3, .d=4, .e=5, .f=6, .g=7, .h=8.8f, .i=9.9, .j=10};
+    dyn_type *type = NULL;
+    char *result = NULL;
+    int rc = dynType_parseWithStr(write_example1_descriptor, "ex1", NULL, &type);
+    CHECK_EQUAL(0, rc);
+    rc = jsonSerializer_serialize(type, &ex1, &result);
+    CHECK_EQUAL(0, rc);
+    STRCMP_CONTAINS("\"a\":1", result);
+    STRCMP_CONTAINS("\"b\":2", result);
+    STRCMP_CONTAINS("\"c\":3", result);
+    STRCMP_CONTAINS("\"d\":4", result);
+    STRCMP_CONTAINS("\"e\":5", result);
+    STRCMP_CONTAINS("\"f\":6", result);
+    STRCMP_CONTAINS("\"g\":7", result);
+    STRCMP_CONTAINS("\"h\":8.8", result);
+    STRCMP_CONTAINS("\"i\":9.9", result);
+    STRCMP_CONTAINS("\"j\":10", result);
+    //printf("example 1 result: '%s'\n", result);
+}
+
+const char *write_example2_descriptor = "{*{JJ a b}{SS c d} sub1 sub2}";
+
+struct write_example2_sub {
+        int64_t a;
+        int64_t b;
+};
+
+struct write_example2 {
+    struct write_example2_sub *sub1;
+    struct {
+        int16_t c;
+        int16_t d;
+    } sub2;
+};
+
+void writeTest2(void) {
+    struct write_example2_sub sub1 = { .a = 1, .b = 2 };
+    struct write_example2 ex = { .sub1 = &sub1 };
+    ex.sub2.c = 3;
+    ex.sub2.d = 4;
+
+    dyn_type *type = NULL;
+    char *result = NULL;
+    int rc = dynType_parseWithStr(write_example2_descriptor, "ex2", NULL, &type);
+    CHECK_EQUAL(0, rc);
+    rc = jsonSerializer_serialize(type, &ex, &result);
+    CHECK_EQUAL(0, rc);
+    STRCMP_CONTAINS("\"a\":1", result);
+    STRCMP_CONTAINS("\"b\":2", result);
+    STRCMP_CONTAINS("\"c\":3", result);
+    STRCMP_CONTAINS("\"d\":4", result);
+    //printf("example 2 result: '%s'\n", result);
+}
+
+const char *write_example3_descriptor = "Tperson={ti name age};[Lperson;";
+
+struct write_example3_person {
+    const char *name;
+    uint32_t age;
+};
+
+struct write_example3 {
+    uint32_t cap;
+    uint32_t len;
+    struct write_example3_person **buf;
+};
+
+void writeTest3(void) {
+    struct write_example3_person p1 = {.name = "John", .age = 33};
+    struct write_example3_person p2 = {.name = "Peter", .age = 44};
+    struct write_example3_person p3 = {.name = "Carol", .age = 55};
+    struct write_example3_person p4 = {.name = "Elton", .age = 66};
+    struct write_example3 seq;
+    seq.buf = (struct write_example3_person **) calloc(4, sizeof(void *));
+    seq.len = seq.cap = 4;
+    seq.buf[0] = &p1;
+    seq.buf[1] = &p2;
+    seq.buf[2] = &p3;
+    seq.buf[3] = &p4;
+
+    dyn_type *type = NULL;
+    char *result = NULL;
+    int rc = dynType_parseWithStr(write_example3_descriptor, "ex3", NULL, &type);
+    CHECK_EQUAL(0, rc);
+    rc = jsonSerializer_serialize(type, &seq, &result);
+    CHECK_EQUAL(0, rc);
+    STRCMP_CONTAINS("\"age\":33", result);
+    STRCMP_CONTAINS("\"age\":44", result);
+    STRCMP_CONTAINS("\"age\":55", result);
+    STRCMP_CONTAINS("\"age\":66", result);
+    //printf("example 3 result: '%s'\n", result);
+}
+
 }
 
 TEST_GROUP(JsonSerializerTests) {
     void setup() {
-        dynType_logSetup(stdLog, NULL, 3);
-        dynCommon_logSetup(stdLog, NULL, 3);
+        int lvl = 3;
+        dynCommon_logSetup(stdLog, NULL, lvl);
+        dynType_logSetup(stdLog, NULL,lvl);
+        jsonSerializer_logSetup(stdLog, NULL, lvl);
     }
 };
 
-TEST(JsonSerializerTests, Test1) {
+TEST(JsonSerializerTests, ParseTests) {
     //TODO split up
-    tests();
+    parseTests();
+}
+
+TEST(JsonSerializerTests, WriteTest1) {
+    writeTest1();
+}
+
+TEST(JsonSerializerTests, WriteTest2) {
+    writeTest2();
+}
+
+TEST(JsonSerializerTests, WriteTest3) {
+    writeTest3();
 }
