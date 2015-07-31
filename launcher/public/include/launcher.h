@@ -28,8 +28,11 @@
 #define CELIX_LAUNCHER_H
 
 #include <stdio.h>
+#include "framework.h"
 
 int celixLauncher_launch(const char *configFile);
 int celixLauncher_launchWithStream(FILE *config);
+void celixLauncher_waitForShutdown(void);
+struct framework *celixLauncher_getFramework(void);
 
 #endif //CELIX_LAUNCHER_H

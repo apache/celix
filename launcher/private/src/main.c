@@ -55,6 +55,7 @@ int main(int argc, char *argv[]) {
     }
 
     celixLauncher_launch(config_file);
+    celixLauncher_waitForShutdown();
 }
 
 static void show_usage(char* prog_name) {

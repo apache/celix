@@ -40,6 +40,8 @@
 static void launcher_shutdown(int signal);
 
 static struct framework * framework;
+static properties_pt config;
+
 #ifdef WITH_APR
 static apr_pool_t *memoryPool;
 #endif
@@ -60,7 +62,7 @@ int celixLauncher_launch(const char *configFile) {
 int celixLauncher_launchWithStream(FILE *stream) {
     int status = 0;
 
-    properties_pt config = properties_loadWithStream(stream);
+    config = properties_loadWithStream(stream);
     fclose(stream);
     // Make sure we've read it and that nothing went wrong with the file access...
     if (config == NULL) {
@@ -154,10 +156,6 @@ int celixLauncher_launchWithStream(FILE *stream) {
                 }
 
                 arrayList_destroy(installed);
-
-                framework_waitForStop(framework);
-                framework_destroy(framework);
-                properties_destroy(config);
             }
         }
 
@@ -177,6 +175,17 @@ int celixLauncher_launchWithStream(FILE *stream) {
     }
 
     return status;
+}
+
+void celixLauncher_waitForShutdown(void) {
+    framework_waitForStop(framework);
+    framework_destroy(framework);
+    properties_destroy(config);
+}
+
+
+struct framework *celixLauncher_getFramework(void) {
+    return framework;
 }
 
 static void launcher_shutdown(int signal) {
