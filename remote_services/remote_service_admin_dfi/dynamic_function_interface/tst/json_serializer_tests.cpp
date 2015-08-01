@@ -49,9 +49,9 @@ struct example1 {
 static void check_example1(void *data) {
     struct example1 *ex = (struct example1 *)data;
     CHECK_EQUAL(1.0, ex->a);
-    CHECK_EQUAL(22, ex->b);
-    CHECK_EQUAL(32, ex->c);
-    CHECK_EQUAL(42, ex->d);
+    LONGS_EQUAL(22, ex->b);
+    LONGS_EQUAL(32, ex->c);
+    LONGS_EQUAL(42, ex->d);
     CHECK_EQUAL(4.4f, ex->e);
 }
 
@@ -79,8 +79,8 @@ struct example2 {
 static void check_example2(void *data) {
     struct example2 *ex = (struct example2 *)data;
     CHECK_EQUAL(42, ex->byte);
-    CHECK_EQUAL(232, ex->long1);
-    CHECK_EQUAL(242, ex->long2);
+    LONGS_EQUAL(232, ex->long1);
+    LONGS_EQUAL(242, ex->long2);
     CHECK_EQUAL(4.2, ex->double1);
     CHECK_EQUAL(3.2f, ex->float1);
     CHECK_EQUAL(4.4, ex->double2);

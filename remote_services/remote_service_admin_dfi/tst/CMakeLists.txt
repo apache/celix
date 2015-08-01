@@ -12,7 +12,7 @@ include_directories(
 #if (FRAMEWORK_TESTS) TODO
     SET(CMAKE_SKIP_BUILD_RPATH  FALSE) #TODO needed?
     SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE) #TODO needed?
-    SET(CMAKE_INSTALL_RPATH "${PROJECT_BINARY_DIR}/framework:${PROJECT_BINARY_DIR}/utils")
+    SET(CMAKE_INSTALL_RPATH "${PROJECT_BINARY_DIR}/framework" "${PROJECT_BINARY_DIR}/utils")
 
 	add_executable(rsa_dfi_tests
 	    ${PROJECT_SOURCE_DIR}/launcher/private/src/launcher.c
