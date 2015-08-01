@@ -37,8 +37,6 @@
 #include "framework.h"
 #include "linked_list_iterator.h"
 
-static void launcher_shutdown(int signal);
-
 static struct framework * framework;
 static properties_pt config;
 
@@ -76,8 +74,6 @@ int celixLauncher_launchWithStream(FILE *stream) {
     apr_status_t rv;
     apr_status_t s;
 #endif
-
-    (void) signal(SIGINT, launcher_shutdown);
 
     // Before doing anything else, let's setup Curl
     curl_global_init(CURL_GLOBAL_NOTHING);
@@ -193,10 +189,3 @@ struct framework *celixLauncher_getFramework(void) {
     return framework;
 }
 
-static void launcher_shutdown(int signal) {
-    celixLauncher_stop();
-//	if (framework_waitForStop(framework) != CELIX_SUCCESS) {
-//		celix_log("Error waiting for stop.");
-//	}
-//	framework_destroy(framework);
-}

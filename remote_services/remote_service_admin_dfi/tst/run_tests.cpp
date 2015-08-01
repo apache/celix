@@ -22,8 +22,5 @@ extern "C" {
 }
 
 int main(int argc, char** argv) {
-    startCelix();
-    int rc = RUN_ALL_TESTS(argc, argv);
-    stopCelix();
-    return rc;
+    return RUN_ALL_TESTS(argc, argv);
 }

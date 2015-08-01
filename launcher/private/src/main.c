@@ -27,13 +27,18 @@
 #include <string.h>
 #include <curl/curl.h>
 #include <signal.h>
+#include <libgen.h>
 #include "launcher.h"
 
 static void show_usage(char* prog_name);
+static void shutdownCelix(int signal);
 
 #define DEFAULT_CONFIG_FILE "config.properties"
 
 int main(int argc, char *argv[]) {
+
+    (void) signal(SIGINT, shutdownCelix);
+
     // Perform some minimal command-line option parsing...
     char *opt = NULL;
     if (argc > 1) {
@@ -61,3 +66,8 @@ int main(int argc, char *argv[]) {
 static void show_usage(char* prog_name) {
     printf("Usage:\n  %s [path/to/config.properties]\n\n", basename(prog_name));
 }
+
+static void shutdownCelix(int signal) {
+    celixLauncher_stop();
+}
+
