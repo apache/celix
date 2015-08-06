@@ -30,10 +30,12 @@
 #include <stdio.h>
 #include "framework.h"
 
-int celixLauncher_launch(const char *configFile);
-int celixLauncher_launchWithStream(FILE *config);
-void celixLauncher_stop(void);
-void celixLauncher_waitForShutdown(void);
-struct framework *celixLauncher_getFramework(void);
+int celixLauncher_launch(const char *configFile, framework_pt *framework);
+int celixLauncher_launchWithStream(FILE *config, framework_pt *framework);
+
+void celixLauncher_stop(framework_pt framework);
+void celixLauncher_destroy(framework_pt framework);
+
+void celixLauncher_waitForShutdown(framework_pt framework);
 
 #endif //CELIX_LAUNCHER_H

@@ -17,16 +17,19 @@ extern "C" {
 #include "remote_service_admin.h"
 
 
+framework_pt framework = NULL;
 bundle_context_pt context = NULL;
 service_reference_pt rsaRef = NULL;
 remote_service_admin_service_pt rsa = NULL;
 
-static void setupContextAndRsa(void) {
+static void setupFm(void) {
     int rc = 0;
-    struct framework *fm = celixLauncher_getFramework();
+
+    rc = celixLauncher_launch("config.properties", &framework);
+    CHECK_EQUAL(CELIX_SUCCESS, rc);
 
     bundle_pt bundle = NULL;
-    rc = framework_getFrameworkBundle(fm, &bundle);
+    rc = framework_getFrameworkBundle(framework, &bundle);
     CHECK_EQUAL(CELIX_SUCCESS, rc);
 
     rc = bundle_getContext(bundle, &context);
@@ -39,13 +42,19 @@ static void setupContextAndRsa(void) {
     CHECK_EQUAL(CELIX_SUCCESS, rc);
 }
 
-static void teardownContextAndRsa(void) {
+static void teardownFm(void) {
     int rc = 0;
     rc = bundleContext_ungetService(context, rsaRef, NULL);
     CHECK_EQUAL(CELIX_SUCCESS, rc);
+
+    celixLauncher_stop(framework);
+    celixLauncher_waitForShutdown(framework);
+    celixLauncher_destroy(framework);
+
     rsaRef = NULL;
     rsa = NULL;
     context = NULL;
+    framework = NULL;
 }
 
 static void testInfo(void) {
@@ -77,14 +86,11 @@ static void testImportService(void) {
 
 TEST_GROUP(RsaDfiTests) {
     void setup() {
-        celixLauncher_launch("config.properties");
-        setupContextAndRsa();
+        setupFm();
     }
 
     void teardown() {
-        teardownContextAndRsa();
-        celixLauncher_stop();
-        celixLauncher_waitForShutdown();
+        teardownFm();
     }
 };
 

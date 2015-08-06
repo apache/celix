@@ -335,6 +335,8 @@ celix_status_t framework_destroy(framework_pt framework) {
 	celixThreadMutex_destroy(&framework->mutex);
 	celixThreadCondition_destroy(&framework->condition);
 
+    properties_destroy(framework->configurationMap);
+
 	free(framework);
 
 	return status;

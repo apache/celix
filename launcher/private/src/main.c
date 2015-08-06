@@ -31,13 +31,13 @@
 #include "launcher.h"
 
 static void show_usage(char* prog_name);
-static void shutdownCelix(int signal);
+static void shutdown_framework(int signal);
 
 #define DEFAULT_CONFIG_FILE "config.properties"
 
-int main(int argc, char *argv[]) {
+static framework_pt framework = NULL;
 
-    (void) signal(SIGINT, shutdownCelix);
+int main(int argc, char *argv[]) {
 
     // Perform some minimal command-line option parsing...
     char *opt = NULL;
@@ -59,15 +59,21 @@ int main(int argc, char *argv[]) {
         config_file = DEFAULT_CONFIG_FILE;
     }
 
-    celixLauncher_launch(config_file);
-    celixLauncher_waitForShutdown();
+
+    // Set signal handler
+    (void) signal(SIGINT, shutdown_framework);
+
+    celixLauncher_launch(config_file, &framework);
+    celixLauncher_waitForShutdown(framework);
+    celixLauncher_destroy(framework);
 }
 
 static void show_usage(char* prog_name) {
     printf("Usage:\n  %s [path/to/config.properties]\n\n", basename(prog_name));
 }
 
-static void shutdownCelix(int signal) {
-    celixLauncher_stop();
+static void shutdown_framework(int signal) {
+    if (framework != NULL) {
+        celixLauncher_stop(framework); //NOTE main thread will destroy
+    }
 }
-

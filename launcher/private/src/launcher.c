@@ -32,23 +32,22 @@
 #include <libgen.h>
 #include <signal.h>
 
+#ifndef CELIX_NO_CURLINIT
 #include <curl/curl.h>
+#endif
 
 #include "framework.h"
 #include "linked_list_iterator.h"
-
-static struct framework * framework;
-static properties_pt config;
 
 #ifdef WITH_APR
 static apr_pool_t *memoryPool;
 #endif
 
-int celixLauncher_launch(const char *configFile) {
+int celixLauncher_launch(const char *configFile, framework_pt *framework) {
     int status = 0;
     FILE *config = fopen(configFile, "r");
     if (config != NULL) {
-        status = celixLauncher_launchWithStream(config);
+        status = celixLauncher_launchWithStream(config, framework);
     } else {
         fprintf(stderr, "Error: invalid or non-existing configuration file: '%s'.", configFile);
         perror("");
@@ -57,10 +56,10 @@ int celixLauncher_launch(const char *configFile) {
     return status;
 }
 
-int celixLauncher_launchWithStream(FILE *stream) {
+int celixLauncher_launchWithStream(FILE *stream, framework_pt *framework) {
     int status = 0;
 
-    config = properties_loadWithStream(stream);
+    properties_pt config = properties_loadWithStream(stream);
     fclose(stream);
     // Make sure we've read it and that nothing went wrong with the file access...
     if (config == NULL) {
@@ -69,14 +68,16 @@ int celixLauncher_launchWithStream(FILE *stream) {
         status = 1;
     }
 
-    // Set signal handler
+
 #ifdef WITH_APR
     apr_status_t rv;
     apr_status_t s;
 #endif
 
+#ifndef CELIX_NO_CURLINIT
     // Before doing anything else, let's setup Curl
     curl_global_init(CURL_GLOBAL_NOTHING);
+#endif
 
 #ifdef WITH_APR
 	rv = apr_initialize();
@@ -93,19 +94,18 @@ int celixLauncher_launchWithStream(FILE *stream) {
 
     if (status == 0) {
         char *autoStart = properties_get(config, "cosgi.auto.start.1");
-        framework = NULL;
         celix_status_t status;
 #ifdef WITH_APR
-        status = framework_create(&framework, memoryPool, config);
+        status = framework_create(framework, memoryPool, config);
 #else
-        status = framework_create(&framework, config);
+        status = framework_create(framework, config);
 #endif
         bundle_pt fwBundle = NULL;
         if (status == CELIX_SUCCESS) {
-            status = fw_init(framework);
+            status = fw_init(*framework);
             if (status == CELIX_SUCCESS) {
                 // Start the system bundle
-                framework_getFrameworkBundle(framework, &fwBundle);
+                framework_getFrameworkBundle(*framework, &fwBundle);
                 bundle_start(fwBundle);
 
                 char delims[] = " ";
@@ -128,7 +128,7 @@ int celixLauncher_launchWithStream(FILE *stream) {
                 // First install all bundles
                 // Afterwards start them
                 arrayList_create(&installed);
-                framework_getFrameworkBundle(framework, &bundle);
+                framework_getFrameworkBundle(*framework, &bundle);
                 bundle_getContext(bundle, &context);
                 iter = linkedListIterator_create(bundles, 0);
                 while (linkedListIterator_hasNext(iter)) {
@@ -164,8 +164,11 @@ int celixLauncher_launchWithStream(FILE *stream) {
 	apr_terminate();
 #endif
 
+
+#ifndef CELIX_NO_CURLINIT
         // Cleanup Curl
         curl_global_cleanup();
+#endif
 
         printf("Launcher: Exit\n");
     }
@@ -173,19 +176,16 @@ int celixLauncher_launchWithStream(FILE *stream) {
     return status;
 }
 
-void celixLauncher_waitForShutdown(void) {
+void celixLauncher_waitForShutdown(framework_pt framework) {
     framework_waitForStop(framework);
-    framework_destroy(framework);
-    properties_destroy(config);
 }
 
-void celixLauncher_stop(void) {
+void celixLauncher_destroy(framework_pt framework) {
+    framework_destroy(framework);
+}
+
+void celixLauncher_stop(framework_pt framework) {
     bundle_pt fwBundle = NULL;
     framework_getFrameworkBundle(framework, &fwBundle);
     bundle_stop(fwBundle);
 }
-
-struct framework *celixLauncher_getFramework(void) {
-    return framework;
-}
-
