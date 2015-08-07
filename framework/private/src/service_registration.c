@@ -146,13 +146,14 @@ celix_status_t serviceRegistration_unregister(service_registration_pt registrati
 }
 
 celix_status_t serviceRegistration_getService(service_registration_pt registration, bundle_pt bundle, void **service) {
+	int status = CELIX_SUCCESS;
     if (registration->isServiceFactory) {
         service_factory_pt factory = registration->serviceFactory;
-        factory->getService(registration->serviceFactory, bundle, registration, service);
+        status = factory->getService(factory->factory, bundle, registration, service);
     } else {
         (*service) = registration->svcObj;
     }
-    return CELIX_SUCCESS;
+    return status;
 }
 
 celix_status_t serviceRegistration_ungetService(service_registration_pt registration, bundle_pt bundle, void **service) {

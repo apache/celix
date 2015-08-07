@@ -31,7 +31,7 @@ target_link_libraries(dfi ${FFI_LIBRARIES} ${JANSSON_LIBRARY})
 
 
 #if (FRAMEWORK_TESTS) TODO
-	add_executable(dfi_tests
+	add_executable(test_dfi
 	    tst/dyn_type_tests.cpp
 	    tst/dyn_function_tests.cpp
 	    tst/dyn_closure_tests.cpp
@@ -39,14 +39,14 @@ target_link_libraries(dfi ${FFI_LIBRARIES} ${JANSSON_LIBRARY})
 	    tst/json_serializer_tests.cpp
 	    tst/run_tests.cpp
 	)
-	target_link_libraries(dfi_tests dfi ${FFI_LIBRARIES} ${CPPUTEST_LIBRARY} ${JANSSON_LIBRARY}) 
+	target_link_libraries(test_dfi dfi ${FFI_LIBRARIES} ${CPPUTEST_LIBRARY} ${JANSSON_LIBRARY})
 
 	add_custom_target(copy-input 
 	    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_LIST_DIR}/schemas schemas
 	    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_LIST_DIR}/descriptors descriptors
 	)
-	add_dependencies(dfi_tests copy-input)
+	add_dependencies(test_dfi copy-input)
 
-    add_test(NAME run_dfi_tests COMMAND dfi_tests)
-	SETUP_TARGET_FOR_COVERAGE(dfi_tests_cov dfi_tests ${CMAKE_BINARY_DIR}/coverage/dfi)
+    add_test(NAME run_test_dfi COMMAND test_dfi)
+	SETUP_TARGET_FOR_COVERAGE(test_dfi_cov test_dfi ${CMAKE_BINARY_DIR}/coverage/dfi)
 #endif()

@@ -29,8 +29,8 @@
 #include "service_registration.h"
 
 #include "remote_service_admin_http_impl.h"
-#include "export_registration_impl.h"
-#include "import_registration_impl.h"
+#include "export_registration_dfi.h"
+#include "import_registration_dfi.h"
 
 struct activator {
 	remote_service_admin_pt admin;

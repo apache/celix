@@ -12,6 +12,13 @@
 
 DFI_SETUP_LOG(dynInterface);
 
+struct _dyn_interface_type {
+    struct namvals_head header;
+    struct namvals_head annotations;
+    struct types_head types;
+    struct methods_head methods;
+};
+
 const int OK = 0;
 const int ERROR = 1;
 
@@ -368,4 +375,19 @@ static int dynInterface_getEntryForHead(struct namvals_head *head, const char *n
         LOG_WARNING("Cannot find '%s' in list", name);
     }
     return status;
+}
+
+int dynInterface_methods(dyn_interface_type *intf, struct methods_head **list) {
+    int status = OK;
+    *list = &intf->methods;
+    return status;
+}
+
+int dynInterface_nrOfMethods(dyn_interface_type *intf) {
+    int count = 0;
+    struct method_entry *entry = NULL;
+    TAILQ_FOREACH(entry, &intf->methods, entries) {
+        count +=1;
+    }
+    return count;
 }

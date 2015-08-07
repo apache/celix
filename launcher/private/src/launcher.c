@@ -113,7 +113,6 @@ int celixLauncher_launchWithStream(FILE *stream, framework_pt *framework) {
                 char *save_ptr = NULL;
                 linked_list_pt bundles;
                 array_list_pt installed = NULL;
-                bundle_pt bundle = NULL;
                 bundle_context_pt context = NULL;
                 linked_list_iterator_pt iter = NULL;
                 unsigned int i;
@@ -128,8 +127,7 @@ int celixLauncher_launchWithStream(FILE *stream, framework_pt *framework) {
                 // First install all bundles
                 // Afterwards start them
                 arrayList_create(&installed);
-                framework_getFrameworkBundle(*framework, &bundle);
-                bundle_getContext(bundle, &context);
+                bundle_getContext(fwBundle, &context);
                 iter = linkedListIterator_create(bundles, 0);
                 while (linkedListIterator_hasNext(iter)) {
                     bundle_pt current = NULL;
@@ -159,18 +157,7 @@ int celixLauncher_launchWithStream(FILE *stream, framework_pt *framework) {
             printf("Problem creating framework\n");
         }
 
-#ifdef WITH_APR
-	apr_pool_destroy(memoryPool);
-	apr_terminate();
-#endif
-
-
-#ifndef CELIX_NO_CURLINIT
-        // Cleanup Curl
-        curl_global_cleanup();
-#endif
-
-        printf("Launcher: Exit\n");
+        printf("Launcher: Framework Started\n");
     }
 
     return status;
@@ -182,6 +169,18 @@ void celixLauncher_waitForShutdown(framework_pt framework) {
 
 void celixLauncher_destroy(framework_pt framework) {
     framework_destroy(framework);
+
+    #ifdef WITH_APR
+        apr_pool_destroy(memoryPool);
+        apr_terminate();
+    #endif
+
+    #ifndef CELIX_NO_CURLINIT
+        // Cleanup Curl
+        curl_global_cleanup();
+    #endif
+
+    printf("Launcher: Exit\n");
 }
 
 void celixLauncher_stop(framework_pt framework) {

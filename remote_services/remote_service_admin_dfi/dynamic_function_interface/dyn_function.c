@@ -15,8 +15,6 @@
 #include "dyn_type.h"
 #include "dfi_log_util.h"
 
-DFI_SETUP_LOG(dynFunction)
-
 struct _dyn_function_type {
     char *name;
     struct types_head *refTypes; //NOTE not owned
@@ -44,6 +42,8 @@ static const int OK = 0;
 static const int MEM_ERROR = 1;
 static const int PARSE_ERROR = 2;
 static const int ERROR = 2;
+
+DFI_SETUP_LOG(dynFunction)
 
 static int dynFunction_initCif(dyn_function_type *dynFunc);
 static int dynFunction_parseDescriptor(dyn_function_type *dynFunc, FILE *descriptor);
@@ -238,6 +238,33 @@ int dynFunction_getFnPointer(dyn_function_type *dynFunc, void (**fn)(void)) {
         status = 1;
     }
     return status;
+}
+
+int dynFunction_nrOfArguments(dyn_function_type *dynFunc) {
+    int count = 0;
+    dyn_function_argument_type *entry = NULL;
+    TAILQ_FOREACH(entry, &dynFunc->arguments, entries) {
+        count += 1;
+    }
+    return count;
+}
+
+dyn_type *dynFunction_argumentTypeForIndex(dyn_function_type *dynFunc, int argumentNr) {
+    dyn_type *result = NULL;
+    int index = 0;
+    dyn_function_argument_type *entry = NULL;
+    TAILQ_FOREACH(entry, &dynFunc->arguments, entries) {
+        if (index == argumentNr) {
+            result = entry->type;
+            break;
+        }
+        index +=1;
+    }
+    return result;
+}
+
+dyn_type * dynFunction_returnType(dyn_function_type *dynFunction) {
+    return dynFunction->funcReturn;
 }
 
 

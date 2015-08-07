@@ -9,7 +9,7 @@
 #include <stdint.h>
 #include <string.h>
 
-static int jsonSerializer_createObject(dyn_type *type, json_t *object, void **result);
+static int jsonSerializer_createType(dyn_type *type, json_t *object, void **result);
 static int jsonSerializer_parseObject(dyn_type *type, json_t *object, void *inst);
 static int jsonSerializer_parseObjectMember(dyn_type *type, const char *name, json_t *val, void *inst);
 static int jsonSerializer_parseSequence(dyn_type *seq, json_t *array, void *seqLoc);
@@ -34,12 +34,7 @@ int jsonSerializer_deserialize(dyn_type *type, const char *input, void **result)
     json_t *root = json_loads(input, JSON_DECODE_ANY, &error);
 
     if (root != NULL) {
-        if (json_is_object(root)) {
-            status = jsonSerializer_createObject(type, root, result);
-        } else {
-            status = ERROR;
-            LOG_ERROR("Error expected root element to be an object");
-        }
+        status = jsonSerializer_deserializeJson(type, root, result);
         json_decref(root);
     } else {
         status = ERROR;
@@ -49,8 +44,12 @@ int jsonSerializer_deserialize(dyn_type *type, const char *input, void **result)
     return status;
 }
 
-static int jsonSerializer_createObject(dyn_type *type, json_t *object, void **result) {
-    assert(object != NULL);
+int jsonSerializer_deserializeJson(dyn_type *type, json_t *input, void **out) {
+    return jsonSerializer_createType(type, input, out);
+}
+
+static int jsonSerializer_createType(dyn_type *type, json_t *val, void **result) {
+    assert(val != NULL);
     int status = OK;
 
     void *inst = NULL;
@@ -58,7 +57,7 @@ static int jsonSerializer_createObject(dyn_type *type, json_t *object, void **re
 
     if (status == OK) {
         assert(inst != NULL);
-        status = jsonSerializer_parseObject(type, object, inst);
+        status = jsonSerializer_parseAny(type, inst, val);
 
         if (status != OK) {
             dynType_free(type, inst);
@@ -189,7 +188,7 @@ static int jsonSerializer_parseAny(dyn_type *type, void *loc, json_t *val) {
         case '*' :
             status = dynType_typedPointer_getTypedType(type, &subType);
             if (status == OK) {
-                status = jsonSerializer_createObject(subType, val, (void **)loc);
+                status = jsonSerializer_createType(subType, val, (void **) loc);
             }
             break;
         case 'P' :

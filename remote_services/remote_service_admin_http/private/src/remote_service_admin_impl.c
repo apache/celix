@@ -679,57 +679,74 @@ celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_pt 
 
 
 celix_status_t remoteServiceAdmin_send(remote_service_admin_pt rsa, endpoint_description_pt endpointDescription, char *request, char **reply, int* replyStatus) {
+	celix_status_t status = CELIX_SUCCESS;
 
-    struct post post;
-    post.readptr = request;
-    post.size = strlen(request);
+	struct post post;
+	struct get get;
+	char url[256];
+	if (request != NULL) {
 
-    struct get get;
-    get.size = 0;
-    get.writeptr = malloc(1);
 
-    char *serviceUrl = properties_get(endpointDescription->properties, (char*) ENDPOINT_URL);
-    char url[256];
-    snprintf(url, 256, "%s", serviceUrl);
+		post.readptr = request;
+		post.size = strlen(request);
 
-    // assume the default timeout
-    int timeout = DEFAULT_TIMEOUT;
+		get.size = 0;
+		get.writeptr = malloc(1);
 
-    char *timeoutStr = NULL;
-    // Check if the endpoint has a timeout, if so, use it.
-	timeoutStr = properties_get(endpointDescription->properties, (char*) OSGI_RSA_REMOTE_PROXY_TIMEOUT);
-    if (timeoutStr == NULL) {
-    	// If not, get the global variable and use that one.
-    	bundleContext_getProperty(rsa->context, (char*) OSGI_RSA_REMOTE_PROXY_TIMEOUT, &timeoutStr);
-    }
+		char *serviceUrl = properties_get(endpointDescription->properties, (char *) ENDPOINT_URL);
+		if (serviceUrl != NULL) {
+			snprintf(url, 256, "%s", serviceUrl);
+		} else {
+			status = CELIX_BUNDLE_EXCEPTION;
+			logHelper_log(rsa->loghelper, OSGI_LOGSERVICE_INFO, "Endpoint Description does not contain mandatory property '%s'", ENDPOINT_URL);
+		}
+	} else {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
 
-    // Update timeout if a property is used to set it.
-    if (timeoutStr != NULL) {
-    	timeout = atoi(timeoutStr);
-    }
+	// assume the default timeout
+	int timeout = DEFAULT_TIMEOUT;
 
-    celix_status_t status = CELIX_SUCCESS;
-    CURL *curl;
-    CURLcode res;
+	if (status == CELIX_SUCCESS) {
+		char *timeoutStr = NULL;
 
-    curl = curl_easy_init();
-    if(!curl) {
-        status = CELIX_ILLEGAL_STATE;
-    } else {
-    	curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
-        curl_easy_setopt(curl, CURLOPT_URL, &url[0]);
-        curl_easy_setopt(curl, CURLOPT_POST, 1L);
-        curl_easy_setopt(curl, CURLOPT_READFUNCTION, remoteServiceAdmin_readCallback);
-        curl_easy_setopt(curl, CURLOPT_READDATA, &post);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, remoteServiceAdmin_write);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&get);
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (curl_off_t)post.size);
-        res = curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
+		// Check if the endpoint has a timeout, if so, use it.
+		timeoutStr = properties_get(endpointDescription->properties, (char *) OSGI_RSA_REMOTE_PROXY_TIMEOUT);
+		if (timeoutStr == NULL) {
+			// If not, get the global variable and use that one.
+			status = bundleContext_getProperty(rsa->context, (char *) OSGI_RSA_REMOTE_PROXY_TIMEOUT, &timeoutStr);
+		}
 
-        *reply = get.writeptr;
-        *replyStatus = res;
-    }
+		// Update timeout if a property is used to set it.
+		if (timeoutStr != NULL) {
+			timeout = atoi(timeoutStr);
+		}
+	}
+
+	if (status == CELIX_SUCCESS) {
+
+		CURL *curl;
+		CURLcode res;
+
+		curl = curl_easy_init();
+		if (!curl) {
+			status = CELIX_ILLEGAL_STATE;
+		} else {
+			curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
+			curl_easy_setopt(curl, CURLOPT_URL, &url[0]);
+			curl_easy_setopt(curl, CURLOPT_POST, 1L);
+			curl_easy_setopt(curl, CURLOPT_READFUNCTION, remoteServiceAdmin_readCallback);
+			curl_easy_setopt(curl, CURLOPT_READDATA, &post);
+			curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, remoteServiceAdmin_write);
+			curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &get);
+			curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (curl_off_t) post.size);
+			res = curl_easy_perform(curl);
+			curl_easy_cleanup(curl);
+
+			*reply = get.writeptr;
+			*replyStatus = res;
+		}
+	}
 
     return status;
 }
@@ -763,28 +780,4 @@ static size_t remoteServiceAdmin_write(void *contents, size_t size, size_t nmemb
   mem->writeptr[mem->size] = 0;
 
   return realsize;
-}
-
-
-celix_status_t exportReference_getExportedEndpoint(export_reference_pt reference, endpoint_description_pt *endpoint) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	*endpoint = reference->endpoint;
-
-	return status;
-}
-
-celix_status_t exportReference_getExportedService(export_reference_pt reference) {
-	celix_status_t status = CELIX_SUCCESS;
-	return status;
-}
-
-celix_status_t importReference_getImportedEndpoint(import_reference_pt reference) {
-	celix_status_t status = CELIX_SUCCESS;
-	return status;
-}
-
-celix_status_t importReference_getImportedService(import_reference_pt reference) {
-	celix_status_t status = CELIX_SUCCESS;
-	return status;
 }

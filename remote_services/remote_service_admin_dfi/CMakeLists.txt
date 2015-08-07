@@ -22,27 +22,38 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
 
     add_subdirectory(dynamic_function_interface)
 
+    include_directories(private/include)
+
     include_directories(${FFI_INCLUDE_DIRS})
     include_directories(${CURL_INCLUDE_DIRS})
     include_directories(${JANSSON_INCLUDE_DIRS})
+
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+
     include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
+
     include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/private/include")
     include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include")
+
     include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
-    include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/include")
     include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin_http/private/include")
+
     include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
+    include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin_dfi/dynamic_function_interface")
+    include_directories("${PROJECT_SOURCE_DIR}/remote_services/examples/calculator_service/public/include")
     
     SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_remote_service_admin_dfi")
     SET(BUNDLE_VERSION "0.0.1")
     SET_HEADERS("Bundle-Name: Apache Celix Remote Service Admin HTTP for dynamic function interface")
     
     bundle(remote_service_admin_dfi SOURCES
-        private/src/remote_service_admin_impl
-        private/src/remote_service_admin_activator
-        ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/export_registration_impl
-        ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/import_registration_impl
+        private/src/remote_service_admin_dfi.c
+        private/src/remote_service_admin_activator.c
+        private/src/export_registration_dfi.c
+        private/src/import_registration_dfi.c
+
+        ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c
+
         ${PROJECT_SOURCE_DIR}/remote_services/utils/private/src/civetweb.c
         ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
     )

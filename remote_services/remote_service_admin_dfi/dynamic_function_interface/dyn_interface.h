@@ -29,18 +29,11 @@ TAILQ_HEAD(methods_head, method_entry);
 
 typedef struct _dyn_interface_type dyn_interface_type;
 
-struct _dyn_interface_type {
-    struct namvals_head header;
-    struct namvals_head annotations;
-    struct types_head types;
-    struct methods_head methods;
-};
 
 struct method_entry {
     int index;
     char *id;
     char *name;
-
     dyn_function_type *dynFunc;
 
     TAILQ_ENTRY(method_entry) entries; 
@@ -53,6 +46,8 @@ int dynInterface_getName(dyn_interface_type *intf, char **name);
 int dynInterface_getVersion(dyn_interface_type *intf, char **version);
 int dynInterface_getHeaderEntry(dyn_interface_type *intf, const char *name, char **value);
 int dynInterface_getAnnotationEntry(dyn_interface_type *intf, const char *name, char **value);
+int dynInterface_methods(dyn_interface_type *intf, struct methods_head **list);
+int dynInterface_nrOfMethods(dyn_interface_type *intf);
 
 
 #endif

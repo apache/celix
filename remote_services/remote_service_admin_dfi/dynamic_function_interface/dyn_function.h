@@ -15,12 +15,15 @@
  */
 
 typedef struct _dyn_function_type dyn_function_type;
-typedef struct _dyn_closure_type dyn_closure_type;
 
 DFI_SETUP_LOG_HEADER(dynFunction);
 
 int dynFunction_parse(FILE *descriptorStream, struct types_head *refTypes, dyn_function_type **dynFunc);
 int dynFunction_parseWithStr(const char *descriptor, struct types_head *refTypes, dyn_function_type **dynFunc);
+
+int dynFunction_nrOfArguments(dyn_function_type *dynFunc);
+dyn_type *dynFunction_argumentTypeForIndex(dyn_function_type *dynFunc, int argumentNr);
+dyn_type * dynFunction_returnType(dyn_function_type *dynFunction);
 
 void dynFunction_destroy(dyn_function_type *dynFunc);
 int dynFunction_call(dyn_function_type *dynFunc, void(*fn)(void), void *returnValue, void **argValues);

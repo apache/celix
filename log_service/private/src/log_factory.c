@@ -72,7 +72,7 @@ celix_status_t logFactory_destroy(service_factory_pt *factory) {
 
 
 celix_status_t logFactory_getService(void *factory, bundle_pt bundle, service_registration_pt registration, void **service) {
-    log_service_factory_pt log_factory = ((service_factory_pt) factory)->factory;
+    log_service_factory_pt log_factory = factory;
     log_service_pt log_service = NULL;
     log_service_data_pt log_service_data = NULL;
 

@@ -96,6 +96,31 @@ extern "C" {
         CHECK_EQUAL(2.2, returnVal);
         dynFunction_destroy(dynFunc);
     }
+
+    static void test_access_functions(void) {
+        dyn_function_type *dynFunc = NULL;
+        int rc;
+        rc = dynFunction_parseWithStr("add(D{DD a b}*D)V", NULL, &dynFunc);
+
+        CHECK_EQUAL(0, rc);
+
+        int nrOfArgs = dynFunction_nrOfArguments(dynFunc);
+        CHECK_EQUAL(3, nrOfArgs);
+
+        dyn_type *arg1 = dynFunction_argumentTypeForIndex(dynFunc, 1);
+        CHECK(arg1 != NULL);
+        CHECK_EQUAL('{', (char) dynType_descriptorType(arg1));
+
+        dyn_type *nonExist = dynFunction_argumentTypeForIndex(dynFunc, 10);
+        CHECK(nonExist == NULL);
+
+        dyn_type *returnType = dynFunction_returnType(dynFunc);
+        CHECK_EQUAL('V', (char) dynType_descriptorType(returnType));
+
+        dynFunction_destroy(dynFunc);
+    }
+
+
 }
 
 TEST_GROUP(DynFunctionTests) {
@@ -112,4 +137,8 @@ TEST(DynFunctionTests, DynFuncTest1) {
 
 TEST(DynFunctionTests, DynFuncTest2) {
     test_example2();
+}
+
+TEST(DynFunctionTests, DynFuncAccTest) {
+    test_access_functions();
 }

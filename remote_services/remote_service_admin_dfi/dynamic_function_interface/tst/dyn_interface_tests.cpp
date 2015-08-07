@@ -57,7 +57,15 @@ extern "C" {
         status = dynInterface_getHeaderEntry(dynIntf, "nonExisting", &nonExist);
         CHECK(status != 0);
         CHECK(nonExist == NULL);
-        
+
+        struct methods_head *list = NULL;
+        status = dynInterface_methods(dynIntf, &list);
+        CHECK(status == 0);
+        CHECK(list != NULL);
+
+        int count = dynInterface_nrOfMethods(dynIntf);
+        CHECK_EQUAL(4, count);
+
         dynInterface_destroy(dynIntf);
     }
 

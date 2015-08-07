@@ -763,6 +763,8 @@ static ffi_type * dynType_ffiTypeFor(int c) {
             break;
         case 'P' :
             type = &ffi_type_pointer;
+        case 'V' :
+            type = &ffi_type_void;
             break;
     }
     return type;

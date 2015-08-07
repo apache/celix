@@ -29,13 +29,11 @@
 
 #include "endpoint_listener.h"
 #include "service_reference.h"
+#include "export_registration.h"
+#include "import_registration.h"
 
 #define OSGI_RSA_REMOTE_SERVICE_ADMIN "remote_service_admin"
 
-typedef struct export_reference *export_reference_pt;
-typedef struct export_registration *export_registration_pt;
-typedef struct import_reference *import_reference_pt;
-typedef struct import_registration *import_registration_pt;
 typedef struct import_registration_factory *import_registration_factory_pt;
 typedef struct remote_service_admin *remote_service_admin_pt;
 
