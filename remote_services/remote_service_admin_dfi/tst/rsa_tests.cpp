@@ -21,14 +21,14 @@ extern "C" {
 #include "calculator_service.h"
 
 
-    framework_pt framework = NULL;
-    bundle_context_pt context = NULL;
+    static framework_pt framework = NULL;
+    static bundle_context_pt context = NULL;
 
-    service_reference_pt rsaRef = NULL;
-    remote_service_admin_service_pt rsa = NULL;
+    static service_reference_pt rsaRef = NULL;
+    static remote_service_admin_service_pt rsa = NULL;
 
-    service_reference_pt calcRef = NULL;
-    calculator_service_pt calc = NULL;
+    static service_reference_pt calcRef = NULL;
+    static calculator_service_pt calc = NULL;
 
     static void setupFm(void) {
         int rc = 0;
@@ -50,7 +50,7 @@ extern "C" {
         rc = bundleContext_getService(context, rsaRef, (void **)&rsa);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
-        rc = bundleContext_getServiceReference(context, (char *)CALCULATOR_SERVICE, &calcRef);
+        rc = bundleContext_getServiceReference(context, (char *)CALCULATOR2_SERVICE, &calcRef);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
         CHECK(calcRef != NULL);
 
@@ -153,6 +153,20 @@ extern "C" {
         int rc = bundleContext_getBundles(context, &bundles);
         CHECK_EQUAL(0, rc);
         CHECK_EQUAL(3, arrayList_size(bundles)); //framework, rsa_dfi & calc
+
+        /*
+        int size = arrayList_size(bundles);
+        int i;
+        for (i = 0; i < size; i += 1) {
+            bundle_pt bundle = NULL;
+            module_pt module = NULL;
+            char *name = NULL;
+
+            bundle = (bundle_pt) arrayList_get(bundles, i);
+            bundle_getCurrentModule(bundle, &module);
+            module_getSymbolicName(module, &name);
+            printf("got bundle with symbolic name '%s'", name);
+        }*/
 
         arrayList_destroy(bundles);
     }

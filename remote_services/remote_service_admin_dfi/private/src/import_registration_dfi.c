@@ -1,4 +1,4 @@
-#include <malloc.h>
+#include <stdlib.h>
 #include "dyn_interface.h"
 #include "import_registration.h"
 #include "import_registration_dfi.h"
@@ -84,6 +84,16 @@ celix_status_t importRegistration_stop(import_registration_pt import) {
 
 celix_status_t importRegistration_getService(import_registration_pt import, bundle_pt bundle, service_registration_pt registration, void **out) {
     celix_status_t  status = CELIX_SUCCESS;
+
+    /*
+    module_pt module = NULL;
+    char *name = NULL;
+    bundle_getCurrentModule(bundle, &module);
+    module_getSymbolicName(module, &name);
+    printf("getting service for bundle '%s'\n", name);
+     */
+
+
     struct service_proxy *proxy = hashMap_get(import->proxies, bundle); //TODO lock
     if (proxy == NULL) {
         status = importRegistration_createProxy(import, bundle, &proxy);

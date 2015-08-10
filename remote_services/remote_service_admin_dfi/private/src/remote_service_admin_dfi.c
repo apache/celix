@@ -414,34 +414,8 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
         if (exports == NULL || provided == NULL || strcmp(exports, provided) != 0) {
             logHelper_log(admin->loghelper, OSGI_LOGSERVICE_WARNING, "RSA: No Services to export.");
             status = CELIX_ILLEGAL_STATE;
-        }
-    }
-
-    bundle_pt bundle = NULL;
-    if (status == CELIX_SUCCESS) {
-        logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA: Export service (%s)", provided);
-        status = serviceReference_getBundle(reference, &bundle);
-    }
-
-    char *descriptorFile = NULL;
-    if (status == CELIX_SUCCESS) {
-        char name[128];
-        snprintf(name, 128, "%s.descriptor", exports);
-        status = bundle_getEntry(bundle, name, &descriptorFile);
-    }
-
-    if (status == CELIX_SUCCESS) {
-        dyn_interface_type *intf = NULL;
-        if (descriptorFile != NULL) {
-            FILE *df = fopen(descriptorFile, "r");
-            if (df != NULL) {
-                int rc = dynInterface_parse(df, &intf);
-                fclose(df);
-                if (rc != 0) {
-                    status = CELIX_BUNDLE_EXCEPTION;
-                    logHelper_log(admin->loghelper, OSGI_LOGSERVICE_WARNING, "RSA: Error parsing service descriptor.");
-                }
-            }
+        } else {
+            logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA: Export service (%s)", provided);
         }
     }
 
@@ -452,6 +426,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 
         remoteServiceAdmin_createEndpointDescription(admin, reference, interface, &endpoint);
         printf("RSA: Creating export registration with endpoint pointer %p\n", endpoint);
+        //TOOD precheck if descriptor exists
         status = exportRegistration_create(admin->loghelper, reference, endpoint, admin->context, &registration);
         if (status == CELIX_SUCCESS) {
             status = exportRegistration_start(registration);
@@ -460,6 +435,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
             }
         }
     }
+
 
     if (status == CELIX_SUCCESS) {
         celixThreadMutex_lock(&admin->exportedServicesLock);

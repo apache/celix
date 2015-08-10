@@ -14,9 +14,9 @@
 
 #include "dfi_log_util.h"
 
-#if defined(BSD) || defined(__APPLE__) 
-#include "open_memstream.h"
-#include "fmemopen.h"
+#if defined(BSD) || defined(__APPLE__)
+#include "memstream/open_memstream.h"
+#include "memstream/fmemopen.h"
 #endif
 
 /* Description string

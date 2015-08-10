@@ -31,7 +31,7 @@ SET(BUNDLE_VERSION "0.0.1")
     private/include/calculator_impl.h
 
     FILES
-        org.apache.celix.calc.api.Calculator.descriptor
+        public/include/org.apache.celix.calc.api.Calculator2.descriptor
 )
 
 target_link_libraries(calculator celix_framework)
