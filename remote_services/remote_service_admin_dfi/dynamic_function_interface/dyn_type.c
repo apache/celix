@@ -5,11 +5,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <string.h>
-#include <ctype.h>
 #include <assert.h>
 #include <errno.h>
 
@@ -763,6 +758,7 @@ static ffi_type * dynType_ffiTypeFor(int c) {
             break;
         case 'P' :
             type = &ffi_type_pointer;
+            break;
         case 'V' :
             type = &ffi_type_void;
             break;
@@ -859,16 +855,6 @@ int dynType_text_allocAndInit(dyn_type *type, void *textLoc, const char *value) 
     }
     return status;
 }
-
-
-
-
-
-
-
-
-
-
 
 
 

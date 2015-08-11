@@ -4,6 +4,7 @@
 #include <CppUTest/TestHarness.h>
 #include <remote_constants.h>
 #include <constants.h>
+#include <tst_service.h>
 #include "CppUTest/CommandLineTestRunner.h"
 #include "../../examples/calculator_service/public/include/calculator_service.h"
 
@@ -74,30 +75,24 @@ extern "C" {
 
     static void test1(void) {
         int rc = 0;
-        /* TODO use tst_service for (which has a descriptor file of the calculator service)
         service_reference_pt ref = NULL;
-        calculator_service_pt calc = NULL;
+        tst_service_pt tst = NULL;
 
-        usleep(5000000); //needed to accept connection (firewall)
+        usleep(2000000); //TODO use tracker
 
-        bundleContext_getServiceReference(clientContext, (char *)CALCULATOR2_SERVICE, &ref);
+        bundleContext_getServiceReference(clientContext, (char *)TST_SERVICE_NAME, &ref);
         CHECK_EQUAL(0, rc);
         CHECK(ref != NULL);
 
-        //NOTE will not work. using framework context. need to use calc client context (lookup bundle / create own?)
-
-        bundleContext_getService(clientContext, ref, (void **)&calc);
+        bundleContext_getService(clientContext, ref, (void **)&tst);
         CHECK_EQUAL(0, rc);
-        CHECK(calc != NULL);
+        CHECK(tst != NULL);
 
-        double result = 0.0;
-        rc = calc->sqrt(calc->calculator, 4, &result);
+        rc = tst->test(tst->handle);
         CHECK_EQUAL(0, rc);
-        CHECK(result == 2.0);
 
         bundleContext_ungetService(clientContext, ref, NULL);
         bundleContext_ungetServiceReference(clientContext, ref);
-         */
     }
 
 }

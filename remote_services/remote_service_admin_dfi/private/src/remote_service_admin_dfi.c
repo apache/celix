@@ -27,16 +27,11 @@
 #include <stdlib.h>
 
 #include <arpa/inet.h>
-#include <sys/socket.h>
 #include <netdb.h>
 #include <ifaddrs.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
 #include <uuid/uuid.h>
 #include <curl/curl.h>
-#include <sys/queue.h>
 
 #include <jansson.h>
 
@@ -47,19 +42,7 @@
 #include "remote_service_admin.h"
 #include "remote_constants.h"
 #include "constants.h"
-#include "utils.h"
-#include "bundle_context.h"
-#include "bundle.h"
-#include "service_reference.h"
-#include "service_registration.h"
-#include "log_helper.h"
-#include "log_service.h"
-#include "celix_threads.h"
 #include "civetweb.h"
-#include "log_helper.h"
-#include "endpoint_description.h"
-#include "dyn_interface.h"
-#include "json_serializer.h"
 
 // defines how often the webserver is restarted (with an increased port number)
 #define MAX_NUMBER_OF_RESTARTS 	5
@@ -112,11 +95,9 @@ static const char *DEFAULT_IP = "127.0.0.1";
 static const unsigned int DEFAULT_TIMEOUT = 0;
 
 static int remoteServiceAdmin_callback(struct mg_connection *conn);
-
 static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, service_reference_pt reference, char *interface, endpoint_description_pt *description);
-
+static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description_pt endpointDescription, char *request, char **reply, int* replyStatus);
 static celix_status_t remoteServiceAdmin_getIpAdress(char* interface, char** ip);
-
 static size_t remoteServiceAdmin_readCallback(void *ptr, size_t size, size_t nmemb, void *userp);
 static size_t remoteServiceAdmin_write(void *contents, size_t size, size_t nmemb, void *userp);
 static void remoteServiceAdmin_log(remote_service_admin_pt admin, int level, const char *file, int line, const char *msg, ...);
@@ -296,7 +277,7 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin) {
 celix_status_t importRegistration_getFactory(import_registration_pt import, service_factory_pt *factory);
 
 static int remoteServiceAdmin_callback(struct mg_connection *conn) {
-    int result = 0; // zero means: let civetweb handle it further, any non-zero value means it is handled by us...
+    int result = 1; // zero means: let civetweb handle it further, any non-zero value means it is handled by us...
 
     const struct mg_request_info *request_info = mg_get_request_info(conn);
     if (request_info->uri != NULL) {
@@ -355,6 +336,7 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
                 if (response != NULL) {
                     mg_write(conn, data_response_headers, strlen(data_response_headers));
 //              mg_write(conn, no_content_response_headers, strlen(no_content_response_headers));
+                    printf("writing response '%s'\n", response);
                     mg_write(conn, response, strlen(response));
 //              mg_send_data(conn, response, strlen(response));
 //              mg_write_data(conn, response, strlen(response));
@@ -363,10 +345,11 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
                 } else {
                     mg_write(conn, no_content_response_headers, strlen(no_content_response_headers));
                 }
-                result = 0;
+                result = 1;
 
                 free(data);
             } else {
+                result = 0;
                 //TODO log warning
             }
 
@@ -597,6 +580,9 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, e
     if (objectClass != NULL) {
         status = importRegistration_create(admin->context, endpointDescription, objectClass, &import);
     }
+    if (status == CELIX_SUCCESS) {
+        importRegistration_setSendFn(import, remoteServiceAdmin_send, admin);
+    }
 
     if (status == CELIX_SUCCESS) {
         status = importRegistration_start(import);
@@ -657,8 +643,8 @@ celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_pt 
 }
 
 
-celix_status_t remoteServiceAdmin_send(remote_service_admin_pt rsa, endpoint_description_pt endpointDescription, char *request, char **reply, int* replyStatus) {
-
+static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description_pt endpointDescription, char *request, char **reply, int* replyStatus) {
+    remote_service_admin_pt  rsa = handle;
     struct post post;
     post.readptr = request;
     post.size = strlen(request);
@@ -703,11 +689,13 @@ celix_status_t remoteServiceAdmin_send(remote_service_admin_pt rsa, endpoint_des
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, remoteServiceAdmin_write);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&get);
         curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (curl_off_t)post.size);
+        logHelper_log(rsa->loghelper, OSGI_LOGSERVICE_DEBUG, "RSA: Performing curl post\n");
         res = curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
 
         *reply = get.writeptr;
         *replyStatus = res;
+
+        curl_easy_cleanup(curl);
     }
 
     return status;

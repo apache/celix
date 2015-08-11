@@ -7,7 +7,6 @@
 #include <remote_constants.h>
 #include "export_registration.h"
 #include "export_registration_dfi.h"
-#include "endpoint_description.h"
 
 struct export_reference {
     endpoint_description_pt endpoint; //owner
@@ -24,15 +23,17 @@ struct export_registration {
     bool closed;
 };
 
+typedef void (*gen_func_type)(void);
+
 struct generic_service_layout {
     void *handle;
-    void **methods;
+    gen_func_type methods[];
 };
 
 celix_status_t exportRegistration_create(log_helper_pt helper, service_reference_pt reference, endpoint_description_pt endpoint, bundle_context_pt context, export_registration_pt *out) {
     celix_status_t status = CELIX_SUCCESS;
 
-    export_registration_pt  reg = calloc(1, sizeof(*reg));
+    export_registration_pt reg = calloc(1, sizeof(*reg));
 
     if (reg == NULL) {
         status = CELIX_ENOMEM;
@@ -90,7 +91,7 @@ celix_status_t exportRegistration_create(log_helper_pt helper, service_reference
     return status;
 }
 
-celix_status_t exportRegistration_call(export_registration_pt export, char *data, int datalength, char **response, int *responseLength) {
+celix_status_t exportRegistration_call(export_registration_pt export, char *data, int datalength, char **responseOut, int *responseLength) {
     int status = CELIX_SUCCESS;
     //TODO lock/sema export
 
@@ -122,21 +123,26 @@ celix_status_t exportRegistration_call(export_registration_pt export, char *data
 
     if (method == NULL) {
         status = CELIX_ILLEGAL_STATE;
+    } else {
+        printf("RSA: found method '%s'\n", entry->id);
     }
 
     if (method != NULL) {
 
         int nrOfArgs = dynFunction_nrOfArguments(method->dynFunc);
-        void *args[nrOfArgs + 1]; //arg 0 is handle
-        dyn_type *returnType = dynFunction_returnType(method->dynFunc);
+        void *args[nrOfArgs]; //arg 0 is handle
 
         json_t *arguments = json_object_get(js_request, "a");
-        json_t *value;
-        size_t index;
+        json_t *value = NULL;
+        int index = -1;
         json_array_foreach(arguments, index, value) {
-            dyn_type *argType = dynFunction_argumentTypeForIndex(method->dynFunc, index + 1);
-            status = jsonSerializer_deserializeJson(argType, value, &(args[index + 1]));
-            index += 1;
+            int argNr = index + 1;
+            if (argNr < nrOfArgs -1 ) { //note skip last argument. this is the output
+                dyn_type *argType = dynFunction_argumentTypeForIndex(method->dynFunc, argNr);
+                status = jsonSerializer_deserializeJson(argType, value, &(args[argNr]));
+            } else {
+                status = CELIX_ILLEGAL_ARGUMENT;
+            }
             if (status != 0) {
                 break;
             }
@@ -144,21 +150,56 @@ celix_status_t exportRegistration_call(export_registration_pt export, char *data
 
         json_decref(js_request);
 
-        struct generic_service_layout *serv = export->service;
-        args[0] = serv->handle;
-        void *returnVal = NULL;
-        dynType_alloc(returnType, &returnVal);
-        dynFunction_call(method->dynFunc, serv->methods[method->index], returnVal, args);
 
-        status = jsonSerializer_serialize(returnType, returnVal, response);
-        if (returnVal != NULL) {
-            dynType_free(returnType, returnVal);
-        }
+        struct generic_service_layout *serv = export->service;
+        args[0] = &serv->handle;
+
+        //TODO assert last is output pointer (e.g. double pointer)
+        dyn_type *lastTypePtr = dynFunction_argumentTypeForIndex(method->dynFunc, nrOfArgs-1);
+        dyn_type *lastType = NULL;
+        dynType_typedPointer_getTypedType(lastTypePtr, &lastType);
+
+
+        void *out = NULL;
+        dynType_alloc(lastType, &out); //TODO, NOTE only for simple types or single pointer types.. TODO check
+        printf("out ptr is %p value is %f\n", out, *(double *)out);
+        args[nrOfArgs-1] = &out; //NOTE for simple type no double
+
+        printf("args is %p %p %p\n", args[0] , args[1], args[2]);
+        printf("args derefs is %p %p %p\n", *(void **)args[0], *(void **)args[1], *(void **)args[2]);
+
+        //TODO assert return type is native int
+        int returnVal = 0;
+        //printf("calling function '%s', with index %i, nrOfArgs %i and at loc %p\n", method->id, method->index, nrOfArgs, serv->methods[method->index]);
+        dynFunction_call(method->dynFunc, serv->methods[method->index], (void *)&returnVal, args);
+        //printf("done calling\n");
+        //printf("args is %p %p %p\n", args[0] , args[1], args[2]);
+        //printf("args derefs is %p %p %p\n", *(void **)args[0], *(void **)args[1], *(void **)args[2]);
+        //printf("out is %p and val is %f\n", out, *(double *)out);
+
+        json_t *responseJson = NULL;
+        //double r = 2.0;
+        //status = jsonSerializer_serializeJson(lastOutputType, &r /*out*/, &responseJson);
+        printf("out ptr is %p, value is %f\n", out, *(double *)out);
+        status = jsonSerializer_serializeJson(lastType, out, &responseJson);
+
+        json_t *payload = json_object();
+        json_object_set_new(payload, "r", responseJson);
+
+        char *response = json_dumps(payload, JSON_DECODE_ANY);
+        json_decref(payload);
+
+
+        *responseOut = response;
+        *responseLength = -1;
+
+        //TODO free args (created by jsonSerializer and dynType_alloc) (dynType_free)
 
         ///TODO add more status checks
     }
 
     //TODO unlock/sema export
+    printf("done export reg call\n");
     return status;
 }
 

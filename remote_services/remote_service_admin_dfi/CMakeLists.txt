@@ -44,7 +44,7 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
     
     SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_remote_service_admin_dfi")
     SET(BUNDLE_VERSION "0.0.1")
-    SET_HEADERS("Bundle-Name: Apache Celix Remote Service Admin HTTP for dynamic function interface")
+    SET_HEADERS("Bundle-Name: Apache Celix Remote Service Admin Dynamic Function Interface (DFI)")
     
     bundle(remote_service_admin_dfi SOURCES
         private/src/remote_service_admin_dfi.c

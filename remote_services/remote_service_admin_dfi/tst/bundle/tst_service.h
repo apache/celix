@@ -9,7 +9,7 @@
 
 struct tst_service {
     void *handle;
-    void (*test)(void *handle);
+    int (*test)(void *handle);
 };
 
 typedef struct tst_service *tst_service_pt;

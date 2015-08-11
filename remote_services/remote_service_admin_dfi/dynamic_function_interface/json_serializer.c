@@ -237,7 +237,7 @@ int jsonSerializer_serialize(dyn_type *type, void *input, char **output) {
     int status = OK;
 
     json_t *root = NULL;
-    status = jsonSerializer_writeAny(type, input, &root);
+    status = jsonSerializer_serializeJson(type, input, &root);
 
     if (status == OK) {
         *output = json_dumps(root, JSON_COMPACT);
@@ -245,6 +245,10 @@ int jsonSerializer_serialize(dyn_type *type, void *input, char **output) {
     }
 
     return status;
+}
+
+int jsonSerializer_serializeJson(dyn_type *type, void *input, json_t **out) {
+    return jsonSerializer_writeAny(type, input, out);
 }
 
 static int jsonSerializer_writeAny(dyn_type *type, void *input, json_t **out) {

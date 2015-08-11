@@ -63,9 +63,11 @@ int main(int argc, char *argv[]) {
     // Set signal handler
     (void) signal(SIGINT, shutdown_framework);
 
-    celixLauncher_launch(config_file, &framework);
-    celixLauncher_waitForShutdown(framework);
-    celixLauncher_destroy(framework);
+    int rc = celixLauncher_launch(config_file, &framework);
+    if (rc == 0) {
+        celixLauncher_waitForShutdown(framework);
+        celixLauncher_destroy(framework);
+    }
 }
 
 static void show_usage(char* prog_name) {

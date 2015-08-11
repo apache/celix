@@ -10,6 +10,7 @@
 #include <stdlib.h>
 
 #include <ffi.h>
+#include <ffi-x86_64.h>
 
 #include "dyn_common.h"
 #include "dyn_type.h"
@@ -222,6 +223,7 @@ int dynFunction_createClosure(dyn_function_type *dynFunc, void (*bind)(void *, v
     }
 
     if (status == 0) {
+        dynFunc->userData = userData;
         dynFunc->bind = bind;
         dynFunc->fn = fn;
         *out =fn;

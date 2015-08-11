@@ -5,8 +5,6 @@
 #TODO add FRAMEWORK_TEST / TEST check
 #if (RSA_EXAMPLES)
 
-    add_subdirectory(bundle)
-
     include_directories(
         ${PROJECT_SOURCE_DIR}/launcher/public/include
         ${CPPUTEST_INCLUDE_DIR}
@@ -27,7 +25,7 @@
         ${PROJECT_SOURCE_DIR}/launcher/private/src/launcher.c #TODO move to libframework
         ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c
     )
-    target_link_libraries(test_rsa_dfi celix_framework celix_utils ${CURL_LIBRARIES})
+    target_link_libraries(test_rsa_dfi celix_framework celix_utils ${CURL_LIBRARIES} ${CPPUTEST_LIBRARY})
 
     get_property(rsa_bundle_file TARGET remote_service_admin_dfi PROPERTY BUNDLE)
     get_property(calc_bundle_file TARGET calculator PROPERTY BUNDLE)

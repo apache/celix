@@ -128,7 +128,6 @@ extern "C" {
         CHECK_EQUAL(2.0, *b)
         CHECK_EQUAL(a, 2.0);
         *out = *b * a;
-        printf("out is %p and *out is %f\n", out, *out);
         return 0;
     }
 
@@ -140,8 +139,6 @@ extern "C" {
         CHECK_EQUAL(0, rc);
         double result = -1.0;
         double *input = &result;
-        printf("\n");
-        printf("input is %p, &input is %p and *input is %d\n", input, &input, *input);
         double a = 2.0;
         void *ptr = &a;
         void *args[3];
@@ -150,8 +147,8 @@ extern "C" {
         args[2] = &input;
         void (*fp)(void) = (void(*)(void)) testExample3;
 
-        rc = dynFunction_call(dynFunc, fp, &result, args);
-        printf("input is %p, &input is %p and *input is %d\n", input, &input, *input);
+        int rVal;
+        rc = dynFunction_call(dynFunc, fp, &rVal, args);
 
         CHECK_EQUAL(0, rc);
         CHECK_EQUAL(4.0, result);

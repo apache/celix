@@ -1,4 +1,6 @@
 #include <stdlib.h>
+#include <jansson.h>
+#include "json_serializer.h"
 #include "dyn_interface.h"
 #include "import_registration.h"
 #include "import_registration_dfi.h"
@@ -7,6 +9,8 @@ struct import_registration {
     bundle_context_pt context;
     endpoint_description_pt  endpoint; //TODO owner? -> free when destroyed
     const char *classObject; //NOTE owned by endpoint
+    send_func_type send;
+    void *sendHandle;
 
     service_factory_pt factory;
     service_registration_pt factoryReg;
@@ -47,14 +51,30 @@ celix_status_t importRegistration_create(bundle_context_pt context, endpoint_des
     }
 
     if (status == CELIX_SUCCESS) {
+        printf("IMPORT REGISTRATION IS %p\n", reg);
         *out = reg;
     }
 
     return status;
 }
 
+
+celix_status_t importRegistration_setSendFn(import_registration_pt reg,
+                                            send_func_type send,
+                                            void *handle) {
+    reg->send = send;
+    reg->sendHandle = handle;
+
+    return CELIX_SUCCESS;
+}
+
 void importRegistration_destroy(import_registration_pt import) {
     if (import != NULL) {
+        if (import->proxies != NULL) {
+            //TODO destroy proxies
+            hashMap_destroy(import->proxies, false, false);
+            import->proxies = NULL;
+        }
         if (import->factory != NULL) {
             free(import->factory);
         }
@@ -93,7 +113,6 @@ celix_status_t importRegistration_getService(import_registration_pt import, bund
     printf("getting service for bundle '%s'\n", name);
      */
 
-
     struct service_proxy *proxy = hashMap_get(import->proxies, bundle); //TODO lock
     if (proxy == NULL) {
         status = importRegistration_createProxy(import, bundle, &proxy);
@@ -117,16 +136,17 @@ static celix_status_t importRegistration_createProxy(import_registration_pt impo
     char name[128];
     snprintf(name, 128, "%s.descriptor", import->classObject);
     status = bundle_getEntry(bundle, name, &descriptorFile);
-    if (status != CELIX_SUCCESS) {
+    if (descriptorFile == NULL) {
         printf("Cannot find entry '%s'\n", name);
+        status = CELIX_ILLEGAL_ARGUMENT;
+    } else {
+        printf("Found descriptor at '%s'\n", descriptorFile);
     }
 
     struct service_proxy *proxy = NULL;
     if (status == CELIX_SUCCESS) {
         proxy = calloc(1, sizeof(*proxy));
-        if (proxy != NULL) {
-
-        } else {
+        if (proxy == NULL) {
             status = CELIX_ENOMEM;
         }
     }
@@ -142,16 +162,23 @@ static celix_status_t importRegistration_createProxy(import_registration_pt impo
         }
     }
 
-    void **serv = NULL;
+
     if (status == CELIX_SUCCESS) {
         size_t count = dynInterface_nrOfMethods(proxy->intf);
-        serv = calloc(1 + count, sizeof(void *));
-        serv[0] = proxy;
+        proxy->service = calloc(1 + count, sizeof(void *));
+        if (proxy->service == NULL) {
+            status = CELIX_ENOMEM;
+        }
+    }
+
+    if (status == CELIX_SUCCESS) {
+        void **serv = proxy->service;
+        serv[0] = import;
 
         struct methods_head *list = NULL;
         dynInterface_methods(proxy->intf, &list);
         struct method_entry *entry = NULL;
-        void (*fn)(void);
+        void (*fn)(void) = NULL;
         int index = 0;
         TAILQ_FOREACH(entry, list, entries) {
             int rc = dynFunction_createClosure(entry->dynFunc, importRegistration_proxyFunc, entry, &fn);
@@ -166,31 +193,102 @@ static celix_status_t importRegistration_createProxy(import_registration_pt impo
     }
 
     if (status == CELIX_SUCCESS) {
-        proxy->service = serv;
-    } else {
-        if (serv != NULL) {
-            free(serv);
-        }
-    }
-
-    if (status == CELIX_SUCCESS) {
         *out = proxy;
+    } else {
+        if (proxy->intf != NULL) {
+            dynInterface_destroy(proxy->intf);
+            proxy->intf = NULL;
+        }
+        if (proxy->service != NULL) {
+            free(proxy->service);
+            proxy->service = NULL;
+        }
+        if (proxy != NULL) {
+            free(proxy);
+        }
     }
 
     return status;
 }
 
 static void importRegistration_proxyFunc(void *userData, void *args[], void *returnVal) {
+    int  status = CELIX_SUCCESS;
     struct method_entry *entry = userData;
-    //struct proxy_service *proxy = args[0];
 
     printf("Calling function '%s'\n", entry->id);
+    json_t *invoke = json_object();
+    json_object_set(invoke, "m", json_string(entry->id));
 
-    //TODO
+    json_t *jsonArgs = json_array();
+    json_object_set(invoke, "a", jsonArgs);
+    json_decref(jsonArgs);
+
+    int i;
+    int nrOfArgs = dynFunction_nrOfArguments(entry->dynFunc);
+    import_registration_pt import = *((void **)args[0]);
+
+    for (i = 1; i < nrOfArgs -1; i +=1) { //note 0 = handle, last = output
+        json_t *val = NULL;
+        dyn_type *type = dynFunction_argumentTypeForIndex(entry->dynFunc, i);
+        int rc = jsonSerializer_serializeJson(type, args[i], &val);
+        if (rc == 0) {
+            json_array_append_new(jsonArgs, val);
+        } else {
+            status = CELIX_ILLEGAL_ARGUMENT;
+            break;
+        }
+    }
+
+
+    char *output = json_dumps(invoke, JSON_DECODE_ANY);
+    printf("Need to send following json '%s'\n", output);
+
+    printf("import is %p\n", import);
+    if (import != NULL && import->send != NULL) {
+        char *reply = NULL;
+        int rc = 0;
+        printf("sending request\n");
+        import->send(import->sendHandle, import->endpoint, output, &reply, &rc);
+        printf("request sended. got reply '%s'\n", reply);
+
+        json_t *replyJson = json_loads(reply, JSON_DECODE_ANY, NULL); //TODO check
+        json_t *result = json_object_get(replyJson, "r"); //TODO check
+
+        printf("replyJson p is %p and result is %p\n", replyJson, result);
+
+        if (rc == 0) {
+            dyn_type *lastPtr = dynFunction_argumentTypeForIndex(entry->dynFunc, nrOfArgs - 1);
+            dyn_type *lastType = NULL;
+            dynType_typedPointer_getTypedType(lastPtr, &lastType);
+            if (rc == CELIX_SUCCESS) {
+                void *tmp = NULL;
+                rc = jsonSerializer_deserializeJson(lastType, result, &tmp);
+                void **out = (void **)args[nrOfArgs-1];
+                memcpy(*out, tmp, dynType_size(lastType));
+                dynType_free(lastType, tmp); //TODO only for simple types -> eg complex type will be alloc by callee
+            }
+            json_decref(replyJson);
+
+            int *returnInt = returnVal;
+            *returnInt = status;
+
+            printf("done with proxy func\n");
+        }
+    } else {
+        printf("Error import of import->send is NULL\n");
+    }
+
+    json_decref(invoke);
 }
 
 celix_status_t importRegistration_ungetService(import_registration_pt import, bundle_pt bundle, service_registration_pt registration, void **out) {
     celix_status_t  status = CELIX_SUCCESS;
+    return status;
+
+    /* TODO fix. gives segfault in framework shutdown (import->proxies == NULL)
+    assert(import != NULL);
+    assert(import->proxies != NULL);
+
     struct service_proxy *proxy = hashMap_get(import->proxies, bundle); //TODO lock
     if (proxy != NULL) {
         if (*out == proxy->service) {
@@ -203,6 +301,7 @@ celix_status_t importRegistration_ungetService(import_registration_pt import, bu
             importRegistration_destroyProxy(proxy);
         }
     }
+     */
 
     return status;
 }

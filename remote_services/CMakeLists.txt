@@ -39,6 +39,7 @@ if (REMOTE_SERVICE_ADMIN)
 
     add_subdirectory(remote_service_admin)
     add_subdirectory(remote_service_admin_http)
+    add_subdirectory(remote_service_admin_dfi/tst/bundle)
     add_subdirectory(remote_service_admin_dfi)
     add_subdirectory(remote_service_admin_shm)
 
