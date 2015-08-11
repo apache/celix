@@ -162,6 +162,12 @@ celix_status_t exportRegistration_call(export_registration_pt export, char *data
 
         void *out = NULL;
         dynType_alloc(lastType, &out); //TODO, NOTE only for simple types or single pointer types.. TODO check
+
+        //NOTE !! Need to access out, else it is a dummy pointer which will result in errors.
+        char b;
+        memcpy(&b, out, 1);
+
+        dynType_alloc(lastType, &out); //TODO, NOTE only for simple types or single pointer types.. TODO check
         printf("out ptr is %p value is %f\n", out, *(double *)out);
         args[nrOfArgs-1] = &out; //NOTE for simple type no double
 

@@ -3,18 +3,10 @@
  */
 #include "dyn_function.h"
 
-#include <stdio.h>
-#include <stdarg.h>
 #include <strings.h>
-#include <string.h>
 #include <stdlib.h>
 
-#include <ffi.h>
-#include <ffi-x86_64.h>
-
 #include "dyn_common.h"
-#include "dyn_type.h"
-#include "dfi_log_util.h"
 
 struct _dyn_function_type {
     char *name;
