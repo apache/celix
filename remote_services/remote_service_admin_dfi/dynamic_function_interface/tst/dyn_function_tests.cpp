@@ -120,6 +120,42 @@ extern "C" {
         dynFunction_destroy(dynFunc);
     }
 
+    //example with gen pointer and output
+    #define EXAMPLE3_DESCRIPTOR "example(PD*D)N"
+
+    static int testExample3(void *ptr, double a, double *out) {
+        double *b = (double *)ptr;
+        CHECK_EQUAL(2.0, *b)
+        CHECK_EQUAL(a, 2.0);
+        *out = *b * a;
+        printf("out is %p and *out is %f\n", out, *out);
+        return 0;
+    }
+
+    static void test_example3(void) {
+        dyn_function_type *dynFunc = NULL;
+        int rc;
+
+        rc = dynFunction_parseWithStr(EXAMPLE3_DESCRIPTOR, NULL, &dynFunc);
+        CHECK_EQUAL(0, rc);
+        double result = -1.0;
+        double *input = &result;
+        printf("\n");
+        printf("input is %p, &input is %p and *input is %d\n", input, &input, *input);
+        double a = 2.0;
+        void *ptr = &a;
+        void *args[3];
+        args[0] = &ptr;
+        args[1] = &a;
+        args[2] = &input;
+        void (*fp)(void) = (void(*)(void)) testExample3;
+
+        rc = dynFunction_call(dynFunc, fp, &result, args);
+        printf("input is %p, &input is %p and *input is %d\n", input, &input, *input);
+
+        CHECK_EQUAL(0, rc);
+        CHECK_EQUAL(4.0, result);
+    }
 
 }
 
@@ -141,4 +177,9 @@ TEST(DynFunctionTests, DynFuncTest2) {
 
 TEST(DynFunctionTests, DynFuncAccTest) {
     test_access_functions();
+}
+
+
+TEST(DynFunctionTests, DynFuncTest3) {
+    test_example3();
 }
