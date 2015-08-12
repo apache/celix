@@ -214,36 +214,24 @@ static celix_status_t importRegistration_createProxy(import_registration_pt impo
 static void importRegistration_proxyFunc(void *userData, void *args[], void *returnVal) {
     int  status = CELIX_SUCCESS;
     struct method_entry *entry = userData;
+    import_registration_pt import = *((void **)args[0]);
 
-    printf("Calling function '%s'\n", entry->id);
+    printf("Calling remote function '%s'\n", entry->id);
     json_t *invoke = json_object();
     json_object_set(invoke, "m", json_string(entry->id));
 
-    json_t *jsonArgs = json_array();
-    json_object_set(invoke, "a", jsonArgs);
-    json_decref(jsonArgs);
+    json_t *arguments = NULL;
 
-    int i;
-    int nrOfArgs = dynFunction_nrOfArguments(entry->dynFunc);
-    import_registration_pt import = *((void **)args[0]);
-
-    for (i = 1; i < nrOfArgs -1; i +=1) { //note 0 = handle, last = output
-        json_t *val = NULL;
-        dyn_type *type = dynFunction_argumentTypeForIndex(entry->dynFunc, i);
-        int rc = jsonSerializer_serializeJson(type, args[i], &val);
-        if (rc == 0) {
-            json_array_append_new(jsonArgs, val);
-        } else {
-            status = CELIX_ILLEGAL_ARGUMENT;
-            break;
-        }
+    status = jsonSerializer_prepareArguments(entry->dynFunc, args, &arguments);
+    if (status == CELIX_SUCCESS) {
+        json_object_set_new(invoke, "a", arguments);
     }
 
-
     char *output = json_dumps(invoke, JSON_DECODE_ANY);
+    json_decref(invoke);
+
     printf("Need to send following json '%s'\n", output);
 
-    printf("import is %p\n", import);
     if (import != NULL && import->send != NULL) {
         char *reply = NULL;
         int rc = 0;
@@ -253,32 +241,22 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
 
         json_t *replyJson = json_loads(reply, JSON_DECODE_ANY, NULL); //TODO check
         json_t *result = json_object_get(replyJson, "r"); //TODO check
+        status = jsonSerializer_handleReply(entry->dynFunc, NULL, result, args);
+        json_decref(result);
 
-        printf("replyJson p is %p and result is %p\n", replyJson, result);
 
-        if (rc == 0) {
-            dyn_type *lastPtr = dynFunction_argumentTypeForIndex(entry->dynFunc, nrOfArgs - 1);
-            dyn_type *lastType = NULL;
-            dynType_typedPointer_getTypedType(lastPtr, &lastType);
-            if (rc == CELIX_SUCCESS) {
-                void *tmp = NULL;
-                rc = jsonSerializer_deserializeJson(lastType, result, &tmp);
-                void **out = (void **)args[nrOfArgs-1];
-                memcpy(*out, tmp, dynType_size(lastType));
-                dynType_free(lastType, tmp); //TODO only for simple types -> eg complex type will be alloc by callee
-            }
-            json_decref(replyJson);
 
-            int *returnInt = returnVal;
-            *returnInt = status;
 
+        if (status == 0) {
             printf("done with proxy func\n");
         }
     } else {
         printf("Error import of import->send is NULL\n");
     }
 
-    json_decref(invoke);
+    //TODO assert double check if return type is native int
+    int *rVal = returnVal;
+    *rVal = status;
 }
 
 celix_status_t importRegistration_ungetService(import_registration_pt import, bundle_pt bundle, service_registration_pt registration, void **out) {

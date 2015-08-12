@@ -415,3 +415,123 @@ static int jsonSerializer_writeComplex(dyn_type *type, void *input, json_t **out
 
     return status;
 }
+
+int jsonSerializer_call(dyn_function_type *func, void *handle, void (*fp)(void), json_t *arguments, json_t **out) {
+    int status = OK;
+
+    int nrOfArgs = dynFunction_nrOfArguments(func);
+    void *args[nrOfArgs];
+
+
+
+    json_t *value = NULL;
+
+    int i;
+    int index = 0;
+    for (i = 0; i < nrOfArgs; i += 1) {
+        int metaInfo = dynFunction_argumentMetaInfoForIndex(func, i);
+        dyn_type *argType = dynFunction_argumentTypeForIndex(func, i);
+        if (metaInfo == DYN_FUNCTION_ARG_META_PRE_ALLOCATED_OUTPUT_TYPE) {
+            printf("setting pre alloc output for %i\n", i);
+            dynType_alloc(argType, &args[i]);
+
+        } else if ( metaInfo == DYN_FUNCTION_ARG_META_OUTPUT_TYPE) {
+            printf("setting output for %i\n", i);
+            args[i] = NULL;
+        } else if (metaInfo == DYN_FUNCTION_ARG_META_HANDLE_TYPE) {
+            printf("setting handle for %i\n", i);
+            args[i] = &handle;
+        } else {
+            printf("setting std for %i\n", i);
+            value = json_array_get(arguments, index++);
+            status = jsonSerializer_deserializeJson(argType, value, &(args[i]));
+        }
+
+        if (status != OK) {
+            break;
+        }
+    }
+
+
+    //TODO assert return type is native int
+    int returnVal = 0;
+    dynFunction_call(func, fp, (void *)&returnVal, args);
+    printf("done calling\n");
+    double **r = args[2];
+    printf("result ptrptr is %p, result ptr %p, result is %f\n", r, *r, **r);
+
+    for (i = 0; i < nrOfArgs; i += 1) {
+        int metaInfo = dynFunction_argumentMetaInfoForIndex(func, i);
+        dyn_type *argType = dynFunction_argumentTypeForIndex(func, i);
+        if (metaInfo == DYN_FUNCTION_ARG_META_PRE_ALLOCATED_OUTPUT_TYPE) {
+            if (status == OK) {
+                status = jsonSerializer_serializeJson(argType, args[i], out);
+            }
+        } else if (metaInfo == DYN_FUNCTION_ARG_META_OUTPUT_TYPE) {
+            printf("TODO\n");
+            assert(false);
+        }
+
+        if (status != OK) {
+            break;
+        }
+    }
+
+    //TODO free args (created by jsonSerializer and dynType_alloc) (dynType_free)
+    return status;
+}
+
+int jsonSerializer_prepareArguments(dyn_function_type *func, void *args[], json_t **out) {
+    int status = OK;
+    json_t *arguments = json_array();
+
+    int i;
+    int nrOfArgs = dynFunction_nrOfArguments(func);
+
+    for (i = 0; i < nrOfArgs; i +=1) {
+        if (dynFunction_argumentMetaInfoForIndex(func, i) == DYN_FUNCTION_ARG_META_INPUT_TYPE) {
+            json_t *val = NULL;
+            dyn_type *type = dynFunction_argumentTypeForIndex(func, i);
+            int rc = jsonSerializer_serializeJson(type, args[i], &val);
+            if (rc == 0) {
+                json_array_append_new(arguments, val);
+            } else {
+                status = ERROR;
+                break;
+            }
+        } else {
+            //skip handle / output types
+        }
+    }
+
+    if (status == OK) {
+        *out = arguments;
+    }
+
+    return status;
+}
+
+int jsonSerializer_handleReply(dyn_function_type *func, void *handle, json_t *reply, void *args[]) {
+    int status = 0;
+
+    int nrOfArgs = dynFunction_nrOfArguments(func);
+    int i;
+    for (i = 0; i < nrOfArgs; i += 1) {
+        dyn_type *argType = dynFunction_argumentTypeForIndex(func, i);
+        int metaInf = dynFunction_argumentMetaInfoForIndex(func, i);
+        if (metaInf == DYN_FUNCTION_ARG_META_PRE_ALLOCATED_OUTPUT_TYPE) {
+            void **tmp = NULL;
+            void **out = (void **)args[i];
+            size_t size = dynType_size(argType);
+            status = jsonSerializer_deserializeJson(argType, reply, (void **)&tmp);
+            memcpy(*out, *tmp, size);
+            dynType_free(argType, tmp);
+        } else if (metaInf == DYN_FUNCTION_ARG_META_OUTPUT_TYPE) {
+            assert(false); //TODO
+        } else {
+            //skipt handle and input types
+        }
+    }
+
+    return status;
+}

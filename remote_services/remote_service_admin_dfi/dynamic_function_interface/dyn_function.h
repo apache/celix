@@ -21,10 +21,11 @@
 //TODO maybe refactor to meta info flags (e.g context/handler, output, etc with a start/stop -> M(MetaType);
 
 #define DYN_FUNCTION_ARG_META_UNKNOWN_TYPE 0
-#define DYN_FUNCTION_ARG_META_STD_TYPE 1
+#define DYN_FUNCTION_ARG_META_INPUT_TYPE 1
 #define DYN_FUNCTION_ARG_META_PRE_ALLOCATED_OUTPUT_TYPE 2
-#define DYN_FUNCTION_ARG_META_OUPUT_TYPE 3
+#define DYN_FUNCTION_ARG_META_OUTPUT_TYPE 3
 #define DYN_FUNCTION_ARG_META_HANDLE_TYPE 4
+//TODO input/output types?
 
 typedef struct _dyn_function_type dyn_function_type;
 

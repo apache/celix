@@ -174,9 +174,9 @@ extern "C" {
         const char *descriptor1 = "sqrt(D^*D~**D#P)V";
         rc = dynFunction_parseWithStr(descriptor1, NULL, &func);
         CHECK_EQUAL(0, rc);
-        CHECK_EQUAL(DYN_FUNCTION_ARG_META_STD_TYPE, dynFunction_argumentMetaInfoForIndex(func, 0));
+        CHECK_EQUAL(DYN_FUNCTION_ARG_META_INPUT_TYPE, dynFunction_argumentMetaInfoForIndex(func, 0));
         CHECK_EQUAL(DYN_FUNCTION_ARG_META_PRE_ALLOCATED_OUTPUT_TYPE, dynFunction_argumentMetaInfoForIndex(func, 1));
-        CHECK_EQUAL(DYN_FUNCTION_ARG_META_OUPUT_TYPE, dynFunction_argumentMetaInfoForIndex(func, 2));
+        CHECK_EQUAL(DYN_FUNCTION_ARG_META_OUTPUT_TYPE, dynFunction_argumentMetaInfoForIndex(func, 2));
         CHECK_EQUAL(DYN_FUNCTION_ARG_META_HANDLE_TYPE, dynFunction_argumentMetaInfoForIndex(func, 3));
         CHECK_EQUAL(DYN_FUNCTION_ARG_META_UNKNOWN_TYPE, dynFunction_argumentMetaInfoForIndex(func, 4));
         dynFunction_destroy(func);

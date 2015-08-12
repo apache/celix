@@ -116,7 +116,7 @@ static int dynFunction_parseDescriptor(dyn_function_type *dynFunc, FILE *descrip
     int nextChar = fgetc(descriptor);
     int index = 0;
     dyn_type *type = NULL;
-    int argMetaInfo = DYN_FUNCTION_ARG_META_STD_TYPE;
+    int argMetaInfo = DYN_FUNCTION_ARG_META_INPUT_TYPE;
     char argName[32];
     while (nextChar != ')' && status == 0)  {
         ungetc(nextChar, descriptor);
@@ -175,7 +175,7 @@ static void dynFunction_parseArgMeta(FILE *descriptor, int *meta) {
 
     switch (c) {
         case '~' :
-            *meta = DYN_FUNCTION_ARG_META_OUPUT_TYPE;
+            *meta = DYN_FUNCTION_ARG_META_OUTPUT_TYPE;
             break;
         case '^' :
             *meta = DYN_FUNCTION_ARG_META_PRE_ALLOCATED_OUTPUT_TYPE;
@@ -184,7 +184,7 @@ static void dynFunction_parseArgMeta(FILE *descriptor, int *meta) {
             *meta = DYN_FUNCTION_ARG_META_HANDLE_TYPE;
             break;
         default :
-            *meta = DYN_FUNCTION_ARG_META_STD_TYPE;
+            *meta = DYN_FUNCTION_ARG_META_INPUT_TYPE;
             ungetc(c, descriptor);
             break;
     }
@@ -197,7 +197,7 @@ static int dynFunction_checkArgument(dyn_function_argument_type *argument) {
         if (dynType_type(argument->type) != DYN_TYPE_TYPED_POINTER) {
             status = ERROR;
         }
-    } else if (argument->argumentType == DYN_FUNCTION_ARG_META_OUPUT_TYPE) {
+    } else if (argument->argumentType == DYN_FUNCTION_ARG_META_OUTPUT_TYPE) {
         //expect atleast two **
         if (dynType_type(argument->type) == DYN_TYPE_TYPED_POINTER) {
             dyn_type *subType = NULL;
