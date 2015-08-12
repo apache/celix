@@ -133,6 +133,7 @@ extern "C" {
 
     static void test_example3(void) {
         dyn_function_type *dynFunc = NULL;
+        void (*fp)(void) = (void(*)(void)) testExample3;
         int rc;
 
         rc = dynFunction_parseWithStr(EXAMPLE3_DESCRIPTOR, NULL, &dynFunc);
@@ -145,15 +146,60 @@ extern "C" {
         args[0] = &ptr;
         args[1] = &a;
         args[2] = &input;
-        void (*fp)(void) = (void(*)(void)) testExample3;
-
         int rVal;
         rc = dynFunction_call(dynFunc, fp, &rVal, args);
-
         CHECK_EQUAL(0, rc);
         CHECK_EQUAL(4.0, result);
+
+
+        double *inMemResult = (double *)calloc(1, sizeof(double));
+        a = 2.0;
+        ptr = &a;
+        args[0] = &ptr;
+        args[1] = &a;
+        args[2] = &inMemResult;
+        rVal;
+        rc = dynFunction_call(dynFunc, fp, &rVal, args);
+        CHECK_EQUAL(0, rc);
+        CHECK_EQUAL(4.0, result);
+        free(inMemResult);
+
+        dynFunction_destroy(dynFunc);
     }
 
+    void test_meta(void) {
+        int rc;
+        dyn_function_type *func = NULL;
+
+        const char *descriptor1 = "sqrt(D^*D~**D#P)V";
+        rc = dynFunction_parseWithStr(descriptor1, NULL, &func);
+        CHECK_EQUAL(0, rc);
+        CHECK_EQUAL(DYN_FUNCTION_ARG_META_STD_TYPE, dynFunction_argumentMetaInfoForIndex(func, 0));
+        CHECK_EQUAL(DYN_FUNCTION_ARG_META_PRE_ALLOCATED_OUTPUT_TYPE, dynFunction_argumentMetaInfoForIndex(func, 1));
+        CHECK_EQUAL(DYN_FUNCTION_ARG_META_OUPUT_TYPE, dynFunction_argumentMetaInfoForIndex(func, 2));
+        CHECK_EQUAL(DYN_FUNCTION_ARG_META_HANDLE_TYPE, dynFunction_argumentMetaInfoForIndex(func, 3));
+        CHECK_EQUAL(DYN_FUNCTION_ARG_META_UNKNOWN_TYPE, dynFunction_argumentMetaInfoForIndex(func, 4));
+        dynFunction_destroy(func);
+
+        const char *descriptor2 = "sqrt(D~*D)V";
+        rc = dynFunction_parseWithStr(descriptor2, NULL, &func);
+        CHECK(rc != 0);
+
+        const char *descriptor3 = "sqrt(D~***D)V";
+        rc = dynFunction_parseWithStr(descriptor3, NULL, &func);
+        CHECK_EQUAL(0, rc);
+        dynFunction_destroy(func);
+
+
+        const char *descriptor4 = "sqrt(D^D)V";
+        rc = dynFunction_parseWithStr(descriptor4, NULL, &func);
+        CHECK(rc != 0);
+
+        const char *descriptor5 = "sqrt(D^***D)V";
+        rc = dynFunction_parseWithStr(descriptor5, NULL, &func);
+        CHECK_EQUAL(0, rc);
+        dynFunction_destroy(func);
+    }
 }
 
 TEST_GROUP(DynFunctionTests) {
@@ -176,7 +222,10 @@ TEST(DynFunctionTests, DynFuncAccTest) {
     test_access_functions();
 }
 
-
 TEST(DynFunctionTests, DynFuncTest3) {
     test_example3();
+}
+
+TEST(DynFunctionTests, DynFuncTestMeta) {
+    test_meta();
 }

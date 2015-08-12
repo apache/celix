@@ -5,6 +5,7 @@
 #include <dyn_interface.h>
 #include <json_serializer.h>
 #include <remote_constants.h>
+#include <assert.h>
 #include "export_registration.h"
 #include "export_registration_dfi.h"
 
@@ -129,31 +130,43 @@ celix_status_t exportRegistration_call(export_registration_pt export, char *data
 
     if (method != NULL) {
 
+        struct generic_service_layout *serv = export->service;
+
         int nrOfArgs = dynFunction_nrOfArguments(method->dynFunc);
-        void *args[nrOfArgs]; //arg 0 is handle
+        void *args[nrOfArgs];
 
         json_t *arguments = json_object_get(js_request, "a");
         json_t *value = NULL;
-        int index = -1;
-        json_array_foreach(arguments, index, value) {
-            int argNr = index + 1;
-            if (argNr < nrOfArgs -1 ) { //note skip last argument. this is the output
-                dyn_type *argType = dynFunction_argumentTypeForIndex(method->dynFunc, argNr);
-                status = jsonSerializer_deserializeJson(argType, value, &(args[argNr]));
+
+        int i;
+        int index = 0;
+        for (i = 0; i < nrOfArgs; i += 1) {
+            int metaInfo = dynFunction_argumentMetaInfoForIndex(method->dynFunc, i);
+            dyn_type *argType = dynFunction_argumentTypeForIndex(method->dynFunc, i);
+            if (metaInfo == DYN_FUNCTION_ARG_META_PRE_ALLOCATED_OUTPUT_TYPE) {
+                printf("setting pre alloc output for %i\n", i);
+                dynType_alloc(argType, &args[i]);
+
+            } else if ( metaInfo == DYN_FUNCTION_ARG_META_OUPUT_TYPE) {
+                printf("setting output for %i\n", i);
+                args[i] = NULL;
+            } else if (metaInfo == DYN_FUNCTION_ARG_META_HANDLE_TYPE) {
+                printf("setting handle for %i\n", i);
+                args[i] = &serv->handle;
             } else {
-                status = CELIX_ILLEGAL_ARGUMENT;
+                printf("setting std for %i\n", i);
+                value = json_array_get(arguments, index++);
+                status = jsonSerializer_deserializeJson(argType, value, &(args[i]));
             }
-            if (status != 0) {
+
+            if (status != CELIX_SUCCESS) {
                 break;
             }
         }
 
         json_decref(js_request);
 
-
-        struct generic_service_layout *serv = export->service;
-        args[0] = &serv->handle;
-
+        /*
         //TODO assert last is output pointer (e.g. double pointer)
         dyn_type *lastTypePtr = dynFunction_argumentTypeForIndex(method->dynFunc, nrOfArgs-1);
         dyn_type *lastType = NULL;
@@ -170,34 +183,46 @@ celix_status_t exportRegistration_call(export_registration_pt export, char *data
         dynType_alloc(lastType, &out); //TODO, NOTE only for simple types or single pointer types.. TODO check
         printf("out ptr is %p value is %f\n", out, *(double *)out);
         args[nrOfArgs-1] = &out; //NOTE for simple type no double
+         */
 
         printf("args is %p %p %p\n", args[0] , args[1], args[2]);
         printf("args derefs is %p %p %p\n", *(void **)args[0], *(void **)args[1], *(void **)args[2]);
 
         //TODO assert return type is native int
         int returnVal = 0;
-        //printf("calling function '%s', with index %i, nrOfArgs %i and at loc %p\n", method->id, method->index, nrOfArgs, serv->methods[method->index]);
         dynFunction_call(method->dynFunc, serv->methods[method->index], (void *)&returnVal, args);
-        //printf("done calling\n");
-        //printf("args is %p %p %p\n", args[0] , args[1], args[2]);
-        //printf("args derefs is %p %p %p\n", *(void **)args[0], *(void **)args[1], *(void **)args[2]);
-        //printf("out is %p and val is %f\n", out, *(double *)out);
+        printf("done calling\n");
+        double **r = args[2];
+        printf("result ptrptr is %p, result ptr %p, result is %f\n", r, *r, **r);
 
         json_t *responseJson = NULL;
-        //double r = 2.0;
-        //status = jsonSerializer_serializeJson(lastOutputType, &r /*out*/, &responseJson);
-        printf("out ptr is %p, value is %f\n", out, *(double *)out);
-        status = jsonSerializer_serializeJson(lastType, out, &responseJson);
 
-        json_t *payload = json_object();
-        json_object_set_new(payload, "r", responseJson);
+        for (i = 0; i < nrOfArgs; i += 1) {
+            int metaInfo = dynFunction_argumentMetaInfoForIndex(method->dynFunc, i);
+            dyn_type *argType = dynFunction_argumentTypeForIndex(method->dynFunc, i);
+            if (metaInfo == DYN_FUNCTION_ARG_META_PRE_ALLOCATED_OUTPUT_TYPE) {
+                if (status == CELIX_SUCCESS) {
+                    status = jsonSerializer_serializeJson(argType, args[i], &responseJson);
+                }
+                break;
+            } else if (metaInfo == DYN_FUNCTION_ARG_META_OUPUT_TYPE) {
+                printf("TODO\n");
+                assert(false);
+            }
+        }
 
-        char *response = json_dumps(payload, JSON_DECODE_ANY);
-        json_decref(payload);
+        if (status == CELIX_SUCCESS) {
+            printf("creating payload\n");
+            json_t *payload = json_object();
+            json_object_set_new(payload, "r", responseJson);
 
+            char *response = json_dumps(payload, JSON_DECODE_ANY);
+            json_decref(payload);
 
-        *responseOut = response;
-        *responseLength = -1;
+            *responseOut = response;
+            *responseLength = -1;
+        }
+
 
         //TODO free args (created by jsonSerializer and dynType_alloc) (dynType_free)
 

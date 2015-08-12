@@ -503,6 +503,17 @@ int dynType_alloc(dyn_type *type, void **bufLoc) {
 
     void *inst = calloc(1, type->ffiType->size);
     if (inst != NULL) {
+        if (type->type == DYN_TYPE_TYPED_POINTER) {
+            void *ptr = NULL;
+            dyn_type *sub = NULL;
+            status = dynType_typedPointer_getTypedType(type, &sub);
+            if (status == OK) {
+                status = dynType_alloc(sub, &ptr);
+                if (status == OK) {
+                    *(void **)inst = ptr;
+                }
+            }
+        }
         *bufLoc = inst;
     } else {
         status = MEM_ERROR;
@@ -913,7 +924,7 @@ static void dynType_printComplex(char *name, dyn_type *type, int depth, FILE *st
         }
 
         dynType_printDepth(depth, stream);
-        printf("}\n");
+        fprintf(stream, "}\n");
     } else {
         dynType_printDepth(depth, stream);
         fprintf(stream, "%s: complex type ('%s'), size is %zu, alignment is %i, descriptor is '%c'.\n", name, type->name, type->ffiType->size, type->ffiType->alignment, type->descriptor);
