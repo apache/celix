@@ -1,16 +1,8 @@
 #
 # Licensed under Apache License v2. See LICENSE for more information.
 #
-find_package(Jansson REQUIRED)
-find_package(CppUTest REQUIRED)
-find_package(FFI REQUIRED)
-
-include_directories( 
-    ${CPPUTEST_INCLUDE_DIR}
-    ${JANSSON_INCLUDE_DIRS}
-    ${CMAKE_CURRENT_LIST_DIR}
-    ${FFI_INCLUDE_DIRS}
-    memstream
+include_directories(
+	.
 )
 
 set(MEMSTREAM_SOURCES "")
@@ -24,29 +16,6 @@ add_library(dfi STATIC
     dyn_function.c
     dyn_interface.c
     json_serializer.c
-#    avro_descriptor_translator.c
     ${MEMSTREAM_SOURCES}
 )
 target_link_libraries(dfi ${FFI_LIBRARIES} ${JANSSON_LIBRARY})
-
-
-#if (FRAMEWORK_TESTS) TODO
-	add_executable(test_dfi
-	    tst/dyn_type_tests.cpp
-	    tst/dyn_function_tests.cpp
-	    tst/dyn_closure_tests.cpp
-        tst/dyn_interface_tests.cpp
-	    tst/json_serializer_tests.cpp
-	    tst/run_tests.cpp
-	)
-	target_link_libraries(test_dfi dfi ${FFI_LIBRARIES} ${CPPUTEST_LIBRARY} ${JANSSON_LIBRARY})
-
-	add_custom_target(copy-input 
-	    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_LIST_DIR}/schemas schemas
-	    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_LIST_DIR}/descriptors descriptors
-	)
-	add_dependencies(test_dfi copy-input)
-
-    add_test(NAME run_test_dfi COMMAND test_dfi)
-	SETUP_TARGET_FOR_COVERAGE(test_dfi_cov test_dfi ${CMAKE_BINARY_DIR}/coverage/dfi)
-#endif()

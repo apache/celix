@@ -3,7 +3,6 @@
 #
 
 include_directories(
-        ${PROJECT_SOURCE_DIR}/launcher/public/include
         ${CPPUTEST_INCLUDE_DIR}
         ${PROJECT_SOURCE_DIR}/framework/public/include
         ${PROJECT_SOURCE_DIR}/utils/public/include
