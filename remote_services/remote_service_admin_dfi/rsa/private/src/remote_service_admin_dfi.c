@@ -34,6 +34,7 @@
 #include <curl/curl.h>
 
 #include <jansson.h>
+#include <json_serializer.h>
 
 #include "import_registration_dfi.h"
 #include "export_registration_dfi.h"
@@ -127,6 +128,7 @@ celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_servi
             dynType_logSetup((void *)remoteServiceAdmin_log, *admin, 4);
             dynFunction_logSetup((void *)remoteServiceAdmin_log, *admin, 4);
             dynInterface_logSetup((void *)remoteServiceAdmin_log, *admin, 4);
+            jsonSerializer_logSetup((void *)remoteServiceAdmin_log, *admin, 4);
         }
 
         bundleContext_getProperty(context, "RSA_PORT", &port);

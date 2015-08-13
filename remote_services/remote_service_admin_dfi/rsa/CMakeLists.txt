@@ -15,15 +15,17 @@
 # specific language governing permissions and limitations
 # under the License.
 
-include_directories(private/include)
-include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/private/include")
-include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin_http/private/include")
-include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin_dfi/dynamic_function_interface")
-include_directories("${PROJECT_SOURCE_DIR}/remote_services/examples/calculator_service/public/include")
-include_directories("../dynamic_function_interface")
+include_directories(
+    private/include
+    ${PROJECT_SOURCE_DIR}/utils/public/include
+    ${PROJECT_SOURCE_DIR}/log_service/public/include
+    ${PROJECT_SOURCE_DIR}/remote_services/utils/private/include
+    ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include
+    ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin_http/private/include
+    ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin_dfi/dynamic_function_interface
+    ${PROJECT_SOURCE_DIR}/remote_services/examples/calculator_service/public/include
+    ../dynamic_function_interface
+)
 
 SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_remote_service_admin_dfi")
 SET(BUNDLE_VERSION "0.0.1")

@@ -8,6 +8,7 @@
 #include "dfi_log_util.h"
 #include "dyn_type.h"
 #include "dyn_function.h"
+#include "dyn_interface.h"
 
 //logging
 DFI_SETUP_LOG_HEADER(jsonSerializer);
@@ -18,10 +19,8 @@ int jsonSerializer_deserializeJson(dyn_type *type, json_t *input, void **result)
 int jsonSerializer_serialize(dyn_type *type, void *input, char **output);
 int jsonSerializer_serializeJson(dyn_type *type, void *input, json_t **out);
 
-//input should be a json array with with the std args
-int jsonSerializer_call(dyn_function_type *func, void *handle, void (*fp)(void), json_t *arguments, json_t **result);
+int jsonSerializer_call(dyn_interface_type *intf, void *service, const char *request, char **out);
 
-int jsonSerializer_prepareArguments(dyn_function_type *func, void *args[], json_t **arguments);
-int jsonSerializer_handleReply(dyn_function_type *func, void *handle, json_t *reply, void *args[]);
-
+int jsonSerializer_prepareInvokeRequest(dyn_function_type *func, const char *id, void *args[], char **out);
+int jsonSerializer_handleReply(dyn_function_type *func, const char *reply, void *args[]);
 #endif

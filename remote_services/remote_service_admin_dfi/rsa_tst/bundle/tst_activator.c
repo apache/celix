@@ -120,7 +120,7 @@ static int test(void *handle) {
 	int status = 0;
 	struct activator *act = handle;
 
-	double result = 0.0;
+	double result = -1.0;
 
     int rc;
     if (act->calc != NULL) {

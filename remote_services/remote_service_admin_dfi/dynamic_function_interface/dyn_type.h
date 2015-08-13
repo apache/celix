@@ -83,7 +83,6 @@
 
 typedef struct _dyn_type dyn_type;
 
-//TODO rename
 TAILQ_HEAD(types_head, type_entry);
 struct type_entry {
     dyn_type *type;

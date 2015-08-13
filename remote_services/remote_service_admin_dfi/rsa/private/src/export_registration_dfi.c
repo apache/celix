@@ -5,7 +5,6 @@
 #include <dyn_interface.h>
 #include <json_serializer.h>
 #include <remote_constants.h>
-#include <assert.h>
 #include "export_registration.h"
 #include "export_registration_dfi.h"
 
@@ -22,13 +21,6 @@ struct export_registration {
 
     //TODO add tracker and lock
     bool closed;
-};
-
-typedef void (*gen_func_type)(void);
-
-struct generic_service_layout {
-    void *handle;
-    gen_func_type methods[];
 };
 
 celix_status_t exportRegistration_create(log_helper_pt helper, service_reference_pt reference, endpoint_description_pt endpoint, bundle_context_pt context, export_registration_pt *out) {
@@ -94,72 +86,12 @@ celix_status_t exportRegistration_create(log_helper_pt helper, service_reference
 
 celix_status_t exportRegistration_call(export_registration_pt export, char *data, int datalength, char **responseOut, int *responseLength) {
     int status = CELIX_SUCCESS;
-    //TODO lock/sema export
 
-    printf("Parsing data: %s\n", data);
-    json_error_t error;
-    json_t *js_request = json_loads(data, 0, &error);
-    json_t *arguments = NULL;
-    const char *sig;
-    if (js_request) {
-        if (json_unpack(js_request, "{s:s}", "m", &sig) != 0) {
-            printf("RSA: Got error '%s'\n", error.text);
-        } else {
-            arguments = json_object_get(js_request, "a");
-        }
-    } else {
-        printf("RSA: got error '%s' for '%s'\n", error.text, data);
-        return 0;
-    }
+    *responseLength = -1;
+    //TODO lock service
+    status = jsonSerializer_call(export->intf, export->service, data, responseOut);
+    //TODO unlock service
 
-    printf("RSA: Looking for method %s\n", sig);
-    struct methods_head *methods = NULL;
-    dynInterface_methods(export->intf, &methods);
-    struct method_entry *entry = NULL;
-    struct method_entry *method = NULL;
-    TAILQ_FOREACH(entry, methods, entries) {
-        if (strcmp(sig, entry->id) == 0) {
-            method = entry;
-            break;
-        }
-    }
-
-    if (method == NULL) {
-        status = CELIX_ILLEGAL_STATE;
-    } else {
-        printf("RSA: found method '%s'\n", entry->id);
-    }
-
-    if (method != NULL) {
-
-        struct generic_service_layout *serv = export->service;
-        void *handle = serv->handle;
-        void (*fp)(void) = serv->methods[method->index];
-
-        json_t *result = NULL;
-        status = jsonSerializer_call(method->dynFunc, handle, fp, arguments, &result);
-
-        json_decref(js_request);
-
-        if (status == CELIX_SUCCESS) {
-            printf("creating payload\n");
-            json_t *payload = json_object();
-            json_object_set_new(payload, "r", result);
-
-            char *response = json_dumps(payload, JSON_DECODE_ANY);
-            printf("status ptr is %p. response if '%s'\n", status, response);
-
-            *responseOut = response;
-            *responseLength = -1;
-
-            json_decref(payload);
-        }
-
-        ///TODO add more status checks
-    }
-
-    //TODO unlock/sema export
-    printf("done export reg call\n");
     return status;
 }
 

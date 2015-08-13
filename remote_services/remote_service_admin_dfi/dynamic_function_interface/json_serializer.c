@@ -3,6 +3,7 @@
  */
 #include "json_serializer.h"
 #include "dyn_type.h"
+#include "dyn_interface.h"
 
 #include <jansson.h>
 #include <assert.h>
@@ -25,6 +26,13 @@ static int OK = 0;
 static int ERROR = 1;
 
 DFI_SETUP_LOG(jsonSerializer);
+
+typedef void (*gen_func_type)(void);
+
+struct generic_service_layout {
+    void *handle;
+    gen_func_type methods[];
+};
 
 int jsonSerializer_deserialize(dyn_type *type, const char *input, void **result) {
     assert(dynType_type(type) == DYN_TYPE_COMPLEX);
@@ -416,13 +424,60 @@ static int jsonSerializer_writeComplex(dyn_type *type, void *input, json_t **out
     return status;
 }
 
-int jsonSerializer_call(dyn_function_type *func, void *handle, void (*fp)(void), json_t *arguments, json_t **out) {
+int jsonSerializer_call(dyn_interface_type *intf, void *service, const char *request, char **out) {
     int status = OK;
 
-    int nrOfArgs = dynFunction_nrOfArguments(func);
+    LOG_DEBUG("Parsing data: %s\n", request);
+    json_error_t error;
+    json_t *js_request = json_loads(request, 0, &error);
+    json_t *arguments = NULL;
+    const char *sig;
+    if (js_request) {
+        if (json_unpack(js_request, "{s:s}", "m", &sig) != 0) {
+            LOG_ERROR("Got json error '%s'\n", error.text);
+        } else {
+            arguments = json_object_get(js_request, "a");
+        }
+    } else {
+        LOG_ERROR("Got json error '%s' for '%s'\n", error.text, request);
+        return 0;
+    }
+
+    LOG_DEBUG("Looking for method %s\n", sig);
+    struct methods_head *methods = NULL;
+    dynInterface_methods(intf, &methods);
+    struct method_entry *entry = NULL;
+    struct method_entry *method = NULL;
+    TAILQ_FOREACH(entry, methods, entries) {
+        if (strcmp(sig, entry->id) == 0) {
+            method = entry;
+            break;
+        }
+    }
+
+    if (method == NULL) {
+        status = ERROR;
+        LOG_ERROR("Cannot find method with sig '%s'", sig);
+    } else {
+        LOG_DEBUG("RSA: found method '%s'\n", entry->id);
+    }
+
+    void (*fp)(void) = NULL;
+    void *handle = NULL;
+    if (status == OK) {
+        struct generic_service_layout *serv = service;
+        handle = serv->handle;
+        fp = serv->methods[method->index];
+    }
+
+    dyn_function_type *func = NULL;
+    int nrOfArgs = 0;
+    if (status == OK) {
+        nrOfArgs = dynFunction_nrOfArguments(entry->dynFunc);
+        func = entry->dynFunc;
+    }
+
     void *args[nrOfArgs];
-
-
 
     json_t *value = NULL;
 
@@ -451,6 +506,7 @@ int jsonSerializer_call(dyn_function_type *func, void *handle, void (*fp)(void),
             break;
         }
     }
+    json_decref(js_request);
 
 
     //TODO assert return type is native int
@@ -460,12 +516,14 @@ int jsonSerializer_call(dyn_function_type *func, void *handle, void (*fp)(void),
     double **r = args[2];
     printf("result ptrptr is %p, result ptr %p, result is %f\n", r, *r, **r);
 
+
+    json_t *jsonResult = NULL;
     for (i = 0; i < nrOfArgs; i += 1) {
         int metaInfo = dynFunction_argumentMetaInfoForIndex(func, i);
         dyn_type *argType = dynFunction_argumentTypeForIndex(func, i);
         if (metaInfo == DYN_FUNCTION_ARG_META_PRE_ALLOCATED_OUTPUT_TYPE) {
             if (status == OK) {
-                status = jsonSerializer_serializeJson(argType, args[i], out);
+                status = jsonSerializer_serializeJson(argType, args[i], &jsonResult);
             }
         } else if (metaInfo == DYN_FUNCTION_ARG_META_OUTPUT_TYPE) {
             printf("TODO\n");
@@ -477,17 +535,41 @@ int jsonSerializer_call(dyn_function_type *func, void *handle, void (*fp)(void),
         }
     }
 
+    char *response = NULL;
+    if (status == OK) {
+        LOG_DEBUG("creating payload\n");
+        json_t *payload = json_object();
+        json_object_set_new(payload, "r", jsonResult);
+        response = json_dumps(payload, JSON_DECODE_ANY);
+        json_decref(payload);
+        LOG_DEBUG("status ptr is %p. response if '%s'\n", status, response);
+    }
+
+    if (status == OK) {
+        *out = response;
+    } else {
+        if (response != NULL) {
+            free(response);
+        }
+    }
+
     //TODO free args (created by jsonSerializer and dynType_alloc) (dynType_free)
     return status;
 }
 
-int jsonSerializer_prepareArguments(dyn_function_type *func, void *args[], json_t **out) {
+int jsonSerializer_prepareInvokeRequest(dyn_function_type *func, const char *id, void *args[], char **out) {
     int status = OK;
+
+
+    LOG_DEBUG("Calling remote function '%s'\n", id);
+    json_t *invoke = json_object();
+    json_object_set(invoke, "m", json_string(id));
+
     json_t *arguments = json_array();
+    json_object_set_new(invoke, "a", arguments);
 
     int i;
     int nrOfArgs = dynFunction_nrOfArguments(func);
-
     for (i = 0; i < nrOfArgs; i +=1) {
         if (dynFunction_argumentMetaInfoForIndex(func, i) == DYN_FUNCTION_ARG_META_INPUT_TYPE) {
             json_t *val = NULL;
@@ -504,15 +586,23 @@ int jsonSerializer_prepareArguments(dyn_function_type *func, void *args[], json_
         }
     }
 
+    char *invokeStr = json_dumps(invoke, JSON_DECODE_ANY);
+    json_decref(invoke);
+
     if (status == OK) {
-        *out = arguments;
+        *out = invokeStr;
     }
 
     return status;
 }
 
-int jsonSerializer_handleReply(dyn_function_type *func, void *handle, json_t *reply, void *args[]) {
+int jsonSerializer_handleReply(dyn_function_type *func, const char *reply, void *args[]) {
     int status = 0;
+
+    json_t *replyJson = json_loads(reply, JSON_DECODE_ANY, NULL); //TODO check
+    json_t *result = json_object_get(replyJson, "r"); //TODO check
+
+    LOG_DEBUG("replyJson ptr is %p and result ptr is %p\n", replyJson, result);
 
     int nrOfArgs = dynFunction_nrOfArguments(func);
     int i;
@@ -520,18 +610,22 @@ int jsonSerializer_handleReply(dyn_function_type *func, void *handle, json_t *re
         dyn_type *argType = dynFunction_argumentTypeForIndex(func, i);
         int metaInf = dynFunction_argumentMetaInfoForIndex(func, i);
         if (metaInf == DYN_FUNCTION_ARG_META_PRE_ALLOCATED_OUTPUT_TYPE) {
-            void **tmp = NULL;
+            dyn_type *subType = NULL;
+            dynType_typedPointer_getTypedType(argType, &subType);
+            void *tmp = NULL;
+            size_t size = dynType_size(subType);
+            status = jsonSerializer_deserializeJson(subType, result, &tmp);
             void **out = (void **)args[i];
-            size_t size = dynType_size(argType);
-            status = jsonSerializer_deserializeJson(argType, reply, (void **)&tmp);
-            memcpy(*out, *tmp, size);
-            dynType_free(argType, tmp);
+            memcpy(*out, tmp, size);
+            dynType_free(subType, tmp);
         } else if (metaInf == DYN_FUNCTION_ARG_META_OUTPUT_TYPE) {
             assert(false); //TODO
         } else {
-            //skipt handle and input types
+            //skip handle and input types
         }
     }
+
+    json_decref(replyJson);
 
     return status;
 }

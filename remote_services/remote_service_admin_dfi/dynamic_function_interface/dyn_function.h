@@ -18,7 +18,7 @@
  * e.g add(DD)D or sum({[D[D setA setB})D
  */
 
-//TODO maybe refactor to meta info flags (e.g context/handler, output, etc with a start/stop -> M(MetaType);
+typedef struct _dyn_function_type dyn_function_type;
 
 #define DYN_FUNCTION_ARG_META_UNKNOWN_TYPE 0
 #define DYN_FUNCTION_ARG_META_INPUT_TYPE 1
@@ -26,8 +26,6 @@
 #define DYN_FUNCTION_ARG_META_OUTPUT_TYPE 3
 #define DYN_FUNCTION_ARG_META_HANDLE_TYPE 4
 //TODO input/output types?
-
-typedef struct _dyn_function_type dyn_function_type;
 
 DFI_SETUP_LOG_HEADER(dynFunction);
 

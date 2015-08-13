@@ -22,14 +22,9 @@ DFI_SETUP_LOG_HEADER(dynInterface);
  * ':methods\n' [MethodIdValue]
  *
  */
-
-//struct namvals_head in dyn_common.h
-TAILQ_HEAD(methods_head, method_entry);
-//struct reference_types_head in dyn_type.h
-
 typedef struct _dyn_interface_type dyn_interface_type;
 
-
+TAILQ_HEAD(methods_head, method_entry);
 struct method_entry {
     int index;
     char *id;

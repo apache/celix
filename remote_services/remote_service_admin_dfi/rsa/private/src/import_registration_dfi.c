@@ -216,47 +216,35 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
     struct method_entry *entry = userData;
     import_registration_pt import = *((void **)args[0]);
 
-    printf("Calling remote function '%s'\n", entry->id);
-    json_t *invoke = json_object();
-    json_object_set(invoke, "m", json_string(entry->id));
-
-    json_t *arguments = NULL;
-
-    status = jsonSerializer_prepareArguments(entry->dynFunc, args, &arguments);
-    if (status == CELIX_SUCCESS) {
-        json_object_set_new(invoke, "a", arguments);
+    if (import == NULL || import->send == NULL) {
+        status = CELIX_ILLEGAL_ARGUMENT;
     }
 
-    char *output = json_dumps(invoke, JSON_DECODE_ANY);
-    json_decref(invoke);
 
-    printf("Need to send following json '%s'\n", output);
+    char *invokeRequest = NULL;
+    if (status == CELIX_SUCCESS) {
+        status = jsonSerializer_prepareInvokeRequest(entry->dynFunc, entry->id, args, &invokeRequest);
+        printf("Need to send following json '%s'\n", invokeRequest);
+    }
 
-    if (import != NULL && import->send != NULL) {
+    if (status == CELIX_SUCCESS) {
         char *reply = NULL;
         int rc = 0;
         printf("sending request\n");
-        import->send(import->sendHandle, import->endpoint, output, &reply, &rc);
-        printf("request sended. got reply '%s'\n", reply);
+        import->send(import->sendHandle, import->endpoint, invokeRequest, &reply, &rc);
+        printf("request sended. got reply '%s' with status %i\n", reply, rc);
 
-        json_t *replyJson = json_loads(reply, JSON_DECODE_ANY, NULL); //TODO check
-        json_t *result = json_object_get(replyJson, "r"); //TODO check
-        status = jsonSerializer_handleReply(entry->dynFunc, NULL, result, args);
-        json_decref(result);
-
-
-
-
-        if (status == 0) {
-            printf("done with proxy func\n");
+        if (rc == 0) {
+            printf("handling reply\n");
+            status = jsonSerializer_handleReply(entry->dynFunc, reply, args);
         }
-    } else {
-        printf("Error import of import->send is NULL\n");
+
+        *(int *) returnVal = rc;
     }
 
-    //TODO assert double check if return type is native int
-    int *rVal = returnVal;
-    *rVal = status;
+    if (status != CELIX_SUCCESS) {
+        //TODO log error
+    }
 }
 
 celix_status_t importRegistration_ungetService(import_registration_pt import, bundle_pt bundle, service_registration_pt registration, void **out) {
