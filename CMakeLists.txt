@@ -64,6 +64,7 @@ if(${WITH_APR})
 endif()
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
                ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/config.h DESTINATION include/celix)
 
 ## New sub project must use a buildoption to be able to enable/disable the project using the CMake Editor
 ## Sub projects depending on another sub project automatically enable these dependencies

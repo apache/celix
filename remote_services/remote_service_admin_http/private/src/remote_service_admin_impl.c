@@ -29,7 +29,11 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netdb.h>
+
+#ifndef ANDROID
 #include <ifaddrs.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -122,6 +126,8 @@ celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_servi
 		}
 
 		bundleContext_getProperty(context, "RSA_IP", &ip);
+
+		#ifndef ANDROID
 		if (ip == NULL) {
 			char *interface = NULL;
 
@@ -136,6 +142,7 @@ celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_servi
 
 			ip = detectedIp;
 		}
+		#endif
 
 		if (ip != NULL) {
 			logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_INFO, "RSA: Using %s for service annunciation", ip);
@@ -520,7 +527,7 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
 
 	return status;
 }
-
+#ifndef ANDROID
 static celix_status_t remoteServiceAdmin_getIpAdress(char* interface, char** ip) {
 	celix_status_t status = CELIX_BUNDLE_EXCEPTION;
 
@@ -551,6 +558,7 @@ static celix_status_t remoteServiceAdmin_getIpAdress(char* interface, char** ip)
 
     return status;
 }
+#endif
 
 
 celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, service_reference_pt reference,

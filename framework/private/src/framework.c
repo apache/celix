@@ -2075,8 +2075,9 @@ static void *framework_shutdown(void *framework) {
 		bundle_close(bundle);
 	}
 	hashMapIterator_destroy(iter);
-
+#ifndef ANDROID
     pthread_cancel(fw->dispatcherThread.thread);
+#endif
     celixThread_join(fw->dispatcherThread, NULL);
 
 	err = celixThreadMutex_lock(&fw->mutex);
