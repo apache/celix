@@ -4,7 +4,6 @@
 
 
 include_directories(
-    ${PROJECT_SOURCE_DIR}/launcher/public/include
     ${PROJECT_SOURCE_DIR}/framework/public/include
     ${PROJECT_SOURCE_DIR}/utils/public/include
     ${PROJECT_SOURCE_DIR}/utils/public/include
@@ -24,7 +23,6 @@ add_executable(test_rsa_dfi
     rsa_tests.cpp
     rsa_client_server_tests.cpp
 
-    ${PROJECT_SOURCE_DIR}/launcher/private/src/launcher.c #TODO move to libframework
     ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c
 )
 target_link_libraries(test_rsa_dfi celix_framework celix_utils ${CURL_LIBRARIES} ${CPPUTEST_LIBRARY})

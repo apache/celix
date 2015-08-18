@@ -41,7 +41,12 @@ SET(CELIX_MINOR "0")
 SET(CELIX_MICRO "0")
 SET(CELIX_QUALIFIER "")
 
-enable_testing()
+option(ENABLE_TESTING "Enables unit/bundle testing" FALSE)
+
+if (ENABLE_TESTING)
+	enable_testing()
+endif()
+
 
 include(CMakeCelix)
 include(cmake_celix/installation)

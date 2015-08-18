@@ -26,7 +26,7 @@ if (LAUNCHER)
     
     add_executable(celix
         private/src/main
-        private/src/launcher)
+    )
     
     target_link_libraries(celix celix_framework ${CURL_LIBRARIES})
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")

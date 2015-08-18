@@ -28,7 +28,7 @@
 #include <curl/curl.h>
 #include <signal.h>
 #include <libgen.h>
-#include "launcher.h"
+#include "celix_launcher.h"
 
 static void show_usage(char* prog_name);
 static void shutdown_framework(int signal);

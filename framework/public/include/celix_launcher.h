@@ -17,7 +17,7 @@
  *under the License.
  */
 /*
- * launcher.h
+ * celix_launcher.h
  *
  *  \date       Jul 30, 2015
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>

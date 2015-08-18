@@ -17,7 +17,7 @@ extern "C" {
 #include <ctype.h>
 #include <unistd.h>
 
-#include "launcher.h"
+#include "celix_launcher.h"
 #include "framework.h"
 #include "remote_service_admin.h"
 #include "calculator_service.h"

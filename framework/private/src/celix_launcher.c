@@ -17,14 +17,14 @@
  *under the License.
  */
 /*
- * launcher.c
+ * celix_launcher.c
  *
  *  \date       Mar 23, 2010
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
-#include "launcher.h"
+#include "celix_launcher.h"
 
 #include <stdio.h>
 #include <string.h>

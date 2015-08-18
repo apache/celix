@@ -20,15 +20,13 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
         include_directories(dynamic_function_interface/memstream)
     endif()
 
-    #TODO if test check
-    include_directories(${CPPUTEST_INCLUDE_DIR})
-
-
     add_subdirectory(dynamic_function_interface)
     add_subdirectory(rsa)
 
-    #TODO if test check
-    add_subdirectory(dynamic_function_interface_tst)
-    add_subdirectory(rsa_tst)
+    if (ENABLE_TESTING)
+        include_directories(${CPPUTEST_INCLUDE_DIR})
+        add_subdirectory(dynamic_function_interface_tst)
+        add_subdirectory(rsa_tst)
+    endif()
 
 endif()

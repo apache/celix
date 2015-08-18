@@ -55,7 +55,7 @@ if (FRAMEWORK)
 	 private/src/requirement.c private/src/resolver.c private/src/service_reference.c private/src/service_registration.c 
 	 private/src/service_registry.c private/src/service_tracker.c private/src/service_tracker_customizer.c
 	 private/src/unzip.c private/src/utils.c private/src/version.c private/src/version_range.c private/src/wire.c
-	 private/src/celix_log.c
+	 private/src/celix_log.c private/src/celix_launcher.c
 
 	 private/include/attribute.h public/include/framework_exports.h
 
@@ -81,7 +81,7 @@ if (FRAMEWORK)
     INSTALL(DIRECTORY "${PROJECT_SOURCE_DIR}/cmake/" DESTINATION share/celix/cmake/modules COMPONENT framework) 
 
 	celix_subproject(FRAMEWORK_TESTS "Option to build the framework tests" "OFF" DEPS)
-    if (FRAMEWORK_TESTS)
+    if (ENABLE_TESTING AND FRAMEWORK_TESTS)
     	find_package(CppUTest REQUIRED)
     	
 	    include_directories(${CPPUTEST_INCLUDE_DIR})
@@ -374,5 +374,5 @@ if (FRAMEWORK)
         SETUP_TARGET_FOR_COVERAGE(attribute_test_c attribute_test ${CMAKE_BINARY_DIR}/coverage/attribute_test)
 		SETUP_TARGET_FOR_COVERAGE(wire_test_c wire_test ${CMAKE_BINARY_DIR}/coverage/wire_test)
 		
-	endif (FRAMEWORK_TESTS)
+	endif (ENABLE_TESTING AND FRAMEWORK_TESTS)
 endif (FRAMEWORK)
