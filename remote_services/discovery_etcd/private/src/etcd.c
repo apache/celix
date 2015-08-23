@@ -304,66 +304,79 @@ bool etcd_del(char* key) {
 }
 
 ///watch
-bool etcd_watch(char* key, int index, char* action, char* prevValue, char* value) {
-	json_error_t error;
-	json_t* js_root = NULL;
-	json_t* js_node = NULL;
-	json_t* js_prevNode = NULL;
-	json_t* js_action = NULL;
-	json_t* js_value = NULL;
-	json_t* js_prevValue = NULL;
-	bool retVal = false;
-	char url[MAX_URL_LENGTH];
-	int res;
-	struct MemoryStruct reply;
 
-	reply.memory = malloc(1); /* will be grown as needed by the realloc above */
-	reply.size = 0; /* no data at this point */
+bool etcd_watch(char* key, int index, char* action, char* prevValue, char* value, char* rkey, int* modifiedIndex) {
+    json_error_t error;
+    json_t* js_root = NULL;
+    json_t* js_node = NULL;
+    json_t* js_prevNode = NULL;
+    json_t* js_action = NULL;
+    json_t* js_value = NULL;
+    json_t* js_rkey = NULL;
+    json_t* js_prevValue = NULL;
+    json_t* js_modIndex = NULL;
+    bool retVal = false;
+    char url[MAX_URL_LENGTH];
+    int res;
+    struct MemoryStruct reply;
 
-	if (index != 0)
-		snprintf(url, MAX_URL_LENGTH, "http://%s:%d/v2/keys/%s?wait=true&recursive=true&waitIndex=%d", etcd_server, etcd_port, key,
-				index);
-	else
-		snprintf(url, MAX_URL_LENGTH, "http://%s:%d/v2/keys/%s?wait=true&recursive=true", etcd_server, etcd_port, key);
+    reply.memory = malloc(1); /* will be grown as needed by the realloc above */
+    reply.size = 0; /* no data at this point */
 
-	res = performRequest(url, GET, WriteMemoryCallback, NULL, (void*) &reply);
+    if (index != 0)
+        snprintf(url, MAX_URL_LENGTH, "http://%s:%d/v2/keys/%s?wait=true&recursive=true&waitIndex=%d", etcd_server, etcd_port, key, index);
+    else
+        snprintf(url, MAX_URL_LENGTH, "http://%s:%d/v2/keys/%s?wait=true&recursive=true", etcd_server, etcd_port, key);
 
-	if (res == CURLE_OK) {
-		js_root = json_loads(reply.memory, 0, &error);
+    res = performRequest(url, GET, WriteMemoryCallback, NULL, (void*) &reply);
 
-		if (js_root != NULL) {
-			js_action = json_object_get(js_root, ETCD_JSON_ACTION);
-			js_node = json_object_get(js_root, ETCD_JSON_NODE);
-			js_prevNode = json_object_get(js_root, ETCD_JSON_PREVNODE);
-		}
-		if (js_prevNode != NULL) {
-			js_prevValue = json_object_get(js_prevNode, ETCD_JSON_VALUE);
-		}
-		if (js_node != NULL) {
-			js_value = json_object_get(js_node, ETCD_JSON_VALUE);
-		}
-		if (js_prevNode != NULL) {
-			js_prevValue = json_object_get(js_prevNode, ETCD_JSON_VALUE);
-		}
-		if ((js_prevValue != NULL) && (json_is_string(js_prevValue))) {
-			strncpy(prevValue, json_string_value(js_prevValue), MAX_VALUE_LENGTH);
-		}
-		if ((js_value != NULL) && (json_is_string(js_value))) {
-			strncpy(value, json_string_value(js_value), MAX_VALUE_LENGTH);
-		}
-		if ((js_action != NULL) && (json_is_string(js_action))) {
-			strncpy(action, json_string_value(js_action), MAX_ACTION_LENGTH);
+    if (res == CURLE_OK) {
 
-			retVal = true;
-		}
-		if (js_root != NULL) {
-			json_decref(js_root);
-		}
-	}
+        js_root = json_loads(reply.memory, 0, &error);
 
-	if (reply.memory) {
-		free(reply.memory);
-	}
+        if (js_root != NULL) {
+            js_action = json_object_get(js_root, ETCD_JSON_ACTION);
+            js_node = json_object_get(js_root, ETCD_JSON_NODE);
+            js_prevNode = json_object_get(js_root, ETCD_JSON_PREVNODE);
+        }
+        if (js_prevNode != NULL) {
+            js_prevValue = json_object_get(js_prevNode, ETCD_JSON_VALUE);
+        }
+        if (js_node != NULL) {
+            js_rkey = json_object_get(js_node, ETCD_JSON_KEY);
+            js_value = json_object_get(js_node, ETCD_JSON_VALUE);
+            js_modIndex = json_object_get(js_node, ETCD_JSON_MODIFIEDINDEX);
+        }
+        if (js_prevNode != NULL) {
+            js_prevValue = json_object_get(js_prevNode, ETCD_JSON_VALUE);
+        }
+        if ((js_prevValue != NULL) && (json_is_string(js_prevValue))) {
+            strncpy(prevValue, json_string_value(js_prevValue), MAX_VALUE_LENGTH);
+        }
+        if ((js_value != NULL) && (json_is_string(js_value))) {
+            strncpy(value, json_string_value(js_value), MAX_VALUE_LENGTH);
+        }
+        if ((js_modIndex != NULL) && (json_is_integer(js_modIndex))) {
+            *modifiedIndex = json_integer_value(js_modIndex);
+        } else {
+            *modifiedIndex = index;
+        }
 
-	return retVal;
+        if ((js_rkey != NULL) && (js_action != NULL) && (json_is_string(js_rkey)) && (json_is_string(js_action))) {
+            strncpy(rkey, json_string_value(js_rkey), MAX_KEY_LENGTH);
+            strncpy(action, json_string_value(js_action), MAX_ACTION_LENGTH);
+
+            retVal = true;
+        }
+        if (js_root != NULL) {
+            json_decref(js_root);
+        }
+
+    }
+
+    if (reply.memory) {
+        free(reply.memory);
+    }
+
+    return retVal;
 }
