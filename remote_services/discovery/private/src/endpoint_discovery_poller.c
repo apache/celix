@@ -172,60 +172,66 @@ celix_status_t endpointDiscoveryPoller_getDiscoveryEndpoints(endpoint_discovery_
  * Adds a new endpoint URL to the list of polled endpoints.
  */
 celix_status_t endpointDiscoveryPoller_addDiscoveryEndpoint(endpoint_discovery_poller_pt poller, char *url) {
-    celix_status_t status;
+	celix_status_t status;
 
-    status = celixThreadMutex_lock(&(poller)->pollerLock);
-    if (status != CELIX_SUCCESS) {
-        return CELIX_BUNDLE_EXCEPTION;
-    }
+	status = celixThreadMutex_lock(&(poller)->pollerLock);
+	if (status != CELIX_SUCCESS) {
+		return CELIX_BUNDLE_EXCEPTION;
+	}
 
 	// Avoid memory leaks when adding an already existing URL...
 	array_list_pt endpoints = hashMap_get(poller->entries, url);
-    if (endpoints == NULL) {
+	if (endpoints == NULL) {
 		status = arrayList_createWithEquals(endpointDiscoveryPoller_endpointDescriptionEquals, &endpoints);
 
 		if (status == CELIX_SUCCESS) {
-			hashMap_put(poller->entries, url, endpoints);
+			logHelper_log(*poller->loghelper, OSGI_LOGSERVICE_DEBUG, "ENDPOINT_POLLER: add new discovery endpoint with url %s", url);
+			hashMap_put(poller->entries, strdup(url), endpoints);
 		}
-    }
+	}
 
 	status = celixThreadMutex_unlock(&poller->pollerLock);
 
-    return status;
+	return status;
 }
 
 /**
  * Removes an endpoint URL from the list of polled endpoints.
  */
 celix_status_t endpointDiscoveryPoller_removeDiscoveryEndpoint(endpoint_discovery_poller_pt poller, char *url) {
-    celix_status_t status;
+	celix_status_t status = CELIX_SUCCESS;
 
-    status = celixThreadMutex_lock(&poller->pollerLock);
-    if (status != CELIX_SUCCESS) {
-        return CELIX_BUNDLE_EXCEPTION;
-    }
+	if (celixThreadMutex_lock(&poller->pollerLock) != CELIX_SUCCESS) {
+		status = CELIX_BUNDLE_EXCEPTION;
+	} else {
+		hash_map_entry_pt entry = hashMap_getEntry(poller->entries, url);
 
-    hash_map_entry_pt entry  = hashMap_getEntry(poller->entries, url);
-    char* origKey = hashMapEntry_getKey(entry);
+		if (entry == NULL) {
+			logHelper_log(*poller->loghelper, OSGI_LOGSERVICE_DEBUG, "ENDPOINT_POLLER: There was no entry found belonging to url %s - maybe already removed?", url);
+		} else {
+			char* origKey = hashMapEntry_getKey(entry);
 
-    array_list_pt entries = hashMap_remove(poller->entries, url);
+			logHelper_log(*poller->loghelper, OSGI_LOGSERVICE_DEBUG, "ENDPOINT_POLLER: remove discovery endpoint with url %s", url);
 
-	for (unsigned int i = arrayList_size(entries); i > 0  ; i--) {
-		endpoint_description_pt endpoint = arrayList_get(entries, i-1);
-		discovery_removeDiscoveredEndpoint(poller->discovery, endpoint);
-		arrayList_remove(entries, i-1);
-		endpointDescription_destroy(endpoint);
+			array_list_pt entries = hashMap_remove(poller->entries, url);
+
+			for (unsigned int i = arrayList_size(entries); i > 0; i--) {
+				endpoint_description_pt endpoint = arrayList_get(entries, i - 1);
+				discovery_removeDiscoveredEndpoint(poller->discovery, endpoint);
+				arrayList_remove(entries, i - 1);
+				endpointDescription_destroy(endpoint);
+			}
+
+			if (entries != NULL) {
+				arrayList_destroy(entries);
+			}
+
+			free(origKey);
+		}
+		status = celixThreadMutex_unlock(&poller->pollerLock);
 	}
 
-	if (entries != NULL) {
-		arrayList_destroy(entries);
-	}
-
-
-	free(origKey);
-	status = celixThreadMutex_unlock(&poller->pollerLock);
-
-    return status;
+	return status;
 }
 
 static void *endpointDiscoveryPoller_poll(void *data) {
@@ -243,6 +249,7 @@ static void *endpointDiscoveryPoller_poll(void *data) {
         }
 
 		hash_map_iterator_pt iterator = hashMapIterator_create(poller->entries);
+
 		while (hashMapIterator_hasNext(iterator)) {
 			hash_map_entry_pt entry = hashMapIterator_nextEntry(iterator);
 
@@ -251,9 +258,9 @@ static void *endpointDiscoveryPoller_poll(void *data) {
 
 			array_list_pt updatedEndpoints = NULL;
 			// create an arraylist with a custom equality test to ensure we can find endpoints properly...
-			status = arrayList_createWithEquals(endpointDiscoveryPoller_endpointDescriptionEquals, &updatedEndpoints);
-
+			arrayList_createWithEquals(endpointDiscoveryPoller_endpointDescriptionEquals, &updatedEndpoints);
 			status = endpointDiscoveryPoller_getEndpoints(poller, url, &updatedEndpoints);
+
 			if (status != CELIX_SUCCESS) {
 				status = celixThreadMutex_unlock(&poller->pollerLock);
 				continue;
@@ -262,6 +269,7 @@ static void *endpointDiscoveryPoller_poll(void *data) {
 			if (updatedEndpoints) {
 				for (unsigned int i = arrayList_size(currentEndpoints); i > 0  ; i--) {
 					endpoint_description_pt endpoint = arrayList_get(currentEndpoints, i-1);
+
 					if (!arrayList_contains(updatedEndpoints, endpoint)) {
 						status = discovery_removeDiscoveredEndpoint(poller->discovery, endpoint);
 						arrayList_remove(currentEndpoints, i-1);
@@ -339,6 +347,8 @@ static celix_status_t endpointDiscoveryPoller_getEndpoints(endpoint_discovery_po
         curl_easy_setopt(curl, CURLOPT_URL, url);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, endpointDiscoveryPoller_writeMemory);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&chunk);
+        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5L);
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);
         res = curl_easy_perform(curl);
         curl_easy_cleanup(curl);
     }

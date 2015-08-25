@@ -111,7 +111,7 @@ static celix_status_t shmWatcher_syncEndpoints(shm_watcher_pt watcher) {
             }
 
             if (elementFound == false) {
-                endpointDiscoveryPoller_addDiscoveryEndpoint(watcher->poller, strdup(url));
+                endpointDiscoveryPoller_addDiscoveryEndpoint(watcher->poller, url);
             }
         }
     }

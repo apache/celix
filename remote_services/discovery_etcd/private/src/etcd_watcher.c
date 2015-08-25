@@ -131,7 +131,7 @@ static celix_status_t etcdWatcher_addAlreadyExistingWatchpoints(discovery_pt dis
 
 			if (etcd_get(key, &value[0], &action[0], &modIndex) == true) {
 				// TODO: check that this is not equals to the local endpoint
-				endpointDiscoveryPoller_addDiscoveryEndpoint(discovery->poller, strdup(&value[0]));
+				endpointDiscoveryPoller_addDiscoveryEndpoint(discovery->poller, &value[0]);
 
 				if (modIndex > *highestModified) {
 					*highestModified = modIndex;
@@ -206,23 +206,22 @@ static celix_status_t etcdWatcher_addOwnFramework(etcd_watcher_pt watcher)
 
 
 static celix_status_t etcdWatcher_addEntry(etcd_watcher_pt watcher, char* key, char* value) {
-    celix_status_t status = CELIX_BUNDLE_EXCEPTION;
+	celix_status_t status = CELIX_BUNDLE_EXCEPTION;
 	endpoint_discovery_poller_pt poller = watcher->discovery->poller;
 
 	if (!hashMap_containsKey(watcher->entries, key)) {
 		status = endpointDiscoveryPoller_addDiscoveryEndpoint(poller, value);
 
 		if (status == CELIX_SUCCESS) {
-			hashMap_put(watcher->entries, key, value);
+			hashMap_put(watcher->entries, strdup(key), strdup(value));
 		}
 	}
 
 	return status;
 }
 
-
 static celix_status_t etcdWatcher_removeEntry(etcd_watcher_pt watcher, char* key, char* value) {
-    celix_status_t status = CELIX_BUNDLE_EXCEPTION;
+	celix_status_t status = CELIX_BUNDLE_EXCEPTION;
 	endpoint_discovery_poller_pt poller = watcher->discovery->poller;
 
 	if (hashMap_containsKey(watcher->entries, key)) {
