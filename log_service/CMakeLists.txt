@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(LOG_SERVICE "Option to enable building the Log Service bundles" "OFF" DEPS framework)
+celix_subproject(LOG_SERVICE "Option to enable building the Log Service bundles" ON DEPS framework)
 if (LOG_SERVICE)
 	
 	SET_HEADER(BUNDLE_VERSION "1.0.0")

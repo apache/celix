@@ -14,7 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-celix_subproject(RSA_REMOTE_SERVICE_ADMIN_HTTP "Option to enable building the Remote Service Admin Service HTTP bundle" OFF)
+celix_subproject(RSA_REMOTE_SERVICE_ADMIN_HTTP "Option to enable building the Remote Service Admin Service HTTP bundle" ON)
 if (RSA_REMOTE_SERVICE_ADMIN_HTTP)
 	find_package(CURL REQUIRED)
 	find_package(UUID REQUIRED)
