@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(RSA_EXAMPLES "Option to enable building the RSA examples" OFF DEPS LAUNCHER shell_tui log_writer RSA_TOPOLOGY_MANAGER)
+celix_subproject(RSA_EXAMPLES "Option to enable building the RSA examples" ON DEPS LAUNCHER shell_tui log_writer RSA_TOPOLOGY_MANAGER)
 if (RSA_EXAMPLES)
     add_subdirectory(calculator_service)
 
