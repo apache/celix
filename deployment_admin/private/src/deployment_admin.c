@@ -218,7 +218,7 @@ static void *deploymentAdmin_poll(void *deploymentAdmin) {
 		char *last = arrayList_get(versions, arrayList_size(versions) - 1);
 
 		if (last != NULL) {
-			if (admin->current == NULL || strcmp(last, admin->current) > 0) {
+			if (admin->current == NULL || strcmp(last, admin->current) != 0) {
 				int length = strlen(admin->pollUrl) + strlen(last) + 2;
 				char request[length];
 				if (admin->current == NULL) {
