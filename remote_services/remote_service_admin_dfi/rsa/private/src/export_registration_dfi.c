@@ -8,6 +8,7 @@
 #include <remote_service_admin.h>
 #include <service_tracker_customizer.h>
 #include <service_tracker.h>
+#include <json_rpc.h>
 #include "export_registration_dfi.h"
 
 struct export_reference {
@@ -100,8 +101,8 @@ celix_status_t exportRegistration_create(log_helper_pt helper, void (*closedCall
 
     if (status == CELIX_SUCCESS) {
         service_tracker_customizer_pt cust = NULL;
-        status = serviceTrackerCustomizer_create(reg, NULL, exportRegistration_addServ, NULL,
-                                                 exportRegistration_removeServ, &cust);
+        status = serviceTrackerCustomizer_create(reg, NULL, (void *) exportRegistration_addServ, NULL,
+                                                 (void *) exportRegistration_removeServ, &cust);
         if (status == CELIX_SUCCESS) {
             char filter[32];
             snprintf(filter, 32, "(service.id=%s)", servId);
@@ -124,7 +125,7 @@ celix_status_t exportRegistration_call(export_registration_pt export, char *data
 
     *responseLength = -1;
     celixThreadMutex_lock(&export->mutex);
-    status = jsonSerializer_call(export->intf, export->service, data, responseOut);
+    status = jsonRpc_call(export->intf, export->service, data, responseOut);
     celixThreadMutex_unlock(&export->mutex);
 
     return status;
@@ -168,7 +169,7 @@ static void exportRegistration_addServ(export_registration_pt reg, service_refer
 static void exportRegistration_removeServ(export_registration_pt reg, service_reference_pt ref, void *service) {
     celixThreadMutex_lock(&reg->mutex);
     if (reg->service == service) {
-        reg->service == NULL;
+        reg->service = NULL;
     }
     celixThreadMutex_unlock(&reg->mutex);
 }

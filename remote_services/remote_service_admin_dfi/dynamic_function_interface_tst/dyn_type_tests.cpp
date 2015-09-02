@@ -38,7 +38,7 @@ extern "C" {
 
 TEST_GROUP(DynTypeTests) {
 	void setup() {
-	    dynType_logSetup(stdLog, NULL, 0);
+	    dynType_logSetup(stdLog, NULL, 4);
 	}
 };
 
@@ -185,6 +185,28 @@ TEST(DynTypeTests, AssignTest3) {
     void *input = &newValue;
     dynType_simple_setValue(type, loc, input);
     CHECK_EQUAL(42, simple);
+    dynType_destroy(type);
+}
+
+TEST(DynTypeTests, MetaInfoTest) {
+    dyn_type *type = NULL;
+    int rc = 0;
+    rc = dynType_parseWithStr("#a=t;{DD#longname=longvalue;D a b c}", NULL, NULL, &type);
+    //rc = dynType_parseWithStr("{DDD a b c}", NULL, NULL, &type);
+
+    CHECK_EQUAL(0, rc);
+
+    const char *val = NULL;
+    val = dynType_getMetaInfo(type, "a");
+    CHECK(val != NULL);
+    CHECK(strcmp("t", val) == 0);
+
+    val = dynType_getMetaInfo(type, "longname");
+    CHECK(val == NULL);
+
+    val = dynType_getMetaInfo(type, "nonexisting");
+    CHECK(val == NULL);
+
     dynType_destroy(type);
 }
 

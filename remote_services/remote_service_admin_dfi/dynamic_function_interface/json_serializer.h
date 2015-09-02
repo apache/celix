@@ -19,8 +19,4 @@ int jsonSerializer_deserializeJson(dyn_type *type, json_t *input, void **result)
 int jsonSerializer_serialize(dyn_type *type, void *input, char **output);
 int jsonSerializer_serializeJson(dyn_type *type, void *input, json_t **out);
 
-int jsonSerializer_call(dyn_interface_type *intf, void *service, const char *request, char **out);
-
-int jsonSerializer_prepareInvokeRequest(dyn_function_type *func, const char *id, void *args[], char **out);
-int jsonSerializer_handleReply(dyn_function_type *func, const char *reply, void *args[]);
 #endif

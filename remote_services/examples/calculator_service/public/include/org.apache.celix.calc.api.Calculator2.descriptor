@@ -6,6 +6,6 @@ version=1.0.0
 classname=org.example.Calculator
 :types
 :methods
-add(DD)D=add(#PDD^*D)N
-sub(DD)D=sub(#PDD^*D)N
-sqrt(D)D=sqrt(#PD^*D)N
+add(DD)D=add(#am=handle;PDD#am=pre;*D)N
+sub(DD)D=sub(#am=handle;PDD#am=pre;*D)N
+sqrt(D)D=sqrt(#am=handle;PD#am=pre;*D)N

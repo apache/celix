@@ -166,40 +166,6 @@ extern "C" {
 
         dynFunction_destroy(dynFunc);
     }
-
-    void test_meta(void) {
-        int rc;
-        dyn_function_type *func = NULL;
-
-        const char *descriptor1 = "sqrt(D^*D~**D#P)V";
-        rc = dynFunction_parseWithStr(descriptor1, NULL, &func);
-        CHECK_EQUAL(0, rc);
-        CHECK_EQUAL(DYN_FUNCTION_ARG_META_INPUT_TYPE, dynFunction_argumentMetaInfoForIndex(func, 0));
-        CHECK_EQUAL(DYN_FUNCTION_ARG_META_PRE_ALLOCATED_OUTPUT_TYPE, dynFunction_argumentMetaInfoForIndex(func, 1));
-        CHECK_EQUAL(DYN_FUNCTION_ARG_META_OUTPUT_TYPE, dynFunction_argumentMetaInfoForIndex(func, 2));
-        CHECK_EQUAL(DYN_FUNCTION_ARG_META_HANDLE_TYPE, dynFunction_argumentMetaInfoForIndex(func, 3));
-        CHECK_EQUAL(DYN_FUNCTION_ARG_META_UNKNOWN_TYPE, dynFunction_argumentMetaInfoForIndex(func, 4));
-        dynFunction_destroy(func);
-
-        const char *descriptor2 = "sqrt(D~*D)V";
-        rc = dynFunction_parseWithStr(descriptor2, NULL, &func);
-        CHECK(rc != 0);
-
-        const char *descriptor3 = "sqrt(D~***D)V";
-        rc = dynFunction_parseWithStr(descriptor3, NULL, &func);
-        CHECK_EQUAL(0, rc);
-        dynFunction_destroy(func);
-
-
-        const char *descriptor4 = "sqrt(D^D)V";
-        rc = dynFunction_parseWithStr(descriptor4, NULL, &func);
-        CHECK(rc != 0);
-
-        const char *descriptor5 = "sqrt(D^***D)V";
-        rc = dynFunction_parseWithStr(descriptor5, NULL, &func);
-        CHECK_EQUAL(0, rc);
-        dynFunction_destroy(func);
-    }
 }
 
 TEST_GROUP(DynFunctionTests) {
@@ -224,8 +190,4 @@ TEST(DynFunctionTests, DynFuncAccTest) {
 
 TEST(DynFunctionTests, DynFuncTest3) {
     test_example3();
-}
-
-TEST(DynFunctionTests, DynFuncTestMeta) {
-    test_meta();
 }

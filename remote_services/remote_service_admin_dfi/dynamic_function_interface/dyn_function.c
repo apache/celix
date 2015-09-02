@@ -43,10 +43,6 @@ static int dynFunction_initCif(dyn_function_type *dynFunc);
 static int dynFunction_parseDescriptor(dyn_function_type *dynFunc, FILE *descriptor);
 static void dynFunction_ffiBind(ffi_cif *cif, void *ret, void *args[], void *userData);
 
-static int dynFunction_checkArgument(dyn_function_argument_type *argument);
-
-static void dynFunction_parseArgMeta(FILE *descriptor, int *meta);
-
 int dynFunction_parse(FILE *descriptor, struct types_head *refTypes, dyn_function_type **out) {
     int status = OK;
     dyn_function_type *dynFunc = NULL;
@@ -116,13 +112,11 @@ static int dynFunction_parseDescriptor(dyn_function_type *dynFunc, FILE *descrip
     int nextChar = fgetc(descriptor);
     int index = 0;
     dyn_type *type = NULL;
-    int argMetaInfo = DYN_FUNCTION_ARG_META_INPUT_TYPE;
     char argName[32];
     while (nextChar != ')' && status == 0)  {
         ungetc(nextChar, descriptor);
         type = NULL;
 
-        dynFunction_parseArgMeta(descriptor, &argMetaInfo);
         dyn_function_argument_type *arg = NULL;
 
         status = dynType_parse(descriptor, NULL, dynFunc->refTypes, &type);
@@ -131,8 +125,6 @@ static int dynFunction_parseDescriptor(dyn_function_type *dynFunc, FILE *descrip
             if (arg != NULL) {
                 arg->index = index;
                 arg->type = type;
-                arg->argumentType = argMetaInfo;
-
                 snprintf(argName, 32, "arg%04i", index);
                 arg->name = strdup(argName);
 
@@ -141,10 +133,6 @@ static int dynFunction_parseDescriptor(dyn_function_type *dynFunc, FILE *descrip
                 LOG_ERROR("Error allocating memory");
                 status = MEM_ERROR;
             }
-        }
-
-        if (status == 0) {
-            status = dynFunction_checkArgument(arg);
         }
 
         if (status == 0) {
@@ -170,47 +158,6 @@ static int dynFunction_parseDescriptor(dyn_function_type *dynFunc, FILE *descrip
     return status;
 }
 
-static void dynFunction_parseArgMeta(FILE *descriptor, int *meta) {
-    int c = fgetc(descriptor);
-
-    switch (c) {
-        case '~' :
-            *meta = DYN_FUNCTION_ARG_META_OUTPUT_TYPE;
-            break;
-        case '^' :
-            *meta = DYN_FUNCTION_ARG_META_PRE_ALLOCATED_OUTPUT_TYPE;
-            break;
-        case '#' :
-            *meta = DYN_FUNCTION_ARG_META_HANDLE_TYPE;
-            break;
-        default :
-            *meta = DYN_FUNCTION_ARG_META_INPUT_TYPE;
-            ungetc(c, descriptor);
-            break;
-    }
-}
-
-static int dynFunction_checkArgument(dyn_function_argument_type *argument) {
-    int status = 0;
-    if (argument->argumentType == DYN_FUNCTION_ARG_META_PRE_ALLOCATED_OUTPUT_TYPE) {
-        //expect atleast one *
-        if (dynType_type(argument->type) != DYN_TYPE_TYPED_POINTER) {
-            status = ERROR;
-        }
-    } else if (argument->argumentType == DYN_FUNCTION_ARG_META_OUTPUT_TYPE) {
-        //expect atleast two **
-        if (dynType_type(argument->type) == DYN_TYPE_TYPED_POINTER) {
-            dyn_type *subType = NULL;
-            status = dynType_typedPointer_getTypedType(argument->type, &subType);
-            if (status == OK && dynType_type(subType) != DYN_TYPE_TYPED_POINTER) {
-                status = ERROR;
-            }
-        } else {
-            status = ERROR;
-        }
-    }
-    return status;
-}
 
 static int dynFunction_initCif(dyn_function_type *dynFunc) {
     int status = 0;
@@ -340,19 +287,4 @@ dyn_type *dynFunction_argumentTypeForIndex(dyn_function_type *dynFunc, int argum
 dyn_type * dynFunction_returnType(dyn_function_type *dynFunction) {
     return dynFunction->funcReturn;
 }
-
-int dynFunction_argumentMetaInfoForIndex(dyn_function_type *dynFunc, int argumentNr) {
-    int argType = DYN_FUNCTION_ARG_META_UNKNOWN_TYPE;
-    int index = 0;
-    dyn_function_argument_type *entry = NULL;
-    TAILQ_FOREACH(entry, &dynFunc->arguments, entries) {
-        if (index == argumentNr) {
-            argType = entry->argumentType;
-            break;
-        }
-        index +=1;
-    }
-    return argType;
-}
-
 

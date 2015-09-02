@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <jansson.h>
+#include <json_rpc.h>
 #include "json_serializer.h"
 #include "dyn_interface.h"
 #include "import_registration.h"
@@ -230,7 +231,7 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
 
     char *invokeRequest = NULL;
     if (status == CELIX_SUCCESS) {
-        status = jsonSerializer_prepareInvokeRequest(entry->dynFunc, entry->id, args, &invokeRequest);
+        status = jsonRpc_prepareInvokeRequest(entry->dynFunc, entry->id, args, &invokeRequest);
         printf("Need to send following json '%s'\n", invokeRequest);
     }
 
@@ -243,7 +244,7 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
 
         if (rc == 0) {
             printf("handling reply\n");
-            status = jsonSerializer_handleReply(entry->dynFunc, reply, args);
+            status = jsonRpc_handleReply(entry->dynFunc, reply, args);
         }
 
         *(int *) returnVal = rc;

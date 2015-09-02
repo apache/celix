@@ -11,6 +11,7 @@ add_executable(test_dfi
 	dyn_closure_tests.cpp
 	dyn_interface_tests.cpp
 	json_serializer_tests.cpp
+	json_rpc_tests.cpp
 	run_tests.cpp
 )
 target_link_libraries(test_dfi dfi ${CPPUTEST_LIBRARY})

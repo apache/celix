@@ -49,11 +49,21 @@ void dynType_freeComplexType(dyn_type *type, void *loc);
 void dynType_deepFree(dyn_type *type, void *loc, bool alsoDeleteSelf);
 void dynType_freeSequenceType(dyn_type *type, void *seqLoc);
 
+static int dynType_parseMetaInfo(FILE *stream, dyn_type *type);
+
 struct generic_sequence {
     uint32_t cap;
     uint32_t len;
     void *buf;
 };
+
+TAILQ_HEAD(meta_properties_head, meta_entry);
+struct meta_entry {
+    char *name;
+    char *value;
+    TAILQ_ENTRY(meta_entry) entries;
+};
+
 
 struct _dyn_type {
     char *name;
@@ -63,6 +73,7 @@ struct _dyn_type {
     dyn_type *parent;
     struct types_head *referenceTypes; //NOTE: not owned
     struct types_head nestedTypesHead;
+    struct meta_properties_head metaProperties;
     union {
         struct {
             struct complex_type_entries_head entriesHead;
@@ -119,6 +130,7 @@ static int dynType_parseWithStream(FILE *stream, const char *name, dyn_type *par
         type->type = DYN_TYPE_INVALID;
         type->referenceTypes = refTypes;
         TAILQ_INIT(&type->nestedTypesHead);
+        TAILQ_INIT(&type->metaProperties);
         if (name != NULL) {
             type->name = strdup(name);
             if (type->name == NULL) {
@@ -170,9 +182,55 @@ static int dynType_parseAny(FILE *stream, dyn_type *type) {
         case 't' :
             status = dynType_parseText(stream, type);
             break;
+        case '#' :
+            status = dynType_parseMetaInfo(stream, type);
+            if (status == OK) {
+                status = dynType_parseAny(stream, type);
+            }
+            break;
         default :
             status = dynType_parseSimple(c, type);
             break;
+    }
+
+    return status;
+}
+
+static int dynType_parseMetaInfo(FILE *stream, dyn_type *type) {
+    int status = OK;
+    char *name = NULL;
+    char *value = NULL;
+
+    struct meta_entry *entry = calloc(1, sizeof(*entry));
+    if (entry == NULL) {
+        status = ERROR;
+    }
+
+    if (status == OK) {
+        status = dynCommon_parseName(stream, &name);
+    }
+
+    if (status == OK) {
+        status = dynCommon_eatChar(stream, '=');
+    }
+
+    if (status == OK) {
+        status = dynCommon_parseName(stream, &value);
+    }
+
+    if (status == OK) {
+        status = dynCommon_eatChar(stream, ';');
+    }
+
+    if (status == OK) {
+        entry->name = name;
+        entry->value = value;
+        TAILQ_INSERT_TAIL(&type->metaProperties, entry, entries);
+        LOG_DEBUG("Added meta properties '%s':'%s'", name, value)
+    } else {
+        free(name);
+        free(value);
+        free(entry);
     }
 
     return status;
@@ -205,6 +263,7 @@ static int dynType_parseComplex(FILE *stream, dyn_type *type) {
             entry->type->parent = type;
             entry->type->type = DYN_TYPE_INVALID;
             TAILQ_INIT(&entry->type->nestedTypesHead);
+            TAILQ_INIT(&entry->type->metaProperties);
             TAILQ_INSERT_TAIL(&type->complex.entriesHead, entry, entries);
             status = dynType_parseAny(stream, entry->type);
         } else {
@@ -281,6 +340,7 @@ static int dynType_parseNestedType(FILE *stream, dyn_type *type) {
         entry->type->parent = type;
         entry->type->type = DYN_TYPE_INVALID;
         TAILQ_INIT(&entry->type->nestedTypesHead);
+        TAILQ_INIT(&entry->type->metaProperties);
         TAILQ_INSERT_TAIL(&type->nestedTypesHead, entry, entries);
         status = dynCommon_parseName(stream, &name);
         entry->type->name = name;
@@ -324,6 +384,7 @@ static int dynType_parseReference(FILE *stream, dyn_type *type) {
         subType->parent = type;
         subType->type = DYN_TYPE_INVALID;
         TAILQ_INIT(&subType->nestedTypesHead);
+        TAILQ_INIT(&subType->metaProperties);
         status = dynType_parseRefByValue(stream, subType);
     } else {
         status = MEM_ERROR;
@@ -443,6 +504,17 @@ static void dynType_clear(dyn_type *type) {
             tmp->type = NULL;
         }
         free(tmp);
+    }
+
+    struct meta_entry *mEntry = TAILQ_FIRST(&type->metaProperties);;
+    struct meta_entry *next = NULL;
+    while (mEntry != NULL) {
+        next = TAILQ_NEXT(mEntry, entries);
+        if (mEntry != NULL) {
+            free(mEntry->name);
+            free(mEntry->value);
+        }
+        mEntry = next;
     }
 
     switch (type->type) {
@@ -722,6 +794,19 @@ void dynType_simple_setValue(dyn_type *type, void *inst, void *in) {
 
 int dynType_descriptorType(dyn_type *type) {
     return type->descriptor;
+}
+
+const char * dynType_getMetaInfo(dyn_type *type, const char *name) {
+    const char *result = NULL;
+    struct meta_entry *entry = NULL;
+    TAILQ_FOREACH(entry, &type->metaProperties, entries) {
+        LOG_DEBUG("Checking '%s'", entry->name);
+        if (strcmp(entry->name, name) == 0) {
+            result = entry->value;
+            break;
+        }
+    }
+    return result;
 }
 
 ffi_type *dynType_ffiType(dyn_type *type) {

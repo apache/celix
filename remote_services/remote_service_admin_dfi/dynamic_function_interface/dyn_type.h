@@ -21,7 +21,7 @@
 
 /* Description string
  *
- * Type = [TypeDef]* (SimpleType | ComplexType | SequenceType | TypedPointer | PointerReference ) [TypeDef]* [Annotation]*
+ * Type = [TypeDef]* (MetaInfo)* (SimpleType | ComplexType | SequenceType | TypedPointer | PointerReference ) [TypeDef]*
  * Name = alpha[(alpha|numeric)*]
  * SPACE = ' ' 
  *
@@ -63,8 +63,10 @@
  * TypedPointer
  * *(Type)
  *
- * Annotation TODO
- * <(Name)=(Value)>
+ * MetaInfo TODO
+ * #Name=Value;
+ *
+ *
  *
  * examples
  * "{DDII a b c d}" -> struct { double a; double b; int c; int d; }; 
@@ -111,7 +113,8 @@ void dynType_print(dyn_type *type, FILE *stream);
 size_t dynType_size(dyn_type *type);
 int dynType_type(dyn_type *type);
 int dynType_descriptorType(dyn_type *type);
-ffi_type *dynType_ffiType(dyn_type *type);
+ffi_type * dynType_ffiType(dyn_type *type);
+const char * dynType_getMetaInfo(dyn_type *type, const char *name);
 
 //complexType
 int dynType_complex_indexForName(dyn_type *type, const char *name);

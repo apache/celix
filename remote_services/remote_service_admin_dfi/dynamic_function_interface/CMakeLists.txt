@@ -16,6 +16,7 @@ add_library(dfi STATIC
     dyn_function.c
     dyn_interface.c
     json_serializer.c
+    json_rpc.c
     ${MEMSTREAM_SOURCES}
 )
 target_link_libraries(dfi ${FFI_LIBRARIES} ${JANSSON_LIBRARY})
