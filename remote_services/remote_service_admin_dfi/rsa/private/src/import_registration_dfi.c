@@ -16,6 +16,9 @@ struct import_registration {
     service_registration_pt factoryReg;
 
     hash_map_pt proxies; //key -> bundle, value -> service_proxy
+
+    void (*rsaCloseImportCallback)(void *, import_registration_pt);
+    void *rsaHandle;
 };
 
 struct service_proxy {
@@ -29,7 +32,9 @@ static celix_status_t importRegistration_createProxy(import_registration_pt impo
 static void importRegistration_proxyFunc(void *userData, void *args[], void *returnVal);
 static void importRegistration_destroyProxy(struct service_proxy *proxy);
 
-celix_status_t importRegistration_create(bundle_context_pt context, endpoint_description_pt  endpoint, const char *classObject, import_registration_pt *out) {
+celix_status_t importRegistration_create(bundle_context_pt context, void (*rsaCallback)(void *, import_registration_pt),
+                                         void *rsaHandle, endpoint_description_pt endpoint, const char *classObject,
+                                         import_registration_pt *out) {
     celix_status_t status = CELIX_SUCCESS;
     import_registration_pt reg = calloc(1, sizeof(*reg));
 
@@ -39,6 +44,8 @@ celix_status_t importRegistration_create(bundle_context_pt context, endpoint_des
 
     if (reg != NULL && reg->factory != NULL) {
         reg->context = context;
+        reg->rsaCloseImportCallback = rsaCallback;
+        reg->rsaHandle = rsaHandle;
         reg->endpoint = endpoint;
         reg->classObject = classObject;
         reg->proxies = hashMap_create(NULL, NULL, NULL, NULL);
@@ -97,7 +104,7 @@ celix_status_t importRegistration_stop(import_registration_pt import) {
     if (import->factoryReg != NULL) {
         serviceRegistration_unregister(import->factoryReg);
     }
-    //TODO unregister every serv instance?
+    //TODO unregister every serv instance? Needed for factory?
     return status;
 }
 
@@ -273,13 +280,21 @@ celix_status_t importRegistration_ungetService(import_registration_pt import, bu
 }
 
 static void importRegistration_destroyProxy(struct service_proxy *proxy) {
-    //TODO
+    if (proxy != NULL) {
+        if (proxy->intf != NULL) {
+            dynInterface_destroy(proxy->intf);
+        }
+        if (proxy->service != NULL) {
+            free(proxy->service);
+        }
+        free(proxy);
+    }
 }
 
 
 celix_status_t importRegistration_close(import_registration_pt registration) {
     celix_status_t status = CELIX_SUCCESS;
-    //TODO
+    registration->rsaCloseImportCallback(registration->rsaHandle, registration);
     return status;
 }
 

@@ -27,35 +27,18 @@
 #ifndef REMOTE_SERVICE_ADMIN_HTTP_IMPL_H_
 #define REMOTE_SERVICE_ADMIN_HTTP_IMPL_H_
 
-#include "remote_service_admin.h"
-#include "log_helper.h"
-#include "civetweb.h"
+#include "bundle_context.h"
+#include "endpoint_description.h"
 
-struct remote_service_admin {
-	bundle_context_pt context;
-	log_helper_pt loghelper;
-
-	celix_thread_mutex_t exportedServicesLock;
-	hash_map_pt exportedServices;
-
-	celix_thread_mutex_t importedServicesLock;
-	hash_map_pt importedServices;
-
-	char *port;
-	char *ip;
-
-	struct mg_context *ctx;
-};
-
+typedef struct remote_service_admin *remote_service_admin_pt;
 
 celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_service_admin_pt *admin);
 celix_status_t remoteServiceAdmin_destroy(remote_service_admin_pt *admin);
 
 celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin);
-celix_status_t remoteServiceAdmin_send(remote_service_admin_pt rsa, endpoint_description_pt endpointDescription, char *methodSignature, char **reply, int* replyStatus);
 
 celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, char *serviceId, properties_pt properties, array_list_pt *registrations);
-celix_status_t remoteServiceAdmin_removeExportedService(export_registration_pt registration);
+celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_pt  admin, export_registration_pt registration);
 celix_status_t remoteServiceAdmin_getExportedServices(remote_service_admin_pt admin, array_list_pt *services);
 celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_admin_pt admin, array_list_pt *services);
 celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, endpoint_description_pt endpoint, import_registration_pt *registration);

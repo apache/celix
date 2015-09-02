@@ -10,7 +10,9 @@
 
 typedef void (*send_func_type)(void *handle, endpoint_description_pt endpointDescription, char *request, char **reply, int* replyStatus);
 
-celix_status_t importRegistration_create(bundle_context_pt context, endpoint_description_pt  description, const char *classObject, import_registration_pt *import);
+celix_status_t importRegistration_create(bundle_context_pt context, void (*rsaCallback)(void *, import_registration_pt),
+                                         void *rsaHandle, endpoint_description_pt description, const char *classObject,
+                                         import_registration_pt *import);
 void importRegistration_destroy(import_registration_pt import);
 
 celix_status_t importRegistration_setSendFn(import_registration_pt reg,

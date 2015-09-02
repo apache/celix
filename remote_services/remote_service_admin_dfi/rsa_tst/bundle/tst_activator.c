@@ -125,7 +125,7 @@ static int test(void *handle) {
     int rc;
     if (act->calc != NULL) {
          rc = act->calc->sqrt(act->calc->calculator, 4, &result);
-        printf("calc result is %d\n", result);
+        printf("calc result is %f\n", result);
     } else {
         printf("calc not ready\n");
     }

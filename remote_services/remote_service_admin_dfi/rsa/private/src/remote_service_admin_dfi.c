@@ -34,13 +34,14 @@
 #include <curl/curl.h>
 
 #include <jansson.h>
-#include <json_serializer.h>
+#include "json_serializer.h"
+#include "remote_service_admin.h"
 
 #include "import_registration_dfi.h"
 #include "export_registration_dfi.h"
+#include "remote_service_admin_dfi.h"
 #include "dyn_interface.h"
 
-#include "remote_service_admin.h"
 #include "remote_constants.h"
 #include "constants.h"
 #include "civetweb.h"
@@ -412,7 +413,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
         remoteServiceAdmin_createEndpointDescription(admin, reference, interface, &endpoint);
         printf("RSA: Creating export registration with endpoint pointer %p\n", endpoint);
         //TOOD precheck if descriptor exists
-        status = exportRegistration_create(admin->loghelper, reference, endpoint, admin->context, &registration);
+        status = exportRegistration_create(admin->loghelper, remoteServiceAdmin_removeExportedService, admin, reference, endpoint, admin->context, &registration);
         if (status == CELIX_SUCCESS) {
             status = exportRegistration_start(registration);
             if (status == CELIX_SUCCESS) {
@@ -431,7 +432,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
     return status;
 }
 
-celix_status_t remoteServiceAdmin_removeExportedService(export_registration_pt registration) {
+celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_pt admin, export_registration_pt registration) {
     celix_status_t status = CELIX_SUCCESS;
     //TODO
     /*
@@ -580,7 +581,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, e
 
     import_registration_pt import = NULL;
     if (objectClass != NULL) {
-        status = importRegistration_create(admin->context, endpointDescription, objectClass, &import);
+        status = importRegistration_create(admin->context, NULL, NULL, endpointDescription, objectClass, &import);
     }
     if (status == CELIX_SUCCESS) {
         importRegistration_setSendFn(import, remoteServiceAdmin_send, admin);
