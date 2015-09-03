@@ -216,6 +216,7 @@ int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[]
         if (argMeta == NULL) {
             //skip
         } else if (strcmp(argMeta, "pre") == 0) {
+            LOG_DEBUG("found pre argument at %i", i);
             dyn_type *subType = NULL;
             dynType_typedPointer_getTypedType(argType, &subType);
             void *tmp = NULL;
@@ -226,7 +227,7 @@ int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[]
             dynType_free(subType, tmp);
         } else if (strcmp(argMeta, "out") == 0) {
             assert(false); //TODO
-        } 
+        }
     }
 
     json_decref(replyJson);
