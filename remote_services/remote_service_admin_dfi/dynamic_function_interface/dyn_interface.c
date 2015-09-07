@@ -279,6 +279,18 @@ static int dynInterface_parseMethods(dyn_interface_type *intf, FILE *stream) {
                 entry->index = index++;
                 entry->id = id;
                 entry->dynFunc = func;
+                entry->name = strndup(id, 1024);
+                if (entry->name != NULL) {
+                    int i;
+                    for (i = 0; i < 1024; i += 1) {
+                        if (entry->name[i] == '\0') {
+                            break;
+                        } else if (entry->name[i] == '(') {
+                            entry->name[i] = '\0';
+                            break;
+                        }
+                    }
+                }
                 TAILQ_INSERT_TAIL(&intf->methods, entry, entries);
             } else {
                 status = ERROR;

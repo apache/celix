@@ -452,7 +452,6 @@ static int dynType_parseSequence(FILE *stream, dyn_type *type) {
     if (status == OK) {
         type->ffiType = &type->sequence.seqType;
         dynType_prepCif(&type->sequence.seqType);
-        LOG_DEBUG("seq size is %zu\n", type->ffiType->size);
     }
 
     return status;

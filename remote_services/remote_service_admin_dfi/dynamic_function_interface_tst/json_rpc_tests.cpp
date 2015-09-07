@@ -59,7 +59,7 @@ static void stdLog(void *handle, int level, const char *file, int line, const ch
         dynFunction_destroy(dynFunc);
     }
 
-    void handleTest(void) {
+    void handleTestPre(void) {
         dyn_function_type *dynFunc = NULL;
         int rc = dynFunction_parseWithStr("add(#am=handle;PDD#am=pre;*D)N", NULL, &dynFunc);
         CHECK_EQUAL(0, rc);
@@ -182,6 +182,45 @@ static void stdLog(void *handle, int level, const char *file, int line, const ch
         dynInterface_destroy(intf);
     }
 
+    void handleTestOut(void) {
+        dyn_interface_type *intf = NULL;
+        FILE *desc = fopen("descriptors/example1.descriptor", "r");
+        CHECK(desc != NULL);
+        int rc = dynInterface_parse(desc, &intf);
+        CHECK_EQUAL(0, rc);
+
+        struct methods_head *head;
+        dynInterface_methods(intf, &head);
+        dyn_function_type *func = NULL;
+        struct method_entry *entry = NULL;
+        TAILQ_FOREACH(entry, head, entries) {
+            if (strcmp(entry->name, "stats") == 0) {
+                func = entry->dynFunc;
+                break;
+            }
+        }
+        CHECK(func != NULL);
+
+        const char *reply = "{\"r\":{\"input\":[1.0,2.0],\"max\":2.0,\"average\":1.5,\"min\":1.0}}";
+
+        void *args[3];
+        args[0] = NULL;
+        args[1] = NULL;
+        args[2] = NULL;
+
+        struct tst_StatsResult *result = NULL;
+        void *out = &result;
+        args[2] = &out;
+
+        rc = jsonRpc_handleReply(func, reply, args);
+        CHECK_EQUAL(0, rc);
+        CHECK_EQUAL(1.5, result->average);
+
+        free(result->input.buf);
+        free(result);
+        dynInterface_destroy(intf);
+    }
+
 }
 
 TEST_GROUP(JsonRpcTests) {
@@ -202,8 +241,12 @@ TEST(JsonRpcTests, prepareTest) {
     prepareTest();
 }
 
-TEST(JsonRpcTests, handleTest) {
-    handleTest();
+TEST(JsonRpcTests, handleTestPre) {
+    handleTestPre();
+}
+
+TEST(JsonRpcTests, handleTestOut) {
+    handleTestOut();
 }
 
 TEST(JsonRpcTests, callPre) {

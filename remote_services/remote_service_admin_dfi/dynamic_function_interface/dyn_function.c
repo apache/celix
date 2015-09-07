@@ -27,7 +27,7 @@ typedef struct _dyn_function_argument_type dyn_function_argument_type;
 struct _dyn_function_argument_type {
     int index;
     char *name;
-    int argumentType;
+    enum dyn_function_argument_meta argumentMeta;
     dyn_type *type;
     TAILQ_ENTRY(_dyn_function_argument_type) entries;
 };
@@ -65,8 +65,27 @@ int dynFunction_parse(FILE *descriptor, struct types_head *refTypes, dyn_functio
         LOG_ERROR("Error allocationg memory for dyn functipn\n");
         status = MEM_ERROR;
     }
+
+    if (status == OK) {
+        dyn_function_argument_type *arg = NULL;
+        TAILQ_FOREACH(arg, &dynFunc->arguments, entries) {
+            const char *meta = dynType_getMetaInfo(arg->type, "am");
+            if (meta == NULL) {
+                arg->argumentMeta = DYN_FUNCTION_ARGUMENT_META__STD;
+            } else if (strcmp(meta, "handle") == 0) {
+                arg->argumentMeta = DYN_FUNCTION_ARGUMENT_META__HANDLE;
+            } else if (strcmp(meta, "pre") == 0) {
+                arg->argumentMeta = DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT;
+            } else if (strcmp(meta, "out") == 0) {
+                arg->argumentMeta = DYN_FUNCTION_ARGUMENT_META__OUTPUT;
+            } else {
+                LOG_WARNING("unknown argument meta '%s' encountered", meta);
+                arg->argumentMeta = DYN_FUNCTION_ARGUMENT_META__STD;
+            }
+        }
+    }
     
-    if (status == 0) {
+    if (status == OK) {
         *out = dynFunc;
     }    else {
         if (dynFunc != NULL) {
@@ -154,6 +173,20 @@ static int dynFunction_parseDescriptor(dyn_function_type *dynFunc, FILE *descrip
     }
     
     return status;
+}
+
+enum dyn_function_argument_meta dynFunction_argumentMetaForIndex(dyn_function_type *dynFunc, int argumentNr) {
+    enum dyn_function_argument_meta result = 0;
+    dyn_function_argument_type *arg = NULL;
+    int index = 0;
+    TAILQ_FOREACH(arg, &dynFunc->arguments, entries) {
+        if (index == argumentNr) {
+            result = arg->argumentMeta;
+            break;
+        }
+        index += 1;
+    }
+    return result;
 }
 
 

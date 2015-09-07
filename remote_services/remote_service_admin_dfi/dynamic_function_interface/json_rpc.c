@@ -87,16 +87,16 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
 
     for (i = 0; i < nrOfArgs; i += 1) {
         dyn_type *argType = dynFunction_argumentTypeForIndex(func, i);
-        const char *argMeta = dynType_getMetaInfo(argType, "am");
-        if (argMeta == NULL) {
+        enum dyn_function_argument_meta  meta = dynFunction_argumentMetaForIndex(func, i);
+        if (meta == DYN_FUNCTION_ARGUMENT_META__STD) {
             value = json_array_get(arguments, index++);
             status = jsonSerializer_deserializeJson(argType, value, &(args[i]));
-        } else if (strcmp(argMeta, "pre") == 0) {
+        } else if (meta == DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT) {
             dynType_alloc(argType, &args[i]);
-        } else if (strcmp(argMeta, "out") == 0) {
+        } else if (meta == DYN_FUNCTION_ARGUMENT_META__OUTPUT) {
             void *inMemPtr = calloc(1, sizeof(void *));
             args[i] = &inMemPtr;
-        } else if (strcmp(argMeta, "handle") == 0) {
+        } else if (meta == DYN_FUNCTION_ARGUMENT_META__HANDLE) {
             args[i] = &handle;
         }
 
@@ -127,15 +127,15 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
     if (funcCallStatus == 0 && status == OK) {
         for (i = 0; i < nrOfArgs; i += 1) {
             dyn_type *argType = dynFunction_argumentTypeForIndex(func, i);
-            const char *argMeta = dynType_getMetaInfo(argType, "am");
-            if (argMeta == NULL) {
+            enum dyn_function_argument_meta  meta = dynFunction_argumentMetaForIndex(func, i);
+            if (meta == DYN_FUNCTION_ARGUMENT_META__STD) {
                 dynType_free(argType, args[i]);
-            } else if (strcmp(argMeta, "pre") == 0) {
+            } else if (meta == DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT) {
                 if (status == OK) {
                     status = jsonSerializer_serializeJson(argType, args[i], &jsonResult);
                 }
                 dynType_free(argType, args[i]);
-            } else if (strcmp(argMeta, "out") == 0) {
+            } else if (meta == DYN_FUNCTION_ARGUMENT_META__OUTPUT) {
                 void ***out = args[i];
                 if (out != NULL && *out != NULL && **out != NULL) {
                     status = jsonSerializer_serializeJson(argType, out, &jsonResult);
@@ -179,7 +179,6 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
         free(response);
     }
 
-    //TODO free args (created by jsonSerializer and dynType_alloc) (dynType_free)
     return status;
 }
 
@@ -198,8 +197,8 @@ int jsonRpc_prepareInvokeRequest(dyn_function_type *func, const char *id, void *
     int nrOfArgs = dynFunction_nrOfArguments(func);
     for (i = 0; i < nrOfArgs; i +=1) {
         dyn_type *type = dynFunction_argumentTypeForIndex(func, i);
-        const char *argMeta = dynType_getMetaInfo(type, "am");
-        if (argMeta == NULL) {
+        enum dyn_function_argument_meta  meta = dynFunction_argumentMetaForIndex(func, i);
+        if (meta == DYN_FUNCTION_ARGUMENT_META__STD) {
             json_t *val = NULL;
 
             int rc = jsonSerializer_serializeJson(type, args[i], &val);
@@ -225,31 +224,51 @@ int jsonRpc_prepareInvokeRequest(dyn_function_type *func, const char *id, void *
 }
 
 int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[]) {
-    int status = 0;
+    int status = OK;
 
-    json_t *replyJson = json_loads(reply, JSON_DECODE_ANY, NULL); //TODO check
-    json_t *result = json_object_get(replyJson, "r"); //TODO check
+    json_error_t error;
+    json_t *replyJson = json_loads(reply, JSON_DECODE_ANY, &error);
+    if (replyJson == NULL) {
+        status = ERROR;
+        LOG_ERROR("Error parsing json '%s', got error '%s'", reply, error.text);
+    }
 
-    LOG_DEBUG("replyJson ptr is %p and result ptr is %p\n", replyJson, result);
+    json_t *result = NULL;
+    if (status == OK) {
+        result = json_object_get(replyJson, "r"); //TODO check
+        if (result == NULL) {
+            status = ERROR;
+            LOG_ERROR("Cannot find r entry in json reply '%s'", reply);
+        }
+    }
 
-    int nrOfArgs = dynFunction_nrOfArguments(func);
-    int i;
-    for (i = 0; i < nrOfArgs; i += 1) {
-        dyn_type *argType = dynFunction_argumentTypeForIndex(func, i);
-        const char *argMeta = dynType_getMetaInfo(argType, "am");
-        if (argMeta == NULL) {
-            //skip
-        } else if (strcmp(argMeta, "pre") == 0) {
-            dyn_type *subType = NULL;
-            dynType_typedPointer_getTypedType(argType, &subType);
-            void *tmp = NULL;
-            size_t size = dynType_size(subType);
-            status = jsonSerializer_deserializeJson(subType, result, &tmp);
-            void **out = (void **)args[i];
-            memcpy(*out, tmp, size);
-            dynType_free(subType, tmp);
-        } else if (strcmp(argMeta, "out") == 0) {
-            assert(false); //TODO
+    if (status == OK) {
+        int nrOfArgs = dynFunction_nrOfArguments(func);
+        int i;
+        for (i = 0; i < nrOfArgs; i += 1) {
+            dyn_type *argType = dynFunction_argumentTypeForIndex(func, i);
+            enum dyn_function_argument_meta meta = dynFunction_argumentMetaForIndex(func, i);
+            if (meta == DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT) {
+                //FIXME need a tmp because deserialize does always does a create (add option?)
+                dyn_type *subType = NULL;
+                dynType_typedPointer_getTypedType(argType, &subType);
+                void *tmp = NULL;
+                size_t size = dynType_size(subType);
+                status = jsonSerializer_deserializeJson(subType, result, &tmp);
+                void **out = (void **)args[i];
+                memcpy(*out, tmp, size);
+                dynType_free(subType, tmp);
+            } else if (meta == DYN_FUNCTION_ARGUMENT_META__OUTPUT) {
+                dyn_type *subType = NULL;
+                dynType_typedPointer_getTypedType(argType, &subType);
+                dyn_type *subSubType = NULL;
+                dynType_typedPointer_getTypedType(subType, &subSubType);
+                void ***out = (void **)args[i];
+                //status = jsonSerializer_deserializeJson(subType, result, *out);
+                status = jsonSerializer_deserializeJson(subSubType, result, *out);
+            } else {
+                //skip
+            }
         }
     }
 
