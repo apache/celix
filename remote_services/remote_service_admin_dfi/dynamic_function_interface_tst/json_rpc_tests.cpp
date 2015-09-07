@@ -2,6 +2,8 @@
  * Licensed under Apache License v2. See LICENSE for more information.
  */
 #include <CppUTest/TestHarness.h>
+#include <float.h>
+#include <assert.h>
 #include "CppUTest/CommandLineTestRunner.h"                                                                                                                                                                        
 
 extern "C" {
@@ -74,9 +76,110 @@ static void stdLog(void *handle, int level, const char *file, int line, const ch
         dynFunction_destroy(dynFunc);
     }
 
+    int add(void *handle, double a, double b, double *result) {
+        *result = a + b;
+        return 0;
+    }
 
-    void callTest(void) {
-        //TODO
+    struct tst_seq {
+        uint32_t cap;
+        uint32_t len;
+        double *buf;
+    };
+
+
+    //StatsResult={DDD[D average min max input}
+    struct tst_StatsResult {
+        double average;
+        double min;
+        double max;
+        struct tst_seq input;
+    };
+
+
+    int stats(void *handle, struct tst_seq input, struct tst_StatsResult **out) {
+        assert(out != NULL);
+        assert(*out == NULL);
+        double total = 0.0;
+        int count = 0;
+        double max = DBL_MIN;
+        double min = DBL_MAX;
+
+        int i;
+        for (i = 0; i<input.len; i += 1) {
+            total += input.buf[i];
+            count += 1;
+            if (input.buf[i] > max) {
+                max = input.buf[i];
+            }
+            if (input.buf[i] < min) {
+                min = input.buf[i];
+            }
+        }
+
+        struct tst_StatsResult *result = (struct tst_StatsResult *) calloc(1, sizeof(*result));
+        result->average = total / count;
+        result->min = min;
+        result->max = max;
+        double *buf = (double *)calloc(input.len, sizeof(double));
+        memcpy(buf, input.buf, input.len * sizeof(double));
+        result->input.len = input.len;
+        result->input.cap = input.len;
+        result->input.buf = buf;
+
+        *out = result;
+        return 0;
+    }
+
+    struct tst_serv {
+        void *handle;
+        int (*add)(void *, double, double, double *);
+        int (*sub)(void *, double, double, double *);
+        int (*sqrt)(void *, double, double *);
+        int (*stats)(void *, struct tst_seq, struct tst_StatsResult **);
+    };
+
+    void callTestPreAllocated(void) {
+        dyn_interface_type *intf = NULL;
+        FILE *desc = fopen("descriptors/example1.descriptor", "r");
+        CHECK(desc != NULL);
+        int rc = dynInterface_parse(desc, &intf);
+        CHECK_EQUAL(0, rc);
+
+        char *result = NULL;
+
+        struct tst_serv serv;
+        serv.handle = NULL;
+        serv.add = add;
+
+
+        rc = jsonRpc_call(intf, &serv, "{\"m\":\"add(DD)D\", \"a\": [1.0,2.0]}", &result);
+        CHECK_EQUAL(0, rc);
+        STRCMP_CONTAINS("3.0", result);
+
+        free(result);
+        dynInterface_destroy(intf);
+    }
+
+    void callTestOutput(void) {
+        dyn_interface_type *intf = NULL;
+        FILE *desc = fopen("descriptors/example1.descriptor", "r");
+        CHECK(desc != NULL);
+        int rc = dynInterface_parse(desc, &intf);
+        CHECK_EQUAL(0, rc);
+
+        char *result = NULL;
+
+        struct tst_serv serv;
+        serv.handle = NULL;
+        serv.stats = stats;
+
+        rc = jsonRpc_call(intf, &serv, "{\"m\":\"stats([D)LStatsResult;\", \"a\": [[1.0,2.0]]}", &result);
+        CHECK_EQUAL(0, rc);
+        STRCMP_CONTAINS("1.5", result); //avg
+
+        free(result);
+        dynInterface_destroy(intf);
     }
 
 }
@@ -103,8 +206,12 @@ TEST(JsonRpcTests, handleTest) {
     handleTest();
 }
 
-TEST(JsonRpcTests, call) {
-    callTest();
+TEST(JsonRpcTests, callPre) {
+    callTestPreAllocated();
+}
+
+TEST(JsonRpcTests, callOut) {
+    callTestOutput();
 }
 
 

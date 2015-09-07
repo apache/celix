@@ -443,11 +443,16 @@ static int dynType_parseSequence(FILE *stream, dyn_type *type) {
     type->descriptor = '[';
 
     type->sequence.seqType.elements = seq_types;
+    type->sequence.seqType.type = FFI_TYPE_STRUCT;
+    type->sequence.seqType.size = 0;
+    type->sequence.seqType.alignment = 0;
+
     status = dynType_parseWithStream(stream, NULL, type, NULL, &type->sequence.itemType);
 
     if (status == OK) {
         type->ffiType = &type->sequence.seqType;
         dynType_prepCif(&type->sequence.seqType);
+        LOG_DEBUG("seq size is %zu\n", type->ffiType->size);
     }
 
     return status;
@@ -513,6 +518,7 @@ static void dynType_clear(dyn_type *type) {
         if (mEntry != NULL) {
             free(mEntry->name);
             free(mEntry->value);
+            free(mEntry);
         }
         mEntry = next;
     }

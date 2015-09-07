@@ -166,6 +166,45 @@ extern "C" {
 
         dynFunction_destroy(dynFunc);
     }
+
+    struct tst_seq {
+        uint32_t cap;
+        uint32_t len;
+        double *buf;
+    };
+
+    #define EXAMPLE4_DESCRIPTOR "example([D)V"
+
+    static void example4Func(struct tst_seq seq) {
+        CHECK_EQUAL(4, seq.cap);
+        CHECK_EQUAL(2, seq.len);
+        CHECK_EQUAL(1.1, seq.buf[0]);
+        CHECK_EQUAL(2.2, seq.buf[1]);
+    }
+
+    static void test_example4(void) {
+        dyn_function_type *dynFunc = NULL;
+        void (*fp)(void) = (void(*)(void)) example4Func;
+        int rc;
+
+        rc = dynFunction_parseWithStr(EXAMPLE4_DESCRIPTOR, NULL, &dynFunc);
+        CHECK_EQUAL(0, rc);
+
+        double buf[4];
+        buf[0] = 1.1;
+        buf[1] = 2.2;
+        struct tst_seq seq;
+        seq.cap = 4;
+        seq.len = 2;
+        seq.buf = buf;
+
+        void *args[1];
+        args[0] = &seq;
+        rc = dynFunction_call(dynFunc, fp, NULL, args);
+        CHECK_EQUAL(0, rc);
+
+        dynFunction_destroy(dynFunc);
+    }
 }
 
 TEST_GROUP(DynFunctionTests) {
@@ -190,4 +229,8 @@ TEST(DynFunctionTests, DynFuncAccTest) {
 
 TEST(DynFunctionTests, DynFuncTest3) {
     test_example3();
+}
+
+TEST(DynFunctionTests, DynFuncTest4) {
+    test_example4();
 }

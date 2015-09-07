@@ -5,7 +5,6 @@
 #include "json_serializer.h"
 #include "dyn_type.h"
 #include "dyn_interface.h"
-
 #include <jansson.h>
 #include <assert.h>
 #include <stdint.h>
@@ -62,6 +61,8 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
         LOG_DEBUG("RSA: found method '%s'\n", entry->id);
     }
 
+    dyn_type *returnType = dynFunction_returnType(method->dynFunc);
+
     void (*fp)(void) = NULL;
     void *handle = NULL;
     if (status == OK) {
@@ -83,22 +84,19 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
 
     int i;
     int index = 0;
+
     for (i = 0; i < nrOfArgs; i += 1) {
         dyn_type *argType = dynFunction_argumentTypeForIndex(func, i);
         const char *argMeta = dynType_getMetaInfo(argType, "am");
         if (argMeta == NULL) {
-            printf("setting std for %i\n", i);
             value = json_array_get(arguments, index++);
             status = jsonSerializer_deserializeJson(argType, value, &(args[i]));
         } else if (strcmp(argMeta, "pre") == 0) {
-            printf("setting pre alloc output for %i\n", i);
             dynType_alloc(argType, &args[i]);
-
-        } else if ( strcmp(argMeta, "out") == 0) {
-            printf("setting output for %i\n", i);
-            args[i] = NULL;
+        } else if (strcmp(argMeta, "out") == 0) {
+            void *inMemPtr = calloc(1, sizeof(void *));
+            args[i] = &inMemPtr;
         } else if (strcmp(argMeta, "handle") == 0) {
-            printf("setting handle for %i\n", i);
             args[i] = &handle;
         }
 
@@ -108,32 +106,54 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
     }
     json_decref(js_request);
 
+    if (dynType_descriptorType(returnType) != 'N') {
+        //NOTE To be able to handle exception only N as returnType is supported
+        LOG_ERROR("Only interface methods with a native int are supported. Found type '%c'", (char)dynType_descriptorType(returnType));
+        status = ERROR;
+    }
 
-    //TODO assert return type is native int
-    int returnVal = 0;
-    dynFunction_call(func, fp, (void *)&returnVal, args);
-    printf("done calling\n");
-    double **r = args[2];
-    printf("result ptrptr is %p, result ptr %p, result is %f\n", r, *r, **r);
+    ffi_sarg returnVal;
 
+    if (status == OK) {
+        dynFunction_call(func, fp, (void *) &returnVal, args);
+    }
+
+    int funcCallStatus = (int)returnVal;
+    if (funcCallStatus != 0) {
+        LOG_WARNING("Error calling remote endpoint function, got error code %i", funcCallStatus);
+    }
 
     json_t *jsonResult = NULL;
-    for (i = 0; i < nrOfArgs; i += 1) {
-        dyn_type *argType = dynFunction_argumentTypeForIndex(func, i);
-        const char *argMeta = dynType_getMetaInfo(argType, "am");
-        if (argMeta == NULL) {
-            //ignore
-        } else if (strcmp(argMeta, "pre") == 0)  {
-            if (status == OK) {
-                status = jsonSerializer_serializeJson(argType, args[i], &jsonResult);
+    if (funcCallStatus == 0 && status == OK) {
+        for (i = 0; i < nrOfArgs; i += 1) {
+            dyn_type *argType = dynFunction_argumentTypeForIndex(func, i);
+            const char *argMeta = dynType_getMetaInfo(argType, "am");
+            if (argMeta == NULL) {
+                dynType_free(argType, args[i]);
+            } else if (strcmp(argMeta, "pre") == 0) {
+                if (status == OK) {
+                    status = jsonSerializer_serializeJson(argType, args[i], &jsonResult);
+                }
+                dynType_free(argType, args[i]);
+            } else if (strcmp(argMeta, "out") == 0) {
+                void ***out = args[i];
+                if (out != NULL && *out != NULL && **out != NULL) {
+                    status = jsonSerializer_serializeJson(argType, out, &jsonResult);
+                    dyn_type *typedType = NULL;
+                    if (status == OK) {
+                        status = dynType_typedPointer_getTypedType(argType, &typedType);
+                    }
+                    if (status == OK) {
+                        dynType_free(typedType, *out);
+                    }
+                } else {
+                    LOG_DEBUG("Output ptr is null");
+                }
             }
-        } else if (strcmp(argMeta, "out") == 0) {
-            printf("TODO\n");
-            assert(false);
-        }
 
-        if (status != OK) {
-            break;
+            if (status != OK) {
+                break;
+            }
         }
     }
 
@@ -141,18 +161,22 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
     if (status == OK) {
         LOG_DEBUG("creating payload\n");
         json_t *payload = json_object();
-        json_object_set_new(payload, "r", jsonResult);
+        if (funcCallStatus == 0) {
+            LOG_DEBUG("Setting result payload");
+            json_object_set_new(payload, "r", jsonResult);
+        } else {
+            LOG_DEBUG("Setting error payload");
+            json_object_set_new(payload, "e", json_integer(funcCallStatus));
+        }
         response = json_dumps(payload, JSON_DECODE_ANY);
         json_decref(payload);
-        LOG_DEBUG("status ptr is %p. response if '%s'\n", status, response);
+        LOG_DEBUG("status ptr is %p. response is '%s'\n", status, response);
     }
 
     if (status == OK) {
         *out = response;
     } else {
-        if (response != NULL) {
-            free(response);
-        }
+        free(response);
     }
 
     //TODO free args (created by jsonSerializer and dynType_alloc) (dynType_free)
@@ -165,7 +189,7 @@ int jsonRpc_prepareInvokeRequest(dyn_function_type *func, const char *id, void *
 
     LOG_DEBUG("Calling remote function '%s'\n", id);
     json_t *invoke = json_object();
-    json_object_set(invoke, "m", json_string(id));
+    json_object_set_new(invoke, "m", json_string(id));
 
     json_t *arguments = json_array();
     json_object_set_new(invoke, "a", arguments);
@@ -216,7 +240,6 @@ int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[]
         if (argMeta == NULL) {
             //skip
         } else if (strcmp(argMeta, "pre") == 0) {
-            LOG_DEBUG("found pre argument at %i", i);
             dyn_type *subType = NULL;
             dynType_typedPointer_getTypedType(argType, &subType);
             void *tmp = NULL;

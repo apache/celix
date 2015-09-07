@@ -135,13 +135,11 @@ static int dynFunction_parseDescriptor(dyn_function_type *dynFunc, FILE *descrip
             }
         }
 
-        if (status == 0) {
+        if (status == OK) {
             TAILQ_INSERT_TAIL(&dynFunc->arguments, arg, entries);
         } else {
             if (arg != NULL) {
-                if (arg->name != NULL) {
-                    free(arg->name);
-                }
+                free(arg->name);
                 if (arg->type != NULL) {
                     dynType_destroy(arg->type);
                 }
@@ -218,8 +216,7 @@ void dynFunction_destroy(dyn_function_type *dynFunc) {
 }
 
 int dynFunction_call(dyn_function_type *dynFunc, void(*fn)(void), void *returnValue, void **argValues) {
-    //TODO check dynFunc arg
-    ffi_call(&dynFunc->cif, fn, returnValue, argValues);    
+    ffi_call(&dynFunc->cif, fn, returnValue, argValues);
     return 0;
 }
 
