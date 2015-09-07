@@ -21,6 +21,7 @@ if (FRAMEWORK)
     
     find_package(ZLIB REQUIRED)
     find_package(UUID REQUIRED)
+    find_package(CURL REQUIRED)
 
     include(CPackComponent)
     
@@ -73,7 +74,7 @@ if (FRAMEWORK)
     if (WITH_APR)
         set(APR ${APR_LIBRARY})
     endif()
-    target_link_libraries(celix_framework celix_utils ${UUID} ${ZLIB_LIBRARY} ${APR})
+    target_link_libraries(celix_framework celix_utils ${UUID} ${ZLIB_LIBRARY} ${APR} ${CURL_LIBRARIES})
 
     install(TARGETS celix_framework DESTINATION lib COMPONENT framework)
     FILE(GLOB files "public/include/*.h")
