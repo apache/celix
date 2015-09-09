@@ -264,7 +264,6 @@ int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[]
                 dyn_type *subSubType = NULL;
                 dynType_typedPointer_getTypedType(subType, &subSubType);
                 void ***out = (void **)args[i];
-                //status = jsonSerializer_deserializeJson(subType, result, *out);
                 status = jsonSerializer_deserializeJson(subSubType, result, *out);
             } else {
                 //skip
