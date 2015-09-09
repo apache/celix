@@ -339,7 +339,7 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
                 if (response != NULL) {
                     mg_write(conn, data_response_headers, strlen(data_response_headers));
 //              mg_write(conn, no_content_response_headers, strlen(no_content_response_headers));
-                    printf("writing response '%s'\n", response);
+                    //printf("writing response '%s'\n", response);
                     mg_write(conn, response, strlen(response));
 //              mg_send_data(conn, response, strlen(response));
 //              mg_write_data(conn, response, strlen(response));
