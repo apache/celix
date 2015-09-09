@@ -197,6 +197,33 @@ static void check_example5(void *data) {
     CHECK(ex->head->right->right == NULL);
 }
 
+static const char *example6_descriptor = "Tsample={DD v1 v2};[lsample;";
+
+static const char *example6_input = "[{\"v1\":0.1,\"v2\":0.2},{\"v1\":1.1,\"v2\":1.2},{\"v1\":2.1,\"v2\":2.2}]";
+
+struct ex6_sample {
+    double v1;
+    double v2;
+};
+
+struct ex6_sequence {
+    uint32_t cap;
+    uint32_t len;
+    struct ex6_sample *buf;
+};
+
+static void check_example6(struct ex6_sequence seq) {
+    CHECK_EQUAL(3, seq.cap);
+    CHECK_EQUAL(3, seq.len);
+    CHECK_EQUAL(0.1, seq.buf[0].v1);
+    CHECK_EQUAL(0.2, seq.buf[0].v2);
+    CHECK_EQUAL(1.1, seq.buf[1].v1);
+    CHECK_EQUAL(1.2, seq.buf[1].v2);
+    CHECK_EQUAL(2.1, seq.buf[2].v1);
+    CHECK_EQUAL(2.2, seq.buf[2].v2);
+}
+
+
 static void parseTests(void) {
     dyn_type *type;
     void *inst;
@@ -250,6 +277,16 @@ static void parseTests(void) {
     CHECK_EQUAL(0, rc);
     check_example5(inst);
     dynType_free(type, inst);
+    dynType_destroy(type);
+
+    type = NULL;
+    struct ex6_sequence *seq;
+    rc = dynType_parseWithStr(example6_descriptor, NULL, NULL, &type);
+    CHECK_EQUAL(0, rc);
+    rc = jsonSerializer_deserialize(type, example6_input, (void **)&seq);
+    CHECK_EQUAL(0, rc);
+    check_example6((*seq));
+    dynType_free(type, seq);
     dynType_destroy(type);
 }
 

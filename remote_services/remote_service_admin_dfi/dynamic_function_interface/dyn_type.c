@@ -736,7 +736,8 @@ int dynType_sequence_locForIndex(dyn_type *type, void *seqLoc, int index, void *
 
     struct generic_sequence *seq = seqLoc;
     char *valLoc = seq->buf;
-    size_t itemSize = type->sequence.itemType->ffiType->size;
+
+    size_t itemSize = dynType_size(type->sequence.itemType);
 
     if (index >= seq->cap) {
         status = ERROR;
@@ -921,7 +922,11 @@ static unsigned short dynType_getOffset(dyn_type *type, int index) {
 }
 
 size_t dynType_size(dyn_type *type) {
-    return type->ffiType->size;
+    dyn_type *rType = type;
+    if (type->type == DYN_TYPE_REF) {
+        rType = type->ref.ref;
+    }
+    return rType->ffiType->size;
 }
 
 int dynType_type(dyn_type *type) {

@@ -28,7 +28,7 @@ static int ERROR = 1;
 DFI_SETUP_LOG(jsonSerializer);
 
 int jsonSerializer_deserialize(dyn_type *type, const char *input, void **result) {
-    assert(dynType_type(type) == DYN_TYPE_COMPLEX);
+    assert(dynType_type(type) == DYN_TYPE_COMPLEX || dynType_type(type) == DYN_TYPE_SEQUENCE);
     int status = 0;
 
     json_error_t error;
@@ -39,7 +39,7 @@ int jsonSerializer_deserialize(dyn_type *type, const char *input, void **result)
         json_decref(root);
     } else {
         status = ERROR;
-        LOG_ERROR("Error parsing json input '%s'. Error is %s\n", input, error.text);
+        LOG_ERROR("Error parsing json input '%s'. Error is: %s\n", input, error.text);
     }
 
     return status;
@@ -120,6 +120,7 @@ static int jsonSerializer_parseAny(dyn_type *type, void *loc, json_t *val) {
     int16_t *s;         //S
     int32_t *i;         //I
     int64_t *l;         //J
+    uint8_t   *ub;      //b
     uint16_t  *us;      //s
     uint32_t  *ui;      //i
     uint64_t  *ul;      //j
@@ -152,6 +153,10 @@ static int jsonSerializer_parseAny(dyn_type *type, void *loc, json_t *val) {
         case 'J' :
             l = loc;
             *l = (int64_t) json_integer_value(val);
+            break;
+        case 'b' :
+            ub = loc;
+            *ub = (uint8_t) json_integer_value(val);
             break;
         case 's' :
             us = loc;
@@ -266,6 +271,7 @@ static int jsonSerializer_writeAny(dyn_type *type, void *input, json_t **out) {
     int16_t *s;         //S
     int32_t *i;         //I
     int64_t *l;         //J
+    uint8_t   *ub;      //b
     uint16_t  *us;      //s
     uint32_t  *ui;      //i
     uint64_t  *ul;      //j
@@ -286,6 +292,10 @@ static int jsonSerializer_writeAny(dyn_type *type, void *input, json_t **out) {
         case 'J' :
             l = input;
             val = json_integer((json_int_t)*l);
+            break;
+        case 'b' :
+            ub = input;
+            val = json_integer((json_int_t)*ub);
             break;
         case 's' :
             us = input;

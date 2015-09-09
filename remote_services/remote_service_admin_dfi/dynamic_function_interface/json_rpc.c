@@ -263,7 +263,7 @@ int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[]
                 dynType_typedPointer_getTypedType(argType, &subType);
                 dyn_type *subSubType = NULL;
                 dynType_typedPointer_getTypedType(subType, &subSubType);
-                void ***out = (void **)args[i];
+                void **out = (void **)args[i];
                 status = jsonSerializer_deserializeJson(subSubType, result, *out);
             } else {
                 //skip
