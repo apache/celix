@@ -256,7 +256,7 @@ static int dynInterface_parseMethods(dyn_interface_type *intf, FILE *stream) {
         ungetc(peek, stream);
 
         char *id;
-        status = dynCommon_parseNameAlsoAccept(stream, "();[{}", &id);
+        status = dynCommon_parseNameAlsoAccept(stream, "();[{}/", &id);
 
         if (status == OK) {
             status = dynCommon_eatChar(stream, '=');
