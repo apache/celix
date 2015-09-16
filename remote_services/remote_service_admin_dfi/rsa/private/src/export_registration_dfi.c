@@ -18,8 +18,6 @@ struct export_reference {
 
 struct export_registration {
     bundle_context_pt  context;
-    void (*rsaCloseExportCallback)(void *handle, export_registration_pt reg);
-    void *handle;
     struct export_reference exportReference;
     char *servId;
     dyn_interface_type *intf; //owner
@@ -35,7 +33,7 @@ struct export_registration {
 static void exportRegistration_addServ(export_registration_pt reg, service_reference_pt ref, void *service);
 static void exportRegistration_removeServ(export_registration_pt reg, service_reference_pt ref, void *service);
 
-celix_status_t exportRegistration_create(log_helper_pt helper, void (*closedCallback)(void *handle, export_registration_pt reg), void *handle, service_reference_pt reference, endpoint_description_pt endpoint, bundle_context_pt context, export_registration_pt *out) {
+celix_status_t exportRegistration_create(log_helper_pt helper, service_reference_pt reference, endpoint_description_pt endpoint, bundle_context_pt context, export_registration_pt *out) {
     celix_status_t status = CELIX_SUCCESS;
 
     char *servId = NULL;
@@ -55,8 +53,6 @@ celix_status_t exportRegistration_create(log_helper_pt helper, void (*closedCall
 
     if (status == CELIX_SUCCESS) {
         reg->context = context;
-        reg->rsaCloseExportCallback = closedCallback;
-        reg->handle = handle;
         reg->exportReference.endpoint = endpoint;
         reg->exportReference.reference = reference;
         reg->closed = false;
@@ -183,7 +179,6 @@ celix_status_t exportRegistration_stop(export_registration_pt reg) {
 celix_status_t exportRegistration_close(export_registration_pt reg) {
     celix_status_t status = CELIX_SUCCESS;
     exportRegistration_stop(reg);
-    reg->rsaCloseExportCallback(reg->handle, reg);
     return status;
 }
 

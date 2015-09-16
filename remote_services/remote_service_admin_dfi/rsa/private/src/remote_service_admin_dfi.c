@@ -49,6 +49,16 @@
 // defines how often the webserver is restarted (with an increased port number)
 #define MAX_NUMBER_OF_RESTARTS 	5
 
+
+#define LOG_ERROR(admin, msg, ...) \
+    logHelper_log((admin)->loghelper, OSGI_LOGSERVICE_ERROR, (msg),  ##__VA_ARGS__)
+
+#define LOG_WARNING(admin, msg, ...) \
+    logHelper_log((admin)->loghelper, OSGI_LOGSERVICE_ERROR, (msg),  ##__VA_ARGS__)
+
+#define LOG_DEBUG(admin, msg, ...) \
+    logHelper_log((admin)->loghelper, OSGI_LOGSERVICE_ERROR, (msg),  ##__VA_ARGS__)
+
 struct remote_service_admin {
     bundle_context_pt context;
     log_helper_pt loghelper;
@@ -413,7 +423,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
         remoteServiceAdmin_createEndpointDescription(admin, reference, interface, &endpoint);
         printf("RSA: Creating export registration with endpoint pointer %p\n", endpoint);
         //TOOD precheck if descriptor exists
-        status = exportRegistration_create(admin->loghelper, remoteServiceAdmin_removeExportedService, admin, reference, endpoint, admin->context, &registration);
+        status = exportRegistration_create(admin->loghelper, reference, endpoint, admin->context, &registration);
         if (status == CELIX_SUCCESS) {
             status = exportRegistration_start(registration);
             if (status == CELIX_SUCCESS) {
@@ -434,17 +444,22 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 
 celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_pt admin, export_registration_pt registration) {
     celix_status_t status = CELIX_SUCCESS;
-    //TODO
-    /*
-    remote_service_admin_pt admin = registration->rsa;
 
-    celixThreadMutex_lock(&admin->exportedServicesLock);
+    service_reference_pt  ref = NULL;
+    status = exportRegistration_getExportReference(registration, &ref);
 
-    hashMap_remove(admin->exportedServices, registration->reference);
-    //TODO stop ?
+    if (status == CELIX_SUCCESS) {
+        celixThreadMutex_lock(&admin->exportedServicesLock);
+        exportRegistration_close(registration);
+        //exportRegistration_destroy(registration); TODO test
+        hashMap_remove(admin->exportedServices, ref);
+        celixThreadMutex_unlock(&admin->exportedServicesLock);
+    } else {
+        LOG_ERROR(admin, "Cannot find reference for registration");
+    }
 
-    celixThreadMutex_unlock(&admin->exportedServicesLock);
-    */
+
+
     return status;
 }
 
