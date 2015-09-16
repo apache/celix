@@ -173,7 +173,7 @@ celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_servi
 
         do {
             char newPort[10];
-            const char *options[] = { "listening_ports", port, NULL};
+            const char *options[] = { "listening_ports", port, "num_threads", "5", NULL};
 
             (*admin)->ctx = mg_start(&callbacks, (*admin), options);
 
@@ -581,7 +581,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, e
 
     import_registration_pt import = NULL;
     if (objectClass != NULL) {
-        status = importRegistration_create(admin->context, NULL, NULL, endpointDescription, objectClass, &import);
+        status = importRegistration_create(admin->context, endpointDescription, objectClass, &import);
     }
     if (status == CELIX_SUCCESS) {
         importRegistration_setSendFn(import, remoteServiceAdmin_send, admin);
@@ -591,9 +591,9 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, e
         status = importRegistration_start(import);
     }
 
-    //celixThreadMutex_lock(&admin->importedServicesLock);
-    //TODO add to list
-    //celixThreadMutex_unlock(&admin->importedServicesLock);
+    celixThreadMutex_lock(&admin->importedServicesLock);
+    hashMap_put(admin->importedServices, import, import);
+    celixThreadMutex_unlock(&admin->importedServicesLock);
 
     if (status == CELIX_SUCCESS) {
         *out = import;
@@ -605,44 +605,14 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, e
 
 celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_pt admin, import_registration_pt registration) {
     celix_status_t status = CELIX_SUCCESS;
+
+    celixThreadMutex_lock(&admin->importedServicesLock);
+    importRegistration_close(registration);
+    //importRegistration_destroy(registration); TODO enable & debug -> segfault
+    hashMap_remove(admin->importedServices, registration);
+    celixThreadMutex_unlock(&admin->importedServicesLock);
+
     return status;
-    /*
-
-      endpoint_description_pt endpointDescription = (endpoint_description_pt) registration->endpointDescription;
-      import_registration_factory_pt registration_factory = NULL;
-
-      celixThreadMutex_lock(&admin->importedServicesLock);
-
-      registration_factory = (import_registration_factory_pt) hashMap_get(admin->importedServices, endpointDescription->service);
-
-      // factory available
-      if ((registration_factory == NULL) || (registration_factory->trackedFactory == NULL))
-      {
-          logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "RSA: Error while retrieving registration factory for imported service %s", endpointDescription->service);
-      }
-      else
-      {
-          registration_factory->trackedFactory->unregisterProxyService(registration_factory->trackedFactory->factory, endpointDescription);
-          arrayList_removeElement(registration_factory->registrations, registration);
-          importRegistration_destroy(registration);
-
-          if (arrayList_isEmpty(registration_factory->registrations))
-          {
-              logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA: closing proxy.");
-
-              serviceTracker_close(registration_factory->proxyFactoryTracker);
-              importRegistrationFactory_close(registration_factory);
-
-              hashMap_remove(admin->importedServices, endpointDescription->service);
-
-              importRegistrationFactory_destroy(&registration_factory);
-          }
-      }
-
-      celixThreadMutex_unlock(&admin->importedServicesLock);
-
-      return status;
-    */
 }
 
 

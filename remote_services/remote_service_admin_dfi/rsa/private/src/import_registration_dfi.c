@@ -10,6 +10,9 @@ struct import_registration {
     bundle_context_pt context;
     endpoint_description_pt  endpoint; //TODO owner? -> free when destroyed
     const char *classObject; //NOTE owned by endpoint
+
+    celix_thread_mutex_t mutex; //protects send & sendhandle
+
     send_func_type send;
     void *sendHandle;
 
@@ -17,9 +20,6 @@ struct import_registration {
     service_registration_pt factoryReg;
 
     hash_map_pt proxies; //key -> bundle, value -> service_proxy
-
-    void (*rsaCloseImportCallback)(void *, import_registration_pt);
-    void *rsaHandle;
 };
 
 struct service_proxy {
@@ -33,8 +33,7 @@ static celix_status_t importRegistration_createProxy(import_registration_pt impo
 static void importRegistration_proxyFunc(void *userData, void *args[], void *returnVal);
 static void importRegistration_destroyProxy(struct service_proxy *proxy);
 
-celix_status_t importRegistration_create(bundle_context_pt context, void (*rsaCallback)(void *, import_registration_pt),
-                                         void *rsaHandle, endpoint_description_pt endpoint, const char *classObject,
+celix_status_t importRegistration_create(bundle_context_pt context, endpoint_description_pt endpoint, const char *classObject,
                                          import_registration_pt *out) {
     celix_status_t status = CELIX_SUCCESS;
     import_registration_pt reg = calloc(1, sizeof(*reg));
@@ -45,11 +44,10 @@ celix_status_t importRegistration_create(bundle_context_pt context, void (*rsaCa
 
     if (reg != NULL && reg->factory != NULL) {
         reg->context = context;
-        reg->rsaCloseImportCallback = rsaCallback;
-        reg->rsaHandle = rsaHandle;
         reg->endpoint = endpoint;
         reg->classObject = classObject;
         reg->proxies = hashMap_create(NULL, NULL, NULL, NULL);
+        celixThreadMutex_create(&reg->mutex, NULL);
 
         reg->factory->factory = reg;
         reg->factory->getService = (void *)importRegistration_getService;
@@ -70,8 +68,10 @@ celix_status_t importRegistration_create(bundle_context_pt context, void (*rsaCa
 celix_status_t importRegistration_setSendFn(import_registration_pt reg,
                                             send_func_type send,
                                             void *handle) {
+    celixThreadMutex_lock(&reg->mutex);
     reg->send = send;
     reg->sendHandle = handle;
+    celixThreadMutex_unlock(&reg->mutex);
 
     return CELIX_SUCCESS;
 }
@@ -79,7 +79,12 @@ celix_status_t importRegistration_setSendFn(import_registration_pt reg,
 void importRegistration_destroy(import_registration_pt import) {
     if (import != NULL) {
         if (import->proxies != NULL) {
-            //TODO destroy proxies
+            hash_map_iterator_pt  iter = hashMapIterator_create(import->proxies);
+            while (hashMapIterator_hasNext(iter)) {
+                struct service_proxy *proxy = hashMapIterator_nextEntry(iter);
+                importRegistration_destroyProxy(proxy);
+            }
+            hashMapIterator_destroy(iter);
             hashMap_destroy(import->proxies, false, false);
             import->proxies = NULL;
         }
@@ -120,6 +125,7 @@ celix_status_t importRegistration_getService(import_registration_pt import, bund
     module_getSymbolicName(module, &name);
     printf("getting service for bundle '%s'\n", name);
      */
+
 
     struct service_proxy *proxy = hashMap_get(import->proxies, bundle); //TODO lock
     if (proxy == NULL) {
@@ -207,13 +213,8 @@ static celix_status_t importRegistration_createProxy(import_registration_pt impo
             dynInterface_destroy(proxy->intf);
             proxy->intf = NULL;
         }
-        if (proxy->service != NULL) {
-            free(proxy->service);
-            proxy->service = NULL;
-        }
-        if (proxy != NULL) {
-            free(proxy);
-        }
+        free(proxy->service);
+        free(proxy);
     }
 
     return status;
@@ -235,11 +236,16 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
         //printf("Need to send following json '%s'\n", invokeRequest);
     }
 
+
     if (status == CELIX_SUCCESS) {
         char *reply = NULL;
         int rc = 0;
         //printf("sending request\n");
-        import->send(import->sendHandle, import->endpoint, invokeRequest, &reply, &rc);
+        celixThreadMutex_lock(&import->mutex);
+        if (import->send != NULL) {
+            import->send(import->sendHandle, import->endpoint, invokeRequest, &reply, &rc);
+        }
+        celixThreadMutex_unlock(&import->mutex);
         //printf("request sended. got reply '%s' with status %i\n", reply, rc);
 
         if (rc == 0) {
@@ -295,7 +301,7 @@ static void importRegistration_destroyProxy(struct service_proxy *proxy) {
 
 celix_status_t importRegistration_close(import_registration_pt registration) {
     celix_status_t status = CELIX_SUCCESS;
-    registration->rsaCloseImportCallback(registration->rsaHandle, registration);
+    importRegistration_stop(registration);
     return status;
 }
 
