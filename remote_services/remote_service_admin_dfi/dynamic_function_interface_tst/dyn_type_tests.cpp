@@ -210,3 +210,54 @@ TEST(DynTypeTests, MetaInfoTest) {
     dynType_destroy(type);
 }
 
+TEST(DynTypeTests, SequenceWithPointerTest) {
+    struct val {
+        double a;
+        double b;
+    };
+
+    struct item {
+        int64_t a;
+        const char *text;
+        struct val val;
+        double c;
+        double d;
+        long e;
+    };
+
+    struct item_sequence {
+        uint32_t cap;
+        uint32_t len;
+        struct item **buf;
+    };
+
+    dyn_type *type = NULL;
+    int rc = 0;
+    rc = dynType_parseWithStr("Tval={DD a b};Titem={Jtlval;DDJ a text val c d e};**[Litem;", NULL, NULL, &type);
+    CHECK_EQUAL(0, rc);
+
+    struct item_sequence *seq = NULL;
+    rc = dynType_alloc(type, (void **)&seq);
+    CHECK_EQUAL(0, rc);
+    CHECK(seq != NULL);
+
+    dynType_free(type, seq);
+
+    /*
+
+
+    struct item_sequence *items = (struct item_sequence *) calloc(1,sizeof(struct item_sequence));
+    items->buf = (struct item **) calloc(2, sizeof(struct item *));
+    items->cap = 2;
+    items->len = 2;
+    items->buf[0] = (struct item *)calloc(1, sizeof(struct item));
+    items->buf[0]->text = strdup("boe");
+    items->buf[1] = (struct item *)calloc(1, sizeof(struct item));
+    items->buf[1]->text = strdup("boe2");
+
+    dynType_free(type, items);
+     */
+
+    dynType_destroy(type);
+}
+

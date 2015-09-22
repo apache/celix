@@ -444,6 +444,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 
 celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_pt admin, export_registration_pt registration) {
     celix_status_t status = CELIX_SUCCESS;
+    logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA_DFI: Removing exported service");
 
     service_reference_pt  ref = NULL;
     status = exportRegistration_getExportReference(registration, &ref);
@@ -620,6 +621,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, e
 
 celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_pt admin, import_registration_pt registration) {
     celix_status_t status = CELIX_SUCCESS;
+    logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA_DFI: Removing imported service");
 
     celixThreadMutex_lock(&admin->importedServicesLock);
     importRegistration_close(registration);

@@ -249,7 +249,7 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
         //printf("request sended. got reply '%s' with status %i\n", reply, rc);
 
         if (rc == 0) {
-            //printf("handling reply\n");
+            //printf("Handling reply '%s'\n", reply);
             status = jsonRpc_handleReply(entry->dynFunc, reply, args);
         }
 

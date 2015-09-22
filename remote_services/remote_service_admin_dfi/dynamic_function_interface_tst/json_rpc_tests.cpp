@@ -131,6 +131,17 @@ static void stdLog(void *handle, int level, const char *file, int line, const ch
         return 0;
     }
 
+    struct item {
+        double a;
+        double b;
+    };
+
+    struct item_seq {
+        uint32_t  cap;
+        uint32_t  len;
+        struct item **buf;
+    };
+
     struct tst_serv {
         void *handle;
         int (*add)(void *, double, double, double *);
@@ -221,6 +232,51 @@ static void stdLog(void *handle, int level, const char *file, int line, const ch
         dynInterface_destroy(intf);
     }
 
+    static void handleTestOutputSequence(void) {
+        dyn_interface_type *intf = NULL;
+        FILE *desc = fopen("descriptors/example2.descriptor", "r");
+        CHECK(desc != NULL);
+        int rc = dynInterface_parse(desc, &intf);
+        CHECK_EQUAL(0, rc);
+
+        struct methods_head *head;
+        dynInterface_methods(intf, &head);
+        dyn_function_type *func = NULL;
+        struct method_entry *entry = NULL;
+        TAILQ_FOREACH(entry, head, entries) {
+            if (strcmp(entry->name, "example1") == 0) {
+                func = entry->dynFunc;
+                break;
+            }
+        }
+        CHECK(func != NULL);
+
+        //dyn_type *arg = dynFunction_argumentTypeForIndex(func, 1);
+        //dynType_print(arg, stdout);
+
+        const char *reply = "{\"r\":[{\"a\":1.0,\"b\":1.5},{\"a\":2.0,\"b\":2.5}]}";
+
+        void *args[2];
+        args[0] = NULL;
+        args[1] = NULL;
+
+        struct item_seq *result = NULL;
+        void *out = &result;
+        args[1] = &out;
+
+        rc = jsonRpc_handleReply(func, reply, args);
+        CHECK_EQUAL(0, rc);
+        CHECK_EQUAL(2, result->len);
+        CHECK_EQUAL(1.0, result->buf[0]->a);
+        CHECK_EQUAL(1.5, result->buf[0]->b);
+        CHECK_EQUAL(2.0, result->buf[1]->a);
+        CHECK_EQUAL(2.5, result->buf[1]->b);
+
+
+        free(result->buf);
+        free(result);
+        dynInterface_destroy(intf);    }
+
 }
 
 TEST_GROUP(JsonRpcTests) {
@@ -255,6 +311,10 @@ TEST(JsonRpcTests, callPre) {
 
 TEST(JsonRpcTests, callOut) {
     callTestOutput();
+}
+
+TEST(JsonRpcTests, handleOutSeq) {
+    handleTestOutputSequence();
 }
 
 

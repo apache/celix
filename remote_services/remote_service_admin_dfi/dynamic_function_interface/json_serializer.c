@@ -90,11 +90,18 @@ static int jsonSerializer_parseObject(dyn_type *type, json_t *object, void *inst
 
 static int jsonSerializer_parseObjectMember(dyn_type *type, const char *name, json_t *val, void *inst) {
     int status = OK;
-    int index = dynType_complex_indexForName(type, name);
     void *valp = NULL;
     dyn_type *valType = NULL;
 
-    status = dynType_complex_valLocAt(type, index, inst, &valp);
+    int index = dynType_complex_indexForName(type, name);
+    if (index < 0) {
+        LOG_ERROR("Cannot find index for member '%s'", name);
+        status = ERROR;
+    }
+
+    if (status == OK) {
+        status = dynType_complex_valLocAt(type, index, inst, &valp);
+    }
 
     if (status == OK ) {
         status = dynType_complex_dynTypeAt(type, index, &valType);
@@ -112,6 +119,12 @@ static int jsonSerializer_parseAny(dyn_type *type, void *loc, json_t *val) {
 
     dyn_type *subType = NULL;
     char c = dynType_descriptorType(type);
+
+    /*
+    printf("parseAny with descriptor '%c' :", c);
+    json_dumpf(val, stdout, 0); //TODO remove
+    printf("\n");
+     */
 
     float *f;           //F
     double *d;          //D
@@ -225,7 +238,7 @@ static int jsonSerializer_parseSequence(dyn_type *seq, json_t *array, void *seqL
         json_array_foreach(array, index, val) {
             void *valLoc = NULL;
             status = dynType_sequence_increaseLengthAndReturnLastLoc(seq, seqLoc, &valLoc);
-            //LOG_DEBUG("Got sequence loc %p", valLoc);
+            //LOG_DEBUG("Got sequence loc %p for index %zu", valLoc, index);
 
             if (status == OK) {
                 status = jsonSerializer_parseAny(itemType, valLoc, val);
