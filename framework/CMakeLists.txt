@@ -39,6 +39,7 @@ if (FRAMEWORK)
     
     add_definitions(-DUSE_FILE32API)
     include_directories(${ZLIB_INCLUDE_DIR})
+    include_directories(${CURL_INCLUDE_DIR})
     include_directories(${UUID_INCLUDE_DIR})
     include_directories("private/include")
     include_directories("public/include")
