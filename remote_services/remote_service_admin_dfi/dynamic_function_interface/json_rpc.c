@@ -124,13 +124,19 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
     }
 
     json_t *jsonResult = NULL;
+    for(i = 0; i < nrOfArgs; i += 1) {
+        dyn_type *argType = dynFunction_argumentTypeForIndex(func, i);
+        enum dyn_function_argument_meta  meta = dynFunction_argumentMetaForIndex(func, i);
+        if (meta == DYN_FUNCTION_ARGUMENT_META__STD) {
+            //TODO SOMETIMES segfault dynType_free(argType, args[i]);
+        }
+    }
+
     if (funcCallStatus == 0 && status == OK) {
         for (i = 0; i < nrOfArgs; i += 1) {
             dyn_type *argType = dynFunction_argumentTypeForIndex(func, i);
             enum dyn_function_argument_meta  meta = dynFunction_argumentMetaForIndex(func, i);
-            if (meta == DYN_FUNCTION_ARGUMENT_META__STD) {
-                dynType_free(argType, args[i]);
-            } else if (meta == DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT) {
+            if (meta == DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT) {
                 if (status == OK) {
                     status = jsonSerializer_serializeJson(argType, args[i], &jsonResult);
                 }
@@ -162,8 +168,12 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
         LOG_DEBUG("creating payload\n");
         json_t *payload = json_object();
         if (funcCallStatus == 0) {
-            LOG_DEBUG("Setting result payload");
-            json_object_set_new(payload, "r", jsonResult);
+            if (jsonResult == NULL) {
+                //ignore -> no result
+            } else {
+                LOG_DEBUG("Setting result payload");
+                json_object_set_new(payload, "r", jsonResult);
+            }
         } else {
             LOG_DEBUG("Setting error payload");
             json_object_set_new(payload, "e", json_integer(funcCallStatus));
