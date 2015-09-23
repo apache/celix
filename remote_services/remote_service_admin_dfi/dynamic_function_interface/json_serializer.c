@@ -126,6 +126,7 @@ static int jsonSerializer_parseAny(dyn_type *type, void *loc, json_t *val) {
     printf("\n");
      */
 
+    bool *z;            //Z
     float *f;           //F
     double *d;          //D
     char *b;            //B
@@ -139,6 +140,10 @@ static int jsonSerializer_parseAny(dyn_type *type, void *loc, json_t *val) {
     uint64_t  *ul;      //j
 
     switch (c) {
+        case 'Z' :
+            z = loc;
+            *z = (bool) json_is_true(val);
+            break;
         case 'F' :
             f = loc;
             *f = (float) json_real_value(val);
@@ -277,6 +282,7 @@ static int jsonSerializer_writeAny(dyn_type *type, void *input, json_t **out) {
     json_t *val = NULL;
     dyn_type *subType = NULL;
 
+    bool *z;            //Z
     float *f;           //F
     double *d;          //D
     char *b;            //B
@@ -290,6 +296,10 @@ static int jsonSerializer_writeAny(dyn_type *type, void *input, json_t **out) {
     uint64_t  *ul;      //j
 
     switch (descriptor) {
+        case 'Z' :
+            z = input;
+            val = json_boolean((bool)*z);
+            break;
         case 'B' :
             b = input;
             val = json_integer((json_int_t)*b);
@@ -439,3 +449,4 @@ static int jsonSerializer_writeComplex(dyn_type *type, void *input, json_t **out
 
     return status;
 }
+

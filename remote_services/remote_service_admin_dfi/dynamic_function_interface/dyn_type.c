@@ -825,6 +825,9 @@ ffi_type *dynType_ffiType(dyn_type *type) {
 static ffi_type * dynType_ffiTypeFor(int c) {
     ffi_type *type = NULL;
     switch (c) {
+        case 'Z' :
+            type = &ffi_type_uint8;
+            break;
         case 'F' :
             type = &ffi_type_float;
             break;
