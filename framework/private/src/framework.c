@@ -2066,10 +2066,23 @@ static void *framework_shutdown(void *framework) {
 		bundle_close(bundle);
 	}
 	hashMapIterator_destroy(iter);
-#ifndef ANDROID
-    pthread_cancel(fw->dispatcherThread.thread);
-#endif
-    celixThread_join(fw->dispatcherThread, NULL);
+
+	if (celixThreadMutex_lock(&fw->dispatcherLock) != CELIX_SUCCESS) {
+		fw_log(fw->logger, OSGI_FRAMEWORK_LOG_ERROR, "Error locking the dispatcherThread.");
+	}
+	else {
+		fw->shutdown = true;
+
+		if (celixThreadCondition_broadcast(&fw->dispatcher)) {
+			fw_log(fw->logger, OSGI_FRAMEWORK_LOG_ERROR, "Error broadcasting .");
+		}
+
+		if (celixThreadMutex_unlock(&fw->dispatcherLock)) {
+			fw_log(fw->logger, OSGI_FRAMEWORK_LOG_ERROR, "Error unlocking the dispatcherThread.");
+		}
+
+		celixThread_join(fw->dispatcherThread, NULL);
+	}
 
 	err = celixThreadMutex_lock(&fw->mutex);
 	if (err != 0) {
@@ -2077,7 +2090,6 @@ static void *framework_shutdown(void *framework) {
 		celixThread_exit(NULL);
 		return NULL;
 	}
-	fw->shutdown = true;
 	err = celixThreadCondition_broadcast(&fw->shutdownGate);
 	if (err != 0) {
 		fw_log(fw->logger, OSGI_FRAMEWORK_LOG_ERROR,  "Error waking the shutdown gate, cannot exit clean.");
