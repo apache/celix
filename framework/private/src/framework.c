@@ -104,6 +104,11 @@ static celix_status_t framework_loadBundleLibraries(framework_pt framework, bund
 static celix_status_t framework_loadLibraries(framework_pt framework, char *libraries, char *activator, bundle_archive_pt archive, void **activatorHandle);
 static celix_status_t framework_loadLibrary(framework_pt framework, char *library, bundle_archive_pt archive, void **handle);
 
+static celix_status_t frameworkActivator_start(void * userData, bundle_context_pt context);
+static celix_status_t frameworkActivator_stop(void * userData, bundle_context_pt context);
+static celix_status_t frameworkActivator_destroy(void * userData, bundle_context_pt context);
+
+
 struct fw_refreshHelper {
     framework_pt framework;
     bundle_pt bundle;
@@ -2303,12 +2308,12 @@ celix_status_t fw_invokeFrameworkListener(framework_pt framework, framework_list
 	return ret;
 }
 
-celix_status_t frameworkActivator_start(void * userData, bundle_context_pt context) {
+static celix_status_t frameworkActivator_start(void * userData, bundle_context_pt context) {
 	// nothing to do
 	return CELIX_SUCCESS;
 }
 
-celix_status_t frameworkActivator_stop(void * userData, bundle_context_pt context) {
+static celix_status_t frameworkActivator_stop(void * userData, bundle_context_pt context) {
     celix_status_t status = CELIX_SUCCESS;
 
 	celix_thread_t shutdownThread;
@@ -2333,7 +2338,7 @@ celix_status_t frameworkActivator_stop(void * userData, bundle_context_pt contex
 	return status;
 }
 
-celix_status_t frameworkActivator_destroy(void * userData, bundle_context_pt context) {
+static celix_status_t frameworkActivator_destroy(void * userData, bundle_context_pt context) {
 	return CELIX_SUCCESS;
 }
 
