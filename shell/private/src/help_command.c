@@ -75,6 +75,7 @@ void helpCommand_execute(command_pt command, char * line, void (*out)(char *), v
 					out(outString);
 				}
 				out("\nUse 'help <command-name>' for more information.\n");
+				arrayList_destroy(commands);
 			} else {
 				bool found = false;
 				while (sub != NULL) {
@@ -99,6 +100,7 @@ void helpCommand_execute(command_pt command, char * line, void (*out)(char *), v
 						}
 					}
 					sub = strtok_r(NULL, delims, &save_ptr);
+					arrayList_destroy(commands);
 				}
 			}
 		}
