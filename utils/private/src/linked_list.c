@@ -115,7 +115,7 @@ void linkedList_addLast(linked_list_pt list, void * element) {
 }
 
 bool linkedList_contains(linked_list_pt list, void * element) {
-	return linkedList_indexOf(list, element) != 0;
+	return linkedList_indexOf(list, element) != -1;
 }
 
 int linkedList_size(linked_list_pt list) {
