@@ -101,10 +101,16 @@ celix_status_t endpointDiscoveryPoller_create(discovery_pt discovery, bundle_con
         return CELIX_BUNDLE_EXCEPTION;
     }
 
-	status = celixThread_create(&(*poller)->pollerThread, NULL, endpointDiscoveryPoller_performPeriodicPoll, *poller);
-	if (status != CELIX_SUCCESS) {
-		return status;
-	}
+    if ((*poller)->poll_interval > 0) {
+
+        status = celixThread_create(&(*poller)->pollerThread, NULL, endpointDiscoveryPoller_performPeriodicPoll, *poller);
+        if (status != CELIX_SUCCESS) {
+            return status;
+        }
+    }
+    else {
+        logHelper_log(*(*poller)->loghelper, OSGI_LOGSERVICE_DEBUG, "ENDPOINT_POLLER: periodic polling disabled!");
+    }
 
 	(*poller)->running = true;
 
@@ -171,7 +177,7 @@ celix_status_t endpointDiscoveryPoller_getDiscoveryEndpoints(endpoint_discovery_
 }
 
 /**
- * Adds a new endpoint URL to the list of polled endpoints.
+ * Adds a new endpoint URL to the list of polled endpoints. In case the URL already exists, a poll is performed
  */
 celix_status_t endpointDiscoveryPoller_addDiscoveryEndpoint(endpoint_discovery_poller_pt poller, char *url) {
 	celix_status_t status;
@@ -191,6 +197,9 @@ celix_status_t endpointDiscoveryPoller_addDiscoveryEndpoint(endpoint_discovery_p
 			hashMap_put(poller->entries, strdup(url), endpoints);
 			endpointDiscoveryPoller_poll(poller, url, endpoints);
 		}
+	}
+	else {
+        endpointDiscoveryPoller_poll(poller, url, endpoints);
 	}
 
 	status = celixThreadMutex_unlock(&poller->pollerLock);
@@ -248,9 +257,7 @@ celix_status_t endpointDiscoveryPoller_poll(endpoint_discovery_poller_pt poller,
 	arrayList_createWithEquals(endpointDiscoveryPoller_endpointDescriptionEquals, &updatedEndpoints);
 	status = endpointDiscoveryPoller_getEndpoints(poller, url, &updatedEndpoints);
 
-	if (status != CELIX_SUCCESS) {
-		status = celixThreadMutex_unlock(&poller->pollerLock);
-	} else {
+	if (status == CELIX_SUCCESS) {
 		if (updatedEndpoints) {
 			for (unsigned int i = arrayList_size(currentEndpoints); i > 0; i--) {
 				endpoint_description_pt endpoint = arrayList_get(currentEndpoints, i - 1);
@@ -295,6 +302,7 @@ static void *endpointDiscoveryPoller_performPeriodicPoll(void *data) {
 		if (status != CELIX_SUCCESS) {
 			logHelper_log(*poller->loghelper, OSGI_LOGSERVICE_WARNING, "ENDPOINT_POLLER: failed to obtain lock; retrying...");
 		} else {
+
 			hash_map_iterator_pt iterator = hashMapIterator_create(poller->entries);
 
 			while (hashMapIterator_hasNext(iterator)) {
@@ -307,11 +315,12 @@ static void *endpointDiscoveryPoller_performPeriodicPoll(void *data) {
 			}
 
 			hashMapIterator_destroy(iterator);
-		}
 
-		status = celixThreadMutex_unlock(&poller->pollerLock);
-		if (status != CELIX_SUCCESS) {
-			logHelper_log(*poller->loghelper, OSGI_LOGSERVICE_WARNING, "ENDPOINT_POLLER: failed to release lock; retrying...");
+			status = celixThreadMutex_unlock(&poller->pollerLock);
+
+			if (status != CELIX_SUCCESS) {
+				logHelper_log(*poller->loghelper, OSGI_LOGSERVICE_WARNING, "ENDPOINT_POLLER: failed to release lock; retrying...");
+			}
 		}
 	}
 

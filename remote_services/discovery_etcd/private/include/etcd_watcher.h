@@ -35,6 +35,6 @@ typedef struct etcd_watcher *etcd_watcher_pt;
 
 celix_status_t etcdWatcher_create(discovery_pt discovery,  bundle_context_pt context, etcd_watcher_pt *watcher);
 celix_status_t etcdWatcher_destroy(etcd_watcher_pt watcher);
-
+celix_status_t etcdWatcher_registerDiscovery(etcd_watcher_pt watcher);
 
 #endif /* ETCD_WATCHER_H_ */

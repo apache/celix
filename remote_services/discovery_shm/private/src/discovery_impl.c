@@ -181,4 +181,10 @@ celix_status_t discovery_stop(discovery_pt discovery) {
 }
 
 
+celix_status_t discovery_update(discovery_pt discovery) {
+    celix_status_t status = CELIX_SUCCESS;
+
+
+    return status;
+}
 

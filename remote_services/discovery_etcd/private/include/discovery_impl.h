@@ -65,4 +65,7 @@ struct discovery {
 	log_helper_pt loghelper;
 };
 
+
+celix_status_t discovery_update(discovery_pt discovery);
+
 #endif /* DISCOVERY_H_ */

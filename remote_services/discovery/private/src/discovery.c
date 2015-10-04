@@ -43,6 +43,10 @@ celix_status_t discovery_endpointAdded(void *handle, endpoint_description_pt end
 
 	status = endpointDiscoveryServer_addEndpoint(discovery->server, endpoint);
 
+	if (status == CELIX_SUCCESS) {
+	    discovery_update(discovery);
+	}
+
 	return status;
 }
 
@@ -53,6 +57,10 @@ celix_status_t discovery_endpointRemoved(void *handle, endpoint_description_pt e
 	logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_INFO, "Endpoint for %s, with filter \"%s\" removed...", endpoint->service, matchedFilter);
 
 	status = endpointDiscoveryServer_removeEndpoint(discovery->server, endpoint);
+
+	if (status == CELIX_SUCCESS) {
+        discovery_update(discovery);
+    }
 
 	return status;
 }

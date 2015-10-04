@@ -150,7 +150,7 @@ static celix_status_t etcdWatcher_addAlreadyExistingWatchpoints(discovery_pt dis
 }
 
 
-static celix_status_t etcdWatcher_addOwnFramework(etcd_watcher_pt watcher)
+celix_status_t etcdWatcher_registerDiscovery(etcd_watcher_pt watcher)
 {
     celix_status_t status = CELIX_BUNDLE_EXCEPTION;
     char localNodePath[MAX_LOCALNODE_LENGTH];
@@ -209,9 +209,9 @@ static celix_status_t etcdWatcher_addEntry(etcd_watcher_pt watcher, char* key, c
 	celix_status_t status = CELIX_BUNDLE_EXCEPTION;
 	endpoint_discovery_poller_pt poller = watcher->discovery->poller;
 
-	if (!hashMap_containsKey(watcher->entries, key)) {
-		status = endpointDiscoveryPoller_addDiscoveryEndpoint(poller, value);
+    status = endpointDiscoveryPoller_addDiscoveryEndpoint(poller, value);
 
+	if (!hashMap_containsKey(watcher->entries, key)) {
 		if (status == CELIX_SUCCESS) {
 			hashMap_put(watcher->entries, strdup(key), strdup(value));
 		}
@@ -288,7 +288,7 @@ static void* etcdWatcher_run(void* data) {
 
 		// update own framework uuid
 		if (time(NULL) - timeBeforeWatch > (DEFAULT_ETCD_TTL/2)) {
-			etcdWatcher_addOwnFramework(watcher);
+		    etcdWatcher_registerDiscovery(watcher);
 			timeBeforeWatch = time(NULL);
 		}
 	}
@@ -347,7 +347,7 @@ celix_status_t etcdWatcher_create(discovery_pt discovery, bundle_context_pt cont
 		return status;
 	}
 
-	etcdWatcher_addOwnFramework(*watcher);
+	etcdWatcher_registerDiscovery(*watcher);
 
 	if ((status = celixThreadMutex_create(&(*watcher)->watcherLock, NULL)) != CELIX_SUCCESS) {
 		return status;

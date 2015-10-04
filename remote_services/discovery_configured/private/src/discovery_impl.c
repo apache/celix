@@ -121,3 +121,14 @@ celix_status_t discovery_destroy(discovery_pt discovery) {
 
 	return status;
 }
+
+/**
+ * discovery_update usually triggers a clientside rep-oll of the
+ * endpoint informations. This unfortunately is not possible for
+ * discovery_configured.
+ */
+celix_status_t discovery_update(discovery_pt discovery) {
+    return CELIX_SUCCESS;
+}
+
+

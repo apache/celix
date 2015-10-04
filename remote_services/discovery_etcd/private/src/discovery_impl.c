@@ -109,20 +109,8 @@ celix_status_t discovery_destroy(discovery_pt discovery) {
 
 celix_status_t discovery_start(discovery_pt discovery) {
     celix_status_t status = CELIX_SUCCESS;
-	char *port = NULL;
-	char *path = NULL;
 
 	logHelper_start(discovery->loghelper);
-
-	bundleContext_getProperty(discovery->context, DISCOVERY_SERVER_PORT, &port);
-	if (port == NULL) {
-		port = DEFAULT_SERVER_PORT;
-	}
-
-	bundleContext_getProperty(discovery->context, DISCOVERY_SERVER_PATH, &path);
-	if (path == NULL) {
-		path = DEFAULT_SERVER_PATH;
-	}
 
     status = endpointDiscoveryPoller_create(discovery, discovery->context, &discovery->poller);
     if (status != CELIX_SUCCESS) {
@@ -179,6 +167,15 @@ celix_status_t discovery_stop(discovery_pt discovery) {
 	logHelper_stop(discovery->loghelper);
 
 	return status;
+}
+
+
+celix_status_t discovery_update(discovery_pt discovery) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    status = etcdWatcher_registerDiscovery(discovery->watcher);
+
+    return status;
 }
 
 
