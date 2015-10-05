@@ -39,7 +39,7 @@
 #include "endpoint_discovery_poller.h"
 
 struct shm_watcher {
-    endpoint_discovery_poller_pt poller;
+    discovery_pt discovery;
     bundle_context_pt context;
 
     shmData_pt shmData;
@@ -79,6 +79,7 @@ static celix_status_t shmWatcher_getLocalNodePath(bundle_context_pt context, cha
 /* retrieves all endpoints from shm and syncs them with the ones already available */
 static celix_status_t shmWatcher_syncEndpoints(shm_watcher_pt watcher) {
     celix_status_t status = CELIX_SUCCESS;
+    endpoint_discovery_poller_pt poller = watcher->discovery->poller;
     char** shmKeyArr = calloc(SHM_DATA_MAX_ENTRIES, sizeof(*shmKeyArr));
     array_list_pt registeredKeyArr = NULL; //calloc(SHM_DATA_MAX_ENTRIES, sizeof(*registeredKeyArr));
 
@@ -94,7 +95,7 @@ static celix_status_t shmWatcher_syncEndpoints(shm_watcher_pt watcher) {
     discovery_shmGetKeys(watcher->shmData, shmKeyArr, &shmSize);
 
     // get all locally registered endpoints
-    endpointDiscoveryPoller_getDiscoveryEndpoints(watcher->poller, registeredKeyArr);
+    endpointDiscoveryPoller_getDiscoveryEndpoints(poller, registeredKeyArr);
 
     // add discovery points which are in shm, but not local yet
     for (i = 0; i < shmSize; i++) {
@@ -111,7 +112,7 @@ static celix_status_t shmWatcher_syncEndpoints(shm_watcher_pt watcher) {
             }
 
             if (elementFound == false) {
-                endpointDiscoveryPoller_addDiscoveryEndpoint(watcher->poller, url);
+                endpointDiscoveryPoller_addDiscoveryEndpoint(poller, url);
             }
         }
     }
@@ -121,7 +122,7 @@ static celix_status_t shmWatcher_syncEndpoints(shm_watcher_pt watcher) {
         char* regUrl = arrayList_get(registeredKeyArr, i);
 
         if (regUrl != NULL) {
-            endpointDiscoveryPoller_removeDiscoveryEndpoint(watcher->poller, regUrl);
+            endpointDiscoveryPoller_removeDiscoveryEndpoint(poller, regUrl);
         }
     }
 
@@ -142,20 +143,23 @@ static celix_status_t shmWatcher_syncEndpoints(shm_watcher_pt watcher) {
 
 static void* shmWatcher_run(void* data) {
     shm_watcher_pt watcher = (shm_watcher_pt) data;
+    endpoint_discovery_server_pt server = watcher->discovery->server;
+
     char localNodePath[MAX_LOCALNODE_LENGTH];
-    char* endpoints = NULL;
+    char url[SHM_ENTRY_MAX_VALUE_LENGTH];
 
     if (shmWatcher_getLocalNodePath(watcher->context, &localNodePath[0]) != CELIX_SUCCESS) {
         fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Cannot register local discovery");
     }
 
-    if ((bundleContext_getProperty(watcher->context, DISCOVERY_POLL_ENDPOINTS, &endpoints) != CELIX_SUCCESS) || !endpoints) {
-        endpoints = DEFAULT_POLL_ENDPOINTS;
+
+    if (endpointDiscoveryServer_getUrl(server, &url[0]) != CELIX_SUCCESS) {
+        snprintf(url, SHM_ENTRY_MAX_VALUE_LENGTH, "http://%s:%s/%s", DEFAULT_SERVER_IP, DEFAULT_SERVER_PORT, DEFAULT_SERVER_PATH);
     }
 
     while (watcher->running) {
         // register own framework
-        if (discovery_shmSet(watcher->shmData, localNodePath, endpoints) != CELIX_SUCCESS) {
+        if (discovery_shmSet(watcher->shmData, localNodePath, url) != CELIX_SUCCESS) {
             fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Cannot register local discovery");
         }
 
@@ -166,10 +170,11 @@ static void* shmWatcher_run(void* data) {
     return NULL;
 }
 
-celix_status_t shmWatcher_create(endpoint_discovery_poller_pt poller, bundle_context_pt context, shm_watcher_pt *watcher) {
+celix_status_t shmWatcher_create(discovery_pt discovery, bundle_context_pt context, shm_watcher_pt *watcher) {
     celix_status_t status = CELIX_SUCCESS;
 
-    if (poller == NULL) {
+
+    if (discovery == NULL) {
         return CELIX_BUNDLE_EXCEPTION;
     }
 
@@ -177,7 +182,7 @@ celix_status_t shmWatcher_create(endpoint_discovery_poller_pt poller, bundle_con
     if (!*watcher) {
         return CELIX_ENOMEM;
     } else {
-        (*watcher)->poller = poller;
+        (*watcher)->discovery = discovery;
         (*watcher)->context = context;
         if (discovery_shmAttach(&((*watcher)->shmData)) != CELIX_SUCCESS)
             discovery_shmCreate(&((*watcher)->shmData));

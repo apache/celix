@@ -109,26 +109,8 @@ celix_status_t discovery_destroy(discovery_pt discovery) {
 
 celix_status_t discovery_start(discovery_pt discovery) {
     celix_status_t status = CELIX_SUCCESS;
-	char *port = NULL;
-	char *path = NULL;
-
-
-	bundleContext_getProperty(discovery->context, DISCOVERY_SERVER_PORT, &port);
-	if (port == NULL) {
-		port = DEFAULT_SERVER_PORT;
-	}
-
-	bundleContext_getProperty(discovery->context, DISCOVERY_SERVER_PATH, &path);
-	if (path == NULL) {
-		path = DEFAULT_SERVER_PATH;
-	}
 
     status = endpointDiscoveryPoller_create(discovery, discovery->context, &discovery->poller);
-    if (status != CELIX_SUCCESS) {
-    	return CELIX_BUNDLE_EXCEPTION;
-    }
-
-    status = shmWatcher_create(discovery->poller, discovery->context, &discovery->watcher);
     if (status != CELIX_SUCCESS) {
     	return CELIX_BUNDLE_EXCEPTION;
     }
@@ -136,6 +118,11 @@ celix_status_t discovery_start(discovery_pt discovery) {
     status = endpointDiscoveryServer_create(discovery, discovery->context, &discovery->server);
     if (status != CELIX_SUCCESS) {
     	return CELIX_BUNDLE_EXCEPTION;
+    }
+
+    status = shmWatcher_create(discovery, discovery->context, &discovery->watcher);
+    if (status != CELIX_SUCCESS) {
+        return CELIX_BUNDLE_EXCEPTION;
     }
 
     return status;

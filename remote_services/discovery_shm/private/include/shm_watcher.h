@@ -33,7 +33,8 @@
 
 typedef struct shm_watcher *shm_watcher_pt;
 
-celix_status_t shmWatcher_create(endpoint_discovery_poller_pt poller, bundle_context_pt context, shm_watcher_pt *watcher);
+
+celix_status_t shmWatcher_create(discovery_pt discovery, bundle_context_pt context, shm_watcher_pt *watcher);
 celix_status_t shmWatcher_destroy(shm_watcher_pt watcher);
 
 
