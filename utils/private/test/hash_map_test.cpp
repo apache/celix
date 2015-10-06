@@ -66,7 +66,7 @@ unsigned int test_hashKeyChar(void * k) {
 
 	unsigned int hash = 1315423911;
 	unsigned int i    = 0;
-	int len = strlen(str);
+	unsigned int len = strlen(str);
 
 	for(i = 0; i < len; str++, i++)
 	{
@@ -77,6 +77,7 @@ unsigned int test_hashKeyChar(void * k) {
 }
 
 unsigned int test_hashValueChar(void * v) {
+	(void)(v);
 	return 0;
 }
 
@@ -381,7 +382,6 @@ TEST(hash_map, put){
 
 TEST(hash_map, resize){
 	int i;
-	char * k;
 	char key[6];
 
 	LONGS_EQUAL(0, map->size);

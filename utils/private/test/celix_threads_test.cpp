@@ -276,22 +276,24 @@ TEST(celix_thread_condition, broadcast) {
 static void * thread_test_func_create(void * arg) {
 	char ** test_str = (char**) arg;
 	*test_str = my_strdup("SUCCESS");
-	celixThread_exit(NULL);
+
+	return NULL;
 }
 
 static void * thread_test_func_exit(void *) {
 	int *pi = (int*) calloc(1, sizeof(int));
 	*pi = 666;
-	celixThread_exit(pi);
+
+	return pi;
 }
 
 static void * thread_test_func_detach(void *) {
-	celixThread_exit(NULL);
+	return NULL;
 }
 
 static void * thread_test_func_self(void * arg) {
 	*((celix_thread*) arg) = celixThread_self();
-	celixThread_exit(NULL);
+	return NULL;
 }
 
 static void * thread_test_func_lock(void *arg) {
@@ -303,7 +305,7 @@ static void * thread_test_func_lock(void *arg) {
 	celixThreadMutex_unlock(&param->mu);
 	celixThreadMutex_unlock(&param->mu2);
 
-	celixThread_exit(NULL);
+	return NULL;
 }
 
 static void * thread_test_func_cond_wait(void *arg) {
@@ -315,7 +317,7 @@ static void * thread_test_func_cond_wait(void *arg) {
 
 	celixThreadCondition_signal(&param->cond);
 	celixThreadMutex_unlock(&param->mu);
-	celixThread_exit(NULL);
+	return NULL;
 }
 
 static void * thread_test_func_cond_broadcast(void *arg) {
@@ -327,7 +329,7 @@ static void * thread_test_func_cond_broadcast(void *arg) {
 	celixThreadMutex_lock(&param->mu2);
 	param->i++;
 	celixThreadMutex_unlock(&param->mu2);
-	celixThread_exit(NULL);
+	return NULL;
 }
 
 static int thread_test_func_recur_lock(celix_thread_mutex_t *mu, int i) {

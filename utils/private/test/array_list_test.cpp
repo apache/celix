@@ -80,11 +80,10 @@ TEST(array_list, create) {
 }
 
 TEST(array_list, trimToSize) {
-	bool added;
 	char * entry = my_strdup("entry");
 	arrayList_clear(list);
 
-	added = arrayList_add(list, entry);
+	arrayList_add(list, entry);
 	LONGS_EQUAL(1, list->size);
 	LONGS_EQUAL(10, list->capacity);
 
@@ -103,9 +102,8 @@ TEST(array_list, ensureCapacity) {
 	LONGS_EQUAL(0, list->size);
 
 	for (i = 0; i < 100; i++) {
-		bool added;
 		char * entry = my_strdup("entry");
-		added = arrayList_add(list, entry);
+		arrayList_add(list, entry);
 	}
 	LONGS_EQUAL(133, list->capacity);
 	LONGS_EQUAL(100, list->size);
