@@ -27,12 +27,11 @@
 
 #include "bundle_context.h"
 
-celix_status_t bundleContext_create(apr_pool_t *pool, framework_pt framework, framework_logger_pt logger, bundle_pt bundle, bundle_context_pt *bundle_context) {
-	mock_c()->actualCall("bundleContext_create")
-                ->withPointerParameters("pool", pool)
-			->withPointerParameters("framework", framework)
-			->withPointerParameters("logger", logger)
-			->withPointerParameters("bundle", bundle)
+celix_status_t bundleContext_create(framework_pt framework, framework_logger_pt logger, bundle_pt bundle, bundle_context_pt *bundle_context) {
+        mock_c()->actualCall("bundleContext_create")
+                        ->withPointerParameters("framework", framework)
+                        ->withPointerParameters("logger", logger)
+                        ->withPointerParameters("bundle", bundle)
 			->withOutputParameter("bundle_context", (void **) bundle_context);
 	return mock_c()->returnValue().value.intValue;
 }
@@ -51,20 +50,12 @@ celix_status_t bundleContext_getFramework(bundle_context_pt context, framework_p
 	mock_c()->actualCall("bundleContext_getFramework")
 			->withPointerParameters("context", context)
 			->withOutputParameter("framework", (void **) framework);
-	return mock_c()->returnValue().value.intValue;
+        return mock_c()->returnValue().value.intValue;
 }
-
-celix_status_t bundleContext_getMemoryPool(bundle_context_pt context, apr_pool_t **memory_pool) {
-	mock_c()->actualCall("bundleContext_getMemoryPool")
-			->withPointerParameters("context", context)
-			->withOutputParameter("memory_pool", (void **) memory_pool);
-	return mock_c()->returnValue().value.intValue;
-}
-
 
 celix_status_t bundleContext_installBundle(bundle_context_pt context, char * location, bundle_pt *bundle) {
-	mock_c()->actualCall("bundleContext_installBundle")
-			->withPointerParameters("context", context)
+        mock_c()->actualCall("bundleContext_installBundle")
+                        ->withPointerParameters("context", context)
 			->withStringParameters("location", location)
 			->withOutputParameter("bundle", (void **) bundle);
 	return mock_c()->returnValue().value.intValue;

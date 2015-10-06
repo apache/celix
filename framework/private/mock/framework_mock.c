@@ -27,9 +27,9 @@
 
 #include "framework_private.h"
 
-celix_status_t framework_create(framework_pt *framework, apr_pool_t *memoryPool, properties_pt config) {
-	mock_c()->actualCall("framework_create");
-		return mock_c()->returnValue().value.intValue;
+celix_status_t framework_create(framework_pt *framework, properties_pt config) {
+        mock_c()->actualCall("framework_create");
+                return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t framework_destroy(framework_pt framework) {
