@@ -40,7 +40,7 @@ celix_status_t importRegistration_proxyFactoryAdded(void * handle, service_refer
 celix_status_t importRegistration_proxyFactoryModified(void * handle, service_reference_pt reference, void *service);
 celix_status_t importRegistration_proxyFactoryRemoved(void * handle, service_reference_pt reference, void *service);
 
-celix_status_t importRegistration_create(endpoint_description_pt endpoint, remote_service_admin_pt rsa, 	sendToHandle sendToCallback, bundle_context_pt context, import_registration_pt *registration) {
+celix_status_t importRegistration_create(endpoint_description_pt endpoint, remote_service_admin_pt rsa, sendToHandle sendToCallback, bundle_context_pt context, import_registration_pt *registration) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*registration = calloc(1, sizeof(**registration));
@@ -61,6 +61,8 @@ celix_status_t importRegistration_create(endpoint_description_pt endpoint, remot
 
 celix_status_t importRegistration_destroy(import_registration_pt registration)
 {
+	free(registration);
+
 	return CELIX_SUCCESS;
 }
 

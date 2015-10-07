@@ -90,7 +90,7 @@ celix_status_t endpointDiscoveryPoller_create(discovery_pt discovery, bundle_con
 	char *save_ptr = NULL;
 	char* tok = strtok_r(endpoints, sep, &save_ptr);
 	while (tok) {
-		endpointDiscoveryPoller_addDiscoveryEndpoint(*poller, strdup(utils_stringTrim(tok)));
+		endpointDiscoveryPoller_addDiscoveryEndpoint(*poller, utils_stringTrim(tok));
 		tok = strtok_r(NULL, sep, &save_ptr);
 	}
 	// Clean up after ourselves...

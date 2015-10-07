@@ -159,7 +159,6 @@ celix_status_t discovery_stop(discovery_pt discovery) {
 	if (status != CELIX_SUCCESS) {
 		return CELIX_BUNDLE_EXCEPTION;
 	}
-
 	hash_map_iterator_pt iter;
 
 	celixThreadMutex_lock(&discovery->discoveredServicesMutex);

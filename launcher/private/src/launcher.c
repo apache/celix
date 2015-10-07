@@ -165,8 +165,11 @@ int main(int argc, char *argv[]) {
 
             framework_waitForStop(framework);
             framework_destroy(framework);
-            properties_destroy(config);
 		}
+    }
+
+    if (config != NULL) {
+        properties_destroy(config);
     }
 
     if (status != CELIX_SUCCESS) {
