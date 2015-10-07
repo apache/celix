@@ -208,7 +208,7 @@ static celix_status_t importRegistration_createProxy(import_registration_pt impo
 
     if (status == CELIX_SUCCESS) {
         *out = proxy;
-    } else {
+    } else if (proxy != NULL) {
         if (proxy->intf != NULL) {
             dynInterface_destroy(proxy->intf);
             proxy->intf = NULL;
