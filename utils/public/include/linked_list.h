@@ -49,7 +49,7 @@ UTILS_EXPORT int linkedList_size(linked_list_pt list);
 UTILS_EXPORT bool linkedList_isEmpty(linked_list_pt list);
 UTILS_EXPORT bool linkedList_addElement(linked_list_pt list, void * element);
 UTILS_EXPORT bool linkedList_removeElement(linked_list_pt list, void * element);
-UTILS_EXPORT void linkedlist_clear(linked_list_pt list);
+UTILS_EXPORT void linkedList_clear(linked_list_pt list);
 UTILS_EXPORT void * linkedList_get(linked_list_pt list, int index);
 UTILS_EXPORT void * linkedList_set(linked_list_pt list, int index, void * element);
 UTILS_EXPORT void linkedList_addIndex(linked_list_pt list, int index, void * element);

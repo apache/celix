@@ -224,9 +224,14 @@ static celix_status_t etcdWatcher_removeEntry(etcd_watcher_pt watcher, char* key
 	celix_status_t status = CELIX_BUNDLE_EXCEPTION;
 	endpoint_discovery_poller_pt poller = watcher->discovery->poller;
 
-	if (hashMap_containsKey(watcher->entries, key)) {
+	hash_map_entry_pt entry = hashMap_getEntry(watcher->entries, key);
 
-		hashMap_remove(watcher->entries, key);
+	if (entry != NULL) {
+		hashMap_removeEntryForKey(watcher->entries, key);
+
+		free(hashMapEntry_getKey(entry));
+		free(hashMapEntry_getValue(entry));
+		free(entry);
 
 		// check if there is another entry with the same value
 		hash_map_iterator_pt iter = hashMapIterator_create(watcher->entries);
@@ -236,6 +241,8 @@ static celix_status_t etcdWatcher_removeEntry(etcd_watcher_pt watcher, char* key
 			if (strcmp(value, hashMapIterator_nextValue(iter)) == 0)
 				valueFound++;
 		}
+
+		hashMapIterator_destroy(iter);
 
 		if (valueFound == 0)
 			status = endpointDiscoveryPoller_removeDiscoveryEndpoint(poller, value);

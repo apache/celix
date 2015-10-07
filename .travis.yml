@@ -26,4 +26,4 @@ before_script:
 
 script: 
     - make all 
-    - make test ARGS="-V"
+    - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/utils && make test ARGS="-V"

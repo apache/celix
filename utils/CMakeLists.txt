@@ -41,6 +41,7 @@ if (UTILS)
 		public/include/exports.h
 		
 		private/src/celix_threads.c
+		public/include/celix_threads.h
 	)
     
     IF(UNIX)
@@ -52,6 +53,7 @@ if (UTILS)
     INSTALL(FILES ${files} DESTINATION include/celix COMPONENT framework)
     
     celix_subproject(UTILS-TESTS "Option to build the utilities library tests" "OFF")
+
     if (UTILS-TESTS)
     	find_package(CppUTest REQUIRED)
 
@@ -60,27 +62,33 @@ if (UTILS)
 	    include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 	    include_directories("${PROJECT_SOURCE_DIR}/utils/private/include")
 	    
-	    add_executable(hash_map_test private/test/hash_map_test.c)
-	    target_link_libraries(hash_map_test celix_utils ${CUNIT_LIBRARIES})
-	    
-	    add_executable(hash_map_test_hash private/test/hash_map_test_hash.c)
-	    target_link_libraries(hash_map_test_hash celix_utils ${CUNIT_LIBRARIES})
-	    
-	    add_executable(array_list_test2 private/test/array_list_test.c)
-	    target_link_libraries(array_list_test2 celix_utils ${CUNIT_LIBRARIES})
+	    add_executable(hash_map_test private/test/hash_map_test.cpp)
+	    target_link_libraries(hash_map_test celix_utils ${CPPUTEST_LIBRARY} pthread)
 	    
 	    add_executable(array_list_test private/test/array_list_test.cpp)
-		target_link_libraries(array_list_test celix_utils ${CPPUTEST_LIBRARY})
+	    target_link_libraries(array_list_test celix_utils ${CPPUTEST_LIBRARY} pthread)
 	    
-	    add_executable(linked_list_test private/test/linked_list_test.c)
-	    target_link_libraries(linked_list_test celix_utils ${CUNIT_LIBRARIES})
+		add_executable(celix_threads_test private/test/celix_threads_test.cpp)
+	    target_link_libraries(celix_threads_test celix_utils ${CPPUTEST_LIBRARY} pthread)
+	    
+	    add_executable(linked_list_test private/test/linked_list_test.cpp)
+	    target_link_libraries(linked_list_test celix_utils ${CPPUTEST_LIBRARY} pthread)
 
-        add_test(NAME util_test_1 COMMAND array_list_test2)
-	    add_test(NAME util_test_2 COMMAND hash_map_test)
-	    add_test(NAME util_test_3 COMMAND hash_map_test_hash)
-	    add_test(NAME util_test_4 COMMAND linked_list_test)
-        add_test(NAME util_test_5 COMMAND array_list_test)
+	    #run_test(array_list_test)
+	    #run_test(hash_map_test)
+	    #run_test(linked_list_test)
 	    
-        SETUP_TARGET_FOR_COVERAGE(array_list_test_c array_list_test ${CMAKE_BINARY_DIR}/coverage/array_list_test)
-    endif(UTILS-TESTS)
+	    ADD_TARGET_FOR_TEST(array_list_test)
+       SETUP_TARGET_FOR_COVERAGE(array_list array_list_test ${CMAKE_BINARY_DIR}/coverage/array_list_test/array_list_test)
+
+ 	    ADD_TARGET_FOR_TEST(hash_map_test)
+       SETUP_TARGET_FOR_COVERAGE(hash_map hash_map_test ${CMAKE_BINARY_DIR}/coverage/hash_map_test/hash_map_test)
+       
+       ADD_TARGET_FOR_TEST(celix_threads_test)
+       SETUP_TARGET_FOR_COVERAGE(celix_threads celix_threads_test ${CMAKE_BINARY_DIR}/coverage/celix_threads_test/celix_threads_test)
+
+	    ADD_TARGET_FOR_TEST(linked_list_test)
+       SETUP_TARGET_FOR_COVERAGE(linked_list linked_list_test ${CMAKE_BINARY_DIR}/coverage/linked_list_test/linked_list_test)
+
+   endif(UTILS-TESTS)
 endif (UTILS)

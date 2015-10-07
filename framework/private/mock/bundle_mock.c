@@ -196,20 +196,11 @@ celix_status_t bundle_getRegisteredServices(bundle_pt bundle, array_list_pt *lis
 }
 
 celix_status_t bundle_getServicesInUse(bundle_pt bundle, array_list_pt *list) {
-	return mock_c()->returnValue().value.intValue;
+        return mock_c()->returnValue().value.intValue;
 }
-
-
-celix_status_t bundle_getMemoryPool(bundle_pt bundle, apr_pool_t **pool) {
-	mock_c()->actualCall("bundle_getMemoryPool")
-			->withPointerParameters("bundle", bundle)
-			->withOutputParameter("pool", (void **) pool);
-	return mock_c()->returnValue().value.intValue;
-}
-
 
 celix_status_t bundle_setFramework(bundle_pt bundle, framework_pt framework) {
-	return mock_c()->returnValue().value.intValue;
+        return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t bundle_getFramework(bundle_pt bundle, framework_pt *framework) {

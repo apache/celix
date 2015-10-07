@@ -86,7 +86,6 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 	}
 
 	(*server)->loghelper = &discovery->loghelper;
-
 	(*server)->entries = hashMap_create(&utils_stringHash, NULL, &utils_stringEquals, NULL);
 	if (!(*server)->entries) {
 		return CELIX_ENOMEM;
@@ -121,7 +120,7 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 	}
 	else {
 		logHelper_log(*(*server)->loghelper, OSGI_LOGSERVICE_WARNING, "No IP address for service annunciation set. Using %s", DEFAULT_SERVER_IP);
-		(*server)->ip = (char*) DEFAULT_SERVER_IP;
+		(*server)->ip = strdup((char*) DEFAULT_SERVER_IP);
 	}
 
 	if (detectedIp != NULL) {

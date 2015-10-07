@@ -150,7 +150,7 @@ celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_servi
 		}
 		else {
 			logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_WARNING, "RSA: No IP address for service annunciation set. Using %s", DEFAULT_IP);
-			(*admin)->ip = (char*) DEFAULT_IP;
+			(*admin)->ip = strdup((char*) DEFAULT_IP);
 		}
 
 		if (detectedIp != NULL) {
@@ -322,7 +322,7 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
 				for (expIt = 0; expIt < arrayList_size(exports); expIt++) {
 					export_registration_pt export = arrayList_get(exports, expIt);
 					long serviceId = atol(service);
-					if (serviceId == export->endpointDescription->serviceId) {
+					if (serviceId == export->endpointDescription->serviceId && export->endpoint != NULL) {
 						uint64_t datalength = request_info->content_length;
 						char* data = malloc(datalength + 1);
 						mg_read(conn, data, datalength);
@@ -447,6 +447,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 				exportRegistration_open(registration);
 				exportRegistration_startTracking(registration);
 			}
+
 			celixThreadMutex_lock(&admin->exportedServicesLock);
 			hashMap_put(admin->exportedServices, reference, *registrations);
 			celixThreadMutex_unlock(&admin->exportedServicesLock);

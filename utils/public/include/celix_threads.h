@@ -44,7 +44,7 @@ typedef pthread_attr_t celix_thread_attr_t;
 
 typedef void *(*celix_thread_start_t)(void*);
 
-static const celix_thread_t celix_thread_default = { .threadInitialized = false };
+static const celix_thread_t celix_thread_default = { 0, 0 };
 
 
 celix_status_t celixThread_create(celix_thread_t *new_thread, celix_thread_attr_t *attr, celix_thread_start_t func, void *data);

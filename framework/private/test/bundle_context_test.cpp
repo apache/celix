@@ -19,7 +19,7 @@
 /*
  * bundle_context_test.cpp
  *
- *  \date       Feb 11, 2013
+ *  \date       Sep 14, 2015
  *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright  Apache License, Version 2.0
  */
@@ -56,13 +56,13 @@ TEST_GROUP(bundle_context) {
 
 TEST(bundle_context, create) {
 	framework_pt framework = (framework_pt) 0x10;
-	bundle_pt bundle = (bundle_pt) 0x20;
+        bundle_pt bundle = (bundle_pt) 0x20;
 
-	bundle_context_pt context = NULL;
-	bundleContext_create(NULL, framework, logger, bundle, &context);
-	POINTERS_EQUAL(framework, context->framework)
-	POINTERS_EQUAL(bundle, context->bundle)
-//	CHECK(context->pool);
+        bundle_context_pt context = NULL;
+        bundleContext_create(framework, logger, bundle, &context);
+        POINTERS_EQUAL(framework, context->framework)
+        POINTERS_EQUAL(bundle, context->bundle)
+//      CHECK(context->pool);
 }
 
 TEST(bundle_context, destroy) {
@@ -80,54 +80,41 @@ TEST(bundle_context, destroy) {
 }
 
 TEST(bundle_context, getBundle) {
-	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
-	framework_pt framework = (framework_pt) 0x10;
-	bundle_pt bundle = (bundle_pt) 0x20;
-	apr_pool_t *pool = (apr_pool_t *) 0x30;
-	context->framework = framework;
-	context->bundle = bundle;
-	context->pool = pool;
+        bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
+        framework_pt framework = (framework_pt) 0x10;
+        bundle_pt bundle = (bundle_pt) 0x20;
+        context->framework = framework;
+        context->bundle = bundle;
 
-	celix_status_t status;
-	bundle_pt actualBundle = NULL;
+        celix_status_t status;
+        bundle_pt actualBundle = NULL;
 	status = bundleContext_getBundle(context, &actualBundle);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	POINTERS_EQUAL(bundle, actualBundle);
 
 	framework_pt actualFramework = NULL;
 	status = bundleContext_getFramework(context, &actualFramework);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
-	POINTERS_EQUAL(framework, actualFramework);
+        LONGS_EQUAL(CELIX_SUCCESS, status);
+        POINTERS_EQUAL(framework, actualFramework);
 
-	apr_pool_t *actualPool = NULL;
-	status = bundleContext_getMemoryPool(context, &actualPool);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
-	POINTERS_EQUAL(pool, actualPool);
+        actualBundle = NULL;
+        status = bundleContext_getBundle(NULL, &actualBundle);
+        LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
 
-	actualBundle = NULL;
-	status = bundleContext_getBundle(NULL, &actualBundle);
-	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
-
-	actualFramework = NULL;
-	status = bundleContext_getFramework(NULL, &actualFramework);
-	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
-
-	actualPool = NULL;
-	status = bundleContext_getMemoryPool(NULL, &actualPool);
-	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
+        actualFramework = NULL;
+        status = bundleContext_getFramework(NULL, &actualFramework);
+        LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
 }
 
 TEST(bundle_context, installBundle) {
-	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
-	framework_pt framework = (framework_pt) 0x10;
-	bundle_pt bundle = (bundle_pt) 0x20;
-	apr_pool_t *pool = (apr_pool_t *) 0x30;
-	context->framework = framework;
-	context->bundle = bundle;
-	context->pool = pool;
+        bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
+        framework_pt framework = (framework_pt) 0x10;
+        bundle_pt bundle = (bundle_pt) 0x20;
+        context->framework = framework;
+        context->bundle = bundle;
 
-	char location[] = "test.zip";
-	bundle_pt installedBundle = (bundle_pt) 0x40;
+        char location[] = "test.zip";
+        bundle_pt installedBundle = (bundle_pt) 0x40;
 	mock().expectOneCall("fw_installBundle")
 		.withParameter("framework", framework)
 		.withParameter("location", location)

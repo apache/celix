@@ -122,7 +122,7 @@ void * hashMap_get(hash_map_pt map, void * key) {
 	}
 
 	hash = hashMap_hash(map->hashKey(key));
-    hash_map_entry_pt entry = NULL;
+	hash_map_entry_pt entry = NULL;
 	for (entry = map->table[hashMap_indexFor(hash, map->tablelength)]; entry != NULL; entry = entry->next) {
 		if (entry->hash == hash && (entry->key == key || map->equalsKey(key, entry->key))) {
 			return entry->value;
@@ -166,7 +166,7 @@ void * hashMap_put(hash_map_pt map, void * key, void * value) {
 	hash = hashMap_hash(map->hashKey(key));
 	i = hashMap_indexFor(hash, map->tablelength);
 
-    hash_map_entry_pt entry;
+	hash_map_entry_pt entry;
 	for (entry = map->table[i]; entry != NULL; entry = entry->next) {
 		if (entry->hash == hash && (entry->key == key || map->equalsKey(key, entry->key))) {
 			void * oldValue = entry->value;
@@ -214,7 +214,7 @@ void * hashMap_remove(hash_map_pt map, void * key) {
 		entry->key = NULL;
 		entry->value = NULL;
 		free(entry);
-    }
+	}
 	return value;
 }
 
@@ -247,12 +247,12 @@ hash_map_entry_pt hashMap_removeMapping(hash_map_pt map, hash_map_entry_pt entry
 	unsigned int hash;
 	hash_map_entry_pt prev;
 	hash_map_entry_pt e;
-    int i;
+	int i;
 	if (entry == NULL) {
 		return NULL;
 	}
 	hash = (entry->key == NULL) ? 0 : hashMap_hash(map->hashKey(entry->key));
-    i = hashMap_indexFor(hash, map->tablelength);
+	i = hashMap_indexFor(hash, map->tablelength);
 	prev = map->table[i];
 	e = prev;
 
@@ -267,7 +267,7 @@ hash_map_entry_pt hashMap_removeMapping(hash_map_pt map, hash_map_entry_pt entry
 				prev->next = next;
 			}
 			return e;
- 		}
+		}
 		prev = e;
 		e = next;
 	}
@@ -435,6 +435,11 @@ hash_map_key_set_pt hashMapKeySet_create(hash_map_pt map) {
 	return keySet;
 }
 
+void hashMapKeySet_destroy(hash_map_key_set_pt keySet){
+	keySet->map = NULL;
+	free(keySet);
+}
+
 int hashMapKeySet_size(hash_map_key_set_pt keySet) {
 	return keySet->map->size;
 }
@@ -485,17 +490,17 @@ bool hashMapValues_contains(hash_map_values_pt values, void * value) {
 void hashMapValues_toArray(hash_map_values_pt values, void* *array[], unsigned int *size) {
 	hash_map_iterator_pt it;
 	int i;
-    int vsize = hashMapValues_size(values);
-    *size = vsize;
-    *array = malloc(vsize * sizeof(*array));
-    it = hashMapValues_iterator(values);
-    for (i = 0; i < vsize; i++) {
-        if (!hashMapIterator_hasNext(it)) {
-            return;
-        }
-        (*array)[i] = hashMapIterator_nextValue(it);
-    }
-    hashMapIterator_destroy(it);
+	int vsize = hashMapValues_size(values);
+	*size = vsize;
+	*array = malloc(vsize * sizeof(*array));
+	it = hashMapValues_iterator(values);
+	for (i = 0; i < vsize; i++) {
+		if (!hashMapIterator_hasNext(it)) {
+			return;
+		}
+		(*array)[i] = hashMapIterator_nextValue(it);
+	}
+	hashMapIterator_destroy(it);
 }
 
 bool hashMapValues_remove(hash_map_values_pt values, void * value) {
@@ -504,6 +509,7 @@ bool hashMapValues_remove(hash_map_values_pt values, void * value) {
 		while (hashMapIterator_hasNext(iterator)) {
 			if (hashMapIterator_nextValue(iterator) == NULL) {
 				hashMapIterator_remove(iterator);
+				hashMapIterator_destroy(iterator);
 				return true;
 			}
 		}
@@ -511,10 +517,12 @@ bool hashMapValues_remove(hash_map_values_pt values, void * value) {
 		while (hashMapIterator_hasNext(iterator)) {
 			if (values->map->equalsValue(value, hashMapIterator_nextValue(iterator))) {
 				hashMapIterator_remove(iterator);
+				hashMapIterator_destroy(iterator);
 				return true;
 			}
 		}
 	}
+	hashMapIterator_destroy(iterator);
 	return false;
 }
 
@@ -533,6 +541,11 @@ hash_map_entry_set_pt hashMapEntrySet_create(hash_map_pt map) {
 	return entrySet;
 }
 
+void hashMapEntrySet_destroy(hash_map_entry_set_pt entrySet){
+	entrySet->map = NULL;
+	free(entrySet);
+}
+
 int hashMapEntrySet_size(hash_map_entry_set_pt entrySet) {
 	return entrySet->map->size;
 }
@@ -541,8 +554,14 @@ bool hashMapEntrySet_contains(hash_map_entry_set_pt entrySet, hash_map_entry_pt 
 	return hashMap_containsValue(entrySet->map, entry);
 }
 
-bool hashMapEntrySet_remove(hash_map_values_pt entrySet, hash_map_entry_pt entry) {
-	return hashMap_removeMapping(entrySet->map, entry) != NULL;
+bool hashMapEntrySet_remove(hash_map_entry_set_pt entrySet, hash_map_entry_pt entry) {
+	hash_map_entry_pt temp = hashMap_removeMapping(entrySet->map, entry);
+	if (temp != NULL) {
+		free(temp);
+		return true;
+	} else {
+		return false;
+	}
 }
 
 void hashMapEntrySet_clear(hash_map_entry_set_pt entrySet) {

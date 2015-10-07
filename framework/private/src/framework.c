@@ -104,6 +104,11 @@ static celix_status_t framework_loadBundleLibraries(framework_pt framework, bund
 static celix_status_t framework_loadLibraries(framework_pt framework, char *libraries, char *activator, bundle_archive_pt archive, void **activatorHandle);
 static celix_status_t framework_loadLibrary(framework_pt framework, char *library, bundle_archive_pt archive, void **handle);
 
+static celix_status_t frameworkActivator_start(void * userData, bundle_context_pt context);
+static celix_status_t frameworkActivator_stop(void * userData, bundle_context_pt context);
+static celix_status_t frameworkActivator_destroy(void * userData, bundle_context_pt context);
+
+
 struct fw_refreshHelper {
     framework_pt framework;
     bundle_pt bundle;
@@ -162,7 +167,6 @@ framework_logger_pt logger;
 
 #ifdef _WIN32
     #define handle_t HMODULE
-    #define fw_getSystemLibrary() fw_getCurrentModule()
     #define fw_openLibrary(path) LoadLibrary(path)
     #define fw_closeLibrary(handle) FreeLibrary(handle)
 
@@ -177,7 +181,6 @@ framework_logger_pt logger;
     }
 #else
     #define handle_t void *
-    #define fw_getSystemLibrary() dlopen(NULL, RTLD_LAZY|RTLD_LOCAL)
     #define fw_openLibrary(path) dlopen(path, RTLD_LAZY|RTLD_LOCAL)
     #define fw_closeLibrary(handle) dlclose(handle)
     #define fw_getSymbol(handle, name) dlsym(handle, name)
@@ -428,16 +431,6 @@ celix_status_t fw_init(framework_pt framework) {
     status = CELIX_DO_IF(status, serviceRegistry_create(framework, fw_serviceChanged, &framework->registry));
     status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, framework->bundle, OSGI_FRAMEWORK_BUNDLE_STARTING));
     status = CELIX_DO_IF(status, celixThreadCondition_init(&framework->shutdownGate, NULL));
-    if (status == CELIX_SUCCESS) {
-        handle_t handle = NULL;
-        handle = fw_getSystemLibrary();
-        if (handle != NULL) {
-            bundle_setHandle(framework->bundle, handle);
-        } else {
-            status = CELIX_FRAMEWORK_EXCEPTION;
-            fw_logCode(framework->logger, OSGI_FRAMEWORK_LOG_ERROR,  status, "Could not get handle to framework library");
-        }
-    }
 
     bundle_context_pt context = NULL;
 #ifdef WITH_APR
@@ -455,10 +448,10 @@ celix_status_t fw_init(framework_pt framework) {
             bundle_context_pt context = NULL;
             void * userData = NULL;
 
-            create_function_pt create = (create_function_pt) fw_getSymbol((handle_t) bundle_getHandle(framework->bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_CREATE);
-            start_function_pt start = (start_function_pt) fw_getSymbol((handle_t) bundle_getHandle(framework->bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_START);
-            stop_function_pt stop = (stop_function_pt) fw_getSymbol((handle_t) bundle_getHandle(framework->bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_STOP);
-            destroy_function_pt destroy = (destroy_function_pt) fw_getSymbol((handle_t) bundle_getHandle(framework->bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_DESTROY);
+			create_function_pt create = NULL;
+			start_function_pt start = (start_function_pt) frameworkActivator_start;
+			stop_function_pt stop = (stop_function_pt) frameworkActivator_stop;
+			destroy_function_pt destroy = (destroy_function_pt) frameworkActivator_destroy;
 
             activator->start = start;
             activator->stop = stop;
@@ -2075,10 +2068,23 @@ static void *framework_shutdown(void *framework) {
 		bundle_close(bundle);
 	}
 	hashMapIterator_destroy(iter);
-#ifndef ANDROID
-    pthread_cancel(fw->dispatcherThread.thread);
-#endif
-    celixThread_join(fw->dispatcherThread, NULL);
+
+	if (celixThreadMutex_lock(&fw->dispatcherLock) != CELIX_SUCCESS) {
+		fw_log(fw->logger, OSGI_FRAMEWORK_LOG_ERROR, "Error locking the dispatcherThread.");
+	}
+	else {
+		fw->shutdown = true;
+
+		if (celixThreadCondition_broadcast(&fw->dispatcher)) {
+			fw_log(fw->logger, OSGI_FRAMEWORK_LOG_ERROR, "Error broadcasting .");
+		}
+
+		if (celixThreadMutex_unlock(&fw->dispatcherLock)) {
+			fw_log(fw->logger, OSGI_FRAMEWORK_LOG_ERROR, "Error unlocking the dispatcherThread.");
+		}
+
+		celixThread_join(fw->dispatcherThread, NULL);
+	}
 
 	err = celixThreadMutex_lock(&fw->mutex);
 	if (err != 0) {
@@ -2086,7 +2092,6 @@ static void *framework_shutdown(void *framework) {
 		celixThread_exit(NULL);
 		return NULL;
 	}
-	fw->shutdown = true;
 	err = celixThreadCondition_broadcast(&fw->shutdownGate);
 	if (err != 0) {
 		fw_log(fw->logger, OSGI_FRAMEWORK_LOG_ERROR,  "Error waking the shutdown gate, cannot exit clean.");
@@ -2317,12 +2322,12 @@ celix_status_t fw_invokeFrameworkListener(framework_pt framework, framework_list
 	return ret;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
+static celix_status_t frameworkActivator_start(void * userData, bundle_context_pt context) {
 	// nothing to do
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
+static celix_status_t frameworkActivator_stop(void * userData, bundle_context_pt context) {
     celix_status_t status = CELIX_SUCCESS;
 
 	celix_thread_t shutdownThread;
@@ -2347,7 +2352,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
+static celix_status_t frameworkActivator_destroy(void * userData, bundle_context_pt context) {
 	return CELIX_SUCCESS;
 }
 
