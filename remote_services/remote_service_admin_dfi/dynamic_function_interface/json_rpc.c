@@ -128,7 +128,7 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
         dyn_type *argType = dynFunction_argumentTypeForIndex(func, i);
         enum dyn_function_argument_meta  meta = dynFunction_argumentMetaForIndex(func, i);
         if (meta == DYN_FUNCTION_ARGUMENT_META__STD) {
-            //TODO SOMETIMES segfault dynType_free(argType, args[i]);
+            dynType_free(argType, args[i]);
         }
     }
 

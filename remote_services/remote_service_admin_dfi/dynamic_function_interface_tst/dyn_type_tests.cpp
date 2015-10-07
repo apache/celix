@@ -22,11 +22,26 @@ extern "C" {
 
     static void runTest(const char *descriptorStr, const char *exName) {
         dyn_type *type;
-        int i;
         type = NULL;
         //printf("\n-- example %s with descriptor string '%s' --\n", exName, descriptorStr);
         int status = dynType_parseWithStr(descriptorStr, exName, NULL, &type);
         CHECK_EQUAL(0, status);
+
+        //MEM check, to try to ensure no mem leaks/corruptions occur.
+        int i;
+        int j;
+        int nrOfBurst = 10;
+        int burst = 50;
+        void *pointers[burst];
+        for (j = 0; j < nrOfBurst; j += 1) {
+            for (i = 0; i < burst ; i +=1 ) {
+                pointers[i] = NULL;
+                dynType_alloc(type, &pointers[i]);
+            }
+            for (i = 0; i < burst ; i +=1 ) {
+                dynType_free(type, pointers[i]);
+            }
+        }
 
         FILE *stream = fopen("/dev/null", "w");
         dynType_print(type, stream);
@@ -56,6 +71,7 @@ TEST_GROUP(DynTypeTests) {
 #define EX12 "Tnode={Lnode;Lnode; left right};{Lnode; head}" //note recursive example
 #define EX13 "Ttype={DDDDD a b c d e};{ltype;Ltype;ltype;Ltype; byVal1 byRef1 byVal2 ByRef2}" 
 #define EX14 "{DD{FF{JJ}{II*{ss}}}}"  //unnamed fields
+#define EX15 "Tsample={jDD time val1 val2};Tresult={jDlsample; time result sample};Lresult;"
 
 #define CREATE_EXAMPLES_TEST(DESC) \
     TEST(DynTypeTests, ParseTestExample ## DESC) { \
@@ -76,6 +92,7 @@ CREATE_EXAMPLES_TEST(EX11)
 CREATE_EXAMPLES_TEST(EX12)
 CREATE_EXAMPLES_TEST(EX13)
 CREATE_EXAMPLES_TEST(EX14)
+CREATE_EXAMPLES_TEST(EX15)
 
 TEST(DynTypeTests, ParseRandomGarbageTest) {
     /*

@@ -301,7 +301,7 @@ static int dynType_parseComplex(FILE *stream, dyn_type *type) {
         if (type->complex.structType.elements != NULL) {
             int index = 0;
             TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
-                type->complex.structType.elements[index++] = entry->type->ffiType;
+                type->complex.structType.elements[index++] = dynType_ffiType(entry->type);
             }
         } else {
             status = MEM_ERROR;
@@ -576,6 +576,7 @@ static void dynType_clearTypedPointer(dyn_type *type) {
 
 int dynType_alloc(dyn_type *type, void **bufLoc) {
     assert(type->type != DYN_TYPE_REF);
+    assert(type->ffiType->size != 0);
     int status = OK;
 
     void *inst = calloc(1, type->ffiType->size);

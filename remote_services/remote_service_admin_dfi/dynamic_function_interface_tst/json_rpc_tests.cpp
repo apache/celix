@@ -156,6 +156,7 @@ static void stdLog(void *handle, int level, const char *file, int line, const ch
         CHECK(desc != NULL);
         int rc = dynInterface_parse(desc, &intf);
         CHECK_EQUAL(0, rc);
+        fclose(desc);
 
         char *result = NULL;
 
@@ -178,6 +179,7 @@ static void stdLog(void *handle, int level, const char *file, int line, const ch
         CHECK(desc != NULL);
         int rc = dynInterface_parse(desc, &intf);
         CHECK_EQUAL(0, rc);
+        fclose(desc);
 
         char *result = NULL;
 
@@ -199,6 +201,7 @@ static void stdLog(void *handle, int level, const char *file, int line, const ch
         CHECK(desc != NULL);
         int rc = dynInterface_parse(desc, &intf);
         CHECK_EQUAL(0, rc);
+        fclose(desc);
 
         struct methods_head *head;
         dynInterface_methods(intf, &head);
@@ -238,6 +241,7 @@ static void stdLog(void *handle, int level, const char *file, int line, const ch
         CHECK(desc != NULL);
         int rc = dynInterface_parse(desc, &intf);
         CHECK_EQUAL(0, rc);
+        fclose(desc);
 
         struct methods_head *head;
         dynInterface_methods(intf, &head);
@@ -273,9 +277,14 @@ static void stdLog(void *handle, int level, const char *file, int line, const ch
         CHECK_EQUAL(2.5, result->buf[1]->b);
 
 
+        int i;
+        for (i = 0; i < result->len; i +=1 ) {
+            free(result->buf[i]);
+        }
         free(result->buf);
         free(result);
-        dynInterface_destroy(intf);    }
+        dynInterface_destroy(intf);
+    }
 
 }
 

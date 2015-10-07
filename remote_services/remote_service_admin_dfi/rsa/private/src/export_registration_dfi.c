@@ -119,6 +119,8 @@ celix_status_t exportRegistration_create(log_helper_pt helper, service_reference
 celix_status_t exportRegistration_call(export_registration_pt export, char *data, int datalength, char **responseOut, int *responseLength) {
     int status = CELIX_SUCCESS;
 
+    //printf("calling for '%s'\n");
+
     *responseLength = -1;
     celixThreadMutex_lock(&export->mutex);
     status = jsonRpc_call(export->intf, export->service, data, responseOut);

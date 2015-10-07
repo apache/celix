@@ -69,6 +69,18 @@ extern "C" {
         dynInterface_destroy(dynIntf);
     }
 
+    static void test2(void) {
+        int status = 0;
+        dyn_interface_type *dynIntf = NULL;
+        FILE *desc = fopen("descriptors/example3.descriptor", "r");
+        assert(desc != NULL);
+        status = dynInterface_parse(desc, &dynIntf);
+        CHECK_EQUAL(0, status);
+        fclose(desc);
+
+        dynInterface_destroy(dynIntf);
+    }
+
 }
 
 
@@ -84,4 +96,8 @@ TEST_GROUP(DynInterfaceTests) {
 
 TEST(DynInterfaceTests, test1) {
     test1();
+}
+
+TEST(DynInterfaceTests, test2) {
+    test2();
 }
