@@ -294,10 +294,6 @@ static celix_status_t endpointDiscoveryServer_getEndpoints(endpoint_discovery_se
 		return CELIX_ENOMEM;
 	}
 
-	status = celixThreadMutex_lock(&server->serverLock);
-	if (status != CELIX_SUCCESS) {
-		return CELIX_BUNDLE_EXCEPTION;
-	}
 
 	hash_map_iterator_pt iter = hashMapIterator_create(server->entries);
 	while (hashMapIterator_hasNext(iter)) {
@@ -311,11 +307,6 @@ static celix_status_t endpointDiscoveryServer_getEndpoints(endpoint_discovery_se
 		}
 	}
 	hashMapIterator_destroy(iter);
-
-	status = celixThreadMutex_unlock(&server->serverLock);
-	if (status != CELIX_SUCCESS) {
-		return CELIX_BUNDLE_EXCEPTION;
-	}
 
 	return status;
 }
@@ -346,12 +337,18 @@ static int endpointDiscoveryServer_returnAllEndpoints(endpoint_discovery_server_
 	int status = CIVETWEB_REQUEST_NOT_HANDLED;
 
 	array_list_pt endpoints = NULL;
-	endpointDiscoveryServer_getEndpoints(server, NULL, &endpoints);
-	if (endpoints) {
-		status = endpointDiscoveryServer_writeEndpoints(conn, endpoints);
 
-		arrayList_destroy(endpoints);
-	}
+    if (celixThreadMutex_lock(&server->serverLock) == CELIX_SUCCESS) {
+        endpointDiscoveryServer_getEndpoints(server, NULL, &endpoints);
+        if (endpoints) {
+            status = endpointDiscoveryServer_writeEndpoints(conn, endpoints);
+
+            arrayList_destroy(endpoints);
+        }
+
+
+        celixThreadMutex_unlock(&server->serverLock);
+    }
 
 	return status;
 }
@@ -361,11 +358,16 @@ static int endpointDiscoveryServer_returnEndpoint(endpoint_discovery_server_pt s
 	int status = CIVETWEB_REQUEST_NOT_HANDLED;
 
 	array_list_pt endpoints = NULL;
-	endpointDiscoveryServer_getEndpoints(server, endpoint_id, &endpoints);
-	if (endpoints) {
-		status = endpointDiscoveryServer_writeEndpoints(conn, endpoints);
 
-		arrayList_destroy(endpoints);
+	if (celixThreadMutex_lock(&server->serverLock) == CELIX_SUCCESS) {
+        endpointDiscoveryServer_getEndpoints(server, endpoint_id, &endpoints);
+        if (endpoints) {
+            status = endpointDiscoveryServer_writeEndpoints(conn, endpoints);
+
+            arrayList_destroy(endpoints);
+        }
+
+        celixThreadMutex_unlock(&server->serverLock);
 	}
 
 	return status;

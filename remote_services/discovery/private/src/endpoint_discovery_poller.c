@@ -101,12 +101,13 @@ celix_status_t endpointDiscoveryPoller_create(discovery_pt discovery, bundle_con
         return CELIX_BUNDLE_EXCEPTION;
     }
 
+	(*poller)->running = true;
+
 	status = celixThread_create(&(*poller)->pollerThread, NULL, endpointDiscoveryPoller_performPeriodicPoll, *poller);
 	if (status != CELIX_SUCCESS) {
 		return status;
 	}
 
-	(*poller)->running = true;
 
     status = celixThreadMutex_unlock(&(*poller)->pollerLock);
 
@@ -362,6 +363,7 @@ static celix_status_t endpointDiscoveryPoller_getEndpoints(endpoint_discovery_po
         curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5L);
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);
         res = curl_easy_perform(curl);
+
         curl_easy_cleanup(curl);
     }
 
