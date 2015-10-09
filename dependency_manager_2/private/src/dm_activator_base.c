@@ -74,7 +74,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context _
 	celix_status_t status = CELIX_SUCCESS;
 	dependency_activator_base_pt dependency_activator = (dependency_activator_base_pt) userData;
 
-	dm_destroy(dependency_activator->userData, dependency_activator->context, dependency_activator->manager);
+	dm_deinit(dependency_activator->userData, dependency_activator->context, dependency_activator->manager);
 
 	dependencyManager_destroy(&dependency_activator->manager);
 
@@ -87,6 +87,8 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context _
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context __attribute__((unused))) {
 	celix_status_t status = CELIX_SUCCESS;
 	dependency_activator_base_pt dependency_activator = (dependency_activator_base_pt) userData;
+
+	dm_destroy(dependency_activator->userData, dependency_activator->context, dependency_activator->manager);
 
 	free(dependency_activator);
 

@@ -42,15 +42,20 @@ typedef enum dm_component_state {
 
 typedef struct dm_executor * dm_executor_pt;
 
+typedef struct dm_interface_struct {
+    char *serviceName;
+    void *service;
+    properties_pt properties;
+    service_registration_pt registration;
+} dm_interface;
+
 struct dm_component {
     bundle_context_pt context;
     dm_dependency_manager_pt manager;
 
-    char *serviceName;
-    void *service;
+    array_list_pt dm_interface;
+
     void *implementation;
-    properties_pt properties;
-    service_registration_pt registration;
 
     init_fpt callbackInit;
     start_fpt callbackStart;

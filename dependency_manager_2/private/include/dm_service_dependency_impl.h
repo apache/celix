@@ -46,6 +46,11 @@ struct dm_service_dependency {
 	service_remove_fpt remove;
 	service_swap_fpt swap;
 
+	service_add_with_ref_fpt add_with_ref;
+	service_change_with_ref_fpt change_with_ref;
+	service_remove_with_ref_fpt remove_with_ref;
+	service_swap_with_ref_fpt swap_with_ref;
+
 	void **autoConfigure;
 	celix_thread_mutex_t lock;
 

@@ -52,6 +52,12 @@ celix_status_t serviceDependency_create(dm_service_dependency_pt *dependency_ptr
 		(*dependency_ptr)->add = NULL;
 		(*dependency_ptr)->change = NULL;
 		(*dependency_ptr)->remove = NULL;
+		(*dependency_ptr)->swap = NULL;
+
+		(*dependency_ptr)->add_with_ref = NULL;
+		(*dependency_ptr)->change_with_ref = NULL;
+		(*dependency_ptr)->remove_with_ref = NULL;
+		(*dependency_ptr)->swap_with_ref = NULL;
 
 		(*dependency_ptr)->autoConfigure = NULL;
 
@@ -152,6 +158,23 @@ celix_status_t serviceDependency_setCallbacks(dm_service_dependency_pt dependenc
 		dependency->change = change;
 		dependency->remove = remove;
 		dependency->swap = swap;
+	}
+
+	return status;
+}
+
+celix_status_t serviceDependency_setCallbacksWithServiceReference(dm_service_dependency_pt dependency, service_add_with_ref_fpt add, service_change_with_ref_fpt change, service_remove_with_ref_fpt remove, service_swap_with_ref_fpt swap) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (!dependency) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		dependency->add_with_ref = add;
+		dependency->change_with_ref = change;
+		dependency->remove_with_ref = remove;
+		dependency->swap_with_ref = swap;
 	}
 
 	return status;
@@ -295,7 +318,10 @@ celix_status_t serviceDependency_invokeAdd(dm_service_dependency_pt dependency, 
 
 	if (status == CELIX_SUCCESS) {
 		if (dependency->add) {
-			dependency->add(dependency->component->implementation, event->reference, event->service);
+			dependency->add(dependency->component->implementation, event->service);
+		}
+		if (dependency->add_with_ref) {
+			dependency->add_with_ref(dependency->component->implementation, event->reference, event->service);
 		}
 	}
 
@@ -311,7 +337,10 @@ celix_status_t serviceDependency_invokeChange(dm_service_dependency_pt dependenc
 
 	if (status == CELIX_SUCCESS) {
 		if (dependency->change) {
-			dependency->change(dependency->component->implementation, event->reference, event->service);
+			dependency->change(dependency->component->implementation, event->service);
+		}
+		if (dependency->change_with_ref) {
+			dependency->change_with_ref(dependency->component->implementation, event->reference, event->service);
 		}
 	}
 
@@ -327,7 +356,10 @@ celix_status_t serviceDependency_invokeRemove(dm_service_dependency_pt dependenc
 
 	if (status == CELIX_SUCCESS) {
 		if (dependency->remove) {
-			dependency->remove(dependency->component->implementation, event->reference, event->service);
+			dependency->remove(dependency->component->implementation, event->service);
+		}
+		if (dependency->remove_with_ref) {
+			dependency->remove_with_ref(dependency->component->implementation, event->reference, event->service);
 		}
 	}
 
@@ -343,9 +375,10 @@ celix_status_t serviceDependency_invokeSwap(dm_service_dependency_pt dependency,
 
 	if (status == CELIX_SUCCESS) {
 		if (dependency->swap) {
-			dependency
-					->swap(dependency->component->implementation, event->reference, event->service, newEvent->reference,
-							newEvent->service);
+			dependency->swap(dependency->component->implementation, event->service, newEvent->service);
+		}
+		if (dependency->swap_with_ref) {
+			dependency->swap_with_ref(dependency->component->implementation, event->reference, event->service, newEvent->reference, newEvent->service);
 		}
 	}
 

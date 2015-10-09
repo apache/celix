@@ -265,7 +265,7 @@ celix_status_t serviceRegistry_unregisterService(service_registry_pt registry, b
 	//TODO not needed, the registration is destroyed, any reference to the registration is invalid and will result in a segfault
 	serviceRegistration_invalidate(registration);
 
-	serviceRegistration_destroy(registration);
+	// serviceRegistration_destroy(registration);
 
 	celixThreadMutex_unlock(&registry->mutex);
 

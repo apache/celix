@@ -26,6 +26,7 @@
 
 #include <stdarg.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "dm_component_impl.h"
 #include "../../../framework/private/include/framework_private.h"
@@ -101,11 +102,9 @@ celix_status_t component_create(bundle_context_pt context, dm_dependency_manager
         (*component)->context = context;
         (*component)->manager = manager;
 
-        (*component)->serviceName = NULL;
-        (*component)->service = NULL;
+	arrayList_create(&((*component)->dm_interface));
+
         (*component)->implementation = NULL;
-        (*component)->properties = NULL;
-        (*component)->registration = NULL;
 
         (*component)->callbackInit = NULL;
         (*component)->callbackStart = NULL;
@@ -137,6 +136,15 @@ celix_status_t component_destroy(dm_component_pt *component_ptr) {
 	}
 
 	if (status == CELIX_SUCCESS) {
+		unsigned int i;
+
+		for (i = 0; i < arrayList_size((*component_ptr)->dm_interface); i++) {
+		    dm_interface *interface = arrayList_get((*component_ptr)->dm_interface, i);
+
+		    free (interface->serviceName);
+		}
+		arrayList_destroy((*component_ptr)->dm_interface);
+
 		// #TODO destroy dependencies?
 		executor_destroy(&(*component_ptr)->executor);
 		hashMap_destroy((*component_ptr)->dependencyEvents, false, false);
@@ -279,15 +287,27 @@ celix_status_t component_stopTask(dm_component_pt component, void *data __attrib
     return status;
 }
 
-celix_status_t component_setInterface(dm_component_pt component, char *serviceName, void *service, properties_pt properties) {
+celix_status_t component_addInterface(dm_component_pt component, char *serviceName, void *service, properties_pt properties) {
     celix_status_t status = CELIX_SUCCESS;
 
     if (component->active) {
         return CELIX_ILLEGAL_STATE;
     } else {
-        component->serviceName = serviceName;
-        component->service = service;
-        component->properties = properties;
+	dm_interface *interface = (dm_interface *) malloc (sizeof (dm_interface));
+	char *name = strdup (serviceName);
+
+	if (interface && name) {
+            interface->serviceName = name;
+            interface->service = service;
+            interface->properties = properties;
+            interface->registration = NULL;
+	    arrayList_add(component->dm_interface, interface);
+	}
+	else {
+	   free (interface);
+	   free (name);
+	   status = CELIX_ENOMEM;
+	}
     }
 
     return status;
@@ -1063,7 +1083,7 @@ celix_status_t component_configureImplementation(dm_component_pt component, dm_s
 celix_status_t component_destroyComponent(dm_component_pt component) {
     celix_status_t status = CELIX_SUCCESS;
 
-    component->implementation = NULL;
+//    component->implementation = NULL;
 
     return status;
 }
@@ -1071,8 +1091,14 @@ celix_status_t component_destroyComponent(dm_component_pt component) {
 celix_status_t component_registerService(dm_component_pt component) {
     celix_status_t status = CELIX_SUCCESS;
 
-    if (component->context && component->serviceName) {
-        bundleContext_registerService(component->context, component->serviceName, component->service, component->properties, &component->registration);
+    if (component->context) {
+	unsigned int i;
+
+	for (i = 0; i < arrayList_size(component->dm_interface); i++) {
+	    dm_interface *interface = arrayList_get(component->dm_interface, i);
+
+            bundleContext_registerService(component->context, interface->serviceName, interface->service, interface->properties, &interface->registration);
+	}
     }
 
     return status;
@@ -1081,9 +1107,13 @@ celix_status_t component_registerService(dm_component_pt component) {
 celix_status_t component_unregisterService(dm_component_pt component) {
     celix_status_t status = CELIX_SUCCESS;
 
-    if (component->registration && component->serviceName) {
-        serviceRegistration_unregister(component->registration);
-        component->registration = NULL;
+    unsigned int i;
+
+    for (i = 0; i < arrayList_size(component->dm_interface); i++) {
+	dm_interface *interface = arrayList_get(component->dm_interface, i);
+
+	serviceRegistration_unregister(interface->registration);
+	interface->registration = NULL;
     }
 
     return status;
