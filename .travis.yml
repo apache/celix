@@ -22,5 +22,8 @@ script:
     - make all && make deploy && make install-all
     - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/utils:`pwd`/framework && make test && make coverage
 
-
+after_success:
+    - cd ${TRAVIS_BUILD_DIR}/build
+    - gem install coveralls-lcov
+    - lcx="lcov --output-file=coverage.info " && for i in `find . -name "*.info.cleaned"`; do lcx+=" --add-tracefile=$i"; done && $lcx && coveralls-lcov --repo-token=9dpeTAjiGoQU5hgXFe0ezk65iu40oc3WY coverage.info
 
