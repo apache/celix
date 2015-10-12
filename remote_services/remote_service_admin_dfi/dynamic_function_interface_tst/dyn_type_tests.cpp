@@ -5,7 +5,6 @@
 #include "CppUTest/CommandLineTestRunner.h"                                                                                                                                                                        
 
 extern "C" {
-    #include <string.h>
     #include <stdarg.h>
     
     #include "dyn_common.h"
@@ -44,7 +43,7 @@ extern "C" {
         }
 
         FILE *stream = fopen("/dev/null", "w");
-        dynType_print(type, stream);
+        dynType_print(type, stdout);
         fclose(stream);
         dynType_destroy(type);
         //printf("--\n\n");
@@ -72,6 +71,7 @@ TEST_GROUP(DynTypeTests) {
 #define EX13 "Ttype={DDDDD a b c d e};{ltype;Ltype;ltype;Ltype; byVal1 byRef1 byVal2 ByRef2}" 
 #define EX14 "{DD{FF{JJ}{II*{ss}}}}"  //unnamed fields
 #define EX15 "Tsample={jDD time val1 val2};Tresult={jDlsample; time result sample};Lresult;"
+#define EX16 "Tpoi={BDD id lat lon};Lpoi;"
 
 #define CREATE_EXAMPLES_TEST(DESC) \
     TEST(DynTypeTests, ParseTestExample ## DESC) { \
@@ -93,6 +93,7 @@ CREATE_EXAMPLES_TEST(EX12)
 CREATE_EXAMPLES_TEST(EX13)
 CREATE_EXAMPLES_TEST(EX14)
 CREATE_EXAMPLES_TEST(EX15)
+CREATE_EXAMPLES_TEST(EX16)
 
 TEST(DynTypeTests, ParseRandomGarbageTest) {
     /*

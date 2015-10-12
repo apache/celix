@@ -32,6 +32,7 @@
 
 static void show_usage(char* prog_name);
 static void shutdown_framework(int signal);
+static void ignore(int signal);
 
 #define DEFAULT_CONFIG_FILE "config.properties"
 
@@ -62,6 +63,8 @@ int main(int argc, char *argv[]) {
 
     // Set signal handler
     (void) signal(SIGINT, shutdown_framework);
+    (void) signal(SIGUSR1, ignore);
+    (void) signal(SIGUSR2, ignore);
 
     int rc = celixLauncher_launch(config_file, &framework);
     if (rc == 0) {
@@ -78,4 +81,8 @@ static void shutdown_framework(int signal) {
     if (framework != NULL) {
         celixLauncher_stop(framework); //NOTE main thread will destroy
     }
+}
+
+static void ignore(int signal) {
+    //ignoring for signal SIGUSR1, SIGUSR2. Can be used on threads
 }
