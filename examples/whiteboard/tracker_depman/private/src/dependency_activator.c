@@ -61,13 +61,13 @@ celix_status_t dm_init(void * userData, bundle_context_pt context, dm_dependency
 	serviceDependency_create(&dep);
 	serviceDependency_setRequired(dep, false);
 	serviceDependency_setService(dep, PUBLISHER_NAME, "(|(id=A)(id=B))");
-	serviceDependency_setCallbacks(dep, tracker_addedServ, tracker_modifiedServ, tracker_removedServ, NULL);
+	serviceDependency_setCallbacksWithServiceReference(dep, tracker_addedServ, tracker_modifiedServ, tracker_removedServ, NULL);
 	component_addServiceDependency(service, dep, NULL);
 
 	serviceDependency_create(&dep2);
     serviceDependency_setRequired(dep2, false);
     serviceDependency_setService(dep2, (char *) OSGI_LOGSERVICE_NAME, NULL);
-//    serviceDependency_setCallbacks(dep2, tracker_addLog, tracker_modifiedLog, tracker_removeLog, NULL);
+    serviceDependency_setCallbacksWithServiceReference(dep2, tracker_addLog, tracker_modifiedLog, tracker_removeLog, NULL);
 	serviceDependency_setAutoConfigure(dep2, &data->logger_lock, (void **) &data->logger);
     component_addServiceDependency(service, dep2, NULL);
 

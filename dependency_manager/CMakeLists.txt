@@ -15,8 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(DEPENDENCY_MANAGER2 "Option to build the dependency manager static library" ON DEPS framework)
-if (DEPENDENCY_MANAGER2) 
+celix_subproject(DEPENDENCY_MANAGER "Option to build the dependency manager static library" ON DEPS framework)
+if (DEPENDENCY_MANAGER) 
     # Add -fPIC for x86_64 Unix platforms; this lib will be linked to a shared lib
     if(UNIX AND NOT WIN32)
       find_program(CMAKE_UNAME uname /bin /usr/bin /usr/local/bin )
@@ -29,13 +29,13 @@ if (DEPENDENCY_MANAGER2)
       endif(CMAKE_UNAME)
     endif(UNIX AND NOT WIN32)
     
-    CELIX_ADD_COMPONENT(dependency_manager2
+    CELIX_ADD_COMPONENT(dependency_manager
     	DISPLAY_NAME Dependency Manager
         DESCRIPTION "The Apache Celix dependency manager (static) library"
         GROUP all
     )
     
-    add_library(dependency_manager2 STATIC 
+    add_library(dependency_manager STATIC 
     	private/src/dm_activator_base 
     	private/src/dm_component_impl 
     	private/src/dm_service_dependency
@@ -44,7 +44,7 @@ if (DEPENDENCY_MANAGER2)
    	include_directories("public/include")
    	include_directories("private/include")
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-    target_link_libraries(dependency_manager2 celix_framework)
+    target_link_libraries(dependency_manager celix_framework)
     
     install(
     	FILES
@@ -53,9 +53,9 @@ if (DEPENDENCY_MANAGER2)
             public/include/dm_dependency_manager.h
             public/include/dm_service_dependency.h
 		DESTINATION 
-			include/celix/dependency_manager_2
+			include/celix/dependency_manager
 		COMPONENT 
-			dependency_manager2
+			dependency_manager
 	)
-    install(TARGETS dependency_manager2 DESTINATION lib COMPONENT dependency_manager2)
-endif (DEPENDENCY_MANAGER2)
+    install(TARGETS dependency_manager DESTINATION lib COMPONENT dependency_manager)
+endif (DEPENDENCY_MANAGER)

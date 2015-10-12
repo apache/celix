@@ -97,25 +97,25 @@ celix_status_t tracker_removedServ(void * handle, service_reference_pt ref, void
 	return CELIX_SUCCESS;
 }
 
-//celix_status_t tracker_addLog(void *handle, service_reference_pt ref, void *service) {
-//    struct data * data = (struct data *) handle;
-//    printf("Add log\n");
-//    data->logger = service;
-//    ((log_service_pt) service)->log(((log_service_pt) service)->logger, OSGI_LOGSERVICE_DEBUG, "test");
-//    return CELIX_SUCCESS;
-//}
-//
-//celix_status_t tracker_modifiedLog(void *handle, service_reference_pt ref, void *service) {
-//    struct data * data = (struct data *) handle;
-//    printf("Modify log\n");
-//    data->logger = service;
-//    ((log_service_pt) service)->log(((log_service_pt) service)->logger, OSGI_LOGSERVICE_DEBUG, "test");
-//    return CELIX_SUCCESS;
-//}
-//
-//celix_status_t tracker_removeLog(void *handle, service_reference_pt ref, void *service) {
-//    struct data * data = (struct data *) handle;
-//    data->logger = NULL;
-//    printf("Remove log\n");
-//    return CELIX_SUCCESS;
-//}
+celix_status_t tracker_addLog(void *handle, service_reference_pt ref, void *service) {
+    struct data * data = (struct data *) handle;
+    printf("Add log\n");
+    data->logger = service;
+    ((log_service_pt) service)->log(((log_service_pt) service)->logger, OSGI_LOGSERVICE_DEBUG, "test");
+    return CELIX_SUCCESS;
+}
+
+celix_status_t tracker_modifiedLog(void *handle, service_reference_pt ref, void *service) {
+    struct data * data = (struct data *) handle;
+    printf("Modify log\n");
+    data->logger = service;
+    ((log_service_pt) service)->log(((log_service_pt) service)->logger, OSGI_LOGSERVICE_DEBUG, "test");
+    return CELIX_SUCCESS;
+}
+
+celix_status_t tracker_removeLog(void *handle, service_reference_pt ref, void *service) {
+    struct data * data = (struct data *) handle;
+    data->logger = NULL;
+    printf("Remove log\n");
+    return CELIX_SUCCESS;
+}
