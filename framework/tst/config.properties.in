@@ -1,0 +1,2 @@
+LOGHELPER_ENABLE_STDOUT_FALLBACK=true
+org.osgi.framework.storage.clean=onFirstInit
