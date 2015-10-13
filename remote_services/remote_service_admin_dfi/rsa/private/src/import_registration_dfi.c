@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <jansson.h>
 #include <json_rpc.h>
+#include <assert.h>
 #include "json_serializer.h"
 #include "dyn_interface.h"
 #include "import_registration.h"
@@ -20,6 +21,7 @@ struct import_registration {
     service_registration_pt factoryReg;
 
     hash_map_pt proxies; //key -> bundle, value -> service_proxy
+    celix_thread_mutex_t proxiesMutex; //protects proxies
 };
 
 struct service_proxy {
@@ -32,6 +34,7 @@ static celix_status_t importRegistration_createProxy(import_registration_pt impo
                                               struct service_proxy **proxy);
 static void importRegistration_proxyFunc(void *userData, void *args[], void *returnVal);
 static void importRegistration_destroyProxy(struct service_proxy *proxy);
+static void importRegistration_clearProxies(import_registration_pt import);
 
 celix_status_t importRegistration_create(bundle_context_pt context, endpoint_description_pt endpoint, const char *classObject,
                                          import_registration_pt *out) {
@@ -47,7 +50,9 @@ celix_status_t importRegistration_create(bundle_context_pt context, endpoint_des
         reg->endpoint = endpoint;
         reg->classObject = classObject;
         reg->proxies = hashMap_create(NULL, NULL, NULL, NULL);
+
         celixThreadMutex_create(&reg->mutex, NULL);
+        celixThreadMutex_create(&reg->proxiesMutex, NULL);
 
         reg->factory->factory = reg;
         reg->factory->getService = (void *)importRegistration_getService;
@@ -76,18 +81,32 @@ celix_status_t importRegistration_setSendFn(import_registration_pt reg,
     return CELIX_SUCCESS;
 }
 
-void importRegistration_destroy(import_registration_pt import) {
+static void importRegistration_clearProxies(import_registration_pt import) {
     if (import != NULL) {
+        pthread_mutex_lock(&import->proxiesMutex);
         if (import->proxies != NULL) {
-            hash_map_iterator_pt  iter = hashMapIterator_create(import->proxies);
+            hash_map_iterator_pt iter = hashMapIterator_create(import->proxies);
             while (hashMapIterator_hasNext(iter)) {
                 struct service_proxy *proxy = hashMapIterator_nextEntry(iter);
                 importRegistration_destroyProxy(proxy);
             }
             hashMapIterator_destroy(iter);
+        }
+        pthread_mutex_unlock(&import->proxiesMutex);
+    }
+}
+
+void importRegistration_destroy(import_registration_pt import) {
+    if (import != NULL) {
+        if (import->proxies != NULL) {
+            importRegistration_clearProxies(import);
             hashMap_destroy(import->proxies, false, false);
             import->proxies = NULL;
         }
+
+        pthread_mutex_destroy(&import->mutex);
+        pthread_mutex_destroy(&import->proxiesMutex);
+
         if (import->factory != NULL) {
             free(import->factory);
         }
@@ -110,7 +129,9 @@ celix_status_t importRegistration_stop(import_registration_pt import) {
     if (import->factoryReg != NULL) {
         serviceRegistration_unregister(import->factoryReg);
     }
-    //TODO unregister every serv instance? Needed for factory?
+
+    importRegistration_clearProxies(import);
+
     return status;
 }
 
@@ -127,11 +148,12 @@ celix_status_t importRegistration_getService(import_registration_pt import, bund
      */
 
 
-    struct service_proxy *proxy = hashMap_get(import->proxies, bundle); //TODO lock
+    pthread_mutex_lock(&import->proxiesMutex);
+    struct service_proxy *proxy = hashMap_get(import->proxies, bundle);
     if (proxy == NULL) {
         status = importRegistration_createProxy(import, bundle, &proxy);
         if (status == CELIX_SUCCESS) {
-            hashMap_put(import->proxies, bundle, proxy); //TODO lock
+            hashMap_put(import->proxies, bundle, proxy);
         }
     }
 
@@ -139,6 +161,7 @@ celix_status_t importRegistration_getService(import_registration_pt import, bund
         proxy->count += 1;
         *out = proxy->service;
     }
+    pthread_mutex_unlock(&import->proxiesMutex);
 
     return status;
 }
@@ -263,13 +286,13 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
 
 celix_status_t importRegistration_ungetService(import_registration_pt import, bundle_pt bundle, service_registration_pt registration, void **out) {
     celix_status_t  status = CELIX_SUCCESS;
-    return status;
 
-    /* TODO fix. gives segfault in framework shutdown (import->proxies == NULL)
     assert(import != NULL);
     assert(import->proxies != NULL);
 
-    struct service_proxy *proxy = hashMap_get(import->proxies, bundle); //TODO lock
+    pthread_mutex_lock(&import->proxiesMutex);
+
+    struct service_proxy *proxy = hashMap_get(import->proxies, bundle);
     if (proxy != NULL) {
         if (*out == proxy->service) {
             proxy->count -= 1;
@@ -281,7 +304,8 @@ celix_status_t importRegistration_ungetService(import_registration_pt import, bu
             importRegistration_destroyProxy(proxy);
         }
     }
-     */
+
+    pthread_mutex_lock(&import->proxiesMutex);
 
     return status;
 }
