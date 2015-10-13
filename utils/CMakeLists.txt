@@ -45,7 +45,7 @@ if (UTILS)
 	)
     
     IF(UNIX)
-    	target_link_libraries(celix_utils m)
+    	target_link_libraries(celix_utils m pthread)
     ENDIF(UNIX)
     
     install(TARGETS celix_utils DESTINATION lib COMPONENT framework)
@@ -53,8 +53,8 @@ if (UTILS)
     INSTALL(FILES ${files} DESTINATION include/celix COMPONENT framework)
     
     celix_subproject(UTILS-TESTS "Option to build the utilities library tests" "OFF")
+
     if (UTILS-TESTS)
-		
     	find_package(CppUTest REQUIRED)
 
 	    include_directories(${CUNIT_INCLUDE_DIRS})

@@ -46,9 +46,9 @@ typedef struct calculator_service *calculator_service_pt;
  */
 struct calculator_service {
 	calculator_pt calculator;
-	celix_status_t (*add)(calculator_pt calculator, double a, double b, double *result);
-	celix_status_t (*sub)(calculator_pt calculator, double a, double b, double *result);
-	celix_status_t (*sqrt)(calculator_pt calculator, double a, double *result);
+	int (*add)(calculator_pt calculator, double a, double b, double *result);
+	int (*sub)(calculator_pt calculator, double a, double b, double *result);
+  int (*sqrt)(calculator_pt calculator, double a, double *result);
 };
 
 

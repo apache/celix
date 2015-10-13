@@ -59,7 +59,7 @@ void sqrtCommand_execute(command_pt command, char *line, void (*out)(char *), vo
 
     status = bundleContext_getServiceReference(command->bundleContext, (char *) CALCULATOR_SERVICE, &calculatorService);
     if (status == CELIX_SUCCESS) {
-    	char *token;
+    	char *token = line;
     	strtok_r(line, " ", &token);
 		char *aStr = strtok_r(NULL, " ", &token);
 		bool numeric;

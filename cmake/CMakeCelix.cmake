@@ -27,6 +27,6 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 include(cmake_celix/Dependencies)
 include(cmake_celix/Packaging)
-include(cmake_celix/Test)
+#include(cmake_celix/Test)
 include(cmake_celix/ApacheRat)
 include(cmake_celix/CodeCoverage)

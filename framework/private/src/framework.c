@@ -330,11 +330,6 @@ celix_status_t framework_destroy(framework_pt framework) {
 
 	unsetenv(OSGI_FRAMEWORK_FRAMEWORK_UUID);
 
-	logger = hashMap_get(framework->configurationMap, "logger");
-	if (logger == NULL) {
-		free(framework->logger);
-	}
-
 	celixThreadCondition_destroy(&framework->dispatcher);
 	celixThreadMutex_destroy(&framework->bundleListenerLock);
 	celixThreadMutex_destroy(&framework->dispatcherLock);
@@ -344,7 +339,14 @@ celix_status_t framework_destroy(framework_pt framework) {
 	celixThreadMutex_destroy(&framework->mutex);
 	celixThreadCondition_destroy(&framework->condition);
 
-	free(framework);
+    logger = hashMap_get(framework->configurationMap, "logger");
+    if (logger == NULL) {
+        free(framework->logger);
+    }
+
+    properties_destroy(framework->configurationMap);
+
+    free(framework);
 
 	return status;
 }

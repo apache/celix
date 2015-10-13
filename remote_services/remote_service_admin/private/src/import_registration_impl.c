@@ -34,6 +34,12 @@
 #include "import_registration_impl.h"
 #include "remote_service_admin_impl.h"
 
+struct import_reference {
+	endpoint_description_pt endpoint;
+	service_reference_pt reference;
+};
+
+
 
 celix_status_t importRegistration_proxyFactoryAdding(void * handle, service_reference_pt reference, void **service);
 celix_status_t importRegistration_proxyFactoryAdded(void * handle, service_reference_pt reference, void *service);
@@ -254,5 +260,16 @@ celix_status_t importRegistration_getImportReference(import_registration_pt regi
 
 	*reference = registration->importReference;
 
+	return status;
+}
+
+
+celix_status_t importReference_getImportedEndpoint(import_reference_pt reference) {
+	celix_status_t status = CELIX_SUCCESS;
+	return status;
+}
+
+celix_status_t importReference_getImportedService(import_reference_pt reference) {
+	celix_status_t status = CELIX_SUCCESS;
 	return status;
 }

@@ -864,27 +864,3 @@ celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_pt 
 
     return status;
 }
-
-celix_status_t exportReference_getExportedEndpoint(export_reference_pt reference, endpoint_description_pt *endpoint) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    *endpoint = reference->endpoint;
-
-    return status;
-}
-
-celix_status_t exportReference_getExportedService(export_reference_pt reference) {
-    celix_status_t status = CELIX_SUCCESS;
-    return status;
-}
-
-celix_status_t importReference_getImportedEndpoint(import_reference_pt reference) {
-    celix_status_t status = CELIX_SUCCESS;
-    return status;
-}
-
-celix_status_t importReference_getImportedService(import_reference_pt reference) {
-    celix_status_t status = CELIX_SUCCESS;
-    return status;
-}
-
