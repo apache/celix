@@ -82,6 +82,14 @@ if (FRAMEWORK)
     INSTALL(FILES ${files} DESTINATION include/celix COMPONENT framework)
     INSTALL(DIRECTORY "${PROJECT_SOURCE_DIR}/cmake/" DESTINATION share/celix/cmake/modules COMPONENT framework) 
 
+
+    if (ENABLE_TESTING)
+        find_package(CppUTest REQUIRED)
+        include_directories(${CPPUTEST_INCLUDE_DIR})
+        add_subdirectory(tst)
+    endif()
+
+
 	celix_subproject(FRAMEWORK_TESTS "Option to build the framework tests" "OFF" DEPS)
     if (ENABLE_TESTING AND FRAMEWORK_TESTS)
     	find_package(CppUTest REQUIRED)
