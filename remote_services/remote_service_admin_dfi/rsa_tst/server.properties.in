@@ -2,7 +2,6 @@ cosgi.auto.start.1=@rsa_bundle_file@ @calc_bundle_file@ @discovery_configured_bu
 LOGHELPER_ENABLE_STDOUT_FALLBACK=true
 RSA_PORT=50882
 DISCOVERY_CFG_SERVER_PORT=50992
-DISCOVERY_CFG_POLL_ENDPOINTS=http://127.0.0.1:50991/org.apache.celix.discovery.configured
 org.osgi.framework.storage.clean=onFirstInit
 org.osgi.framework.storage=.cacheServer
 DISCOVERY_CFG_POLL_INTERVAL=1

@@ -87,7 +87,8 @@ static void importRegistration_clearProxies(import_registration_pt import) {
         if (import->proxies != NULL) {
             hash_map_iterator_pt iter = hashMapIterator_create(import->proxies);
             while (hashMapIterator_hasNext(iter)) {
-                struct service_proxy *proxy = hashMapIterator_nextEntry(iter);
+                hash_map_entry_pt  entry = hashMapIterator_nextEntry(iter);
+                struct service_proxy *proxy = hashMapEntry_getValue(entry);
                 importRegistration_destroyProxy(proxy);
             }
             hashMapIterator_destroy(iter);
@@ -126,11 +127,12 @@ celix_status_t importRegistration_start(import_registration_pt import) {
 
 celix_status_t importRegistration_stop(import_registration_pt import) {
     celix_status_t status = CELIX_SUCCESS;
+
+    importRegistration_clearProxies(import);
+
     if (import->factoryReg != NULL) {
         serviceRegistration_unregister(import->factoryReg);
     }
-
-    importRegistration_clearProxies(import);
 
     return status;
 }

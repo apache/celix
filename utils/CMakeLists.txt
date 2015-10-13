@@ -54,8 +54,8 @@ if (UTILS)
     
     celix_subproject(UTILS-TESTS "Option to build the utilities library tests" "OFF")
 
-    if (UTILS-TESTS)
-    	find_package(CppUTest REQUIRED)
+	if (ENABLE_TESTING)
+		find_package(CppUTest REQUIRED)
 
 	    include_directories(${CUNIT_INCLUDE_DIRS})
 	    include_directories(${CPPUTEST_INCLUDE_DIR})
@@ -94,5 +94,5 @@ if (UTILS)
 		add_test(NAME run_linked_list_test COMMAND linked_list_test)
        	SETUP_TARGET_FOR_COVERAGE(linked_list linked_list_test ${CMAKE_BINARY_DIR}/coverage/linked_list_test/linked_list_test)
 
-   endif(UTILS-TESTS)
+   endif(ENABLE_TESTING)
 endif (UTILS)

@@ -10,19 +10,18 @@ matrix:
     - compiler: clang
 
 before_script:  
-    - git clone -b 3.7.2 --single-branch https://github.com/cpputest/cpputest.git cpputest-build
-    - cd cpputest-build
-    - cmake . && make
-    - sudo make install 
-    - cd ..
+    - wget https://github.com/cpputest/cpputest.github.io/blob/master/releases/cpputest-3.7.1.tar.gz?raw=true -O /tmp/cpputest.tar.gz
+    - tar -xzvf /tmp/cpputest.tar.gz -C /tmp 
+    - if [ "$CC" = "clang" ]; then export CXX="clang++"; fi && cd /tmp/cpputest-3.7.1 && ./configure --prefix=/usr && make && make install && cd -
+    - mkdir build install
     - git clone -b 2.7 --single-branch https://github.com/akheron/jansson.git jansson-build
     - cd jansson-build
     - cmake -DJANSSON_BUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr . && make
     - sudo make install
-    - cd ..
+    - cd -
     - mkdir build install
     - cd build
-    - cmake -DBUILD_DEPLOYMENT_ADMIN=ON -DBUILD_EXAMPLES=ON -DBUILD_LOG_SERVICE=ON -DBUILD_LOG_WRITER=ON -DBUILD_REMOTE_SERVICE_ADMIN=ON -DBUILD_RSA_DISCOVERY_CONFIGURED=ON -DBUILD_RSA_DISCOVERY_ETCD=ON -DBUILD_RSA_DISCOVERY_SHM=ON -DBUILD_RSA_EXAMPLES=ON -DBUILD_RSA_REMOTE_SERVICE_ADMIN_SHM=ON -DBUILD_RSA_REMOTE_SERVICE_ADMIN_HTTP=ON -DBUILD_REMOTE_SHELL=ON -DBUILD_SHELL=ON -DBUILD_SHELL_TUI=ON -DBUILD_DEVICE_ACCESS=ON -DBUILD_DEVICE_ACCESS_EXAMPLE=ON -DBUILD_FRAMEWORK_TESTS=OFF -DBUILD_UTILS-TESTS=ON -DCPPUTEST_INCLUDE_DIR=$HOME/cpputest/include -DCPPUTEST_LIBRARY=$HOME/cpputest/lib/libCppUTest.a -DCPPUTEST_EXT_INCLUDE_DIR=$HOME/cpputest/include -DCPPUTEST_EXT_LIBRARY=$HOME/cpputest/lib/libCppUTestExt.a -DENABLE_CODE_COVERAGE=ON -DBUILD_RSA_REMOTE_SERVICE_ADMIN_DFI=ON -DCMAKE_INSTALL_PREFIX=../install ..
+    - cmake -DBUILD_DEPLOYMENT_ADMIN=ON -DBUILD_EXAMPLES=ON -DBUILD_LOG_SERVICE=ON -DBUILD_LOG_WRITER=ON -DBUILD_REMOTE_SERVICE_ADMIN=ON -DBUILD_RSA_DISCOVERY_CONFIGURED=ON -DBUILD_RSA_DISCOVERY_ETCD=ON -DBUILD_RSA_DISCOVERY_SHM=ON -DBUILD_RSA_EXAMPLES=ON -DBUILD_RSA_REMOTE_SERVICE_ADMIN_SHM=ON -DBUILD_RSA_REMOTE_SERVICE_ADMIN_HTTP=ON -DBUILD_REMOTE_SHELL=ON -DBUILD_SHELL=ON -DBUILD_SHELL_TUI=ON -DBUILD_DEVICE_ACCESS=ON -DBUILD_DEVICE_ACCESS_EXAMPLE=ON -DBUILD_FRAMEWORK_TESTS=OFF -DENABLE_CODE_COVERAGE=ON -DBUILD_RSA_REMOTE_SERVICE_ADMIN_DFI=ON -DENABLE_TESTING=ON -DCMAKE_INSTALL_PREFIX=../install ..
     - make all && make deploy && make install-all
     - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/utils:`pwd`/framework && make test && make coverage
 

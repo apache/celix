@@ -7,8 +7,6 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
     find_package(CURL REQUIRED)
     find_package(Jansson REQUIRED)
     find_package(FFI REQUIRED)
-    #TODO if test check
-    find_package(CppUTest REQUIRED)
 
     include_directories(
         ${CURL_INCLUDE_DIRS}
@@ -24,6 +22,7 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
     add_subdirectory(rsa)
 
     if (ENABLE_TESTING)
+        find_package(CppUTest REQUIRED)
         include_directories(${CPPUTEST_INCLUDE_DIR})
         add_subdirectory(dynamic_function_interface_tst)
         add_subdirectory(rsa_tst)
