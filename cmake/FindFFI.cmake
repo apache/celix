@@ -23,23 +23,26 @@
 #  FFI_INCLUDE_DIRS - The package include directories
 #  FFI_LIBRARIES - The libraries needed to use this package
 
-find_library(FFI_LIBRARY NAMES ffi
-             	PATHS $ENV{FFI_DIR} ${FFI_DIR} /usr/local /opt/local ENV FFI_DIR
-             	PATH_SUFFIXES lib lib/x86_64-linux-gnu NO_DEFAULT_PATH)
+if (NOT WIN32)
+   # try using pkg-config to get the directories and then use these values
+   # in the find_path() and find_library() calls
+   find_package(PkgConfig QUIET)
+   PKG_CHECK_MODULES(PC_LIBFFI QUIET libffi)
+endif ()
+
+mark_as_advanced(GNUTLS_INCLUDE_DIR GNUTLS_LIBRARY)
 
 find_library(FFI_LIBRARY NAMES ffi
-             	PATH_SUFFIXES lib)
-
-#NOTE on OSX ffi.h from macport is located at /opt/local/lib/libffi-<version>/ffi.h 
-#Using FFI_LIBRARY location as hint to find it
-find_path(FFI_INCLUDE_DIR ffi.h
-		HINTS /opt/local/lib/*
-        PATH_SUFFIXES include include/ffi) 
+        PATHS $ENV{FFI_DIR} ${FFI_DIR} /usr/local /opt/local
+        PATH_SUFFIXES lib
+        HINTS ${PC_LIBFFI_LIBDIR} ${PC_LIBFFI_LIBRARY_DIRS}
+)
 
 find_path(FFI_INCLUDE_DIR ffi.h
 		PATHS $ENV{FFI_DIR} ${FFI_DIR} /usr /usr/local /opt/local 
-        PATH_SUFFIXES include include/ffi include/x86_64-linux-gnu) 
-
+        PATH_SUFFIXES include include/ffi
+        HINTS ${PC_LIBFFI_INCLUDEDIR} ${PC_LIBFFI_INCLUDE_DIRS}
+)
 
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set FFI_FOUND to TRUE
