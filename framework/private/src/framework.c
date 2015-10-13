@@ -2392,7 +2392,7 @@ static celix_status_t frameworkActivator_destroy(void * userData, bundle_context
 static celix_status_t framework_loadBundleLibraries(framework_pt framework, bundle_pt bundle) {
     celix_status_t status = CELIX_SUCCESS;
 
-    handle_t handle;
+    handle_t handle = NULL;
     bundle_archive_pt archive = NULL;
     bundle_revision_pt revision = NULL;
     manifest_pt manifest = NULL;
