@@ -306,7 +306,18 @@ struct write_example1 {
 };
 
 void writeTest1(void) {
-    struct write_example1 ex1 = {.a=1, .b=2, .c=3, .d=4, .e=5, .f=6, .g=7, .h=8.8f, .i=9.9, .j=10};
+    struct write_example1 ex1;
+    ex1.a=1;
+    ex1.b=2;
+    ex1.c=3;
+    ex1.d=4;
+    ex1.e=5;
+    ex1.f=6;
+    ex1.g=7;
+    ex1.h=8.8f;
+    ex1.i=9.9;
+    ex1.j=10;
+
     dyn_type *type = NULL;
     char *result = NULL;
     int rc = dynType_parseWithStr(write_example1_descriptor, "ex1", NULL, &type);
@@ -344,8 +355,12 @@ struct write_example2 {
 };
 
 void writeTest2(void) {
-    struct write_example2_sub sub1 = { .a = 1, .b = 2 };
-    struct write_example2 ex = { .sub1 = &sub1 };
+    struct write_example2_sub sub1;
+    sub1.a = 1;
+    sub1.b = 2;
+
+    struct write_example2 ex;
+    ex.sub1=&sub1;
     ex.sub2.c = 3;
     ex.sub2.d = 4;
 
@@ -378,10 +393,22 @@ struct write_example3 {
 };
 
 void writeTest3(void) {
-    struct write_example3_person p1 = {.name = "John", .age = 33};
-    struct write_example3_person p2 = {.name = "Peter", .age = 44};
-    struct write_example3_person p3 = {.name = "Carol", .age = 55};
-    struct write_example3_person p4 = {.name = "Elton", .age = 66};
+    struct write_example3_person p1;
+    p1.name = "John";
+    p1.age = 33;
+
+    struct write_example3_person p2;
+    p2.name = "Peter";
+    p2.age = 44;
+
+    struct write_example3_person p3;
+    p3.name = "Carol";
+    p3.age = 55;
+
+    struct write_example3_person p4;
+    p4.name = "Elton";
+    p4.age = 66;
+
     struct write_example3 seq;
     seq.buf = (struct write_example3_person **) calloc(4, sizeof(void *));
     seq.len = seq.cap = 4;
