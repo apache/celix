@@ -135,11 +135,11 @@ celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_servi
 
         if (logHelper_create(context, &(*admin)->loghelper) == CELIX_SUCCESS) {
             logHelper_start((*admin)->loghelper);
-            dynCommon_logSetup((void *)remoteServiceAdmin_log, *admin, 4);
-            dynType_logSetup((void *)remoteServiceAdmin_log, *admin, 4);
-            dynFunction_logSetup((void *)remoteServiceAdmin_log, *admin, 4);
-            dynInterface_logSetup((void *)remoteServiceAdmin_log, *admin, 4);
-            jsonSerializer_logSetup((void *)remoteServiceAdmin_log, *admin, 4);
+            dynCommon_logSetup((void *)remoteServiceAdmin_log, *admin, 1);
+            dynType_logSetup((void *)remoteServiceAdmin_log, *admin, 1);
+            dynFunction_logSetup((void *)remoteServiceAdmin_log, *admin, 1);
+            dynInterface_logSetup((void *)remoteServiceAdmin_log, *admin, 1);
+            jsonSerializer_logSetup((void *)remoteServiceAdmin_log, *admin, 1);
         }
 
         bundleContext_getProperty(context, "RSA_PORT", &port);
