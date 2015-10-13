@@ -41,7 +41,7 @@ celix_status_t bundleCache_create(properties_pt configurationMap, framework_logg
     celix_status_t status;
     bundle_cache_pt cache;
 
-	cache = (bundle_cache_pt) calloc((1, sizeof(*cache)));
+	cache = (bundle_cache_pt) calloc(1, sizeof(*cache));
     if (cache == NULL) {
         status = CELIX_ENOMEM;
     } else {
