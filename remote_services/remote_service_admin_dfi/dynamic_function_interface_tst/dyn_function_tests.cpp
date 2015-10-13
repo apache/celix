@@ -209,9 +209,10 @@ extern "C" {
 
 TEST_GROUP(DynFunctionTests) {
     void setup() {
-        dynFunction_logSetup(stdLog, NULL, 3);
-        dynType_logSetup(stdLog, NULL, 3);
-        dynCommon_logSetup(stdLog, NULL, 3);
+        int lvl = 1;
+        dynFunction_logSetup(stdLog, NULL, lvl);
+        dynType_logSetup(stdLog, NULL, lvl);
+        dynCommon_logSetup(stdLog, NULL, lvl);
     }
 };
 

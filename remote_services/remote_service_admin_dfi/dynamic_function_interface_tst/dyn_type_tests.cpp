@@ -52,7 +52,7 @@ extern "C" {
 
 TEST_GROUP(DynTypeTests) {
 	void setup() {
-	    dynType_logSetup(stdLog, NULL, 4);
+	    dynType_logSetup(stdLog, NULL, 1);
 	}
 };
 

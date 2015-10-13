@@ -290,7 +290,7 @@ static void stdLog(void *handle, int level, const char *file, int line, const ch
 
 TEST_GROUP(JsonRpcTests) {
     void setup() {
-        int lvl = 4;
+        int lvl = 1;
         dynCommon_logSetup(stdLog, NULL, lvl);
         dynType_logSetup(stdLog, NULL,lvl);
         dynFunction_logSetup(stdLog, NULL,lvl);
