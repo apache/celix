@@ -32,9 +32,8 @@ endif ()
 
 mark_as_advanced(GNUTLS_INCLUDE_DIR GNUTLS_LIBRARY)
 
-find_library(FFI_LIBRARY NAMES ffi
+find_library(FFI_LIBRARY NAMES ffi libffi
         PATHS $ENV{FFI_DIR} ${FFI_DIR} /usr/local /opt/local
-        PATH_SUFFIXES lib
         HINTS ${PC_LIBFFI_LIBDIR} ${PC_LIBFFI_LIBRARY_DIRS}
 )
 
