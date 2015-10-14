@@ -64,9 +64,8 @@ extern "C" {
         celixLauncher_destroy(serverFramework);
 
         celixLauncher_stop(clientFramework);
-        //TODO, FIXME, hangs on second wait for shutdown.. investigate
-        // celixLauncher_waitForShutdown(clientFramework);
-        //celixLauncher_destroy(clientFramework);
+        celixLauncher_waitForShutdown(clientFramework);
+        celixLauncher_destroy(clientFramework);
 
         serverContext = NULL;
         serverFramework = NULL;

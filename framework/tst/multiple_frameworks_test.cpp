@@ -68,7 +68,8 @@ extern "C" {
     }
 
     static void testFrameworks(void) {
-        printf("testing startup/shutdown mutiple frameworks\n");    }
+        printf("testing startup/shutdown mutiple frameworks\n");
+    }
 
 }
 

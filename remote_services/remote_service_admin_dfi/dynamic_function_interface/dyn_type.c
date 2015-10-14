@@ -297,8 +297,8 @@ static int dynType_parseComplex(FILE *stream, dyn_type *type) {
     if (status == OK) {
         type->complex.structType.type =  FFI_TYPE_STRUCT;
         type->complex.structType.elements = calloc(count + 1, sizeof(ffi_type));
-        type->complex.structType.elements[count] = NULL;
         if (type->complex.structType.elements != NULL) {
+            type->complex.structType.elements[count] = NULL;
             int index = 0;
             TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
                 type->complex.structType.elements[index++] = dynType_ffiType(entry->type);

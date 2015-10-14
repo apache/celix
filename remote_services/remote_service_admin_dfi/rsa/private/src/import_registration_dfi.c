@@ -289,6 +289,10 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
 celix_status_t importRegistration_ungetService(import_registration_pt import, bundle_pt bundle, service_registration_pt registration, void **out) {
     celix_status_t  status = CELIX_SUCCESS;
 
+    return status;
+
+    /* TODO, FIXME ungetService can happen after importRegistration destroy leading to segfaults
+
     assert(import != NULL);
     assert(import->proxies != NULL);
 
@@ -310,6 +314,7 @@ celix_status_t importRegistration_ungetService(import_registration_pt import, bu
     pthread_mutex_lock(&import->proxiesMutex);
 
     return status;
+     */
 }
 
 static void importRegistration_destroyProxy(struct service_proxy *proxy) {

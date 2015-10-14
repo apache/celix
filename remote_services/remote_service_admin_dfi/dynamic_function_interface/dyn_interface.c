@@ -323,15 +323,6 @@ void dynInterface_destroy(dyn_interface_type *intf) {
         dynCommon_clearNamValHead(&intf->header);
         dynCommon_clearNamValHead(&intf->annotations);
 
-        struct type_entry *tmp = NULL;
-        struct type_entry *tInfo = TAILQ_FIRST(&intf->types);
-        while (tInfo != NULL) {
-            tmp = tInfo;
-            tInfo = TAILQ_NEXT(tInfo, entries);
-            dynType_destroy(tmp->type);
-            free(tmp);
-        }
-
         struct method_entry *mTmp = NULL;
         struct method_entry *mInfo = TAILQ_FIRST(&intf->methods);
         while (mInfo != NULL) {
@@ -348,6 +339,15 @@ void dynInterface_destroy(dyn_interface_type *intf) {
                 dynFunction_destroy(mTmp->dynFunc);
             }
             free(mTmp);
+        }
+
+        struct type_entry *tmp = NULL;
+        struct type_entry *tInfo = TAILQ_FIRST(&intf->types);
+        while (tInfo != NULL) {
+            tmp = tInfo;
+            tInfo = TAILQ_NEXT(tInfo, entries);
+            dynType_destroy(tmp->type);
+            free(tmp);
         }
 
         free(intf);

@@ -85,6 +85,9 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
     int i;
     int index = 0;
 
+    void *ptr = NULL;
+    void *ptrToPtr = &ptr;
+
     for (i = 0; i < nrOfArgs; i += 1) {
         dyn_type *argType = dynFunction_argumentTypeForIndex(func, i);
         enum dyn_function_argument_meta  meta = dynFunction_argumentMetaForIndex(func, i);
@@ -94,8 +97,7 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
         } else if (meta == DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT) {
             dynType_alloc(argType, &args[i]);
         } else if (meta == DYN_FUNCTION_ARGUMENT_META__OUTPUT) {
-            void *inMemPtr = calloc(1, sizeof(void *));
-            args[i] = &inMemPtr;
+            args[i] = &ptrToPtr;
         } else if (meta == DYN_FUNCTION_ARGUMENT_META__HANDLE) {
             args[i] = &handle;
         }
@@ -142,15 +144,22 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
                 }
                 dynType_free(argType, args[i]);
             } else if (meta == DYN_FUNCTION_ARGUMENT_META__OUTPUT) {
-                void ***out = args[i];
-                if (out != NULL && *out != NULL && **out != NULL) {
-                    status = jsonSerializer_serializeJson(argType, out, &jsonResult);
+                if (ptr != NULL) {
+
                     dyn_type *typedType = NULL;
                     if (status == OK) {
                         status = dynType_typedPointer_getTypedType(argType, &typedType);
                     }
+
+                    dyn_type *typedTypedType = NULL;
                     if (status == OK) {
-                        dynType_free(typedType, *out);
+                        status = dynType_typedPointer_getTypedType(typedType, &typedTypedType);
+                    }
+
+                    status = jsonSerializer_serializeJson(typedTypedType, ptr, &jsonResult);
+
+                    if (status == OK) {
+                        dynType_free(typedTypedType, ptr);
                     }
                 } else {
                     LOG_DEBUG("Output ptr is null");
