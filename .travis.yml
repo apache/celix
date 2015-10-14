@@ -18,6 +18,7 @@ before_script:
     - cmake -DJANSSON_BUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr . && make
     - sudo make install
     - cd -
+    - ls /usr/lib/x86_64-linux-gnu/libffi.so
     - wget ftp://sourceware.org/pub/libffi/libffi-3.2.1.tar.gz -O /tmp/libffi.tar.gz
     - tar xzf /tmp/libffi.tar.gz 
     - cd libffi*
