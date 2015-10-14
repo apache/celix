@@ -22,7 +22,6 @@ before_script:
     - tar xzf /tmp/libffi.tar.gz 
     - cd libffi*
     - ./configure --prefix=/usr/local && make && sudo make install 
-    - ls /usr/local
     - cd -
     - mkdir build install
 
@@ -30,7 +29,7 @@ script:
     - cd build
     - cmake -DFFI_LIBRARY=/usr/local/lib/libffi.so -DFFI_INCLUDE_DIR=/usr/local/include -DBUILD_DEPLOYMENT_ADMIN=ON -DBUILD_EXAMPLES=ON -DBUILD_LOG_SERVICE=ON -DBUILD_LOG_WRITER=ON -DBUILD_REMOTE_SERVICE_ADMIN=ON -DBUILD_RSA_DISCOVERY_CONFIGURED=ON -DBUILD_RSA_DISCOVERY_ETCD=ON -DBUILD_RSA_DISCOVERY_SHM=ON -DBUILD_RSA_EXAMPLES=ON -DBUILD_RSA_REMOTE_SERVICE_ADMIN_SHM=ON -DBUILD_RSA_REMOTE_SERVICE_ADMIN_HTTP=ON -DBUILD_REMOTE_SHELL=ON -DBUILD_SHELL=ON -DBUILD_SHELL_TUI=ON -DBUILD_DEVICE_ACCESS=ON -DBUILD_DEVICE_ACCESS_EXAMPLE=ON -DBUILD_FRAMEWORK_TESTS=OFF -DENABLE_CODE_COVERAGE=ON -DENABLE_TESTING=ON -DBUILD_RSA_REMOTE_SERVICE_ADMIN_DFI=ON -DCMAKE_INSTALL_PREFIX=../install ..
     - make all && make deploy && make install-all
-    - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/utils:`pwd`/framework && make test ARGS="-V" && make coverage
+    - export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH:`pwd`/utils:`pwd`/framework && make test ARGS="-V" && make coverage
 
 after_success:
     - cd ${TRAVIS_BUILD_DIR}/build
