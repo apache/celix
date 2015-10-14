@@ -25,6 +25,8 @@ install (FILES
         public/include/remote_endpoint.h
         public/include/remote_proxy.h
         public/include/remote_service_admin.h
+        public/include/export_registration.h
+        public/include/import_registration.h
         public/include/endpoint_description.h
         public/include/endpoint_listener.h
         public/include/remote_constants.h
