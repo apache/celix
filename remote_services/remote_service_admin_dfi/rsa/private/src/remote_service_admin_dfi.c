@@ -50,13 +50,13 @@
 #define MAX_NUMBER_OF_RESTARTS 	5
 
 
-#define LOG_ERROR(admin, msg, ...) \
+#define RSA_LOG_ERROR(admin, msg, ...) \
     logHelper_log((admin)->loghelper, OSGI_LOGSERVICE_ERROR, (msg),  ##__VA_ARGS__)
 
-#define LOG_WARNING(admin, msg, ...) \
+#define RSA_LOG_WARNING(admin, msg, ...) \
     logHelper_log((admin)->loghelper, OSGI_LOGSERVICE_ERROR, (msg),  ##__VA_ARGS__)
 
-#define LOG_DEBUG(admin, msg, ...) \
+#define RSA_LOG_DEBUG(admin, msg, ...) \
     logHelper_log((admin)->loghelper, OSGI_LOGSERVICE_ERROR, (msg),  ##__VA_ARGS__)
 
 struct remote_service_admin {
@@ -67,7 +67,7 @@ struct remote_service_admin {
     hash_map_pt exportedServices;
 
     celix_thread_mutex_t importedServicesLock;
-    hash_map_pt importedServices;
+    array_list_pt importedServices;
 
     char *port;
     char *ip;
@@ -128,7 +128,7 @@ celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_servi
         char *detectedIp = NULL;
         (*admin)->context = context;
         (*admin)->exportedServices = hashMap_create(NULL, NULL, NULL, NULL);
-        (*admin)->importedServices = hashMap_create(NULL, NULL, NULL, NULL);
+         arrayList_create(&(*admin)->importedServices);
 
         celixThreadMutex_create(&(*admin)->exportedServicesLock, NULL);
         celixThreadMutex_create(&(*admin)->importedServicesLock, NULL);
@@ -251,20 +251,14 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin) {
     celixThreadMutex_unlock(&admin->exportedServicesLock);
 
     celixThreadMutex_lock(&admin->importedServicesLock);
-
-    iter = hashMapIterator_create(admin->importedServices);
-    while (hashMapIterator_hasNext(iter))
-    {
-
-        hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-        import_registration_pt import = hashMapEntry_getValue(entry);
-
+    int i;
+    int size = arrayList_size(admin->importedServices);
+    for (i = 0; i < size ; i += 1) {
+        import_registration_pt import = arrayList_get(admin->importedServices, i);
         if (import != NULL) {
             importRegistration_stop(import);
         }
     }
-
-    hashMapIterator_destroy(iter);
     celixThreadMutex_unlock(&admin->importedServicesLock);
 
     if (admin->ctx != NULL) {
@@ -274,7 +268,7 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin) {
     }
 
     hashMap_destroy(admin->exportedServices, false, false);
-    hashMap_destroy(admin->importedServices, false, false);
+    arrayList_destroy(admin->importedServices);
 
     logHelper_stop(admin->loghelper);
     logHelper_destroy(&admin->loghelper);
@@ -344,16 +338,13 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
                 char *response = NULL;
                 int responceLength = 0;
                 int rc = exportRegistration_call(export, data, -1, &response, &responceLength);
-                //TODO check rc
+                if (rc != CELIX_SUCCESS) {
+                    RSA_LOG_ERROR(rsa, "Error trying to invoke remove service, got error %i\n", rc);
+                }
 
-                if (response != NULL) {
+                if (rc == CELIX_SUCCESS && response != NULL) {
                     mg_write(conn, data_response_headers, strlen(data_response_headers));
-//              mg_write(conn, no_content_response_headers, strlen(no_content_response_headers));
-                    //printf("writing response '%s'\n", response);
                     mg_write(conn, response, strlen(response));
-//              mg_send_data(conn, response, strlen(response));
-//              mg_write_data(conn, response, strlen(response));
-
                     free(response);
                 } else {
                     mg_write(conn, no_content_response_headers, strlen(no_content_response_headers));
@@ -363,7 +354,7 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
                 free(data);
             } else {
                 result = 0;
-                //TODO log warning
+                RSA_LOG_WARNING(rsa, "NO export registration found for service id %i", serviceId);
             }
 
             celixThreadMutex_unlock(&rsa->exportedServicesLock);
@@ -446,7 +437,7 @@ celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_pt 
     celix_status_t status = CELIX_SUCCESS;
     logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA_DFI: Removing exported service");
 
-    service_reference_pt  ref = NULL;
+    export_reference_pt  ref = NULL;
     status = exportRegistration_getExportReference(registration, &ref);
 
     if (status == CELIX_SUCCESS) {
@@ -456,7 +447,7 @@ celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_pt 
         hashMap_remove(admin->exportedServices, ref);
         celixThreadMutex_unlock(&admin->exportedServicesLock);
     } else {
-        LOG_ERROR(admin, "Cannot find reference for registration");
+        RSA_LOG_ERROR(admin, "Cannot find reference for registration");
     }
 
 
@@ -600,7 +591,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, e
         status = importRegistration_create(admin->context, endpointDescription, objectClass, &import);
     }
     if (status == CELIX_SUCCESS) {
-        importRegistration_setSendFn(import, remoteServiceAdmin_send, admin);
+        importRegistration_setSendFn(import, (send_func_type) remoteServiceAdmin_send, admin);
     }
 
     if (status == CELIX_SUCCESS) {
@@ -608,7 +599,7 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, e
     }
 
     celixThreadMutex_lock(&admin->importedServicesLock);
-    hashMap_put(admin->importedServices, import, import);
+    arrayList_add(admin->importedServices, import);
     celixThreadMutex_unlock(&admin->importedServicesLock);
 
     if (status == CELIX_SUCCESS) {
@@ -624,9 +615,18 @@ celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_pt 
     logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA_DFI: Removing imported service");
 
     celixThreadMutex_lock(&admin->importedServicesLock);
-    importRegistration_close(registration);
-    //importRegistration_destroy(registration); TODO enable & debug -> segfault
-    hashMap_remove(admin->importedServices, registration);
+    int i;
+    int size = arrayList_size(admin->importedServices);
+    import_registration_pt  current  = NULL;
+    for (i = 0; i < size; i += 1) {
+        current = arrayList_get(admin->importedServices, i);
+        if (current == registration) {
+            arrayList_remove(admin->importedServices, i);
+            importRegistration_close(current);
+            //TODO, FIXME -> segfault. importRegistration_destroy(current);
+            break;
+        }
+    }
     celixThreadMutex_unlock(&admin->importedServicesLock);
 
     return status;
