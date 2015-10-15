@@ -58,12 +58,13 @@
 
 #define IDENTIFICATION_ID "deployment_admin_identification"
 #define DISCOVERY_URL "deployment_admin_url"
+#define DEPLOYMENT_CACHE_DIR "deployment_cache_dir"
 // "http://localhost:8080/deployment/"
 
 #define VERSIONS "/versions"
 
 static void* deploymentAdmin_poll(void *deploymentAdmin);
-celix_status_t deploymentAdmin_download(char * url, char **inputFile);
+celix_status_t deploymentAdmin_download(deployment_admin_pt admin, char * url, char **inputFile);
 size_t deploymentAdmin_writeData(void *ptr, size_t size, size_t nmemb, FILE *stream);
 static celix_status_t deploymentAdmin_deleteTree(char * directory);
 celix_status_t deploymentAdmin_readVersions(deployment_admin_pt admin, array_list_pt *versions);
@@ -232,7 +233,7 @@ static void *deploymentAdmin_poll(void *deploymentAdmin) {
 				}
 
 				char *inputFilename = NULL;
-				celix_status_t status = deploymentAdmin_download(request, &inputFilename);
+				celix_status_t status = deploymentAdmin_download(admin ,request, &inputFilename);
 				if (status == CELIX_SUCCESS) {
 					bundle_pt bundle = NULL;
 					bundleContext_getBundle(admin->context, &bundle);
@@ -363,15 +364,23 @@ celix_status_t deploymentAdmin_readVersions(deployment_admin_pt admin, array_lis
 }
 
 
-celix_status_t deploymentAdmin_download(char * url, char **inputFile) {
+celix_status_t deploymentAdmin_download(deployment_admin_pt admin, char * url, char **inputFile) {
 	celix_status_t status = CELIX_SUCCESS;
 	CURL *curl = NULL;
 	CURLcode res = 0;
 	curl = curl_easy_init();
 	if (curl) {
-	    *inputFile = strdup("updateXXXXXX");
+		char *dir = NULL;
+		bundleContext_getProperty(admin->context, DEPLOYMENT_CACHE_DIR, &dir);
+		if (dir != NULL) {
+			*inputFile = calloc(1024, sizeof (char));
+			snprintf(*inputFile, 1024, "%s/%s", dir, "updateXXXXXX");
+		}
+		else {
+				*inputFile = strdup("updateXXXXXX");
+		}
         int fd = mkstemp(*inputFile);
-        if (fd) {
+        if (fd != -1) {
             FILE *fp = fopen(*inputFile, "wb+");
             curl_easy_setopt(curl, CURLOPT_URL, url);
             curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, deploymentAdmin_writeData);
