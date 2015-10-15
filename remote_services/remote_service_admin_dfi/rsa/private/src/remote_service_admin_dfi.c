@@ -623,7 +623,7 @@ celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_pt 
         if (current == registration) {
             arrayList_remove(admin->importedServices, i);
             importRegistration_close(current);
-            //TODO, FIXME -> segfault. importRegistration_destroy(current);
+            importRegistration_destroy(current);
             break;
         }
     }
