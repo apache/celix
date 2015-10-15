@@ -163,7 +163,7 @@ celix_status_t serviceRegistration_getService(service_registration_pt registrati
 celix_status_t serviceRegistration_ungetService(service_registration_pt registration, bundle_pt bundle, void **service) {
     if (registration->isServiceFactory) {
         service_factory_pt factory = registration->serviceFactory;
-        factory->ungetService(registration->serviceFactory, bundle, registration, service);
+        factory->ungetService(factory->factory, bundle, registration, service);
     }
     return CELIX_SUCCESS;
 }

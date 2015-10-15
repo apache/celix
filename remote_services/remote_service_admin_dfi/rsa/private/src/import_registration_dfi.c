@@ -13,7 +13,6 @@ struct import_registration {
     const char *classObject; //NOTE owned by endpoint
 
     celix_thread_mutex_t mutex; //protects send & sendhandle
-
     send_func_type send;
     void *sendHandle;
 
@@ -27,7 +26,7 @@ struct import_registration {
 struct service_proxy {
     dyn_interface_type *intf;
     void *service;
-    int count;
+    size_t count;
 };
 
 static celix_status_t importRegistration_createProxy(import_registration_pt import, bundle_pt bundle,
@@ -128,11 +127,12 @@ celix_status_t importRegistration_start(import_registration_pt import) {
 celix_status_t importRegistration_stop(import_registration_pt import) {
     celix_status_t status = CELIX_SUCCESS;
 
-    importRegistration_clearProxies(import);
-
     if (import->factoryReg != NULL) {
         serviceRegistration_unregister(import->factoryReg);
+        import->factoryReg = NULL;
     }
+
+    importRegistration_clearProxies(import);
 
     return status;
 }
@@ -289,10 +289,6 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
 celix_status_t importRegistration_ungetService(import_registration_pt import, bundle_pt bundle, service_registration_pt registration, void **out) {
     celix_status_t  status = CELIX_SUCCESS;
 
-    return status;
-
-    /* TODO, FIXME ungetService can happen after importRegistration destroy leading to segfaults
-
     assert(import != NULL);
     assert(import->proxies != NULL);
 
@@ -307,14 +303,14 @@ celix_status_t importRegistration_ungetService(import_registration_pt import, bu
         }
 
         if (proxy->count == 0) {
+            hashMap_remove(import->proxies, bundle);
             importRegistration_destroyProxy(proxy);
         }
     }
 
-    pthread_mutex_lock(&import->proxiesMutex);
+    pthread_mutex_unlock(&import->proxiesMutex);
 
     return status;
-     */
 }
 
 static void importRegistration_destroyProxy(struct service_proxy *proxy) {
