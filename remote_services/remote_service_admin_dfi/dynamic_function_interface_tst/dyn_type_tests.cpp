@@ -43,7 +43,7 @@ extern "C" {
         }
 
         FILE *stream = fopen("/dev/null", "w");
-        dynType_print(type, stdout);
+        dynType_print(type, stream);
         fclose(stream);
         dynType_destroy(type);
         //printf("--\n\n");

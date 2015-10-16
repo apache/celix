@@ -95,6 +95,17 @@ static int dynInterface_checkInterface(dyn_interface_type *intf) {
             status = ERROR;
             LOG_ERROR("Parse Error. There must be a header section with a type, version and name entry");
         }
+
+        struct method_entry *mEntry = NULL;
+        TAILQ_FOREACH(mEntry, &intf->methods, entries) {
+            dyn_type *type = dynFunction_returnType(mEntry->dynFunc);
+            int descriptor = dynType_descriptorType(type);
+            if (descriptor != 'N') {
+                status = ERROR;
+                LOG_ERROR("Parse Error. Only method with a return type 'N' (native int) are supported. Got return type '%c'\n", descriptor);
+                break;
+            }
+        }
     }
 
     return status;
