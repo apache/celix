@@ -19,7 +19,7 @@
 /*
  * dm_service_dependency_impl.h
  *
- *  \date       8 Oct 2014
+ *  \date       16 Oct 2015
  *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright  Apache License, Version 2.0
  */
