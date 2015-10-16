@@ -24,6 +24,7 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdlib.h>
+#include <constants.h>
 
 #include "bundle_activator.h"
 #include "publisher_private.h"
@@ -53,6 +54,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
 	props = properties_create();
 	properties_set(props, "id", "A");
+	properties_set(props,(char*)OSGI_FRAMEWORK_SERVICE_RANKING , "10");
 
 	status = bundleContext_registerService(context, PUBLISHER_NAME, data->ps, props, &data->reg);
 	if (status != CELIX_SUCCESS) {
