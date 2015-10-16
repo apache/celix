@@ -27,7 +27,10 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
+#include "constants.h"
+#include "filter.h"
 #include "dm_component_impl.h"
 #include "../../../framework/private/include/framework_private.h"
 
@@ -109,7 +112,7 @@ celix_status_t component_create(bundle_context_pt context, dm_dependency_manager
         (*component)->callbackInit = NULL;
         (*component)->callbackStart = NULL;
         (*component)->callbackStop = NULL;
-        (*component)->callbackDestroy = NULL;
+        (*component)->callbackDeinit = NULL;
 
 
         arrayList_create(&(*component)->dependencies);
@@ -362,6 +365,7 @@ celix_status_t component_handleAdded(dm_component_pt component, dm_service_depen
 
     serviceDependency_setAvailable(dependency, true);
 
+    serviceDependency_invokeSet(dependency, event);
     switch (component->state) {
         case DM_CMP_STATE_WAITING_FOR_REQUIRED: {
             bool required = false;
@@ -418,6 +422,7 @@ celix_status_t component_handleChanged(dm_component_pt component, dm_service_dep
         arrayList_add(events, event);
         pthread_mutex_unlock(&component->mutex);
 
+        serviceDependency_invokeSet(dependency, event);
         switch (component->state) {
             case DM_CMP_STATE_TRACKING_OPTIONAL:
                 serviceDependency_invokeChange(dependency, event);
@@ -467,6 +472,8 @@ celix_status_t component_handleRemoved(dm_component_pt component, dm_service_dep
         dm_event_pt old = arrayList_remove(events, (unsigned int) index);
         pthread_mutex_unlock(&component->mutex);
 
+        serviceDependency_invokeSet(dependency, event);
+
         switch (component->state) {
             case DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED: {
                 bool instanceBound = false;
@@ -514,6 +521,8 @@ celix_status_t component_handleSwapped(dm_component_pt component, dm_service_dep
         dm_event_pt old = arrayList_remove(events, (unsigned int) index);
         arrayList_add(events, newEvent);
         pthread_mutex_unlock(&component->mutex);
+
+        serviceDependency_invokeSet(dependency, event);
 
         switch (component->state) {
             case DM_CMP_STATE_WAITING_FOR_REQUIRED:
@@ -746,8 +755,8 @@ celix_status_t component_performTransition(dm_component_pt component, dm_compone
     }
 
     if (oldState == DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED && newState == DM_CMP_STATE_WAITING_FOR_REQUIRED) {
-    	if (component->callbackDestroy) {
-    		component->callbackDestroy(component->implementation);
+    	if (component->callbackDeinit) {
+    		component->callbackDeinit(component->implementation);
     	}
         component_invokeRemoveRequiredDependencies(component);
 //            #TODO Add listener support
@@ -1119,14 +1128,14 @@ celix_status_t component_unregisterService(dm_component_pt component) {
     return status;
 }
 
-celix_status_t component_setCallbacks(dm_component_pt component, init_fpt init, start_fpt start, stop_fpt stop, destroy_fpt destroy) {
+celix_status_t component_setCallbacks(dm_component_pt component, init_fpt init, start_fpt start, stop_fpt stop, deinit_fpt deinit) {
 	if (component->active) {
 		return CELIX_ILLEGAL_STATE;
 	}
 	component->callbackInit = init;
 	component->callbackStart = start;
 	component->callbackStop = stop;
-	component->callbackDestroy = destroy;
+	component->callbackDeinit = deinit;
 	return CELIX_SUCCESS;
 }
 

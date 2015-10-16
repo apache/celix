@@ -56,12 +56,13 @@ static void *dp_send(void *handle) {
 }
 
 celix_status_t service_init(void * userData) {
+	fprintf(stderr, "Service init");
 	return CELIX_SUCCESS;
 }
 
 celix_status_t service_start(void * userData) {
 	struct data * data = (struct data *) userData;
-
+	fprintf(stderr, "Service started");
 	data->running = true;
 	pthread_create(&data->sender, NULL, dp_send, data);
 	return CELIX_SUCCESS;
@@ -69,14 +70,22 @@ celix_status_t service_start(void * userData) {
 
 celix_status_t service_stop(void * userData) {
 	struct data * data = (struct data *) userData;
+	fprintf(stderr, "Service stopped");
 	data->running = false;
 	pthread_join(data->sender, NULL);
 	return CELIX_SUCCESS;
 }
 
-celix_status_t service_destroy(void * userData) {
+celix_status_t service_deinit(void * userData) {
+	fprintf(stderr, "Service deinit");
 	return CELIX_SUCCESS;
 }
+
+celix_status_t tracker_setServ(void * handle, service_reference_pt ref, void * service) {
+	printf("Service Set %p\n", service);
+	return CELIX_SUCCESS;
+}
+
 
 celix_status_t tracker_addedServ(void * handle, service_reference_pt ref, void * service) {
 	struct data * data = (struct data *) handle;
@@ -97,9 +106,21 @@ celix_status_t tracker_removedServ(void * handle, service_reference_pt ref, void
 	return CELIX_SUCCESS;
 }
 
+celix_status_t tracker_setLog(void *handle, service_reference_pt ref, void *service) {
+	struct data * data = (struct data *) handle;
+
+	printf("SET log %p\n", service);
+	if(service) {
+		data->logger = service;
+		((log_service_pt) service)->log(((log_service_pt) service)->logger, OSGI_LOGSERVICE_DEBUG, "SET log");
+	}
+	fprintf(stderr, "SET end %p\n", service);
+	return CELIX_SUCCESS;
+}
+
 celix_status_t tracker_addLog(void *handle, service_reference_pt ref, void *service) {
     struct data * data = (struct data *) handle;
-    printf("Add log\n");
+    printf("Add log %p\n", service);
     data->logger = service;
     ((log_service_pt) service)->log(((log_service_pt) service)->logger, OSGI_LOGSERVICE_DEBUG, "test");
     return CELIX_SUCCESS;

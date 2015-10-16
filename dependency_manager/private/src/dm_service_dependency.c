@@ -27,11 +27,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #include "constants.h"
 
 #include "dm_service_dependency_impl.h"
 #include "dm_component_impl.h"
+
+#define DEFAULT_RANKING     0
 
 static celix_status_t serviceDependency_addedService(void *_ptr, service_reference_pt reference, void *service);
 static celix_status_t serviceDependency_modifiedService(void *_ptr, service_reference_pt reference, void *service);
@@ -49,6 +52,7 @@ celix_status_t serviceDependency_create(dm_service_dependency_pt *dependency_ptr
 		(*dependency_ptr)->instanceBound = false;
 		(*dependency_ptr)->required = false;
 
+		(*dependency_ptr)->set = NULL;
 		(*dependency_ptr)->add = NULL;
 		(*dependency_ptr)->change = NULL;
 		(*dependency_ptr)->remove = NULL;
@@ -146,7 +150,7 @@ celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency,
 	return status;
 }
 
-celix_status_t serviceDependency_setCallbacks(dm_service_dependency_pt dependency, service_add_fpt add, service_change_fpt change, service_remove_fpt remove, service_swap_fpt swap) {
+celix_status_t serviceDependency_setCallbacks(dm_service_dependency_pt dependency, service_set_fpt set, service_add_fpt add, service_change_fpt change, service_remove_fpt remove, service_swap_fpt swap) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (!dependency) {
@@ -154,6 +158,7 @@ celix_status_t serviceDependency_setCallbacks(dm_service_dependency_pt dependenc
 	}
 
 	if (status == CELIX_SUCCESS) {
+		dependency->set = set;
 		dependency->add = add;
 		dependency->change = change;
 		dependency->remove = remove;
@@ -163,7 +168,7 @@ celix_status_t serviceDependency_setCallbacks(dm_service_dependency_pt dependenc
 	return status;
 }
 
-celix_status_t serviceDependency_setCallbacksWithServiceReference(dm_service_dependency_pt dependency, service_add_with_ref_fpt add, service_change_with_ref_fpt change, service_remove_with_ref_fpt remove, service_swap_with_ref_fpt swap) {
+celix_status_t serviceDependency_setCallbacksWithServiceReference(dm_service_dependency_pt dependency, service_set_with_ref_fpt set, service_add_with_ref_fpt add, service_change_with_ref_fpt change, service_remove_with_ref_fpt remove, service_swap_with_ref_fpt swap) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (!dependency) {
@@ -171,6 +176,7 @@ celix_status_t serviceDependency_setCallbacksWithServiceReference(dm_service_dep
 	}
 
 	if (status == CELIX_SUCCESS) {
+		dependency->set_with_ref = set;
 		dependency->add_with_ref = add;
 		dependency->change_with_ref = change;
 		dependency->remove_with_ref = remove;
@@ -304,6 +310,62 @@ celix_status_t serviceDependency_setAvailable(dm_service_dependency_pt dependenc
 
 	if (status == CELIX_SUCCESS) {
 		dependency->available = available;
+	}
+
+	return status;
+}
+celix_status_t serviceDependency_invokeSet(dm_service_dependency_pt dependency, dm_event_pt event) {
+	celix_status_t status = CELIX_SUCCESS;
+	array_list_pt serviceReferences = NULL;
+	int i;
+	int curRanking = INT_MIN;
+	service_reference_pt curServRef = NULL;
+	void *service = NULL;
+
+	serviceReferences = serviceTracker_getServiceReferences(dependency->tracker);
+
+	fprintf(stderr,"found %d servicereferences\n",arrayList_size(serviceReferences));
+	/* Find the service with the higest ranking */
+	for (i = 0; i < arrayList_size(serviceReferences); i++) {
+		service_reference_pt serviceReference = arrayList_get(serviceReferences, i);
+		char *ranking_value;
+		int ranking = 0;
+
+		status = serviceReference_getProperty(serviceReference, ((char *)OSGI_FRAMEWORK_SERVICE_RANKING), &ranking_value);
+
+		if(status == CELIX_SUCCESS) {
+			if (ranking_value == NULL) {
+				ranking  = DEFAULT_RANKING;
+			} else {
+				char *end;
+				ranking = strtol(ranking_value, &end, 10);
+				if( end == ranking_value) {
+					ranking = DEFAULT_RANKING;
+				}
+			}
+
+			if (ranking > curRanking) {
+				curRanking = ranking;
+				curServRef = serviceReference;
+			}
+		} else {
+			return status;
+		}
+	}
+
+	if (curServRef) {
+		status = bundleContext_getService(event->context, curServRef, &service);
+	} else {
+		service = NULL;
+	}
+
+	fprintf(stderr, "Ranking found: %d service %p\n", curRanking, service);
+
+	if (dependency->set) {
+		dependency->set(dependency->component->implementation, service);
+	}
+	if (dependency->set_with_ref) {
+		dependency->set_with_ref(dependency->component->implementation, curServRef, service);
 	}
 
 	return status;

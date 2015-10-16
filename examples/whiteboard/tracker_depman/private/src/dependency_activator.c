@@ -49,30 +49,30 @@ celix_status_t dm_init(void * userData, bundle_context_pt context, dm_dependency
 	printf("Init\n");
 	struct data * data = (struct data *) userData;
 	dm_component_pt service = NULL;
-	dm_service_dependency_pt dep = NULL;
+	dm_service_dependency_pt dep1 = NULL;
 	dm_service_dependency_pt dep2 = NULL;
 
 	data->context = context;
 
 	component_create(context, manager, &service);
 	component_setImplementation(service, data);
-	component_setCallbacks(service, service_init, service_start, service_stop, service_destroy);
+	component_setCallbacks(service, service_init, service_start, service_stop, service_deinit);
 
-	serviceDependency_create(&dep);
-	serviceDependency_setRequired(dep, false);
-	serviceDependency_setService(dep, PUBLISHER_NAME, "(|(id=A)(id=B))");
-	serviceDependency_setCallbacksWithServiceReference(dep, tracker_addedServ, tracker_modifiedServ, tracker_removedServ, NULL);
-	component_addServiceDependency(service, dep, NULL);
+	serviceDependency_create(&dep1);
+	serviceDependency_setRequired(dep1, true);
+	serviceDependency_setService(dep1, PUBLISHER_NAME, "(|(id=A)(id=B))");
+	serviceDependency_setCallbacksWithServiceReference(dep1, NULL /*tracker_setServ*/, tracker_addedServ, tracker_modifiedServ, tracker_removedServ, NULL);
+	component_addServiceDependency(service, dep1, NULL);
 
 	serviceDependency_create(&dep2);
     serviceDependency_setRequired(dep2, false);
     serviceDependency_setService(dep2, (char *) OSGI_LOGSERVICE_NAME, NULL);
-    serviceDependency_setCallbacksWithServiceReference(dep2, tracker_addLog, tracker_modifiedLog, tracker_removeLog, NULL);
+    serviceDependency_setCallbacksWithServiceReference(dep2, NULL  /*tracker_setLog*/, tracker_addLog, tracker_modifiedLog, tracker_removeLog, NULL);
 	serviceDependency_setAutoConfigure(dep2, &data->logger_lock, (void **) &data->logger);
     component_addServiceDependency(service, dep2, NULL);
 
 	data->service = service;
-	data->dep = dep;
+	data->dep = dep1;
 	data->dep2 = dep2;
 
 	dependencyManager_add(manager, service);
