@@ -44,10 +44,12 @@ struct data {
 	celix_thread_mutex_t publisher_lock;
 };
 
+celix_status_t tracker_setServ(void * handle, service_reference_pt ref, void * service);
 celix_status_t tracker_addedServ(void * handle, service_reference_pt ref, void * service);
 celix_status_t tracker_modifiedServ(void * handle, service_reference_pt ref, void * service);
 celix_status_t tracker_removedServ(void * handle, service_reference_pt ref, void * service);
 
+celix_status_t tracker_setLog(void * handle, service_reference_pt ref, void * service);
 celix_status_t tracker_addLog(void * handle, service_reference_pt ref, void * service);
 celix_status_t tracker_modifiedLog(void * handle, service_reference_pt ref, void * service);
 celix_status_t tracker_removeLog(void * handle, service_reference_pt ref, void * service);
@@ -55,7 +57,7 @@ celix_status_t tracker_removeLog(void * handle, service_reference_pt ref, void *
 celix_status_t service_init(void * userData);
 celix_status_t service_start(void * userData);
 celix_status_t service_stop(void * userData);
-celix_status_t service_destroy(void * userData);
+celix_status_t service_deinit(void * userData);
 
 
 #endif /* TRACKER_H_ */

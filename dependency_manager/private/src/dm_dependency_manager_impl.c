@@ -31,12 +31,8 @@
 
 #include "bundle_context.h"
 #include "dm_component_impl.h"
+#include "dm_dependency_manager_impl.h"
 
-struct dm_dependency_manager {
-	array_list_pt components;
-
-	pthread_mutex_t mutex;
-};
 
 celix_status_t dependencyManager_create(bundle_context_pt context __attribute__((unused)), dm_dependency_manager_pt *manager) {
 	celix_status_t status = CELIX_ENOMEM;

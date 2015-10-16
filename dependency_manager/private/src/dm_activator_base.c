@@ -30,11 +30,14 @@
 
 #include "bundle_activator.h"
 #include "dm_activator_base.h"
-
+#include "dm_server.h"
+#include "dm_server_impl.h"
 
 struct dm_dependency_activator_base {
 	dm_dependency_manager_pt manager;
 	bundle_context_pt context;
+	dm_service_pt dmService;
+	service_registration_pt reg;
 	void* userData;
 };
 
@@ -67,6 +70,11 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 		dm_init(dependency_activator->userData, context, dependency_activator->manager);
 	}
 
+	//Create the service
+	dependency_activator->dmService = calloc(sizeof(*(dependency_activator->dmService)), 1);
+	dependency_activator->dmService->getInfo = dmService_getInfo;
+	dmServiceCreate(&(dependency_activator->dmService->server), context, dependency_activator->manager);
+	bundleContext_registerService(context, DM_SERVICE_NAME, dependency_activator->dmService, NULL, &(dependency_activator->reg));
 	return status;
 }
 
@@ -74,12 +82,18 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context _
 	celix_status_t status = CELIX_SUCCESS;
 	dependency_activator_base_pt dependency_activator = (dependency_activator_base_pt) userData;
 
-	dm_deinit(dependency_activator->userData, dependency_activator->context, dependency_activator->manager);
+	dm_destroy(dependency_activator->userData, dependency_activator->context, dependency_activator->manager);
 
 	dependencyManager_destroy(&dependency_activator->manager);
 
+	// Remove the service
+	serviceRegistration_unregister(dependency_activator->reg);
+	dmServiceDestroy(dependency_activator->dmService->server);
+	free(dependency_activator->dmService);
+
 	dependency_activator->userData = NULL;
 	dependency_activator->manager = NULL;
+	dependency_activator->dmService = NULL;
 
 	return status;
 }
@@ -87,8 +101,6 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context _
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context __attribute__((unused))) {
 	celix_status_t status = CELIX_SUCCESS;
 	dependency_activator_base_pt dependency_activator = (dependency_activator_base_pt) userData;
-
-	dm_destroy(dependency_activator->userData, dependency_activator->context, dependency_activator->manager);
 
 	free(dependency_activator);
 
