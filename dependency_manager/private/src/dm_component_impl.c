@@ -120,7 +120,7 @@ celix_status_t component_create(bundle_context_pt context, dm_dependency_manager
 
         (*component)->state = DM_CMP_STATE_INACTIVE;
         (*component)->isStarted = false;
-        (*component)->active = false;
+        (*component)->active = a;
 
         (*component)->dependencyEvents = hashMap_create(NULL, NULL, NULL, NULL);
 

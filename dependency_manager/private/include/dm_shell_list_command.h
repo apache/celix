@@ -17,9 +17,9 @@
  *under the License.
  */
 /*
- * help_command.c
+ * dm_shell_list_command.h
  *
- *  \date       Aug 20, 2010
+ *  \date       Oct 16, 2015
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
