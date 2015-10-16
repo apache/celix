@@ -26,10 +26,12 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "log_helper.h"
 #include "log_service.h"
 #include "constants.h"
+#include "utils.h"
 #include "discovery.h"
 #include "discovery_impl.h"
 
@@ -41,6 +43,7 @@
 struct etcd_watcher {
     discovery_pt discovery;
     log_helper_pt* loghelper;
+    hash_map_pt entries;
 
 	celix_thread_mutex_t watcherLock;
 	celix_thread_t watcherThread;
@@ -128,7 +131,7 @@ static celix_status_t etcdWatcher_addAlreadyExistingWatchpoints(discovery_pt dis
 
 			if (etcd_get(key, &value[0], &action[0], &modIndex) == true) {
 				// TODO: check that this is not equals to the local endpoint
-				endpointDiscoveryPoller_addDiscoveryEndpoint(discovery->poller, strdup(&value[0]));
+				endpointDiscoveryPoller_addDiscoveryEndpoint(discovery->poller, &value[0]);
 
 				if (modIndex > *highestModified) {
 					*highestModified = modIndex;
@@ -199,6 +202,58 @@ static celix_status_t etcdWatcher_addOwnFramework(etcd_watcher_pt watcher)
     return status;
 }
 
+
+
+
+static celix_status_t etcdWatcher_addEntry(etcd_watcher_pt watcher, char* key, char* value) {
+	celix_status_t status = CELIX_BUNDLE_EXCEPTION;
+	endpoint_discovery_poller_pt poller = watcher->discovery->poller;
+
+	if (!hashMap_containsKey(watcher->entries, key)) {
+		status = endpointDiscoveryPoller_addDiscoveryEndpoint(poller, value);
+
+		if (status == CELIX_SUCCESS) {
+			hashMap_put(watcher->entries, strdup(key), strdup(value));
+		}
+	}
+
+	return status;
+}
+
+static celix_status_t etcdWatcher_removeEntry(etcd_watcher_pt watcher, char* key, char* value) {
+	celix_status_t status = CELIX_BUNDLE_EXCEPTION;
+	endpoint_discovery_poller_pt poller = watcher->discovery->poller;
+
+	hash_map_entry_pt entry = hashMap_getEntry(watcher->entries, key);
+
+	if (entry != NULL) {
+		hashMap_removeEntryForKey(watcher->entries, key);
+
+		free(hashMapEntry_getKey(entry));
+		free(hashMapEntry_getValue(entry));
+		free(entry);
+
+		// check if there is another entry with the same value
+		hash_map_iterator_pt iter = hashMapIterator_create(watcher->entries);
+		unsigned int valueFound = 0;
+
+		while (hashMapIterator_hasNext(iter) && valueFound <= 1) {
+			if (strcmp(value, hashMapIterator_nextValue(iter)) == 0)
+				valueFound++;
+		}
+
+		hashMapIterator_destroy(iter);
+
+		if (valueFound == 0)
+			status = endpointDiscoveryPoller_removeDiscoveryEndpoint(poller, value);
+
+	}
+
+	return status;
+
+}
+
+
 /*
  * performs (blocking) etcd_watch calls to check for
  * changing discovery endpoint information within etcd.
@@ -210,29 +265,32 @@ static void* etcdWatcher_run(void* data) {
 	int highestModified = 0;
 
 	bundle_context_pt context = watcher->discovery->context;
-	endpoint_discovery_poller_pt poller = watcher->discovery->poller;
 
 	etcdWatcher_addAlreadyExistingWatchpoints(watcher->discovery, &highestModified);
 	etcdWatcher_getRootPath(context, &rootPath[0]);
 
 	while (watcher->running) {
+
+        char rkey[MAX_KEY_LENGTH];
 		char value[MAX_VALUE_LENGTH];
 		char preValue[MAX_VALUE_LENGTH];
 		char action[MAX_ACTION_LENGTH];
+        int modIndex;
 
-		if (etcd_watch(rootPath, highestModified+1, &action[0], &preValue[0], &value[0]) == true) {
+		if (etcd_watch(rootPath, highestModified + 1, &action[0], &preValue[0], &value[0], &rkey[0], &modIndex) == true) {
 			if (strcmp(action, "set") == 0) {
-				endpointDiscoveryPoller_addDiscoveryEndpoint(poller, strdup(&value[0]));
+				etcdWatcher_addEntry(watcher, &rkey[0], &value[0]);
 			} else if (strcmp(action, "delete") == 0) {
-				endpointDiscoveryPoller_removeDiscoveryEndpoint(poller, &preValue[0]);
+				etcdWatcher_removeEntry(watcher, &rkey[0], &value[0]);
 			} else if (strcmp(action, "expire") == 0) {
-				endpointDiscoveryPoller_removeDiscoveryEndpoint(poller, &preValue[0]);
+				etcdWatcher_removeEntry(watcher, &rkey[0], &value[0]);
 			} else if (strcmp(action, "update") == 0) {
-				// TODO
+				etcdWatcher_addEntry(watcher, &rkey[0], &value[0]);
 			} else {
 				logHelper_log(*watcher->loghelper, OSGI_LOGSERVICE_INFO, "Unexpected action: %s", action);
 			}
-			highestModified++;
+
+			highestModified = modIndex;
 		}
 
 		// update own framework uuid
@@ -262,7 +320,6 @@ celix_status_t etcdWatcher_create(discovery_pt discovery, bundle_context_pt cont
 		return CELIX_BUNDLE_EXCEPTION;
 	}
 
-
 	(*watcher) = calloc(1, sizeof(struct etcd_watcher));
 	if (!*watcher) {
 		return CELIX_ENOMEM;
@@ -271,6 +328,7 @@ celix_status_t etcdWatcher_create(discovery_pt discovery, bundle_context_pt cont
 	{
 		(*watcher)->discovery = discovery;
 		(*watcher)->loghelper = &discovery->loghelper;
+		(*watcher)->entries = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 	}
 
 	if ((bundleContext_getProperty(context, CFG_ETCD_SERVER_IP, &etcd_server) != CELIX_SUCCESS) || !etcd_server) {
@@ -336,6 +394,8 @@ celix_status_t etcdWatcher_destroy(etcd_watcher_pt watcher) {
 	}
 
 	watcher->loghelper = NULL;
+
+	hashMap_destroy(watcher->entries, true, true);
 
 	free(watcher);
 

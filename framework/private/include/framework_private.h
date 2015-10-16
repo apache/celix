@@ -48,7 +48,9 @@
 #include "celix_threads.h"
 
 struct framework {
+#ifdef WITH_APR
     apr_pool_t *pool;
+#endif
     struct bundle * bundle;
     hash_map_pt installedBundleMap;
     hash_map_pt installRequestMap;
@@ -65,6 +67,7 @@ struct framework {
     celix_thread_cond_t shutdownGate;
     celix_thread_cond_t condition;
 
+    celix_thread_mutex_t installedBundleMapLock;
     celix_thread_mutex_t installRequestLock;
     celix_thread_mutex_t mutex;
     celix_thread_mutex_t bundleLock;

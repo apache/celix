@@ -15,8 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(APR REQUIRED)
-
 SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_device_manager")
 SET(BUNDLE_VERSION "0.0.1")
 SET_HEADERS("Bundle-Name: Apache Celix Device Access Device Manager") 
@@ -52,4 +50,4 @@ include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 include_directories("public/include")
 include_directories("private/include")
 
-target_link_libraries(device_manager celix_framework celix_utils ${APR_LIBRARY})
+target_link_libraries(device_manager celix_framework celix_utils)

@@ -502,7 +502,7 @@ celix_status_t serviceRegistry_getService(service_registry_pt registry, bundle_p
 	celixThreadMutex_unlock(&registry->mutex);
 
 	if ((usage != NULL) && (*service == NULL)) {
-		serviceRegistration_getService(registration, bundle, service);
+		status = serviceRegistration_getService(registration, bundle, service);
 	}
 	celixThreadMutex_lock(&registry->mutex);
 	if ((!serviceRegistration_isValid(registration)) || (*service == NULL)) {

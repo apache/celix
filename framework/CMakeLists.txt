@@ -21,6 +21,7 @@ if (FRAMEWORK)
     
     find_package(ZLIB REQUIRED)
     find_package(UUID REQUIRED)
+    find_package(CURL REQUIRED)
 
     include(CPackComponent)
     
@@ -38,6 +39,7 @@ if (FRAMEWORK)
     
     add_definitions(-DUSE_FILE32API)
     include_directories(${ZLIB_INCLUDE_DIR})
+    include_directories(${CURL_INCLUDE_DIR})
     include_directories(${UUID_INCLUDE_DIR})
     include_directories("private/include")
     include_directories("public/include")
@@ -55,7 +57,7 @@ if (FRAMEWORK)
 	 private/src/requirement.c private/src/resolver.c private/src/service_reference.c private/src/service_registration.c 
 	 private/src/service_registry.c private/src/service_tracker.c private/src/service_tracker_customizer.c
 	 private/src/unzip.c private/src/utils.c private/src/version.c private/src/version_range.c private/src/wire.c
-	 private/src/celix_log.c
+	 private/src/celix_log.c private/src/celix_launcher.c
 
 	 private/include/attribute.h public/include/framework_exports.h
 
@@ -70,15 +72,18 @@ if (FRAMEWORK)
 	if(NOT APPLE)
       set(UUID ${UUID_LIBRARY})
     endif()
-    target_link_libraries(celix_framework celix_utils ${UUID} ${ZLIB_LIBRARY} ${APR_LIBRARY})
-    
+    if (WITH_APR)
+        set(APR ${APR_LIBRARY})
+    endif()
+    target_link_libraries(celix_framework celix_utils ${UUID} ${ZLIB_LIBRARY} ${APR} ${CURL_LIBRARIES})
+
     install(TARGETS celix_framework DESTINATION lib COMPONENT framework)
     FILE(GLOB files "public/include/*.h")
     INSTALL(FILES ${files} DESTINATION include/celix COMPONENT framework)
     INSTALL(DIRECTORY "${PROJECT_SOURCE_DIR}/cmake/" DESTINATION share/celix/cmake/modules COMPONENT framework) 
 
 	celix_subproject(FRAMEWORK_TESTS "Option to build the framework tests" "OFF" DEPS)
-    if (FRAMEWORK_TESTS)
+    if (ENABLE_TESTING AND FRAMEWORK_TESTS)
     	find_package(CppUTest REQUIRED)
     	
 	    include_directories(${CPPUTEST_INCLUDE_DIR})
@@ -89,7 +94,7 @@ if (FRAMEWORK)
             private/src/attribute.c
             private/src/celix_errorcodes.c
             private/src/celix_log.c)
-        target_link_libraries(attribute_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils)
+        target_link_libraries(attribute_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils pthread)
         
         add_executable(bundle_archive_test 
             private/test/bundle_archive_test.cpp
@@ -97,7 +102,7 @@ if (FRAMEWORK)
             private/src/bundle_archive.c
             private/src/celix_errorcodes.c
             private/src/celix_log.c)
-        target_link_libraries(bundle_archive_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils)
+        target_link_libraries(bundle_archive_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils pthread)
         
         add_executable(bundle_cache_test 
             private/test/bundle_cache_test.cpp
@@ -106,8 +111,8 @@ if (FRAMEWORK)
             private/src/bundle_cache.c
             private/src/celix_errorcodes.c
             private/src/celix_log.c)
-        target_link_libraries(bundle_cache_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils)
-	    
+        target_link_libraries(bundle_cache_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils pthread)
+            
         add_executable(bundle_context_test 
             private/test/bundle_context_test.cpp
             private/mock/bundle_mock.c
@@ -115,8 +120,8 @@ if (FRAMEWORK)
             private/src/bundle_context.c
             private/src/celix_errorcodes.c
             private/src/celix_log.c)
-        target_link_libraries(bundle_context_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils)
-	    
+        target_link_libraries(bundle_context_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils pthread)
+            
         add_executable(bundle_revision_test 
             private/test/bundle_revision_test.cpp
             private/mock/miniunz_mock.c
@@ -124,8 +129,8 @@ if (FRAMEWORK)
             private/src/bundle_revision.c
             private/src/celix_errorcodes.c
             private/src/celix_log.c)
-        target_link_libraries(bundle_revision_test ${ZLIB_LIBRARY} ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils)
-	    
+        target_link_libraries(bundle_revision_test ${ZLIB_LIBRARY} ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils pthread)
+            
         add_executable(bundle_test 
             private/test/bundle_test.cpp
             private/mock/framework_mock.c
@@ -138,8 +143,8 @@ if (FRAMEWORK)
             private/src/bundle.c
             private/src/celix_errorcodes.c
             private/src/celix_log.c)
-        target_link_libraries(bundle_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils)
-	    
+        target_link_libraries(bundle_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils pthread)
+            
         add_executable(capability_test 
             private/test/capability_test.cpp
             private/mock/attribute_mock.c
@@ -147,16 +152,16 @@ if (FRAMEWORK)
             private/src/capability.c
             private/src/celix_errorcodes.c
             private/src/celix_log.c)
-        target_link_libraries(capability_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils)
-	    
+        target_link_libraries(capability_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils pthread)
+            
         add_executable(filter_test 
             private/test/filter_test.cpp
             private/mock/properties_mock.c
             private/src/filter.c
             private/src/celix_errorcodes.c
             private/src/celix_log.c)
-        target_link_libraries(filter_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils)
-	    
+        target_link_libraries(filter_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils pthread)
+            
         add_executable(framework_test 
             private/test/framework_test.cpp
             private/mock/properties_mock.c
@@ -176,7 +181,7 @@ if (FRAMEWORK)
             private/src/celix_errorcodes.c
             private/src/celix_log.c
             private/src/framework.c)
-        target_link_libraries(framework_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} ${UUID} celix_utils)
+        target_link_libraries(framework_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} ${UUID} celix_utils pthread dl)
     
         add_executable(manifest_parser_test 
             private/test/manifest_parser_test.cpp
@@ -189,8 +194,8 @@ if (FRAMEWORK)
             private/src/manifest_parser.c
             private/src/celix_errorcodes.c
             private/src/celix_log.c)
-        target_link_libraries(manifest_parser_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils)
-	    
+        target_link_libraries(manifest_parser_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils pthread)
+            
         add_executable(manifest_test 
             private/test/manifest_test.cpp
             private/mock/properties_mock.c
@@ -198,8 +203,8 @@ if (FRAMEWORK)
             private/src/manifest.c
             private/src/celix_errorcodes.c
             private/src/celix_log.c)
-        target_link_libraries(manifest_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils)
-	    
+        target_link_libraries(manifest_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils pthread)
+            
         add_executable(module_test 
             private/test/module_test.cpp
             private/mock/bundle_mock.c
@@ -210,15 +215,15 @@ if (FRAMEWORK)
             private/mock/requirement_mock.c
             private/mock/wire_mock.c
             private/src/module.c)
-        target_link_libraries(module_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils)
-	    
+        target_link_libraries(module_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils pthread)
+            
         add_executable(properties_test 
             private/test/properties_test.cpp
             private/src/utils.c
             private/src/properties.c)
-        target_link_libraries(properties_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils)
-	    
-	    
+        target_link_libraries(properties_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils pthread)
+            
+            
         add_executable(requirement_test 
             private/test/requirement_test.cpp
             private/mock/attribute_mock.c
@@ -227,8 +232,8 @@ if (FRAMEWORK)
             private/src/requirement.c
             private/src/celix_errorcodes.c
             private/src/celix_log.c)
-        target_link_libraries(requirement_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils)
-	    
+        target_link_libraries(requirement_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils pthread)
+            
         add_executable(resolver_test 
             private/test/resolver_test.cpp
             private/mock/bundle_mock.c
@@ -239,8 +244,8 @@ if (FRAMEWORK)
             private/src/resolver.c
             private/src/celix_errorcodes.c
             private/src/celix_log.c)
-        target_link_libraries(resolver_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils)
-	    
+        target_link_libraries(resolver_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils pthread)
+            
         add_executable(service_reference_test 
             private/test/service_reference_test.cpp
             private/mock/properties_mock.c
@@ -249,18 +254,18 @@ if (FRAMEWORK)
             private/src/service_reference.c
             private/src/celix_errorcodes.c
             private/src/celix_log.c)
-        target_link_libraries(service_reference_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils)
-	    
-	    add_executable(service_registration_test 
+        target_link_libraries(service_reference_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils pthread)
+            
+            add_executable(service_registration_test 
             private/test/service_registration_test.cpp
             private/mock/properties_mock.c
             private/mock/service_registry_mock.c
             private/src/service_registration.c
             private/src/celix_errorcodes.c
             private/src/celix_log.c)
-        target_link_libraries(service_registration_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils)
-	    
-	    
+        target_link_libraries(service_registration_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils pthread)
+            
+            
         add_executable(service_registry_test 
             private/test/service_registry_test.cpp
             private/mock/framework_mock.c
@@ -272,16 +277,16 @@ if (FRAMEWORK)
             private/src/service_registry.c
             private/src/celix_errorcodes.c
             private/src/celix_log.c) 
-        target_link_libraries(service_registry_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils)
-	    
+        target_link_libraries(service_registry_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils pthread)
+            
         add_executable(service_tracker_customizer_test 
             private/test/service_tracker_customizer_test.cpp
             private/mock/service_reference_mock.c
             private/src/service_tracker_customizer.c
             private/src/celix_errorcodes.c
             private/src/celix_log.c) 
-        target_link_libraries(service_tracker_customizer_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils)
-	    
+        target_link_libraries(service_tracker_customizer_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils pthread)
+            
         add_executable(service_tracker_test 
             private/test/service_tracker_test.cpp 
             private/mock/bundle_context_mock.c
@@ -290,12 +295,12 @@ if (FRAMEWORK)
             private/src/service_tracker.c
             private/src/celix_errorcodes.c
             private/src/celix_log.c)
-        target_link_libraries(service_tracker_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils)
+        target_link_libraries(service_tracker_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils pthread)
         
         add_executable(utils_test 
             private/test/utils_test.cpp private/src/utils.c)
-        target_link_libraries(utils_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils)
-	    
+        target_link_libraries(utils_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils pthread)
+            
         add_executable(version_range_test 
             private/test/version_range_test.cpp 
             private/src/version_range.c
@@ -323,29 +328,29 @@ if (FRAMEWORK)
 		
 		set_target_properties(wire_test PROPERTIES COMPILE_FLAGS "-include ${CPPUTEST_INCLUDE_DIR}/CppUTest/MemoryLeakDetectorMallocMacros.h -include ${CPPUTEST_INCLUDE_DIR}/CppUTest/MemoryLeakDetectorNewMacros.h")
 		
-        ADD_TARGET_FOR_TEST(attribute_test)
-        ADD_TARGET_FOR_TEST(bundle_archive_test)
+        add_test(NAME framework_test_1 COMMAND attribute_test)
+        add_test(NAME framework_test_2 COMMAND bundle_archive_test)
         #ADD_TARGET_FOR_TEST(bundle_cache_test)
-        ADD_TARGET_FOR_TEST(bundle_context_test)
-        ADD_TARGET_FOR_TEST(bundle_revision_test)
-        ADD_TARGET_FOR_TEST(bundle_test)
-        ADD_TARGET_FOR_TEST(capability_test)
-        ADD_TARGET_FOR_TEST(filter_test)
-        ADD_TARGET_FOR_TEST(framework_test)
-        ADD_TARGET_FOR_TEST(manifest_parser_test)
-        ADD_TARGET_FOR_TEST(manifest_test)
-        ADD_TARGET_FOR_TEST(module_test)
-        ADD_TARGET_FOR_TEST(properties_test)
-        ADD_TARGET_FOR_TEST(requirement_test)
-        ADD_TARGET_FOR_TEST(resolver_test)
-        ADD_TARGET_FOR_TEST(service_reference_test)
-        ADD_TARGET_FOR_TEST(service_registration_test)
-        ADD_TARGET_FOR_TEST(service_registry_test)
-        ADD_TARGET_FOR_TEST(service_tracker_customizer_test)
-        ADD_TARGET_FOR_TEST(service_tracker_test)
-        ADD_TARGET_FOR_TEST(version_range_test)
-        ADD_TARGET_FOR_TEST(version_test)
-	    ADD_TARGET_FOR_TEST(wire_test)
+        add_test(NAME framework_test_3 COMMAND bundle_context_test)
+        add_test(NAME framework_test_4 COMMAND bundle_revision_test)
+        add_test(NAME framework_test_5 COMMAND bundle_test)
+        add_test(NAME framework_test_6 COMMAND capability_test)
+        add_test(NAME framework_test_7 COMMAND filter_test)
+        add_test(NAME framework_test_8 COMMAND framework_test)
+        add_test(NAME framework_test_9 COMMAND manifest_parser_test)
+        add_test(NAME framework_test_10 COMMAND manifest_test)
+        add_test(NAME framework_test_11 COMMAND module_test)
+        add_test(NAME framework_test_12 COMMAND properties_test)
+        add_test(NAME framework_test_13 COMMAND requirement_test)
+        add_test(NAME framework_test_14 COMMAND resolver_test)
+        add_test(NAME framework_test_15 COMMAND service_reference_test)
+        add_test(NAME framework_test_16 COMMAND service_registration_test)
+        add_test(NAME framework_test_17 COMMAND service_registry_test)
+        add_test(NAME framework_test_18 COMMAND service_tracker_customizer_test)
+        add_test(NAME framework_test_19 COMMAND service_tracker_test)
+        add_test(NAME framework_test_20 COMMAND version_range_test)
+        add_test(NAME framework_test_21 COMMAND version_test)
+	    add_test(NAME framework_test_22 COMMAND wire_test)
 	    
         SETUP_TARGET_FOR_COVERAGE(version_test_c version_test ${CMAKE_BINARY_DIR}/coverage/version_test)
         SETUP_TARGET_FOR_COVERAGE(version_range_test_c version_range_test ${CMAKE_BINARY_DIR}/coverage/version_range_test)
@@ -371,5 +376,5 @@ if (FRAMEWORK)
         SETUP_TARGET_FOR_COVERAGE(attribute_test_c attribute_test ${CMAKE_BINARY_DIR}/coverage/attribute_test)
 		SETUP_TARGET_FOR_COVERAGE(wire_test_c wire_test ${CMAKE_BINARY_DIR}/coverage/wire_test)
 		
-	endif (FRAMEWORK_TESTS)
+	endif (ENABLE_TESTING AND FRAMEWORK_TESTS)
 endif (FRAMEWORK)

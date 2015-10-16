@@ -53,9 +53,6 @@ struct export_registration {
 celix_status_t exportRegistration_create(log_helper_pt helper, service_reference_pt reference, endpoint_description_pt endpoint, remote_service_admin_pt rsa, bundle_context_pt context, export_registration_pt *registration);
 celix_status_t exportRegistration_destroy(export_registration_pt *registration);
 celix_status_t exportRegistration_open(export_registration_pt registration);
-celix_status_t exportRegistration_close(export_registration_pt registration);
-celix_status_t exportRegistration_getException(export_registration_pt registration);
-celix_status_t exportRegistration_getExportReference(export_registration_pt registration, export_reference_pt *reference);
 
 celix_status_t exportRegistration_setEndpointDescription(export_registration_pt registration, endpoint_description_pt endpointDescription);
 celix_status_t exportRegistration_startTracking(export_registration_pt registration);

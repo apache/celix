@@ -68,7 +68,7 @@ celix_status_t calculatorProxy_add(calculator_pt calculator, double a, double b,
 
 	if (calculator->endpoint != NULL) {
 		json_t *root;
-		root = json_pack("{s:s, s:[ff]}", "m", "add(DD)D", "a", a, b);
+		root = json_pack("{s:s, s:[fmt]}", "m", "add(DD)D", "a", a, b);
 
 		char *data = json_dumps(root, 0);
 		char *reply = NULL;

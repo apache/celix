@@ -24,6 +24,7 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdlib.h>
+#include <string.h>
 
 #include <device.h>
 #include <bundle_context.h>

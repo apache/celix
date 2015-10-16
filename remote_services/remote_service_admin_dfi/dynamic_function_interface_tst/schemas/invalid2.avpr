@@ -1,0 +1,31 @@
+{
+  "protocol" : "Simple",
+  "types" : [ ],
+  "messages" : {
+    "sum" : {
+      "request" : [ {
+        "name" : "a"
+      }, {
+        "name" : "b",
+        "type" : "double"
+      } ],
+      "response" : "double"
+    },
+    "sub" : {
+      "request" : [ {
+        "name" : "a",
+        "type" : "double"
+      }, {
+        "name" : "b",
+        "type" : "double"
+      } ],
+      "response" : "double"
+    },
+    "sqrt" : {
+      "request" : [ {
+        "name" : "a"
+      } ],
+      "response" : "double"
+    }
+  }
+}

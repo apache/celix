@@ -14,11 +14,13 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-celix_subproject(RSA_REMOTE_SERVICE_ADMIN_HTTP "Option to enable building the Remote Service Admin Service HTTP bundle" OFF)
+celix_subproject(RSA_REMOTE_SERVICE_ADMIN_HTTP "Option to enable building the Remote Service Admin Service HTTP bundle" ON)
 if (RSA_REMOTE_SERVICE_ADMIN_HTTP)
 	find_package(CURL REQUIRED)
+	find_package(UUID REQUIRED)
 
 	include_directories(${CURL_INCLUDE_DIRS})
+	include_directories(${UUID_INCLUDE_DIR})
 	include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 	include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 	include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/private/include")
@@ -43,5 +45,5 @@ if (RSA_REMOTE_SERVICE_ADMIN_HTTP)
 
 	install_bundle(remote_service_admin_http)
 
-	target_link_libraries(remote_service_admin_http celix_framework ${CURL_LIBRARIES})
+	target_link_libraries(remote_service_admin_http celix_framework ${CURL_LIBRARIES} ${UUID})
 endif (RSA_REMOTE_SERVICE_ADMIN_HTTP)

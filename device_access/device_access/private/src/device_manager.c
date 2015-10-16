@@ -25,6 +25,7 @@
  */
 #include <stdlib.h>
 #include <constants.h>
+#include <string.h>
 
 #include "device_manager.h"
 #include "driver_locator.h"

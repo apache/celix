@@ -17,4 +17,8 @@
 
 /.project
 .DS_Store
+.idea
 build
+*~
+*.swp
+.idea

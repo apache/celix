@@ -32,7 +32,9 @@
 #include "celix_log.h"
 
 struct bundleContext {
+#ifdef WITH_APR
     apr_pool_t *pool;
+#endif
 	struct framework * framework;
 	struct bundle * bundle;
 	framework_logger_pt logger;

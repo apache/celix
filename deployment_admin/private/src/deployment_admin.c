@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdint.h>
 
 #include <dirent.h>
 #include <sys/types.h>
@@ -217,7 +218,7 @@ static void *deploymentAdmin_poll(void *deploymentAdmin) {
 		char *last = arrayList_get(versions, arrayList_size(versions) - 1);
 
 		if (last != NULL) {
-			if (admin->current == NULL || strcmp(last, admin->current) > 0) {
+			if (admin->current == NULL || strcmp(last, admin->current) != 0) {
 				int length = strlen(admin->pollUrl) + strlen(last) + 2;
 				char request[length];
 				if (admin->current == NULL) {
@@ -459,6 +460,7 @@ celix_status_t deploymentAdmin_stopDeploymentPackageBundles(deployment_admin_pt 
 				fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "DEPLOYMENT_ADMIN: Bundle %s not found", info->symbolicName);
 			}
 		}
+		arrayList_destroy(infos);
 	}
 
 	return status;
@@ -499,7 +501,7 @@ celix_status_t deploymentAdmin_updateDeploymentPackageBundles(deployment_admin_p
 			bundleContext_installBundle2(admin->context, bsn, bundlePath, &updateBundle);
 		}
 	}
-
+	arrayList_destroy(infos);
 	return status;
 }
 
@@ -523,6 +525,7 @@ celix_status_t deploymentAdmin_startDeploymentPackageCustomizerBundles(deploymen
 			}
 		}
 	}
+	arrayList_destroy(sourceInfos);
 
 	if (target != NULL) {
 		array_list_pt targetInfos = NULL;
@@ -537,6 +540,7 @@ celix_status_t deploymentAdmin_startDeploymentPackageCustomizerBundles(deploymen
 				}
 			}
 		}
+		arrayList_destroy(targetInfos);
 	}
 
 	for (i = 0; i < arrayList_size(bundles); i++) {
@@ -582,7 +586,7 @@ celix_status_t deploymentAdmin_processDeploymentPackageResources(deployment_admi
 
 					int length = strlen(entry) + strlen(name) + strlen(info->path) + 7;
 					char resourcePath[length];
-					snprintf(resourcePath, length, "%srepo/%s/%s", entry, name, info->path, NULL);
+					snprintf(resourcePath, length, "%srepo/%s/%s", entry, name, info->path);
 					deploymentPackage_getName(source, &packageName);
 
 					processor->begin(processor->processor, packageName);
@@ -667,6 +671,7 @@ celix_status_t deploymentAdmin_dropDeploymentPackageBundles(deployment_admin_pt 
 				}
 			}
 		}
+		arrayList_destroy(targetInfos);
 	}
 
 	return status;
@@ -690,6 +695,7 @@ celix_status_t deploymentAdmin_startDeploymentPackageBundles(deployment_admin_pt
 			}
 		}
 	}
+	arrayList_destroy(infos);
 
 	return status;
 }

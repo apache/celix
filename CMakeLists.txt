@@ -29,7 +29,8 @@ set(CMAKE_INSTALL_NAME_DIR "@rpath")
 
 SET(CMAKE_BUILD_TYPE "Debug")
 IF(UNIX)
-	SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -Wall ${CMAKE_C_FLAGS}")
+	SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -Wall -pthread ${CMAKE_C_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "-pthread ${CMAKE_EXE_LINKER_FLAGS}")
 ENDIF()
 IF(WIN32)
 	SET(CMAKE_C_FLAGS "-D_CRT_SECURE_NO_WARNINGS ${CMAKE_C_FLAGS}")
@@ -41,7 +42,12 @@ SET(CELIX_MINOR "0")
 SET(CELIX_MICRO "0")
 SET(CELIX_QUALIFIER "")
 
-enable_testing()
+option(ENABLE_TESTING "Enables unit/bundle testing" FALSE)
+
+if (ENABLE_TESTING)
+	enable_testing()
+endif()
+
 
 include(CMakeCelix)
 include(cmake_celix/installation)
@@ -49,6 +55,17 @@ include(UseDoxygen)
 
 # Default bundle version
 set(DEFAULT_VERSION 1.0.0)
+
+option("WITH_APR" "Build Celix with APR support" "OFF")
+if(${WITH_APR})
+	find_package(APR REQUIRED)
+
+	include_directories(${APR_INCLUDE_DIR})
+	include_directories(${APRUTIL_INCLUDE_DIR})
+endif()
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
+               ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/config.h DESTINATION include/celix COMPONENT framework)
 
 ## New sub project must use a buildoption to be able to enable/disable the project using the CMake Editor
 ## Sub projects depending on another sub project automatically enable these dependencies

@@ -1,0 +1,6 @@
+@namespace("org.apache.avro.test")
+protocol Simple {
+  double sum(double a, double b);
+  double sub(double a, double b);
+  double sqrt(double a);
+}

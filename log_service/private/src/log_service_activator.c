@@ -25,6 +25,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "bundle_activator.h"
 #include "log_service_impl.h"

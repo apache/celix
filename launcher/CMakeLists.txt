@@ -17,8 +17,16 @@
 celix_subproject(LAUNCHER "Option to build the launcher" "ON" DEPS UTILS FRAMEWORK)
 if (LAUNCHER) 
     find_package(CURL REQUIRED)
+
+    SET(CMAKE_SKIP_BUILD_RPATH  FALSE) #TODO needed?
+    SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE) #TODO needed?
+    SET(CMAKE_INSTALL_RPATH "${PROJECT_BINARY_DIR}/framework" "${PROJECT_BINARY_DIR}/utils")
+
+    include_directories(public/include)
     
-    add_executable(celix private/src/launcher)
+    add_executable(celix
+        private/src/main
+    )
     
     target_link_libraries(celix celix_framework ${CURL_LIBRARIES})
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")

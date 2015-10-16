@@ -33,6 +33,10 @@ bundle(calculator_shell SOURCES
     private/include/sqrt_command.h
     private/include/sub_command.h
     ../../../shell/public/src/command.c
+
+
+        FILES
+            ../calculator_service/public/include/org.apache.celix.calc.api.Calculator2.descriptor
 )
 
 target_link_libraries(calculator_shell celix_framework)

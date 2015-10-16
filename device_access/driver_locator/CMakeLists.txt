@@ -15,8 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(APR REQUIRED)
-
 SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_driver_locator")
 SET(BUNDLE_VERSION "0.0.1")
 SET_HEADERS("Bundle-Name: Apache Celix Device Access Driver Locator")
@@ -33,4 +31,4 @@ include_directories(private/include)
 include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 
-target_link_libraries(driver_locator celix_utils celix_framework ${APR_LIBRARY})
+target_link_libraries(driver_locator celix_utils celix_framework)

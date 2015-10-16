@@ -32,16 +32,6 @@
 #define BUNDLE_STORE_PROPERTY_NAME "ENDPOINTS"
 #define DEFAULT_BUNDLE_STORE "endpoints"
 
-struct export_reference {
-	endpoint_description_pt endpoint;
-	service_reference_pt reference;
-};
-
-struct import_reference {
-	endpoint_description_pt endpoint;
-	service_reference_pt reference;
-};
-
 celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_service_admin_pt *admin);
 celix_status_t remoteServiceAdmin_destroy(remote_service_admin_pt *admin);
 
@@ -53,13 +43,6 @@ celix_status_t remoteServiceAdmin_getExportedServices(remote_service_admin_pt ad
 celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_admin_pt admin, array_list_pt *services);
 celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, endpoint_description_pt endpoint, import_registration_pt *registration);
 celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_pt admin, import_registration_pt registration);
-
-
-celix_status_t exportReference_getExportedEndpoint(export_reference_pt reference, endpoint_description_pt *endpoint);
-celix_status_t exportReference_getExportedService(export_reference_pt reference);
-
-celix_status_t importReference_getImportedEndpoint(import_reference_pt reference);
-celix_status_t importReference_getImportedService(import_reference_pt reference);
 
 celix_status_t remoteServiceAdmin_destroyEndpointDescription(endpoint_description_pt *description);
 

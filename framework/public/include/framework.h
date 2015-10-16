@@ -30,7 +30,10 @@
 typedef struct activator * activator_pt;
 typedef struct framework * framework_pt;
 
+#include "config.h"
+#ifdef WITH_APR
 #include <apr_general.h>
+#endif
 
 #include "celix_errno.h"
 #include "framework_exports.h"
@@ -38,8 +41,11 @@ typedef struct framework * framework_pt;
 #include "properties.h"
 
 // #TODO: Move to FrameworkFactory according the OSGi Spec
+#ifdef WITH_APR
 FRAMEWORK_EXPORT celix_status_t framework_create(framework_pt *framework, apr_pool_t *memoryPool, properties_pt config);
-// #TODO: Replace with a pool hook when this is possible
+#else
+FRAMEWORK_EXPORT celix_status_t framework_create(framework_pt *framework, properties_pt config);
+#endif
 FRAMEWORK_EXPORT celix_status_t framework_destroy(framework_pt framework);
 
 FRAMEWORK_EXPORT celix_status_t fw_init(framework_pt framework);

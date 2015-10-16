@@ -26,6 +26,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "constants.h"
 #include "bundle_activator.h"
@@ -214,12 +215,12 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
     celix_status_t status = CELIX_SUCCESS;
     struct activator *activator = userData;
 
-    if (serviceTracker_close(activator->endpointListenerTracker) == CELIX_SUCCESS) {
-        serviceTracker_destroy(activator->endpointListenerTracker);
-    }
-
     if (serviceTracker_close(activator->remoteServiceAdminTracker) == CELIX_SUCCESS) {
         serviceTracker_destroy(activator->remoteServiceAdminTracker);
+    }
+
+    if (serviceTracker_close(activator->endpointListenerTracker) == CELIX_SUCCESS) {
+        serviceTracker_destroy(activator->endpointListenerTracker);
     }
 
     bundleContext_removeServiceListener(context, activator->serviceListener);

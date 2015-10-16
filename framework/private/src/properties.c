@@ -47,9 +47,14 @@ void properties_destroy(properties_pt properties) {
 }
 
 properties_pt properties_load(char *filename) {
-	properties_pt props = NULL;
-	FILE *file = fopen ( filename, "r" );
+	FILE *file = fopen(filename, "r");
+	properties_pt props = properties_loadWithStream(file);
+	fclose(file);
+	return props;
+}
 
+FRAMEWORK_EXPORT properties_pt properties_loadWithStream(FILE *file) {
+	properties_pt props = NULL;
 	char line[1024];
 	char key[1024];
 	char value[1024];
@@ -110,7 +115,7 @@ properties_pt properties_load(char *filename) {
 					}
 				} else if (line[linePos] == '\\') {
 					if (precedingCharIsBackslash) { //double backslash -> backslash
-							output[outputPos++] = '\\';
+						output[outputPos++] = '\\';
 					}
 					precedingCharIsBackslash = true;
 				} else { //normal character
@@ -128,8 +133,6 @@ properties_pt properties_load(char *filename) {
 				hashMap_put(props, strdup(utils_stringTrim(key)), strdup(utils_stringTrim(value)));
 			}
 		}
-
-		fclose(file);
 	}
 
 	return props;
