@@ -1,9 +1,5 @@
 language: c
 
-os:
-  - linux
-  - osx
-
 matrix:
   include:
     - compiler: gcc
@@ -34,4 +30,4 @@ script:
 after_success:
     - cd ${TRAVIS_BUILD_DIR}/build
     - gem install coveralls-lcov
-    - lcx="lcov --output-file=coverage.info " && for i in `find . -name "*.info.cleaned"`; do lcx+=" --add-tracefile=$i"; done && $lcx && coveralls-lcov --repo-token=9dpeTAjiGoQU5hgXFe0ezk65iu40oc3WY coverage.info
+    - lcx="lcov --output-file=coverage.info " && for i in `find . -name "*.info.cleaned"`; do lcx+=" --add-tracefile=$i"; done && $lcx && coveralls-lcov --repo-token=L6gyZX6SZqpYIBFdk9KtBVVVwTzv9qavR coverage.info
