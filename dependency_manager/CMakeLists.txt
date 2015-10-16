@@ -16,7 +16,10 @@
 # under the License.
 
 celix_subproject(DEPENDENCY_MANAGER "Option to build the dependency manager static library" ON DEPS framework)
-if (DEPENDENCY_MANAGER) 
+if (DEPENDENCY_MANAGER)
+    SET(BUNDLE_SYMBOLICNAME "apache_celix_dm_shell")
+    SET(BUNDLE_VERSION "0.0.1")
+    SET(BUNDLE_NAME "Apache Celix DM Shell commands")
     # Add -fPIC for x86_64 Unix platforms; this lib will be linked to a shared lib
     if(UNIX AND NOT WIN32)
       find_program(CMAKE_UNAME uname /bin /usr/bin /usr/local/bin )
@@ -34,15 +37,22 @@ if (DEPENDENCY_MANAGER)
         DESCRIPTION "The Apache Celix dependency manager (static) library"
         GROUP all
     )
-    
+    bundle(dm_shell SOURCES
+            private/src/dm_shell_activator
+            private/src/dm_shell_list_command
+    )
     add_library(dependency_manager STATIC 
     	private/src/dm_activator_base 
     	private/src/dm_component_impl 
     	private/src/dm_service_dependency
     	private/src/dm_event
-    	private/src/dm_dependency_manager_impl)
+    	private/src/dm_dependency_manager_impl
+        private/src/dm_server
+    )
+
    	include_directories("public/include")
    	include_directories("private/include")
+    include_directories("../shell/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     target_link_libraries(dependency_manager celix_framework)
     
@@ -52,10 +62,12 @@ if (DEPENDENCY_MANAGER)
             public/include/dm_component.h
             public/include/dm_dependency_manager.h
             public/include/dm_service_dependency.h
+            public/include/dm_server.h
 		DESTINATION 
 			include/celix/dependency_manager
 		COMPONENT 
 			dependency_manager
 	)
+    install_bundle(dm_shell)
     install(TARGETS dependency_manager DESTINATION lib COMPONENT dependency_manager)
 endif (DEPENDENCY_MANAGER)

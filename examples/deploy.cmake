@@ -22,7 +22,7 @@ if (EXAMPLES)
 	
 	deploy("hello_world" BUNDLES shell shell_tui apache_celix_examples_hello_world hello_world_test log_service log_writer)
 	deploy("wb" BUNDLES tracker publisherA publisherB shell shell_tui log_service log_writer)
-	deploy("wb_dp" BUNDLES tracker_depman publisherA publisherB shell shell_tui log_service log_writer)
+	deploy("wb_dp" BUNDLES tracker_depman publisherA publisherB shell shell_tui log_service log_writer dm_shell)
 	deploy("echo" BUNDLES echo_server echo_client shell shell_tui)
 	deploy("producer_consumer" BUNDLES producer consumer database shell shell_tui)
 	if (NOT ANDROID)

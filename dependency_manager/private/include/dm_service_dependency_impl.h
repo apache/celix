@@ -41,11 +41,13 @@ struct dm_service_dependency {
 	bool instanceBound;
 	bool required;
 
+	service_set_fpt set;
 	service_add_fpt add;
 	service_change_fpt change;
 	service_remove_fpt remove;
 	service_swap_fpt swap;
 
+	service_set_with_ref_fpt set_with_ref;
 	service_add_with_ref_fpt add_with_ref;
 	service_change_with_ref_fpt change_with_ref;
 	service_remove_with_ref_fpt remove_with_ref;
@@ -73,6 +75,7 @@ celix_status_t serviceDependency_setAvailable(dm_service_dependency_pt dependenc
 celix_status_t serviceDependency_setComponent(dm_service_dependency_pt dependency, dm_component_pt component);
 //celix_status_t serviceDependency_removeComponent(dm_service_dependency_pt dependency, dm_component_pt component);
 
+celix_status_t serviceDependency_invokeSet(dm_service_dependency_pt dependency, dm_event_pt event);
 celix_status_t serviceDependency_invokeAdd(dm_service_dependency_pt dependency, dm_event_pt event);
 celix_status_t serviceDependency_invokeChange(dm_service_dependency_pt dependency, dm_event_pt event);
 celix_status_t serviceDependency_invokeRemove(dm_service_dependency_pt dependency, dm_event_pt event);

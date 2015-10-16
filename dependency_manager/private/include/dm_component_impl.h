@@ -60,7 +60,7 @@ struct dm_component {
     init_fpt callbackInit;
     start_fpt callbackStart;
     stop_fpt callbackStop;
-    destroy_fpt callbackDestroy;
+    deinit_fpt callbackDeinit;
 
     array_list_pt dependencies;
     pthread_mutex_t mutex;
