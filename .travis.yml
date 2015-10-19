@@ -10,7 +10,7 @@ compiler:
 
 before_install:
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get -qq update && sudo apt-get install -y uuid-dev libjansson-dev libxml2-dev lcov libffi-dev; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update && brew install lcov; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update && brew install lcov libffi; fi
 
 before_script:
     - wget https://github.com/cpputest/cpputest.github.io/blob/master/releases/cpputest-3.7.1.tar.gz?raw=true -O /tmp/cpputest.tar.gz
@@ -24,10 +24,14 @@ before_script:
     - mkdir build install
 
 script:
+     # the following setup is broken:
+     # RSA_DFI is only working for gcc on linux
+     # RSA_DISCOVERY_SHM is only working on linux, but both compilers (see CELIX-277)
+     # RSA_SHM is only working on linux, but both compilers (see CELIX-277)
     - cd build
-    - if [ "$CC" = "clang" ]; then export BUILD_OPTS=""; else export BUILD_OPTS="-DBUILD_RSA_REMOTE_SERVICE_ADMIN_DFI=ON"; fi
+    - if [ "$CC" = "clang" OR "$TRAVIS_OS_NAME" = "osx" ]; then export BUILD_OPTS=""; else export BUILD_OPTS="-DBUILD_RSA_REMOTE_SERVICE_ADMIN_DFI=ON"; fi
     - if [ "$TRAVIS_OS_NAME" = "linux" ]; then cmake -DBUILD_DEPLOYMENT_ADMIN=ON -DBUILD_EXAMPLES=ON -DBUILD_LOG_SERVICE=ON -DBUILD_LOG_WRITER=ON -DBUILD_REMOTE_SERVICE_ADMIN=ON -DBUILD_RSA_DISCOVERY_CONFIGURED=ON -DBUILD_RSA_DISCOVERY_ETCD=ON -DBUILD_RSA_DISCOVERY_SHM=ON -DBUILD_RSA_EXAMPLES=ON -DBUILD_RSA_REMOTE_SERVICE_ADMIN_SHM=ON -DBUILD_RSA_REMOTE_SERVICE_ADMIN_HTTP=ON -DBUILD_REMOTE_SHELL=ON -DBUILD_SHELL=ON -DBUILD_SHELL_TUI=ON -DBUILD_DEVICE_ACCESS=ON -DBUILD_DEVICE_ACCESS_EXAMPLE=ON -DBUILD_FRAMEWORK_TESTS=OFF -DENABLE_CODE_COVERAGE=ON -DENABLE_TESTING=ON ${BUILD_OPTS} -DCMAKE_INSTALL_PREFIX=../install ..; fi
-    - if [ "$TRAVIS_OS_NAME" = "osx" ]; then  cmake -DBUILD_DEPLOYMENT_ADMIN=ON -DBUILD_EXAMPLES=ON -DBUILD_LOG_SERVICE=ON -DBUILD_LOG_WRITER=ON -DBUILD_REMOTE_SERVICE_ADMIN=ON -DBUILD_RSA_DISCOVERY_CONFIGURED=ON -DBUILD_RSA_DISCOVERY_ETCD=ON -DBUILD_RSA_DISCOVERY_SHM=OFF -DBUILD_RSA_EXAMPLES=ON -DBUILD_RSA_REMOTE_SERVICE_ADMIN_SHM=OFF -DBUILD_RSA_REMOTE_SERVICE_ADMIN_HTTP=ON -DBUILD_REMOTE_SHELL=ON -DBUILD_SHELL=ON -DBUILD_SHELL_TUI=ON -DBUILD_DEVICE_ACCESS=ON -DBUILD_DEVICE_ACCESS_EXAMPLE=ON -DBUILD_FRAMEWORK_TESTS=OFF -DENABLE_CODE_COVERAGE=ON -DENABLE_TESTING=ON ${BUILD_OPTS} -DCMAKE_INSTALL_PREFIX=../install ..; fi
+    - if [ "$TRAVIS_OS_NAME" = "osx" ]; then  cmake -DBUILD_DEPLOYMENT_ADMIN=ON -DBUILD_EXAMPLES=ON -DBUILD_LOG_SERVICE=ON -DBUILD_LOG_WRITER=ON -DBUILD_REMOTE_SERVICE_ADMIN=ON -DBUILD_RSA_DISCOVERY_CONFIGURED=ON -DBUILD_RSA_DISCOVERY_ETCD=ON -DBUILD_RSA_DISCOVERY_SHM=OFF -DBUILD_RSA_EXAMPLES=ON -DBUILD_RSA_REMOTE_SERVICE_ADMIN_SHM=OFF -DBUILD_RSA_REMOTE_SERVICE_ADMIN_HTTP=ON -DBUILD_REMOTE_SHELL=ON -DBUILD_SHELL=ON -DBUILD_SHELL_TUI=ON -DBUILD_DEVICE_ACCESS=ON -DBUILD_DEVICE_ACCESS_EXAMPLE=ON -DBUILD_FRAMEWORK_TESTS=OFF -DENABLE_CODE_COVERAGE=ON -DENABLE_TESTING=ON -DFFI_LIBRARY=/usr/local/opt/libffi/lib/libffi.dylib ${BUILD_OPTS} -DCMAKE_INSTALL_PREFIX=../install ..; fi
     - make all && make deploy && make install-all
     - export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH:`pwd`/utils:`pwd`/framework && make test ARGS="-V" && make coverage
 
