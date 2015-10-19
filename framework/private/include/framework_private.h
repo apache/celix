@@ -85,6 +85,7 @@ struct framework {
     celix_thread_cond_t dispatcher;
     celix_thread_mutex_t dispatcherLock;
     celix_thread_t dispatcherThread;
+    celix_thread_t shutdownThread;
 
     framework_logger_pt logger;
 };

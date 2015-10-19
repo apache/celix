@@ -2067,6 +2067,9 @@ celix_status_t framework_waitForStop(framework_pt framework) {
 		fw_log(framework->logger, OSGI_FRAMEWORK_LOG_ERROR, "Error unlocking the framework.");
 		return CELIX_FRAMEWORK_EXCEPTION;
 	}
+
+	celixThread_join(framework->shutdownThread, NULL);
+
 	fw_log(framework->logger, OSGI_FRAMEWORK_LOG_INFO, "FRAMEWORK: Successful shutdown");
 	return CELIX_SUCCESS;
 }
@@ -2101,6 +2104,13 @@ static void *framework_shutdown(void *framework) {
 	hashMapIterator_destroy(iter);
 	celixThreadMutex_unlock(&fw->installedBundleMapLock);
 
+    err = celixThreadMutex_lock(&fw->mutex);
+    if (err != 0) {
+        fw_log(fw->logger, OSGI_FRAMEWORK_LOG_ERROR,  "Error locking the framework, cannot exit clean.");
+        celixThread_exit(NULL);
+        return NULL;
+    }
+
 	if (celixThreadMutex_lock(&fw->dispatcherLock) != CELIX_SUCCESS) {
 		fw_log(fw->logger, OSGI_FRAMEWORK_LOG_ERROR, "Error locking the dispatcherThread.");
 	}
@@ -2118,12 +2128,7 @@ static void *framework_shutdown(void *framework) {
 		celixThread_join(fw->dispatcherThread, NULL);
 	}
 
-	err = celixThreadMutex_lock(&fw->mutex);
-	if (err != 0) {
-		fw_log(fw->logger, OSGI_FRAMEWORK_LOG_ERROR,  "Error locking the framework, cannot exit clean.");
-		celixThread_exit(NULL);
-		return NULL;
-	}
+
 	err = celixThreadCondition_broadcast(&fw->shutdownGate);
 	if (err != 0) {
 		fw_log(fw->logger, OSGI_FRAMEWORK_LOG_ERROR,  "Error waking the shutdown gate, cannot exit clean.");
@@ -2260,6 +2265,7 @@ static void *fw_eventDispatcher(void *fw) {
 		}
 
 		if (size == 0 && framework->shutdown) {
+		    celixThreadMutex_unlock(&framework->dispatcherLock);
 			celixThread_exit(NULL);
 			return NULL;
 		}
@@ -2361,17 +2367,12 @@ static celix_status_t frameworkActivator_start(void * userData, bundle_context_p
 
 static celix_status_t frameworkActivator_stop(void * userData, bundle_context_pt context) {
     celix_status_t status = CELIX_SUCCESS;
-
-	celix_thread_t shutdownThread;
 	framework_pt framework;
 
 	if (bundleContext_getFramework(context, &framework) == CELIX_SUCCESS) {
 
 	    fw_log(framework->logger, OSGI_FRAMEWORK_LOG_INFO, "FRAMEWORK: Start shutdownthread");
-	    if (celixThread_create(&shutdownThread, NULL, &framework_shutdown, framework) == CELIX_SUCCESS) {
-//            celixThread_join(&status, shutdownThread);
-	        celixThread_detach(shutdownThread);
-	    } else {
+	    if (celixThread_create(&framework->shutdownThread, NULL, &framework_shutdown, framework) != CELIX_SUCCESS) {
             fw_log(framework->logger, OSGI_FRAMEWORK_LOG_ERROR,  "Could not create shutdown thread, normal exit not possible.");
 	        status = CELIX_FRAMEWORK_EXCEPTION;
 	    }
