@@ -34,6 +34,7 @@
 #include "service_tracker_customizer.h"
 
 #include "dm_service_dependency.h"
+#include "dm_component.h"
 
 struct dm_service_dependency {
 	dm_component_pt component;

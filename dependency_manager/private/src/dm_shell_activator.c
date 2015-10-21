@@ -66,16 +66,8 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
     bundle_instance_pt bi = (bundle_instance_pt) userData;
     command_service_pt commandService = calloc(1, sizeof(*commandService));
 
-    command_pt command = calloc(sizeof(*command),1);
-    command->executeCommand = dmListCommand_execute;
-    command->bundleContext = context;
-    command->handle = NULL;
-    command->name ="dm:list";
-    command->shortDescription ="not_used";
-    command->usage="not_used";
-
     commandService->getName             = dmListCommand_getName;
-    commandService->command             = command;
+    commandService->command             = context;
     commandService->executeCommand      = dmListCommand_execute;
     commandService->getShortDescription = dmListCommand_getShortDescription;
     commandService->getUsage            = dmListCommand_getUsage;

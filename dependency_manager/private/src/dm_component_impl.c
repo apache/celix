@@ -95,15 +95,17 @@ static celix_status_t component_handleChanged(dm_component_pt component, dm_serv
 static celix_status_t component_handleRemoved(dm_component_pt component, dm_service_dependency_pt dependency, dm_event_pt event);
 static celix_status_t component_handleSwapped(dm_component_pt component, dm_service_dependency_pt dependency, dm_event_pt event, dm_event_pt newEvent);
 
-celix_status_t component_create(bundle_context_pt context, dm_dependency_manager_pt manager, dm_component_pt *component) {
+celix_status_t component_create(bundle_context_pt context, dm_component_pt *component) {
     celix_status_t status = CELIX_SUCCESS;
 
     *component = malloc(sizeof(**component));
     if (!*component) {
         status = CELIX_ENOMEM;
     } else {
+        char id[16];
+        snprintf(id, 16, "%p", *component);
+        (*component)->id = strdup(id);
         (*component)->context = context;
-        (*component)->manager = manager;
 
 	arrayList_create(&((*component)->dm_interface));
 
@@ -311,6 +313,26 @@ celix_status_t component_addInterface(dm_component_pt component, char *serviceNa
 	   free (name);
 	   status = CELIX_ENOMEM;
 	}
+    }
+
+    return status;
+}
+
+celix_status_t component_getInterfaces(dm_component_pt component, array_list_pt *out) {
+    celix_status_t status = CELIX_SUCCESS;
+    array_list_pt names = NULL;
+    arrayList_create(&names);
+    celixThreadMutex_lock(&component->mutex);
+    int size = arrayList_size(component->dm_interface);
+    int i;
+    for (i = 0; i < size; i += 1) {
+        dm_interface *interface = arrayList_get(component->dm_interface, i);
+        arrayList_add(names, strdup(interface->serviceName));
+    }
+    celixThreadMutex_unlock(&component->mutex);
+
+    if (status == CELIX_SUCCESS) {
+        *out = names;
     }
 
     return status;
@@ -1281,6 +1303,45 @@ celix_status_t executor_runTasks(dm_executor_pt executor, pthread_t currentThrea
 //        }
 //        pthread_mutex_unlock(&executor->mutex);
     } while (!linkedList_isEmpty(executor->workQueue)); // && execute
+
+    return status;
+}
+
+celix_status_t component_getComponentInfo(dm_component_pt component, dm_component_info_pt *out) {
+    celix_status_t status = CELIX_SUCCESS;
+    int i;
+    int size;
+    dm_component_info_pt info = NULL;
+    info = calloc(1, sizeof(*info));
+
+
+    if (info != NULL) {
+        arrayList_create(&info->dependency_list);
+        component_getInterfaces(component, &info->interfaces);
+        info->active = component->active;
+        info->id = strdup(component->id);
+    } else {
+        status = CELIX_ENOMEM;
+    }
+
+
+    celixThreadMutex_lock(&component->mutex);
+    size = arrayList_size(component->dependencies);
+    for (i = 0; status == CELIX_SUCCESS && i < size; i += 1) {
+        dm_service_dependency_pt dep = arrayList_get(component->dependencies, i);
+        dm_service_dependency_info_pt depInfo= NULL;
+        status = serviceDependency_getServiceDependencyInfo(dep, &depInfo);
+        if (status == CELIX_SUCCESS) {
+            arrayList_add(info->dependency_list, depInfo);
+        }
+    }
+    celixThreadMutex_unlock(&component->mutex);
+
+    if (status == CELIX_SUCCESS) {
+        *out = info;
+    } else if (info != NULL) {
+        //TODO cleanup
+    }
 
     return status;
 }

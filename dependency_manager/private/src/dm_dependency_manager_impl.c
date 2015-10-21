@@ -28,6 +28,7 @@
 
 #include <pthread.h>
 #include <stdlib.h>
+#include <dm_dependency_manager.h>
 
 #include "bundle_context.h"
 #include "dm_component_impl.h"
@@ -78,10 +79,33 @@ celix_status_t dependencyManager_remove(dm_dependency_manager_pt manager, dm_com
 	return status;
 }
 
-celix_status_t dependencyManager_getComponents(dm_dependency_manager_pt manager, array_list_pt* components) {
+celix_status_t dependencyManager_getInfo(dm_dependency_manager_pt manager, dm_dependency_manager_info_pt *out) {
 	celix_status_t status = CELIX_SUCCESS;
+	int i;
+	int size;
+	dm_component_info_pt cmpInfo = NULL;
+	dm_dependency_manager_info_pt info = calloc(1, sizeof(*info));
 
-	(*components) = manager->components;
+	celixThreadMutex_lock(&manager->mutex);
+
+	if (info != NULL) {
+		arrayList_create(&info->components);
+		size = arrayList_size(manager->components);
+		for (i = 0; i < size; i += 1) {
+			dm_component_pt cmp = arrayList_get(manager->components, i);
+			cmpInfo = NULL;
+			component_getComponentInfo(cmp, &cmpInfo);
+			arrayList_add(info->components, cmpInfo);
+		}
+	} else {
+		status = CELIX_ENOMEM;
+	}
+
+	celixThreadMutex_unlock(&manager->mutex);
+
+	if (status == CELIX_SUCCESS) {
+		*out = info;
+	}
 
 	return status;
 }

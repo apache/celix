@@ -150,6 +150,11 @@ celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency,
 	return status;
 }
 
+celix_status_t serviceDependency_getFilter(dm_service_dependency_pt dependency, char **filter) {
+	*filter = dependency->tracked_filter;
+	return CELIX_SUCCESS;
+}
+
 celix_status_t serviceDependency_setCallbacks(dm_service_dependency_pt dependency, service_set_fpt set, service_add_fpt add, service_change_fpt change, service_remove_fpt remove, service_swap_fpt swap) {
 	celix_status_t status = CELIX_SUCCESS;
 
@@ -620,6 +625,35 @@ celix_status_t serviceDependency_removedService(void *_ptr, service_reference_pt
 
 	if (status == CELIX_SUCCESS) {
 		component_handleEvent(dependency->component, dependency, event);
+	}
+
+	return status;
+}
+
+celix_status_t serviceDependency_getServiceDependencyInfo(dm_service_dependency_pt dep, dm_service_dependency_info_pt *out) {
+	celix_status_t status = CELIX_SUCCESS;
+	dm_service_dependency_info_pt  info = calloc(1, sizeof(*info));
+	if (info != NULL) {
+		celixThreadMutex_lock(&dep->lock);
+		info->available = dep->available;
+		info->filter = dep->tracked_filter != NULL ? strdup(dep->tracked_filter) : NULL;
+        if (info->filter == NULL) {
+            info->filter = dep->tracked_service_name != NULL ? strdup(dep->tracked_service_name) : NULL;
+        }
+        info->required = dep->required;
+
+		array_list_pt refs = serviceTracker_getServiceReferences(dep->tracker);
+		if (refs != NULL) {
+			info->count = arrayList_size(refs);
+		}
+
+		celixThreadMutex_unlock(&dep->lock);
+	} else {
+		status = CELIX_ENOMEM;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		*out = info;
 	}
 
 	return status;

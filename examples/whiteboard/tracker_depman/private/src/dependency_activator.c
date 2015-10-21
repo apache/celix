@@ -54,7 +54,7 @@ celix_status_t dm_init(void * userData, bundle_context_pt context, dm_dependency
 
 	data->context = context;
 
-	component_create(context, manager, &service);
+	component_create(context, &service);
 	component_setImplementation(service, data);
 	component_setCallbacks(service, service_init, service_start, service_stop, service_deinit);
 

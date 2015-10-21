@@ -28,10 +28,10 @@
 #define DM_SERVICE_DEPENDENCY_H_
 
 #include "celix_errno.h"
+#include "dm_info.h"
+
 
 typedef struct dm_service_dependency *dm_service_dependency_pt;
-
-#include "dm_component.h"
 
 typedef celix_status_t (*service_set_fpt)(void *handle, void *service);
 typedef celix_status_t (*service_add_fpt)(void *handle, void *service);
@@ -50,8 +50,14 @@ celix_status_t serviceDependency_destroy(dm_service_dependency_pt *dependency_pt
 
 celix_status_t serviceDependency_setRequired(dm_service_dependency_pt dependency, bool required);
 celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency, char *serviceName, char *filter);
+celix_status_t serviceDependency_getFilter(dm_service_dependency_pt dependency, char **filter);
 celix_status_t serviceDependency_setCallbacks(dm_service_dependency_pt dependency, service_set_fpt set, service_add_fpt add, service_change_fpt change, service_remove_fpt remove, service_swap_fpt swap);
 celix_status_t serviceDependency_setCallbacksWithServiceReference(dm_service_dependency_pt dependency, service_set_with_ref_fpt set, service_add_with_ref_fpt add, service_change_with_ref_fpt change, service_remove_with_ref_fpt remove, service_swap_with_ref_fpt swap);
 celix_status_t serviceDependency_setAutoConfigure(dm_service_dependency_pt dependency, celix_thread_mutex_t *service_lock, void **field);
+
+/**
+ * Return a service dependency info. The caller is the owner
+ */
+celix_status_t serviceDependency_getServiceDependencyInfo(dm_service_dependency_pt, dm_service_dependency_info_pt *info);
 
 #endif /* DM_SERVICE_DEPENDENCY_H_ */

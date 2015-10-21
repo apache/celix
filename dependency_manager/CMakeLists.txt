@@ -47,7 +47,6 @@ if (DEPENDENCY_MANAGER)
     	private/src/dm_service_dependency
     	private/src/dm_event
     	private/src/dm_dependency_manager_impl
-        private/src/dm_server
     )
 
    	include_directories("public/include")
@@ -62,7 +61,7 @@ if (DEPENDENCY_MANAGER)
             public/include/dm_component.h
             public/include/dm_dependency_manager.h
             public/include/dm_service_dependency.h
-            public/include/dm_server.h
+            public/include/dm_info.h
 		DESTINATION 
 			include/celix/dependency_manager
 		COMPONENT 

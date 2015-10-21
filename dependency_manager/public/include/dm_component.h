@@ -30,25 +30,36 @@
 #include <bundle_context.h>
 #include <celix_errno.h>
 
+#include "dm_service_dependency.h"
+
 typedef struct dm_component *dm_component_pt;
 
-#include "dm_dependency_manager.h"
-#include "dm_service_dependency.h"
+#include "dm_component.h"
 
 typedef celix_status_t (*init_fpt)(void *userData);
 typedef celix_status_t (*start_fpt)(void *userData);
 typedef celix_status_t (*stop_fpt)(void *userData);
 typedef celix_status_t (*deinit_fpt)(void *userData);
 
-celix_status_t component_create(bundle_context_pt context, dm_dependency_manager_pt manager, dm_component_pt *component);
+celix_status_t component_create(bundle_context_pt context, dm_component_pt *component);
 celix_status_t component_destroy(dm_component_pt *component);
 
 celix_status_t component_addInterface(dm_component_pt component, char *serviceName, void *service, properties_pt properties);
 celix_status_t component_setImplementation(dm_component_pt component, void *implementation);
 
+/**
+ * Returns an arraylist of service names. The caller owns the arraylist and strings (char *)
+ */
+celix_status_t component_getInterfaces(dm_component_pt component, array_list_pt *servicesNames);
+
 celix_status_t component_addServiceDependency(dm_component_pt component, ...);
 celix_status_t component_removeServiceDependency(dm_component_pt component, dm_service_dependency_pt dependency);
 
 celix_status_t component_setCallbacks(dm_component_pt component, init_fpt init, start_fpt start, stop_fpt stop, deinit_fpt deinit);
+
+/**
+ * returns a dm_component_info_pt. Caller has ownership.
+ */
+celix_status_t component_getComponentInfo(dm_component_pt component, dm_component_info_pt *info);
 
 #endif /* COMPONENT_H_ */

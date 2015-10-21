@@ -50,9 +50,8 @@ typedef struct dm_interface_struct {
 } dm_interface;
 
 struct dm_component {
+    char *id;
     bundle_context_pt context;
-    dm_dependency_manager_pt manager;
-
     array_list_pt dm_interface;
 
     void *implementation;
