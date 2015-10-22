@@ -169,7 +169,7 @@ celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_servi
         }
         else {
             logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_WARNING, "RSA: No IP address for service annunciation set. Using %s", DEFAULT_IP);
-            (*admin)->ip = (char*) DEFAULT_IP;
+            (*admin)->ip = strdup((char*) DEFAULT_IP);
         }
 
         if (detectedIp != NULL) {
