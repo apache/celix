@@ -35,6 +35,11 @@
 #include "shell.h"
 
 
+static const char * const OK_COLOR = "\033[92m";
+static const char * const WARNING_COLOR = "\033[93m";
+static const char * const NOK_COLOR = "\033[91m";
+static const char * const END_COLOR = "\033[m";
+
 char * dmListCommand_getName(command_pt command) {
     return "dm";
 }
@@ -73,8 +78,8 @@ void dmListCommand_execute(command_pt command, char * line, void (*out)(char *),
             char *startColors = "";
             char *endColors = "";
             if (colors) {
-                startColors = compInfo->active ? "\033[92m" : "\033[91m";
-                endColors = "\033[m";
+                startColors = compInfo->active ? OK_COLOR : NOK_COLOR;
+                endColors = END_COLOR;
             }
             sprintf(outString, "Component: ID=%s, %sActive=%s%s, State=%s\n", compInfo->id, startColors, compInfo->active ?  "true " : "false", endColors, compInfo->state);
             out(outString);
@@ -98,8 +103,13 @@ void dmListCommand_execute(command_pt command, char * line, void (*out)(char *),
                 char *startColors = "";
                 char *endColors = "";
                 if (colors) {
-                    startColors = dependency->available ? "\033[92m" : "\033[91m";
-                    endColors = "\033[m";
+                    if (dependency->required) {
+                        startColors = dependency->available ? OK_COLOR : NOK_COLOR;
+                    } else {
+                        startColors = dependency->available ? OK_COLOR : WARNING_COLOR;
+                    }
+
+                    endColors = END_COLOR;
                 }
                 sprintf(outString, "   |- Dependency: %sAvailable = %s%s, Required = %s, Filter = %s\n",
                         startColors,
