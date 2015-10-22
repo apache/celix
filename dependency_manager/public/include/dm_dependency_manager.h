@@ -45,5 +45,6 @@ celix_status_t dependencyManager_remove(dm_dependency_manager_pt manager, dm_com
  * returns a dm_ of dm_dependency_manager_info. Caller has ownership.
  */
 celix_status_t dependencyManager_getInfo(dm_dependency_manager_pt manager, dm_dependency_manager_info_pt *info);
+void dependencyManager_destroyInfo(dm_dependency_manager_pt manager, dm_dependency_manager_info_pt info);
 
 #endif /* DM_DEPENDENCY_MANAGER_H_ */

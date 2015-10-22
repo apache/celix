@@ -61,5 +61,6 @@ celix_status_t component_setCallbacks(dm_component_pt component, init_fpt init, 
  * returns a dm_component_info_pt. Caller has ownership.
  */
 celix_status_t component_getComponentInfo(dm_component_pt component, dm_component_info_pt *info);
+void component_destroyComponentInfo(dm_component_info_pt info);
 
 #endif /* COMPONENT_H_ */

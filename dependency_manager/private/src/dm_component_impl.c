@@ -400,21 +400,19 @@ celix_status_t component_handleAdded(dm_component_pt component, dm_service_depen
         case DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED: {
             bool instanceBound = false;
             serviceDependency_isInstanceBound(dependency, &instanceBound);
+            bool required = false;
+            serviceDependency_isRequired(dependency, &required);
             if (!instanceBound) {
-                bool required = false;
-                serviceDependency_isRequired(dependency, &required);
                 if (required) {
                     serviceDependency_invokeAdd(dependency, event);
                 }
                 dm_event_pt event = NULL;
                 component_getDependencyEvent(component, dependency, &event);
                 component_updateInstance(component, dependency, event, false, true);
-            } else {
-                bool required = false;
-                serviceDependency_isRequired(dependency, &required);
-                if (required) {
-                    component_handleChange(component);
-                }
+            }
+
+            if (required) {
+                component_handleChange(component);
             }
             break;
         }
@@ -1361,8 +1359,34 @@ celix_status_t component_getComponentInfo(dm_component_pt component, dm_componen
     if (status == CELIX_SUCCESS) {
         *out = info;
     } else if (info != NULL) {
-        //TODO cleanup
+        component_destroyComponentInfo(info);
     }
 
     return status;
+}
+
+void component_destroyComponentInfo(dm_component_info_pt info) {
+    int i;
+    int size;
+    if (info != NULL) {
+        free(info->state);
+
+        if (info->interfaces != NULL) {
+            size = arrayList_size(info->interfaces);
+            for (i = 0; i < size; i += 1) {
+                char *intf = arrayList_get(info->interfaces, i);
+                free(intf);
+            }
+            arrayList_destroy(info->interfaces);
+        }
+        if (info->dependency_list != NULL) {
+            size = arrayList_size(info->dependency_list);
+            for (i = 0; i < size; i += 1) {
+                dm_service_dependency_info_pt depInfo = arrayList_get(info->dependency_list, i);
+                dependency_destroyDependencyInfo(depInfo);
+            }
+            arrayList_destroy(info->dependency_list);
+        }
+    }
+    free(info);
 }

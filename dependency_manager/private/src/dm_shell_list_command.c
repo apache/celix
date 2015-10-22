@@ -87,9 +87,7 @@ void dmListCommand_execute(command_pt command, char * line, void (*out)(char *),
                 interface = arrayList_get(compInfo->interfaces, interfCnt);
                 sprintf(outString, "   |- Interface: %s\n", interface);
                 out(outString);
-                free(interface);
             }
-            arrayList_destroy(compInfo->interfaces);
 
             int depCnt;
             sprintf(outString, "|- Dependencies (%d):\n", arrayList_size(compInfo->dependency_list));
@@ -111,12 +109,9 @@ void dmListCommand_execute(command_pt command, char * line, void (*out)(char *),
                         dependency->filter
                 );
                 out(outString);
-                free(dependency->filter);
-                free(dependency);
             }
 
-            //TODO free compInfo
-            arrayList_destroy(compInfo->dependency_list);
+            infoServ->destroyInfo(infoServ->handle, info);
         }
     }
 }

@@ -59,5 +59,6 @@ celix_status_t serviceDependency_setAutoConfigure(dm_service_dependency_pt depen
  * Return a service dependency info. The caller is the owner
  */
 celix_status_t serviceDependency_getServiceDependencyInfo(dm_service_dependency_pt, dm_service_dependency_info_pt *info);
+void dependency_destroyDependencyInfo(dm_service_dependency_info_pt info);
 
 #endif /* DM_SERVICE_DEPENDENCY_H_ */

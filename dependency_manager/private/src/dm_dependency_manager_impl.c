@@ -109,3 +109,22 @@ celix_status_t dependencyManager_getInfo(dm_dependency_manager_pt manager, dm_de
 
 	return status;
 }
+
+void dependencyManager_destroyInfo(dm_dependency_manager_pt manager, dm_dependency_manager_info_pt info) {
+    return;
+    /*
+     * TODO
+
+    int i;
+    int size;
+    if (info != NULL) {
+        size = arrayList_size(info->components);
+        for (i = 0; i < size; i += 1) {
+            dm_component_info_pt cmpInfo = arrayList_get(info->components, i);
+            component_destroyComponentInfo(cmpInfo);
+        }
+        arrayList_destroy(info->components);
+    }
+    free(info);
+     */
+}

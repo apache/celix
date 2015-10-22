@@ -56,6 +56,7 @@ struct dm_info_service {
 
     /*Note: dm_caller has the ownership of the result.*/
     celix_status_t (*getInfo)(void *handle, dm_dependency_manager_info_pt *info);
+    void (*destroyInfo)(void *handle, dm_service_dependency_info_pt info);
 };
 
 typedef struct dm_info_service * dm_info_service_pt;

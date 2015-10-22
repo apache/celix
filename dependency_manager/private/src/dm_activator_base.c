@@ -77,6 +77,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	//Create the service
 	dependency_activator->info->handle = dependency_activator->manager;
 	dependency_activator->info->getInfo = (void *)dependencyManager_getInfo;
+    dependency_activator->info->destroyInfo = (void *)dependencyManager_destroyInfo;
 
 	bundleContext_registerService(context, DM_INFO_SERVICE_NAME, dependency_activator->info, NULL, &(dependency_activator->reg));
 	return status;

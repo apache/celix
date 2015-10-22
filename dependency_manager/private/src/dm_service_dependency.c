@@ -658,3 +658,10 @@ celix_status_t serviceDependency_getServiceDependencyInfo(dm_service_dependency_
 
 	return status;
 }
+
+void dependency_destroyDependencyInfo(dm_service_dependency_info_pt info) {
+    if (info != NULL) {
+        free(info->filter);
+    }
+    free(info);
+}
