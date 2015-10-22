@@ -62,7 +62,7 @@ celix_status_t service_init(void * userData) {
 
 celix_status_t service_start(void * userData) {
 	struct data * data = (struct data *) userData;
-	fprintf(stderr, "Service started");
+	fprintf(stderr, "Service started\n");
 	data->running = true;
 	pthread_create(&data->sender, NULL, dp_send, data);
 	return CELIX_SUCCESS;
@@ -70,14 +70,14 @@ celix_status_t service_start(void * userData) {
 
 celix_status_t service_stop(void * userData) {
 	struct data * data = (struct data *) userData;
-	fprintf(stderr, "Service stopped");
+	fprintf(stderr, "Service stopped\n");
 	data->running = false;
 	pthread_join(data->sender, NULL);
 	return CELIX_SUCCESS;
 }
 
 celix_status_t service_deinit(void * userData) {
-	fprintf(stderr, "Service deinit");
+	fprintf(stderr, "Service deinit\n");
 	return CELIX_SUCCESS;
 }
 

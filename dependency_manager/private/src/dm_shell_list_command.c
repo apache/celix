@@ -76,7 +76,7 @@ void dmListCommand_execute(command_pt command, char * line, void (*out)(char *),
                 startColors = compInfo->active ? "\033[92m" : "\033[91m";
                 endColors = "\033[m";
             }
-            sprintf(outString, "Component: ID=%s, %sActive=%s%s\n", compInfo->id, startColors, compInfo->active ? "true " : "false", endColors);
+            sprintf(outString, "Component: ID=%s, %sActive=%s%s, State=%s\n", compInfo->id, startColors, compInfo->active ?  "true " : "false", endColors, compInfo->state);
             out(outString);
 
             int interfCnt;
@@ -114,6 +114,8 @@ void dmListCommand_execute(command_pt command, char * line, void (*out)(char *),
                 free(dependency->filter);
                 free(dependency);
             }
+
+            //TODO free compInfo
             arrayList_destroy(compInfo->dependency_list);
         }
     }

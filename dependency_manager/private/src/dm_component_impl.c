@@ -77,8 +77,8 @@ static celix_status_t component_invokeAutoConfigDependencies(dm_component_pt com
 static celix_status_t component_configureImplementation(dm_component_pt component, dm_service_dependency_pt dependency);
 static celix_status_t component_allInstanceBoundAvailable(dm_component_pt component, bool *available);
 static celix_status_t component_allRequiredAvailable(dm_component_pt component, bool *available);
-static celix_status_t component_performTransition(dm_component_pt component, dm_component_state_pt oldState, dm_component_state_pt newState, bool *transition);
-static celix_status_t component_calculateNewState(dm_component_pt component, dm_component_state_pt currentState, dm_component_state_pt *newState);
+static celix_status_t component_performTransition(dm_component_pt component, dm_component_state_t oldState, dm_component_state_t newState, bool *transition);
+static celix_status_t component_calculateNewState(dm_component_pt component, dm_component_state_t currentState, dm_component_state_t *newState);
 static celix_status_t component_handleChange(dm_component_pt component);
 static celix_status_t component_startDependencies(dm_component_pt component __attribute__((unused)), array_list_pt dependencies);
 static celix_status_t component_getDependencyEvent(dm_component_pt component, dm_service_dependency_pt dependency, dm_event_pt *event_pptr);
@@ -645,21 +645,21 @@ celix_status_t component_stopDependencies(dm_component_pt component) {
 celix_status_t component_handleChange(dm_component_pt component) {
     celix_status_t status = CELIX_SUCCESS;
 
-    dm_component_state_pt oldState;
-    dm_component_state_pt newState;
+    dm_component_state_t oldState;
+    dm_component_state_t newState;
 
-    bool cont = false;
+    bool transition = false;
     do {
         oldState = component->state;
         component_calculateNewState(component, oldState, &newState);
         component->state = newState;
-        component_performTransition(component, oldState, newState, &cont);
-    } while (cont);
+        component_performTransition(component, oldState, newState, &transition);
+    } while (transition);
 
     return status;
 }
 
-celix_status_t component_calculateNewState(dm_component_pt component, dm_component_state_pt currentState, dm_component_state_pt *newState) {
+celix_status_t component_calculateNewState(dm_component_pt component, dm_component_state_t currentState, dm_component_state_t *newState) {
     celix_status_t status = CELIX_SUCCESS;
 
     if (currentState == DM_CMP_STATE_INACTIVE) {
@@ -698,7 +698,9 @@ celix_status_t component_calculateNewState(dm_component_pt component, dm_compone
             *newState = currentState;
             return status;
         }
-        *newState = DM_CMP_STATE_WAITING_FOR_REQUIRED;
+
+        *newState = component->isStarted ? DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED :
+                        DM_CMP_STATE_WAITING_FOR_REQUIRED;
         return status;
     }
     if (currentState == DM_CMP_STATE_TRACKING_OPTIONAL) {
@@ -722,8 +724,9 @@ celix_status_t component_calculateNewState(dm_component_pt component, dm_compone
     return status;
 }
 
-celix_status_t component_performTransition(dm_component_pt component, dm_component_state_pt oldState, dm_component_state_pt newState, bool *transition) {
+celix_status_t component_performTransition(dm_component_pt component, dm_component_state_t oldState, dm_component_state_t newState, bool *transition) {
     celix_status_t status = CELIX_SUCCESS;
+    printf("performing transition from %i to %i\n", oldState, newState);
 
     if (oldState == DM_CMP_STATE_INACTIVE && newState == DM_CMP_STATE_WAITING_FOR_REQUIRED) {
         component_startDependencies(component, component->dependencies);
@@ -738,7 +741,7 @@ celix_status_t component_performTransition(dm_component_pt component, dm_compone
 //        component_instantiateComponent(component);
         component_invokeAddRequiredDependencies(component);
         component_invokeAutoConfigDependencies(component);
-        dm_component_state_pt stateBeforeCallingInit = component->state;
+        dm_component_state_t stateBeforeCallingInit = component->state;
         if (component->callbackInit) {
         	component->callbackInit(component->implementation);
         }
@@ -1318,8 +1321,26 @@ celix_status_t component_getComponentInfo(dm_component_pt component, dm_componen
     if (info != NULL) {
         arrayList_create(&info->dependency_list);
         component_getInterfaces(component, &info->interfaces);
-        info->active = component->active;
+        info->active = false;
         info->id = strdup(component->id);
+        switch (component->state) {
+            case DM_CMP_STATE_INACTIVE :
+                info->state = strdup("INACTIVE");
+                break;
+            case DM_CMP_STATE_WAITING_FOR_REQUIRED :
+                info->state = strdup("WAITING_FOR_REQUIRED");
+                break;
+            case DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED :
+                info->state = strdup("INSTANTIATED_AND_WAITING_FOR_REQUIRED");
+                break;
+            case DM_CMP_STATE_TRACKING_OPTIONAL :
+                info->state = strdup("TRACKING_OPTIONAL");
+                info->active = true;
+                break;
+            default :
+                info->state = strdup("UNKNOWN");
+                break;
+        }
     } else {
         status = CELIX_ENOMEM;
     }
