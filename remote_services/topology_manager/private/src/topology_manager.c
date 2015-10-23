@@ -311,7 +311,6 @@ celix_status_t topologyManager_rsaRemoved(void * handle, service_reference_pt re
 
     while (hashMapIterator_hasNext(iter)) {
         hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-        endpoint_description_pt ep = hashMapEntry_getKey(entry);
         hash_map_pt imports = hashMapEntry_getValue(entry);
 
         import_registration_pt import = hashMap_get(imports, rsa);
