@@ -50,7 +50,8 @@ typedef struct dm_interface_struct {
 } dm_interface;
 
 struct dm_component {
-    char *id;
+    char id[DM_COMPONENT_MAX_ID_LENGTH];
+    char name[DM_COMPONENT_MAX_NAME_LENGTH];
     bundle_context_pt context;
     array_list_pt dm_interface;
 

@@ -36,12 +36,15 @@ typedef struct dm_component *dm_component_pt;
 
 #include "dm_component.h"
 
+#define DM_COMPONENT_MAX_ID_LENGTH 64
+#define DM_COMPONENT_MAX_NAME_LENGTH 128
+
 typedef celix_status_t (*init_fpt)(void *userData);
 typedef celix_status_t (*start_fpt)(void *userData);
 typedef celix_status_t (*stop_fpt)(void *userData);
 typedef celix_status_t (*deinit_fpt)(void *userData);
 
-celix_status_t component_create(bundle_context_pt context, dm_component_pt *component);
+celix_status_t component_create(bundle_context_pt context, const char *name, dm_component_pt *component);
 celix_status_t component_destroy(dm_component_pt *component);
 
 celix_status_t component_addInterface(dm_component_pt component, char *serviceName, void *service, properties_pt properties);

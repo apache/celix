@@ -81,7 +81,7 @@ void dmListCommand_execute(command_pt command, char * line, void (*out)(char *),
                 startColors = compInfo->active ? OK_COLOR : NOK_COLOR;
                 endColors = END_COLOR;
             }
-            sprintf(outString, "Component: ID=%s, %sActive=%s%s, State=%s\n", compInfo->id, startColors, compInfo->active ?  "true " : "false", endColors, compInfo->state);
+            sprintf(outString, "Component: Name=%s\n|- ID=%s, %sActive=%s%s, State=%s\n", compInfo->name, compInfo->id, startColors, compInfo->active ?  "true " : "false", endColors, compInfo->state);
             out(outString);
 
             int interfCnt;
@@ -120,6 +120,8 @@ void dmListCommand_execute(command_pt command, char * line, void (*out)(char *),
                 );
                 out(outString);
             }
+            sprintf(outString, "\n");
+            out(outString);
 
             infoServ->destroyInfo(infoServ->handle, info);
         }

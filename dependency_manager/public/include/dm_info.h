@@ -40,7 +40,8 @@ typedef struct dm_service_dependency_info {
 } * dm_service_dependency_info_pt;
 
 typedef struct dm_component_info {
-    char *id;
+    char id[64];
+    char name[128];
     bool active;
     char * state;
     array_list_pt interfaces;   // type char*

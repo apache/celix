@@ -95,16 +95,19 @@ static celix_status_t component_handleChanged(dm_component_pt component, dm_serv
 static celix_status_t component_handleRemoved(dm_component_pt component, dm_service_dependency_pt dependency, dm_event_pt event);
 static celix_status_t component_handleSwapped(dm_component_pt component, dm_service_dependency_pt dependency, dm_event_pt event, dm_event_pt newEvent);
 
-celix_status_t component_create(bundle_context_pt context, dm_component_pt *component) {
+celix_status_t component_create(bundle_context_pt context, const char *name, dm_component_pt *component) {
     celix_status_t status = CELIX_SUCCESS;
 
     *component = malloc(sizeof(**component));
     if (!*component) {
         status = CELIX_ENOMEM;
     } else {
-        char id[16];
-        snprintf(id, 16, "%p", *component);
-        (*component)->id = strdup(id);
+        snprintf((*component)->id, DM_COMPONENT_MAX_ID_LENGTH, "%p", *component);
+        if (name == NULL) {
+            snprintf((*component)->name, DM_COMPONENT_MAX_NAME_LENGTH, "%s", "n/a");
+        } else {
+            snprintf((*component)->name, DM_COMPONENT_MAX_NAME_LENGTH, "%s", name);
+        }
         (*component)->context = context;
 
 	arrayList_create(&((*component)->dm_interface));
@@ -1320,7 +1323,9 @@ celix_status_t component_getComponentInfo(dm_component_pt component, dm_componen
         arrayList_create(&info->dependency_list);
         component_getInterfaces(component, &info->interfaces);
         info->active = false;
-        info->id = strdup(component->id);
+        memcpy(info->id, component->id, DM_COMPONENT_MAX_ID_LENGTH);
+        memcpy(info->name, component->name, DM_COMPONENT_MAX_NAME_LENGTH);
+
         switch (component->state) {
             case DM_CMP_STATE_INACTIVE :
                 info->state = strdup("INACTIVE");
