@@ -28,6 +28,12 @@ set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 set(CMAKE_INSTALL_NAME_DIR "@rpath")
 
 SET(CMAKE_BUILD_TYPE "Debug")
+
+# see https://public.kitware.com/Bug/view.php?id=15696
+IF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} EQUAL 3.3)
+	message( FATAL_ERROR "Building Celix using CMake 3.3 is not supported due to a bug in the Makefile Generator (see Bug 15696). Please change the used CMake version - both, CMake 3.2 and CMake 3.4 are working fine." )
+ENDIF()
+
 IF(UNIX)
 	SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -Wall -pthread ${CMAKE_C_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "-pthread ${CMAKE_EXE_LINKER_FLAGS}")
