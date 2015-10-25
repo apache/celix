@@ -67,7 +67,7 @@ static void* deploymentAdmin_poll(void *deploymentAdmin);
 celix_status_t deploymentAdmin_download(deployment_admin_pt admin, char * url, char **inputFile);
 size_t deploymentAdmin_writeData(void *ptr, size_t size, size_t nmemb, FILE *stream);
 static celix_status_t deploymentAdmin_deleteTree(char * directory);
-celix_status_t deploymentAdmin_readVersions(deployment_admin_pt admin, array_list_pt *versions);
+celix_status_t deploymentAdmin_readVersions(deployment_admin_pt admin, array_list_pt versions);
 
 celix_status_t deploymentAdmin_stopDeploymentPackageBundles(deployment_admin_pt admin, deployment_package_pt target);
 celix_status_t deploymentAdmin_updateDeploymentPackageBundles(deployment_admin_pt admin, deployment_package_pt source);
@@ -145,6 +145,10 @@ celix_status_t deploymentAdmin_create(bundle_context_pt context, deployment_admi
 celix_status_t deploymentAdmin_destroy(deployment_admin_pt admin) {
 	celix_status_t status = CELIX_SUCCESS;
 
+    admin->running = false;
+
+    celixThread_join(admin->poller, NULL);
+
 	hash_map_iterator_pt iter = hashMapIterator_create(admin->packages);
 
 	while (hashMapIterator_hasNext(iter)) {
@@ -214,7 +218,9 @@ static void *deploymentAdmin_poll(void *deploymentAdmin) {
 	while (admin->running) {
 		//poll ace
 		array_list_pt versions = NULL;
-		deploymentAdmin_readVersions(admin, &versions);
+	    arrayList_create(&versions);
+
+		deploymentAdmin_readVersions(admin, versions);
 
 		char *last = arrayList_get(versions, arrayList_size(versions) - 1);
 
@@ -299,10 +305,12 @@ static void *deploymentAdmin_poll(void *deploymentAdmin) {
 				}
 			}
 		}
+
 		sleep(5);
+
+		arrayList_destroy(versions);
 	}
 
-	celixThread_exit(NULL);
 	return NULL;
 }
 
@@ -329,9 +337,9 @@ size_t deploymentAdmin_parseVersions(void *contents, size_t size, size_t nmemb, 
 	return realsize;
 }
 
-celix_status_t deploymentAdmin_readVersions(deployment_admin_pt admin, array_list_pt *versions) {
+celix_status_t deploymentAdmin_readVersions(deployment_admin_pt admin, array_list_pt versions) {
 	celix_status_t status = CELIX_SUCCESS;
-	arrayList_create(versions);
+
 	CURL *curl;
 	CURLcode res;
 	curl = curl_easy_init();
@@ -353,12 +361,14 @@ celix_status_t deploymentAdmin_readVersions(deployment_admin_pt admin, array_lis
 		char *last;
 		char *token = strtok_r(chunk.memory, "\n", &last);
 		while (token != NULL) {
-			arrayList_add(*versions, strdup(token));
+			arrayList_add(versions, strdup(token));
 			token = strtok_r(NULL, "\n", &last);
 		}
 	}
 
-
+    if (chunk.memory) {
+        free(chunk.memory);
+    }
 
 	return status;
 }
