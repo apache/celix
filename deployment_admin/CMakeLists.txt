@@ -60,5 +60,5 @@ if (DEPLOYMENT_ADMIN)
     		public/include/resource_processor.h
 	)
     
-    target_link_libraries(deployment_admin celix_framework ${CURL_LIBRARIES} ${UUID_LIBRARY})
+    target_link_libraries(deployment_admin celix_framework ${CURL_LIBRARIES})
 endif (DEPLOYMENT_ADMIN)
