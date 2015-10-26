@@ -46,7 +46,7 @@ celix_status_t deploymentPackage_create(bundle_context_pt context, manifest_pt m
 	celix_status_t status = CELIX_SUCCESS;
 
 	*package = calloc(1, sizeof(**package));
-	if (!package) {
+	if (!(*package)) {
 		status = CELIX_ENOMEM;
 	} else {
 		(*package)->context = context;

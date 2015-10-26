@@ -59,6 +59,7 @@
 #define IDENTIFICATION_ID "deployment_admin_identification"
 #define DISCOVERY_URL "deployment_admin_url"
 #define DEPLOYMENT_CACHE_DIR "deployment_cache_dir"
+#define DEPLOYMENT_TAGS "deployment_tags"
 // "http://localhost:8080/deployment/"
 
 #define VERSIONS "/versions"
@@ -172,48 +173,86 @@ celix_status_t deploymentAdmin_destroy(deployment_admin_pt admin) {
 	return status;
 }
 
-static celix_status_t deploymentAdmin_updateAuditPool(deployment_admin_pt admin, DEPLOYMENT_ADMIN_AUDIT_EVENT auditEvent) {
-	celix_status_t status = CELIX_SUCCESS;
 
+static celix_status_t deploymentAdmin_performRequest(deployment_admin_pt admin, char* entry) {
+    celix_status_t status = CELIX_SUCCESS;
 
-	CURL *curl;
-	CURLcode res;
-	curl = curl_easy_init();
+    CURL *curl;
+    CURLcode res;
+    curl = curl_easy_init();
 
-	if (!curl) {
-		status = CELIX_BUNDLE_EXCEPTION;
+    if (!curl) {
+        status = CELIX_BUNDLE_EXCEPTION;
 
-		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error initializing curl.");
-	}
+        fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error initializing curl.");
+    }
 
-	char url[strlen(admin->auditlogUrl)+6];
-	sprintf(url, "%s/send", admin->auditlogUrl);
-	char entry[512];
-	int entrySize = snprintf(entry, 512, "%s,%llu,%u,0,%i\n", admin->targetIdentification, admin->auditlogId, admin->aditlogSeqNr++, auditEvent);
-	if (entrySize >= 512) {
-		status = CELIX_BUNDLE_EXCEPTION;
-		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error, entry buffer is too small");
-	}
+    char url[strlen(admin->auditlogUrl)+6];
+    sprintf(url, "%s/send", admin->auditlogUrl);
 
-	if (status == CELIX_SUCCESS) {
-			curl_easy_setopt(curl, CURLOPT_URL, url);
-			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, entry);
-			res = curl_easy_perform(curl);
+    if (status == CELIX_SUCCESS) {
+            curl_easy_setopt(curl, CURLOPT_URL, url);
+            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, entry);
+            res = curl_easy_perform(curl);
 
-			if (res != CURLE_OK ) {
-				status = CELIX_BUNDLE_EXCEPTION;
-				fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error sending auditlog, got curl error code %d", res);
-			}
-	}
+            if (res != CURLE_OK ) {
+                status = CELIX_BUNDLE_EXCEPTION;
+                fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error sending auditlog, got curl error code %d", res);
+            }
+    }
 
-	return status;
+    return status;
 }
+
+static celix_status_t deploymentAdmin_auditEventTargetPropertiesSet(deployment_admin_pt admin) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    char *tags = NULL;
+
+    bundleContext_getProperty(admin->context, DEPLOYMENT_TAGS, &tags);
+
+    if (tags != NULL) {
+        char entry[512];
+        int entrySize = 0;
+
+        entrySize = snprintf(entry, 512, "%s,%llu,%u,0,%i,%s\n", admin->targetIdentification, admin->auditlogId, admin->aditlogSeqNr++, DEPLOYMENT_ADMIN_AUDIT_EVENT__TARGETPROPERTIES_SET, tags);
+
+        if (entrySize >= 512) {
+            status = CELIX_BUNDLE_EXCEPTION;
+        }
+        else {
+            status = deploymentAdmin_performRequest(admin, entry);
+        }
+    }
+
+    return status;
+}
+
+static celix_status_t deploymentAdmin_auditEventFrameworkStarted(deployment_admin_pt admin) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    char entry[512];
+    int entrySize = 0;
+
+    entrySize = snprintf(entry, 512, "%s,%llu,%u,0,%i\n", admin->targetIdentification, admin->auditlogId, admin->aditlogSeqNr++, DEPLOYMENT_ADMIN_AUDIT_EVENT__FRAMEWORK_STARTED);
+
+    if (entrySize >= 512) {
+        status = CELIX_BUNDLE_EXCEPTION;
+    }
+    else {
+        status = deploymentAdmin_performRequest(admin, entry);
+    }
+
+    return status;
+}
+
 
 static void *deploymentAdmin_poll(void *deploymentAdmin) {
 	deployment_admin_pt admin = deploymentAdmin;
 
 	/*first poll send framework started audit event, note this will register the target in Apache ACE*/
-	deploymentAdmin_updateAuditPool(admin, DEPLOYMENT_ADMIN_AUDIT_EVENT__FRAMEWORK_STARTED);
+    deploymentAdmin_auditEventFrameworkStarted(admin);
+    deploymentAdmin_auditEventTargetPropertiesSet(admin);
 
 	while (admin->running) {
 		//poll ace
@@ -228,15 +267,12 @@ static void *deploymentAdmin_poll(void *deploymentAdmin) {
 			if (admin->current == NULL || strcmp(last, admin->current) != 0) {
 				int length = strlen(admin->pollUrl) + strlen(last) + 2;
 				char request[length];
-				if (admin->current == NULL) {
-					snprintf(request, length, "%s/%s", admin->pollUrl, last);
-				} else {
-					// TODO
-					//      We do not yet support fix packages
-					//		Check string lenght!
-					// snprintf(request, length, "%s/%s?current=%s", admin->pollUrl, last, admin->current);
-					snprintf(request, length, "%s/%s", admin->pollUrl, last);
-				}
+
+				// TODO
+                //      We do not yet support fix packages
+                //		Check string lenght!
+                // snprintf(request, length, "%s/%s?current=%s", admin->pollUrl, last, admin->current);
+                snprintf(request, length, "%s/%s", admin->pollUrl, last);
 
 				char *inputFilename = NULL;
 				celix_status_t status = deploymentAdmin_download(admin ,request, &inputFilename);
