@@ -39,7 +39,7 @@ if (SHELL)
     
     install_bundle(shell
     	HEADERS
-    		public/include/shell.h public/include/command.h public/include/command_impl.h
+    		public/include/shell.h public/include/command.h
     	RESOURCES 
     		public/src/command.c
 	)
