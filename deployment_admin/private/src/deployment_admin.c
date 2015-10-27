@@ -77,7 +77,10 @@ celix_status_t deploymentAdmin_processDeploymentPackageResources(deployment_admi
 celix_status_t deploymentAdmin_dropDeploymentPackageResources(deployment_admin_pt admin, deployment_package_pt source, deployment_package_pt target);
 celix_status_t deploymentAdmin_dropDeploymentPackageBundles(deployment_admin_pt admin, deployment_package_pt source, deployment_package_pt target);
 celix_status_t deploymentAdmin_startDeploymentPackageBundles(deployment_admin_pt admin, deployment_package_pt source);
-static celix_status_t deploymentAdmin_updateAuditPool(deployment_admin_pt admin, DEPLOYMENT_ADMIN_AUDIT_EVENT auditEvent);
+
+static celix_status_t deploymentAdmin_performRequest(deployment_admin_pt admin, char* entry);
+static celix_status_t deploymentAdmin_auditEventTargetPropertiesSet(deployment_admin_pt admin);
+static celix_status_t deploymentAdmin_auditEventFrameworkStarted(deployment_admin_pt admin);
 
 celix_status_t deploymentAdmin_create(bundle_context_pt context, deployment_admin_pt *admin) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -344,6 +347,10 @@ static void *deploymentAdmin_poll(void *deploymentAdmin) {
 
 		sleep(5);
 
+		for (i = arrayList_size(versions); i > 0; --i) {
+		    free(arrayList_remove(versions, 0));
+		}
+
 		arrayList_destroy(versions);
 	}
 
@@ -603,6 +610,8 @@ celix_status_t deploymentAdmin_startDeploymentPackageCustomizerBundles(deploymen
 		bundle_start(bundle);
 	}
 
+    arrayList_destroy(bundles);
+
 	return status;
 }
 
@@ -650,61 +659,64 @@ celix_status_t deploymentAdmin_processDeploymentPackageResources(deployment_admi
 			}
 		}
 
-		if(services!=NULL){
+		if(services != NULL) {
 			arrayList_destroy(services);
 		}
-
-
 	}
+
+    arrayList_destroy(infos);
+
 
 	return status;
 }
 
 celix_status_t deploymentAdmin_dropDeploymentPackageResources(deployment_admin_pt admin, deployment_package_pt source, deployment_package_pt target) {
-	celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status = CELIX_SUCCESS;
 
-	if (target != NULL) {
-		array_list_pt infos = NULL;
-		deploymentPackage_getResourceInfos(target, &infos);
-		int i;
-		for (i = 0; i < arrayList_size(infos); i++) {
-			resource_info_pt info = arrayList_get(infos, i);
-			resource_info_pt sourceInfo = NULL;
-			deploymentPackage_getResourceInfoByPath(source, info->path, &sourceInfo);
-			if (sourceInfo == NULL) {
-				array_list_pt services = NULL;
-				int length = strlen(OSGI_FRAMEWORK_SERVICE_PID) + strlen(info->resourceProcessor) + 4;
-				char filter[length];
+    if (target != NULL) {
+        array_list_pt infos = NULL;
+        deploymentPackage_getResourceInfos(target, &infos);
+        int i;
+        for (i = 0; i < arrayList_size(infos); i++) {
+            resource_info_pt info = arrayList_get(infos, i);
+            resource_info_pt sourceInfo = NULL;
+            deploymentPackage_getResourceInfoByPath(source, info->path, &sourceInfo);
+            if (sourceInfo == NULL) {
+                array_list_pt services = NULL;
+                int length = strlen(OSGI_FRAMEWORK_SERVICE_PID) + strlen(info->resourceProcessor) + 4;
+                char filter[length];
 
-				snprintf(filter, length, "(%s=%s)", OSGI_FRAMEWORK_SERVICE_PID, info->resourceProcessor);
-				status = bundleContext_getServiceReferences(admin->context, DEPLOYMENTADMIN_RESOURCE_PROCESSOR_SERVICE, filter, &services);
-				if (status == CELIX_SUCCESS) {
-					if (services != NULL && arrayList_size(services) > 0) {
-						service_reference_pt ref = arrayList_get(services, 0);
-						// In Felix a check is done to assure the processor belongs to the deployment package
-						// Is this according to spec?
-						void *processorP = NULL;
-						status = bundleContext_getService(admin->context, ref, &processorP);
-						if (status == CELIX_SUCCESS) {
-							char *packageName = NULL;
-							resource_processor_service_pt processor = processorP;
+                snprintf(filter, length, "(%s=%s)", OSGI_FRAMEWORK_SERVICE_PID, info->resourceProcessor);
+                status = bundleContext_getServiceReferences(admin->context, DEPLOYMENTADMIN_RESOURCE_PROCESSOR_SERVICE, filter, &services);
+                if (status == CELIX_SUCCESS) {
+                    if (services != NULL && arrayList_size(services) > 0) {
+                        service_reference_pt ref = arrayList_get(services, 0);
+                        // In Felix a check is done to assure the processor belongs to the deployment package
+                        // Is this according to spec?
+                        void *processorP = NULL;
+                        status = bundleContext_getService(admin->context, ref, &processorP);
+                        if (status == CELIX_SUCCESS) {
+                            char *packageName = NULL;
+                            resource_processor_service_pt processor = processorP;
 
-							deploymentPackage_getName(source, &packageName);
-							processor->begin(processor->processor, packageName);
-							processor->dropped(processor->processor, info->path);
-						}
-					}
-				}
+                            deploymentPackage_getName(source, &packageName);
+                            processor->begin(processor->processor, packageName);
+                            processor->dropped(processor->processor, info->path);
+                        }
+                    }
+                }
 
-		if(services!=NULL){
-			arrayList_destroy(services);
-		}
+                if (services != NULL) {
+                    arrayList_destroy(services);
+                }
 
-			}
-		}
-	}
+            }
+        }
 
-	return status;
+        arrayList_destroy(infos);
+    }
+
+    return status;
 }
 
 celix_status_t deploymentAdmin_dropDeploymentPackageBundles(deployment_admin_pt admin, deployment_package_pt source, deployment_package_pt target) {
