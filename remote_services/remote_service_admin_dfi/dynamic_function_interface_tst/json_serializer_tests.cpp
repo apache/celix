@@ -142,7 +142,7 @@ static void check_example4(void *data) {
 }
 
 
-/*********** example 4 ************************/
+/*********** example 5 ************************/
 /** structs within a struct (by reference)*******/
 const char *example5_descriptor = "Tleaf={ts name age};Tnode={Lnode;Lnode;Lleaf; left right value};{Lnode; head}";
 
@@ -224,6 +224,22 @@ static void check_example6(struct ex6_sequence seq) {
 }
 
 
+/*********** example 7 ************************/
+const char *example7_descriptor = "{t a}";
+
+const char *example7_input = "{ \
+    \"a\" : \"apache celix\" \
+}";
+
+struct example7 {
+    char* a;   //0
+};
+
+static void check_example7(void *data) {
+    struct example7 *ex = (struct example7 *)data;
+    STRCMP_EQUAL("apache celix", ex->a);
+}
+
 static void parseTests(void) {
     dyn_type *type;
     void *inst;
@@ -287,6 +303,17 @@ static void parseTests(void) {
     CHECK_EQUAL(0, rc);
     check_example6((*seq));
     dynType_free(type, seq);
+    dynType_destroy(type);
+
+
+    type = NULL;
+    inst = NULL;
+    rc = dynType_parseWithStr(example7_descriptor, NULL, NULL, &type);
+    CHECK_EQUAL(0, rc);
+    rc = jsonSerializer_deserialize(type, example7_input, &inst);
+    CHECK_EQUAL(0, rc);
+    check_example7(inst);
+    dynType_free(type, inst);
     dynType_destroy(type);
 }
 
@@ -433,6 +460,8 @@ void writeTest3(void) {
     free(result);
 }
 
+
+
 }
 
 TEST_GROUP(JsonSerializerTests) {
@@ -460,3 +489,5 @@ TEST(JsonSerializerTests, WriteTest2) {
 TEST(JsonSerializerTests, WriteTest3) {
     writeTest3();
 }
+
+
