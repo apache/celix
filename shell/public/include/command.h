@@ -28,6 +28,7 @@
 #define COMMAND_H_
 
 #include "celix_errno.h"
+#include <stdio.h>
 
 #define OSGI_SHELL_COMMAND_NAME "command.name"
 #define OSGI_SHELL_COMMAND_USAGE "command.usage"

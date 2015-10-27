@@ -25,12 +25,11 @@
  */
 #include <stdlib.h>
 #include <string.h>
+#include <command.h>
 
 #include "bundle_activator.h"
 #include "bundle_context.h"
 #include "service_registration.h"
-
-#include "command_impl.h"
 
 #include "add_command.h"
 #include "sub_command.h"
@@ -38,19 +37,17 @@
 
 struct activator {
 	service_registration_pt addCommand;
-	command_pt addCmd;
+	command_service_pt addCmd;
 	command_service_pt addCmdSrv;
 
 	service_registration_pt subCommand;
-	command_pt subCmd;
+	command_service_pt subCmd;
 	command_service_pt subCmdSrv;
 
 	service_registration_pt sqrtCommand;
-	command_pt sqrtCmd;
+	command_service_pt sqrtCmd;
 	command_service_pt sqrtCmdSrv;
 };
-
-static celix_status_t calculatorShell_createCommandService(command_pt command, command_service_pt *commandService);
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -81,31 +78,31 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
 	struct activator * activator = (struct activator *) userData;
 
-	activator->addCmd = addCommand_create(context);
-	calculatorShell_createCommandService(activator->addCmd, &activator->addCmdSrv);
-	bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, activator->addCmdSrv, NULL, &activator->addCommand);
+	activator->addCmdSrv = calloc(1, sizeof(*activator->addCmdSrv));
+	activator->addCmdSrv->handle = context;
+	activator->addCmdSrv->executeCommand = (void *)addCommand_execute;
+	properties_pt props = properties_create();
+	properties_set(props, OSGI_SHELL_COMMAND_NAME, "add");
+	bundleContext_registerService(context, OSGI_SHELL_COMMAND_SERVICE_NAME, activator->addCmdSrv, props, &activator->addCommand);
 
-	activator->subCmd = subCommand_create(context);
-	calculatorShell_createCommandService(activator->subCmd, &activator->subCmdSrv);
-	bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, activator->subCmdSrv, NULL, &activator->subCommand);
 
-	activator->sqrtCmd = sqrtCommand_create(context);
-	calculatorShell_createCommandService(activator->sqrtCmd, &activator->sqrtCmdSrv);
-	bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, activator->sqrtCmdSrv, NULL, &activator->sqrtCommand);
+	activator->sqrtCmdSrv = calloc(1, sizeof(*activator->sqrtCmdSrv));
+	activator->sqrtCmdSrv->handle = context;
+	activator->sqrtCmdSrv->executeCommand = (void *)sqrtCommand_execute;
+	props = properties_create();
+	properties_set(props, OSGI_SHELL_COMMAND_NAME, "sqrt");
+	bundleContext_registerService(context, OSGI_SHELL_COMMAND_SERVICE_NAME, activator->sqrtCmdSrv, props, &activator->sqrtCommand);
+
+	activator->subCmdSrv = calloc(1, sizeof(*activator->subCmdSrv));
+	activator->subCmdSrv->handle = context;
+	activator->subCmdSrv->executeCommand = (void *)subCommand_execute;
+	props = properties_create();
+	properties_set(props, OSGI_SHELL_COMMAND_NAME, "sub");
+	bundleContext_registerService(context, OSGI_SHELL_COMMAND_SERVICE_NAME, activator->subCmdSrv, props, &activator->subCommand);
 
 	return status;
 }
 
-static celix_status_t calculatorShell_createCommandService(command_pt command, command_service_pt *commandService) {
-	*commandService = calloc(1, sizeof(**commandService));
-	(*commandService)->command = command;
-	(*commandService)->executeCommand = command->executeCommand;
-	(*commandService)->getName = command_getName;
-	(*commandService)->getShortDescription = command_getShortDescription;
-	(*commandService)->getUsage = command_getUsage;
-
-	return CELIX_SUCCESS;
-}
 
 celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
     celix_status_t status = CELIX_SUCCESS;
@@ -119,9 +116,9 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	free(activator->sqrtCmdSrv);
 
 	if (status == CELIX_SUCCESS) {
-        addCommand_destroy(activator->addCmd);
-        subCommand_destroy(activator->subCmd);
-        sqrtCommand_destroy(activator->sqrtCmd);
+        free(activator->addCmdSrv);
+		free(activator->sqrtCmdSrv);
+		free(activator->subCmdSrv);
 	}
 
 	return status;

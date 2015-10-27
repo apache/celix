@@ -24,9 +24,9 @@ if (SHELL)
 
     bundle(shell SOURCES
     	
-     	private/src/activator
-    	private/src/shell 
-    	private/src/lb_command
+	  private/src/activator
+	  private/src/shell
+	  private/src/lb_command
       private/src/start_command 
       private/src/stop_command
       private/src/install_command

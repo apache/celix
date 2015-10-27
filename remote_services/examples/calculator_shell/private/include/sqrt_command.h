@@ -27,9 +27,6 @@
 #ifndef SQRT_COMMAND_H_
 #define SQRT_COMMAND_H_
 
-#include "command_impl.h"
-
-command_pt sqrtCommand_create(bundle_context_pt context);
-void sqrtCommand_destroy(command_pt command);
+void sqrtCommand_execute(bundle_context_pt context, char *line, FILE *out, FILE *err);
 
 #endif /* SQRT_COMMAND_H_ */

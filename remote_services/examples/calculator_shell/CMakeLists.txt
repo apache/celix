@@ -32,7 +32,6 @@ bundle(calculator_shell SOURCES
     private/include/add_command.h
     private/include/sqrt_command.h
     private/include/sub_command.h
-    ../../../shell/public/src/command.c
 
 
         FILES
