@@ -258,6 +258,8 @@ static void *deploymentAdmin_poll(void *deploymentAdmin) {
     deploymentAdmin_auditEventTargetPropertiesSet(admin);
 
 	while (admin->running) {
+        int i;
+
 		//poll ace
 		array_list_pt versions = NULL;
 	    arrayList_create(&versions);
