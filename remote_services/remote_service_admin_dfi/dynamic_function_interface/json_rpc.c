@@ -268,21 +268,29 @@ int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[]
             dyn_type *argType = dynFunction_argumentTypeForIndex(func, i);
             enum dyn_function_argument_meta meta = dynFunction_argumentMetaForIndex(func, i);
             if (meta == DYN_FUNCTION_ARGUMENT_META__PRE_ALLOCATED_OUTPUT) {
-                //FIXME need a tmp because deserialize does always does a create (add option?)
-                dyn_type *subType = NULL;
-                dynType_typedPointer_getTypedType(argType, &subType);
                 void *tmp = NULL;
-                size_t size = dynType_size(subType);
-                status = jsonSerializer_deserializeJson(subType, result, &tmp);
-                void **out = (void **)args[i];
-                memcpy(*out, tmp, size);
-                dynType_free(subType, tmp);
+                void **out = (void **) args[i];
+
+                size_t size = 0;
+                dynType_typedPointer_getTypedType(argType, &argType);
+
+                if (dynType_descriptorType(argType) == 't') {
+                    status = jsonSerializer_deserializeJson(argType, result, &tmp);
+                    size = strnlen(((char *) *(char**) tmp), 1024 * 1024);
+                    memcpy(*out, *(void**) tmp, size);
+                } else {
+                    status = jsonSerializer_deserializeJson(argType, result, &tmp);
+                    size = dynType_size(argType);
+                    memcpy(*out, tmp, size);
+                }
+
+                dynType_free(argType, tmp);
             } else if (meta == DYN_FUNCTION_ARGUMENT_META__OUTPUT) {
                 dyn_type *subType = NULL;
                 dynType_typedPointer_getTypedType(argType, &subType);
                 dyn_type *subSubType = NULL;
                 dynType_typedPointer_getTypedType(subType, &subSubType);
-                void **out = (void **)args[i];
+                void **out = (void **) args[i];
                 status = jsonSerializer_deserializeJson(subSubType, result, *out);
             } else {
                 //skip

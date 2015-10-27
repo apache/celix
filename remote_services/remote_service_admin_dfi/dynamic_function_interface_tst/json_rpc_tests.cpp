@@ -286,6 +286,42 @@ static void stdLog(void *handle, int level, const char *file, int line, const ch
         dynInterface_destroy(intf);
     }
 
+
+    void handleTestOutChar(void) {
+        dyn_interface_type *intf = NULL;
+        FILE *desc = fopen("descriptors/example4.descriptor", "r");
+        CHECK(desc != NULL);
+        int rc = dynInterface_parse(desc, &intf);
+        CHECK_EQUAL(0, rc);
+        fclose(desc);
+
+        struct methods_head *head;
+        dynInterface_methods(intf, &head);
+        dyn_function_type *func = NULL;
+        struct method_entry *entry = NULL;
+        TAILQ_FOREACH(entry, head, entries) {
+            if (strcmp(entry->name, "getName") == 0) {
+                func = entry->dynFunc;
+                break;
+            }
+        }
+        CHECK(func != NULL);
+
+        const char *reply = "{\"r\": \"this is an pre-allocated string\" }";
+        char *result = (char*) calloc(50, sizeof(*result));
+
+        void *args[2];
+        args[0] = NULL;
+        args[1] = &result;
+
+        rc = jsonRpc_handleReply(func, reply, args);
+
+        STRCMP_EQUAL("this is an pre-allocated string", result);
+
+        free(result);
+        dynInterface_destroy(intf);
+    }
+
 }
 
 TEST_GROUP(JsonRpcTests) {
@@ -324,6 +360,10 @@ TEST(JsonRpcTests, callOut) {
 
 TEST(JsonRpcTests, handleOutSeq) {
     handleTestOutputSequence();
+}
+
+TEST(JsonRpcTests, handleOutChar) {
+	handleTestOutChar();
 }
 
 
