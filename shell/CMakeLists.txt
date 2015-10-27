@@ -40,8 +40,6 @@ if (SHELL)
     install_bundle(shell
     	HEADERS
     		public/include/shell.h public/include/command.h
-    	RESOURCES 
-    		public/src/command.c
 	)
 
 	include_directories("public/include")
