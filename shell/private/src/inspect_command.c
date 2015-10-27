@@ -76,6 +76,7 @@ celix_status_t inspectCommand_execute(void *handle, char * commandline, FILE *ou
 			} else {
 				fprintf(errStream, "INSPECT: Invalid argument\n");
 			}
+			arrayList_destroy(ids);
 		} else {
 			fprintf(errStream, "INSPECT: Too few arguments\n");
 		}
@@ -162,6 +163,9 @@ celix_status_t inspectCommand_printExportedServices(bundle_context_pt context, a
 		}
 	}
 
+	if (bundles != NULL) {
+	    arrayList_destroy(bundles);
+	}
 
 	return status;
 }
@@ -240,6 +244,7 @@ celix_status_t inspectCommand_printImportedServices(bundle_context_pt context, a
 
 										fprintf(outStream, "%s = %s\n", key, value);
                                     }
+                                    free(keys);
 
 //                                  objectClass = properties_get(props, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
 //                                  sprintf(line, "ObjectClass = %s\n", objectClass);
@@ -254,6 +259,8 @@ celix_status_t inspectCommand_printImportedServices(bundle_context_pt context, a
             }
         }
     }
+
+    arrayList_destroy(bundles);
 
 
     return status;

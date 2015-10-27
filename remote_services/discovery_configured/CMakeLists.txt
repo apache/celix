@@ -14,7 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-celix_subproject(RSA_DISCOVERY_CONFIGURED "Option to enable building the Discovery (Configured) bundle" OFF)
+celix_subproject(RSA_DISCOVERY_CONFIGURED "Option to enable building the Discovery (Configured) bundle" ON)
 if (RSA_DISCOVERY_CONFIGURED)
     find_package(CURL REQUIRED)
     find_package(LibXml2 REQUIRED)
@@ -36,17 +36,17 @@ if (RSA_DISCOVERY_CONFIGURED)
     SET_HEADERS("Bundle-Name: Apache Celix RSA Configured Discovery")
 
     bundle(discovery_configured SOURCES
-        private/src/discovery_impl.c
-        ${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/discovery_activator.c
-        ${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/discovery.c
-        ${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_descriptor_reader.c
-        ${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_descriptor_writer.c
-        ${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_discovery_poller.c
-        ${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_discovery_server.c
-        ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c
-        ${PROJECT_SOURCE_DIR}/remote_services/utils/private/src/civetweb.c
+	private/src/discovery_impl.c
+	${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/discovery_activator.c
+	${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/discovery.c
+	${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_descriptor_reader.c
+	${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_descriptor_writer.c
+	${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_discovery_poller.c
+	${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_discovery_server.c
+	${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c
+	${PROJECT_SOURCE_DIR}/remote_services/utils/private/src/civetweb.c
 
-        ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
+	${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
     )
 
     install_bundle(discovery_configured)

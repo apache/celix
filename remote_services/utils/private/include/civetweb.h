@@ -394,7 +394,7 @@ enum {
 };
 
 
-/* Macros for enabling compiler-specific checks for printf-like arguments. */
+/* Macros for enabling compiler-specific checks forprintf-like arguments. */
 #undef PRINTF_FORMAT_STRING
 #if defined(_MSC_VER) && _MSC_VER >= 1400
 #include <sal.h>
@@ -413,7 +413,7 @@ enum {
 #define PRINTF_ARGS(x, y)
 #endif
 
-/* Send data to the client using printf() semantics.
+/* Send data to the client usingprintf() semantics.
    Works exactly like mg_write(), but allows to do message formatting. */
 CIVETWEB_API int mg_printf(struct mg_connection *,
                            PRINTF_FORMAT_STRING(const char *fmt), ...) PRINTF_ARGS(2, 3);

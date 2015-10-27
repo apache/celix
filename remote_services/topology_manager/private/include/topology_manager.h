@@ -32,6 +32,8 @@
 #include "bundle_context.h"
 #include "log_helper.h"
 
+#define OSGI_RSA_REMOTE_SERVICE_ADMIN "remote_service_admin"
+
 typedef struct topology_manager *topology_manager_pt;
 
 celix_status_t topologyManager_create(bundle_context_pt context, log_helper_pt logHelper, topology_manager_pt *manager);
@@ -42,6 +44,11 @@ celix_status_t topologyManager_rsaAdding(void *handle, service_reference_pt refe
 celix_status_t topologyManager_rsaAdded(void *handle, service_reference_pt reference, void *service);
 celix_status_t topologyManager_rsaModified(void *handle, service_reference_pt reference, void *service);
 celix_status_t topologyManager_rsaRemoved(void *handle, service_reference_pt reference, void *service);
+
+celix_status_t topologyManager_endpointListenerAdding(void* handle, service_reference_pt reference, void** service);
+celix_status_t topologyManager_endpointListenerAdded(void* handle, service_reference_pt reference, void* service);
+celix_status_t topologyManager_endpointListenerModified(void * handle, service_reference_pt reference, void* service);
+celix_status_t topologyManager_endpointListenerRemoved(void * handle, service_reference_pt reference, void* service);
 
 celix_status_t topologyManager_serviceChanged(void *listener, service_event_pt event);
 

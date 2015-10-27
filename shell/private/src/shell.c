@@ -280,12 +280,12 @@ celix_status_t shell_getCommandReference(shell_pt shell_ptr, char *command_name_
 	return status;
 }
 
-celix_status_t shell_executeCommand(shell_pt shell_ptr, char *command_line_str, void (*out)(char *), void (*error)(char *)) {
+celix_status_t shell_executeCommand(shell_pt shell_ptr, char *command_line_str, FILE *out, FILE *err) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	command_service_pt command_ptr = NULL;
 
-	if (!shell_ptr || !command_line_str || !out || !error) {
+	if (!shell_ptr || !command_line_str || !out || !err) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	}
 
@@ -296,15 +296,13 @@ celix_status_t shell_executeCommand(shell_pt shell_ptr, char *command_line_str, 
 		command_ptr = hashMap_get(shell_ptr->command_name_map_ptr, command_name_str);
 		free(command_name_str);
 		if (!command_ptr) {
-			error("No such command");
+			fprintf(err, "No such command\n");
 			status = CELIX_BUNDLE_EXCEPTION;
 		}
 	}
 
 	if (status == CELIX_SUCCESS) {
-		printf("TODO\n");
-		//FIXME udpate shell_executeCommand with FILE
-		status = command_ptr->executeCommand(command_ptr->handle, command_line_str, stdout, stderr);
+		status = command_ptr->executeCommand(command_ptr->handle, command_line_str, out, err);
 	}
 
 	return status;

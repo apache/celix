@@ -25,21 +25,16 @@
  */
 
 #include <stdlib.h>
-
+#include <string.h>
 #include <utils.h>
 #include <shell.h>
 #include <service_tracker.h>
 #include <command.h>
+#include <sys/socket.h>
 
 #include "log_helper.h"
 #include "log_service.h"
 #include "shell_mediator.h"
-
-//NOTE: multiple instances of shell_mediator are not supported, because we need
-// 		a non ADT - shared between instances - variable.
-static int currentOutputSocket = -1;
-
-static void shellMediator_writeOnCurrentSocket(char *buff);
 
 static celix_status_t shellMediator_addingService(void *handler, service_reference_pt reference, void **service);
 static celix_status_t shellMediator_addedService(void *handler, service_reference_pt reference, void * service);
@@ -95,21 +90,14 @@ celix_status_t shellMediator_destroy(shell_mediator_pt instance) {
 	return status;
 }
 
-static void shellMediator_writeOnCurrentSocket(char *buff) {
-
-	size_t len = strlen(buff);
-	send(currentOutputSocket, buff, len, 0);
-}
-
-celix_status_t shellMediator_executeCommand(shell_mediator_pt instance, char *command, int socket) {
+celix_status_t shellMediator_executeCommand(shell_mediator_pt instance, char *command, FILE *out, FILE *err) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	celixThreadMutex_lock(&instance->mutex);
 
+
 	if (instance->shellService != NULL) {
-		currentOutputSocket = socket;
-		instance->shellService->executeCommand(instance->shellService->shell, command, shellMediator_writeOnCurrentSocket, shellMediator_writeOnCurrentSocket);
-		currentOutputSocket = -1;
+		instance->shellService->executeCommand(instance->shellService->shell, command, out, err);
 	}
 
 	celixThreadMutex_unlock(&instance->mutex);

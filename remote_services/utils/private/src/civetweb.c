@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2015 the Civetweb developers
+	/* Copyright (c) 2013-2015 the Civetweb developers
  * Copyright (c) 2004-2013 Sergey Lyubka
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -280,9 +280,9 @@ struct pollfd {
 #include <netdb.h>
 typedef const void * SOCK_OPT_TYPE;
 
-#if defined(ANDROID)
+//#if defined(ANDROID)
 typedef unsigned short int in_port_t;
-#endif
+//#endif
 
 #include <pwd.h>
 #include <unistd.h>
@@ -371,7 +371,7 @@ static void DEBUG_TRACE_FUNC(const char *func, unsigned line, const char *fmt, .
 
   va_list args;
   flockfile(stdout);
-  printf("*** %lu.%p.%s.%u: ",
+ printf("*** %lu.%p.%s.%u: ",
          (unsigned long) time(NULL), (void *) pthread_self(),
          func, line);
   va_start(args, fmt);
@@ -6150,7 +6150,7 @@ static int use_request_handler(struct mg_connection *conn)
     return 0; /* none found */
 }
 
-/* This is the heart of the Civetweb's logic.
+/* This is the heart of the Civetweb's printfc.
    This function is called when the request is read, parsed and validated,
    and Civetweb must decide what action to take: serve a file, or
    a directory, or call embedded function, etcetera. */

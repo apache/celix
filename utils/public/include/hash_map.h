@@ -61,6 +61,7 @@ UTILS_EXPORT void * hashMapIterator_nextKey(hash_map_iterator_pt iterator);
 UTILS_EXPORT hash_map_entry_pt hashMapIterator_nextEntry(hash_map_iterator_pt iterator);
 
 UTILS_EXPORT hash_map_key_set_pt hashMapKeySet_create(hash_map_pt map);
+UTILS_EXPORT void hashMapKeySet_destroy(hash_map_key_set_pt keySet);
 UTILS_EXPORT int hashMapKeySet_size(hash_map_key_set_pt keySet);
 UTILS_EXPORT bool hashMapKeySet_contains(hash_map_key_set_pt keySet, void * key);
 UTILS_EXPORT bool hashMapKeySet_remove(hash_map_key_set_pt keySet, void * key);
@@ -78,9 +79,10 @@ UTILS_EXPORT void hashMapValues_clear(hash_map_values_pt values);
 UTILS_EXPORT bool hashMapValues_isEmpty(hash_map_values_pt values);
 
 UTILS_EXPORT hash_map_entry_set_pt hashMapEntrySet_create(hash_map_pt map);
+UTILS_EXPORT void hashMapEntrySet_destroy(hash_map_entry_set_pt entrySet);
 UTILS_EXPORT int hashMapEntrySet_size(hash_map_entry_set_pt entrySet);
 UTILS_EXPORT bool hashMapEntrySet_contains(hash_map_entry_set_pt entrySet, hash_map_entry_pt entry);
-UTILS_EXPORT bool hashMapEntrySet_remove(hash_map_values_pt entrySet, hash_map_entry_pt entry);
+UTILS_EXPORT bool hashMapEntrySet_remove(hash_map_entry_set_pt entrySet, hash_map_entry_pt entry);
 UTILS_EXPORT void hashMapEntrySet_clear(hash_map_entry_set_pt entrySet);
 UTILS_EXPORT bool hashMapEntrySet_isEmpty(hash_map_entry_set_pt entrySet);
 

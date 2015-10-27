@@ -14,7 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-celix_subproject(REMOTE_SHELL "Option to enable building the Remote Shell bundles" OFF DEPS LAUNCHER SHELL_TUI)
+celix_subproject(REMOTE_SHELL "Option to enable building the Remote Shell bundles" ON DEPS LAUNCHER SHELL_TUI)
 if (REMOTE_SHELL)
 
 	SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_remote_shell")

@@ -45,9 +45,6 @@ struct shellTuiActivator {
 
 typedef struct shellTuiActivator * shell_tui_activator_pt;
 
-void shellTui_write(char * line) {
-	fprintf(stdout, "%s", line);
-}
 
 static void* shellTui_runnable(void *data) {
 	shell_tui_activator_pt act = (shell_tui_activator_pt) data;
@@ -83,7 +80,7 @@ static void* shellTui_runnable(void *data) {
 				continue;
 			}
 
-			act->shell->executeCommand(act->shell->shell, line, shellTui_write, shellTui_write);
+			act->shell->executeCommand(act->shell->shell, line, stdout, stderr);
 		}
 	}
 

@@ -25,6 +25,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 
 #include <constants.h>
 
@@ -33,13 +34,19 @@
 #include "import_registration_impl.h"
 #include "remote_service_admin_impl.h"
 
+struct import_reference {
+	endpoint_description_pt endpoint;
+	service_reference_pt reference;
+};
+
+
 
 celix_status_t importRegistration_proxyFactoryAdding(void * handle, service_reference_pt reference, void **service);
 celix_status_t importRegistration_proxyFactoryAdded(void * handle, service_reference_pt reference, void *service);
 celix_status_t importRegistration_proxyFactoryModified(void * handle, service_reference_pt reference, void *service);
 celix_status_t importRegistration_proxyFactoryRemoved(void * handle, service_reference_pt reference, void *service);
 
-celix_status_t importRegistration_create(endpoint_description_pt endpoint, remote_service_admin_pt rsa, 	sendToHandle sendToCallback, bundle_context_pt context, import_registration_pt *registration) {
+celix_status_t importRegistration_create(endpoint_description_pt endpoint, remote_service_admin_pt rsa, sendToHandle sendToCallback, bundle_context_pt context, import_registration_pt *registration) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*registration = calloc(1, sizeof(**registration));
@@ -60,6 +67,8 @@ celix_status_t importRegistration_create(endpoint_description_pt endpoint, remot
 
 celix_status_t importRegistration_destroy(import_registration_pt registration)
 {
+	free(registration);
+
 	return CELIX_SUCCESS;
 }
 
@@ -251,5 +260,16 @@ celix_status_t importRegistration_getImportReference(import_registration_pt regi
 
 	*reference = registration->importReference;
 
+	return status;
+}
+
+
+celix_status_t importReference_getImportedEndpoint(import_reference_pt reference) {
+	celix_status_t status = CELIX_SUCCESS;
+	return status;
+}
+
+celix_status_t importReference_getImportedService(import_reference_pt reference) {
+	celix_status_t status = CELIX_SUCCESS;
 	return status;
 }

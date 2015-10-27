@@ -25,6 +25,7 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
 #include <celix_errno.h>
 #include <stdio.h>
 #include <errno.h>

@@ -26,6 +26,7 @@
 
 #include <stdlib.h>
 #include <ctype.h>
+#include <string.h>
 
 #include "array_list.h"
 #include "bundle_context.h"
@@ -58,7 +59,7 @@ void addCommand_execute(command_pt command, char *line, void (*out)(char *), voi
 
     status = bundleContext_getServiceReference(command->bundleContext, (char *) CALCULATOR_SERVICE, &calculatorService);
     if (status == CELIX_SUCCESS) {
-    	char *token;
+    	char *token = line;
     	strtok_r(line, " ", &token);
 		char *aStr = strtok_r(NULL, " ", &token);
 		bool numeric;

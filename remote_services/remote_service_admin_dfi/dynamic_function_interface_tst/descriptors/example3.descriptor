@@ -1,0 +1,11 @@
+:header
+type=interface
+name=detection_provider
+version=1.0.0
+:annotations
+:types
+location={DD lat lon}
+target={Jllocation;DDJ id location speed heading lastUpdated}
+detection={Jllocation;Dltarget; id center range simulated}
+:methods
+getDetections()Ljava/util/List;=getDetections(#am=handle;P#am=out;**[Ldetection;)N

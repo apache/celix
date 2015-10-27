@@ -24,11 +24,14 @@ include_directories("public/include")
 SET(BUNDLE_SYMBOLICNAME "apache_celix_remoting_calculator_impl")
 SET(BUNDLE_VERSION "0.0.1")
 
-bundle(calculator SOURCES 
+    bundle(calculator SOURCES
 	private/src/calculator_impl
 	private/src/calculator_activator
     
     private/include/calculator_impl.h
+
+    FILES
+        public/include/org.apache.celix.calc.api.Calculator2.descriptor
 )
 
 target_link_libraries(calculator celix_framework)

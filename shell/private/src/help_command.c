@@ -25,6 +25,7 @@
  */
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "array_list.h"
 #include "bundle_context.h"
@@ -51,66 +52,60 @@ celix_status_t helpCommand_execute(void *_ptr, char *line_str, FILE *out_ptr, FI
 	}
 
 	if (status == CELIX_SUCCESS) {
-		uint32_t out_len = 256;
-		char *sub = NULL;
-		char *save_ptr = NULL;
-		char out_str[out_len];
+        uint32_t out_len = 256;
+        char *sub = NULL;
+        char *save_ptr = NULL;
+        char out_str[out_len];
 
-		memset(out_str, 0, sizeof(out_str));
+        memset(out_str, 0, sizeof(out_str));
 
-		strtok_r(line_str, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
-		sub = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
+        strtok_r(line_str, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
+        sub = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
 
-		if (sub == NULL) {
-			unsigned int i;
-			array_list_pt commands = NULL;
+        if (sub == NULL) {
+            unsigned int i;
+            array_list_pt commands = NULL;
 
-			status = shell_ptr->getCommands(shell_ptr->shell, &commands);
-			for (i = 0; i < arrayList_size(commands); i++) {
-				char *name = arrayList_get(commands, i);
-				fprintf(out_ptr, "%s\n", name);
-			}
-			fprintf(out_ptr, "\nUse 'help <command-name>' for more information.\n");
-		} else {
-			bool found = false;
-			while (sub != NULL) {
-				unsigned int i;
-				array_list_pt commands = NULL;
-				status = shell_ptr->getCommands(shell_ptr->shell, &commands);
-				for (i = 0; i < arrayList_size(commands); i++) {
-					char *name = arrayList_get(commands, i);
-					if (strcmp(sub, name) == 0) {
-						celix_status_t sub_status_desc;
-						celix_status_t sub_status_usage;
+            status = shell_ptr->getCommands(shell_ptr->shell, &commands);
+            for (i = 0; i < arrayList_size(commands); i++) {
+                char *name = arrayList_get(commands, i);
+                fprintf(out_ptr, "%s\n", name);
+            }
+            fprintf(out_ptr, "\nUse 'help <command-name>' for more information.\n");
+        } else {
+            celix_status_t sub_status_desc;
+            celix_status_t sub_status_usage;
+            int i;
+            array_list_pt commands = NULL;
+            shell_ptr->getCommands(shell_ptr->shell, &commands);
+            for (i = 0; i < arrayList_size(commands); i++) {
+                char *name = arrayList_get(commands, i);
+                if (strcmp(sub, name) == 0) {
+                    char *usage_str = NULL;
+                    char *desc_str = NULL;
 
-						char *usage_str = NULL;
-						char *desc_str = NULL;
+                    sub_status_desc = shell_ptr->getCommandDescription(shell_ptr->shell, name, &desc_str);
+                    sub_status_usage = shell_ptr->getCommandUsage(shell_ptr->shell, name, &usage_str);
 
-						sub_status_desc = shell_ptr->getCommandDescription(shell_ptr->shell, name, &desc_str);
-						sub_status_usage = shell_ptr->getCommandUsage(shell_ptr->shell, name, &usage_str);
+                    if (sub_status_usage == CELIX_SUCCESS && sub_status_desc == CELIX_SUCCESS) {
+                        fprintf(out_ptr, "Command     : %s\n", name);
+                        fprintf(out_ptr, "Usage       : %s\n", usage_str == NULL ? "" : usage_str);
+                        fprintf(out_ptr, "Description : %s\n", desc_str == NULL ? "" : desc_str);
+                    } else {
+                        fprintf(err_ptr, "Error retreiving help info for command '%s'\n", sub);
+                    }
 
-						if (sub_status_usage == CELIX_SUCCESS && sub_status_desc == CELIX_SUCCESS) {
-							if (found) {
-								fprintf(out_ptr, "---\n");
-							}
-							found = true;
-							fprintf(out_ptr, "Command     : %s\n", name);
-							fprintf(out_ptr, "Usage       : %s\n", usage_str);
-							fprintf(out_ptr, "Description : %s\n", desc_str);
-						}
+                    if (sub_status_desc != CELIX_SUCCESS && status == CELIX_SUCCESS) {
+                        status = sub_status_desc;
+                    }
+                    if (sub_status_usage != CELIX_SUCCESS && status == CELIX_SUCCESS) {
+                        status = sub_status_usage;
+                    }
+                }
+            }
+            arrayList_destroy(commands);
+        }
+    }
 
-						if (sub_status_desc != CELIX_SUCCESS && status == CELIX_SUCCESS) {
-							status = sub_status_desc;
-						}
-						if (sub_status_usage != CELIX_SUCCESS && status == CELIX_SUCCESS) {
-							status = sub_status_usage;
-						}
-					}
-				}
-				sub = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
-			}
-		}
-	}
-
-	return status;
+    return status;
 }

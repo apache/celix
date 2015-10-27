@@ -78,7 +78,7 @@ celix_status_t updateCommand_download(bundle_context_pt context, char * url, cha
 	curl = curl_easy_init();
 	if (curl) {
 		FILE *fp = NULL;
-		*inputFile = "updateXXXXXX";
+		snprintf(*inputFile, 13,"updateXXXXXX");
 		int fd = mkstemp(*inputFile);
 		if (fd) {
 		    fp = fopen(*inputFile, "wb+");

@@ -75,9 +75,9 @@ celix_status_t bundleActivator_create(bundle_context_pt context_ptr, void **_ppt
         instance_ptr->std_commands[0] =
                 (struct command) {
                         .exec = psCommand_execute,
-                        .name = "ps",
-                        .description = "list installed bundles.",
-                        .usage = "ps [-l | -s | -u]"
+                        .name = "lb",
+                        .description = "list bundles.",
+                        .usage = "lb [-l | -s | -u]"
                 };
         instance_ptr->std_commands[1] =
                 (struct command) {

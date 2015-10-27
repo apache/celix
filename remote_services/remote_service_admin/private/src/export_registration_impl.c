@@ -32,6 +32,12 @@
 #include "export_registration_impl.h"
 #include "remote_service_admin_impl.h"
 
+
+struct export_reference {
+	endpoint_description_pt endpoint;
+	service_reference_pt reference;
+};
+
 celix_status_t exportRegistration_endpointAdding(void * handle, service_reference_pt reference, void **service);
 celix_status_t exportRegistration_endpointAdded(void * handle, service_reference_pt reference, void *service);
 celix_status_t exportRegistration_endpointModified(void * handle, service_reference_pt reference, void *service);
@@ -174,7 +180,7 @@ celix_status_t exportRegistration_endpointRemoved(void * handle, service_referen
 }
 
 celix_status_t exportRegistration_open(export_registration_pt registration) {
-	celix_status_t status;
+	celix_status_t status = CELIX_SUCCESS;
 	char *bundleStore = NULL;
 
 	bundleContext_getProperty(registration->context, BUNDLE_STORE_PROPERTY_NAME, &bundleStore);
@@ -238,3 +244,17 @@ celix_status_t exportRegistration_setEndpointDescription(export_registration_pt 
 
 	return status;
 }
+
+celix_status_t exportReference_getExportedEndpoint(export_reference_pt reference, endpoint_description_pt *endpoint) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	*endpoint = reference->endpoint;
+
+	return status;
+}
+
+celix_status_t exportReference_getExportedService(export_reference_pt reference) {
+	celix_status_t status = CELIX_SUCCESS;
+	return status;
+}
+

@@ -408,7 +408,7 @@ celix_status_t bundleArchive_setRefreshCount(bundle_archive_pt archive) {
 	celix_status_t status = CELIX_SUCCESS;
 	char refreshCounter[512];
 
-	snprintf(refreshCounter, sizeof(refreshCounter), "%s/bundle.state", archive->archiveRoot);
+	snprintf(refreshCounter, sizeof(refreshCounter), "%s/refresh.counter", archive->archiveRoot);
 
 	refreshCounterFile = fopen(refreshCounter, "w");
     if (refreshCounterFile == NULL) {

@@ -15,10 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(DEPLOYMENT_ADMIN "Option to enable building the Deployment Admin Service bundles" OFF DEPS framework launcher shell_tui log_writer)
+celix_subproject(DEPLOYMENT_ADMIN "Option to enable building the Deployment Admin Service bundles" ON DEPS framework launcher shell_tui log_writer)
 if (DEPLOYMENT_ADMIN)
 	
-	find_package(CURL REQUIRED)
+    find_package(CURL REQUIRED)
+    find_package(UUID REQUIRED)
 
     add_definitions(-DUSE_FILE32API)
     
@@ -27,8 +28,7 @@ if (DEPLOYMENT_ADMIN)
 	SET_HEADERS("Bundle-Name: Apache Celix Deployment Admin") 
     
     include_directories("${CURL_INCLUDE_DIR}")
-    include_directories("${APR_INCLUDE_DIR}")
-    include_directories("${APRUTIL_INCLUDE_DIR}")
+    include_directories("${UUID_INCLUDE_DIR}")
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/deployment_admin/private/include")
     include_directories("${PROJECT_SOURCE_DIR}/deployment_admin/public/include")
@@ -60,5 +60,5 @@ if (DEPLOYMENT_ADMIN)
     		public/include/resource_processor.h
 	)
     
-    target_link_libraries(deployment_admin celix_framework ${CURL_LIBRARIES} ${APR_LIBRARY} ${APRUTIL_LIBRARY})
+    target_link_libraries(deployment_admin celix_framework ${CURL_LIBRARIES} ${UUID_LIBRARY})
 endif (DEPLOYMENT_ADMIN)

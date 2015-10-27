@@ -54,6 +54,6 @@ bool etcd_get(char* key, char* value, char*action, int* modifiedIndex);
 bool etcd_getNodes(char* directory, char** nodeNames, int* size);
 bool etcd_set(char* key, char* value, int ttl, bool prevExist);
 bool etcd_del(char* key);
-bool etcd_watch(char* key, int index, char* action, char* prevValue, char* value);
+bool etcd_watch(char* key, int index, char* action, char* prevValue, char* value, char* rkey, int *modifiedIndex);
 
 #endif /* ETCD_H_ */

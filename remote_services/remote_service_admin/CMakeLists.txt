@@ -25,9 +25,11 @@ install (FILES
         public/include/remote_endpoint.h
         public/include/remote_proxy.h
         public/include/remote_service_admin.h
+        public/include/export_registration.h
+        public/include/import_registration.h
         public/include/endpoint_description.h
-        ../endpoint_listener/public/include/endpoint_listener.h
-        ../utils/public/include/remote_constants.h
+        public/include/endpoint_listener.h
+        public/include/remote_constants.h
     DESTINATION 
         include/celix/remote_service_admin 
     COMPONENT 
@@ -41,7 +43,7 @@ install (FILES
         remote_service_admin
 )
 install (FILES 
-        ${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include/endpoint_listener.h
+        public/include/endpoint_listener.h
     DESTINATION 
         include/celix/endpoint_listener 
     COMPONENT 

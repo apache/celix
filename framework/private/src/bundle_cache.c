@@ -41,7 +41,7 @@ celix_status_t bundleCache_create(properties_pt configurationMap, framework_logg
     celix_status_t status;
     bundle_cache_pt cache;
 
-	cache = (bundle_cache_pt) malloc((sizeof(*cache)));
+	cache = (bundle_cache_pt) calloc(1, sizeof(*cache));
     if (cache == NULL) {
         status = CELIX_ENOMEM;
     } else {
@@ -59,9 +59,10 @@ celix_status_t bundleCache_create(properties_pt configurationMap, framework_logg
         } else {
             status = CELIX_ILLEGAL_ARGUMENT;
         }
+
+	    framework_logIfError(cache->logger, status, NULL, "Failed to create bundle cache");
     }
 
-    framework_logIfError(cache->logger, status, NULL, "Failed to create bundle cache");
 
 	return status;
 }

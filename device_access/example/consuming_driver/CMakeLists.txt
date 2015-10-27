@@ -15,8 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(APR REQUIRED)
-
 SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_word_consuming_driver_example")
 SET(BUNDLE_VERSION "0.0.1")
 SET_HEADERS("Bundle-Name: Apache Celix Device Access Word Consuming Driver Example")
@@ -32,4 +30,4 @@ include_directories(private/include)
 include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 
-target_link_libraries(word_consumingdriver celix_utils celix_framework ${APR_LIBRARY})
+target_link_libraries(word_consumingdriver celix_utils celix_framework)

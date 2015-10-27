@@ -41,7 +41,7 @@ struct shellService {
 	celix_status_t (*getCommandUsage)(shell_pt shell_ptr, char *command_name_str, char **usage_str);
 	celix_status_t (*getCommandDescription)(shell_pt shell_ptr, char *command_name_str, char **command_description_str);
 	celix_status_t (*getCommandReference)(shell_pt shell_ptr, char *command_name_str, service_reference_pt *command_reference_ptr);
-	celix_status_t (*executeCommand)(shell_pt shell_ptr, char * command_line_str, void (*out)(char *), void (*error)(char *));
+	celix_status_t (*executeCommand)(shell_pt shell_ptr, char * command_line_str, FILE *out, FILE *err);
 };
 
 typedef struct shellService * shell_service_pt;

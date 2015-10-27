@@ -14,7 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-celix_subproject(SHELL "Option to enable building the Shell bundles" "OFF" DEPS LAUNCHER LOG_SERVICE)
+celix_subproject(SHELL "Option to enable building the Shell bundles" ON DEPS LAUNCHER LOG_SERVICE)
 if (SHELL)
 	find_package(CURL REQUIRED)
 	
