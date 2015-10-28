@@ -23,5 +23,5 @@ add_custom_target(copy-input
 add_dependencies(test_dfi copy-input)
 
 add_test(NAME run_test_dfi COMMAND test_dfi)
-SETUP_TARGET_FOR_COVERAGE(test_dfi_cov test_dfi ${CMAKE_BINARY_DIR}/coverage/dfi)
+SETUP_TARGET_FOR_COVERAGE(test_dfi_cov test_dfi ${CMAKE_BINARY_DIR}/coverage/test_dfi/test_dfi)
 
