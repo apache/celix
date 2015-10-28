@@ -81,6 +81,11 @@ static void stdLog(void *handle, int level, const char *file, int line, const ch
         return 0;
     }
 
+    int getName_example4(void *handle, char** result) {
+        *result = strdup("allocatedInFunction");
+        return 0;
+    }
+
     struct tst_seq {
         uint32_t cap;
         uint32_t len;
@@ -148,6 +153,11 @@ static void stdLog(void *handle, int level, const char *file, int line, const ch
         int (*sub)(void *, double, double, double *);
         int (*sqrt)(void *, double, double *);
         int (*stats)(void *, struct tst_seq, struct tst_StatsResult **);
+    };
+
+    struct tst_serv_example4 {
+        void *handle;
+        int (*getName_example4)(void *, char** name);
     };
 
     void callTestPreAllocated(void) {
@@ -287,6 +297,32 @@ static void stdLog(void *handle, int level, const char *file, int line, const ch
     }
 
 
+
+
+    void callTestOutChar(void) {
+        dyn_interface_type *intf = NULL;
+        FILE *desc = fopen("descriptors/example4.descriptor", "r");
+        CHECK(desc != NULL);
+        int rc = dynInterface_parse(desc, &intf);
+        CHECK_EQUAL(0, rc);
+        fclose(desc);
+
+        char *result = NULL;
+
+        struct tst_serv_example4 serv;
+        serv.handle = NULL;
+        serv.getName_example4 = getName_example4;
+
+        rc = jsonRpc_call(intf, &serv, "{\"m\":\"getName(V)t\", \"a\": []}", &result);
+        CHECK_EQUAL(0, rc);
+
+        STRCMP_CONTAINS("allocatedInFunction", result);
+
+        free(result);
+        dynInterface_destroy(intf);
+    }
+
+
     void handleTestOutChar(void) {
         dyn_interface_type *intf = NULL;
         FILE *desc = fopen("descriptors/example4.descriptor", "r");
@@ -305,22 +341,25 @@ static void stdLog(void *handle, int level, const char *file, int line, const ch
                 break;
             }
         }
+
         CHECK(func != NULL);
 
-        const char *reply = "{\"r\": \"this is an pre-allocated string\" }";
-        char *result = (char*) calloc(50, sizeof(*result));
+        const char *reply = "{\"r\": \"this is a test string\" }";
+        char *result = NULL;
+        void *out = &result;
 
         void *args[2];
         args[0] = NULL;
-        args[1] = &result;
+        args[1] = &out;
 
         rc = jsonRpc_handleReply(func, reply, args);
 
-        STRCMP_EQUAL("this is an pre-allocated string", result);
+        STRCMP_EQUAL("this is a test string", result);
 
         free(result);
         dynInterface_destroy(intf);
     }
+
 
 }
 
@@ -362,8 +401,13 @@ TEST(JsonRpcTests, handleOutSeq) {
     handleTestOutputSequence();
 }
 
-TEST(JsonRpcTests, handleOutChar) {
-	handleTestOutChar();
+
+
+TEST(JsonRpcTests, callTestOutChar) {
+    callTestOutChar();
 }
 
+TEST(JsonRpcTests, handleOutChar) {
+    handleTestOutChar();
+}
 

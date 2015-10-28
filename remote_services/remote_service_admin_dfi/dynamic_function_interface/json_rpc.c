@@ -145,22 +145,26 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
                 dynType_free(argType, args[i]);
             } else if (meta == DYN_FUNCTION_ARGUMENT_META__OUTPUT) {
                 if (ptr != NULL) {
-
                     dyn_type *typedType = NULL;
                     if (status == OK) {
                         status = dynType_typedPointer_getTypedType(argType, &typedType);
                     }
+                    if (dynType_descriptorType(typedType) == 't') {
+                        status = jsonSerializer_serializeJson(typedType, (void*) &ptr, &jsonResult);
+                    }
+                    else {
+                        dyn_type *typedTypedType = NULL;
+                        if (status == OK) {
+                            status = dynType_typedPointer_getTypedType(typedType, &typedTypedType);
+                        }
 
-                    dyn_type *typedTypedType = NULL;
-                    if (status == OK) {
-                        status = dynType_typedPointer_getTypedType(typedType, &typedTypedType);
+                        status = jsonSerializer_serializeJson(typedTypedType, ptr, &jsonResult);
+
+                        if (status == OK) {
+                            dynType_free(typedTypedType, ptr);
+                        }
                     }
 
-                    status = jsonSerializer_serializeJson(typedTypedType, ptr, &jsonResult);
-
-                    if (status == OK) {
-                        dynType_free(typedTypedType, ptr);
-                    }
                 } else {
                     LOG_DEBUG("Output ptr is null");
                 }
@@ -272,13 +276,13 @@ int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[]
                 void **out = (void **) args[i];
 
                 size_t size = 0;
-                dynType_typedPointer_getTypedType(argType, &argType);
 
                 if (dynType_descriptorType(argType) == 't') {
                     status = jsonSerializer_deserializeJson(argType, result, &tmp);
                     size = strnlen(((char *) *(char**) tmp), 1024 * 1024);
                     memcpy(*out, *(void**) tmp, size);
                 } else {
+                    dynType_typedPointer_getTypedType(argType, &argType);
                     status = jsonSerializer_deserializeJson(argType, result, &tmp);
                     size = dynType_size(argType);
                     memcpy(*out, tmp, size);
@@ -287,11 +291,21 @@ int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[]
                 dynType_free(argType, tmp);
             } else if (meta == DYN_FUNCTION_ARGUMENT_META__OUTPUT) {
                 dyn_type *subType = NULL;
+
                 dynType_typedPointer_getTypedType(argType, &subType);
-                dyn_type *subSubType = NULL;
-                dynType_typedPointer_getTypedType(subType, &subSubType);
-                void **out = (void **) args[i];
-                status = jsonSerializer_deserializeJson(subSubType, result, *out);
+
+                if (dynType_descriptorType(subType) == 't') {
+                    void* tmp = NULL;
+                    status = jsonSerializer_deserializeJson(subType, result, &tmp);
+                    void ***out = (void ***) args[i];
+                    **out = * (void**) tmp;
+                }
+                else {
+                    dyn_type *subSubType = NULL;
+                    dynType_typedPointer_getTypedType(subType, &subSubType);
+                    void **out = (void **) args[i];
+                    status = jsonSerializer_deserializeJson(subSubType, result, *out);
+                }
             } else {
                 //skip
             }
