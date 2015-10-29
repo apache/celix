@@ -67,6 +67,7 @@ struct framework {
     celix_thread_cond_t shutdownGate;
     celix_thread_cond_t condition;
 
+    celix_thread_mutex_t installedBundleMapLock;
     celix_thread_mutex_t installRequestLock;
     celix_thread_mutex_t mutex;
     celix_thread_mutex_t bundleLock;
@@ -84,6 +85,7 @@ struct framework {
     celix_thread_cond_t dispatcher;
     celix_thread_mutex_t dispatcherLock;
     celix_thread_t dispatcherThread;
+    celix_thread_t shutdownThread;
 
     framework_logger_pt logger;
 };

@@ -172,6 +172,9 @@ TEST(celix_thread_mutex, lock) {
 
 	//possible race condition, not perfect test
 	celixThreadMutex_unlock(&params->mu);
+
+	sleep(2);
+
 	celixThreadMutex_lock(&params->mu2);
 	LONGS_EQUAL(666, params->i);
 	celixThreadMutex_unlock(&params->mu2);
@@ -191,14 +194,14 @@ TEST(celix_thread_mutex, attrSettype) {
 	celixThreadMutexAttr_create(&mu_attr);
 
 	//test recursive mutex
-	celixThreadMutexAttr_settype(&mu_attr, PTHREAD_MUTEX_RECURSIVE);
+	celixThreadMutexAttr_settype(&mu_attr, CELIX_THREAD_MUTEX_RECURSIVE);
 	celixThreadMutex_create(&mu, &mu_attr);
 	//if program doesnt deadlock: succes! also check factorial of 10, for reasons unknown
 	LONGS_EQUAL(3628800, thread_test_func_recur_lock(&mu, 10));
 	celixThreadMutex_destroy(&mu);
 
 	//test deadlock check mutex
-	celixThreadMutexAttr_settype(&mu_attr, PTHREAD_MUTEX_ERRORCHECK);
+	celixThreadMutexAttr_settype(&mu_attr, CELIX_THREAD_MUTEX_ERRORCHECK);
 	celixThreadMutex_create(&mu, &mu_attr);
 	//get deadlock error
 	celixThreadMutex_lock(&mu);

@@ -46,7 +46,9 @@ struct deployment_admin {
 };
 
 typedef enum {
-	DEPLOYMENT_ADMIN_AUDIT_EVENT__FRAMEWORK_STARTED = 1005
+	DEPLOYMENT_ADMIN_AUDIT_EVENT__FRAMEWORK_STARTED = 1005,
+	DEPLOYMENT_ADMIN_AUDIT_EVENT__TARGETPROPERTIES_SET = 4001
+
 } DEPLOYMENT_ADMIN_AUDIT_EVENT;
 
 celix_status_t deploymentAdmin_create(bundle_context_pt context, deployment_admin_pt *admin);

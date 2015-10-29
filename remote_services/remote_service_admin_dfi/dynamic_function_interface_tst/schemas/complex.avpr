@@ -1,0 +1,36 @@
+{
+  "protocol" : "Complex",
+  "namespace" : null,
+  "types" : [ {
+    "type" : "record",
+    "name" : "StatResult",
+    "fields" : [ {
+      "name" : "sum",
+      "type" : "double"
+    }, {
+      "name" : "min",
+      "type" : "double"
+    }, {
+      "name" : "max",
+      "type" : "double"
+    }, {
+      "name" : "input",
+      "type" : {
+        "type" : "array",
+        "items" : "double"
+      }
+    } ]
+  } ],
+  "messages" : {
+    "stats" : {
+      "request" : [ {
+        "name" : "input",
+        "type" : {
+          "type" : "array",
+          "items" : "double"
+        }
+      } ],
+      "response" : "StatResult"
+    }
+  }
+}

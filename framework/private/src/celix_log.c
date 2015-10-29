@@ -34,7 +34,10 @@ void framework_log(framework_logger_pt logger, framework_log_level_t level, cons
     va_start(listPointer, fmsg);
     vsprintf(msg, fmsg, listPointer);
 
-    logger->logFunction(level, func, file, line, msg);
+    //FIXME logger and/or logger->logFucntion can be null. But this solution is not thread safe!
+    if (logger != NULL && logger->logFunction != NULL) {
+        logger->logFunction(level, func, file, line, msg);
+    }
 }
 
 void framework_logCode(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line, celix_status_t code, char *fmsg, ...) {

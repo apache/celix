@@ -134,7 +134,6 @@ celix_status_t inspectCommand_printExportedServices(command_pt command, array_li
 				out(line);
 			}
 		}
-		arrayList_destroy(bundles);
 	}
 
 	if (status == CELIX_SUCCESS) {
@@ -192,6 +191,10 @@ celix_status_t inspectCommand_printExportedServices(command_pt command, array_li
 				}
 			}
 		}
+	}
+
+	if (bundles != NULL) {
+	    arrayList_destroy(bundles);
 	}
 
 	return status;

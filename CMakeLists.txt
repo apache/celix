@@ -28,6 +28,12 @@ set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 set(CMAKE_INSTALL_NAME_DIR "@rpath")
 
 SET(CMAKE_BUILD_TYPE "Debug")
+
+# see https://public.kitware.com/Bug/view.php?id=15696
+IF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} EQUAL 3.3 AND ${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
+    message( FATAL_ERROR "Building Celix using CMake 3.3 and makefiles is not supported due to a bug in the Makefile Generator (see Bug 15696). Please change the used CMake version - both, CMake 3.2 and CMake 3.4 are working fine. Or use a different generator (e.g. Ninja)." )
+ENDIF()
+
 IF(UNIX)
 	SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -Wall -pthread ${CMAKE_C_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "-pthread ${CMAKE_EXE_LINKER_FLAGS}")
@@ -42,7 +48,12 @@ SET(CELIX_MINOR "0")
 SET(CELIX_MICRO "0")
 SET(CELIX_QUALIFIER "")
 
-enable_testing()
+option(ENABLE_TESTING "Enables unit/bundle testing" FALSE)
+
+if (ENABLE_TESTING)
+	enable_testing()
+endif()
+
 
 include(CMakeCelix)
 include(cmake_celix/installation)
@@ -60,7 +71,7 @@ if(${WITH_APR})
 endif()
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
                ${CMAKE_CURRENT_BINARY_DIR}/config.h)
-INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/config.h DESTINATION include/celix)
+INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/config.h DESTINATION include/celix COMPONENT framework)
 
 ## New sub project must use a buildoption to be able to enable/disable the project using the CMake Editor
 ## Sub projects depending on another sub project automatically enable these dependencies

@@ -46,7 +46,7 @@ celix_status_t deploymentPackage_create(bundle_context_pt context, manifest_pt m
 	celix_status_t status = CELIX_SUCCESS;
 
 	*package = calloc(1, sizeof(**package));
-	if (!package) {
+	if (!(*package)) {
 		status = CELIX_ENOMEM;
 	} else {
 		(*package)->context = context;
@@ -80,11 +80,26 @@ celix_status_t deploymentPackage_create(bundle_context_pt context, manifest_pt m
 
 celix_status_t deploymentPackage_destroy(deployment_package_pt package) {
 	celix_status_t status = CELIX_SUCCESS;
+	int i;
+
+
+    manifest_destroy(package->manifest);
 
 	hashMap_destroy(package->nameToBundleInfo, false, false);
 	hashMap_destroy(package->pathToEntry, false, false);
 
+
+    for(i = arrayList_size(package->bundleInfos); i  > 0; --i) {
+        free(arrayList_remove(package->bundleInfos, 0));
+    }
+
 	arrayList_destroy(package->bundleInfos);
+
+    for (i = arrayList_size(package->resourceInfos); i > 0; --i) {
+        free(arrayList_remove(package->resourceInfos, 0));
+    }
+
+
 	arrayList_destroy(package->resourceInfos);
 
 	free(package);
@@ -123,6 +138,8 @@ celix_status_t deploymentPackage_getBundle(deployment_package_pt package, char *
 				break;
 			}
 		}
+
+		arrayList_destroy(bundles);
 	}
 
 	return CELIX_SUCCESS;

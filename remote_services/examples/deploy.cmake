@@ -41,7 +41,7 @@ if (RSA_EXAMPLES)
     if (RSA_REMOTE_SERVICE_ADMIN_SHM)
         is_enabled(RSA_DISCOVERY_SHM)
         if (RSA_DISCOVERY_SHM)
-            deploy("remote-services-shm" BUNDLES discovery_shm topology_manager remote_service_admin_shm calculator shell shell_tui log_service log_writer 
+            deploy("remote-services-shm" BUNDLES discovery_shm topology_manager remote_service_admin_shm calculator shell shell_tui log_service log_writer
                                          ENDPOINTS org.apache.celix.calc.api.Calculator_endpoint)
             deploy("remote-services-shm-client" BUNDLES topology_manager remote_service_admin_shm shell shell_tui log_service log_writer calculator_shell discovery_shm
                                                 ENDPOINTS org.apache.celix.calc.api.Calculator_proxy)

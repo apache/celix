@@ -1,0 +1,8 @@
+:header
+type=interface
+name=example4
+version=1.0.0
+:annotations
+:types
+:methods
+getName(V)t=getName(#am=handle;P#am=out;*t)N

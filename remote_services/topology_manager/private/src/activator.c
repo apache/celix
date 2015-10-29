@@ -124,7 +124,7 @@ static celix_status_t bundleActivator_createRSATracker(struct activator *activat
     status = serviceTrackerCustomizer_create(activator->manager, topologyManager_rsaAdding, topologyManager_rsaAdded, topologyManager_rsaModified, topologyManager_rsaRemoved, &customizer);
 
     if (status == CELIX_SUCCESS) {
-        status = serviceTracker_create(activator->context, "remote_service_admin", customizer, tracker);
+        status = serviceTracker_create(activator->context, OSGI_RSA_REMOTE_SERVICE_ADMIN, customizer, tracker);
     }
 
     return status;
