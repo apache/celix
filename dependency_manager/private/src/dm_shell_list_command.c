@@ -75,8 +75,8 @@ void dmListCommand_execute(command_pt command, char * line, void (*out)(char *),
         int cmpCnt;
         for (cmpCnt = 0; cmpCnt < arrayList_size(info->components); cmpCnt++) {
             dm_component_info_pt compInfo = arrayList_get(info->components, cmpCnt);
-            char *startColors = "";
-            char *endColors = "";
+            const char *startColors = "";
+            const char *endColors = "";
             if (colors) {
                 startColors = compInfo->active ? OK_COLOR : NOK_COLOR;
                 endColors = END_COLOR;
@@ -100,8 +100,8 @@ void dmListCommand_execute(command_pt command, char * line, void (*out)(char *),
             for(depCnt = 0 ;depCnt < arrayList_size(compInfo->dependency_list); depCnt++) {
                 dm_service_dependency_info_pt dependency;
                 dependency = arrayList_get(compInfo->dependency_list, depCnt);
-                char *startColors = "";
-                char *endColors = "";
+                const char *startColors = "";
+                const char *endColors = "";
                 if (colors) {
                     if (dependency->required) {
                         startColors = dependency->available ? OK_COLOR : NOK_COLOR;

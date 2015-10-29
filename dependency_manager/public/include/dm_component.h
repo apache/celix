@@ -39,10 +39,10 @@ typedef struct dm_component *dm_component_pt;
 #define DM_COMPONENT_MAX_ID_LENGTH 64
 #define DM_COMPONENT_MAX_NAME_LENGTH 128
 
-typedef celix_status_t (*init_fpt)(void *userData);
-typedef celix_status_t (*start_fpt)(void *userData);
-typedef celix_status_t (*stop_fpt)(void *userData);
-typedef celix_status_t (*deinit_fpt)(void *userData);
+typedef int (*init_fpt)(void *userData);
+typedef int (*start_fpt)(void *userData);
+typedef int (*stop_fpt)(void *userData);
+typedef int (*deinit_fpt)(void *userData);
 
 celix_status_t component_create(bundle_context_pt context, const char *name, dm_component_pt *component);
 celix_status_t component_destroy(dm_component_pt *component);
@@ -57,6 +57,15 @@ celix_status_t component_getInterfaces(dm_component_pt component, array_list_pt 
 
 celix_status_t component_addServiceDependency(dm_component_pt component, dm_service_dependency_pt dep);
 celix_status_t component_removeServiceDependency(dm_component_pt component, dm_service_dependency_pt dependency);
+
+#define component_setCallbacksSafe(dmCmp, type, init, start, stop, deinit) \
+    do {  \
+        int (*tmp_init)(type)   = (init); \
+        int (*tmp_start)(type)  = (start); \
+        int (*tmp_stop)(type)   = (stop); \
+        int (*tmp_deinit)(type) = (deinit); \
+        component_setCallbacks((dmCmp), (init_fpt)tmp_init, (start_fpt)tmp_start, (stop_fpt)tmp_stop, (deinit_fpt)tmp_deinit); \
+    } while(0)
 
 celix_status_t component_setCallbacks(dm_component_pt component, init_fpt init, start_fpt start, stop_fpt stop, deinit_fpt deinit);
 

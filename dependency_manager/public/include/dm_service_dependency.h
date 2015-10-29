@@ -33,11 +33,11 @@
 
 typedef struct dm_service_dependency *dm_service_dependency_pt;
 
-typedef celix_status_t (*service_set_fpt)(void *handle, void *service);
-typedef celix_status_t (*service_add_fpt)(void *handle, void *service);
-typedef celix_status_t (*service_change_fpt)(void *handle, void *service);
-typedef celix_status_t (*service_remove_fpt)(void *handle, void *service);
-typedef celix_status_t (*service_swap_fpt)(void *handle, void *oldService, void *newService);
+typedef int (*service_set_fpt)(void *handle, void *service);
+typedef int (*service_add_fpt)(void *handle, void *service);
+typedef int (*service_change_fpt)(void *handle, void *service);
+typedef int (*service_remove_fpt)(void *handle, void *service);
+typedef int (*service_swap_fpt)(void *handle, void *oldService, void *newService);
 
 typedef celix_status_t (*service_set_with_ref_fpt)(void *handle, service_reference_pt reference, void *service);
 typedef celix_status_t (*service_add_with_ref_fpt)(void *handle, service_reference_pt reference, void *service);
@@ -51,9 +51,21 @@ celix_status_t serviceDependency_destroy(dm_service_dependency_pt *dependency_pt
 celix_status_t serviceDependency_setRequired(dm_service_dependency_pt dependency, bool required);
 celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency, char *serviceName, char *filter);
 celix_status_t serviceDependency_getFilter(dm_service_dependency_pt dependency, char **filter);
+
 celix_status_t serviceDependency_setCallbacks(dm_service_dependency_pt dependency, service_set_fpt set, service_add_fpt add, service_change_fpt change, service_remove_fpt remove, service_swap_fpt swap);
 celix_status_t serviceDependency_setCallbacksWithServiceReference(dm_service_dependency_pt dependency, service_set_with_ref_fpt set, service_add_with_ref_fpt add, service_change_with_ref_fpt change, service_remove_with_ref_fpt remove, service_swap_with_ref_fpt swap);
 celix_status_t serviceDependency_setAutoConfigure(dm_service_dependency_pt dependency, celix_thread_mutex_t *service_lock, void **field);
+
+#define serviceDependency_setCallbacksSafe(dep, cmpType, servType, set, add, change, remove, swap) \
+	do { \
+		int (*tmpSet)(cmpType, servType) = set; \
+		int (*tmpAdd)(cmpType, servType) = add; \
+		int (*tmpChange)(cmpType, servType) = change; \
+		int (*tmpRemove)(cmpType, servType) = remove; \
+		int (*tmpSwap)(cmpType, servType, servType) = swap; \
+		serviceDependency_setCallbacks((dep), (service_set_fpt)tmpSet, (service_add_fpt)tmpAdd, (service_change_fpt)tmpChange, (service_remove_fpt)tmpRemove, (service_swap_fpt)tmpSwap); \
+	} while(0)
+
 
 /**
  * Return a service dependency info. The caller is the owner

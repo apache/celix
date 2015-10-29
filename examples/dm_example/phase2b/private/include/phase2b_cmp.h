@@ -35,6 +35,7 @@ phase2b_cmp_t *phase2b_create(void);
 int phase2b_init(phase2b_cmp_t *cmp);
 int phase2b_start(phase2b_cmp_t *cmp);
 int phase2b_stop(phase2b_cmp_t *cmp);
+int phase2b_deinit(phase2b_cmp_t *cmp);
 void phase2b_destroy(phase2b_cmp_t *cmp);
 
 int phase2b_setPhase1(phase2b_cmp_t *cmp, phase1_t *phase1);

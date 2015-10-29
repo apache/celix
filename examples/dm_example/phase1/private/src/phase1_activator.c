@@ -53,7 +53,7 @@ celix_status_t dm_init(void * userData, bundle_context_pt context, dm_dependency
 	if (act->phase1Cmp != NULL) {
 
 		act->phase1Serv.handle = act->phase1Cmp;
-		act->phase1Serv.getData = phase1_getData;
+		act->phase1Serv.getData = (void *)phase1_getData;
 
 		properties_pt props = properties_create();
 		properties_set(props, "id", "phase1");
@@ -61,7 +61,7 @@ celix_status_t dm_init(void * userData, bundle_context_pt context, dm_dependency
 		dm_component_pt cmp;
 		component_create(context, "PHASE1_PROCESSING_COMPONENT", &cmp);
 		component_setImplementation(cmp, act->phase1Cmp);
-		component_setCallbacks(cmp, phase1_init, phase1_start, phase1_stop, phase1_destroy);
+		component_setCallbacksSafe(cmp, phase1_cmp_t *, phase1_init, phase1_start, phase1_stop, phase1_deinit);
 		component_addInterface(cmp, PHASE1_NAME, &act->phase1Serv, props);
 
 		dependencyManager_add(manager, cmp);

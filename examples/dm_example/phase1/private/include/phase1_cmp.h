@@ -34,6 +34,7 @@ phase1_cmp_t *phase1_create(void);
 int phase1_init(phase1_cmp_t *cmp);
 int phase1_start(phase1_cmp_t *cmp);
 int phase1_stop(phase1_cmp_t *cmp);
+int phase1_deinit(phase1_cmp_t *cmp);
 void phase1_destroy(phase1_cmp_t *cmp);
 
 int phase1_getData(phase1_cmp_t *cmp, unsigned int *data);

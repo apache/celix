@@ -71,6 +71,11 @@ int phase1_stop(phase1_cmp_t *cmp) {
     return 0;
 }
 
+int phase1_deinit(phase1_cmp_t *cmp) {
+    printf("deinit phase1\n");
+    return 0;
+}
+
 void phase1_destroy(phase1_cmp_t *cmp) {
     free(cmp);
 	printf("destroy phase1\n");

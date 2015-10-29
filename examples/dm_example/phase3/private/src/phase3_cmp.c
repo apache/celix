@@ -75,6 +75,11 @@ int phase3_stop(phase3_cmp_t *cmp) {
     return 0;
 }
 
+int phase3_deinit(phase3_cmp_t *cmp) {
+    printf("deinit phase1\n");
+    return 0;
+}
+
 void phase3_destroy(phase3_cmp_t *cmp) {
     celixThreadMutex_lock(&cmp->mutex);
     celixThreadMutex_destroy(&cmp->mutex);
