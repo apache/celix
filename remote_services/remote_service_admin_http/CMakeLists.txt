@@ -46,4 +46,10 @@ if (RSA_REMOTE_SERVICE_ADMIN_HTTP)
 	install_bundle(remote_service_admin_http)
 
 	target_link_libraries(remote_service_admin_http celix_framework ${CURL_LIBRARIES} ${UUID})
+
+	if (ENABLE_TESTING)
+             find_package(CppUTest REQUIRED)
+	     include_directories(${CPPUTEST_INCLUDE_DIR})
+	     add_subdirectory(private/test)
+         endif()
 endif (RSA_REMOTE_SERVICE_ADMIN_HTTP)
