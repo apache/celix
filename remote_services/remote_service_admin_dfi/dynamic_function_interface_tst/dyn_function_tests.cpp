@@ -146,7 +146,7 @@ extern "C" {
         args[0] = &ptr;
         args[1] = &a;
         args[2] = &input;
-        int rVal;
+        int rVal = 0;
         rc = dynFunction_call(dynFunc, fp, &rVal, args);
         CHECK_EQUAL(0, rc);
         CHECK_EQUAL(4.0, result);
@@ -158,7 +158,7 @@ extern "C" {
         args[0] = &ptr;
         args[1] = &a;
         args[2] = &inMemResult;
-        rVal;
+        rVal = 0;
         rc = dynFunction_call(dynFunc, fp, &rVal, args);
         CHECK_EQUAL(0, rc);
         CHECK_EQUAL(4.0, result);

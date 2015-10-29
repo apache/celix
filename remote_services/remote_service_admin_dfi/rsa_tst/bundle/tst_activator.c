@@ -122,7 +122,7 @@ static int test(void *handle) {
 
 	double result = -1.0;
 
-    int rc;
+    int rc = 1;
     if (act->calc != NULL) {
          rc = act->calc->sqrt(act->calc->calculator, 4, &result);
         printf("calc result is %f\n", result);
