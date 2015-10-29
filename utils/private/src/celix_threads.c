@@ -24,6 +24,7 @@
  *  \copyright  Apache License, Version 2.0
  */
 #include <stdlib.h>
+#include "signal.h"
 #include "celix_threads.h"
 
 
@@ -60,6 +61,10 @@ celix_status_t celixThread_join(celix_thread_t thread, void **retVal) {
 	// thread.threadInitialized = false;
 
     return status;
+}
+
+celix_status_t celixThread_kill(celix_thread_t thread, int sig) {
+    return pthread_kill(thread.thread, sig);
 }
 
 celix_thread_t celixThread_self() {

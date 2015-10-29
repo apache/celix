@@ -51,6 +51,7 @@ celix_status_t celixThread_create(celix_thread_t *new_thread, celix_thread_attr_
 void celixThread_exit(void *exitStatus);
 celix_status_t celixThread_detach(celix_thread_t thread);
 celix_status_t celixThread_join(celix_thread_t thread, void **status);
+celix_status_t celixThread_kill(celix_thread_t thread, int sig);
 celix_thread_t celixThread_self();
 int celixThread_equals(celix_thread_t thread1, celix_thread_t thread2);
 bool celixThread_initalized(celix_thread_t thread);
