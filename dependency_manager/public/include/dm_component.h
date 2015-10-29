@@ -55,7 +55,7 @@ celix_status_t component_setImplementation(dm_component_pt component, void *impl
  */
 celix_status_t component_getInterfaces(dm_component_pt component, array_list_pt *servicesNames);
 
-celix_status_t component_addServiceDependency(dm_component_pt component, ...);
+celix_status_t component_addServiceDependency(dm_component_pt component, dm_service_dependency_pt dep);
 celix_status_t component_removeServiceDependency(dm_component_pt component, dm_service_dependency_pt dependency);
 
 celix_status_t component_setCallbacks(dm_component_pt component, init_fpt init, start_fpt start, stop_fpt stop, deinit_fpt deinit);

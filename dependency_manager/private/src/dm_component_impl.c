@@ -166,23 +166,25 @@ celix_status_t component_destroy(dm_component_pt *component_ptr) {
 	return status;
 }
 
-celix_status_t component_addServiceDependency(dm_component_pt component, ...) {
+celix_status_t component_addServiceDependency(dm_component_pt component, dm_service_dependency_pt dep) {
     celix_status_t status = CELIX_SUCCESS;
 
     array_list_pt dependenciesList = NULL;
     arrayList_create(&dependenciesList);
+    arrayList_add(dependenciesList, dep);
 
+    /*
     va_list dependencies;
     va_start(dependencies, component);
     dm_service_dependency_pt dependency = va_arg(dependencies, dm_service_dependency_pt);
     while (dependency != NULL) {
         arrayList_add(dependenciesList, dependency);
 
-
         dependency = va_arg(dependencies, dm_service_dependency_pt);
     }
 
     va_end(dependencies);
+     */
 
 	executor_executeTask(component->executor, component, component_addTask, dependenciesList);
 //    component_addTask(component, dependenciesList);
@@ -1351,12 +1353,14 @@ celix_status_t component_getComponentInfo(dm_component_pt component, dm_componen
 
     celixThreadMutex_lock(&component->mutex);
     size = arrayList_size(component->dependencies);
-    for (i = 0; status == CELIX_SUCCESS && i < size; i += 1) {
+    for (i = 0; i < size; i += 1) {
         dm_service_dependency_pt dep = arrayList_get(component->dependencies, i);
         dm_service_dependency_info_pt depInfo= NULL;
         status = serviceDependency_getServiceDependencyInfo(dep, &depInfo);
         if (status == CELIX_SUCCESS) {
             arrayList_add(info->dependency_list, depInfo);
+        } else {
+            break;
         }
     }
     celixThreadMutex_unlock(&component->mutex);
