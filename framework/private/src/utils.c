@@ -103,3 +103,18 @@ celix_status_t utils_isNumeric(char *number, bool *ret) {
 	}
 	return status;
 }
+
+
+FRAMEWORK_EXPORT int utils_compareServiceIdsAndRanking(long servId, long servRank, long otherServId, long otherServRank) {
+	int result;
+
+	if (servId == otherServId) {
+		result = 0;
+	} else if (servRank != otherServRank) {
+		result = servRank < otherServRank ? -1 : 1;
+	} else { //equal service rank, compare service ids
+		result = servId < otherServId ? 1 : -1;
+	}
+
+	return result;
+}

@@ -42,6 +42,8 @@ typedef enum dm_event_type dm_event_type_e;
 
 struct dm_event {
 	void *service;
+	long serviceId;
+	long ranking;
 	service_reference_pt reference;
 	bundle_context_pt context;
 	bundle_pt bundle;

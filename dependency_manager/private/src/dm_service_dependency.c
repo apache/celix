@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
+#include <assert.h>
 
 #include "constants.h"
 
@@ -273,6 +274,10 @@ celix_status_t serviceDependency_stop(dm_service_dependency_pt dependency) {
 	}
 
 	if (status == CELIX_SUCCESS) {
+		dependency->isStarted = false;
+	}
+
+	if (status == CELIX_SUCCESS) {
 		if (dependency->tracker) {
             tmp_status = serviceTracker_close(dependency->tracker);
             if (tmp_status != CELIX_SUCCESS) {
@@ -283,10 +288,6 @@ celix_status_t serviceDependency_stop(dm_service_dependency_pt dependency) {
                 status = tmp_status;
             }
 		}
-	}
-
-	if (status == CELIX_SUCCESS) {
-		dependency->isStarted = false;
 	}
 
 	return status;
@@ -319,8 +320,10 @@ celix_status_t serviceDependency_setAvailable(dm_service_dependency_pt dependenc
 
 	return status;
 }
+
 celix_status_t serviceDependency_invokeSet(dm_service_dependency_pt dependency, dm_event_pt event) {
 	celix_status_t status = CELIX_SUCCESS;
+	assert(dependency->isStarted == true);
 	array_list_pt serviceReferences = NULL;
 	int i;
 	int curRanking = INT_MIN;
@@ -329,7 +332,6 @@ celix_status_t serviceDependency_invokeSet(dm_service_dependency_pt dependency, 
 
 	serviceReferences = serviceTracker_getServiceReferences(dependency->tracker);
 
-	fprintf(stderr,"found %d servicereferences\n",arrayList_size(serviceReferences));
 	/* Find the service with the higest ranking */
 	for (i = 0; i < arrayList_size(serviceReferences); i++) {
 		service_reference_pt serviceReference = arrayList_get(serviceReferences, i);
@@ -363,8 +365,6 @@ celix_status_t serviceDependency_invokeSet(dm_service_dependency_pt dependency, 
 	} else {
 		service = NULL;
 	}
-
-	fprintf(stderr, "Ranking found: %d service %p\n", curRanking, service);
 
 	if (dependency->set) {
 		dependency->set(dependency->component->implementation, service);

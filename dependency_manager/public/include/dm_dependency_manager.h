@@ -36,10 +36,11 @@
 typedef struct dm_dependency_manager *dm_dependency_manager_pt;
 
 celix_status_t dependencyManager_create(bundle_context_pt context, dm_dependency_manager_pt *manager);
-celix_status_t dependencyManager_destroy(dm_dependency_manager_pt *manager);
+void dependencyManager_destroy(dm_dependency_manager_pt manager);
 
 celix_status_t dependencyManager_add(dm_dependency_manager_pt manager, dm_component_pt component);
-celix_status_t dependencyManager_remove(dm_dependency_manager_pt manager, dm_component_pt component);
+
+celix_status_t depedencyManager_removeAllComponents(dm_dependency_manager_pt manager);
 
 /**
  * returns a dm_ of dm_dependency_manager_info. Caller has ownership.

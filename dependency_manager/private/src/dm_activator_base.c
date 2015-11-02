@@ -53,13 +53,21 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 		dm_create(context, &dependency_activator->userData);
 		dependency_activator->info = serv;
 
-		(*userData) = dependency_activator;;
-
-		status = CELIX_SUCCESS;
+        status = dependencyManager_create(dependency_activator->context, &dependency_activator->manager);
 	} else {
-		free(dependency_activator);
-		free(serv);
+        status = CELIX_ENOMEM;
+
 	}
+
+    if (status == CELIX_SUCCESS) {
+        *userData = dependency_activator;
+    } else {
+        if (dependency_activator != NULL) {
+            dependencyManager_destroy(dependency_activator->manager);
+        }
+        free(dependency_activator);
+        free(serv);
+    }
 
 	return status;
 }
@@ -68,41 +76,46 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	celix_status_t status;
 	dependency_activator_base_pt dependency_activator = (dependency_activator_base_pt) userData;
 
-	status = dependencyManager_create(dependency_activator->context, &dependency_activator->manager);
 
-	if (status == CELIX_SUCCESS) {
-		dm_init(dependency_activator->userData, context, dependency_activator->manager);
-	}
+    status = dm_init(dependency_activator->userData, context, dependency_activator->manager);
 
-	//Create the service
-	dependency_activator->info->handle = dependency_activator->manager;
-	dependency_activator->info->getInfo = (void *)dependencyManager_getInfo;
-    dependency_activator->info->destroyInfo = (void *)dependencyManager_destroyInfo;
+    if (status == CELIX_SUCCESS) {
+        //Create the service
+        dependency_activator->info->handle = dependency_activator->manager;
+        dependency_activator->info->getInfo = (void *) dependencyManager_getInfo;
+        dependency_activator->info->destroyInfo = (void *) dependencyManager_destroyInfo;
 
-	bundleContext_registerService(context, DM_INFO_SERVICE_NAME, dependency_activator->info, NULL, &(dependency_activator->reg));
+        status = bundleContext_registerService(context, DM_INFO_SERVICE_NAME, dependency_activator->info, NULL,
+                                               &(dependency_activator->reg));
+    }
+
 	return status;
 }
 
 celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context __attribute__((unused))) {
 	celix_status_t status = CELIX_SUCCESS;
-	dependency_activator_base_pt dependency_activator = (dependency_activator_base_pt) userData;
+    dependency_activator_base_pt dependency_activator = (dependency_activator_base_pt) userData;
 
-	dm_destroy(dependency_activator->userData, dependency_activator->context, dependency_activator->manager);
+    // Remove the service
+    status = serviceRegistration_unregister(dependency_activator->reg);
+    depedencyManager_removeAllComponents(dependency_activator->manager);
 
-	dependencyManager_destroy(&dependency_activator->manager);
-
-	// Remove the service
-	serviceRegistration_unregister(dependency_activator->reg);
-
-	dependency_activator->userData = NULL;
-	dependency_activator->manager = NULL;
-
-	return status;
+    return status;
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context __attribute__((unused))) {
 	celix_status_t status = CELIX_SUCCESS;
 	dependency_activator_base_pt dependency_activator = (dependency_activator_base_pt) userData;
+
+    status = dm_destroy(dependency_activator->userData, dependency_activator->context,
+                        dependency_activator->manager);
+
+    if (status == CELIX_SUCCESS) {
+        dependencyManager_destroy(dependency_activator->manager);
+    }
+
+	dependency_activator->userData = NULL;
+	dependency_activator->manager = NULL;
 
 	if (dependency_activator != NULL) {
 		free(dependency_activator->info);

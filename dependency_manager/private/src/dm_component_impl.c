@@ -63,12 +63,11 @@ static celix_status_t executor_schedule(dm_executor_pt executor, dm_component_pt
 static celix_status_t executor_create(dm_component_pt component __attribute__((unused)), dm_executor_pt *executor);
 static celix_status_t executor_destroy(dm_executor_pt *executor);
 
-static celix_status_t component_destroyComponent(dm_component_pt component);
 static celix_status_t component_invokeRemoveRequiredDependencies(dm_component_pt component);
 static celix_status_t component_invokeRemoveInstanceBoundDependencies(dm_component_pt component);
 static celix_status_t component_invokeRemoveOptionalDependencies(dm_component_pt component);
-static celix_status_t component_registerService(dm_component_pt component);
-static celix_status_t component_unregisterService(dm_component_pt component);
+static celix_status_t component_registerServices(dm_component_pt component);
+static celix_status_t component_unregisterServices(dm_component_pt component);
 static celix_status_t component_invokeAddOptionalDependencies(dm_component_pt component);
 static celix_status_t component_invokeAddRequiredInstanceBoundDependencies(dm_component_pt component);
 static celix_status_t component_invokeAddRequiredDependencies(dm_component_pt component);
@@ -497,10 +496,10 @@ celix_status_t component_handleRemoved(dm_component_pt component, dm_service_dep
         dm_event_pt old = arrayList_remove(events, (unsigned int) index);
         pthread_mutex_unlock(&component->mutex);
 
-        serviceDependency_invokeSet(dependency, event);
 
         switch (component->state) {
             case DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED: {
+                serviceDependency_invokeSet(dependency, event);
                 bool instanceBound = false;
                 serviceDependency_isInstanceBound(dependency, &instanceBound);
                 if (!instanceBound) {
@@ -516,6 +515,7 @@ celix_status_t component_handleRemoved(dm_component_pt component, dm_service_dep
                 break;
             }
             case DM_CMP_STATE_TRACKING_OPTIONAL:
+                serviceDependency_invokeSet(dependency, event);
                 serviceDependency_invokeRemove(dependency, event);
                 dm_event_pt hevent = NULL;
                 component_getDependencyEvent(component, dependency, &hevent);
@@ -729,85 +729,48 @@ celix_status_t component_calculateNewState(dm_component_pt component, dm_compone
 
 celix_status_t component_performTransition(dm_component_pt component, dm_component_state_t oldState, dm_component_state_t newState, bool *transition) {
     celix_status_t status = CELIX_SUCCESS;
-    printf("performing transition from %i to %i\n", oldState, newState);
+    //printf("performing transition for %s in thread %i from %i to %i\n", component->name, pthread_self(), oldState, newState);
 
-    if (oldState == DM_CMP_STATE_INACTIVE && newState == DM_CMP_STATE_WAITING_FOR_REQUIRED) {
+    if (oldState == newState) {
+        *transition = false;
+    } else if (oldState == DM_CMP_STATE_INACTIVE && newState == DM_CMP_STATE_WAITING_FOR_REQUIRED) {
         component_startDependencies(component, component->dependencies);
-//        #TODO Add listener support
-//        notifyListeners(newState);
         *transition = true;
-        return status;
-    }
-
-    if (oldState == DM_CMP_STATE_WAITING_FOR_REQUIRED && newState == DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED) {
-        // #TODO Remove
-//        component_instantiateComponent(component);
+    } else if (oldState == DM_CMP_STATE_WAITING_FOR_REQUIRED && newState == DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED) {
         component_invokeAddRequiredDependencies(component);
         component_invokeAutoConfigDependencies(component);
-        dm_component_state_t stateBeforeCallingInit = component->state;
         if (component->callbackInit) {
-        	component->callbackInit(component->implementation);
-        }
-        if (stateBeforeCallingInit == component->state) {
-//            #TODO Add listener support
-//            notifyListeners(newState); // init did not change current state, we can notify about this new state
+        	status = component->callbackInit(component->implementation);
         }
         *transition = true;
-        return status;
-    }
-
-    if (oldState == DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED && newState == DM_CMP_STATE_TRACKING_OPTIONAL) {
+    } else if (oldState == DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED && newState == DM_CMP_STATE_TRACKING_OPTIONAL) {
         component_invokeAddRequiredInstanceBoundDependencies(component);
         component_invokeAutoConfigInstanceBoundDependencies(component);
         if (component->callbackStart) {
-        	component->callbackStart(component->implementation);
+        	status = component->callbackStart(component->implementation);
         }
         component_invokeAddOptionalDependencies(component);
-        component_registerService(component);
-//            #TODO Add listener support
-//        notifyListeners(newState);
-        return true;
-    }
-
-    if (oldState == DM_CMP_STATE_TRACKING_OPTIONAL && newState == DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED) {
-        component_unregisterService(component);
+        component_registerServices(component);
+        *transition = true;
+    } else if (oldState == DM_CMP_STATE_TRACKING_OPTIONAL && newState == DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED) {
+        component_unregisterServices(component);
         component_invokeRemoveOptionalDependencies(component);
         if (component->callbackStop) {
-        	component->callbackStop(component->implementation);
+        	status = component->callbackStop(component->implementation);
         }
         component_invokeRemoveInstanceBoundDependencies(component);
-//            #TODO Add listener support
-//        notifyListeners(newState);
         *transition = true;
-        return status;
-    }
-
-    if (oldState == DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED && newState == DM_CMP_STATE_WAITING_FOR_REQUIRED) {
+    } else if (oldState == DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED && newState == DM_CMP_STATE_WAITING_FOR_REQUIRED) {
     	if (component->callbackDeinit) {
-    		component->callbackDeinit(component->implementation);
+    		status = component->callbackDeinit(component->implementation);
     	}
         component_invokeRemoveRequiredDependencies(component);
-//            #TODO Add listener support
-//        notifyListeners(newState);
-//        bool needInstance = false;
-//        component_someDependenciesNeedInstance(component, &needInstance);
-//        if (!needInstance) {
-            component_destroyComponent(component);
-//        }
         *transition = true;
-        return status;
-    }
-
-    if (oldState == DM_CMP_STATE_WAITING_FOR_REQUIRED && newState == DM_CMP_STATE_INACTIVE) {
+    } else if (oldState == DM_CMP_STATE_WAITING_FOR_REQUIRED && newState == DM_CMP_STATE_INACTIVE) {
         component_stopDependencies(component);
-        component_destroyComponent(component);
-//            #TODO Add listener support
-//        notifyListeners(newState);
         *transition = true;
-        return status;
     }
 
-    *transition = false;
     return status;
 }
 
@@ -1117,15 +1080,7 @@ celix_status_t component_configureImplementation(dm_component_pt component, dm_s
     return status;
 }
 
-celix_status_t component_destroyComponent(dm_component_pt component) {
-    celix_status_t status = CELIX_SUCCESS;
-
-//    component->implementation = NULL;
-
-    return status;
-}
-
-celix_status_t component_registerService(dm_component_pt component) {
+celix_status_t component_registerServices(dm_component_pt component) {
     celix_status_t status = CELIX_SUCCESS;
 
     if (component->context) {
@@ -1141,7 +1096,7 @@ celix_status_t component_registerService(dm_component_pt component) {
     return status;
 }
 
-celix_status_t component_unregisterService(dm_component_pt component) {
+celix_status_t component_unregisterServices(dm_component_pt component) {
     celix_status_t status = CELIX_SUCCESS;
 
     unsigned int i;

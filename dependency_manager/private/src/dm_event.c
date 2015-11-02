@@ -26,6 +26,8 @@
  */
 
 #include <stdlib.h>
+#include <constants.h>
+#include <utils.h>
 
 #include "dm_event.h"
 
@@ -37,12 +39,23 @@ celix_status_t event_create(dm_event_type_e event_type, bundle_pt bundle, bundle
 		status = CELIX_ENOMEM;
 	}
 
+	char *serviceIdStr = NULL;
+	serviceReference_getProperty(reference, (char *)OSGI_FRAMEWORK_SERVICE_ID, &serviceIdStr);
+	long servId = atol(serviceIdStr);
+
+	//FIXME service ranking can dynamicly change, but service reference can be removed at any time.
+	char *rankingStr = NULL;
+	serviceReference_getProperty(reference, (char *)OSGI_FRAMEWORK_SERVICE_RANKING, &rankingStr);
+	long ranking = rankingStr == NULL ? 0 : atol(rankingStr);
+
 	if (status == CELIX_SUCCESS) {
 		(*event)->bundle = bundle;
 		(*event)->event_type = event_type;
 		(*event)->context = context;
 		(*event)->reference = reference;
 		(*event)->service = service;
+		(*event)->serviceId = servId;
+		(*event)->ranking = ranking;
 	}
 
 	return status;
@@ -72,7 +85,7 @@ celix_status_t event_equals(void *a, void *b, bool *equals) {
 		dm_event_pt a_ptr = a;
 		dm_event_pt b_ptr = b;
 
-		status = serviceReference_equals(a_ptr->reference, b_ptr->reference, equals);
+		*equals = a_ptr->serviceId == b_ptr->serviceId;
 	}
 
 	return status;
@@ -81,7 +94,7 @@ celix_status_t event_equals(void *a, void *b, bool *equals) {
 celix_status_t event_compareTo(dm_event_pt event, dm_event_pt compareTo, int *compare) {
 	celix_status_t status;
 
-	status = serviceReference_compareTo(event->reference, compareTo->reference, compare);
+	*compare = utils_compareServiceIdsAndRanking(event->serviceId, event->ranking, compareTo->serviceId, compareTo->ranking);
 
 	return status;
 }
