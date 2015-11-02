@@ -41,6 +41,9 @@ if (DEPENDENCY_MANAGER)
             private/src/dm_shell_activator
             private/src/dm_shell_list_command
     )
+    target_link_libraries(dm_shell celix_framework celix_utils)
+
+
     add_library(dependency_manager STATIC 
     	private/src/dm_activator_base 
     	private/src/dm_component_impl 

@@ -14,7 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-if (BUILD_DEPENDENCY_MANAGER AND BUILD_SHELL AND BUILD_SHELL_TUI)
+if (BUILD_EXAMPLES AND BUILD_DEPENDENCY_MANAGER AND BUILD_SHELL AND BUILD_SHELL_TUI)
     deploy("dm_example"
             BUNDLES
             phase1
@@ -25,5 +25,5 @@ if (BUILD_DEPENDENCY_MANAGER AND BUILD_SHELL AND BUILD_SHELL_TUI)
             shell_tui
             dm_shell
     )
-endif()
+endif ()
 

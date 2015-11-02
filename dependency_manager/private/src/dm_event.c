@@ -92,7 +92,7 @@ celix_status_t event_equals(void *a, void *b, bool *equals) {
 }
 
 celix_status_t event_compareTo(dm_event_pt event, dm_event_pt compareTo, int *compare) {
-	celix_status_t status;
+	celix_status_t status = CELIX_SUCCESS;
 
 	*compare = utils_compareServiceIdsAndRanking(event->serviceId, event->ranking, compareTo->serviceId, compareTo->ranking);
 
