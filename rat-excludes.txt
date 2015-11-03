@@ -19,6 +19,7 @@
    - Civetweb
    - Unzip and MiniZip files
    - Doxygen scripts for CMake (Doxyfile.in, UseDoxygen.cmake)
+   - memstream
  
  Also there are several files which can't have a license.
    - *.in Input files used by CMake to generate files for deployment,
@@ -56,3 +57,18 @@ CodeCoverage.cmake
 
 manifest_sections.txt
 manifest.txt
+
+fmemopen.c
+fmemopen.h
+open_memstream.c
+open_memstream.h
+
+README.md
+
+.travis.yml
+
+example1.descriptor
+example2.descriptor
+example3.descriptor
+example4.descriptor
+org.apache.celix.calc.api.Calculator2.descriptor

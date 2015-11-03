@@ -1,3 +1,4 @@
+
 /*
  * fmem.c : fmemopen() on top of BSD's funopen()
  * 20081017 AF
