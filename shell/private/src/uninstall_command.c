@@ -26,53 +26,32 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "command_impl.h"
 #include "array_list.h"
 #include "bundle_context.h"
-#include "bundle.h"
-#include "uninstall_command.h"
 
-void uninstallCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *));
-
-command_pt uninstallCommand_create(bundle_context_pt context) {
-	command_pt command = (command_pt) malloc(sizeof(*command));
-	command->bundleContext = context;
-	command->name = "uninstall";
-	command->shortDescription = "uninstall bundle(s).";
-	command->usage = "uninstall <id> [<id> ...]";
-	command->executeCommand = uninstallCommand_execute;
-	return command;
-}
-
-void uninstallCommand_destroy(command_pt command) {
-	free(command);
-}
-
-
-void uninstallCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *)) {
+celix_status_t uninstallCommand_execute(void *handle, char * line, FILE *outStream, FILE *errStream) {
+	bundle_context_pt context = handle;
 	char delims[] = " ";
 	char * sub = NULL;
 	char *save_ptr = NULL;
-	char outString[256];
 
 	sub = strtok_r(line, delims, &save_ptr);
 	sub = strtok_r(NULL, delims, &save_ptr);
 
 	if (sub == NULL) {
-		err("Incorrect number of arguments.\n");
-		sprintf(outString, "%s\n", command->usage);
-		out(outString);
+		fprintf(errStream, "Incorrect number of arguments.\n");
 	} else {
 		while (sub != NULL) {
 			long id = atol(sub);
 			bundle_pt bundle = NULL;
-			bundleContext_getBundleById(command->bundleContext, id, &bundle);
+			bundleContext_getBundleById(context, id, &bundle);
 			if (bundle != NULL) {
 				bundle_uninstall(bundle);
 			} else {
-				err("Bundle id is invalid.");
+				fprintf(errStream, "Bundle id is invalid.");
 			}
 			sub = strtok_r(NULL, delims, &save_ptr);
 		}
 	}
+	return CELIX_SUCCESS;
 }

@@ -36,11 +36,12 @@ typedef struct shell * shell_pt;
 
 struct shellService {
 	shell_pt shell;
-	array_list_pt (*getCommands)(shell_pt shell);
-	char * (*getCommandUsage)(shell_pt shell, char * commandName);
-	char * (*getCommandDescription)(shell_pt shell, char * commandName);
-	service_reference_pt (*getCommandReference)(shell_pt shell, char * command);
-	void (*executeCommand)(shell_pt shell, char * commandLine, void (*out)(char *), void (*error)(char *));
+
+	celix_status_t (*getCommands)(shell_pt shell_ptr, array_list_pt *commands_ptr);
+	celix_status_t (*getCommandUsage)(shell_pt shell_ptr, char *command_name_str, char **usage_str);
+	celix_status_t (*getCommandDescription)(shell_pt shell_ptr, char *command_name_str, char **command_description_str);
+	celix_status_t (*getCommandReference)(shell_pt shell_ptr, char *command_name_str, service_reference_pt *command_reference_ptr);
+	celix_status_t (*executeCommand)(shell_pt shell_ptr, char * command_line_str, FILE *out, FILE *err);
 };
 
 typedef struct shellService * shell_service_pt;

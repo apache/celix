@@ -27,50 +27,28 @@
 #include <stdlib.h>
 #include <string.h>
 #include <curl/curl.h>
-#include <curl/easy.h>
 
-#include "command_impl.h"
 #include "array_list.h"
 #include "bundle_context.h"
-#include "bundle.h"
-#include "update_command.h"
 
-void updateCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *));
-celix_status_t updateCommand_download(command_pt command, char * url, char **inputFile);
+celix_status_t updateCommand_download(bundle_context_pt context, char * url, char **inputFile);
 size_t updateCommand_writeData(void *ptr, size_t size, size_t nmemb, FILE *stream);
 
-command_pt updateCommand_create(bundle_context_pt context) {
-	command_pt command = (command_pt) malloc(sizeof(*command));
-	command->bundleContext = context;
-	command->name = "update";
-	command->shortDescription = "update bundle.";
-	command->usage = "update <id> [<URL>]";
-	command->executeCommand = updateCommand_execute;
-	return command;
-}
-
-void updateCommand_destroy(command_pt command) {
-	free(command);
-}
-
-
-void updateCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *)) {
+void updateCommand_execute(void *handle, char * line, FILE *outStream, FILE *errStream) {
+	bundle_context_pt context = handle;
     bundle_pt bundle = NULL;
 	char delims[] = " ";
 	char * sub = NULL;
 	char *save_ptr = NULL;
-	char outString[256];
 
 	sub = strtok_r(line, delims, &save_ptr);
 	sub = strtok_r(NULL, delims, &save_ptr);
 
 	if (sub == NULL) {
-		err("Incorrect number of arguments.\n");
-		sprintf(outString, "%s\n", command->usage);
-		out(outString);
+		fprintf(errStream, "Incorrect number of arguments.\n");
 	} else {
 		long id = atol(sub);
-		bundleContext_getBundleById(command->bundleContext, id, &bundle);
+		bundleContext_getBundleById(context, id, &bundle);
 		if (bundle != NULL) {
 			char inputFile[256];
 			sub = strtok_r(NULL, delims, &save_ptr);
@@ -79,24 +57,22 @@ void updateCommand_execute(command_pt command, char * line, void (*out)(char *),
 				char *test = inputFile;
 				printf("URL: %s\n", sub);
 
-				if (updateCommand_download(command, sub, &test) == CELIX_SUCCESS) {
+				if (updateCommand_download(context, sub, &test) == CELIX_SUCCESS) {
 					printf("Update bundle with stream\n");
 					bundle_update(bundle, inputFile);
 				} else {
-					char error[256];
-					sprintf(error, "Unable to download from %s\n", sub);
-					err(error);
+					fprintf(errStream, "Unable to download from %s\n", sub);
 				}
 			} else {
 				bundle_update(bundle, NULL);
 			}
 		} else {
-			err("Bundle id is invalid.\n");
+			fprintf(errStream, "Bundle id is invalid.\n");
 		}
 	}
 }
 
-celix_status_t updateCommand_download(command_pt command, char * url, char **inputFile) {
+celix_status_t updateCommand_download(bundle_context_pt context, char * url, char **inputFile) {
 	CURL *curl = NULL;
 	CURLcode res = 0;
 	curl = curl_easy_init();

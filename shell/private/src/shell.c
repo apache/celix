@@ -29,149 +29,301 @@
 #include "celix_errno.h"
 
 #include "shell_private.h"
-#include "bundle_activator.h"
-#include "command_impl.h"
-#include "bundle_context.h"
-#include "service_registration.h"
-#include "service_listener.h"
-
-#include "ps_command.h"
-#include "start_command.h"
-#include "stop_command.h"
-#include "install_command.h"
-#include "uninstall_command.h"
-#include "update_command.h"
-#include "log_command.h"
-#include "inspect_command.h"
-#include "help_command.h"
 
 #include "utils.h"
 
-static command_service_pt shell_getCommand(shell_pt shell, char * commandName);
-array_list_pt shell_getCommands(shell_pt shell);
+celix_status_t shell_getCommands(shell_pt shell_ptr, array_list_pt *commands_ptr);
+celix_status_t shell_getCommandUsage(shell_pt shell_ptr, char *command_name_str, char **usage_pstr);
+celix_status_t shell_getCommandDescription(shell_pt shell_ptr, char *command_name_str, char **command_description_pstr);
 
-celix_status_t shell_create(bundle_context_pt context, shell_service_pt* shellService) {
-	celix_status_t status = CELIX_ENOMEM;
-
-	shell_service_pt lclService = (shell_service_pt) calloc(1, sizeof(struct shellService));
-	shell_pt lclShell = (shell_pt) calloc(1, sizeof(struct shell));
-
-	if (lclService && lclShell) {
-		lclShell->bundleContext = context;
-		lclShell->commandNameMap = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
-		lclShell->commandReferenceMap = hashMap_create(NULL, NULL, NULL, NULL);
-		lclService->shell = lclShell;
-
-		lclService->getCommands = shell_getCommands;
-		lclService->getCommandDescription = shell_getCommandDescription;
-		lclService->getCommandUsage = shell_getCommandUsage;
-		lclService->getCommandReference = shell_getCommandReference;
-		lclService->executeCommand = shell_executeCommand;
-
-		*shellService = lclService;
-		status = CELIX_SUCCESS;
-	}
-
-	return status;
-}
-
-celix_status_t shell_destroy(shell_service_pt* shellService) {
+celix_status_t shell_create(bundle_context_pt context_ptr, shell_service_pt *shell_service_ptr) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	hashMap_destroy((*shellService)->shell->commandNameMap, false, false);
-	hashMap_destroy((*shellService)->shell->commandReferenceMap, false, false);
-
-	free((*shellService)->shell);
-	free(*shellService);
-
-	return status;
-}
-
-celix_status_t shell_addCommand(shell_pt shell, service_reference_pt reference) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	command_service_pt command = NULL;
-	void *cmd = NULL;
-	bundleContext_getService(shell->bundleContext, reference, &cmd);
-	command = (command_service_pt) cmd;
-	hashMap_put(shell->commandNameMap, command->getName(command->command), command);
-	hashMap_put(shell->commandReferenceMap, reference, command);
-
-	return status;
-}
-
-celix_status_t shell_removeCommand(shell_pt shell, service_reference_pt reference) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	command_service_pt command = (command_service_pt) hashMap_remove(shell->commandReferenceMap, reference);
-	if (command != NULL) {
-		bool result = false;
-		hashMap_remove(shell->commandNameMap, command->getName(command->command));
-		bundleContext_ungetService(shell->bundleContext, reference, &result);
+	if (!context_ptr || !shell_service_ptr) {
+		status = CELIX_ILLEGAL_ARGUMENT;
 	}
 
-	return status;
-}
-
-array_list_pt shell_getCommands(shell_pt shell) {
-	array_list_pt commands = NULL;
-	hash_map_iterator_pt iter = hashMapIterator_create(shell->commandNameMap);
-
-	arrayList_create(&commands);
-	while (hashMapIterator_hasNext(iter)) {
-		char * name = hashMapIterator_nextKey(iter);
-		arrayList_add(commands, name);
-	}
-	hashMapIterator_destroy(iter);
-	return commands;
-}
-
-char * shell_getCommandUsage(shell_pt shell, char * commandName) {
-	command_service_pt command = hashMap_get(shell->commandNameMap, commandName);
-	return (command == NULL) ? NULL : command->getUsage(command->command);
-}
-
-char * shell_getCommandDescription(shell_pt shell, char * commandName) {
-	command_service_pt command = hashMap_get(shell->commandNameMap, commandName);
-	return (command == NULL) ? NULL : command->getShortDescription(command->command);
-}
-
-service_reference_pt shell_getCommandReference(shell_pt shell, char * command) {
-	hash_map_iterator_pt iter = hashMapIterator_create(shell->commandReferenceMap);
-	while (hashMapIterator_hasNext(iter)) {
-		hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-		command_service_pt cmd = (command_service_pt) hashMapEntry_getValue(entry);
-		if (strcmp(cmd->getName(cmd->command), command) == 0) {
-			return (service_reference_pt) hashMapEntry_getValue(entry);
+	if (status == CELIX_SUCCESS) {
+		*shell_service_ptr =  calloc(1, sizeof(**shell_service_ptr));
+		if (!*shell_service_ptr) {
+			status = CELIX_ENOMEM;
 		}
 	}
-	hashMapIterator_destroy(iter);
-	return NULL;
-}
 
-void shell_executeCommand(shell_pt shell, char * commandLine, void (*out)(char *), void (*error)(char *)) {
-	unsigned int pos = strcspn(commandLine, " ");
-	char * commandName = (pos != strlen(commandLine)) ? string_ndup((char *) commandLine, pos) : strdup(commandLine);
-	command_service_pt command = shell_getCommand(shell, commandName);
-	if (command != NULL) {
-		command->executeCommand(command->command, commandLine, out, error);
-	} else {
-		error("No such command\n");
+	if (status == CELIX_SUCCESS) {
+		(*shell_service_ptr)->shell = calloc(1, sizeof(*(*shell_service_ptr)->shell));
+		if (!(*shell_service_ptr)->shell) {
+			status = CELIX_ENOMEM;
+		}
 	}
-	free(commandName);
-}
 
-static command_service_pt shell_getCommand(shell_pt shell, char * commandName) {
-	command_service_pt command = hashMap_get(shell->commandNameMap, commandName);
-	return (command == NULL) ? NULL : command;
-}
+	if (status == CELIX_SUCCESS) {
+		(*shell_service_ptr)->shell->bundle_context_ptr = context_ptr;
+		(*shell_service_ptr)->shell->command_name_map_ptr = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+		(*shell_service_ptr)->shell->command_reference_map_ptr = hashMap_create(NULL, NULL, NULL, NULL);
 
-void shell_serviceChanged(service_listener_pt listener, service_event_pt event) {
-	shell_pt shell = (shell_pt) listener->handle;
-	if (event->type == OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED) {
-		shell_addCommand(shell, event->reference);
-	} else if (event->type == OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING) {
-		shell_removeCommand(shell, event->reference);
+		(*shell_service_ptr)->getCommands = shell_getCommands;
+		(*shell_service_ptr)->getCommandDescription = shell_getCommandDescription;
+		(*shell_service_ptr)->getCommandUsage = shell_getCommandUsage;
+		(*shell_service_ptr)->getCommandReference = shell_getCommandReference;
+		(*shell_service_ptr)->executeCommand = shell_executeCommand;
 	}
+
+	if (status != CELIX_SUCCESS) {
+		shell_destroy(shell_service_ptr);
+	}
+
+	return status;
+}
+
+celix_status_t shell_destroy(shell_service_pt *shell_service_ptr) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (!shell_service_ptr || !*shell_service_ptr) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		if ((*shell_service_ptr)->shell) {
+			if ((*shell_service_ptr)->shell->command_name_map_ptr) {
+				hashMap_destroy((*shell_service_ptr)->shell->command_name_map_ptr, false, false);
+			}
+			if ((*shell_service_ptr)->shell->command_reference_map_ptr) {
+				hashMap_destroy((*shell_service_ptr)->shell->command_reference_map_ptr, false, false);
+			}
+			free((*shell_service_ptr)->shell);
+			(*shell_service_ptr)->shell = NULL;
+		}
+		free(*shell_service_ptr);
+		*shell_service_ptr = NULL;
+	}
+
+	return status;
+}
+
+celix_status_t shell_addCommand(shell_pt shell_ptr, service_reference_pt reference_ptr) {
+	celix_status_t status = CELIX_SUCCESS;
+	command_service_pt command_ptr = NULL;
+	char *name_str = NULL;
+
+	if (!shell_ptr && !reference_ptr) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		status = bundleContext_getService(shell_ptr->bundle_context_ptr, reference_ptr, (void **) &command_ptr);
+		if (!command_ptr) {
+			status = CELIX_BUNDLE_EXCEPTION;
+		}
+	}
+
+	if (status == CELIX_SUCCESS) {
+		status = serviceReference_getProperty(reference_ptr, "command.name", &name_str);
+		if (!name_str) {
+			status = CELIX_BUNDLE_EXCEPTION;
+		}
+	}
+
+	if (status == CELIX_SUCCESS) {
+		hashMap_put(shell_ptr->command_name_map_ptr, name_str, command_ptr);
+		hashMap_put(shell_ptr->command_reference_map_ptr, reference_ptr, command_ptr);
+	}
+
+	if (status != CELIX_SUCCESS) {
+		shell_removeCommand(shell_ptr, reference_ptr);
+		fprintf(stderr, "Could not add Command. TODO\n");
+		//TODO log to log service
+	}
+
+	return status;
+}
+
+celix_status_t shell_removeCommand(shell_pt shell_ptr, service_reference_pt reference_ptr) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	command_service_pt command_ptr = NULL;
+	char *name_str = NULL;
+
+	if (!shell_ptr || !reference_ptr) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		command_ptr = hashMap_remove(shell_ptr->command_reference_map_ptr, reference_ptr);
+		if (!command_ptr) {
+			status = CELIX_ILLEGAL_ARGUMENT;
+		}
+	}
+
+	if (status == CELIX_SUCCESS) {
+		status = serviceReference_getProperty(reference_ptr, "command.name", &name_str);
+		if (!name_str) {
+			status = CELIX_BUNDLE_EXCEPTION;
+		}
+	}
+
+	if (status == CELIX_SUCCESS) {
+		hashMap_remove(shell_ptr->command_name_map_ptr, name_str);
+	}
+
+	celix_status_t sub_status = bundleContext_ungetService(shell_ptr->bundle_context_ptr, reference_ptr, NULL);
+	if (sub_status != CELIX_SUCCESS && status == CELIX_SUCCESS) {
+		status = sub_status;
+	}
+
+	sub_status = bundleContext_ungetServiceReference(shell_ptr->bundle_context_ptr, reference_ptr);
+	if (sub_status != CELIX_SUCCESS && status == CELIX_SUCCESS) {
+		status = sub_status;
+	}
+
+	return status;
+}
+
+celix_status_t shell_getCommands(shell_pt shell_ptr, array_list_pt *commands_ptr) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	hash_map_iterator_pt iter = NULL;
+
+	if (!shell_ptr || !commands_ptr) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		iter = hashMapIterator_create(shell_ptr->command_name_map_ptr);
+		if (!iter) {
+			status = CELIX_BUNDLE_EXCEPTION;
+		}
+	}
+
+	if (status == CELIX_SUCCESS) {
+		arrayList_create(commands_ptr);
+		while (hashMapIterator_hasNext(iter)) {
+			char *name_str = hashMapIterator_nextKey(iter);
+			arrayList_add(*commands_ptr, name_str);
+		}
+		hashMapIterator_destroy(iter);
+	}
+
+	return status;
+}
+
+
+celix_status_t shell_getCommandUsage(shell_pt shell_ptr, char *command_name_str, char **usage_pstr) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	service_reference_pt reference = NULL;
+
+	if (!shell_ptr || !command_name_str || !usage_pstr) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		status = shell_getCommandReference(shell_ptr, command_name_str, &reference);
+		if (!reference) {
+			status = CELIX_BUNDLE_EXCEPTION;
+		}
+	}
+
+	if (status == CELIX_SUCCESS) {
+		status = serviceReference_getProperty(reference, "command.usage", usage_pstr);
+	}
+
+	return status;
+}
+
+celix_status_t shell_getCommandDescription(shell_pt shell_ptr, char *command_name_str, char **command_description_pstr) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	service_reference_pt reference = NULL;
+
+	if (!shell_ptr || !command_name_str || !command_description_pstr) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		status = shell_getCommandReference(shell_ptr, command_name_str, &reference);
+		if (!reference) {
+			status = CELIX_BUNDLE_EXCEPTION;
+		}
+	}
+
+	if (status == CELIX_SUCCESS) {
+		serviceReference_getProperty(reference, "command.description", command_description_pstr);
+	}
+
+	return status;
+}
+
+celix_status_t shell_getCommandReference(shell_pt shell_ptr, char *command_name_str, service_reference_pt *command_reference_ptr) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (!shell_ptr || !command_name_str || !command_reference_ptr) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		*command_reference_ptr = NULL;
+		hash_map_iterator_pt iter = hashMapIterator_create(shell_ptr->command_reference_map_ptr);
+		while (hashMapIterator_hasNext(iter)) {
+			hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
+			service_reference_pt reference = hashMapEntry_getKey(entry);
+			char *name_str = NULL;
+			serviceReference_getProperty(reference, "command.name", &name_str);
+			if (strcmp(name_str, command_name_str) == 0) {
+				*command_reference_ptr = (service_reference_pt) hashMapEntry_getKey(entry);
+				break;
+			}
+		}
+		hashMapIterator_destroy(iter);
+	}
+
+	return status;
+}
+
+celix_status_t shell_executeCommand(shell_pt shell_ptr, char *command_line_str, FILE *out, FILE *err) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	command_service_pt command_ptr = NULL;
+
+	if (!shell_ptr || !command_line_str || !out || !err) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		size_t pos = strcspn(command_line_str, " ");
+
+		char *command_name_str = (pos != strlen(command_line_str)) ? strndup(command_line_str, pos) : strdup(command_line_str);
+		command_ptr = hashMap_get(shell_ptr->command_name_map_ptr, command_name_str);
+		free(command_name_str);
+		if (!command_ptr) {
+			fprintf(err, "No such command\n");
+			status = CELIX_BUNDLE_EXCEPTION;
+		}
+	}
+
+	if (status == CELIX_SUCCESS) {
+		status = command_ptr->executeCommand(command_ptr->handle, command_line_str, out, err);
+	}
+
+	return status;
+}
+
+celix_status_t shell_serviceChanged(service_listener_pt listener_ptr, service_event_pt event_ptr) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (!listener_ptr || !event_ptr || !listener_ptr->handle || !event_ptr->type || !event_ptr->reference) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		shell_pt shell_ptr = (shell_pt) listener_ptr->handle;
+		if (event_ptr->type == OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED) {
+			status = shell_addCommand(shell_ptr, event_ptr->reference);
+		} else if (event_ptr->type == OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING) {
+			status = shell_removeCommand(shell_ptr, event_ptr->reference);
+		}
+	}
+
+	return status;
 }
 

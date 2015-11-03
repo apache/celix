@@ -50,7 +50,7 @@
 
 struct connection {
 	remote_shell_pt parent;
-	int socket;
+	FILE *socketStream;
 	fd_set pollset;
 	bool threadRunning;
 };
@@ -99,26 +99,34 @@ celix_status_t remoteShell_addConnection(remote_shell_pt instance, int socket) {
 
 	if (connection != NULL) {
 		connection->parent = instance;
-		connection->socket = socket;
 		connection->threadRunning = false;
+		connection->socketStream = fdopen(socket, "w");
 
-		celixThreadMutex_lock(&instance->mutex);
+		if (connection->socketStream != NULL) {
 
-		if (arrayList_size(instance->connections) < instance->maximumConnections) {
-			celix_thread_t connectionRunThread = celix_thread_default;
-			arrayList_add(instance->connections, connection);
-			status = celixThread_create(&connectionRunThread, NULL, &remoteShell_connection_run, connection);
+			celixThreadMutex_lock(&instance->mutex);
+
+			if (arrayList_size(instance->connections) < instance->maximumConnections) {
+				celix_thread_t connectionRunThread = celix_thread_default;
+				arrayList_add(instance->connections, connection);
+				status = celixThread_create(&connectionRunThread, NULL, &remoteShell_connection_run, connection);
+			} else {
+				status = CELIX_BUNDLE_EXCEPTION;
+				remoteShell_connection_print(connection, RS_MAXIMUM_CONNECTIONS_REACHED);
+			}
+			celixThreadMutex_unlock(&instance->mutex);
+
 		} else {
 			status = CELIX_BUNDLE_EXCEPTION;
-			remoteShell_connection_print(connection, RS_MAXIMUM_CONNECTIONS_REACHED);
 		}
-		celixThreadMutex_unlock(&instance->mutex);
 	} else {
 		status = CELIX_ENOMEM;
 	}
 
 	if (status != CELIX_SUCCESS) {
-		close(connection->socket);
+		if (connection->socketStream != NULL) {
+			fclose(connection->socketStream);
+		}
 		free(connection);
 	}
 
@@ -150,6 +158,8 @@ void *remoteShell_connection_run(void *data) {
 	int result;
 	struct timeval timeout; /* Timeout for select */
 
+	int fd = fileno(connection->socketStream);
+
 	connection->threadRunning = true;
 	status = remoteShell_connection_print(connection, RS_WELCOME);
 
@@ -159,15 +169,15 @@ void *remoteShell_connection_run(void *data) {
 			timeout.tv_usec = 0;
 
 			FD_ZERO(&connection->pollset);
-			FD_SET(connection->socket, &connection->pollset);
-			result = select(connection->socket + 1, &connection->pollset, NULL, NULL, &timeout);
+			FD_SET(fd, &connection->pollset);
+			result = select(fd + 1, &connection->pollset, NULL, NULL, &timeout);
 		} while (result == -1 && errno == EINTR && connection->threadRunning == true);
 
 		/* The socket_fd has data available to be read */
-		if (result > 0 && FD_ISSET(connection->socket, &connection->pollset)) {
+		if (result > 0 && FD_ISSET(fd, &connection->pollset)) {
 			char buff[COMMAND_BUFF_SIZE];
 
-			len = recv(connection->socket, buff, COMMAND_BUFF_SIZE - 1, 0);
+			len = recv(fd, buff, COMMAND_BUFF_SIZE - 1, 0);
 			if (len < COMMAND_BUFF_SIZE) {
 				celix_status_t commandStatus = CELIX_SUCCESS;
 				buff[len] = '\0';
@@ -197,7 +207,7 @@ void *remoteShell_connection_run(void *data) {
 	arrayList_removeElement(connection->parent->connections, connection);
 	celixThreadMutex_unlock(&connection->parent->mutex);
 
-	close(connection->socket);
+	fclose(connection->socketStream);
 
 	return NULL;
 }
@@ -215,7 +225,8 @@ static celix_status_t remoteShell_connection_execute(connection_pt connection, c
 		} else if (len == 4 && strncmp("exit", line, 4) == 0) {
 			status = CELIX_FILE_IO_EXCEPTION;
 		} else {
-			status = shellMediator_executeCommand(connection->parent->mediator, line, connection->socket);
+			status = shellMediator_executeCommand(connection->parent->mediator, line, connection->socketStream, connection->socketStream);
+            fflush(connection->socketStream);
 		}
 
 		free(dline);
@@ -226,5 +237,6 @@ static celix_status_t remoteShell_connection_execute(connection_pt connection, c
 
 celix_status_t remoteShell_connection_print(connection_pt connection, char *text) {
 	size_t len = strlen(text);
-	return (send(connection->socket, text, len, 0) > 0) ? CELIX_SUCCESS : CELIX_FILE_IO_EXCEPTION;
+    int fd = fileno(connection->socketStream);
+	return (send(fd, text, len, 0) > 0) ? CELIX_SUCCESS : CELIX_FILE_IO_EXCEPTION;
 }

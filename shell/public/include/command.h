@@ -27,18 +27,27 @@
 #ifndef COMMAND_H_
 #define COMMAND_H_
 
-static const char * const OSGI_SHELL_COMMAND_SERVICE_NAME = "commandService";
+#include "celix_errno.h"
+#include <stdio.h>
 
-typedef struct command * command_pt;
+#define OSGI_SHELL_COMMAND_NAME "command.name"
+#define OSGI_SHELL_COMMAND_USAGE "command.usage"
+#define OSGI_SHELL_COMMAND_DESCRIPTION "command.description"
+
+static const char * const OSGI_SHELL_COMMAND_SERVICE_NAME = "commandService";
 
 typedef struct commandService * command_service_pt;
 
+/**
+ * The command service can be used to register additional shell commands.
+ * The service should be register with the following properties:
+ *  - command.name: mandatory, name of the command e.g. 'lb'
+ *  - command.usage: optional, string describing how tu use the commmand e.g. 'lb [-l | -s | -u]'
+ *  - command.descrription: optional, string describing the command e.g. 'list bundles.'
+ */
 struct commandService {
-	command_pt command;
-	char * (*getName)(command_pt command);
-	char * (*getUsage)(command_pt command);
-	char * (*getShortDescription)(command_pt command);
-	void (*executeCommand)(command_pt command, char * commandLine, void (*out)(char *), void (*error)(char *));
+	void *handle;
+	celix_status_t (*executeCommand)(void *handle, char * commandLine, FILE *outStream, FILE *errorStream);
 };
 
 
