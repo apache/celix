@@ -17,13 +17,16 @@
 if (BUILD_EXAMPLES AND BUILD_DEPENDENCY_MANAGER AND BUILD_SHELL AND BUILD_SHELL_TUI)
     deploy("dm_example"
             BUNDLES
-            phase1
-            phase2a
-            phase2b
-            phase3
-            shell
-            shell_tui
-            dm_shell
+                phase1
+                phase2a
+                phase2b
+                phase3
+                shell
+                shell_tui
+                dm_shell
+            PROPERTIES
+                LOGHELPER_ENABLE_STDOUT_FALLBACK=true
+
     )
 endif ()
 

@@ -32,7 +32,7 @@
 
 struct bundle_instance {
     service_registration_pt reg;
-    command_pt dmListCmd;
+    command_service_pt  dmCommand;
 };
 
 typedef struct bundle_instance * bundle_instance_pt;
@@ -66,13 +66,24 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
     bundle_instance_pt bi = (bundle_instance_pt) userData;
     command_service_pt commandService = calloc(1, sizeof(*commandService));
 
-    commandService->getName             = dmListCommand_getName;
-    commandService->command             = context;
-    commandService->executeCommand      = dmListCommand_execute;
-    commandService->getShortDescription = dmListCommand_getShortDescription;
-    commandService->getUsage            = dmListCommand_getUsage;
+    if (commandService != NULL) {
+        commandService->handle = context;
+        commandService->executeCommand = dmListCommand_execute;
 
-    bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, commandService, NULL, &bi->reg);
+        properties_pt props = properties_create();
+        properties_set(props, OSGI_SHELL_COMMAND_NAME, "dm");
+        properties_set(props, OSGI_SHELL_COMMAND_USAGE, "dm");
+        properties_set(props, OSGI_SHELL_COMMAND_DESCRIPTION,
+                       "Gives an overview of the component managemend by a dependency manager.");
+
+        bi->dmCommand = commandService;
+
+        status = bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, commandService, props,
+                                               &bi->reg);
+    } else {
+        status = CELIX_ENOMEM;
+        free(commandService);
+    }
 
     return status;
 }
@@ -84,7 +95,11 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
-    free(userData);
+    bundle_instance_pt bi = (bundle_instance_pt) userData;
+    if (bi != NULL) {
+        free(bi->dmCommand);
+    }
+    free(bi);
     return CELIX_SUCCESS;
 }
 

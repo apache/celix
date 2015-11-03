@@ -25,6 +25,7 @@
  */
 #include <stdlib.h>
 #include <string.h>
+#include <log_helper.h>
 
 #include "celix_errno.h"
 
@@ -67,6 +68,8 @@ celix_status_t shell_create(bundle_context_pt context_ptr, shell_service_pt *she
 		(*shell_service_ptr)->getCommandUsage = shell_getCommandUsage;
 		(*shell_service_ptr)->getCommandReference = shell_getCommandReference;
 		(*shell_service_ptr)->executeCommand = shell_executeCommand;
+
+        status = logHelper_create(context_ptr, &(*shell_service_ptr)->shell->logHelper);
 	}
 
 	if (status != CELIX_SUCCESS) {
@@ -120,6 +123,7 @@ celix_status_t shell_addCommand(shell_pt shell_ptr, service_reference_pt referen
 	if (status == CELIX_SUCCESS) {
 		status = serviceReference_getProperty(reference_ptr, "command.name", &name_str);
 		if (!name_str) {
+            logHelper_log(shell_ptr->logHelper, OSGI_LOGSERVICE_ERROR, "Command service must contain a 'command.name' property!");
 			status = CELIX_BUNDLE_EXCEPTION;
 		}
 	}
@@ -131,8 +135,9 @@ celix_status_t shell_addCommand(shell_pt shell_ptr, service_reference_pt referen
 
 	if (status != CELIX_SUCCESS) {
 		shell_removeCommand(shell_ptr, reference_ptr);
-		fprintf(stderr, "Could not add Command. TODO\n");
-		//TODO log to log service
+        char err[32];
+        celix_strerror(status, err, 32);
+        logHelper_log(shell_ptr->logHelper, OSGI_LOGSERVICE_ERROR, "Could not add command, got error %s\n", err);
 	}
 
 	return status;

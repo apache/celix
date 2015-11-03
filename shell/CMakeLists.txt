@@ -35,6 +35,9 @@ if (SHELL)
       private/src/log_command
       private/src/inspect_command
       private/src/help_command
+
+      ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
+
     )
     
     install_bundle(shell

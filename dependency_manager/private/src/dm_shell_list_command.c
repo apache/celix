@@ -28,7 +28,6 @@
 #include <dm_dependency_manager.h>
 #include "dm_info.h"
 #include "service_reference.h"
-#include "command_impl.h"
 #include "array_list.h"
 #include "bundle_context.h"
 #include "bundle.h"
@@ -40,23 +39,9 @@ static const char * const WARNING_COLOR = "\033[93m";
 static const char * const NOK_COLOR = "\033[91m";
 static const char * const END_COLOR = "\033[m";
 
-char * dmListCommand_getName(command_pt command) {
-    return "dm";
-}
-
-char * dmListCommand_getUsage(command_pt command) {
-    return "dm [overview|notavail]";
-}
-
-char * dmListCommand_getShortDescription(command_pt command) {
-    return "\t overview: Get an overview of the dependency-managed components with their dependencies.\n\tnotavail: Get an overview of dependency-managed compononentes where required depencies are not available. ";
-}
-
-void dmListCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *)) {
-    char outString[256];
+void dmListCommand_execute(bundle_context_pt context, char * line, FILE *out, FILE *err) {
     array_list_pt servRefs = NULL;
     int i;
-    bundle_context_pt context = (void *)command;
     bundleContext_getServiceReferences(context, DM_INFO_SERVICE_NAME ,NULL, &servRefs);
     char *term = getenv("TERM");
     bool colors = false;
@@ -81,22 +66,18 @@ void dmListCommand_execute(command_pt command, char * line, void (*out)(char *),
                 startColors = compInfo->active ? OK_COLOR : NOK_COLOR;
                 endColors = END_COLOR;
             }
-            sprintf(outString, "Component: Name=%s\n|- ID=%s, %sActive=%s%s, State=%s\n", compInfo->name, compInfo->id, startColors, compInfo->active ?  "true " : "false", endColors, compInfo->state);
-            out(outString);
+            fprintf(out, "Component: Name=%s\n|- ID=%s, %sActive=%s%s, State=%s\n", compInfo->name, compInfo->id, startColors, compInfo->active ?  "true " : "false", endColors, compInfo->state);
 
             int interfCnt;
-            sprintf(outString, "|- Interfaces (%d):\n", arrayList_size(compInfo->interfaces));
-            out(outString);
+            fprintf(out, "|- Interfaces (%d):\n", arrayList_size(compInfo->interfaces));
             for(interfCnt = 0 ;interfCnt < arrayList_size(compInfo->interfaces); interfCnt++) {
                 char * interface;
                 interface = arrayList_get(compInfo->interfaces, interfCnt);
-                sprintf(outString, "   |- Interface: %s\n", interface);
-                out(outString);
+                fprintf(out, "   |- Interface: %s\n", interface);
             }
 
             int depCnt;
-            sprintf(outString, "|- Dependencies (%d):\n", arrayList_size(compInfo->dependency_list));
-            out(outString);
+            fprintf(out, "|- Dependencies (%d):\n", arrayList_size(compInfo->dependency_list));
             for(depCnt = 0 ;depCnt < arrayList_size(compInfo->dependency_list); depCnt++) {
                 dm_service_dependency_info_pt dependency;
                 dependency = arrayList_get(compInfo->dependency_list, depCnt);
@@ -111,17 +92,15 @@ void dmListCommand_execute(command_pt command, char * line, void (*out)(char *),
 
                     endColors = END_COLOR;
                 }
-                sprintf(outString, "   |- Dependency: %sAvailable = %s%s, Required = %s, Filter = %s\n",
+                fprintf(out, "   |- Dependency: %sAvailable = %s%s, Required = %s, Filter = %s\n",
                         startColors,
                         dependency->available ? "true " : "false" ,
                         endColors,
                         dependency->required ? "true " : "false",
                         dependency->filter
                 );
-                out(outString);
             }
-            sprintf(outString, "\n");
-            out(outString);
+            fprintf(out, "\n");
 
             infoServ->destroyInfo(infoServ->handle, info);
         }

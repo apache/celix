@@ -26,9 +26,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "command_impl.h"
+#include "command.h"
 
-char * dmListCommand_getName(command_pt command);
-char * dmListCommand_getUsage(command_pt command);
-char * dmListCommand_getShortDescription(command_pt command);
-void dmListCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *));
+void dmListCommand_execute(bundle_context_pt context, char * line, FILE *out, FILE *err);

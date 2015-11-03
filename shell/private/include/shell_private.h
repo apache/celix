@@ -31,11 +31,13 @@
 #include "shell.h"
 #include "hash_map.h"
 #include "command.h"
+#include "log_helper.h"
 
 struct shell {
 	bundle_context_pt bundle_context_ptr;
 	hash_map_pt command_reference_map_ptr;
 	hash_map_pt command_name_map_ptr;
+	log_helper_pt logHelper;
 };
 
 celix_status_t shell_create(bundle_context_pt context_ptr, shell_service_pt *shell_service_ptr);
