@@ -38,6 +38,13 @@ static const char * const OSGI_SHELL_COMMAND_SERVICE_NAME = "commandService";
 
 typedef struct commandService * command_service_pt;
 
+/**
+ * The command service can be used to register additional shell commands.
+ * The service should be register with the following properties:
+ *  - command.name: mandatory, name of the command e.g. 'lb'
+ *  - command.usage: optional, string describing how tu use the commmand e.g. 'lb [-l | -s | -u]'
+ *  - command.descrription: optional, string describing the command e.g. 'list bundles.'
+ */
 struct commandService {
 	void *handle;
 	celix_status_t (*executeCommand)(void *handle, char * commandLine, FILE *outStream, FILE *errorStream);
