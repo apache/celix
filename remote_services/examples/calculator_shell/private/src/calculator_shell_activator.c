@@ -114,13 +114,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	free(activator->addCmdSrv);
 	free(activator->subCmdSrv);
 	free(activator->sqrtCmdSrv);
-
-	if (status == CELIX_SUCCESS) {
-        free(activator->addCmdSrv);
-		free(activator->sqrtCmdSrv);
-		free(activator->subCmdSrv);
-	}
-
+	
 	return status;
 }
 
