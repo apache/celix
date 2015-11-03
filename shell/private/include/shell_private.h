@@ -33,20 +33,18 @@
 #include "command.h"
 
 struct shell {
-	bundle_context_pt bundleContext;
-	hash_map_pt commandReferenceMap;
-	hash_map_pt commandNameMap;
+	bundle_context_pt bundle_context_ptr;
+	hash_map_pt command_reference_map_ptr;
+	hash_map_pt command_name_map_ptr;
 };
 
-celix_status_t shell_create(bundle_context_pt, shell_service_pt* shellService);
-celix_status_t shell_destroy(shell_service_pt* shellService);
-celix_status_t shell_addCommand(shell_pt shell, service_reference_pt reference);
+celix_status_t shell_create(bundle_context_pt context_ptr, shell_service_pt *shell_service_ptr);
+celix_status_t shell_destroy(shell_service_pt *shell_service_ptr);
+celix_status_t shell_addCommand(shell_pt shell_ptr, service_reference_pt reference_ptr);
+celix_status_t shell_removeCommand(shell_pt shell_ptr, service_reference_pt reference_ptr);
 
-
-char * shell_getCommandUsage(shell_pt shell, char * commandName);
-char * shell_getCommandDescription(shell_pt shell, char * commandName);
-service_reference_pt shell_getCommandReference(shell_pt shell, char * command);
-void shell_executeCommand(shell_pt shell, char * commandLine, void (*out)(char *), void (*error)(char *));
-void shell_serviceChanged(service_listener_pt listener, service_event_pt event);
+celix_status_t shell_getCommandReference(shell_pt shell_ptr, char *command_name_str, service_reference_pt *command_reference_ptr);
+celix_status_t shell_executeCommand(shell_pt shell_ptr, char *command_line_str, FILE *out, FILE *err);
+celix_status_t shell_serviceChanged(service_listener_pt listener_ptr, service_event_pt event_ptr);
 
 #endif /* SHELL_PRIVATE_H_ */

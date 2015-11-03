@@ -24,251 +24,258 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdlib.h>
-#include <string.h>
 
 #include "shell_private.h"
 #include "bundle_activator.h"
-#include "command_impl.h"
-#include "bundle_context.h"
-#include "service_registration.h"
-#include "service_listener.h"
+#include "std_commands.h"
 
-#include "ps_command.h"
-#include "start_command.h"
-#include "stop_command.h"
-#include "install_command.h"
-#include "uninstall_command.h"
-#include "update_command.h"
-#include "log_command.h"
-#include "inspect_command.h"
-#include "help_command.h"
+#define NUMBER_OF_COMMANDS 10
 
-#include "utils.h"
+struct command {
+    celix_status_t (*exec)(void *handle, char *commandLine, FILE *out, FILE *err);
+    char *name;
+    char *description;
+    char *usage;
+    command_service_pt service;
+    service_registration_pt reg;
+    properties_pt props;
+};
 
 struct bundle_instance {
 	shell_service_pt shellService;
 	service_registration_pt registration;
 	service_listener_pt listener;
 
-	service_registration_pt psCommand;
-	command_pt psCmd;
-	command_service_pt psCmdSrv;
-
-	service_registration_pt startCommand;
-	command_pt startCmd;
-	command_service_pt startCmdSrv;
-
-	service_registration_pt stopCommand;
-	command_pt stopCmd;
-	command_service_pt stopCmdSrv;
-
-	service_registration_pt installCommand;
-	command_pt installCmd;
-	command_service_pt installCmdSrv;
-
-	service_registration_pt uninstallCommand;
-	command_pt uninstallCmd;
-	command_service_pt uninstallCmdSrv;
-
-	service_registration_pt updateCommand;
-	command_pt updateCmd;
-	command_service_pt updateCmdSrv;
-
-	service_registration_pt logCommand;
-	command_pt logCmd;
-	command_service_pt logCmdSrv;
-
-	service_registration_pt inspectCommand;
-	command_pt inspectCmd;
-	command_service_pt inspectCmdSrv;
-
-	service_registration_pt helpCommand;
-	command_pt helpCmd;
-	command_service_pt helpCmdSrv;
+    struct command std_commands[NUMBER_OF_COMMANDS];
 };
 
 typedef struct bundle_instance *bundle_instance_pt;
 
-static celix_status_t shell_createCommandService(command_pt command, command_service_pt *commandService) {
+celix_status_t bundleActivator_create(bundle_context_pt context_ptr, void **_pptr) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	*commandService = calloc(1, sizeof(**commandService));
+    bundle_instance_pt instance_ptr = NULL;
 
-	if (!*commandService) {
-		status = CELIX_ENOMEM;
-	}
-	else {
-		(*commandService)->command = command;
-		(*commandService)->executeCommand = command->executeCommand;
-		(*commandService)->getName = command_getName;
-		(*commandService)->getShortDescription = command_getShortDescription;
-		(*commandService)->getUsage = command_getUsage;
-	}
+    if (!_pptr || !context_ptr) {
+        status = CELIX_ENOMEM;
+    }
+
+    if (status == CELIX_SUCCESS) {
+        instance_ptr = (bundle_instance_pt) calloc(1, sizeof(struct bundle_instance));
+        if (!instance_ptr) {
+            status = CELIX_ENOMEM;
+        }
+    }
+
+    if (status == CELIX_SUCCESS) {
+        status = shell_create(context_ptr, &instance_ptr->shellService);
+    }
+
+    if (status == CELIX_SUCCESS) {
+        instance_ptr->std_commands[0] =
+                (struct command) {
+                        .exec = psCommand_execute,
+                        .name = "lb",
+                        .description = "list bundles.",
+                        .usage = "lb [-l | -s | -u]"
+                };
+        instance_ptr->std_commands[1] =
+                (struct command) {
+                        .exec = startCommand_execute,
+                        .name = "start",
+                        .description = "start bundle(s).",
+                        .usage = "start <id> [<id> ...]"
+                };
+        instance_ptr->std_commands[2] =
+                (struct command) {
+                        .exec = stopCommand_execute,
+                        .name = "stop",
+                        .description = "stop bundle(s).",
+                        .usage = "stop <id> [<id> ...]"
+                };
+        instance_ptr->std_commands[3] =
+                (struct command) {
+                        .exec = installCommand_execute,
+                        .name = "install",
+                        .description = "install bundle(s).",
+                        .usage = "install <file> [<file> ...]"
+                };
+        instance_ptr->std_commands[4] =
+                (struct command) {
+                        .exec = uninstallCommand_execute,
+                        .name = "uninstall",
+                        .description = "uninstall bundle(s).",
+                        .usage = "uninstall <file> [<file> ...]"
+                };
+        instance_ptr->std_commands[5] =
+                (struct command) {
+                        .exec = updateCommand_execute,
+                        .name = "update",
+                        .description = "update bundle(s).",
+                        .usage = "update <id> [<URL>]"
+                };
+        instance_ptr->std_commands[6] =
+                (struct command) {
+                        .exec = helpCommand_execute,
+                        .name = "help",
+                        .description = "display available commands and description.",
+                        .usage = "help <command>]"
+                };
+        instance_ptr->std_commands[7] =
+                (struct command) {
+                        .exec = logCommand_execute,
+                        .name = "log",
+                        .description = "print log.",
+                        .usage = "log"
+                };
+        instance_ptr->std_commands[8] =
+                (struct command) {
+                        .exec = inspectCommand_execute,
+                        .name = "inspect",
+                        .description = "inspect services and components.",
+                        .usage = "inspect (service) (capability|requirement) [<id> ...]"
+                };
+        instance_ptr->std_commands[9] =
+                (struct command) { NULL, NULL, NULL, NULL, NULL, NULL, NULL }; /*marker for last element*/
+
+        unsigned int i = 0;
+        while (instance_ptr->std_commands[i].exec != NULL) {
+            instance_ptr->std_commands[i].props = properties_create();
+            if (!instance_ptr->std_commands[i].props) {
+                status = CELIX_BUNDLE_EXCEPTION;
+                break;
+            }
+
+            properties_set(instance_ptr->std_commands[i].props, OSGI_SHELL_COMMAND_NAME, instance_ptr->std_commands[i].name);
+            properties_set(instance_ptr->std_commands[i].props, OSGI_SHELL_COMMAND_USAGE, instance_ptr->std_commands[i].usage);
+            properties_set(instance_ptr->std_commands[i].props, OSGI_SHELL_COMMAND_DESCRIPTION, instance_ptr->std_commands[i].description);
+
+            instance_ptr->std_commands[i].service = calloc(1, sizeof(*instance_ptr->std_commands[i].service));
+            if (!instance_ptr->std_commands[i].service) {
+                status = CELIX_ENOMEM;
+                break;
+            }
+
+            instance_ptr->std_commands[i].service->handle = context_ptr;
+            instance_ptr->std_commands[i].service->executeCommand = instance_ptr->std_commands[i].exec;
+
+            i += 1;
+        }
+    }
+
+    if (status == CELIX_SUCCESS) {
+        *_pptr = instance_ptr;
+    }
+
+
+    if (status != CELIX_SUCCESS) {
+        bundleActivator_destroy(instance_ptr, context_ptr);
+    }
 
 	return status;
 }
 
-celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
+celix_status_t bundleActivator_start(void *_ptr, bundle_context_pt context_ptr) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	bundle_instance_pt bi = (bundle_instance_pt) calloc(1, sizeof(struct bundle_instance));
+	bundle_instance_pt instance_ptr  = (bundle_instance_pt) _ptr;
+    array_list_pt references_ptr     = NULL;
+    service_listener_pt listener_ptr = NULL;
 
-	if (!bi) {
-		status = CELIX_ENOMEM;
-	}
-	else if (userData == NULL) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-		free(bi);
-	}
-	else {
-		bi->listener = NULL;
-		bi->psCommand = NULL;
-		bi->startCommand = NULL;
-		bi->stopCommand = NULL;
-		bi->installCommand = NULL;
-		bi->uninstallCommand = NULL;
-		bi->updateCommand = NULL;
-		bi->logCommand = NULL;
-		bi->inspectCommand = NULL;
-		bi->helpCommand = NULL;
-		bi->registration = NULL;
+    if (!instance_ptr || !context_ptr) {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
 
-		status = shell_create(context, &bi->shellService);
-
-		if (status != CELIX_SUCCESS) {
-			printf("shell_create failed\n");
-		}
-
-		(*userData) = bi;
-	}
-
-	return status;
-}
-
-celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
-	celix_status_t status = CELIX_SUCCESS;
-	bundle_instance_pt bi = (bundle_instance_pt) userData;
-
-	status = bundleContext_registerService(context, (char *) OSGI_SHELL_SERVICE_NAME, bi->shellService, NULL, &bi->registration);
+    if (status == CELIX_SUCCESS) {
+        status = bundleContext_registerService(context_ptr, (char *) OSGI_SHELL_SERVICE_NAME, instance_ptr->shellService, NULL, &instance_ptr->registration);
+    }
 
 	if (status == CELIX_SUCCESS) {
-		array_list_pt references = NULL;
-		service_listener_pt listener = (service_listener_pt) calloc(1, sizeof(*listener));
+        listener_ptr = (service_listener_pt) calloc(1, sizeof(*listener_ptr));
+        if (!listener_ptr) {
+            status = CELIX_ENOMEM;
+        }
+    }
 
-		bi->listener = listener;
-		listener->handle = bi->shellService->shell;
-		listener->serviceChanged = (void *) shell_serviceChanged;
+    if (status == CELIX_SUCCESS) {
+        instance_ptr->listener = listener_ptr;
+        listener_ptr->handle = instance_ptr->shellService->shell;
+        listener_ptr->serviceChanged = (void *) shell_serviceChanged;
 
-		status = bundleContext_addServiceListener(context, listener, "(objectClass=commandService)");
-		status = bundleContext_getServiceReferences(context, "commandService", NULL, &references);
+        status = bundleContext_addServiceListener(context_ptr, listener_ptr, "(objectClass=commandService)");
+    }
 
-		if (status == CELIX_SUCCESS) {
-			int i = 0;
+    if (status == CELIX_SUCCESS) {
+        status = bundleContext_getServiceReferences(context_ptr, "commandService", NULL, &references_ptr);
+    }
 
-			for (i = 0; i < arrayList_size(references); i++) {
-				shell_addCommand(bi->shellService->shell, arrayList_get(references, i));
-			}
-		}
+    if (status == CELIX_SUCCESS) {
+        for (unsigned int i = 0; i < arrayList_size(references_ptr); i++) {
+            shell_addCommand(instance_ptr->shellService->shell, arrayList_get(references_ptr, i));
+        }
+    }
 
-		if (status == CELIX_SUCCESS) {
-			bi->psCmd = psCommand_create(context);
-			shell_createCommandService(bi->psCmd, &bi->psCmdSrv);
-			bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, bi->psCmdSrv, NULL, &bi->psCommand);
+    if (status == CELIX_SUCCESS) {
+        for (unsigned int i = 0; instance_ptr->std_commands[i].exec != NULL; i++) {
+            status = bundleContext_registerService(context_ptr, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME,
+                                                   instance_ptr->std_commands[i].service,
+                                                   instance_ptr->std_commands[i].props,
+                                                   &instance_ptr->std_commands[i].reg);
+            if (status != CELIX_SUCCESS) {
+                break;
+            }
 
-			bi->startCmd = startCommand_create(context);
-			shell_createCommandService(bi->startCmd, &bi->startCmdSrv);
-			bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, bi->startCmdSrv, NULL, &bi->startCommand);
-
-			bi->stopCmd = stopCommand_create(context);
-			shell_createCommandService(bi->stopCmd, &bi->stopCmdSrv);
-			bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, bi->stopCmdSrv, NULL, &bi->stopCommand);
-
-			bi->installCmd = installCommand_create(context);
-			shell_createCommandService(bi->installCmd, &bi->installCmdSrv);
-			bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, bi->installCmdSrv, NULL, &bi->installCommand);
-
-			bi->uninstallCmd = uninstallCommand_create(context);
-			shell_createCommandService(bi->uninstallCmd, &bi->uninstallCmdSrv);
-			bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, bi->uninstallCmdSrv, NULL, &bi->uninstallCommand);
-
-			bi->updateCmd = updateCommand_create(context);
-			shell_createCommandService(bi->updateCmd, &bi->updateCmdSrv);
-			bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, bi->updateCmdSrv, NULL, &bi->updateCommand);
-
-			bi->logCmd = logCommand_create(context);
-			shell_createCommandService(bi->logCmd, &bi->logCmdSrv);
-			bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, bi->logCmdSrv, NULL, &bi->logCommand);
-
-			bi->inspectCmd = inspectCommand_create(context);
-			shell_createCommandService(bi->inspectCmd, &bi->inspectCmdSrv);
-			bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, bi->inspectCmdSrv, NULL, &bi->inspectCommand);
-
-			bi->helpCmd = helpCommand_create(context);
-			shell_createCommandService(bi->helpCmd, &bi->helpCmdSrv);
-			bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, bi->helpCmdSrv, NULL, &bi->helpCommand);
-		}
-		arrayList_destroy(references);
+        }
+		arrayList_destroy(references_ptr);
 	}
 
+    if (status != CELIX_SUCCESS) {
+        bundleActivator_stop(_ptr, context_ptr);
+    }
+
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_stop(void *_ptr, bundle_context_pt context_ptr) {
 	celix_status_t status = CELIX_SUCCESS;
-	bundle_instance_pt bi = (bundle_instance_pt) userData;
+    celix_status_t sub_status;
 
-	serviceRegistration_unregister(bi->registration);
-	serviceRegistration_unregister(bi->psCommand);
-	serviceRegistration_unregister(bi->startCommand);
-	serviceRegistration_unregister(bi->stopCommand);
-	serviceRegistration_unregister(bi->installCommand);
-	serviceRegistration_unregister(bi->uninstallCommand);
-	serviceRegistration_unregister(bi->updateCommand);
-	serviceRegistration_unregister(bi->logCommand);
-	serviceRegistration_unregister(bi->inspectCommand);
-	serviceRegistration_unregister(bi->helpCommand);
+	bundle_instance_pt instance_ptr = (bundle_instance_pt) _ptr;
 
-	status = bundleContext_removeServiceListener(context, bi->listener);
+    if (instance_ptr) {
+        for (unsigned int i = 0; instance_ptr->std_commands[i].exec != NULL; i++) {
+            if (instance_ptr->std_commands[i].reg != NULL) {
+                status = serviceRegistration_unregister(instance_ptr->std_commands[i].reg);
+                instance_ptr->std_commands[i].reg = NULL;
+                instance_ptr->std_commands[i].props = NULL;
+            }
+        }
+    }
+
+	sub_status = bundleContext_removeServiceListener(context_ptr, instance_ptr->listener);
+    if (status == CELIX_SUCCESS && sub_status != CELIX_SUCCESS) {
+        status = sub_status;
+    }
 
 	return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
-	bundle_instance_pt bi = (bundle_instance_pt) userData;
+celix_status_t bundleActivator_destroy(void *_ptr, bundle_context_pt __attribute__((__unused__)) context_ptr) {
+    bundle_instance_pt instance_ptr = (bundle_instance_pt) _ptr;
 
-	psCommand_destroy(bi->psCmd);
-	free(bi->psCmdSrv);
+    if (instance_ptr) {
+        for (unsigned int i = 0; instance_ptr->std_commands[i].exec != NULL; i++) {
+            free(instance_ptr->std_commands[i].service);
 
-	startCommand_destroy(bi->startCmd);
-	free(bi->startCmdSrv);
+            if (instance_ptr->std_commands[i].props != NULL) {
+                properties_destroy(instance_ptr->std_commands[i].props);
+            }
+        }
+    }
 
-	stopCommand_destroy(bi->stopCmd);
-	free(bi->stopCmdSrv);
+    shell_destroy(&instance_ptr->shellService);
 
-	installCommand_destroy(bi->installCmd);
-	free(bi->installCmdSrv);
-
-	uninstallCommand_destroy(bi->uninstallCmd);
-	free(bi->uninstallCmdSrv);
-
-	updateCommand_destroy(bi->updateCmd);
-	free(bi->updateCmdSrv);
-
-	logCommand_destroy(bi->logCmd);
-	free(bi->logCmdSrv);
-
-	inspectCommand_destroy(bi->inspectCmd);
-	free(bi->inspectCmdSrv);
-
-	inspectCommand_destroy(bi->helpCmd);
-	free(bi->helpCmdSrv);
-
-	free(bi->listener);
-	bi->listener = NULL;
-
-	shell_destroy(&bi->shellService);
-	bi->shellService = NULL;
-	free(bi);
+    free(instance_ptr);
 
 	return CELIX_SUCCESS;
 }

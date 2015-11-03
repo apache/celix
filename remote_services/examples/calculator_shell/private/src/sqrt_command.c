@@ -33,66 +33,46 @@
 #include "sqrt_command.h"
 #include "calculator_service.h"
 
+static celix_status_t sqrtCommand_isNumeric(char *number, bool *ret);
 
-void sqrtCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *));
-celix_status_t sqrtCommand_isNumeric(command_pt command, char *number, bool *ret);
-
-command_pt sqrtCommand_create(bundle_context_pt context) {
-    command_pt command = (command_pt) calloc(1, sizeof(*command));
-    if (command) {
-		command->bundleContext = context;
-		command->name = "sqrt";
-		command->shortDescription = "calculates the square root of the given double";
-		command->usage = "sqrt <double>";
-		command->executeCommand = sqrtCommand_execute;
-    }
-    return command;
-}
-
-void sqrtCommand_destroy(command_pt command) {
-	free(command);
-}
-
-void sqrtCommand_execute(command_pt command, char *line, void (*out)(char *), void (*err)(char *)) {
+void sqrtCommand_execute(bundle_context_pt context, char *line, FILE *out, FILE *err) {
 	celix_status_t status = CELIX_SUCCESS;
     service_reference_pt calculatorService = NULL;
 
-    status = bundleContext_getServiceReference(command->bundleContext, (char *) CALCULATOR_SERVICE, &calculatorService);
+    status = bundleContext_getServiceReference(context, (char *) CALCULATOR_SERVICE, &calculatorService);
     if (status == CELIX_SUCCESS) {
     	char *token = line;
     	strtok_r(line, " ", &token);
 		char *aStr = strtok_r(NULL, " ", &token);
 		bool numeric;
-		sqrtCommand_isNumeric(command, aStr, &numeric);
+		sqrtCommand_isNumeric(aStr, &numeric);
 		if (aStr != NULL && numeric) {
 			calculator_service_pt calculator = NULL;
-			status = bundleContext_getService(command->bundleContext, calculatorService, (void *) &calculator);
+			status = bundleContext_getService(context, calculatorService, (void *) &calculator);
 			if (status == CELIX_SUCCESS) {
 				double a = atof(aStr);
 				double result = 0;
 				status = calculator->sqrt(calculator->calculator, a, &result);
 				if (status == CELIX_SUCCESS) {
-					char line[256];
-					sprintf(line, "CALCULATOR_SHELL: Sqrt: %f = %f\n", a, result);
-					out(line);
+					fprintf(out, "CALCULATOR_SHELL: Sqrt: %f = %f\n", a, result);
 				} else {
-					out("SQRT: Unexpected exception in Calc service\n");
+					fprintf(err, "SQRT: Unexpected exception in Calc service\n");
 				}
 			} else {
-				out("No calc service available\n");
+				fprintf(err, "No calc service available\n");
 			}
 		} else {
-			out("SQRT: Requires 1 numerical parameter\n");
+			fprintf(err, "SQRT: Requires 1 numerical parameter\n");
 			status = CELIX_ILLEGAL_ARGUMENT;
 		}
     } else {
-        out("No calc service available\n");
+		fprintf(err, "No calc service available\n");
     }
 
     //return status;
 }
 
-celix_status_t sqrtCommand_isNumeric(command_pt command, char *number, bool *ret) {
+static celix_status_t sqrtCommand_isNumeric(char *number, bool *ret) {
 	celix_status_t status = CELIX_SUCCESS;
 	*ret = true;
 	while(*number) {

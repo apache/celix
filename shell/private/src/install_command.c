@@ -26,51 +26,28 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "command_impl.h"
 #include "array_list.h"
 #include "bundle_context.h"
-#include "bundle_archive.h"
-#include "module.h"
-#include "bundle.h"
-#include "install_command.h"
 
-void installCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *));
-void installCommand_install(command_pt command, bundle_pt *bundle, char * location, void (*out)(char *), void (*err)(char *));
+void installCommand_execute(void *handle, char * line, FILE *outStream, FILE *errStream) {
+	bundle_context_pt context = handle;
 
-command_pt installCommand_create(bundle_context_pt context) {
-	command_pt command = (command_pt) malloc(sizeof(*command));
-	command->bundleContext = context;
-	command->name = "install";
-	command->shortDescription = "install bundle(s).";
-	command->usage = "install <file> [<file> ...]";
-	command->executeCommand = installCommand_execute;
-	return command;
-}
-
-void installCommand_destroy(command_pt command) {
-	free(command);
-}
-
-void installCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *)) {
 	char delims[] = " ";
 	char * sub = NULL;
 	char *save_ptr = NULL;
 	char info[256];
-	char outString[256];
 
 	// ignore the command
 	sub = strtok_r(line, delims, &save_ptr);
 	sub = strtok_r(NULL, delims, &save_ptr);
 	
 	if (sub == NULL) {
-		err("Incorrect number of arguments.\n");
-		sprintf(outString, "%s\n", command->usage);
-		out(outString);
+		fprintf(errStream, "Incorrect number of arguments.\n");
 	} else {
 		info[0] = '\0';
 		while (sub != NULL) {
 			bundle_pt bundle = NULL;
-			installCommand_install(command, &bundle, sub, out, err);
+			bundleContext_installBundle(context, sub, &bundle);
 			if (bundle != NULL) {
 				long id;
 				bundle_archive_pt archive = NULL;
@@ -87,17 +64,13 @@ void installCommand_execute(command_pt command, char * line, void (*out)(char *)
 			sub = strtok_r(NULL, delims, &save_ptr);
 		}
 		if (strchr(info, ',') != NULL) {
-			out("Bundle IDs: ");
-			out(info);
-			out("\n");
+			fprintf(outStream, "Bundle IDs: ");
+			fprintf(outStream, "%s", info);
+			fprintf(outStream, "\n");
 		} else if (strlen(info) > 0) {
-			out("Bundle ID: ");
-			out(info);
-			out("\n");
+			fprintf(outStream, "Bundle ID: ");
+			fprintf(outStream, "%s", info);
+			fprintf(outStream, "\n");
 		}
 	}
-}
-
-void installCommand_install(command_pt command, bundle_pt *bundle, char * location, void (*out)(char *), void (*err)(char *)) {
-	bundleContext_installBundle(command->bundleContext, location, bundle);
 }

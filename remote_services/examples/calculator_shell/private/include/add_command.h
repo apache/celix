@@ -27,9 +27,6 @@
 #ifndef ADD_COMMAND_H_
 #define ADD_COMMAND_H_
 
-#include "command_impl.h"
-
-command_pt addCommand_create(bundle_context_pt context);
-void addCommand_destroy(command_pt command);
+void addCommand_execute(bundle_context_pt context, char *line, FILE *out, FILE *err);
 
 #endif /* ADD_COMMAND_H_ */

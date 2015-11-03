@@ -25,84 +25,87 @@
  */
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
-#include "command_impl.h"
 #include "array_list.h"
 #include "bundle_context.h"
-#include "bundle.h"
 #include "shell.h"
+#include "std_commands.h"
 
-void helpCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *));
+celix_status_t helpCommand_execute(void *_ptr, char *line_str, FILE *out_ptr, FILE *err_ptr) {
+	celix_status_t status = CELIX_SUCCESS;
 
-command_pt helpCommand_create(bundle_context_pt context) {
-	command_pt command = (command_pt) malloc(sizeof(*command));
-	command->bundleContext = context;
-	command->name = "help";
-	command->shortDescription = "display available command usage and description.";
-	command->usage = "start [<command> ...]";
-	command->executeCommand = helpCommand_execute;
-	return command;
-}
+	bundle_context_pt context_ptr = _ptr;
+	service_reference_pt shell_service_reference_ptr = NULL;
+	shell_service_pt shell_ptr = NULL;
 
-void helpCommand_destroy(command_pt command) {
-	free(command);
-}
-
-
-void helpCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *)) {
-	service_reference_pt shellService = NULL;
-	bundleContext_getServiceReference(command->bundleContext, (char *) OSGI_SHELL_SERVICE_NAME, &shellService);
-
-	if (shellService != NULL) {
-		shell_service_pt shell = NULL;
-		bundleContext_getService(command->bundleContext, shellService, (void **) &shell);
-
-		if (shell != NULL) {
-			char delims[] = " ";
-			char * sub = NULL;
-			char *save_ptr = NULL;
-			char outString[256];
-
-			sub = strtok_r(line, delims, &save_ptr);
-			sub = strtok_r(NULL, delims, &save_ptr);
-
-			if (sub == NULL) {
-				int i;
-				array_list_pt commands = shell->getCommands(shell->shell);
-				for (i = 0; i < arrayList_size(commands); i++) {
-					char *name = arrayList_get(commands, i);
-					sprintf(outString, "%s\n", name);
-					out(outString);
-				}
-				out("\nUse 'help <command-name>' for more information.\n");
-				arrayList_destroy(commands);
-			} else {
-				bool found = false;
-				while (sub != NULL) {
-					int i;
-					array_list_pt commands = shell->getCommands(shell->shell);
-					for (i = 0; i < arrayList_size(commands); i++) {
-						char *name = arrayList_get(commands, i);
-						if (strcmp(sub, name) == 0) {
-							char *desc = shell->getCommandDescription(shell->shell, name);
-							char *usage = shell->getCommandUsage(shell->shell, name);
-
-							if (found) {
-								out("---\n");
-							}
-							found = true;
-							sprintf(outString, "Command     : %s\n", name);
-							out(outString);
-							sprintf(outString, "Usage       : %s\n", usage);
-							out(outString);
-							sprintf(outString, "Description : %s\n", desc);
-							out(outString);
-						}
-					}
-					sub = strtok_r(NULL, delims, &save_ptr);
-					arrayList_destroy(commands);
-				}
-			}
-		}
+	if (!context_ptr || !line_str || !out_ptr || !err_ptr) {
+		status = CELIX_ILLEGAL_ARGUMENT;
 	}
+
+	if (status == CELIX_SUCCESS) {
+		status = bundleContext_getServiceReference(context_ptr, (char *) OSGI_SHELL_SERVICE_NAME, &shell_service_reference_ptr);
+	}
+
+	if (status == CELIX_SUCCESS) {
+		status = bundleContext_getService(context_ptr, shell_service_reference_ptr, (void **) &shell_ptr);
+	}
+
+	if (status == CELIX_SUCCESS) {
+        uint32_t out_len = 256;
+        char *sub = NULL;
+        char *save_ptr = NULL;
+        char out_str[out_len];
+
+        memset(out_str, 0, sizeof(out_str));
+
+        strtok_r(line_str, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
+        sub = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
+
+        if (sub == NULL) {
+            unsigned int i;
+            array_list_pt commands = NULL;
+
+            status = shell_ptr->getCommands(shell_ptr->shell, &commands);
+            for (i = 0; i < arrayList_size(commands); i++) {
+                char *name = arrayList_get(commands, i);
+                fprintf(out_ptr, "%s\n", name);
+            }
+            fprintf(out_ptr, "\nUse 'help <command-name>' for more information.\n");
+        } else {
+            celix_status_t sub_status_desc;
+            celix_status_t sub_status_usage;
+            int i;
+            array_list_pt commands = NULL;
+            shell_ptr->getCommands(shell_ptr->shell, &commands);
+            for (i = 0; i < arrayList_size(commands); i++) {
+                char *name = arrayList_get(commands, i);
+                if (strcmp(sub, name) == 0) {
+                    char *usage_str = NULL;
+                    char *desc_str = NULL;
+
+                    sub_status_desc = shell_ptr->getCommandDescription(shell_ptr->shell, name, &desc_str);
+                    sub_status_usage = shell_ptr->getCommandUsage(shell_ptr->shell, name, &usage_str);
+
+                    if (sub_status_usage == CELIX_SUCCESS && sub_status_desc == CELIX_SUCCESS) {
+                        fprintf(out_ptr, "Command     : %s\n", name);
+                        fprintf(out_ptr, "Usage       : %s\n", usage_str == NULL ? "" : usage_str);
+                        fprintf(out_ptr, "Description : %s\n", desc_str == NULL ? "" : desc_str);
+                    } else {
+                        fprintf(err_ptr, "Error retreiving help info for command '%s'\n", sub);
+                    }
+
+                    if (sub_status_desc != CELIX_SUCCESS && status == CELIX_SUCCESS) {
+                        status = sub_status_desc;
+                    }
+                    if (sub_status_usage != CELIX_SUCCESS && status == CELIX_SUCCESS) {
+                        status = sub_status_usage;
+                    }
+                }
+            }
+            arrayList_destroy(commands);
+        }
+    }
+
+    return status;
 }

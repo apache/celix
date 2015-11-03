@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include <command.h>
 
 #include "array_list.h"
 #include "bundle_context.h"
@@ -34,72 +35,53 @@
 #include "calculator_service.h"
 
 
-void addCommand_execute(command_pt command, char * line, void (*out)(char *), void (*err)(char *));
-celix_status_t addCommand_isNumeric(command_pt command, char *number, bool *ret);
+static celix_status_t addCommand_isNumeric(char *number, bool *ret);
 
-command_pt addCommand_create(bundle_context_pt context) {
-    command_pt command = (command_pt) calloc(1, sizeof(*command));
-    if (command) {
-		command->bundleContext = context;
-		command->name = "add";
-		command->shortDescription = "add the given doubles";
-		command->usage = "add <double> <double>";
-		command->executeCommand = addCommand_execute;
-    }
-    return command;
-}
-
-void addCommand_destroy(command_pt command) {
-	free(command);
-}
-
-void addCommand_execute(command_pt command, char *line, void (*out)(char *), void (*err)(char *)) {
+void addCommand_execute(bundle_context_pt context, char *line, FILE *out, FILE *err) {
 	celix_status_t status = CELIX_SUCCESS;
     service_reference_pt calculatorService = NULL;
 
-    status = bundleContext_getServiceReference(command->bundleContext, (char *) CALCULATOR_SERVICE, &calculatorService);
+    status = bundleContext_getServiceReference(context, (char *) CALCULATOR_SERVICE, &calculatorService);
     if (status == CELIX_SUCCESS) {
     	char *token = line;
     	strtok_r(line, " ", &token);
 		char *aStr = strtok_r(NULL, " ", &token);
 		bool numeric;
-		addCommand_isNumeric(command, aStr, &numeric);
+		addCommand_isNumeric(aStr, &numeric);
 		if (aStr != NULL && numeric) {
 			char *bStr = strtok_r(NULL, " ", &token);
-			addCommand_isNumeric(command, bStr, &numeric);
+			addCommand_isNumeric(bStr, &numeric);
 			if (bStr != NULL && numeric) {
 				calculator_service_pt calculator = NULL;
-				status = bundleContext_getService(command->bundleContext, calculatorService, (void *) &calculator);
+				status = bundleContext_getService(context, calculatorService, (void *) &calculator);
 				if (status == CELIX_SUCCESS) {
 					double a = atof(aStr);
 					double b = atof(bStr);
 					double result = 0;
 					status = calculator->add(calculator->calculator, a, b, &result);
 					if (status == CELIX_SUCCESS) {
-						char line[256];
-						sprintf(line, "CALCULATOR_SHELL: Add: %f + %f = %f\n", a, b, result);
-						out(line);
+						fprintf(out, "CALCULATOR_SHELL: Add: %f + %f = %f\n", a, b, result);
 					} else {
-						out("ADD: Unexpected exception in Calc service\n");
+						fprintf(err, "ADD: Unexpected exception in Calc service\n");
 					}
 				} else {
-					out("No calc service available\n");
+					fprintf(err, "No calc service available\n");
 				}
 			} else {
-				out("ADD: Requires 2 numerical parameter\n");
+				fprintf(err, "ADD: Requires 2 numerical parameter\n");
 			}
 		} else {
-			out("ADD: Requires 2 numerical parameter\n");
+			fprintf(err, "ADD: Requires 2 numerical parameter\n");
 			status = CELIX_ILLEGAL_ARGUMENT;
 		}
     } else {
-        out("No calc service available\n");
+		fprintf(err, "No calc service available\n");
     }
 
     //return status;
 }
 
-celix_status_t addCommand_isNumeric(command_pt command, char *number, bool *ret) {
+static celix_status_t addCommand_isNumeric(char *number, bool *ret) {
 	celix_status_t status = CELIX_SUCCESS;
 	*ret = true;
 	while(*number) {
