@@ -75,6 +75,9 @@ celix_status_t psCommand_execute(void *_ptr, char *command_line_str, FILE *out_p
         fprintf(out_ptr, "  %-5s %-12s %s\n", "ID", "State", message_str);
 
         unsigned int size = arrayList_size(bundles_ptr);
+
+        printf("size is %d\n", size);
+
         bundle_pt bundles_array_ptr[size];
 
         for (unsigned int i = 0; i < size; i++) {
@@ -106,7 +109,7 @@ celix_status_t psCommand_execute(void *_ptr, char *command_line_str, FILE *out_p
             }
         }
 
-        for (unsigned int i = 0; i < size - 1; i++) {
+        for (unsigned int i = 0; i < size; i++) {
             celix_status_t sub_status;
 
             bundle_pt bundle_ptr = bundles_array_ptr[i];
