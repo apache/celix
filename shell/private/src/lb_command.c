@@ -76,8 +76,6 @@ celix_status_t psCommand_execute(void *_ptr, char *command_line_str, FILE *out_p
 
         unsigned int size = arrayList_size(bundles_ptr);
 
-        printf("size is %d\n", size);
-
         bundle_pt bundles_array_ptr[size];
 
         for (unsigned int i = 0; i < size; i++) {
