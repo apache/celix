@@ -38,5 +38,5 @@ if (RSA_TOPOLOGY_MANAGER)
 
     install_bundle(topology_manager)
 
-    target_link_libraries(topology_manager celix_framework ${APRUTIL_LIBRARY})
+    target_link_libraries(topology_manager celix_framework)
 endif (RSA_TOPOLOGY_MANAGER)

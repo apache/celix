@@ -39,10 +39,6 @@
 #include "framework.h"
 #include "linked_list_iterator.h"
 
-#ifdef WITH_APR
-static apr_pool_t *memoryPool;
-#endif
-
 int celixLauncher_launch(const char *configFile, framework_pt *framework) {
     int status = 0;
     FILE *config = fopen(configFile, "r");
@@ -69,37 +65,16 @@ int celixLauncher_launchWithStream(FILE *stream, framework_pt *framework) {
     }
 
 
-#ifdef WITH_APR
-    apr_status_t rv;
-    apr_status_t s;
-#endif
-
 #ifndef CELIX_NO_CURLINIT
     // Before doing anything else, let's setup Curl
     curl_global_init(CURL_GLOBAL_NOTHING);
-#endif
-
-#ifdef WITH_APR
-	rv = apr_initialize();
-    if (rv != APR_SUCCESS) {
-        return CELIX_START_ERROR;
-    }
-
-    s = apr_pool_create(&memoryPool, NULL);
-    if (s != APR_SUCCESS) {
-        return CELIX_START_ERROR;
-    }
 #endif
 
 
     if (status == 0) {
         char *autoStart = properties_get(config, "cosgi.auto.start.1");
         celix_status_t status;
-#ifdef WITH_APR
-        status = framework_create(framework, memoryPool, config);
-#else
         status = framework_create(framework, config);
-#endif
         bundle_pt fwBundle = NULL;
         if (status == CELIX_SUCCESS) {
             status = fw_init(*framework);
@@ -169,11 +144,6 @@ void celixLauncher_waitForShutdown(framework_pt framework) {
 
 void celixLauncher_destroy(framework_pt framework) {
     framework_destroy(framework);
-
-    #ifdef WITH_APR
-        apr_pool_destroy(memoryPool);
-        apr_terminate();
-    #endif
 
     #ifndef CELIX_NO_CURLINIT
         // Cleanup Curl

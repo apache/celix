@@ -65,17 +65,6 @@ include(UseDoxygen)
 # Default bundle version
 set(DEFAULT_VERSION 1.0.0)
 
-option("WITH_APR" "Build Celix with APR support" "OFF")
-if(${WITH_APR})
-	find_package(APR REQUIRED)
-
-	include_directories(${APR_INCLUDE_DIR})
-	include_directories(${APRUTIL_INCLUDE_DIR})
-endif()
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in
-               ${CMAKE_CURRENT_BINARY_DIR}/config.h)
-INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/config.h DESTINATION include/celix COMPONENT framework)
-
 ## New sub project must use a buildoption to be able to enable/disable the project using the CMake Editor
 ## Sub projects depending on another sub project automatically enable these dependencies
 ## For this to work, the order off "add_subdirectory" has to be correct (ie backwards)
@@ -84,14 +73,15 @@ add_subdirectory(device_access)
 add_subdirectory(deployment_admin)
 add_subdirectory(remote_services)
 add_subdirectory(remote_shell)
-add_subdirectory(shell_bonjour)
+#add_subdirectory(shell_bonjour) shell_bonjour is still based on APR and old shell command service
 add_subdirectory(shell_tui)
 add_subdirectory(shell)
 add_subdirectory(log_writer)
 add_subdirectory(log_service)
 
-add_subdirectory(event_admin)
+#add_subdirectory(event_admin) event_admin is still bases on APR
 add_subdirectory(dependency_manager)
+#add_subdirectory(scr) scr still needs APR
 
 add_subdirectory(launcher)
 add_subdirectory(framework)

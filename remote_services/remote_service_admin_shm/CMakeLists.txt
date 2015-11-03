@@ -46,6 +46,6 @@ if (RSA_REMOTE_SERVICE_ADMIN_SHM)
 			${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin_shm/public/include/remote_service_admin_shm.h
 	)
 
-	target_link_libraries(remote_service_admin_shm celix_framework ${APRUTIL_LIBRARY})
+	target_link_libraries(remote_service_admin_shm celix_framework)
 endif (RSA_REMOTE_SERVICE_ADMIN_SHM)
 

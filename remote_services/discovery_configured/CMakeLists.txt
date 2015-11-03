@@ -51,7 +51,7 @@ if (RSA_DISCOVERY_CONFIGURED)
 
     install_bundle(discovery_configured)
 
-    target_link_libraries(discovery_configured celix_framework ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES} ${APRUTIL_LIBRARY})
+    target_link_libraries(discovery_configured celix_framework ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES})
 
     if (RSA_ENDPOINT_TEST_READER)
         add_executable(descparser

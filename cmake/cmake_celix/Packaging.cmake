@@ -448,8 +448,6 @@ MACRO(deploy)
 	ENDIF(UNIX)
 	
 	IF(WIN32)
-		GET_FILENAME_COMPONENT(apr_path ${APR_LIBRARY} PATH)
-		GET_FILENAME_COMPONENT(aprutil_path ${APRUTIL_LIBRARY} PATH)
 		GET_FILENAME_COMPONENT(zlib_path ${ZLIB_LIBRARY} PATH)
 		GET_FILENAME_COMPONENT(curl_path ${CURL_LIBRARY} PATH)
 		
@@ -461,7 +459,7 @@ MACRO(deploy)
 			SET(celixframework_path "${PROJECT_BINARY_DIR}/framework/${CMAKE_BUILD_TYPE}")
 		ENDIF(CELIX_FOUND)
 		
-		SET(PATH "%PATH%;${apr_path};${aprutil_path};${zlib_path};${curl_path};${celixutils_path};${celixframework_path}")
+		SET(PATH "%PATH%;${zlib_path};${curl_path};${celixutils_path};${celixframework_path}")
 		
 		CONFIGURE_FILE(${PROJECT_SOURCE_DIR}/cmake/vcxproj.user.in ${CMAKE_CURRENT_BINARY_DIR}/deploy_${DEPLOY_NAME}.vcxproj.user @ONLY)
 	ENDIF(WIN32)
