@@ -19,10 +19,8 @@ celix_subproject(RSA_DISCOVERY_SHM "Option to enable building the Discovery (SHM
 if (RSA_DISCOVERY_SHM)
 find_package(CURL REQUIRED)
 	find_package(LibXml2 REQUIRED)
-	find_package(Jansson REQUIRED)
 	
 	include_directories("${CURL_INCLUDE_DIR}")
-	include_directories("${JANSSON_INCLUDE_DIR}")
 	include_directories("${LIBXML2_INCLUDE_DIR}")
 	include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 	include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/private/include")
@@ -35,6 +33,7 @@ find_package(CURL REQUIRED)
 	include_directories("private/include")
 
 	SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_rsa_discovery_shm")
+	SET(BUNDLE_VERSION "0.0.1")
 	SET_HEADERS("Bundle-Name: Apache Celix RSA Discovery SHM")
 
 	bundle(discovery_shm SOURCES 
@@ -54,6 +53,6 @@ find_package(CURL REQUIRED)
 
 	install_bundle(discovery_shm)
 		
-	target_link_libraries(discovery_shm celix_framework ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES} ${JANSSON_LIBRARIES})
+	target_link_libraries(discovery_shm celix_framework ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES})
 
 endif (RSA_DISCOVERY_SHM)
