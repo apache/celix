@@ -27,41 +27,70 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>
 
-#include "constants.h"
 #include "filter.h"
 #include "dm_component_impl.h"
-#include "../../../framework/private/include/framework_private.h"
 
-struct dm_executor {
+
+typedef struct dm_executor_struct * dm_executor_pt;
+
+struct dm_component_struct {
+    char id[DM_COMPONENT_MAX_ID_LENGTH];
+    char name[DM_COMPONENT_MAX_NAME_LENGTH];
+    bundle_context_pt context;
+    array_list_pt dm_interfaces;
+
+    void *implementation;
+
+    init_fpt callbackInit;
+    start_fpt callbackStart;
+    stop_fpt callbackStop;
+    deinit_fpt callbackDeinit;
+
+    array_list_pt dependencies; //protected by mutex
+    pthread_mutex_t mutex;
+
+    dm_component_state_t state;
+    bool isStarted;
+    bool active;
+
+    hash_map_pt dependencyEvents; //protected by mutex
+
+    dm_executor_pt executor;
+};
+
+typedef struct dm_interface_struct {
+    char *serviceName;
+    void *service;
+    properties_pt properties;
+    service_registration_pt registration;
+} dm_interface_t;
+
+struct dm_executor_struct {
     pthread_t runningThread;
     bool runningThreadSet;
     linked_list_pt workQueue;
-
     pthread_mutex_t mutex;
 };
 
-struct dm_executor_task {
+typedef struct dm_executor_task_struct {
     dm_component_pt component;
     void (*command)(void *command_ptr, void *data);
     void *data;
-};
+} dm_executor_task_t;
 
-struct dm_handle_event_type {
+typedef struct dm_handle_event_type_struct {
 	dm_service_dependency_pt dependency;
 	dm_event_pt event;
 	dm_event_pt newEvent;
-};
-
-typedef struct dm_handle_event_type *dm_handle_event_type_pt;
+} *dm_handle_event_type_pt;
 
 static celix_status_t executor_runTasks(dm_executor_pt executor, pthread_t  currentThread __attribute__((unused)));
 static celix_status_t executor_execute(dm_executor_pt executor);
 static celix_status_t executor_executeTask(dm_executor_pt executor, dm_component_pt component, void (*command), void *data);
 static celix_status_t executor_schedule(dm_executor_pt executor, dm_component_pt component, void (*command), void *data);
 static celix_status_t executor_create(dm_component_pt component __attribute__((unused)), dm_executor_pt *executor);
-static celix_status_t executor_destroy(dm_executor_pt *executor);
+static void executor_destroy(dm_executor_pt executor);
 
 static celix_status_t component_invokeRemoveRequiredDependencies(dm_component_pt component);
 static celix_status_t component_invokeRemoveInstanceBoundDependencies(dm_component_pt component);
@@ -83,7 +112,7 @@ static celix_status_t component_startDependencies(dm_component_pt component __at
 static celix_status_t component_getDependencyEvent(dm_component_pt component, dm_service_dependency_pt dependency, dm_event_pt *event_pptr);
 static celix_status_t component_updateInstance(dm_component_pt component, dm_service_dependency_pt dependency, dm_event_pt event, bool update, bool add);
 
-static celix_status_t component_addTask(dm_component_pt component, array_list_pt dependencies);
+static celix_status_t component_addTask(dm_component_pt component, dm_service_dependency_pt dep);
 static celix_status_t component_startTask(dm_component_pt component, void * data __attribute__((unused)));
 static celix_status_t component_stopTask(dm_component_pt component, void * data __attribute__((unused)));
 static celix_status_t component_removeTask(dm_component_pt component, dm_service_dependency_pt dependency);
@@ -94,140 +123,124 @@ static celix_status_t component_handleChanged(dm_component_pt component, dm_serv
 static celix_status_t component_handleRemoved(dm_component_pt component, dm_service_dependency_pt dependency, dm_event_pt event);
 static celix_status_t component_handleSwapped(dm_component_pt component, dm_service_dependency_pt dependency, dm_event_pt event, dm_event_pt newEvent);
 
-celix_status_t component_create(bundle_context_pt context, const char *name, dm_component_pt *component) {
+celix_status_t component_create(bundle_context_pt context, const char *name, dm_component_pt *out) {
     celix_status_t status = CELIX_SUCCESS;
 
-    *component = malloc(sizeof(**component));
-    if (!*component) {
+    dm_component_pt component = calloc(1, sizeof(*component));
+
+    if (!component) {
         status = CELIX_ENOMEM;
     } else {
-        snprintf((*component)->id, DM_COMPONENT_MAX_ID_LENGTH, "%p", *component);
-        if (name == NULL) {
-            snprintf((*component)->name, DM_COMPONENT_MAX_NAME_LENGTH, "%s", "n/a");
-        } else {
-            snprintf((*component)->name, DM_COMPONENT_MAX_NAME_LENGTH, "%s", name);
-        }
-        (*component)->context = context;
+        snprintf(component->id, DM_COMPONENT_MAX_ID_LENGTH, "%p", component);
+        snprintf(component->name, DM_COMPONENT_MAX_NAME_LENGTH, "%s", name == NULL ? "n/a" : name);
 
-	arrayList_create(&((*component)->dm_interface));
+        component->context = context;
 
-        (*component)->implementation = NULL;
+	    arrayList_create(&component->dm_interfaces);
+        arrayList_create(&(component)->dependencies);
+        pthread_mutex_init(&(component)->mutex, NULL);
 
-        (*component)->callbackInit = NULL;
-        (*component)->callbackStart = NULL;
-        (*component)->callbackStop = NULL;
-        (*component)->callbackDeinit = NULL;
+        component->implementation = NULL;
 
+        component->callbackInit = NULL;
+        component->callbackStart = NULL;
+        component->callbackStop = NULL;
+        component->callbackDeinit = NULL;
 
-        arrayList_create(&(*component)->dependencies);
-        pthread_mutex_init(&(*component)->mutex, NULL);
+        component->state = DM_CMP_STATE_INACTIVE;
+        component->isStarted = false;
+        component->active = false;
 
-        (*component)->state = DM_CMP_STATE_INACTIVE;
-        (*component)->isStarted = false;
-        (*component)->active = false;
+        component->dependencyEvents = hashMap_create(NULL, NULL, NULL, NULL);
 
-        (*component)->dependencyEvents = hashMap_create(NULL, NULL, NULL, NULL);
+        component->executor = NULL;
+        executor_create(component, &component->executor);
+    }
 
-        (*component)->executor = NULL;
-        executor_create(*component, &(*component)->executor);
+    if (status == CELIX_SUCCESS) {
+        *out = component;
     }
 
     return status;
 }
 
-celix_status_t component_destroy(dm_component_pt *component_ptr) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	if (!*component_ptr) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	if (status == CELIX_SUCCESS) {
+void component_destroy(dm_component_pt component) {
+	if (component) {
 		unsigned int i;
 
-		for (i = 0; i < arrayList_size((*component_ptr)->dm_interface); i++) {
-		    dm_interface *interface = arrayList_get((*component_ptr)->dm_interface, i);
+		for (i = 0; i < arrayList_size(component->dm_interfaces); i++) {
+		    dm_interface_t *interface = arrayList_get(component->dm_interfaces, i);
 
 		    free (interface->serviceName);
+            free (interface);
 		}
-		arrayList_destroy((*component_ptr)->dm_interface);
+		arrayList_destroy(component->dm_interfaces);
 
-		// #TODO destroy dependencies?
-		executor_destroy(&(*component_ptr)->executor);
-		hashMap_destroy((*component_ptr)->dependencyEvents, false, false);
-		pthread_mutex_destroy(&(*component_ptr)->mutex);
-		arrayList_destroy((*component_ptr)->dependencies);
+		// #TODO destroy dependencies
 
-		free(*component_ptr);
-		*component_ptr = NULL;
+		executor_destroy(component->executor);
+        //TODO free events
+		hashMap_destroy(component->dependencyEvents, false, false);
+		pthread_mutex_destroy(&component->mutex);
+		arrayList_destroy(component->dependencies);
+
+		free(component);
 	}
-
-	return status;
 }
 
 celix_status_t component_addServiceDependency(dm_component_pt component, dm_service_dependency_pt dep) {
     celix_status_t status = CELIX_SUCCESS;
 
-    array_list_pt dependenciesList = NULL;
-    arrayList_create(&dependenciesList);
-    arrayList_add(dependenciesList, dep);
-
-    /*
-    va_list dependencies;
-    va_start(dependencies, component);
-    dm_service_dependency_pt dependency = va_arg(dependencies, dm_service_dependency_pt);
-    while (dependency != NULL) {
-        arrayList_add(dependenciesList, dependency);
-
-        dependency = va_arg(dependencies, dm_service_dependency_pt);
-    }
-
-    va_end(dependencies);
-     */
-
-	executor_executeTask(component->executor, component, component_addTask, dependenciesList);
-//    component_addTask(component, dependenciesList);
+	executor_executeTask(component->executor, component, component_addTask, dep);
 
     return status;
 }
 
 
-celix_status_t component_addTask(dm_component_pt component, array_list_pt dependencies) {
+static celix_status_t component_addTask(dm_component_pt component, dm_service_dependency_pt dep) {
     celix_status_t status = CELIX_SUCCESS;
 
     array_list_pt bounds = NULL;
     arrayList_create(&bounds);
-    for (unsigned int i = 0; i < arrayList_size(dependencies); i++) {
-        dm_service_dependency_pt dependency = arrayList_get(dependencies, i);
 
-        pthread_mutex_lock(&component->mutex);
-        array_list_pt events = NULL;
-        arrayList_createWithEquals(event_equals, &events);
-        hashMap_put(component->dependencyEvents, dependency, events);
+    array_list_pt events = NULL;
+    arrayList_createWithEquals(event_equals, &events);
 
-        arrayList_add(component->dependencies, dependency);
-        pthread_mutex_unlock(&component->mutex);
+    pthread_mutex_lock(&component->mutex);
+    hashMap_put(component->dependencyEvents, dep, events);
+    arrayList_add(component->dependencies, dep);
+    pthread_mutex_unlock(&component->mutex);
 
-        serviceDependency_setComponent(dependency, component);
-        if (component->state != DM_CMP_STATE_INACTIVE) {
-            serviceDependency_setInstanceBound(dependency, true);
-            arrayList_add(bounds, dependency);
-        }
-        component_startDependencies(component, bounds);
-        component_handleChange(component);
+    serviceDependency_setComponent(dep, component);
+
+    if (component->state != DM_CMP_STATE_INACTIVE) {
+        serviceDependency_setInstanceBound(dep, true);
+        arrayList_add(bounds, dep);
     }
+    component_startDependencies(component, bounds);
+    component_handleChange(component);
 
     arrayList_destroy(bounds);
-    arrayList_destroy(dependencies);
 
     return status;
+}
+
+dm_component_state_t component_currentState(dm_component_pt cmp) {
+    return cmp->state;
+}
+
+void * component_getImplementation(dm_component_pt cmp) {
+    return cmp->implementation;
+}
+
+const char * component_getName(dm_component_pt cmp) {
+    return cmp->name;
 }
 
 celix_status_t component_removeServiceDependency(dm_component_pt component, dm_service_dependency_pt dependency) {
     celix_status_t status = CELIX_SUCCESS;
 
     executor_executeTask(component->executor, component, component_removeTask, dependency);
-//    component_removeTask(component, dependency);
 
     return status;
 }
@@ -245,12 +258,13 @@ celix_status_t component_removeTask(dm_component_pt component, dm_service_depend
 
     pthread_mutex_lock(&component->mutex);
     array_list_pt events = hashMap_remove(component->dependencyEvents, dependency);
-    for (unsigned int i = arrayList_size(events); i > 0; i--) {
-    	dm_event_pt event = arrayList_remove(events, i - 1);
+    pthread_mutex_unlock(&component->mutex);
+
+    while (!arrayList_isEmpty(events)) {
+    	dm_event_pt event = arrayList_remove(events, 0);
     	event_destroy(&event);
     }
     arrayList_destroy(events);
-    pthread_mutex_unlock(&component->mutex);
 
     component_handleChange(component);
 
@@ -262,7 +276,6 @@ celix_status_t component_start(dm_component_pt component) {
 
     component->active = true;
     executor_executeTask(component->executor, component, component_startTask, NULL);
-//    component_startTask(component, NULL);
 
     return status;
 }
@@ -281,7 +294,6 @@ celix_status_t component_stop(dm_component_pt component) {
 
     component->active = false;
     executor_executeTask(component->executor, component, component_stopTask, NULL);
-//    component_stopTask(component, NULL);
 
     return status;
 }
@@ -302,7 +314,7 @@ celix_status_t component_addInterface(dm_component_pt component, char *serviceNa
     if (component->active) {
         return CELIX_ILLEGAL_STATE;
     } else {
-	dm_interface *interface = (dm_interface *) malloc (sizeof (dm_interface));
+	dm_interface_t *interface = (dm_interface_t *) calloc(1, sizeof(*interface));
 	char *name = strdup (serviceName);
 
 	if (interface && name) {
@@ -310,7 +322,7 @@ celix_status_t component_addInterface(dm_component_pt component, char *serviceNa
             interface->service = service;
             interface->properties = properties;
             interface->registration = NULL;
-	    arrayList_add(component->dm_interface, interface);
+	    arrayList_add(component->dm_interfaces, interface);
 	}
 	else {
 	   free (interface);
@@ -327,10 +339,10 @@ celix_status_t component_getInterfaces(dm_component_pt component, array_list_pt 
     array_list_pt names = NULL;
     arrayList_create(&names);
     celixThreadMutex_lock(&component->mutex);
-    int size = arrayList_size(component->dm_interface);
+    int size = arrayList_size(component->dm_interfaces);
     int i;
     for (i = 0; i < size; i += 1) {
-        dm_interface *interface = arrayList_get(component->dm_interface, i);
+        dm_interface_t *interface = arrayList_get(component->dm_interfaces, i);
         arrayList_add(names, strdup(interface->serviceName));
     }
     celixThreadMutex_unlock(&component->mutex);
@@ -1086,8 +1098,8 @@ celix_status_t component_registerServices(dm_component_pt component) {
     if (component->context) {
 	unsigned int i;
 
-	for (i = 0; i < arrayList_size(component->dm_interface); i++) {
-	    dm_interface *interface = arrayList_get(component->dm_interface, i);
+	for (i = 0; i < arrayList_size(component->dm_interfaces); i++) {
+	    dm_interface_t *interface = arrayList_get(component->dm_interfaces, i);
 
             bundleContext_registerService(component->context, interface->serviceName, interface->service, interface->properties, &interface->registration);
 	}
@@ -1101,8 +1113,8 @@ celix_status_t component_unregisterServices(dm_component_pt component) {
 
     unsigned int i;
 
-    for (i = 0; i < arrayList_size(component->dm_interface); i++) {
-	dm_interface *interface = arrayList_get(component->dm_interface, i);
+    for (i = 0; i < arrayList_size(component->dm_interfaces); i++) {
+	dm_interface_t *interface = arrayList_get(component->dm_interfaces, i);
 
 	serviceRegistration_unregister(interface->registration);
 	interface->registration = NULL;
@@ -1147,7 +1159,7 @@ celix_status_t component_getBundleContext(dm_component_pt component, bundle_cont
 }
 
 
-celix_status_t executor_create(dm_component_pt component __attribute__((unused)), dm_executor_pt *executor) {
+static celix_status_t executor_create(dm_component_pt component __attribute__((unused)), dm_executor_pt *executor) {
     celix_status_t status = CELIX_SUCCESS;
 
     *executor = malloc(sizeof(**executor));
@@ -1162,28 +1174,20 @@ celix_status_t executor_create(dm_component_pt component __attribute__((unused))
     return status;
 }
 
-celix_status_t executor_destroy(dm_executor_pt *executor) {
-	celix_status_t status = CELIX_SUCCESS;
+static void executor_destroy(dm_executor_pt executor) {
 
-	if (!*executor) {
-		status = CELIX_ILLEGAL_ARGUMENT;
+	if (executor) {
+		pthread_mutex_destroy(&executor->mutex);
+		linkedList_destroy(executor->workQueue);
+
+		free(executor);
 	}
-
-	if (status == CELIX_SUCCESS) {
-		pthread_mutex_destroy(&(*executor)->mutex);
-		linkedList_destroy((*executor)->workQueue);
-
-		free(*executor);
-		*executor = NULL;
-	}
-
-	return status;
 }
 
-celix_status_t executor_schedule(dm_executor_pt executor, dm_component_pt component, void (*command), void *data) {
+static celix_status_t executor_schedule(dm_executor_pt executor, dm_component_pt component, void (*command), void *data) {
     celix_status_t status = CELIX_SUCCESS;
 
-    struct dm_executor_task *task = NULL;
+    dm_executor_task_t *task = NULL;
     task = malloc(sizeof(*task));
     if (!task) {
         status = CELIX_ENOMEM;
@@ -1200,7 +1204,7 @@ celix_status_t executor_schedule(dm_executor_pt executor, dm_component_pt compon
     return status;
 }
 
-celix_status_t executor_executeTask(dm_executor_pt executor, dm_component_pt component, void (*command), void *data) {
+static celix_status_t executor_executeTask(dm_executor_pt executor, dm_component_pt component, void (*command), void *data) {
     celix_status_t status = CELIX_SUCCESS;
 
     // Check thread and executor thread, if the same, execute immediately.
@@ -1219,7 +1223,7 @@ celix_status_t executor_executeTask(dm_executor_pt executor, dm_component_pt com
     return status;
 }
 
-celix_status_t executor_execute(dm_executor_pt executor) {
+static celix_status_t executor_execute(dm_executor_pt executor) {
     celix_status_t status = CELIX_SUCCESS;
     pthread_t currentThread = pthread_self();
 
@@ -1238,12 +1242,12 @@ celix_status_t executor_execute(dm_executor_pt executor) {
     return status;
 }
 
-celix_status_t executor_runTasks(dm_executor_pt executor, pthread_t currentThread __attribute__((unused))) {
+static celix_status_t executor_runTasks(dm_executor_pt executor, pthread_t currentThread __attribute__((unused))) {
     celix_status_t status = CELIX_SUCCESS;
 //    bool execute = false;
 
     do {
-        struct dm_executor_task *entry = NULL;
+        dm_executor_task_t *entry = NULL;
         pthread_mutex_lock(&executor->mutex);
         while ((entry = linkedList_removeFirst(executor->workQueue)) != NULL) {
             pthread_mutex_unlock(&executor->mutex);

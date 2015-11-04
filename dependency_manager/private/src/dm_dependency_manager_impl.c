@@ -73,7 +73,7 @@ celix_status_t depedencyManager_removeAllComponents(dm_dependency_manager_pt man
 
 	while (!arrayList_isEmpty(manager->components)) {
 		dm_component_pt cmp = arrayList_remove(manager->components, 0);
-        printf("Removing comp %s\n", cmp->name);
+        printf("Removing comp %s\n", component_getName(cmp));
         status = component_stop(cmp);
         //TODO component_destroy(&cmp);
 

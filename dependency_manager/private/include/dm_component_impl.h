@@ -33,47 +33,6 @@
 
 #include "dm_event.h"
 
-typedef enum dm_component_state {
-    DM_CMP_STATE_INACTIVE = 1,
-    DM_CMP_STATE_WAITING_FOR_REQUIRED = 2,
-    DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED = 3,
-    DM_CMP_STATE_TRACKING_OPTIONAL = 4,
-} dm_component_state_t;
-
-typedef struct dm_executor * dm_executor_pt;
-
-typedef struct dm_interface_struct {
-    char *serviceName;
-    void *service;
-    properties_pt properties;
-    service_registration_pt registration;
-} dm_interface;
-
-struct dm_component {
-    char id[DM_COMPONENT_MAX_ID_LENGTH];
-    char name[DM_COMPONENT_MAX_NAME_LENGTH];
-    bundle_context_pt context;
-    array_list_pt dm_interface;
-
-    void *implementation;
-
-    init_fpt callbackInit;
-    start_fpt callbackStart;
-    stop_fpt callbackStop;
-    deinit_fpt callbackDeinit;
-
-    array_list_pt dependencies;
-    pthread_mutex_t mutex;
-
-    dm_component_state_t state;
-    bool isStarted;
-    bool active;
-
-    hash_map_pt dependencyEvents;
-
-    dm_executor_pt executor;
-};
-
 celix_status_t component_start(dm_component_pt component);
 celix_status_t component_stop(dm_component_pt component);
 

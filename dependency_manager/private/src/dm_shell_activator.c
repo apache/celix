@@ -68,7 +68,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
     if (commandService != NULL) {
         commandService->handle = context;
-        commandService->executeCommand = dmListCommand_execute;
+        commandService->executeCommand = (void *)dmListCommand_execute;
 
         properties_pt props = properties_create();
         properties_set(props, OSGI_SHELL_COMMAND_NAME, "dm");

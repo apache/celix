@@ -32,9 +32,14 @@
 
 #include "dm_service_dependency.h"
 
-typedef struct dm_component *dm_component_pt;
+typedef struct dm_component_struct *dm_component_pt;
 
-#include "dm_component.h"
+typedef enum dm_component_state_enum {
+    DM_CMP_STATE_INACTIVE = 1,
+    DM_CMP_STATE_WAITING_FOR_REQUIRED = 2,
+    DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED = 3,
+    DM_CMP_STATE_TRACKING_OPTIONAL = 4,
+} dm_component_state_t;
 
 #define DM_COMPONENT_MAX_ID_LENGTH 64
 #define DM_COMPONENT_MAX_NAME_LENGTH 128
@@ -45,7 +50,7 @@ typedef int (*stop_fpt)(void *userData);
 typedef int (*deinit_fpt)(void *userData);
 
 celix_status_t component_create(bundle_context_pt context, const char *name, dm_component_pt *component);
-celix_status_t component_destroy(dm_component_pt *component);
+void component_destroy(dm_component_pt component);
 
 celix_status_t component_addInterface(dm_component_pt component, char *serviceName, void *service, properties_pt properties);
 celix_status_t component_setImplementation(dm_component_pt component, void *implementation);
@@ -57,6 +62,10 @@ celix_status_t component_getInterfaces(dm_component_pt component, array_list_pt 
 
 celix_status_t component_addServiceDependency(dm_component_pt component, dm_service_dependency_pt dep);
 celix_status_t component_removeServiceDependency(dm_component_pt component, dm_service_dependency_pt dependency);
+
+dm_component_state_t component_currentState(dm_component_pt cmp);
+void * component_getImplementation(dm_component_pt cmp);
+const char * component_getName(dm_component_pt cmp);
 
 #define component_setCallbacksSafe(dmCmp, type, init, start, stop, deinit) \
     do {  \
@@ -74,5 +83,6 @@ celix_status_t component_setCallbacks(dm_component_pt component, init_fpt init, 
  */
 celix_status_t component_getComponentInfo(dm_component_pt component, dm_component_info_pt *info);
 void component_destroyComponentInfo(dm_component_info_pt info);
+
 
 #endif /* COMPONENT_H_ */
