@@ -37,6 +37,8 @@ Doxyfile.in
  Workaround to exclude .in files.
 (.*).in
 
+build/*
+
 .project
    
 md5.inl
@@ -72,3 +74,6 @@ example2.descriptor
 example3.descriptor
 example4.descriptor
 org.apache.celix.calc.api.Calculator2.descriptor
+msg_example1.descriptor
+msg_example2.descriptor
+msg_example3.descriptor
