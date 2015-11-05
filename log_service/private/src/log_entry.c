@@ -32,7 +32,7 @@
 #include "log_service.h"
 #include "log_entry.h"
 
-celix_status_t logEntry_create(bundle_pt bundle, service_reference_pt reference,
+celix_status_t logEntry_create(long bundleId, char* bundleSymbolicName , service_reference_pt reference,
         log_level_t level, char *message, int errorCode,
         log_entry_pt *entry) {
     celix_status_t status = CELIX_SUCCESS;
@@ -46,24 +46,8 @@ celix_status_t logEntry_create(bundle_pt bundle, service_reference_pt reference,
         (*entry)->errorCode = errorCode;
         (*entry)->time = time(NULL);
 
-        (*entry)->bundleSymbolicName = NULL;
-        (*entry)->bundleId = 0;
-    }
-
-    if (status == CELIX_SUCCESS) {
-        status = bundle_getBundleId(bundle, &(*entry)->bundleId);
-    }
-
-    if (status == CELIX_SUCCESS) {
-    	module_pt module = NULL;
-        status = bundle_getCurrentModule(bundle, &module);
-		if (status == CELIX_SUCCESS) {
-			char *symbolicName = NULL;
-			status = module_getSymbolicName(module, &symbolicName);
-			if (status == CELIX_SUCCESS) {
-				(*entry)->bundleSymbolicName = strdup(symbolicName);
-			}
-		}
+        (*entry)->bundleSymbolicName = strdup(bundleSymbolicName);
+        (*entry)->bundleId = bundleId;
     }
 
     return status;

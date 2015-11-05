@@ -61,12 +61,33 @@ celix_status_t logService_log(log_service_data_pt logger, log_level_t level, cha
 }
 
 celix_status_t logService_logSr(log_service_data_pt logger, service_reference_pt reference, log_level_t level, char * message) {
+    celix_status_t status;
     log_entry_pt entry = NULL;
     bundle_pt bundle = logger->bundle;
+    bundle_archive_pt archive = NULL;
+    module_pt module = NULL;
+    char *symbolicName = NULL;
+    long bundleId = -1;
+
     if (reference != NULL) {
     	serviceReference_getBundle(reference, &bundle);
     }
-    logEntry_create(bundle, reference, level, message, 0, &entry);
+
+    status = bundle_getArchive(bundle, &archive);
+
+    if (status == CELIX_SUCCESS) {
+        status = bundleArchive_getId(archive, &bundleId);
+    }
+
+    if (status == CELIX_SUCCESS) {
+        status = bundle_getCurrentModule(bundle, &module);
+
+        if (status == CELIX_SUCCESS) {
+            status = module_getSymbolicName(module, &symbolicName);
+        }
+    }
+
+    logEntry_create(bundleId, symbolicName, reference, level, message, 0, &entry);
     log_addEntry(logger->log, entry);
 
     return CELIX_SUCCESS;

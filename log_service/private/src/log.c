@@ -212,7 +212,7 @@ celix_status_t log_bundleChanged(void *listener, bundle_event_pt event) {
 	}
 
 	if (message != NULL) {
-		status = logEntry_create(event->bundle, NULL, OSGI_LOGSERVICE_INFO, message, 0, &entry);
+		status = logEntry_create(event->bundleId, event->bundleSymbolicName, NULL, OSGI_LOGSERVICE_INFO, message, 0, &entry);
 		if (status == CELIX_SUCCESS) {
 			status = log_addEntry(logger, entry);
 		}
@@ -222,11 +222,11 @@ celix_status_t log_bundleChanged(void *listener, bundle_event_pt event) {
 }
 
 celix_status_t log_frameworkEvent(void *listener, framework_event_pt event) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 	log_pt logger = ((framework_listener_pt) listener)->handle;
 	log_entry_pt entry = NULL;
 
-	status = logEntry_create(event->bundle, NULL, (event->type == OSGI_FRAMEWORK_EVENT_ERROR) ? OSGI_LOGSERVICE_ERROR : OSGI_LOGSERVICE_INFO, event->error, event->errorCode, &entry);
+	status = logEntry_create(event->bundleId, event->bundleSymbolicName, NULL, (event->type == OSGI_FRAMEWORK_EVENT_ERROR) ? OSGI_LOGSERVICE_ERROR : OSGI_LOGSERVICE_INFO, event->error, event->errorCode, &entry);
 	if (status == CELIX_SUCCESS) {
 		status = log_addEntry(logger, entry);
 	}
@@ -235,7 +235,7 @@ celix_status_t log_frameworkEvent(void *listener, framework_event_pt event) {
 }
 
 celix_status_t log_addLogListener(log_pt logger, log_listener_pt listener) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	status = celixThreadMutex_lock(&logger->listenerLock);
 
@@ -251,12 +251,13 @@ celix_status_t log_addLogListener(log_pt logger, log_listener_pt listener) {
 
 celix_status_t log_removeLogListener(log_pt logger, log_listener_pt listener) {
 	celix_status_t status = CELIX_SUCCESS;
-	bool last = false;
 
     status = CELIX_DO_IF(status, celixThreadMutex_lock(&logger->deliverLock));
     status = CELIX_DO_IF(status, celixThreadMutex_lock(&logger->listenerLock));
 
 	if (status == CELIX_SUCCESS) {
+	    bool last = false;
+
 		arrayList_removeElement(logger->listeners, listener);
 		if (arrayList_size(logger->listeners) == 0) {
 			status = log_stopListenerThread(logger);
@@ -279,7 +280,7 @@ celix_status_t log_removeLogListener(log_pt logger, log_listener_pt listener) {
 }
 
 celix_status_t log_removeAllLogListener(log_pt logger) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	status = celixThreadMutex_lock(&logger->listenerLock);
 
@@ -293,7 +294,7 @@ celix_status_t log_removeAllLogListener(log_pt logger) {
 }
 
 static celix_status_t log_startListenerThread(log_pt logger) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	logger->running = true;
     logger->running = true;
@@ -303,7 +304,7 @@ static celix_status_t log_startListenerThread(log_pt logger) {
 }
 
 static celix_status_t log_stopListenerThread(log_pt logger) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	logger->running = false;
 

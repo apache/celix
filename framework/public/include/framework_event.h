@@ -48,7 +48,8 @@ typedef struct framework_event *framework_event_pt;
 #include "bundle.h"
 
 struct framework_event {
-	bundle_pt bundle;
+	long bundleId;
+	char* bundleSymbolicName;
 	framework_event_type_e type;
 	celix_status_t errorCode;
 	char *error;

@@ -81,7 +81,7 @@ celix_status_t logFactory_getService(void *factory, bundle_pt bundle, service_re
     log_service = calloc(1, sizeof(*log_service));
     log_service->logger = log_service_data;
     log_service->log = logService_log;
-    log_service->logSr = logService_logSr;
+  //  log_service->logSr = logService_logSr;
 
     (*service) = log_service;
 

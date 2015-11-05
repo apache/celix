@@ -48,7 +48,8 @@ typedef struct bundle_event *bundle_event_pt;
 #include "bundle.h"
 
 struct bundle_event {
-	bundle_pt bundle;
+    long bundleId;
+    char* bundleSymbolicName;
 	bundle_event_type_e type;
 };
 

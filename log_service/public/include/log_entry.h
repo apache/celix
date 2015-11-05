@@ -35,13 +35,13 @@ struct log_entry {
     char *message;
     time_t time;
 
-    char *bundleSymbolicName;
     long bundleId;
+    char* bundleSymbolicName;
 };
 
 typedef struct log_entry * log_entry_pt;
 
-celix_status_t logEntry_create(bundle_pt bundle, service_reference_pt reference,
+celix_status_t logEntry_create(long bundleId, char* bundleSymbolicName , service_reference_pt reference,
         log_level_t level, char *message, int errorCode,
         log_entry_pt *entry);
 celix_status_t logEntry_destroy(log_entry_pt *entry);
