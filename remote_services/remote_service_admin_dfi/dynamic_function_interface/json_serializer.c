@@ -67,18 +67,28 @@ int jsonSerializer_deserializeJson(dyn_type *type, json_t *input, void **out) {
 static int jsonSerializer_createType(dyn_type *type, json_t *val, void **result) {
     assert(val != NULL);
     int status = OK;
-
     void *inst = NULL;
-    status = dynType_alloc(type, &inst);
 
-    if (status == OK) {
-        assert(inst != NULL);
-        status = jsonSerializer_parseAny(type, inst, val);
+    if (dynType_descriptorType(type) == 't') {
+        if (json_typeof(val) == JSON_STRING) {
+            inst = strdup(json_string_value(val));
+        } else {
+            status = ERROR;
+            LOG_ERROR("Expected json_string type got %i\n", json_typeof(val));
+        }
+    } else {
+        status = dynType_alloc(type, &inst);
 
-        if (status != OK) {
-            dynType_free(type, inst);
+        if (status == OK) {
+            assert(inst != NULL);
+            status = jsonSerializer_parseAny(type, inst, val);
+
+            if (status != OK) {
+                dynType_free(type, inst);
+            }
         }
     }
+
 
     if (status == OK) {
         *result = inst;
