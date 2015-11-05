@@ -680,61 +680,58 @@ celix_status_t component_calculateNewState(dm_component_pt component, dm_compone
     if (currentState == DM_CMP_STATE_INACTIVE) {
         if (component->isStarted) {
             *newState = DM_CMP_STATE_WAITING_FOR_REQUIRED;
-            return status;
+        } else {
+            *newState = currentState;
         }
-    }
-    if (currentState == DM_CMP_STATE_WAITING_FOR_REQUIRED) {
+    } else if (currentState == DM_CMP_STATE_WAITING_FOR_REQUIRED) {
         if (!component->isStarted) {
             *newState = DM_CMP_STATE_INACTIVE;
-            return status;
-        }
+        } else {
+            bool available = false;
+            component_allRequiredAvailable(component, &available);
 
-        bool available = false;
-        component_allRequiredAvailable(component, &available);
-
-        if (available) {
-            *newState = DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED;
-            return status;
-        }
-    }
-    if (currentState == DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED) {
-        bool available = false;
-        component_allRequiredAvailable(component, &available);
-
-        if (component->isStarted && available) {
-            bool instanceBoundAvailable = false;
-            component_allInstanceBoundAvailable(component, &instanceBoundAvailable);
-
-            if (instanceBoundAvailable) {
-                *newState = DM_CMP_STATE_TRACKING_OPTIONAL;
-                return status;
+            if (available) {
+                *newState = DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED;
+            } else {
+                *newState = currentState;
             }
-
-            *newState = currentState;
-            return status;
         }
+    } else if (currentState == DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED) {
+        if (!component->isStarted) {
+            *newState = DM_CMP_STATE_WAITING_FOR_REQUIRED;
+        } else {
+            bool available = false;
+            component_allRequiredAvailable(component, &available);
 
-        *newState = component->isStarted ? DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED :
-                        DM_CMP_STATE_WAITING_FOR_REQUIRED;
-        return status;
-    }
-    if (currentState == DM_CMP_STATE_TRACKING_OPTIONAL) {
+            if (available) {
+                bool instanceBoundAvailable = false;
+                component_allInstanceBoundAvailable(component, &instanceBoundAvailable);
+
+                if (instanceBoundAvailable) {
+                    *newState = DM_CMP_STATE_TRACKING_OPTIONAL;
+                } else {
+                    *newState = currentState;
+                }
+            } else {
+                *newState = currentState;
+            }
+        }
+    } else if (currentState == DM_CMP_STATE_TRACKING_OPTIONAL) {
         bool instanceBoundAvailable = false;
         bool available = false;
 
         component_allInstanceBoundAvailable(component, &instanceBoundAvailable);
         component_allRequiredAvailable(component, &available);
 
-        if (component->isStarted  && available && instanceBoundAvailable) {
+        if (component->isStarted && available && instanceBoundAvailable) {
             *newState = currentState;
-            return status;
+        } else {
+            *newState = DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED;
         }
-
-        *newState = DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED;
-        return status;
+    } else {
+        //should not reach
+        status = CELIX_BUNDLE_EXCEPTION;
     }
-
-    *newState = currentState;
 
     return status;
 }
