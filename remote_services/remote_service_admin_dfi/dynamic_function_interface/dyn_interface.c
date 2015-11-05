@@ -34,8 +34,8 @@ struct _dyn_interface_type {
     struct methods_head methods;
 };
 
-const int OK = 0;
-const int ERROR = 1;
+static const int OK = 0;
+static const int ERROR = 1;
 
 static int dynInterface_parseSection(dyn_interface_type *intf, FILE *stream);
 static int dynInterface_parseAnnotations(dyn_interface_type *intf, FILE *stream);

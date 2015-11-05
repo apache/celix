@@ -166,8 +166,8 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
                     }
                     if (dynType_descriptorType(typedType) == 't') {
                         status = jsonSerializer_serializeJson(typedType, (void*) &ptr, &jsonResult);
-                    }
-                    else {
+                        free(ptr);
+                    } else {
                         dyn_type *typedTypedType = NULL;
                         if (status == OK) {
                             status = dynType_typedPointer_getTypedType(typedType, &typedTypedType);
@@ -310,15 +310,12 @@ int jsonRpc_handleReply(dyn_function_type *func, const char *reply, void *args[]
                 dynType_typedPointer_getTypedType(argType, &subType);
 
                 if (dynType_descriptorType(subType) == 't') {
-                    void* tmp = NULL;
-                    status = jsonSerializer_deserializeJson(subType, result, &tmp);
                     void ***out = (void ***) args[i];
-                    **out = * (void**) tmp;
-                }
-                else {
+                    status = jsonSerializer_deserializeJson(subType, result, *out);
+                } else {
                     dyn_type *subSubType = NULL;
                     dynType_typedPointer_getTypedType(subType, &subSubType);
-                    void **out = (void **) args[i];
+                    void ***out = (void ***) args[i];
                     status = jsonSerializer_deserializeJson(subSubType, result, *out);
                 }
             } else {
