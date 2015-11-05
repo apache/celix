@@ -29,6 +29,7 @@ add_library(dfi STATIC
     dyn_type.c
     dyn_function.c
     dyn_interface.c
+    dyn_message.c
     json_serializer.c
     json_rpc.c
     ${MEMSTREAM_SOURCES}

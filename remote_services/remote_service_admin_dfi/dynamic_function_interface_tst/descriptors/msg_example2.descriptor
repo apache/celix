@@ -1,0 +1,12 @@
+:header
+type=message
+name=track
+version=0.0.1
+:annotations
+classname=org.example.Track
+:types
+timestamp={SSSSSSI day month year hour minute second microseconds}
+latlonpos={DD lat lon}
+polarpos={DDD azimuth elevation range}
+:message
+{Iltimestamp;llatlonpos;lpolarpos;SS trackid lastupdate abspos relpos classification identity}

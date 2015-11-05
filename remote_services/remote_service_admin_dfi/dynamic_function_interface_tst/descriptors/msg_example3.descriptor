@@ -1,0 +1,10 @@
+:header
+type=message
+name=logEntry
+version=1.0.0
+:annotations
+classname=org.example.LogEntry
+:types
+timestamp={SSSSSSI day month year hour minute second microseconds}
+:message
+{ltimestamp;St timestamp severity eventdescription}

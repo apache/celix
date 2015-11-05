@@ -24,6 +24,7 @@ add_executable(test_dfi
 	dyn_function_tests.cpp
 	dyn_closure_tests.cpp
 	dyn_interface_tests.cpp
+	dyn_message_tests.cpp
 	json_serializer_tests.cpp
 	json_rpc_tests.cpp
 	run_tests.cpp
