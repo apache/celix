@@ -40,6 +40,7 @@ int main(int argc, char** argv) {
 }
 
 TEST_GROUP(properties) {
+	properties_pt properties;
 
 	void setup(void) {
 	}
@@ -51,25 +52,29 @@ TEST_GROUP(properties) {
 };
 
 TEST(properties, create) {
-	properties_pt properties = properties_create();
+	properties = properties_create();
 	CHECK(properties);
+
+	properties_destroy(properties);
 }
 
 TEST(properties, load) {
-	char propertiesFile[] = "../../celix/framework/private/resources-test/properties.txt";
-	properties_pt properties = properties_load(propertiesFile);
-	LONGS_EQUAL(2, hashMap_size(properties));
+	char propertiesFile[] = "resources-test/properties.txt";
+	properties = properties_load(propertiesFile);
+	LONGS_EQUAL(3, hashMap_size(properties));
 
 	char keyA[] = "a";
 	char *valueA = properties_get(properties, keyA);
 	STRCMP_EQUAL("b", valueA);
 	char keyB[] = "b";
 	STRCMP_EQUAL("c", properties_get(properties, keyB));
+
+	properties_destroy(properties);
 }
 
 TEST(properties, store) {
-	char propertiesFile[] = "properties_out.txt";
-	properties_pt properties = properties_create();
+	char propertiesFile[] = "resources-test/properties_out.txt";
+	properties = properties_create();
 	char keyA[] = "x";
 	char keyB[] = "y";
 	char valueA[] = "1";
@@ -77,10 +82,12 @@ TEST(properties, store) {
 	properties_set(properties, keyA, valueA);
 	properties_set(properties, keyB, valueB);
 	properties_store(properties, propertiesFile, NULL);
+
+	properties_destroy(properties);
 }
 
 TEST(properties, getSet) {
-	properties_pt properties = properties_create();
+	properties = properties_create();
 	char keyA[] = "x";
 	char keyB[] = "y";
 	char keyC[] = "z";
@@ -93,5 +100,7 @@ TEST(properties, getSet) {
 	STRCMP_EQUAL(valueA, properties_get(properties, keyA));
 	STRCMP_EQUAL(valueB, properties_get(properties, keyB));
 	STRCMP_EQUAL(valueC, properties_getWithDefault(properties, keyC, valueC));
+
+	properties_destroy(properties);
 }
 

@@ -54,7 +54,7 @@ typedef struct bundleCache *bundle_cache_pt;
  * 		- CELIX_ILLEGAL_ARGUMENT If <code>bundle_cache</code> not is null.
  * 		- CELIX_ENOMEM If allocating memory for <code>bundle_cache</code> failed.
  */
-celix_status_t bundleCache_create(properties_pt configurationMap, framework_logger_pt logger, bundle_cache_pt *bundle_cache);
+celix_status_t bundleCache_create(properties_pt configurationMap, bundle_cache_pt *bundle_cache);
 
 /**
  * Frees the bundle_cache memory allocated in bundleCache_create

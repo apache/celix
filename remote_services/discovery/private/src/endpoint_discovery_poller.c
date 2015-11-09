@@ -242,7 +242,7 @@ celix_status_t endpointDiscoveryPoller_removeDiscoveryEndpoint(endpoint_discover
 
 
 celix_status_t endpointDiscoveryPoller_poll(endpoint_discovery_poller_pt poller, char *url, array_list_pt currentEndpoints) {
-	celix_status_t status;
+	celix_status_t status = NULL;
 	array_list_pt updatedEndpoints = NULL;
 
 	// create an arraylist with a custom equality test to ensure we can find endpoints properly...

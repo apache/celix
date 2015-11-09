@@ -29,32 +29,46 @@
 
 celix_status_t wire_create(module_pt importer, requirement_pt requirement,
 		module_pt exporter, capability_pt capability, wire_pt *wire) {
-	mock_c()->actualCall("requirement_create");
+	mock_c()->actualCall("wire_create")
+			->withPointerParameters("importer", importer)
+			->withPointerParameters("requirement", requirement)
+			->withPointerParameters("exporter", exporter)
+			->withPointerParameters("capability", capability)
+			->withOutputParameter("wire", wire);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t wire_destroy(wire_pt wire) {
-    mock_c()->actualCall("wire_destroy");
+    mock_c()->actualCall("wire_destroy")
+		->withPointerParameters("wire", wire);
     return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t wire_getCapability(wire_pt wire, capability_pt *capability) {
-	mock_c()->actualCall("requirement_create");
+	mock_c()->actualCall("wire_getCapability")
+			->withPointerParameters("wire", wire)
+			->withOutputParameter("capability", (void**) capability);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t wire_getRequirement(wire_pt wire, requirement_pt *requirement) {
-	mock_c()->actualCall("requirement_create");
+	mock_c()->actualCall("wire_getRequirement")
+		->withPointerParameters("wire", wire)
+		->withOutputParameter("requirement", (void**) requirement);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t wire_getImporter(wire_pt wire, module_pt *importer) {
-	mock_c()->actualCall("requirement_create");
+	mock_c()->actualCall("wire_getImporter")
+		->withPointerParameters("wire", wire)
+		->withOutputParameter("importer", (void**) importer);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t wire_getExporter(wire_pt wire, module_pt *exporter) {
-	mock_c()->actualCall("requirement_create");
+	mock_c()->actualCall("wire_getExporter")
+			->withPointerParameters("wire", wire)
+			->withOutputParameter("exporter", (void**) exporter);
 	return mock_c()->returnValue().value.intValue;
 }
 

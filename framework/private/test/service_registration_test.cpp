@@ -270,7 +270,9 @@ TEST(service_registration, getRegistryIllegalArgument) {
 TEST(service_registration, getServiceReferences) {
 	service_registration_pt registration = (service_registration_pt) malloc(sizeof(*registration));
 	array_list_pt references = NULL;
-	service_registry_pt registry = (service_registry_pt) 0x10;
+	//service_registry_pt registry = (service_registry_pt) 0x10;
+	//service_registry_pt registry = (service_registry_pt) 0x0;
+	service_registry_pt registry = registration->registry;
 	bundle_pt bundle = (bundle_pt) 0x20;
 
 	mock().expectOneCall("serviceRegistry_getServiceReferencesForRegistration")

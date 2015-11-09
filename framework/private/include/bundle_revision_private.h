@@ -35,7 +35,6 @@ struct bundleRevision {
 	char *root;
 	char *location;
 	manifest_pt manifest;
-	framework_logger_pt logger;
 
 	array_list_pt libraryHandles;
 };

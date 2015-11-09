@@ -37,22 +37,30 @@ celix_status_t requirement_create(hash_map_pt directives, hash_map_pt attributes
 }
 
 celix_status_t requirement_destroy(requirement_pt requirement) {
-	mock_c()->actualCall("requirement_destroy");
+	mock_c()->actualCall("requirement_destroy")
+			->withPointerParameters("requirement", requirement);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t requirement_getVersionRange(requirement_pt requirement, version_range_pt *range) {
-	mock_c()->actualCall("requirement_create");
+	mock_c()->actualCall("requirement_getVersionRange")
+			->withPointerParameters("requirement", requirement)
+			->withOutputParameter("range", range);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t requirement_getTargetName(requirement_pt requirement, char **targetName) {
-	mock_c()->actualCall("requirement_create");
+	mock_c()->actualCall("requirement_getTargetName")
+			->withPointerParameters("requirement", requirement)
+			->withOutputParameter("targetName", targetName);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t requirement_isSatisfied(requirement_pt requirement, capability_pt capability, bool *inRange) {
-	mock_c()->actualCall("requirement_create");
+	mock_c()->actualCall("requirement_isSatisfied")
+			->withPointerParameters("requirement", requirement)
+			->withPointerParameters("capability", capability)
+			->withOutputParameter("inRange", inRange);
 	return mock_c()->returnValue().value.intValue;
 }
 

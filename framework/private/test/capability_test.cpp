@@ -33,10 +33,11 @@
 
 extern "C" {
 #include "capability_private.h"
+#include "utils.h"
 #include "attribute.h"
 #include "celix_log.h"
 
-framework_logger_pt logger;
+framework_logger_pt logger = (framework_logger_pt) 0x42;
 }
 
 int main(int argc, char** argv) {
@@ -45,8 +46,6 @@ int main(int argc, char** argv) {
 
 TEST_GROUP(capability) {
 	void setup(void) {
-		logger = (framework_logger_pt) malloc(sizeof(*logger));
-        logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
@@ -57,8 +56,8 @@ TEST_GROUP(capability) {
 
 TEST(capability, create) {
 	module_pt module = (module_pt) 0x10;
-	hash_map_pt directives = hashMap_create(NULL, NULL, NULL, NULL);
-	hash_map_pt attributes = hashMap_create(NULL, NULL, NULL, NULL);
+	hash_map_pt directives =  hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+	hash_map_pt attributes = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 
 	attribute_pt serviceAttribute = (attribute_pt) 0x01;
     hashMap_put(attributes, (void*) "service", serviceAttribute);
@@ -90,6 +89,10 @@ TEST(capability, create) {
 
 	capability_pt capability = NULL;
 	celix_status_t status = capability_create(module, directives, attributes, &capability);
+
+	mock().expectNCalls(2, "attribute_destroy");
+	mock().expectOneCall("version_destroy");
+	capability_destroy(capability);
 }
 
 TEST(capability, getServiceName) {
@@ -100,6 +103,8 @@ TEST(capability, getServiceName) {
 	char *actual = NULL;
 	capability_getServiceName(capability, &actual);
 	STRCMP_EQUAL(serviceName, actual);
+
+	free(capability);
 }
 
 TEST(capability, getVersion) {
@@ -110,6 +115,8 @@ TEST(capability, getVersion) {
 	version_pt actual = NULL;
 	capability_getVersion(capability, &actual);
 	POINTERS_EQUAL(version, actual);
+
+	free(capability);
 }
 
 TEST(capability, getModule) {
@@ -120,4 +127,6 @@ TEST(capability, getModule) {
 	module_pt actual = NULL;
 	capability_getModule(capability, &actual);
 	POINTERS_EQUAL(module, actual);
+
+	free(capability);
 }

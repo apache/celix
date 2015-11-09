@@ -30,7 +30,7 @@
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/TestHarness_c.h"
 #include "CppUTest/CommandLineTestRunner.h"
-//#include "CppUTestExt/MockSupport.h"
+#include "CppUTestExt/MockSupport.h"
 
 extern "C"
 {
@@ -47,13 +47,11 @@ int main(int argc, char** argv) {
 
 TEST_GROUP(service_tracker_customizer) {
 	void setup(void) {
-		logger = (framework_logger_pt) malloc(sizeof(*logger));
-        logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
-//		mock().checkExpectations();
-//		mock().clear();
+		mock().checkExpectations();
+		mock().clear();
 	}
 };
 
@@ -88,9 +86,13 @@ TEST(service_tracker_customizer, create) {
 	POINTERS_EQUAL(serviceTrackerCustomizerTest_addedService, customizer->addedService);
 	POINTERS_EQUAL(serviceTrackerCustomizerTest_modifiedService, customizer->modifiedService);
 	POINTERS_EQUAL(serviceTrackerCustomizerTest_removedService, customizer->removedService);
+
+	serviceTrackerCustomizer_destroy(customizer);
 }
 
 TEST(service_tracker_customizer, createIllegalArgument) {
+	mock().expectOneCall("framework_logCode").withParameter("code", CELIX_ILLEGAL_ARGUMENT);
+
 	void *handle = (void *) 0x10;
 	service_tracker_customizer_pt customizer = NULL;
 	celix_status_t status = serviceTrackerCustomizer_create(
@@ -112,6 +114,8 @@ TEST(service_tracker_customizer, getHandle) {
 	celix_status_t status = serviceTrackerCustomizer_getHandle(customizer, &getHandle);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	POINTERS_EQUAL(handle, getHandle);
+
+	free(customizer);
 }
 
 TEST(service_tracker_customizer, getAddingFunction) {
@@ -123,6 +127,8 @@ TEST(service_tracker_customizer, getAddingFunction) {
 	celix_status_t status = serviceTrackerCustomizer_getAddingFunction(customizer, &getAdding);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	POINTERS_EQUAL(adding, getAdding);
+
+	free(customizer);
 }
 
 TEST(service_tracker_customizer, getAddedFunction) {
@@ -134,6 +140,8 @@ TEST(service_tracker_customizer, getAddedFunction) {
 	celix_status_t status = serviceTrackerCustomizer_getAddedFunction(customizer, &getAdded);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	POINTERS_EQUAL(added, getAdded);
+
+	free(customizer);
 }
 
 TEST(service_tracker_customizer, getModifiedFunction) {
@@ -145,6 +153,8 @@ TEST(service_tracker_customizer, getModifiedFunction) {
 	celix_status_t status = serviceTrackerCustomizer_getModifiedFunction(customizer, &getModified);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	POINTERS_EQUAL(modified, getModified);
+
+	free(customizer);
 }
 
 TEST(service_tracker_customizer, getRemovedFunction) {
@@ -156,5 +166,7 @@ TEST(service_tracker_customizer, getRemovedFunction) {
 	celix_status_t status = serviceTrackerCustomizer_getRemovedFunction(customizer, &getRemoved);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	POINTERS_EQUAL(removed, getRemoved);
+
+	free(customizer);
 }
 

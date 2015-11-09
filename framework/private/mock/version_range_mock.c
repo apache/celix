@@ -28,12 +28,18 @@
 #include "version_range.h"
 
 celix_status_t versionRange_createVersionRange(version_pt low, bool isLowInclusive, version_pt high, bool isHighInclusive, version_range_pt *versionRange) {
-	mock_c()->actualCall("versionRange_createVersionRange");
+	mock_c()->actualCall("versionRange_createVersionRange")
+		->withPointerParameters("low", low)
+		->withIntParameters("isLowInclusive", isLowInclusive)
+		->withPointerParameters("high", high)
+		->withIntParameters("isHighInclusive", isHighInclusive)
+		->withOutputParameter("versionRange", versionRange);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t versionRange_destroy(version_range_pt range) {
-	mock_c()->actualCall("versionRange_destroy");
+	mock_c()->actualCall("versionRange_destroy")
+		->withPointerParameters("range", range);
 	return mock_c()->returnValue().value.intValue;
 }
 

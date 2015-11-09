@@ -23,6 +23,10 @@
  *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright  Apache License, Version 2.0
  */
+#include "string.h"
+#include <stdlib.h>
+#include <string.h>
+
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/TestHarness_c.h"
 #include "CppUTest/CommandLineTestRunner.h"
@@ -45,17 +49,36 @@ TEST_GROUP(utils) {
 	}
 };
 
+static char* my_strdup(const char* s){
+	if(s==NULL){
+		return NULL;
+	}
+
+	size_t len = strlen(s);
+
+	char *d = (char*) calloc (len + 1,sizeof(char));
+
+	if (d == NULL){
+		return NULL;
+	}
+
+	strncpy (d,s,len);
+	return d;
+}
+
 TEST(utils, stringHash) {
-	std::string toHash = "abc";
+	char * toHash = my_strdup("abc");
 	unsigned int hash;
-	hash = utils_stringHash((void *) toHash.c_str());
+	hash = utils_stringHash((void *) toHash);
 	LONGS_EQUAL(446371745, hash);
 
-	toHash = "abc123def456ghi789jkl012mno345pqr678stu901vwx234yz";
-	hash = utils_stringHash((void *) toHash.c_str());
+	free(toHash);
+	toHash = my_strdup("abc123def456ghi789jkl012mno345pqr678stu901vwx234yz");
+	hash = utils_stringHash((void *) toHash);
 	LONGS_EQUAL(1508668412, hash);
 
-	toHash = "abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
+	free(toHash);
+	toHash = my_strdup("abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
 			"abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
 			"abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
 			"abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
@@ -76,34 +99,40 @@ TEST(utils, stringHash) {
 			"abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
 			"abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
 			"abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
-			"abc123def456ghi789jkl012mno345pqr678stu901vwx234yz";
-	hash = utils_stringHash((void *) toHash.c_str());
+			"abc123def456ghi789jkl012mno345pqr678stu901vwx234yz");
+	hash = utils_stringHash((void *) toHash);
 	LONGS_EQUAL(829630780, hash);
+	free(toHash);
 }
 
 TEST(utils, stringEquals) {
 	// Compare with equal strings
-	std::string org = "abc";
-	std::string cmp = "abc";
+	char * org = my_strdup("abc");
+	char * cmp = my_strdup("abc");
 
-	int result = utils_stringEquals((void *) org.c_str(), (void *) cmp.c_str());
+	int result = utils_stringEquals((void *) org, (void *) cmp);
 	CHECK(result);
 
 	// Compare with no equal strings
-	cmp = "abcd";
+	free(cmp);
+	cmp = my_strdup("abcd");
 
-	result = utils_stringEquals((void *) org.c_str(), (void *) cmp.c_str());
-	CHECK(!result);
+	result = utils_stringEquals((void *) org, (void *) cmp);
+	CHECK_FALSE(result);
 
 	// Compare with numeric strings
-	org = "123";
-	cmp = "123";
+	free(org);
+	free(cmp);
+	org = my_strdup("123");
+	cmp = my_strdup("123");
 
-	result = utils_stringEquals((void *) org.c_str(), (void *) cmp.c_str());
+	result = utils_stringEquals((void *) org, (void *) cmp);
 	CHECK(result);
 
 	// Compare with long strings
-	org = "abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
+	free(org);
+	free(cmp);
+	org = my_strdup("abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
 			"abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
 			"abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
 			"abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
@@ -124,8 +153,8 @@ TEST(utils, stringEquals) {
 			"abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
 			"abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
 			"abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
-			"abc123def456ghi789jkl012mno345pqr678stu901vwx234yz";
-	cmp = "abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
+			"abc123def456ghi789jkl012mno345pqr678stu901vwx234yz");
+	cmp = my_strdup("abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
 			"abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
 			"abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
 			"abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
@@ -146,58 +175,101 @@ TEST(utils, stringEquals) {
 			"abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
 			"abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
 			"abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
-			"abc123def456ghi789jkl012mno345pqr678stu901vwx234yz";
+			"abc123def456ghi789jkl012mno345pqr678stu901vwx234yz");
 
-	result = utils_stringEquals((void *) org.c_str(), (void *) cmp.c_str());
+	result = utils_stringEquals((void *) org, (void *) cmp);
 	CHECK(result);
+
+	free(org);
+	free(cmp);
+}
+
+TEST(utils, string_ndup){
+	// Compare with equal strings
+	const char * org = "abc";
+	char * cmp = NULL;
+
+	cmp = string_ndup(org, 3);
+	STRCMP_EQUAL(org, cmp);
+	free(cmp);
+
+	org = "abc123def456ghi789jkl012mno345pqr678stu901vwx234yz";
+	cmp = string_ndup(org, 50);
+	STRCMP_EQUAL(org, cmp);
+	free(cmp);
+
+	cmp = string_ndup(org, 25);
+	LONGS_EQUAL(25, strlen(cmp));
+	free(cmp);
 }
 
 TEST(utils, stringTrim) {
 	// Multiple whitespaces, before, after and in between
-	std::string toTrim = " a b c ";
-	char *result = utils_stringTrim((char*) toTrim.c_str());
+	char * toTrim = my_strdup(" a b c ");
+	char * result = utils_stringTrim(toTrim);
 
 	STRCMP_EQUAL("a b c", result);
 
 	// No whitespaces
-	toTrim = "abc";
-	result = utils_stringTrim((char*) toTrim.c_str());
+	free(toTrim);
+	toTrim = my_strdup("abc");
+	result = utils_stringTrim(toTrim);
 
 	STRCMP_EQUAL("abc", result);
 
 	// Only whitespace before
-	toTrim = "               abc";
-	result = utils_stringTrim((char*) toTrim.c_str());
+	free(toTrim);
+	toTrim = my_strdup("               abc");
+	result = utils_stringTrim(toTrim);
 
 	STRCMP_EQUAL("abc", result);
 
 	// Only whitespace after
-	toTrim = "abc         ";
-	result = utils_stringTrim((char*) toTrim.c_str());
+	free(toTrim);
+	toTrim = my_strdup("abc         ");
+	result = utils_stringTrim(toTrim);
 
 	STRCMP_EQUAL("abc", result);
 
 	// Whitespace other then space (tab, cr..).
-	toTrim = "\tabc  \n asdf  \n";
-	result = utils_stringTrim((char*) toTrim.c_str());
+	free(toTrim);
+	toTrim = my_strdup("\tabc  \n asdf  \n");
+	result = utils_stringTrim(toTrim);
 
 	STRCMP_EQUAL("abc  \n asdf", result);
+
+	free(toTrim);
+}
+
+TEST(utils, thread_equalsSelf){
+	celix_thread thread = celixThread_self();
+	bool get;
+
+	LONGS_EQUAL(CELIX_SUCCESS, thread_equalsSelf(thread, &get));
+	CHECK(get);
+
+	thread.thread = (pthread_t) 0x42;
+	LONGS_EQUAL(CELIX_SUCCESS, thread_equalsSelf(thread, &get));
+	CHECK_FALSE(get);
 }
 
 TEST(utils, isNumeric) {
 	// Check numeric string
-	std::string toCheck = "42";
+	char * toCheck = my_strdup("42");
 
 	bool result;
-	celix_status_t status = utils_isNumeric((char *) toCheck.c_str(), &result);
+	celix_status_t status = utils_isNumeric(toCheck, &result);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	CHECK_C(result);
 
 	// Check non numeric string
-	toCheck = "42b";
-	status = utils_isNumeric((char *) toCheck.c_str(), &result);
+	free(toCheck);
+	toCheck = my_strdup("42b");
+	status = utils_isNumeric(toCheck, &result);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	CHECK_C(!result);
+
+	free(toCheck);
 }
 
 

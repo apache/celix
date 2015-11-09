@@ -41,6 +41,4 @@ celix_status_t serviceReference_destroy(service_reference_pt *reference);
 celix_status_t serviceReference_invalidate(service_reference_pt reference);
 celix_status_t serviceRefernce_isValid(service_reference_pt reference, bool *result);
 
-celix_status_t serviceReference_getServiceRegistration(service_reference_pt reference, service_registration_pt *registration);
-
 #endif /* SERVICE_REFERENCE_PRIVATE_H_ */

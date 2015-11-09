@@ -80,7 +80,7 @@ if (UTILS)
 	    
 	    #ADD_TARGET_FOR_TEST(array_list_test)
  		add_test(NAME run_array_list_test COMMAND array_list_test)
-       	SETUP_TARGET_FOR_COVERAGE(array_list array_list_test ${CMAKE_BINARY_DIR}/coverage/array_list_test/array_list_test)
+       	SETUP_TARGET_FOR_COVERAGE(array_list_test array_list_test ${CMAKE_BINARY_DIR}/coverage/array_list_test/array_list_test)
 
  	    #ADD_TARGET_FOR_TEST(hash_map_test)
 		add_test(NAME run_hash_map_test COMMAND hash_map_test)
@@ -88,11 +88,11 @@ if (UTILS)
        
        	#ADD_TARGET_FOR_TEST(celix_threads_test)
 		add_test(NAME run_celix_threads_test COMMAND celix_threads_test)
-       	SETUP_TARGET_FOR_COVERAGE(celix_threads celix_threads_test ${CMAKE_BINARY_DIR}/coverage/celix_threads_test/celix_threads_test)
+       	SETUP_TARGET_FOR_COVERAGE(celix_threads_test celix_threads_test ${CMAKE_BINARY_DIR}/coverage/celix_threads_test/celix_threads_test)
 
 	    #ADD_TARGET_FOR_TEST(linked_list_test)
 		add_test(NAME run_linked_list_test COMMAND linked_list_test)
-       	SETUP_TARGET_FOR_COVERAGE(linked_list linked_list_test ${CMAKE_BINARY_DIR}/coverage/linked_list_test/linked_list_test)
+       	SETUP_TARGET_FOR_COVERAGE(linked_list_test linked_list_test ${CMAKE_BINARY_DIR}/coverage/linked_list_test/linked_list_test)
 
    endif(ENABLE_TESTING)
 endif (UTILS)

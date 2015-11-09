@@ -37,7 +37,7 @@ extern "C"
 #include "service_reference_private.h"
 #include "celix_log.h"
 
-framework_logger_pt logger;
+framework_logger_pt logger = (framework_logger_pt) 0x42;
 }
 
 int main(int argc, char** argv) {
@@ -46,8 +46,6 @@ int main(int argc, char** argv) {
 
 TEST_GROUP(service_tracker) {
 	void setup(void) {
-		logger = (framework_logger_pt) malloc(sizeof(*logger));
-        logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
@@ -69,6 +67,8 @@ TEST(service_tracker, create) {
 	POINTERS_EQUAL(NULL, tracker->listener);
 	POINTERS_EQUAL(tracker, tracker->tracker);
 	STRCMP_EQUAL("(objectClass=service)", tracker->filter);
+
+	serviceTracker_destroy(tracker);
 }
 
 TEST(service_tracker, createWithFilter) {
@@ -84,6 +84,8 @@ TEST(service_tracker, createWithFilter) {
 	POINTERS_EQUAL(NULL, tracker->listener);
 	POINTERS_EQUAL(tracker, tracker->tracker);
 	STRCMP_EQUAL("(objectClass=test)", tracker->filter);
+
+	serviceTracker_destroy(tracker);
 }
 
 TEST(service_tracker, destroy) {
@@ -92,7 +94,7 @@ TEST(service_tracker, destroy) {
 	bundle_context_pt ctx = (bundle_context_pt) 0x123;
 	std::string filter = "(objectClass=test)";
 	status = serviceTracker_createWithFilter(ctx, (char *) filter.c_str(), NULL, &tracker);
-	service_listener_pt listener = (service_listener_pt) 0x20;
+	service_listener_pt listener = (service_listener_pt) calloc(1, sizeof(serviceListener));
 	tracker->listener = listener;
 
 	mock()
@@ -139,6 +141,11 @@ TEST(service_tracker, open) {
 
 	// No services should be found
 	LONGS_EQUAL(0, arrayList_size(tracker->tracked));
+
+	arrayList_destroy(tracked);
+
+	free(tracker->listener);
+	free(tracker);
 }
 
 TEST(service_tracker, open_withRefs) {
@@ -197,6 +204,13 @@ TEST(service_tracker, open_withRefs) {
 
 	// One service should be found
 	LONGS_EQUAL(1, arrayList_size(tracker->tracked));
+
+	free(arrayList_get(tracked, 0));
+	arrayList_destroy(tracked);
+
+	free(tracker->listener);
+	free(tracker);
+	free(ref);
 }
 
 TEST(service_tracker, open_withRefsAndTracked) {
@@ -238,18 +252,27 @@ TEST(service_tracker, open_withRefsAndTracked) {
 		.withParameter("filter", "(objectClass=service)")
 		.ignoreOtherParameters()
 		.andReturnValue(CELIX_SUCCESS);
+
 	bool equal = true;
 	mock()
 		.expectOneCall("serviceReference_equals")
 		.withParameter("reference", ref)
+		.withParameter("compareTo", ref)
 		.withOutputParameterReturning("equal", &equal, sizeof(equal))
-		.ignoreOtherParameters()
+		//.ignoreOtherParameters()
 		.andReturnValue(CELIX_SUCCESS);
+
 	serviceTracker_open(tracker);
 	CHECK(tracker->listener != NULL);
 
 	// One service should be found
 	LONGS_EQUAL(1, arrayList_size(tracker->tracked));
+
+	arrayList_destroy(tracked);
+
+	free(tracker->listener);
+	free(tracker);
+	free(entry);
 }
 
 TEST(service_tracker, close) {
@@ -292,7 +315,16 @@ TEST(service_tracker, close) {
 		.withOutputParameterReturning("result", &result, sizeof(result))
 		.andReturnValue(CELIX_SUCCESS);
 
+	mock()
+		.expectOneCall("bundleContext_ungetServiceReference")
+		.withParameter("context", ctx)
+		.withParameter("reference", ref)
+		.andReturnValue(CELIX_SUCCESS);
+
 	serviceTracker_close(tracker);
+
+	arrayList_destroy(tracked);
+	free(tracker);
 }
 
 TEST(service_tracker, getServiceReference) {
@@ -316,6 +348,12 @@ TEST(service_tracker, getServiceReference) {
 
 	service_reference_pt reference = serviceTracker_getServiceReference(tracker);
 	POINTERS_EQUAL(ref, reference);
+
+	arrayList_destroy(tracked);
+
+	free(tracker);
+	free(entry);
+	free(entry2);
 }
 
 TEST(service_tracker, getServiceReferenceNull) {
@@ -328,6 +366,9 @@ TEST(service_tracker, getServiceReferenceNull) {
 
 	service_reference_pt reference = serviceTracker_getServiceReference(tracker);
 	POINTERS_EQUAL(NULL, reference);
+
+	arrayList_destroy(tracked);
+	free(tracker);
 }
 
 TEST(service_tracker, getServiceReferences) {
@@ -353,6 +394,13 @@ TEST(service_tracker, getServiceReferences) {
 	LONGS_EQUAL(2, arrayList_size(references));
 	POINTERS_EQUAL(ref, arrayList_get(references, 0));
 	POINTERS_EQUAL(ref2, arrayList_get(references, 1));
+
+	arrayList_destroy(references);
+	arrayList_destroy(tracked);
+
+	free(tracker);
+	free(entry);
+	free(entry2);
 }
 
 TEST(service_tracker, getService) {
@@ -376,6 +424,12 @@ TEST(service_tracker, getService) {
 
 	void *service = serviceTracker_getService(tracker);
 	POINTERS_EQUAL(0x31, service);
+
+	arrayList_destroy(tracked);
+
+	free(entry);
+	free(entry2);
+	free(tracker);
 }
 
 TEST(service_tracker, getServiceNull) {
@@ -388,6 +442,9 @@ TEST(service_tracker, getServiceNull) {
 
 	void *service = serviceTracker_getService(tracker);
 	POINTERS_EQUAL(NULL, service);
+
+	arrayList_destroy(tracked);
+	free(tracker);
 }
 
 TEST(service_tracker, getServices) {
@@ -413,6 +470,13 @@ TEST(service_tracker, getServices) {
 	LONGS_EQUAL(2, arrayList_size(services));
 	POINTERS_EQUAL(0x31, arrayList_get(services, 0));
 	POINTERS_EQUAL(0x32, arrayList_get(services, 1));
+
+	arrayList_destroy(services);
+	arrayList_destroy(tracked);
+
+	free(entry);
+	free(entry2);
+	free(tracker);
 }
 
 TEST(service_tracker, getServiceByReference) {
@@ -433,12 +497,17 @@ TEST(service_tracker, getServiceByReference) {
 	mock()
 		.expectOneCall("serviceReference_equals")
 		.withParameter("reference", ref)
+		.withParameter("compareTo", ref)
 		.withOutputParameterReturning("equal", &equal, sizeof(equal))
-		.ignoreOtherParameters()
-		.andReturnValue(4)
-		.withCallOrder(1);
+		.andReturnValue(4);
+		//.ignoreOtherParameters();
 	void *service = serviceTracker_getServiceByReference(tracker, ref);
 	POINTERS_EQUAL(0x31, service);
+
+	arrayList_destroy(tracked);
+
+	free(tracker);
+	free(entry);
 }
 
 TEST(service_tracker, getServiceByReferenceNull) {
@@ -465,6 +534,11 @@ TEST(service_tracker, getServiceByReferenceNull) {
 		.withCallOrder(1);
 	void *service = serviceTracker_getServiceByReference(tracker, ref);
 	POINTERS_EQUAL(NULL, service);
+
+	arrayList_destroy(tracked);
+
+	free(tracker);
+	free(entry);
 }
 
 TEST(service_tracker, serviceChangedRegistered) {
@@ -495,6 +569,13 @@ TEST(service_tracker, serviceChangedRegistered) {
 		.withOutputParameterReturning("service_instance", &src, sizeof(src))
 		.andReturnValue(CELIX_SUCCESS);
 	serviceTracker_serviceChanged(listener, event);
+
+	free(arrayList_get(tracked, 0));
+	arrayList_destroy(tracked);
+
+	free(event);
+	free(tracker);
+	free(listener);
 }
 
 TEST(service_tracker, serviceChangedModified) {
@@ -530,7 +611,22 @@ TEST(service_tracker, serviceChangedModified) {
 		.withOutputParameterReturning("equal", &equal, sizeof(equal))
 		.ignoreOtherParameters()
 		.andReturnValue(CELIX_SUCCESS);
+
+	mock()
+			.expectOneCall("bundleContext_getService")
+			.withParameter("context", ctx)
+			.withParameter("reference", ref)
+			.withOutputParameterReturning("service_instance", &entry->service, sizeof(entry->service));
+
 	serviceTracker_serviceChanged(listener, event);
+
+	free(arrayList_get(tracked, 0));
+	free(arrayList_get(tracked, 1));
+	arrayList_destroy(tracked);
+
+	free(event);
+	free(listener);
+	free(tracker);
 }
 
 TEST(service_tracker, serviceChangedUnregistering) {
@@ -573,7 +669,20 @@ TEST(service_tracker, serviceChangedUnregistering) {
 		.withParameter("reference", ref)
 		.withOutputParameterReturning("result", &result, sizeof(result))
 		.andReturnValue(CELIX_SUCCESS);
+
+	mock()
+		.expectOneCall("bundleContext_ungetServiceReference")
+		.withParameter("context", ctx)
+		.withParameter("reference", ref)
+		.andReturnValue(CELIX_SUCCESS);
+
 	serviceTracker_serviceChanged(listener, event);
+
+	arrayList_destroy(tracked);
+
+	free(listener);
+	free(event);
+	free(tracker);
 }
 
 TEST(service_tracker, serviceChangedModifiedEndmatch) {
@@ -602,6 +711,13 @@ TEST(service_tracker, serviceChangedModifiedEndmatch) {
 	event->reference = ref;
 
 	serviceTracker_serviceChanged(listener, event);
+
+	arrayList_destroy(tracked);
+
+	free(entry);
+	free(listener);
+	free(tracker);
+	free(event);
 }
 
 extern "C" {
@@ -661,6 +777,13 @@ TEST(service_tracker, serviceChangedRegisteredCustomizer) {
 		.withOutputParameterReturning("function", &function2, sizeof(function))
 		.andReturnValue(CELIX_SUCCESS);
 	serviceTracker_serviceChanged(listener, event);
+
+	free(arrayList_get(tracked, 0));
+	arrayList_destroy(tracked);
+
+	free(event);
+	free(tracker);
+	free(listener);
 }
 
 
@@ -681,6 +804,8 @@ TEST(service_tracker, serviceChangedModifiedCustomizer) {
 	listener->handle = tracker;
 	service_tracker_customizer_pt customizer = (service_tracker_customizer_pt) 0x20;
 	tracker->customizer = customizer;
+	adding_callback_pt adding_func = NULL;
+	added_callback_pt added_func = NULL;
 
 	// new tracker->tracked
 	array_list_pt tracked = NULL;
@@ -706,17 +831,45 @@ TEST(service_tracker, serviceChangedModifiedCustomizer) {
 		.andReturnValue(CELIX_SUCCESS);
 	void * handle = (void*) 0x60;
 	mock()
-		.expectOneCall("serviceTrackerCustomizer_getHandle")
+		.expectNCalls(2, "serviceTrackerCustomizer_getHandle")
 		.withParameter("customizer", customizer)
 		.withOutputParameterReturning("handle", &handle, sizeof(handle))
 		.andReturnValue(CELIX_SUCCESS);
 	void *function = (void *) serviceDependency_modifiedService;
-	mock()
+/*	mock()
 		.expectOneCall("serviceTrackerCustomizer_getModifiedFunction")
 		.withParameter("customizer", customizer)
 		.withOutputParameterReturning("function", &function, sizeof(function))
 		.andReturnValue(CELIX_SUCCESS);
+*/
+	mock()
+		.expectOneCall("serviceTrackerCustomizer_getAddingFunction")
+		.withParameter("customizer", customizer)
+		.withOutputParameterReturning("function", &adding_func, sizeof(adding_func))
+		.andReturnValue(CELIX_SUCCESS);
+
+	mock()
+		.expectOneCall("serviceTrackerCustomizer_getAddedFunction")
+		.withParameter("customizer", customizer)
+		.withOutputParameterReturning("function", &added_func, sizeof(added_func));
+
+
+	mock()
+		.expectOneCall("bundleContext_getService")
+		.withParameter("context", ctx)
+		.withParameter("reference", ref)
+		.withOutputParameterReturning("service_instance", &entry->service, sizeof(entry->service));
+
+
 	serviceTracker_serviceChanged(listener, event);
+
+	free(arrayList_get(tracked, 0));
+	free(arrayList_get(tracked, 1));
+	arrayList_destroy(tracked);
+
+	free(event);
+	free(listener);
+	free(tracker);
 }
 
 extern "C" {
@@ -771,7 +924,19 @@ TEST(service_tracker, serviceChangedUnregisteringCustomizer) {
 		.withParameter("customizer", customizer)
 		.withOutputParameterReturning("function", &function , sizeof(function))
 		.andReturnValue(CELIX_SUCCESS);
+
+	mock()
+		.expectOneCall("bundleContext_ungetServiceReference")
+		.withParameter("context", ctx)
+		.withParameter("reference", ref)
+		.andReturnValue(CELIX_SUCCESS);
 	serviceTracker_serviceChanged(listener, event);
+
+	arrayList_destroy(tracked);
+
+	free(listener);
+	free(event);
+	free(tracker);
 }
 
 TEST(service_tracker, serviceChangedUnregisteringCustomizerNoFunc) {
@@ -827,7 +992,19 @@ TEST(service_tracker, serviceChangedUnregisteringCustomizerNoFunc) {
 		.withParameter("reference", ref)
 		.withOutputParameterReturning("result", &result, sizeof(result))
 		.andReturnValue(CELIX_SUCCESS);
+
+	mock()
+		.expectOneCall("bundleContext_ungetServiceReference")
+		.withParameter("context", ctx)
+		.withParameter("reference", ref)
+		.andReturnValue(CELIX_SUCCESS);
+
 	serviceTracker_serviceChanged(listener, event);
+
+	arrayList_destroy(tracked);
+	free(listener);
+	free(tracker);
+	free(event);
 }
 
 

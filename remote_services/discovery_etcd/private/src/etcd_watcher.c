@@ -227,7 +227,7 @@ static celix_status_t etcdWatcher_removeEntry(etcd_watcher_pt watcher, char* key
 	hash_map_entry_pt entry = hashMap_getEntry(watcher->entries, key);
 
 	if (entry != NULL) {
-		hashMap_removeEntryForKey(watcher->entries, key);
+		hashMap_remove(watcher->entries, key);
 
 		free(hashMapEntry_getKey(entry));
 		free(hashMapEntry_getValue(entry));

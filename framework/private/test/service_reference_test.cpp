@@ -34,6 +34,7 @@
 extern "C" {
 #include "service_reference_private.h"
 #include "celix_log.h"
+#include "utils.h"
 
 framework_logger_pt logger;
 }

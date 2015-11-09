@@ -28,17 +28,20 @@
 #include "filter.h"
 
 filter_pt filter_create(char * filterString) {
+	mock_c()->actualCall("filter_create");
 	return mock_c()->returnValue().value.pointerValue;
 }
 
 void filter_destroy(filter_pt filter) {
-
+	mock_c()->actualCall("filter_destroy");
 }
 
 celix_status_t filter_match(filter_pt filter, properties_pt properties, bool *result) {
+	mock_c()->actualCall("filter_match");
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t filter_getString(filter_pt filter, char **filterStr) {
+	mock_c()->actualCall("filter_getString");
 	return mock_c()->returnValue().value.intValue;
 }

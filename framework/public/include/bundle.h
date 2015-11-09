@@ -40,7 +40,7 @@ typedef struct bundle * bundle_pt;
 #include "celix_log.h"
 #include "celix_threads.h"
 
-FRAMEWORK_EXPORT celix_status_t bundle_create(bundle_pt * bundle, framework_logger_pt logger);
+FRAMEWORK_EXPORT celix_status_t bundle_create(bundle_pt * bundle);
 FRAMEWORK_EXPORT celix_status_t bundle_createFromArchive(bundle_pt * bundle, framework_pt framework, bundle_archive_pt archive);
 FRAMEWORK_EXPORT celix_status_t bundle_destroy(bundle_pt bundle);
 

@@ -62,7 +62,7 @@ typedef struct bundleRevision * bundle_revision_pt;
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ENOMEM If allocating memory for <code>bundle_revision</code> failed.
  */
-celix_status_t bundleRevision_create(framework_logger_pt logger, char *root, char *location, long revisionNr, char *inputFile, bundle_revision_pt *bundle_revision);
+celix_status_t bundleRevision_create(char *root, char *location, long revisionNr, char *inputFile, bundle_revision_pt *bundle_revision);
 
 celix_status_t bundleRevision_destroy(bundle_revision_pt revision);
 

@@ -38,7 +38,9 @@ celix_status_t capability_destroy(capability_pt capability) {
 }
 
 celix_status_t capability_getServiceName(capability_pt capability, char **serviceName) {
-	mock_c()->actualCall("capability_getServiceName");
+	mock_c()->actualCall("capability_getServiceName")
+			->withPointerParameters("capability", capability)
+			->withOutputParameter("serviceName", serviceName);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -50,7 +52,9 @@ celix_status_t capability_getVersion(capability_pt capability, version_pt *versi
 }
 
 celix_status_t capability_getModule(capability_pt capability, module_pt *module) {
-	mock_c()->actualCall("capability_getModule");
+	mock_c()->actualCall("capability_getModule")
+			->withPointerParameters("capability", capability)
+			->withOutputParameter("module", module);
 	return mock_c()->returnValue().value.intValue;
 }
 

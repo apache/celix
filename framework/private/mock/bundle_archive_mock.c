@@ -27,9 +27,8 @@
 
 #include "bundle_archive.h"
 
-celix_status_t bundleArchive_create(framework_logger_pt logger, char * archiveRoot, long id, char * location, char *inputFile, bundle_archive_pt *bundle_archive) {
+celix_status_t bundleArchive_create(char * archiveRoot, long id, char * location, char *inputFile, bundle_archive_pt *bundle_archive) {
 	mock_c()->actualCall("bundleArchive_create")
-            ->withPointerParameters("logger", logger)
 			->withStringParameters("archiveRoot", archiveRoot)
 			->withIntParameters("id", id)
 			->withStringParameters("location", location)
@@ -38,9 +37,8 @@ celix_status_t bundleArchive_create(framework_logger_pt logger, char * archiveRo
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundleArchive_createSystemBundleArchive(framework_logger_pt logger, bundle_archive_pt *bundle_archive) {
+celix_status_t bundleArchive_createSystemBundleArchive(bundle_archive_pt *bundle_archive) {
 	mock_c()->actualCall("bundleArchive_createSystemBundleArchive")
-			->withPointerParameters("logger", logger)
 			->withOutputParameter("bundle_archive", (void **) bundle_archive);
 	return mock_c()->returnValue().value.intValue;
 }
@@ -112,7 +110,8 @@ celix_status_t bundleArchive_setRefreshCount(bundle_archive_pt archive) {
 }
 
 celix_status_t bundleArchive_close(bundle_archive_pt archive) {
-	mock_c()->actualCall("bundleArchive_close");
+	mock_c()->actualCall("bundleArchive_close")
+			->withPointerParameters("archive", archive);
 	return mock_c()->returnValue().value.intValue;
 }
 

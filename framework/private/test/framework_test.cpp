@@ -19,7 +19,7 @@
 /*
  * framework_test.cpp
  *
- *  \date       Feb 11, 2013
+ *  \date       Sep 28, 2015
  *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright  Apache License, Version 2.0
  */
@@ -33,21 +33,78 @@
 
 extern "C" {
 #include "framework.h"
+#include "framework_private.h"
 }
 
 int main(int argc, char** argv) {
-	return RUN_ALL_TESTS(argc, argv);
+	return CommandLineTestRunner::RUN_ALL_TESTS(argc, argv);
 }
 
 TEST_GROUP(framework) {
+	properties_pt properties;
+
 	void setup(void) {
+		properties = properties_create();
 	}
 
 	void teardown() {
-		mock().checkExpectations();
-		mock().clear();
+		properties_destroy(properties);
 	}
 };
+
+TEST(framework, create){
+	framework_pt framework = NULL;
+
+	mock().expectOneCall("bundle_create");
+
+	framework_create(&framework, properties);
+
+
+	CHECK(framework != NULL);
+	POINTERS_EQUAL(&properties, framework->configurationMap);
+
+	mock().checkExpectations();
+	mock().clear();
+}
+
+/*TEST(framework, startFw){
+	framework_pt framework = NULL;
+
+	mock().expectOneCall("bundle_create");
+	mock().expectOneCall("framework_logCode")
+			.withParameter("code", CELIX_ILLEGAL_ARGUMENT);
+
+	LONGS_EQUAL(CELIX_SUCCESS,framework_create(&framework, properties));
+
+	LONGS_EQUAL(CELIX_SUCCESS,fw_init(framework));
+
+	LONGS_EQUAL(CELIX_SUCCESS,framework_start(framework));
+
+	framework_stop(framework);
+	framework_destroy(framework);
+
+}
+
+TEST(framework, installBundle){
+	framework_pt framework = NULL;
+
+	mock().expectOneCall("bundle_create");
+	mock().expectOneCall("framework_logCode")
+			.withParameter("code", CELIX_ILLEGAL_ARGUMENT);
+
+	LONGS_EQUAL(CELIX_SUCCESS, framework_create(&framework, properties));
+
+	LONGS_EQUAL(CELIX_SUCCESS,fw_init(framework));
+
+	LONGS_EQUAL(CELIX_SUCCESS,framework_start(framework));
+
+	// fw_installBundle(); // Needs a fake bundle..
+
+	framework_stop(framework);
+	framework_destroy(framework);
+
+}*/
+
 
 
 

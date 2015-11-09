@@ -25,6 +25,7 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/TestHarness_c.h"
@@ -35,17 +36,32 @@ extern "C" {
 #include "attribute_private.h"
 #include "celix_log.h"
 
-framework_logger_pt logger;
+framework_logger_pt logger = (framework_logger_pt) 0x42;
 }
 
 int main(int argc, char** argv) {
 	return RUN_ALL_TESTS(argc, argv);
 }
 
+static char* my_strdup(const char* s){
+	if(s==NULL){
+		return NULL;
+	}
+
+	size_t len = strlen(s);
+
+	char *d = (char*) calloc (len + 1,sizeof(char));
+
+	if (d == NULL){
+		return NULL;
+	}
+
+	strncpy (d,s,len);
+	return d;
+}
+
 TEST_GROUP(attribute) {
 	void setup(void) {
-		logger = (framework_logger_pt) malloc(sizeof(*logger));
-		logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
@@ -55,13 +71,22 @@ TEST_GROUP(attribute) {
 };
 
 TEST(attribute, create) {
-	char key[] = "key";
-	char value[] = "value";
+	char * key = (char*) my_strdup("key");
+	char * value = (char*) my_strdup("value");
 
 	attribute_pt attribute = NULL;
 	celix_status_t status = attribute_create(key, value, &attribute);
 	STRCMP_EQUAL(key, attribute->key);
 	STRCMP_EQUAL(value, attribute->value);
+	LONGS_EQUAL(CELIX_SUCCESS, status);
+
+	mock().expectOneCall("framework_logCode")
+			.withParameter("code", CELIX_ILLEGAL_ARGUMENT);
+
+	status = attribute_create(NULL, NULL, NULL);
+	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
+
+	attribute_destroy(attribute);
 }
 
 TEST(attribute, getKey) {
@@ -75,6 +100,8 @@ TEST(attribute, getKey) {
 	char *actual = NULL;
 	celix_status_t status = attribute_getKey(attribute, &actual);
 	STRCMP_EQUAL(key, actual);
+
+	free(attribute);
 }
 
 TEST(attribute, getValue) {
@@ -88,4 +115,6 @@ TEST(attribute, getValue) {
 	char *actual = NULL;
 	celix_status_t status = attribute_getValue(attribute, &actual);
 	STRCMP_EQUAL(value, actual);
+
+	free(attribute);
 }

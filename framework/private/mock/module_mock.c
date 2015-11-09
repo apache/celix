@@ -56,7 +56,7 @@ int module_equals(void * module, void * compare) {
 }
 
 wire_pt module_getWire(module_pt module, char * serviceName) {
-	mock_c()->actualCall("requirement_create");
+	mock_c()->actualCall("module_getwire");
 	return mock_c()->returnValue().value.pointerValue;
 }
 
@@ -74,71 +74,71 @@ celix_status_t module_getSymbolicName(module_pt module, char **symbolicName) {
 }
 
 char * module_getId(module_pt module) {
-	mock_c()->actualCall("requirement_create");
+	mock_c()->actualCall("module_getId");
 	return (char *) mock_c()->returnValue().value.stringValue;
 }
 
 linked_list_pt module_getWires(module_pt module) {
-	mock_c()->actualCall("requirement_create");
+	mock_c()->actualCall("module_getWires");
 	return mock_c()->returnValue().value.pointerValue;
 }
 
 void module_setWires(module_pt module, linked_list_pt wires) {
-	mock_c()->actualCall("requirement_create");
+	mock_c()->actualCall("module_setWires");
 }
 
 bool module_isResolved(module_pt module) {
-	mock_c()->actualCall("requirement_create");
+	mock_c()->actualCall("module_isResolved");
 	return mock_c()->returnValue().value.intValue;
 }
 
 void module_setResolved(module_pt module) {
-	mock_c()->actualCall("requirement_create");
+	mock_c()->actualCall("module_setResolved");
 }
 
 bundle_pt module_getBundle(module_pt module) {
-	mock_c()->actualCall("requirement_create");
+	mock_c()->actualCall("module_getBundle");
 	return mock_c()->returnValue().value.pointerValue;
 }
 
 linked_list_pt module_getRequirements(module_pt module) {
-	mock_c()->actualCall("requirement_create");
+	mock_c()->actualCall("module_getRequirements");
 	return mock_c()->returnValue().value.pointerValue;
 }
 
 linked_list_pt module_getCapabilities(module_pt module) {
-	mock_c()->actualCall("requirement_create");
+	mock_c()->actualCall("module_getCapabilities");
 	return mock_c()->returnValue().value.pointerValue;
 }
 
 array_list_pt module_getDependentImporters(module_pt module) {
-	mock_c()->actualCall("requirement_create");
+	mock_c()->actualCall("module_getDependentImporters");
 	return mock_c()->returnValue().value.pointerValue;
 }
 
 void module_addDependentImporter(module_pt module, module_pt importer) {
-	mock_c()->actualCall("requirement_create");
+	mock_c()->actualCall("module_addDependentImporter");
 }
 
 void module_removeDependentImporter(module_pt module, module_pt importer) {
-	mock_c()->actualCall("requirement_create");
+	mock_c()->actualCall("module_removeDependentImporter");
 }
 
 array_list_pt module_getDependentRequirers(module_pt module) {
-	mock_c()->actualCall("requirement_create");
+	mock_c()->actualCall("module_getDependentRequirers");
 	return mock_c()->returnValue().value.pointerValue;
 }
 
 void module_addDependentRequirer(module_pt module, module_pt requirer) {
-	mock_c()->actualCall("requirement_create");
+	mock_c()->actualCall("module_addDependentRequirer");
 }
 
 void module_removeDependentRequirer(module_pt module, module_pt requirer) {
-	mock_c()->actualCall("requirement_create");
+	mock_c()->actualCall("module_removeDependentRequirer");
 }
 
 array_list_pt module_getDependents(module_pt module) {
-	mock_c()->actualCall("requirement_create");
+	mock_c()->actualCall("module_getDependents");
 	return mock_c()->returnValue().value.pointerValue;
 }
 

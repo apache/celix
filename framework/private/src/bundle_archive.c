@@ -45,7 +45,6 @@ struct bundleArchive {
 	linked_list_pt revisions;
 	long refreshCount;
 	time_t lastModified;
-	framework_logger_pt logger;
 
 	bundle_state_e persistentState;
 };
@@ -63,7 +62,7 @@ static celix_status_t bundleArchive_reviseInternal(bundle_archive_pt archive, bo
 static celix_status_t bundleArchive_readLastModified(bundle_archive_pt archive, time_t *time);
 static celix_status_t bundleArchive_writeLastModified(bundle_archive_pt archive);
 
-celix_status_t bundleArchive_createSystemBundleArchive(framework_logger_pt logger, bundle_archive_pt *bundle_archive) {
+celix_status_t bundleArchive_createSystemBundleArchive(bundle_archive_pt *bundle_archive) {
     celix_status_t status = CELIX_SUCCESS;
     char *error = NULL;
 	bundle_archive_pt archive;
@@ -84,7 +83,6 @@ celix_status_t bundleArchive_createSystemBundleArchive(framework_logger_pt logge
                 archive->archiveRootDir = NULL;
                 archive->refreshCount = -1;
                 archive->persistentState = OSGI_FRAMEWORK_BUNDLE_UNKNOWN;
-                archive->logger = logger;
                 time(&archive->lastModified);
 
                 *bundle_archive = archive;
@@ -97,7 +95,7 @@ celix_status_t bundleArchive_createSystemBundleArchive(framework_logger_pt logge
     return status;
 }
 
-celix_status_t bundleArchive_create(framework_logger_pt logger, char * archiveRoot, long id, char * location, char *inputFile, bundle_archive_pt *bundle_archive) {
+celix_status_t bundleArchive_create(char * archiveRoot, long id, char * location, char *inputFile, bundle_archive_pt *bundle_archive) {
     celix_status_t status = CELIX_SUCCESS;
     char *error = NULL;
     bundle_archive_pt archive;
@@ -115,9 +113,8 @@ celix_status_t bundleArchive_create(framework_logger_pt logger, char * archiveRo
                 archive->id = id;
                 archive->location = strdup(location);
                 archive->archiveRootDir = NULL;
-                archive->archiveRoot = archiveRoot;
+				archive->archiveRoot = strdup(archiveRoot);
                 archive->refreshCount = -1;
-                archive->logger = logger;
                 time(&archive->lastModified);
 
                 status = bundleArchive_initialize(archive);
@@ -177,7 +174,7 @@ celix_status_t bundleArchive_recreate(char * archiveRoot, bundle_archive_pt *bun
  	} else {
 		status = linkedList_create(&archive->revisions);
 		if (status == CELIX_SUCCESS) {
-            archive->archiveRoot = archiveRoot;
+			archive->archiveRoot = strdup(archiveRoot);
             archive->archiveRootDir = NULL;
             archive->id = -1;
             archive->persistentState = -1;
@@ -565,7 +562,7 @@ static celix_status_t bundleArchive_createRevisionFromLocation(bundle_archive_pt
 		bundle_revision_pt revision = NULL;
 		
 		sprintf(root, "%s/version%ld.%ld", archive->archiveRoot, refreshCount, revNr);
-        status = bundleRevision_create(logger, root, location, revNr, inputFile, &revision);
+        status = bundleRevision_create(root, location, revNr, inputFile, &revision);
 
 		if (status == CELIX_SUCCESS) {
 			*bundle_revision = revision;

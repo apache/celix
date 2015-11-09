@@ -30,12 +30,21 @@
 #include "CppUTest/TestHarness_c.h"
 #include "CppUTest/CommandLineTestRunner.h"
 #include "CppUTestExt/MockSupport.h"
+#include "CppUTestExt/MockSupport_c.h"
 
 extern "C" {
 #include "service_registry_private.h"
 #include "celix_log.h"
 
-framework_logger_pt logger;
+framework_logger_pt logger = (framework_logger_pt) 0x42;
+
+void serviceRegistryTest_serviceChanged(framework_pt framework, service_event_type_e eventType, service_registration_pt registration, properties_pt oldprops) {
+	mock_c()->actualCall("serviceRegistryTest_serviceChanged")
+			->withPointerParameters("framework", framework)
+			->withIntParameters("eventType", eventType)
+			->withPointerParameters("registration", registration)
+			->withPointerParameters("oldprops", oldprops);
+}
 }
 
 int main(int argc, char** argv) {
@@ -44,8 +53,6 @@ int main(int argc, char** argv) {
 
 TEST_GROUP(service_registry) {
 	void setup(void) {
-		logger = (framework_logger_pt) malloc(sizeof(*logger));
-        logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
@@ -53,11 +60,6 @@ TEST_GROUP(service_registry) {
 		mock().clear();
 	}
 };
-
-extern "C" {
-void serviceRegistryTest_serviceChanged(framework_pt framework, service_event_type_e eventType, service_registration_pt registration, properties_pt oldprops) {
-}
-}
 
 TEST(service_registry, create) {
 	framework_pt framework = (framework_pt) 0x10;
@@ -71,14 +73,20 @@ TEST(service_registry, create) {
 	CHECK(registry->inUseMap != NULL);
 	CHECK(registry->listenerHooks != NULL);
 	//CHECK(registry->mutex != NULL);
-	CHECK(registry->serviceReferences == NULL);
+	CHECK(registry->serviceReferences != NULL);
 	CHECK(registry->serviceRegistrations != NULL);
+
+	serviceRegistry_destroy(registry);
 }
 
 TEST(service_registry, getRegisteredServices) {
 	service_registry_pt registry = (service_registry_pt) malloc(sizeof(*registry));
 	registry->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
-
+	registry->serviceReferences = hashMap_create(NULL, NULL, NULL, NULL);
+	celixThreadMutexAttr_create(&registry->mutexAttr);
+    celixThreadMutexAttr_settype(&registry->mutexAttr, CELIX_THREAD_MUTEX_RECURSIVE);
+    celixThreadMutex_create(&registry->mutex, &registry->mutexAttr);
+	celixThreadMutex_create(&registry->referencesMapMutex, NULL);
 	array_list_pt registrations = NULL;
 	arrayList_create(&registrations);
 	service_registration_pt reg = (service_registration_pt) 0x10;
@@ -108,21 +116,28 @@ TEST(service_registry, getRegisteredServices) {
 		.withOutputParameterReturning("reference", &ref, sizeof(ref))
 		.andReturnValue(CELIX_SUCCESS)
 		.ignoreOtherParameters();
-	mock()
+	/*mock()
 		.expectOneCall("serviceRegistration_getServiceReferences")
 		.withParameter("registration", reg)
 		.withOutputParameterReturning("references", &refs, sizeof(refs))
-		.andReturnValue(CELIX_SUCCESS);
+		.andReturnValue(CELIX_SUCCESS);*/
 
 	array_list_pt services = NULL;
 	serviceRegistry_getRegisteredServices(registry, bundle, &services);
 	LONGS_EQUAL(1, arrayList_size(services));
 	POINTERS_EQUAL(ref, arrayList_get(services, 0));
+
+	free(registry);
 }
 
 TEST(service_registry, getServicesInUse) {
 	service_registry_pt registry = (service_registry_pt) malloc(sizeof(*registry));
 	registry->inUseMap = hashMap_create(NULL, NULL, NULL, NULL);
+	celixThreadMutexAttr_create(&registry->mutexAttr);
+    celixThreadMutexAttr_settype(&registry->mutexAttr, CELIX_THREAD_MUTEX_RECURSIVE);
+    celixThreadMutex_create(&registry->mutex, &registry->mutexAttr);
+
+	celixThreadMutex_create(&registry->referencesMapMutex, NULL);
 
 	array_list_pt usages = NULL;
 	arrayList_create(&usages);
@@ -137,6 +152,8 @@ TEST(service_registry, getServicesInUse) {
 	serviceRegistry_getServicesInUse(registry, bundle, &inUse);
 	LONGS_EQUAL(1, arrayList_size(inUse));
 	POINTERS_EQUAL(ref, arrayList_get(inUse, 0));
+
+	free(registry);
 }
 
 TEST(service_registry, registerServiceNoProps) {
@@ -167,6 +184,8 @@ TEST(service_registry, registerServiceNoProps) {
 	service_registration_pt registration = NULL;
 	serviceRegistry_registerService(registry, bundle, (char *) serviceName.c_str(), service, NULL, &registration);
 	POINTERS_EQUAL(reg, registration);
+
+	free(registry);
 }
 
 TEST(service_registry, registerServiceFactoryNoProps) {
@@ -197,6 +216,8 @@ TEST(service_registry, registerServiceFactoryNoProps) {
 	service_registration_pt registration = NULL;
 	serviceRegistry_registerServiceFactory(registry, bundle, (char *) serviceName.c_str(), factory, NULL, &registration);
 	POINTERS_EQUAL(reg, registration);
+
+	free(registry);
 }
 
 TEST(service_registry, unregisterService) {
@@ -243,11 +264,18 @@ TEST(service_registry, unregisterService) {
 		.withOutputParameterReturning("references", &references, sizeof(references))
 		.andReturnValue(CELIX_SUCCESS);
 	mock()
+		.expectOneCall("serviceReference_invalidate")
+		.withParameter("reference", reference)
+		.andReturnValue(CELIX_SUCCESS);
+
+	mock()
 		.expectOneCall("serviceRegistration_invalidate")
 		.withParameter("registration", registration)
 		.andReturnValue(CELIX_SUCCESS);
 
 	serviceRegistry_unregisterService(registry, bundle, registration);
+
+	free(registry);
 }
 
 TEST(service_registry, unregisterServices) {
@@ -277,14 +305,18 @@ TEST(service_registry, unregisterServices) {
 		.andReturnValue(CELIX_SUCCESS);
 	serviceRegistry_unregisterServices(registry, bundle);
 	LONGS_EQUAL(0, hashMap_size(registry->serviceRegistrations));
+
+	free(registry);
 }
 
-TEST(service_registry, getServiceReferences) {
+TEST(service_registry, getServiceReferencesForRegistration){
+#warning implement this
 	service_registry_pt registry = (service_registry_pt) malloc(sizeof(*registry));
 	registry->inUseMap = hashMap_create(NULL, NULL, NULL, NULL);
 	celixThreadMutexAttr_create(&registry->mutexAttr);
     celixThreadMutexAttr_settype(&registry->mutexAttr, CELIX_THREAD_MUTEX_RECURSIVE);
     celixThreadMutex_create(&registry->mutex, &registry->mutexAttr);
+	celixThreadMutex_create(&registry->referencesMapMutex, NULL);
 	registry->currentServiceId = 1l;
 	registry->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
 
@@ -293,7 +325,34 @@ TEST(service_registry, getServiceReferences) {
 	array_list_pt registrations = NULL;
 	arrayList_create(&registrations);
 	arrayList_add(registrations, registration);
+	registry->serviceReferences = hashMap_create(NULL, NULL, NULL, NULL);
+	hashMap_put(registry->serviceRegistrations, bundle, registrations);
 
+	properties_pt properties = (properties_pt) 0x30;
+	array_list_pt references = NULL;
+	arrayList_create(&references);
+	service_reference_pt reference = (service_reference_pt) 0x40;
+	arrayList_add(references, reference);
+
+	serviceRegistry_getServiceReferencesForRegistration(registry, registration, &references);
+}
+
+TEST(service_registry, getServiceReferences) {
+	service_registry_pt registry = (service_registry_pt) malloc(sizeof(*registry));
+	registry->inUseMap = hashMap_create(NULL, NULL, NULL, NULL);
+	celixThreadMutexAttr_create(&registry->mutexAttr);
+    celixThreadMutexAttr_settype(&registry->mutexAttr, CELIX_THREAD_MUTEX_RECURSIVE);
+    celixThreadMutex_create(&registry->mutex, &registry->mutexAttr);
+	celixThreadMutex_create(&registry->referencesMapMutex, NULL);
+	registry->currentServiceId = 1l;
+	registry->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
+
+	bundle_pt bundle = (bundle_pt) 0x10;
+	service_registration_pt registration = (service_registration_pt) 0x20;
+	array_list_pt registrations = NULL;
+	arrayList_create(&registrations);
+	arrayList_add(registrations, registration);
+	registry->serviceReferences = hashMap_create(NULL, NULL, NULL, NULL);
 	hashMap_put(registry->serviceRegistrations, bundle, registrations);
 
 	properties_pt properties = (properties_pt) 0x30;
@@ -330,17 +389,19 @@ TEST(service_registry, getServiceReferences) {
 		.withOutputParameterReturning("reference", &reference, sizeof(reference))
 		.andReturnValue(CELIX_SUCCESS)
 		.ignoreOtherParameters();
-	mock()
+	/*mock()
 		.expectOneCall("serviceRegistration_getServiceReferences")
 		.withParameter("registration", registration)
 		.withOutputParameterReturning("references", &references, sizeof(references))
-		.andReturnValue(CELIX_SUCCESS);
+		.andReturnValue(CELIX_SUCCESS);*/
 
 	array_list_pt actual  = NULL;
 
 	serviceRegistry_getServiceReferences(registry, NULL, "test", NULL, &actual);
 	LONGS_EQUAL(1, arrayList_size(actual));
 	POINTERS_EQUAL(reference, arrayList_get(actual, 0));
+
+	free(registry);
 }
 
 TEST(service_registry, getService) {
@@ -379,11 +440,11 @@ TEST(service_registry, getService) {
 		.expectOneCall("serviceRegistration_isValid")
 		.withParameter("registration", registration)
 		.andReturnValue(true);
-	mock()
+	/*mock()
 		.expectOneCall("bundle_getCurrentModule")
 		.withParameter("bundle", bundle)
 		.withOutputParameterReturning("module", &module, sizeof(module))
-		.andReturnValue(CELIX_SUCCESS);
+		.andReturnValue(CELIX_SUCCESS);*/
 	mock()
 		.expectOneCall("serviceRegistration_getService")
 		.withParameter("registration", registration)
@@ -398,10 +459,12 @@ TEST(service_registry, getService) {
 	void *actual = NULL;
 	serviceRegistry_getService(registry, bundle, reference, &actual);
 	POINTERS_EQUAL(service, actual);
+
+	free(registry);
 }
 
 TEST(service_registry, ungetService) {
-	service_registry_pt registry = (service_registry_pt) malloc(sizeof(*registry));
+	service_registry_pt registry = (service_registry_pt) calloc(1,sizeof(*registry));
 	registry->inUseMap = hashMap_create(NULL, NULL, NULL, NULL);
 	celixThreadMutexAttr_create(&registry->mutexAttr);
     celixThreadMutexAttr_settype(&registry->mutexAttr, CELIX_THREAD_MUTEX_RECURSIVE);
@@ -425,7 +488,7 @@ TEST(service_registry, ungetService) {
 
 	array_list_pt usages = NULL;
 	arrayList_create(&usages);
-	usage_count_pt usage = (usage_count_pt) malloc(sizeof(*usage));
+	usage_count_pt usage = (usage_count_pt) calloc(1,sizeof(*usage));
 	usage->reference = reference;
 	arrayList_add(usages, usage);
 	hashMap_put(registry->inUseMap, bundle, usages);
@@ -435,18 +498,25 @@ TEST(service_registry, ungetService) {
 		.withParameter("reference", reference)
 		.withOutputParameterReturning("registration", &registration, sizeof(registration))
 		.andReturnValue(CELIX_SUCCESS);
+
+	bool out = true;
+	mock()
+			.expectOneCall("serviceReference_equals")
+			.withParameter("reference", reference)
+			.withParameter("compareTo", reference)
+			.withOutputParameterReturning("equal", &out, sizeof(out))
+			.andReturnValue(CELIX_SUCCESS);
+
 	mock()
 		.expectOneCall("serviceRegistration_isValid")
 		.withParameter("registration", registration)
 		.andReturnValue(true);
-	mock()
-	    .expectOneCall("serviceReference_destroy")
-	    .withParameter("reference", reference)
-	    .andReturnValue(CELIX_SUCCESS);
 
 	bool result = false;
 	serviceRegistry_ungetService(registry, bundle, reference, &result);
 	LONGS_EQUAL(1, result);
+
+	free(registry);
 }
 
 TEST(service_registry, ungetServivces) {
@@ -485,27 +555,42 @@ TEST(service_registry, ungetServivces) {
 		.withParameter("reference", reference)
 		.withOutputParameterReturning("registration", &registration, sizeof(registration))
 		.andReturnValue(CELIX_SUCCESS);
-//	mock()
-//		.expectOneCall("serviceReference_equals")
-//		.withParameter("reference", reference)
-//		.withParameter("compareTo", reference)
-//		.withOutputParameterReturning("equal", true)
-//		.andReturnValue(CELIX_SUCCESS);
+
+	bool out = true;
+	mock()
+			.expectOneCall("serviceReference_equals")
+			.withParameter("reference", reference)
+			.withParameter("compareTo", reference)
+			.withOutputParameterReturning("equal", &out, sizeof(out))
+			.andReturnValue(CELIX_SUCCESS);
+
+	out =  true;
+	mock()
+			.expectOneCall("serviceReference_equals")
+			.withParameter("reference", reference)
+			.withParameter("compareTo", reference)
+			.withOutputParameterReturning("equal", &out, sizeof(out))
+			.andReturnValue(CELIX_SUCCESS);
+
+	mock().expectOneCall("serviceRegistration_ungetService")
+			.withParameter("registration", registration)
+			.withParameter("bundle", bundle)
+			.withOutputParameterReturning("service", &reference, sizeof(reference));
+
 	mock()
 		.expectOneCall("serviceRegistration_isValid")
 		.withParameter("registration", registration)
 		.andReturnValue(true);
+
 	mock()
 		.expectOneCall("serviceReference_getServiceRegistration")
 		.withParameter("reference", reference)
 		.withOutputParameterReturning("registration", &registration, sizeof(registration))
 		.andReturnValue(CELIX_SUCCESS);
-	mock()
-        .expectOneCall("serviceReference_destroy")
-        .withParameter("reference", reference)
-        .andReturnValue(CELIX_SUCCESS);
 
 	serviceRegistry_ungetServices(registry, bundle);
+
+	free(registry);
 }
 
 TEST(service_registry, getUsingBundles) {
@@ -538,9 +623,19 @@ TEST(service_registry, getUsingBundles) {
 	arrayList_add(usages, usage);
 	hashMap_put(registry->inUseMap, bundle, usages);
 
+	bool out = true;
+	mock()
+			.expectOneCall("serviceReference_equals")
+			.withParameter("reference", reference)
+			.withParameter("compareTo", reference)
+			.withOutputParameterReturning("equal", &out, sizeof(out))
+			.andReturnValue(CELIX_SUCCESS);
+
 	array_list_pt actual = serviceRegistry_getUsingBundles(registry, reference);
 	LONGS_EQUAL(1, arrayList_size(actual));
 	POINTERS_EQUAL(bundle, arrayList_get(actual, 0));
+
+	free(registry);
 }
 
 TEST(service_registry, createServiceReference) {
@@ -549,16 +644,17 @@ TEST(service_registry, createServiceReference) {
 	celixThreadMutexAttr_create(&registry->mutexAttr);
     celixThreadMutexAttr_settype(&registry->mutexAttr, CELIX_THREAD_MUTEX_RECURSIVE);
 	celixThreadMutex_create(&registry->mutex, &registry->mutexAttr);
+	celixThreadMutex_create(&registry->referencesMapMutex, NULL);
 	registry->currentServiceId = 1l;
-	registry->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
+	registry->serviceReferences = hashMap_create(NULL, NULL, NULL, NULL);
 
 	bundle_pt bundle = (bundle_pt) 0x10;
 	service_registration_pt registration = (service_registration_pt) 0x20;
-//	array_list_pt registrations = NULL;
-//	arrayList_create(&registrations);
-//	arrayList_add(registrations, registration);
-//
-//	hashMap_put(registry->serviceRegistrations, bundle, registrations);
+	/*array_list_pt registrations = NULL;
+	arrayList_create(&registrations);
+	arrayList_add(registrations, registration);
+
+	hashMap_put(registry->serviceRegistrations, bundle, registrations);*/
 
 	array_list_pt references = NULL;
 	arrayList_create(&references);
@@ -578,22 +674,23 @@ TEST(service_registry, createServiceReference) {
 		.withOutputParameterReturning("reference", &reference, sizeof(reference))
 		.andReturnValue(CELIX_SUCCESS)
 		.ignoreOtherParameters();
-	mock()
-		.expectOneCall("serviceRegistration_getServiceReferences")
-		.withParameter("registration", registration)
-		.withOutputParameterReturning("references", &references, sizeof(references))
-		.andReturnValue(CELIX_SUCCESS);
 
 	service_reference_pt actual  = NULL;
 	serviceRegistry_createServiceReference(registry, NULL, registration, &actual);
 	POINTERS_EQUAL(reference, actual);
+
+	free(registry);
 }
 
 TEST(service_registry, getListenerHooks) {
 	service_registry_pt registry = (service_registry_pt) malloc(sizeof(*registry));
 	registry->listenerHooks = NULL;
 	arrayList_create(&registry->listenerHooks);
-
+	celixThreadMutexAttr_create(&registry->mutexAttr);
+	celixThreadMutexAttr_settype(&registry->mutexAttr, CELIX_THREAD_MUTEX_RECURSIVE);
+	celixThreadMutex_create(&registry->mutex, &registry->mutexAttr);
+	celixThreadMutex_create(&registry->referencesMapMutex, NULL);
+	registry->serviceReferences = hashMap_create(NULL, NULL, NULL, NULL);
 	bundle_pt bundle = (bundle_pt) 0x10;
 	service_registration_pt registration = (service_registration_pt) 0x20;
 	arrayList_add(registry->listenerHooks, registration);
@@ -616,23 +713,30 @@ TEST(service_registry, getListenerHooks) {
 		.withOutputParameterReturning("reference", &reference, sizeof(reference))
 		.andReturnValue(CELIX_SUCCESS)
 		.ignoreOtherParameters();
-	mock()
-		.expectOneCall("serviceRegistration_getServiceReferences")
-		.withParameter("registration", registration)
-		.withOutputParameterReturning("references", &references, sizeof(registration))
-		.andReturnValue(CELIX_SUCCESS);
 
 	array_list_pt hooks = NULL;
 	celix_status_t status = serviceRegistry_getListenerHooks(registry, NULL, &hooks);
 	LONGS_EQUAL(1, arrayList_size(hooks));
 	POINTERS_EQUAL(reference, arrayList_get(hooks, 0));
+
+	free(registry);
 }
 
 TEST(service_registry, servicePropertiesModified) {
 	service_registry_pt registry = (service_registry_pt) malloc(sizeof(*registry));
 	service_registration_pt registration = (service_registration_pt) 0x10;
 	properties_pt properties = (properties_pt) 0x20;
+	//test function, defined at top of this test file
+	registry->serviceChanged = serviceRegistryTest_serviceChanged;
+	registry->framework = (framework_pt) 0x30;
+
+	mock().expectOneCall("serviceRegistryTest_serviceChanged")
+		.withParameter("framework", registry->framework)
+		.withParameter("eventType", OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED)
+		.withParameter("registration", registration)
+		.withParameter("oldprops", properties);
 
 	serviceRegistry_servicePropertiesModified(registry, registration, properties);
-}
 
+	free(registry);
+}

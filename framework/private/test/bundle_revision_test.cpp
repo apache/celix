@@ -35,7 +35,7 @@ extern "C" {
 #include "bundle_revision_private.h"
 #include "celix_log.h"
 
-framework_logger_pt logger;
+framework_logger_pt logger = (framework_logger_pt) 0x10;
 }
 
 int main(int argc, char** argv) {
@@ -44,8 +44,6 @@ int main(int argc, char** argv) {
 
 TEST_GROUP(bundle_revision) {
 	void setup(void) {
-		logger = (framework_logger_pt) malloc(sizeof(*logger));
-        logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
@@ -71,11 +69,13 @@ TEST(bundle_revision, create) {
             .andReturnValue(CELIX_SUCCESS);
 
 	bundle_revision_pt revision = NULL;
-	celix_status_t status = bundleRevision_create(logger, root, location, revisionNr, inputFile, &revision);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
+	LONGS_EQUAL(CELIX_SUCCESS, bundleRevision_create(root, location, revisionNr, inputFile, &revision));
 	LONGS_EQUAL(revisionNr, revision->revisionNr);
 	STRCMP_EQUAL(root, revision->root);
 	STRCMP_EQUAL(location, revision->location);
+
+    mock().expectOneCall("manifest_destroy");
+	LONGS_EQUAL(CELIX_SUCCESS, bundleRevision_destroy(revision));
 }
 
 TEST(bundle_revision, createWithInput) {
@@ -96,55 +96,62 @@ TEST(bundle_revision, createWithInput) {
         .andReturnValue(CELIX_SUCCESS);
 
 	bundle_revision_pt revision = NULL;
-	celix_status_t status = bundleRevision_create(logger, root, location, revisionNr, inputFile, &revision);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
+	LONGS_EQUAL(CELIX_SUCCESS, bundleRevision_create(root, location, revisionNr, inputFile, &revision));
 	LONGS_EQUAL(revisionNr, revision->revisionNr);
 	STRCMP_EQUAL(root, revision->root);
 	STRCMP_EQUAL(location, revision->location);
+
+    mock().expectOneCall("manifest_destroy");
+	LONGS_EQUAL(CELIX_SUCCESS, bundleRevision_destroy(revision));
 }
 
 TEST(bundle_revision, getters) {
+	mock().expectNCalls(5, "framework_logCode").withParameter("code", CELIX_ILLEGAL_ARGUMENT);
+
 	bundle_revision_pt revision = (bundle_revision_pt) malloc(sizeof(*revision));
 	char root[] = "bundle_revision_test";
 	char location[] = "test_bundle.zip";
 	long revisionNr = 1l;
-	manifest_pt expected = (manifest_pt) 0x42;
+	manifest_pt expectedManifest = (manifest_pt) 0x42;
+	array_list_pt handles = NULL;
+	arrayList_create(&handles);
 	revision->root = root;
 	revision->location = location;
 	revision->revisionNr = revisionNr;
-	revision->manifest = expected;
+	revision->manifest = expectedManifest;
+	revision->libraryHandles = handles;
 
 	char *actualRoot = NULL;
 	char *actualLocation = NULL;
 	long actualRevisionNr = 0l;
 	manifest_pt actualManifest = NULL;
-	celix_status_t status = CELIX_SUCCESS;
+	array_list_pt actualHandles = NULL;
 
-	status = bundleRevision_getNumber(revision, &actualRevisionNr);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
+	LONGS_EQUAL(CELIX_SUCCESS, bundleRevision_getNumber(revision, &actualRevisionNr));
 	LONGS_EQUAL(revisionNr, actualRevisionNr);
 
-	status = bundleRevision_getLocation(revision, &actualLocation);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
+	LONGS_EQUAL(CELIX_SUCCESS, bundleRevision_getLocation(revision, &actualLocation));
 	STRCMP_EQUAL(location, actualLocation);
 
-	status = bundleRevision_getRoot(revision, &actualRoot);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
+	LONGS_EQUAL(CELIX_SUCCESS, bundleRevision_getRoot(revision, &actualRoot));
 	STRCMP_EQUAL(root, actualRoot);
 
-	status = bundleRevision_getManifest(revision, &actualManifest);
-    LONGS_EQUAL(CELIX_SUCCESS, status);
-    POINTERS_EQUAL(expected, actualManifest);
+	LONGS_EQUAL(CELIX_SUCCESS, bundleRevision_getManifest(revision, &actualManifest));
+    POINTERS_EQUAL(expectedManifest, actualManifest);
 
-	status = bundleRevision_getNumber(NULL, &actualRevisionNr);
-	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
+    LONGS_EQUAL(CELIX_SUCCESS, bundleRevision_getHandles(revision, &actualHandles));
+    POINTERS_EQUAL(handles, actualHandles);
 
-	status = bundleRevision_getLocation(NULL, &actualLocation);
-	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
+	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, bundleRevision_getNumber(NULL, &actualRevisionNr));
 
-	status = bundleRevision_getRoot(NULL, &actualRoot);
-	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
+	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, bundleRevision_getLocation(NULL, &actualLocation));
 
-	status = bundleRevision_getManifest(NULL, &actualManifest);
-	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
+	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, bundleRevision_getRoot(NULL, &actualRoot));
+
+	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, bundleRevision_getManifest(NULL, &actualManifest));
+
+	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, bundleRevision_getHandles(NULL, &actualHandles));
+
+	arrayList_destroy(handles);
+	free(revision);
 }

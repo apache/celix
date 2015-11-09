@@ -17,27 +17,25 @@
  *under the License.
  */
 /*
- * bundle_context_private.h
+ * celix_log_mock.c
  *
- *  \date       Feb 12, 2013
+ *  \date       Oct, 5 2015
  *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright  Apache License, Version 2.0
  */
+#include "CppUTestExt/MockSupport_c.h"
 
-
-#ifndef BUNDLE_CONTEXT_PRIVATE_H_
-#define BUNDLE_CONTEXT_PRIVATE_H_
-
-#include "bundle_context.h"
 #include "celix_log.h"
 
-struct bundleContext {
-#ifdef WITH_APR
-    apr_pool_t *pool;
-#endif
-	struct framework * framework;
-	struct bundle * bundle;
-};
+void framework_log(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line, char *fmsg, ...) {
+	mock_c()->actualCall("framework_log");
+}
 
+void framework_logCode(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line, celix_status_t code, char *fmsg, ...) {
+	mock_c()->actualCall("framework_logCode")->withIntParameters("code", code);
+}
 
-#endif /* BUNDLE_CONTEXT_PRIVATE_H_ */
+celix_status_t frameworkLogger_log(framework_log_level_t level, const char *func, const char *file, int line, char *msg) {
+	mock_c()->actualCall("frameworkLogger_log");
+	return mock_c()->returnValue().value.intValue;
+}

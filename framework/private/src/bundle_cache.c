@@ -37,7 +37,7 @@
 
 static celix_status_t bundleCache_deleteTree(bundle_cache_pt cache, char * directory);
 
-celix_status_t bundleCache_create(properties_pt configurationMap, framework_logger_pt logger, bundle_cache_pt *bundle_cache) {
+celix_status_t bundleCache_create(properties_pt configurationMap, bundle_cache_pt *bundle_cache) {
     celix_status_t status;
     bundle_cache_pt cache;
 
@@ -52,17 +52,15 @@ celix_status_t bundleCache_create(properties_pt configurationMap, framework_logg
                 cacheDir = ".cache";
             }
             cache->cacheDir = cacheDir;
-            cache->logger = logger;
 
             *bundle_cache = cache;
             status = CELIX_SUCCESS;
         } else {
             status = CELIX_ILLEGAL_ARGUMENT;
         }
-
-	    framework_logIfError(cache->logger, status, NULL, "Failed to create bundle cache");
     }
 
+    framework_logIfError(logger, status, NULL, "Failed to create bundle cache");
 
 	return status;
 }
@@ -123,7 +121,7 @@ celix_status_t bundleCache_getArchives(bundle_cache_pt cache, array_list_pt *arc
 	    status = CELIX_FILE_IO_EXCEPTION;
 	}
 
-	framework_logIfError(cache->logger, status, NULL, "Failed to get bundle archives");
+	framework_logIfError(logger, status, NULL, "Failed to get bundle archives");
 
 	return status;
 }
@@ -134,10 +132,10 @@ celix_status_t bundleCache_createArchive(bundle_cache_pt cache, long id, char * 
 
 	if (cache && location) {
 		snprintf(archiveRoot, sizeof(archiveRoot), "%s/bundle%ld",  cache->cacheDir, id);
-        status = bundleArchive_create(cache->logger, strdup(archiveRoot), id, location, inputFile, bundle_archive);
+        status = bundleArchive_create(archiveRoot, id, location, inputFile, bundle_archive);
 	}
 
-	framework_logIfError(cache->logger, status, NULL, "Failed to create archive");
+	framework_logIfError(logger, status, NULL, "Failed to create archive");
 
 	return status;
 }

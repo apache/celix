@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/stat.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "CppUTest/TestHarness.h"
@@ -37,17 +38,32 @@ extern "C" {
 #include "bundle_cache_private.h"
 #include "celix_log.h"
 
-framework_logger_pt logger;
+framework_logger_pt logger = (framework_logger_pt) 0x42;
 }
 
 int main(int argc, char** argv) {
 	return RUN_ALL_TESTS(argc, argv);
 }
 
+static char* my_strdup(const char* s) {
+	if (s == NULL) {
+		return NULL;
+	}
+
+	size_t len = strlen(s);
+
+	char *d = (char*) calloc(len + 1, sizeof(char));
+
+	if (d == NULL) {
+		return NULL;
+	}
+
+	strncpy(d, s, len);
+	return d;
+}
+
 TEST_GROUP(bundle_cache) {
 	void setup(void) {
-		logger = (framework_logger_pt) malloc(sizeof(*logger));
-        logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
@@ -65,23 +81,23 @@ TEST(bundle_cache, create) {
 		.andReturnValue((char *) NULL);
 
 	bundle_cache_pt cache = NULL;
-	celix_status_t status = bundleCache_create(configuration, logger, &cache);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
+	LONGS_EQUAL(CELIX_SUCCESS, bundleCache_create(configuration, &cache));
+
+	LONGS_EQUAL(CELIX_SUCCESS, bundleCache_destroy(&cache));
 }
 
 TEST(bundle_cache, deleteTree) {
 	bundle_cache_pt cache = (bundle_cache_pt) malloc(sizeof(*cache));
 	char cacheDir[] = "bundle_cache_test_directory";
-	char cacheFile[] = "bundle_cache_test_directory/temp";
+	char cacheDir2[] = "bundle_cache_test_directory/testdir";
+	char cacheFile[] = "bundle_cache_test_directory/tempXXXXXX";
 	cache->cacheDir = cacheDir;
 
 	mkdir(cacheDir, S_IRWXU);
+	mkdir(cacheDir2, S_IRWXU);
 	mktemp(cacheFile);
 
-	celix_status_t status = bundleCache_delete(cache);
-
-	LONGS_EQUAL(CELIX_SUCCESS, status);
-
+	LONGS_EQUAL(CELIX_SUCCESS, bundleCache_delete(cache));
 }
 
 TEST(bundle_cache, getArchive) {
@@ -102,15 +118,17 @@ TEST(bundle_cache, getArchive) {
 		.andReturnValue(CELIX_SUCCESS);
 
 	array_list_pt archives = NULL;
-	celix_status_t status = bundleCache_getArchives(cache, &archives);
+	LONGS_EQUAL(CELIX_SUCCESS, bundleCache_getArchives(cache, &archives));
 
-	LONGS_EQUAL(CELIX_SUCCESS, status);
 	CHECK(archives);
 	LONGS_EQUAL(1, arrayList_size(archives));
 	POINTERS_EQUAL(archive, arrayList_get(archives, 0));
 
 	rmdir(bundle0);
 	rmdir(bundle1);
+	rmdir(cacheDir);
+
+	LONGS_EQUAL(CELIX_SUCCESS, bundleCache_getArchives(cache, &archives));
 	rmdir(cacheDir);
 }
 
@@ -124,7 +142,6 @@ TEST(bundle_cache, createArchive) {
 	char location[] = "test.zip";
 	bundle_archive_pt archive = (bundle_archive_pt) 0x10;
 	mock().expectOneCall("bundleArchive_create")
-        .withParameter("logger", (void *) NULL)
 		.withParameter("archiveRoot", archiveRoot)
 		.withParameter("id", id)
 		.withParameter("location", location)

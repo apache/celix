@@ -258,6 +258,19 @@ void module_removeDependentImporter(module_pt module, module_pt importer) {
     arrayList_removeElement(module->dependentImporters, importer);
 }
 
+//----------------------------------------------------
+//TODO add implementation (functions not implemented but already exported)
+array_list_pt module_getDependentRequirers(module_pt module) {
+	return NULL;
+}
+
+void module_addDependentRequirer(module_pt module, module_pt requirer) {
+}
+
+void module_removeDependentRequirer(module_pt module, module_pt requirer) {
+}
+//----------------------------------------------------
+
 array_list_pt module_getDependents(module_pt module) {
     array_list_pt dependents = NULL;
     arrayList_create(&dependents);

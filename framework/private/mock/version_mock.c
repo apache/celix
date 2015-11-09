@@ -28,24 +28,32 @@
 #include "version.h"
 
 celix_status_t version_createVersion(int major, int minor, int micro, char * qualifier, version_pt *version) {
-	mock_c()->actualCall("version_createVersion");
+	mock_c()->actualCall("version_createVersion")
+		->withIntParameters("major", major)
+		->withIntParameters("minor", minor)
+		->withIntParameters("micro", micro)
+		->withStringParameters("qualifier", qualifier)
+		->withOutputParameter("version", version);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t version_destroy(version_pt version) {
-    mock_c()->actualCall("version_destroy");
+    mock_c()->actualCall("version_destroy")
+    		->withPointerParameters("version", version);
     return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t version_clone(version_pt version, version_pt *clone) {
-	mock_c()->actualCall("version_clone");
+	mock_c()->actualCall("version_clone")
+		->withPointerParameters("version", version)
+		->withOutputParameter("clone", clone);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t version_createVersionFromString(char * versionStr, version_pt *version) {
 	mock_c()->actualCall("version_createVersionFromString")
-	        ->withStringParameters("versionStr", versionStr)
-	        ->withOutputParameter("version", (void **) version);
+			->withStringParameters("versionStr", versionStr)
+	      ->withOutputParameter("version", (void **) version);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -56,36 +64,46 @@ celix_status_t version_createEmptyVersion(version_pt *version) {
 }
 
 celix_status_t version_getMajor(version_pt version, int *major) {
-	mock_c()->actualCall("version_getMajor");
+	mock_c()->actualCall("version_getMajor")
+			->withPointerParameters("version", version)
+			->withOutputParameter("major", major);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t version_getMinor(version_pt version, int *minor) {
-	mock_c()->actualCall("version_getMinor");
+	mock_c()->actualCall("version_getMinor")
+			->withPointerParameters("version", version)
+			->withOutputParameter("minor", minor);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t version_getMicro(version_pt version, int *micro) {
-	mock_c()->actualCall("version_getMicro");
+	mock_c()->actualCall("version_getMicro")
+			->withPointerParameters("version", version)
+			->withOutputParameter("micro", micro);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t version_getQualifier(version_pt version, char **qualifier) {
-	mock_c()->actualCall("version_getQualifier");
+	mock_c()->actualCall("version_getQualifier")
+			->withPointerParameters("version", version)
+			->withOutputParameter("qualifier", qualifier);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t version_compareTo(version_pt version, version_pt compare, int *result) {
     mock_c()->actualCall("version_compareTo")
-        ->withPointerParameters("version", version)
-        ->withPointerParameters("compare", compare)
-        ->withOutputParameter("result", result);
+    		->withPointerParameters("version", version)
+    		->withPointerParameters("compare", compare)
+    		->withOutputParameter("result", result);
     return CELIX_SUCCESS;
 }
 
 
 celix_status_t version_toString(version_pt version, char **string) {
-	mock_c()->actualCall("version_toString");
+	mock_c()->actualCall("version_toString")
+			->withPointerParameters("version", version)
+			->withOutputParameter("string", string);
 	return mock_c()->returnValue().value.intValue;
 }
 

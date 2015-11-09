@@ -64,7 +64,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
-	celix_status_t status;
+	celix_status_t status = CELIX_SUCCESS;
 
 	bundle_activator_pt activator = (bundle_activator_pt) userData;
 

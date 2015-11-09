@@ -48,7 +48,7 @@ static char *celix_error_string(celix_status_t statcode) {
 	case CELIX_SERVICE_EXCEPTION:
         return "Service exception";
 	}
-	return "Unkown code";
+	return "Unknown code";
 }
 
 char *celix_strerror(celix_status_t errorcode, char *buffer, size_t bufferSize) {

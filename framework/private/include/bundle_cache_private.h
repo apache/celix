@@ -33,7 +33,6 @@
 struct bundleCache {
 	properties_pt configurationMap;
 	char * cacheDir;
-	framework_logger_pt logger;
 };
 
 

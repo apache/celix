@@ -34,7 +34,7 @@
 #include "archive.h"
 #include "celix_log.h"
 
-celix_status_t bundleRevision_create(framework_logger_pt loggera, char *root, char *location, long revisionNr, char *inputFile, bundle_revision_pt *bundle_revision) {
+celix_status_t bundleRevision_create(char *root, char *location, long revisionNr, char *inputFile, bundle_revision_pt *bundle_revision) {
     celix_status_t status = CELIX_SUCCESS;
 	bundle_revision_pt revision = NULL;
 
@@ -61,7 +61,6 @@ celix_status_t bundleRevision_create(framework_logger_pt loggera, char *root, ch
                 revision->revisionNr = revisionNr;
                 revision->root = strdup(root);
                 revision->location = strdup(location);
-                revision->logger = loggera;
 
                 *bundle_revision = revision;
 

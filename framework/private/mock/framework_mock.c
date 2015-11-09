@@ -28,8 +28,8 @@
 #include "framework_private.h"
 
 celix_status_t framework_create(framework_pt *framework, properties_pt config) {
-        mock_c()->actualCall("framework_create");
-                return mock_c()->returnValue().value.intValue;
+	mock_c()->actualCall("framework_create");
+		return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t framework_destroy(framework_pt framework) {
@@ -174,12 +174,18 @@ celix_status_t framework_ungetService(framework_pt framework, bundle_pt bundle, 
 }
 
 celix_status_t fw_getBundleRegisteredServices(framework_pt framework, bundle_pt bundle, array_list_pt *services) {
-	mock_c()->actualCall("fw_getBundleRegisteredServices");
+	mock_c()->actualCall("fw_getBundleRegisteredServices")
+			->withPointerParameters("framework", framework)
+			->withPointerParameters("bundle", bundle)
+			->withOutputParameter("services", (void **) services);
 		return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t fw_getBundleServicesInUse(framework_pt framework, bundle_pt bundle, array_list_pt *services) {
-	mock_c()->actualCall("fw_getBundleServicesInUse");
+	mock_c()->actualCall("fw_getBundleServicesInUse")
+			->withPointerParameters("framework", framework)
+			->withPointerParameters("bundle", bundle)
+			->withOutputParameter("services", (void **) services);
 		return mock_c()->returnValue().value.intValue;
 }
 

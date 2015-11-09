@@ -45,7 +45,6 @@ celix_status_t bundleContext_create(framework_pt framework, framework_logger_pt 
         } else {
             context->framework = framework;
             context->bundle = bundle;
-            context->logger = logger;
 
             *bundle_context = context;
         }

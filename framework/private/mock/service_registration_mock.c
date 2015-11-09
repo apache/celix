@@ -50,6 +50,8 @@ service_registration_pt serviceRegistration_createServiceFactory(service_registr
 }
 
 celix_status_t serviceRegistration_destroy(service_registration_pt registration) {
+	mock_c()->actualCall("serviceRegistration_destroy")
+			->withPointerParameters("registration", registration);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -84,7 +86,7 @@ celix_status_t serviceRegistration_ungetService(service_registration_pt registra
 	mock_c()->actualCall("serviceRegistration_ungetService")
 			->withPointerParameters("registration", registration)
 			->withPointerParameters("bundle", bundle)
-			->withPointerParameters("service", *service);
+			->withOutputParameter("service", service);
 	return mock_c()->returnValue().value.intValue;
 }
 

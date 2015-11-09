@@ -38,5 +38,5 @@ configure_file(framework1.properties.in framework1.properties @ONLY)
 configure_file(framework2.properties.in framework2.properties @ONLY)
 
 add_test(NAME run_test_framework COMMAND test_framework)
-SETUP_TARGET_FOR_COVERAGE(test_framework_cov test_framework ${CMAKE_BINARY_DIR}/coverage/framework)
+SETUP_TARGET_FOR_COVERAGE(test_framework_cov test_framework ${CMAKE_BINARY_DIR}/coverage/framework/framework)
 

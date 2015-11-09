@@ -234,7 +234,7 @@ celix_status_t framework_create(framework_pt *framework, properties_pt config) {
             (*framework)->logger = logger;
 
 
-            status = CELIX_DO_IF(status, bundle_create(&(*framework)->bundle, (*framework)->logger));
+            status = CELIX_DO_IF(status, bundle_create(&(*framework)->bundle));
             status = CELIX_DO_IF(status, arrayList_create(&(*framework)->globalLockWaitersList));
             status = CELIX_DO_IF(status, bundle_setFramework((*framework)->bundle, (*framework)));
             if (status == CELIX_SUCCESS) {
@@ -372,7 +372,7 @@ celix_status_t fw_init(framework_pt framework) {
 	if (status == CELIX_SUCCESS) {
 	    if ((state == OSGI_FRAMEWORK_BUNDLE_INSTALLED) || (state == OSGI_FRAMEWORK_BUNDLE_RESOLVED)) {
 	        bundle_state_e state;
-	        status = CELIX_DO_IF(status, bundleCache_create(framework->configurationMap, framework->logger, &framework->cache));
+	        status = CELIX_DO_IF(status, bundleCache_create(framework->configurationMap,&framework->cache));
 	        status = CELIX_DO_IF(status, bundle_getState(framework->bundle, &state));
 	        if (status == CELIX_SUCCESS) {
 	            if (state == OSGI_FRAMEWORK_BUNDLE_INSTALLED) {

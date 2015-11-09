@@ -65,11 +65,11 @@ celix_status_t manifest_read(manifest_pt manifest, char *filename) {
 }
 
 void manifest_write(manifest_pt manifest, char * filename) {
-	mock_c()->actualCall("bundle_getCurrentModule");
+	mock_c()->actualCall("manifest_write");
 }
 
 char * manifest_getValue(manifest_pt manifest, const char * name) {
-	mock_c()->actualCall("bundle_getCurrentModule");
+	mock_c()->actualCall("manifest_getValue");
 	return (char *) mock_c()->returnValue().value.stringValue;
 }
 

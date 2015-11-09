@@ -200,7 +200,7 @@ void *serviceTracker_getServiceByReference(service_tracker_pt tracker, service_r
 	tracked_pt tracked;
 	unsigned int i;
 	for (i = 0; i < arrayList_size(tracker->tracked); i++) {
-		bool equals;
+		bool equals = false;
 		tracked = (tracked_pt) arrayList_get(tracker->tracked, i);
 		serviceReference_equals(reference, tracked->reference, &equals);
 		if (equals) {
@@ -232,7 +232,7 @@ static celix_status_t serviceTracker_track(service_tracker_pt tracker, service_r
 	int found = -1;
 	unsigned int i;
 	for (i = 0; i < arrayList_size(tracker->tracked); i++) {
-		bool equals;
+		bool equals = false;
 		tracked = (tracked_pt) arrayList_get(tracker->tracked, i);
 		serviceReference_equals(reference, tracked->reference, &equals);
 		if (equals) {

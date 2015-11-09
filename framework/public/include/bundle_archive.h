@@ -38,8 +38,8 @@
 
 typedef struct bundleArchive * bundle_archive_pt;
 
-celix_status_t bundleArchive_create(framework_logger_pt logger, char * archiveRoot, long id, char * location, char *inputFile, bundle_archive_pt *bundle_archive);
-celix_status_t bundleArchive_createSystemBundleArchive(framework_logger_pt logger, bundle_archive_pt *bundle_archive);
+celix_status_t bundleArchive_create(char * archiveRoot, long id, char * location, char *inputFile, bundle_archive_pt *bundle_archive);
+celix_status_t bundleArchive_createSystemBundleArchive(bundle_archive_pt *bundle_archive);
 celix_status_t bundleArchive_recreate(char * archiveRoot, bundle_archive_pt *bundle_archive);
 
 celix_status_t bundleArchive_destroy(bundle_archive_pt archive);

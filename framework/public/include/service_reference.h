@@ -44,6 +44,8 @@ FRAMEWORK_EXPORT celix_status_t serviceReference_getUsingBundles(service_referen
 FRAMEWORK_EXPORT celix_status_t serviceReference_getProperty(service_reference_pt reference, char *key, char **value);
 FRAMEWORK_EXPORT celix_status_t serviceReference_getPropertyKeys(service_reference_pt reference, char **keys[], unsigned int *size);
 
+FRAMEWORK_EXPORT celix_status_t serviceReference_getServiceRegistration(service_reference_pt reference, service_registration_pt *registration);
+
 FRAMEWORK_EXPORT celix_status_t serviceReference_equals(service_reference_pt reference, service_reference_pt compareTo, bool *equal);
 FRAMEWORK_EXPORT unsigned int serviceReference_hashCode(void *referenceP);
 FRAMEWORK_EXPORT int serviceReference_equals2(void *reference1, void *reference2);

@@ -55,7 +55,7 @@ celix_status_t log_destroy(log_pt *log) {
 }
 
 celix_status_t log_log(log_pt log, unsigned int type, properties_pt properties) {
-	celix_status_t status;
+	celix_status_t status = CELIX_SUCCESS;
 
 	log_event_pt event = NULL;
 

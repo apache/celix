@@ -28,26 +28,44 @@
 #include "CppUTest/TestHarness_c.h"
 #include "CppUTest/CommandLineTestRunner.h"
 #include "CppUTestExt/MockSupport.h"
+#include "string.h"
 
 extern "C"
 {
-	#include "version_range_private.h"
-	#include "version_private.h"
+#include "version_range_private.h"
+#include "version_private.h"
 
-    #include "celix_log.h"
+#include "celix_log.h"
 
-    framework_logger_pt logger;
+framework_logger_pt logger = (framework_logger_pt) 0x42;
 }
 
 int main(int argc, char** argv) {
 	return RUN_ALL_TESTS(argc, argv);
 }
 
+static char* my_strdup(const char* s) {
+	if (s == NULL) {
+		return NULL;
+	}
+
+	size_t len = strlen(s);
+
+	char *d = (char*) calloc(len + 1, sizeof(char));
+
+	if (d == NULL) {
+		return NULL;
+	}
+
+	strncpy(d, s, len);
+	return d;
+}
+
+//----------------------TESTGROUP DEFINES----------------------
+
 TEST_GROUP(version_range) {
 
 	void setup(void) {
-		logger = (framework_logger_pt) malloc(sizeof(*logger));
-        logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
@@ -68,6 +86,11 @@ TEST(version_range, create) {
 	LONGS_EQUAL(false, range->isLowInclusive);
 	POINTERS_EQUAL(version, range->low);
 	POINTERS_EQUAL(version, range->high);
+
+	mock().expectNCalls(2, "version_destroy");
+
+	versionRange_destroy(range);
+	free(version);
 }
 
 TEST(version_range, createInfinite) {
@@ -79,8 +102,8 @@ TEST(version_range, createInfinite) {
 	version->micro = 3;
 
 	mock()
-		.expectOneCall("version_createEmptyVersion")
-		.withOutputParameterReturning("version", &version, sizeof("version"));
+	.expectOneCall("version_createEmptyVersion")
+	.withOutputParameterReturning("version", &version, sizeof("version"));
 	status = versionRange_createInfiniteVersionRange(&range);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	CHECK_C(range != NULL);
@@ -88,10 +111,16 @@ TEST(version_range, createInfinite) {
 	LONGS_EQUAL(true, range->isLowInclusive);
 	POINTERS_EQUAL(version, range->low);
 	POINTERS_EQUAL(NULL, range->high);
+
+	mock().expectOneCall("version_destroy");
+
+	versionRange_destroy(range);
+	free(version);
 }
 
 TEST(version_range, isInRange) {
 	celix_status_t status = CELIX_SUCCESS;
+	bool result;
 	version_range_pt range = NULL;
 	version_pt version = (version_pt) malloc(sizeof(*version));
 	version->major = 1;
@@ -108,56 +137,95 @@ TEST(version_range, isInRange) {
 	high->minor = 2;
 	high->micro = 3;
 
-	versionRange_createVersionRange(low, true, high, true, &range);
-
 	int stat = 1;
 	mock()
-		.expectOneCall("version_compareTo")
-		.withParameter("version", version)
-		.withParameter("compare", low)
-	    .withOutputParameterReturning("result", &stat, sizeof(int));
+	.expectNCalls(5, "version_compareTo")
+	.withParameter("version", version)
+	.withParameter("compare", low)
+	.withOutputParameterReturning("result", &stat, sizeof(int));
 	int stat2 = -1;
 	mock()
-		.expectOneCall("version_compareTo")
-		.withParameter("version", version)
-		.withParameter("compare", high)
-		.withOutputParameterReturning("result", &stat2, sizeof(int));
+	.expectNCalls(4, "version_compareTo")
+	.withParameter("version", version)
+	.withParameter("compare", high)
+	.withOutputParameterReturning("result", &stat2, sizeof(int));
 
-	bool result;
-	status = versionRange_isInRange(range, version, &result);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
+	versionRange_createVersionRange(low, true, high, true, &range);
+	LONGS_EQUAL(CELIX_SUCCESS, versionRange_isInRange(range, version, &result));
 	LONGS_EQUAL(true, result);
+	mock().expectNCalls(2, "version_destroy");
+	versionRange_destroy(range);
+
+	versionRange_createVersionRange(low, true, NULL, true, &range);
+	LONGS_EQUAL(CELIX_SUCCESS, versionRange_isInRange(range, version, &result));
+	LONGS_EQUAL(true, result);
+	mock().expectOneCall("version_destroy");
+	versionRange_destroy(range);
+
+	versionRange_createVersionRange(low, false, high, true, &range);
+	LONGS_EQUAL(CELIX_SUCCESS, versionRange_isInRange(range, version, &result));
+	LONGS_EQUAL(true, result);
+	mock().expectNCalls(2, "version_destroy");
+	versionRange_destroy(range);
+
+	versionRange_createVersionRange(low, true, high, false, &range);
+	LONGS_EQUAL(CELIX_SUCCESS, versionRange_isInRange(range, version, &result));
+	LONGS_EQUAL(true, result);
+	mock().expectNCalls(2, "version_destroy");
+	versionRange_destroy(range);
+
+	versionRange_createVersionRange(low, false, high, false, &range);
+	LONGS_EQUAL(CELIX_SUCCESS, versionRange_isInRange(range, version, &result));
+	LONGS_EQUAL(true, result);
+	mock().expectNCalls(2, "version_destroy");
+	versionRange_destroy(range);
+
+	free(version);
+	free(high);
+	free(low);
 }
 
-// This test fails due to ordering of expected calls.
-//TEST(version_range, parse) {
-//	celix_status_t status = CELIX_SUCCESS;
-//	version_range_pt range = NULL;
-//	version_pt low = (version_pt) malloc(sizeof(*low));
-//	version_pt high = (version_pt) malloc(sizeof(*high));
-//
-//	low->major = 1;
-//	low->minor = 2;
-//	low->micro = 3;
-//
-//	high->major = 7;
-//	high->minor = 8;
-//	high->micro = 9;
-//
-//	mock().strictOrder();
-//	mock()
-//		.expectOneCall("version_createVersionFromString")
-//		.withParameter("versionStr", "7.8.9")
-//		.withOutputParameterReturning("version", &high, sizeof(high));
-//	mock()
-//        .expectOneCall("version_createVersionFromString")
-//        .withParameter("versionStr", "1.2.3")
-//        .withOutputParameterReturning("version", &low, sizeof(low));
-//
-//	std::string version = "[1.2.3, 7.8.9]";
-//	status = versionRange_parse((char *) version.c_str(), &range);
-//	LONGS_EQUAL(CELIX_SUCCESS, status);
-//}
+TEST(version_range, parse) {
+	celix_status_t status = CELIX_SUCCESS;
+	version_range_pt range = NULL;
+	version_pt low = (version_pt) malloc(sizeof(*low));
+	version_pt high = (version_pt) malloc(sizeof(*high));
+	char * version = my_strdup("[1.2.3,7.8.9]");
+	low->major = 1;
+	low->minor = 2;
+	low->micro = 3;
+
+	high->major = 7;
+	high->minor = 8;
+	high->micro = 9;
+
+	mock().expectNCalls(3, "version_destroy");
+
+	mock().expectOneCall("version_createVersionFromString")
+		   .withParameter("versionStr", "1.2.3")
+		   .withOutputParameterReturning("version", &low, sizeof(low));
+
+	mock().expectOneCall("version_createVersionFromString")
+			.withParameter("versionStr", "7.8.9")
+			.withOutputParameterReturning("version", &high, sizeof(high));
+
+	LONGS_EQUAL(CELIX_SUCCESS, versionRange_parse(version, &range));
+
+	versionRange_destroy(range);
+	free(version);
+	version = my_strdup("[1.2.3");
+
+	mock().expectOneCall("version_createVersionFromString")
+			.withParameter("versionStr", "[1.2.3")
+			.withOutputParameterReturning("version", &low, sizeof(low));
+
+	LONGS_EQUAL(CELIX_SUCCESS, versionRange_parse(version, &range));
+
+	versionRange_destroy(range);
+	free(version);
+	free(high);
+	free(low);
+}
 
 
 

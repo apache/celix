@@ -84,7 +84,7 @@ celix_status_t logHelper_create(bundle_context_pt context, log_helper_pt* loghel
 
 celix_status_t logHelper_start(log_helper_pt loghelper)
 {
-	celix_status_t status;
+	celix_status_t status = CELIX_SUCCESS;
 	service_tracker_customizer_pt logTrackerCustomizer = NULL;
 
 	status = serviceTrackerCustomizer_create(loghelper, NULL, logHelper_logServiceAdded, NULL, logHelper_logServiceRemoved, &logTrackerCustomizer);
@@ -126,7 +126,7 @@ celix_status_t logHelper_logServiceRemoved(void *handle, service_reference_pt re
 
 
 celix_status_t logHelper_stop(log_helper_pt loghelper) {
-	celix_status_t status;
+	celix_status_t status = CELIX_SUCCESS;
 
     status = serviceTracker_close(loghelper->logServiceTracker);
 

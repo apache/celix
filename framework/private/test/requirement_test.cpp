@@ -36,8 +36,9 @@ extern "C" {
 #include "attribute.h"
 #include "version_range.h"
 #include "celix_log.h"
+#include "utils.h"
 
-framework_logger_pt logger;
+framework_logger_pt logger = (framework_logger_pt) 0x42;
 }
 
 int main(int argc, char** argv) {
@@ -46,8 +47,6 @@ int main(int argc, char** argv) {
 
 TEST_GROUP(requirement) {
 	void setup(void) {
-		logger = (framework_logger_pt) malloc(sizeof(*logger));
-        logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
@@ -58,7 +57,7 @@ TEST_GROUP(requirement) {
 
 TEST(requirement, create) {
 	hash_map_pt directives = hashMap_create(NULL, NULL, NULL, NULL);
-	hash_map_pt attributes = hashMap_create(NULL, NULL, NULL, NULL);
+	hash_map_pt attributes = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 
 	attribute_pt serviceAttribute = (attribute_pt) 0x01;
 	hashMap_put(attributes, (void*) "service", serviceAttribute);
@@ -88,6 +87,11 @@ TEST(requirement, create) {
 
 	requirement_pt requirement = NULL;
 	requirement_create(directives, attributes, &requirement);
+
+	mock().expectNCalls(2, "attribute_destroy");
+	mock().expectOneCall("versionRange_destroy");
+
+	requirement_destroy(requirement);
 }
 
 TEST(requirement, getVersionRange) {
@@ -98,6 +102,8 @@ TEST(requirement, getVersionRange) {
 	version_range_pt actual = NULL;
 	requirement_getVersionRange(requirement, &actual);
 	POINTERS_EQUAL(versionRange, actual);
+
+	free(requirement);
 }
 
 TEST(requirement, getTargetName) {
@@ -108,6 +114,8 @@ TEST(requirement, getTargetName) {
 	char *actual = NULL;
 	requirement_getTargetName(requirement, &actual);
 	STRCMP_EQUAL(targetName, actual);
+
+	free(requirement);
 }
 
 TEST(requirement, isSatisfied) {
@@ -130,4 +138,6 @@ TEST(requirement, isSatisfied) {
 	bool inRange2 = false;
 	requirement_isSatisfied(requirement, capability, &inRange2);
 	CHECK(inRange2);
+
+	free(requirement);
 }

@@ -35,7 +35,7 @@ extern "C" {
 #include "bundle_context_private.h"
 #include "celix_log.h"
 
-framework_logger_pt logger;
+framework_logger_pt logger = (framework_logger_pt) 0x42;
 }
 
 int main(int argc, char** argv) {
@@ -44,8 +44,6 @@ int main(int argc, char** argv) {
 
 TEST_GROUP(bundle_context) {
 	void setup(void) {
-		logger = (framework_logger_pt) malloc(sizeof(*logger));
-        logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
@@ -55,17 +53,21 @@ TEST_GROUP(bundle_context) {
 };
 
 TEST(bundle_context, create) {
-	framework_pt framework = (framework_pt) 0x10;
-        bundle_pt bundle = (bundle_pt) 0x20;
+	mock().expectOneCall("framework_logCode").withParameter("code", CELIX_ILLEGAL_ARGUMENT);
 
-        bundle_context_pt context = NULL;
-        bundleContext_create(framework, logger, bundle, &context);
-        POINTERS_EQUAL(framework, context->framework)
-        POINTERS_EQUAL(bundle, context->bundle)
-//      CHECK(context->pool);
+	framework_pt framework = (framework_pt) 0x10;
+	bundle_pt bundle = (bundle_pt) 0x20;
+
+	bundle_context_pt context = NULL;
+	bundleContext_create(framework, logger, bundle, &context);
+	POINTERS_EQUAL(framework, context->framework)
+	POINTERS_EQUAL(bundle, context->bundle)
+
+	bundleContext_create(NULL, logger, NULL, &context);
 }
 
 TEST(bundle_context, destroy) {
+	mock().expectOneCall("framework_logCode").withParameter("code", CELIX_ILLEGAL_ARGUMENT);
 	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
@@ -80,41 +82,43 @@ TEST(bundle_context, destroy) {
 }
 
 TEST(bundle_context, getBundle) {
-        bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
-        framework_pt framework = (framework_pt) 0x10;
-        bundle_pt bundle = (bundle_pt) 0x20;
-        context->framework = framework;
-        context->bundle = bundle;
+	mock().expectNCalls(2, "framework_logCode").withParameter("code", CELIX_ILLEGAL_ARGUMENT);
 
-        celix_status_t status;
-        bundle_pt actualBundle = NULL;
+	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
+	framework_pt framework = (framework_pt) 0x10;
+	bundle_pt bundle = (bundle_pt) 0x20;
+	context->framework = framework;
+	context->bundle = bundle;
+
+	celix_status_t status;
+	bundle_pt actualBundle = NULL;
 	status = bundleContext_getBundle(context, &actualBundle);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	POINTERS_EQUAL(bundle, actualBundle);
 
 	framework_pt actualFramework = NULL;
 	status = bundleContext_getFramework(context, &actualFramework);
-        LONGS_EQUAL(CELIX_SUCCESS, status);
-        POINTERS_EQUAL(framework, actualFramework);
+	LONGS_EQUAL(CELIX_SUCCESS, status);
+	POINTERS_EQUAL(framework, actualFramework);
 
-        actualBundle = NULL;
-        status = bundleContext_getBundle(NULL, &actualBundle);
-        LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
+	actualBundle = NULL;
+	status = bundleContext_getBundle(NULL, &actualBundle);
+	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
 
-        actualFramework = NULL;
-        status = bundleContext_getFramework(NULL, &actualFramework);
-        LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
+	actualFramework = NULL;
+	status = bundleContext_getFramework(NULL, &actualFramework);
+	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
 }
 
 TEST(bundle_context, installBundle) {
-        bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
-        framework_pt framework = (framework_pt) 0x10;
-        bundle_pt bundle = (bundle_pt) 0x20;
-        context->framework = framework;
-        context->bundle = bundle;
+	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
+	framework_pt framework = (framework_pt) 0x10;
+	bundle_pt bundle = (bundle_pt) 0x20;
+	context->framework = framework;
+	context->bundle = bundle;
 
-        char location[] = "test.zip";
-        bundle_pt installedBundle = (bundle_pt) 0x40;
+	char location[] = "test.zip";
+	bundle_pt installedBundle = (bundle_pt) 0x40;
 	mock().expectOneCall("fw_installBundle")
 		.withParameter("framework", framework)
 		.withParameter("location", location)
@@ -129,6 +133,8 @@ TEST(bundle_context, installBundle) {
 }
 
 TEST(bundle_context, installBundle2) {
+	mock().expectOneCall("framework_logCode").withParameter("code", CELIX_ILLEGAL_ARGUMENT);
+
 	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
@@ -156,6 +162,8 @@ TEST(bundle_context, installBundle2) {
 }
 
 TEST(bundle_context, registerService) {
+	mock().expectOneCall("framework_logCode").withParameter("code", CELIX_ILLEGAL_ARGUMENT);
+
 	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
@@ -187,6 +195,8 @@ TEST(bundle_context, registerService) {
 }
 
 TEST(bundle_context, registerServiceFactory) {
+	mock().expectOneCall("framework_logCode").withParameter("code", CELIX_ILLEGAL_ARGUMENT);
+
 	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
@@ -218,6 +228,8 @@ TEST(bundle_context, registerServiceFactory) {
 }
 
 TEST(bundle_context, getServiceReferences) {
+	mock().expectOneCall("framework_logCode").withParameter("code", CELIX_ILLEGAL_ARGUMENT);
+
 	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
@@ -247,6 +259,8 @@ TEST(bundle_context, getServiceReferences) {
 }
 
 TEST(bundle_context, getServiceReference) {
+	mock().expectNCalls(3, "framework_logCode").withParameter("code", CELIX_ILLEGAL_ARGUMENT);
+
 	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
@@ -268,16 +282,38 @@ TEST(bundle_context, getServiceReference) {
 		.andReturnValue(CELIX_SUCCESS);
 
 	service_reference_pt actualReference = NULL;
-	celix_status_t status = bundleContext_getServiceReference(context, serviceName, &actualReference);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
+	LONGS_EQUAL(CELIX_SUCCESS, bundleContext_getServiceReference(context, serviceName, &actualReference));
 	POINTERS_EQUAL(reference, actualReference);
 
+	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, bundleContext_getServiceReference(NULL, serviceName, &actualReference));
 	actualReference = NULL;
-	status = bundleContext_getServiceReference(context, NULL, &actualReference);
-	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
+	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, bundleContext_getServiceReference(context, NULL, &actualReference));
+}
+
+TEST(bundle_context, ungetServiceReference) {
+	mock().expectOneCall("framework_logCode").withParameter("code", CELIX_ILLEGAL_ARGUMENT);
+
+	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
+	framework_pt framework = (framework_pt) 0x10;
+	bundle_pt bundle = (bundle_pt) 0x20;
+	context->framework = framework;
+	context->bundle = bundle;
+	service_reference_pt reference = (service_reference_pt) 0x30;
+
+    mock().expectOneCall("framework_ungetServiceReference")
+    		.withParameter("framework", framework)
+    		.withParameter("bundle", bundle)
+    		.withParameter("reference", reference);
+
+	service_reference_pt actualReference = NULL;
+	LONGS_EQUAL(CELIX_SUCCESS, bundleContext_ungetServiceReference(context, reference));
+
+    LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, bundleContext_ungetServiceReference(context, NULL));
 }
 
 TEST(bundle_context, getService) {
+	mock().expectOneCall("framework_logCode").withParameter("code", CELIX_ILLEGAL_ARGUMENT);
+
 	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
@@ -306,6 +342,8 @@ TEST(bundle_context, getService) {
 }
 
 TEST(bundle_context, ungetService) {
+	mock().expectOneCall("framework_logCode").withParameter("code", CELIX_ILLEGAL_ARGUMENT);
+
 	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
@@ -334,6 +372,8 @@ TEST(bundle_context, ungetService) {
 }
 
 TEST(bundle_context, getBundles) {
+	mock().expectOneCall("framework_logCode").withParameter("code", CELIX_ILLEGAL_ARGUMENT);
+
 	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
@@ -357,6 +397,8 @@ TEST(bundle_context, getBundles) {
 }
 
 TEST(bundle_context, getBundleById) {
+	mock().expectOneCall("framework_logCode").withParameter("code", CELIX_ILLEGAL_ARGUMENT);
+
 	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
@@ -382,6 +424,8 @@ TEST(bundle_context, getBundleById) {
 }
 
 TEST(bundle_context, addServiceListener) {
+	mock().expectOneCall("framework_logCode").withParameter("code", CELIX_ILLEGAL_ARGUMENT);
+
 	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
@@ -407,6 +451,8 @@ TEST(bundle_context, addServiceListener) {
 }
 
 TEST(bundle_context, removeServiceListener) {
+	mock().expectOneCall("framework_logCode").withParameter("code", CELIX_ILLEGAL_ARGUMENT);
+
 	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
@@ -430,6 +476,8 @@ TEST(bundle_context, removeServiceListener) {
 }
 
 TEST(bundle_context, addBundleListener) {
+	mock().expectOneCall("framework_logCode").withParameter("code", CELIX_ILLEGAL_ARGUMENT);
+
 	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
@@ -453,6 +501,8 @@ TEST(bundle_context, addBundleListener) {
 }
 
 TEST(bundle_context, removeBundleListener) {
+	mock().expectOneCall("framework_logCode").withParameter("code", CELIX_ILLEGAL_ARGUMENT);
+
 	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
@@ -475,7 +525,49 @@ TEST(bundle_context, removeBundleListener) {
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
 }
 
+TEST(bundle_context, addFrameworkListener){
+		mock().expectOneCall("framework_logCode").withParameter("code", CELIX_ILLEGAL_ARGUMENT);
+
+		bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
+		framework_pt framework = (framework_pt) 0x10;
+		bundle_pt bundle = (bundle_pt) 0x20;
+		context->framework = framework;
+		context->bundle = bundle;
+		framework_listener_pt listener = (framework_listener_pt) 0x30;
+
+	    mock().expectOneCall("fw_addframeworkListener")
+	    		.withParameter("framework", framework)
+	            .withParameter("bundle", bundle)
+	            .withParameter("listener", listener);
+
+		LONGS_EQUAL(CELIX_SUCCESS, bundleContext_addFrameworkListener(context, listener));
+
+		LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, bundleContext_addFrameworkListener(context, NULL));
+}
+
+TEST(bundle_context, removeFrameworkListener){
+		mock().expectOneCall("framework_logCode").withParameter("code", CELIX_ILLEGAL_ARGUMENT);
+
+		bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
+		framework_pt framework = (framework_pt) 0x10;
+		bundle_pt bundle = (bundle_pt) 0x20;
+		context->framework = framework;
+		context->bundle = bundle;
+		framework_listener_pt listener = (framework_listener_pt) 0x30;
+
+	    mock().expectOneCall("fw_removeframeworkListener")
+	    		.withParameter("framework", framework)
+	            .withParameter("bundle", bundle)
+	            .withParameter("listener", listener);
+
+		LONGS_EQUAL(CELIX_SUCCESS, bundleContext_removeFrameworkListener(context, listener));
+
+		LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, bundleContext_removeFrameworkListener(context, NULL));
+}
+
 TEST(bundle_context, getProperty) {
+	mock().expectOneCall("framework_logCode").withParameter("code", CELIX_ILLEGAL_ARGUMENT);
+
 	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
 	framework_pt framework = (framework_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;

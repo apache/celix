@@ -19,13 +19,14 @@
 /*
  * wire_test.cpp
  *
- *  \date       Dec 18, 2012
+ *  \date       Sep 25, 2015
  *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright  Apache License, Version 2.0
  */
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/TestHarness_c.h"
 #include "CppUTest/CommandLineTestRunner.h"
+#include "CppUTestExt/MockSupport.h"
 
 extern "C"
 {
@@ -37,7 +38,7 @@ extern "C"
 #include "requirement.h"
 #include "capability.h"
 
-framework_logger_pt logger;
+framework_logger_pt logger = (framework_logger_pt) 0x42;
 }
 
 int main(int argc, char** argv) {
@@ -47,30 +48,53 @@ int main(int argc, char** argv) {
 TEST_GROUP(wire) {
 
 	void setup(void) {
-	    logger = (framework_logger_pt) malloc(sizeof(*logger));
-        logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {
-	    free(logger);
+		mock().checkExpectations();
+		mock().clear();
 	}
 };
 
 
 TEST(wire, create) {
+	mock().expectOneCall("framework_logCode").withParameter("code", CELIX_ILLEGAL_ARGUMENT);
+
     module_pt module = (module_pt) 0x01;
     capability_pt cap = (capability_pt) 0x02;
     requirement_pt req = (requirement_pt) 0x03;
+    celix_status_t status;
+    wire_pt wire = NULL;
+
+    LONGS_EQUAL(CELIX_SUCCESS, wire_create(module, req, module, cap, &wire));
+
+    LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, wire_create(module, req, module, cap, &wire));
+
+    LONGS_EQUAL(CELIX_SUCCESS, wire_destroy(wire));
+}
+
+TEST(wire, get){
+    module_pt importer = (module_pt) 0x01;
+    module_pt exporter = (module_pt) 0x02;
+    capability_pt cap = (capability_pt) 0x03;
+    requirement_pt req = (requirement_pt) 0x04;
+    void * get;
 
     wire_pt wire = NULL;
 
-    wire_create(module, req, module, cap, &wire);
+    wire_create(importer, req, exporter, cap, &wire);
 
-	LONGS_EQUAL(1, 1);
+    wire_getImporter(wire, (module_pt*)&get);
+	POINTERS_EQUAL(importer, get);
+
+    wire_getExporter(wire, (module_pt*)&get);
+	POINTERS_EQUAL(exporter, get);
+
+    wire_getCapability(wire, (capability_pt*)&get);
+	POINTERS_EQUAL(cap, get);
+
+    wire_getRequirement(wire, (requirement_pt*)&get);
+	POINTERS_EQUAL(req, get);
 
 	wire_destroy(wire);
 }
-
-
-
-
