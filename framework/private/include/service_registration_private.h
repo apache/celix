@@ -51,11 +51,15 @@ struct serviceRegistration {
 
 	struct service *services;
 	int nrOfServices;
+
+	size_t refCount; //protected by mutex
 };
 
 service_registration_pt serviceRegistration_create(service_registry_pt registry, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary);
 service_registration_pt serviceRegistration_createServiceFactory(service_registry_pt registry, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary);
-celix_status_t serviceRegistration_destroy(service_registration_pt registration);
+
+void serviceRegistration_retain(service_registration_pt registration);
+void serviceRegistration_release(service_registration_pt registration);
 
 bool serviceRegistration_isValid(service_registration_pt registration);
 void serviceRegistration_invalidate(service_registration_pt registration);

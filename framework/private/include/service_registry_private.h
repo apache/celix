@@ -50,6 +50,7 @@ struct usageCount {
 	unsigned int count;
 	service_reference_pt reference;
 	void * service;
+	service_registration_pt registration;
 };
 
 typedef struct usageCount * usage_count_pt;

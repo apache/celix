@@ -28,6 +28,7 @@
 #include <constants.h>
 #include <stdint.h>
 #include <utils.h>
+#include <assert.h>
 
 #include "service_reference.h"
 
@@ -39,29 +40,53 @@
 #include "bundle.h"
 #include "celix_log.h"
 
-celix_status_t serviceReference_create(bundle_pt bundle, service_registration_pt registration, service_reference_pt *reference) {
+static void serviceReference_destroy(service_reference_pt);
+
+celix_status_t serviceReference_create(bundle_pt bundle, service_registration_pt registration, service_reference_pt *out) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	*reference = malloc(sizeof(**reference));
-	if (!*reference) {
+	service_reference_pt ref = calloc(1, sizeof(*ref));
+	if (!ref) {
 		status = CELIX_ENOMEM;
 	} else {
-
-		(*reference)->bundle = bundle;
-		(*reference)->registration = registration;
+		ref->bundle = bundle;
+		ref->registration = registration;
+		celixThreadMutex_create(&ref->mutex, NULL);
+		ref->refCount = 1;
 	}
 
-	framework_logIfError(logger, status, NULL, "Cannot create service reference");
+	if (status == CELIX_SUCCESS) {
+		*out = ref;
+	} else {
+		framework_logIfError(logger, status, NULL, "Cannot create service reference");
+	}
 
 	return status;
 }
 
-celix_status_t serviceReference_destroy(service_reference_pt *reference) {
-	(*reference)->bundle = NULL;
-	(*reference)->registration = NULL;
-	free(*reference);
-	*reference = NULL;
-	return CELIX_SUCCESS;
+void serviceReference_retain(service_reference_pt ref) {
+    celixThreadMutex_lock(&ref->mutex);
+    ref->refCount += 1;
+    celixThreadMutex_unlock(&ref->mutex);
+}
+
+void serviceReference_release(service_reference_pt ref) {
+    celixThreadMutex_lock(&ref->mutex);
+    assert(ref->refCount > 0);
+    ref->refCount -= 1;
+    if (ref->refCount == 0) {
+        serviceReference_destroy(ref);
+    } else {
+        celixThreadMutex_unlock(&ref->mutex);
+    }
+}
+
+static void serviceReference_destroy(service_reference_pt ref) {
+	assert(ref->refCount == 0);
+    celixThreadMutex_destroy(&ref->mutex);
+	ref->bundle = NULL;
+	ref->registration = NULL;
+	free(ref);
 }
 
 celix_status_t serviceReference_getBundle(service_reference_pt reference, bundle_pt *bundle) {
@@ -109,7 +134,7 @@ celix_status_t serviceReference_invalidate(service_reference_pt reference) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t serviceRefernce_isValid(service_reference_pt reference, bool *result) {
+celix_status_t serviceReference_isValid(service_reference_pt reference, bool *result) {
 	(*result) = reference->registration != NULL;
 	return CELIX_SUCCESS;
 }
@@ -117,22 +142,8 @@ celix_status_t serviceRefernce_isValid(service_reference_pt reference, bool *res
 bool serviceReference_isAssignableTo(service_reference_pt reference, bundle_pt requester, char * serviceName) {
 	bool allow = true;
 
-	bundle_pt provider = reference->bundle;
-	if (requester == provider) {
-		return allow;
-	}
-//	wire_pt providerWire = module_getWire(bundle_getCurrentModule(provider), serviceName);
-//	wire_pt requesterWire = module_getWire(bundle_getCurrentModule(requester), serviceName);
-//
-//	if (providerWire == NULL && requesterWire != NULL) {
-//		allow = (bundle_getCurrentModule(provider) == wire_getExporter(requesterWire));
-//	} else if (providerWire != NULL && requesterWire != NULL) {
-//		allow = (wire_getExporter(providerWire) == wire_getExporter(requesterWire));
-//	} else if (providerWire != NULL && requesterWire == NULL) {
-//		allow = (wire_getExporter(providerWire) == bundle_getCurrentModule(requester));
-//	} else {
-//		allow = false;
-//	}
+	/*NOTE for now always true. It would be nice to be able to do somechecks if the services are really assignable.
+	 */
 
 	return allow;
 }

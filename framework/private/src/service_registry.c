@@ -38,7 +38,9 @@
 #include "celix_log.h"
 
 static celix_status_t serviceRegistry_getUsageCount(service_registry_pt registry, bundle_pt bundle, service_reference_pt reference, usage_count_pt *usageCount);
-static celix_status_t serviceRegistry_addUsageCount(service_registry_pt registry, bundle_pt bundle, service_reference_pt reference, usage_count_pt *usageCount);
+static celix_status_t serviceRegistry_addUsageCount(service_registry_pt registry, bundle_pt bundle,
+                                                   service_reference_pt reference,
+                                                   service_registration_pt registration, usage_count_pt *usageCount);
 static celix_status_t serviceRegistry_flushUsageCount(service_registry_pt registry, bundle_pt bundle, service_reference_pt reference);
 
 celix_status_t serviceRegistry_registerServiceInternal(service_registry_pt registry, bundle_pt bundle, char * serviceName, void * serviceObject, properties_pt dictionary, bool isFactory, service_registration_pt *registration);
@@ -108,12 +110,17 @@ static celix_status_t serviceRegistry_getUsageCount(service_registry_pt registry
 	return CELIX_SUCCESS;
 }
 
-static celix_status_t serviceRegistry_addUsageCount(service_registry_pt registry, bundle_pt bundle, service_reference_pt reference, usage_count_pt *usageCount) {
+static celix_status_t serviceRegistry_addUsageCount(service_registry_pt registry, bundle_pt bundle,
+                                                   service_reference_pt reference,
+                                                   service_registration_pt registration, usage_count_pt *usageCount) {
 	array_list_pt usages = hashMap_get(registry->inUseMap, bundle);
 	usage_count_pt usage = malloc(sizeof(*usage));
 	usage->reference = reference;
 	usage->count = 0;
 	usage->service = NULL;
+    usage->registration = registration;
+
+    serviceRegistration_retain(registration);
 
 	if (usages == NULL) {
 		arrayList_create(&usages);
@@ -134,6 +141,7 @@ static celix_status_t serviceRegistry_flushUsageCount(service_registry_pt regist
 			serviceReference_equals(usage->reference, reference, &equals);
 			if (equals) {
 				arrayListIterator_remove(iter);
+                serviceRegistration_release(usage->registration);
 				free(usage);
 			}
 		}
@@ -262,10 +270,8 @@ celix_status_t serviceRegistry_unregisterService(service_registry_pt registry, b
 	}
 	arrayList_destroy(references);
 
-	//TODO not needed, the registration is destroyed, any reference to the registration is invalid and will result in a segfault
-	serviceRegistration_invalidate(registration);
-
-	// serviceRegistration_destroy(registration);
+    serviceRegistration_invalidate(registration);
+    serviceRegistration_release(registration);
 
 	celixThreadMutex_unlock(&registry->mutex);
 
@@ -345,7 +351,7 @@ celix_status_t serviceRegistry_getServiceReferencesForRegistration(service_regis
             service_registration_pt reg = NULL;
             service_reference_pt reference = (service_reference_pt) arrayList_get(refs, refIdx);
             bool valid = false;
-            serviceRefernce_isValid(reference, &valid);
+			serviceReference_isValid(reference, &valid);
             if (valid) {
                 serviceReference_getServiceRegistration(reference, &reg);
                 if (reg == registration) {
@@ -421,7 +427,7 @@ celix_status_t serviceRegistry_ungetServiceReference(service_registry_pt registr
     celix_status_t status = CELIX_SUCCESS;
 
     bool valid = false;
-    serviceRefernce_isValid(reference, &valid);
+	serviceReference_isValid(reference, &valid);
     if (valid) {
         bool ungetResult = true;
         while (ungetResult) {
@@ -433,7 +439,7 @@ celix_status_t serviceRegistry_ungetServiceReference(service_registry_pt registr
     array_list_pt references = hashMap_get(registry->serviceReferences, owner);
     if (references != NULL) {
         arrayList_removeElement(references, reference);
-        serviceReference_destroy(&reference);
+        serviceReference_release(reference);
         if (arrayList_size(references) > 0) {
             hashMap_put(registry->serviceReferences, owner, references);
         } else {
@@ -494,7 +500,7 @@ celix_status_t serviceRegistry_getService(service_registry_pt registry, bundle_p
 	if (serviceRegistration_isValid(registration)) {
 		status = serviceRegistry_getUsageCount(registry, bundle, reference, &usage);
 		if (usage == NULL) {
-			status = serviceRegistry_addUsageCount(registry, bundle, reference, &usage);
+			status = serviceRegistry_addUsageCount(registry, bundle, reference, registration, &usage);
 		}
 		usage->count++;
 		*service = usage->service;

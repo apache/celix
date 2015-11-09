@@ -33,12 +33,17 @@
 struct serviceReference {
 	bundle_pt bundle;
 	struct serviceRegistration * registration;
+
+	size_t refCount;
+    celix_thread_mutex_t mutex; //protects refCount
 };
 
 celix_status_t serviceReference_create(bundle_pt bundle, service_registration_pt registration, service_reference_pt *reference);
-celix_status_t serviceReference_destroy(service_reference_pt *reference);
+
+void serviceReference_retain(service_reference_pt ref);
+void serviceReference_release(service_reference_pt ref);
 
 celix_status_t serviceReference_invalidate(service_reference_pt reference);
-celix_status_t serviceRefernce_isValid(service_reference_pt reference, bool *result);
+celix_status_t serviceReference_isValid(service_reference_pt reference, bool *result);
 
 #endif /* SERVICE_REFERENCE_PRIVATE_H_ */
