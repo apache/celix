@@ -38,7 +38,11 @@ struct serviceTrackerCustomizer {
 	celix_status_t (*addingService)(void * handle, service_reference_pt reference, void **service);
 	celix_status_t (*addedService)(void * handle, service_reference_pt reference, void * service);
 	celix_status_t (*modifiedService)(void * handle, service_reference_pt reference, void * service);
+
+	/*TODO rename to removingService. because it is invoke during remove not after!*/
 	celix_status_t (*removedService)(void * handle, service_reference_pt reference, void * service);
+
+	/*TODO add removed function ? invoked after the remove ?? */
 };
 
 

@@ -200,6 +200,8 @@ celix_status_t properties_copy(properties_pt properties, properties_pt *out) {
 	if (status == CELIX_SUCCESS) {
 		*out = copy;
 	}
+
+	return status;
 }
 
 char * properties_get(properties_pt properties, char * key) {

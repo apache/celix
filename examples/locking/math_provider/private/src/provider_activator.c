@@ -73,6 +73,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 	activator->context = context;
 	activator->benchmarkName = NULL;
 	activator->freqService  = NULL;
+	activator->registration = NULL;
 	activator->freqRegistration  = NULL;
 	activator->updateFrequency = 0;
 	activator->nrOfThreads = 0;

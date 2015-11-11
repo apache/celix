@@ -33,8 +33,7 @@
 struct serviceRegistry {
 	framework_pt framework;
 	hash_map_pt serviceRegistrations;
-	hash_map_pt serviceReferences;
-	hash_map_pt inUseMap;
+	hash_map_pt serviceReferences; //key = bundle, value = map (key = registration, value = reference)
 	serviceChanged_function_pt serviceChanged;
 	long currentServiceId;
 
@@ -44,6 +43,7 @@ struct serviceRegistry {
 	celix_thread_mutexattr_t mutexAttr;
 
 	celix_thread_mutex_t referencesMapMutex;
+
 };
 
 struct usageCount {

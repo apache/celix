@@ -112,11 +112,8 @@ static celix_status_t serviceRegistration_destroy(service_registration_pt regist
 	registration->registry = NULL;
 
 	properties_destroy(registration->properties);
-
 	celixThreadMutex_destroy(&registration->mutex);
-
 	free(registration);
-	registration = NULL;
 
 	return CELIX_SUCCESS;
 }
@@ -223,20 +220,6 @@ celix_status_t serviceRegistration_getRegistry(service_registration_pt registrat
 	}
 
 	framework_logIfError(logger, status, NULL, "Cannot get registry");
-
-	return status;
-}
-
-celix_status_t serviceRegistration_getServiceReferences(service_registration_pt registration, array_list_pt *references) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	if (registration != NULL && *references == NULL) {
-	    serviceRegistry_getServiceReferencesForRegistration(registration->registry, registration, references);
-	} else {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	framework_logIfError(logger, status, NULL, "Cannot get service reference");
 
 	return status;
 }

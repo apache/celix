@@ -31,19 +31,28 @@
 #include "service_reference.h"
 
 struct serviceReference {
-	bundle_pt bundle;
+	bundle_pt referenceOwner;
 	struct serviceRegistration * registration;
+    bundle_pt registrationBundle;
 
 	size_t refCount;
-    celix_thread_mutex_t mutex; //protects refCount
+    size_t usageCount;
+
+    celix_thread_rwlock_t lock;
 };
 
-celix_status_t serviceReference_create(bundle_pt bundle, service_registration_pt registration, service_reference_pt *reference);
+celix_status_t serviceReference_create(bundle_pt referenceOwner, service_registration_pt registration, service_reference_pt *reference);
 
-void serviceReference_retain(service_reference_pt ref);
-void serviceReference_release(service_reference_pt ref);
+celix_status_t serviceReference_retain(service_reference_pt ref);
+celix_status_t serviceReference_release(service_reference_pt ref, bool *destroyed);
+
+celix_status_t serviceReference_increaseUsage(service_reference_pt ref);
+celix_status_t serviceReference_decreaseUsage(service_reference_pt ref);
 
 celix_status_t serviceReference_invalidate(service_reference_pt reference);
 celix_status_t serviceReference_isValid(service_reference_pt reference, bool *result);
+
+celix_status_t serviceReference_getUsageCount(service_reference_pt reference, size_t *count);
+celix_status_t serviceReference_getReferenceCount(service_reference_pt reference, size_t *count);
 
 #endif /* SERVICE_REFERENCE_PRIVATE_H_ */

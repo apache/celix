@@ -39,8 +39,6 @@ FRAMEWORK_EXPORT celix_status_t serviceReference_getBundle(service_reference_pt 
 
 FRAMEWORK_EXPORT bool serviceReference_isAssignableTo(service_reference_pt reference, bundle_pt requester, char * serviceName);
 
-FRAMEWORK_EXPORT celix_status_t serviceReference_getUsingBundles(service_reference_pt reference, array_list_pt *bundles);
-
 FRAMEWORK_EXPORT celix_status_t serviceReference_getProperty(service_reference_pt reference, char *key, char **value);
 FRAMEWORK_EXPORT celix_status_t serviceReference_getPropertyKeys(service_reference_pt reference, char **keys[], unsigned int *size);
 

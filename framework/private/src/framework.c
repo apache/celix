@@ -910,7 +910,7 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
 	        }
 
             if (id != 0) {
-                status = CELIX_DO_IF(status, serviceRegistry_unregisterServices(framework->registry, bundle));
+                status = CELIX_DO_IF(status, serviceRegistry_clearServiceRegistrations(framework->registry, bundle));
                 if (status == CELIX_SUCCESS) {
                     module_pt module = NULL;
                     char *symbolicName = NULL;
@@ -919,8 +919,7 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
                     module_getSymbolicName(module, &symbolicName);
                     bundle_getBundleId(bundle, &id);
 
-                    serviceRegistry_ungetServices(framework->registry, bundle);
-                    serviceRegistry_ungetServiceReferences(framework->registry, bundle);
+                    serviceRegistry_clearReferencesFor(framework->registry, bundle);
                 }
                 // #TODO remove listeners for bundle
 
@@ -1294,14 +1293,13 @@ celix_status_t fw_registerService(framework_pt framework, service_registration_p
                     }
                 }
 
-                bool ungetResult = false;
-
-                status = CELIX_DO_IF(status, serviceRegistry_createServiceReference(framework->registry, framework->bundle, *registration, &ref));
+                status = CELIX_DO_IF(status, serviceRegistry_getServiceReference(framework->registry, framework->bundle,
+                                                                                 *registration, &ref));
                 status = CELIX_DO_IF(status, fw_getService(framework,framework->bundle, ref, (void **) &hook));
                 if (status == CELIX_SUCCESS) {
                     hook->added(hook->handle, infos);
                 }
-                status = CELIX_DO_IF(status, serviceRegistry_ungetService(framework->registry, framework->bundle, ref, &ungetResult));
+                status = CELIX_DO_IF(status, serviceRegistry_ungetService(framework->registry, framework->bundle, ref, NULL));
                 status = CELIX_DO_IF(status, serviceRegistry_ungetServiceReference(framework->registry, framework->bundle, ref));
 
                 int i = 0;
@@ -1633,15 +1631,21 @@ void fw_serviceChanged(framework_pt framework, service_event_type_e eventType, s
 
 				event = (service_event_pt) malloc(sizeof(*event));
 
-				serviceRegistry_createServiceReference(framework->registry, element->bundle, registration, &reference);
+                serviceRegistry_getServiceReference(framework->registry, element->bundle, registration, &reference);
 
 				event->type = eventType;
 				event->reference = reference;
 
 				element->listener->serviceChanged(element->listener, event);
 
-				free(event);
-				//TODO cleanup service reference
+                if (eventType != OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED) {
+                    serviceRegistry_ungetServiceReference(framework->registry, element->bundle, reference);
+                }
+                if (eventType == OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING) {
+                    serviceRegistry_ungetServiceReference(framework->registry, element->bundle, reference);
+                }
+
+                free(event);
 
 			} else if (eventType == OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED) {
 				bool matchResult = false;
@@ -1654,14 +1658,16 @@ void fw_serviceChanged(framework_pt framework, service_event_type_e eventType, s
 					service_reference_pt reference = NULL;
 					service_event_pt endmatch = (service_event_pt) malloc(sizeof(*endmatch));
 
-					serviceRegistry_createServiceReference(framework->registry, element->bundle, registration, &reference);
+                    serviceRegistry_getServiceReference(framework->registry, element->bundle, registration, &reference);
 
 					endmatch->reference = reference;
 					endmatch->type = OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED_ENDMATCH;
 					element->listener->serviceChanged(element->listener, endmatch);
 
-					//TODO clean up serviceReference after serviceChanged update
-				}
+                    serviceRegistry_ungetServiceReference(framework->registry, element->bundle, reference);
+                    free(endmatch);
+
+                }
 			}
 		}
 	}
