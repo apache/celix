@@ -43,7 +43,7 @@ void dmListCommand_execute(bundle_context_pt context, char * line, FILE *out, FI
     array_list_pt servRefs = NULL;
     int i;
     bundleContext_getServiceReferences(context, DM_INFO_SERVICE_NAME ,NULL, &servRefs);
-    char *term = getenv("TERM");
+    char *term = secure_getenv("TERM");
     bool colors = false;
     if (strcmp("xterm-256color", term) == 0) {
         colors = true;

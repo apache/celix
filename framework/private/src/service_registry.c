@@ -201,7 +201,6 @@ celix_status_t serviceRegistry_clearServiceRegistrations(service_registry_pt reg
     celix_status_t status = CELIX_SUCCESS;
     array_list_pt registrations = NULL;
 
-
     celixThreadMutex_lock(&registry->mutex);
 
     registrations = hashMap_get(registry->serviceRegistrations, bundle);
@@ -386,8 +385,7 @@ celix_status_t serviceRegistry_clearReferencesFor(service_registry_pt registry, 
             serviceRegistry_logWarningServiceReferenceUsageCount(registry, usageCount, refCount);
 
             while (usageCount > 0) {
-                serviceReference_decreaseUsage(ref);
-                serviceReference_getUsageCount(ref, &usageCount);
+                serviceReference_decreaseUsage(ref, &usageCount);
             }
 
             bool destroyed = false;
@@ -431,14 +429,21 @@ celix_status_t serviceRegistry_getServicesInUse(service_registry_pt registry, bu
 celix_status_t serviceRegistry_getService(service_registry_pt registry, bundle_pt bundle, service_reference_pt reference, void **out) {
 	celix_status_t status = CELIX_SUCCESS;
 	service_registration_pt registration = NULL;
+    size_t count = 0;
+    void *service = NULL;
 
 	serviceReference_getServiceRegistration(reference, &registration);
-	
 	celixThreadMutex_lock(&registry->mutex);
 
+
 	if (serviceRegistration_isValid(registration)) {
-        serviceReference_increaseUsage(reference);
-		serviceRegistration_getService(registration, bundle, out);
+        serviceReference_increaseUsage(reference, &count);
+        if (count == 1) {
+            serviceRegistration_getService(registration, bundle, &service);
+            serviceReference_setService(reference, service);
+        }
+
+        serviceReference_getService(reference, out);
 	} else {
         *out = NULL; //invalid service registration
     }
@@ -451,8 +456,18 @@ celix_status_t serviceRegistry_getService(service_registry_pt registry, bundle_p
 
 celix_status_t serviceRegistry_ungetService(service_registry_pt registry, bundle_pt bundle, service_reference_pt reference, bool *result) {
 	celix_status_t status = CELIX_SUCCESS;
+    service_registration_pt reg = NULL;
+    void *service = NULL;
+    size_t count = 0;
 
-    celix_status_t subStatus = serviceReference_decreaseUsage(reference);
+    celix_status_t subStatus = serviceReference_decreaseUsage(reference, &count);
+
+    if (count == 0) {
+        serviceReference_getService(reference, &service);
+        serviceReference_getServiceRegistration(reference, &reg);
+        serviceRegistration_ungetService(reg, bundle, &service);
+    }
+
     if (result) {
         *result = (subStatus == CELIX_SUCCESS);
     }

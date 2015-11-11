@@ -43,7 +43,7 @@
 static void serviceReference_destroy(service_reference_pt);
 static void serviceReference_logWarningUsageCountBelowZero(service_reference_pt ref);
 
-celix_status_t serviceReference_create(bundle_pt referenceOwner, service_registration_pt registration, service_reference_pt *out) {
+celix_status_t serviceReference_create(bundle_pt referenceOwner, service_registration_pt registration,  service_reference_pt *out) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	service_reference_pt ref = calloc(1, sizeof(*ref));
@@ -53,6 +53,7 @@ celix_status_t serviceReference_create(bundle_pt referenceOwner, service_registr
         serviceRegistration_retain(registration);
 		ref->referenceOwner = referenceOwner;
 		ref->registration = registration;
+        ref->service = NULL;
         serviceRegistration_getBundle(registration, &ref->registrationBundle);
 		celixThreadRwlock_create(&ref->lock, NULL);
 		ref->refCount = 1;
@@ -76,6 +77,23 @@ celix_status_t serviceReference_retain(service_reference_pt ref) {
 }
 
 celix_status_t serviceReference_release(service_reference_pt ref, bool *out) {
+    celixThreadRwlock_writeLock(&ref->lock);
+    if (ref->refCount > 0) {
+        ref->refCount -= 1;
+    } else {
+        fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "serviceReference_release error serv reference count already at 0\n");
+    }
+
+    if (out) {
+        *out = ref->refCount == 0;
+    }
+
+    celixThreadRwlock_unlock(&ref->lock);
+    return CELIX_SUCCESS;
+}
+
+/* TODO enable, for now use a leak version to prevent to much errors
+celix_status_t serviceReference_release(service_reference_pt ref, bool *out) {
     bool destroyed = false;
     celixThreadRwlock_writeLock(&ref->lock);
     assert(ref->refCount > 0);
@@ -91,17 +109,23 @@ celix_status_t serviceReference_release(service_reference_pt ref, bool *out) {
         *out = destroyed;
     }
     return CELIX_SUCCESS;
-}
+}*/
 
-celix_status_t serviceReference_increaseUsage(service_reference_pt ref) {
+celix_status_t serviceReference_increaseUsage(service_reference_pt ref, size_t *out) {
+    size_t local = 0;
     celixThreadRwlock_writeLock(&ref->lock);
     ref->usageCount += 1;
+    local = ref->usageCount;
     celixThreadRwlock_unlock(&ref->lock);
+    if (out) {
+        *out = local;
+    }
     return CELIX_SUCCESS;
 }
 
-celix_status_t serviceReference_decreaseUsage(service_reference_pt ref) {
+celix_status_t serviceReference_decreaseUsage(service_reference_pt ref, size_t *out) {
     celix_status_t status = CELIX_SUCCESS;
+    size_t localCount = 0;
     celixThreadRwlock_writeLock(&ref->lock);
     if (ref->usageCount == 0) {
         serviceReference_logWarningUsageCountBelowZero(ref);
@@ -109,7 +133,12 @@ celix_status_t serviceReference_decreaseUsage(service_reference_pt ref) {
     } else {
         ref->usageCount -= 1;
     }
+    localCount = ref->usageCount;
     celixThreadRwlock_unlock(&ref->lock);
+
+    if (out) {
+        *out = localCount;
+    }
     return status;
 }
 
@@ -130,6 +159,22 @@ celix_status_t serviceReference_getReferenceCount(service_reference_pt ref, size
     celix_status_t status = CELIX_SUCCESS;
     celixThreadRwlock_readLock(&ref->lock);
     *count = ref->refCount;
+    celixThreadRwlock_unlock(&ref->lock);
+    return status;
+}
+
+celix_status_t serviceReference_getService(service_reference_pt ref, void **service) {
+    celix_status_t status = CELIX_SUCCESS;
+    celixThreadRwlock_readLock(&ref->lock);
+    *service = ref->service;
+    celixThreadRwlock_unlock(&ref->lock);
+    return status;
+}
+
+celix_status_t serviceReference_setService(service_reference_pt ref, void *service) {
+    celix_status_t status = CELIX_SUCCESS;
+    celixThreadRwlock_writeLock(&ref->lock);
+    ref->service = service;
     celixThreadRwlock_unlock(&ref->lock);
     return status;
 }
