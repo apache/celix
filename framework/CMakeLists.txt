@@ -259,8 +259,8 @@ if (FRAMEWORK)
             private/mock/requirement_mock.c
             private/mock/capability_mock.c
             private/mock/manifest_parser_mock.c
-            private/mock/wire_mock.c
             private/mock/version_mock.c
+            private/src/wire.c
             private/src/module.c
             private/src/resolver.c
             private/src/celix_errorcodes.c
@@ -348,9 +348,9 @@ if (FRAMEWORK)
 	        private/test/wire_test.cpp) 
 		target_link_libraries(wire_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY})
 		
-		configure_file(private/resources-test/manifest_sections.txt ${CMAKE_BINARY_DIR}/framework/resources-test/manifest_sections.txt [COPYONLY])
-		configure_file(private/resources-test/manifest.txt ${CMAKE_BINARY_DIR}/framework/resources-test/manifest.txt [COPYONLY])
-		configure_file(private/resources-test/properties.txt ${CMAKE_BINARY_DIR}/framework/resources-test/properties.txt [COPYONLY])
+		configure_file(private/resources-test/manifest_sections.txt ${CMAKE_BINARY_DIR}/framework/resources-test/manifest_sections.txt COPYONLY)
+		configure_file(private/resources-test/manifest.txt ${CMAKE_BINARY_DIR}/framework/resources-test/manifest.txt COPYONLY)
+		configure_file(private/resources-test/properties.txt ${CMAKE_BINARY_DIR}/framework/resources-test/properties.txt COPYONLY)
 				
 		#set_target_properties(wire_test PROPERTIES COMPILE_FLAGS "-include ${CPPUTEST_INCLUDE_DIR}/CppUTest/MemoryLeakDetectorMallocMacros.h -include ${CPPUTEST_INCLUDE_DIR}/CppUTest/MemoryLeakDetectorNewMacros.h")
 			
@@ -381,7 +381,7 @@ if (FRAMEWORK)
 	     add_test(NAME wire_test COMMAND wire_test)
 	    
 	     SETUP_TARGET_FOR_COVERAGE(attribute_test attribute_test ${CMAKE_BINARY_DIR}/coverage/attribute_test/attribute_test)
-        SETUP_TARGET_FOR_COVERAGE(bundle_archive_test bundle_archive_test ${CMAKE_BINARY_DIR}/coverage/bundle_archive/bundle_archive_test)
+        SETUP_TARGET_FOR_COVERAGE(bundle_archive_test bundle_archive_test ${CMAKE_BINARY_DIR}/coverage/bundle_archive_test/bundle_archive_test)
         SETUP_TARGET_FOR_COVERAGE(bundle_cache_test bundle_cache_test ${CMAKE_BINARY_DIR}/coverage/bundle_cache_test/bundle_cache_test)
         SETUP_TARGET_FOR_COVERAGE(bundle_context_test bundle_context_test ${CMAKE_BINARY_DIR}/coverage/bundle_context_test/bundle_context_test)
         SETUP_TARGET_FOR_COVERAGE(bundle_revision_test bundle_revision_test ${CMAKE_BINARY_DIR}/coverage/bundle_revision_test/bundle_revision_test)

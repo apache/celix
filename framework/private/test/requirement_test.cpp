@@ -88,8 +88,14 @@ TEST(requirement, create) {
 	requirement_pt requirement = NULL;
 	requirement_create(directives, attributes, &requirement);
 
-	mock().expectNCalls(2, "attribute_destroy");
-	mock().expectOneCall("versionRange_destroy");
+	mock().expectOneCall("attribute_destroy")
+			.withParameter("attribute", versionAttribute);
+
+	mock().expectOneCall("attribute_destroy")
+			.withParameter("attribute", serviceAttribute);
+
+	mock().expectOneCall("versionRange_destroy")
+			.withParameter("range", parsedRange);
 
 	requirement_destroy(requirement);
 }

@@ -55,7 +55,7 @@ TEST_GROUP(framework) {
 TEST(framework, create){
 	framework_pt framework = NULL;
 
-	mock().expectOneCall("bundle_create");
+	mock().expectOneCall("bundle_create").ignoreOtherParameters();
 
 	framework_create(&framework, properties);
 

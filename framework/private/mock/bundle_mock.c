@@ -28,7 +28,8 @@
 #include "bundle_private.h"
 
 celix_status_t bundle_create(bundle_pt * bundle) {
-	mock_c()->actualCall("bundle_create");
+	mock_c()->actualCall("bundle_create")
+			->withOutputParameter("bundle", bundle);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -90,7 +91,9 @@ celix_status_t bundle_setActivator(bundle_pt bundle, activator_pt activator) {
 }
 
 celix_status_t bundle_getContext(bundle_pt bundle, bundle_context_pt *context) {
-	mock_c()->actualCall("bundle_getContext");
+	mock_c()->actualCall("bundle_getContext")
+			->withPointerParameters("bundle", bundle)
+			->withOutputParameter("context", context);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -100,7 +103,10 @@ celix_status_t bundle_setContext(bundle_pt bundle, bundle_context_pt context) {
 }
 
 celix_status_t bundle_getEntry(bundle_pt bundle, char * name, char **entry) {
-	mock_c()->actualCall("bundle_getEntry");
+	mock_c()->actualCall("bundle_getEntry")
+			->withPointerParameters("bundle", bundle)
+			->withStringParameters("name", name)
+			->withOutputParameter("entry", entry);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -186,27 +192,37 @@ int compareTo(service_reference_pt a, service_reference_pt b) {
 
 
 celix_status_t bundle_getState(bundle_pt bundle, bundle_state_e *state) {
-	mock_c()->actualCall("bundle_getState");
+	mock_c()->actualCall("bundle_getState")
+			->withPointerParameters("bundle", bundle)
+			->withOutputParameter("state", state);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t bundle_isLockable(bundle_pt bundle, bool *lockable) {
-	mock_c()->actualCall("bundle_isLockable");
+	mock_c()->actualCall("bundle_isLockable")
+			->withPointerParameters("bundle", bundle)
+			->withOutputParameter("lockable", lockable);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t bundle_getLockingThread(bundle_pt bundle, celix_thread_t *thread) {
-	mock_c()->actualCall("bundle_getLockingThread");
+	mock_c()->actualCall("bundle_getLockingThread")
+			->withPointerParameters("bundle", bundle)
+			->withOutputParameter("thread", thread);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t bundle_lock(bundle_pt bundle, bool *locked) {
-	mock_c()->actualCall("bundle_lock");
+	mock_c()->actualCall("bundle_lock")
+			->withPointerParameters("bundle", bundle)
+			->withOutputParameter("locked", locked);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t bundle_unlock(bundle_pt bundle, bool *unlocked) {
-	mock_c()->actualCall("bundle_unlock");
+	mock_c()->actualCall("bundle_unlock")
+			->withPointerParameters("bundle", bundle)
+			->withOutputParameter("unlocked", unlocked);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -228,18 +244,24 @@ celix_status_t bundle_refresh(bundle_pt bundle) {
 }
 
 celix_status_t bundle_getBundleId(bundle_pt bundle, long *id) {
-	mock_c()->actualCall("bundle_getBundleId");
+	mock_c()->actualCall("bundle_getBundleId")
+			->withPointerParameters("bundle", bundle)
+			->withOutputParameter("id", id);
 	return mock_c()->returnValue().value.intValue;
 }
 
 
 celix_status_t bundle_getRegisteredServices(bundle_pt bundle, array_list_pt *list) {
-	mock_c()->actualCall("bundle_getRegisteredServices");
+	mock_c()->actualCall("bundle_getRegisteredServices")
+			->withPointerParameters("bundle", bundle)
+			->withOutputParameter("list", list);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t bundle_getServicesInUse(bundle_pt bundle, array_list_pt *list) {
-	mock_c()->actualCall("bundle_getServicesInUse");
+	mock_c()->actualCall("bundle_getServicesInUse")
+			->withPointerParameters("bundle", bundle)
+			->withOutputParameter("list", list);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -249,7 +271,9 @@ celix_status_t bundle_setFramework(bundle_pt bundle, framework_pt framework) {
 }
 
 celix_status_t bundle_getFramework(bundle_pt bundle, framework_pt *framework) {
-	mock_c()->actualCall("bundle_getFramework");
+	mock_c()->actualCall("bundle_getFramework")
+			->withPointerParameters("bundle", bundle)
+			->withOutputParameter("framework", framework);
 	return mock_c()->returnValue().value.intValue;
 }
 

@@ -55,7 +55,9 @@ properties_pt manifest_getMainAttributes(manifest_pt manifest) {
 }
 
 celix_status_t manifest_getEntries(manifest_pt manifest, hash_map_pt *map) {
-	mock_c()->actualCall("manifest_getEntries");
+	mock_c()->actualCall("manifest_getEntries")
+			->withPointerParameters("manifest", manifest)
+			->withOutputParameter("map", map);
 	return mock_c()->returnValue().value.intValue;
 }
 

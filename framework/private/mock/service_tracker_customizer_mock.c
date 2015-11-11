@@ -31,7 +31,13 @@ celix_status_t serviceTrackerCustomizer_create(void *handle,
 		adding_callback_pt addingFunction, added_callback_pt addedFunction,
 		modified_callback_pt modifiedFunction, removed_callback_pt removedFunction,
 		service_tracker_customizer_pt *customizer) {
-	mock_c()->actualCall("serviceTrackerCustomizer_create");
+	mock_c()->actualCall("serviceTrackerCustomizer_create")
+			->withPointerParameters("handle", handle)
+			->withPointerParameters("addingFunction", addingFunction)
+			->withPointerParameters("addedFunction", addedFunction)
+			->withPointerParameters("modifiedFunction", modifiedFunction)
+			->withPointerParameters("removedFunction", removedFunction)
+			->withOutputParameter("customizer", customizer);
 	return mock_c()->returnValue().value.intValue;
 }
 

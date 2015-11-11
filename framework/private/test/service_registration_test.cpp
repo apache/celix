@@ -35,7 +35,7 @@ extern "C" {
 #include "service_registration_private.h"
 #include "celix_log.h"
 
-framework_logger_pt logger;
+framework_logger_pt logger = (framework_logger_pt) 0x42;
 }
 
 int main(int argc, char** argv) {
@@ -44,8 +44,6 @@ int main(int argc, char** argv) {
 
 TEST_GROUP(service_registration) {
 	void setup(void) {
-		logger = (framework_logger_pt) malloc(sizeof(*logger));
-        logger->logFunction = frameworkLogger_log;
 	}
 
 	void teardown() {

@@ -459,9 +459,7 @@ linked_list_pt resolver_populateWireMap(hash_map_pt candidates, module_pt import
                                 linkedList_addElement(serviceWires, wire);
                             }
 
-                            wireMap = resolver_populateWireMap(candidates,
-                                    module,
-                                    wireMap);
+                            wireMap = resolver_populateWireMap(candidates,module,wireMap);
                         }
 
                         importerWires->wires = serviceWires;

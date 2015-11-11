@@ -273,7 +273,8 @@ service_registration_pt findRegistration(service_reference_pt reference) {
 
 
 service_reference_pt listToArray(array_list_pt list) {
-	mock_c()->actualCall("listToArray");
+	mock_c()->actualCall("listToArray")
+			->withPointerParameters("list", list);
 		return mock_c()->returnValue().value.pointerValue;
 }
 
@@ -296,7 +297,9 @@ array_list_pt framework_getBundles(framework_pt framework) {
 }
 
 bundle_pt framework_getBundle(framework_pt framework, char * location) {
-	mock_c()->actualCall("framework_getBundle");
+	mock_c()->actualCall("framework_getBundle")
+			->withPointerParameters("framework", framework)
+			->withStringParameters("location", location);
 		return mock_c()->returnValue().value.pointerValue;
 }
 
@@ -308,7 +311,9 @@ bundle_pt framework_getBundleById(framework_pt framework, long id) {
 }
 
 celix_status_t framework_getFrameworkBundle(framework_pt framework, bundle_pt *bundle) {
-	mock_c()->actualCall("framework_getFrameworkBundle");
+	mock_c()->actualCall("framework_getFrameworkBundle")
+			->withPointerParameters("framework", framework)
+			->withOutputParameter("bundle", bundle);
 	return mock_c()->returnValue().value.intValue;
 }
 

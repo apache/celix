@@ -63,7 +63,9 @@ celix_status_t serviceReference_getServiceRegistration(service_reference_pt refe
 }
 
 celix_status_t serviceReference_getBundle(service_reference_pt reference, bundle_pt *bundle) {
-	mock_c()->actualCall("serviceReference_getBundle");
+	mock_c()->actualCall("serviceReference_getBundle")
+		->withPointerParameters("reference", reference)
+		->withOutputParameter("bundle", bundle);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -73,7 +75,9 @@ bool serviceReference_isAssignableTo(service_reference_pt reference, bundle_pt r
 }
 
 celix_status_t serviceReference_getUsingBundles(service_reference_pt reference, array_list_pt *bundles) {
-	mock_c()->actualCall("serviceReference_getUsingBundles");
+	mock_c()->actualCall("serviceReference_getUsingBundles")
+		->withPointerParameters("reference", reference)
+		->withOutputParameter("bundles", bundles);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -91,7 +95,9 @@ unsigned int serviceReference_hashCode(void *referenceP) {
 }
 
 int serviceReference_equals2(void *reference1, void *reference2) {
-	mock_c()->actualCall("serviceReference_equals2");
+	mock_c()->actualCall("serviceReference_equals2")
+			->withPointerParameters("reference1", reference1)
+			->withPointerParameters("reference2", reference2);
 	return mock_c()->returnValue().value.intValue;
 }
 

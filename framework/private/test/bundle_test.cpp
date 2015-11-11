@@ -643,7 +643,10 @@ TEST(bundle, revise) {
 	char location[] = "location";
 	char inputFile[] = "inputFile";
 
-	mock().expectNCalls(2, "bundleArchive_revise");
+	mock().expectNCalls(2, "bundleArchive_revise")
+			.withParameter("archive", actual_archive)
+			.withParameter("location", location)
+			.withParameter("inputFile", inputFile);
 
 	mock().expectNCalls(2, "bundleArchive_getCurrentRevision")
 			.withParameter("archive", bundle->archive)
@@ -682,7 +685,10 @@ TEST(bundle, revise) {
 			.withOutputParameterReturning("symbolicName", &symbolic_name,sizeof(symbolic_name))
 			.andReturnValue(CELIX_ILLEGAL_ARGUMENT);
 
-	mock().expectOneCall("bundleArchive_rollbackRevise");
+	bool rolledBack = true;
+	mock().expectOneCall("bundleArchive_rollbackRevise")
+			.withParameter("archive", actual_archive)
+			.withOutputParameterReturning("rolledback", &rolledBack, sizeof(rolledBack));
 
 	mock().expectOneCall("framework_logCode")
 			.withParameter("code", CELIX_ILLEGAL_ARGUMENT);

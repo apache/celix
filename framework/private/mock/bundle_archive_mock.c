@@ -63,27 +63,39 @@ celix_status_t bundleArchive_getId(bundle_archive_pt archive, long *id) {
 }
 
 celix_status_t bundleArchive_getLocation(bundle_archive_pt archive, char **location) {
-	mock_c()->actualCall("bundleArchive_getLocation");
+	mock_c()->actualCall("bundleArchive_getLocation")
+			->withPointerParameters("archive", archive)
+			->withOutputParameter("location", location);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t bundleArchive_getArchiveRoot(bundle_archive_pt archive, char **archiveRoot) {
-	mock_c()->actualCall("bundleArchive_getArchiveRoot");
+	mock_c()->actualCall("bundleArchive_getArchiveRoot")
+			->withPointerParameters("archive", archive)
+			->withOutputParameter("archiveRoot", archiveRoot);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t bundleArchive_revise(bundle_archive_pt archive, char * location, char *inputFile) {
-	mock_c()->actualCall("bundleArchive_revise");
+	mock_c()->actualCall("bundleArchive_revise")
+			->withPointerParameters("archive", archive)
+			->withStringParameters("location", location)
+			->withStringParameters("inputFile", inputFile);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t bundleArchive_rollbackRevise(bundle_archive_pt archive, bool *rolledback) {
-	mock_c()->actualCall("bundleArchive_rollbackRevise");
+	mock_c()->actualCall("bundleArchive_rollbackRevise")
+			->withPointerParameters("archive", archive)
+			->withOutputParameter("rolledback", rolledback);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t bundleArchive_getRevision(bundle_archive_pt archive, long revNr, bundle_revision_pt *revision) {
-	mock_c()->actualCall("bundleArchive_getRevision");
+	mock_c()->actualCall("bundleArchive_getRevision")
+			->withPointerParameters("archive", archive)
+			->withLongIntParameters("revNr", revNr)
+			->withOutputParameter("revision", revision);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -95,12 +107,16 @@ celix_status_t bundleArchive_getCurrentRevision(bundle_archive_pt archive, bundl
 }
 
 celix_status_t bundleArchive_getCurrentRevisionNumber(bundle_archive_pt archive, long *revisionNumber) {
-	mock_c()->actualCall("bundleArchive_getCurrentRevisionNumber");
+	mock_c()->actualCall("bundleArchive_getCurrentRevisionNumber")
+			->withPointerParameters("archive", archive)
+			->withOutputParameter("revisionNumber", revisionNumber);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t bundleArchive_getRefreshCount(bundle_archive_pt archive, long *refreshCount) {
-	mock_c()->actualCall("bundleArchive_getRefreshCount");
+	mock_c()->actualCall("bundleArchive_getRefreshCount")
+			->withPointerParameters("archive", archive)
+			->withOutputParameter("refreshCount", refreshCount);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -126,7 +142,9 @@ celix_status_t bundleArchive_setLastModified(bundle_archive_pt archive, time_t l
 }
 
 celix_status_t bundleArchive_getLastModified(bundle_archive_pt archive, time_t *lastModified) {
-	mock_c()->actualCall("bundleArchive_getLastModified");
+	mock_c()->actualCall("bundleArchive_getLastModified")
+			->withPointerParameters("archive", archive)
+			->withOutputParameter("lastModified", lastModified);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -138,7 +156,9 @@ celix_status_t bundleArchive_setPersistentState(bundle_archive_pt archive, bundl
 }
 
 celix_status_t bundleArchive_getPersistentState(bundle_archive_pt archive, bundle_state_e *state) {
-	mock_c()->actualCall("bundleArchive_getPersistentState");
+	mock_c()->actualCall("bundleArchive_getPersistentState")
+			->withPointerParameters("archive", archive)
+			->withOutputParameter("state", state);
 	return mock_c()->returnValue().value.intValue;
 }
 

@@ -16,3 +16,5 @@
 # under the License.
 a=b
 b=c
+ // == \\ # 5 \0 \=
+ #line to check possible special characters

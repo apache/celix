@@ -95,7 +95,9 @@ TEST(bundle_cache, deleteTree) {
 
 	mkdir(cacheDir, S_IRWXU);
 	mkdir(cacheDir2, S_IRWXU);
-	mktemp(cacheFile);
+	//mkstemp opens the file for safety, but bundlecache_delete needs to reopen the file
+	close(mkstemp(cacheFile));
+
 
 	LONGS_EQUAL(CELIX_SUCCESS, bundleCache_delete(cache));
 }

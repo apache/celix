@@ -28,10 +28,10 @@
 #include "bundle_context.h"
 
 celix_status_t bundleContext_create(framework_pt framework, framework_logger_pt logger, bundle_pt bundle, bundle_context_pt *bundle_context) {
-        mock_c()->actualCall("bundleContext_create")
-                        ->withPointerParameters("framework", framework)
-                        ->withPointerParameters("logger", logger)
-                        ->withPointerParameters("bundle", bundle)
+	mock_c()->actualCall("bundleContext_create")
+			->withPointerParameters("framework", framework)
+			->withPointerParameters("logger", logger)
+			->withPointerParameters("bundle", bundle)
 			->withOutputParameter("bundle_context", (void **) bundle_context);
 	return mock_c()->returnValue().value.intValue;
 }
@@ -50,12 +50,12 @@ celix_status_t bundleContext_getFramework(bundle_context_pt context, framework_p
 	mock_c()->actualCall("bundleContext_getFramework")
 			->withPointerParameters("context", context)
 			->withOutputParameter("framework", (void **) framework);
-        return mock_c()->returnValue().value.intValue;
+	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t bundleContext_installBundle(bundle_context_pt context, char * location, bundle_pt *bundle) {
-        mock_c()->actualCall("bundleContext_installBundle")
-                        ->withPointerParameters("context", context)
+	mock_c()->actualCall("bundleContext_installBundle")
+			->withPointerParameters("context", context)
 			->withStringParameters("location", location)
 			->withOutputParameter("bundle", (void **) bundle);
 	return mock_c()->returnValue().value.intValue;
@@ -136,12 +136,17 @@ celix_status_t bundleContext_ungetService(bundle_context_pt context, service_ref
 
 
 celix_status_t bundleContext_getBundles(bundle_context_pt context, array_list_pt *bundles) {
-	mock_c()->actualCall("bundleContext_getBundles");
+	mock_c()->actualCall("bundleContext_getBundles")
+			->withPointerParameters("context", context)
+			->withOutputParameter("bundles", bundles);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t bundleContext_getBundleById(bundle_context_pt context, long id, bundle_pt *bundle) {
-	mock_c()->actualCall("bundleContext_getBundleById");
+	mock_c()->actualCall("bundleContext_getBundleById")
+			->withPointerParameters("context", context)
+			->withLongIntParameters("id", id)
+			->withOutputParameter("bundle", bundle);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -174,6 +179,9 @@ celix_status_t bundleContext_removeBundleListener(bundle_context_pt context, bun
 
 
 celix_status_t bundleContext_getProperty(bundle_context_pt context, const char *name, char **value) {
-	mock_c()->actualCall("bundleContext_getProperty");
+	mock_c()->actualCall("bundleContext_getProperty")
+			->withPointerParameters("context", context)
+			->withStringParameters("name", name)
+			->withOutputParameter("value", value);
 	return mock_c()->returnValue().value.intValue;
 }

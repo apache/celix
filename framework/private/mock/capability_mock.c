@@ -28,12 +28,17 @@
 #include "capability.h"
 
 celix_status_t capability_create(module_pt module, hash_map_pt directives, hash_map_pt attributes, capability_pt *capability) {
-	mock_c()->actualCall("capability_create");
+	mock_c()->actualCall("capability_create")
+			->withPointerParameters("module", module)
+			->withPointerParameters("directives", directives)
+			->withPointerParameters("attributes", attributes)
+			->withOutputParameter("capability", capability);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t capability_destroy(capability_pt capability) {
-	mock_c()->actualCall("capability_destroy");
+	mock_c()->actualCall("capability_destroy")
+			->withPointerParameters("capability", capability);
 	return mock_c()->returnValue().value.intValue;
 }
 
