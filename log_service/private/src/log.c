@@ -222,7 +222,7 @@ celix_status_t log_bundleChanged(void *listener, bundle_event_pt event) {
 }
 
 celix_status_t log_frameworkEvent(void *listener, framework_event_pt event) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 	log_pt logger = ((framework_listener_pt) listener)->handle;
 	log_entry_pt entry = NULL;
 
@@ -235,7 +235,7 @@ celix_status_t log_frameworkEvent(void *listener, framework_event_pt event) {
 }
 
 celix_status_t log_addLogListener(log_pt logger, log_listener_pt listener) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	status = celixThreadMutex_lock(&logger->listenerLock);
 
@@ -280,7 +280,7 @@ celix_status_t log_removeLogListener(log_pt logger, log_listener_pt listener) {
 }
 
 celix_status_t log_removeAllLogListener(log_pt logger) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	status = celixThreadMutex_lock(&logger->listenerLock);
 
@@ -294,7 +294,7 @@ celix_status_t log_removeAllLogListener(log_pt logger) {
 }
 
 static celix_status_t log_startListenerThread(log_pt logger) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	logger->running = true;
     logger->running = true;
@@ -304,7 +304,7 @@ static celix_status_t log_startListenerThread(log_pt logger) {
 }
 
 static celix_status_t log_stopListenerThread(log_pt logger) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	logger->running = false;
 

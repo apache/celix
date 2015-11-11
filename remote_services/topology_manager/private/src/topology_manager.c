@@ -287,9 +287,6 @@ celix_status_t topologyManager_rsaRemoved(void * handle, service_reference_pt re
                 topologyManager_notifyListenersEndpointRemoved(manager, rsa, export);
                 rsa->exportRegistration_close(export);
             }
-
-            arrayList_destroy(exports_list);
-            exports_list = NULL;
         }
 
         hashMap_remove(exports, rsa);
