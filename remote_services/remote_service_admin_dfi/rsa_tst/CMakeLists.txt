@@ -32,7 +32,7 @@ SET(CMAKE_INSTALL_RPATH "${PROJECT_BINARY_DIR}/framework" "${PROJECT_BINARY_DIR}
 
 add_executable(test_rsa_dfi
     run_tests.cpp
-    rsa_tests.cpp
+    #rsa_tests.cpp
     rsa_client_server_tests.cpp
 
     ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c
