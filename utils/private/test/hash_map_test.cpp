@@ -167,10 +167,10 @@ TEST(hash_map, create){
 	CHECK(map != NULL);
 	LONGS_EQUAL(0, map->size);
 	// This fails on windows due to dllimport providing a proxy for exported functions.
-	CHECK_EQUAL(hashMap_equals, map->equalsKey);
-	CHECK_EQUAL(hashMap_equals, map->equalsValue);
-	CHECK_EQUAL(hashMap_hashCode, map->hashKey);
-	CHECK_EQUAL(hashMap_hashCode, map->hashValue);
+	CHECK_EQUAL(&hashMap_equals, map->equalsKey);
+	CHECK_EQUAL(&hashMap_equals, map->equalsValue);
+	CHECK_EQUAL(&hashMap_hashCode, map->hashKey);
+	CHECK_EQUAL(&hashMap_hashCode, map->hashValue);
 }
 
 TEST(hash_map, size){
