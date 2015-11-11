@@ -288,6 +288,7 @@ static void * thread_test_func_exit(void *) {
 	*pi = 666;
 
 	celixThread_exit(pi);
+	return NULL;
 }
 
 static void * thread_test_func_detach(void *) {
