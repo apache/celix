@@ -74,7 +74,8 @@ celix_status_t bundleCache_destroy(bundle_cache_pt *cache) {
 }
 
 celix_status_t bundleCache_delete(bundle_cache_pt cache) {
-	return bundleCache_deleteTree(cache, cache->cacheDir);
+    printf("DELETING CACHE DIR: %s\n", cache->cacheDir);
+    return bundleCache_deleteTree(cache, cache->cacheDir);
 }
 
 celix_status_t bundleCache_getArchives(bundle_cache_pt cache, array_list_pt *archives) {
@@ -90,19 +91,23 @@ celix_status_t bundleCache_getArchives(bundle_cache_pt cache, array_list_pt *arc
 
 	if (dir != NULL) {
         array_list_pt list = NULL;
-		struct dirent *dp;
         arrayList_create(&list);
-        
-        while ((dp = readdir(dir)) != NULL) {
-			char archiveRoot[512];
 
-			snprintf(archiveRoot, sizeof(archiveRoot), "%s/%s", cache->cacheDir, dp->d_name);
+        struct dirent dp;
+        struct dirent *result = NULL;
+        int rc = 0;
 
-            if (dp->d_type == DT_DIR
-                    && (strcmp((dp->d_name), ".") != 0)
-                    && (strcmp((dp->d_name), "..") != 0)
-                    && (strncmp(dp->d_name, "bundle", 6) == 0)
-                    && (strcmp(dp->d_name, "bundle0") != 0)) {
+        rc = readdir_r(dir, &dp, &result);
+        while (rc == 0 && result != NULL) {
+            char archiveRoot[512];
+
+            snprintf(archiveRoot, sizeof(archiveRoot), "%s/%s", cache->cacheDir, dp.d_name);
+
+            if (dp.d_type == DT_DIR
+                && (strcmp((dp.d_name), ".") != 0)
+                && (strcmp((dp.d_name), "..") != 0)
+                && (strncmp(dp.d_name, "bundle", 6) == 0)
+                && (strcmp(dp.d_name, "bundle0") != 0)) {
 
                 bundle_archive_pt archive = NULL;
                 status = bundleArchive_recreate(strdup(archiveRoot), &archive);
@@ -110,13 +115,23 @@ celix_status_t bundleCache_getArchives(bundle_cache_pt cache, array_list_pt *arc
                     arrayList_add(list, archive);
                 }
             }
+
+            readdir_r(dir, &dp, &result);
+        }
+
+        if (rc != 0) {
+            fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error reading dir");
+            status = CELIX_FILE_IO_EXCEPTION;
+        } else {
+            status = CELIX_SUCCESS;
         }
 
         closedir(dir);
 
-        *archives = list;
+        if (status == CELIX_SUCCESS) {
+            *archives = list;
+        }
 
-        status = CELIX_SUCCESS;
 	} else {
 	    status = CELIX_FILE_IO_EXCEPTION;
 	}
@@ -147,13 +162,16 @@ static celix_status_t bundleCache_deleteTree(bundle_cache_pt cache, char * direc
     if (dir == NULL) {
         status = CELIX_FILE_IO_EXCEPTION;
     } else {
-        struct dirent *dp;
-        while ((dp = readdir(dir)) != NULL) {
-            if ((strcmp((dp->d_name), ".") != 0) && (strcmp((dp->d_name), "..") != 0)) {
+        struct dirent dp;
+        struct dirent *result = NULL;
+        int rc = 0;
+        rc = readdir_r(dir, &dp, &result);
+        while (rc == 0 && result != NULL) {
+            if ((strcmp((dp.d_name), ".") != 0) && (strcmp((dp.d_name), "..") != 0)) {
                 char subdir[512];
-                snprintf(subdir, sizeof(subdir), "%s/%s", directory, dp->d_name);
+                snprintf(subdir, sizeof(subdir), "%s/%s", directory, dp.d_name);
 
-                if (dp->d_type == DT_DIR) {
+                if (dp.d_type == DT_DIR) {
                     status = bundleCache_deleteTree(cache, subdir);
                 } else {
                     if (remove(subdir) != 0) {
@@ -162,6 +180,7 @@ static celix_status_t bundleCache_deleteTree(bundle_cache_pt cache, char * direc
                     }
                 }
             }
+            readdir_r(dir, &dp, &result);
         }
 
         if (closedir(dir) != 0) {
@@ -174,7 +193,7 @@ static celix_status_t bundleCache_deleteTree(bundle_cache_pt cache, char * direc
         }
     }
 
-    framework_logIfError(logger, status, NULL, "Failed to delete tree");
+    framework_logIfError(logger, status, NULL, "Failed to delete tree at dir '%s'", directory);
 
     return status;
 }
