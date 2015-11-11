@@ -612,12 +612,6 @@ TEST(service_tracker, serviceChangedModified) {
 		.ignoreOtherParameters()
 		.andReturnValue(CELIX_SUCCESS);
 
-	mock()
-			.expectOneCall("bundleContext_getService")
-			.withParameter("context", ctx)
-			.withParameter("reference", ref)
-			.withOutputParameterReturning("service_instance", &entry->service, sizeof(entry->service));
-
 	serviceTracker_serviceChanged(listener, event);
 
 	free(arrayList_get(tracked, 0));
@@ -830,18 +824,14 @@ TEST(service_tracker, serviceChangedModifiedCustomizer) {
 		.ignoreOtherParameters()
 		.andReturnValue(CELIX_SUCCESS);
 	void * handle = (void*) 0x60;
+
+/*	this branch is not covered here, unlike earlier faulty tests
 	mock()
-		.expectNCalls(2, "serviceTrackerCustomizer_getHandle")
+		.expectOneCall("serviceTrackerCustomizer_getHandle")
 		.withParameter("customizer", customizer)
 		.withOutputParameterReturning("handle", &handle, sizeof(handle))
 		.andReturnValue(CELIX_SUCCESS);
-	void *function = (void *) serviceDependency_modifiedService;
-/*	mock()
-		.expectOneCall("serviceTrackerCustomizer_getModifiedFunction")
-		.withParameter("customizer", customizer)
-		.withOutputParameterReturning("function", &function, sizeof(function))
-		.andReturnValue(CELIX_SUCCESS);
-*/
+
 	mock()
 		.expectOneCall("serviceTrackerCustomizer_getAddingFunction")
 		.withParameter("customizer", customizer)
@@ -853,13 +843,25 @@ TEST(service_tracker, serviceChangedModifiedCustomizer) {
 		.withParameter("customizer", customizer)
 		.withOutputParameterReturning("function", &added_func, sizeof(added_func));
 
-
 	mock()
 		.expectOneCall("bundleContext_getService")
 		.withParameter("context", ctx)
 		.withParameter("reference", ref)
 		.withOutputParameterReturning("service_instance", &entry->service, sizeof(entry->service));
+*/
 
+	mock()
+			.expectOneCall("serviceTrackerCustomizer_getHandle")
+			.withParameter("customizer", customizer)
+			.withOutputParameterReturning("handle", &handle, sizeof(handle))
+			.andReturnValue(CELIX_SUCCESS);
+
+	void *function = (void *) serviceDependency_modifiedService;
+	mock()
+		.expectOneCall("serviceTrackerCustomizer_getModifiedFunction")
+		.withParameter("customizer", customizer)
+		.withOutputParameterReturning("function", &function, sizeof(function))
+		.andReturnValue(CELIX_SUCCESS);
 
 	serviceTracker_serviceChanged(listener, event);
 

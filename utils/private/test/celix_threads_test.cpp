@@ -287,7 +287,7 @@ static void * thread_test_func_exit(void *) {
 	int *pi = (int*) calloc(1, sizeof(int));
 	*pi = 666;
 
-	return pi;
+	celixThread_exit(pi);
 }
 
 static void * thread_test_func_detach(void *) {

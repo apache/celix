@@ -90,8 +90,14 @@ TEST(capability, create) {
 	capability_pt capability = NULL;
 	celix_status_t status = capability_create(module, directives, attributes, &capability);
 
-	mock().expectNCalls(2, "attribute_destroy");
-	mock().expectOneCall("version_destroy");
+	mock().expectOneCall("attribute_destroy")
+			.withParameter("attribute", serviceAttribute);
+	mock().expectOneCall("attribute_destroy")
+			.withParameter("attribute", versionAttribute);
+
+	mock().expectOneCall("version_destroy")
+			.withParameter("version", emptyVersion);
+
 	capability_destroy(capability);
 }
 

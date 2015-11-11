@@ -87,7 +87,8 @@ TEST(version_range, create) {
 	POINTERS_EQUAL(version, range->low);
 	POINTERS_EQUAL(version, range->high);
 
-	mock().expectNCalls(2, "version_destroy");
+	mock().expectNCalls(2, "version_destroy")
+			.withParameter("version", version);
 
 	versionRange_destroy(range);
 	free(version);
@@ -112,7 +113,8 @@ TEST(version_range, createInfinite) {
 	POINTERS_EQUAL(version, range->low);
 	POINTERS_EQUAL(NULL, range->high);
 
-	mock().expectOneCall("version_destroy");
+	mock().expectOneCall("version_destroy")
+			.withParameter("version", version);
 
 	versionRange_destroy(range);
 	free(version);
@@ -153,31 +155,49 @@ TEST(version_range, isInRange) {
 	versionRange_createVersionRange(low, true, high, true, &range);
 	LONGS_EQUAL(CELIX_SUCCESS, versionRange_isInRange(range, version, &result));
 	LONGS_EQUAL(true, result);
-	mock().expectNCalls(2, "version_destroy");
+
+	mock().expectOneCall("version_destroy")
+			.withParameter("version", low);
+	mock().expectOneCall("version_destroy")
+			.withParameter("version", high);
 	versionRange_destroy(range);
 
 	versionRange_createVersionRange(low, true, NULL, true, &range);
 	LONGS_EQUAL(CELIX_SUCCESS, versionRange_isInRange(range, version, &result));
 	LONGS_EQUAL(true, result);
-	mock().expectOneCall("version_destroy");
+
+	mock().expectOneCall("version_destroy")
+			.withParameter("version", low);
 	versionRange_destroy(range);
 
 	versionRange_createVersionRange(low, false, high, true, &range);
 	LONGS_EQUAL(CELIX_SUCCESS, versionRange_isInRange(range, version, &result));
 	LONGS_EQUAL(true, result);
-	mock().expectNCalls(2, "version_destroy");
+
+	mock().expectOneCall("version_destroy")
+			.withParameter("version", low);
+	mock().expectOneCall("version_destroy")
+			.withParameter("version", high);
 	versionRange_destroy(range);
 
 	versionRange_createVersionRange(low, true, high, false, &range);
 	LONGS_EQUAL(CELIX_SUCCESS, versionRange_isInRange(range, version, &result));
 	LONGS_EQUAL(true, result);
-	mock().expectNCalls(2, "version_destroy");
+
+	mock().expectOneCall("version_destroy")
+			.withParameter("version", low);
+	mock().expectOneCall("version_destroy")
+			.withParameter("version", high);
 	versionRange_destroy(range);
 
 	versionRange_createVersionRange(low, false, high, false, &range);
 	LONGS_EQUAL(CELIX_SUCCESS, versionRange_isInRange(range, version, &result));
 	LONGS_EQUAL(true, result);
-	mock().expectNCalls(2, "version_destroy");
+
+	mock().expectOneCall("version_destroy")
+			.withParameter("version", low);
+	mock().expectOneCall("version_destroy")
+			.withParameter("version", high);
 	versionRange_destroy(range);
 
 	free(version);
@@ -199,7 +219,11 @@ TEST(version_range, parse) {
 	high->minor = 8;
 	high->micro = 9;
 
-	mock().expectNCalls(3, "version_destroy");
+	mock().expectOneCall("version_destroy")
+			.withParameter("version", high);
+
+	mock().expectNCalls(2, "version_destroy")
+			.withParameter("version", low);
 
 	mock().expectOneCall("version_createVersionFromString")
 		   .withParameter("versionStr", "1.2.3")

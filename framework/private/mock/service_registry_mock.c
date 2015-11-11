@@ -28,7 +28,10 @@
 #include "service_registry.h"
 
 celix_status_t serviceRegistry_create(framework_pt framework, serviceChanged_function_pt serviceChanged, service_registry_pt *registry) {
-	mock_c()->actualCall("serviceRegistry_create");
+	mock_c()->actualCall("serviceRegistry_create")
+			->withPointerParameters("framework", framework)
+			->withPointerParameters("serviceChanged", serviceChanged)
+			->withOutputParameter("registry", registry);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -38,22 +41,40 @@ celix_status_t serviceRegistry_destroy(service_registry_pt registry) {
 }
 
 celix_status_t serviceRegistry_getRegisteredServices(service_registry_pt registry, bundle_pt bundle, array_list_pt *services) {
-	mock_c()->actualCall("serviceRegistry_getRegisteredServices");
+	mock_c()->actualCall("serviceRegistry_getRegisteredServices")
+			->withPointerParameters("registry", registry)
+			->withPointerParameters("bundle", bundle)
+			->withOutputParameter("services", services);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t serviceRegistry_getServicesInUse(service_registry_pt registry, bundle_pt bundle, array_list_pt *services) {
-	mock_c()->actualCall("serviceRegistry_getServicesInUse");
+	mock_c()->actualCall("serviceRegistry_getServicesInUse")
+			->withPointerParameters("registry", registry)
+			->withPointerParameters("bundle", bundle)
+			->withOutputParameter("services", services);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t serviceRegistry_registerService(service_registry_pt registry, bundle_pt bundle, char * serviceName, void * serviceObject, properties_pt dictionary, service_registration_pt *registration) {
-	mock_c()->actualCall("serviceRegistry_registerService");
+	mock_c()->actualCall("serviceRegistry_registerService")
+			->withPointerParameters("registry", registry)
+			->withPointerParameters("bundle", bundle)
+			->withStringParameters("serviceName", serviceName)
+			->withPointerParameters("serviceObject", serviceObject)
+			->withPointerParameters("dictionary", dictionary)
+			->withOutputParameter("registration", registration);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t serviceRegistry_registerServiceFactory(service_registry_pt registry, bundle_pt bundle, char * serviceName, service_factory_pt factory, properties_pt dictionary, service_registration_pt *registration) {
-	mock_c()->actualCall("serviceRegistry_registerServiceFactory");
+	mock_c()->actualCall("serviceRegistry_registerServiceFactory")
+		->withPointerParameters("registry", registry)
+		->withPointerParameters("bundle", bundle)
+		->withStringParameters("serviceName", serviceName)
+		->withPointerParameters("factory", factory)
+		->withPointerParameters("dictionary", dictionary)
+		->withOutputParameter("registration", registration);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -91,12 +112,19 @@ celix_status_t serviceRegistry_ungetServiceReferences(service_registry_pt regist
 }
 
 celix_status_t serviceRegistry_getService(service_registry_pt registry, bundle_pt bundle, service_reference_pt reference, void **service) {
-	mock_c()->actualCall("serviceRegistry_getService");
+	mock_c()->actualCall("serviceRegistry_getService")
+		->withPointerParameters("registry", registry)
+		->withPointerParameters("bundle", bundle)
+		->withPointerParameters("reference", reference)
+		->withOutputParameter("service", service);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t serviceRegistry_ungetService(service_registry_pt registry, bundle_pt bundle, service_reference_pt reference, bool *result) {
-	mock_c()->actualCall("serviceRegistry_ungetService");
+	mock_c()->actualCall("serviceRegistry_ungetService")
+		->withPointerParameters("registry", registry)
+		->withPointerParameters("bundle", bundle)
+		->withOutputParameter("result", result);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -117,7 +145,11 @@ service_registration_pt serviceRegistry_findRegistration(service_registry_pt reg
 }
 
 celix_status_t serviceRegistry_createServiceReference(service_registry_pt registry, bundle_pt bundle, service_registration_pt registration, service_reference_pt *reference) {
-	mock_c()->actualCall("serviceRegistry_createServiceReference");
+	mock_c()->actualCall("serviceRegistry_createServiceReference")
+		->withPointerParameters("registry", registry)
+		->withPointerParameters("bundle", bundle)
+		->withPointerParameters("registration", registration)
+		->withOutputParameter("reference", reference);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -130,7 +162,10 @@ celix_status_t serviceRegistry_getServiceReferencesForRegistration(service_regis
 }
 
 celix_status_t serviceRegistry_getListenerHooks(service_registry_pt registry, bundle_pt bundle, array_list_pt *hooks) {
-	mock_c()->actualCall("serviceRegistry_getListenerHooks");
+	mock_c()->actualCall("serviceRegistry_getListenerHooks")
+		->withPointerParameters("registry", registry)
+		->withPointerParameters("bundle", bundle)
+		->withOutputParameter("hooks", hooks);
 	return mock_c()->returnValue().value.intValue;
 }
 

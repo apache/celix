@@ -28,35 +28,43 @@
 #include "manifest_parser.h"
 
 celix_status_t manifestParser_create(module_pt owner, manifest_pt manifest, manifest_parser_pt *manifest_parser) {
-	mock_c()->actualCall("manifestParser_create");
+	mock_c()->actualCall("manifestParser_create")
+			->withPointerParameters("owner", owner)
+			->withPointerParameters("manifest", manifest)
+			->withOutputParameter("manifest_parser", manifest_parser);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t manifestParser_destroy(manifest_parser_pt manifest_parser) {
-    mock_c()->actualCall("manifestParser_destroy");
+    mock_c()->actualCall("manifestParser_destroy")
+    		->withPointerParameters("manifest_parser", manifest_parser);
     return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t manifestParser_getSymbolicName(manifest_parser_pt parser, char **symbolicName) {
 	mock_c()->actualCall("manifestParser_getSymbolicName")
+			->withPointerParameters("parser", parser)
 			->withOutputParameter("symbolicName", (void**) symbolicName);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t manifestParser_getBundleVersion(manifest_parser_pt parser, version_pt *version) {
 	mock_c()->actualCall("manifestParser_getBundleVersion")
+			->withPointerParameters("parser", parser)
 			->withOutputParameter("version", (void**) version);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t manifestParser_getCapabilities(manifest_parser_pt parser, linked_list_pt *capabilities) {
 	mock_c()->actualCall("manifestParser_getCapabilities")
+			->withPointerParameters("parser", parser)
 			->withOutputParameter("capabilities", (void**) capabilities);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t manifestParser_getRequirements(manifest_parser_pt parser, linked_list_pt *requirements) {
 	mock_c()->actualCall("manifestParser_getCurrentRequirements")
+			->withPointerParameters("parser", parser)
 			->withOutputParameter("requirements", (void**) requirements);
 	return mock_c()->returnValue().value.intValue;
 }

@@ -35,6 +35,10 @@
 extern "C" {
 #include "resolver.h"
 #include "celix_log.h"
+#include "manifest_parser.h"
+#include "requirement_private.h"
+#include "capability_private.h"
+#include "version_private.h"
 
 framework_logger_pt logger = (framework_logger_pt) 0x42;
 }
@@ -73,62 +77,101 @@ TEST_GROUP(resolver) {
 TEST(resolver, resolve){
 	module_pt module;
 	module_pt module2;
-	manifest_pt actual_manifest = (manifest_pt) 0x01;
-	bundle_pt actual_bundle = (bundle_pt) 0x02;
-	version_pt actual_version = (version_pt) 0x03;
-	linked_list_pt actual_capabilities = NULL;
-	linked_list_pt actual_requirements= NULL;
-	char * actual_name = my_strdup("module");
-	char * actual_id = my_strdup("42");
-	char * actual_service_name = my_strdup("test_service_foo");
-	char * actual_service_name2 = my_strdup("test_service_bar");
-	requirement_pt req = (requirement_pt) 0x04;
-	requirement_pt req2= (requirement_pt) 0x05;
-	capability_pt cap = (capability_pt) 0x06;
-	capability_pt cap2= (capability_pt) 0x07;
-	linked_list_pt get;
+	manifest_pt manifest = (manifest_pt) 0x01;
+	manifest_pt manifest2 = (manifest_pt) 0x02;
+	manifest_parser_pt parser = (manifest_parser_pt) 0x03;
+	manifest_parser_pt parser2 = (manifest_parser_pt) 0x04;
+	bundle_pt bundle = (bundle_pt) 0x05;
+	version_pt version = (version_pt) malloc(sizeof(*version));
+	linked_list_pt capabilities = NULL;
+	linked_list_pt requirements = NULL;
+	linked_list_pt empty_capabilities = NULL;
+	linked_list_pt empty_requirements = NULL;
+	char * name = my_strdup("module_one");
+	char * name2 = my_strdup("module_two");
+	char * id = my_strdup("42");
+	char * id2 = my_strdup("43");
+	char * service_name = my_strdup("test_service_foo");
+	char * service_name2 = my_strdup("test_service_bar");
+	requirement_pt req = (requirement_pt) 0x06;
+	requirement_pt req2= (requirement_pt) 0x07;
+	capability_pt cap = (capability_pt) 0x08;
+	capability_pt cap2= (capability_pt) 0x09;
+	wire_pt get_wire;
+	importer_wires_pt get_importer_wires;
+	linked_list_pt get_wire_map;
 
 	//creating module
-	linkedList_create(&actual_capabilities);
-	linkedList_create(&actual_requirements);
+	linkedList_create(&capabilities);
+	linkedList_create(&empty_capabilities);
+	linkedList_create(&requirements);
+	linkedList_create(&empty_requirements);
 
-	linkedList_addElement(actual_requirements, req);
-	linkedList_addElement(actual_requirements, req2);
-	linkedList_addElement(actual_capabilities, cap);
-	linkedList_addElement(actual_capabilities, cap2);
+	linkedList_addElement(requirements, req);
+	linkedList_addElement(requirements, req2);
+	linkedList_addElement(capabilities, cap);
+	linkedList_addElement(capabilities, cap2);
 
 
-	mock().expectNCalls(2, "manifestParser_create");
-	mock().expectNCalls(2,"manifestParser_getSymbolicName")
-					.withOutputParameterReturning("symbolicName", &actual_name, sizeof(actual_name) );
-	mock().expectNCalls(2, "manifestParser_getBundleVersion")
-					.withOutputParameterReturning("version", &actual_version, sizeof(version_pt) );
-	mock().expectNCalls(2, "manifestParser_getCapabilities")
-					.withOutputParameterReturning("capabilities", &actual_capabilities, sizeof(linked_list_pt) );
-	mock().expectNCalls(2, "manifestParser_getCurrentRequirements")
-					.withOutputParameterReturning("requirements", &actual_requirements, sizeof(linked_list_pt) );
-	mock().expectNCalls(2, "manifestParser_destroy");
+	mock().expectOneCall("manifestParser_create")
+			.withParameter("manifest", manifest)
+			.withOutputParameterReturning("manifest_parser", &parser, sizeof(parser))
+			.ignoreOtherParameters();
+	mock().expectOneCall("manifestParser_getSymbolicName")
+			.withParameter("parser", parser)
+			.withOutputParameterReturning("symbolicName", &name, sizeof(name));
+	mock().expectOneCall("manifestParser_getBundleVersion")
+			.withParameter("parser", parser)
+			.withOutputParameterReturning("version", &version, sizeof(version_pt));
+	mock().expectOneCall("manifestParser_getCapabilities")
+			.withParameter("parser", parser)
+			.withOutputParameterReturning("capabilities", &empty_capabilities, sizeof(empty_capabilities));
+	mock().expectOneCall("manifestParser_getCurrentRequirements")
+			.withParameter("parser", parser)
+			.withOutputParameterReturning("requirements", &requirements, sizeof(requirements));
+	mock().expectOneCall("manifestParser_destroy")
+			.withParameter("manifest_parser", parser);
 
-	module = module_create(actual_manifest, actual_id, actual_bundle);
-	module2 = module_create(actual_manifest, actual_id, actual_bundle);
+	mock().expectOneCall("manifestParser_create")
+			.withParameter("manifest", manifest2)
+			.withOutputParameterReturning("manifest_parser", &parser2, sizeof(parser2))
+			.ignoreOtherParameters();
+	mock().expectOneCall("manifestParser_getSymbolicName")
+			.withParameter("parser", parser2)
+			.withOutputParameterReturning("symbolicName", &name2, sizeof(name2));
+	mock().expectOneCall("manifestParser_getBundleVersion")
+			.withParameter("parser", parser2)
+			.withOutputParameterReturning("version", &version, sizeof(version_pt));
+	mock().expectOneCall("manifestParser_getCapabilities")
+			.withParameter("parser", parser2)
+			.withOutputParameterReturning("capabilities", &capabilities, sizeof(linked_list_pt));
+	mock().expectOneCall("manifestParser_getCurrentRequirements")
+			.withParameter("parser", parser2)
+			.withOutputParameterReturning("requirements", &empty_requirements, sizeof(linked_list_pt));
+	mock().expectOneCall("manifestParser_destroy")
+			.withParameter("manifest_parser", parser2);
+
+
+	module = module_create(manifest, id, bundle);
+	module2 = module_create(manifest2, id2, bundle);
 
 	mock().expectOneCall("capability_getServiceName")
 			.withParameter("capability", cap)
-			.withOutputParameterReturning("serviceName", &actual_service_name, sizeof(actual_service_name));
+			.withOutputParameterReturning("serviceName", &service_name, sizeof(service_name));
 
 	mock().expectOneCall("capability_getServiceName")
 			.withParameter("capability", cap2)
-			.withOutputParameterReturning("serviceName", &actual_service_name2, sizeof(actual_service_name2));
+			.withOutputParameterReturning("serviceName", &service_name2, sizeof(service_name2));
 
 	resolver_addModule(module2);
 
-	mock().expectOneCall("requirement_getTargetName")
+	mock().expectOneCall( "requirement_getTargetName")
 			.withParameter("requirement", req)
-			.withOutputParameterReturning("targetName", &actual_service_name, sizeof(actual_service_name));
+			.withOutputParameterReturning("targetName", &service_name, sizeof(service_name));
 
 	mock().expectOneCall("requirement_getTargetName")
 			.withParameter("requirement", req2)
-			.withOutputParameterReturning("targetName", &actual_service_name2, sizeof(actual_service_name2));
+			.withOutputParameterReturning("targetName", &service_name2, sizeof(service_name2));
 
 	bool out = true;
 	mock().expectOneCall("requirement_isSatisfied")
@@ -141,28 +184,70 @@ TEST(resolver, resolve){
 			.withParameter("capability", cap2)
 			.withOutputParameterReturning("inRange", &out, sizeof(out));
 
-	mock().expectOneCall("capability_getModule")
+	mock().expectNCalls(2, "capability_getModule")
 			.withParameter("capability", cap)
-			.withOutputParameterReturning("module", &module, sizeof(module));
+			.withOutputParameterReturning("module", &module2, sizeof(module2));
 
-	/*mock().expectOneCall("capability_getModule")
-			.withParameter("capability", cap)
-			.withOutputParameterReturning("module", &module, sizeof(module));*/
+	mock().expectNCalls(2, "capability_getModule")
+			.withParameter("capability", cap2)
+			.withOutputParameterReturning("module", &module2, sizeof(module2));
 
-	get = resolver_resolve(module);
-	//CHECK(linkedList_contains(get, wire));
+	get_wire_map = resolver_resolve(module);
+
+	get_importer_wires = (importer_wires_pt) linkedList_removeLast(get_wire_map);
+	if ( get_importer_wires->importer == module ) {
+		module_setWires(module, get_importer_wires->wires);
+		get_importer_wires = (importer_wires_pt) linkedList_removeLast(get_wire_map);
+		POINTERS_EQUAL(get_importer_wires->importer, module2);
+		module_setWires(module2, get_importer_wires->wires);
+	} else {
+		POINTERS_EQUAL(get_importer_wires->importer, module2);
+		module_setWires(module2, get_importer_wires->wires);
+		get_importer_wires = (importer_wires_pt) linkedList_removeLast(get_wire_map);
+		POINTERS_EQUAL(get_importer_wires->importer, module);
+		module_setWires(module, get_importer_wires->wires);
+	}
 
 	//test resolved module checking
-
+	module_setResolved(module);
 	POINTERS_EQUAL(NULL, resolver_resolve(module));
 
-	mock().expectOneCall("version_destroy");
+	//CLEAN UP
+	mock().expectOneCall("capability_getServiceName")
+			.withParameter("capability", cap)
+			.withOutputParameterReturning("serviceName", &service_name, sizeof(service_name));
+
+	mock().expectOneCall("capability_getServiceName")
+			.withParameter("capability", cap2)
+			.withOutputParameterReturning("serviceName", &service_name2, sizeof(service_name2));
+
+	resolver_removeModule(module2);
+
+	mock().expectOneCall("requirement_destroy")
+			.withParameter("requirement", req);
+
+	mock().expectOneCall("requirement_destroy")
+			.withParameter("requirement", req2);
+
+	mock().expectOneCall("capability_destroy")
+			.withParameter("capability", cap);
+
+	mock().expectOneCall("capability_destroy")
+			.withParameter("capability", cap2);
+
+	mock().expectNCalls(2, "version_destroy")
+			.withParameter("version", version);
+
 	module_destroy(module);
 	module_destroy(module2);
 
+	linkedList_destroy(get_wire_map);
 
-	free(actual_id);
-	free(actual_name);
+	free(id);
+	free(id2);
+	free(service_name);
+	free(service_name2);
+	free(version);
 }
 /*
 TEST(resolver, moduleResolved){

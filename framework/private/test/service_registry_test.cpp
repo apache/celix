@@ -273,6 +273,10 @@ TEST(service_registry, unregisterService) {
 		.withParameter("registration", registration)
 		.andReturnValue(CELIX_SUCCESS);
 
+	mock()
+		.expectOneCall("serviceRegistration_destroy")
+		.withParameter("registration", registration);
+
 	serviceRegistry_unregisterService(registry, bundle, registration);
 
 	free(registry);
@@ -310,7 +314,6 @@ TEST(service_registry, unregisterServices) {
 }
 
 TEST(service_registry, getServiceReferencesForRegistration){
-#warning implement this
 	service_registry_pt registry = (service_registry_pt) malloc(sizeof(*registry));
 	registry->inUseMap = hashMap_create(NULL, NULL, NULL, NULL);
 	celixThreadMutexAttr_create(&registry->mutexAttr);

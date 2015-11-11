@@ -28,7 +28,9 @@
 #include "bundle_cache.h"
 
 celix_status_t bundleCache_create(properties_pt configurationMap, bundle_cache_pt *bundle_cache) {
-	mock_c()->actualCall("bundleCache_create");
+	mock_c()->actualCall("bundleCache_create")
+		->withPointerParameters("configurationMap", configurationMap)
+		->withOutputParameter("bundle_cache", bundle_cache);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -38,12 +40,19 @@ celix_status_t bundleCache_destroy(bundle_cache_pt *cache) {
 }
 
 celix_status_t bundleCache_getArchives(bundle_cache_pt cache, array_list_pt *archives) {
-	mock_c()->actualCall("bundleCache_getArchives");
+	mock_c()->actualCall("bundleCache_getArchives")
+			->withPointerParameters("cache", cache)
+			->withOutputParameter("archives", archives);
 	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t bundleCache_createArchive(bundle_cache_pt cache, long id, char * location, char *inputFile, bundle_archive_pt *archive) {
-	mock_c()->actualCall("bundleCache_createArchive");
+	mock_c()->actualCall("bundleCache_createArchive")
+			->withPointerParameters("cache", cache)
+			->withLongIntParameters("id", id)
+			->withStringParameters("location", location)
+			->withStringParameters("inputFile", inputFile)
+			->withOutputParameter("archive", archive);
 	return mock_c()->returnValue().value.intValue;
 }
 

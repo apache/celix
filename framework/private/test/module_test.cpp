@@ -34,6 +34,8 @@
 
 extern "C" {
 #include "module.h"
+
+#include "manifest_parser.h"
 }
 
 int main(int argc, char** argv) {
@@ -70,8 +72,9 @@ TEST_GROUP(module) {
 TEST(module, create){
 	module_pt module = NULL;
 	manifest_pt actual_manifest = (manifest_pt) 0x01;
-	bundle_pt actual_bundle = (bundle_pt) 0x02;
-	version_pt actual_version = (version_pt) 0x03;
+	manifest_parser_pt parser = (manifest_parser_pt) 0x02;
+	bundle_pt actual_bundle = (bundle_pt) 0x03;
+	version_pt actual_version = (version_pt) 0x04;
 	linked_list_pt actual_capabilities = NULL;
 	linked_list_pt actual_requirements= NULL;
 	char * actual_name = my_strdup("module");
@@ -79,21 +82,30 @@ TEST(module, create){
 
 	linkedList_create(&actual_capabilities);
 	linkedList_create(&actual_requirements);
-	mock().expectOneCall("manifestParser_create");
+	mock().expectOneCall("manifestParser_create")
+			.withParameter("manifest", actual_manifest)
+			.withOutputParameterReturning("manifest_parser", &parser, sizeof(parser))
+			.ignoreOtherParameters();
 	mock().expectOneCall("manifestParser_getSymbolicName")
-					.withOutputParameterReturning("symbolicName", &actual_name, sizeof(actual_name) );
+			.withParameter("parser", parser)
+			.withOutputParameterReturning("symbolicName", &actual_name, sizeof(actual_name) );
 	mock().expectOneCall("manifestParser_getBundleVersion")
-					.withOutputParameterReturning("version", &actual_version, sizeof(version_pt) );
+			.withParameter("parser", parser)
+			.withOutputParameterReturning("version", &actual_version, sizeof(actual_version) );
 	mock().expectOneCall("manifestParser_getCapabilities")
-					.withOutputParameterReturning("capabilities", &actual_capabilities, sizeof(linked_list_pt) );
+			.withParameter("parser", parser)
+			.withOutputParameterReturning("capabilities", &actual_capabilities, sizeof(actual_capabilities) );
 	mock().expectOneCall("manifestParser_getCurrentRequirements")
-					.withOutputParameterReturning("requirements", &actual_requirements, sizeof(linked_list_pt) );
-	mock().expectOneCall("manifestParser_destroy");
+			.withParameter("parser", parser)
+			.withOutputParameterReturning("requirements", &actual_requirements, sizeof(actual_requirements) );
+	mock().expectOneCall("manifestParser_destroy")
+			.withParameter("manifest_parser", parser);
 
 	module = module_create(actual_manifest, actual_id, actual_bundle);
 	CHECK(module != NULL);
 
-	mock().expectOneCall("version_destroy");
+	mock().expectOneCall("version_destroy")
+			.withParameter("version", actual_version);
 	module_destroy(module);
 
 	free(actual_id);
@@ -102,14 +114,21 @@ TEST(module, create){
 TEST(module, createFrameworkModule){
 	module_pt module = NULL;
 	bundle_pt actual_bundle = (bundle_pt) 0x01;
+	version_pt actual_version = (version_pt) 0x02;
 
-	mock().expectOneCall("version_createVersion");
+	mock().expectOneCall("version_createVersion")
+			.withParameter("major", 1)
+			.withParameter("minor", 0)
+			.withParameter("micro", 0)
+			.withParameter("qualifier", "")
+			.withOutputParameterReturning("version", &actual_version, sizeof(actual_version));
 
 	module = module_createFrameworkModule(actual_bundle);
 
 	CHECK(module != NULL);
 
-	mock().expectOneCall("version_destroy");
+	mock().expectOneCall("version_destroy")
+			.withParameter("version", actual_version);
 
 	module_destroy(module);
 }
@@ -117,8 +136,9 @@ TEST(module, createFrameworkModule){
 TEST(module, resolved){
 	module_pt module = NULL;
 	manifest_pt actual_manifest = (manifest_pt) 0x01;
-	bundle_pt actual_bundle = (bundle_pt) 0x02;
-	version_pt actual_version = (version_pt) 0x03;
+	manifest_parser_pt parser = (manifest_parser_pt) 0x02;
+	bundle_pt actual_bundle = (bundle_pt) 0x03;
+	version_pt actual_version = (version_pt) 0x04;
 	linked_list_pt actual_capabilities = NULL;
 	linked_list_pt actual_requirements= NULL;
 	char * actual_name = my_strdup("module");
@@ -126,23 +146,32 @@ TEST(module, resolved){
 
 	linkedList_create(&actual_capabilities);
 	linkedList_create(&actual_requirements);
-	mock().expectOneCall("manifestParser_create");
+	mock().expectOneCall("manifestParser_create")
+			.withParameter("manifest", actual_manifest)
+			.withOutputParameterReturning("manifest_parser", &parser, sizeof(parser))
+			.ignoreOtherParameters();
 	mock().expectOneCall("manifestParser_getSymbolicName")
-					.withOutputParameterReturning("symbolicName", &actual_name, sizeof(actual_name) );
+			.withParameter("parser", parser)
+			.withOutputParameterReturning("symbolicName", &actual_name, sizeof(actual_name) );
 	mock().expectOneCall("manifestParser_getBundleVersion")
-					.withOutputParameterReturning("version", &actual_version, sizeof(version_pt) );
+			.withParameter("parser", parser)
+			.withOutputParameterReturning("version", &actual_version, sizeof(actual_version) );
 	mock().expectOneCall("manifestParser_getCapabilities")
-					.withOutputParameterReturning("capabilities", &actual_capabilities, sizeof(linked_list_pt) );
+			.withParameter("parser", parser)
+			.withOutputParameterReturning("capabilities", &actual_capabilities, sizeof(actual_capabilities) );
 	mock().expectOneCall("manifestParser_getCurrentRequirements")
-					.withOutputParameterReturning("requirements", &actual_requirements, sizeof(linked_list_pt) );
-	mock().expectOneCall("manifestParser_destroy");
+			.withParameter("parser", parser)
+			.withOutputParameterReturning("requirements", &actual_requirements, sizeof(actual_requirements) );
+	mock().expectOneCall("manifestParser_destroy")
+			.withParameter("manifest_parser", parser);
 	module = module_create(actual_manifest, actual_id, actual_bundle);
 
 	CHECK_FALSE(module_isResolved(module));
 	module_setResolved(module);
 	CHECK(module_isResolved(module));
 
-	mock().expectOneCall("version_destroy");
+	mock().expectOneCall("version_destroy")
+			.withParameter("version", actual_version);
 	module_destroy(module);
 
 	free(actual_id);
@@ -150,12 +179,13 @@ TEST(module, resolved){
 
 TEST(module, wires){
 	manifest_pt manifest = (manifest_pt) 0x01;
-	bundle_pt bundle = (bundle_pt) 0x02;
-	version_pt version = (version_pt) 0x03;
-	wire_pt wire = (wire_pt) 0x04;
-	wire_pt wire_new = (wire_pt) 0x05;
-	capability_pt cap = (capability_pt) 0x06;
-	requirement_pt req = (requirement_pt) 0x07;
+	manifest_parser_pt parser = (manifest_parser_pt) 0x02;
+	bundle_pt bundle = (bundle_pt) 0x03;
+	version_pt version = (version_pt) 0x04;
+	wire_pt wire = (wire_pt) 0x05;
+	wire_pt wire_new = (wire_pt) 0x06;
+	capability_pt cap = (capability_pt) 0x07;
+	requirement_pt req = (requirement_pt) 0x08;
 	char * service_name = my_strdup("foobar");
 
 	//test var declarations
@@ -186,16 +216,24 @@ TEST(module, wires){
 	linkedList_addElement(requirements, req);
 	linkedList_addElement(wires, wire);
 
-	mock().expectOneCall("manifestParser_create");
+	mock().expectOneCall("manifestParser_create")
+			.withParameter("manifest", manifest)
+			.withOutputParameterReturning("manifest_parser", &parser, sizeof(parser))
+			.ignoreOtherParameters();
 	mock().expectOneCall("manifestParser_getSymbolicName")
-						.withOutputParameterReturning("symbolicName", &name, sizeof(name));
+			.withParameter("parser", parser)
+			.withOutputParameterReturning("symbolicName", &name, sizeof(name) );
 	mock().expectOneCall("manifestParser_getBundleVersion")
-						.withOutputParameterReturning("version", &version, sizeof(version));
+			.withParameter("parser", parser)
+			.withOutputParameterReturning("version", &version, sizeof(version) );
 	mock().expectOneCall("manifestParser_getCapabilities")
-						.withOutputParameterReturning("capabilities", &capabilities, sizeof(capabilities));
+			.withParameter("parser", parser)
+			.withOutputParameterReturning("capabilities", &capabilities, sizeof(capabilities) );
 	mock().expectOneCall("manifestParser_getCurrentRequirements")
-						.withOutputParameterReturning("requirements", &requirements, sizeof(requirements));
-	mock().expectOneCall("manifestParser_destroy");
+			.withParameter("parser", parser)
+			.withOutputParameterReturning("requirements", &requirements, sizeof(requirements) );
+	mock().expectOneCall("manifestParser_destroy")
+			.withParameter("manifest_parser", parser);
 	module = module_create(manifest, id, bundle);
 
 	//create module2
@@ -203,17 +241,26 @@ TEST(module, wires){
 	linkedList_create(&requirements2);
 	linkedList_create(&wires_new);
 	linkedList_addElement(wires_new, wire_new);
-	mock().expectOneCall("manifestParser_create");
+
+	mock().expectOneCall("manifestParser_create")
+			.withParameter("manifest", manifest)
+			.withOutputParameterReturning("manifest_parser", &parser, sizeof(parser))
+			.ignoreOtherParameters();
 	mock().expectOneCall("manifestParser_getSymbolicName")
-						.withOutputParameterReturning("symbolicName", &name2, sizeof(name2));
+			.withParameter("parser", parser)
+			.withOutputParameterReturning("symbolicName", &name2, sizeof(name2) );
 	mock().expectOneCall("manifestParser_getBundleVersion")
-						.withOutputParameterReturning("version", &version, sizeof(version));
+			.withParameter("parser", parser)
+			.withOutputParameterReturning("version", &version, sizeof(version) );
 	mock().expectOneCall("manifestParser_getCapabilities")
-						.withOutputParameterReturning("capabilities", &capabilities2, sizeof(capabilities2));
+			.withParameter("parser", parser)
+			.withOutputParameterReturning("capabilities", &capabilities2, sizeof(capabilities2) );
 	mock().expectOneCall("manifestParser_getCurrentRequirements")
-						.withOutputParameterReturning("requirements", &requirements2, sizeof(requirements2));
-	mock().expectOneCall("manifestParser_destroy");
-	module2 = module_create(manifest, id, bundle);
+			.withParameter("parser", parser)
+			.withOutputParameterReturning("requirements", &requirements2, sizeof(requirements2) );
+	mock().expectOneCall("manifestParser_destroy")
+			.withParameter("manifest_parser", parser);
+	module2 = module_create(manifest, id2, bundle);
 
 	//test empty wires handling
 	POINTERS_EQUAL(NULL, module_getWire(module, service_name));
@@ -248,7 +295,8 @@ TEST(module, wires){
 					.withParameter("wire", wire)
 					.withOutputParameterReturning("exporter", &module2, sizeof(module2));
 
-	mock().expectOneCall("wire_destroy");
+	mock().expectOneCall("wire_destroy")
+			.withParameter("wire", wire);
 
 	mock().expectOneCall("wire_getExporter")
 					.withParameter("wire", wire_new)
@@ -269,10 +317,17 @@ TEST(module, wires){
 	module_removeDependentRequirer(module, module2);
 
 	//clean up
-	mock().expectNCalls(2, "version_destroy");
-	mock().expectOneCall("wire_destroy");
-	mock().expectOneCall("capability_destroy");
-	mock().expectOneCall("requirement_destroy");
+	mock().expectNCalls(2, "version_destroy")
+			.withParameter("version", version);
+
+	mock().expectOneCall("wire_destroy")
+			.withParameter("wire", wire_new);
+
+	mock().expectOneCall("capability_destroy")
+			.withParameter("capability", cap);
+
+	mock().expectOneCall("requirement_destroy")
+			.withParameter("requirement", req);
 	module_destroy(module);
 	module_destroy(module2);
 
@@ -285,8 +340,9 @@ TEST(module, wires){
 TEST(module, get){
 	module_pt module = NULL;
 	manifest_pt actual_manifest = (manifest_pt) 0x01;
-	bundle_pt actual_bundle = (bundle_pt) 0x02;
-	version_pt actual_version = (version_pt) 0x03;
+	manifest_parser_pt parser = (manifest_parser_pt) 0x02;
+	bundle_pt actual_bundle = (bundle_pt) 0x03;
+	version_pt actual_version = (version_pt) 0x04;
 	linked_list_pt actual_capabilities = NULL;
 	linked_list_pt actual_requirements= NULL;
 	char * actual_name = my_strdup("module");
@@ -296,20 +352,24 @@ TEST(module, get){
 	linkedList_create(&actual_capabilities);
 	linkedList_create(&actual_requirements);
 
-	mock().expectOneCall("manifestParser_create");
+	mock().expectOneCall("manifestParser_create")
+			.withParameter("manifest", actual_manifest)
+			.withOutputParameterReturning("manifest_parser", &parser, sizeof(parser))
+			.ignoreOtherParameters();
 	mock().expectOneCall("manifestParser_getSymbolicName")
-					.withOutputParameterReturning("symbolicName", &actual_name, sizeof(actual_name) );
-
+			.withParameter("parser", parser)
+			.withOutputParameterReturning("symbolicName", &actual_name, sizeof(actual_name) );
 	mock().expectOneCall("manifestParser_getBundleVersion")
-					.withOutputParameterReturning("version", &actual_version, sizeof(version_pt) );
-
+			.withParameter("parser", parser)
+			.withOutputParameterReturning("version", &actual_version, sizeof(actual_version) );
 	mock().expectOneCall("manifestParser_getCapabilities")
-					.withOutputParameterReturning("capabilities", &actual_capabilities, sizeof(linked_list_pt) );
-
+			.withParameter("parser", parser)
+			.withOutputParameterReturning("capabilities", &actual_capabilities, sizeof(actual_capabilities) );
 	mock().expectOneCall("manifestParser_getCurrentRequirements")
-					.withOutputParameterReturning("requirements", &actual_requirements, sizeof(linked_list_pt) );
-
-	mock().expectOneCall("manifestParser_destroy");
+			.withParameter("parser", parser)
+			.withOutputParameterReturning("requirements", &actual_requirements, sizeof(actual_requirements) );
+	mock().expectOneCall("manifestParser_destroy")
+			.withParameter("manifest_parser", parser);
 
 
 	module = module_create(actual_manifest, actual_id, actual_bundle);
@@ -328,7 +388,8 @@ TEST(module, get){
 
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, module_getSymbolicName(NULL, &get));
 
-	mock().expectOneCall("version_destroy");
+	mock().expectOneCall("version_destroy")
+			.withParameter("version", actual_version);
 
 	module_destroy(module);
 
