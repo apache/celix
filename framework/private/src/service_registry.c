@@ -226,7 +226,7 @@ celix_status_t serviceRegistry_clearServiceRegistrations(service_registry_pt reg
 static void serviceRegistry_logWarningServiceRegistration(service_registry_pt registry, service_registration_pt reg) {
     char *servName = NULL;
     serviceRegistration_getServiceName(reg, &servName);
-    fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Dangling service registration for service %s. Look for missing serviceRegistration_unregister", servName);
+    fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Dangling service registration for service %s. Look for missing serviceRegistration_unregister.", servName);
 }
 
 celix_status_t serviceRegistry_getServiceReference(service_registry_pt registry, bundle_pt owner,
@@ -358,10 +358,10 @@ celix_status_t serviceRegistry_ungetServiceReference(service_registry_pt registr
 
 void serviceRegistry_logWarningServiceReferenceUsageCount(service_registry_pt registry, size_t usageCount, size_t refCount) {
     if (usageCount > 0) {
-        fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Service Reference destroyed will usage count is %zu. Look for missing bundleContext_ungetService calls", usageCount);
+        fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Service Reference destroyed will usage count is %zu. Look for missing bundleContext_ungetService calls.", usageCount);
     }
     if (refCount > 0) {
-        fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Dangling service reference. Reference count is %zu. Look for missing bundleContext_ungetServiceReference", refCount);
+        fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Dangling service reference. Reference count is %zu. Look for missing bundleContext_ungetServiceReference.", refCount);
     }
 }
 
