@@ -189,10 +189,11 @@ celix_status_t bundleArchive_recreate(char * archiveRoot, bundle_archive_pt *bun
 		} else {
 
             long idx = 0;
+            long highestId = -1;
             char *location = NULL;
 
 			struct dirent dent;
-			struct dirent *result;
+			struct dirent *result = NULL;
             struct stat st;
 			int rc;
 
@@ -203,15 +204,15 @@ celix_status_t bundleArchive_recreate(char * archiveRoot, bundle_archive_pt *bun
                 stat(subdir, &st);
 				if (S_ISDIR(st.st_mode) && (strncmp(dent.d_name, "version", 7) == 0)) {
 					sscanf(dent.d_name, "version%*d.%ld", &idx);
-				} else {
-                    status = CELIX_FILE_IO_EXCEPTION;
-                    break;
-                }
+                    if (idx > highestId) {
+                        highestId = idx;
+                    }
+				}
 				rc = readdir_r(archive->archiveRootDir, &dent, &result);
 			}
 
             status = CELIX_DO_IF(status, bundleArchive_getRevisionLocation(archive, 0, &location));
-            status = CELIX_DO_IF(status, bundleArchive_reviseInternal(archive, true, idx, location, NULL));
+            status = CELIX_DO_IF(status, bundleArchive_reviseInternal(archive, true, highestId, location, NULL));
             if (location) {
                 free(location);
             }
@@ -668,7 +669,10 @@ static celix_status_t bundleArchive_initialize(bundle_archive_pt archive) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (archive->archiveRootDir == NULL) {
-	    if (mkdir(archive->archiveRoot, S_IRWXU) != 0) {
+        int err = mkdir(archive->archiveRoot, S_IRWXU) ;
+	    if (err != 0) {
+            char *errmsg = strerror(errno);
+            fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error mkdir: %s\n", errmsg);
 			status = CELIX_FILE_IO_EXCEPTION;
 		} else {
 		    archive->archiveRootDir = opendir(archive->archiveRoot);
