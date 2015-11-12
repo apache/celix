@@ -193,14 +193,20 @@ celix_status_t bundleArchive_recreate(char * archiveRoot, bundle_archive_pt *bun
 
 			struct dirent dent;
 			struct dirent *result;
+            struct stat st;
 			int rc;
 
 			rc = readdir_r(archive->archiveRootDir, &dent, &result);
-
 			while (rc == 0 && result != NULL) {
-				if (dent.d_type == DT_DIR && (strncmp(dent.d_name, "version", 7) == 0)) {
+                char subdir[512];
+                snprintf(subdir, 512, "%s/%s", archiveRoot, dent.d_name);
+                stat(subdir, &st);
+				if (S_ISDIR(st.st_mode) && (strncmp(dent.d_name, "version", 7) == 0)) {
 					sscanf(dent.d_name, "version%*d.%ld", &idx);
-				}
+				} else {
+                    status = CELIX_FILE_IO_EXCEPTION;
+                    break;
+                }
 				rc = readdir_r(archive->archiveRootDir, &dent, &result);
 			}
 
@@ -720,23 +726,26 @@ static celix_status_t bundleArchive_deleteTree(bundle_archive_pt archive, char *
 		struct dirent *result = NULL;
 		int rc = 0;
 
-		rc = readdir_r(dir, &dp, &result);
-		while (rc == 0 && result != NULL) {
-			if ((strcmp((dp.d_name), ".") != 0) && (strcmp((dp.d_name), "..") != 0)) {
-				char subdir[512];
-				snprintf(subdir, sizeof(subdir), "%s/%s", directory, dp.d_name);
+        rc = readdir_r(dir, &dp, &result);
+        while (rc == 0 && result != NULL) {
+            if ((strcmp((dp.d_name), ".") != 0) && (strcmp((dp.d_name), "..") != 0)) {
+                char subdir[512];
+                snprintf(subdir, 512, "%s/%s", directory, dp.d_name);
 
-				if (dp.d_type == DT_DIR) {
-					status = bundleArchive_deleteTree(archive, subdir);
-				} else {
-					if (remove(subdir) != 0) {
-						status = CELIX_FILE_IO_EXCEPTION;
-						break;
-					}
-				}
-			}
-			rc = readdir_r(dir, &dp, &result);
-		}
+                struct stat st;
+                if (stat(subdir, &st) == 0) {
+                    if (S_ISDIR (st.st_mode)) {
+                        status = bundleArchive_deleteTree(archive, subdir);
+                    } else {
+                        if (remove(subdir) != 0) {
+                            status = CELIX_FILE_IO_EXCEPTION;
+                            break;
+                        }
+                    }
+                }
+            }
+            rc = readdir_r(dir, &dp, &result);
+        }
 
 		if (closedir(dir) != 0) {
 			status = CELIX_FILE_IO_EXCEPTION;
