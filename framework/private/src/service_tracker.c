@@ -346,7 +346,7 @@ static celix_status_t serviceTracker_untrack(service_tracker_pt tracker, service
 		if (equals) {
 			arrayList_remove(tracker->tracked, i);
             serviceTracker_invokeRemovingService(tracker, tracked->reference, tracked->service);
-            bundleContext_ungetService(tracker->context, tracked->reference, tracked->service);
+            bundleContext_ungetService(tracker->context, tracked->reference, NULL);
 			free(tracked);
             break;
 		}
