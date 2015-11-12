@@ -329,8 +329,6 @@ celix_status_t framework_destroy(framework_pt framework) {
 
 	bundleCache_destroy(&framework->cache);
 
-	unsetenv(OSGI_FRAMEWORK_FRAMEWORK_UUID);
-
 	celixThreadCondition_destroy(&framework->dispatcher);
 	celixThreadMutex_destroy(&framework->bundleListenerLock);
 	celixThreadMutex_destroy(&framework->dispatcherLock);
@@ -359,7 +357,6 @@ celix_status_t fw_init(framework_pt framework) {
 	linked_list_pt wires = NULL;
 	array_list_pt archives = NULL;
 	bundle_archive_pt archive = NULL;
-	char uuid[37];
 
 	celix_status_t status = CELIX_SUCCESS;
 	status = CELIX_DO_IF(status, framework_acquireBundleLock(framework, framework->bundle, OSGI_FRAMEWORK_BUNDLE_INSTALLED|OSGI_FRAMEWORK_BUNDLE_RESOLVED|OSGI_FRAMEWORK_BUNDLE_STARTING|OSGI_FRAMEWORK_BUNDLE_ACTIVE));
@@ -387,11 +384,13 @@ celix_status_t fw_init(framework_pt framework) {
 
 	if (status == CELIX_SUCCESS) {
         /*create and store framework uuid*/
+        char uuid[37];
+
 	    uuid_t uid;
         uuid_generate(uid);
         uuid_unparse(uid, uuid);
-        // #TODO setenv has a memory leak
-        setenv(OSGI_FRAMEWORK_FRAMEWORK_UUID, uuid, true);
+
+        properties_set(framework->configurationMap, (char*) OSGI_FRAMEWORK_FRAMEWORK_UUID, uuid);
 
         framework->installedBundleMap = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 	}
