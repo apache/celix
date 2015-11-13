@@ -47,5 +47,12 @@ if (RSA_REMOTE_SERVICE_ADMIN_SHM)
 	)
 
 	target_link_libraries(remote_service_admin_shm celix_framework)
+
+	if (ENABLE_TESTING)
+             find_package(CppUTest REQUIRED)
+	     include_directories(${CPPUTEST_INCLUDE_DIR})
+	     add_subdirectory(private/test)
+         endif()
+
 endif (RSA_REMOTE_SERVICE_ADMIN_SHM)
 

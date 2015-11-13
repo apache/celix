@@ -37,8 +37,8 @@ find_package(CURL REQUIRED)
 	SET_HEADERS("Bundle-Name: Apache Celix RSA Discovery SHM")
 
 	bundle(discovery_shm SOURCES 
-		private/src/shm
-		private/src/shm_watcher
+		private/src/discovery_shm
+		private/src/discovery_shmWatcher
 		private/src/discovery_impl
 		${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/discovery_activator.c
 		${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/discovery.c

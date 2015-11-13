@@ -53,22 +53,22 @@ static celix_status_t remoteServiceAdmin_unlock(int semId, int semNr);
 static int remoteServiceAdmin_getCount(int semId, int semNr);
 
 celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin, export_registration_pt registration, service_reference_pt reference, char *interface);
-celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, service_reference_pt reference, properties_pt endpointProperties, char *interface,
-        endpoint_description_pt *description);
+celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, service_reference_pt reference, properties_pt endpointProperties, char *interface, endpoint_description_pt *description);
 
 celix_status_t remoteServiceAdmin_createOrAttachShm(hash_map_pt ipcSegment, remote_service_admin_pt admin, endpoint_description_pt endpointDescription, bool createIfNotFound);
 celix_status_t remoteServiceAdmin_getIpcSegment(remote_service_admin_pt admin, endpoint_description_pt endpointDescription, ipc_segment_pt* ipc);
 celix_status_t remoteServiceAdmin_detachIpcSegment(ipc_segment_pt ipc);
 celix_status_t remoteServiceAdmin_deleteIpcSegment(ipc_segment_pt ipc);
 
-celix_status_t remoteServiceAdmin_getSharedIdentifierFile(char *fwUuid, char* servicename, char* outFile);
-celix_status_t remoteServiceAdmin_removeSharedIdentityFile(char *fwUuid, char* servicename);
-celix_status_t remoteServiceAdmin_removeSharedIdentityFiles(char* fwUuid);
+celix_status_t remoteServiceAdmin_getSharedIdentifierFile(remote_service_admin_pt admin, char *fwUuid, char* servicename, char* outFile);
+celix_status_t remoteServiceAdmin_removeSharedIdentityFile(remote_service_admin_pt admin, char *fwUuid, char* servicename);
+celix_status_t remoteServiceAdmin_removeSharedIdentityFiles(remote_service_admin_pt admin);
 
 celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_service_admin_pt *admin) {
     celix_status_t status = CELIX_SUCCESS;
 
     *admin = calloc(1, sizeof(**admin));
+
     if (!*admin) {
         status = CELIX_ENOMEM;
     } else {
@@ -141,7 +141,6 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin) {
                     importFactory->trackedFactory->unregisterProxyService(importFactory->trackedFactory->factory, importRegistration->endpointDescription);
                 }
             }
-
             serviceTracker_close(importFactory->proxyFactoryTracker);
             importRegistrationFactory_close(importFactory);
 
@@ -182,27 +181,22 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin) {
     iter = hashMapIterator_create(admin->importedIpcSegment);
     while (hashMapIterator_hasNext(iter)) {
         ipc_segment_pt ipc = hashMapIterator_nextValue(iter);
-        shmdt(ipc->shmBaseAdress);
+        remoteServiceAdmin_detachIpcSegment(ipc);
+        free(ipc);
     }
     hashMapIterator_destroy(iter);
 
     iter = hashMapIterator_create(admin->exportedIpcSegment);
     while (hashMapIterator_hasNext(iter)) {
         ipc_segment_pt ipc = hashMapIterator_nextValue(iter);
-
-        semctl(ipc->semId, 1 /*ignored*/, IPC_RMID);
-        shmctl(ipc->shmId, IPC_RMID, 0);
+        remoteServiceAdmin_deleteIpcSegment(ipc);
     }
     hashMapIterator_destroy(iter);
 
-    char *fwUuid = NULL;
-    bundleContext_getProperty(admin->context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &fwUuid);
-
-    remoteServiceAdmin_removeSharedIdentityFiles(fwUuid);
+    remoteServiceAdmin_removeSharedIdentityFiles(admin);
 
     logHelper_stop(admin->loghelper);
     logHelper_destroy(&admin->loghelper);
-
     return status;
 }
 
@@ -339,13 +333,13 @@ static void * remoteServiceAdmin_receiveFromSharedMemory(void *data) {
 
                             if (reply != NULL) {
                                 if ((strlen(reply) * sizeof(char)) >= RSA_SHM_MEMSIZE) {
-                                    fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "RSA : receiveFromSharedMemory : size of message bigger than shared memory message. NOT SENDING.");
+                                    logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "receiveFromSharedMemory : size of message bigger than shared memory message. NOT SENDING.");
                                 } else {
                                     strcpy(ipc->shmBaseAdress, reply);
                                 }
                             }
                         } else {
-                            fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "RSA : receiveFromSharedMemory : No endpoint set for %s.", export->endpointDescription->service);
+                            logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "receiveFromSharedMemory : No endpoint set for %s.", export->endpointDescription->service);
                         }
                     }
                 }
@@ -363,51 +357,53 @@ static void * remoteServiceAdmin_receiveFromSharedMemory(void *data) {
     return NULL;
 }
 
-celix_status_t remoteServiceAdmin_getSharedIdentifierFile(char *fwUuid, char* servicename, char* outFile) {
+celix_status_t remoteServiceAdmin_getSharedIdentifierFile(remote_service_admin_pt admin, char *fwUuid, char* servicename, char* outFile) {
     celix_status_t status = CELIX_SUCCESS;
     snprintf(outFile, RSA_FILEPATH_LENGTH, "%s/%s/%s", P_tmpdir, fwUuid, servicename);
 
     if (access(outFile, F_OK) != 0) {
         char tmpDir[RSA_FILEPATH_LENGTH];
 
-        snprintf(tmpDir, sizeof(tmpDir), "%s/%s", P_tmpdir, fwUuid);
+        snprintf(tmpDir, RSA_FILEPATH_LENGTH, "%s/%s", P_tmpdir, fwUuid);
 
         // we call, even if it already exists (and just don't care about the return value)
         mkdir(tmpDir, 0755);
 
         if (fopen(outFile, "wb") == NULL) {
-            fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "RSA: error while creating shared identifier file %s (%s)", outFile, strerror(errno));
+            logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "error while creating shared identifier file %s (%s)", outFile, strerror(errno));
             status = CELIX_FILE_IO_EXCEPTION;
         } else {
-            fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "RSA:create shared identifier file %s", outFile);
+            logHelper_log(admin->loghelper, OSGI_LOGSERVICE_DEBUG, "create shared identifier file %s", outFile);
         }
     } else {
-        fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "RSA: shared identifier file %s already exists", outFile);
+        logHelper_log(admin->loghelper, OSGI_LOGSERVICE_DEBUG, "shared identifier file %s already exists", outFile);
     }
 
     return status;
 }
 
-celix_status_t remoteServiceAdmin_removeSharedIdentityFile(char *fwUuid, char* servicename) {
+celix_status_t remoteServiceAdmin_removeSharedIdentityFile(remote_service_admin_pt admin, char *fwUuid, char* servicename) {
     celix_status_t status = CELIX_SUCCESS;
     char tmpPath[RSA_FILEPATH_LENGTH];
 
-    snprintf(tmpPath, sizeof(tmpPath), "%s/%s/%s", P_tmpdir, fwUuid, servicename);
+    snprintf(tmpPath, RSA_FILEPATH_LENGTH, "%s/%s/%s", P_tmpdir, fwUuid, servicename);
 
     if (access(tmpPath, F_OK) == 0) {
-        fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "RSA: removing shared identifier file %s", tmpPath);
+        logHelper_log(admin->loghelper, OSGI_LOGSERVICE_DEBUG, "removing shared identifier file %s", tmpPath);
         unlink(tmpPath);
     } else {
-        fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "RSA: cannot remove shared identifier file %s", tmpPath);
+        logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "cannot remove shared identifier file %s", tmpPath);
     }
 
     return status;
 }
 
-celix_status_t remoteServiceAdmin_removeSharedIdentityFiles(char* fwUuid) {
+celix_status_t remoteServiceAdmin_removeSharedIdentityFiles(remote_service_admin_pt admin) {
     char tmpDir[RSA_FILEPATH_LENGTH];
+    char* fwUuid = NULL;
+    bundleContext_getProperty(admin->context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &fwUuid);
 
-    snprintf(tmpDir, sizeof(tmpDir), "%s/%s", P_tmpdir, fwUuid);
+    snprintf(tmpDir, RSA_FILEPATH_LENGTH, "%s/%s", P_tmpdir, fwUuid);
 
     DIR *d = opendir(tmpDir);
     size_t path_len = strlen(tmpDir);
@@ -433,7 +429,7 @@ celix_status_t remoteServiceAdmin_removeSharedIdentityFiles(char* fwUuid) {
                 snprintf(f_name, len, "%s/%s", tmpDir, p->d_name);
 
                 if (!stat(f_name, &statbuf)) {
-                    fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "RSA: removing shared identifier file %s (unproper clean-up?)", f_name);
+                    logHelper_log(admin->loghelper, OSGI_LOGSERVICE_WARNING, "removing shared identifier file %s (unproper clean-up?)", f_name);
                     retVal = unlink(f_name);
                 }
             }
@@ -457,6 +453,8 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
     array_list_pt references = NULL;
     service_reference_pt reference = NULL;
     char filter[256];
+    char *exports = NULL;
+    char *provided = NULL;
 
     snprintf(filter, 256, "(%s=%s)", (char *) OSGI_FRAMEWORK_SERVICE_ID, serviceId);
 
@@ -465,36 +463,35 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
     if (arrayList_size(references) >= 1) {
         reference = arrayList_get(references, 0);
     }
+
     arrayList_destroy(references);
 
-    if (reference == NULL) {
-        fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "ERROR: expected a reference for service id %s.", serviceId);
-        return CELIX_ILLEGAL_STATE;
-    }
-
-    char *exports = NULL;
-    char *provided = NULL;
     serviceReference_getProperty(reference, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, &exports);
     serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_OBJECTCLASS, &provided);
 
-    if (exports == NULL || provided == NULL) {
-        logHelper_log(admin->loghelper, OSGI_LOGSERVICE_WARNING, "RSA: No Services to export.");
+
+    if (reference == NULL) {
+        logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "expected a reference for service id %s.", serviceId);
+        status = CELIX_ILLEGAL_STATE;
+    }
+    else if (exports == NULL || provided == NULL) {
+        logHelper_log(admin->loghelper, OSGI_LOGSERVICE_WARNING, "No Services to export.");
     } else {
-        logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA: Export services (%s)", exports);
+        logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "Export services (%s)", exports);
         array_list_pt interfaces = NULL;
         arrayList_create(&interfaces);
         if (strcmp(utils_stringTrim(exports), "*") == 0) {
-        	char *provided_save_ptr = NULL;
+            char *provided_save_ptr = NULL;
             char *interface = strtok_r(provided, ",", &provided_save_ptr);
             while (interface != NULL) {
                 arrayList_add(interfaces, utils_stringTrim(interface));
                 interface = strtok_r(NULL, ",", &provided_save_ptr);
             }
         } else {
-        	char *provided_save_ptr = NULL;
+            char *provided_save_ptr = NULL;
             char *pinterface = strtok_r(provided, ",", &provided_save_ptr);
             while (pinterface != NULL) {
-            	char *exports_save_ptr = NULL;
+                char *exports_save_ptr = NULL;
                 char *einterface = strtok_r(exports, ",", &exports_save_ptr);
                 while (einterface != NULL) {
                     if (strcmp(einterface, pinterface) == 0) {
@@ -513,7 +510,6 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
                 export_registration_pt registration = NULL;
 
                 exportRegistration_create(admin->loghelper, reference, NULL, admin, admin->context, &registration);
-
                 arrayList_add(*registrations, registration);
 
                 remoteServiceAdmin_installEndpoint(admin, registration, reference, interface);
@@ -543,7 +539,10 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
                 }
             }
 
+            celixThreadMutex_lock(&admin->exportedServicesLock);
             hashMap_put(admin->exportedServices, reference, *registrations);
+            celixThreadMutex_unlock(&admin->exportedServicesLock);
+
         }
         arrayList_destroy(interfaces);
     }
@@ -554,39 +553,45 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 celix_status_t remoteServiceAdmin_removeExportedService(export_registration_pt registration) {
     celix_status_t status = CELIX_SUCCESS;
     remote_service_admin_pt admin = registration->rsa;
-    bool *pollThreadRunning = NULL;
     ipc_segment_pt ipc = NULL;
-    celix_thread_t* pollThread;
 
     celixThreadMutex_lock(&admin->exportedServicesLock);
 
-    hashMap_remove(admin->exportedServices, registration->reference);
+    array_list_pt registrations = hashMap_remove(admin->exportedServices, registration->reference);
 
-    if ((pollThreadRunning = hashMap_get(admin->pollThreadRunning, registration->endpointDescription)) != NULL) {
-        *pollThreadRunning = false;
+    if ((registrations) != NULL) {
+    	bool *pollThreadRunning = NULL;
+        if ((pollThreadRunning = hashMap_get(admin->pollThreadRunning, registration->endpointDescription)) != NULL) {
+            *pollThreadRunning = false;
 
-        if ((ipc = hashMap_get(admin->exportedIpcSegment, registration->endpointDescription->service)) != NULL) {
-            remoteServiceAdmin_unlock(ipc->semId, 1);
+            if ((ipc = hashMap_get(admin->exportedIpcSegment, registration->endpointDescription->service)) != NULL) {
+                celix_thread_t* pollThread;
 
-            if ((pollThread = hashMap_get(admin->pollThread, registration->endpointDescription)) != NULL) {
-                status = celixThread_join(*pollThread, NULL);
+                remoteServiceAdmin_unlock(ipc->semId, 1);
 
-                if (status == CELIX_SUCCESS) {
-                    semctl(ipc->semId, 1 /*ignored*/, IPC_RMID);
-                    shmctl(ipc->shmId, IPC_RMID, 0);
+                if ((pollThread = hashMap_get(admin->pollThread, registration->endpointDescription)) != NULL) {
+                    status = celixThread_join(*pollThread, NULL);
 
-                    remoteServiceAdmin_removeSharedIdentityFile(registration->endpointDescription->frameworkUUID, registration->endpointDescription->service);
+                    if (status == CELIX_SUCCESS) {
+                        semctl(ipc->semId, 1 /*ignored*/, IPC_RMID);
+                        shmctl(ipc->shmId, IPC_RMID, 0);
 
-                    hashMap_remove(admin->pollThreadRunning, registration->endpointDescription);
-                    hashMap_remove(admin->exportedIpcSegment, registration->endpointDescription->service);
-                    hashMap_remove(admin->pollThread, registration->endpointDescription);
+                        remoteServiceAdmin_removeSharedIdentityFile(admin, registration->endpointDescription->frameworkUUID, registration->endpointDescription->service);
 
-                    free(pollThreadRunning);
-                    free(pollThread);
-                    free(ipc);
+                        hashMap_remove(admin->pollThreadRunning, registration->endpointDescription);
+                        hashMap_remove(admin->exportedIpcSegment, registration->endpointDescription->service);
+                        hashMap_remove(admin->pollThread, registration->endpointDescription);
+
+                        free(pollThreadRunning);
+                        free(pollThread);
+                        free(ipc);
+                    }
                 }
             }
         }
+
+        arrayList_destroy(registrations);
+        registrations = NULL;
     }
     celixThreadMutex_unlock(&admin->exportedServicesLock);
 
@@ -622,40 +627,40 @@ celix_status_t remoteServiceAdmin_createOrAttachShm(hash_map_pt ipcSegment, remo
     char *semFtokId = NULL;
 
     if ((shmPath = properties_get(endpointProperties, (char *) RSA_SHM_PATH_PROPERTYNAME)) == NULL) {
-        fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "RSA : No value found for key %s in endpointProperties.", RSA_SHM_PATH_PROPERTYNAME);
+        logHelper_log(admin->loghelper, OSGI_LOGSERVICE_DEBUG, "No value found for key %s in endpointProperties.", RSA_SHM_PATH_PROPERTYNAME);
         status = CELIX_BUNDLE_EXCEPTION;
     } else if ((shmFtokId = properties_get(endpointProperties, (char *) RSA_SHM_FTOK_ID_PROPERTYNAME)) == NULL) {
-        fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "RSA : No value found for key %s in endpointProperties.", RSA_SHM_FTOK_ID_PROPERTYNAME);
+        logHelper_log(admin->loghelper, OSGI_LOGSERVICE_DEBUG, "No value found for key %s in endpointProperties.", RSA_SHM_FTOK_ID_PROPERTYNAME);
         status = CELIX_BUNDLE_EXCEPTION;
     } else if ((semPath = properties_get(endpointProperties, (char *) RSA_SEM_PATH_PROPERTYNAME)) == NULL) {
-        fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "RSA : No value found for key %s in endpointProperties.", RSA_SEM_PATH_PROPERTYNAME);
+        logHelper_log(admin->loghelper, OSGI_LOGSERVICE_DEBUG, "No value found for key %s in endpointProperties.", RSA_SEM_PATH_PROPERTYNAME);
         status = CELIX_BUNDLE_EXCEPTION;
     } else if ((semFtokId = properties_get(endpointProperties, (char *) RSA_SEM_FTOK_ID_PROPERTYNAME)) == NULL) {
-        fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "RSA : No value found for key %s in endpointProperties.", RSA_SEM_FTOK_ID_PROPERTYNAME);
+        logHelper_log(admin->loghelper, OSGI_LOGSERVICE_DEBUG, "No value found for key %s in endpointProperties.", RSA_SEM_FTOK_ID_PROPERTYNAME);
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
         key_t shmKey = ftok(shmPath, atoi(shmFtokId));
         ipc = calloc(1, sizeof(*ipc));
 
         if ((ipc->shmId = shmget(shmKey, RSA_SHM_MEMSIZE, 0666)) < 0) {
-            fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "RSA : Could not attach to shared memory");
+            logHelper_log(admin->loghelper, OSGI_LOGSERVICE_WARNING, "Could not attach to shared memory");
 
             if (createIfNotFound == true) {
                 if ((ipc->shmId = shmget(shmKey, RSA_SHM_MEMSIZE, IPC_CREAT | 0666)) < 0) {
-                    fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "RSA : Creation of shared memory segment failed.");
+                    logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "Creation of shared memory segment failed.");
                     status = CELIX_BUNDLE_EXCEPTION;
                 } else if ((ipc->shmBaseAdress = shmat(ipc->shmId, 0, 0)) == (char *) -1) {
-                    fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "RSA : Attaching of shared memory segment failed.");
+                    logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "Attaching of shared memory segment failed.");
                     status = CELIX_BUNDLE_EXCEPTION;
                 } else {
-                    fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "RSA : shared memory segment sucessfully created at %p.", ipc->shmBaseAdress);
+                    logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "shared memory segment sucessfully created at %p.", ipc->shmBaseAdress);
                 }
             }
         } else if ((ipc->shmBaseAdress = shmat(ipc->shmId, 0, 0)) == (char *) -1) {
-            fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "RSA : Attaching to shared memory segment failed.");
+            logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "Attaching to shared memory segment failed.");
             status = CELIX_BUNDLE_EXCEPTION;
         } else {
-            fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "RSA : sucessfully attached to shared memory at %p.", ipc->shmBaseAdress);
+            logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "sucessfully attached to shared memory at %p.", ipc->shmBaseAdress);
         }
     }
 
@@ -667,15 +672,15 @@ celix_status_t remoteServiceAdmin_createOrAttachShm(hash_map_pt ipcSegment, remo
         if (semid != -1) {
             // only reset semaphores if a create was supposed
             if ((createIfNotFound == true) && ((semctl(semid, 0, SETVAL, (int) 1) == -1) || (semctl(semid, 1, SETVAL, (int) 0) == -1) || (semctl(semid, 2, SETVAL, (int) 0) == -1))) {
-                fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "RSA : error while initialize semaphores.");
+                logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "error while initialize semaphores.");
             }
 
-            fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "RSA : semaphores w/ key %s and id %i added.", endpointDescription->service, semid);
+            logHelper_log(admin->loghelper, OSGI_LOGSERVICE_DEBUG, "semaphores w/ key %s and id %i added.", endpointDescription->service, semid);
             ipc->semId = semid;
 
             hashMap_put(ipcSegment, endpointDescription->service, ipc);
         } else {
-            fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "RSA : error getting semaphores.");
+            logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "error getting semaphores.");
             status = CELIX_BUNDLE_EXCEPTION;
         }
     }
@@ -695,8 +700,7 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
         char *key = keys[i];
         char *value = NULL;
 
-        if (serviceReference_getProperty(reference, key, &value) == CELIX_SUCCESS && strcmp(key, (char*) OSGI_RSA_SERVICE_EXPORTED_INTERFACES) != 0
-                && strcmp(key, (char*) OSGI_FRAMEWORK_OBJECTCLASS) != 0) {
+        if (serviceReference_getProperty(reference, key, &value) == CELIX_SUCCESS && strcmp(key, (char*) OSGI_RSA_SERVICE_EXPORTED_INTERFACES) != 0 && strcmp(key, (char*) OSGI_FRAMEWORK_OBJECTCLASS) != 0) {
             properties_set(endpointProperties, key, value);
         }
     }
@@ -713,7 +717,6 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
     uuid_unparse_lower(endpoint_uid, endpoint_uuid);
 
     bundleContext_getProperty(admin->context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
-
     properties_set(endpointProperties, (char*) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, uuid);
     properties_set(endpointProperties, (char*) OSGI_FRAMEWORK_OBJECTCLASS, interface);
     properties_set(endpointProperties, (char*) OSGI_RSA_ENDPOINT_SERVICE_ID, serviceId);
@@ -724,7 +727,7 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
     if (properties_get(endpointProperties, (char *) RSA_SHM_PATH_PROPERTYNAME) == NULL) {
         char sharedIdentifierFile[RSA_FILEPATH_LENGTH];
 
-        if (remoteServiceAdmin_getSharedIdentifierFile(uuid, interface, sharedIdentifierFile) == CELIX_SUCCESS) {
+        if (remoteServiceAdmin_getSharedIdentifierFile(admin, uuid, interface, sharedIdentifierFile) == CELIX_SUCCESS) {
             properties_set(endpointProperties, (char *) RSA_SHM_PATH_PROPERTYNAME, sharedIdentifierFile);
         } else {
             properties_set(endpointProperties, (char *) RSA_SHM_PATH_PROPERTYNAME, (char *) RSA_SHM_DEFAULTPATH);
@@ -736,7 +739,7 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
     if (properties_get(endpointProperties, (char *) RSA_SEM_PATH_PROPERTYNAME) == NULL) {
         char sharedIdentifierFile[RSA_FILEPATH_LENGTH];
 
-        if (remoteServiceAdmin_getSharedIdentifierFile(uuid, interface, sharedIdentifierFile) == CELIX_SUCCESS) {
+        if (remoteServiceAdmin_getSharedIdentifierFile(admin, uuid, interface, sharedIdentifierFile) == CELIX_SUCCESS) {
             properties_set(endpointProperties, (char *) RSA_SEM_PATH_PROPERTYNAME, sharedIdentifierFile);
         } else {
             properties_set(endpointProperties, (char *) RSA_SEM_PATH_PROPERTYNAME, (char *) RSA_SEM_DEFAULTPATH);
@@ -757,12 +760,10 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
     return status;
 }
 
-celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, service_reference_pt reference, properties_pt endpointProperties, char *interface,
-        endpoint_description_pt *description) {
+celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, service_reference_pt reference, properties_pt endpointProperties, char *interface, endpoint_description_pt *description) {
     celix_status_t status = CELIX_SUCCESS;
 
     *description = calloc(1, sizeof(**description));
-
     if (!*description) {
         status = CELIX_ENOMEM;
     } else {
@@ -802,19 +803,26 @@ celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_admin_pt a
 celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, endpoint_description_pt endpointDescription, import_registration_pt *registration) {
     celix_status_t status = CELIX_SUCCESS;
 
-    fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "RSA: Import service %s.", endpointDescription->service);
+    logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA: Import service %s", endpointDescription->service);
+
+    celixThreadMutex_lock(&admin->importedServicesLock);
 
     import_registration_factory_pt registration_factory = (import_registration_factory_pt) hashMap_get(admin->importedServices, endpointDescription->service);
 
-    // check whether we already have a registration_factory
+    // check whether we already have a registration_factory registered in the hashmap
     if (registration_factory == NULL) {
-        importRegistrationFactory_install(admin->loghelper, endpointDescription->service, admin->context, &registration_factory);
-        hashMap_put(admin->importedServices, endpointDescription->service, registration_factory);
+        status = importRegistrationFactory_install(admin->loghelper, endpointDescription->service, admin->context, &registration_factory);
+        if (status == CELIX_SUCCESS) {
+            hashMap_put(admin->importedServices, endpointDescription->service, registration_factory);
+        }
     }
 
     // factory available
-    if (status != CELIX_SUCCESS || (registration_factory == NULL) || (registration_factory->trackedFactory == NULL)) {
-        fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "RSA: no proxyFactory available.");
+    if (status != CELIX_SUCCESS || (registration_factory->trackedFactory == NULL)) {
+        logHelper_log(admin->loghelper, OSGI_LOGSERVICE_WARNING, "RSA: no proxyFactory available.");
+        if (status == CELIX_SUCCESS) {
+            status = CELIX_SERVICE_EXCEPTION;
+        }
     } else {
         // we create an importRegistration per imported service
         importRegistration_create(endpointDescription, admin, (sendToHandle) &remoteServiceAdmin_send, admin->context, registration);
@@ -823,6 +831,8 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, e
         arrayList_add(registration_factory->registrations, *registration);
         remoteServiceAdmin_createOrAttachShm(admin->importedIpcSegment, admin, endpointDescription, false);
     }
+
+    celixThreadMutex_unlock(&admin->importedServicesLock);
 
     return status;
 }
@@ -837,26 +847,27 @@ celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_pt 
 
         // detach from IPC
         if (remoteServiceAdmin_getIpcSegment(admin, endpointDescription, &ipc) != CELIX_SUCCESS) {
-            fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "RSA: Error while retrieving IPC segment for imported service %s.", endpointDescription->service);
+            logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "Error while retrieving IPC segment for imported service %s.", endpointDescription->service);
         } else if (remoteServiceAdmin_detachIpcSegment(ipc) != CELIX_SUCCESS) {
-            fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "RSA: Error while detaching IPC segment for imported service %s.", endpointDescription->service);
+            logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "Error while detaching IPC segment for imported service %s.", endpointDescription->service);
         }
 
         // factory available
         if ((registration_factory == NULL) || (registration_factory->trackedFactory == NULL)) {
-            fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "RSA: Error while retrieving registration factory for imported service %s.", endpointDescription->service);
+            logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "Error while retrieving registration factory for imported service %s.", endpointDescription->service);
         } else {
             registration_factory->trackedFactory->unregisterProxyService(registration_factory->trackedFactory->factory, endpointDescription);
             arrayList_removeElement(registration_factory->registrations, registration);
             importRegistration_destroy(registration);
 
             if (arrayList_isEmpty(registration_factory->registrations) == true) {
-                fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "RSA: closing proxy");
+                logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "closing proxy");
 
                 serviceTracker_close(registration_factory->proxyFactoryTracker);
                 importRegistrationFactory_close(registration_factory);
 
                 hashMap_remove(admin->importedServices, endpointDescription->service);
+
                 importRegistrationFactory_destroy(&registration_factory);
             }
         }

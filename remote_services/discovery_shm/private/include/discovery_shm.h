@@ -27,8 +27,8 @@
 
 
 
-#ifndef _SHM_H_
-#define _SHM_H_
+#ifndef _DISCOVERY_SHM_H_
+#define _DISCOVERY_SHM_H_
 
 #include <celix_errno.h>
 
@@ -44,13 +44,13 @@
 typedef struct shmData* shmData_pt;
 
 /* creates a new shared memory block */
-celix_status_t discovery_shmCreate(shmData_pt* data);
-celix_status_t discovery_shmAttach(shmData_pt* data);
-celix_status_t discovery_shmSet(shmData_pt data, char *key, char* value);
-celix_status_t discovery_shmGet(shmData_pt data, char* key, char* value);
-celix_status_t discovery_shmGetKeys(shmData_pt data, char** keys, int* size);
-celix_status_t discovery_shmRemove(shmData_pt data, char* key);
-celix_status_t discovery_shmDetach(shmData_pt data);
-celix_status_t discovery_shmDestroy(shmData_pt data);
+celix_status_t discoveryShm_create(shmData_pt* data);
+celix_status_t discoveryShm_attach(shmData_pt* data);
+celix_status_t discoveryShm_set(shmData_pt data, char *key, char* value);
+celix_status_t discoveryShm_get(shmData_pt data, char* key, char* value);
+celix_status_t discoveryShm_getKeys(shmData_pt data, char** keys, int* size);
+celix_status_t discoveryShm_remove(shmData_pt data, char* key);
+celix_status_t discoveryShm_detach(shmData_pt data);
+celix_status_t discoveryShm_destroy(shmData_pt data);
 
 #endif
