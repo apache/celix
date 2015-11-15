@@ -279,10 +279,16 @@ celix_status_t topologyManager_rsaRemoved(void * handle, service_reference_pt re
         service_reference_pt key = hashMapEntry_getKey(entry);
         hash_map_pt exports = hashMapEntry_getValue(entry);
 
+
+        /*
+         * the problem here is that also the rsa has a a list of
+         * endpoints which is destroyed when closing the exportRegistrtaiom
+         */
         array_list_pt exports_list = hashMap_get(exports, rsa);
 
         if (exports_list != NULL) {
-            for (exportsIter = 0; exportsIter < arrayList_size(exports_list); exportsIter++) {
+            int exportListSize = arrayList_size(exports_list);
+            for (exportsIter = 0; exports_list != NULL && exportsIter < exportListSize; exportsIter++) {
                 export_registration_pt export = arrayList_get(exports_list, exportsIter);
                 topologyManager_notifyListenersEndpointRemoved(manager, rsa, export);
                 rsa->exportRegistration_close(export);
