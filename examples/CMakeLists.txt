@@ -32,7 +32,7 @@ if (EXAMPLES)
     add_subdirectory(osgi-in-action/chapter04-correct-listener)
     add_subdirectory(osgi-in-action/chapter01-greeting-example)
     #add_subdirectory(osgi-in-action/chapter04-paint-example) chapter4 example is still based on APR
-    add_subdirectory(locking)
+    #add_subdirectory(locking) still under construction
     
     #add_subdirectory(embedding) embedding is still baed on APR
 endif(EXAMPLES)

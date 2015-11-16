@@ -29,6 +29,6 @@ if (EXAMPLES)
 		deploy("mongoose" BUNDLES shell shell_tui log_service apache_celix_examples_mongoose)
 	endif ()
 
-    deploy("locking_example" BUNDLES benchmark_runner reference_benchmark start_stop_benchmark mutex_benchmark math_provider shell shell_tui log_service log_writer)
+    #deploy("locking_example" BUNDLES benchmark_runner reference_benchmark start_stop_benchmark mutex_benchmark math_provider shell shell_tui log_service log_writer)
 
 endif (EXAMPLES)
