@@ -30,13 +30,15 @@
 
 #include "service_registration.h"
 
-struct service {
-	char *name;
-	void *serviceStruct;
-};
+typedef struct registry_callback_struct {
+	void *handle;
+	celix_status_t (*unregister)(void *handle, bundle_pt bundle, service_registration_pt reg);
+	celix_status_t (*modified)(void *handle, service_registration_pt registration, properties_pt oldProperties);
+} registry_callback_t;
 
 struct serviceRegistration {
-	service_registry_pt registry;
+    registry_callback_t callback;
+
 	char * className;
 	bundle_pt bundle;
 	properties_pt properties;
@@ -56,8 +58,8 @@ struct serviceRegistration {
 	celix_thread_rwlock_t lock;
 };
 
-service_registration_pt serviceRegistration_create(service_registry_pt registry, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary);
-service_registration_pt serviceRegistration_createServiceFactory(service_registry_pt registry, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary);
+service_registration_pt serviceRegistration_create(registry_callback_t callback, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary);
+service_registration_pt serviceRegistration_createServiceFactory(registry_callback_t callback, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary);
 
 void serviceRegistration_retain(service_registration_pt registration);
 void serviceRegistration_release(service_registration_pt registration);

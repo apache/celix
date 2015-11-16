@@ -32,13 +32,8 @@
 
 #include "service_reference.h"
 
-#include "service_registry.h"
 #include "service_reference_private.h"
 #include "service_registration_private.h"
-#include "module.h"
-#include "wire.h"
-#include "bundle.h"
-#include "celix_log.h"
 
 static void serviceReference_destroy(service_reference_pt);
 static void serviceReference_logWarningUsageCountBelowZero(service_reference_pt ref);
@@ -58,6 +53,8 @@ celix_status_t serviceReference_create(bundle_pt referenceOwner, service_registr
 		celixThreadRwlock_create(&ref->lock, NULL);
 		ref->refCount = 1;
         ref->usageCount = 0;
+
+        serviceRegistration_retain(ref->registration);
 	}
 
 	if (status == CELIX_SUCCESS) {
@@ -77,28 +74,14 @@ celix_status_t serviceReference_retain(service_reference_pt ref) {
 }
 
 celix_status_t serviceReference_release(service_reference_pt ref, bool *out) {
-    celixThreadRwlock_writeLock(&ref->lock);
-    if (ref->refCount > 0) {
-        ref->refCount -= 1;
-    } else {
-        fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "serviceReference_release error serv reference count already at 0\n");
-    }
-
-    if (out) {
-        *out = ref->refCount == 0;
-    }
-
-    celixThreadRwlock_unlock(&ref->lock);
-    return CELIX_SUCCESS;
-}
-
-/* TODO enable, for now use a leak version to prevent to much errors
-celix_status_t serviceReference_release(service_reference_pt ref, bool *out) {
     bool destroyed = false;
     celixThreadRwlock_writeLock(&ref->lock);
     assert(ref->refCount > 0);
     ref->refCount -= 1;
     if (ref->refCount == 0) {
+        if (ref->registration != NULL) {
+            serviceRegistration_release(ref->registration);
+        }
         serviceReference_destroy(ref);
         destroyed = true;
     } else {
@@ -109,9 +92,10 @@ celix_status_t serviceReference_release(service_reference_pt ref, bool *out) {
         *out = destroyed;
     }
     return CELIX_SUCCESS;
-}*/
+}
 
 celix_status_t serviceReference_increaseUsage(service_reference_pt ref, size_t *out) {
+    fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Destroying service reference %p\n", ref);
     size_t local = 0;
     celixThreadRwlock_writeLock(&ref->lock);
     ref->usageCount += 1;
@@ -142,7 +126,7 @@ celix_status_t serviceReference_decreaseUsage(service_reference_pt ref, size_t *
     return status;
 }
 
-static void serviceReference_logWarningUsageCountBelowZero(service_reference_pt ref) {
+static void serviceReference_logWarningUsageCountBelowZero(service_reference_pt ref __attribute__((unused))) {
     fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Cannot decrease service usage count below 0\n");
 }
 
@@ -228,7 +212,7 @@ FRAMEWORK_EXPORT celix_status_t serviceReference_getPropertyKeys(service_referen
     hash_map_iterator_pt it;
     int i = 0;
     int vsize = hashMap_size(props);
-    *size = vsize;
+    *size = (unsigned int)vsize;
     *keys = malloc(vsize * sizeof(*keys));
     it = hashMapIterator_create(props);
     while (hashMapIterator_hasNext(it)) {
@@ -262,7 +246,7 @@ celix_status_t serviceReference_isValid(service_reference_pt ref, bool *result) 
     return CELIX_SUCCESS;
 }
 
-bool serviceReference_isAssignableTo(service_reference_pt reference, bundle_pt requester, char * serviceName) {
+bool serviceReference_isAssignableTo(service_reference_pt reference __attribute__((unused)), bundle_pt requester __attribute__((unused)), char * serviceName __attribute__((unused))) {
 	bool allow = true;
 
 	/*NOTE for now always true. It would be nice to be able to do somechecks if the services are really assignable.
@@ -292,7 +276,7 @@ celix_status_t serviceReference_compareTo(service_reference_pt reference, servic
 	long id, other_id;
 	char *id_str, *other_id_str;
 	serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_ID, &id_str);
-	serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_ID, &other_id_str);
+	serviceReference_getProperty(compareTo, (char *) OSGI_FRAMEWORK_SERVICE_ID, &other_id_str);
 
 	id = atol(id_str);
 	other_id = atol(other_id_str);
@@ -301,12 +285,12 @@ celix_status_t serviceReference_compareTo(service_reference_pt reference, servic
 	long rank, other_rank;
 	char *rank_str, *other_rank_str;
 	serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_RANKING, &rank_str);
-	serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_RANKING, &other_rank_str);
+	serviceReference_getProperty(compareTo, (char *) OSGI_FRAMEWORK_SERVICE_RANKING, &other_rank_str);
 
 	rank = rank_str == NULL ? 0 : atol(rank_str);
 	other_rank = other_rank_str == NULL ? 0 : atol(other_rank_str);
 
-	utils_compareServiceIdsAndRanking(id, rank, other_id, other_rank);
+    *compare = utils_compareServiceIdsAndRanking(id, rank, other_id, other_rank);
 
 	return status;
 }
