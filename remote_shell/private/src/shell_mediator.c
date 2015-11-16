@@ -36,9 +36,7 @@
 #include "log_service.h"
 #include "shell_mediator.h"
 
-static celix_status_t shellMediator_addingService(void *handler, service_reference_pt reference, void **service);
 static celix_status_t shellMediator_addedService(void *handler, service_reference_pt reference, void * service);
-static celix_status_t shellMediator_modifiedService(void *handler, service_reference_pt reference, void * service);
 static celix_status_t shellMediator_removedService(void *handler, service_reference_pt reference, void * service);
 
 celix_status_t shellMediator_create(bundle_context_pt context, shell_mediator_pt *instance) {
@@ -56,8 +54,8 @@ celix_status_t shellMediator_create(bundle_context_pt context, shell_mediator_pt
 
 		status = CELIX_DO_IF(status, celixThreadMutex_create(&(*instance)->mutex, NULL));
 
-		status = CELIX_DO_IF(status, serviceTrackerCustomizer_create((*instance), shellMediator_addingService, shellMediator_addedService,
-				shellMediator_modifiedService, shellMediator_removedService, &customizer));
+		status = CELIX_DO_IF(status, serviceTrackerCustomizer_create((*instance), NULL, shellMediator_addedService,
+				NULL, shellMediator_removedService, &customizer));
 		status = CELIX_DO_IF(status, serviceTracker_create(context, (char * )OSGI_SHELL_SERVICE_NAME, customizer, &(*instance)->tracker));
 
 		if (status == CELIX_SUCCESS) {
@@ -74,18 +72,31 @@ celix_status_t shellMediator_create(bundle_context_pt context, shell_mediator_pt
 	return status;
 }
 
+celix_status_t shellMediator_stop(shell_mediator_pt instance) {
+	service_tracker_pt tracker;
+	celixThreadMutex_lock(&instance->mutex);
+	tracker = instance->tracker;
+	celixThreadMutex_unlock(&instance->mutex);
+
+	if (tracker != NULL) {
+		serviceTracker_close(tracker);
+	}
+}
+
 celix_status_t shellMediator_destroy(shell_mediator_pt instance) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	celixThreadMutex_lock(&instance->mutex);
 
 	instance->shellService = NULL;
-	serviceTracker_close(instance->tracker);
-	celixThreadMutex_unlock(&instance->mutex);
-
+	serviceTracker_destroy(instance->tracker);
 	logHelper_stop(instance->loghelper);
-
 	status = logHelper_destroy(&instance->loghelper);
+	celixThreadMutex_destroy(&instance->mutex);
+
+
+	free(instance);
+
 
 	return status;
 }
@@ -105,13 +116,6 @@ celix_status_t shellMediator_executeCommand(shell_mediator_pt instance, char *co
 	return status;
 }
 
-static celix_status_t shellMediator_addingService(void *handler, service_reference_pt reference, void **service) {
-	celix_status_t status = CELIX_SUCCESS;
-	shell_mediator_pt instance = (shell_mediator_pt) handler;
-	bundleContext_getService(instance->context, reference, service);
-	return status;
-}
-
 static celix_status_t shellMediator_addedService(void *handler, service_reference_pt reference, void * service) {
 	celix_status_t status = CELIX_SUCCESS;
 	shell_mediator_pt instance = (shell_mediator_pt) handler;
@@ -121,11 +125,6 @@ static celix_status_t shellMediator_addedService(void *handler, service_referenc
 	return status;
 }
 
-static celix_status_t shellMediator_modifiedService(void *handler, service_reference_pt reference, void * service) {
-	celix_status_t status = CELIX_SUCCESS;
-	//ignore
-	return status;
-}
 
 static celix_status_t shellMediator_removedService(void *handler, service_reference_pt reference, void * service) {
 	celix_status_t status = CELIX_SUCCESS;

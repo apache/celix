@@ -102,6 +102,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	bundle_instance_pt bi = (bundle_instance_pt) userData;
 
 	connectionListener_stop(bi->connectionListener);
+	shellMediator_stop(bi->shellMediator);
 	shellMediator_destroy(bi->shellMediator);
 
 	remoteShell_stopConnections(bi->remoteShell);
