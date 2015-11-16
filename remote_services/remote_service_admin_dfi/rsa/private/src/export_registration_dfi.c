@@ -190,7 +190,6 @@ static void exportRegistration_removeServ(export_registration_pt reg, service_re
 
 celix_status_t exportRegistration_stop(export_registration_pt reg) {
     celix_status_t status = CELIX_SUCCESS;
-    status = bundleContext_ungetService(reg->context, reg->exportReference.reference, NULL);
     if (status == CELIX_SUCCESS) {
         bundleContext_ungetServiceReference(reg->context, reg->exportReference.reference);
     }

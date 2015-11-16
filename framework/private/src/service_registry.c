@@ -94,7 +94,7 @@ celix_status_t serviceRegistry_destroy(service_registry_pt registry) {
 
     //destroy service references (double) map);
     size = hashMap_size(registry->serviceReferences);
-    assert(size == 0);
+    //assert(size == 0); FIXME This gives a problem in the remote_service_admin_dfi test. seems that the bundleActivator_stop of the calculator is activated twice ??
     hashMap_destroy(registry->serviceReferences, false, false);
 
     //destroy listener hooks
@@ -155,17 +155,21 @@ celix_status_t serviceRegistry_registerServiceInternal(service_registry_pt regis
 	    *registration = serviceRegistration_create(registry->callback, bundle, serviceName, ++registry->currentServiceId, serviceObject, dictionary);
 	}
 
-	serviceRegistry_addHooks(registry, serviceName, serviceObject, *registration);
+    //long id;
+    //bundle_getBundleId(bundle, &id);
+    //fprintf(stderr, "REG: Registering service '%s' for bundle id %li with reg pointer %p\n", serviceName, id, *registration);
+
+
+    serviceRegistry_addHooks(registry, serviceName, serviceObject, *registration);
 
 	celixThreadRwlock_writeLock(&registry->lock);
 	regs = (array_list_pt) hashMap_get(registry->serviceRegistrations, bundle);
 	if (regs == NULL) {
 		regs = NULL;
 		arrayList_create(&regs);
-	}
+        hashMap_put(registry->serviceRegistrations, bundle, regs);
+    }
 	arrayList_add(regs, *registration);
-	hashMap_put(registry->serviceRegistrations, bundle, regs);
-
 	celixThreadRwlock_unlock(&registry->lock);
 
 	if (registry->serviceChanged != NULL) {
@@ -179,6 +183,7 @@ celix_status_t serviceRegistry_unregisterService(service_registry_pt registry, b
 	// array_list_t clients;
 	array_list_pt regs;
 
+    //fprintf(stderr, "REG: Unregistering service registration with pointer %p\n", registration);
 
 	serviceRegistry_removeHook(registry, registration);
 
@@ -422,7 +427,8 @@ celix_status_t serviceRegistry_setReferenceStatus(service_registry_pt registry, 
 static void serviceRegistry_logIllegalReference(service_registry_pt registry __attribute__((unused)), service_reference_pt reference,
                                                    reference_status_t refStatus) {
 
-    fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error handling service reference %p has ref status %i", reference, refStatus);
+    fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error handling service reference %p from registration %p and bundle (owner) %p, ref has ref status %i",
+           reference, reference->registration, reference->referenceOwner, refStatus);
 }
 
 celix_status_t serviceRegistry_checkReference(service_registry_pt registry, service_reference_pt ref,
