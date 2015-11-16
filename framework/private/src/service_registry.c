@@ -66,6 +66,8 @@ celix_status_t serviceRegistry_create(framework_pt framework, serviceChanged_fun
 		reg->framework = framework;
 		reg->currentServiceId = 1l;
 		reg->serviceReferences = hashMap_create(NULL, NULL, NULL, NULL);
+
+        reg->checkDeletedReferences = true;
         reg->deletedServiceReferences = hashMap_create(NULL, NULL, NULL, NULL);
 
 		arrayList_create(&reg->listenerHooks);
@@ -184,6 +186,11 @@ celix_status_t serviceRegistry_unregisterService(service_registry_pt registry, b
 	regs = (array_list_pt) hashMap_get(registry->serviceRegistrations, bundle);
 	if (regs != NULL) {
 		arrayList_removeElement(regs, registration);
+        int size = arrayList_size(regs);
+        if (size == 0) {
+            arrayList_destroy(regs);
+            hashMap_remove(registry->serviceRegistrations, bundle);
+        }
 	}
 	celixThreadRwlock_unlock(&registry->lock);
 
@@ -479,6 +486,7 @@ celix_status_t serviceRegistry_clearReferencesFor(service_registry_pt registry, 
 
         }
         hashMapIterator_destroy(iter);
+        hashMap_destroy(refsMap, false, false);
     }
 
     celixThreadRwlock_unlock(&registry->lock);

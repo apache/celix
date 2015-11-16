@@ -112,7 +112,7 @@ celix_status_t bundleCache_getArchives(bundle_cache_pt cache, array_list_pt *arc
                     && (strcmp(dp.d_name, "bundle0") != 0)) {
 
                     bundle_archive_pt archive = NULL;
-                    status = bundleArchive_recreate(strdup(archiveRoot), &archive);
+                    status = bundleArchive_recreate(archiveRoot, &archive);
                     if (status == CELIX_SUCCESS) {
                         arrayList_add(list, archive);
                     }

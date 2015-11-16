@@ -2354,6 +2354,7 @@ static void *fw_eventDispatcher(void *fw) {
 
                     fw_invokeBundleListener(framework, listener->listener, event, listener->bundle);
 
+                    free(event->bundleSymbolicName);
                     free(event);
                 } else if (request->type == FRAMEWORK_EVENT_TYPE) {
                     fw_framework_listener_pt listener = (fw_framework_listener_pt) arrayList_get(request->listeners, i);

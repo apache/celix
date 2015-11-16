@@ -360,6 +360,8 @@ celix_status_t serviceDependency_invokeSet(dm_service_dependency_pt dependency, 
 		}
 	}
 
+    arrayList_destroy(serviceReferences);
+
 	if (curServRef) {
 		status = bundleContext_getService(event->context, curServRef, &service);
 	} else {
@@ -646,6 +648,7 @@ celix_status_t serviceDependency_getServiceDependencyInfo(dm_service_dependency_
 		if (refs != NULL) {
 			info->count = arrayList_size(refs);
 		}
+		arrayList_destroy(refs);
 
 		celixThreadMutex_unlock(&dep->lock);
 	} else {
