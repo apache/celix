@@ -136,7 +136,9 @@ celix_status_t logHelper_stop(log_helper_pt loghelper) {
 celix_status_t logHelper_destroy(log_helper_pt* loghelper) {
         celix_status_t status = CELIX_SUCCESS;
 
-        serviceTracker_destroy((*loghelper)->logServiceTracker);
+        if((*loghelper)->logServiceTracker){
+      		serviceTracker_destroy((*loghelper)->logServiceTracker);
+        }
 
         pthread_mutex_lock(&(*loghelper)->logListLock);
         arrayList_destroy((*loghelper)->logServices);

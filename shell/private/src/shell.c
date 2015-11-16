@@ -94,6 +94,9 @@ celix_status_t shell_destroy(shell_service_pt *shell_service_ptr) {
 			if ((*shell_service_ptr)->shell->command_reference_map_ptr) {
 				hashMap_destroy((*shell_service_ptr)->shell->command_reference_map_ptr, false, false);
 			}
+			if ((*shell_service_ptr)->shell->logHelper) {
+				logHelper_destroy(&((*shell_service_ptr)->shell->logHelper));
+			}
 			free((*shell_service_ptr)->shell);
 			(*shell_service_ptr)->shell = NULL;
 		}
