@@ -24,7 +24,7 @@ if (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin")
 	set(MEMSTREAM_SOURCES memstream/open_memstream.c memstream/fmemopen.c)
 endif()
 
-add_library(dfi STATIC
+add_library(dfi SHARED
     dyn_common.c
     dyn_type.c
     dyn_function.c
