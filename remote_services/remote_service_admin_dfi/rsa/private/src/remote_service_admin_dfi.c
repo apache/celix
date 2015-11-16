@@ -388,10 +388,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
             bundleContext_ungetServiceReference(admin->context, arrayList_get(references, i));
         }
     }
-
-    if(references != NULL){
-        arrayList_destroy(references);
-    }
+    arrayList_destroy(references);
 
     if (reference == NULL) {
         logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "ERROR: expected a reference for service id %s.", serviceId);
