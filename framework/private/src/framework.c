@@ -27,9 +27,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include "celixbool.h"
-#include <math.h>
+
 #ifdef _WIN32
 #include <winbase.h>
 #include <windows.h>
@@ -39,26 +38,13 @@
 #include <uuid/uuid.h>
 
 #include "framework_private.h"
-#include "filter.h"
 #include "constants.h"
-#include "archive.h"
-#include "bundle.h"
-#include "wire.h"
 #include "resolver.h"
 #include "utils.h"
-#include "bundle_activator.h"
-#include "service_registry.h"
-#include "bundle_cache.h"
-#include "bundle_archive.h"
-#include "bundle_revision.h"
-#include "bundle_context.h"
 #include "linked_list_iterator.h"
 #include "service_reference_private.h"
 #include "listener_hook_service.h"
 #include "service_registration_private.h"
-#include "celix_log.h"
-
-#include "celix_threads.h"
 
 typedef celix_status_t (*create_function_pt)(bundle_context_pt context, void **userData);
 typedef celix_status_t (*start_function_pt)(void * handle, bundle_context_pt context);
