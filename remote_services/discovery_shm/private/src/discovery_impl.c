@@ -44,7 +44,7 @@
 
 #include "discovery.h"
 #include "discovery_impl.h"
-#include "shm_watcher.h"
+#include "discovery_shmWatcher.h"
 #include "endpoint_discovery_poller.h"
 #include "endpoint_discovery_server.h"
 
@@ -64,8 +64,8 @@ celix_status_t discovery_create(bundle_context_pt context, discovery_pt *discove
         (*discovery)->listenerReferences = hashMap_create(serviceReference_hashCode, NULL, serviceReference_equals2, NULL);
         (*discovery)->discoveredServices = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 
-        status = celixThreadMutex_create(&(*discovery)->listenerReferencesMutex, NULL);
-        status = celixThreadMutex_create(&(*discovery)->discoveredServicesMutex, NULL);
+        celixThreadMutex_create(&(*discovery)->listenerReferencesMutex, NULL);
+        celixThreadMutex_create(&(*discovery)->discoveredServicesMutex, NULL);
 
         if (logHelper_create(context, &(*discovery)->loghelper) == CELIX_SUCCESS) {
             logHelper_start((*discovery)->loghelper);
@@ -102,40 +102,24 @@ celix_status_t discovery_destroy(discovery_pt discovery) {
 
 	celixThreadMutex_destroy(&discovery->listenerReferencesMutex);
 
+
+
+
 	free(discovery);
 
 	return status;
 }
 
 celix_status_t discovery_start(discovery_pt discovery) {
-    celix_status_t status = CELIX_SUCCESS;
-	char *port = NULL;
-	char *path = NULL;
-
-
-	bundleContext_getProperty(discovery->context, DISCOVERY_SERVER_PORT, &port);
-	if (port == NULL) {
-		port = DEFAULT_SERVER_PORT;
-	}
-
-	bundleContext_getProperty(discovery->context, DISCOVERY_SERVER_PATH, &path);
-	if (path == NULL) {
-		path = DEFAULT_SERVER_PATH;
-	}
+    celix_status_t status;
 
     status = endpointDiscoveryPoller_create(discovery, discovery->context, &discovery->poller);
-    if (status != CELIX_SUCCESS) {
-    	return CELIX_BUNDLE_EXCEPTION;
+    if (status == CELIX_SUCCESS) {
+        status = endpointDiscoveryServer_create(discovery, discovery->context, &discovery->server);
     }
 
-    status = shmWatcher_create(discovery->poller, discovery->context, &discovery->watcher);
-    if (status != CELIX_SUCCESS) {
-    	return CELIX_BUNDLE_EXCEPTION;
-    }
-
-    status = endpointDiscoveryServer_create(discovery, discovery->context, &discovery->server);
-    if (status != CELIX_SUCCESS) {
-    	return CELIX_BUNDLE_EXCEPTION;
+    if (status == CELIX_SUCCESS) {
+        status = discoveryShmWatcher_create(discovery);
     }
 
     return status;
@@ -144,38 +128,35 @@ celix_status_t discovery_start(discovery_pt discovery) {
 celix_status_t discovery_stop(discovery_pt discovery) {
 	celix_status_t status;
 
-	status = endpointDiscoveryServer_destroy(discovery->server);
-	if (status != CELIX_SUCCESS) {
-		return CELIX_BUNDLE_EXCEPTION;
+    status = discoveryShmWatcher_destroy(discovery);
+
+    if (status == CELIX_SUCCESS) {
+        status = endpointDiscoveryServer_destroy(discovery->server);
+    }
+
+	if (status == CELIX_SUCCESS) {
+	    status = endpointDiscoveryPoller_destroy(discovery->poller);
 	}
 
-	status = shmWatcher_destroy(discovery->watcher);
-	if (status != CELIX_SUCCESS) {
-		return CELIX_BUNDLE_EXCEPTION;
+	if (status == CELIX_SUCCESS) {
+        hash_map_iterator_pt iter;
+
+        celixThreadMutex_lock(&discovery->discoveredServicesMutex);
+
+        iter = hashMapIterator_create(discovery->discoveredServices);
+        while (hashMapIterator_hasNext(iter)) {
+            hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
+            endpoint_description_pt endpoint = hashMapEntry_getValue(entry);
+
+            discovery_informEndpointListeners(discovery, endpoint, false);
+        }
+        hashMapIterator_destroy(iter);
+
+        celixThreadMutex_unlock(&discovery->discoveredServicesMutex);
+
+        logHelper_stop(discovery->loghelper);
+        logHelper_destroy(&discovery->loghelper);
 	}
-
-	status = endpointDiscoveryPoller_destroy(discovery->poller);
-	if (status != CELIX_SUCCESS) {
-		return CELIX_BUNDLE_EXCEPTION;
-	}
-
-	hash_map_iterator_pt iter;
-
-	celixThreadMutex_lock(&discovery->discoveredServicesMutex);
-
-	iter = hashMapIterator_create(discovery->discoveredServices);
-	while (hashMapIterator_hasNext(iter)) {
-		hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-		endpoint_description_pt endpoint = hashMapEntry_getValue(entry);
-
-		discovery_informEndpointListeners(discovery, endpoint, false);
-	}
-	hashMapIterator_destroy(iter);
-
-	celixThreadMutex_unlock(&discovery->discoveredServicesMutex);
-
-    logHelper_stop(discovery->loghelper);
-    logHelper_destroy(&discovery->loghelper);
 
 	return status;
 }

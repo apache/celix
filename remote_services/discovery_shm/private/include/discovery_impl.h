@@ -35,7 +35,7 @@
 
 #include "endpoint_discovery_poller.h"
 #include "endpoint_discovery_server.h"
-#include "shm_watcher.h"
+#include "discovery_shmWatcher.h"
 
 
 #define DEFAULT_SERVER_IP   "127.0.0.1"

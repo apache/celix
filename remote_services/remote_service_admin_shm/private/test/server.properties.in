@@ -15,27 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-include_directories(
-	.
-)
-
-set(MEMSTREAM_SOURCES "")
-if (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin") 
-	set(MEMSTREAM_SOURCES memstream/open_memstream.c memstream/fmemopen.c)
-endif()
-
-add_library(dfi SHARED
-    dyn_common.c
-    dyn_type.c
-    dyn_function.c
-    dyn_interface.c
-    dyn_message.c
-    json_serializer.c
-    json_rpc.c
-    ${MEMSTREAM_SOURCES}
-)
-target_link_libraries(dfi ${FFI_LIBRARIES} ${JANSSON_LIBRARY})
-
-install(TARGETS dfi DESTINATION lib)
-FILE(GLOB files "*.h")
-INSTALL(FILES ${files} DESTINATION include/celix/dfi)
+cosgi.auto.start.1=@rsa_bundle_file@ @calc_bundle_file@ @discovery_shm_bundle_file@ @topology_manager_bundle_file@
+LOGHELPER_ENABLE_STDOUT_FALLBACK=true
+ENDPOINTS=@server_endpoints@
+RSA_PORT=50882
+DISCOVERY_CFG_SERVER_PORT=50994
+org.osgi.framework.storage.clean=onFirstInit
+org.osgi.framework.storage=.cacheServer
+DISCOVERY_CFG_POLL_INTERVAL=1

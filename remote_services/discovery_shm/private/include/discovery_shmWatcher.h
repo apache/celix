@@ -24,8 +24,8 @@
  * \copyright  Apache License, Version 2.0
  */
 
-#ifndef SHM_WATCHER_H_
-#define SHM_WATCHER_H_
+#ifndef DISCOVERY_SHM_WATCHER_H_
+#define DISCOVERY_SHM_WATCHER_H_
 
 #include "celix_errno.h"
 #include "discovery.h"
@@ -33,8 +33,8 @@
 
 typedef struct shm_watcher *shm_watcher_pt;
 
-celix_status_t shmWatcher_create(endpoint_discovery_poller_pt poller, bundle_context_pt context, shm_watcher_pt *watcher);
-celix_status_t shmWatcher_destroy(shm_watcher_pt watcher);
+celix_status_t discoveryShmWatcher_create(discovery_pt discovery);
+celix_status_t discoveryShmWatcher_destroy(discovery_pt discovery);
 
 
-#endif /* SHM_WATCHER_H_ */
+#endif /* DISCOVERY_SHM_WATCHER_H_ */

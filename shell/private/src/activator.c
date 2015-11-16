@@ -273,6 +273,8 @@ celix_status_t bundleActivator_destroy(void *_ptr, bundle_context_pt __attribute
 
     shell_destroy(&instance_ptr->shellService);
 
+    free(instance_ptr->listener);
+
     free(instance_ptr);
 
 	return CELIX_SUCCESS;

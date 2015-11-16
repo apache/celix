@@ -346,7 +346,6 @@ static size_t endpointDiscoveryPoller_writeMemory(void *contents, size_t size, s
 static celix_status_t endpointDiscoveryPoller_getEndpoints(endpoint_discovery_poller_pt poller, char *url, array_list_pt *updatedEndpoints) {
     celix_status_t status = CELIX_SUCCESS;
 
-	logHelper_log(*poller->loghelper, OSGI_LOGSERVICE_DEBUG, "Polling url '%s'", url);
 
     CURL *curl = NULL;
     CURLcode res = CURLE_OK;
@@ -375,7 +374,6 @@ static celix_status_t endpointDiscoveryPoller_getEndpoints(endpoint_discovery_po
 
     	status = endpointDescriptorReader_create(poller, &reader);
     	if (status == CELIX_SUCCESS) {
-			logHelper_log(*poller->loghelper, OSGI_LOGSERVICE_DEBUG, "Polled data '%s'", chunk.memory);
 			status = endpointDescriptorReader_parseDocument(reader, chunk.memory, updatedEndpoints);
     	}
 
