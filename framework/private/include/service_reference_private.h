@@ -28,9 +28,12 @@
 #ifndef SERVICE_REFERENCE_PRIVATE_H_
 #define SERVICE_REFERENCE_PRIVATE_H_
 
+#include "registry_callback_private.h"
 #include "service_reference.h"
 
+
 struct serviceReference {
+    registry_callback_t callback;
 	bundle_pt referenceOwner;
 	struct serviceRegistration * registration;
     bundle_pt registrationBundle;
@@ -42,7 +45,7 @@ struct serviceReference {
     celix_thread_rwlock_t lock;
 };
 
-celix_status_t serviceReference_create(bundle_pt referenceOwner, service_registration_pt registration, service_reference_pt *reference);
+celix_status_t serviceReference_create(registry_callback_t callback, bundle_pt referenceOwner, service_registration_pt registration, service_reference_pt *reference);
 
 celix_status_t serviceReference_retain(service_reference_pt ref);
 celix_status_t serviceReference_release(service_reference_pt ref, bool *destroyed);

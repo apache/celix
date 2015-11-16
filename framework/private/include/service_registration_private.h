@@ -28,13 +28,8 @@
 #ifndef SERVICE_REGISTRATION_PRIVATE_H_
 #define SERVICE_REGISTRATION_PRIVATE_H_
 
+#include "registry_callback_private.h"
 #include "service_registration.h"
-
-typedef struct registry_callback_struct {
-	void *handle;
-	celix_status_t (*unregister)(void *handle, bundle_pt bundle, service_registration_pt reg);
-	celix_status_t (*modified)(void *handle, service_registration_pt registration, properties_pt oldProperties);
-} registry_callback_t;
 
 struct serviceRegistration {
     registry_callback_t callback;

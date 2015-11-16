@@ -48,5 +48,6 @@ FRAMEWORK_EXPORT celix_status_t serviceReference_equals(service_reference_pt ref
 FRAMEWORK_EXPORT unsigned int serviceReference_hashCode(void *referenceP);
 FRAMEWORK_EXPORT int serviceReference_equals2(void *reference1, void *reference2);
 FRAMEWORK_EXPORT celix_status_t serviceReference_compareTo(service_reference_pt reference, service_reference_pt compareTo, int *compare);
+FRAMEWORK_EXPORT celix_status_t serviceReference_getUsingBundles(service_reference_pt ref, array_list_pt *out);
 
 #endif /* SERVICE_REFERENCE_H_ */

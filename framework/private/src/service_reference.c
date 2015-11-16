@@ -38,14 +38,14 @@
 static void serviceReference_destroy(service_reference_pt);
 static void serviceReference_logWarningUsageCountBelowZero(service_reference_pt ref);
 
-celix_status_t serviceReference_create(bundle_pt referenceOwner, service_registration_pt registration,  service_reference_pt *out) {
+celix_status_t serviceReference_create(registry_callback_t callback, bundle_pt referenceOwner, service_registration_pt registration,  service_reference_pt *out) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	service_reference_pt ref = calloc(1, sizeof(*ref));
 	if (!ref) {
 		status = CELIX_ENOMEM;
 	} else {
-        serviceRegistration_retain(registration);
+        ref->callback = callback;
 		ref->referenceOwner = referenceOwner;
 		ref->registration = registration;
         ref->service = NULL;
@@ -95,7 +95,7 @@ celix_status_t serviceReference_release(service_reference_pt ref, bool *out) {
 }
 
 celix_status_t serviceReference_increaseUsage(service_reference_pt ref, size_t *out) {
-    fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Destroying service reference %p\n", ref);
+    //fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Destroying service reference %p\n", ref);
     size_t local = 0;
     celixThreadRwlock_writeLock(&ref->lock);
     ref->usageCount += 1;
@@ -319,5 +319,36 @@ unsigned int serviceReference_hashCode(void *referenceP) {
 		result += bundleA + registrationA;
 	}
 	return result;
+}
+
+
+celix_status_t serviceReference_getUsingBundles(service_reference_pt ref, array_list_pt *out) {
+    celix_status_t status = CELIX_SUCCESS;
+    service_registration_pt reg = NULL;
+    registry_callback_t callback;
+
+    callback.getUsingBundles = NULL;
+
+
+    celixThreadRwlock_readLock(&ref->lock);
+    reg = ref->registration;
+    if (reg != NULL) {
+        serviceRegistration_retain(reg);
+        callback.handle = ref->callback.handle;
+        callback.getUsingBundles = ref->callback.getUsingBundles;
+    }
+    celixThreadRwlock_unlock(&ref->lock);
+
+    if (reg != NULL) {
+        if (callback.getUsingBundles != NULL) {
+            status = callback.getUsingBundles(callback.handle, reg, out);
+        } else {
+            fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "getUsingBundles callback not set");
+            status = CELIX_BUNDLE_EXCEPTION;
+        }
+        serviceRegistration_release(reg);
+    }
+
+    return status;
 }
 

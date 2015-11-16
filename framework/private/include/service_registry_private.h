@@ -28,10 +28,12 @@
 #ifndef SERVICE_REGISTRY_PRIVATE_H_
 #define SERVICE_REGISTRY_PRIVATE_H_
 
+#include "registry_callback_private.h"
 #include "service_registry.h"
 
 struct serviceRegistry {
 	framework_pt framework;
+	registry_callback_t callback;
 
 	hash_map_pt serviceRegistrations; //key = bundle (reg owner), value = registration
 	hash_map_pt serviceReferences; //key = bundle, value = map (key = registration, value = reference)

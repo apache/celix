@@ -103,7 +103,7 @@ void serviceRegistration_release(service_registration_pt registration) {
 }
 
 static celix_status_t serviceRegistration_destroy(service_registration_pt registration) {
-	fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Destroying service registration %p\n", registration);
+	//fw_log(logger, OSGI_FRAMEWORK_LOG_DEBUG, "Destroying service registration %p\n", registration);
     free(registration->className);
 	registration->className = NULL;
 
