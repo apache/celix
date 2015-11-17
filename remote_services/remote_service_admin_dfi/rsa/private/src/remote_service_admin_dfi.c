@@ -41,6 +41,7 @@
 #include "export_registration_dfi.h"
 #include "remote_service_admin_dfi.h"
 #include "dyn_interface.h"
+#include "json_rpc.h"
 
 #include "remote_constants.h"
 #include "constants.h"
@@ -140,6 +141,7 @@ celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_servi
             dynFunction_logSetup((void *)remoteServiceAdmin_log, *admin, 1);
             dynInterface_logSetup((void *)remoteServiceAdmin_log, *admin, 1);
             jsonSerializer_logSetup((void *)remoteServiceAdmin_log, *admin, 1);
+            jsonRpc_logSetup((void *)remoteServiceAdmin_log, *admin, 1);
         }
 
         bundleContext_getProperty(context, "RSA_PORT", &port);
