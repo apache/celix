@@ -137,7 +137,7 @@ bool etcd_get(char* key, char* value, char* action, int* modifiedIndex) {
 			js_modifiedIndex = json_object_get(js_node, ETCD_JSON_MODIFIEDINDEX);
 
 			*modifiedIndex = json_integer_value(js_modifiedIndex);
-			strncpy(value, json_string_value(js_value), MAX_VALUE_LENGTH);
+			snprintf(value, MAX_VALUE_LENGTH, "%s", json_string_value(js_value));
 			retVal = true;
 		}
 		if (js_root != NULL) {
@@ -193,7 +193,7 @@ bool etcd_getNodes(char* directory, char** nodeNames, int* size) {
 					retVal = false;
 				} else {
 					json_t* js_key = json_object_get(js_node, ETCD_JSON_KEY);
-					strncpy(nodeNames[i], json_string_value(js_key), MAX_KEY_LENGTH);
+					snprintf(nodeNames[i], MAX_KEY_LENGTH, "%s", json_string_value(js_key));
 				}
 			}
 			*size = i;

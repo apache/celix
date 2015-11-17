@@ -227,11 +227,11 @@ static celix_status_t etcdWatcher_removeEntry(etcd_watcher_pt watcher, char* key
 	hash_map_entry_pt entry = hashMap_getEntry(watcher->entries, key);
 
 	if (entry != NULL) {
-		hashMap_remove(watcher->entries, key);
+		void* origKey = hashMapEntry_getKey(entry);
+		void* value = hashMap_remove(watcher->entries, key);
 
-		free(hashMapEntry_getKey(entry));
-		free(hashMapEntry_getValue(entry));
-		free(entry);
+		free(origKey);
+		free(value);
 
 		// check if there is another entry with the same value
 		hash_map_iterator_pt iter = hashMapIterator_create(watcher->entries);
