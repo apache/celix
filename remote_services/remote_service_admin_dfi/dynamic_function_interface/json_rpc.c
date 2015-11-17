@@ -41,6 +41,8 @@ struct generic_service_layout {
 int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, char **out) {
     int status = OK;
 
+    dyn_type* returnType = NULL;
+
     LOG_DEBUG("Parsing data: %s\n", request);
     json_error_t error;
     json_t *js_request = json_loads(request, 0, &error);
@@ -72,11 +74,12 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
     if (method == NULL) {
         status = ERROR;
         LOG_ERROR("Cannot find method with sig '%s'", sig);
-    } else {
-        LOG_DEBUG("RSA: found method '%s'\n", entry->id);
     }
 
-    dyn_type *returnType = dynFunction_returnType(method->dynFunc);
+    if (status == OK) {
+        LOG_DEBUG("RSA: found method '%s'\n", entry->id);
+        returnType = dynFunction_returnType(method->dynFunc);
+    }
 
     void (*fp)(void) = NULL;
     void *handle = NULL;
@@ -123,10 +126,12 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
     }
     json_decref(js_request);
 
-    if (dynType_descriptorType(returnType) != 'N') {
-        //NOTE To be able to handle exception only N as returnType is supported
-        LOG_ERROR("Only interface methods with a native int are supported. Found type '%c'", (char)dynType_descriptorType(returnType));
-        status = ERROR;
+    if (status == OK) {
+		if (dynType_descriptorType(returnType) != 'N') {
+			//NOTE To be able to handle exception only N as returnType is supported
+			LOG_ERROR("Only interface methods with a native int are supported. Found type '%c'", (char)dynType_descriptorType(returnType));
+			status = ERROR;
+		}
     }
 
     ffi_sarg returnVal = 1;
