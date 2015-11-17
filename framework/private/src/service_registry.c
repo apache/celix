@@ -35,6 +35,12 @@
 #include "service_reference_private.h"
 #include "framework_private.h"
 
+#ifdef NDEBUG
+#define CHECK_DELETED_REFERENCES false
+#else
+#define CHECK_DELETED_REFERENCES true
+#endif
+
 celix_status_t serviceRegistry_registerServiceInternal(service_registry_pt registry, bundle_pt bundle, char * serviceName, void * serviceObject, properties_pt dictionary, bool isFactory, service_registration_pt *registration);
 celix_status_t serviceRegistry_addHooks(service_registry_pt registry, char *serviceName, void *serviceObject, service_registration_pt registration);
 celix_status_t serviceRegistry_removeHook(service_registry_pt registry, service_registration_pt registration);
@@ -67,7 +73,7 @@ celix_status_t serviceRegistry_create(framework_pt framework, serviceChanged_fun
 		reg->currentServiceId = 1l;
 		reg->serviceReferences = hashMap_create(NULL, NULL, NULL, NULL);
 
-        reg->checkDeletedReferences = true;
+        reg->checkDeletedReferences = CHECK_DELETED_REFERENCES;
         reg->deletedServiceReferences = hashMap_create(NULL, NULL, NULL, NULL);
 
 		arrayList_create(&reg->listenerHooks);
@@ -248,7 +254,7 @@ celix_status_t serviceRegistry_clearServiceRegistrations(service_registry_pt reg
 static void serviceRegistry_logWarningServiceRegistration(service_registry_pt registry __attribute__((unused)), service_registration_pt reg) {
     char *servName = NULL;
     serviceRegistration_getServiceName(reg, &servName);
-    fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Dangling service registration for service %s. Look for missing serviceRegistration_unregister.", servName);
+    fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Dangling service registration for service %s. Look for missing serviceRegistration_unregister calls.", servName);
 }
 
 celix_status_t serviceRegistry_getServiceReference(service_registry_pt registry, bundle_pt owner,
@@ -427,8 +433,11 @@ celix_status_t serviceRegistry_setReferenceStatus(service_registry_pt registry, 
 static void serviceRegistry_logIllegalReference(service_registry_pt registry __attribute__((unused)), service_reference_pt reference,
                                                    reference_status_t refStatus) {
 
-    fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error handling service reference %p from registration %p and bundle (owner) %p, ref has ref status %i",
-           reference, reference->registration, reference->referenceOwner, refStatus);
+    service_registration_pt reg = reference != NULL ? reference->registration : NULL;
+    bundle_pt bundle = reference != NULL ? reference->referenceOwner : NULL;
+    fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR,
+           "Error handling service reference %p from registration %p and bundle (owner) %p, ref has ref status %i",
+           reference, reg, bundle, refStatus);
 }
 
 celix_status_t serviceRegistry_checkReference(service_registry_pt registry, service_reference_pt ref,
@@ -454,10 +463,10 @@ celix_status_t serviceRegistry_checkReference(service_registry_pt registry, serv
 
 void serviceRegistry_logWarningServiceReferenceUsageCount(service_registry_pt registry __attribute__((unused)), size_t usageCount, size_t refCount) {
     if (usageCount > 0) {
-        fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Service Reference destroyed will usage count is %zu. Look for missing bundleContext_ungetService calls.", usageCount);
+        fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Service Reference destroyed with usage count is %zu. Look for missing bundleContext_ungetService calls.", usageCount);
     }
     if (refCount > 0) {
-        fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Dangling service reference. Reference count is %zu. Look for missing bundleContext_ungetServiceReference.", refCount);
+        fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Dangling service reference. Reference count is %zu.  Look for missing bundleContext_ungetServiceReference calls.", refCount);
     }
 }
 
