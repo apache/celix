@@ -148,13 +148,13 @@ void serviceRegistration_invalidate(service_registration_pt registration) {
 
 bool serviceRegistration_isValid(service_registration_pt registration) {
     bool isValid;
-    celixThreadRwlock_readLock(&registration->lock);
     if (registration != NULL) {
+        celixThreadRwlock_readLock(&registration->lock);
         isValid = registration->svcObj != NULL;
+        celixThreadRwlock_unlock(&registration->lock);
     } else {
         isValid = false;
     }
-    celixThreadRwlock_unlock(&registration->lock);
     return isValid;
 }
 
@@ -216,14 +216,13 @@ celix_status_t serviceRegistration_ungetService(service_registration_pt registra
 celix_status_t serviceRegistration_getProperties(service_registration_pt registration, properties_pt *properties) {
 	celix_status_t status = CELIX_SUCCESS;
 
-    celixThreadRwlock_readLock(&registration->lock);
     if (registration != NULL && *properties == NULL) {
-		*properties = registration->properties;
+        celixThreadRwlock_readLock(&registration->lock);
+        *properties = registration->properties;
+        celixThreadRwlock_unlock(&registration->lock);
 	} else {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	}
-    celixThreadRwlock_unlock(&registration->lock);
-
 
     framework_logIfError(logger, status, NULL, "Cannot get registration properties");
 
@@ -231,11 +230,10 @@ celix_status_t serviceRegistration_getProperties(service_registration_pt registr
 }
 
 celix_status_t serviceRegistration_setProperties(service_registration_pt registration, properties_pt properties) {
-    celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status;
 
     properties_pt oldProperties = NULL;
     registry_callback_t callback;
-    callback.modified = NULL;
 
     celixThreadRwlock_writeLock(&registration->lock);
     oldProperties = registration->properties;
@@ -247,21 +245,20 @@ celix_status_t serviceRegistration_setProperties(service_registration_pt registr
         callback.modified(callback.handle, registration, oldProperties);
     }
 
-	return CELIX_SUCCESS;
+	return status;
 }
 
 
 celix_status_t serviceRegistration_getBundle(service_registration_pt registration, bundle_pt *bundle) {
 	celix_status_t status = CELIX_SUCCESS;
 
-    celixThreadRwlock_readLock(&registration->lock);
     if (registration != NULL && *bundle == NULL) {
-		*bundle = registration->bundle;
+        celixThreadRwlock_readLock(&registration->lock);
+        *bundle = registration->bundle;
+        celixThreadRwlock_unlock(&registration->lock);
 	} else {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	}
-    celixThreadRwlock_unlock(&registration->lock);
-
 
     framework_logIfError(logger, status, NULL, "Cannot get bundle");
 
@@ -271,13 +268,14 @@ celix_status_t serviceRegistration_getBundle(service_registration_pt registratio
 celix_status_t serviceRegistration_getServiceName(service_registration_pt registration, char **serviceName) {
 	celix_status_t status = CELIX_SUCCESS;
 
-    celixThreadRwlock_readLock(&registration->lock);
     if (registration != NULL && *serviceName == NULL) {
-		*serviceName = registration->className;
+        celixThreadRwlock_readLock(&registration->lock);
+        *serviceName = registration->className;
+        celixThreadRwlock_unlock(&registration->lock);
 	} else {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-    celixThreadRwlock_unlock(&registration->lock);
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
+
 
     framework_logIfError(logger, status, NULL, "Cannot get service name");
 

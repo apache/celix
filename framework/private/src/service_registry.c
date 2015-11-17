@@ -99,7 +99,7 @@ celix_status_t serviceRegistry_destroy(service_registry_pt registry) {
     hashMap_destroy(registry->serviceRegistrations, false, false);
 
     //destroy service references (double) map);
-    size = hashMap_size(registry->serviceReferences);
+    //size = hashMap_size(registry->serviceReferences);
     //assert(size == 0); FIXME This gives a problem in the remote_service_admin_dfi test. seems that the bundleActivator_stop of the calculator is activated twice ??
     hashMap_destroy(registry->serviceReferences, false, false);
 
