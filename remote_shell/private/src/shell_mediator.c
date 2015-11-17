@@ -81,6 +81,8 @@ celix_status_t shellMediator_stop(shell_mediator_pt instance) {
 	if (tracker != NULL) {
 		serviceTracker_close(tracker);
 	}
+
+    return CELIX_SUCCESS;
 }
 
 celix_status_t shellMediator_destroy(shell_mediator_pt instance) {
