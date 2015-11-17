@@ -288,18 +288,18 @@ if (FRAMEWORK)
         target_link_libraries(service_registration_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils pthread)
 	    
 	    
-        add_executable(service_registry_test 
-            private/test/service_registry_test.cpp
-            private/mock/framework_mock.c
-            private/mock/bundle_mock.c
-            private/mock/filter_mock.c
-            private/mock/service_reference_mock.c
-            private/mock/service_registration_mock.c
-            private/mock/properties_mock.c
-            private/src/service_registry.c
-            private/src/celix_errorcodes.c
-            private/mock/celix_log_mock.c) 
-        target_link_libraries(service_registry_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils pthread)
+        #add_executable(service_registry_test
+        #    private/test/service_registry_test.cpp
+        #    private/mock/framework_mock.c
+        #    private/mock/bundle_mock.c
+        #    private/mock/filter_mock.c
+        #    private/mock/service_reference_mock.c
+        #    private/mock/service_registration_mock.c
+        #    private/mock/properties_mock.c
+        #    private/src/service_registry.c
+        #    private/src/celix_errorcodes.c
+        #    private/mock/celix_log_mock.c)
+        #target_link_libraries(service_registry_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils pthread)
 	    
         add_executable(service_tracker_customizer_test 
             private/test/service_tracker_customizer_test.cpp

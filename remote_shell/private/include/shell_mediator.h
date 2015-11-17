@@ -47,6 +47,7 @@ struct shell_mediator {
 typedef struct shell_mediator *shell_mediator_pt;
 
 celix_status_t shellMediator_create(bundle_context_pt context, shell_mediator_pt *instance);
+celix_status_t shellMediator_stop(shell_mediator_pt instance);
 celix_status_t shellMediator_destroy(shell_mediator_pt instance);
 celix_status_t shellMediator_executeCommand(shell_mediator_pt instance, char *command, FILE *out, FILE *err);
 

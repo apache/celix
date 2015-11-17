@@ -70,7 +70,6 @@ TEST(service_registry, create) {
 	POINTERS_EQUAL(framework, registry->framework);
 	POINTERS_EQUAL(serviceRegistryTest_serviceChanged, registry->serviceChanged);
 	LONGS_EQUAL(1l, registry->currentServiceId);
-	CHECK(registry->inUseMap != NULL);
 	CHECK(registry->listenerHooks != NULL);
 	//CHECK(registry->mutex != NULL);
 	CHECK(registry->serviceReferences != NULL);
@@ -83,10 +82,7 @@ TEST(service_registry, getRegisteredServices) {
 	service_registry_pt registry = (service_registry_pt) malloc(sizeof(*registry));
 	registry->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
 	registry->serviceReferences = hashMap_create(NULL, NULL, NULL, NULL);
-	celixThreadMutexAttr_create(&registry->mutexAttr);
-    celixThreadMutexAttr_settype(&registry->mutexAttr, CELIX_THREAD_MUTEX_RECURSIVE);
-    celixThreadMutex_create(&registry->mutex, &registry->mutexAttr);
-	celixThreadMutex_create(&registry->referencesMapMutex, NULL);
+	celixThreadRwlock_create(&registry->lock, NULL);
 	array_list_pt registrations = NULL;
 	arrayList_create(&registrations);
 	service_registration_pt reg = (service_registration_pt) 0x10;
@@ -132,12 +128,7 @@ TEST(service_registry, getRegisteredServices) {
 
 TEST(service_registry, getServicesInUse) {
 	service_registry_pt registry = (service_registry_pt) malloc(sizeof(*registry));
-	registry->inUseMap = hashMap_create(NULL, NULL, NULL, NULL);
-	celixThreadMutexAttr_create(&registry->mutexAttr);
-    celixThreadMutexAttr_settype(&registry->mutexAttr, CELIX_THREAD_MUTEX_RECURSIVE);
-    celixThreadMutex_create(&registry->mutex, &registry->mutexAttr);
-
-	celixThreadMutex_create(&registry->referencesMapMutex, NULL);
+	celixThreadRwlock_create(&registry->lock, NULL);
 
 	array_list_pt usages = NULL;
 	arrayList_create(&usages);

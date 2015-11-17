@@ -381,13 +381,16 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 
     logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "RSA: exportService called for serviceId %s", serviceId);
 
-    if (status == CELIX_SUCCESS && arrayList_size(references) >= 1) {
-        reference = arrayList_get(references, 0);
+    int i;
+    int size = arrayList_size(references);
+    for (i = 0; i < size; i += 1) {
+        if (i == 0) {
+            reference = arrayList_get(references, i);
+        } else {
+            bundleContext_ungetServiceReference(admin->context, arrayList_get(references, i));
+        }
     }
-
-    if(references != NULL){
-        arrayList_destroy(references);
-    }
+    arrayList_destroy(references);
 
     if (reference == NULL) {
         logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "ERROR: expected a reference for service id %s.", serviceId);

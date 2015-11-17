@@ -180,6 +180,30 @@ void properties_store(properties_pt properties, char * filename, char * header) 
 	}
 }
 
+celix_status_t properties_copy(properties_pt properties, properties_pt *out) {
+	celix_status_t status = CELIX_SUCCESS;
+	properties_pt copy = properties_create();
+
+	if (copy != NULL) {
+		hash_map_iterator_pt iter = hashMapIterator_create(properties);
+		while (hashMapIterator_hasNext(iter)) {
+			hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
+			char *key = hashMapEntry_getKey(entry);
+			char *value = hashMapEntry_getValue(entry);
+			properties_set(copy, key, value);
+		}
+		hashMapIterator_destroy(iter);
+	} else {
+		status = CELIX_ENOMEM;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		*out = copy;
+	}
+
+	return status;
+}
+
 char * properties_get(properties_pt properties, char * key) {
 	return hashMap_get(properties, key);
 }

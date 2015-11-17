@@ -76,13 +76,13 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 			properties = properties_create();
 			properties_set(properties, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, (char *) CALCULATOR_SERVICE);
 
-                        bundleContext_registerService(context, (char *) CALCULATOR_SERVICE, activator->service, properties, &activator->calculatorReg);
+			bundleContext_registerService(context, (char *) CALCULATOR_SERVICE, activator->service, properties, &activator->calculatorReg);
 
-                        properties_pt properties2 = properties_create();
-            properties_set(properties2, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, (char *) CALCULATOR2_SERVICE);
-                        bundleContext_registerService(context, CALCULATOR2_SERVICE, activator->service, properties2, &activator->calculatorReg2);
-                }
-        }
+			properties_pt properties2 = properties_create();
+			properties_set(properties2, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, (char *) CALCULATOR2_SERVICE);
+			bundleContext_registerService(context, CALCULATOR2_SERVICE, activator->service, properties2, &activator->calculatorReg2);
+		}
+	}
 
 	return status;
 }

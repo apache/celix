@@ -27,9 +27,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <sys/types.h>
 #include "celixbool.h"
-#include <math.h>
+
 #ifdef _WIN32
 #include <winbase.h>
 #include <windows.h>
@@ -39,26 +38,13 @@
 #include <uuid/uuid.h>
 
 #include "framework_private.h"
-#include "filter.h"
 #include "constants.h"
-#include "archive.h"
-#include "bundle.h"
-#include "wire.h"
 #include "resolver.h"
 #include "utils.h"
-#include "bundle_activator.h"
-#include "service_registry.h"
-#include "bundle_cache.h"
-#include "bundle_archive.h"
-#include "bundle_revision.h"
-#include "bundle_context.h"
 #include "linked_list_iterator.h"
 #include "service_reference_private.h"
 #include "listener_hook_service.h"
 #include "service_registration_private.h"
-#include "celix_log.h"
-
-#include "celix_threads.h"
 
 typedef celix_status_t (*create_function_pt)(bundle_context_pt context, void **userData);
 typedef celix_status_t (*start_function_pt)(void * handle, bundle_context_pt context);
@@ -166,6 +152,13 @@ typedef struct request *request_pt;
 
 framework_logger_pt logger;
 
+//TODO introduce a counter + mutex to control the freeing of the logger when mutiple threads are running a framework.
+static celix_thread_once_t loggerInit = CELIX_THREAD_ONCE_INIT;
+static void framework_loggerInit(void) {
+    logger = malloc(sizeof(*logger));
+    logger->logFunction = frameworkLogger_log;
+}
+
 #ifdef _WIN32
     #define handle_t HMODULE
     #define fw_openLibrary(path) LoadLibrary(path)
@@ -188,17 +181,12 @@ framework_logger_pt logger;
     #define fw_getLastError() dlerror()
 #endif
 
-#ifdef WITH_APR
-celix_status_t framework_create(framework_pt *framework, apr_pool_t *pool, properties_pt config) {
-#else
 celix_status_t framework_create(framework_pt *framework, properties_pt config) {
-#endif
     celix_status_t status = CELIX_SUCCESS;
 
     logger = hashMap_get(config, "logger");
     if (logger == NULL) {
-        logger = malloc(sizeof(*logger));
-        logger->logFunction = frameworkLogger_log;
+        celixThread_once(&loggerInit, framework_loggerInit);
     }
 
     *framework = (framework_pt) malloc(sizeof(**framework));
@@ -212,9 +200,6 @@ celix_status_t framework_create(framework_pt *framework, properties_pt config) {
         status = CELIX_DO_IF(status, celixThreadMutex_create(&(*framework)->bundleListenerLock, NULL));
         status = CELIX_DO_IF(status, celixThreadCondition_init(&(*framework)->dispatcher, NULL));
         if (status == CELIX_SUCCESS) {
-#ifdef WITH_APR
-            (*framework)->pool = pool;
-#endif
             (*framework)->bundle = NULL;
             (*framework)->installedBundleMap = NULL;
             (*framework)->registry = NULL;
@@ -439,13 +424,7 @@ celix_status_t fw_init(framework_pt framework) {
     status = CELIX_DO_IF(status, celixThreadCondition_init(&framework->shutdownGate, NULL));
 
     bundle_context_pt context = NULL;
-#ifdef WITH_APR
-    apr_pool_t *bundlePool = NULL;
-    apr_pool_create(&bundlePool, framework->pool);
-    status = CELIX_DO_IF(status, bundleContext_create(bundlePool, framework, framework->logger, framework->bundle, &context));
-#else
     status = CELIX_DO_IF(status, bundleContext_create(framework, framework->logger, framework->bundle, &context));
-#endif
     status = CELIX_DO_IF(status, bundle_setContext(framework->bundle, context));
     if (status == CELIX_SUCCESS) {
         activator_pt activator = NULL;
@@ -699,13 +678,7 @@ celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int opti
                 name = NULL;
                 bundle_getCurrentModule(bundle, &module);
                 module_getSymbolicName(module, &name);
-#ifdef WITH_APR
-                apr_pool_t *bundlePool = NULL;
-                apr_pool_create(&bundlePool, framework->pool);
-                status = CELIX_DO_IF(status, bundleContext_create(bundlePool, framework, framework->logger, bundle, &context));
-#else
                 status = CELIX_DO_IF(status, bundleContext_create(framework, framework->logger, bundle, &context));
-#endif
                 status = CELIX_DO_IF(status, bundle_setContext(bundle, context));
 
                 if (status == CELIX_SUCCESS) {
@@ -909,7 +882,7 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
 	        }
 
             if (id != 0) {
-                status = CELIX_DO_IF(status, serviceRegistry_unregisterServices(framework->registry, bundle));
+                status = CELIX_DO_IF(status, serviceRegistry_clearServiceRegistrations(framework->registry, bundle));
                 if (status == CELIX_SUCCESS) {
                     module_pt module = NULL;
                     char *symbolicName = NULL;
@@ -918,8 +891,7 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
                     module_getSymbolicName(module, &symbolicName);
                     bundle_getBundleId(bundle, &id);
 
-                    serviceRegistry_ungetServices(framework->registry, bundle);
-                    serviceRegistry_ungetServiceReferences(framework->registry, bundle);
+                    serviceRegistry_clearReferencesFor(framework->registry, bundle);
                 }
                 // #TODO remove listeners for bundle
 
@@ -1293,14 +1265,13 @@ celix_status_t fw_registerService(framework_pt framework, service_registration_p
                     }
                 }
 
-                bool ungetResult = false;
-
-                status = CELIX_DO_IF(status, serviceRegistry_createServiceReference(framework->registry, framework->bundle, *registration, &ref));
+                status = CELIX_DO_IF(status, serviceRegistry_getServiceReference(framework->registry, framework->bundle,
+                                                                                 *registration, &ref));
                 status = CELIX_DO_IF(status, fw_getService(framework,framework->bundle, ref, (void **) &hook));
                 if (status == CELIX_SUCCESS) {
                     hook->added(hook->handle, infos);
                 }
-                status = CELIX_DO_IF(status, serviceRegistry_ungetService(framework->registry, framework->bundle, ref, &ungetResult));
+                status = CELIX_DO_IF(status, serviceRegistry_ungetService(framework->registry, framework->bundle, ref, NULL));
                 status = CELIX_DO_IF(status, serviceRegistry_ungetServiceReference(framework->registry, framework->bundle, ref));
 
                 int i = 0;
@@ -1632,15 +1603,21 @@ void fw_serviceChanged(framework_pt framework, service_event_type_e eventType, s
 
 				event = (service_event_pt) malloc(sizeof(*event));
 
-				serviceRegistry_createServiceReference(framework->registry, element->bundle, registration, &reference);
+                serviceRegistry_getServiceReference(framework->registry, element->bundle, registration, &reference);
 
 				event->type = eventType;
 				event->reference = reference;
 
 				element->listener->serviceChanged(element->listener, event);
 
-				free(event);
-				//TODO cleanup service reference
+                if (eventType != OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED) {
+                    serviceRegistry_ungetServiceReference(framework->registry, element->bundle, reference);
+                }
+                if (eventType == OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING) {
+                    serviceRegistry_ungetServiceReference(framework->registry, element->bundle, reference);
+                }
+
+                free(event);
 
 			} else if (eventType == OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED) {
 				bool matchResult = false;
@@ -1653,14 +1630,16 @@ void fw_serviceChanged(framework_pt framework, service_event_type_e eventType, s
 					service_reference_pt reference = NULL;
 					service_event_pt endmatch = (service_event_pt) malloc(sizeof(*endmatch));
 
-					serviceRegistry_createServiceReference(framework->registry, element->bundle, registration, &reference);
+                    serviceRegistry_getServiceReference(framework->registry, element->bundle, registration, &reference);
 
 					endmatch->reference = reference;
 					endmatch->type = OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED_ENDMATCH;
 					element->listener->serviceChanged(element->listener, endmatch);
 
-					//TODO clean up serviceReference after serviceChanged update
-				}
+                    serviceRegistry_ungetServiceReference(framework->registry, element->bundle, reference);
+                    free(endmatch);
+
+                }
 			}
 		}
 	}
@@ -2348,6 +2327,7 @@ static void *fw_eventDispatcher(void *fw) {
 
                     fw_invokeBundleListener(framework, listener->listener, event, listener->bundle);
 
+                    free(event->bundleSymbolicName);
                     free(event);
                 } else if (request->type == FRAMEWORK_EVENT_TYPE) {
                     fw_framework_listener_pt listener = (fw_framework_listener_pt) arrayList_get(request->listeners, i);

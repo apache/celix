@@ -28,28 +28,38 @@
 #ifndef SERVICE_REGISTRY_PRIVATE_H_
 #define SERVICE_REGISTRY_PRIVATE_H_
 
+#include "registry_callback_private.h"
 #include "service_registry.h"
 
 struct serviceRegistry {
 	framework_pt framework;
-	hash_map_pt serviceRegistrations;
-	hash_map_pt serviceReferences;
-	hash_map_pt inUseMap;
+	registry_callback_t callback;
+
+	hash_map_pt serviceRegistrations; //key = bundle (reg owner), value = registration
+	hash_map_pt serviceReferences; //key = bundle, value = map (key = registration, value = reference)
+
+	bool checkDeletedReferences; //If enabled. check if provided service references are still valid
+	hash_map_pt deletedServiceReferences; //key = ref pointer, value = bool
+
 	serviceChanged_function_pt serviceChanged;
 	long currentServiceId;
 
 	array_list_pt listenerHooks;
 
-	celix_thread_mutex_t mutex;
-	celix_thread_mutexattr_t mutexAttr;
-
-	celix_thread_mutex_t referencesMapMutex;
+	celix_thread_rwlock_t lock;
 };
+
+typedef enum reference_status_enum {
+	REF_ACTIVE,
+	REF_DELETED,
+	REF_UNKNOWN
+} reference_status_t;
 
 struct usageCount {
 	unsigned int count;
 	service_reference_pt reference;
 	void * service;
+	service_registration_pt registration;
 };
 
 typedef struct usageCount * usage_count_pt;

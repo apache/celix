@@ -27,12 +27,25 @@
 
 #include "service_reference_private.h"
 
-celix_status_t serviceReference_create(bundle_pt bundle, service_registration_pt registration, service_reference_pt *reference) {
+celix_status_t serviceReference_create(registry_callback_t callback, bundle_pt referenceOwner, service_registration_pt registration, service_reference_pt *reference) {
 	mock_c()->actualCall("serviceReference_create")
-			->withPointerParameters("bundle", bundle)
+			->withParameterOfType("registry_callback_t", "callback", &callback)
+			->withPointerParameters("referenceOwner", referenceOwner)
 			->withPointerParameters("registration", registration)
 			->withOutputParameter("reference", (void **) reference);
 	return mock_c()->returnValue().value.intValue;
+}
+
+celix_status_t serviceReference_retain(service_reference_pt ref) {
+    mock_c()->actualCall("serviceReference_retain")
+            ->withPointerParameters("ref", ref);
+    return mock_c()->returnValue().value.intValue;
+}
+celix_status_t serviceReference_release(service_reference_pt ref, bool *destroyed) {
+    mock_c()->actualCall("serviceReference_release")
+            ->withPointerParameters("ref", ref)
+            ->withOutputParameter("destroyed", destroyed);
+    return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t serviceReference_destroy(service_reference_pt *reference) {

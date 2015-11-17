@@ -81,7 +81,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 
 	serviceRegistration_unregister(activator->endpointServiceRegistration);
 
-	free(activator->endpointService->endpoint);
+	//calculatorEndpoint_destroy(activator->endpointService->endpoint);
 	free(activator->endpointService);
 
 	return status;

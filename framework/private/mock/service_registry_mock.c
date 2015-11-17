@@ -179,3 +179,26 @@ celix_status_t serviceRegistry_removeReference(service_reference_pt reference) {
     return mock_c()->returnValue().value.intValue;
 }
 
+
+celix_status_t serviceRegistry_getServiceReference(service_registry_pt registry, bundle_pt bundle, service_registration_pt registration, service_reference_pt *reference) {
+	mock_c()->actualCall("serviceRegistry_getServiceReference")
+			->withPointerParameters("registry", registry)
+			->withPointerParameters("bundle", bundle)
+			->withPointerParameters("registration", registration)
+			->withOutputParameter("reference", reference);
+	return mock_c()->returnValue().value.intValue;
+}
+
+celix_status_t serviceRegistry_clearReferencesFor(service_registry_pt registry, bundle_pt bundle) {
+	mock_c()->actualCall("serviceRegistry_clearReferencesFor")
+			->withPointerParameters("registry", registry)
+			->withPointerParameters("bundle", bundle);
+	return mock_c()->returnValue().value.intValue;
+}
+
+celix_status_t serviceRegistry_clearServiceRegistrations(service_registry_pt registry, bundle_pt bundle) {
+	mock_c()->actualCall("serviceRegistry_clearReferencesFor")
+			->withPointerParameters("registry", registry)
+			->withPointerParameters("bundle", bundle);
+	return mock_c()->returnValue().value.intValue;
+}
