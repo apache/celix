@@ -93,7 +93,6 @@ TEST(service_tracker_customizer, create) {
 TEST(service_tracker_customizer, createIllegalArgument) {
 	mock().expectOneCall("framework_logCode").withParameter("code", CELIX_ILLEGAL_ARGUMENT);
 
-	void *handle = (void *) 0x10;
 	service_tracker_customizer_pt customizer = NULL;
 	celix_status_t status = serviceTrackerCustomizer_create(
 			NULL,

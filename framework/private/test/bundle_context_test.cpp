@@ -305,7 +305,6 @@ TEST(bundle_context, ungetServiceReference) {
     		.withParameter("bundle", bundle)
     		.withParameter("reference", reference);
 
-	service_reference_pt actualReference = NULL;
 	LONGS_EQUAL(CELIX_SUCCESS, bundleContext_ungetServiceReference(context, reference));
 
     LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, bundleContext_ungetServiceReference(context, NULL));
@@ -320,7 +319,6 @@ TEST(bundle_context, getService) {
 	context->framework = framework;
 	context->bundle = bundle;
 
-	char serviceName[] = "service";
 	service_reference_pt serviceReference = (service_reference_pt) 0x30;
 	void *service = (void *) 0x40;
 
@@ -350,7 +348,6 @@ TEST(bundle_context, ungetService) {
 	context->framework = framework;
 	context->bundle = bundle;
 
-	char serviceName[] = "service";
 	service_reference_pt serviceReference = (service_reference_pt) 0x30;
 	bool result = true;
 
@@ -441,11 +438,9 @@ TEST(bundle_context, addServiceListener) {
 		.withParameter("filter", filter)
 		.andReturnValue(CELIX_SUCCESS);
 
-	bundle_pt actualBundle = NULL;
 	celix_status_t status = bundleContext_addServiceListener(context, listener, filter);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 
-	actualBundle = NULL;
 	status = bundleContext_addServiceListener(context, NULL, filter);
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
 }
@@ -466,11 +461,9 @@ TEST(bundle_context, removeServiceListener) {
 		.withParameter("listener", listener)
 		.andReturnValue(CELIX_SUCCESS);
 
-	bundle_pt actualBundle = NULL;
 	celix_status_t status = bundleContext_removeServiceListener(context, listener);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 
-	actualBundle = NULL;
 	status = bundleContext_removeServiceListener(context, NULL);
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
 }
@@ -491,11 +484,9 @@ TEST(bundle_context, addBundleListener) {
 		.withParameter("listener", listener)
 		.andReturnValue(CELIX_SUCCESS);
 
-	bundle_pt actualBundle = NULL;
 	celix_status_t status = bundleContext_addBundleListener(context, listener);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 
-	actualBundle = NULL;
 	status = bundleContext_addBundleListener(context, NULL);
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
 }
@@ -516,11 +507,9 @@ TEST(bundle_context, removeBundleListener) {
 		.withParameter("listener", listener)
 		.andReturnValue(CELIX_SUCCESS);
 
-	bundle_pt actualBundle = NULL;
 	celix_status_t status = bundleContext_removeBundleListener(context, listener);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 
-	actualBundle = NULL;
 	status = bundleContext_removeBundleListener(context, NULL);
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
 }

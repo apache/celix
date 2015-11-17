@@ -75,7 +75,6 @@ TEST_GROUP(version) {
 TEST(version, create) {
 	mock().expectNCalls(2, "framework_logCode").withParameter("code", CELIX_ILLEGAL_ARGUMENT);
 	version_pt version = NULL;
-	celix_status_t status = CELIX_SUCCESS;
 	char * str;
 
 //	str = my_strdup("abc");
@@ -119,7 +118,6 @@ TEST(version, create) {
 
 TEST(version, clone) {
 	version_pt version = NULL, clone = NULL;
-	celix_status_t status = CELIX_SUCCESS;
 	char * str;
 
 	str = my_strdup("abc");
@@ -327,7 +325,7 @@ TEST(version, compare) {
 }
 
 TEST(version, toString) {
-	version_pt version = NULL, compare = NULL;
+	version_pt version = NULL;
 	celix_status_t status = CELIX_SUCCESS;
 	char * str;
 	char *result = NULL;

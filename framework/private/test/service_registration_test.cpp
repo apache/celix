@@ -53,7 +53,6 @@ TEST_GROUP(service_registration) {
 };
 
 TEST(service_registration, create) {
-	service_registry_pt registry = (service_registry_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
 	std::string serviceName = "service";
 	long serviceId = 1l;
@@ -90,7 +89,6 @@ TEST(service_registration, create) {
 }
 
 TEST(service_registration, createServiceFactory) {
-	service_registry_pt registry = (service_registry_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
 	std::string serviceName = "service";
 	long serviceId = 1l;
@@ -177,7 +175,6 @@ TEST(service_registration, unregisterValid) {
 }
 
 TEST(service_registration, unregisterInvalid) {
-	service_registry_pt registry = (service_registry_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
 	service_registration_pt registration = (service_registration_pt) malloc(sizeof(*registration));
 	registration->bundle = bundle;

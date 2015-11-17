@@ -120,6 +120,7 @@ TEST(service_reference, getUsingBundle) {
 
 	array_list_pt actual = NULL;
 	celix_status_t status = serviceReference_getUsingBundles(reference, &actual);
+	LONGS_EQUAL(status,CELIX_SUCCESS);
 	POINTERS_EQUAL(bundles, actual);
 	LONGS_EQUAL(1, arrayList_size(actual));
 	POINTERS_EQUAL(bundle, arrayList_get(actual, 0));

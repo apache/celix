@@ -121,7 +121,6 @@ TEST(version_range, createInfinite) {
 }
 
 TEST(version_range, isInRange) {
-	celix_status_t status = CELIX_SUCCESS;
 	bool result;
 	version_range_pt range = NULL;
 	version_pt version = (version_pt) malloc(sizeof(*version));
@@ -206,7 +205,6 @@ TEST(version_range, isInRange) {
 }
 
 TEST(version_range, parse) {
-	celix_status_t status = CELIX_SUCCESS;
 	version_range_pt range = NULL;
 	version_pt low = (version_pt) malloc(sizeof(*low));
 	version_pt high = (version_pt) malloc(sizeof(*high));

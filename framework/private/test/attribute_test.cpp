@@ -98,7 +98,7 @@ TEST(attribute, getKey) {
 	attribute->value = value;
 
 	char *actual = NULL;
-	celix_status_t status = attribute_getKey(attribute, &actual);
+	attribute_getKey(attribute, &actual);
 	STRCMP_EQUAL(key, actual);
 
 	free(attribute);
@@ -113,7 +113,7 @@ TEST(attribute, getValue) {
 	attribute->value = value;
 
 	char *actual = NULL;
-	celix_status_t status = attribute_getValue(attribute, &actual);
+	attribute_getValue(attribute, &actual);
 	STRCMP_EQUAL(value, actual);
 
 	free(attribute);

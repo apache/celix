@@ -711,6 +711,7 @@ TEST(bundle, isLockable) {
 
 	bool lockable = false;
 	celix_status_t status = bundle_isLockable(bundle, &lockable);
+	LONGS_EQUAL(CELIX_SUCCESS, status);
 	//	FAIL("Test not fully implemented");
 
 	free(bundle);

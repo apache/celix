@@ -49,7 +49,6 @@ extern "C" {
     }
 
     static void teardownFm(void) {
-        int rc = 0;
 
         celixLauncher_stop(framework);
         celixLauncher_waitForShutdown(framework);
