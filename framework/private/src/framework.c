@@ -152,6 +152,13 @@ typedef struct request *request_pt;
 
 framework_logger_pt logger;
 
+//TODO introduce a counter + mutex to control the freeing of the logger when mutiple threads are running a framework.
+static celix_thread_once_t loggerInit = CELIX_THREAD_ONCE_INIT;
+static void framework_loggerInit(void) {
+    logger = malloc(sizeof(*logger));
+    logger->logFunction = frameworkLogger_log;
+}
+
 #ifdef _WIN32
     #define handle_t HMODULE
     #define fw_openLibrary(path) LoadLibrary(path)
@@ -179,8 +186,7 @@ celix_status_t framework_create(framework_pt *framework, properties_pt config) {
 
     logger = hashMap_get(config, "logger");
     if (logger == NULL) {
-        logger = malloc(sizeof(*logger));
-        logger->logFunction = frameworkLogger_log;
+        celixThread_once(&loggerInit, framework_loggerInit);
     }
 
     *framework = (framework_pt) malloc(sizeof(**framework));

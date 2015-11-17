@@ -38,6 +38,8 @@ struct celix_thread {
 	pthread_t thread;
 };
 
+typedef pthread_once_t celix_thread_once_t;
+#define CELIX_THREAD_ONCE_INIT PTHREAD_ONCE_INIT
 
 typedef struct celix_thread celix_thread_t;
 typedef pthread_attr_t celix_thread_attr_t;
@@ -101,5 +103,6 @@ celix_status_t celixThreadCondition_wait(celix_thread_cond_t *cond, celix_thread
 celix_status_t celixThreadCondition_broadcast(celix_thread_cond_t *cond);
 celix_status_t celixThreadCondition_signal(celix_thread_cond_t *cond);
 
+celix_status_t celixThread_once(celix_thread_once_t *once_control, void (*init_routine)(void));
 
 #endif /* CELIX_THREADS_H_ */

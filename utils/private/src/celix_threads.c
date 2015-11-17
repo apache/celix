@@ -178,3 +178,7 @@ celix_status_t celixThreadRwlockAttr_create(celix_thread_rwlockattr_t *attr) {
 celix_status_t celixThreadRwlockAttr_destroy(celix_thread_rwlockattr_t *attr) {
 	return pthread_rwlockattr_destroy(attr);
 }
+
+celix_status_t celixThread_once(celix_thread_once_t *once_control, void (*init_routine)(void)) {
+	return pthread_once(once_control, init_routine);
+}
