@@ -97,7 +97,6 @@ TEST(resolver, resolve){
 	requirement_pt req2= (requirement_pt) 0x07;
 	capability_pt cap = (capability_pt) 0x08;
 	capability_pt cap2= (capability_pt) 0x09;
-	wire_pt get_wire;
 	importer_wires_pt get_importer_wires;
 	linked_list_pt get_wire_map;
 

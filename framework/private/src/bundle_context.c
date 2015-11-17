@@ -133,7 +133,7 @@ celix_status_t bundleContext_registerService(bundle_context_pt context, char * s
 	    status = CELIX_ILLEGAL_ARGUMENT;
 	}
 
-	framework_logIfError(logger, status, NULL, "Failed to register service");
+	framework_logIfError(logger, status, NULL, "Failed to register service. serviceName '%s'", serviceName);
 
 	return status;
 }

@@ -53,7 +53,6 @@ TEST_GROUP(service_registration) {
 };
 
 TEST(service_registration, create) {
-	service_registry_pt registry = (service_registry_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
 	std::string serviceName = "service";
 	long serviceId = 1l;
@@ -73,9 +72,9 @@ TEST(service_registration, create) {
 		.withParameter("value", "service")
 		.andReturnValue((char *) NULL);
 
-	service_registration_pt registration = serviceRegistration_create(registry, bundle, (char *) serviceName.c_str(), serviceId, service, NULL);
+	registry_callback_t callback;
+	service_registration_pt registration = serviceRegistration_create(callback, bundle, (char *) serviceName.c_str(), serviceId, service, NULL);
 
-	POINTERS_EQUAL(registry, registration->registry);
 	STRCMP_EQUAL("service", registration->className);
 	POINTERS_EQUAL(bundle, registration->bundle);
 	POINTERS_EQUAL(properties, registration->properties);
@@ -90,7 +89,6 @@ TEST(service_registration, create) {
 }
 
 TEST(service_registration, createServiceFactory) {
-	service_registry_pt registry = (service_registry_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
 	std::string serviceName = "service";
 	long serviceId = 1l;
@@ -110,9 +108,9 @@ TEST(service_registration, createServiceFactory) {
 		.withParameter("value", "service")
 		.andReturnValue((char *) NULL);
 
-	service_registration_pt registration = serviceRegistration_createServiceFactory(registry, bundle, (char *) serviceName.c_str(), serviceId, service, NULL);
+    registry_callback_t callback;
+	service_registration_pt registration = serviceRegistration_createServiceFactory(callback, bundle, (char *) serviceName.c_str(), serviceId, service, NULL);
 
-	POINTERS_EQUAL(registry, registration->registry);
 	STRCMP_EQUAL("service", registration->className);
 	POINTERS_EQUAL(bundle, registration->bundle);
 	POINTERS_EQUAL(properties, registration->properties);
@@ -147,7 +145,7 @@ TEST(service_registration, isValidFalse) {
 
 TEST(service_registration, invalidate) {
 	service_registration_pt registration = (service_registration_pt) malloc(sizeof(*registration));
-	celixThreadMutex_create(&registration->mutex, NULL);
+    celixThreadRwlock_create(&registration->lock, NULL);
 	void *service = (void *) 0x30;
 	registration->svcObj = service;
 
@@ -160,9 +158,8 @@ TEST(service_registration, unregisterValid) {
 	service_registry_pt registry = (service_registry_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
 	service_registration_pt registration = (service_registration_pt) malloc(sizeof(*registration));
-	registration->registry = registry;
 	registration->bundle = bundle;
-	celixThreadMutex_create(&registration->mutex, NULL);
+    celixThreadRwlock_create(&registration->lock, NULL);
 	void *service = (void *) 0x30;
 	registration->svcObj = service;
 
@@ -178,12 +175,10 @@ TEST(service_registration, unregisterValid) {
 }
 
 TEST(service_registration, unregisterInvalid) {
-	service_registry_pt registry = (service_registry_pt) 0x10;
 	bundle_pt bundle = (bundle_pt) 0x20;
 	service_registration_pt registration = (service_registration_pt) malloc(sizeof(*registration));
-	registration->registry = registry;
 	registration->bundle = bundle;
-	celixThreadMutex_create(&registration->mutex, NULL);
+    celixThreadRwlock_create(&registration->lock, NULL);
 	registration->svcObj = NULL;
 
 	celix_status_t status = serviceRegistration_unregister(registration);
@@ -242,52 +237,6 @@ TEST(service_registration, getPropertiesIllegalArgument) {
 
 	properties_pt actual = (properties_pt) 0x01;
 	celix_status_t status = serviceRegistration_getProperties(registration, &actual);
-	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
-}
-
-TEST(service_registration, getRegistry) {
-	service_registration_pt registration = (service_registration_pt) malloc(sizeof(*registration));
-	service_registry_pt registry = (service_registry_pt) 0x10;
-	registration->registry = registry;
-
-	service_registry_pt actual = NULL;
-	celix_status_t status = serviceRegistration_getRegistry(registration, &actual);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
-	POINTERS_EQUAL(registry, actual);
-}
-
-TEST(service_registration, getRegistryIllegalArgument) {
-	service_registration_pt registration = (service_registration_pt) malloc(sizeof(*registration));
-	registration->registry = NULL;
-
-	service_registry_pt actual = (service_registry_pt) 0x01;
-	celix_status_t status = serviceRegistration_getRegistry(registration, &actual);
-	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
-}
- 
-TEST(service_registration, getServiceReferences) {
-	service_registration_pt registration = (service_registration_pt) malloc(sizeof(*registration));
-	array_list_pt references = NULL;
-	//service_registry_pt registry = (service_registry_pt) 0x10;
-	//service_registry_pt registry = (service_registry_pt) 0x0;
-	service_registry_pt registry = registration->registry;
-	bundle_pt bundle = (bundle_pt) 0x20;
-
-	mock().expectOneCall("serviceRegistry_getServiceReferencesForRegistration")
-			.withParameter("registry", registry)
-			.withParameter("registration", registration)
-			.withOutputParameterReturning("references", &references, sizeof(references));
-
-	celix_status_t status = serviceRegistration_getServiceReferences(registration, &references);
-	LONGS_EQUAL(CELIX_SUCCESS, status);
-}
-
-TEST(service_registration, getServiceReferencesIllegalArgument) {
-	service_registration_pt registration = (service_registration_pt) malloc(sizeof(*registration));
-	registration->registry = NULL;
-
-	array_list_pt actual = (array_list_pt) 0x01;
-	celix_status_t status = serviceRegistration_getServiceReferences(registration, &actual);
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
 }
 

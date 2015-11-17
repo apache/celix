@@ -88,7 +88,7 @@ TEST(capability, create) {
         .andReturnValue(CELIX_SUCCESS);
 
 	capability_pt capability = NULL;
-	celix_status_t status = capability_create(module, directives, attributes, &capability);
+	capability_create(module, directives, attributes, &capability);
 
 	mock().expectOneCall("attribute_destroy")
 			.withParameter("attribute", serviceAttribute);

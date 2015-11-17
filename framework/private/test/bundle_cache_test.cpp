@@ -45,23 +45,6 @@ int main(int argc, char** argv) {
 	return RUN_ALL_TESTS(argc, argv);
 }
 
-static char* my_strdup(const char* s) {
-	if (s == NULL) {
-		return NULL;
-	}
-
-	size_t len = strlen(s);
-
-	char *d = (char*) calloc(len + 1, sizeof(char));
-
-	if (d == NULL) {
-		return NULL;
-	}
-
-	strncpy(d, s, len);
-	return d;
-}
-
 TEST_GROUP(bundle_cache) {
 	void setup(void) {
 	}

@@ -150,3 +150,35 @@ celix_status_t celixThreadCondition_broadcast(celix_thread_cond_t *cond) {
 celix_status_t celixThreadCondition_signal(celix_thread_cond_t *cond) {
     return pthread_cond_signal(cond);
 }
+
+celix_status_t celixThreadRwlock_create(celix_thread_rwlock_t *lock, celix_thread_rwlockattr_t *attr) {
+	return pthread_rwlock_init(lock, attr);
+}
+
+celix_status_t celixThreadRwlock_destroy(celix_thread_rwlock_t *lock) {
+	return pthread_rwlock_destroy(lock);
+}
+
+celix_status_t celixThreadRwlock_readLock(celix_thread_rwlock_t *lock) {
+	return pthread_rwlock_rdlock(lock);
+}
+
+celix_status_t celixThreadRwlock_writeLock(celix_thread_rwlock_t *lock) {
+	return pthread_rwlock_wrlock(lock);
+}
+
+celix_status_t celixThreadRwlock_unlock(celix_thread_rwlock_t *lock) {
+	return pthread_rwlock_unlock(lock);
+}
+
+celix_status_t celixThreadRwlockAttr_create(celix_thread_rwlockattr_t *attr) {
+	return pthread_rwlockattr_init(attr);
+}
+
+celix_status_t celixThreadRwlockAttr_destroy(celix_thread_rwlockattr_t *attr) {
+	return pthread_rwlockattr_destroy(attr);
+}
+
+celix_status_t celixThread_once(celix_thread_once_t *once_control, void (*init_routine)(void)) {
+	return pthread_once(once_control, init_routine);
+}

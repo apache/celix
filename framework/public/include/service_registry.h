@@ -43,21 +43,24 @@ celix_status_t serviceRegistry_destroy(service_registry_pt registry);
 
 celix_status_t serviceRegistry_getRegisteredServices(service_registry_pt registry, bundle_pt bundle, array_list_pt *services);
 celix_status_t serviceRegistry_getServicesInUse(service_registry_pt registry, bundle_pt bundle, array_list_pt *services);
+
 celix_status_t serviceRegistry_registerService(service_registry_pt registry, bundle_pt bundle, char * serviceName, void * serviceObject, properties_pt dictionary, service_registration_pt *registration);
 celix_status_t serviceRegistry_registerServiceFactory(service_registry_pt registry, bundle_pt bundle, char * serviceName, service_factory_pt factory, properties_pt dictionary, service_registration_pt *registration);
+
 celix_status_t serviceRegistry_unregisterService(service_registry_pt registry, bundle_pt bundle, service_registration_pt registration);
-celix_status_t serviceRegistry_unregisterServices(service_registry_pt registry, bundle_pt bundle);
+celix_status_t serviceRegistry_clearServiceRegistrations(service_registry_pt registry, bundle_pt bundle);
+
+celix_status_t serviceRegistry_getServiceReference(service_registry_pt registry, bundle_pt bundle, service_registration_pt registration, service_reference_pt *reference);
 celix_status_t serviceRegistry_getServiceReferences(service_registry_pt registry, bundle_pt bundle, const char *serviceName, filter_pt filter, array_list_pt *references);
+celix_status_t serviceRegistry_ungetServiceReference(service_registry_pt registry, bundle_pt bundle, service_reference_pt reference);
+
 celix_status_t serviceRegistry_getService(service_registry_pt registry, bundle_pt bundle, service_reference_pt reference, void **service);
 celix_status_t serviceRegistry_ungetService(service_registry_pt registry, bundle_pt bundle, service_reference_pt reference, bool *result);
-void serviceRegistry_ungetServices(service_registry_pt registry, bundle_pt bundle);
-array_list_pt serviceRegistry_getUsingBundles(service_registry_pt registry, service_reference_pt reference);
-service_registration_pt serviceRegistry_findRegistration(service_registry_pt registry, service_reference_pt reference);
-celix_status_t serviceRegistry_ungetServiceReference(service_registry_pt registry, bundle_pt bundle, service_reference_pt reference);
-celix_status_t serviceRegistry_ungetServiceReferences(service_registry_pt registry, bundle_pt bundle);
 
-celix_status_t serviceRegistry_createServiceReference(service_registry_pt registry, bundle_pt bundle, service_registration_pt registration, service_reference_pt *reference);
-celix_status_t serviceRegistry_getServiceReferencesForRegistration(service_registry_pt registry, service_registration_pt registration, array_list_pt *references);
+celix_status_t serviceRegistry_clearReferencesFor(service_registry_pt registry, bundle_pt bundle);
+
+
+service_registration_pt serviceRegistry_findRegistration(service_registry_pt registry, service_reference_pt reference);
 
 celix_status_t serviceRegistry_getListenerHooks(service_registry_pt registry, bundle_pt bundle, array_list_pt *hooks);
 

@@ -31,6 +31,7 @@
 
 #include "hash_map.h"
 #include "framework_exports.h"
+#include "celix_errno.h"
 
 typedef hash_map_pt properties_pt;
 
@@ -43,5 +44,7 @@ FRAMEWORK_EXPORT void properties_store(properties_pt properties, char * file, ch
 FRAMEWORK_EXPORT char * properties_get(properties_pt properties, char * key);
 FRAMEWORK_EXPORT char * properties_getWithDefault(properties_pt properties, char * key, char * defaultValue);
 FRAMEWORK_EXPORT char * properties_set(properties_pt properties, char * key, char * value);
+
+FRAMEWORK_EXPORT celix_status_t properties_copy(properties_pt properties, properties_pt *copy);
 
 #endif /* PROPERTIES_H_ */

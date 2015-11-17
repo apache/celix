@@ -63,7 +63,6 @@ TEST(wire, create) {
     module_pt module = (module_pt) 0x01;
     capability_pt cap = (capability_pt) 0x02;
     requirement_pt req = (requirement_pt) 0x03;
-    celix_status_t status;
     wire_pt wire = NULL;
 
     LONGS_EQUAL(CELIX_SUCCESS, wire_create(module, req, module, cap, &wire));

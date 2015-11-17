@@ -187,18 +187,32 @@ celix_status_t bundleArchive_recreate(char * archiveRoot, bundle_archive_pt *bun
 		if (archive->archiveRootDir == NULL) {
 		    status = CELIX_FRAMEWORK_EXCEPTION;
 		} else {
-		    struct dirent *dent;
+
             long idx = 0;
+            long highestId = -1;
             char *location = NULL;
 
-            while ((dent = readdir(archive->archiveRootDir)) != NULL) {
-                if (dent->d_type == DT_DIR && (strncmp(dent->d_name, "version", 7) == 0)) {
-                    sscanf(dent->d_name, "version%*d.%ld", &idx);
-                }
-            }
+			struct dirent dent;
+			struct dirent *result = NULL;
+            struct stat st;
+			int rc;
+
+			rc = readdir_r(archive->archiveRootDir, &dent, &result);
+			while (rc == 0 && result != NULL) {
+                char subdir[512];
+                snprintf(subdir, 512, "%s/%s", archiveRoot, dent.d_name);
+                stat(subdir, &st);
+				if (S_ISDIR(st.st_mode) && (strncmp(dent.d_name, "version", 7) == 0)) {
+					sscanf(dent.d_name, "version%*d.%ld", &idx);
+                    if (idx > highestId) {
+                        highestId = idx;
+                    }
+				}
+				rc = readdir_r(archive->archiveRootDir, &dent, &result);
+			}
 
             status = CELIX_DO_IF(status, bundleArchive_getRevisionLocation(archive, 0, &location));
-            status = CELIX_DO_IF(status, bundleArchive_reviseInternal(archive, true, idx, location, NULL));
+            status = CELIX_DO_IF(status, bundleArchive_reviseInternal(archive, true, highestId, location, NULL));
             if (location) {
                 free(location);
             }
@@ -655,7 +669,10 @@ static celix_status_t bundleArchive_initialize(bundle_archive_pt archive) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (archive->archiveRootDir == NULL) {
-	    if (mkdir(archive->archiveRoot, S_IRWXU) != 0) {
+        int err = mkdir(archive->archiveRoot, S_IRWXU) ;
+	    if (err != 0) {
+            char *errmsg = strerror(errno);
+            fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error mkdir: %s\n", errmsg);
 			status = CELIX_FILE_IO_EXCEPTION;
 		} else {
 		    archive->archiveRootDir = opendir(archive->archiveRoot);
@@ -708,22 +725,31 @@ static celix_status_t bundleArchive_deleteTree(bundle_archive_pt archive, char *
 	if (dir == NULL) {
 	    status = CELIX_FILE_IO_EXCEPTION;
 	} else {
-		struct dirent *dp;
-		while ((dp = readdir(dir)) != NULL) {
-		    if ((strcmp((dp->d_name), ".") != 0) && (strcmp((dp->d_name), "..") != 0)) {
-                char subdir[512];
-                snprintf(subdir, sizeof(subdir), "%s/%s", directory, dp->d_name);
 
-                if (dp->d_type == DT_DIR) {
-                    status = bundleArchive_deleteTree(archive, subdir);
-                } else {
-                    if (remove(subdir) != 0) {
-                        status = CELIX_FILE_IO_EXCEPTION;
-                        break;
+		struct dirent dp;
+		struct dirent *result = NULL;
+		int rc = 0;
+
+        rc = readdir_r(dir, &dp, &result);
+        while (rc == 0 && result != NULL) {
+            if ((strcmp((dp.d_name), ".") != 0) && (strcmp((dp.d_name), "..") != 0)) {
+                char subdir[512];
+                snprintf(subdir, 512, "%s/%s", directory, dp.d_name);
+
+                struct stat st;
+                if (stat(subdir, &st) == 0) {
+                    if (S_ISDIR (st.st_mode)) {
+                        status = bundleArchive_deleteTree(archive, subdir);
+                    } else {
+                        if (remove(subdir) != 0) {
+                            status = CELIX_FILE_IO_EXCEPTION;
+                            break;
+                        }
                     }
                 }
-		    }
-		}
+            }
+            rc = readdir_r(dir, &dp, &result);
+        }
 
 		if (closedir(dir) != 0) {
 			status = CELIX_FILE_IO_EXCEPTION;

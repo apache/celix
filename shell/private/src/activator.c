@@ -266,12 +266,10 @@ celix_status_t bundleActivator_destroy(void *_ptr, bundle_context_pt __attribute
     if (instance_ptr) {
         for (unsigned int i = 0; instance_ptr->std_commands[i].exec != NULL; i++) {
             free(instance_ptr->std_commands[i].service);
-
-            if (instance_ptr->std_commands[i].props != NULL) {
-                properties_destroy(instance_ptr->std_commands[i].props);
-            }
         }
     }
+
+    serviceRegistration_unregister(instance_ptr->registration);
 
     shell_destroy(&instance_ptr->shellService);
 

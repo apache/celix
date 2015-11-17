@@ -126,5 +126,15 @@ celix_status_t serviceRegistration_getServiceName(service_registration_pt regist
 	return mock_c()->returnValue().value.intValue;
 }
 
+void serviceRegistration_retain(service_registration_pt registration) {
+    mock_c()->actualCall("serviceRegistration_retain")
+            ->withPointerParameters("registration", registration);
+}
+
+void serviceRegistration_release(service_registration_pt registration) {
+    mock_c()->actualCall("serviceRegistration_release")
+            ->withPointerParameters("registration", registration);
+}
+
 
 

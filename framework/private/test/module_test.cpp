@@ -206,7 +206,6 @@ TEST(module, wires){
 	char * id2 = my_strdup("43");
 	linked_list_pt capabilities2 = NULL;
 	linked_list_pt requirements2 = NULL;
-	linked_list_pt wires2 = NULL;
 
 	//create module
 	linkedList_create(&capabilities);

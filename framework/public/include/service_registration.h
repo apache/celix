@@ -40,6 +40,5 @@ typedef struct serviceRegistration * service_registration_pt;
 FRAMEWORK_EXPORT celix_status_t serviceRegistration_unregister(service_registration_pt registration);
 FRAMEWORK_EXPORT celix_status_t serviceRegistration_getProperties(service_registration_pt registration, properties_pt *properties);
 FRAMEWORK_EXPORT celix_status_t serviceRegistration_setProperties(service_registration_pt registration, properties_pt properties);
-FRAMEWORK_EXPORT celix_status_t serviceRegistration_getServiceReferences(service_registration_pt registration, array_list_pt *references);
 
 #endif /* SERVICE_REGISTRATION_H_ */

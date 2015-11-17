@@ -79,7 +79,13 @@ extern "C" {
         rc = bundleContext_ungetService(context, rsaRef, NULL);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
+        rc = bundleContext_ungetServiceReference(context, rsaRef);
+        CHECK_EQUAL(CELIX_SUCCESS, rc);
+
         rc = bundleContext_ungetService(context, calcRef, NULL);
+        CHECK_EQUAL(CELIX_SUCCESS, rc);
+
+        rc = bundleContext_ungetServiceReference(context, calcRef);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
         celixLauncher_stop(framework);

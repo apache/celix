@@ -179,11 +179,6 @@ celix_status_t shell_removeCommand(shell_pt shell_ptr, service_reference_pt refe
 		status = sub_status;
 	}
 
-	sub_status = bundleContext_ungetServiceReference(shell_ptr->bundle_context_ptr, reference_ptr);
-	if (sub_status != CELIX_SUCCESS && status == CELIX_SUCCESS) {
-		status = sub_status;
-	}
-
 	return status;
 }
 

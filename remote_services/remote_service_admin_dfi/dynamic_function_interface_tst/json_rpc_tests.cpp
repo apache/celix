@@ -121,11 +121,11 @@ static void stdLog(void *handle, int level, const char *file, int line, const ch
         assert(out != NULL);
         assert(*out == NULL);
         double total = 0.0;
-        int count = 0;
+        unsigned int count = 0;
         double max = DBL_MIN;
         double min = DBL_MAX;
 
-        int i;
+        unsigned int i;
         for (i = 0; i<input.len; i += 1) {
             total += input.buf[i];
             count += 1;
@@ -302,7 +302,7 @@ static void stdLog(void *handle, int level, const char *file, int line, const ch
         CHECK_EQUAL(2.5, result->buf[1]->b);
 
 
-        int i;
+        unsigned int i;
         for (i = 0; i < result->len; i +=1 ) {
             free(result->buf[i]);
         }

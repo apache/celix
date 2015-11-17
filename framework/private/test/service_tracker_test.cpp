@@ -94,6 +94,7 @@ TEST(service_tracker, destroy) {
 	bundle_context_pt ctx = (bundle_context_pt) 0x123;
 	std::string filter = "(objectClass=test)";
 	status = serviceTracker_createWithFilter(ctx, (char *) filter.c_str(), NULL, &tracker);
+	LONGS_EQUAL(CELIX_SUCCESS, status);
 	service_listener_pt listener = (service_listener_pt) calloc(1, sizeof(serviceListener));
 	tracker->listener = listener;
 
@@ -104,6 +105,7 @@ TEST(service_tracker, destroy) {
 		.andReturnValue(CELIX_SUCCESS);
 
 	status = serviceTracker_destroy(tracker);
+	LONGS_EQUAL(CELIX_SUCCESS, status);
 }
 
 TEST(service_tracker, open) {
@@ -236,7 +238,6 @@ TEST(service_tracker, open_withRefsAndTracked) {
 	array_list_pt refs = NULL;
 	arrayList_create(&refs);
 	arrayList_add(refs, ref);
-	void *src = (void *) 0x345;
 
 //	mock().strictOrder();
 	mock()
@@ -741,7 +742,6 @@ TEST(service_tracker, serviceChangedRegisteredCustomizer) {
 	tracker->customizer = customizer;
 
 	service_reference_pt ref = (service_reference_pt) 0x51;
-	void *src = (void *) 0x345;
 
 	service_event_pt event = (service_event_pt) malloc(sizeof(*event));
 	event->type = OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED;
@@ -798,8 +798,8 @@ TEST(service_tracker, serviceChangedModifiedCustomizer) {
 	listener->handle = tracker;
 	service_tracker_customizer_pt customizer = (service_tracker_customizer_pt) 0x20;
 	tracker->customizer = customizer;
-	adding_callback_pt adding_func = NULL;
-	added_callback_pt added_func = NULL;
+	//adding_callback_pt adding_func = NULL;
+	//added_callback_pt added_func = NULL;
 
 	// new tracker->tracked
 	array_list_pt tracked = NULL;

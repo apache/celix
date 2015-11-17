@@ -55,20 +55,21 @@ TEST_GROUP(service_reference) {
 };
 
 TEST(service_reference, create) {
-	bundle_pt bundle = (bundle_pt) 0x10;
+	registry_callback_t callback;
+	bundle_pt owner = (bundle_pt) 0x10;
 	service_registration_pt registration = (service_registration_pt) 0x20;
 
 	service_reference_pt reference = NULL;
-	serviceReference_create(bundle, registration, &reference);
+	serviceReference_create(callback, owner, registration, &reference);
 
-	POINTERS_EQUAL(bundle, reference->bundle);
+	POINTERS_EQUAL(owner, reference->referenceOwner);
 	POINTERS_EQUAL(registration, reference->registration);
 }
 
 TEST(service_reference, getBundle) {
 	service_reference_pt reference = (service_reference_pt) malloc(sizeof(*reference));
 	bundle_pt bundle = (bundle_pt) 0x10;
-	reference->bundle = bundle;
+	reference->registrationBundle = bundle;
 
 	bundle_pt actual = NULL;
 	celix_status_t status = serviceReference_getBundle(reference, &actual);
@@ -119,6 +120,7 @@ TEST(service_reference, getUsingBundle) {
 
 	array_list_pt actual = NULL;
 	celix_status_t status = serviceReference_getUsingBundles(reference, &actual);
+	LONGS_EQUAL(status,CELIX_SUCCESS);
 	POINTERS_EQUAL(bundles, actual);
 	LONGS_EQUAL(1, arrayList_size(actual));
 	POINTERS_EQUAL(bundle, arrayList_get(actual, 0));
@@ -129,13 +131,13 @@ TEST(service_reference, equals) {
 	service_registration_pt registration = (service_registration_pt) 0x10;
 	reference->registration = registration;
 	bundle_pt bundle = (bundle_pt) 0x20;
-	reference->bundle = bundle;
+	reference->registrationBundle = bundle;
 
 	service_reference_pt toCompare = (service_reference_pt) malloc(sizeof(*reference));
 	registration = (service_registration_pt) 0x10;
 	toCompare->registration = registration;
 	bundle = (bundle_pt) 0x30;
-	toCompare->bundle = bundle;
+	toCompare->registrationBundle = bundle;
 
 	bool equal = false;
 	celix_status_t status = serviceReference_equals(reference, toCompare, &equal);
@@ -146,7 +148,7 @@ TEST(service_reference, equals) {
 	registration = (service_registration_pt) 0x11;
 	toCompare->registration = registration;
 	bundle = (bundle_pt) 0x30;
-	toCompare->bundle = bundle;
+	toCompare->registrationBundle = bundle;
 
 	equal = true;
 	status = serviceReference_equals(reference, toCompare, &equal);
@@ -159,13 +161,13 @@ TEST(service_reference, equals2) {
 	service_registration_pt registration = (service_registration_pt) 0x10;
 	reference->registration = registration;
 	bundle_pt bundle = (bundle_pt) 0x20;
-	reference->bundle = bundle;
+	reference->registrationBundle = bundle;
 
 	service_reference_pt toCompare = (service_reference_pt) malloc(sizeof(*reference));
 	registration = (service_registration_pt) 0x10;
 	toCompare->registration = registration;
 	bundle = (bundle_pt) 0x30;
-	toCompare->bundle = bundle;
+	toCompare->registrationBundle = bundle;
 
 	bool equal = serviceReference_equals2(reference, toCompare);
 	LONGS_EQUAL(true, equal);
@@ -174,7 +176,7 @@ TEST(service_reference, equals2) {
 	registration = (service_registration_pt) 0x11;
 	toCompare->registration = registration;
 	bundle = (bundle_pt) 0x30;
-	toCompare->bundle = bundle;
+	toCompare->registrationBundle = bundle;
 
 	equal = serviceReference_equals2(reference, toCompare);
 	LONGS_EQUAL(false, equal);
@@ -185,7 +187,7 @@ TEST(service_reference, hashCode) {
 	service_registration_pt registration = (service_registration_pt) 0x10;
 	reference->registration = registration;
 	bundle_pt bundle = (bundle_pt) 0x20;
-	reference->bundle = bundle;
+	reference->registrationBundle = bundle;
 
 	unsigned int hash = serviceReference_hashCode(reference);
 	LONGS_EQUAL(79, hash);
