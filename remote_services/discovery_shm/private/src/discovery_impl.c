@@ -134,9 +134,7 @@ celix_status_t discovery_stop(discovery_pt discovery) {
         status = endpointDiscoveryServer_destroy(discovery->server);
     }
 
-	if (status == CELIX_SUCCESS) {
-	    status = endpointDiscoveryPoller_destroy(discovery->poller);
-	}
+	endpointDiscoveryPoller_destroy(discovery->poller);
 
 	if (status == CELIX_SUCCESS) {
         hash_map_iterator_pt iter;

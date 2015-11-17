@@ -225,7 +225,7 @@ celix_status_t discovery_removeDiscoveredEndpoint(discovery_pt discovery, endpoi
         status = celixThreadMutex_unlock(&discovery->discoveredServicesMutex);
 
         if (oldValue) {
-            status = discovery_informEndpointListeners(discovery, endpoint, false /* addingService */);
+            status = discovery_informEndpointListeners(discovery, endpoint, false /* removeService */);
         }
     }
 

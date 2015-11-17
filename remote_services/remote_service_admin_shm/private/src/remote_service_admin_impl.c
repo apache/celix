@@ -838,9 +838,12 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, e
 }
 
 celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_pt admin, import_registration_pt registration) {
-    celix_status_t status = CELIX_BUNDLE_EXCEPTION;
+    celix_status_t status = CELIX_SUCCESS;
 
     if (registration != NULL) {
+
+        celixThreadMutex_lock(&admin->importedServicesLock);
+
         ipc_segment_pt ipc = NULL;
         endpoint_description_pt endpointDescription = (endpoint_description_pt) registration->endpointDescription;
         import_registration_factory_pt registration_factory = (import_registration_factory_pt) hashMap_get(admin->importedServices, endpointDescription->service);
@@ -871,6 +874,8 @@ celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_pt 
                 importRegistrationFactory_destroy(&registration_factory);
             }
         }
+
+        celixThreadMutex_unlock(&admin->importedServicesLock);
     }
 
     return status;
