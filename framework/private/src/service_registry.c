@@ -99,8 +99,9 @@ celix_status_t serviceRegistry_destroy(service_registry_pt registry) {
     hashMap_destroy(registry->serviceRegistrations, false, false);
 
     //destroy service references (double) map);
+    //FIXME. The framework bundle does not (yet) call clearReferences, as result the size could be > 0 for test code.
     //size = hashMap_size(registry->serviceReferences);
-    //assert(size == 0); FIXME This gives a problem in the remote_service_admin_dfi test. seems that the bundleActivator_stop of the calculator is activated twice ??
+    //assert(size == 0);
     hashMap_destroy(registry->serviceReferences, false, false);
 
     //destroy listener hooks
@@ -392,14 +393,12 @@ celix_status_t serviceRegistry_ungetServiceReference(service_registry_pt registr
     celix_status_t status = CELIX_SUCCESS;
     bool destroyed = false;
     size_t count = 0;
-    service_registration_pt reg = NULL;
     reference_status_t refStatus;
 
     celixThreadRwlock_writeLock(&registry->lock);
     serviceRegistry_checkReference(registry, reference, &refStatus);
     if (refStatus == REF_ACTIVE) {
         serviceReference_getUsageCount(reference, &count);
-        serviceReference_getServiceRegistration(reference, &reg);
         serviceReference_release(reference, &destroyed);
         if (destroyed) {
             if (count > 0) {
@@ -408,13 +407,36 @@ celix_status_t serviceRegistry_ungetServiceReference(service_registry_pt registr
 
 
             hash_map_pt refsMap = hashMap_get(registry->serviceReferences, bundle);
-            hashMap_remove(refsMap, reg);
-            int size = hashMap_size(refsMap);
-            if (size == 0) {
-                hashMap_destroy(refsMap, false, false);
-                hashMap_remove(registry->serviceReferences, bundle);
+
+            service_registration_pt reg = NULL;
+            service_reference_pt ref = NULL;
+            hash_map_iterator_pt iter = hashMapIterator_create(refsMap);
+            while (hashMapIterator_hasNext(iter)) {
+                hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
+                reg = hashMapEntry_getKey(entry); //note could be invalid e.g. freed
+                ref = hashMapEntry_getValue(entry);
+
+                if (ref == reference) {
+                    break;
+                } else {
+                    ref = NULL;
+                    reg = NULL;
+                }
             }
-            serviceRegistry_setReferenceStatus(registry, reference, true);
+            hashMapIterator_destroy(iter);
+
+            if (ref != NULL) {
+                hashMap_remove(refsMap, reg);
+                int size = hashMap_size(refsMap);
+                if (size == 0) {
+                    hashMap_destroy(refsMap, false, false);
+                    hashMap_remove(registry->serviceReferences, bundle);
+                }
+                serviceRegistry_setReferenceStatus(registry, reference, true);
+            } else {
+                fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Cannot find reference %p in serviceReferences map",
+                       reference);
+            }
         }
     } else {
         serviceRegistry_logIllegalReference(registry, reference, refStatus);

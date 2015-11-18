@@ -161,6 +161,9 @@ extern "C" {
         CHECK_EQUAL(CELIX_SUCCESS, rc);
         CHECK(ref != NULL);
 
+        rc = bundleContext_ungetServiceReference(context, ref);
+        CHECK_EQUAL(CELIX_SUCCESS, rc);
+
         /* Cannot test. uses requesting bundles descriptor
         void *service = NULL;
         rc = bundleContext_getService(context, ref, &service);
