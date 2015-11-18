@@ -246,6 +246,9 @@ celix_status_t serviceRegistry_clearServiceRegistrations(service_registry_pt reg
         if (serviceRegistration_isValid(reg)) {
             serviceRegistration_unregister(reg);
         }
+        else {
+            arrayList_remove(registrations, 0);
+        }
     }
 
     return status;
