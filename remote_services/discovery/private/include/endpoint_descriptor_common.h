@@ -43,15 +43,15 @@ typedef enum {
     VALUE_TYPE_SHORT,
 } valueType;
 
-static const xmlChar* XML = (const xmlChar*) "xml";
-static const xmlChar* XMLNS = (const xmlChar*) "http://www.osgi.org/xmlns/rsa/v1.0.0";
+static const __attribute__((unused)) xmlChar* XML = (const xmlChar*) "xml";
+static const __attribute__((unused)) xmlChar* XMLNS = (const xmlChar*) "http://www.osgi.org/xmlns/rsa/v1.0.0";
 
-static const xmlChar* ENDPOINT_DESCRIPTIONS = (const xmlChar*) "endpoint-descriptions";
+static const __attribute__((unused)) xmlChar* ENDPOINT_DESCRIPTIONS = (const xmlChar*) "endpoint-descriptions";
 static const xmlChar* ENDPOINT_DESCRIPTION = (const xmlChar*) "endpoint-description";
 
 static const xmlChar* ARRAY = (const xmlChar*) "array";
-static const xmlChar* LIST = (const xmlChar*) "list";
-static const xmlChar* SET = (const xmlChar*) "set";
+static const __attribute__((unused)) xmlChar* LIST = (const xmlChar*) "list";
+static const __attribute__((unused)) xmlChar* SET = (const xmlChar*) "set";
 
 static const xmlChar* PROPERTY = (const xmlChar*) "property";
 static const xmlChar* NAME = (const xmlChar*) "name";
