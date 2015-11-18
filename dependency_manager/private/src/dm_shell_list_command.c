@@ -43,11 +43,7 @@ void dmListCommand_execute(bundle_context_pt context, char * line, FILE *out, FI
     array_list_pt servRefs = NULL;
     int i;
     bundleContext_getServiceReferences(context, DM_INFO_SERVICE_NAME ,NULL, &servRefs);
-#if defined(BSD) || defined(__APPLE__)
     char *term = getenv("TERM");
-#else
-    char *term = secure_getenv("TERM");
-#endif
     bool colors = false;
     if (strcmp("xterm-256color", term) == 0) {
         colors = true;
