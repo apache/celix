@@ -56,13 +56,12 @@ TEST(framework, create){
 	framework_pt framework = NULL;
 
 	mock().expectOneCall("bundle_create").ignoreOtherParameters();
-	mock().ignoreOtherCalls();
 
 	framework_create(&framework, properties);
 
 
 	CHECK(framework != NULL);
-	POINTERS_EQUAL(properties, framework->configurationMap);
+	POINTERS_EQUAL(&properties, framework->configurationMap);
 
 	mock().checkExpectations();
 	mock().clear();

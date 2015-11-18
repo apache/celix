@@ -71,8 +71,7 @@ void manifest_write(manifest_pt manifest, char * filename) {
 }
 
 char * manifest_getValue(manifest_pt manifest, const char * name) {
-	mock_c()->actualCall("manifest_getValue")
-			->withStringParameters("name", name);
+	mock_c()->actualCall("manifest_getValue");
 	return (char *) mock_c()->returnValue().value.stringValue;
 }
 

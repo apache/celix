@@ -30,7 +30,6 @@
 #include "resolver.h"
 #include "linked_list_iterator.h"
 #include "bundle.h"
-#include "celix_log.h"
 
 struct capabilityList {
 	char * serviceName;
@@ -181,7 +180,7 @@ int resolver_populateCandidatesMap(hash_map_pt candidatesMap, module_pt targetMo
 
                                 module_getSymbolicName(targetModule, &name);
 
-                                fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Unable to resolve: %s, %s\n", name, targetName);
+                                printf("Unable to resolve: %s, %s\n", name, targetName);
                             }
                             linkedList_destroy(candidates);
                             return -1;

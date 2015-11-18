@@ -206,10 +206,9 @@ if (FRAMEWORK)
             private/test/manifest_parser_test.cpp
             private/mock/attribute_mock.c
             private/mock/manifest_mock.c
+            private/mock/capability_mock.c
+            private/mock/requirement_mock.c
             private/mock/version_mock.c
-            private/mock/version_range_mock.c
-            private/src/capability.c
-            private/src/requirement.c
             private/src/utils.c
             private/src/manifest_parser.c
             private/src/celix_errorcodes.c
