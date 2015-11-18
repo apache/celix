@@ -108,7 +108,7 @@ celix_status_t manifest_read(manifest_pt manifest, char *filename) {
 
 			len = strlen(lbuf);
 			if (lbuf[--len] != '\n') {
-				printf("MANIFEST: Line too long\n");
+				framework_logIfError(logger, status, NULL, "Manifest '%s' line too long", filename);
 				return CELIX_FILE_IO_EXCEPTION;
 			}
 			if (len > 0 && lbuf[len - 1] == '\r') {
