@@ -136,9 +136,14 @@ bool etcd_get(char* key, char* value, char* action, int* modifiedIndex) {
 			js_value = json_object_get(js_node, ETCD_JSON_VALUE);
 			js_modifiedIndex = json_object_get(js_node, ETCD_JSON_MODIFIEDINDEX);
 
-			*modifiedIndex = json_integer_value(js_modifiedIndex);
-			snprintf(value, MAX_VALUE_LENGTH, "%s", json_string_value(js_value));
-			retVal = true;
+			if (js_modifiedIndex != NULL) {
+				*modifiedIndex = json_integer_value(js_modifiedIndex);
+			}
+
+			if (js_value != NULL) {
+				snprintf(value, MAX_VALUE_LENGTH, "%s", json_string_value(js_value));
+				retVal = true;
+			}
 		}
 		if (js_root != NULL) {
 			json_decref(js_root);
