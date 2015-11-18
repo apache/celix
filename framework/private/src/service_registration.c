@@ -110,6 +110,7 @@ static celix_status_t serviceRegistration_destroy(service_registration_pt regist
     registration->callback.unregister = NULL;
 
 	properties_destroy(registration->properties);
+	celixThreadRwlock_unlock(&registration->lock);
     celixThreadRwlock_destroy(&registration->lock);
 	free(registration);
 
