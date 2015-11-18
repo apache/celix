@@ -465,7 +465,11 @@ celix_status_t remoteServiceAdmin_removeExportedService(export_registration_pt r
 
     celixThreadMutex_lock(&admin->exportedServicesLock);
 
-    hashMap_remove(admin->exportedServices, registration->reference);
+    array_list_pt registrations = (array_list_pt) hashMap_remove(admin->exportedServices, registration->reference);
+
+    if (registrations != NULL) {
+    	arrayList_destroy(registrations);
+    }
 
     celixThreadMutex_unlock(&admin->exportedServicesLock);
 
