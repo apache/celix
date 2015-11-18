@@ -50,9 +50,9 @@ static celix_status_t serviceRegistry_checkReference(service_registry_pt registr
                                                      reference_status_t *refStatus);
 static void serviceRegistry_logIllegalReference(service_registry_pt registry, service_reference_pt reference,
                                                    reference_status_t refStatus);
-
 static celix_status_t serviceRegistry_setReferenceStatus(service_registry_pt registry, service_reference_pt reference,
                                                   bool deleted);
+static celix_status_t serviceRegistry_getUsingBUndles(service_registry_pt registry, service_registration_pt reg, array_list_pt *bundles);
 
 celix_status_t serviceRegistry_create(framework_pt framework, serviceChanged_function_pt serviceChanged, service_registry_pt *out) {
 	celix_status_t status;
@@ -63,7 +63,7 @@ celix_status_t serviceRegistry_create(framework_pt framework, serviceChanged_fun
 	} else {
 
         reg->callback.handle = reg;
-        reg->callback.getUsingBundles = NULL; /*TODO*/
+        reg->callback.getUsingBundles = (void *)serviceRegistry_getUsingBUndles;
         reg->callback.unregister = (void *) serviceRegistry_unregisterService;
         reg->callback.modified = (void *) serviceRegistry_servicePropertiesModified;
 
@@ -669,4 +669,35 @@ celix_status_t serviceRegistry_servicePropertiesModified(service_registry_pt reg
 		registry->serviceChanged(registry->framework, OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED, registration, oldprops);
 	}
 	return CELIX_SUCCESS;
+}
+
+static celix_status_t serviceRegistry_getUsingBUndles(service_registry_pt registry, service_registration_pt registration, array_list_pt *out) {
+    celix_status_t status;
+    array_list_pt bundles = NULL;
+    hash_map_iterator_pt iter;
+
+    status = arrayList_create(&bundles);
+    if (status == CELIX_SUCCESS) {
+        celixThreadRwlock_readLock(&registry->lock);
+        iter = hashMapIterator_create(registry->serviceReferences);
+        while (hashMapIterator_hasNext(iter)) {
+            hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
+            bundle_pt registrationUser = hashMapEntry_getKey(entry);
+            service_registration_pt reg = hashMapEntry_getValue(entry);
+            if (registration == reg) {
+                arrayList_add(bundles, registrationUser);
+            }
+        }
+        celixThreadRwlock_unlock(&registry->lock);
+    }
+
+    if (status == CELIX_SUCCESS) {
+        *out = bundles;
+    } else {
+        if (bundles != NULL) {
+            arrayList_destroy(bundles);
+        }
+    }
+
+    return status;
 }
