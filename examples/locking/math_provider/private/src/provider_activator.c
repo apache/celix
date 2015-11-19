@@ -50,21 +50,21 @@ typedef struct activator {
 	service_registration_pt registration;
 
 	double updateFrequency;
-	uint nrOfThreads;
+	unsigned int nrOfThreads;
 	pthread_t *threads;
 
 
-	uint counter;
+	unsigned int counter;
 } activator_t;
 
 static int calc(int arg1, int arg2)  __attribute__((unused));
 static void* run(void *data);
 static void setFrequency(activator_t *activator, double freq);
-static void setNrOfThreads(activator_t *activator, uint nrOfThreads);
+static void setNrOfThreads(activator_t *activator, unsigned int nrOfThreads);
 static void resetCounter(activator_t *activator);
 static void stopThreads(activator_t *activator);
-static void startThreads(activator_t *activator, uint nrOfThreads);
-static uint getCounter(activator_t *activator);
+static void startThreads(activator_t *activator, unsigned int nrOfThreads);
+static unsigned int getCounter(activator_t *activator);
 static void setBenchmarkName(activator_t *activator, char *benchmark);
 static math_service_pt registerMath(activator_t *activator, service_registration_pt *reg);
 
@@ -146,7 +146,7 @@ static void stopThreads(activator_t *activator) {
 	}
 }
 
-static void startThreads(activator_t *activator, uint nrOfThreads) {
+static void startThreads(activator_t *activator, unsigned int nrOfThreads) {
     activator->isRunning = true;
 	activator->threads = malloc(sizeof(pthread_t) * nrOfThreads);
 	for (int i = 0 ; i < nrOfThreads ; i += 1) {
@@ -164,7 +164,7 @@ static void* run(void *data) {
 	math_service_pt prev = NULL;
 
 	while (activator->isRunning) {
- 		uint delayInMicroseconds =  activator->updateFrequency == 0 ? 0 : (1000 * 1000) / activator->updateFrequency;
+ 		unsigned int delayInMicroseconds =  activator->updateFrequency == 0 ? 0 : (1000 * 1000) / activator->updateFrequency;
 		if (delayInMicroseconds > 0) {
 			prevReg = currentReg;
 			prev = current;
@@ -213,7 +213,7 @@ static void setFrequency(activator_t *activator, double freq) {
 	activator->updateFrequency = freq;
 }
 
-static void setNrOfThreads(activator_t *activator, uint nrOfThreads) {
+static void setNrOfThreads(activator_t *activator, unsigned int nrOfThreads) {
     printf("Setting nr of update Threads to %d\n", nrOfThreads);
     stopThreads(activator);
 	startThreads(activator, nrOfThreads);
@@ -223,6 +223,6 @@ static void resetCounter(activator_t *activator) {
 	activator->counter = 0;
 }
 
-static uint getCounter(activator_t *activator) {
+static unsigned int getCounter(activator_t *activator) {
 	return activator->counter;
 }

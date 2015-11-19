@@ -27,7 +27,7 @@ typedef struct thread_info {
 	unsigned int result;
 	struct timeval begin;
 	struct timeval end;
-	uint skips;
+	unsigned int skips;
 } thread_info_t;
 
 static void benchmark_thread(thread_info_t *info);
@@ -67,7 +67,7 @@ benchmark_result_t benchmark_run(benchmark_pt benchmark, int nrOfThreads, int nr
 		result.skips += infos[i].skips;
 	}
 
-    uint actualSamples = (nrOfSamples * nrOfThreads) - result.skips;
+    unsigned int actualSamples = (nrOfSamples * nrOfThreads) - result.skips;
 	result.averageCallTimeInNanoseconds = actualSamples == 0 ? NAN : ((double)elapsedTime * 1000) / (nrOfSamples * nrOfThreads);
 	result.callFrequencyInMhz = ((double)(actualSamples * nrOfThreads) / elapsedTime);
 	result.nrOfThreads = nrOfThreads;
