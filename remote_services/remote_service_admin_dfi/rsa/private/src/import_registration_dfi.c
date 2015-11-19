@@ -218,8 +218,9 @@ static celix_status_t importRegistration_createProxy(import_registration_pt impo
                 status = CELIX_BUNDLE_EXCEPTION;
             }
         }
-    }
 
+        free(descriptorFile);
+    }
 
     if (status == CELIX_SUCCESS) {
         size_t count = dynInterface_nrOfMethods(proxy->intf);

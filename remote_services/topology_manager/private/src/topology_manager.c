@@ -528,8 +528,6 @@ celix_status_t topologyManager_removeExportedService(topology_manager_pt manager
                 topologyManager_notifyListenersEndpointRemoved(manager, rsa, export);
                 rsa->exportRegistration_close(export);
             }
-            arrayList_destroy(exportRegistrations);
-            exportRegistrations = NULL;
 
             hashMap_remove(exports, rsa);
             hashMapIterator_destroy(iter);

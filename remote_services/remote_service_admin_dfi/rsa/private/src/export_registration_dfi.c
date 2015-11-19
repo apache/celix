@@ -109,6 +109,8 @@ celix_status_t exportRegistration_create(log_helper_pt helper, service_reference
             status = CELIX_BUNDLE_EXCEPTION;
             logHelper_log(helper, OSGI_LOGSERVICE_ERROR, "Cannot open descriptor '%s'", descriptorFile);
         }
+
+        free(descriptorFile);
     }
 
     if (status == CELIX_SUCCESS) {

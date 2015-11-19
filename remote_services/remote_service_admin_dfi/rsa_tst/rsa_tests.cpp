@@ -119,15 +119,15 @@ extern "C" {
         rc = calc->add(calc->calculator, 2.0, 5.0, &result);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
         CHECK_EQUAL(7.0, result);
+
+        arrayList_destroy(imported);
+        arrayList_destroy(exported);
     }
 
     static void testExportService(void) {
         int rc = 0;
         char *calcId = NULL;
         array_list_pt regs = NULL;
-
-        rc = arrayList_create(&regs);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
 
         rc = serviceReference_getProperty(calcRef, (char *)"service.id", &calcId);
         CHECK_EQUAL(CELIX_SUCCESS, rc);

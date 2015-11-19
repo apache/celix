@@ -324,8 +324,10 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
                     exportReference_getExportedEndpoint(ref, &checkEndpoint);
                     if (serviceId == checkEndpoint->serviceId) {
                         export = check;
+                        free(ref);
                         break;
                     }
+                    free(ref);
                 }
             }
             hashMapIterator_destroy(iter);
@@ -454,8 +456,6 @@ celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_pt 
     } else {
         RSA_LOG_ERROR(admin, "Cannot find reference for registration");
     }
-
-
 
     return status;
 }
