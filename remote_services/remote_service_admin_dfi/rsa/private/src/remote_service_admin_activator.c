@@ -101,10 +101,10 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
     celix_status_t status = CELIX_SUCCESS;
     struct activator *activator = userData;
 
-    remoteServiceAdmin_stop(activator->admin);
     serviceRegistration_unregister(activator->registration);
     activator->registration = NULL;
 
+    remoteServiceAdmin_stop(activator->admin);
     remoteServiceAdmin_destroy(&activator->admin);
 
     free(activator->adminService);
