@@ -208,8 +208,8 @@ celix_status_t discoveryShmWatcher_create(discovery_pt discovery) {
     }
 
     if (status == CELIX_SUCCESS) {
+    	watcher->running = true;
         status = celixThread_create(&watcher->watcherThread, NULL, discoveryShmWatcher_run, discovery);
-        watcher->running = true;
     }
 
     if (status == CELIX_SUCCESS) {
