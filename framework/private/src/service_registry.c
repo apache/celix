@@ -471,12 +471,8 @@ celix_status_t serviceRegistry_setReferenceStatus(service_registry_pt registry, 
 
 static void serviceRegistry_logIllegalReference(service_registry_pt registry __attribute__((unused)), service_reference_pt reference,
                                                    reference_status_t refStatus) {
-
-    service_registration_pt reg = reference != NULL ? reference->registration : NULL;
-    bundle_pt bundle = reference != NULL ? reference->referenceOwner : NULL;
     fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR,
-           "Error handling service reference %p from registration %p and bundle (owner) %p, ref has ref status %i",
-           reference, reg, bundle, refStatus);
+           "Error handling service reference %p, status is %i",reference, refStatus);
 }
 
 celix_status_t serviceRegistry_checkReference(service_registry_pt registry, service_reference_pt ref,
