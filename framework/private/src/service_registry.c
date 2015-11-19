@@ -106,8 +106,8 @@ celix_status_t serviceRegistry_destroy(service_registry_pt registry) {
 
     //destroy listener hooks
     size = arrayList_size(registry->listenerHooks);
-    if (size == 0);
-    arrayList_destroy(registry->listenerHooks);
+    if (size == 0)
+    	arrayList_destroy(registry->listenerHooks);
 
     hashMap_destroy(registry->deletedServiceReferences, false, false);
 
