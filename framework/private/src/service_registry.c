@@ -234,12 +234,17 @@ celix_status_t serviceRegistry_unregisterService(service_registry_pt registry, b
 celix_status_t serviceRegistry_clearServiceRegistrations(service_registry_pt registry, bundle_pt bundle) {
     celix_status_t status = CELIX_SUCCESS;
     array_list_pt registrations = NULL;
+    bool registrationsLeft;
 
-	celixThreadRwlock_writeLock(&registry->lock);
-	registrations = hashMap_remove(registry->serviceRegistrations, bundle);
-	celixThreadRwlock_unlock(&registry->lock);
+    celixThreadRwlock_writeLock(&registry->lock);
+    registrations = hashMap_get(registry->serviceRegistrations, bundle);
+    registrationsLeft = (registrations != NULL);
+    if (registrationsLeft) {
+        registrationsLeft = (arrayList_size(registrations) > 0);
+    }
+    celixThreadRwlock_unlock(&registry->lock);
 
-    while (registrations != NULL && arrayList_size(registrations) > 0) {
+    while (registrationsLeft) {
         service_registration_pt reg = arrayList_get(registrations, 0);
 
         serviceRegistry_logWarningServiceRegistration(registry, reg);
@@ -250,6 +255,15 @@ celix_status_t serviceRegistry_clearServiceRegistrations(service_registry_pt reg
         else {
             arrayList_remove(registrations, 0);
         }
+
+        // not removed by last unregister call?
+        celixThreadRwlock_writeLock(&registry->lock);
+        registrations = hashMap_get(registry->serviceRegistrations, bundle);
+        registrationsLeft = (registrations != NULL);
+        if (registrationsLeft) {
+            registrationsLeft = (arrayList_size(registrations) > 0);
+        }
+        celixThreadRwlock_unlock(&registry->lock);
     }
 
     return status;
