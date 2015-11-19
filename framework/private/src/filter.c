@@ -67,6 +67,11 @@ filter_pt filter_create(char * filterString) {
 void filter_destroy(filter_pt filter) {
 	if (filter != NULL) {
 		if (filter->operand == SUBSTRING) {
+			 int size = arrayList_size(filter->value);
+			 for (; size > 0; --size) {
+				 char* operand = (char*) arrayList_remove(filter->value, 0);
+				 free(operand);
+			 }
 			arrayList_clear(filter->value);
 			arrayList_destroy(filter->value);
 			filter->value = NULL;
