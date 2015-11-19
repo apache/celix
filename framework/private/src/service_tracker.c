@@ -275,8 +275,7 @@ static celix_status_t serviceTracker_track(service_tracker_pt tracker, service_r
 	bool found = false;
 	unsigned int i;
 
-    celixThreadRwlock_writeLock(&tracker->lock);
-
+    celixThreadRwlock_readLock(&tracker->lock);
 	for (i = 0; i < arrayList_size(tracker->trackedServices); i++) {
 		bool equals = false;
 		tracked = (tracked_pt) arrayList_get(tracker->trackedServices, i);
@@ -289,6 +288,7 @@ static celix_status_t serviceTracker_track(service_tracker_pt tracker, service_r
 			break;
 		}
 	}
+    celixThreadRwlock_unlock(&tracker->lock);
 
 	if (status == CELIX_SUCCESS && !found /*new*/) {
 		void * service = NULL;
@@ -299,15 +299,19 @@ static celix_status_t serviceTracker_track(service_tracker_pt tracker, service_r
 				assert(reference != NULL);
 				tracked->reference = reference;
 				tracked->service = service;
-				arrayList_add(tracker->trackedServices, tracked);
                 serviceTracker_invokeAddService(tracker, reference, service);
+                celixThreadRwlock_writeLock(&tracker->lock);
+                arrayList_add(tracker->trackedServices, tracked);
+                celixThreadRwlock_unlock(&tracker->lock);
 			}
 		}
+
 	} else {
         status = serviceTracker_invokeModifiedService(tracker, reference, tracked->service);
 	}
 
-    celixThreadRwlock_unlock(&tracker->lock);
+
+
 
 	framework_logIfError(logger, status, NULL, "Cannot track reference");
 
@@ -387,12 +391,15 @@ static celix_status_t serviceTracker_untrack(service_tracker_pt tracker, service
 		serviceReference_equals(reference, tracked->reference, &equals);
 		if (equals) {
 			arrayList_remove(tracker->trackedServices, i);
-            serviceTracker_invokeRemovingService(tracker, tracked->reference, tracked->service);
-			free(tracked);
             break;
 		}
 	}
     celixThreadRwlock_unlock(&tracker->lock);
+
+    if (tracked != NULL) {
+        serviceTracker_invokeRemovingService(tracker, tracked->reference, tracked->service);
+        free(tracked);
+    }
 
 	framework_logIfError(logger, status, NULL, "Cannot untrack reference");
 
