@@ -14,20 +14,13 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+is_enabled(EXAMPLES)
+if (EXAMPLES)
 
-SET(BUNDLE_SYMBOLICNAME mutex_benchmark)
-SET(BUNDLE_VERSION 0.0.0)
+	#deploy("locking_example_reference" BUNDLES benchmark_runner reference_benchmark math_provider shell shell_tui log_service log_writer)
+	deploy("locking_example_mutex" BUNDLES benchmark_runner mutex_benchmark math_provider shell shell_tui log_service log_writer)
 
-include_directories(public/include)
-include_directories(../benchmark/public/include)
-include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/shell/public/include")
+	#deploy("locking_example_suspend" BUNDLES benchmark_runner start_stop_benchmark math_provider shell shell_tui log_service log_writer)
+	#deploy("locking_example_rcu" BUNDLES benchmark_runner rcu_benchmark mutex_benchmark math_provider shell shell_tui log_service log_writer)
 
-bundle(mutex_benchmark SOURCES
-	../benchmark/public/src/benchmark_activator
-	private/src/mutex_benchmark 
-)
-
-target_link_libraries(mutex_benchmark celix_framework)
-
+endif (EXAMPLES)

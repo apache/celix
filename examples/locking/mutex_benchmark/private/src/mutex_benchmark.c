@@ -7,8 +7,9 @@
 
 #include <stdlib.h>
 #include <pthread.h>
-#include <unistd.h>
 #include <sys/time.h>
+#include <stdio.h>
+#include <math.h>
 
 #include "benchmark.h"
 
@@ -26,7 +27,7 @@ typedef struct thread_info {
 	unsigned int result;
 	struct timeval begin;
 	struct timeval end;
-	int skips;
+	uint skips;
 } thread_info_t;
 
 static void benchmark_thread(thread_info_t *info);
@@ -66,10 +67,12 @@ benchmark_result_t benchmark_run(benchmark_pt benchmark, int nrOfThreads, int nr
 		result.skips += infos[i].skips;
 	}
 
-	result.averageCallTimeInNanoseconds = ((double)elapsedTime * 1000) / (nrOfSamples * nrOfThreads);
-	result.callFrequencyInMhz = ((double)(nrOfSamples * nrOfThreads) / elapsedTime);
+    uint actualSamples = (nrOfSamples * nrOfThreads) - result.skips;
+	result.averageCallTimeInNanoseconds = actualSamples == 0 ? NAN : ((double)elapsedTime * 1000) / (nrOfSamples * nrOfThreads);
+	result.callFrequencyInMhz = ((double)(actualSamples * nrOfThreads) / elapsedTime);
 	result.nrOfThreads = nrOfThreads;
-	result.nrOfsamples = nrOfSamples;
+	result.nrOfsamples = actualSamples;
+    result.requestedNrOfSamples = (nrOfSamples * nrOfThreads);
 
 	return result;
 }
