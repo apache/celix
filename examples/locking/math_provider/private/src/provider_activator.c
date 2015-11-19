@@ -25,12 +25,13 @@
  */
 #include <stdlib.h>
 #include <unistd.h>
-#include <stdbool.h>
-#include <sys/time.h>
+#include <string.h>
+#include <pthread.h>
+#include <signal.h>
+
+
 
 #include "bundle_activator.h"
-#include "bundle_context.h"
-#include "service_registration.h"
 
 #include "math_service.h"
 #include "frequency_service.h"
@@ -38,6 +39,7 @@
 
 typedef struct activator {
 	bundle_context_pt context;
+	bool isRunning;
 
 	frequency_service_pt freqService;
 	service_registration_pt freqRegistration;
@@ -47,19 +49,17 @@ typedef struct activator {
 	char *benchmarkName;
 	service_registration_pt registration;
 
-	uint updateFrequency;
+	double updateFrequency;
 	uint nrOfThreads;
 	pthread_t *threads;
 
 
-	volatile uint counter;
-	struct timeval beginMeasurement;
-	struct timeval endMeasurement;
+	uint counter;
 } activator_t;
 
-static int calc(int arg1, int arg2);
-static void run(activator_t *activator);
-static void setFrequency(activator_t *activator, uint freq);
+static int calc(int arg1, int arg2)  __attribute__((unused));
+static void* run(void *data);
+static void setFrequency(activator_t *activator, double freq);
 static void setNrOfThreads(activator_t *activator, uint nrOfThreads);
 static void resetCounter(activator_t *activator);
 static void stopThreads(activator_t *activator);
@@ -86,10 +86,11 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_start(void * userData, bundle_context_pt context __attribute__((unused))) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator * activator = userData;
 
+    activator->isRunning = true;
 	activator->mathService = malloc(sizeof(*activator->mathService));
 	activator->mathService->handle = activator->math;
 	activator->mathService->calc = (void *)mathComponent_calc;
@@ -109,7 +110,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	return status;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context __attribute__((unused))) {
 	struct activator * activator = userData;
 
 	printf("Stopping service registration thread\n");
@@ -120,7 +121,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
+celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context __attribute__((unused))) {
 	struct echoActivator * activator = userData;
 
 	//TODO free service & freqService struct
@@ -136,15 +137,17 @@ static int calc(int arg1, int arg2) {
 
 static void stopThreads(activator_t *activator) {
 	//cancel and join threads
+    activator->isRunning = false;
 	if (activator->threads != NULL) {
 		for (int i = 0 ; i < activator->nrOfThreads ; i += 1) {
-			pthread_cancel(activator->threads[i]);
+            pthread_kill(activator->threads[i], SIGUSR1);
 			pthread_join(activator->threads[i], NULL);
 		}
 	}
 }
 
 static void startThreads(activator_t *activator, uint nrOfThreads) {
+    activator->isRunning = true;
 	activator->threads = malloc(sizeof(pthread_t) * nrOfThreads);
 	for (int i = 0 ; i < nrOfThreads ; i += 1) {
 		pthread_create(&activator->threads[i], NULL, (void *)run, activator);
@@ -152,13 +155,15 @@ static void startThreads(activator_t *activator, uint nrOfThreads) {
 	activator->nrOfThreads = nrOfThreads;
 }
 
-static void run(activator_t *activator) {
+static void* run(void *data) {
+	activator_t *activator = data;
+
 	service_registration_pt currentReg = NULL;
 	service_registration_pt prevReg = NULL;
 	math_service_pt current = NULL;
 	math_service_pt prev = NULL;
-	while (1) {
-		pthread_testcancel(); //NOTE no clean exit still need to clear a register service
+
+	while (activator->isRunning) {
  		uint delayInMicroseconds =  activator->updateFrequency == 0 ? 0 : (1000 * 1000) / activator->updateFrequency;
 		if (delayInMicroseconds > 0) {
 			prevReg = currentReg;
@@ -174,6 +179,8 @@ static void run(activator_t *activator) {
 		}
 		usleep(delayInMicroseconds > 0 ? delayInMicroseconds : 1000000);
 	}
+
+    return NULL;
 }
 
 static math_service_pt registerMath(activator_t *activator, service_registration_pt *reg) {
@@ -201,13 +208,14 @@ static void setBenchmarkName(activator_t *activator, char *benchmark) {
 	}
 }
 
-static void setFrequency(activator_t *activator, uint freq) {
-	printf("Setting frequency to %i\n", freq);
+static void setFrequency(activator_t *activator, double freq) {
+	printf("Setting frequency to %f\n", freq);
 	activator->updateFrequency = freq;
 }
 
 static void setNrOfThreads(activator_t *activator, uint nrOfThreads) {
-	stopThreads(activator);
+    printf("Setting nr of update Threads to %d\n", nrOfThreads);
+    stopThreads(activator);
 	startThreads(activator, nrOfThreads);
 }
 

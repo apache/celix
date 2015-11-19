@@ -18,13 +18,15 @@
 SET(BUNDLE_SYMBOLICNAME benchmark_runner)
 SET(BUNDLE_VERSION 0.0.0)
 
-bundle(benchmark_runner SOURCES
-	private/src/benchmark_runner_activator 
-)
-
 include_directories(private/include)
 include_directories(public/include)
 include_directories(${PROJECT_SOURCE_DIR}/framework/public/include)
 include_directories(${PROJECT_SOURCE_DIR}/utils/public/include)
+include_directories(${PROJECT_SOURCE_DIR}/shell/public/include)
+
+bundle(benchmark_runner SOURCES
+	private/src/benchmark_runner_activator 
+)
 
 target_link_libraries(benchmark_runner celix_framework)
+

@@ -5,6 +5,7 @@
  *      Author: dl436
  */
 
+#include <stdlib.h>
 #include "math_component.h"
 
 struct math_component {
@@ -12,7 +13,7 @@ struct math_component {
 };
 
 celix_status_t mathComponent_create(math_component_pt *math) {
-	(*math) = malloc(sizeof(struct math_component));
+	(*math) = calloc(1, sizeof(struct math_component));
 	return CELIX_SUCCESS;
 }
 
@@ -21,7 +22,7 @@ celix_status_t mathComponent_destroy(math_component_pt math) {
 	return CELIX_SUCCESS;
 }
 
-int mathComponent_calc(math_component_pt math, int arg1, int arg2) {
+int mathComponent_calc(math_component_pt math __attribute__((unused)), int arg1, int arg2) {
 	return arg1 * arg2 + arg2;
 }
 

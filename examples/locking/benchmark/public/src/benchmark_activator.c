@@ -36,9 +36,7 @@
 #include "benchmark_service.h"
 #include "frequency_service.h"
 
-static celix_status_t addingService(void * handle, service_reference_pt reference, void **service);
 static celix_status_t addedService(void * handle, service_reference_pt reference, void * service);
-static celix_status_t modifiedService(void * handle, service_reference_pt reference, void * service);
 static celix_status_t removedService(void * handle, service_reference_pt reference, void * service);
 
 struct activator {
@@ -69,7 +67,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	struct activator * activator = userData;
 
 	status = benchmark_create(&activator->benchmark);
-	serviceTrackerCustomizer_create(activator, addingService, addedService, modifiedService, removedService, &activator->customizer);
+	serviceTrackerCustomizer_create(activator, NULL, addedService, NULL, removedService, &activator->customizer);
 
 	char filter[128];
 	sprintf(filter, "(&(objectClass=%s)(benchmark=%s))", MATH_SERVICE_NAME, benchmark_getName(activator->benchmark));
@@ -106,22 +104,10 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt contex
 	return CELIX_SUCCESS;
 }
 
-static celix_status_t addingService(void * handle, service_reference_pt reference, void **service) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator * activator = handle;
-	status = bundleContext_getService(activator->context, reference, service);
-	return status;
-
-}
 static celix_status_t addedService(void * handle, service_reference_pt reference, void * service) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator * activator = handle;
 	benchmark_addMathService(activator->benchmark, service);
-	return status;
-}
-static celix_status_t modifiedService(void * handle, service_reference_pt reference, void * service) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator * activator = handle;
 	return status;
 }
 

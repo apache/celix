@@ -18,15 +18,16 @@
 SET(BUNDLE_SYMBOLICNAME math_provider)
 SET(BUNDLE_VERSION 0.0.0)
 
-bundle(math_provider SOURCES 
-	private/src/provider_activator 
-	private/src/math_component
-)
-
 include_directories(public/include)
 include_directories(../benchmark/public/include)
 include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/shell/public/include")
 include_directories(private/include)
+
+bundle(math_provider SOURCES 
+	private/src/provider_activator 
+	private/src/math_component
+)
+
 target_link_libraries(math_provider celix_framework)
