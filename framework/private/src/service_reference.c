@@ -82,6 +82,7 @@ celix_status_t serviceReference_release(service_reference_pt ref, bool *out) {
         if (ref->registration != NULL) {
             serviceRegistration_release(ref->registration);
         }
+        celixThreadRwlock_unlock(&ref->lock);
         serviceReference_destroy(ref);
         destroyed = true;
     } else {
