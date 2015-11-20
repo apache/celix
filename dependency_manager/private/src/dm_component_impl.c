@@ -666,9 +666,15 @@ celix_status_t component_handleChange(dm_component_pt component) {
     bool transition = false;
     do {
         oldState = component->state;
-        component_calculateNewState(component, oldState, &newState);
-        component->state = newState;
-        component_performTransition(component, oldState, newState, &transition);
+        status = component_calculateNewState(component, oldState, &newState);
+        if (status == CELIX_SUCCESS) {
+            component->state = newState;
+            status = component_performTransition(component, oldState, newState, &transition);
+        }
+
+        if (status != CELIX_SUCCESS) {
+            break;
+        }
     } while (transition);
 
     return status;
@@ -730,6 +736,7 @@ celix_status_t component_calculateNewState(dm_component_pt component, dm_compone
         }
     } else {
         //should not reach
+        *newState = DM_CMP_STATE_INACTIVE;
         status = CELIX_BUNDLE_EXCEPTION;
     }
 
