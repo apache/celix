@@ -190,6 +190,7 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin) {
     while (hashMapIterator_hasNext(iter)) {
         ipc_segment_pt ipc = hashMapIterator_nextValue(iter);
         remoteServiceAdmin_deleteIpcSegment(ipc);
+        free(ipc);
     }
     hashMapIterator_destroy(iter);
 
@@ -337,6 +338,7 @@ static void * remoteServiceAdmin_receiveFromSharedMemory(void *data) {
                                 } else {
                                     strcpy(ipc->shmBaseAdress, reply);
                                 }
+                                free(reply);
                             }
                         } else {
                             logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "receiveFromSharedMemory : No endpoint set for %s.", export->endpointDescription->service);

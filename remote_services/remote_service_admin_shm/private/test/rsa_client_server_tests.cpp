@@ -94,7 +94,7 @@ static void test1(void) {
     celix_status_t status = CELIX_BUNDLE_EXCEPTION;
     service_reference_pt ref = NULL;
     calculator_service_pt calcService = NULL;
-    int retries = 24;
+    int retries = 12;
 
     while (ref == NULL && retries > 0) {
     	printf("Waiting for service .. %d\n", retries);
