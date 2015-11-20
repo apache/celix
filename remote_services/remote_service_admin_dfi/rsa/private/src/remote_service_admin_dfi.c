@@ -214,13 +214,6 @@ celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_servi
 
     }
 
-    if (status != CELIX_SUCCESS)
-    printf("111 status is not success\n ");
-    else {
-        printf("111 status is success\n ");
-
-    }
-
     return status;
 }
 
