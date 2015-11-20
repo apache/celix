@@ -697,7 +697,8 @@ celix_status_t topologyManager_notifyListenersEndpointAdded(topology_manager_pt 
 }
 
 celix_status_t topologyManager_notifyListenersEndpointRemoved(topology_manager_pt manager, remote_service_admin_service_pt rsa, export_registration_pt export) {
-    celix_status_t status = CELIX_SUCCESS;
+
+    celix_status_t status;
 
     celixThreadMutex_lock(&manager->listenerListLock);
 
