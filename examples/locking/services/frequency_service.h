@@ -35,11 +35,11 @@ typedef struct frequency_hander frequence_handler_t;
 
 struct frequency_service {
 	frequence_handler_t *handle;
-	void (*setFrequency)(frequence_handler_t *handle, int freq);
+	void (*setFrequency)(frequence_handler_t *handle, double freq);
 	void (*resetCounter)(frequence_handler_t *handle);
-	uint (*getCounter)(frequence_handler_t *handle);
+	unsigned int (*getCounter)(frequence_handler_t *handle);
 	void (*setBenchmarkName)(frequence_handler_t *handle, char *name);
-	void (*setNrOfThreads)(frequence_handler_t *handle, uint nrOfThreads);
+	void (*setNrOfThreads)(frequence_handler_t *handle, unsigned int nrOfThreads);
 };
 
 typedef struct frequency_service * frequency_service_pt;

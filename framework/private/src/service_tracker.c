@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <service_reference_private.h>
 #include <framework_private.h>
+#include <assert.h>
 
 #include "service_tracker_private.h"
 #include "bundle_context.h"
@@ -74,8 +75,9 @@ celix_status_t serviceTracker_createWithFilter(bundle_context_pt context, char *
 		(*tracker)->filter = strdup(filter);
 
 		(*tracker)->tracker = *tracker;
-		(*tracker)->tracked = NULL;
-		arrayList_create(&(*tracker)->tracked);
+        celixThreadRwlock_create(&(*tracker)->lock, NULL);
+		(*tracker)->trackedServices = NULL;
+		arrayList_create(&(*tracker)->trackedServices);
 		(*tracker)->customizer = customizer;
 		(*tracker)->listener = NULL;
 	}
@@ -92,11 +94,17 @@ celix_status_t serviceTracker_destroy(service_tracker_pt tracker) {
 	if (tracker->customizer != NULL) {
 	    serviceTrackerCustomizer_destroy(tracker->customizer);
 	}
-	arrayList_destroy(tracker->tracked);
+
+    celixThreadRwlock_writeLock(&tracker->lock);
+	arrayList_destroy(tracker->trackedServices);
+    celixThreadRwlock_unlock(&tracker->lock);
+
 
 	if (tracker->listener != NULL) {
 		free (tracker->listener);
 	}
+
+    celixThreadRwlock_destroy(&tracker->lock);
 
 	free(tracker->filter);
 	free(tracker);
@@ -160,12 +168,18 @@ celix_status_t serviceTracker_close(service_tracker_pt tracker) {
 
 service_reference_pt serviceTracker_getServiceReference(service_tracker_pt tracker) {
 	tracked_pt tracked;
+    service_reference_pt result = NULL;
 	unsigned int i;
-	for (i = 0; i < arrayList_size(tracker->tracked); i++) {
-		tracked = (tracked_pt) arrayList_get(tracker->tracked, i);
-		return tracked->reference;
+
+    celixThreadRwlock_readLock(&tracker->lock);
+	for (i = 0; i < arrayList_size(tracker->trackedServices); i++) {
+		tracked = (tracked_pt) arrayList_get(tracker->trackedServices, i);
+		result = tracked->reference;
+        break;
 	}
-	return NULL;
+    celixThreadRwlock_unlock(&tracker->lock);
+
+	return result;
 }
 
 array_list_pt serviceTracker_getServiceReferences(service_tracker_pt tracker) {
@@ -173,22 +187,31 @@ array_list_pt serviceTracker_getServiceReferences(service_tracker_pt tracker) {
 	unsigned int i;
 	array_list_pt references = NULL;
 	arrayList_create(&references);
-	
-	for (i = 0; i < arrayList_size(tracker->tracked); i++) {
-		tracked = (tracked_pt) arrayList_get(tracker->tracked, i);
+
+    celixThreadRwlock_readLock(&tracker->lock);
+	for (i = 0; i < arrayList_size(tracker->trackedServices); i++) {
+		tracked = (tracked_pt) arrayList_get(tracker->trackedServices, i);
 		arrayList_add(references, tracked->reference);
 	}
+    celixThreadRwlock_unlock(&tracker->lock);
+
 	return references;
 }
 
 void *serviceTracker_getService(service_tracker_pt tracker) {
 	tracked_pt tracked;
+    void *service = NULL;
 	unsigned int i;
-	for (i = 0; i < arrayList_size(tracker->tracked); i++) {
-		tracked = (tracked_pt) arrayList_get(tracker->tracked, i);
-		return tracked->service;
+
+    celixThreadRwlock_readLock(&tracker->lock);
+    for (i = 0; i < arrayList_size(tracker->trackedServices); i++) {
+		tracked = (tracked_pt) arrayList_get(tracker->trackedServices, i);
+		service = tracked->service;
+        break;
 	}
-	return NULL;
+    celixThreadRwlock_unlock(&tracker->lock);
+
+    return service;
 }
 
 array_list_pt serviceTracker_getServices(service_tracker_pt tracker) {
@@ -196,26 +219,35 @@ array_list_pt serviceTracker_getServices(service_tracker_pt tracker) {
 	unsigned int i;
 	array_list_pt references = NULL;
 	arrayList_create(&references);
-	
-	for (i = 0; i < arrayList_size(tracker->tracked); i++) {
-		tracked = (tracked_pt) arrayList_get(tracker->tracked, i);
+
+    celixThreadRwlock_readLock(&tracker->lock);
+    for (i = 0; i < arrayList_size(tracker->trackedServices); i++) {
+		tracked = (tracked_pt) arrayList_get(tracker->trackedServices, i);
 		arrayList_add(references, tracked->service);
 	}
-	return references;
+    celixThreadRwlock_unlock(&tracker->lock);
+
+    return references;
 }
 
 void *serviceTracker_getServiceByReference(service_tracker_pt tracker, service_reference_pt reference) {
 	tracked_pt tracked;
+    void *service = NULL;
 	unsigned int i;
-	for (i = 0; i < arrayList_size(tracker->tracked); i++) {
+
+    celixThreadRwlock_readLock(&tracker->lock);
+	for (i = 0; i < arrayList_size(tracker->trackedServices); i++) {
 		bool equals = false;
-		tracked = (tracked_pt) arrayList_get(tracker->tracked, i);
+		tracked = (tracked_pt) arrayList_get(tracker->trackedServices, i);
 		serviceReference_equals(reference, tracked->reference, &equals);
 		if (equals) {
-			return tracked->service;
+			service = tracked->service;
+            break;
 		}
 	}
-	return NULL;
+    celixThreadRwlock_unlock(&tracker->lock);
+
+	return service;
 }
 
 void serviceTracker_serviceChanged(service_listener_pt listener, service_event_pt event) {
@@ -242,31 +274,44 @@ static celix_status_t serviceTracker_track(service_tracker_pt tracker, service_r
 	tracked_pt tracked = NULL;
 	bool found = false;
 	unsigned int i;
-	for (i = 0; i < arrayList_size(tracker->tracked); i++) {
+
+    celixThreadRwlock_readLock(&tracker->lock);
+	for (i = 0; i < arrayList_size(tracker->trackedServices); i++) {
 		bool equals = false;
-		tracked = (tracked_pt) arrayList_get(tracker->tracked, i);
-		serviceReference_equals(reference, tracked->reference, &equals);
+		tracked = (tracked_pt) arrayList_get(tracker->trackedServices, i);
+		status = serviceReference_equals(reference, tracked->reference, &equals);
+        if (status != CELIX_SUCCESS) {
+            break;
+        }
 		if (equals) {
 			found = true;
 			break;
 		}
 	}
+    celixThreadRwlock_unlock(&tracker->lock);
 
-	if (!found /*new*/) {
+	if (status == CELIX_SUCCESS && !found /*new*/) {
 		void * service = NULL;
 		status = serviceTracker_invokeAddingService(tracker, reference, &service);
 		if (status == CELIX_SUCCESS) {
 			if (service != NULL) {
 				tracked = (tracked_pt) calloc(1, sizeof(*tracked));
+				assert(reference != NULL);
 				tracked->reference = reference;
 				tracked->service = service;
-				arrayList_add(tracker->tracked, tracked);
                 serviceTracker_invokeAddService(tracker, reference, service);
+                celixThreadRwlock_writeLock(&tracker->lock);
+                arrayList_add(tracker->trackedServices, tracked);
+                celixThreadRwlock_unlock(&tracker->lock);
 			}
 		}
+
 	} else {
         status = serviceTracker_invokeModifiedService(tracker, reference, tracked->service);
 	}
+
+
+
 
 	framework_logIfError(logger, status, NULL, "Cannot track reference");
 
@@ -339,17 +384,22 @@ static celix_status_t serviceTracker_untrack(service_tracker_pt tracker, service
 	tracked_pt tracked = NULL;
 	unsigned int i;
 
-	for (i = 0; i < arrayList_size(tracker->tracked); i++) {
+    celixThreadRwlock_writeLock(&tracker->lock);
+    for (i = 0; i < arrayList_size(tracker->trackedServices); i++) {
 		bool equals;
-		tracked = (tracked_pt) arrayList_get(tracker->tracked, i);
+		tracked = (tracked_pt) arrayList_get(tracker->trackedServices, i);
 		serviceReference_equals(reference, tracked->reference, &equals);
 		if (equals) {
-			arrayList_remove(tracker->tracked, i);
-            serviceTracker_invokeRemovingService(tracker, tracked->reference, tracked->service);
-			free(tracked);
+			arrayList_remove(tracker->trackedServices, i);
             break;
 		}
 	}
+    celixThreadRwlock_unlock(&tracker->lock);
+
+    if (tracked != NULL) {
+        serviceTracker_invokeRemovingService(tracker, tracked->reference, tracked->service);
+        free(tracked);
+    }
 
 	framework_logIfError(logger, status, NULL, "Cannot untrack reference");
 

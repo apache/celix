@@ -35,6 +35,6 @@ struct math_service {
 	int (*calc)(void *handle, int arg1, int arg2);
 };
 
-typedef struct math_service * math_service_pt;
+typedef struct math_service *math_service_pt;
 
 #endif /* MATH_SERVICE_H */

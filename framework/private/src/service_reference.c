@@ -256,12 +256,18 @@ bool serviceReference_isAssignableTo(service_reference_pt reference __attribute_
 }
 
 celix_status_t serviceReference_equals(service_reference_pt reference, service_reference_pt compareTo, bool *equal) {
-    service_registration_pt reg1;
-    service_registration_pt reg2;
-    serviceReference_getServiceRegistration(reference, &reg1);
-    serviceReference_getServiceRegistration(compareTo, &reg2);
-	*equal = (reg1 == reg2);
-	return CELIX_SUCCESS;
+    celix_status_t status = CELIX_SUCCESS;
+    if (reference != NULL && compareTo != NULL) {
+        service_registration_pt reg1;
+        service_registration_pt reg2;
+        serviceReference_getServiceRegistration(reference, &reg1);
+        serviceReference_getServiceRegistration(compareTo, &reg2);
+        *equal = (reg1 == reg2);
+    } else {
+        status = CELIX_ILLEGAL_ARGUMENT;
+        *equal = false;
+    }
+	return status;
 }
 
 int serviceReference_equals2(void *reference1, void *reference2) {

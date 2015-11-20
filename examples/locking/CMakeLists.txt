@@ -15,10 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
+include_directories(services)
+
 add_subdirectory(benchmark)
 add_subdirectory(math_provider)
 
 add_subdirectory(mutex_benchmark)
-add_subdirectory(reference_benchmark)
-add_subdirectory(start_stop_benchmark)
-add_subdirectory(modified_bool_benchmark)
+#add_subdirectory(reference_benchmark)
+#add_subdirectory(start_stop_benchmark)
+#add_subdirectory(modified_bool_benchmark)

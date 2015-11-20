@@ -11,6 +11,7 @@
 typedef struct benchmark_result {
 		unsigned int nrOfThreads;
 		unsigned int nrOfsamples;
+		unsigned int requestedNrOfSamples;
 		unsigned int result;
 		unsigned int skips;
 		double averageCallTimeInNanoseconds;
