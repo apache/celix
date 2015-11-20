@@ -26,11 +26,15 @@ celix_status_t discMockService_create(void *handle, disc_mock_service_pt *serv)
 
     (*serv)->handle = handle;
 	(*serv)->getEPDescriptors = test;
+
+	return CELIX_SUCCESS;
 }
 
 celix_status_t discMockService_destroy(disc_mock_service_pt serv)
 {
 	free(serv);
+
+	return CELIX_SUCCESS;
 }
 
 celix_status_t test(void *handle, array_list_pt *descrList)
@@ -38,5 +42,5 @@ celix_status_t test(void *handle, array_list_pt *descrList)
     struct disc_mock_activator *act = handle;
     *descrList = act->endpointList;
 
-	return 0;
+    return CELIX_SUCCESS;
 }

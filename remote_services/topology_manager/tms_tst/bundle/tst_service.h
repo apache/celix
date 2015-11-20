@@ -9,7 +9,7 @@
 
 struct tst_service {
     void *handle;
-    int (*IsImported)(void *handle);
+    bool (*IsImported)(void *handle);
 };
 
 typedef struct tst_service *tst_service_pt;
