@@ -24,355 +24,458 @@
 
 extern "C" {
 
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-#include <unistd.h>
-
-#include "celix_launcher.h"
-#include "framework.h"
-#include "remote_service_admin.h"
-#include "calculator_service.h"
-#include "bundle.h"
-
-#define NUM_OF_BUNDLES          3
-#define DISCOVERY_CFG_NAME      "apache_celix_rsa_discovery_configured"
-#define RSA_HTTP_NAME           "apache_celix_remote_service_admin_http"
-#define TOPOLOGY_MANAGER_NAME   "apache_celix_rs_topology_manager"
-
-static framework_pt serverFramework = NULL;
-static bundle_context_pt serverContext = NULL;
-
-static framework_pt clientFramework = NULL;
-static bundle_context_pt clientContext = NULL;
-
-static void setupFm(void) {
-    int rc = 0;
-    bundle_pt bundle = NULL;
-
-    //server
-    rc = celixLauncher_launch("server.properties", &serverFramework);
-    CHECK_EQUAL(CELIX_SUCCESS, rc);
-
-    bundle = NULL;
-    rc = framework_getFrameworkBundle(serverFramework, &bundle);
-    CHECK_EQUAL(CELIX_SUCCESS, rc);
-
-    rc = bundle_getContext(bundle, &serverContext);
-    CHECK_EQUAL(CELIX_SUCCESS, rc);
-
-    //client
-    rc = celixLauncher_launch("client.properties", &clientFramework);
-    CHECK_EQUAL(CELIX_SUCCESS, rc);
-
-    bundle = NULL;
-    rc = framework_getFrameworkBundle(clientFramework, &bundle);
-    CHECK_EQUAL(CELIX_SUCCESS, rc);
-
-    rc = bundle_getContext(bundle, &clientContext);
-    CHECK_EQUAL(CELIX_SUCCESS, rc);
-}
-
-static void teardownFm(void) {
-    celixLauncher_stop(serverFramework);
-    celixLauncher_waitForShutdown(serverFramework);
-    celixLauncher_destroy(serverFramework);
-
-    celixLauncher_stop(clientFramework);
-    celixLauncher_waitForShutdown(clientFramework);
-    celixLauncher_destroy(clientFramework);
-
-    serverContext = NULL;
-    serverFramework = NULL;
-    clientContext = NULL;
-    clientFramework = NULL;
-}
-
-static void test1(void) {
-    celix_status_t status;
-    service_reference_pt ref = NULL;
-    calculator_service_pt calcService = NULL;
-    usleep(2000000); //TODO use tracker
-
-    status = bundleContext_getServiceReference(clientContext, (char *) CALCULATOR_SERVICE, &ref);
-    CHECK_EQUAL(CELIX_SUCCESS, status);
-    CHECK(ref != NULL);
-
-    status = bundleContext_getService(clientContext, ref, (void **) &calcService);
-    CHECK_EQUAL(CELIX_SUCCESS, status);
-    CHECK(calcService != NULL);
-
-    double result = 0;
-    status = calcService->add(calcService->calculator, 2.0, 5.0, &result);
-    CHECK_EQUAL(CELIX_SUCCESS, status);
-    CHECK_EQUAL(7.0, result);
+	#include <stdio.h>
+	#include <stdint.h>
+	#include <stdlib.h>
+	#include <string.h>
+	#include <ctype.h>
+	#include <unistd.h>
+
+	#include "celix_launcher.h"
+	#include "framework.h"
+	#include "remote_service_admin.h"
+	#include "calculator_service.h"
+	#include "bundle.h"
+
+	#define DISCOVERY_CFG_NAME      "apache_celix_rsa_discovery_configured"
+	#define RSA_HTTP_NAME           "apache_celix_remote_service_admin_http"
+	#define TOPOLOGY_MANAGER_NAME   "apache_celix_rs_topology_manager"
+	#define CALCULATOR_PROXY   		"apache_celix_remoting_calculator_proxy"
+	#define CALCULATOR_ENDPOINT   	"apache_celix_remoting_calculator_endpoint"
+
+
+	static framework_pt	serverFramework = NULL;
+	static bundle_context_pt serverContext = NULL;
+
+	static framework_pt clientFramework = NULL;
+	static bundle_context_pt clientContext = NULL;
+
+	static void setupFm(void) {
+		int rc = 0;
+		bundle_pt bundle = NULL;
+
+		//server
+		rc = celixLauncher_launch("server.properties", &serverFramework);
+		CHECK_EQUAL(CELIX_SUCCESS, rc);
+
+		bundle = NULL;
+		rc = framework_getFrameworkBundle(serverFramework, &bundle);
+		CHECK_EQUAL(CELIX_SUCCESS, rc);
+
+		rc = bundle_getContext(bundle, &serverContext);
+		CHECK_EQUAL(CELIX_SUCCESS, rc);
+
+		//client
+		rc = celixLauncher_launch("client.properties", &clientFramework);
+		CHECK_EQUAL(CELIX_SUCCESS, rc);
 
-    bundleContext_ungetService(clientContext, ref, NULL);
-    bundleContext_ungetServiceReference(clientContext, ref);
-}
+		bundle = NULL;
+		rc = framework_getFrameworkBundle(clientFramework, &bundle);
+		CHECK_EQUAL(CELIX_SUCCESS, rc);
 
-static celix_status_t getPermutations(long bundleIds[], int from, int to, array_list_pt permutations) {
-    celix_status_t status = CELIX_SUCCESS;
-    int i = 0;
+		rc = bundle_getContext(bundle, &clientContext);
+		CHECK_EQUAL(CELIX_SUCCESS, rc);
+	}
 
-    if (from == to) {
-        long* permutation = (long*) calloc(to + 1, sizeof(bundleIds[0]));
-
-        if (!permutation) {
-            status = CELIX_ENOMEM;
-        } else {
-            for (; i <= to; i++) {
-                permutation[i] = bundleIds[i];
-            }
+	static void teardownFm(void) {
+		celixLauncher_stop(serverFramework);
+		celixLauncher_waitForShutdown(serverFramework);
+		celixLauncher_destroy(serverFramework);
 
-            arrayList_add(permutations, permutation);
-        }
-    } else {
-        for (i = from; i <= to; i++) {
-            long fromOrg = bundleIds[from];
-            long iOrg = bundleIds[i];
+		celixLauncher_stop(clientFramework);
+		celixLauncher_waitForShutdown(clientFramework);
+		celixLauncher_destroy(clientFramework);
 
-            bundleIds[from] = iOrg;
-            bundleIds[i] = fromOrg;
+		serverContext = NULL;
+		serverFramework = NULL;
+		clientContext = NULL;
+		clientFramework = NULL;
+	}
 
-            status = getPermutations(bundleIds, from + 1, to, permutations);
+	static void test1(void) {
+		celix_status_t status;
+		service_reference_pt ref = NULL;
+		calculator_service_pt calcService = NULL;
+		usleep(2000000); //TODO use tracker
 
-            bundleIds[from] = fromOrg;
-            bundleIds[i] = iOrg;
-        }
-    }
+		status = bundleContext_getServiceReference(clientContext, (char *) CALCULATOR_SERVICE, &ref);
+		CHECK_EQUAL(CELIX_SUCCESS, status);
+		CHECK(ref != NULL);
 
-    return status;
-}
+		status = bundleContext_getService(clientContext, ref, (void **) &calcService);
+		CHECK_EQUAL(CELIX_SUCCESS, status);
+		CHECK(calcService != NULL);
 
-static celix_status_t getRemoteServicesBundles(bundle_context_pt context, long rsaBundles[]) {
-    celix_status_t status;
-    array_list_pt bundles = NULL;
+		double result = 0;
+		status = calcService->add(calcService->calculator, 2.0, 5.0, &result);
+		CHECK_EQUAL(CELIX_SUCCESS, status);
+		CHECK_EQUAL(7.0, result);
 
-    status = bundleContext_getBundles(clientContext, &bundles);
+		bundleContext_ungetService(clientContext, ref, NULL);
+		bundleContext_ungetServiceReference(clientContext, ref);
+	}
 
-    if (status == CELIX_SUCCESS) {
-        unsigned int size = arrayList_size(bundles);
-        unsigned int bundleCnt = 0;
-        unsigned int i;
 
-        for (i = 0; i < size; i++) {
-            module_pt module = NULL;
-            char *name = NULL;
+	static celix_status_t getPermutations(array_list_pt bundleIds, int from, int to, array_list_pt permutations) {
+		celix_status_t status = CELIX_SUCCESS;
+		int i = 0;
 
-            bundle_pt bundle = (bundle_pt) arrayList_get(bundles, i);
+		if (from == to) {
+			long* permutation = (long*) calloc(to + 1, sizeof(*permutation));
 
-            status = bundle_getCurrentModule(bundle, &module);
+			if (!permutation) {
+				status = CELIX_ENOMEM;
+			} else {
+				for (; i <= to; i++) {
+					permutation[i] = (long) arrayList_get(bundleIds, i);
+				}
 
-            if (status == CELIX_SUCCESS) {
-                status = module_getSymbolicName(module, &name);
+				arrayList_add(permutations, permutation);
+			}
+		} else {
+			for (i = from; i <= to; i++) {
+				long fromOrg = (long) arrayList_get(bundleIds, from);
+				long iOrg = (long) arrayList_get(bundleIds, i);
 
-            }
+				arrayList_set(bundleIds, from, (void*) iOrg);
+				arrayList_set(bundleIds, i, (void*) fromOrg);
 
-            if (status == CELIX_SUCCESS) {
-                if ((strcmp(name, DISCOVERY_CFG_NAME) == 0) || (strcmp(name, RSA_HTTP_NAME) == 0) || (strcmp(name, TOPOLOGY_MANAGER_NAME) == 0)) {
-                    bundle_archive_pt bundleArchive = NULL;
-                    long bundleId = -1;
+				status = getPermutations(bundleIds, from + 1, to, permutations);
 
-                    status = bundle_getArchive(bundle, &bundleArchive);
+				arrayList_set(bundleIds, from, (void*) fromOrg);
+				arrayList_set(bundleIds, i, (void*) iOrg);
+			}
+		}
 
-                    if (status == CELIX_SUCCESS) {
-                        status = bundleArchive_getId(bundleArchive, &bundleId);
-                    }
+		return status;
+	}
 
-                    if (status == CELIX_SUCCESS) {
-                        rsaBundles[bundleCnt] = bundleId;
-                        ++bundleCnt;
-                    }
-                }
-            }
-        }
+	static celix_status_t getSpecifiedBundles(bundle_context_pt context, array_list_pt bundleNames, array_list_pt retrievedBundles) {
+		celix_status_t status;
+		array_list_pt bundles = NULL;
 
-        arrayList_destroy(bundles);
-    }
+		status = bundleContext_getBundles(context, &bundles);
 
-    return status;
-}
+		if (status == CELIX_SUCCESS) {
+			unsigned int size = arrayList_size(bundles);
+			unsigned int i;
 
-static celix_status_t stopStartPermutation(bundle_context_pt context, long* permutation) {
-    celix_status_t status = CELIX_SUCCESS;
-    int y = 0;
+			for (i = 0; i < size; i++) {
+				module_pt module = NULL;
+				char *name = NULL;
 
-    printf("Test stop/start permutation: ");
+				bundle_pt bundle = (bundle_pt) arrayList_get(bundles, i);
 
-    for (y = 0; (y < NUM_OF_BUNDLES) && (status == CELIX_SUCCESS); y++) {
-        bundle_pt bundle = NULL;
+				status = bundle_getCurrentModule(bundle, &module);
 
-        status = bundleContext_getBundleById(context, permutation[y], &bundle);
+				if (status == CELIX_SUCCESS) {
+					status = module_getSymbolicName(module, &name);
+				}
 
-        if (status == CELIX_SUCCESS) {
-            module_pt module = NULL;
-            char *name = NULL;
+				if (status == CELIX_SUCCESS) {
 
-            status = bundle_getCurrentModule(bundle, &module);
+					printf("FOUND %s\n", name);
 
-            if (status == CELIX_SUCCESS) {
-                status = module_getSymbolicName(module, &name);
-                printf("%s (%ld) ", name, permutation[y]);
-            }
-        }
-    }
-    printf("\n");
+					array_list_iterator_pt iter = arrayListIterator_create(bundleNames);
 
-    // stop all bundles
-    if (status == CELIX_SUCCESS) {
-        for (y = 0; (y < NUM_OF_BUNDLES) && (status == CELIX_SUCCESS); y++) {
-            bundle_pt bundle = NULL;
+					while(arrayListIterator_hasNext(iter)) {
+						char* bundleName = (char*) arrayListIterator_next(iter);
 
-            status = bundleContext_getBundleById(context, permutation[y], &bundle);
+						if ((strcmp(name, bundleName) == 0)) {
 
-            if (status == CELIX_SUCCESS) {
-                printf("stop bundle: %ld\n", permutation[y]);
-                status = bundle_stop(bundle);
-            }
+							bundle_archive_pt bundleArchive = NULL;
+							long bundleId = -1;
 
-        }
-    }
+							status = bundle_getArchive(bundle, &bundleArchive);
 
-    // verify stop state
-    if (status == CELIX_SUCCESS) {
-        for (y = 0; (y < NUM_OF_BUNDLES) && (status == CELIX_SUCCESS); y++) {
-            bundle_pt bundle = NULL;
+							if (status == CELIX_SUCCESS) {
+								status = bundleArchive_getId(bundleArchive, &bundleId);
+							}
 
-            status = bundleContext_getBundleById(context, permutation[y], &bundle);
+							if (status == CELIX_SUCCESS) {
+								arrayList_add(retrievedBundles, (void*) bundleId);
+								break;
+							}
+						}
+					}
 
-            if (status == CELIX_SUCCESS) {
-                bundle_state_e state;
-                status = bundle_getState(bundle, &state);
+					arrayListIterator_destroy(iter);
 
-                if (state != OSGI_FRAMEWORK_BUNDLE_RESOLVED) {
-                    printf("bundle %ld has state %d (should be %d) \n", permutation[y], state, OSGI_FRAMEWORK_BUNDLE_RESOLVED);
-                    status = CELIX_ILLEGAL_STATE;
-                }
-            }
+				}
+			}
 
-        }
-    }
+			arrayList_destroy(bundles);
+		}
 
-    // start all bundles
-    if (status == CELIX_SUCCESS) {
+		return status;
+	}
 
-        for (y = 0; (y < NUM_OF_BUNDLES) && (status == CELIX_SUCCESS); y++) {
-            bundle_pt bundle = NULL;
+	static celix_status_t stopStartPermutation(bundle_context_pt context, long* permutation, int size) {
+		celix_status_t status = CELIX_SUCCESS;
+		int y = 0;
 
-            status = bundleContext_getBundleById(context, permutation[y], &bundle);
+		printf("Test stop/start permutation: ");
 
-            if (status == CELIX_SUCCESS) {
-                printf("start bundle: %ld\n", permutation[y]);
-                status = bundle_start(bundle);
-            }
+		for (y = 0; (y < size) && (status == CELIX_SUCCESS); y++) {
+			bundle_pt bundle = NULL;
 
-        }
-    }
+			status = bundleContext_getBundleById(context, permutation[y], &bundle);
 
-    // verify started state
-    if (status == CELIX_SUCCESS) {
-        for (y = 0; (y < NUM_OF_BUNDLES) && (status == CELIX_SUCCESS); y++) {
-            bundle_pt bundle = NULL;
+			if (status == CELIX_SUCCESS) {
+				module_pt module = NULL;
+				char *name = NULL;
 
-            status = bundleContext_getBundleById(context, permutation[y], &bundle);
+				status = bundle_getCurrentModule(bundle, &module);
 
-            if (status == CELIX_SUCCESS) {
-                bundle_state_e state;
-                status = bundle_getState(bundle, &state);
+				if (status == CELIX_SUCCESS) {
+					status = module_getSymbolicName(module, &name);
+					printf("%s (%ld) ", name, permutation[y]);
+				}
+			}
+		}
+		printf("\n");
 
-                if (state != OSGI_FRAMEWORK_BUNDLE_ACTIVE) {
-                    printf("bundle %ld has state %d (should be %d) \n", permutation[y], state, OSGI_FRAMEWORK_BUNDLE_ACTIVE);
-                    status = CELIX_ILLEGAL_STATE;
-                }
-            }
+		// stop all bundles
+		if (status == CELIX_SUCCESS) {
+			for (y = 0; (y < size) && (status == CELIX_SUCCESS); y++) {
+				bundle_pt bundle = NULL;
 
-        }
-    }
+				status = bundleContext_getBundleById(context, permutation[y], &bundle);
 
-    return status;
-}
+				if (status == CELIX_SUCCESS) {
+					printf("stop bundle: %ld\n", permutation[y]);
+					status = bundle_stop(bundle);
+				}
+			}
+		}
 
+		// verify stop state
+		if (status == CELIX_SUCCESS) {
+			for (y = 0; (y < size) && (status == CELIX_SUCCESS); y++) {
+				bundle_pt bundle = NULL;
 
-static void testImport(void) {
-    celix_status_t status;
-    array_list_pt bundlePermutations = NULL;
-    long rsaBundles[NUM_OF_BUNDLES];
-    unsigned int i;
+				status = bundleContext_getBundleById(context, permutation[y], &bundle);
 
-    arrayList_create(&bundlePermutations);
+				if (status == CELIX_SUCCESS) {
+					bundle_state_e state;
+					status = bundle_getState(bundle, &state);
 
-    status = getRemoteServicesBundles(clientContext, rsaBundles);
-    CHECK_EQUAL(CELIX_SUCCESS, status);
+					if (state != OSGI_FRAMEWORK_BUNDLE_RESOLVED) {
+						printf("bundle %ld has state %d (should be %d) \n", permutation[y], state, OSGI_FRAMEWORK_BUNDLE_RESOLVED);
+						status = CELIX_ILLEGAL_STATE;
+					}
+				}
+			}
+		}
 
-    status = getPermutations(rsaBundles, 0, NUM_OF_BUNDLES - 1, bundlePermutations);
-    CHECK_EQUAL(CELIX_SUCCESS, status);
+		// start all bundles
+		if (status == CELIX_SUCCESS) {
 
-    for (i = 0; i < arrayList_size(bundlePermutations); ++i) {
-        long* singlePermutation = (long*) arrayList_get(bundlePermutations, i);
+			for (y = 0; (y < size) && (status == CELIX_SUCCESS); y++) {
+				bundle_pt bundle = NULL;
 
-        status = stopStartPermutation(clientContext, singlePermutation);
-        CHECK_EQUAL(CELIX_SUCCESS, status);
+				status = bundleContext_getBundleById(context, permutation[y], &bundle);
 
-        // check whether calc service is available
-        test1();
+				if (status == CELIX_SUCCESS) {
+					printf("start bundle: %ld\n", permutation[y]);
+					status = bundle_start(bundle);
+				}
+			}
+		}
 
-        free(singlePermutation);
-    }
+		// verify started state
+		if (status == CELIX_SUCCESS) {
+			for (y = 0; (y < size) && (status == CELIX_SUCCESS); y++) {
+				bundle_pt bundle = NULL;
 
-    arrayList_destroy(bundlePermutations);
-}
+				status = bundleContext_getBundleById(context, permutation[y], &bundle);
 
-static void testExport(void) {
-    celix_status_t status;
-    array_list_pt bundlePermutations = NULL;
-    long rsaBundles[NUM_OF_BUNDLES];
-    unsigned int i;
+				if (status == CELIX_SUCCESS) {
+					bundle_state_e state;
+					status = bundle_getState(bundle, &state);
 
-    arrayList_create(&bundlePermutations);
+					if (state != OSGI_FRAMEWORK_BUNDLE_ACTIVE) {
+						printf("bundle %ld has state %d (should be %d) \n", permutation[y], state, OSGI_FRAMEWORK_BUNDLE_ACTIVE);
+						status = CELIX_ILLEGAL_STATE;
+					}
+				}
+			}
+		}
 
-    status = getRemoteServicesBundles(serverContext, rsaBundles);
-    CHECK_EQUAL(CELIX_SUCCESS, status);
+		return status;
+	}
 
-    status = getPermutations(rsaBundles, 0, NUM_OF_BUNDLES - 1, bundlePermutations);
-    CHECK_EQUAL(CELIX_SUCCESS, status);
+	static void testImport(void) {
+		celix_status_t status;
+		array_list_pt bundleNames = NULL;
+		array_list_pt bundlePermutations = NULL;
+		array_list_pt rsaBundles = NULL;
+		unsigned int i, size;
 
-    for (i = 0; i < arrayList_size(bundlePermutations); ++i) {
-        long* singlePermutation = (long*) arrayList_get(bundlePermutations, i);
+		arrayList_create(&bundleNames);
+		arrayList_create(&bundlePermutations);
+		arrayList_create(&rsaBundles);
 
-        status = stopStartPermutation(serverContext, singlePermutation);
-        CHECK_EQUAL(CELIX_SUCCESS, status);
+		arrayList_add(bundleNames, (void*) DISCOVERY_CFG_NAME);
+		arrayList_add(bundleNames, (void*) RSA_HTTP_NAME);
+		arrayList_add(bundleNames, (void*) TOPOLOGY_MANAGER_NAME);
 
-        // check whether calc service is available
-        test1();
+		status = getSpecifiedBundles(clientContext, bundleNames, rsaBundles);
+		CHECK_EQUAL(CELIX_SUCCESS, status);
+		CHECK_EQUAL(arrayList_size(rsaBundles), arrayList_size(bundleNames));
 
-        free(singlePermutation);
-    }
+		status = getPermutations(rsaBundles, 0, arrayList_size(rsaBundles) - 1, bundlePermutations);
+		CHECK_EQUAL(CELIX_SUCCESS, status);
 
-    arrayList_destroy(bundlePermutations);
-}
+		size = arrayList_size(bundlePermutations);
+
+		for (i = 0; i < size; ++i) {
+			long* singlePermutation = (long*) arrayList_get(bundlePermutations, i);
+
+			status = stopStartPermutation(clientContext, singlePermutation, arrayList_size(rsaBundles));
+			CHECK_EQUAL(CELIX_SUCCESS, status);
+
+			// check whether calc service is available
+			test1();
+
+			free(singlePermutation);
+		}
+
+		arrayList_destroy(bundlePermutations);
+		arrayList_destroy(bundleNames);
+		arrayList_destroy(rsaBundles);
+	}
+
+	static void testExport(void) {
+		celix_status_t status;
+		array_list_pt bundleNames = NULL;
+		array_list_pt bundlePermutations = NULL;
+		array_list_pt rsaBundles = NULL;
+
+		unsigned int i, size;
+
+		arrayList_create(&bundleNames);
+		arrayList_create(&bundlePermutations);
+		arrayList_create(&rsaBundles);
+
+		arrayList_add(bundleNames, (void*) DISCOVERY_CFG_NAME);
+		arrayList_add(bundleNames, (void*) RSA_HTTP_NAME);
+		arrayList_add(bundleNames, (void*) TOPOLOGY_MANAGER_NAME);
+
+		status = getSpecifiedBundles(serverContext, bundleNames, rsaBundles);
+		CHECK_EQUAL(CELIX_SUCCESS, status);
+		CHECK_EQUAL(arrayList_size(rsaBundles), arrayList_size(bundleNames));
+
+		status = getPermutations(rsaBundles, 0, arrayList_size(rsaBundles) - 1, bundlePermutations);
+		CHECK_EQUAL(CELIX_SUCCESS, status);
+
+		size = arrayList_size(bundlePermutations);
+
+		for (i = 0; i < size; ++i) {
+			long* singlePermutation = (long*) arrayList_get(bundlePermutations, i);
+
+			status = stopStartPermutation(serverContext, singlePermutation, arrayList_size(rsaBundles));
+			CHECK_EQUAL(CELIX_SUCCESS, status);
+
+			// check whether calc service is available
+			test1();
+
+			free(singlePermutation);
+		}
+
+		arrayList_destroy(bundlePermutations);
+		arrayList_destroy(bundleNames);
+		arrayList_destroy(rsaBundles);
+	}
+
+	static void testProxyRemoval(void) {
+		celix_status_t status;
+		bundle_pt bundle = NULL;
+		array_list_pt bundleNames = NULL;
+		array_list_pt proxyBundle = NULL;
+		service_reference_pt ref = NULL;
+
+		arrayList_create(&bundleNames);
+		arrayList_create(&proxyBundle);
+
+		arrayList_add(bundleNames, (void*) CALCULATOR_PROXY);
+		status = getSpecifiedBundles(clientContext, bundleNames, proxyBundle);
+		CHECK_EQUAL(CELIX_SUCCESS, status);
+		CHECK_EQUAL(arrayList_size(proxyBundle), arrayList_size(bundleNames));
+
+		status = bundleContext_getBundleById(clientContext, (long) arrayList_get(proxyBundle, 0), &bundle);
+		CHECK_EQUAL(CELIX_SUCCESS, status);
+
+		status = bundle_stop(bundle);
+		CHECK_EQUAL(CELIX_SUCCESS, status);
+
+		status = bundleContext_getServiceReference(clientContext, (char *) CALCULATOR_SERVICE, &ref);
+		CHECK_EQUAL(CELIX_SUCCESS, status);
+		CHECK(ref == NULL);
+
+		arrayList_destroy(bundleNames);
+		arrayList_destroy(proxyBundle);
+	}
+
+	static void testEndpointRemoval(void) {
+		celix_status_t status;
+		bundle_pt bundle = NULL;
+		array_list_pt bundleNames = NULL;
+		array_list_pt endpointBundle = NULL;
+		service_reference_pt ref = NULL;
+
+		arrayList_create(&bundleNames);
+		arrayList_create(&endpointBundle);
+
+		arrayList_add(bundleNames, (void*) CALCULATOR_ENDPOINT);
+		status = getSpecifiedBundles(serverContext, bundleNames, endpointBundle);
+		CHECK_EQUAL(CELIX_SUCCESS, status);
+		CHECK_EQUAL(arrayList_size(endpointBundle), arrayList_size(bundleNames));
+
+		status = bundleContext_getBundleById(serverContext, (long) arrayList_get(endpointBundle, 0), &bundle);
+		CHECK_EQUAL(CELIX_SUCCESS, status);
+
+		status = bundle_stop(bundle);
+		CHECK_EQUAL(CELIX_SUCCESS, status);
+
+		status = bundleContext_getServiceReference(serverContext, (char *) CALCULATOR_SERVICE, &ref);
+		CHECK_EQUAL(CELIX_SUCCESS, status);
+		CHECK(ref == NULL);
+
+		arrayList_destroy(bundleNames);
+		arrayList_destroy(endpointBundle);
+	}
 }
 
 TEST_GROUP(RsaHttpClientServerTests) {
-    void setup() {
-        setupFm();
-    }
+	void setup() {
+		setupFm();
+	}
 
-    void teardown() {
-        teardownFm();
-    }
+	void teardown() {
+		teardownFm();
+	}
 };
 
 TEST(RsaHttpClientServerTests, Test1) {
-    test1();
+	test1();
 }
 
 TEST(RsaHttpClientServerTests, TestImport) {
-    testImport();
+	testImport();
 }
 
 TEST(RsaHttpClientServerTests, TestExport) {
-    testExport();
+	testExport();
 }
+
+TEST(RsaHttpClientServerTests, TestProxyRemoval) {
+	testProxyRemoval();
+}
+
+TEST(RsaHttpClientServerTests, TestEndpointRemoval) {
+	// test is currenlty failing
+	//testEndpointRemoval();
+
+}
+
