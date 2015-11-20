@@ -17,29 +17,29 @@
  *under the License.
  */
 /*
- * service_registration.h
+ * tm_scope.h
  *
- *  \date       Aug 6, 2010
+ *  \date       Oct 29, 2015
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
-#ifndef SERVICE_REGISTRATION_H_
-#define SERVICE_REGISTRATION_H_
+#ifndef TM_SCOPE_H_
+#define TM_SCOPE_H_
 
-#include "celixbool.h"
+#include "celix_errno.h"
 
-typedef struct serviceRegistration * service_registration_pt;
-
-#include "service_registry.h"
-#include "array_list.h"
-#include "bundle.h"
-#include "framework_exports.h"
+#define TOPOLOGYMANAGER_SCOPE_SERVICE "tm_scope"
 
 
-FRAMEWORK_EXPORT celix_status_t serviceRegistration_unregister(service_registration_pt registration);
-FRAMEWORK_EXPORT celix_status_t serviceRegistration_getProperties(service_registration_pt registration, properties_pt *properties);
-FRAMEWORK_EXPORT celix_status_t serviceRegistration_setProperties(service_registration_pt registration, properties_pt properties);
-FRAMEWORK_EXPORT celix_status_t serviceRegistration_getServiceName(service_registration_pt registration, char **serviceName);
+struct tm_scope_service {
+    void *handle;	// scope_pt
+    celix_status_t (*addExportScope)(void *handle, char *filter, properties_pt props);
+    celix_status_t (*removeExportScope)(void *handle, char *filter);
+    celix_status_t (*addImportScope)(void *handle, char *filter);
+    celix_status_t (*removeImportScope)(void *handle, char *filter);
+};
 
-#endif /* SERVICE_REGISTRATION_H_ */
+typedef struct tm_scope_service *tm_scope_service_pt;
+
+#endif /* TM_SCOPE_H_ */

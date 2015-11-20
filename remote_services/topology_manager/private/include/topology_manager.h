@@ -31,12 +31,13 @@
 #include "service_reference.h"
 #include "bundle_context.h"
 #include "log_helper.h"
+#include "scope.h"
 
 #define OSGI_RSA_REMOTE_SERVICE_ADMIN "remote_service_admin"
 
 typedef struct topology_manager *topology_manager_pt;
 
-celix_status_t topologyManager_create(bundle_context_pt context, log_helper_pt logHelper, topology_manager_pt *manager);
+celix_status_t topologyManager_create(bundle_context_pt context, log_helper_pt logHelper, topology_manager_pt *manager, void **scope);
 celix_status_t topologyManager_destroy(topology_manager_pt manager);
 celix_status_t topologyManager_closeImports(topology_manager_pt manager);
 

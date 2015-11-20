@@ -552,17 +552,24 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
     return status;
 }
 
-celix_status_t remoteServiceAdmin_removeExportedService(export_registration_pt registration) {
+celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_pt admin, export_registration_pt registration) {
     celix_status_t status = CELIX_SUCCESS;
-    remote_service_admin_pt admin = registration->rsa;
     ipc_segment_pt ipc = NULL;
 
-    celixThreadMutex_lock(&admin->exportedServicesLock);
+    export_reference_pt ref = NULL;
+    status = exportRegistration_getExportReference(registration, &ref);
 
-    array_list_pt registrations = hashMap_remove(admin->exportedServices, registration->reference);
+    if (status == CELIX_SUCCESS) {
+        bool *pollThreadRunning = NULL;
 
-    if ((registrations) != NULL) {
-    	bool *pollThreadRunning = NULL;
+        service_reference_pt servRef;
+        celixThreadMutex_lock(&admin->exportedServicesLock);
+        exportReference_getExportedService(ref, &servRef);
+
+        hashMap_remove(admin->exportedServices, servRef);
+
+        exportRegistration_close(registration);
+
         if ((pollThreadRunning = hashMap_get(admin->pollThreadRunning, registration->endpointDescription)) != NULL) {
             *pollThreadRunning = false;
 
@@ -575,7 +582,7 @@ celix_status_t remoteServiceAdmin_removeExportedService(export_registration_pt r
                     status = celixThread_join(*pollThread, NULL);
 
                     if (status == CELIX_SUCCESS) {
-                        semctl(ipc->semId, 1 /*ignored*/, IPC_RMID);
+                        semctl(ipc->semId, 1 , IPC_RMID);
                         shmctl(ipc->shmId, IPC_RMID, 0);
 
                         remoteServiceAdmin_removeSharedIdentityFile(admin, registration->endpointDescription->frameworkUUID, registration->endpointDescription->service);
@@ -591,10 +598,9 @@ celix_status_t remoteServiceAdmin_removeExportedService(export_registration_pt r
                 }
             }
         }
-
-        arrayList_destroy(registrations);
-        registrations = NULL;
+        exportRegistration_destroy(&registration);
     }
+
     celixThreadMutex_unlock(&admin->exportedServicesLock);
 
     return status;

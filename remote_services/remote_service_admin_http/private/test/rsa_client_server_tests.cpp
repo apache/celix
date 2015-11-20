@@ -476,6 +476,5 @@ TEST(RsaHttpClientServerTests, TestProxyRemoval) {
 TEST(RsaHttpClientServerTests, TestEndpointRemoval) {
 	// test is currenlty failing
 	//testEndpointRemoval();
-
 }
 

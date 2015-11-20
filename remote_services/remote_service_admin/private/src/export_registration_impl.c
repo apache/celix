@@ -171,8 +171,6 @@ celix_status_t exportRegistration_endpointRemoved(void * handle, service_referen
 
 	remote_endpoint_service_pt endpoint = service;
 	if (registration->endpoint != NULL) {
-		remoteServiceAdmin_removeExportedService(registration);
-//		registration->endpoint = NULL;
 		endpoint->setService(endpoint->endpoint, NULL);
 	}
 
@@ -208,9 +206,7 @@ celix_status_t exportRegistration_close(export_registration_pt registration) {
 	exportRegistration_stopTracking(registration);
 
 	bundle_uninstall(registration->bundle);
-	remoteServiceAdmin_removeExportedService(registration);
 
-	exportRegistration_destroy(&registration);
 
 	return status;
 }
@@ -253,8 +249,9 @@ celix_status_t exportReference_getExportedEndpoint(export_reference_pt reference
 	return status;
 }
 
-celix_status_t exportReference_getExportedService(export_reference_pt reference) {
+celix_status_t exportReference_getExportedService(export_reference_pt reference, service_reference_pt *service) {
 	celix_status_t status = CELIX_SUCCESS;
+	*service = reference->reference;
 	return status;
 }
 

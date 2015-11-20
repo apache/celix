@@ -1,0 +1,15 @@
+{
+"exportServices": [
+{
+"filter": "(objectClass=org.apache.celix.calc.*)",
+"key2": "inaetics"
+},
+{
+"filter": "(objectClass=org.inaetics.demonstrator.*)",
+"key1": "value1",
+"key2": "value2"
+}
+],
+"importServices": [
+]
+}

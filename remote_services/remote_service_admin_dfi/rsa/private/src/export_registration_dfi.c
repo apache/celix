@@ -200,11 +200,13 @@ static void exportRegistration_removeServ(export_registration_pt reg, service_re
     celixThreadMutex_unlock(&reg->mutex);
 }
 
+
 celix_status_t exportRegistration_close(export_registration_pt reg) {
     celix_status_t status = CELIX_SUCCESS;
     exportRegistration_stop(reg);
     return status;
 }
+
 
 celix_status_t exportRegistration_getException(export_registration_pt registration) {
     celix_status_t status = CELIX_SUCCESS;
@@ -235,8 +237,9 @@ celix_status_t exportReference_getExportedEndpoint(export_reference_pt reference
     return status;
 }
 
-celix_status_t exportReference_getExportedService(export_reference_pt reference) {
+celix_status_t exportReference_getExportedService(export_reference_pt reference, service_reference_pt *ref) {
     celix_status_t status = CELIX_SUCCESS;
+    *ref = reference->reference;
     return status;
 }
 

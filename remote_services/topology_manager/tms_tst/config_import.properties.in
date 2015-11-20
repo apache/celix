@@ -1,0 +1,3 @@
+cosgi.auto.start.1=@rsa_bundle_file@ @topology_manager_bundle_file@ @calc_bundle_file@ @test_bundle_file@
+LOGHELPER_ENABLE_STDOUT_FALLBACK=true
+org.osgi.framework.storage.clean=onFirstInit

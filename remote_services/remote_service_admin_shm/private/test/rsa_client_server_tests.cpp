@@ -453,6 +453,7 @@ extern "C" {
 	}
 };
 
+
 TEST(RsaShmClientServerTests, Test1) {
 	test1();
 }
@@ -465,7 +466,7 @@ TEST(RsaShmClientServerTests, TestExport) {
 	// test is currenlty failing
 	//testExport();
 }
-
+/*
 TEST(RsaShmClientServerTests, TestProxyRemoval) {
 	// test is currenlty failing
 	// testProxyRemoval();
@@ -475,4 +476,4 @@ TEST(RsaShmClientServerTests, TestEndpointRemoval) {
 	// test is currenlty failing
 	//testEndpointRemoval();
 }
-
+*/

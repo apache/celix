@@ -108,7 +108,7 @@ static const char *DEFAULT_IP = "127.0.0.1";
 static const unsigned int DEFAULT_TIMEOUT = 0;
 
 static int remoteServiceAdmin_callback(struct mg_connection *conn);
-static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, service_reference_pt reference, char *interface, endpoint_description_pt *description);
+static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, service_reference_pt reference, properties_pt props, char *interface, endpoint_description_pt *description);
 static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description_pt endpointDescription, char *request, char **reply, int* replyStatus);
 static celix_status_t remoteServiceAdmin_getIpAdress(char* interface, char** ip);
 static size_t remoteServiceAdmin_readCallback(void *ptr, size_t size, size_t nmemb, void *userp);
@@ -213,6 +213,14 @@ celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_servi
         } while(((*admin)->ctx == NULL) && (port_counter < MAX_NUMBER_OF_RESTARTS));
 
     }
+
+    if (status != CELIX_SUCCESS)
+    printf("111 status is not success\n ");
+    else {
+        printf("111 status is success\n ");
+
+    }
+
     return status;
 }
 
@@ -418,8 +426,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
         endpoint_description_pt endpoint = NULL;
         export_registration_pt registration = NULL;
 
-        remoteServiceAdmin_createEndpointDescription(admin, reference, interface, &endpoint);
-        printf("RSA: Creating export registration with endpoint pointer %p\n", endpoint);
+        remoteServiceAdmin_createEndpointDescription(admin, reference, properties, interface, &endpoint);
         //TOOD precheck if descriptor exists
         status = exportRegistration_create(admin->loghelper, reference, endpoint, admin->context, &registration);
         if (status == CELIX_SUCCESS) {
@@ -442,25 +449,36 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 
 celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_pt admin, export_registration_pt registration) {
     celix_status_t status = CELIX_SUCCESS;
+
     logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA_DFI: Removing exported service");
 
     export_reference_pt  ref = NULL;
     status = exportRegistration_getExportReference(registration, &ref);
 
     if (status == CELIX_SUCCESS) {
+    	service_reference_pt servRef;
         celixThreadMutex_lock(&admin->exportedServicesLock);
+    	exportReference_getExportedService(ref, &servRef);
+
+    	hashMap_remove(admin->exportedServices, servRef);
+
         exportRegistration_close(registration);
-        //exportRegistration_destroy(registration); TODO test
-        hashMap_remove(admin->exportedServices, ref);
+        exportRegistration_destroy(registration);
+
         celixThreadMutex_unlock(&admin->exportedServicesLock);
+
+        if (ref != NULL) {
+        	free(ref);
+        }
     } else {
-        RSA_LOG_ERROR(admin, "Cannot find reference for registration");
+    	logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "Cannot find reference for registration");
     }
 
     return status;
 }
 
-static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, service_reference_pt reference, char *interface, endpoint_description_pt *endpoint) {
+static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin_pt admin, service_reference_pt reference, properties_pt props, char *interface, endpoint_description_pt *endpoint) {
+
     celix_status_t status = CELIX_SUCCESS;
     properties_pt endpointProperties = properties_create();
 
@@ -477,7 +495,6 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
             && strcmp(key, (char*) OSGI_RSA_SERVICE_EXPORTED_INTERFACES) != 0
             && strcmp(key, (char*) OSGI_FRAMEWORK_OBJECTCLASS) != 0) {
             properties_set(endpointProperties, key, value);
-            printf("Added property '%s' with value '%s'\n", key, value);
         }
     }
 
@@ -507,7 +524,14 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
     properties_set(endpointProperties, (char*) OSGI_RSA_SERVICE_IMPORTED_CONFIGS, (char*) CONFIGURATION_TYPE);
     properties_set(endpointProperties, (char*) ENDPOINT_URL, url);
 
-
+    if (props != NULL) {
+        hash_map_iterator_pt propIter = hashMapIterator_create(props);
+        while (hashMapIterator_hasNext(propIter)) {
+    	    hash_map_entry_pt entry = hashMapIterator_nextEntry(propIter);
+    	    properties_set(endpointProperties, (char*)hashMapEntry_getKey(entry), (char*)hashMapEntry_getValue(entry));
+        }
+        hashMapIterator_destroy(propIter);
+    }
 
     *endpoint = calloc(1, sizeof(**endpoint));
     if (!*endpoint) {

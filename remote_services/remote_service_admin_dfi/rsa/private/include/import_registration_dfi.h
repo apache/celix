@@ -28,6 +28,7 @@ typedef void (*send_func_type)(void *handle, endpoint_description_pt endpointDes
 
 celix_status_t importRegistration_create(bundle_context_pt context, endpoint_description_pt description, const char *classObject,
                                          import_registration_pt *import);
+celix_status_t importRegistration_close(import_registration_pt import);
 void importRegistration_destroy(import_registration_pt import);
 
 celix_status_t importRegistration_setSendFn(import_registration_pt reg,

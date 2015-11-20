@@ -21,6 +21,7 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/log_service/public/include
     ${PROJECT_SOURCE_DIR}/remote_services/utils/private/include
     ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include
+    ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/include
     ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin_http/private/include
     ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin_dfi/dynamic_function_interface
     ${PROJECT_SOURCE_DIR}/remote_services/examples/calculator_service/public/include

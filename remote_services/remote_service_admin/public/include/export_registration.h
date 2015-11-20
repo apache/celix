@@ -17,6 +17,6 @@ celix_status_t exportRegistration_getException(export_registration_pt registrati
 celix_status_t exportRegistration_getExportReference(export_registration_pt registration, export_reference_pt *reference);
 
 celix_status_t exportReference_getExportedEndpoint(export_reference_pt reference, endpoint_description_pt *endpoint);
-celix_status_t exportReference_getExportedService(export_reference_pt reference);
+celix_status_t exportReference_getExportedService(export_reference_pt reference, service_reference_pt *service);
 
 #endif //CELIX_EXPORT_REGISTRATION_H

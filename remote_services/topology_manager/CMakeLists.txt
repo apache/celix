@@ -14,7 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-celix_subproject(RSA_TOPOLOGY_MANAGER "Option to enable building the Remote Service Admin Service SHM bundle" ON)
+celix_subproject(RSA_TOPOLOGY_MANAGER "Option to enable building the Remote Service Admin Service SHM bundle" ON DEPS REMOTE_SERVICE_ADMIN_DFI)
 if (RSA_TOPOLOGY_MANAGER)
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include")
@@ -22,21 +22,32 @@ if (RSA_TOPOLOGY_MANAGER)
     include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
+    include_directories("${PROJECT_SOURCE_DIR}/remote_services/topology_manager/public/include")
 
     SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_rs_topology_manager")
-    SET(BUNDLE_VERSION "0.0.1")
+    SET(BUNDLE_VERSION "0.0.2")
     SET_HEADERS("Bundle-Name: Apache Celix RS Topology Manager")
 
     bundle(topology_manager SOURCES
         private/src/topology_manager
+        private/src/scope
         private/src/activator
 
         ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
 
         private/include/topology_manager.h
+        public/include/tm_scope.h
     )
 
     install_bundle(topology_manager)
 
-    target_link_libraries(topology_manager celix_framework)
+    if (ENABLE_TESTING)
+        find_package(CppUTest REQUIRED)
+
+        include_directories(${CPPUTEST_INCLUDE_DIR})
+        include_directories(${CPPUTEST_EXT_INCLUDE_DIR})
+        add_subdirectory(tms_tst)
+   endif (ENABLE_TESTING)
+
+   target_link_libraries(topology_manager celix_framework)
 endif (RSA_TOPOLOGY_MANAGER)

@@ -459,19 +459,32 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 	return status;
 }
 
-celix_status_t remoteServiceAdmin_removeExportedService(export_registration_pt registration) {
+celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_pt admin, export_registration_pt registration) {
     celix_status_t status = CELIX_SUCCESS;
-    remote_service_admin_pt admin = registration->rsa;
 
-    celixThreadMutex_lock(&admin->exportedServicesLock);
+    logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA_HTTP: Removing exported service");
 
-    array_list_pt registrations = (array_list_pt) hashMap_remove(admin->exportedServices, registration->reference);
+    export_reference_pt ref = NULL;
+    status = exportRegistration_getExportReference(registration, &ref);
 
-    if (registrations != NULL) {
-    	arrayList_destroy(registrations);
+    if (status == CELIX_SUCCESS) {
+    	service_reference_pt servRef;
+        celixThreadMutex_lock(&admin->exportedServicesLock);
+    	exportReference_getExportedService(ref, &servRef);
+
+    	hashMap_remove(admin->exportedServices, servRef);
+
+        exportRegistration_close(registration);
+        exportRegistration_destroy(&registration);
+
+        celixThreadMutex_unlock(&admin->exportedServicesLock);
+
+        if (ref != NULL) {
+        	free(ref);
+        }
+    } else {
+    	 logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "Cannot find reference for registration");
     }
-
-    celixThreadMutex_unlock(&admin->exportedServicesLock);
 
     return status;
 }

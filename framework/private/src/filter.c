@@ -572,3 +572,19 @@ celix_status_t filter_getString(filter_pt filter, char **filterStr) {
 	}
 	return CELIX_SUCCESS;
 }
+
+celix_status_t filter_match_filter(filter_pt src, filter_pt dest, bool *result) {
+	char *srcStr = NULL;
+	char *destStr = NULL;
+	*result = false;
+
+	if (src) srcStr = src->filterStr;
+	if (dest) destStr = dest->filterStr;
+
+	if ((srcStr != NULL) && (destStr != NULL)) {
+		// TODO: should be done smarted, e.g. src="&(a=1)(b=2)" and dest="&(b=2)(a=1)" should result in true
+		*result = (strcmp(srcStr, destStr) == 0);
+	}
+
+	return CELIX_SUCCESS;
+}
