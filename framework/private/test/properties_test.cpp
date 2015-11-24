@@ -86,6 +86,24 @@ TEST(properties, store) {
 	properties_destroy(properties);
 }
 
+TEST(properties, copy) {
+	properties_pt copy;
+	char propertiesFile[] = "resources-test/properties.txt";
+	properties = properties_load(propertiesFile);
+	LONGS_EQUAL(3, hashMap_size(properties));
+
+	properties_copy(properties, &copy);
+
+	char keyA[] = "a";
+	char *valueA = properties_get(copy, keyA);
+	STRCMP_EQUAL("b", valueA);
+	char keyB[] = "b";
+	STRCMP_EQUAL("c", properties_get(copy, keyB));
+
+	properties_destroy(properties);
+	properties_destroy(copy);
+}
+
 TEST(properties, getSet) {
 	properties = properties_create();
 	char keyA[] = "x";

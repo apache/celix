@@ -33,6 +33,8 @@
 #include "CppUTestExt/MockSupport.h"
 
 extern "C" {
+#include "capability_private.h"
+#include "requirement_private.h"
 #include "constants.h"
 #include "manifest_parser.h"
 #include "attribute.h"
@@ -67,6 +69,8 @@ TEST_GROUP(manifest_parser) {
 	}
 
 	void teardown() {
+		mock().checkExpectations();
+		mock().clear();
 	}
 };
 
@@ -95,101 +99,55 @@ TEST(manifest_parser, create){
 			.andReturnValue(bundle_name);
 
 	//create capabilities
-	char * export_header = my_strdup("export_service_name;version=\"[4.5,6)\",export_service_name2;version=\"[6.5,4)\"");
+	char * export_header = my_strdup("export_service_name;version=\"4.5.6\",export_service_name2;version=\"6.5.4\"");
 	char * cap_name	= my_strdup("export_service_name");
-	char * cap_name2	= my_strdup("export_service_name2");
-	capability_pt cap = (capability_pt) 0x04;
-	capability_pt cap2 = (capability_pt) 0x05;
-	attribute_pt attribute_cap_name = (attribute_pt) 0x06;
-	attribute_pt attribute_cap_version = (attribute_pt) 0x07;
-	attribute_pt attribute_cap_name2 = (attribute_pt) 0x08;
-	attribute_pt attribute_cap_version2 = (attribute_pt) 0x09;
+	char * cap_name2 = my_strdup("export_service_name2");
+	char * cap_version_str = my_strdup("4.5.6");
+	char * cap_version_str2 = my_strdup("6.5.4");
+	version_pt cap_version = (version_pt) 0x0A;
+	version_pt cap_version2 = (version_pt) 0x0B;
 
 	mock().expectOneCall("manifest_getValue")
 			.withParameter("name", OSGI_FRAMEWORK_EXPORT_LIBRARY)
 			.andReturnValue(export_header);
 
-	//make cap 1
-	mock().expectOneCall("attribute_create")
-			.withParameter("key", service_name_key)
-			.withParameter("value", cap_name)
-			.withOutputParameterReturning("attribute", &attribute_cap_name, sizeof(attribute_cap_name));
+	mock().expectOneCall("version_createVersionFromString")
+					.withParameter("versionStr", cap_version_str)
+					.withOutputParameterReturning("version", &cap_version, sizeof(cap_version));
 
-	mock().expectOneCall("attribute_create")
-			.withParameter("key", service_version_key)
-			.withParameter("value", "[4.5,6)")
-			.withOutputParameterReturning("attribute", &attribute_cap_version, sizeof(attribute_cap_version));
-
-	mock().expectOneCall("attribute_getKey")
-			.withParameter("attribute", attribute_cap_name)
-			.withOutputParameterReturning("key", &service_name_key, sizeof(service_name_key));
-
-	//make cap2
-	mock().expectOneCall("attribute_create")
-			.withParameter("key", service_name_key)
-			.withParameter("value", cap_name2)
-			.withOutputParameterReturning("attribute", &attribute_cap_name2, sizeof(attribute_cap_name2));
-
-	mock().expectOneCall("attribute_create")
-			.withParameter("key", service_version_key)
-			.withParameter("value", "[6.5,4)")
-			.withOutputParameterReturning("attribute", &attribute_cap_version2, sizeof(attribute_cap_version2));
-
-	mock().expectOneCall("attribute_getKey")
-			.withParameter("attribute", attribute_cap_name2)
-			.withOutputParameterReturning("key", &service_name_key, sizeof(service_name_key));
+	mock().expectOneCall("version_createVersionFromString")
+				.withParameter("versionStr", cap_version_str2)
+				.withOutputParameterReturning("version", &cap_version2, sizeof(cap_version2));
 
 	//create requirements
 	char * import_header = my_strdup("import_service_name;version=\"[7.8,9)\",import_service_name2;version=\"[9.8,7)\"");
 	char * req_name	= my_strdup("import_service_name");
 	char * req_name2 = my_strdup("import_service_name2");
-	requirement_pt req = (requirement_pt) 0x0A;
-	requirement_pt req2 = (requirement_pt) 0x0B;
-	attribute_pt attribute_req_name = (attribute_pt) 0x0C;
-	attribute_pt attribute_req_name2 = (attribute_pt) 0x0D;
-	attribute_pt attribute_req_version = (attribute_pt) 0x0E;
-	attribute_pt attribute_req_version2 = (attribute_pt) 0x0F;
+	char * req_version_str = my_strdup("[7.8,9)");
+	char * req_version_str2 = my_strdup("[9.8,7)");
+	version_range_pt req_version_range = (version_range_pt) 0x12;
+	version_range_pt req_version_range2 = (version_range_pt) 0x13;
 
 	mock().expectOneCall("manifest_getValue")
 			.withParameter("name", OSGI_FRAMEWORK_IMPORT_LIBRARY)
 			.andReturnValue(import_header);
 
-	//make req 1
-	mock().expectOneCall("attribute_create")
-			.withParameter("key", service_name_key)
-			.withParameter("value", req_name)
-			.withOutputParameterReturning("attribute", &attribute_req_name, sizeof(attribute_req_name));
+	mock().expectOneCall("versionRange_parse")
+			.withParameter("rangeStr", req_version_str)
+			.withOutputParameterReturning("range", &req_version_range, sizeof(req_version_range));
 
-	mock().expectOneCall("attribute_create")
-			.withParameter("key", service_version_key)
-			.withParameter("value", "[7.8,9)")
-			.withOutputParameterReturning("attribute", &attribute_req_version, sizeof(attribute_req_version));
-
-	mock().expectOneCall("attribute_getKey")
-			.withParameter("attribute", attribute_req_name)
-			.withOutputParameterReturning("key", &service_name_key, sizeof(service_name_key));
-
-	//make req 2
-	mock().expectOneCall("attribute_create")
-			.withParameter("key", service_name_key)
-			.withParameter("value", req_name2)
-			.withOutputParameterReturning("attribute", &attribute_req_name2, sizeof(attribute_req_name2));
-
-	mock().expectOneCall("attribute_create")
-			.withParameter("key", service_version_key)
-			.withParameter("value", "[9.8,7)")
-			.withOutputParameterReturning("attribute", &attribute_req_version2, sizeof(attribute_req_version2));
-
-	mock().expectOneCall("attribute_getKey")
-			.withParameter("attribute", attribute_req_name2)
-			.withOutputParameterReturning("key", &service_name_key, sizeof(service_name_key));
+	mock().expectOneCall("versionRange_parse")
+			.withParameter("rangeStr", req_version_str2)
+			.withOutputParameterReturning("range", &req_version_range2, sizeof(req_version_range2));
 
 
 	//actual call to create
 	manifestParser_create(owner, manifest, &parser);
 
 	//test getters
-	version_pt version_clone = (version_pt) 0x06;
+	capability_pt get_cap;
+	requirement_pt get_req;
+	version_pt version_clone = (version_pt) 0x14;
 	version_pt get_version;
 	linked_list_pt get_caps;
 	linked_list_pt get_reqs;
@@ -206,15 +164,40 @@ TEST(manifest_parser, create){
 
 	status = manifestParser_getCapabilities(parser, &get_caps);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
-	CHECK(linkedList_contains(get_caps, cap));
-	CHECK(linkedList_contains(get_caps, cap2));
 	LONGS_EQUAL(2, linkedList_size(get_caps));
+	//check for both capabilities, in no specific order
+	get_cap = (capability_pt)linkedList_get(get_caps, 0);
+	if (strcmp(get_cap->serviceName, cap_name) == 0){
+		POINTERS_EQUAL(cap_version, get_cap->version);
+		get_cap = (capability_pt)linkedList_get(get_caps, 1);
+		STRCMP_EQUAL(cap_name2, get_cap->serviceName);
+		POINTERS_EQUAL(cap_version2, get_cap->version);
+	} else {
+		STRCMP_EQUAL(cap_name2, get_cap->serviceName);
+		POINTERS_EQUAL(cap_version2, get_cap->version);
+		get_cap = (capability_pt)linkedList_get(get_caps, 1);
+		STRCMP_EQUAL(cap_name, get_cap->serviceName);
+		POINTERS_EQUAL(cap_version, get_cap->serviceName);
+	}
 
 	status = manifestParser_getRequirements(parser, &get_reqs);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
-	CHECK(linkedList_contains(get_reqs, req));
-	CHECK(linkedList_contains(get_reqs, req2));
 	LONGS_EQUAL(2, linkedList_size(get_reqs));
+	//check for both requirements, in no specific order
+	get_req = (requirement_pt)linkedList_get(get_reqs, 0);
+	if (strcmp(get_req->targetName, req_name) == 0){
+		POINTERS_EQUAL(req_version_range, get_req->versionRange);
+		get_req = (requirement_pt)linkedList_get(get_reqs, 1);
+		STRCMP_EQUAL(req_name2, get_req->targetName);
+		POINTERS_EQUAL(req_version_range2, get_req->versionRange);
+	} else {
+		STRCMP_EQUAL(req_name2, get_req->targetName);
+		POINTERS_EQUAL(req_version_range2, get_req->versionRange);
+		get_req = (requirement_pt)linkedList_get(get_reqs, 1);
+		STRCMP_EQUAL(req_name, get_req->targetName);
+		POINTERS_EQUAL(req_version_range, get_req->versionRange);
+	}
+
 
 	status = manifestParser_getSymbolicName(parser, &get_bundle_name);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
@@ -227,6 +210,18 @@ TEST(manifest_parser, create){
 
 	manifestParser_destroy(parser);
 
+	mock().expectOneCall("version_destroy")
+			.withParameter("version", cap_version);
+
+	mock().expectOneCall("version_destroy")
+			.withParameter("version", cap_version2);
+
+	mock().expectOneCall("versionRange_destroy")
+			.withParameter("range", req_version_range);
+
+	mock().expectOneCall("versionRange_destroy")
+				.withParameter("range", req_version_range2);
+
 	capability_destroy((capability_pt) linkedList_get(get_caps, 0));
 	capability_destroy((capability_pt) linkedList_get(get_caps, 1));
 
@@ -234,7 +229,6 @@ TEST(manifest_parser, create){
 	requirement_destroy((requirement_pt) linkedList_get(get_reqs, 1));
 
 	linkedList_destroy(get_caps);
-	linkedList_clear(get_reqs);
 	linkedList_destroy(get_reqs);
 
 	free(service_name_key);
@@ -246,14 +240,15 @@ TEST(manifest_parser, create){
 	free(export_header);
 	free(cap_name);
 	free(cap_name2);
+	free(cap_version_str);
+	free(cap_version_str2);
 
 	free(import_header);
 	free(req_name);
 	free(req_name2);
+	free(req_version_str);
+	free(req_version_str2);
 
 	free(get_bundle_name);
-
-	mock().checkExpectations();
-	mock().clear();
 }
 

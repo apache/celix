@@ -38,23 +38,22 @@ celix_status_t capability_create(module_pt module, hash_map_pt directives, hash_
 		(*capability)->module = module;
 		(*capability)->attributes = attributes;
 		(*capability)->directives = directives;
-
 		(*capability)->version = NULL;
-		status = version_createEmptyVersion(&(*capability)->version);
+
+		attribute_pt versionAttribute = NULL;
+		attribute_pt serviceAttribute = (attribute_pt) hashMap_get(attributes, "service");
+		status = attribute_getValue(serviceAttribute, &(*capability)->serviceName);
 		if (status == CELIX_SUCCESS) {
-			attribute_pt versionAttribute = NULL;
-			attribute_pt serviceAttribute = (attribute_pt) hashMap_get(attributes, "service");
-			status = attribute_getValue(serviceAttribute, &(*capability)->serviceName);
-			if (status == CELIX_SUCCESS) {
-				versionAttribute = (attribute_pt) hashMap_get(attributes, "version");
-				if (versionAttribute != NULL) {
-					char *versionStr = NULL;
-					attribute_getValue(versionAttribute, &versionStr);
-					(*capability)->version = NULL;
-					status = version_createVersionFromString(versionStr, &(*capability)->version);
-				}
+			versionAttribute = (attribute_pt) hashMap_get(attributes, "version");
+			if (versionAttribute != NULL) {
+				char *versionStr = NULL;
+				attribute_getValue(versionAttribute, &versionStr);
+				status = version_createVersionFromString(versionStr, &(*capability)->version);
+			} else {
+				status = version_createEmptyVersion(&(*capability)->version);
 			}
 		}
+
 	}
 
 	framework_logIfError(logger, status, NULL, "Failed to create capability");

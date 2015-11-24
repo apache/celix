@@ -56,18 +56,24 @@ TEST_GROUP(requirement) {
 };
 
 TEST(requirement, create) {
-	hash_map_pt directives = hashMap_create(NULL, NULL, NULL, NULL);
-	hash_map_pt attributes = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+	requirement_pt requirement = NULL;
+	hash_map_pt directives;
+	hash_map_pt attributes;
 
 	attribute_pt serviceAttribute = (attribute_pt) 0x01;
-	hashMap_put(attributes, (void*) "service", serviceAttribute);
 	attribute_pt versionAttribute = (attribute_pt) 0x02;
-	hashMap_put(attributes, (void*) "version", versionAttribute);
 
 	version_range_pt infiniteRange = (version_range_pt) 0x10;
 	version_range_pt parsedRange = (version_range_pt) 0x11;
 
 	char *value1 = (char *) "target";
+	char *value2 = (char *) "1.0.0";
+
+	//create with infinite version range
+	directives = hashMap_create(NULL, NULL, NULL, NULL);
+	attributes = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+	hashMap_put(attributes, (void*) "service", serviceAttribute);
+
 	mock().expectOneCall("attribute_getValue")
         .withParameter("attribute", serviceAttribute)
         .withOutputParameterReturning("value", &value1, sizeof(value1))
@@ -75,7 +81,29 @@ TEST(requirement, create) {
 	mock().expectOneCall("versionRange_createInfiniteVersionRange")
 	    .withOutputParameterReturning("range", &infiniteRange, sizeof(infiniteRange))
         .andReturnValue(CELIX_SUCCESS);
-	char *value2 = (char *) "1.0.0";
+
+	requirement_create(directives, attributes, &requirement);
+
+	//clean up
+	mock().expectOneCall("attribute_destroy")
+			.withParameter("attribute", serviceAttribute);
+
+	mock().expectOneCall("versionRange_destroy")
+			.withParameter("range",	infiniteRange);
+
+	requirement_destroy(requirement);
+	requirement = NULL;
+
+	//create with version range
+	directives = hashMap_create(NULL, NULL, NULL, NULL);
+	attributes = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+	hashMap_put(attributes, (void*) "service", serviceAttribute);
+	hashMap_put(attributes, (void*) "version", versionAttribute);
+
+	mock().expectOneCall("attribute_getValue")
+        .withParameter("attribute", serviceAttribute)
+        .withOutputParameterReturning("value", &value1, sizeof(value1))
+        .andReturnValue(CELIX_SUCCESS);
 	mock().expectOneCall("attribute_getValue")
         .withParameter("attribute", versionAttribute)
         .withOutputParameterReturning("value", &value2, sizeof(value2))
@@ -85,9 +113,10 @@ TEST(requirement, create) {
         .withOutputParameterReturning("range", &parsedRange, sizeof(parsedRange))
         .andReturnValue(CELIX_SUCCESS);
 
-	requirement_pt requirement = NULL;
+
 	requirement_create(directives, attributes, &requirement);
 
+	//clean up
 	mock().expectOneCall("attribute_destroy")
 			.withParameter("attribute", versionAttribute);
 

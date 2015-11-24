@@ -64,9 +64,10 @@ celix_status_t manifest_destroy(manifest_pt manifest) {
 }
 
 celix_status_t manifest_createFromFile(char *filename, manifest_pt *manifest) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	status = manifest_create(manifest);
+
 	if (status == CELIX_SUCCESS) {
 		manifest_read(*manifest, filename);
 	}
@@ -95,7 +96,6 @@ celix_status_t manifest_read(manifest_pt manifest, char *filename) {
 	FILE *file = fopen ( filename, "r" );
 	if (file != NULL) {
 		char lbuf[512];
-		int len;
 		char name[512];
 		bool skipEmptyLines = true;
 		char lastline[512];
@@ -103,13 +103,14 @@ celix_status_t manifest_read(manifest_pt manifest, char *filename) {
 
 		manifest_readAttributes(manifest, manifest->mainAttributes, file);
 		
-		while (fgets(lbuf, sizeof(lbuf), file) != NULL ) {
+		while (status==CELIX_SUCCESS && fgets(lbuf, sizeof(lbuf), file) != NULL) {
 			properties_pt attributes;
+			int len = strlen(lbuf);
 
-			len = strlen(lbuf);
 			if (lbuf[--len] != '\n') {
+				status = CELIX_FILE_IO_EXCEPTION;
 				framework_logIfError(logger, status, NULL, "Manifest '%s' line too long", filename);
-				return CELIX_FILE_IO_EXCEPTION;
+				return status;
 			}
 			if (len > 0 && lbuf[len - 1] == '\r') {
 				--len;
@@ -128,8 +129,9 @@ celix_status_t manifest_read(manifest_pt manifest, char *filename) {
 					strncpy(name, lbuf+6, len - 6);
 					name[len - 6] = '\0';
 				} else {
-					printf("MANIFEST: Invalid manifest format\n");
-					return CELIX_FILE_IO_EXCEPTION;
+					status = CELIX_FILE_IO_EXCEPTION;
+					framework_logIfError(logger, status, NULL, "Manifest '%s' invalid format", filename);
+					return status;
 				}
 
 				if (fpeek(file) == ' ') {
@@ -200,12 +202,11 @@ celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt prope
 	char lastLine[512];
 	char lbuf[512];
 
-	int len;
-	while (fgets(lbuf, sizeof(lbuf), file ) != NULL ) {
 
+	while (fgets(lbuf, sizeof(lbuf), file ) != NULL ) {
 		bool lineContinued = false;
-		int i = 0;
-		len = strlen(lbuf);
+		int len = strlen(lbuf);
+
 		if (lbuf[--len] != '\n') {
 			printf("MANIFEST: Line too long\n");
 			return CELIX_FILE_IO_EXCEPTION;
@@ -240,7 +241,8 @@ celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt prope
 			value[0] = '\0';
 			strcpy(value, buf);
 		} else {
-			while (lbuf[i++] != ':') {
+	        int i = 0;
+			while (lbuf[++i] != ':') {
 				if (i >= len) {
 					printf("MANIFEST: Invalid header\n");
 					return CELIX_FILE_IO_EXCEPTION;

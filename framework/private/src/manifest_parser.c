@@ -174,7 +174,6 @@ static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseStri
     linked_list_pt pieces;
 
     clause = NULL;
-    pieces = NULL;
     pieces = manifestParser_parseDelimitedString(clauseString, ";");
 
     if (linkedList_create(&paths) == CELIX_SUCCESS) {
@@ -182,7 +181,6 @@ static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseStri
         int pieceIdx;
         hash_map_pt dirsMap = NULL;
         hash_map_pt attrsMap = NULL;
-        char * sepPtr;
         char * sep;
 
         for (pieceIdx = 0; pieceIdx < linkedList_size(pieces); pieceIdx++) {
@@ -193,7 +191,6 @@ static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseStri
                 linkedList_addElement(paths, strdup(piece));
                 pathCount++;
             }
-            free(piece);
         }
 
         if (pathCount == 0) {
@@ -205,6 +202,7 @@ static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseStri
 
 
         for (pieceIdx = pathCount; pieceIdx < linkedList_size(pieces); pieceIdx++) {
+            char * sepPtr;
             char * key;
             char * value;
             char * DIRECTIVE_SEP = ":=";
@@ -224,10 +222,12 @@ static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseStri
             if (value[0] == '"' && value[strlen(value) -1] == '"') {
                 char * oldV = strdup(value);
                 int len = strlen(oldV) - 2;
-                value = (char *) malloc(sizeof(char) * len+1);
+                value = (char *) realloc(value, (sizeof(char) * len+1));
                 value[0] = '\0';
                 value = strncpy(value, oldV+1, strlen(oldV) - 2);
                 value[len] = '\0';
+                //check if correct
+                free(oldV);
             }
 
             if (strcmp(sep, DIRECTIVE_SEP) == 0) {
@@ -251,14 +251,18 @@ static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseStri
         }
     }
 
+    for(int listIdx = 0; listIdx < linkedList_size(pieces); listIdx++){
+    	void * element = linkedList_get(pieces, listIdx);
+    	free(element);
+    }
+
     linkedList_destroy(pieces);
+
 
 	return clause;
 }
 
 static linked_list_pt manifestParser_parseStandardHeader(char * header) {
-    int i;
-    char *clauseString;
     linked_list_pt clauseStrings = NULL;
     linked_list_pt completeList = NULL;
 
@@ -272,8 +276,9 @@ static linked_list_pt manifestParser_parseStandardHeader(char * header) {
             clauseStrings = manifestParser_parseDelimitedString(hdr, ",");
             free(hdr);
             if (clauseStrings != NULL) {
+                int i;
                 for (i = 0; i < linkedList_size(clauseStrings); i++) {
-                    clauseString = (char *) linkedList_get(clauseStrings, i);
+                    char *clauseString = (char *) linkedList_get(clauseStrings, i);
                     linkedList_addElement(completeList, manifestParser_parseStandardHeaderClause(clauseString));
                     free(clauseString);
                 }
@@ -398,7 +403,7 @@ celix_status_t manifestParser_getBundleVersion(manifest_parser_pt parser, versio
 }
 
 celix_status_t manifestParser_getCapabilities(manifest_parser_pt parser, linked_list_pt *capabilities) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	status = linkedList_clone(parser->capabilities, capabilities);
 
@@ -406,7 +411,7 @@ celix_status_t manifestParser_getCapabilities(manifest_parser_pt parser, linked_
 }
 
 celix_status_t manifestParser_getRequirements(manifest_parser_pt parser, linked_list_pt *requirements) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	status = linkedList_clone(parser->requirements, requirements);
 

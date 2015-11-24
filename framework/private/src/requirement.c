@@ -42,20 +42,18 @@ celix_status_t requirement_create(hash_map_pt directives, hash_map_pt attributes
 
 		(*requirement)->attributes = attributes;
 		(*requirement)->directives = directives;
+		(*requirement)->versionRange = NULL;
 
 		serviceAttribute = (attribute_pt) hashMap_get(attributes, "service");
 		status = attribute_getValue(serviceAttribute, &(*requirement)->targetName);
 		if (status == CELIX_SUCCESS) {
-			(*requirement)->versionRange = NULL;
-			status = versionRange_createInfiniteVersionRange(&(*requirement)->versionRange);
-			if (status == CELIX_SUCCESS) {
-				versionAttribute = (attribute_pt) hashMap_get(attributes, "version");
-				if (versionAttribute != NULL) {
-					char *versionStr = NULL;
-					attribute_getValue(versionAttribute, &versionStr);
-					(*requirement)->versionRange = NULL;
-					status = versionRange_parse(versionStr, &(*requirement)->versionRange);
-				}
+			versionAttribute = (attribute_pt) hashMap_get(attributes, "version");
+			if (versionAttribute != NULL) {
+				char *versionStr = NULL;
+				attribute_getValue(versionAttribute, &versionStr);
+				status = versionRange_parse(versionStr, &(*requirement)->versionRange);
+			} else {
+				status = versionRange_createInfiniteVersionRange(&(*requirement)->versionRange);
 			}
 		}
 	}

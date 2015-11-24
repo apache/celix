@@ -105,9 +105,10 @@ TEST(manifest, createFromFileWithSections) {
     char manifestFile[] = "resources-test/manifest_sections.txt";
     manifest_pt manifest = NULL;
     //properties_pt properties = properties_create();
-    properties_pt properties = (properties_pt) 0x40;
-    properties_pt properties2 = (properties_pt) 0x41;
-    properties_pt properties3 = (properties_pt) 0x42;
+    properties_pt properties = (properties_pt) 0x01;
+    properties_pt properties2 = (properties_pt) 0x02;
+    properties_pt properties3 = (properties_pt) 0x03;
+    properties_pt properties4 = (properties_pt) 0x04;
     void *ov = (void *) 0x00;
 
     mock()
@@ -137,34 +138,56 @@ TEST(manifest, createFromFileWithSections) {
         .withParameter("key", "Import-Service")
         .withParameter("value", "server")
         .andReturnValue(ov);
+
     mock()
         .expectOneCall("properties_create")
         .andReturnValue(properties2);
     mock()
         .expectOneCall("properties_set")
         .withParameter("properties", properties2)
-        .withParameter("key", "a")
+        .withParameter("key", "aa")
         .withParameter("value", "1")
         .andReturnValue(ov);
+    mock()
+        .expectOneCall("properties_set")
+        .withParameter("properties", properties2)
+        .withParameter("key", "ab")
+        .withParameter("value", "2")
+        .andReturnValue(ov);
+
     mock()
         .expectOneCall("properties_create")
         .andReturnValue(properties3);
     mock()
         .expectOneCall("properties_set")
         .withParameter("properties", properties3)
-        .withParameter("key", "b")
-        .withParameter("value", "1")
+        .withParameter("key", "ba")
+        .withParameter("value", "3")
         .andReturnValue(ov);
+    mock()
+    	.expectOneCall("properties_set")
+    	.withParameter("properties", properties3)
+    	.withParameter("key", "bb")
+    	.withParameter("value", "4")
+    	.andReturnValue(ov);
+
+    mock()
+        .expectOneCall("properties_create")
+        .andReturnValue(properties4);
+    mock()
+        .expectOneCall("properties_set")
+        .withParameter("properties", properties4)
+        .withParameter("key", "white space")
+        .withParameter("value", "5")
+        .andReturnValue(ov);
+
+    manifest_createFromFile(manifestFile, &manifest);
+
     mock()
         .expectOneCall("properties_get")
         .withParameter("properties", properties)
         .withParameter("key", "Bundle-SymbolicName")
         .andReturnValue("bsn");
-    mock()
-        .expectOneCall("properties_destroy")
-        .withParameter("properties", properties);
-
-    manifest_createFromFile(manifestFile, &manifest);
 
     properties_pt main = manifest_getMainAttributes(manifest);
     POINTERS_EQUAL(properties, main);
@@ -174,13 +197,17 @@ TEST(manifest, createFromFileWithSections) {
 
     hash_map_pt map = NULL;
     manifest_getEntries(manifest, &map);
-    LONGS_EQUAL(2, hashMap_size(map));
+    LONGS_EQUAL(3, hashMap_size(map));
 
     properties_pt actual = (properties_pt) hashMap_get(map, (void *) "a");
     POINTERS_EQUAL(properties2, actual);
 
     actual = (properties_pt) hashMap_get(map, (void *) "b");
     POINTERS_EQUAL(properties3, actual);
+
+    mock()
+    	.expectOneCall("properties_destroy")
+        .withParameter("properties", properties);
 
     manifest_destroy(manifest);
 }

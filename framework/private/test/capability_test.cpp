@@ -55,48 +55,72 @@ TEST_GROUP(capability) {
 };
 
 TEST(capability, create) {
+	capability_pt capability;
 	module_pt module = (module_pt) 0x10;
-	hash_map_pt directives =  hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
-	hash_map_pt attributes = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+	hash_map_pt directives;
+	hash_map_pt attributes;
 
 	attribute_pt serviceAttribute = (attribute_pt) 0x01;
-    hashMap_put(attributes, (void*) "service", serviceAttribute);
     attribute_pt versionAttribute = (attribute_pt) 0x02;
-    hashMap_put(attributes, (void*) "version", versionAttribute);
 
 	version_pt emptyVersion = (version_pt) 0x10;
-
-	mock().expectOneCall("version_createEmptyVersion")
-        .withOutputParameterReturning("version", &emptyVersion, sizeof(emptyVersion))
-        .andReturnValue(CELIX_SUCCESS);
+	version_pt fromstrVersion = (version_pt) 0x11;
 
 	char *value1 = (char *) "target";
+	char *value2 = (char *) "1.0.0";
+
+	//create with empty version
+	directives =  hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+	attributes = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+    hashMap_put(attributes, (void*) "service", serviceAttribute);
+
+
 	mock().expectOneCall("attribute_getValue")
         .withParameter("attribute", serviceAttribute)
         .withOutputParameterReturning("value", &value1, sizeof(value1))
         .andReturnValue(CELIX_SUCCESS);
-
-	char *value2 = (char *) "1.0.0";
-	mock().expectOneCall("attribute_getValue")
-        .withParameter("attribute", versionAttribute)
-        .withOutputParameterReturning("value", &value2, sizeof(value2))
-        .andReturnValue(CELIX_SUCCESS);
-
-	mock().expectOneCall("version_createVersionFromString")
-        .withParameter("versionStr", (char *) "1.0.0")
+	mock().expectOneCall("version_createEmptyVersion")
         .withOutputParameterReturning("version", &emptyVersion, sizeof(emptyVersion))
         .andReturnValue(CELIX_SUCCESS);
 
-	capability_pt capability = NULL;
+	capability = NULL;
+	capability_create(module, directives, attributes, &capability);
+
+	mock().expectOneCall("attribute_destroy")
+			.withParameter("attribute", serviceAttribute);
+	mock().expectOneCall("version_destroy")
+			.withParameter("version", emptyVersion);
+
+	capability_destroy(capability);
+
+	//create with version from version string
+	directives =  hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+	attributes = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+    hashMap_put(attributes, (void*) "service", serviceAttribute);
+    hashMap_put(attributes, (void*) "version", versionAttribute);
+
+	mock().expectOneCall("attribute_getValue")
+			.withParameter("attribute", serviceAttribute)
+        	.withOutputParameterReturning("value", &value1, sizeof(value1))
+        	.andReturnValue(CELIX_SUCCESS);
+	mock().expectOneCall("attribute_getValue")
+    		.withParameter("attribute", versionAttribute)
+    		.withOutputParameterReturning("value", &value2, sizeof(value2))
+    		.andReturnValue(CELIX_SUCCESS);
+	mock().expectOneCall("version_createVersionFromString")
+			.withParameter("versionStr", (char *) "1.0.0")
+			.withOutputParameterReturning("version", &fromstrVersion, sizeof(fromstrVersion))
+			.andReturnValue(CELIX_SUCCESS);
+
+	capability = NULL;
 	capability_create(module, directives, attributes, &capability);
 
 	mock().expectOneCall("attribute_destroy")
 			.withParameter("attribute", serviceAttribute);
 	mock().expectOneCall("attribute_destroy")
 			.withParameter("attribute", versionAttribute);
-
 	mock().expectOneCall("version_destroy")
-			.withParameter("version", emptyVersion);
+			.withParameter("version", fromstrVersion);
 
 	capability_destroy(capability);
 }

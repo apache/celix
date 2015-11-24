@@ -204,10 +204,10 @@ if (FRAMEWORK)
     
         add_executable(manifest_parser_test 
             private/test/manifest_parser_test.cpp
-            private/mock/attribute_mock.c
             private/mock/manifest_mock.c
             private/mock/version_mock.c
             private/mock/version_range_mock.c
+            private/src/attribute.c
             private/src/capability.c
             private/src/requirement.c
             private/src/utils.c
@@ -379,9 +379,9 @@ if (FRAMEWORK)
         add_test(NAME utils_test COMMAND utils_test)
         add_test(NAME version_range_test COMMAND version_range_test)
         add_test(NAME version_test COMMAND version_test)
-	     add_test(NAME wire_test COMMAND wire_test)
+	    add_test(NAME wire_test COMMAND wire_test)
 	    
-	     SETUP_TARGET_FOR_COVERAGE(attribute_test attribute_test ${CMAKE_BINARY_DIR}/coverage/attribute_test/attribute_test)
+	    SETUP_TARGET_FOR_COVERAGE(attribute_test attribute_test ${CMAKE_BINARY_DIR}/coverage/attribute_test/attribute_test)
         SETUP_TARGET_FOR_COVERAGE(bundle_archive_test bundle_archive_test ${CMAKE_BINARY_DIR}/coverage/bundle_archive_test/bundle_archive_test)
         SETUP_TARGET_FOR_COVERAGE(bundle_cache_test bundle_cache_test ${CMAKE_BINARY_DIR}/coverage/bundle_cache_test/bundle_cache_test)
         SETUP_TARGET_FOR_COVERAGE(bundle_context_test bundle_context_test ${CMAKE_BINARY_DIR}/coverage/bundle_context_test/bundle_context_test)
@@ -405,7 +405,7 @@ if (FRAMEWORK)
         SETUP_TARGET_FOR_COVERAGE(utils_test utils_test ${CMAKE_BINARY_DIR}/coverage/utils_test/utils_test)
         SETUP_TARGET_FOR_COVERAGE(version_range_test version_range_test ${CMAKE_BINARY_DIR}/coverage/version_range_test/version_range_test)
         SETUP_TARGET_FOR_COVERAGE(version_test version_test ${CMAKE_BINARY_DIR}/coverage/version_test/version_test)
-		  SETUP_TARGET_FOR_COVERAGE(wire_test wire_test ${CMAKE_BINARY_DIR}/coverage/wire_test/wire_test)
+		SETUP_TARGET_FOR_COVERAGE(wire_test wire_test ${CMAKE_BINARY_DIR}/coverage/wire_test/wire_test)
 		
 	endif (ENABLE_TESTING AND FRAMEWORK_TESTS)
 endif (FRAMEWORK)
