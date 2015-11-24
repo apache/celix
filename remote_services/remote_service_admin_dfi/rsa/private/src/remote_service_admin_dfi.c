@@ -247,8 +247,10 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin) {
             export_registration_pt export = arrayList_get(exports, i);
             if (export != NULL) {
                 exportRegistration_stop(export);
+                exportRegistration_destroy(export);
             }
         }
+        arrayList_destroy(exports);
     }
     hashMapIterator_destroy(iter);
     celixThreadMutex_unlock(&admin->exportedServicesLock);
@@ -260,6 +262,7 @@ celix_status_t remoteServiceAdmin_stop(remote_service_admin_pt admin) {
         import_registration_pt import = arrayList_get(admin->importedServices, i);
         if (import != NULL) {
             importRegistration_stop(import);
+            importRegistration_destroy(import);
         }
     }
     celixThreadMutex_unlock(&admin->importedServicesLock);
@@ -371,7 +374,7 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
 }
 
 celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, char *serviceId, properties_pt properties, array_list_pt *registrations) {
-    celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status;
 
     arrayList_create(registrations);
     array_list_pt references = NULL;
@@ -436,12 +439,16 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
         hashMap_put(admin->exportedServices, reference, *registrations);
         celixThreadMutex_unlock(&admin->exportedServicesLock);
     }
+    else{
+    	arrayList_destroy(*registrations);
+    	*registrations = NULL;
+    }
 
     return status;
 }
 
 celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_pt admin, export_registration_pt registration) {
-    celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status;
 
     logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA_DFI: Removing exported service");
 
@@ -453,7 +460,10 @@ celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_pt 
         celixThreadMutex_lock(&admin->exportedServicesLock);
     	exportReference_getExportedService(ref, &servRef);
 
-    	hashMap_remove(admin->exportedServices, servRef);
+    	array_list_pt exports = (array_list_pt)hashMap_remove(admin->exportedServices, servRef);
+    	if(exports!=NULL){
+    		arrayList_destroy(exports);
+    	}
 
         exportRegistration_close(registration);
         exportRegistration_destroy(registration);

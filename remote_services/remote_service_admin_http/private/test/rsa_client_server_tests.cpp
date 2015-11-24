@@ -96,9 +96,15 @@ extern "C" {
 		celix_status_t status;
 		service_reference_pt ref = NULL;
 		calculator_service_pt calcService = NULL;
-		usleep(2000000); //TODO use tracker
+        int retries = 4;
 
-		status = bundleContext_getServiceReference(clientContext, (char *) CALCULATOR_SERVICE, &ref);
+        while (ref == NULL && retries > 0) {
+            printf("Waiting for service .. %d\n", retries);
+            status = bundleContext_getServiceReference(clientContext, (char *) CALCULATOR_SERVICE, &ref);
+            usleep(1000000);
+            --retries;
+        }
+
 		CHECK_EQUAL(CELIX_SUCCESS, status);
 		CHECK(ref != NULL);
 

@@ -460,11 +460,11 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 }
 
 celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_pt admin, export_registration_pt registration) {
-    celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status;
+    export_reference_pt ref = NULL;
 
     logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA_HTTP: Removing exported service");
 
-    export_reference_pt ref = NULL;
     status = exportRegistration_getExportReference(registration, &ref);
 
     if (status == CELIX_SUCCESS) {
@@ -472,7 +472,10 @@ celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_pt 
         celixThreadMutex_lock(&admin->exportedServicesLock);
     	exportReference_getExportedService(ref, &servRef);
 
-    	hashMap_remove(admin->exportedServices, servRef);
+    	array_list_pt registrations = (array_list_pt)hashMap_remove(admin->exportedServices, servRef);
+    	if(registrations!=NULL){
+    		arrayList_destroy(registrations);
+    	}
 
         exportRegistration_close(registration);
         exportRegistration_destroy(&registration);
@@ -550,12 +553,13 @@ static celix_status_t remoteServiceAdmin_getIpAdress(char* interface, char** ip)
 	celix_status_t status = CELIX_BUNDLE_EXCEPTION;
 
 	struct ifaddrs *ifaddr, *ifa;
-    char host[NI_MAXHOST];
 
     if (getifaddrs(&ifaddr) != -1)
     {
 		for (ifa = ifaddr; ifa != NULL && status != CELIX_SUCCESS; ifa = ifa->ifa_next)
 		{
+		    char host[NI_MAXHOST];
+
 			if (ifa->ifa_addr == NULL)
 				continue;
 

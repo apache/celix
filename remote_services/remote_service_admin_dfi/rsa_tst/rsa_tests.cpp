@@ -136,6 +136,10 @@ extern "C" {
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
         CHECK_EQUAL(1, arrayList_size(regs));
+
+        rc = rsa->exportRegistration_close(rsa->admin,(export_registration_pt)(arrayList_get(regs,0)));
+        CHECK_EQUAL(CELIX_SUCCESS, rc);
+
     }
 
     static void testImportService(void) {
@@ -162,6 +166,9 @@ extern "C" {
         CHECK(ref != NULL);
 
         rc = bundleContext_ungetServiceReference(context, ref);
+        CHECK_EQUAL(CELIX_SUCCESS, rc);
+
+        rc = endpointDescription_destroy(endpoint);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
         /* Cannot test. uses requesting bundles descriptor

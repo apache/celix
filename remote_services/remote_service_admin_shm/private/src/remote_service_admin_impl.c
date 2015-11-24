@@ -553,7 +553,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 }
 
 celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_pt admin, export_registration_pt registration) {
-    celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status;
     ipc_segment_pt ipc = NULL;
 
     export_reference_pt ref = NULL;
@@ -566,7 +566,10 @@ celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_pt 
         celixThreadMutex_lock(&admin->exportedServicesLock);
         exportReference_getExportedService(ref, &servRef);
 
-        hashMap_remove(admin->exportedServices, servRef);
+        array_list_pt exports = (array_list_pt)hashMap_remove(admin->exportedServices, servRef);
+        if(exports!=NULL){
+        	arrayList_destroy(exports);
+        }
 
         exportRegistration_close(registration);
 
@@ -599,6 +602,10 @@ celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_pt 
             }
         }
         exportRegistration_destroy(&registration);
+    }
+
+    if(ref!=NULL){
+    	free(ref);
     }
 
     celixThreadMutex_unlock(&admin->exportedServicesLock);
@@ -861,6 +868,11 @@ celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_pt 
             logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "Error while retrieving IPC segment for imported service %s.", endpointDescription->service);
         } else if (remoteServiceAdmin_detachIpcSegment(ipc) != CELIX_SUCCESS) {
             logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "Error while detaching IPC segment for imported service %s.", endpointDescription->service);
+        }
+
+        ipc = hashMap_remove(admin->importedIpcSegment,endpointDescription);
+        if(ipc!=NULL){
+        	free(ipc);
         }
 
         // factory available

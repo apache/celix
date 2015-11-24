@@ -313,6 +313,9 @@ celix_status_t topologyManager_rsaRemoved(void * handle, service_reference_pt re
             }
 
             hashMap_remove(exports, rsa);
+            /*if(exports_list!=NULL){
+            	arrayList_destroy(exports_list);
+            }*/
 
             if (hashMap_size(exports) == 0) {
                 hashMap_remove(manager->exportedServices, key);
@@ -668,6 +671,7 @@ celix_status_t topologyManager_removeExportedService(topology_manager_pt manager
                 }
 
                 hashMap_remove(exports, rsa);
+                arrayList_destroy(exportRegistrations);
                 hashMapIterator_destroy(iter);
                 iter = hashMapIterator_create(exports);
 

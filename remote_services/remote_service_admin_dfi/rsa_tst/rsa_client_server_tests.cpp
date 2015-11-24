@@ -88,22 +88,27 @@ extern "C" {
     }
 
     static void test1(void) {
-        int rc = 0;
+        celix_status_t rc;
         service_reference_pt ref = NULL;
         tst_service_pt tst = NULL;
+        int retries = 4;
 
-        usleep(2000000); //TODO use tracker
+        while (ref == NULL && retries > 0) {
+            printf("Waiting for service .. %d\n", retries);
+            rc = bundleContext_getServiceReference(clientContext, (char *) TST_SERVICE_NAME, &ref);
+            usleep(1000000);
+            --retries;
+        }
 
-        bundleContext_getServiceReference(clientContext, (char *)TST_SERVICE_NAME, &ref);
-        CHECK_EQUAL(0, rc);
+        CHECK_EQUAL(CELIX_SUCCESS, rc);
         CHECK(ref != NULL);
 
-        bundleContext_getService(clientContext, ref, (void **)&tst);
-        CHECK_EQUAL(0, rc);
+        rc = bundleContext_getService(clientContext, ref, (void **)&tst);
+        CHECK_EQUAL(CELIX_SUCCESS, rc);
         CHECK(tst != NULL);
 
         rc = tst->test(tst->handle);
-        CHECK_EQUAL(0, rc);
+        CHECK_EQUAL(CELIX_SUCCESS, rc);
 
         bool result;
         bundleContext_ungetService(clientContext, ref, &result);

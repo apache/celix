@@ -188,7 +188,7 @@ celix_status_t importRegistration_getService(import_registration_pt import, bund
 }
 
 static celix_status_t importRegistration_createProxy(import_registration_pt import, bundle_pt bundle, struct service_proxy **out) {
-    celix_status_t  status = CELIX_SUCCESS;
+    celix_status_t  status;
 
     char *descriptorFile = NULL;
     char name[128];
@@ -299,6 +299,9 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
         }
 
         *(int *) returnVal = rc;
+
+        free(invokeRequest); //Allocated by json_dumps in jsonRpc_prepareInvokeRequest
+        free(reply); //Allocated by json_dumps in remoteServiceAdmin_send through curl call
     }
 
     if (status != CELIX_SUCCESS) {
