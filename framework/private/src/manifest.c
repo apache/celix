@@ -242,7 +242,7 @@ celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt prope
 			strcpy(value, buf);
 		} else {
 	        int i = 0;
-			while (lbuf[++i] != ':') {
+			while (lbuf[i++] != ':') {
 				if (i >= len) {
 					printf("MANIFEST: Invalid header\n");
 					return CELIX_FILE_IO_EXCEPTION;
