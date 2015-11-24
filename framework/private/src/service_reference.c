@@ -51,7 +51,7 @@ celix_status_t serviceReference_create(registry_callback_t callback, bundle_pt r
         ref->service = NULL;
         serviceRegistration_getBundle(registration, &ref->registrationBundle);
 		celixThreadRwlock_create(&ref->lock, NULL);
-		ref->refCount = 0;
+		ref->refCount = 1;
         ref->usageCount = 0;
 
         serviceRegistration_retain(ref->registration);
