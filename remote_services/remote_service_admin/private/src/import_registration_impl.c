@@ -209,7 +209,6 @@ celix_status_t importRegistration_proxyFactoryRemoved(void * handle, service_ref
 	import_registration_factory_pt registration_factory = (import_registration_factory_pt) handle;
 	registration_factory->trackedFactory = NULL;
 
-
 	return status;
 }
 

@@ -679,13 +679,15 @@ celix_status_t remoteServiceAdmin_removeImportedService(remote_service_admin_pt 
     registration_factory = (import_registration_factory_pt) hashMap_get(admin->importedServices, endpointDescription->service);
 
     // factory available
-    if ((registration_factory == NULL) || (registration_factory->trackedFactory == NULL))
+    if (registration_factory == NULL)
     {
     	logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "RSA: Error while retrieving registration factory for imported service %s", endpointDescription->service);
     }
     else
     {
-		registration_factory->trackedFactory->unregisterProxyService(registration_factory->trackedFactory->factory, endpointDescription);
+        if (registration_factory->trackedFactory != NULL) {
+            registration_factory->trackedFactory->unregisterProxyService(registration_factory->trackedFactory->factory, endpointDescription);
+        }
 		arrayList_removeElement(registration_factory->registrations, registration);
 		importRegistration_destroy(registration);
 

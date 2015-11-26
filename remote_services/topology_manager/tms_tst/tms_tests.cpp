@@ -130,14 +130,22 @@ extern "C" {
 
         rc = bundleContext_ungetService(context, scopeServiceRef, NULL);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
+        rc = bundleContext_ungetServiceReference(context,scopeServiceRef);
+        CHECK_EQUAL(CELIX_SUCCESS, rc);
 
         rc = bundleContext_ungetService(context, calcRef, NULL);
+        CHECK_EQUAL(CELIX_SUCCESS, rc);
+        rc = bundleContext_ungetServiceReference(context,calcRef);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
         rc = bundleContext_ungetService(context, rsaRef, NULL);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
+        rc = bundleContext_ungetServiceReference(context,rsaRef);
+        CHECK_EQUAL(CELIX_SUCCESS, rc);
 
         rc = bundleContext_ungetService(context, discRef, NULL);
+        CHECK_EQUAL(CELIX_SUCCESS, rc);
+        rc = bundleContext_ungetServiceReference(context,discRef);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
         celixLauncher_stop(framework);
@@ -208,19 +216,24 @@ extern "C" {
     static void teardownFmImport(void) {
         int rc = 0;
 
-        rc = bundleContext_ungetService(context, scopeServiceRef, NULL);
+        rc = bundleContext_ungetService(context, rsaRef, NULL);
+        CHECK_EQUAL(CELIX_SUCCESS, rc);
+        rc = bundleContext_ungetServiceReference(context,rsaRef);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
-// rc = bundleContext_ungetService(context, calcRef, NULL);
-//        CHECK_EQUAL(CELIX_SUCCESS, rc);
-
-        rc = bundleContext_ungetService(context, rsaRef, NULL);
+        rc = bundleContext_ungetService(context, scopeServiceRef, NULL);
+        CHECK_EQUAL(CELIX_SUCCESS, rc);
+        rc = bundleContext_ungetServiceReference(context,scopeServiceRef);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
         rc = bundleContext_ungetService(context, testRef, NULL);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
+        rc = bundleContext_ungetServiceReference(context,testRef);
+        CHECK_EQUAL(CELIX_SUCCESS, rc);
 
         rc = bundleContext_ungetService(context, eplRef, NULL);
+        CHECK_EQUAL(CELIX_SUCCESS, rc);
+        rc = bundleContext_ungetServiceReference(context,eplRef);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
         celixLauncher_stop(framework);
@@ -379,7 +392,7 @@ extern "C" {
         discMock->getEPDescriptors(discMock->handle, &epList);
         // We export two services: Calculator and Calculator2, but only 1 has DFI bundle info
         CHECK_EQUAL(1, arrayList_size(epList));
-        for (int i = 0; i < arrayList_size(epList); i++) {
+        for (unsigned int i = 0; i < arrayList_size(epList); i++) {
         	endpoint_description_pt ep = (endpoint_description_pt) arrayList_get(epList, i);
         	properties_pt props = ep->properties;
         	hash_map_entry_pt entry = hashMap_getEntry(props, (void*)"key2");
@@ -415,7 +428,7 @@ extern "C" {
         discMock->getEPDescriptors(discMock->handle, &epList);
         // We export two services: Calculator and Calculator2, but only 1 has DFI bundle info
         CHECK_EQUAL(1, arrayList_size(epList));
-        for (int i = 0; i < arrayList_size(epList); i++) {
+        for (unsigned int i = 0; i < arrayList_size(epList); i++) {
         	endpoint_description_pt ep = (endpoint_description_pt) arrayList_get(epList, i);
         	properties_pt props = ep->properties;
         	hash_map_entry_pt entry = hashMap_getEntry(props, (void*)"key2");
@@ -439,7 +452,7 @@ extern "C" {
         discMock->getEPDescriptors(discMock->handle, &epList);
         // We export two services: Calculator and Calculator2, but only 1 has DFI bundle info
         CHECK_EQUAL(1, arrayList_size(epList));
-        for (int i = 0; i < arrayList_size(epList); i++) {
+        for (unsigned int i = 0; i < arrayList_size(epList); i++) {
         	endpoint_description_pt ep = (endpoint_description_pt) arrayList_get(epList, i);
         	properties_pt props = ep->properties;
         	hash_map_entry_pt entry = hashMap_getEntry(props, (void *)"key2");
@@ -463,7 +476,7 @@ extern "C" {
         discMock->getEPDescriptors(discMock->handle, &epList);
         // We export two services: Calculator and Calculator2, but only 1 has DFI bundle info
         CHECK_EQUAL(1, arrayList_size(epList));
-        for (int i = 0; i < arrayList_size(epList); i++) {
+        for (unsigned int i = 0; i < arrayList_size(epList); i++) {
         	endpoint_description_pt ep = (endpoint_description_pt) arrayList_get(epList, i);
         	properties_pt props = ep->properties;
         	hash_map_entry_pt entry = hashMap_getEntry(props, (void*)"zone");

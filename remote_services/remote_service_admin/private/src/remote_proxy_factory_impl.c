@@ -129,6 +129,18 @@ celix_status_t remoteProxyFactory_unregister(remote_proxy_factory_pt remote_prox
 
 	// #TODO Remove proxy registrations
 	if (status == CELIX_SUCCESS) {
+
+		hash_map_iterator_pt iter = hashMapIterator_create(remote_proxy_factory_ptr->proxy_instances);
+		while(hashMapIterator_hasNext(iter)){
+			proxy_instance_pt proxy_instance_ptr = (proxy_instance_pt)hashMapIterator_nextValue(iter);
+
+			if (proxy_instance_ptr->service) {
+				remote_proxy_factory_ptr->destroy_proxy_service_ptr(remote_proxy_factory_ptr->handle, proxy_instance_ptr->service);
+			}
+			free(proxy_instance_ptr);
+		}
+		hashMapIterator_destroy(iter);
+
 		if (remote_proxy_factory_ptr->registration) {
 			status = serviceRegistration_unregister(remote_proxy_factory_ptr->registration);
 			remote_proxy_factory_ptr->properties = NULL;
@@ -143,6 +155,7 @@ celix_status_t remoteProxyFactory_unregister(remote_proxy_factory_pt remote_prox
 
 	return status;
 }
+
 
 static celix_status_t remoteProxyFactory_registerProxyService(remote_proxy_factory_pt remote_proxy_factory_ptr, endpoint_description_pt endpointDescription, remote_service_admin_pt rsa, sendToHandle sendToCallback) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -172,10 +185,6 @@ static celix_status_t remoteProxyFactory_registerProxyService(remote_proxy_facto
 
 	if (status == CELIX_SUCCESS) {
 		properties_set(proxy_instance_ptr->properties, "proxy.interface", remote_proxy_factory_ptr->service);
-
-
-
-
 
 		hash_map_iterator_pt iter = hashMapIterator_create(endpointDescription->properties);
 		while (hashMapIterator_hasNext(iter)) {

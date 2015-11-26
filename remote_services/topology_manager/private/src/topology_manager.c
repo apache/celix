@@ -664,14 +664,16 @@ celix_status_t topologyManager_removeExportedService(topology_manager_pt manager
                 remote_service_admin_service_pt rsa = hashMapEntry_getKey(entry);
                 array_list_pt exportRegistrations = hashMapEntry_getValue(entry);
 
-                for (int exportsIter = 0; exportsIter < arrayList_size(exportRegistrations); exportsIter++) {
+                int size = arrayList_size(exportRegistrations);
+
+                for (int exportsIter = 0; exportsIter < size; exportsIter++) {
                     export_registration_pt export = arrayList_get(exportRegistrations, exportsIter);
                     topologyManager_notifyListenersEndpointRemoved(manager, rsa, export);
                     rsa->exportRegistration_close(rsa->admin, export);
                 }
 
                 hashMap_remove(exports, rsa);
-                arrayList_destroy(exportRegistrations);
+                //arrayList_destroy(exportRegistrations);
                 hashMapIterator_destroy(iter);
                 iter = hashMapIterator_create(exports);
 
