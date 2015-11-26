@@ -402,6 +402,29 @@ celix_status_t serviceRegistry_getServiceReferences(service_registry_pt registry
 	return status;
 }
 
+celix_status_t serviceRegistry_retainServiceReference(service_registry_pt registry, bundle_pt bundle, service_reference_pt reference) {
+    celix_status_t status = CELIX_SUCCESS;
+    reference_status_t refStatus;
+    bundle_pt refBundle = NULL;
+    
+    celixThreadRwlock_writeLock(&registry->lock);
+    serviceRegistry_checkReference(registry, reference, &refStatus);
+    if (status == REF_ACTIVE) {
+        serviceReference_getOwner(reference, &refBundle);
+        if (refBundle == bundle) {
+            serviceReference_retain(reference);
+        } else {
+            status = CELIX_ILLEGAL_ARGUMENT;
+            fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "cannot retain a service reference from an other bundle (in ref %p) (provided %p).", refBundle, bundle);
+        }
+    } else {
+        serviceRegistry_logIllegalReference(registry, reference, refStatus);
+    }
+    celixThreadRwlock_unlock(&registry->lock);
+
+    return status;
+}
+
 
 celix_status_t serviceRegistry_ungetServiceReference(service_registry_pt registry, bundle_pt bundle, service_reference_pt reference) {
     celix_status_t status = CELIX_SUCCESS;

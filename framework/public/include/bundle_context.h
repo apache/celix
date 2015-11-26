@@ -55,8 +55,47 @@ FRAMEWORK_EXPORT celix_status_t bundleContext_registerService(bundle_context_pt 
 FRAMEWORK_EXPORT celix_status_t bundleContext_registerServiceFactory(bundle_context_pt context, char * serviceName, service_factory_pt factory,
         properties_pt properties, service_registration_pt *service_registration);
 
-FRAMEWORK_EXPORT celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, const char * serviceName, char * filter, array_list_pt *service_references);
+/**
+ * Get a service reference for the bundle context. When the service reference is no longer needed use bundleContext_ungetServiceReference.
+ * ServiceReference are coupled to a bundle context. Do not share service reference between bundles. Exchange the service.id instead.
+ * 
+ * @param context The bundle context
+ * @param serviceName The name of the service (objectClass) to get
+ * @param service_reference _output_ The found service reference, or NULL when no service is found.
+ * @return CELIX_SUCCESS on success
+ */
 FRAMEWORK_EXPORT celix_status_t bundleContext_getServiceReference(bundle_context_pt context, char * serviceName, service_reference_pt *service_reference);
+
+/** Same as bundleContext_getServiceReference, but than for a optional serviceName combined with a optional filter.
+ * The resulting array_list should be destroyed by the caller. For all service references return a unget should be called.
+ * 
+ * @param context the bundle context
+ * @param serviceName the serviceName, can be NULL
+ * @param filter the filter, can be NULL. If present will be combined (and) with the serviceName 
+ * @param service_references _output_ a array list, can be size 0. 
+ * @return CELIX_SUCCESS on success
+ */
+FRAMEWORK_EXPORT celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, const char * serviceName, char * filter, array_list_pt *service_references);
+
+/**
+ * Retains (increases the ref count) the provided service reference. Can be used to retain a service reference.
+ * Note that this is a deviation from the OSGi spec, due to the fact that C has no garbage collect.
+ * 
+ * @param context the bundle context
+ * @param reference the service reference to retain
+ * @return CELIX_SUCCES on success
+ */
+FRAMEWORK_EXPORT celix_status_t bundleContext_retainServiceReference(bundle_context_pt context, service_reference_pt reference);
+
+/**
+ * Ungets the service references. If the ref counter of the service refernce goes to 0, the reference will be destroyed.
+ * This is coupled with the bundleContext_getServiceReference(s) and bundleContext_retainServiceReferenc.
+ * Note: That this is a deviation from the OSGi standard, due to the fact that C has no garbage collect.
+ * 
+ * @param context The bundle context.
+ * @param reference the service reference to unget
+ * @return CELIX_SUCCESS on success.
+ */
 FRAMEWORK_EXPORT celix_status_t bundleContext_ungetServiceReference(bundle_context_pt context, service_reference_pt reference);
 
 FRAMEWORK_EXPORT celix_status_t bundleContext_getService(bundle_context_pt context, service_reference_pt reference, void **service_instance);

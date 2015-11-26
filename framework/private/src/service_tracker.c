@@ -271,51 +271,50 @@ void serviceTracker_serviceChanged(service_listener_pt listener, service_event_p
 static celix_status_t serviceTracker_track(service_tracker_pt tracker, service_reference_pt reference, service_event_pt event) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	tracked_pt tracked = NULL;
-	bool found = false;
-	unsigned int i;
+    tracked_pt tracked = NULL;
+    bool found = false;
+    unsigned int i;
+    
+    bundleContext_retainServiceReference(tracker->context, reference);
 
     celixThreadRwlock_readLock(&tracker->lock);
-	for (i = 0; i < arrayList_size(tracker->trackedServices); i++) {
-		bool equals = false;
-		tracked = (tracked_pt) arrayList_get(tracker->trackedServices, i);
-		status = serviceReference_equals(reference, tracked->reference, &equals);
+    for (i = 0; i < arrayList_size(tracker->trackedServices); i++) {
+        bool equals = false;
+        tracked = (tracked_pt) arrayList_get(tracker->trackedServices, i);
+        status = serviceReference_equals(reference, tracked->reference, &equals);
         if (status != CELIX_SUCCESS) {
             break;
         }
-		if (equals) {
-			found = true;
-			break;
-		}
-	}
+        if (equals) {
+            found = true;
+            break;
+        }
+    }
     celixThreadRwlock_unlock(&tracker->lock);
 
-	if (status == CELIX_SUCCESS && !found /*new*/) {
-		void * service = NULL;
-		status = serviceTracker_invokeAddingService(tracker, reference, &service);
-		if (status == CELIX_SUCCESS) {
-			if (service != NULL) {
-				tracked = (tracked_pt) calloc(1, sizeof(*tracked));
-				assert(reference != NULL);
-				tracked->reference = reference;
-				tracked->service = service;
+    if (status == CELIX_SUCCESS && !found /*new*/) {
+        void * service = NULL;
+        status = serviceTracker_invokeAddingService(tracker, reference, &service);
+        if (status == CELIX_SUCCESS) {
+            if (service != NULL) {
+                tracked = (tracked_pt) calloc(1, sizeof (*tracked));
+                assert(reference != NULL);
+                tracked->reference = reference;
+                tracked->service = service;
                 serviceTracker_invokeAddService(tracker, reference, service);
                 celixThreadRwlock_writeLock(&tracker->lock);
                 arrayList_add(tracker->trackedServices, tracked);
                 celixThreadRwlock_unlock(&tracker->lock);
-			}
-		}
+            }
+        }
 
-	} else {
+    } else {
         status = serviceTracker_invokeModifiedService(tracker, reference, tracked->service);
-	}
+    }
 
+    framework_logIfError(logger, status, NULL, "Cannot track reference");
 
-
-
-	framework_logIfError(logger, status, NULL, "Cannot track reference");
-
-	return status;
+    return status;
 }
 
 static celix_status_t serviceTracker_invokeModifiedService(service_tracker_pt tracker, service_reference_pt ref, void *service) {
@@ -380,30 +379,31 @@ static celix_status_t serviceTracker_invokeAddingService(service_tracker_pt trac
 }
 
 static celix_status_t serviceTracker_untrack(service_tracker_pt tracker, service_reference_pt reference, service_event_pt event) {
-	celix_status_t status = CELIX_SUCCESS;
-	tracked_pt tracked = NULL;
-	unsigned int i;
+    celix_status_t status = CELIX_SUCCESS;
+    tracked_pt tracked = NULL;
+    unsigned int i;
 
     celixThreadRwlock_writeLock(&tracker->lock);
     for (i = 0; i < arrayList_size(tracker->trackedServices); i++) {
-		bool equals;
-		tracked = (tracked_pt) arrayList_get(tracker->trackedServices, i);
-		serviceReference_equals(reference, tracked->reference, &equals);
-		if (equals) {
-			arrayList_remove(tracker->trackedServices, i);
+        bool equals;
+        tracked = (tracked_pt) arrayList_get(tracker->trackedServices, i);
+        serviceReference_equals(reference, tracked->reference, &equals);
+        if (equals) {
+            arrayList_remove(tracker->trackedServices, i);
             break;
-		}
-	}
+        }
+    }
     celixThreadRwlock_unlock(&tracker->lock);
 
     if (tracked != NULL) {
         serviceTracker_invokeRemovingService(tracker, tracked->reference, tracked->service);
         free(tracked);
+        bundleContext_ungetServiceReference(tracker->context, reference);
     }
+   
+    framework_logIfError(logger, status, NULL, "Cannot untrack reference");
 
-	framework_logIfError(logger, status, NULL, "Cannot untrack reference");
-
-	return status;
+    return status;
 }
 
 static celix_status_t serviceTracker_invokeRemovingService(service_tracker_pt tracker, service_reference_pt ref,  void *service) {

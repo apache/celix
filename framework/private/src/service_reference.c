@@ -181,6 +181,14 @@ celix_status_t serviceReference_getBundle(service_reference_pt ref, bundle_pt *b
     return status;
 }
 
+celix_status_t serviceReference_getOwner(service_reference_pt ref, bundle_pt *owner) { 
+    celix_status_t status = CELIX_SUCCESS;
+    celixThreadRwlock_readLock(&ref->lock);
+    *owner = ref->referenceOwner;
+    celixThreadRwlock_unlock(&ref->lock);
+    return status;
+}
+
 celix_status_t serviceReference_getServiceRegistration(service_reference_pt ref, service_registration_pt *out) {
     celixThreadRwlock_readLock(&ref->lock);
     *out = ref->registration;

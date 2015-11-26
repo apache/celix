@@ -1582,67 +1582,74 @@ celix_status_t fw_removeFrameworkListener(framework_pt framework, bundle_pt bund
 }
 
 void fw_serviceChanged(framework_pt framework, service_event_type_e eventType, service_registration_pt registration, properties_pt oldprops) {
-	unsigned int i;
-	fw_service_listener_pt element;
+    unsigned int i;
+    fw_service_listener_pt element;
 
-	if (arrayList_size(framework->serviceListeners) > 0) {
-		for (i = 0; i < arrayList_size(framework->serviceListeners); i++) {
-			int matched = 0;
-			properties_pt props = NULL;
-			bool matchResult = false;
+    if (arrayList_size(framework->serviceListeners) > 0) {
+        for (i = 0; i < arrayList_size(framework->serviceListeners); i++) {
+            int matched = 0;
+            properties_pt props = NULL;
+            bool matchResult = false;
 
-			element = (fw_service_listener_pt) arrayList_get(framework->serviceListeners, i);
-			serviceRegistration_getProperties(registration, &props);
-			if (element->filter != NULL) {
-				filter_match(element->filter, props, &matchResult);
-			}
-			matched = (element->filter == NULL) || matchResult;
-			if (matched) {
-				service_reference_pt reference = NULL;
-				service_event_pt event;
+            element = (fw_service_listener_pt) arrayList_get(framework->serviceListeners, i);
+            serviceRegistration_getProperties(registration, &props);
+            if (element->filter != NULL) {
+                filter_match(element->filter, props, &matchResult);
+            }
+            matched = (element->filter == NULL) || matchResult;
+            if (matched) {
+                service_reference_pt reference = NULL;
+                service_event_pt event;
 
-				event = (service_event_pt) malloc(sizeof(*event));
+                event = (service_event_pt) malloc(sizeof (*event));
 
                 serviceRegistry_getServiceReference(framework->registry, element->bundle, registration, &reference);
-
-				event->type = eventType;
-				event->reference = reference;
-
-				element->listener->serviceChanged(element->listener, event);
-
-                if (eventType != OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED) {
-                    serviceRegistry_ungetServiceReference(framework->registry, element->bundle, reference);
+                
+                
+                //FIXME, TODO need to retain the service ref. If not bundles using the service_listener will crash.
+                //update service_listener users so that they retain references if the keep them. 
+                //NOTE: that you are never sure that the UNREGISTERED event will by handle by an service_listener (could be gone))
+                if (eventType == OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED) {
+                    serviceRegistry_retainServiceReference(framework->registry, element->bundle, reference);
                 }
+
+                event->type = eventType;
+                event->reference = reference;
+
+                element->listener->serviceChanged(element->listener, event);
+
+                serviceRegistry_ungetServiceReference(framework->registry, element->bundle, reference);
+                
                 if (eventType == OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING) {
-                    serviceRegistry_ungetServiceReference(framework->registry, element->bundle, reference);
+                    serviceRegistry_ungetServiceReference(framework->registry, element->bundle, reference); // to counter retain    
                 }
-
+                
                 free(event);
 
-			} else if (eventType == OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED) {
-				bool matchResult = false;
-				int matched = 0;
-				if (element->filter != NULL) {
-					filter_match(element->filter, oldprops, &matchResult);
-				}
-				matched = (element->filter == NULL) || matchResult;
-				if (matched) {
-					service_reference_pt reference = NULL;
-					service_event_pt endmatch = (service_event_pt) malloc(sizeof(*endmatch));
+            } else if (eventType == OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED) {
+                bool matchResult = false;
+                int matched = 0;
+                if (element->filter != NULL) {
+                    filter_match(element->filter, oldprops, &matchResult);
+                }
+                matched = (element->filter == NULL) || matchResult;
+                if (matched) {
+                    service_reference_pt reference = NULL;
+                    service_event_pt endmatch = (service_event_pt) malloc(sizeof (*endmatch));
 
                     serviceRegistry_getServiceReference(framework->registry, element->bundle, registration, &reference);
 
-					endmatch->reference = reference;
-					endmatch->type = OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED_ENDMATCH;
-					element->listener->serviceChanged(element->listener, endmatch);
+                    endmatch->reference = reference;
+                    endmatch->type = OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED_ENDMATCH;
+                    element->listener->serviceChanged(element->listener, endmatch);
 
                     serviceRegistry_ungetServiceReference(framework->registry, element->bundle, reference);
                     free(endmatch);
 
                 }
-			}
-		}
-	}
+            }
+        }
+    }
 
 }
 

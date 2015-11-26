@@ -191,6 +191,20 @@ celix_status_t bundleContext_getServiceReference(bundle_context_pt context, char
 	return status;
 }
 
+FRAMEWORK_EXPORT celix_status_t bundleContext_retainServiceReference(bundle_context_pt context, service_reference_pt ref) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    if (context != NULL && ref != NULL) {
+        serviceRegistry_retainServiceReference(context->framework->registry, context->bundle, ref);
+    } else {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
+
+    framework_logIfError(logger, status, NULL, "Failed to get service references");
+
+    return status;
+}
+
 celix_status_t bundleContext_ungetServiceReference(bundle_context_pt context, service_reference_pt reference) {
     celix_status_t status = CELIX_SUCCESS;
 

@@ -62,6 +62,8 @@ celix_status_t serviceReference_getReferenceCount(service_reference_pt reference
 celix_status_t serviceReference_setService(service_reference_pt ref, void *service);
 celix_status_t serviceReference_getService(service_reference_pt reference, void **service);
 
+celix_status_t serviceReference_getOwner(service_reference_pt reference, bundle_pt *owner);
+
 
 
 #endif /* SERVICE_REFERENCE_PRIVATE_H_ */
