@@ -36,6 +36,6 @@ add_library(dfi SHARED
 )
 target_link_libraries(dfi ${FFI_LIBRARIES} ${JANSSON_LIBRARY})
 
-install(TARGETS dfi DESTINATION lib)
+install(TARGETS dfi DESTINATION lib COMPONENT framework)
 FILE(GLOB files "*.h")
 INSTALL(FILES ${files} DESTINATION include/celix/dfi)
