@@ -4,7 +4,6 @@
  * 20081017 AF
  */
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -55,7 +54,7 @@ static fpos_t seekfn(void *handler, fpos_t offset, int whence)
         default: return -1;
     }
 
-    if(pos < 0 || pos > mem->size) return -1;
+    if(pos > mem->size) return -1;
 
     mem->pos = pos;
     return (fpos_t) pos;

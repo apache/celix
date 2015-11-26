@@ -52,9 +52,7 @@ celix_status_t driverLocator_findDrivers(driver_locator_pt locator, properties_p
 					int length = strlen(str1) + strlen(str2) + 2;
 					char driver[length];
 					snprintf(driver, length, "%s_%s", str1, str2);
-					if (driver != NULL) {
-						arrayList_add(*drivers, strdup(driver));
-					}
+                    arrayList_add(*drivers, strdup(driver));
 				}
 			}
 			closedir(dir);

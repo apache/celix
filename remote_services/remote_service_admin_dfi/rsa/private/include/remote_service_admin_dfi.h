@@ -31,7 +31,7 @@
 #include "bundle_context.h"
 #include "endpoint_description.h"
 
-typedef struct remote_service_admin *remote_service_admin_pt;
+//typedef struct remote_service_admin *remote_service_admin_pt;
 
 celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_service_admin_pt *admin);
 celix_status_t remoteServiceAdmin_destroy(remote_service_admin_pt *admin);

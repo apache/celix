@@ -326,11 +326,11 @@ celix_status_t bundleArchive_getPersistentState(bundle_archive_pt archive, bundl
         }
 
         if (status == CELIX_SUCCESS) {
-            if (stateString != NULL && (strcmp(stateString, "active") == 0)) {
+            if (strncmp(stateString, "active", 256) == 0) {
                 archive->persistentState = OSGI_FRAMEWORK_BUNDLE_ACTIVE;
-            } else if (stateString != NULL && (strcmp(stateString, "starting") == 0)) {
+            } else if (strncmp(stateString, "starting", 256) == 0) {
                 archive->persistentState = OSGI_FRAMEWORK_BUNDLE_STARTING;
-            } else if (stateString != NULL && (strcmp(stateString, "uninstalled") == 0)) {
+            } else if (strncmp(stateString, "uninstalled", 256) == 0) {
                 archive->persistentState = OSGI_FRAMEWORK_BUNDLE_UNINSTALLED;
             } else {
                 archive->persistentState = OSGI_FRAMEWORK_BUNDLE_INSTALLED;

@@ -223,11 +223,6 @@ celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt prope
 			buf[0] = '\0';
 
 			// Line continued
-			if (name == NULL) {
-			    buf[0] = '\0';
-				printf("MANIFEST: No continued line expected\n");
-				return CELIX_FILE_IO_EXCEPTION;
-			}
 			lineContinued = true;
 			strcat(buf, lastLine);
 			strncat(buf, lbuf+1, len - 1);
