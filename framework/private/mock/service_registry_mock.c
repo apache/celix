@@ -101,6 +101,11 @@ celix_status_t serviceRegistry_getServiceReferences(service_registry_pt registry
 	return mock_c()->returnValue().value.intValue;
 }
 
+celix_status_t serviceRegistry_retainServiceReference(service_registry_pt registry, bundle_pt bundle, service_reference_pt reference) {
+	mock_c()->actualCall("serviceRegistry_retainServiceReference");
+	return mock_c()->returnValue().value.intValue;
+}
+
 celix_status_t serviceRegistry_ungetServiceReference(service_registry_pt registry, bundle_pt bundle, service_reference_pt reference) {
 	mock_c()->actualCall("serviceRegistry_ungetServiceReference");
 	return mock_c()->returnValue().value.intValue;

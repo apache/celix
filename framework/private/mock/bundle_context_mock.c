@@ -111,6 +111,13 @@ celix_status_t bundleContext_getServiceReference(bundle_context_pt context, char
 	return mock_c()->returnValue().value.intValue;
 }
 
+celix_status_t bundleContext_retainServiceReference(bundle_context_pt context, service_reference_pt reference) {
+    mock_c()->actualCall("bundleContext_retainServiceReference")
+            ->withPointerParameters("context", context)
+            ->withPointerParameters("reference", reference);
+    return mock_c()->returnValue().value.intValue;
+}
+
 celix_status_t bundleContext_ungetServiceReference(bundle_context_pt context, service_reference_pt reference) {
     mock_c()->actualCall("bundleContext_ungetServiceReference")
             ->withPointerParameters("context", context)

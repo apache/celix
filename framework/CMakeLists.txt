@@ -129,6 +129,7 @@ if (FRAMEWORK)
             private/test/bundle_context_test.cpp
             private/mock/bundle_mock.c
             private/mock/framework_mock.c
+            private/mock/service_registry_mock.c
             private/src/bundle_context.c
             private/src/celix_errorcodes.c
             private/mock/celix_log_mock.c)
