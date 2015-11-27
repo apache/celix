@@ -28,7 +28,7 @@ add_subdirectory(bundle)
 
 SET(CMAKE_SKIP_BUILD_RPATH  FALSE) #TODO needed?
 SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE) #TODO needed?
-SET(CMAKE_INSTALL_RPATH "${PROJECT_BINARY_DIR}/framework" "${PROJECT_BINARY_DIR}/utils" "${PROJECT_BINARY_DIR}/remote_services/remote_service_admin_dfi/dynamic_function_interface")
+SET(CMAKE_INSTALL_RPATH "${PROJECT_BINARY_DIR}/framework" "${PROJECT_BINARY_DIR}/utils" "${PROJECT_BINARY_DIR}/dfi")
 
 add_executable(test_rsa_dfi
     run_tests.cpp

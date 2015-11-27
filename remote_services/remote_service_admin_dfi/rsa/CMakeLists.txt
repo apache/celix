@@ -23,9 +23,8 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include
     ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/include
     ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin_http/private/include
-    ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin_dfi/dynamic_function_interface
+    ${PROJECT_SOURCE_DIR}/dfi/public/include
     ${PROJECT_SOURCE_DIR}/remote_services/examples/calculator_service/public/include
-    ../dynamic_function_interface
 )
 
 SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_remote_service_admin_dfi")
@@ -43,6 +42,6 @@ bundle(remote_service_admin_dfi SOURCES
     ${PROJECT_SOURCE_DIR}/remote_services/utils/private/src/civetweb.c
     ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
 )
-target_link_libraries(remote_service_admin_dfi celix_framework celix_utils ${CURL_LIBRARIES} ${JANSSON_LIBRARIES} dfi)
+target_link_libraries(remote_service_admin_dfi celix_framework celix_utils celix_dfi ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
 
 install_bundle(remote_service_admin_dfi)
