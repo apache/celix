@@ -52,9 +52,7 @@ celix_status_t dependencyManager_create(bundle_context_pt context __attribute__(
 
 void dependencyManager_destroy(dm_dependency_manager_pt manager) {
 	if (manager != NULL) {
-		//TODO destroy components
 		arrayList_destroy(manager->components);
-
 		free(manager);
 	}
 }
@@ -71,15 +69,19 @@ celix_status_t dependencyManager_add(dm_dependency_manager_pt manager, dm_compon
 celix_status_t depedencyManager_removeAllComponents(dm_dependency_manager_pt manager) {
 	celix_status_t status;
 
+	unsigned int i=0;
+	unsigned int size = arrayList_size(manager->components);
+
+	for(;i<size;i++){
+		dm_component_pt cmp = arrayList_get(manager->components, i);
+		printf("Stopping comp %s\n", component_getName(cmp));
+		status += component_stop(cmp);
+	}
+
 	while (!arrayList_isEmpty(manager->components)) {
 		dm_component_pt cmp = arrayList_remove(manager->components, 0);
         printf("Removing comp %s\n", component_getName(cmp));
-        status = component_stop(cmp);
-        //TODO component_destroy(&cmp);
-
-		if (status != CELIX_SUCCESS) {
-			break;
-		}
+        component_destroy(cmp);
 	}
 
 	return status;
@@ -117,20 +119,14 @@ celix_status_t dependencyManager_getInfo(dm_dependency_manager_pt manager, dm_de
 }
 
 void dependencyManager_destroyInfo(dm_dependency_manager_pt manager, dm_dependency_manager_info_pt info) {
-    return;
-    /*
-     * TODO
 
-    int i;
-    int size;
-    if (info != NULL) {
-        size = arrayList_size(info->components);
-        for (i = 0; i < size; i += 1) {
-            dm_component_info_pt cmpInfo = arrayList_get(info->components, i);
-            component_destroyComponentInfo(cmpInfo);
+	unsigned int i = 0;
+	for(;i<arrayList_size(info->components);i++){
+		dm_component_info_pt cmpinfo = (dm_component_info_pt)arrayList_get(info->components,0);
+		component_destroyComponentInfo(cmpinfo);
         }
         arrayList_destroy(info->components);
-    }
+
     free(info);
-     */
+
 }

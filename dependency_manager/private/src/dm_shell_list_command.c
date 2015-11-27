@@ -102,7 +102,15 @@ void dmListCommand_execute(bundle_context_pt context, char * line, FILE *out, FI
             }
             fprintf(out, "\n");
 
+		}
+
             infoServ->destroyInfo(infoServ->handle, info);
+
+		bundleContext_ungetService(context,servRef,NULL);
+
         }
+
+	if(servRefs!=NULL){
+		arrayList_destroy(servRefs);
     }
 }

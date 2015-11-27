@@ -72,6 +72,7 @@ celix_status_t helpCommand_execute(void *_ptr, char *line_str, FILE *out_ptr, FI
                 fprintf(out_ptr, "%s\n", name);
             }
             fprintf(out_ptr, "\nUse 'help <command-name>' for more information.\n");
+            arrayList_destroy(commands);
         } else {
             celix_status_t sub_status_desc;
             celix_status_t sub_status_usage;

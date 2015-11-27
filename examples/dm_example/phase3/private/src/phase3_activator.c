@@ -50,9 +50,6 @@ celix_status_t dm_init(void * userData, bundle_context_pt context, dm_dependency
 	act->phase3Cmp = phase3_create();
 	if (act->phase3Cmp != NULL) {
 
-		properties_pt props = properties_create();
-		properties_set(props, "id", "phase3");
-
 		dm_component_pt cmp;
 		component_create(context, "PHASE3_PROCESSING_COMPONENT", &cmp);
 		component_setImplementation(cmp, act->phase3Cmp);

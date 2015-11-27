@@ -82,6 +82,8 @@ int phase3_deinit(phase3_cmp_t *cmp) {
 
 void phase3_destroy(phase3_cmp_t *cmp) {
     celixThreadMutex_lock(&cmp->mutex);
+    arrayList_destroy(cmp->phase2Services);
+    celixThreadMutex_unlock(&cmp->mutex);
     celixThreadMutex_destroy(&cmp->mutex);
     free(cmp);
 	printf("destroy phase3\n");

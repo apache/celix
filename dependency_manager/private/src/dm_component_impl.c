@@ -171,18 +171,30 @@ void component_destroy(dm_component_pt component) {
 		for (i = 0; i < arrayList_size(component->dm_interfaces); i++) {
 		    dm_interface_t *interface = arrayList_get(component->dm_interfaces, i);
 
+			if(interface->properties!=NULL){
+				properties_destroy(interface->properties);
+			}
 		    free (interface->serviceName);
             free (interface);
 		}
 		arrayList_destroy(component->dm_interfaces);
 
-		// #TODO destroy dependencies
-
 		executor_destroy(component->executor);
-        //TODO free events
+
+		hash_map_iterator_pt iter = hashMapIterator_create(component->dependencyEvents);
+		while(hashMapIterator_hasNext(iter)){
+			hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
+			dm_service_dependency_pt sdep = (dm_service_dependency_pt)hashMapEntry_getKey(entry);
+			array_list_pt eventList = (array_list_pt)hashMapEntry_getValue(entry);
+			serviceDependency_destroy(&sdep);
+			arrayList_destroy(eventList);
+		}
+		hashMapIterator_destroy(iter);
+
 		hashMap_destroy(component->dependencyEvents, false, false);
-		pthread_mutex_destroy(&component->mutex);
+
 		arrayList_destroy(component->dependencies);
+		pthread_mutex_destroy(&component->mutex);
 
 		free(component);
 	}
@@ -259,6 +271,8 @@ celix_status_t component_removeTask(dm_component_pt component, dm_service_depend
     pthread_mutex_lock(&component->mutex);
     array_list_pt events = hashMap_remove(component->dependencyEvents, dependency);
     pthread_mutex_unlock(&component->mutex);
+
+	serviceDependency_destroy(&dependency);
 
     while (!arrayList_isEmpty(events)) {
     	dm_event_pt event = arrayList_remove(events, 0);
@@ -762,18 +776,18 @@ celix_status_t component_performTransition(dm_component_pt component, dm_compone
     } else if (oldState == DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED && newState == DM_CMP_STATE_TRACKING_OPTIONAL) {
         component_invokeAddRequiredInstanceBoundDependencies(component);
         component_invokeAutoConfigInstanceBoundDependencies(component);
+		component_invokeAddOptionalDependencies(component);
         if (component->callbackStart) {
         	status = component->callbackStart(component->implementation);
         }
-        component_invokeAddOptionalDependencies(component);
         component_registerServices(component);
         *transition = true;
     } else if (oldState == DM_CMP_STATE_TRACKING_OPTIONAL && newState == DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED) {
         component_unregisterServices(component);
-        component_invokeRemoveOptionalDependencies(component);
         if (component->callbackStop) {
         	status = component->callbackStop(component->implementation);
         }
+		component_invokeRemoveOptionalDependencies(component);
         component_invokeRemoveInstanceBoundDependencies(component);
         *transition = true;
     } else if (oldState == DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED && newState == DM_CMP_STATE_WAITING_FOR_REQUIRED) {
