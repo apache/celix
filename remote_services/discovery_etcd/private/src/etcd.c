@@ -79,6 +79,7 @@ static int performRequest(char* url, request_t request, void* callback, void* re
 	curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, callback);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, repData);
+	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1)
 
 	if (request == PUT) {
 		curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
