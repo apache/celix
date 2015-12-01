@@ -764,7 +764,7 @@ celix_status_t remoteServiceAdmin_send(remote_service_admin_pt rsa, endpoint_des
 		if (!curl) {
 			status = CELIX_ILLEGAL_STATE;
 		} else {
-		    curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1)
+		    curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
 			curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
 			curl_easy_setopt(curl, CURLOPT_URL, &url[0]);
 			curl_easy_setopt(curl, CURLOPT_POST, 1L);

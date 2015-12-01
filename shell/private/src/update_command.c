@@ -83,7 +83,7 @@ celix_status_t updateCommand_download(bundle_context_pt context, char * url, cha
 		if (fd) {
 		    fp = fopen(*inputFile, "wb+");
             printf("Temp file: %s\n", *inputFile);
-            curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1)
+            curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
             curl_easy_setopt(curl, CURLOPT_URL, url);
             curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, updateCommand_writeData);
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);

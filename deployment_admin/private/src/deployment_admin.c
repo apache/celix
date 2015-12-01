@@ -194,7 +194,7 @@ static celix_status_t deploymentAdmin_performRequest(deployment_admin_pt admin, 
     sprintf(url, "%s/send", admin->auditlogUrl);
 
     if (status == CELIX_SUCCESS) {
-            curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1)
+            curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
             curl_easy_setopt(curl, CURLOPT_URL, url);
             curl_easy_setopt(curl, CURLOPT_POSTFIELDS, entry);
             res = curl_easy_perform(curl);
@@ -393,7 +393,7 @@ celix_status_t deploymentAdmin_readVersions(deployment_admin_pt admin, array_lis
 	chunk.memory = calloc(1, sizeof(char));
 	chunk.size = 0;
 	if (curl) {
-	    curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1)
+	    curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
 		curl_easy_setopt(curl, CURLOPT_URL, admin->pollUrl);
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, deploymentAdmin_parseVersions);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &chunk);
@@ -439,7 +439,7 @@ celix_status_t deploymentAdmin_download(deployment_admin_pt admin, char * url, c
         int fd = mkstemp(*inputFile);
         if (fd != -1) {
             FILE *fp = fopen(*inputFile, "wb+");
-            curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1)
+            curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
             curl_easy_setopt(curl, CURLOPT_URL, url);
             curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, deploymentAdmin_writeData);
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
