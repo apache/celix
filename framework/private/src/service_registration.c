@@ -71,12 +71,15 @@ static celix_status_t serviceRegistration_createInternal(registry_callback_t cal
 		}
 
 		reg->isUnregistering = false;
-        celixThreadRwlock_create(&reg->lock, NULL);
+		celixThreadRwlock_create(&reg->lock, NULL);
 
+		celixThreadRwlock_writeLock(&reg->lock);
 		serviceRegistration_initializeProperties(reg, dictionary);
-    } else {
-    	status = CELIX_ENOMEM;
-    }
+		celixThreadRwlock_unlock(&reg->lock);
+
+	} else {
+		status = CELIX_ENOMEM;
+	}
 
 	if (status == CELIX_SUCCESS) {
 		*out = reg;
@@ -132,13 +135,9 @@ static celix_status_t serviceRegistration_initializeProperties(service_registrat
 		properties_set(dictionary, (char *) OSGI_FRAMEWORK_OBJECTCLASS, registration->className);
 	}
 
+	registration->properties = dictionary;
 
-    celixThreadRwlock_writeLock(&registration->lock);
-    registration->properties = dictionary;
-    celixThreadRwlock_unlock(&registration->lock);
-
-
-    return CELIX_SUCCESS;
+	return CELIX_SUCCESS;
 }
 
 void serviceRegistration_invalidate(service_registration_pt registration) {
@@ -171,8 +170,7 @@ celix_status_t serviceRegistration_unregister(service_registration_pt registrati
     callback.unregister = NULL;
     bundle_pt bundle = NULL;
 
-    if (notValidOrUnregistering) {
-		printf("Service is already unregistered\n");
+	if (notValidOrUnregistering) {
 		status = CELIX_ILLEGAL_STATE;
 	} else {
         celixThreadRwlock_writeLock(&registration->lock);
