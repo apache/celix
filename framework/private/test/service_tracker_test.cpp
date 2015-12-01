@@ -25,6 +25,7 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/TestHarness_c.h"
@@ -44,6 +45,23 @@ int main(int argc, char** argv) {
 	return RUN_ALL_TESTS(argc, argv);
 }
 
+static char* my_strdup(const char* s) {
+	if (s == NULL) {
+		return NULL;
+	}
+
+	size_t len = strlen(s);
+
+	char *d = (char*) calloc(len + 1, sizeof(char));
+
+	if (d == NULL) {
+		return NULL;
+	}
+
+	strncpy(d, s, len);
+	return d;
+}
+
 TEST_GROUP(service_tracker) {
 	void setup(void) {
 	}
@@ -57,69 +75,65 @@ TEST_GROUP(service_tracker) {
 TEST(service_tracker, create) {
 	celix_status_t status;
 	service_tracker_pt tracker = NULL;
-	bundle_context_pt ctx = (bundle_context_pt) 0x123;
-	std::string service = "service";
-	status = serviceTracker_create(ctx, (char *) service.c_str(), NULL, &tracker);
+	bundle_context_pt context = (bundle_context_pt) 0x123;
+	char * service = my_strdup("service");
+	status = serviceTracker_create(context, service, NULL, &tracker);
 
 	LONGS_EQUAL(CELIX_SUCCESS, status);
-	POINTERS_EQUAL(ctx, tracker->context);
+	POINTERS_EQUAL(context, tracker->context);
 	POINTERS_EQUAL(NULL, tracker->customizer);
 	POINTERS_EQUAL(NULL, tracker->listener);
 	POINTERS_EQUAL(tracker, tracker->tracker);
 	STRCMP_EQUAL("(objectClass=service)", tracker->filter);
 
 	serviceTracker_destroy(tracker);
+	free(service);
 }
 
 TEST(service_tracker, createWithFilter) {
 	celix_status_t status;
 	service_tracker_pt tracker = NULL;
-	bundle_context_pt ctx = (bundle_context_pt) 0x123;
-	std::string filter = "(objectClass=test)";
-	status = serviceTracker_createWithFilter(ctx, (char *) filter.c_str(), NULL, &tracker);
+	bundle_context_pt context = (bundle_context_pt) 0x123;
+	char * filter = my_strdup("(objectClass=test)");
+	status = serviceTracker_createWithFilter(context, filter, NULL, &tracker);
 
 	LONGS_EQUAL(CELIX_SUCCESS, status);
-	POINTERS_EQUAL(ctx, tracker->context);
+	POINTERS_EQUAL(context, tracker->context);
 	POINTERS_EQUAL(NULL, tracker->customizer);
 	POINTERS_EQUAL(NULL, tracker->listener);
 	POINTERS_EQUAL(tracker, tracker->tracker);
 	STRCMP_EQUAL("(objectClass=test)", tracker->filter);
 
 	serviceTracker_destroy(tracker);
+	free(filter);
 }
 
 TEST(service_tracker, destroy) {
 	celix_status_t status;
 	service_tracker_pt tracker = NULL;
-	bundle_context_pt ctx = (bundle_context_pt) 0x123;
-	std::string filter = "(objectClass=test)";
-	status = serviceTracker_createWithFilter(ctx, (char *) filter.c_str(), NULL, &tracker);
+	bundle_context_pt context = (bundle_context_pt) 0x123;
+	char * filter = my_strdup("(objectClass=test)");
+	status = serviceTracker_createWithFilter(context, filter, NULL, &tracker);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	service_listener_pt listener = (service_listener_pt) calloc(1, sizeof(serviceListener));
 	tracker->listener = listener;
 
 	mock()
 		.expectOneCall("bundleContext_removeServiceListener")
-		.withParameter("context", ctx)
+		.withParameter("context", context)
 		.withParameter("listener", listener)
 		.andReturnValue(CELIX_SUCCESS);
 
 	status = serviceTracker_destroy(tracker);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
+	free(filter);
 }
 
 TEST(service_tracker, open) {
-	// Without initial services and no customizer
-	// new tracker
-	service_tracker_pt tracker = (service_tracker_pt) malloc(sizeof(*tracker));
-	bundle_context_pt ctx = (bundle_context_pt) 0x10;
-	tracker->context = ctx;
-	std::string filter = "(objectClass=service)";
-	tracker->filter = (char *) filter.c_str();
-	// new tracker->trackedServices
-	array_list_pt tracked = NULL;
-	arrayList_create(&tracked);
-	tracker->trackedServices = tracked;
+	bundle_context_pt context= (bundle_context_pt) 0x01;
+	char * filter = my_strdup("(objectClass=service)");
+	service_tracker_pt tracker = NULL;
+	serviceTracker_createWithFilter(context, filter, NULL, &tracker);
 
 	array_list_pt refs = NULL;
 	arrayList_create(&refs);
@@ -127,53 +141,37 @@ TEST(service_tracker, open) {
 	mock().strictOrder();
 	mock()
 		.expectOneCall("bundleContext_getServiceReferences")
-		.withParameter("context", ctx)
+		.withParameter("context", context)
 		.withParameter("serviceName", (char *) NULL)
 		.withParameter("filter", "(objectClass=service)")
-		.withOutputParameterReturning("service_references", &refs, sizeof(refs))
-		.andReturnValue(CELIX_SUCCESS);
+		.withOutputParameterReturning("service_references", &refs, sizeof(refs));
 	mock()
 		.expectOneCall("bundleContext_addServiceListener")
-		.withParameter("context", ctx)
+		.withParameter("context", context)
 		.withParameter("filter", "(objectClass=service)")
-		.ignoreOtherParameters()
-		.andReturnValue(CELIX_SUCCESS);
+		.ignoreOtherParameters();
 	serviceTracker_open(tracker);
 	CHECK(tracker->listener != NULL);
 
 	// No services should be found
 	LONGS_EQUAL(0, arrayList_size(tracker->trackedServices));
 
-	arrayList_destroy(tracked);
+	mock().expectOneCall("bundleContext_removeServiceListener")
+			.withParameter("context", context)
+			.ignoreOtherParameters();
 
-	free(tracker->listener);
-	free(tracker);
+	serviceTracker_destroy(tracker);
+	free(filter);
 }
 
 TEST(service_tracker, open_withRefs) {
-	// With one initial service
-	// new tracker
-	service_tracker_pt tracker = (service_tracker_pt) malloc(sizeof(*tracker));
-	tracker->customizer = NULL;
-	bundle_context_pt ctx = (bundle_context_pt) 0x10;
-	tracker->context = ctx;
-	std::string filter = "(objectClass=service)";
-	tracker->filter = (char *) filter.c_str();
-	// new tracker->trackedServices
-	array_list_pt tracked = NULL;
-	arrayList_create(&tracked);
-	tracker->trackedServices = tracked;
-//	// add tracked to tracker->trackedServices
-//	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
-//	entry->service = (void *) 0x31;
-//	service_reference_pt ref = (service_reference_pt) 0x51;
-//	entry->reference = ref;
-//	arrayList_add(tracked, entry);
-//	tracked_pt entry2 = (tracked_pt) malloc(sizeof(*entry));
-//	entry2->service = (void *) 0x32;
-//	service_reference_pt ref2 = (service_reference_pt) 0x52;
-//	entry2->reference = ref2;
-//	arrayList_add(tracked, entry2);
+	celix_status_t status;
+	service_tracker_pt tracker = NULL;
+	bundle_context_pt context = (bundle_context_pt) 0x123;
+	char * filter = my_strdup("(objectClass=test)");
+	status = serviceTracker_createWithFilter(context, filter, NULL, &tracker);
+	LONGS_EQUAL(CELIX_SUCCESS, status);
+	tracker->listener = NULL;
 
 	array_list_pt refs = NULL;
 	arrayList_create(&refs);
@@ -181,78 +179,70 @@ TEST(service_tracker, open_withRefs) {
 	arrayList_add(refs, ref);
 	void *src = (void *) 0x345;
 
-//	mock().strictOrder();
 	mock()
 		.expectOneCall("bundleContext_getServiceReferences")
-		.withParameter("context", ctx)
+		.withParameter("context", context)
 		.withParameter("serviceName", (char *) NULL)
-		.withParameter("filter", "(objectClass=service)")
-		.withOutputParameterReturning("service_references", &refs, sizeof(refs))
-		.andReturnValue(CELIX_SUCCESS);
+		.withParameter("filter", filter)
+		.withOutputParameterReturning("service_references", &refs, sizeof(refs));
 	mock()
 		.expectOneCall("bundleContext_addServiceListener")
-		.withParameter("context", ctx)
-		.withParameter("filter", "(objectClass=service)")
-		.ignoreOtherParameters()
-		.andReturnValue(CELIX_SUCCESS);
+		.withParameter("context", context)
+		.withParameter("filter", filter)
+		.ignoreOtherParameters();
 	mock()
 		.expectOneCall("bundleContext_getService")
-		.withParameter("context", ctx)
+		.withParameter("context", context)
 		.withParameter("reference", ref)
-		.withOutputParameterReturning("service_instance", &src, sizeof(src))
-		.andReturnValue(CELIX_SUCCESS);
+		.withOutputParameterReturning("service_instance", &src, sizeof(src));
 	serviceTracker_open(tracker);
+
 	CHECK(tracker->listener != NULL);
+	tracked_pt get_tracked = (tracked_pt) arrayList_get(tracker->trackedServices, 0);
+	POINTERS_EQUAL(src, get_tracked->service);
+	POINTERS_EQUAL(ref, get_tracked->reference);
+
 
 	// One service should be found
 	LONGS_EQUAL(1, arrayList_size(tracker->trackedServices));
 
-	free(arrayList_get(tracked, 0));
-	arrayList_destroy(tracked);
+	mock()
+		.expectOneCall("bundleContext_removeServiceListener")
+		.withParameter("context", context)
+		.ignoreOtherParameters();
 
-	free(tracker->listener);
-	free(tracker);
+	serviceTracker_destroy(tracker);
 	free(ref);
+	free(get_tracked);
+	free(filter);
 }
 
 TEST(service_tracker, open_withRefsAndTracked) {
-	// With one initial service
-	// new tracker
-	service_tracker_pt tracker = (service_tracker_pt) malloc(sizeof(*tracker));
-	tracker->customizer = NULL;
-	bundle_context_pt ctx = (bundle_context_pt) 0x10;
-	tracker->context = ctx;
-	std::string filter = "(objectClass=service)";
-	tracker->filter = (char *) filter.c_str();
-	// new tracker->trackedServices
-	array_list_pt tracked = NULL;
-	arrayList_create(&tracked);
-	tracker->trackedServices = tracked;
-	// add tracked to tracker->trackedServices
+	bundle_context_pt context= (bundle_context_pt) 0x01;
+	char * service = my_strdup("service_name");
+	service_tracker_pt tracker = NULL;
+	serviceTracker_create(context, service, NULL, &tracker);
+
 	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
-	entry->service = (void *) 0x31;
-	service_reference_pt ref = (service_reference_pt) 0x51;
+	service_reference_pt ref = (service_reference_pt) 0x02;
 	entry->reference = ref;
-	arrayList_add(tracked, entry);
+	arrayList_add(tracker->trackedServices, entry);
 
 	array_list_pt refs = NULL;
 	arrayList_create(&refs);
 	arrayList_add(refs, ref);
 
-//	mock().strictOrder();
 	mock()
 		.expectOneCall("bundleContext_getServiceReferences")
-		.withParameter("context", ctx)
+		.withParameter("context", context)
 		.withParameter("serviceName", (char *) NULL)
-		.withParameter("filter", "(objectClass=service)")
-		.withOutputParameterReturning("service_references", &refs, sizeof(refs))
-		.andReturnValue(CELIX_SUCCESS);
+		.withParameter("filter", "(objectClass=service_name)")
+		.withOutputParameterReturning("service_references", &refs, sizeof(refs));
 	mock()
 		.expectOneCall("bundleContext_addServiceListener")
-		.withParameter("context", ctx)
-		.withParameter("filter", "(objectClass=service)")
-		.ignoreOtherParameters()
-		.andReturnValue(CELIX_SUCCESS);
+		.withParameter("context", context)
+		.withParameter("filter", "(objectClass=service_name)")
+		.ignoreOtherParameters();
 
 	bool equal = true;
 	mock()
@@ -260,7 +250,6 @@ TEST(service_tracker, open_withRefsAndTracked) {
 		.withParameter("reference", ref)
 		.withParameter("compareTo", ref)
 		.withOutputParameterReturning("equal", &equal, sizeof(equal))
-		//.ignoreOtherParameters()
 		.andReturnValue(CELIX_SUCCESS);
 
 	serviceTracker_open(tracker);
@@ -269,36 +258,35 @@ TEST(service_tracker, open_withRefsAndTracked) {
 	// One service should be found
 	LONGS_EQUAL(1, arrayList_size(tracker->trackedServices));
 
-	arrayList_destroy(tracked);
+	mock()
+		.expectOneCall("bundleContext_removeServiceListener")
+		.withParameter("context", context)
+		.ignoreOtherParameters();
 
-	free(tracker->listener);
-	free(tracker);
+	serviceTracker_destroy(tracker);
 	free(entry);
+	free(service);
 }
 
 TEST(service_tracker, close) {
-	// new tracker
-	service_tracker_pt tracker = (service_tracker_pt) malloc(sizeof(*tracker));
-	tracker->customizer = NULL;
-	bundle_context_pt ctx = (bundle_context_pt) 0x345;
-	tracker->context = ctx;
-	// new tracker->listener
-	service_listener_pt listener = (service_listener_pt) 0x42;
-	tracker->listener = (service_listener_pt) listener;
-	// new tracker->trackedServices
-	array_list_pt tracked = NULL;
-	arrayList_create(&tracked);
-	tracker->trackedServices = tracked;
-	// add tracked to tracker->trackedServices
+	bundle_context_pt context= (bundle_context_pt) 0x01;
+	char * service = my_strdup("service_name");
+	service_tracker_pt tracker = NULL;
+	serviceTracker_create(context, service, NULL, &tracker);
+
+	service_listener_pt listener = (service_listener_pt) malloc(sizeof(*listener));
 	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
-	entry->service = (void *) 0x31;
-	service_reference_pt ref = (service_reference_pt) 0x51;
+	service_reference_pt ref = (service_reference_pt) 0x02;
+
+	tracker->listener = listener;
+
+	entry->service = (void *) 0x03;
 	entry->reference = ref;
-	arrayList_add(tracked, entry);
+	arrayList_add(tracker->trackedServices, entry);
 
 	mock()
 		.expectOneCall("bundleContext_removeServiceListener")
-		.withParameter("context", ctx)
+		.withParameter("context", context)
 		.withParameter("listener", listener)
 		.andReturnValue(CELIX_SUCCESS);
 	bool equal = true;
@@ -311,161 +299,161 @@ TEST(service_tracker, close) {
 	bool result = true;
 	mock()
 		.expectOneCall("bundleContext_ungetService")
-		.withParameter("context", ctx)
+		.withParameter("context", context)
 		.withParameter("reference", ref)
 		.withOutputParameterReturning("result", &result, sizeof(result))
 		.andReturnValue(CELIX_SUCCESS);
 
+	celix_status_t status;
+
+	status = serviceTracker_close(tracker);
+	LONGS_EQUAL(CELIX_SUCCESS, status);
+
 	mock()
-		.expectOneCall("bundleContext_ungetServiceReference")
-		.withParameter("context", ctx)
-		.withParameter("reference", ref)
+		.expectOneCall("bundleContext_removeServiceListener")
+		.withParameter("context", context)
+		.withParameter("listener", listener)
 		.andReturnValue(CELIX_SUCCESS);
 
-	serviceTracker_close(tracker);
-
-	arrayList_destroy(tracked);
-	free(tracker);
+	serviceTracker_destroy(tracker);
+	free(service);
 }
 
 TEST(service_tracker, getServiceReference) {
-	// new tracker
-	service_tracker_pt tracker = (service_tracker_pt) malloc(sizeof(*tracker));
-	// new tracker->trackedServices
-	array_list_pt tracked = NULL;
-	arrayList_create(&tracked);
-	tracker->trackedServices = tracked;
-	// add tracked to tracker->trackedServices
-	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
-	entry->service = (void *) 0x31;
-	service_reference_pt ref = (service_reference_pt) 0x51;
-	entry->reference = ref;
-	arrayList_add(tracked, entry);
-	tracked_pt entry2 = (tracked_pt) malloc(sizeof(*entry));
-	entry2->service = (void *) 0x32;
-	service_reference_pt ref2 = (service_reference_pt) 0x52;
-	entry2->reference = ref2;
-	arrayList_add(tracked, entry2);
+	bundle_context_pt context= (bundle_context_pt) 0x01;
+	char * service = my_strdup("service_name");
+	service_tracker_pt tracker = NULL;
+	serviceTracker_create(context, service, NULL, &tracker);
+	service_reference_pt reference = (service_reference_pt) 0x02;
+	service_reference_pt reference2 = (service_reference_pt) 0x03;
+	service_reference_pt get_reference;
+	tracked_pt tracked = (tracked_pt) malloc(sizeof(*tracked));
+	tracked_pt tracked2 = (tracked_pt) malloc(sizeof(*tracked2));
 
-	service_reference_pt reference = serviceTracker_getServiceReference(tracker);
-	POINTERS_EQUAL(ref, reference);
+	tracked->reference = reference;
+	tracked2->reference = reference2;
+	arrayList_add(tracker->trackedServices, tracked);
+	arrayList_add(tracker->trackedServices, tracked2);
 
-	arrayList_destroy(tracked);
+	get_reference = serviceTracker_getServiceReference(tracker);
 
-	free(tracker);
-	free(entry);
-	free(entry2);
+	//test for either of the references
+	if(get_reference != reference && get_reference != reference2){
+		FAIL("unknown reference");
+	}
+
+	serviceTracker_destroy(tracker);
+	free(service);
+	free(tracked);
+	free(tracked2);
 }
 
 TEST(service_tracker, getServiceReferenceNull) {
-	// new tracker
-	service_tracker_pt tracker = (service_tracker_pt) malloc(sizeof(*tracker));
-	// new tracker->trackedServices
-	array_list_pt tracked = NULL;
-	arrayList_create(&tracked);
-	tracker->trackedServices = tracked;
+	bundle_context_pt context= (bundle_context_pt) 0x01;
+	char * service = my_strdup("service_name");
+	service_tracker_pt tracker = NULL;
+	serviceTracker_create(context, service, NULL, &tracker);
 
 	service_reference_pt reference = serviceTracker_getServiceReference(tracker);
 	POINTERS_EQUAL(NULL, reference);
 
-	arrayList_destroy(tracked);
-	free(tracker);
+	serviceTracker_destroy(tracker);
+	free(service);
 }
 
 TEST(service_tracker, getServiceReferences) {
-	// new tracker
-	service_tracker_pt tracker = (service_tracker_pt) malloc(sizeof(*tracker));
-	// new tracker->trackedServices
-	array_list_pt tracked = NULL;
-	arrayList_create(&tracked);
-	tracker->trackedServices = tracked;
-	// add tracked to tracker->trackedServices
-	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
-	entry->service = (void *) 0x31;
-	service_reference_pt ref = (service_reference_pt) 0x51;
-	entry->reference = ref;
-	arrayList_add(tracked, entry);
-	tracked_pt entry2 = (tracked_pt) malloc(sizeof(*entry));
-	entry2->service = (void *) 0x32;
-	service_reference_pt ref2 = (service_reference_pt) 0x52;
-	entry2->reference = ref2;
-	arrayList_add(tracked, entry2);
+	bundle_context_pt context= (bundle_context_pt) 0x01;
+	char * service = my_strdup("service_name");
+	service_tracker_pt tracker = NULL;
+	serviceTracker_create(context, service, NULL, &tracker);
+	service_reference_pt reference = (service_reference_pt) 0x02;
+	service_reference_pt reference2 = (service_reference_pt) 0x03;
+	service_reference_pt get_reference;
+	tracked_pt tracked = (tracked_pt) malloc(sizeof(*tracked));
+	tracked_pt tracked2 = (tracked_pt) malloc(sizeof(*tracked2));
+	array_list_pt get_references;
 
-	array_list_pt references = serviceTracker_getServiceReferences(tracker);
-	LONGS_EQUAL(2, arrayList_size(references));
-	POINTERS_EQUAL(ref, arrayList_get(references, 0));
-	POINTERS_EQUAL(ref2, arrayList_get(references, 1));
+	tracked->reference = reference;
+	tracked2->reference = reference2;
+	arrayList_add(tracker->trackedServices, tracked);
+	arrayList_add(tracker->trackedServices, tracked2);
 
-	arrayList_destroy(references);
-	arrayList_destroy(tracked);
+	get_references = serviceTracker_getServiceReferences(tracker);
 
-	free(tracker);
-	free(entry);
-	free(entry2);
+	//test for the references, in no specific order
+	get_reference = (service_reference_pt) arrayList_get(get_references, 0);
+	if(get_reference == reference){
+		get_reference = (service_reference_pt) arrayList_get(get_references, 1);
+		POINTERS_EQUAL(reference2, get_reference);
+	} else {
+		POINTERS_EQUAL(reference2, get_reference);
+		get_reference = (service_reference_pt) arrayList_get(get_references, 1);
+		POINTERS_EQUAL(reference, get_reference);
+	}
+
+	arrayList_destroy(get_references);
+
+	serviceTracker_destroy(tracker);
+	free(service);
+	free(tracked);
+	free(tracked2);
 }
 
 TEST(service_tracker, getService) {
-	// new tracker
-	service_tracker_pt tracker = (service_tracker_pt) malloc(sizeof(*tracker));
-	// new tracker->trackedServices
-	array_list_pt tracked = NULL;
-	arrayList_create(&tracked);
-	tracker->trackedServices = tracked;
-	// add tracked to tracker->trackedServices
+	bundle_context_pt context= (bundle_context_pt) 0x01;
+	char * service = my_strdup("service_name");
+	service_tracker_pt tracker = NULL;
+	serviceTracker_create(context, service, NULL, &tracker);
+
 	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
-	entry->service = (void *) 0x31;
-	service_reference_pt ref = (service_reference_pt) 0x51;
+	service_reference_pt ref = (service_reference_pt) 0x02;
 	entry->reference = ref;
-	arrayList_add(tracked, entry);
+	void * actual_service = (void*) 0x32;
+	entry->service = actual_service;
+	arrayList_add(tracker->trackedServices, entry);
 	tracked_pt entry2 = (tracked_pt) malloc(sizeof(*entry));
-	entry2->service = (void *) 0x32;
 	service_reference_pt ref2 = (service_reference_pt) 0x52;
 	entry2->reference = ref2;
-	arrayList_add(tracked, entry2);
+	arrayList_add(tracker->trackedServices, entry2);
 
-	void *service = serviceTracker_getService(tracker);
-	POINTERS_EQUAL(0x31, service);
+	void *get_service = serviceTracker_getService(tracker);
+	POINTERS_EQUAL(actual_service, get_service);
 
-	arrayList_destroy(tracked);
-
+	serviceTracker_destroy(tracker);
 	free(entry);
 	free(entry2);
-	free(tracker);
+	free(service);
 }
 
 TEST(service_tracker, getServiceNull) {
-	// new tracker
-	service_tracker_pt tracker = (service_tracker_pt) malloc(sizeof(*tracker));
-	// new tracker->trackedServices
-	array_list_pt tracked = NULL;
-	arrayList_create(&tracked);
-	tracker->trackedServices = tracked;
+	bundle_context_pt context= (bundle_context_pt) 0x01;
+	char * service = my_strdup("service_name");
+	service_tracker_pt tracker = NULL;
+	serviceTracker_create(context, service, NULL, &tracker);
 
-	void *service = serviceTracker_getService(tracker);
-	POINTERS_EQUAL(NULL, service);
+	void * get_service = serviceTracker_getService(tracker);
+	POINTERS_EQUAL(NULL, get_service);
 
-	arrayList_destroy(tracked);
-	free(tracker);
+	serviceTracker_destroy(tracker);
+	free(service);
 }
 
 TEST(service_tracker, getServices) {
-	// new tracker
-	service_tracker_pt tracker = (service_tracker_pt) malloc(sizeof(*tracker));
-	// new tracker->trackedServices
-	array_list_pt tracked = NULL;
-	arrayList_create(&tracked);
-	tracker->trackedServices = tracked;
-	// add tracked to tracker->trackedServices
+	bundle_context_pt context= (bundle_context_pt) 0x01;
+	char * service = my_strdup("service_name");
+	service_tracker_pt tracker = NULL;
+	serviceTracker_create(context, service, NULL, &tracker);
+
 	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
 	entry->service = (void *) 0x31;
 	service_reference_pt ref = (service_reference_pt) 0x51;
 	entry->reference = ref;
-	arrayList_add(tracked, entry);
+	arrayList_add(tracker->trackedServices, entry);
 	tracked_pt entry2 = (tracked_pt) malloc(sizeof(*entry));
 	entry2->service = (void *) 0x32;
 	service_reference_pt ref2 = (service_reference_pt) 0x52;
 	entry2->reference = ref2;
-	arrayList_add(tracked, entry2);
+	arrayList_add(tracker->trackedServices, entry2);
 
 	array_list_pt services = serviceTracker_getServices(tracker);
 	LONGS_EQUAL(2, arrayList_size(services));
@@ -473,26 +461,24 @@ TEST(service_tracker, getServices) {
 	POINTERS_EQUAL(0x32, arrayList_get(services, 1));
 
 	arrayList_destroy(services);
-	arrayList_destroy(tracked);
 
+	serviceTracker_destroy(tracker);
 	free(entry);
 	free(entry2);
-	free(tracker);
+	free(service);
 }
 
 TEST(service_tracker, getServiceByReference) {
-	// new tracker
-	service_tracker_pt tracker = (service_tracker_pt) malloc(sizeof(*tracker));
-	// new tracker->trackedServices
-	array_list_pt tracked = NULL;
-	arrayList_create(&tracked);
-	tracker->trackedServices = tracked;
-	// add tracked to tracker->trackedServices
+	bundle_context_pt context= (bundle_context_pt) 0x01;
+	char * service = my_strdup("service_name");
+	service_tracker_pt tracker = NULL;
+	serviceTracker_create(context, service, NULL, &tracker);
+
 	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
 	entry->service = (void *) 0x31;
 	service_reference_pt ref = (service_reference_pt) 0x51;
 	entry->reference = ref;
-	arrayList_add(tracked, entry);
+	arrayList_add(tracker->trackedServices, entry);
 
 	bool equal = true;
 	mock()
@@ -502,28 +488,25 @@ TEST(service_tracker, getServiceByReference) {
 		.withOutputParameterReturning("equal", &equal, sizeof(equal))
 		.andReturnValue(4);
 		//.ignoreOtherParameters();
-	void *service = serviceTracker_getServiceByReference(tracker, ref);
-	POINTERS_EQUAL(0x31, service);
+	void * get_service = serviceTracker_getServiceByReference(tracker, ref);
+	POINTERS_EQUAL(0x31, get_service);
 
-	arrayList_destroy(tracked);
-
-	free(tracker);
+	serviceTracker_destroy(tracker);
 	free(entry);
+	free(service);
 }
 
 TEST(service_tracker, getServiceByReferenceNull) {
-	// new tracker
-	service_tracker_pt tracker = (service_tracker_pt) malloc(sizeof(*tracker));
-	// new tracker->trackedServices
-	array_list_pt tracked = NULL;
-	arrayList_create(&tracked);
-	tracker->trackedServices = tracked;
-	// add tracked to tracker->trackedServices
+	bundle_context_pt context= (bundle_context_pt) 0x01;
+	char * service = my_strdup("service_name");
+	service_tracker_pt tracker = NULL;
+	serviceTracker_create(context, service, NULL, &tracker);
+
 	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
 	entry->service = (void *) 0x31;
 	service_reference_pt ref = (service_reference_pt) 0x51;
 	entry->reference = ref;
-	arrayList_add(tracked, entry);
+	arrayList_add(tracker->trackedServices, entry);
 
 	bool equal = false;
 	mock()
@@ -533,28 +516,23 @@ TEST(service_tracker, getServiceByReferenceNull) {
 		.ignoreOtherParameters()
 		.andReturnValue(CELIX_SUCCESS)
 		.withCallOrder(1);
-	void *service = serviceTracker_getServiceByReference(tracker, ref);
-	POINTERS_EQUAL(NULL, service);
+	void * get_service = serviceTracker_getServiceByReference(tracker, ref);
+	POINTERS_EQUAL(NULL, get_service);
 
-	arrayList_destroy(tracked);
-
-	free(tracker);
+	serviceTracker_destroy(tracker);
 	free(entry);
+	free(service);
 }
 
 TEST(service_tracker, serviceChangedRegistered) {
-	// With one initial service
-	// new tracker
-	service_tracker_pt tracker = (service_tracker_pt) malloc(sizeof(*tracker));
-	tracker->customizer = NULL;
-	bundle_context_pt ctx = (bundle_context_pt) 0x10;
-	tracker->context = ctx;
+	bundle_context_pt context= (bundle_context_pt) 0x01;
+	char * service = my_strdup("service_name");
+	service_tracker_pt tracker = NULL;
+	serviceTracker_create(context, service, NULL, &tracker);
+
 	service_listener_pt listener = (service_listener_pt) malloc(sizeof(*listener));
 	tracker->listener = listener;
 	listener->handle = tracker;
-	array_list_pt tracked = NULL;
-	arrayList_create(&tracked);
-	tracker->trackedServices = tracked;
 
 	service_reference_pt ref = (service_reference_pt) 0x51;
 
@@ -565,41 +543,44 @@ TEST(service_tracker, serviceChangedRegistered) {
 	void *src = (void *) 0x345;
 	mock()
 		.expectOneCall("bundleContext_getService")
-		.withParameter("context", ctx)
+		.withParameter("context", context)
 		.withParameter("reference", ref)
 		.withOutputParameterReturning("service_instance", &src, sizeof(src))
 		.andReturnValue(CELIX_SUCCESS);
 	serviceTracker_serviceChanged(listener, event);
 
-	free(arrayList_get(tracked, 0));
-	arrayList_destroy(tracked);
+	tracked_pt get_tracked = (tracked_pt) arrayList_get(tracker->trackedServices, 0);
+	POINTERS_EQUAL(src, get_tracked->service);
+	POINTERS_EQUAL(ref, get_tracked->reference);
 
+	//cleanup
+	mock()
+		.expectOneCall("bundleContext_removeServiceListener")
+		.withParameter("context", context)
+		.withParameter("listener", listener)
+		.andReturnValue(CELIX_SUCCESS);
+
+	serviceTracker_destroy(tracker);
+	free(get_tracked);
 	free(event);
-	free(tracker);
-	free(listener);
+	free(service);
 }
 
 TEST(service_tracker, serviceChangedModified) {
-	// With one initial service
-	// new tracker
-	service_tracker_pt tracker = (service_tracker_pt) malloc(sizeof(*tracker));
-	tracker->customizer = NULL;
-	bundle_context_pt ctx = (bundle_context_pt) 0x10;
-	tracker->context = ctx;
+	bundle_context_pt context= (bundle_context_pt) 0x01;
+	char * service = my_strdup("service_name");
+	service_tracker_pt tracker = NULL;
+	serviceTracker_create(context, service, NULL, &tracker);
+
 	service_listener_pt listener = (service_listener_pt) malloc(sizeof(*listener));
 	tracker->listener = listener;
 	listener->handle = tracker;
 
-	// new tracker->trackedServices
-	array_list_pt tracked = NULL;
-	arrayList_create(&tracked);
-	tracker->trackedServices = tracked;
-//	// add tracked to tracker->trackedServices
 	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
 	entry->service = (void *) 0x31;
 	service_reference_pt ref = (service_reference_pt) 0x51;
 	entry->reference = ref;
-	arrayList_add(tracked, entry);
+	arrayList_add(tracker->trackedServices, entry);
 
 	service_event_pt event = (service_event_pt) malloc(sizeof(*event));
 	event->type = OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED;
@@ -615,36 +596,33 @@ TEST(service_tracker, serviceChangedModified) {
 
 	serviceTracker_serviceChanged(listener, event);
 
-	free(arrayList_get(tracked, 0));
-	free(arrayList_get(tracked, 1));
-	arrayList_destroy(tracked);
+	mock()
+		.expectOneCall("bundleContext_removeServiceListener")
+		.withParameter("context", context)
+		.withParameter("listener", listener)
+		.andReturnValue(CELIX_SUCCESS);
 
+	serviceTracker_destroy(tracker);
+	free(entry);
 	free(event);
-	free(listener);
-	free(tracker);
+	free(service);
 }
 
 TEST(service_tracker, serviceChangedUnregistering) {
-	// With one initial service
-	// new tracker
-	service_tracker_pt tracker = (service_tracker_pt) malloc(sizeof(*tracker));
-	tracker->customizer = NULL;
-	bundle_context_pt ctx = (bundle_context_pt) 0x10;
-	tracker->context = ctx;
+	bundle_context_pt context= (bundle_context_pt) 0x01;
+	char * service = my_strdup("service_name");
+	service_tracker_pt tracker = NULL;
+	serviceTracker_create(context, service, NULL, &tracker);
+
 	service_listener_pt listener = (service_listener_pt) malloc(sizeof(*listener));
 	tracker->listener = listener;
 	listener->handle = tracker;
 
-	// new tracker->trackedServices
-	array_list_pt tracked = NULL;
-	arrayList_create(&tracked);
-	tracker->trackedServices = tracked;
-//	// add tracked to tracker->trackedServices
 	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
 	entry->service = (void *) 0x31;
 	service_reference_pt ref = (service_reference_pt) 0x51;
 	entry->reference = ref;
-	arrayList_add(tracked, entry);
+	arrayList_add(tracker->trackedServices, entry);
 
 	service_event_pt event = (service_event_pt) malloc(sizeof(*event));
 	event->type = OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING;
@@ -660,46 +638,38 @@ TEST(service_tracker, serviceChangedUnregistering) {
 	bool result = true;
 	mock()
 		.expectOneCall("bundleContext_ungetService")
-		.withParameter("context", ctx)
+		.withParameter("context", context)
 		.withParameter("reference", ref)
 		.withOutputParameterReturning("result", &result, sizeof(result))
 		.andReturnValue(CELIX_SUCCESS);
 
-	mock()
-		.expectOneCall("bundleContext_ungetServiceReference")
-		.withParameter("context", ctx)
-		.withParameter("reference", ref)
-		.andReturnValue(CELIX_SUCCESS);
-
 	serviceTracker_serviceChanged(listener, event);
 
-	arrayList_destroy(tracked);
+	mock()
+		.expectOneCall("bundleContext_removeServiceListener")
+		.withParameter("context", context)
+		.withParameter("listener", listener)
+		.andReturnValue(CELIX_SUCCESS);
 
-	free(listener);
+	serviceTracker_destroy(tracker);
 	free(event);
-	free(tracker);
+	free(service);
 }
 
 TEST(service_tracker, serviceChangedModifiedEndmatch) {
-	// With one initial service
-	// new tracker
-	service_tracker_pt tracker = (service_tracker_pt) malloc(sizeof(*tracker));
-	bundle_context_pt ctx = (bundle_context_pt) 0x10;
-	tracker->context = ctx;
+	bundle_context_pt context= (bundle_context_pt) 0x01;
+	char * service = my_strdup("service_name");
+	service_tracker_pt tracker = NULL;
+	serviceTracker_create(context, service, NULL, &tracker);
 	service_listener_pt listener = (service_listener_pt) malloc(sizeof(*listener));
 	tracker->listener = listener;
 	listener->handle = tracker;
 
-	// new tracker->trackedServices
-	array_list_pt tracked = NULL;
-	arrayList_create(&tracked);
-	tracker->trackedServices = tracked;
-//	// add tracked to tracker->trackedServices
 	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
 	entry->service = (void *) 0x31;
 	service_reference_pt ref = (service_reference_pt) 0x51;
 	entry->reference = ref;
-	arrayList_add(tracked, entry);
+	arrayList_add(tracker->trackedServices, entry);
 
 	service_event_pt event = (service_event_pt) malloc(sizeof(*event));
 	event->type = OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED_ENDMATCH;
@@ -707,12 +677,17 @@ TEST(service_tracker, serviceChangedModifiedEndmatch) {
 
 	serviceTracker_serviceChanged(listener, event);
 
-	arrayList_destroy(tracked);
+	//cleanup
+	mock()
+		.expectOneCall("bundleContext_removeServiceListener")
+		.withParameter("context", context)
+		.withParameter("listener", listener)
+		.andReturnValue(CELIX_SUCCESS);
 
+	serviceTracker_destroy(tracker);
 	free(entry);
-	free(listener);
-	free(tracker);
 	free(event);
+	free(service);
 }
 
 extern "C" {
@@ -727,17 +702,13 @@ extern "C" {
 }
 
 TEST(service_tracker, serviceChangedRegisteredCustomizer) {
-	// With one initial service
-	// new tracker
-	service_tracker_pt tracker = (service_tracker_pt) malloc(sizeof(*tracker));
-	bundle_context_pt ctx = (bundle_context_pt) 0x10;
-	tracker->context = ctx;
+	bundle_context_pt context= (bundle_context_pt) 0x01;
+	char * service = my_strdup("service_name");
+	service_tracker_pt tracker = NULL;
+	serviceTracker_create(context, service, NULL, &tracker);
 	service_listener_pt listener = (service_listener_pt) malloc(sizeof(*listener));
 	tracker->listener = listener;
 	listener->handle = tracker;
-	array_list_pt tracked = NULL;
-	arrayList_create(&tracked);
-	tracker->trackedServices = tracked;
 	service_tracker_customizer_pt customizer = (service_tracker_customizer_pt) 0x20;
 	tracker->customizer = customizer;
 
@@ -772,12 +743,25 @@ TEST(service_tracker, serviceChangedRegisteredCustomizer) {
 		.andReturnValue(CELIX_SUCCESS);
 	serviceTracker_serviceChanged(listener, event);
 
-	free(arrayList_get(tracked, 0));
-	arrayList_destroy(tracked);
+	tracked_pt get_tracked = (tracked_pt) arrayList_get(tracker->trackedServices, 0);
+	POINTERS_EQUAL(0x45, get_tracked->service);
+	POINTERS_EQUAL(ref, get_tracked->reference);
 
+	//cleanup
+	mock()
+		.expectOneCall("bundleContext_removeServiceListener")
+		.withParameter("context", context)
+		.withParameter("listener", listener)
+		.andReturnValue(CELIX_SUCCESS);
+
+	mock()
+		.expectOneCall("serviceTrackerCustomizer_destroy")
+		.withParameter("customizer", customizer);
+
+	serviceTracker_destroy(tracker);
+	free(get_tracked);
 	free(event);
-	free(tracker);
-	free(listener);
+	free(service);
 }
 
 
@@ -788,11 +772,10 @@ extern "C" {
 }
 
 TEST(service_tracker, serviceChangedModifiedCustomizer) {
-	// With one initial service
-	// new tracker
-	service_tracker_pt tracker = (service_tracker_pt) malloc(sizeof(*tracker));
-	bundle_context_pt ctx = (bundle_context_pt) 0x10;
-	tracker->context = ctx;
+	bundle_context_pt context= (bundle_context_pt) 0x01;
+	char * service = my_strdup("service_name");
+	service_tracker_pt tracker = NULL;
+	serviceTracker_create(context, service, NULL, &tracker);
 	service_listener_pt listener = (service_listener_pt) malloc(sizeof(*listener));
 	tracker->listener = listener;
 	listener->handle = tracker;
@@ -801,16 +784,11 @@ TEST(service_tracker, serviceChangedModifiedCustomizer) {
 	//adding_callback_pt adding_func = NULL;
 	//added_callback_pt added_func = NULL;
 
-	// new tracker->trackedServices
-	array_list_pt tracked = NULL;
-	arrayList_create(&tracked);
-	tracker->trackedServices = tracked;
-//	// add tracked to tracker->trackedServices
 	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
 	entry->service = (void *) 0x31;
 	service_reference_pt ref = (service_reference_pt) 0x51;
 	entry->reference = ref;
-	arrayList_add(tracked, entry);
+	arrayList_add(tracker->trackedServices, entry);
 
 	service_event_pt event = (service_event_pt) malloc(sizeof(*event));
 	event->type = OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED;
@@ -845,7 +823,7 @@ TEST(service_tracker, serviceChangedModifiedCustomizer) {
 
 	mock()
 		.expectOneCall("bundleContext_getService")
-		.withParameter("context", ctx)
+		.withParameter("context", context)
 		.withParameter("reference", ref)
 		.withOutputParameterReturning("service_instance", &entry->service, sizeof(entry->service));
 */
@@ -865,13 +843,21 @@ TEST(service_tracker, serviceChangedModifiedCustomizer) {
 
 	serviceTracker_serviceChanged(listener, event);
 
-	free(arrayList_get(tracked, 0));
-	free(arrayList_get(tracked, 1));
-	arrayList_destroy(tracked);
+	//cleanup
+	mock()
+		.expectOneCall("bundleContext_removeServiceListener")
+		.withParameter("context", context)
+		.withParameter("listener", listener)
+		.andReturnValue(CELIX_SUCCESS);
 
+	mock()
+		.expectOneCall("serviceTrackerCustomizer_destroy")
+		.withParameter("customizer", customizer);
+
+	serviceTracker_destroy(tracker);
+	free(entry);
 	free(event);
-	free(listener);
-	free(tracker);
+	free(service);
 }
 
 extern "C" {
@@ -881,27 +867,21 @@ extern "C" {
 }
 
 TEST(service_tracker, serviceChangedUnregisteringCustomizer) {
-	// With one initial service
-	// new tracker
-	service_tracker_pt tracker = (service_tracker_pt) malloc(sizeof(*tracker));
-	bundle_context_pt ctx = (bundle_context_pt) 0x10;
-	tracker->context = ctx;
+	bundle_context_pt context= (bundle_context_pt) 0x01;
+	char * service = my_strdup("service_name");
+	service_tracker_pt tracker = NULL;
+	serviceTracker_create(context, service, NULL, &tracker);
 	service_listener_pt listener = (service_listener_pt) malloc(sizeof(*listener));
 	tracker->listener = listener;
 	listener->handle = tracker;
 	service_tracker_customizer_pt customizer = (service_tracker_customizer_pt) 0x20;
 	tracker->customizer = customizer;
 
-	// new tracker->trackedServices
-	array_list_pt tracked = NULL;
-	arrayList_create(&tracked);
-	tracker->trackedServices = tracked;
-//	// add tracked to tracker->trackedServices
 	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
 	entry->service = (void *) 0x31;
 	service_reference_pt ref = (service_reference_pt) 0x51;
 	entry->reference = ref;
-	arrayList_add(tracked, entry);
+	arrayList_add(tracker->trackedServices, entry);
 
 	service_event_pt event = (service_event_pt) malloc(sizeof(*event));
 	event->type = OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING;
@@ -927,42 +907,47 @@ TEST(service_tracker, serviceChangedUnregisteringCustomizer) {
 		.withOutputParameterReturning("function", &function , sizeof(function))
 		.andReturnValue(CELIX_SUCCESS);
 
+	bool result = true;
 	mock()
-		.expectOneCall("bundleContext_ungetServiceReference")
-		.withParameter("context", ctx)
+		.expectOneCall("bundleContext_ungetService")
+		.withParameter("context", context)
 		.withParameter("reference", ref)
-		.andReturnValue(CELIX_SUCCESS);
+		.withOutputParameterReturning("result", &result, sizeof(result));
+
 	serviceTracker_serviceChanged(listener, event);
 
-	arrayList_destroy(tracked);
+	//clean up
+	mock()
+		.expectOneCall("bundleContext_removeServiceListener")
+		.withParameter("context", context)
+		.withParameter("listener", listener)
+		.andReturnValue(CELIX_SUCCESS);
 
-	free(listener);
+	mock()
+		.expectOneCall("serviceTrackerCustomizer_destroy")
+		.withParameter("customizer", customizer);
+
+	serviceTracker_destroy(tracker);
 	free(event);
-	free(tracker);
+	free(service);
 }
 
 TEST(service_tracker, serviceChangedUnregisteringCustomizerNoFunc) {
-	// With one initial service
-	// new tracker
-	service_tracker_pt tracker = (service_tracker_pt) malloc(sizeof(*tracker));
-	bundle_context_pt ctx = (bundle_context_pt) 0x10;
-	tracker->context = ctx;
+	bundle_context_pt context= (bundle_context_pt) 0x01;
+	char * service = my_strdup("service_name");
+	service_tracker_pt tracker = NULL;
+	serviceTracker_create(context, service, NULL, &tracker);
 	service_listener_pt listener = (service_listener_pt) malloc(sizeof(*listener));
 	tracker->listener = listener;
 	listener->handle = tracker;
 	service_tracker_customizer_pt customizer = (service_tracker_customizer_pt) 0x20;
 	tracker->customizer = customizer;
 
-	// new tracker->trackedServices
-	array_list_pt tracked = NULL;
-	arrayList_create(&tracked);
-	tracker->trackedServices = tracked;
-//	// add tracked to tracker->trackedServices
 	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
 	entry->service = (void *) 0x31;
 	service_reference_pt ref = (service_reference_pt) 0x51;
 	entry->reference = ref;
-	arrayList_add(tracked, entry);
+	arrayList_add(tracker->trackedServices, entry);
 
 	service_event_pt event = (service_event_pt) malloc(sizeof(*event));
 	event->type = OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING;
@@ -973,41 +958,37 @@ TEST(service_tracker, serviceChangedUnregisteringCustomizerNoFunc) {
 		.expectOneCall("serviceReference_equals")
 		.withParameter("reference", ref)
 		.withParameter("compareTo", ref)
-		.withOutputParameterReturning("equal", &equals, sizeof(equals))
-		.andReturnValue(CELIX_SUCCESS);
+		.withOutputParameterReturning("equal", &equals, sizeof(equals));
 	void * handle = (void*) 0x60;
 	mock()
 		.expectOneCall("serviceTrackerCustomizer_getHandle")
 		.withParameter("customizer", customizer)
-		.withOutputParameterReturning("handle", &handle, sizeof(handle))
-		.andReturnValue(CELIX_SUCCESS);
+		.withOutputParameterReturning("handle", &handle, sizeof(handle));
 	void *function = NULL;
 	mock()
 		.expectOneCall("serviceTrackerCustomizer_getRemovedFunction")
 		.withParameter("customizer", customizer)
-		.withOutputParameterReturning("function", &function, sizeof(function))
-		.andReturnValue(CELIX_SUCCESS);
+		.withOutputParameterReturning("function", &function, sizeof(function));
 	bool result = true;
 	mock()
 		.expectOneCall("bundleContext_ungetService")
-		.withParameter("context", ctx)
+		.withParameter("context", context)
 		.withParameter("reference", ref)
-		.withOutputParameterReturning("result", &result, sizeof(result))
-		.andReturnValue(CELIX_SUCCESS);
-
-	mock()
-		.expectOneCall("bundleContext_ungetServiceReference")
-		.withParameter("context", ctx)
-		.withParameter("reference", ref)
-		.andReturnValue(CELIX_SUCCESS);
+		.withOutputParameterReturning("result", &result, sizeof(result));
 
 	serviceTracker_serviceChanged(listener, event);
 
-	arrayList_destroy(tracked);
-	free(listener);
-	free(tracker);
+	mock()
+		.expectOneCall("bundleContext_removeServiceListener")
+		.withParameter("context", context)
+		.withParameter("listener", listener)
+		.andReturnValue(CELIX_SUCCESS);
+
+	mock()
+		.expectOneCall("serviceTrackerCustomizer_destroy")
+		.withParameter("customizer", customizer);
+
+	serviceTracker_destroy(tracker);
 	free(event);
+	free(service);
 }
-
-
-

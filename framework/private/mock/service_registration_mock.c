@@ -26,10 +26,11 @@
 #include "CppUTestExt/MockSupport_c.h"
 
 #include "service_registration.h"
+#include "service_registration_private.h"
 
-service_registration_pt serviceRegistration_create(service_registry_pt registry, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary) {
+service_registration_pt serviceRegistration_create(registry_callback_t callback, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary) {
 	mock_c()->actualCall("serviceRegistration_create")
-		->withPointerParameters("registry", registry)
+		->withParameterOfType("registry_callback_t", "callback", &callback)
 		->withPointerParameters("bundle", bundle)
 		->withStringParameters("serviceName", serviceName)
 		->withIntParameters("serviceId", serviceId)
@@ -38,9 +39,9 @@ service_registration_pt serviceRegistration_create(service_registry_pt registry,
 	return mock_c()->returnValue().value.pointerValue;
 }
 
-service_registration_pt serviceRegistration_createServiceFactory(service_registry_pt registry, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary) {
+service_registration_pt serviceRegistration_createServiceFactory(registry_callback_t callback, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary) {
 	mock_c()->actualCall("serviceRegistration_createServiceFactory")
-		->withPointerParameters("registry", registry)
+		->withParameterOfType("registry_callback_t", "callback", &callback)
 		->withPointerParameters("bundle", bundle)
 		->withStringParameters("serviceName", serviceName)
 		->withIntParameters("serviceId", serviceId)

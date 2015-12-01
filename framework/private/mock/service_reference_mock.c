@@ -48,30 +48,45 @@ celix_status_t serviceReference_release(service_reference_pt ref, bool *destroye
     return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t serviceReference_destroy(service_reference_pt *reference) {
-	mock_c()->actualCall("serviceReference_destroy")
-			->withPointerParameters("reference", *reference);
+
+celix_status_t serviceReference_increaseUsage(service_reference_pt ref, size_t *updatedCount){
+	mock_c()->actualCall("serviceReference_increaseUsage")
+			->withPointerParameters("reference", ref)
+			->withOutputParameter("updatedCount", updatedCount);
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t serviceReference_invalidate(service_reference_pt reference) {
-	mock_c()->actualCall("serviceReference_invalidate")
-			->withPointerParameters("reference", reference);
+celix_status_t serviceReference_decreaseUsage(service_reference_pt ref, size_t *updatedCount){
+	mock_c()->actualCall("serviceReference_decreaseUsage")
+			->withPointerParameters("ref", ref)
+			->withOutputParameter("updatedCount", updatedCount);
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t serviceRefernce_isValid(service_reference_pt reference, bool *result) {
-	mock_c()->actualCall("serviceRefernce_isValid")
+celix_status_t serviceReference_getUsageCount(service_reference_pt reference, size_t *count){
+	mock_c()->actualCall("serviceReference_getUsageCount")
 			->withPointerParameters("reference", reference)
-			->withOutputParameter("result", result);
+			->withOutputParameter("count", count);
 	return mock_c()->returnValue().value.intValue;
 }
 
-
-celix_status_t serviceReference_getServiceRegistration(service_reference_pt reference, service_registration_pt *registration) {
-	mock_c()->actualCall("serviceReference_getServiceRegistration")
+celix_status_t serviceReference_getReferenceCount(service_reference_pt reference, size_t *count){
+	mock_c()->actualCall("serviceReference_getReferenceCount")
 			->withPointerParameters("reference", reference)
-			->withOutputParameter("registration", (void **) registration);
+			->withOutputParameter("count", count);
+	return mock_c()->returnValue().value.intValue;
+}
+
+celix_status_t serviceReference_setService(service_reference_pt ref, void *service){
+	mock_c()->actualCall("serviceReference_setService")
+			->withPointerParameters("ref", ref)
+			->withPointerParameters("service", service);
+	return mock_c()->returnValue().value.intValue;
+}
+celix_status_t serviceReference_getService(service_reference_pt reference, void **service){
+	mock_c()->actualCall("serviceReference_getService")
+			->withPointerParameters("reference", reference)
+			->withOutputParameter("service", service);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -82,8 +97,55 @@ celix_status_t serviceReference_getBundle(service_reference_pt reference, bundle
 	return mock_c()->returnValue().value.intValue;
 }
 
+
+celix_status_t serviceReference_getOwner(service_reference_pt reference, bundle_pt *owner) {
+    mock_c()->actualCall("serviceReference_getOwner")
+        ->withPointerParameters("reference", reference)
+        ->withOutputParameter("owner", owner);
+    return mock_c()->returnValue().value.intValue;
+}
+
+celix_status_t serviceReference_getServiceRegistration(service_reference_pt reference, service_registration_pt *registration) {
+	mock_c()->actualCall("serviceReference_getServiceRegistration")
+			->withPointerParameters("reference", reference)
+			->withOutputParameter("registration", (void **) registration);
+	return mock_c()->returnValue().value.intValue;
+}
+
+celix_status_t serviceReference_getProperty(service_reference_pt reference, char *key, char **value){
+	mock_c()->actualCall("serviceReference_getProperty")
+			->withPointerParameters("reference", reference)
+			->withStringParameters("key", key)
+			->withOutputParameter("value", value);
+	return mock_c()->returnValue().value.intValue;
+}
+
+celix_status_t serviceReference_getPropertyKeys(service_reference_pt reference, char **keys[], unsigned int *size){
+	mock_c()->actualCall("serviceReference_getPropertyKeys")
+			->withPointerParameters("reference", reference)
+			->withOutputParameter("keys", keys)
+			->withOutputParameter("size", size);
+	return mock_c()->returnValue().value.intValue;
+}
+
+celix_status_t serviceReference_invalidate(service_reference_pt reference) {
+	mock_c()->actualCall("serviceReference_invalidate")
+			->withPointerParameters("reference", reference);
+	return mock_c()->returnValue().value.intValue;
+}
+
+celix_status_t serviceReference_isValid(service_reference_pt reference, bool *result) {
+	mock_c()->actualCall("serviceReference_isValid")
+			->withPointerParameters("reference", reference)
+			->withOutputParameter("result", result);
+	return mock_c()->returnValue().value.intValue;
+}
+
 bool serviceReference_isAssignableTo(service_reference_pt reference, bundle_pt requester, char * serviceName) {
-	mock_c()->actualCall("serviceReference_isAssignableTo");
+	mock_c()->actualCall("serviceReference_isAssignableTo")
+			->withPointerParameters("reference", reference)
+			->withPointerParameters("requester", requester)
+			->withStringParameters("serviceName", serviceName);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -102,11 +164,6 @@ celix_status_t serviceReference_equals(service_reference_pt reference, service_r
 	return mock_c()->returnValue().value.intValue;
 }
 
-unsigned int serviceReference_hashCode(void *referenceP) {
-	mock_c()->actualCall("serviceReference_hashCode");
-	return mock_c()->returnValue().value.intValue;
-}
-
 int serviceReference_equals2(void *reference1, void *reference2) {
 	mock_c()->actualCall("serviceReference_equals2")
 			->withPointerParameters("reference1", reference1)
@@ -114,4 +171,15 @@ int serviceReference_equals2(void *reference1, void *reference2) {
 	return mock_c()->returnValue().value.intValue;
 }
 
+celix_status_t serviceReference_compareTo(service_reference_pt reference, service_reference_pt compareTo, int *compare){
+	mock_c()->actualCall("serviceReference_compareTo")
+			->withPointerParameters("reference", reference)
+			->withPointerParameters("compareTo", compareTo)
+			->withOutputParameter("compare", compare);
+	return mock_c()->returnValue().value.intValue;
+}
 
+unsigned int serviceReference_hashCode(void *referenceP) {
+	mock_c()->actualCall("serviceReference_hashCode");
+	return mock_c()->returnValue().value.intValue;
+}
