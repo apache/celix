@@ -380,6 +380,12 @@ extern "C" {
 			status = stopStartPermutation(serverContext, singlePermutation, arrayList_size(rsaBundles));
 			CHECK_EQUAL(CELIX_SUCCESS, status);
 
+            /* we need to sleep here for a bit to ensure
+             * that the client has flushed the old discovery
+             * values
+             */
+            sleep(2);
+
 			// check whether calc service is available
 			test1();
 
@@ -391,6 +397,7 @@ extern "C" {
 		arrayList_destroy(rsaBundles);
 	}
 
+	/*
 	static void testProxyRemoval(void) {
 		celix_status_t status;
 		bundle_pt bundle = NULL;
@@ -419,7 +426,9 @@ extern "C" {
 		arrayList_destroy(bundleNames);
 		arrayList_destroy(proxyBundle);
 	}
+	*/
 
+	/*
 	static void testEndpointRemoval(void) {
 		celix_status_t status;
 		bundle_pt bundle = NULL;
@@ -448,6 +457,7 @@ extern "C" {
 		arrayList_destroy(bundleNames);
 		arrayList_destroy(endpointBundle);
 	}
+	*/
 }
 
 	TEST_GROUP(RsaShmClientServerTests) {
