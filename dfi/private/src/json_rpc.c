@@ -24,6 +24,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <string.h>
+#include <ffi.h>
 
 
 static int OK = 0;

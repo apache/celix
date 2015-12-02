@@ -24,7 +24,6 @@
 #include <sys/queue.h>
 #include <stdbool.h>
 
-#include <ffi.h>
 #include <stdint.h>
 
 #include "dfi_log_util.h"
@@ -128,7 +127,6 @@ void dynType_print(dyn_type *type, FILE *stream);
 size_t dynType_size(dyn_type *type);
 int dynType_type(dyn_type *type);
 int dynType_descriptorType(dyn_type *type);
-ffi_type * dynType_ffiType(dyn_type *type);
 const char * dynType_getMetaInfo(dyn_type *type, const char *name);
 
 //complexType

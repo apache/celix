@@ -19,7 +19,6 @@
 #ifndef __DYN_FUNCTION_H_
 #define __DYN_FUNCTION_H_
 
-#include <ffi.h>
 #include "dyn_type.h"
 #include "dfi_log_util.h"
 

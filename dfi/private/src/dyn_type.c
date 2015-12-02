@@ -22,6 +22,7 @@
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
+#include <ffi.h>
 
 #include "dyn_common.h"
 
@@ -32,6 +33,7 @@ static void dynType_clear(dyn_type *type);
 static void dynType_clearComplex(dyn_type *type);
 static void dynType_clearSequence(dyn_type *type);
 static void dynType_clearTypedPointer(dyn_type *type);
+ffi_type * dynType_ffiType(dyn_type *type);
 
 static struct type_entry *dynType_allocTypeEntry(void);
 

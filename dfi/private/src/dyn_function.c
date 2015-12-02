@@ -20,6 +20,7 @@
 
 #include <strings.h>
 #include <stdlib.h>
+#include <ffi.h>
 
 #include "dyn_common.h"
 
@@ -57,6 +58,8 @@ DFI_SETUP_LOG(dynFunction)
 static int dynFunction_initCif(dyn_function_type *dynFunc);
 static int dynFunction_parseDescriptor(dyn_function_type *dynFunc, FILE *descriptor);
 static void dynFunction_ffiBind(ffi_cif *cif, void *ret, void *args[], void *userData);
+
+extern ffi_type * dynType_ffiType(dyn_type *type);
 
 int dynFunction_parse(FILE *descriptor, struct types_head *refTypes, dyn_function_type **out) {
     int status = OK;
