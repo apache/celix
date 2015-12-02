@@ -25,11 +25,12 @@ include_directories(
 	    public/include
 )
 
-set(MEMSTREAM_SOURCES "")
-set(MEMSTREAM_INCLUDES "")
+set(MEMSTREAM_SOURCES )
+set(MEMSTREAM_INCLUDES )
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin") 
 	set(MEMSTREAM_SOURCES private/src/memstream/open_memstream.c private/src/memstream/fmemopen.c)
 	set(MEMSTREAM_INCLUDES public/include/memstream/open_memstream.h public/include/memstream/fmemopen.h)
+    include_directories(public/include/memstream)
 endif()
 
 add_library(celix_dfi SHARED
