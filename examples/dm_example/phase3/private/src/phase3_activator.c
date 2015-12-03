@@ -47,7 +47,10 @@ celix_status_t dm_init(void * userData, bundle_context_pt context, dm_dependency
 
     struct phase3_activator_struct *act = (struct phase3_activator_struct *)userData;
 
-	act->phase3Cmp = phase3_create();
+    dm_service_dependency_strategy_t strategy = DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND;
+    bool lockStrategy = (strategy==DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING);
+
+	act->phase3Cmp = phase3_create(lockStrategy);
 	if (act->phase3Cmp != NULL) {
 
 		dm_component_pt cmp;
@@ -58,6 +61,7 @@ celix_status_t dm_init(void * userData, bundle_context_pt context, dm_dependency
 		dm_service_dependency_pt dep;
 		serviceDependency_create(&dep);
 		serviceDependency_setService(dep, PHASE2_NAME, NULL);
+		serviceDependency_setStrategy(dep, strategy);
         serviceDependency_setCallbacksSafe(dep, phase3_cmp_t *, phase2_t *, NULL, phase3_addPhase2, NULL, phase3_removePhase2, NULL);
 		serviceDependency_setRequired(dep, true);
 		component_addServiceDependency(cmp, dep);

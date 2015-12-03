@@ -36,6 +36,7 @@
 #include "dm_component_impl.h"
 
 #define DEFAULT_RANKING     0
+#define DM_SERVICE_DEPENDENCY_DEFAULT_STRATEGY DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING
 
 static celix_status_t serviceDependency_addedService(void *_ptr, service_reference_pt reference, void *service);
 static celix_status_t serviceDependency_modifiedService(void *_ptr, service_reference_pt reference, void *service);
@@ -52,6 +53,7 @@ celix_status_t serviceDependency_create(dm_service_dependency_pt *dependency_ptr
 		(*dependency_ptr)->available = false;
 		(*dependency_ptr)->instanceBound = false;
 		(*dependency_ptr)->required = false;
+		(*dependency_ptr)->strategy = DM_SERVICE_DEPENDENCY_DEFAULT_STRATEGY;
 
 		(*dependency_ptr)->set = NULL;
 		(*dependency_ptr)->add = NULL;
@@ -119,6 +121,33 @@ celix_status_t serviceDependency_setRequired(dm_service_dependency_pt dependency
 	}
 
 	return status;
+}
+
+celix_status_t serviceDependency_setStrategy(dm_service_dependency_pt dependency, dm_service_dependency_strategy_t strategy) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (!dependency) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+	else{
+		dependency->strategy = strategy;
+	}
+
+	return status;
+}
+
+celix_status_t serviceDependency_getStrategy(dm_service_dependency_pt dependency, dm_service_dependency_strategy_t* strategy){
+	celix_status_t status = CELIX_SUCCESS;
+
+	if (!dependency) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+	else{
+		*strategy = dependency->strategy;
+	}
+
+	return status;
+
 }
 
 celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency, char *serviceName, char *filter) {

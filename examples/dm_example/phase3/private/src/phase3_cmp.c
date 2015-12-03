@@ -40,17 +40,19 @@ struct phase3_cmp_struct {
 	double currentValue;
     celix_thread_mutex_t mutex;
     array_list_pt phase2Services; //phase2_t *
+	bool lockStrategy;
 };
 
 static void *phase3_thread(void *data);
 
-phase3_cmp_t *phase3_create(void) {
+phase3_cmp_t *phase3_create(bool lockStrategy) {
 	phase3_cmp_t *cmp = calloc(1, sizeof(*cmp));
 	if (cmp != NULL) {
 		cmp->currentValue = 0.0;
         cmp->running = false;
         celixThreadMutex_create(&cmp->mutex, NULL);
         arrayList_create(&cmp->phase2Services);
+		cmp->lockStrategy = lockStrategy;
 	}
 	return cmp;
 }
@@ -81,25 +83,44 @@ int phase3_deinit(phase3_cmp_t *cmp) {
 }
 
 void phase3_destroy(phase3_cmp_t *cmp) {
+	if(cmp->lockStrategy){
     celixThreadMutex_lock(&cmp->mutex);
+	}
+
     arrayList_destroy(cmp->phase2Services);
+
+	if(cmp->lockStrategy){
     celixThreadMutex_unlock(&cmp->mutex);
+	}
+
     celixThreadMutex_destroy(&cmp->mutex);
     free(cmp);
 	printf("destroy phase3\n");
 }
 
 int phase3_addPhase2(phase3_cmp_t *cmp, phase2_t *phase2) {
+	if(cmp->lockStrategy){
     celixThreadMutex_lock(&cmp->mutex);
+	}
+
     arrayList_add(cmp->phase2Services, phase2);
+
+	if(cmp->lockStrategy){
     celixThreadMutex_unlock(&cmp->mutex);
+	}
     return 0;
 }
 
 int phase3_removePhase2(phase3_cmp_t *cmp, phase2_t *phase2) {
+	if(cmp->lockStrategy){
     celixThreadMutex_lock(&cmp->mutex);
+	}
+
     arrayList_removeElement(cmp->phase2Services, phase2);
+
+	if(cmp->lockStrategy){
     celixThreadMutex_unlock(&cmp->mutex);
+	}
     return 0;
 }
 
@@ -111,14 +132,21 @@ static void *phase3_thread(void *data) {
     double value;
 
     while (cmp->running) {
+		if(cmp->lockStrategy){
         celixThreadMutex_lock(&cmp->mutex);
+		}
+
         size = arrayList_size(cmp->phase2Services);
         for (i = 0; i < size; i += 1) {
             phase2_t *serv = arrayList_get(cmp->phase2Services, i);
             serv->getData(serv->handle, &value);
             printf("PHASE3: Data from %p is %f\n", serv, value);
         }
+
+		if(cmp->lockStrategy){
         celixThreadMutex_unlock(&cmp->mutex);
+		}
+
         usleep(SLEEPTIME);
     }
 

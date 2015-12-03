@@ -123,6 +123,9 @@ static celix_status_t component_handleChanged(dm_component_pt component, dm_serv
 static celix_status_t component_handleRemoved(dm_component_pt component, dm_service_dependency_pt dependency, dm_event_pt event);
 static celix_status_t component_handleSwapped(dm_component_pt component, dm_service_dependency_pt dependency, dm_event_pt event, dm_event_pt newEvent);
 
+static celix_status_t component_suspend(dm_component_pt component, dm_service_dependency_pt dependency);
+static celix_status_t component_resume(dm_component_pt component, dm_service_dependency_pt dependency);
+
 celix_status_t component_create(bundle_context_pt context, const char *name, dm_component_pt *out) {
     celix_status_t status = CELIX_SUCCESS;
 
@@ -407,6 +410,30 @@ celix_status_t component_handleEventTask(dm_component_pt component, dm_handle_ev
 	return status;
 }
 
+static celix_status_t component_suspend(dm_component_pt component, dm_service_dependency_pt dependency) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	dm_service_dependency_strategy_t strategy;
+	serviceDependency_getStrategy(dependency, &strategy);
+	if (strategy == DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND &&  component->callbackStop != NULL) {
+		status = component->callbackStop(component->implementation);
+	}
+
+	return status;
+}
+
+static celix_status_t component_resume(dm_component_pt component, dm_service_dependency_pt dependency) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	dm_service_dependency_strategy_t strategy;
+	serviceDependency_getStrategy(dependency, &strategy);
+	if (strategy == DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND &&  component->callbackStop != NULL) {
+		status = component->callbackStart(component->implementation);
+	}
+
+	return status;
+}
+
 celix_status_t component_handleAdded(dm_component_pt component, dm_service_dependency_pt dependency, dm_event_pt event) {
     celix_status_t status = CELIX_SUCCESS;
 
@@ -447,7 +474,9 @@ celix_status_t component_handleAdded(dm_component_pt component, dm_service_depen
             break;
         }
         case DM_CMP_STATE_TRACKING_OPTIONAL:
+		component_suspend(component,dependency);
             serviceDependency_invokeAdd(dependency, event);
+		component_resume(component,dependency);
             dm_event_pt event = NULL;
             component_getDependencyEvent(component, dependency, &event);
             component_updateInstance(component, dependency, event, false, true);
@@ -475,7 +504,9 @@ celix_status_t component_handleChanged(dm_component_pt component, dm_service_dep
         serviceDependency_invokeSet(dependency, event);
         switch (component->state) {
             case DM_CMP_STATE_TRACKING_OPTIONAL:
+			component_suspend(component,dependency);
                 serviceDependency_invokeChange(dependency, event);
+			component_resume(component,dependency);
                 dm_event_pt hevent = NULL;
                 component_getDependencyEvent(component, dependency, &hevent);
                 component_updateInstance(component, dependency, hevent, true, false);
@@ -541,8 +572,10 @@ celix_status_t component_handleRemoved(dm_component_pt component, dm_service_dep
                 break;
             }
             case DM_CMP_STATE_TRACKING_OPTIONAL:
+			component_suspend(component,dependency);
                 serviceDependency_invokeSet(dependency, event);
                 serviceDependency_invokeRemove(dependency, event);
+			component_resume(component,dependency);
                 dm_event_pt hevent = NULL;
                 component_getDependencyEvent(component, dependency, &hevent);
                 component_updateInstance(component, dependency, hevent, false, false);
@@ -591,7 +624,9 @@ celix_status_t component_handleSwapped(dm_component_pt component, dm_service_dep
                 break;
             }
             case DM_CMP_STATE_TRACKING_OPTIONAL:
+			component_suspend(component,dependency);
                 serviceDependency_invokeSwap(dependency, event, newEvent);
+			component_resume(component,dependency);
                 break;
             default:
                 break;

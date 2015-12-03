@@ -41,6 +41,7 @@ struct dm_service_dependency {
 	bool available;
 	bool instanceBound;
 	bool required;
+	dm_service_dependency_strategy_t strategy;
 
 	service_set_fpt set;
 	service_add_fpt add;

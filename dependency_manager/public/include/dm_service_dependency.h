@@ -33,6 +33,11 @@
 
 typedef struct dm_service_dependency *dm_service_dependency_pt;
 
+typedef enum dm_service_dependency_strategy_enum {
+	DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING,
+	DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND
+} dm_service_dependency_strategy_t;
+
 typedef int (*service_set_fpt)(void *handle, void *service);
 typedef int (*service_add_fpt)(void *handle, void *service);
 typedef int (*service_change_fpt)(void *handle, void *service);
@@ -49,6 +54,8 @@ celix_status_t serviceDependency_create(dm_service_dependency_pt *dependency_ptr
 celix_status_t serviceDependency_destroy(dm_service_dependency_pt *dependency_ptr);
 
 celix_status_t serviceDependency_setRequired(dm_service_dependency_pt dependency, bool required);
+celix_status_t serviceDependency_setStrategy(dm_service_dependency_pt dependency,dm_service_dependency_strategy_t strategy);
+celix_status_t serviceDependency_getStrategy(dm_service_dependency_pt dependency,dm_service_dependency_strategy_t* strategy);
 celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency, char *serviceName, char *filter);
 celix_status_t serviceDependency_getFilter(dm_service_dependency_pt dependency, char **filter);
 
