@@ -179,7 +179,7 @@ static int jsonSerializer_parseAny(dyn_type *type, void *loc, json_t *val) {
             break;
         case 'N' :
             n = loc;
-            *n = (int) json_real_value(val);
+            *n = (int) json_integer_value(val);
             break;
         case 'B' :
             b = loc;
