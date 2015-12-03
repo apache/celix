@@ -31,7 +31,7 @@
 
 typedef struct phase3_cmp_struct phase3_cmp_t;
 
-phase3_cmp_t *phase3_create(bool lockStrategy);
+phase3_cmp_t *phase3_create();
 int phase3_init(phase3_cmp_t *cmp);
 int phase3_start(phase3_cmp_t *cmp);
 int phase3_stop(phase3_cmp_t *cmp);
