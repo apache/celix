@@ -282,7 +282,8 @@ static void check_example8(void *data) {
 	CHECK_EQUAL(true,ex->a);
 	CHECK_EQUAL(4,ex->b);
 	CHECK_EQUAL(8,ex->c);
-	CHECK_EQUAL(16,ex->d);
+	//error on mac CHECK_EQUAL(16,ex->d);
+    CHECK(16 == ex->d)
 	CHECK_EQUAL(32,ex->e);
 }
 
