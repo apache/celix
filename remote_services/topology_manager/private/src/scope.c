@@ -26,7 +26,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <jansson.h>
 #include "scope.h"
 #include "tm_scope.h"
 #include "topology_manager.h"
