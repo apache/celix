@@ -83,6 +83,8 @@ TEST(bundle_cache, deleteTree) {
 
 
 	LONGS_EQUAL(CELIX_SUCCESS, bundleCache_delete(cache));
+
+	free(cache);
 }
 
 TEST(bundle_cache, getArchive) {
@@ -112,9 +114,13 @@ TEST(bundle_cache, getArchive) {
 	rmdir(bundle0);
 	rmdir(bundle1);
 	rmdir(cacheDir);
+	arrayList_destroy(archives);
 
 	LONGS_EQUAL(CELIX_SUCCESS, bundleCache_getArchives(cache, &archives));
+
+	arrayList_destroy(archives);
 	rmdir(cacheDir);
+	free(cache);
 }
 
 TEST(bundle_cache, createArchive) {
@@ -137,4 +143,6 @@ TEST(bundle_cache, createArchive) {
 	bundle_archive_pt actual;
 	bundleCache_createArchive(cache, 1l, location, NULL, &actual);
 	POINTERS_EQUAL(archive, actual);
+
+	free(cache);
 }

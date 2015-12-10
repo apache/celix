@@ -64,6 +64,8 @@ TEST(bundle_context, create) {
 	POINTERS_EQUAL(bundle, context->bundle)
 
 	bundleContext_create(NULL, logger, NULL, &context);
+
+	free(context);
 }
 
 TEST(bundle_context, destroy) {
@@ -108,6 +110,8 @@ TEST(bundle_context, getBundle) {
 	actualFramework = NULL;
 	status = bundleContext_getFramework(NULL, &actualFramework);
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
+
+	free(context);
 }
 
 TEST(bundle_context, installBundle) {
@@ -130,6 +134,8 @@ TEST(bundle_context, installBundle) {
 	celix_status_t status = bundleContext_installBundle(context, location, &actualInstalledBundle);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	POINTERS_EQUAL(installedBundle, actualInstalledBundle);
+
+	free(context);
 }
 
 TEST(bundle_context, installBundle2) {
@@ -159,6 +165,8 @@ TEST(bundle_context, installBundle2) {
 	actualInstalledBundle = NULL;
 	status = bundleContext_installBundle2(NULL, location, inputFile, &actualInstalledBundle);
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
+
+	free(context);
 }
 
 TEST(bundle_context, registerService) {
@@ -192,6 +200,8 @@ TEST(bundle_context, registerService) {
 	actualRegistration = NULL;
 	status = bundleContext_registerService(NULL, serviceName, service, properties, &actualRegistration);
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
+
+	free(context);
 }
 
 TEST(bundle_context, registerServiceFactory) {
@@ -225,6 +235,8 @@ TEST(bundle_context, registerServiceFactory) {
 	actualRegistration = NULL;
 	status = bundleContext_registerServiceFactory(NULL, serviceName, serviceFactory, properties, &actualRegistration);
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
+
+	free(context);
 }
 
 TEST(bundle_context, getServiceReferences) {
@@ -256,6 +268,8 @@ TEST(bundle_context, getServiceReferences) {
 	actualReferences = NULL;
 	status = bundleContext_getServiceReferences(NULL, serviceName, filter, &actualReferences);
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
+
+	free(context);
 }
 
 TEST(bundle_context, getServiceReference) {
@@ -288,6 +302,8 @@ TEST(bundle_context, getServiceReference) {
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, bundleContext_getServiceReference(NULL, serviceName, &actualReference));
 	actualReference = NULL;
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, bundleContext_getServiceReference(context, NULL, &actualReference));
+
+	free(context);
 }
 
 TEST(bundle_context, ungetServiceReference) {
@@ -308,6 +324,8 @@ TEST(bundle_context, ungetServiceReference) {
 	LONGS_EQUAL(CELIX_SUCCESS, bundleContext_ungetServiceReference(context, reference));
 
     LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, bundleContext_ungetServiceReference(context, NULL));
+
+    free(context);
 }
 
 TEST(bundle_context, getService) {
@@ -337,6 +355,8 @@ TEST(bundle_context, getService) {
 	actualService = NULL;
 	status = bundleContext_getService(context, NULL, &actualService);
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
+
+	free(context);
 }
 
 TEST(bundle_context, ungetService) {
@@ -366,6 +386,8 @@ TEST(bundle_context, ungetService) {
 	actualResult = false;
 	status = bundleContext_ungetService(context, NULL, &actualResult);
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
+
+	free(context);
 }
 
 TEST(bundle_context, getBundles) {
@@ -391,6 +413,8 @@ TEST(bundle_context, getBundles) {
 	actualBundles = NULL;
 	status = bundleContext_getBundles(NULL, &actualBundles);
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
+
+	free(context);
 }
 
 TEST(bundle_context, getBundleById) {
@@ -418,6 +442,8 @@ TEST(bundle_context, getBundleById) {
 	actualBundle = NULL;
 	status = bundleContext_getBundleById(NULL, id, &actualBundle);
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
+
+	free(context);
 }
 
 TEST(bundle_context, addServiceListener) {
@@ -443,6 +469,8 @@ TEST(bundle_context, addServiceListener) {
 
 	status = bundleContext_addServiceListener(context, NULL, filter);
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
+
+	free(context);
 }
 
 TEST(bundle_context, removeServiceListener) {
@@ -466,6 +494,8 @@ TEST(bundle_context, removeServiceListener) {
 
 	status = bundleContext_removeServiceListener(context, NULL);
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
+
+	free(context);
 }
 
 TEST(bundle_context, addBundleListener) {
@@ -489,6 +519,8 @@ TEST(bundle_context, addBundleListener) {
 
 	status = bundleContext_addBundleListener(context, NULL);
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
+
+	free(context);
 }
 
 TEST(bundle_context, removeBundleListener) {
@@ -512,6 +544,8 @@ TEST(bundle_context, removeBundleListener) {
 
 	status = bundleContext_removeBundleListener(context, NULL);
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
+
+	free(context);
 }
 
 TEST(bundle_context, addFrameworkListener){
@@ -532,6 +566,8 @@ TEST(bundle_context, addFrameworkListener){
 		LONGS_EQUAL(CELIX_SUCCESS, bundleContext_addFrameworkListener(context, listener));
 
 		LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, bundleContext_addFrameworkListener(context, NULL));
+
+		free(context);
 }
 
 TEST(bundle_context, removeFrameworkListener){
@@ -552,6 +588,8 @@ TEST(bundle_context, removeFrameworkListener){
 		LONGS_EQUAL(CELIX_SUCCESS, bundleContext_removeFrameworkListener(context, listener));
 
 		LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, bundleContext_removeFrameworkListener(context, NULL));
+
+		free(context);
 }
 
 TEST(bundle_context, getProperty) {
@@ -578,5 +616,7 @@ TEST(bundle_context, getProperty) {
 
 	actualValue = NULL;
 	status = bundleContext_getProperty(context, NULL, &actualValue);
+
 	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
+	free(context);
 }
