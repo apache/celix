@@ -54,7 +54,7 @@ if (UTILS)
     
     celix_subproject(UTILS-TESTS "Option to build the utilities library tests" "OFF")
 
-	if (ENABLE_TESTING)
+	if (ENABLE_TESTING AND UTILS-TESTS)
 		find_package(CppUTest REQUIRED)
 
 	    include_directories(${CUNIT_INCLUDE_DIRS})
@@ -69,30 +69,19 @@ if (UTILS)
 	    target_link_libraries(array_list_test celix_utils ${CPPUTEST_LIBRARY} pthread)
 	    
 		add_executable(celix_threads_test private/test/celix_threads_test.cpp)
-	    target_link_libraries(celix_threads_test celix_utils ${CPPUTEST_LIBRARY} pthread)
+	    target_link_libraries(celix_threads_test celix_utils ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} pthread)
 	    
 	    add_executable(linked_list_test private/test/linked_list_test.cpp)
 	    target_link_libraries(linked_list_test celix_utils ${CPPUTEST_LIBRARY} pthread)
-
-	    #run_test(array_list_test)
-	    #run_test(hash_map_test)
-	    #run_test(linked_list_test)
 	    
-	    #ADD_TARGET_FOR_TEST(array_list_test)
  		add_test(NAME run_array_list_test COMMAND array_list_test)
+ 		add_test(NAME run_hash_map_test COMMAND hash_map_test)
+       	add_test(NAME run_celix_threads_test COMMAND celix_threads_test)
+       	add_test(NAME run_linked_list_test COMMAND linked_list_test)
        	SETUP_TARGET_FOR_COVERAGE(array_list_test array_list_test ${CMAKE_BINARY_DIR}/coverage/array_list_test/array_list_test)
+		SETUP_TARGET_FOR_COVERAGE(hash_map hash_map_test ${CMAKE_BINARY_DIR}/coverage/hash_map_test/hash_map_test)
+		SETUP_TARGET_FOR_COVERAGE(celix_threads_test celix_threads_test ${CMAKE_BINARY_DIR}/coverage/celix_threads_test/celix_threads_test)
+		SETUP_TARGET_FOR_COVERAGE(linked_list_test linked_list_test ${CMAKE_BINARY_DIR}/coverage/linked_list_test/linked_list_test)
 
- 	    #ADD_TARGET_FOR_TEST(hash_map_test)
-		add_test(NAME run_hash_map_test COMMAND hash_map_test)
-       	SETUP_TARGET_FOR_COVERAGE(hash_map hash_map_test ${CMAKE_BINARY_DIR}/coverage/hash_map_test/hash_map_test)
-       
-       	#ADD_TARGET_FOR_TEST(celix_threads_test)
-		add_test(NAME run_celix_threads_test COMMAND celix_threads_test)
-       	SETUP_TARGET_FOR_COVERAGE(celix_threads_test celix_threads_test ${CMAKE_BINARY_DIR}/coverage/celix_threads_test/celix_threads_test)
-
-	    #ADD_TARGET_FOR_TEST(linked_list_test)
-		add_test(NAME run_linked_list_test COMMAND linked_list_test)
-       	SETUP_TARGET_FOR_COVERAGE(linked_list_test linked_list_test ${CMAKE_BINARY_DIR}/coverage/linked_list_test/linked_list_test)
-
-   endif(ENABLE_TESTING)
+   endif(ENABLE_TESTING AND UTILS-TESTS)
 endif (UTILS)

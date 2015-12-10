@@ -27,42 +27,77 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <signal.h>
 
 #include "CppUTest/TestHarness.h"
 #include "CppUTest/TestHarness_c.h"
 #include "CppUTest/CommandLineTestRunner.h"
+#include "CppUTestExt/MockSupport.h"
 
 extern "C" {
 #include "celix_threads.h"
+#include "CppUTestExt/MockSupport_c.h"
+
+
+static char* my_strdup(const char* s) {
+	if (s == NULL) {
+		return NULL;
+	}
+
+	size_t len = strlen(s);
+
+	char *d = (char*) calloc(len + 1, sizeof(char));
+
+	if (d == NULL) {
+		return NULL;
+	}
+
+	strncpy(d, s, len);
+	return d;
+}
+
+static int celix_thread_t_equals(const void * object, const void * compareTo){
+	celix_thread_t * thread1 = (celix_thread_t*) object;
+	celix_thread_t * thread2 = (celix_thread_t*) compareTo;
+
+	return thread1->thread == thread2->thread &&
+			thread1->threadInitialized == thread2->threadInitialized;
+}
+
+static char * celix_thread_t_toString(const void * object){
+	celix_thread_t * thread = (celix_thread_t*) object;
+	char buff[512];
+	snprintf(buff, 512, "thread: %lu, threadInitialized: %s", thread->thread, (thread->threadInitialized ? "true" : "false"));
+
+	return my_strdup(buff);
+}
+
+//----------------------TEST THREAD FUNCTION DECLARATIONS----------------------
+static void * thread_test_func_create(void *);
+static void * thread_test_func_exit(void *);
+static void * thread_test_func_detach(void *);
+static void * thread_test_func_self(void *);
+static void * thread_test_func_once(void*);
+static void thread_test_func_once_init(void);
+static void * thread_test_func_lock(void *);
+static void * thread_test_func_cond_wait(void *);
+static void * thread_test_func_cond_broadcast(void *);
+static int thread_test_func_recur_lock(celix_thread_mutex_t*, int);
+static void * thread_test_func_kill(void*);
+static void thread_test_func_kill_handler(int);
+struct func_param{
+	int i, i2;
+	celix_thread_mutex_t mu, mu2;
+	celix_thread_cond_t cond, cond2;
+	celix_thread_once_t once_control;
+	celix_thread_rwlock_t rwlock;
+};
 }
 
 int main(int argc, char** argv) {
 	return RUN_ALL_TESTS(argc, argv);
 }
 
-static char* my_strdup(const char* s) {
-	char *d = (char*) malloc(strlen(s) + 1);
-	if (d == NULL)
-		return NULL;
-	strcpy(d, s);
-	return d;
-}
-
-//----------------------TEST THREAD FUNCTION DECLARATIONS----------------------
-
-static void * thread_test_func_create(void *);
-static void * thread_test_func_exit(void *);
-static void * thread_test_func_detach(void *);
-static void * thread_test_func_self(void *);
-static void * thread_test_func_lock(void *);
-static void * thread_test_func_cond_wait(void *arg);
-static void * thread_test_func_cond_broadcast(void *arg);
-static int thread_test_func_recur_lock(celix_thread_mutex_t*, int);
-struct func_param{
-	int i, i2;
-	celix_thread_mutex_t mu, mu2;
-	celix_thread_cond_t cond, cond2;
-};
 //----------------------TESTGROUP DEFINES----------------------
 
 TEST_GROUP(celix_thread) {
@@ -72,6 +107,25 @@ TEST_GROUP(celix_thread) {
 	}
 
 	void teardown(void) {
+	}
+};
+
+TEST_GROUP(celix_thread_kill) {
+	celix_thread thread;
+	struct sigaction sigact, sigactold;
+
+	void setup(void) {
+		memset(&sigact, 0, sizeof(sigact));
+		sigact.sa_handler = thread_test_func_kill_handler;
+		sigaction(SIGUSR1, &sigact, &sigactold);
+
+		mock_c()->installComparator("celix_thread_t", celix_thread_t_equals, celix_thread_t_toString);
+	}
+
+	void teardown(void) {
+		sigaction(SIGUSR1, &sigactold, &sigact);
+
+		mock_c()->removeAllComparators();
 	}
 };
 
@@ -90,6 +144,16 @@ TEST_GROUP(celix_thread_condition) {
 	celix_thread thread;
 	celix_thread_mutex_t mu;
 	celix_thread_cond_t cond;
+
+	void setup(void) {
+	}
+
+	void teardown(void) {
+	}
+};
+
+TEST_GROUP(celix_thread_rwlock) {
+	celix_thread thread;
 
 	void setup(void) {
 	}
@@ -147,6 +211,45 @@ TEST(celix_thread, initalized) {
 	celixThread_create(&thread, NULL, thread_test_func_detach, NULL);
 	CHECK(celixThread_initalized(thread));
 	celixThread_detach(thread);
+}
+
+TEST(celix_thread, once) {
+	int *status;
+	celix_thread thread2;
+	struct func_param * params = (struct func_param*) calloc(1,
+				sizeof(struct func_param));
+
+	mock().expectOneCall("thread_test_func_once_init");
+
+	celixThread_create(&thread, NULL, &thread_test_func_once, params);
+	celixThread_join(thread, (void**) &status);
+
+	celixThread_create(&thread2, NULL, &thread_test_func_once, params);
+	celixThread_join(thread2, (void**) &status);
+
+	free(params);
+
+	mock().checkExpectations();
+	mock().clear();
+}
+//----------------------CELIX THREADS KILL TESTS----------------------
+TEST(celix_thread_kill, kill){
+	int * ret;
+	celixThread_create(&thread, NULL, thread_test_func_kill, NULL);
+	sleep(2);
+
+	mock().expectOneCall("thread_test_func_kill_handler")
+			.withParameter("signo", SIGUSR1)
+			.withParameterOfType("celix_thread_t", "inThread", (const void*) &thread);
+
+	celixThread_kill(thread, SIGUSR1);
+	celixThread_join(thread, (void**)&ret);
+
+	LONGS_EQUAL(-1, *ret);
+	free(ret);
+
+	mock().checkExpectations();
+	mock().clear();
 }
 
 //----------------------CELIX THREADS MUTEX TESTS----------------------
@@ -274,8 +377,58 @@ TEST(celix_thread_condition, broadcast) {
 	free(param);
 }
 
-//----------------------TEST THREAD FUNCTION DEFINES----------------------
+//----------------------CELIX READ-WRITE LOCK TESTS----------------------
 
+TEST(celix_thread_rwlock, create){
+	celix_thread_rwlock_t lock;
+	celix_status_t status;
+	status = celixThreadRwlock_create(&lock, NULL);
+	LONGS_EQUAL(CELIX_SUCCESS, status);
+	status = celixThreadRwlock_destroy(&lock);
+	LONGS_EQUAL(CELIX_SUCCESS, status);
+}
+
+TEST(celix_thread_rwlock, readLock){
+	int status;
+	celix_thread_rwlock_t lock;
+	//struct func_param * param = (struct func_param*) calloc(1,sizeof(struct func_param));
+
+	celixThreadRwlock_create(&lock, NULL);
+
+	status = celixThreadRwlock_readLock(&lock);
+	LONGS_EQUAL(0, status);
+	status = celixThreadRwlock_readLock(&lock);
+	LONGS_EQUAL(0, status);
+	status = celixThreadRwlock_unlock(&lock);
+	LONGS_EQUAL(0, status);
+	status = celixThreadRwlock_unlock(&lock);
+	LONGS_EQUAL(0, status);
+
+	celixThreadRwlock_destroy(&lock);
+}
+
+TEST(celix_thread_rwlock, writeLock){
+	int status;
+	celix_thread_rwlock_t lock;
+	celixThreadRwlock_create(&lock, NULL);
+
+	status = celixThreadRwlock_writeLock(&lock);
+	LONGS_EQUAL(0, status);
+	status = celixThreadRwlock_writeLock(&lock);
+	//EDEADLK ErNo: Resource deadlock avoided
+	LONGS_EQUAL(EDEADLK, status);
+
+	celixThreadRwlock_unlock(&lock);
+}
+
+TEST(celix_thread_rwlock, attr){
+	celix_thread_rwlockattr_t attr;
+	celixThreadRwlockAttr_create(&attr);
+	celixThreadRwlockAttr_destroy(&attr);
+}
+
+//----------------------TEST THREAD FUNCTION DEFINES----------------------
+extern "C" {
 static void * thread_test_func_create(void * arg) {
 	char ** test_str = (char**) arg;
 	*test_str = my_strdup("SUCCESS");
@@ -298,6 +451,17 @@ static void * thread_test_func_detach(void *) {
 static void * thread_test_func_self(void * arg) {
 	*((celix_thread*) arg) = celixThread_self();
 	return NULL;
+}
+
+static void * thread_test_func_once(void * arg) {
+	struct func_param *param = (struct func_param *) arg;
+	celixThread_once(&param->once_control, thread_test_func_once_init);
+
+	return NULL;
+}
+
+static void thread_test_func_once_init(void) {
+	mock_c()->actualCall("thread_test_func_once_init");
 }
 
 static void * thread_test_func_lock(void *arg) {
@@ -347,4 +511,20 @@ static int thread_test_func_recur_lock(celix_thread_mutex_t *mu, int i) {
 		celixThreadMutex_unlock(mu);
 		return temp;
 	}
+}
+
+static void * thread_test_func_kill(void *arg){
+	int * ret = (int*) malloc(sizeof(*ret));
+	//sleep for a about a minute, or until a kill signal (USR1) is recieved
+	*ret = usleep(60000000);
+	return ret;
+}
+
+static void thread_test_func_kill_handler(int signo){
+	celix_thread_t inThread = celixThread_self();
+
+	mock_c()->actualCall("thread_test_func_kill_handler")
+			->withLongIntParameters("signo", signo)
+			->withParameterOfType("celix_thread_t", "inThread", (const void*) &inThread);
+}
 }
