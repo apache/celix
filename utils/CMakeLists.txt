@@ -43,6 +43,14 @@ if (UTILS)
                 private/src/celix_threads.c
                 public/include/celix_threads.h
 
+                private/src/version.c
+                private/include/version_private.h
+                public/include/version.h
+		
+                private/src/version_range.c
+                private/include/version_range_private.h
+                public/include/version_range.h
+
                 private/src/thpool.c
                 public/include/thpool.h
         )

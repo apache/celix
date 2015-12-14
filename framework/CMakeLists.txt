@@ -56,7 +56,7 @@ if (FRAMEWORK)
 	 private/src/manifest_parser.c private/src/miniunz.c private/src/module.c private/src/properties.c 
 	 private/src/requirement.c private/src/resolver.c private/src/service_reference.c private/src/service_registration.c 
 	 private/src/service_registry.c private/src/service_tracker.c private/src/service_tracker_customizer.c
-	 private/src/unzip.c private/src/utils.c private/src/version.c private/src/version_range.c private/src/wire.c
+	 private/src/unzip.c private/src/utils.c private/src/wire.c
 	 private/src/celix_log.c private/src/celix_launcher.c
 
 	 private/include/attribute.h public/include/framework_exports.h
@@ -326,21 +326,6 @@ if (FRAMEWORK)
             private/test/utils_test.cpp private/src/utils.c)
         target_link_libraries(utils_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils pthread)
 	    
-        add_executable(version_range_test 
-            private/test/version_range_test.cpp 
-            private/src/version_range.c
-            private/mock/version_mock.c
-            private/src/celix_errorcodes.c
-            private/mock/celix_log_mock.c)
-        target_link_libraries(version_range_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY})
-	    
-        add_executable(version_test 
-            private/test/version_test.cpp 
-            private/src/version.c
-            private/src/celix_errorcodes.c
-            private/mock/celix_log_mock.c)
-        target_link_libraries(version_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY})
-	    
 	    add_executable(wire_test
 	       private/mock/requirement_mock.c
 	       private/mock/capability_mock.c
@@ -379,8 +364,6 @@ if (FRAMEWORK)
         add_test(NAME service_tracker_customizer_test COMMAND service_tracker_customizer_test)
 #        add_test(NAME service_tracker_test COMMAND service_tracker_test)
         add_test(NAME utils_test COMMAND utils_test)
-        add_test(NAME version_range_test COMMAND version_range_test)
-        add_test(NAME version_test COMMAND version_test)
 	add_test(NAME wire_test COMMAND wire_test)
 	    
 	SETUP_TARGET_FOR_COVERAGE(attribute_test attribute_test ${CMAKE_BINARY_DIR}/coverage/attribute_test/attribute_test)
@@ -405,8 +388,6 @@ if (FRAMEWORK)
         SETUP_TARGET_FOR_COVERAGE(service_tracker_customizer_test service_tracker_customizer_test ${CMAKE_BINARY_DIR}/coverage/service_tracker_customizer_test/service_tracker_customizer_test)
         SETUP_TARGET_FOR_COVERAGE(service_tracker_test service_tracker_test ${CMAKE_BINARY_DIR}/coverage/service_tracker_test/service_tracker_test)
         SETUP_TARGET_FOR_COVERAGE(utils_test utils_test ${CMAKE_BINARY_DIR}/coverage/utils_test/utils_test)
-        SETUP_TARGET_FOR_COVERAGE(version_range_test version_range_test ${CMAKE_BINARY_DIR}/coverage/version_range_test/version_range_test)
-        SETUP_TARGET_FOR_COVERAGE(version_test version_test ${CMAKE_BINARY_DIR}/coverage/version_test/version_test)
 		SETUP_TARGET_FOR_COVERAGE(wire_test wire_test ${CMAKE_BINARY_DIR}/coverage/wire_test/wire_test)
 		
 	endif (ENABLE_TESTING AND FRAMEWORK_TESTS)

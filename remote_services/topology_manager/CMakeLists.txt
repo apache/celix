@@ -51,5 +51,5 @@ if (RSA_TOPOLOGY_MANAGER)
         add_subdirectory(tms_tst)
    endif (ENABLE_TESTING)
 
-   target_link_libraries(topology_manager celix_framework)
+   target_link_libraries(topology_manager celix_framework celix_utils)
 endif (RSA_TOPOLOGY_MANAGER)
