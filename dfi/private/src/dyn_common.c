@@ -80,16 +80,17 @@ int dynCommon_parseNameAlsoAccept(FILE *stream, const char *acceptedChars, char 
 }
 
 int dynCommon_parseNameValue(FILE *stream, char **outName, char **outValue) {
-    int status = OK;
+    int status;
     char *name = NULL;
     char *value = NULL;
-    const char *valueAcceptedChars = ".<>{}[]?;:~!@#$%^&*()_+-=,./\\'\"";
 
     status = dynCommon_parseName(stream, &name);
     if (status == OK) {
         status = dynCommon_eatChar(stream, '=');
     }
     if (status == OK) {
+        const char *valueAcceptedChars = ".<>{}[]?;:~!@#$%^&*()_+-=,./\\'\"";
+
         status = dynCommon_parseNameAlsoAccept(stream, valueAcceptedChars, &value); //NOTE use different more lenient function e.g. only stop at '\n' ?
     }
 
@@ -113,7 +114,7 @@ int dynCommon_eatChar(FILE *stream, int expected) {
     int c = fgetc(stream);
     if (c != expected) {
         status = ERROR;
-        LOG_ERROR("Error parsing, expected token '%c' got '%c' at position %li", expected, loc);
+        LOG_ERROR("Error parsing, expected token '%c' got '%c' at position %li", expected, c, loc);
     }
     return status;
 }
@@ -134,10 +135,9 @@ static bool dynCommon_charIn(int c, const char *acceptedChars) {
 }
 
 void dynCommon_clearNamValHead(struct namvals_head *head) {
-    struct namval_entry *tmp = NULL;
     struct namval_entry *entry = TAILQ_FIRST(head);
     while (entry != NULL) {
-        tmp = entry;
+        struct namval_entry *tmp = entry;
 
         if (entry->name != NULL) {
             free(entry->name);

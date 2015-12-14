@@ -96,6 +96,60 @@ extern "C" {
         dynInterface_destroy(dynIntf);
     }
 
+    static void testInvalid(void) {
+        int status = 0;
+
+        /* Invalid field */
+        dyn_interface_type *dynIntf = NULL;
+        FILE *desc = fopen("descriptors/invalids/invalid.descriptor", "r");
+        assert(desc != NULL);
+        status = dynInterface_parse(desc, &dynIntf);
+        CHECK_EQUAL(1, status); //Test fails because of a space at the end of the name
+        fclose(desc);
+        dynInterface_destroy(dynIntf);
+
+        /* Header without Version */
+        desc = fopen("descriptors/invalids/noVersion.descriptor", "r");
+        status = dynInterface_parse(desc, &dynIntf);
+        CHECK_EQUAL(1, status); //Test fails because of missing version field in header section
+        fclose(desc);
+        dynInterface_destroy(dynIntf);
+
+        /* Invalid section */
+        desc = fopen("descriptors/invalids/invalidSection.descriptor", "r");
+        status = dynInterface_parse(desc, &dynIntf);
+        CHECK_EQUAL(1, status); //Test fails because of unknown section type
+        fclose(desc);
+        dynInterface_destroy(dynIntf);
+
+        /* Invalid return type */
+        desc = fopen("descriptors/invalids/invalidMethodReturnType.descriptor", "r");
+        status = dynInterface_parse(desc, &dynIntf);
+        CHECK_EQUAL(1, status); //Test fails because of invalid return type (D instead of N)
+        fclose(desc);
+        dynInterface_destroy(dynIntf);
+
+        /* Invalid  method section */
+        desc = fopen("descriptors/invalids/invalidMethod.descriptor", "r");
+        status = dynInterface_parse(desc, &dynIntf);
+        CHECK_EQUAL(1, status); //Test fails because of space at the end of the method
+        fclose(desc);
+        dynInterface_destroy(dynIntf);
+
+        /* Invalid  method section */
+        desc = fopen("descriptors/invalids/invalidType.descriptor", "r");
+        status = dynInterface_parse(desc, &dynIntf);
+        CHECK_EQUAL(1, status); //Test fails because of space at the end of the type
+        fclose(desc);
+        dynInterface_destroy(dynIntf);
+
+        /* Invalid  method section */
+        desc = fopen("descriptors/invalids/invalidMetaType.descriptor", "r");
+        status = dynInterface_parse(desc, &dynIntf);
+        CHECK_EQUAL(0, status); //Invalid meta type doesn't generate errors, just warnings
+        fclose(desc);
+        dynInterface_destroy(dynIntf);
+    }
 }
 
 
@@ -115,4 +169,8 @@ TEST(DynInterfaceTests, test1) {
 
 TEST(DynInterfaceTests, test2) {
     test2();
+}
+
+TEST(DynInterfaceTests, testInvalid) {
+    testInvalid();
 }

@@ -220,6 +220,22 @@ extern "C" {
 
         dynFunction_destroy(dynFunc);
     }
+
+    #define INVALID_FUNC_DESCRIPTOR "example$[D)V"//$ is an invalid symbol, missing (
+
+    static void test_invalidDynFunc(void) {
+        dyn_function_type *dynFunc = NULL;
+        int rc = dynFunction_parseWithStr(INVALID_FUNC_DESCRIPTOR, NULL, &dynFunc);
+        CHECK_EQUAL(2, rc); //Mem error
+    }
+
+    #define INVALID_FUNC_TYPE_DESCRIPTOR "example(H)A"//H and A are invalid types
+
+    static void test_invalidDynFuncType(void) {
+        dyn_function_type *dynFunc = NULL;
+        int rc = dynFunction_parseWithStr(INVALID_FUNC_TYPE_DESCRIPTOR, NULL, &dynFunc);
+        CHECK_EQUAL(3, rc); //Parse Error
+    }
 }
 
 TEST_GROUP(DynFunctionTests) {
@@ -249,4 +265,9 @@ TEST(DynFunctionTests, DynFuncTest3) {
 
 TEST(DynFunctionTests, DynFuncTest4) {
     test_example4();
+}
+
+TEST(DynFunctionTests, InvalidDynFuncTest) {
+    test_invalidDynFunc();
+    test_invalidDynFuncType();
 }

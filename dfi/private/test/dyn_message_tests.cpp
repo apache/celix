@@ -158,6 +158,41 @@ static void msg_test3(void) {
 	dynMessage_destroy(dynMsg);
 }
 
+static void msg_invalid(void) {
+	int status = 0;
+	dyn_message_type *dynMsg = NULL;
+	FILE *desc = fopen("descriptors/invalids/invalidMsgHdr.descriptor", "r");
+	assert(desc != NULL);
+	status = dynMessage_parse(desc, &dynMsg);
+	CHECK_EQUAL(1, status);
+	fclose(desc);
+
+	desc = fopen("descriptors/invalids/invalidMsgMissingVersion.descriptor", "r");
+	assert(desc != NULL);
+	status = dynMessage_parse(desc, &dynMsg);
+	CHECK_EQUAL(1, status);
+	fclose(desc);
+
+	desc = fopen("descriptors/invalids/invalidMsgInvalidSection.descriptor", "r");
+	assert(desc != NULL);
+	status = dynMessage_parse(desc, &dynMsg);
+	CHECK_EQUAL(1, status);
+	fclose(desc);
+
+	desc = fopen("descriptors/invalids/invalidMsgInvalidName.descriptor", "r");
+	assert(desc != NULL);
+	status = dynMessage_parse(desc, &dynMsg);
+	CHECK_EQUAL(1, status);
+	fclose(desc);
+
+	desc = fopen("descriptors/invalids/invalidMsgInvalidType.descriptor", "r");
+	assert(desc != NULL);
+	status = dynMessage_parse(desc, &dynMsg);
+	CHECK_EQUAL(1, status);
+	fclose(desc);
+
+}
+
 }
 
 
@@ -181,4 +216,8 @@ TEST(DynMessageTests, msg_test2) {
 
 TEST(DynMessageTests, msg_test3) {
 	msg_test3();
+}
+
+TEST(DynMessageTests, msg_invalid) {
+	msg_invalid();
 }
