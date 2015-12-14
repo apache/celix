@@ -24,6 +24,8 @@
 #include "dyn_function.h"
 #include "dfi_log_util.h"
 
+#include "version.h"
+
 DFI_SETUP_LOG_HEADER(dynInterface);
 
 /* Description string
@@ -53,7 +55,8 @@ int dynInterface_parse(FILE *descriptor, dyn_interface_type **out);
 void dynInterface_destroy(dyn_interface_type *intf);
 
 int dynInterface_getName(dyn_interface_type *intf, char **name);
-int dynInterface_getVersion(dyn_interface_type *intf, char **version);
+int dynInterface_getVersion(dyn_interface_type *intf, version_pt* version);
+int dynInterface_getVersionString(dyn_interface_type *intf, char **version);
 int dynInterface_getHeaderEntry(dyn_interface_type *intf, const char *name, char **value);
 int dynInterface_getAnnotationEntry(dyn_interface_type *intf, const char *name, char **value);
 int dynInterface_methods(dyn_interface_type *intf, struct methods_head **list);

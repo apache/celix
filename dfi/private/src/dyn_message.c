@@ -31,6 +31,7 @@ struct _dyn_message_type {
     struct namvals_head annotations;
     struct types_head types;
     dyn_type *msgType;
+    version_pt msgVersion;
 };
 
 static const int OK = 0;
@@ -72,6 +73,18 @@ int dynMessage_parse(FILE *descriptor, dyn_message_type **out) {
         if (status == OK) {
             status = dynMessage_checkMessage(msg);
         }
+
+        if(status==OK){ /* We are sure that version field is present in the header */
+        	char* version=NULL;
+        	dynMessage_getVersionString(msg,&version);
+        	if(version!=NULL){
+        		status = (version_createVersionFromString(version,&(msg->msgVersion)) == CELIX_SUCCESS)?OK:ERROR;
+        	}
+        	if(status==ERROR){
+        		LOG_ERROR("Invalid version (%s) in parsed descriptor\n",version);
+        	}
+        }
+
     } else {
         status = ERROR;
         LOG_ERROR("Error allocating memory for dynamic message\n");
@@ -114,7 +127,7 @@ static int dynMessage_checkMessage(dyn_message_type *msg) {
 }
 
 static int dynMessage_parseSection(dyn_message_type *msg, FILE *stream) {
-    int status = OK;
+    int status;
     char *sectionName = NULL;
 
     status = dynCommon_eatChar(stream, ':');
@@ -260,7 +273,7 @@ static int dynMessage_parseTypes(dyn_message_type *msg, FILE *stream) {
 }
 
 static int dynMessage_parseMessage(dyn_message_type *msg, FILE *stream) {
-    int status = OK;
+    int status;
 
     //expected input <dynType>\n
     char *name = NULL;
@@ -278,10 +291,9 @@ void dynMessage_destroy(dyn_message_type *msg) {
         dynCommon_clearNamValHead(&msg->header);
         dynCommon_clearNamValHead(&msg->annotations);
 
-        struct type_entry *tmp = NULL;
         struct type_entry *tInfo = TAILQ_FIRST(&msg->types);
         while (tInfo != NULL) {
-            tmp = tInfo;
+            struct type_entry *tmp = tInfo;
             tInfo = TAILQ_NEXT(tInfo, entries);
             dynType_destroy(tmp->type);
             free(tmp);
@@ -289,6 +301,10 @@ void dynMessage_destroy(dyn_message_type *msg) {
 
         if (msg->msgType != NULL) {
         	dynType_destroy(msg->msgType);
+        }
+
+        if(msg->msgVersion != NULL){
+        	version_destroy(msg->msgVersion);
         }
 
         free(msg);
@@ -299,7 +315,15 @@ int dynMessage_getName(dyn_message_type *msg, char **out) {
     return dynMessage_getEntryForHead(&msg->header, "name", out);
 }
 
-int dynMessage_getVersion(dyn_message_type *msg, char **version) {
+int dynMessage_getVersion(dyn_message_type *msg, version_pt* version){
+	*version = msg->msgVersion;
+	if(*version==NULL){
+		return ERROR;
+	}
+	return OK;
+}
+
+int dynMessage_getVersionString(dyn_message_type *msg, char **version) {
     return dynMessage_getEntryForHead(&msg->header, "version", version);
 }
 

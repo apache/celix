@@ -44,6 +44,23 @@ extern "C" {
         fprintf(stderr, "\n");
     }
 
+    static void checkInterfaceVersion(dyn_interface_type* dynIntf, const char* v) {
+        int status;
+
+        char *version = NULL;
+        status = dynInterface_getVersionString(dynIntf, &version);
+        CHECK_EQUAL(0, status);
+        STRCMP_EQUAL(v, version);
+        version_pt msgVersion = NULL, localMsgVersion = NULL;
+        int cmpVersion = -1;
+        version_createVersionFromString(version, &localMsgVersion);
+        status = dynInterface_getVersion(dynIntf, &msgVersion);
+        CHECK_EQUAL(0, status);
+        version_compareTo(msgVersion, localMsgVersion, &cmpVersion);
+        CHECK_EQUAL(cmpVersion, 0);
+        version_destroy(localMsgVersion);
+    }
+
     static void test1(void) {
         int status = 0;
         dyn_interface_type *dynIntf = NULL;
@@ -58,10 +75,7 @@ extern "C" {
         CHECK_EQUAL(0, status);
         STRCMP_EQUAL("calculator", name);
 
-        char *version = NULL;
-        status = dynInterface_getVersion(dynIntf, &version);
-        CHECK_EQUAL(0, status);
-        STRCMP_EQUAL("1.0.0", version);
+	checkInterfaceVersion(dynIntf,"1.0.0");
 
         char *annVal = NULL;
         status = dynInterface_getAnnotationEntry(dynIntf, "classname", &annVal);
@@ -136,19 +150,25 @@ extern "C" {
         fclose(desc);
         dynInterface_destroy(dynIntf);
 
-        /* Invalid  method section */
+        /* Invalid type */
         desc = fopen("descriptors/invalids/invalidType.descriptor", "r");
         status = dynInterface_parse(desc, &dynIntf);
         CHECK_EQUAL(1, status); //Test fails because of space at the end of the type
         fclose(desc);
         dynInterface_destroy(dynIntf);
 
-        /* Invalid  method section */
+        /* Invalid metatype in method description */
         desc = fopen("descriptors/invalids/invalidMetaType.descriptor", "r");
         status = dynInterface_parse(desc, &dynIntf);
         CHECK_EQUAL(0, status); //Invalid meta type doesn't generate errors, just warnings
         fclose(desc);
         dynInterface_destroy(dynIntf);
+
+        /* Invalid version section */
+        desc = fopen("descriptors/invalids/invalidVersion.descriptor", "r");
+        status = dynInterface_parse(desc, &dynIntf);
+        CHECK_EQUAL(1, status); //Invalid meta type doesn't generate errors, just warnings
+        fclose(desc);
     }
 }
 

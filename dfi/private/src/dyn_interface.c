@@ -32,6 +32,7 @@ struct _dyn_interface_type {
     struct namvals_head annotations;
     struct types_head types;
     struct methods_head methods;
+    version_pt version;
 };
 
 static const int OK = 0;
@@ -73,6 +74,17 @@ int dynInterface_parse(FILE *descriptor, dyn_interface_type **out) {
 
         if (status == OK) {
             status = dynInterface_checkInterface(intf);
+        }
+
+        if(status==OK){ /* We are sure that version field is present in the header */
+        	char* version=NULL;
+            dynInterface_getVersionString(intf,&version);
+            if(version!=NULL){
+            	status = (version_createVersionFromString(version,&(intf->version)) == CELIX_SUCCESS)?OK:ERROR;
+            }
+            if(status==ERROR){
+            	LOG_ERROR("Invalid version (%s) in parsed descriptor\n",version);
+            }
         }
     } else {
         status = ERROR;
@@ -349,10 +361,9 @@ void dynInterface_destroy(dyn_interface_type *intf) {
         dynCommon_clearNamValHead(&intf->header);
         dynCommon_clearNamValHead(&intf->annotations);
 
-        struct method_entry *mTmp = NULL;
         struct method_entry *mInfo = TAILQ_FIRST(&intf->methods);
         while (mInfo != NULL) {
-            mTmp = mInfo;
+            struct method_entry *mTmp = mInfo;
             mInfo = TAILQ_NEXT(mInfo, entries);
             
             if (mTmp->id != NULL) {
@@ -367,13 +378,16 @@ void dynInterface_destroy(dyn_interface_type *intf) {
             free(mTmp);
         }
 
-        struct type_entry *tmp = NULL;
         struct type_entry *tInfo = TAILQ_FIRST(&intf->types);
         while (tInfo != NULL) {
-            tmp = tInfo;
+            struct type_entry *tmp = tInfo;
             tInfo = TAILQ_NEXT(tInfo, entries);
             dynType_destroy(tmp->type);
             free(tmp);
+        }
+
+        if(intf->version!=NULL){
+        	version_destroy(intf->version);
         }
 
         free(intf);
@@ -384,7 +398,15 @@ int dynInterface_getName(dyn_interface_type *intf, char **out) {
     return dynInterface_getEntryForHead(&intf->header, "name", out);
 }
 
-int dynInterface_getVersion(dyn_interface_type *intf, char **version) {
+int dynInterface_getVersion(dyn_interface_type* intf , version_pt* version){
+	*version = intf->version;
+	if(*version==NULL){
+		return ERROR;
+	}
+	return OK;
+}
+
+int dynInterface_getVersionString(dyn_interface_type *intf, char **version) {
     return dynInterface_getEntryForHead(&intf->header, "version", version);
 }
 

@@ -23,6 +23,7 @@ include_directories(
         ${JANSSON_INCLUDE_DIRS}
 	    private/include
 	    public/include
+	    ${PROJECT_SOURCE_DIR}/utils/public/include
 )
 
 set(MEMSTREAM_SOURCES )
@@ -52,7 +53,7 @@ add_library(celix_dfi SHARED
     public/include/json_rpc.h
     ${MEMSTREAM_INCLUDES}
 )
-target_link_libraries(celix_dfi ${FFI_LIBRARIES} ${JANSSON_LIBRARY})
+target_link_libraries(celix_dfi celix_utils ${FFI_LIBRARIES} ${JANSSON_LIBRARY})
 
 install(TARGETS celix_dfi DESTINATION lib COMPONENT framework)
 FILE(GLOB files "public/include/*.h" ${MEMSTREAM_INCLUDES})

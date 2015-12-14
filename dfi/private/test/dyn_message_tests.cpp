@@ -45,6 +45,24 @@ static void stdLog(void *handle, int level, const char *file, int line, const ch
 	fprintf(stderr, "\n");
 }
 
+static void checkMessageVersion(dyn_message_type* dynMsg, const char* v){
+	int status = 0;
+
+	char *version = NULL;
+	status = dynMessage_getVersionString(dynMsg, &version);
+	CHECK_EQUAL(0, status);
+	STRCMP_EQUAL(v, version);
+	version_pt msgVersion = NULL, localMsgVersion = NULL;
+	int cmpVersion = -1;
+	version_createVersionFromString(version,&localMsgVersion);
+	status = dynMessage_getVersion(dynMsg,&msgVersion);
+	CHECK_EQUAL(0, status);
+	version_compareTo(msgVersion,localMsgVersion,&cmpVersion);
+	CHECK_EQUAL(cmpVersion,0);
+	version_destroy(localMsgVersion);
+
+}
+
 
 static void msg_test1(void) {
 	int status = 0;
@@ -60,10 +78,7 @@ static void msg_test1(void) {
 	CHECK_EQUAL(0, status);
 	STRCMP_EQUAL("poi", name);
 
-	char *version = NULL;
-	status = dynMessage_getVersion(dynMsg, &version);
-	CHECK_EQUAL(0, status);
-	STRCMP_EQUAL("1.0.0", version);
+	checkMessageVersion(dynMsg,"1.0.0");
 
 	char *annVal = NULL;
 	status = dynMessage_getAnnotationEntry(dynMsg, "classname", &annVal);
@@ -98,10 +113,7 @@ static void msg_test2(void) {
 	CHECK_EQUAL(0, status);
 	STRCMP_EQUAL("track", name);
 
-	char *version = NULL;
-	status = dynMessage_getVersion(dynMsg, &version);
-	CHECK_EQUAL(0, status);
-	STRCMP_EQUAL("0.0.1", version);
+	checkMessageVersion(dynMsg,"0.0.1");
 
 	char *annVal = NULL;
 	status = dynMessage_getAnnotationEntry(dynMsg, "classname", &annVal);
@@ -135,10 +147,7 @@ static void msg_test3(void) {
 	CHECK_EQUAL(0, status);
 	STRCMP_EQUAL("logEntry", name);
 
-	char *version = NULL;
-	status = dynMessage_getVersion(dynMsg, &version);
-	CHECK_EQUAL(0, status);
-	STRCMP_EQUAL("1.0.0", version);
+	checkMessageVersion(dynMsg,"1.0.0");
 
 	char *annVal = NULL;
 	status = dynMessage_getAnnotationEntry(dynMsg, "classname", &annVal);
@@ -186,6 +195,12 @@ static void msg_invalid(void) {
 	fclose(desc);
 
 	desc = fopen("descriptors/invalids/invalidMsgInvalidType.descriptor", "r");
+	assert(desc != NULL);
+	status = dynMessage_parse(desc, &dynMsg);
+	CHECK_EQUAL(1, status);
+	fclose(desc);
+
+	desc = fopen("descriptors/invalids/invalidMsgInvalidVersion.descriptor", "r");
 	assert(desc != NULL);
 	status = dynMessage_parse(desc, &dynMsg);
 	CHECK_EQUAL(1, status);
