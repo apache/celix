@@ -1,0 +1,6 @@
+:header
+type=interface
+name=calculator
+version=1.0.0
+:invalidSection
+invalidKey=invalidValue
