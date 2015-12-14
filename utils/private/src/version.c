@@ -111,7 +111,9 @@ celix_status_t version_createVersionFromString(char * versionStr, version_pt *ve
 
 	int i = 0;
 
-	token = strtok_r(versionStr, delims, &last);
+	char* versionWrkStr = strdup(versionStr);
+
+	token = strtok_r(versionWrkStr, delims, &last);
 	if (token != NULL) {
 		for (i = 0; i < strlen(token); i++) {
 			char ch = token[i];
@@ -156,6 +158,9 @@ celix_status_t version_createVersionFromString(char * versionStr, version_pt *ve
 			}
 		}
 	}
+
+	free(versionWrkStr);
+
 	if (status == CELIX_SUCCESS) {
 		status = version_createVersion(major, minor, micro, qualifier, version);
 	}
