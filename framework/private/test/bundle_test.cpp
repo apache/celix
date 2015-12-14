@@ -663,7 +663,8 @@ TEST(bundle, revise) {
 	mock().expectOneCall("module_create")
 			.withParameter("headerMap", actual_manifest)
 			.withParameter("moduleId", actual_module_id)
-			.withParameter("bundle", bundle);
+			.withParameter("bundle", bundle)
+			.andReturnValue((void*)NULL);
 
 	//module create returns NULL during test
 	mock().expectOneCall("resolver_addModule")
