@@ -674,3 +674,24 @@ celix_status_t bundle_getFramework(bundle_pt bundle, framework_pt *framework) {
 
 	return status;
 }
+
+celix_status_t bundle_getBundleLocation(bundle_pt bundle, char **location){
+
+	celix_status_t status;
+
+	bundle_archive_pt archive = NULL;
+
+	status = bundle_getArchive(bundle, &archive);
+	if (status != CELIX_SUCCESS){
+		printf("[ ERROR ]: Bundle - getBundleLocation (BundleArchive) \n");
+		return status;
+	}
+
+	status =  bundleArchive_getLocation(archive, location);
+	if (status != CELIX_SUCCESS){
+		printf("[ ERROR ]:  Bundle - getBundleLocation (BundleArchiveLocation) \n");
+		return status;
+	}
+
+	return CELIX_SUCCESS;
+}

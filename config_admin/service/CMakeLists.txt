@@ -30,7 +30,6 @@ bundle(config_admin SOURCES
 	private/src/configuration_admin_impl
 	private/src/configuration_impl
 	private/src/configuration_store
-	private/src/framework_patch
 	private/src/managed_service_impl.c
 	private/src/managed_service_tracker.c
 	private/src/updated_thread_pool.c

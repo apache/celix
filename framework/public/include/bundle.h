@@ -96,4 +96,7 @@ FRAMEWORK_EXPORT celix_status_t bundle_getServicesInUse(bundle_pt bundle, array_
 FRAMEWORK_EXPORT celix_status_t bundle_setFramework(bundle_pt bundle, framework_pt framework);
 FRAMEWORK_EXPORT celix_status_t bundle_getFramework(bundle_pt bundle, framework_pt *framework);
 
+FRAMEWORK_EXPORT celix_status_t bundle_getBundleLocation(bundle_pt bundle, char **location);
+
+
 #endif /* BUNDLE_H_ */
