@@ -51,6 +51,8 @@ TEST_GROUP(filter) {
 	void teardown() {
 		mock().checkExpectations();
 		mock().clear();
+
+		free(logger);
 	}
 };
 
@@ -62,5 +64,32 @@ TEST(filter, create) {
 }
 
 
+TEST(filter, create1) {
+    char filterStr[] = "(key<value)";
+    filter_pt filter = filter_create(filterStr);
+
+    STRCMP_EQUAL(filterStr, filter->filterStr);
+}
+
+TEST(filter, create2) {
+    char filterStr[] = "(key>value)";
+    filter_pt filter = filter_create(filterStr);
+
+    STRCMP_EQUAL(filterStr, filter->filterStr);
+}
+
+TEST(filter, create3) {
+    char filterStr[] = "(key<=value)";
+    filter_pt filter = filter_create(filterStr);
+
+    STRCMP_EQUAL(filterStr, filter->filterStr);
+}
+
+TEST(filter, create4) {
+    char filterStr[] = "(key>=value)";
+    filter_pt filter = filter_create(filterStr);
+
+    STRCMP_EQUAL(filterStr, filter->filterStr);
+}
 
 

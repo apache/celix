@@ -228,10 +228,18 @@ filter_pt filter_parseItem(char * filterString, int * pos) {
 			if (filterString[*pos + 1] == '=') {
 				filter_pt filter = (filter_pt) malloc(sizeof(*filter));
 				*pos += 2;
-				filter->operand = GREATER;
+				filter->operand = GREATEREQUAL;
 				filter->attribute = attr;
 				filter->value = filter_parseValue(filterString, pos);
 				return filter;
+			}
+			else {
+                filter_pt filter = (filter_pt) malloc(sizeof(*filter));
+                *pos += 1;
+                filter->operand = GREATER;
+                filter->attribute = attr;
+                filter->value = filter_parseValue(filterString, pos);
+                return filter;
 			}
 			break;
 		}
@@ -239,10 +247,18 @@ filter_pt filter_parseItem(char * filterString, int * pos) {
 			if (filterString[*pos + 1] == '=') {
 				filter_pt filter = (filter_pt) malloc(sizeof(*filter));
 				*pos += 2;
-				filter->operand = LESS;
+				filter->operand = LESSEQUAL;
 				filter->attribute = attr;
 				filter->value = filter_parseValue(filterString, pos);
 				return filter;
+			}
+			else {
+                filter_pt filter = (filter_pt) malloc(sizeof(*filter));
+                *pos += 1;
+                filter->operand = LESS;
+                filter->attribute = attr;
+                filter->value = filter_parseValue(filterString, pos);
+                return filter;
 			}
 			break;
 		}
@@ -459,7 +475,9 @@ celix_status_t filter_match(filter_pt filter, properties_pt properties, bool *re
 		case SUBSTRING :
 		case EQUAL :
 		case GREATER :
+        case GREATEREQUAL :
 		case LESS :
+        case LESSEQUAL :
 		case APPROX : {
 			char * value = (properties == NULL) ? NULL: properties_get(properties, filter->attribute);
 
@@ -548,13 +566,21 @@ celix_status_t filter_compareString(OPERAND operand, char * string, void * value
 			return CELIX_SUCCESS;
 		}
 		case GREATER: {
-			*result = (strcmp(string, (char *) value2) >= 0);
+			*result = (strcmp(string, (char *) value2) > 0);
 			return CELIX_SUCCESS;
 		}
+        case GREATEREQUAL: {
+            *result = (strcmp(string, (char *) value2) >= 0);
+            return CELIX_SUCCESS;
+        }
 		case LESS: {
-			*result = (strcmp(string, (char *) value2) <= 0);
+			*result = (strcmp(string, (char *) value2) < 0);
 			return CELIX_SUCCESS;
 		}
+        case LESSEQUAL: {
+            *result = (strcmp(string, (char *) value2) <= 0);
+            return CELIX_SUCCESS;
+        }
 		case AND:
 		case NOT:
 		case OR:
