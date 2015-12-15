@@ -33,6 +33,7 @@
 #include <fcntl.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <limits.h>
 
 /* celix.config_admin.ConfigurationStore */
 #include "configuration_store.h"
