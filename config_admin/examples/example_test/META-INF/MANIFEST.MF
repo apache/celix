@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+Bundle-SymbolicName: example_test
+Bundle-Version: 1.0.0
+library: example_test
+Import-Service: configuration_admin

@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+Bundle-SymbolicName: bundle_managed_service
+Bundle-Version: 1.0.0
+library: bundle_managed_service
+Import-Service: configuration_admin

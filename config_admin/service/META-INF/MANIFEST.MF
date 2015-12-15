@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+Bundle-SymbolicName: config_admin
+Bundle-Version: 1.0.0
+library: config_admin
+Export-Service: configuration_admin
+Import-Service: configuration_admin
