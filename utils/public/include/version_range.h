@@ -81,6 +81,50 @@ celix_status_t versionRange_destroy(version_range_pt range);
 celix_status_t versionRange_isInRange(version_range_pt versionRange, version_pt version, bool *inRange);
 
 /**
+ * Determines whether the lower bound is included in the given range
+ *
+ * @param versionRange The range to check
+ * @param isLowInclusive is set to true in case, the lower bound the lower bound is included, otherwise false
+ * @return Status code indication failure or success:
+ *      - CELIX_SUCCESS when no errors are encountered.
+ *      - CELIX_ILLEGAL_ARGUMENT in case the versionRange is NULL
+ */
+celix_status_t versionRange_isLowInclusive(version_range_pt versionRange, bool *isLowInclusive);
+
+/**
+ * Determines whether the higher bound is included in the given range
+ *
+ * @param versionRange The range to check
+ * @param isHighInclusive is set to true in case, the lower bound the higher bound is included, otherwise false
+ * @return Status code indication failure or success:
+ *      - CELIX_SUCCESS when no errors are encountered.
+ *      - CELIX_ILLEGAL_ARGUMENT in case the versionRange is NULL
+ */
+celix_status_t versionRange_isHighInclusive(version_range_pt versionRange, bool *isHighInclusive);
+
+/**
+ * Retrieves whether the lower bound version from the given range
+ *
+ * @param versionRange The range
+ * @param highVersion is set to the lower bound version
+ * @return Status code indication failure or success:
+ *      - CELIX_SUCCESS when no errors are encountered.
+ *      - CELIX_ILLEGAL_ARGUMENT in case the versionRange is NULL
+ */
+celix_status_t versionRange_getLowVersion(version_range_pt versionRange, version_pt *lowVersion);
+
+/**
+ * Retrieves whether the upper bound version from the given range
+ *
+ * @param versionRange The range
+ * @param highVersion is set to the upper bound version
+ * @return Status code indication failure or success:
+ *      - CELIX_SUCCESS when no errors are encountered.
+ *      - CELIX_ILLEGAL_ARGUMENT in case the versionRange is NULL
+ */
+celix_status_t versionRange_getHighVersion(version_range_pt versionRange, version_pt *highVersion);
+
+/**
  * Parses a version range from the specified string.
  *
  * <p>

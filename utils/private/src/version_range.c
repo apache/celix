@@ -124,6 +124,59 @@ celix_status_t versionRange_isInRange(version_range_pt versionRange, version_pt 
 	return status;
 }
 
+celix_status_t versionRange_getLowVersion(version_range_pt versionRange, version_pt *lowVersion) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    if (versionRange == NULL) {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
+    else {
+        *lowVersion = versionRange->low;
+    }
+
+    return status;
+}
+
+celix_status_t versionRange_isLowInclusive(version_range_pt versionRange, bool *isLowInclusive) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    if (versionRange == NULL) {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
+    else {
+        *isLowInclusive = versionRange->isLowInclusive;
+    }
+
+    return status;
+}
+
+celix_status_t versionRange_getHighVersion(version_range_pt versionRange, version_pt *highVersion) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    if (versionRange == NULL) {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
+    else {
+        *highVersion = versionRange->high;
+    }
+
+    return status;
+}
+
+celix_status_t versionRange_isHighInclusive(version_range_pt versionRange, bool *isHighInclusive) {
+    celix_status_t status = CELIX_SUCCESS;
+
+    if (versionRange == NULL) {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
+    else {
+        *isHighInclusive = versionRange->isHighInclusive;
+    }
+
+    return status;
+}
+
+
 celix_status_t versionRange_parse(char * rangeStr, version_range_pt *range) {
 	celix_status_t status;
 	if (strchr(rangeStr, ',') != NULL) {
@@ -177,3 +230,4 @@ celix_status_t versionRange_parse(char * rangeStr, version_range_pt *range) {
 
 	return status;
 }
+

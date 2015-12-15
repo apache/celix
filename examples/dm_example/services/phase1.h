@@ -27,8 +27,12 @@
 #ifndef PHASE1_H_
 #define PHASE1_H_
 
-#define PHASE1_NAME     "PHASE1"
-#define PHASE1_VERSION  "1.0.0.0"
+#define PHASE1_NAME         "PHASE1"
+#define PHASE1_VERSION      "1.2.2.0"
+#define PHASE1_RANGE_ALL    "[1.2.2.0,4.5.6.x)"
+#define PHASE1_RANGE_EXACT  "[1.2.2.0,1.2.2.0]"
+
+
 
 struct phase1_struct {
 	void *handle;

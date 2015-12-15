@@ -148,7 +148,7 @@ celix_status_t serviceDependency_getStrategy(dm_service_dependency_pt dependency
 
 }
 
-celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency, char *serviceName, char *serviceVersion, char *filter) {
+celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency, char *serviceName, char *serviceVersionRange, char *filter) {
     celix_status_t status = CELIX_SUCCESS;
     if (!dependency) {
         status = CELIX_ILLEGAL_ARGUMENT;
@@ -162,11 +162,45 @@ celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency,
             dependency->tracked_service = strdup(serviceName);
         }
 
-        if (serviceVersion != NULL) {
-            size_t len = strlen(CELIX_FRAMEWORK_SERVICE_VERSION) + strlen(serviceVersion) + 4;
-            char serviceVersionFilter[len];
-            snprintf(serviceVersionFilter, len, "(%s=%s)", CELIX_FRAMEWORK_SERVICE_VERSION, serviceVersion);
-            arrayList_add(filterElements, strdup(serviceVersionFilter));
+        if (serviceVersionRange != NULL) {
+            version_range_pt versionRange;
+
+            if (versionRange_parse(serviceVersionRange, &versionRange) == CELIX_SUCCESS) {
+                version_pt lowVersion = NULL;
+                version_pt highVersion = NULL;
+
+                if ((versionRange_getHighVersion(versionRange, &highVersion) == CELIX_SUCCESS) && (highVersion != NULL)) {
+                    bool isHighInclusive;
+                    char* highOperator;
+                    char* highVersionStr;
+
+                    versionRange_isHighInclusive(versionRange, &isHighInclusive);
+                    version_toString(highVersion, &highVersionStr);
+
+                    highOperator = isHighInclusive ? "<=" : "<";
+
+                    size_t len = strlen(CELIX_FRAMEWORK_SERVICE_VERSION) + strlen(highVersionStr) + strlen(highOperator) + 3;
+                    char serviceVersionFilter[len];
+                    snprintf(serviceVersionFilter, len, "(%s%s%s)", CELIX_FRAMEWORK_SERVICE_VERSION, highOperator, highVersionStr);
+                    arrayList_add(filterElements, strdup(serviceVersionFilter));
+                }
+
+                if ((versionRange_getLowVersion(versionRange, &lowVersion) == CELIX_SUCCESS) && (lowVersion != NULL)) {
+                    bool isLowInclusive;
+                    char* lowOperator;
+                    char* lowVersionStr;
+
+                    versionRange_isLowInclusive(versionRange, &isLowInclusive);
+                    version_toString(lowVersion, &lowVersionStr);
+
+                    lowOperator = isLowInclusive ? ">=" : ">";
+
+                    size_t len = strlen(CELIX_FRAMEWORK_SERVICE_VERSION) + strlen(lowVersionStr) + strlen(lowOperator) + 3;
+                    char serviceVersionFilter[len];
+                    snprintf(serviceVersionFilter, len, "(%s%s%s)", CELIX_FRAMEWORK_SERVICE_VERSION, lowOperator, lowVersionStr);
+                    arrayList_add(filterElements, strdup(serviceVersionFilter));
+                }
+            }
         }
 
         if (filter != NULL) {
