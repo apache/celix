@@ -27,7 +27,8 @@
 #ifndef PHASE2_H
 #define PHASE2_H
 
-#define PHASE2_NAME "PHASE2"
+#define PHASE2_NAME     "PHASE2"
+#define PHASE2_VERSION  "1.0.0.0"
 
 struct phase2_struct {
 	void *handle;

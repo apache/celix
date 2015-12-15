@@ -56,7 +56,7 @@ celix_status_t serviceDependency_destroy(dm_service_dependency_pt *dependency_pt
 celix_status_t serviceDependency_setRequired(dm_service_dependency_pt dependency, bool required);
 celix_status_t serviceDependency_setStrategy(dm_service_dependency_pt dependency,dm_service_dependency_strategy_t strategy);
 celix_status_t serviceDependency_getStrategy(dm_service_dependency_pt dependency,dm_service_dependency_strategy_t* strategy);
-celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency, char *serviceName, char *filter);
+celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency, char *serviceName, char *serviceVersion, char *filter);
 celix_status_t serviceDependency_getFilter(dm_service_dependency_pt dependency, char **filter);
 
 celix_status_t serviceDependency_setCallbacks(dm_service_dependency_pt dependency, service_set_fpt set, service_add_fpt add, service_change_fpt change, service_remove_fpt remove, service_swap_fpt swap);

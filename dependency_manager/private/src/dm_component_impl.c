@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "constants.h"
 #include "filter.h"
 #include "dm_component_impl.h"
 
@@ -325,27 +326,30 @@ celix_status_t component_stopTask(dm_component_pt component, void *data __attrib
     return status;
 }
 
-celix_status_t component_addInterface(dm_component_pt component, char *serviceName, void *service, properties_pt properties) {
+celix_status_t component_addInterface(dm_component_pt component, char *serviceName, char *serviceVersion, void *service, properties_pt properties) {
     celix_status_t status = CELIX_SUCCESS;
 
     if (component->active) {
         return CELIX_ILLEGAL_STATE;
     } else {
-	dm_interface_t *interface = (dm_interface_t *) calloc(1, sizeof(*interface));
-	char *name = strdup (serviceName);
+        dm_interface_t *interface = (dm_interface_t *) calloc(1, sizeof(*interface));
+        char *name = strdup(serviceName);
 
-	if (interface && name) {
+        if ((properties_get(properties, (char*) CELIX_FRAMEWORK_SERVICE_VERSION) == NULL) && (serviceVersion != NULL)) {
+            properties_set(properties, (char*) CELIX_FRAMEWORK_SERVICE_VERSION, serviceVersion);
+        }
+
+        if (interface && name) {
             interface->serviceName = name;
             interface->service = service;
             interface->properties = properties;
             interface->registration = NULL;
-	    arrayList_add(component->dm_interfaces, interface);
-	}
-	else {
-	   free (interface);
-	   free (name);
-	   status = CELIX_ENOMEM;
-	}
+            arrayList_add(component->dm_interfaces, interface);
+        } else {
+            free(interface);
+            free(name);
+            status = CELIX_ENOMEM;
+        }
     }
 
     return status;
@@ -794,7 +798,7 @@ celix_status_t component_calculateNewState(dm_component_pt component, dm_compone
 
 celix_status_t component_performTransition(dm_component_pt component, dm_component_state_t oldState, dm_component_state_t newState, bool *transition) {
     celix_status_t status = CELIX_SUCCESS;
-    //printf("performing transition for %s in thread %i from %i to %i\n", component->name, pthread_self(), oldState, newState);
+    //printf("performing transition for %s in thread %i from %i to %i\n", component->name, (int) pthread_self(), oldState, newState);
 
     if (oldState == newState) {
         *transition = false;

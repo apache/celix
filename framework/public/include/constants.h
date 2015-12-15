@@ -32,6 +32,8 @@ static const char * const OSGI_FRAMEWORK_SERVICE_ID = "service.id";
 static const char * const OSGI_FRAMEWORK_SERVICE_PID = "service.pid";
 static const char * const OSGI_FRAMEWORK_SERVICE_RANKING = "service.ranking";
 
+static const char * const CELIX_FRAMEWORK_SERVICE_VERSION = "service.version";
+
 static const char * const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR = "Bundle-Activator";
 static const char * const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_CREATE = "bundleActivator_create";
 static const char * const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_START = "bundleActivator_start";

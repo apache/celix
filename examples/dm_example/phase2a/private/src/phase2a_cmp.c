@@ -86,6 +86,7 @@ void phase2a_destroy(phase2a_cmp_t *cmp) {
 }
 
 int phase2a_setPhase1(phase2a_cmp_t *cmp, phase1_t *phase1) {
+    printf("phase2a_setPhase1 called!\n\n");
     celixThreadMutex_lock(&cmp->mutex);
     cmp->phase1Serv = phase1;
     celixThreadMutex_unlock(&cmp->mutex);

@@ -63,12 +63,12 @@ celix_status_t dm_init(void * userData, bundle_context_pt context, dm_dependency
 		component_create(context, "PHASE2A_PROCESSING_COMPONENT", &cmp);
 		component_setImplementation(cmp, act->phase2aCmp);
 		component_setCallbacksSafe(cmp, phase2a_cmp_t *, phase2a_init, phase2a_start, phase2a_stop, phase2a_deinit);
-		component_addInterface(cmp, PHASE2_NAME, &act->phase2Serv, props);
+		component_addInterface(cmp, PHASE2_NAME, PHASE2_VERSION, &act->phase2Serv, props);
 
 
 		dm_service_dependency_pt dep;
 		serviceDependency_create(&dep);
-		serviceDependency_setService(dep, PHASE1_NAME, NULL);
+		serviceDependency_setService(dep, PHASE1_NAME, PHASE1_VERSION, NULL);
         serviceDependency_setCallbacksSafe(dep, phase2a_cmp_t *, phase1_t *, phase2a_setPhase1, NULL, NULL, NULL, NULL);
 		serviceDependency_setRequired(dep, true);
 		component_addServiceDependency(cmp, dep);

@@ -60,7 +60,7 @@ struct dm_service_dependency {
 
 	bool isStarted;
 
-	char *tracked_service_name;
+	char *tracked_service;
 	char *tracked_filter_unmodified;
 	char *tracked_filter;
 
