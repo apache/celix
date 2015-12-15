@@ -185,7 +185,12 @@ celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency,
                 char* filterElement = (char*) arrayListIterator_next(filterElementsIter);
                 size_t len = strlen(dependency->tracked_filter) + strlen(filterElement) + 4;
                 char* newFilter = calloc(len, sizeof(*newFilter));
+
                 snprintf(newFilter, len, "(&%s%s)", dependency->tracked_filter, filterElement);
+
+                free(dependency->tracked_filter);
+                free(filterElement);
+
                 dependency->tracked_filter = newFilter;
             }
 
@@ -194,6 +199,8 @@ celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency,
         else {
             dependency->tracked_filter = NULL;
         }
+
+        arrayList_destroy(filterElements);
     }
 
     return status;
