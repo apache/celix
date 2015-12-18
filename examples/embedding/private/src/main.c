@@ -25,8 +25,7 @@
  */
 #include <stdlib.h>
 
-#include <apr_general.h>
-
+#include "celix_launcher.h"
 #include "celix_errno.h"
 #include "framework.h"
 #include "bundle_context.h"
@@ -36,56 +35,59 @@ struct foo {
 };
 
 struct fooSrv {
-	struct foo *handle;
-	celix_status_t (*foo)(struct foo *handle);
+    struct foo *handle;
+    celix_status_t (*foo)(struct foo *handle);
 };
 
 celix_status_t embedded_foo();
 
 int main(void) {
-	apr_status_t status = APR_SUCCESS;
-	apr_pool_t *memoryPool = NULL;
 
-	status = apr_initialize();
-	if (status != APR_SUCCESS) {
-		return CELIX_START_ERROR;
-	}
+    framework_pt framework = NULL;
 
-	status = apr_pool_create(&memoryPool, NULL);
-	if (status != APR_SUCCESS) {
-		return CELIX_START_ERROR;
-	}
+    properties_pt config = properties_create();
+    int rc = celixLauncher_launchWithProperties(config, &framework);
 
-	framework_pt framework = NULL;
-	framework_create(&framework, memoryPool, NULL);
-	fw_init(framework);
+    if (rc == 0) {
+        bundle_pt fwBundle = NULL;
+        framework_getFrameworkBundle(framework, &fwBundle);
+        bundle_start(fwBundle);
 
-	bundle_pt fwBundle = NULL;
-	framework_getFrameworkBundle(framework, &fwBundle);
-	bundle_start(fwBundle);
+        bundle_context_pt context = NULL;
+        bundle_getContext(fwBundle, &context);
 
-	bundle_context_pt context = NULL;
-	bundle_getContext(fwBundle, &context);
+        struct foo *f = calloc(1, sizeof(*f));
+        struct fooSrv *fs = calloc(1, sizeof(*fs));
 
-	struct foo *f = calloc(1, sizeof(*f));
-	struct fooSrv *fs = calloc(1, sizeof(*fs));
-	fs->handle = f;
-	fs->foo = embedded_foo;
+        fs->handle = f;
+        fs->foo = embedded_foo;
 
-	service_registration_pt reg = NULL;
-	bundleContext_registerService(context, "foo", fs, NULL, &reg);
+        service_registration_pt reg = NULL;
+        bundleContext_registerService(context, "foo", fs, NULL, &reg);
 
-	service_reference_pt ref = NULL;
-	bundleContext_getServiceReference(context, "foo", &ref);
+        service_reference_pt ref = NULL;
+        bundleContext_getServiceReference(context, "foo", &ref);
 
-	void *fs2 = NULL;
-	bundleContext_getService(context, ref, &fs2);
+        void *fs2 = NULL;
+        bundleContext_getService(context, ref, &fs2);
 
-	((struct fooSrv*)fs2)->foo(((struct fooSrv*)fs2)->handle);
+        ((struct fooSrv*) fs2)->foo(((struct fooSrv*) fs2)->handle);
+
+        bundleContext_ungetServiceReference(context, ref);
+        serviceRegistration_unregister(reg);
+
+        free(f);
+        free(fs);
+
+        celixLauncher_destroy(framework);
+    }
+
+    return rc;
+
 }
 
 celix_status_t embedded_foo() {
-	printf("foo\n");
-	return CELIX_SUCCESS;
+    printf("foo\n");
+    return CELIX_SUCCESS;
 }
 

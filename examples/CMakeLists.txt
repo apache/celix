@@ -34,5 +34,5 @@ if (EXAMPLES)
     #add_subdirectory(osgi-in-action/chapter04-paint-example) chapter4 example is still based on APR
     add_subdirectory(locking)
     
-    #add_subdirectory(embedding) embedding is still baed on APR
+    add_subdirectory(embedding)
 endif(EXAMPLES)
