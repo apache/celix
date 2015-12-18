@@ -63,77 +63,83 @@ int celixLauncher_launchWithStream(FILE *stream, framework_pt *framework) {
         perror(NULL);
         status = 1;
     }
+    else {
+        status = celixLauncher_launchWithProperties(config, framework);
+    }
+
+    return status;
+}
 
 
+int celixLauncher_launchWithProperties(properties_pt config, framework_pt *framework) {
+    celix_status_t status;
 #ifndef CELIX_NO_CURLINIT
     // Before doing anything else, let's setup Curl
     curl_global_init(CURL_GLOBAL_NOTHING);
 #endif
 
+    char *autoStart = properties_get(config, "cosgi.auto.start.1");
 
-    if (status == 0) {
-        char *autoStart = properties_get(config, "cosgi.auto.start.1");
-        celix_status_t status;
-        status = framework_create(framework, config);
-        bundle_pt fwBundle = NULL;
+    status = framework_create(framework, config);
+    bundle_pt fwBundle = NULL;
+    if (status == CELIX_SUCCESS) {
+        status = fw_init(*framework);
         if (status == CELIX_SUCCESS) {
-            status = fw_init(*framework);
-            if (status == CELIX_SUCCESS) {
-                // Start the system bundle
-                framework_getFrameworkBundle(*framework, &fwBundle);
-                bundle_start(fwBundle);
+            // Start the system bundle
+            framework_getFrameworkBundle(*framework, &fwBundle);
+            bundle_start(fwBundle);
 
-                char delims[] = " ";
-                char *result = NULL;
-                char *save_ptr = NULL;
-                linked_list_pt bundles;
-                array_list_pt installed = NULL;
-                bundle_context_pt context = NULL;
-                linked_list_iterator_pt iter = NULL;
-                unsigned int i;
+            char delims[] = " ";
+            char *result = NULL;
+            char *save_ptr = NULL;
+            linked_list_pt bundles;
+            array_list_pt installed = NULL;
+            bundle_context_pt context = NULL;
+            linked_list_iterator_pt iter = NULL;
+            unsigned int i;
 
-                linkedList_create(&bundles);
-                result = strtok_r(autoStart, delims, &save_ptr);
-                while (result != NULL) {
-                    char *location = strdup(result);
-                    linkedList_addElement(bundles, location);
-                    result = strtok_r(NULL, delims, &save_ptr);
-                }
-                // First install all bundles
-                // Afterwards start them
-                arrayList_create(&installed);
-                bundle_getContext(fwBundle, &context);
-                iter = linkedListIterator_create(bundles, 0);
-                while (linkedListIterator_hasNext(iter)) {
-                    bundle_pt current = NULL;
-                    char *location = (char *) linkedListIterator_next(iter);
-                    if (bundleContext_installBundle(context, location, &current) == CELIX_SUCCESS) {
-                        // Only add bundle if it is installed correctly
-                        arrayList_add(installed, current);
-                    } else {
-                        printf("Could not install bundle from %s\n", location);
-                    }
-                    linkedListIterator_remove(iter);
-                    free(location);
-                }
-                linkedListIterator_destroy(iter);
-                linkedList_destroy(bundles);
-
-                for (i = 0; i < arrayList_size(installed); i++) {
-                    bundle_pt installedBundle = (bundle_pt) arrayList_get(installed, i);
-                    bundle_startWithOptions(installedBundle, 0);
-                }
-
-                arrayList_destroy(installed);
+            linkedList_create(&bundles);
+            result = strtok_r(autoStart, delims, &save_ptr);
+            while (result != NULL) {
+                char *location = strdup(result);
+                linkedList_addElement(bundles, location);
+                result = strtok_r(NULL, delims, &save_ptr);
             }
-        }
+            // First install all bundles
+            // Afterwards start them
+            arrayList_create(&installed);
+            bundle_getContext(fwBundle, &context);
+            iter = linkedListIterator_create(bundles, 0);
+            while (linkedListIterator_hasNext(iter)) {
+                bundle_pt current = NULL;
+                char *location = (char *) linkedListIterator_next(iter);
+                if (bundleContext_installBundle(context, location, &current) == CELIX_SUCCESS) {
+                    // Only add bundle if it is installed correctly
+                    arrayList_add(installed, current);
+                } else {
+                    printf("Could not install bundle from %s\n", location);
+                }
+                linkedListIterator_remove(iter);
+                free(location);
+            }
+            linkedListIterator_destroy(iter);
+            linkedList_destroy(bundles);
 
-        if (status != CELIX_SUCCESS) {
-            printf("Problem creating framework\n");
-        }
+            for (i = 0; i < arrayList_size(installed); i++) {
+                bundle_pt installedBundle = (bundle_pt) arrayList_get(installed, i);
+                bundle_startWithOptions(installedBundle, 0);
+            }
 
-        printf("Launcher: Framework Started\n");
+            arrayList_destroy(installed);
+        }
     }
+
+    if (status != CELIX_SUCCESS) {
+        printf("Problem creating framework\n");
+    }
+
+    printf("Launcher: Framework Started\n");
+
 
     return status;
 }
