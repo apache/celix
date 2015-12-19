@@ -60,9 +60,6 @@ celix_status_t serviceRegistry_ungetService(service_registry_pt registry, bundle
 
 celix_status_t serviceRegistry_clearReferencesFor(service_registry_pt registry, bundle_pt bundle);
 
-
-service_registration_pt serviceRegistry_findRegistration(service_registry_pt registry, service_reference_pt reference);
-
 celix_status_t serviceRegistry_getListenerHooks(service_registry_pt registry, bundle_pt bundle, array_list_pt *hooks);
 
 celix_status_t serviceRegistry_servicePropertiesModified(service_registry_pt registry, service_registration_pt registration, properties_pt oldprops);

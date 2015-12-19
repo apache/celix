@@ -35,7 +35,7 @@ struct serviceRegistry {
 	framework_pt framework;
 	registry_callback_t callback;
 
-	hash_map_pt serviceRegistrations; //key = bundle (reg owner), value = registration
+	hash_map_pt serviceRegistrations; //key = bundle (reg owner), value = list ( registration )
 	hash_map_pt serviceReferences; //key = bundle, value = map (key = registration, value = reference)
 
 	bool checkDeletedReferences; //If enabled. check if provided service references are still valid
