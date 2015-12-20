@@ -19,7 +19,9 @@ cmake_minimum_required (VERSION 2.6)
 project (Celix C CXX)
 
 cmake_policy(SET CMP0012 NEW)
-cmake_policy(SET CMP0053 OLD)
+if(POLICY CMP0053)
+    cmake_policy(SET CMP0053 OLD)
+endif(POLICY CMP0053)
 
 #SET(CMAKE_VERBOSE_MAKEFILE ON)
 
