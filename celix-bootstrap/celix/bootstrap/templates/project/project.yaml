@@ -1,0 +1,14 @@
+
+# {{ 
+# name=raw_input("Please enter projectname [myproject]:") or 'myproject' if 'name' not in vars() else None; 
+# cog.outl('name: \"%s\"' % name )
+# }}
+name: "myproject"
+# {{end}}
+
+# {{  
+# install=raw_input("Please enter celix installation location [/usr/local]:") or '/usr/local'if 'install' not in vars() else None; 
+# cog.outl('celix_install_dir: \"%s\"' % install ) 
+# }}
+celix_install_dir: "/usr/local"
+# {{end}}

@@ -1,10 +1,10 @@
 //TODO update fields from <service>Type to <service>For<component>Type
 //TODO improve names to camel case (e.g. from _add_logger_for_example to _addLoggerToExample)
 //{{
-//import json
+//import yaml
 //bundle = None 
 //with open(bundleFile) as input :
-//	bundle = json.load(input)
+//	bundle = yaml.load(input)
 //}}
 //{{end}}
 #include <stdlib.h>

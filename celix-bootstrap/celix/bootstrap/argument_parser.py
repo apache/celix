@@ -62,12 +62,12 @@ class GeneratorMediator :
 		self.servicesGenerator.create()
 
 	def update(self) :
-		if os.path.isfile(os.path.join(self.gendir, "bundle.json")) :
+		if os.path.isfile(os.path.join(self.gendir, "bundle.yaml")) :
 			print("Generating/updating bundle code")
 			self.bundleGenerator.update()
-		if os.path.isfile(os.path.join(self.gendir, "project.json")) :
+		if os.path.isfile(os.path.join(self.gendir, "project.yaml")) :
 			print("Generating/updating project code")
 			self.projectGenerator.update()
-		if os.path.isfile(os.path.join(self.gendir, "services.json")) :
+		if os.path.isfile(os.path.join(self.gendir, "services.yaml")) :
 			print("Generating/updating services code")
 			self.servicesGenerator.update()
