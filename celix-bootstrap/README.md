@@ -37,16 +37,24 @@ Is good to known that you should not edit anything between the following comment
 
 You can setup a new Apache Celix project by executing following steps:
 * Choose a project directory and cd to it
-* Run `celix-bootstrap create_project .`
-* Edit the project.json file and ensure that the celix_install_dir points to the directory where Apache Celix is installed
+* Run `celix-bootstrap create_project` .
+* Enter projectname and the location of the Apache Celix installation.
 * Run `celix-bootstrap update .` to generate the needed files
-* (Optional) Update the project.json file and run `celix-bootstrap update .` again to update the generated files
+* (Optional) Update the project.yaml file and run `celix-bootstrap update .` again to update the generated files
 * (Optional) Run `celix-bootstrap update . -e` to update the project source files one more time and remove the code generation parts
 
 You can create a new bundle by executing the following steps:
 * cd to the project directory
 * Run `celix-bootstrap create_bundle mybundle`
-* Edit the `mybundle/bundle.json` file to declare which components you like to create and what services those components depends on and/or provide
+* Enter a bundlename and a symbolicName
+* Confirm to create a component and enter a componentname
+* Confirm whether the component should provide a service
+* Enter include file, name, service name and type
+* Confirm when the component should provide another service and provide the according details. Otherwise Decline.
+* Confirm whether the component is dependent on another service
+* Enter include file, name, service name and type and cardinality of the depending service
+* Confirm when the component is dependent on another service and provide the according details. Otherwise Decline.
+* Confirm if another component should be created. Otherwise Decline.
 * Run `celix-bootstrap update mybundle` to generate the neccesary files
 * Add the bundle to the project CMakeLists.txt file by adding the `add_subdirectory(mybundle)` line
 * Add code to the component and when providing service also add the necesarry code to the bundle activator
