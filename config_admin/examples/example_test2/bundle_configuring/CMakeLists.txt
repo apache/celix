@@ -20,11 +20,9 @@ include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/config_admin/service/public/include")
 
-SET(BUNDLE_SYMBOLICNAME  "bundle_configuraring")
-SET(BUNDLE_VERSION "0.1.0")
-
-bundle(bundle_configuring SOURCES 
+add_bundle(bundle_configuring SOURCES
 	private/src/activator
+    VERSION 0.1.0
 )
 
 target_link_libraries(bundle_configuring celix_framework celix_utils config_admin ${APR_LIBRARY})

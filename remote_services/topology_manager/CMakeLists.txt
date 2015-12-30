@@ -24,11 +24,7 @@ if (RSA_TOPOLOGY_MANAGER)
     include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/remote_services/topology_manager/public/include")
 
-    SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_rs_topology_manager")
-    SET(BUNDLE_VERSION "0.0.2")
-    SET_HEADERS("Bundle-Name: Apache Celix RS Topology Manager")
-
-    bundle(topology_manager SOURCES
+    add_bundle(topology_manager SOURCES
         private/src/topology_manager
         private/src/scope
         private/src/activator
@@ -37,6 +33,10 @@ if (RSA_TOPOLOGY_MANAGER)
 
         private/include/topology_manager.h
         public/include/tm_scope.h
+        VERSION 0.0.2
+        SYMBOLIC_NAME "apache_celix_rs_topology_manager"
+        NAME
+            "Apache Celix RS Topology Manager"
     )
 
     install_bundle(topology_manager)

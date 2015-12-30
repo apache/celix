@@ -35,7 +35,7 @@ link_directories(${GLIB_LIBRARY_DIRS})
 link_directories(${GTHR_LIBRARY_DIRS})
 link_directories(${GMODULE_LIBRARY_DIRS})
 
-bundle(chapter04-paint-example SOURCES 
+add_bundle(chapter04-paint-example  VERSION 0.0.1 SOURCES
 	private/src/activator
 	private/src/default_shape
 	private/src/shape_component

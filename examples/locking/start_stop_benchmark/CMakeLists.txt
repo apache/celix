@@ -15,10 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-SET(BUNDLE_SYMBOLICNAME stop_benchmark)
-SET(BUNDLE_VERSION 0.0.0)
-
-bundle(start_stop_benchmark SOURCES
+add_bundle(start_stop_benchmark SOURCES
 	../benchmark/public/src/benchmark_activator
 	private/src/start_stop_benchmark 
 )

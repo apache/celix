@@ -24,3 +24,11 @@ add_subdirectory(mutex_benchmark)
 #add_subdirectory(reference_benchmark)
 #add_subdirectory(start_stop_benchmark)
 #add_subdirectory(modified_bool_benchmark)
+
+
+#add_deploy("locking_example_reference" BUNDLES benchmark_runner reference_benchmark math_provider shell shell_tui log_service log_writer)
+add_deploy("locking_example_mutex" BUNDLES benchmark_runner mutex_benchmark math_provider shell shell_tui log_service log_writer)
+
+#add_deploy("locking_example_suspend" BUNDLES benchmark_runner start_stop_benchmark math_provider shell shell_tui log_service log_writer)
+#add_deploy("locking_example_rcu" BUNDLES benchmark_runner rcu_benchmark mutex_benchmark math_provider shell shell_tui log_service log_writer)
+

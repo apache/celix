@@ -15,16 +15,72 @@
 # specific language governing permissions and limitations
 # under the License.
 
-SET(BUNDLE_SYMBOLICNAME "apache_celix_examples_hello_world_test")
-SET(BUNDLE_VERSION "0.0.1")
-SET_HEADERS("Bundle-Name: Apache Celix Shell TUI") 
-    
-bundle(hello_world_test 
-    SOURCES private/src/activator 
-    IMPORT_LIBRARIES "org.apache.incubator.celix.helloworld.sub")
-    #IMPORT_LIBRARIES "org.apache.incubator.celix.helloworld.sub;version=\"[1.0,2.0\)\"")
-target_link_libraries(hello_world_test celix_framework)
-target_link_libraries(hello_world_test org.apache.incubator.celix.helloworld.sub)
+#############################################################################
+## NOTE Examples of using add_bundle and add_deploy and assorted commands ##
+#############################################################################
+
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/examples/hello_world/public/include")
-include_directories("private/include")
+include_directories(public/include)
+
+add_bundle(hellotest1
+    VERSION "1.2"
+    SOURCES
+        private/src/activator
+)
+
+bundle_headers(hellotest1
+    "X-WebContent: web"
+    "X-MediaType: application/json"
+)
+
+add_library(tlib SHARED
+    private/src/test
+)
+set_library_version(tlib "4.3.2") # sets target propery VERSION to 4.3.2 and SOVERSION to 4
+
+bundle_private_libs(hellotest1
+    #/usr/local/lib/libjansson.4.dylib
+    /usr/lib64/libjansson.so.4
+)
+bundle_private_libs(hellotest1
+    tlib
+    #/usr/lib/libcurl.4.dylib 
+    /usr/lib64/libcurl.so.4
+)
+
+
+add_deploy(hello_test_deploy
+    BUNDLES hellotest1 hellotest2 #NOTE hellotest2 is still a unknown target
+    PROPERTIES 
+        "Test=true"
+)
+
+#add_deploy(hello_test_deploy_fail
+#    BUNDLES nonexisting
+#)
+
+#NOTE: Gives error:
+#Error evaluating generator expression:
+#
+#    $<TARGET_PROPERTY:nonexisting,BUNDLE_FILE>
+#
+#  Target "nonexisting" not found.
+
+
+
+add_library(hello2act SHARED
+    private/src/activator
+)
+set_library_version(hello2act "3.2.4") #sets VERSION prop to 3.2.4 and SOVERSION to 3
+add_bundle(hellotest2
+    VERSION "1.0.0" #can be the same as activator lib, but does not have to be
+    ACTIVATOR hello2act
+)
+
+add_bundle(hellotest3
+    VERSION "2.1.2"
+    #ACTIVATOR /usr/local/lib/libjansson.4.dylib
+    ACTIVATOR /usr/lib64/libjansson.so.4
+)
+
+

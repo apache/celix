@@ -53,6 +53,7 @@ add_library(celix_dfi SHARED
     public/include/json_rpc.h
     ${MEMSTREAM_INCLUDES}
 )
+set_target_properties(celix_dfi PROPERTIES "SOVERSION" 1)
 target_link_libraries(celix_dfi celix_utils ${FFI_LIBRARIES} ${JANSSON_LIBRARY})
 
 install(TARGETS celix_dfi DESTINATION lib COMPONENT framework)
@@ -67,7 +68,7 @@ if (ENABLE_TESTING)
 
 	SET(CMAKE_SKIP_BUILD_RPATH  FALSE) #TODO needed?
 	SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE) #TODO needed?
-	SET(CMAKE_INSTALL_RPATH "${PROJECT_BINARY_DIR}/dfi")
+    SET(CMAKE_INSTALL_RPATH "${PROJECT_BINARY_DIR}/dfi" "${PROJECT_BINARY_DIR}/utils")
 
 
 	add_executable(test_dfi
@@ -82,11 +83,8 @@ if (ENABLE_TESTING)
 	)
 	target_link_libraries(test_dfi celix_dfi ${FFI_LIBRARIES} ${CPPUTEST_LIBRARY})
 
-	add_custom_target(copy-input
-		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_LIST_DIR}/private/test/schemas schemas
-		COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_LIST_DIR}/private/test/descriptors descriptors
-	)
-	add_dependencies(test_dfi copy-input)
+    file(COPY ${CMAKE_CURRENT_LIST_DIR}/private/test/schemas DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    file(COPY ${CMAKE_CURRENT_LIST_DIR}/private/test/descriptors DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 	add_test(NAME run_test_dfi COMMAND test_dfi)
 	SETUP_TARGET_FOR_COVERAGE(test_dfi_cov test_dfi ${CMAKE_BINARY_DIR}/coverage/test_dfi/test_dfi)

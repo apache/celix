@@ -22,17 +22,13 @@ include_directories(private/include)
 include_directories(${PROJECT_SOURCE_DIR}/event_admin/event_admin/public/include)
 include_directories(${PROJECT_SOURCE_DIR}/log_service/public/include)
 
-SET_HEADER(BUNDLE_SYMBOLICNAME "event_publisher")
-SET(BUNDLE_VERSION "0.0.1")
-SET_HEADERS("Bundle-Name: Event Publisher")
-
-
-bundle(event_publisher SOURCES 
+add_bundle(event_publisher SOURCES
+    VERSION 0.0.0
 	private/src/event_publisher_activator.c
 	private/src/event_publisher_impl.c
 	${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c	
 )
 
-install_bundle(event_publisher)
+install_add_bundle(event_publisher)
 
 target_link_libraries(event_publisher celix_framework celix_utils ${APR_LIBRARY} ${APRUTIL_LIBRARY})

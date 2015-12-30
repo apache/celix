@@ -1,2 +1,0 @@
-export @LIBRARY_PATH@=@FW_PATH@:@UTILS_PATH@
-@LAUNCHER@ $@

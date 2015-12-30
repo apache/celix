@@ -27,11 +27,11 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/remote_services/examples/calculator_service/public/include
 )
 
-SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_remote_service_admin_dfi")
-SET(BUNDLE_VERSION "0.0.1")
-SET_HEADERS("Bundle-Name: Apache Celix Remote Service Admin Dynamic Function Interface (DFI)")
-
-bundle(remote_service_admin_dfi SOURCES
+add_bundle(remote_service_admin_dfi 
+    VERSION 0.0.1
+    SYMBOLIC_NAME "apache_celix_remote_service_admin_dfi"
+    NAME "Apache Celix Remote Service Admin Dynamic Function Interface (DFI)"
+    SOURCES
     private/src/remote_service_admin_dfi.c
     private/src/remote_service_admin_activator.c
     private/src/export_registration_dfi.c

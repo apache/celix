@@ -23,14 +23,13 @@ include_directories("../../remote_service_admin/public/include")
 include_directories("../calculator_service/public/include")
 include_directories("private/include")
 
-SET(BUNDLE_SYMBOLICNAME "apache_celix_remoting_calculator2_endpoint")
-SET(BUNDLE_VERSION "0.0.1")
-
-bundle(org.apache.celix.calc.api.Calculator2_endpoint SOURCES 
+add_bundle(org.apache.celix.calc.api.Calculator2_endpoint SOURCES
 	private/src/calculator_endpoint_activator
 	private/src/calculator_endpoint_impl.c
     
     private/include/calculator_endpoint_impl.h
+    SYMBOLIC_NAME "apache_celix_remoting_calculator2_endpoint"
+    VERSION "0.0.1"
 )
 
 target_link_libraries(org.apache.celix.calc.api.Calculator2_endpoint celix_framework ${JANSSON_LIBRARIES})

@@ -15,11 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-CELIX_ADD_COMPONENT(remote_service_admin
-    DISPLAY_NAME remote_service_admin
-    DESCRIPTION Public files needed for RSA implementations
-    GROUP bundles
-)
 install (FILES 
         public/include/remote_endpoint_impl.h
         public/include/remote_endpoint.h

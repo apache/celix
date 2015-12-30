@@ -15,10 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-SET(BUNDLE_SYMBOLICNAME "apache_celix_examples_chapter04_correct_lookup")
-SET(BUNDLE_VERSION "0.0.1")
-
-bundle(chapter04-correct-lookup SOURCES private/src/activator)
+add_bundle(chapter04-correct-lookup VERSION 0.0.1 SOURCES private/src/activator)
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 target_link_libraries(chapter04-correct-lookup celix_framework)

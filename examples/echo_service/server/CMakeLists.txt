@@ -15,15 +15,15 @@
 # specific language governing permissions and limitations
 # under the License.
 
-SET(BUNDLE_SYMBOLICNAME "apache_celix_examples_echo_server")
-SET(BUNDLE_VERSION "0.0.1")
-SET(BUNDLE_NAME "Apache Celix Echo Server")
+add_bundle(echo_server
+	SYMBOLIC_NAME "apache_celix_examples_echo_server"
+	VERSION "0.0.1"
+	NAME "Apache Celix Echo Server"
+	SOURCES
+		private/src/echo_server_activator
+		private/src/echo_server
 
-bundle(echo_server SOURCES 
-	private/src/echo_server_activator 
-	private/src/echo_server
-    
-    private/include/echo_server_private.h
+		private/include/echo_server_private.h
 )
 
 include_directories("private/include")

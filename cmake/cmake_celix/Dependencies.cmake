@@ -16,11 +16,22 @@
 # under the License.
 
 MACRO(celix_subproject)
-    PARSE_ARGUMENTS(OPTION "DEPS" "" ${ARGN})
-    LIST(GET OPTION_DEFAULT_ARGS 0 OPTION_NAME)
-    LIST(GET OPTION_DEFAULT_ARGS 1 OPTION_DESCRIPTION)
-    LIST(GET OPTION_DEFAULT_ARGS 2 OPTION_DEFAULT)
-    
+    set(ARGS "${ARGN}")
+
+    list(GET ARGS 0 OPTION_NAME)
+    list(REMOVE_AT ARGS 0)
+
+    list(GET ARGS 0 OPTION_DESCRIPTION)
+    list(REMOVE_AT ARGS 0)
+
+    list(GET ARGS 0 OPTION_DEFAULT)
+    list(REMOVE_AT ARGS 0)
+
+    set(OPTIONS )
+    set(ONE_VAL_ARGS )
+    set(MULTI_VAL_ARGS DEPS)
+    cmake_parse_arguments(OPTION "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGS})
+
     string(TOUPPER ${OPTION_NAME} UC_OPTION_NAME)
     set(NAME "BUILD_${UC_OPTION_NAME}")
     
@@ -46,17 +57,13 @@ MACRO(celix_subproject)
 ENDMACRO(celix_subproject)
 
 MACRO(is_enabled name)
-	string(TOUPPER ${name} UC_NAME)
-    set(NAME "BUILD_${UC_NAME}")
+    string(TOUPPER "BUILD_${name}_INTERNAL" OPTION)
     
-    get_property(BUILD GLOBAL PROPERTY ${NAME}_INTERNAL)
-    if (NOT DEFINED BUILD)
-        set(BUILD "OFF")
-    endif (NOT DEFINED BUILD)
+    get_property(BUILD GLOBAL PROPERTY ${OPTION})
     
-    IF (${BUILD})
+    if(BUILD)
         set(${name} "ON")
-    ELSE (${BUILD})
+    else()
         set(${name} "OFF")
-    ENDIF (${BUILD})
+    endif()
 ENDMACRO(is_enabled)

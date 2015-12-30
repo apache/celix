@@ -15,23 +15,23 @@
 # specific language governing permissions and limitations
 # under the License.
 
-SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_device_manager")
-SET(BUNDLE_VERSION "0.0.1")
-SET_HEADERS("Bundle-Name: Apache Celix Device Access Device Manager") 
+add_bundle(device_manager
+	SYMBOLIC_NAME "apache_celix_device_manager"
+	VERSION "0.0.1"
+	NAME "Apache Celix Device Access Device Manager"
+	SOURCES
+		private/src/activator
+		private/src/driver_attributes
+		private/src/device_manager
+		private/src/driver_loader
+		private/src/driver_matcher
 
-bundle(device_manager SOURCES 
-	private/src/activator
-	private/src/driver_attributes 
-	private/src/device_manager
-	private/src/driver_loader
-	private/src/driver_matcher
-    
-    ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
-    
-    private/include/device_manager.h
-    private/include/driver_attributes.h
-    private/include/driver_loader.h
-    private/include/driver_matcher.h
+		${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
+
+		private/include/device_manager.h
+		private/include/driver_attributes.h
+		private/include/driver_loader.h
+		private/include/driver_matcher.h
 )
 
 install_bundle(device_manager

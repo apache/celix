@@ -15,27 +15,32 @@
 # specific language governing permissions and limitations
 # under the License.
 
-SET(BUNDLE_SYMBOLICNAME "apache_celix_examples_hello_world")
-SET(BUNDLE_VERSION "0.0.1")
-SET(BUNDLE_NAME "Apache Celix Shell TUI")
-
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("public/include")
 
-BUNDLE_LIBRARY(org.apache.incubator.celix.helloworld.sub
-    SOURCES private/src/test
-    LINK_LIBRARIES celix_framework
-    )
 
-BUNDLE_PRIVATE_LIBRARY(private
-    SOURCES private/src/activator
-    LINK_LIBRARIES celix_framework org.apache.incubator.celix.helloworld.sub
-    )
-    
-BUNDLE(
-    ACTIVATOR "apache_celix_examples_hello_world-private"
-    PRIVATE_LIBRARIES "private"
-    EXPORT_LIBRARIES org.apache.incubator.celix.helloworld.sub
-    )
+add_bundle(hello
+    VERSION "1.2"
+    SOURCES
+        private/src/activator.c
+)
 
+add_library(hello_testlib SHARED
+    private/src/test
+)
+set_library_version(hello_testlib "4.3.2") # sets target propery VERSION to 4.3.2 and SOVERSION to 4
 
+bundle_private_libs(hello
+    hello_testlib
+)
+
+add_deploy(helloworld_byref
+    GROUP hello
+    BUNDLES hello shell shell_tui
+)
+
+add_deploy(helloworld_withcopy
+    GROUP hello
+    COPY #Ensures that bundles are copied in the deploy location
+    BUNDLES hello shell shell_tui
+)

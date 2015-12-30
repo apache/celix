@@ -15,12 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-SET(BUNDLE_SYMBOLICNAME "phase2b")
-SET(BUNDLE_VERSION "0.0.1")
-
-bundle(phase2b SOURCES
-        private/src/phase2b_activator
-        private/src/phase2b_cmp
+add_bundle(phase2b
+        SYMBOLIC_NAME phase2b
+        VERSION 0.0.1
+        SOURCES
+                private/src/phase2b_activator
+                private/src/phase2b_cmp
 )
 
 include_directories(

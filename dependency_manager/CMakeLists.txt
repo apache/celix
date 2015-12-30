@@ -17,9 +17,7 @@
 
 celix_subproject(DEPENDENCY_MANAGER "Option to build the dependency manager static library" ON DEPS framework)
 if (DEPENDENCY_MANAGER)
-    SET(BUNDLE_SYMBOLICNAME "apache_celix_dm_shell")
-    SET(BUNDLE_VERSION "0.0.1")
-    SET(BUNDLE_NAME "Apache Celix DM Shell commands")
+
     # Add -fPIC for x86_64 Unix platforms; this lib will be linked to a shared lib
     if(UNIX AND NOT WIN32)
       find_program(CMAKE_UNAME uname /bin /usr/bin /usr/local/bin )
@@ -31,13 +29,19 @@ if (DEPENDENCY_MANAGER)
         endif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
       endif(CMAKE_UNAME)
     endif(UNIX AND NOT WIN32)
-    
-    CELIX_ADD_COMPONENT(dependency_manager
-    	DISPLAY_NAME Dependency Manager
-        DESCRIPTION "The Apache Celix dependency manager (static) library"
-        GROUP all
-    )
-    bundle(dm_shell SOURCES
+
+    #TODO check if something needs to be done?
+    #CELIX_ADD_COMPONENT(dependency_manager
+    #	DISPLAY_NAME Dependency Manager
+    #    DESCRIPTION "The Apache Celix dependency manager (static) library"
+    #    GROUP all
+    #)
+
+    add_bundle(dm_shell
+        SYMBOLIC_NAME "apche_celix_dm_shell"
+        VERSION "0.0.1"
+        NAME "Apache Celix DM Shell Commands"
+        SOURCES
             private/src/dm_shell_activator
             private/src/dm_shell_list_command
     )
@@ -66,9 +70,10 @@ if (DEPENDENCY_MANAGER)
             public/include/dm_service_dependency.h
             public/include/dm_info.h
 		DESTINATION 
-			include/celix/dependency_manager
-		COMPONENT 
-			dependency_manager
+	    	include/celix/dependency_manager
+	    #TODO install componnent
+		#COMPONENT
+		#	dependency_manager
 	)
     install_bundle(dm_shell)
     install(TARGETS dependency_manager DESTINATION lib COMPONENT dependency_manager)

@@ -17,26 +17,27 @@
 celix_subproject(SHELL "Option to enable building the Shell bundles" ON DEPS LAUNCHER LOG_SERVICE)
 if (SHELL)
 	find_package(CURL REQUIRED)
-	
-	SET_HEADER(BUNDLE_VERSION "1.0.0")
-	SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_shell")
-	SET_HEADERS("Bundle-Name: Apache Celix Shell") 
 
-    bundle(shell SOURCES
-    	
-	  private/src/activator
-	  private/src/shell
-	  private/src/lb_command
-      private/src/start_command 
-      private/src/stop_command
-      private/src/install_command
-      private/src/update_command
-      private/src/uninstall_command
-      private/src/log_command
-      private/src/inspect_command
-      private/src/help_command
+    add_bundle(shell
+        SYMBOLIC_NAME "apache_celix_shell"
+        VERSION "1.0.0"
+        NAME "Apache Celix Shell"
 
-      ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
+        SOURCES
+
+          private/src/activator
+          private/src/shell
+          private/src/lb_command
+          private/src/start_command
+          private/src/stop_command
+          private/src/install_command
+          private/src/update_command
+          private/src/uninstall_command
+          private/src/log_command
+          private/src/inspect_command
+          private/src/help_command
+
+          ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
 
     )
     

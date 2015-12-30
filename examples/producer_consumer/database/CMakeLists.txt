@@ -15,16 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-set(BUNDLE_SYMBOLICNAME "apache_celix_examples_database")
-set(BUNDLE_VERSION "1.0.0")
-set(BUNDLE_NAME "Apache Celix Database")
-
-
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/examples/producer_consumer/database/private/include")
 include_directories("${PROJECT_SOURCE_DIR}/examples/producer_consumer/database/public/include")
 
-bundle(database 
+add_bundle(database
+	VERSION 1.0.0
 	SOURCES private/src/activator 
 		private/src/writer 
 		private/src/reader

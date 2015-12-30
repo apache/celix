@@ -15,10 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-SET(BUNDLE_SYMBOLICNAME "apache_celix_examples_tracker_dm")
-SET(BUNDLE_VERSION "0.0.1")
-
-bundle(tracker_depman SOURCES
+add_bundle(tracker_depman VERSION 1.0.0 SOURCES
     private/src/dependency_activator
     private/src/tracker
     

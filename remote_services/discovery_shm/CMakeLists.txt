@@ -32,11 +32,11 @@ find_package(CURL REQUIRED)
 	include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 	include_directories("private/include")
 
-	SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_rsa_discovery_shm")
-	SET(BUNDLE_VERSION "0.0.1")
-	SET_HEADERS("Bundle-Name: Apache Celix RSA Discovery SHM")
-
-	bundle(discovery_shm SOURCES 
+	add_bundle(discovery_shm 
+        VERSION 0.0.1
+        SYMBOLIC_NAME "apache_celix_rsa_discovery_shm"
+        NAME "Apache Celix RSA Discovery SHM"
+        SOURCES
 		private/src/discovery_shm
 		private/src/discovery_shmWatcher
 		private/src/discovery_impl

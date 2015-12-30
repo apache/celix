@@ -15,10 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-SET(BUNDLE_SYMBOLICNAME "apache_celix_examples_chapter01_greeting_example")
-SET(BUNDLE_VERSION "0.0.1")
-
-bundle(chapter01-greeting-example SOURCES
+add_bundle(chapter01-greeting-example VERSION 0.0.1 SOURCES
     private/src/activator
     private/src/greeting_impl
     

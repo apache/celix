@@ -21,5 +21,5 @@ if(DEVICE_ACCESS)
     add_subdirectory(device_access)
     add_subdirectory(driver_locator)   
     add_subdirectory(example)
-    
+
 endif(DEVICE_ACCESS)

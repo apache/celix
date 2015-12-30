@@ -2435,12 +2435,10 @@ static celix_status_t framework_loadBundleLibraries(framework_pt framework, bund
     status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
     status = CELIX_DO_IF(status, bundleRevision_getManifest(revision, &manifest));
     if (status == CELIX_SUCCESS) {
-        char *library = NULL;
         char *privateLibraries = NULL;
         char *exportLibraries = NULL;
         char *activator = NULL;
 
-        library = manifest_getValue(manifest, OSGI_FRAMEWORK_HEADER_LIBRARY);
         privateLibraries = manifest_getValue(manifest, OSGI_FRAMEWORK_PRIVATE_LIBRARY);
         exportLibraries = manifest_getValue(manifest, OSGI_FRAMEWORK_EXPORT_LIBRARY);
         activator = manifest_getValue(manifest, OSGI_FRAMEWORK_BUNDLE_ACTIVATOR);
@@ -2450,11 +2448,8 @@ static celix_status_t framework_loadBundleLibraries(framework_pt framework, bund
         }
 
         if (privateLibraries != NULL) {
-            status = CELIX_DO_IF(status, framework_loadLibraries(framework, privateLibraries, activator, archive, &handle));
-        }
-
-        if (library != NULL) {
-            status = CELIX_DO_IF(status, framework_loadLibrary(framework, library, archive, &handle));
+            status = CELIX_DO_IF(status,
+                                 framework_loadLibraries(framework, privateLibraries, activator, archive, &handle));
         }
 
         if (status == CELIX_SUCCESS) {
@@ -2483,6 +2478,8 @@ static celix_status_t framework_loadLibraries(framework_pt framework, char *libr
         pathToken = strtok_r(NULL, ";", &path);
 
         while (pathToken != NULL) {
+
+            /*Disable version should be part of the lib name
             if (strncmp(pathToken, "version", 7) == 0) {
                 char *ver = strdup(pathToken);
                 char version[strlen(ver) - 9];
@@ -2491,15 +2488,16 @@ static celix_status_t framework_loadLibraries(framework_pt framework, char *libr
 
                 strcat(lib, "-");
                 strcat(lib, version);
-            }
+            }*/
             pathToken = strtok_r(NULL, ";", &path);
         }
 
-        status = framework_loadLibrary(framework, lib, archive, &handle);
+        char *trimmedLib = utils_stringTrim(lib);
+        status = framework_loadLibrary(framework, trimmedLib, archive, &handle);
 
         if (status == CELIX_SUCCESS) {
             if (activator != NULL) {
-                if (strcmp(lib, activator) == 0) {
+                if (strcmp(trimmedLib, activator) == 0) {
                     *activatorHandle = handle;
                 }
             }
@@ -2537,8 +2535,13 @@ static celix_status_t framework_loadLibrary(framework_pt framework, char *librar
     status = CELIX_DO_IF(status, bundleArchive_getArchiveRoot(archive, &archiveRoot));
     status = CELIX_DO_IF(status, bundleArchive_getCurrentRevisionNumber(archive, &revisionNumber));
 
-    memset(libraryPath, 0, sizeof(libraryPath));
-    int written = snprintf(libraryPath, 256, "%s/version%ld.%ld/%s%s%s", archiveRoot, refreshCount, revisionNumber, library_prefix, library, library_extension);
+    memset(libraryPath, 0, 256);
+    int written = 0;
+    if (strncmp("lib", library, 3) == 0) {
+        written = snprintf(libraryPath, 256, "%s/version%ld.%ld/%s", archiveRoot, refreshCount, revisionNumber, library);
+    } else {
+        written = snprintf(libraryPath, 256, "%s/version%ld.%ld/%s%s%s", archiveRoot, refreshCount, revisionNumber, library_prefix, library, library_extension);
+    }
 
     if (written >= 256) {
     	error = "library path is too long";

@@ -15,10 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-SET(BUNDLE_SYMBOLICNAME reference_benchmark)
-SET(BUNDLE_VERSION 0.0.0)
-
-bundle(reference_benchmark SOURCES
+add_bundle(reference_benchmark SOURCES
 	../benchmark/public/src/benchmark_activator
 	private/src/reference_benchmark 
 )

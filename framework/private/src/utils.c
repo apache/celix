@@ -77,7 +77,24 @@ char * utils_stringTrim(char * string) {
 		end--;
 	}
 
+
+
 	return copy;
+}
+
+bool utils_isStringEmptyOrNull(const char * const str) {
+	bool empty = true;
+	if (str != NULL) {
+		int i;
+		for (i = 0; i < strnlen(str, 1024 * 1024); i += 1) {
+			if (!isspace(str[i])) {
+				empty = false;
+				break;
+			}
+		}
+	}
+
+	return empty;
 }
 
 celix_status_t thread_equalsSelf(celix_thread_t thread, bool *equals) {

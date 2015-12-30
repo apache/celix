@@ -22,12 +22,8 @@ include_directories(private/include)
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 
-SET_HEADER(BUNDLE_SYMBOLICNAME "eventadmin")
-SET(BUNDLE_VERSION "0.0.1")
-SET_HEADERS("Bundle-Name: Event admin")
-
-
-bundle(event_admin 
+add_bundle(event_admin
+    VERSION 0.0.0
 	SOURCES 
 		private/src/event_admin_activator.c
 		private/src/event_admin_impl.c
@@ -38,7 +34,7 @@ bundle(event_admin
 		${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
 )
 
-install_bundle(event_admin
+install_add_bundle(event_admin
 	HEADERS
 	    public/include/event_admin.h
 	    public/include/event_constants.h

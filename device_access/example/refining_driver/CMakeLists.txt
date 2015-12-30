@@ -15,13 +15,13 @@
 # specific language governing permissions and limitations
 # under the License.
 
-SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_char_refining_driver_example")
-SET(BUNDLE_VERSION "0.0.1")
-SET_HEADERS("Bundle-Name: Apache Celix Device Access Char Refining Driver Example")
-
-bundle(char_refiningdriver SOURCES 
-	private/src/activator 
-	private/src/refining_driver
+add_bundle(char_refiningdriver
+ 	SYMBOLIC_NAME "apache_celix_char_refining_driver_example"
+ 	NAME "Apache Celix Device Access Char Refining Driver Example"
+ 	VERSION "0.0.1"
+	SOURCES
+		private/src/activator
+		private/src/refining_driver
 )
 
 include_directories(${PROJECT_SOURCE_DIR}/device_access/device_access/public/include)

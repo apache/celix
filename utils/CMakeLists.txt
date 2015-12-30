@@ -54,7 +54,8 @@ if (UTILS)
                 private/src/thpool.c
                 public/include/thpool.h
         )
-    
+    set_target_properties(celix_utils PROPERTIES "SOVERSION" 2)
+   
     IF(UNIX)
         target_link_libraries(celix_utils m pthread)
     ENDIF(UNIX)

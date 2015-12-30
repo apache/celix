@@ -31,7 +31,7 @@ link_directories(${GTK_LIBRARY_DIRS})
 link_directories(${GLIB_LIBRARY_DIRS})
 link_directories(${GTHR_LIBRARY_DIRS})
 
-bundle(triangle SOURCES 
+add_bundle(triangle  VERSION 0.0.1 SOURCES
  	private/src/activator
  	private/src/triangle_shape
     

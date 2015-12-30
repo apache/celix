@@ -35,4 +35,18 @@ if (EXAMPLES)
     add_subdirectory(locking)
     
     add_subdirectory(embedding)
+
+    add_deploy(chapter01-greeting-example-d BUNDLES shell shell_tui log_service chapter01-greeting-example-client chapter01-greeting-example)
+    add_deploy(chapter04-correct-lookup-d BUNDLES shell shell_tui log_service chapter04-correct-lookup)
+    add_deploy(chapter04-correct-listener-d BUNDLES shell shell_tui log_service chapter04-correct-listener)
+
+    #deploy("hello_world" BUNDLES shell shell_tui apache_celix_examples_hello_world hello_world_test log_service log_writer)
+    add_deploy("wb" BUNDLES tracker publisherA publisherB shell shell_tui log_service log_writer)
+    add_deploy("wb_dp" BUNDLES tracker_depman publisherA publisherB shell shell_tui log_service log_writer dm_shell)
+    add_deploy("echo" BUNDLES echo_server echo_client shell shell_tui)
+    add_deploy("producer_consumer" BUNDLES producer consumer database shell shell_tui)
+    if (NOT ANDROID)
+        add_deploy("mongoose_deploy" BUNDLES shell shell_tui log_service mongoose)
+    endif ()
+
 endif(EXAMPLES)

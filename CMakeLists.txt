@@ -62,7 +62,6 @@ endif()
 
 
 include(CMakeCelix)
-include(cmake_celix/installation)
 include(UseDoxygen)  
 
 # Default bundle version
@@ -92,4 +91,4 @@ add_subdirectory(framework)
 add_subdirectory(utils)
 add_subdirectory(dfi)
 
-deploy_targets()
+#deploy_targets()

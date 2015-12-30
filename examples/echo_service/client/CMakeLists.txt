@@ -15,15 +15,15 @@
 # specific language governing permissions and limitations
 # under the License.
 
-SET(BUNDLE_SYMBOLICNAME "apache_celix_examples_echo_client")
-SET(BUNDLE_VERSION "0.0.1")
-SET(BUNDLE_NAME "Apache Celix Echo Client")
+add_bundle(echo_client
+	SYMBOLIC_NAME  "apache_celix_examples_echo_client"
+	VERSION "0.0.1"
+	NAME "Apache Celix Echo Client"
+	SOURCES
+		private/src/echo_client_activator
+		private/src/echo_client
 
-bundle(echo_client SOURCES 
-	private/src/echo_client_activator 
-	private/src/echo_client
-
-    private/include/echo_client_private.h
+		private/include/echo_client_private.h
 )
 
 include_directories("private/include")

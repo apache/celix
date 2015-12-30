@@ -15,10 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-SET(BUNDLE_SYMBOLICNAME bool_benchmark)
-SET(BUNDLE_VERSION 0.0.0)
-
-bundle(modified_bool_benchmark SOURCES
+add_bundle(modified_bool_benchmark SOURCES
 	../benchmark/public/src/benchmark_activator
 	private/src/modified_bool_benchmark 
 )

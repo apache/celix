@@ -22,16 +22,16 @@ include_directories(
         ${PROJECT_SOURCE_DIR}/remote_services/examples/calculator_service/public/include
 )
 
-SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_remote_service_admin_dfi_tst_bundle")
-SET(BUNDLE_VERSION "0.0.1")
-SET_HEADERS("Bundle-Name: Apache Celix Remote Service Admin DFI test bundle")
 
-
-bundle(rsa_dfi_tst_bundle
+add_bundle(rsa_dfi_tst_bundle
+    VERSION 0.0.1
     SOURCES
         tst_activator.c
-
-    FILES
-        ${PROJECT_SOURCE_DIR}/remote_services/examples/calculator_service/public/include/org.apache.celix.calc.api.Calculator2.descriptor
 )
+
+bundle_files(rsa_dfi_tst_bundle
+    ${PROJECT_SOURCE_DIR}/remote_services/examples/calculator_service/public/include/org.apache.celix.calc.api.Calculator2.descriptor
+    DESTINATION .
+)
+
 target_link_libraries(rsa_dfi_tst_bundle ${CPPUTEST_LIBRARY} celix_framework celix_utils)
