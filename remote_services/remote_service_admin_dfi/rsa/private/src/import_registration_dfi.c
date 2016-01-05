@@ -21,6 +21,7 @@
 #include <jansson.h>
 #include <json_rpc.h>
 #include <assert.h>
+#include "version.h"
 #include "json_serializer.h"
 #include "dyn_interface.h"
 #include "import_registration.h"
@@ -30,6 +31,7 @@ struct import_registration {
     bundle_context_pt context;
     endpoint_description_pt  endpoint; //TODO owner? -> free when destroyed
     const char *classObject; //NOTE owned by endpoint
+    version_pt version;
 
     celix_thread_mutex_t mutex; //protects send & sendhandle
     send_func_type send;
@@ -54,7 +56,7 @@ static void importRegistration_proxyFunc(void *userData, void *args[], void *ret
 static void importRegistration_destroyProxy(struct service_proxy *proxy);
 static void importRegistration_clearProxies(import_registration_pt import);
 
-celix_status_t importRegistration_create(bundle_context_pt context, endpoint_description_pt endpoint, const char *classObject,
+celix_status_t importRegistration_create(bundle_context_pt context, endpoint_description_pt endpoint, const char *classObject, const char* serviceVersion,
                                          import_registration_pt *out) {
     celix_status_t status = CELIX_SUCCESS;
     import_registration_pt reg = calloc(1, sizeof(*reg));
@@ -71,6 +73,7 @@ celix_status_t importRegistration_create(bundle_context_pt context, endpoint_des
 
         celixThreadMutex_create(&reg->mutex, NULL);
         celixThreadMutex_create(&reg->proxiesMutex, NULL);
+        version_createVersionFromString((char*)serviceVersion,&(reg->version));
 
         reg->factory->factory = reg;
         reg->factory->getService = (void *)importRegistration_getService;
@@ -118,7 +121,6 @@ static void importRegistration_clearProxies(import_registration_pt import) {
 void importRegistration_destroy(import_registration_pt import) {
     if (import != NULL) {
         if (import->proxies != NULL) {
-            importRegistration_clearProxies(import);
             hashMap_destroy(import->proxies, false, false);
             import->proxies = NULL;
         }
@@ -128,6 +130,10 @@ void importRegistration_destroy(import_registration_pt import) {
 
         if (import->factory != NULL) {
             free(import->factory);
+        }
+
+        if(import->version!=NULL){
+        	version_destroy(import->version);
         }
         free(import);
     }
@@ -189,9 +195,10 @@ celix_status_t importRegistration_getService(import_registration_pt import, bund
 
 static celix_status_t importRegistration_createProxy(import_registration_pt import, bundle_pt bundle, struct service_proxy **out) {
     celix_status_t  status;
-
+    dyn_interface_type* intf = NULL;
     char *descriptorFile = NULL;
     char name[128];
+
     snprintf(name, 128, "%s.descriptor", import->classObject);
     status = bundle_getEntry(bundle, name, &descriptorFile);
     if (descriptorFile == NULL) {
@@ -199,6 +206,37 @@ static celix_status_t importRegistration_createProxy(import_registration_pt impo
         status = CELIX_ILLEGAL_ARGUMENT;
     } else {
         printf("Found descriptor at '%s'\n", descriptorFile);
+    }
+
+    if (status == CELIX_SUCCESS) {
+        FILE *df = fopen(descriptorFile, "r");
+        if (df != NULL) {
+            int rc = dynInterface_parse(df, &intf);
+            fclose(df);
+            if (rc != 0) {
+                status = CELIX_BUNDLE_EXCEPTION;
+            }
+        }
+
+        free(descriptorFile);
+    }
+
+    /* Check if the imported service version is compatible with the one in the consumer descriptor */
+    version_pt consumerVersion = NULL;
+    bool isCompatible = false;
+    dynInterface_getVersion(intf,&consumerVersion);
+    version_isCompatible(consumerVersion,import->version,&isCompatible);
+
+    if(!isCompatible){
+    	char* cVerString = NULL;
+    	char* pVerString = NULL;
+    	version_toString(consumerVersion,&cVerString);
+    	version_toString(import->version,&pVerString);
+    	printf("Service version mismatch: consumer has %s, provider has %s. NOT creating proxy.\n",cVerString,pVerString);
+    	dynInterface_destroy(intf);
+    	free(cVerString);
+    	free(pVerString);
+    	status = CELIX_SERVICE_EXCEPTION;
     }
 
     struct service_proxy *proxy = NULL;
@@ -210,19 +248,7 @@ static celix_status_t importRegistration_createProxy(import_registration_pt impo
     }
 
     if (status == CELIX_SUCCESS) {
-        FILE *df = fopen(descriptorFile, "r");
-        if (df != NULL) {
-            int rc = dynInterface_parse(df, &proxy->intf);
-            fclose(df);
-            if (rc != 0) {
-                status = CELIX_BUNDLE_EXCEPTION;
-            }
-        }
-
-        free(descriptorFile);
-    }
-
-    if (status == CELIX_SUCCESS) {
+    	proxy->intf = intf;
         size_t count = dynInterface_nrOfMethods(proxy->intf);
         proxy->service = calloc(1 + count, sizeof(void *));
         if (proxy->service == NULL) {

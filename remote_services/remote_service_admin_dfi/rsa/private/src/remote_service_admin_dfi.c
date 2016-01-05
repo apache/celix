@@ -36,6 +36,9 @@
 #include <jansson.h>
 #include "json_serializer.h"
 #include "remote_service_admin.h"
+#include "celix_threads.h"
+#include "hash_map.h"
+#include "array_list.h"
 
 #include "import_registration_dfi.h"
 #include "export_registration_dfi.h"
@@ -611,16 +614,16 @@ celix_status_t remoteServiceAdmin_getImportedEndpoints(remote_service_admin_pt a
 
 celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, endpoint_description_pt endpointDescription, import_registration_pt *out) {
     celix_status_t status = CELIX_SUCCESS;
-
-    logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA: Import service %s", endpointDescription->service);
+    import_registration_pt import = NULL;
 
     const char *objectClass = properties_get(endpointDescription->properties, "objectClass");
+    const char *serviceVersion = properties_get(endpointDescription->properties, (char*) CELIX_FRAMEWORK_SERVICE_VERSION);
+
+    logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA: Import service %s", endpointDescription->service);
     logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "Registering service factory (proxy) for service '%s'\n", objectClass);
 
-
-    import_registration_pt import = NULL;
     if (objectClass != NULL) {
-        status = importRegistration_create(admin->context, endpointDescription, objectClass, &import);
+        status = importRegistration_create(admin->context, endpointDescription, objectClass, serviceVersion, &import);
     }
     if (status == CELIX_SUCCESS) {
         importRegistration_setSendFn(import, (send_func_type) remoteServiceAdmin_send, admin);

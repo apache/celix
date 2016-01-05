@@ -55,5 +55,11 @@ if (RSA_EXAMPLES)
         deploy("remote-services-etcd-client" BUNDLES topology_manager remote_service_admin_http shell shell_tui log_service log_writer calculator_shell discovery_etcd
                                             ENDPOINTS org.apache.celix.calc.api.Calculator_proxy)
     endif ()
+     
+    is_enabled(RSA_REMOTE_SERVICE_ADMIN_DFI)
+    if(RSA_REMOTE_SERVICE_ADMIN_DFI)
+        deploy("remote-services-dfi-etcd" BUNDLES discovery_etcd topology_manager remote_service_admin_dfi calculator shell shell_tui log_service log_writer)
+        deploy("remote-services-dfi-etcd-client" BUNDLES topology_manager remote_service_admin_dfi shell shell_tui log_service log_writer calculator_shell discovery_etcd)
+    endif()
 
 endif (RSA_EXAMPLES)

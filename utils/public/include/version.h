@@ -28,6 +28,7 @@
 #define VERSION_H_
 
 #include "celix_errno.h"
+#include <stdbool.h>
 /**
  * The definition of the version_pt abstract data type.
  */
@@ -153,6 +154,23 @@ celix_status_t version_compareTo(version_pt version, version_pt compare, int *re
  * 		- CELIX_SUCCESS when no errors are encountered.
  */
 celix_status_t version_toString(version_pt version, char **string);
+
+/**
+ * Check if two versions are semantically compatible.
+ *
+ * <p>
+ * The user version is compatible with the provider version if the provider version is in the range
+ * [user_version, next_macro_from_user_version)
+ *
+ * @return Boolean indicating if the versions are compatible
+ * @param version The user <code>version_pt</code> .
+ * @param version The reference provider <code>version_pt</code> .
+ * @param Boolean indicating if the versions are compatible
+ * @return Status code indication failure or success:
+ * 		- CELIX_SUCCESS when no errors are encountered.
+ */
+celix_status_t version_isCompatible(version_pt user, version_pt provider, bool* isCompatible);
+
 
 /**
  * @}

@@ -40,6 +40,13 @@ void sqrtCommand_execute(bundle_context_pt context, char *line, FILE *out, FILE 
     service_reference_pt calculatorService = NULL;
 
     status = bundleContext_getServiceReference(context, (char *) CALCULATOR_SERVICE, &calculatorService);
+    if (calculatorService == NULL) {
+        fprintf(err, "SQRT: Cannot get reference for %s. Trying to get one for %s\n", CALCULATOR_SERVICE, CALCULATOR2_SERVICE);
+        status = bundleContext_getServiceReference(context, (char *) CALCULATOR2_SERVICE, &calculatorService);
+        if (calculatorService == NULL) {
+            fprintf(err, "SQRT: Cannot get reference even for %s.\n", CALCULATOR2_SERVICE);
+        }
+    }
     if (status == CELIX_SUCCESS) {
     	char *token = line;
     	strtok_r(line, " ", &token);
@@ -49,7 +56,7 @@ void sqrtCommand_execute(bundle_context_pt context, char *line, FILE *out, FILE 
 		if (aStr != NULL && numeric) {
 			calculator_service_pt calculator = NULL;
 			status = bundleContext_getService(context, calculatorService, (void *) &calculator);
-			if (status == CELIX_SUCCESS) {
+			if (status == CELIX_SUCCESS && calculator != NULL) {
 				double a = atof(aStr);
 				double result = 0;
 				status = calculator->sqrt(calculator->calculator, a, &result);

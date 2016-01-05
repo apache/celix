@@ -36,6 +36,7 @@ bundle(calculator_shell SOURCES
 
         FILES
             ../calculator_service/public/include/org.apache.celix.calc.api.Calculator2.descriptor
+            #private/include/org.apache.celix.calc.api.Calculator2.descriptor ##Use this descriptor in case you want to try out versioning!
 )
 
 target_link_libraries(calculator_shell celix_framework)

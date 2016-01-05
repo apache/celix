@@ -421,6 +421,7 @@ MACRO(deploy)
 		ELSE(CELIX_FOUND)
 			set(FW_PATH ${CMAKE_BINARY_DIR}/framework)
 			set(UTILS_PATH ${CMAKE_BINARY_DIR}/utils)
+			set(DFI_PATH ${CMAKE_BINARY_DIR}/dfi)
 			set(LAUNCHER ${CMAKE_BINARY_DIR}/launcher/celix)
 		ENDIF(CELIX_FOUND)
 		

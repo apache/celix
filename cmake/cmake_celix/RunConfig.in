@@ -16,6 +16,6 @@
 <listEntry value="4"/>
 </listAttribute>
 <mapAttribute key="org.eclipse.debug.core.environmentVariables">
-<mapEntry key="@LIBRARY_PATH@" value="@FW_PATH@:@UTILS_PATH@"/>
+<mapEntry key="@LIBRARY_PATH@" value="@FW_PATH@:@UTILS_PATH@:@DFI_PATH@"/>
 </mapAttribute>
 </launchConfiguration>

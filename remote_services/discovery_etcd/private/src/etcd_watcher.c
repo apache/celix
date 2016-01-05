@@ -58,7 +58,7 @@ struct etcd_watcher {
 #define DEFAULT_ETCD_SERVER_IP	"127.0.0.1"
 
 #define CFG_ETCD_SERVER_PORT	"DISCOVERY_ETCD_SERVER_PORT"
-#define DEFAULT_ETCD_SERVER_PORT 4001
+#define DEFAULT_ETCD_SERVER_PORT 2379
 
 // be careful - this should be higher than the curl timeout
 #define CFG_ETCD_TTL   "DISCOVERY_ETCD_TTL"

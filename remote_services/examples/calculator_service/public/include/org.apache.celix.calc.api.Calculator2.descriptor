@@ -1,7 +1,7 @@
 :header
 type=interface
 name=calculator
-version=1.0.0
+version=1.3.0
 :annotations
 classname=org.example.Calculator
 :types

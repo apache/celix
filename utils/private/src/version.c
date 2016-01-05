@@ -245,3 +245,20 @@ celix_status_t version_toString(version_pt version, char **string) {
 	}
 	return status;
 }
+
+celix_status_t version_isCompatible(version_pt user, version_pt provider, bool* isCompatible) {
+    celix_status_t status = CELIX_SUCCESS;
+    bool result = false;
+
+    if (user == NULL || provider == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
+
+    if (user->major == provider->major) {
+        result = (provider->minor >= user->minor);
+    }
+
+    *isCompatible = result;
+
+    return status;
+}
