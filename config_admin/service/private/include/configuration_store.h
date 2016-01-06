@@ -43,6 +43,7 @@ typedef struct configuration_store *configuration_store_pt;
 
 /* METHODS */
 celix_status_t configurationStore_create(bundle_context_pt context, configuration_admin_factory_pt factory, configuration_store_pt *store);
+celix_status_t configurationStore_destroy(configuration_store_pt store);
 
 celix_status_t configurationStore_lock(configuration_store_pt store);
 celix_status_t configurationStore_unlock(configuration_store_pt store);

@@ -48,3 +48,8 @@ celix_status_t managedService_create(bundle_context_pt context, managed_service_
 	return CELIX_SUCCESS;
 
 }
+
+celix_status_t managedService_destroy(managed_service_pt service) {
+	free(service);
+	return CELIX_SUCCESS;
+}

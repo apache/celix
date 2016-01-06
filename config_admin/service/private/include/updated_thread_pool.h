@@ -33,7 +33,7 @@
 #define MAX_THREADS 10
 
 
-typedef struct updated_thread_pool *updated_thread_pool_t;
+typedef struct updated_thread_pool *updated_thread_pool_pt;
 
 /* celix.framework.public */
 #include "bundle_context.h"
@@ -44,9 +44,9 @@ typedef struct updated_thread_pool *updated_thread_pool_t;
 
 
 
-celix_status_t updatedThreadPool_create( bundle_context_pt context, int maxTreads, updated_thread_pool_t *updatedThreadPool);
-
-celix_status_t updatedThreadPool_push(updated_thread_pool_t updatedThreadPool, managed_service_service_pt service, properties_pt properties);
+celix_status_t updatedThreadPool_create( bundle_context_pt context, int maxTreads, updated_thread_pool_pt *updatedThreadPool);
+celix_status_t updatedThreadPool_destroy(updated_thread_pool_pt pool);
+celix_status_t updatedThreadPool_push(updated_thread_pool_pt updatedThreadPool, managed_service_service_pt service, properties_pt properties);
 
 
 #endif /* UPDATED_THREAD_POOL_H_ */

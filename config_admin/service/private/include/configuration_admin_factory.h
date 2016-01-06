@@ -47,7 +47,7 @@ typedef struct configuration_admin_factory *configuration_admin_factory_pt;
 /* METHODS */
 
 celix_status_t configurationAdminFactory_create(bundle_context_pt context, service_factory_pt *factory, configuration_admin_factory_pt *instance);
-
+celix_status_t configurationAdminFactory_destroy( bundle_context_pt context, configuration_admin_factory_pt instance);
 celix_status_t configurationAdminFactory_start(configuration_admin_factory_pt factory);
 celix_status_t configurationAdminFactory_stop(configuration_admin_factory_pt factory);
 

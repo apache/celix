@@ -40,15 +40,16 @@
 #include "configuration_store.h"
 
 
-typedef struct managed_service_tracker *managed_service_tracker_t;
+typedef struct managed_service_tracker *managed_service_tracker_pt;
 
 
 celix_status_t managedServiceTracker_create(bundle_context_pt context,
 											configuration_admin_factory_pt factory, configuration_store_pt store,
-											managed_service_tracker_t *trackerHandle, service_tracker_pt *tracker);
+											managed_service_tracker_pt *trackerHandle, service_tracker_pt *tracker);
+celix_status_t managedServiceTracker_destroy(bundle_context_pt context, managed_service_tracker_pt handle, service_tracker_pt tracker);
 
-celix_status_t managedServiceTracker_notifyDeleted(managed_service_tracker_t tracker, configuration_pt configuration);
-celix_status_t managedServiceTracker_notifyUpdated(managed_service_tracker_t tracker, configuration_pt configuration);
+celix_status_t managedServiceTracker_notifyDeleted(managed_service_tracker_pt tracker, configuration_pt configuration);
+celix_status_t managedServiceTracker_notifyUpdated(managed_service_tracker_pt tracker, configuration_pt configuration);
 
 celix_status_t managedServiceTracker_addingService(void * handle, service_reference_pt reference, void **service);
 celix_status_t managedServiceTracker_addedService(void * handle, service_reference_pt reference, void * service);

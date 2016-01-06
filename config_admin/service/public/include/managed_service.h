@@ -49,6 +49,6 @@ struct managed_service_service{
 };
 
 celix_status_t managedService_create(bundle_context_pt context, managed_service_service_pt *service);
-
+celix_status_t managedService_destroy(managed_service_pt service);
 
 #endif /* MANAGED_SERVICE_H_ */

@@ -20,6 +20,29 @@ celix_subproject(CONFIG_ADMIN "Option to enable building the Config Admin Servic
 if (CONFIG_ADMIN)
 
 	add_subdirectory(service)
-	add_subdirectory(examples)
+#	add_subdirectory(examples)
+	
+	if (ENABLE_TESTING)
+		find_package(CppUTest REQUIRED)
+
+	    include_directories(${CPPUTEST_INCLUDE_DIR})
+	    add_subdirectory(config_admin_tst)
+#		find_package(CppUTest REQUIRED)
+#
+#	    include_directories(${CUNIT_INCLUDE_DIRS})
+#	    include_directories(${CPPUTEST_INCLUDE_DIR})
+#	    include_directories("${PROJECT_SOURCE_DIR}/config_admin/service/public/include")
+#	    include_directories("${PROJECT_SOURCE_DIR}/config_admin/service/private/include")
+#	    include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+#	    
+#	    add_executable(config_admin_test config_admin_tst/config_admin_test.cpp)
+#	    target_link_libraries(config_admin_test celix_utils ${CPPUTEST_LIBRARY} pthread)
+#	    
+#	    
+#		add_test(NAME run_config_admin_test COMMAND config_admin_test)
+#      	SETUP_TARGET_FOR_COVERAGE(config_admin_test config_admin_test ${CMAKE_BINARY_DIR}/coverage/config_admin_test/config_admin_test)
+
+   endif(ENABLE_TESTING)
+	
 
 endif (CONFIG_ADMIN)
