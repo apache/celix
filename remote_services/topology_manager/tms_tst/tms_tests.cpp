@@ -466,6 +466,7 @@ extern "C" {
     /// \TEST_CASE_TITLE{Test scope initialisation}
     /// \TEST_CASE_REQ{REQ-5}
     /// \TEST_CASE_DESC Invalid input file, two partly matching filters with same key name
+    /*
     static void testScope4(void) {
     	int nr_exported;
     	int nr_imported;
@@ -485,7 +486,7 @@ extern "C" {
         	CHECK_TRUE((entry == NULL));
         }
         printf("End: %s\n", __func__);
-    }
+    }*/
 
 
     /// \TEST_CASE_ID{6}
