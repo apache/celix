@@ -65,7 +65,7 @@ static celix_status_t updatedThreadPool_wrapDataCallback(managed_service_service
 
 /* ---------- public ---------- */
 
-celix_status_t updatedThreadPool_create(bundle_context_pt context, int maxThreads, updated_thread_pool_t *updatedThreadPool){
+celix_status_t updatedThreadPool_create(bundle_context_pt context, int maxThreads, updated_thread_pool_pt *updatedThreadPool){
 
 	*updatedThreadPool = calloc(1, sizeof(**updatedThreadPool));
 	if (!*updatedThreadPool){
@@ -87,47 +87,34 @@ celix_status_t updatedThreadPool_create(bundle_context_pt context, int maxThread
 
 }
 
+celix_status_t updatedThreadPool_destroy(updated_thread_pool_pt pool) {
+	thpool_destroy(pool->threadPool);
+	free(pool);
+	return CELIX_SUCCESS;
+}
 /* ========== IMPLEMENTATION ========== */
 
 /* ---------- public ---------- */
 
-celix_status_t updatedThreadPool_push(updated_thread_pool_t updatedThreadPool, managed_service_service_pt service, properties_pt properties){
+celix_status_t updatedThreadPool_push(updated_thread_pool_pt updatedThreadPool, managed_service_service_pt service, properties_pt properties){
 
 	data_callback_t data = NULL;
 
-	// TODO apr_thread_mutex_lock(instance->mutex)?
-//	if ( apr_thread_pool_busy_count(updatedThreadPool->threadPool) < updatedThreadPool->maxTreads ) {
+	if ( updatedThreadPool_wrapDataCallback(service, properties, &data) != CELIX_SUCCESS ){
+		return CELIX_ILLEGAL_ARGUMENT;
+	}
 
-		if ( updatedThreadPool_wrapDataCallback(service, properties, &data) != CELIX_SUCCESS ){
-			return CELIX_ILLEGAL_ARGUMENT;
-		}
+	if (thpool_add_work(updatedThreadPool->threadPool, updateThreadPool_updatedCallback, data) != 0) {
+		printf("[ ERROR ]: UpdatedThreadPool - add_work \n ");
+		return CELIX_ILLEGAL_STATE;
+	}
 
-		if (thpool_add_work(updatedThreadPool->threadPool, updateThreadPool_updatedCallback, data) == 0) {
-//		if ( apr_thread_pool_push(updatedThreadPool->threadPool, updateThreadPool_updatedCallback, data,
-//				APR_THREAD_TASK_PRIORITY_NORMAL, NULL) != APR_SUCCESS ){
-
-			printf("[ ERROR ]: UpdatedThreadPool - Push (apr_thread_pool_push) \n ");
-			return CELIX_ILLEGAL_STATE;
-
-		}
-
-//	} else {
-
-//		printf("[ ERROR ]: UpdatedThreadPool - Push (Full!) \n ");
-//		return CELIX_ILLEGAL_STATE;
-
-//	}
-
-	printf("[ SUCCESS ]:  UpdatedThreadPool - Push \n");
 	return CELIX_SUCCESS;
 }
 
 /* ---------- private ---------- */
 
 void *updateThreadPool_updatedCallback(void *data) {
-
-
-	printf("[ DEBUG ]: UpdatedThreadPool - Callback \n");
 
 	data_callback_t params = data;
 

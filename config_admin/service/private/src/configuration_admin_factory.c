@@ -48,7 +48,7 @@ struct configuration_admin_factory{
 //	configuration_permission_t configurationPermission;
 //	event_dispatcher_t eventDispatcher;
 //	plugin_manager_t pluginManager;
-	managed_service_tracker_t managedServiceTrackerHandle;
+	managed_service_tracker_pt managedServiceTrackerHandle;
 	service_tracker_pt managedServiceTracker;
 //	managed_service_factory_ptracker_t managedServiceFactoryTracker;
 	configuration_store_pt configurationStore;
@@ -70,7 +70,7 @@ celix_status_t configurationAdminFactory_create( bundle_context_pt context, serv
 
 	configuration_admin_factory_pt this = calloc(1, sizeof(*this));
 	configuration_store_pt configurationStore;
-	managed_service_tracker_t managedServiceTrackerHandle;
+	managed_service_tracker_pt managedServiceTrackerHandle;
 	service_tracker_pt managedServiceTracker;
 
 	// (1) SERVICE FACTORY
@@ -104,12 +104,17 @@ celix_status_t configurationAdminFactory_create( bundle_context_pt context, serv
 	(*factory)->getService = configurationAdminFactory_getService;
 	(*factory)->ungetService = configurationAdminFactory_ungetService;
 
-	printf("[ SUCCESS ]: ConfigAdminFactory - Initialized \n");
 	*instance = this;
 	return CELIX_SUCCESS;
 
 }
 
+celix_status_t configurationAdminFactory_destroy( bundle_context_pt context, configuration_admin_factory_pt instance){
+	managedServiceTracker_destroy(context, instance->managedServiceTrackerHandle, instance->managedServiceTracker);
+	configurationStore_destroy(instance->configurationStore);
+	free(instance);
+	return CELIX_SUCCESS;
+}
 /* ========== IMPLEMENTS SERVICE FACTORY ========== */
 
 /* ---------- public ---------- */
@@ -118,7 +123,7 @@ celix_status_t configurationAdminFactory_getService(void *factory, bundle_pt bun
 
 	celix_status_t status;
 
-	configuration_admin_factory_pt configAdminFactory = ((service_factory_pt) factory)->factory;
+	configuration_admin_factory_pt configAdminFactory = (configuration_admin_factory_pt) factory;
 	configuration_admin_service_pt confAdminService;
 
 	// TODO
@@ -131,11 +136,11 @@ celix_status_t configurationAdminFactory_getService(void *factory, bundle_pt bun
 		return status;
 	}
 
-	/* DEBUG CODE */
+	/* DEBUG CODE *
 		char* location;
 		bundle_getBundleLocation(bundle, &location);
 		printf("[ SUCCESS ]: ConfigAdminFactory - get configAdminService (bundle=%s) \n ",location);
-	/* END DEBUG CODE */
+	* END DEBUG CODE */
 
 	(*service) = confAdminService;
 	return CELIX_SUCCESS;
@@ -155,19 +160,19 @@ celix_status_t configurationAdminFactory_ungetService(void *factory, bundle_pt b
 celix_status_t configurationAdminFactory_start(configuration_admin_factory_pt factory){
 
 	celix_status_t status;
-
+	printf("%s\n", __func__);
 	status = serviceTracker_open(factory->managedServiceTracker);
 	if( status!=CELIX_SUCCESS ){
 		printf("[ ERROR ]: ConfigAdminFactory - ManagedServiceTracker not opened \n");
 		return status;
 	}
 
-	printf("[ SUCCESS ]: ConfigAdminFactory - ManagedServiceTracker opened \n");
 	return CELIX_SUCCESS;
 }
 
 celix_status_t configurationAdminFactory_stop(configuration_admin_factory_pt factory){
-	return CELIX_SUCCESS;
+	celix_status_t status = serviceTracker_close(factory->managedServiceTracker);
+	return status;;
 }
 
 celix_status_t configurationAdminFactory_checkConfigurationPermission(configuration_admin_factory_pt factory){
@@ -182,12 +187,10 @@ celix_status_t configurationAdminFactory_notifyConfigurationUpdated(configuratio
 
 	if (isFactory == true){
 
-		printf("[ DEBUG ]: ConfigAdminFactory - notifyConfigUpdated Factory \n");
 		return CELIX_SUCCESS;
 
 	}else{
 
-		printf("[ DEBUG ]: ConfigAdminFactory - notifyConfigUpdated \n");
 		return managedServiceTracker_notifyUpdated(factory->managedServiceTrackerHandle,configuration);
 
 	}

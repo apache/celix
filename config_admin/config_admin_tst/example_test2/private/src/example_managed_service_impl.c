@@ -28,7 +28,17 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "example_managed_service_impl.h"
+#include "example2_managed_service_impl.h"
+
+
+struct managed_service{
+
+	bundle_context_pt 			context;
+
+	service_registration_pt 	registration;
+	properties_pt 				properties;
+
+};
 
 /* ------------------------ Constructor -------------------------------------*/
 
@@ -46,7 +56,6 @@ celix_status_t managedServiceImpl_create(bundle_context_pt context, managed_serv
 	managedService->registration = NULL;
 	managedService->properties = NULL;
 
-	printf("[ ManagedServiceImpl ]: ManagedServiceImpl - Initialized \n");
 	*instance = managedService;
 	return status;
 }

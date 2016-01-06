@@ -649,7 +649,9 @@ celix_status_t serviceRegistry_ungetService(service_registry_pt registry, bundle
         if (count == 0) {
             serviceReference_getService(reference, &service);
             serviceReference_getServiceRegistration(reference, &reg);
-            serviceRegistration_ungetService(reg, bundle, &service);
+            if (reg != NULL) {
+                serviceRegistration_ungetService(reg, bundle, &service);
+            }
         }
     } else {
         serviceRegistry_logIllegalReference(registry, reference, refStatus);

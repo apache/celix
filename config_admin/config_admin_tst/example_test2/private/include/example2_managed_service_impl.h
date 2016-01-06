@@ -25,8 +25,8 @@
  */
 
 
-#ifndef MANAGED_SERVICE_IMPL_H_
-#define MANAGED_SERVICE_IMPL_H_
+#ifndef TEST2_SERVICE_IMPL_H_
+#define TEST2_SERVICE_IMPL_H_
 
 
 /* celix.utils*/
@@ -38,7 +38,8 @@
 /* celix.config_admin.ManagedService */
 #include "managed_service.h"
 
-struct managed_service{
+/*
+struct managed_service2{
 
 	bundle_context_pt 			context;
 
@@ -46,8 +47,19 @@ struct managed_service{
 	properties_pt 				properties;
 
 };
+*/
+#define TST2_SERVICE_NAME "tst2_service"
+
+struct tst2_service {
+    void *handle;
+    int (*get_type)(void *handle, char *value);
+};
+
+typedef struct tst2_service *tst2_service_pt;
 
 celix_status_t managedServiceImpl_create(bundle_context_pt context, managed_service_pt *instance);
 celix_status_t managedServiceImpl_updated(managed_service_pt instance, properties_pt properties);
 
-#endif /* MANAGED_SERVICE_IMPL_H_ */
+
+
+#endif /* TEST2_SERVICE_IMPL_H_ */

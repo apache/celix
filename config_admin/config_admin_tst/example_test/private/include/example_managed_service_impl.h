@@ -38,18 +38,30 @@
 /* celix.config_admin.ManagedService */
 #include "managed_service.h"
 
-
-struct managed_service{
+struct test_managed_service{
 
 	bundle_context_pt 			context;
 
 	service_registration_pt 	registration;
 	properties_pt 				properties;
+	void 						*handle;
+	void (*store_props)(void *handle, char* type, char* second_type);
 
 };
 
+#define TST_SERVICE_NAME "tst_service"
+
+struct tst_service {
+    void *handle;
+    int (*get_type)(void *handle, char *value);
+    int (*get_second_type)(void *handle, char *value);
+};
+
+typedef struct tst_service *tst_service_pt;
 
 celix_status_t managedServiceImpl_create(bundle_context_pt context, managed_service_pt *instance);
 celix_status_t managedServiceImpl_updated(managed_service_pt instance, properties_pt properties);
+
+
 
 #endif /* MANAGED_SERVICE_IMPL_H_ */

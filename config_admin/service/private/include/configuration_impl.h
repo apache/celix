@@ -37,30 +37,36 @@
 #include "configuration_admin_factory.h"
 #include "configuration_store.h"
 
+typedef struct configuration_impl *configuration_impl_pt;
+//typedef struct configuration_impl *configuration_pt;
 
+#if 0
+
+
+
+
+
+
+
+celix_status_t configuration_getFactoryPid2(configuration_pt configuration, bool checkDeleted, char **factoryPid);
+celix_status_t configuration_getPid2(configuration_pt configuration, bool checkDeleted, char **pid);
+
+celix_status_t configuration_isDeleted(configuration_pt configuration, bool *isDeleted);
+#endif
+celix_status_t configuration_lock(configuration_impl_pt configuration);
+celix_status_t configuration_unlock(configuration_impl_pt configuration);
 celix_status_t configuration_create( configuration_admin_factory_pt factory, configuration_store_pt store,
 									 char *factoryPid, char *pid, char *bundleLocation,
 									 configuration_pt *configuration);
-
 celix_status_t configuration_create2(configuration_admin_factory_pt factory, configuration_store_pt store,
 									 properties_pt dictionary,
 									 configuration_pt *configuration);
+celix_status_t configuration_getBundleLocation2(configuration_impl_pt configuration, bool checkPermission, char **location);
+celix_status_t configuration_bind(configuration_impl_pt configuration, bundle_pt bundle, bool *isBind);
+celix_status_t configuration_unbind(configuration_impl_pt configuration, bundle_pt bundle);
+celix_status_t configuration_checkLocked(configuration_impl_pt configuration);
+celix_status_t configuration_getAllProperties(configuration_impl_pt configuration, properties_pt *properties);
 
-celix_status_t configuration_lock(configuration_pt configuration);
-celix_status_t configuration_unlock(configuration_pt configuration);
-celix_status_t configuration_checkLocked(configuration_pt configuration);
-
-celix_status_t configuration_bind(configuration_pt configuration, bundle_pt bundle, bool *isBind);
-celix_status_t configuration_unbind(configuration_pt configuration, bundle_pt bundle);
-
-celix_status_t configuration_checkDeleted(configuration_pt configuration);
-
-celix_status_t configuration_getBundleLocation2(configuration_pt configuration, bool checkPermission, char **location);
-celix_status_t configuration_getFactoryPid2(configuration_pt configuration, bool checkDeleted, char **factoryPid);
-celix_status_t configuration_getPid2(configuration_pt configuration, bool checkDeleted, char **pid);
-celix_status_t configuration_getAllProperties(configuration_pt configuration, properties_pt *properties);
-
-celix_status_t configuration_isDeleted(configuration_pt configuration, bool *isDeleted);
-
-
+celix_status_t configuration_getPid(void *handle, char **pid);
+celix_status_t configuration_getProperties(void *handle, properties_pt *properties);
 #endif /* CONFIGURATION_IMPL_H_ */

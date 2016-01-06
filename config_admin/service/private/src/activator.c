@@ -44,6 +44,7 @@
 struct config_admin_bundle {
 	bundle_context_pt context;
 	service_registration_pt configAdminFactoryReg;
+	configuration_admin_factory_pt configAdminFactoryInstance;
 };
 
 typedef struct config_admin_bundle *config_admin_bundle_t;
@@ -66,6 +67,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 		(*userData) = bi;
 		bi->context = context;
 		bi->configAdminFactoryReg = NULL;
+		bi->configAdminFactoryInstance = NULL;
 
 		status = CELIX_SUCCESS;
 
@@ -80,9 +82,8 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	config_admin_bundle_t bi = (config_admin_bundle_t) userData;
 
 	service_factory_pt configAdminFactory;
-	configuration_admin_factory_pt configAdminFactoryInstance;
 
-	status = configurationAdminFactory_create(bi->context, &configAdminFactory, &configAdminFactoryInstance);
+	status = configurationAdminFactory_create(bi->context, &configAdminFactory, &bi->configAdminFactoryInstance);
 	if (status != CELIX_SUCCESS){
 		return status;
 	}
@@ -93,7 +94,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	}
 	printf("[ SUCCESS ]: Activator - ConfigAdminFactory Registered \n");
 
-	status = configurationAdminFactory_start(configAdminFactoryInstance);
+	status = configurationAdminFactory_start(bi->configAdminFactoryInstance);
 	if (status != CELIX_SUCCESS){
 		return status;
 	}
@@ -107,8 +108,9 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	celix_status_t status = CELIX_SUCCESS;
 
 	config_admin_bundle_t bi = (config_admin_bundle_t) userData;
-
+	configurationAdminFactory_stop(bi->configAdminFactoryInstance);
 	serviceRegistration_unregister(bi->configAdminFactoryReg);
+	configurationAdminFactory_destroy(context, bi->configAdminFactoryInstance);
 
 	bi->configAdminFactoryReg = NULL;
 
