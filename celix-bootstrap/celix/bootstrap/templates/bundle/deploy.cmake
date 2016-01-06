@@ -1,8 +1,8 @@
 #{{
-#import json
+#import yaml
 #bundle = None 
 #with open(bundleFile) as input :
-#	bundle = json.load(input)
+#	bundle = yaml.load(input)
 #cog.outl("deploy( \"%s\" BUNDLES" % bundle['name'])
 #cog.outl("\t${CELIX_BUNDLES_DIR}/shell.zip")
 #cog.outl("\t${CELIX_BUNDLES_DIR}/shell_tui.zip")

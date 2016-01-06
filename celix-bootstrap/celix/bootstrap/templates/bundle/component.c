@@ -1,9 +1,9 @@
 //{{
-//import json
+//import yaml
 //bundle = None 
 //component = None
 //with open(bundleFile) as input :
-//	bundle = json.load(input)
+//	bundle = yaml.load(input)
 //for comp in bundle['components'] :
 //	if comp['name'] == componentName :
 //		component = comp

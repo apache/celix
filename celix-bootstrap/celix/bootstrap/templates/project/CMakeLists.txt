@@ -1,8 +1,8 @@
 #{{
-#	import json
+#	import yaml
 #	project = None 
 #	with open(projectFile) as input :
-#		project = json.load(input)
+#		project = yaml.load(input)
 #}}
 #{{end}}
 

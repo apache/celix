@@ -1,0 +1,51 @@
+#{{
+#def yn(msg, default = 'y'):
+#	while True:
+#		addComponent = raw_input("%s [%s]:" % (msg, default)) or default
+#      		if addComponent.lower() in ('y', 'yes', 'n', 'no'):
+#			return addComponent.lower() in ('y', 'yes')
+#		else:
+#			print("Invalid Input.")
+#}}
+#{{end}}
+
+#{{ 
+#name=raw_input("Please enter bundlename [mybundle]:") or 'mybundle' if 'name' not in vars() else None; 
+#cog.out('name : \"%s\"' % name )
+#}}
+name: "mybundle"
+#{{end}}
+
+#{{ 
+#symbolicName=raw_input("Please enter symbolicName [org.example.mybundle]:") or 'org.example.mybundle' if 'symbolicName' not in vars() else None; 
+#cog.out('symbolicName: \"%s\"' % name )
+#}}
+symbolicName: "org.example.mybundle"
+#{{end}}
+
+components: 
+    #{{
+    #while yn("Do you want to add a component?"):
+    #		componentName=raw_input("Please enter componentname [example]:") or 'example'; 
+    #		cog.outl('- name: \"%s\"' % componentName )
+    #		cog.outl('  providedServices:')
+    #		while yn("Should component '%s' provide a service?" % componentName):
+    #			include=raw_input("Please enter include: "); 
+    #			service_name1=raw_input("Please enter name: "); 
+    #			service_name2=raw_input("Please enter service_name: "); 
+    #			service_type=raw_input("Please enter type: ");
+    #			cog.outl('      - {include: "%s", name: "%s", service_name: "%s", type: "%s"}' % (include, service_name1, service_name2, service_type))
+    #		cog.outl('  serviceDependencies:')
+    #		while yn("Should component '%s' depend on another service?" % componentName):
+    #			include=raw_input("Please enter include: "); 
+    #			service_name1=raw_input("Please enter name: "); 
+    #			service_name2=raw_input("Please enter service_name: "); 
+    #			service_type=raw_input("Please enter type: ");
+    #			cardinality=raw_input("Please enter cardinality: ");
+    #			cog.outl('      - {include: "%s", name: "%s", service_name: "%s", type: "%s", cardinality: "%s"}' % (include, service_name1, service_name2, service_type, cardinality))
+    #
+    #}}
+    #{{end}}
+
+
+
