@@ -157,6 +157,10 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
 	celix_status_t status;
 	shell_tui_activator_pt activator = (shell_tui_activator_pt) userData;
+
+	bundleContext_ungetService(activator->context,activator->reference,NULL);
+	bundleContext_ungetServiceReference(activator->context,activator->reference);
+
 	status = bundleContext_removeServiceListener(context, activator->listener);
 
 	if (status == CELIX_SUCCESS) {

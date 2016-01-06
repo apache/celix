@@ -443,10 +443,10 @@ celix_status_t serviceRegistry_ungetServiceReference(service_registry_pt registr
         serviceReference_getUsageCount(reference, &count);
         serviceReference_release(reference, &destroyed);
         if (destroyed) {
-            if (count > 0) {
-                serviceRegistry_logWarningServiceReferenceUsageCount(registry, 0, count);
-            }
 
+            if (count > 0) {
+                serviceRegistry_logWarningServiceReferenceUsageCount(registry, count, 0);
+            }
 
             hash_map_pt refsMap = hashMap_get(registry->serviceReferences, bundle);
 
