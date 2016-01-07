@@ -32,7 +32,7 @@ before_script:
 
 
 script:
-    - if [ "$SANITIZE" == 1 ]; then export CC=/usr/bin/gcc-4.8 CXX=/usr/bin/g++-4.8 CFLAGS="-lasan -fsanitize=address"  CXXFLAGS="-lasan -fsanitize=address" ASAN_OPTIONS="symbolize=1" ASAN_SYMBOLIZER_PATH="/usr/bin/asan_symbolize"; fi
+    - if [ "$SANITIZE" == 1 ]; then export CC=/usr/bin/gcc-4.8 CXX=/usr/bin/g++-4.8 CFLAGS="-lasan -fsanitize=address"  CXXFLAGS="-lasan -fsanitize=address" ASAN_OPTIONS="symbolize=1" ASAN_SYMBOLIZER_PATH="/usr/local/clang-3.4/bin/llvm-symbolizer"; fi
      # the following setup is broken:
      # RSA_DISCOVERY_SHM is only working on linux, but both compilers (see CELIX-277)
      # RSA_SHM is only working on linux, but both compilers (see CELIX-277)
