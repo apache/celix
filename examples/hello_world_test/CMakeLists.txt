@@ -38,14 +38,14 @@ add_library(tlib SHARED
 )
 set_library_version(tlib "4.3.2") # sets target propery VERSION to 4.3.2 and SOVERSION to 4
 
-bundle_private_libs(hellotest1
-    #/usr/local/lib/libjansson.4.dylib
-    /usr/lib64/libjansson.so.4
-)
+#bundle_private_libs(hellotest1
+#    #/usr/local/lib/libjansson.4.dylib
+#    /usr/lib64/libjansson.so.4
+#)
 bundle_private_libs(hellotest1
     tlib
     #/usr/lib/libcurl.4.dylib 
-    /usr/lib64/libcurl.so.4
+    #    /usr/lib64/libcurl.so.4
 )
 
 
@@ -77,10 +77,10 @@ add_bundle(hellotest2
     ACTIVATOR hello2act
 )
 
-add_bundle(hellotest3
-    VERSION "2.1.2"
+#add_bundle(hellotest3
+#    VERSION "2.1.2"
     #ACTIVATOR /usr/local/lib/libjansson.4.dylib
-    ACTIVATOR /usr/lib64/libjansson.so.4
-)
+    #ACTIVATOR /usr/lib64/libjansson.so.4
+    #)
 
 
