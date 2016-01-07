@@ -53,6 +53,6 @@ configure_file(server.properties.in server.properties @ONLY)
 
 add_dependencies(test_rsa_shm remote_service_admin_shm calculator org.apache.celix.calc.api.Calculator_proxy org.apache.celix.calc.api.Calculator_endpoint)
  
-add_test(NAME run_test_rsa_shm COMMAND test_rsa_shm)
-SETUP_TARGET_FOR_COVERAGE(test_rsa_shm_cov test_rsa_shm ${CMAKE_BINARY_DIR}/coverage/test_rsa_shm/test_rsa_shm)
+#add_test(NAME run_test_rsa_shm COMMAND test_rsa_shm)
+#SETUP_TARGET_FOR_COVERAGE(test_rsa_shm_cov test_rsa_shm ${CMAKE_BINARY_DIR}/coverage/test_rsa_shm/test_rsa_shm)
 
