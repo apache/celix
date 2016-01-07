@@ -9,7 +9,7 @@ If there are any uncertainties or question, don't hesitate to ask your questions
 Some experience with a command line interface (xterm) is expected to be able to follow this guide. 
 
 ##Building and Installing
-For Apache Celix see [Building And Installing](../building/building_and_installing.md)
+For Apache Celix see [Building And Installing](../building/readme.md)
 
 ##Installing Eclipse CDT
 Download the latest eclipse CDT at [http://www.eclipse.org](http://www.eclipse.org) and install it on your system. For more information on how the install eclipse on your system consult the eclipse documentation. For this getting started guide the luna version of eclipse was used ([linux](http://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/luna/R/eclipse-cpp-luna-R-linux-gtk-x86_64.tar.gz) [mac](http://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/luna/R/eclipse-cpp-luna-R-macosx-cocoa-x86_64.tar.gz)).
@@ -64,7 +64,7 @@ It is a good pratice to create a seperate CMakeLists.txt file for every bundle y
 
 Create the sub directory:
 
-```cmake
+```CMake
 #Create directory structure for the hello_world bundles
 cd ${WS}/myproject
 mkdir -p bundles/hello_world/private/src
@@ -73,7 +73,7 @@ mkdir -p bundles/hello_world/private/src
 
 And add the following CMakeList.txt file:
 
-```cmake	
+```CMake	
 #${WS}/myproject/bundles/hello_world/CMakeLists.txt
 
 add_bundle(hello_world
@@ -153,9 +153,9 @@ To create a deployment for the hello_world bundle two things are needed:
 	
 1. Add a `add_deploy` statement in the `bundles/hello_world/CMakeLists.txt` file declaring what to deploy and under which name.
 
-```cmake
+```CMake
 ${WS}/myproject/bundles/hello_world/CMakeLists.txt
-deploy("myproject-deploy" BUNDLES 
+add_deploy("myproject-deploy" BUNDLES 
 	${CELIX_BUNDLES_DIR}/shell.zip 
 	${CELIX_BUNDLES_DIR}/shell_tui.zip
 	hello_world
@@ -173,8 +173,10 @@ make
 
 Now a deploy directory myproject should be availabe in the deploy directory. This directory contains - among other files - the run.sh script. This can be used to run the Apache Celix framework with the declared bundles from the deploy.cmake.
 
-	cd ${WS}/myproject-build/deploy/myproject-deploy
-	sh run.sh
+```bash
+cd ${WS}/myproject-build/deploy/myproject-deploy
+sh run.sh
+```
 
 The hello_world bundle should be started with the famous "Hello World" text printed. The shell and shell_tui bundle are also deployed and these can be used to query and control the running framework. Below some commands are shown for printed the installed bundles, printing all known shell command, printing help of a specific command and stopping a specific bundle (note that bundle 0 is the framework):
 
@@ -195,15 +197,15 @@ To get started change directory to the build directory and generate a eclipse pr
 	
 Startup the Eclipse EDI and a chose the `${WS}`
 
-![select workspace](/documentation/getting_started_img1.png)
+![select workspace](getting_started_img1.png)
 
 Import the project with existing project. 
 
-![import project](/documentation/getting_started_img2.png)
+![import project](getting_started_img2.png)
 
 To build the project, use Project->Build All. To run or debug from Eclipse navigate to the myproject deploy directory and right click on the 'myproject.launch' file. And select Run As or Debug As to run or debug the bundle.
 
-![run project](/documentation/getting_started_img3.png) 
+![run project](getting_started_img3.png) 
  
 
  
