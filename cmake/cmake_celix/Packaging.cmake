@@ -166,7 +166,7 @@ function(add_bundle)
 
     ##### MANIFEST configuration and generation ##################
     #Step1 configure the file so that the target name is present in in the template
-    configure_file(${CELIX_CMAKE_DIRECTORY}/cmake_celix/Manifest.template.in ${BUNDLE_GEN_DIR}/MANIFEST.template @ONLY)
+    configure_file(${CELIX_CMAKE_DIRECTORY}/cmake_celix/Manifest.template.in ${BUNDLE_GEN_DIR}/MANIFEST.template)
     #Step2 replace headers with target property values. Note this is done build time
     file(GENERATE 
         OUTPUT "${BUNDLE_GEN_DIR}/MANIFEST.tmp"

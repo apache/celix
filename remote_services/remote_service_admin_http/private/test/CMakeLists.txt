@@ -45,8 +45,8 @@ get_property(topology_manager_bundle_file TARGET topology_manager PROPERTY BUNDL
 get_property(calc_proxy_bundle_file TARGET org.apache.celix.calc.api.Calculator_proxy PROPERTY BUNDLE_FILE)
 get_property(calc_endpoint_bundle_file TARGET  org.apache.celix.calc.api.Calculator_endpoint PROPERTY BUNDLE_FILE)
 
-get_filename_component(client_endpoints @calc_proxy_bundle_file@ PATH)
-get_filename_component(server_endpoints @calc_endpoint_bundle_file@ PATH)
+get_filename_component(client_endpoints ${calc_proxy_bundle_file} PATH)
+get_filename_component(server_endpoints ${calc_endpoint_bundle_file} PATH)
 
 configure_file(client.properties.in client.properties @ONLY)
 configure_file(server.properties.in server.properties @ONLY)

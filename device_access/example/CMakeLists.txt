@@ -26,7 +26,7 @@ if(DEVICE_ACCESS_EXAMPLE)
     )
 
     deploy_bundles_dir(device_access_example
-            DIR_NAME "DRIVERS"
+            DIR_NAME "drivers"
             BUNDLES word_consumingdriver char_refiningdriver
     )
 endif(DEVICE_ACCESS_EXAMPLE)

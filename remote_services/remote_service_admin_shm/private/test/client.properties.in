@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-cosgi.auto.start.1=@rsa_bundle_file@ @calculator_shell_bundle_file@ @discovery_shm_bundle_file@ @topology_manager_bundle_file@ @tst_bundle_file@
+cosgi.auto.start.1=${rsa_bundle_file} ${calculator_shell_bundle_file} ${discovery_shm_bundle_file} ${topology_manager_bundle_file} ${tst_bundle_file}
 LOGHELPER_ENABLE_STDOUT_FALLBACK=true
 ENDPOINTS=@client_endpoints@
 RSA_PORT=50881
