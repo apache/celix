@@ -311,11 +311,10 @@ function(bundle_libs)
 
             #NOTE add_custom_command does not support generator expression in OUTPUT value (e.g. $<TARGET_FILE:${LIB}>)
             #Using a two step approach to be able to use add_custom_command instead of add_custom_target
-            get_target_property(EXTENSION ${LIB} SUFFIX)
-            set(OUT "${BUNDLE_GEN_DIR}/lib-${LIB}-copy")
+            set(OUT "${BUNDLE_GEN_DIR}/lib-${LIB}-copy-timestamp")
             add_custom_command(OUTPUT ${OUT}
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:${LIB}>" ${OUT}
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${OUT} "${BUNDLE_DIR}/$<TARGET_SONAME_FILE_NAME:${LIB}>"
+                COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:${LIB}>" "${BUNDLE_DIR}/$<TARGET_SONAME_FILE_NAME:${LIB}>"
                 DEPENDS ${LIB}
             )
             list(APPEND DEPS "${OUT}") #NOTE depending on ${OUT} not on $<TARGET_FILE:${LIB}>.
