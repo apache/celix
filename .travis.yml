@@ -12,7 +12,7 @@ compiler:
 env:
     global:
         - COVERITY_SCAN_BUILD_COMMAND="make"
-        - COVERITY_SCAN_PROJECT_NAME="apache/celix"
+        - COVERITY_SCAN_PROJECT_NAME="Apache Celix"
         - COVERITY_SCAN_NOTIFICATION_EMAIL="bpetri@apache.org"
         - COVERITY_SCAN_BRANCH_PATTERN="develop"
         - COVERITY_SCAN_TOKEN="iomLSuaE8KOZLDog-KK7Ug"
@@ -60,5 +60,5 @@ after_success:
         gem install coveralls-lcov &&
         make coverage &&
         lcx="lcov --output-file=coverage.info " && for i in `find . -name "*.info.cleaned"`; do lcx+=" --add-tracefile=$i"; done && $lcx && coveralls-lcov --repo-token=9dpeTAjiGoQU5hgXFe0ezk65iu40oc3WY coverage.info;
-        if [ $(( $TRAVIS_BUILD_NUMBER  % 5 )) -eq 0 ]; then make clean & eval "$COVERITY_SCAN_BUILD"; fi
+        if [ $(( $TRAVIS_BUILD_NUMBER  % 1 )) -eq 0 ]; then make clean & eval "$COVERITY_SCAN_BUILD"; fi
       fi;
