@@ -8,6 +8,17 @@ compiler:
     - gcc
     - clang
 
+
+env:
+    global:
+        - COVERITY_SCAN_BUILD_COMMAND="make"
+        - COVERITY_SCAN_PROJECT_NAME="apache/celix"
+        - COVERITY_SCAN_NOTIFICATION_EMAIL="bpetri@apache.org"
+        - COVERITY_SCAN_BRANCH_PATTERN="develop"
+        - COVERITY_SCAN_TOKEN="iomLSuaE8KOZLDog-KK7Ug"
+        - COVERITY_SCAN_BUILD_URL="https://scan.coverity.com/scripts/travisci_build_coverity_scan.sh"
+        - COVERITY_SCAN_BUILD="curl -s $COVERITY_SCAN_BUILD_URL | bash"
+
 matrix:
     include:
        - os: linux
@@ -49,4 +60,6 @@ after_success:
         gem install coveralls-lcov &&
         make coverage &&
         lcx="lcov --output-file=coverage.info " && for i in `find . -name "*.info.cleaned"`; do lcx+=" --add-tracefile=$i"; done && $lcx && coveralls-lcov --repo-token=9dpeTAjiGoQU5hgXFe0ezk65iu40oc3WY coverage.info;
+        make clean && eval "$COVERITY_SCAN_BUILD"
+        #if [ $(( $TRAVIS_BUILD_NUMBER  % 10 )) -eq 0 ]; then make clean & eval "$COVERITY_SCAN_BUILD"; fi
       fi;
