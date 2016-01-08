@@ -60,6 +60,5 @@ after_success:
         gem install coveralls-lcov &&
         make coverage &&
         lcx="lcov --output-file=coverage.info " && for i in `find . -name "*.info.cleaned"`; do lcx+=" --add-tracefile=$i"; done && $lcx && coveralls-lcov --repo-token=9dpeTAjiGoQU5hgXFe0ezk65iu40oc3WY coverage.info;
-        make clean && eval "$COVERITY_SCAN_BUILD"
-        #if [ $(( $TRAVIS_BUILD_NUMBER  % 10 )) -eq 0 ]; then make clean & eval "$COVERITY_SCAN_BUILD"; fi
+        if [ $(( $TRAVIS_BUILD_NUMBER  % 5 )) -eq 0 ]; then make clean & eval "$COVERITY_SCAN_BUILD"; fi
       fi;
