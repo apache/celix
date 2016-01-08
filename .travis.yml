@@ -3,10 +3,10 @@ language: c
 matrix:
     include:
         - os: linux
-          dist: trustry
+          dist: trusty
           compiler: gcc
         - os: linux
-          dist: trustry
+          dist: trusty
           compiler: clang
         - os: osx
           compiler: gcc

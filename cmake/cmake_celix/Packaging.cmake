@@ -538,8 +538,7 @@ function(deploy_bundles_dir)
         else()
             add_custom_command(OUTPUT ${OUT}
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>" ${OUT}
-                DEPENDS ${BUNDLE}
-                #DEPENDS "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>"
+                DEPENDS ${BUNDLE}_bundle
             )
         endif()
     endforeach()
