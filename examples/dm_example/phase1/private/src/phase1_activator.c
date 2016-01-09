@@ -27,7 +27,7 @@
 #include <phase1_cmp.h>
 
 #include "bundle_activator.h"
-#include "dm_activator_base.h"
+#include "dm_activator.h"
 
 #include "phase1.h"
 

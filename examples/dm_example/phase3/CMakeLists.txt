@@ -22,16 +22,9 @@ add_bundle(phase3
                 private/src/phase3_activator
                 private/src/phase3_cmp
 )
+bundle_private_libs(phase3 dependency_manager)
 
 include_directories(
         private/include
         ../services
 )
-
-#target_link_libraries(fase2_a -Wl,--whole-archive dependency_manager2 -Wl,--no-whole-archive celix_framework)
-#target_link_libraries(fase2_a celix_framework)
-IF(APPLE)
-target_link_libraries(phase3 celix_framework -Wl,-all_load dependency_manager)
-else()
-target_link_libraries(phase3 -Wl,--whole-archive dependency_manager -Wl,--no-whole-archive celix_framework)
-ENDIF()

@@ -28,9 +28,19 @@
 
 #include <stdlib.h>
 
+#include "bundle_context.h"
+#include "celix_errno.h"
+#include "dm_dependency_manager.h"
 #include "bundle_activator.h"
-#include "dm_activator_base.h"
 #include "dm_info.h"
+
+#ifdef DM_USE_WEAK_DEFAULT_FUNCTIONS
+celix_status_t dm_create(bundle_context_pt context, void ** userData) __attribute__((weak));
+celix_status_t dm_init(void * userData, bundle_context_pt context, dm_dependency_manager_pt manager) __attribute__((weak));
+celix_status_t dm_destroy(void * userData, bundle_context_pt context, dm_dependency_manager_pt manager) __attribute__((weak));
+#else
+#include "dm_activator.h"
+#endif
 
 struct dm_dependency_activator_base {
 	dm_dependency_manager_pt manager;
@@ -41,6 +51,7 @@ struct dm_dependency_activator_base {
 };
 
 typedef struct dm_dependency_activator_base * dependency_activator_base_pt;
+
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_ENOMEM;
@@ -125,4 +136,41 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt contex
 	return status;
 }
 
+#ifdef DM_USE_WEAK_DEFAULT_FUNCTIONS
 
+static char * dm_getSymbolicNameFromContext(bundle_context_pt context) {
+    celix_status_t status = CELIX_SUCCESS;
+    bundle_pt bundle = NULL;
+    module_pt module = NULL;
+    char *name =  NULL;
+    if (context != NULL) {
+        status = bundleContext_getBundle(context, &bundle);
+    } 
+    if (status == CELIX_SUCCESS) {
+        status = bundle_getCurrentModule(bundle, &module);
+    }
+    if (status == CELIX_SUCCESS) {
+        status = module_getSymbolicName(module, &name);
+    }
+    return name;
+}
+
+celix_status_t dm_create(bundle_context_pt context, void ** userData) {
+    //NOTE weak version
+    printf("Error: Bundle '%s' should implement the dm_create function\n", dm_getSymbolicNameFromContext(context));
+    *userData = NULL;
+    return CELIX_SUCCESS;
+}
+
+celix_status_t dm_init(void * userData, bundle_context_pt context, dm_dependency_manager_pt manager) {
+    //NOTE weak version
+    printf("Error: Bundle '%s' should implement the dm_init function\n", dm_getSymbolicNameFromContext(context));
+    return CELIX_SUCCESS;
+}
+
+celix_status_t dm_destroy(void * userData, bundle_context_pt context, dm_dependency_manager_pt manager) {
+    //NOTE weak version
+    printf("Error: Bundle '%s' should implement the dm_destroy function\n", dm_getSymbolicNameFromContext(context));
+    return CELIX_SUCCESS;
+}
+#endif

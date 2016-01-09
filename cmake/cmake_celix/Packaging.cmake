@@ -166,16 +166,18 @@ function(add_bundle)
 
     ##### MANIFEST configuration and generation ##################
     #Step1 configure the file so that the target name is present in in the template
-    configure_file(${CELIX_CMAKE_DIRECTORY}/cmake_celix/Manifest.template.in ${BUNDLE_GEN_DIR}/MANIFEST.template)
+    configure_file(${CELIX_CMAKE_DIRECTORY}/cmake_celix/Manifest.template.in ${BUNDLE_GEN_DIR}/MANIFEST.step1)
+
     #Step2 replace headers with target property values. Note this is done build time
     file(GENERATE 
-        OUTPUT "${BUNDLE_GEN_DIR}/MANIFEST.tmp"
-        INPUT "${BUNDLE_GEN_DIR}/MANIFEST.template"
+        OUTPUT "${BUNDLE_GEN_DIR}/MANIFEST.step2"
+        INPUT "${BUNDLE_GEN_DIR}/MANIFEST.step1"
     )
+
     #Step3 The replaced values in step 2 can contain generator expresssion, generated again to resolve those. Note this is done build time
     file(GENERATE 
         OUTPUT "${BUNDLE_GEN_DIR}/MANIFEST.MF"
-        INPUT "${BUNDLE_GEN_DIR}/MANIFEST.tmp"
+        INPUT "${BUNDLE_GEN_DIR}/MANIFEST.step2"
     )   
     #########################################################
 
@@ -305,10 +307,16 @@ function(bundle_libs)
     get_target_property(DEPS ${BUNDLE} "BUNDLE_DEPEND_TARGETS")
 
     foreach(LIB IN ITEMS ${ARGN})
-        check_lib(${LIB})
-
-        if(TARGET ${LIB})
-
+        if(IS_ABSOLUTE ${LIB} AND EXISTS ${LIB})
+            get_filename_component(LIB_NAME ${LIB} NAME) 
+            set(OUT "${BUNDLE_DIR}/${LIB_NAME}") 
+            add_custom_command(OUTPUT ${OUT} 
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LIB} ${OUT} 
+            )
+            list(APPEND LIBS ${LIB_NAME})
+            list(APPEND DEPS ${OUT}) 
+        else()
+            #Assuming target
             #NOTE add_custom_command does not support generator expression in OUTPUT value (e.g. $<TARGET_FILE:${LIB}>)
             #Using a two step approach to be able to use add_custom_command instead of add_custom_target
             set(OUT "${BUNDLE_GEN_DIR}/lib-${LIB}-copy-timestamp")
@@ -319,14 +327,6 @@ function(bundle_libs)
             )
             list(APPEND DEPS "${OUT}") #NOTE depending on ${OUT} not on $<TARGET_FILE:${LIB}>.
             list(APPEND LIBS "$<TARGET_SONAME_FILE_NAME:${LIB}>")
-        else()
-            get_filename_component(LIB_NAME ${LIB} NAME) 
-            set(OUT "${BUNDLE_DIR}/${LIB_NAME}") 
-            add_custom_command(OUTPUT ${OUT} 
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LIB} ${OUT} 
-            )
-            list(APPEND LIBS ${LIB_NAME})
-            list(APPEND DEPS ${OUT}) 
         endif()
 
         get_target_property(IS_LIB ${BUNDLE} "BUNDLE_TARGET_IS_LIB")
@@ -471,8 +471,10 @@ function(add_deploy)
         COMMENT "Deploying ${DEPLOY_NAME}" VERBATIM
     )
 
+
+    #TODO generate in the CMakeFiles/deploy.dir/<GROUP_NAME>/DEPLOY_NAME> location
     file(GENERATE 
-        OUTPUT "${DEPLOY_LOCATION}/config.properties.tmp"
+        OUTPUT "${DEPLOY_LOCATION}/config.properties.step1"
         CONTENT "cosgi.auto.start.1=$<JOIN:$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_BUNDLES>, >
 $<JOIN:$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_PROPERTIES>,
 >
@@ -481,15 +483,24 @@ $<JOIN:$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_PROPERTIES>,
 
     file(GENERATE
         OUTPUT "${DEPLOY_LOCATION}/config.properties"
-        INPUT "${DEPLOY_LOCATION}/config.properties.tmp"
+        INPUT "${DEPLOY_LOCATION}/config.properties.step1"
     )
 
-    file(GENERATE
-        OUTPUT ${DEPLOY_LOCATION}/run.sh
-        CONTENT "export DYLD_LIBRARY_PATH=$<TARGET_FILE_DIR:celix_framework>:$<TARGET_FILE_DIR:celix_utils>:$<TARGET_FILE_DIR:celix_dfi>
+    if(APPLE) 
+        file(GENERATE
+            OUTPUT ${DEPLOY_LOCATION}/run.sh
+            CONTENT "export DYLD_LIBRARY_PATH=$<TARGET_FILE_DIR:celix_framework>:$<TARGET_FILE_DIR:celix_utils>:$<TARGET_FILE_DIR:celix_dfi>
 $<TARGET_FILE:celix> $@
 "
     )
+    else() 
+        file(GENERATE
+            OUTPUT ${DEPLOY_LOCATION}/run.sh
+            CONTENT "export LD_LIBRARY_PATH=$<TARGET_FILE_DIR:celix_framework>:$<TARGET_FILE_DIR:celix_utils>:$<TARGET_FILE_DIR:celix_dfi>
+$<TARGET_FILE:celix> $@
+"
+    )
+    endif()
 
     #TODO eclipse launcher file
     #####

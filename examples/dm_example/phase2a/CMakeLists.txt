@@ -28,10 +28,10 @@ include_directories(
         ../services
 )
 
-#target_link_libraries(fase2_a -Wl,--whole-archive dependency_manager2 -Wl,--no-whole-archive celix_framework)
-#target_link_libraries(fase2_a celix_framework)
+# Note as example the phase2a uses the dependency manager as static library. 
+# Some additional linking argument magic is needed to make this work
 IF(APPLE)
-target_link_libraries(phase2a celix_framework -Wl,-all_load dependency_manager)
+target_link_libraries(phase2a celix_framework -Wl,-all_load dependency_manager_static)
 else()
-target_link_libraries(phase2a -Wl,--whole-archive dependency_manager -Wl,--no-whole-archive celix_framework)
+target_link_libraries(phase2a -Wl,--whole-archive dependency_manager -Wl,--no-whole-archive celix_framework_static)
 ENDIF()
