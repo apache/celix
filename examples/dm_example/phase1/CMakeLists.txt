@@ -15,18 +15,24 @@
 # specific language governing permissions and limitations
 # under the License.
 
+include_directories(
+        private/include
+        ../services
+)
+
 add_bundle(phase1
-    SYMBOLIC_NAME phase2
+    SYMBOLIC_NAME phase1
     VERSION 0.0.1
     SOURCES
         private/src/phase1_activator
         private/src/phase1_cmp.c
 )
 
-bundle_private_libs(phase1 dependency_manager)
+#Not possbile yet.
+#bundle_private_libs(phase1 dependency_manager)
 
-include_directories(
-        private/include
-        ../services
-)
-
+IF(APPLE)
+target_link_libraries(phase1 celix_framework -Wl,-all_load dependency_manager_static)
+else()
+target_link_libraries(phase1 -Wl,--whole-archive dependency_manager_static -Wl,--no-whole-archive celix_framework)
+ENDIF()

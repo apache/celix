@@ -49,21 +49,20 @@ if (DEPENDENCY_MANAGER)
     	private/src/dm_dependency_manager_impl
     )
 
-    add_library(dependency_manager SHARED 
-    	private/src/dm_activator_base 
-    	private/src/dm_component_impl 
-    	private/src/dm_service_dependency
-    	private/src/dm_event
-    	private/src/dm_dependency_manager_impl
-    )
-    set_target_properties(dependency_manager PROPERTIES SOVERSION 1)
-    target_compile_definitions(dependency_manager PRIVATE DM_USE_WEAK_DEFAULT_FUNCTIONS)
+    #add_library(dependency_manager SHARED 
+    #	private/src/dm_activator_base 
+    #	private/src/dm_component_impl 
+    #	private/src/dm_service_dependency
+    # 	private/src/dm_event
+    #   private/src/dm_dependency_manager_impl
+    #)
+    #set_target_properties(dependency_manager PROPERTIES SOVERSION 1)
+    #target_link_libraries(dependency_manager celix_framework -undefined dynamic_load)
 
    	include_directories("public/include")
    	include_directories("private/include")
     include_directories("../shell/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-    target_link_libraries(dependency_manager celix_framework)
     target_link_libraries(dependency_manager_static celix_framework)
     
     install(
@@ -79,5 +78,6 @@ if (DEPENDENCY_MANAGER)
 			dependency_manager
 	)
     install_bundle(dm_shell)
-    install(TARGETS dependency_manager dependency_manager_static DESTINATION lib COMPONENT dependency_manager)
+    #install(TARGETS dependency_manager dependency_manager_static DESTINATION lib COMPONENT dependency_manager)
+    install(TARGETS dependency_manager_static DESTINATION lib COMPONENT dependency_manager)
 endif (DEPENDENCY_MANAGER)

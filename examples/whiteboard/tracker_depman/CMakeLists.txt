@@ -30,7 +30,7 @@ include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 
 # Use some magic to include all symbols of the static library
 IF(APPLE)
-target_link_libraries(tracker_depman celix_framework -Wl,-all_load dependency_manager)
+target_link_libraries(tracker_depman celix_framework -Wl,-all_load dependency_manager_static)
 else()
-target_link_libraries(tracker_depman -Wl,--whole-archive dependency_manager -Wl,--no-whole-archive celix_framework)
+target_link_libraries(tracker_depman -Wl,--whole-archive dependency_manager -Wl,--no-whole-archive celix_framework_static)
 ENDIF()

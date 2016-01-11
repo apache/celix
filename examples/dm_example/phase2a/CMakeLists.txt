@@ -15,6 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
+include_directories(
+        private/include
+        ../services
+)
+
 add_bundle(phase2a
         SYMBOLIC_NAME phase2a
         VERSION 0.0.1
@@ -23,13 +28,6 @@ add_bundle(phase2a
                 private/src/phase2a_cmp
 )
 
-include_directories(
-        private/include
-        ../services
-)
-
-# Note as example the phase2a uses the dependency manager as static library. 
-# Some additional linking argument magic is needed to make this work
 IF(APPLE)
 target_link_libraries(phase2a celix_framework -Wl,-all_load dependency_manager_static)
 else()

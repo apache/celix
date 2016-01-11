@@ -15,6 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
+include_directories(
+        private/include
+        ../services
+)
+
 add_bundle(phase2b
         SYMBOLIC_NAME phase2b
         VERSION 0.0.1
@@ -22,9 +27,11 @@ add_bundle(phase2b
                 private/src/phase2b_activator
                 private/src/phase2b_cmp
 )
-bundle_private_libs(phase2b dependency_manager)
 
-include_directories(
-        private/include
-        ../services
-)
+#bundle_private_libs(phase2b dependency_manager)
+
+IF(APPLE)
+target_link_libraries(phase2b celix_framework -Wl,-all_load dependency_manager_static)
+else()
+target_link_libraries(phase2b -Wl,--whole-archive dependency_manager_static -Wl,--no-whole-archive celix_framework)
+ENDIF()

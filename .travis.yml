@@ -18,7 +18,7 @@ allow_failures:
 
 before_install:
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get -qq update && sudo apt-get install -y uuid-dev libxml2-dev lcov libffi-dev; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update && brew install lcov libffi && brew link --force libffi; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update && brew install lcov libffi cmake && brew link --force libffi; fi
 
 before_script:
     - cmake -version
