@@ -49,7 +49,6 @@ typedef enum operand
 struct filter {
 	OPERAND operand;
 	char * attribute;
-	int operands;
 	void * value;
 	char *filterStr;
 };
