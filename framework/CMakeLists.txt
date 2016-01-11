@@ -93,6 +93,7 @@ if (FRAMEWORK)
     	
 	    include_directories(${CPPUTEST_INCLUDE_DIR})
 	    include_directories(${CPPUTEST_EXT_INCLUDE_DIR})
+	    include_directories(${PROJECT_SOURCE_DIR}/utils/private/include)
 	    
         add_executable(attribute_test 
             private/test/attribute_test.cpp
