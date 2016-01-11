@@ -538,19 +538,25 @@ function(deploy_bundles_dir)
     get_target_property(DEPS ${DEPLOY_NAME} "DEPLOY_TARGET_DEPS")
 
     foreach(BUNDLE IN ITEMS ${BD_BUNDLES})
-        set(OUT "${DEPLOY_LOC}/${BD_DIR_NAME}/${BUNDLE}.zip")
-        list(APPEND DEPS "${OUT}")
-
         if (IS_ABSOLUTE ${BUNDLE} AND EXISTS ${BUNDLE})
+            get_filename_component(BUNDLE_FILENAME ${BUNDLE} NAME) 
+            set(OUT "${DEPLOY_LOC}/${BD_DIR_NAME}/${BUNDLE_FILENAME}.zip")
             add_custom_command(OUTPUT ${OUT}
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE} ${OUT}
+                COMMENT "Copying bundle '${BUNDLE}' to '${DEPLOY_LOC}/${BD_DIR_NAME}'"
+                DEPENDS ${BUNDLE}
             )
         else()
+            set(OUT "${DEPLOY_LOC}/${BD_DIR_NAME}/${BUNDLE}.zip")
             add_custom_command(OUTPUT ${OUT}
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>" ${OUT}
-                DEPENDS ${BUNDLE}_bundle
+                COMMENT "Copying bundle '${BUNDLE}' to '${DEPLOY_LOC}/${BD_DIR_NAME}'"
+                DEPENDS ${BUNDLE} #Note cannot directly depends on ${BUNDLE}_bundle, depending in ${BUNDLE} triggering build instead. 
             )
+            add_dependencies(${DEPLOY_NAME} ${BUNDLE}_bundle) #ensure the the deploy depends on the _bundle target, custom_command depends on add_library
         endif()
+        list(APPEND DEPS "${OUT}")
+
     endforeach()
 
     set_target_properties(${DEPLOY_NAME} PROPERTIES "DEPLOY_TARGET_DEPS" "${DEPS}")
