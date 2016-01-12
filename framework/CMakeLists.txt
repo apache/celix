@@ -176,7 +176,8 @@ if (FRAMEWORK)
 	    
         add_executable(filter_test 
             private/test/filter_test.cpp
-            private/mock/properties_mock.c
+            private/src/utils.c
+            private/src/properties.c
             private/src/filter.c
             private/src/celix_errorcodes.c
             private/mock/celix_log_mock.c)
