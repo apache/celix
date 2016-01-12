@@ -222,7 +222,7 @@ TEST(service_registry, registerServiceFactoryNoProps) {
 	bundle_pt bundle = (bundle_pt) 0x10;
 	char * serviceName = my_strdup("service");
 	service_factory_pt factory = (service_factory_pt) malloc(sizeof(*factory));
-	factory->factory = (void*) 0x20;
+	factory->handle = (void*) 0x20;
 	service_registration_pt reg = (service_registration_pt) 0x40;
 
 	mock()
