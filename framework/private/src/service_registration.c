@@ -194,7 +194,7 @@ celix_status_t serviceRegistration_getService(service_registration_pt registrati
     celixThreadRwlock_readLock(&registration->lock);
     if (registration->isServiceFactory) {
         service_factory_pt factory = registration->serviceFactory;
-        status = factory->getService(factory->factory, bundle, registration, service);
+        status = factory->getService(factory->handle, bundle, registration, service);
     } else {
         (*service) = registration->svcObj;
     }
@@ -206,7 +206,7 @@ celix_status_t serviceRegistration_ungetService(service_registration_pt registra
     celixThreadRwlock_readLock(&registration->lock);
     if (registration->isServiceFactory) {
         service_factory_pt factory = registration->serviceFactory;
-        factory->ungetService(factory->factory, bundle, registration, service);
+        factory->ungetService(factory->handle, bundle, registration, service);
     }
     celixThreadRwlock_unlock(&registration->lock);
     return CELIX_SUCCESS;

@@ -100,7 +100,7 @@ celix_status_t configurationAdminFactory_create( bundle_context_pt context, serv
 	this->managedServiceTracker = managedServiceTracker;
 	this->configurationStore = configurationStore;
 
-	(*factory)->factory = this;
+	(*factory)->handle = this;
 	(*factory)->getService = configurationAdminFactory_getService;
 	(*factory)->ungetService = configurationAdminFactory_ungetService;
 
@@ -119,11 +119,11 @@ celix_status_t configurationAdminFactory_destroy( bundle_context_pt context, con
 
 /* ---------- public ---------- */
 
-celix_status_t configurationAdminFactory_getService(void *factory, bundle_pt bundle, service_registration_pt registration, void **service){
+celix_status_t configurationAdminFactory_getService(void *handle, bundle_pt bundle, service_registration_pt registration, void **service){
 
 	celix_status_t status;
 
-	configuration_admin_factory_pt configAdminFactory = (configuration_admin_factory_pt) factory;
+	configuration_admin_factory_pt configAdminFactory = (configuration_admin_factory_pt)handle;
 	configuration_admin_service_pt confAdminService;
 
 	// TODO

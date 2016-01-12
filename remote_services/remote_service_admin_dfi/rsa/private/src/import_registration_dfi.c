@@ -75,7 +75,7 @@ celix_status_t importRegistration_create(bundle_context_pt context, endpoint_des
         celixThreadMutex_create(&reg->proxiesMutex, NULL);
         version_createVersionFromString((char*)serviceVersion,&(reg->version));
 
-        reg->factory->factory = reg;
+        reg->factory->handle = reg;
         reg->factory->getService = (void *)importRegistration_getService;
         reg->factory->ungetService = (void *)importRegistration_ungetService;
     } else {

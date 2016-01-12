@@ -49,7 +49,7 @@ celix_status_t logFactory_create(log_pt log, service_factory_pt *factory) {
         } else {
             factoryData->log = log;
 
-            (*factory)->factory = factoryData;
+            (*factory)->handle = factoryData;
             (*factory)->getService = logFactory_getService;
             (*factory)->ungetService = logFactory_ungetService;
         }
@@ -62,7 +62,7 @@ celix_status_t logFactory_destroy(service_factory_pt *factory) {
     celix_status_t status = CELIX_SUCCESS;
 
 
-    free((*factory)->factory);
+    free((*factory)->handle);
     free(*factory);
 
     factory = NULL;

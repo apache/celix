@@ -34,9 +34,9 @@ typedef struct service_factory * service_factory_pt;
 #include "bundle.h"
 
 struct service_factory {
-    void *factory;
-    celix_status_t (*getService)(void *factory, bundle_pt bundle, service_registration_pt registration, void **service);
-    celix_status_t (*ungetService)(void *factory, bundle_pt bundle, service_registration_pt registration, void **service);
+    void *handle;
+    celix_status_t (*getService)(void *handle, bundle_pt bundle, service_registration_pt registration, void **service);
+    celix_status_t (*ungetService)(void *handle, bundle_pt bundle, service_registration_pt registration, void **service);
 };
 
 
