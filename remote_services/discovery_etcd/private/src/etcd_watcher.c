@@ -349,34 +349,31 @@ celix_status_t etcdWatcher_create(discovery_pt discovery, bundle_context_pt cont
 		}
 	}
 
-	status = etcd_init(etcd_server, etcd_port);
-	if (status != CELIX_SUCCESS)
-	{
-		return status;
-	}
+    status = etcd_init(etcd_server, etcd_port);
 
-	etcdWatcher_addOwnFramework(*watcher);
+    printf(" ININT\n");
+    if (status == CELIX_SUCCESS) {
+        etcdWatcher_addOwnFramework(*watcher);
+        status = celixThreadMutex_create(&(*watcher)->watcherLock, NULL);
+        printf(" 111\n");
+    }
 
-	if ((status = celixThreadMutex_create(&(*watcher)->watcherLock, NULL)) != CELIX_SUCCESS) {
-		return status;
-	}
+    if (status == CELIX_SUCCESS) {
+        if (celixThreadMutex_lock(&(*watcher)->watcherLock) == CELIX_SUCCESS) {
+            status = celixThread_create(&(*watcher)->watcherThread, NULL, etcdWatcher_run, *watcher);
+            if (status == CELIX_SUCCESS) {
+                printf(" STARTEDTSTARTED\n");
+                (*watcher)->running = true;
+            }
+            celixThreadMutex_unlock(&(*watcher)->watcherLock);
+        }
+    }
 
-	if ((status = celixThreadMutex_lock(&(*watcher)->watcherLock)) != CELIX_SUCCESS) {
-		return status;
-	}
 
-	if ((status = celixThread_create(&(*watcher)->watcherThread, NULL, etcdWatcher_run, *watcher)) != CELIX_SUCCESS) {
-		return status;
-	}
-
-	(*watcher)->running = true;
-
-	if ((status = celixThreadMutex_unlock(&(*watcher)->watcherLock)) != CELIX_SUCCESS) {
-		return status;
-	}
-
-	return status;
+    printf(" DONEDONE\n");
+    return status;
 }
+
 
 celix_status_t etcdWatcher_destroy(etcd_watcher_pt watcher) {
 	celix_status_t status = CELIX_SUCCESS;
