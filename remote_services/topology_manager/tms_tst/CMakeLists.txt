@@ -44,13 +44,13 @@ get_property(test_bundle_file TARGET topology_manager_test_bundle PROPERTY BUNDL
 #LOGHELPER_ENABLE_STDOUT_FALLBACK=true
 #org.osgi.framework.storage.clean=onFirstInit
 #")
-configure_file(config.properties.in config.properties @ONLY)
+configure_file(config.properties.in config.properties)
 
-configure_file(config_import.properties.in config_import.properties @ONLY)
-configure_file(scope.json scope.json @ONLY)
-configure_file(scope2.json scope2.json @ONLY)
-configure_file(scope3.json scope3.json @ONLY)
-configure_file(scope4.json scope4.json @ONLY)
+configure_file(config_import.properties.in config_import.properties)
+configure_file(scope.json scope.json)
+configure_file(scope2.json scope2.json)
+configure_file(scope3.json scope3.json)
+configure_file(scope4.json scope4.json)
 
 
 add_test(NAME run_test_tm_scoped COMMAND test_tm_scoped)

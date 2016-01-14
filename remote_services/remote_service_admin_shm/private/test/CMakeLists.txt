@@ -48,8 +48,8 @@ get_property(calc_endpoint_bundle_file TARGET  org.apache.celix.calc.api.Calcula
 get_filename_component(client_endpoints ${calc_proxy_bundle_file} PATH)
 get_filename_component(server_endpoints ${calc_endpoint_bundle_file} PATH)
 
-configure_file(client.properties.in client.properties @ONLY)
-configure_file(server.properties.in server.properties @ONLY)
+configure_file(client.properties.in client.properties)
+configure_file(server.properties.in server.properties)
 
 add_dependencies(test_rsa_shm remote_service_admin_shm calculator org.apache.celix.calc.api.Calculator_proxy org.apache.celix.calc.api.Calculator_endpoint)
  

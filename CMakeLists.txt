@@ -15,12 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
-cmake_minimum_required (VERSION 3.0)
+cmake_minimum_required (VERSION 3.2)
 project (Celix C CXX)
 
 cmake_policy(SET CMP0012 NEW)
-
-#SET(CMAKE_VERBOSE_MAKEFILE ON)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 

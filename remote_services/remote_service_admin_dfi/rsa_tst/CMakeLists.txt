@@ -46,9 +46,9 @@ get_property(discovery_configured_bundle_file TARGET discovery_configured PROPER
 get_property(topology_manager_bundle_file TARGET topology_manager PROPERTY BUNDLE_FILE)
 get_property(tst_bundle_file TARGET rsa_dfi_tst_bundle PROPERTY BUNDLE_FILE)
 
-configure_file(config.properties.in config.properties @ONLY)
-configure_file(client.properties.in client.properties @ONLY)
-configure_file(server.properties.in server.properties @ONLY)
+configure_file(config.properties.in config.properties)
+configure_file(client.properties.in client.properties)
+configure_file(server.properties.in server.properties)
 
 add_dependencies(test_rsa_dfi remote_service_admin_dfi calculator)
 
