@@ -20,7 +20,7 @@
  * activator.c
  *
  *  \date       Aug 12, 2013
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
@@ -53,7 +53,8 @@ struct activator {
 	service_registration_pt  tstReg;
 
     service_registration_pt   mgmReg;
-	managed_service_pt		  mgmServ;
+    managed_service_service_pt  mgmServ;
+
 
 	service_reference_pt	  configAdminServRef;
 	configuration_admin_service_pt   configAdminServ;
@@ -124,19 +125,19 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt ctx) {
 				act->configAdminServ = confAdminServ;
 				act->configAdminServRef = ref;
 
-				status = managedServiceImpl_create(ctx, &act->mgmServ);
+			    managed_service_pt managedService;
+				status = managedServiceImpl_create(ctx, &managedService);
 				if (status != CELIX_SUCCESS){
 					return status;
 				}
 
-				managed_service_service_pt managedService;
-				status = managedService_create(ctx, &managedService);
+				status = managedService_create(ctx, &act->mgmServ);
 				if (status != CELIX_SUCCESS){
 					return status;
 				}
 
-				managedService->managedService = act->mgmServ;
-				managedService->updated = managedServiceImpl_updated;
+				act->mgmServ->managedService = managedService;
+				act->mgmServ->updated = managedServiceImpl_updated;
 
 				properties_pt dictionary;
 				dictionary = properties_create();
@@ -144,7 +145,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt ctx) {
 				properties_set(dictionary, (char *) "type", (char*)"test2_default_value");
 
 				status = bundleContext_registerService(ctx, (char *) MANAGED_SERVICE_SERVICE_NAME,
-						managedService, dictionary, &act->mgmReg);
+				        act->mgmServ, dictionary, &act->mgmReg);
 				if (status != CELIX_SUCCESS){
 					printf("[ ERROR ]: Managed Service not registered \n");
 					return status;
@@ -206,7 +207,8 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	struct activator *act = (struct activator *)userData;
-	managedService_destroy(act->mgmServ);
+    managedServiceImpl_destroy(&act->mgmServ->managedService);
+    managedService_destroy(act->mgmServ);
 	free(act->tstServ);
 	free(act);
 	return CELIX_SUCCESS;

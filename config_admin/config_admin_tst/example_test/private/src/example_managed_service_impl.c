@@ -20,7 +20,7 @@
  * example_managed_service_impl.c
  *
  *  \date       Aug 12, 2013
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
@@ -32,7 +32,7 @@
 
 /* ------------------------ Constructor -------------------------------------*/
 
-celix_status_t managedServiceImpl_create(bundle_context_pt context, managed_service_pt *instance){
+celix_status_t managedServiceImpl_create(bundle_context_pt context, managed_service_pt *instance) {
 
 	celix_status_t status = CELIX_SUCCESS;
 
@@ -51,6 +51,12 @@ celix_status_t managedServiceImpl_create(bundle_context_pt context, managed_serv
 	return status;
 }
 
+
+celix_status_t managedServiceImpl_destroy(managed_service_pt *instance) {
+    free(*instance);
+
+    return CELIX_SUCCESS;
+}
 
 /* -------------------- Implementation --------------------------------------*/
 

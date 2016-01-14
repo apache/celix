@@ -17,10 +17,10 @@
  *under the License.
  */
 /*
- * array_list_test.cpp
+ * config_admin_test.cpp
  *
  * 	\date       Sep 15, 2015
- *  \author    	Menno van der Graaf & Alexander
+ *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdio.h>

@@ -20,7 +20,7 @@
  * configuration_store.c
  *
  *  \date       Aug 12, 2013
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
@@ -151,6 +151,7 @@ celix_status_t configurationStore_saveConfiguration(configuration_store_pt store
 
     //(5) configStore.writeFile(file,properties)
     status = configurationStore_writeConfigurationFile(configFile, configProperties);
+
     if (status != CELIX_SUCCESS) {
         return status;
     }
@@ -247,17 +248,17 @@ celix_status_t configurationStore_writeConfigurationFile(int file, properties_pt
     }
     // size >0
 
-    char buffer[128];
+    char buffer[256];
 
     hash_map_iterator_pt iterator = hashMapIterator_create(properties);
     while (hashMapIterator_hasNext(iterator)) {
 
         hash_map_entry_pt entry = hashMapIterator_nextEntry(iterator);
 
-        strcpy(buffer, hashMapEntry_getKey(entry));
-        strcat(buffer, "=");
-        strcat(buffer, hashMapEntry_getValue(entry));
-        strcat(buffer, "\n");
+        char* key = hashMapEntry_getKey(entry);
+        char* val = hashMapEntry_getValue(entry);
+
+        snprintf(buffer, 256, "%s=%s", key, val);
 
         int buffLength = strlen((const char *) buffer);
 
@@ -333,7 +334,7 @@ celix_status_t configurationStore_readCache(configuration_store_pt store) {
 
 celix_status_t configurationStore_readConfigurationFile(const char *name, int size, properties_pt *dictionary) {
 
-    char *fname;		// file name
+    char fname[256];		// file name
     char *buffer;		// file buffer
     int fd;
     celix_status_t status = CELIX_SUCCESS;
@@ -341,9 +342,7 @@ celix_status_t configurationStore_readConfigurationFile(const char *name, int si
     properties_pt properties = NULL;
 
     // (1) The full path to the file
-    fname = strdup((const char *) STORE_DIR);
-    strcat(fname, strdup("/"));
-    strcat(fname, strdup(name));
+    snprintf(fname, 256, "%s/%s", STORE_DIR, name);
 
     // (2) pool.new
 
@@ -355,7 +354,7 @@ celix_status_t configurationStore_readConfigurationFile(const char *name, int si
     }
 
     // (4) buffer.new
-    buffer = calloc(1, size);
+    buffer = calloc(1, size+1);
     if (!buffer) {
         close(fd);
         return CELIX_ENOMEM;
@@ -382,26 +381,28 @@ celix_status_t configurationStore_parseDataConfigurationFile(char *data, propert
 
     properties_pt properties = properties_create();
 
+
     char *token;
     char *key;
     char *value;
+    char *saveptr;
 
     bool isKey = true;
-    token = strtok(data, "=");
+    token = strtok_r(data, "=", &saveptr);
 
     while (token != NULL) {
 
         if (isKey) {
             key = strdup(token);
             isKey = false;
+
         } else { // isValue
             value = strdup(token);
             properties_set(properties, key, value);
             isKey = true;
         }
 
-        token = strtok(NULL, "=\n");
-
+        token = strtok_r(NULL, "=\n", &saveptr);
     }
 
     if (hashMap_isEmpty(properties)) {

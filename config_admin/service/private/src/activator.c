@@ -20,7 +20,7 @@
  * activator.c
  *
  *  \date       Aug 12, 2013
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
@@ -44,6 +44,7 @@
 struct config_admin_bundle {
 	bundle_context_pt context;
 	service_registration_pt configAdminFactoryReg;
+    service_factory_pt configAdminFactory;
 	configuration_admin_factory_pt configAdminFactoryInstance;
 };
 
@@ -81,14 +82,13 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
 	config_admin_bundle_t bi = (config_admin_bundle_t) userData;
 
-	service_factory_pt configAdminFactory;
 
-	status = configurationAdminFactory_create(bi->context, &configAdminFactory, &bi->configAdminFactoryInstance);
+	status = configurationAdminFactory_create(bi->context, &bi->configAdminFactory, &bi->configAdminFactoryInstance);
 	if (status != CELIX_SUCCESS){
 		return status;
 	}
 
-	status = bundleContext_registerServiceFactory(bi->context, (char *) CONFIGURATION_ADMIN_SERVICE_NAME, configAdminFactory, NULL, &bi->configAdminFactoryReg);
+	status = bundleContext_registerServiceFactory(bi->context, (char *) CONFIGURATION_ADMIN_SERVICE_NAME, bi->configAdminFactory, NULL, &bi->configAdminFactoryReg);
 	if (status != CELIX_SUCCESS){
 		return status;
 	}
@@ -113,11 +113,18 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	configurationAdminFactory_destroy(context, bi->configAdminFactoryInstance);
 
 	bi->configAdminFactoryReg = NULL;
+    free(bi->configAdminFactory);
+
 
 	return status;
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
+
+    config_admin_bundle_t bi = (config_admin_bundle_t) userData;
+
+    free(bi);
+
 	return CELIX_SUCCESS;
 }
 

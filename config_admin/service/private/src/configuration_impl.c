@@ -20,7 +20,7 @@
  * configuration_impl.c
  *
  *  \date       Aug 12, 2013
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
@@ -635,7 +635,9 @@ celix_status_t configuration_setAutoProperties(configuration_impl_pt configurati
 	configuration_lock(configuration);
 
 	// (2) set service.pid
-	properties_set(*properties, (char*)OSGI_FRAMEWORK_SERVICE_PID, configuration->pid);
+    if (properties_get(*properties, (char*)OSGI_FRAMEWORK_SERVICE_PID) != NULL) {
+        properties_set(*properties, (char*)OSGI_FRAMEWORK_SERVICE_PID, configuration->pid);
+    }
 
 	// (3) set factory.pid
 	if ( configuration->factoryPid != NULL ){
@@ -660,17 +662,17 @@ celix_status_t configuration_setAutoProperties(configuration_impl_pt configurati
 
 celix_status_t configuration_setBundleLocationProperty(configuration_impl_pt configuration, properties_pt *properties){
 
-	char *boundLocation;
+	char *bundleLocation;
 
 	configuration_lock(configuration);
 
-	if( configuration_getBundleLocation(configuration, &boundLocation) != CELIX_SUCCESS ){
+	if( configuration_getBundleLocation(configuration, &bundleLocation) != CELIX_SUCCESS ){
 		configuration_unlock(configuration);
 		return CELIX_ILLEGAL_ARGUMENT;
 	}
 
-	if ( boundLocation != NULL ){
-		properties_set(*properties, (char*)SERVICE_BUNDLELOCATION, boundLocation);
+	if ( bundleLocation != NULL ) {
+		properties_set(*properties, (char*)SERVICE_BUNDLELOCATION, bundleLocation);
 	}
 
 	configuration_unlock(configuration);

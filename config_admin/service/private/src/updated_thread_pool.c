@@ -20,7 +20,7 @@
  * updated_thread_pool.c
  *
  *  \date       Aug 12, 2013
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
@@ -123,14 +123,16 @@ void *updateThreadPool_updatedCallback(void *data) {
 
 	(*managedServiceService->updated)(managedServiceService->managedService, properties);
 
+	free(data);
+
 	return NULL;
 
 }
 
 celix_status_t updatedThreadPool_wrapDataCallback(managed_service_service_pt service, properties_pt properties, data_callback_t *data){
 
-
 	*data = calloc(1, sizeof(**data));
+
 	if (!*data){
 		printf("[ ERROR ]: UpdatedThreadPool - WrapDataCallback (Data not initialized) \n");
 		return CELIX_ENOMEM;

@@ -20,7 +20,7 @@
  * managed_service_tracker.c
  *
  *  \date       Aug 12, 2013
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
@@ -182,6 +182,8 @@ celix_status_t managedServiceTracker_destroy(bundle_context_pt context, managed_
 	updatedThreadPool_destroy(mgServTr->updatedThreadPool);
 	celixThreadMutex_destroy(&mgServTr->managedServicesReferencesMutex);
 	serviceTracker_destroy(tracker);
+    free(mgServTr);
+
 	return CELIX_SUCCESS;
 }
 

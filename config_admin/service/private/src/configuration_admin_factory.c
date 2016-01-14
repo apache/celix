@@ -20,7 +20,7 @@
  * configuration_admin_factory.c
  *
  *  \date       Aug 12, 2013
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
@@ -149,6 +149,9 @@ celix_status_t configurationAdminFactory_getService(void *handle, bundle_pt bund
 
 celix_status_t configurationAdminFactory_ungetService(void *factory, bundle_pt bundle, service_registration_pt registration, void **service){
 	// do nothing
+
+    free(*service);
+
 	return CELIX_SUCCESS;
 }
 

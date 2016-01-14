@@ -20,7 +20,7 @@
  * managed_service_impl.c
  *
  *  \date       Aug 12, 2013
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
@@ -49,7 +49,7 @@ celix_status_t managedService_create(bundle_context_pt context, managed_service_
 
 }
 
-celix_status_t managedService_destroy(managed_service_pt service) {
+celix_status_t managedService_destroy(managed_service_service_pt service) {
 	free(service);
 	return CELIX_SUCCESS;
 }
