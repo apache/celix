@@ -62,15 +62,15 @@ celix_status_t example_destroy(example_pt component); //do not edit, generated c
 //{{
 //for service in component['serviceDependencies'] :
 //	if service['cardinality'] == "many" :
-//		cog.outl("celix_status_t %s_add_%s(%s_pt component, %s %s);" % (componentName, service['name'], componentName, service['type'], service['name']))
-//		cog.outl("celix_status_t %s_remove_%s(%s_pt component, %s %s);" % (componentName, service['name'], componentName, service['type'], service['name']))
+//		cog.outl("celix_status_t %s_add%s(%s_pt component, %s %s);" % (componentName, service['name'].title(), componentName, service['type'], service['name']))
+//		cog.outl("celix_status_t %s_remove%s(%s_pt component, %s %s);" % (componentName, service['name'].title(), componentName, service['type'], service['name']))
 //	else :
-//		cog.outl("celix_status_t %s_set_%s(%s_pt component, %s %s);" % (componentName, service['name'], componentName, service['type'], service['name']))
+//		cog.outl("celix_status_t %s_set%s(%s_pt component, %s %s);" % (componentName, service['name'].title(), componentName, service['type'], service['name']))
 //}}
-celix_status_t example_set_logger(example_pt component, log_service_pt logger); //do not edit, generated code
-celix_status_t example_set_loggerOptional(example_pt component, log_service_pt loggerOptional); //do not edit, generated code
-celix_status_t example_add_loggerMany(example_pt component, log_service_pt loggerMany); //do not edit, generated code
-celix_status_t example_remove_loggerMany(example_pt component, log_service_pt loggerMany); //do not edit, generated code
+celix_status_t example_setLogger(example_pt component, log_service_pt logger); //do not edit, generated code
+celix_status_t example_setLoggerOptional(example_pt component, log_service_pt loggerOptional); //do not edit, generated code
+celix_status_t example_add:oggerMany(example_pt component, log_service_pt loggerMany); //do not edit, generated code
+celix_status_t example_removeLoggerMany(example_pt component, log_service_pt loggerMany); //do not edit, generated code
 //{{end}}
 
 //{{

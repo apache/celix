@@ -1,7 +1,7 @@
 //TODO update fields from <service>Type to <service>For<component>Type
-//TODO improve names to camel case (e.g. from _add_logger_for_example to _addLoggerToExample)
+
 //{{
-//import yaml
+//import os, yaml
 //bundle = None 
 //with open(bundleFile) as input :
 //	bundle = yaml.load(input)
@@ -32,7 +32,7 @@
 //	for service in comp['providedServices'] :
 //		cog.outl("#include <%s>" % service['include'])
 //	for service in comp['serviceDependencies'] :
-//		cog.outl("#include <%s>" % service['include'])
+//		cog.outl("#include <%s>" % os.path.split(service['include'])[1])
 //}}
 //{{end}}
 
@@ -41,18 +41,18 @@
 //Private (static) function declarations
 //{{
 //for comp in bundle['components'] :
-//	cog.outl("static bundleActivator_resolveState_for_%s(struct activator *activator);" % comp['name'])
+//	cog.outl("static bundleActivator_resolveStateFor%s(struct activator *activator);" % comp['name'].title())
 //	for service in comp['serviceDependencies'] :
-//		cog.outl("static celix_status_t bundleActivator_add_%s_for_%s(void *handle, service_reference_pt ref, void *service);" % (service['name'], comp['name']))
-//		cog.outl("static celix_status_t bundleActivator_remove_%s_for_%s(void *handle, service_reference_pt ref, void *service);" % (service['name'], comp['name']))
+//		cog.outl("static celix_status_t bundleActivator_add%sFor%s(void *handle, service_reference_pt ref, void *service);" % (service['name'].title(), comp['name'].title()))
+//		cog.outl("static celix_status_t bundleActivator_remove%sFor%s(void *handle, service_reference_pt ref, void *service);" % (service['name'].title(), comp['name'].title()))
 //}}
-static bundleActivator_resolveState_for_example(struct activator *activator); //do not edit, generated code
-static celix_status_t bundleActivator_add_logger_for_example(void *handle, service_reference_pt ref, void *service); //do not edit, generated code
-static celix_status_t bundleActivator_remove_logger_for_example(void *handle, service_reference_pt ref, void *service); //do not edit, generated code
-static celix_status_t bundleActivator_add_loggerOptional_for_example(void *handle, service_reference_pt ref, void *service); //do not edit, generated code
-static celix_status_t bundleActivator_remove_loggerOptional_for_example(void *handle, service_reference_pt ref, void *service); //do not edit, generated code
-static celix_status_t bundleActivator_add_loggerMany_for_example(void *handle, service_reference_pt ref, void *service); //do not edit, generated code
-static celix_status_t bundleActivator_remove_loggerMany_for_example(void *handle, service_reference_pt ref, void *service); //do not edit, generated code
+static bundleActivator_resolveStateForExample(struct activator *activator); //do not edit, generated code
+static celix_status_t bundleActivator_addLoggerForExample(void *handle, service_reference_pt ref, void *service); //do not edit, generated code
+static celix_status_t bundleActivator_removeLoggerForExample(void *handle, service_reference_pt ref, void *service); //do not edit, generated code
+static celix_status_t bundleActivator_addLoggerOptionalForExample(void *handle, service_reference_pt ref, void *service); //do not edit, generated code
+static celix_status_t bundleActivator_removeLoggerOptionalForExample(void *handle, service_reference_pt ref, void *service); //do not edit, generated code
+static celix_status_t bundleActivator_addLoggerManyForExample(void *handle, service_reference_pt ref, void *service); //do not edit, generated code
+static celix_status_t bundleActivator_removeLoggerManyForExample(void *handle, service_reference_pt ref, void *service); //do not edit, generated code
 //{{end}}
 static celix_status_t bundleActivator_getFirst(hash_map_pt services, void **result);
 
@@ -77,8 +77,8 @@ struct activator {
 //		cog.outl("\tservice_tracker_customizer_pt %sCustomizer;" % service['name'])
 //		cog.outl("\tservice_tracker_pt %sServiceTracker;" % service['name'])
 //		if service['cardinality'] == "one" or service['cardinality'] == "optional" :
-//			cog.outl("\thash_map_pt %s_services_for_%s;" % (service['name'], comp['name']))
-//			cog.outl("\t%s current_%s_service_for_%s;" % (service['type'], service['name'], comp['name'])) 
+//			cog.outl("\thash_map_pt %sServicesFor%s;" % (service['name'], comp['name'].title()))
+//			cog.outl("\t%s current%sServiceFor%s;" % (service['type'], service['name'].title(), comp['name'].title())) 
 //	for service in comp['providedServices'] :
 //		cog.outl("\t%s %s;" % (service['type'], service['name']))
 //		cog.outl("\tservice_registration_pt %sServiceRegistry;" % service['name'])
@@ -90,12 +90,12 @@ struct activator {
 	component_state_type exampleState; //do not edit, generated code
 	service_tracker_customizer_pt loggerCustomizer; //do not edit, generated code
 	service_tracker_pt loggerServiceTracker; //do not edit, generated code
-	hash_map_pt logger_services_for_example; //do not edit, generated code
-	log_service_pt current_logger_service_for_example; //do not edit, generated code
+	hash_map_pt loggerServicesForExample; //do not edit, generated code
+	log_service_pt currentLoggerServiceForExample; //do not edit, generated code
 	service_tracker_customizer_pt loggerOptionalCustomizer; //do not edit, generated code
 	service_tracker_pt loggerOptionalServiceTracker; //do not edit, generated code
-	hash_map_pt loggerOptional_services_for_example; //do not edit, generated code
-	log_service_pt current_loggerOptional_service_for_example; //do not edit, generated code
+	hash_map_pt loggerOptionalServicesForExample; //do not edit, generated code
+	log_service_pt currentLoggerOptionalServiceForExample; //do not edit, generated code
 	service_tracker_customizer_pt loggerManyCustomizer; //do not edit, generated code
 	service_tracker_pt loggerManyServiceTracker; //do not edit, generated code
 	command_service_pt command; //do not edit, generated code
@@ -121,14 +121,14 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 //
 //	for service in comp['serviceDependencies'] :
 //		cog.outl("\t\tactivator->%sServiceTracker = NULL;" % service['name'])
-//		cog.outl("\t\tserviceTrackerCustomizer_create(activator, NULL, bundleActivator_add_%s_for_%s, NULL, bundleActivator_remove_%s_for_%s, &activator->%sCustomizer);" % (service['name'], comp['name'], service['name'], comp['name'], service['name']))
+//		cog.outl("\t\tserviceTrackerCustomizer_create(activator, NULL, bundleActivator_add%sFor%s, NULL, bundleActivator_remove%sFor%s, &activator->%sCustomizer);" % (service['name'].title(), comp['name'].title(), service['name'].title(), comp['name'].title(), service['name']))
 //		if 'service_name' in service :
 //			cog.outl("\t\tserviceTracker_create(context, (char *) %s, activator->%sCustomizer, &activator->%sServiceTracker);" % (service['service_name'], service['name'], service['name']))
 //		else :
 //			cog.outl("\t\tserviceTracker_createWithService(context, \"%s\", activator->%sCustomizer, &activator->%sServiceTracker);" % (service['filter'], service['name'], service['name']))
 //		if service['cardinality'] == "one" or service['cardinality'] == "optional" :
-//			cog.outl("\t\tactivator->%s_services_for_%s = hashMap_create(NULL, NULL, NULL, NULL);" % (service['name'], comp['name']))
-//			cog.outl("\t\tactivator->current_%s_service_for_%s = NULL;" % (service['name'], comp['name']))
+//			cog.outl("\t\tactivator->%sServicesFor%s = hashMap_create(NULL, NULL, NULL, NULL);" % (service['name'], comp['name'].title()))
+//			cog.outl("\t\tactivator->current%sServiceFor%s = NULL;" % (service['name'].title(), comp['name'].title()))
 //
 //	for service in comp['providedServices'] :
 //		cog.outl("\t\tactivator->%s = NULL;" % service['name'])
@@ -141,17 +141,17 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 		activator->exampleState = COMPONENT_STATE_CREATED; //do not edit, generated code
 		pthread_mutex_init(&activator->exampleLock, NULL); //do not edit, generated code
 		activator->loggerServiceTracker = NULL; //do not edit, generated code
-		serviceTrackerCustomizer_create(activator, NULL, bundleActivator_add_logger_for_example, NULL, bundleActivator_remove_logger_for_example, &activator->loggerCustomizer); //do not edit, generated code
+		serviceTrackerCustomizer_create(activator, NULL, bundleActivator_addLoggerForExample, NULL, bundleActivator_removeLoggerForExample, &activator->loggerCustomizer); //do not edit, generated code
 		serviceTracker_create(context, (char *) OSGI_LOGSERVICE_NAME, activator->loggerCustomizer, &activator->loggerServiceTracker); //do not edit, generated code
-		activator->logger_services_for_example = hashMap_create(NULL, NULL, NULL, NULL); //do not edit, generated code
-		activator->current_logger_service_for_example = NULL; //do not edit, generated code
+		activator->loggerServicesForExample = hashMap_create(NULL, NULL, NULL, NULL); //do not edit, generated code
+		activator->currentLoggerServiceForExample = NULL; //do not edit, generated code
 		activator->loggerOptionalServiceTracker = NULL; //do not edit, generated code
-		serviceTrackerCustomizer_create(activator, NULL, bundleActivator_add_loggerOptional_for_example, NULL, bundleActivator_remove_loggerOptional_for_example, &activator->loggerOptionalCustomizer); //do not edit, generated code
+		serviceTrackerCustomizer_create(activator, NULL, bundleActivator_addLoggerOptionalForExample, NULL, bundleActivator_removeLoggerOptionalForExample, &activator->loggerOptionalCustomizer); //do not edit, generated code
 		serviceTracker_create(context, (char *) OSGI_LOGSERVICE_NAME, activator->loggerOptionalCustomizer, &activator->loggerOptionalServiceTracker); //do not edit, generated code
-		activator->loggerOptional_services_for_example = hashMap_create(NULL, NULL, NULL, NULL); //do not edit, generated code
-		activator->current_loggerOptional_service_for_example = NULL; //do not edit, generated code
+		activator->loggerOptionalServicesForExample = hashMap_create(NULL, NULL, NULL, NULL); //do not edit, generated code
+		activator->currentLoggerOptionalServiceForExample = NULL; //do not edit, generated code
 		activator->loggerManyServiceTracker = NULL; //do not edit, generated code
-		serviceTrackerCustomizer_create(activator, NULL, bundleActivator_add_loggerMany_for_example, NULL, bundleActivator_remove_loggerMany_for_example, &activator->loggerManyCustomizer); //do not edit, generated code
+		serviceTrackerCustomizer_create(activator, NULL, bundleActivator_addLoggerManyForExample, NULL, bundleActivator_removeLoggerManyForExample, &activator->loggerManyCustomizer); //do not edit, generated code
 		serviceTracker_create(context, (char *) OSGI_LOGSERVICE_NAME, activator->loggerManyCustomizer, &activator->loggerManyServiceTracker); //do not edit, generated code
 		activator->command = NULL; //do not edit, generated code
 		activator->commandServiceRegistry = NULL; //do not edit, generated code
@@ -316,11 +316,11 @@ static celix_status_t bundleActivator_getFirst(hash_map_pt services, void **resu
 //ResolveNewState
 //{{
 //for comp in bundle['components'] :
-//	cog.outl("static bundleActivator_resolveState_for_%s(struct activator *activator) {" % comp['name'])
+//	cog.outl("static bundleActivator_resolveStateFor%s(struct activator *activator) {" % comp['name'].title())
 //	cog.outl("\tcelix_status_t status = CELIX_SUCCESS;")
 //
 //	cog.out("\tif (activator->%sState == COMPONENT_STATE_CREATED " % comp['name'])
-//	conditions = [("activator->current_%s_service_for_%s != NULL" % (serv['name'], comp['name'])) for serv in comp['serviceDependencies'] if serv['cardinality'] == "one"] 
+//	conditions = [("activator->current%sServiceFor%s != NULL" % (serv['name'].title(), comp['name'].title())) for serv in comp['serviceDependencies'] if serv['cardinality'] == "one"] 
 //	if len(conditions) > 0: 
 //		cog.out(" && ")
 //		cog.out(" && ".join(conditions))
@@ -329,7 +329,7 @@ static celix_status_t bundleActivator_getFirst(hash_map_pt services, void **resu
 //	cog.outl("\t}")
 //
 //	cog.out("\tif (activator->%sState == COMPONENT_STATE_STARTED " % comp['name'])
-//	conditions = [("activator->current_%s_service_for_%s == NULL" % (serv['name'], comp['name'])) for serv in comp['serviceDependencies'] if serv['cardinality'] == "one"]
+//	conditions = [("activator->current%sServiceFor%s == NULL" % (serv['name'].title(), comp['name'].title())) for serv in comp['serviceDependencies'] if serv['cardinality'] == "one"]
 //	if len(conditions) > 0:
 //		cog.out(" && (");
 //		cog.out(" || ".join(conditions))
@@ -341,42 +341,42 @@ static celix_status_t bundleActivator_getFirst(hash_map_pt services, void **resu
 //	cog.outl("\treturn status;")
 //	cog.outl("}")
 //}}
-static bundleActivator_resolveState_for_example(struct activator *activator) { //do not edit, generated code
+static bundleActivator_resolveStateForExample(struct activator *activator) { //do not edit, generated code
 	celix_status_t status = CELIX_SUCCESS; //do not edit, generated code
-	if (activator->exampleState == COMPONENT_STATE_CREATED && activator->current_logger_service_for_example != NULL) { //do not edit, generated code
+	if (activator->exampleState == COMPONENT_STATE_CREATED && activator->currentLoggerServiceForExample != NULL) { //do not edit, generated code
 		example_start(activator->example); //do not edit, generated code
 	} //do not edit, generated code
-	if (activator->exampleState == COMPONENT_STATE_STARTED && (activator->current_logger_service_for_example == NULL)) { //do not edit, generated code
+	if (activator->exampleState == COMPONENT_STATE_STARTED && (activator->currentLoggerServiceForExample == NULL)) { //do not edit, generated code
 		example_stop(activator->example); //do not edit, generated code
 	} //do not edit, generated code
 	return status; //do not edit, generated code
 } //do not edit, generated code
 //{{end}}
 
-//Add/Remove functions for the trakkers
+//Add/Remove functions for the trackers
 //{{
 //for comp in bundle['components'] :
 //	for service in comp['serviceDependencies'] :
-//		cog.outl("static celix_status_t bundleActivator_add_%s_for_%s(void *handle, service_reference_pt ref, void *service) {" % (service['name'], comp['name']))
+//		cog.outl("static celix_status_t bundleActivator_add%sFor%s(void *handle, service_reference_pt ref, void *service) {" % (service['name'].title(), comp['name'].title()))
 //		cog.outl("\tcelix_status_t status = CELIX_SUCCESS;")
 //		cog.outl("\tstruct activator *activator = handle;")
 //		cog.outl("\t%s %s = service;" % (service['type'], service['name']))
 //		if service['cardinality'] == "many" :
-//			cog.outl("\t%s_add_%s(activator->%s, %s);" % (comp['name'], service['name'], comp['name'], service['name']))
+//			cog.outl("\t%s_add%s(activator->%s, %s);" % (comp['name'], service['name'].title(), comp['name'], service['name']))
 //		else :
 //			cog.outl("\tpthread_mutex_lock(&activator->%sLock);" % comp['name']);
 //			cog.outl("\t%s highest = NULL;" % service['type']);
-//			cog.outl("\tbundleActivator_getFirst(activator->%s_services_for_%s, (void **)&highest);" % (service['name'], comp['name']))
-//			cog.outl("\tif (highest != activator->current_%s_service_for_%s) {" % (service['name'], comp['name']))
-//			cog.outl("\t\tactivator->current_%s_service_for_%s = highest;" % (service['name'], comp['name']))
-//			cog.outl("\t\t%s_set_%s(activator->%s, highest);" % (comp['name'], service['name'], comp['name'])) 
-//			cog.outl("\t\tbundleActivator_resolveState_for_%s(activator);" % comp['name']);
+//			cog.outl("\tbundleActivator_getFirst(activator->%sServicesFor%s, (void **)&highest);" % (service['name'], comp['name'].title()))
+//			cog.outl("\tif (highest != activator->current%sServiceFor%s) {" % (service['name'].title(), comp['name'].title()))
+//			cog.outl("\t\tactivator->current%sServiceFor%s = highest;" % (service['name'].title(), comp['name'].title()))
+//			cog.outl("\t\t%s_set%s(activator->%s, highest);" % (comp['name'], service['name'].title(), comp['name'])) 
+//			cog.outl("\t\tbundleActivator_resolveStateFor%s(activator);" % comp['name'].title());
 //			cog.outl("\t}")
 //			cog.outl("\tpthread_mutex_unlock(&activator->%sLock);" % comp['name']);
 //		cog.outl("\treturn status;")
 //		cog.outl("}")
 //		cog.outl("")
-//		cog.outl("static celix_status_t bundleActivator_remove_%s_for_%s(void *handle, service_reference_pt ref, void *service) {" % (service['name'], comp['name']))
+//		cog.outl("static celix_status_t bundleActivator_remove%sFor%s(void *handle, service_reference_pt ref, void *service) {" % (service['name'].title(), comp['name'].title()))
 //		cog.outl("\tcelix_status_t status = CELIX_SUCCESS;")
 //		cog.outl("\tstruct activator *activator = handle;")
 //		cog.outl("\t%s %s = service;" % (service['type'], service['name']))
@@ -385,94 +385,94 @@ static bundleActivator_resolveState_for_example(struct activator *activator) { /
 //			cog.outl("\t%s_remove_%s(activator->%s, %s);" % (comp['name'], service['name'], comp['name'], service['name']))
 //		else :
 //			cog.outl("\tpthread_mutex_lock(&activator->%sLock);" % comp['name']);
-//			cog.outl("\thashMap_remove(activator->%s_services_for_%s, ref);" % (service['name'], comp['name']))
-//			cog.outl("\tif (activator->current_%s_service_for_%s == service) { " % (service['name'], comp['name']))
+//			cog.outl("\thashMap_remove(activator->%sServicesFor%s, ref);" % (service['name'], comp['name'].title()))
+//			cog.outl("\tif (activator->current%sServiceFor%s == service) { " % (service['name'].title(), comp['name'].title()))
 //			cog.outl("\t\t%s highest = NULL;" % service['type']);
-//		cog.outl("\t\tbundleActivator_getFirst(activator->%s_services_for_%s, (void **)&highest);" % (service['name'], comp['name']))
-//		cog.outl("\t\tactivator->current_%s_service_for_%s = highest;" % (service['name'], comp['name']))
-//		cog.outl("\t\tbundleActivator_resolveState_for_%s(activator);" % comp['name']);
-//		cog.outl("\t\t%s_set_%s(activator->%s, highest);" % (comp['name'], service['name'], comp['name'])) 
+//		cog.outl("\t\tbundleActivator_getFirst(activator->%sServicesFor%s, (void **)&highest);" % (service['name'], comp['name'].title()))
+//		cog.outl("\t\tactivator->current%sServiceFor%s = highest;" % (service['name'].title(), comp['name'].title()))
+//		cog.outl("\t\tbundleActivator_resolveStateFor%s(activator);" % comp['name'].title());
+//		cog.outl("\t\t%s_set%s(activator->%s, highest);" % (comp['name'], service['name'].title(), comp['name'])) 
 //		cog.outl("\t}")
 //		cog.outl("\tpthread_mutex_unlock(&activator->%sLock);" % comp['name']);
 //		cog.outl("\treturn status;")
 //		cog.outl("}")
 //		cog.outl("")
 //}}
-static celix_status_t bundleActivator_add_logger_for_example(void *handle, service_reference_pt ref, void *service) { //do not edit, generated code
+static celix_status_t bundleActivator_addLoggerForExample(void *handle, service_reference_pt ref, void *service) { //do not edit, generated code
 	celix_status_t status = CELIX_SUCCESS; //do not edit, generated code
 	struct activator *activator = handle; //do not edit, generated code
 	log_service_pt logger = service; //do not edit, generated code
 	pthread_mutex_lock(&activator->exampleLock); //do not edit, generated code
 	log_service_pt highest = NULL; //do not edit, generated code
-	bundleActivator_getFirst(activator->logger_services_for_example, (void **)&highest); //do not edit, generated code
-	if (highest != activator->current_logger_service_for_example) { //do not edit, generated code
-		activator->current_logger_service_for_example = highest; //do not edit, generated code
-		example_set_logger(activator->example, highest); //do not edit, generated code
-		bundleActivator_resolveState_for_example(activator); //do not edit, generated code
+	bundleActivator_getFirst(activator->loggerServicesForExample, (void **)&highest); //do not edit, generated code
+	if (highest != activator->currentLoggerServiceForExample) { //do not edit, generated code
+		activator->currentLoggerServiceForExample = highest; //do not edit, generated code
+		example_setLogger(activator->example, highest); //do not edit, generated code
+		bundleActivator_resolveStateForExample(activator); //do not edit, generated code
 	} //do not edit, generated code
 	pthread_mutex_unlock(&activator->exampleLock); //do not edit, generated code
 	return status; //do not edit, generated code
 } //do not edit, generated code
 
-static celix_status_t bundleActivator_remove_logger_for_example(void *handle, service_reference_pt ref, void *service) { //do not edit, generated code
+static celix_status_t bundleActivator_removeLoggerForExample(void *handle, service_reference_pt ref, void *service) { //do not edit, generated code
 	celix_status_t status = CELIX_SUCCESS; //do not edit, generated code
 	struct activator *activator = handle; //do not edit, generated code
 	log_service_pt logger = service; //do not edit, generated code
 	pthread_mutex_lock(&activator->exampleLock); //do not edit, generated code
-	hashMap_remove(activator->logger_services_for_example, ref); //do not edit, generated code
-	if (activator->current_logger_service_for_example == service) {  //do not edit, generated code
+	hashMap_remove(activator->loggerServicesForExample, ref); //do not edit, generated code
+	if (activator->currentLoggerServiceForExample == service) {  //do not edit, generated code
 		log_service_pt highest = NULL; //do not edit, generated code
-		bundleActivator_getFirst(activator->logger_services_for_example, (void **)&highest); //do not edit, generated code
-		activator->current_logger_service_for_example = highest; //do not edit, generated code
-		bundleActivator_resolveState_for_example(activator); //do not edit, generated code
-		example_set_logger(activator->example, highest); //do not edit, generated code
+		bundleActivator_getFirst(activator->loggerServicesForExample, (void **)&highest); //do not edit, generated code
+		activator->currentLoggerServiceForExample = highest; //do not edit, generated code
+		bundleActivator_resolveStateForExample(activator); //do not edit, generated code
+		example_setLogger(activator->example, highest); //do not edit, generated code
 	} //do not edit, generated code
 	pthread_mutex_unlock(&activator->exampleLock); //do not edit, generated code
 	return status; //do not edit, generated code
 } //do not edit, generated code
 
-static celix_status_t bundleActivator_add_loggerOptional_for_example(void *handle, service_reference_pt ref, void *service) { //do not edit, generated code
+static celix_status_t bundleActivator_addLoggerOptionalForExample(void *handle, service_reference_pt ref, void *service) { //do not edit, generated code
 	celix_status_t status = CELIX_SUCCESS; //do not edit, generated code
 	struct activator *activator = handle; //do not edit, generated code
 	log_service_pt loggerOptional = service; //do not edit, generated code
 	pthread_mutex_lock(&activator->exampleLock); //do not edit, generated code
 	log_service_pt highest = NULL; //do not edit, generated code
-	bundleActivator_getFirst(activator->loggerOptional_services_for_example, (void **)&highest); //do not edit, generated code
-	if (highest != activator->current_loggerOptional_service_for_example) { //do not edit, generated code
-		activator->current_loggerOptional_service_for_example = highest; //do not edit, generated code
-		example_set_loggerOptional(activator->example, highest); //do not edit, generated code
-		bundleActivator_resolveState_for_example(activator); //do not edit, generated code
+	bundleActivator_getFirst(activator->loggerOptionalServicesForExample, (void **)&highest); //do not edit, generated code
+	if (highest != activator->currentLoggerOptionalServiceForExample) { //do not edit, generated code
+		activator->currentLoggerOptionalServiceForExample = highest; //do not edit, generated code
+		example_setLoggerOptional(activator->example, highest); //do not edit, generated code
+		bundleActivator_resolveStateForExample(activator); //do not edit, generated code
 	} //do not edit, generated code
 	pthread_mutex_unlock(&activator->exampleLock); //do not edit, generated code
 	return status; //do not edit, generated code
 } //do not edit, generated code
 
-static celix_status_t bundleActivator_remove_loggerOptional_for_example(void *handle, service_reference_pt ref, void *service) { //do not edit, generated code
+static celix_status_t bundleActivator_removeLoggerOptionalForExample(void *handle, service_reference_pt ref, void *service) { //do not edit, generated code
 	celix_status_t status = CELIX_SUCCESS; //do not edit, generated code
 	struct activator *activator = handle; //do not edit, generated code
 	log_service_pt loggerOptional = service; //do not edit, generated code
 	pthread_mutex_lock(&activator->exampleLock); //do not edit, generated code
-	hashMap_remove(activator->loggerOptional_services_for_example, ref); //do not edit, generated code
-	if (activator->current_loggerOptional_service_for_example == service) {  //do not edit, generated code
+	hashMap_remove(activator->loggerOptionalServicesForExample, ref); //do not edit, generated code
+	if (activator->currentLoggerOptionalServiceForExample == service) {  //do not edit, generated code
 		log_service_pt highest = NULL; //do not edit, generated code
-		bundleActivator_getFirst(activator->loggerOptional_services_for_example, (void **)&highest); //do not edit, generated code
-		activator->current_loggerOptional_service_for_example = highest; //do not edit, generated code
-		bundleActivator_resolveState_for_example(activator); //do not edit, generated code
-		example_set_loggerOptional(activator->example, highest); //do not edit, generated code
+		bundleActivator_getFirst(activator->loggerOptionalServicesForExample, (void **) &highest); //do not edit, generated code
+		activator->currentLoggerOptionalServiceForExample = highest; //do not edit, generated code
+		bundleActivator_resolveStateForExample(activator); //do not edit, generated code
+		example_setLoggerOptional(activator->example, highest); //do not edit, generated code
 	} //do not edit, generated code
 	pthread_mutex_unlock(&activator->exampleLock); //do not edit, generated code
 	return status; //do not edit, generated code
 } //do not edit, generated code
 
-static celix_status_t bundleActivator_add_loggerMany_for_example(void *handle, service_reference_pt ref, void *service) { //do not edit, generated code
+static celix_status_t bundleActivator_addLoggerManyForExample(void *handle, service_reference_pt ref, void *service) { //do not edit, generated code
 	celix_status_t status = CELIX_SUCCESS; //do not edit, generated code
 	struct activator *activator = handle; //do not edit, generated code
 	log_service_pt loggerMany = service; //do not edit, generated code
-	example_add_loggerMany(activator->example, loggerMany); //do not edit, generated code
+	example_addLoggerMany(activator->example, loggerMany); //do not edit, generated code
 	return status; //do not edit, generated code
 } //do not edit, generated code
 
-static celix_status_t bundleActivator_remove_loggerMany_for_example(void *handle, service_reference_pt ref, void *service) { //do not edit, generated code
+static celix_status_t bundleActivator_removeLoggerManyForExample(void *handle, service_reference_pt ref, void *service) { //do not edit, generated code
 	celix_status_t status = CELIX_SUCCESS; //do not edit, generated code
 	struct activator *activator = handle; //do not edit, generated code
 	log_service_pt loggerMany = service; //do not edit, generated code

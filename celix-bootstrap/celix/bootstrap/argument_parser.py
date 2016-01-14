@@ -12,7 +12,7 @@ def main() :
 	UPDATE_COMMAND = "update"
 
 	#positional
-	parser.add_argument("command", help="The command to executee", choices=(CREATE_PROJECT_COMMAND, CREATE_BUNDLE_COMMAND, CREATE_SERVICE_COMMAND, UPDATE_COMMAND))
+	parser.add_argument("command", help="The command to execute", choices=(CREATE_PROJECT_COMMAND, CREATE_BUNDLE_COMMAND, UPDATE_COMMAND))
 	parser.add_argument("directory", help="The directory to work on")
 
 	#optional

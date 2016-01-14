@@ -1,11 +1,15 @@
 #{{
-#import yaml
+#import os, yaml
 #bundle = None 
 #with open(bundleFile) as input :
 #	bundle = yaml.load(input)
 #
 #if not 'components' in bundle or bundle['components'] is None:
 # 	bundle['components'] = []
+#else:
+#	for comp in bundle['components'] : 
+#		if not 'serviceDependencies' in comp or comp['serviceDependencies'] is None:
+#			comp['serviceDependencies'] = []
 #
 #}}
 #{{end}}
@@ -34,6 +38,14 @@ SET(BUNDLE_VERSION "0.0.1")
 include_directories(
 	"private/include"
 	"public/include"
+#{{ 
+#for comp in bundle['components'] : 
+#	for service in comp['serviceDependencies']:
+#			cog.outl("\t\"%s\"" % os.path.dirname(service['include'])) 
+#}}
+"org.example.mybundle" #do not edit, generated code
+#{{end}}
+
 )
 
 bundle(
