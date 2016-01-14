@@ -50,14 +50,18 @@ before_script:
         -DBUILD_REMOTE_SERVICE_ADMIN=ON \
         -DBUILD_RSA_DISCOVERY_CONFIGURED=ON \
         -DBUILD_RSA_DISCOVERY_ETCD=ON \
-        -DBUILD_RSA_DISCOVERY_SHM=ON \
         -DBUILD_RSA_EXAMPLES=ON \
-        -DBUILD_RSA_REMOTE_SERVICE_ADMIN_SHM=ON \
         -DBUILD_RSA_REMOTE_SERVICE_ADMIN_HTTP=ON \
-        -DBUILD_REMOTE_SHELL=ON -DBUILD_SHELL=ON \
+        -DBUILD_REMOTE_SHELL=ON \
+        -DBUILD_SHELL=ON \
         -DBUILD_SHELL_TUI=ON -DBUILD_DEVICE_ACCESS=ON \
         -DBUILD_DEVICE_ACCESS_EXAMPLE=ON "
-
+    - export BUILD_OPTIONS_LINUX=" \
+        -DBUILD_RSA_REMOTE_SERVICE_ADMIN_SHM=ON \
+        -DBUILD_RSA_DISCOVERY_SHM=ON "
+    - export BUILD_OPTIONS_OSX=" \
+        -DBUILD_RSA_REMOTE_SERVICE_ADMIN_SHM=OFF \
+        -DBUILD_RSA_DISCOVERY_SHM=OFF "
 
 script:
     - if [ "$SANITIZE" == 1 ]; then export CC=/usr/bin/gcc-4.8 CXX=/usr/bin/g++-4.8 CFLAGS="-lasan -fsanitize=address"  CXXFLAGS="-lasan -fsanitize=address" ASAN_OPTIONS="symbolize=1" ASAN_SYMBOLIZER_PATH="/usr/local/clang-3.4/bin/llvm-symbolizer"; fi
