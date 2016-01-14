@@ -38,8 +38,8 @@ before_script:
     - sudo make install
     - cd -
     - mkdir build install
-    - if [ "${BUILD_SYSTEM}" = "make" ]; then export BUILD_CMD=make;    export BUILD_GEN=""; 
-    - if [ "${BUILD_SYSTEM}" = "ninja"]; then export BUILD_CMD=ninja;   export BUILD_GEN="-G Ninja"; fi
+    - if [ "${BUILD_SYSTEM}" = "make"  ]; then export BUILD_CMD=make;    export BUILD_GEN=""; fi
+    - if [ "${BUILD_SYSTEM}" = "ninja" ]; then export BUILD_CMD=ninja;   export BUILD_GEN="-G Ninja"; fi
 
 
 script:
