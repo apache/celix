@@ -1,8 +1,10 @@
 #{{
-#	import json
-#	project = None 
-#	with open(projectFile) as input :
-#		project = json.load(input)
+#import fnmatch
+#import os
+#import yaml
+#project = None 
+#with open(projectFile) as input :
+#	project = yaml.load(input)
 #}}
 #{{end}}
 
@@ -23,8 +25,13 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "/usr/local/share/celix/cmake/modules
 find_package(CELIX REQUIRED)
 include_directories(${CELIX_INCLUDE_DIRS})
 
-#TODO add sub directory for every bundle
-#e.g. 
-#add_subdirectory(mybundle)
+
+#{{
+#for root, dirs, filenames in os.walk('.'):
+#	for foundFile in fnmatch.filter(filenames, 'bundle.yaml'):
+#		cog.outl("add_subdirectory(%s)" % root)
+#}}
+#
+#{{end}}
 
 deploy_targets()

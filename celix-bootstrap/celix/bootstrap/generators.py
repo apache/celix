@@ -1,10 +1,10 @@
 import shutil
 import os
 import sys
-import json
+import yaml
 import cogapp
 
-class BaseGenerator:
+class BaseGenerator(object):
 	gendir = None
 	descriptor = None
 	erase_cog = False
@@ -15,7 +15,7 @@ class BaseGenerator:
 
 	def __init__(self, gendir, profile, erase, template_dir) :
 		self.gendir = gendir
-		self.descriptor = "%s/%s.json" % (gendir, profile)
+		self.descriptor = "%s/%s.yaml" % (gendir, profile)
 		self.template_dir = os.path.join(os.getcwd(), os.path.dirname(__file__), "templates")
 		self.profile = profile
 		self.erase_cog = erase
@@ -36,11 +36,11 @@ class BaseGenerator:
 		
 	def create(self) :
 		if os.path.exists(self.descriptor) :
-			print("%s Already exists. Will not override existing %s.json" % (self.descriptor, self.profile))
+			print("%s Already exists. Will not override existing %s.yaml" % (self.descriptor, self.profile))
 		else :
 			if not os.path.exists(self.gendir) :
 				os.makedirs(self.gendir)
-			shutil.copyfile(os.path.join(self.template_dir, self.profile, "%s.json" % self.profile), self.descriptor)
+			shutil.copyfile(os.path.join(self.template_dir, self.profile, "%s.yaml" % self.profile), self.descriptor)
 			
 			print("Edit the %s file and run 'celix-bootstrap update %s' to generate the source files" % (self.descriptor, self.gendir))
 
@@ -48,13 +48,15 @@ class BaseGenerator:
 		if os.path.isdir(self.gendir) and os.path.exists(self.descriptor) :
 			with open(self.descriptor) as inputFile :
 				try :
-					return json.load(inputFile)
+					return yaml.load(inputFile)
 				except ValueError as e:
-					print("ERROR: %s is not a valid json file: %s" % (self.descriptor, e))
+					print("ERROR: %s is not a valid yaml file: %s" % (self.descriptor, e))
 					sys.exit(1)
 
 	def update_file(self, template, targetFile, options=[], commentsPrefix="//") :
+		print("Creating file %s %s" % (self.gendir, targetFile))
 		cog_file = os.path.join(self.gendir, targetFile)
+#		cog_file = os.path.join('.', targetFile)
 		if not os.path.exists(cog_file) :
 			print("Creating file %s" % cog_file)
 			if not os.path.exists(os.path.dirname(cog_file)) :
@@ -77,7 +79,11 @@ class BaseGenerator:
 		if self.erase_cog :
 			cog_options += ["-d", "-o", cog_file, backup_cog_file]
 		else :
-			cog_options += ["-r", "-e", "-s", " %s%s" %(commentsPrefix, self.gen_code_suffix), cog_file]
+			cog_options += ["-r", "-e" ]
+			if commentsPrefix is not None: 
+				cog_options += [ "-s", " %s%s" %(commentsPrefix, self.gen_code_suffix)]
+			cog_options += [cog_file]
+
 		cog.main(cog_options)
 	
 
@@ -109,17 +115,29 @@ class Bundle(BaseGenerator):
 		options = ["-D", "bundleFile=%s" % self.descriptor, "-D", "componentName=%s" % componentName]
 		self.update_file("component.c", genfile, options)
 
+	def update_service_header(self, componentName, service) :
+		genfile = "public/include/%s" % service['include']
+		options = ["-D", "bundleFile=%s" % self.descriptor,  "-D", "componentName=%s" % componentName, "-D", "serviceName=%s" % service['name']]
+		self.update_file("service.h", genfile, options)
+
+	def create(self) :
+		self.update_file(os.path.join(self.template_dir, self.profile, "%s.yaml" % self.profile), "%s.yaml" % self.profile, [], None)
+
 	def update(self) :
 		bd = self.read_descriptor()
 		if bd is None :
-			print("%s does not exist or does not contain a bundle.json file" % self.gendir)
+			print("%s does not exist or does not contain a bundle.yaml file" % self.gendir)
 		else :
 			self.update_cmakelists()	
 			self.update_deploy_file()
 			self.update_activator()
-			for comp in bd['components'] :
-				self.update_component_header(comp['name'])
-				self.update_component_source(comp['name'])
+			if 'components' in bd and bd['components'] is not None:
+				for comp in bd['components'] :
+					self.update_component_header(comp['name'])
+					self.update_component_source(comp['name'])
+					if 'providedServices' in comp and comp['providedServices'] is not None:
+						for service in comp['providedServices']:
+							self.update_service_header(comp['name'], service)
 
 class Project(BaseGenerator):
 
@@ -131,33 +149,12 @@ class Project(BaseGenerator):
 		options = ["-D", "projectFile=%s" % self.descriptor]
 		self.update_file("CMakeLists.txt", "CMakeLists.txt", options, "#")	
 
+	def create(self) :
+		self.update_file(os.path.join(self.template_dir, self.profile, "%s.yaml" % self.profile),  "%s.yaml" % self.profile, [], None)	
+
 	def update(self) :
 		descriptor = self.read_descriptor()
 		if descriptor is None :
-			print("%s does not exist or does not contain a project.json file" % self.gendir)
+			print("%s does not exist or does not contain a project.yaml file" % self.gendir)
 		else :
 			self.update_cmakelists()	
-
-
-class Services(BaseGenerator):
-
-	def __init__(self, gendir, erase, template_dir) :
-		BaseGenerator.__init__(self, gendir, "services", erase, template_dir)
-		#python3 super(Services, self).__init__(gendir, "services")
-
-	def update_cmakelists(self) :
-		options = ["-D", "projectFile=%s" % self.descriptor]
-		self.update_file("CMakeLists.txt", "CMakeLists.txt", options, "#")	
-
-	def update_service_header(self, serviceName) :
-		genfile = "public/include/%s.h" % serviceName
-		options = ["-D", "descriptorFile=%s" % self.descriptor, "-D", "serviceName=%s" % serviceName]
-		self.update_file("service.h", genfile, options)
-
-	def update(self) :
-		descriptor = self.read_descriptor()
-		if descriptor is None :
-			print("%s does not exist or does not contain a services.json file" % self.gendir)
-		else :
-			for serv in descriptor :
-				self.update_service_header(serv['name'])

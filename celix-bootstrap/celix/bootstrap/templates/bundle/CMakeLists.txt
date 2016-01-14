@@ -1,8 +1,12 @@
 #{{
-#import json
+#import yaml
 #bundle = None 
 #with open(bundleFile) as input :
-#	bundle = json.load(input)
+#	bundle = yaml.load(input)
+#
+#if not 'components' in bundle or bundle['components'] is None:
+# 	bundle['components'] = []
+#
 #}}
 #{{end}}
 

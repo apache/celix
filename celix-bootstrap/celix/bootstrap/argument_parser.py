@@ -3,15 +3,11 @@ import os
 import argparse
 from . import generators
 
-#TODO add support to add licence text to all created files
-#TODO add support to select pthread or celix_threads
-
 def main() :
 	parser = argparse.ArgumentParser("celix-bootstrap")
 
 	CREATE_PROJECT_COMMAND = "create_project"	
 	CREATE_BUNDLE_COMMAND = "create_bundle"
-	CREATE_SERVICE_COMMAND = "create_services"
 
 	UPDATE_COMMAND = "update"
 
@@ -31,8 +27,6 @@ def main() :
 		gm.createBundle()
 	elif args.command == CREATE_PROJECT_COMMAND :
 		gm.createProject()
-	elif args.command == CREATE_SERVICE_COMMAND :
-		gm.createServices()
 	elif args.command == UPDATE_COMMAND :
 		gm.update()
 	else :
@@ -44,13 +38,11 @@ class GeneratorMediator :
 	gendir = None
 	bundleGenerator = None
 	projectGenerator = None
-	servicesGenerator = None
 	
 	def __init__(self, gendir, erase, template_dir) :		
 		self.gendir = gendir
 		self.bundleGenerator = generators.Bundle(gendir, erase, template_dir)
 		self.projectGenerator = generators.Project(gendir, erase, template_dir)
-		self.servicesGenerator = generators.Services(gendir, erase, template_dir)
 
 	def createBundle(self) :
 		self.bundleGenerator.create()
@@ -58,16 +50,11 @@ class GeneratorMediator :
 	def createProject(self) :
 		self.projectGenerator.create()	
 	
-	def createServices(self) :
-		self.servicesGenerator.create()
 
 	def update(self) :
-		if os.path.isfile(os.path.join(self.gendir, "bundle.json")) :
+		if os.path.isfile(os.path.join(self.gendir, "bundle.yaml")) :
 			print("Generating/updating bundle code")
 			self.bundleGenerator.update()
-		if os.path.isfile(os.path.join(self.gendir, "project.json")) :
+		if os.path.isfile(os.path.join(self.gendir, "project.yaml")) :
 			print("Generating/updating project code")
 			self.projectGenerator.update()
-		if os.path.isfile(os.path.join(self.gendir, "services.json")) :
-			print("Generating/updating services code")
-			self.servicesGenerator.update()

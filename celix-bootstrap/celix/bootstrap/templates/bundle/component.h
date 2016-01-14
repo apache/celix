@@ -1,9 +1,19 @@
 //{{
-//import json
+//import yaml
 //bundle = None 
 //component = None
 //with open(bundleFile) as input :
-//	bundle = json.load(input)
+//	bundle = yaml.load(input)
+//
+//if not 'components' in bundle or bundle['components'] is None:
+// 	bundle['components'] = []
+//else:
+//	for comp in bundle['components'] : 
+//		if not 'serviceDependencies' in comp or comp['serviceDependencies'] is None:
+//			comp['serviceDependencies'] = []
+//		if not 'providedServices' in comp or comp['providedServices'] is None:
+//			comp['providedServices'] = []
+//
 //for comp in bundle['components'] :
 //	if comp['name'] == componentName :
 //		component = comp
@@ -13,9 +23,10 @@
 //cog.outl("#define __%s_H_" % componentName.upper())
 //cog.outl("")
 //
-//for service in component['serviceDependencies'] :
-//	cog.outl("#include <%s>" % service['include'])
-//cog.outl("")
+//if 'serviceDependencies' in comp and comp['serviceDependencies'] is not None:
+//	for service in component['serviceDependencies'] :
+//		cog.outl("#include <%s>" % service['include'])
+//	cog.outl("")
 //
 //}}
 #ifndef __EXAMPLE_H_ //do not edit, generated code

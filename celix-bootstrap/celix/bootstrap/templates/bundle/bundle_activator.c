@@ -1,10 +1,19 @@
 //TODO update fields from <service>Type to <service>For<component>Type
 //TODO improve names to camel case (e.g. from _add_logger_for_example to _addLoggerToExample)
 //{{
-//import json
+//import yaml
 //bundle = None 
 //with open(bundleFile) as input :
-//	bundle = json.load(input)
+//	bundle = yaml.load(input)
+//
+//if not 'components' in bundle or bundle['components'] is None:
+// 	bundle['components'] = []
+//else:
+//	for comp in bundle['components'] : 
+//		if not 'serviceDependencies' in comp or comp['serviceDependencies'] is None:
+//			comp['serviceDependencies'] = []
+//		if not 'providedServices' in comp or comp['providedServices'] is None:
+//			comp['providedServices'] = []
 //}}
 //{{end}}
 #include <stdlib.h>
@@ -20,17 +29,11 @@
 //{{
 //for comp in bundle['components'] : 
 //	cog.outl("#include \"%s.h\"" % comp['name'])
-//	for service in comp['serviceDependencies'] :
-//		cog.outl("#include <%s>" % service['include'])
 //	for service in comp['providedServices'] :
 //		cog.outl("#include <%s>" % service['include'])
+//	for service in comp['serviceDependencies'] :
+//		cog.outl("#include <%s>" % service['include'])
 //}}
-#include "example.h" //do not edit, generated code
-#include <log_service/log_service.h> //do not edit, generated code
-#include <log_service/log_service.h> //do not edit, generated code
-#include <log_service/log_service.h> //do not edit, generated code
-#include <shell/command.h> //do not edit, generated code
-#include <shell/command.h> //do not edit, generated code
 //{{end}}
 
 
@@ -115,6 +118,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 //	cog.outl("\t\t%s_create(&activator->%s);" % (comp['name'], comp['name']))
 //	cog.outl("\t\tactivator->%sState = COMPONENT_STATE_CREATED;" % (comp['name']))
 //	cog.outl("\t\tpthread_mutex_init(&activator->%sLock, NULL);" % comp['name'])
+//
 //	for service in comp['serviceDependencies'] :
 //		cog.outl("\t\tactivator->%sServiceTracker = NULL;" % service['name'])
 //		cog.outl("\t\tserviceTrackerCustomizer_create(activator, NULL, bundleActivator_add_%s_for_%s, NULL, bundleActivator_remove_%s_for_%s, &activator->%sCustomizer);" % (service['name'], comp['name'], service['name'], comp['name'], service['name']))
@@ -125,6 +129,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 //		if service['cardinality'] == "one" or service['cardinality'] == "optional" :
 //			cog.outl("\t\tactivator->%s_services_for_%s = hashMap_create(NULL, NULL, NULL, NULL);" % (service['name'], comp['name']))
 //			cog.outl("\t\tactivator->current_%s_service_for_%s = NULL;" % (service['name'], comp['name']))
+//
 //	for service in comp['providedServices'] :
 //		cog.outl("\t\tactivator->%s = NULL;" % service['name'])
 //		cog.outl("\t\tactivator->%sServiceRegistry = NULL;" % service['name'])
@@ -182,7 +187,7 @@ celix_status_t bundleActivator_start(void *userData, bundle_context_pt context) 
 //		cog.outl("\tserviceTracker_open(activator->%sServiceTracker);" % service['name'])
 //	for service in comp['providedServices'] :
 //		cog.outl("\tif (activator->%s != NULL) {" % service['name'])
-//		cog.outl("\t\tbundleContext_registerService(context, (char *)%s, activator->%s, NULL, &activator->%sServiceRegistry);" % (service['service_name'], service['name'], service['name']))
+//		cog.outl("\t\tbundleContext_registerService(context, (char *)  %s_SERVICE_NAME, activator->%s, NULL, &activator->%sServiceRegistry);" % (service['name'].upper(), service['name'], service['name']))
 //		cog.outl("\t}")
 //}}
 //indent marker //do not edit, generated code
@@ -213,9 +218,10 @@ celix_status_t bundleActivator_stop(void *userData, bundle_context_pt context) {
 //		cog.outl("\tif (activator->%s != NULL) {" % service['name'])
 //		cog.outl("\t\tserviceRegistration_unregister(activator->%sServiceRegistry);" % (service['name']))
 //		cog.outl("\t}")
+//
 //	for service in comp['serviceDependencies'] :
 //		cog.outl("\tserviceTracker_close(activator->%sServiceTracker);" % service['name'])
-//	cog.outl("\t%s_stop(activator->%s);" % (comp['name'], comp['name']))
+//		cog.outl("\t%s_stop(activator->%s);" % (comp['name'], comp['name']))
 //}}
 //indent marker //do not edit, generated code
 	if (activator->command != NULL) { //do not edit, generated code
@@ -313,17 +319,22 @@ static celix_status_t bundleActivator_getFirst(hash_map_pt services, void **resu
 //	cog.outl("static bundleActivator_resolveState_for_%s(struct activator *activator) {" % comp['name'])
 //	cog.outl("\tcelix_status_t status = CELIX_SUCCESS;")
 //
-//	cog.out("\tif (activator->%sState == COMPONENT_STATE_CREATED && " % comp['name'])
+//	cog.out("\tif (activator->%sState == COMPONENT_STATE_CREATED " % comp['name'])
 //	conditions = [("activator->current_%s_service_for_%s != NULL" % (serv['name'], comp['name'])) for serv in comp['serviceDependencies'] if serv['cardinality'] == "one"] 
-//	cog.out(" && ".join(conditions))
+//	if len(conditions) > 0: 
+//		cog.out(" && ")
+//		cog.out(" && ".join(conditions))
 //	cog.outl(") {")
 //	cog.outl("\t\t%s_start(activator->%s);" % (comp['name'], comp['name']))
 //	cog.outl("\t}")
 //
-//	cog.out("\tif (activator->%sState == COMPONENT_STATE_STARTED && (" % comp['name'])
-//	conditions = [("activator->current_%s_service_for_%s == NULL" % (serv['name'], comp['name'])) for serv in comp['serviceDependencies'] if serv['cardinality'] == "one"] 
-//	cog.out(" || ".join(conditions))
-//	cog.outl(")) {")
+//	cog.out("\tif (activator->%sState == COMPONENT_STATE_STARTED " % comp['name'])
+//	conditions = [("activator->current_%s_service_for_%s == NULL" % (serv['name'], comp['name'])) for serv in comp['serviceDependencies'] if serv['cardinality'] == "one"]
+//	if len(conditions) > 0:
+//		cog.out(" && (");
+//		cog.out(" || ".join(conditions))
+//		cog.out(")"); 
+//	cog.outl(") {")
 //	cog.outl("\t\t%s_stop(activator->%s);" % (comp['name'], comp['name']))
 //	cog.outl("\t}")
 //
@@ -346,45 +357,46 @@ static bundleActivator_resolveState_for_example(struct activator *activator) { /
 //{{
 //for comp in bundle['components'] :
 //	for service in comp['serviceDependencies'] :
-//			cog.outl("static celix_status_t bundleActivator_add_%s_for_%s(void *handle, service_reference_pt ref, void *service) {" % (service['name'], comp['name']))
-//			cog.outl("\tcelix_status_t status = CELIX_SUCCESS;")
-//			cog.outl("\tstruct activator *activator = handle;")
-//			cog.outl("\t%s %s = service;" % (service['type'], service['name']))
-//			if service['cardinality'] == "many" :
-//				cog.outl("\t%s_add_%s(activator->%s, %s);" % (comp['name'], service['name'], comp['name'], service['name']))
-//			else :
-//				cog.outl("\tpthread_mutex_lock(&activator->%sLock);" % comp['name']);
-//				cog.outl("\t%s highest = NULL;" % service['type']);
-//				cog.outl("\tbundleActivator_getFirst(activator->%s_services_for_%s, (void **)&highest);" % (service['name'], comp['name']))
-//				cog.outl("\tif (highest != activator->current_%s_service_for_%s) {" % (service['name'], comp['name']))
-//				cog.outl("\t\tactivator->current_%s_service_for_%s = highest;" % (service['name'], comp['name']))
-//				cog.outl("\t\t%s_set_%s(activator->%s, highest);" % (comp['name'], service['name'], comp['name'])) 
-//				cog.outl("\t\tbundleActivator_resolveState_for_%s(activator);" % comp['name']);
-//				cog.outl("\t}")
-//				cog.outl("\tpthread_mutex_unlock(&activator->%sLock);" % comp['name']);
-//			cog.outl("\treturn status;")
-//			cog.outl("}")
-//			cog.outl("")
-//			cog.outl("static celix_status_t bundleActivator_remove_%s_for_%s(void *handle, service_reference_pt ref, void *service) {" % (service['name'], comp['name']))
-//			cog.outl("\tcelix_status_t status = CELIX_SUCCESS;")
-//			cog.outl("\tstruct activator *activator = handle;")
-//			cog.outl("\t%s %s = service;" % (service['type'], service['name']))
-//			if service['cardinality'] == "many" :
-//				cog.outl("\t%s_remove_%s(activator->%s, %s);" % (comp['name'], service['name'], comp['name'], service['name']))
-//			else :
-//				cog.outl("\tpthread_mutex_lock(&activator->%sLock);" % comp['name']);
-//				cog.outl("\thashMap_remove(activator->%s_services_for_%s, ref);" % (service['name'], comp['name']))
-//				cog.outl("\tif (activator->current_%s_service_for_%s == service) { " % (service['name'], comp['name']))
-//				cog.outl("\t\t%s highest = NULL;" % service['type']);
-//				cog.outl("\t\tbundleActivator_getFirst(activator->%s_services_for_%s, (void **)&highest);" % (service['name'], comp['name']))
-//				cog.outl("\t\tactivator->current_%s_service_for_%s = highest;" % (service['name'], comp['name']))
-//				cog.outl("\t\tbundleActivator_resolveState_for_%s(activator);" % comp['name']);
-//				cog.outl("\t\t%s_set_%s(activator->%s, highest);" % (comp['name'], service['name'], comp['name'])) 
-//				cog.outl("\t}")
-//				cog.outl("\tpthread_mutex_unlock(&activator->%sLock);" % comp['name']);
-//			cog.outl("\treturn status;")
-//			cog.outl("}")
-//			cog.outl("")
+//		cog.outl("static celix_status_t bundleActivator_add_%s_for_%s(void *handle, service_reference_pt ref, void *service) {" % (service['name'], comp['name']))
+//		cog.outl("\tcelix_status_t status = CELIX_SUCCESS;")
+//		cog.outl("\tstruct activator *activator = handle;")
+//		cog.outl("\t%s %s = service;" % (service['type'], service['name']))
+//		if service['cardinality'] == "many" :
+//			cog.outl("\t%s_add_%s(activator->%s, %s);" % (comp['name'], service['name'], comp['name'], service['name']))
+//		else :
+//			cog.outl("\tpthread_mutex_lock(&activator->%sLock);" % comp['name']);
+//			cog.outl("\t%s highest = NULL;" % service['type']);
+//			cog.outl("\tbundleActivator_getFirst(activator->%s_services_for_%s, (void **)&highest);" % (service['name'], comp['name']))
+//			cog.outl("\tif (highest != activator->current_%s_service_for_%s) {" % (service['name'], comp['name']))
+//			cog.outl("\t\tactivator->current_%s_service_for_%s = highest;" % (service['name'], comp['name']))
+//			cog.outl("\t\t%s_set_%s(activator->%s, highest);" % (comp['name'], service['name'], comp['name'])) 
+//			cog.outl("\t\tbundleActivator_resolveState_for_%s(activator);" % comp['name']);
+//			cog.outl("\t}")
+//			cog.outl("\tpthread_mutex_unlock(&activator->%sLock);" % comp['name']);
+//		cog.outl("\treturn status;")
+//		cog.outl("}")
+//		cog.outl("")
+//		cog.outl("static celix_status_t bundleActivator_remove_%s_for_%s(void *handle, service_reference_pt ref, void *service) {" % (service['name'], comp['name']))
+//		cog.outl("\tcelix_status_t status = CELIX_SUCCESS;")
+//		cog.outl("\tstruct activator *activator = handle;")
+//		cog.outl("\t%s %s = service;" % (service['type'], service['name']))
+//
+//		if service['cardinality'] == "many" :
+//			cog.outl("\t%s_remove_%s(activator->%s, %s);" % (comp['name'], service['name'], comp['name'], service['name']))
+//		else :
+//			cog.outl("\tpthread_mutex_lock(&activator->%sLock);" % comp['name']);
+//			cog.outl("\thashMap_remove(activator->%s_services_for_%s, ref);" % (service['name'], comp['name']))
+//			cog.outl("\tif (activator->current_%s_service_for_%s == service) { " % (service['name'], comp['name']))
+//			cog.outl("\t\t%s highest = NULL;" % service['type']);
+//		cog.outl("\t\tbundleActivator_getFirst(activator->%s_services_for_%s, (void **)&highest);" % (service['name'], comp['name']))
+//		cog.outl("\t\tactivator->current_%s_service_for_%s = highest;" % (service['name'], comp['name']))
+//		cog.outl("\t\tbundleActivator_resolveState_for_%s(activator);" % comp['name']);
+//		cog.outl("\t\t%s_set_%s(activator->%s, highest);" % (comp['name'], service['name'], comp['name'])) 
+//		cog.outl("\t}")
+//		cog.outl("\tpthread_mutex_unlock(&activator->%sLock);" % comp['name']);
+//		cog.outl("\treturn status;")
+//		cog.outl("}")
+//		cog.outl("")
 //}}
 static celix_status_t bundleActivator_add_logger_for_example(void *handle, service_reference_pt ref, void *service) { //do not edit, generated code
 	celix_status_t status = CELIX_SUCCESS; //do not edit, generated code

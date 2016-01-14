@@ -1,9 +1,19 @@
 //{{
-//import json
+//import yaml
 //bundle = None 
 //component = None
 //with open(bundleFile) as input :
-//	bundle = json.load(input)
+//	bundle = yaml.load(input)
+//
+//if not 'components' in bundle or bundle['components'] is None:
+// 	bundle['components'] = []
+//else:
+//	for comp in bundle['components'] : 
+//		if not 'serviceDependencies' in comp or comp['serviceDependencies'] is None:
+//			comp['serviceDependencies'] = []
+//		if not 'providedServices' in comp or comp['providedServices'] is None:
+//			comp['providedServices'] = []
+//
 //for comp in bundle['components'] :
 //	if comp['name'] == componentName :
 //		component = comp
@@ -45,6 +55,7 @@ struct example { //do not edit, generated code
 //{{
 //cog.outl("celix_status_t %s_create(%s_pt *result) {" % (componentName, componentName))
 //cog.outl("\tcelix_status_t status = CELIX_SUCCESS;")
+//cog.outl("printf(\" %s_create called.\\n\");" % (componentName))
 //cog.outl("\t%s_pt component = calloc(1, sizeof(*component));" % componentName)
 //cog.outl("\tif (component != NULL) {")
 //for service in component['serviceDependencies'] :
@@ -79,6 +90,7 @@ celix_status_t example_create(example_pt *result) { //do not edit, generated cod
 //Destroy function
 //{{
 //cog.outl("celix_status_t %s_destroy(%s_pt component) {" % (componentName,componentName))
+//cog.outl("printf(\" %s_destroy called.\\n\");" % (componentName))
 //}}
 celix_status_t example_destroy(example_pt component) { //do not edit, generated code
 //{{end}}
@@ -94,6 +106,7 @@ celix_status_t example_destroy(example_pt component) { //do not edit, generated 
 //Start function
 //{{
 //cog.outl("celix_status_t %s_start(%s_pt component) {" % (componentName,componentName))
+//cog.outl("printf(\" %s_start called.\\n\");" % (componentName))
 //}}
 celix_status_t example_start(example_pt component) { //do not edit, generated code
 //{{end}}
@@ -104,6 +117,7 @@ celix_status_t example_start(example_pt component) { //do not edit, generated co
 //Stop function
 //{{
 //cog.outl("celix_status_t %s_stop(%s_pt component) {" % (componentName,componentName))
+//cog.outl("printf(\" %s_stop called.\\n\");" % (componentName))
 //}}
 celix_status_t example_stop(example_pt component) { //do not edit, generated code
 //{{end}}
@@ -116,6 +130,7 @@ celix_status_t example_stop(example_pt component) { //do not edit, generated cod
 //	if service['cardinality'] == "many" :
 //		cog.outl("celix_status_t %s_add_%s(%s_pt component, %s %s) {" % (componentName, service['name'], componentName, service['type'], service['name'])) 
 //		cog.outl("\tcelix_status_t status = CELIX_SUCCESS;")
+//		cog.outl("printf(\" %s_add_%s called.\\n\");" % (componentName, service['name']))
 //		cog.outl("\tpthread_mutex_lock(&component->mutex_for_%sServices);" % service['name'])
 //		cog.outl("\tarrayList_add(component->%sServices, %s);" % (service['name'], service['name']))
 //		cog.outl("\tpthread_mutex_unlock(&component->mutex_for_%sServices);" % service['name'])
@@ -132,12 +147,13 @@ celix_status_t example_stop(example_pt component) { //do not edit, generated cod
 //	else :
 //		cog.outl("celix_status_t %s_set_%s(%s_pt component, %s %s) {" % (componentName, service['name'], componentName, service['type'], service['name'])) 
 //		cog.outl("\tcelix_status_t status = CELIX_SUCCESS;")
+//		cog.outl("printf(\" %s_set_%s called.\\n\");" % (componentName, service['name']))
 //		cog.outl("\tpthread_mutex_lock(&component->mutex_for_%s);" % service['name'])
 //		cog.outl("\tcomponent->%s == %s;" % (service['name'], service['name']))
 //		cog.outl("\tpthread_mutex_unlock(&component->mutex_for_%s);" % service['name'])
 //		cog.outl("\treturn status;")
 //		cog.outl("}")
-//	cog.outl("")	
+//		cog.outl("")	
 //}}
 celix_status_t example_set_logger(example_pt component, log_service_pt logger) { //do not edit, generated code
 	celix_status_t status = CELIX_SUCCESS; //do not edit, generated code

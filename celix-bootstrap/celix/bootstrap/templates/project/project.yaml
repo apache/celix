@@ -1,0 +1,19 @@
+#{{
+#from celix.bootstrap.celix_utils import *
+#}}
+#{{end}}
+
+
+# {{ 
+# name = checkInput('\nPlease enter projectname', '([a-zA-Z_][a-zA-Z0-9_]*)', 'myproject')
+# cog.outl('name: \"%s\"' % name )
+# }}
+name: "myproject"
+# {{end}}
+
+# {{  
+# install = checkCelixInstallation()
+# cog.outl('celix_install_dir: \"%s\"' % install ) 
+# }}
+celix_install_dir: "/usr/local"
+# {{end}}
