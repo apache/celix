@@ -182,6 +182,10 @@ celix_status_t managedServiceTracker_destroy(bundle_context_pt context, managed_
 	updatedThreadPool_destroy(mgServTr->updatedThreadPool);
 	celixThreadMutex_destroy(&mgServTr->managedServicesReferencesMutex);
 	serviceTracker_destroy(tracker);
+
+	hashMap_destroy(mgServTr->managedServices, true, true);
+	hashMap_destroy(mgServTr->managedServicesReferences, true, true);
+
     free(mgServTr);
 
 	return CELIX_SUCCESS;

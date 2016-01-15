@@ -94,6 +94,10 @@ tst2_service_pt test2Serv = NULL;
 		rc = bundleContext_ungetService(context, testRef, NULL);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
+        // check whether this is necessary
+        rc = bundleContext_ungetService(context, testRef, NULL);
+        CHECK_EQUAL(CELIX_SUCCESS, rc);
+
         rc = bundleContext_ungetServiceReference(context, testRef);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
