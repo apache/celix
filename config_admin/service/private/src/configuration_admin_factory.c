@@ -143,16 +143,18 @@ celix_status_t configurationAdminFactory_getService(void *handle, bundle_pt bund
 	* END DEBUG CODE */
 
 	(*service) = confAdminService;
+
 	return CELIX_SUCCESS;
 
 }
 
-celix_status_t configurationAdminFactory_ungetService(void *factory, bundle_pt bundle, service_registration_pt registration, void **service){
-	// do nothing
+celix_status_t configurationAdminFactory_ungetService(void *factory, bundle_pt bundle, service_registration_pt registration, void **service) {
 
-    free(*service);
+    configuration_admin_service_pt confAdminService = (*service);
 
-	return CELIX_SUCCESS;
+    configurationAdmin_destroy(&confAdminService);
+
+    return CELIX_SUCCESS;
 }
 
 

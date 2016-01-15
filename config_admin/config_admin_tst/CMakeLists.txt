@@ -40,10 +40,6 @@ get_property(example_test_bundle_file TARGET example_test PROPERTY BUNDLE)
 get_property(example_test2_bundle_file TARGET example_test2 PROPERTY BUNDLE)
 
 configure_file(config.properties.in config.properties @ONLY)
-#configure_file(client.properties.in client.properties @ONLY)
-#configure_file(server.properties.in server.properties @ONLY)
-
-#add_dependencies(test_rsa_dfi remote_service_admin_dfi calculator)
 
 
 #ADD_TARGET_FOR_TEST(config_admin_test)

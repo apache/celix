@@ -84,18 +84,15 @@ tst2_service_pt test2Serv = NULL;
         rc = bundleContext_getServiceReference(context, (char *) TST2_SERVICE_NAME, &test2Ref);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
-		rc = bundleContext_getService(context, testRef, (void **)&test2Serv);
+		rc = bundleContext_getService(context, test2Ref, (void **)&test2Serv);
 		CHECK_EQUAL(CELIX_SUCCESS, rc);
+
 	}
 
 	void teardownFw(void) {
         int rc = 0;
 
 		rc = bundleContext_ungetService(context, testRef, NULL);
-        CHECK_EQUAL(CELIX_SUCCESS, rc);
-
-        // check whether this is necessary
-        rc = bundleContext_ungetService(context, testRef, NULL);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
         rc = bundleContext_ungetServiceReference(context, testRef);
@@ -405,4 +402,3 @@ TEST(managed_service, test_managed_service) {
 TEST(managed_service, test_bundles) {
     testBundles();
 }
-

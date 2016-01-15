@@ -49,6 +49,8 @@ celix_status_t configurationAdmin_create(configuration_admin_factory_pt factory,
 										 configuration_admin_service_pt *service){
 
 	*service = calloc(1, sizeof(**service));
+
+
 	if(!*service){
 		printf("[ ERROR ]: ConfigAdmin - Not initialized(ENOMEM) \n");
 		return CELIX_ENOMEM;
@@ -77,8 +79,10 @@ celix_status_t configurationAdmin_create(configuration_admin_factory_pt factory,
 }
 
 celix_status_t configurationAdmin_destroy(configuration_admin_service_pt *service) {
-	free(service);
-	return CELIX_SUCCESS;
+    free((*service)->configAdmin);
+    free(*service);
+
+    return CELIX_SUCCESS;
 }
 /* ========== IMPLEMENTATION ========== */
 

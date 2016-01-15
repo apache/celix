@@ -52,6 +52,7 @@ struct configuration_admin{
 /* METHODS: celix.config_admin.private */
 celix_status_t configurationAdmin_create(configuration_admin_factory_pt factory, configuration_store_pt store, bundle_pt bundle,
 										 configuration_admin_service_pt *service);
+celix_status_t configurationAdmin_destroy(configuration_admin_service_pt *service);
 
 /* METHODS: celix.config_admin.public */
 celix_status_t configurationAdmin_createFactoryConfiguration(configuration_admin_pt configAdmin, char *factoryPid, configuration_pt *configuration);
