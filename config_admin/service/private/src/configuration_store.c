@@ -109,7 +109,7 @@ celix_status_t configurationStore_create(bundle_context_pt context, configuratio
 
 celix_status_t configurationStore_destroy(configuration_store_pt store) {
     celixThreadMutex_destroy(&store->mutex);
-    hashMap_destroy(store->configurations, true, true);
+    hashMap_destroy(store->configurations, false, true);
     free(store);
 
     return CELIX_SUCCESS;
