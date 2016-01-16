@@ -35,7 +35,6 @@
 #include "shell_tui.h"
 #include "utils.h"
 
-typedef struct shellTuiActivator * shell_tui_activator_pt;
 
 static void* shellTui_runnable(void *data) {
     shell_tui_activator_pt act = (shell_tui_activator_pt) data;
