@@ -38,19 +38,24 @@ Is good to known that you should not edit anything between the following comment
 You can setup a new Apache Celix project by executing following steps:
 * Choose a project directory and cd to it
 * Run `celix-bootstrap create_project .`
-* Edit the project.json file and ensure that the celix_install_dir points to the directory where Apache Celix is installed
+* Edit the project.yaml file and ensure that the celix_install_dir points to the directory where Apache Celix is installed
 * Run `celix-bootstrap update .` to generate the needed files
-* (Optional) Update the project.json file and run `celix-bootstrap update .` again to update the generated files
+* (Optional) Update the project.yaml file and run `celix-bootstrap update .` again to update the generated files
 * (Optional) Run `celix-bootstrap update . -e` to update the project source files one more time and remove the code generation parts
 
 You can create a new bundle by executing the following steps:
 * cd to the project directory
 * Run `celix-bootstrap create_bundle mybundle`
-* Edit the `mybundle/bundle.json` file to declare which components you like to create and what services those components depends on and/or provide
+* Edit the `mybundle/bundle.yaml` file to declare which components you like to create and what services those components depends on and/or provide
 * Run `celix-bootstrap update mybundle` to generate the neccesary files
-* Add the bundle to the project CMakeLists.txt file by adding the `add_subdirectory(mybundle)` line
+* Run `celix-bootstrap update .` to include the new bundle into the CMakeLists.txt 
 * Add code to the component and when providing service also add the necesarry code to the bundle activator
 * (Optional) Run `celix-bootstrap update . -e` to update the bundle source files one more time and remove the code generation parts
+
+You can build your whole project with the following step:
+* cd to the project directory
+* Run `celix-bootstrap build buildDirectory` to build and the deploy the code within the buildDirectory
+* In case the build was successful, you'll find several deployed configuration at buildDirectory/deploy
 
 Additional Info
 * You can use the -t argument to use a different set of template (project & bundle) files. The original template files can be found at ${celix-bootstrap_dir}/templates
