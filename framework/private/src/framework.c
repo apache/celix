@@ -2470,11 +2470,12 @@ static celix_status_t framework_loadLibraries(framework_pt framework, char *libr
     char *token = strtok_r(libraries, ",", &last);
     while (token != NULL) {
         void *handle = NULL;
-        char lib[strlen(token)];
+        char lib[128];
+        lib[127] = '\0';
 
         char *path;
         char *pathToken = strtok_r(token, ";", &path);
-        strcpy(lib, pathToken);
+        strncpy(lib, pathToken, 127);
         pathToken = strtok_r(NULL, ";", &path);
 
         while (pathToken != NULL) {

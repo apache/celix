@@ -15,12 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_program(JAR_COMMAND jar) #TODO enable
+find_program(JAR_COMMAND jar)
 
 if(JAR_COMMAND)
     message(STATUS "Using jar to create bundles")
 else()
-    find_program(ZIP_COMMAND zip) #TODO enable
+    find_program(ZIP_COMMAND zip)
     if(ZIP_COMMAND)
         message(STATUS "Using zip to create bundles")
     else()
@@ -452,8 +452,10 @@ function(add_deploy)
     ##### Setting defaults #####
     if(DEPLOY_GROUP) 
         set(DEPLOY_LOCATION "${CMAKE_BINARY_DIR}/deploy/${DEPLOY_GROUP}/${DEPLOY_NAME}")
+        set(DEPLOY_PRINT_NAME "${DEPLOY_GROUP}/${DEPLOY_NAME}")
     else()
         set(DEPLOY_LOCATION "${CMAKE_BINARY_DIR}/deploy/${DEPLOY_NAME}")
+        set(DEPLOY_PRINT_NAME "${DEPLOY_NAME}")
     endif()
     ######
 
@@ -468,7 +470,7 @@ function(add_deploy)
         COMMAND ${CMAKE_COMMAND} -E touch ${DEPLOY_LOCATION}/timestamp
         DEPENDS  "$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_TARGET_DEPS>" "${DEPLOY_LOCATION}/config.properties" "${DEPLOY_LOCATION}/run.sh"
         WORKING_DIRECTORY "${DEPLOY_LOCATION}"
-        COMMENT "Deploying ${DEPLOY_NAME}" VERBATIM
+        COMMENT "Deploying ${DEPLOY_PRINT_NAME}" VERBATIM
     )
 
 
