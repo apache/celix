@@ -55,9 +55,11 @@ if (UTILS)
                 public/include/thpool.h
         )
     
-    IF(UNIX)
+    IF(UNIX AND NOT ANDROID)
         target_link_libraries(celix_utils m pthread)
-    ENDIF(UNIX)
+    ELSEIF(ANDROID)
+        target_link_libraries(celix_utils m)
+    ENDIF()
     
     install(TARGETS celix_utils DESTINATION lib COMPONENT framework)
     FILE(GLOB files "public/include/*.h")

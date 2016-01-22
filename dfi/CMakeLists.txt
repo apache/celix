@@ -28,7 +28,7 @@ include_directories(
 
 set(MEMSTREAM_SOURCES )
 set(MEMSTREAM_INCLUDES )
-if (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin") 
+if (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin" OR ANDROID) 
 	set(MEMSTREAM_SOURCES private/src/memstream/open_memstream.c private/src/memstream/fmemopen.c)
 	set(MEMSTREAM_INCLUDES public/include/memstream/open_memstream.h public/include/memstream/fmemopen.h)
     include_directories(public/include/memstream)
