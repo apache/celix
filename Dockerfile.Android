@@ -5,7 +5,8 @@
 # Celix android builder
 # 
 # Howto:
-# Build docker image -> docker build -t celix-android-builder <path-to-this-dockerfile>
+#
+# Build docker image -> docker build -t celix-android-builder - < Dockerfile.Android
 # Run docker image -> docker run --name builder celix-android-builder
 # Extract filesystem -> docker export builder > fs.tar
 # Extract /build dir from tar -> tar xf fs.tar build/output/celix
