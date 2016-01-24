@@ -1,4 +1,7 @@
 
+sudo: required
+dist: trusty
+
 language: c
 
 os:
@@ -8,6 +11,9 @@ os:
 compiler:
     - gcc
     - clang
+
+services:
+    - docker
 
 
 env:
@@ -25,9 +31,13 @@ matrix:
        - os: linux
          compiler: gcc
          env: SANITIZE=1
+       - os: linux
+         compiler: clang
+         env: ANDROID=1
+
 
 before_install:
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y && sudo apt-get -qq update && sudo apt-get install -y uuid-dev libxml2-dev lcov libffi-dev gcc-4.8 g++-4.8; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ] &&  [ -z "$ANDROID" ]; then sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y && sudo apt-get -qq update && sudo apt-get install -y uuid-dev libxml2-dev lcov libffi-dev gcc-4.8 g++-4.8; fi
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update && brew install lcov libffi && brew link --force libffi; fi
 
 before_script:
@@ -71,10 +81,10 @@ script:
      # RSA_SHM is only working on linux, but both compilers (see CELIX-277)
     - cd build
     - if [ "$CC" = "gcc" ] && [ "$TRAVIS_OS_NAME" = "linux" ]; then export BUILD_OPTS="${BUILD_OPTS} -DENABLE_CODE_COVERAGE=ON"; fi
-    - if [ "$TRAVIS_OS_NAME" = "linux" ]; then cmake ${BUILD_OPTIONS} ${BUILD_OPTIONS_LINUX} -DBUILD_FRAMEWORK_TESTS=ON -DBUILD_UTILS-TESTS=ON -DENABLE_TESTING=ON ${BUILD_OPTS} -DCMAKE_INSTALL_PREFIX=../install ..; fi
+    - if [ "$TRAVIS_OS_NAME" = "linux" ] && [ -z "$ANDROID" ]; then cmake ${BUILD_OPTIONS} ${BUILD_OPTIONS_LINUX} -DBUILD_FRAMEWORK_TESTS=ON -DBUILD_UTILS-TESTS=ON -DENABLE_TESTING=ON ${BUILD_OPTS} -DCMAKE_INSTALL_PREFIX=../install ..; fi
     - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cmake ${BUILD_OPTIONS} ${BUILD_OPTIONS_OSX} -DBUILD_FRAMEWORK_TESTS=ON -DBUILD_UTILS-TESTS=ON -DENABLE_TESTING=ON -DFFI_LIBRARY=/usr/local/opt/libffi/lib/libffi.dylib ${BUILD_OPTS} -DCMAKE_INSTALL_PREFIX=../install ..; fi
-    - make all && make deploy && make install-all
-    - export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH:`pwd`/utils:`pwd`/framework:`pwd`/dfi && make test ARGS="-V" 
+    - if [ -z "$ANDROID" ]; then make all && make deploy && make install-all; else docker build -t celixandroid ..; fi
+    - if [ -z "$ANDROID" ]; then export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH:`pwd`/utils:`pwd`/framework:`pwd`/dfi && make test ARGS="-V"; else docker run celixandroid; fi 
 
 after_success:
     - if [ "$CC" = "gcc" ] && [ "$TRAVIS_OS_NAME" = "linux" ]; then 
