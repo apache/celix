@@ -183,10 +183,9 @@ bool etcd_getNodes(char* directory, char** nodeNames, int* size) {
 		if (js_root != NULL) {
 			js_node = json_object_get(js_root, ETCD_JSON_NODE);
 		}
-		if (js_root != NULL) {
+		if (js_node != NULL) {
 			js_nodes = json_object_get(js_node, ETCD_JSON_NODES);
 		}
-
 
 		if (js_nodes != NULL && json_is_array(js_nodes)) {
 			int i = 0;

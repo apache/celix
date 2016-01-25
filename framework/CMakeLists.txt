@@ -95,6 +95,7 @@ if (FRAMEWORK)
     	
 	    include_directories(${CPPUTEST_INCLUDE_DIR})
 	    include_directories(${CPPUTEST_EXT_INCLUDE_DIR})
+	    include_directories(${PROJECT_SOURCE_DIR}/utils/private/include)
 	    
         add_executable(attribute_test 
             private/test/attribute_test.cpp
@@ -177,7 +178,8 @@ if (FRAMEWORK)
 	    
         add_executable(filter_test 
             private/test/filter_test.cpp
-            private/mock/properties_mock.c
+            private/src/utils.c
+            private/src/properties.c
             private/src/filter.c
             private/src/celix_errorcodes.c
             private/mock/celix_log_mock.c)
@@ -380,15 +382,15 @@ if (FRAMEWORK)
         SETUP_TARGET_FOR_COVERAGE(framework_test framework_test ${CMAKE_BINARY_DIR}/coverage/framework_test/framework_test)
         SETUP_TARGET_FOR_COVERAGE(manifest_parser_test manifest_parser_test ${CMAKE_BINARY_DIR}/coverage/manifest_parser_test/manifest_parser_test)
         SETUP_TARGET_FOR_COVERAGE(manifest_test manifest_test ${CMAKE_BINARY_DIR}/coverage/manifest_test/manifest_test)
-        SETUP_TARGET_FOR_COVERAGE(module_test module_test ${CMAKE_BINARY_DIR}/coverage/module_test/module_test)
+#        SETUP_TARGET_FOR_COVERAGE(module_test module_test ${CMAKE_BINARY_DIR}/coverage/module_test/module_test)
         SETUP_TARGET_FOR_COVERAGE(properties_test properties_test ${CMAKE_BINARY_DIR}/coverage/properties_test/properties_test)
         SETUP_TARGET_FOR_COVERAGE(requirement_test requirement_test ${CMAKE_BINARY_DIR}/coverage/requirement_test/requirement_test)
-        SETUP_TARGET_FOR_COVERAGE(resolver_test resolver_test ${CMAKE_BINARY_DIR}/coverage/resolver_test/resolver_test)
+#        SETUP_TARGET_FOR_COVERAGE(resolver_test resolver_test ${CMAKE_BINARY_DIR}/coverage/resolver_test/resolver_test)
         SETUP_TARGET_FOR_COVERAGE(service_reference_test service_reference_test ${CMAKE_BINARY_DIR}/coverage/service_reference_test/service_reference_test)
         SETUP_TARGET_FOR_COVERAGE(service_registration_test service_registration_test ${CMAKE_BINARY_DIR}/coverage/service_registration_test/service_registration_test)
         SETUP_TARGET_FOR_COVERAGE(service_registry_test service_registry_test ${CMAKE_BINARY_DIR}/coverage/service_registry_test/service_registry_test)
         SETUP_TARGET_FOR_COVERAGE(service_tracker_customizer_test service_tracker_customizer_test ${CMAKE_BINARY_DIR}/coverage/service_tracker_customizer_test/service_tracker_customizer_test)
-        SETUP_TARGET_FOR_COVERAGE(service_tracker_test service_tracker_test ${CMAKE_BINARY_DIR}/coverage/service_tracker_test/service_tracker_test)
+#        SETUP_TARGET_FOR_COVERAGE(service_tracker_test service_tracker_test ${CMAKE_BINARY_DIR}/coverage/service_tracker_test/service_tracker_test)
         SETUP_TARGET_FOR_COVERAGE(utils_test utils_test ${CMAKE_BINARY_DIR}/coverage/utils_test/utils_test)
 		SETUP_TARGET_FOR_COVERAGE(wire_test wire_test ${CMAKE_BINARY_DIR}/coverage/wire_test/wire_test)
 		

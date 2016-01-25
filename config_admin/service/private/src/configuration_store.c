@@ -20,7 +20,7 @@
  * configuration_store.c
  *
  *  \date       Aug 12, 2013
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
@@ -44,10 +44,14 @@
 #include "properties.h"
 #include "utils.h"
 /* celix.config_admin.private*/
+#include "configuration_admin_factory.h"
+#include "configuration.h"
 #include "configuration_impl.h"
 
 #define STORE_DIR "store"
 #define PID_EXT ".pid"
+#define MAX_CONFIG_PROPERTY_LEN		128
+
 
 struct configuration_store {
 
@@ -63,7 +67,7 @@ struct configuration_store {
 };
 
 static celix_status_t configurationStore_createCache(configuration_store_pt store);
-static celix_status_t configurationStore_getConfigurationFile(char *pid, char* storePath, configuration_pt configuration, int *file);
+static celix_status_t configurationStore_getConfigurationFile(char *pid, char* storePath, int *file);
 static celix_status_t configurationStore_writeConfigurationFile(int fd, properties_pt properties);
 static celix_status_t configurationStore_readCache(configuration_store_pt store);
 static celix_status_t configurationStore_readConfigurationFile(const char *name, int size, properties_pt *dictionary);
@@ -100,12 +104,14 @@ celix_status_t configurationStore_create(bundle_context_pt context, configuratio
 
     configurationStore_readCache((*store));
 
-    printf("[ SUCCESS ]: ConfigStore - Initialized \n");
     return CELIX_SUCCESS;
 }
 
 celix_status_t configurationStore_destroy(configuration_store_pt store) {
     celixThreadMutex_destroy(&store->mutex);
+    hashMap_destroy(store->configurations, false, true);
+    free(store);
+
     return CELIX_SUCCESS;
 }
 
@@ -115,19 +121,15 @@ celix_status_t configurationStore_destroy(configuration_store_pt store) {
 // org.eclipse.equinox.internal.cm
 celix_status_t configurationStore_lock(configuration_store_pt store) {
     celixThreadMutex_lock(&store->mutex);
-    printf("[ SUCCESS ]: ConfigStore - LOCK \n");
     return CELIX_SUCCESS;
 }
 
 celix_status_t configurationStore_unlock(configuration_store_pt store) {
     celixThreadMutex_unlock(&store->mutex);
-    printf("[ SUCCESS ]: ConfigStore - UNLOCK \n");
     return CELIX_SUCCESS;
 }
 
 celix_status_t configurationStore_saveConfiguration(configuration_store_pt store, char *pid, configuration_pt configuration) {
-
-    printf("[ DEBUG ]: ConfigStore - saveConfig{PID=%s} \n", pid);
 
     celix_status_t status;
 
@@ -135,7 +137,7 @@ celix_status_t configurationStore_saveConfiguration(configuration_store_pt store
 
     //(2) configurationStore.getFile
     int configFile;
-    status = configurationStore_getConfigurationFile(pid, (char *) STORE_DIR, configuration, &configFile);
+    status = configurationStore_getConfigurationFile(pid, (char *) STORE_DIR, &configFile);
     if (status != CELIX_SUCCESS) {
         return status;
     }
@@ -143,16 +145,16 @@ celix_status_t configurationStore_saveConfiguration(configuration_store_pt store
     //(4) configProperties = config.getAllProperties
 
     properties_pt configProperties = NULL;
-    status = configuration_getAllProperties(configuration, &configProperties);
+    status = configuration_getAllProperties(configuration->handle, &configProperties);
     if (status != CELIX_SUCCESS) {
         printf("[ ERROR ]: ConfigStore - config{PID=%s}.getAllProperties \n", pid);
         return status;
     }
 
-    printf("properties_pt SIZE = %i \n", hashMap_size(configProperties));
 
     //(5) configStore.writeFile(file,properties)
     status = configurationStore_writeConfigurationFile(configFile, configProperties);
+
     if (status != CELIX_SUCCESS) {
         return status;
     }
@@ -180,7 +182,6 @@ celix_status_t configurationStore_getConfiguration(configuration_store_pt store,
         }
 
         hashMap_put(store->configurations, pid, config);
-        printf("[ DEBUG ]: ConfigStore - getConfig(PID=%s) (new one stored) \n", pid);
     }
 
     *configuration = config;
@@ -194,7 +195,6 @@ celix_status_t configurationStore_createFactoryConfiguration(configuration_store
 celix_status_t configurationStore_findConfiguration(configuration_store_pt store, char *pid, configuration_pt *configuration) {
 
     *configuration = hashMap_get(store->configurations, pid);
-    printf("[ DEBUG ]: ConfigStore - findConfig(PID=%s) \n", pid);
     return CELIX_SUCCESS;
 
 }
@@ -218,7 +218,6 @@ celix_status_t configurationStore_createCache(configuration_store_pt store) {
     int result = mkdir((const char*) STORE_DIR, 0777);
 
     if ((result == 0) || ((result == -1) && (errno == EEXIST))) {
-        printf("[ SUCCESS ]: ConfigStore - Cache OK \n");
         return CELIX_SUCCESS;
     }
 
@@ -227,22 +226,18 @@ celix_status_t configurationStore_createCache(configuration_store_pt store) {
 
 }
 
-celix_status_t configurationStore_getConfigurationFile(char *pid, char* storePath, configuration_pt configuration, int *file) {
+celix_status_t configurationStore_getConfigurationFile(char *pid, char* storePath, int *file) {
 
     // (1) The full path to the file
-    char *fname = strdup((const char *) storePath);
-    strcat(fname, strdup("/"));
-    strcat(fname, strdup((const char *) pid));
-    strcat(fname, strdup((const char *) PID_EXT));
+    char fname[PATH_MAX];
+    strcpy(fname, storePath);
+    strcat(fname, "/");
+    strcat(fname, (const char *) pid);
+    strcat(fname, (const char *) PID_EXT);
 
-    printf("[ DEBUG ]: ConfigStore - getFile(%s) \n", fname);
     // (2) configuration.getPool
-#if 0
-    apr_pool_t *fpool;
-    configuration_getPool(configuration, &fpool);
-#endif
     // (3) file.open
-    if ((*file = open((const char*) fname, O_CREAT | O_RDWR)) < 0) {
+    if ((*file = open((const char*) fname, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR)) < 0) {
         printf("[ ERROR ]: ConfigStore - getFile(IO_EXCEPTION) \n");
         return CELIX_FILE_IO_EXCEPTION;
     }
@@ -251,41 +246,31 @@ celix_status_t configurationStore_getConfigurationFile(char *pid, char* storePat
 
 celix_status_t configurationStore_writeConfigurationFile(int file, properties_pt properties) {
 
-    printf("[ DEBUG ]: ConfigStore - write \n");
-
     if (properties == NULL || hashMap_size(properties) <= 0) {
         return CELIX_SUCCESS;
     }
     // size >0
 
-    char *buffer;
-    bool iterator0 = true;
+    char buffer[256];
 
     hash_map_iterator_pt iterator = hashMapIterator_create(properties);
     while (hashMapIterator_hasNext(iterator)) {
 
         hash_map_entry_pt entry = hashMapIterator_nextEntry(iterator);
 
-        char * line = strdup(hashMapEntry_getKey(entry));
-        strcat(line, strdup("="));
-        strcat(line, strdup(hashMapEntry_getValue(entry)));
-        strcat(line, "\n");
+        char* key = hashMapEntry_getKey(entry);
+        char* val = hashMapEntry_getValue(entry);
 
-        if (iterator0) {
-            buffer = line;
-            iterator0 = false;
-        } else {
-            strcat(buffer, strdup(line));
+        snprintf(buffer, 256, "%s=%s", key, val);
+
+        int buffLength = strlen((const char *) buffer);
+
+    	if (write(file, (const void *) buffer, buffLength) != buffLength) {
+            printf("[ ERROR ]: ConfigStore - writing in Cache incomplete \n");
+            return CELIX_FILE_IO_EXCEPTION;
         }
     }
-
-    int buffLength = strlen((const char *) buffer);
-
-    if (write(file, (const void *) buffer, buffLength) != buffLength) {
-        printf("[ ERROR ]: ConfigStore - writing in Cache incomplete \n");
-        return CELIX_FILE_IO_EXCEPTION;
-    }
-
+    hashMapIterator_destroy(iterator);
     return CELIX_SUCCESS;
 
 }
@@ -319,15 +304,18 @@ celix_status_t configurationStore_readCache(configuration_store_pt store) {
     while ((res == 0) && (dp != NULL)) {
 
         if ((strcmp((dp->d_name), ".") != 0) && (strcmp((dp->d_name), "..") != 0) && (strpbrk(dp->d_name, "~") == NULL)) {
-
+	    char storeRoot[512];
+            snprintf(storeRoot, sizeof(storeRoot), "%s/%s", STORE_DIR, dp->d_name);
             // (2.1) file.readData
-            if (stat(dp->d_name, &st) == 0) {
+            if (stat(storeRoot, &st) == 0) {
                 status = configurationStore_readConfigurationFile(dp->d_name, st.st_size, &properties);
                 if (status != CELIX_SUCCESS) {
                     closedir(cache);
                     return status;
                 }
             }
+            else
+                perror("stat");
             // (2.2) new configuration
             status = configuration_create2(store->configurationAdminFactory, store, properties, &configuration);
             if (status != CELIX_SUCCESS) {
@@ -336,7 +324,7 @@ celix_status_t configurationStore_readCache(configuration_store_pt store) {
             }
 
             // (2.3) configurations.put
-            configuration_getPid(configuration, &pid);
+            configuration_getPid(configuration->handle, &pid);
             hashMap_put(store->configurations, pid, configuration);
         }
         res = readdir_r(cache, (struct dirent*) &u, &dp);
@@ -349,7 +337,7 @@ celix_status_t configurationStore_readCache(configuration_store_pt store) {
 
 celix_status_t configurationStore_readConfigurationFile(const char *name, int size, properties_pt *dictionary) {
 
-    char *fname;		// file name
+    char fname[256];		// file name
     char *buffer;		// file buffer
     int fd;
     celix_status_t status = CELIX_SUCCESS;
@@ -357,9 +345,7 @@ celix_status_t configurationStore_readConfigurationFile(const char *name, int si
     properties_pt properties = NULL;
 
     // (1) The full path to the file
-    fname = strdup((const char *) STORE_DIR);
-    strcat(fname, strdup("/"));
-    strcat(fname, strdup(name));
+    snprintf(fname, 256, "%s/%s", STORE_DIR, name);
 
     // (2) pool.new
 
@@ -371,7 +357,7 @@ celix_status_t configurationStore_readConfigurationFile(const char *name, int si
     }
 
     // (4) buffer.new
-    buffer = calloc(1, size);
+    buffer = calloc(1, size+1);
     if (!buffer) {
         close(fd);
         return CELIX_ENOMEM;
@@ -398,26 +384,28 @@ celix_status_t configurationStore_parseDataConfigurationFile(char *data, propert
 
     properties_pt properties = properties_create();
 
+
     char *token;
     char *key;
     char *value;
+    char *saveptr;
 
     bool isKey = true;
-    token = strtok(data, "=");
+    token = strtok_r(data, "=", &saveptr);
 
     while (token != NULL) {
 
         if (isKey) {
             key = strdup(token);
             isKey = false;
+
         } else { // isValue
             value = strdup(token);
             properties_set(properties, key, value);
             isKey = true;
         }
 
-        token = strtok(NULL, "=\n");
-
+        token = strtok_r(NULL, "=\n", &saveptr);
     }
 
     if (hashMap_isEmpty(properties)) {

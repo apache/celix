@@ -237,10 +237,10 @@ celix_status_t bundleActivator_start(void *_ptr, bundle_context_pt context_ptr) 
 }
 
 celix_status_t bundleActivator_stop(void *_ptr, bundle_context_pt context_ptr) {
-	celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status = CELIX_SUCCESS;
     celix_status_t sub_status;
 
-	bundle_instance_pt instance_ptr = (bundle_instance_pt) _ptr;
+    bundle_instance_pt instance_ptr = (bundle_instance_pt) _ptr;
 
     if (instance_ptr) {
         for (unsigned int i = 0; instance_ptr->std_commands[i].exec != NULL; i++) {
@@ -250,32 +250,36 @@ celix_status_t bundleActivator_stop(void *_ptr, bundle_context_pt context_ptr) {
                 instance_ptr->std_commands[i].props = NULL;
             }
         }
+
+        sub_status = bundleContext_removeServiceListener(context_ptr, instance_ptr->listener);
+        if (status == CELIX_SUCCESS && sub_status != CELIX_SUCCESS) {
+            status = sub_status;
+        }
+    } else {
+        status = CELIX_ILLEGAL_ARGUMENT;
     }
 
-	sub_status = bundleContext_removeServiceListener(context_ptr, instance_ptr->listener);
-    if (status == CELIX_SUCCESS && sub_status != CELIX_SUCCESS) {
-        status = sub_status;
-    }
-
-	return status;
+    return status;
 }
 
 celix_status_t bundleActivator_destroy(void *_ptr, bundle_context_pt __attribute__((__unused__)) context_ptr) {
+    celix_status_t status = CELIX_SUCCESS;
+
     bundle_instance_pt instance_ptr = (bundle_instance_pt) _ptr;
 
     if (instance_ptr) {
         for (unsigned int i = 0; instance_ptr->std_commands[i].exec != NULL; i++) {
             free(instance_ptr->std_commands[i].service);
         }
+
+        serviceRegistration_unregister(instance_ptr->registration);
+        shell_destroy(&instance_ptr->shellService);
+
+        free(instance_ptr->listener);
+        free(instance_ptr);
+    } else {
+        status = CELIX_ILLEGAL_ARGUMENT;
     }
 
-    serviceRegistration_unregister(instance_ptr->registration);
-
-    shell_destroy(&instance_ptr->shellService);
-
-    free(instance_ptr->listener);
-
-    free(instance_ptr);
-
-	return CELIX_SUCCESS;
+    return status;
 }

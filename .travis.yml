@@ -1,33 +1,46 @@
+
+sudo: required
+dist: trusty
+
 language: c
+
+os:
+    - linux
+    - osx
+
+compiler:
+    - gcc
+    - clang
+
+services:
+    - docker
+
+
+env:
+    global:
+        - COVERITY_SCAN_BUILD_COMMAND="make"
+        - COVERITY_SCAN_PROJECT_NAME="Apache Celix"
+        - COVERITY_SCAN_NOTIFICATION_EMAIL="bpetri@apache.org"
+        - COVERITY_SCAN_BRANCH_PATTERN="develop"
+        - COVERITY_SCAN_TOKEN="iomLSuaE8KOZLDog-KK7Ug"
+        - COVERITY_SCAN_BUILD_URL="https://scan.coverity.com/scripts/travisci_build_coverity_scan.sh"
+        - COVERITY_SCAN_BUILD="curl -s $COVERITY_SCAN_BUILD_URL | sed 's/https:\/\/scan.coverity.com\/builds/https:\/\/scan.coverity.com\/builds?project=Apache+Celix/g' | bash"
 
 matrix:
     include:
-        - os: linux
-          dist: trusty
-          compiler: gcc
-          env: BUILD_SYSTEM=ninja
-        - os: linux
-          dist: trusty
-          compiler: clang
-          env: BUILD_SYSTEM=ninja
-        - os: osx
-          compiler: gcc
-          env: BUILD_SYSTEM=make
-        - os: osx
-          compiler: clang
-          env: BUILD_SYSTEM=make
+       - os: linux
+         compiler: gcc
+         env: SANITIZE=1
+       - os: linux
+         compiler: clang
+         env: ANDROID=1
 
-allow_failures:
-    - os: osx
 
 before_install:
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then sudo apt-get -qq update && sudo apt-get install -y uuid-dev libxml2-dev lcov libffi-dev ninja-build; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew uninstall cmake; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update && brew install lcov libffi cmake ninja && brew link --force libffi; fi
+  - if [ "$TRAVIS_OS_NAME" = "linux" ] &&  [ -z "$ANDROID" ]; then sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y && sudo apt-get -qq update && sudo apt-get install -y uuid-dev libxml2-dev lcov libffi-dev gcc-4.8 g++-4.8; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update && brew install lcov libffi && brew link --force libffi; fi
 
 before_script:
-    - cmake -version
-    - ninja --version
     - wget https://github.com/cpputest/cpputest.github.io/blob/master/releases/cpputest-3.7.1.tar.gz?raw=true -O /tmp/cpputest.tar.gz
     - tar -xzvf /tmp/cpputest.tar.gz -C /tmp
     - if [ "$CC" = "clang" ]; then export CXX="clang++"; fi && cd /tmp/cpputest-3.7.1 && ./configure --prefix=/usr && make && sudo make install && cd -
@@ -38,27 +51,46 @@ before_script:
     - sudo make install
     - cd -
     - mkdir build install
-    - if [ "${BUILD_SYSTEM}" = "make"  ]; then export BUILD_CMD=make;    export BUILD_GEN=""; fi
-    - if [ "${BUILD_SYSTEM}" = "ninja" ]; then export BUILD_CMD=ninja;   export BUILD_GEN="-G Ninja"; fi
-
+    - export BUILD_OPTIONS=" \
+        -DBUILD_CONFIG_ADMIN=OFF \
+        -DBUILD_RSA_REMOTE_SERVICE_ADMIN_DFI=ON \
+        -DBUILD_DEPLOYMENT_ADMIN=ON \
+        -DBUILD_DEPENDENCY_MANAGER=ON \
+        -DBUILD_EXAMPLES=ON -DBUILD_LOG_SERVICE=ON \
+        -DBUILD_LOG_WRITER=ON \
+        -DBUILD_REMOTE_SERVICE_ADMIN=ON \
+        -DBUILD_RSA_DISCOVERY_CONFIGURED=ON \
+        -DBUILD_RSA_DISCOVERY_ETCD=ON \
+        -DBUILD_RSA_EXAMPLES=ON \
+        -DBUILD_RSA_REMOTE_SERVICE_ADMIN_HTTP=ON \
+        -DBUILD_REMOTE_SHELL=ON \
+        -DBUILD_SHELL=ON \
+        -DBUILD_SHELL_TUI=ON -DBUILD_DEVICE_ACCESS=ON \
+        -DBUILD_DEVICE_ACCESS_EXAMPLE=ON "
+    - export BUILD_OPTIONS_LINUX=" \
+        -DBUILD_RSA_REMOTE_SERVICE_ADMIN_SHM=ON \
+        -DBUILD_RSA_DISCOVERY_SHM=ON "
+    - export BUILD_OPTIONS_OSX=" \
+        -DBUILD_RSA_REMOTE_SERVICE_ADMIN_SHM=OFF \
+        -DBUILD_RSA_DISCOVERY_SHM=OFF "
 
 script:
+    - if [ "$SANITIZE" == 1 ]; then export CC=/usr/bin/gcc-4.8 CXX=/usr/bin/g++-4.8 CFLAGS="-lasan -fsanitize=address"  CXXFLAGS="-lasan -fsanitize=address" ASAN_OPTIONS="symbolize=1" ASAN_SYMBOLIZER_PATH="/usr/local/clang-3.4/bin/llvm-symbolizer"; fi
      # the following setup is broken:
      # RSA_DISCOVERY_SHM is only working on linux, but both compilers (see CELIX-277)
      # RSA_SHM is only working on linux, but both compilers (see CELIX-277)
     - cd build
     - if [ "$CC" = "gcc" ] && [ "$TRAVIS_OS_NAME" = "linux" ]; then export BUILD_OPTS="${BUILD_OPTS} -DENABLE_CODE_COVERAGE=ON"; fi
-    - if [ "$TRAVIS_OS_NAME" = "linux" ]; then cmake ${BUILD_GEN} -DBUILD_CONFIG_ADMIN=ON -DBUILD_RSA_REMOTE_SERVICE_ADMIN_DFI=ON -DBUILD_DEPLOYMENT_ADMIN=ON -DBUILD_DEPENDENCY_MANAGER=ON -DBUILD_EXAMPLES=ON -DBUILD_LOG_SERVICE=ON -DBUILD_LOG_WRITER=ON -DBUILD_REMOTE_SERVICE_ADMIN=ON -DBUILD_RSA_DISCOVERY_CONFIGURED=ON -DBUILD_RSA_DISCOVERY_ETCD=ON -DBUILD_RSA_DISCOVERY_SHM=ON -DBUILD_RSA_EXAMPLES=ON -DBUILD_RSA_REMOTE_SERVICE_ADMIN_SHM=ON -DBUILD_RSA_REMOTE_SERVICE_ADMIN_HTTP=ON -DBUILD_REMOTE_SHELL=ON -DBUILD_SHELL=ON -DBUILD_SHELL_TUI=ON -DBUILD_DEVICE_ACCESS=ON -DBUILD_DEVICE_ACCESS_EXAMPLE=ON -DBUILD_FRAMEWORK_TESTS=ON -DBUILD_UTILS-TESTS=ON -DENABLE_TESTING=ON ${BUILD_OPTS} -DCMAKE_INSTALL_PREFIX=../install ..; fi
-    - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cmake ${BUILD_GEN} -DBUILD_CONFIG_ADMIN=ON -DBUILD_RSA_REMOTE_SERVICE_ADMIN_DFI=ON -DBUILD_DEPLOYMENT_ADMIN=ON -DBUILD_DEPENDENCY_MANAGER=ON -DBUILD_EXAMPLES=ON -DBUILD_LOG_SERVICE=ON -DBUILD_LOG_WRITER=ON -DBUILD_REMOTE_SERVICE_ADMIN=ON -DBUILD_RSA_DISCOVERY_CONFIGURED=ON -DBUILD_RSA_DISCOVERY_ETCD=ON -DBUILD_RSA_DISCOVERY_SHM=OFF -DBUILD_RSA_EXAMPLES=ON -DBUILD_RSA_REMOTE_SERVICE_ADMIN_SHM=OFF -DBUILD_RSA_REMOTE_SERVICE_ADMIN_HTTP=ON -DBUILD_REMOTE_SHELL=ON -DBUILD_SHELL=ON -DBUILD_SHELL_TUI=ON -DBUILD_DEVICE_ACCESS=ON -DBUILD_DEVICE_ACCESS_EXAMPLE=ON -DBUILD_FRAMEWORK_TESTS=ON -DBUILD_UTILS-TESTS=ON -DENABLE_TESTING=ON -DFFI_LIBRARY=/usr/local/opt/libffi/lib/libffi.dylib ${BUILD_OPTS} -DCMAKE_INSTALL_PREFIX=../install ..; fi
-    - ${BUILD_CMD} all && ${BUILD_CMD} install
-    - if [ "${BUILD_SYSTEM}" = "make" ] ; then export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH:`pwd`/utils:`pwd`/framework:`pwd`/dfi && make test ARGS="-V"; fi
-    - if [ "${BUILD_SYSTEM}" = "ninja" ] ; then export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH:`pwd`/utils:`pwd`/framework:`pwd`/dfi && ninja test; fi
-
+    - if [ "$TRAVIS_OS_NAME" = "linux" ] && [ -z "$ANDROID" ]; then cmake ${BUILD_OPTIONS} ${BUILD_OPTIONS_LINUX} -DBUILD_FRAMEWORK_TESTS=ON -DBUILD_UTILS-TESTS=ON -DENABLE_TESTING=ON ${BUILD_OPTS} -DCMAKE_INSTALL_PREFIX=../install ..; fi
+    - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cmake ${BUILD_OPTIONS} ${BUILD_OPTIONS_OSX} -DBUILD_FRAMEWORK_TESTS=ON -DBUILD_UTILS-TESTS=ON -DENABLE_TESTING=ON -DFFI_LIBRARY=/usr/local/opt/libffi/lib/libffi.dylib ${BUILD_OPTS} -DCMAKE_INSTALL_PREFIX=../install ..; fi
+    - if [ -z "$ANDROID" ]; then make all && make deploy && make install-all; else cd .. && docker build -t celixandroid - < Dockerfile.Android ; fi
+    - if [ -z "$ANDROID" ]; then export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH:`pwd`/utils:`pwd`/framework:`pwd`/dfi && make test ARGS="-V"; else docker run celixandroid; fi 
 
 after_success:
     - if [ "$CC" = "gcc" ] && [ "$TRAVIS_OS_NAME" = "linux" ]; then 
         cd ${TRAVIS_BUILD_DIR}/build;
         gem install coveralls-lcov &&
-        ${BUILD_CMD} coverage &&
+        make coverage &&
         lcx="lcov --output-file=coverage.info " && for i in `find . -name "*.info.cleaned"`; do lcx+=" --add-tracefile=$i"; done && $lcx && coveralls-lcov --repo-token=9dpeTAjiGoQU5hgXFe0ezk65iu40oc3WY coverage.info;
+        if [ $(( $TRAVIS_BUILD_NUMBER  % 5 )) -eq 0 ]; then make clean & eval "$COVERITY_SCAN_BUILD"; fi
       fi;

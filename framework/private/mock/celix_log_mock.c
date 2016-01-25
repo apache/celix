@@ -25,17 +25,71 @@
  */
 #include "CppUTestExt/MockSupport_c.h"
 
+#include <stdarg.h>
+
+#include "celix_errno.h"
 #include "celix_log.h"
+
+static void test_logger_log(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line, char *fmsg, ...);
+static void test_logger_print(framework_log_level_t level, const char *func, const char *file, int line, char *msg);
 
 void framework_log(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line, char *fmsg, ...) {
 	mock_c()->actualCall("framework_log");
+
+    test_logger_log(logger, level, func, file, line, "%s", fmsg);
 }
 
 void framework_logCode(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line, celix_status_t code, char *fmsg, ...) {
 	mock_c()->actualCall("framework_logCode")->withIntParameters("code", code);
+    char message[256];
+    celix_strerror(code, message, 256);
+    char msg[512];
+    va_list listPointer;
+    va_start(listPointer, fmsg);
+    vsprintf(msg, fmsg, listPointer);
+
+    test_logger_log(logger, level, func, file, line, "%s [%d]: %s", message, code, msg);
 }
 
 celix_status_t frameworkLogger_log(framework_log_level_t level, const char *func, const char *file, int line, char *msg) {
 	mock_c()->actualCall("frameworkLogger_log");
+
+	test_logger_print(level, func, file, line, msg);
+
 	return mock_c()->returnValue().value.intValue;
+}
+
+//test logger functions, let you read the logged errors
+static void test_logger_log(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line, char *fmsg, ...) {
+    char msg[512];
+    va_list listPointer;
+    va_start(listPointer, fmsg);
+    vsprintf(msg, fmsg, listPointer);
+
+    test_logger_print(level, func, file, line, msg);
+}
+
+static void test_logger_print(framework_log_level_t level, const char *func, const char *file, int line, char *msg) {
+    char *levelStr = NULL;
+    switch (level) {
+        case OSGI_FRAMEWORK_LOG_ERROR:
+            levelStr = "ERROR";
+            break;
+        case OSGI_FRAMEWORK_LOG_WARNING:
+            levelStr = "WARNING";
+            break;
+        case OSGI_FRAMEWORK_LOG_INFO:
+            levelStr = "INFO";
+            break;
+        case OSGI_FRAMEWORK_LOG_DEBUG:
+        default:
+            levelStr = "DEBUG";
+            break;
+    }
+
+    if (level == OSGI_FRAMEWORK_LOG_ERROR) {
+        printf("Code says: %s: %s\n\tat %s(%s:%d)\n", levelStr, msg, func, file, line);
+    } else {
+        printf("Code says: %s: %s\n", levelStr, msg);
+    }
 }

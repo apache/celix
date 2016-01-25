@@ -16,6 +16,16 @@
 # under the License.
 
 
-add_subdirectory(example_test)	
-add_subdirectory(example_test2)
-	
+include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
+include_directories("${PROJECT_SOURCE_DIR}/config_admin/service/public/include")
+include_directories("private/include")
+
+add_bundle(example_test
+    VERSION 0.1.0
+    SOURCES
+	private/src/activator
+	private/src/example_managed_service_impl
+)
+
+target_link_libraries(example_test celix_framework celix_utils config_admin)

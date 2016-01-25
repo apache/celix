@@ -20,7 +20,7 @@
  * managed_service_tracker.c
  *
  *  \date       Aug 12, 2013
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
@@ -55,39 +55,39 @@ struct managed_service_tracker {
 
     configuration_admin_factory_pt configurationAdminfactory;
     configuration_store_pt configurationStore;
-    updated_thread_pool_t updatedThreadPool; // according to org.equinox is our "SerializableTaskQueue"
+    updated_thread_pool_pt updatedThreadPool; // according to org.equinox is our "SerializableTaskQueue"
 
     hash_map_pt managedServices;
     hash_map_pt managedServicesReferences;
     celix_thread_mutex_t managedServicesReferencesMutex;
 };
 
-static celix_status_t managedServiceTracker_createHandle(bundle_context_pt context, configuration_admin_factory_pt factory, configuration_store_pt store, managed_service_tracker_t *tracker);
-static celix_status_t managedServiceTracker_createCustomized(bundle_context_pt context, managed_service_tracker_t trackerHandle, service_tracker_pt *tracker);
+static celix_status_t managedServiceTracker_createHandle(bundle_context_pt context, configuration_admin_factory_pt factory, configuration_store_pt store, managed_service_tracker_pt *tracker);
+static celix_status_t managedServiceTracker_createCustomized(bundle_context_pt context, managed_service_tracker_pt trackerHandle, service_tracker_pt *tracker);
 
-static celix_status_t managedServiceTracker_add(managed_service_tracker_t tracker, service_reference_pt reference, char * pid, managed_service_service_pt service);
-//static celix_status_t managedServiceTracker_remove(managed_service_tracker_t tracker, service_reference_pt reference, char * pid);
-static celix_status_t managedServiceTracker_trackManagedService(managed_service_tracker_t tracker, char *pid, service_reference_pt reference, managed_service_service_pt service);
-//static celix_status_t managedServiceTracker_untrackManagedService(managed_service_tracker_t tracker, char *pid, service_reference_pt reference);
-static celix_status_t managedServiceTracker_getManagedService(managed_service_tracker_t tracker, char *pid, managed_service_service_pt *service);
-static celix_status_t managedServiceTracker_getManagedServiceReference(managed_service_tracker_t tracker, char *pid, service_reference_pt *reference);
+static celix_status_t managedServiceTracker_add(managed_service_tracker_pt tracker, service_reference_pt reference, char * pid, managed_service_service_pt service);
+static celix_status_t managedServiceTracker_remove(managed_service_tracker_pt tracker, service_reference_pt reference, char * pid);
+static celix_status_t managedServiceTracker_trackManagedService(managed_service_tracker_pt tracker, char *pid, service_reference_pt reference, managed_service_service_pt service);
+static celix_status_t managedServiceTracker_untrackManagedService(managed_service_tracker_pt tracker, char *pid, service_reference_pt reference);
+static celix_status_t managedServiceTracker_getManagedService(managed_service_tracker_pt tracker, char *pid, managed_service_service_pt *service);
+static celix_status_t managedServiceTracker_getManagedServiceReference(managed_service_tracker_pt tracker, char *pid, service_reference_pt *reference);
 //static celix_status_t managedServiceTracker_getPidForManagedService(managed_service_service_pt *service, char **pid);
-static celix_status_t managedServiceTracker_asynchUpdated(managed_service_tracker_t trackerHandle, managed_service_service_pt service, properties_pt properties);
+celix_status_t managedServiceTracker_asynchUpdated(managed_service_tracker_pt trackerHandle, managed_service_service_pt service, properties_pt properties);
 
-static celix_status_t managedServiceTracker_getBundleContext(managed_service_tracker_t trackerHandle, bundle_context_pt *context);
+static celix_status_t managedServiceTracker_getBundleContext(managed_service_tracker_pt trackerHandle, bundle_context_pt *context);
 
-static celix_status_t managedServiceTracker_lockManagedServicesReferences(managed_service_tracker_t handle);
-static celix_status_t managedServiceTracker_unlockManagedServicesReferences(managed_service_tracker_t handle);
+static celix_status_t managedServiceTracker_lockManagedServicesReferences(managed_service_tracker_pt handle);
+static celix_status_t managedServiceTracker_unlockManagedServicesReferences(managed_service_tracker_pt handle);
 
 /* ========== CONSTRUCTOR ========== */
 
 /* ---------- public ---------- */
 
-celix_status_t managedServiceTracker_create(bundle_context_pt context, configuration_admin_factory_pt factory, configuration_store_pt store, managed_service_tracker_t *trackerHandle, service_tracker_pt *tracker) {
+celix_status_t managedServiceTracker_create(bundle_context_pt context, configuration_admin_factory_pt factory, configuration_store_pt store, managed_service_tracker_pt *trackerHandle, service_tracker_pt *tracker) {
 
     celix_status_t status;
 
-    managed_service_tracker_t managedServiceTrackerHandle;
+    managed_service_tracker_pt managedServiceTrackerHandle;
     service_tracker_pt managedServiceTrackerCustomized;
 
     status = managedServiceTracker_createHandle(context, factory, store, &managedServiceTrackerHandle);
@@ -113,12 +113,12 @@ celix_status_t managedServiceTracker_create(bundle_context_pt context, configura
 
 /* ---------- private ---------- */
 
-celix_status_t managedServiceTracker_createHandle(bundle_context_pt context, configuration_admin_factory_pt factory, configuration_store_pt store, managed_service_tracker_t *tracker) {
+celix_status_t managedServiceTracker_createHandle(bundle_context_pt context, configuration_admin_factory_pt factory, configuration_store_pt store, managed_service_tracker_pt *tracker) {
 
     celix_status_t status;
 
-    updated_thread_pool_t updatedThreadPool = NULL;
-    managed_service_tracker_t this = calloc(1, sizeof(*this));
+    updated_thread_pool_pt updatedThreadPool = NULL;
+    managed_service_tracker_pt this = calloc(1, sizeof(*this));
 
     if (!this) {
         printf("[ ERROR ]: TrackerInstance - Not initialized (ENOMEM) \n");
@@ -152,7 +152,7 @@ celix_status_t managedServiceTracker_createHandle(bundle_context_pt context, con
 
 }
 
-celix_status_t managedServiceTracker_createCustomized(bundle_context_pt context, managed_service_tracker_t trackerHandle, service_tracker_pt *tracker) {
+celix_status_t managedServiceTracker_createCustomized(bundle_context_pt context, managed_service_tracker_pt trackerHandle, service_tracker_pt *tracker) {
     celix_status_t status;
 
     service_tracker_customizer_pt customizer = NULL;
@@ -178,13 +178,27 @@ celix_status_t managedServiceTracker_createCustomized(bundle_context_pt context,
     return CELIX_SUCCESS;
 }
 
+celix_status_t managedServiceTracker_destroy(bundle_context_pt context, managed_service_tracker_pt mgServTr, service_tracker_pt tracker) {
+	updatedThreadPool_destroy(mgServTr->updatedThreadPool);
+	celixThreadMutex_destroy(&mgServTr->managedServicesReferencesMutex);
+	serviceTracker_destroy(tracker);
+
+	hashMap_destroy(mgServTr->managedServices, true, true);
+	hashMap_destroy(mgServTr->managedServicesReferences, true, true);
+
+    free(mgServTr);
+
+	return CELIX_SUCCESS;
+}
+
+
+
 /* ========== IMPLEMENTS CUSTOMIZED TRACKER ========== */
 
 /* ---------- public ---------- */
 
 celix_status_t managedServiceTracker_addingService(void * handle, service_reference_pt reference, void **service) {
 
-    printf("[ DEBUG ]: Tracker - Adding Service \n");
 
     celix_status_t status;
 
@@ -192,12 +206,12 @@ celix_status_t managedServiceTracker_addingService(void * handle, service_refere
 
     bundle_context_pt context = NULL;
 
-    managed_service_tracker_t managedServiceTracker_i = handle;	//instance
+    managed_service_tracker_pt managedServiceTracker_i = handle;	//instance
     managed_service_service_pt managedService_s = NULL;			//service
 
     // (1) reference.getPid
 
-    status = serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_ID, &pid);
+    status = serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_PID, &pid);
     if (status != CELIX_SUCCESS || pid == NULL) {
         *service = NULL;
         printf(" [ ERROR ]: Tracker - PID is NULL \n");
@@ -227,7 +241,7 @@ celix_status_t managedServiceTracker_addingService(void * handle, service_refere
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
-    /* DEBUG CODE */
+    /* DEBUG CODE *
 
     service_registration_pt registration = NULL;
     serviceReference_getServiceRegistration(reference, &registration);
@@ -236,13 +250,15 @@ celix_status_t managedServiceTracker_addingService(void * handle, service_refere
 
     printf("[ DEBUG ]: Tracker - AddingService ( SUCCESS BundleCtxt - getService{Name=%s,PID=%s}  ) \n", serviceName, pid);
 
-    /* ENF OF DEBUG CODE */
+    * ENF OF DEBUG CODE */
 
     // (3) trackerInstance.AddManagedServiceToLocalList
     configurationStore_lock(managedServiceTracker_i->configurationStore);
 
     status = managedServiceTracker_add(managedServiceTracker_i, reference, pid, managedService_s);
-
+    if (status != CELIX_SUCCESS) {
+        bundleContext_ungetService(context, reference, NULL);
+    }
     configurationStore_unlock(managedServiceTracker_i->configurationStore);
 
     if (status != CELIX_SUCCESS) {
@@ -264,14 +280,28 @@ celix_status_t managedServiceTracker_modifiedService(void * handle, service_refe
 }
 
 celix_status_t managedServiceTracker_removedService(void * handle, service_reference_pt reference, void * service) {
-    return CELIX_SUCCESS;
+    celix_status_t status = CELIX_SUCCESS;
+    char *pid;
+    managed_service_tracker_pt managedServiceTracker_i = handle;	//instance
+    bundle_context_pt context;
+
+
+    status = serviceReference_getProperty(reference, (char *)OSGI_FRAMEWORK_SERVICE_PID, &pid);
+    if (status != CELIX_SUCCESS || pid == NULL){
+	return CELIX_ILLEGAL_ARGUMENT;
+    }
+    if ( managedServiceTracker_getBundleContext(managedServiceTracker_i, &context) != CELIX_SUCCESS ){
+	return CELIX_ILLEGAL_ARGUMENT;
+    }
+    status = managedServiceTracker_remove(managedServiceTracker_i, reference, pid);
+
+    return status;
+
 }
 
 /* ---------- private ---------- */
 // org.eclipse.equinox.internal.cm.ManagedServiceTracker
-celix_status_t managedServiceTracker_add(managed_service_tracker_t tracker, service_reference_pt reference, char *pid, managed_service_service_pt service) {
-
-    printf("[ DEBUG ]: Tracker - Add (Service{PID=%s}) \n", pid);
+celix_status_t managedServiceTracker_add(managed_service_tracker_pt tracker, service_reference_pt reference, char *pid, managed_service_service_pt service) {
 
     celix_status_t status;
 
@@ -304,7 +334,7 @@ celix_status_t managedServiceTracker_add(managed_service_tracker_t tracker, serv
 
             // (2) bind the Configuration with the ManagedService
             bool dummy;
-            if ((configuration_bind(configuration, bundle, &dummy) != CELIX_SUCCESS)) {
+            if ((configuration_bind(configuration->handle, bundle, &dummy) != CELIX_SUCCESS)) {
                 return CELIX_ILLEGAL_ARGUMENT;
             }
 
@@ -315,11 +345,8 @@ celix_status_t managedServiceTracker_add(managed_service_tracker_t tracker, serv
 
             // End of new code
 
-            printf("[ SUCCESS ]: Tracker - Add (Service{PID=%s} tracked) \n", pid);
-
             // TODO: It must be considered in case of fail if untrack the ManagedService
 
-            printf("[ DEBUG ]: Tracker - Add (Service{PID=%s} AsynchUpdated - NULL props) \n", pid);
             return managedServiceTracker_asynchUpdated(tracker, service, NULL);
 
         } else {
@@ -328,13 +355,12 @@ celix_status_t managedServiceTracker_add(managed_service_tracker_t tracker, serv
 
     } else {
 
-        printf("[ DEBUG ]: Tracker - Add (Service{PID=%s} - LOCK Config) \n", pid);
-        configuration_lock(configuration);
+        configuration_lock(configuration->handle);
 
         if (managedServiceTracker_trackManagedService(tracker, pid, reference, service) == CELIX_SUCCESS) {
 
             if (serviceReference_getBundle(reference, &bundle) != CELIX_SUCCESS) {
-                configuration_unlock(configuration);
+                configuration_unlock(configuration->handle);
                 printf("[ERROR ]: Tracker - Add (Service{PID=%s} Reference - getBundle NULL)", pid);
                 return CELIX_ILLEGAL_ARGUMENT;
             }
@@ -342,45 +368,41 @@ celix_status_t managedServiceTracker_add(managed_service_tracker_t tracker, serv
             // TODO configuration.isDeleted ? - with only using one calling bundle OK
 
             bool isBind;
-            if ((configuration_bind(configuration, bundle, &isBind) == CELIX_SUCCESS) && (isBind == true)) { // config.bind(bundle)
+            if ((configuration_bind(configuration->handle, bundle, &isBind) == CELIX_SUCCESS) && (isBind == true)) { // config.bind(bundle)
 
-                if (configuration_getProperties(configuration, &properties) != CELIX_SUCCESS) {
-                    configuration_unlock(configuration);
+                if (configuration_getProperties(configuration->handle, &properties) != CELIX_SUCCESS) {
+                    configuration_unlock(configuration->handle);
                     return CELIX_ILLEGAL_ARGUMENT;
                 }
 
                 if (configurationAdminFactory_modifyConfiguration(tracker->configurationAdminfactory, reference, properties) != CELIX_SUCCESS) {
-                    configuration_unlock(configuration);
+                    configuration_unlock(configuration->handle);
                     return CELIX_ILLEGAL_ARGUMENT;
                 }
-                printf("[ DEBUG ]: Tracker - Add Service{PID=%s} (AsynchUpdated - existing Configuration) \n", pid);
 
                 status = managedServiceTracker_asynchUpdated(tracker, service, properties);
-                printf("[ DEBUG ]: Tracker - Add Service{PID=%s} (UNLOCK Config) \n", pid);
 
-                configuration_unlock(configuration);
+                configuration_unlock(configuration->handle);
 
                 return status;
 
             } else {
-                printf("[ WARNING ]: Tracker - Add Service{PID=%s} ( Configuration for Service could not be bound ) $s \n", pid);
-                configuration_unlock(configuration);
+                configuration_unlock(configuration->handle);
                 return CELIX_ILLEGAL_STATE;
             }
 
         } else {
-            configuration_unlock(configuration);
+            configuration_unlock(configuration->handle);
             return CELIX_ILLEGAL_ARGUMENT; // the service was already tracked
         }
     }
 }
 
-/* TODO
- celix_status_t managedServiceTracker_remove(managed_service_tracker_t tracker, service_reference_pt reference, char * pid){
- return CELIX_SUCCESS;
- }
- */
-celix_status_t managedServiceTracker_trackManagedService(managed_service_tracker_t tracker, char *pid, service_reference_pt reference, managed_service_service_pt service) {
+celix_status_t managedServiceTracker_remove(managed_service_tracker_pt tracker, service_reference_pt reference, char * pid){
+	return managedServiceTracker_untrackManagedService(tracker, pid, reference);
+}
+
+celix_status_t managedServiceTracker_trackManagedService(managed_service_tracker_pt tracker, char *pid, service_reference_pt reference, managed_service_service_pt service) {
 
     managedServiceTracker_lockManagedServicesReferences(tracker);
 
@@ -398,13 +420,19 @@ celix_status_t managedServiceTracker_trackManagedService(managed_service_tracker
     return CELIX_SUCCESS;
 }
 
-/* TODO
- celix_status_t managedServiceTracker_untrackManagedService(managed_service_tracker_t tracker, char *pid, service_reference_pt reference){
- return CELIX_SUCCESS;
- }
- */
+celix_status_t managedServiceTracker_untrackManagedService(managed_service_tracker_pt tracker, char *pid, service_reference_pt reference){
+    managedServiceTracker_lockManagedServicesReferences(tracker);
 
-celix_status_t managedServiceTracker_getManagedService(managed_service_tracker_t tracker, char *pid, managed_service_service_pt *service) {
+    if ( hashMap_containsKey(tracker->managedServicesReferences, pid) ){
+	hashMap_remove(tracker->managedServicesReferences, pid);
+	hashMap_remove(tracker->managedServices, pid);
+    }
+    managedServiceTracker_unlockManagedServicesReferences(tracker);
+    return CELIX_SUCCESS;
+
+}
+
+celix_status_t managedServiceTracker_getManagedService(managed_service_tracker_pt tracker, char *pid, managed_service_service_pt *service) {
 
     celix_status_t status;
     managed_service_service_pt serv = NULL;
@@ -424,7 +452,7 @@ celix_status_t managedServiceTracker_getManagedService(managed_service_tracker_t
     return status;
 }
 
-celix_status_t managedServiceTracker_getManagedServiceReference(managed_service_tracker_t tracker, char *pid, service_reference_pt *reference) {
+celix_status_t managedServiceTracker_getManagedServiceReference(managed_service_tracker_pt tracker, char *pid, service_reference_pt *reference) {
 
     celix_status_t status;
     service_reference_pt ref = NULL;
@@ -450,7 +478,7 @@ celix_status_t managedServiceTracker_getManagedServiceReference(managed_service_
  }
  */
 
-celix_status_t managedServiceTracker_asynchUpdated(managed_service_tracker_t trackerHandle, managed_service_service_pt service, properties_pt properties) {
+celix_status_t managedServiceTracker_asynchUpdated(managed_service_tracker_pt trackerHandle, managed_service_service_pt service, properties_pt properties) {
 
     return updatedThreadPool_push(trackerHandle->updatedThreadPool, service, properties);
 
@@ -460,13 +488,12 @@ celix_status_t managedServiceTracker_asynchUpdated(managed_service_tracker_t tra
 
 /* ---------- public ---------- */
 
-celix_status_t managedServiceTracker_notifyDeleted(managed_service_tracker_t tracker, configuration_pt configuration) {
+celix_status_t managedServiceTracker_notifyDeleted(managed_service_tracker_pt tracker, configuration_pt configuration) {
     return CELIX_SUCCESS;
 }
 
-celix_status_t managedServiceTracker_notifyUpdated(managed_service_tracker_t tracker, configuration_pt configuration) {
+celix_status_t managedServiceTracker_notifyUpdated(managed_service_tracker_pt tracker, configuration_pt configuration) {
 
-    printf("[ DEBUG ]: Tracker - NotifyUpdated \n");
 
     char *pid;
 
@@ -477,12 +504,12 @@ celix_status_t managedServiceTracker_notifyUpdated(managed_service_tracker_t tra
     managed_service_service_pt service = NULL;
 
     // (1) config.checkLocked
-    if (configuration_checkLocked(configuration) != CELIX_SUCCESS) { //TODO not yet implemented
+    if (configuration_checkLocked(configuration->handle) != CELIX_SUCCESS) { //TODO not yet implemented
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
     // (2) config.getPid
-    if (configuration_getPid(configuration, &pid) != CELIX_SUCCESS) {
+    if (configuration_getPid(configuration->handle, &pid) != CELIX_SUCCESS) {
         return CELIX_ILLEGAL_ARGUMENT;
     }
 
@@ -500,7 +527,7 @@ celix_status_t managedServiceTracker_notifyUpdated(managed_service_tracker_t tra
 
     //	(4.2) config.bind(reference.getBundle)
     bool isBind;
-    if (configuration_bind(configuration, bundle, &isBind) != CELIX_SUCCESS || isBind == false) {
+    if (configuration_bind(configuration->handle, bundle, &isBind) != CELIX_SUCCESS || isBind == false) {
         printf("[ ERROR ]: Tracker - Notify (Service{PID=%s} Permission Error) \n", pid);
         return CELIX_ILLEGAL_STATE;
     }
@@ -508,7 +535,7 @@ celix_status_t managedServiceTracker_notifyUpdated(managed_service_tracker_t tra
     // (5) if (reference != null && config.bind(reference.getBundle()))
 
     // (5.1) properties = config.getProperties
-    if (configuration_getProperties(configuration, &properties) != CELIX_SUCCESS) {
+    if (configuration_getProperties(configuration->handle, &properties) != CELIX_SUCCESS) {
         printf("[ ERROR ]: Tracker - Notify (Service{PID=%s} Wrong Properties) \n", pid);
         return CELIX_ILLEGAL_ARGUMENT;
     }
@@ -526,36 +553,35 @@ celix_status_t managedServiceTracker_notifyUpdated(managed_service_tracker_t tra
 
     // (5.4) asynchUpdate(service,properties)
     if ((properties == NULL) || (properties != NULL && hashMap_size(properties) == 0)) {
-        printf("[ DEBUG ]: Tracker - Notify (AsynchUpdated Service{PID=%s} - NULL props) \n", pid);
         return managedServiceTracker_asynchUpdated(tracker, service, NULL);
     } else {
-        printf("[ DEBUG ]: Tracker - Notify (AsynchUpdated Service{PID=%s} - existing props) \n", pid);
         return managedServiceTracker_asynchUpdated(tracker, service, properties);
     }
+    return CELIX_ILLEGAL_ARGUMENT;
 }
 
 /* ---------- private ---------- */
 
-celix_status_t managedServiceTracker_getBundleContext(managed_service_tracker_t trackerHandle, bundle_context_pt *context) {
+celix_status_t managedServiceTracker_getBundleContext(managed_service_tracker_pt trackerHandle, bundle_context_pt *context) {
 
     if (trackerHandle->context != NULL) {
         *context = trackerHandle->context;
-        return CELIX_SUCCESS;
     } else {
         printf("[ ERROR ]: Tracker - getBundleContext (NULL context) \n");
         *context = NULL;
         return CELIX_ILLEGAL_ARGUMENT;
     }
+    return CELIX_SUCCESS;
 }
 
-celix_status_t managedServiceTracker_lockManagedServicesReferences(managed_service_tracker_t handle) {
+celix_status_t managedServiceTracker_lockManagedServicesReferences(managed_service_tracker_pt handle) {
 
     celixThreadMutex_lock(&handle->managedServicesReferencesMutex);
     return CELIX_SUCCESS;
 
 }
 
-celix_status_t managedServiceTracker_unlockManagedServicesReferences(managed_service_tracker_t handle) {
+celix_status_t managedServiceTracker_unlockManagedServicesReferences(managed_service_tracker_pt handle) {
 
     celixThreadMutex_unlock(&handle->managedServicesReferencesMutex);
     return CELIX_SUCCESS;

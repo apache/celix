@@ -20,7 +20,7 @@
  * example_managed_service_impl.c
  *
  *  \date       Aug 12, 2013
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
@@ -28,7 +28,17 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "example_managed_service_impl.h"
+#include "example2_managed_service_impl.h"
+
+
+struct managed_service{
+
+	bundle_context_pt 			context;
+
+	service_registration_pt 	registration;
+	properties_pt 				properties;
+
+};
 
 /* ------------------------ Constructor -------------------------------------*/
 
@@ -36,22 +46,25 @@ celix_status_t managedServiceImpl_create(bundle_context_pt context, managed_serv
 
 	celix_status_t status = CELIX_SUCCESS;
 
-
 	managed_service_pt managedService = calloc(1, sizeof(*managedService));
 	if(!managedService){
 		printf("[ ERROR ]: ManagedServiceImpl - Not initialized (ENOMEM) \n");
 		return CELIX_ENOMEM;
 	}
 
-    managedService->context = context;
+	managedService->context = context;
 	managedService->registration = NULL;
 	managedService->properties = NULL;
 
-	printf("[ ManagedServiceImpl ]: ManagedServiceImpl - Initialized \n");
 	*instance = managedService;
 	return status;
 }
 
+celix_status_t managedServiceImpl_destroy(managed_service_pt *instance) {
+    free(*instance);
+
+    return CELIX_SUCCESS;
+}
 
 /* -------------------- Implementation --------------------------------------*/
 

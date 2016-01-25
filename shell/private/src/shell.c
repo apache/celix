@@ -108,78 +108,80 @@ celix_status_t shell_destroy(shell_service_pt *shell_service_ptr) {
 }
 
 celix_status_t shell_addCommand(shell_pt shell_ptr, service_reference_pt reference_ptr) {
-	celix_status_t status = CELIX_SUCCESS;
-	command_service_pt command_ptr = NULL;
-	char *name_str = NULL;
+    celix_status_t status = CELIX_SUCCESS;
+    command_service_pt command_ptr = NULL;
+    char *name_str = NULL;
 
-	if (!shell_ptr && !reference_ptr) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
+    if (!shell_ptr || !reference_ptr) {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
 
-	if (status == CELIX_SUCCESS) {
-		status = bundleContext_getService(shell_ptr->bundle_context_ptr, reference_ptr, (void **) &command_ptr);
-		if (!command_ptr) {
-			status = CELIX_BUNDLE_EXCEPTION;
-		}
-	}
+    if (status == CELIX_SUCCESS) {
+        status = bundleContext_getService(shell_ptr->bundle_context_ptr, reference_ptr, (void **) &command_ptr);
+        if (!command_ptr) {
+            status = CELIX_BUNDLE_EXCEPTION;
+        }
+    }
 
-	if (status == CELIX_SUCCESS) {
-		status = serviceReference_getProperty(reference_ptr, "command.name", &name_str);
-		if (!name_str) {
+    if (status == CELIX_SUCCESS) {
+        status = serviceReference_getProperty(reference_ptr, "command.name", &name_str);
+        if (!name_str) {
             logHelper_log(shell_ptr->logHelper, OSGI_LOGSERVICE_ERROR, "Command service must contain a 'command.name' property!");
-			status = CELIX_BUNDLE_EXCEPTION;
-		}
-	}
+            status = CELIX_BUNDLE_EXCEPTION;
+        }
+    }
 
-	if (status == CELIX_SUCCESS) {
-		hashMap_put(shell_ptr->command_name_map_ptr, name_str, command_ptr);
-		hashMap_put(shell_ptr->command_reference_map_ptr, reference_ptr, command_ptr);
-	}
+    if (status == CELIX_SUCCESS) {
+        hashMap_put(shell_ptr->command_name_map_ptr, name_str, command_ptr);
+        hashMap_put(shell_ptr->command_reference_map_ptr, reference_ptr, command_ptr);
+    }
 
-	if (status != CELIX_SUCCESS) {
-		shell_removeCommand(shell_ptr, reference_ptr);
+    if (status != CELIX_SUCCESS) {
+        shell_removeCommand(shell_ptr, reference_ptr);
         char err[32];
         celix_strerror(status, err, 32);
         logHelper_log(shell_ptr->logHelper, OSGI_LOGSERVICE_ERROR, "Could not add command, got error %s\n", err);
-	}
+    }
 
-	return status;
+    return status;
 }
 
 celix_status_t shell_removeCommand(shell_pt shell_ptr, service_reference_pt reference_ptr) {
-	celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status = CELIX_SUCCESS;
 
-	command_service_pt command_ptr = NULL;
-	char *name_str = NULL;
+    command_service_pt command_ptr = NULL;
+    char *name_str = NULL;
 
-	if (!shell_ptr || !reference_ptr) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
+    if (!shell_ptr || !reference_ptr) {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
 
-	if (status == CELIX_SUCCESS) {
-		command_ptr = hashMap_remove(shell_ptr->command_reference_map_ptr, reference_ptr);
-		if (!command_ptr) {
-			status = CELIX_ILLEGAL_ARGUMENT;
-		}
-	}
+    if (status == CELIX_SUCCESS) {
+        command_ptr = hashMap_remove(shell_ptr->command_reference_map_ptr, reference_ptr);
+        if (!command_ptr) {
+            status = CELIX_ILLEGAL_ARGUMENT;
+        }
+    }
 
-	if (status == CELIX_SUCCESS) {
-		status = serviceReference_getProperty(reference_ptr, "command.name", &name_str);
-		if (!name_str) {
-			status = CELIX_BUNDLE_EXCEPTION;
-		}
-	}
+    if (status == CELIX_SUCCESS) {
+        status = serviceReference_getProperty(reference_ptr, "command.name", &name_str);
+        if (!name_str) {
+            status = CELIX_BUNDLE_EXCEPTION;
+        }
+    }
 
-	if (status == CELIX_SUCCESS) {
-		hashMap_remove(shell_ptr->command_name_map_ptr, name_str);
-	}
+    if (status == CELIX_SUCCESS) {
+        hashMap_remove(shell_ptr->command_name_map_ptr, name_str);
+    }
 
-	celix_status_t sub_status = bundleContext_ungetService(shell_ptr->bundle_context_ptr, reference_ptr, NULL);
-	if (sub_status != CELIX_SUCCESS && status == CELIX_SUCCESS) {
-		status = sub_status;
-	}
+    if (status == CELIX_SUCCESS) {
+        celix_status_t sub_status = bundleContext_ungetService(shell_ptr->bundle_context_ptr, reference_ptr, NULL);
+        if (sub_status != CELIX_SUCCESS && status == CELIX_SUCCESS) {
+            status = sub_status;
+        }
+    }
 
-	return status;
+    return status;
 }
 
 celix_status_t shell_getCommands(shell_pt shell_ptr, array_list_pt *commands_ptr) {

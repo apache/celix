@@ -25,6 +25,7 @@
 #include <service_tracker_customizer.h>
 #include <service_tracker.h>
 #include <json_rpc.h>
+#include "constants.h"
 #include "export_registration_dfi.h"
 
 struct export_reference {
@@ -105,6 +106,12 @@ celix_status_t exportRegistration_create(log_helper_pt helper, service_reference
                 status = CELIX_BUNDLE_EXCEPTION;
                 logHelper_log(helper, OSGI_LOGSERVICE_WARNING, "RSA: Error parsing service descriptor.");
             }
+            else{
+                /* Add the interface version as a property in the properties_map */
+                char* intfVersion = NULL;
+                dynInterface_getVersionString(reg->intf, &intfVersion);
+                properties_set(endpoint->properties, (char*) CELIX_FRAMEWORK_SERVICE_VERSION, intfVersion);
+            }
         } else {
             status = CELIX_BUNDLE_EXCEPTION;
             logHelper_log(helper, OSGI_LOGSERVICE_ERROR, "Cannot open descriptor '%s'", descriptorFile);
@@ -112,6 +119,8 @@ celix_status_t exportRegistration_create(log_helper_pt helper, service_reference
 
         free(descriptorFile);
     }
+
+
 
     if (status == CELIX_SUCCESS) {
         service_tracker_customizer_pt cust = NULL;
@@ -156,7 +165,7 @@ void exportRegistration_destroy(export_registration_pt reg) {
         }
 
         if (reg->exportReference.endpoint != NULL) {
-            endpoint_description_pt  ep = reg->exportReference.endpoint;
+            endpoint_description_pt ep = reg->exportReference.endpoint;
             reg->exportReference.endpoint = NULL;
             endpointDescription_destroy(ep);
         }

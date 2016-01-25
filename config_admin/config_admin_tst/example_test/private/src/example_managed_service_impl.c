@@ -20,7 +20,7 @@
  * example_managed_service_impl.c
  *
  *  \date       Aug 12, 2013
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
@@ -32,11 +32,11 @@
 
 /* ------------------------ Constructor -------------------------------------*/
 
-celix_status_t managedServiceImpl_create(bundle_context_pt context, managed_service_pt *instance){
+celix_status_t managedServiceImpl_create(bundle_context_pt context, managed_service_pt *instance) {
 
 	celix_status_t status = CELIX_SUCCESS;
 
-	managed_service_pt managedService = calloc(1, sizeof(*managedService));
+	struct test_managed_service *managedService = calloc(1, sizeof(*managedService));
 	if(!managedService){
 		printf("[ ERROR ]: ManagedServiceImpl - Not initialized (ENOMEM) \n");
 		return CELIX_ENOMEM;
@@ -47,22 +47,31 @@ celix_status_t managedServiceImpl_create(bundle_context_pt context, managed_serv
 	managedService->properties = NULL;
 
 	printf("[ ManagedServiceImpl ]: ManagedServiceImpl - Initialized \n");
-	*instance = managedService;
+	*instance = (managed_service_pt)managedService;
 	return status;
 }
 
 
+celix_status_t managedServiceImpl_destroy(managed_service_pt *instance) {
+    free(*instance);
+
+    return CELIX_SUCCESS;
+}
+
 /* -------------------- Implementation --------------------------------------*/
 
 celix_status_t managedServiceImpl_updated(managed_service_pt managedService, properties_pt properties){
+	struct test_managed_service *msp = (struct test_managed_service *) managedService;
 
 	if (properties == NULL){
 		printf("[ managedServiceImpl ]: updated - Received NULL properties \n");
-		managedService->properties = NULL;
+		msp->store_props(msp->handle, "", "");
 	}else{
 		printf("[ managedServiceImpl ]: updated - Received New Properties \n");
-		managedService->properties = properties_create();
-		managedService->properties = properties;
+		char *value = properties_get(properties, "type");
+		char *value2 = properties_get(properties, "second_type");
+		msp->store_props(msp->handle, value, value2);
+		// it would be nicer if we get the property values here and store them in the activator structure.
 	}
 
 	return CELIX_SUCCESS;

@@ -461,6 +461,10 @@ celix_status_t serviceDependency_invokeSet(dm_service_dependency_pt dependency, 
         dependency->set_with_ref(component_getImplementation(dependency->component), curServRef, service);
     }
 
+    if (curServRef) {
+        bundleContext_ungetService(event->context, curServRef, NULL);
+    }
+
     return status;
 }
 

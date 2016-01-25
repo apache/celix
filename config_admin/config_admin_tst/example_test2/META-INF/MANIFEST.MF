@@ -1,5 +1,5 @@
 Manifest-Version: 1.0
-Bundle-SymbolicName: bundle_managed_service
+Bundle-SymbolicName: example_test
 Bundle-Version: 1.0.0
-library: bundle_managed_service
+library: example_test
 Import-Service: configuration_admin

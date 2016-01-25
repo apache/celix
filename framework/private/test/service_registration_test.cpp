@@ -280,11 +280,11 @@ TEST(service_registration, getServiceFromFactory) {
 	void *service = (void *) 0x30;
 	service_factory_pt factory = (service_factory_pt) malloc(sizeof(*factory));
 	factory->getService = serviceRegistrationTest_getService;
-	factory->factory = (void*) 0x40;
+	factory->handle = (void*) 0x40;
 	service_registration_pt registration = serviceRegistration_createServiceFactory(callback, bundle, name, 0, factory, NULL);
 
 	mock().expectOneCall("serviceRegistrationTest_getService")
-			.withParameter("factory", factory->factory)
+			.withParameter("factory", factory->handle)
 			.withParameter("bundle", bundle)
 			.withParameter("registration", registration)
 			.withOutputParameterReturning("service", &service, sizeof(service));
@@ -306,12 +306,12 @@ TEST(service_registration, ungetServiceFromFactory) {
 	void *service = (void *) 0x30;
 	service_factory_pt factory = (service_factory_pt) malloc(sizeof(*factory));
 	factory->ungetService = serviceRegistrationTest_ungetService;
-	factory->factory = (void*) 0x40;
+	factory->handle = (void*) 0x40;
 	service_registration_pt registration = serviceRegistration_createServiceFactory(callback, bundle, name, 0, factory, NULL);
 
 
 	mock().expectOneCall("serviceRegistrationTest_ungetService")
-			.withParameter("factory", factory->factory)
+			.withParameter("factory", factory->handle)
 			.withParameter("bundle", bundle)
 			.withParameter("registration", registration)
 			.withOutputParameterReturning("service", &service, sizeof(service));

@@ -31,21 +31,21 @@
 #include "celix_log.h"
 #include "filter_private.h"
 
-void filter_skipWhiteSpace(char * filterString, int * pos);
-filter_pt filter_parseFilter(char * filterString, int * pos);
-filter_pt filter_parseFilterComp(char * filterString, int * pos);
-filter_pt filter_parseAnd(char * filterString, int * pos);
-filter_pt filter_parseOr(char * filterString, int * pos);
-filter_pt filter_parseNot(char * filterString, int * pos);
-filter_pt filter_parseItem(char * filterString, int * pos);
-char * filter_parseAttr(char * filterString, int * pos);
-char * filter_parseValue(char * filterString, int * pos);
-array_list_pt filter_parseSubstring(char * filterString, int * pos);
+static void filter_skipWhiteSpace(char * filterString, int * pos);
+static filter_pt filter_parseFilter(char * filterString, int * pos);
+static filter_pt filter_parseFilterComp(char * filterString, int * pos);
+static filter_pt filter_parseAnd(char * filterString, int * pos);
+static filter_pt filter_parseOr(char * filterString, int * pos);
+static filter_pt filter_parseNot(char * filterString, int * pos);
+static filter_pt filter_parseItem(char * filterString, int * pos);
+static char * filter_parseAttr(char * filterString, int * pos);
+static char * filter_parseValue(char * filterString, int * pos);
+static array_list_pt filter_parseSubstring(char * filterString, int * pos);
 
-celix_status_t filter_compare(OPERAND operand, char * string, void * value2, bool *result);
-celix_status_t filter_compareString(OPERAND operand, char * string, void * value2, bool *result);
+static celix_status_t filter_compare(OPERAND operand, char * string, void * value2, bool *result);
+static celix_status_t filter_compareString(OPERAND operand, char * string, void * value2, bool *result);
 
-void filter_skipWhiteSpace(char * filterString, int * pos) {
+static void filter_skipWhiteSpace(char * filterString, int * pos) {
 	int length;
 	for (length = strlen(filterString); (*pos < length) && isspace(filterString[*pos]);) {
 		(*pos)++;
@@ -58,38 +58,43 @@ filter_pt filter_create(char * filterString) {
 	filter = filter_parseFilter(filterString, &pos);
 	if (pos != strlen(filterString)) {
 		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR,  "Error: Extraneous trailing characters.");
+		filter_destroy(filter);
 		return NULL;
 	}
-	filter->filterStr = filterString;
+	if(filter != NULL){
+		filter->filterStr = filterString;
+	}
+
 	return filter;
 }
 
 void filter_destroy(filter_pt filter) {
 	if (filter != NULL) {
-		if (filter->operand == SUBSTRING) {
-			 int size = arrayList_size(filter->value);
-			 for (; size > 0; --size) {
-				 char* operand = (char*) arrayList_remove(filter->value, 0);
-				 free(operand);
-			 }
-			arrayList_clear(filter->value);
-			arrayList_destroy(filter->value);
-			filter->value = NULL;
-		} else if ( (filter->operand == OR) || (filter->operand == AND) ) {
-			int size = arrayList_size(filter->value);
-			unsigned int i = 0;
-			for (i = 0; i < size; i++) {
-				filter_pt f = arrayList_get(filter->value, i);
-				filter_destroy(f);
+		if(filter->value!=NULL){
+			if (filter->operand == SUBSTRING) {
+				int size = arrayList_size(filter->value);
+				for (; size > 0; --size) {
+					char* operand = (char*) arrayList_remove(filter->value, 0);
+					free(operand);
+				}
+				arrayList_destroy(filter->value);
+				filter->value = NULL;
+			} else if ( (filter->operand == OR) || (filter->operand == AND) ) {
+				int size = arrayList_size(filter->value);
+				unsigned int i = 0;
+				for (i = 0; i < size; i++) {
+					filter_pt f = arrayList_get(filter->value, i);
+					filter_destroy(f);
+				}
+				arrayList_destroy(filter->value);
+				filter->value = NULL;
+			} else  if (filter->operand == NOT) {
+				filter_destroy(filter->value);
+				filter->value = NULL;
+			} else {
+				free(filter->value);
+				filter->value = NULL;
 			}
-			arrayList_destroy(filter->value);
-			filter->value = NULL;
-		} else  if (filter->operand == NOT) {
-			filter_destroy(filter->value);
-			filter->value = NULL;
-		} else {
-			free(filter->value);
-			filter->value = NULL;
 		}
 		free(filter->attribute);
 		filter->attribute = NULL;
@@ -98,7 +103,7 @@ void filter_destroy(filter_pt filter) {
 	}
 }
 
-filter_pt filter_parseFilter(char * filterString, int * pos) {
+static filter_pt filter_parseFilter(char * filterString, int * pos) {
 	filter_pt filter;
 	filter_skipWhiteSpace(filterString, pos);
 	if (filterString[*pos] != '(') {
@@ -113,15 +118,25 @@ filter_pt filter_parseFilter(char * filterString, int * pos) {
 
 	if (filterString[*pos] != ')') {
 		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error: Missing ')'.");
+		if(filter!=NULL){
+			filter_destroy(filter);
+		}
 		return NULL;
 	}
 	(*pos)++;
 	filter_skipWhiteSpace(filterString, pos);
 
+	if(filter != NULL){
+		if(filter->value == NULL && filter->operand!=PRESENT){
+			filter_destroy(filter);
+			return NULL;
+		}
+	}
+
 	return filter;
 }
 
-filter_pt filter_parseFilterComp(char * filterString, int * pos) {
+static filter_pt filter_parseFilterComp(char * filterString, int * pos) {
 	char c;
 	filter_skipWhiteSpace(filterString, pos);
 
@@ -144,22 +159,39 @@ filter_pt filter_parseFilterComp(char * filterString, int * pos) {
 	return filter_parseItem(filterString, pos);
 }
 
-filter_pt filter_parseAnd(char * filterString, int * pos) {
-	filter_pt filter = (filter_pt) malloc(sizeof(*filter));
+static filter_pt filter_parseAnd(char * filterString, int * pos) {
+
 	array_list_pt operands = NULL;
-	arrayList_create(&operands);
 	filter_skipWhiteSpace(filterString, pos);
+	bool failure = false;
 
 	if (filterString[*pos] != '(') {
 		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error: Missing '('.");
 		return NULL;
 	}
 
+	arrayList_create(&operands);
 	while(filterString[*pos] == '(') {
 		filter_pt child = filter_parseFilter(filterString, pos);
+		if(child == NULL){
+			failure = true;
+			break;
+		}
 		arrayList_add(operands, child);
 	}
 
+	if(failure == true){
+		array_list_iterator_pt listIt = arrayListIterator_create(operands);
+		while(arrayListIterator_hasNext(listIt)){
+			filter_pt f = arrayListIterator_next(listIt);
+			filter_destroy(f);
+		}
+		arrayListIterator_destroy(listIt);
+		arrayList_destroy(operands);
+		operands = NULL;
+	}
+
+	filter_pt filter = (filter_pt) malloc(sizeof(*filter));
 	filter->operand = AND;
 	filter->attribute = NULL;
 	filter->value = operands;
@@ -167,22 +199,40 @@ filter_pt filter_parseAnd(char * filterString, int * pos) {
 	return filter;
 }
 
-filter_pt filter_parseOr(char * filterString, int * pos) {
-	filter_pt filter = (filter_pt) malloc(sizeof(*filter));
+static filter_pt filter_parseOr(char * filterString, int * pos) {
+
 	array_list_pt operands = NULL;
-	arrayList_create(&operands);
+
 	filter_skipWhiteSpace(filterString, pos);
+	bool failure = false;
 
 	if (filterString[*pos] != '(') {
 		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error: Missing '('.");
 		return NULL;
 	}
 
+	arrayList_create(&operands);
 	while(filterString[*pos] == '(') {
 		filter_pt child = filter_parseFilter(filterString, pos);
+		if(child == NULL){
+			failure = true;
+			break;
+		}
 		arrayList_add(operands, child);
 	}
 
+	if(failure == true){
+		array_list_iterator_pt listIt = arrayListIterator_create(operands);
+		while(arrayListIterator_hasNext(listIt)){
+			filter_pt f = arrayListIterator_next(listIt);
+			filter_destroy(f);
+		}
+		arrayListIterator_destroy(listIt);
+		arrayList_destroy(operands);
+		operands = NULL;
+	}
+
+	filter_pt filter = (filter_pt) malloc(sizeof(*filter));
 	filter->operand = OR;
 	filter->attribute = NULL;
 	filter->value = operands;
@@ -190,9 +240,8 @@ filter_pt filter_parseOr(char * filterString, int * pos) {
 	return filter;
 }
 
-filter_pt filter_parseNot(char * filterString, int * pos) {
+static filter_pt filter_parseNot(char * filterString, int * pos) {
 	filter_pt child = NULL;
-	filter_pt filter = (filter_pt) malloc(sizeof(*filter));
 	filter_skipWhiteSpace(filterString, pos);
 
 	if (filterString[*pos] != '(') {
@@ -202,6 +251,8 @@ filter_pt filter_parseNot(char * filterString, int * pos) {
 
 	child = filter_parseFilter(filterString, pos);
 
+
+	filter_pt filter = (filter_pt) malloc(sizeof(*filter));
 	filter->operand = NOT;
 	filter->attribute = NULL;
 	filter->value = child;
@@ -209,8 +260,12 @@ filter_pt filter_parseNot(char * filterString, int * pos) {
 	return filter;
 }
 
-filter_pt filter_parseItem(char * filterString, int * pos) {
+static filter_pt filter_parseItem(char * filterString, int * pos) {
 	char * attr = filter_parseAttr(filterString, pos);
+	if(attr == NULL){
+		return NULL;
+	}
+
 	filter_skipWhiteSpace(filterString, pos);
 	switch(filterString[*pos]) {
 		case '~': {
@@ -281,17 +336,19 @@ filter_pt filter_parseItem(char * filterString, int * pos) {
 			filter = (filter_pt) malloc(sizeof(*filter));			
 			(*pos)++;
 			subs = filter_parseSubstring(filterString, pos);
-			if (arrayList_size(subs) == 1) {
-				char * string = (char *) arrayList_get(subs, 0);
-				if (string != NULL) {
-					filter->operand = EQUAL;
-					filter->attribute = attr;
-					filter->value = string;
+			if(subs!=NULL){
+				if (arrayList_size(subs) == 1) {
+					char * string = (char *) arrayList_get(subs, 0);
+					if (string != NULL) {
+						filter->operand = EQUAL;
+						filter->attribute = attr;
+						filter->value = string;
 
-					arrayList_clear(subs);
-					arrayList_destroy(subs);
+						arrayList_clear(subs);
+						arrayList_destroy(subs);
 
-					return filter;
+						return filter;
+					}
 				}
 			}
 			filter->operand = SUBSTRING;
@@ -301,10 +358,11 @@ filter_pt filter_parseItem(char * filterString, int * pos) {
 		}
 	}
 	fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Invalid operator.");
+	free(attr);
 	return NULL;
 }
 
-char * filter_parseAttr(char * filterString, int * pos) {
+static char * filter_parseAttr(char * filterString, int * pos) {
 	char c;
 	int begin = *pos;
 	int end = *pos;
@@ -336,7 +394,7 @@ char * filter_parseAttr(char * filterString, int * pos) {
 	}
 }
 
-char * filter_parseValue(char * filterString, int * pos) {
+static char * filter_parseValue(char * filterString, int * pos) {
 	char *value = calloc(strlen(filterString) + 1, sizeof(*value));
 	int keepRunning = 1;
 
@@ -350,6 +408,12 @@ char * filter_parseValue(char * filterString, int * pos) {
 			}
 			case '(': {
 				fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Invalid value.");
+				free(value);
+				return NULL;
+			}
+			case '\0':{
+				fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Unclosed bracket.");
+				free(value);
 				return NULL;
 			}
 			case '\\': {
@@ -370,16 +434,16 @@ char * filter_parseValue(char * filterString, int * pos) {
 
 	if (strlen(value) == 0) {
 		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Missing value.");
+		free(value);
 		return NULL;
 	}
 	return value;
 }
 
-array_list_pt filter_parseSubstring(char * filterString, int * pos) {
+static array_list_pt filter_parseSubstring(char * filterString, int * pos) {
 	char *sub = calloc(strlen(filterString) + 1, sizeof(*sub));
 	array_list_pt operands = NULL;
 	int keepRunning = 1;
-	int size;
 
 	arrayList_create(&operands);
 	while (keepRunning) {
@@ -394,9 +458,15 @@ array_list_pt filter_parseSubstring(char * filterString, int * pos) {
 				keepRunning = 0;
 				break;
 			}
+			case '\0':{
+				fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Unclosed bracket.");
+				keepRunning = false;
+				break;
+			}
 			case '(': {
 				fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Invalid value.");
-				return NULL;
+				keepRunning = false;
+				break;
 			}
 			case '*': {
 				if (strlen(sub) > 0) {
@@ -423,10 +493,10 @@ array_list_pt filter_parseSubstring(char * filterString, int * pos) {
 		}
 	}
 	free(sub);
-	size = arrayList_size(operands);
 
-	if (size == 0) {
+	if (arrayList_size(operands) == 0) {
 		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Missing value.");
+		arrayList_destroy(operands);
 		return NULL;
 	}
 
@@ -493,7 +563,7 @@ celix_status_t filter_match(filter_pt filter, properties_pt properties, bool *re
 	return CELIX_SUCCESS;
 }
 
-celix_status_t filter_compare(OPERAND operand, char * string, void * value2, bool *result) {
+static celix_status_t filter_compare(OPERAND operand, char * string, void * value2, bool *result) {
 	if (string == NULL) {
 		*result = 0;
 		return CELIX_SUCCESS;
@@ -502,7 +572,7 @@ celix_status_t filter_compare(OPERAND operand, char * string, void * value2, boo
 
 }
 
-celix_status_t filter_compareString(OPERAND operand, char * string, void * value2, bool *result) {
+static celix_status_t filter_compareString(OPERAND operand, char * string, void * value2, bool *result) {
 	switch (operand) {
 		case SUBSTRING: {
 			array_list_pt subs = (array_list_pt) value2;
@@ -560,7 +630,7 @@ celix_status_t filter_compareString(OPERAND operand, char * string, void * value
 			*result = true;
 			return CELIX_SUCCESS;
 		}
-		case APPROX:
+		case APPROX: //TODO: Implement strcmp with ignorecase and ignorespaces
 		case EQUAL: {
 			*result = (strcmp(string, (char *) value2) == 0);
 			return CELIX_SUCCESS;

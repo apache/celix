@@ -352,5 +352,37 @@ TEST(version, toString) {
 	free(str);
 }
 
+TEST(version,semanticCompatibility) {
+    version_pt provider = NULL;
+    version_pt compatible_user = NULL;
+    version_pt incompatible_user_by_major = NULL;
+    version_pt incompatible_user_by_minor = NULL;
+    celix_status_t status = CELIX_SUCCESS;
+    bool isCompatible = false;
 
+    status = version_isCompatible(compatible_user, provider, &isCompatible);
+    LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
+
+    version_createVersion(2, 3, 5, NULL, &provider);
+    version_createVersion(2, 1, 9, NULL, &compatible_user);
+    version_createVersion(1, 3, 5, NULL, &incompatible_user_by_major);
+    version_createVersion(2, 5, 7, NULL, &incompatible_user_by_minor);
+
+    status = version_isCompatible(compatible_user, provider, &isCompatible);
+    CHECK(isCompatible == true);
+    LONGS_EQUAL(CELIX_SUCCESS, status);
+
+    status = version_isCompatible(incompatible_user_by_major, provider, &isCompatible);
+    CHECK(isCompatible == false);
+    LONGS_EQUAL(CELIX_SUCCESS, status);
+
+    status = version_isCompatible(incompatible_user_by_minor, provider, &isCompatible);
+    CHECK(isCompatible == false);
+    LONGS_EQUAL(CELIX_SUCCESS, status);
+
+    version_destroy(provider);
+    version_destroy(compatible_user);
+    version_destroy(incompatible_user_by_major);
+    version_destroy(incompatible_user_by_minor);
+}
 

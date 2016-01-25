@@ -20,7 +20,7 @@
  * configuration_impl.c
  *
  *  \date       Aug 12, 2013
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
@@ -48,35 +48,54 @@
 #include "configuration_admin_factory.h"
 #include "configuration_store.h"
 
-struct configuration{
+struct configuration_impl {
 
 	configuration_admin_factory_pt configurationAdminFactory;
-	configuration_store_pt configurationStore;
+	configuration_store_pt 		configurationStore;
 
-	char *bundleLocation;
-	char *factoryPid;
-	char *pid;
-	properties_pt dictionary;
+	configuration_pt	        configuration_interface;
+	char 						*bundleLocation;
+	char 						*factoryPid;
+	char 						*pid;
+	properties_pt 				dictionary;
 
-	bool deleted; // Not sure if it's needed
-	bundle_pt boundBundle;
+	bool 						deleted; // Not sure if it's needed
+	bundle_pt 					boundBundle;
 
 	celix_thread_mutex_t        mutex;
 };
 
 
+
+// External interface functions
+// see configuration.h
+celix_status_t configuration_delete(void* configuration);
+celix_status_t configuration_equals(void* thisConfiguration, void* otherConfiguration, bool *equals);
+celix_status_t configuration_getBundleLocation(void *configuration, char **bundleLocation);
+celix_status_t configuration_getFactoryPid(void *handle, char **factoryPid);
+celix_status_t configuration_hashCode(void *handle, int *hashCode);
+celix_status_t configuration_setBundleLocation(void *handle, char *bundleLocation);
+celix_status_t configuration_update(void *handle, properties_pt properties);
+
+
+// Configuration admin internal functions
+// see configuration_impl.h
+//static celix_status_t configuration_getBundleLocation2(configuration_impl_pt configuration, bool checkPermission, char **location);
+
+
+// static functions
+
 // org.eclipse.equinox.internal.cm
-celix_status_t configuration_lock(configuration_pt configuration);
-celix_status_t configuration_unlock(configuration_pt configuration);
-celix_status_t configuration_getBundleLocation2(configuration_pt configuration, bool checkPermission, char **location);
-celix_status_t configuration_getFactoryPid2(configuration_pt configuration, bool checkDeleted, char **factoryPid);
-celix_status_t configuration_getPid2(configuration_pt configuration, bool checkDeleted, char **pid);
-static celix_status_t configuration_updateDictionary(configuration_pt configuration, properties_pt properties);
+static celix_status_t configuration_getFactoryPid2(configuration_impl_pt configuration, bool checkDeleted, char **factoryPid);
+static celix_status_t configuration_getPid2(configuration_impl_pt configuration, bool checkDeleted, char **pid);
+static celix_status_t configuration_updateDictionary(configuration_impl_pt configuration, properties_pt properties);
 
 // org.apache.felix.cm.impl
-static celix_status_t configuration_setBundleLocationProperty(configuration_pt configuration, properties_pt *properties);
-static celix_status_t configuration_setAutoProperties(configuration_pt configuration, properties_pt *properties, bool withBundleLocation);
+static celix_status_t configuration_setBundleLocationProperty(configuration_impl_pt configuration, properties_pt *properties);
+static celix_status_t configuration_setAutoProperties(configuration_impl_pt configuration, properties_pt *properties, bool withBundleLocation);
 
+
+static celix_status_t configuration_checkDeleted(configuration_impl_pt configuration);
 
 /* ========== CONSTRUCTOR ========== */
 
@@ -86,35 +105,63 @@ celix_status_t configuration_create( configuration_admin_factory_pt factory, con
 									 char *factoryPid, char *pid, char *bundleLocation,
 									 configuration_pt *configuration){
 
-	configuration_pt config;
+	struct configuration *config;
+	struct configuration_impl *conf_impl;
     celix_thread_mutexattr_t	mutex_attr;
 
+    config = calloc(1, sizeof(struct configuration));
+    if (config == NULL) return CELIX_ENOMEM;
+    conf_impl = calloc(1, sizeof(struct configuration_impl));
+    if (conf_impl == NULL) {
+    	free (config);
+    	return CELIX_ENOMEM;
+    }
 
+    config->configuration_delete = configuration_delete;
+    config->configuration_equals = configuration_equals;
+    config->configuration_getBundleLocation = configuration_getBundleLocation;
+    config->configuration_getFactoryPid = configuration_getFactoryPid;
+    config->configuration_getPid = configuration_getPid;
+    config->configuration_getProperties = configuration_getProperties;
+    config->configuration_hashCode = configuration_hashCode;
+    config->configuration_setBundleLocation = configuration_setBundleLocation;
+    config->configuration_update = configuration_update;
+/*
 	config = calloc(1,sizeof(struct configuration));
 	if(!config){
 		printf("[ ERROR ]: Configuration{PID=%s} - Not created (ENOMEM) \n",pid);
 		return CELIX_ENOMEM;
 	}
+*/
+	conf_impl->configurationAdminFactory  = factory;
+	conf_impl->configurationStore = store;
 
-	config->configurationAdminFactory  = factory;
-	config->configurationStore = store;
+	if (factoryPid != NULL)
+		conf_impl->factoryPid = strdup(factoryPid);
+	else
+		conf_impl->factoryPid = NULL;
+	if (pid != NULL)
+		conf_impl->pid = strdup(pid);
+	else
+		conf_impl->pid = NULL;
+	if (bundleLocation != NULL)
+		conf_impl->bundleLocation = strdup(bundleLocation);
+	else
+		conf_impl->bundleLocation = NULL;
+	conf_impl->dictionary = NULL;
 
-	config->factoryPid = factoryPid;
-	config->pid = pid;
-	config->bundleLocation = bundleLocation;
-	config->dictionary = NULL;
-
-	config->deleted = false;
-	config->boundBundle = NULL;
+	conf_impl->deleted = false;
+	conf_impl->boundBundle = NULL;
 
     celixThreadMutexAttr_create(&mutex_attr);
     celixThreadMutexAttr_settype(&mutex_attr, CELIX_THREAD_MUTEX_RECURSIVE);  // why recursive?
-	if( celixThreadMutex_create(&config->mutex, &mutex_attr) != CELIX_SUCCESS ){
+	if( celixThreadMutex_create(&conf_impl->mutex, &mutex_attr) != CELIX_SUCCESS ){
 		printf("[ ERROR ]: Configuration{PID=%s} - Not created (MUTEX) \n",pid);
 		return CELIX_ILLEGAL_ARGUMENT;
 	}
 
-	printf("[ SUCCESS]: Configuration{PID=%s}  - Created \n", pid);
+	conf_impl->configuration_interface = config;
+	config->handle = conf_impl;
 	*configuration = config;
 	return CELIX_SUCCESS;
 }
@@ -124,35 +171,63 @@ celix_status_t configuration_create2(configuration_admin_factory_pt factory, con
 									 configuration_pt *configuration){
 
 	configuration_pt config;
+	configuration_impl_pt conf_impl;
+
     celix_thread_mutexattr_t	mutex_attr;
+    char *value;
 
 	config = calloc(1, sizeof(struct configuration));
-	if(!config){
-		printf("[ ERROR ]: Configuration - Not created (ENOMEM) \n");
-		return CELIX_ENOMEM;
-	}
+    if (config == NULL) return CELIX_ENOMEM;
+    conf_impl = calloc(1, sizeof(struct configuration_impl));
+    if (conf_impl == NULL) {
+    	free (config);
+    	return CELIX_ENOMEM;
+    }
 
-	config->configurationAdminFactory  = factory;
-	config->configurationStore = store;
+    config->configuration_delete = configuration_delete;
+    config->configuration_equals = configuration_equals;
+    config->configuration_getBundleLocation = configuration_getBundleLocation;
+    config->configuration_getFactoryPid = configuration_getFactoryPid;
+    config->configuration_getPid = configuration_getPid;
+    config->configuration_getProperties = configuration_getProperties;
+    config->configuration_hashCode = configuration_hashCode;
+    config->configuration_setBundleLocation = configuration_setBundleLocation;
+    config->configuration_update = configuration_update;
 
-	config->factoryPid = properties_get(dictionary,(char *)SERVICE_FACTORYPID);
-	config->pid = properties_get(dictionary, (char *)OSGI_FRAMEWORK_SERVICE_PID);
-	config->bundleLocation = properties_get(dictionary, (char *)SERVICE_BUNDLELOCATION);
-	config->dictionary = NULL;
+	conf_impl->configurationAdminFactory  = factory;
+	conf_impl->configurationStore = store;
 
-	config->deleted = false;
-	config->boundBundle = NULL;
+	value = properties_get(dictionary,(char *)SERVICE_FACTORYPID);
+	if (value != NULL)
+		conf_impl->factoryPid = strdup(value);
+	else
+		conf_impl->factoryPid = NULL;
+	value = properties_get(dictionary, (char *)OSGI_FRAMEWORK_SERVICE_PID);
+	if (value != NULL)
+		conf_impl->pid = strdup(value);
+	else
+		conf_impl->pid = NULL;
+	value = properties_get(dictionary, (char *)SERVICE_BUNDLELOCATION);
+	if (value != NULL)
+		conf_impl->bundleLocation = strdup(value);
+	else
+		conf_impl->bundleLocation = NULL;
+	conf_impl->dictionary = NULL;
+
+	conf_impl->deleted = false;
+	conf_impl->boundBundle = NULL;
 
     celixThreadMutexAttr_create(&mutex_attr);
     celixThreadMutexAttr_settype(&mutex_attr, CELIX_THREAD_MUTEX_RECURSIVE);  // why recursive?
-	if( celixThreadMutex_create(&config->mutex, &mutex_attr) != CELIX_SUCCESS ){
-		printf("[ ERROR ]: Configuration{PID=%s} - Not created (MUTEX) \n", config->pid);
+	if( celixThreadMutex_create(&conf_impl->mutex, &mutex_attr) != CELIX_SUCCESS ){
+		printf("[ ERROR ]: Configuration{PID=%s} - Not created (MUTEX) \n", conf_impl->pid);
 		return CELIX_ILLEGAL_ARGUMENT;
 	}
     celixThreadMutexAttr_destroy(&mutex_attr);
-	configuration_updateDictionary(config, dictionary);
+	configuration_updateDictionary(conf_impl, dictionary);
 
-	printf("[ SUCCESS]: Configuration{PID=%s}  - Created \n", config->pid);
+	conf_impl->configuration_interface = config;
+	config->handle = conf_impl;
 	*configuration = config;
 	return CELIX_SUCCESS;
 
@@ -164,159 +239,169 @@ celix_status_t configuration_create2(configuration_admin_factory_pt factory, con
 /* ---------- public ---------- */
 // specifications
 
-celix_status_t configuration_delete(configuration_pt configuration){
+celix_status_t configuration_delete(void *handle){
+	configuration_impl_pt conf = (configuration_impl_pt)handle;
+
 	printf("TODO: Implement configuration_delete\n");
-	celixThreadMutex_destroy(&configuration->mutex);
+	celixThreadMutex_destroy(&conf->mutex);
+	if (conf->factoryPid != NULL)
+		free(conf->factoryPid);
+	if (conf->pid != NULL)
+		free(conf->pid);
+	if (conf->bundleLocation != NULL)
+		free(conf->bundleLocation);
+	free(conf->configuration_interface);
+	free(conf);
 	return CELIX_SUCCESS;
 }
 
-celix_status_t configuration_equals(configuration_pt thisConfiguration, configuration_pt otherConfiguration, bool *equals){
+celix_status_t configuration_equals(void* thisConfiguration, void *otherConfiguration, bool *equals){
 	return CELIX_SUCCESS;
 }
 
-celix_status_t configuration_getBundleLocation(configuration_pt configuration, char **bundleLocation){
-	return configuration_getBundleLocation2( configuration, true, bundleLocation);
+celix_status_t configuration_getBundleLocation(void *handle, char **bundleLocation){
+	return configuration_getBundleLocation2( handle, true, bundleLocation);
 }
 
-celix_status_t configuration_getFactoryPid(configuration_pt configuration, char **factoryPid){
-	return configuration_getFactoryPid2(configuration, true, factoryPid);
+celix_status_t configuration_getFactoryPid(void *handle, char **factoryPid){
+	return configuration_getFactoryPid2(handle, true, factoryPid);
 }
 
-celix_status_t configuration_getPid(configuration_pt configuration, char **pid){
-	return configuration_getPid2(configuration, true, pid);
+celix_status_t configuration_getPid(void *handle, char **pid){
+	return configuration_getPid2(handle, true, pid);
 }
 
-celix_status_t configuration_getProperties(configuration_pt configuration, properties_pt *properties){
+celix_status_t configuration_getProperties(void *handle, properties_pt *properties){
 
-	printf("[ DEBUG ]: Configuration{PID=%s} - getProperties \n",configuration->pid);
+    configuration_impl_pt conf = (configuration_impl_pt) handle;
 
-	properties_pt copy = configuration->dictionary;
+	properties_pt copy = conf->dictionary;
 
 	// (1) configuration.lock
-	configuration_lock(configuration);
+	configuration_lock(conf);
 
 	// (2) configuration.checkDeleted
-	if ( configuration_checkDeleted(configuration) != CELIX_SUCCESS ){
-		configuration_unlock(configuration);
+	if ( configuration_checkDeleted(conf) != CELIX_SUCCESS ){
+		configuration_unlock(conf);
 		return CELIX_ILLEGAL_STATE;
 	}
 	// (3) Have the Configuration properties ?
-	if ( configuration->dictionary == NULL ){
-		printf("[ DEBUG ]: configuration_getProperties results NULL \n");
+	if ( conf->dictionary == NULL ){
 		*properties = NULL;
-		configuration_unlock(configuration);
+		configuration_unlock(conf);
 		return CELIX_SUCCESS;
 	}
 
 	// (4) configuration.setAutoProperties
-	if ( configuration_setAutoProperties(configuration, &copy, false) != CELIX_SUCCESS ){
-		configuration_unlock(configuration);
+	if ( configuration_setAutoProperties(conf, &copy, false) != CELIX_SUCCESS ){
+		configuration_unlock(conf);
 		return CELIX_ILLEGAL_ARGUMENT;
 	}
 
 	// (5) return
 	*properties = copy;
-	configuration_unlock(configuration);
+	configuration_unlock(conf);
 	return CELIX_SUCCESS;
 }
 
-celix_status_t configuration_hashCode(configuration_pt configuration, int *hashCode){
+celix_status_t configuration_hashCode(void *handle, int *hashCode){
 	return CELIX_SUCCESS;
 }
 
-celix_status_t configuration_setBundleLocation(configuration_pt configuration, char *bundleLocation){
+celix_status_t configuration_setBundleLocation(void *handle, char *bundleLocation){
 
-	configuration_lock(configuration);
+	configuration_impl_pt	conf = (configuration_impl_pt)handle;
+	configuration_lock(conf);
 
-	if ( configuration_checkDeleted(configuration) != CELIX_SUCCESS ){
-		configuration_unlock(configuration);
+	if ( configuration_checkDeleted(conf) != CELIX_SUCCESS ){
+		configuration_unlock(conf);
 		return CELIX_ILLEGAL_STATE;
 	}
 
 	//	TODO configurationAdminFactory.checkConfigurationPermission
 
-	configuration->bundleLocation = bundleLocation;
-	configuration->boundBundle = NULL; // always reset the boundBundle when setBundleLocation is called
+	conf->bundleLocation = bundleLocation;
+	conf->boundBundle = NULL; // always reset the boundBundle when setBundleLocation is called
 
-	configuration_unlock(configuration);
+	configuration_unlock(conf);
 
 	return CELIX_SUCCESS;
 }
 
-celix_status_t configuration_update(configuration_pt configuration, properties_pt properties){
+celix_status_t configuration_update(void *handle, properties_pt properties){
 
-	printf("[ DEBUG ]: Configuration{PID=%s} - update \n", configuration->pid);
+	configuration_impl_pt conf = (configuration_impl_pt)handle;
+
 
 	celix_status_t status;
 
 	// (1)
-	configuration_lock(configuration);
+	configuration_lock(conf);
 
 	// (2)
-	if ( configuration_checkDeleted(configuration) != CELIX_SUCCESS ){
-		configuration_unlock(configuration);
+	if ( configuration_checkDeleted(conf) != CELIX_SUCCESS ){
+		configuration_unlock(conf);
 		return CELIX_ILLEGAL_STATE;
 	}
 	// (3)
-	configuration_updateDictionary(configuration,properties);
+	configuration_updateDictionary(conf, properties);
 
 	// (4)
-	status = configurationStore_saveConfiguration(configuration->configurationStore,configuration->pid,configuration);
+	status = configurationStore_saveConfiguration(conf->configurationStore, conf->pid, conf->configuration_interface);
 	if (status != CELIX_SUCCESS){
-		configuration_unlock(configuration);
+		configuration_unlock(conf);
 		return status;
 	}
 
 	// (5)
 	bool isFactory;
-	if (configuration->factoryPid == NULL){
+	if (conf->factoryPid == NULL){
 		isFactory = false;
 	} else{
 		isFactory = true;
 	}
 
-	status = configurationAdminFactory_notifyConfigurationUpdated(configuration->configurationAdminFactory, configuration, isFactory);
+	status = configurationAdminFactory_notifyConfigurationUpdated(conf->configurationAdminFactory, conf->configuration_interface, isFactory);
 	if (status != CELIX_SUCCESS){
-		configuration_unlock(configuration);
+		configuration_unlock(conf);
 		return status;
 	}
 
 	// (6)
-	status = configurationAdminFactory_dispatchEvent(configuration->configurationAdminFactory, CONFIGURATION_EVENT_CM_UPDATED, configuration->factoryPid, configuration->pid);
+	status = configurationAdminFactory_dispatchEvent(conf->configurationAdminFactory, CONFIGURATION_EVENT_CM_UPDATED, conf->factoryPid, conf->pid);
 	if (status != CELIX_SUCCESS){
-		configuration_unlock(configuration);
+		configuration_unlock(conf);
 		return status;
 	}
 
 	// (7)
-	configuration_unlock(configuration);
-	printf("[ SUCCESS ]: Configuration{PID=%s} - update \n",configuration->pid);
+	configuration_unlock(conf);
 	return CELIX_SUCCESS;
 }
 
 /* ---------- protected ---------- */
 // org.eclipse.equinox.cm.impl
 
-celix_status_t configuration_lock(configuration_pt configuration){
+celix_status_t configuration_lock(configuration_impl_pt configuration){
 //	printf("[ DEBUG ]: Configuration{PID=%s} - LOCK \n",configuration->pid);
 	celixThreadMutex_lock(&configuration->mutex);
 	return CELIX_SUCCESS;
 }
 
-celix_status_t configuration_unlock(configuration_pt configuration){
+celix_status_t configuration_unlock(configuration_impl_pt configuration){
 //	printf("[ DEBUG ]: Configuration{PID=%s} - UNLOCK \n",configuration->pid);
 	celixThreadMutex_unlock(&configuration->mutex);
 	return CELIX_SUCCESS;
 }
 
-celix_status_t configuration_checkLocked(configuration_pt configuration){
+celix_status_t configuration_checkLocked(configuration_impl_pt configuration){
 	// Not used
 	return CELIX_SUCCESS;
 }
 
-celix_status_t configuration_bind(configuration_pt configuration, bundle_pt bundle, bool *isBind){
+celix_status_t configuration_bind(configuration_impl_pt configuration, bundle_pt bundle, bool *isBind){
 
-	printf("[ DEBUG ]: Configuration{PID=%s} - bind(START) \n",configuration->pid);
+//	printf("[ DEBUG ]: Configuration{PID=%s} - bind(START) \n",configuration->pid);
 
 	char *bundleLocation;
 
@@ -339,14 +424,14 @@ celix_status_t configuration_bind(configuration_pt configuration, bundle_pt bund
 			if ( strcmp(configuration->bundleLocation, bundleLocation) == 0 ){ // (3): Yes
 				// bind up configuration with bundle
 				configuration->boundBundle = bundle;
-				printf("[ DEBUG ]: Configuration{PID=%s} - bind (bound with Bundle{%s}) \n",configuration->pid,bundleLocation);
+//				printf("[ DEBUG ]: Configuration{PID=%s} - bind (bound with Bundle{%s}) \n",configuration->pid,bundleLocation);
 			}
 			// (3): No
 
 		}else{// (2): No
 			// bind up configuration with bundle
 			configuration->boundBundle = bundle;
-			printf("[ DEBUG ]: Configuration{PID=%s}) - bind (not located and now bound with Bundle) \n",configuration->pid);
+//			printf("[ DEBUG ]: Configuration{PID=%s}) - bind (not located and now bound with Bundle) \n",configuration->pid);
 		}
 
 	}// (1): Yes
@@ -364,16 +449,16 @@ celix_status_t configuration_bind(configuration_pt configuration, bundle_pt bund
 	configuration_unlock(configuration);
 
 	*isBind = bind;
-	printf("[ DEBUG ]: Configuration{PID=%s} - bind(END) \n",configuration->pid);
+//	printf("[ DEBUG ]: Configuration{PID=%s} - bind(END) \n",configuration->pid);
 	return CELIX_SUCCESS;
 
 }
 
-celix_status_t configuration_unbind(configuration_pt configuration, bundle_pt bundle){
+celix_status_t configuration_unbind(configuration_impl_pt configuration, bundle_pt bundle){
 	return CELIX_SUCCESS;
 }
 
-celix_status_t configuration_getBundleLocation2(configuration_pt configuration, bool checkPermission, char **location){
+celix_status_t configuration_getBundleLocation2(configuration_impl_pt configuration, bool checkPermission, char **location){
 
 	celix_status_t status;
 
@@ -413,13 +498,11 @@ celix_status_t configuration_getBundleLocation2(configuration_pt configuration, 
 	return CELIX_SUCCESS;
 }
 
-celix_status_t configuration_getFactoryPid2(configuration_pt configuration, bool checkDeleted, char **factoryPid){
+static celix_status_t configuration_getFactoryPid2(configuration_impl_pt configuration, bool checkDeleted, char **factoryPid){
 	return CELIX_SUCCESS;
 }
 
-celix_status_t configuration_getPid2(configuration_pt configuration, bool checkDeleted, char **pid){
-
-	printf("[ DEBUG ]: Configuration{PID=%s} - getPid \n", configuration->pid);
+static celix_status_t configuration_getPid2(configuration_impl_pt configuration, bool checkDeleted, char **pid){
 
 	configuration_lock(configuration);
 
@@ -439,7 +522,7 @@ celix_status_t configuration_getPid2(configuration_pt configuration, bool checkD
 
 // org.eclipse.equinox.internal.cm modified to fit with org.apache.felix.cm.impl
 // change due to ConfigurationStore implementation
-celix_status_t configuration_getAllProperties(configuration_pt configuration, properties_pt *properties){
+celix_status_t configuration_getAllProperties(configuration_impl_pt configuration, properties_pt *properties){
 
 	celix_status_t status;
 
@@ -485,13 +568,13 @@ celix_status_t configuration_getAllProperties(configuration_pt configuration, pr
 
 }
 
-celix_status_t configuration_isDeleted(configuration_pt configuration, bool *isDeleted){
+celix_status_t configuration_isDeleted(configuration_impl_pt configuration, bool *isDeleted){
 	return CELIX_SUCCESS;
 }
 
 /* ---------- private ---------- */
 
-celix_status_t configuration_checkDeleted(configuration_pt configuration){
+celix_status_t configuration_checkDeleted(configuration_impl_pt configuration){
 
 	if ( configuration->deleted ){
 		printf("[CELIX_ILLEGAL_STATE ]: configuration(pid=%s) deleted \n", configuration->pid);
@@ -502,7 +585,7 @@ celix_status_t configuration_checkDeleted(configuration_pt configuration){
 }
 
 // configuration->dictionary must not contain keys reserved to ConfigAdmin (i.e. "service.pid")
-celix_status_t configuration_updateDictionary(configuration_pt configuration, properties_pt properties){
+celix_status_t configuration_updateDictionary(configuration_impl_pt configuration, properties_pt properties){
 
 	properties_pt newDictionary = NULL;
 
@@ -528,7 +611,7 @@ celix_status_t configuration_updateDictionary(configuration_pt configuration, pr
 
 /* ---------- protected ---------- */
 #if 0
-celix_status_t configuration_getPool(configuration_pt configuration, apr_pool_t **pool){
+celix_status_t configuration_getPool(configuration_impl_pt configuration, apr_pool_t **pool){
 
 	printf("[ DEBUG ]: Configuration{PID=%s} - get Pool \n",configuration->pid);
 
@@ -546,13 +629,15 @@ celix_status_t configuration_getPool(configuration_pt configuration, apr_pool_t 
 
 
 // properties_pt as input and output
-celix_status_t configuration_setAutoProperties(configuration_pt configuration, properties_pt *properties, bool withBundleLocation){
+celix_status_t configuration_setAutoProperties(configuration_impl_pt configuration, properties_pt *properties, bool withBundleLocation){
 
 	//(1) configuration.lock
 	configuration_lock(configuration);
 
 	// (2) set service.pid
-	properties_set(*properties, (char*)OSGI_FRAMEWORK_SERVICE_PID, configuration->pid);
+    if (properties_get(*properties, (char*)OSGI_FRAMEWORK_SERVICE_PID) != NULL) {
+        properties_set(*properties, (char*)OSGI_FRAMEWORK_SERVICE_PID, configuration->pid);
+    }
 
 	// (3) set factory.pid
 	if ( configuration->factoryPid != NULL ){
@@ -575,19 +660,19 @@ celix_status_t configuration_setAutoProperties(configuration_pt configuration, p
 
 }
 
-celix_status_t configuration_setBundleLocationProperty(configuration_pt configuration, properties_pt *properties){
+celix_status_t configuration_setBundleLocationProperty(configuration_impl_pt configuration, properties_pt *properties){
 
-	char *boundLocation;
+	char *bundleLocation;
 
 	configuration_lock(configuration);
 
-	if( configuration_getBundleLocation(configuration, &boundLocation) != CELIX_SUCCESS ){
+	if( configuration_getBundleLocation(configuration, &bundleLocation) != CELIX_SUCCESS ){
 		configuration_unlock(configuration);
 		return CELIX_ILLEGAL_ARGUMENT;
 	}
 
-	if ( boundLocation != NULL ){
-		properties_set(*properties, (char*)SERVICE_BUNDLELOCATION, boundLocation);
+	if ( bundleLocation != NULL ) {
+		properties_set(*properties, (char*)SERVICE_BUNDLELOCATION, bundleLocation);
 	}
 
 	configuration_unlock(configuration);

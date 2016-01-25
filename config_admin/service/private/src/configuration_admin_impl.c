@@ -20,7 +20,7 @@
  * configuration_admin_impl.c
  *
  *  \date       Aug 12, 2013
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
@@ -49,6 +49,8 @@ celix_status_t configurationAdmin_create(configuration_admin_factory_pt factory,
 										 configuration_admin_service_pt *service){
 
 	*service = calloc(1, sizeof(**service));
+
+
 	if(!*service){
 		printf("[ ERROR ]: ConfigAdmin - Not initialized(ENOMEM) \n");
 		return CELIX_ENOMEM;
@@ -72,12 +74,18 @@ celix_status_t configurationAdmin_create(configuration_admin_factory_pt factory,
 	(*service)->getConfiguration2 = configurationAdmin_getConfiguration2;
 	(*service)->listConfigurations = configurationAdmin_listConfigurations;
 
-	printf("[ SUCCESS ]: ConfigAdmin - Initialized \n");
 	return CELIX_SUCCESS;
 
 }
 
+celix_status_t configurationAdmin_destroy(configuration_admin_service_pt *service) {
+    free((*service)->configAdmin);
+    free(*service);
+
+    return CELIX_SUCCESS;
+}
 /* ========== IMPLEMENTATION ========== */
+
 
 /* ---------- public ---------- */
 
@@ -114,8 +122,6 @@ celix_status_t configurationAdmin_getConfiguration(configuration_admin_pt config
 		return CELIX_ILLEGAL_ARGUMENT;
 	}
 
-	printf("[ DEBUG ]: ConfigAdmin - getBundleLocation \n");
-
 
 	/* ---------- pseudo code ---------- */
 	/*
@@ -132,7 +138,7 @@ celix_status_t configurationAdmin_getConfiguration(configuration_admin_pt config
 
 
 	// (4) config.getBundleLocation != NULL ?
-	if ( configuration_getBundleLocation2(config,false,&configBundleLocation) == CELIX_SUCCESS ){
+	if ( configuration_getBundleLocation2(config->handle,false,&configBundleLocation) == CELIX_SUCCESS ){
 
 		if ( strcmp(configAdminBundleLocation,configBundleLocation) != 0 ){
 
@@ -146,13 +152,12 @@ celix_status_t configurationAdmin_getConfiguration(configuration_admin_pt config
 
 	// (5) config.bind(bundle)
 	bool dummy;
-	if ( configuration_bind(config, configAdmin->bundle, &dummy) != CELIX_SUCCESS){
+	if ( configuration_bind(config->handle, configAdmin->bundle, &dummy) != CELIX_SUCCESS){
 		*configuration = NULL;
 		printf("[ ERROR]: ConfigAdmin - bind Config.");
 		return CELIX_ILLEGAL_STATE;
 	}
 
-	printf("[ SUCCESS ]: ConfigAdmin - get Configuration \n");
 	*configuration = config;
 	return CELIX_SUCCESS;
 

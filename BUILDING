@@ -42,16 +42,13 @@ Quick Start
 Unit testing using CppUTest
 ---------------------------
 
-Apache Celix has two build options that enable a set of unit tests. These tests
-are based on CUnit a fork of CppUTest. CUnit can simply be installed and is normally
-found by the CMake scripts, but for CppUTest a fork needs to be build.
-
-The fork can be found on https://github.com/abroekhuis/cpputest/tree/backup. Simply cloning, building
-and updating the build configuration to point to the build files should be enough.
-
-Some background, CppUTest doesn't support output parameters, but Celix's API relies heavily
-on those. The fork adds support for this.
-
+Apache Celix has build options that enable a set of unit tests for each component. These tests
+are based on CppUTest, which needs to be installed separately.
+To run the tests
+  $ make test
+To get a HTML page with the test coverage
+  $ make coverage
+The coverage results are found in <build_dir>/coverage_results/index.html
 
 Background information
 ----------------------

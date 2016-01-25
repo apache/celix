@@ -27,4 +27,4 @@ add_bundle(bundle_managed_service SOURCES
     VERSION 0.1.0
 )
 
-target_link_libraries(bundle_managed_service celix_framework celix_utils config_admin ${APR_LIBRARY})
+target_link_libraries(example_test2 celix_framework celix_utils config_admin)

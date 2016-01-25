@@ -466,6 +466,7 @@ extern "C" {
     /// \TEST_CASE_TITLE{Test scope initialisation}
     /// \TEST_CASE_REQ{REQ-5}
     /// \TEST_CASE_DESC Invalid input file, two partly matching filters with same key name
+    /*
     static void testScope4(void) {
     	int nr_exported;
     	int nr_imported;
@@ -485,7 +486,7 @@ extern "C" {
         	CHECK_TRUE((entry == NULL));
         }
         printf("End: %s\n", __func__);
-    }
+    }*/
 
 
     /// \TEST_CASE_ID{6}
@@ -508,6 +509,7 @@ extern "C" {
         properties_set(props, (char *)OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42");
         properties_set(props, (char *)OSGI_RSA_ENDPOINT_ID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42-42");
         properties_set(props, (char *)OSGI_FRAMEWORK_OBJECTCLASS,(char *)"org.apache.celix.test.MyBundle");
+        properties_set(props, (char *)"service.version",(char *)"1.0.0"); //TODO find out standard in osgi spec
         properties_set(props, (char *)"zone", (char *)"thales");
 
         rc = endpointDescription_create(props, &endpoint);
@@ -549,6 +551,7 @@ extern "C" {
         properties_set(props, (char *)OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42");
         properties_set(props, (char *)OSGI_RSA_ENDPOINT_ID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42-42");
         properties_set(props, (char *)OSGI_FRAMEWORK_OBJECTCLASS,(char *)"org.apache.celix.test.MyBundle");
+        properties_set(props, (char *)"service.version",(char *)"1.0.0"); //TODO find out standard in osgi spec
         properties_set(props, (char *)"zone", (char *)"thales");
 
         rc = endpointDescription_create(props, &endpoint);
@@ -590,6 +593,7 @@ extern "C" {
         properties_set(props, (char *)OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42");
         properties_set(props, (char *)OSGI_RSA_ENDPOINT_ID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42-42");
         properties_set(props, (char *)OSGI_FRAMEWORK_OBJECTCLASS,(char *)"org.apache.celix.test.MyBundle");
+        properties_set(props, (char *)"service.version",(char *)"1.0.0"); //TODO find out standard in osgi spec
         properties_set(props, (char *)"zone", (char *)"thales");
 
         rc = endpointDescription_create(props, &endpoint);
@@ -630,6 +634,7 @@ extern "C" {
         properties_set(props, (char *)OSGI_RSA_ENDPOINT_FRAMEWORK_UUID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42");
         properties_set(props, (char *)OSGI_RSA_ENDPOINT_ID, (char *)"eec5404d-51d0-47ef-8d86-c825a8beda42-42");
         properties_set(props, (char *)OSGI_FRAMEWORK_OBJECTCLASS,(char *)"org.apache.celix.test.MyBundle");
+        properties_set(props, (char *)"service.version",(char *)"1.0.0"); //TODO find out standard in osgi spec
         properties_set(props, (char *)"zone", (char *)"thales");
 
         rc = endpointDescription_create(props, &endpoint);

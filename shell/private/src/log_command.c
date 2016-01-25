@@ -34,10 +34,11 @@
 celix_status_t logCommand_levelAsString(bundle_context_pt context, log_level_t level, char **string);
 
 void logCommand_execute(bundle_context_pt context, char *line, FILE *outStream, FILE *errStream) {
+    celix_status_t status;
     service_reference_pt readerService = NULL;
 
-    bundleContext_getServiceReference(context, (char *) OSGI_LOGSERVICE_READER_SERVICE_NAME, &readerService);
-    if (readerService != NULL) {
+    status = bundleContext_getServiceReference(context, (char *) OSGI_LOGSERVICE_READER_SERVICE_NAME, &readerService);
+    if (status != CELIX_SUCCESS || readerService != NULL) {
         linked_list_pt list = NULL;
         linked_list_iterator_pt iter = NULL;
         log_reader_service_pt reader = NULL;

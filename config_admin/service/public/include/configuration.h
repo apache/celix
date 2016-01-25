@@ -20,7 +20,7 @@
  * configuration.h
  *
  *  \date       Aug 12, 2013
- *  \author    	<a href="mailto:celix-dev@incubator.apache.org">Apache Celix Project Team</a>
+ *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
@@ -35,9 +35,32 @@
 #include "properties.h"
 
 
+// Note: the term interface is used because configuration is not a service, it is not
+//       registered in the service registry but it is owned by the config_admin
+struct configuration
+{
+	void 	*handle;	// pointer to configuration datastore
+	/* METHODS */
+	celix_status_t (*configuration_delete)(void *handle);
+
+	celix_status_t (*configuration_equals)(void *thisConfiguration, void *otherConfiguration, bool *equals);
+
+	celix_status_t (*configuration_getBundleLocation)(void *handle, char **bundleLocation);
+	celix_status_t (*configuration_getFactoryPid)(void *handle, char **factoryPid);
+	celix_status_t (*configuration_getPid)(void *handle, char **pid);
+	celix_status_t (*configuration_getProperties)(void *handle, properties_pt *properties);
+
+	celix_status_t (*configuration_hashCode)(void *handle, int *hashCode);
+
+	celix_status_t (*configuration_setBundleLocation)(void *handle, char *bundleLocation);
+
+	celix_status_t (*configuration_update)(void *handle, properties_pt properties);
+
+};
+
 typedef struct configuration *configuration_pt;
 
-/* METHODS */
+/* METHODS
 celix_status_t configuration_delete(configuration_pt configuration);
 
 celix_status_t configuration_equals(configuration_pt thisConfiguration, configuration_pt otherConfiguration, bool *equals);
@@ -52,6 +75,6 @@ celix_status_t configuration_hashCode(configuration_pt configuration, int *hashC
 celix_status_t configuration_setBundleLocation(configuration_pt configuration, char *bundleLocation);
 
 celix_status_t configuration_update(configuration_pt configuration, properties_pt properties);
-
+*/
 
 #endif /* CONFIGURATION_H_ */
