@@ -1,21 +1,22 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <launchConfiguration type="org.eclipse.cdt.launch.applicationLaunchType">
-<stringAttribute key="bad_container_name" value="@CONTAINER_NAME@"/>
-<intAttribute key="org.eclipse.cdt.launch.ATTR_BUILD_BEFORE_LAUNCH_ATTR" value="0"/>
-<stringAttribute key="org.eclipse.cdt.launch.COREFILE_PATH" value=""/>
-<stringAttribute key="org.eclipse.cdt.launch.PROGRAM_NAME" value="@PROGRAM_NAME@"/>
-<stringAttribute key="org.eclipse.cdt.launch.PROJECT_ATTR" value="@PROJECT_ATTR@"/>
-<booleanAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_AUTO_ATTR" value="true"/>
-<stringAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_ID_ATTR" value="org.eclipse.cdt.core.default.config.1"/>
-<stringAttribute key="org.eclipse.cdt.launch.WORKING_DIRECTORY" value="@WORKING_DIRECTORY@"/>
-<booleanAttribute key="org.eclipse.cdt.launch.use_terminal" value="true"/>
-<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
-<listEntry value="/@PROJECT_ATTR@"/>
-</listAttribute>
-<listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
-<listEntry value="4"/>
-</listAttribute>
-<mapAttribute key="org.eclipse.debug.core.environmentVariables">
-<mapEntry key="@LIBRARY_PATH@" value="@FW_PATH@:@UTILS_PATH@"/>
-</mapAttribute>
+    <stringAttribute key="bad_container_name" value="${CONTAINER_NAME}"/>
+    <intAttribute key="org.eclipse.cdt.launch.ATTR_BUILD_BEFORE_LAUNCH_ATTR" value="0"/>
+    <stringAttribute key="org.eclipse.cdt.launch.COREFILE_PATH" value=""/>
+    <stringAttribute key="org.eclipse.cdt.launch.PROGRAM_NAME" value="${PROGRAM_NAME}"/>
+    <stringAttribute key="org.eclipse.cdt.launch.PROJECT_ATTR" value="${PROJECT_ATTR}"/>
+    <booleanAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_AUTO_ATTR" value="true"/>
+    <stringAttribute key="org.eclipse.cdt.launch.PROJECT_BUILD_CONFIG_ID_ATTR" value="org.eclipse.cdt.core.default.config.1"/>
+    <stringAttribute key="org.eclipse.cdt.launch.WORKING_DIRECTORY" value="${WORKING_DIRECTORY}"/>
+    <booleanAttribute key="org.eclipse.cdt.launch.use_terminal" value="true"/>
+    <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_PATHS">
+        <listEntry value="/${PROJECT_ATTR}"/>
+    </listAttribute>
+    <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
+        <listEntry value="4"/>
+    </listAttribute>
+    <mapAttribute key="org.eclipse.debug.core.environmentVariables">
+        <mapEntry key="LD_LIBRARY_PATH" value="${PATHS}"/>
+        <mapEntry key="DYLD_LIBRARY_PATH" value="${PATHS}"/>
+    </mapAttribute>
 </launchConfiguration>

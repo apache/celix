@@ -105,7 +105,7 @@ function(add_bundle)
     list(REMOVE_AT ARGN 0)
 
     set(OPTIONS NO_ACTIVATOR)
-    set(ONE_VAL_ARGS VERSION ACTIVATOR SYMBOLIC_NAME NAME) 
+    set(ONE_VAL_ARGS VERSION ACTIVATOR SYMBOLIC_NAME NAME DESCRIPTION) 
     set(MULTI_VAL_ARGS SOURCES PRIVATE_LIBRARIES EXPORT_LIBRARIES HEADERS)
     cmake_parse_arguments(BUNDLE "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
 
@@ -153,9 +153,7 @@ function(add_bundle)
         set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_TARGET_IS_LIB" TRUE)
         add_dependencies(bundles ${BUNDLE_TARGET_NAME})
     else()
-        add_custom_target(${BUNDLE_TARGET_NAME}
-          DEPENDS "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_FILE>"
-        )
+        add_custom_target(${BUNDLE_TARGET_NAME})
     endif()
     add_custom_target(${BUNDLE_TARGET_NAME}_bundle
         DEPENDS "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_FILE>"
@@ -240,6 +238,7 @@ SET(CPACK_INCLUDE_TOPLEVEL_DIRECTORY \"0\")
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_NAME" ${BUNDLE_NAME}) #The bundle name default target name
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_SYMBOLIC_NAME" ${BUNDLE_SYMBOLIC_NAME}) #The bundle symbolic name. Default target name
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_VERSION" ${BUNDLE_VERSION}) #The bundle version. Default 0.0.0
+    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_DESCRIPTION" "${BUNDLE_DESCRIPTION}") #The bundle description.
 
     #headers
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_ACTIVATOR" 1) #Library containing the activator (if any)
@@ -407,6 +406,10 @@ function(bundle_version BUNDLE VERSION)
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_VERSION" ${VERSION})
 endfunction()
 
+function(bundle_description BUNDLE DESC) 
+    set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_DESCRIPTION" ${DESC})
+endfunction()
+
 function(install_bundle)
     #0 is bundle TARGET
     list(GET ARGN 0 BUNDLE)
@@ -468,13 +471,12 @@ function(add_deploy)
 
     add_custom_command(OUTPUT ${DEPLOY_LOCATION}/timestamp
         COMMAND ${CMAKE_COMMAND} -E touch ${DEPLOY_LOCATION}/timestamp
-        DEPENDS  "$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_TARGET_DEPS>" "${DEPLOY_LOCATION}/config.properties" "${DEPLOY_LOCATION}/run.sh"
+        DEPENDS  "$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_TARGET_DEPS>" "${DEPLOY_LOCATION}/config.properties" "${DEPLOY_LOCATION}/run.sh" 
         WORKING_DIRECTORY "${DEPLOY_LOCATION}"
         COMMENT "Deploying ${DEPLOY_PRINT_NAME}" VERBATIM
     )
 
 
-    #TODO generate in the CMakeFiles/deploy.dir/<GROUP_NAME>/DEPLOY_NAME> location
     file(GENERATE 
         OUTPUT "${DEPLOY_LOCATION}/config.properties.step1"
         CONTENT "cosgi.auto.start.1=$<JOIN:$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_BUNDLES>, >
@@ -487,6 +489,14 @@ $<JOIN:$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_PROPERTIES>,
         OUTPUT "${DEPLOY_LOCATION}/config.properties"
         INPUT "${DEPLOY_LOCATION}/config.properties.step1"
     )
+
+    set(CONTAINER_NAME ${DEPLOY_NAME})
+    set(PROGRAM_NAME "${CMAKE_BIN_DIRECTORY}/launcher/celix")
+    set(PROJECT_ATTR "build")
+    set(WORKING_DIRECTORY ${DEPLOY_LOCATION})
+    set(PATHS "${CMAKE_BIN_DIRECTORY}/framework:${CMAKE_BIN_DIRECTORY}/utils:${CMAKE_BIN_DIRECTORY}/dfi")
+    configure_file("${CELIX_CMAKE_DIRECTORY}/cmake_celix/RunConfig.in"  "${DEPLOY_LOCATION}/${DEPLOY_NAME}")
+
 
     if(APPLE) 
         file(GENERATE
