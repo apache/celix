@@ -38,7 +38,8 @@ matrix:
 
 before_install:
   - if [ "$TRAVIS_OS_NAME" = "linux" ] &&  [ -z "$ANDROID" ]; then sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y && sudo apt-get -qq update && sudo apt-get install -y uuid-dev libxml2-dev lcov libffi-dev gcc-4.8 g++-4.8; fi
-  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update && brew install lcov libffi && brew link --force libffi; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew uninstall cmake; fi
+  - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update && brew install lcov libffi cmake && brew link --force libffi; fi
 
 before_script:
     - wget https://github.com/cpputest/cpputest.github.io/blob/master/releases/cpputest-3.7.1.tar.gz?raw=true -O /tmp/cpputest.tar.gz
