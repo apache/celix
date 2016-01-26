@@ -5,12 +5,15 @@ A (python based) code generation tool for [Apache Celix](https://celix.apache.or
 
 ###Option 1 (install with distutils)
 
+* Install PyYAML: `pip install pyyaml`
 * Download Cog from https://pypi.python.org/pypi/cogapp
 * Unpack and run `python setup.py install' in the cogapp directory
 * Clone this repository
 * Run `python setup.py install` in the celix-bootstrap directory
 
 ###Option 2 (configure with alias)
+
+* Install PyYAML: `pip install pyyaml`
 * Download Cog from https://pypi.python.org/pypi/cogapp
 * Unpack it in a convenient directory 
 * Clone this repository
