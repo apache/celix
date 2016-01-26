@@ -20,7 +20,7 @@ celix_subproject(CONFIG_ADMIN "Option to enable building the Config Admin Servic
 if (CONFIG_ADMIN)
 
 	add_subdirectory(service)
-#	add_subdirectory(examples)
+    add_subdirectory(example)
 	
 	if (ENABLE_TESTING)
 		find_package(CppUTest REQUIRED)

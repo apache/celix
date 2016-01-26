@@ -16,9 +16,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
-if (CONFIG_ADMIN)
+if (BUILD_CONFIG_ADMIN)
  	
-	deploy("config_admin1" BUNDLES config_admin shell shell_tui log_service log_writer example_test)
-	deploy("config_admin2" BUNDLES config_admin shell shell_tui log_service log_writer bundle_managed_service bundle_configuring)
+    deploy("config_admin" BUNDLES config_admin shell shell_tui log_service log_writer config_admin_example)
 
-endif (CONFIG_ADMIN)
+endif (BUILD_CONFIG_ADMIN)
