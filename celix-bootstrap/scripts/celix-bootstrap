@@ -1,0 +1,5 @@
+#!/usr/bin/env python
+
+import celix.bootstrap.argument_parser
+
+celix.bootstrap.argument_parser.main()
