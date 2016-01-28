@@ -11,6 +11,7 @@
 #
 #cog.outl("deploy( \"%s\" BUNDLES" % project['name'])
 #cog.outl("\t${CELIX_BUNDLES_DIR}/shell.zip")
+#cog.outl("\t${CELIX_BUNDLES_DIR}/dm_shell.zip")
 #cog.outl("\t${CELIX_BUNDLES_DIR}/shell_tui.zip")
 #cog.outl("\t${CELIX_BUNDLES_DIR}/log_service.zip")
 #
@@ -19,8 +20,8 @@
 #	for foundFile in fnmatch.filter(filenames, 'bundle.yaml'):
 #		bundleFile = root + '/' + foundFile
 #		with open(bundleFile) as input :
-#			bundle = yaml.load(input)
-#			cog.outl("\t%s" % bundle['name'])
+#                       bundle = yaml.load(input)
+#                       cog.outl("\t%s" % bundle['name'])
 #
 #cog.outl(")");
 #}}

@@ -1,9 +1,33 @@
+/**
+ *Licensed to the Apache Software Foundation (ASF) under one
+ *or more contributor license agreements.  See the NOTICE file
+ *distributed with this work for additional information
+ *regarding copyright ownership.  The ASF licenses this file
+ *to you under the Apache License, Version 2.0 (the
+ *"License"); you may not use this file except in compliance
+ *with the License.  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *Unless required by applicable law or agreed to in writing,
+ *software distributed under the License is distributed on an
+ *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ *specific language governing permissions and limitations
+ *under the License.
+ */
+/*
+ * component.c
+ *
+ *  \date       Oct 29, 2015
+ *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
+ */
 //{{
-//import yaml
+//import os, yaml
 //bundle = None 
-//component = None
 //with open(bundleFile) as input :
-//	bundle = yaml.load(input)
+//      bundle = yaml.load(input)
 //
 //if not 'components' in bundle or bundle['components'] is None:
 // 	bundle['components'] = []
@@ -11,180 +35,150 @@
 //	for comp in bundle['components'] : 
 //		if not 'serviceDependencies' in comp or comp['serviceDependencies'] is None:
 //			comp['serviceDependencies'] = []
-//		if not 'providedServices' in comp or comp['providedServices'] is None:
-//			comp['providedServices'] = []
+//              if not 'providedServices' in comp or comp['providedServices'] is None:
+//                      comp['providedServices'] = []
+//
 //
 //for comp in bundle['components'] :
-//	if comp['name'] == componentName :
-//		component = comp
-//		break
+//      if comp['name'] == componentName :
+//              component = comp
+//              break
 //}}
 //{{end}}
-
-
+#include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <signal.h>
 
-#include <pthread.h>
+#include "celix_threads.h"
 
-//Component Struct
+
+//Includes for the services / components
 //{{
-//cog.outl("#include \"%s.h\"" % componentName);
-//cog.outl("")
-//cog.outl("struct %s {" % componentName)
-//for service in component['serviceDependencies'] : 
-//	if service['cardinality'] == "many" :
-//		cog.outl("\tarray_list_pt %sServices;" % (service['name']))	
-//		cog.outl("\tpthread_mutex_t mutexFor%sServices;" % service['name'].title());
-//	else :
-//		cog.outl("\t%s %s;" % (service['type'], service['name']))	
-//		cog.outl("\tpthread_mutex_t mutexFor%s;" % service['name'].title());
+//cog.outl("#include \"%s.h\"" % component['name'])
+//for service in component['providedServices'] :
+//      cog.outl("#include <%s>" % service['include'])
+//for service in component['serviceDependencies'] :
+//      cog.outl("#include <%s>" % os.path.split(service['include'])[1])
 //}}
-#include "example.h" //do not edit, generated code
-
-struct example { //do not edit, generated code
-	log_service_pt logger; //do not edit, generated code
-	pthread_mutex_t mutexForLogger; //do not edit, generated code
-	log_service_pt loggerOptional; //do not edit, generated code
-	pthread_mutex_t mutexForLoggerOptional; //do not edit, generated code
-	array_list_pt loggerManyServices; //do not edit, generated code
-	pthread_mutex_t mutexForLoggerManyServices; //do not edit, generated code
 //{{end}}
+
+
+//{{
+//cog.outl("struct %s_cmp_struct {" %(component['name']) )
+//for service in component['serviceDependencies'] :
+//      cog.outl("      %s %sServ;" %(service['type'], service['name']))
+//      cog.outl("      celix_thread_mutex_t %sMutex;" %(service['name']))
+//cog.outl("};");
+//}}
+struct example_cmp_struct {
+    phase1_t* phase1Serv;
+    celix_thread_mutex_t mutex;
 };
+//{{end}}
 
-//Create function
+
+
 //{{
-//cog.outl("celix_status_t %s_create(%s_pt *result) {" % (componentName, componentName))
-//cog.outl("\tcelix_status_t status = CELIX_SUCCESS;")
-//cog.outl("printf(\" %s_create called.\\n\");" % (componentName))
-//cog.outl("\t%s_pt component = calloc(1, sizeof(*component));" % componentName)
-//cog.outl("\tif (component != NULL) {")
+//cog.outl("%s_cmp_t *%s_create(void) {" %(component['name'], component['name']))
+//cog.outl("    %s_cmp_t *cmp = calloc(1, sizeof(*cmp));" %(component['name']))
+//cog.outl("    if (cmp != NULL) {")
 //for service in component['serviceDependencies'] :
-//	if service['cardinality'] == "many" :
-//		cog.outl("\t\tcomponent->%sServices = NULL;" % service['name'])
-//		cog.outl("\t\tstatus = arrayList_create(&component->%sServices);" % service['name'])
-//		cog.outl("\t\tpthread_mutex_init(&component->mutexFor%sServices, NULL);" % service['name'].title())
-//	else :
-//		cog.outl("\t\tcomponent->%s = NULL;" % service['name'])
-//		cog.outl("\t\tpthread_mutex_init(&component->mutexFor%s, NULL);" % service['name'].title())
+//      cog.outl("              celixThreadMutex_create(&cmp->%sMutex, NULL);" %(service['name']));
+//cog.outl("    }");
 //}}
-celix_status_t example_create(example_pt *result) { //do not edit, generated code
-	celix_status_t status = CELIX_SUCCESS; //do not edit, generated code
-	example_pt component = calloc(1, sizeof(*component)); //do not edit, generated code
-	if (component != NULL) { //do not edit, generated code
-		component->logger = NULL; //do not edit, generated code
-		pthread_mutex_init(&component->mutexForLogger, NULL); //do not edit, generated code
-		component->loggerOptional = NULL; //do not edit, generated code
-		pthread_mutex_init(&component->mutexForLoggerOptional, NULL); //do not edit, generated code
-		component->loggerManyServices = NULL; //do not edit, generated code
-		status = arrayList_create(&component->loggerManyServices); //do not edit, generated code
-		pthread_mutex_init(&component->mutexForLoggerManyServices, NULL); //do not edit, generated code
+example_cmp_t* example_create(void) {
+        example_cmp_t* cmp = calloc(1, sizeof(*cmp));
+        if (cmp != NULL) {
+                celixThreadMutex_create(&cmp->mutex, NULL);
+        }
 //{{end}}
-		(*result) = component;
-	} else {
-		status = CELIX_ENOMEM;
-	}	
-	return status;
+
+        return cmp;
 }
 
-
-//Destroy function
 //{{
-//cog.outl("celix_status_t %s_destroy(%s_pt component) {" % (componentName,componentName))
-//cog.outl("printf(\" %s_destroy called.\\n\");" % (componentName))
+//cog.outl("int %s_init(%s_cmp_t* cmp) {" %(component['name'], component['name']) )
+//cog.outl("    printf(\"init %s\\n\");" %(component['name']) )
 //}}
-celix_status_t example_destroy(example_pt component) { //do not edit, generated code
+int example_init(example_cmp_t* cmp) {
+        printf("init example\n");
 //{{end}}
-	celix_status_t status = CELIX_SUCCESS;
-	if (component != NULL) {
-		free(component);
-	} else {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-	return status;
+        return 0;
 }
 
-//Start function
 //{{
-//cog.outl("celix_status_t %s_start(%s_pt component) {" % (componentName,componentName))
-//cog.outl("printf(\" %s_start called.\\n\");" % (componentName))
+//cog.outl("int %s_start(%s_cmp_t* cmp) {" %(component['name'], component['name']) )
+//cog.outl("    printf(\"start %s\\n\");" %(component['name']) )
 //}}
-celix_status_t example_start(example_pt component) { //do not edit, generated code
+int example_init(example_cmp_t* cmp) {
+        printf("start example\n");
 //{{end}}
-	celix_status_t status = CELIX_SUCCESS;
-	return status;
+        return 0;
 }
 
-//Stop function
 //{{
-//cog.outl("celix_status_t %s_stop(%s_pt component) {" % (componentName,componentName))
-//cog.outl("printf(\" %s_stop called.\\n\");" % (componentName))
+//cog.outl("int %s_stop(%s_cmp_t* cmp) {" %(component['name'], component['name']) )
+//cog.outl("    printf(\"stop %s\\n\");" %(component['name']) )
 //}}
-celix_status_t example_stop(example_pt component) { //do not edit, generated code
+int example_stop(example_cmp_t* cmp) {
+        printf("stop example\n");
 //{{end}}
-	celix_status_t status = CELIX_SUCCESS;
-	return status;
+        return 0;
 }
+
+//{{
+//cog.outl("int %s_deinit(%s_cmp_t* cmp) {" %(component['name'], component['name']) )
+//cog.outl("    printf(\"deinit %s\\n\");" %(component['name']) )
+//}}
+int example_deinit(example_cmp_t* cmp) {
+        printf("deinit example\n");
+//{{end}}
+        return 0;
+}
+
+//{{
+//cog.outl("int %s_destroy(%s_cmp_t* cmp) {" %(component['name'], component['name']) )
+//cog.outl("    printf(\"destroy %s\\n\");" %(component['name']) )
+//}}
+int example_destroy(example_cmp_t* cmp) {
+        printf("destroy example\n");
+//{{end}}
+        free(cmp);
+        return 0;
+}
+
 
 //{{
 //for service in component['serviceDependencies'] :
-//	if service['cardinality'] == "many" :
-//		cog.outl("celix_status_t %s_add%s(%s_pt component, %s %s) {" % (componentName, service['name'].title(), componentName, service['type'], service['name'])) 
-//		cog.outl("\tcelix_status_t status = CELIX_SUCCESS;")
-//		cog.outl("printf(\" %s_add%s called.\\n\");" % (componentName, service['name'].title()))
-//		cog.outl("\tpthread_mutex_lock(&component->mutexFor%sServices);" % service['name'].title())
-//		cog.outl("\tarrayList_add(component->%sServices, %s);" % (service['name'], service['name']))
-//		cog.outl("\tpthread_mutex_unlock(&component->mutexFor%sServices);" % service['name'].title())
-//		cog.outl("\treturn status;")
-//		cog.outl("}")
-//		cog.outl("")
-//		cog.outl("celix_status_t %s_remove%s(%s_pt component, %s %s) {" % (componentName, service['name'].title(), componentName, service['type'], service['name'])) 
-//		cog.outl("\tcelix_status_t status = CELIX_SUCCESS;")
-//		cog.outl("\tpthread_mutex_lock(&component->mutexFor%sServices);" % service['name'].title())
-//		cog.outl("\tarrayList_removeElement(component->%sServices, %s);" % (service['name'], service['name']))
-//		cog.outl("\tpthread_mutex_unlock(&component->mutexFor%sServices);" % service['name'].title())
-//		cog.outl("\treturn status;")
-//		cog.outl("}")
-//	else :
-//		cog.outl("celix_status_t %s_set%s(%s_pt component, %s %s) {" % (componentName, service['name'].title(), componentName, service['type'], service['name'])) 
-//		cog.outl("\tcelix_status_t status = CELIX_SUCCESS;")
-//		cog.outl("printf(\" %s_set%s called.\\n\");" % (componentName, service['name'].title()))
-//		cog.outl("\tpthread_mutex_lock(&component->mutexFor%s);" % service['name'].title())
-//		cog.outl("\tcomponent->%s == %s;" % (service['name'], service['name']))
-//		cog.outl("\tpthread_mutex_unlock(&component->mutexFor%s);" % service['name'].title())
-//		cog.outl("\treturn status;")
-//		cog.outl("}")
-//		cog.outl("")	
+//      cog.outl("int %s_set%s(%s_cmp_t* cmp, %s srvc) {" %(component['name'], service['name'], component['name'], service['type']) )
+//      cog.outl("      printf(\"%s_set%s called!\\n\");" %(component['name'], service['name']) )
+//      cog.outl("      celixThreadMutex_lock(&cmp->%sMutex);" %(service['name']))
+//      cog.outl("      cmp->%sServ = srvc;" %(service['name']))
+//      cog.outl("      celixThreadMutex_unlock(&cmp->%sMutex);" %(service['name']))
+//      cog.outl("      return 0;")
+//      cog.outl("}")
 //}}
-celix_status_t example_setLogger(example_pt component, log_service_pt logger) { //do not edit, generated code
-	celix_status_t status = CELIX_SUCCESS; //do not edit, generated code
-	pthread_mutex_lock(&component->mutexFor:ogger); //do not edit, generated code
-	component->logger == logger; //do not edit, generated code
-	pthread_mutex_unlock(&component->mutexForLogger); //do not edit, generated code
-	return status; //do not edit, generated code
-} //do not edit, generated code
-
-celix_status_t example_setLoggerOptional(example_pt component, log_service_pt loggerOptional) { //do not edit, generated code
-	celix_status_t status = CELIX_SUCCESS; //do not edit, generated code
-	pthread_mutex_lock(&component->mutexForLoggerOptional); //do not edit, generated code
-	component->loggerOptional == loggerOptional; //do not edit, generated code
-	pthread_mutex_unlock(&component->mutexForLoggerOptional); //do not edit, generated code
-	return status; //do not edit, generated code
-} //do not edit, generated code
-
-celix_status_t example_addLoggerMany(example_pt component, log_service_pt loggerMany) { //do not edit, generated code
-	celix_status_t status = CELIX_SUCCESS; //do not edit, generated code
-	pthread_mutex_lock(&component->mutexFor:oggerManyServices); //do not edit, generated code
-	arrayList_add(component->loggerManyServices, loggerMany); //do not edit, generated code
-	pthread_mutex_unlock(&component->mutexForLoggerManyServices); //do not edit, generated code
-	return status; //do not edit, generated code
-} //do not edit, generated code
-
-celix_status_t example_removeLoggerMany(example_pt component, log_service_pt loggerMany) { //do not edit, generated code
-	celix_status_t status = CELIX_SUCCESS; //do not edit, generated code
-	pthread_mutex_lock(&component->mutexForLoggerManyServices); //do not edit, generated code
-	arrayList_removeElement(component->loggerManyServices, loggerMany); //do not edit, generated code
-	pthread_mutex_unlock(&component->mutexForLoggerManyServices); //do not edit, generated code
-	return status; //do not edit, generated code
-} //do not edit, generated code
-
+int example_setDependendService(example_cmp_t* cmp, void* service) {
+        celixThreadMutex_lock(&cmp->mutex);
+        cmp->phase1Serv = service;
+        celixThreadMutex_unlock(&cmp->mutex);
+        return 0;
+}
 //{{end}}
+
+
+//{{
+//for service in component['providedServices'] :
+//      cog.outl("int %s%s_callService(%s_cmp_t* cmp, void* data) {" %(component['name'], service['name'].title(), component['name']) )
+//      cog.outl("      printf(\"%s%s callService\\n\");" %(component['name'], service['name'].title() ))
+//      cog.outl("      return 0;")
+//      cog.outl("}")
+//}}
+   
+int example_callService(example_cmp_t* cmp, void* data) {
+        printf("callService called!!\n");
+        return 0;
+}
+//{{end}}
+

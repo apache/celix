@@ -31,9 +31,10 @@
 //TODO add needed includes
 
 //{{
-//cog.outl("#define %s_SERVICE_NAME \"%s_service\"" % (service['name'].upper(), service['service_name']))
+//cog.outl("#define %s_NAME \"%s_service\"" % (service['name'].upper(), service['service_name']))
+//cog.outl("#define %s_VERSION \"1.0.0.0\"" % (service['name'].upper()))
 //cog.outl("")
-//cog.outl("typedef struct %s_service* %s;" % (service['name'], service['type']))
+//cog.outl("typedef struct %s_service %s;" % (service['name'], service['type']))
 //cog.outl("")
 //cog.outl("struct %s_service {" % service['name'])
 //cog.outl("\tvoid *handle;")
@@ -42,10 +43,9 @@
 typedef struct benchmark_service *benchmark_service_pt;
 
 struct benchmark_service {
-	benchmark_handler_pt handler;
+        benchmark_handler_pt handler;
 //{{end}}}
-
-	//TODO add service methods
+        void (*callService)(void *handle, void* data);
 
 //{{
 //cog.outl("};")

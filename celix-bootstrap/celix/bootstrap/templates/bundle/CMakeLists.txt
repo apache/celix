@@ -36,12 +36,13 @@ SET(
 SET(BUNDLE_VERSION "0.0.1")
 
 include_directories(
-	"private/include"
-	"public/include"
+        ${CELIX_INCLUDE_DIR}/dependency_manager
+        "private/include"
+        "public/include"
 #{{ 
 #for comp in bundle['components'] : 
-#	for service in comp['serviceDependencies']:
-#			cog.outl("\t\"%s\"" % os.path.dirname(service['include'])) 
+#       for service in comp['serviceDependencies']:
+#                       cog.outl("\t\"%s\"" % os.path.abspath(os.path.dirname(service['include']))) 
 #}}
 "org.example.mybundle" #do not edit, generated code
 #{{end}}
@@ -68,4 +69,8 @@ mybundle SOURCES #do not edit, generated code
 SET(BUNDLE_LIB "mybundle") #do not edit, generated code
 #{{end}}
 
-target_link_libraries(${BUNDLE_LIB} ${CELIX_FRAMEWORK_LIBRARY} ${CELIX_UTILS_LIBRARY})
+IF(APPLE)
+target_link_libraries(${BUNDLE_LIB} ${CELIX_FRAMEWORK_LIBRARY} -Wl,-all_load dependency_manager  ${CELIX_UTILS_LIBRARY})
+else()
+target_link_libraries(${BUNDLE_LIB} -Wl,--whole-archive dependency_manager -Wl,--no-whole-archive ${CELIX_FRAMEWORK_LIBRARY} ${CELIX_UTILS_LIBRARY})
+ENDIF()

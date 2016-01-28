@@ -146,15 +146,20 @@ class Project(BaseGenerator):
 		#python3 super(Project, self).__init__(gendir, "project")
 
 	def update_cmakelists(self) :
-		options = ["-D", "projectFile=%s" % self.descriptor]
-		self.update_file("CMakeLists.txt", "CMakeLists.txt", options, "#")	
+                options = ["-D", "projectFile=%s" % self.descriptor]
+                self.update_file("CMakeLists.txt", "CMakeLists.txt", options, "#")      
 
-	def create(self) :
-		self.update_file(os.path.join(self.template_dir, self.profile, "%s.yaml" % self.profile),  "%s.yaml" % self.profile, [], None)	
+        def update_deploy_file(self) :
+                options = ["-D", "projectFile=%s" % self.descriptor]
+                self.update_file("deploy.cmake", "deploy.cmake", options, "#")  
+
+        def create(self) :
+                self.update_file(os.path.join(self.template_dir, self.profile, "%s.yaml" % self.profile),  "%s.yaml" % self.profile, [], None)  
 
 	def update(self) :
 		descriptor = self.read_descriptor()
 		if descriptor is None :
-			print("%s does not exist or does not contain a project.yaml file" % self.gendir)
-		else :
-			self.update_cmakelists()	
+                        print("%s does not exist or does not contain a project.yaml file" % self.gendir)
+                else :
+                        self.update_cmakelists()        
+                        self.update_deploy_file()

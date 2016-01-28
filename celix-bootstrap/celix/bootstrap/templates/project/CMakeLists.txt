@@ -17,7 +17,8 @@ project(myproject C) #do not edit, generated code
 #{{end}}
 
 #{{ 
-#	cog.outl("set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} \"%s/share/celix/cmake/modules\")" % project['celix_install_dir'])
+#       cog.outl("set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} \"%s/share/celix/cmake/modules\")" % project['celix_install_dir'])
+#       cog.outl("link_directories(\"%s/lib\")" % project['celix_install_dir'])
 #}}
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "/usr/local/share/celix/cmake/modules") #do not edit, generated code
 #{{end}}

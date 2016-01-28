@@ -1,9 +1,33 @@
+/**
+ *Licensed to the Apache Software Foundation (ASF) under one
+ *or more contributor license agreements.  See the NOTICE file
+ *distributed with this work for additional information
+ *regarding copyright ownership.  The ASF licenses this file
+ *to you under the Apache License, Version 2.0 (the
+ *"License"); you may not use this file except in compliance
+ *with the License.  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *Unless required by applicable law or agreed to in writing,
+ *software distributed under the License is distributed on an
+ *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ *specific language governing permissions and limitations
+ *under the License.
+ */
+/*
+ * component.c
+ *
+ *  \date       Oct 29, 2015
+ *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
+ *  \copyright  Apache License, Version 2.0
+ */
 //{{
-//import yaml
+//import os, yaml
 //bundle = None 
-//component = None
 //with open(bundleFile) as input :
-//	bundle = yaml.load(input)
+//      bundle = yaml.load(input)
 //
 //if not 'components' in bundle or bundle['components'] is None:
 // 	bundle['components'] = []
@@ -23,56 +47,36 @@
 //cog.outl("#define __%s_H_" % componentName.upper())
 //cog.outl("")
 //
-//if 'serviceDependencies' in comp and comp['serviceDependencies'] is not None:
-//	for service in component['serviceDependencies'] :
-//		cog.outl("#include <%s>" % service['include'])
-//	cog.outl("")
+//if 'serviceDependencies' in comp and component['serviceDependencies'] is not None:
+//      for service in component['serviceDependencies'] :
+//              cog.outl("#include <%s>" % os.path.split(service['include'])[1])
+//      cog.outl("")
 //
 //}}
 #ifndef __EXAMPLE_H_ //do not edit, generated code
 #define __EXAMPLE_H_ //do not edit, generated code
-
-#include <log_service/log_service.h> //do not edit, generated code
-#include <log_service/log_service.h> //do not edit, generated code
-#include <log_service/log_service.h> //do not edit, generated code
-
 //{{end}}
-
 #include <celix_errno.h>
-#include <array_list.h>
-
 //{{
-//cog.outl("typedef struct %s *%s_pt;" % (componentName, componentName))
-//cog.outl("")
-//cog.outl("celix_status_t %s_create(%s_pt *component);" % (componentName, componentName))
-//cog.outl("celix_status_t %s_start(%s_pt component);" % (componentName, componentName))
-//cog.outl("celix_status_t %s_stop(%s_pt component);" % (componentName, componentName))
-//cog.outl("celix_status_t %s_destroy(%s_pt component);" % (componentName, componentName))
-//
-//#TODO add remote of service dependencies
+//cog.outl("typedef struct %s_cmp_struct %s_cmp_t;" %(component['name'], component['name']))
+//cog.outl("%s_cmp_t *%s_create(void);" %(component['name'], component['name']))
+//cog.outl("int %s_init(%s_cmp_t *cmp);" %(component['name'], component['name']))
+//cog.outl("int %s_start(%s_cmp_t *cmp);" %(component['name'], component['name'])) 
+//cog.outl("int %s_stop(%s_cmp_t *cmp);" %(component['name'],component['name'])) 
+//cog.outl("int %s_deinit(%s_cmp_t *cmp);" %(component['name'],component['name'])) 
+//cog.outl("int %s_destroy(%s_cmp_t *cmp);" %(component['name'],component['name'])) 
 //}}
-typedef struct example *example_pt; //do not edit, generated code
-
-celix_status_t example_create(example_pt *component); //do not edit, generated code
-celix_status_t example_start(example_pt component); //do not edit, generated code
-celix_status_t example_stop(example_pt component); //do not edit, generated code
-celix_status_t example_destroy(example_pt component); //do not edit, generated code
 //{{end}}
-
 //{{
 //for service in component['serviceDependencies'] :
-//	if service['cardinality'] == "many" :
-//		cog.outl("celix_status_t %s_add%s(%s_pt component, %s %s);" % (componentName, service['name'].title(), componentName, service['type'], service['name']))
-//		cog.outl("celix_status_t %s_remove%s(%s_pt component, %s %s);" % (componentName, service['name'].title(), componentName, service['type'], service['name']))
-//	else :
-//		cog.outl("celix_status_t %s_set%s(%s_pt component, %s %s);" % (componentName, service['name'].title(), componentName, service['type'], service['name']))
+//      cog.outl("int %s_set%s(%s_cmp_t* cmp, %s srvc);" %(component['name'], service['name'], component['name'], service['type'] ) )
 //}}
-celix_status_t example_setLogger(example_pt component, log_service_pt logger); //do not edit, generated code
-celix_status_t example_setLoggerOptional(example_pt component, log_service_pt loggerOptional); //do not edit, generated code
-celix_status_t example_add:oggerMany(example_pt component, log_service_pt loggerMany); //do not edit, generated code
-celix_status_t example_removeLoggerMany(example_pt component, log_service_pt loggerMany); //do not edit, generated code
 //{{end}}
-
+//{{
+//for service in component['providedServices'] :
+//      cog.outl("int %s%s_callService(%s_cmp_t* cmp, void* data);" %(component['name'], service['name'].title(), component['name']))
+//}}
+//{{end}}
 //{{
 //cog.outl("#endif //__%s_H_" % componentName.upper())
 //}}
