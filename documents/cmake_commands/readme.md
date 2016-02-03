@@ -165,6 +165,15 @@ add_deploy(<deploy_target_name>
 )
 ```
 
+The provided bundle targets for a deployment do not have to exists (yet).
+This removes the need for correctly ordening the add_bundle commands so that all bundle target are present before an add_deploy command.
+If the bundle target is never added CMake will give an error:
+```
+  Error evaluating generator expression:
+
+    $<TARGET_PROPERTY:foo,BUNDLE_FILE>
+```
+
 - If COPY is provided the selected bundles will be copied in a bundles dir and the generated config.properties will use relative paths to the bundle locations. Default bundles will not be copied and the generated config.properties will use absolute references to the bundle locations.
 - If GROUP is provided the deployment will be grouped in the provided group name. 
 - If NAME is provided that name will be used for the deployment dir. Default the deploy target name will be used.
