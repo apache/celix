@@ -464,13 +464,15 @@ function(add_deploy)
 
 
     ###### Setup deploy custom target and config.properties file
+    set(TIMESTAMP_FILE "${CMAKE_CURRENT_BINARY_DIR}/${DEPLOY_TARGET}-timestamp")
+
     add_custom_target(${DEPLOY_TARGET}
-        DEPENDS  "${DEPLOY_LOCATION}/timestamp"
+        DEPENDS ${TIMESTAMP_FILE}
     )
     add_dependencies(deploy ${DEPLOY_TARGET})
 
-    add_custom_command(OUTPUT ${DEPLOY_LOCATION}/timestamp
-        COMMAND ${CMAKE_COMMAND} -E touch ${DEPLOY_LOCATION}/timestamp
+    add_custom_command(OUTPUT "${TIMESTAMP_FILE}"
+        COMMAND ${CMAKE_COMMAND} -E touch ${TIMESTAMP_FILE}
         DEPENDS  "$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_TARGET_DEPS>" "${DEPLOY_LOCATION}/config.properties" "${DEPLOY_LOCATION}/run.sh" 
         WORKING_DIRECTORY "${DEPLOY_LOCATION}"
         COMMENT "Deploying ${DEPLOY_PRINT_NAME}" VERBATIM
@@ -501,14 +503,14 @@ $<JOIN:$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_PROPERTIES>,
     if(APPLE) 
         file(GENERATE
             OUTPUT ${DEPLOY_LOCATION}/run.sh
-            CONTENT "export DYLD_LIBRARY_PATH=$<TARGET_FILE_DIR:celix_framework>:$<TARGET_FILE_DIR:celix_utils>:$<TARGET_FILE_DIR:celix_dfi>
+            CONTENT "export DYLD_LIBRARY_PATH=$<TARGET_FILE_DIR:celix_framework>:$<TARGET_FILE_DIR:celix_utils>:$<TARGET_FILE_DIR:celix_dfi>:\${DYLD_LIBRARY_PATH}
 $<TARGET_FILE:celix> $@
 "
     )
     else() 
         file(GENERATE
             OUTPUT ${DEPLOY_LOCATION}/run.sh
-            CONTENT "export LD_LIBRARY_PATH=$<TARGET_FILE_DIR:celix_framework>:$<TARGET_FILE_DIR:celix_utils>:$<TARGET_FILE_DIR:celix_dfi>
+            CONTENT "export LD_LIBRARY_PATH=$<TARGET_FILE_DIR:celix_framework>:$<TARGET_FILE_DIR:celix_utils>:$<TARGET_FILE_DIR:celix_dfi>:\${LD_LIBRARY_PATH}
 $<TARGET_FILE:celix> $@
 "
     )
