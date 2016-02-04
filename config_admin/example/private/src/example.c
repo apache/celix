@@ -2,6 +2,8 @@
 
 #include <pthread.h>
 
+#include "hash_map.h"
+
 #include "example.h"
 
 struct example {
@@ -42,5 +44,16 @@ celix_status_t example_stop(example_pt component) {
 
 celix_status_t example_updated(example_pt component, properties_pt updatedProperties) {
     printf("updated called\n");
+    hash_map_pt map = (hash_map_pt)updatedProperties;
+    if (map != NULL) {
+        hash_map_iterator_pt iter = hashMapIterator_create(map);
+        while(hashMapIterator_hasNext(iter)) {
+            char *key = hashMapIterator_nextKey(iter);
+            char *value = properties_get(updatedProperties, key);
+            printf("got property %s:%s\n", key, value);
+        }
+    } else {
+        printf("updated with NULL properties\n");
+    }
     return CELIX_SUCCESS;
 }
