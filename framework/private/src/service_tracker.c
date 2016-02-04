@@ -382,6 +382,7 @@ static celix_status_t serviceTracker_untrack(service_tracker_pt tracker, service
     celix_status_t status = CELIX_SUCCESS;
     tracked_pt tracked = NULL;
     unsigned int i;
+    bool found = false;
 
     celixThreadRwlock_writeLock(&tracker->lock);
     for (i = 0; i < arrayList_size(tracker->trackedServices); i++) {
@@ -389,13 +390,14 @@ static celix_status_t serviceTracker_untrack(service_tracker_pt tracker, service
         tracked = (tracked_pt) arrayList_get(tracker->trackedServices, i);
         serviceReference_equals(reference, tracked->reference, &equals);
         if (equals) {
+            found = true;
             arrayList_remove(tracker->trackedServices, i);
             break;
         }
     }
     celixThreadRwlock_unlock(&tracker->lock);
 
-    if (tracked != NULL) {
+    if (found && tracked != NULL) {
         serviceTracker_invokeRemovingService(tracker, tracked->reference, tracked->service);
         free(tracked);
         bundleContext_ungetServiceReference(tracker->context, reference);
