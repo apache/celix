@@ -455,7 +455,8 @@ celix_status_t configuration_bind(configuration_impl_pt configuration, bundle_pt
 }
 
 celix_status_t configuration_unbind(configuration_impl_pt configuration, bundle_pt bundle){
-	return CELIX_SUCCESS;
+	configuration->boundBundle = NULL;
+    return CELIX_SUCCESS;
 }
 
 celix_status_t configuration_getBundleLocation2(configuration_impl_pt configuration, bool checkPermission, char **location){
@@ -635,9 +636,9 @@ celix_status_t configuration_setAutoProperties(configuration_impl_pt configurati
 	configuration_lock(configuration);
 
 	// (2) set service.pid
-    if (properties_get(*properties, (char*)OSGI_FRAMEWORK_SERVICE_PID) != NULL) {
+//    if (properties_get(*properties, (char*)OSGI_FRAMEWORK_SERVICE_PID) != NULL) {
         properties_set(*properties, (char*)OSGI_FRAMEWORK_SERVICE_PID, configuration->pid);
-    }
+//    }
 
 	// (3) set factory.pid
 	if ( configuration->factoryPid != NULL ){

@@ -337,7 +337,7 @@ tst2_service_pt test2Serv = NULL;
 			testServ->get_second_type(testServ->handle, value);
 			CHECK_TEXT("my_second_value", value);
 			printf("end: %s\n", __func__);
-		 }
+	}
 }
 
 

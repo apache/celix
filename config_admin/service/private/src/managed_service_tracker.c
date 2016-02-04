@@ -399,6 +399,15 @@ celix_status_t managedServiceTracker_add(managed_service_tracker_pt tracker, ser
 }
 
 celix_status_t managedServiceTracker_remove(managed_service_tracker_pt tracker, service_reference_pt reference, char * pid){
+    configuration_pt configuration = NULL;
+    bundle_pt bundle = NULL;
+
+    configurationStore_findConfiguration(tracker->configurationStore, pid, &configuration);
+    if (configuration != NULL) {
+        if (serviceReference_getBundle(reference, &bundle) == CELIX_SUCCESS) {
+			configuration_unbind(configuration->handle, bundle);
+		}	
+	}
 	return managedServiceTracker_untrackManagedService(tracker, pid, reference);
 }
 

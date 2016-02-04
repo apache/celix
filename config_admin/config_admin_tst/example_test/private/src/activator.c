@@ -123,13 +123,11 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt ctx) {
 				printf("[ TEST ]: ConfigAdminService not available\n");
 			} else {
 				char *pid = "base.device1";
-				properties_pt dictionary;
 				configuration_pt configuration;
 				/* ------------------ get Configuration -------------------*/
 				(*confAdminServ->getConfiguration)(confAdminServ->configAdmin,pid, &configuration);
 				act->configAdminServ = confAdminServ;
 				act->configAdminServRef = ref;
-
 				managed_service_pt managedService;
 				status = managedServiceImpl_create(ctx, &managedService);
 				if (status != CELIX_SUCCESS){
@@ -147,19 +145,20 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt ctx) {
 
 				act->mgmServ->managedService = managedService;
 				act->mgmServ->updated = managedServiceImpl_updated;
-
+				properties_pt dictionary;
 				configuration->configuration_getProperties(configuration->handle, &dictionary);
 				if (dictionary == NULL) {
 					dictionary = properties_create();
 					properties_set(dictionary, (char *) OSGI_FRAMEWORK_SERVICE_PID, pid);
 					properties_set(dictionary, (char *) "type", (char*)"default_value");
 				}
+				// the service has to be registered with a properties/dictionary structure that at least contains a pid to assure it
+				// is picked up by the managedServiceTracker of the configuration Admin
 				status = bundleContext_registerService(ctx, (char *) MANAGED_SERVICE_SERVICE_NAME, act->mgmServ, dictionary, &act->mgmReg);
 				if (status != CELIX_SUCCESS){
 					printf("[ ERROR ]: Managed Service not registered \n");
 					return status;
 				}
-
 				status = bundleContext_registerService(ctx, (char *)TST_SERVICE_NAME, act->tstServ, NULL, &act->tstReg);
 
 			}
@@ -186,8 +185,10 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	struct activator *act = (struct activator *)userData;
+
 	managedServiceImpl_destroy(&act->mgmServ->managedService);
 	managedService_destroy(act->mgmServ);
+
 	free(act->tstServ);
 	free(act);
 	return CELIX_SUCCESS;

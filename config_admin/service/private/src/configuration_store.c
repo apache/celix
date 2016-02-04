@@ -261,7 +261,7 @@ celix_status_t configurationStore_writeConfigurationFile(int file, properties_pt
         char* key = hashMapEntry_getKey(entry);
         char* val = hashMapEntry_getValue(entry);
 
-        snprintf(buffer, 256, "%s=%s", key, val);
+        snprintf(buffer, 256, "%s=%s\n", key, val);
 
         int buffLength = strlen((const char *) buffer);
 

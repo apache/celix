@@ -44,7 +44,7 @@ celix_status_t bundleActivator_start(void *userData, bundle_context_pt context) 
         properties_set(props, "service.pid", "org.example.config.admin"); 
         activator->managed->managedService = (void *)activator->example;
         activator->managed->updated = (void *)example_updated;
-		bundleContext_registerService(context, (char *)  MANAGED_SERVICE_SERVICE_NAME, activator->managed, NULL, &activator->managedServiceRegistry);
+		bundleContext_registerService(context, (char *)  MANAGED_SERVICE_SERVICE_NAME, activator->managed, props, &activator->managedServiceRegistry);
 	}
 
 	return status;
