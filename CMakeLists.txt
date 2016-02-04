@@ -89,5 +89,3 @@ add_subdirectory(launcher)
 add_subdirectory(framework)
 add_subdirectory(utils)
 add_subdirectory(dfi)
-
-#deploy_targets()
