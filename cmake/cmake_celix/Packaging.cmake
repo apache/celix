@@ -556,7 +556,7 @@ function(deploy_bundles_dir)
     foreach(BUNDLE IN ITEMS ${BD_BUNDLES})
         if (IS_ABSOLUTE ${BUNDLE} AND EXISTS ${BUNDLE})
             get_filename_component(BUNDLE_FILENAME ${BUNDLE} NAME) 
-            set(OUT "${DEPLOY_LOC}/${BD_DIR_NAME}/${BUNDLE_FILENAME}.zip")
+            set(OUT "${DEPLOY_LOC}/${BD_DIR_NAME}/${BUNDLE_FILENAME}")
             add_custom_command(OUTPUT ${OUT}
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE} ${OUT}
                 COMMENT "Copying bundle '${BUNDLE}' to '${DEPLOY_LOC}/${BD_DIR_NAME}'"
@@ -591,7 +591,7 @@ function(deploy_bundles)
            if(COPY)
                 if(IS_ABSOLUTE ${BUNDLE} AND EXISTS ${BUNDLE})
                     get_filename_component(BUNDLE_FILENAME ${BUNDLE} NAME) 
-                    list(APPEND BUNDLES ${BUNDLE_FILENAME})
+                    list(APPEND BUNDLES "bundles/${BUNDLE_FILENAME}")
                 else() #assuming target
                     list(APPEND BUNDLES "bundles/${BUNDLE}.zip")
                 endif()
@@ -604,7 +604,7 @@ function(deploy_bundles)
            endif()
    endforeach()
 
-   if(DEPLOY_COPY) 
+   if(COPY) 
        deploy_bundles_dir(${DEPLOY_NAME} DIR_NAME bundles BUNDLES ${ARGN})
    endif()
 
