@@ -34,7 +34,7 @@ add_bundle(
 #cog.outl("\tNAME \"%s\"" % bundle['name'])
 #cog.outl("\tSYMBOLIC_NAME \"%s\"" % bundle['symbolicName']) 
 #cog.outl("\tVERSION \"0.0.1\"")
-#cog.outl("\t%s SOURCES" % bundle['name']) 
+#cog.outl("\t%s SOURCES") 
 #cog.outl("\t\tprivate/src/bundle_activator")
 #for comp in bundle['components'] :
 #	cog.outl("\t\tprivate/src/%s" % comp['name'])
