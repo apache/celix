@@ -53,7 +53,7 @@ before_script:
     - cd -
     - mkdir build install
     - export BUILD_OPTIONS=" \
-        -DBUILD_CONFIG_ADMIN=OFF \
+        -DBUILD_CONFIG_ADMIN=ON \
         -DBUILD_RSA_REMOTE_SERVICE_ADMIN_DFI=ON \
         -DBUILD_DEPLOYMENT_ADMIN=ON \
         -DBUILD_DEPENDENCY_MANAGER=ON \

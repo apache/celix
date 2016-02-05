@@ -21,7 +21,7 @@ include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/config_admin/service/public/include")
 include_directories("private/include")
 
-add_bundle(bundle_managed_service SOURCES
+add_bundle(example_test2 SOURCES
 	private/src/activator
 	private/src/example_managed_service_impl
     VERSION 0.1.0

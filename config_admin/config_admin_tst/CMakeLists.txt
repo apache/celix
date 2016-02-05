@@ -35,9 +35,9 @@ add_executable(config_admin_test config_admin_test.cpp)
 target_link_libraries(config_admin_test celix_framework ${CELIX_LIBRARIES} ${CPPUTEST_LIBRARY} pthread)
 
 
-get_property(config_admin_bundle_file TARGET config_admin PROPERTY BUNDLE)
-get_property(example_test_bundle_file TARGET example_test PROPERTY BUNDLE)
-get_property(example_test2_bundle_file TARGET example_test2 PROPERTY BUNDLE)
+get_property(config_admin_bundle_file TARGET config_admin PROPERTY BUNDLE_FILE)
+get_property(example_test_bundle_file TARGET example_test PROPERTY BUNDLE_FILE)
+get_property(example_test2_bundle_file TARGET example_test2 PROPERTY BUNDLE_FILE)
 
 configure_file(config.properties.in config.properties @ONLY)
 
