@@ -14,27 +14,6 @@
 #}}
 #{{end}}
 
-
-SET(
-	BUNDLE_NAME 
-#{{ 
-#cog.outl("\t\"%s\"" % bundle['name']) 
-#}}
-"mybundle" #do not edit, generated code
-#{{end}}
-)
-
-SET(
-	BUNDLE_SYMBOLICNAME 
-#{{ 
-#cog.outl("\t\"%s\"" % bundle['symbolicName']) 
-#}}
-"org.example.mybundle" #do not edit, generated code
-#{{end}}
-)
-
-SET(BUNDLE_VERSION "0.0.1")
-
 include_directories(
         ${CELIX_INCLUDE_DIR}/dependency_manager
         "private/include"
@@ -49,8 +28,11 @@ include_directories(
 
 )
 
-bundle(
+add_bundle(
 #{{ 
+#cog.outl("\tNAME \"%s\"" % bundle['name'])
+#cog.outl("\tSYMBOLIC_NAME \"%s\"" % bundle['symbolicName']) 
+#cog.outl("\tVERSION \"0.0.1\"")
 #cog.outl("\t%s SOURCES" % bundle['name']) 
 #cog.outl("\t\tprivate/src/bundle_activator")
 #for comp in bundle['components'] :
@@ -74,3 +56,23 @@ target_link_libraries(${BUNDLE_LIB} ${CELIX_FRAMEWORK_LIBRARY} -Wl,-all_load dep
 else()
 target_link_libraries(${BUNDLE_LIB} -Wl,--whole-archive dependency_manager -Wl,--no-whole-archive ${CELIX_FRAMEWORK_LIBRARY} ${CELIX_UTILS_LIBRARY})
 ENDIF()
+
+#{{
+#cog.outl("add_deploy(%s_deploy" % bundle['name'])
+#cog.outl("\tCOPY")
+#cog.outl("\tNAME \"%s\"" % bundle['name'])
+#cog.outl("\tBUNDLES")
+#cog.outl("\t\t${CELIX_BUNDLES_DIR}/shell.zip")
+#cog.outl("\t\t${CELIX_BUNDLES_DIR}/dm_shell.zip")
+#cog.outl("\t\t${CELIX_BUNDLES_DIR}/shell_tui.zip")
+#cog.outl("\t\t${CELIX_BUNDLES_DIR}/log_service.zip")
+#cog.outl("\t\t%s" % bundle['name'])
+#cog.outl(")")
+#}}
+add_deploy(mybundle_deploy
+    COPY
+    NAME "mybundle"
+    BUNDLES 
+        mybundle
+)
+#{{end}}

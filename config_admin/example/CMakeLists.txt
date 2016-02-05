@@ -2,12 +2,12 @@
 
 SET(
 	BUNDLE_NAME 
-"config_admin_example"
+    "config_admin_example"
 )
 
 SET(
 	BUNDLE_SYMBOLICNAME 
-"org.apache.celix.config_admin.example"
+    "org.apache.celix.config_admin.example"
 )
 
 SET(BUNDLE_VERSION "0.0.1")

@@ -97,10 +97,6 @@ class Bundle(BaseGenerator):
 		options = ["-D", "bundleFile=%s" % self.descriptor]
 		self.update_file("CMakeLists.txt", "CMakeLists.txt", options, "#")	
 		
-	def update_deploy_file(self) :
-		options = ["-D", "bundleFile=%s" % self.descriptor]
-		self.update_file("deploy.cmake", "deploy.cmake", options, "#")	
-
 	def update_activator(self) :
 		options = ["-D", "bundleFile=%s" % self.descriptor]
 		self.update_file("bundle_activator.c", "private/src/bundle_activator.c", options)
@@ -129,7 +125,6 @@ class Bundle(BaseGenerator):
 			print("%s does not exist or does not contain a bundle.yaml file" % self.gendir)
 		else :
 			self.update_cmakelists()	
-			self.update_deploy_file()
 			self.update_activator()
 			if 'components' in bd and bd['components'] is not None:
 				for comp in bd['components'] :
@@ -149,10 +144,6 @@ class Project(BaseGenerator):
                 options = ["-D", "projectFile=%s" % self.descriptor]
                 self.update_file("CMakeLists.txt", "CMakeLists.txt", options, "#")      
 
-        def update_deploy_file(self) :
-                options = ["-D", "projectFile=%s" % self.descriptor]
-                self.update_file("deploy.cmake", "deploy.cmake", options, "#")  
-
         def create(self) :
                 self.update_file(os.path.join(self.template_dir, self.profile, "%s.yaml" % self.profile),  "%s.yaml" % self.profile, [], None)  
 
@@ -162,4 +153,3 @@ class Project(BaseGenerator):
                         print("%s does not exist or does not contain a project.yaml file" % self.gendir)
                 else :
                         self.update_cmakelists()        
-                        self.update_deploy_file()

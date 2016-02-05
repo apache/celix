@@ -27,7 +27,7 @@ macro(SET_HEADERS HEADERS)
     endif()
 endmacro()
 
-function(bundles)
+function(bundle)
     list(GET ARGN 0 BUNDLE)
     list(REMOVE_AT ARGN 0)
 
@@ -45,27 +45,36 @@ function(bundles)
 
     if(BUNDLE_FILES)
         bundle_files(${BUNDLE} ${BUNDLE_FILES} DESTINATION .)
+    endif()
+
     if(BUNDLE_EXPORT_VERSION) 
         message(WARNING "EXPORT_VERSION argument not supported")
     endif()
+
     if(BUNDLE_LINK_LIBRARIES) 
         target_link_libraries(${BUNDLE} ${BUNDLE_LINK_LIBRARIES})
     endif()
+
     if(BUNDLE_PRIVATE_LIBRARIES) 
         bundle_private_libs(${BUNDLE} ${BUNDLE_PRIVATE_LIBS})
     endif()
+
     if(BUNDLE_EXPORT_LIBRARIES)
         bundle_export_libs(${BUNDLE} ${BUNDLE_PRIVATE_LIBS})
     endif()
+
     if(BUNDLE_IMPORT_LIBRARIES)
         message(FATAL_ERROR "TODO IMPORT LIBRARIES")
     endif()
+
     if(BUNDLE_DIRECTORIES)
         message(WARNING "DIRECTORIES argument not supported")
     endif()
+
     if(BUNDLE_INSTALL_FILES)
         message(WARNING "INSTALL_FILES argument not supported")
     endif()
+
     if(BUNDLE_INSTALL)
         bundle_install(${BUNDLE})
     endif()
@@ -73,17 +82,20 @@ function(bundles)
     if(BUNDLE_NAME)
         bundle_name(${BUNDLE} ${BUNDLE_NAME})
     endif()
+
     if(BUNDLE_SYMBOLICNAME)
         bundle_symbolic_name(${BUNDLE} ${BUNDLE_SYMBOLICNAME})
     endif()
+
     if(BUNDLE_VERSION)
         bundle_version(${BUNDLE} ${BUNDLE_VERSION})
     endif()
+
     if (BUNDLE_HEADERS)
         bundle_headers(${BUNDLE} ${BUNDLE_HEADERS})
     endif()
 
-    message(STATUS "bundle function is deprecated. update to add_bundle")
+    message(STATUS "bundle function is deprecated. update target '${BUNDLE}' to add_bundle")
 endfunction()
 
 
@@ -104,5 +116,5 @@ function(deploy)
     if(DEPLOY_ENDPOINTS)
         deploy_bundles_dir(${DEPLOY} DIR_NAME "endpoints" BUNDLES ${DEPLOY_ENDPOINTS})
     endif()
-    message(STATUS "deploy function is deprecated. update to add_deploy")
+    message(STATUS "deploy function is deprecated. update target '${DEPLOY}' to add_deploy")
 endfunction()

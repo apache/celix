@@ -45,7 +45,14 @@ if (CONFIG_ADMIN)
    endif(ENABLE_TESTING)
 	
 
-	add_deploy("config_admin1" BUNDLES config_admin shell shell_tui log_service log_writer example_test)
-	add_deploy("config_admin2" BUNDLES config_admin shell shell_tui log_service log_writer bundle_managed_service bundle_configuring)
+   add_deploy(config_admin_deploy 
+       NAME "config_admin"
+       BUNDLES 
+        config_admin 
+        shell shell_tui 
+        log_service 
+        log_writer 
+        config_admin_example
+   )
 
 endif (CONFIG_ADMIN)
