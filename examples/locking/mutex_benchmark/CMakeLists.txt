@@ -15,18 +15,17 @@
 # specific language governing permissions and limitations
 # under the License.
 
-SET(BUNDLE_SYMBOLICNAME mutex_benchmark)
-SET(BUNDLE_VERSION 0.0.0)
-
 include_directories(public/include)
 include_directories(../benchmark/public/include)
 include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/shell/public/include")
 
-bundle(mutex_benchmark SOURCES
-	../benchmark/public/src/benchmark_activator
-	private/src/mutex_benchmark 
+add_bundle(mutex_benchmark
+	VERSION 0.0.1
+	SOURCES
+		../benchmark/public/src/benchmark_activator
+		private/src/mutex_benchmark
 )
 
 target_link_libraries(mutex_benchmark celix_framework)

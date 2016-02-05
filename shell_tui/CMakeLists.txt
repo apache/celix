@@ -17,12 +17,11 @@
 celix_subproject(SHELL_TUI "Option to enable building the Shell Textual User Interface bundles" ON DEPS LAUNCHER SHELL)
 if (SHELL_TUI)
 
-    SET_HEADER(BUNDLE_VERSION "1.0.0")
-	SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_shell_tui")
-	SET_HEADERS("Bundle-Name: Apache Celix Shell TUI") 
-
-    bundle(shell_tui 
-    	SOURCES
+    add_bundle(shell_tui
+    	SYMBOLIC_NAME "apache_celix_shell_tui"
+    	VERSION "1.0.0"
+    	NAME "Apache Celix Shell TUI"
+    	SOURCES 
     		private/src/activator 
     		private/src/shell_tui
 	)

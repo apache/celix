@@ -17,7 +17,7 @@
 
 SET_HEADERS("Service-Component: test.xml")
 
-bundle(scr_test SOURCES
+add_bundle(scr_test SOURCES
 	test.c 
 	FILES test.xml
 	)

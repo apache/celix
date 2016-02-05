@@ -15,24 +15,24 @@
 # specific language governing permissions and limitations
 # under the License.
 
-SET(BUNDLE_SYMBOLICNAME "phase1")
-SET(BUNDLE_VERSION "0.0.1")
-
-bundle(phase1
-        SOURCES
-            private/src/phase1_activator
-            private/src/phase1_cmp.c
-)
-
 include_directories(
         private/include
         ../services
 )
 
-# Use some magic to include all symbols of the static library
-IF(APPLE)
-target_link_libraries(phase1 celix_framework -Wl,-all_load dependency_manager)
-else()
-target_link_libraries(phase1 -Wl,--whole-archive dependency_manager -Wl,--no-whole-archive celix_framework)
-ENDIF()
+add_bundle(phase1
+    SYMBOLIC_NAME phase1
+    VERSION 0.0.1
+    SOURCES
+        private/src/phase1_activator
+        private/src/phase1_cmp.c
+)
 
+#Not possbile yet.
+#bundle_private_libs(phase1 dependency_manager)
+
+IF(APPLE)
+target_link_libraries(phase1 celix_framework -Wl,-all_load dependency_manager_static)
+else()
+target_link_libraries(phase1 -Wl,--whole-archive dependency_manager_static -Wl,--no-whole-archive celix_framework)
+ENDIF()

@@ -37,19 +37,19 @@ add_executable(test_rsa_shm
 )
 target_link_libraries(test_rsa_shm celix_framework celix_utils ${CURL_LIBRARIES} ${CPPUTEST_LIBRARY})
 
-get_property(rsa_bundle_file TARGET remote_service_admin_shm PROPERTY BUNDLE)
-get_property(calc_bundle_file TARGET calculator PROPERTY BUNDLE)
-get_property(calculator_shell_bundle_file TARGET calculator_shell PROPERTY BUNDLE)
-get_property(discovery_shm_bundle_file TARGET discovery_shm PROPERTY BUNDLE)
-get_property(topology_manager_bundle_file TARGET topology_manager PROPERTY BUNDLE)
-get_property(calc_proxy_bundle_file TARGET org.apache.celix.calc.api.Calculator_proxy PROPERTY BUNDLE)
-get_property(calc_endpoint_bundle_file TARGET  org.apache.celix.calc.api.Calculator_endpoint PROPERTY BUNDLE)
+get_property(rsa_bundle_file TARGET remote_service_admin_shm PROPERTY BUNDLE_FILE)
+get_property(calc_bundle_file TARGET calculator PROPERTY BUNDLE_FILE)
+get_property(calculator_shell_bundle_file TARGET calculator_shell PROPERTY BUNDLE_FILE)
+get_property(discovery_shm_bundle_file TARGET discovery_shm PROPERTY BUNDLE_FILE)
+get_property(topology_manager_bundle_file TARGET topology_manager PROPERTY BUNDLE_FILE)
+get_property(calc_proxy_bundle_file TARGET org.apache.celix.calc.api.Calculator_proxy PROPERTY BUNDLE_FILE)
+get_property(calc_endpoint_bundle_file TARGET  org.apache.celix.calc.api.Calculator_endpoint PROPERTY BUNDLE_FILE)
 
-get_filename_component(client_endpoints @calc_proxy_bundle_file@ PATH)
-get_filename_component(server_endpoints @calc_endpoint_bundle_file@ PATH)
+get_filename_component(client_endpoints ${calc_proxy_bundle_file} PATH)
+get_filename_component(server_endpoints ${calc_endpoint_bundle_file} PATH)
 
-configure_file(client.properties.in client.properties @ONLY)
-configure_file(server.properties.in server.properties @ONLY)
+configure_file(client.properties.in client.properties)
+configure_file(server.properties.in server.properties)
 
 add_dependencies(test_rsa_shm remote_service_admin_shm calculator org.apache.celix.calc.api.Calculator_proxy org.apache.celix.calc.api.Calculator_endpoint)
  

@@ -17,9 +17,7 @@
 
 celix_subproject(DEPENDENCY_MANAGER "Option to build the dependency manager static library" ON DEPS framework)
 if (DEPENDENCY_MANAGER)
-    SET(BUNDLE_SYMBOLICNAME "apache_celix_dm_shell")
-    SET(BUNDLE_VERSION "0.0.1")
-    SET(BUNDLE_NAME "Apache Celix DM Shell commands")
+
     # Add -fPIC for x86_64 Unix platforms; this lib will be linked to a shared lib
     if(UNIX AND NOT WIN32)
       find_program(CMAKE_UNAME uname /bin /usr/bin /usr/local/bin )
@@ -31,20 +29,19 @@ if (DEPENDENCY_MANAGER)
         endif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
       endif(CMAKE_UNAME)
     endif(UNIX AND NOT WIN32)
-    
-    CELIX_ADD_COMPONENT(dependency_manager
-    	DISPLAY_NAME Dependency Manager
-        DESCRIPTION "The Apache Celix dependency manager (static) library"
-        GROUP all
-    )
-    bundle(dm_shell SOURCES
+
+    add_bundle(dm_shell
+        SYMBOLIC_NAME "apche_celix_dm_shell"
+        VERSION "0.0.1"
+        NAME "Apache Celix DM Shell Commands"
+        SOURCES
             private/src/dm_shell_activator
             private/src/dm_shell_list_command
     )
     target_link_libraries(dm_shell celix_framework celix_utils)
 
 
-    add_library(dependency_manager STATIC 
+    add_library(dependency_manager_static STATIC 
     	private/src/dm_activator_base 
     	private/src/dm_component_impl 
     	private/src/dm_service_dependency
@@ -52,24 +49,35 @@ if (DEPENDENCY_MANAGER)
     	private/src/dm_dependency_manager_impl
     )
 
+    #add_library(dependency_manager SHARED 
+    #	private/src/dm_activator_base 
+    #	private/src/dm_component_impl 
+    #	private/src/dm_service_dependency
+    # 	private/src/dm_event
+    #   private/src/dm_dependency_manager_impl
+    #)
+    #set_target_properties(dependency_manager PROPERTIES SOVERSION 1)
+    #target_link_libraries(dependency_manager celix_framework -undefined dynamic_load)
+
    	include_directories("public/include")
    	include_directories("private/include")
     include_directories("../shell/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-    target_link_libraries(dependency_manager celix_framework)
+    target_link_libraries(dependency_manager_static celix_framework)
     
     install(
     	FILES
-    	    public/include/dm_activator_base.h
+    	    public/include/dm_activator.h
             public/include/dm_component.h
             public/include/dm_dependency_manager.h
             public/include/dm_service_dependency.h
             public/include/dm_info.h
 		DESTINATION 
-			include/celix/dependency_manager
-		COMPONENT 
+	    	include/celix/dependency_manager
+		COMPONENT
 			dependency_manager
 	)
     install_bundle(dm_shell)
-    install(TARGETS dependency_manager DESTINATION lib COMPONENT dependency_manager)
+    #install(TARGETS dependency_manager dependency_manager_static DESTINATION lib COMPONENT dependency_manager)
+    install(TARGETS dependency_manager_static DESTINATION lib COMPONENT dependency_manager)
 endif (DEPENDENCY_MANAGER)

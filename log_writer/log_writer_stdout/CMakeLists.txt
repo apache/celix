@@ -15,16 +15,16 @@
 # specific language governing permissions and limitations
 # under the License.
 
-SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_log_writer")
-SET_HEADERS("Bundle-Name: Apache Celix Log Writer")
-SET_HEADER(BUNDLE_VERSION "1.0.0")
+add_bundle(log_writer
+	SYMBOLIC_NAME "apache_celix_log_writer"
+	VERSION "1.0.0"
+	NAME "Apache Celix Log Writer"
+	SOURCES
+		${PROJECT_SOURCE_DIR}/log_writer/log_writer/private/src/log_writer_activator
+		${PROJECT_SOURCE_DIR}/log_writer/log_writer/private/src/log_writer
+		${PROJECT_SOURCE_DIR}/log_writer/log_writer/private/include/log_writer.h
 
-bundle(log_writer SOURCES 
-	${PROJECT_SOURCE_DIR}/log_writer/log_writer/private/src/log_writer_activator
-	${PROJECT_SOURCE_DIR}/log_writer/log_writer/private/src/log_writer
-	${PROJECT_SOURCE_DIR}/log_writer/log_writer/private/include/log_writer.h
-
-	private/src/log_writer_stdout
+		private/src/log_writer_stdout
 )
 
 install_bundle(log_writer)

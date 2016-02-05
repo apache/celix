@@ -18,11 +18,11 @@ celix_subproject(LOG_WRITER_SYSLOG "Option to enable building the Syslog Writer"
 if (LOG_WRITER_SYSLOG)
     find_package(Syslog REQUIRED)
 
-    SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_log_writer_syslog")
-    SET_HEADERS("Bundle-Name: Apache Celix Log Writer Syslog")
-    SET_HEADER(BUNDLE_VERSION "1.0.0")
-
-    bundle(log_writer_syslog SOURCES 
+    add_bundle(log_writer_syslog 
+        VERSION 1.0.0
+        SYMBOLIC_NAME "apache_celix_log_writer_syslog"
+        NAME "Apache Celix Log Writer Syslog"
+        SOURCES
         ${PROJECT_SOURCE_DIR}/log_writer/log_writer/private/src/log_writer_activator
         ${PROJECT_SOURCE_DIR}/log_writer/log_writer/private/src/log_writer
         ${PROJECT_SOURCE_DIR}/log_writer/log_writer/private/include/log_writer.h

@@ -15,15 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-set(BUNDLE_SYMBOLICNAME "apache_celix_examples_consumer")
-set(BUNDLE_VERSION "1.0.0")
-set(BUNDLE_NAME "Apache Celix Consumer")
-
-
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/examples/producer_consumer/database/public/include")
 
-bundle(consumer
+add_bundle(consumer
+	VERSION 1.0.0
 	SOURCES
 	 	private/src/activator.c
 )

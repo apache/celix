@@ -21,12 +21,10 @@ include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/config_admin/service/public/include")
 include_directories("private/include")
 
-SET(BUNDLE_SYMBOLICNAME "example_test2")
-SET(BUNDLE_VERSION "0.1.0")
-
-bundle(example_test2 SOURCES 
+add_bundle(bundle_managed_service SOURCES
 	private/src/activator
 	private/src/example_managed_service_impl
+    VERSION 0.1.0
 )
 
 target_link_libraries(example_test2 celix_framework celix_utils config_admin)

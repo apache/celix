@@ -15,10 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-SET(BUNDLE_SYMBOLICNAME "apache_celix_examples_publisher_b")
-SET(BUNDLE_VERSION "0.0.1")
-
-bundle(publisherB SOURCES private/src/activator private/src/publisher)
+add_bundle(publisherB VERSION 1.0.0 SOURCES private/src/activator private/src/publisher)
 include_directories("../publisherService/public/include")
 include_directories("../publisherService/private/include")
 target_link_libraries(publisherB celix_framework)

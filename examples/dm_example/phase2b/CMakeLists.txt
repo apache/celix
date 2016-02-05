@@ -15,23 +15,23 @@
 # specific language governing permissions and limitations
 # under the License.
 
-SET(BUNDLE_SYMBOLICNAME "phase2b")
-SET(BUNDLE_VERSION "0.0.1")
-
-bundle(phase2b SOURCES
-        private/src/phase2b_activator
-        private/src/phase2b_cmp
-)
-
 include_directories(
         private/include
         ../services
 )
 
-#target_link_libraries(fase2_a -Wl,--whole-archive dependency_manager2 -Wl,--no-whole-archive celix_framework)
-#target_link_libraries(fase2_a celix_framework)
+add_bundle(phase2b
+        SYMBOLIC_NAME phase2b
+        VERSION 0.0.1
+        SOURCES
+                private/src/phase2b_activator
+                private/src/phase2b_cmp
+)
+
+#bundle_private_libs(phase2b dependency_manager)
+
 IF(APPLE)
-target_link_libraries(phase2b celix_framework -Wl,-all_load dependency_manager)
+target_link_libraries(phase2b celix_framework -Wl,-all_load dependency_manager_static)
 else()
-target_link_libraries(phase2b -Wl,--whole-archive dependency_manager -Wl,--no-whole-archive celix_framework)
+target_link_libraries(phase2b -Wl,--whole-archive dependency_manager_static -Wl,--no-whole-archive celix_framework)
 ENDIF()

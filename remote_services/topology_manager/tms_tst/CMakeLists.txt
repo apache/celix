@@ -34,17 +34,23 @@ add_dependencies(test_tm_scoped remote_service_admin_dfi topology_manager calcul
 # Not nice, but only (?) solution to prevent circular dependency between this test and rsa_dfi_test
 set_property(GLOBAL PROPERTY temp_rsa_bundle_file ${PROJECT_BINARY_DIR}/remote_services/remote_service_admin_dfi/rsa/remote_service_admin_dfi.zip)
 get_property(rsa_bundle_file GLOBAL PROPERTY temp_rsa_bundle_file)
-get_property(calc_bundle_file TARGET calculator PROPERTY BUNDLE)
-get_property(topology_manager_bundle_file TARGET topology_manager PROPERTY BUNDLE)
-get_property(disc_mock_bundle_file TARGET topology_manager_disc_mock_bundle PROPERTY BUNDLE)
-get_property(test_bundle_file TARGET topology_manager_test_bundle PROPERTY BUNDLE)
+get_property(calc_bundle_file TARGET calculator PROPERTY BUNDLE_FILE)
+get_property(topology_manager_bundle_file TARGET topology_manager PROPERTY BUNDLE_FILE)
+get_property(disc_mock_bundle_file TARGET topology_manager_disc_mock_bundle PROPERTY BUNDLE_FILE)
+get_property(test_bundle_file TARGET topology_manager_test_bundle PROPERTY BUNDLE_FILE)
 
-configure_file(config.properties.in config.properties @ONLY)
-configure_file(config_import.properties.in config_import.properties @ONLY)
-configure_file(scope.json scope.json @ONLY)
-configure_file(scope2.json scope2.json @ONLY)
-configure_file(scope3.json scope3.json @ONLY)
-configure_file(scope4.json scope4.json @ONLY)
+#file(GENERATE OUTPUT config.properties CONTENT "
+#cosgi.auto.start.1=$<TARGET_PROPERTY:remote_service_admin_dfi,BUNDE_FILE> $<TARGET_PROPERTY:calculator,BUNDLE_FILE> $<TARGET_PROPERTY:topology_manager,BUNDLE_FILE> $<TARGET_PROPERTY:topology_manager_disc_mock_bundle,BUNDLE_FILE>
+#LOGHELPER_ENABLE_STDOUT_FALLBACK=true
+#org.osgi.framework.storage.clean=onFirstInit
+#")
+configure_file(config.properties.in config.properties)
+
+configure_file(config_import.properties.in config_import.properties)
+configure_file(scope.json scope.json)
+configure_file(scope2.json scope2.json)
+configure_file(scope3.json scope3.json)
+configure_file(scope4.json scope4.json)
 
 
 add_test(NAME run_test_tm_scoped COMMAND test_tm_scoped)

@@ -28,9 +28,13 @@
 
 #include <stdlib.h>
 
+#include "bundle_context.h"
+#include "celix_errno.h"
+#include "dm_dependency_manager.h"
 #include "bundle_activator.h"
-#include "dm_activator_base.h"
 #include "dm_info.h"
+
+#include "dm_activator.h"
 
 struct dm_dependency_activator_base {
 	dm_dependency_manager_pt manager;
@@ -41,6 +45,7 @@ struct dm_dependency_activator_base {
 };
 
 typedef struct dm_dependency_activator_base * dependency_activator_base_pt;
+
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_ENOMEM;
@@ -124,5 +129,3 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt contex
 
 	return status;
 }
-
-

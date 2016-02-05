@@ -186,7 +186,8 @@ void manifest_write(manifest_pt manifest, char * filename) {
 
 char * manifest_getValue(manifest_pt manifest, const char * name) {
 	char * val = properties_get(manifest->mainAttributes, (char *) name);
-	return val;
+	bool isEmpty = utils_isStringEmptyOrNull(val);
+	return isEmpty ? NULL : val;
 }
 
 int fpeek(FILE *stream) {

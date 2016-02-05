@@ -40,8 +40,6 @@ static const char * const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_START = "bundleActivat
 static const char * const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_STOP = "bundleActivator_stop";
 static const char * const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_DESTROY = "bundleActivator_destroy";
 
-static const char * const OSGI_FRAMEWORK_HEADER_LIBRARY = "library";
-
 static const char * const OSGI_FRAMEWORK_BUNDLE_SYMBOLICNAME = "Bundle-SymbolicName";
 static const char * const OSGI_FRAMEWORK_BUNDLE_VERSION = "Bundle-Version";
 static const char * const OSGI_FRAMEWORK_PRIVATE_LIBRARY = "Private-Library";

@@ -15,13 +15,13 @@
 # specific language governing permissions and limitations
 # under the License.
 
-SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_driver_locator")
-SET(BUNDLE_VERSION "0.0.1")
-SET_HEADERS("Bundle-Name: Apache Celix Device Access Driver Locator")
-
-bundle(driver_locator SOURCES 
-	private/src/activator 
-	private/src/driver_locator
+add_bundle(driver_locator
+	SYMBOLIC_NAME "apache_celix_driver_locator"
+	VERSION "0.0.1"
+	NAME "Apache Celix Device Access Driver Locator"
+	SOURCES
+		private/src/activator
+		private/src/driver_locator
 )
 
 install_bundle(driver_locator)

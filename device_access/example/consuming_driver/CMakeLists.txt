@@ -15,13 +15,13 @@
 # specific language governing permissions and limitations
 # under the License.
 
-SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_word_consuming_driver_example")
-SET(BUNDLE_VERSION "0.0.1")
-SET_HEADERS("Bundle-Name: Apache Celix Device Access Word Consuming Driver Example")
-
-bundle(word_consumingdriver SOURCES 
-	private/src/activator 
-	private/src/consuming_driver
+add_bundle(word_consumingdriver
+ 	SYMBOLIC_NAME "apache_celix_word_consuming_driver_example"
+ 	VERSION "0.0.1"
+ 	NAME "Apache Celix Device Access Word Consuming Driver Example"
+	SOURCES
+		private/src/activator
+		private/src/consuming_driver
 )
 
 include_directories(${PROJECT_SOURCE_DIR}/device_access/device_access/public/include)

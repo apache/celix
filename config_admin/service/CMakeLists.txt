@@ -20,11 +20,10 @@ include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
 include_directories("public/include")
 include_directories("private/include")
-
-SET(BUNDLE_SYMBOLICNAME "config_admin")
-SET(BUNDLE_VERSION "0.0.1")
  		
-bundle(config_admin SOURCES 
+add_bundle(config_admin 
+    VERSION 0.0.1
+    SOURCES
 	private/src/activator 
 	private/src/configuration_admin_factory
 	private/src/configuration_admin_impl

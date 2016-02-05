@@ -15,10 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-SET(BUNDLE_SYMBOLICNAME "apache_celix_examples_tracker_dm")
-SET(BUNDLE_VERSION "0.0.1")
-
-bundle(tracker_depman SOURCES
+add_bundle(tracker_depman VERSION 1.0.0 SOURCES
     private/src/dependency_activator
     private/src/tracker
     
@@ -33,7 +30,7 @@ include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 
 # Use some magic to include all symbols of the static library
 IF(APPLE)
-target_link_libraries(tracker_depman celix_framework -Wl,-all_load dependency_manager)
+target_link_libraries(tracker_depman celix_framework -Wl,-all_load dependency_manager_static)
 else()
-target_link_libraries(tracker_depman -Wl,--whole-archive dependency_manager -Wl,--no-whole-archive celix_framework)
+target_link_libraries(tracker_depman -Wl,--whole-archive dependency_manager_static -Wl,--no-whole-archive celix_framework)
 ENDIF()

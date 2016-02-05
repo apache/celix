@@ -33,13 +33,12 @@ if (RSA_DISCOVERY_ETCD)
 	include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
 	include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 	include_directories("private/include")
-
-	SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_rsa_discovery_etcd")
-	SET(BUNDLE_VERSION "0.0.1")
-	SET_HEADERS("Bundle-Name: Apache Celix RSA Discovery ETCD")
-
     
-	bundle(discovery_etcd SOURCES
+	add_bundle(discovery_etcd 
+        VERSION 0.0.1
+        SYMBOLIC_NAME "apache_celix_rsa_discovery_etcd"
+        NAME "Apache Celix RSA Discovery ETCD"
+        SOURCES
 		private/src/discovery_impl.c
 		private/src/etcd.c
 	    private/src/etcd_watcher.c

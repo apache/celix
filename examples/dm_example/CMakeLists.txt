@@ -26,4 +26,19 @@ if (BUILD_DEPENDENCY_MANAGER)
     add_subdirectory(phase2b)
     add_subdirectory(phase3)
 
+
+    add_deploy("dm_example"
+        COPY 
+        BUNDLES
+            phase1
+            phase2a
+            phase2b
+            phase3
+            shell
+            shell_tui
+            dm_shell
+        PROPERTIES
+            LOGHELPER_ENABLE_STDOUT_FALLBACK=true
+    )
+
 endif ()

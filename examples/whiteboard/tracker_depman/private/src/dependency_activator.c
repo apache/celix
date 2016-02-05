@@ -27,7 +27,7 @@
 #include <stdio.h>
 #include "celixbool.h"
 
-#include "dm_activator_base.h"
+#include "dm_activator.h"
 #include "publisher.h"
 #include "tracker.h"
 

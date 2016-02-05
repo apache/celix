@@ -9,12 +9,9 @@ include_directories(
         ${PROJECT_SOURCE_DIR}/remote_services/discovery/private/include
 )
 
-SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_topology_manager_scoped_disc_mock_bundle")
-SET(BUNDLE_VERSION "0.0.1")
-SET_HEADERS("Bundle-Name: Apache Celix Topology manager discovery mock bundle")
 
-
-bundle(topology_manager_disc_mock_bundle
+add_bundle(topology_manager_disc_mock_bundle
+    VERSION 0.0.1
     SOURCES
         disc_mock_activator.c
         disc_mock_service.c

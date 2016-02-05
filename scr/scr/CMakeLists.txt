@@ -18,7 +18,7 @@
 include(FindLibXml2)
 include_directories(${LIBXML2_INCLUDE_DIR})
 
-bundle(scr SOURCES
+add_bundle(scr SOURCES
 	scr.c 
 	private/src/xml_parser.c
 	private/src/component_metadata.c

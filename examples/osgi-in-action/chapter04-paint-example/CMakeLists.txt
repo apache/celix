@@ -24,6 +24,8 @@ if(PKG_CONFIG_EXECUTABLE)
 	add_subdirectory(paint)
 	add_subdirectory(square)
 	add_subdirectory(triangle)
+
+	add_deploy("chapter04-paint-example" BUNDLES chapter04-paint-example circle square triangle shell shell_tui log_service log_writer)
 else(PKG_CONFIG_EXECUTABLE)
 	MESSAGE("No GTK found, not building the Paint Example")	
 endif(PKG_CONFIG_EXECUTABLE)

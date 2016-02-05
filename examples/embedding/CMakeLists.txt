@@ -15,14 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-#SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_examples_embedding")
-#SET_HEADERS("Bundle-Name: Apache Celix Shell TUI") 
-	
-#bundle(hello_world SOURCES private/src/activator)
-
-if(NOT ${WITH_APR})
-    message(FATAL_ERROR "Embedding example requires APR, enable WITH_APR option.")
-endif()
 
 add_executable(embedding private/src/main)
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")

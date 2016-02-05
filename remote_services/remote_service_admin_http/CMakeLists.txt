@@ -30,11 +30,11 @@ if (RSA_REMOTE_SERVICE_ADMIN_HTTP)
 	include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin_http/private/include")
 	include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
 
-	SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_remote_service_admin_http")
-	SET(BUNDLE_VERSION "0.0.1")
-	SET_HEADERS("Bundle-Name: Apache Celix Remote Service Admin HTTP")
-
-	bundle(remote_service_admin_http SOURCES
+	add_bundle(remote_service_admin_http 
+        VERSION 0.0.1
+        SYMBOLIC_NAME "apache_celix_remote_service_admin_http"
+        NAME "Apache Celix Remote Service Admin HTTP"
+        SOURCES
 	private/src/remote_service_admin_impl
 	private/src/remote_service_admin_activator
 	${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/export_registration_impl

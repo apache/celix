@@ -15,8 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(mongoose STATIC private/src/mongoose.c)
-SET_TARGET_PROPERTIES(mongoose PROPERTIES COMPILE_FLAGS -fPIC)
+add_library(mongooselib STATIC private/src/mongoose.c)
+SET_TARGET_PROPERTIES(mongooselib PROPERTIES COMPILE_FLAGS -fPIC)
 
 SET(BUNDLE_SYMBOLICNAME "apache_celix_examples_mongoose")
 SET(BUNDLE_VERSION "0.0.1")
@@ -28,14 +28,11 @@ if(WIN32)
 	  set(LIBS wsock32)
 endif(WIN32)
 
-bundle(
+add_bundle(mongoose
+    VERSION 0.0.1
     SOURCES
         private/src/activator
-    
         private/include/mongoose.h
-    DIRECTORIES 
-        root
-    LINK_LIBRARIES
-        celix_framework mongoose ${LIBS}
-        
 )
+
+target_link_libraries(mongoose celix_framework mongooselib ${LIBS})

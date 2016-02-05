@@ -22,38 +22,39 @@ if (DEPLOYMENT_ADMIN)
     find_package(UUID REQUIRED)
 
     add_definitions(-DUSE_FILE32API)
-    
-    SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_deployment_admin")
-    SET(BUNDLE_VERSION "0.0.1")
-	SET_HEADERS("Bundle-Name: Apache Celix Deployment Admin") 
-    
+
     include_directories("${CURL_INCLUDE_DIR}")
     include_directories("${UUID_INCLUDE_DIR}")
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/deployment_admin/private/include")
     include_directories("${PROJECT_SOURCE_DIR}/deployment_admin/public/include")
     
-    bundle(deployment_admin SOURCES
-    	private/src/deployment_package 
-    	private/src/deployment_admin
-    	private/src/deployment_admin_activator
-    	private/src/ioapi
-    	private/src/miniunz
-    	private/src/unzip
-    	private/src/log
-    	private/src/log_store
-    	private/src/log_sync
-        
-        private/include/deployment_admin.h
-        private/include/deployment_package.h
-        private/include/ioapi.h
-        private/include/log.h
-        private/include/log_event.h
-        private/include/log_store.h
-        private/include/log_sync.h
-        private/include/miniunz.h
-        private/include/unzip.h
+    add_bundle(deployment_admin
+        SYMBOLIC_NAME "apache_celix_deployment_admin"
+        VERSION "0.0.1"
+        NAME "Apache Celix Deployment Admin"
+        SOURCES
+            private/src/deployment_package
+            private/src/deployment_admin
+            private/src/deployment_admin_activator
+            private/src/ioapi
+            private/src/miniunz
+            private/src/unzip
+            private/src/log
+            private/src/log_store
+            private/src/log_sync
+
+            private/include/deployment_admin.h
+            private/include/deployment_package.h
+            private/include/ioapi.h
+            private/include/log.h
+            private/include/log_event.h
+            private/include/log_store.h
+            private/include/log_sync.h
+            private/include/miniunz.h
+            private/include/unzip.h
     )
+
     
     install_bundle(deployment_admin
     	HEADERS
@@ -61,4 +62,13 @@ if (DEPLOYMENT_ADMIN)
 	)
     
     target_link_libraries(deployment_admin celix_framework ${CURL_LIBRARIES})
+
+
+    add_deploy(deployment-admin
+        BUNDLES deployment_admin shell shell_tui log_service log_writer
+        PROPERTIES
+    		"deployment_admin_url=http://localhost:8080"
+    		"deployment_admin_identification=celix"
+    		"org.osgi.framework.storage.clean=onFirstInit"
+    )
 endif (DEPLOYMENT_ADMIN)

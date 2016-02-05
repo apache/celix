@@ -15,15 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-set(BUNDLE_SYMBOLICNAME "apache_celix_examples_producer")
-set(BUNDLE_VERSION "1.0.0")
-set(BUNDLE_NAME "Apache Celix Producer")
-
-
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/examples/producer_consumer/database/public/include")
 
-bundle(producer
+add_bundle(producer
+	VERSION 1.0.0
 	SOURCES
 	 	private/src/activator.c
 )

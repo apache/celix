@@ -24,15 +24,14 @@ include_directories("private/include")
 include_directories("../calculator_service/public/include")
 include_directories("../../endpoint_listener/public/include")
 
-SET(BUNDLE_SYMBOLICNAME "apache_celix_remoting_calculator2_proxy")
-SET(BUNDLE_VERSION "0.0.1")
-
-bundle(org.apache.celix.calc.api.Calculator2_proxy SOURCES 
+add_bundle(org.apache.celix.calc.api.Calculator2_proxy SOURCES
 	private/src/calculator_proxy_activator
 	private/src/calculator_proxy_impl.c
     ../../remote_service_admin/private/src/remote_proxy_factory_impl.c
     
     private/include/calculator_proxy_impl.h
+    VERSION 0.0.1
+    SYMBOLIC_NAME "apache_celix_remoting_calculator2_proxy"
 )
 
 target_link_libraries(org.apache.celix.calc.api.Calculator2_proxy celix_framework ${JANSSON_LIBRARIES})

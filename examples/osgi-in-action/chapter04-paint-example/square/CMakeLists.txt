@@ -31,7 +31,7 @@ link_directories(${GTK_LIBRARY_DIRS})
 link_directories(${GLIB_LIBRARY_DIRS})
 link_directories(${GTHR_LIBRARY_DIRS})
 
-bundle(square SOURCES 
+add_bundle(square  VERSION 0.0.1  SOURCES
  	private/src/activator
  	private/src/square_shape
     

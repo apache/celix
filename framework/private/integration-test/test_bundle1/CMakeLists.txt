@@ -15,9 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_test_bundle1")
-SET_HEADERS("Bundle-Name: Apache Celix TestBundle1") 
-	
-bundle(test_bundle1 SOURCES src/activator)
+add_bundle(test_bundle1 SOURCES src/activator VERSION 0.0.1)
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 target_link_libraries(test_bundle1 celix_framework)

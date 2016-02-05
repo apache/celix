@@ -30,12 +30,13 @@ if (FRAMEWORK)
     #    DESCRIPTION "The Apache Celix framework library"
     #    REQUIRED
     #)
-    
-    CELIX_ADD_COMPONENT(framework
-    	DISPLAY_NAME Framework
-        DESCRIPTION "The Apache Celix framework library"
-        GROUP all
-    )
+
+    #TODO setup intall framework
+    #CELIX_ADD_COMPONENT(framework
+    #	DISPLAY_NAME Framework
+    #    DESCRIPTION "The Apache Celix framework library"
+    #    GROUP all
+    #)
     
     add_definitions(-DUSE_FILE32API)
     include_directories(${ZLIB_INCLUDE_DIR})
@@ -69,6 +70,7 @@ if (FRAMEWORK)
 		${IO}
 	 
 	)
+    set_target_properties(celix_framework PROPERTIES "SOVERSION" 2)
 	if(NOT APPLE)
       set(UUID ${UUID_LIBRARY})
     endif()

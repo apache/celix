@@ -34,7 +34,7 @@ if (SHELL_BONJOUR)
 	include_directories("${LIBXML2_INCLUDE_DIR}")
 	include_directories("private/include")
 	
-	bundle(bonjour_shell
+	add_bundle(bonjour_shell
 		SOURCES
 		 	private/src/activator.c
 		 	private/src/bonjour_shell.c
@@ -42,5 +42,10 @@ if (SHELL_BONJOUR)
 	
 	target_link_libraries(bonjour_shell celix_framework celix_utils ${LIBXML2_LIBRARIES} ${DNS_SD_LIB})
 
+	add_deploy("bonjour_shell" BUNDLES 
+		shell
+		bonjour_shell
+		PROPERTIES "bonjour.shell.id=Apache Celix"
+	)
 endif (SHELL_BONJOUR)
 

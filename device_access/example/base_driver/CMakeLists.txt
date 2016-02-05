@@ -15,13 +15,13 @@
 # specific language governing permissions and limitations
 # under the License.
 
-SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_base_driver_example")
-SET(BUNDLE_VERSION "0.0.1")
-SET_HEADERS("Bundle-Name: Apache Celix Device Access Base Driver Example")
-
-bundle(base_driver SOURCES 
-	private/src/activator 
-	private/src/base_driver
+add_bundle(base_driver
+ 	SYMBOLIC_NAME "apache_celix_base_driver_example"
+ 	VERSION "0.0.1"
+ 	NAME "Apache Celix Device Access Base Driver Example"
+	SOURCES
+		private/src/activator
+		private/src/base_driver
 )
 
 include_directories(${PROJECT_SOURCE_DIR}/device_access/device_access/public/include)

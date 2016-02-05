@@ -31,11 +31,12 @@ if (RSA_DISCOVERY_CONFIGURED)
     include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
     include_directories(private/include)
 
-    SET_HEADER(BUNDLE_SYMBOLICNAME "apache_celix_rsa_discovery_configured")
-    SET(BUNDLE_VERSION "0.0.1")
-    SET_HEADERS("Bundle-Name: Apache Celix RSA Configured Discovery")
+    add_bundle(discovery_configured 
+    VERSION 0.0.1
+    SYMBOLIC_NAME "apache_celix_rsa_discovery_configured"
+    NAME "Apache Celix RSA Configured Discovery"    
+    SOURCES
 
-    bundle(discovery_configured SOURCES
 	private/src/discovery_impl.c
 	${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/discovery_activator.c
 	${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/discovery.c

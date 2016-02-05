@@ -15,15 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 3.2)
 project (Celix C CXX)
 
 cmake_policy(SET CMP0012 NEW)
-if(POLICY CMP0053)
-    cmake_policy(SET CMP0053 OLD)
-endif(POLICY CMP0053)
-
-#SET(CMAKE_VERBOSE_MAKEFILE ON)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
@@ -66,7 +61,6 @@ endif()
 
 
 include(CMakeCelix)
-include(cmake_celix/installation)
 include(UseDoxygen)  
 
 # Default bundle version
@@ -95,5 +89,3 @@ add_subdirectory(launcher)
 add_subdirectory(framework)
 add_subdirectory(utils)
 add_subdirectory(dfi)
-
-deploy_targets()
