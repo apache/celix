@@ -35,4 +35,3 @@ include_directories(${CELIX_INCLUDE_DIRS})
 #
 #{{end}}
 
-deploy_targets()
