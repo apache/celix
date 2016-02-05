@@ -30,6 +30,7 @@ include_directories(
 
 add_bundle(
 #{{ 
+#cog.outl("\t%s" % bundle['name'])
 #cog.outl("\tNAME \"%s\"" % bundle['name'])
 #cog.outl("\tSYMBOLIC_NAME \"%s\"" % bundle['symbolicName']) 
 #cog.outl("\tVERSION \"0.0.1\"")
