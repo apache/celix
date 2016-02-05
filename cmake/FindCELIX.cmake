@@ -31,28 +31,39 @@ set(CELIX_DIR_FROM_FINDCELIX "${CMAKE_CURRENT_LIST_DIR}/../../../..")
 
 find_path(CELIX_INCLUDE_DIR celix_errno.h
 		PATHS ${CELIX_DIR_FROM_FINDCELIX} $ENV{CELIX_DIR} ${CELIX_DIR} /usr /usr/local
-          	PATH_SUFFIXES include include/celix)
+          	PATH_SUFFIXES include include/celix
+)
 
 find_library(CELIX_FRAMEWORK_LIBRARY NAMES celix_framework
              	PATHS ${CELIX_DIR_FROM_FINDCELIX} $ENV{CELIX_DIR} ${CELIX_DIR} /usr /usr/local
-             	PATH_SUFFIXES lib lib64)
+             	PATH_SUFFIXES lib lib64
+)
              
 find_library(CELIX_UTILS_LIBRARY NAMES celix_utils
 		PATHS ${CELIX_DIR_FROM_FINDCELIX} $ENV{CELIX_DIR} ${CELIX_DIR} /usr /usr/local
-		PATH_SUFFIXES lib lib64)
+		PATH_SUFFIXES lib lib64
+)
+
+find_library(CELIX_DFI_LIBRARY NAMES celix_dfi
+		PATHS ${CELIX_DIR_FROM_FINDCELIX} $ENV{CELIX_DIR} ${CELIX_DIR} /usr /usr/local
+		PATH_SUFFIXES lib lib64
+)
 
 find_program(CELIX_LAUNCHER NAMES celix
 		PATHS ${CELIX_DIR_FROM_FINDCELIX} $ENV{CELIX_DIR} ${CELIX_DIR} /usr /usr/local
-		PATH_SUFFIXES bin)
+		PATH_SUFFIXES bin
+)
 
 find_file(CELIX_CMAKECELIX_FILE CMakeCelix.cmake
              	PATHS ${CELIX_DIR_FROM_FINDCELIX} $ENV{CELIX_DIR} ${CELIX_DIR} /usr /usr/local
-             	PATH_SUFFIXES share/celix/cmake/modules)
+             	PATH_SUFFIXES share/celix/cmake/modules
+)
 
 #NOTE assuming shell.zip is always installed.
 find_path(CELIX_BUNDLES_DIR shell.zip
 		PATHS ${CELIX_DIR_FROM_FINDCELIX} $ENV{CELIX_DIR} ${CELIX_DIR} /usr /usr/local
-          	PATH_SUFFIXES share/celix/bundles)
+          	PATH_SUFFIXES share/celix/bundles
+)
 	
 
 

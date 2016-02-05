@@ -496,22 +496,27 @@ $<JOIN:$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_PROPERTIES>,
     set(PATHS "${CMAKE_BIN_DIRECTORY}/framework:${CMAKE_BIN_DIRECTORY}/utils:${CMAKE_BIN_DIRECTORY}/dfi")
     configure_file("${CELIX_CMAKE_DIRECTORY}/cmake_celix/RunConfig.in"  "${DEPLOY_LOCATION}/${DEPLOY_NAME}")
 
-
-    if(APPLE) 
-        file(GENERATE
-            OUTPUT ${DEPLOY_LOCATION}/run.sh
-            CONTENT "export DYLD_LIBRARY_PATH=$<TARGET_FILE_DIR:celix_framework>:$<TARGET_FILE_DIR:celix_utils>:$<TARGET_FILE_DIR:celix_dfi>:\${DYLD_LIBRARY_PATH}
-$<TARGET_FILE:celix> $@
-"
-    )
-    else() 
-        file(GENERATE
-            OUTPUT ${DEPLOY_LOCATION}/run.sh
-            CONTENT "export LD_LIBRARY_PATH=$<TARGET_FILE_DIR:celix_framework>:$<TARGET_FILE_DIR:celix_utils>:$<TARGET_FILE_DIR:celix_dfi>:\${LD_LIBRARY_PATH}
-$<TARGET_FILE:celix> $@
-"
-    )
+    if(APPLE)
+        set(LIB_PATH_NAME "DYLD_LIBRARY_PATH")
+    else()
+        set(LIB_PATH_NAME "LD_LIBRARY_PATH")
     endif()
+
+    if (EXISTS ${CELIX_FRAMEWORK_LIBRARY}) 
+        #Celix Based Project
+        get_filename_component(CELIX_LIB_DIR ${CELIX_FRAMEWORK_LIBRARY} DIRECTORY) #Note assuming all celix libs are in the same dir
+        set(RUN_CONTENT "export ${LIB_PATH_NAME}=${CELIX_LIB_DIR}:\${${LIB_PATH_NAME}}
+${CELIX_LAUNCHER} $@")
+    else()
+        #Celix Main Project
+        set(RUN_CONTENT "export ${LIB_PATH_NAME}=$<TARGET_FILE_DIR:celix_framework>:$<TARGET_FILE_DIR:celix_utils>:$<TARGET_FILE_DIR:celix_dfi>:\${${LIB_PATH_NAME}}
+$<TARGET_FILE:celix> $@")
+    endif()
+
+    file(GENERATE
+        OUTPUT ${DEPLOY_LOCATION}/run.sh
+        CONTENT ${RUN_CONTENT}
+    )
 
     #TODO eclipse launcher file
     #####
