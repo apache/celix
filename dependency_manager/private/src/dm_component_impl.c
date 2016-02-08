@@ -335,6 +335,10 @@ celix_status_t component_addInterface(dm_component_pt component, char *serviceNa
         dm_interface_t *interface = (dm_interface_t *) calloc(1, sizeof(*interface));
         char *name = strdup(serviceName);
 
+        if (properties == NULL) {
+            properties = properties_create();
+        }
+
         if ((properties_get(properties, (char*) CELIX_FRAMEWORK_SERVICE_VERSION) == NULL) && (serviceVersion != NULL)) {
             properties_set(properties, (char*) CELIX_FRAMEWORK_SERVICE_VERSION, serviceVersion);
         }
