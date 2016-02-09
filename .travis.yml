@@ -31,9 +31,9 @@ matrix:
        - os: linux
          compiler: gcc
          env: SANITIZE=1
-#       - os: linux
-#         compiler: clang
-#         env: ANDROID=1
+       - os: linux
+         compiler: clang
+         env: ANDROID=1
 
 
 before_install:
