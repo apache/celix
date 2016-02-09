@@ -25,44 +25,44 @@ components:
     #		componentName = checkInput('\nPlease enter componentName', '([a-zA-Z_][a-zA-Z0-9_]*)', 'example') 
     #		cog.outl('- name: \'%s\'' % componentName )
     #		cog.outl('  providedServices:')
-    #           while yn('Should component \'%s\' provide %s service?' % (componentName, 'a' if 'psInclude' not in vars() else 'another')):
-    #                   psServiceName1 = checkInput('(1) Please enter a name, which can be used for the filename and the include guards', '([a-zA-Z_][a-zA-Z0-9_]*)'); 
-    #                   psServiceName2 = checkInput('(2) Please enter a name, which is used to register and lookup the service', '([a-zA-Z_][a-zA-Z0-9_]*)', (psServiceName1.lower() + ('_service' if not psServiceName1.endswith('_service') else ''))); 
-    #                   psServiceVersion = checkInput('(3) Please enter a version number', '(\d+\.)?(\d+\.)?(\d+\.)?(\*|\d+)', '1.0.0.0'); 
-    #                   psServiceType = checkInput('(4) Please enter a type', '([a-zA-Z_][a-zA-Z0-9_]*)',  (psServiceName1.lower() + ('_service_t' if not psServiceName1.endswith('_service_t') else ''))  );
-    #                   psInclude = checkInput('(5) Please enter the name of the include file', '(.+?)(\.[^.]*$|$)', psServiceName1.lower() + '.h'); 
+    #		while yn('Should component \'%s\' provide %s service?' % (componentName, 'a' if 'psInclude' not in vars() else 'another')):
+    #			psServiceName1 = checkInput('(1) Please enter a name, which can be used for the filename and the include guards', '([a-zA-Z_][a-zA-Z0-9_]*)'); 
+    #			psServiceName2 = checkInput('(2) Please enter a name, which is used to register and lookup the service', '([a-zA-Z_][a-zA-Z0-9_]*)', (psServiceName1.lower() + ('_service' if not psServiceName1.endswith('_service') else ''))); 
+    #			psServiceVersion = checkInput('(3) Please enter a version number', '(\d+\.)?(\d+\.)?(\d+\.)?(\*|\d+)', '1.0.0.0'); 
+    #			psServiceType = checkInput('(4) Please enter a type', '([a-zA-Z_][a-zA-Z0-9_]*)',  (psServiceName1.lower() + ('_service_t' if not psServiceName1.endswith('_service_t') else ''))  );
+    #			psInclude = checkInput('(5) Please enter the name of the include file', '(.+?)(\.[^.]*$|$)', psServiceName1.lower() + '.h'); 
     #
-    #                   print("\n Summary:")    
-    #                   print("\tname :\t%s" % (psServiceName1))        
-    #                   print("\tservice_name:\t%s" % (psServiceName2)) 
-    #                   print("\tservice_version:\t%s" % (psServiceVersion))    
-    #                   print("\tservice_type:\t%s" % (psServiceType))  
-    #                   print("\tinclude file:\t%s" % (psInclude)) 
-    #                   if yn('Are those information correct?'):
-    #                           cog.outl('      - {include: \'%s\', name: \'%s\', service_name: \'%s\', service_version: \'%s\', type: \'%s\'}' % (psInclude, psServiceName1, psServiceName2, psServiceVersion, psServiceType))
-    #                   else:
-    #                           print("Service was not added.")
+    #			print("\n Summary:")	
+    #			print("\tname :\t%s" % (psServiceName1))	
+    #			print("\tservice_name:\t%s" % (psServiceName2))	
+    #			print("\tservice_version:\t%s" % (psServiceVersion))	
+    #			print("\tservice_type:\t%s" % (psServiceType))	
+    #			print("\tinclude file:\t%s" % (psInclude)) 
+    #			if yn('Are those information correct?'):
+    #				cog.outl('      - {include: \'%s\', name: \'%s\', service_name: \'%s\', service_version: \'%s\', type: \'%s\'}' % (psInclude, psServiceName1, psServiceName2, psServiceVersion, psServiceType))
+    #			else:
+    #				print("Service was not added.")
     #
     #		cog.outl('  serviceDependencies:')
     #		while yn('Should component \'%s\' depend on %s service?' % (componentName, 'a' if 'sdInclude' not in vars() else 'another')):
-    #                   sdInclude = checkInclude('(1) Please enter the include filename, which describes the service', '(.+?)(\.[^.]*$|$)'); 
-    #                   sdServiceName1 = checkInput('(2) Please enter a name, which is used to generate the code', '([a-zA-Z_][a-zA-Z0-9_]*)'); 
-    #                   sdServiceName2 = checkIncludeContent('(3) Please enter the variable/constants, which is used to register the service within the framework', sdInclude); 
-    #                   sdServiceRange = checkIncludeContent('(4) Please enter the variable/constants, which contains the version range', sdInclude); 
-    #                   sdServiceType = checkIncludeContent('(5) Please enter the type of the service', sdInclude);
-    #                   sdCardinality = checkInput('(6) Please enter the cardinality (one|many|optional)', '(one)|(many)|(optional)');
+    #			sdInclude = checkInclude('(1) Please enter the include filename, which describes the service', '(.+?)(\.[^.]*$|$)'); 
+    #			sdServiceName1 = checkInput('(2) Please enter a name, which is used to generate the code', '([a-zA-Z_][a-zA-Z0-9_]*)'); 
+    #			sdServiceName2 = checkIncludeContent('(3) Please enter the variable/constants, which is used to register the service within the framework', sdInclude); 
+    #			sdServiceRange = checkIncludeContent('(4) Please enter the variable/constants, which contains the version range', sdInclude); 
+    #			sdServiceType = checkIncludeContent('(5) Please enter the type of the service', sdInclude);
+    #			sdCardinality = checkInput('(6) Please enter the cardinality (one|many|optional)', '(one)|(many)|(optional)');
     #
-    #                   print("\n Summary:")    
-    #                   print("\tname :\t%s" % (sdServiceName1))        
-    #                   print("\tservice_name:\t%s" % (sdServiceName2)) 
-    #                   print("\tservice_range:\t%s" % (sdServiceRange))        
-    #                   print("\tservice_type:\t%s" % (sdServiceType))  
-    #                   print("\tcardinality:\t%s" % (sdCardinality)) 
-    #                   print("\tinclude file:\t%s" % (sdInclude)) 
-    #                   if yn('Are those information correct?'):
-    #                           cog.outl('      - {include: \'%s\', name: \'%s\', service_name: \'%s\', service_versionrange: \'%s\', type: \'%s\', cardinality: \'%s\'}' % (sdInclude, sdServiceName1, sdServiceName2, sdServiceRange, sdServiceType, sdCardinality))
-    #                   else:
-    #                           print("Service dependency was not added.")
+    #			print("\n Summary:")	
+    #			print("\tname :\t%s" % (sdServiceName1))	
+    #			print("\tservice_name:\t%s" % (sdServiceName2))	
+    #			print("\tservice_range:\t%s" % (sdServiceRange))	
+    #			print("\tservice_type:\t%s" % (sdServiceType))	
+    #			print("\tcardinality:\t%s" % (sdCardinality)) 
+    #			print("\tinclude file:\t%s" % (sdInclude)) 
+    #			if yn('Are those information correct?'):
+    #				cog.outl('      - {include: \'%s\', name: \'%s\', service_name: \'%s\', service_versionrange: \'%s\', type: \'%s\', cardinality: \'%s\'}' % (sdInclude, sdServiceName1, sdServiceName2, sdServiceRange, sdServiceType, sdCardinality))
+    #			else:
+    #				print("Service dependency was not added.")
     #}}
     #{{end}}
 

@@ -19,7 +19,7 @@ A (python based) code generation tool for [Apache Celix](https://celix.apache.or
 * Clone this repository
 * Create a celix-bootstrap alias:
 ```
-alias celix-bootstrap='PYTHONPATH=${cog_dir}:${celix-boostrap_dir} python -m celix-bootstrap'
+alias celix-bootstrap='PYTHONPATH=${cog_dir}:${celix-boostrap_dir} python -m celix.bootstrap'
 ```
 
 #Concept
