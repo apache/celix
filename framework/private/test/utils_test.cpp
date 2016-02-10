@@ -70,12 +70,12 @@ TEST(utils, stringHash) {
 	char * toHash = my_strdup("abc");
 	unsigned int hash;
 	hash = utils_stringHash((void *) toHash);
-	LONGS_EQUAL(446371745, hash);
+	LONGS_EQUAL(193485928, hash);
 
 	free(toHash);
 	toHash = my_strdup("abc123def456ghi789jkl012mno345pqr678stu901vwx234yz");
 	hash = utils_stringHash((void *) toHash);
-	LONGS_EQUAL(1508668412, hash);
+	LONGS_EQUAL(3704717399, hash);
 
 	free(toHash);
 	toHash = my_strdup("abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
@@ -101,7 +101,7 @@ TEST(utils, stringHash) {
 			"abc123def456ghi789jkl012mno345pqr678stu901vwx234yz"
 			"abc123def456ghi789jkl012mno345pqr678stu901vwx234yz");
 	hash = utils_stringHash((void *) toHash);
-	LONGS_EQUAL(829630780, hash);
+	LONGS_EQUAL(3862509969, hash);
 	free(toHash);
 }
 
