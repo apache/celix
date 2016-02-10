@@ -66,7 +66,7 @@ celix_status_t dependencyManager_add(dm_dependency_manager_pt manager, dm_compon
 	return status;
 }
 
-celix_status_t depedencyManager_removeAllComponents(dm_dependency_manager_pt manager) {
+celix_status_t dependencyManager_removeAllComponents(dm_dependency_manager_pt manager) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	unsigned int i=0;

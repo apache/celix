@@ -103,7 +103,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context _
 
     // Remove the service
     status = serviceRegistration_unregister(dependency_activator->reg);
-    depedencyManager_removeAllComponents(dependency_activator->manager);
+    dependencyManager_removeAllComponents(dependency_activator->manager);
 
     return status;
 }
