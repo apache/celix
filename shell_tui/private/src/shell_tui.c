@@ -111,10 +111,10 @@ celix_status_t shellTui_serviceChanged(service_listener_pt listener, service_eve
         status = shellTui_initializeService(act);
     } else if ((event->type == OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING) && (equals)) {
         bundleContext_ungetService(act->context, act->reference, &result);
+        bundleContext_ungetServiceReference(act->context,act->reference);
         act->reference = NULL;
         act->shell = NULL;
 
-        status = shellTui_initializeService(act);
     }
 
     return status;
