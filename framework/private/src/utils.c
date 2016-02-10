@@ -28,7 +28,8 @@
 
 #include "utils.h"
 
-unsigned int utils_stringHash(void * string) {
+unsigned int utils_stringHash(void * strPtr) {
+    char * string = strPtr;
     unsigned int hash = 5381;
     unsigned int i = 0;
     unsigned int len = strlen(string);
