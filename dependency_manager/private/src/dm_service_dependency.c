@@ -163,7 +163,7 @@ celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency,
         }
 
         if (serviceVersionRange != NULL) {
-            version_range_pt versionRange;
+            version_range_pt versionRange = NULL;
 
             if (versionRange_parse(serviceVersionRange, &versionRange) == CELIX_SUCCESS) {
                 version_pt lowVersion = NULL;
@@ -172,7 +172,7 @@ celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency,
                 if ((versionRange_getHighVersion(versionRange, &highVersion) == CELIX_SUCCESS) && (highVersion != NULL)) {
                     bool isHighInclusive;
                     char* highOperator;
-                    char* highVersionStr;
+                    char* highVersionStr = NULL;
 
                     versionRange_isHighInclusive(versionRange, &isHighInclusive);
                     version_toString(highVersion, &highVersionStr);
@@ -183,12 +183,16 @@ celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency,
                     char serviceVersionFilter[len];
                     snprintf(serviceVersionFilter, len, "(%s%s%s)", CELIX_FRAMEWORK_SERVICE_VERSION, highOperator, highVersionStr);
                     arrayList_add(filterElements, strdup(serviceVersionFilter));
+
+                    if(highVersionStr!=NULL){
+                    	free(highVersionStr);
+                    }
                 }
 
                 if ((versionRange_getLowVersion(versionRange, &lowVersion) == CELIX_SUCCESS) && (lowVersion != NULL)) {
                     bool isLowInclusive;
                     char* lowOperator;
-                    char* lowVersionStr;
+                    char* lowVersionStr = NULL;
 
                     versionRange_isLowInclusive(versionRange, &isLowInclusive);
                     version_toString(lowVersion, &lowVersionStr);
@@ -199,7 +203,15 @@ celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency,
                     char serviceVersionFilter[len];
                     snprintf(serviceVersionFilter, len, "(%s%s%s)", CELIX_FRAMEWORK_SERVICE_VERSION, lowOperator, lowVersionStr);
                     arrayList_add(filterElements, strdup(serviceVersionFilter));
+
+                    if(lowVersionStr!=NULL){
+                    	free(lowVersionStr);
+                    }
                 }
+            }
+
+            if(versionRange!=NULL){
+            	versionRange_destroy(versionRange);
             }
         }
 
