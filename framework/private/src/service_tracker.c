@@ -301,10 +301,12 @@ static celix_status_t serviceTracker_track(service_tracker_pt tracker, service_r
                 assert(reference != NULL);
                 tracked->reference = reference;
                 tracked->service = service;
-                serviceTracker_invokeAddService(tracker, reference, service);
+
                 celixThreadRwlock_writeLock(&tracker->lock);
                 arrayList_add(tracker->trackedServices, tracked);
                 celixThreadRwlock_unlock(&tracker->lock);
+
+                serviceTracker_invokeAddService(tracker, reference, service);
             }
         }
 
