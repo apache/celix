@@ -29,18 +29,14 @@
 #include "utils.h"
 
 unsigned int utils_stringHash(void * string) {
-	char * str = (char *) string;
+    unsigned int hash = 5381;
+    unsigned int i = 0;
+    unsigned int len = strlen(string);
 
-	unsigned int hash = 1315423911;
-	unsigned int i    = 0;
-	unsigned int len = strlen(str);
+    for(i=0; i < len; i++)
+    { hash = (hash << 5) + (*string) + hash; }
 
-	for(i = 0; i < len; str++, i++)
-	{
-	  hash ^= ((hash << 5) + (*str) + (hash >> 2));
-	}
-
-	return hash;
+    return hash;
 }
 
 int utils_stringEquals(void * string, void * toCompare) {
