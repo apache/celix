@@ -27,6 +27,7 @@
 #include <json_rpc.h>
 #include "constants.h"
 #include "export_registration_dfi.h"
+#include "dfi_utils.h"
 
 struct export_reference {
     endpoint_description_pt endpoint; //owner
@@ -83,44 +84,30 @@ celix_status_t exportRegistration_create(log_helper_pt helper, service_reference
     bundle_pt bundle = NULL;
     CELIX_DO_IF(status, serviceReference_getBundle(reference, &bundle));
 
-
-    char *descriptorFile = NULL;
+    FILE *descriptor = NULL;
     if (status == CELIX_SUCCESS) {
-        char name[128];
-        snprintf(name, 128, "%s.descriptor", exports);
-        status = bundle_getEntry(bundle, name, &descriptorFile);
-        logHelper_log(helper, OSGI_LOGSERVICE_DEBUG, "RSA: Found descriptor '%s' for %'s'.", descriptorFile, exports);
+        status = dfi_findDescriptor(context, bundle, exports, &descriptor);
     }
 
-    if (descriptorFile == NULL) {
-        logHelper_log(helper, OSGI_LOGSERVICE_ERROR, "RSA: Cannot find descrriptor in bundle for service '%s'", exports);
-        status = CELIX_ILLEGAL_ARGUMENT;
+    if (status != CELIX_SUCCESS || descriptor == NULL) {
+        status = CELIX_BUNDLE_EXCEPTION;
+        logHelper_log(helper, OSGI_LOGSERVICE_ERROR, "Cannot find/open descriptor for '%s'", exports);
     }
 
     if (status == CELIX_SUCCESS) {
-        FILE *df = fopen(descriptorFile, "r");
-        if (df != NULL) {
-            int rc = dynInterface_parse(df, &reg->intf);
-            fclose(df);
-            if (rc != 0) {
-                status = CELIX_BUNDLE_EXCEPTION;
-                logHelper_log(helper, OSGI_LOGSERVICE_WARNING, "RSA: Error parsing service descriptor.");
-            }
-            else{
-                /* Add the interface version as a property in the properties_map */
-                char* intfVersion = NULL;
-                dynInterface_getVersionString(reg->intf, &intfVersion);
-                properties_set(endpoint->properties, (char*) CELIX_FRAMEWORK_SERVICE_VERSION, intfVersion);
-            }
-        } else {
+        int rc = dynInterface_parse(descriptor, &reg->intf);
+        fclose(descriptor);
+        if (rc != 0) {
             status = CELIX_BUNDLE_EXCEPTION;
-            logHelper_log(helper, OSGI_LOGSERVICE_ERROR, "Cannot open descriptor '%s'", descriptorFile);
+            logHelper_log(helper, OSGI_LOGSERVICE_WARNING, "RSA: Error parsing service descriptor.");
         }
-
-        free(descriptorFile);
-    }
-
-
+        else{
+            /* Add the interface version as a property in the properties_map */
+            char* intfVersion = NULL;
+            dynInterface_getVersionString(reg->intf, &intfVersion);
+            properties_set(endpoint->properties, (char*) CELIX_FRAMEWORK_SERVICE_VERSION, intfVersion);
+        }
+    } 
 
     if (status == CELIX_SUCCESS) {
         service_tracker_customizer_pt cust = NULL;

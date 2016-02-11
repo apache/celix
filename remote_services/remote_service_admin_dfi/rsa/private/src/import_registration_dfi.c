@@ -196,29 +196,22 @@ celix_status_t importRegistration_getService(import_registration_pt import, bund
 static celix_status_t importRegistration_createProxy(import_registration_pt import, bundle_pt bundle, struct service_proxy **out) {
     celix_status_t  status;
     dyn_interface_type* intf = NULL;
-    char *descriptorFile = NULL;
-    char name[128];
+    FILE *descriptor = NULL;
 
-    snprintf(name, 128, "%s.descriptor", import->classObject);
-    status = bundle_getEntry(bundle, name, &descriptorFile);
-    if (descriptorFile == NULL) {
-        printf("Cannot find entry '%s'\n", name);
-        status = CELIX_ILLEGAL_ARGUMENT;
-    } else {
-        printf("Found descriptor at '%s'\n", descriptorFile);
+    status = dfi_findDescriptor(import->context, bundle, import->classObject, &descriptor);
+
+    if (status != CELIX_SUCCESS || descriptor == NULL) {
+        status = CELIX_BUNDLE_EXCEPTION;
+        //TODO use log helper logHelper_log(helper, OSGI_LOGSERVICE_ERROR, "Cannot find/open descriptor for '%s'", import->classObject);
+        fprintf(stderr, "RSA_DFI: Cannot find/open descriptor for '%s'", import->classObject);
     }
 
     if (status == CELIX_SUCCESS) {
-        FILE *df = fopen(descriptorFile, "r");
-        if (df != NULL) {
-            int rc = dynInterface_parse(df, &intf);
-            fclose(df);
-            if (rc != 0) {
-                status = CELIX_BUNDLE_EXCEPTION;
-            }
+        int rc = dynInterface_parse(descriptor, &intf);
+        fclose(descriptor);
+        if (rc != 0) {
+            status = CELIX_BUNDLE_EXCEPTION;
         }
-
-        free(descriptorFile);
     }
 
     /* Check if the imported service version is compatible with the one in the consumer descriptor */

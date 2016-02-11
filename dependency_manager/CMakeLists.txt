@@ -49,15 +49,15 @@ if (DEPENDENCY_MANAGER)
     	private/src/dm_dependency_manager_impl
     )
 
-    #add_library(dependency_manager SHARED 
-    #	private/src/dm_activator_base 
-    #	private/src/dm_component_impl 
-    #	private/src/dm_service_dependency
-    # 	private/src/dm_event
-    #   private/src/dm_dependency_manager_impl
-    #)
-    #set_target_properties(dependency_manager PROPERTIES SOVERSION 1)
-    #target_link_libraries(dependency_manager celix_framework -undefined dynamic_load)
+    add_library(dependency_manager_so SHARED 
+    	private/src/dm_activator_base 
+    	private/src/dm_component_impl 
+    	private/src/dm_service_dependency
+    	private/src/dm_event
+        private/src/dm_dependency_manager_impl
+    )
+    set_target_properties(dependency_manager_so PROPERTIES SOVERSION 1)
+    target_link_libraries(dependency_manager_so celix_framework)
 
    	include_directories("public/include")
    	include_directories("private/include")

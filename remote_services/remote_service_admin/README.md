@@ -8,3 +8,4 @@ Note that this folder contains code commonly used by the RSA implementations and
 
 ###### Properties
     ENDPOINTS				 defines the relative directory where endpoints and proxys can be found (default: endpoints)
+    CELIX_FRAMEWORK_EXTENDER_PATH  Used in RSA_DFI only. Can be used to define a path to use as an extender path point for the framework bundle. For normal bundles the bundle cache is used. 

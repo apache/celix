@@ -21,6 +21,7 @@
 #define CELIX_IMPORT_REGISTRATION_DFI_H
 
 #include "import_registration.h"
+#include "dfi_utils.h"
 
 #include <celix_errno.h>
 

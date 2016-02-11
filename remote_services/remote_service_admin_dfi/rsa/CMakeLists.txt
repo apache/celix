@@ -36,6 +36,7 @@ add_bundle(remote_service_admin_dfi
     private/src/remote_service_admin_activator.c
     private/src/export_registration_dfi.c
     private/src/import_registration_dfi.c
+    private/src/dfi_utils.c
 
     ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c
 
