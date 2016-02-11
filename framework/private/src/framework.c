@@ -109,6 +109,7 @@ struct fw_serviceListener {
 	bundle_pt bundle;
 	service_listener_pt listener;
 	filter_pt filter;
+    array_list_pt retainedReferences;
 };
 
 typedef struct fw_serviceListener * fw_service_listener_pt;
@@ -1379,6 +1380,7 @@ void fw_addServiceListener(framework_pt framework, bundle_pt bundle, service_lis
 	bundle_context_pt context = NULL;
 
 	fwListener->bundle = bundle;
+    arrayList_create(&fwListener->retainedReferences);
 	if (sfilter != NULL) {
 		filter_pt filter = filter_create(sfilter);
 		fwListener->filter = filter;
@@ -1447,8 +1449,22 @@ void fw_removeServiceListener(framework_pt framework, bundle_pt bundle, service_
 
 			arrayList_remove(framework->serviceListeners, i);
 			i--;
+            
+            //unregistering retained service references. For these refs a unregister event will not be triggered.
+            int k;
+            int rSize = arrayList_size(element->retainedReferences);
+            for (k = 0; k < rSize; k += 1) {
+                service_reference_pt ref = arrayList_get(element->retainedReferences, i);
+                if (ref != NULL) {
+                    serviceRegistry_ungetServiceReference(framework->registry, element->bundle, ref); // decrease retain counter                                       
+                } else {
+                    //TODO,FIXME ref is sometimes NULL. This should not happen, investigate why
+                }
+            }
+
 			element->bundle = NULL;
 			filter_destroy(element->filter);
+            arrayList_destroy(element->retainedReferences);
 			element->filter = NULL;
 			element->listener = NULL;
 			free(element);
@@ -1605,12 +1621,11 @@ void fw_serviceChanged(framework_pt framework, service_event_type_e eventType, s
 
                 serviceRegistry_getServiceReference(framework->registry, element->bundle, registration, &reference);
                 
-                
-                //FIXME, TODO need to retain the service ref. If not bundles using the service_listener will crash.
-                //update service_listener users so that they retain references if the keep them. 
-                //NOTE: that you are never sure that the UNREGISTERED event will by handle by an service_listener (could be gone))
+                //NOTE: that you are never sure that the UNREGISTERED event will by handle by an service_listener. listener could be gone
+                //Every reference retained is therefore stored and called when a service listener is removed from the framework.
                 if (eventType == OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED) {
                     serviceRegistry_retainServiceReference(framework->registry, element->bundle, reference);
+                    arrayList_add(element->retainedReferences, reference); //TODO improve by using set (or hashmap) instead of list
                 }
 
                 event->type = eventType;
@@ -1621,7 +1636,8 @@ void fw_serviceChanged(framework_pt framework, service_event_type_e eventType, s
                 serviceRegistry_ungetServiceReference(framework->registry, element->bundle, reference);
                 
                 if (eventType == OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING) {
-                    serviceRegistry_ungetServiceReference(framework->registry, element->bundle, reference); // to counter retain    
+                    arrayList_removeElement(element->retainedReferences, reference);
+                    serviceRegistry_ungetServiceReference(framework->registry, element->bundle, reference); // decrease retain counter
                 }
                 
                 free(event);
