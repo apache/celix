@@ -57,7 +57,11 @@ if (DEPENDENCY_MANAGER)
         private/src/dm_dependency_manager_impl
     )
     set_target_properties(dependency_manager_so PROPERTIES SOVERSION 1)
-    target_link_libraries(dependency_manager_so celix_framework)
+    if (APPLE) 
+        target_link_libraries(dependency_manager_so celix_framework "-undefined dynamic_lookup")
+    else()
+        target_link_libraries(dependency_manager_so celix_framework)
+    endif()
 
    	include_directories("public/include")
    	include_directories("private/include")

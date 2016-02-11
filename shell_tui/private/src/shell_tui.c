@@ -72,11 +72,13 @@ static void* shellTui_runnable(void *data) {
                 continue;
             }
 
+            celixThreadMutex_lock(&act->mutex);
             if (act->shell != NULL) {
                 act->shell->executeCommand(act->shell->shell, line, stdout, stderr);
             } else {
                 fprintf(stderr, "Shell service not available\n");
             }
+            celixThreadMutex_unlock(&act->mutex);
         }
     }
 

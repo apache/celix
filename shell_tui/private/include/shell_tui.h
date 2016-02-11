@@ -41,6 +41,7 @@ struct shellTuiActivator {
     service_tracker_pt tracker;
     bool running;
     celix_thread_t runnable;
+    celix_thread_mutex_t mutex;
 };
 
 typedef struct shellTuiActivator * shell_tui_activator_pt;

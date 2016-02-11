@@ -35,13 +35,19 @@
 
 static celix_status_t activator_addShellService(void *handle, service_reference_pt ref, void *svc) {
     shell_tui_activator_pt act = (shell_tui_activator_pt) handle;
+    celixThreadMutex_lock(&act->mutex);
     act->shell = svc;
+    celixThreadMutex_unlock(&act->mutex);
     return CELIX_SUCCESS;
 }
 
 static celix_status_t activator_removeShellService(void *handle, service_reference_pt ref, void *svc) {
     shell_tui_activator_pt act = (shell_tui_activator_pt) handle;
-    act->shell = svc;
+    celixThreadMutex_lock(&act->mutex);
+    if (act->shell == svc) {
+        act->shell = NULL;
+    }
+    celixThreadMutex_unlock(&act->mutex);
     return CELIX_SUCCESS;
 }
 
@@ -52,6 +58,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 
 	if (activator) {
 		activator->shell = NULL;
+        celixThreadMutex_create(&activator->mutex, NULL);
 		(*userData) = activator;
 	}
 	else {
