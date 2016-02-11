@@ -33,19 +33,19 @@
 #include "celix_threads.h"
 #include "service_reference.h"
 #include "shell.h"
+#include "service_tracker.h"
 
 struct shellTuiActivator {
     bundle_context_pt context;
     shell_service_pt shell;
-    service_reference_pt reference;
-    struct serviceListener * listener;
+    service_tracker_pt tracker;
     bool running;
     celix_thread_t runnable;
 };
 
 typedef struct shellTuiActivator * shell_tui_activator_pt;
 
-celix_status_t shellTui_initializeService(shell_tui_activator_pt activator);
-celix_status_t shellTui_serviceChanged(service_listener_pt listener, service_event_pt event);
+celix_status_t shellTui_start(shell_tui_activator_pt activator);
+celix_status_t shellTui_stop(shell_tui_activator_pt activator);
 
 #endif /* SHELL_TUI_H_ */

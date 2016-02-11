@@ -30,8 +30,20 @@
 
 
 #include "shell_tui.h"
+#include "service_tracker.h"
 
 
+static celix_status_t activator_addShellService(void *handle, service_reference_pt ref, void *svc) {
+    shell_tui_activator_pt act = (shell_tui_activator_pt) handle;
+    act->shell = svc;
+    return CELIX_SUCCESS;
+}
+
+static celix_status_t activator_removeShellService(void *handle, service_reference_pt ref, void *svc) {
+    shell_tui_activator_pt act = (shell_tui_activator_pt) handle;
+    act->shell = svc;
+    return CELIX_SUCCESS;
+}
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -50,42 +62,30 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 }
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
-	celix_status_t status;
+	celix_status_t status = CELIX_SUCCESS;
 
 	shell_tui_activator_pt act = (shell_tui_activator_pt) userData;
-	service_listener_pt listener = (service_listener_pt) calloc(1, sizeof(*listener));
 
-	act->context = context;
-	act->running = true;
+    service_tracker_customizer_pt cust = NULL;
+    serviceTrackerCustomizer_create(userData, NULL, activator_addShellService, NULL, activator_removeShellService, &cust);
+    serviceTracker_create(context, (char *) OSGI_SHELL_SERVICE_NAME, cust, &act->tracker);
+    serviceTracker_open(act->tracker);
 
-	act->listener = listener;
-	act->listener->handle = act;
-	act->listener->serviceChanged = (void *) shellTui_serviceChanged;
-	status = bundleContext_addServiceListener(context, act->listener, "(objectClass=shellService)");
-
-	if (status == CELIX_SUCCESS) {
-		shellTui_initializeService(act);
-	}
+    shellTui_start(act);
 
 	return status;
 }
 
 celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
-	celix_status_t status;
-	shell_tui_activator_pt activator = (shell_tui_activator_pt) userData;
+	celix_status_t status = CELIX_SUCCESS;
+	shell_tui_activator_pt act = (shell_tui_activator_pt) userData;
 
-	status = bundleContext_removeServiceListener(context, activator->listener);
-
-	if (status == CELIX_SUCCESS) {
-		free(activator->listener);
-
-		activator->running = false;
-		activator->listener = NULL;
-		activator->context = NULL;
-		activator->running = false;
-
-		celixThread_join(activator->runnable, NULL);
-	}
+    if (act != NULL) {
+        shellTui_stop(act);
+        if (act->tracker != NULL) {
+            serviceTracker_close(act->tracker);
+        }
+    }
 
 	return status;
 }
@@ -93,6 +93,9 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	shell_tui_activator_pt activator = (shell_tui_activator_pt) userData;
 
+    if (activator->tracker != NULL) {
+        serviceTracker_destroy(activator->tracker);
+    }
 	free(activator);
 
 	return CELIX_SUCCESS;

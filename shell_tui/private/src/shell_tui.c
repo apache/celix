@@ -34,6 +34,8 @@
 #include "shell.h"
 #include "shell_tui.h"
 #include "utils.h"
+#include <signal.h>
+#include <unistd.h>
 
 
 static void* shellTui_runnable(void *data) {
@@ -54,13 +56,13 @@ static void* shellTui_runnable(void *data) {
             needPrompt = false;
         }
         FD_ZERO(&rfds);
-        FD_SET(0, &rfds);
+        FD_SET(STDIN_FILENO, &rfds);
 
         tv.tv_sec = 1;
         tv.tv_usec = 0;
 
-        if (select(1, &rfds, NULL, NULL, &tv)) {
-            fgets(in, 256, stdin);
+        if (select(1, &rfds, NULL, NULL, &tv) > 0) {
+            fgets(in, sizeof(in)-1, stdin);
             needPrompt = true;
             memset(dline, 0, 256);
             strncpy(dline, in, 256);
@@ -70,52 +72,32 @@ static void* shellTui_runnable(void *data) {
                 continue;
             }
 
-            act->shell->executeCommand(act->shell->shell, line, stdout, stderr);
+            if (act->shell != NULL) {
+                act->shell->executeCommand(act->shell->shell, line, stdout, stderr);
+            } else {
+                fprintf(stderr, "Shell service not available\n");
+            }
         }
     }
 
     return NULL;
 }
 
-celix_status_t shellTui_initializeService(shell_tui_activator_pt activator) {
+celix_status_t shellTui_start(shell_tui_activator_pt activator) {
 
     celix_status_t status = CELIX_SUCCESS;
 
-    if (activator->shell != NULL) {
-        status = CELIX_ILLEGAL_ARGUMENT;
-    } else {
-        status = bundleContext_getServiceReference(activator->context, (char *) OSGI_SHELL_SERVICE_NAME, &activator->reference);
-
-        if (status != CELIX_SUCCESS || activator->reference != NULL) {
-            void *shell_svc = NULL;
-            bundleContext_getService(activator->context, activator->reference, &shell_svc);
-            activator->shell = (shell_service_pt) shell_svc;
-
-            celixThread_create(&activator->runnable, NULL, shellTui_runnable, activator);
-        }
-    }
+    activator->running = true;
+    celixThread_create(&activator->runnable, NULL, shellTui_runnable, activator);
 
     return status;
 }
 
-celix_status_t shellTui_serviceChanged(service_listener_pt listener, service_event_pt event) {
+celix_status_t shellTui_stop(shell_tui_activator_pt act) {
     celix_status_t status = CELIX_SUCCESS;
-
-    bool result = false;
-    shell_tui_activator_pt act = (shell_tui_activator_pt) listener->handle;
-    bool equals = false;
-
-    serviceReference_equals(act->reference, event->reference, &equals);
-
-    if ((event->type == OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED) && (act->reference == NULL)) {
-        status = shellTui_initializeService(act);
-    } else if ((event->type == OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING) && (equals)) {
-        bundleContext_ungetService(act->context, act->reference, &result);
-        bundleContext_ungetServiceReference(act->context,act->reference);
-        act->reference = NULL;
-        act->shell = NULL;
-
-    }
-
+    act->running = false;
+    celixThread_kill(act->runnable, SIGUSR1);
+    celixThread_join(act->runnable, NULL);
     return status;
 }
+
