@@ -1454,12 +1454,10 @@ void fw_removeServiceListener(framework_pt framework, bundle_pt bundle, service_
             int k;
             int rSize = arrayList_size(element->retainedReferences);
             for (k = 0; k < rSize; k += 1) {
-                service_reference_pt ref = arrayList_get(element->retainedReferences, i);
+                service_reference_pt ref = arrayList_get(element->retainedReferences, k);
                 if (ref != NULL) {
                     serviceRegistry_ungetServiceReference(framework->registry, element->bundle, ref); // decrease retain counter                                       
-                } else {
-                    //TODO,FIXME ref is sometimes NULL. This should not happen, investigate why
-                }
+                } 
             }
 
 			element->bundle = NULL;

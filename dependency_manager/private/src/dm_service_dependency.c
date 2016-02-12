@@ -456,6 +456,7 @@ celix_status_t serviceDependency_invokeSet(dm_service_dependency_pt dependency, 
         } else {
             return status;
         }
+
     }
 
     arrayList_destroy(serviceReferences);
