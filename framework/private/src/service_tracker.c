@@ -132,7 +132,6 @@ celix_status_t serviceTracker_open(service_tracker_pt tracker) {
 			for (i = 0; i < arrayList_size(initial); i++) {
 				initial_reference = (service_reference_pt) arrayList_get(initial, i);
 				serviceTracker_track(tracker, initial_reference, NULL);
-                bundleContext_ungetServiceReference(tracker->context, initial_reference);
 			}
 			arrayList_clear(initial);
 			arrayList_destroy(initial);

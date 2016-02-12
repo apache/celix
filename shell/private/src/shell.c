@@ -107,7 +107,7 @@ celix_status_t shell_destroy(shell_service_pt *shell_service_ptr) {
 	return status;
 }
 
-celix_status_t shell_addCommand(shell_pt shell_ptr, service_reference_pt reference_ptr) {
+celix_status_t shell_addCommand(shell_pt shell_ptr, service_reference_pt reference_ptr, void *svc) {
     celix_status_t status = CELIX_SUCCESS;
     command_service_pt command_ptr = NULL;
     char *name_str = NULL;
@@ -117,10 +117,7 @@ celix_status_t shell_addCommand(shell_pt shell_ptr, service_reference_pt referen
     }
 
     if (status == CELIX_SUCCESS) {
-        status = bundleContext_getService(shell_ptr->bundle_context_ptr, reference_ptr, (void **) &command_ptr);
-        if (!command_ptr) {
-            status = CELIX_BUNDLE_EXCEPTION;
-        }
+        command_ptr = svc;
     }
 
     if (status == CELIX_SUCCESS) {
@@ -137,7 +134,7 @@ celix_status_t shell_addCommand(shell_pt shell_ptr, service_reference_pt referen
     }
 
     if (status != CELIX_SUCCESS) {
-        shell_removeCommand(shell_ptr, reference_ptr);
+        shell_removeCommand(shell_ptr, reference_ptr, svc);
         char err[32];
         celix_strerror(status, err, 32);
         logHelper_log(shell_ptr->logHelper, OSGI_LOGSERVICE_ERROR, "Could not add command, got error %s\n", err);
@@ -146,7 +143,7 @@ celix_status_t shell_addCommand(shell_pt shell_ptr, service_reference_pt referen
     return status;
 }
 
-celix_status_t shell_removeCommand(shell_pt shell_ptr, service_reference_pt reference_ptr) {
+celix_status_t shell_removeCommand(shell_pt shell_ptr, service_reference_pt reference_ptr, void *svc) {
     celix_status_t status = CELIX_SUCCESS;
 
     command_service_pt command_ptr = NULL;
@@ -172,13 +169,6 @@ celix_status_t shell_removeCommand(shell_pt shell_ptr, service_reference_pt refe
 
     if (status == CELIX_SUCCESS) {
         hashMap_remove(shell_ptr->command_name_map_ptr, name_str);
-    }
-
-    if (status == CELIX_SUCCESS) {
-        celix_status_t sub_status = bundleContext_ungetService(shell_ptr->bundle_context_ptr, reference_ptr, NULL);
-        if (sub_status != CELIX_SUCCESS && status == CELIX_SUCCESS) {
-            status = sub_status;
-        }
     }
 
     return status;
@@ -312,23 +302,3 @@ celix_status_t shell_executeCommand(shell_pt shell_ptr, char *command_line_str, 
 
 	return status;
 }
-
-celix_status_t shell_serviceChanged(service_listener_pt listener_ptr, service_event_pt event_ptr) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	if (!listener_ptr || !event_ptr || !listener_ptr->handle || !event_ptr->type || !event_ptr->reference) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
-
-	if (status == CELIX_SUCCESS) {
-		shell_pt shell_ptr = (shell_pt) listener_ptr->handle;
-		if (event_ptr->type == OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED) {
-			status = shell_addCommand(shell_ptr, event_ptr->reference);
-		} else if (event_ptr->type == OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING) {
-			status = shell_removeCommand(shell_ptr, event_ptr->reference);
-		}
-	}
-
-	return status;
-}
-

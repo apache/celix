@@ -42,11 +42,10 @@ struct shell {
 
 celix_status_t shell_create(bundle_context_pt context_ptr, shell_service_pt *shell_service_ptr);
 celix_status_t shell_destroy(shell_service_pt *shell_service_ptr);
-celix_status_t shell_addCommand(shell_pt shell_ptr, service_reference_pt reference_ptr);
-celix_status_t shell_removeCommand(shell_pt shell_ptr, service_reference_pt reference_ptr);
+celix_status_t shell_addCommand(shell_pt shell_ptr, service_reference_pt reference_ptr, void *svc);
+celix_status_t shell_removeCommand(shell_pt shell_ptr, service_reference_pt reference_ptr, void *svc);
 
 celix_status_t shell_getCommandReference(shell_pt shell_ptr, char *command_name_str, service_reference_pt *command_reference_ptr);
 celix_status_t shell_executeCommand(shell_pt shell_ptr, char *command_line_str, FILE *out, FILE *err);
-celix_status_t shell_serviceChanged(service_listener_pt listener_ptr, service_event_pt event_ptr);
 
 #endif /* SHELL_PRIVATE_H_ */

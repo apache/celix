@@ -28,6 +28,7 @@
 #include "shell_private.h"
 #include "bundle_activator.h"
 #include "std_commands.h"
+#include "service_tracker.h"
 
 #define NUMBER_OF_COMMANDS 10
 
@@ -44,7 +45,7 @@ struct command {
 struct bundle_instance {
 	shell_service_pt shellService;
 	service_registration_pt registration;
-	service_listener_pt listener;
+    service_tracker_pt tracker;
 
     struct command std_commands[NUMBER_OF_COMMANDS];
 };
@@ -179,8 +180,6 @@ celix_status_t bundleActivator_start(void *_ptr, bundle_context_pt context_ptr) 
 	celix_status_t status = CELIX_SUCCESS;
 
 	bundle_instance_pt instance_ptr  = (bundle_instance_pt) _ptr;
-    array_list_pt references_ptr     = NULL;
-    service_listener_pt listener_ptr = NULL;
 
     if (!instance_ptr || !context_ptr) {
         status = CELIX_ILLEGAL_ARGUMENT;
@@ -191,29 +190,12 @@ celix_status_t bundleActivator_start(void *_ptr, bundle_context_pt context_ptr) 
     }
 
 	if (status == CELIX_SUCCESS) {
-        listener_ptr = (service_listener_pt) calloc(1, sizeof(*listener_ptr));
-        if (!listener_ptr) {
-            status = CELIX_ENOMEM;
-        }
+        service_tracker_customizer_pt cust = NULL;
+        serviceTrackerCustomizer_create(instance_ptr->shellService->shell, NULL, (void *)shell_addCommand, NULL, (void *)shell_removeCommand, &cust);
+        serviceTracker_create(context_ptr, (char *)OSGI_SHELL_COMMAND_SERVICE_NAME, cust, &instance_ptr->tracker);
+        serviceTracker_open(instance_ptr->tracker);
     }
 
-    if (status == CELIX_SUCCESS) {
-        instance_ptr->listener = listener_ptr;
-        listener_ptr->handle = instance_ptr->shellService->shell;
-        listener_ptr->serviceChanged = (void *) shell_serviceChanged;
-
-        status = bundleContext_addServiceListener(context_ptr, listener_ptr, "(objectClass=commandService)");
-    }
-
-    if (status == CELIX_SUCCESS) {
-        status = bundleContext_getServiceReferences(context_ptr, "commandService", NULL, &references_ptr);
-    }
-
-    if (status == CELIX_SUCCESS) {
-        for (unsigned int i = 0; i < arrayList_size(references_ptr); i++) {
-            shell_addCommand(instance_ptr->shellService->shell, arrayList_get(references_ptr, i));
-        }
-    }
 
     if (status == CELIX_SUCCESS) {
         for (unsigned int i = 0; instance_ptr->std_commands[i].exec != NULL; i++) {
@@ -226,19 +208,13 @@ celix_status_t bundleActivator_start(void *_ptr, bundle_context_pt context_ptr) 
             }
 
         }
-		arrayList_destroy(references_ptr);
 	}
-
-    if (status != CELIX_SUCCESS) {
-        bundleActivator_stop(_ptr, context_ptr);
-    }
 
 	return status;
 }
 
 celix_status_t bundleActivator_stop(void *_ptr, bundle_context_pt context_ptr) {
     celix_status_t status = CELIX_SUCCESS;
-    celix_status_t sub_status;
 
     bundle_instance_pt instance_ptr = (bundle_instance_pt) _ptr;
 
@@ -251,9 +227,8 @@ celix_status_t bundleActivator_stop(void *_ptr, bundle_context_pt context_ptr) {
             }
         }
 
-        sub_status = bundleContext_removeServiceListener(context_ptr, instance_ptr->listener);
-        if (status == CELIX_SUCCESS && sub_status != CELIX_SUCCESS) {
-            status = sub_status;
+        if (instance_ptr->tracker != NULL) {
+            serviceTracker_close(instance_ptr->tracker);
         }
     } else {
         status = CELIX_ILLEGAL_ARGUMENT;
@@ -268,14 +243,18 @@ celix_status_t bundleActivator_destroy(void *_ptr, bundle_context_pt __attribute
     bundle_instance_pt instance_ptr = (bundle_instance_pt) _ptr;
 
     if (instance_ptr) {
+        serviceRegistration_unregister(instance_ptr->registration);
+
         for (unsigned int i = 0; instance_ptr->std_commands[i].exec != NULL; i++) {
             free(instance_ptr->std_commands[i].service);
         }
 
-        serviceRegistration_unregister(instance_ptr->registration);
         shell_destroy(&instance_ptr->shellService);
 
-        free(instance_ptr->listener);
+        if (instance_ptr->tracker != NULL) {
+            serviceTracker_destroy(instance_ptr->tracker);
+        }
+
         free(instance_ptr);
     } else {
         status = CELIX_ILLEGAL_ARGUMENT;

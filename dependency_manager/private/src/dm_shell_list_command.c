@@ -107,6 +107,7 @@ void dmListCommand_execute(bundle_context_pt context, char * line, FILE *out, FI
             infoServ->destroyInfo(infoServ->handle, info);
 
 		bundleContext_ungetService(context,servRef,NULL);
+		bundleContext_ungetServiceReference(context,servRef);
 
         }
 
