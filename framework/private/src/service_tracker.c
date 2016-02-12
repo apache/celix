@@ -148,7 +148,6 @@ celix_status_t serviceTracker_open(service_tracker_pt tracker) {
 celix_status_t serviceTracker_close(service_tracker_pt tracker) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	status = bundleContext_removeServiceListener(tracker->context, tracker->listener);
 	if (status == CELIX_SUCCESS) {
 		array_list_pt refs = serviceTracker_getServiceReferences(tracker);
 		if (refs != NULL) {
@@ -160,6 +159,9 @@ celix_status_t serviceTracker_close(service_tracker_pt tracker) {
 		}
 		arrayList_destroy(refs);
 	}
+    if (status == CELIX_SUCCESS) {
+        status = bundleContext_removeServiceListener(tracker->context, tracker->listener);
+    }
 
 	framework_logIfError(logger, status, NULL, "Cannot close tracker");
 
