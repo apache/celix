@@ -24,15 +24,17 @@
 static celix_status_t dfi_findFileForFramework(bundle_context_pt context, const char *fileName, FILE **out) {
     celix_status_t  status;
 
-    char pwd[1024]
+    char pwd[1024];
     char path[1024];
+    char *extPath = NULL;
    
     status = bundleContext_getProperty(context, "CELIX_FRAMEWORK_EXTENDER_PATH", &extPath);
-    if (status != CELIX_SUCCESS) {
+    if (status != CELIX_SUCCESS || extPath == NULL) {
         getcwd(pwd, sizeof(pwd));
+        extPath = pwd;
     }
 
-    snprintf(path, sizeof(path), "%s/%s", pwd, fileName);
+    snprintf(path, sizeof(path), "%s/%s", extPath, fileName);
 
     if (status == CELIX_SUCCESS) {
         FILE *df = fopen(path, "r");
