@@ -74,9 +74,11 @@ before_script:
     - export BUILD_OPTIONS_OSX=" \
         -DBUILD_RSA_REMOTE_SERVICE_ADMIN_SHM=OFF \
         -DBUILD_RSA_DISCOVERY_SHM=OFF "
+    - export BUILD_OPTIONS_SANITIZE=" -DENABLE_ADDRESS_SANITIZER=ON"
 
 script:
-    - if [ "$SANITIZE" == 1 ]; then export CC=/usr/bin/gcc-4.8 CXX=/usr/bin/g++-4.8 CFLAGS="-lasan -fsanitize=address"  CXXFLAGS="-lasan -fsanitize=address" ASAN_OPTIONS="symbolize=1" ASAN_SYMBOLIZER_PATH="/usr/local/clang-3.4/bin/llvm-symbolizer"; fi
+    #- if [ "$SANITIZE" == 1 ]; then export CC=/usr/bin/gcc-4.8 CXX=/usr/bin/g++-4.8 CFLAGS="-lasan -fsanitize=address"  CXXFLAGS="-lasan -fsanitize=address" ASAN_OPTIONS="symbolize=1" ASAN_SYMBOLIZER_PATH="/usr/local/clang-3.4/bin/llvm-symbolizer"; fi
+    - if [ "$SANITIZE" == 1 ]; then export BUILD_OPTIONS="${BUILD_OPTIONS} ${BUILD_OPTIONS_SANITIZE}"; fi
      # the following setup is broken:
      # RSA_DISCOVERY_SHM is only working on linux, but both compilers (see CELIX-277)
      # RSA_SHM is only working on linux, but both compilers (see CELIX-277)
