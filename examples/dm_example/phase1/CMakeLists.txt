@@ -34,5 +34,10 @@ add_bundle(phase1
 IF(APPLE)
     target_link_libraries(phase1 celix_framework -Wl,-all_load dependency_manager_static)
 else()
-    target_link_libraries(phase1 -Wl,--no-undefined -Wl,--whole-archive dependency_manager_static -Wl,--no-whole-archive celix_framework)
-ENDIF()
+    if(ENABLE_ADDRESS_SANITIZER)
+        #With asan there can be undefined symbols
+        target_link_libraries(phase1 -Wl,--whole-archive dependency_manager_static -Wl,--no-whole-archive celix_framework)
+    else()
+        target_link_libraries(phase1 -Wl,--no-undefined -Wl,--whole-archive dependency_manager_static -Wl,--no-whole-archive celix_framework)
+    endif()
+endif()
