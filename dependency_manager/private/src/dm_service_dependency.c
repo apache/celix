@@ -229,10 +229,16 @@ celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency,
 
             while (arrayListIterator_hasNext(filterElementsIter) == true) {
                 char* filterElement = (char*) arrayListIterator_next(filterElementsIter);
-                size_t len = strlen(dependency->tracked_filter) + strlen(filterElement) + 4;
+                size_t len = strnlen(dependency->tracked_filter, 1024*1024) + strnlen(filterElement, 1024*1024) + 4;
                 char* newFilter = calloc(len, sizeof(*newFilter));
 
-                snprintf(newFilter, len, "(&%s%s)", dependency->tracked_filter, filterElement);
+                if (dependency->tracked_filter[0] == '(' && dependency->tracked_filter[1] == '&') {
+                    //already have an & (AND) can combine with additional filter -> easier to read
+                    size_t orgLen = strnlen(dependency->tracked_filter, 1024*1024);
+                    snprintf(newFilter, len, "%.*s%s)", (int)orgLen -1, dependency->tracked_filter, filterElement);
+                } else {
+                    snprintf(newFilter, len, "(&%s%s)", dependency->tracked_filter, filterElement);
+                }
 
                 free(dependency->tracked_filter);
                 free(filterElement);

@@ -31,7 +31,7 @@ add_bundle(phase2b
 #bundle_private_libs(phase2b dependency_manager)
 
 IF(APPLE)
-target_link_libraries(phase2b celix_framework -Wl,-all_load dependency_manager_static)
+    target_link_libraries(phase2b celix_framework -Wl,-all_load dependency_manager_static)
 else()
-target_link_libraries(phase2b -Wl,--whole-archive dependency_manager_static -Wl,--no-whole-archive celix_framework)
+    target_link_libraries(phase2b -Wl,--no-undefined -Wl,--whole-archive dependency_manager_static -Wl,--no-whole-archive celix_framework)
 ENDIF()
