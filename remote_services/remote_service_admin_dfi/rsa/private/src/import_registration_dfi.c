@@ -142,7 +142,9 @@ void importRegistration_destroy(import_registration_pt import) {
 celix_status_t importRegistration_start(import_registration_pt import) {
     celix_status_t  status = CELIX_SUCCESS;
     if (import->factoryReg == NULL && import->factory != NULL) {
-        status = bundleContext_registerServiceFactory(import->context, (char *)import->classObject, import->factory, NULL /*TODO*/, &import->factoryReg);
+        properties_pt props = NULL;
+        properties_copy(import->endpoint->properties, &props);
+        status = bundleContext_registerServiceFactory(import->context, (char *)import->classObject, import->factory, props, &import->factoryReg);
     } else {
         status = CELIX_ILLEGAL_STATE;
     }
