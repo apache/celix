@@ -67,6 +67,8 @@ dm_component_state_t component_currentState(dm_component_pt cmp);
 void * component_getImplementation(dm_component_pt cmp);
 const char * component_getName(dm_component_pt cmp);
 
+celix_status_t component_getBundleContext(dm_component_pt component, bundle_context_pt *out);
+
 #define component_setCallbacksSafe(dmCmp, type, init, start, stop, deinit) \
     do {  \
         int (*tmp_init)(type)   = (init); \

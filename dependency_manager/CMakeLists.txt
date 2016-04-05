@@ -31,7 +31,7 @@ if (DEPENDENCY_MANAGER)
     endif(UNIX AND NOT WIN32)
 
     add_bundle(dm_shell
-        SYMBOLIC_NAME "apche_celix_dm_shell"
+        SYMBOLIC_NAME "apache_celix_dm_shell"
         VERSION "0.0.1"
         NAME "Apache Celix DM Shell Commands"
         SOURCES
