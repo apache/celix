@@ -76,6 +76,11 @@ FRAMEWORK_EXPORT properties_pt properties_loadWithStream(FILE *file) {
 			key[0] = '\0';
 			value[0] = '\0';
 
+			//Ignore empty lines
+			if(line[0]=='\n' && line[1]=='\0'){
+				continue;
+			}
+
 			while (line[linePos] != '\0') {
 				if (line[linePos] == ' ' || line[linePos] == '\t') {
 					if (output == NULL) {
