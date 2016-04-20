@@ -176,7 +176,12 @@ static void framework_loggerInit(void) {
     }
 #else
     #define handle_t void *
+    #ifdef ANDROID
+    #define 
+    #define fw_openLibrary(path) dlopen(path, RTLD_LAZY|RTLD_LOCAL)
+    #else
     #define fw_openLibrary(path) dlopen(path, RTLD_LAZY|RTLD_LOCAL|RTLD_NODELETE)
+    #endif
     #define fw_closeLibrary(handle) dlclose(handle)
     #define fw_getSymbol(handle, name) dlsym(handle, name)
     #define fw_getLastError() dlerror()
