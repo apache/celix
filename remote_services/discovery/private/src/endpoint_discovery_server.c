@@ -47,21 +47,21 @@
 #define CIVETWEB_REQUEST_HANDLED 1
 
 static const char *response_headers =
-  "HTTP/1.1 200 OK\r\n"
-  "Cache: no-cache\r\n"
-  "Content-Type: application/xml;charset=utf-8\r\n"
-  "\r\n";
+		"HTTP/1.1 200 OK\r\n"
+		"Cache: no-cache\r\n"
+		"Content-Type: application/xml;charset=utf-8\r\n"
+		"\r\n";
 
 struct endpoint_discovery_server {
 	log_helper_pt* loghelper;
-    hash_map_pt entries; // key = endpointId, value = endpoint_descriptor_pt
+	hash_map_pt entries; // key = endpointId, value = endpoint_descriptor_pt
 
-    celix_thread_mutex_t serverLock;
+	celix_thread_mutex_t serverLock;
 
-    const char* path;
-    const char *port;
-    const char* ip;
-    struct mg_context* ctx;
+	const char* path;
+	const char *port;
+	const char* ip;
+	struct mg_context* ctx;
 };
 
 // Forward declarations...
@@ -75,7 +75,7 @@ static celix_status_t endpointDiscoveryServer_getIpAdress(char* interface, char*
 celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_context_pt context, endpoint_discovery_server_pt *server) {
 	celix_status_t status;
 
-	char *port = 0;
+	char *port = NULL;
 	char *ip = NULL;
 	char *detectedIp = NULL;
 	char *path = NULL;
@@ -97,7 +97,7 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 	}
 
 	bundleContext_getProperty(context, DISCOVERY_SERVER_IP, &ip);
-	#ifndef ANDROID
+#ifndef ANDROID
 	if (ip == NULL) {
 		char *interface = NULL;
 
@@ -112,7 +112,7 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 
 		ip = detectedIp;
 	}
-	#endif
+#endif
 
 	if (ip != NULL) {
 		logHelper_log(*(*server)->loghelper, OSGI_LOGSERVICE_INFO, "Using %s for service annunciation", ip);
@@ -140,17 +140,17 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 	(*server)->path = format_path(path);
 
 	const struct mg_callbacks callbacks = {
-		.begin_request = endpointDiscoveryServer_callback,
+			.begin_request = endpointDiscoveryServer_callback,
 	};
 
 	unsigned int port_counter = 0;
+	char newPort[10];
 
 	do {
-		char newPort[10];
 		const char *options[] = {
-			"listening_ports", port,
-			"num_threads", DEFAULT_SERVER_THREADS,
-			NULL
+				"listening_ports", port,
+				"num_threads", DEFAULT_SERVER_THREADS,
+				NULL
 		};
 
 		(*server)->ctx = mg_start(&callbacks, (*server), options);
@@ -161,14 +161,14 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 		}
 		else {
 			errno = 0;
-	        char* endptr = port;
-	        long currentPort = strtol(port, &endptr, 10);
+			char* endptr = port;
+			long currentPort = strtol(port, &endptr, 10);
 
-	        if (*endptr || errno != 0) {
-	            currentPort = strtol(DEFAULT_SERVER_PORT, NULL, 10);
-	        }
+			if (*endptr || errno != 0) {
+				currentPort = strtol(DEFAULT_SERVER_PORT, NULL, 10);
+			}
 
-	        port_counter++;
+			port_counter++;
 			snprintf(&newPort[0], 10,  "%ld", (currentPort+1));
 
 			logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_ERROR, "Error while starting discovery server on port %s - retrying on port %s...", port, newPort);
@@ -313,23 +313,27 @@ static celix_status_t endpointDiscoveryServer_getEndpoints(endpoint_discovery_se
 
 static int endpointDiscoveryServer_writeEndpoints(struct mg_connection* conn, array_list_pt endpoints) {
 	celix_status_t status;
+	int rv = CIVETWEB_REQUEST_NOT_HANDLED;
 
-    endpoint_descriptor_writer_pt writer = NULL;
-    status = endpointDescriptorWriter_create(&writer);
-    if (status != CELIX_SUCCESS) {
-    	return CIVETWEB_REQUEST_NOT_HANDLED;
-    }
+	endpoint_descriptor_writer_pt writer = NULL;
+	status = endpointDescriptorWriter_create(&writer);
+	if (status == CELIX_SUCCESS) {
 
-    char *buffer = NULL;
-    status = endpointDescriptorWriter_writeDocument(writer, endpoints, &buffer);
-    if (buffer) {
-    	mg_write(conn, response_headers, strlen(response_headers));
-    	mg_write(conn, buffer, strlen(buffer));
-    }
+		char *buffer = NULL;
+		status = endpointDescriptorWriter_writeDocument(writer, endpoints, &buffer);
+		if (buffer) {
+			mg_write(conn, response_headers, strlen(response_headers));
+			mg_write(conn, buffer, strlen(buffer));
+		}
 
-    status = endpointDescriptorWriter_destroy(writer);
+		rv = CIVETWEB_REQUEST_HANDLED;
+	}
 
-	return CIVETWEB_REQUEST_HANDLED;
+	if(writer!=NULL){
+		endpointDescriptorWriter_destroy(writer);
+	}
+
+	return rv;
 }
 
 // returns all endpoints as XML...
@@ -338,17 +342,17 @@ static int endpointDiscoveryServer_returnAllEndpoints(endpoint_discovery_server_
 
 	array_list_pt endpoints = NULL;
 
-    if (celixThreadMutex_lock(&server->serverLock) == CELIX_SUCCESS) {
-        endpointDiscoveryServer_getEndpoints(server, NULL, &endpoints);
-        if (endpoints) {
-            status = endpointDiscoveryServer_writeEndpoints(conn, endpoints);
+	if (celixThreadMutex_lock(&server->serverLock) == CELIX_SUCCESS) {
+		endpointDiscoveryServer_getEndpoints(server, NULL, &endpoints);
+		if (endpoints) {
+			status = endpointDiscoveryServer_writeEndpoints(conn, endpoints);
 
-            arrayList_destroy(endpoints);
-        }
+			arrayList_destroy(endpoints);
+		}
 
 
-        celixThreadMutex_unlock(&server->serverLock);
-    }
+		celixThreadMutex_unlock(&server->serverLock);
+	}
 
 	return status;
 }
@@ -360,14 +364,14 @@ static int endpointDiscoveryServer_returnEndpoint(endpoint_discovery_server_pt s
 	array_list_pt endpoints = NULL;
 
 	if (celixThreadMutex_lock(&server->serverLock) == CELIX_SUCCESS) {
-        endpointDiscoveryServer_getEndpoints(server, endpoint_id, &endpoints);
-        if (endpoints) {
-            status = endpointDiscoveryServer_writeEndpoints(conn, endpoints);
+		endpointDiscoveryServer_getEndpoints(server, endpoint_id, &endpoints);
+		if (endpoints) {
+			status = endpointDiscoveryServer_writeEndpoints(conn, endpoints);
 
-            arrayList_destroy(endpoints);
-        }
+			arrayList_destroy(endpoints);
+		}
 
-        celixThreadMutex_unlock(&server->serverLock);
+		celixThreadMutex_unlock(&server->serverLock);
 	}
 
 	return status;
@@ -404,10 +408,10 @@ static celix_status_t endpointDiscoveryServer_getIpAdress(char* interface, char*
 	celix_status_t status = CELIX_BUNDLE_EXCEPTION;
 
 	struct ifaddrs *ifaddr, *ifa;
-    char host[NI_MAXHOST];
+	char host[NI_MAXHOST];
 
-    if (getifaddrs(&ifaddr) != -1)
-    {
+	if (getifaddrs(&ifaddr) != -1)
+	{
 		for (ifa = ifaddr; ifa != NULL && status != CELIX_SUCCESS; ifa = ifa->ifa_next)
 		{
 			if (ifa->ifa_addr == NULL)
@@ -426,8 +430,8 @@ static celix_status_t endpointDiscoveryServer_getIpAdress(char* interface, char*
 		}
 
 		freeifaddrs(ifaddr);
-    }
+	}
 
-    return status;
+	return status;
 }
 #endif

@@ -41,15 +41,10 @@ typedef struct bundle_instance *bundle_instance_pt;
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
-	bundle_instance_pt bi = calloc(1, sizeof(struct bundle_instance));
-	if (userData != NULL) {
-		bi->service=NULL;
-		bi->locator=NULL;
-		bi->locatorRegistration=NULL;
-		(*userData)=bi;
-	} else {
+	(*userData) = calloc(1, sizeof(struct bundle_instance));
+	if ( (*userData) == NULL ){
 		status = CELIX_ENOMEM;
-    }
+	}
     return status;
 }
 

@@ -72,6 +72,13 @@ celix_status_t driverAttributes_create(service_reference_pt reference, driver_se
 	return status;
 }
 
+celix_status_t driverAttributes_destroy(driver_attributes_pt attributes){
+	if(attributes != NULL){
+		free(attributes);
+	}
+	return CELIX_SUCCESS;
+}
+
 celix_status_t driverAttributes_getReference(driver_attributes_pt driverAttributes, service_reference_pt *reference) {
 	*reference = driverAttributes->reference;
 

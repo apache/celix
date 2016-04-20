@@ -52,6 +52,7 @@ celix_status_t refiningDriver_match(void *driver, service_reference_pt reference
 
 celix_status_t refiningDriverDevice_noDriverFound(device_pt device);
 celix_status_t refiningDriverDevice_createService(refining_driver_device_pt, refining_driver_device_service_pt *service);
+celix_status_t refiningDriverDevice_destroyService(refining_driver_device_service_pt service);
 celix_status_t refiningDriverDevice_getNextWord(refining_driver_device_pt refiningDriverDevice, char **word);
 
 #endif /* REFINING_DRIVER_PRIVATE_H_ */

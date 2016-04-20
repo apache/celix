@@ -489,16 +489,13 @@ bool hashMapValues_contains(hash_map_values_pt values, void * value) {
 
 void hashMapValues_toArray(hash_map_values_pt values, void* *array[], unsigned int *size) {
 	hash_map_iterator_pt it;
-	int i;
+	int i = 0;
 	int vsize = hashMapValues_size(values);
 	*size = vsize;
 	*array = malloc(vsize * sizeof(*array));
 	it = hashMapValues_iterator(values);
-	for (i = 0; i < vsize; i++) {
-		if (!hashMapIterator_hasNext(it)) {
-			return;
-		}
-		(*array)[i] = hashMapIterator_nextValue(it);
+	while(hashMapIterator_hasNext(it) && i<vsize){
+		(*array)[i++] = hashMapIterator_nextValue(it);
 	}
 	hashMapIterator_destroy(it);
 }

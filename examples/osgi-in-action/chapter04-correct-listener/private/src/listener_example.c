@@ -102,6 +102,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
                 event->type = OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED;
 
                 listenerExample_serviceChanged(listener, event);
+                free(event);
             }
             arrayList_destroy(logServices);
         }
@@ -145,7 +146,7 @@ void listenerExample_serviceChanged(service_listener_pt listener, service_event_
 //		// only the service metadata has changed, so no need to do anything here
 //		break;
     case OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING:
-        arrayList_remove(activator->logServiceReferences, arrayList_indexOf(activator->logServiceReferences, event->reference));
+        arrayList_removeElement(activator->logServiceReferences, event->reference);
         break;
     default:
         break;

@@ -119,7 +119,7 @@ celix_status_t serviceTracker_open(service_tracker_pt tracker) {
 	listener = (service_listener_pt) malloc(sizeof(*listener));
 	
 	status = bundleContext_getServiceReferences(tracker->context, NULL, tracker->filter, &initial);
-	if (status == CELIX_SUCCESS) {
+	if (status == CELIX_SUCCESS && listener != NULL) {
 		service_reference_pt initial_reference;
 		unsigned int i;
 
@@ -133,11 +133,15 @@ celix_status_t serviceTracker_open(service_tracker_pt tracker) {
 				initial_reference = (service_reference_pt) arrayList_get(initial, i);
 				serviceTracker_track(tracker, initial_reference, NULL);
 			}
-			arrayList_clear(initial);
+
 			arrayList_destroy(initial);
 
 			initial = NULL;
 		}
+	}
+
+	if(status != CELIX_SUCCESS && listener != NULL){
+		free(listener);
 	}
 
 	framework_logIfError(logger, status, NULL, "Cannot open tracker");

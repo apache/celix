@@ -118,7 +118,7 @@ celix_status_t logSync_parseLogDescriptor(log_sync_pt logSync, char *descriptorS
 static void *logSync_synchronize(void *logSyncP) {
 	log_sync_pt logSync = logSyncP;
 
-		while (logSync->running) {
+	while (logSync->running) {
 
 		//query current log
 		// http://localhost:8080/auditlog/query?tid=targetid&logid=logid
@@ -139,6 +139,11 @@ static void *logSync_synchronize(void *logSyncP) {
 				logStore_getEvents(logSync->logStore, &events);
 			}
 		}
+
+		if(descriptor!=NULL){
+			free(descriptor);
+		}
+
 		sleep(10);
 	}
 
@@ -166,7 +171,7 @@ celix_status_t logSync_queryLog(log_sync_pt logSync, char *targetId, long logId,
 	chunk.memory = calloc(1, sizeof(char));
 	chunk.size = 0;
 	if (curl) {
-	    curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
+		curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
 		curl_easy_setopt(curl, CURLOPT_URL, query);
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, logSync_readQeury);
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &chunk);

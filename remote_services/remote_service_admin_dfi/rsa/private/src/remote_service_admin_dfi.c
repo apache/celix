@@ -186,8 +186,10 @@ celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_servi
         memset(&callbacks, 0, sizeof(callbacks));
         callbacks.begin_request = remoteServiceAdmin_callback;
 
+        char newPort[10];
+
         do {
-            char newPort[10];
+
             const char *options[] = { "listening_ports", port, "num_threads", "5", NULL};
 
             (*admin)->ctx = mg_start(&callbacks, (*admin), options);
@@ -198,10 +200,9 @@ celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_servi
 
             }
             else {
+            	errno = 0;
                 char* endptr = port;
                 int currentPort = strtol(port, &endptr, 10);
-
-                errno = 0;
 
                 if (*endptr || errno != 0) {
                     currentPort = strtol(DEFAULT_PORT, NULL, 10);

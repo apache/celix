@@ -83,32 +83,41 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
 	if (readerService && writerService && databaseHandler)
 	{
-	    status = celixThreadMutex_create(&databaseHandler->lock, NULL);
+		status = celixThreadMutex_create(&databaseHandler->lock, NULL);
 
-	    if (status == CELIX_SUCCESS)
-	    {
-            arrayList_create(&databaseHandler->data);
-            databaseHandler->dataIndex = 0;
+		if (status == CELIX_SUCCESS)
+		{
+			arrayList_create(&databaseHandler->data);
+			databaseHandler->dataIndex = 0;
 
-            readerService->handler = databaseHandler;
-            readerService->readerService_getFirstData = readerService_getFirstData;
-            readerService->readerService_getNextData = readerService_getNextData;
+			readerService->handler = databaseHandler;
+			readerService->readerService_getFirstData = readerService_getFirstData;
+			readerService->readerService_getNextData = readerService_getNextData;
 
-            writerService->handler = databaseHandler;
-            writerService->writerService_storeData = writerService_storeData;
-            writerService->writerService_removeData = writerService_removeData;
+			writerService->handler = databaseHandler;
+			writerService->writerService_storeData = writerService_storeData;
+			writerService->writerService_removeData = writerService_removeData;
 
-            activator->readerService = readerService;
-            activator->writerService = writerService;
+			activator->readerService = readerService;
+			activator->writerService = writerService;
 
-            status = bundleContext_registerService(context, READER_SERVICE_NAME, activator->readerService, NULL,  &activator->readerRegistration);
+			status = bundleContext_registerService(context, READER_SERVICE_NAME, activator->readerService, NULL,  &activator->readerRegistration);
 
-            if (status == CELIX_SUCCESS)
-                status = bundleContext_registerService(context, WRITER_SERVICE_NAME, activator->writerService, NULL,  &activator->writerRegistration);
-	    }
+			if (status == CELIX_SUCCESS)
+				status = bundleContext_registerService(context, WRITER_SERVICE_NAME, activator->writerService, NULL,  &activator->writerRegistration);
+		}
 	}
 	else
 	{
+		if(readerService!=NULL){
+			free(readerService);
+		}
+		if(writerService!=NULL){
+			free(writerService);
+		}
+		if(databaseHandler!=NULL){
+			free(databaseHandler);
+		}
 		status = CELIX_ENOMEM;
 	}
 
@@ -128,6 +137,16 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator *activator = userData;
+
+	database_handler_pt dbh = (database_handler_pt)activator->writerService->handler;
+	if(dbh != NULL){
+		celixThreadMutex_destroy(&dbh->lock);
+		if(dbh->data != NULL){
+			arrayList_destroy(dbh->data);
+		}
+		free(dbh);
+		activator->writerService->handler=NULL;
+	}
 
 	free(activator->readerService);
 	free(activator->writerService);

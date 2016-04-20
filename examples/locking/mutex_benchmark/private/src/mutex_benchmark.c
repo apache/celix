@@ -17,6 +17,7 @@
  *under the License.
  */
 #include <stdlib.h>
+#include <string.h>
 #include <pthread.h>
 #include <sys/time.h>
 #include <stdio.h>
@@ -60,6 +61,7 @@ benchmark_result_t benchmark_run(benchmark_pt benchmark, int nrOfThreads, int nr
 	pthread_t threads[nrOfThreads];
 	thread_info_t infos[nrOfThreads];
 	benchmark_result_t result;
+	memset(&result,0,sizeof(benchmark_result_t));
 	unsigned long elapsedTime = 0;
 
 	result.skips =0;

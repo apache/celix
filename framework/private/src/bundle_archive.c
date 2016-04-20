@@ -63,100 +63,111 @@ static celix_status_t bundleArchive_readLastModified(bundle_archive_pt archive, 
 static celix_status_t bundleArchive_writeLastModified(bundle_archive_pt archive);
 
 celix_status_t bundleArchive_createSystemBundleArchive(bundle_archive_pt *bundle_archive) {
-    celix_status_t status = CELIX_SUCCESS;
-    char *error = NULL;
-	bundle_archive_pt archive;
+	celix_status_t status = CELIX_SUCCESS;
+	char *error = NULL;
+	bundle_archive_pt archive = NULL;
 
 	if (*bundle_archive != NULL) {
-	    status = CELIX_ILLEGAL_ARGUMENT;
-	    error = "Missing required arguments and/or incorrect values";
+		status = CELIX_ILLEGAL_ARGUMENT;
+		error = "Missing required arguments and/or incorrect values";
 	} else {
-        archive = (bundle_archive_pt) malloc(sizeof(*archive));
-        if (archive == NULL) {
-            status = CELIX_ENOMEM;
-        } else {
-        	status = linkedList_create(&archive->revisions);
-        	if (status == CELIX_SUCCESS) {
-                archive->id = 0l;
-                archive->location = strdup("System Bundle");
-                archive->archiveRoot = NULL;
-                archive->archiveRootDir = NULL;
-                archive->refreshCount = -1;
-                archive->persistentState = OSGI_FRAMEWORK_BUNDLE_UNKNOWN;
-                time(&archive->lastModified);
+		archive = (bundle_archive_pt) malloc(sizeof(*archive));
+		if (archive == NULL) {
+			status = CELIX_ENOMEM;
+		} else {
+			status = linkedList_create(&archive->revisions);
+			if (status == CELIX_SUCCESS) {
+				archive->id = 0l;
+				archive->location = strdup("System Bundle");
+				archive->archiveRoot = NULL;
+				archive->archiveRootDir = NULL;
+				archive->refreshCount = -1;
+				archive->persistentState = OSGI_FRAMEWORK_BUNDLE_UNKNOWN;
+				time(&archive->lastModified);
 
-                *bundle_archive = archive;
-            }
-        }
+				*bundle_archive = archive;
+			}
+		}
+	}
+
+	if(status != CELIX_SUCCESS && archive != NULL){
+		bundleArchive_destroy(archive);
 	}
 
 	framework_logIfError(logger, status, error, "Could not create archive");
 
-    return status;
+	return status;
 }
 
 celix_status_t bundleArchive_create(char * archiveRoot, long id, char * location, char *inputFile, bundle_archive_pt *bundle_archive) {
-    celix_status_t status = CELIX_SUCCESS;
-    char *error = NULL;
-    bundle_archive_pt archive;
+	celix_status_t status = CELIX_SUCCESS;
+	char *error = NULL;
+	bundle_archive_pt archive = NULL;
 
-    if (*bundle_archive != NULL) {
-    	status = CELIX_ILLEGAL_ARGUMENT;
-    	error = "bundle_archive_pt must be NULL";
-    } else {
+	if (*bundle_archive != NULL) {
+		status = CELIX_ILLEGAL_ARGUMENT;
+		error = "bundle_archive_pt must be NULL";
+	} else {
 		archive = (bundle_archive_pt) malloc(sizeof(*archive));
 		if (archive == NULL) {
-		    status = CELIX_ENOMEM;
+			status = CELIX_ENOMEM;
 		} else {
 			status = linkedList_create(&archive->revisions);
 			if (status == CELIX_SUCCESS) {
-                archive->id = id;
-                archive->location = strdup(location);
-                archive->archiveRootDir = NULL;
+				archive->id = id;
+				archive->location = strdup(location);
+				archive->archiveRootDir = NULL;
 				archive->archiveRoot = strdup(archiveRoot);
-                archive->refreshCount = -1;
-                time(&archive->lastModified);
+				archive->refreshCount = -1;
+				time(&archive->lastModified);
 
-                status = bundleArchive_initialize(archive);
-                if (status == CELIX_SUCCESS) {
-                    status = bundleArchive_revise(archive, location, inputFile);
+				status = bundleArchive_initialize(archive);
+				if (status == CELIX_SUCCESS) {
+					status = bundleArchive_revise(archive, location, inputFile);
 
-                    if (status != CELIX_SUCCESS) {
-                        bundleArchive_closeAndDelete(archive);
-                    }
-                }
-
-                *bundle_archive = archive;
-            }
+					if (status == CELIX_SUCCESS) {
+						*bundle_archive = archive;
+					}
+					else{
+						bundleArchive_closeAndDelete(archive);
+					}
+				}
+			}
 		}
-    }
+	}
 
-    framework_logIfError(logger, status, error, "Could not create archive");
+	if(status != CELIX_SUCCESS && archive != NULL){
+		bundleArchive_destroy(archive);
+	}
+
+	framework_logIfError(logger, status, error, "Could not create archive");
 
 	return status;
 }
 
 celix_status_t bundleArchive_destroy(bundle_archive_pt archive) {
-    celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status = CELIX_SUCCESS;
 
-	if (archive->revisions != NULL) {
-	    linked_list_iterator_pt iter = linkedListIterator_create(archive->revisions, 0);
-	    while(linkedListIterator_hasNext(iter)) {
-            bundle_revision_pt rev = linkedListIterator_next(iter);
-            bundleRevision_destroy(rev);
-	    }
-	    linkedListIterator_destroy(iter);
-		linkedList_destroy(archive->revisions);
-	}
-	if (archive->archiveRoot != NULL) {
-	    free(archive->archiveRoot);
-	}
-	if (archive->location != NULL) {
-        free(archive->location);
-    }
+	if(archive != NULL){
+		if (archive->revisions != NULL) {
+			linked_list_iterator_pt iter = linkedListIterator_create(archive->revisions, 0);
+			while(linkedListIterator_hasNext(iter)) {
+				bundle_revision_pt rev = linkedListIterator_next(iter);
+				bundleRevision_destroy(rev);
+			}
+			linkedListIterator_destroy(iter);
+			linkedList_destroy(archive->revisions);
+		}
+		if (archive->archiveRoot != NULL) {
+			free(archive->archiveRoot);
+		}
+		if (archive->location != NULL) {
+			free(archive->location);
+		}
 
-	free(archive);
-	archive = NULL;
+		free(archive);
+		archive = NULL;
+	}
 
 	framework_logIfError(logger, status, NULL, "Could not create archive");
 
@@ -164,63 +175,67 @@ celix_status_t bundleArchive_destroy(bundle_archive_pt archive) {
 }
 
 celix_status_t bundleArchive_recreate(char * archiveRoot, bundle_archive_pt *bundle_archive) {
-    celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status = CELIX_SUCCESS;
 
-    bundle_archive_pt archive;
+	bundle_archive_pt archive = NULL;
 
 	archive = (bundle_archive_pt) malloc(sizeof(*archive));
 	if (archive == NULL) {
-	    status = CELIX_ENOMEM;
- 	} else {
+		status = CELIX_ENOMEM;
+	} else {
 		status = linkedList_create(&archive->revisions);
 		if (status == CELIX_SUCCESS) {
 			archive->archiveRoot = strdup(archiveRoot);
-            archive->archiveRootDir = NULL;
-            archive->id = -1;
-            archive->persistentState = -1;
-            archive->location = NULL;
-            archive->refreshCount = -1;
-            archive->lastModified = (time_t) NULL;
-		}
+			archive->archiveRootDir = NULL;
+			archive->id = -1;
+			archive->persistentState = -1;
+			archive->location = NULL;
+			archive->refreshCount = -1;
+			archive->lastModified = (time_t) NULL;
 
-        archive->archiveRootDir = opendir(archiveRoot);
-		if (archive->archiveRootDir == NULL) {
-		    status = CELIX_FRAMEWORK_EXCEPTION;
-		} else {
+			archive->archiveRootDir = opendir(archiveRoot);
+			if (archive->archiveRootDir == NULL) {
+				status = CELIX_FRAMEWORK_EXCEPTION;
+			} else {
 
-            long idx = 0;
-            long highestId = -1;
-            char *location = NULL;
+				long idx = 0;
+				long highestId = -1;
+				char *location = NULL;
 
-			struct dirent dent;
-			struct dirent *result = NULL;
-            struct stat st;
-			int rc;
+				struct dirent dent;
+				struct dirent *result = NULL;
+				struct stat st;
+				int rc;
 
-			rc = readdir_r(archive->archiveRootDir, &dent, &result);
-			while (rc == 0 && result != NULL) {
-                char subdir[512];
-                snprintf(subdir, 512, "%s/%s", archiveRoot, dent.d_name);
-                stat(subdir, &st);
-				if (S_ISDIR(st.st_mode) && (strncmp(dent.d_name, "version", 7) == 0)) {
-					sscanf(dent.d_name, "version%*d.%ld", &idx);
-                    if (idx > highestId) {
-                        highestId = idx;
-                    }
-				}
 				rc = readdir_r(archive->archiveRootDir, &dent, &result);
-			}
+				while (rc == 0 && result != NULL) {
+					char subdir[512];
+					snprintf(subdir, 512, "%s/%s", archiveRoot, dent.d_name);
+					stat(subdir, &st);
+					if (S_ISDIR(st.st_mode) && (strncmp(dent.d_name, "version", 7) == 0)) {
+						sscanf(dent.d_name, "version%*d.%ld", &idx);
+						if (idx > highestId) {
+							highestId = idx;
+						}
+					}
+					rc = readdir_r(archive->archiveRootDir, &dent, &result);
+				}
 
-            status = CELIX_DO_IF(status, bundleArchive_getRevisionLocation(archive, 0, &location));
-            status = CELIX_DO_IF(status, bundleArchive_reviseInternal(archive, true, highestId, location, NULL));
-            if (location) {
-                free(location);
-            }
-            if (status == CELIX_SUCCESS) {
-                *bundle_archive = archive;
-            }
-            closedir(archive->archiveRootDir);
+				status = CELIX_DO_IF(status, bundleArchive_getRevisionLocation(archive, 0, &location));
+				status = CELIX_DO_IF(status, bundleArchive_reviseInternal(archive, true, highestId, location, NULL));
+				if (location) {
+					free(location);
+				}
+				if (status == CELIX_SUCCESS) {
+					*bundle_archive = archive;
+				}
+				closedir(archive->archiveRootDir);
+			}
 		}
+	}
+
+	if(status != CELIX_SUCCESS && archive != NULL){
+		bundleArchive_destroy(archive);
 	}
 
 	framework_logIfError(logger, status, NULL, "Could not create archive");
@@ -233,14 +248,14 @@ celix_status_t bundleArchive_getId(bundle_archive_pt archive, long *id) {
 
 	if (archive->id < 0) {
 		FILE *bundleIdFile;
-        char id[256];
-        char bundleId[512];
-        snprintf(bundleId, sizeof(bundleId), "%s/bundle.id", archive->archiveRoot);
+		char id[256];
+		char bundleId[512];
+		snprintf(bundleId, sizeof(bundleId), "%s/bundle.id", archive->archiveRoot);
 
-        bundleIdFile = fopen(bundleId, "r");
-        fgets(id, sizeof(id), bundleIdFile);
-        fclose(bundleIdFile);
-        sscanf(id, "%ld", &archive->id);
+		bundleIdFile = fopen(bundleId, "r");
+		fgets(id, sizeof(id), bundleIdFile);
+		fclose(bundleIdFile);
+		sscanf(id, "%ld", &archive->id);
 	}
 
 	if (status == CELIX_SUCCESS) {
@@ -257,21 +272,21 @@ celix_status_t bundleArchive_getLocation(bundle_archive_pt archive, char **locat
 	if (archive->location == NULL) {
 		FILE *bundleLocationFile;
 		char bundleLocation[512];
-        char loc[256];
+		char loc[256];
 
-        snprintf(bundleLocation, sizeof(bundleLocation), "%s/bundle.location", archive->archiveRoot);
+		snprintf(bundleLocation, sizeof(bundleLocation), "%s/bundle.location", archive->archiveRoot);
 
-        bundleLocationFile = fopen(bundleLocation, "r");
-        fgets(loc, sizeof(loc), bundleLocationFile);
-        fclose(bundleLocationFile);
-        archive->location = strdup(loc);
+		bundleLocationFile = fopen(bundleLocation, "r");
+		fgets(loc, sizeof(loc), bundleLocationFile);
+		fclose(bundleLocationFile);
+		archive->location = strdup(loc);
 	}
 
 	if (status == CELIX_SUCCESS) {
 		*location = archive->location;
 	}
 
-    framework_logIfError(logger, status, NULL, "Could not get archive location");
+	framework_logIfError(logger, status, NULL, "Could not get archive location");
 
 	return status;
 }
@@ -285,11 +300,11 @@ celix_status_t bundleArchive_getCurrentRevisionNumber(bundle_archive_pt archive,
 	celix_status_t status = CELIX_SUCCESS;
 	bundle_revision_pt revision;
 	*revisionNumber = -1;
-	
+
 	status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
 	status = CELIX_DO_IF(status, bundleRevision_getNumber(revision, revisionNumber));
 
-    framework_logIfError(logger, status, NULL, "Could not get current revision number");
+	framework_logIfError(logger, status, NULL, "Could not get current revision number");
 
 	return status;
 }
@@ -312,35 +327,35 @@ celix_status_t bundleArchive_getPersistentState(bundle_archive_pt archive, bundl
 	} else {
 		FILE *persistentStateLocationFile;
 		char persistentStateLocation[512];
-        char stateString[256];
-        snprintf(persistentStateLocation, sizeof(persistentStateLocation), "%s/bundle.state", archive->archiveRoot);
+		char stateString[256];
+		snprintf(persistentStateLocation, sizeof(persistentStateLocation), "%s/bundle.state", archive->archiveRoot);
 
-        persistentStateLocationFile = fopen(persistentStateLocation, "r");
-        if (persistentStateLocationFile == NULL) {
-            status = CELIX_FILE_IO_EXCEPTION;
-        } else {
-            if (fgets(stateString, sizeof(stateString), persistentStateLocationFile) == NULL) {
-                status = CELIX_FILE_IO_EXCEPTION;
-            }
-            fclose(persistentStateLocationFile);
-        }
+		persistentStateLocationFile = fopen(persistentStateLocation, "r");
+		if (persistentStateLocationFile == NULL) {
+			status = CELIX_FILE_IO_EXCEPTION;
+		} else {
+			if (fgets(stateString, sizeof(stateString), persistentStateLocationFile) == NULL) {
+				status = CELIX_FILE_IO_EXCEPTION;
+			}
+			fclose(persistentStateLocationFile);
+		}
 
-        if (status == CELIX_SUCCESS) {
-            if (strncmp(stateString, "active", 256) == 0) {
-                archive->persistentState = OSGI_FRAMEWORK_BUNDLE_ACTIVE;
-            } else if (strncmp(stateString, "starting", 256) == 0) {
-                archive->persistentState = OSGI_FRAMEWORK_BUNDLE_STARTING;
-            } else if (strncmp(stateString, "uninstalled", 256) == 0) {
-                archive->persistentState = OSGI_FRAMEWORK_BUNDLE_UNINSTALLED;
-            } else {
-                archive->persistentState = OSGI_FRAMEWORK_BUNDLE_INSTALLED;
-            }
+		if (status == CELIX_SUCCESS) {
+			if (strncmp(stateString, "active", 256) == 0) {
+				archive->persistentState = OSGI_FRAMEWORK_BUNDLE_ACTIVE;
+			} else if (strncmp(stateString, "starting", 256) == 0) {
+				archive->persistentState = OSGI_FRAMEWORK_BUNDLE_STARTING;
+			} else if (strncmp(stateString, "uninstalled", 256) == 0) {
+				archive->persistentState = OSGI_FRAMEWORK_BUNDLE_UNINSTALLED;
+			} else {
+				archive->persistentState = OSGI_FRAMEWORK_BUNDLE_INSTALLED;
+			}
 
-            *state = archive->persistentState;
-        }
+			*state = archive->persistentState;
+		}
 	}
 
-    framework_logIfError(logger, status, NULL, "Could not get persistent state");
+	framework_logIfError(logger, status, NULL, "Could not get persistent state");
 
 	return status;
 }
@@ -349,35 +364,35 @@ celix_status_t bundleArchive_setPersistentState(bundle_archive_pt archive, bundl
 	celix_status_t status = CELIX_SUCCESS;
 	char persistentStateLocation[512];
 	FILE *persistentStateLocationFile;
-	
+
 	snprintf(persistentStateLocation, sizeof(persistentStateLocation), "%s/bundle.state", archive->archiveRoot);
 
 	persistentStateLocationFile = fopen(persistentStateLocation, "w");
-    if (persistentStateLocationFile == NULL) {
-        status = CELIX_FILE_IO_EXCEPTION;
-    } else {
-        char * s;
-        switch (state) {
-            case OSGI_FRAMEWORK_BUNDLE_ACTIVE:
-                s = "active";
-                break;
-            case OSGI_FRAMEWORK_BUNDLE_STARTING:
-                s = "starting";
-                break;
-            case OSGI_FRAMEWORK_BUNDLE_UNINSTALLED:
-                s = "uninstalled";
-                break;
-            default:
-                s = "installed";
-                break;
-        }
-        fprintf(persistentStateLocationFile, "%s", s);
-        if (fclose(persistentStateLocationFile) ==  0) {
-            archive->persistentState = state;
-        }
-    }
+	if (persistentStateLocationFile == NULL) {
+		status = CELIX_FILE_IO_EXCEPTION;
+	} else {
+		char * s;
+		switch (state) {
+		case OSGI_FRAMEWORK_BUNDLE_ACTIVE:
+			s = "active";
+			break;
+		case OSGI_FRAMEWORK_BUNDLE_STARTING:
+			s = "starting";
+			break;
+		case OSGI_FRAMEWORK_BUNDLE_UNINSTALLED:
+			s = "uninstalled";
+			break;
+		default:
+			s = "installed";
+			break;
+		}
+		fprintf(persistentStateLocationFile, "%s", s);
+		if (fclose(persistentStateLocationFile) ==  0) {
+			archive->persistentState = state;
+		}
+	}
 
-    framework_logIfError(logger, status, NULL, "Could not set persistent state");
+	framework_logIfError(logger, status, NULL, "Could not set persistent state");
 
 	return status;
 }
@@ -386,30 +401,30 @@ celix_status_t bundleArchive_getRefreshCount(bundle_archive_pt archive, long *re
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (archive->refreshCount == -1) {
-	    FILE *refreshCounterFile;
-        char refreshCounter[512];
-        snprintf(refreshCounter, sizeof(refreshCounter), "%s/refresh.counter", archive->archiveRoot);
+		FILE *refreshCounterFile;
+		char refreshCounter[512];
+		snprintf(refreshCounter, sizeof(refreshCounter), "%s/refresh.counter", archive->archiveRoot);
 
-        refreshCounterFile = fopen(refreshCounter, "r");
-        if (refreshCounterFile == NULL) {
-            archive->refreshCount = 0;
-        } else {
-            char counterStr[256];
-            if (fgets(counterStr, sizeof(counterStr), refreshCounterFile) == NULL) {
-                status = CELIX_FILE_IO_EXCEPTION;
-            }
-            fclose(refreshCounterFile);
-            if (status == CELIX_SUCCESS) {
-                sscanf(counterStr, "%ld", &archive->refreshCount);
-            }
-        }
+		refreshCounterFile = fopen(refreshCounter, "r");
+		if (refreshCounterFile == NULL) {
+			archive->refreshCount = 0;
+		} else {
+			char counterStr[256];
+			if (fgets(counterStr, sizeof(counterStr), refreshCounterFile) == NULL) {
+				status = CELIX_FILE_IO_EXCEPTION;
+			}
+			fclose(refreshCounterFile);
+			if (status == CELIX_SUCCESS) {
+				sscanf(counterStr, "%ld", &archive->refreshCount);
+			}
+		}
 	}
 
 	if (status == CELIX_SUCCESS) {
 		*refreshCount = archive->refreshCount;
 	}
 
-    framework_logIfError(logger, status, NULL, "Could not get refresh count");
+	framework_logIfError(logger, status, NULL, "Could not get refresh count");
 
 	return status;
 }
@@ -422,15 +437,15 @@ celix_status_t bundleArchive_setRefreshCount(bundle_archive_pt archive) {
 	snprintf(refreshCounter, sizeof(refreshCounter), "%s/refresh.counter", archive->archiveRoot);
 
 	refreshCounterFile = fopen(refreshCounter, "w");
-    if (refreshCounterFile == NULL) {
-        status = CELIX_FILE_IO_EXCEPTION;
-    } else {
-        fprintf(refreshCounterFile, "%ld", archive->refreshCount);
-        if (fclose(refreshCounterFile) ==  0) {
-        }
-    }
+	if (refreshCounterFile == NULL) {
+		status = CELIX_FILE_IO_EXCEPTION;
+	} else {
+		fprintf(refreshCounterFile, "%ld", archive->refreshCount);
+		if (fclose(refreshCounterFile) ==  0) {
+		}
+	}
 
-    framework_logIfError(logger, status, NULL, "Could not set refresh count");
+	framework_logIfError(logger, status, NULL, "Could not set refresh count");
 
 	return status;
 }
@@ -439,14 +454,14 @@ celix_status_t bundleArchive_getLastModified(bundle_archive_pt archive, time_t *
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (archive->lastModified == (time_t) NULL) {
-	    status = CELIX_DO_IF(status, bundleArchive_readLastModified(archive, &archive->lastModified));
+		status = CELIX_DO_IF(status, bundleArchive_readLastModified(archive, &archive->lastModified));
 	}
 
 	if (status == CELIX_SUCCESS) {
 		*lastModified = archive->lastModified;
 	}
 
-    framework_logIfError(logger, status, NULL, "Could not get last modified");
+	framework_logIfError(logger, status, NULL, "Could not get last modified");
 
 	return status;
 }
@@ -457,7 +472,7 @@ celix_status_t bundleArchive_setLastModified(bundle_archive_pt archive, time_t l
 	archive->lastModified = lastModifiedTime;
 	status = CELIX_DO_IF(status, bundleArchive_writeLastModified(archive));
 
-    framework_logIfError(logger, status, NULL, "Could not set last modified");
+	framework_logIfError(logger, status, NULL, "Could not set last modified");
 
 	return status;
 }
@@ -471,29 +486,29 @@ static celix_status_t bundleArchive_readLastModified(bundle_archive_pt archive, 
 	snprintf(lastModified, sizeof(lastModified), "%s/bundle.lastmodified", archive->archiveRoot);
 
 	lastModifiedFile = fopen(lastModified, "r");
-    if (lastModifiedFile == NULL) {
-        status = CELIX_FILE_IO_EXCEPTION;
-    } else {
-        char timeStr[20];
-        int year, month, day, hours, minutes, seconds;
-        struct tm tm_time;
+	if (lastModifiedFile == NULL) {
+		status = CELIX_FILE_IO_EXCEPTION;
+	} else {
+		char timeStr[20];
+		int year, month, day, hours, minutes, seconds;
+		struct tm tm_time;
 
-        if (fgets(timeStr, sizeof(timeStr), lastModifiedFile) == NULL) {
-            status = CELIX_FILE_IO_EXCEPTION;
-        }
-        fclose(lastModifiedFile);
-        if (status == CELIX_SUCCESS) {
-            sscanf(timeStr, "%d %d %d %d:%d:%d", &year, &month, &day, &hours, &minutes, &seconds);
-            tm_time.tm_year = year - 1900;
-            tm_time.tm_mon = month - 1;
-            tm_time.tm_mday = day;
-            tm_time.tm_hour = hours;
-            tm_time.tm_min = minutes;
-            tm_time.tm_sec = seconds;
+		if (fgets(timeStr, sizeof(timeStr), lastModifiedFile) == NULL) {
+			status = CELIX_FILE_IO_EXCEPTION;
+		}
+		fclose(lastModifiedFile);
+		if (status == CELIX_SUCCESS) {
+			sscanf(timeStr, "%d %d %d %d:%d:%d", &year, &month, &day, &hours, &minutes, &seconds);
+			tm_time.tm_year = year - 1900;
+			tm_time.tm_mon = month - 1;
+			tm_time.tm_mday = day;
+			tm_time.tm_hour = hours;
+			tm_time.tm_min = minutes;
+			tm_time.tm_sec = seconds;
 
-            *time = mktime(&tm_time);
-        }
-    }
+			*time = mktime(&tm_time);
+		}
+	}
 
 	framework_logIfError(logger, status, NULL, "Could not read last modified");
 
@@ -507,16 +522,16 @@ static celix_status_t bundleArchive_writeLastModified(bundle_archive_pt archive)
 
 	snprintf(lastModified, sizeof(lastModified), "%s/bundle.lastmodified", archive->archiveRoot);
 	lastModifiedFile = fopen(lastModified, "w");
-    if (lastModifiedFile == NULL) {
-        status = CELIX_FILE_IO_EXCEPTION;
-    } else {
-        char timeStr[20];
-        strftime(timeStr, 20, "%Y %m %d %H:%M:%S", localtime(&archive->lastModified));
-        fprintf(lastModifiedFile, "%s", timeStr);
-        fclose(lastModifiedFile);
-    }
-	
-    framework_logIfError(logger, status, NULL, "Could not write last modified");
+	if (lastModifiedFile == NULL) {
+		status = CELIX_FILE_IO_EXCEPTION;
+	} else {
+		char timeStr[20];
+		strftime(timeStr, 20, "%Y %m %d %H:%M:%S", localtime(&archive->lastModified));
+		fprintf(lastModifiedFile, "%s", timeStr);
+		fclose(lastModifiedFile);
+	}
+
+	framework_logIfError(logger, status, NULL, "Could not write last modified");
 
 	return status;
 }
@@ -533,27 +548,27 @@ celix_status_t bundleArchive_revise(bundle_archive_pt archive, char * location, 
 		status = bundleArchive_reviseInternal(archive, false, revNr, location, inputFile);
 	}
 
-    framework_logIfError(logger, status, NULL, "Could not revise bundle archive");
+	framework_logIfError(logger, status, NULL, "Could not revise bundle archive");
 
 	return status;
 }
 
 static celix_status_t bundleArchive_reviseInternal(bundle_archive_pt archive, bool isReload, long revNr, char * location, char *inputFile) {
-    celix_status_t status = CELIX_SUCCESS;
-    bundle_revision_pt revision = NULL;
+	celix_status_t status = CELIX_SUCCESS;
+	bundle_revision_pt revision = NULL;
 
-    if (inputFile != NULL) {
+	if (inputFile != NULL) {
 		location = "inputstream:";
 	}
 
 	status = bundleArchive_createRevisionFromLocation(archive, location, inputFile, revNr, &revision);
 
 	if (status == CELIX_SUCCESS) {
-        if (!isReload) {
-            status = bundleArchive_setRevisionLocation(archive, location, revNr);
-        }
+		if (!isReload) {
+			status = bundleArchive_setRevisionLocation(archive, location, revNr);
+		}
 
-        linkedList_addElement(archive->revisions, revision);
+		linkedList_addElement(archive->revisions, revision);
 	}
 
 	framework_logIfError(logger, status, NULL, "Could not revise bundle archive");
@@ -567,29 +582,29 @@ celix_status_t bundleArchive_rollbackRevise(bundle_archive_pt archive, bool *rol
 }
 
 static celix_status_t bundleArchive_createRevisionFromLocation(bundle_archive_pt archive, char *location, char *inputFile, long revNr, bundle_revision_pt *bundle_revision) {
-    celix_status_t status = CELIX_SUCCESS;
-    char root[256];
-    long refreshCount;
+	celix_status_t status = CELIX_SUCCESS;
+	char root[256];
+	long refreshCount;
 
-    status = bundleArchive_getRefreshCount(archive, &refreshCount);
-    if (status == CELIX_SUCCESS) {
+	status = bundleArchive_getRefreshCount(archive, &refreshCount);
+	if (status == CELIX_SUCCESS) {
 		bundle_revision_pt revision = NULL;
-		
+
 		sprintf(root, "%s/version%ld.%ld", archive->archiveRoot, refreshCount, revNr);
-        status = bundleRevision_create(root, location, revNr, inputFile, &revision);
+		status = bundleRevision_create(root, location, revNr, inputFile, &revision);
 
 		if (status == CELIX_SUCCESS) {
 			*bundle_revision = revision;
 		}
-    }
+	}
 
-    framework_logIfError(logger, status, NULL, "Could not create revision [location=%s,inputFile=%s]", location, inputFile);
+	framework_logIfError(logger, status, NULL, "Could not create revision [location=%s,inputFile=%s]", location, inputFile);
 
 	return status;
 }
 
 static celix_status_t bundleArchive_getRevisionLocation(bundle_archive_pt archive, long revNr, char **revision_location) {
-    celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status = CELIX_SUCCESS;
 	char revisionLocation[256];
 	long refreshCount;
 
@@ -598,7 +613,7 @@ static celix_status_t bundleArchive_getRevisionLocation(bundle_archive_pt archiv
 		FILE *revisionLocationFile;
 
 		snprintf(revisionLocation, sizeof(revisionLocation), "%s/version%ld.%ld/revision.location", archive->archiveRoot, refreshCount, revNr);
-		
+
 		revisionLocationFile = fopen(revisionLocation, "r");
 		if (revisionLocationFile != NULL) {
 			char location[256];
@@ -615,7 +630,7 @@ static celix_status_t bundleArchive_getRevisionLocation(bundle_archive_pt archiv
 	}
 
 
-    framework_logIfError(logger, status, NULL, "Failed to get revision location");
+	framework_logIfError(logger, status, NULL, "Failed to get revision location");
 
 	return status;
 }
@@ -631,7 +646,7 @@ static celix_status_t bundleArchive_setRevisionLocation(bundle_archive_pt archiv
 		FILE * revisionLocationFile;
 
 		snprintf(revisionLocation, sizeof(revisionLocation), "%s/version%ld.%ld/revision.location", archive->archiveRoot, refreshCount, revNr);
-		
+
 		revisionLocationFile = fopen(revisionLocation, "w");
 		if (revisionLocationFile == NULL) {
 			status = CELIX_FILE_IO_EXCEPTION;
@@ -669,13 +684,13 @@ static celix_status_t bundleArchive_initialize(bundle_archive_pt archive) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (archive->archiveRootDir == NULL) {
-        int err = mkdir(archive->archiveRoot, S_IRWXU) ;
-	    if (err != 0) {
-            char *errmsg = strerror(errno);
-            fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error mkdir: %s\n", errmsg);
+		int err = mkdir(archive->archiveRoot, S_IRWXU) ;
+		if (err != 0) {
+			char *errmsg = strerror(errno);
+			fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error mkdir: %s\n", errmsg);
 			status = CELIX_FILE_IO_EXCEPTION;
 		} else {
-		    archive->archiveRootDir = opendir(archive->archiveRoot);
+			archive->archiveRootDir = opendir(archive->archiveRoot);
 			if (archive->archiveRootDir == NULL) {
 				status = CELIX_FILE_IO_EXCEPTION;
 			} else {
@@ -701,7 +716,7 @@ static celix_status_t bundleArchive_initialize(bundle_archive_pt archive) {
 					if (bundleLocationFile == NULL) {
 						status = CELIX_FILE_IO_EXCEPTION;
 					} else {
-					    fprintf(bundleLocationFile, "%s", archive->location);
+						fprintf(bundleLocationFile, "%s", archive->location);
 						// Ignore close status, let it fail if needed again
 						fclose(bundleLocationFile);
 
@@ -723,39 +738,39 @@ static celix_status_t bundleArchive_deleteTree(bundle_archive_pt archive, char *
 	celix_status_t status = CELIX_SUCCESS;
 	dir = opendir(directory);
 	if (dir == NULL) {
-	    status = CELIX_FILE_IO_EXCEPTION;
+		status = CELIX_FILE_IO_EXCEPTION;
 	} else {
 
 		struct dirent dp;
 		struct dirent *result = NULL;
 		int rc = 0;
 
-        rc = readdir_r(dir, &dp, &result);
-        while (rc == 0 && result != NULL) {
-            if ((strcmp((dp.d_name), ".") != 0) && (strcmp((dp.d_name), "..") != 0)) {
-                char subdir[512];
-                snprintf(subdir, 512, "%s/%s", directory, dp.d_name);
+		rc = readdir_r(dir, &dp, &result);
+		while (rc == 0 && result != NULL) {
+			if ((strcmp((dp.d_name), ".") != 0) && (strcmp((dp.d_name), "..") != 0)) {
+				char subdir[512];
+				snprintf(subdir, 512, "%s/%s", directory, dp.d_name);
 
-                struct stat st;
-                if (stat(subdir, &st) == 0) {
-                    if (S_ISDIR (st.st_mode)) {
-                        status = bundleArchive_deleteTree(archive, subdir);
-                    } else {
-                        if (remove(subdir) != 0) {
-                            status = CELIX_FILE_IO_EXCEPTION;
-                            break;
-                        }
-                    }
-                }
-            }
-            rc = readdir_r(dir, &dp, &result);
-        }
+				struct stat st;
+				if (stat(subdir, &st) == 0) {
+					if (S_ISDIR (st.st_mode)) {
+						status = bundleArchive_deleteTree(archive, subdir);
+					} else {
+						if (remove(subdir) != 0) {
+							status = CELIX_FILE_IO_EXCEPTION;
+							break;
+						}
+					}
+				}
+			}
+			rc = readdir_r(dir, &dp, &result);
+		}
 
 		if (closedir(dir) != 0) {
 			status = CELIX_FILE_IO_EXCEPTION;
 		}
 		if (status == CELIX_SUCCESS) {
-            if (rmdir(directory) != 0) {
+			if (rmdir(directory) != 0) {
 				status = CELIX_FILE_IO_EXCEPTION;
 			}
 		}

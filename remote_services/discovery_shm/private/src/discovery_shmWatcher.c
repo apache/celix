@@ -196,24 +196,19 @@ celix_status_t discoveryShmWatcher_create(discovery_pt discovery) {
         if (status == CELIX_SUCCESS) {
             discovery->watcher = watcher;
         }
+        else{
+        	discovery->watcher = NULL;
+        	free(watcher);
+        }
 
     }
 
     if (status == CELIX_SUCCESS) {
-        status = celixThreadMutex_create(&watcher->watcherLock, NULL);
-    }
-
-    if (status == CELIX_SUCCESS) {
-        status = celixThreadMutex_lock(&watcher->watcherLock);
-    }
-
-    if (status == CELIX_SUCCESS) {
-    	watcher->running = true;
-        status = celixThread_create(&watcher->watcherThread, NULL, discoveryShmWatcher_run, discovery);
-    }
-
-    if (status == CELIX_SUCCESS) {
-        status = celixThreadMutex_unlock(&watcher->watcherLock);
+        status += celixThreadMutex_create(&watcher->watcherLock, NULL);
+        status += celixThreadMutex_lock(&watcher->watcherLock);
+        watcher->running = true;
+        status += celixThread_create(&watcher->watcherThread, NULL, discoveryShmWatcher_run, discovery);
+        status += celixThreadMutex_unlock(&watcher->watcherLock);
     }
 
     return status;

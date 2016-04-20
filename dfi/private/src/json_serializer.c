@@ -82,16 +82,14 @@ static int jsonSerializer_createType(dyn_type *type, json_t *val, void **result)
         if (status == OK) {
             assert(inst != NULL);
             status = jsonSerializer_parseAny(type, inst, val);
-
-            if (status != OK) {
-                dynType_free(type, inst);
-            }
         }
     }
 
-
     if (status == OK) {
         *result = inst;
+    }
+    else{
+    	dynType_free(type, inst);
     }
 
     return status;

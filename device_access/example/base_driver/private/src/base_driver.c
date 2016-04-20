@@ -92,3 +92,20 @@ celix_status_t baseDriver_getNextChar(base_driver_device_pt device, char *c) {
 	return CELIX_SUCCESS;
 }
 
+celix_status_t baseDriver_destroy(base_driver_device_pt device){
+	if(device != NULL){
+		if(device->device != NULL){
+			free(device->device);
+		}
+		free(device);
+	}
+	return CELIX_SUCCESS;
+}
+
+celix_status_t baseDriver_destroyService(base_driver_device_service_pt service){
+	if(service != NULL){
+		free(service);
+	}
+
+	return CELIX_SUCCESS;
+}

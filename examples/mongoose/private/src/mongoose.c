@@ -2203,6 +2203,7 @@ int mg_modify_passwords_file(struct mg_context *ctx, const char *fname,
     return 0;
   } else if ((fp2 = mg_fopen(tmp, "w+")) == NULL) {
     cry(fc(ctx), "Cannot open %s: %s", tmp, strerror(errno));
+    fclose(fp);
     return 0;
   }
 
@@ -2366,6 +2367,7 @@ static void handle_directory_request(struct mg_connection *conn,
     if (entries == NULL) {
       send_http_error(conn, 500, "Cannot open directory",
           "%s", "Error: cannot allocate memory");
+      closedir(dirp);
       return;
     }
 
@@ -3476,7 +3478,9 @@ static int load_dll(struct mg_context *ctx, const char *dll_name,
     return 0;
   }
 
-  for (fp = sw; fp->name != NULL; fp++) {
+  int ret = 1;
+
+  for (fp = sw; fp->name != NULL && ret==1; fp++) {
 #ifdef _WIN32
     // GetProcAddress() returns pointer to function
     u.fp = (void (*)(void)) dlsym(dll_handle, fp->name);
@@ -3487,13 +3491,15 @@ static int load_dll(struct mg_context *ctx, const char *dll_name,
 #endif /* _WIN32 */
     if (u.fp == NULL) {
       cry(fc(ctx), "%s: %s: cannot find %s", __func__, dll_name, fp->name);
-      return 0;
+      ret=0;
     } else {
       fp->ptr = u.fp;
     }
   }
 
-  return 1;
+  dlclose(dll_handle);
+
+  return ret;
 }
 #endif // NO_SSL_DL
 
@@ -3804,9 +3810,9 @@ static void worker_thread(struct mg_context *ctx) {
   struct mg_connection *conn;
   int buf_size = atoi(ctx->config[MAX_REQUEST_SIZE]);
 
-  conn = calloc(1, sizeof(*conn) + buf_size);
+  conn = calloc(1, sizeof(*conn));
   conn->buf_size = buf_size;
-  conn->buf = (char *) (conn + 1);
+  conn->buf = calloc(buf_size + 1, sizeof(char));
   assert(conn != NULL);
 
   while (ctx->stop_flag == 0 && consume_socket(ctx, &conn->client)) {
@@ -3829,6 +3835,7 @@ static void worker_thread(struct mg_context *ctx) {
 
     close_connection(conn);
   }
+  free(conn->buf);
   free(conn);
 
   // Signal master that we're done with connection and exiting
@@ -3863,7 +3870,8 @@ static void produce_socket(struct mg_context *ctx, const struct socket *sp) {
 static void accept_new_connection(const struct socket *listener,
                                   struct mg_context *ctx) {
   struct socket accepted;
-  int allowed;
+  memset(&accepted,0,sizeof(struct socket));
+  int allowed = 0;
 
   accepted.rsa.len = sizeof(accepted.rsa.u.sin);
   accepted.lsa = listener->lsa;

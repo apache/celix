@@ -175,7 +175,7 @@ static celix_status_t remoteProxyFactory_registerProxyService(remote_proxy_facto
 	if (status == CELIX_SUCCESS) {
 		proxy_instance_ptr->properties = properties_create();
 		if (!proxy_instance_ptr->properties) {
-			status = CELIX_BUNDLE_EXCEPTION;
+			status = CELIX_ENOMEM;
 		}
 	}
 
@@ -203,6 +203,15 @@ static celix_status_t remoteProxyFactory_registerProxyService(remote_proxy_facto
 
 	if (status == CELIX_SUCCESS) {
 		hashMap_put(remote_proxy_factory_ptr->proxy_instances, endpointDescription, proxy_instance_ptr);
+	}
+
+	if(status!=CELIX_SUCCESS){
+		if(proxy_instance_ptr != NULL){
+			if(proxy_instance_ptr->properties != NULL){
+				properties_destroy(proxy_instance_ptr->properties);
+			}
+			free(proxy_instance_ptr);
+		}
 	}
 
 	return status;

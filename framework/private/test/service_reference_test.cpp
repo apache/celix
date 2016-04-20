@@ -718,6 +718,7 @@ TEST(service_reference, getUsingBundle) {
 	reference->registration = registration;
 	service_registry_pt registry = (service_registry_pt) 0x20;
 	registry_callback_t callback;
+	memset(&callback,0,sizeof(registry_callback_t));
 	callback.getUsingBundles = serviceReferenceTest_getUsingBundles;
 	callback.handle = registry;
 	reference->callback = callback;

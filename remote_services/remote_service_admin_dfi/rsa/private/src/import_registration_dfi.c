@@ -73,7 +73,7 @@ celix_status_t importRegistration_create(bundle_context_pt context, endpoint_des
 
         celixThreadMutex_create(&reg->mutex, NULL);
         celixThreadMutex_create(&reg->proxiesMutex, NULL);
-        version_createVersionFromString((char*)serviceVersion,&(reg->version));
+        status = version_createVersionFromString((char*)serviceVersion,&(reg->version));
 
         reg->factory->handle = reg;
         reg->factory->getService = (void *)importRegistration_getService;
@@ -85,6 +85,9 @@ celix_status_t importRegistration_create(bundle_context_pt context, endpoint_des
     if (status == CELIX_SUCCESS) {
         printf("IMPORT REGISTRATION IS %p\n", reg);
         *out = reg;
+    }
+    else{
+    	importRegistration_destroy(reg);
     }
 
     return status;

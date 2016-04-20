@@ -393,7 +393,10 @@ celix_status_t serviceRegistry_getServiceReferences(service_registry_pt registry
             }
             serviceRegistration_release(reg);
         }
-        arrayList_destroy(matchingRegistrations);
+    }
+
+    if(matchingRegistrations != NULL){
+    	arrayList_destroy(matchingRegistrations);
     }
 
     if (status == CELIX_SUCCESS) {

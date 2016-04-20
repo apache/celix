@@ -259,7 +259,7 @@ void resolver_addModule(module_pt module) {
 
         for (i = 0; i < linkedList_size(module_getCapabilities(module)); i++) {
             char *serviceName = NULL;
-            capability_list_pt list;
+            capability_list_pt list = NULL;
             capability_pt cap;
 
             cap = (capability_pt) linkedList_get(module_getCapabilities(module), i);
@@ -271,6 +271,10 @@ void resolver_addModule(module_pt module) {
                     list->serviceName = strdup(serviceName);
                     if (linkedList_create(&list->capabilities) == CELIX_SUCCESS) {
                         linkedList_addElement(m_unresolvedServices, list);
+                    }
+                    else{
+                    	free(list->serviceName);
+                    	free(list);
                     }
                 }
             }
@@ -376,7 +380,7 @@ void resolver_moduleResolved(module_pt module) {
 
                 if (cap != NULL) {
                     char *serviceName = NULL;
-                    capability_list_pt list;
+                    capability_list_pt list = NULL;
                     capability_getServiceName(cap, &serviceName);
 
                     list = resolver_getCapabilityList(m_resolvedServices, serviceName);
@@ -386,6 +390,10 @@ void resolver_moduleResolved(module_pt module) {
                             list->serviceName = strdup(serviceName);
                             if (linkedList_create(&list->capabilities) == CELIX_SUCCESS) {
                                 linkedList_addElement(m_resolvedServices, list);
+                            }
+                            else{
+                            	free(list->serviceName);
+                            	free(list);
                             }
                         }
                     }

@@ -176,7 +176,7 @@ static void framework_loggerInit(void) {
     }
 #else
     #define handle_t void *
-    #define fw_openLibrary(path) dlopen(path, RTLD_LAZY|RTLD_LOCAL)
+    #define fw_openLibrary(path) dlopen(path, RTLD_LAZY|RTLD_LOCAL|RTLD_NODELETE)
     #define fw_closeLibrary(handle) dlclose(handle)
     #define fw_getSymbol(handle, name) dlsym(handle, name)
     #define fw_getLastError() dlerror()
@@ -429,7 +429,7 @@ celix_status_t fw_init(framework_pt framework) {
     status = CELIX_DO_IF(status, bundle_setContext(framework->bundle, context));
     if (status == CELIX_SUCCESS) {
         activator_pt activator = NULL;
-        activator = (activator_pt) malloc((sizeof(*activator)));
+        activator = (activator_pt) calloc(1,(sizeof(*activator)));
         if (activator != NULL) {
             bundle_context_pt context = NULL;
             void * userData = NULL;
@@ -454,6 +454,9 @@ celix_status_t fw_init(framework_pt framework) {
                 if (start != NULL) {
                     start(userData, context);
                 }
+            }
+            else{
+            	free(activator);
             }
         } else {
             status = CELIX_ENOMEM;
@@ -683,7 +686,7 @@ celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int opti
                 status = CELIX_DO_IF(status, bundle_setContext(bundle, context));
 
                 if (status == CELIX_SUCCESS) {
-                    activator = (activator_pt) malloc((sizeof(*activator)));
+                    activator = (activator_pt) calloc(1,(sizeof(*activator)));
                     if (activator == NULL) {
                         status = CELIX_ENOMEM;
                     } else {
@@ -714,7 +717,6 @@ celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int opti
                         }
                         if (status == CELIX_SUCCESS) {
                             if (start != NULL) {
-
                                 status = CELIX_DO_IF(status, start(userData, context));
                             }
                         }
@@ -741,6 +743,9 @@ celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int opti
 	        fw_logCode(framework->logger, OSGI_FRAMEWORK_LOG_ERROR, status, "Could not start bundle: %s [%ld]; cause: %s", symbolicName, id, error);
 	    } else {
 	        fw_logCode(framework->logger, OSGI_FRAMEWORK_LOG_ERROR, status, "Could not start bundle: %s [%ld]", symbolicName, id);
+	    }
+	    if(activator!=NULL){
+	    	free(activator);
 	    }
 	}
 
@@ -1261,8 +1266,9 @@ celix_status_t fw_registerService(framework_pt framework, service_registration_p
                     if (subs == CELIX_SUCCESS) {
                         arrayList_add(infos, info);
                     }
-                    if (subs != CELIX_SUCCESS) {
+                    else{
                         fw_logCode(framework->logger, OSGI_FRAMEWORK_LOG_ERROR, status, "Could not pass all listeners to the hook: %s", serviceName);
+                        free(info);
                     }
                 }
 
@@ -2213,12 +2219,10 @@ celix_status_t fw_fireBundleEvent(framework_pt framework, bundle_event_type_e ev
                 status = CELIX_FRAMEWORK_EXCEPTION;
             } else {
                 arrayList_add(framework->requests, request);
-                if (celixThreadCondition_broadcast(&framework->dispatcher)) {
+                celix_status_t bcast_status = celixThreadCondition_broadcast(&framework->dispatcher);
+                celix_status_t unlock_status = celixThreadMutex_unlock(&framework->dispatcherLock);
+                if (bcast_status!=0 || unlock_status!=0) {
                     status = CELIX_FRAMEWORK_EXCEPTION;
-                } else {
-                    if (celixThreadMutex_unlock(&framework->dispatcherLock)) {
-                        status = CELIX_FRAMEWORK_EXCEPTION;
-                    }
                 }
             }
         }

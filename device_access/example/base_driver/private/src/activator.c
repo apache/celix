@@ -60,9 +60,9 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 static celix_status_t bundleActivator_registerBaseDriverDevice(base_driver_bundle_instance_pt bi, char *serial) {
 	celix_status_t status = CELIX_SUCCESS;
 	base_driver_device_pt device = NULL;
+	base_driver_device_service_pt service = NULL;
 	status = baseDriver_create(&device);
 	if (status == CELIX_SUCCESS) {
-		base_driver_device_service_pt service = NULL;
 		status = baseDriver_createService(device, &service);
 		if (status == CELIX_SUCCESS) {
 			properties_pt props = properties_create();
@@ -72,11 +72,9 @@ static celix_status_t bundleActivator_registerBaseDriverDevice(base_driver_bundl
 			status = bundleContext_registerService(bi->context, OSGI_DEVICEACCESS_DEVICE_SERVICE_NAME, service, props, &service_registration);
 			if (status == CELIX_SUCCESS) {
 				arrayList_add(bi->serviceRegistrations, service_registration);
-//				service_registration = NULL;
-//				status = bundleContext_registerService(bi->context, BASE_DRIVER_SERVICE_NAME, service, NULL, &service_registration);
-//				if (status == CELIX_SUCCESS) {
-//					arrayList_add(bi->serviceRegistrations, service_registration);
-//				}
+			}
+			else{
+				properties_destroy(props);
 			}
 		}
 	}
@@ -87,6 +85,12 @@ static celix_status_t bundleActivator_registerBaseDriverDevice(base_driver_bundl
 		char error[256];
 		printf("BASE_DRIVER: Unsuccessfully registered device service with serial %s. Got error: %s\n",
 				serial, celix_strerror(status, error, 256));
+		if(service != NULL){
+			baseDriver_destroyService(service);
+		}
+		if(device != NULL){
+			baseDriver_destroy(device);
+		}
 	}
 	return status;
 }

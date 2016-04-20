@@ -81,21 +81,34 @@ celix_status_t driverMatcher_create(bundle_context_pt context, driver_matcher_pt
 }
 
 celix_status_t driverMatcher_destroy(driver_matcher_pt *matcher) {
-	arrayList_destroy((*matcher)->matches);
-	hash_map_iterator_pt iter = hashMapIterator_create((*matcher)->attributes);
-	while (hashMapIterator_hasNext(iter)) {
-		array_list_pt list = hashMapIterator_nextValue(iter);
-		if (list != NULL) {
-			arrayList_destroy(list);
+
+	if((*matcher) != NULL){
+
+		int i = 0;
+
+		for(;i<arrayList_size((*matcher)->matches);i++){
+			free(arrayList_get((*matcher)->matches,i));
 		}
+		arrayList_destroy((*matcher)->matches);
+
+		hash_map_iterator_pt iter = hashMapIterator_create((*matcher)->attributes);
+		while (hashMapIterator_hasNext(iter)) {
+			hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
+			match_key_t match = (match_key_t)hashMapEntry_getKey(entry);
+			array_list_pt list = (array_list_pt)hashMapEntry_getValue(entry);
+			free(match);
+			if (list != NULL) {
+				arrayList_destroy(list);
+			}
+		}
+		hashMapIterator_destroy(iter);
+		hashMap_destroy((*matcher)->attributes, false, false);
+
+		logHelper_stop((*matcher)->loghelper);
+		logHelper_destroy(&(*matcher)->loghelper);
+
+		free(*matcher);
 	}
-	hashMapIterator_destroy(iter);
-	hashMap_destroy((*matcher)->attributes, false, false);
-
-	logHelper_stop((*matcher)->loghelper);
-	logHelper_destroy(&(*matcher)->loghelper);
-
-	free(*matcher);
 
 	return CELIX_SUCCESS;
 }
@@ -136,6 +149,8 @@ celix_status_t driverMatcher_get(driver_matcher_pt matcher, int key, array_list_
 		matchKey->matchValue = key;
 		hashMap_put(matcher->attributes, matchKey, *attributes);
 	}
+
+	free(matchKeyS);
 
 	return status;
 }

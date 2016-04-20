@@ -35,4 +35,7 @@ celix_status_t baseDriver_noDriverFound(device_pt device);
 
 celix_status_t baseDriver_getNextChar(base_driver_device_pt service, char *c);
 
+celix_status_t baseDriver_destroy(base_driver_device_pt device);
+celix_status_t baseDriver_destroyService(base_driver_device_service_pt service);
+
 #endif /* BASE_DRIVER_PRIVATE_H_ */

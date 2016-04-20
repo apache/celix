@@ -1071,8 +1071,9 @@ static void dynType_printTypedPointer(char *name, dyn_type *type, int depth, FIL
     dynType_printDepth(depth, stream);
     fprintf(stream, "%s: typed pointer, size is %zu, alignment is %i, points to ->\n", name, type->ffiType->size, type->ffiType->alignment);
     char *subName = NULL;
+    char buf[128];
+    memset(buf,0,128);
     if (name != NULL) {
-        char buf[128];
         snprintf(buf, 128, "*%s", name);
         subName = buf;
     }

@@ -167,8 +167,9 @@ static celix_status_t refiningDriver_registerDevice(refining_driver_pt driver, r
 	celix_status_t status = CELIX_SUCCESS;
 	refining_driver_device_service_pt service = NULL;
 	status = refiningDriverDevice_createService(device, &service);
+	properties_pt props = properties_create();
+
 	if (status == CELIX_SUCCESS) {
-		properties_pt props = properties_create();
 		properties_set(props, OSGI_DEVICEACCESS_DEVICE_CATEGORY, REFINING_DRIVER_DEVICE_CATEGORY);
 		properties_set(props, OSGI_DEVICEACCESS_DEVICE_SERIAL, serial);
 		status = bundleContext_registerService(driver->context, OSGI_DEVICEACCESS_DEVICE_SERVICE_NAME, service, props, &device->deviceRegistration);
@@ -176,6 +177,10 @@ static celix_status_t refiningDriver_registerDevice(refining_driver_pt driver, r
 
 	if (status == CELIX_SUCCESS) {
 		printf("REFINING_DRIVER: registered refining device with serial %s\n", serial);
+	}
+	else{
+		properties_destroy(props);
+		refiningDriverDevice_destroyService(service);
 	}
 	return status;
 }
@@ -233,6 +238,16 @@ celix_status_t refiningDriverDevice_createService(refining_driver_device_pt devi
 		status = CELIX_ENOMEM;
 	}
 	return status;
+}
+
+celix_status_t refiningDriverDevice_destroyService(refining_driver_device_service_pt service){
+	if(service != NULL){
+		if(service->deviceService.device != NULL){
+			free(service->deviceService.device);
+		}
+		free(service);
+	}
+	return CELIX_SUCCESS;
 }
 
 celix_status_t refiningDriverDevice_getNextWord(refining_driver_device_pt refiningDriverDevice, char **word) {

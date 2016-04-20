@@ -193,15 +193,17 @@ static celix_status_t deviceManager_attachAlgorithm(device_manager_pt manager, s
 								}
 							}
 							arrayListIterator_destroy(idsIter);
-						} else {
-							// Ignore
+						}
+						if(id != NULL){
+							free(id);
 						}
 					}
 					hashMapIterator_destroy(iter);
 
 					status = deviceManager_matchAttachDriver(manager, loader, driverIds, included, excluded, service, ref);
-					arrayList_destroy(driverIds);
+
 				}
+				arrayList_destroy(driverIds);
 				properties_destroy(properties);
 				arrayList_destroy(excluded);
 			}
@@ -209,6 +211,8 @@ static celix_status_t deviceManager_attachAlgorithm(device_manager_pt manager, s
 		}
 
 	}
+
+	driverLoader_destroy(&loader);
 	return status;
 }
 
@@ -287,6 +291,9 @@ celix_status_t deviceManager_matchAttachDriver(device_manager_pt manager, driver
 				}
 			}
 		}
+
+		driverMatcher_destroy(&matcher);
+
 	}
 
 	if (references != NULL) {
@@ -332,6 +339,9 @@ celix_status_t deviceManager_driverAdded(void * handle, service_reference_pt ref
 	status = driverAttributes_create(ref, service, &attributes);
 	if (status == CELIX_SUCCESS) {
 		hashMap_put(manager->drivers, ref, attributes);
+	}
+	else{
+		driverAttributes_destroy(attributes);
 	}
 	return status;
 }

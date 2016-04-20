@@ -49,6 +49,8 @@ void framework_logCode(framework_logger_pt logger, framework_log_level_t level, 
     vsprintf(msg, fmsg, listPointer);
 
     test_logger_log(logger, level, func, file, line, "%s [%d]: %s", message, code, msg);
+
+    va_end(listPointer);
 }
 
 celix_status_t frameworkLogger_log(framework_log_level_t level, const char *func, const char *file, int line, char *msg) {
