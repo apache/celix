@@ -58,7 +58,7 @@ add_bundle(<bundle_target_name>
 For SOVERSION only the major part is used. Expected scheme is "<major>.<minor>.<path>". Default version is "0.0.0"
 If PRIVATE_LIBRARIES is provided all provided lib are added to the "Private-Library" manifest statement and added in the root of the bundle. libraries can be cmake library targets or absolute paths to existing libraries.  
 - If EXPORT_LIBRARIES is provided all provided lib are added to the "Export-Library" manifest statement and added in the root of the bundle. libraries can be cmake library targets or absolute paths to existing libraries. This is not yet supported by the celix framework.
-- If EXPORT_LIBRARIES is provided all provided lib are added to the "Import-Library" manifest statement and added in the root of the bundle. libraries can be cmake library targets or absolute paths to existing libraries.  This is not yet supported by the celix framework
+- If IMPORT_LIBRARIES is provided all provided lib are added to the "Import-Library" manifest statement and added in the root of the bundle. libraries can be cmake library targets or absolute paths to existing libraries.  This is not yet supported by the celix framework
 - If HEADERS is provided the headers values are appended to the bundle manifest.
 
 ##bundle_private_libs
