@@ -18,17 +18,29 @@
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("public/include")
 
+add_library(hello_testlib SHARED
+    private/src/test
+)
+set_library_version(hello_testlib "4.3.2") # sets target propery VERSION to 4.3.2 and SOVERSION to 4
+
+
+add_library(hello_test2lib SHARED
+        private/src/test2
+)
+set_library_version(hello_test2lib "3.3.3")
 
 add_bundle(hello
     VERSION "1.2"
     SOURCES
         private/src/activator.c
+    IMPORT_LIBRARIES hello_test2lib
 )
 
-add_library(hello_testlib SHARED
-    private/src/test
+add_bundle(hello_import
+    VERSION "1.0"
+    NO_ACTIVATOR
+    EXPORT_LIBRARIES hello_test2lib
 )
-set_library_version(hello_testlib "4.3.2") # sets target propery VERSION to 4.3.2 and SOVERSION to 4
 
 bundle_private_libs(hello
     hello_testlib
@@ -36,11 +48,11 @@ bundle_private_libs(hello
 
 add_deploy(helloworld_byref
     GROUP hello
-    BUNDLES hello shell shell_tui
+    BUNDLES hello_import hello shell shell_tui
 )
 
 add_deploy(helloworld_withcopy
     GROUP hello
     COPY #Ensures that bundles are copied in the deploy location
-    BUNDLES hello shell shell_tui
+    BUNDLES hello_import hello shell shell_tui
 )

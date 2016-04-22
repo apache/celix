@@ -104,7 +104,7 @@ function(add_bundle)
 
     set(OPTIONS NO_ACTIVATOR)
     set(ONE_VAL_ARGS VERSION ACTIVATOR SYMBOLIC_NAME NAME DESCRIPTION) 
-    set(MULTI_VAL_ARGS SOURCES PRIVATE_LIBRARIES EXPORT_LIBRARIES HEADERS)
+    set(MULTI_VAL_ARGS SOURCES PRIVATE_LIBRARIES EXPORT_LIBRARIES IMPORT_LIBRARIES HEADERS)
     cmake_parse_arguments(BUNDLE "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
 
     ##check arguments
@@ -179,6 +179,7 @@ function(add_bundle)
     ###### Packaging the bundle using using jar,zip or cpack and a content dir. Configuring dependencies ######
     if(JAR_COMMAND)
         add_custom_command(OUTPUT ${BUNDLE_FILE}
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${BUNDLE_CONTENT_DIR}
             COMMAND ${JAR_COMMAND} -cfm ${BUNDLE_FILE} ${BUNDLE_GEN_DIR}/MANIFEST.MF -C ${BUNDLE_CONTENT_DIR} .
             COMMENT "Packaging ${BUNDLE_TARGET_NAME}"
             DEPENDS  ${BUNDLE_TARGET_NAME} "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_DEPEND_TARGETS>" ${BUNDLE_GEN_DIR}/MANIFEST.MF
@@ -186,6 +187,7 @@ function(add_bundle)
         )
     elseif(ZIP_COMMAND)
         add_custom_command(OUTPUT ${BUNDLE_FILE}
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${BUNDLE_CONTENT_DIR}
             COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE_GEN_DIR}/MANIFEST.MF META-INF/MANIFEST.MF
             COMMAND ${ZIP_COMMAND} -rq ${BUNDLE_FILE} *
             COMMENT "Packaging ${BUNDLE_TARGET_NAME}"
@@ -255,6 +257,8 @@ SET(CPACK_INCLUDE_TOPLEVEL_DIRECTORY \"0\")
         else()
             set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
         endif()
+    elseif(BUNDLE_NO_ACTIVATOR)
+        #do nothing
     else() #ACTIVATOR 
         bundle_private_libs(${BUNDLE_TARGET_NAME} ${BUNDLE_ACTIVATOR})
         get_filename_component(ACT_NAME ${BUNDLE_ACTIVATOR} NAME)
@@ -263,6 +267,7 @@ SET(CPACK_INCLUDE_TOPLEVEL_DIRECTORY \"0\")
 
     bundle_private_libs(${BUNDLE_TARGET_NAME} ${BUNDLE_PRIVATE_LIBRARIES})
     bundle_export_libs(${BUNDLE_TARGET_NAME} ${BUNDLE_EXPORT_LIBRARIES})
+    bundle_import_libs(${BUNDLE_TARGET_NAME} ${BUNDLE_IMPORT_LIBRARIES})
     bundle_headers(${BUNDLE_TARGET_NAME} ${BUNDLE_HEADERS})
 endfunction()
 
@@ -338,19 +343,30 @@ function(bundle_libs)
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_DEPEND_TARGETS" "${DEPS}")
 endfunction()
 
-#TODO
-#
-# bundle_import_libs(<target> LIB <lib> RANGE <version_range> ?)
-#
-#
 function(bundle_import_libs)
     #0 is bundle TARGET
-    #1..n is libs
+    #2..n is import libs
     list(GET ARGN 0 BUNDLE)
     list(REMOVE_AT ARGN 0)
 
-    message(WARNING "IMPORT BUNDLES STILL TODO")
+    #check if arg 0 is corrent
+    check_bundle(${BUNDLE})
 
+    get_target_property(LIBS ${BUNDLE} "BUNDLE_IMPORT_LIBS")
+    set(LIBS )
+
+    foreach(LIB IN ITEMS ${ARGN})
+        if(IS_ABSOLUTE ${LIB} AND EXISTS ${LIB})
+            list(APPEND LIBS ${LIB_NAME})
+        else()
+            list(APPEND LIBS "$<TARGET_SONAME_FILE_NAME:${LIB}>")
+        endif()
+
+        target_link_libraries(${BUNDLE} ${LIB})
+    endforeach()
+
+
+    set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_IMPORT_LIBS" "${LIBS}")
 endfunction()
 
 function(bundle_files)
