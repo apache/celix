@@ -43,6 +43,12 @@ void dmListCommand_execute(bundle_context_pt context, char * line, FILE *out, FI
     array_list_pt servRefs = NULL;
     int i;
     bundleContext_getServiceReferences(context, DM_INFO_SERVICE_NAME ,NULL, &servRefs);
+
+    if(servRefs==NULL){
+	fprintf(out, "Invalid dm_info ServiceReferences List\n");
+	return;
+    }
+
     char *term = getenv("TERM");
     bool colors = false;
     if (strcmp("xterm-256color", term) == 0) {
@@ -109,7 +115,7 @@ void dmListCommand_execute(bundle_context_pt context, char * line, FILE *out, FI
 		bundleContext_ungetService(context,servRef,NULL);
 		bundleContext_ungetServiceReference(context,servRef);
 
-        }
+    }
 
 	if(servRefs!=NULL){
 		arrayList_destroy(servRefs);

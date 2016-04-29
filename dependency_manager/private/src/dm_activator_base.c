@@ -112,6 +112,10 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt contex
 	celix_status_t status = CELIX_SUCCESS;
 	dependency_activator_base_pt dependency_activator = (dependency_activator_base_pt) userData;
 
+	if(dependency_activator==NULL){
+		return CELIX_ILLEGAL_ARGUMENT;
+	}
+
     status = dm_destroy(dependency_activator->userData, dependency_activator->context,
                         dependency_activator->manager);
 

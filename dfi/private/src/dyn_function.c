@@ -157,7 +157,7 @@ static int dynFunction_parseDescriptor(dyn_function_type *dynFunc, FILE *descrip
         dyn_function_argument_type *arg = NULL;
 
         status = dynType_parse(descriptor, NULL, dynFunc->refTypes, &type);
-        if (status == 0) {
+        if (status == OK) {
             arg = calloc(1, sizeof(*arg));
             if (arg != NULL) {
                 arg->index = index;
@@ -174,15 +174,8 @@ static int dynFunction_parseDescriptor(dyn_function_type *dynFunc, FILE *descrip
 
         if (status == OK) {
             TAILQ_INSERT_TAIL(&dynFunc->arguments, arg, entries);
-        } else {
-            if (arg != NULL) {
-                free(arg->name);
-                if (arg->type != NULL) {
-                    dynType_destroy(arg->type);
-                }
-                free(arg);
-            }
         }
+
         nextChar = fgetc(descriptor);
     }
 
@@ -217,7 +210,7 @@ static int dynFunction_initCif(dyn_function_type *dynFunc) {
         count +=1;
     }
 
-    dynFunc->ffiArguments = calloc(count, sizeof(ffi_type));
+    dynFunc->ffiArguments = calloc(count, sizeof(ffi_type*));
 
     TAILQ_FOREACH(entry, &dynFunc->arguments, entries) {
         dynFunc->ffiArguments[entry->index] = dynType_ffiType(entry->type);

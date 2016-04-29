@@ -1930,7 +1930,7 @@ static void MD5Final(unsigned char digest[16], MD5_CTX *ctx) {
   MD5Transform(ctx->buf, (uint32_t *) ctx->in);
   byteReverse((unsigned char *) ctx->buf, 4);
   memcpy(digest, ctx->buf, 16);
-  memset((char *) ctx, 0, sizeof(ctx));
+  memset((char *) ctx, 0, sizeof(*ctx));
 }
 #endif // !HAVE_MD5
 
@@ -2406,12 +2406,14 @@ static void handle_directory_request(struct mg_connection *conn,
       conn->request_info.uri, "..", "Parent directory", "-", "-");
 
   // Sort and print directory entries
-  qsort(entries, num_entries, sizeof(entries[0]), compare_dir_entries);
-  for (i = 0; i < num_entries; i++) {
-    print_dir_entry(&entries[i]);
-    free(entries[i].file_name);
+  if(entries!=NULL){
+	  qsort(entries, num_entries, sizeof(entries[0]), compare_dir_entries);
+	  for (i = 0; i < num_entries; i++) {
+		  print_dir_entry(&entries[i]);
+		  free(entries[i].file_name);
+	  }
+	  free(entries);
   }
-  free(entries);
 
   conn->num_bytes_sent += mg_printf(conn, "%s", "</table></body></html>");
   conn->request_info.status_code = 200;
@@ -3293,7 +3295,9 @@ static int set_ports_option(struct mg_context *ctx) {
 #endif // !_WIN32
                bind(sock, &so.lsa.u.sa, so.lsa.len) != 0 ||
                listen(sock, 20) != 0) {
-      closesocket(sock);
+      if(sock != INVALID_SOCKET ){
+	  closesocket(sock);
+      }
       cry(fc(ctx), "%s: cannot bind to %.*s: %s", __func__,
           vec.len, vec.ptr, strerror(ERRNO));
       success = 0;

@@ -3903,7 +3903,7 @@ static int remove_directory(struct mg_connection *conn, const char *dir)
                 if(de.file.is_directory) {
                     remove_directory(conn, path);
                 } else {
-                    mg_remove(path);
+                    (void) mg_remove(path);
                 }
             }
 
@@ -5992,14 +5992,20 @@ int mg_upload2(struct mg_connection *conn, const char *destination_dir, int time
         } while (!eof && (n = mg_read(conn, buf + len, sizeof(buf) - len)) > 0);
         fclose(fp);
         if (eof) {
-            remove(path);
-            rename(tmp_path, path);
+            if( remove(path) == -1){
+		mg_cry(conn,"Unable to remove %s",path);
+            }
+            if( rename(tmp_path, path) == -1){
+		mg_cry(conn,"Unable to rename %s to %s",tmp_path,path);
+            }
             num_uploaded_files++;
             if (conn->ctx->callbacks.upload != NULL) {
                 conn->ctx->callbacks.upload(conn, path);
             }
         } else {
-            remove(tmp_path);
+            if( remove(tmp_path) == -1){
+		mg_cry(conn,"Unable to remove %s",tmp_path);
+            }
         }
     }
 

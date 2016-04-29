@@ -448,8 +448,14 @@ static int jsonSerializer_writeComplex(dyn_type *type, void *input, json_t **out
             json_t *subVal = NULL;
             dyn_type *subType = NULL;
             index = dynType_complex_indexForName(type, entry->name);
-            status = dynType_complex_valLocAt(type, index, input, &subLoc);
-            if (status == OK ) {
+            if (index < 0) {
+		LOG_ERROR("Cannot find index for member '%s'", entry->name);
+                status = ERROR;
+            }
+            if(status == OK){
+		status = dynType_complex_valLocAt(type, index, input, &subLoc);
+            }
+            if (status == OK) {
                 status = dynType_complex_dynTypeAt(type, index, &subType);
             }
             if (status == OK) {

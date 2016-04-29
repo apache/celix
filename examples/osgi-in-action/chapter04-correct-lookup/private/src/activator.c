@@ -59,7 +59,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 
     *userData = calloc(1, sizeof(struct threadData));
 
-    if (!userData) {
+    if ((*userData)==NULL) {
         status = CELIX_ENOMEM;
     } else {
         ((thread_data_pt) (*userData))->service = "chapter04-correct-lookup";

@@ -209,16 +209,17 @@ static void benchmarkRunner_runBenchmark(struct activator *activator, FILE *out)
 	updateFrequency = 1000;
 	nrOfUpdateThreads = 100;
 
+	benchmarkServ = activator->benchmark;
+	name = benchmarkServ->name(benchmarkServ->handler);
+	sampleFactor = benchmarkServ->getSampleFactor(benchmarkServ->handler);
+
 	pthread_mutex_lock(&activator->mutex);
 	if (activator->freqService != NULL) {
 		activator->freqService->setFrequency(activator->freqService->handle, updateFrequency);
 		activator->freqService->setNrOfThreads(activator->freqService->handle, nrOfUpdateThreads);
+		activator->freqService->setBenchmarkName(activator->freqService->handle, name);
 	}
 
-	benchmarkServ = activator->benchmark;
-	name = benchmarkServ->name(benchmarkServ->handler);
-	sampleFactor = benchmarkServ->getSampleFactor(benchmarkServ->handler);
-	activator->freqService->setBenchmarkName(activator->freqService->handle, name);
 	usleep(1000);
     benchmarkRunner_printHeader(name, nrOfSamples * (int)sampleFactor, out);
 	for (k = 0 ; k < nrOfThreadRuns ; k +=1) {

@@ -39,6 +39,7 @@ static void stdLog(void *handle, int level, const char *file, int line, const ch
     va_start(ap, msg);
     vfprintf(stderr, msg, ap);
     fprintf(stderr, "\n");
+    va_end(ap);
 }
 
 #define EXAMPLE1_DESCRIPTOR "example(III)I"

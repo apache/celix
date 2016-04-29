@@ -150,7 +150,7 @@ celix_status_t serviceDependency_getStrategy(dm_service_dependency_pt dependency
 
 celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency, char *serviceName, char *serviceVersionRange, char *filter) {
 	celix_status_t status = CELIX_SUCCESS;
-	if (!dependency) {
+	if (!dependency || !serviceName) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	}
 
@@ -158,9 +158,7 @@ celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency,
 		array_list_pt filterElements = NULL;
 		arrayList_create(&filterElements);
 
-		if (serviceName != NULL) {
-			dependency->tracked_service = strdup(serviceName);
-		}
+		dependency->tracked_service = strdup(serviceName);
 
 		if (serviceVersionRange != NULL) {
 			version_range_pt versionRange = NULL;

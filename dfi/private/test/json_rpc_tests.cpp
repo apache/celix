@@ -42,6 +42,7 @@ static void stdLog(void *handle, int level, const char *file, int line, const ch
     va_start(ap, msg);
     vfprintf(stderr, msg, ap);
     fprintf(stderr, "\n");
+    va_end(ap);
 }
 
 
@@ -138,7 +139,9 @@ static void stdLog(void *handle, int level, const char *file, int line, const ch
         }
 
         struct tst_StatsResult *result = (struct tst_StatsResult *) calloc(1, sizeof(*result));
-        result->average = total / count;
+        if(count>0){
+		result->average = total / count;
+        }
         result->min = min;
         result->max = max;
         double *buf = (double *)calloc(input.len, sizeof(double));
@@ -367,7 +370,9 @@ static void stdLog(void *handle, int level, const char *file, int line, const ch
         args[0] = NULL;
         args[1] = &out;
 
-        rc = jsonRpc_handleReply(func, reply, args);
+        if(func!=NULL){ // Check needed just to satisfy Coverity
+		rc = jsonRpc_handleReply(func, reply, args);
+        }
 
         STRCMP_EQUAL("this is a test string", result);
 

@@ -368,7 +368,9 @@ celix_status_t remoteServiceAdmin_getSharedIdentifierFile(remote_service_admin_p
 
 		snprintf(tmpDir, RSA_FILEPATH_LENGTH, "%s/%s", P_tmpdir, fwUuid);
 
-		mkdir(tmpDir, 0755);
+		if(mkdir(tmpDir, 0755) == -1 ){
+			logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "error while creating directory %s (%s)", tmpDir, strerror(errno));
+		}
 		FILE *shid_file = fopen(outFile, "wb");
 		if (shid_file == NULL) {
 			logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "error while creating shared identifier file %s (%s)", outFile, strerror(errno));

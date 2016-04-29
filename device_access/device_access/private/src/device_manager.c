@@ -75,9 +75,11 @@ celix_status_t deviceManager_create(bundle_context_pt context, log_helper_pt log
 		(*manager)->loghelper = logHelper;
 
 		status = arrayList_create(&(*manager)->locators);
+
+		logHelper_log((*manager)->loghelper, OSGI_LOGSERVICE_DEBUG, "DEVICE_MANAGER: Initialized");
 	}
 
-	logHelper_log((*manager)->loghelper, OSGI_LOGSERVICE_DEBUG, "DEVICE_MANAGER: Initialized");
+
 	return status;
 }
 

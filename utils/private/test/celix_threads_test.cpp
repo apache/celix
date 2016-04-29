@@ -343,6 +343,7 @@ TEST(celix_thread_condition, wait) {
 
 	celixThreadCondition_wait(&param->cond, &param->mu);
 	LONGS_EQUAL(666, param->i);
+	celixThreadMutex_unlock(&param->mu);
 
 	celixThread_join(thread, NULL);
 	free(param);
@@ -360,17 +361,17 @@ TEST(celix_thread_condition, broadcast) {
 	celixThread_create(&thread2, NULL, thread_test_func_cond_broadcast, param);
 
 	sleep(1);
-	celixThreadMutex_lock(&param->mu2);
+	celixThreadMutex_lock(&param->mu);
 	LONGS_EQUAL(0, param->i);
-	celixThreadMutex_unlock(&param->mu2);
+	celixThreadMutex_unlock(&param->mu);
 
 	celixThreadMutex_lock(&param->mu);
 	celixThreadCondition_broadcast(&param->cond);
 	celixThreadMutex_unlock(&param->mu);
 	sleep(1);
-	celixThreadMutex_lock(&param->mu2);
+	celixThreadMutex_lock(&param->mu);
 	LONGS_EQUAL(2, param->i);
-	celixThreadMutex_unlock(&param->mu2);
+	celixThreadMutex_unlock(&param->mu);
 
 	celixThread_join(thread, NULL);
 	celixThread_join(thread2, NULL);
@@ -494,9 +495,9 @@ static void * thread_test_func_cond_broadcast(void *arg) {
 	celixThreadMutex_lock(&param->mu);
 	celixThreadCondition_wait(&param->cond, &param->mu);
 	celixThreadMutex_unlock(&param->mu);
-	celixThreadMutex_lock(&param->mu2);
+	celixThreadMutex_lock(&param->mu);
 	param->i++;
-	celixThreadMutex_unlock(&param->mu2);
+	celixThreadMutex_unlock(&param->mu);
 	return NULL;
 }
 

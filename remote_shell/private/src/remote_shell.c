@@ -123,7 +123,7 @@ celix_status_t remoteShell_addConnection(remote_shell_pt instance, int socket) {
 		status = CELIX_ENOMEM;
 	}
 
-	if (status != CELIX_SUCCESS) {
+	if (status != CELIX_SUCCESS && connection != NULL) {
 		if (connection->socketStream != NULL) {
 			fclose(connection->socketStream);
 		}

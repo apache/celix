@@ -313,7 +313,7 @@ static int dynType_parseComplex(FILE *stream, dyn_type *type) {
 
     if (status == OK) {
         type->complex.structType.type =  FFI_TYPE_STRUCT;
-        type->complex.structType.elements = calloc(count + 1, sizeof(ffi_type));
+        type->complex.structType.elements = calloc(count + 1, sizeof(ffi_type*));
         if (type->complex.structType.elements != NULL) {
             type->complex.structType.elements[count] = NULL;
             int index = 0;
@@ -328,7 +328,7 @@ static int dynType_parseComplex(FILE *stream, dyn_type *type) {
 
     if (status == OK) {
         type->complex.types = calloc(count, sizeof(dyn_type *));
-        if (type != NULL) {
+        if (type->complex.types != NULL) {
             int index = 0;
             TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
                 type->complex.types[index++] = entry->type;
@@ -635,6 +635,7 @@ int dynType_complex_indexForName(dyn_type *type, const char *name) {
 
 int dynType_complex_dynTypeAt(dyn_type *type, int index, dyn_type **result) {
     assert(type->type == DYN_TYPE_COMPLEX);
+    assert(index >= 0);
     dyn_type *sub = type->complex.types[index];
     if (sub->type == DYN_TYPE_REF) {
         sub = sub->ref.ref;
@@ -656,7 +657,7 @@ int dynType_complex_valLocAt(dyn_type *type, int index, void *inst, void **resul
     char *l = (char *)inst;
     void *loc = (void *)(l + dynType_getOffset(type, index));
     *result = loc;
-    return 0;
+    return OK;
 }
 
 int dynType_complex_entries(dyn_type *type, struct complex_type_entries_head **entries) {

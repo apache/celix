@@ -86,8 +86,9 @@ celix_status_t bundleCache_getArchives(bundle_cache_pt cache, array_list_pt *arc
 	dir = opendir(cache->cacheDir);
 
 	if (dir == NULL && errno == ENOENT) {
-		mkdir(cache->cacheDir, S_IRWXU);
-		dir = opendir(cache->cacheDir);
+		if(mkdir(cache->cacheDir, S_IRWXU) == 0 ){
+			dir = opendir(cache->cacheDir);
+		}
 	}
 
 	if (dir != NULL) {
@@ -119,7 +120,7 @@ celix_status_t bundleCache_getArchives(bundle_cache_pt cache, array_list_pt *arc
 				}
 			}
 
-			readdir_r(dir, &dp, &result);
+			rc = readdir_r(dir, &dp, &result);
 		}
 
 		if (rc != 0) {
@@ -195,7 +196,7 @@ static celix_status_t bundleCache_deleteTree(bundle_cache_pt cache, char * direc
 					}
 				}
 			}
-			readdir_r(dir, &dp, &result);
+			rc = readdir_r(dir, &dp, &result);
 		}
 
 		if (closedir(dir) != 0) {

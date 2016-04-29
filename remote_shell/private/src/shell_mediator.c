@@ -66,7 +66,7 @@ celix_status_t shellMediator_create(bundle_context_pt context, shell_mediator_pt
 		status = CELIX_ENOMEM;
 	}
 
-	if (status != CELIX_SUCCESS) {
+	if ((status != CELIX_SUCCESS) && ((*instance) != NULL)){
 		logHelper_log((*instance)->loghelper, OSGI_LOGSERVICE_ERROR, "Error creating shell_mediator, error code is %i\n", status);
 	}
 	return status;

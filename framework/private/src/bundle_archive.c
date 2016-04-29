@@ -211,8 +211,8 @@ celix_status_t bundleArchive_recreate(char * archiveRoot, bundle_archive_pt *bun
 				while (rc == 0 && result != NULL) {
 					char subdir[512];
 					snprintf(subdir, 512, "%s/%s", archiveRoot, dent.d_name);
-					stat(subdir, &st);
-					if (S_ISDIR(st.st_mode) && (strncmp(dent.d_name, "version", 7) == 0)) {
+					int rv = stat(subdir, &st);
+					if (rv == 0 && S_ISDIR(st.st_mode) && (strncmp(dent.d_name, "version", 7) == 0)) {
 						sscanf(dent.d_name, "version%*d.%ld", &idx);
 						if (idx > highestId) {
 							highestId = idx;

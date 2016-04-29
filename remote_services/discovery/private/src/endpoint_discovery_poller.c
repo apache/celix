@@ -103,13 +103,12 @@ celix_status_t endpointDiscoveryPoller_create(discovery_pt discovery, bundle_con
 
 	(*poller)->running = true;
 
-	status = celixThread_create(&(*poller)->pollerThread, NULL, endpointDiscoveryPoller_performPeriodicPoll, *poller);
-	if (status != CELIX_SUCCESS) {
-		return status;
+	status += celixThread_create(&(*poller)->pollerThread, NULL, endpointDiscoveryPoller_performPeriodicPoll, *poller);
+	status += celixThreadMutex_unlock(&(*poller)->pollerLock);
+
+	if(status != CELIX_SUCCESS){
+		status = CELIX_BUNDLE_EXCEPTION;
 	}
-
-
-	status = celixThreadMutex_unlock(&(*poller)->pollerLock);
 
 	return status;
 }
@@ -219,14 +218,13 @@ celix_status_t endpointDiscoveryPoller_removeDiscoveryEndpoint(endpoint_discover
 
 			array_list_pt entries = hashMap_remove(poller->entries, url);
 
-			for (unsigned int i = arrayList_size(entries); i > 0; i--) {
-				endpoint_description_pt endpoint = arrayList_get(entries, i - 1);
-				discovery_removeDiscoveredEndpoint(poller->discovery, endpoint);
-				arrayList_remove(entries, i - 1);
-				endpointDescription_destroy(endpoint);
-			}
-
 			if (entries != NULL) {
+				for (unsigned int i = arrayList_size(entries); i > 0; i--) {
+					endpoint_description_pt endpoint = arrayList_get(entries, i - 1);
+					discovery_removeDiscoveredEndpoint(poller->discovery, endpoint);
+					arrayList_remove(entries, i - 1);
+					endpointDescription_destroy(endpoint);
+				}
 				arrayList_destroy(entries);
 			}
 

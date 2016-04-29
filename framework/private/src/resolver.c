@@ -278,7 +278,9 @@ void resolver_addModule(module_pt module) {
                     }
                 }
             }
-            linkedList_addElement(list->capabilities, cap);
+            if(list != NULL){
+		linkedList_addElement(list->capabilities, cap);
+            }
         }
     }
 }
@@ -352,7 +354,9 @@ void resolver_moduleResolved(module_pt module) {
                 capability_list_pt list;
                 capability_getServiceName(cap, &serviceName);
                 list = resolver_getCapabilityList(m_unresolvedServices, serviceName);
-                linkedList_removeElement(list->capabilities, cap);
+                if(list != NULL){
+			linkedList_removeElement(list->capabilities, cap);
+                }
 
                 linkedList_addElement(capsCopy, cap);
             }
@@ -397,7 +401,9 @@ void resolver_moduleResolved(module_pt module) {
                             }
                         }
                     }
-                    linkedList_addElement(list->capabilities, cap);
+                    if(list != NULL){
+			linkedList_addElement(list->capabilities, cap);
+                    }
                 }
             }
 

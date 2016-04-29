@@ -203,8 +203,9 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
                 } else if (xmlStrcmp(localname, ENDPOINT_DESCRIPTION) == 0) {
                     endpoint_description_pt endpointDescription = NULL;
                     // Completely parsed endpoint description, add it to our list of results...
-                    endpointDescription_create(endpointProperties, &endpointDescription);
-                    arrayList_add(endpointDescriptions, endpointDescription);
+                    if(endpointDescription_create(endpointProperties, &endpointDescription) == CELIX_SUCCESS){
+			arrayList_add(endpointDescriptions, endpointDescription);
+                    }
 
                     endpointProperties = properties_create();
                 } else if (xmlStrcmp(localname, PROPERTY) == 0) {

@@ -51,26 +51,29 @@ void sqrtCommand_execute(bundle_context_pt context, char *line, FILE *out, FILE 
     	char *token = line;
     	strtok_r(line, " ", &token);
 		char *aStr = strtok_r(NULL, " ", &token);
-		bool numeric;
-		sqrtCommand_isNumeric(aStr, &numeric);
-		if (aStr != NULL && numeric) {
-			calculator_service_pt calculator = NULL;
-			status = bundleContext_getService(context, calculatorService, (void *) &calculator);
-			if (status == CELIX_SUCCESS && calculator != NULL) {
-				double a = atof(aStr);
-				double result = 0;
-				status = calculator->sqrt(calculator->calculator, a, &result);
-				if (status == CELIX_SUCCESS) {
-					fprintf(out, "CALCULATOR_SHELL: Sqrt: %f = %f\n", a, result);
+		if(aStr != NULL){
+			bool numeric;
+			sqrtCommand_isNumeric(aStr, &numeric);
+			if (numeric) {
+				calculator_service_pt calculator = NULL;
+				status = bundleContext_getService(context, calculatorService, (void *) &calculator);
+				if (status == CELIX_SUCCESS && calculator != NULL) {
+					double a = atof(aStr);
+					double result = 0;
+					status = calculator->sqrt(calculator->calculator, a, &result);
+					if (status == CELIX_SUCCESS) {
+						fprintf(out, "CALCULATOR_SHELL: Sqrt: %f = %f\n", a, result);
+					} else {
+						fprintf(err, "SQRT: Unexpected exception in Calc service\n");
+					}
 				} else {
-					fprintf(err, "SQRT: Unexpected exception in Calc service\n");
+					fprintf(err, "No calc service available\n");
 				}
 			} else {
-				fprintf(err, "No calc service available\n");
+				fprintf(err, "SQRT: Requires 1 numerical parameter\n");
 			}
 		} else {
 			fprintf(err, "SQRT: Requires 1 numerical parameter\n");
-			status = CELIX_ILLEGAL_ARGUMENT;
 		}
     } else {
 		fprintf(err, "No calc service available\n");

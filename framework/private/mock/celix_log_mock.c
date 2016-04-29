@@ -69,6 +69,8 @@ static void test_logger_log(framework_logger_pt logger, framework_log_level_t le
     vsprintf(msg, fmsg, listPointer);
 
     test_logger_print(level, func, file, line, msg);
+
+    va_end(listPointer);
 }
 
 static void test_logger_print(framework_log_level_t level, const char *func, const char *file, int line, char *msg) {

@@ -459,7 +459,7 @@ celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_pt 
     export_reference_pt  ref = NULL;
     status = exportRegistration_getExportReference(registration, &ref);
 
-    if (status == CELIX_SUCCESS) {
+    if (status == CELIX_SUCCESS && ref != NULL) {
     	service_reference_pt servRef;
         celixThreadMutex_lock(&admin->exportedServicesLock);
     	exportReference_getExportedService(ref, &servRef);
@@ -474,9 +474,8 @@ celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_pt 
 
         celixThreadMutex_unlock(&admin->exportedServicesLock);
 
-        if (ref != NULL) {
-        	free(ref);
-        }
+        free(ref);
+
     } else {
     	logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "Cannot find reference for registration");
     }
@@ -626,11 +625,11 @@ celix_status_t remoteServiceAdmin_importService(remote_service_admin_pt admin, e
     if (objectClass != NULL) {
         status = importRegistration_create(admin->context, endpointDescription, objectClass, serviceVersion, &import);
     }
-    if (status == CELIX_SUCCESS) {
+    if (status == CELIX_SUCCESS && import != NULL) {
         importRegistration_setSendFn(import, (send_func_type) remoteServiceAdmin_send, admin);
     }
 
-    if (status == CELIX_SUCCESS) {
+    if (status == CELIX_SUCCESS && import != NULL) {
         status = importRegistration_start(import);
     }
 
@@ -709,7 +708,7 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
     } else {
         curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
-        curl_easy_setopt(curl, CURLOPT_URL, &url[0]);
+        curl_easy_setopt(curl, CURLOPT_URL, url);
         curl_easy_setopt(curl, CURLOPT_POST, 1L);
         curl_easy_setopt(curl, CURLOPT_READFUNCTION, remoteServiceAdmin_readCallback);
         curl_easy_setopt(curl, CURLOPT_READDATA, &post);
@@ -771,4 +770,5 @@ static void remoteServiceAdmin_log(remote_service_admin_pt admin, int level, con
     char buf2[256];
     vsnprintf(buf2, 256, msg, ap);
     logHelper_log(admin->loghelper, levels[level], "%s%s", buf1, buf2);
+    va_end(ap);
 }

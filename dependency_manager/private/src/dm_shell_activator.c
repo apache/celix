@@ -39,26 +39,19 @@ typedef struct bundle_instance * bundle_instance_pt;
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 
+	if(userData==NULL){
+		return CELIX_ILLEGAL_ARGUMENT;
+	}
+
     struct bundle_instance *bi = calloc(sizeof (struct bundle_instance), 1);
-    celix_status_t status = CELIX_SUCCESS;
 
-    if (!bi) {
-        status = CELIX_ENOMEM;
-    }
-    else if (userData == NULL) {
-        status = CELIX_ILLEGAL_ARGUMENT;
-        free(bi);
-    }
-    else {
-        if (status != CELIX_SUCCESS) {
-            printf("DM:LIST Create failed\n");
-            free(bi);
-        }
-
-        (*userData) = bi;
+    if (bi==NULL) {
+        return CELIX_ENOMEM;
     }
 
-    return status;
+    (*userData) = bi;
+
+    return CELIX_SUCCESS;
 }
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {

@@ -55,12 +55,12 @@ int dynMessage_parse(FILE *descriptor, dyn_message_type **out) {
         TAILQ_INIT(&msg->annotations);
         TAILQ_INIT(&msg->types);
 
-        char peek = fgetc(descriptor);
+        char peek = (char)fgetc(descriptor);
         while (peek == ':') {
             ungetc(peek, descriptor);
             status = dynMessage_parseSection(msg, descriptor);
             if (status == OK) {
-                peek = fgetc(descriptor);
+                peek = (char)fgetc(descriptor);
             } else {
                 break;
             }
@@ -205,9 +205,6 @@ static int dynMessage_parseNameValueSection(dyn_message_type *msg, FILE *stream,
             if (value != NULL) {
                 free(value);
             }
-            if (entry != NULL) {
-                free(entry);
-            }
             break;
         }
         peek = fgetc(stream);
@@ -259,9 +256,6 @@ static int dynMessage_parseTypes(dyn_message_type *msg, FILE *stream) {
         if (status != OK) {
             if (type != NULL) {
                 dynType_destroy(type);
-            }
-            if (entry != NULL) {
-                free(entry);
             }
             break;
         }

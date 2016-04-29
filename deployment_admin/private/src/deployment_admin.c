@@ -295,7 +295,9 @@ static void *deploymentAdmin_poll(void *deploymentAdmin) {
 					uuid_generate(uid);
 					uuid_unparse(uid, uuid);
                     snprintf(tmpDir, 256, "%s%s", entry, uuid);
-                    mkdir(tmpDir, S_IRWXU);
+                    if( mkdir(tmpDir, S_IRWXU) == -1){
+			fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Failed creating directory %s",tmpDir);
+                    }
 
 					// TODO: update to use bundle cache DataFile instead of module entries.
 					unzip_extractDeploymentPackage(inputFilename, tmpDir);
@@ -338,7 +340,9 @@ static void *deploymentAdmin_poll(void *deploymentAdmin) {
 
 					deploymentAdmin_deleteTree(repoCache);
 					deploymentAdmin_deleteTree(tmpDir);
-					remove(inputFilename);
+					if( remove(inputFilename) == -1){
+						fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Remove of %s failed",inputFilename);
+					}
 					admin->current = strdup(last);
 					hashMap_put(admin->packages, name, source);
 				}

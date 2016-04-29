@@ -387,12 +387,11 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 
 	bundleContext_getServiceReferences(admin->context, NULL, filter, &references);
 
-	if (arrayList_size(references) >= 1) {
-		reference = arrayList_get(references, 0);
-	}
-
-    if(references!=NULL){
-        arrayList_destroy(references);
+	if(references!=NULL){
+		if (arrayList_size(references) >= 1) {
+			reference = arrayList_get(references, 0);
+		}
+		arrayList_destroy(references);
     }
 
 	if (reference == NULL) {
@@ -467,7 +466,7 @@ celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_pt 
 
     status = exportRegistration_getExportReference(registration, &ref);
 
-    if (status == CELIX_SUCCESS) {
+    if (status == CELIX_SUCCESS && ref != NULL) {
     	service_reference_pt servRef;
         celixThreadMutex_lock(&admin->exportedServicesLock);
     	exportReference_getExportedService(ref, &servRef);
@@ -482,9 +481,8 @@ celix_status_t remoteServiceAdmin_removeExportedService(remote_service_admin_pt 
 
         celixThreadMutex_unlock(&admin->exportedServicesLock);
 
-        if (ref != NULL) {
-        	free(ref);
-        }
+        free(ref);
+
     } else {
     	 logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "Cannot find reference for registration");
     }
@@ -766,7 +764,7 @@ celix_status_t remoteServiceAdmin_send(remote_service_admin_pt rsa, endpoint_des
 		} else {
 		    curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
 			curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
-			curl_easy_setopt(curl, CURLOPT_URL, &url[0]);
+			curl_easy_setopt(curl, CURLOPT_URL, url);
 			curl_easy_setopt(curl, CURLOPT_POST, 1L);
 			curl_easy_setopt(curl, CURLOPT_READFUNCTION, remoteServiceAdmin_readCallback);
 			curl_easy_setopt(curl, CURLOPT_READDATA, &post);

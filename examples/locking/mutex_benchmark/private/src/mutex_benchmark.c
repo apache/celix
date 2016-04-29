@@ -81,8 +81,10 @@ benchmark_result_t benchmark_run(benchmark_pt benchmark, int nrOfThreads, int nr
 	}
 
     unsigned int actualSamples = (nrOfSamples * nrOfThreads) - result.skips;
+    if(elapsedTime != 0){
 	result.averageCallTimeInNanoseconds = actualSamples == 0 ? NAN : ((double)elapsedTime * 1000) / (nrOfSamples * nrOfThreads);
 	result.callFrequencyInMhz = ((double)(actualSamples * nrOfThreads) / elapsedTime);
+    }
 	result.nrOfThreads = nrOfThreads;
 	result.nrOfsamples = actualSamples;
     result.requestedNrOfSamples = (nrOfSamples * nrOfThreads);

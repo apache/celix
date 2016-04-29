@@ -51,12 +51,12 @@ void subCommand_execute(bundle_context_pt context, char *line, FILE *out, FILE *
     	char *token = line;
     	strtok_r(line, " ", &token);
 		char *aStr = strtok_r(NULL, " ", &token);
-		bool numeric;
-		subCommand_isNumeric(aStr, &numeric);
-		if (aStr != NULL && numeric) {
-			char *bStr = strtok_r(NULL, " ", &token);
-			subCommand_isNumeric(bStr, &numeric);
-			if (bStr != NULL && numeric) {
+		char *bStr = strtok_r(NULL, " ", &token);
+		if(aStr != NULL && bStr != NULL ){
+			bool aNumeric, bNumeric;
+			subCommand_isNumeric(aStr, &aNumeric);
+			subCommand_isNumeric(bStr, &bNumeric);
+			if (aNumeric && bNumeric) {
 				calculator_service_pt calculator = NULL;
 				status = bundleContext_getService(context, calculatorService, (void *) &calculator);
 				if (status == CELIX_SUCCESS && calculator != NULL) {
@@ -77,7 +77,6 @@ void subCommand_execute(bundle_context_pt context, char *line, FILE *out, FILE *
 			}
 		} else {
 			fprintf(err, "SUB: Requires 2 numerical parameter\n");
-			status = CELIX_ILLEGAL_ARGUMENT;
 		}
     } else {
 		fprintf(err, "No calc service available\n");

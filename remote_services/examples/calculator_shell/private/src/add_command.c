@@ -52,37 +52,36 @@ void addCommand_execute(bundle_context_pt context, char *line, FILE *out, FILE *
     if (status == CELIX_SUCCESS) {
     	char *token = line;
     	strtok_r(line, " ", &token);
-		char *aStr = strtok_r(NULL, " ", &token);
-		bool numeric;
-		addCommand_isNumeric(aStr, &numeric);
-		if (aStr != NULL && numeric) {
-			char *bStr = strtok_r(NULL, " ", &token);
-			addCommand_isNumeric(bStr, &numeric);
-			if (bStr != NULL && numeric) {
-				calculator_service_pt calculator = NULL;
-				status = bundleContext_getService(context, calculatorService, (void *) &calculator);
-                if (status == CELIX_SUCCESS && calculator != NULL) {
-					double a = atof(aStr);
-					double b = atof(bStr);
-					double result = 0;
-					status = calculator->add(calculator->calculator, a, b, &result);
-					if (status == CELIX_SUCCESS) {
-						fprintf(out, "CALCULATOR_SHELL: Add: %f + %f = %f\n", a, b, result);
-					} else {
-						fprintf(err, "ADD: Unexpected exception in Calc service\n");
-					}
+	char *aStr = strtok_r(NULL, " ", &token);
+	char *bStr = strtok_r(NULL, " ", &token);
+	bool aNumeric, bNumeric;
+	if (aStr != NULL && bStr != NULL) {
+		addCommand_isNumeric(aStr, &aNumeric);
+		addCommand_isNumeric(bStr, &bNumeric);
+		if(aNumeric && bNumeric){
+			calculator_service_pt calculator = NULL;
+			status = bundleContext_getService(context, calculatorService, (void *) &calculator);
+			if (status == CELIX_SUCCESS && calculator != NULL) {
+				double a = atof(aStr);
+				double b = atof(bStr);
+				double result = 0;
+				status = calculator->add(calculator->calculator, a, b, &result);
+				if (status == CELIX_SUCCESS) {
+					fprintf(out, "CALCULATOR_SHELL: Add: %f + %f = %f\n", a, b, result);
 				} else {
-					fprintf(err, "No calc service available\n");
+					fprintf(err, "ADD: Unexpected exception in Calc service\n");
 				}
 			} else {
-				fprintf(err, "ADD: Requires 2 numerical parameter\n");
+				fprintf(err, "No calc service available\n");
 			}
 		} else {
 			fprintf(err, "ADD: Requires 2 numerical parameter\n");
-			status = CELIX_ILLEGAL_ARGUMENT;
 		}
+	} else {
+		fprintf(err, "ADD: Requires 2 numerical parameter\n");
+	}
     } else {
-		fprintf(err, "No calc service available\n");
+	fprintf(err, "No calc service available\n");
     }
 
     //return status;

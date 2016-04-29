@@ -38,6 +38,8 @@ void framework_log(framework_logger_pt logger, framework_log_level_t level, cons
     if (logger != NULL && logger->logFunction != NULL) {
         logger->logFunction(level, func, file, line, msg);
     }
+
+    va_end(listPointer);
 }
 
 void framework_logCode(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line, celix_status_t code, char *fmsg, ...) {
@@ -49,6 +51,8 @@ void framework_logCode(framework_logger_pt logger, framework_log_level_t level, 
     vsprintf(msg, fmsg, listPointer);
 
     framework_log(logger, level, func, file, line, "%s [%d]: %s", message, code, msg);
+
+    va_end(listPointer);
 }
 
 celix_status_t frameworkLogger_log(framework_log_level_t level, const char *func, const char *file, int line, char *msg) {

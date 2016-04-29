@@ -113,7 +113,7 @@ celix_status_t shell_addCommand(shell_pt shell_ptr, service_reference_pt referen
     char *name_str = NULL;
 
     if (!shell_ptr || !reference_ptr) {
-        status = CELIX_ILLEGAL_ARGUMENT;
+        return CELIX_ILLEGAL_ARGUMENT;
     }
 
     if (status == CELIX_SUCCESS) {

@@ -503,6 +503,7 @@ celix_status_t component_handleChanged(dm_component_pt component, dm_service_dep
     array_list_pt events = hashMap_get(component->dependencyEvents, dependency);
     int index = arrayList_indexOf(events, event);
     if (index < 0) {
+	pthread_mutex_unlock(&component->mutex);
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
         dm_event_pt old = arrayList_remove(events, (unsigned int) index);
@@ -556,6 +557,7 @@ celix_status_t component_handleRemoved(dm_component_pt component, dm_service_dep
     pthread_mutex_lock(&component->mutex);
     int index = arrayList_indexOf(events, event);
     if (index < 0) {
+	pthread_mutex_unlock(&component->mutex);
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
         dm_event_pt old = arrayList_remove(events, (unsigned int) index);
@@ -608,6 +610,7 @@ celix_status_t component_handleSwapped(dm_component_pt component, dm_service_dep
     array_list_pt events = hashMap_get(component->dependencyEvents, dependency);
     int index = arrayList_indexOf(events, event);
     if (index < 0) {
+	pthread_mutex_unlock(&component->mutex);
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
         dm_event_pt old = arrayList_remove(events, (unsigned int) index);
@@ -1340,36 +1343,34 @@ celix_status_t component_getComponentInfo(dm_component_pt component, dm_componen
     dm_component_info_pt info = NULL;
     info = calloc(1, sizeof(*info));
 
-
-    if (info != NULL) {
-        arrayList_create(&info->dependency_list);
-        component_getInterfaces(component, &info->interfaces);
-        info->active = false;
-        memcpy(info->id, component->id, DM_COMPONENT_MAX_ID_LENGTH);
-        memcpy(info->name, component->name, DM_COMPONENT_MAX_NAME_LENGTH);
-
-        switch (component->state) {
-            case DM_CMP_STATE_INACTIVE :
-                info->state = strdup("INACTIVE");
-                break;
-            case DM_CMP_STATE_WAITING_FOR_REQUIRED :
-                info->state = strdup("WAITING_FOR_REQUIRED");
-                break;
-            case DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED :
-                info->state = strdup("INSTANTIATED_AND_WAITING_FOR_REQUIRED");
-                break;
-            case DM_CMP_STATE_TRACKING_OPTIONAL :
-                info->state = strdup("TRACKING_OPTIONAL");
-                info->active = true;
-                break;
-            default :
-                info->state = strdup("UNKNOWN");
-                break;
-        }
-    } else {
-        status = CELIX_ENOMEM;
+    if(info==NULL){
+	return CELIX_ENOMEM;
     }
 
+    arrayList_create(&info->dependency_list);
+    component_getInterfaces(component, &info->interfaces);
+    info->active = false;
+    memcpy(info->id, component->id, DM_COMPONENT_MAX_ID_LENGTH);
+    memcpy(info->name, component->name, DM_COMPONENT_MAX_NAME_LENGTH);
+
+    switch (component->state) {
+    case DM_CMP_STATE_INACTIVE :
+	info->state = strdup("INACTIVE");
+	break;
+    case DM_CMP_STATE_WAITING_FOR_REQUIRED :
+	info->state = strdup("WAITING_FOR_REQUIRED");
+	break;
+    case DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED :
+	info->state = strdup("INSTANTIATED_AND_WAITING_FOR_REQUIRED");
+	break;
+    case DM_CMP_STATE_TRACKING_OPTIONAL :
+	info->state = strdup("TRACKING_OPTIONAL");
+	info->active = true;
+	break;
+    default :
+	info->state = strdup("UNKNOWN");
+	break;
+    }
 
     celixThreadMutex_lock(&component->mutex);
     size = arrayList_size(component->dependencies);

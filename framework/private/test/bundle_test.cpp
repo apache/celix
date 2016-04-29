@@ -634,7 +634,7 @@ TEST(bundle, revise) {
 	bundle_pt bundle = (bundle_pt) malloc(sizeof(*bundle));
 	arrayList_create(&bundle->modules);
 	bundle_archive_pt actual_archive = (bundle_archive_pt) 0x02;
-	bundle_revision_pt actual_revision = (bundle_revision_pt) malloc(sizeof(actual_revision));
+	bundle_revision_pt actual_revision = (bundle_revision_pt) malloc(sizeof(*actual_revision));
 	manifest_pt actual_manifest = (manifest_pt) malloc(sizeof(*actual_manifest));
 	int actual_id = 666;
 	const char * actual_module_id = "666.0";

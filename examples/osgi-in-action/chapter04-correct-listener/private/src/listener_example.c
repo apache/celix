@@ -77,7 +77,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
     celix_status_t status = CELIX_SUCCESS;
     struct listenerActivator *activator = userData;
 
-    service_listener_pt listener = calloc(1, sizeof(struct listenerActivator));
+    service_listener_pt listener = calloc(1, sizeof(*listener));
     if (!listener) {
         status = CELIX_ENOMEM;
     } else {
