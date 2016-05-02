@@ -49,7 +49,7 @@ ENV CHOST arm-linux-androideabi
 
 # install needed tools
 
-RUN apt-get update && apt-get install -y software-properties-common && add-apt-repository ppa:george-edison55/cmake-3.x
+RUN apt-get update && apt-get install -y software-properties-common && add-apt-repository ppa:george-edison55/cmake-3.x && apt-get clean
 
 RUN apt-get update && apt-get install -y \
     automake \
@@ -60,7 +60,8 @@ RUN apt-get update && apt-get install -y \
     curl \
     cmake \
     git \
-    vim 
+    vim \
+    && apt-get clean
 
 
 RUN mkdir -p build/output
