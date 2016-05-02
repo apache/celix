@@ -36,13 +36,13 @@
 #include "reader_service.h"
 
 
-celix_status_t readerService_getFirstData(database_handler_pt handler, data_pt firstData)
+celix_status_t readerService_getFirstData(database_handler_pt handler, __attribute__((unused)) data_pt firstData)
 {
 	celix_status_t status = CELIX_BUNDLE_EXCEPTION;
 
 	celixThreadMutex_lock(&handler->lock);
 
-	if ((firstData = (data_pt) arrayList_remove(handler->data, 0)) != NULL)
+	if (arrayList_remove(handler->data, 0) != NULL)
 	{
 		handler->dataIndex--;
 		status = CELIX_SUCCESS;

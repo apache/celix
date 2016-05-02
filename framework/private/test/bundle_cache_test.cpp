@@ -84,6 +84,7 @@ TEST(bundle_cache, deleteTree) {
 	LONGS_EQUAL(rv,0);
 
 	//mkstemp opens the file for safety, but bundlecache_delete needs to reopen the file
+	umask(0033);
 	int fd = mkstemp(cacheFile);
 	if(fd>=0){
 		close(fd);

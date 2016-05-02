@@ -162,8 +162,9 @@ celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_servi
 		memset(&callbacks, 0, sizeof(callbacks));
 		callbacks.begin_request = remoteServiceAdmin_callback;
 
+		char newPort[10];
 		do {
-			char newPort[10];
+
 			const char *options[] = { "listening_ports", port, NULL};
 
 			(*admin)->ctx = mg_start(&callbacks, (*admin), options);
@@ -171,7 +172,6 @@ celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_servi
 			if ((*admin)->ctx != NULL) {
 				logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_INFO, "RSA: Start webserver: %s", port);
 				(*admin)->port = strdup(port);
-
 			}
 			else {
 		        char* endptr = port;

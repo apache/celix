@@ -389,14 +389,17 @@ celix_status_t remoteServiceAdmin_getSharedIdentifierFile(remote_service_admin_p
 celix_status_t remoteServiceAdmin_removeSharedIdentityFile(remote_service_admin_pt admin, char *fwUuid, char* servicename) {
 	celix_status_t status = CELIX_SUCCESS;
 	char tmpPath[RSA_FILEPATH_LENGTH];
+	int retVal = 0;
 
 	snprintf(tmpPath, RSA_FILEPATH_LENGTH, "%s/%s/%s", P_tmpdir, fwUuid, servicename);
 
-	if (access(tmpPath, F_OK) == 0) {
-		logHelper_log(admin->loghelper, OSGI_LOGSERVICE_DEBUG, "removing shared identifier file %s", tmpPath);
-		unlink(tmpPath);
+	retVal = unlink(tmpPath);
+
+	if (retVal == 0) {
+		logHelper_log(admin->loghelper, OSGI_LOGSERVICE_DEBUG, "Removed shared identifier file %s", tmpPath);
 	} else {
-		logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "cannot remove shared identifier file %s", tmpPath);
+		logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "Cannot remove shared identifier file %s", tmpPath);
+		status = CELIX_FILE_IO_EXCEPTION;
 	}
 
 	return status;
@@ -428,14 +431,17 @@ celix_status_t remoteServiceAdmin_removeSharedIdentityFiles(remote_service_admin
 			f_name = (char*) calloc(len, 1);
 
 			if (f_name) {
-				struct stat statbuf;
-
 				snprintf(f_name, len, "%s/%s", tmpDir, p->d_name);
 
-				if (!stat(f_name, &statbuf)) {
-					logHelper_log(admin->loghelper, OSGI_LOGSERVICE_WARNING, "removing shared identifier file %s (unproper clean-up?)", f_name);
-					retVal = unlink(f_name);
+				retVal = unlink(f_name);
+
+				if(retVal==0){
+					logHelper_log(admin->loghelper, OSGI_LOGSERVICE_WARNING, "Removed shared identifier file %s (unproper clean-up?)", f_name);
 				}
+				else{
+					logHelper_log(admin->loghelper, OSGI_LOGSERVICE_WARNING, "Unable to remove shared identifier file %s ", f_name);
+				}
+
 			}
 			free(f_name);
 		}
@@ -684,32 +690,31 @@ celix_status_t remoteServiceAdmin_createOrAttachShm(hash_map_pt ipcSegment, remo
 		}
 	}
 
-	if(ipc != NULL){
-		if(status == CELIX_SUCCESS){
-			key_t semkey = ftok(semPath, atoi(semFtokId));
-			int semflg = (createIfNotFound == true) ? (0666 | IPC_CREAT) : (0666);
-			int semid = semget(semkey, 3, semflg);
+	if(ipc != NULL && status == CELIX_SUCCESS){
 
-			if (semid != -1) {
-				// only reset semaphores if a create was supposed
-				if ((createIfNotFound == true) && ((semctl(semid, 0, SETVAL, (int) 1) == -1) || (semctl(semid, 1, SETVAL, (int) 0) == -1) || (semctl(semid, 2, SETVAL, (int) 0) == -1))) {
-					logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "error while initialize semaphores.");
-				}
+		key_t semkey = ftok(semPath, atoi(semFtokId));
+		int semflg = (createIfNotFound == true) ? (0666 | IPC_CREAT) : (0666);
+		int semid = semget(semkey, 3, semflg);
 
-				logHelper_log(admin->loghelper, OSGI_LOGSERVICE_DEBUG, "semaphores w/ key %s and id %i added.", endpointDescription->service, semid);
-				ipc->semId = semid;
-
-				hashMap_put(ipcSegment, endpointDescription->service, ipc);
-			} else {
-				logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "error getting semaphores.");
-				status = CELIX_BUNDLE_EXCEPTION;
+		if (semid != -1) {
+			// only reset semaphores if a create was supposed
+			if ((createIfNotFound == true) && ((semctl(semid, 0, SETVAL, (int) 1) == -1) || (semctl(semid, 1, SETVAL, (int) 0) == -1) || (semctl(semid, 2, SETVAL, (int) 0) == -1))) {
+				logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "error while initialize semaphores.");
 			}
-		}
-		else{
-			free(ipc);
+
+			logHelper_log(admin->loghelper, OSGI_LOGSERVICE_DEBUG, "semaphores w/ key %s and id %i added.", endpointDescription->service, semid);
+			ipc->semId = semid;
+
+			hashMap_put(ipcSegment, endpointDescription->service, ipc);
+		} else {
+			logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "error getting semaphores.");
+			status = CELIX_BUNDLE_EXCEPTION;
 		}
 	}
 
+	if(ipc != NULL && status != CELIX_SUCCESS){
+		free(ipc);
+	}
 
 	return status;
 }

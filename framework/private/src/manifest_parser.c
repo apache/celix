@@ -176,7 +176,7 @@ static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseStri
 
 	pieces = manifestParser_parseDelimitedString(clauseString, ";");
 
-	if (linkedList_create(&paths) == CELIX_SUCCESS) {
+	if ((pieces != NULL) && (linkedList_create(&paths) == CELIX_SUCCESS)) {
 		int pathCount = 0;
 		int pieceIdx;
 		hash_map_pt dirsMap = NULL;
@@ -245,6 +245,10 @@ static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseStri
 				}
 			}
 
+			if(linkedList_create(&clause) != CELIX_SUCCESS){
+				failure=true;
+			}
+
 			if(failure){
 				hashMap_destroy(dirsMap,false,false);
 				hash_map_iterator_pt attrIter = hashMapIterator_create(attrsMap);
@@ -263,8 +267,12 @@ static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseStri
 				if(value!=NULL){
 					free(value);
 				}
+				linkedList_destroy(paths);
+				if(clause!=NULL){
+					linkedList_destroy(clause);
+				}
 			}
-			else if(linkedList_create(&clause) == CELIX_SUCCESS) {
+			else{
 				linkedList_addElement(clause, paths);
 				linkedList_addElement(clause, dirsMap);
 				linkedList_addElement(clause, attrsMap);
@@ -274,14 +282,15 @@ static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseStri
 		else{
 			linkedList_destroy(paths);
 		}
+
+		for(int listIdx = 0; listIdx < linkedList_size(pieces); listIdx++){
+			void * element = linkedList_get(pieces, listIdx);
+			free(element);
+		}
+		linkedList_destroy(pieces);
 	}
 
-	for(int listIdx = 0; listIdx < linkedList_size(pieces); listIdx++){
-		void * element = linkedList_get(pieces, listIdx);
-		free(element);
-	}
 
-	linkedList_destroy(pieces);
 
 	return clause;
 }

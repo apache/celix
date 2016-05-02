@@ -222,7 +222,7 @@ FRAMEWORK_EXPORT celix_status_t serviceReference_getPropertyKeys(service_referen
     int i = 0;
     int vsize = hashMap_size(props);
     *size = (unsigned int)vsize;
-    *keys = malloc(vsize * sizeof(*keys));
+    *keys = malloc(vsize * sizeof(**keys));
     it = hashMapIterator_create(props);
     while (hashMapIterator_hasNext(it)) {
         (*keys)[i] = hashMapIterator_nextKey(it);

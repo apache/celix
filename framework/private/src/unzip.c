@@ -603,6 +603,7 @@ local unzFile unzOpenInternal (const void *path,
     if (unz_copyright[0]!=' ')
         return NULL;
 
+    memset(&us,0,sizeof(unz64_s));
     us.z_filefunc.zseek32_file = NULL;
     us.z_filefunc.ztell32_file = NULL;
     if (pzlib_filefunc64_32_def==NULL)

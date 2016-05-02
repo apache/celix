@@ -492,7 +492,7 @@ void hashMapValues_toArray(hash_map_values_pt values, void* *array[], unsigned i
 	int i = 0;
 	int vsize = hashMapValues_size(values);
 	*size = vsize;
-	*array = malloc(vsize * sizeof(*array));
+	*array = malloc(vsize * sizeof(**array));
 	it = hashMapValues_iterator(values);
 	while(hashMapIterator_hasNext(it) && i<vsize){
 		(*array)[i++] = hashMapIterator_nextValue(it);

@@ -275,6 +275,7 @@ void resolver_addModule(module_pt module) {
                     else{
                     	free(list->serviceName);
                     	free(list);
+			list=NULL;
                     }
                 }
             }
@@ -398,6 +399,7 @@ void resolver_moduleResolved(module_pt module) {
                             else{
                             	free(list->serviceName);
                             	free(list);
+				list=NULL;
                             }
                         }
                     }

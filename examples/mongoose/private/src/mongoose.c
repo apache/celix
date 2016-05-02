@@ -1204,12 +1204,12 @@ static int start_thread(struct mg_context *ctx, mg_thread_func_pt func,
 
 #ifndef NO_CGI
 static pid_t spawn_process(struct mg_connection *conn, const char *prog,
-                           char *envblk, char *envp[], int fd_stdin,
+		__attribute__((unused)) char *envblk, char *envp[], int fd_stdin,
                            int fd_stdout, const char *dir) {
   pid_t pid;
   const char *interp;
 
-  envblk = NULL; // Unused
+  // envblk = NULL; // Unused
 
   if ((pid = fork()) == -1) {
     // Parent
@@ -3454,10 +3454,10 @@ static int set_uid_option(struct mg_context *ctx) {
 #if !defined(NO_SSL)
 static pthread_mutex_t *ssl_mutexes;
 
-static void ssl_locking_callback(int mode, int mutex_num, const char *file,
-                                 int line) {
-  line = 0;    // Unused
-  file = NULL; // Unused
+static void ssl_locking_callback(int mode, int mutex_num, __attribute__((unused)) const char *file,
+		__attribute__((unused)) int line) {
+  // line = 0;    // Unused
+  // file = NULL; // Unused
 
   if (mode & CRYPTO_LOCK) {
     (void) pthread_mutex_lock(&ssl_mutexes[mutex_num]);
@@ -3816,7 +3816,8 @@ static void worker_thread(struct mg_context *ctx) {
 
   conn = calloc(1, sizeof(*conn));
   conn->buf_size = buf_size;
-  conn->buf = calloc(buf_size + 1, sizeof(char));
+  //+5 because in some point of the code there are direct accesses to buf with index>=2
+  conn->buf = calloc(buf_size + 5, sizeof(char));
   assert(conn != NULL);
 
   while (ctx->stop_flag == 0 && consume_socket(ctx, &conn->client)) {

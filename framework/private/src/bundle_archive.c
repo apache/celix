@@ -71,7 +71,7 @@ celix_status_t bundleArchive_createSystemBundleArchive(bundle_archive_pt *bundle
 		status = CELIX_ILLEGAL_ARGUMENT;
 		error = "Missing required arguments and/or incorrect values";
 	} else {
-		archive = (bundle_archive_pt) malloc(sizeof(*archive));
+		archive = (bundle_archive_pt) calloc(1,sizeof(*archive));
 		if (archive == NULL) {
 			status = CELIX_ENOMEM;
 		} else {
@@ -108,7 +108,7 @@ celix_status_t bundleArchive_create(char * archiveRoot, long id, char * location
 		status = CELIX_ILLEGAL_ARGUMENT;
 		error = "bundle_archive_pt must be NULL";
 	} else {
-		archive = (bundle_archive_pt) malloc(sizeof(*archive));
+		archive = (bundle_archive_pt) calloc(1,sizeof(*archive));
 		if (archive == NULL) {
 			status = CELIX_ENOMEM;
 		} else {
@@ -179,7 +179,7 @@ celix_status_t bundleArchive_recreate(char * archiveRoot, bundle_archive_pt *bun
 
 	bundle_archive_pt archive = NULL;
 
-	archive = (bundle_archive_pt) malloc(sizeof(*archive));
+	archive = (bundle_archive_pt) calloc(1,sizeof(*archive));
 	if (archive == NULL) {
 		status = CELIX_ENOMEM;
 	} else {

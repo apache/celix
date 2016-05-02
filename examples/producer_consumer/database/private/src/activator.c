@@ -75,7 +75,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status = CELIX_ENOMEM;
 	struct activator *activator = userData;
 	reader_service_pt readerService = calloc(1, sizeof(struct reader_service));
 	writer_service_pt writerService = calloc(1, sizeof(struct writer_service));
@@ -103,12 +103,13 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
 			status = bundleContext_registerService(context, READER_SERVICE_NAME, activator->readerService, NULL,  &activator->readerRegistration);
 
-			if (status == CELIX_SUCCESS)
+			if (status == CELIX_SUCCESS){
 				status = bundleContext_registerService(context, WRITER_SERVICE_NAME, activator->writerService, NULL,  &activator->writerRegistration);
+			}
 		}
 	}
-	else
-	{
+
+	if(status != CELIX_SUCCESS){
 		if(readerService!=NULL){
 			free(readerService);
 		}
@@ -118,7 +119,6 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 		if(databaseHandler!=NULL){
 			free(databaseHandler);
 		}
-		status = CELIX_ENOMEM;
 	}
 
 	return status;

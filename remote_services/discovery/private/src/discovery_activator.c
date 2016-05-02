@@ -84,6 +84,9 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 			bundleActivator_destroy(activator,context);
 		}
 	}
+	else{
+		free(activator);
+	}
 
 	return status;
 }

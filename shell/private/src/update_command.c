@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <curl/curl.h>
+#include <sys/stat.h>
 
 #include "array_list.h"
 #include "bundle_context.h"
@@ -79,6 +80,7 @@ celix_status_t updateCommand_download(bundle_context_pt context, char * url, cha
 	if (curl) {
 		FILE *fp = NULL;
 		snprintf(*inputFile, 13,"updateXXXXXX");
+		umask(0011);
 		int fd = mkstemp(*inputFile);
 		if (fd) {
 		    fp = fopen(*inputFile, "wb+");

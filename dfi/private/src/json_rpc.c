@@ -178,7 +178,9 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
 							status = dynType_typedPointer_getTypedType(typedType, &typedTypedType);
 						}
 
-						status = jsonSerializer_serializeJson(typedTypedType, ptr, &jsonResult);
+						if(status == OK){
+							status = jsonSerializer_serializeJson(typedTypedType, ptr, &jsonResult);
+						}
 
 						if (status == OK) {
 							dynType_free(typedTypedType, ptr);

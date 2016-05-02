@@ -440,7 +440,7 @@ celix_status_t fw_init(framework_pt framework) {
             bundle_context_pt context = NULL;
             void * userData = NULL;
 
-			create_function_pt create = NULL;
+			//create_function_pt create = NULL;
 			start_function_pt start = (start_function_pt) frameworkActivator_start;
 			stop_function_pt stop = (stop_function_pt) frameworkActivator_stop;
 			destroy_function_pt destroy = (destroy_function_pt) frameworkActivator_destroy;
@@ -452,9 +452,12 @@ celix_status_t fw_init(framework_pt framework) {
             status = CELIX_DO_IF(status, bundle_getContext(framework->bundle, &context));
 
             if (status == CELIX_SUCCESS) {
-                if (create != NULL) {
+                /* This code part is in principle dead, but in future it may do something.
+                 * That's why it's outcommented and not deleted
+		if (create != NULL) {
                     create(context, &userData);
                 }
+                */
                 activator->userData = userData;
 
                 if (start != NULL) {

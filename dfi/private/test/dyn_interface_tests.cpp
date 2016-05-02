@@ -119,7 +119,7 @@ extern "C" {
         FILE *desc = fopen("descriptors/invalids/invalid.descriptor", "r");
         assert(desc != NULL);
         status = dynInterface_parse(desc, &dynIntf);
-        dynInterface_destroy(dynIntf);
+        //dynInterface_destroy(dynIntf);
         CHECK_EQUAL(1, status); //Test fails because of a space at the end of the name
         fclose(desc); desc=NULL;
 
@@ -128,7 +128,7 @@ extern "C" {
         desc = fopen("descriptors/invalids/noVersion.descriptor", "r");
         assert(desc != NULL);
         status = dynInterface_parse(desc, &dynIntf);
-        dynInterface_destroy(dynIntf);
+        //dynInterface_destroy(dynIntf);
         CHECK_EQUAL(1, status); //Test fails because of missing version field in header section
         fclose(desc); desc=NULL;
 
@@ -136,7 +136,7 @@ extern "C" {
         desc = fopen("descriptors/invalids/invalidSection.descriptor", "r");
         assert(desc != NULL);
         status = dynInterface_parse(desc, &dynIntf);
-        dynInterface_destroy(dynIntf);
+        //dynInterface_destroy(dynIntf);
         CHECK_EQUAL(1, status); //Test fails because of unknown section type
         fclose(desc); desc=NULL;
 
@@ -144,7 +144,7 @@ extern "C" {
         desc = fopen("descriptors/invalids/invalidMethodReturnType.descriptor", "r");
         assert(desc != NULL);
         status = dynInterface_parse(desc, &dynIntf);
-        dynInterface_destroy(dynIntf);
+        //dynInterface_destroy(dynIntf);
         CHECK_EQUAL(1, status); //Test fails because of invalid return type (D instead of N)
         fclose(desc); desc=NULL;
 
@@ -152,7 +152,7 @@ extern "C" {
         desc = fopen("descriptors/invalids/invalidMethod.descriptor", "r");
         assert(desc != NULL);
         status = dynInterface_parse(desc, &dynIntf);
-        dynInterface_destroy(dynIntf);
+        //dynInterface_destroy(dynIntf);
         CHECK_EQUAL(1, status); //Test fails because of space at the end of the method
         fclose(desc); desc=NULL;
 
@@ -160,7 +160,7 @@ extern "C" {
         desc = fopen("descriptors/invalids/invalidType.descriptor", "r");
         assert(desc != NULL);
         status = dynInterface_parse(desc, &dynIntf);
-        dynInterface_destroy(dynIntf);
+        //dynInterface_destroy(dynIntf);
         CHECK_EQUAL(1, status); //Test fails because of space at the end of the type
         fclose(desc); desc=NULL;
 
@@ -170,12 +170,13 @@ extern "C" {
         status = dynInterface_parse(desc, &dynIntf);
         dynInterface_destroy(dynIntf);
         CHECK_EQUAL(0, status); //Invalid meta type doesn't generate errors, just warnings
-        fclose(desc); desc=NULL;
+        fclose(desc); desc=NULL; dynIntf=NULL;
 
         /* Invalid version section */
         desc = fopen("descriptors/invalids/invalidVersion.descriptor", "r");
         assert(desc != NULL);
         status = dynInterface_parse(desc, &dynIntf);
+        //dynInterface_destroy(dynIntf);
         CHECK_EQUAL(1, status); //Invalid meta type doesn't generate errors, just warnings
         fclose(desc); desc=NULL;
 

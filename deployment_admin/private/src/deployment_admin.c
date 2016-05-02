@@ -438,8 +438,9 @@ celix_status_t deploymentAdmin_download(deployment_admin_pt admin, char * url, c
 			snprintf(*inputFile, 1024, "%s/%s", dir, "updateXXXXXX");
 		}
 		else {
-				*inputFile = strdup("updateXXXXXX");
+			*inputFile = strdup("updateXXXXXX");
 		}
+		umask(0000);
         int fd = mkstemp(*inputFile);
         if (fd != -1) {
             FILE *fp = fopen(*inputFile, "wb+");
@@ -451,19 +452,22 @@ celix_status_t deploymentAdmin_download(deployment_admin_pt admin, char * url, c
             //curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0);
             //curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, updateCommand_downloadProgress);
             res = curl_easy_perform(curl);
-            if (res != CURLE_OK) {
-                status = CELIX_BUNDLE_EXCEPTION;
-            }
+
             /* always cleanup */
             curl_easy_cleanup(curl);
             fclose(fp);
         }
+        else{
+		status = CELIX_FILE_IO_EXCEPTION;
+        }
 	}
+	else{
+		res = CURLE_FAILED_INIT;
+	}
+
 	if (res != CURLE_OK) {
 		*inputFile[0] = '\0';
 		status = CELIX_ILLEGAL_STATE;
-	} else {
-		status = CELIX_SUCCESS;
 	}
 
 	return status;
