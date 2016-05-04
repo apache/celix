@@ -2486,6 +2486,9 @@ static celix_status_t framework_loadBundleLibraries(framework_pt framework, bund
         if (status == CELIX_SUCCESS) {
             bundle_setHandle(bundle, handle);
         }
+        else if(handle != NULL){
+		fw_closeLibrary(handle);
+        }
     }
 
     framework_logIfError(framework->logger, status, NULL, "Could not load all bundle libraries");
@@ -2527,12 +2530,14 @@ static celix_status_t framework_loadLibraries(framework_pt framework, char *libr
         char *trimmedLib = utils_stringTrim(lib);
         status = framework_loadLibrary(framework, trimmedLib, archive, &handle);
 
-        if (status == CELIX_SUCCESS) {
-            if (activator != NULL) {
-                if (strcmp(trimmedLib, activator) == 0) {
-                    *activatorHandle = handle;
-                }
-            }
+        if( (status == CELIX_SUCCESS) && (activator != NULL) && (strcmp(trimmedLib, activator) == 0) ) {
+		*activatorHandle = handle;
+        }
+        else{
+		*activatorHandle = NULL;
+		if(handle != NULL){
+			fw_closeLibrary(handle);
+		}
         }
 
         token = strtok_r(NULL, ",", &last);

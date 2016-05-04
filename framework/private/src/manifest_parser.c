@@ -174,9 +174,13 @@ static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseStri
 	linked_list_pt clause = NULL;
 	linked_list_pt pieces = NULL;
 
+	if(linkedList_create(&paths) != CELIX_SUCCESS){
+		return NULL;
+	}
+
 	pieces = manifestParser_parseDelimitedString(clauseString, ";");
 
-	if ((pieces != NULL) && (linkedList_create(&paths) == CELIX_SUCCESS)) {
+	if (pieces != NULL) {
 		int pathCount = 0;
 		int pieceIdx;
 		hash_map_pt dirsMap = NULL;
@@ -216,23 +220,25 @@ static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseStri
 					break;
 				}
 
-				key = string_ndup(piece, sepPtr - piece);
-				value = strdup(sepPtr+strlen(sep));
-
-				if (value[0] == '"' && value[strlen(value) -1] == '"') {
-					char * oldV = strdup(value);
-					int len = strlen(oldV) - 2;
-					value = (char *) realloc(value, (sizeof(char) * len+1));
-					value[0] = '\0';
-					value = strncpy(value, oldV+1, strlen(oldV) - 2);
-					value[len] = '\0';
-					//check if correct
-					free(oldV);
-				}
-
 				if (strcmp(sep, DIRECTIVE_SEP) == 0) {
 					// Not implemented
-				} else {
+				}
+				else {
+
+					key = string_ndup(piece, sepPtr - piece);
+					value = strdup(sepPtr+strlen(sep));
+
+					if (value[0] == '"' && value[strlen(value) -1] == '"') {
+						char * oldV = strdup(value);
+						int len = strlen(oldV) - 2;
+						value = (char *) realloc(value, (sizeof(char) * len+1));
+						value[0] = '\0';
+						value = strncpy(value, oldV+1, strlen(oldV) - 2);
+						value[len] = '\0';
+						//check if correct
+						free(oldV);
+					}
+
 					attribute_pt attr = NULL;
 					if (hashMap_containsKey(attrsMap, key)) {
 						failure=true;
@@ -251,6 +257,7 @@ static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseStri
 
 			if(failure){
 				hashMap_destroy(dirsMap,false,false);
+
 				hash_map_iterator_pt attrIter = hashMapIterator_create(attrsMap);
 				while(hashMapIterator_hasNext(attrIter)){
 					hash_map_entry_pt entry = hashMapIterator_nextEntry(attrIter);
@@ -261,15 +268,24 @@ static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseStri
 				}
 				hashMapIterator_destroy(attrIter);
 				hashMap_destroy(attrsMap,false,false);
+
 				if(key!=NULL){
 					free(key);
 				}
 				if(value!=NULL){
 					free(value);
 				}
+
+				linked_list_iterator_pt piter = linkedListIterator_create(paths,0);
+				while(linkedListIterator_hasNext(piter)){
+					free(linkedListIterator_next(piter));
+				}
+				linkedListIterator_destroy(piter);
 				linkedList_destroy(paths);
+
 				if(clause!=NULL){
 					linkedList_destroy(clause);
+					clause = NULL;
 				}
 			}
 			else{
@@ -289,8 +305,9 @@ static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseStri
 		}
 		linkedList_destroy(pieces);
 	}
-
-
+	else{
+		linkedList_destroy(paths);
+	}
 
 	return clause;
 }

@@ -219,7 +219,9 @@ celix_status_t discoveryShmWatcher_destroy(discovery_pt discovery) {
     shm_watcher_pt watcher = discovery->watcher;
     char localNodePath[MAX_LOCALNODE_LENGTH];
 
+    celixThreadMutex_lock(&watcher->watcherLock);
     watcher->running = false;
+    celixThreadMutex_unlock(&watcher->watcherLock);
 
     celixThread_join(watcher->watcherThread, NULL);
 

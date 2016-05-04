@@ -314,7 +314,9 @@ static void *deploymentAdmin_poll(void *deploymentAdmin) {
 					int repoDirLength = strlen(entry) + 5;
 					char repoDir[repoDirLength];
 					snprintf(repoDir, repoDirLength, "%srepo", entry);
-					mkdir(repoDir, S_IRWXU);
+					if( mkdir(repoDir, S_IRWXU) == -1){
+						fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Failed creating directory %s",repoDir);
+					}
 
 					int repoCacheLength = strlen(entry) + strlen(name) + 6;
 					char repoCache[repoCacheLength];
@@ -440,7 +442,7 @@ celix_status_t deploymentAdmin_download(deployment_admin_pt admin, char * url, c
 		else {
 			*inputFile = strdup("updateXXXXXX");
 		}
-		umask(0000);
+		umask(0011);
         int fd = mkstemp(*inputFile);
         if (fd != -1) {
             FILE *fp = fopen(*inputFile, "wb+");

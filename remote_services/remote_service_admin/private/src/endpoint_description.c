@@ -35,25 +35,33 @@
 static celix_status_t endpointDescription_verifyLongProperty(properties_pt properties, char *propertyName, long *longProperty);
 
 celix_status_t endpointDescription_create(properties_pt properties, endpoint_description_pt *endpointDescription) {
-	celix_status_t status;
+	celix_status_t status = CELIX_SUCCESS;
 
-    *endpointDescription = malloc(sizeof(**endpointDescription));
+	long serviceId = 0L;
+	status = endpointDescription_verifyLongProperty(properties, (char *) OSGI_RSA_ENDPOINT_SERVICE_ID, &serviceId);
+	if (status != CELIX_SUCCESS) {
+		return status;
+	}
 
-    long serviceId = 0L;
-    status = endpointDescription_verifyLongProperty(properties, (char *) OSGI_RSA_ENDPOINT_SERVICE_ID, &serviceId);
-    if (status != CELIX_SUCCESS) {
-    	return status;
-    }
+	endpoint_description_pt ep = calloc(1,sizeof(*ep));
 
-    (*endpointDescription)->properties = properties;
-    (*endpointDescription)->frameworkUUID = properties_get(properties, (char *) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
-    (*endpointDescription)->id = properties_get(properties, (char *) OSGI_RSA_ENDPOINT_ID);
-    (*endpointDescription)->service = properties_get(properties, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
-    (*endpointDescription)->serviceId = serviceId;
+    ep->properties = properties;
+    ep->frameworkUUID = properties_get(properties, (char *) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
+    ep->id = properties_get(properties, (char *) OSGI_RSA_ENDPOINT_ID);
+    ep->service = properties_get(properties, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
+    ep->serviceId = serviceId;
 
-    if (!(*endpointDescription)->frameworkUUID || !(*endpointDescription)->id || !(*endpointDescription)->service) {
+    if (!(ep->frameworkUUID) || !(ep->id) || !(ep->service) ) {
     	fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "ENDPOINT_DESCRIPTION: incomplete description!.");
     	status = CELIX_BUNDLE_EXCEPTION;
+    }
+
+    if(status == CELIX_SUCCESS){
+	*endpointDescription = ep;
+    }
+    else{
+	*endpointDescription = NULL;
+	free(ep);
     }
 
     return status;
