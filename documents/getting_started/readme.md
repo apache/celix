@@ -33,7 +33,7 @@ Then create a CMakeLists.txt file - the makefile variant of CMake -in project ro
 #${WS}/myproject/CMakeLists.txt
 	
 #PART 1
-cmake_minimum_required(VERSION 3)
+cmake_minimum_required(VERSION 3.2)
 project(myproject C)
 
 #PART 2
@@ -78,7 +78,8 @@ And add the following CMakeList.txt file:
 
 add_bundle(hello_world
     VERSION 1.0.0
-	SOURCES(private/src/activator)
+	SOURCES
+        private/src/activator
 )	
 ```
 	
