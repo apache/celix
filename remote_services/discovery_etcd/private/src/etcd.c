@@ -310,7 +310,7 @@ bool etcd_del(char* key) {
 
 ///watch
 
-bool etcd_watch(char* key, int index, char* action, char* prevValue, char* value, char* rkey, int* modifiedIndex) {
+bool etcd_watch(char* key, int index, char* action, char* prevValue, char* value, char* rkey, int* modifiedIndex, int* errorCode) {
     json_error_t error;
     json_t* js_root = NULL;
     json_t* js_node = NULL;
@@ -320,7 +320,9 @@ bool etcd_watch(char* key, int index, char* action, char* prevValue, char* value
     json_t* js_rkey = NULL;
     json_t* js_prevValue = NULL;
     json_t* js_modIndex = NULL;
+    json_t* js_error = NULL;	// used to indicate valid json response with ETCD error indication
     bool retVal = false;
+    *errorCode = 0;
     char url[MAX_URL_LENGTH];
     int res;
     struct MemoryStruct reply;
@@ -343,6 +345,7 @@ bool etcd_watch(char* key, int index, char* action, char* prevValue, char* value
             js_action = json_object_get(js_root, ETCD_JSON_ACTION);
             js_node = json_object_get(js_root, ETCD_JSON_NODE);
             js_prevNode = json_object_get(js_root, ETCD_JSON_PREVNODE);
+            js_error = json_object_get(js_root, ETCD_ERROR_INDICATION);
         }
         if (js_prevNode != NULL) {
             js_prevValue = json_object_get(js_prevNode, ETCD_JSON_VALUE);
@@ -372,6 +375,13 @@ bool etcd_watch(char* key, int index, char* action, char* prevValue, char* value
             strncpy(action, json_string_value(js_action), MAX_ACTION_LENGTH);
 
             retVal = true;
+        }
+        if ((js_error != NULL) && (json_is_integer(js_error))) {
+		*errorCode = json_integer_value(js_error);
+		js_modIndex = json_object_get(js_root, ETCD_INDEX);
+		if ((js_modIndex != NULL) && (json_is_integer(js_modIndex))) {
+		    *modifiedIndex = json_integer_value(js_modIndex);
+		}
         }
         if (js_root != NULL) {
             json_decref(js_root);

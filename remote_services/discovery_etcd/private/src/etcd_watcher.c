@@ -264,6 +264,7 @@ static void* etcdWatcher_run(void* data) {
 	time_t timeBeforeWatch = time(NULL);
 	static char rootPath[MAX_ROOTNODE_LENGTH];
 	int highestModified = 0;
+	int errorCode=0;
 
 	bundle_context_pt context = watcher->discovery->context;
 
@@ -276,23 +277,34 @@ static void* etcdWatcher_run(void* data) {
 		char value[MAX_VALUE_LENGTH];
 		char preValue[MAX_VALUE_LENGTH];
 		char action[MAX_ACTION_LENGTH];
-        int modIndex;
+        int modIndex=0;
 
-		if (etcd_watch(rootPath, highestModified + 1, &action[0], &preValue[0], &value[0], &rkey[0], &modIndex) == true) {
-			if (strcmp(action, "set") == 0) {
-				etcdWatcher_addEntry(watcher, &rkey[0], &value[0]);
-			} else if (strcmp(action, "delete") == 0) {
-				etcdWatcher_removeEntry(watcher, &rkey[0], &value[0]);
-			} else if (strcmp(action, "expire") == 0) {
-				etcdWatcher_removeEntry(watcher, &rkey[0], &value[0]);
-			} else if (strcmp(action, "update") == 0) {
-				etcdWatcher_addEntry(watcher, &rkey[0], &value[0]);
-			} else {
-				logHelper_log(*watcher->loghelper, OSGI_LOGSERVICE_INFO, "Unexpected action: %s", action);
-			}
-
-			highestModified = modIndex;
+        if (etcd_watch(rootPath, highestModified + 1, &action[0], &preValue[0], &value[0], &rkey[0], &modIndex, &errorCode) == true) {
+		if (strcmp(action, "set") == 0) {
+			etcdWatcher_addEntry(watcher, &rkey[0], &value[0]);
+		} else if (strcmp(action, "delete") == 0) {
+			etcdWatcher_removeEntry(watcher, &rkey[0], &value[0]);
+		} else if (strcmp(action, "expire") == 0) {
+			etcdWatcher_removeEntry(watcher, &rkey[0], &value[0]);
+		} else if (strcmp(action, "update") == 0) {
+			etcdWatcher_addEntry(watcher, &rkey[0], &value[0]);
+		} else {
+			logHelper_log(*watcher->loghelper, OSGI_LOGSERVICE_INFO, "Unexpected action: %s", action);
 		}
+
+		highestModified = modIndex;
+        }
+        /* prevent busy waiting, in case etcd_watch returns false */
+        else {
+		switch (errorCode) {
+		case 401:
+			// Etcd can store at most 1000 events
+			highestModified = modIndex;
+			break;
+		default:
+			break;
+		}
+        }
 
 		// update own framework uuid
 		if (time(NULL) - timeBeforeWatch > (DEFAULT_ETCD_TTL/2)) {
