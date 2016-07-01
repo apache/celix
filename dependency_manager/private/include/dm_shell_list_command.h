@@ -16,16 +16,23 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * dm_shell_list_command.h
- *
- *  \date       Oct 16, 2015
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
+
+#ifndef DM_SHELL_LIST_COMMAND_H_
+#define DM_SHELL_LIST_COMMAND_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 
 #include "command.h"
 
 void dmListCommand_execute(bundle_context_pt context, char * line, FILE *out, FILE *err);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif //DM_SHELL_LSIT_COMMAND_H_

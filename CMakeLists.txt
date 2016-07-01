@@ -36,7 +36,7 @@ IF (ANDROID)
     SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -Wall ${CMAKE_C_FLAGS}")
 ENDIF()
 IF(UNIX AND NOT ANDROID)
-    SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -Wall -Werror ${CMAKE_C_FLAGS}")
+    SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -Wall -Werror -fPIC ${CMAKE_C_FLAGS}")
     #SET(CMAKE_CXX_FLAGS "-Wall -Werror ${CMAKE_CXX_FLAGS}")
 ENDIF()
 IF(UNIX AND NOT APPLE) 
@@ -46,6 +46,8 @@ ENDIF()
 IF(WIN32)
 	SET(CMAKE_C_FLAGS "-D_CRT_SECURE_NO_WARNINGS ${CMAKE_C_FLAGS}")
 ENDIF()
+
+set(CMAKE_CXX_FLAGS "-std=c++11 -pthread ${CMAKE_CXX_FLAGS}")
 
 # Set version for the framework package/release
 SET(CELIX_MAJOR "1")
@@ -70,7 +72,6 @@ set(DEFAULT_VERSION 1.0.0)
 ## Sub projects depending on another sub project automatically enable these dependencies
 ## For this to work, the order off "add_subdirectory" has to be correct (ie backwards)
 add_subdirectory(config_admin)
-add_subdirectory(examples)
 add_subdirectory(device_access)
 add_subdirectory(deployment_admin)
 add_subdirectory(remote_services)
@@ -83,9 +84,13 @@ add_subdirectory(log_service)
 
 #add_subdirectory(event_admin)# event_admin is unstable
 add_subdirectory(dependency_manager)
+add_subdirectory(dependency_manager_cxx)
 #add_subdirectory(scr) scr still needs APR
 
 add_subdirectory(launcher)
 add_subdirectory(framework)
 add_subdirectory(utils)
 add_subdirectory(dfi)
+
+#Example as last, because some example will check if underlining options are enabled
+add_subdirectory(examples)

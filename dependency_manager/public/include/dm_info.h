@@ -26,6 +26,11 @@
 #ifndef CELIX_DM_INFO_SERVICE_H
 #define CELIX_DM_INFO_SERVICE_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 #include <stdbool.h>
 #include "array_list.h"
 
@@ -60,7 +65,11 @@ struct dm_info_service {
     void (*destroyInfo)(void *handle, dm_dependency_manager_info_pt info);
 };
 
-typedef struct dm_info_service * dm_info_service_pt;
+typedef struct dm_info_service dm_info_service_t;
+typedef dm_info_service_t* dm_info_service_pt;
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif //CELIX_DM_INFO_SERVICE_H

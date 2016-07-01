@@ -27,6 +27,10 @@
 #ifndef DM_EVENT_H_
 #define DM_EVENT_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "service_reference.h"
 #include "bundle_context.h"
 #include "bundle.h"
@@ -61,5 +65,8 @@ celix_status_t event_equals(const void* a, const void* b, bool* equals);
 celix_status_t event_getService(dm_event_pt event, const void** service);
 celix_status_t event_compareTo(dm_event_pt event, dm_event_pt compareTo, int* compare);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* DM_EVENT_H_ */

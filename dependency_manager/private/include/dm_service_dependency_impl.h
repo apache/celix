@@ -27,6 +27,10 @@
 #ifndef DM_SERVICE_DEPENDENCY_IMPL_H_
 #define DM_SERVICE_DEPENDENCY_IMPL_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdbool.h>
 
 #include "dm_event.h"
@@ -43,6 +47,7 @@ struct dm_service_dependency {
 	bool required;
 	dm_service_dependency_strategy_t strategy;
 
+	void* callbackHandle; //This handle can be set to be used instead of the component implementation
 	service_set_fpt set;
 	service_add_fpt add;
 	service_change_fpt change;
@@ -91,5 +96,8 @@ celix_status_t serviceDependency_getAutoConfig(dm_service_dependency_pt dependen
 celix_status_t serviceDependency_unlock(dm_service_dependency_pt dependency);
 celix_status_t serviceDependency_lock(dm_service_dependency_pt dependency);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* DM_SERVICE_DEPENDENCY_IMPL_H_ */

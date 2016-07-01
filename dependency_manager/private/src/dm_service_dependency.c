@@ -36,11 +36,12 @@
 #include "dm_component_impl.h"
 
 #define DEFAULT_RANKING     0
-#define DM_SERVICE_DEPENDENCY_DEFAULT_STRATEGY DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING
+#define DM_SERVICE_DEPENDENCY_DEFAULT_STRATEGY DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND
 
 static celix_status_t serviceDependency_addedService(void *_ptr, service_reference_pt reference, void *service);
 static celix_status_t serviceDependency_modifiedService(void *_ptr, service_reference_pt reference, void *service);
 static celix_status_t serviceDependency_removedService(void *_ptr, service_reference_pt reference, void *service);
+static void* serviceDependency_getCallbackHandle(dm_service_dependency_pt dep);
 
 celix_status_t serviceDependency_create(dm_service_dependency_pt *dependency_ptr) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -55,6 +56,7 @@ celix_status_t serviceDependency_create(dm_service_dependency_pt *dependency_ptr
 		(*dependency_ptr)->required = false;
 		(*dependency_ptr)->strategy = DM_SERVICE_DEPENDENCY_DEFAULT_STRATEGY;
 
+		(*dependency_ptr)->callbackHandle = NULL;
 		(*dependency_ptr)->set = NULL;
 		(*dependency_ptr)->add = NULL;
 		(*dependency_ptr)->change = NULL;
@@ -158,6 +160,7 @@ celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency,
 		array_list_pt filterElements = NULL;
 		arrayList_create(&filterElements);
 
+		free(dependency->tracked_service);
 		dependency->tracked_service = strdup(serviceName);
 
 		if (serviceVersionRange != NULL) {
@@ -212,6 +215,7 @@ celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency,
 		}
 
 		if (filter != NULL) {
+			free(dependency->tracked_filter_unmodified);
 			dependency->tracked_filter_unmodified = strdup(filter);
 			arrayList_add(filterElements, strdup(filter));
 		}
@@ -220,6 +224,7 @@ celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency,
 			array_list_iterator_pt filterElementsIter = arrayListIterator_create(filterElements);
 
 			size_t len = strlen(serviceName) + strlen(OSGI_FRAMEWORK_OBJECTCLASS) + 4;
+			free(dependency->tracked_filter);
 			dependency->tracked_filter = calloc(len, sizeof(*dependency->tracked_filter));
 			snprintf(dependency->tracked_filter, len, "(%s=%s)", OSGI_FRAMEWORK_OBJECTCLASS, serviceName);
 
@@ -245,6 +250,7 @@ celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency,
 			arrayListIterator_destroy(filterElementsIter);
 		}
 		else {
+			free(dependency->tracked_filter);
 			dependency->tracked_filter = NULL;
 		}
 
@@ -471,10 +477,10 @@ celix_status_t serviceDependency_invokeSet(dm_service_dependency_pt dependency, 
 	}
 
 	if (dependency->set) {
-		dependency->set(component_getImplementation(dependency->component), service);
+		dependency->set(serviceDependency_getCallbackHandle(dependency), service);
 	}
 	if (dependency->set_with_ref) {
-		dependency->set_with_ref(component_getImplementation(dependency->component), curServRef, service);
+		dependency->set_with_ref(serviceDependency_getCallbackHandle(dependency), curServRef, service);
 	}
 
 	if (curServRef) {
@@ -493,10 +499,10 @@ celix_status_t serviceDependency_invokeAdd(dm_service_dependency_pt dependency, 
 
 	if (status == CELIX_SUCCESS) {
 		if (dependency->add) {
-			dependency->add(component_getImplementation(dependency->component), event->service);
+			dependency->add(serviceDependency_getCallbackHandle(dependency), event->service);
 		}
 		if (dependency->add_with_ref) {
-			dependency->add_with_ref(component_getImplementation(dependency->component), event->reference, event->service);
+			dependency->add_with_ref(serviceDependency_getCallbackHandle(dependency), event->reference, event->service);
 		}
 	}
 
@@ -512,10 +518,10 @@ celix_status_t serviceDependency_invokeChange(dm_service_dependency_pt dependenc
 
 	if (status == CELIX_SUCCESS) {
 		if (dependency->change) {
-			dependency->change(component_getImplementation(dependency->component), event->service);
+			dependency->change(serviceDependency_getCallbackHandle(dependency), event->service);
 		}
 		if (dependency->change_with_ref) {
-			dependency->change_with_ref(component_getImplementation(dependency->component), event->reference, event->service);
+			dependency->change_with_ref(serviceDependency_getCallbackHandle(dependency), event->reference, event->service);
 		}
 	}
 
@@ -531,10 +537,10 @@ celix_status_t serviceDependency_invokeRemove(dm_service_dependency_pt dependenc
 
 	if (status == CELIX_SUCCESS) {
 		if (dependency->remove) {
-			dependency->remove(component_getImplementation(dependency->component), event->service);
+			dependency->remove(serviceDependency_getCallbackHandle(dependency), event->service);
 		}
 		if (dependency->remove_with_ref) {
-			dependency->remove_with_ref(component_getImplementation(dependency->component), event->reference, event->service);
+			dependency->remove_with_ref(serviceDependency_getCallbackHandle(dependency), event->reference, event->service);
 		}
 	}
 
@@ -550,10 +556,10 @@ celix_status_t serviceDependency_invokeSwap(dm_service_dependency_pt dependency,
 
 	if (status == CELIX_SUCCESS) {
 		if (dependency->swap) {
-			dependency->swap(component_getImplementation(dependency->component), event->service, newEvent->service);
+			dependency->swap(serviceDependency_getCallbackHandle(dependency), event->service, newEvent->service);
 		}
 		if (dependency->swap_with_ref) {
-			dependency->swap_with_ref(component_getImplementation(dependency->component), event->reference, event->service, newEvent->reference, newEvent->service);
+			dependency->swap_with_ref(serviceDependency_getCallbackHandle(dependency), event->reference, event->service, newEvent->reference, newEvent->service);
 		}
 	}
 
@@ -773,4 +779,13 @@ void dependency_destroyDependencyInfo(dm_service_dependency_info_pt info) {
 		free(info->filter);
 	}
 	free(info);
+}
+
+celix_status_t serviceDependency_setCallbackHandle(dm_service_dependency_pt dependency, void* handle) {
+	dependency->callbackHandle = handle;
+    return CELIX_SUCCESS;
+}
+
+static void* serviceDependency_getCallbackHandle(dm_service_dependency_pt dependency) {
+    return dependency->callbackHandle == NULL ? component_getImplementation(dependency->component) : dependency->callbackHandle;
 }

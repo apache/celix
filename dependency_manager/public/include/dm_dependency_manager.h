@@ -27,6 +27,10 @@
 #ifndef DM_DEPENDENCY_MANAGER_H_
 #define DM_DEPENDENCY_MANAGER_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "bundle_context.h"
 #include "celix_errno.h"
 #include "array_list.h"
@@ -47,5 +51,9 @@ celix_status_t dependencyManager_removeAllComponents(dm_dependency_manager_pt ma
  */
 celix_status_t dependencyManager_getInfo(dm_dependency_manager_pt manager, dm_dependency_manager_info_pt *info);
 void dependencyManager_destroyInfo(dm_dependency_manager_pt manager, dm_dependency_manager_info_pt info);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* DM_DEPENDENCY_MANAGER_H_ */

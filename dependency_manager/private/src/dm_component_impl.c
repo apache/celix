@@ -1159,7 +1159,7 @@ celix_status_t component_configureImplementation(dm_component_pt component, dm_s
 celix_status_t component_registerServices(dm_component_pt component) {
     celix_status_t status = CELIX_SUCCESS;
 
-    if (component->context) {
+    if (component->context != NULL) {
 	    unsigned int i;
         for (i = 0; i < arrayList_size(component->dm_interfaces); i++) {
             dm_interface_t *interface = arrayList_get(component->dm_interfaces, i);

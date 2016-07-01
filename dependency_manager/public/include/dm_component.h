@@ -27,6 +27,10 @@
 #ifndef COMPONENT_H_
 #define COMPONENT_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <bundle_context.h>
 #include <celix_errno.h>
 
@@ -86,5 +90,8 @@ celix_status_t component_setCallbacks(dm_component_pt component, init_fpt init, 
 celix_status_t component_getComponentInfo(dm_component_pt component, dm_component_info_pt *info);
 void component_destroyComponentInfo(dm_component_info_pt info);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* COMPONENT_H_ */

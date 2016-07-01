@@ -27,6 +27,11 @@
 #ifndef DM_SERVICE_DEPENDENCY_H_
 #define DM_SERVICE_DEPENDENCY_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "service_reference.h"
 #include "celix_errno.h"
 #include "dm_info.h"
 
@@ -73,11 +78,21 @@ celix_status_t serviceDependency_setAutoConfigure(dm_service_dependency_pt depen
 		serviceDependency_setCallbacks((dep), (service_set_fpt)tmpSet, (service_add_fpt)tmpAdd, (service_change_fpt)tmpChange, (service_remove_fpt)tmpRemove, (service_swap_fpt)tmpSwap); \
 	} while(0)
 
+/**
+ * Set the callback handle to be used in the callbacks. Note that this normally should not be set, because the
+ * result of component_getImplementation() is used
+ * This can be used in rare cases when the callbacks are actually interceptors. e.g. in the case of C++ support.
+ */
+celix_status_t serviceDependency_setCallbackHandle(dm_service_dependency_pt dependency, void* handle);
 
 /**
  * Return a service dependency info. The caller is the owner
  */
 celix_status_t serviceDependency_getServiceDependencyInfo(dm_service_dependency_pt, dm_service_dependency_info_pt *info);
 void dependency_destroyDependencyInfo(dm_service_dependency_info_pt info);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* DM_SERVICE_DEPENDENCY_H_ */
