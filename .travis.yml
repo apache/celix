@@ -98,3 +98,4 @@ after_success:
         lcx="lcov --output-file=coverage.info " && for i in `find . -name "*.info.cleaned"`; do lcx+=" --add-tracefile=$i"; done && $lcx && coveralls-lcov --repo-token=9dpeTAjiGoQU5hgXFe0ezk65iu40oc3WY coverage.info;
         if [ $(( $TRAVIS_BUILD_NUMBER  % 5 )) -eq 0 -o ${COVERITY_SCAN_ALWAYS_ON} = "y" ]; then make clean & eval "$COVERITY_SCAN_BUILD"; fi
       fi;
+
