@@ -174,7 +174,7 @@ celix_status_t configuration_create2(configuration_admin_factory_pt factory, con
 	configuration_impl_pt conf_impl;
 
     celix_thread_mutexattr_t	mutex_attr;
-    char *value;
+    const char *value;
 
 	config = calloc(1, sizeof(struct configuration));
     if (config == NULL) return CELIX_ENOMEM;

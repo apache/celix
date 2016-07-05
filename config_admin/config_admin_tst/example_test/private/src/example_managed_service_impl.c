@@ -68,8 +68,8 @@ celix_status_t managedServiceImpl_updated(managed_service_pt managedService, pro
 		msp->store_props(msp->handle, "", "");
 	}else{
 		printf("[ managedServiceImpl ]: updated - Received New Properties \n");
-		char *value = properties_get(properties, "type");
-		char *value2 = properties_get(properties, "second_type");
+		char *value = (char*)properties_get(properties, "type");
+		char *value2 = (char*)properties_get(properties, "second_type");
 		msp->store_props(msp->handle, value, value2);
 		// it would be nicer if we get the property values here and store them in the activator structure.
 	}
