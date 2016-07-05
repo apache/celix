@@ -60,7 +60,7 @@ static celix_status_t discoveryShmWatcher_getRootPath(char* rootNode) {
 static celix_status_t discoveryShmWatcher_getLocalNodePath(bundle_context_pt context, char* localNodePath) {
     celix_status_t status;
     char rootPath[MAX_ROOTNODE_LENGTH];
-    char* uuid = NULL;
+    const char* uuid = NULL;
 
     status = discoveryShmWatcher_getRootPath(&rootPath[0]);
 

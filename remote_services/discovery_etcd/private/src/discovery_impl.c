@@ -109,8 +109,8 @@ celix_status_t discovery_destroy(discovery_pt discovery) {
 
 celix_status_t discovery_start(discovery_pt discovery) {
     celix_status_t status = CELIX_SUCCESS;
-	char *port = NULL;
-	char *path = NULL;
+	const char *port = NULL;
+	const char *path = NULL;
 
 	logHelper_start(discovery->loghelper);
 
@@ -138,7 +138,6 @@ celix_status_t discovery_start(discovery_pt discovery) {
     if (status != CELIX_SUCCESS) {
     	return CELIX_BUNDLE_EXCEPTION;
     }
-
     return status;
 }
 

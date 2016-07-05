@@ -59,7 +59,7 @@ char * string_ndup(const char *s, size_t n) {
 }
 
 char * utils_stringTrim(char * string) {
-	char * copy = string;
+	char* copy = string;
 
 	char *end;
 	// Trim leading space
@@ -70,13 +70,21 @@ char * utils_stringTrim(char * string) {
 	// Trim trailing space
 	end = copy + strlen(copy) - 1;
 	while(end > copy && isspace(*end)) {
-		*(end) = 0;
+		*(end) = '\0';
 		end--;
 	}
 
+	if (copy != string) { 
+		//beginning whitespaces -> move char in copy to to begin string
+		//This to ensure free still works on the same pointer.
+		char* nstring = string;
+		while(*copy != '\0') {
+			*(nstring++) = *(copy++);
+		}
+		(*nstring) = '\0';
+	}
 
-
-	return copy;
+	return string;
 }
 
 bool utils_isStringEmptyOrNull(const char * const str) {

@@ -67,19 +67,19 @@ celix_status_t endpointDiscoveryPoller_create(discovery_pt discovery, bundle_con
 		return status;
 	}
 
-	char* interval = NULL;
+	const char* interval = NULL;
 	status = bundleContext_getProperty(context, DISCOVERY_POLL_INTERVAL, &interval);
 	if (!interval) {
 		interval = DEFAULT_POLL_INTERVAL;
 	}
 
-	char* endpoints = NULL;
-	status = bundleContext_getProperty(context, DISCOVERY_POLL_ENDPOINTS, &endpoints);
-	if (!endpoints) {
-		endpoints = DEFAULT_POLL_ENDPOINTS;
+	const char* endpointsProp = NULL;
+	status = bundleContext_getProperty(context, DISCOVERY_POLL_ENDPOINTS, &endpointsProp);
+	if (!endpointsProp) {
+		endpointsProp = DEFAULT_POLL_ENDPOINTS;
 	}
 	// we're going to mutate the string with strtok, so create a copy...
-	endpoints = strdup(endpoints);
+	char* endpoints = strdup(endpointsProp);
 
 	(*poller)->poll_interval = atoi(interval);
 	(*poller)->discovery = discovery;

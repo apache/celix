@@ -97,7 +97,7 @@ celix_status_t deploymentAdmin_create(bundle_context_pt context, deployment_admi
 		(*admin)->pollUrl = NULL;
 		(*admin)->auditlogUrl = NULL;
 
-        bundleContext_getProperty(context, IDENTIFICATION_ID, &(*admin)->targetIdentification);
+        bundleContext_getProperty(context, IDENTIFICATION_ID, (const char**) &(*admin)->targetIdentification);
 
         struct timeval tv;
 		gettimeofday(&tv,NULL);
@@ -108,7 +108,7 @@ celix_status_t deploymentAdmin_create(bundle_context_pt context, deployment_admi
 		    fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Target name must be set using \"deployment_admin_identification\"");
 			status = CELIX_ILLEGAL_ARGUMENT;
 		} else {
-			char *url = NULL;
+			const char *url = NULL;
 			bundleContext_getProperty(context, DISCOVERY_URL, &url);
 			if (url == NULL) {
 			    fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "URL must be set using \"deployment_admin_url\"\n");
@@ -211,7 +211,7 @@ static celix_status_t deploymentAdmin_performRequest(deployment_admin_pt admin, 
 static celix_status_t deploymentAdmin_auditEventTargetPropertiesSet(deployment_admin_pt admin) {
     celix_status_t status = CELIX_SUCCESS;
 
-    char *tags = NULL;
+    const char *tags = NULL;
 
     bundleContext_getProperty(admin->context, DEPLOYMENT_TAGS, &tags);
 
@@ -433,7 +433,7 @@ celix_status_t deploymentAdmin_download(deployment_admin_pt admin, char * url, c
 	CURLcode res = 0;
 	curl = curl_easy_init();
 	if (curl) {
-		char *dir = NULL;
+		const char *dir = NULL;
 		bundleContext_getProperty(admin->context, DEPLOYMENT_CACHE_DIR, &dir);
 		if (dir != NULL) {
 			*inputFile = calloc(1024, sizeof (char));

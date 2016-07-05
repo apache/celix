@@ -407,7 +407,7 @@ celix_status_t remoteServiceAdmin_removeSharedIdentityFile(remote_service_admin_
 
 celix_status_t remoteServiceAdmin_removeSharedIdentityFiles(remote_service_admin_pt admin) {
 	char tmpDir[RSA_FILEPATH_LENGTH];
-	char* fwUuid = NULL;
+	const char* fwUuid = NULL;
 	bundleContext_getProperty(admin->context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &fwUuid);
 
 	snprintf(tmpDir, RSA_FILEPATH_LENGTH, "%s/%s", P_tmpdir, fwUuid);
@@ -463,8 +463,8 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 	array_list_pt references = NULL;
 	service_reference_pt reference = NULL;
 	char filter[256];
-	char *exports = NULL;
-	char *provided = NULL;
+	const char *exportsProp = NULL;
+	const char *providedProp = NULL;
 
 	snprintf(filter, 256, "(%s=%s)", (char *) OSGI_FRAMEWORK_SERVICE_ID, serviceId);
 
@@ -476,9 +476,11 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 
 	arrayList_destroy(references);
 
-	serviceReference_getProperty(reference, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, &exports);
-	serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_OBJECTCLASS, &provided);
+	serviceReference_getProperty(reference, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, &exportsProp);
+	serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_OBJECTCLASS, &providedProp);
 
+	char* exports = strndup(exportsProp, 1024*10);
+	char* provided = strndup(providedProp, 1024*10);
 
 	if (reference == NULL) {
 		logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "expected a reference for service id %s.", serviceId);
@@ -556,6 +558,9 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 		}
 		arrayList_destroy(interfaces);
 	}
+
+	free(exports);
+	free(provided);
 
 	return status;
 }
@@ -729,7 +734,7 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
 	serviceReference_getPropertyKeys(reference, &keys, &size);
 	for (int i = 0; i < size; i++) {
 		char *key = keys[i];
-		char *value = NULL;
+		const char *value = NULL;
 
 		if (serviceReference_getProperty(reference, key, &value) == CELIX_SUCCESS && strcmp(key, (char*) OSGI_RSA_SERVICE_EXPORTED_INTERFACES) != 0 && strcmp(key, (char*) OSGI_FRAMEWORK_OBJECTCLASS) != 0) {
 			properties_set(endpointProperties, key, value);
@@ -740,7 +745,7 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
 
 	char* key = hashMapEntry_getKey(entry);
 	char *serviceId = (char *) hashMap_remove(endpointProperties, (void *) OSGI_FRAMEWORK_SERVICE_ID);
-	char *uuid = NULL;
+	const char *uuid = NULL;
 
 	uuid_t endpoint_uid;
 	uuid_generate(endpoint_uid);
@@ -758,8 +763,8 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
 	if (properties_get(endpointProperties, (char *) RSA_SHM_PATH_PROPERTYNAME) == NULL) {
 		char sharedIdentifierFile[RSA_FILEPATH_LENGTH];
 
-		if (remoteServiceAdmin_getSharedIdentifierFile(admin, uuid, interface, sharedIdentifierFile) == CELIX_SUCCESS) {
-			properties_set(endpointProperties, (char *) RSA_SHM_PATH_PROPERTYNAME, sharedIdentifierFile);
+		if (remoteServiceAdmin_getSharedIdentifierFile(admin, (char*)uuid, interface, sharedIdentifierFile) == CELIX_SUCCESS) {
+			properties_set(endpointProperties, RSA_SHM_PATH_PROPERTYNAME, sharedIdentifierFile);
 		} else {
 			properties_set(endpointProperties, (char *) RSA_SHM_PATH_PROPERTYNAME, (char *) RSA_SHM_DEFAULTPATH);
 		}
@@ -770,7 +775,7 @@ celix_status_t remoteServiceAdmin_installEndpoint(remote_service_admin_pt admin,
 	if (properties_get(endpointProperties, (char *) RSA_SEM_PATH_PROPERTYNAME) == NULL) {
 		char sharedIdentifierFile[RSA_FILEPATH_LENGTH];
 
-		if (remoteServiceAdmin_getSharedIdentifierFile(admin, uuid, interface, sharedIdentifierFile) == CELIX_SUCCESS) {
+		if (remoteServiceAdmin_getSharedIdentifierFile(admin, (char*)uuid, interface, sharedIdentifierFile) == CELIX_SUCCESS) {
 			properties_set(endpointProperties, (char *) RSA_SEM_PATH_PROPERTYNAME, sharedIdentifierFile);
 		} else {
 			properties_set(endpointProperties, (char *) RSA_SEM_PATH_PROPERTYNAME, (char *) RSA_SEM_DEFAULTPATH);
@@ -801,7 +806,7 @@ celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin
 		if (status == CELIX_SUCCESS) {
 			(*description)->properties = endpointProperties;
 			(*description)->frameworkUUID = (char*)properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
-			char *serviceId = NULL;
+			const char *serviceId = NULL;
 			serviceReference_getProperty(reference, (char*)OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
 			(*description)->serviceId = strtoull(serviceId, NULL, 0);
 			(*description)->id = (char*)properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID);

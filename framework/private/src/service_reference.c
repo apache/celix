@@ -196,7 +196,7 @@ celix_status_t serviceReference_getServiceRegistration(service_reference_pt ref,
     return CELIX_SUCCESS;
 }
 
-celix_status_t serviceReference_getProperty(service_reference_pt ref, char *key, char **value) {
+celix_status_t serviceReference_getProperty(service_reference_pt ref, const char* key, const char** value) {
     celix_status_t status = CELIX_SUCCESS;
     properties_pt props = NULL;
     celixThreadRwlock_readLock(&ref->lock);
@@ -289,7 +289,8 @@ celix_status_t serviceReference_compareTo(service_reference_pt reference, servic
 	celix_status_t status = CELIX_SUCCESS;
 
 	long id, other_id;
-	char *id_str, *other_id_str;
+	const char* id_str;
+    const char* other_id_str;
 	serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_ID, &id_str);
 	serviceReference_getProperty(compareTo, (char *) OSGI_FRAMEWORK_SERVICE_ID, &other_id_str);
 
@@ -298,9 +299,10 @@ celix_status_t serviceReference_compareTo(service_reference_pt reference, servic
 
 
 	long rank, other_rank;
-	char *rank_str, *other_rank_str;
-	serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_RANKING, &rank_str);
-	serviceReference_getProperty(compareTo, (char *) OSGI_FRAMEWORK_SERVICE_RANKING, &other_rank_str);
+	const char *rank_str;
+    const char* other_rank_str;
+	serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_RANKING, &rank_str);
+	serviceReference_getProperty(compareTo, OSGI_FRAMEWORK_SERVICE_RANKING, &other_rank_str);
 
 	rank = rank_str == NULL ? 0 : atol(rank_str);
 	other_rank = other_rank_str == NULL ? 0 : atol(other_rank_str);

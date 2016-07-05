@@ -326,7 +326,7 @@ TEST(service_reference, getProperty){
 	properties_pt props = (properties_pt) 0x20;
 	char * key = my_strdup("key");
 	char * value = my_strdup("value");
-	char * get_value = (char*) NULL;
+	const char * get_value = (char*) NULL;
 
 	//test getting a property
 	mock().expectOneCall("serviceRegistration_getProperties")

@@ -51,7 +51,7 @@ void framework_stop(framework_pt framework) {
 	mock_c()->actualCall("framework_stop");
 }
 
-celix_status_t fw_getProperty(framework_pt framework, const char *name, char **value) {
+celix_status_t fw_getProperty(framework_pt framework, const char *name, const char** value) {
 	mock_c()->actualCall("fw_getProperty")
 			->withPointerParameters("framework", framework)
 			->withStringParameters("name", name)

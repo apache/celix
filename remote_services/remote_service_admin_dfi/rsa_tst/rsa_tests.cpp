@@ -126,13 +126,13 @@ extern "C" {
 
     static void testExportService(void) {
         int rc = 0;
-        char *calcId = NULL;
+        const char *calcId = NULL;
         array_list_pt regs = NULL;
 
         rc = serviceReference_getProperty(calcRef, (char *)"service.id", &calcId);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
-        rc = rsa->exportService(rsa->admin, calcId, NULL, &regs);
+        rc = rsa->exportService(rsa->admin, (char*)calcId, NULL, &regs);
         CHECK_EQUAL(CELIX_SUCCESS, rc);
 
         CHECK_EQUAL(1, arrayList_size(regs));

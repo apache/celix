@@ -246,14 +246,14 @@ celix_status_t topologyManager_rsaAdded(void * handle, service_reference_pt refe
 			while (hashMapIterator_hasNext(exportedServicesIterator)) {
 				hash_map_entry_pt entry = hashMapIterator_nextEntry(exportedServicesIterator);
 				service_reference_pt reference = hashMapEntry_getKey(entry);
-				char *serviceId = NULL;
+				const char* serviceId = NULL;
 
-				serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
+				serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
 
 				scope_getExportProperties(manager->scope, reference, &serviceProperties);
 
 				array_list_pt endpoints = NULL;
-				status = rsa->exportService(rsa->admin, serviceId, serviceProperties, &endpoints);
+				status = rsa->exportService(rsa->admin, (char*)serviceId, serviceProperties, &endpoints);
 
 				if (status == CELIX_SUCCESS) {
 					hash_map_pt exports = hashMapEntry_getValue(entry);
@@ -370,10 +370,10 @@ celix_status_t topologyManager_serviceChanged(void *listener, service_event_pt e
 	service_listener_pt listen = listener;
 	topology_manager_pt manager = listen->handle;
 
-	char *export = NULL;
-	char *serviceId = NULL;
-	serviceReference_getProperty(event->reference, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, &export);
-	serviceReference_getProperty(event->reference, (char *) OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
+	const char* export = NULL;
+	const char* serviceId = NULL;
+	serviceReference_getProperty(event->reference, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, &export);
+	serviceReference_getProperty(event->reference, OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
 
 	if (!export) {
 		// Nothing needs to be done: we're not interested...
@@ -382,17 +382,17 @@ celix_status_t topologyManager_serviceChanged(void *listener, service_event_pt e
 
 	switch (event->type) {
 	case OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED:
-		status = topologyManager_addExportedService(manager, event->reference, serviceId);
+		status = topologyManager_addExportedService(manager, event->reference, (char*)serviceId);
 		break;
 	case OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED:
-		status = topologyManager_removeExportedService(manager, event->reference, serviceId);
+		status = topologyManager_removeExportedService(manager, event->reference, (char*)serviceId);
 
 		if (status == CELIX_SUCCESS) {
-			status = topologyManager_addExportedService(manager, event->reference, serviceId);
+			status = topologyManager_addExportedService(manager, event->reference, (char*)serviceId);
 		}
 		break;
 	case OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING:
-		status = topologyManager_removeExportedService(manager, event->reference, serviceId);
+		status = topologyManager_removeExportedService(manager, event->reference, (char*)serviceId);
 		break;
 	case OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED_ENDMATCH:
 		break;
@@ -405,7 +405,7 @@ celix_status_t topologyManager_exportScopeChanged(void *handle, char *filterStr)
 	celix_status_t status = CELIX_SUCCESS;
 	topology_manager_pt manager = (topology_manager_pt) handle;
 	service_registration_pt reg = NULL;
-	char *serviceId = NULL;
+	const char* serviceId = NULL;
 	bool found;
 	properties_pt props;
 	filter_pt filter = filter_create(filterStr);
@@ -436,8 +436,8 @@ celix_status_t topologyManager_exportScopeChanged(void *handle, char *filterStr)
 				status = filter_match(filter, props, &found);
 				if (found) {
 					srvRefs[nrFound] = reference;
-					serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
-					srvIds[nrFound++] = serviceId;
+					serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
+					srvIds[nrFound++] = (char*)serviceId;
 				}
 			}
 		}
@@ -448,7 +448,7 @@ celix_status_t topologyManager_exportScopeChanged(void *handle, char *filterStr)
 		if (nrFound > 0) {
 			for (int i = 0; i < nrFound; i++) {
 				// Question: can srvRefs become invalid meanwhile??
-						char *export = NULL;
+				const char* export = NULL;
 				serviceReference_getProperty(srvRefs[i], (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, &export);
 
 				if (export) {
@@ -698,7 +698,7 @@ celix_status_t topologyManager_endpointListenerAdding(void* handle, service_refe
 celix_status_t topologyManager_endpointListenerAdded(void* handle, service_reference_pt reference, void* service) {
 	celix_status_t status = CELIX_SUCCESS;
 	topology_manager_pt manager = handle;
-	char *scope = NULL;
+	const char* scope = NULL;
 
 	logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "TOPOLOGY_MANAGER: Added ENDPOINT_LISTENER");
 
@@ -706,7 +706,7 @@ celix_status_t topologyManager_endpointListenerAdded(void* handle, service_refer
 		hashMap_put(manager->listenerList, reference, NULL);
 		celixThreadMutex_unlock(&manager->listenerListLock);
 
-		serviceReference_getProperty(reference, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
+		serviceReference_getProperty(reference, OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
 
 		filter_pt filter = filter_create(scope);
 		hash_map_iterator_pt refIter = hashMapIterator_create(manager->exportedServices);
@@ -733,7 +733,7 @@ celix_status_t topologyManager_endpointListenerAdded(void* handle, service_refer
 						filter_match(filter, endpoint->properties, &matchResult);
 						if (matchResult) {
 							endpoint_listener_pt listener = (endpoint_listener_pt) service;
-							status = listener->endpointAdded(listener->handle, endpoint, scope);
+							status = listener->endpointAdded(listener->handle, endpoint, (char*)scope);
 						}
 					}
 				}
@@ -783,11 +783,11 @@ celix_status_t topologyManager_notifyListenersEndpointAdded(topology_manager_pt 
 
 		hash_map_iterator_pt iter = hashMapIterator_create(manager->listenerList);
 		while (hashMapIterator_hasNext(iter)) {
-			char *scope = NULL;
+			const char* scope = NULL;
 			endpoint_listener_pt epl = NULL;
 			service_reference_pt reference = hashMapIterator_nextKey(iter);
 
-			serviceReference_getProperty(reference, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
+			serviceReference_getProperty(reference, OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
 
 			status = bundleContext_getService(manager->context, reference, (void **) &epl);
 			if (status == CELIX_SUCCESS) {
@@ -802,7 +802,7 @@ celix_status_t topologyManager_notifyListenersEndpointAdded(topology_manager_pt 
 						bool matchResult = false;
 						filter_match(filter, endpoint->properties, &matchResult);
 						if (matchResult) {
-							status = epl->endpointAdded(epl->handle, endpoint, scope);
+							status = epl->endpointAdded(epl->handle, endpoint, (char*)scope);
 						}
 					} else {
 						status = substatus;
@@ -827,10 +827,10 @@ celix_status_t topologyManager_notifyListenersEndpointRemoved(topology_manager_p
 			endpoint_description_pt endpoint = NULL;
 			endpoint_listener_pt epl = NULL;
 			celix_status_t substatus;
-			char *scope = NULL;
+			const char* scope = NULL;
 
 			service_reference_pt reference = hashMapIterator_nextKey(iter);
-			serviceReference_getProperty(reference, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
+			serviceReference_getProperty(reference, OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
 
 			substatus = bundleContext_getService(manager->context, reference, (void **) &epl);
 
@@ -858,9 +858,9 @@ celix_status_t topologyManager_notifyListenersEndpointRemoved(topology_manager_p
 celix_status_t topologyManager_extendFilter(topology_manager_pt manager, char *filter, char **updatedFilter) {
 	celix_status_t status;
 	bundle_context_pt context = manager->context;
-	char* uuid = NULL;
+	const char* uuid = NULL;
 
-	status = bundleContext_getProperty(context, (char *) OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
+	status = bundleContext_getProperty(context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
 
 	if (!uuid) {
 		logHelper_log(manager->loghelper, OSGI_LOGSERVICE_ERROR, "TOPOLOGY_MANAGER: no framework UUID defined?!");

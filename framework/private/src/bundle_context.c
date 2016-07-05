@@ -362,7 +362,7 @@ celix_status_t bundleContext_removeFrameworkListener(bundle_context_pt context, 
     return status;
 }
 
-celix_status_t bundleContext_getProperty(bundle_context_pt context, const char *name, char **value) {
+celix_status_t bundleContext_getProperty(bundle_context_pt context, const char *name, const char** value) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (context == NULL || name == NULL || *value != NULL) {

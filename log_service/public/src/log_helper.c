@@ -64,7 +64,7 @@ celix_status_t logHelper_create(bundle_context_pt context, log_helper_pt* loghel
 	}
 	else
 	{
-		char* stdOutFallbackStr = NULL;
+		const char* stdOutFallbackStr = NULL;
 		(*loghelper)->bundleContext = context;
 		(*loghelper)->logServiceTracker = NULL;
 		(*loghelper)->stdOutFallback = false;

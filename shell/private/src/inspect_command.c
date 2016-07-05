@@ -143,7 +143,7 @@ celix_status_t inspectCommand_printExportedServices(bundle_context_pt context, a
 									serviceReference_getPropertyKeys(ref, &keys, &size);
 									for (int k = 0; k < size; k++) {
 									    char *key = keys[k];
-									    char *value = NULL;
+									    const char *value = NULL;
 									    serviceReference_getProperty(ref, key, &value);
 
 										fprintf(outStream, "%s = %s\n", key, value);
@@ -239,7 +239,7 @@ celix_status_t inspectCommand_printImportedServices(bundle_context_pt context, a
                                     serviceReference_getPropertyKeys(ref, &keys, &size);
                                     for (int k = 0; k < size; k++) {
                                         char *key = keys[k];
-                                        char *value = NULL;
+                                        const char *value = NULL;
                                         serviceReference_getProperty(ref, key, &value);
 
 										fprintf(outStream, "%s = %s\n", key, value);

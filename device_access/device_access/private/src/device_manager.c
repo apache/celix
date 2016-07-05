@@ -169,8 +169,8 @@ static celix_status_t deviceManager_attachAlgorithm(device_manager_pt manager, s
 
 				serviceReference_getPropertyKeys(ref, &keys, &size);
 				for (int i = 0; i < size; i++) {
-					char *key = keys[i];
-					char *value = NULL;
+					char* key = keys[i];
+					const char* value = NULL;
 					serviceReference_getProperty(ref, key, &value);
 					properties_set(properties, key, value);
 				}
@@ -307,7 +307,7 @@ celix_status_t deviceManager_matchAttachDriver(device_manager_pt manager, driver
 
 celix_status_t deviceManager_noDriverFound(device_manager_pt manager, void *service, service_reference_pt reference) {
 	celix_status_t status = CELIX_SUCCESS;
-    char *objectClass = NULL;
+    const char* objectClass = NULL;
     serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_OBJECTCLASS, &objectClass);
     if (strcmp(objectClass, OSGI_DEVICEACCESS_DRIVER_SERVICE_NAME) == 0) {
         device_service_pt device = service;
@@ -541,8 +541,8 @@ celix_status_t deviceManager_isDriverBundle(device_manager_pt manager, bundle_pt
 				int i;
 				for (i = 0; i < arrayList_size(refs); i++) {
 					service_reference_pt ref = arrayList_get(refs, i);
-                    char *object = NULL;
-                    serviceReference_getProperty(ref, (char *) OSGI_FRAMEWORK_OBJECTCLASS, &object);
+                    const char* object = NULL;
+                    serviceReference_getProperty(ref, OSGI_FRAMEWORK_OBJECTCLASS, &object);
                     if (strcmp(object, "driver") == 0) {
                         *isDriver = true;
                         break;

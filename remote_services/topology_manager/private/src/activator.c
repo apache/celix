@@ -179,8 +179,8 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	endpointListener->endpointRemoved = topologyManager_removeImportedService;
 	activator->endpointListener = endpointListener;
 
-	char *uuid = NULL;
-	status = bundleContext_getProperty(activator->context, (char *) OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
+	const char *uuid = NULL;
+	status = bundleContext_getProperty(activator->context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
 	if (!uuid) {
 		logHelper_log(activator->loghelper, OSGI_LOGSERVICE_ERROR, "TOPOLOGY_MANAGER: no framework UUID defined?!");
 		return CELIX_ILLEGAL_STATE;
@@ -228,10 +228,10 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	int i;
 	for (i = 0; i < arrayList_size(references); i++) {
 		service_reference_pt reference = arrayList_get(references, i);
-		char *serviceId = NULL;
-		status = CELIX_DO_IF(status, serviceReference_getProperty(reference, (char *)OSGI_FRAMEWORK_SERVICE_ID, &serviceId));
+		const char* serviceId = NULL;
+		status = CELIX_DO_IF(status, serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_ID, &serviceId));
 
-		CELIX_DO_IF(status, topologyManager_addExportedService(activator->manager, reference, serviceId));
+		CELIX_DO_IF(status, topologyManager_addExportedService(activator->manager, reference, (char*)serviceId));
 	}
 	arrayList_destroy(references);
 

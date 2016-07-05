@@ -110,7 +110,7 @@ celix_status_t shell_destroy(shell_service_pt *shell_service_ptr) {
 celix_status_t shell_addCommand(shell_pt shell_ptr, service_reference_pt reference_ptr, void *svc) {
     celix_status_t status = CELIX_SUCCESS;
     command_service_pt command_ptr = NULL;
-    char *name_str = NULL;
+    const char *name_str = NULL;
 
     if (!shell_ptr || !reference_ptr) {
         return CELIX_ILLEGAL_ARGUMENT;
@@ -129,7 +129,7 @@ celix_status_t shell_addCommand(shell_pt shell_ptr, service_reference_pt referen
     }
 
     if (status == CELIX_SUCCESS) {
-        hashMap_put(shell_ptr->command_name_map_ptr, name_str, command_ptr);
+        hashMap_put(shell_ptr->command_name_map_ptr, (char *)name_str, command_ptr);
         hashMap_put(shell_ptr->command_reference_map_ptr, reference_ptr, command_ptr);
     }
 
@@ -147,7 +147,7 @@ celix_status_t shell_removeCommand(shell_pt shell_ptr, service_reference_pt refe
     celix_status_t status = CELIX_SUCCESS;
 
     command_service_pt command_ptr = NULL;
-    char *name_str = NULL;
+    const char *name_str = NULL;
 
     if (!shell_ptr || !reference_ptr) {
         status = CELIX_ILLEGAL_ARGUMENT;
@@ -168,7 +168,7 @@ celix_status_t shell_removeCommand(shell_pt shell_ptr, service_reference_pt refe
     }
 
     if (status == CELIX_SUCCESS) {
-        hashMap_remove(shell_ptr->command_name_map_ptr, name_str);
+        hashMap_remove(shell_ptr->command_name_map_ptr, (char *)name_str);
     }
 
     return status;
@@ -220,7 +220,7 @@ celix_status_t shell_getCommandUsage(shell_pt shell_ptr, char *command_name_str,
 	}
 
 	if (status == CELIX_SUCCESS) {
-		status = serviceReference_getProperty(reference, "command.usage", usage_pstr);
+		status = serviceReference_getProperty(reference, "command.usage", (const char**)usage_pstr);
 	}
 
 	return status;
@@ -243,7 +243,7 @@ celix_status_t shell_getCommandDescription(shell_pt shell_ptr, char *command_nam
 	}
 
 	if (status == CELIX_SUCCESS) {
-		serviceReference_getProperty(reference, "command.description", command_description_pstr);
+		serviceReference_getProperty(reference, "command.description", (const char**)command_description_pstr);
 	}
 
 	return status;
@@ -262,7 +262,7 @@ celix_status_t shell_getCommandReference(shell_pt shell_ptr, char *command_name_
 		while (hashMapIterator_hasNext(iter)) {
 			hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
 			service_reference_pt reference = hashMapEntry_getKey(entry);
-			char *name_str = NULL;
+			const char *name_str = NULL;
 			serviceReference_getProperty(reference, "command.name", &name_str);
 			if (strcmp(name_str, command_name_str) == 0) {
 				*command_reference_ptr = (service_reference_pt) hashMapEntry_getKey(entry);

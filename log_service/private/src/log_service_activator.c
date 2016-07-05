@@ -158,7 +158,7 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt contex
 static celix_status_t bundleActivator_getMaxSize(struct logActivator *activator, int *max_size) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	char *max_size_str = NULL;
+	const char *max_size_str = NULL;
 
 	*max_size = DEFAULT_MAX_SIZE;
 
@@ -173,7 +173,7 @@ static celix_status_t bundleActivator_getMaxSize(struct logActivator *activator,
 static celix_status_t bundleActivator_getStoreDebug(struct logActivator *activator, bool *store_debug) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	char *store_debug_str = NULL;
+	const char *store_debug_str = NULL;
 
 	*store_debug = DEFAULT_STORE_DEBUG;
 

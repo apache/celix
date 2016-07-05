@@ -112,7 +112,7 @@ celix_status_t serviceReference_getServiceRegistration(service_reference_pt refe
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t serviceReference_getProperty(service_reference_pt reference, char *key, char **value){
+celix_status_t serviceReference_getProperty(service_reference_pt reference, const char *key, const char** value){
 	mock_c()->actualCall("serviceReference_getProperty")
 			->withPointerParameters("reference", reference)
 			->withStringParameters("key", key)

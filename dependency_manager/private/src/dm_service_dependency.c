@@ -435,7 +435,7 @@ celix_status_t serviceDependency_invokeSet(dm_service_dependency_pt dependency, 
 	/* Find the service with the higest ranking */
 	for (i = 0; i < arrayList_size(serviceReferences); i++) {
 		service_reference_pt serviceReference = arrayList_get(serviceReferences, i);
-		char *ranking_value;
+		const char* ranking_value;
 		int ranking = 0;
 
 		status = serviceReference_getProperty(serviceReference, ((char *) OSGI_FRAMEWORK_SERVICE_RANKING), &ranking_value);

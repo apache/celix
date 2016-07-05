@@ -39,13 +39,13 @@ celix_status_t event_create(dm_event_type_e event_type, bundle_pt bundle, bundle
 		status = CELIX_ENOMEM;
 	}
 
-	char *serviceIdStr = NULL;
-	serviceReference_getProperty(reference, (char *)OSGI_FRAMEWORK_SERVICE_ID, &serviceIdStr);
+	const char* serviceIdStr = NULL;
+	serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_ID, &serviceIdStr);
 	long servId = atol(serviceIdStr);
 
 	//FIXME service ranking can dynamicly change, but service reference can be removed at any time.
-	char *rankingStr = NULL;
-	serviceReference_getProperty(reference, (char *)OSGI_FRAMEWORK_SERVICE_RANKING, &rankingStr);
+	const char* rankingStr = NULL;
+	serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_RANKING, &rankingStr);
 	long ranking = rankingStr == NULL ? 0 : atol(rankingStr);
 
 	if (status == CELIX_SUCCESS) {

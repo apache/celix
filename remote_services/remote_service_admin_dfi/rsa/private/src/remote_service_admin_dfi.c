@@ -127,8 +127,8 @@ celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_servi
         status = CELIX_ENOMEM;
     } else {
         unsigned int port_counter = 0;
-        char *port = NULL;
-        char *ip = NULL;
+        const char *port = NULL;
+        const char *ip = NULL;
         char *detectedIp = NULL;
         (*admin)->context = context;
         (*admin)->exportedServices = hashMap_create(NULL, NULL, NULL, NULL);
@@ -154,10 +154,10 @@ celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_servi
 
         bundleContext_getProperty(context, "RSA_IP", &ip);
         if (ip == NULL) {
-            char *interface = NULL;
+            const char *interface = NULL;
 
             bundleContext_getProperty(context, "RSA_INTERFACE", &interface);
-            if ((interface != NULL) && (remoteServiceAdmin_getIpAdress(interface, &detectedIp) != CELIX_SUCCESS)) {
+            if ((interface != NULL) && (remoteServiceAdmin_getIpAdress((char*)interface, &detectedIp) != CELIX_SUCCESS)) {
                 logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_WARNING, "RSA: Could not retrieve IP adress for interface %s", interface);
             }
 
@@ -201,7 +201,7 @@ celix_status_t remoteServiceAdmin_create(bundle_context_pt context, remote_servi
             }
             else {
             	errno = 0;
-                char* endptr = port;
+                char* endptr = (char*)port;
                 int currentPort = strtol(port, &endptr, 10);
 
                 if (*endptr || errno != 0) {
@@ -407,8 +407,8 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
         status = CELIX_ILLEGAL_STATE;
     }
 
-    char *exports = NULL;
-    char *provided = NULL;
+    const char *exports = NULL;
+    const char *provided = NULL;
     if (status == CELIX_SUCCESS) {
         serviceReference_getProperty(reference, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, &exports);
         serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_OBJECTCLASS, &provided);
@@ -422,11 +422,11 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
     }
 
     if (status == CELIX_SUCCESS) {
-        char *interface = provided;
+        const char *interface = provided;
         endpoint_description_pt endpoint = NULL;
         export_registration_pt registration = NULL;
 
-        remoteServiceAdmin_createEndpointDescription(admin, reference, properties, interface, &endpoint);
+        remoteServiceAdmin_createEndpointDescription(admin, reference, properties, (char*)interface, &endpoint);
         //TOOD precheck if descriptor exists
         status = exportRegistration_create(admin->loghelper, reference, endpoint, admin->context, &registration);
         if (status == CELIX_SUCCESS) {
@@ -495,7 +495,7 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
     serviceReference_getPropertyKeys(reference, &keys, &size);
     for (int i = 0; i < size; i++) {
         char *key = keys[i];
-        char *value = NULL;
+        const char *value = NULL;
 
         if (serviceReference_getProperty(reference, key, &value) == CELIX_SUCCESS
             && strcmp(key, (char*) OSGI_RSA_SERVICE_EXPORTED_INTERFACES) != 0
@@ -508,7 +508,7 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
 
     char* key = hashMapEntry_getKey(entry);
     char *serviceId = (char *) hashMap_remove(endpointProperties, (void *) OSGI_FRAMEWORK_SERVICE_ID);
-    char *uuid = NULL;
+    const char *uuid = NULL;
 
     char buf[512];
     snprintf(buf, 512,  "/service/%s/%s", serviceId, interface);
@@ -544,7 +544,7 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
         status = CELIX_ENOMEM;
     } else {
         (*endpoint)->id = (char*)properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID);
-        char *serviceId = NULL;
+        const char *serviceId = NULL;
         serviceReference_getProperty(reference, (char*) OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
         (*endpoint)->serviceId = strtoull(serviceId, NULL, 0);
         (*endpoint)->frameworkUUID = (char*) properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
@@ -685,7 +685,7 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
     // assume the default timeout
     int timeout = DEFAULT_TIMEOUT;
 
-    char *timeoutStr = NULL;
+    const char *timeoutStr = NULL;
     // Check if the endpoint has a timeout, if so, use it.
     timeoutStr = (char*) properties_get(endpointDescription->properties, (char*) OSGI_RSA_REMOTE_PROXY_TIMEOUT);
     if (timeoutStr == NULL) {

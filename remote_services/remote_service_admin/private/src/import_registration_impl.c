@@ -116,7 +116,7 @@ celix_status_t importRegistrationFactory_open(import_registration_factory_pt reg
 {
 	celix_status_t status;
 
-	char *bundleStore = NULL;
+	const char *bundleStore = NULL;
 	bundleContext_getProperty(registration_factory->context, BUNDLE_STORE_PROPERTY_NAME, &bundleStore);
 
 	if (bundleStore == NULL) {

@@ -111,7 +111,7 @@ celix_status_t consumingDriver_match(void *driverHandler, service_reference_pt r
 	int match=0;
 	celix_status_t status = CELIX_SUCCESS;
 
-    char *category = NULL;
+    const char* category = NULL;
     status = serviceReference_getProperty(reference, OSGI_DEVICEACCESS_DEVICE_CATEGORY, &category);
     if (status == CELIX_SUCCESS) {
         if (strcmp(category, REFINING_DRIVER_DEVICE_CATEGORY) == 0) {

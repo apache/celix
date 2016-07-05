@@ -26,7 +26,7 @@ static celix_status_t dfi_findFileForFramework(bundle_context_pt context, const 
 
     char pwd[1024];
     char path[1024];
-    char *extPath = NULL;
+    const char *extPath = NULL;
    
     status = bundleContext_getProperty(context, "CELIX_FRAMEWORK_EXTENDER_PATH", &extPath);
     if (status != CELIX_SUCCESS || extPath == NULL) {

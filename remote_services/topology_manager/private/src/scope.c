@@ -286,7 +286,7 @@ celix_status_t scope_getExportProperties(scope_pt scope, service_reference_pt re
     serviceReference_getPropertyKeys(reference, &keys, &size);
     for (int i = 0; i < size; i++) {
         char *key = keys[i];
-        char *value = NULL;
+        const char* value = NULL;
 
         if (serviceReference_getProperty(reference, key, &value) == CELIX_SUCCESS) {
 //        		&& strcmp(key, (char*) OSGI_RSA_SERVICE_EXPORTED_INTERFACES) != 0

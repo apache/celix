@@ -215,7 +215,8 @@ celix_status_t driverMatcher_getBestMatchInternal(driver_matcher_pt matcher, mat
 			celix_status_t substatus = driverAttributes_getReference(attributes, &reference);
 			if (substatus == CELIX_SUCCESS) {
 				if (best != NULL) {
-					char *rank1Str, *rank2Str;
+					const char* rank1Str;
+					const char* rank2Str;
 					int rank1, rank2;
 
 					rank1Str = "0";
@@ -223,8 +224,8 @@ celix_status_t driverMatcher_getBestMatchInternal(driver_matcher_pt matcher, mat
 
 					logHelper_log(matcher->loghelper, OSGI_LOGSERVICE_DEBUG, "DRIVER_MATCHER: Compare ranking");
 
-					serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_RANKING, &rank1Str);
-					serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_RANKING, &rank2Str);
+					serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_RANKING, &rank1Str);
+					serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_RANKING, &rank2Str);
 
 					rank1 = atoi(rank1Str);
 					rank2 = atoi(rank2Str);
@@ -234,7 +235,8 @@ celix_status_t driverMatcher_getBestMatchInternal(driver_matcher_pt matcher, mat
 							best = reference;
 						}
 					} else {
-						char *id1Str, *id2Str;
+						const char* id1Str;
+						const char* id2Str;
 						long id1, id2;
 
 						id1Str = NULL;
@@ -242,8 +244,8 @@ celix_status_t driverMatcher_getBestMatchInternal(driver_matcher_pt matcher, mat
 
 						logHelper_log(matcher->loghelper, OSGI_LOGSERVICE_DEBUG, "DRIVER_MATCHER: Compare id's");
 
-						serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_ID, &id1Str);
-						serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_ID, &id2Str);
+						serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_ID, &id1Str);
+						serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_ID, &id2Str);
 
 						id1 = atol(id1Str);
 						id2 = atol(id2Str);

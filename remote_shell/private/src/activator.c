@@ -131,12 +131,12 @@ static int bundleActivator_getMaximumConnections(bundle_instance_pt bi, bundle_c
 }
 
 static int bundleActivator_getProperty(bundle_instance_pt bi, bundle_context_pt context, char* propertyName, int defaultValue) {
-	char *strValue = NULL;
+	const char *strValue = NULL;
 	int value;
 
 	bundleContext_getProperty(context, propertyName, &strValue);
 	if (strValue != NULL) {
-		char* endptr = strValue;
+		char* endptr = (char*)strValue;
 
 		errno = 0;
 		value = strtol(strValue, &endptr, 10);

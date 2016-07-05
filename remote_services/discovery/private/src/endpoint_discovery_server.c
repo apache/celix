@@ -66,7 +66,7 @@ struct endpoint_discovery_server {
 
 // Forward declarations...
 static int endpointDiscoveryServer_callback(struct mg_connection *conn);
-static char* format_path(char* path);
+static char* format_path(const char* path);
 
 #ifndef ANDROID
 static celix_status_t endpointDiscoveryServer_getIpAdress(char* interface, char** ip);
@@ -75,10 +75,10 @@ static celix_status_t endpointDiscoveryServer_getIpAdress(char* interface, char*
 celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_context_pt context, endpoint_discovery_server_pt *server) {
 	celix_status_t status;
 
-	char *port = NULL;
-	char *ip = NULL;
+	const char *port = NULL;
+	const char *ip = NULL;
 	char *detectedIp = NULL;
-	char *path = NULL;
+	const char *path = NULL;
 
 	*server = malloc(sizeof(struct endpoint_discovery_server));
 	if (!*server) {
@@ -99,10 +99,10 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 	bundleContext_getProperty(context, DISCOVERY_SERVER_IP, &ip);
 #ifndef ANDROID
 	if (ip == NULL) {
-		char *interface = NULL;
+		const char *interface = NULL;
 
 		bundleContext_getProperty(context, DISCOVERY_SERVER_INTERFACE, &interface);
-		if ((interface != NULL) && (endpointDiscoveryServer_getIpAdress(interface, &detectedIp) != CELIX_SUCCESS)) {
+		if ((interface != NULL) && (endpointDiscoveryServer_getIpAdress((char*)interface, &detectedIp) != CELIX_SUCCESS)) {
 			logHelper_log(*(*server)->loghelper, OSGI_LOGSERVICE_WARNING, "Could not retrieve IP adress for interface %s", interface);
 		}
 
@@ -161,7 +161,7 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 		}
 		else {
 			errno = 0;
-			char* endptr = port;
+			char* endptr = (char*)port;
 			long currentPort = strtol(port, &endptr, 10);
 
 			if (*endptr || errno != 0) {
@@ -273,8 +273,9 @@ celix_status_t endpointDiscoveryServer_removeEndpoint(endpoint_discovery_server_
 	return status;
 }
 
-static char* format_path(char* path) {
-	char* result = strdup(utils_stringTrim(path));
+static char* format_path(const char* path) {
+	char* result = strdup(path);
+	result = utils_stringTrim(result);
 	// check whether the path starts with a leading slash...
 	if (result[0] != '/') {
 		size_t len = strlen(result);

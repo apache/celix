@@ -185,7 +185,7 @@ celix_status_t bundleContext_removeBundleListener(bundle_context_pt context, bun
 }
 
 
-celix_status_t bundleContext_getProperty(bundle_context_pt context, const char *name, char **value) {
+celix_status_t bundleContext_getProperty(bundle_context_pt context, const char *name, const char** value) {
 	mock_c()->actualCall("bundleContext_getProperty")
 			->withPointerParameters("context", context)
 			->withStringParameters("name", name)

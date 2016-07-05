@@ -54,7 +54,7 @@ static void exportRegistration_removeServ(export_registration_pt reg, service_re
 celix_status_t exportRegistration_create(log_helper_pt helper, service_reference_pt reference, endpoint_description_pt endpoint, bundle_context_pt context, export_registration_pt *out) {
     celix_status_t status = CELIX_SUCCESS;
 
-    char *servId = NULL;
+    const char *servId = NULL;
     status = serviceReference_getProperty(reference, "service.id", &servId);
     if (status != CELIX_SUCCESS) {
         logHelper_log(helper, OSGI_LOGSERVICE_WARNING, "Cannot find service.id for ref");
@@ -78,7 +78,7 @@ celix_status_t exportRegistration_create(log_helper_pt helper, service_reference
         celixThreadMutex_create(&reg->mutex, NULL);
     }
 
-    char *exports = NULL;
+    const char *exports = NULL;
     CELIX_DO_IF(status, serviceReference_getProperty(reference, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, &exports));
 
     bundle_pt bundle = NULL;

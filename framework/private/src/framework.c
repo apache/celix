@@ -518,14 +518,14 @@ void framework_stop(framework_pt framework) {
 	fw_stopBundle(framework, framework->bundle, true);
 }
 
-celix_status_t fw_getProperty(framework_pt framework, const char *name, char **value) {
+celix_status_t fw_getProperty(framework_pt framework, const char *name, const char** value) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (framework == NULL || name == NULL || *value != NULL) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
 		if (framework->configurationMap != NULL) {
-			*value = (char*) properties_get(framework->configurationMap, name);
+			*value = properties_get(framework->configurationMap, name);
 		}
 		if (*value == NULL) {
 			*value = getenv(name);
