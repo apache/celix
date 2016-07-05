@@ -63,10 +63,10 @@ TEST(properties, load) {
 	properties = properties_load(propertiesFile);
 	LONGS_EQUAL(3, hashMap_size(properties));
 
-	char keyA[] = "a";
-	char *valueA = properties_get(properties, keyA);
+	const char keyA[] = "a";
+	const char *valueA = properties_get(properties, keyA);
 	STRCMP_EQUAL("b", valueA);
-	char keyB[] = "b";
+	const char keyB[] = "b";
 	STRCMP_EQUAL("c", properties_get(properties, keyB));
 
 	properties_destroy(properties);
@@ -95,9 +95,9 @@ TEST(properties, copy) {
 	properties_copy(properties, &copy);
 
 	char keyA[] = "a";
-	char *valueA = properties_get(copy, keyA);
+	const char *valueA = properties_get(copy, keyA);
 	STRCMP_EQUAL("b", valueA);
-	char keyB[] = "b";
+	const char keyB[] = "b";
 	STRCMP_EQUAL("c", properties_get(copy, keyB));
 
 	properties_destroy(properties);

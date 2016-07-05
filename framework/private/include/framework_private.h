@@ -104,18 +104,18 @@ FRAMEWORK_EXPORT celix_status_t fw_startBundle(framework_pt framework, bundle_pt
 FRAMEWORK_EXPORT celix_status_t framework_updateBundle(framework_pt framework, bundle_pt bundle, char *inputFile);
 FRAMEWORK_EXPORT celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool record);
 
-FRAMEWORK_EXPORT celix_status_t fw_registerService(framework_pt framework, service_registration_pt * registration, bundle_pt bundle, char * serviceName, void * svcObj, properties_pt properties);
-FRAMEWORK_EXPORT celix_status_t fw_registerServiceFactory(framework_pt framework, service_registration_pt * registration, bundle_pt bundle, char * serviceName, service_factory_pt factory, properties_pt properties);
+FRAMEWORK_EXPORT celix_status_t fw_registerService(framework_pt framework, service_registration_pt * registration, bundle_pt bundle, const char* serviceName, void* svcObj, properties_pt properties);
+FRAMEWORK_EXPORT celix_status_t fw_registerServiceFactory(framework_pt framework, service_registration_pt * registration, bundle_pt bundle, const char* serviceName, service_factory_pt factory, properties_pt properties);
 FRAMEWORK_EXPORT void fw_unregisterService(service_registration_pt registration);
 
-FRAMEWORK_EXPORT celix_status_t fw_getServiceReferences(framework_pt framework, array_list_pt *references, bundle_pt bundle, const char * serviceName, char * filter);
+FRAMEWORK_EXPORT celix_status_t fw_getServiceReferences(framework_pt framework, array_list_pt *references, bundle_pt bundle, const char* serviceName, char * filter);
 FRAMEWORK_EXPORT celix_status_t framework_ungetServiceReference(framework_pt framework, bundle_pt bundle, service_reference_pt reference);
-FRAMEWORK_EXPORT celix_status_t fw_getService(framework_pt framework, bundle_pt bundle, service_reference_pt reference, void **service);
+FRAMEWORK_EXPORT celix_status_t fw_getService(framework_pt framework, bundle_pt bundle, service_reference_pt reference, void** service);
 FRAMEWORK_EXPORT celix_status_t framework_ungetService(framework_pt framework, bundle_pt bundle, service_reference_pt reference, bool *result);
 FRAMEWORK_EXPORT celix_status_t fw_getBundleRegisteredServices(framework_pt framework, bundle_pt bundle, array_list_pt *services);
 FRAMEWORK_EXPORT celix_status_t fw_getBundleServicesInUse(framework_pt framework, bundle_pt bundle, array_list_pt *services);
 
-FRAMEWORK_EXPORT void fw_addServiceListener(framework_pt framework, bundle_pt bundle, service_listener_pt listener, char * filter);
+FRAMEWORK_EXPORT void fw_addServiceListener(framework_pt framework, bundle_pt bundle, service_listener_pt listener, const char* filter);
 FRAMEWORK_EXPORT void fw_removeServiceListener(framework_pt framework, bundle_pt bundle, service_listener_pt listener);
 
 FRAMEWORK_EXPORT celix_status_t fw_addBundleListener(framework_pt framework, bundle_pt bundle, bundle_listener_pt listener);
@@ -126,7 +126,7 @@ FRAMEWORK_EXPORT celix_status_t fw_removeFrameworkListener(framework_pt framewor
 
 FRAMEWORK_EXPORT void fw_serviceChanged(framework_pt framework, service_event_type_e eventType, service_registration_pt registration, properties_pt oldprops);
 
-FRAMEWORK_EXPORT celix_status_t fw_isServiceAssignable(framework_pt fw, bundle_pt requester, service_reference_pt reference, bool *assignable);
+FRAMEWORK_EXPORT celix_status_t fw_isServiceAssignable(framework_pt fw, bundle_pt requester, service_reference_pt reference, bool* assignable);
 
 //bundle_archive_t fw_createArchive(long id, char * location);
 //void revise(bundle_archive_t archive, char * location);

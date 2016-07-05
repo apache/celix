@@ -589,11 +589,11 @@ celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin
 	if (!*description) {
 		status = CELIX_ENOMEM;
 	} else {
-		(*description)->id = properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID);
+		(*description)->id = (char*)properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID);
 		char *serviceId = NULL;
-		serviceReference_getProperty(reference, (char*) OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
+		serviceReference_getProperty(reference, (char*)OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
 		(*description)->serviceId = strtoull(serviceId, NULL, 0);
-		(*description)->frameworkUUID = properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
+		(*description)->frameworkUUID = (char*)properties_get(endpointProperties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
 		(*description)->service = interface;
 		(*description)->properties = endpointProperties;
 	}
@@ -723,7 +723,7 @@ celix_status_t remoteServiceAdmin_send(remote_service_admin_pt rsa, endpoint_des
 		get.size = 0;
 		get.writeptr = malloc(1);
 
-		char *serviceUrl = properties_get(endpointDescription->properties, (char *) ENDPOINT_URL);
+		const char* serviceUrl = properties_get(endpointDescription->properties, ENDPOINT_URL);
 		if (serviceUrl != NULL) {
 			snprintf(url, 256, "%s", serviceUrl);
 		} else {
@@ -741,10 +741,10 @@ celix_status_t remoteServiceAdmin_send(remote_service_admin_pt rsa, endpoint_des
 		char *timeoutStr = NULL;
 
 		// Check if the endpoint has a timeout, if so, use it.
-		timeoutStr = properties_get(endpointDescription->properties, (char *) OSGI_RSA_REMOTE_PROXY_TIMEOUT);
+		timeoutStr = (char*)properties_get(endpointDescription->properties, OSGI_RSA_REMOTE_PROXY_TIMEOUT);
 		if (timeoutStr == NULL) {
 			// If not, get the global variable and use that one.
-			status = bundleContext_getProperty(rsa->context, (char *) OSGI_RSA_REMOTE_PROXY_TIMEOUT, &timeoutStr);
+			status = bundleContext_getProperty(rsa->context, OSGI_RSA_REMOTE_PROXY_TIMEOUT, &timeoutStr);
 		}
 
 		// Update timeout if a property is used to set it.

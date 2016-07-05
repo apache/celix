@@ -105,7 +105,7 @@ celix_status_t exportRegistration_create(log_helper_pt helper, service_reference
             /* Add the interface version as a property in the properties_map */
             char* intfVersion = NULL;
             dynInterface_getVersionString(reg->intf, &intfVersion);
-            char *serviceVersion = properties_get(endpoint->properties,(char*) CELIX_FRAMEWORK_SERVICE_VERSION);
+            const char *serviceVersion = properties_get(endpoint->properties,(char*) CELIX_FRAMEWORK_SERVICE_VERSION);
             if(serviceVersion!=NULL){
             	if(strcmp(serviceVersion,intfVersion)!=0){
             		logHelper_log(helper, OSGI_LOGSERVICE_WARNING, "Service version (%s) and interface version from the descriptor (%s) are not the same!",serviceVersion,intfVersion);

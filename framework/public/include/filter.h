@@ -34,7 +34,7 @@
 
 typedef struct filter * filter_pt;
 
-FRAMEWORK_EXPORT filter_pt filter_create(char * filterString);
+FRAMEWORK_EXPORT filter_pt filter_create(const char * filterString);
 FRAMEWORK_EXPORT void filter_destroy(filter_pt filter);
 
 FRAMEWORK_EXPORT celix_status_t filter_match(filter_pt filter, properties_pt properties, bool *result);

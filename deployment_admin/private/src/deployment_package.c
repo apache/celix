@@ -177,19 +177,19 @@ celix_status_t deploymentPackage_processEntries(deployment_package_pt package) {
 			bundle_info_pt info = calloc(1, sizeof(*info));
 			info->path = name;
 			info->attributes = values;
-			info->symbolicName = properties_get(values, (char *) OSGI_FRAMEWORK_BUNDLE_SYMBOLICNAME);
-			char *version = properties_get(values, (char *) OSGI_FRAMEWORK_BUNDLE_VERSION);
+			info->symbolicName = (char*)properties_get(values, OSGI_FRAMEWORK_BUNDLE_SYMBOLICNAME);
+			const char *version = properties_get(values, OSGI_FRAMEWORK_BUNDLE_VERSION);
 			info->version = NULL;
-			status = version_createVersionFromString(version, &info->version);
-			char *customizer = properties_get(values, (char *) DEPLOYMENTPACKAGE_CUSTOMIZER);
-			deploymentPackage_parseBooleanHeader(customizer, &info->customizer);
+			status = version_createVersionFromString((char*)version, &info->version);
+			const char *customizer = properties_get(values, DEPLOYMENTPACKAGE_CUSTOMIZER);
+			deploymentPackage_parseBooleanHeader((char*)customizer, &info->customizer);
 
 			arrayList_add(package->bundleInfos, info);
 		} else {
 			resource_info_pt info = calloc(1, sizeof(*info));
 			info->path = name;
 			info->attributes = values;
-			info->resourceProcessor = properties_get(values, (char *) RESOURCE_PROCESSOR);
+			info->resourceProcessor = (char*)properties_get(values,RESOURCE_PROCESSOR);
 
 			arrayList_add(package->resourceInfos, info);
 		}

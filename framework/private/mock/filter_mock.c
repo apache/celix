@@ -27,7 +27,7 @@
 
 #include "filter.h"
 
-filter_pt filter_create(char * filterString) {
+filter_pt filter_create(const char * filterString) {
 	mock_c()->actualCall("filter_create")
 			->withStringParameters("filterString", filterString);
 	return mock_c()->returnValue().value.pointerValue;

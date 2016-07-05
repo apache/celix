@@ -139,7 +139,7 @@ static celix_status_t benchmarkRunner_addedService(void * handle, service_refere
 
 	service_registration_pt registration = NULL;
 	properties_pt properties = NULL;
-	char *serviceName = NULL;
+	const char* serviceName = NULL;
 	serviceReference_getServiceRegistration(reference, &registration);
 	serviceRegistration_getProperties(registration, &properties);
 	serviceName = properties_get(properties, "objectClass");
@@ -167,7 +167,7 @@ static celix_status_t benchmarkRunner_removedService(void * handle, service_refe
 
 	service_registration_pt registration = NULL;
 		properties_pt properties = NULL;
-		char *serviceName = NULL;
+		const char* serviceName = NULL;
 		serviceReference_getServiceRegistration(reference, &registration);
 		serviceRegistration_getProperties(registration, &properties);
 		serviceName = properties_get(properties, "objectClass");

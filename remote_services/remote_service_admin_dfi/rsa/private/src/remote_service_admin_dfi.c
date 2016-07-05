@@ -543,11 +543,11 @@ static celix_status_t remoteServiceAdmin_createEndpointDescription(remote_servic
     if (!*endpoint) {
         status = CELIX_ENOMEM;
     } else {
-        (*endpoint)->id = properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID);
+        (*endpoint)->id = (char*)properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID);
         char *serviceId = NULL;
         serviceReference_getProperty(reference, (char*) OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
         (*endpoint)->serviceId = strtoull(serviceId, NULL, 0);
-        (*endpoint)->frameworkUUID = properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
+        (*endpoint)->frameworkUUID = (char*) properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
         (*endpoint)->service = interface;
         (*endpoint)->properties = endpointProperties;
     }
@@ -678,7 +678,7 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
     get.size = 0;
     get.writeptr = malloc(1);
 
-    char *serviceUrl = properties_get(endpointDescription->properties, (char*) ENDPOINT_URL);
+    char *serviceUrl = (char*)properties_get(endpointDescription->properties, (char*) ENDPOINT_URL);
     char url[256];
     snprintf(url, 256, "%s", serviceUrl);
 
@@ -687,7 +687,7 @@ static celix_status_t remoteServiceAdmin_send(void *handle, endpoint_description
 
     char *timeoutStr = NULL;
     // Check if the endpoint has a timeout, if so, use it.
-    timeoutStr = properties_get(endpointDescription->properties, (char*) OSGI_RSA_REMOTE_PROXY_TIMEOUT);
+    timeoutStr = (char*) properties_get(endpointDescription->properties, (char*) OSGI_RSA_REMOTE_PROXY_TIMEOUT);
     if (timeoutStr == NULL) {
         // If not, get the global variable and use that one.
         bundleContext_getProperty(rsa->context, (char*) OSGI_RSA_REMOTE_PROXY_TIMEOUT, &timeoutStr);

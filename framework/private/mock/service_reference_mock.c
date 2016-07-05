@@ -141,7 +141,7 @@ celix_status_t serviceReference_isValid(service_reference_pt reference, bool *re
 	return mock_c()->returnValue().value.intValue;
 }
 
-bool serviceReference_isAssignableTo(service_reference_pt reference, bundle_pt requester, char * serviceName) {
+bool serviceReference_isAssignableTo(service_reference_pt reference, bundle_pt requester, const char * serviceName) {
 	mock_c()->actualCall("serviceReference_isAssignableTo")
 			->withPointerParameters("reference", reference)
 			->withPointerParameters("requester", requester)

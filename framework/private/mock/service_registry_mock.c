@@ -56,7 +56,7 @@ celix_status_t serviceRegistry_getServicesInUse(service_registry_pt registry, bu
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t serviceRegistry_registerService(service_registry_pt registry, bundle_pt bundle, char * serviceName, void * serviceObject, properties_pt dictionary, service_registration_pt *registration) {
+celix_status_t serviceRegistry_registerService(service_registry_pt registry, bundle_pt bundle, const char* serviceName, void * serviceObject, properties_pt dictionary, service_registration_pt *registration) {
 	mock_c()->actualCall("serviceRegistry_registerService")
 			->withPointerParameters("registry", registry)
 			->withPointerParameters("bundle", bundle)
@@ -67,7 +67,7 @@ celix_status_t serviceRegistry_registerService(service_registry_pt registry, bun
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t serviceRegistry_registerServiceFactory(service_registry_pt registry, bundle_pt bundle, char * serviceName, service_factory_pt factory, properties_pt dictionary, service_registration_pt *registration) {
+celix_status_t serviceRegistry_registerServiceFactory(service_registry_pt registry, bundle_pt bundle, const char* serviceName, service_factory_pt factory, properties_pt dictionary, service_registration_pt *registration) {
 	mock_c()->actualCall("serviceRegistry_registerServiceFactory")
 		->withPointerParameters("registry", registry)
 		->withPointerParameters("bundle", bundle)

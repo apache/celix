@@ -365,7 +365,7 @@ celix_status_t fw_init(framework_pt framework) {
 	        status = CELIX_DO_IF(status, bundle_getState(framework->bundle, &state));
 	        if (status == CELIX_SUCCESS) {
 	            if (state == OSGI_FRAMEWORK_BUNDLE_INSTALLED) {
-	                char *clean = properties_get(framework->configurationMap, (char *) OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN);
+	                const char *clean = properties_get(framework->configurationMap, OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN);
 	                if (clean != NULL && (strcmp(clean, OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT) == 0)) {
 	                    bundleCache_delete(framework->cache);
 	                }
@@ -525,7 +525,7 @@ celix_status_t fw_getProperty(framework_pt framework, const char *name, char **v
 		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
 		if (framework->configurationMap != NULL) {
-			*value = properties_get(framework->configurationMap, (char *) name);
+			*value = (char*) properties_get(framework->configurationMap, name);
 		}
 		if (*value == NULL) {
 			*value = getenv(name);
@@ -1229,7 +1229,7 @@ celix_status_t fw_populateDependentGraph(framework_pt framework, bundle_pt expor
     return status;
 }
 
-celix_status_t fw_registerService(framework_pt framework, service_registration_pt *registration, bundle_pt bundle, char * serviceName, void * svcObj, properties_pt properties) {
+celix_status_t fw_registerService(framework_pt framework, service_registration_pt *registration, bundle_pt bundle, const char* serviceName, void* svcObj, properties_pt properties) {
 	celix_status_t status = CELIX_SUCCESS;
 	char *error = NULL;
 	if (serviceName == NULL || svcObj == NULL) {
@@ -1312,7 +1312,7 @@ celix_status_t fw_registerService(framework_pt framework, service_registration_p
 	return status;
 }
 
-celix_status_t fw_registerServiceFactory(framework_pt framework, service_registration_pt *registration, bundle_pt bundle, char * serviceName, service_factory_pt factory, properties_pt properties) {
+celix_status_t fw_registerServiceFactory(framework_pt framework, service_registration_pt *registration, bundle_pt bundle, const char* serviceName, service_factory_pt factory, properties_pt properties) {
     celix_status_t status = CELIX_SUCCESS;
     char *error = NULL;
 	if (serviceName == NULL || factory == NULL) {
@@ -1352,12 +1352,12 @@ celix_status_t fw_getServiceReferences(framework_pt framework, array_list_pt *re
         for (refIdx = 0; (*references != NULL) && refIdx < arrayList_size(*references); refIdx++) {
             service_reference_pt ref = (service_reference_pt) arrayList_get(*references, refIdx);
             service_registration_pt reg = NULL;
-            char * serviceName;
+            const char* serviceName;
             properties_pt props = NULL;
             status = CELIX_DO_IF(status, serviceReference_getServiceRegistration(ref, &reg));
             status = CELIX_DO_IF(status, serviceRegistration_getProperties(reg, &props));
             if (status == CELIX_SUCCESS) {
-                serviceName = properties_get(props, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
+                serviceName = properties_get(props, OSGI_FRAMEWORK_OBJECTCLASS);
                 if (!serviceReference_isAssignableTo(ref, bundle, serviceName)) {
                     arrayList_remove(*references, refIdx);
                     refIdx--;
@@ -1393,7 +1393,7 @@ celix_status_t framework_ungetService(framework_pt framework, bundle_pt bundle, 
 	return serviceRegistry_ungetService(framework->registry, bundle, reference, result);
 }
 
-void fw_addServiceListener(framework_pt framework, bundle_pt bundle, service_listener_pt listener, char * sfilter) {
+void fw_addServiceListener(framework_pt framework, bundle_pt bundle, service_listener_pt listener, const char* sfilter) {
 	array_list_pt listenerHooks = NULL;
 	listener_hook_info_pt info;
 	unsigned int i;

@@ -46,7 +46,7 @@ void properties_destroy(properties_pt properties) {
 	hashMap_destroy(properties, false, false);
 }
 
-properties_pt properties_load(char *filename) {
+properties_pt properties_load(const char* filename) {
 	FILE *file = fopen(filename, "r");
 	properties_pt props = properties_loadWithStream(file);
 	fclose(file);
@@ -147,7 +147,7 @@ FRAMEWORK_EXPORT properties_pt properties_loadWithStream(FILE *file) {
 /**
  * Header is ignored for now, cannot handle comments yet
  */
-void properties_store(properties_pt properties, char * filename, char * header) {
+void properties_store(properties_pt properties, const char* filename, const char* header) {
 	FILE *file = fopen ( filename, "w+" );
 	char *str;
 
@@ -209,15 +209,15 @@ celix_status_t properties_copy(properties_pt properties, properties_pt *out) {
 	return status;
 }
 
-char * properties_get(properties_pt properties, char * key) {
-	return hashMap_get(properties, key);
+const char* properties_get(properties_pt properties, const char* key) {
+	return hashMap_get(properties, (void*)key);
 }
 
-char * properties_getWithDefault(properties_pt properties, char * key, char * defaultValue) {
-	char * value = properties_get(properties, key);
+const char* properties_getWithDefault(properties_pt properties, const char* key, const char* defaultValue) {
+	const char* value = properties_get(properties, key);
 	return value == NULL ? defaultValue : value;
 }
 
-char * properties_set(properties_pt properties, char * key, char * value) {
-	return hashMap_put(properties, strdup(key), strdup(value));
+const char* properties_set(properties_pt properties, const char* key, const char* value) {
+	return hashMap_put(properties, strndup(key, 1024*10), strndup(value, 1024*10));
 }

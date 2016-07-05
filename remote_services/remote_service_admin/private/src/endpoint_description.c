@@ -46,9 +46,9 @@ celix_status_t endpointDescription_create(properties_pt properties, endpoint_des
 	endpoint_description_pt ep = calloc(1,sizeof(*ep));
 
     ep->properties = properties;
-    ep->frameworkUUID = properties_get(properties, (char *) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
-    ep->id = properties_get(properties, (char *) OSGI_RSA_ENDPOINT_ID);
-    ep->service = properties_get(properties, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
+    ep->frameworkUUID = (char*)properties_get(properties, (char *) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
+    ep->id = (char*)properties_get(properties, (char *) OSGI_RSA_ENDPOINT_ID);
+    ep->service = (char*)properties_get(properties, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
     ep->serviceId = serviceId;
 
     if (!(ep->frameworkUUID) || !(ep->id) || !(ep->service) ) {
@@ -76,7 +76,7 @@ celix_status_t endpointDescription_destroy(endpoint_description_pt description) 
 static celix_status_t endpointDescription_verifyLongProperty(properties_pt properties, char *propertyName, long *longProperty) {
     celix_status_t status = CELIX_SUCCESS;
 
-    char *value = properties_get(properties, propertyName);
+    const char *value = properties_get(properties, propertyName);
     if (value == NULL) {
         *longProperty = 0l;
     } else {

@@ -53,8 +53,8 @@ struct serviceRegistration {
 	celix_thread_rwlock_t lock;
 };
 
-service_registration_pt serviceRegistration_create(registry_callback_t callback, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary);
-service_registration_pt serviceRegistration_createServiceFactory(registry_callback_t callback, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary);
+service_registration_pt serviceRegistration_create(registry_callback_t callback, bundle_pt bundle, const char* serviceName, long serviceId, void * serviceObject, properties_pt dictionary);
+service_registration_pt serviceRegistration_createServiceFactory(registry_callback_t callback, bundle_pt bundle, const char* serviceName, long serviceId, void * serviceObject, properties_pt dictionary);
 
 void serviceRegistration_retain(service_registration_pt registration);
 void serviceRegistration_release(service_registration_pt registration);

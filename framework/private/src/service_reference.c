@@ -203,7 +203,7 @@ celix_status_t serviceReference_getProperty(service_reference_pt ref, char *key,
     if (ref->registration != NULL) {
         status = serviceRegistration_getProperties(ref->registration, &props);
         if (status == CELIX_SUCCESS) {
-            *value = properties_get(props, key);
+            *value = (char*) properties_get(props, key);
         }
     } else {
         *value = NULL;
@@ -255,7 +255,7 @@ celix_status_t serviceReference_isValid(service_reference_pt ref, bool *result) 
     return CELIX_SUCCESS;
 }
 
-bool serviceReference_isAssignableTo(service_reference_pt reference __attribute__((unused)), bundle_pt requester __attribute__((unused)), char * serviceName __attribute__((unused))) {
+bool serviceReference_isAssignableTo(service_reference_pt reference __attribute__((unused)), bundle_pt requester __attribute__((unused)), const char* serviceName __attribute__((unused))) {
 	bool allow = true;
 
 	/*NOTE for now always true. It would be nice to be able to do somechecks if the services are really assignable.

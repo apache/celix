@@ -649,16 +649,16 @@ celix_status_t remoteServiceAdmin_createOrAttachShm(hash_map_pt ipcSegment, remo
 	char *semPath = NULL;
 	char *semFtokId = NULL;
 
-	if ((shmPath = properties_get(endpointProperties, (char *) RSA_SHM_PATH_PROPERTYNAME)) == NULL) {
+	if ((shmPath = (char*)properties_get(endpointProperties, (char *) RSA_SHM_PATH_PROPERTYNAME)) == NULL) {
 		logHelper_log(admin->loghelper, OSGI_LOGSERVICE_DEBUG, "No value found for key %s in endpointProperties.", RSA_SHM_PATH_PROPERTYNAME);
 		status = CELIX_BUNDLE_EXCEPTION;
-	} else if ((shmFtokId = properties_get(endpointProperties, (char *) RSA_SHM_FTOK_ID_PROPERTYNAME)) == NULL) {
+	} else if ((shmFtokId = (char*)properties_get(endpointProperties, (char *) RSA_SHM_FTOK_ID_PROPERTYNAME)) == NULL) {
 		logHelper_log(admin->loghelper, OSGI_LOGSERVICE_DEBUG, "No value found for key %s in endpointProperties.", RSA_SHM_FTOK_ID_PROPERTYNAME);
 		status = CELIX_BUNDLE_EXCEPTION;
-	} else if ((semPath = properties_get(endpointProperties, (char *) RSA_SEM_PATH_PROPERTYNAME)) == NULL) {
+	} else if ((semPath = (char*)properties_get(endpointProperties, (char *) RSA_SEM_PATH_PROPERTYNAME)) == NULL) {
 		logHelper_log(admin->loghelper, OSGI_LOGSERVICE_DEBUG, "No value found for key %s in endpointProperties.", RSA_SEM_PATH_PROPERTYNAME);
 		status = CELIX_BUNDLE_EXCEPTION;
-	} else if ((semFtokId = properties_get(endpointProperties, (char *) RSA_SEM_FTOK_ID_PROPERTYNAME)) == NULL) {
+	} else if ((semFtokId = (char*)properties_get(endpointProperties, (char *) RSA_SEM_FTOK_ID_PROPERTYNAME)) == NULL) {
 		logHelper_log(admin->loghelper, OSGI_LOGSERVICE_DEBUG, "No value found for key %s in endpointProperties.", RSA_SEM_FTOK_ID_PROPERTYNAME);
 		status = CELIX_BUNDLE_EXCEPTION;
 	} else {
@@ -800,11 +800,11 @@ celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin
 	} else {
 		if (status == CELIX_SUCCESS) {
 			(*description)->properties = endpointProperties;
-			(*description)->frameworkUUID = properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
+			(*description)->frameworkUUID = (char*)properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
 			char *serviceId = NULL;
-			serviceReference_getProperty(reference, (char*) OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
+			serviceReference_getProperty(reference, (char*)OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
 			(*description)->serviceId = strtoull(serviceId, NULL, 0);
-			(*description)->id = properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID);
+			(*description)->id = (char*)properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID);
 			(*description)->service = interface;
 		}
 	}

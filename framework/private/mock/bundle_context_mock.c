@@ -71,7 +71,7 @@ celix_status_t bundleContext_installBundle2(bundle_context_pt context, char * lo
 }
 
 
-celix_status_t bundleContext_registerService(bundle_context_pt context, char * serviceName, void * svcObj,
+celix_status_t bundleContext_registerService(bundle_context_pt context, const char * serviceName, void * svcObj,
         properties_pt properties, service_registration_pt *service_registration) {
 	mock_c()->actualCall("bundleContext_registerService")
 			->withPointerParameters("context", context)
@@ -82,7 +82,7 @@ celix_status_t bundleContext_registerService(bundle_context_pt context, char * s
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundleContext_registerServiceFactory(bundle_context_pt context, char * serviceName, service_factory_pt factory,
+celix_status_t bundleContext_registerServiceFactory(bundle_context_pt context, const char * serviceName, service_factory_pt factory,
         properties_pt properties, service_registration_pt *service_registration) {
 	mock_c()->actualCall("bundleContext_registerServiceFactory")
 			->withPointerParameters("context", context)
@@ -103,7 +103,7 @@ celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, con
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundleContext_getServiceReference(bundle_context_pt context, char * serviceName, service_reference_pt *service_reference) {
+celix_status_t bundleContext_getServiceReference(bundle_context_pt context, const char * serviceName, service_reference_pt *service_reference) {
 	mock_c()->actualCall("bundleContext_getServiceReference")
 			->withPointerParameters("context", context)
 			->withStringParameters("serviceName", serviceName)
@@ -158,7 +158,7 @@ celix_status_t bundleContext_getBundleById(bundle_context_pt context, long id, b
 }
 
 
-celix_status_t bundleContext_addServiceListener(bundle_context_pt context, service_listener_pt listener, char * filter) {
+celix_status_t bundleContext_addServiceListener(bundle_context_pt context, service_listener_pt listener, const char * filter) {
 	mock_c()->actualCall("bundleContext_addServiceListener")
 		->withPointerParameters("context", context)
 		->withPointerParameters("listener", listener)

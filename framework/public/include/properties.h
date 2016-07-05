@@ -37,13 +37,13 @@ typedef hash_map_pt properties_pt;
 
 FRAMEWORK_EXPORT properties_pt properties_create(void);
 FRAMEWORK_EXPORT void properties_destroy(properties_pt properties);
-FRAMEWORK_EXPORT properties_pt properties_load(char * filename);
+FRAMEWORK_EXPORT properties_pt properties_load(const char* filename);
 FRAMEWORK_EXPORT properties_pt properties_loadWithStream(FILE *stream);
-FRAMEWORK_EXPORT void properties_store(properties_pt properties, char * file, char * header);
+FRAMEWORK_EXPORT void properties_store(properties_pt properties, const char* file, const char* header);
 
-FRAMEWORK_EXPORT char * properties_get(properties_pt properties, char * key);
-FRAMEWORK_EXPORT char * properties_getWithDefault(properties_pt properties, char * key, char * defaultValue);
-FRAMEWORK_EXPORT char * properties_set(properties_pt properties, char * key, char * value);
+FRAMEWORK_EXPORT const char* properties_get(properties_pt properties, const char* key);
+FRAMEWORK_EXPORT const char* properties_getWithDefault(properties_pt properties, const char* key, const char* defaultValue);
+FRAMEWORK_EXPORT const char* properties_set(properties_pt properties, const char* key, const char* value);
 
 FRAMEWORK_EXPORT celix_status_t properties_copy(properties_pt properties, properties_pt *copy);
 

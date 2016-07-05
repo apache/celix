@@ -121,7 +121,7 @@ celix_status_t bundleContext_installBundle2(bundle_context_pt context, char * lo
 	return status;
 }
 
-celix_status_t bundleContext_registerService(bundle_context_pt context, char * serviceName, void * svcObj,
+celix_status_t bundleContext_registerService(bundle_context_pt context, const char * serviceName, void * svcObj,
         properties_pt properties, service_registration_pt *service_registration) {
 	service_registration_pt registration = NULL;
 	celix_status_t status = CELIX_SUCCESS;
@@ -138,7 +138,7 @@ celix_status_t bundleContext_registerService(bundle_context_pt context, char * s
 	return status;
 }
 
-celix_status_t bundleContext_registerServiceFactory(bundle_context_pt context, char * serviceName, service_factory_pt factory,
+celix_status_t bundleContext_registerServiceFactory(bundle_context_pt context, const char * serviceName, service_factory_pt factory,
         properties_pt properties, service_registration_pt *service_registration) {
     service_registration_pt registration = NULL;
     celix_status_t status = CELIX_SUCCESS;
@@ -169,7 +169,7 @@ celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, con
 	return status;
 }
 
-celix_status_t bundleContext_getServiceReference(bundle_context_pt context, char * serviceName, service_reference_pt *service_reference) {
+celix_status_t bundleContext_getServiceReference(bundle_context_pt context, const char * serviceName, service_reference_pt *service_reference) {
     service_reference_pt reference = NULL;
     array_list_pt services = NULL;
     celix_status_t status = CELIX_SUCCESS;
@@ -278,7 +278,7 @@ celix_status_t bundleContext_getBundleById(bundle_context_pt context, long id, b
 	return status;
 }
 
-celix_status_t bundleContext_addServiceListener(bundle_context_pt context, service_listener_pt listener, char * filter) {
+celix_status_t bundleContext_addServiceListener(bundle_context_pt context, service_listener_pt listener, const char* filter) {
     celix_status_t status = CELIX_SUCCESS;
 
     if (context != NULL && listener != NULL) {

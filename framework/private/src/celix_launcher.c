@@ -78,7 +78,11 @@ int celixLauncher_launchWithProperties(properties_pt config, framework_pt *frame
 	curl_global_init(CURL_GLOBAL_NOTHING);
 #endif
 
-	char *autoStart = properties_get(config, "cosgi.auto.start.1");
+	const char* autoStartProp = properties_get(config, "cosgi.auto.start.1");
+	char* autoStart = NULL;
+	if (autoStartProp != NULL) {
+		autoStart = strndup(autoStartProp, 1024*10);
+	}
 
 	status = framework_create(framework, config);
 	bundle_pt fwBundle = NULL;
@@ -143,7 +147,8 @@ int celixLauncher_launchWithProperties(properties_pt config, framework_pt *frame
 
 	printf("Launcher: Framework Started\n");
 
-
+	free(autoStart);
+	
 	return status;
 }
 

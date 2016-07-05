@@ -49,7 +49,7 @@ celix_status_t bundleCache_create(properties_pt configurationMap, bundle_cache_p
 	if (cache == NULL) {
 		status = CELIX_ENOMEM;
 	} else {
-		char * cacheDir = properties_get(configurationMap, (char *) OSGI_FRAMEWORK_FRAMEWORK_STORAGE);
+		char* cacheDir = (char*)properties_get(configurationMap, (char *) OSGI_FRAMEWORK_FRAMEWORK_STORAGE);
 		cache->configurationMap = configurationMap;
 		if (cacheDir == NULL) {
 			cacheDir = ".cache";

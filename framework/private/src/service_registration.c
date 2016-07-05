@@ -32,23 +32,23 @@
 #include "constants.h"
 
 static celix_status_t serviceRegistration_initializeProperties(service_registration_pt registration, properties_pt properties);
-static celix_status_t serviceRegistration_createInternal(registry_callback_t callback, bundle_pt bundle, char * serviceName, long serviceId,
+static celix_status_t serviceRegistration_createInternal(registry_callback_t callback, bundle_pt bundle, const char* serviceName, long serviceId,
         void * serviceObject, properties_pt dictionary, bool isFactory, service_registration_pt *registration);
 static celix_status_t serviceRegistration_destroy(service_registration_pt registration);
 
-service_registration_pt serviceRegistration_create(registry_callback_t callback, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary) {
+service_registration_pt serviceRegistration_create(registry_callback_t callback, bundle_pt bundle, const char* serviceName, long serviceId, void * serviceObject, properties_pt dictionary) {
     service_registration_pt registration = NULL;
 	serviceRegistration_createInternal(callback, bundle, serviceName, serviceId, serviceObject, dictionary, false, &registration);
 	return registration;
 }
 
-service_registration_pt serviceRegistration_createServiceFactory(registry_callback_t callback, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary) {
+service_registration_pt serviceRegistration_createServiceFactory(registry_callback_t callback, bundle_pt bundle, const char* serviceName, long serviceId, void * serviceObject, properties_pt dictionary) {
     service_registration_pt registration = NULL;
     serviceRegistration_createInternal(callback, bundle, serviceName, serviceId, serviceObject, dictionary, true, &registration);
     return registration;
 }
 
-static celix_status_t serviceRegistration_createInternal(registry_callback_t callback, bundle_pt bundle, char * serviceName, long serviceId,
+static celix_status_t serviceRegistration_createInternal(registry_callback_t callback, bundle_pt bundle, const char* serviceName, long serviceId,
         void * serviceObject, properties_pt dictionary, bool isFactory, service_registration_pt *out) {
     celix_status_t status = CELIX_SUCCESS;
 
@@ -58,7 +58,7 @@ static celix_status_t serviceRegistration_createInternal(registry_callback_t cal
         reg->services = NULL;
         reg->nrOfServices = 0;
 		reg->isServiceFactory = isFactory;
-		reg->className = strdup(serviceName);
+		reg->className = strndup(serviceName, 1024*10);
 		reg->bundle = bundle;
 		reg->refCount = 1;
 

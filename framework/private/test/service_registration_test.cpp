@@ -115,7 +115,7 @@ TEST(service_registration, create) {
 	POINTERS_EQUAL(NULL, registration->services);
 	LONGS_EQUAL(0, registration->nrOfServices);
 
-	char* get;
+	const char* get;
 	get = properties_get(registration->properties, (char*)"service.id");
 	STRCMP_EQUAL("1", get);
 
@@ -147,7 +147,7 @@ TEST(service_registration, createServiceFactory) {
 	POINTERS_EQUAL(NULL, registration->services);
 	LONGS_EQUAL(0, registration->nrOfServices);
 
-	char* get;
+	const char* get;
 	get = properties_get(registration->properties, (char*)"service.id");
 	STRCMP_EQUAL("1", get);
 
@@ -336,7 +336,7 @@ TEST(service_registration, getProperties) {
 	celix_status_t status = serviceRegistration_getProperties(registration, &actual);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 
-	char* get;
+	const char* get;
 	get = properties_get(registration->properties, (char*)"service.id");
 	STRCMP_EQUAL("5", get);
 
