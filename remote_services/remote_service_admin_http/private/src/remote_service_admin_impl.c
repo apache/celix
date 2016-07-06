@@ -399,32 +399,33 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 		return CELIX_ILLEGAL_STATE;
 	}
 
-	const char *exports = NULL;
-	const char *provided = NULL;
-	serviceReference_getProperty(reference, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, &exports);
-	serviceReference_getProperty(reference, OSGI_FRAMEWORK_OBJECTCLASS, &provided);
-
-	if (exports == NULL || provided == NULL) {
+	const char *exportsProp = NULL;
+	const char *providedProp = NULL;
+	serviceReference_getProperty(reference, OSGI_RSA_SERVICE_EXPORTED_INTERFACES, &exportsProp);
+	serviceReference_getProperty(reference, OSGI_FRAMEWORK_OBJECTCLASS, &providedProp);
+	
+	if (exportsProp == NULL || providedProp == NULL) {
 		logHelper_log(admin->loghelper, OSGI_LOGSERVICE_WARNING, "RSA: No Services to export.");
 	} else {
+		char *exports = strndup(exportsProp, 1024*10);
+		char *provided = strndup(providedProp, 1024*10);
+
 		logHelper_log(admin->loghelper, OSGI_LOGSERVICE_INFO, "RSA: Export services (%s)", exports);
 		array_list_pt interfaces = NULL;
 		arrayList_create(&interfaces);
-		char *cmpExports = strndup(exports, 1024*10);
-		char *providedCopy = strndup(provided, 1024*10);
-		if (strcmp(utils_stringTrim(cmpExports), "*") == 0) {
+		if (strcmp(utils_stringTrim(exports), "*") == 0) {
 			char *save_ptr = NULL;
-			char *interface = strtok_r(providedCopy, ",", &save_ptr);
+			char *interface = strtok_r(provided, ",", &save_ptr);
 			while (interface != NULL) {
 				arrayList_add(interfaces, utils_stringTrim(interface));
 				interface = strtok_r(NULL, ",", &save_ptr);
 			}
 		} else {
 			char *provided_save_ptr = NULL;
-			char *pinterface = strtok_r(providedCopy, ",", &provided_save_ptr);
+			char *pinterface = strtok_r(provided, ",", &provided_save_ptr);
 			while (pinterface != NULL) {
 				char *exports_save_ptr = NULL;
-				char *einterface = strtok_r(cmpExports, ",", &exports_save_ptr);
+				char *einterface = strtok_r(exports, ",", &exports_save_ptr);
 				while (einterface != NULL) {
 					if (strcmp(einterface, pinterface) == 0) {
 						arrayList_add(interfaces, einterface);
@@ -434,8 +435,6 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 				pinterface = strtok_r(NULL, ",", &provided_save_ptr);
 			}
 		}
-		free(cmpExports);
-		free(providedCopy);
 
 		if (arrayList_size(interfaces) != 0) {
 			int iter = 0;
@@ -457,7 +456,11 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 
 		}
 		arrayList_destroy(interfaces);
+		free(exports);
+		free(provided);
 	}
+
+	
 
 	return status;
 }
@@ -598,7 +601,7 @@ celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin
 		serviceReference_getProperty(reference, (char*)OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
 		(*description)->serviceId = strtoull(serviceId, NULL, 0);
 		(*description)->frameworkUUID = (char*)properties_get(endpointProperties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
-		(*description)->service = interface;
+		(*description)->service = strndup(interface, 1024*10);
 		(*description)->properties = endpointProperties;
 	}
 
@@ -611,6 +614,7 @@ celix_status_t remoteServiceAdmin_destroyEndpointDescription(endpoint_descriptio
 	celix_status_t status = CELIX_SUCCESS;
 
 	properties_destroy((*description)->properties);
+	free((*description)->service);
 	free(*description);
 
 	return status;

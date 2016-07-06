@@ -810,7 +810,7 @@ celix_status_t remoteServiceAdmin_createEndpointDescription(remote_service_admin
 			serviceReference_getProperty(reference, (char*)OSGI_FRAMEWORK_SERVICE_ID, &serviceId);
 			(*description)->serviceId = strtoull(serviceId, NULL, 0);
 			(*description)->id = (char*)properties_get(endpointProperties, (char*) OSGI_RSA_ENDPOINT_ID);
-			(*description)->service = interface;
+			(*description)->service = strndup(interface, 1024*10);
 		}
 	}
 
@@ -821,6 +821,7 @@ celix_status_t remoteServiceAdmin_destroyEndpointDescription(endpoint_descriptio
 	celix_status_t status = CELIX_SUCCESS;
 
 	properties_destroy((*description)->properties);
+	free((*description)->service);
 	free(*description);
 
 	return status;
