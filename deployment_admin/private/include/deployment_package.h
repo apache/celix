@@ -65,12 +65,12 @@ typedef struct deployment_package *deployment_package_pt;
 
 celix_status_t deploymentPackage_create(bundle_context_pt context, manifest_pt manifest, deployment_package_pt *package);
 celix_status_t deploymentPackage_destroy(deployment_package_pt package);
-celix_status_t deploymentPackage_getName(deployment_package_pt package, char **name);
+celix_status_t deploymentPackage_getName(deployment_package_pt package, const char** name);
 celix_status_t deploymentPackage_getBundleInfos(deployment_package_pt package, array_list_pt *infos);
-celix_status_t deploymentPackage_getBundleInfoByName(deployment_package_pt package, char *name, bundle_info_pt *info);
+celix_status_t deploymentPackage_getBundleInfoByName(deployment_package_pt package, const char* name, bundle_info_pt *info);
 celix_status_t deploymentPackage_getResourceInfos(deployment_package_pt package, array_list_pt *infos);
-celix_status_t deploymentPackage_getResourceInfoByPath(deployment_package_pt package, char *path, resource_info_pt *info);
-celix_status_t deploymentPackage_getBundle(deployment_package_pt package, char *name, bundle_pt *bundle);
+celix_status_t deploymentPackage_getResourceInfoByPath(deployment_package_pt package, const char* path, resource_info_pt *info);
+celix_status_t deploymentPackage_getBundle(deployment_package_pt package, const char* name, bundle_pt *bundle);
 celix_status_t deploymentPackage_getVersion(deployment_package_pt package, version_pt *version);
 
 #endif /* DEPLOYMENT_PACKAGE_H_ */

@@ -95,7 +95,7 @@ celix_status_t bundleCache_getArchives(bundle_cache_pt cache, array_list_pt *arc
  * 		- CELIX_ILLEGAL_ARGUMENT If <code>bundle_archive</code> not is null.
  * 		- CELIX_ENOMEM If allocating memory for <code>bundle_archive</code> failed.
  */
-celix_status_t bundleCache_createArchive(bundle_cache_pt cache, long id, char * location, char *inputFile, bundle_archive_pt *archive);
+celix_status_t bundleCache_createArchive(bundle_cache_pt cache, long id, const char* location, const char* inputFile, bundle_archive_pt *archive);
 
 /**
  * Deletes the entire bundle cache.

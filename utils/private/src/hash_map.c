@@ -36,12 +36,12 @@ static unsigned int DEFAULT_INITIAL_CAPACITY = 16;
 static float DEFAULT_LOAD_FACTOR = 0.75f;
 static unsigned int MAXIMUM_CAPACITY = 1 << 30;
 
-unsigned int hashMap_hashCode(void * toHash) {
+unsigned int hashMap_hashCode(const void * toHash) {
 	intptr_t address = (intptr_t) toHash;
 	return address;
 }
 
-int hashMap_equals(void * toCompare, void * compare) {
+int hashMap_equals(const void * toCompare, const void * compare) {
 	return toCompare == compare;
 }
 
@@ -66,8 +66,8 @@ static unsigned int hashMap_indexFor(unsigned int h, unsigned int length) {
 	return h & (length - 1);
 }
 
-hash_map_pt hashMap_create(unsigned int (*keyHash)(void *), unsigned int (*valueHash)(void *),
-		int (*keyEquals)(void *, void *), int (*valueEquals)(void *, void *)) {
+hash_map_pt hashMap_create(unsigned int (*keyHash)(const void *), unsigned int (*valueHash)(const void *),
+		int (*keyEquals)(const void *, const void *), int (*valueEquals)(const void *, const void *)) {
 	hash_map_pt map = (hash_map_pt) malloc(sizeof(*map));
 	map->treshold = (unsigned int) (DEFAULT_INITIAL_CAPACITY * DEFAULT_LOAD_FACTOR);
 	map->table = (hash_map_entry_pt *) calloc(DEFAULT_INITIAL_CAPACITY, sizeof(hash_map_entry_pt));
@@ -109,7 +109,7 @@ bool hashMap_isEmpty(hash_map_pt map) {
 	return hashMap_size(map) == 0;
 }
 
-void * hashMap_get(hash_map_pt map, void * key) {
+void * hashMap_get(hash_map_pt map, const void* key) {
 	unsigned int hash;
 	if (key == NULL) {
 		hash_map_entry_pt entry;
@@ -131,11 +131,11 @@ void * hashMap_get(hash_map_pt map, void * key) {
 	return NULL;
 }
 
-bool hashMap_containsKey(hash_map_pt map, void * key) {
+bool hashMap_containsKey(hash_map_pt map, const void* key) {
 	return hashMap_getEntry(map, key) != NULL;
 }
 
-hash_map_entry_pt hashMap_getEntry(hash_map_pt map, void * key) {
+hash_map_entry_pt hashMap_getEntry(hash_map_pt map, const void* key) {
 	unsigned int hash = (key == NULL) ? 0 : hashMap_hash(map->hashKey(key));
 	hash_map_entry_pt entry;
 	int index = hashMap_indexFor(hash, map->tablelength);
@@ -207,7 +207,7 @@ void hashMap_resize(hash_map_pt map, int newCapacity) {
 	map->treshold = (unsigned int) ceil(newCapacity * DEFAULT_LOAD_FACTOR);
 }
 
-void * hashMap_remove(hash_map_pt map, void * key) {
+void * hashMap_remove(hash_map_pt map, const void* key) {
 	hash_map_entry_pt entry = hashMap_removeEntryForKey(map, key);
 	void * value = (entry == NULL ? NULL : entry->value);
 	if (entry != NULL) {
@@ -218,7 +218,7 @@ void * hashMap_remove(hash_map_pt map, void * key) {
 	return value;
 }
 
-void * hashMap_removeEntryForKey(hash_map_pt map, void * key) {
+void * hashMap_removeEntryForKey(hash_map_pt map, const void* key) {
 	unsigned int hash = (key == NULL) ? 0 : hashMap_hash(map->hashKey(key));
 	int i = hashMap_indexFor(hash, map->tablelength);
 	hash_map_entry_pt prev = map->table[i];
@@ -297,7 +297,7 @@ void hashMap_clear(hash_map_pt map, bool freeKey, bool freeValue) {
 	map->size = 0;
 }
 
-bool hashMap_containsValue(hash_map_pt map, void * value) {
+bool hashMap_containsValue(hash_map_pt map, const void* value) {
 	unsigned int i;
 	if (value == NULL) {
 		for (i = 0; i < map->tablelength; i++) {
@@ -321,7 +321,7 @@ bool hashMap_containsValue(hash_map_pt map, void * value) {
 	return false;
 }
 
-void hashMap_addEntry(hash_map_pt map, int hash, void * key, void * value, int bucketIndex) {
+void hashMap_addEntry(hash_map_pt map, int hash, void* key, void* value, int bucketIndex) {
 	hash_map_entry_pt entry = map->table[bucketIndex];
 	hash_map_entry_pt new = (hash_map_entry_pt) malloc(sizeof(*new));
 	new->hash = hash;
@@ -444,11 +444,11 @@ int hashMapKeySet_size(hash_map_key_set_pt keySet) {
 	return keySet->map->size;
 }
 
-bool hashMapKeySet_contains(hash_map_key_set_pt keySet, void * key) {
+bool hashMapKeySet_contains(hash_map_key_set_pt keySet, const void* key) {
 	return hashMap_containsKey(keySet->map, key);
 }
 
-bool hashMapKeySet_remove(hash_map_key_set_pt keySet, void * key) {
+bool hashMapKeySet_remove(hash_map_key_set_pt keySet, const void* key) {
 	hash_map_entry_pt entry = hashMap_removeEntryForKey(keySet->map, key);
 	bool removed = entry != NULL;
 	free(entry);
@@ -483,7 +483,7 @@ int hashMapValues_size(hash_map_values_pt values) {
 	return values->map->size;
 }
 
-bool hashMapValues_contains(hash_map_values_pt values, void * value) {
+bool hashMapValues_contains(hash_map_values_pt values, const void* value) {
 	return hashMap_containsValue(values->map, value);
 }
 
@@ -500,7 +500,7 @@ void hashMapValues_toArray(hash_map_values_pt values, void* *array[], unsigned i
 	hashMapIterator_destroy(it);
 }
 
-bool hashMapValues_remove(hash_map_values_pt values, void * value) {
+bool hashMapValues_remove(hash_map_values_pt values, const void* value) {
 	hash_map_iterator_pt iterator = hashMapValues_iterator(values);
 	if (value == NULL) {
 		while (hashMapIterator_hasNext(iterator)) {

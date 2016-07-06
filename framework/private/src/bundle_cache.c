@@ -153,7 +153,7 @@ celix_status_t bundleCache_getArchives(bundle_cache_pt cache, array_list_pt *arc
 	return status;
 }
 
-celix_status_t bundleCache_createArchive(bundle_cache_pt cache, long id, char * location, char *inputFile, bundle_archive_pt *bundle_archive) {
+celix_status_t bundleCache_createArchive(bundle_cache_pt cache, long id, const char * location, const char *inputFile, bundle_archive_pt *bundle_archive) {
 	celix_status_t status = CELIX_SUCCESS;
 	char archiveRoot[512];
 

@@ -61,7 +61,7 @@ static char* my_strdup(const char* s){
 }
 
 //Callback functions
-unsigned int test_hashKeyChar(void * k) {
+unsigned int test_hashKeyChar(const void * k) {
 	char * str = (char *) k;
 
 	unsigned int hash = 1315423911;
@@ -76,16 +76,16 @@ unsigned int test_hashKeyChar(void * k) {
 	return hash;
 }
 
-unsigned int test_hashValueChar(void * v) {
+unsigned int test_hashValueChar(const void * v) {
 	(void)(v);
 	return 0;
 }
 
-int test_equalsKeyChar(void * k, void * o) {
+int test_equalsKeyChar(const void * k, const void * o) {
 	return strcmp((char *)k, (char *) o) == 0;
 }
 
-int test_equalsValueChar(void * v, void * o) {
+int test_equalsValueChar(const void * v, const void * o) {
 	return strcmp((char *)v, (char *) o) == 0;
 }
 

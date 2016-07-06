@@ -97,7 +97,7 @@ celix_status_t version_destroy(version_pt version) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t version_createVersionFromString(char * versionStr, version_pt *version) {
+celix_status_t version_createVersionFromString(const char * versionStr, version_pt *version) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	int major = 0;
@@ -194,7 +194,7 @@ celix_status_t version_getMicro(version_pt version, int *micro) {
 	return status;
 }
 
-celix_status_t version_getQualifier(version_pt version, char **qualifier) {
+celix_status_t version_getQualifier(version_pt version, const char **qualifier) {
 	celix_status_t status = CELIX_SUCCESS;
 	*qualifier = version->qualifier;
 	return status;

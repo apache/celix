@@ -370,7 +370,7 @@ celix_status_t deviceManager_driverRemoved(void * handle, service_reference_pt r
 		for (i = 0; i < arrayList_size(idleDevices); i++) {
 			celix_status_t forStatus = CELIX_SUCCESS;
 			service_reference_pt ref = arrayList_get(idleDevices, i);
-			char *bsn = NULL;
+			const char *bsn = NULL;
 			bundle_pt bundle = NULL;
 			forStatus = serviceReference_getBundle(ref, &bundle);
 			if (forStatus == CELIX_SUCCESS) {
@@ -425,7 +425,7 @@ celix_status_t deviceManager_getIdleDevices(device_manager_pt manager, array_lis
 		while (hashMapIterator_hasNext(iter)) {
 			celix_status_t substatus = CELIX_SUCCESS;
 			service_reference_pt ref = hashMapIterator_nextKey(iter);
-			char *bsn = NULL;
+			const char *bsn = NULL;
 			module_pt module = NULL;
 			bundle_pt bundle = NULL;
 			substatus = serviceReference_getBundle(ref, &bundle);
@@ -446,7 +446,7 @@ celix_status_t deviceManager_getIdleDevices(device_manager_pt manager, array_lis
 								celix_status_t sstatus = deviceManager_isDriverBundle(manager, bundle, &isDriver);
 								if (sstatus == CELIX_SUCCESS) {
 									if (isDriver) {
-										char *bsn = NULL;
+										const char *bsn = NULL;
 										module_pt module = NULL;
 										bundle_getCurrentModule(bundle, &module);
 										module_getSymbolicName(module, &bsn);
@@ -488,7 +488,7 @@ celix_status_t deviceManager_getIdleDevices_exmaple(device_manager_pt manager, a
 		while (hashMapIterator_hasNext(iter)) {
 			celix_status_t substatus = CELIX_SUCCESS;
 			service_reference_pt ref = hashMapIterator_nextKey(iter);
-			char *bsn = NULL;
+			const char *bsn = NULL;
 			module_pt module = NULL;
 			bundle_pt bundle = NULL;
 			array_list_pt bundles = NULL;
@@ -507,7 +507,7 @@ celix_status_t deviceManager_getIdleDevices_exmaple(device_manager_pt manager, a
 					celix_status_t sstatus = deviceManager_isDriverBundle(manager, bundle, &isDriver);
 					if (sstatus == CELIX_SUCCESS) {
 						if (isDriver) {
-							char *bsn = NULL;
+							const char *bsn = NULL;
 							module_pt module = NULL;
 							bundle_getCurrentModule(bundle, &module);
 							module_getSymbolicName(module, &bsn);

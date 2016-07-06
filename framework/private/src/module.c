@@ -48,7 +48,7 @@ struct module {
 	struct bundle * bundle;
 };
 
-module_pt module_create(manifest_pt headerMap, char * moduleId, bundle_pt bundle) {
+module_pt module_create(manifest_pt headerMap, const char * moduleId, bundle_pt bundle) {
     module_pt module = NULL;
     manifest_parser_pt mp;
 
@@ -64,7 +64,7 @@ module_pt module_create(manifest_pt headerMap, char * moduleId, bundle_pt bundle
 
         if (manifestParser_create(module, headerMap, &mp) == CELIX_SUCCESS) {
             module->symbolicName = NULL;
-            manifestParser_getSymbolicName(mp, &module->symbolicName);
+            manifestParser_getAndDuplicateSymbolicName(mp, &module->symbolicName);
 
             module->version = NULL;
             manifestParser_getBundleVersion(mp, &module->version);
@@ -151,12 +151,12 @@ void module_destroy(module_pt module) {
 	free(module);
 }
 
-wire_pt module_getWire(module_pt module, char * serviceName) {
+wire_pt module_getWire(module_pt module, const char * serviceName) {
 	wire_pt wire = NULL;
 	if (module->wires != NULL) {
 		linked_list_iterator_pt iterator = linkedListIterator_create(module->wires, 0);
 		while (linkedListIterator_hasNext(iterator)) {
-			char *name;
+			const char* name;
 			wire_pt next = linkedListIterator_next(iterator);
 			capability_pt cap = NULL;
 			wire_getCapability(next, &cap);
@@ -174,7 +174,7 @@ version_pt module_getVersion(module_pt module) {
 	return module->version;
 }
 
-celix_status_t module_getSymbolicName(module_pt module, char **symbolicName) {
+celix_status_t module_getSymbolicName(module_pt module, const char **symbolicName) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (module == NULL || *symbolicName != NULL) {

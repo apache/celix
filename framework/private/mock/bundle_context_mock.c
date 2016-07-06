@@ -53,7 +53,7 @@ celix_status_t bundleContext_getFramework(bundle_context_pt context, framework_p
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundleContext_installBundle(bundle_context_pt context, char * location, bundle_pt *bundle) {
+celix_status_t bundleContext_installBundle(bundle_context_pt context, const char * location, bundle_pt *bundle) {
 	mock_c()->actualCall("bundleContext_installBundle")
 			->withPointerParameters("context", context)
 			->withStringParameters("location", location)
@@ -61,7 +61,7 @@ celix_status_t bundleContext_installBundle(bundle_context_pt context, char * loc
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundleContext_installBundle2(bundle_context_pt context, char * location, char *inputFile, bundle_pt *bundle) {
+celix_status_t bundleContext_installBundle2(bundle_context_pt context, const char * location, const char *inputFile, bundle_pt *bundle) {
 	mock_c()->actualCall("bundleContext_installBundle2")
 			->withPointerParameters("context", context)
 			->withStringParameters("location", location)
@@ -94,7 +94,7 @@ celix_status_t bundleContext_registerServiceFactory(bundle_context_pt context, c
 }
 
 
-celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, const char * serviceName, char * filter, array_list_pt *service_references) {
+celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, const char * serviceName, const char * filter, array_list_pt *service_references) {
 	mock_c()->actualCall("bundleContext_getServiceReferences")
 			->withPointerParameters("context", context)
 			->withStringParameters("serviceName", serviceName)

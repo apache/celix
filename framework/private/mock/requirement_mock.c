@@ -48,7 +48,7 @@ celix_status_t requirement_getVersionRange(requirement_pt requirement, version_r
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t requirement_getTargetName(requirement_pt requirement, char **targetName) {
+celix_status_t requirement_getTargetName(requirement_pt requirement, const char **targetName) {
 	mock_c()->actualCall("requirement_getTargetName")
 			->withPointerParameters("requirement", requirement)
 			->withOutputParameter("targetName", targetName);

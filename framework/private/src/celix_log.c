@@ -28,7 +28,7 @@
 #include "celix_errno.h"
 #include "celix_log.h"
 
-void framework_log(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line, char *fmsg, ...) {
+void framework_log(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line, const char *fmsg, ...) {
     char msg[512];
     va_list listPointer;
     va_start(listPointer, fmsg);
@@ -42,7 +42,7 @@ void framework_log(framework_logger_pt logger, framework_log_level_t level, cons
     va_end(listPointer);
 }
 
-void framework_logCode(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line, celix_status_t code, char *fmsg, ...) {
+void framework_logCode(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line, celix_status_t code, const char *fmsg, ...) {
     char message[256];
     celix_strerror(code, message, 256);
     char msg[512];
@@ -55,7 +55,7 @@ void framework_logCode(framework_logger_pt logger, framework_log_level_t level, 
     va_end(listPointer);
 }
 
-celix_status_t frameworkLogger_log(framework_log_level_t level, const char *func, const char *file, int line, char *msg) {
+celix_status_t frameworkLogger_log(framework_log_level_t level, const char *func, const char *file, int line, const char *msg) {
     char *levelStr = NULL;
     switch (level) {
         case OSGI_FRAMEWORK_LOG_ERROR:

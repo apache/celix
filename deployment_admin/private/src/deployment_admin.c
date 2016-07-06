@@ -285,7 +285,7 @@ static void *deploymentAdmin_poll(void *deploymentAdmin) {
 				if (status == CELIX_SUCCESS) {
 					bundle_pt bundle = NULL;
 					bundleContext_getBundle(admin->context, &bundle);
-					char *entry = NULL;
+					const char *entry = NULL;
 					bundle_getEntry(bundle, "/", &entry);
 
 					// Handle file
@@ -308,7 +308,7 @@ static void *deploymentAdmin_poll(void *deploymentAdmin) {
 					manifest_createFromFile(manifest, &mf);
 					deployment_package_pt source = NULL;
 					deploymentPackage_create(admin->context, mf, &source);
-					char *name = NULL;
+					const char *name = NULL;
 					deploymentPackage_getName(source, &name);
 
 					int repoDirLength = strlen(entry) + 5;
@@ -346,7 +346,7 @@ static void *deploymentAdmin_poll(void *deploymentAdmin) {
 						fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Remove of %s failed",inputFilename);
 					}
 					admin->current = strdup(last);
-					hashMap_put(admin->packages, name, source);
+					hashMap_put(admin->packages, (char*)name, source);
 				}
 				if (inputFilename != NULL) {
 					free(inputFilename);
@@ -562,9 +562,9 @@ celix_status_t deploymentAdmin_updateDeploymentPackageBundles(deployment_admin_p
 		bundle_info_pt info = arrayList_get(infos, i);
 
 		bundleContext_getBundle(admin->context, &bundle);
-		char *entry = NULL;
+		const char *entry = NULL;
 		bundle_getEntry(bundle, "/", &entry);
-		char *name = NULL;
+		const char *name = NULL;
 		deploymentPackage_getName(source, &name);
 
 		int bundlePathLength = strlen(entry) + strlen(name) + strlen(info->path) + 7;
@@ -662,9 +662,9 @@ celix_status_t deploymentAdmin_processDeploymentPackageResources(deployment_admi
 				status = bundleContext_getService(admin->context, ref, &processorP);
 				if (status == CELIX_SUCCESS) {
 					bundle_pt bundle = NULL;
-					char *entry = NULL;
-					char *name = NULL;
-					char *packageName = NULL;
+					const char *entry = NULL;
+					const char *name = NULL;
+					const char *packageName = NULL;
 					resource_processor_service_pt processor = processorP;
 
 					bundleContext_getBundle(admin->context, &bundle);
@@ -676,7 +676,7 @@ celix_status_t deploymentAdmin_processDeploymentPackageResources(deployment_admi
 					snprintf(resourcePath, length, "%srepo/%s/%s", entry, name, info->path);
 					deploymentPackage_getName(source, &packageName);
 
-					processor->begin(processor->processor, packageName);
+					processor->begin(processor->processor, (char*)packageName);
 					processor->process(processor->processor, info->path, resourcePath);
 				}
 			}
@@ -719,11 +719,11 @@ celix_status_t deploymentAdmin_dropDeploymentPackageResources(deployment_admin_p
                         void *processorP = NULL;
                         status = bundleContext_getService(admin->context, ref, &processorP);
                         if (status == CELIX_SUCCESS) {
-                            char *packageName = NULL;
+                            const char *packageName = NULL;
                             resource_processor_service_pt processor = processorP;
 
                             deploymentPackage_getName(source, &packageName);
-                            processor->begin(processor->processor, packageName);
+                            processor->begin(processor->processor, (char*)packageName);
                             processor->dropped(processor->processor, info->path);
                         }
                     }

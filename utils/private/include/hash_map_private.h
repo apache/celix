@@ -30,17 +30,17 @@
 #include "exports.h"
 #include "hash_map.h"
 
-UTILS_EXPORT unsigned int hashMap_hashCode(void * toHash);
-UTILS_EXPORT int hashMap_equals(void * toCompare, void * compare);
+UTILS_EXPORT unsigned int hashMap_hashCode(const void* toHash);
+UTILS_EXPORT int hashMap_equals(const void* toCompare, const void* compare);
 
 void hashMap_resize(hash_map_pt map, int newCapacity);
-void * hashMap_removeEntryForKey(hash_map_pt map, void * key);
+void * hashMap_removeEntryForKey(hash_map_pt map, const void* key);
 UTILS_EXPORT hash_map_entry_pt hashMap_removeMapping(hash_map_pt map, hash_map_entry_pt entry);
-void hashMap_addEntry(hash_map_pt map, int hash, void * key, void * value, int bucketIndex);
+void hashMap_addEntry(hash_map_pt map, int hash, void* key, void* value, int bucketIndex);
 
 struct hashMapEntry {
-	void * key;
-	void * value;
+	void* key;
+	void* value;
 	hash_map_entry_pt next;
 	unsigned int hash;
 };
@@ -52,10 +52,10 @@ struct hashMap {
 	unsigned int modificationCount;
 	unsigned int tablelength;
 
-	unsigned int (*hashKey)(void * key);
-	unsigned int (*hashValue)(void * value);
-	int (*equalsKey)(void * key1, void * key2);
-	int (*equalsValue)(void * value1, void * value2);
+	unsigned int (*hashKey)(const void* key);
+	unsigned int (*hashValue)(const void* value);
+	int (*equalsKey)(const void* key1, const void* key2);
+	int (*equalsValue)(const void* value1, const void* value2);
 };
 
 struct hashMapIterator {

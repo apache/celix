@@ -66,6 +66,6 @@ celix_status_t serviceRegistration_getService(service_registration_pt registrati
 celix_status_t serviceRegistration_ungetService(service_registration_pt registration, bundle_pt bundle, void **service);
 
 celix_status_t serviceRegistration_getBundle(service_registration_pt registration, bundle_pt *bundle);
-celix_status_t serviceRegistration_getServiceName(service_registration_pt registration, char **serviceName);
+celix_status_t serviceRegistration_getServiceName(service_registration_pt registration, const char **serviceName);
 
 #endif /* SERVICE_REGISTRATION_PRIVATE_H_ */

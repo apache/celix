@@ -41,15 +41,15 @@ struct log_entry {
 
 typedef struct log_entry * log_entry_pt;
 
-celix_status_t logEntry_create(long bundleId, char* bundleSymbolicName , service_reference_pt reference,
+celix_status_t logEntry_create(long bundleId, const char* bundleSymbolicName , service_reference_pt reference,
         log_level_t level, char *message, int errorCode,
         log_entry_pt *entry);
 celix_status_t logEntry_destroy(log_entry_pt *entry);
-celix_status_t logEntry_getBundleSymbolicName(log_entry_pt entry, char **bundleSymbolicName);
+celix_status_t logEntry_getBundleSymbolicName(log_entry_pt entry, const char** bundleSymbolicName);
 celix_status_t logEntry_getBundleId(log_entry_pt entry, long *bundleId);
 celix_status_t logEntry_getErrorCode(log_entry_pt entry, int *errorCode);
 celix_status_t logEntry_getLevel(log_entry_pt entry, log_level_t *level);
-celix_status_t logEntry_getMessage(log_entry_pt entry, char **message);
+celix_status_t logEntry_getMessage(log_entry_pt entry, const char** message);
 celix_status_t logEntry_getTime(log_entry_pt entry, time_t *time);
 
 #endif /* LOG_ENTRY_H_ */

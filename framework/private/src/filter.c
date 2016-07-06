@@ -663,7 +663,7 @@ static celix_status_t filter_compareString(OPERAND operand, char * string, void 
 	return CELIX_SUCCESS;
 }
 
-celix_status_t filter_getString(filter_pt filter, char **filterStr) {
+celix_status_t filter_getString(filter_pt filter, const char **filterStr) {
 	if (filter != NULL) {
 		*filterStr = filter->filterStr;
 	}

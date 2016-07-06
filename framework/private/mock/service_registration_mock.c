@@ -120,7 +120,7 @@ celix_status_t serviceRegistration_getBundle(service_registration_pt registratio
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t serviceRegistration_getServiceName(service_registration_pt registration, char **serviceName) {
+celix_status_t serviceRegistration_getServiceName(service_registration_pt registration, const char **serviceName) {
 	mock_c()->actualCall("serviceRegistration_getServiceName")
 			->withPointerParameters("registration", registration)
 			->withOutputParameter("serviceName", (const char **) serviceName);

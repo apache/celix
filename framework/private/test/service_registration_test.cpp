@@ -400,7 +400,7 @@ TEST(service_registration, getServiceName) {
 	char * name = my_strdup("sevice_name");
 	service_registration_pt registration = serviceRegistration_create(callback, NULL, name, 0, NULL, NULL);
 
-	char *actual = NULL;
+	const char *actual = NULL;
 	celix_status_t status = serviceRegistration_getServiceName(registration, &actual);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	STRCMP_EQUAL(name, actual);
@@ -413,7 +413,7 @@ TEST(service_registration, getServiceNameIllegalArgument) {
 	registry_callback_t callback;
 	char * name = my_strdup("sevice_name");
 	service_registration_pt registration = serviceRegistration_create(callback, NULL, name, 0, NULL, NULL);
-	char *actual = (char *) 0x01;
+	const char *actual = (char *) 0x01;
 
 	mock().expectOneCall("framework_logCode")
 			.withParameter("code", CELIX_ILLEGAL_ARGUMENT);

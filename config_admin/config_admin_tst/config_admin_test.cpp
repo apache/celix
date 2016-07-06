@@ -295,7 +295,7 @@ tst2_service_pt test2Serv = NULL;
 			bundle_pt   fwBundle = NULL;
 			bundle_archive_pt	archive = NULL;
 			bundle_context_pt   context = NULL;
-			char                *location = NULL;
+			const char                *location = NULL;
 			/* ------------------ get Configuration -------------------*/
 
 			configuration_pt configuration;

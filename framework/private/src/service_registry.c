@@ -271,7 +271,7 @@ celix_status_t serviceRegistry_clearServiceRegistrations(service_registry_pt reg
 }
 
 static void serviceRegistry_logWarningServiceRegistration(service_registry_pt registry __attribute__((unused)), service_registration_pt reg) {
-    char *servName = NULL;
+    const char *servName = NULL;
     serviceRegistration_getServiceName(reg, &servName);
     fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Dangling service registration for service %s. Look for missing serviceRegistration_unregister calls.", servName);
 }
@@ -356,7 +356,7 @@ celix_status_t serviceRegistry_getServiceReferences(service_registry_pt registry
 				if ((serviceName == NULL) && ((filter == NULL) || matchResult)) {
 					matched = true;
 				} else if (serviceName != NULL) {
-					char *className = NULL;
+					const char *className = NULL;
 					matchResult = false;
 					serviceRegistration_getServiceName(registration, &className);
 					if (filter != NULL) {

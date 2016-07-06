@@ -146,7 +146,7 @@ TEST(requirement, getTargetName) {
 	char targetName[] = "target";
 	requirement->targetName = targetName;
 
-	char *actual = NULL;
+	const char *actual = NULL;
 	requirement_getTargetName(requirement, &actual);
 	STRCMP_EQUAL(targetName, actual);
 

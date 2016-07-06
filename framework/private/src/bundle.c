@@ -184,7 +184,7 @@ celix_status_t bundle_setContext(bundle_pt bundle, bundle_context_pt context) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundle_getEntry(bundle_pt bundle, char * name, char **entry) {
+celix_status_t bundle_getEntry(bundle_pt bundle, const char* name, const char** entry) {
 	return framework_getBundleEntry(bundle->framework, bundle, name, entry);
 }
 
@@ -223,7 +223,7 @@ celix_status_t bundle_createModule(bundle_pt bundle, module_pt *module) {
 
 			if (*module != NULL) {
 				version_pt bundleVersion = module_getVersion(*module);
-				char * symName = NULL;
+				const char * symName = NULL;
 				status = module_getSymbolicName(*module, &symName);
 				if (status == CELIX_SUCCESS) {
 					array_list_pt bundles = framework_getBundles(bundle->framework);
@@ -235,7 +235,7 @@ celix_status_t bundle_createModule(bundle_pt bundle, module_pt *module) {
 						if (bundleArchive_getId(check->archive, &id) == CELIX_SUCCESS) {
 							if (id != bundleId) {
 								module_pt mod = NULL;
-								char * sym = NULL;
+								const char * sym = NULL;
 								version_pt version;
 								int cmp;
 								status = bundle_getCurrentModule(check, &mod);
@@ -289,7 +289,7 @@ celix_status_t bundle_startWithOptions(bundle_pt bundle, int options) {
     return status;
 }
 
-celix_status_t bundle_update(bundle_pt bundle, char *inputFile) {
+celix_status_t bundle_update(bundle_pt bundle, const char *inputFile) {
 	celix_status_t status = CELIX_SUCCESS;
 	if (bundle != NULL) {
 		bool systemBundle = false;
@@ -383,7 +383,7 @@ celix_status_t bundle_setPersistentStateUninstalled(bundle_pt bundle) {
     return status;
 }
 
-celix_status_t bundle_revise(bundle_pt bundle, char * location, char *inputFile) {
+celix_status_t bundle_revise(bundle_pt bundle, const char * location, const char *inputFile) {
 	celix_status_t status;
 
 	bundle_archive_pt archive = NULL;
@@ -675,7 +675,7 @@ celix_status_t bundle_getFramework(bundle_pt bundle, framework_pt *framework) {
 	return status;
 }
 
-celix_status_t bundle_getBundleLocation(bundle_pt bundle, char **location){
+celix_status_t bundle_getBundleLocation(bundle_pt bundle, const char **location){
 
 	celix_status_t status;
 

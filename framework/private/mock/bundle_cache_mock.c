@@ -46,7 +46,7 @@ celix_status_t bundleCache_getArchives(bundle_cache_pt cache, array_list_pt *arc
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundleCache_createArchive(bundle_cache_pt cache, long id, char * location, char *inputFile, bundle_archive_pt *archive) {
+celix_status_t bundleCache_createArchive(bundle_cache_pt cache, long id, const char * location, const char *inputFile, bundle_archive_pt *archive) {
 	mock_c()->actualCall("bundleCache_createArchive")
 			->withPointerParameters("cache", cache)
 			->withLongIntParameters("id", id)

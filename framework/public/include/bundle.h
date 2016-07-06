@@ -54,11 +54,11 @@ FRAMEWORK_EXPORT activator_pt bundle_getActivator(bundle_pt bundle);
 FRAMEWORK_EXPORT celix_status_t bundle_setActivator(bundle_pt bundle, activator_pt activator);
 FRAMEWORK_EXPORT celix_status_t bundle_getContext(bundle_pt bundle, bundle_context_pt *context);
 FRAMEWORK_EXPORT celix_status_t bundle_setContext(bundle_pt bundle, bundle_context_pt context);
-FRAMEWORK_EXPORT celix_status_t bundle_getEntry(bundle_pt bundle, char * name, char **entry);
+FRAMEWORK_EXPORT celix_status_t bundle_getEntry(bundle_pt bundle, const char* name, const char** entry);
 
 FRAMEWORK_EXPORT celix_status_t bundle_start(bundle_pt bundle);
 FRAMEWORK_EXPORT celix_status_t bundle_startWithOptions(bundle_pt bundle, int options);
-FRAMEWORK_EXPORT celix_status_t bundle_update(bundle_pt bundle, char *inputFile);
+FRAMEWORK_EXPORT celix_status_t bundle_update(bundle_pt bundle, const char* inputFile);
 FRAMEWORK_EXPORT celix_status_t bundle_stop(bundle_pt bundle);
 FRAMEWORK_EXPORT celix_status_t bundle_stopWithOptions(bundle_pt bundle, int options);
 FRAMEWORK_EXPORT celix_status_t bundle_uninstall(bundle_pt bundle);
@@ -69,7 +69,7 @@ FRAMEWORK_EXPORT celix_status_t bundle_setPersistentStateUninstalled(bundle_pt b
 
 FRAMEWORK_EXPORT void uninstallBundle(bundle_pt bundle);
 
-FRAMEWORK_EXPORT celix_status_t bundle_revise(bundle_pt bundle, char * location, char *inputFile);
+FRAMEWORK_EXPORT celix_status_t bundle_revise(bundle_pt bundle, const char* location, const char* inputFile);
 FRAMEWORK_EXPORT celix_status_t bundle_addModule(bundle_pt bundle, module_pt module);
 FRAMEWORK_EXPORT celix_status_t bundle_closeModules(bundle_pt bundle);
 
@@ -96,7 +96,7 @@ FRAMEWORK_EXPORT celix_status_t bundle_getServicesInUse(bundle_pt bundle, array_
 FRAMEWORK_EXPORT celix_status_t bundle_setFramework(bundle_pt bundle, framework_pt framework);
 FRAMEWORK_EXPORT celix_status_t bundle_getFramework(bundle_pt bundle, framework_pt *framework);
 
-FRAMEWORK_EXPORT celix_status_t bundle_getBundleLocation(bundle_pt bundle, char **location);
+FRAMEWORK_EXPORT celix_status_t bundle_getBundleLocation(bundle_pt bundle, const char** location);
 
 
 #endif /* BUNDLE_H_ */

@@ -41,7 +41,7 @@
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_FILE_IO_EXCEPTION If the zip file cannot be extracted.
  */
-celix_status_t extractBundle(char * bundleName, char * revisionRoot);
+celix_status_t extractBundle(const char* bundleName, const char* revisionRoot);
 
 #endif /* ARCHIVE_H_ */
 

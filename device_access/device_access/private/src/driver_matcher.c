@@ -48,13 +48,13 @@ typedef struct match_key {
 static celix_status_t driverMatcher_get(driver_matcher_pt matcher, int key, array_list_pt *attributesV);
 static celix_status_t driverMatcher_getBestMatchInternal(driver_matcher_pt matcher, match_pt *match);
 
-unsigned int driverMatcher_matchKeyHash(void * match_key) {
-	match_key_t key = match_key;
+unsigned int driverMatcher_matchKeyHash(const void* match_key) {
+	match_key_t key = (match_key_t) match_key;
 
 	return key->matchValue;
 }
 
-int driverMatcher_matchKeyEquals(void * key, void * toCompare) {
+int driverMatcher_matchKeyEquals(const void* key, const void* toCompare) {
 	return ((match_key_t) key)->matchValue == ((match_key_t) toCompare)->matchValue;
 }
 

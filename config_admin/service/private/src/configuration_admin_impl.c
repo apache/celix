@@ -100,8 +100,8 @@ celix_status_t configurationAdmin_createFactoryConfiguration2(configuration_admi
 celix_status_t configurationAdmin_getConfiguration(configuration_admin_pt configAdmin, char *pid, configuration_pt *configuration){
 	configuration_pt config;
 
-	char *configAdminBundleLocation;
-	char *configBundleLocation;
+	const char* configAdminBundleLocation;
+	const char* configBundleLocation;
 
 
 	// (1) configurationAdmin.checkPid
@@ -117,7 +117,7 @@ celix_status_t configurationAdmin_getConfiguration(configuration_admin_pt config
 	}
 
 	// (3) delegates to configurationStore.getConfiguration
-	if ( configurationStore_getConfiguration(configAdmin->configurationStore, pid, configAdminBundleLocation, &config) != CELIX_SUCCESS ){
+	if ( configurationStore_getConfiguration(configAdmin->configurationStore, pid, (char*)configAdminBundleLocation, &config) != CELIX_SUCCESS ){
 		*configuration = NULL;
 		return CELIX_ILLEGAL_ARGUMENT;
 	}
@@ -138,7 +138,7 @@ celix_status_t configurationAdmin_getConfiguration(configuration_admin_pt config
 
 
 	// (4) config.getBundleLocation != NULL ?
-	if ( configuration_getBundleLocation2(config->handle,false,&configBundleLocation) == CELIX_SUCCESS ){
+	if ( configuration_getBundleLocation2(config->handle,false,(char**)&configBundleLocation) == CELIX_SUCCESS ){
 
 		if ( strcmp(configAdminBundleLocation,configBundleLocation) != 0 ){
 

@@ -33,7 +33,7 @@ celix_status_t manifest_create(manifest_pt *manifest) {
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t manifest_createFromFile(char *filename, manifest_pt *manifest) {
+celix_status_t manifest_createFromFile(const char *filename, manifest_pt *manifest) {
     mock_c()->actualCall("manifest_createFromFile")
         ->withStringParameters("filename", filename)
         ->withOutputParameter("manifest", (void **) manifest);
@@ -61,16 +61,16 @@ celix_status_t manifest_getEntries(manifest_pt manifest, hash_map_pt *map) {
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t manifest_read(manifest_pt manifest, char *filename) {
+celix_status_t manifest_read(manifest_pt manifest, const char *filename) {
 	mock_c()->actualCall("manifest_read");
 	return mock_c()->returnValue().value.intValue;
 }
 
-void manifest_write(manifest_pt manifest, char * filename) {
+void manifest_write(manifest_pt manifest, const char * filename) {
 	mock_c()->actualCall("manifest_write");
 }
 
-char * manifest_getValue(manifest_pt manifest, const char * name) {
+const char * manifest_getValue(manifest_pt manifest, const char * name) {
 	mock_c()->actualCall("manifest_getValue")
 			->withStringParameters("name", name);
 	return (char *) mock_c()->returnValue().value.stringValue;

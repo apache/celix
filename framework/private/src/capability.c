@@ -84,7 +84,7 @@ celix_status_t capability_destroy(capability_pt capability) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t capability_getServiceName(capability_pt capability, char **serviceName) {
+celix_status_t capability_getServiceName(capability_pt capability, const char **serviceName) {
 	*serviceName = capability->serviceName;
 	return CELIX_SUCCESS;
 }

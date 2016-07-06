@@ -415,7 +415,7 @@ celix_status_t configuration_bind(configuration_impl_pt configuration, bundle_pt
 		// (2): it's the configuration located?
 		if ( configuration->bundleLocation != NULL ){//(2): Yes
 
-			if ( bundle_getBundleLocation(bundle, &bundleLocation) != CELIX_SUCCESS){
+			if ( bundle_getBundleLocation(bundle, (const char**)&bundleLocation) != CELIX_SUCCESS){
 				configuration_unlock(configuration);
 				return CELIX_ILLEGAL_ARGUMENT;
 			}
@@ -459,7 +459,7 @@ celix_status_t configuration_unbind(configuration_impl_pt configuration, bundle_
     return CELIX_SUCCESS;
 }
 
-celix_status_t configuration_getBundleLocation2(configuration_impl_pt configuration, bool checkPermission, char **location){
+celix_status_t configuration_getBundleLocation2(configuration_impl_pt configuration, bool checkPermission, char** location){
 
 	celix_status_t status;
 
@@ -488,7 +488,7 @@ celix_status_t configuration_getBundleLocation2(configuration_impl_pt configurat
 
 	// (5)
 	if ( configuration->boundBundle != NULL ){
-		status = bundle_getBundleLocation(configuration->boundBundle,location);
+		status = bundle_getBundleLocation(configuration->boundBundle,(const char**)location);
 		configuration_unlock(configuration);
 		return status;
 	}

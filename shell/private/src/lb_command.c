@@ -115,9 +115,9 @@ celix_status_t psCommand_execute(void *_ptr, char *command_line_str, FILE *out_p
             bundle_archive_pt archive_ptr = NULL;
             long id = 0;
             bundle_state_e state = OSGI_FRAMEWORK_BUNDLE_UNKNOWN;
-            char *state_str = NULL;
+            const char *state_str = NULL;
             module_pt module_ptr = NULL;
-            char *name_str = NULL;
+            const char *name_str = NULL;
 
             sub_status = bundle_getArchive(bundle_ptr, &archive_ptr);
             if (sub_status == CELIX_SUCCESS) {

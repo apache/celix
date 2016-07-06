@@ -27,7 +27,7 @@
 
 #include "archive.h"
 
-celix_status_t extractBundle(char * bundleName, char * revisionRoot) {
+celix_status_t extractBundle(const char * bundleName, const char * revisionRoot) {
 	mock_c()->actualCall("extractBundle")
 			->withStringParameters("bundleName", bundleName)
 			->withStringParameters("revisionRoot", revisionRoot);

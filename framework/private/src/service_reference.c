@@ -279,9 +279,9 @@ celix_status_t serviceReference_equals(service_reference_pt reference, service_r
 	return status;
 }
 
-int serviceReference_equals2(void *reference1, void *reference2) {
+int serviceReference_equals2(const void* reference1, const void* reference2) {
 	bool equal;
-	serviceReference_equals(reference1, reference2, &equal);
+	serviceReference_equals((service_reference_pt)reference1, (service_reference_pt)reference2, &equal);
 	return equal;
 }
 
@@ -312,8 +312,8 @@ celix_status_t serviceReference_compareTo(service_reference_pt reference, servic
 	return status;
 }
 
-unsigned int serviceReference_hashCode(void *referenceP) {
-    service_reference_pt ref = referenceP;
+unsigned int serviceReference_hashCode(const void *referenceP) {
+    service_reference_pt ref = (service_reference_pt)referenceP;
     bundle_pt bundle = NULL;
     service_registration_pt reg = NULL;
 

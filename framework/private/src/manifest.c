@@ -63,7 +63,7 @@ celix_status_t manifest_destroy(manifest_pt manifest) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t manifest_createFromFile(char *filename, manifest_pt *manifest) {
+celix_status_t manifest_createFromFile(const char *filename, manifest_pt *manifest) {
 	celix_status_t status;
 
 	status = manifest_create(manifest);
@@ -90,7 +90,7 @@ celix_status_t manifest_getEntries(manifest_pt manifest, hash_map_pt *map) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t manifest_read(manifest_pt manifest, char *filename) {
+celix_status_t manifest_read(manifest_pt manifest, const char *filename) {
     celix_status_t status = CELIX_SUCCESS;
 
 	FILE *file = fopen ( filename, "r" );
@@ -182,14 +182,14 @@ celix_status_t manifest_read(manifest_pt manifest, char *filename) {
 	return status;
 }
 
-void manifest_write(manifest_pt manifest, char * filename) {
+void manifest_write(manifest_pt manifest, const char * filename) {
 
 }
 
-char * manifest_getValue(manifest_pt manifest, const char * name) {
+const char* manifest_getValue(manifest_pt manifest, const char* name) {
 	const char* val = properties_get(manifest->mainAttributes, name);
 	bool isEmpty = utils_isStringEmptyOrNull(val);
-	return isEmpty ? NULL : (char*)val;
+	return isEmpty ? NULL : val;
 }
 
 int fpeek(FILE *stream) {

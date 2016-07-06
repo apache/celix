@@ -46,7 +46,7 @@ celix_status_t filter_match(filter_pt filter, properties_pt properties, bool *re
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t filter_getString(filter_pt filter, char **filterStr) {
+celix_status_t filter_getString(filter_pt filter, const char **filterStr) {
 	mock_c()->actualCall("filter_getString")
 			->withPointerParameters("filter", filter)
 			->withOutputParameter("filterStr", filterStr);

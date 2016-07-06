@@ -34,7 +34,7 @@
 #include "archive.h"
 #include "celix_log.h"
 
-celix_status_t bundleRevision_create(char *root, char *location, long revisionNr, char *inputFile, bundle_revision_pt *bundle_revision) {
+celix_status_t bundleRevision_create(const char *root, const char *location, long revisionNr, const char *inputFile, bundle_revision_pt *bundle_revision) {
     celix_status_t status = CELIX_SUCCESS;
 	bundle_revision_pt revision = NULL;
 
@@ -102,7 +102,7 @@ celix_status_t bundleRevision_getNumber(bundle_revision_pt revision, long *revis
 	return status;
 }
 
-celix_status_t bundleRevision_getLocation(bundle_revision_pt revision, char **location) {
+celix_status_t bundleRevision_getLocation(bundle_revision_pt revision, const char **location) {
 	celix_status_t status = CELIX_SUCCESS;
 	if (revision == NULL) {
 		status = CELIX_ILLEGAL_ARGUMENT;
@@ -115,7 +115,7 @@ celix_status_t bundleRevision_getLocation(bundle_revision_pt revision, char **lo
 	return status;
 }
 
-celix_status_t bundleRevision_getRoot(bundle_revision_pt revision, char **root) {
+celix_status_t bundleRevision_getRoot(bundle_revision_pt revision, const char **root) {
 	celix_status_t status = CELIX_SUCCESS;
 	if (revision == NULL) {
 		status = CELIX_ILLEGAL_ARGUMENT;

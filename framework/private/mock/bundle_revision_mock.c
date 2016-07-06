@@ -27,7 +27,7 @@
 
 #include "bundle_revision.h"
 
-celix_status_t bundleRevision_create(char *root, char *location, long revisionNr, char *inputFile, bundle_revision_pt *bundle_revision) {
+celix_status_t bundleRevision_create(const char *root, const char *location, long revisionNr, const char *inputFile, bundle_revision_pt *bundle_revision) {
 	mock_c()->actualCall("bundleRevision_create")
 			->withStringParameters("root", root)
 			->withStringParameters("location", location)
@@ -49,14 +49,14 @@ celix_status_t bundleRevision_getNumber(bundle_revision_pt revision, long *revis
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundleRevision_getLocation(bundle_revision_pt revision, char **location) {
+celix_status_t bundleRevision_getLocation(bundle_revision_pt revision, const char **location) {
 	mock_c()->actualCall("bundleRevision_getLocation")
 			->withPointerParameters("revision", revision)
 			->withOutputParameter("location", location);
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundleRevision_getRoot(bundle_revision_pt revision, char **root) {
+celix_status_t bundleRevision_getRoot(bundle_revision_pt revision, const char **root) {
 	mock_c()->actualCall("bundleRevision_getRoot")
 			->withPointerParameters("revision", revision)
 			->withOutputParameter("root", root);

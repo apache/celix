@@ -46,7 +46,7 @@ static celix_status_t serviceTracker_invokeModifiedService(service_tracker_pt tr
 static celix_status_t serviceTracker_invokeRemovingService(service_tracker_pt tracker, service_reference_pt ref,
                                                            void *service);
 
-celix_status_t serviceTracker_create(bundle_context_pt context, char * service, service_tracker_customizer_pt customizer, service_tracker_pt *tracker) {
+celix_status_t serviceTracker_create(bundle_context_pt context, const char * service, service_tracker_customizer_pt customizer, service_tracker_pt *tracker) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (service == NULL || *tracker != NULL) {
@@ -64,7 +64,7 @@ celix_status_t serviceTracker_create(bundle_context_pt context, char * service, 
 	return status;
 }
 
-celix_status_t serviceTracker_createWithFilter(bundle_context_pt context, char * filter, service_tracker_customizer_pt customizer, service_tracker_pt *tracker) {
+celix_status_t serviceTracker_createWithFilter(bundle_context_pt context, const char * filter, service_tracker_customizer_pt customizer, service_tracker_pt *tracker) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*tracker = (service_tracker_pt) malloc(sizeof(**tracker));

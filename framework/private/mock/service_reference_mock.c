@@ -164,10 +164,10 @@ celix_status_t serviceReference_equals(service_reference_pt reference, service_r
 	return mock_c()->returnValue().value.intValue;
 }
 
-int serviceReference_equals2(void *reference1, void *reference2) {
+int serviceReference_equals2(const void *reference1, const void *reference2) {
 	mock_c()->actualCall("serviceReference_equals2")
-			->withPointerParameters("reference1", reference1)
-			->withPointerParameters("reference2", reference2);
+			->withPointerParameters("reference1", (void*)reference1)
+			->withPointerParameters("reference2", (void*)reference2);
 	return mock_c()->returnValue().value.intValue;
 }
 
@@ -179,7 +179,7 @@ celix_status_t serviceReference_compareTo(service_reference_pt reference, servic
 	return mock_c()->returnValue().value.intValue;
 }
 
-unsigned int serviceReference_hashCode(void *referenceP) {
+unsigned int serviceReference_hashCode(const void *referenceP) {
 	mock_c()->actualCall("serviceReference_hashCode");
 	return mock_c()->returnValue().value.intValue;
 }

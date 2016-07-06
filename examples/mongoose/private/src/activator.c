@@ -44,7 +44,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	struct userData * data = (struct userData *) userData;
 
 	if (bundleContext_getBundle(context, &bundle) == CELIX_SUCCESS) {
-		char *entry = NULL;
+		const char* entry = NULL;
 		bundle_getEntry(bundle, "root", &entry);
 		const char *options[] = {
 			"document_root", entry,

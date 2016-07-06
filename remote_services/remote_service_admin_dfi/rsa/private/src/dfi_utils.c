@@ -51,7 +51,7 @@ static celix_status_t dfi_findFileForFramework(bundle_context_pt context, const 
 static celix_status_t dfi_findFileForBundle(bundle_pt bundle, const char *fileName, FILE **out) {
     celix_status_t  status;
 
-    char *path = NULL;
+    const char *path = NULL;
     char metaInfFileName[128];
     snprintf(metaInfFileName, sizeof(metaInfFileName), "META-INF/descriptors/%s", fileName);
 
@@ -69,7 +69,6 @@ static celix_status_t dfi_findFileForBundle(bundle_pt bundle, const char *fileNa
             *out = df;
         }
 
-        free(path);
     }
     return status;
 }

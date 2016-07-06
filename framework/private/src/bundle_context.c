@@ -98,11 +98,11 @@ celix_status_t bundleContext_getFramework(bundle_context_pt context, framework_p
 	return status;
 }
 
-celix_status_t bundleContext_installBundle(bundle_context_pt context, char * location, bundle_pt *bundle) {
+celix_status_t bundleContext_installBundle(bundle_context_pt context, const char * location, bundle_pt *bundle) {
 	return bundleContext_installBundle2(context, location, NULL, bundle);
 }
 
-celix_status_t bundleContext_installBundle2(bundle_context_pt context, char * location, char *inputFile, bundle_pt *bundle) {
+celix_status_t bundleContext_installBundle2(bundle_context_pt context, const char * location, const char *inputFile, bundle_pt *bundle) {
 	celix_status_t status = CELIX_SUCCESS;
 	bundle_pt b = NULL;
 
@@ -155,7 +155,7 @@ celix_status_t bundleContext_registerServiceFactory(bundle_context_pt context, c
     return status;
 }
 
-celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, const char * serviceName, char * filter, array_list_pt *service_references) {
+celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, const char * serviceName, const char * filter, array_list_pt *service_references) {
     celix_status_t status = CELIX_SUCCESS;
 
     if (context != NULL && *service_references == NULL) {

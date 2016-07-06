@@ -59,7 +59,7 @@ celix_status_t driverAttributes_create(service_reference_pt reference, driver_se
 				(*attributes)->driver = driver;
 				(*attributes)->bundle = bundle;
 
-				char *location;
+				const char *location;
 				status = bundleArchive_getLocation(bundleArchive, &location);
 				if (status == CELIX_SUCCESS) {
 					(*attributes)->dynamic = strncmp(location, DRIVER_LOCATION_PREFIX, 4) == 0 ? true : false;

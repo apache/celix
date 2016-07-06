@@ -28,8 +28,8 @@
 
 #include "utils.h"
 
-unsigned int utils_stringHash(void * strPtr) {
-    char * string = strPtr;
+unsigned int utils_stringHash(const void* strPtr) {
+    const char* string = strPtr;
     unsigned int hash = 5381;
     unsigned int i = 0;
     unsigned int len = strlen(string);
@@ -40,8 +40,8 @@ unsigned int utils_stringHash(void * strPtr) {
     return hash;
 }
 
-int utils_stringEquals(void * string, void * toCompare) {
-	return strcmp((char *)string, (char *) toCompare) == 0;
+int utils_stringEquals(const void* string, const void* toCompare) {
+	return strcmp((const char*)string, (const char*)toCompare) == 0;
 }
 
 char * string_ndup(const char *s, size_t n) {
@@ -113,7 +113,7 @@ celix_status_t thread_equalsSelf(celix_thread_t thread, bool *equals) {
 	return status;
 }
 
-celix_status_t utils_isNumeric(char *number, bool *ret) {
+celix_status_t utils_isNumeric(const char *number, bool *ret) {
 	celix_status_t status = CELIX_SUCCESS;
 	*ret = true;
 	while(*number) {

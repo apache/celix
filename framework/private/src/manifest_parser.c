@@ -49,11 +49,11 @@ struct manifestParser {
 	linked_list_pt requirements;
 };
 
-static linked_list_pt manifestParser_parseImportHeader(char * header);
-static linked_list_pt manifestParser_parseExportHeader(module_pt module, char * header);
-static linked_list_pt manifestParser_parseDelimitedString(char * value, char * delim);
-static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseString);
-static linked_list_pt manifestParser_parseStandardHeader(char * header);
+static linked_list_pt manifestParser_parseImportHeader(const char* header);
+static linked_list_pt manifestParser_parseExportHeader(module_pt module, const char* header);
+static linked_list_pt manifestParser_parseDelimitedString(const char* value, const char* delim);
+static linked_list_pt manifestParser_parseStandardHeaderClause(const char* clauseString);
+static linked_list_pt manifestParser_parseStandardHeader(const char* header);
 
 celix_status_t manifestParser_create(module_pt owner, manifest_pt manifest, manifest_parser_pt *manifest_parser) {
 	celix_status_t status;
@@ -62,8 +62,8 @@ celix_status_t manifestParser_create(module_pt owner, manifest_pt manifest, mani
 	status = CELIX_SUCCESS;
 	parser = (manifest_parser_pt) malloc(sizeof(*parser));
 	if (parser) {
-		char * bundleVersion = NULL;
-		char * bundleSymbolicName = NULL;
+		const char * bundleVersion = NULL;
+		const char * bundleSymbolicName = NULL;
 		parser->manifest = manifest;
 		parser->owner = owner;
 
@@ -77,7 +77,7 @@ celix_status_t manifestParser_create(module_pt owner, manifest_pt manifest, mani
 		}
 		bundleSymbolicName = manifest_getValue(manifest, OSGI_FRAMEWORK_BUNDLE_SYMBOLICNAME);
 		if (bundleSymbolicName != NULL) {
-			parser->bundleSymbolicName = bundleSymbolicName;
+			parser->bundleSymbolicName = (char*)bundleSymbolicName;
 		}
 
 		parser->capabilities = manifestParser_parseExportHeader(owner, manifest_getValue(manifest, OSGI_FRAMEWORK_EXPORT_LIBRARY));
@@ -111,7 +111,7 @@ celix_status_t manifestParser_destroy(manifest_parser_pt mp) {
 	return CELIX_SUCCESS;
 }
 
-static linked_list_pt manifestParser_parseDelimitedString(char * value, char * delim) {
+static linked_list_pt manifestParser_parseDelimitedString(const char * value, const char * delim) {
 	linked_list_pt list;
 
 	if (linkedList_create(&list) == CELIX_SUCCESS) {
@@ -169,7 +169,7 @@ static linked_list_pt manifestParser_parseDelimitedString(char * value, char * d
 	return list;
 }
 
-static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseString) {
+static linked_list_pt manifestParser_parseStandardHeaderClause(const char * clauseString) {
 	linked_list_pt paths = NULL;
 	linked_list_pt clause = NULL;
 	linked_list_pt pieces = NULL;
@@ -312,7 +312,7 @@ static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseStri
 	return clause;
 }
 
-static linked_list_pt manifestParser_parseStandardHeader(char * header) {
+static linked_list_pt manifestParser_parseStandardHeader(const char * header) {
 	linked_list_pt clauseStrings = NULL;
 	linked_list_pt completeList = NULL;
 
@@ -341,7 +341,7 @@ static linked_list_pt manifestParser_parseStandardHeader(char * header) {
 	return completeList;
 }
 
-static linked_list_pt manifestParser_parseImportHeader(char * header) {
+static linked_list_pt manifestParser_parseImportHeader(const char * header) {
 	linked_list_pt clauses = NULL;
 	linked_list_pt requirements = NULL;
 	bool failure = false;
@@ -403,7 +403,7 @@ static linked_list_pt manifestParser_parseImportHeader(char * header) {
 	return requirements;
 }
 
-static linked_list_pt manifestParser_parseExportHeader(module_pt module, char * header) {
+static linked_list_pt manifestParser_parseExportHeader(module_pt module, const char * header) {
 	linked_list_pt clauses = NULL;
 	linked_list_pt capabilities = NULL;
 	int clauseIdx;
@@ -464,8 +464,8 @@ static linked_list_pt manifestParser_parseExportHeader(module_pt module, char * 
 	return capabilities;
 }
 
-celix_status_t manifestParser_getSymbolicName(manifest_parser_pt parser, char **symbolicName) {
-	*symbolicName = strdup(parser->bundleSymbolicName);
+celix_status_t manifestParser_getAndDuplicateSymbolicName(manifest_parser_pt parser, char **symbolicName) {
+	*symbolicName = strndup(parser->bundleSymbolicName, 1024*10);
 	return CELIX_SUCCESS;
 }
 

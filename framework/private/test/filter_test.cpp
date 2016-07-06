@@ -544,7 +544,7 @@ TEST(filter, getString){
 	char * filter_str = my_strdup("(&(test_attr1=attr1)(|(test_attr2=attr2)(test_attr3=attr3)))");
 	filter_pt filter = filter_create(filter_str);
 
-	char * get_str;
+	const char * get_str;
 	filter_getString(filter, &get_str);
 
 	//cleanup

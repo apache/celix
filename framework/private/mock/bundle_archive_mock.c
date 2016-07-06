@@ -27,7 +27,7 @@
 
 #include "bundle_archive.h"
 
-celix_status_t bundleArchive_create(char * archiveRoot, long id, char * location, char *inputFile, bundle_archive_pt *bundle_archive) {
+celix_status_t bundleArchive_create(const char * archiveRoot, long id, const char * location, const char *inputFile, bundle_archive_pt *bundle_archive) {
 	mock_c()->actualCall("bundleArchive_create")
 			->withStringParameters("archiveRoot", archiveRoot)
 			->withIntParameters("id", id)
@@ -43,7 +43,7 @@ celix_status_t bundleArchive_createSystemBundleArchive(bundle_archive_pt *bundle
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundleArchive_recreate(char * archiveRoot, bundle_archive_pt *bundle_archive) {
+celix_status_t bundleArchive_recreate(const char * archiveRoot, bundle_archive_pt *bundle_archive) {
 	mock_c()->actualCall("bundleArchive_recreate")
 			->withStringParameters("archiveRoot", archiveRoot)
 			->withOutputParameter("bundle_archive", (void **) bundle_archive);
@@ -62,21 +62,21 @@ celix_status_t bundleArchive_getId(bundle_archive_pt archive, long *id) {
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundleArchive_getLocation(bundle_archive_pt archive, char **location) {
+celix_status_t bundleArchive_getLocation(bundle_archive_pt archive, const char **location) {
 	mock_c()->actualCall("bundleArchive_getLocation")
 			->withPointerParameters("archive", archive)
 			->withOutputParameter("location", location);
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundleArchive_getArchiveRoot(bundle_archive_pt archive, char **archiveRoot) {
+celix_status_t bundleArchive_getArchiveRoot(bundle_archive_pt archive, const char **archiveRoot) {
 	mock_c()->actualCall("bundleArchive_getArchiveRoot")
 			->withPointerParameters("archive", archive)
 			->withOutputParameter("archiveRoot", archiveRoot);
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundleArchive_revise(bundle_archive_pt archive, char * location, char *inputFile) {
+celix_status_t bundleArchive_revise(bundle_archive_pt archive, const char * location, const char *inputFile) {
 	mock_c()->actualCall("bundleArchive_revise")
 			->withPointerParameters("archive", archive)
 			->withStringParameters("location", location)

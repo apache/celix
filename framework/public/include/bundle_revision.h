@@ -62,7 +62,7 @@ typedef struct bundleRevision * bundle_revision_pt;
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ENOMEM If allocating memory for <code>bundle_revision</code> failed.
  */
-celix_status_t bundleRevision_create(char *root, char *location, long revisionNr, char *inputFile, bundle_revision_pt *bundle_revision);
+celix_status_t bundleRevision_create(const char* root, const char* location, long revisionNr, const char* inputFile, bundle_revision_pt *bundle_revision);
 
 celix_status_t bundleRevision_destroy(bundle_revision_pt revision);
 
@@ -88,7 +88,7 @@ celix_status_t bundleRevision_getNumber(bundle_revision_pt revision, long *revis
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ILLEGAL_ARGUMENT If <code>revision</code> is illegal.
  */
-celix_status_t bundleRevision_getLocation(bundle_revision_pt revision, char **location);
+celix_status_t bundleRevision_getLocation(bundle_revision_pt revision, const char** location);
 
 /**
  * Retrieves the root of the given revision.
@@ -100,7 +100,7 @@ celix_status_t bundleRevision_getLocation(bundle_revision_pt revision, char **lo
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ILLEGAL_ARGUMENT If <code>revision</code> is illegal.
  */
-celix_status_t bundleRevision_getRoot(bundle_revision_pt revision, char **root);
+celix_status_t bundleRevision_getRoot(bundle_revision_pt revision, const char** root);
 
 /**
  * Retrieves the manifest of the given revision.

@@ -47,12 +47,12 @@ celix_status_t bundleContext_destroy(bundle_context_pt context);
 FRAMEWORK_EXPORT celix_status_t bundleContext_getBundle(bundle_context_pt context, bundle_pt *bundle);
 FRAMEWORK_EXPORT celix_status_t bundleContext_getFramework(bundle_context_pt context, framework_pt *framework);
 
-FRAMEWORK_EXPORT celix_status_t bundleContext_installBundle(bundle_context_pt context, char * location, bundle_pt *bundle);
-FRAMEWORK_EXPORT celix_status_t bundleContext_installBundle2(bundle_context_pt context, char * location, char *inputFile, bundle_pt *bundle);
+FRAMEWORK_EXPORT celix_status_t bundleContext_installBundle(bundle_context_pt context, const char* location, bundle_pt *bundle);
+FRAMEWORK_EXPORT celix_status_t bundleContext_installBundle2(bundle_context_pt context, const char* location, const char* inputFile, bundle_pt *bundle);
 
-FRAMEWORK_EXPORT celix_status_t bundleContext_registerService(bundle_context_pt context, const char * serviceName, void * svcObj,
+FRAMEWORK_EXPORT celix_status_t bundleContext_registerService(bundle_context_pt context, const char* serviceName, void * svcObj,
         properties_pt properties, service_registration_pt *service_registration);
-FRAMEWORK_EXPORT celix_status_t bundleContext_registerServiceFactory(bundle_context_pt context, const char * serviceName, service_factory_pt factory,
+FRAMEWORK_EXPORT celix_status_t bundleContext_registerServiceFactory(bundle_context_pt context, const char* serviceName, service_factory_pt factory,
         properties_pt properties, service_registration_pt *service_registration);
 
 /**
@@ -75,7 +75,7 @@ FRAMEWORK_EXPORT celix_status_t bundleContext_getServiceReference(bundle_context
  * @param service_references _output_ a array list, can be size 0. 
  * @return CELIX_SUCCESS on success
  */
-FRAMEWORK_EXPORT celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, const char * serviceName, char * filter, array_list_pt *service_references);
+FRAMEWORK_EXPORT celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, const char * serviceName, const char * filter, array_list_pt *service_references);
 
 /**
  * Retains (increases the ref count) the provided service reference. Can be used to retain a service reference.

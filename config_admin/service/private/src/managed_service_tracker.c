@@ -306,7 +306,7 @@ celix_status_t managedServiceTracker_add(managed_service_tracker_pt tracker, ser
     celix_status_t status;
 
     bundle_pt bundle = NULL;
-    char *bundleLocation;
+    const char* bundleLocation;
 
     configuration_pt configuration = NULL;
     properties_pt properties = NULL;
@@ -328,7 +328,7 @@ celix_status_t managedServiceTracker_add(managed_service_tracker_pt tracker, ser
             }
 
             // (1) creates a new Configuration for the ManagedService
-            if (configurationStore_getConfiguration(tracker->configurationStore, pid, bundleLocation, &configuration) != CELIX_SUCCESS || configuration == NULL) {
+            if (configurationStore_getConfiguration(tracker->configurationStore, pid, (char*)bundleLocation, &configuration) != CELIX_SUCCESS || configuration == NULL) {
                 return CELIX_ILLEGAL_ARGUMENT;
             }
 

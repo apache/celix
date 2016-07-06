@@ -264,7 +264,7 @@ celix_status_t serviceRegistration_getBundle(service_registration_pt registratio
 	return status;
 }
 
-celix_status_t serviceRegistration_getServiceName(service_registration_pt registration, char **serviceName) {
+celix_status_t serviceRegistration_getServiceName(service_registration_pt registration, const char **serviceName) {
 	celix_status_t status = CELIX_SUCCESS;
 
     if (registration != NULL && *serviceName == NULL) {

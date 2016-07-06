@@ -59,7 +59,7 @@ celix_status_t fw_getProperty(framework_pt framework, const char *name, const ch
 		return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t fw_installBundle(framework_pt framework, bundle_pt * bundle, char * location, char *inputFile) {
+celix_status_t fw_installBundle(framework_pt framework, bundle_pt * bundle, const char * location, const char *inputFile) {
 	mock_c()->actualCall("fw_installBundle")
 			->withPointerParameters("framework", framework)
 			->withStringParameters("location", location)
@@ -75,7 +75,7 @@ celix_status_t fw_uninstallBundle(framework_pt framework, bundle_pt bundle) {
 		return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t framework_getBundleEntry(framework_pt framework, bundle_pt bundle, char *name, char **entry) {
+celix_status_t framework_getBundleEntry(framework_pt framework, bundle_pt bundle, const char *name, const char **entry) {
 	mock_c()->actualCall("framework_getBundleEntry")
 			->withPointerParameters("framework", framework)
 			->withPointerParameters("bundle", bundle)
@@ -93,7 +93,7 @@ celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int opti
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t framework_updateBundle(framework_pt framework, bundle_pt bundle, char *inputFile) {
+celix_status_t framework_updateBundle(framework_pt framework, bundle_pt bundle, const char *inputFile) {
 	mock_c()->actualCall("framework_updateBundle")
 		->withPointerParameters("framework", framework)
 		->withPointerParameters("bundle", bundle)
@@ -137,7 +137,7 @@ void fw_unregisterService(service_registration_pt registration) {
 }
 
 
-celix_status_t fw_getServiceReferences(framework_pt framework, array_list_pt *references, bundle_pt bundle, const char * serviceName, char * filter) {
+celix_status_t fw_getServiceReferences(framework_pt framework, array_list_pt *references, bundle_pt bundle, const char * serviceName, const char * filter) {
 	mock_c()->actualCall("fw_getServiceReferences")
 		->withPointerParameters("framework", framework)
 		->withPointerParameters("bundle", bundle)
@@ -296,7 +296,7 @@ array_list_pt framework_getBundles(framework_pt framework) {
 		return mock_c()->returnValue().value.pointerValue;
 }
 
-bundle_pt framework_getBundle(framework_pt framework, char * location) {
+bundle_pt framework_getBundle(framework_pt framework, const char* location) {
 	mock_c()->actualCall("framework_getBundle")
 			->withPointerParameters("framework", framework)
 			->withStringParameters("location", location);

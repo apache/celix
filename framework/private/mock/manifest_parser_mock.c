@@ -41,7 +41,7 @@ celix_status_t manifestParser_destroy(manifest_parser_pt manifest_parser) {
     return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t manifestParser_getSymbolicName(manifest_parser_pt parser, char **symbolicName) {
+celix_status_t manifestParser_getAndDuplicateSymbolicName(manifest_parser_pt parser, char **symbolicName) {
 	mock_c()->actualCall("manifestParser_getSymbolicName")
 			->withPointerParameters("parser", parser)
 			->withOutputParameter("symbolicName", (void**) symbolicName);
