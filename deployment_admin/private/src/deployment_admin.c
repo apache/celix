@@ -57,7 +57,11 @@
 #include "miniunz.h"
 
 #define IDENTIFICATION_ID "deployment_admin_identification"
-#define DISCOVERY_URL "deployment_admin_url"
+#define DEFAULT_IDENTIFICATION_ID "celix"
+
+#define ADMIN_URL "deployment_admin_url"
+#define DEFAULT_ADMIN_URL "localhost:8080"
+
 #define DEPLOYMENT_CACHE_DIR "deployment_cache_dir"
 #define DEPLOYMENT_TAGS "deployment_tags"
 // "http://localhost:8080/deployment/"
@@ -98,6 +102,11 @@ celix_status_t deploymentAdmin_create(bundle_context_pt context, deployment_admi
 		(*admin)->auditlogUrl = NULL;
 
         bundleContext_getProperty(context, IDENTIFICATION_ID, (const char**) &(*admin)->targetIdentification);
+        if ((*admin)->targetIdentification == NULL) {
+        	(*admin)->targetIdentification = DEFAULT_IDENTIFICATION_ID;
+        	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Identification ID not set, using default '%s'. Set id by using '%s'",
+        		DEFAULT_IDENTIFICATION_ID, IDENTIFICATION_ID);
+        }
 
         struct timeval tv;
 		gettimeofday(&tv,NULL);
@@ -106,25 +115,26 @@ celix_status_t deploymentAdmin_create(bundle_context_pt context, deployment_admi
 
 		if ((*admin)->targetIdentification == NULL ) {
 		    fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Target name must be set using \"deployment_admin_identification\"");
-			status = CELIX_ILLEGAL_ARGUMENT;
 		} else {
 			const char *url = NULL;
-			bundleContext_getProperty(context, DISCOVERY_URL, &url);
+			bundleContext_getProperty(context, ADMIN_URL, &url);
 			if (url == NULL) {
-			    fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "URL must be set using \"deployment_admin_url\"\n");
-				status = CELIX_ILLEGAL_ARGUMENT;
-			} else {
-				int pollUrlLength = strlen(url) + strlen((*admin)->targetIdentification) + strlen(VERSIONS) + 13;
-				int auditlogUrlLength = strlen(url) + 10;
+				url = DEFAULT_ADMIN_URL;
+			    fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Server URL is not set, using default '%s'. Set id by using '%s'",
+        			DEFAULT_ADMIN_URL, ADMIN_URL);
+			}
+		
+			int pollUrlLength = strlen(url) + strlen((*admin)->targetIdentification) + strlen(VERSIONS) + 13;
+			int auditlogUrlLength = strlen(url) + 10;
 
-				char pollUrl[pollUrlLength];
-				char auditlogUrl[auditlogUrlLength];
+			char pollUrl[pollUrlLength];
+			char auditlogUrl[auditlogUrlLength];
 
-				snprintf(pollUrl, pollUrlLength, "%s/deployment/%s%s", url, (*admin)->targetIdentification, VERSIONS);
-				snprintf(auditlogUrl, auditlogUrlLength, "%s/auditlog", url);
+			snprintf(pollUrl, pollUrlLength, "%s/deployment/%s%s", url, (*admin)->targetIdentification, VERSIONS);
+			snprintf(auditlogUrl, auditlogUrlLength, "%s/auditlog", url);
 
-				(*admin)->pollUrl = strdup(pollUrl);
-				(*admin)->auditlogUrl = strdup(auditlogUrl);
+			(*admin)->pollUrl = strdup(pollUrl);
+			(*admin)->auditlogUrl = strdup(auditlogUrl);
 
 //				log_store_pt store = NULL;
 //				log_pt log = NULL;
@@ -136,8 +146,7 @@ celix_status_t deploymentAdmin_create(bundle_context_pt context, deployment_admi
 //				log_log(log, 20000, NULL);
 
 
-				celixThread_create(&(*admin)->poller, NULL, deploymentAdmin_poll, *admin);
-			}
+			celixThread_create(&(*admin)->poller, NULL, deploymentAdmin_poll, *admin);
 		}
 	}
 

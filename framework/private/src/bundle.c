@@ -67,7 +67,6 @@ celix_status_t bundle_create(bundle_pt * bundle) {
 			(*bundle)->lockThread = celix_thread_default;
         }
 	}
-
 	framework_logIfError(logger, status, NULL, "Failed to create bundle");
 
 	return status;
