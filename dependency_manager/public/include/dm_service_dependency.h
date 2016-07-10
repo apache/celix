@@ -38,17 +38,17 @@ typedef enum dm_service_dependency_strategy_enum {
 	DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND
 } dm_service_dependency_strategy_t;
 
-typedef int (*service_set_fpt)(void *handle, void *service);
-typedef int (*service_add_fpt)(void *handle, void *service);
-typedef int (*service_change_fpt)(void *handle, void *service);
-typedef int (*service_remove_fpt)(void *handle, void *service);
-typedef int (*service_swap_fpt)(void *handle, void *oldService, void *newService);
+typedef int (*service_set_fpt)(void *handle, const void* service);
+typedef int (*service_add_fpt)(void *handle, const void* service);
+typedef int (*service_change_fpt)(void *handle, const void* service);
+typedef int (*service_remove_fpt)(void *handle, const void* service);
+typedef int (*service_swap_fpt)(void *handle, const void* oldService, const void* newService);
 
-typedef celix_status_t (*service_set_with_ref_fpt)(void *handle, service_reference_pt reference, void *service);
-typedef celix_status_t (*service_add_with_ref_fpt)(void *handle, service_reference_pt reference, void *service);
-typedef celix_status_t (*service_change_with_ref_fpt)(void *handle, service_reference_pt reference, void *service);
-typedef celix_status_t (*service_remove_with_ref_fpt)(void *handle, service_reference_pt reference, void *service);
-typedef celix_status_t (*service_swap_with_ref_fpt)(void *handle, service_reference_pt oldReference, void *oldService, service_reference_pt newReference, void *newService);
+typedef celix_status_t (*service_set_with_ref_fpt)(void *handle, service_reference_pt reference, const void* service);
+typedef celix_status_t (*service_add_with_ref_fpt)(void *handle, service_reference_pt reference, const void* service);
+typedef celix_status_t (*service_change_with_ref_fpt)(void *handle, service_reference_pt reference, const void* service);
+typedef celix_status_t (*service_remove_with_ref_fpt)(void *handle, service_reference_pt reference, const void* service);
+typedef celix_status_t (*service_swap_with_ref_fpt)(void *handle, service_reference_pt oldReference, const void* oldService, service_reference_pt newReference, const void* newService);
 
 celix_status_t serviceDependency_create(dm_service_dependency_pt *dependency_ptr);
 celix_status_t serviceDependency_destroy(dm_service_dependency_pt *dependency_ptr);
@@ -56,12 +56,12 @@ celix_status_t serviceDependency_destroy(dm_service_dependency_pt *dependency_pt
 celix_status_t serviceDependency_setRequired(dm_service_dependency_pt dependency, bool required);
 celix_status_t serviceDependency_setStrategy(dm_service_dependency_pt dependency,dm_service_dependency_strategy_t strategy);
 celix_status_t serviceDependency_getStrategy(dm_service_dependency_pt dependency,dm_service_dependency_strategy_t* strategy);
-celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency, char *serviceName, char *serviceVersionRange, char *filter);
-celix_status_t serviceDependency_getFilter(dm_service_dependency_pt dependency, char **filter);
+celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency, const char* serviceName, const char* serviceVersionRange, const char* filter);
+celix_status_t serviceDependency_getFilter(dm_service_dependency_pt dependency, const char** filter);
 
 celix_status_t serviceDependency_setCallbacks(dm_service_dependency_pt dependency, service_set_fpt set, service_add_fpt add, service_change_fpt change, service_remove_fpt remove, service_swap_fpt swap);
 celix_status_t serviceDependency_setCallbacksWithServiceReference(dm_service_dependency_pt dependency, service_set_with_ref_fpt set, service_add_with_ref_fpt add, service_change_with_ref_fpt change, service_remove_with_ref_fpt remove, service_swap_with_ref_fpt swap);
-celix_status_t serviceDependency_setAutoConfigure(dm_service_dependency_pt dependency, celix_thread_mutex_t *service_lock, void **field);
+celix_status_t serviceDependency_setAutoConfigure(dm_service_dependency_pt dependency, celix_thread_mutex_t *service_lock, const void** field);
 
 #define serviceDependency_setCallbacksSafe(dep, cmpType, servType, set, add, change, remove, swap) \
 	do { \

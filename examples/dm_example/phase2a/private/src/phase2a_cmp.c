@@ -38,7 +38,7 @@ struct phase2a_cmp_struct {
     bool running;
 	double currentValue;
     celix_thread_mutex_t mutex;
-    phase1_t *phase1Serv;
+    const phase1_t* phase1Serv;
 };
 
 static void *phase2a_thread(void *data);
@@ -85,7 +85,7 @@ void phase2a_destroy(phase2a_cmp_t *cmp) {
 	printf("destroy phase2a\n");
 }
 
-int phase2a_setPhase1(phase2a_cmp_t *cmp, phase1_t *phase1) {
+int phase2a_setPhase1(phase2a_cmp_t *cmp, const phase1_t* phase1) {
     printf("phase2a_setPhase1 called!\n\n");
     celixThreadMutex_lock(&cmp->mutex);
     cmp->phase1Serv = phase1;

@@ -121,7 +121,7 @@ celix_status_t bundleContext_installBundle2(bundle_context_pt context, const cha
 	return status;
 }
 
-celix_status_t bundleContext_registerService(bundle_context_pt context, const char * serviceName, void * svcObj,
+celix_status_t bundleContext_registerService(bundle_context_pt context, const char * serviceName, const void * svcObj,
         properties_pt properties, service_registration_pt *service_registration) {
 	service_registration_pt registration = NULL;
 	celix_status_t status = CELIX_SUCCESS;
@@ -219,11 +219,14 @@ celix_status_t bundleContext_ungetServiceReference(bundle_context_pt context, se
     return status;
 }
 
-celix_status_t bundleContext_getService(bundle_context_pt context, service_reference_pt reference, void **service_instance) {
+celix_status_t bundleContext_getService(bundle_context_pt context, service_reference_pt reference, void** service_instance) {
     celix_status_t status = CELIX_SUCCESS;
 
     if (context != NULL && reference != NULL && *service_instance == NULL) {
-	    status = fw_getService(context->framework, context->bundle, reference, service_instance);
+        /*NOTE argument service_instance should be considerd a 'const void**'. 
+        To ensure backwards compatiblity a cast is made instead.
+        */
+	    status = fw_getService(context->framework, context->bundle, reference, (const void**) service_instance);
     } else {
         status = CELIX_ILLEGAL_ARGUMENT;
     }

@@ -795,7 +795,7 @@ TEST(service_registry, getService) {
 	mock().expectOneCall("framework_log");
 
 
-	void *actual = (void*) 0x666;//generic non null pointer value
+	const void *actual = (void*) 0x666;//generic non null pointer value
 	celix_status_t status = serviceRegistry_getService(registry, bundle, reference, &actual);
 	LONGS_EQUAL(CELIX_BUNDLE_EXCEPTION, status);
 	//test reference with invalid registration

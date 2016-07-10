@@ -1229,7 +1229,7 @@ celix_status_t fw_populateDependentGraph(framework_pt framework, bundle_pt expor
     return status;
 }
 
-celix_status_t fw_registerService(framework_pt framework, service_registration_pt *registration, bundle_pt bundle, const char* serviceName, void* svcObj, properties_pt properties) {
+celix_status_t fw_registerService(framework_pt framework, service_registration_pt *registration, bundle_pt bundle, const char* serviceName, const void* svcObj, properties_pt properties) {
 	celix_status_t status = CELIX_SUCCESS;
 	char *error = NULL;
 	if (serviceName == NULL || svcObj == NULL) {
@@ -1290,7 +1290,7 @@ celix_status_t fw_registerService(framework_pt framework, service_registration_p
 
                 status = CELIX_DO_IF(status, serviceRegistry_getServiceReference(framework->registry, framework->bundle,
                                                                                  *registration, &ref));
-                status = CELIX_DO_IF(status, fw_getService(framework,framework->bundle, ref, (void **) &hook));
+                status = CELIX_DO_IF(status, fw_getService(framework,framework->bundle, ref, (const void **) &hook));
                 if (status == CELIX_SUCCESS) {
                     hook->added(hook->handle, infos);
                 }
@@ -1375,7 +1375,7 @@ celix_status_t framework_ungetServiceReference(framework_pt framework, bundle_pt
     return serviceRegistry_ungetServiceReference(framework->registry, bundle, reference);
 }
 
-celix_status_t fw_getService(framework_pt framework, bundle_pt bundle, service_reference_pt reference, void **service) {
+celix_status_t fw_getService(framework_pt framework, bundle_pt bundle, service_reference_pt reference, const void **service) {
 	return serviceRegistry_getService(framework->registry, bundle, reference, service);
 }
 
@@ -1429,7 +1429,7 @@ void fw_addServiceListener(framework_pt framework, bundle_pt bundle, service_lis
 		array_list_pt infos = NULL;
 		bool ungetResult = false;
 
-		fw_getService(framework, framework->bundle, ref, (void **) &hook);
+		fw_getService(framework, framework->bundle, ref, (const void **) &hook);
 
 		arrayList_create(&infos);
 		arrayList_add(infos, info);
@@ -1504,7 +1504,7 @@ void fw_removeServiceListener(framework_pt framework, bundle_pt bundle, service_
 			array_list_pt infos = NULL;
 			bool ungetResult;
 
-			fw_getService(framework, framework->bundle, ref, (void **) &hook);
+			fw_getService(framework, framework->bundle, ref, (const void **) &hook);
 
 			arrayList_create(&infos);
 			arrayList_add(infos, info);

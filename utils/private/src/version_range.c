@@ -177,7 +177,7 @@ celix_status_t versionRange_isHighInclusive(version_range_pt versionRange, bool 
 }
 
 
-celix_status_t versionRange_parse(char * rangeStr, version_range_pt *range) {
+celix_status_t versionRange_parse(const char * rangeStr, version_range_pt *range) {
 	celix_status_t status;
 	if (strchr(rangeStr, ',') != NULL) {
 			int vlowL = strcspn(rangeStr+1, ",");

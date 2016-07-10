@@ -71,12 +71,12 @@ celix_status_t bundleContext_installBundle2(bundle_context_pt context, const cha
 }
 
 
-celix_status_t bundleContext_registerService(bundle_context_pt context, const char * serviceName, void * svcObj,
+celix_status_t bundleContext_registerService(bundle_context_pt context, const char * serviceName, const void * svcObj,
         properties_pt properties, service_registration_pt *service_registration) {
 	mock_c()->actualCall("bundleContext_registerService")
 			->withPointerParameters("context", context)
 			->withStringParameters("serviceName", serviceName)
-			->withPointerParameters("svcObj", svcObj)
+			->withPointerParameters("svcObj", (void*)svcObj)
 			->withPointerParameters("properties", properties)
 			->withOutputParameter("service_registration", (void **) service_registration);
 	return mock_c()->returnValue().value.intValue;

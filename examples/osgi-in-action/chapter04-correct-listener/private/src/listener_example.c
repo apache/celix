@@ -49,8 +49,8 @@ static void* listenerExample_logger(void* data);
 
 celix_status_t listenerExample_alternativeLog(struct listenerActivator *activator, char *message);
 
-celix_status_t ref_equals(void *a, void *b, bool *equals) {
-    return serviceReference_equals(a, b, equals);
+static celix_status_t ref_equals(const void *a, const void *b, bool *equals) {
+    return serviceReference_equals((void*)a, (void*)b, equals);
 }
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {

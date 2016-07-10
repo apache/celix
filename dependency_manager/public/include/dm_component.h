@@ -49,11 +49,11 @@ typedef int (*start_fpt)(void *userData);
 typedef int (*stop_fpt)(void *userData);
 typedef int (*deinit_fpt)(void *userData);
 
-celix_status_t component_create(bundle_context_pt context, const char *name, dm_component_pt *component);
+celix_status_t component_create(bundle_context_pt context, const char* name, dm_component_pt *component);
 void component_destroy(dm_component_pt component);
 
-celix_status_t component_addInterface(dm_component_pt component, char *serviceName, char *serviceVersion, void *service, properties_pt properties);
-celix_status_t component_setImplementation(dm_component_pt component, void *implementation);
+celix_status_t component_addInterface(dm_component_pt component, const char* serviceName, const char* serviceVersion, const void* service, properties_pt properties);
+celix_status_t component_setImplementation(dm_component_pt component, void* implementation);
 
 /**
  * Returns an arraylist of service names. The caller owns the arraylist and strings (char *)

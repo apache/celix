@@ -151,12 +151,15 @@ celix_status_t serviceReference_getReferenceCount(service_reference_pt ref, size
 celix_status_t serviceReference_getService(service_reference_pt ref, void **service) {
     celix_status_t status = CELIX_SUCCESS;
     celixThreadRwlock_readLock(&ref->lock);
-    *service = ref->service;
+    /*NOTE the service argument should be 'const void**'
+      To ensure backwards compatability a cast is made instead.
+    */
+    *service = (const void**) ref->service;
     celixThreadRwlock_unlock(&ref->lock);
     return status;
 }
 
-celix_status_t serviceReference_setService(service_reference_pt ref, void *service) {
+celix_status_t serviceReference_setService(service_reference_pt ref, const void *service) {
     celix_status_t status = CELIX_SUCCESS;
     celixThreadRwlock_writeLock(&ref->lock);
     ref->service = service;

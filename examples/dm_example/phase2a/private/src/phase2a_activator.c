@@ -70,7 +70,7 @@ celix_status_t dm_init(void * userData, bundle_context_pt context, dm_dependency
 		serviceDependency_create(&dep);
 		serviceDependency_setService(dep, PHASE1_NAME, PHASE1_RANGE_ALL, NULL);
 
-        serviceDependency_setCallbacksSafe(dep, phase2a_cmp_t *, phase1_t *, phase2a_setPhase1, NULL, NULL, NULL, NULL);
+        serviceDependency_setCallbacksSafe(dep, phase2a_cmp_t*, const phase1_t*, phase2a_setPhase1, NULL, NULL, NULL, NULL);
 		serviceDependency_setRequired(dep, true);
 		component_addServiceDependency(cmp, dep);
 

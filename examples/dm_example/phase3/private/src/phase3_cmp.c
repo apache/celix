@@ -84,13 +84,13 @@ void phase3_destroy(phase3_cmp_t *cmp) {
 	printf("destroy phase3\n");
 }
 
-int phase3_addPhase2(phase3_cmp_t *cmp, phase2_t *phase2) {
-    arrayList_add(cmp->phase2Services, phase2);
+int phase3_addPhase2(phase3_cmp_t *cmp, const phase2_t* phase2) {
+    arrayList_add(cmp->phase2Services, (void*)phase2);
     return 0;
 }
 
-int phase3_removePhase2(phase3_cmp_t *cmp, phase2_t *phase2) {
-    arrayList_removeElement(cmp->phase2Services, phase2);
+int phase3_removePhase2(phase3_cmp_t *cmp, const phase2_t *phase2) {
+    arrayList_removeElement(cmp->phase2Services, (void*)phase2);
     return 0;
 }
 
@@ -104,7 +104,7 @@ static void *phase3_thread(void *data) {
     while (cmp->running) {
         size = arrayList_size(cmp->phase2Services);
         for (i = 0; i < size; i += 1) {
-            phase2_t *serv = arrayList_get(cmp->phase2Services, i);
+            const phase2_t* serv = arrayList_get(cmp->phase2Services, i);
             serv->getData(serv->handle, &value);
             printf("PHASE3: Data from %p is %f\n", serv, value);
         }

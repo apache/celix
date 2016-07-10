@@ -50,7 +50,7 @@ FRAMEWORK_EXPORT celix_status_t bundleContext_getFramework(bundle_context_pt con
 FRAMEWORK_EXPORT celix_status_t bundleContext_installBundle(bundle_context_pt context, const char* location, bundle_pt *bundle);
 FRAMEWORK_EXPORT celix_status_t bundleContext_installBundle2(bundle_context_pt context, const char* location, const char* inputFile, bundle_pt *bundle);
 
-FRAMEWORK_EXPORT celix_status_t bundleContext_registerService(bundle_context_pt context, const char* serviceName, void * svcObj,
+FRAMEWORK_EXPORT celix_status_t bundleContext_registerService(bundle_context_pt context, const char* serviceName, const void * svcObj,
         properties_pt properties, service_registration_pt *service_registration);
 FRAMEWORK_EXPORT celix_status_t bundleContext_registerServiceFactory(bundle_context_pt context, const char* serviceName, service_factory_pt factory,
         properties_pt properties, service_registration_pt *service_registration);

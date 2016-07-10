@@ -264,7 +264,7 @@ TEST(service_registration, getService) {
 	void *service = (void *) 0x20;
 	service_registration_pt registration = serviceRegistration_create(callback, bundle, name, 0, service, NULL);
 
-	void *actual = NULL;
+	const void *actual = NULL;
 	celix_status_t status = serviceRegistration_getService(registration, bundle, &actual);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	POINTERS_EQUAL(service, actual);
@@ -289,7 +289,7 @@ TEST(service_registration, getServiceFromFactory) {
 			.withParameter("registration", registration)
 			.withOutputParameterReturning("service", &service, sizeof(service));
 
-	void *actual = NULL;
+	const void *actual = NULL;
 	celix_status_t status = serviceRegistration_getService(registration, bundle, &actual);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	POINTERS_EQUAL(service, actual);
@@ -316,7 +316,7 @@ TEST(service_registration, ungetServiceFromFactory) {
 			.withParameter("registration", registration)
 			.withOutputParameterReturning("service", &service, sizeof(service));
 
-	void *actual = NULL;
+	const void *actual = NULL;
 	celix_status_t status = serviceRegistration_ungetService(registration, bundle, &actual);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	POINTERS_EQUAL(service, actual);
