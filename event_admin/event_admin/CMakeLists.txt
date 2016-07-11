@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(APR REQUIRED)
+
 
 include_directories(public/include)
 include_directories(private/include)
@@ -34,11 +34,6 @@ add_bundle(event_admin
 		${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
 )
 
-install_add_bundle(event_admin
-	HEADERS
-	    public/include/event_admin.h
-	    public/include/event_constants.h
-	    public/include/event_handler.h
-)
+install_bundle(event_admin)
 
-target_link_libraries(event_admin celix_framework celix_utils ${APR_LIBRARY} ${APRUTIL_LIBRARY})
+target_link_libraries(event_admin celix_framework celix_utils)

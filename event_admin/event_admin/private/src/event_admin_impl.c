@@ -33,17 +33,23 @@
 #include "celix_log.h"
 
 
-celix_status_t eventAdmin_create(apr_pool_t *pool, bundle_context_pt context, event_admin_pt *event_admin){
+celix_status_t eventAdmin_create(bundle_context_pt context, event_admin_pt *event_admin){
 	celix_status_t status = CELIX_SUCCESS;
-	*event_admin = apr_palloc(pool, sizeof(**event_admin));
+	*event_admin = calloc(1,sizeof(**event_admin));
 	if (!*event_admin) {
         status = CELIX_ENOMEM;
     } else {
-        (*event_admin)->pool = pool;
         (*event_admin)->channels = hashMap_create(utils_stringHash, utils_stringHash, utils_stringEquals, utils_stringEquals);
         (*event_admin)->context =context;
         status = arrayList_create(&(*event_admin)->event_handlers);
     }
+	return status;
+}
+
+celix_status_t eventAdmin_destroy(event_admin_pt *event_admin)
+{
+	celix_status_t status = CELIX_SUCCESS;
+	free(event_admin);
 	return status;
 }
 
@@ -120,18 +126,17 @@ celix_status_t eventAdmin_createEventChannels(event_admin_pt *event_admin, char 
 		//create channel
 		logHelper_log(*(*event_admin)->loghelper, OSGI_LOGSERVICE_INFO, "Creating channel: %s", topic);
 
-        apr_pool_t *subPool = NULL;
-        apr_pool_create(&subPool, (*event_admin)->pool);
 
-		channel = apr_palloc(subPool, sizeof(*channel));
+
+		channel = calloc(1, sizeof(*channel));
 		if (!channel) {
             status = CELIX_ENOMEM;
         } else {
             char *channel_name = strdup(topic);
 			channel->topic = channel_name;
 			channel->eventHandlers = hashMap_create(NULL,NULL,NULL,NULL);
-			channel->channelLock = NULL;
-            apr_thread_mutex_create(&channel->channelLock, APR_THREAD_MUTEX_NESTED, subPool);
+			//channel->channelLock = NULL;
+          //  apr_thread_mutex_create(&channel->channelLock, APR_THREAD_MUTEX_NESTED, subPool);
 			hashMap_put((*event_admin)->channels, channel_name, channel);
 		}
     }
@@ -179,15 +184,15 @@ celix_status_t eventAdmin_createEventChannels(event_admin_pt *event_admin, char 
 
 celix_status_t eventAdmin_lockHandlersList(event_admin_pt event_admin, char *topic) {
 	celix_status_t status = CELIX_SUCCESS;
-    channel_t channel = hashMap_get(event_admin->channels, topic);
+    /*channel_t channel = hashMap_get(event_admin->channels, topic);
 	if (channel != NULL) {
         // TODO verify this will never deadlock...
-        apr_status_t status;
+       // apr_status_t status;
         do {
-            status = apr_thread_mutex_trylock(channel->channelLock);
+         //   status = apr_thread_mutex_trylock(channel->channelLock);
         } while (status != 0 && !APR_STATUS_IS_EBUSY(status));
         logHelper_log(*event_admin->loghelper, OSGI_LOGSERVICE_DEBUG, "LOCK: %s!", topic);
-    }
+    }*/
 	return status;
 }
 
@@ -196,7 +201,7 @@ celix_status_t eventAdmin_releaseHandersList(event_admin_pt event_admin, char *t
     channel_t channel = hashMap_get(event_admin->channels, topic);
 	if (channel != NULL) {
         // TODO check the result value...
-        apr_thread_mutex_unlock(channel->channelLock);
+       // apr_thread_mutex_unlock(channel->channelLock);
         logHelper_log(*event_admin->loghelper, OSGI_LOGSERVICE_DEBUG, "UNLOCK: %s!", topic);
     }
 	return status;

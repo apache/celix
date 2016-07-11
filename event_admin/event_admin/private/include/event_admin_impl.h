@@ -27,8 +27,6 @@
 #ifndef EVENT_ADMIN_IMPL_H_
 #define EVENT_ADMIN_IMPL_H_
 #include <string.h>
-#include <apr.h>
-#include <apr_pools.h>
 #include "celix_errno.h"
 #include "bundle_context.h"
 #include "constants.h"
@@ -45,7 +43,6 @@
 #include "log_helper.h"
 
 struct event_admin {
-        apr_pool_t *pool;
         hash_map_pt channels;
         array_list_pt event_handlers;
         bundle_context_pt context;
@@ -56,7 +53,7 @@ struct channel {
         char *topic;
         hash_map_pt eventHandlers;///array list containing all listeners subscribed to the channel
        // hash_map_pt channels;
-        apr_thread_mutex_t *channelLock;
+       // apr_thread_mutex_t *channelLock;
 
 };
 /**
@@ -65,7 +62,11 @@ struct channel {
  * @param bundle_context_pt context. Pointer to the bundle context.
  * @param event_admin_pt *event_admin. The event admin result.
  */
-celix_status_t eventAdmin_create(apr_pool_t *pool, bundle_context_pt context, event_admin_pt *event_admin);
+celix_status_t eventAdmin_create( bundle_context_pt context, event_admin_pt *event_admin);
+
+
+celix_status_t eventAdmin_destroy(event_admin_pt *event_admin);
+
 /**
  * @desc Post event. sends the event to the handlers in async.
  * @param event_admin_pt event_admin. the event admin instance
@@ -108,7 +109,7 @@ celix_status_t eventAdmin_findHandlersByTopic(event_admin_pt event_admin, char *
  * @desc char *topic the topic
  * @desc channel_t *channel. the top level channel.
  */
-celix_status_t eventAdmin_createEventChannelsByEventHandler(apr_pool_t *pool,event_handler_service_pt event_handler_service, char *topic, channel_t *channel);
+celix_status_t eventAdmin_createEventChannelsByEventHandler(event_handler_service_pt event_handler_service, char *topic, channel_t *channel);
 /**
  * @desc mutex functions for the channels
  * @param event_admin_pt event_admin. the event admin instance.
