@@ -38,7 +38,7 @@ int phase2b_stop(phase2b_cmp_t *cmp);
 int phase2b_deinit(phase2b_cmp_t *cmp);
 void phase2b_destroy(phase2b_cmp_t *cmp);
 
-int phase2b_setPhase1(phase2b_cmp_t *cmp, phase1_t *phase1);
+int phase2b_setPhase1(phase2b_cmp_t *cmp, const phase1_t* phase1);
 
 int phase2b_getData(phase2b_cmp_t *cmp, double *data);
 

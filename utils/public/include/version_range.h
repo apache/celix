@@ -146,7 +146,7 @@ celix_status_t versionRange_getHighVersion(version_range_pt versionRange, versio
  * 		- CELIX_ILLEGAL_ARGUMENT If the numerical components are negative,
  * 		  	the qualifier string is invalid or <code>versionStr</code> is impropertly formatted.
  */
-celix_status_t versionRange_parse(char * rangeStr, version_range_pt *range);
+celix_status_t versionRange_parse(const char* rangeStr, version_range_pt *range);
 
 /**
  * @}

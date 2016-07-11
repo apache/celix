@@ -47,7 +47,7 @@
 static void *endpointDiscoveryPoller_performPeriodicPoll(void *data);
 celix_status_t endpointDiscoveryPoller_poll(endpoint_discovery_poller_pt poller, char *url, array_list_pt currentEndpoints);
 static celix_status_t endpointDiscoveryPoller_getEndpoints(endpoint_discovery_poller_pt poller, char *url, array_list_pt *updatedEndpoints);
-static celix_status_t endpointDiscoveryPoller_endpointDescriptionEquals(void *endpointPtr, void *comparePtr, bool *equals);
+static celix_status_t endpointDiscoveryPoller_endpointDescriptionEquals(const void *endpointPtr, const void *comparePtr, bool *equals);
 
 /**
  * Allocates memory and initializes a new endpoint_discovery_poller instance.
@@ -391,7 +391,7 @@ static celix_status_t endpointDiscoveryPoller_getEndpoints(endpoint_discovery_po
 	return status;
 }
 
-static celix_status_t endpointDiscoveryPoller_endpointDescriptionEquals(void *endpointPtr, void *comparePtr, bool *equals) {
+static celix_status_t endpointDiscoveryPoller_endpointDescriptionEquals(const void *endpointPtr, const void *comparePtr, bool *equals) {
 	endpoint_description_pt endpoint = (endpoint_description_pt) endpointPtr;
 	endpoint_description_pt compare = (endpoint_description_pt) comparePtr;
 

@@ -110,12 +110,12 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
 }
 
 
-celix_status_t fw_registerService(framework_pt framework, service_registration_pt * registration, bundle_pt bundle, const char* serviceName, void* svcObj, properties_pt properties) {
+celix_status_t fw_registerService(framework_pt framework, service_registration_pt * registration, bundle_pt bundle, const char* serviceName, const void* svcObj, properties_pt properties) {
 	mock_c()->actualCall("fw_registerService")
 		->withPointerParameters("framework", framework)
 		->withPointerParameters("bundle", bundle)
 		->withStringParameters("serviceName", serviceName)
-		->withPointerParameters("service", svcObj)
+		->withPointerParameters("service", (void*) svcObj)
 		->withPointerParameters("properties", properties)
 		->withOutputParameter("registration", (void **) registration);
 		return mock_c()->returnValue().value.intValue;
@@ -155,7 +155,7 @@ celix_status_t framework_ungetServiceReference(framework_pt framework, bundle_pt
     return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t fw_getService(framework_pt framework, bundle_pt bundle, service_reference_pt reference, void **service) {
+celix_status_t fw_getService(framework_pt framework, bundle_pt bundle, service_reference_pt reference, const void **service) {
 	mock_c()->actualCall("fw_getService")
 		->withPointerParameters("framework", framework)
 		->withPointerParameters("bundle", bundle)

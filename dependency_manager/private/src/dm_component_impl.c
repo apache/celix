@@ -41,7 +41,7 @@ struct dm_component_struct {
     bundle_context_pt context;
     array_list_pt dm_interfaces;
 
-    void *implementation;
+    void* implementation;
 
     init_fpt callbackInit;
     start_fpt callbackStart;
@@ -61,8 +61,8 @@ struct dm_component_struct {
 };
 
 typedef struct dm_interface_struct {
-    char *serviceName;
-    void *service;
+    char* serviceName;
+    const void* service;
     properties_pt properties;
     service_registration_pt registration;
 } dm_interface_t;
@@ -326,7 +326,7 @@ celix_status_t component_stopTask(dm_component_pt component, void *data __attrib
     return status;
 }
 
-celix_status_t component_addInterface(dm_component_pt component, char *serviceName, char *serviceVersion, void *service, properties_pt properties) {
+celix_status_t component_addInterface(dm_component_pt component, const char* serviceName, const char* serviceVersion, const void* service, properties_pt properties) {
     celix_status_t status = CELIX_SUCCESS;
 
     if (component->active) {
@@ -339,8 +339,8 @@ celix_status_t component_addInterface(dm_component_pt component, char *serviceNa
             properties = properties_create();
         }
 
-        if ((properties_get(properties, (char*) CELIX_FRAMEWORK_SERVICE_VERSION) == NULL) && (serviceVersion != NULL)) {
-            properties_set(properties, (char*) CELIX_FRAMEWORK_SERVICE_VERSION, serviceVersion);
+        if ((properties_get(properties, CELIX_FRAMEWORK_SERVICE_VERSION) == NULL) && (serviceVersion != NULL)) {
+            properties_set(properties, CELIX_FRAMEWORK_SERVICE_VERSION, serviceVersion);
         }
 
         if (interface && name) {
@@ -660,8 +660,8 @@ celix_status_t component_updateInstance(dm_component_pt component, dm_service_de
     serviceDependency_isAutoConfig(dependency, &autoConfig);
 
     if (autoConfig) {
-        void *service = NULL;
-        void **field = NULL;
+        const void *service = NULL;
+        const void **field = NULL;
 
         if (event != NULL) {
             event_getService(event, &service);
@@ -1137,11 +1137,11 @@ celix_status_t component_getDependencyEvent(dm_component_pt component, dm_servic
 celix_status_t component_configureImplementation(dm_component_pt component, dm_service_dependency_pt dependency) {
     celix_status_t status = CELIX_SUCCESS;
 
-    void **field = NULL;
+    const void **field = NULL;
 
     array_list_pt events = hashMap_get(component->dependencyEvents, dependency);
     if (events) {
-        void *service = NULL;
+        const void *service = NULL;
         dm_event_pt event = NULL;
         component_getDependencyEvent(component, dependency, &event);
         if (event != NULL) {

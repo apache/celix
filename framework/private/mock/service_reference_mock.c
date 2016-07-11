@@ -77,10 +77,10 @@ celix_status_t serviceReference_getReferenceCount(service_reference_pt reference
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t serviceReference_setService(service_reference_pt ref, void *service){
+celix_status_t serviceReference_setService(service_reference_pt ref, const void *service){
 	mock_c()->actualCall("serviceReference_setService")
 			->withPointerParameters("ref", ref)
-			->withPointerParameters("service", service);
+			->withPointerParameters("service", (void *)service);
 	return mock_c()->returnValue().value.intValue;
 }
 celix_status_t serviceReference_getService(service_reference_pt reference, void **service){

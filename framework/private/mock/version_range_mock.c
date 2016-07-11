@@ -57,7 +57,7 @@ celix_status_t versionRange_isInRange(version_range_pt versionRange, version_pt 
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t versionRange_parse(char * rangeStr, version_range_pt *range) {
+celix_status_t versionRange_parse(const char * rangeStr, version_range_pt *range) {
 	mock_c()->actualCall("versionRange_parse")
         ->withStringParameters("rangeStr", rangeStr)
         ->withOutputParameter("range", (void **) range);

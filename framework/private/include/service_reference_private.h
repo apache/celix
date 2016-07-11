@@ -37,7 +37,7 @@ struct serviceReference {
 	bundle_pt referenceOwner;
 	struct serviceRegistration * registration;
     bundle_pt registrationBundle;
-    void *service;
+    const void* service;
 
 	size_t refCount;
     size_t usageCount;
@@ -59,7 +59,7 @@ celix_status_t serviceReference_isValid(service_reference_pt reference, bool *re
 celix_status_t serviceReference_getUsageCount(service_reference_pt reference, size_t *count);
 celix_status_t serviceReference_getReferenceCount(service_reference_pt reference, size_t *count);
 
-celix_status_t serviceReference_setService(service_reference_pt ref, void *service);
+celix_status_t serviceReference_setService(service_reference_pt ref, const void *service);
 celix_status_t serviceReference_getService(service_reference_pt reference, void **service);
 
 celix_status_t serviceReference_getOwner(service_reference_pt reference, bundle_pt *owner);

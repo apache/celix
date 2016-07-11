@@ -68,7 +68,7 @@ celix_status_t dm_init(void * userData, bundle_context_pt context, dm_dependency
     serviceDependency_setRequired(dep2, false);
     serviceDependency_setService(dep2, (char *) OSGI_LOGSERVICE_NAME, NULL,  NULL);
     serviceDependency_setCallbacksWithServiceReference(dep2, NULL  /*tracker_setLog*/, tracker_addLog, tracker_modifiedLog, tracker_removeLog, NULL);
-	serviceDependency_setAutoConfigure(dep2, &data->logger_lock, (void **) &data->logger);
+	serviceDependency_setAutoConfigure(dep2, &data->logger_lock, (const void **) &data->logger);
     component_addServiceDependency(service, dep2);
 
 	data->service = service;

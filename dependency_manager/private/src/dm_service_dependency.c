@@ -148,7 +148,7 @@ celix_status_t serviceDependency_getStrategy(dm_service_dependency_pt dependency
 
 }
 
-celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency, char *serviceName, char *serviceVersionRange, char *filter) {
+celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency, const char* serviceName, const char* serviceVersionRange, const char* filter) {
 	celix_status_t status = CELIX_SUCCESS;
 	if (!dependency || !serviceName) {
 		status = CELIX_ILLEGAL_ARGUMENT;
@@ -254,8 +254,8 @@ celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency,
 	return status;
 }
 
-celix_status_t serviceDependency_getFilter(dm_service_dependency_pt dependency, char **filter) {
-	*filter = dependency->tracked_filter;
+celix_status_t serviceDependency_getFilter(dm_service_dependency_pt dependency, const char** filter) {
+	*filter = (const char*)dependency->tracked_filter;
 	return CELIX_SUCCESS;
 }
 
@@ -296,7 +296,7 @@ celix_status_t serviceDependency_setCallbacksWithServiceReference(dm_service_dep
 	return status;
 }
 
-celix_status_t serviceDependency_setAutoConfigure(dm_service_dependency_pt dependency, celix_thread_mutex_t *service_lock, void **field) {
+celix_status_t serviceDependency_setAutoConfigure(dm_service_dependency_pt dependency, celix_thread_mutex_t *service_lock, const void **field) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	celix_thread_mutex_t lock;
@@ -616,7 +616,7 @@ celix_status_t serviceDependency_isAutoConfig(dm_service_dependency_pt dependenc
 	return status;
 }
 
-celix_status_t serviceDependency_getAutoConfig(dm_service_dependency_pt dependency, void ***autoConfigure) {
+celix_status_t serviceDependency_getAutoConfig(dm_service_dependency_pt dependency, const void*** autoConfigure) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (!dependency) {

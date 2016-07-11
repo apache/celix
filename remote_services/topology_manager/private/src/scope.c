@@ -47,7 +47,7 @@ struct scope {
     celix_status_t (*importScopeChangedHandler)(void* manager, char *filter);
 };
 
-static celix_status_t import_equal(void *, void *, bool *equals);
+static celix_status_t import_equal(const void *, const void *, bool *equals);
 
 /*
  * SERVICES
@@ -243,7 +243,7 @@ celix_status_t scope_scopeDestroy(scope_pt scope) {
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static celix_status_t import_equal(void *src, void *dest, bool *equals) {
+static celix_status_t import_equal(const void *src, const void *dest, bool *equals) {
     celix_status_t status;
 
     filter_pt src_filter = (filter_pt) src;

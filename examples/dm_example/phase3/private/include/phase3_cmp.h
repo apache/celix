@@ -38,8 +38,8 @@ int phase3_stop(phase3_cmp_t *cmp);
 int phase3_deinit(phase3_cmp_t *cmp);
 void phase3_destroy(phase3_cmp_t *cmp);
 
-int phase3_addPhase2(phase3_cmp_t *cmp, phase2_t *phase2);
-int phase3_removePhase2(phase3_cmp_t *cmp, phase2_t *phase2);
+int phase3_addPhase2(phase3_cmp_t *cmp, const phase2_t* phase2);
+int phase3_removePhase2(phase3_cmp_t *cmp, const phase2_t* phase2);
 
 
 #endif //PHASE3_CMP_H
