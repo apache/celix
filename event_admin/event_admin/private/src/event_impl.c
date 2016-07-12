@@ -33,10 +33,6 @@
 #include "stddef.h"
 
 
-struct event {
-	const char *topic;
-	properties_pt properties;
-};
 
 celix_status_t eventAdmin_createEvent(event_admin_pt event_admin, const char *topic, properties_pt properties,
 									  event_pt *event) {

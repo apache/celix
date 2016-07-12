@@ -54,19 +54,27 @@ celix_status_t eventHandlerCreate(bundle_context_pt context, event_handler_pt *e
 celix_status_t eventHandlerHandleEvent(event_handler_pt *event_handler, event_pt event) {
 	celix_status_t status = CELIX_SUCCESS;
 	if (event != NULL) {
-        const char *topic = NULL;
-		status = (*event_handler)->event_admin_service->getTopic(&event, &topic);
+        const char *topic = event->topic;
+        //status = (*event_handler)->event_admin_service->getTopic(&event, &topic);
 		logHelper_log((*event_handler)->loghelper, OSGI_LOGSERVICE_INFO, "[SUB] topic of event: %s.", topic);
 
 		array_list_pt propertyNames;
 		arrayList_create(&propertyNames);
-		status = (*event_handler)->event_admin_service->getPropertyNames(&event, &propertyNames);
-
+        properties_pt properties = event->properties;
+        if (hashMap_size(properties) > 0) {
+            hash_map_iterator_pt iterator = hashMapIterator_create(properties);
+            while (hashMapIterator_hasNext(iterator)) {
+                hash_map_entry_pt entry = hashMapIterator_nextEntry(iterator);
+                char *key = hashMapEntry_getKey(entry);
+                arrayList_add(propertyNames, key);
+            }
+        }
 		array_list_iterator_pt propertyIter = arrayListIterator_create(propertyNames);
 		while (arrayListIterator_hasNext(propertyIter)) {
             char *key = arrayListIterator_next(propertyIter);
             const char *value = NULL;
-			(*event_handler)->event_admin_service->getProperty(&event,key,&value);
+            value = properties_get((*event).properties, key);
+
 
 			logHelper_log((*event_handler)->loghelper, OSGI_LOGSERVICE_INFO, "[SUB] Key: %s value: %s.", key, value);
 		}

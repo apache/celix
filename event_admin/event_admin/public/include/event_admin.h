@@ -26,7 +26,6 @@
 
 #ifndef EVENT_ADMIN_H_
 #define EVENT_ADMIN_H_
-/*#include "event.h"*/
 #include "celix_errno.h"
 
 #include "listener_hook_service.h"
@@ -34,7 +33,13 @@
 #define EVENT_ADMIN_NAME "event_admin"
 typedef struct event_admin *event_admin_pt;
 typedef struct event_admin_service *event_admin_service_pt;
+
+struct event {
+	const char *topic;
+	properties_pt properties;
+};
 typedef struct event *event_pt;
+
 /**
  * @desc service description for the event admin.
  * @param event_admin_pt eventAdmin. incomplete type for the event admin instance.

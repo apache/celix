@@ -32,6 +32,9 @@ static const char * const EVENT_HANDLER_SERVICE = "service.event.handler";
 
 typedef struct event_handler_service *event_handler_service_pt;
 typedef struct event_handler *event_handler_pt; //ADT
+
+
+
 /**
  * @desc description of the event handler service
  * @param event_handler_pt event_handler incomplete type pointer for the event_handler instance
