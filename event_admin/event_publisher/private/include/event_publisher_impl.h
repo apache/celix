@@ -40,17 +40,13 @@
 #include "log_helper.h"
 #include "log_service.h"
 
-#include <apr.h>
-#include <apr_pools.h>
-#include <apr_thread_proc.h>
 
 typedef struct event_publisher *event_publisher_pt;
 struct event_publisher {
-	apr_pool_t *pool;
 	event_admin_service_pt event_admin_service;
 	bool running;
 	bool eventAdminAdded;
-	apr_thread_t *sender;
+	celix_thread_t sender;
 	bundle_context_pt context;
 	log_helper_pt loghelper;
 };
@@ -60,7 +56,7 @@ struct event_publisher {
  * @param bundle_context_pt context the bundle context
  * @param event_publisher_pt *event_publisher. The publisher to be made.
  */
-celix_status_t eventPublisherCreate(apr_pool_t *pool, bundle_context_pt context, event_publisher_pt *event_publisher);
+celix_status_t eventPublisherCreate(bundle_context_pt context, event_publisher_pt *event_publisher);
 /**
  * @desc start the event publisher. Starts the threads and trackers.
  * @param event_publisher_pt *event_publisher the publisher to start
@@ -82,4 +78,6 @@ celix_status_t eventPublisherRemovedService(void * handle, service_reference_pt 
  * @param event_publisher_pt *event_publisher. pointer to the publisher.
  */
 celix_status_t eventPublisherStop(event_publisher_pt *event_publisher);
+
+void *produceEvents(void *handle);
 #endif /* EVENT_PUBLISHER_H_ */

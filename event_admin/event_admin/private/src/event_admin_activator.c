@@ -119,16 +119,16 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	serviceTracker_close(data->tracker);
 	status = logHelper_stop(data->loghelper);
     logHelper_destroy(&data->loghelper);
-    free(data->event_admin_service);
+
 	return status;
 }
 
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
-    struct activator *activator = userData;
+    //stop  struct activator *activator = userData;
 
-    free(activator);
+    // free(activator);
 
 	return status;
 }

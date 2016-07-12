@@ -23,25 +23,24 @@
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
+#include <stdlib.h>
 #include "event_handler.h"
 #include "log_helper.h"
 #include "log_service.h"
 
 struct event_handler {
-	apr_pool_t *pool;
 	event_admin_service_pt event_admin_service;
 	bundle_context_pt context;
 	log_helper_pt loghelper;
 
 };
 
-celix_status_t eventHandlerCreate(apr_pool_t *pool, bundle_context_pt context, event_handler_pt *event_handler){
+celix_status_t eventHandlerCreate(bundle_context_pt context, event_handler_pt *event_handler) {
 	celix_status_t status = CELIX_SUCCESS;
-	*event_handler = apr_palloc(pool, sizeof(**event_handler));
+    *event_handler = calloc(1, sizeof(**event_handler));
 	if (!*event_handler) {
         status = CELIX_ENOMEM;
 	} else {
-        (*event_handler)->pool = pool;
         (*event_handler)->event_admin_service = NULL;
         (*event_handler)->context = context;
 
@@ -55,7 +54,7 @@ celix_status_t eventHandlerCreate(apr_pool_t *pool, bundle_context_pt context, e
 celix_status_t eventHandlerHandleEvent(event_handler_pt *event_handler, event_pt event) {
 	celix_status_t status = CELIX_SUCCESS;
 	if (event != NULL) {
-		char *topic = NULL;
+        const char *topic = NULL;
 		status = (*event_handler)->event_admin_service->getTopic(&event, &topic);
 		logHelper_log((*event_handler)->loghelper, OSGI_LOGSERVICE_INFO, "[SUB] topic of event: %s.", topic);
 
@@ -65,8 +64,8 @@ celix_status_t eventHandlerHandleEvent(event_handler_pt *event_handler, event_pt
 
 		array_list_iterator_pt propertyIter = arrayListIterator_create(propertyNames);
 		while (arrayListIterator_hasNext(propertyIter)) {
-			char *key = arrayListIterator_next(propertyIter);
-			char *value = NULL;
+            char *key = arrayListIterator_next(propertyIter);
+            const char *value = NULL;
 			(*event_handler)->event_admin_service->getProperty(&event,key,&value);
 
 			logHelper_log((*event_handler)->loghelper, OSGI_LOGSERVICE_INFO, "[SUB] Key: %s value: %s.", key, value);
@@ -98,7 +97,7 @@ celix_status_t eventHandlerModifiedService(void * handle, service_reference_pt r
 
 celix_status_t eventHandlerRemovedService(void * handle, service_reference_pt ref, void * service) {
 	event_handler_pt data = (event_handler_pt) handle;
-logHelper_log(data->loghelper, OSGI_LOGSERVICE_DEBUG, "[SUB] Event admin removed.");
+    logHelper_log(data->loghelper, OSGI_LOGSERVICE_DEBUG, "[SUB] Event admin removed.");
 	data->event_admin_service = NULL;
 	return CELIX_SUCCESS;
 }

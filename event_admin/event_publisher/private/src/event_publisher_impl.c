@@ -23,46 +23,69 @@
  * \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  * \copyright	Apache License, Version 2.0
  */
+#include <stdlib.h>
 
+#include <unistd.h>
+#include <sys/time.h>
 #include "event_publisher_impl.h"
 
-static void *APR_THREAD_FUNC eventPublisherSendEventThread(apr_thread_t *thd, void *handle);
+celix_thread_start_t eventPublisherSendEventThread(celix_thread_t *thd, void *handle);
 
-celix_status_t eventPublisherCreate(apr_pool_t *pool, bundle_context_pt context, event_publisher_pt *event_publisher) {
+celix_status_t eventPublisherCreate(bundle_context_pt context, event_publisher_pt *event_publisher) {
     celix_status_t status = CELIX_SUCCESS;
-    *event_publisher = apr_palloc(pool, sizeof(**event_publisher));
+    *event_publisher = calloc(1, sizeof(**event_publisher));
     if (!*event_publisher) {
         status = CELIX_ENOMEM;
     } else {
         (*event_publisher)->event_admin_service = NULL;
-        (*event_publisher)->pool = NULL;
+
         (*event_publisher)->eventAdminAdded = false;
         (*event_publisher)->running = false;
-        (*event_publisher)->pool = pool;
         (*event_publisher)->context = context;
-
+        (*event_publisher)->sender = celix_thread_default;
         logHelper_create(context, &(*event_publisher)->loghelper);
     }
     return status;
 }
 
 celix_status_t eventPublisherStart(event_publisher_pt *event_publisher) {
+    celix_status_t status = CELIX_SUCCESS;
 	(*event_publisher)->running = true;
     logHelper_start((*event_publisher)->loghelper);
-	apr_thread_create(&(*event_publisher)->sender, NULL, eventPublisherSendEventThread, event_publisher, (*event_publisher)->pool);
-	return CELIX_SUCCESS;
+    // celixThread_create((*event_publisher)->sender, NULL, eventPublisherSendEventThread, event_publisher);
+    status = celixThread_create(&(*event_publisher)->sender, NULL, produceEvents, &(*event_publisher));
+    return status;
 }
 
 celix_status_t eventPublisherStop(event_publisher_pt *event_publisher) {
 	(*event_publisher)->running = false;
-	apr_status_t status;
-	apr_thread_join(&status,(*event_publisher)->sender);
+    //void * status;
+    // celixThread_join((*event_publisher)->sender, &status);
 	logHelper_stop((*event_publisher)->loghelper);
 	logHelper_destroy(&(*event_publisher)->loghelper);
 	return CELIX_SUCCESS;
 }
 
-static void *APR_THREAD_FUNC eventPublisherSendEventThread(apr_thread_t *thd, void *handle) {
+void *produceEvents(void *handle) {
+    event_publisher_pt *event_publisher = handle;
+    while ((*event_publisher)->running && (*event_publisher)->eventAdminAdded) {
+        //   sleep(1000000); // 1 sec.
+        event_admin_service_pt *event_admin_service = &(*event_publisher)->event_admin_service;
+        event_admin_pt event_admin = (*event_admin_service)->eventAdmin;
+        if (event_admin_service != NULL) {
+            event_pt event;
+            properties_pt props = properties_create();
+            properties_set(props, "This is a key", "this is a value");
+            (*event_admin_service)->createEvent(event_admin, "log/error/eventpublishers/event", props, &event);
+            (*event_admin_service)->postEvent(event_admin, event);
+            (*event_admin_service)->sendEvent(event_admin, event);
+            printf("send event\n");
+        }
+    }
+    return CELIX_SUCCESS;
+}
+
+/*celix_thread_start_t eventPublisherSendEventThread(celix_thread_t *thd, void *handle) {
     event_publisher_pt *client = (event_publisher_pt *) handle;
 
     while ((*client)->running && (*client)->eventAdminAdded) {
@@ -79,21 +102,22 @@ static void *APR_THREAD_FUNC eventPublisherSendEventThread(apr_thread_t *thd, vo
             (*event_admin_service)->sendEvent(event_admin, event);
         }
     }
-	apr_thread_exit(thd, APR_SUCCESS);
-	return NULL;
-}
+    celixThread_exit( APR_SUCCESS);
+	return NULL;*
+}*/
 
 celix_status_t eventPublisherAddingService(void * handle, service_reference_pt ref, void **service) {
 	celix_status_t status = CELIX_SUCCESS;
 	event_publisher_pt event_publisher = handle;
 	status = bundleContext_getService(event_publisher->context, ref, service);
-	return status;
+
+    return status;
 }
 
 celix_status_t eventPublisherAddedService(void * handle, service_reference_pt ref, void * service) {
     event_publisher_pt data = (event_publisher_pt) handle;
 	logHelper_log(data->loghelper, OSGI_LOGSERVICE_DEBUG, "[PUB] Event admin added.");
-
+    printf(" added event admin");
     data->event_admin_service = (event_admin_service_pt) service;
     data->eventAdminAdded = true;
 	return CELIX_SUCCESS;
