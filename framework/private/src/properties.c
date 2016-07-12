@@ -135,7 +135,7 @@ FRAMEWORK_EXPORT properties_pt properties_loadWithStream(FILE *file) {
 
 			if (!isComment) {
 				//printf("putting 'key'/'value' '%s'/'%s' in properties\n", utils_stringTrim(key), utils_stringTrim(value));
-				hashMap_put(props, strdup(utils_stringTrim(key)), strdup(utils_stringTrim(value)));
+				properties_set(props, utils_stringTrim(key), utils_stringTrim(value));
 			}
 		}
 	}
@@ -218,6 +218,15 @@ const char* properties_getWithDefault(properties_pt properties, const char* key,
 	return value == NULL ? defaultValue : value;
 }
 
-const char* properties_set(properties_pt properties, const char* key, const char* value) {
-	return hashMap_put(properties, strndup(key, 1024*10), strndup(value, 1024*10));
+void properties_set(properties_pt properties, const char* key, const char* value) {
+    hash_map_entry_pt entry = hashMap_getEntry(properties, key);
+    char* oldValue = NULL;
+	if (entry != NULL) {
+        char* oldKey = hashMapEntry_getKey(entry);
+        oldValue = hashMapEntry_getValue(entry);
+        hashMap_put(properties, oldKey, strndup(value, 1024*10));
+	} else {
+        hashMap_put(properties, strndup(key, 1024*10), strndup(value, 1024*10));
+    }
+    free(oldValue);
 }

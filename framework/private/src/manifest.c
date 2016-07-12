@@ -207,7 +207,6 @@ celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt prope
 
 
 	while (fgets(lbuf, sizeof(lbuf), file ) != NULL ) {
-		bool lineContinued = false;
 		int len = strlen(lbuf);
 
 		if (lbuf[--len] != '\n') {
@@ -226,7 +225,6 @@ celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt prope
 			buf[0] = '\0';
 
 			// Line continued
-			lineContinued = true;
 			strcat(buf, lastLine);
 			strncat(buf, lbuf+1, len - 1);
 
@@ -265,9 +263,7 @@ celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt prope
 			value[len - i] = '\0';
 		}
 
-		if ((properties_set(properties, name, value) != NULL) && (!lineContinued)) {
-			printf("Duplicate entry: %s", name);
-		}
+		properties_set(properties, name, value);
 	}
 
 	return CELIX_SUCCESS;

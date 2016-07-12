@@ -272,12 +272,12 @@ celix_status_t framework_destroy(framework_pt framework) {
                     array_list_pt handles = NULL;
                     status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
                     status = CELIX_DO_IF(status, bundleRevision_getHandles(revision, &handles));
-                    if(handles != NULL){
-			for (int i = arrayList_size(handles) - 1; i >= 0; i--) {
-			    void *handle = arrayList_get(handles, i);
-			    fw_closeLibrary(handle);
-			}
-						  }
+                    if (handles != NULL) {
+                        for (int i = arrayList_size(handles) - 1; i >= 0; i--) {
+                            void *handle = arrayList_get(handles, i);
+                            fw_closeLibrary(handle);
+                        }
+                    }
                 }
 
                 bundleArchive_destroy(archive);
@@ -791,17 +791,17 @@ celix_status_t framework_updateBundle(framework_pt framework, bundle_pt bundle, 
 	status = CELIX_DO_IF(status, bundleArchive_setLastModified(archive, time(NULL)));
 	status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, bundle, OSGI_FRAMEWORK_BUNDLE_INSTALLED));
 
-	// TODO Unload all libraries for transition to unresolved
 	bundle_revision_pt revision = NULL;
 	array_list_pt handles = NULL;
 	status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
     status = CELIX_DO_IF(status, bundleRevision_getHandles(revision, &handles));
-    if(handles != NULL){
-	for (int i = arrayList_size(handles) - 1; i >= 0; i--) {
-	    void *handle = arrayList_get(handles, i);
-	    fw_closeLibrary(handle);
-	}
-	 }
+    if (handles != NULL) {
+        int i;
+	    for (i = arrayList_size(handles) - 1; i >= 0; i--) {
+	        void* handle = arrayList_get(handles, i);
+	        fw_closeLibrary(handle);
+	    }
+    }
 
 
 	status = CELIX_DO_IF(status, fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_UNRESOLVED, bundle));
@@ -2496,7 +2496,6 @@ static celix_status_t framework_loadBundleLibraries(framework_pt framework, bund
     return status;
 }
 
-// TODO Store all handles for unloading!
 static celix_status_t framework_loadLibraries(framework_pt framework, const char *librariesIn, const char *activator, bundle_archive_pt archive, void **activatorHandle) {
     celix_status_t status = CELIX_SUCCESS;
 
@@ -2531,14 +2530,8 @@ static celix_status_t framework_loadLibraries(framework_pt framework, const char
         char *trimmedLib = utils_stringTrim(lib);
         status = framework_loadLibrary(framework, trimmedLib, archive, &handle);
 
-        if( (status == CELIX_SUCCESS) && (activator != NULL) && (strcmp(trimmedLib, activator) == 0) ) {
-		*activatorHandle = handle;
-        }
-        else{
-		*activatorHandle = NULL;
-		if(handle != NULL){
-			fw_closeLibrary(handle);
-		}
+        if ( (status == CELIX_SUCCESS) && (activator != NULL) && (strcmp(trimmedLib, activator) == 0) ) {
+		    *activatorHandle = handle;
         }
 
         token = strtok_r(NULL, ",", &last);
@@ -2587,9 +2580,8 @@ static celix_status_t framework_loadLibrary(framework_pt framework, const char *
     	status = CELIX_FRAMEWORK_EXCEPTION;
     } else {
 		*handle = fw_openLibrary(libraryPath);
-		if (*handle == NULL) {
+        if (*handle == NULL) {
 			error = fw_getLastError();
-			// #TODO this is wrong
 			status =  CELIX_BUNDLE_EXCEPTION;
 		} else {
 			bundle_revision_pt revision = NULL;
