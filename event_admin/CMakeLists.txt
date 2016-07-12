@@ -22,9 +22,14 @@ if(EVENT_ADMIN)
 	add_subdirectory(event_admin)
 #	add_subdirectory(event_handler)
 #	add_subdirectory(event_publisher)
-	
+
 	#deploy("event_admin_bundle" BUNDLES event_admin shell shell_tui log_service log_writer)
   #  deploy("event_publisher_example" BUNDLES event_admin event_publisher shell shell_tui log_service log_writer)
 #	deploy("event_handler_example" BUNDLES event_admin event_handler shell shell_tui log_service log_writer)
 #	deploy("event_admin_example" BUNDLES event_admin event_publisher event_handler shell shell_tui log_service log_writer)
+	add_deploy(event_admin_service
+			NAME "event_admin_service"
+			GROUP "event_admin/event_admin"
+			BUNDLES event_admin shell shell_tui log_service log_writer
+			)
 endif(EVENT_ADMIN)

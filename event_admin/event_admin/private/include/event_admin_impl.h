@@ -101,7 +101,8 @@ celix_status_t eventAdmin_removedService(void * handle, service_reference_pt ref
  * @param char *topic, the topic string.
  * @param array_list_pt event_handlers. The array list to contain the interested handlers.
  */
-celix_status_t eventAdmin_findHandlersByTopic(event_admin_pt event_admin, char *topic , array_list_pt event_handlers);
+celix_status_t eventAdmin_findHandlersByTopic(event_admin_pt event_admin, const char *topic,
+                                              array_list_pt event_handlers);
 /**
  * @desc create the needed event channels for an event handler.
  * @desc apr_pool_t *pool. a memory pool pointer.
@@ -109,21 +110,24 @@ celix_status_t eventAdmin_findHandlersByTopic(event_admin_pt event_admin, char *
  * @desc char *topic the topic
  * @desc channel_t *channel. the top level channel.
  */
-celix_status_t eventAdmin_createEventChannelsByEventHandler(event_handler_service_pt event_handler_service, char *topic, channel_t *channel);
+celix_status_t eventAdmin_createEventChannelsByEventHandler(event_handler_service_pt event_handler_service,
+                                                            const char *topic, channel_t *channel);
 /**
  * @desc mutex functions for the channels
  * @param event_admin_pt event_admin. the event admin instance.
  * @param char *topic. the topic for which the channels need to be locked or unlocked
  */
-celix_status_t eventAdmin_lockHandlersList(event_admin_pt event_admin, char *topic );
-celix_status_t eventAdmin_releaseHandersList(event_admin_pt event_admin, char *topic );
+celix_status_t eventAdmin_lockHandlersList(event_admin_pt event_admin, const char *topic);
+
+celix_status_t eventAdmin_releaseHandersList(event_admin_pt event_admin, const char *topic);
 
 /**
  * @desc create an event
  * @param char *topic. String containing the topic
  * @param properties_pt properties.
  */
-celix_status_t eventAdmin_createEvent(event_admin_pt event_admin, char *topic, properties_pt properties, event_pt *event);
+celix_status_t eventAdmin_createEvent(event_admin_pt event_admin, const char *topic, properties_pt properties,
+                                      event_pt *event);
 /**
  * @desc checks if an event contains the property
  * @param event_pt *event. the event to check
@@ -144,7 +148,7 @@ celix_status_t eventAdmin_event_equals( event_pt *event, event_pt *compare, bool
  * @param char *propertyKey the key of the property to get
  * @param char **propertyValue. the result param will contain the property if it exists in the event.
  */
-celix_status_t eventAdmin_getProperty( event_pt *event, char *propertyKey, char **propertyValue);
+celix_status_t eventAdmin_getProperty(event_pt *event, char *propertyKey, const char **propertyValue);
 /**
  * @desc gets all property names from the event
  * @param event_pt *event. the event to get the property names from
@@ -156,7 +160,7 @@ celix_status_t eventAdmin_getPropertyNames( event_pt *event, array_list_pt *name
  * @param event_pt *event. the event to get the topic from
  * @param char **topic, result pointer will contain the topic.
  */
-celix_status_t eventAdmin_getTopic( event_pt *event, char **topic);
+celix_status_t eventAdmin_getTopic(event_pt *event, const char **topic);
 celix_status_t eventAdmin_hashCode(event_pt *event, int *hashCode);
 celix_status_t eventAdmin_matches( event_pt *event);
 celix_status_t eventAdmin_toString( event_pt *event, char *eventString);
