@@ -218,7 +218,7 @@ void * hashMap_remove(hash_map_pt map, const void* key) {
 	return value;
 }
 
-void * hashMap_removeEntryForKey(hash_map_pt map, const void* key) {
+hash_map_entry_pt hashMap_removeEntryForKey(hash_map_pt map, const void* key) {
 	unsigned int hash = (key == NULL) ? 0 : hashMap_hash(map->hashKey(key));
 	int i = hashMap_indexFor(hash, map->tablelength);
 	hash_map_entry_pt prev = map->table[i];

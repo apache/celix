@@ -58,12 +58,11 @@ const char * properties_getWithDefault(properties_pt properties, const char * ke
 	return mock_c()->returnValue().value.pointerValue;
 }
 
-const char * properties_set(properties_pt properties, const char * key, const char * value) {
+void properties_set(properties_pt properties, const char * key, const char * value) {
 	mock_c()->actualCall("properties_set")
 		->withPointerParameters("properties", properties)
 		->withStringParameters("key", key)
 		->withStringParameters("value", value);
-	return mock_c()->returnValue().value.pointerValue;
 }
 
 

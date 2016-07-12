@@ -43,7 +43,7 @@ FRAMEWORK_EXPORT void properties_store(properties_pt properties, const char* fil
 
 FRAMEWORK_EXPORT const char* properties_get(properties_pt properties, const char* key);
 FRAMEWORK_EXPORT const char* properties_getWithDefault(properties_pt properties, const char* key, const char* defaultValue);
-FRAMEWORK_EXPORT const char* properties_set(properties_pt properties, const char* key, const char* value);
+FRAMEWORK_EXPORT void properties_set(properties_pt properties, const char* key, const char* value);
 
 FRAMEWORK_EXPORT celix_status_t properties_copy(properties_pt properties, properties_pt *copy);
 

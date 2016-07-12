@@ -37,7 +37,7 @@ cmake_minimum_required(VERSION 3.2)
 project(myproject C)
 
 #PART 2
-    #Note. If celix is not installed in /usr/local dir, change the location accordingly.
+#Note. If celix is not installed in /usr/local dir, change the location accordingly.
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "/usr/local/share/celix/cmake/modules")
 find_package(CELIX REQUIRED)
 include_directories(${CELIX_INCLUDE_DIRS})
@@ -79,18 +79,16 @@ And add the following CMakeList.txt file:
 add_bundle(hello_world
     VERSION 1.0.0
 	SOURCES
-        private/src/activator
+        private/src/hello_world_activator
 )	
 ```
 	
-This CMakeLists.txt file declares that a bundle should be build based on the build result (shared library) of the declared sources (in this caese the private/src/activator.c source). The add_bundle function is an Apache Celix specific CMake extension. 
+This CMakeLists.txt file declares that a bundle should be build based on the build result (shared library) of the declared sources (in this caese the private/src/hello_world_activator.c source). The add_bundle function is an Apache Celix specific CMake extension. 
 
-The last part for the hello_world bundle is the bundle activator source. The bundle activator is the entry point for an Apache Celix Bundle. Think of the bundle activator as the main function for a bundle, whith the difference that is does not only control the start of a bundle, but also the stopping of a bundle. 
-
-Creating/starting and stopping/destroying is seperated in bundle activator. This is done to make a clear seperation between the instantion/creation of a structure (e.g. object) and exposure of that instantation to other parts of the program. The same, but then reserve hold for seperating stopping and destroying a bundle. 
+What to create/destroy and how do when starting/stopping a bundle must programmed in the bundle activator. create and starting a bundle is seperated to make a clear seperation between the instantion/creation of a structure (e.g. object) and exposure of that instantation to other parts of the program. The same, but then reserve hold for seperating stopping and destroying a bundle. 
 
 ```C
-//${WS}/myproject/bundles/hello_world/private/src/activator.c
+//${WS}/myproject/bundles/hello_world/private/src/hello_world_activator.c
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -155,7 +153,7 @@ To create a deployment for the hello_world bundle two things are needed:
 1. Add a `add_deploy` statement in the `bundles/hello_world/CMakeLists.txt` file declaring what to deploy and under which name.
 
 ```CMake
-${WS}/myproject/bundles/hello_world/CMakeLists.txt
+#${WS}/myproject/bundles/hello_world/CMakeLists.txt
 add_deploy("myproject-deploy" BUNDLES 
 	${CELIX_BUNDLES_DIR}/shell.zip 
 	${CELIX_BUNDLES_DIR}/shell_tui.zip
@@ -167,7 +165,7 @@ Rerun make again form the  build project. the make files genereated by CMake wil
 
 ```bash 		
 cd ${WS}/myproject-build
-make 
+make -j
 #or
 #ninja
 ```	
@@ -176,10 +174,11 @@ Now a deploy directory myproject should be availabe in the deploy directory. Thi
 
 ```bash
 cd ${WS}/myproject-build/deploy/myproject-deploy
-sh run.sh
+. ./release.sh
+celix
 ```
 
-The hello_world bundle should be started with the famous "Hello World" text printed. The shell and shell_tui bundle are also deployed and these can be used to query and control the running framework. Below some commands are shown for printed the installed bundles, printing all known shell command, printing help of a specific command and stopping a specific bundle (note that bundle 0 is the framework):
+The hello_world bundle should be started with the famous "Hello World" text printed. The shell and shell_tui bundle are also deployed and these can be used to query and control the running framework. Below some commands are shown for querying the installed bundles, listing all known shell command, showing the help of a specific command and stopping a specific bundle (note that bundle 0 is the framework "bundle"):
 
 ```
 lb 
@@ -193,7 +192,7 @@ stop 0
 A nice feature of CMake is the ability to generate Eclipse project files, with this feature bundles can also be developed with use of Eclipse. This should help speed up the development process. 
 To get started change directory to the build directory and generate a eclipse project file.
 
-	cd ${WS}/myproject/build 
+	cd ${WS}/myproject-build 
 	cmake -G "Eclipse CDT4 - Unix Makefiles" .
 	
 Startup the Eclipse EDI and a chose the `${WS}`
@@ -204,7 +203,7 @@ Import the project with existing project.
 
 ![import project](getting_started_img2.png)
 
-To build the project, use Project->Build All. To run or debug from Eclipse navigate to the myproject deploy directory and right click on the 'myproject.launch' file. And select Run As or Debug As to run or debug the bundle.
+To build the project, use Project->Build All. To run or debug from Eclipse navigate to the myproject deploy directory and right click on the 'myproject-deploy.launch' file. And select Run As or Debug As to run or debug the bundle.
 
 ![run project](getting_started_img3.png) 
  
