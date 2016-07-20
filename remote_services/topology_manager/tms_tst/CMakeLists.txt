@@ -59,10 +59,18 @@ LOGHELPER_ENABLE_STDOUT_FALLBACK=true
 org.osgi.framework.storage.clean=onFirstInit
 ")
 
-add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/scope.json" COMMAND ${CMAKE_COMMAND} -E copy_if_different "scope.json" "${CMAKE_CURRENT_BINARY_DIR}/scope.json")
-add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/scope2.json" COMMAND ${CMAKE_COMMAND} -E copy_if_different "scope2.json" "${CMAKE_CURRENT_BINARY_DIR}/scope2.json")
-add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/scope3.json" COMMAND ${CMAKE_COMMAND} -E copy_if_different "scope3.json" "${CMAKE_CURRENT_BINARY_DIR}/scope3.json")
-add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/scope4.json" COMMAND ${CMAKE_COMMAND} -E copy_if_different "scope4.json" "${CMAKE_CURRENT_BINARY_DIR}/scope4.json")
+
+#TODO improve copy commands, for now using configure_file as copy 
+#add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/scope.json" COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURE_DIR}/scope.json" "${CMAKE_CURRENT_BINARY_DIR}/scope.json")
+#add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/scope2.json" COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURE_DIR}/scope2.json" "${CMAKE_CURRENT_BINARY_DIR}/scope2.json")
+#add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/scope3.json" COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURE_DIR}/scope3.json" "${CMAKE_CURRENT_BINARY_DIR}/scope3.json")
+#add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/scope4.json" COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURE_DIR}/scope4.json" "${CMAKE_CURRENT_BINARY_DIR}/scope4.json")
+
+configure_file("scope.json" "scope.json")
+configure_file("scope2.json" "scope2.json")
+configure_file("scope3.json" "scope3.json")
+configure_file("scope4.json" "scope4.json")
+
 
 add_test(NAME run_test_tm_scoped COMMAND test_tm_scoped)
 SETUP_TARGET_FOR_COVERAGE(test_tm_scoped_cov test_tm_scoped ${CMAKE_BINARY_DIR}/coverage/test_tm_scoped/test_tm_scoped)
