@@ -17,8 +17,8 @@
  * under the License.
  */
 
-#ifndef CELIX_PHASE3ACTIVATOR_H
-#define CELIX_PHASE3ACTIVATOR_H
+#ifndef CELIX_PHASE3LOCKINGACTIVATOR_H
+#define CELIX_PHASE3LOCKINGACTIVATOR_H
 
 #include "celix/dm/DmActivator.h"
 
@@ -30,4 +30,4 @@ public:
     virtual void init(DependencyManager& manager);
 };
 
-#endif //CELIX_PHASE2AACTIVATOR_H
+#endif //CELIX_PHASE3LOCKINGAACTIVATOR_H

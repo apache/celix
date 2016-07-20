@@ -17,8 +17,8 @@
  * under the License.
  */
 
-#ifndef CELIX_PHASE2CMP_H
-#define CELIX_PHASE2CMP_H
+#ifndef CELIX_PHASE3CMP_H
+#define CELIX_PHASE3CMP_H
 
 #include "IPhase1.h"
 #include "IPhase2.h"
@@ -47,4 +47,4 @@ public:
     void setPhase2a(IPhase2* phase);
 };
 
-#endif //CELIX_PHASE2CMP_H
+#endif //CELIX_PHASE3CMP_H

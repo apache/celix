@@ -24,8 +24,8 @@ add_bundle(phase3_cxx
     SYMBOLIC_NAME phase3_cxx
     VERSION 0.0.1
     SOURCES
-        src/Phase3LockingActivator.cc
-        src/Phase3LockingCmp.cc
+        src/Phase3Activator.cc
+        src/Phase3Cmp.cc
 )
 
 

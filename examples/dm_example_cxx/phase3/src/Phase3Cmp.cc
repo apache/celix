@@ -27,7 +27,7 @@
 void Phase3Cmp::start() {
     std::cout << "start Phase3Cmp\n";
     running = true;
-    pollThread = std::thread {&Phase3Cmp::poll, std::ref(*this)};
+    pollThread = std::thread {&Phase3Cmp::poll, this};
 }
 
 void Phase3Cmp::stop() {

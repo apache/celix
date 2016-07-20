@@ -17,8 +17,8 @@
  * under the License.
  */
 
-#ifndef CELIX_PHASE2CMP_H
-#define CELIX_PHASE2CMP_H
+#ifndef CELIX_PHASE3LOCKINGCMP_H
+#define CELIX_PHASE3LOCKINGCMP_H
 
 #include "IPhase2.h"
 #include <stdint.h>
@@ -47,4 +47,4 @@ public:
     void removePhase2(IPhase2* phase, celix::dm::Properties&& props); //injector used by dependency manager
 };
 
-#endif //CELIX_PHASE2CMP_H
+#endif //CELIX_PHASE3LOCKINGCMP_H
