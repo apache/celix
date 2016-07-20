@@ -47,4 +47,10 @@ FRAMEWORK_EXPORT void properties_set(properties_pt properties, const char* key, 
 
 FRAMEWORK_EXPORT celix_status_t properties_copy(properties_pt properties, properties_pt *copy);
 
+
+#define PROPERTIES_FOR_EACH(props, key) \
+	for(hash_map_iterator_t iter = hashMapIterator_construct((props)); \
+		hashMapIterator_hasNext(&iter); \
+		(key) = (const char*)hashMapIterator_nextKey(&iter))
+
 #endif /* PROPERTIES_H_ */

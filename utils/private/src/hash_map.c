@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "hash_map.h"
 #include "hash_map_private.h"
@@ -334,8 +335,28 @@ void hashMap_addEntry(hash_map_pt map, int hash, void* key, void* value, int buc
 	}
 }
 
+hash_map_iterator_pt hashMapIterator_alloc(void) {
+    return calloc(1, sizeof(hash_map_iterator_t));
+}
+
+void hashMapIterator_dealloc(hash_map_iterator_pt iterator) {
+    free(iterator);
+}
+
 hash_map_iterator_pt hashMapIterator_create(hash_map_pt map) {
-	hash_map_iterator_pt iterator = (hash_map_iterator_pt) malloc(sizeof(*iterator));
+	hash_map_iterator_pt iterator = hashMapIterator_alloc();
+    hashMapIterator_init(map, iterator);
+    return iterator;
+}
+
+UTILS_EXPORT hash_map_iterator_t hashMapIterator_construct(hash_map_pt map) {
+    hash_map_iterator_t iter;
+    memset(&iter, 0, sizeof(iter));
+    hashMapIterator_init(map, &iter);
+    return iter;
+}
+
+void hashMapIterator_init(hash_map_pt map, hash_map_iterator_pt iterator) {
 	iterator->map = map;
 	iterator->expectedModCount = map->modificationCount;
 	iterator->index = 0;
@@ -345,16 +366,19 @@ hash_map_iterator_pt hashMapIterator_create(hash_map_pt map) {
 		while (iterator->index < map->tablelength && (iterator->next = map->table[iterator->index++]) == NULL) {
 		}
 	}
-	return iterator;
+}
+
+void hashMapIterator_deinit(hash_map_iterator_pt iterator) {
+    iterator->current = NULL;
+    iterator->expectedModCount = 0;
+    iterator->index = 0;
+    iterator->map = NULL;
+    iterator->next = NULL;
 }
 
 void hashMapIterator_destroy(hash_map_iterator_pt iterator) {
-	iterator->current = NULL;
-	iterator->expectedModCount = 0;
-	iterator->index = 0;
-	iterator->map = NULL;
-	iterator->next = NULL;
-	free(iterator);
+	hashMapIterator_deinit(iterator);
+    hashMapIterator_dealloc(iterator);
 }
 
 bool hashMapIterator_hasNext(hash_map_iterator_pt iterator) {

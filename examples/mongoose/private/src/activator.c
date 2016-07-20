@@ -31,6 +31,7 @@
 
 struct userData {
 	struct mg_context *ctx;
+    char* entry;
 };
 
 celix_status_t bundleActivator_create(bundle_context_pt  __attribute__((unused)) context, void **userData) {
@@ -44,15 +45,12 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	struct userData * data = (struct userData *) userData;
 
 	if (bundleContext_getBundle(context, &bundle) == CELIX_SUCCESS) {
-		const char* entry = NULL;
-		bundle_getEntry(bundle, "root", &entry);
+		bundle_getEntry(bundle, "root", &data->entry);
 		const char *options[] = {
-			"document_root", entry,
+			"document_root", data->entry,
 			"listening_ports", "8081",
 			NULL
 		};
-
-		printf("entry %s\n", entry);
 
 		data->ctx = mg_start(NULL, options);
 
@@ -74,6 +72,8 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt  __attrib
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt  __attribute__((unused)) context) {
-	free(userData);
+	struct userData * data = (struct userData *) userData;
+    free(data->entry);
+	free(data);
 	return CELIX_SUCCESS;
 }

@@ -93,12 +93,12 @@ struct framework {
 celix_status_t framework_start(framework_pt framework);
 void framework_stop(framework_pt framework);
 
-FRAMEWORK_EXPORT celix_status_t fw_getProperty(framework_pt framework, const char *name, const char** value);
+FRAMEWORK_EXPORT celix_status_t fw_getProperty(framework_pt framework, const char* name, const char* defaultValue, const char** value);
 
 FRAMEWORK_EXPORT celix_status_t fw_installBundle(framework_pt framework, bundle_pt * bundle, const char * location, const char *inputFile);
 FRAMEWORK_EXPORT celix_status_t fw_uninstallBundle(framework_pt framework, bundle_pt bundle);
 
-FRAMEWORK_EXPORT celix_status_t framework_getBundleEntry(framework_pt framework, bundle_pt bundle, const char* name, const char** entry);
+FRAMEWORK_EXPORT celix_status_t framework_getBundleEntry(framework_pt framework, bundle_pt bundle, const char* name, char** entry);
 
 FRAMEWORK_EXPORT celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int options);
 FRAMEWORK_EXPORT celix_status_t framework_updateBundle(framework_pt framework, bundle_pt bundle, const char* inputFile);

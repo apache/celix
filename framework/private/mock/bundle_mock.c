@@ -102,7 +102,7 @@ celix_status_t bundle_setContext(bundle_pt bundle, bundle_context_pt context) {
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundle_getEntry(bundle_pt bundle, const char * name, const char **entry) {
+celix_status_t bundle_getEntry(bundle_pt bundle, const char * name, char **entry) {
 	mock_c()->actualCall("bundle_getEntry")
 			->withPointerParameters("bundle", bundle)
 			->withStringParameters("name", name)

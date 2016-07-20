@@ -294,7 +294,7 @@ static void *deploymentAdmin_poll(void *deploymentAdmin) {
 				if (status == CELIX_SUCCESS) {
 					bundle_pt bundle = NULL;
 					bundleContext_getBundle(admin->context, &bundle);
-					const char *entry = NULL;
+					char *entry = NULL;
 					bundle_getEntry(bundle, "/", &entry);
 
 					// Handle file
@@ -305,7 +305,7 @@ static void *deploymentAdmin_poll(void *deploymentAdmin) {
 					uuid_unparse(uid, uuid);
                     snprintf(tmpDir, 256, "%s%s", entry, uuid);
                     if( mkdir(tmpDir, S_IRWXU) == -1){
-			fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Failed creating directory %s",tmpDir);
+                        fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Failed creating directory %s",tmpDir);
                     }
 
 					// TODO: update to use bundle cache DataFile instead of module entries.
@@ -356,6 +356,8 @@ static void *deploymentAdmin_poll(void *deploymentAdmin) {
 					}
 					admin->current = strdup(last);
 					hashMap_put(admin->packages, (char*)name, source);
+
+                    free(entry);
 				}
 				if (inputFilename != NULL) {
 					free(inputFilename);
@@ -571,7 +573,7 @@ celix_status_t deploymentAdmin_updateDeploymentPackageBundles(deployment_admin_p
 		bundle_info_pt info = arrayList_get(infos, i);
 
 		bundleContext_getBundle(admin->context, &bundle);
-		const char *entry = NULL;
+		char *entry = NULL;
 		bundle_getEntry(bundle, "/", &entry);
 		const char *name = NULL;
 		deploymentPackage_getName(source, &name);
@@ -594,6 +596,8 @@ celix_status_t deploymentAdmin_updateDeploymentPackageBundles(deployment_admin_p
 			//printf("Install bundle from: %s\n", bundlePath);
 			bundleContext_installBundle2(admin->context, bsn, bundlePath, &updateBundle);
 		}
+
+        free(entry);
 	}
 	arrayList_destroy(infos);
 	return status;
@@ -671,7 +675,7 @@ celix_status_t deploymentAdmin_processDeploymentPackageResources(deployment_admi
 				status = bundleContext_getService(admin->context, ref, &processorP);
 				if (status == CELIX_SUCCESS) {
 					bundle_pt bundle = NULL;
-					const char *entry = NULL;
+					char *entry = NULL;
 					const char *name = NULL;
 					const char *packageName = NULL;
 					resource_processor_service_pt processor = processorP;
@@ -687,6 +691,8 @@ celix_status_t deploymentAdmin_processDeploymentPackageResources(deployment_admi
 
 					processor->begin(processor->processor, (char*)packageName);
 					processor->process(processor->processor, info->path, resourcePath);
+
+                    free(entry);
 				}
 			}
 		}

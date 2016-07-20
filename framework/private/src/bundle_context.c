@@ -366,15 +366,19 @@ celix_status_t bundleContext_removeFrameworkListener(bundle_context_pt context, 
 }
 
 celix_status_t bundleContext_getProperty(bundle_context_pt context, const char *name, const char** value) {
-	celix_status_t status = CELIX_SUCCESS;
+	return bundleContext_getPropertyWithDefault(context, name, NULL, value);
+}
 
-	if (context == NULL || name == NULL || *value != NULL) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	} else {
-		fw_getProperty(context->framework, name, value);
-	}
+celix_status_t bundleContext_getPropertyWithDefault(bundle_context_pt context, const char* name, const char* defaultValue, const char** value) {
+    celix_status_t status = CELIX_SUCCESS;
 
-	framework_logIfError(logger, status, NULL, "Failed to get property [name=%s]", name);
+    if (context == NULL || name == NULL || *value != NULL) {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    } else {
+        fw_getProperty(context->framework, name, defaultValue, value);
+    }
 
-	return status;
+    framework_logIfError(logger, status, NULL, "Failed to get property [name=%s]", name);
+
+    return status;
 }

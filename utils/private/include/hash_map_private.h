@@ -58,14 +58,6 @@ struct hashMap {
 	int (*equalsValue)(const void* value1, const void* value2);
 };
 
-struct hashMapIterator {
-	hash_map_pt map;
-	hash_map_entry_pt next;
-	hash_map_entry_pt current;
-	int expectedModCount;
-	int index;
-};
-
 struct hashMapKeySet {
 	hash_map_pt map;
 };

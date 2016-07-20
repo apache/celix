@@ -24,6 +24,7 @@
  *  \copyright  Apache License, Version 2.0
  */
 #include <stdlib.h>
+#include <string.h>
 
 #include "celix_errno.h"
 #include "celix_log.h"
@@ -46,9 +47,9 @@ celix_status_t endpointDescription_create(properties_pt properties, endpoint_des
 	endpoint_description_pt ep = calloc(1,sizeof(*ep));
 
     ep->properties = properties;
-    ep->frameworkUUID = (char*)properties_get(properties, (char *) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
-    ep->id = (char*)properties_get(properties, (char *) OSGI_RSA_ENDPOINT_ID);
-    ep->service = (char*)properties_get(properties, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
+    ep->frameworkUUID = (char*)properties_get(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
+    ep->id = (char*)properties_get(properties, OSGI_RSA_ENDPOINT_ID);
+    ep->service = strndup(properties_get(properties, OSGI_FRAMEWORK_OBJECTCLASS), 1024*10);
     ep->serviceId = serviceId;
 
     if (!(ep->frameworkUUID) || !(ep->id) || !(ep->service) ) {
@@ -69,6 +70,7 @@ celix_status_t endpointDescription_create(properties_pt properties, endpoint_des
 
 celix_status_t endpointDescription_destroy(endpoint_description_pt description) {
     properties_destroy(description->properties);
+    free(description->service);
     free(description);
     return CELIX_SUCCESS;
 }

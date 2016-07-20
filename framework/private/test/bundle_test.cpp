@@ -316,11 +316,12 @@ TEST(bundle, getEntry) {
 						.withOutputParameterReturning("entry", &expected, sizeof(expected))
 						.andReturnValue(CELIX_SUCCESS);
 
-	const char *actual = NULL;
+	char *actual = NULL;
 	celix_status_t status = bundle_getEntry(bundle, name, &actual);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	POINTERS_EQUAL(expected, actual);
 
+    //free(actual);
 	free(bundle);
 }
 

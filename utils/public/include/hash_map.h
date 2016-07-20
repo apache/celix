@@ -33,7 +33,16 @@
 typedef struct hashMapEntry * hash_map_entry_pt;
 typedef struct hashMap * hash_map_pt;
 
-typedef struct hashMapIterator * hash_map_iterator_pt;
+struct hashMapIterator {
+    hash_map_pt map;
+    hash_map_entry_pt next;
+    hash_map_entry_pt current;
+    int expectedModCount;
+    int index;
+};
+
+typedef struct hashMapIterator hash_map_iterator_t;
+typedef hash_map_iterator_t * hash_map_iterator_pt;
 
 typedef struct hashMapKeySet * hash_map_key_set_pt;
 typedef struct hashMapValues * hash_map_values_pt;
@@ -54,6 +63,13 @@ UTILS_EXPORT bool hashMap_containsValue(hash_map_pt map, const void* value);
 
 UTILS_EXPORT hash_map_iterator_pt hashMapIterator_create(hash_map_pt map);
 UTILS_EXPORT void hashMapIterator_destroy(hash_map_iterator_pt iterator);
+UTILS_EXPORT hash_map_iterator_pt hashMapIterator_alloc(void);
+UTILS_EXPORT void hashMapIterator_dealloc(hash_map_iterator_pt iterator);
+UTILS_EXPORT void hashMapIterator_init(hash_map_pt map, hash_map_iterator_pt iterator);
+UTILS_EXPORT void hashMapIterator_deinit(hash_map_iterator_pt iterator);
+UTILS_EXPORT hash_map_iterator_t hashMapIterator_construct(hash_map_pt map);
+
+
 UTILS_EXPORT bool hashMapIterator_hasNext(hash_map_iterator_pt iterator);
 UTILS_EXPORT void hashMapIterator_remove(hash_map_iterator_pt iterator);
 UTILS_EXPORT void * hashMapIterator_nextValue(hash_map_iterator_pt iterator);

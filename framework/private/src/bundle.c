@@ -183,7 +183,7 @@ celix_status_t bundle_setContext(bundle_pt bundle, bundle_context_pt context) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundle_getEntry(bundle_pt bundle, const char* name, const char** entry) {
+celix_status_t bundle_getEntry(bundle_pt bundle, const char* name, char** entry) {
 	return framework_getBundleEntry(bundle->framework, bundle, name, entry);
 }
 

@@ -54,7 +54,7 @@ FRAMEWORK_EXPORT activator_pt bundle_getActivator(bundle_pt bundle);
 FRAMEWORK_EXPORT celix_status_t bundle_setActivator(bundle_pt bundle, activator_pt activator);
 FRAMEWORK_EXPORT celix_status_t bundle_getContext(bundle_pt bundle, bundle_context_pt *context);
 FRAMEWORK_EXPORT celix_status_t bundle_setContext(bundle_pt bundle, bundle_context_pt context);
-FRAMEWORK_EXPORT celix_status_t bundle_getEntry(bundle_pt bundle, const char* name, const char** entry);
+FRAMEWORK_EXPORT celix_status_t bundle_getEntry(bundle_pt bundle, const char* name, char** entry);
 
 FRAMEWORK_EXPORT celix_status_t bundle_start(bundle_pt bundle);
 FRAMEWORK_EXPORT celix_status_t bundle_startWithOptions(bundle_pt bundle, int options);

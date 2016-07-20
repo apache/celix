@@ -427,7 +427,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
         export_registration_pt registration = NULL;
 
         remoteServiceAdmin_createEndpointDescription(admin, reference, properties, (char*)interface, &endpoint);
-        //TOOD precheck if descriptor exists
+        //TODO precheck if descriptor exists
         status = exportRegistration_create(admin->loghelper, reference, endpoint, admin->context, &registration);
         if (status == CELIX_SUCCESS) {
             status = exportRegistration_start(registration);

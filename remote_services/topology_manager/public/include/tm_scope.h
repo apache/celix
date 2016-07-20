@@ -40,6 +40,7 @@ struct tm_scope_service {
     celix_status_t (*removeImportScope)(void *handle, char *filter);
 };
 
-typedef struct tm_scope_service *tm_scope_service_pt;
+typedef struct tm_scope_service tm_scope_service_t;
+typedef tm_scope_service_t *tm_scope_service_pt;
 
 #endif /* TM_SCOPE_H_ */

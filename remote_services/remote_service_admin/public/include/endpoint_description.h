@@ -40,7 +40,8 @@ struct endpoint_description {
     long serviceId;
 };
 
-typedef struct endpoint_description *endpoint_description_pt;
+typedef struct endpoint_description endpoint_description_t;
+typedef endpoint_description_t* endpoint_description_pt;
 
 celix_status_t endpointDescription_create(properties_pt properties, endpoint_description_pt *endpointDescription);
 celix_status_t endpointDescription_destroy(endpoint_description_pt description);

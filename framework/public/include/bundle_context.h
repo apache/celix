@@ -114,5 +114,6 @@ FRAMEWORK_EXPORT celix_status_t bundleContext_addFrameworkListener(bundle_contex
 FRAMEWORK_EXPORT celix_status_t bundleContext_removeFrameworkListener(bundle_context_pt context, framework_listener_pt listener);
 
 FRAMEWORK_EXPORT celix_status_t bundleContext_getProperty(bundle_context_pt context, const char* name, const char** value);
+FRAMEWORK_EXPORT celix_status_t bundleContext_getPropertyWithDefault(bundle_context_pt context, const char* name, const char* defaultValue, const char** value);
 
 #endif /* BUNDLE_CONTEXT_H_ */

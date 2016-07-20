@@ -29,7 +29,8 @@
 
 #define OSGI_RSA_REMOTE_ENDPOINT "remote_endpoint"
 
-typedef struct remote_endpoint *remote_endpoint_pt;
+typedef struct remote_endpoint remote_endpoint_t;
+typedef remote_endpoint_t* remote_endpoint_pt;
 
 struct remote_endpoint_service {
 	remote_endpoint_pt endpoint;

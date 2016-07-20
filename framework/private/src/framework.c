@@ -26,7 +26,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/stat.h>
+#include <unistd.h>
 #include "celixbool.h"
 
 #ifdef _WIN32
@@ -518,7 +518,7 @@ void framework_stop(framework_pt framework) {
 	fw_stopBundle(framework, framework->bundle, true);
 }
 
-celix_status_t fw_getProperty(framework_pt framework, const char *name, const char** value) {
+celix_status_t fw_getProperty(framework_pt framework, const char* name, const char* defaultValue, const char** value) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (framework == NULL || name == NULL || *value != NULL) {
@@ -530,6 +530,9 @@ celix_status_t fw_getProperty(framework_pt framework, const char *name, const ch
 		if (*value == NULL) {
 			*value = getenv(name);
 		}
+        if (*value == NULL) {
+            *value = defaultValue;
+        }
 	}
 
 	return status;
@@ -607,7 +610,7 @@ celix_status_t fw_installBundle2(framework_pt framework, bundle_pt * bundle, lon
   	return status;
 }
 
-celix_status_t framework_getBundleEntry(framework_pt framework, bundle_pt bundle, const char* name, const char** entry) {
+celix_status_t framework_getBundleEntry(framework_pt framework, bundle_pt bundle, const char* name, char** entry) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	bundle_revision_pt revision;
@@ -618,18 +621,17 @@ celix_status_t framework_getBundleEntry(framework_pt framework, bundle_pt bundle
     status = CELIX_DO_IF(status, bundleArchive_getCurrentRevision(archive, &revision));
     status = CELIX_DO_IF(status, bundleRevision_getRoot(revision, &root));
     if (status == CELIX_SUCCESS) {
-        if ((strlen(name) > 0) && (name[0] == '/')) {
-            name++;
-        }
         char e[strlen(name) + strlen(root) + 2];
         strcpy(e, root);
-        strcat(e, "/");
-        strcat(e, name);
+        if ((strlen(name) > 0) && (name[0] == '/')) {
+            strcat(e, name);
+        } else {
+            strcat(e, "/");
+            strcat(e, name);
+        }
 
-        struct stat info;
-
-        if (stat(e, &info) == 0) {
-            (*entry) = strdup(e);
+        if (access(e, F_OK) == 0) {
+            (*entry) = strndup(e, 1024*10);
         } else {
             (*entry) = NULL;
         }

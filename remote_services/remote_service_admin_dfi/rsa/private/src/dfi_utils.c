@@ -51,11 +51,11 @@ static celix_status_t dfi_findFileForFramework(bundle_context_pt context, const 
 static celix_status_t dfi_findFileForBundle(bundle_pt bundle, const char *fileName, FILE **out) {
     celix_status_t  status;
 
-    const char *path = NULL;
-    char metaInfFileName[128];
+    char *path = NULL;
+    char metaInfFileName[512];
     snprintf(metaInfFileName, sizeof(metaInfFileName), "META-INF/descriptors/%s", fileName);
 
-    status = bundle_getEntry(bundle, (char *)fileName, &path);
+    status = bundle_getEntry(bundle, fileName, &path);
     
     if (status != CELIX_SUCCESS || path == NULL) {
         status = bundle_getEntry(bundle, metaInfFileName, &path);
@@ -70,6 +70,8 @@ static celix_status_t dfi_findFileForBundle(bundle_pt bundle, const char *fileNa
         }
 
     }
+
+    free(path);
     return status;
 }
 

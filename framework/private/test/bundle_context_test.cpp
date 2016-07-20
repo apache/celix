@@ -606,6 +606,7 @@ TEST(bundle_context, getProperty) {
 	mock().expectOneCall("fw_getProperty")
 		.withParameter("framework", framework)
 		.withParameter("name", name)
+		.withStringParameter("defaultValue", NULL)
 		.withOutputParameterReturning("value", &value, sizeof(value))
 		.andReturnValue(CELIX_SUCCESS);
 

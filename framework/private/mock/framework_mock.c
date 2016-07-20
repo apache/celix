@@ -51,10 +51,11 @@ void framework_stop(framework_pt framework) {
 	mock_c()->actualCall("framework_stop");
 }
 
-celix_status_t fw_getProperty(framework_pt framework, const char *name, const char** value) {
+celix_status_t fw_getProperty(framework_pt framework, const char* name, const char* defaultValue, const char** value) {
 	mock_c()->actualCall("fw_getProperty")
 			->withPointerParameters("framework", framework)
 			->withStringParameters("name", name)
+			->withStringParameters("defaultValue", defaultValue)
 			->withOutputParameter("value", (const char **) value);
 		return mock_c()->returnValue().value.intValue;
 }
@@ -75,7 +76,7 @@ celix_status_t fw_uninstallBundle(framework_pt framework, bundle_pt bundle) {
 		return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t framework_getBundleEntry(framework_pt framework, bundle_pt bundle, const char *name, const char **entry) {
+celix_status_t framework_getBundleEntry(framework_pt framework, bundle_pt bundle, const char *name, char **entry) {
 	mock_c()->actualCall("framework_getBundleEntry")
 			->withPointerParameters("framework", framework)
 			->withPointerParameters("bundle", bundle)

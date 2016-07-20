@@ -43,28 +43,26 @@ target_link_libraries(test_tm_scoped celix_framework celix_utils ${CPPUTEST_LIBR
 
 add_dependencies(test_tm_scoped remote_service_admin_dfi topology_manager calculator)
 
-#get_property(rsa_bundle_file TARGET remote_service_admin_dfi PROPERTY BUNDLE)
-# Not nice, but only (?) solution to prevent circular dependency between this test and rsa_dfi_test
-set_property(GLOBAL PROPERTY temp_rsa_bundle_file ${PROJECT_BINARY_DIR}/remote_services/remote_service_admin_dfi/rsa/remote_service_admin_dfi.zip)
-get_property(rsa_bundle_file GLOBAL PROPERTY temp_rsa_bundle_file)
-get_property(calc_bundle_file TARGET calculator PROPERTY BUNDLE_FILE)
-get_property(topology_manager_bundle_file TARGET topology_manager PROPERTY BUNDLE_FILE)
-get_property(disc_mock_bundle_file TARGET topology_manager_disc_mock_bundle PROPERTY BUNDLE_FILE)
-get_property(test_bundle_file TARGET topology_manager_test_bundle PROPERTY BUNDLE_FILE)
+file(GENERATE 
+    OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/config.properties"
+    CONTENT "
+cosgi.auto.start.1=$<TARGET_PROPERTY:remote_service_admin_dfi,BUNDLE_FILE> $<TARGET_PROPERTY:calculator,BUNDLE_FILE> $<TARGET_PROPERTY:topology_manager,BUNDLE_FILE> $<TARGET_PROPERTY:topology_manager_disc_mock_bundle,BUNDLE_FILE>
+LOGHELPER_ENABLE_STDOUT_FALLBACK=true
+org.osgi.framework.storage.clean=onFirstInit
+")
 
-#file(GENERATE OUTPUT config.properties CONTENT "
-#cosgi.auto.start.1=$<TARGET_PROPERTY:remote_service_admin_dfi,BUNDE_FILE> $<TARGET_PROPERTY:calculator,BUNDLE_FILE> $<TARGET_PROPERTY:topology_manager,BUNDLE_FILE> $<TARGET_PROPERTY:topology_manager_disc_mock_bundle,BUNDLE_FILE>
-#LOGHELPER_ENABLE_STDOUT_FALLBACK=true
-#org.osgi.framework.storage.clean=onFirstInit
-#")
-configure_file(config.properties.in config.properties)
+file(GENERATE 
+    OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/config_import.properties"
+    CONTENT "
+cosgi.auto.start.1=$<TARGET_PROPERTY:remote_service_admin_dfi,BUNDLE_FILE> $<TARGET_PROPERTY:calculator,BUNDLE_FILE> $<TARGET_PROPERTY:topology_manager,BUNDLE_FILE> $<TARGET_PROPERTY:topology_manager_test_bundle,BUNDLE_FILE>
+LOGHELPER_ENABLE_STDOUT_FALLBACK=true
+org.osgi.framework.storage.clean=onFirstInit
+")
 
-configure_file(config_import.properties.in config_import.properties)
-configure_file(scope.json scope.json)
-configure_file(scope2.json scope2.json)
-configure_file(scope3.json scope3.json)
-configure_file(scope4.json scope4.json)
-
+add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/scope.json" COMMAND ${CMAKE_COMMAND} -E copy_if_different "scope.json" "${CMAKE_CURRENT_BINARY_DIR}/scope.json")
+add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/scope2.json" COMMAND ${CMAKE_COMMAND} -E copy_if_different "scope2.json" "${CMAKE_CURRENT_BINARY_DIR}/scope2.json")
+add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/scope3.json" COMMAND ${CMAKE_COMMAND} -E copy_if_different "scope3.json" "${CMAKE_CURRENT_BINARY_DIR}/scope3.json")
+add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/scope4.json" COMMAND ${CMAKE_COMMAND} -E copy_if_different "scope4.json" "${CMAKE_CURRENT_BINARY_DIR}/scope4.json")
 
 add_test(NAME run_test_tm_scoped COMMAND test_tm_scoped)
 SETUP_TARGET_FOR_COVERAGE(test_tm_scoped_cov test_tm_scoped ${CMAKE_BINARY_DIR}/coverage/test_tm_scoped/test_tm_scoped)
