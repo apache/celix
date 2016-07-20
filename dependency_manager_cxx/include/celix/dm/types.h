@@ -29,6 +29,7 @@
 #include <cxxabi.h>
 #include <string.h>
 #include "celix/dm/Properties.h"
+#include <stdlib.h>
 
 namespace celix { namespace dm {
     //forward declarations

@@ -27,7 +27,7 @@ namespace celix { namespace dm {
     class DmActivator {
     protected:
         DependencyManager& manager;
-        DmActivator(DependencyManager& mng) : manager{mng} {}
+        DmActivator(DependencyManager& mng) : manager(mng) {}
     public:
         ~DmActivator() = default;
         virtual void init(DependencyManager& manager) {};
