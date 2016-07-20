@@ -1,4 +1,4 @@
-Title: Apache Celix Dependency Manager
+# Apache Celix Dependency Manager
 
 ## Introduction
 
@@ -23,7 +23,7 @@ Changes in the state of the component will trigger the following life cycle call
     `stop` and
     `deinit`.
 
-The callback functions can be specified by using the component\_setCallbacks.
+The callback functions can be specified by using the component_setCallbacks.
 
 ## DM Parts
 
@@ -32,22 +32,22 @@ The Dependency Manager consist out of four main parts: `DM (Dependency Manager) 
 ### DM Activator
 
 The `DM Activator implements a "normal" Celix bundle activator and depends on four functions which needs to be implemented by the user of the Depedency Manager:
- - `dm\_create` : Should be used to allocated and initialize a dm activator structure. If needed this structure can be used to store object during the lifecycle of the bundle.
- - `dm\_init` : Should be used to interact with the `Dependency Manager`. Here a user can components, service dependencies and provided services. 
- - `dm\_destroy` : Should be used to deinitialize and deallocate objects created in the `dm\_create` function.
+ - `dm_create` : Should be used to allocated and initialize a dm activator structure. If needed this structure can be used to store object during the lifecycle of the bundle.
+ - `dm_init` : Should be used to interact with the `Dependency Manager`. Here a user can components, service dependencies and provided services. 
+ - `dm_destroy` : Should be used to deinitialize and deallocate objects created in the `dm_create` function.
 
 
 ### Dependency Manager
 
-The `Dependency Manager` act as an entry point to add or remove DM Components. The `Dependency Manager` is provided to the `dm\_init` functoin.
+The `Dependency Manager` act as an entry point to add or remove DM Components. The `Dependency Manager` is provided to the `dm_init` functoin.
 
 ### DM Component
 
 The `DM Component` manages the life cycle of the component. For example, when all required service dependencies are aviable the `DM Component` will call the `start` specified callback function of the component. 
 
-The `component\_setImplementation` function can be used to specify which component handle to use. 
-The `component\_addInterface` can be used to specify one additional service provided by the component. 
-The `component\_addServiceDependency` can be used to specify one additional service dependency.
+The `component_setImplementation` function can be used to specify which component handle to use. 
+The `component_addInterface` can be used to specify one additional service provided by the component. 
+The `component_addServiceDependency` can be used to specify one additional service dependency.
 
 ### Dm Service Dependency 
 
@@ -55,11 +55,11 @@ The `DM Service Dependency` can be used to specify service dependencies for a co
 
 When these dependencies are set to required the `DM Component` will ensure that components will only be started when all quired dependencies are aviable and stop the component if any of the required dependencies are removed. This feature should prevent a lot of boiler plating code compared to usign a service tracker or services references directly. 
 
-A service dependency update strategy can also be specified. Default this strategy is set to `DM\_SERVICE\_DEPENDENCY\_STRATEGY\_SUSPEND` this stragegy will stop and start (suspend) a component when any of the specified service dependencies change (are removed, added or modified). When correclty used this strategy removes the need for locking services during updates/invocation. See the dependency manager example for more details.
+A service dependency update strategy can also be specified. Default this strategy is set to `DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND` this stragegy will stop and start (suspend) a component when any of the specified service dependencies change (are removed, added or modified). When correclty used this strategy removes the need for locking services during updates/invocation. See the dependency manager example for more details.
 
-The `serviceDependency\_setCallbacks` function can be used to specify the function callback used when services are added, set, removed or modified. 
-The `serviceDependency\_setRequired` function can be used to specify if a service dependency is required.
-The `serviceDependency\_setStrategy` function can be used to specify a service dependency update strategy (suspend or locking).
+The `serviceDependency_setCallbacks` function can be used to specify the function callback used when services are added, set, removed or modified. 
+The `serviceDependency_setRequired` function can be used to specify if a service dependency is required.
+The `serviceDependency_setStrategy` function can be used to specify a service dependency update strategy (suspend or locking).
 
 ### Snippets
 
@@ -69,7 +69,7 @@ The next snippet shows a dm bundle activator and how to add components to the de
 ```C
 
 //exmpl_activator.c
-#include <dm\_activator.h>
+#include <dm_activator.h>
 #include <stdlib.h>
 
 struct dm_exmpl_activator {
@@ -112,9 +112,10 @@ celix_status_t dm_destroy(void * userData, bundle_context_pt context, dm_depende
 }  
 ```
 
-TODO add cmp callbacks
-TODO add interface
-TODO add service dependency and callbacks
+TODOS
+    1. add cmp callbacks
+    1. add interface
+    1. add service dependency and callbacks
 
 ### Example
 
