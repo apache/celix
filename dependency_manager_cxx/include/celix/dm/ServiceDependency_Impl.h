@@ -23,8 +23,8 @@
 using namespace celix::dm;
 
 template<class T>
-CServiceDependency<T>& CServiceDependency<T>::setCService(const std::string serviceName, const std::string serviceVersion, const std::string filter) {
-    const char* cversion = serviceVersion.empty() ? nullptr : serviceVersion.c_str();
+CServiceDependency<T>& CServiceDependency<T>::setCService(const std::string serviceName, const std::string serviceVersionRange, const std::string filter) {
+    const char* cversion = serviceVersionRange.empty() ? nullptr : serviceVersionRange.c_str();
     const char* cfilter = filter.empty() ? nullptr : filter.c_str();
     serviceDependency_setService(this->cServiceDependency(), serviceName.c_str(), cversion, cfilter);
     return *this;
@@ -50,7 +50,7 @@ ServiceDependency<T,I>::ServiceDependency() : TypedServiceDependency<T>() {
 template<class T, class I>
 void ServiceDependency<T,I>::setupService() {
     std::string n = name.empty() ? typeName<I>() : name;
-    const char* v =  version.empty() ? nullptr : version.c_str();
+    const char* v =  versionRange.empty() ? nullptr : versionRange.c_str();
 
     //setting modified filter. which is in a filter including a lang=c++
     modifiedFilter = std::string("(lang=c++)");
@@ -86,8 +86,8 @@ ServiceDependency<T,I>& ServiceDependency<T,I>::setFilter(std::string filter) {
 };
 
 template<class T, class I>
-ServiceDependency<T,I>& ServiceDependency<T,I>::setVersion(std::string version) {
-    this->version = version;
+ServiceDependency<T,I>& ServiceDependency<T,I>::setVersion(std::string versionRange) {
+    this->versionRange = versionRange;
     setupService();
     return *this;
 };

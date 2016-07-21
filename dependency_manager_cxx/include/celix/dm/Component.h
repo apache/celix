@@ -156,7 +156,7 @@ namespace celix { namespace dm {
         Component<T>& remove(ServiceDependency<T,I>& dep);
 
         /**
-         * Removes a C service dependency to the component
+         * Adds a C service dependency to the component
          *
          * @return the DM Component reference for chaining (fluent API)
          */

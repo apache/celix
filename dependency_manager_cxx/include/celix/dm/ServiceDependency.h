@@ -78,11 +78,11 @@ namespace celix { namespace dm {
          * Sets the service name, version and filter for the C service dependency.
          *
          * @param serviceName The service name. Must have a value
-         * @param serviceVersion The service vesrion, can be an empty string
+         * @param serviceVersionRange The service version range, can be an empty string
          * @param filter The (additional) filter to use (e.g. "(location=front)")
          * @return the C service dependency reference for chaining (fluent API)
          */
-        CServiceDependency<T>& setCService(const std::string serviceName, const std::string serviceVersion, const std::string filter);
+        CServiceDependency<T>& setCService(const std::string serviceName, const std::string serviceVersionRange, const std::string filter);
 
         /**
          * Specify if the service dependency is required. Default is false
@@ -104,7 +104,7 @@ namespace celix { namespace dm {
     protected:
         std::string name {};
         std::string filter {};
-        std::string version {};
+        std::string versionRange {};
         std::string modifiedFilter {};
 
         void (T::*setFp)(I* service) {nullptr};
@@ -139,11 +139,11 @@ namespace celix { namespace dm {
         ServiceDependency<T,I>& setFilter(std::string filter);
 
         /**
-         * Set the service version of the service dependency.
+         * Set the service version range of the service dependency.
          *
          * @return the C++ service dependency reference for chaining (fluent API)
          */
-        ServiceDependency<T,I>& setVersion(std::string version);
+        ServiceDependency<T,I>& setVersion(std::string versionRange);
 
         /**
          * Set the set callback for when the service dependency becomes available
