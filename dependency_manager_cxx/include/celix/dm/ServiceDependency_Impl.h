@@ -36,19 +36,9 @@ CServiceDependency<T>& CServiceDependency<T>::setRequired(bool req) {
     return *this;
 }
 
-static void dep_setStrategy(dm_service_dependency_pt dep, DependencyUpdateStrategy strategy) {
-    if (strategy == DependencyUpdateStrategy::locking) {
-        serviceDependency_setStrategy(dep, DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING);
-    } else if (strategy == DependencyUpdateStrategy::suspend) {
-        serviceDependency_setStrategy(dep, DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND);
-    } else {
-        std::cerr << "Unexpected dependency update strategy. Cannot convert for dm_depdendency\n";
-    }
-}
-
 template<class T>
 CServiceDependency<T>& CServiceDependency<T>::setStrategy(DependencyUpdateStrategy strategy) {
-    dep_setStrategy(this->cServiceDependency(), strategy);
+    this->setDepStrategy(strategy);
     return *this;
 }
 
@@ -57,28 +47,27 @@ ServiceDependency<T,I>::ServiceDependency() : TypedServiceDependency<T>() {
     setupService();
 };
 
-static std::string filterWithCxx(std::string filter) {
-    std::string result {"(lang=c++)"};
-    if (!filter.empty()) {
-        if (strncmp(filter.c_str(), "(&", 2) == 0 && filter[filter.size()-1] == ')') {
-            result = filter.substr(0, filter.size()-1);
-            result = result.append("(lang=c++))");
-        } else if (filter[0] == '(' && filter[filter.size()-1] == ')') {
-            result = "(&";
-            result = result.append(filter);
-            result = result.append("(lang=c++))");
-        } else {
-            std::cerr << "Unexpected filter layout: '" << filter << "'\n";
-        }
-    }
-    return result;
-}
-
 template<class T, class I>
 void ServiceDependency<T,I>::setupService() {
     std::string n = name.empty() ? typeName<I>() : name;
     const char* v =  version.empty() ? nullptr : version.c_str();
-    this->modifiedFilter = filterWithCxx(filter);
+
+    //setting modified filter. which is in a filter including a lang=c++
+    modifiedFilter = std::string("(lang=c++)");
+    if (!filter.empty()) {
+        if (strncmp(filter.c_str(), "(&", 2) == 0 && filter[filter.size()-1] == ')') {
+            modifiedFilter = filter.substr(0, filter.size()-1);
+            modifiedFilter = modifiedFilter.append("(lang=c++))");
+        } else if (filter[0] == '(' && filter[filter.size()-1] == ')') {
+            modifiedFilter = "(&";
+            modifiedFilter = modifiedFilter.append(filter);
+            modifiedFilter = modifiedFilter.append("(lang=c++))");
+        } else {
+            std::cerr << "Unexpected filter layout: '" << filter << "'\n";
+        }
+    }
+
+
     serviceDependency_setService(this->cServiceDependency(), n.c_str(), v, this->modifiedFilter.c_str());
 }
 
@@ -148,7 +137,7 @@ ServiceDependency<T,I>& ServiceDependency<T,I>::setRequired(bool req) {
 
 template<class T, class I>
 ServiceDependency<T,I>& ServiceDependency<T,I>::setStrategy(DependencyUpdateStrategy strategy) {
-    dep_setStrategy(this->cServiceDependency(), strategy);
+    this->setDepStrategy(strategy);
     return *this;
 };
 

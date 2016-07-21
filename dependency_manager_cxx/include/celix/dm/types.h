@@ -44,6 +44,9 @@ namespace celix { namespace dm {
     template<class T, class I>
     class ServiceDependency;
 
+    /**
+     * Returns the deferred type name for the template I
+     */
     template<typename T>
     const std::string typeName() {
         std::string result = std::string(typeid(T).name());

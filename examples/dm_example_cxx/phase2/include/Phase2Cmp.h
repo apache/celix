@@ -25,16 +25,19 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <thread>
+#include <iostream>
 
 class Phase2Cmp : public IPhase2 {
     IPhase1* phase1 {nullptr};
 public:
     Phase2Cmp() = default;
-    virtual ~Phase2Cmp() = default;
+    virtual ~Phase2Cmp() { std::cout << "Destroying Phase2\n"; };
 
     void setPhase1(IPhase1* phase); //injector used by dependency manager
 
     virtual double getData(); //implements IPhase2
+private:
+
 };
 
 #endif //CELIX_PHASE2CMP_H

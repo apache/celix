@@ -45,6 +45,7 @@ if (DEPENDENCY_MANAGER_CXX)
 
         src/DependencyManager.cc
         src/Component.cc
+        src/ServiceDependency.cc
         src/dm_activator_base_cxx.cc
     )
     #set_target_properties(dependency_manager_cxx_static PROPERTIES SOVERSION 1)

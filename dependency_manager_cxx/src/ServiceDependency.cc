@@ -17,37 +17,22 @@
  * under the License.
  */
 
-#include "Phase2Cmp.h"
-#include "Phase2Activator.h"
-#include "log_service.h"
+#include "celix/dm/ServiceDependency.h"
+#include <iostream>
 
 using namespace celix::dm;
 
-
-DmActivator* DmActivator::create(DependencyManager& mng) {
-    return new Phase2Activator(mng);
+BaseServiceDependency::BaseServiceDependency() {
+    serviceDependency_create(&this->cServiceDep);
+    serviceDependency_setStrategy(this->cServiceDep, DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND); //NOTE using suspend as default strategy
 }
 
-
-void Phase2Activator::init(DependencyManager& manager) {
-
-    Properties props {};
-    props["name"] = "phase2a";
-
-    add(createComponent<Phase2Cmp>()
-        //FIXME .setInstance(Phase2Cmp()) //NOTE using move initialization
-        .addInterface<IPhase2>(IPHASE2_VERSION, props)
-        .add(createServiceDependency<Phase2Cmp,IPhase1>()
-            .setRequired(true)
-            .setCallbacks(&Phase2Cmp::setPhase1)
-        )
-        .add(createCServiceDependency<Phase2Cmp>()
-            .setRequired(false)
-            .setCService(OSGI_LOGSERVICE_NAME, {}, {})
-        )
-    );
-}
-
-void Phase2Activator::deinit(DependencyManager& manager) {
-
+void BaseServiceDependency::setDepStrategy(DependencyUpdateStrategy strategy) {
+    if (strategy == DependencyUpdateStrategy::locking) {
+        serviceDependency_setStrategy(this->cServiceDependency(), DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING);
+    } else if (strategy == DependencyUpdateStrategy::suspend) {
+        serviceDependency_setStrategy(this->cServiceDependency(), DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND);
+    } else {
+        std::cerr << "Unexpected dependency update strategy. Cannot convert for dm_depdendency\n";
+    }
 }

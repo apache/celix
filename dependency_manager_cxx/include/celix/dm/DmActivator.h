@@ -30,26 +30,64 @@ namespace celix { namespace dm {
         DmActivator(DependencyManager& mng) : manager(mng) {}
     public:
         ~DmActivator() = default;
+
+        /**
+         * The init of the DM Activator. Should be overridden by the bundle specific DM activator.
+         *
+         * @param manager A reference to the  Dependency Manager
+         */
         virtual void init(DependencyManager& manager) {};
+
+        /**
+         * The init of the DM Activator. Can be overridden by the bundle specific DM activator.
+         *
+         * @param manager A reference to the  Dependency Manager
+         */
         virtual void deinit(DependencyManager& manager) {};
 
+        /**
+         * Create a new DM Component for a component of type T
+         *
+         * @return Returns a reference to the DM Component
+         */
         template< class T>
         Component<T>& createComponent() { return manager.createComponent<T>(); }
 
+        /**
+         * Adds a DM Component to the Dependency Manager
+         */
         template<class T>
-        Component<T>& add(Component<T>& cmp) { return manager.add(cmp); }
+        void add(Component<T>& cmp) { manager.add(cmp); }
 
+        /**
+        * Removes a DM Component to the Dependency Manager
+        */
         template<class T>
-        Component<T>& remove(Component<T>& cmp) { return manager.remove(cmp); }
+        void remove(Component<T>& cmp) { manager.remove(cmp); }
 
+        /**
+         * Create a new C++ service dependency for a component of type T with an interface of type I
+         *
+         * @return Returns a reference to the service dependency
+         */
         template<class T, class I>
         ServiceDependency<T,I>& createServiceDependency() { return manager.createServiceDependency<T,I>(); }
 
+        /**
+         * Create a new C service dependency for a component of type T.
+         *
+         * @return Returns a reference to the service dependency
+         */
         template<class T>
         CServiceDependency<T>& createCServiceDependency() { return manager.createCServiceDependency<T>(); }
 
-        /* NOTE the following static method is intentionally not implemented
-         * This should be done by the bundle activator.
+        /**
+         * The static method to create a new DM activator.
+         * NOTE that this method in intentionally not implemented in the C++ Dependency Manager library.
+         * This should be done by the bundle specific DM activator.
+         *
+         * @param mng A reference to the Dependency Manager
+         * @returns A pointer to a DmActivator. The Dependency Manager is responsible for deleting the pointer when the bundle is stopped.
          */
         static DmActivator* create(DependencyManager& mng);
     };

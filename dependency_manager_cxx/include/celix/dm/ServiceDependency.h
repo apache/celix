@@ -43,13 +43,14 @@ namespace celix { namespace dm {
     class BaseServiceDependency {
     protected:
         dm_service_dependency_pt cServiceDep {nullptr};
+        void setDepStrategy(DependencyUpdateStrategy strategy);
     public:
-        BaseServiceDependency() {
-            serviceDependency_create(&this->cServiceDep);
-            serviceDependency_setStrategy(this->cServiceDep, DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND); //NOTE using suspend as default strategy
-        }
+        BaseServiceDependency();
         virtual ~BaseServiceDependency() = default;
 
+        /**
+         * Returns the C DM service dependency
+         */
         dm_service_dependency_pt cServiceDependency() const { return cServiceDep; }
     };
 
@@ -61,6 +62,9 @@ namespace celix { namespace dm {
         TypedServiceDependency() : BaseServiceDependency() {}
         virtual ~TypedServiceDependency() = default;
 
+        /**
+         * Set the component instance with a pointer
+         */
         void setComponentInstance(T* cmp) { componentInstance = cmp;}
     };
 
@@ -70,9 +74,28 @@ namespace celix { namespace dm {
         CServiceDependency() : TypedServiceDependency<T>() {};
         virtual ~CServiceDependency() = default;
 
+        /**
+         * Sets the service name, version and filter for the C service dependency.
+         *
+         * @param serviceName The service name. Must have a value
+         * @param serviceVersion The service vesrion, can be an empty string
+         * @param filter The (additional) filter to use (e.g. "(location=front)")
+         * @return the C service dependency reference for chaining (fluent API)
+         */
         CServiceDependency<T>& setCService(const std::string serviceName, const std::string serviceVersion, const std::string filter);
 
+        /**
+         * Specify if the service dependency is required. Default is false
+         *
+         * @return the C service dependency reference for chaining (fluent API)
+         */
         CServiceDependency<T>& setRequired(bool req);
+
+        /**
+         * Specify if the update strategy to use
+         *
+         * @return the C service dependency reference for chaining (fluent API)
+         */
         CServiceDependency<T>& setStrategy(DependencyUpdateStrategy strategy);
     };
 
@@ -101,26 +124,70 @@ namespace celix { namespace dm {
         ServiceDependency();
         virtual ~ServiceDependency() = default;
 
+        /**
+         * Set the service name of the service dependency.
+         *
+         * @return the C++ service dependency reference for chaining (fluent API)
+         */
         ServiceDependency<T,I>& setName(std::string name);
 
+        /**
+         * Set the service filter of the service dependency.
+         *
+         * @return the C++ service dependency reference for chaining (fluent API)
+         */
         ServiceDependency<T,I>& setFilter(std::string filter);
 
+        /**
+         * Set the service version of the service dependency.
+         *
+         * @return the C++ service dependency reference for chaining (fluent API)
+         */
         ServiceDependency<T,I>& setVersion(std::string version);
 
-        //set callbacks
+        /**
+         * Set the set callback for when the service dependency becomes available
+         *
+         * @return the C++ service dependency reference for chaining (fluent API)
+         */
         ServiceDependency<T,I>& setCallbacks(void (T::*set)(I* service));
 
+        /**
+         * Set the set callback for when the service dependency becomes available
+         *
+         * @return the C++ service dependency reference for chaining (fluent API)
+         */
         ServiceDependency<T,I>& setCallbacks(void (T::*set)(I* service, Properties&& properties));
 
-        //add remove callbacks
+        /**
+         * Set the add and remove callback for when the services of service dependency are added or removed.
+         *
+         * @return the C++ service dependency reference for chaining (fluent API)
+         */
         ServiceDependency<T,I>& setCallbacks( void (T::*add)(I* service),  void (T::*remove)(I* service));
+
+        /**
+         * Set the add and remove callback for when the services of service dependency are added or removed.
+         *
+         * @return the C++ service dependency reference for chaining (fluent API)
+         */
         ServiceDependency<T,I>& setCallbacks(
                 void (T::*add)(I* service, Properties&& properties),
                 void (T::*remove)(I* service, Properties&& properties)
         );
 
+        /**
+         * Specify if the service dependency is required. Default is false
+         *
+         * @return the C service dependency reference for chaining (fluent API)
+         */
         ServiceDependency<T,I>& setRequired(bool req);
 
+        /**
+         * Specify if the update strategy to use
+         *
+         * @return the C service dependency reference for chaining (fluent API)
+         */
         ServiceDependency<T,I>& setStrategy(DependencyUpdateStrategy strategy);
     };
 }}

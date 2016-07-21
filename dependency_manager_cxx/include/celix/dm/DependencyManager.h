@@ -47,7 +47,11 @@ namespace celix { namespace dm {
         const bundle_context_pt bundleContext() const;
         const dm_dependency_manager_pt cDependencyManager() const;
 
-        //components
+        /**
+         * Create a new DM Component for a component of type T
+         *
+         * @return Returns a reference to the DM Component
+         */
         template<class T>
         Component<T>& createComponent() {
             std::shared_ptr<Component<T>> cmp {new Component<T>(this->context, typeName<T>())};
@@ -55,19 +59,27 @@ namespace celix { namespace dm {
             return *cmp;
         }
 
+        /**
+         * Adds a DM Component to the Dependency Manager
+         */
         template<class T>
-        Component<T>& add(Component<T>& cmp) {
+        void add(Component<T>& cmp) {
             addedComponents.push_back(&cmp);
-            return cmp;
         }
 
+        /**
+         * Removes a DM Component to the Dependency Manager
+         */
         template<class T>
-        Component<T>& remove(Component<T>& cmp) {
+        void remove(Component<T>& cmp) {
             addedComponents.remove(&cmp);
-            return cmp;
         }
 
-        //service dependencies
+        /**
+         * Create a new C++ service dependency for a component of type T with an interface of type I
+         *
+         * @return Returns a reference to the service dependency
+         */
         template<class T, class I>
         ServiceDependency<T,I>& createServiceDependency() {
             auto dep = std::shared_ptr<ServiceDependency<T,I>> {new ServiceDependency<T,I>()};
@@ -76,6 +88,11 @@ namespace celix { namespace dm {
         };
 
 
+        /**
+         * Create a new C service dependency for a component of type T.
+         *
+         * @return Returns a reference to the service dependency
+         */
         template<class T>
         CServiceDependency<T>& createCServiceDependency() {
             auto dep = std::shared_ptr<CServiceDependency<T>> {new CServiceDependency<T>()};
@@ -83,8 +100,14 @@ namespace celix { namespace dm {
             return *dep;
         }
 
-        //life cycle
+        /**
+         * Starts the Dependency Manager
+         */
         void start();
+
+        /**
+         * Stops the Dependency Manager
+         */
         void stop();
     };
 

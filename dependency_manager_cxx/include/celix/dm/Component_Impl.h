@@ -65,6 +65,11 @@ Component<T>& Component<T>::addInterface(const std::string serviceName, const st
 };
 
 template<class T>
+Component<T>& Component<T>::addCInterface(const void* svc, const std::string serviceName, const std::string version) {
+    return this->addCInterface(svc, serviceName, version, Properties());
+};
+
+template<class T>
 Component<T>& Component<T>::addCInterface(const void* svc, const std::string serviceName, const std::string version, const Properties properties) {
     properties_pt cProperties = properties_create();
     properties_set(cProperties, (char*)"lang", (char*)"c");
@@ -125,12 +130,14 @@ Component<T>& Component<T>::setInstance(std::shared_ptr<T> inst) {
     return *this;
 }
 
+/*
 template<class T>
 Component<T>& Component<T>::setInstance(T&& inst) {
     this->refInstance.clear();
-    this->refInstance.push_back(inst);
+    this->refInstance.push_back(std::move(inst));
     return *this;
 }
+ */
 
 template<class T>
 Component<T>& Component<T>::setCallbacks(
