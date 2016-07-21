@@ -27,13 +27,19 @@
 #include <thread>
 #include <iostream>
 
+extern "C" {
+#include "log_service.h"
+};
+
 class Phase2Cmp : public IPhase2 {
     IPhase1* phase1 {nullptr};
+    log_service_pt logSrv {nullptr};
 public:
     Phase2Cmp() = default;
     virtual ~Phase2Cmp() { std::cout << "Destroying Phase2\n"; };
 
     void setPhase1(IPhase1* phase); //injector used by dependency manager
+    void setLogService(log_service_pt logSrv);
 
     virtual double getData(); //implements IPhase2
 private:

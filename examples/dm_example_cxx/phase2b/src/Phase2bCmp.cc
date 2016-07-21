@@ -27,6 +27,11 @@ void Phase2Cmp::setPhase1(IPhase1* phase1) {
     this->phase1 = phase1;
 }
 
+void Phase2Cmp::setLogService(log_service_pt logSrv) {
+    this->logSrv = logSrv;
+}
+
 double Phase2Cmp::getData() {
+    logSrv->log(logSrv->logger, OSGI_LOGSERVICE_DEBUG, (char*)"getting data from phase2cmp B\n");
     return phase1->getData() * 24.0;
 };

@@ -70,6 +70,19 @@ namespace celix { namespace dm {
 
     template<class T>
     class CServiceDependency : public TypedServiceDependency<T> {
+    private:
+        void (T::*setFp)(const void* service) {nullptr};
+        void (T::*setFpWithProperties)(const void* service, Properties&& properties) {nullptr};
+
+        void (T::*addFp)(const void* service) {nullptr};
+        void (T::*addFpWithProperties)(const void* service, Properties&& properties) {nullptr};
+
+        void (T::*removeFp)(const void* service) {nullptr};
+        void (T::*removeFpWithProperties)(const void* service, Properties&& properties) {nullptr};
+
+        void setupCallbacks();
+        int invokeCallback(void(T::*fp)(const void*), const void* service);
+        int invokeCallbackWithProperties(void(T::*fp)(const void*, Properties&&), service_reference_pt  ref, const void* service);
     public:
         CServiceDependency() : TypedServiceDependency<T>() {};
         virtual ~CServiceDependency() = default;
@@ -97,11 +110,42 @@ namespace celix { namespace dm {
          * @return the C service dependency reference for chaining (fluent API)
          */
         CServiceDependency<T>& setStrategy(DependencyUpdateStrategy strategy);
+
+        /**
+         * Set the set callback for when the service dependency becomes available
+         *
+         * @return the C++ service dependency reference for chaining (fluent API)
+         */
+        CServiceDependency<T>& setCallbacks(void (T::*set)(const void* service));
+
+        /**
+         * Set the set callback for when the service dependency becomes available
+         *
+         * @return the C++ service dependency reference for chaining (fluent API)
+         */
+        CServiceDependency<T>& setCallbacks(void (T::*set)(const void* service, Properties&& properties));
+
+        /**
+         * Set the add and remove callback for when the services of service dependency are added or removed.
+         *
+         * @return the C++ service dependency reference for chaining (fluent API)
+         */
+        CServiceDependency<T>& setCallbacks( void (T::*add)(const void* service),  void (T::*remove)(const void* service));
+
+        /**
+         * Set the add and remove callback for when the services of service dependency are added or removed.
+         *
+         * @return the C++ service dependency reference for chaining (fluent API)
+         */
+        CServiceDependency<T>& setCallbacks(
+                void (T::*add)(const void* service, Properties&& properties),
+                void (T::*remove)(const void* service, Properties&& properties)
+        );
     };
 
     template<class T, class I>
     class ServiceDependency : public TypedServiceDependency<T> {
-    protected:
+    private:
         std::string name {};
         std::string filter {};
         std::string versionRange {};
@@ -115,7 +159,7 @@ namespace celix { namespace dm {
 
         void (T::*removeFp)(I* service) {nullptr};
         void (T::*removeFpWithProperties)(I* service, Properties&& properties) {nullptr};
-    private:
+
         void setupService();
         void setupCallbacks();
         int invokeCallback(void(T::*fp)(I*), const void* service);

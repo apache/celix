@@ -94,6 +94,7 @@ The error checking is very minimal in these example to keep the focus on how to 
 
 
 ### Bar example
+
 The bar example is a simple component providing the `example` service. 
  
 ```C
