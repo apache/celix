@@ -1,4 +1,4 @@
-# Best Practice Example
+# Apache Celix Best Practices
 
 ## Intro 
 
