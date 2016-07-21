@@ -74,7 +74,7 @@ Changes considered backwards compatible which does not extend the functionaility
  
 ## Components
 
-Component should use the ADT principle (see [http://lmgtfy.com/?q=ADT+in+C](http://lmgtfy.com/?q=ADT+in+C)).
+Component should use the ADT principle (see [ADT in C](http://inst.eecs.berkeley.edu/~selfpace/studyguide/9C.sg/Output/ADTs.in.C.html)).
 
 Components should have a `<cmpName>_create` and `<cmpName>_destroy` function.
 Components can have a `<cmpName>_start` and `<cmpName>_stop` function to start/stop threads or invoke functionality needed a fully created component. 
