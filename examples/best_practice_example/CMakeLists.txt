@@ -15,30 +15,28 @@
 # specific language governing permissions and limitations
 # under the License.
 if (BUILD_DEPENDENCY_MANAGER)
+
     include_directories(
             ${PROJECT_SOURCE_DIR}/dependency_manager/public/include
             ${PROJECT_SOURCE_DIR}/utils/public/include
-            services
+            api
     )
 
-    add_subdirectory(phase1)
-    add_subdirectory(phase2a)
-    add_subdirectory(phase2b)
-    add_subdirectory(phase3)
+    add_subdirectory(foo1)
+    add_subdirectory(foo2)
+    add_subdirectory(bar)
 
-
-    add_deploy("dm_example"
-        COPY 
+    add_deploy(best-practice-example
+        COPY
         BUNDLES
             shell
             shell_tui
             dm_shell
-            phase1
-            phase2a
-            phase2b
-            phase3
+            bar
+            foo1
+            foo2
         PROPERTIES
-            LOGHELPER_ENABLE_STDOUT_FALLBACK=true
+            example=value
     )
 
 endif ()

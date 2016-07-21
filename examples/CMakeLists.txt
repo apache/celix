@@ -19,6 +19,8 @@ if (EXAMPLES)
     add_subdirectory(hello_world)
     add_subdirectory(hello_world_test)
 
+    add_subdirectory(best_practice_example)
+
     if (NOT ANDROID)
     	add_subdirectory(mongoose)
     endif()

@@ -75,13 +75,13 @@ celix_status_t serviceDependency_setRequired(dm_service_dependency_pt dependency
 /**
  * Specify if the service dependency update strategy.
  *
- * For DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING the component is expected to use locking mechanismes when updating
- * and invoking services.
+ * The DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING strategy notifies the component in case the dependencies set
+ * changes (e.g. a dependency is added/removed): the component is responsible for protecting via locks
+ * the dependencies list and check (always under lock) if the service he's depending on is still available.
  *
- * For DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND the component is stopped/started
- * when services are set,added, modified or removed.
- * It is the responsibility of the component to ensure that no
- * service invocation is possible or happening when the component stop callback is finished.
+ * The DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND (default when no strategy is explicitly set) reliefs the programmer
+ * from dealing with service dependencies' consistency issues: in case this strategy is adopted, the component
+ * is stopped and restarted (i.e. temporarily suspended) upon service dependencies' changes.
  *
  * Default strategy is DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND
  */
