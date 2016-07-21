@@ -55,17 +55,78 @@ typedef celix_status_t (*service_change_with_ref_fpt)(void *handle, service_refe
 typedef celix_status_t (*service_remove_with_ref_fpt)(void *handle, service_reference_pt reference, const void* service);
 typedef celix_status_t (*service_swap_with_ref_fpt)(void *handle, service_reference_pt oldReference, const void* oldService, service_reference_pt newReference, const void* newService);
 
+/**
+ * Create a service dependency.
+ * Caller has ownership.
+ */
 celix_status_t serviceDependency_create(dm_service_dependency_pt *dependency_ptr);
+
+/**
+ * Destroys a service dependency.
+ * Caller has ownership.
+ */
 celix_status_t serviceDependency_destroy(dm_service_dependency_pt *dependency_ptr);
 
+/**
+ * Specify if the service dependency is required. default is false
+ */
 celix_status_t serviceDependency_setRequired(dm_service_dependency_pt dependency, bool required);
+
+/**
+ * Specify if the service dependency update strategy.
+ *
+ * For DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING the component is expected to use locking mechanismes when updating
+ * and invoking services.
+ *
+ * For DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND the component is stopped/started
+ * when services are set,added, modified or removed.
+ * It is the responsibility of the component to ensure that no
+ * service invocation is possible or happening when the component stop callback is finished.
+ *
+ * Default strategy is DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND
+ */
 celix_status_t serviceDependency_setStrategy(dm_service_dependency_pt dependency,dm_service_dependency_strategy_t strategy);
+
+/**
+ * Return the service dependency update strategy.
+ */
 celix_status_t serviceDependency_getStrategy(dm_service_dependency_pt dependency,dm_service_dependency_strategy_t* strategy);
+
+/**
+ * Set the service name, version range and filter.
+ *
+ * @param serviceName The service name. Must have a value.
+ * @param serviceVersionRange The service version range, can be a NULL pointer.
+ * @param filter The (additional) filter to use (e.g. "(location=front)"). Can be a NULL pointer.
+ */
 celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency, const char* serviceName, const char* serviceVersionRange, const char* filter);
+
+/**
+ * Returns the service depenendy filter.
+ */
 celix_status_t serviceDependency_getFilter(dm_service_dependency_pt dependency, const char** filter);
 
+/**
+ * Set the set, add, change, remove and swap function callbacks when services specified by the service dependency
+ * are (respectively) set, added, changed, removed or swapped.
+ * The first argument of the callbacks will be the component implement (@see component_getImplementation)
+ * The second the argument a pointer to an instance of a service struct of the specified service dependency.
+ */
 celix_status_t serviceDependency_setCallbacks(dm_service_dependency_pt dependency, service_set_fpt set, service_add_fpt add, service_change_fpt change, service_remove_fpt remove, service_swap_fpt swap);
+
+/**
+ * Set the set, add, change, remove and swap function callbacks when services specified by the service dependency
+ * are (respectively) set, added, changed, removed or swapped.
+ * The first argument of the callbacks will be the component implement (@see component_getImplementation)
+ * The second argument of th callbacks will be a pointer to an instance of a service struct of the specified service dependency.
+ * The third argument of th callbacks will be a pointer to a service reference of the a service instance of the specified service dependency.
+ */
 celix_status_t serviceDependency_setCallbacksWithServiceReference(dm_service_dependency_pt dependency, service_set_with_ref_fpt set, service_add_with_ref_fpt add, service_change_with_ref_fpt change, service_remove_with_ref_fpt remove, service_swap_with_ref_fpt swap);
+
+/**
+ * Specifies which field member (pointer to) to update when a service dependencies is set.
+ * If provided the provided service_lock will be used for locking when updating the service instance.
+ */
 celix_status_t serviceDependency_setAutoConfigure(dm_service_dependency_pt dependency, celix_thread_mutex_t *service_lock, const void** field);
 
 #define serviceDependency_setCallbacksSafe(dep, cmpType, servType, set, add, change, remove, swap) \
@@ -86,9 +147,14 @@ celix_status_t serviceDependency_setAutoConfigure(dm_service_dependency_pt depen
 celix_status_t serviceDependency_setCallbackHandle(dm_service_dependency_pt dependency, void* handle);
 
 /**
- * Return a service dependency info. The caller is the owner
+ * Creates a service dependency info. The service dependency info struct contains information about the service dependency.
+ * The caller is the owner
  */
 celix_status_t serviceDependency_getServiceDependencyInfo(dm_service_dependency_pt, dm_service_dependency_info_pt *info);
+
+/**
+ * Destroy a provided service dependency info struct.
+ */
 void dependency_destroyDependencyInfo(dm_service_dependency_info_pt info);
 
 #ifdef __cplusplus

@@ -63,7 +63,7 @@ The `serviceDependency_setStrategy` function can be used to specify a service de
 
 ### Snippets
 
-### DM Bundle Activator
+#### DM Bundle Activator
 
 The next snippet shows a dm bundle activator and how to add components to the dependency manager.
 ```C
@@ -112,7 +112,8 @@ celix_status_t dm_destroy(void * userData, bundle_context_pt context, dm_depende
 }  
 ```
 
-TODOS
+TODOS:
+
     1. add cmp callbacks
     1. add interface
     1. add service dependency and callbacks
