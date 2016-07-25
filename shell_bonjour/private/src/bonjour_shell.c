@@ -28,6 +28,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include <pthread.h>
 #include <arpa/inet.h>
 #include <sys/time.h>
@@ -78,7 +79,7 @@ struct connection_context {
 
 static struct connection_context *currentContext = NULL; //TODO update shell to accept void * data next to callback
 
-static void bonjourShell_addDataToCurrentContext(char *buff);
+static void bonjourShell_addDataToCurrentContext(const char* out, const char* err);
 static void bonjourShell_sendData(struct connection_context *context);
 
 static celix_status_t bonjourShell_register(bonjour_shell_pt shell);
@@ -92,9 +93,9 @@ static void bonjourShell_parseXmlNode(bonjour_shell_pt shell, struct connection_
 static void bonjourShell_parseStream(bonjour_shell_pt shell, struct connection_context *context);
 static void bonjourShell_parseCommand(bonjour_shell_pt shell, struct connection_context *context);
 
-celix_status_t bonjourShell_create(apr_pool_t *parentPool, char *id, bonjour_shell_pt *result) {
+celix_status_t bonjourShell_create(char *id, bonjour_shell_pt *result) {
 	celix_status_t status = CELIX_SUCCESS;
-	bonjour_shell_pt shell = (bonjour_shell_pt) malloc(sizeof(struct bonjour_shell));
+	bonjour_shell_pt shell = (bonjour_shell_pt) calloc(1, sizeof(*shell));
 	if (shell != NULL) {
 		shell->id = strdup(id);
 		shell->running = true;
@@ -262,7 +263,7 @@ static void bonjourShell_acceptConnection(bonjour_shell_pt shell, int connection
 			xmlFreeTextWriter(context.writer);
 		}
 	}
-
+        arrayList_destroy(context.dataList);
 
 }
 
@@ -322,29 +323,44 @@ static void bonjourShell_parseStream(bonjour_shell_pt shell, struct connection_c
 	}
 }
 
+static void bonjourShell_parseCommand(bonjour_shell_pt shell, struct connection_context *context)
+{
+        xmlChar *command = xmlTextReaderReadString(context->reader);
 
-static void bonjourShell_parseCommand(bonjour_shell_pt shell, struct connection_context *context)  {
-    xmlChar *command = xmlTextReaderReadString(context->reader);
+        if (command != NULL) {
+                context->gotCommand = true;
+                currentContext = context;
+                pthread_mutex_lock(&shell->mutex);
+                if (shell->service != NULL) {
+                        char *outbuf;
+                        size_t outsize;
+                        char *errbuf;
+                        size_t errsize;
 
-	if (command != NULL) {
-		context->gotCommand = true;
-		currentContext = context;
-		pthread_mutex_lock(&shell->mutex);
-		if (shell->service != NULL) {
-			shell->service->executeCommand(shell->service->shell, (char *)command, bonjourShell_addDataToCurrentContext, bonjourShell_addDataToCurrentContext);
-		}
-		pthread_mutex_unlock(&shell->mutex);
-	} 
+                        FILE *out = open_memstream(&outbuf, &outsize);
+                        FILE *err = open_memstream(&errbuf, &errsize);
 
-	if (command != NULL) {
-		xmlFree(command);
-	}
+                        shell->service->executeCommand(shell->service->shell, (char *) command, out, err);
+
+                        fclose(out);
+                        fclose(err);
+                        bonjourShell_addDataToCurrentContext(outbuf, errbuf);
+                        free(outbuf);
+                        free(errbuf);
+                }
+                pthread_mutex_unlock(&shell->mutex);
+        }
+
+        if (command != NULL) {
+                xmlFree(command);
+        }
 }
 
-static void bonjourShell_addDataToCurrentContext(char *buff) {
+static void bonjourShell_addDataToCurrentContext(const char* out, const char* err) {
 	pthread_mutex_lock(&currentContext->mutex);
-	arrayList_add(currentContext->dataList, strdup(buff));
-	gettimeofday(&currentContext->lastUpdated, NULL);
+	arrayList_add(currentContext->dataList, strdup(out));
+	arrayList_add(currentContext->dataList, strdup(err));
+        gettimeofday(&currentContext->lastUpdated, NULL);
 	pthread_mutex_unlock(&currentContext->mutex);
 	pthread_cond_signal(&currentContext->dataAvailCond);
 }
@@ -396,7 +412,7 @@ celix_status_t bonjourShell_destroy(bonjour_shell_pt shell) {
 
 	close(shell->listenSocket);
 	pthread_join(shell->listenThread, NULL);
-
+        free(shell->id);
 	free(shell);
 	return CELIX_SUCCESS;
 }

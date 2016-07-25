@@ -27,7 +27,6 @@
 #include <celix_errno.h>
 
 #include <stdlib.h>
-#include <apr_pools.h>
 
 #include "bundle_activator.h"
 #include "bundle_context.h"
@@ -40,79 +39,72 @@
 #include <shell.h>
 
 struct bundle_instance {
-	apr_pool_t *pool;
-	bonjour_shell_pt shell;
-	service_tracker_pt tracker;
+        bonjour_shell_pt shell;
+        service_tracker_pt tracker;
 };
 
 typedef struct bundle_instance *bundle_instance_pt;
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
-	celix_status_t status = CELIX_SUCCESS;
-    apr_pool_t *ctxpool;
-    apr_pool_t *pool;
-
-    status = bundleContext_getMemoryPool(context, &ctxpool);
-    apr_pool_create(&pool, ctxpool);
-    if (status == CELIX_SUCCESS) {
-    	bundle_instance_pt bi = (bundle_instance_pt) apr_palloc(pool, sizeof(struct bundle_instance));
-        if (userData != NULL) {
-        	bi->pool = pool;
-        	bi->shell = NULL;
-        	bi->tracker = NULL;
-        	(*userData) = bi;
+        celix_status_t status = CELIX_SUCCESS;
+        struct bundle_instance *bi = calloc(1, sizeof(*bi));
+        
+        if (bi) {
+                bi->shell = NULL;
+                bi->tracker = NULL;
+                (*userData) = bi;
         } else {
-        	status = CELIX_ENOMEM;
+                status = CELIX_ENOMEM;
+                
         }
-    }
-    return status;
+        return status;
 }
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
-    celix_status_t status = CELIX_SUCCESS;
-    bundle_instance_pt bi = (bundle_instance_pt)userData;
+        celix_status_t status = CELIX_SUCCESS;
+        bundle_instance_pt bi = (bundle_instance_pt) userData;
 
-    char *uuid = NULL;
-    bundleContext_getProperty(context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
-    char *hostname = NULL;
-    bundleContext_getProperty(context, "HOSTNAME", &hostname);
-    char *bonjourShellId = NULL;
-    bundleContext_getProperty(context, "bonjour.shell.id", &bonjourShellId);
+        const char *uuid = NULL;
+        bundleContext_getProperty(context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
+        const char *hostname = NULL;
+        bundleContext_getProperty(context, "HOSTNAME", &hostname);
+        const char *bonjourShellId = NULL;
+        bundleContext_getProperty(context, "bonjour.shell.id", &bonjourShellId);
 
-    char id[128];
-    if (bonjourShellId != NULL) {
-    	snprintf(id, 128, bonjourShellId);
-    } else if (hostname != NULL) {
-    	snprintf(id, 128, "Celix-%.8s@%s", uuid, hostname);
-    } else {
-    	snprintf(id, 128, "Celix-%.8s", uuid);
-    }
-    status = bonjourShell_create(bi->pool, id, &bi->shell);
+        char id[128];
+        if (bonjourShellId != NULL) {
+                snprintf(id, 128, bonjourShellId);
+        } else if (hostname != NULL) {
+                snprintf(id, 128, "Celix-%.8s@%s", uuid, hostname);
+        } else {
+                snprintf(id, 128, "Celix-%.8s", uuid);
+        }
+        status = bonjourShell_create(id, &bi->shell);
 
-    service_tracker_customizer_pt cust = NULL;
-    serviceTrackerCustomizer_create(bi->shell,  NULL, bonjourShell_addShellService, NULL, bonjourShell_removeShellService, &cust);
-    serviceTracker_create(context, (char *)OSGI_SHELL_SERVICE_NAME, cust, &bi->tracker);
-    serviceTracker_open(bi->tracker);
+        service_tracker_customizer_pt cust = NULL;
+        serviceTrackerCustomizer_create(bi->shell, NULL, bonjourShell_addShellService, NULL, bonjourShell_removeShellService, &cust);
+        serviceTracker_create(context, (char *) OSGI_SHELL_SERVICE_NAME, cust, &bi->tracker);
+        serviceTracker_open(bi->tracker);
 
 
-    return status;
+        return status;
 }
 
 celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
-    celix_status_t status = CELIX_SUCCESS;
-    bundle_instance_pt bi = (bundle_instance_pt)userData;
+        celix_status_t status = CELIX_SUCCESS;
+        bundle_instance_pt bi = (bundle_instance_pt) userData;
 
-    serviceTracker_close(bi->tracker);
+        serviceTracker_close(bi->tracker);
 
-    return status;
+        return status;
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
-	 celix_status_t status = CELIX_SUCCESS;
-	    bundle_instance_pt bi = (bundle_instance_pt)userData;
+        celix_status_t status = CELIX_SUCCESS;
+        bundle_instance_pt bi = (bundle_instance_pt) userData;
 
-	    serviceTracker_destroy(bi->tracker);
-	    bonjourShell_destroy(bi->shell);
+        serviceTracker_destroy(bi->tracker);
+        bonjourShell_destroy(bi->shell);
 
-	    return status;
+        return status;
 }

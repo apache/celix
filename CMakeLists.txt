@@ -75,7 +75,7 @@ add_subdirectory(device_access)
 add_subdirectory(deployment_admin)
 add_subdirectory(remote_services)
 add_subdirectory(remote_shell)
-#add_subdirectory(shell_bonjour) shell_bonjour is still based on APR and old shell command service
+add_subdirectory(shell_bonjour)
 add_subdirectory(shell_tui)
 add_subdirectory(shell)
 add_subdirectory(log_writer)
