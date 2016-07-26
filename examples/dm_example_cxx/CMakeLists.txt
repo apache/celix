@@ -15,6 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 if (BUILD_DEPENDENCY_MANAGER_CXX)
+    #set -Wall, -Werror locally, currenctly cpputest contains warnings
+    set(CMAKE_CXX_FLAGS "-Wall -Werror ${CMAKE_CXX_FLAGS}")
+
     include_directories(
             ${PROJECT_SOURCE_DIR}/dependency_manager/public/include
             ${PROJECT_SOURCE_DIR}/dependency_manager_cxx/include

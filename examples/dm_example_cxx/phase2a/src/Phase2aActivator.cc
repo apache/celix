@@ -35,7 +35,7 @@ void Phase2Activator::init(DependencyManager& manager) {
     props["name"] = "phase2a";
 
     add(createComponent<Phase2Cmp>()
-        //FIXME .setInstance(Phase2Cmp()) //NOTE using move initialization
+        .setInstance(Phase2Cmp()) 
         .addInterface<IPhase2>(IPHASE2_VERSION, props)
         .add(createServiceDependency<Phase2Cmp,IPhase1>()
             .setRequired(true)
