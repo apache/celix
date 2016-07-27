@@ -1,7 +1,7 @@
 #Apache Celix - Building and Installing
 Apache Celix aims to be support a broad range of UNIX platforms.
  
-Currently the [continuous integration build server](https://travis-ci.org/apache/celix) build and tests Apache Celix for:
+Currently the [continuous integration build server](https://travis-ci.org/apache/celix) builds and tests Apache Celix for:
 
 *   Ubuntu Trusty Tahr (14.04)
     * GCC 
@@ -27,8 +27,8 @@ The following packages (libraries + headers) should be installed on your system:
 	*   libxml2 (for remote services and bonjour shell)
 	
 
-For a debian based systems, the following should work:
-<pre>
+For debian based systems (apt), the following command should work:
+```bash
 sudo apt-get install -yq --no-install-recommends \
 	build-essential \
     ninja \ 
@@ -40,10 +40,10 @@ sudo apt-get install -yq --no-install-recommends \
   	cmake \
   	libffi-dev \
   	libxml2-dev
-</pre>
+```
 
-For Fedora based systems (dnf), the following should work:
-<pre>
+For Fedora based systems (dnf), the following command should work:
+```bash
 sudo dnf install \
     cmake \
     ninja-build \
@@ -54,14 +54,14 @@ sudo dnf install \
     jansson-devel \
     libffi-devel \
     libxml2-devel
-</pre>
+```
 
-For a OSX with brew installed, the following should work:
- <pre>
+For OSX systems with brew installed, the following command should work:
+```bash
     brew update && \
     brew install lcov libffi cmake && \
     brew link --force libffi
- </pre>
+```
 
 ##Download the Apache Celix sources
 To get started you first have to download the Apache Celix sources. This can be done by cloning the Apache Celix git repository:
@@ -126,6 +126,6 @@ If Apache Celix is succesfully installed running
 celix
 ```
 should give the following output:
-"Error: invalid or non-existing configuration file: 'config.properties'.No such file or directory"
+"Error: invalid or non-existing configuration file: 'config.properties'.No such file or directory".
 
-For more info how to build your own projects and/or running the Apache Celix examples see [Getting Started](../getting_started/readme.md)
+For more info how to build your own projects and/or running the Apache Celix examples see [Getting Started](../getting_started/readme.md).
