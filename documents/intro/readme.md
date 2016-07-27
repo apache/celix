@@ -1,12 +1,9 @@
 #Apache Celix Introduction
 
 ##What is Apache Celix
-Apache Celix is an implementation of the [OSGi specification](https://www.osgi.org/developer/specifications) adapted to C . 
+Apache Celix is an implementation of the [OSGi specification](https://www.osgi.org/developer/specifications) adapted to C and C++. It is a provides a framework to develop (dynamic) modular software applications using component and/or service-oriented programming.
 
-OSGi is a specification describing a dynamic modular system composed out of components.
-Components are packaged in, runtime, installable bundles and should be implemented using a (dynamic) service-oriented programming style. 
-
-Apache Celix also has support for C++ providing a higher abstraction API built on top of the Apache Celix C API.
+Apache Celix is primarily developed in C and adds an additional abstraction, in the form of a library, to support for C++. 
 
 ##C and Objects
 C is a procedural programming language and as result has no direct support for the notion of a object. 

@@ -1,5 +1,5 @@
 #Apache Celix [![Build Status](https://travis-ci.org/apache/celix.svg?branch=develop)](https://travis-ci.org/apache/celix) [![Coverage Status](https://coveralls.io/repos/apache/celix/badge.svg?branch=develop&service=github)](https://coveralls.io/github/apache/celix?branch=develop) [![Coverity Scan Build Status](https://scan.coverity.com/projects/6685/badge.svg)](https://scan.coverity.com/projects/6685)
-Apache Celix is an implementation of the OSGi specification adapted to C. It will follow the API as close as possible, but since the OSGi specification is written primarily for Java, there will be differences (Java is OO, C is procedural). An important aspect of the implementation is interoperability between Java and C. This interoperability is achieved by porting and implementing the Remote Services specification in Celix.
+Apache Celix is an implementation of the OSGi specification] adapted to C and C++. It is a provides a framework to develop (dynamic) modular software applications using component and/or service-oriented programming.
 
 ##Building
 For information how to build Apache Celix see [Building Apache Celix](documents/building/readme.md)
