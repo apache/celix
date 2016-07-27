@@ -27,15 +27,13 @@
 #ifndef BONJOUR_SHELL_H_
 #define BONJOUR_SHELL_H_
 
-#include <apr_pools.h>
-
 #include <service_reference.h>
 
 #include "celix_errno.h"
 
 typedef struct bonjour_shell *bonjour_shell_pt;
 
-celix_status_t bonjourShell_create(apr_pool_t *pool, char *id, bonjour_shell_pt *shell);
+celix_status_t bonjourShell_create(char *id, bonjour_shell_pt *shell);
 celix_status_t bonjourShell_destroy(bonjour_shell_pt shell);
 
 celix_status_t bonjourShell_addShellService(void * handle, service_reference_pt reference, void * service);
