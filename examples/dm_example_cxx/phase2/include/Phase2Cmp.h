@@ -34,13 +34,7 @@ extern "C" {
 class Phase2Cmp : public IPhase2 {
 public:
     Phase2Cmp() = default;
-    Phase2Cmp(Phase2Cmp&& other) : phase1(nullptr), logSrv{nullptr} {
-        std::cout << "Move constructor Phase2Cmp called\n";
-        this->phase1 = phase1;
-        this->logSrv = logSrv;
-        other.phase1 = nullptr;
-        other.logSrv = nullptr;
-    }
+    Phase2Cmp(Phase2Cmp&& other);
     Phase2Cmp(const Phase2Cmp& other) = delete;
     virtual ~Phase2Cmp() { std::cout << "Destroying Phase2\n"; };
 

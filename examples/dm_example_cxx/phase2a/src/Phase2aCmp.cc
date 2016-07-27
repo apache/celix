@@ -22,6 +22,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+Phase2Cmp::Phase2Cmp(Phase2Cmp&& other) : phase1(other.phase1), logSrv{other.logSrv} {
+    std::cout << "Move constructor Phase2Cmp called\n";
+    other.phase1 = nullptr;
+    other.logSrv = nullptr;
+}
+
 void Phase2Cmp::setPhase1(IPhase1* phase1) {
     std::cout << "setting phase1 for phase2\n";
     this->phase1 = phase1;
