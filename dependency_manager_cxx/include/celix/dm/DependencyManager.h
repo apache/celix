@@ -55,7 +55,7 @@ namespace celix { namespace dm {
         template<class T>
         Component<T>& createComponent() {
             std::shared_ptr<Component<T>> cmp {new Component<T>(this->context, typeName<T>())};
-            components.push_back(cmp);
+            this->components.push_back(cmp);
             return *cmp;
         }
 
@@ -93,9 +93,9 @@ namespace celix { namespace dm {
          *
          * @return Returns a reference to the service dependency
          */
-        template<class T>
-        CServiceDependency<T>& createCServiceDependency() {
-            auto dep = std::shared_ptr<CServiceDependency<T>> {new CServiceDependency<T>()};
+        template<class T, typename I>
+        CServiceDependency<T,I>& createCServiceDependency() {
+            auto dep = std::shared_ptr<CServiceDependency<T,I>> {new CServiceDependency<T,I>()};
             dependencies.push_back(dep);
             return *dep;
         }

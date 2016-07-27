@@ -78,8 +78,8 @@ namespace celix { namespace dm {
          *
          * @return Returns a reference to the service dependency
          */
-        template<class T>
-        CServiceDependency<T>& createCServiceDependency() { return manager.createCServiceDependency<T>(); }
+        template<class T, typename I>
+        CServiceDependency<T,I>& createCServiceDependency() { return manager.createCServiceDependency<T,I>(); }
 
         /**
          * The static method to create a new DM activator.

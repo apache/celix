@@ -38,7 +38,7 @@ namespace celix { namespace dm {
 
     class BaseServiceDependency;
 
-    template<class T>
+    template<class T, typename I>
     class CServiceDependency;
 
     template<class T, class I>
@@ -47,9 +47,9 @@ namespace celix { namespace dm {
     /**
      * Returns the deferred type name for the template I
      */
-    template<typename T>
+    template<typename I>
     const std::string typeName() {
-        std::string result = std::string(typeid(T).name());
+        std::string result = std::string(typeid(I).name());
         int status = 0;
         char* demangled_name {abi::__cxa_demangle(result.c_str(), NULL, NULL, &status)};
         if(status == 0) {

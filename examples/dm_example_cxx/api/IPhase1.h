@@ -23,6 +23,8 @@
 #define IPHASE1_VERSION "1.0.0"
 
 class IPhase1 {
+protected:
+    IPhase1() = default;
 public:
     virtual int getData() = 0;
 };

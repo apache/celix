@@ -27,7 +27,7 @@ void Phase2Cmp::setPhase1(IPhase1* phase1) {
     this->phase1 = phase1;
 }
 
-void Phase2Cmp::setLogService(log_service_pt logSrv) {
+void Phase2Cmp::setLogService(const log_service_t* logSrv) {
     this->logSrv = logSrv;
 }
 

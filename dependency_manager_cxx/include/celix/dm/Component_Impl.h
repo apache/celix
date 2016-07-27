@@ -42,11 +42,7 @@ Component<T>& Component<T>::addInterface(const std::string version) {
 template<class T>
 template<class I>
 Component<T>& Component<T>::addInterface(const std::string version, const Properties props) {
-    if (dynamic_cast<I*>(&this->getInstance()) != nullptr) {
-        this->addInterface(typeName<I>(), version.c_str(), props);
-    } else {
-        std::cerr << "Error casting to type " << typeName<I>() << "\n";
-    }
+    this->addInterface(typeName<I>(), version.c_str(), props);
     return *this;
 }
 
@@ -99,7 +95,8 @@ Component<T>& Component<T>::remove(ServiceDependency<T,I>& dep) {
 }
 
 template<class T>
-Component<T>& Component<T>::add(CServiceDependency<T>& dep) {
+template<typename I>
+Component<T>& Component<T>::add(CServiceDependency<T,I>& dep) {
     component_addServiceDependency(cComponent(), dep.cServiceDependency());
 
     dep.setComponentInstance(&getInstance());
@@ -107,7 +104,8 @@ Component<T>& Component<T>::add(CServiceDependency<T>& dep) {
 }
 
 template<class T>
-Component<T>& Component<T>::remove(CServiceDependency<T>& dep) {
+template<typename I>
+Component<T>& Component<T>::remove(CServiceDependency<T,I>& dep) {
     component_removeServiceDependency(cComponent(), dep.cServiceDependency());
     return *this;
 }

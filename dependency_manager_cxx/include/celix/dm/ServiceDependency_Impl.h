@@ -22,56 +22,56 @@
 
 using namespace celix::dm;
 
-template<class T>
-CServiceDependency<T>& CServiceDependency<T>::setCService(const std::string serviceName, const std::string serviceVersionRange, const std::string filter) {
+template<class T, typename I>
+CServiceDependency<T,I>& CServiceDependency<T,I>::setCService(const std::string serviceName, const std::string serviceVersionRange, const std::string filter) {
     const char* cversion = serviceVersionRange.empty() ? nullptr : serviceVersionRange.c_str();
     const char* cfilter = filter.empty() ? nullptr : filter.c_str();
     serviceDependency_setService(this->cServiceDependency(), serviceName.c_str(), cversion, cfilter);
     return *this;
 }
 
-template<class T>
-CServiceDependency<T>& CServiceDependency<T>::setRequired(bool req) {
+template<class T, typename I>
+CServiceDependency<T,I>& CServiceDependency<T,I>::setRequired(bool req) {
     serviceDependency_setRequired(this->cServiceDependency(), req);
     return *this;
 }
 
-template<class T>
-CServiceDependency<T>& CServiceDependency<T>::setStrategy(DependencyUpdateStrategy strategy) {
+template<class T, typename I>
+CServiceDependency<T,I>& CServiceDependency<T,I>::setStrategy(DependencyUpdateStrategy strategy) {
     this->setDepStrategy(strategy);
     return *this;
 }
 
 //set callbacks
-template<class T>
-CServiceDependency<T>& CServiceDependency<T>::setCallbacks(void (T::*set)(const void* service)) {
+template<class T, typename I>
+CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(void (T::*set)(const I* service)) {
     this->setFp = set;
     this->setupCallbacks();
     return *this;
 }
 
-template<class T>
-CServiceDependency<T>& CServiceDependency<T>::setCallbacks(void (T::*set)(const void* service, Properties&& properties)) {
+template<class T, typename I>
+CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(void (T::*set)(const I* service, Properties&& properties)) {
     this->setFpWithProperties = set;
     this->setupCallbacks();
     return *this;
 }
 
 //add remove callbacks
-template<class T>
-CServiceDependency<T>& CServiceDependency<T>::setCallbacks(
-        void (T::*add)(const void* service),
-        void (T::*remove)(const void* service)) {
+template<class T, typename I>
+CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(
+        void (T::*add)(const I* service),
+        void (T::*remove)(const I* service)) {
     this->addFp = add;
     this->removeFp = remove;
     this->setupCallbacks();
     return *this;
 }
 
-template<class T>
-CServiceDependency<T>& CServiceDependency<T>::setCallbacks(
-        void (T::*add)(const void* service, Properties&& properties),
-        void (T::*remove)(const void* service, Properties&& properties)
+template<class T, typename I>
+CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(
+        void (T::*add)(const I* service, Properties&& properties),
+        void (T::*remove)(const I* service, Properties&& properties)
 ) {
     this->addFpWithProperties = add;
     this->removeFpWithProperties = remove;
@@ -80,8 +80,8 @@ CServiceDependency<T>& CServiceDependency<T>::setCallbacks(
 }
 
 
-template<class T>
-void CServiceDependency<T>::setupCallbacks() {
+template<class T, typename I>
+void CServiceDependency<T,I>::setupCallbacks() {
 
     int(*cset)(void*,const void*) {nullptr};
     int(*cadd)(void*, const void*) {nullptr};
@@ -89,20 +89,20 @@ void CServiceDependency<T>::setupCallbacks() {
 
 
     if (setFp != nullptr) {
-        cset = [](void* handle, const void*service) -> int {
-            auto dep = (CServiceDependency<T>*) handle;
+        cset = [](void* handle, const void* service) -> int {
+            auto dep = (CServiceDependency<T,I>*) handle;
             return dep->invokeCallback(dep->setFp, service);
         };
     }
     if (addFp != nullptr) {
-        cadd = [](void* handle, const void*service) -> int {
-            auto dep = (CServiceDependency<T>*) handle;
+        cadd = [](void* handle, const void* service) -> int {
+            auto dep = (CServiceDependency<T,I>*) handle;
             return dep->invokeCallback(dep->addFp, service);
         };
     }
     if (removeFp != nullptr) {
-        cremove = [](void* handle, const void*service) -> int {
-            auto dep = (CServiceDependency<T>*) handle;
+        cremove = [](void* handle, const void* service) -> int {
+            auto dep = (CServiceDependency<T,I>*) handle;
             return dep->invokeCallback(dep->removeFp, service);
         };
     }
@@ -113,19 +113,19 @@ void CServiceDependency<T>::setupCallbacks() {
 
     if (setFpWithProperties != nullptr) {
         csetWithRef = [](void* handle, service_reference_pt ref, const void* service) -> int {
-            auto dep = (CServiceDependency<T>*) handle;
+            auto dep = (CServiceDependency<T,I>*) handle;
             return dep->invokeCallbackWithProperties(dep->setFpWithProperties, ref, service);
         };
     }
     if (addFpWithProperties != nullptr) {
         caddWithRef = [](void* handle, service_reference_pt ref, const void* service) -> int {
-            auto dep = (CServiceDependency<T>*) handle;
+            auto dep = (CServiceDependency<T,I>*) handle;
             return dep->invokeCallbackWithProperties(dep->addFpWithProperties, ref, service);
         };
     }
     if (removeFpWithProperties != nullptr) {
         cremoveWithRef = [](void* handle, service_reference_pt ref, const void* service) -> int {
-            auto dep = (CServiceDependency<T>*) handle;
+            auto dep = (CServiceDependency<T,I>*) handle;
             return dep->invokeCallbackWithProperties(dep->removeFpWithProperties, ref, service);
         };
     }
@@ -135,15 +135,16 @@ void CServiceDependency<T>::setupCallbacks() {
     serviceDependency_setCallbacksWithServiceReference(this->cServiceDependency(), csetWithRef, caddWithRef, nullptr, cremoveWithRef, nullptr);
 };
 
-template<class T>
-int CServiceDependency<T>::invokeCallback(void(T::*fp)(const void* service), const void* service) {
+template<class T, typename I>
+int CServiceDependency<T,I>::invokeCallback(void(T::*fp)(const I*), const void* service) {
     T *cmp = this->componentInstance;
-    (cmp->*fp)(service);
+    const I* srv = (const I*) service;
+    (cmp->*fp)(srv);
     return 0;
 };
 
-template<class T>
-int CServiceDependency<T>::invokeCallbackWithProperties(void(T::*fp)(const void*, Properties&&), service_reference_pt  ref, const void* service) {
+template<class T, typename I>
+int CServiceDependency<T,I>::invokeCallbackWithProperties(void(T::*fp)(const I*, Properties&&), service_reference_pt  ref, const void* service) {
     service_registration_pt reg {nullptr};
     properties_pt props {nullptr};
     T *cmp = this->componentInstance;
@@ -162,7 +163,9 @@ int CServiceDependency<T>::invokeCallbackWithProperties(void(T::*fp)(const void*
         properties[key] = value;
     }
 
-    (cmp->*fp)(service, static_cast<Properties&&>(properties)); //explicit move of lvalue properties.
+    const I* srv = (const I*) service;
+
+    (cmp->*fp)(srv, static_cast<Properties&&>(properties)); //explicit move of lvalue properties.
     return 0;
 }
 

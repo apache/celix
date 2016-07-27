@@ -157,14 +157,16 @@ namespace celix { namespace dm {
          *
          * @return the DM Component reference for chaining (fluent API)
          */
-        Component<T>& add(CServiceDependency<T>& dep);
+        template<typename I>
+        Component<T>& add(CServiceDependency<T,I>& dep);
 
         /**
          * Removes a C service dependency to the component
          *
          * @return the DM Component reference for chaining (fluent API)
          */
-        Component<T>& remove(CServiceDependency<T>& dep);
+        template<typename I>
+        Component<T>& remove(CServiceDependency<T,I>& dep);
 
         /**
          * Set the callback for the component life cycle control

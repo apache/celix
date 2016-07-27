@@ -41,10 +41,10 @@ void Phase2Activator::init(DependencyManager& manager) {
             .setRequired(true)
             .setCallbacks(&Phase2Cmp::setPhase1)
         )
-        .add(createCServiceDependency<Phase2Cmp>()
+        .add(createCServiceDependency<Phase2Cmp, log_service_t>()
             .setRequired(false)
-            .setCService(OSGI_LOGSERVICE_NAME, "", "")
-            .setCallbacks((void (Phase2Cmp::*)(const void*)) &Phase2Cmp::setLogService)
+            .setCService(OSGI_LOGSERVICE_NAME, {}, {})
+            .setCallbacks(&Phase2Cmp::setLogService)
         )
     );
 }

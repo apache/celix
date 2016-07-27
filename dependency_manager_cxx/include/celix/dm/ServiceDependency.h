@@ -68,21 +68,21 @@ namespace celix { namespace dm {
         void setComponentInstance(T* cmp) { componentInstance = cmp;}
     };
 
-    template<class T>
+    template<class T, typename I>
     class CServiceDependency : public TypedServiceDependency<T> {
     private:
-        void (T::*setFp)(const void* service) {nullptr};
-        void (T::*setFpWithProperties)(const void* service, Properties&& properties) {nullptr};
+        void (T::*setFp)(const I* service) {nullptr};
+        void (T::*setFpWithProperties)(const I* service, Properties&& properties) {nullptr};
 
-        void (T::*addFp)(const void* service) {nullptr};
-        void (T::*addFpWithProperties)(const void* service, Properties&& properties) {nullptr};
+        void (T::*addFp)(const I* service) {nullptr};
+        void (T::*addFpWithProperties)(const I* service, Properties&& properties) {nullptr};
 
-        void (T::*removeFp)(const void* service) {nullptr};
-        void (T::*removeFpWithProperties)(const void* service, Properties&& properties) {nullptr};
+        void (T::*removeFp)(const I* service) {nullptr};
+        void (T::*removeFpWithProperties)(const I* service, Properties&& properties) {nullptr};
 
         void setupCallbacks();
-        int invokeCallback(void(T::*fp)(const void*), const void* service);
-        int invokeCallbackWithProperties(void(T::*fp)(const void*, Properties&&), service_reference_pt  ref, const void* service);
+        int invokeCallback(void(T::*fp)(const I*), const void* service);
+        int invokeCallbackWithProperties(void(T::*fp)(const I*, Properties&&), service_reference_pt  ref, const void* service);
     public:
         CServiceDependency() : TypedServiceDependency<T>() {};
         virtual ~CServiceDependency() = default;
@@ -95,51 +95,51 @@ namespace celix { namespace dm {
          * @param filter The (additional) filter to use (e.g. "(location=front)")
          * @return the C service dependency reference for chaining (fluent API)
          */
-        CServiceDependency<T>& setCService(const std::string serviceName, const std::string serviceVersionRange, const std::string filter);
+        CServiceDependency<T,I>& setCService(const std::string serviceName, const std::string serviceVersionRange, const std::string filter);
 
         /**
          * Specify if the service dependency is required. Default is false
          *
          * @return the C service dependency reference for chaining (fluent API)
          */
-        CServiceDependency<T>& setRequired(bool req);
+        CServiceDependency<T,I>& setRequired(bool req);
 
         /**
          * Specify if the update strategy to use
          *
          * @return the C service dependency reference for chaining (fluent API)
          */
-        CServiceDependency<T>& setStrategy(DependencyUpdateStrategy strategy);
+        CServiceDependency<T,I>& setStrategy(DependencyUpdateStrategy strategy);
 
         /**
          * Set the set callback for when the service dependency becomes available
          *
-         * @return the C++ service dependency reference for chaining (fluent API)
+         * @return the C service dependency reference for chaining (fluent API)
          */
-        CServiceDependency<T>& setCallbacks(void (T::*set)(const void* service));
+        CServiceDependency<T,I>& setCallbacks(void (T::*set)(const I* service));
 
         /**
          * Set the set callback for when the service dependency becomes available
          *
-         * @return the C++ service dependency reference for chaining (fluent API)
+         * @return the C service dependency reference for chaining (fluent API)
          */
-        CServiceDependency<T>& setCallbacks(void (T::*set)(const void* service, Properties&& properties));
+        CServiceDependency<T,I>& setCallbacks(void (T::*set)(const I* service, Properties&& properties));
 
         /**
          * Set the add and remove callback for when the services of service dependency are added or removed.
          *
-         * @return the C++ service dependency reference for chaining (fluent API)
+         * @return the C service dependency reference for chaining (fluent API)
          */
-        CServiceDependency<T>& setCallbacks( void (T::*add)(const void* service),  void (T::*remove)(const void* service));
+        CServiceDependency<T,I>& setCallbacks( void (T::*add)(const I* service),  void (T::*remove)(const I* service));
 
         /**
          * Set the add and remove callback for when the services of service dependency are added or removed.
          *
-         * @return the C++ service dependency reference for chaining (fluent API)
+         * @return the C service dependency reference for chaining (fluent API)
          */
-        CServiceDependency<T>& setCallbacks(
-                void (T::*add)(const void* service, Properties&& properties),
-                void (T::*remove)(const void* service, Properties&& properties)
+        CServiceDependency<T,I>& setCallbacks(
+                void (T::*add)(const I* service, Properties&& properties),
+                void (T::*remove)(const I* service, Properties&& properties)
         );
     };
 
