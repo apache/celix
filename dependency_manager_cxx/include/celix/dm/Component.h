@@ -79,15 +79,12 @@ namespace celix { namespace dm {
         Component<T>& setInstance(std::shared_ptr<T> inst);
 
         /**
-         * TODO FIXME, DOES NOT WORK
-         * Set the component instance using move semantic
+         * Set the component instance using rvalue reference
          * The DM Component will contain the instance.
          *
          * @return the DM Component reference for chaining (fluent API)
          */
-        /*
         Component<T>& setInstance(T&& inst);
-        */
 
 
         /**

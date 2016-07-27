@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <thread>
 #include <chrono>
+#include <sstream>
 
 void Phase3Cmp::start() {
     std::cout << "start Phase3Cmp\n";
@@ -40,8 +41,9 @@ void Phase3Cmp::poll() {
     while (running) {
         std::cout << "polling Phase3Cmp\n";
         for (std::pair<IPhase2*, celix::dm::Properties> pair : this->phases) {
-            std::string name = pair.second["name"];
-            std::cout << "current data for " << name << " is " << pair.first->getData() << "\n";
+            std::ostringstream oss {};
+            oss << "current data for " << pair.second["name"] << " is " << pair.first->getData() << "\n";
+            std::cout << oss.str();
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }

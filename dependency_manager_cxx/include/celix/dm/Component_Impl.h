@@ -130,14 +130,12 @@ Component<T>& Component<T>::setInstance(std::shared_ptr<T> inst) {
     return *this;
 }
 
-/*
 template<class T>
 Component<T>& Component<T>::setInstance(T&& inst) {
     this->refInstance.clear();
     this->refInstance.push_back(std::move(inst));
     return *this;
 }
- */
 
 template<class T>
 Component<T>& Component<T>::setCallbacks(

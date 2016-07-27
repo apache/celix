@@ -32,10 +32,14 @@ extern "C" {
 };
 
 class Phase2Cmp : public IPhase2 {
-    IPhase1* phase1 {nullptr};
-    log_service_pt logSrv {nullptr};
 public:
     Phase2Cmp() = default;
+    Phase2Cmp(Phase2Cmp&& other) : phase1(other.phase1), logSrv(other.logSrv) {
+        std::cout << "Move constructor Phase2Cmp called\n"; 
+        other.phase1 = nullptr;
+        other.logSrv = nullptr;
+    }
+    Phase2Cmp(const Phase2Cmp& other) = delete;
     virtual ~Phase2Cmp() { std::cout << "Destroying Phase2\n"; };
 
     void setPhase1(IPhase1* phase); //injector used by dependency manager
@@ -43,7 +47,8 @@ public:
 
     virtual double getData(); //implements IPhase2
 private:
-
+    IPhase1* phase1 {nullptr};
+    log_service_pt logSrv {nullptr};
 };
 
 #endif //CELIX_PHASE2CMP_H

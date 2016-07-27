@@ -18,6 +18,9 @@
 celix_subproject(DEPENDENCY_MANAGER_CXX "Option to build the C++ dependency manager static library" ON DEPS framework DEPENDENCY_MANAGER)
 if (DEPENDENCY_MANAGER_CXX)
 
+    #set -Wall, -Werror locally, currenctly cpputest contains warnings
+    set(CMAKE_CXX_FLAGS "-Wall -Werror ${CMAKE_CXX_FLAGS}")
+
     # Add -fPIC for x86_64 Unix platforms; this lib will be linked to a shared lib
     if(UNIX AND NOT WIN32)
         find_program(CMAKE_UNAME uname /bin /usr/bin /usr/local/bin )
