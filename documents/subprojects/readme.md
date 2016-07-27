@@ -3,7 +3,8 @@
 Apache Celix is organized into several subprojects. The following subproject are currently available:
 
 * [Framework](../../framework) - The Apache Celix framework, an implementation of OSGi adapted to C.
-* [Dependency Manager](../../dependency_manager) - A component/dependency model for use through an API provided as library.
+* [Dependency Manager](../../dependency_manager) - A C component/dependency model for use through an API provided as library.
+* [C++ Dependency Manager](../../dependency_manager_cxx) - A C++ component/dependency model for use through an API provided as library.
 * [Device Access](../../device_access) - An implementation of the OSGi Device Access specification adapted to C.
 * [Examples](../../examples) - A Selection of examples showing how the framework can be used.
 * [Log Service](../../log_service) - An implementation of the OSGi Log Service adapated to C.
@@ -18,6 +19,7 @@ Apache Celix is organized into several subprojects. The following subproject are
     * [Discovery SHM](../../remote_services/dicovery_shm) - A RSA Discovery implementation using shared memory.
 * [Shell](../../shell) - A OSGi shell implementation.
 * [Shell TUI](../../shell_tui) - A textual UI for the Celix Shell.
-* [Remote Shell](../../remote_shell) - A remote (telnet) frontend for the Celix Shell.
+* [Remote Shell](../../remote_shell) - A remote (telnet) frontend for the Celix shell.
+* [Bonjour Shell](../../shell_bonjour) - A remote (Bonjour / mDNS) frontend for the Celix shell.
 * [Deployment Admin](../../deployment_admin) - A deployment admin implementation.
 

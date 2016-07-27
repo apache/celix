@@ -1,4 +1,4 @@
-#Apache Celix - Getting Started
+#Apache Celix - Getting Started Guide
 
 ##Intro
 This page is intended for first time users of Apache Celix. It should guide you through building & installing Apache Celix, setting up a new project, creating your first bundle, setting up the project for use with Eclipse project and finally running and debugging your bundle directly from eclipse workspace. 

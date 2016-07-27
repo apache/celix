@@ -1,4 +1,4 @@
-# Apache Celix Best Practices
+#Apache Celix - Best Practices
 
 ## Intro 
 

@@ -61,4 +61,4 @@ For more information examples please see
 
 - [The C++ Dependency Manager API](include/celix/dm): The c++ dependency manager header files
 - [Dm C++ example](../examples/dm_example_cxx): A DM C++ example.
-- [Best practices](../documents/best_practices/README.md): A introduction how to work with services using the C dependency manager
+- [Best practices](../documents/best_practices/readme.md): A introduction how to work with services using the C dependency manager

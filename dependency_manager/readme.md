@@ -117,7 +117,7 @@ celix_status_t dm_destroy(void * userData, bundle_context_pt context, dm_depende
 
 For more information examples please see
 
-- [Best practices](../documents/best_practices/README.md): A introduction how to work with services using the dependency manager
+- [Best practices](../documents/best_practices/readme.md): A introduction how to work with services using the dependency manager
 - [The Dependency Manager API](public/include): The dependency manager header files
 - [Best practice example](../examples/best_practice_example): A best practice example (also refered to in the Best practices documentation
 - [Dm example](../examples/dm_example): A DM example.  
