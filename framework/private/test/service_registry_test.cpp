@@ -727,6 +727,8 @@ TEST(service_registry, clearReferencesFor){
 	service_reference_pt reference = (service_reference_pt) 0x40;
 	service_reference_pt reference2 = (service_reference_pt) 0x50;
 	bundle_pt bundle = (bundle_pt) 0x70;
+	module_pt module = (module_pt) 0x80;
+	const char* modName = "mod name";
 
 	hash_map_pt references = hashMap_create(NULL, NULL, NULL, NULL);
 	hashMap_put(references, registration, reference);
@@ -767,6 +769,13 @@ TEST(service_registry, clearReferencesFor){
 	mock().expectOneCall("serviceReference_release")
 			.withParameter("ref", reference2)
 			.withOutputParameterReturning("destroyed", &destroyed, sizeof(destroyed));
+	mock().expectOneCall("bundle_getCurrentModule")
+			.withParameter("bundle", bundle)
+			.withOutputParameterReturning("module", &module, sizeof(module));
+	mock().expectOneCall("module_getSymbolicName")
+			.withParameter("module", module)
+			.withOutputParameterReturning("symbolicName", &modName, sizeof(modName));
+	mock().expectOneCall("framework_log");
 
 	serviceRegistry_clearReferencesFor(registry, bundle);
 

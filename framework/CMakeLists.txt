@@ -304,6 +304,7 @@ if (FRAMEWORK)
             private/mock/service_registration_mock.c
             private/mock/properties_mock.c
             private/src/service_registry.c
+            private/mock/module_mock.c
             private/src/celix_errorcodes.c
             private/mock/celix_log_mock.c)
         target_link_libraries(service_registry_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils pthread)
