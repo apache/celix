@@ -540,6 +540,7 @@ static void serviceRegistry_logWarningServiceReferenceUsageCount(service_registr
 celix_status_t serviceRegistry_clearReferencesFor(service_registry_pt registry, bundle_pt bundle) {
     celix_status_t status = CELIX_SUCCESS;
 
+    int echoName =0;
     celixThreadRwlock_writeLock(&registry->lock);
 
     hash_map_pt refsMap = hashMap_remove(registry->serviceReferences, bundle);
@@ -552,6 +553,10 @@ celix_status_t serviceRegistry_clearReferencesFor(service_registry_pt registry, 
 
             serviceReference_getUsageCount(ref, &usageCount);
             serviceReference_getReferenceCount(ref, &refCount);
+            if(refCount>0)
+            {
+                echoName++;
+            }
 
             serviceRegistry_logWarningServiceReferenceUsageCount(registry, usageCount, refCount);
 
@@ -568,6 +573,15 @@ celix_status_t serviceRegistry_clearReferencesFor(service_registry_pt registry, 
         }
         hashMapIterator_destroy(iter);
         hashMap_destroy(refsMap, false, false);
+    }
+
+    if(echoName >0)
+    {
+        module_pt module_ptr = NULL;
+        bundle_getCurrentModule(bundle, &module_ptr);
+        const char *name_str = NULL;
+        module_getSymbolicName(module_ptr, &name_str);
+        fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING,"Previous Dangling service reference warnings caused by bundle: %s",name_str);
     }
 
     celixThreadRwlock_unlock(&registry->lock);
