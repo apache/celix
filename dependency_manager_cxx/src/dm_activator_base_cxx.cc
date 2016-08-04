@@ -44,9 +44,16 @@ typedef struct dm_dependency_activator_base *dependency_activator_base_pt;
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
     celix_status_t status = CELIX_SUCCESS;
 
+#ifdef __EXCEPTIONS
     auto man = std::shared_ptr<celix::dm::DependencyManager>{new celix::dm::DependencyManager(context)};
     auto dmAct = std::shared_ptr<celix::dm::DmActivator> {DmActivator::create(*man)};
     dependency_activator_base_pt act = new dm_dependency_activator_base(man, dmAct);
+#else
+    auto man = std::shared_ptr<celix::dm::DependencyManager>{new(std::nothrow) celix::dm::DependencyManager(context)};
+    auto dmAct = std::shared_ptr<celix::dm::DmActivator> {DmActivator::create(*man)};
+    dependency_activator_base_pt act = new(std::nothrow) dm_dependency_activator_base(man, dmAct);
+#endif
+
 
     if (act != nullptr) {
         act->context = context;
@@ -71,6 +78,10 @@ celix_status_t bundleActivator_start(void *userData, bundle_context_pt context) 
     celix_status_t status = CELIX_SUCCESS;
     dependency_activator_base_pt act = (dependency_activator_base_pt) userData;
 
+    if (act == nullptr || act->manager == nullptr) {
+        return CELIX_ILLEGAL_STATE;
+    }
+
     act->activator->init(*act->manager);
     act->manager->start();
 
@@ -90,6 +101,10 @@ celix_status_t bundleActivator_stop(void *userData, bundle_context_pt context __
     celix_status_t status = CELIX_SUCCESS;
     dependency_activator_base_pt act = (dependency_activator_base_pt) userData;
 
+    if (act == nullptr || act->manager == nullptr) {
+        return CELIX_ILLEGAL_STATE;
+    }
+
     // Remove the service
     status = serviceRegistration_unregister(act->reg);
     dependencyManager_removeAllComponents(act->manager->cDependencyManager());
@@ -102,7 +117,7 @@ celix_status_t bundleActivator_destroy(void *userData, bundle_context_pt context
     dependency_activator_base_pt act = (dependency_activator_base_pt) userData;
 
     if (act == NULL) {
-        return CELIX_ILLEGAL_ARGUMENT;
+        return CELIX_ILLEGAL_STATE;
     }
 
     act->activator->deinit(*act->manager);

@@ -30,10 +30,13 @@
 #include <memory>
 #include <iostream>
 
+/**
+ * TODO add a dependency for a whiteboard pattern or marker service. e.g. a service where the type is irrelevant.
+ */
+
 namespace celix { namespace dm {
 
     class DependencyManager; //forward declaration
-
 
     enum class DependencyUpdateStrategy {
         suspend,
@@ -43,9 +46,11 @@ namespace celix { namespace dm {
     class BaseServiceDependency {
     protected:
         dm_service_dependency_pt cServiceDep {nullptr};
+
         void setDepStrategy(DependencyUpdateStrategy strategy);
     public:
         BaseServiceDependency();
+
         virtual ~BaseServiceDependency() = default;
 
         /**
@@ -71,6 +76,10 @@ namespace celix { namespace dm {
     template<class T, typename I>
     class CServiceDependency : public TypedServiceDependency<T> {
     private:
+        std::string name {};
+        std::string filter {};
+        std::string versionRange {};
+
         void (T::*setFp)(const I* service) {nullptr};
         void (T::*setFpWithProperties)(const I* service, Properties&& properties) {nullptr};
 
@@ -83,6 +92,8 @@ namespace celix { namespace dm {
         void setupCallbacks();
         int invokeCallback(void(T::*fp)(const I*), const void* service);
         int invokeCallbackWithProperties(void(T::*fp)(const I*, Properties&&), service_reference_pt  ref, const void* service);
+
+        void setupService();
     public:
         CServiceDependency() : TypedServiceDependency<T>() {};
         virtual ~CServiceDependency() = default;
@@ -141,11 +152,18 @@ namespace celix { namespace dm {
                 void (T::*add)(const I* service, Properties&& properties),
                 void (T::*remove)(const I* service, Properties&& properties)
         );
+
+        /**
+         * Specify if the service dependency should add a service.lang filter part if it is not already present
+         * For C service dependencies 'service.lang=C' will be added.
+         */
+        CServiceDependency<T,I>& setAddLanguageFilter(bool addLang);
     };
 
     template<class T, class I>
     class ServiceDependency : public TypedServiceDependency<T> {
     private:
+        bool addCxxLanguageFilter {true};
         std::string name {};
         std::string filter {};
         std::string versionRange {};
@@ -233,6 +251,13 @@ namespace celix { namespace dm {
          * @return the C service dependency reference for chaining (fluent API)
          */
         ServiceDependency<T,I>& setStrategy(DependencyUpdateStrategy strategy);
+
+        /**
+         * Specify if the service dependency should add a service.lang filter part if it is not already present
+         * For C++ service dependencies 'service.lang=C++' will be added.
+         * Should be called before
+         */
+        ServiceDependency<T,I>& setAddLanguageFilter(bool addLang);
     };
 }}
 

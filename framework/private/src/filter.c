@@ -108,7 +108,7 @@ static filter_pt filter_parseFilter(char * filterString, int * pos) {
 	filter_pt filter;
 	filter_skipWhiteSpace(filterString, pos);
 	if (filterString[*pos] != '(') {
-		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error: Missing '('.");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error: Missing '(' in filter string '%s'.", filterString);
 		return NULL;
 	}
 	(*pos)++;
@@ -118,7 +118,7 @@ static filter_pt filter_parseFilter(char * filterString, int * pos) {
 	filter_skipWhiteSpace(filterString, pos);
 
 	if (filterString[*pos] != ')') {
-		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error: Missing ')'.");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error: Missing ')' in filter string '%s'.", filterString);
 		if(filter!=NULL){
 			filter_destroy(filter);
 		}

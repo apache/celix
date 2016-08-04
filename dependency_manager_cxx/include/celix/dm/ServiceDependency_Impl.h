@@ -19,16 +19,32 @@
 
 #include <vector>
 #include <iostream>
+#include "constants.h"
 
 using namespace celix::dm;
 
 template<class T, typename I>
 CServiceDependency<T,I>& CServiceDependency<T,I>::setCService(const std::string serviceName, const std::string serviceVersionRange, const std::string filter) {
-    const char* cversion = serviceVersionRange.empty() ? nullptr : serviceVersionRange.c_str();
-    const char* cfilter = filter.empty() ? nullptr : filter.c_str();
-    serviceDependency_setService(this->cServiceDependency(), serviceName.c_str(), cversion, cfilter);
+    this->name = serviceName;
+    this->versionRange = serviceVersionRange;
+    this->filter = filter;
+    this->setupService();
     return *this;
 }
+
+template<class T, typename I>
+void CServiceDependency<T,I>::setupService() {
+    const char* cversion = this->versionRange.empty() ? nullptr : versionRange.c_str();
+    const char* cfilter = filter.empty() ? nullptr : filter.c_str();
+    serviceDependency_setService(this->cServiceDependency(), this->name.c_str(), cversion, cfilter);
+};
+
+template<class T, typename I>
+CServiceDependency<T,I>& CServiceDependency<T,I>::setAddLanguageFilter(bool addLang) {
+    serviceDependency_setAddCLanguageFilter(this->cServiceDependency(), addLang);
+    this->setupService();
+    return *this;
+};
 
 template<class T, typename I>
 CServiceDependency<T,I>& CServiceDependency<T,I>::setRequired(bool req) {
@@ -169,7 +185,6 @@ int CServiceDependency<T,I>::invokeCallbackWithProperties(void(T::*fp)(const I*,
     return 0;
 }
 
-
 template<class T, class I>
 ServiceDependency<T,I>::ServiceDependency() : TypedServiceDependency<T>() {
     setupService();
@@ -177,24 +192,49 @@ ServiceDependency<T,I>::ServiceDependency() : TypedServiceDependency<T>() {
 
 template<class T, class I>
 void ServiceDependency<T,I>::setupService() {
-    std::string n = name.empty() ? typeName<I>() : name;
-    const char* v =  versionRange.empty() ? nullptr : versionRange.c_str();
+    std::string n = name;
 
-    //setting modified filter. which is in a filter including a lang=c++
-    modifiedFilter = std::string("(lang=c++)");
-    if (!filter.empty()) {
-        if (strncmp(filter.c_str(), "(&", 2) == 0 && filter[filter.size()-1] == ')') {
-            modifiedFilter = filter.substr(0, filter.size()-1);
-            modifiedFilter = modifiedFilter.append("(lang=c++))");
-        } else if (filter[0] == '(' && filter[filter.size()-1] == ')') {
-            modifiedFilter = "(&";
-            modifiedFilter = modifiedFilter.append(filter);
-            modifiedFilter = modifiedFilter.append("(lang=c++))");
-        } else {
-            std::cerr << "Unexpected filter layout: '" << filter << "'\n";
+    if (n.empty()) {
+        n = typeName<I>();
+        if (n.empty()) {
+            std::cerr << "Error in service dependency. Type name cannot be inferred, using '<TYPE_NAME_ERROR>'. function: '" << __PRETTY_FUNCTION__ << "'\n";
+            n = "<TYPE_NAME_ERROR>";
         }
     }
 
+    const char* v =  versionRange.empty() ? nullptr : versionRange.c_str();
+
+
+    if (this->addCxxLanguageFilter) {
+
+        char langFilter[128];
+        snprintf(langFilter, sizeof(langFilter), "(%s=%s)", CELIX_FRAMEWORK_SERVICE_LANGUAGE,
+                 CELIX_FRAMEWORK_SERVICE_CXX_LANGUAGE);
+
+        //setting modified filter. which is in a filter including a lang=c++
+        modifiedFilter = std::string{langFilter};
+        if (!filter.empty()) {
+            char needle[128];
+            snprintf(needle, sizeof(needle), "(%s=", CELIX_FRAMEWORK_SERVICE_LANGUAGE);
+            size_t langFilterPos = filter.find(needle);
+            if (langFilterPos != std::string::npos) {
+                //do nothing filter already contains a language part.
+            } else if (strncmp(filter.c_str(), "(&", 2) == 0 && filter[filter.size() - 1] == ')') {
+                modifiedFilter = filter.substr(0, filter.size() - 1); //remove closing ')'
+                modifiedFilter = modifiedFilter.append(langFilter);
+                modifiedFilter = modifiedFilter.append(")"); //add closing ')'
+            } else if (filter[0] == '(' && filter[filter.size() - 1] == ')') {
+                modifiedFilter = "(&";
+                modifiedFilter = modifiedFilter.append(filter);
+                modifiedFilter = modifiedFilter.append(langFilter);
+                modifiedFilter = modifiedFilter.append(")");
+            } else {
+                std::cerr << "Unexpected filter layout: '" << filter << "'\n";
+            }
+        }
+    } else {
+        this->modifiedFilter = this->filter;
+    }
 
     serviceDependency_setService(this->cServiceDependency(), n.c_str(), v, this->modifiedFilter.c_str());
 }
@@ -216,6 +256,14 @@ ServiceDependency<T,I>& ServiceDependency<T,I>::setFilter(std::string filter) {
 template<class T, class I>
 ServiceDependency<T,I>& ServiceDependency<T,I>::setVersion(std::string versionRange) {
     this->versionRange = versionRange;
+    setupService();
+    return *this;
+};
+
+
+template<class T, class I>
+ServiceDependency<T,I>& ServiceDependency<T,I>::setAddLanguageFilter(bool addLang) {
+    this->addCxxLanguageFilter = addLang;
     setupService();
     return *this;
 };

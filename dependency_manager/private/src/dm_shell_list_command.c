@@ -77,9 +77,14 @@ void dmListCommand_execute(bundle_context_pt context, char * line, FILE *out, FI
             int interfCnt;
             fprintf(out, "|- Interfaces (%d):\n", arrayList_size(compInfo->interfaces));
             for(interfCnt = 0 ;interfCnt < arrayList_size(compInfo->interfaces); interfCnt++) {
-                char * interface;
-                interface = arrayList_get(compInfo->interfaces, interfCnt);
-                fprintf(out, "   |- Interface: %s\n", interface);
+                dm_interface_info_pt intfInfo= arrayList_get(compInfo->interfaces, interfCnt);
+                fprintf(out, "   |- Interface: %s\n", intfInfo->name);
+
+                hash_map_iterator_t iter = hashMapIterator_construct((hash_map_pt) intfInfo->properties);
+                char* key = NULL;
+                while((key = hashMapIterator_nextKey(&iter)) != NULL) {
+                    fprintf(out, "      | %15s = %s\n", key, properties_get(intfInfo->properties, key));
+                }
             }
 
             int depCnt;

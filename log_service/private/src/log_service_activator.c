@@ -26,6 +26,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <constants.h>
 
 #include "bundle_activator.h"
 #include "log_service_impl.h"
@@ -107,7 +108,11 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
     logFactory_create(activator->logger, &activator->factory);
 
-    bundleContext_registerServiceFactory(context, (char *) OSGI_LOGSERVICE_NAME, activator->factory, NULL, &activator->logServiceFactoryReg);
+	properties_pt props = properties_create();
+	properties_set(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
+
+
+	bundleContext_registerServiceFactory(context, (char *) OSGI_LOGSERVICE_NAME, activator->factory, props, &activator->logServiceFactoryReg);
 
     logReaderService_create(activator->logger, &activator->reader);
 
@@ -118,7 +123,10 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
     activator->reader_service->removeLogListener = logReaderService_removeLogListener;
     activator->reader_service->removeAllLogListener = logReaderService_removeAllLogListener;
 
-    bundleContext_registerService(context, (char *) OSGI_LOGSERVICE_READER_SERVICE_NAME, activator->reader_service, NULL, &activator->logReaderServiceReg);
+	props = properties_create();
+	properties_set(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
+
+    bundleContext_registerService(context, (char *) OSGI_LOGSERVICE_READER_SERVICE_NAME, activator->reader_service, props, &activator->logReaderServiceReg);
 
     return status;
 }

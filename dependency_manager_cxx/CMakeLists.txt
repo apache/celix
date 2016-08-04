@@ -19,7 +19,7 @@ celix_subproject(DEPENDENCY_MANAGER_CXX "Option to build the C++ dependency mana
 if (DEPENDENCY_MANAGER_CXX)
 
     #set -Wall, -Werror locally, currenctly cpputest contains warnings
-    set(CMAKE_CXX_FLAGS "-Wall -Werror ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-Wall -Werror -fno-rtti -fno-exceptions ${CMAKE_CXX_FLAGS}")
 
     # Add -fPIC for x86_64 Unix platforms; this lib will be linked to a shared lib
     if(UNIX AND NOT WIN32)

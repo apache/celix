@@ -29,6 +29,7 @@
 #include "bundle_activator.h"
 #include "std_commands.h"
 #include "service_tracker.h"
+#include "constants.h"
 
 #define NUMBER_OF_COMMANDS 10
 
@@ -150,6 +151,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context_ptr, void **_ppt
             properties_set(instance_ptr->std_commands[i].props, OSGI_SHELL_COMMAND_NAME, instance_ptr->std_commands[i].name);
             properties_set(instance_ptr->std_commands[i].props, OSGI_SHELL_COMMAND_USAGE, instance_ptr->std_commands[i].usage);
             properties_set(instance_ptr->std_commands[i].props, OSGI_SHELL_COMMAND_DESCRIPTION, instance_ptr->std_commands[i].description);
+            properties_set(instance_ptr->std_commands[i].props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
 
             instance_ptr->std_commands[i].service = calloc(1, sizeof(*instance_ptr->std_commands[i].service));
             if (!instance_ptr->std_commands[i].service) {
@@ -186,7 +188,9 @@ celix_status_t bundleActivator_start(void *_ptr, bundle_context_pt context_ptr) 
     }
 
     if (status == CELIX_SUCCESS) {
-        status = bundleContext_registerService(context_ptr, (char *) OSGI_SHELL_SERVICE_NAME, instance_ptr->shellService, NULL, &instance_ptr->registration);
+        properties_pt props = properties_create();
+        properties_set(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
+        status = bundleContext_registerService(context_ptr, (char *) OSGI_SHELL_SERVICE_NAME, instance_ptr->shellService, props, &instance_ptr->registration);
     }
 
 	if (status == CELIX_SUCCESS) {

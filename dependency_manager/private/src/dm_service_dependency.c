@@ -72,6 +72,7 @@ celix_status_t serviceDependency_create(dm_service_dependency_pt *dependency_ptr
 
 		(*dependency_ptr)->isStarted = false;
 
+        (*dependency_ptr)->addCLanguageFilter = true;
 		(*dependency_ptr)->tracked_service = NULL;
 		(*dependency_ptr)->tracked_filter_unmodified = NULL;
 		(*dependency_ptr)->tracked_filter = NULL;
@@ -123,6 +124,11 @@ celix_status_t serviceDependency_setRequired(dm_service_dependency_pt dependency
 	}
 
 	return status;
+}
+
+celix_status_t serviceDependency_setAddCLanguageFilter(dm_service_dependency_pt dependency, bool addCLangFilter) {
+    dependency->addCLanguageFilter = addCLangFilter;
+    return CELIX_SUCCESS;
 }
 
 celix_status_t serviceDependency_setStrategy(dm_service_dependency_pt dependency, dm_service_dependency_strategy_t strategy) {
@@ -218,6 +224,23 @@ celix_status_t serviceDependency_setService(dm_service_dependency_pt dependency,
 			free(dependency->tracked_filter_unmodified);
 			dependency->tracked_filter_unmodified = strdup(filter);
 			arrayList_add(filterElements, strdup(filter));
+		}
+
+
+
+        bool needLangFilter = true;
+		if (filter != NULL) {
+            char needle[128];
+            snprintf(needle, sizeof(needle), "(%s=", CELIX_FRAMEWORK_SERVICE_LANGUAGE);
+            if (strstr(filter, needle) != NULL) {
+                needLangFilter = false;
+            }
+        }
+
+        if (needLangFilter && dependency->addCLanguageFilter) {
+			char langFilter[128];
+			snprintf(langFilter, sizeof(langFilter), "(%s=%s)", CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
+            arrayList_add(filterElements, strdup(langFilter));
 		}
 
 		if (arrayList_size(filterElements) > 0) {

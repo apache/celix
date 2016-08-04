@@ -30,6 +30,7 @@
 #include <string.h>
 #include "celix/dm/Properties.h"
 #include <stdlib.h>
+#include <iostream>
 
 namespace celix { namespace dm {
     //forward declarations
@@ -47,15 +48,44 @@ namespace celix { namespace dm {
     /**
      * Returns the deferred type name for the template I
      */
-    template<typename I>
+    template<typename INTERFACE_TYPENAME>
     const std::string typeName() {
-        std::string result = std::string(typeid(I).name());
+        std::string result;
+
+#ifdef __GXX_RTTI
+        result = typeid(I);
         int status = 0;
         char* demangled_name {abi::__cxa_demangle(result.c_str(), NULL, NULL, &status)};
         if(status == 0) {
-            result = std::string(demangled_name);
+            result = std::string{demangled_name};
             free(demangled_name);
         }
+#else
+        const char *templateStr = "INTERFACE_TYPENAME =";
+        const size_t templateStrLen = strlen(templateStr);
+
+        result = __PRETTY_FUNCTION__; //USING pretty function to retrieve the filled in template argument without using typeid()
+
+        size_t bpos = result.find(templateStr) + templateStrLen + 1; //find begin pos after INTERFACE_TYPENAME = entry
+        size_t epos = bpos;
+        while (isalnum(result[epos]) || result[epos] == '_' || result[epos] == ';') {
+            epos += 1;
+        }
+        size_t len = epos - bpos - 1;
+        if (len < 0) {
+            len = 0;
+        }
+        result = result.substr(bpos, len);
+#endif
+
+        //std::cout << "PRETTY IS '" << __PRETTY_FUNCTION__ << "'\n";
+        //std::cout << "RESULT IS '" << result << "'\n";
+
+        if (result.empty()) {
+            std::cerr << "Cannot infer type name in function call '" << __PRETTY_FUNCTION__ << "'\n'";
+        }
+
+
         return result;
     }
 

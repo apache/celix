@@ -42,14 +42,19 @@ Component<T>& Component<T>::addInterface(const std::string version) {
 template<class T>
 template<class I>
 Component<T>& Component<T>::addInterface(const std::string version, const Properties props) {
-    this->addInterface(typeName<I>(), version.c_str(), props);
+    std::string name = typeName<I>();
+    if (name.empty()) {
+        std::cerr << "Cannot add interface, because type name could not be inferred. function: '" << __PRETTY_FUNCTION__ << "'\n";
+    } else {
+        this->addInterface(name, version.c_str(), props);
+    }
     return *this;
 }
 
 template<class T>
 Component<T>& Component<T>::addInterface(const std::string serviceName, const std::string version, const Properties properties) {
     properties_pt cProperties = properties_create();
-    properties_set(cProperties, (char*)"lang", (char*)"c++");
+    properties_set(cProperties, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_CXX_LANGUAGE);
     for (auto iter = properties.begin(); iter != properties.end(); iter++) {
         properties_set(cProperties, (char*)iter->first.c_str(), (char*)iter->second.c_str());
     }
@@ -68,7 +73,7 @@ Component<T>& Component<T>::addCInterface(const void* svc, const std::string ser
 template<class T>
 Component<T>& Component<T>::addCInterface(const void* svc, const std::string serviceName, const std::string version, const Properties properties) {
     properties_pt cProperties = properties_create();
-    properties_set(cProperties, (char*)"lang", (char*)"c");
+    properties_set(cProperties, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
     for (auto iter = properties.begin(); iter != properties.end(); iter++) {
         properties_set(cProperties, (char*)iter->first.c_str(), (char*)iter->second.c_str());
     }
@@ -98,7 +103,6 @@ template<class T>
 template<typename I>
 Component<T>& Component<T>::add(CServiceDependency<T,I>& dep) {
     component_addServiceDependency(cComponent(), dep.cServiceDependency());
-
     dep.setComponentInstance(&getInstance());
     return *this;
 }
@@ -114,9 +118,14 @@ template<class T>
 T& Component<T>::getInstance() {
     if (this->refInstance.size() == 1) {
         return refInstance.front();
-    } else {
+    } else {  //TODO check if we can use move??
         if (this->instance.get() == nullptr) {
+#ifdef __EXCEPTIONS
             this->instance = std::shared_ptr<T> {new T()};
+#else
+            this->instance = std::shared_ptr<T> {new(std::nothrow) T()};
+#endif
+            //TODO check needed, how to handle nullptr ?
         }
         return *this->instance.get();
     }

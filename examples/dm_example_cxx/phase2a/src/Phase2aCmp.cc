@@ -38,6 +38,8 @@ void Phase2Cmp::setLogService(const log_service_t* logSrv) {
 }
 
 double Phase2Cmp::getData() {
-    logSrv->log(logSrv->logger, OSGI_LOGSERVICE_DEBUG, (char*)"getting data from phase2cmp A\n");
+    if (this->logSrv != NULL) {
+        this->logSrv->log(this->logSrv->logger, OSGI_LOGSERVICE_DEBUG, (char *) "getting data from phase2cmp A\n");
+    }
     return phase1->getData() * 42.0;
 };

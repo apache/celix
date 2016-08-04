@@ -73,6 +73,13 @@ celix_status_t serviceDependency_destroy(dm_service_dependency_pt *dependency_pt
 celix_status_t serviceDependency_setRequired(dm_service_dependency_pt dependency, bool required);
 
 /**
+ * Specify if the servide dependency should add a C language filter for this dependency if no "service.lang" part if found the in the provided filter.
+ * Default is true
+ */
+celix_status_t serviceDependency_setAddCLanguageFilter(dm_service_dependency_pt dependency, bool addCLangFilter);
+
+
+/**
  * Specify if the service dependency update strategy.
  *
  * The DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING strategy notifies the component in case the dependencies set

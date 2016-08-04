@@ -65,6 +65,7 @@ struct dm_service_dependency {
 
 	bool isStarted;
 
+	bool addCLanguageFilter;
 	char *tracked_service;
 	char *tracked_filter_unmodified;
 	char *tracked_filter;

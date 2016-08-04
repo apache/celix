@@ -5,7 +5,8 @@
 The C++ Dependency Manager contains a static library which can be used to manage (dynamic) services on a higher abstraction level in a declarative style. 
 The Apache Celix C++ Dependency Manager is inspired by the [Apache Felix Dependency Manager](http://felix.apache.org/documentation/subprojects/apache-felix-dependency-manager.html).
 
-The C++ Dependency Manager uses fluent interface to make specifying DM components and service dependencies very concise.
+The C++ Dependency Manager uses fluent interface to make specifying DM components and service dependencies very concise and relies on features introduced in C++11.
+
 
 
 ## C++ and C Dependency Manager

@@ -24,6 +24,7 @@
  *  \copyright  Apache License, Version 2.0
  */
 
+#include <constants.h>
 #include "bundle_context.h"
 #include "service_registration.h"
 #include "command.h"
@@ -64,6 +65,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
         commandService->executeCommand = (void *)dmListCommand_execute;
 
         properties_pt props = properties_create();
+        properties_set(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
         properties_set(props, OSGI_SHELL_COMMAND_NAME, "dm");
         properties_set(props, OSGI_SHELL_COMMAND_USAGE, "dm");
         properties_set(props, OSGI_SHELL_COMMAND_DESCRIPTION,

@@ -82,7 +82,13 @@ namespace celix { namespace dm {
          */
         template<class T, class I>
         ServiceDependency<T,I>& createServiceDependency() {
+#ifdef __EXCEPTIONS
             auto dep = std::shared_ptr<ServiceDependency<T,I>> {new ServiceDependency<T,I>()};
+#else
+            auto dep = std::shared_ptr<ServiceDependency<T,I>> {new(std::nothrow) ServiceDependency<T,I>()};
+            //TODO handle nullptr, how? Note that in modern operating system a null return for a alloc is virtually impossible.
+#endif
+
             dependencies.push_back(dep);
             return *dep;
         };
@@ -95,7 +101,13 @@ namespace celix { namespace dm {
          */
         template<class T, typename I>
         CServiceDependency<T,I>& createCServiceDependency() {
+#ifdef __EXCEPTIONS
             auto dep = std::shared_ptr<CServiceDependency<T,I>> {new CServiceDependency<T,I>()};
+#else
+            auto dep = std::shared_ptr<CServiceDependency<T,I>> {new(std::nothrow) CServiceDependency<T,I>()};
+            //TODO handle nullptr, how?
+#endif
+
             dependencies.push_back(dep);
             return *dep;
         }

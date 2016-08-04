@@ -64,6 +64,14 @@ celix_status_t component_create(bundle_context_pt context, const char* name, dm_
  */
 void component_destroy(dm_component_pt component);
 
+
+/**
+ * Specify if a default 'service.lang=C' should be added to the properties of interfaces if no 'service.lang' has been
+ * provided. Default is true. Note that this should be set before using component_addInterface.
+ */
+celix_status_t setCLanguageProperty(dm_component_pt component, bool setCLangProp);
+
+
 /**
  * Adds a C interface to provide as service to the Celix framework.
  *
