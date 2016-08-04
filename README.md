@@ -8,5 +8,5 @@ For information how to build Apache Celix see [Building Apache Celix](documents/
 For an introduction into Apache Celix see [Apache Celix Intro](documents/intro/readme.md)
 
 ##Getting Started with Apache Celix
-For a guide how to start writing your own bundles and services see [Getting Started Guide](documents/intro/readme.md)
+For a guide how to start writing your own bundles and services see [Getting Started Guide](documents/getting_started/readme.md)
 

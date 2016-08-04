@@ -91,8 +91,8 @@ void hashMapIterator_deinit(hash_map_iterator_pt iterator);
 Apache Celix follows the OSGi API as close as possible, but since the OSGi specification is written primarily for Java, there will be differences (Java is OO, C is procedural).
 Taking into account those differences and mapping explained before the OSGi javadoc can be used for a more in depth description of what the Apache Celix API offers. 
 
-[OSGi core specification 4.3](https://osgi.org/javadoc/r4v43/core/index.html)
-[OSGi compendium specification 4.3](https://osgi.org/javadoc/r4v43/cmpn/index.html)
+* [OSGi core specification 4.3](https://osgi.org/javadoc/r4v43/core/index.html)
+* [OSGi compendium specification 4.3](https://osgi.org/javadoc/r4v43/cmpn/index.html)
 
 ##What is a OSGi service?
 A OSGi service is a Java object register to the OSGi framework under a certain set of properties.
@@ -103,7 +103,7 @@ Consumers can dynamically lookup the services providing a filter to specify what
 ##C services in Apache Celix
 As mentioned OSGi uses Java Interfaces to define a service. Since C does not have Interfaces as compilable unit, this is not possible for Celix.  To be able to define a service which hides implementation details, Celix uses structs with function pointers.
  
-See [Apache Celix Best Practices](../best_practices/README.md) for a more in depth look at services and service usage.
+See [Apache Celix Best Practices](../best_practices/readme.md) for a more in depth look at services and service usage.
  
 ##Impact of dynamic services
 Services in Apache Celix are dynamic, meaning that they can come and go at any moment. 
@@ -114,17 +114,17 @@ Taking into account that C has no garbage collection handling the dynamic behavi
  
 Apache Celix offers different solutions how to cope with this dynamic behaviour:
 
-* Bundle Context & Service References  - This (low level) [API](../framework/public/include/bundle_context.h) exists to be compatible with the OSGi standard. This should not be used in production code, because no locking/syncing mechanisms are available.   
-* Service Listener - This (log level) [API](../framework/public/include/service_listener.h) can be used to retrieve event when services are being removed or are added. Combined with locking this can be used to safely monitor and use services. 
-* Service Tracker - This [API](../framework/public/include/service_tracker.h) can be used to register callbacks function when services are being removed or are added. Combined with locking this can be used to safely use services.
-* Dependency Manager - This [library](../dependency_manager/readme.md) can be used to add service dependency is a declarative way.  A locking or syncing mechanism can be selected to safely use services. Note that this is not part of the OSGi standard.
+* Bundle Context & Service References  - This (low level) [API](../../framework/public/include/bundle_context.h) exists to be compatible with the OSGi standard. This should not be used in production code, because no locking/syncing mechanisms are available.   
+* Service Listener - This (log level) [API](../../framework/public/include/service_listener.h) can be used to retrieve event when services are being removed or are added. Combined with locking this can be used to safely monitor and use services. 
+* Service Tracker - This [API](../../framework/public/include/service_tracker.h) can be used to register callbacks function when services are being removed or are added. Combined with locking this can be used to safely use services.
+* [Dependency Manager](../../dependency_manager/readme.md) - This library can be used to add service dependency is a declarative way.  A locking or syncing mechanism can be selected to safely use services. Note that this is not part of the OSGi standard.
 
 Even though the dependency manager is not part of the OSGi specification, this is the preferred way because it uses a higher abstraction and removes a lot boilerplate code. 
 
 ##C++ Support
 
 One of the reasons why C was chosen as implementation language is that C can act as a common denominator for (service oriented) interoperability between a range of languages.
-C++ support is added with the use of a [C++ Dependency Manager](../dependency_manager_cxx/readme.md).
+C++ support is added with the use of a [C++ Dependency Manager](../../dependency_manager_cxx/readme.md).
 The Dependency Manager is arguably the most convenient way to interact with services, confers most uses cases and eliminates the necessity to port the rest of the (large) API to C++.
 
 ##Documentation

@@ -186,7 +186,10 @@ Deploy a selection of bundles to the provided bundle dir. This can be used to cr
 ```CMake
 deploy_bundles_dir(<deploy_target_name>
     DIR_NAME dir_name
-    BUNDLES bundle1 bundle2 ...
+    BUNDLES 
+        bundle1 
+        bundle2 
+        ...
 )
 ```
 
@@ -195,7 +198,9 @@ Deploy the selected bundles. The bundles are configured for auto starting.
 
 ```CMake
 deploy_bundles(<deploy_target_name>
-    bundle1 bundle2 ...
+    bundle1 
+    bundle2 
+    ...
 )
 ```
 
@@ -205,6 +210,8 @@ deploy_bundles(<deploy_target_name>
 Add the provided properties to the target deploy config.properties.
 
 deploy_properties(<deploy_target_name>
-    "prop1=val1" "prop2=val2" ...
+    "prop1=val1" 
+    "prop2=val2" 
+    ...
 )
 
