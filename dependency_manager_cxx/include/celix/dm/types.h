@@ -72,9 +72,6 @@ namespace celix { namespace dm {
             epos += 1;
         }
         size_t len = epos - bpos - 1;
-        if (len < 0) {
-            len = 0;
-        }
         result = result.substr(bpos, len);
 #endif
 
