@@ -18,26 +18,21 @@
 celix_subproject(EVENT_ADMIN "Option to enable building the Event Admin Service bundles" OFF DEPS LAUNCHER LOG_SERVICE SHELL shell_tui)
 if(EVENT_ADMIN)
 
-	#add_subdirectory(utils)
 	add_subdirectory(event_admin)
 	add_subdirectory(event_handler)
 	add_subdirectory(event_publisher)
 
-	#deploy("event_admin_bundle" BUNDLES event_admin shell shell_tui log_service log_writer)
-  #  deploy("event_publisher_example" BUNDLES event_admin event_publisher shell shell_tui log_service log_writer)
-#	deploy("event_handler_example" BUNDLES event_admin event_handler shell shell_tui log_service log_writer)
-#	deploy("event_admin_example" BUNDLES event_admin event_publisher event_handler shell shell_tui log_service log_writer)
 	add_deploy(event_admin_service
 			NAME "event_admin_service"
-			GROUP "event_admin/event_admin"
-			BUNDLES event_admin shell shell_tui log_service log_writer
+			GROUP "event_admin"
+			BUNDLES event_admin shell_tui shell log_writer log_service
 			)
 	add_deploy(event_handler_consumer
 			NAME "event_handler_consumer"
 			GROUP "event_handler"
-			BUNDLES event_handler event_admin shell shell_tui log_service log_writer)
+			BUNDLES event_handler shell_tui shell log_writer log_service)
 	add_deploy(event_publisher_consumer
 			NAME "event_publisher_consumer"
 			GROUP "event_publisher"
-			BUNDLES event_publisher event_handler event_admin shell shell_tui log_service log_writer)
+			BUNDLES event_admin event_publisher event_handler shell_tui shell log_writer log_service )
 endif(EVENT_ADMIN)

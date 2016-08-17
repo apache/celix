@@ -50,6 +50,7 @@ celix_status_t eventHandlerHandleEvent(event_handler_pt *instance, event_pt even
  * @param event_handler_pt *event_handler. the event handler to be made.
  */
 celix_status_t eventHandlerCreate(bundle_context_pt context, event_handler_pt *event_handler);
+celix_status_t eventHandlerDestroy(event_handler_pt *event_handler);
 celix_status_t  eventHandlerRemovedService(void * handle, service_reference_pt ref, void * service) ;
 celix_status_t  eventHandlerModifiedService(void * handle, service_reference_pt ref, void * service) ;
 celix_status_t  eventHandlerAddedService(void * handle, service_reference_pt ref, void * service) ;

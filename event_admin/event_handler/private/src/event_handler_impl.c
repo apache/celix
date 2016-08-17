@@ -51,11 +51,20 @@ celix_status_t eventHandlerCreate(bundle_context_pt context, event_handler_pt *e
 	return status;
 }
 
+celix_status_t eventHandlerDestroy(event_handler_pt *event_handler)
+{
+    celix_status_t status = CELIX_SUCCESS;
+    logHelper_stop((*event_handler)->loghelper);
+    logHelper_destroy(&(*event_handler)->loghelper);
+    free(*event_handler);
+    return status;
+}
+
 celix_status_t eventHandlerHandleEvent(event_handler_pt *event_handler, event_pt event) {
 	celix_status_t status = CELIX_SUCCESS;
 	if (event != NULL) {
         const char *topic = event->topic;
-        //status = (*event_handler)->event_admin_service->getTopic(&event, &topic);
+
 		logHelper_log((*event_handler)->loghelper, OSGI_LOGSERVICE_INFO, "[SUB] topic of event: %s.", topic);
 
 		array_list_pt propertyNames;
@@ -83,29 +92,3 @@ celix_status_t eventHandlerHandleEvent(event_handler_pt *event_handler, event_pt
 }
 
 
-celix_status_t eventHandlerAddingService(void * handle, service_reference_pt ref, void **service) {
-	celix_status_t status = CELIX_SUCCESS;
-	event_handler_pt event_handler = handle;
-	status = bundleContext_getService(event_handler->context, ref, service);
-	return status;
-}
-
-celix_status_t eventHandlerAddedService(void * handle, service_reference_pt ref, void * service) {
-	event_handler_pt data = (event_handler_pt) handle;
-	logHelper_log(data->loghelper, OSGI_LOGSERVICE_DEBUG, "[SUB] Event admin added.");
-	data->event_admin_service = (event_admin_service_pt) service;
-	return CELIX_SUCCESS;
-}
-
-celix_status_t eventHandlerModifiedService(void * handle, service_reference_pt ref, void * service) {
-	event_handler_pt data = (event_handler_pt) handle;
-	logHelper_log(data->loghelper, OSGI_LOGSERVICE_DEBUG, "[SUB] Event admin modified.");
-	return CELIX_SUCCESS;
-}
-
-celix_status_t eventHandlerRemovedService(void * handle, service_reference_pt ref, void * service) {
-	event_handler_pt data = (event_handler_pt) handle;
-    logHelper_log(data->loghelper, OSGI_LOGSERVICE_DEBUG, "[SUB] Event admin removed.");
-	data->event_admin_service = NULL;
-	return CELIX_SUCCESS;
-}

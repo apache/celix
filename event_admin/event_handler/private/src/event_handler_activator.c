@@ -33,7 +33,6 @@ static const char * const EVENT_HANDLER_NAME = "demo";
 struct activator {
 	event_handler_service_pt event_handler_service;
 	service_registration_pt registration;
-	service_tracker_pt eventAdminTracker;
 };
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
@@ -73,17 +72,8 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
     properties_set(properties, (char *) EVENT_TOPIC, (const char *) "log/error/eventpublishers/event");
 
 	event_handler_service_pt event_handler_service = activator->event_handler_service;
-    bundleContext_registerService(context, (const char *) EVENT_HANDLER_SERVICE, event_handler_service, properties,
+    bundleContext_registerService(context, (char *) EVENT_HANDLER_SERVICE, event_handler_service, properties,
                                   &activator->registration);
-
-    /*if (status == CELIX_SUCCESS) {
-        service_tracker_customizer_pt customizer = NULL;
-        service_tracker_pt tracker = NULL;
-        serviceTrackerCustomizer_create(activator->event_handler_service->event_handler, eventHandlerAddingService, eventHandlerAddedService, eventHandlerModifiedService, eventHandlerRemovedService, &customizer);
-        serviceTracker_create(context, (const char *) EVENT_ADMIN_NAME, customizer, &tracker);
-        activator->eventAdminTracker = tracker;
-        serviceTracker_open(tracker);
-    }*/
 	return status;
 }
 
@@ -91,14 +81,13 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	celix_status_t status = CELIX_SUCCESS;
     struct activator *data = userData;
     serviceRegistration_unregister(data->registration);
-    //serviceTracker_close(data->tracker);
-    //status = logHelper_stop(data->loghelper);
-    //logHelper_destroy(&data->loghelper);
 	return status;
 }
 
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
+    struct activator *data = userData;
+    eventHandlerDestroy(&(data->event_handler_service)->event_handler);
 	return status;
 }

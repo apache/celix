@@ -79,5 +79,7 @@ celix_status_t eventPublisherRemovedService(void * handle, service_reference_pt 
  */
 celix_status_t eventPublisherStop(event_publisher_pt *event_publisher);
 
+celix_status_t eventPublisherDestroy(event_publisher_pt *event_publisher);
+
 void *produceEvents(void *handle);
 #endif /* EVENT_PUBLISHER_H_ */

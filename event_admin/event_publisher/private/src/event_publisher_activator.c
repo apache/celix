@@ -47,7 +47,6 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 	status = eventPublisherCreate(context, &eventpublisher);
 	if(status == CELIX_SUCCESS) {
 		activator->event_publisher = eventpublisher;
-
 	}
 
 	return status;
@@ -56,16 +55,14 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator * data = (struct activator *) userData;
-
-
 	service_tracker_customizer_pt cust = NULL;
-		service_tracker_pt tracker = NULL;
-		data->context = context;
-		serviceTrackerCustomizer_create(data->event_publisher, eventPublisherAddingService, eventPublisherAddedService, eventPublisherModifiedService, eventPublisherRemovedService, &cust);
-		serviceTracker_create(context, (char *) EVENT_ADMIN_NAME, cust, &tracker);
-		data->tracker = tracker;
+    service_tracker_pt tracker = NULL;
+    data->context = context;
+    serviceTrackerCustomizer_create(data->event_publisher, eventPublisherAddingService, eventPublisherAddedService, eventPublisherModifiedService, eventPublisherRemovedService, &cust);
+    serviceTracker_create(context, (char *) EVENT_ADMIN_NAME, cust, &tracker);
+    data->tracker = tracker;
 
-		serviceTracker_open(tracker);
+    serviceTracker_open(tracker);
 
 	eventPublisherStart(&data->event_publisher);
 	return status;
@@ -81,6 +78,8 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
-
+	struct activator * data = (struct activator *) userData;
+	serviceTracker_destroy(data->tracker);
+    eventPublisherDestroy(&data->event_publisher);
 	return status;
 }

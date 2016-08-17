@@ -37,7 +37,6 @@ struct activator {
 	service_registration_pt registration;
 	service_tracker_pt tracker;
 	bundle_context_pt context;
-	log_helper_pt loghelper;
 };
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
@@ -50,7 +49,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 		status = CELIX_BUNDLE_EXCEPTION;
 	}else {
 		activator->registration = NULL;
-		logHelper_create(context, &activator->loghelper);
+
 
 		*userData = activator;
 		event_admin_pt event_admin = NULL;
@@ -58,12 +57,11 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 		status = eventAdmin_create(context, &event_admin);
 		if(status == CELIX_SUCCESS){
 			activator->event_admin = event_admin;
-			event_admin_service = calloc(1, sizeof(event_admin_service));
+			event_admin_service = calloc(1, sizeof(*event_admin_service));
 			if(!event_admin_service){
 				status = CELIX_ENOMEM;
 			} else {
 				event_admin->context = context;
-				event_admin->loghelper = &activator->loghelper;
 				event_admin_service->eventAdmin = event_admin;
 				event_admin_service->postEvent = eventAdmin_postEvent;
 				event_admin_service->sendEvent = eventAdmin_sendEvent;
@@ -77,6 +75,11 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 				event_admin_service->matches = eventAdmin_matches;
 				event_admin_service->toString = eventAdmin_toString;
 
+				service_tracker_customizer_pt cust = NULL;
+				service_tracker_pt tracker = NULL;
+				serviceTrackerCustomizer_create(event_admin_service->eventAdmin, eventAdmin_addingService, eventAdmin_addedService, eventAdmin_modifiedService, eventAdmin_removedService, &cust);
+				serviceTracker_create(context, (char *) EVENT_HANDLER_SERVICE, cust, &tracker);
+				activator->tracker = tracker;
 			}
 		}
 		activator->event_admin_service = event_admin_service;
@@ -90,24 +93,15 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator *activator = userData;
 	event_admin_service_pt event_admin_service = NULL;
+	properties_pt properties = NULL;
 
 	if(status == CELIX_SUCCESS) {
 		struct activator * data = (struct activator *) userData;
-		service_tracker_customizer_pt cust = NULL;
-		service_tracker_pt tracker = NULL;
 		data->context = context;
-
-		serviceTrackerCustomizer_create(data->event_admin_service->eventAdmin, eventAdmin_addingService, eventAdmin_addedService, eventAdmin_modifiedService, eventAdmin_removedService, &cust);
-		serviceTracker_create(context, (char *) EVENT_HANDLER_SERVICE, cust, &tracker);
-
-		data->tracker = tracker;
-
-		serviceTracker_open(tracker);
-		properties_pt properties = NULL;
+		serviceTracker_open(data->tracker);
 		properties = properties_create();
 		event_admin_service = activator->event_admin_service;
 		bundleContext_registerService(context, (char *) EVENT_ADMIN_NAME, event_admin_service, properties, &activator->registration);
-		logHelper_start(activator->loghelper);
 	}
 	return status;
 }
@@ -117,18 +111,18 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	struct activator * data =  userData;
     serviceRegistration_unregister(data->registration);
 	serviceTracker_close(data->tracker);
-	status = logHelper_stop(data->loghelper);
-    logHelper_destroy(&data->loghelper);
-
 	return status;
 }
 
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
-    //stop  struct activator *activator = userData;
-
-    // free(activator);
+	struct activator * data =  userData;
+	event_admin_pt event_admin = data->event_admin;
+	event_admin_service_pt event_admin_service = data->event_admin_service;
+	eventAdmin_destroy(&event_admin);
+	free(event_admin_service);
+	serviceTracker_destroy(data->tracker);
 
 	return status;
 }
