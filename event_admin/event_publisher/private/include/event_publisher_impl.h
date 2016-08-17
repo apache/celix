@@ -47,6 +47,7 @@ struct event_publisher {
 	bool running;
 	bool eventAdminAdded;
 	celix_thread_t sender;
+    celix_thread_mutex_t *eventAdminAvailility;
 	bundle_context_pt context;
 	log_helper_pt loghelper;
 };

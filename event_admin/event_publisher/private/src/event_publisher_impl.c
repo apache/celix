@@ -43,6 +43,7 @@ celix_status_t eventPublisherCreate(bundle_context_pt context, event_publisher_p
         (*event_publisher)->running = false;
         (*event_publisher)->context = context;
         (*event_publisher)->sender = celix_thread_default;
+        (*event_publisher)->eventAdminAvailility = calloc(1, sizeof(celix_thread_mutex_t));
         logHelper_create(context, &(*event_publisher)->loghelper);
     }
     return status;
@@ -53,13 +54,14 @@ celix_status_t eventPublisherStart(event_publisher_pt *event_publisher) {
 	(*event_publisher)->running = true;
     logHelper_start((*event_publisher)->loghelper);
     status = celixThread_create(&(*event_publisher)->sender, NULL, produceEvents, &(*event_publisher));
+    celixThreadMutex_create((*event_publisher)->eventAdminAvailility,NULL);
     if(status != CELIX_SUCCESS)
     {
         printf("failed to create thread\n");
     }
     else
     {
-       printf("trhead created \n");
+       printf("thread created \n");
     }
     return status;
 }
@@ -80,39 +82,24 @@ celix_status_t eventPublisherDestroy(event_publisher_pt *event_publisher)
 }
 
 void *produceEvents(void *handle) {
-    int i =0;
     event_publisher_pt *event_publisher = handle;
     while ((*event_publisher)->running ) {
 
-        if((*event_publisher)->eventAdminAdded) {
+        if((*event_publisher)->eventAdminAdded && celixThreadMutex_tryLock((*event_publisher)->eventAdminAvailility) == 0) {
             event_admin_service_pt *event_admin_service = &(*event_publisher)->event_admin_service;
             event_admin_pt event_admin = (*event_admin_service)->eventAdmin;
             if (event_admin_service != NULL) {
                 event_pt event;
                 properties_pt props = properties_create();
-                properties_set(props, "This is a key", "this is a value");
-                printf("create event\n");
+                properties_set(props, "Error ", "No Error, Just testing");
                 (*event_admin_service)->createEvent(event_admin, "log/error/eventpublishers/event", props, &event);
-                printf("post event\n");
                 (*event_admin_service)->postEvent(event_admin, event);
-                printf("send event\n");
                 (*event_admin_service)->sendEvent(event_admin, event);
-
-            } else {
-                printf("could not send event\n");
             }
+            celixThreadMutex_unlock((*event_publisher)->eventAdminAvailility);
         }
-        else
-        {
-            printf("No event admin\n");
-        }
-        for (i=0;i<10000000; i++){
-            continue;
-        }
+        usleep(1*10000);
     }
-    printf("end of thread\n");
-
-
     return CELIX_SUCCESS;
 }
 
@@ -128,9 +115,11 @@ celix_status_t eventPublisherAddingService(void * handle, service_reference_pt r
 celix_status_t eventPublisherAddedService(void * handle, service_reference_pt ref, void * service) {
     event_publisher_pt data = (event_publisher_pt) handle;
 	logHelper_log(data->loghelper, OSGI_LOGSERVICE_DEBUG, "[PUB] Event admin added.");
-    printf(" added event admin");
+    printf(" added event admin\n");
+    celixThreadMutex_lock(data->eventAdminAvailility);
     data->event_admin_service = (event_admin_service_pt) service;
     data->eventAdminAdded = true;
+    celixThreadMutex_unlock(data->eventAdminAvailility);
 	return CELIX_SUCCESS;
 }
 
@@ -143,9 +132,10 @@ celix_status_t eventPublisherModifiedService(void * handle, service_reference_pt
 celix_status_t eventPublisherRemovedService(void * handle, service_reference_pt ref, void * service) {
 	event_publisher_pt data = (event_publisher_pt) handle;
 	logHelper_log(data->loghelper, OSGI_LOGSERVICE_DEBUG, "[PUB] Event admin removed.");
-
+    celixThreadMutex_lock(data->eventAdminAvailility);
     data->event_admin_service = NULL;
     data->eventAdminAdded = false;
+    celixThreadMutex_unlock(data->eventAdminAvailility);
 	return CELIX_SUCCESS;
 }
 
