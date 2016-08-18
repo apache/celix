@@ -42,11 +42,16 @@
 #include "event_admin.h"
 #include "log_helper.h"
 
+
 struct event_admin {
-        hash_map_pt channels;
-        array_list_pt event_handlers;
-        bundle_context_pt context;
-        log_helper_pt *loghelper;
+    hash_map_pt channels;
+    array_list_pt event_handlers;
+    bundle_context_pt context;
+    log_helper_pt *loghelper;
+    linked_list_pt eventList;
+    celix_thread_t eventListProcessor;
+    celix_thread_mutex_t *eventListLock;
+    bool eventAdminRunning;
 };
 typedef struct channel *channel_t;
 struct channel {
@@ -64,6 +69,9 @@ struct channel {
  */
 celix_status_t eventAdmin_create( bundle_context_pt context, event_admin_pt *event_admin);
 
+celix_status_t eventAdmin_start(event_admin_pt *event_admin);
+
+celix_status_t eventAdmin_stop(event_admin_pt *event_admin);
 
 celix_status_t eventAdmin_destroy(event_admin_pt *event_admin);
 
@@ -165,5 +173,7 @@ celix_status_t eventAdmin_hashCode(event_pt *event, int *hashCode);
 celix_status_t eventAdmin_matches( event_pt *event);
 celix_status_t eventAdmin_toString( event_pt *event, char *eventString);
 
+celix_status_t processEvent(event_admin_pt event_admin, event_pt event);
 
+void *eventProcessor(void *handle);
 #endif /* EVENT_ADMIN_IMPL_H_ */

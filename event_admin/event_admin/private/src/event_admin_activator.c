@@ -101,7 +101,9 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 		serviceTracker_open(data->tracker);
 		properties = properties_create();
 		event_admin_service = activator->event_admin_service;
+		eventAdmin_start(&event_admin_service->eventAdmin);
 		bundleContext_registerService(context, (char *) EVENT_ADMIN_NAME, event_admin_service, properties, &activator->registration);
+
 	}
 	return status;
 }
@@ -111,6 +113,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	struct activator * data =  userData;
     serviceRegistration_unregister(data->registration);
 	serviceTracker_close(data->tracker);
+	eventAdmin_stop(&data->event_admin_service->eventAdmin);
 	return status;
 }
 

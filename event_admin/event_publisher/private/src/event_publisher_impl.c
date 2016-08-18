@@ -55,14 +55,6 @@ celix_status_t eventPublisherStart(event_publisher_pt *event_publisher) {
     logHelper_start((*event_publisher)->loghelper);
     status = celixThread_create(&(*event_publisher)->sender, NULL, produceEvents, &(*event_publisher));
     celixThreadMutex_create((*event_publisher)->eventAdminAvailility,NULL);
-    if(status != CELIX_SUCCESS)
-    {
-        printf("failed to create thread\n");
-    }
-    else
-    {
-       printf("thread created \n");
-    }
     return status;
 }
 
@@ -91,14 +83,15 @@ void *produceEvents(void *handle) {
             if (event_admin_service != NULL) {
                 event_pt event;
                 properties_pt props = properties_create();
-                properties_set(props, "Error ", "No Error, Just testing");
+                properties_set(props, "Error ", "No Error, Just testing ");
+
                 (*event_admin_service)->createEvent(event_admin, "log/error/eventpublishers/event", props, &event);
                 (*event_admin_service)->postEvent(event_admin, event);
-                (*event_admin_service)->sendEvent(event_admin, event);
+                //  (*event_admin_service)->sendEvent(event_admin, event);
             }
             celixThreadMutex_unlock((*event_publisher)->eventAdminAvailility);
         }
-        usleep(1*10000);
+        usleep(1 * 1000000);
     }
     return CELIX_SUCCESS;
 }
