@@ -52,13 +52,13 @@ struct event_admin {
     celix_thread_t eventListProcessor;
     celix_thread_mutex_t *eventListLock;
     bool eventAdminRunning;
+    celix_thread_mutex_t *topicLock;
 };
 typedef struct channel *channel_t;
 struct channel {
         char *topic;
         hash_map_pt eventHandlers;///array list containing all listeners subscribed to the channel
-       // hash_map_pt channels;
-       // apr_thread_mutex_t *channelLock;
+    celix_thread_mutex_t *channelLock;
 
 };
 /**
@@ -120,14 +120,6 @@ celix_status_t eventAdmin_findHandlersByTopic(event_admin_pt event_admin, const 
  */
 celix_status_t eventAdmin_createEventChannelsByEventHandler(event_handler_service_pt event_handler_service,
                                                             const char *topic, channel_t *channel);
-/**
- * @desc mutex functions for the channels
- * @param event_admin_pt event_admin. the event admin instance.
- * @param char *topic. the topic for which the channels need to be locked or unlocked
- */
-celix_status_t eventAdmin_lockHandlersList(event_admin_pt event_admin, const char *topic);
-
-celix_status_t eventAdmin_releaseHandersList(event_admin_pt event_admin, const char *topic);
 
 /**
  * @desc create an event
@@ -175,5 +167,6 @@ celix_status_t eventAdmin_toString( event_pt *event, char *eventString);
 
 celix_status_t processEvent(event_admin_pt event_admin, event_pt event);
 
+celix_status_t eventAdmin_unlockTopic(event_admin_pt event_admin, const char *topic);
 void *eventProcessor(void *handle);
 #endif /* EVENT_ADMIN_IMPL_H_ */
