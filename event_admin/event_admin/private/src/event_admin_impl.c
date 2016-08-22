@@ -44,6 +44,7 @@ celix_status_t eventAdmin_create(bundle_context_pt context, event_admin_pt *even
         (*event_admin)->context =context;
         (*event_admin)->eventListLock = calloc(1, sizeof(celix_thread_mutex_t));
         (*event_admin)->eventListProcessor = celix_thread_default;
+        (*event_admin)->topicLock = calloc(1, sizeof(celix_thread_mutex_t));
         (*event_admin)->eventAdminRunning = false;
         linkedList_create(&(*event_admin)->eventList);//
 
@@ -56,6 +57,7 @@ celix_status_t eventAdmin_start(event_admin_pt *event_admin) {
     celix_status_t status = CELIX_SUCCESS;
     status = celixThread_create(&(*event_admin)->eventListProcessor, NULL, eventProcessor, &(*event_admin));
     celixThreadMutex_create((*event_admin)->eventListLock, NULL);
+    celixThreadMutex_create((*event_admin)->topicLock, NULL);
     (*event_admin)->eventAdminRunning = true;
     return status;
 }
@@ -148,7 +150,6 @@ celix_status_t processEvent(event_admin_pt event_admin, event_pt event) {
 
     array_list_pt event_handlers;
     arrayList_create(&event_handlers);
-    //eventAdmin_lockHandlersList(event_admin, topic);
     status = eventAdmin_findHandlersByTopic(event_admin, topic, event_handlers);
     if (status == CELIX_SUCCESS) {
         array_list_iterator_pt handlers_iterator = arrayListIterator_create(event_handlers);
@@ -158,11 +159,15 @@ celix_status_t processEvent(event_admin_pt event_admin, event_pt event) {
             event_handler_service->handle_event(&event_handler_service->event_handler, event);
         }
     }
-    //eventAdmin_releaseHandersList(event_admin, topic);
     return status;
 }
 celix_status_t eventAdmin_sendEvent(event_admin_pt event_admin, event_pt event) {
-    return processEvent(event_admin, event);
+    celix_status_t status = CELIX_SUCCESS;
+    status = processEvent(event_admin, event);
+    const char *topic;
+    eventAdmin_getTopic(&event, &topic);
+    status = eventAdmin_unlockTopic(event_admin, topic);
+    return status;
 }
 
 celix_status_t eventAdmin_findHandlersByTopic(event_admin_pt event_admin, const char *topic,
@@ -201,6 +206,9 @@ celix_status_t eventAdmin_unlockTopic(event_admin_pt event_admin, const char *to
 celix_status_t eventAdmin_createEventChannels(event_admin_pt *event_admin, const char *topic,
 											  event_handler_service_pt event_handler_service) {
 	celix_status_t status = CELIX_SUCCESS;
+    do {
+        status = celixThreadMutex_tryLock((*event_admin)->topicLock);
+    } while (status != 0);
     channel_t channel = hashMap_get((*event_admin)->channels, topic);
 	if (channel == NULL) {
 		//create channel
@@ -219,6 +227,7 @@ celix_status_t eventAdmin_createEventChannels(event_admin_pt *event_admin, const
     if (channel) {
         hashMap_put(channel->eventHandlers, &event_handler_service, event_handler_service);
     }
+    status = celixThreadMutex_unlock((*event_admin)->topicLock);
 
 	return status;
 
@@ -251,7 +260,15 @@ celix_status_t eventAdmin_modifiedService(void * handle, service_reference_pt re
 
 celix_status_t eventAdmin_removedService(void * handle, service_reference_pt ref, void * service) {
 	celix_status_t status = CELIX_SUCCESS;
-	//event_admin_pt  event_admin = handle;
+    event_admin_pt event_admin = handle;
+    do {
+        status = celixThreadMutex_tryLock(event_admin->topicLock);
+    } while (status != 0);
+    const char *topic = NULL;
+    serviceReference_getProperty(ref, (const char *) EVENT_TOPIC, &topic);
+    channel_t channel = hashMap_get(event_admin->channels, topic);
+    hashMap_remove(channel->eventHandlers, &service);
+    status = celixThreadMutex_unlock(event_admin->topicLock);
 	//hashMap_clear(event_admin->)
 	/*event_admin_pt event_admin = (event_admin_pt) handle;
 	logHelper_log(*event_admin->loghelper, OSGI_LOGSERVICE_ERROR, "Event admin Removed %p", service);

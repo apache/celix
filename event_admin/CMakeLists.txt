@@ -34,6 +34,5 @@ if(EVENT_ADMIN)
 	add_deploy(event_publisher_consumer
 			NAME "event_publisher_consumer"
 			GROUP "event_publisher"
-			BUNDLES event_admin event_publisher event_handler shell_tui shell log_writer log_service )
-            #BUNDLES event_publisher shell_tui shell log_writer log_service )
+			BUNDLES event_publisher event_handler event_admin shell_tui shell log_writer log_service)
 endif(EVENT_ADMIN)

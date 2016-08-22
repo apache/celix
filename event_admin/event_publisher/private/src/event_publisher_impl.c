@@ -87,7 +87,7 @@ void *produceEvents(void *handle) {
 
                 (*event_admin_service)->createEvent(event_admin, "log/error/eventpublishers/event", props, &event);
                 (*event_admin_service)->postEvent(event_admin, event);
-                //  (*event_admin_service)->sendEvent(event_admin, event);
+                (*event_admin_service)->sendEvent(event_admin, event);
             }
             celixThreadMutex_unlock((*event_publisher)->eventAdminAvailility);
         }
@@ -106,13 +106,16 @@ celix_status_t eventPublisherAddingService(void * handle, service_reference_pt r
 }
 
 celix_status_t eventPublisherAddedService(void * handle, service_reference_pt ref, void * service) {
+    celix_status_t status = CELIX_SUCCESS;
     event_publisher_pt data = (event_publisher_pt) handle;
 	logHelper_log(data->loghelper, OSGI_LOGSERVICE_DEBUG, "[PUB] Event admin added.");
-    printf(" added event admin\n");
-    celixThreadMutex_lock(data->eventAdminAvailility);
+    do {
+        status = celixThreadMutex_tryLock(data->eventAdminAvailility);
+    } while (status != 0);
     data->event_admin_service = (event_admin_service_pt) service;
     data->eventAdminAdded = true;
     celixThreadMutex_unlock(data->eventAdminAvailility);
+
 	return CELIX_SUCCESS;
 }
 
@@ -123,9 +126,12 @@ celix_status_t eventPublisherModifiedService(void * handle, service_reference_pt
 }
 
 celix_status_t eventPublisherRemovedService(void * handle, service_reference_pt ref, void * service) {
+    celix_status_t status = CELIX_SUCCESS;
 	event_publisher_pt data = (event_publisher_pt) handle;
 	logHelper_log(data->loghelper, OSGI_LOGSERVICE_DEBUG, "[PUB] Event admin removed.");
-    celixThreadMutex_lock(data->eventAdminAvailility);
+    do {
+        status = celixThreadMutex_tryLock(data->eventAdminAvailility);
+    } while (status != 0);
     data->event_admin_service = NULL;
     data->eventAdminAdded = false;
     celixThreadMutex_unlock(data->eventAdminAvailility);
