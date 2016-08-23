@@ -47,7 +47,6 @@ struct event_admin {
     hash_map_pt channels;
     array_list_pt event_handlers;
     bundle_context_pt context;
-    log_helper_pt *loghelper;
     linked_list_pt eventList;
     celix_thread_t eventListProcessor;
     celix_thread_mutex_t *eventListLock;
@@ -56,8 +55,8 @@ struct event_admin {
 };
 typedef struct channel *channel_t;
 struct channel {
-        char *topic;
-        hash_map_pt eventHandlers;///array list containing all listeners subscribed to the channel
+    char *topic;
+    hash_map_pt eventHandlers;///array list containing all listeners subscribed to the channel
     celix_thread_mutex_t *channelLock;
 
 };

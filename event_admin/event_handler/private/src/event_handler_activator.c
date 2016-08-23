@@ -69,7 +69,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	properties_pt properties = NULL;
 	properties = properties_create();
     properties_set(properties, (char *) EVENT_HANDLER_SERVICE, (const char *) EVENT_HANDLER_NAME);
-    properties_set(properties, (char *) EVENT_TOPIC, (const char *) "log/error/eventpublishers/event");
+    properties_set(properties, (char *) EVENT_TOPIC, (const char *) "log/error");
 
 	event_handler_service_pt event_handler_service = activator->event_handler_service;
     bundleContext_registerService(context, (char *) EVENT_HANDLER_SERVICE, event_handler_service, properties,

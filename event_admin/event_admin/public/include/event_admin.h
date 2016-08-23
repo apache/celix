@@ -30,7 +30,7 @@
 
 #include "listener_hook_service.h"
 
-#define EVENT_ADMIN_NAME "event_admin"
+static const char *const EVENT_ADMIN_NAME = "org.osgi.service.event.EventAdmin";
 typedef struct event_admin *event_admin_pt;
 typedef struct event_admin_service *event_admin_service_pt;
 

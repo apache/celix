@@ -23,7 +23,7 @@ include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 
 add_bundle(event_admin
-    VERSION 0.0.0
+		VERSION 0.0.1
 	SOURCES 
 		private/src/event_admin_activator.c
 		private/src/event_admin_impl.c

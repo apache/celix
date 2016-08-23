@@ -57,7 +57,6 @@ celix_status_t eventHandlerDestroy(event_handler_pt *event_handler)
     logHelper_stop((*event_handler)->loghelper);
     logHelper_destroy(&(*event_handler)->loghelper);
     free(*event_handler);
-    printf("event handler clean\n");
     return status;
 }
 

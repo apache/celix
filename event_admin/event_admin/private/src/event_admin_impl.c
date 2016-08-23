@@ -78,12 +78,6 @@ celix_status_t eventAdmin_destroy(event_admin_pt *event_admin) {
     return status;
 }
 
-celix_status_t eventAdmin_getEventHandlersByChannel(bundle_context_pt context, const char * serviceName, array_list_pt *eventHandlers) {
-	celix_status_t status = CELIX_SUCCESS;
-	//celix_status_t status = bundleContext_getServiceReferences(context, serviceName, NULL, eventHandlers);
-	return status;
-}
-
 celix_status_t eventAdmin_postEvent(event_admin_pt event_admin, event_pt event) {
     bool added = false;
     while (event_admin->eventAdminRunning && added == false) {
@@ -92,7 +86,6 @@ celix_status_t eventAdmin_postEvent(event_admin_pt event_admin, event_pt event) 
             celixThreadMutex_unlock(event_admin->eventListLock);
             added = true;
         }
-
     }
     return CELIX_SUCCESS;
 }

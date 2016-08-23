@@ -85,7 +85,7 @@ void *produceEvents(void *handle) {
                     properties_pt props = properties_create();
                     properties_set(props, "Error ", "No Error, Just testing ");
 
-                    (*event_admin_service)->createEvent(event_admin, "log/error/eventpublishers/event", props, &event);
+                    (*event_admin_service)->createEvent(event_admin, "log/error", props, &event);
                     (*event_admin_service)->postEvent(event_admin, event);
                     (*event_admin_service)->sendEvent(event_admin, event);
                 }

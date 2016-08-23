@@ -28,7 +28,8 @@
 #define EVENT_HANDLER_H_
 #include "event_admin.h"
 #include "properties.h"
-static const char * const EVENT_HANDLER_SERVICE = "service.event.handler";
+
+static const char *const EVENT_HANDLER_SERVICE = "org.osgi.service.event.EventHandler";
 
 typedef struct event_handler_service *event_handler_service_pt;
 typedef struct event_handler *event_handler_pt; //ADT
