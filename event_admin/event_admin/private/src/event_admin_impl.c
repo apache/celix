@@ -118,17 +118,22 @@ void *eventProcessor(void *handle) {
         }
         if (event != NULL) {
             status = processEvent((*eventAdminPt), event);
-            if (status == CELIX_SUCCESS) {
-                const char *topic;
+            const char *topic;
 
-                eventAdmin_getTopic(&event, &topic);
+            eventAdmin_getTopic(&event, &topic);
+            if (status == CELIX_SUCCESS) {
+
                 eventAdmin_unlockTopic((*eventAdminPt), topic);
                 event = NULL;
 
 
             } else {
+                do {
+                    status = celixThreadMutex_tryLock((*eventAdminPt)->eventListLock);
+                } while (status != 0);
                 //processing event unsuccesfull since topic is locked. put event back into list for later processing.
-                eventAdmin_postEvent(*eventAdminPt, event);
+                linkedList_addFirst((*eventAdminPt)->eventList, event);
+                celixThreadMutex_unlock((*eventAdminPt)->eventListLock);
             }
         }
 
