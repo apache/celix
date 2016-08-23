@@ -114,6 +114,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
     serviceRegistration_unregister(data->registration);
 	serviceTracker_close(data->tracker);
 	eventAdmin_stop(&data->event_admin_service->eventAdmin);
+	printf("event admin stopped\n");
 	return status;
 }
 

@@ -70,9 +70,12 @@ celix_status_t eventAdmin_stop(event_admin_pt *event_admin)
 
 celix_status_t eventAdmin_destroy(event_admin_pt *event_admin) {
 	celix_status_t status = CELIX_SUCCESS;
+    status = celixThread_join((*event_admin)->eventListProcessor, NULL);
+
     arrayList_destroy((*event_admin)->event_handlers);
 	free(*event_admin);
-	return status;
+
+    return status;
 }
 
 celix_status_t eventAdmin_getEventHandlersByChannel(bundle_context_pt context, const char * serviceName, array_list_pt *eventHandlers) {
@@ -269,9 +272,5 @@ celix_status_t eventAdmin_removedService(void * handle, service_reference_pt ref
     channel_t channel = hashMap_get(event_admin->channels, topic);
     hashMap_remove(channel->eventHandlers, &service);
     status = celixThreadMutex_unlock(event_admin->topicLock);
-	//hashMap_clear(event_admin->)
-	/*event_admin_pt event_admin = (event_admin_pt) handle;
-	logHelper_log(*event_admin->loghelper, OSGI_LOGSERVICE_ERROR, "Event admin Removed %p", service);
-	printf("Event admin Removed %p", service);*/
 	return status;
 }
