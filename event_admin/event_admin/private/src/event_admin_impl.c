@@ -82,7 +82,17 @@ celix_status_t eventAdmin_postEvent(event_admin_pt event_admin, event_pt event) 
     bool added = false;
     while (event_admin->eventAdminRunning && added == false) {
         if (celixThreadMutex_tryLock(event_admin->eventListLock) == 0) {
-            linkedList_addLast(event_admin->eventList, event);
+            //linkedList_addLast(event_admin->eventList, event);
+            array_list_pt event_handlers;
+            array_list_pt event_and_handlers;
+            const char *topic;
+            eventAdmin_getTopic(&event, &topic);
+            arrayList_create(&event_and_handlers);
+            arrayList_create(&event_handlers);
+            eventAdmin_findHandlersByTopic(event_admin, topic, event_handlers);
+            arrayList_addIndex(event_and_handlers, 0, event);
+            arrayList_addIndex(event_and_handlers, 1, event_handlers);
+            linkedList_addLast(event_admin->eventList, event_and_handlers);
             celixThreadMutex_unlock(event_admin->eventListLock);
             added = true;
         }
@@ -94,6 +104,9 @@ void *eventProcessor(void *handle) {
     celix_status_t status = CELIX_SUCCESS;
     event_admin_pt *eventAdminPt = handle;
     event_pt event = NULL;
+    array_list_pt event_and_handlers;
+
+    arrayList_create(&event_and_handlers);
     int waitcounter = 1;
     while ((*eventAdminPt)->eventAdminRunning) {
         if (celixThreadMutex_tryLock((*eventAdminPt)->eventListLock) == 0) {
@@ -104,7 +117,7 @@ void *eventProcessor(void *handle) {
                     waitcounter = 1;
                 }
             } else {
-                event = linkedList_removeFirst((*eventAdminPt)->eventList);
+                event_and_handlers = linkedList_removeFirst((*eventAdminPt)->eventList);
                 waitcounter = 1;
 
             }
@@ -116,8 +129,19 @@ void *eventProcessor(void *handle) {
                 waitcounter = 1;
             }
         }
-        if (event != NULL) {
-            status = processEvent((*eventAdminPt), event);
+        if (arrayList_isEmpty(event_and_handlers) == false) {
+            event = arrayList_get(event_and_handlers, 0);
+            array_list_pt event_handlers;
+            arrayList_create(&event_handlers);
+            event_handlers = arrayList_get(event_and_handlers, 1);
+            array_list_iterator_pt handlers_iterator = arrayListIterator_create(event_handlers);
+            while (arrayListIterator_hasNext(handlers_iterator)) {
+                event_handler_service_pt event_handler_service = (event_handler_service_pt) arrayListIterator_next(
+                        handlers_iterator);
+                if (event_handler_service != NULL) {
+                    event_handler_service->handle_event(&event_handler_service->event_handler, event);
+                }
+            }
             const char *topic;
 
             eventAdmin_getTopic(&event, &topic);
