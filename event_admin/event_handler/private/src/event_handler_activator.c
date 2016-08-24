@@ -48,7 +48,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 
     status = eventHandlerCreate(context, &event_handler);
     if (status == CELIX_SUCCESS) {
-        event_handler_service = calloc(1, sizeof(event_handler_service));
+        event_handler_service = calloc(1, sizeof(*event_handler_service));
         if (!event_handler_service) {
             status = CELIX_ENOMEM;
         } else {

@@ -101,7 +101,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 		serviceTracker_open(data->tracker);
 		properties = properties_create();
 		event_admin_service = activator->event_admin_service;
-		eventAdmin_start(&event_admin_service->eventAdmin);
+		eventAdmin_start(event_admin_service->eventAdmin);
 		bundleContext_registerService(context, (char *) EVENT_ADMIN_NAME, event_admin_service, properties, &activator->registration);
 
 	}
@@ -113,7 +113,7 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	struct activator * data =  userData;
     serviceRegistration_unregister(data->registration);
 	serviceTracker_close(data->tracker);
-	eventAdmin_stop(&data->event_admin_service->eventAdmin);
+	eventAdmin_stop(data->event_admin_service->eventAdmin);
 	printf("event admin stopped\n");
 	return status;
 }
@@ -124,9 +124,11 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt contex
 	struct activator * data =  userData;
 	event_admin_pt event_admin = data->event_admin;
 	event_admin_service_pt event_admin_service = data->event_admin_service;
-	eventAdmin_destroy(&event_admin);
+	eventAdmin_destroy(event_admin);
 	free(event_admin_service);
 	serviceTracker_destroy(data->tracker);
+
+    free(data);
 
 	return status;
 }

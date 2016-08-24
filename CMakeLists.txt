@@ -81,7 +81,7 @@ add_subdirectory(shell)
 add_subdirectory(log_writer)
 add_subdirectory(log_service)
 
-add_subdirectory(event_admin)# event_admin is unstable
+add_subdirectory(event_admin)
 add_subdirectory(dependency_manager)
 add_subdirectory(dependency_manager_cxx)
 #add_subdirectory(scr) scr still needs APR

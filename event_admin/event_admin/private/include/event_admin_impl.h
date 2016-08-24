@@ -49,10 +49,11 @@ struct event_admin {
     bundle_context_pt context;
     linked_list_pt eventList;
     celix_thread_t eventListProcessor;
-    celix_thread_mutex_t *eventListLock;
+    celix_thread_mutex_t eventListLock;
     bool eventAdminRunning;
-    celix_thread_mutex_t *topicLock;
+    celix_thread_mutex_t topicLock;
 };
+
 typedef struct channel *channel_t;
 struct channel {
     char *topic;
@@ -60,19 +61,20 @@ struct channel {
     celix_thread_mutex_t *channelLock;
 
 };
+
 /**
  * @desc Create event an event admin and put it in the event_admin parameter.
  * @param apr_pool_t *pool. Pointer to the apr pool
  * @param bundle_context_pt context. Pointer to the bundle context.
  * @param event_admin_pt *event_admin. The event admin result.
  */
-celix_status_t eventAdmin_create( bundle_context_pt context, event_admin_pt *event_admin);
+celix_status_t eventAdmin_create(bundle_context_pt context, event_admin_pt *event_admin);
 
-celix_status_t eventAdmin_start(event_admin_pt *event_admin);
+celix_status_t eventAdmin_start(event_admin_pt event_admin);
 
-celix_status_t eventAdmin_stop(event_admin_pt *event_admin);
+celix_status_t eventAdmin_stop(event_admin_pt event_admin);
 
-celix_status_t eventAdmin_destroy(event_admin_pt *event_admin);
+celix_status_t eventAdmin_destroy(event_admin_pt event_admin);
 
 /**
  * @desc Post event. sends the event to the handlers in async.
@@ -94,10 +96,10 @@ celix_status_t eventAdmin_sendEvent(event_admin_pt event_admin, event_pt event);
  * @param service_reference_pt ref. Pointer to the service reference. Needed to get the service
  * @param void **service Pointer to the service. Needed to use the service.
  */
-celix_status_t eventAdmin_addingService(void * handle, service_reference_pt ref, void **service);
-celix_status_t eventAdmin_addedService(void * handle, service_reference_pt ref, void * service);
-celix_status_t eventAdmin_modifiedService(void * handle, service_reference_pt ref, void * service);
-celix_status_t eventAdmin_removedService(void * handle, service_reference_pt ref, void * service) ;
+celix_status_t eventAdmin_addingService(void* handle, service_reference_pt ref, void **service);
+celix_status_t eventAdmin_addedService(void* handle, service_reference_pt ref, void * service);
+celix_status_t eventAdmin_modifiedService(void* handle, service_reference_pt ref, void * service);
+celix_status_t eventAdmin_removedService(void* handle, service_reference_pt ref, void * service) ;
 /*
  * end functions for service tracker
  */
@@ -133,36 +135,36 @@ celix_status_t eventAdmin_createEvent(event_admin_pt event_admin, const char *to
  * @param char *property. the key for the property to check
  * @param bool *result. the result.
  */
-celix_status_t eventAdmin_containsProperty( event_pt *event, char *property, bool *result);
+celix_status_t eventAdmin_containsProperty(event_pt event, char *property, bool *result);
 /**
  * @desc checks if an event is equal to the second event.
  * @param event_pt *event, event to compare to
  * @param event_pt *event, the event to be compared
  * @param bool *result. the result true if equal.
  */
-celix_status_t eventAdmin_event_equals( event_pt *event, event_pt *compare, bool *result);
+celix_status_t eventAdmin_event_equals(event_pt event, event_pt compare, bool *result);
 /**
  * @desc gets a property from the event.
  * @param event_pt *event. the event to get the property from
  * @param char *propertyKey the key of the property to get
  * @param char **propertyValue. the result param will contain the property if it exists in the event.
  */
-celix_status_t eventAdmin_getProperty(event_pt *event, char *propertyKey, const char **propertyValue);
+celix_status_t eventAdmin_getProperty(event_pt event, char *propertyKey, const char **propertyValue);
 /**
  * @desc gets all property names from the event
  * @param event_pt *event. the event to get the property names from
  * @param array_list_pt *names. will contain the keys
  */
-celix_status_t eventAdmin_getPropertyNames( event_pt *event, array_list_pt *names);
+celix_status_t eventAdmin_getPropertyNames(event_pt event, array_list_pt *names);
 /**
  * @desc gets the topic from an event
  * @param event_pt *event. the event to get the topic from
  * @param char **topic, result pointer will contain the topic.
  */
-celix_status_t eventAdmin_getTopic(event_pt *event, const char **topic);
-celix_status_t eventAdmin_hashCode(event_pt *event, int *hashCode);
-celix_status_t eventAdmin_matches( event_pt *event);
-celix_status_t eventAdmin_toString( event_pt *event, char *eventString);
+celix_status_t eventAdmin_getTopic(event_pt event, const char **topic);
+celix_status_t eventAdmin_hashCode(event_pt event, int *hashCode);
+celix_status_t eventAdmin_matches(event_pt event);
+celix_status_t eventAdmin_toString(event_pt event, char *eventString);
 
 celix_status_t processEvent(event_admin_pt event_admin, event_pt event);
 

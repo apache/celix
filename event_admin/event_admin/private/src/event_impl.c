@@ -51,12 +51,12 @@ celix_status_t eventAdmin_createEvent(event_admin_pt event_admin, const char *to
 	return status;
 }
 
-celix_status_t eventAdmin_containsProperty( event_pt *event, char *property, bool *result){
+celix_status_t eventAdmin_containsProperty(event_pt event, char *property, bool *result){
 	celix_status_t status = CELIX_SUCCESS;
-	if((*event)==NULL || property == NULL){
+	if(event==NULL || property == NULL){
 		status = CELIX_BUNDLE_EXCEPTION;
 	}else {
-		const char *propertyValue = properties_get((*event)->properties, property);
+		const char *propertyValue = properties_get(event->properties, property);
 		if(propertyValue == NULL){
 			(*result)= false;
 		}else {
@@ -66,13 +66,13 @@ celix_status_t eventAdmin_containsProperty( event_pt *event, char *property, boo
 	return status;
 }
 
-celix_status_t eventAdmin_event_equals( event_pt *event, event_pt *compare, bool *result){
+celix_status_t eventAdmin_event_equals(event_pt event, event_pt compare, bool *result){
 	celix_status_t status = CELIX_SUCCESS;
 	if(event == compare){
 		(*result) = true;
 	}else {
-		int sizeofEvent = hashMap_size((*event)->properties);
-		int sizeofCompare = hashMap_size((*compare)->properties);
+		int sizeofEvent = hashMap_size(event->properties);
+		int sizeofCompare = hashMap_size(compare->properties);
 		if(sizeofEvent == sizeofCompare){
 			(*result) = true;
 		}else {
@@ -82,16 +82,16 @@ celix_status_t eventAdmin_event_equals( event_pt *event, event_pt *compare, bool
 	return status;
 }
 
-celix_status_t eventAdmin_getProperty(event_pt *event, char *propertyKey, const char **propertyValue) {
+celix_status_t eventAdmin_getProperty(event_pt event, char *propertyKey, const char **propertyValue) {
 	celix_status_t status = CELIX_SUCCESS;
-	*propertyValue = properties_get((*event)->properties,propertyKey);
+	*propertyValue = properties_get(event->properties,propertyKey);
 
 	return status;
 }
 
-celix_status_t eventAdmin_getPropertyNames( event_pt *event, array_list_pt *names){
+celix_status_t eventAdmin_getPropertyNames(event_pt event, array_list_pt *names){
 	celix_status_t status = CELIX_SUCCESS;
-	properties_pt properties =  (*event)->properties;
+	properties_pt properties =  event->properties;
 	if (hashMap_size(properties) > 0) {
 		hash_map_iterator_pt iterator = hashMapIterator_create(properties);
 		while (hashMapIterator_hasNext(iterator)) {
@@ -103,26 +103,26 @@ celix_status_t eventAdmin_getPropertyNames( event_pt *event, array_list_pt *name
 	return status;
 }
 
-celix_status_t eventAdmin_getTopic(event_pt *event, const char **topic) {
+celix_status_t eventAdmin_getTopic(event_pt event, const char **topic) {
 	celix_status_t status = CELIX_SUCCESS;
 	const char *value;
-	value = properties_get((*event)->properties,(char*) EVENT_TOPIC);
+	value = properties_get(event->properties,(char*) EVENT_TOPIC);
 	*topic = value;
 
 	return status;
 }
 
-celix_status_t eventAdmin_hashCode( event_pt *event, int *hashCode){
+celix_status_t eventAdmin_hashCode(event_pt event, int *hashCode){
 	celix_status_t status = CELIX_SUCCESS;
 	return status;
 }
 
-celix_status_t eventAdmin_matches( event_pt *event){
+celix_status_t eventAdmin_matches(event_pt event){
 	celix_status_t status = CELIX_SUCCESS;
 	return status;
 }
 
-celix_status_t eventAdmin_toString( event_pt *event, char *eventString){
+celix_status_t eventAdmin_toString(event_pt event, char *eventString){
 	celix_status_t status = CELIX_SUCCESS;
 	return status;
 }

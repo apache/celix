@@ -71,9 +71,9 @@ celix_status_t eventHandlerHandleEvent(event_handler_pt *event_handler, event_pt
 		arrayList_create(&propertyNames);
         properties_pt properties = event->properties;
         if (hashMap_size(properties) > 0) {
-            hash_map_iterator_pt iterator = hashMapIterator_create(properties);
-            while (hashMapIterator_hasNext(iterator)) {
-                hash_map_entry_pt entry = hashMapIterator_nextEntry(iterator);
+            hash_map_iterator_t iterator = hashMapIterator_construct(properties);
+            while (hashMapIterator_hasNext(&iterator)) {
+                hash_map_entry_pt entry = hashMapIterator_nextEntry(&iterator);
                 char *key = hashMapEntry_getKey(entry);
                 arrayList_add(propertyNames, key);
             }
@@ -87,6 +87,8 @@ celix_status_t eventHandlerHandleEvent(event_handler_pt *event_handler, event_pt
 
 			logHelper_log((*event_handler)->loghelper, OSGI_LOGSERVICE_INFO, "[SUB] Key: %s value: %s.", key, value);
 		}
+        arrayListIterator_destroy(propertyIter);
+        arrayList_destroy(propertyNames);
 	}
 	return status;
 }

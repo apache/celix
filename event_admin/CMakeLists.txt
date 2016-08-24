@@ -23,16 +23,15 @@ if(EVENT_ADMIN)
 	add_subdirectory(event_publisher)
 
 	add_deploy(event_admin_service
-			NAME "event_admin_service"
-			GROUP "event_admin"
-			BUNDLES event_admin shell_tui shell log_writer log_service
-			)
-	add_deploy(event_handler_consumer
-			NAME "event_handler_consumer"
-			GROUP "event_handler"
-			BUNDLES event_handler shell_tui shell log_writer log_service)
+	    NAME "event_admin_service"
+	    GROUP "event_admin"
+	    BUNDLES event_admin shell_tui shell log_writer log_service
+	)
+
 	add_deploy(event_publisher_consumer
-			NAME "event_publisher_consumer"
-			GROUP "event_publisher"
-			BUNDLES event_publisher event_handler event_admin shell_tui shell log_writer log_service)
+	    NAME "example"
+	    GROUP "event_admin"
+	    BUNDLES event_publisher event_handler event_admin shell_tui shell log_writer log_service
+    )
+
 endif(EVENT_ADMIN)
