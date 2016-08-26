@@ -40,7 +40,7 @@
 #include "endpoint_descriptor_writer.h"
 
 // defines how often the webserver is restarted (with an increased port number)
-#define MAX_NUMBER_OF_RESTARTS 	5
+#define MAX_NUMBER_OF_RESTARTS 	15
 #define DEFAULT_SERVER_THREADS "1"
 
 #define CIVETWEB_REQUEST_NOT_HANDLED 0
@@ -79,6 +79,9 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 	const char *ip = NULL;
 	char *detectedIp = NULL;
 	const char *path = NULL;
+	const char *retries = NULL;
+
+	int max_ep_num = MAX_NUMBER_OF_RESTARTS;
 
 	*server = malloc(sizeof(struct endpoint_discovery_server));
 	if (!*server) {
@@ -137,6 +140,15 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 		path = DEFAULT_SERVER_PATH;
 	}
 
+	bundleContext_getProperty(context, DISCOVERY_SERVER_MAX_EP, &retries);
+	if (retries != NULL) {
+		errno=0;
+		max_ep_num = strtol(retries,NULL,10);
+		if(errno!=0 || max_ep_num<=0){
+			max_ep_num=MAX_NUMBER_OF_RESTARTS;
+		}
+	}
+
 	(*server)->path = format_path(path);
 
 	const struct mg_callbacks callbacks = {
@@ -176,7 +188,7 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 
 		}
 
-	} while(((*server)->ctx == NULL) && (port_counter < MAX_NUMBER_OF_RESTARTS));
+	} while(((*server)->ctx == NULL) && (port_counter < max_ep_num));
 
 	(*server)->port = strdup(port);
 
