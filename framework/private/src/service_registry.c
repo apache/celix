@@ -35,10 +35,10 @@
 #include "service_reference_private.h"
 #include "framework_private.h"
 
-#ifdef NDEBUG
-#define CHECK_DELETED_REFERENCES false
-#else
+#ifdef DEBUG
 #define CHECK_DELETED_REFERENCES true
+#else
+#define CHECK_DELETED_REFERENCES false
 #endif
 
 static celix_status_t serviceRegistry_registerServiceInternal(service_registry_pt registry, bundle_pt bundle, const char* serviceName, const void * serviceObject, properties_pt dictionary, bool isFactory, service_registration_pt *registration);

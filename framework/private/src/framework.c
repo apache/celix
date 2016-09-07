@@ -160,6 +160,17 @@ static void framework_loggerInit(void) {
     logger->logFunction = frameworkLogger_log;
 }
 
+/* Note: RTLD_NODELETE flag is needed in order to obtain a readable valgrind output.
+ * Valgrind output is written when the application terminates, so symbols resolving
+ * is impossible if dlopened libraries are unloaded before the application ends.
+ * RTLD_NODELETE closes the dynamic library but does not unload it from the memory space,
+ * so that symbols will be available until the application terminates.
+ * On the other hand, since the memory mapping is not destroyed after dlclose, calling again
+ * dlopen for the same library clashes with the previous mapping: this breaks the memory layout
+ * in case the user, for example, uninstall (dlclose) and install the bundle again (dlopen)
+ * So, RTLD_NODELETE should be used only for debugging purposes.
+ * Refer to dlopen manpage for additional details about libraries dynamic loading.
+ */
 #ifdef _WIN32
     #define handle_t HMODULE
     #define fw_openLibrary(path) LoadLibrary(path)
@@ -176,10 +187,10 @@ static void framework_loggerInit(void) {
     }
 #else
     #define handle_t void *
-    #ifdef ANDROID
-    #define fw_openLibrary(path) dlopen(path, RTLD_LAZY|RTLD_LOCAL)
+    #if defined(DEBUG) && !defined(ANDROID)
+	#define fw_openLibrary(path) dlopen(path, RTLD_LAZY|RTLD_LOCAL|RTLD_NODELETE)
     #else
-    #define fw_openLibrary(path) dlopen(path, RTLD_LAZY|RTLD_LOCAL|RTLD_NODELETE)
+	#define fw_openLibrary(path) dlopen(path, RTLD_LAZY|RTLD_LOCAL)
     #endif
     #define fw_closeLibrary(handle) dlclose(handle)
     #define fw_getSymbol(handle, name) dlsym(handle, name)

@@ -38,6 +38,8 @@ ENDIF()
 IF(UNIX AND NOT ANDROID)
     SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -Wall -Werror -fPIC ${CMAKE_C_FLAGS}")
     SET(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}") #TODO enable -Wall -Werror -> warning in cpputest
+    SET(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG")
+    SET(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG")
 ENDIF()
 IF(UNIX AND NOT APPLE) 
 	SET(CMAKE_C_FLAGS "-pthread ${CMAKE_C_FLAGS}")

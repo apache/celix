@@ -149,6 +149,8 @@ celix_status_t inspectCommand_printExportedServices(bundle_context_pt context, a
 										fprintf(outStream, "%s = %s\n", key, value);
 									}
 
+									free(keys);
+
 //									objectClass = properties_get(props, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
 //									sprintf(line, "ObjectClass = %s\n", objectClass);
 									if ((j + 1) < arrayList_size(refs)) {
@@ -158,6 +160,10 @@ celix_status_t inspectCommand_printExportedServices(bundle_context_pt context, a
 							}
 						}
 					}
+				}
+
+				if(refs!=NULL){
+					arrayList_destroy(refs);
 				}
 			}
 		}
@@ -255,6 +261,10 @@ celix_status_t inspectCommand_printImportedServices(bundle_context_pt context, a
                             }
                         }
                     }
+                }
+
+                if(refs!=NULL){
+                	arrayList_destroy(refs);
                 }
             }
         }
