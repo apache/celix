@@ -1315,7 +1315,7 @@ int mg_read(struct mg_connection *conn, void *buf, size_t len) {
 
   assert(conn->content_len >= conn->consumed_content);
   DEBUG_TRACE(("%p %zu %ld %ld", buf, len,
-               conn->content_len, conn->consumed_content));
+               (long)conn->content_len, (long)conn->consumed_content));
   nread = 0;
   if (strcmp(conn->request_info.request_method, "POST") == 0 &&
       conn->consumed_content < conn->content_len) {
