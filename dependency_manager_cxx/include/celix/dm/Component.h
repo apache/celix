@@ -31,6 +31,7 @@
 namespace celix { namespace dm {
 
     class BaseComponent {
+    private:
         bundle_context_pt context {nullptr};
         std::string name {};
         dm_component_pt cCmp {nullptr};
@@ -52,8 +53,10 @@ namespace celix { namespace dm {
 
     template<class T>
     class Component : public BaseComponent {
-        std::shared_ptr<T> instance = {nullptr};
+    private:
+        std::shared_ptr<T> instance {nullptr};
         std::list<T> refInstance {};
+        std::list<std::shared_ptr<BaseServiceDependency>> dependencies {};
 
         void (T::*initFp)() = {};
         void (T::*startFp)() = {};
@@ -62,6 +65,20 @@ namespace celix { namespace dm {
     public:
         Component(const bundle_context_pt context, std::string name);
         virtual ~Component();
+
+        /**
+         * Creates a Component using the provided bundle context.
+         * Will use new(nothrow) if exceptions are disabled.
+         * @return newly created DM Component or nullptr
+         */
+        static Component<T>* create(bundle_context_pt, std::string name = {});
+
+        /**
+         * Wether the component is valid. Invalid component can occurs when no new components can be created and
+         * exceptions are not allowed.
+         * @return
+         */
+        bool isValid() const;
 
         /**
          * Get the component instance. If no instance is explicitly set with setInstance than a instance will be create
@@ -86,16 +103,6 @@ namespace celix { namespace dm {
          */
         Component<T>& setInstance(T&& inst);
 
-
-        /**
-         * Adds a C++ interface to provide as service to the Celix framework.
-         * The interface name will be inferred using the I template.
-         *
-         * @param version The version of the interface (e.g. "1.0.0"), can be an empty string
-         * @return the DM Component reference for chaining (fluent API)
-         */
-        template<class I> Component<T>& addInterface(const std::string version);
-
         /**
          * Adds a C++ interface to provide as service to the Celix framework.
          * The interface name will be inferred using the I template.
@@ -104,7 +111,7 @@ namespace celix { namespace dm {
          * @param properties To (meta) properties to provide with the service
          * @return the DM Component reference for chaining (fluent API)
          */
-        template<class I> Component<T>& addInterface(const std::string version, const Properties properties);
+        template<class I> Component<T>& addInterface(const std::string version, const Properties properties = {});
 
         /**
          * Adds a C++ interface to provide as service to the Celix framework.
@@ -114,7 +121,7 @@ namespace celix { namespace dm {
          * @param properties To (meta) properties to provide with the service
          * @return the DM Component reference for chaining (fluent API)
          */
-        Component<T>& addInterface(const std::string serviceName, const std::string version, const Properties properties);
+        Component<T>& addInterface(const std::string serviceName, const std::string version = {}, const Properties properties = {});
 
         /**
          * Adds a C interface to provide as service to the Celix framework.
@@ -124,28 +131,19 @@ namespace celix { namespace dm {
          * @param version The version of the interface (e.g. "1.0.0"), can be an empty string
          * @param properties To (meta) properties to provide with the service
          */
-        Component<T>& addCInterface(const void* svc, const std::string serviceName, const std::string version);
+        Component<T>& addCInterface(const void* svc, const std::string serviceName, const std::string version = {}, const Properties properties = {});
+
 
         /**
-         * Adds a C interface to provide as service to the Celix framework.
+         * Creates and adds a C++ service dependency to the component
          *
-         * @param svc The service struct
-         * @param serviceName The service name to use
-         * @param version The version of the interface (e.g. "1.0.0"), can be an empty string
-         * @param properties To (meta) properties to provide with the service
-         */
-        Component<T>& addCInterface(const void* svc, const std::string serviceName, const std::string version, const Properties properties);
-
-        /**
-         * Adds a C++ service dependency to the component
-         *
-         * @return the DM Component reference for chaining (fluent API)
+         * @return the Service Dependency reference for chaining (fluent API)
          */
         template<class I>
-        Component<T>& add(ServiceDependency<T,I>& dep);
+        ServiceDependency<T,I>& createServiceDependency();
 
         /**
-         * Removes a C++ service dependency to the component
+         Creates and adds a C++ service dependency to the component
          *
          * @return the DM Component reference for chaining (fluent API)
          */
@@ -158,7 +156,7 @@ namespace celix { namespace dm {
          * @return the DM Component reference for chaining (fluent API)
          */
         template<typename I>
-        Component<T>& add(CServiceDependency<T,I>& dep);
+        CServiceDependency<T,I>& createCServiceDependency();
 
         /**
          * Removes a C service dependency to the component
@@ -185,7 +183,6 @@ namespace celix { namespace dm {
             void (T::*deinit)()
         );
     };
-
 }}
 
 #include "celix/dm/Component_Impl.h"

@@ -106,7 +106,7 @@ namespace celix { namespace dm {
          * @param filter The (additional) filter to use (e.g. "(location=front)")
          * @return the C service dependency reference for chaining (fluent API)
          */
-        CServiceDependency<T,I>& setCService(const std::string serviceName, const std::string serviceVersionRange, const std::string filter);
+        CServiceDependency<T,I>& setCService(const std::string serviceName, const std::string serviceVersionRange = {}, const std::string filter = {});
 
         /**
          * Specify if the service dependency is required. Default is false

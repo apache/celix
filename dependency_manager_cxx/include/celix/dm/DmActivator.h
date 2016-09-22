@@ -46,40 +46,14 @@ namespace celix { namespace dm {
         virtual void deinit(DependencyManager& manager) {};
 
         /**
-         * Create a new DM Component for a component of type T
+         * Creates and adds a new DM Component for a component of type T.
+         * If inst is provided the DM Component will manage provided instance.
+         * If inst is not provided (nullptr) the DM Component will lazy contsruct a new instance if needed.
          *
          * @return Returns a reference to the DM Component
          */
         template< class T>
-        Component<T>& createComponent() { return manager.createComponent<T>(); }
-
-        /**
-         * Adds a DM Component to the Dependency Manager
-         */
-        template<class T>
-        void add(Component<T>& cmp) { manager.add(cmp); }
-
-        /**
-        * Removes a DM Component to the Dependency Manager
-        */
-        template<class T>
-        void remove(Component<T>& cmp) { manager.remove(cmp); }
-
-        /**
-         * Create a new C++ service dependency for a component of type T with an interface of type I
-         *
-         * @return Returns a reference to the service dependency
-         */
-        template<class T, class I>
-        ServiceDependency<T,I>& createServiceDependency() { return manager.createServiceDependency<T,I>(); }
-
-        /**
-         * Create a new C service dependency for a component of type T.
-         *
-         * @return Returns a reference to the service dependency
-         */
-        template<class T, typename I>
-        CServiceDependency<T,I>& createCServiceDependency() { return manager.createCServiceDependency<T,I>(); }
+        Component<T>& createComponent(std::shared_ptr<T> inst = {nullptr}) { return manager.createComponent<T>(inst); }
 
         /**
          * The static method to create a new DM activator.

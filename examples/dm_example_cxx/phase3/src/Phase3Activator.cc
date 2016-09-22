@@ -29,17 +29,15 @@ DmActivator* DmActivator::create(DependencyManager& mng) {
 }
 
 void Phase3Activator::init(DependencyManager& manager) {
-    add(createComponent<Phase3Cmp>()
-        //NOTE no setInstance -> lazy initialization using the default constructor
-        .setCallbacks(nullptr, &Phase3Cmp::start, &Phase3Cmp::stop, nullptr)
-        .add(createServiceDependency<Phase3Cmp,IPhase2>()
+    Component<Phase3Cmp>& cmp = createComponent<Phase3Cmp>() //NOTE no setInstance -> lazy initialization using the default constructor
+            .setCallbacks(nullptr, &Phase3Cmp::start, &Phase3Cmp::stop, nullptr);
+
+    cmp.createServiceDependency<IPhase2>()
             .setRequired(true)
-            .setCallbacks(&Phase3Cmp::addPhase2, &Phase3Cmp::removePhase2)
-        )
-        .add(createServiceDependency<Phase3Cmp,IPhase2>()
+            .setCallbacks(&Phase3Cmp::addPhase2, &Phase3Cmp::removePhase2);
+
+    cmp.createServiceDependency<IPhase2>()
              .setRequired(false)
              .setFilter("(&(name=phase2a)(non-existing=*))")
-             .setCallbacks(&Phase3Cmp::setPhase2a)
-        )
-    );
+             .setCallbacks(&Phase3Cmp::setPhase2a);
 }

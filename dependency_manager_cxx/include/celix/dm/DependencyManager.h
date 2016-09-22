@@ -35,11 +35,10 @@ extern "C" {
 namespace celix { namespace dm {
 
     class DependencyManager {
+    private:
         bundle_context_pt context = {nullptr};
-        std::list<std::shared_ptr<BaseComponent>> components {};
-        std::list<BaseComponent*> addedComponents {};
+        std::list<std::unique_ptr<BaseComponent>> components {};
         dm_dependency_manager_pt cDepMan {nullptr};
-        std::list<std::shared_ptr<BaseServiceDependency>> dependencies {};
     public:
         DependencyManager(bundle_context_pt context);
         virtual ~DependencyManager();
@@ -48,68 +47,20 @@ namespace celix { namespace dm {
         const dm_dependency_manager_pt cDependencyManager() const;
 
         /**
-         * Create a new DM Component for a component of type T
+         * Creates and adds a new DM Component for a component of type T and instance inst
+         * If inst if nullptr lazy initializion is used.
          *
          * @return Returns a reference to the DM Component
          */
         template<class T>
-        Component<T>& createComponent() {
-            std::shared_ptr<Component<T>> cmp {new Component<T>(this->context, typeName<T>())};
-            this->components.push_back(cmp);
+        Component<T>& createComponent(std::shared_ptr<T> inst) {
+            Component<T>* cmp = Component<T>::create(this->context);
+            //TODO handle nullptr component, how?
+            if (inst.get() != nullptr) {
+                cmp->setInstance(inst);
+            }
+            this->components.push_back(std::unique_ptr<BaseComponent> {cmp});
             return *cmp;
-        }
-
-        /**
-         * Adds a DM Component to the Dependency Manager
-         */
-        template<class T>
-        void add(Component<T>& cmp) {
-            addedComponents.push_back(&cmp);
-        }
-
-        /**
-         * Removes a DM Component to the Dependency Manager
-         */
-        template<class T>
-        void remove(Component<T>& cmp) {
-            addedComponents.remove(&cmp);
-        }
-
-        /**
-         * Create a new C++ service dependency for a component of type T with an interface of type I
-         *
-         * @return Returns a reference to the service dependency
-         */
-        template<class T, class I>
-        ServiceDependency<T,I>& createServiceDependency() {
-#ifdef __EXCEPTIONS
-            auto dep = std::shared_ptr<ServiceDependency<T,I>> {new ServiceDependency<T,I>()};
-#else
-            auto dep = std::shared_ptr<ServiceDependency<T,I>> {new(std::nothrow) ServiceDependency<T,I>()};
-            //TODO handle nullptr, how? Note that in modern operating system a null return for a alloc is virtually impossible.
-#endif
-
-            dependencies.push_back(dep);
-            return *dep;
-        };
-
-
-        /**
-         * Create a new C service dependency for a component of type T.
-         *
-         * @return Returns a reference to the service dependency
-         */
-        template<class T, typename I>
-        CServiceDependency<T,I>& createCServiceDependency() {
-#ifdef __EXCEPTIONS
-            auto dep = std::shared_ptr<CServiceDependency<T,I>> {new CServiceDependency<T,I>()};
-#else
-            auto dep = std::shared_ptr<CServiceDependency<T,I>> {new(std::nothrow) CServiceDependency<T,I>()};
-            //TODO handle nullptr, how?
-#endif
-
-            dependencies.push_back(dep);
-            return *dep;
         }
 
         /**

@@ -33,18 +33,17 @@ void Phase2Activator::init(DependencyManager& manager) {
     Properties props {};
     props["name"] = "phase2b";
 
-    add(createComponent<Phase2Cmp>()
-        .addInterface<IPhase2>(IPHASE2_VERSION, props)
-        .add(createServiceDependency<Phase2Cmp,IPhase1>()
+    Component<Phase2Cmp>& cmp = createComponent<Phase2Cmp>()
+        .addInterface<IPhase2>(IPHASE2_VERSION, props);
+
+    cmp.createServiceDependency<IPhase1>()
             .setRequired(true)
-            .setCallbacks(&Phase2Cmp::setPhase1)
-        )
-        .add(createCServiceDependency<Phase2Cmp, log_service_t>()
+            .setCallbacks(&Phase2Cmp::setPhase1);
+
+    cmp.createCServiceDependency<log_service_t>()
             .setRequired(false)
-            .setCService(OSGI_LOGSERVICE_NAME, {}, {})
-            .setCallbacks(&Phase2Cmp::setLogService)
-        )
-    );
+            .setCService(OSGI_LOGSERVICE_NAME)
+            .setCallbacks(&Phase2Cmp::setLogService);
 }
 
 void Phase2Activator::deinit(DependencyManager& manager) {

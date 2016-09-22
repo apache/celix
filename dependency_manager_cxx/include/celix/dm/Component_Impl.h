@@ -30,13 +30,8 @@ template<class T>
 Component<T>::Component(const bundle_context_pt context, std::string name) : BaseComponent(context, name) { }
 
 template<class T>
-Component<T>::~Component() { }
-
-template<class T>
-template<class I>
-Component<T>& Component<T>::addInterface(const std::string version) {
-    Properties props;
-    return addInterface<I>(version, props);
+Component<T>::~Component() {
+    this->dependencies.clear();
 }
 
 template<class T>
@@ -66,11 +61,6 @@ Component<T>& Component<T>::addInterface(const std::string serviceName, const st
 };
 
 template<class T>
-Component<T>& Component<T>::addCInterface(const void* svc, const std::string serviceName, const std::string version) {
-    return this->addCInterface(svc, serviceName, version, Properties());
-};
-
-template<class T>
 Component<T>& Component<T>::addCInterface(const void* svc, const std::string serviceName, const std::string version, const Properties properties) {
     properties_pt cProperties = properties_create();
     properties_set(cProperties, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
@@ -86,48 +76,80 @@ Component<T>& Component<T>::addCInterface(const void* svc, const std::string ser
 
 template<class T>
 template<class I>
-Component<T>& Component<T>::add(ServiceDependency<T,I>& dep) {
-    component_addServiceDependency(cComponent(), dep.cServiceDependency());
-    dep.setComponentInstance(&getInstance());
-    return *this;
+ServiceDependency<T,I>& Component<T>::createServiceDependency() {
+#ifdef __EXCEPTIONS
+    auto dep = std::shared_ptr<ServiceDependency<T,I>> {new ServiceDependency<T,I>()};
+#else
+    auto dep = std::shared_ptr<ServiceDependency<T,I>> {new(std::nothrow) ServiceDependency<T,I>()};
+    //TODO handle nullptr, how?
+#endif
+    this->dependencies.push_back(dep);
+    component_addServiceDependency(cComponent(), dep->cServiceDependency());
+    dep->setComponentInstance(&getInstance());
+    return *dep;
 }
 
 template<class T>
 template<class I>
 Component<T>& Component<T>::remove(ServiceDependency<T,I>& dep) {
     component_removeServiceDependency(cComponent(), dep.cServiceDependency());
+    this->dependencies.remove(dep);
     return *this;
 }
 
 template<class T>
 template<typename I>
-Component<T>& Component<T>::add(CServiceDependency<T,I>& dep) {
-    component_addServiceDependency(cComponent(), dep.cServiceDependency());
-    dep.setComponentInstance(&getInstance());
-    return *this;
+CServiceDependency<T,I>& Component<T>::createCServiceDependency() {
+#ifdef __EXCEPTIONS
+    auto dep = std::shared_ptr<CServiceDependency<T,I>> {new CServiceDependency<T,I>()};
+#else
+    auto dep = std::shared_ptr<CServiceDependency<T,I>> {new(std::nothrow) CServiceDependency<T,I>()};
+    //TODO handle nullptr, how?
+#endif
+    this->dependencies.push_back(dep);
+    component_addServiceDependency(cComponent(), dep->cServiceDependency());
+    dep->setComponentInstance(&getInstance());
+    return *dep;
 }
 
 template<class T>
 template<typename I>
 Component<T>& Component<T>::remove(CServiceDependency<T,I>& dep) {
     component_removeServiceDependency(cComponent(), dep.cServiceDependency());
+    this->dependencies.remove(dep);
     return *this;
+}
+
+template<class T>
+Component<T>* Component<T>::create(bundle_context_pt context, std::string name) {
+    std::string n = name.empty() ? typeName<T>() : name;
+#ifdef __EXCEPTIONS
+    Component<T>* cmp = new Component<T>(context, n);
+#else
+    Component<T>* cmp = new(std::nothrow) Component<T>(context, n);
+#endif
+    return cmp;
+}
+
+template<class T>
+bool Component<T>::isValid() const {
+    return this->bundleContext() != nullptr;
 }
 
 template<class T>
 T& Component<T>::getInstance() {
     if (this->refInstance.size() == 1) {
         return refInstance.front();
-    } else {  //TODO check if we can use move??
+    } else {
         if (this->instance.get() == nullptr) {
 #ifdef __EXCEPTIONS
             this->instance = std::shared_ptr<T> {new T()};
 #else
             this->instance = std::shared_ptr<T> {new(std::nothrow) T()};
+
 #endif
-            //TODO check needed, how to handle nullptr ?
         }
-        return *this->instance.get();
+        return *this->instance;
     }
 }
 

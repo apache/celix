@@ -29,12 +29,11 @@ DmActivator* DmActivator::create(DependencyManager& mng) {
 }
 
 void Phase3LockingActivator::init(DependencyManager& manager) {
-    add(createComponent<Phase3LockingCmp>()
+    Component<Phase3LockingCmp>& cmp = createComponent<Phase3LockingCmp>()
         //NOTE no setInstance -> lazy initialization using the default constructor
-        .setCallbacks(nullptr, &Phase3LockingCmp::start, &Phase3LockingCmp::stop, nullptr)
-        .add(createServiceDependency<Phase3LockingCmp,IPhase2>()
+        .setCallbacks(nullptr, &Phase3LockingCmp::start, &Phase3LockingCmp::stop, nullptr);
+
+    cmp.createServiceDependency<IPhase2>()
             .setStrategy(DependencyUpdateStrategy::locking)
-            .setCallbacks(&Phase3LockingCmp::addPhase2, &Phase3LockingCmp::removePhase2)
-        )
-    );
+            .setCallbacks(&Phase3LockingCmp::addPhase2, &Phase3LockingCmp::removePhase2);
 }

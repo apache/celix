@@ -41,7 +41,7 @@ const dm_dependency_manager_pt DependencyManager::cDependencyManager() const {
 }
 
 void DependencyManager::start() {
-    for(BaseComponent* cmp : addedComponents)  {
+    for(std::unique_ptr<BaseComponent>& cmp : components)  {
         dependencyManager_add(cDepMan, cmp->cComponent());
     }
 }
@@ -49,8 +49,6 @@ void DependencyManager::start() {
 void DependencyManager::stop() {
     dependencyManager_removeAllComponents(cDepMan);
     components.clear();
-    addedComponents.clear();
-    dependencies.clear();
 }
 
 
