@@ -22,12 +22,18 @@
 
 using namespace celix::dm;
 
-BaseServiceDependency::BaseServiceDependency() {
-    serviceDependency_create(&this->cServiceDep);
-    serviceDependency_setStrategy(this->cServiceDep, DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND); //NOTE using suspend as default strategy
+BaseServiceDependency::BaseServiceDependency(bool v) : valid{v} {
+    if (this->valid) {
+        serviceDependency_create(&this->cServiceDep);
+        //NOTE using suspend as default strategy
+        serviceDependency_setStrategy(this->cServiceDep,  DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND);
+    }
 }
 
 void BaseServiceDependency::setDepStrategy(DependencyUpdateStrategy strategy) {
+    if (!valid) {
+        return;
+    }
     if (strategy == DependencyUpdateStrategy::locking) {
         serviceDependency_setStrategy(this->cServiceDependency(), DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING);
     } else if (strategy == DependencyUpdateStrategy::suspend) {

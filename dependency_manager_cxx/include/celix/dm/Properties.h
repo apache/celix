@@ -24,7 +24,7 @@
 #include <string>
 
 namespace celix { namespace dm {
-    typedef std::map<std::string, std::string> Properties;
+    using Properties = std::map<std::string, std::string>;
 }}
 
 #endif //CELIX_DM_PROPERTIES_H

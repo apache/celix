@@ -53,13 +53,11 @@ namespace celix { namespace dm {
          * @return Returns a reference to the DM Component
          */
         template<class T>
-        Component<T>& createComponent(std::shared_ptr<T> inst) {
+        Component<T>& createComponent(std::shared_ptr<T> inst = std::shared_ptr<T>{nullptr}) {
             Component<T>* cmp = Component<T>::create(this->context);
-            //TODO handle nullptr component, how?
-            if (inst.get() != nullptr) {
-                cmp->setInstance(inst);
+            if (cmp->isValid()) {
+                this->components.push_back(std::unique_ptr<BaseComponent> {cmp});
             }
-            this->components.push_back(std::unique_ptr<BaseComponent> {cmp});
             return *cmp;
         }
 

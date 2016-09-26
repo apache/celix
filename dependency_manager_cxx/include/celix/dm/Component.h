@@ -71,7 +71,7 @@ namespace celix { namespace dm {
          * Will use new(nothrow) if exceptions are disabled.
          * @return newly created DM Component or nullptr
          */
-        static Component<T>* create(bundle_context_pt, std::string name = {});
+        static Component<T>* create(bundle_context_pt, std::string name = std::string{});
 
         /**
          * Wether the component is valid. Invalid component can occurs when no new components can be created and
@@ -111,7 +111,7 @@ namespace celix { namespace dm {
          * @param properties To (meta) properties to provide with the service
          * @return the DM Component reference for chaining (fluent API)
          */
-        template<class I> Component<T>& addInterface(const std::string version, const Properties properties = {});
+        template<class I> Component<T>& addInterface(const std::string version, const Properties properties = Properties{});
 
         /**
          * Adds a C++ interface to provide as service to the Celix framework.
@@ -121,7 +121,7 @@ namespace celix { namespace dm {
          * @param properties To (meta) properties to provide with the service
          * @return the DM Component reference for chaining (fluent API)
          */
-        Component<T>& addInterface(const std::string serviceName, const std::string version = {}, const Properties properties = {});
+        Component<T>& addInterface(const std::string serviceName, const std::string version = std::string{}, const Properties properties = Properties{});
 
         /**
          * Adds a C interface to provide as service to the Celix framework.
@@ -131,7 +131,7 @@ namespace celix { namespace dm {
          * @param version The version of the interface (e.g. "1.0.0"), can be an empty string
          * @param properties To (meta) properties to provide with the service
          */
-        Component<T>& addCInterface(const void* svc, const std::string serviceName, const std::string version = {}, const Properties properties = {});
+        Component<T>& addCInterface(const void* svc, const std::string serviceName, const std::string version = std::string{}, const Properties properties = Properties{});
 
 
         /**

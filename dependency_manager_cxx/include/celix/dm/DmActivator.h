@@ -53,7 +53,7 @@ namespace celix { namespace dm {
          * @return Returns a reference to the DM Component
          */
         template< class T>
-        Component<T>& createComponent(std::shared_ptr<T> inst = {nullptr}) { return manager.createComponent<T>(inst); }
+        Component<T>& createComponent(std::shared_ptr<T> inst = std::shared_ptr<T>{nullptr}) { return manager.createComponent<T>(inst); }
 
         /**
          * The static method to create a new DM activator.

@@ -27,7 +27,7 @@
 using namespace celix::dm;
 
 template<class T>
-Component<T>::Component(const bundle_context_pt context, std::string name) : BaseComponent(context, name) { }
+Component<T>::Component(const bundle_context_pt context, std::string name) : BaseComponent(context, name) {}
 
 template<class T>
 Component<T>::~Component() {
@@ -80,8 +80,11 @@ ServiceDependency<T,I>& Component<T>::createServiceDependency() {
 #ifdef __EXCEPTIONS
     auto dep = std::shared_ptr<ServiceDependency<T,I>> {new ServiceDependency<T,I>()};
 #else
+    static ServiceDependency<T,I> invalidDep{false};
     auto dep = std::shared_ptr<ServiceDependency<T,I>> {new(std::nothrow) ServiceDependency<T,I>()};
-    //TODO handle nullptr, how?
+    if (dep == nullptr) {
+        return invalidDep;
+    }
 #endif
     this->dependencies.push_back(dep);
     component_addServiceDependency(cComponent(), dep->cServiceDependency());
@@ -103,8 +106,11 @@ CServiceDependency<T,I>& Component<T>::createCServiceDependency() {
 #ifdef __EXCEPTIONS
     auto dep = std::shared_ptr<CServiceDependency<T,I>> {new CServiceDependency<T,I>()};
 #else
+    static CServiceDependency<T,I> invalidDep{false};
     auto dep = std::shared_ptr<CServiceDependency<T,I>> {new(std::nothrow) CServiceDependency<T,I>()};
-    //TODO handle nullptr, how?
+    if (dep == nullptr) {
+        return invalidDep;
+    }
 #endif
     this->dependencies.push_back(dep);
     component_addServiceDependency(cComponent(), dep->cServiceDependency());
@@ -124,9 +130,13 @@ template<class T>
 Component<T>* Component<T>::create(bundle_context_pt context, std::string name) {
     std::string n = name.empty() ? typeName<T>() : name;
 #ifdef __EXCEPTIONS
-    Component<T>* cmp = new Component<T>(context, n);
+    Component<T>* cmp = new Component<T>{context, n};
 #else
+    static Component<T> invalid{nullptr, std::string{}};
     Component<T>* cmp = new(std::nothrow) Component<T>(context, n);
+    if (cmp == nullptr) {
+        cmp = &invalid;
+    }
 #endif
     return cmp;
 }

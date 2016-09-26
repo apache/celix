@@ -45,13 +45,19 @@ namespace celix { namespace dm {
 
     class BaseServiceDependency {
     protected:
+        const bool valid;
         dm_service_dependency_pt cServiceDep {nullptr};
 
         void setDepStrategy(DependencyUpdateStrategy strategy);
     public:
-        BaseServiceDependency();
+        BaseServiceDependency(bool valid);
 
         virtual ~BaseServiceDependency() = default;
+
+        /**
+         * Wether the service dependency is valid.
+         */
+        bool isValid() const { return valid; }
 
         /**
          * Returns the C DM service dependency
@@ -64,7 +70,7 @@ namespace celix { namespace dm {
     protected:
         T* componentInstance {nullptr};
     public:
-        TypedServiceDependency() : BaseServiceDependency() {}
+        TypedServiceDependency(bool valid) : BaseServiceDependency(valid) {}
         virtual ~TypedServiceDependency() = default;
 
         /**
@@ -95,7 +101,7 @@ namespace celix { namespace dm {
 
         void setupService();
     public:
-        CServiceDependency() : TypedServiceDependency<T>() {};
+        CServiceDependency(bool valid = true) : TypedServiceDependency<T>(valid) {};
         virtual ~CServiceDependency() = default;
 
         /**
@@ -106,7 +112,7 @@ namespace celix { namespace dm {
          * @param filter The (additional) filter to use (e.g. "(location=front)")
          * @return the C service dependency reference for chaining (fluent API)
          */
-        CServiceDependency<T,I>& setCService(const std::string serviceName, const std::string serviceVersionRange = {}, const std::string filter = {});
+        CServiceDependency<T,I>& setCService(const std::string serviceName, const std::string serviceVersionRange = std::string{}, const std::string filter = std::string{});
 
         /**
          * Specify if the service dependency is required. Default is false
@@ -183,7 +189,7 @@ namespace celix { namespace dm {
         int invokeCallback(void(T::*fp)(I*), const void* service);
         int invokeCallbackWithProperties(void(T::*fp)(I*, Properties&&), service_reference_pt  ref, const void* service);
     public:
-        ServiceDependency();
+        ServiceDependency(bool valid = true);
         virtual ~ServiceDependency() = default;
 
         /**

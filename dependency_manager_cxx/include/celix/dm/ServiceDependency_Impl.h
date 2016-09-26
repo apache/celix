@@ -34,6 +34,9 @@ CServiceDependency<T,I>& CServiceDependency<T,I>::setCService(const std::string 
 
 template<class T, typename I>
 void CServiceDependency<T,I>::setupService() {
+    if (!this->valid) {
+        return;
+    }
     const char* cversion = this->versionRange.empty() ? nullptr : versionRange.c_str();
     const char* cfilter = filter.empty() ? nullptr : filter.c_str();
     serviceDependency_setService(this->cServiceDependency(), this->name.c_str(), cversion, cfilter);
@@ -41,6 +44,9 @@ void CServiceDependency<T,I>::setupService() {
 
 template<class T, typename I>
 CServiceDependency<T,I>& CServiceDependency<T,I>::setAddLanguageFilter(bool addLang) {
+    if (!this->valid) {
+        *this;
+    }
     serviceDependency_setAddCLanguageFilter(this->cServiceDependency(), addLang);
     this->setupService();
     return *this;
@@ -48,12 +54,18 @@ CServiceDependency<T,I>& CServiceDependency<T,I>::setAddLanguageFilter(bool addL
 
 template<class T, typename I>
 CServiceDependency<T,I>& CServiceDependency<T,I>::setRequired(bool req) {
+    if (!this->valid) {
+        return *this;
+    }
     serviceDependency_setRequired(this->cServiceDependency(), req);
     return *this;
 }
 
 template<class T, typename I>
 CServiceDependency<T,I>& CServiceDependency<T,I>::setStrategy(DependencyUpdateStrategy strategy) {
+    if (!this->valid) {
+        return *this;
+    }
     this->setDepStrategy(strategy);
     return *this;
 }
@@ -98,6 +110,9 @@ CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(
 
 template<class T, typename I>
 void CServiceDependency<T,I>::setupCallbacks() {
+    if (!this->valid) {
+        return;
+    }
 
     int(*cset)(void*,const void*) {nullptr};
     int(*cadd)(void*, const void*) {nullptr};
@@ -186,12 +201,16 @@ int CServiceDependency<T,I>::invokeCallbackWithProperties(void(T::*fp)(const I*,
 }
 
 template<class T, class I>
-ServiceDependency<T,I>::ServiceDependency() : TypedServiceDependency<T>() {
+ServiceDependency<T,I>::ServiceDependency(bool valid) : TypedServiceDependency<T>(valid) {
     setupService();
 };
 
 template<class T, class I>
 void ServiceDependency<T,I>::setupService() {
+    if (!this->valid) {
+        return;
+    }
+
     std::string n = name;
 
     if (n.empty()) {
@@ -352,6 +371,9 @@ int ServiceDependency<T,I>::invokeCallbackWithProperties(void(T::*fp)(I*, Proper
 
 template<class T, class I>
 void ServiceDependency<T,I>::setupCallbacks() {
+    if (!this->valid) {
+        return;
+    }
 
     int(*cset)(void*,const void*) {nullptr};
     int(*cadd)(void*, const void*) {nullptr};
