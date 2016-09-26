@@ -49,6 +49,7 @@ struct topology_manager {
 	bundle_context_pt context;
 
 	celix_thread_mutex_t rsaListLock;
+	celix_thread_mutexattr_t rsaListLockAttr;
 	array_list_pt rsaList;
 
 	celix_thread_mutex_t listenerListLock;
@@ -58,6 +59,7 @@ struct topology_manager {
 	hash_map_pt exportedServices;
 
 	celix_thread_mutex_t importedServicesLock;
+	celix_thread_mutexattr_t importedServicesLockAttr;
 	hash_map_pt importedServices;
 
 	scope_pt scope;
@@ -84,9 +86,16 @@ celix_status_t topologyManager_create(bundle_context_pt context, log_helper_pt l
 
 	arrayList_create(&(*manager)->rsaList);
 
-	celixThreadMutex_create(&(*manager)->rsaListLock, NULL);
+
+	celixThreadMutexAttr_create(&(*manager)->rsaListLockAttr);
+	celixThreadMutexAttr_settype(&(*manager)->rsaListLockAttr, CELIX_THREAD_MUTEX_RECURSIVE);
+	celixThreadMutex_create(&(*manager)->rsaListLock, &(*manager)->rsaListLockAttr);
+
+	celixThreadMutexAttr_create(&(*manager)->importedServicesLockAttr);
+	celixThreadMutexAttr_settype(&(*manager)->importedServicesLockAttr, CELIX_THREAD_MUTEX_RECURSIVE);
+	celixThreadMutex_create(&(*manager)->importedServicesLock, &(*manager)->importedServicesLockAttr);
+
 	celixThreadMutex_create(&(*manager)->exportedServicesLock, NULL);
-	celixThreadMutex_create(&(*manager)->importedServicesLock, NULL);
 	celixThreadMutex_create(&(*manager)->listenerListLock, NULL);
 
 	(*manager)->listenerList = hashMap_create(serviceReference_hashCode, NULL, serviceReference_equals2, NULL);
@@ -119,6 +128,7 @@ celix_status_t topologyManager_destroy(topology_manager_pt manager) {
 
 	celixThreadMutex_unlock(&manager->rsaListLock);
 	celixThreadMutex_destroy(&manager->rsaListLock);
+	celixThreadMutexAttr_destroy(&manager->rsaListLockAttr);
 
 	celixThreadMutex_lock(&manager->exportedServicesLock);
 
@@ -133,6 +143,7 @@ celix_status_t topologyManager_destroy(topology_manager_pt manager) {
 
 	celixThreadMutex_unlock(&manager->importedServicesLock);
 	celixThreadMutex_destroy(&manager->importedServicesLock);
+	celixThreadMutexAttr_destroy(&manager->importedServicesLockAttr);
 
 	scope_scopeDestroy(manager->scope);
 	free(manager);
