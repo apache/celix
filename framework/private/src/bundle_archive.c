@@ -253,9 +253,14 @@ celix_status_t bundleArchive_getId(bundle_archive_pt archive, long *id) {
 		snprintf(bundleId, sizeof(bundleId), "%s/bundle.id", archive->archiveRoot);
 
 		bundleIdFile = fopen(bundleId, "r");
-		fgets(id, sizeof(id), bundleIdFile);
-		fclose(bundleIdFile);
-		sscanf(id, "%ld", &archive->id);
+		if(bundleIdFile!=NULL){
+			fgets(id, sizeof(id), bundleIdFile);
+			fclose(bundleIdFile);
+			sscanf(id, "%ld", &archive->id);
+		}
+		else{
+			status = CELIX_FILE_IO_EXCEPTION;
+		}
 	}
 
 	if (status == CELIX_SUCCESS) {
@@ -277,9 +282,14 @@ celix_status_t bundleArchive_getLocation(bundle_archive_pt archive, const char *
 		snprintf(bundleLocation, sizeof(bundleLocation), "%s/bundle.location", archive->archiveRoot);
 
 		bundleLocationFile = fopen(bundleLocation, "r");
-		fgets(loc, sizeof(loc), bundleLocationFile);
-		fclose(bundleLocationFile);
-		archive->location = strdup(loc);
+		if(bundleLocationFile!=NULL){
+			fgets(loc, sizeof(loc), bundleLocationFile);
+			fclose(bundleLocationFile);
+			archive->location = strdup(loc);
+		}
+		else{
+			status = CELIX_FILE_IO_EXCEPTION;
+		}
 	}
 
 	if (status == CELIX_SUCCESS) {

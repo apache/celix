@@ -52,6 +52,9 @@ void properties_destroy(properties_pt properties) {
 
 properties_pt properties_load(const char* filename) {
 	FILE *file = fopen(filename, "r");
+	if(file==NULL){
+		return NULL;
+	}
 	properties_pt props = properties_loadWithStream(file);
 	fclose(file);
 	return props;
@@ -59,7 +62,7 @@ properties_pt properties_load(const char* filename) {
 
 FRAMEWORK_EXPORT properties_pt properties_loadWithStream(FILE *file) {
 	properties_pt props = NULL;
-	
+
 
 	if (file != NULL ) {
 		char *saveptr;
@@ -72,16 +75,22 @@ FRAMEWORK_EXPORT properties_pt properties_loadWithStream(FILE *file) {
 		file_size = ftell(file);
 		fseek(file, 0, SEEK_SET);
 
-		filebuffer = calloc(file_size + 1, sizeof(char));
-                if(filebuffer) {
-                    fread(filebuffer, sizeof(char), file_size, file);
-                    line = strtok_r(filebuffer, "\n", &saveptr);
-                    while ( line != NULL ) {
-			    parseLine(line, props);
-                            line = strtok_r(NULL, "\n", &saveptr);
-                    }
-                    free(filebuffer);
-                }
+		if(file_size > 0){
+			filebuffer = calloc(file_size + 1, sizeof(char));
+			if(filebuffer) {
+				size_t rs = fread(filebuffer, sizeof(char), file_size, file);
+				if(rs != file_size){
+					fprintf(stderr,"fread read only %lu bytes out of %lu\n",rs,file_size);
+				}
+				filebuffer[file_size]='\0';
+				line = strtok_r(filebuffer, "\n", &saveptr);
+				while ( line != NULL ) {
+					parseLine(line, props);
+					line = strtok_r(NULL, "\n", &saveptr);
+				}
+				free(filebuffer);
+			}
+		}
 	}
 
 	return props;
@@ -163,16 +172,16 @@ const char* properties_getWithDefault(properties_pt properties, const char* key,
 }
 
 void properties_set(properties_pt properties, const char* key, const char* value) {
-    hash_map_entry_pt entry = hashMap_getEntry(properties, key);
-    char* oldValue = NULL;
+	hash_map_entry_pt entry = hashMap_getEntry(properties, key);
+	char* oldValue = NULL;
 	if (entry != NULL) {
-        char* oldKey = hashMapEntry_getKey(entry);
-        oldValue = hashMapEntry_getValue(entry);
-        hashMap_put(properties, oldKey, strndup(value, 1024*10));
+		char* oldKey = hashMapEntry_getKey(entry);
+		oldValue = hashMapEntry_getValue(entry);
+		hashMap_put(properties, oldKey, strndup(value, 1024*10));
 	} else {
-        hashMap_put(properties, strndup(key, 1024*10), strndup(value, 1024*10));
-    }
-    free(oldValue);
+		hashMap_put(properties, strndup(key, 1024*10), strndup(value, 1024*10));
+	}
+	free(oldValue);
 }
 
 static void updateBuffers(char **key, char ** value, char **output, int outputPos, int *key_len, int *value_len) {
@@ -200,20 +209,21 @@ static void parseLine(const char* line, properties_pt props) {
 	char *output = NULL;
 	int key_len = MALLOC_BLOCK_SIZE;
 	int value_len = MALLOC_BLOCK_SIZE;
-	char *key = calloc(1, key_len);
-	char *value = calloc(1, value_len);
 	linePos = 0;
 	precedingCharIsBackslash = false;
 	isComment = false;
 	output = NULL;
 	outputPos = 0;
-	key[0] = '\0';
-	value[0] = '\0';
 
 	//Ignore empty lines
 	if (line[0] == '\n' && line[1] == '\0') {
 		return;
 	}
+
+	char *key = calloc(1, key_len);
+	char *value = calloc(1, value_len);
+	key[0] = '\0';
+	value[0] = '\0';
 
 	while (line[linePos] != '\0') {
 		if (line[linePos] == ' ' || line[linePos] == '\t') {

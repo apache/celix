@@ -27,7 +27,7 @@
 #define IPHASE1_VERSION "1.0.0"
 
 class Phase1Cmp : public IPhase1 {
-    uint32_t counter;
+    uint32_t counter = 0;
 public:
     Phase1Cmp() = default;
     virtual ~Phase1Cmp() = default;

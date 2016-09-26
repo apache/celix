@@ -2546,6 +2546,9 @@ static celix_status_t framework_loadLibraries(framework_pt framework, const char
         if ( (status == CELIX_SUCCESS) && (activator != NULL) && (strcmp(trimmedLib, activator) == 0) ) {
 		    *activatorHandle = handle;
         }
+        else if(handle!=NULL){
+        	fw_closeLibrary(handle);
+        }
 
         token = strtok_r(NULL, ",", &last);
     }

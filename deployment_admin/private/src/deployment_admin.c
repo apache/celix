@@ -457,21 +457,26 @@ celix_status_t deploymentAdmin_download(deployment_admin_pt admin, char * url, c
         int fd = mkstemp(*inputFile);
         if (fd != -1) {
             FILE *fp = fopen(*inputFile, "wb+");
-            curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
-            curl_easy_setopt(curl, CURLOPT_URL, url);
-            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, deploymentAdmin_writeData);
-            curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
-            curl_easy_setopt(curl, CURLOPT_FAILONERROR, true);
-            //curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0);
-            //curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, updateCommand_downloadProgress);
-            res = curl_easy_perform(curl);
+            if(fp!=NULL){
+            	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
+            	curl_easy_setopt(curl, CURLOPT_URL, url);
+            	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, deploymentAdmin_writeData);
+            	curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
+            	curl_easy_setopt(curl, CURLOPT_FAILONERROR, true);
+            	//curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0);
+            	//curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, updateCommand_downloadProgress);
+            	res = curl_easy_perform(curl);
 
-            /* always cleanup */
-            curl_easy_cleanup(curl);
-            fclose(fp);
+            	/* always cleanup */
+            	curl_easy_cleanup(curl);
+            	fclose(fp);
+            }
+            else{
+            	status = CELIX_FILE_IO_EXCEPTION;
+            }
         }
         else{
-		status = CELIX_FILE_IO_EXCEPTION;
+        	status = CELIX_FILE_IO_EXCEPTION;
         }
 	}
 	else{

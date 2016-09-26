@@ -75,7 +75,7 @@ void updateCommand_execute(void *handle, char * line, FILE *outStream, FILE *err
 
 celix_status_t updateCommand_download(bundle_context_pt context, char * url, char **inputFile) {
 	CURL *curl = NULL;
-	CURLcode res = 0;
+	CURLcode res = CURLE_FILE_COULDNT_READ_FILE;
 	curl = curl_easy_init();
 	if (curl) {
 		FILE *fp = NULL;
@@ -84,21 +84,26 @@ celix_status_t updateCommand_download(bundle_context_pt context, char * url, cha
 		int fd = mkstemp(*inputFile);
 		if (fd) {
 		    fp = fopen(*inputFile, "wb+");
-            printf("Temp file: %s\n", *inputFile);
-            curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
-            curl_easy_setopt(curl, CURLOPT_URL, url);
-            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, updateCommand_writeData);
-            curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
-            //curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0);
-            //curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, updateCommand_downloadProgress);
-            res = curl_easy_perform(curl);
-            printf("Error: %d\n", res);
-            /* always cleanup */
-            curl_easy_cleanup(curl);
-            fclose(fp);
+		    if(fp!=NULL){
+		    	printf("Temp file: %s\n", *inputFile);
+		    	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
+		    	curl_easy_setopt(curl, CURLOPT_URL, url);
+		    	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, updateCommand_writeData);
+		    	curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
+		    	//curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0);
+		    	//curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, updateCommand_downloadProgress);
+		    	res = curl_easy_perform(curl);
+		    	fclose(fp);
+		    }
+		    /* always cleanup */
+		    curl_easy_cleanup(curl);
+		    if(fp==NULL){
+		    	return CELIX_FILE_IO_EXCEPTION;
+		    }
 		}
 	}
 	if (res != CURLE_OK) {
+		printf("Error: %d\n", res);
 		*inputFile[0] = '\0';
 		return CELIX_ILLEGAL_STATE;
 	} else {

@@ -33,10 +33,10 @@ struct dm_dependency_activator_base {
     dm_dependency_activator_base(std::shared_ptr<celix::dm::DependencyManager> man, std::shared_ptr<celix::dm::DmActivator> act) : manager(man), activator(act) {}
     bundle_context_pt context {nullptr};
     service_registration_pt reg {nullptr};
-    dm_info_service_t info;
+    dm_info_service_t info {nullptr,nullptr,nullptr};
 
-    std::shared_ptr<celix::dm::DependencyManager> manager;
-    std::shared_ptr<celix::dm::DmActivator> activator;
+    std::shared_ptr<celix::dm::DependencyManager> manager {nullptr};
+    std::shared_ptr<celix::dm::DmActivator> activator {nullptr};
 };
 
 typedef struct dm_dependency_activator_base *dependency_activator_base_pt;
