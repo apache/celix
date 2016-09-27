@@ -99,8 +99,8 @@ ninja
 ```
 
 ##Editing Build options
-With use of CMake Apache Celix makes it possible to edit build options. This enabled users to configure a install location and selecting additional bundles.
-To edit the options use ccmake or cmake-gui. For cmake-gui an additional package install can be neccesary (Fedora: `dnf install cmake-gui`). 
+With use of CMake, Apache Celix makes it possible to edit build options. This enabled users, among other options, to configure a install location and select additional bundles.
+To edit the options use ccmake or cmake-gui. For cmake-gui an additional package install can be necessary (Fedora: `dnf install cmake-gui`). 
 
 ```bash
 cd ${WS}/celix/build

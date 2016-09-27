@@ -28,7 +28,7 @@ DmActivator* DmActivator::create(DependencyManager& mng) {
     return new Phase3Activator(mng);
 }
 
-void Phase3Activator::init(DependencyManager& manager) {
+void Phase3Activator::init() {
     Component<Phase3Cmp>& cmp = createComponent<Phase3Cmp>() //NOTE no setInstance -> lazy initialization using the default constructor
             .setCallbacks(nullptr, &Phase3Cmp::start, &Phase3Cmp::stop, nullptr);
 

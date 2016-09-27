@@ -29,8 +29,8 @@ class Phase1Activator : public DmActivator {
     command_service_t cmd {};
 public:
     Phase1Activator(DependencyManager& mng) : DmActivator(mng) {}
-    virtual void init(DependencyManager& manager);
-    virtual void deinit(DependencyManager& manager);
+    virtual void init();
+    virtual void deinit();
 };
 
 #endif //CELIX_PHASE1ACTIVATOR_H

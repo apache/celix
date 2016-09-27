@@ -82,7 +82,7 @@ celix_status_t bundleActivator_start(void *userData, bundle_context_pt context) 
         return CELIX_ILLEGAL_STATE;
     }
 
-    act->activator->init(*act->manager);
+    act->activator->init();
     act->manager->start();
 
     if (status == CELIX_SUCCESS) {
@@ -120,7 +120,7 @@ celix_status_t bundleActivator_destroy(void *userData, bundle_context_pt context
         return CELIX_ILLEGAL_STATE;
     }
 
-    act->activator->deinit(*act->manager);
+    act->activator->deinit();
     act->manager->stop();
 
     delete act;

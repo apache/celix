@@ -53,7 +53,7 @@ namespace celix { namespace dm {
         std::string result;
 
 #ifdef __GXX_RTTI
-        result = typeid(I);
+        result = typeid(INTERFACE_TYPENAME).name();
         int status = 0;
         char* demangled_name {abi::__cxa_demangle(result.c_str(), NULL, NULL, &status)};
         if(status == 0) {

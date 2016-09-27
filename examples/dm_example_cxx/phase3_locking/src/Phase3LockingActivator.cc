@@ -28,7 +28,7 @@ DmActivator* DmActivator::create(DependencyManager& mng) {
     return new Phase3LockingActivator(mng);
 }
 
-void Phase3LockingActivator::init(DependencyManager& manager) {
+void Phase3LockingActivator::init() {
     Component<Phase3LockingCmp>& cmp = createComponent<Phase3LockingCmp>()
         //NOTE no setInstance -> lazy initialization using the default constructor
         .setCallbacks(nullptr, &Phase3LockingCmp::start, &Phase3LockingCmp::stop, nullptr);

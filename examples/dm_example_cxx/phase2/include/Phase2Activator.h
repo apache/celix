@@ -27,8 +27,8 @@ using namespace celix::dm;
 class Phase2Activator : public DmActivator {
 public:
     Phase2Activator(DependencyManager& mng) : DmActivator(mng) {}
-    virtual void init(DependencyManager& manager);
-    virtual void deinit(DependencyManager& manager);
+    virtual void init();
+    virtual void deinit();
 };
 
 #endif //CELIX_PHASE2AACTIVATOR_H

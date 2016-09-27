@@ -26,24 +26,26 @@ namespace celix { namespace dm {
 
     class DmActivator {
     protected:
-        DependencyManager& manager;
-        DmActivator(DependencyManager& mng) : manager(mng) {}
+        DependencyManager& depMng;
+        DmActivator(DependencyManager& mng) : depMng(mng) {}
     public:
         ~DmActivator() = default;
+
+        DependencyManager& manager() const { return this->depMng; }
 
         /**
          * The init of the DM Activator. Should be overridden by the bundle specific DM activator.
          *
          * @param manager A reference to the  Dependency Manager
          */
-        virtual void init(DependencyManager& manager) {};
+        virtual void init() {};
 
         /**
          * The init of the DM Activator. Can be overridden by the bundle specific DM activator.
          *
          * @param manager A reference to the  Dependency Manager
          */
-        virtual void deinit(DependencyManager& manager) {};
+        virtual void deinit() {};
 
         /**
          * Creates and adds a new DM Component for a component of type T.
@@ -53,7 +55,7 @@ namespace celix { namespace dm {
          * @return Returns a reference to the DM Component
          */
         template< class T>
-        Component<T>& createComponent(std::shared_ptr<T> inst = std::shared_ptr<T>{nullptr}) { return manager.createComponent<T>(inst); }
+        Component<T>& createComponent(std::shared_ptr<T> inst = std::shared_ptr<T>{nullptr}) { return depMng.createComponent<T>(inst); }
 
         /**
          * The static method to create a new DM activator.

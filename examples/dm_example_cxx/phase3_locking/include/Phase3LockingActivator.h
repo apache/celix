@@ -27,7 +27,7 @@ using namespace celix::dm;
 class Phase3LockingActivator : public DmActivator {
 public:
     Phase3LockingActivator(DependencyManager& mng) : DmActivator(mng) {}
-    virtual void init(DependencyManager& manager);
+    virtual void init();
 };
 
 #endif //CELIX_PHASE3LOCKINGAACTIVATOR_H

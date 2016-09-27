@@ -54,22 +54,9 @@ if (DEPENDENCY_MANAGER_CXX)
     #set_target_properties(dependency_manager_cxx_static PROPERTIES SOVERSION 1)
     target_link_libraries(dependency_manager_cxx_static celix_framework)
 
-    #NOTE need to install dep man headers? or depend on install of dependency manager?
-    install(
-        FILES
-            ${DM_DIR}/public/include/dm_activator.h
-            ${DM_DIR}/public/include/dm_component.h
-            ${DM_DIR}/public/include/dm_dependency_manager.h
-            ${DM_DIR}/public/include/dm_service_dependency.h
-            ${DM_DIR}/public/include/dm_info.h
-        DESTINATION
-            include/celix/dependency_manager_cxx
-        COMPONENT
-            dependency_manager_cxx
-    )
     install(
         DIRECTORY
-            include
+            include/celix
         DESTINATION
             include/celix/dependency_manager_cxx
         COMPONENT

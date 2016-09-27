@@ -133,5 +133,4 @@ For more information see:
 
 * [Apache Celix - Building and Installing] (../building/readme.md)
 * [Apache Celix - Getting Started Guide](../getting_started/readme.md)
-* [Apache Celix - Best Practices](../best_practices/readme.md)
 * [Apache Celix - CMake Commands](../cmake_commands/readme.md)

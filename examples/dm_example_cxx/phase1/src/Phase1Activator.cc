@@ -31,7 +31,7 @@ DmActivator* DmActivator::create(DependencyManager& mng) {
     return new Phase1Activator(mng);
 }
 
-void Phase1Activator::init(DependencyManager& manager) {
+void Phase1Activator::init() {
     std::shared_ptr<Phase1Cmp> cmp {new Phase1Cmp()};
 
     Properties cmdProps;
@@ -52,6 +52,6 @@ void Phase1Activator::init(DependencyManager& manager) {
         .setCallbacks(&Phase1Cmp::init, &Phase1Cmp::start, &Phase1Cmp::stop, &Phase1Cmp::deinit);
 }
 
-void Phase1Activator::deinit(DependencyManager& manager) {
+void Phase1Activator::deinit() {
     //nothing to do
 }

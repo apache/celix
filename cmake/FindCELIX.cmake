@@ -24,7 +24,10 @@
 #  CELIX_INCLUDE_DIRS - The Apache Celix include directories
 #  CELIX_LIBRARIES - The libraries needed to use Apache Celix
 #  CELIX_LAUNCHER - The path to the celix launcher
+#
 #  CELIX_BUNDLES_DIR - The path where the Celix provided bundles are installed
+#  CELIX_DM_STATIC_LIB - The Celix Dependency Manager static library
+#  CELIX_DM_CXX_STATIC_LIB - The Celix C++ Dependency Manager static library
 
 set(CELIX_DIR_FROM_FINDCELIX "${CMAKE_CURRENT_LIST_DIR}/../../../..")
 
@@ -64,18 +67,36 @@ find_path(CELIX_BUNDLES_DIR shell.zip
 		PATHS ${CELIX_DIR_FROM_FINDCELIX} $ENV{CELIX_DIR} ${CELIX_DIR} /usr /usr/local
           	PATH_SUFFIXES share/celix/bundles
 )
-	
 
+find_library(CELIX_DM_STATIC_LIB NAMES dependency_manager_static
+		PATHS ${CELIX_DIR_FROM_FINDCELIX} $ENV{CELIX_DIR} ${CELIX_DIR} /usr /usr/local
+		PATH_SUFFIXES lib lib64
+)
+if (CELIX_DM_STATIC_LIB)
+    set(CELIX_DM_INCLUDE_DIR ${CELIX_INCLUDE_DIR}/dependency_manager)
+else()
+    set(CELIX_DM_INCLUDE_DIR )
+endif()
+
+find_library(CELIX_DM_CXX_STATIC_LIB NAMES dependency_manager_cxx_static
+		PATHS ${CELIX_DIR_FROM_FINDCELIX} $ENV{CELIX_DIR} ${CELIX_DIR} /usr /usr/local
+		PATH_SUFFIXES lib lib64
+)
+if (CELIX_DM_CXX_STATIC_LIB)
+    set(CELIX_DM_CXX_INCLUDE_DIR ${CELIX_INCLUDE_DIR}/dependency_manager_cxx)
+else()
+    set(CELIX_DM_CXX_INCLUDE_DIR )
+endif()
 
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set CELIX_FOUND to TRUE
 # if all listed variables are TRUE
 find_package_handle_standard_args(CELIX  DEFAULT_MSG
-                                  CELIX_FRAMEWORK_LIBRARY CELIX_UTILS_LIBRARY CELIX_INCLUDE_DIR CELIX_LAUNCHER CELIX_CMAKECELIX_FILE) 
+                                  CELIX_FRAMEWORK_LIBRARY CELIX_UTILS_LIBRARY CELIX_DFI_LIBRARY CELIX_DM_STATIC_LIB CELIX_DM_CXX_STATIC_LIB CELIX_INCLUDE_DIR CELIX_LAUNCHER CELIX_CMAKECELIX_FILE)
 mark_as_advanced(CELIX_INCLUDE_DIR CELIX_FRAMEWORK_LIBRARY CELIX_UTILS_LIBRARY CELIX_LAUNCHER CELIX_CMAKECELIX_FILE)
 
 if(CELIX_FOUND)
-	set(CELIX_LIBRARIES ${CELIX_FRAMEWORK_LIBRARY} ${CELIX_UTILS_LIBRARY})
-	set(CELIX_INCLUDE_DIRS ${CELIX_INCLUDE_DIR})
+	set(CELIX_LIBRARIES ${CELIX_FRAMEWORK_LIBRARY} ${CELIX_UTILS_LIBRARY} ${CELIX_DFI_LIBRARY})
+	set(CELIX_INCLUDE_DIRS ${CELIX_INCLUDE_DIR} ${CELIX_DM_INCLUDE_DIR} ${CELIX_DM_CXX_INCLUDE_DIR})
 	include(${CELIX_CMAKECELIX_FILE})
 endif()

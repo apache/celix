@@ -29,7 +29,7 @@ DmActivator* DmActivator::create(DependencyManager& mng) {
 }
 
 
-void Phase2Activator::init(DependencyManager& manager) {
+void Phase2Activator::init() {
 
     Properties props {};
     props["name"] = "phase2a";
@@ -48,6 +48,6 @@ void Phase2Activator::init(DependencyManager& manager) {
             .setCallbacks(&Phase2Cmp::setLogService);
 }
 
-void Phase2Activator::deinit(DependencyManager& manager) {
+void Phase2Activator::deinit() {
 
 }
