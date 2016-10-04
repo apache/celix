@@ -216,12 +216,12 @@ To create the build directory and build the project execute the following comman
 
 ```bash
 cd ${WS}
-mkdir myproject/build
-cd myproject/build
-cmake ..
+mkdir myproject-build
+cd myproject-build
+cmake ../myproject
 make all  
 #Or
-#cmake -G Ninja ..
+#cmake -G Ninja ../myproject
 #ninja
 ```	
 
@@ -235,7 +235,7 @@ To create a deployment for the hello world bundles two things are needed:
 
 ```CMake
 #${WS}/myproject/CMakeLists.txt
-add_deploy(hello 
+add_deploy(myproject 
     BUNDLES 
 	    ${CELIX_BUNDLES_DIR}/shell.zip 
 	    ${CELIX_BUNDLES_DIR}/shell_tui.zip
@@ -257,7 +257,7 @@ make -j
 Now a deploy directory myproject should be available in the deploy directory. This directory contains - among other files - the run.sh script. This can be used to run the Apache Celix framework with the declared bundles from the deploy.cmake.
 
 ```bash
-cd ${WS}/myproject-build/deploy/hello
+cd ${WS}/myproject-build/deploy/myproject
 . ./release.sh
 celix
 #or ./hello
@@ -298,7 +298,7 @@ The idea behind service oriented programming is that functionality is provided a
 For a guide how to provide and use services see
 
 * [Apache Celix - Getting Started Guide: Using Services with C](using_services_with_c.md)
-* [Apache Celix - Getting Started Guide: Using services with C++](using_services_with_cxx.md)
+* [Apache Celix - Getting Started Guide: Using Services with C++](using_services_with_cxx.md)
  
 
 

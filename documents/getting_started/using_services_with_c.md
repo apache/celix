@@ -1,12 +1,12 @@
-#Apache Celix - Best Practices
+#Apache Celix - Using Services with C
 
 ## Intro 
 
-This example should give a best practice approach for providing and using service with Apache Celix.
+This example gives an overview for providing and using services with Apache Celix with C.
 
 ## Services
 
-To start-of, services in Celix are just a pointer to a memory location registered in the service registry using a name and an optional set of key/value pairs.
+To start-of, C services in Celix are just a pointer to a memory location registered in the service registry using a name and an optional set of key/value pairs.
 
 By convention use the following service layout:
 
@@ -32,7 +32,7 @@ typedef struct example_struct example_t;
 ```
 
 
-For a Celix service a service name, service version and service consumer range should be declared.
+For a Celix service a service name, service provider version and service consumer range should be declared.
 This is explicitly done with macros to prevent symbols so to that no linking dependencies are introduced.
 
 Then the actual struct for the service needs to be declared.
@@ -44,8 +44,11 @@ The rest of the element should be function pointers, which by convention should 
 The return value is used as a way of handling errors and is also needed to be able to make remote services (e.g. to be able to handle remote exceptions).
 
 The first argument of a service function should be the service handle and if there is a result the last argument should be a output parameter (either pre allocated (e.g. double *) or not (e.g. double **)).
-It is also possible to create typedef of the pointer to the service struct (e.g. typedef struct example_service *example_service_pt), but this is not needed. 
-If you do not create typedefs with pointers it is easier to include service struct in an parent struct (without memory allocation) and also make it's possible to use the const on the struct instead of the pointer.
+If the caller is not the owner of the output argument, a const pointer should be used (e.g. const char**). 
+It is also possible to create typedef of the pointer to the service struct (e.g. typedef struct example_struct example_t), but this is not needed. 
+
+In the Celix code base there are still service which uses a typedef with a pointer (e.g. typedef struct example_struct* example_struct_pt). This should be avoided, 
+because it is not possible to create the const pointer of those typedefs and it is not possible to include those typedef inside a existing struct without the needed for an additional malloc.
 
 ### Semantic Versioning
 
@@ -75,16 +78,15 @@ Changes considered backwards compatible which does not extend the functionaility
 ## Components
 
 Component should use the ADT principle (see [ADT in C](http://inst.eecs.berkeley.edu/~selfpace/studyguide/9C.sg/Output/ADTs.in.C.html)).
+Note that is a a convention.
 
 Components should have a `<cmpName>_create` and `<cmpName>_destroy` function.
 Components can have a `<cmpName>_start` and `<cmpName>_stop` function to start/stop threads or invoke functionality needed a fully created component. 
 The start function will only be called if all required service are available and the stop function will be called when some required are going or if the component needs to be stopped.
 
 Components can also have a `<cmpName>_init` and `<cmpName>_deinit` function which will be called before and after respectively the start and stop function. 
-The init function can be used to add additional (even required) service dependencies.
-The use case for init/deinit component functions are exceptional.
+The init/deinit function can be used to include (de)initialization which is not needed/wanted every time when service dependencies are being removed/added. 
 
- 
 ## Code Examples
 
 The next code block contains some code examples of components to indicate how to handle service dependencies, how to specify providing services and how to cope with locking/synchronizing.

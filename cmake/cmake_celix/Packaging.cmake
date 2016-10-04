@@ -564,7 +564,7 @@ $<JOIN:$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_PROPERTIES>,
     #generate eclipse project launch file
     set(PROGRAM_NAME "${CELIX_LAUNCHER}")
     set(CONTAINER_NAME ${DEPLOY_NAME})
-    set(PROJECT_ATTR "build")
+    set(PROJECT_ATTR "${CMAKE_PROJECT_NAME}-build")
     set(WORKING_DIRECTORY ${DEPLOY_LOCATION})
     include("${CELIX_CMAKE_DIRECTORY}/cmake_celix/RunConfig.in.cmake") #set VAR RUN_CONFIG_IN
     file(GENERATE
