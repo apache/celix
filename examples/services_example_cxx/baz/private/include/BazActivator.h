@@ -17,34 +17,18 @@
  * under the License.
  */
 
-#include "Phase2Cmp.h"
-#include "Phase2Activator.h"
-#include "log_service.h"
+#ifndef BAZ_ACTIVATOR_H
+#define BAZ_ACTIVATOR_H
+
+#include "celix/dm/DmActivator.h"
 
 using namespace celix::dm;
 
+class BazActivator : public DmActivator {
+private:
+public:
+    BazActivator(DependencyManager& mng) : DmActivator(mng) {}
+    virtual void init();
+};
 
-DmActivator* DmActivator::create(DependencyManager& mng) {
-    return new Phase2Activator(mng);
-}
-
-void Phase2Activator::init() {
-
-    Properties props {};
-    props["name"] = "phase2b";
-
-    Component<Phase2Cmp>& cmp = createComponent<Phase2Cmp>()
-        .addInterface<IPhase2>(IPHASE2_VERSION, props);
-
-    cmp.createServiceDependency<IPhase1>()
-            .setRequired(true)
-            .setCallbacks(&Phase2Cmp::setPhase1);
-
-    cmp.createCServiceDependency<log_service_t>(OSGI_LOGSERVICE_NAME)
-            .setRequired(false)
-            .setCallbacks(&Phase2Cmp::setLogService);
-}
-
-void Phase2Activator::deinit() {
-
-}
+#endif //BAZ_ACTIVATOR_H

@@ -101,18 +101,24 @@ namespace celix { namespace dm {
 
         void setupService();
     public:
-        CServiceDependency(bool valid = true) : TypedServiceDependency<T>(valid) {};
+        CServiceDependency(const std::string name, bool valid = true);
         virtual ~CServiceDependency() = default;
 
         /**
-         * Sets the service name, version and filter for the C service dependency.
+         * Sets the service version range for the C service dependency.
          *
-         * @param serviceName The service name. Must have a value
          * @param serviceVersionRange The service version range, can be an empty string
+         * @return the C service dependency reference for chaining (fluent API)
+         */
+        CServiceDependency<T,I>& setVersionRange(const std::string serviceVersionRange);
+
+        /**
+         * Sets the service filter for the C service dependency.
+         *
          * @param filter The (additional) filter to use (e.g. "(location=front)")
          * @return the C service dependency reference for chaining (fluent API)
          */
-        CServiceDependency<T,I>& setCService(const std::string serviceName, const std::string serviceVersionRange = std::string{}, const std::string filter = std::string{});
+        CServiceDependency<T,I>& setFilter(const std::string filter);
 
         /**
          * Specify if the service dependency is required. Default is false
@@ -189,7 +195,7 @@ namespace celix { namespace dm {
         int invokeCallback(void(T::*fp)(I*), const void* service);
         int invokeCallbackWithProperties(void(T::*fp)(I*, Properties&&), service_reference_pt  ref, const void* service);
     public:
-        ServiceDependency(bool valid = true);
+        ServiceDependency(const std::string name = std::string{}, bool valid = true);
         virtual ~ServiceDependency() = default;
 
         /**
@@ -197,21 +203,21 @@ namespace celix { namespace dm {
          *
          * @return the C++ service dependency reference for chaining (fluent API)
          */
-        ServiceDependency<T,I>& setName(std::string name);
+        ServiceDependency<T,I>& setName(const std::string name);
 
         /**
          * Set the service filter of the service dependency.
          *
          * @return the C++ service dependency reference for chaining (fluent API)
          */
-        ServiceDependency<T,I>& setFilter(std::string filter);
+        ServiceDependency<T,I>& setFilter(const std::string filter);
 
         /**
          * Set the service version range of the service dependency.
          *
          * @return the C++ service dependency reference for chaining (fluent API)
          */
-        ServiceDependency<T,I>& setVersion(std::string versionRange);
+        ServiceDependency<T,I>& setVersionRange(const std::string versionRange);
 
         /**
          * Set the set callback for when the service dependency becomes available

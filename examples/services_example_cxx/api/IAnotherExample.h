@@ -17,34 +17,17 @@
  * under the License.
  */
 
-#include "Phase2Cmp.h"
-#include "Phase2Activator.h"
-#include "log_service.h"
+#ifndef IANOTHER_EXAMPLE_H
+#define IANOTHER_EXAMPLE_H
 
-using namespace celix::dm;
+#define IANOTHER_EXAMPLE_VERSION "1.0.0"
+#define IANOTHER_EXAMPLE_CONSUMER_RANGE "[1.0.0,2.0.0)"
 
+class IAnotherExample {
+protected:
+    IAnotherExample() = default;
+public:
+    virtual double method(int arg1, double arg2) = 0;
+};
 
-DmActivator* DmActivator::create(DependencyManager& mng) {
-    return new Phase2Activator(mng);
-}
-
-void Phase2Activator::init() {
-
-    Properties props {};
-    props["name"] = "phase2b";
-
-    Component<Phase2Cmp>& cmp = createComponent<Phase2Cmp>()
-        .addInterface<IPhase2>(IPHASE2_VERSION, props);
-
-    cmp.createServiceDependency<IPhase1>()
-            .setRequired(true)
-            .setCallbacks(&Phase2Cmp::setPhase1);
-
-    cmp.createCServiceDependency<log_service_t>(OSGI_LOGSERVICE_NAME)
-            .setRequired(false)
-            .setCallbacks(&Phase2Cmp::setLogService);
-}
-
-void Phase2Activator::deinit() {
-
-}
+#endif //IANOTHER_EXAMPLE_H

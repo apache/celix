@@ -5,38 +5,35 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-#
+# 
 #   http://www.apache.org/licenses/LICENSE-2.0
-#
+# 
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-if (BUILD_DEPENDENCY_MANAGER)
 
-    include_directories(
-            ${PROJECT_SOURCE_DIR}/dependency_manager/public/include
-            ${PROJECT_SOURCE_DIR}/utils/public/include
-            api
-    )
+include_directories(
+        private/include
+)
 
-    add_subdirectory(foo1)
-    add_subdirectory(foo2)
-    add_subdirectory(bar)
+add_bundle(baz_cxx
+    SYMBOLIC_NAME Baz
+    VERSION 1.0.0
+    SOURCES
+        private/src/Baz.cc
+        private/src/BazActivator.cc
+)
 
-    add_deploy(best-practice-example
-        COPY
-        BUNDLES
-            shell
-            shell_tui
-            dm_shell
-            bar
-            foo1
-            foo2
-        PROPERTIES
-            example=value
-    )
-
-endif ()
+IF(APPLE)
+    target_link_libraries(baz_cxx celix_framework -Wl,-all_load dependency_manager_cxx_static)
+else()
+    if(ENABLE_ADDRESS_SANITIZER)
+        #With asan there can be undefined symbols
+        target_link_libraries(baz_cxx -Wl,--whole-archive dependency_manager_cxx_static -Wl,--no-whole-archive celix_framework)
+    else()
+        target_link_libraries(baz_cxx -Wl,--no-undefined -Wl,--whole-archive dependency_manager_cxx_static -Wl,--no-whole-archive celix_framework)
+    endif()
+endif()

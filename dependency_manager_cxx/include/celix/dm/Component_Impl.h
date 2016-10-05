@@ -76,12 +76,12 @@ Component<T>& Component<T>::addCInterface(const void* svc, const std::string ser
 
 template<class T>
 template<class I>
-ServiceDependency<T,I>& Component<T>::createServiceDependency() {
+ServiceDependency<T,I>& Component<T>::createServiceDependency(const std::string name) {
 #ifdef __EXCEPTIONS
     auto dep = std::shared_ptr<ServiceDependency<T,I>> {new ServiceDependency<T,I>()};
 #else
-    static ServiceDependency<T,I> invalidDep{false};
-    auto dep = std::shared_ptr<ServiceDependency<T,I>> {new(std::nothrow) ServiceDependency<T,I>()};
+    static ServiceDependency<T,I> invalidDep{std::string{}, false};
+    auto dep = std::shared_ptr<ServiceDependency<T,I>> {new(std::nothrow) ServiceDependency<T,I>(name)};
     if (dep == nullptr) {
         return invalidDep;
     }
@@ -102,12 +102,12 @@ Component<T>& Component<T>::remove(ServiceDependency<T,I>& dep) {
 
 template<class T>
 template<typename I>
-CServiceDependency<T,I>& Component<T>::createCServiceDependency() {
+CServiceDependency<T,I>& Component<T>::createCServiceDependency(const std::string name) {
 #ifdef __EXCEPTIONS
     auto dep = std::shared_ptr<CServiceDependency<T,I>> {new CServiceDependency<T,I>()};
 #else
-    static CServiceDependency<T,I> invalidDep{false};
-    auto dep = std::shared_ptr<CServiceDependency<T,I>> {new(std::nothrow) CServiceDependency<T,I>()};
+    static CServiceDependency<T,I> invalidDep{std::string{}, false};
+    auto dep = std::shared_ptr<CServiceDependency<T,I>> {new(std::nothrow) CServiceDependency<T,I>(name)};
     if (dep == nullptr) {
         return invalidDep;
     }

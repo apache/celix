@@ -19,7 +19,8 @@ if (EXAMPLES)
     add_subdirectory(hello_world)
     add_subdirectory(hello_world_test)
 
-    add_subdirectory(best_practice_example)
+    add_subdirectory(services_example_c)
+    add_subdirectory(services_example_cxx)
 
     if (NOT ANDROID)
     	add_subdirectory(mongoose)

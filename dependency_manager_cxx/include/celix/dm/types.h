@@ -71,7 +71,7 @@ namespace celix { namespace dm {
         while (isalnum(result[epos]) || result[epos] == '_' || result[epos] == ';') {
             epos += 1;
         }
-        size_t len = epos - bpos - 1;
+        size_t len = epos - bpos;
         result = result.substr(bpos, len);
 #endif
 

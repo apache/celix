@@ -17,34 +17,38 @@
  * under the License.
  */
 
-#include "Phase2Cmp.h"
-#include "Phase2Activator.h"
-#include "log_service.h"
+#ifndef BAZ_H
+#define BAZ_H
 
-using namespace celix::dm;
+#include "example.h"
+#include "IAnotherExample.h"
+#include <thread>
+#include <list>
+#include <mutex>
 
+class Baz  {
+    std::list<IAnotherExample*> examples {};
+    std::mutex lock_for_examples {};
 
-DmActivator* DmActivator::create(DependencyManager& mng) {
-    return new Phase2Activator(mng);
-}
+    std::list<const example_t*> cExamples {};
+    std::mutex lock_for_cExamples {};
 
-void Phase2Activator::init() {
+    std::thread pollThread {};
+    bool running = false;
+public:
+    Baz() = default;
+    virtual ~Baz() = default;
 
-    Properties props {};
-    props["name"] = "phase2b";
+    void start();
+    void stop();
 
-    Component<Phase2Cmp>& cmp = createComponent<Phase2Cmp>()
-        .addInterface<IPhase2>(IPHASE2_VERSION, props);
+    void addAnotherExample(IAnotherExample* e);
+    void removeAnotherExample(IAnotherExample* e);
 
-    cmp.createServiceDependency<IPhase1>()
-            .setRequired(true)
-            .setCallbacks(&Phase2Cmp::setPhase1);
+    void addExample(const example_t* e);
+    void removeExample(const example_t* e);
 
-    cmp.createCServiceDependency<log_service_t>(OSGI_LOGSERVICE_NAME)
-            .setRequired(false)
-            .setCallbacks(&Phase2Cmp::setLogService);
-}
+    void poll();
+};
 
-void Phase2Activator::deinit() {
-
-}
+#endif //BAZ_H

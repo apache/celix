@@ -140,7 +140,7 @@ namespace celix { namespace dm {
          * @return the Service Dependency reference for chaining (fluent API)
          */
         template<class I>
-        ServiceDependency<T,I>& createServiceDependency();
+        ServiceDependency<T,I>& createServiceDependency(const std::string name = std::string{});
 
         /**
          Creates and adds a C++ service dependency to the component
@@ -156,7 +156,7 @@ namespace celix { namespace dm {
          * @return the DM Component reference for chaining (fluent API)
          */
         template<typename I>
-        CServiceDependency<T,I>& createCServiceDependency();
+        CServiceDependency<T,I>& createCServiceDependency(const std::string name);
 
         /**
          * Removes a C service dependency to the component

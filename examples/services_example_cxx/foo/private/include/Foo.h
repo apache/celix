@@ -17,34 +17,29 @@
  * under the License.
  */
 
-#include "Phase2Cmp.h"
-#include "Phase2Activator.h"
-#include "log_service.h"
+#ifndef FOO_H
+#define FOO_H
 
-using namespace celix::dm;
+#include "example.h"
+#include "IAnotherExample.h"
+#include <thread>
 
+class Foo  {
+    IAnotherExample* example {nullptr};
+    const example_t* cExample {nullptr};
+    std::thread pollThread {};
+    bool running = false;
+public:
+    Foo() = default;
+    virtual ~Foo() = default;
 
-DmActivator* DmActivator::create(DependencyManager& mng) {
-    return new Phase2Activator(mng);
-}
+    void start();
+    void stop();
 
-void Phase2Activator::init() {
+    void setAnotherExample(IAnotherExample* e);
+    void setExample(const example_t* e);
 
-    Properties props {};
-    props["name"] = "phase2b";
+    void poll();
+};
 
-    Component<Phase2Cmp>& cmp = createComponent<Phase2Cmp>()
-        .addInterface<IPhase2>(IPHASE2_VERSION, props);
-
-    cmp.createServiceDependency<IPhase1>()
-            .setRequired(true)
-            .setCallbacks(&Phase2Cmp::setPhase1);
-
-    cmp.createCServiceDependency<log_service_t>(OSGI_LOGSERVICE_NAME)
-            .setRequired(false)
-            .setCallbacks(&Phase2Cmp::setLogService);
-}
-
-void Phase2Activator::deinit() {
-
-}
+#endif //FOO_H

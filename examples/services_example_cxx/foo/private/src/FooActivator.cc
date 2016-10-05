@@ -17,34 +17,27 @@
  * under the License.
  */
 
-#include "Phase2Cmp.h"
-#include "Phase2Activator.h"
-#include "log_service.h"
+#include "Foo.h"
+#include "FooActivator.h"
 
 using namespace celix::dm;
 
-
 DmActivator* DmActivator::create(DependencyManager& mng) {
-    return new Phase2Activator(mng);
+    return new FooActivator(mng);
 }
 
-void Phase2Activator::init() {
+void FooActivator::init() {
 
-    Properties props {};
-    props["name"] = "phase2b";
+    Component<Foo>& cmp = createComponent<Foo>()
+        .setCallbacks(nullptr, &Foo::start, &Foo::stop, nullptr);
 
-    Component<Phase2Cmp>& cmp = createComponent<Phase2Cmp>()
-        .addInterface<IPhase2>(IPHASE2_VERSION, props);
-
-    cmp.createServiceDependency<IPhase1>()
+    cmp.createServiceDependency<IAnotherExample>()
             .setRequired(true)
-            .setCallbacks(&Phase2Cmp::setPhase1);
+            .setVersionRange(IANOTHER_EXAMPLE_CONSUMER_RANGE)
+            .setCallbacks(&Foo::setAnotherExample);
 
-    cmp.createCServiceDependency<log_service_t>(OSGI_LOGSERVICE_NAME)
+    cmp.createCServiceDependency<example_t>(EXAMPLE_NAME)
             .setRequired(false)
-            .setCallbacks(&Phase2Cmp::setLogService);
-}
-
-void Phase2Activator::deinit() {
-
+            .setVersionRange(EXAMPLE_CONSUMER_RANGE)
+            .setCallbacks(&Foo::setExample);
 }

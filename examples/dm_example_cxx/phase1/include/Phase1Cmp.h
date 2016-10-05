@@ -24,8 +24,6 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#define IPHASE1_VERSION "1.0.0"
-
 class Phase1Cmp : public IPhase1 {
     uint32_t counter = 0;
 public:

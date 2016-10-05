@@ -17,34 +17,32 @@
  * under the License.
  */
 
-#include "Phase2Cmp.h"
-#include "Phase2Activator.h"
-#include "log_service.h"
+#include "Bar.h"
+#include <iostream>
 
-using namespace celix::dm;
-
-
-DmActivator* DmActivator::create(DependencyManager& mng) {
-    return new Phase2Activator(mng);
+void Bar::init() {
+    std::cout << "init Bar\n";
 }
 
-void Phase2Activator::init() {
-
-    Properties props {};
-    props["name"] = "phase2b";
-
-    Component<Phase2Cmp>& cmp = createComponent<Phase2Cmp>()
-        .addInterface<IPhase2>(IPHASE2_VERSION, props);
-
-    cmp.createServiceDependency<IPhase1>()
-            .setRequired(true)
-            .setCallbacks(&Phase2Cmp::setPhase1);
-
-    cmp.createCServiceDependency<log_service_t>(OSGI_LOGSERVICE_NAME)
-            .setRequired(false)
-            .setCallbacks(&Phase2Cmp::setLogService);
+void Bar::start() {
+    std::cout << "start Bar\n";
 }
 
-void Phase2Activator::deinit() {
+void Bar::stop() {
+    std::cout << "stop Bar\n";
+}
 
+void Bar::deinit() {
+    std::cout << "deinit Bar\n";
+}
+
+double Bar::method(int arg1, double arg2) {
+    double update = (this->seed + arg1) * arg2;
+    return update;
+}
+
+int Bar::cMethod(int arg1, double arg2, double *out) {
+    double r = this->method(arg1, arg2);
+    *out = r;
+    return 0;
 }

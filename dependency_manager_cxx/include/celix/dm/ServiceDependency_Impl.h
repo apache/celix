@@ -24,9 +24,20 @@
 using namespace celix::dm;
 
 template<class T, typename I>
-CServiceDependency<T,I>& CServiceDependency<T,I>::setCService(const std::string serviceName, const std::string serviceVersionRange, const std::string filter) {
-    this->name = serviceName;
+CServiceDependency<T,I>::CServiceDependency(const std::string name, bool valid) : TypedServiceDependency<T>(valid) {
+    this->name = name;
+    this->setupService();
+}
+
+template<class T, typename I>
+CServiceDependency<T,I>& CServiceDependency<T,I>::setVersionRange(const std::string serviceVersionRange) {
     this->versionRange = serviceVersionRange;
+    this->setupService();
+    return *this;
+}
+
+template<class T, typename I>
+CServiceDependency<T,I>& CServiceDependency<T,I>::setFilter(const std::string filter) {
     this->filter = filter;
     this->setupService();
     return *this;
@@ -201,8 +212,12 @@ int CServiceDependency<T,I>::invokeCallbackWithProperties(void(T::*fp)(const I*,
 }
 
 template<class T, class I>
-ServiceDependency<T,I>::ServiceDependency(bool valid) : TypedServiceDependency<T>(valid) {
-    setupService();
+ServiceDependency<T,I>::ServiceDependency(std::string name, bool valid) : TypedServiceDependency<T>(valid) {
+    if (!name.empty()) {
+        this->setName(name);
+    } else {
+        this->setupService();
+    }
 };
 
 template<class T, class I>
@@ -273,7 +288,7 @@ ServiceDependency<T,I>& ServiceDependency<T,I>::setFilter(std::string filter) {
 };
 
 template<class T, class I>
-ServiceDependency<T,I>& ServiceDependency<T,I>::setVersion(std::string versionRange) {
+ServiceDependency<T,I>& ServiceDependency<T,I>::setVersionRange(std::string versionRange) {
     this->versionRange = versionRange;
     setupService();
     return *this;

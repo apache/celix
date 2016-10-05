@@ -6,7 +6,7 @@ This example gives an overview for providing and using services with Apache Celi
 
 ## Services
 
-To start-of, C services in Celix are just a pointer to a memory location registered in the service registry using a name and an optional set of key/value pairs.
+To start of, C services in Celix are just a pointer to a memory location registered in the service registry using a name and an optional set of key/value pairs. 
 
 By convention use the following service layout:
 
@@ -55,7 +55,7 @@ because it is not possible to create the const pointer of those typedefs and it 
 For versioning, semantic versioning should be used.
 
 A backward incompatible change should lead to a major version increase (e.g. 1.0.0 -> 2.0.0).
-For a C Service change that are incompatible are:
+For a C Service versioning is used to express binary compatibility (for the same platform / compiler), change that are incompatible are:
 
 - Removing a function
 - Adding a function to before any other function
@@ -63,16 +63,19 @@ For a C Service change that are incompatible are:
 - Changing the signature of a function
 - Changing the semantics of a argument (e.g. changing range input from "range in kilometer" to "range in meters")
 
-A backwards compatible change which extend the functionality should lead to a minor version increase (e.g. 1.0.0 -> 1.1.0).
+A backwards binary compatible change which extend the functionality should lead to a minor version increase (e.g. 1.0.0 -> 1.1.0).
 Changes considered backwards compatible which extend the functionality are:
 
 - Adding a function to the back of the service struct
 
-A backwards compatible change which does not extend the functionality should lead to a micro version increase (e.g. 1.0.0 -> 1.0.1).
-Changes considered backwards compatible which does not extend the functionaility are:
+A backwards binary compatible change which does not extend the functionality should lead to a micro version increase (e.g. 1.0.0 -> 1.0.1).
+Changes considered backwards binary compatible which does not extend the functionality are:
 
 - Changes in the documentation
 - Renaming of arguments
+
+For C services generally platform specific calling convention are used therefore binary compatibility between service provider and consumers from different compilers is possible (e.g. gcc and clang), 
+ but not advisable
 
  
 ## Components
@@ -89,8 +92,8 @@ The init/deinit function can be used to include (de)initialization which is not 
 
 ## Code Examples
 
-The next code block contains some code examples of components to indicate how to handle service dependencies, how to specify providing services and how to cope with locking/synchronizing.
-The complete example can be found [here](../../examples/best_practice_example).
+The next code blocks contains some code examples of components to indicate how to handle service dependencies, how to specify providing services and how to cope with locking/synchronizing.
+The complete example can be found [here](../../examples/services_example_c).
 
 The error checking is very minimal in these example to keep the focus on how to interact with services and how to deal with errors in C / Celix.
 
@@ -585,3 +588,6 @@ The suspend or non-locking strategy `DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND` (de
 
 The suspend strategy has the advantage of reducing locks' usage: of course, suspending the component has its own overhead (e.g. stopping and restarting threads), but this overhead is "paid" only in case of changes in service dependencies, while the locking overhead is always paid.
 
+## See also
+
+See the [Dependency Manager example](../../examples/dm_example) for a working example and good starting point to create more complex bundles.

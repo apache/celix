@@ -17,34 +17,29 @@
  * under the License.
  */
 
-#include "Phase2Cmp.h"
-#include "Phase2Activator.h"
-#include "log_service.h"
+#include "Baz.h"
+#include "BazActivator.h"
 
 using namespace celix::dm;
 
-
 DmActivator* DmActivator::create(DependencyManager& mng) {
-    return new Phase2Activator(mng);
+    return new BazActivator(mng);
 }
 
-void Phase2Activator::init() {
+void BazActivator::init() {
 
-    Properties props {};
-    props["name"] = "phase2b";
+    Component<Baz>& cmp = createComponent<Baz>()
+        .setCallbacks(nullptr, &Baz::start, &Baz::stop, nullptr);
 
-    Component<Phase2Cmp>& cmp = createComponent<Phase2Cmp>()
-        .addInterface<IPhase2>(IPHASE2_VERSION, props);
-
-    cmp.createServiceDependency<IPhase1>()
+    cmp.createServiceDependency<IAnotherExample>()
             .setRequired(true)
-            .setCallbacks(&Phase2Cmp::setPhase1);
+            .setStrategy(DependencyUpdateStrategy::locking)
+            .setVersionRange(IANOTHER_EXAMPLE_CONSUMER_RANGE)
+            .setCallbacks(&Baz::addAnotherExample, &Baz::removeAnotherExample);
 
-    cmp.createCServiceDependency<log_service_t>(OSGI_LOGSERVICE_NAME)
+    cmp.createCServiceDependency<example_t>(EXAMPLE_NAME)
             .setRequired(false)
-            .setCallbacks(&Phase2Cmp::setLogService);
-}
-
-void Phase2Activator::deinit() {
-
+            .setStrategy(DependencyUpdateStrategy::locking)
+            .setVersionRange(EXAMPLE_CONSUMER_RANGE)
+            .setCallbacks(&Baz::addExample, &Baz::removeExample);
 }

@@ -54,8 +54,9 @@ namespace celix { namespace dm {
          */
         template<class T>
         Component<T>& createComponent(std::shared_ptr<T> inst = std::shared_ptr<T>{nullptr}) {
-            Component<T>* cmp = Component<T>::create(this->context);
+            Component<T>* cmp = Component<T>::create(this->context);;
             if (cmp->isValid()) {
+                cmp->setInstance(inst);
                 this->components.push_back(std::unique_ptr<BaseComponent> {cmp});
             }
             return *cmp;
