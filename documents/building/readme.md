@@ -44,6 +44,7 @@ sudo apt-get install -yq --no-install-recommends \
 
 For Fedora based systems (dnf), the following command should work:
 ```bash
+sudo dnf group install -y "C Development Tools and Libraries"
 sudo dnf install \
     cmake \
     ninja-build \
@@ -53,7 +54,8 @@ sudo dnf install \
     libcurl-devel \
     jansson-devel \
     libffi-devel \
-    libxml2-devel
+    libxml2-devel \
+    libuuid-devel
 ```
 
 For OSX systems with brew installed, the following command should work:
