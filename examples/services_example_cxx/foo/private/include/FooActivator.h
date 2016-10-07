@@ -17,8 +17,8 @@
  * under the License.
  */
 
-#ifndef BAR_ACTIVATOR_H
-#define BAR_ACTIVATOR_H
+#ifndef FOO_ACTIVATOR_H
+#define FOO_ACTIVATOR_H
 
 #include "celix/dm/DmActivator.h"
 
@@ -31,4 +31,4 @@ public:
     virtual void init();
 };
 
-#endif //BAR_ACTIVATOR_H
+#endif //FOO_ACTIVATOR_H

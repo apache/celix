@@ -590,4 +590,4 @@ The suspend strategy has the advantage of reducing locks' usage: of course, susp
 
 ## See also
 
-See the [Dependency Manager example](../../examples/dm_example) for a working example and good starting point to create more complex bundles.
+See the [C Dependeny Manager](../../dependency_manager/readme.md) and [C Dependency Manager example](../../examples/dm_example) for more information and a more complex working example.

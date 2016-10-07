@@ -27,7 +27,7 @@ using namespace celix::dm;
 
 class BarActivator : public DmActivator {
 private:
-    example_t cExample;
+    example_t cExample {nullptr, nullptr};
 public:
     BarActivator(DependencyManager& mng) : DmActivator(mng) {}
     virtual void init();

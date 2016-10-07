@@ -62,7 +62,6 @@ typedef struct example_struct example_t;
 #endif
 
 #endif /* EXAMPLE_H_ */
-
 ```
 
 For C service a struct containing the function pointers needs to be declared.
@@ -127,13 +126,430 @@ Component are concrete classes in C++. This do not have to implement specific in
 The next code blocks contains some code examples of components to indicate how to handle service dependencies, how to specify providing services and how to cope with locking/synchronizing.
 The complete example can be found [here](../../examples/services_example_cxx).
 
-### Bar example
+### Bar Example
 
-The bar example is a simple component providing the C `example` service and C++ `IAnotherExample` service. 
+The Bar example is a simple component providing the C `example` service and C++ `IAnotherExample` service.
+ 
+Note that the Bar component is just a plain old C++ object and does need to implement any specific Celix interfaces. 
+
+The BarActivator is the entry point for a C++ bundle. It must implement the DmActivator::create method which the C++ Dependency manager will call. 
+It should also override the DmActivator::init to be able to declaratively program components and their provided service and service dependencies.
+
+The C++ Dependency Manager can use C++ member function pointers to control the component lifecycle (init, start, stop and deinit)  
+
+```C++
+//Bar.h
+#ifndef BAR_H
+#define BAR_H
+
+#include "IAnotherExample.h"
+
+class Bar : public IAnotherExample {
+    const double seed = 42;
+public:
+    Bar() = default;
+    virtual ~Bar() = default;
+
+    void init();
+    void start();
+    void stop();
+    void deinit();
+
+    virtual double method(int arg1, double arg2); //implementation of IAnotherExample::method
+    int cMethod(int arg1, double arg2, double *out); //implementation of example_t->method;
+};
+
+#endif //BAR_H
+```
+
+```C++
+//BarActivator.h
+#ifndef BAR_ACTIVATOR_H
+#define BAR_ACTIVATOR_H
+
+#include "celix/dm/DmActivator.h"
+#include "example.h"
+
+using namespace celix::dm;
+
+class BarActivator : public DmActivator {
+private:
+    example_t cExample {nullptr, nullptr};
+public:
+    BarActivator(DependencyManager& mng) : DmActivator(mng) {}
+    virtual void init();
+};
+
+#endif //BAR_ACTIVATOR_H
+```
+
+```C++
+//Bar.cc
+#include "Bar.h"
+#include <iostream>
+
+void Bar::init() {
+    std::cout << "init Bar\n";
+}
+
+void Bar::start() {
+    std::cout << "start Bar\n";
+}
+
+void Bar::stop() {
+    std::cout << "stop Bar\n";
+}
+
+void Bar::deinit() {
+    std::cout << "deinit Bar\n";
+}
+
+double Bar::method(int arg1, double arg2) {
+    double update = (this->seed + arg1) * arg2;
+    return update;
+}
+
+int Bar::cMethod(int arg1, double arg2, double *out) {
+    double r = this->method(arg1, arg2);
+    *out = r;
+    return 0;
+}
+```
+
+```C++
+//BarActivator.cc
+#include "Bar.h"
+#include "BarActivator.h"
+
+using namespace celix::dm;
+
+DmActivator* DmActivator::create(DependencyManager& mng) {
+    return new BarActivator(mng);
+}
+
+void BarActivator::init() {
+    std::shared_ptr<Bar> bar = std::shared_ptr<Bar>{new Bar{}};
+    std::cout << "bar pointer is " << bar.get() << "\n";
+
+    Properties props;
+    props["meta.info.key"] = "meta.info.value";
+
+    Properties cProps;
+    cProps["also.meta.info.key"] = "also.meta.info.value";
+
+    this->cExample.handle = bar.get();
+    this->cExample.method = [](void *handle, int arg1, double arg2, double *out) {
+        Bar* bar = static_cast<Bar*>(handle);
+        return bar->cMethod(arg1, arg2, out);
+    };
+
+    createComponent(bar)  //using a pointer a instance. Also supported is lazy initialization (default constructor needed) or a rvalue reference (move)
+        .addInterface<IAnotherExample>(IANOTHER_EXAMPLE_VERSION, props)
+        .addCInterface(&this->cExample, EXAMPLE_NAME, EXAMPLE_VERSION, cProps)
+        .setCallbacks(&Bar::init, &Bar::start, &Bar::stop, &Bar::deinit);
+}
+```
+
+### Foo Example
+
+The Foo example has a dependency to the C++ and C services provider by the Bar component. Note that it depends on the services and not directly on the Bar component.
+
+```C++
+//Foo.h
+#ifndef FOO_H
+#define FOO_H
+
+#include "example.h"
+#include "IAnotherExample.h"
+#include <thread>
+
+class Foo  {
+    IAnotherExample* example {nullptr};
+    const example_t* cExample {nullptr};
+    std::thread pollThread {};
+    bool running = false;
+public:
+    Foo() = default;
+    virtual ~Foo() = default;
+
+    void start();
+    void stop();
+
+    void setAnotherExample(IAnotherExample* e);
+    void setExample(const example_t* e);
+
+    void poll();
+};
+
+#endif //FOO_H
+```
+
+```C++
+//FooActivator.h
+#ifndef FOO_ACTIVATOR_H
+#define FOO_ACTIVATOR_H
+
+#include "celix/dm/DmActivator.h"
+
+using namespace celix::dm;
+
+class FooActivator : public DmActivator {
+private:
+public:
+    FooActivator(DependencyManager& mng) : DmActivator(mng) {}
+    virtual void init();
+};
+
+#endif //FOO_ACTIVATOR_H
+```
+
+```C++
+//Foo.cc
+#include "Foo.h"
+#include <iostream>
+
+void Foo::start() {
+    std::cout << "start Foo\n";
+    this->running = true;
+    pollThread = std::thread {&Foo::poll, this};
+}
+
+void Foo::stop() {
+    std::cout << "stop Foo\n";
+    this->running = false;
+    this->pollThread.join();
+}
+
+void Foo::setAnotherExample(IAnotherExample *e) {
+    this->example = e;
+}
+
+void Foo::setExample(const example_t *e) {
+    this->cExample = e;
+}
+
+void Foo::poll() {
+    double r1 = 1.0;
+    double r2 = 1.0;
+    while (this->running) {
+        //c++ service required -> if component started always available
+        r1 = this->example->method(3, r1);
+        std::cout << "Result IAnotherExample is " << r1 << "\n";
+
+        //c service is optional, can be nullptr
+        if (this->cExample != nullptr) {
+            double out;
+            this->cExample->method(this->cExample->handle, 4, r2, &out);
+            r2 = out;
+            std::cout << "Result example_t is " << r2 << "\n";
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+    }
+}
+```
+
+```C++
+//FooActivator.cc
+#include "Foo.h"
+#include "FooActivator.h"
+
+using namespace celix::dm;
+
+DmActivator* DmActivator::create(DependencyManager& mng) {
+    return new FooActivator(mng);
+}
+
+void FooActivator::init() {
+
+    Component<Foo>& cmp = createComponent<Foo>()
+        .setCallbacks(nullptr, &Foo::start, &Foo::stop, nullptr);
+
+    cmp.createServiceDependency<IAnotherExample>()
+            .setRequired(true)
+            .setVersionRange(IANOTHER_EXAMPLE_CONSUMER_RANGE)
+            .setCallbacks(&Foo::setAnotherExample);
+
+    cmp.createCServiceDependency<example_t>(EXAMPLE_NAME)
+            .setRequired(false)
+            .setVersionRange(EXAMPLE_CONSUMER_RANGE)
+            .setCallbacks(&Foo::setExample);
+}
+```
+
+### Baz Example
+
+The Baz example has a dependency to the C++ and C services provider by the Bar component, 
+but uses the add / remove callbacks instead of set and us result is able to depend on multiple instance of a declared service dependencies.
 
 
-TODO
+```C++
+//Baz.h
+#ifndef BAZ_H
+#define BAZ_H
+
+#include "example.h"
+#include "IAnotherExample.h"
+#include <thread>
+#include <list>
+#include <mutex>
+
+class Baz  {
+    std::list<IAnotherExample*> examples {};
+    std::mutex lock_for_examples {};
+
+    std::list<const example_t*> cExamples {};
+    std::mutex lock_for_cExamples {};
+
+    std::thread pollThread {};
+    bool running = false;
+public:
+    Baz() = default;
+    virtual ~Baz() = default;
+
+    void start();
+    void stop();
+
+    void addAnotherExample(IAnotherExample* e);
+    void removeAnotherExample(IAnotherExample* e);
+
+    void addExample(const example_t* e);
+    void removeExample(const example_t* e);
+
+    void poll();
+};
+
+#endif //BAZ_H
+```
+
+```C++
+//BazActivator.h
+#ifndef BAZ_ACTIVATOR_H
+#define BAZ_ACTIVATOR_H
+
+#include "celix/dm/DmActivator.h"
+
+using namespace celix::dm;
+
+class BazActivator : public DmActivator {
+private:
+public:
+    BazActivator(DependencyManager& mng) : DmActivator(mng) {}
+    virtual void init();
+};
+
+#endif //BAZ_ACTIVATOR_H
+```
+
+```C++
+//Baz.cc
+#include "Baz.h"
+#include <iostream>
+
+void Baz::start() {
+    std::cout << "start Baz\n";
+    this->running = true;
+    pollThread = std::thread {&Baz::poll, this};
+}
+
+void Baz::stop() {
+    std::cout << "stop Baz\n";
+    this->running = false;
+    this->pollThread.join();
+}
+
+void Baz::addAnotherExample(IAnotherExample *e) {
+    std::lock_guard<std::mutex> lock(this->lock_for_examples);
+    this->examples.push_back(e);
+}
+
+void Baz::removeAnotherExample(IAnotherExample *e) {
+    std::lock_guard<std::mutex> lock(this->lock_for_examples);
+    this->examples.remove(e);
+}
+
+void Baz::addExample(const example_t *e) {
+    std::lock_guard<std::mutex> lock(this->lock_for_cExamples);
+    this->cExamples.push_back(e);
+}
+
+void Baz::removeExample(const example_t *e) {
+    std::lock_guard<std::mutex> lock(this->lock_for_cExamples);
+    this->cExamples.remove(e);
+}
+
+void Baz::poll() {
+    double r1 = 1.0;
+    double r2 = 1.0;
+    while (this->running) {
+        //c++ service required -> if component started always available
+
+        {
+            int index = 0;
+            std::lock_guard<std::mutex> lock(this->lock_for_examples);
+            for (IAnotherExample *e : this->examples) {
+                r1 = e->method(3, r1);
+                std::cout << "Result IAnotherExample " << index++ << " is " << r1 << "\n";
+            }
+        }
+
+
+        {
+            int index = 0;
+            std::lock_guard<std::mutex> lock(this->lock_for_cExamples);
+            for (const example_t *e : this->cExamples) {
+                double out;
+                e->method(e->handle, 4, r2, &out);
+                r2 = out;
+                std::cout << "Result example_t " << index++ << " is " << r2 << "\n";
+            }
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(4000));
+    }
+}
+```
+
+```C++
+//BazActivator.cc
+#include "Baz.h"
+#include "BazActivator.h"
+
+using namespace celix::dm;
+
+DmActivator* DmActivator::create(DependencyManager& mng) {
+    return new BazActivator(mng);
+}
+
+void BazActivator::init() {
+
+    Component<Baz>& cmp = createComponent<Baz>()
+        .setCallbacks(nullptr, &Baz::start, &Baz::stop, nullptr);
+
+    cmp.createServiceDependency<IAnotherExample>()
+            .setRequired(true)
+            .setStrategy(DependencyUpdateStrategy::locking)
+            .setVersionRange(IANOTHER_EXAMPLE_CONSUMER_RANGE)
+            .setCallbacks(&Baz::addAnotherExample, &Baz::removeAnotherExample);
+
+    cmp.createCServiceDependency<example_t>(EXAMPLE_NAME)
+            .setRequired(false)
+            .setStrategy(DependencyUpdateStrategy::locking)
+            .setVersionRange(EXAMPLE_CONSUMER_RANGE)
+            .setCallbacks(&Baz::addExample, &Baz::removeExample);
+}
+```
+
+## Locking and Suspending
+ 
+As you may notice, the Baz example uses locks 
+In principle, locking is necessary in order to ensure coherence in case service dependencies are removed/added/changed; on the other hands, locking increases latency and, when misused, can lead to poor performance. 
+For this reason, the serviceDependecy interface gives the possibility to choose between a locking and suspend (a non-locking) strategy through the serviceDependency_setStrategy function, as is used in the Foo2 example.
+
+The locking strategy `DependencyUpdateStrategy::locking` notifies the component in case the dependencies' set changes (e.g. a dependency is added/removed): the component is responsible for protecting via locks the dependencies' list and check (always under lock) if the service he's depending on is still available.
+The suspend or non-locking strategy `DependencyUpdateStrategy::suspend` (default when no strategy is explicitly set) reliefs the programmer from dealing with service dependencies' consistency issues: in case this strategy is adopted, the component is stopped and restarted (i.e. temporarily suspended) upon service dependencies' changes.
+
+The suspend strategy has the advantage of reducing locks' usage: of course, suspending the component has its own overhead (e.g. stopping and restarting threads), but this overhead is "paid" only in case of changes in service dependencies, while the locking overhead is always paid.
 
 ## See also
 
-See the [C++ Dependency Manager example](../../examples/dm_example_cxx) for a working example and good starting point to create more complex bundles.
+See the [C++ Dependeny Manager](../../dependency_manager_cxx/readme.md) and [C++ Dependency Manager example](../../examples/dm_example_cxx) for more information and a more complex working example.
