@@ -12,21 +12,20 @@ TO start of, C++ service in Celix are just (abstract) classes.
 In the following example there also a projected default constructor to ensure no instantiation of the service is possible:
 ```C++
 //IAnotherExample.h
-#ifndef ANOTHER_EXAMPLE_H
-#define ANOTHER_EXAMPLE_H
+#ifndef IANOTHER_EXAMPLE_H
+#define IANOTHER_EXAMPLE_H
 
-#define ANOTHER_EXAMPLE_VERSION "1.0.0"
-#define ANOTHER_EXAMPLE_VERSION "1.0.0"
-#define ANOTHER_EXAMPLE_CONSUMER_RANGE "[1.0.0,2.0.0)"
+#define IANOTHER_EXAMPLE_VERSION "1.0.0"
+#define IANOTHER_EXAMPLE_CONSUMER_RANGE "[1.0.0,2.0.0)"
 
 class IAnotherExample {
 protected:
     IAnotherExample() = default;
 public:
-    virtual void method() = 0;
+    virtual double method(int arg1, double arg2) = 0;
 };
 
-#endif //ANOTHER_EXAMPLE_H
+#endif //IANOTHER_EXAMPLE_H
 ```
 
 For a Celix service a service name, service provider version and service consumer range should be declared.

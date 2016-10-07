@@ -5,4 +5,4 @@ There are several guide to help you get started. The first guide is [Getting Sta
 and this should get you started for your first C and/or C++ bundle.
 
 After that you can extend the example by providing and use services using the 
-guide [Getting Started: Using Services with C](using_services_for_c.md) or [Getting Started: Using Services with C++](using_services_with_cxx.md). 
+guide [Getting Started: Using Services with C](using_services_with_c.md) or [Getting Started: Using Services with C++](using_services_with_cxx.md). 
