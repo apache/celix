@@ -27,7 +27,9 @@ if (LAUNCHER)
     set_target_properties(celix PROPERTIES "INSTALL_RPATH" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
     
     target_link_libraries(celix celix_framework ${CURL_LIBRARIES})
-    target_link_libraries(celix celix_dfi) #note not strictly needed, but ensure libdfi is a dep for the framework, useful when create docker images
+    if (NOT ANDROID)
+        target_link_libraries(celix celix_dfi) #note not strictly needed, but ensure libdfi is a dep for the framework, useful when create docker images
+    endif()
 
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
