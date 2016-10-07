@@ -59,8 +59,8 @@ void Baz::poll() {
         //c++ service required -> if component started always available
 
         {
-            int index = 0;
             std::lock_guard<std::mutex> lock(this->lock_for_examples);
+            int index = 0;
             for (IAnotherExample *e : this->examples) {
                 r1 = e->method(3, r1);
                 std::cout << "Result IAnotherExample " << index++ << " is " << r1 << "\n";
@@ -69,8 +69,8 @@ void Baz::poll() {
 
 
         {
-            int index = 0;
             std::lock_guard<std::mutex> lock(this->lock_for_cExamples);
+            int index = 0;
             for (const example_t *e : this->cExamples) {
                 double out;
                 e->method(e->handle, 4, r2, &out);

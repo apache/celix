@@ -28,7 +28,6 @@ DmActivator* DmActivator::create(DependencyManager& mng) {
 
 void BarActivator::init() {
     std::shared_ptr<Bar> bar = std::shared_ptr<Bar>{new Bar{}};
-    std::cout << "bar pointer is " << bar.get() << "\n";
 
     Properties props;
     props["meta.info.key"] = "meta.info.value";

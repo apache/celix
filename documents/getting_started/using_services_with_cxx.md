@@ -7,7 +7,7 @@ This example gives an overview for providing and using C and C++ services with A
 ## Services
 
 ### C++ Services
-TO start of, C++ service in Celix are just (abstract) classes. 
+To start of, C++ service in Celix are just (abstract) classes. 
 
 In the following example there also a projected default constructor to ensure no instantiation of the service is possible:
 ```C++
@@ -130,12 +130,12 @@ The complete example can be found [here](../../examples/services_example_cxx).
 
 The Bar example is a simple component providing the C `example` service and C++ `IAnotherExample` service.
  
-Note that the Bar component is just a plain old C++ object and does need to implement any specific Celix interfaces. 
+Note that the `Bar` component is just a plain old C++ object and does need to implement any specific Celix interfaces. 
 
-The BarActivator is the entry point for a C++ bundle. It must implement the DmActivator::create method which the C++ Dependency manager will call. 
-It should also override the DmActivator::init to be able to declaratively program components and their provided service and service dependencies.
+The `BarActivator` is the entry point for a C++ bundle. It must implement the `DmActivator::create` method so that C++ Dependency manager can create a instance `DmActivator` without needing to known the subclass. 
+It should also override the `DmActivator::init` to be able to declaratively program components and their provided service and service dependencies.
 
-The C++ Dependency Manager can use C++ member function pointers to control the component lifecycle (init, start, stop and deinit)  
+The C++ Dependency Manager can use C++ member function pointers to control the component lifecycle (`init`, `start`, `stop` and `deinit`)  
 
 ```C++
 //Bar.h
@@ -229,7 +229,6 @@ DmActivator* DmActivator::create(DependencyManager& mng) {
 
 void BarActivator::init() {
     std::shared_ptr<Bar> bar = std::shared_ptr<Bar>{new Bar{}};
-    std::cout << "bar pointer is " << bar.get() << "\n";
 
     Properties props;
     props["meta.info.key"] = "meta.info.value";
@@ -252,7 +251,7 @@ void BarActivator::init() {
 
 ### Foo Example
 
-The Foo example has a dependency to the C++ and C services provider by the Bar component. Note that it depends on the services and not directly on the Bar component.
+The `Foo` example has a dependency to the C++ and C services provider by the `Bar` component. Note that it depends on the services and not directly on the Bar component.
 
 ```C++
 //Foo.h
@@ -378,8 +377,8 @@ void FooActivator::init() {
 
 ### Baz Example
 
-The Baz example has a dependency to the C++ and C services provider by the Bar component, 
-but uses the add / remove callbacks instead of set and us result is able to depend on multiple instance of a declared service dependencies.
+The `Baz` example has a dependency to the C++ and C services provider by the `Bar` component, 
+but uses the add / remove callbacks instead of set and as result is able to depend on multiple instance of a declared service dependencies.
 
 
 ```C++
@@ -484,8 +483,8 @@ void Baz::poll() {
         //c++ service required -> if component started always available
 
         {
-            int index = 0;
             std::lock_guard<std::mutex> lock(this->lock_for_examples);
+            int index = 0;
             for (IAnotherExample *e : this->examples) {
                 r1 = e->method(3, r1);
                 std::cout << "Result IAnotherExample " << index++ << " is " << r1 << "\n";
@@ -494,8 +493,8 @@ void Baz::poll() {
 
 
         {
-            int index = 0;
             std::lock_guard<std::mutex> lock(this->lock_for_cExamples);
+            int index = 0;
             for (const example_t *e : this->cExamples) {
                 double out;
                 e->method(e->handle, 4, r2, &out);
@@ -541,9 +540,9 @@ void BazActivator::init() {
 
 ## Locking and Suspending
  
-As you may notice, the Baz example uses locks 
+As you may notice, the Baz example uses locks.
 In principle, locking is necessary in order to ensure coherence in case service dependencies are removed/added/changed; on the other hands, locking increases latency and, when misused, can lead to poor performance. 
-For this reason, the serviceDependecy interface gives the possibility to choose between a locking and suspend (a non-locking) strategy through the serviceDependency_setStrategy function, as is used in the Foo2 example.
+For this reason, the serviceDependency interface gives the possibility to choose between a locking and suspend (a non-locking) strategy through the serviceDependency_setStrategy function, as is used in the Foo2 example.
 
 The locking strategy `DependencyUpdateStrategy::locking` notifies the component in case the dependencies' set changes (e.g. a dependency is added/removed): the component is responsible for protecting via locks the dependencies' list and check (always under lock) if the service he's depending on is still available.
 The suspend or non-locking strategy `DependencyUpdateStrategy::suspend` (default when no strategy is explicitly set) reliefs the programmer from dealing with service dependencies' consistency issues: in case this strategy is adopted, the component is stopped and restarted (i.e. temporarily suspended) upon service dependencies' changes.

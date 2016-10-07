@@ -581,7 +581,7 @@ celix_status_t dm_destroy(void *userData, bundle_context_pt context, dm_dependen
  
 As you may notice, the Foo1 example uses locks. 
 In principle, locking is necessary in order to ensure coherence in case service dependencies are removed/added/changed; on the other hands, locking increases latency and, when misused, can lead to poor performance. 
-For this reason, the serviceDependecy interface gives the possibility to choose between a locking and suspend (a non-locking) strategy through the serviceDependency_setStrategy function, as is used in the Foo2 example.
+For this reason, the serviceDependency interface gives the possibility to choose between a locking and suspend (a non-locking) strategy through the serviceDependency_setStrategy function, as is used in the Foo2 example.
 
 The locking strategy `DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING` notifies the component in case the dependencies' set changes (e.g. a dependency is added/removed): the component is responsible for protecting via locks the dependencies' list and check (always under lock) if the service he's depending on is still available.
 The suspend or non-locking strategy `DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND` (default when no strategy is explicitly set) reliefs the programmer from dealing with service dependencies' consistency issues: in case this strategy is adopted, the component is stopped and restarted (i.e. temporarily suspended) upon service dependencies' changes.

@@ -16,9 +16,11 @@
 # under the License.
 
 cmake_minimum_required (VERSION 3.2)
+cmake_policy(SET CMP0012 NEW)
+cmake_policy(SET CMP0042 NEW)
+
 project (Celix C CXX)
 
-cmake_policy(SET CMP0012 NEW)
 include(GNUInstallDirs)                                                                                                                                                                             
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
@@ -46,6 +48,9 @@ IF(UNIX AND NOT APPLE)
 ENDIF()
 IF(WIN32)
 	SET(CMAKE_C_FLAGS "-D_CRT_SECURE_NO_WARNINGS ${CMAKE_C_FLAGS}")
+ENDIF()
+IF(APPLE)
+    set(CMAKE_MACOSX_RPATH 1)
 ENDIF()
 
 # Set version for the framework package/release
