@@ -19,11 +19,9 @@ cmake_minimum_required (VERSION 3.2)
 project (Celix C CXX)
 
 cmake_policy(SET CMP0012 NEW)
+include(GNUInstallDirs)                                                                                                                                                                             
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
-
-set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-set(CMAKE_INSTALL_NAME_DIR "@rpath")
 
 SET(CMAKE_BUILD_TYPE "Debug")
 

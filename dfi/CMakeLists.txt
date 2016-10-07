@@ -56,7 +56,7 @@ add_library(celix_dfi SHARED
 set_target_properties(celix_dfi PROPERTIES "SOVERSION" 1)
 target_link_libraries(celix_dfi celix_utils ${FFI_LIBRARIES} ${JANSSON_LIBRARY})
 
-install(TARGETS celix_dfi DESTINATION lib COMPONENT framework)
+install(TARGETS celix_dfi DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
 FILE(GLOB files "public/include/*.h" ${MEMSTREAM_INCLUDES})
 INSTALL(FILES ${files} DESTINATION include/celix/dfi COMPONENT framework)
 

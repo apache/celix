@@ -18,20 +18,20 @@ celix_subproject(LAUNCHER "Option to build the launcher" "ON" DEPS UTILS FRAMEWO
 if (LAUNCHER) 
     find_package(CURL REQUIRED)
 
-    SET(CMAKE_SKIP_BUILD_RPATH  FALSE) #TODO needed?
-    SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE) #TODO needed?
-    SET(CMAKE_INSTALL_RPATH "${PROJECT_BINARY_DIR}/framework" "${PROJECT_BINARY_DIR}/utils")
-
     include_directories(public/include)
     
     add_executable(celix
         private/src/main
     )
+
+    set_target_properties(celix PROPERTIES "INSTALL_RPATH" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
     
     target_link_libraries(celix celix_framework ${CURL_LIBRARIES})
+    target_link_libraries(celix celix_dfi) #note not strictly needed, but ensure libdfi is a dep for the framework, useful when create docker images
+
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
     include_directories("${CURL_INCLUDE_DIRS}")
     
-    install(TARGETS celix RUNTIME DESTINATION bin COMPONENT framework)
+    install(TARGETS celix RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT framework)
 endif (LAUNCHER) 

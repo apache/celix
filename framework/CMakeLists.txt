@@ -76,7 +76,7 @@ if (FRAMEWORK)
     endif()
     target_link_libraries(celix_framework celix_utils ${UUID} ${ZLIB_LIBRARY} ${CURL_LIBRARIES})
 
-    install(TARGETS celix_framework DESTINATION lib COMPONENT framework)
+    install(TARGETS celix_framework DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
     FILE(GLOB files "public/include/*.h")
     INSTALL(FILES ${files} DESTINATION include/celix COMPONENT framework)
     INSTALL(DIRECTORY "${PROJECT_SOURCE_DIR}/cmake/" DESTINATION share/celix/cmake/modules COMPONENT framework) 

@@ -251,6 +251,7 @@ SET(CPACK_INCLUDE_TOPLEVEL_DIRECTORY \"0\")
     if(BUNDLE_SOURCES) 
         bundle_private_libs(${BUNDLE_TARGET_NAME} ${BUNDLE_TARGET_NAME})
         set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_ACTIVATOR" "$<TARGET_SONAME_FILE_NAME:${BUNDLE_TARGET_NAME}>")
+        set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUILD_WITH_INSTALL_RPATH" true)
 
         if(APPLE)
             set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES INSTALL_RPATH "@loader_path")

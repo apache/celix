@@ -427,15 +427,14 @@ static int dynType_parseRefByValue(FILE *stream, dyn_type *type) {
             LOG_ERROR("Error cannot find type '%s'", name);
         }
         free(name);
-    } 
 
-    if (status == OK) {
         int c = fgetc(stream);
         if (c != ';') {
             status = PARSE_ERROR;
             LOG_ERROR("Error expected ';' got '%c'", c);
         } 
-    }
+    } 
+
 
     return status;
 }

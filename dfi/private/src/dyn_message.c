@@ -93,6 +93,7 @@ int dynMessage_parse(FILE *descriptor, dyn_message_type **out) {
     if (status == OK) {
         *out = msg;
     } else if (msg != NULL) {
+        LOG_ERROR("Error parsing msg\n");
         dynMessage_destroy(msg);
     }
     return status;
@@ -222,7 +223,7 @@ static int dynMessage_parseTypes(dyn_message_type *msg, FILE *stream) {
     while (peek != ':' && peek != EOF) {
         ungetc(peek, stream);
 
-        char *name;
+        char *name = NULL;
         status = dynCommon_parseName(stream, &name);
 
         if (status == OK) {
@@ -231,10 +232,7 @@ static int dynMessage_parseTypes(dyn_message_type *msg, FILE *stream) {
 
         dyn_type *type = NULL;
         if (status == OK) {
-            dynType_parse(stream, name, &msg->types, &type);
-        }
-        if (name != NULL) {
-            free(name);
+            status = dynType_parse(stream, name, &msg->types, &type);
         }
 
         if (status == OK) {
@@ -245,12 +243,17 @@ static int dynMessage_parseTypes(dyn_message_type *msg, FILE *stream) {
         if (status == OK) {
             entry = calloc(1, sizeof(*entry));
             if (entry != NULL) {
+                LOG_DEBUG("Adding type '%s' with pointer %p to types", name, type);
                 entry->type = type;
                 TAILQ_INSERT_TAIL(&msg->types, entry, entries);
             } else {
                 status = ERROR;
                 LOG_ERROR("Error allocating memory for type entry");
             }
+        }
+
+        if (name != NULL) {
+            free(name);
         }
 
         if (status != OK) {
