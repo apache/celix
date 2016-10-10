@@ -9,9 +9,8 @@ This example gives an overview for providing and using C and C++ services with A
 ### C++ Services
 To start of, C++ service in Celix are just (abstract) classes. 
 
-In the following example there also a projected default constructor to ensure no instantiation of the service is possible:
+In the following example there also a projected default constructor and destructor to ensure no instantiation / deletion of the service is possible:
 ```C++
-//IAnotherExample.h
 #ifndef IANOTHER_EXAMPLE_H
 #define IANOTHER_EXAMPLE_H
 
@@ -21,6 +20,7 @@ In the following example there also a projected default constructor to ensure no
 class IAnotherExample {
 protected:
     IAnotherExample() = default;
+    virtual ~IAnotherExample() = default;
 public:
     virtual double method(int arg1, double arg2) = 0;
 };
