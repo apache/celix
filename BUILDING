@@ -10,73 +10,7 @@ Notes
 * More information about the build system, and how to extend it, can be found at
   the website: http://celix.apache.org/documentation.html
 	
-	
-Quick Start
------------
+Building
+--------
 
-  # Create a build directory next to the celix source directory
-  $ mkdir celix-build; cd celix-build
-  $ ccmake ../celix
-  
-  # When this is the first time the CMake cache is created, a configuration has to be created
-  # This is done by running Configure (c) in CMake.
-  
-  # Enable/Disable the required sub projects (BUILD_{NAME} entries)
-  # Optionally, enable advanced mode (t) and change CMAKE_INSTALL_PREFIX
-  # Run Configure (might be needed multiple times)
-  # Run Generate (this also returns to the shell)
-  $ make
-  
-  # To deploy the included examples
-  $ make deploy
-  # Navigate to <subproject>/deploy/<deployname>
-  $ sh run.sh
-  
-  # To install the release (framework, headers and bundles)
-  $ make install-all
-  
-  # To see a list of all available targets
-  $ make help
-
-  
-Unit testing using CppUTest
----------------------------
-
-Apache Celix has build options that enable a set of unit tests for each component. These tests
-are based on CppUTest, which needs to be installed separately.
-To run the tests
-  $ make test
-To get a HTML page with the test coverage
-  $ make coverage
-The coverage results are found in <build_dir>/coverage_results/index.html
-
-Background information
-----------------------
-
-Apache Celix uses CMake to generate the build files needed for compilation.
-deployment and installation.
-
-* CMake (http://www.cmake.org)
-  CMake generated build files based on specific CMake files. To setup a build
-  a console (ccmake) and GUI (cmake-gui) method is provided. With these editors
-  include paths, installation prefix etc can be changed.
-  CMake stores the configuration in a cache, which is used during the build.
-  To keep the cache/build files separate from the source, a out-of-source build
-  is preferred. To start from scratch, the build directory can be deleted and
-  new build files can be generated.
-* Apache Celix Subprojects
-  Since Apache Celix provides a modular framework, it makes sense to provide the
-  available components as modules as well. To enable/disable these modules cmake
-  is used. In the GUI or console there are settings named BUILD_{NAME} which can
-  be switched on or off. On http://celix.apache.org/subprojects.html a
-  list of all subprojects is given.
-* Apache Celix deployment/installation
-  With a modular system it doesn't make sense to simply install everything to
-  the file system. Depending on the needs different version/modules can be 
-  needed.
-  To cater for this, Celix provides deployment support which takes care of 
-  copying the required bundles to a named target. A basic run script is 
-  created as well.
-  Installing the framework (and its dependencies) might make sense, every target
-  needs the framework. To install only the framework a dedicated target is 
-  available: make install-release.
+See documents/building/readme.md for howto build Apache Celix	
