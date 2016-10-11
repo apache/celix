@@ -63,5 +63,5 @@ if (DEPENDENCY_MANAGER_CXX)
             dependency_manager_cxx
     )
 
-    install(TARGETS dependency_manager_cxx_static DESTINATION lib COMPONENT dependency_manager_cxx)
+    install(TARGETS dependency_manager_cxx_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dependency_manager_cxx)
 endif (DEPENDENCY_MANAGER_CXX)

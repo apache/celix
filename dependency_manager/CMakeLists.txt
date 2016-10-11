@@ -84,6 +84,6 @@ if (DEPENDENCY_MANAGER)
 			dependency_manager
 	)
     install_bundle(dm_shell)
-    install(TARGETS dependency_manager_static DESTINATION lib COMPONENT dependency_manager)
-    #install(TARGETS dependency_manager_so DESTINATION lib COMPONENT dependency_manager)
+    install(TARGETS dependency_manager_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dependency_manager)
+    #install(TARGETS dependency_manager_so DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dependency_manager)
 endif (DEPENDENCY_MANAGER)
