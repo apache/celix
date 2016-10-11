@@ -157,7 +157,7 @@ celix_status_t component_create(bundle_context_pt context, const char *name, dm_
         component->isStarted = false;
         component->active = false;
 
-        component->setCLanguageProperty = true;
+        component->setCLanguageProperty = false;
 
         component->dependencyEvents = hashMap_create(NULL, NULL, NULL, NULL);
 

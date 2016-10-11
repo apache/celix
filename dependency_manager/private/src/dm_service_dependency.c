@@ -72,7 +72,7 @@ celix_status_t serviceDependency_create(dm_service_dependency_pt *dependency_ptr
 
 		(*dependency_ptr)->isStarted = false;
 
-        (*dependency_ptr)->addCLanguageFilter = true;
+        (*dependency_ptr)->addCLanguageFilter = false;
 		(*dependency_ptr)->tracked_service = NULL;
 		(*dependency_ptr)->tracked_filter_unmodified = NULL;
 		(*dependency_ptr)->tracked_filter = NULL;
