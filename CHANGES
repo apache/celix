@@ -209,3 +209,5 @@ Changes for 2.0.0
     [CELIX-375] Topology manager deadlocks when interacts with dependency manager
     [CELIX-377] wrong rpath setup in CMake files
     [CELIX-378] Travis build errors on Max OSX
+    [CELIX-379] Extend cmake fucntion add_deploy with an option to specify the launcher
+    [CELIX-380] PROPERTIES_FOR_EACH macro does not iterate over all keys
