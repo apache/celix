@@ -536,12 +536,26 @@ $<JOIN:$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_PROPERTIES>,
         INPUT "${STAGE1_PROPERTIES}"
     )
 
+
+    #Setup launcher using celix target, celix binary or custom launcher
+    if (DEPLOY_LAUNCHER)
+        if (IS_ABSOLUTE "${DEPLOY_LAUNCHER}")
+            #assuming target
+            set(LAUNCHER "${DEPLOY_LAUNCHER}")
+        else()
+            set(LAUNCHER "$<TARGET_FILE:${DEPLOY_LAUNCHER}>")
+        endif()
+    else()
+        #Use CELIX_LAUNCHER
+        set(LAUNCHER "${CELIX_LAUNCHER}")
+    endif()
+
     #softlink celix exe file
     add_custom_command(OUTPUT "${DEPLOY_EXE}"
-        COMMAND ${LINK_CMD} -s "${CELIX_LAUNCHER}" "${DEPLOY_EXE}"
+        COMMAND ${LINK_CMD} -s "${LAUNCHER}" "${DEPLOY_EXE}"
         WORKING_DIRECTORY ${DEPLOY_LOCATION}
-        DEPENDS "${CELIX_LAUNCHER}" 
-        COMMENT "Symbolic link celix exe to ${DEPLOY_EXE}" VERBATIM
+        DEPENDS "${LAUNCHER}" 
+        COMMENT "Symbolic link launcher to ${DEPLOY_EXE}" VERBATIM
     ) 
 
 
@@ -556,22 +570,14 @@ $<JOIN:$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_PROPERTIES>,
         OUTPUT ${DEPLOY_RELEASE_SH}
         CONTENT ${RELEASE_CONTENT}
     )
-    if(DEPLOY_LAUNCHER)
-        if(TARGET ${DEPLOY_LAUNCHER})
-            set(RUN_CONTENT "${RELEASE_CONTENT}\n$<TARGET_FILE:${DEPLOY_LAUNCHER}> \$@\n")
-        else() 
-            set(RUN_CONTENT "${RELEASE_CONTENT}\n${DEPLOY_LAUNCHER} \$@\n")
-        endif()
-    else()
-        set(RUN_CONTENT "${RELEASE_CONTENT}\ncelix \$@\n")
-    endif()
+    set(RUN_CONTENT "${RELEASE_CONTENT}\n${LAUNCHER} \$@\n")
     file(GENERATE
         OUTPUT ${DEPLOY_RUN_SH}
         CONTENT ${RUN_CONTENT}
     )
 
     #generate eclipse project launch file
-    set(PROGRAM_NAME "${CELIX_LAUNCHER}")
+    set(PROGRAM_NAME "${LAUNCHER}")
     set(CONTAINER_NAME ${DEPLOY_NAME})
     set(PROJECT_ATTR "${CMAKE_PROJECT_NAME}-build")
     set(WORKING_DIRECTORY ${DEPLOY_LOCATION})

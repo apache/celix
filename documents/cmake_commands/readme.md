@@ -160,6 +160,7 @@ add_deploy(<deploy_target_name>
     [COPY] 
     [GROUP group_name]
     [NAME deploy_name]
+    [LAUNCHER launcher]
     [BUNDLES <bundle1> <bundle2> ...]
     [PROPERTIES "prop1=val1" "prop2=val2" ...]
 )
@@ -177,6 +178,7 @@ If the bundle target is never added CMake will give an error:
 - If COPY is provided the selected bundles will be copied in a bundles dir and the generated config.properties will use relative paths to the bundle locations. Default bundles will not be copied and the generated config.properties will use absolute references to the bundle locations.
 - If GROUP is provided the deployment will be grouped in the provided group name. 
 - If NAME is provided that name will be used for the deployment dir. Default the deploy target name will be used.
+- If LAUNCHER is provided that path or target will be used as launcher executable for the deployment. If no LAUNCHER is not provided the celix executable will be used.
 - If BUNDLES is provided the list of bundles will be added the the generated config.properties for startup. Combined with COPY the bundles will also be copied to a bundles dir.
 - If PROPERTIES is provided the list of properties will be appended to the generated config.properties
 
