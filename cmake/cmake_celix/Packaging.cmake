@@ -456,7 +456,7 @@ function(add_deploy)
     list(REMOVE_AT ARGN 0)
 
     set(OPTIONS COPY)
-    set(ONE_VAL_ARGS GROUP NAME)
+    set(ONE_VAL_ARGS GROUP NAME LAUNCHER)
     set(MULTI_VAL_ARGS BUNDLES PROPERTIES)
     cmake_parse_arguments(DEPLOY "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
 
@@ -556,7 +556,15 @@ $<JOIN:$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_PROPERTIES>,
         OUTPUT ${DEPLOY_RELEASE_SH}
         CONTENT ${RELEASE_CONTENT}
     )
-    set(RUN_CONTENT "${RELEASE_CONTENT}\ncelix \$@")
+    if(DEPLOY_LAUNCHER)
+        if(TARGET ${DEPLOY_LAUNCHER})
+            set(RUN_CONTENT "${RELEASE_CONTENT}\n$<TARGET_FILE:${DEPLOY_LAUNCHER}> \$@\n")
+        else() 
+            set(RUN_CONTENT "${RELEASE_CONTENT}\n${DEPLOY_LAUNCHER} \$@\n")
+        endif()
+    else()
+        set(RUN_CONTENT "${RELEASE_CONTENT}\ncelix \$@\n")
+    endif()
     file(GENERATE
         OUTPUT ${DEPLOY_RUN_SH}
         CONTENT ${RUN_CONTENT}
