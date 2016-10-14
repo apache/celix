@@ -28,10 +28,10 @@ include_directories(
 
 set(MEMSTREAM_SOURCES )
 set(MEMSTREAM_INCLUDES )
-if (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin" OR ANDROID) 
-	set(MEMSTREAM_SOURCES private/src/memstream/open_memstream.c private/src/memstream/fmemopen.c)
-	set(MEMSTREAM_INCLUDES public/include/memstream/open_memstream.h public/include/memstream/fmemopen.h)
-    include_directories(public/include/memstream)
+if (APPLE OR ANDROID)
+	set(MEMSTREAM_SOURCES ${PROJECT_SOURCE_DIR}/utils/private/src/memstream/open_memstream.c  ${PROJECT_SOURCE_DIR}/utils/private/src/memstream/fmemopen.c)
+	set(MEMSTREAM_INCLUDES ${PROJECT_SOURCE_DIR}/utils/public/include/memstream/open_memstream.h ${PROJECT_SOURCE_DIR}/utils/public/include/memstream/fmemopen.h)
+    include_directories(${PROJECT_SOURCE_DIR}/utils/public/include/memstream)
 endif()
 
 add_library(celix_dfi SHARED

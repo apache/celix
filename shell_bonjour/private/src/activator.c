@@ -73,7 +73,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
         char id[128];
         if (bonjourShellId != NULL) {
-                snprintf(id, 128, bonjourShellId);
+                snprintf(id, 128, "%s", bonjourShellId);
         } else if (hostname != NULL) {
                 snprintf(id, 128, "Celix-%.8s@%s", uuid, hostname);
         } else {

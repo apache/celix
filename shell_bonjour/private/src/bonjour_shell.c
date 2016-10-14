@@ -40,6 +40,11 @@
 #include <celixbool.h>
 #include <shell.h>
 
+#if defined(BSD) || defined(__APPLE__)  || defined(ANDROID)
+#include "open_memstream.h"
+#include "fmemopen.h"
+#endif
+
 #define MAX_BUFFER_SIZE 5120
 
 //static xmlBufferPtr buf; //FOR DEBUG
@@ -358,9 +363,13 @@ static void bonjourShell_parseCommand(bonjour_shell_pt shell, struct connection_
 
 static void bonjourShell_addDataToCurrentContext(const char* out, const char* err) {
 	pthread_mutex_lock(&currentContext->mutex);
-	arrayList_add(currentContext->dataList, strdup(out));
-	arrayList_add(currentContext->dataList, strdup(err));
-        gettimeofday(&currentContext->lastUpdated, NULL);
+    if (out != NULL) {
+	    arrayList_add(currentContext->dataList, strdup(out));
+    }
+	if (err != NULL) {
+        arrayList_add(currentContext->dataList, strdup(err));
+    }
+    gettimeofday(&currentContext->lastUpdated, NULL);
 	pthread_mutex_unlock(&currentContext->mutex);
 	pthread_cond_signal(&currentContext->dataAvailCond);
 }
