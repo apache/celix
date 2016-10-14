@@ -71,7 +71,7 @@ celix_status_t serviceRegistry_create(framework_pt framework, serviceChanged_fun
         reg->serviceChanged = serviceChanged;
 		reg->serviceRegistrations = hashMap_create(NULL, NULL, NULL, NULL);
 		reg->framework = framework;
-		reg->currentServiceId = 1l;
+		reg->currentServiceId = 1UL;
 		reg->serviceReferences = hashMap_create(NULL, NULL, NULL, NULL);
 
         reg->checkDeletedReferences = CHECK_DELETED_REFERENCES;
@@ -218,7 +218,7 @@ celix_status_t serviceRegistry_unregisterService(service_registry_pt registry, b
     while (hashMapIterator_hasNext(iter)) {
         hash_map_pt refsMap = hashMapIterator_nextValue(iter);
         service_reference_pt ref = refsMap != NULL ?
-                                   hashMap_get(refsMap, registration) : NULL;
+                                   hashMap_get(refsMap, (void*)registration->serviceId) : NULL;
         if (ref != NULL) {
             serviceReference_invalidate(ref);
         }
@@ -302,7 +302,7 @@ static celix_status_t serviceRegistry_getServiceReference_internal(service_regis
         hashMap_put(registry->serviceReferences, owner, references);
 	}
 
-    ref = hashMap_get(references, registration);
+    ref = hashMap_get(references, (void*)registration->serviceId);
 
     if (ref == NULL) {
         status = serviceRegistration_getBundle(registration, &bundle);
@@ -310,7 +310,7 @@ static celix_status_t serviceRegistry_getServiceReference_internal(service_regis
             status = serviceReference_create(registry->callback, owner, registration, &ref);
         }
         if (status == CELIX_SUCCESS) {
-            hashMap_put(references, registration, ref);
+            hashMap_put(references, (void*)registration->serviceId, ref);
             hashMap_put(registry->deletedServiceReferences, ref, (void *)false);
         }
     } else {
@@ -453,25 +453,25 @@ celix_status_t serviceRegistry_ungetServiceReference(service_registry_pt registr
 
             hash_map_pt refsMap = hashMap_get(registry->serviceReferences, bundle);
 
-            service_registration_pt reg = NULL;
+            unsigned long reg = 0UL;
             service_reference_pt ref = NULL;
             hash_map_iterator_pt iter = hashMapIterator_create(refsMap);
             while (hashMapIterator_hasNext(iter)) {
                 hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-                reg = hashMapEntry_getKey(entry); //note could be invalid e.g. freed
+                reg = (unsigned long)hashMapEntry_getKey(entry); //note could be invalid e.g. freed
                 ref = hashMapEntry_getValue(entry);
 
                 if (ref == reference) {
                     break;
                 } else {
                     ref = NULL;
-                    reg = NULL;
+                    reg = 0UL;
                 }
             }
             hashMapIterator_destroy(iter);
 
             if (ref != NULL) {
-                hashMap_remove(refsMap, reg);
+                hashMap_remove(refsMap, (void*)reg);
                 int size = hashMap_size(refsMap);
                 if (size == 0) {
                     hashMap_destroy(refsMap, false, false);
@@ -771,7 +771,7 @@ static celix_status_t serviceRegistry_getUsingBundles(service_registry_pt regist
             hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
             bundle_pt registrationUser = hashMapEntry_getKey(entry);
             hash_map_pt regMap = hashMapEntry_getValue(entry);
-            if (hashMap_containsKey(regMap, registration)) {
+            if (hashMap_containsKey(regMap, (void*)registration->serviceId)) {
                 arrayList_add(bundles, registrationUser);
             }
         }

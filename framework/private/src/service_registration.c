@@ -32,23 +32,23 @@
 #include "constants.h"
 
 static celix_status_t serviceRegistration_initializeProperties(service_registration_pt registration, properties_pt properties);
-static celix_status_t serviceRegistration_createInternal(registry_callback_t callback, bundle_pt bundle, const char* serviceName, long serviceId,
+static celix_status_t serviceRegistration_createInternal(registry_callback_t callback, bundle_pt bundle, const char* serviceName, unsigned long serviceId,
         const void * serviceObject, properties_pt dictionary, bool isFactory, service_registration_pt *registration);
 static celix_status_t serviceRegistration_destroy(service_registration_pt registration);
 
-service_registration_pt serviceRegistration_create(registry_callback_t callback, bundle_pt bundle, const char* serviceName, long serviceId, const void * serviceObject, properties_pt dictionary) {
+service_registration_pt serviceRegistration_create(registry_callback_t callback, bundle_pt bundle, const char* serviceName, unsigned long serviceId, const void * serviceObject, properties_pt dictionary) {
     service_registration_pt registration = NULL;
 	serviceRegistration_createInternal(callback, bundle, serviceName, serviceId, serviceObject, dictionary, false, &registration);
 	return registration;
 }
 
-service_registration_pt serviceRegistration_createServiceFactory(registry_callback_t callback, bundle_pt bundle, const char* serviceName, long serviceId, const void * serviceObject, properties_pt dictionary) {
+service_registration_pt serviceRegistration_createServiceFactory(registry_callback_t callback, bundle_pt bundle, const char* serviceName, unsigned long serviceId, const void * serviceObject, properties_pt dictionary) {
     service_registration_pt registration = NULL;
     serviceRegistration_createInternal(callback, bundle, serviceName, serviceId, serviceObject, dictionary, true, &registration);
     return registration;
 }
 
-static celix_status_t serviceRegistration_createInternal(registry_callback_t callback, bundle_pt bundle, const char* serviceName, long serviceId,
+static celix_status_t serviceRegistration_createInternal(registry_callback_t callback, bundle_pt bundle, const char* serviceName, unsigned long serviceId,
         const void * serviceObject, properties_pt dictionary, bool isFactory, service_registration_pt *out) {
     celix_status_t status = CELIX_SUCCESS;
 
@@ -128,7 +128,7 @@ static celix_status_t serviceRegistration_initializeProperties(service_registrat
 	}
 
 
-	snprintf(sId, 32, "%ld", registration->serviceId);
+	snprintf(sId, 32, "%lu", registration->serviceId);
 	properties_set(dictionary, (char *) OSGI_FRAMEWORK_SERVICE_ID, sId);
 
 	if (properties_get(dictionary, (char *) OSGI_FRAMEWORK_OBJECTCLASS) == NULL) {

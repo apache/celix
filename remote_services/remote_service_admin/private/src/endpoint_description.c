@@ -33,12 +33,12 @@
 #include "remote_constants.h"
 #include "constants.h"
 
-static celix_status_t endpointDescription_verifyLongProperty(properties_pt properties, char *propertyName, long *longProperty);
+static celix_status_t endpointDescription_verifyLongProperty(properties_pt properties, char *propertyName, unsigned long *longProperty);
 
 celix_status_t endpointDescription_create(properties_pt properties, endpoint_description_pt *endpointDescription) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	long serviceId = 0L;
+	unsigned long serviceId = 0UL;
 	status = endpointDescription_verifyLongProperty(properties, (char *) OSGI_RSA_ENDPOINT_SERVICE_ID, &serviceId);
 	if (status != CELIX_SUCCESS) {
 		return status;
@@ -75,14 +75,14 @@ celix_status_t endpointDescription_destroy(endpoint_description_pt description) 
     return CELIX_SUCCESS;
 }
 
-static celix_status_t endpointDescription_verifyLongProperty(properties_pt properties, char *propertyName, long *longProperty) {
+static celix_status_t endpointDescription_verifyLongProperty(properties_pt properties, char *propertyName, unsigned long *longProperty) {
     celix_status_t status = CELIX_SUCCESS;
 
     const char *value = properties_get(properties, propertyName);
     if (value == NULL) {
-        *longProperty = 0l;
+        *longProperty = 0UL;
     } else {
-        *longProperty = atol(value);
+        *longProperty = strtoul(value,NULL,10);
     }
 
     return status;

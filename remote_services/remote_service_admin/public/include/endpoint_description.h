@@ -37,7 +37,7 @@ struct endpoint_description {
     char *service;
     // HASH_MAP packageVersions;
     properties_pt properties;
-    long serviceId;
+    unsigned long serviceId;
 };
 
 typedef struct endpoint_description endpoint_description_t;

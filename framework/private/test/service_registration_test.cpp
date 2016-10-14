@@ -100,7 +100,7 @@ TEST(service_registration, create) {
 	callback.handle = registry;
 	char * name = my_strdup("sevice_name");
 	bundle_pt bundle = (bundle_pt) 0x20;
-	long serviceId = 1l;
+	unsigned long serviceId = 1UL;
 	void *service = (void *) 0x30;
 
 	service_registration_pt registration = serviceRegistration_create(callback, bundle, name, serviceId, service, NULL);
@@ -108,7 +108,8 @@ TEST(service_registration, create) {
 	STRCMP_EQUAL(name, registration->className);
 	POINTERS_EQUAL(bundle, registration->bundle);
 	POINTERS_EQUAL(service, registration->svcObj);
-	LONGS_EQUAL(serviceId, registration->serviceId);
+	UNSIGNED_LONGS_EQUAL(serviceId, registration->serviceId);
+
 	LONGS_EQUAL(0, registration->isUnregistering);
 	LONGS_EQUAL(0, registration->isServiceFactory);
 	POINTERS_EQUAL(NULL, registration->serviceFactory);
@@ -132,7 +133,7 @@ TEST(service_registration, createServiceFactory) {
 	callback.handle = registry;
 	char * name = my_strdup("sevice_name");
 	bundle_pt bundle = (bundle_pt) 0x20;
-	long serviceId = 1l;
+	unsigned long serviceId = 1UL;
 	void *service = (void *) 0x30;
 
 	service_registration_pt registration = serviceRegistration_createServiceFactory(callback, bundle, name, serviceId, service, NULL);
@@ -140,7 +141,7 @@ TEST(service_registration, createServiceFactory) {
 	STRCMP_EQUAL(name, registration->className);
 	POINTERS_EQUAL(bundle, registration->bundle);
 	POINTERS_EQUAL(service, registration->svcObj);
-	LONGS_EQUAL(serviceId, registration->serviceId);
+	UNSIGNED_LONGS_EQUAL(serviceId, registration->serviceId);
 	LONGS_EQUAL(0, registration->isUnregistering);
 	LONGS_EQUAL(1, registration->isServiceFactory);
 	POINTERS_EQUAL(service, registration->serviceFactory);

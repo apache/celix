@@ -40,7 +40,7 @@ FRAMEWORK_EXPORT char * string_ndup(const char *s, size_t n);
 FRAMEWORK_EXPORT char * utils_stringTrim(char * string);
 FRAMEWORK_EXPORT bool utils_isStringEmptyOrNull(const char * const str);
 
-FRAMEWORK_EXPORT int utils_compareServiceIdsAndRanking(long servId, long servRank, long otherServId, long otherServRank);
+FRAMEWORK_EXPORT int utils_compareServiceIdsAndRanking(unsigned long servId, long servRank, unsigned long otherServId, long otherServRank);
 
 FRAMEWORK_EXPORT celix_status_t thread_equalsSelf(celix_thread_t thread, bool *equals);
 

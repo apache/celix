@@ -321,7 +321,7 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
 				int expIt = 0;
 				for (expIt = 0; expIt < arrayList_size(exports); expIt++) {
 					export_registration_pt export = arrayList_get(exports, expIt);
-					long serviceId = atol(service);
+					unsigned long serviceId = strtoul(service,NULL,10);
 					if (serviceId == export->endpointDescription->serviceId && export->endpoint != NULL) {
 						uint64_t datalength = request_info->content_length;
 						char* data = malloc(datalength + 1);

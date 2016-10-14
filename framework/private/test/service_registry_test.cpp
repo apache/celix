@@ -38,6 +38,7 @@ extern "C" {
 #include "listener_hook_service.h"
 #include "service_registry.h"
 #include "service_registry_private.h"
+#include "service_registration_private.h"
 #include "celix_log.h"
 
 framework_logger_pt logger = (framework_logger_pt) 0x42;
@@ -112,7 +113,7 @@ TEST(service_registry, create) {
 
 	POINTERS_EQUAL(framework, registry->framework);
 	POINTERS_EQUAL(serviceRegistryTest_serviceChanged, registry->serviceChanged);
-	LONGS_EQUAL(1l, registry->currentServiceId);
+	UNSIGNED_LONGS_EQUAL(1UL, registry->currentServiceId);
 	CHECK(registry->listenerHooks != NULL);
 	CHECK(registry->serviceReferences != NULL);
 	CHECK(registry->serviceRegistrations != NULL);
@@ -126,14 +127,15 @@ TEST(service_registry, getRegisteredServices) {
 	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
 	array_list_pt registrations = NULL;
 	arrayList_create(&registrations);
-	service_registration_pt reg = (service_registration_pt) 0x10;
+	service_registration_pt reg = (service_registration_pt) calloc(1,sizeof(struct serviceRegistration));
+	reg->serviceId = 10UL;
 	arrayList_add(registrations, reg);
 	bundle_pt bundle = (bundle_pt) 0x20;
 	hashMap_put(registry->serviceRegistrations, bundle, registrations);
 
 	hash_map_pt usages = hashMap_create(NULL, NULL, NULL, NULL);
 	service_reference_pt ref = (service_reference_pt) 0x30;
-	hashMap_put(usages, reg, ref);
+	hashMap_put(usages, (void*)reg->serviceId, ref);
 	hashMap_put(registry->serviceReferences, bundle, usages);
 
 	mock()
@@ -153,6 +155,7 @@ TEST(service_registry, getRegisteredServices) {
 	arrayList_destroy(registrations);
 	hashMap_remove(registry->serviceRegistrations, bundle);
 	serviceRegistry_destroy(registry);
+	free(reg);
 	hashMap_destroy(usages, false, false);
 }
 
@@ -297,7 +300,8 @@ TEST(service_registry, unregisterService) {
 	framework_pt framework = (framework_pt) 0x01;
 	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
 	bundle_pt bundle = (bundle_pt) 0x10;
-	service_registration_pt registration = (service_registration_pt) 0x20;
+	service_registration_pt registration = (service_registration_pt) calloc(1,sizeof(struct serviceRegistration));
+	registration->serviceId = 20UL;
 
 	array_list_pt registrations = NULL;
 	arrayList_create(&registrations);
@@ -306,7 +310,7 @@ TEST(service_registry, unregisterService) {
 	service_reference_pt reference = (service_reference_pt) 0x30;
 	hash_map_pt references = hashMap_create(NULL, NULL, NULL, NULL);
 
-	hashMap_put(references, registration, reference);
+	hashMap_put(references, (void*)registration->serviceId, reference);
 	hashMap_put(registry->serviceReferences, bundle, references);
 	properties_pt properties = (properties_pt) 0x40;
 
@@ -343,6 +347,7 @@ TEST(service_registry, unregisterService) {
 
 	serviceRegistry_unregisterService(registry, bundle, registration);
 	hashMap_destroy(references, false,false);
+	free(registration);
 	serviceRegistry_destroy(registry);
 }
 
@@ -408,11 +413,12 @@ TEST(service_registry, getServiceReference){
 	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
 
 	bundle_pt bundle = (bundle_pt) 0x10;
-	service_registration_pt registration = (service_registration_pt) 0x20;
+	service_registration_pt registration = (service_registration_pt) calloc(1,sizeof(struct serviceRegistration));
+	registration->serviceId = 20UL;
 	service_reference_pt reference = (service_reference_pt) 0x50;
 
 	hash_map_pt references = hashMap_create(NULL, NULL, NULL, NULL);
-	hashMap_put(references, registration, reference);
+	hashMap_put(references, (void*)registration->serviceId, reference);
 	hashMap_put(registry->serviceReferences, bundle, references);
 
 	mock().expectOneCall("serviceReference_retain")
@@ -424,6 +430,7 @@ TEST(service_registry, getServiceReference){
 	POINTERS_EQUAL(reference, get_reference);
 
 	hashMap_destroy(references, false, false);
+	free(registration);
 	serviceRegistry_destroy(registry);
 }
 
@@ -433,7 +440,8 @@ TEST(service_registry, getServiceReference_unknownRef){
 	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
 
 	bundle_pt bundle = (bundle_pt) 0x10;
-	service_registration_pt registration = (service_registration_pt) 0x20;
+	service_registration_pt registration = (service_registration_pt) calloc(1,sizeof(struct serviceRegistration));
+	registration->serviceId = 20UL;
 	service_reference_pt reference = (service_reference_pt) 0x50;
 
 	//test getting ref from bundle without refs
@@ -456,6 +464,7 @@ TEST(service_registry, getServiceReference_unknownRef){
 	//cleanup
 	hash_map_pt del = (hash_map_pt) hashMap_remove(registry->serviceReferences, bundle);
 	hashMap_destroy(del, false, false);
+	free(registration);
 	serviceRegistry_destroy(registry);
 }
 
@@ -465,7 +474,9 @@ TEST(service_registry, getServiceReferences) {
 	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
 
 	bundle_pt bundle = (bundle_pt) 0x10;
-	service_registration_pt registration = (service_registration_pt) 0x20;
+	service_registration_pt registration = (service_registration_pt) calloc(1,sizeof(struct serviceRegistration));
+	registration->serviceId = 20UL;
+
 	array_list_pt registrations = NULL;
 	arrayList_create(&registrations);
 	arrayList_add(registrations, registration);
@@ -476,7 +487,7 @@ TEST(service_registry, getServiceReferences) {
 
 	hash_map_pt references = hashMap_create(NULL, NULL, NULL, NULL);
 	service_reference_pt reference = (service_reference_pt) 0x50;
-	hashMap_put(references, registration, reference);
+	hashMap_put(references, (void*)registration->serviceId, reference);
 	hashMap_put(registry->serviceReferences, bundle, references);
 
 	mock()
@@ -522,6 +533,7 @@ TEST(service_registry, getServiceReferences) {
 	arrayList_destroy(actual);
 	arrayList_destroy(registrations);
 	hashMap_remove(registry->serviceRegistrations, bundle);
+	free(registration);
 	serviceRegistry_destroy(registry);
 }
 
@@ -531,7 +543,9 @@ TEST(service_registry, getServiceReferences_noFilterOrName) {
 	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
 
 	bundle_pt bundle = (bundle_pt) 0x10;
-	service_registration_pt registration = (service_registration_pt) 0x20;
+	service_registration_pt registration = (service_registration_pt) calloc(1,sizeof(struct serviceRegistration));
+	registration->serviceId = 20UL;
+
 	array_list_pt registrations = NULL;
 	arrayList_create(&registrations);
 	arrayList_add(registrations, registration);
@@ -541,7 +555,7 @@ TEST(service_registry, getServiceReferences_noFilterOrName) {
 
 	hash_map_pt references = hashMap_create(NULL, NULL, NULL, NULL);
 	service_reference_pt reference = (service_reference_pt) 0x50;
-	hashMap_put(references, registration, reference);
+	hashMap_put(references, (void*)registration->serviceId, reference);
 	hashMap_put(registry->serviceReferences, bundle, references);
 
 	mock()
@@ -576,6 +590,7 @@ TEST(service_registry, getServiceReferences_noFilterOrName) {
 	arrayList_destroy(actual);
 	arrayList_destroy(registrations);
 	hashMap_remove(registry->serviceRegistrations, bundle);
+	free(registration);
 	serviceRegistry_destroy(registry);
 }
 
@@ -937,12 +952,13 @@ TEST(service_registry, getListenerHooks) {
 	framework_pt framework = (framework_pt) 0x01;
 	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
 	bundle_pt bundle = (bundle_pt) 0x10;
-	service_registration_pt registration = (service_registration_pt) 0x20;
+	service_registration_pt registration = (service_registration_pt) calloc(1,sizeof(struct serviceRegistration));
+	registration->serviceId = 20UL;
 	arrayList_add(registry->listenerHooks, registration);
 
 	hash_map_pt usages = hashMap_create(NULL, NULL, NULL, NULL);
 	service_reference_pt reference = (service_reference_pt) 0x30;
-	hashMap_put(usages, registration, reference);
+	hashMap_put(usages, (void*)registration->serviceId, reference);
 	hashMap_put(registry->serviceReferences, bundle, usages);
 
 	mock()
@@ -963,6 +979,7 @@ TEST(service_registry, getListenerHooks) {
 	hashMap_destroy(usages, false, false);
 	arrayList_destroy(hooks);
 	arrayList_remove(registry->listenerHooks, 0);
+	free(registration);
 	serviceRegistry_destroy(registry);
 }
 
@@ -989,10 +1006,16 @@ TEST(service_registry, getUsingBundles) {
 	framework_pt framework = (framework_pt) 0x01;
 	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
 
-	service_registration_pt registration = (service_registration_pt) 0x10;
-	service_registration_pt registration2 = (service_registration_pt) 0x20;
-	service_registration_pt registration3 = (service_registration_pt) 0x30;
-	service_registration_pt registration4 = (service_registration_pt) 0x40;
+	service_registration_pt registration  = (service_registration_pt) calloc(1,sizeof(struct serviceRegistration));
+	service_registration_pt registration2 = (service_registration_pt) calloc(1,sizeof(struct serviceRegistration));
+	service_registration_pt registration3 = (service_registration_pt) calloc(1,sizeof(struct serviceRegistration));
+	service_registration_pt registration4 = (service_registration_pt) calloc(1,sizeof(struct serviceRegistration));
+
+	registration->serviceId  = 10UL;
+	registration2->serviceId = 20UL;
+	registration3->serviceId = 30UL;
+	registration4->serviceId = 40UL;
+
 	service_reference_pt reference = (service_reference_pt) 0x50;
 	service_reference_pt reference2 = (service_reference_pt) 0x60;
 	service_reference_pt reference3 = (service_reference_pt) 0x70;
@@ -1005,19 +1028,19 @@ TEST(service_registry, getUsingBundles) {
 
 	//only contains registration1
 	hash_map_pt references = hashMap_create(NULL, NULL, NULL, NULL);
-	hashMap_put(references, registration, reference);
+	hashMap_put(references, (void*)registration->serviceId, reference);
 	hashMap_put(registry->serviceReferences, bundle, references);
 
 	//contains registration1 and one other
 	hash_map_pt references2 = hashMap_create(NULL, NULL, NULL, NULL);
-	hashMap_put(references2, registration, reference2);
-	hashMap_put(references2, registration2, reference3);
+	hashMap_put(references2, (void*)registration->serviceId, reference2);
+	hashMap_put(references2, (void*)registration2->serviceId, reference3);
 	hashMap_put(registry->serviceReferences, bundle2, references2);
 
 	//contains 2 registrations, but not registration1
 	hash_map_pt references3 = hashMap_create(NULL, NULL, NULL, NULL);
-	hashMap_put(references3, registration3, reference4);
-	hashMap_put(references3, registration4, reference5);
+	hashMap_put(references3, (void*)registration3->serviceId, reference4);
+	hashMap_put(references3, (void*)registration4->serviceId, reference5);
 	hashMap_put(registry->serviceReferences, bundle3, references3);
 
 	//call to getUsingBundles
@@ -1043,4 +1066,10 @@ TEST(service_registry, getUsingBundles) {
 	hashMap_destroy(references2, false, false);
 	hashMap_destroy(references3, false, false);
 	serviceRegistry_destroy(registry);
+
+   free(registration);
+   free(registration2);
+   free(registration3);
+   free(registration4);
+
 }

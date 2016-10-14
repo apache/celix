@@ -41,7 +41,7 @@ celix_status_t event_create(dm_event_type_e event_type, bundle_pt bundle, bundle
 
 	const char* serviceIdStr = NULL;
 	serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_ID, &serviceIdStr);
-	long servId = atol(serviceIdStr);
+	unsigned long servId = strtoul(serviceIdStr,NULL,10);
 
 	//FIXME service ranking can dynamicly change, but service reference can be removed at any time.
 	const char* rankingStr = NULL;

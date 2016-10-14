@@ -28,23 +28,23 @@
 #include "service_registration.h"
 #include "service_registration_private.h"
 
-service_registration_pt serviceRegistration_create(registry_callback_t callback, bundle_pt bundle, const char* serviceName, long serviceId, const void* serviceObject, properties_pt dictionary) {
+service_registration_pt serviceRegistration_create(registry_callback_t callback, bundle_pt bundle, const char* serviceName, unsigned long serviceId, const void* serviceObject, properties_pt dictionary) {
 	mock_c()->actualCall("serviceRegistration_create")
 		->withParameterOfType("registry_callback_t", "callback", &callback)
 		->withPointerParameters("bundle", bundle)
 		->withStringParameters("serviceName", serviceName)
-		->withIntParameters("serviceId", serviceId)
+		->withUnsignedLongIntParameters("serviceId", serviceId)
 		->withPointerParameters("serviceObject", (void*)serviceObject)
 		->withPointerParameters("dictionary", dictionary);
 	return mock_c()->returnValue().value.pointerValue;
 }
 
-service_registration_pt serviceRegistration_createServiceFactory(registry_callback_t callback, bundle_pt bundle, const char* serviceName, long serviceId, const void* serviceObject, properties_pt dictionary) {
+service_registration_pt serviceRegistration_createServiceFactory(registry_callback_t callback, bundle_pt bundle, const char* serviceName, unsigned long serviceId, const void* serviceObject, properties_pt dictionary) {
 	mock_c()->actualCall("serviceRegistration_createServiceFactory")
 		->withParameterOfType("registry_callback_t", "callback", &callback)
 		->withPointerParameters("bundle", bundle)
 		->withStringParameters("serviceName", serviceName)
-		->withIntParameters("serviceId", serviceId)
+		->withUnsignedLongIntParameters("serviceId", serviceId)
 		->withPointerParameters("serviceObject", (void*) serviceObject)
 		->withPointerParameters("dictionary", dictionary);
 	return mock_c()->returnValue().value.pointerValue;

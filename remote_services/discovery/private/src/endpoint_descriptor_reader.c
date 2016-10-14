@@ -358,7 +358,7 @@ int main() {
 		printf("\nEndpoint description #%d:\n", (i+1));
 		endpoint_description_pt edp = arrayList_get(list, i);
 		printf("Id: %s\n", edp->id);
-		printf("Service Id: %ld\n", edp->serviceId);
+		printf("Service Id: %lu\n", edp->serviceId);
 		printf("Framework UUID: %s\n", edp->frameworkUUID);
 		printf("Service: %s\n", edp->service);
 

@@ -313,7 +313,7 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
             char service[pos+1];
             strncpy(service, rest, pos);
             service[pos] = '\0';
-            long serviceId = atol(service);
+            unsigned long serviceId = strtoul(service,NULL,10);
 
             celixThreadMutex_lock(&rsa->exportedServicesLock);
 
@@ -366,7 +366,7 @@ static int remoteServiceAdmin_callback(struct mg_connection *conn) {
                 free(data);
             } else {
                 result = 0;
-                RSA_LOG_WARNING(rsa, "NO export registration found for service id %i", serviceId);
+                RSA_LOG_WARNING(rsa, "NO export registration found for service id %lu", serviceId);
             }
 
             celixThreadMutex_unlock(&rsa->exportedServicesLock);
