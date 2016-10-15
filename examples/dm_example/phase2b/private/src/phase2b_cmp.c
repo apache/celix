@@ -74,7 +74,7 @@ int phase2b_stop(phase2b_cmp_t *cmp) {
 }
 
 int phase2b_deinit(phase2b_cmp_t *cmp) {
-    printf("deinit phase1\n");
+    printf("deinit phase2b\n");
     return 0;
 }
 

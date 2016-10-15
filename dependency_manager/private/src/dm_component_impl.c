@@ -468,9 +468,9 @@ celix_status_t component_handleAdded(dm_component_pt component, dm_service_depen
 
     serviceDependency_setAvailable(dependency, true);
 
-    serviceDependency_invokeSet(dependency, event);
     switch (component->state) {
         case DM_CMP_STATE_WAITING_FOR_REQUIRED: {
+            serviceDependency_invokeSet(dependency, event);
             bool required = false;
             serviceDependency_isRequired(dependency, &required);
             if (required) {
@@ -485,6 +485,7 @@ celix_status_t component_handleAdded(dm_component_pt component, dm_service_depen
             serviceDependency_isRequired(dependency, &required);
             if (!instanceBound) {
                 if (required) {
+                    serviceDependency_invokeSet(dependency, event);
                     serviceDependency_invokeAdd(dependency, event);
                 }
                 dm_event_pt event = NULL;
@@ -498,9 +499,10 @@ celix_status_t component_handleAdded(dm_component_pt component, dm_service_depen
             break;
         }
         case DM_CMP_STATE_TRACKING_OPTIONAL:
-		component_suspend(component,dependency);
+		    component_suspend(component,dependency);
+            serviceDependency_invokeSet(dependency, event);
             serviceDependency_invokeAdd(dependency, event);
-		component_resume(component,dependency);
+		    component_resume(component,dependency);
             dm_event_pt event = NULL;
             component_getDependencyEvent(component, dependency, &event);
             component_updateInstance(component, dependency, event, false, true);
@@ -529,9 +531,9 @@ celix_status_t component_handleChanged(dm_component_pt component, dm_service_dep
         serviceDependency_invokeSet(dependency, event);
         switch (component->state) {
             case DM_CMP_STATE_TRACKING_OPTIONAL:
-			component_suspend(component,dependency);
+			    component_suspend(component,dependency);
                 serviceDependency_invokeChange(dependency, event);
-			component_resume(component,dependency);
+			    component_resume(component,dependency);
                 dm_event_pt hevent = NULL;
                 component_getDependencyEvent(component, dependency, &hevent);
                 component_updateInstance(component, dependency, hevent, true, false);
@@ -598,10 +600,10 @@ celix_status_t component_handleRemoved(dm_component_pt component, dm_service_dep
                 break;
             }
             case DM_CMP_STATE_TRACKING_OPTIONAL:
-			component_suspend(component,dependency);
+			    component_suspend(component,dependency);
                 serviceDependency_invokeSet(dependency, event);
                 serviceDependency_invokeRemove(dependency, event);
-			component_resume(component,dependency);
+			    component_resume(component,dependency);
                 dm_event_pt hevent = NULL;
                 component_getDependencyEvent(component, dependency, &hevent);
                 component_updateInstance(component, dependency, hevent, false, false);
@@ -651,9 +653,9 @@ celix_status_t component_handleSwapped(dm_component_pt component, dm_service_dep
                 break;
             }
             case DM_CMP_STATE_TRACKING_OPTIONAL:
-			component_suspend(component,dependency);
+			    component_suspend(component,dependency);
                 serviceDependency_invokeSwap(dependency, event, newEvent);
-			component_resume(component,dependency);
+			    component_resume(component,dependency);
                 break;
             default:
                 break;
