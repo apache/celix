@@ -15,6 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
+if(NOT APPLE)
+#Importing and exporting libraries not (yet) work under OSX. 
+
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("public/include")
 
@@ -36,7 +39,7 @@ add_bundle(hello
     IMPORT_LIBRARIES hello_test2lib
 )
 
-add_bundle(hello_import
+add_bundle(hello_export
     VERSION "1.0"
     NO_ACTIVATOR
     EXPORT_LIBRARIES hello_test2lib
@@ -54,5 +57,7 @@ add_deploy(helloworld_byref
 add_deploy(helloworld_withcopy
     GROUP hello
     COPY #Ensures that bundles are copied in the deploy location
-    BUNDLES hello_import hello shell shell_tui
+    BUNDLES hello_export hello shell shell_tui
 )
+
+endif()
