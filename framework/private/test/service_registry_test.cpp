@@ -647,6 +647,7 @@ TEST(service_registry, ungetServiceReference){
 	service_reference_pt reference3 = (service_reference_pt) 0x60;
 	bundle_pt bundle = (bundle_pt) 0x70;
 	bundle_pt bundle2 = (bundle_pt) 0x80;
+    module_pt module = (module_pt) 0x90;
 
 	hash_map_pt references = hashMap_create(NULL, NULL, NULL, NULL);
 	hashMap_put(references, registration, reference);
@@ -692,13 +693,31 @@ TEST(service_registry, ungetServiceReference){
 	destroyed = true;
 	count = 5;
 
+    const char* mod_name = "mod name";
+    const char* srv_name = "srv name";
 	mock().expectOneCall("serviceReference_getUsageCount")
 			.withParameter("reference", reference)
 			.withOutputParameterReturning("count", &count, sizeof(count));
 	mock().expectOneCall("serviceReference_release")
 			.withParameter("ref", reference)
 			.withOutputParameterReturning("destroyed", &destroyed, sizeof(destroyed));
-	mock().expectOneCall("framework_log");
+    mock().expectNCalls(2, "bundle_getCurrentModule")
+            .withParameter("bundle", bundle)
+			.withOutputParameterReturning("module", &module, sizeof(module));
+    mock().expectNCalls(2, "module_getSymbolicName")
+            .withParameter("module", module)
+			.withOutputParameterReturning("symbolicName", &mod_name, sizeof(mod_name));
+    mock().expectOneCall("serviceReference_getProperty")
+            .withParameter("reference", reference)
+            .withParameter("key", OSGI_FRAMEWORK_OBJECTCLASS)
+			.withOutputParameterReturning("value", &srv_name, sizeof(srv_name));
+    mock().expectOneCall("serviceReference_getServiceRegistration")
+            .withParameter("reference", reference)
+			.withOutputParameterReturning("registration", &registration, sizeof(registration));
+    mock().expectOneCall("serviceRegistration_getBundle")
+            .withParameter("registration", registration)
+			.withOutputParameterReturning("bundle", &bundle, sizeof(bundle));
+	mock().expectNCalls(2, "framework_log");
 
 	serviceRegistry_ungetServiceReference(registry, bundle, reference);
 
