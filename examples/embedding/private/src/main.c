@@ -75,6 +75,7 @@ int main(void) {
 
 						((struct fooSrv*) fs2)->foo(((struct fooSrv*) fs2)->handle);
 
+						bundleContext_ungetService(context, ref, NULL);
 						bundleContext_ungetServiceReference(context, ref);
 						serviceRegistration_unregister(reg);
 					}

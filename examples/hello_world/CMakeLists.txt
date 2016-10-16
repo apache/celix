@@ -16,7 +16,7 @@
 # under the License.
 
 if(NOT APPLE)
-#Importing and exporting libraries not (yet) work under OSX. 
+#Importing and exporting libraries not (yet) work under OSX.
 
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("public/include")
