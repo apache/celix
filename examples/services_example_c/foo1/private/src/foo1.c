@@ -59,12 +59,14 @@ void foo1_destroy(foo1_t *self) {
 }
 
 int foo1_start(foo1_t *self) {
+    printf("starting foo1\n");
     self->running = true;
     pthread_create(&self->thread, NULL, foo1_thread, self);
     return OK;
 }
 
 int foo1_stop(foo1_t *self) {
+    printf("stopping foo1\n");
     self->running = false;
     pthread_kill(self->thread, SIGUSR1);
     pthread_join(self->thread, NULL);
@@ -72,6 +74,7 @@ int foo1_stop(foo1_t *self) {
 }
 
 int foo1_setExample(foo1_t *self, const example_t *example) {
+    printf("Setting example %p for foo1\n", example);
     pthread_mutex_lock(&self->mutex);
     self->example = example; //NOTE could be NULL if req is not mandatory
     pthread_mutex_unlock(&self->mutex);
@@ -93,7 +96,7 @@ static void* foo1_thread(void *userdata) {
             }
         }
         pthread_mutex_unlock(&self->mutex);
-        usleep(10000000);
+        usleep(30000000);
     }
     return NULL;
 }

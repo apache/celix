@@ -61,12 +61,14 @@ void foo2_destroy(foo2_t *self) {
 }
 
 int foo2_start(foo2_t *self) {
+    printf("starting foo2\n");
     self->running = true;
     pthread_create(&self->thread, NULL, foo2_thread, self);
     return OK;
 }
 
 int foo2_stop(foo2_t *self) {
+    printf("stopping foo2\n");
     self->running = false;
     pthread_kill(self->thread, SIGUSR1);
     pthread_join(self->thread, NULL);
@@ -76,6 +78,7 @@ int foo2_stop(foo2_t *self) {
 int foo2_addExample(foo2_t *self, const example_t *example) {
     //NOTE foo2 is suspended -> thread is not running  -> safe to update
     int status = OK;
+    printf("Adding example %p for foo2\n", example);
     status = arrayList_add(self->examples, (void *)example);
     return status;
 }
@@ -83,6 +86,7 @@ int foo2_addExample(foo2_t *self, const example_t *example) {
 int foo2_removeExample(foo2_t *self, const example_t *example) {
     //NOTE foo2 is suspended -> thread is not running  -> safe to update
     int status = OK;
+    printf("Removing example %p for foo2\n", example);
     status = arrayList_removeElement(self->examples, (void*)example);
     return status;
 }
@@ -103,7 +107,7 @@ static void* foo2_thread(void *userdata) {
                 printf("Error invoking method for example\n");
             }
         }
-        usleep(10000000);
+        usleep(15000000);
     }
     return NULL;
 }

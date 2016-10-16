@@ -531,11 +531,11 @@ static void serviceRegistry_logWarningServiceReferenceUsageCount(service_registr
     if (usageCount > 0) {
         fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Service Reference destroyed with usage count is %zu, expected 0. Look for missing bundleContext_ungetService calls.", usageCount);
     }
-    if (refCount > 1) {
+    if (refCount > 0) {
         fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Dangling service reference. Reference count is %zu, expected 1.  Look for missing bundleContext_ungetServiceReference calls.", refCount);
     }
 
-    if(usageCount > 0 || refCount > 1) {
+    if(usageCount > 0 || refCount > 0) {
         module_pt module_ptr = NULL;
         bundle_getCurrentModule(bundle, &module_ptr);
         const char* bundle_name = NULL;
@@ -575,10 +575,7 @@ celix_status_t serviceRegistry_clearReferencesFor(service_registry_pt registry, 
 
             serviceReference_getUsageCount(ref, &usageCount);
             serviceReference_getReferenceCount(ref, &refCount);
-
-            if (refCount > 1 || usageCount > 0) {
-                serviceRegistry_logWarningServiceReferenceUsageCount(registry, bundle, ref, usageCount, refCount);
-            }
+            serviceRegistry_logWarningServiceReferenceUsageCount(registry, bundle, ref, usageCount, refCount);
 
             while (usageCount > 0) {
                 serviceReference_decreaseUsage(ref, &usageCount);

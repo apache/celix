@@ -118,7 +118,7 @@ celix_status_t serviceTracker_open(service_tracker_pt tracker) {
 	celix_status_t status = CELIX_SUCCESS;
 	listener = (service_listener_pt) malloc(sizeof(*listener));
 	
-	status = bundleContext_getServiceReferences(tracker->context, NULL, tracker->filter, &initial);
+	status = bundleContext_getServiceReferences(tracker->context, NULL, tracker->filter, &initial); //REF COUNT to 1
 	if (status == CELIX_SUCCESS && listener != NULL) {
 		service_reference_pt initial_reference;
 		unsigned int i;
@@ -131,7 +131,8 @@ celix_status_t serviceTracker_open(service_tracker_pt tracker) {
 
 			for (i = 0; i < arrayList_size(initial); i++) {
 				initial_reference = (service_reference_pt) arrayList_get(initial, i);
-				serviceTracker_track(tracker, initial_reference, NULL);
+				serviceTracker_track(tracker, initial_reference, NULL); //REF COUNT to 2
+                bundleContext_ungetServiceReference(tracker->context, initial_reference); //REF COUNT to 1
 			}
 
 			arrayList_destroy(initial);
@@ -407,8 +408,8 @@ static celix_status_t serviceTracker_untrack(service_tracker_pt tracker, service
 
     if (found && tracked != NULL) {
         serviceTracker_invokeRemovingService(tracker, tracked->reference, tracked->service);
-        free(tracked);
         bundleContext_ungetServiceReference(tracker->context, reference);
+        free(tracked);
     }
    
     framework_logIfError(logger, status, NULL, "Cannot untrack reference");

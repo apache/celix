@@ -291,6 +291,8 @@ celix_status_t serviceDependency_getFilter(dm_service_dependency_pt dependency, 
 celix_status_t serviceDependency_setCallbacks(dm_service_dependency_pt dependency, service_set_fpt set, service_add_fpt add, service_change_fpt change, service_remove_fpt remove, service_swap_fpt swap) {
 	celix_status_t status = CELIX_SUCCESS;
 
+    //printf("Setting callbacks set %p, add %p, change %p, remove %p and swap %p\n", set, add, change, remove, swap);
+
 	if (!dependency) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	}

@@ -1669,8 +1669,10 @@ void fw_serviceChanged(framework_pt framework, service_event_type_e eventType, s
                 serviceRegistry_ungetServiceReference(framework->registry, element->bundle, reference);
                 
                 if (eventType == OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING) {
-                    arrayList_removeElement(element->retainedReferences, reference);
-                    serviceRegistry_ungetServiceReference(framework->registry, element->bundle, reference); // decrease retain counter
+                    //if service listener was active when service was registered, release the retained reference
+                    if (arrayList_removeElement(element->retainedReferences, reference)) {
+                        serviceRegistry_ungetServiceReference(framework->registry, element->bundle, reference); // decrease retain counter
+                    }
                 }
                 
                 free(event);
