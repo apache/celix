@@ -51,7 +51,7 @@ bundle_private_libs(hello
 
 add_deploy(helloworld_byref
     GROUP hello
-    BUNDLES hello_import hello shell shell_tui
+    BUNDLES hello_export hello shell shell_tui
 )
 
 add_deploy(helloworld_withcopy
