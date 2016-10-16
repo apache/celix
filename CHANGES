@@ -210,4 +210,6 @@ Changes for 2.0.0
     [CELIX-377] wrong rpath setup in CMake files
     [CELIX-378] Travis build errors on Max OSX
     [CELIX-379] Extend cmake fucntion add_deploy with an option to specify the launcher
+    [CELIX-376] serviceRegistration sometimes paired to invalidated serviceReference
     [CELIX-380] PROPERTIES_FOR_EACH macro does not iterate over all keys
+    [CELIX-381] Invoke set for dependency manager called before suspending the component

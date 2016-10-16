@@ -560,7 +560,7 @@ celix_status_t dm_init(void *userData, bundle_context_pt context, dm_dependency_
  	service because after removal of the service the memory location of that service
 	could be freed
 	*/
-    serviceDependency_setCallbacksSafe(dep, foo2_t*, const example_t*, NULL, foo2_addExample, foo2_removeExample, NULL, NULL);
+    serviceDependency_setCallbacksSafe(dep, foo2_t*, const example_t*, NULL, foo2_addExample, NULL, foo2_removeExample, NULL);
 	component_addServiceDependency(cmp, dep);
 
 	dependencyManager_add(manager, cmp);
