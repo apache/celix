@@ -255,7 +255,10 @@ celix_status_t serviceRegistration_setProperties(service_registration_pt registr
 
 
 celix_status_t serviceRegistration_getBundle(service_registration_pt registration, bundle_pt *bundle) {
-	celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status = CELIX_SUCCESS;
+    if (registration == NULL) {
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
 
     if (registration != NULL && *bundle == NULL) {
         celixThreadRwlock_readLock(&registration->lock);

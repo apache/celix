@@ -142,12 +142,11 @@ celix_status_t bundle_getArchive(bundle_pt bundle, bundle_archive_pt *archive) {
 celix_status_t bundle_getCurrentModule(bundle_pt bundle, module_pt *module) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	if (bundle == NULL || *module != NULL || arrayList_size(bundle->modules)==0 ) {
+	if (bundle == NULL || arrayList_size(bundle->modules)==0 ) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
 		*module = arrayList_get(bundle->modules, arrayList_size(bundle->modules) - 1);
 	}
-
 
 	return status;
 }

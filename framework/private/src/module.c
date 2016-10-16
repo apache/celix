@@ -177,7 +177,7 @@ version_pt module_getVersion(module_pt module) {
 celix_status_t module_getSymbolicName(module_pt module, const char **symbolicName) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	if (module == NULL || *symbolicName != NULL) {
+	if (module == NULL) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
 		*symbolicName = module->symbolicName;

@@ -396,7 +396,6 @@ celix_status_t serviceDependency_start(dm_service_dependency_pt dependency) {
 
 celix_status_t serviceDependency_stop(dm_service_dependency_pt dependency) {
 	celix_status_t status = CELIX_SUCCESS;
-	celix_status_t tmp_status;
 
 	if (!dependency) {
 		status = CELIX_ILLEGAL_ARGUMENT;
@@ -406,16 +405,11 @@ celix_status_t serviceDependency_stop(dm_service_dependency_pt dependency) {
 		dependency->isStarted = false;
 	}
 
-	if (status == CELIX_SUCCESS) {
-		if (dependency->tracker) {
-			tmp_status = serviceTracker_close(dependency->tracker);
-			if (tmp_status != CELIX_SUCCESS) {
-				status = tmp_status;
-			}
-			tmp_status = serviceTracker_destroy(dependency->tracker);
-			if (tmp_status != CELIX_SUCCESS && status == CELIX_SUCCESS) {
-				status = tmp_status;
-			}
+	if (status == CELIX_SUCCESS && dependency->tracker) {
+		status = serviceTracker_close(dependency->tracker);
+		if (status == CELIX_SUCCESS) {
+			serviceTracker_destroy(dependency->tracker);
+			dependency->tracker = NULL;
 		}
 	}
 
@@ -485,29 +479,30 @@ celix_status_t serviceDependency_invokeSet(dm_service_dependency_pt dependency, 
 				curServRef = serviceReference;
 			}
 		} else {
-			arrayList_destroy(serviceReferences);
-			return status;
+			break;
 		}
 
 	}
 
 	arrayList_destroy(serviceReferences);
 
-	if (curServRef) {
-		status = bundleContext_getService(event->context, curServRef, &service);
-	} else {
-		service = NULL;
-	}
+	if (status == CELIX_SUCCESS) {
+		if (curServRef) {
+			status = bundleContext_getService(event->context, curServRef, &service);
+		} else {
+			service = NULL;
+		}
 
-	if (dependency->set) {
-		dependency->set(serviceDependency_getCallbackHandle(dependency), service);
-	}
-	if (dependency->set_with_ref) {
-		dependency->set_with_ref(serviceDependency_getCallbackHandle(dependency), curServRef, service);
-	}
+		if (dependency->set) {
+			dependency->set(serviceDependency_getCallbackHandle(dependency), service);
+		}
+		if (dependency->set_with_ref) {
+			dependency->set_with_ref(serviceDependency_getCallbackHandle(dependency), curServRef, service);
+		}
 
-	if (curServRef) {
-		bundleContext_ungetService(event->context, curServRef, NULL);
+		if (curServRef) {
+			bundleContext_ungetService(event->context, curServRef, NULL);
+		}
 	}
 
 	return status;
