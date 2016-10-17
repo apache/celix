@@ -543,9 +543,8 @@ static void serviceRegistry_logWarningServiceReferenceUsageCount(service_registr
 
         const char* service_name = "unknown";
         const char* bundle_provider_name = "unknown";
-        if (ref != NULL) {
+        if (refCount > 0 && ref != NULL) {
             serviceReference_getProperty(ref, OSGI_FRAMEWORK_OBJECTCLASS, &service_name);
-
             service_registration_pt reg = NULL;
             bundle_pt bundle = NULL;
             module_pt mod = NULL;

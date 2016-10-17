@@ -701,22 +701,12 @@ TEST(service_registry, ungetServiceReference){
 	mock().expectOneCall("serviceReference_release")
 			.withParameter("ref", reference)
 			.withOutputParameterReturning("destroyed", &destroyed, sizeof(destroyed));
-    mock().expectNCalls(2, "bundle_getCurrentModule")
+    mock().expectNCalls(1, "bundle_getCurrentModule")
             .withParameter("bundle", bundle)
 			.withOutputParameterReturning("module", &module, sizeof(module));
-    mock().expectNCalls(2, "module_getSymbolicName")
+    mock().expectNCalls(1, "module_getSymbolicName")
             .withParameter("module", module)
 			.withOutputParameterReturning("symbolicName", &mod_name, sizeof(mod_name));
-    mock().expectOneCall("serviceReference_getProperty")
-            .withParameter("reference", reference)
-            .withParameter("key", OSGI_FRAMEWORK_OBJECTCLASS)
-			.withOutputParameterReturning("value", &srv_name, sizeof(srv_name));
-    mock().expectOneCall("serviceReference_getServiceRegistration")
-            .withParameter("reference", reference)
-			.withOutputParameterReturning("registration", &registration, sizeof(registration));
-    mock().expectOneCall("serviceRegistration_getBundle")
-            .withParameter("registration", registration)
-			.withOutputParameterReturning("bundle", &bundle, sizeof(bundle));
 	mock().expectNCalls(2, "framework_log");
 
 	serviceRegistry_ungetServiceReference(registry, bundle, reference);
@@ -751,30 +741,25 @@ TEST(service_registry, ungetServiceReference){
 	serviceRegistry_destroy(registry);
 }
 
-/*TODO FIX
-TEST(service_registry, clearReferencesFor){
+TEST(service_registry, clearReferencesFor_1){
 	service_registry_pt registry = NULL;
 	framework_pt framework = (framework_pt) 0x01;
 	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
 
 	service_registration_pt registration = (service_registration_pt) 0x10;
-	service_registration_pt registration2 = (service_registration_pt) 0x20;
 	service_reference_pt reference = (service_reference_pt) 0x40;
-	service_reference_pt reference2 = (service_reference_pt) 0x50;
 	bundle_pt bundle = (bundle_pt) 0x70;
 	module_pt module = (module_pt) 0x80;
 	const char* modName = "mod name";
 
 	hash_map_pt references = hashMap_create(NULL, NULL, NULL, NULL);
 	hashMap_put(references, registration, reference);
-	hashMap_put(references, registration2, reference2);
 	hashMap_put(registry->serviceReferences, bundle, references);
 
 	size_t useCount = 0;
 	size_t refCount = 0;
 	bool destroyed = true;
 	hashMap_put(registry->deletedServiceReferences, reference, (void*) false);
-	hashMap_put(registry->deletedServiceReferences, reference2, (void*) false);
 
 	//expected calls for removing reference1
 	mock().expectOneCall("serviceReference_getUsageCount")
@@ -787,36 +772,67 @@ TEST(service_registry, clearReferencesFor){
 			.withParameter("ref", reference)
 			.withOutputParameterReturning("destroyed", &destroyed, sizeof(destroyed));
 
+	serviceRegistry_clearReferencesFor(registry, bundle);
+
+	serviceRegistry_destroy(registry);
+}
+
+TEST(service_registry, clearReferencesFor_2){
+	service_registry_pt registry = NULL;
+	framework_pt framework = (framework_pt) 0x01;
+	serviceRegistry_create(framework,serviceRegistryTest_serviceChanged, &registry);
+
+	service_registration_pt registration = (service_registration_pt) 0x10;
+	service_reference_pt reference = (service_reference_pt) 0x40;
+	bundle_pt bundle = (bundle_pt) 0x70;
+	module_pt module = (module_pt) 0x80;
+	const char* modName = "mod name";
+    const char* srvName = "srv name";
+
+	hash_map_pt references = hashMap_create(NULL, NULL, NULL, NULL);
+	hashMap_put(references, registration, reference);
+	hashMap_put(registry->serviceReferences, bundle, references);
+
 	//expected calls for removing reference2 (including count error logging)
-	size_t useCount2 = 1;
-	size_t refCount2 = 1;
+	size_t useCount = 1;
+	size_t refCount = 1;
+    bool destroyed = true;
 	mock().expectOneCall("serviceReference_getUsageCount")
-			.withParameter("reference", reference2)
-			.withOutputParameterReturning("count", &useCount2, sizeof(useCount2));
+			.withParameter("reference", reference)
+			.withOutputParameterReturning("count", &useCount, sizeof(useCount));
 	mock().expectOneCall("serviceReference_getReferenceCount")
-			.withParameter("reference", reference2)
-			.withOutputParameterReturning("count", &refCount2, sizeof(refCount2));
+			.withParameter("reference", reference)
+			.withOutputParameterReturning("count", &refCount, sizeof(refCount));
 	mock().expectNCalls(2, "framework_log");
 	size_t updatedUseCount = 0;
 	mock().expectOneCall("serviceReference_decreaseUsage")
-			.withParameter("ref", reference2)
+			.withParameter("ref", reference)
 			.withOutputParameterReturning("updatedCount", &updatedUseCount, sizeof(updatedUseCount));
-	mock().expectOneCall("serviceReference_release")
-			.withParameter("ref", reference2)
+	mock().expectNCalls(1, "serviceReference_release")
+			.withParameter("ref", reference)
 			.withOutputParameterReturning("destroyed", &destroyed, sizeof(destroyed));
-	mock().expectOneCall("bundle_getCurrentModule")
+	mock().expectNCalls(2, "bundle_getCurrentModule")
 			.withParameter("bundle", bundle)
 			.withOutputParameterReturning("module", &module, sizeof(module));
-	mock().expectOneCall("module_getSymbolicName")
+	mock().expectNCalls(2, "module_getSymbolicName")
 			.withParameter("module", module)
 			.withOutputParameterReturning("symbolicName", &modName, sizeof(modName));
+    mock().expectOneCall("serviceReference_getProperty")
+            .withParameter("reference", reference)
+            .withParameter("key", OSGI_FRAMEWORK_OBJECTCLASS)
+			.withOutputParameterReturning("value", &srvName, sizeof(srvName));
+    mock().expectOneCall("serviceReference_getServiceRegistration")
+            .withParameter("reference", reference)
+			.withOutputParameterReturning("registration", &registration, sizeof(registration));
+    mock().expectOneCall("serviceRegistration_getBundle")
+            .withParameter("registration", registration)
+			.withOutputParameterReturning("bundle", &bundle, sizeof(bundle));
 	mock().expectOneCall("framework_log");
 
 	serviceRegistry_clearReferencesFor(registry, bundle);
 
 	serviceRegistry_destroy(registry);
 }
-*/
 
 
 TEST(service_registry, getService) {
