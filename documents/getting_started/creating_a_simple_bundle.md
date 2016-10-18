@@ -15,7 +15,8 @@ For Apache Celix see [Building And Installing](../building/readme.md)
 Download the latest eclipse CDT at [http://www.eclipse.org](http://www.eclipse.org) and install it on your system. For more information on how the install eclipse on your system consult the eclipse documentation. For this getting started guide the luna version of eclipse was used ([linux](http://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/luna/R/eclipse-cpp-luna-R-linux-gtk-x86_64.tar.gz) [mac](http://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/luna/R/eclipse-cpp-luna-R-macosx-cocoa-x86_64.tar.gz)).
 
 ##Apache Celix Bundle project
-Now that Apache Celix and Eclipse is installed, we are ready to create a new Apache Celix Bundle project. In this project cmake will be create a singe hello world bundle with a deployment configuration for testing the bundle.
+Now that Apache Celix and Eclipse is installed, we are ready to create a new Apache Celix Bundle project.
+CMake is used as build tool for Apache Celix projects.
 
 To setup of the project, first create a new project dir to work in:
 
@@ -122,13 +123,14 @@ else()
 endif()
 ```
 	
-These CMakeLists.txt files declare that the bundles should be build based on the build result (shared library) of the declared sources (in this case the private/src/hello_world_activator.c or private/src/HelloWorldActivator.cc source). 
+These CMakeLists.txt files declare that the bundles should be build based on the build result (shared library) of the declared sources (in this case the `private/src/hello_world_activator.c` or `private/src/HelloWorldActivator.cc` source). 
 The add_bundle function is an Apache Celix specific CMake extension. 
 The library used for the bundle will also be linked against the dependency manager static library. 
 
 
 The Celix framework will install the bundle, load the bundle shared library and call the bundle activator entry symbols. These entries need to be programmed by the user. 
-Note that in these examples we use the dependency manager libraries (C and C++ version) instead of developing a "naked" bundle activator; The dependency manager uses a higher abstraction and is more simple to understand and maintain. 
+Note that in these examples we use the dependency manager libraries (C and C++ version) instead of developing a "vanilla" bundle activator; 
+The dependency manager uses a higher abstraction and is more simple to understand and maintain, but not part of the OSGi standard.
 
 The C Bundle Activator:
 ```C
@@ -225,7 +227,8 @@ make all
 #ninja
 ```	
 
-Hopefully you will some some build results scrolling over the screen and actual build results in the build directory. There should be a hello_world.zip in the bundles/hello_world directory, this the actual bundle. But a bundle on its own has no real value, so lets setup a deployment and run the Apache Celix framwork with this bundle.
+Hopefully you will some some build results scrolling over the screen and actual build results in the build directory. There should be a hello_world.zip in the bundles/hello_world directory, this the actual bundle.  
+A bundle on its own has no real value, so lets setup a deployment and run the Apache Celix framwork with these bundles.
 
 ###Running 
 
@@ -254,7 +257,7 @@ make -j
 #ninja
 ```	
 
-Now a deploy directory myproject should be available in the deploy directory. This directory contains - among other files - the run.sh script. This can be used to run the Apache Celix framework with the declared bundles from the deploy.cmake.
+Now a deploy directory myproject should be available in the deploy directory. This directory contains - among other files - a release.sh script. This can be used to setup the required environment variables (like LD_LIBRARY_PATH).
 
 ```bash
 cd ${WS}/myproject-build/deploy/myproject
