@@ -68,7 +68,7 @@ struct etcd_watcher {
 // note that the rootNode shouldn't have a leading slash
 static celix_status_t etcdWatcher_getRootPath(bundle_context_pt context, char* rootNode) {
 	celix_status_t status = CELIX_SUCCESS;
-	char* rootPath = NULL;
+	const char* rootPath = NULL;
 
 	if (((bundleContext_getProperty(context, CFG_ETCD_ROOT_PATH, &rootPath)) != CELIX_SUCCESS) || (!rootPath)) {
 		strcpy(rootNode, DEFAULT_ETCD_ROOTPATH);
@@ -84,7 +84,7 @@ static celix_status_t etcdWatcher_getRootPath(bundle_context_pt context, char* r
 static celix_status_t etcdWatcher_getLocalNodePath(bundle_context_pt context, char* localNodePath) {
 	celix_status_t status = CELIX_SUCCESS;
 	char rootPath[MAX_ROOTNODE_LENGTH];
-    char* uuid = NULL;
+    const char* uuid = NULL;
 
     if ((etcdWatcher_getRootPath(context, &rootPath[0]) != CELIX_SUCCESS)) {
 		status = CELIX_ILLEGAL_STATE;
@@ -159,7 +159,7 @@ static celix_status_t etcdWatcher_addOwnFramework(etcd_watcher_pt watcher)
  	char url[MAX_VALUE_LENGTH];
     int modIndex;
     char* endpoints = NULL;
-    char* ttlStr = NULL;
+    const char* ttlStr = NULL;
     int ttl;
 
 	bundle_context_pt context = watcher->discovery->context;
@@ -181,7 +181,7 @@ static celix_status_t etcdWatcher_addOwnFramework(etcd_watcher_pt watcher)
     }
     else
     {
-        char* endptr = ttlStr;
+        char* endptr = (char*)ttlStr;
         errno = 0;
         ttl =  strtol(ttlStr, &endptr, 10);
         if (*endptr || errno != 0) {
@@ -264,6 +264,7 @@ static void* etcdWatcher_run(void* data) {
 	time_t timeBeforeWatch = time(NULL);
 	static char rootPath[MAX_ROOTNODE_LENGTH];
 	int highestModified = 0;
+	int errorCode=0;
 
 	bundle_context_pt context = watcher->discovery->context;
 
@@ -276,23 +277,34 @@ static void* etcdWatcher_run(void* data) {
 		char value[MAX_VALUE_LENGTH];
 		char preValue[MAX_VALUE_LENGTH];
 		char action[MAX_ACTION_LENGTH];
-        int modIndex;
+        int modIndex=0;
 
-		if (etcd_watch(rootPath, highestModified + 1, &action[0], &preValue[0], &value[0], &rkey[0], &modIndex) == true) {
-			if (strcmp(action, "set") == 0) {
-				etcdWatcher_addEntry(watcher, &rkey[0], &value[0]);
-			} else if (strcmp(action, "delete") == 0) {
-				etcdWatcher_removeEntry(watcher, &rkey[0], &value[0]);
-			} else if (strcmp(action, "expire") == 0) {
-				etcdWatcher_removeEntry(watcher, &rkey[0], &value[0]);
-			} else if (strcmp(action, "update") == 0) {
-				etcdWatcher_addEntry(watcher, &rkey[0], &value[0]);
-			} else {
-				logHelper_log(*watcher->loghelper, OSGI_LOGSERVICE_INFO, "Unexpected action: %s", action);
-			}
-
-			highestModified = modIndex;
+        if (etcd_watch(rootPath, highestModified + 1, &action[0], &preValue[0], &value[0], &rkey[0], &modIndex, &errorCode) == true) {
+		if (strcmp(action, "set") == 0) {
+			etcdWatcher_addEntry(watcher, &rkey[0], &value[0]);
+		} else if (strcmp(action, "delete") == 0) {
+			etcdWatcher_removeEntry(watcher, &rkey[0], &value[0]);
+		} else if (strcmp(action, "expire") == 0) {
+			etcdWatcher_removeEntry(watcher, &rkey[0], &value[0]);
+		} else if (strcmp(action, "update") == 0) {
+			etcdWatcher_addEntry(watcher, &rkey[0], &value[0]);
+		} else {
+			logHelper_log(*watcher->loghelper, OSGI_LOGSERVICE_INFO, "Unexpected action: %s", action);
 		}
+
+		highestModified = modIndex;
+        }
+        /* prevent busy waiting, in case etcd_watch returns false */
+        else {
+		switch (errorCode) {
+		case 401:
+			// Etcd can store at most 1000 events
+			highestModified = modIndex;
+			break;
+		default:
+			break;
+		}
+        }
 
 		// update own framework uuid
 		if (time(NULL) - timeBeforeWatch > (DEFAULT_ETCD_TTL/2)) {
@@ -313,8 +325,8 @@ celix_status_t etcdWatcher_create(discovery_pt discovery, bundle_context_pt cont
 {
 	celix_status_t status = CELIX_SUCCESS;
 
-	char* etcd_server = NULL;
-	char* etcd_port_string = NULL;
+	const char* etcd_server = NULL;
+	const char* etcd_port_string = NULL;
 	int etcd_port = 0;
 
 	if (discovery == NULL) {
@@ -341,7 +353,7 @@ celix_status_t etcdWatcher_create(discovery_pt discovery, bundle_context_pt cont
 	}
 	else
 	{
-		char* endptr = etcd_port_string;
+		char* endptr = (char*)etcd_port_string;
 		errno = 0;
 		etcd_port =  strtol(etcd_port_string, &endptr, 10);
 		if (*endptr || errno != 0) {
@@ -349,7 +361,7 @@ celix_status_t etcdWatcher_create(discovery_pt discovery, bundle_context_pt cont
 		}
 	}
 
-    status = etcd_init(etcd_server, etcd_port);
+    status = etcd_init((char*)etcd_server, etcd_port);
 
     printf(" ININT\n");
     if (status == CELIX_SUCCESS) {

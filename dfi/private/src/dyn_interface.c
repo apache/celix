@@ -57,12 +57,12 @@ int dynInterface_parse(FILE *descriptor, dyn_interface_type **out) {
         TAILQ_INIT(&intf->types);
         TAILQ_INIT(&intf->methods);
 
-        char peek = fgetc(descriptor);
+        char peek = (char)fgetc(descriptor);
         while (peek == ':') {
             ungetc(peek, descriptor);
             status = dynInterface_parseSection(intf, descriptor);
             if (status == OK) {
-                peek = fgetc(descriptor);
+                peek = (char)fgetc(descriptor);
             } else {
                 break;
             }
@@ -217,9 +217,6 @@ static int dynInterface_parseNameValueSection(dyn_interface_type *intf, FILE *st
             if (value != NULL) {
                 free(value);
             }
-            if (entry != NULL) {
-                free(entry);
-            }
             break;
         }
         peek = fgetc(stream);
@@ -271,9 +268,6 @@ static int dynInterface_parseTypes(dyn_interface_type *intf, FILE *stream) {
         if (status != OK) {
             if (type != NULL) {
                 dynType_destroy(type);
-            }
-            if (entry != NULL) {
-                free(entry);
             }
             break;
         }
@@ -343,9 +337,6 @@ static int dynInterface_parseMethods(dyn_interface_type *intf, FILE *stream) {
             if (func != NULL) {
                 dynFunction_destroy(func);
                 //TODO free strIdentier, name
-            }
-            if (entry != NULL) {
-                free(entry);
             }
             break;
         }

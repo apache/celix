@@ -70,10 +70,10 @@ celix_status_t discovery_endpointListenerAdded(void* handle, service_reference_p
 	celix_status_t status = CELIX_SUCCESS;
 	discovery_pt discovery = handle;
 
-	char *discoveryListener = NULL;
+	const char *discoveryListener = NULL;
 	serviceReference_getProperty(reference, "DISCOVERY", &discoveryListener);
-	char *scope = NULL;
-	serviceReference_getProperty(reference, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
+	const char *scope = NULL;
+	serviceReference_getProperty(reference, OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
 
 	filter_pt filter = filter_create(scope);
 
@@ -157,8 +157,8 @@ celix_status_t discovery_informEndpointListeners(discovery_pt discovery, endpoin
                 service_reference_pt reference = hashMapEntry_getKey(entry);
                 endpoint_listener_pt listener = NULL;
 
-                char *scope = NULL;
-                serviceReference_getProperty(reference, (char *) OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
+                const char* scope = NULL;
+                serviceReference_getProperty(reference, OSGI_ENDPOINT_LISTENER_SCOPE, &scope);
 
                 filter_pt filter = filter_create(scope);
                 bool matchResult = false;
@@ -170,11 +170,11 @@ celix_status_t discovery_informEndpointListeners(discovery_pt discovery, endpoin
                         if (endpointAdded) {
                             logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_INFO, "Adding service (%s)", endpoint->service);
 
-                            listener->endpointAdded(listener->handle, endpoint, scope);
+                            listener->endpointAdded(listener->handle, endpoint, (char*)scope);
                         } else {
                             logHelper_log(discovery->loghelper, OSGI_LOGSERVICE_INFO, "Removing service (%s)", endpoint->service);
 
-                            listener->endpointRemoved(listener->handle, endpoint, scope);
+                            listener->endpointRemoved(listener->handle, endpoint, (char*)scope);
                         }
                     }
 

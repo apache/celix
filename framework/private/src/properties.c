@@ -31,6 +31,10 @@
 #include "properties.h"
 #include "utils.h"
 
+#define MALLOC_BLOCK_SIZE		5
+
+static void parseLine(const char* line, properties_pt props);
+
 properties_pt properties_create(void) {
 	return hashMap_create(utils_stringHash, utils_stringHash, utils_stringEquals, utils_stringEquals);
 }
@@ -46,8 +50,11 @@ void properties_destroy(properties_pt properties) {
 	hashMap_destroy(properties, false, false);
 }
 
-properties_pt properties_load(char *filename) {
+properties_pt properties_load(const char* filename) {
 	FILE *file = fopen(filename, "r");
+	if(file==NULL){
+		return NULL;
+	}
 	properties_pt props = properties_loadWithStream(file);
 	fclose(file);
 	return props;
@@ -55,82 +62,33 @@ properties_pt properties_load(char *filename) {
 
 FRAMEWORK_EXPORT properties_pt properties_loadWithStream(FILE *file) {
 	properties_pt props = NULL;
-	char line[1024];
-	char key[1024];
-	char value[1024];
-	bool precedingCharIsBackslash = false;
-	bool isComment = false;
-	int linePos = 0;
-	int outputPos = 0;
-	char *output = NULL;
+
 
 	if (file != NULL ) {
+		char *saveptr;
+		char *filebuffer = NULL;
+		char *line = NULL;
+		size_t file_size = 0;
+
 		props = properties_create();
-		while ( fgets ( line, sizeof line, file ) != NULL ) {
+		fseek(file, 0, SEEK_END);
+		file_size = ftell(file);
+		fseek(file, 0, SEEK_SET);
 
-			linePos = 0;
-			precedingCharIsBackslash = false;
-			isComment = false;
-			output = NULL;
-			outputPos = 0;
-			key[0] = '\0';
-			value[0] = '\0';
-
-			while (line[linePos] != '\0') {
-				if (line[linePos] == ' ' || line[linePos] == '\t') {
-					if (output == NULL) {
-						//ignore
-						linePos += 1;
-						continue;
-					} else {
-						output[outputPos++] = line[linePos];
-					}
-				} else {
-					if (output == NULL) {
-						output = key;
-					}
+		if(file_size > 0){
+			filebuffer = calloc(file_size + 1, sizeof(char));
+			if(filebuffer) {
+				size_t rs = fread(filebuffer, sizeof(char), file_size, file);
+				if(rs != file_size){
+					fprintf(stderr,"fread read only %lu bytes out of %lu\n",rs,file_size);
 				}
-				if (line[linePos] == '=' || line[linePos] == ':' || line[linePos] == '#' || line[linePos] == '!') {
-					if (precedingCharIsBackslash) {
-						//escaped special character
-						output[outputPos++] = line[linePos];
-						precedingCharIsBackslash = false;
-					} else {
-						if (line[linePos] == '#' || line[linePos] == '!') {
-							if (outputPos == 0) {
-								isComment = true;
-								break;
-							} else {
-								output[outputPos++] = line[linePos];
-							}
-						} else { // = or :
-							if (output == value) { //already have a seperator
-								output[outputPos++] = line[linePos];
-							} else {
-								output[outputPos++] = '\0';
-								output = value;
-								outputPos = 0;
-							}
-						}
-					}
-				} else if (line[linePos] == '\\') {
-					if (precedingCharIsBackslash) { //double backslash -> backslash
-						output[outputPos++] = '\\';
-					}
-					precedingCharIsBackslash = true;
-				} else { //normal character
-					precedingCharIsBackslash = false;
-					output[outputPos++] = line[linePos];
+				filebuffer[file_size]='\0';
+				line = strtok_r(filebuffer, "\n", &saveptr);
+				while ( line != NULL ) {
+					parseLine(line, props);
+					line = strtok_r(NULL, "\n", &saveptr);
 				}
-				linePos += 1;
-			}
-			if (output != NULL) {
-				output[outputPos] = '\0';
-			}
-
-			if (!isComment) {
-				//printf("putting 'key'/'value' '%s'/'%s' in properties\n", utils_stringTrim(key), utils_stringTrim(value));
-				hashMap_put(props, strdup(utils_stringTrim(key)), strdup(utils_stringTrim(value)));
+				free(filebuffer);
 			}
 		}
 	}
@@ -142,7 +100,7 @@ FRAMEWORK_EXPORT properties_pt properties_loadWithStream(FILE *file) {
 /**
  * Header is ignored for now, cannot handle comments yet
  */
-void properties_store(properties_pt properties, char * filename, char * header) {
+void properties_store(properties_pt properties, const char* filename, const char* header) {
 	FILE *file = fopen ( filename, "w+" );
 	char *str;
 
@@ -204,15 +162,145 @@ celix_status_t properties_copy(properties_pt properties, properties_pt *out) {
 	return status;
 }
 
-char * properties_get(properties_pt properties, char * key) {
-	return hashMap_get(properties, key);
+const char* properties_get(properties_pt properties, const char* key) {
+	return hashMap_get(properties, (void*)key);
 }
 
-char * properties_getWithDefault(properties_pt properties, char * key, char * defaultValue) {
-	char * value = properties_get(properties, key);
+const char* properties_getWithDefault(properties_pt properties, const char* key, const char* defaultValue) {
+	const char* value = properties_get(properties, key);
 	return value == NULL ? defaultValue : value;
 }
 
-char * properties_set(properties_pt properties, char * key, char * value) {
-	return hashMap_put(properties, strdup(key), strdup(value));
+void properties_set(properties_pt properties, const char* key, const char* value) {
+	hash_map_entry_pt entry = hashMap_getEntry(properties, key);
+	char* oldValue = NULL;
+	if (entry != NULL) {
+		char* oldKey = hashMapEntry_getKey(entry);
+		oldValue = hashMapEntry_getValue(entry);
+		hashMap_put(properties, oldKey, strndup(value, 1024*10));
+	} else {
+		hashMap_put(properties, strndup(key, 1024*10), strndup(value, 1024*10));
+	}
+	free(oldValue);
+}
+
+static void updateBuffers(char **key, char ** value, char **output, int outputPos, int *key_len, int *value_len) {
+	if (*output == *key) {
+		if (outputPos == (*key_len) - 1) {
+			(*key_len) += MALLOC_BLOCK_SIZE;
+			*key = realloc(*key, *key_len);
+			*output = *key;
+		}
+	}
+	else {
+		if (outputPos == (*value_len) - 1) {
+			(*value_len) += MALLOC_BLOCK_SIZE;
+			*value = realloc(*value, *value_len);
+			*output = *value;
+		}
+	}
+}
+
+static void parseLine(const char* line, properties_pt props) {
+	int linePos = 0;
+	bool precedingCharIsBackslash = false;
+	bool isComment = false;
+	int outputPos = 0;
+	char *output = NULL;
+	int key_len = MALLOC_BLOCK_SIZE;
+	int value_len = MALLOC_BLOCK_SIZE;
+	linePos = 0;
+	precedingCharIsBackslash = false;
+	isComment = false;
+	output = NULL;
+	outputPos = 0;
+
+	//Ignore empty lines
+	if (line[0] == '\n' && line[1] == '\0') {
+		return;
+	}
+
+	char *key = calloc(1, key_len);
+	char *value = calloc(1, value_len);
+	key[0] = '\0';
+	value[0] = '\0';
+
+	while (line[linePos] != '\0') {
+		if (line[linePos] == ' ' || line[linePos] == '\t') {
+			if (output == NULL) {
+				//ignore
+				linePos += 1;
+				continue;
+			}
+			else {
+				output[outputPos++] = line[linePos];
+				updateBuffers(&key, &value, &output, outputPos, &key_len, &value_len);
+			}
+		}
+		else {
+			if (output == NULL) {
+				output = key;
+			}
+		}
+		if (line[linePos] == '=' || line[linePos] == ':' || line[linePos] == '#' || line[linePos] == '!') {
+			if (precedingCharIsBackslash) {
+				//escaped special character
+				output[outputPos++] = line[linePos];
+				updateBuffers(&key, &value, &output, outputPos, &key_len, &value_len);
+				precedingCharIsBackslash = false;
+			}
+			else {
+				if (line[linePos] == '#' || line[linePos] == '!') {
+					if (outputPos == 0) {
+						isComment = true;
+						break;
+					}
+					else {
+						output[outputPos++] = line[linePos];
+						updateBuffers(&key, &value, &output, outputPos, &key_len, &value_len);
+					}
+				}
+				else { // = or :
+					if (output == value) { //already have a seperator
+						output[outputPos++] = line[linePos];
+						updateBuffers(&key, &value, &output, outputPos, &key_len, &value_len);
+					}
+					else {
+						output[outputPos++] = '\0';
+						updateBuffers(&key, &value, &output, outputPos, &key_len, &value_len);
+						output = value;
+						outputPos = 0;
+					}
+				}
+			}
+		}
+		else if (line[linePos] == '\\') {
+			if (precedingCharIsBackslash) { //double backslash -> backslash
+				output[outputPos++] = '\\';
+				updateBuffers(&key, &value, &output, outputPos, &key_len, &value_len);
+			}
+			precedingCharIsBackslash = true;
+		}
+		else { //normal character
+			precedingCharIsBackslash = false;
+			output[outputPos++] = line[linePos];
+			updateBuffers(&key, &value, &output, outputPos, &key_len, &value_len);
+		}
+		linePos += 1;
+	}
+	if (output != NULL) {
+		output[outputPos] = '\0';
+	}
+
+	if (!isComment) {
+		//printf("putting 'key'/'value' '%s'/'%s' in properties\n", utils_stringTrim(key), utils_stringTrim(value));
+		properties_set(props, utils_stringTrim(key), utils_stringTrim(value));
+	}
+	if(key) {
+		free(key);
+	}
+	if(value) {
+		free(value);
+	}
+
 }

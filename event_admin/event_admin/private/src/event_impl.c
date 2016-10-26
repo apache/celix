@@ -24,28 +24,24 @@
  *  \copyright	Apache License, Version 2.0
  *
  */
-
+#include <stdlib.h>
 
 #include "event_admin.h"
 #include "event_admin_impl.h"
 #include "event_constants.h"
 #include "celix_errno.h"
 #include "stddef.h"
-#include <apr.h>
-#include <apr_pools.h>
 
-struct event {
-	char *topic;
-	properties_pt properties;
-};
 
-celix_status_t eventAdmin_createEvent(event_admin_pt event_admin, char *topic, properties_pt properties, event_pt *event){
+
+celix_status_t eventAdmin_createEvent(event_admin_pt event_admin, const char *topic, properties_pt properties,
+									  event_pt *event) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	logHelper_log(*event_admin->loghelper, OSGI_LOGSERVICE_DEBUG, "create event event admin pointer: %p",event_admin);
-	logHelper_log(*event_admin->loghelper, OSGI_LOGSERVICE_DEBUG, "pool create event: %p",event_admin->pool);
 
-	*event = apr_palloc(event_admin->pool,sizeof(**event));
+
+	*event = calloc(1, sizeof(**event));
 	if(!*event){
 	       status = CELIX_ENOMEM;
 	       logHelper_log(*event_admin->loghelper, OSGI_LOGSERVICE_ERROR, "No MEM");
@@ -63,7 +59,7 @@ celix_status_t eventAdmin_containsProperty( event_pt *event, char *property, boo
 	if((*event)==NULL || property == NULL){
 		status = CELIX_BUNDLE_EXCEPTION;
 	}else {
-		char * propertyValue = properties_get((*event)->properties,property);
+		const char *propertyValue = properties_get((*event)->properties, property);
 		if(propertyValue == NULL){
 			(*result)= false;
 		}else {
@@ -89,7 +85,7 @@ celix_status_t eventAdmin_event_equals( event_pt *event, event_pt *compare, bool
 	return status;
 }
 
-celix_status_t eventAdmin_getProperty( event_pt *event, char *propertyKey,  char **propertyValue){
+celix_status_t eventAdmin_getProperty(event_pt *event, char *propertyKey, const char **propertyValue) {
 	celix_status_t status = CELIX_SUCCESS;
 	*propertyValue = properties_get((*event)->properties,propertyKey);
 
@@ -110,9 +106,9 @@ celix_status_t eventAdmin_getPropertyNames( event_pt *event, array_list_pt *name
 	return status;
 }
 
-celix_status_t eventAdmin_getTopic( event_pt *event, char **topic){
+celix_status_t eventAdmin_getTopic(event_pt *event, const char **topic) {
 	celix_status_t status = CELIX_SUCCESS;
-	char *value;
+	const char *value;
 	value = properties_get((*event)->properties,(char*) EVENT_TOPIC);
 	*topic = value;
 

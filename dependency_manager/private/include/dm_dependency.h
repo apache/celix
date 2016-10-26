@@ -27,8 +27,15 @@
 #ifndef DM_DEPENDENCY_H_
 #define DM_DEPENDENCY_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* DM_DEPENDENCY_H_ */

@@ -64,7 +64,7 @@ celix_status_t logHelper_create(bundle_context_pt context, log_helper_pt* loghel
 	}
 	else
 	{
-		char* stdOutFallbackStr = NULL;
+		const char* stdOutFallbackStr = NULL;
 		(*loghelper)->bundleContext = context;
 		(*loghelper)->logServiceTracker = NULL;
 		(*loghelper)->stdOutFallback = false;
@@ -162,27 +162,25 @@ celix_status_t logHelper_log(log_helper_pt loghelper, log_level_t level, char* m
     msg[0] = '\0';
     bool logged = false;
 
+    if(loghelper == NULL){
+	return CELIX_ILLEGAL_ARGUMENT;
+    }
+
 	va_start(listPointer, message);
 	vsnprintf(msg, 1024, message, listPointer);
 
-	if (loghelper != NULL) {
-		pthread_mutex_lock(&loghelper->logListLock);
+	pthread_mutex_lock(&loghelper->logListLock);
 
-		int i = 0;
-
-		for (; i < arrayList_size(loghelper->logServices); i++) {
-
-			log_service_pt logService = arrayList_get(loghelper->logServices, i);
-
-			if (logService != NULL) {
-				(logService->log)(logService->logger, level, msg);
-				logged = true;
-			}
+	int i = 0;
+	for (; i < arrayList_size(loghelper->logServices); i++) {
+		log_service_pt logService = arrayList_get(loghelper->logServices, i);
+		if (logService != NULL) {
+			(logService->log)(logService->logger, level, msg);
+			logged = true;
 		}
-
-		pthread_mutex_unlock(&loghelper->logListLock);
 	}
 
+	pthread_mutex_unlock(&loghelper->logListLock);
 
     if (!logged && loghelper->stdOutFallback) {
         char *levelStr = NULL;
@@ -206,6 +204,7 @@ celix_status_t logHelper_log(log_helper_pt loghelper, log_level_t level, char* m
         printf("%s: %s\n", levelStr, msg);
     }
 
+    va_end(listPointer);
 
 	return status;
 }

@@ -48,12 +48,14 @@
 #define ETCD_JSON_KEY			"key"
 #define ETCD_JSON_VALUE			"value"
 #define ETCD_JSON_MODIFIEDINDEX	"modifiedIndex"
+#define ETCD_ERROR_INDICATION   "errorCode"
+#define ETCD_INDEX				"index"
 
 celix_status_t etcd_init(char* server, int port);
 bool etcd_get(char* key, char* value, char*action, int* modifiedIndex);
 bool etcd_getNodes(char* directory, char** nodeNames, int* size);
 bool etcd_set(char* key, char* value, int ttl, bool prevExist);
 bool etcd_del(char* key);
-bool etcd_watch(char* key, int index, char* action, char* prevValue, char* value, char* rkey, int *modifiedIndex);
+bool etcd_watch(char* key, int index, char* action, char* prevValue, char* value, char* rkey, int *modifiedIndex, int *error);
 
 #endif /* ETCD_H_ */

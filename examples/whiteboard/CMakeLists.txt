@@ -19,3 +19,6 @@ add_subdirectory(publisherA)
 add_subdirectory(publisherB)
 add_subdirectory(tracker)
 add_subdirectory(tracker_depman)
+
+add_deploy("whiteboard" GROUP whiteboard BUNDLES tracker publisherA publisherB shell shell_tui log_service log_writer)
+add_deploy("whiteboard_dependency_manager" GROUP whiteboard BUNDLES tracker_depman publisherA publisherB shell shell_tui log_service log_writer dm_shell)

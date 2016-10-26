@@ -74,13 +74,13 @@ celix_status_t dependencyManager_removeAllComponents(dm_dependency_manager_pt ma
 
 	for(;i<size;i++){
 		dm_component_pt cmp = arrayList_get(manager->components, i);
-		printf("Stopping comp %s\n", component_getName(cmp));
+//		printf("Stopping comp %s\n", component_getName(cmp));
 		component_stop(cmp);
 	}
 
 	while (!arrayList_isEmpty(manager->components)) {
 		dm_component_pt cmp = arrayList_remove(manager->components, 0);
-        printf("Removing comp %s\n", component_getName(cmp));
+//        printf("Removing comp %s\n", component_getName(cmp));
         component_destroy(cmp);
 	}
 
@@ -119,14 +119,11 @@ celix_status_t dependencyManager_getInfo(dm_dependency_manager_pt manager, dm_de
 }
 
 void dependencyManager_destroyInfo(dm_dependency_manager_pt manager, dm_dependency_manager_info_pt info) {
-
-	unsigned int i = 0;
-	for(;i<arrayList_size(info->components);i++){
-		dm_component_info_pt cmpinfo = (dm_component_info_pt)arrayList_get(info->components,0);
-		component_destroyComponentInfo(cmpinfo);
-        }
-        arrayList_destroy(info->components);
-
+    unsigned int i = 0;
+    for (; i < arrayList_size(info->components); i += 1) {
+        dm_component_info_pt cmpinfo = (dm_component_info_pt)arrayList_get(info->components, i);
+        component_destroyComponentInfo(cmpinfo);
+    }
+    arrayList_destroy(info->components);
     free(info);
-
 }

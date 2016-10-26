@@ -55,7 +55,7 @@ linked_list_pt m_unresolvedServices = NULL;
 linked_list_pt m_resolvedServices = NULL;
 
 int resolver_populateCandidatesMap(hash_map_pt candidatesMap, module_pt targetModule);
-capability_list_pt resolver_getCapabilityList(linked_list_pt list, char * name);
+capability_list_pt resolver_getCapabilityList(linked_list_pt list, const char* name);
 void resolver_removeInvalidCandidate(module_pt module, hash_map_pt candidates, linked_list_pt invalid);
 linked_list_pt resolver_populateWireMap(hash_map_pt candidates, module_pt importer, linked_list_pt wireMap);
 
@@ -134,7 +134,7 @@ int resolver_populateCandidatesMap(hash_map_pt candidatesMap, module_pt targetMo
         for (i = 0; i < linkedList_size(module_getRequirements(targetModule)); i++) {
             capability_list_pt capList;
             requirement_pt req;
-            char *targetName = NULL;
+            const char *targetName = NULL;
             req = (requirement_pt) linkedList_get(module_getRequirements(targetModule), i);
             requirement_getTargetName(req, &targetName);
             capList = resolver_getCapabilityList(m_resolvedServices, targetName);
@@ -176,7 +176,7 @@ int resolver_populateCandidatesMap(hash_map_pt candidatesMap, module_pt targetMo
 
                 if (linkedList_size(candidates) == 0) {
                     if (linkedList_create(&invalid) == CELIX_SUCCESS) {
-                        char *name = NULL;
+                        const char *name = NULL;
                         resolver_removeInvalidCandidate(targetModule, candidatesMap, invalid);
 
                         module_getSymbolicName(targetModule, &name);
@@ -258,8 +258,8 @@ void resolver_addModule(module_pt module) {
         linkedList_addElement(m_modules, module);
 
         for (i = 0; i < linkedList_size(module_getCapabilities(module)); i++) {
-            char *serviceName = NULL;
-            capability_list_pt list;
+            const char *serviceName = NULL;
+            capability_list_pt list = NULL;
             capability_pt cap;
 
             cap = (capability_pt) linkedList_get(module_getCapabilities(module), i);
@@ -272,9 +272,16 @@ void resolver_addModule(module_pt module) {
                     if (linkedList_create(&list->capabilities) == CELIX_SUCCESS) {
                         linkedList_addElement(m_unresolvedServices, list);
                     }
+                    else{
+                    	free(list->serviceName);
+                    	free(list);
+			list=NULL;
+                    }
                 }
             }
-            linkedList_addElement(list->capabilities, cap);
+            if(list != NULL){
+		linkedList_addElement(list->capabilities, cap);
+            }
         }
     }
 }
@@ -287,7 +294,7 @@ void resolver_removeModule(module_pt module) {
         int i = 0;
         for (i = 0; i < linkedList_size(caps); i++) {
             capability_pt cap = (capability_pt) linkedList_get(caps, i);
-            char *serviceName = NULL;
+            const char *serviceName = NULL;
             capability_list_pt list;
             capability_getServiceName(cap, &serviceName);
             list = resolver_getCapabilityList(m_unresolvedServices, serviceName);
@@ -344,11 +351,13 @@ void resolver_moduleResolved(module_pt module) {
 
             for (capIdx = 0; (module_getCapabilities(module) != NULL) && (capIdx < linkedList_size(module_getCapabilities(module))); capIdx++) {
                 capability_pt cap = (capability_pt) linkedList_get(module_getCapabilities(module), capIdx);
-                char *serviceName = NULL;
+                const char *serviceName = NULL;
                 capability_list_pt list;
                 capability_getServiceName(cap, &serviceName);
                 list = resolver_getCapabilityList(m_unresolvedServices, serviceName);
-                linkedList_removeElement(list->capabilities, cap);
+                if(list != NULL){
+			linkedList_removeElement(list->capabilities, cap);
+                }
 
                 linkedList_addElement(capsCopy, cap);
             }
@@ -375,8 +384,8 @@ void resolver_moduleResolved(module_pt module) {
                 capability_pt cap = linkedList_get(capsCopy, capIdx);
 
                 if (cap != NULL) {
-                    char *serviceName = NULL;
-                    capability_list_pt list;
+                    const char *serviceName = NULL;
+                    capability_list_pt list = NULL;
                     capability_getServiceName(cap, &serviceName);
 
                     list = resolver_getCapabilityList(m_resolvedServices, serviceName);
@@ -387,9 +396,16 @@ void resolver_moduleResolved(module_pt module) {
                             if (linkedList_create(&list->capabilities) == CELIX_SUCCESS) {
                                 linkedList_addElement(m_resolvedServices, list);
                             }
+                            else{
+                            	free(list->serviceName);
+                            	free(list);
+				list=NULL;
+                            }
                         }
                     }
-                    linkedList_addElement(list->capabilities, cap);
+                    if(list != NULL){
+			linkedList_addElement(list->capabilities, cap);
+                    }
                 }
             }
 
@@ -398,7 +414,7 @@ void resolver_moduleResolved(module_pt module) {
     }
 }
 
-capability_list_pt resolver_getCapabilityList(linked_list_pt list, char * name) {
+capability_list_pt resolver_getCapabilityList(linked_list_pt list, const char * name) {
     capability_list_pt capabilityList = NULL;
     linked_list_iterator_pt iterator = linkedListIterator_create(list, 0);
     while (linkedListIterator_hasNext(iterator)) {
@@ -445,7 +461,7 @@ linked_list_pt resolver_populateWireMap(hash_map_pt candidates, module_pt import
 
                     // hashMap_put(wireMap, importer, emptyWires);
 
-                    char *mname = NULL;
+                    const char *mname = NULL;
                     module_getSymbolicName(importer, &mname);
 
                     importer_wires_pt importerWires = malloc(sizeof(*importerWires));

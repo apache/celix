@@ -29,6 +29,7 @@
 #include "bundle_activator.h"
 
 #include "test.h"
+#include "test2.h"
 
 struct userData {
 	char * word;
@@ -50,6 +51,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	printf("Hello %s\n", data->word);
 
 	doo();
+    bar();
 
 	return CELIX_SUCCESS;
 }

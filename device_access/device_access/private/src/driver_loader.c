@@ -51,7 +51,11 @@ celix_status_t driverLoader_create(bundle_context_pt context, driver_loader_pt *
 }
 
 celix_status_t driverLoader_destroy(driver_loader_pt *loader) {
-	arrayList_destroy((*loader)->loadedDrivers);
+	if((*loader) != NULL){
+		arrayList_destroy((*loader)->loadedDrivers);
+		free((*loader));
+		(*loader)=NULL;
+	}
 	return CELIX_SUCCESS;
 }
 
@@ -137,8 +141,8 @@ celix_status_t driverLoader_loadDriverForLocator(driver_loader_pt loader, driver
 	if (status == CELIX_SUCCESS) {
 		bundle_pt bundle = NULL;
 		int length = strlen(DRIVER_LOCATION_PREFIX) + strlen(driverId);
-		char location[length];
-		snprintf(location, length, "%s%s", DRIVER_LOCATION_PREFIX, driverId);
+		char location[length+2];
+		snprintf(location, length+2, "%s%s", DRIVER_LOCATION_PREFIX, driverId);
 		status = bundleContext_installBundle2(loader->context, location, filename, &bundle);
 		if (status == CELIX_SUCCESS) {
 			status = bundle_start(bundle);

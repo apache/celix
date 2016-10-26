@@ -125,8 +125,13 @@ celix_status_t discoveryShm_attach(shmData_pt* data) {
         status = CELIX_BUNDLE_EXCEPTION;
     }
 
-    if (((*data) = shmat(shmId, 0, 0)) < 0) {
-        status = CELIX_BUNDLE_EXCEPTION;
+    /* shmat has a curious return value of (void*)-1 in case of error */
+    void *mem=shmat(shmId, 0, 0);
+    if(mem==((void*)-1)){
+	status = CELIX_BUNDLE_EXCEPTION;
+    }
+    else{
+	(*data)=mem;
     }
 
     return status;
@@ -166,7 +171,7 @@ celix_status_t discoveryShm_getKeys(shmData_pt data, char** keys, int* size) {
         for (i = 0; i < data->numOfEntries; i++) {
             shmEntry entry = data->entries[i];
 
-            if (entry.key) {
+            if (strlen(entry.key)>0) {
                 snprintf(keys[i], SHM_ENTRY_MAX_KEY_LENGTH, "%s", entry.key);
             }
         }

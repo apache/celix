@@ -120,6 +120,7 @@ static void* connection_listener_thread(void *data) {
 	connection_listener_pt instance = data;
 	struct timeval timeout; /* Timeout for select */
 	fd_set active_fd_set;
+	FD_ZERO(&active_fd_set);
 	int listenSocket = 0;
 	int on = 1;
 
@@ -209,7 +210,7 @@ static void* connection_listener_thread(void *data) {
 		}
 	}
 
-	if (listenSocket > 0) {
+	if (listenSocket >= 0) {
 		close(listenSocket);
 	}
 

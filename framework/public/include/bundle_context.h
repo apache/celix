@@ -47,12 +47,12 @@ celix_status_t bundleContext_destroy(bundle_context_pt context);
 FRAMEWORK_EXPORT celix_status_t bundleContext_getBundle(bundle_context_pt context, bundle_pt *bundle);
 FRAMEWORK_EXPORT celix_status_t bundleContext_getFramework(bundle_context_pt context, framework_pt *framework);
 
-FRAMEWORK_EXPORT celix_status_t bundleContext_installBundle(bundle_context_pt context, char * location, bundle_pt *bundle);
-FRAMEWORK_EXPORT celix_status_t bundleContext_installBundle2(bundle_context_pt context, char * location, char *inputFile, bundle_pt *bundle);
+FRAMEWORK_EXPORT celix_status_t bundleContext_installBundle(bundle_context_pt context, const char* location, bundle_pt *bundle);
+FRAMEWORK_EXPORT celix_status_t bundleContext_installBundle2(bundle_context_pt context, const char* location, const char* inputFile, bundle_pt *bundle);
 
-FRAMEWORK_EXPORT celix_status_t bundleContext_registerService(bundle_context_pt context, char * serviceName, void * svcObj,
+FRAMEWORK_EXPORT celix_status_t bundleContext_registerService(bundle_context_pt context, const char* serviceName, const void * svcObj,
         properties_pt properties, service_registration_pt *service_registration);
-FRAMEWORK_EXPORT celix_status_t bundleContext_registerServiceFactory(bundle_context_pt context, char * serviceName, service_factory_pt factory,
+FRAMEWORK_EXPORT celix_status_t bundleContext_registerServiceFactory(bundle_context_pt context, const char* serviceName, service_factory_pt factory,
         properties_pt properties, service_registration_pt *service_registration);
 
 /**
@@ -64,7 +64,7 @@ FRAMEWORK_EXPORT celix_status_t bundleContext_registerServiceFactory(bundle_cont
  * @param service_reference _output_ The found service reference, or NULL when no service is found.
  * @return CELIX_SUCCESS on success
  */
-FRAMEWORK_EXPORT celix_status_t bundleContext_getServiceReference(bundle_context_pt context, char * serviceName, service_reference_pt *service_reference);
+FRAMEWORK_EXPORT celix_status_t bundleContext_getServiceReference(bundle_context_pt context, const char * serviceName, service_reference_pt *service_reference);
 
 /** Same as bundleContext_getServiceReference, but than for a optional serviceName combined with a optional filter.
  * The resulting array_list should be destroyed by the caller. For all service references return a unget should be called.
@@ -75,7 +75,7 @@ FRAMEWORK_EXPORT celix_status_t bundleContext_getServiceReference(bundle_context
  * @param service_references _output_ a array list, can be size 0. 
  * @return CELIX_SUCCESS on success
  */
-FRAMEWORK_EXPORT celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, const char * serviceName, char * filter, array_list_pt *service_references);
+FRAMEWORK_EXPORT celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, const char * serviceName, const char * filter, array_list_pt *service_references);
 
 /**
  * Retains (increases the ref count) the provided service reference. Can be used to retain a service reference.
@@ -98,13 +98,13 @@ FRAMEWORK_EXPORT celix_status_t bundleContext_retainServiceReference(bundle_cont
  */
 FRAMEWORK_EXPORT celix_status_t bundleContext_ungetServiceReference(bundle_context_pt context, service_reference_pt reference);
 
-FRAMEWORK_EXPORT celix_status_t bundleContext_getService(bundle_context_pt context, service_reference_pt reference, void **service_instance);
-FRAMEWORK_EXPORT celix_status_t bundleContext_ungetService(bundle_context_pt context, service_reference_pt reference, bool *result);
+FRAMEWORK_EXPORT celix_status_t bundleContext_getService(bundle_context_pt context, service_reference_pt reference, void** service_instance);
+FRAMEWORK_EXPORT celix_status_t bundleContext_ungetService(bundle_context_pt context, service_reference_pt reference, bool* result);
 
-FRAMEWORK_EXPORT celix_status_t bundleContext_getBundles(bundle_context_pt context, array_list_pt *bundles);
-FRAMEWORK_EXPORT celix_status_t bundleContext_getBundleById(bundle_context_pt context, long id, bundle_pt *bundle);
+FRAMEWORK_EXPORT celix_status_t bundleContext_getBundles(bundle_context_pt context, array_list_pt* bundles);
+FRAMEWORK_EXPORT celix_status_t bundleContext_getBundleById(bundle_context_pt context, long id, bundle_pt* bundle);
 
-FRAMEWORK_EXPORT celix_status_t bundleContext_addServiceListener(bundle_context_pt context, service_listener_pt listener, char * filter);
+FRAMEWORK_EXPORT celix_status_t bundleContext_addServiceListener(bundle_context_pt context, service_listener_pt listener, const char* filter);
 FRAMEWORK_EXPORT celix_status_t bundleContext_removeServiceListener(bundle_context_pt context, service_listener_pt listener);
 
 FRAMEWORK_EXPORT celix_status_t bundleContext_addBundleListener(bundle_context_pt context, bundle_listener_pt listener);
@@ -113,6 +113,7 @@ FRAMEWORK_EXPORT celix_status_t bundleContext_removeBundleListener(bundle_contex
 FRAMEWORK_EXPORT celix_status_t bundleContext_addFrameworkListener(bundle_context_pt context, framework_listener_pt listener);
 FRAMEWORK_EXPORT celix_status_t bundleContext_removeFrameworkListener(bundle_context_pt context, framework_listener_pt listener);
 
-FRAMEWORK_EXPORT celix_status_t bundleContext_getProperty(bundle_context_pt context, const char *name, char **value);
+FRAMEWORK_EXPORT celix_status_t bundleContext_getProperty(bundle_context_pt context, const char* name, const char** value);
+FRAMEWORK_EXPORT celix_status_t bundleContext_getPropertyWithDefault(bundle_context_pt context, const char* name, const char* defaultValue, const char** value);
 
 #endif /* BUNDLE_CONTEXT_H_ */

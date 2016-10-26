@@ -42,7 +42,8 @@ struct endpoint_listener {
 	celix_status_t (*endpointRemoved)(void *handle, endpoint_description_pt endpoint, char *machtedFilter);
 };
 
-typedef struct endpoint_listener *endpoint_listener_pt;
+typedef struct endpoint_listener endpoint_listener_t;
+typedef endpoint_listener_t *endpoint_listener_pt;
 
 
 #endif /* ENDPOINT_LISTENER_H_ */

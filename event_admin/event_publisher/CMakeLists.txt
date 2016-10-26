@@ -15,20 +15,20 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(APR REQUIRED)
 
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories(private/include)
 include_directories(${PROJECT_SOURCE_DIR}/event_admin/event_admin/public/include)
 include_directories(${PROJECT_SOURCE_DIR}/log_service/public/include)
 
-add_bundle(event_publisher SOURCES
+add_bundle(event_publisher
     VERSION 0.0.0
-	private/src/event_publisher_activator.c
-	private/src/event_publisher_impl.c
-	${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c	
+		SOURCES
+		private/src/event_publisher_activator.c
+		private/src/event_publisher_impl.c
+		${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
 )
 
-install_add_bundle(event_publisher)
+install_bundle(event_publisher)
 
-target_link_libraries(event_publisher celix_framework celix_utils ${APR_LIBRARY} ${APRUTIL_LIBRARY})
+target_link_libraries(event_publisher celix_framework celix_utils)

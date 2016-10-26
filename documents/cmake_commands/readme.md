@@ -56,9 +56,9 @@ add_bundle(<bundle_target_name>
 - If DESCRIPTION is provided that will be used as Bundle-Description. Default this is empty
 - If VERSION is provided. That will be used for the Bundle-Version. In combination with SOURCES the version will alse be use to set the activator library target property VERSION and SOVERSION.
 For SOVERSION only the major part is used. Expected scheme is "<major>.<minor>.<path>". Default version is "0.0.0"
-If PRIVATE_LIBRARIES is provided all provided lib are added to the "Private-Library" manifest statement and added in the root of the bundle. libraries can be cmake library targets or absolute paths to existing libraries.  
+- If PRIVATE_LIBRARIES is provided all provided lib are added to the "Private-Library" manifest statement and added in the root of the bundle. libraries can be cmake library targets or absolute paths to existing libraries.  
 - If EXPORT_LIBRARIES is provided all provided lib are added to the "Export-Library" manifest statement and added in the root of the bundle. libraries can be cmake library targets or absolute paths to existing libraries. This is not yet supported by the celix framework.
-- If EXPORT_LIBRARIES is provided all provided lib are added to the "Import-Library" manifest statement and added in the root of the bundle. libraries can be cmake library targets or absolute paths to existing libraries.  This is not yet supported by the celix framework
+- If IMPORT_LIBRARIES is provided all provided lib are added to the "Import-Library" manifest statement and added in the root of the bundle. libraries can be cmake library targets or absolute paths to existing libraries.  This is not yet supported by the celix framework
 - If HEADERS is provided the headers values are appended to the bundle manifest.
 
 ##bundle_private_libs
@@ -160,6 +160,7 @@ add_deploy(<deploy_target_name>
     [COPY] 
     [GROUP group_name]
     [NAME deploy_name]
+    [LAUNCHER launcher]
     [BUNDLES <bundle1> <bundle2> ...]
     [PROPERTIES "prop1=val1" "prop2=val2" ...]
 )
@@ -177,6 +178,7 @@ If the bundle target is never added CMake will give an error:
 - If COPY is provided the selected bundles will be copied in a bundles dir and the generated config.properties will use relative paths to the bundle locations. Default bundles will not be copied and the generated config.properties will use absolute references to the bundle locations.
 - If GROUP is provided the deployment will be grouped in the provided group name. 
 - If NAME is provided that name will be used for the deployment dir. Default the deploy target name will be used.
+- If LAUNCHER is provided that path or target will be used as launcher executable for the deployment. If no LAUNCHER is not provided the celix executable will be used.
 - If BUNDLES is provided the list of bundles will be added the the generated config.properties for startup. Combined with COPY the bundles will also be copied to a bundles dir.
 - If PROPERTIES is provided the list of properties will be appended to the generated config.properties
 
@@ -186,7 +188,10 @@ Deploy a selection of bundles to the provided bundle dir. This can be used to cr
 ```CMake
 deploy_bundles_dir(<deploy_target_name>
     DIR_NAME dir_name
-    BUNDLES bundle1 bundle2 ...
+    BUNDLES 
+        bundle1 
+        bundle2 
+        ...
 )
 ```
 
@@ -195,7 +200,9 @@ Deploy the selected bundles. The bundles are configured for auto starting.
 
 ```CMake
 deploy_bundles(<deploy_target_name>
-    bundle1 bundle2 ...
+    bundle1 
+    bundle2 
+    ...
 )
 ```
 
@@ -205,6 +212,8 @@ deploy_bundles(<deploy_target_name>
 Add the provided properties to the target deploy config.properties.
 
 deploy_properties(<deploy_target_name>
-    "prop1=val1" "prop2=val2" ...
+    "prop1=val1" 
+    "prop2=val2" 
+    ...
 )
 

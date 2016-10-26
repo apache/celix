@@ -90,7 +90,7 @@ celix_status_t requirement_getVersionRange(requirement_pt requirement, version_r
 	return CELIX_SUCCESS;
 }
 
-celix_status_t requirement_getTargetName(requirement_pt requirement, char **targetName) {
+celix_status_t requirement_getTargetName(requirement_pt requirement, const char **targetName) {
 	*targetName = requirement->targetName;
 	return CELIX_SUCCESS;
 }

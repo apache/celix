@@ -1,10 +1,14 @@
-Release Notes for 1.0.0.incubating
+Release Notes for 2.0.0
 Remarks:
- * Components that are 1.0.0 are
+ * Components that are 2.0.0 are
    - Framework
    - Utils
    - Shell
+
+* Components that are 1.0.0
    - Shell TUI
    - Log Service
    - Log Writer
    - Launcher
+   - C Dependency Manager
+   - C++ Dependency Manager

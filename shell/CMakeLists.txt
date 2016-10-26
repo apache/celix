@@ -20,7 +20,7 @@ if (SHELL)
 
     add_bundle(shell
         SYMBOLIC_NAME "apache_celix_shell"
-        VERSION "1.0.0"
+        VERSION "2.0.0"
         NAME "Apache Celix Shell"
 
         SOURCES

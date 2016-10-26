@@ -37,13 +37,13 @@ struct serviceRegistration {
 	char * className;
 	bundle_pt bundle;
 	properties_pt properties;
-	void * svcObj;
-	long serviceId;
+	const void * svcObj;
+	unsigned long serviceId;
 
 	bool isUnregistering;
 
 	bool isServiceFactory;
-	void *serviceFactory;
+	const void *serviceFactory;
 
 	struct service *services;
 	int nrOfServices;
@@ -53,8 +53,8 @@ struct serviceRegistration {
 	celix_thread_rwlock_t lock;
 };
 
-service_registration_pt serviceRegistration_create(registry_callback_t callback, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary);
-service_registration_pt serviceRegistration_createServiceFactory(registry_callback_t callback, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary);
+service_registration_pt serviceRegistration_create(registry_callback_t callback, bundle_pt bundle, const char* serviceName, unsigned long serviceId, const void * serviceObject, properties_pt dictionary);
+service_registration_pt serviceRegistration_createServiceFactory(registry_callback_t callback, bundle_pt bundle, const char* serviceName, unsigned long serviceId, const void * serviceObject, properties_pt dictionary);
 
 void serviceRegistration_retain(service_registration_pt registration);
 void serviceRegistration_release(service_registration_pt registration);
@@ -62,10 +62,10 @@ void serviceRegistration_release(service_registration_pt registration);
 bool serviceRegistration_isValid(service_registration_pt registration);
 void serviceRegistration_invalidate(service_registration_pt registration);
 
-celix_status_t serviceRegistration_getService(service_registration_pt registration, bundle_pt bundle, void **service);
-celix_status_t serviceRegistration_ungetService(service_registration_pt registration, bundle_pt bundle, void **service);
+celix_status_t serviceRegistration_getService(service_registration_pt registration, bundle_pt bundle, const void **service);
+celix_status_t serviceRegistration_ungetService(service_registration_pt registration, bundle_pt bundle, const void **service);
 
 celix_status_t serviceRegistration_getBundle(service_registration_pt registration, bundle_pt *bundle);
-celix_status_t serviceRegistration_getServiceName(service_registration_pt registration, char **serviceName);
+celix_status_t serviceRegistration_getServiceName(service_registration_pt registration, const char **serviceName);
 
 #endif /* SERVICE_REGISTRATION_PRIVATE_H_ */

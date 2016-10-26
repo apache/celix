@@ -29,12 +29,35 @@
 #ifndef DM_ACTIVATOR_BASE_H_
 #define DM_ACTIVATOR_BASE_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "bundle_context.h"
 #include "celix_errno.h"
 #include "dm_dependency_manager.h"
 
+/**
+ * Should be implemented by a bundle specific DM activator.
+ * Should allocate and initialize a bundle specific activator struct.
+ */
 celix_status_t dm_create(bundle_context_pt context, void ** userData);
+
+/**
+ * Should be implemented by a bundle specific DM activator.
+ * Will be called after the dm_create function.
+ * Can be used to specify with use of the provided dependency manager the bundle specific components.
+ */
 celix_status_t dm_init(void * userData, bundle_context_pt context, dm_dependency_manager_pt manager);
+
+/**
+ * Should be implemented by a bundle specific DM activator.
+ * Should deinitialize and deallocate the undle specific activator struct.
+ */
 celix_status_t dm_destroy(void * userData, bundle_context_pt context, dm_dependency_manager_pt manager);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* DM_ACTIVATOR_BASE_H_ */

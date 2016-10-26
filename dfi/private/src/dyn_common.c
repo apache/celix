@@ -23,7 +23,7 @@
 #include <ctype.h>
 #include <stdbool.h>
 
-#if defined(BSD) || defined(__APPLE__) 
+#if defined(BSD) || defined(__APPLE__)  || defined(ANDROID)
 #include "open_memstream.h"
 #include "fmemopen.h"
 #endif

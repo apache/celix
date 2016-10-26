@@ -121,8 +121,8 @@ TEST(bundle_revision, getters) {
 	revision->manifest = expectedManifest;
 	revision->libraryHandles = handles;
 
-	char *actualRoot = NULL;
-	char *actualLocation = NULL;
+	const char *actualRoot = NULL;
+	const char *actualLocation = NULL;
 	long actualRevisionNr = 0l;
 	manifest_pt actualManifest = NULL;
 	array_list_pt actualHandles = NULL;

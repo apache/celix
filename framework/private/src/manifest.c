@@ -63,7 +63,7 @@ celix_status_t manifest_destroy(manifest_pt manifest) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t manifest_createFromFile(char *filename, manifest_pt *manifest) {
+celix_status_t manifest_createFromFile(const char *filename, manifest_pt *manifest) {
 	celix_status_t status;
 
 	status = manifest_create(manifest);
@@ -90,7 +90,7 @@ celix_status_t manifest_getEntries(manifest_pt manifest, hash_map_pt *map) {
 	return CELIX_SUCCESS;
 }
 
-celix_status_t manifest_read(manifest_pt manifest, char *filename) {
+celix_status_t manifest_read(manifest_pt manifest, const char *filename) {
     celix_status_t status = CELIX_SUCCESS;
 
 	FILE *file = fopen ( filename, "r" );
@@ -99,7 +99,9 @@ celix_status_t manifest_read(manifest_pt manifest, char *filename) {
 		char name[512];
 		bool skipEmptyLines = true;
 		char lastline[512];
-		name[0] = '\0';
+		memset(lbuf,0,512);
+		memset(name,0,512);
+		memset(lastline,0,512);
 
 		manifest_readAttributes(manifest, manifest->mainAttributes, file);
 		
@@ -110,7 +112,7 @@ celix_status_t manifest_read(manifest_pt manifest, char *filename) {
 			if (lbuf[--len] != '\n') {
 				status = CELIX_FILE_IO_EXCEPTION;
 				framework_logIfError(logger, status, NULL, "Manifest '%s' line too long", filename);
-				return status;
+				break;
 			}
 			if (len > 0 && lbuf[len - 1] == '\r') {
 				--len;
@@ -131,7 +133,7 @@ celix_status_t manifest_read(manifest_pt manifest, char *filename) {
 				} else {
 					status = CELIX_FILE_IO_EXCEPTION;
 					framework_logIfError(logger, status, NULL, "Manifest '%s' invalid format", filename);
-					return status;
+					break;
 				}
 
 				if (fpeek(file) == ' ') {
@@ -180,12 +182,12 @@ celix_status_t manifest_read(manifest_pt manifest, char *filename) {
 	return status;
 }
 
-void manifest_write(manifest_pt manifest, char * filename) {
+void manifest_write(manifest_pt manifest, const char * filename) {
 
 }
 
-char * manifest_getValue(manifest_pt manifest, const char * name) {
-	char * val = properties_get(manifest->mainAttributes, (char *) name);
+const char* manifest_getValue(manifest_pt manifest, const char* name) {
+	const char* val = properties_get(manifest->mainAttributes, name);
 	bool isEmpty = utils_isStringEmptyOrNull(val);
 	return isEmpty ? NULL : val;
 }
@@ -198,14 +200,13 @@ int fpeek(FILE *stream) {
 }
 
 celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt properties, FILE *file) {
-	char name[512];
-	char value[512];
-	char lastLine[512];
-	char lbuf[512];
+	char name[512]; memset(name,0,512);
+	char value[512]; memset(value,0,512);
+	char lastLine[512]; memset(lastLine,0,512);
+	char lbuf[512]; memset(lbuf,0,512);
 
 
 	while (fgets(lbuf, sizeof(lbuf), file ) != NULL ) {
-		bool lineContinued = false;
 		int len = strlen(lbuf);
 
 		if (lbuf[--len] != '\n') {
@@ -224,7 +225,6 @@ celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt prope
 			buf[0] = '\0';
 
 			// Line continued
-			lineContinued = true;
 			strcat(buf, lastLine);
 			strncat(buf, lbuf+1, len - 1);
 
@@ -263,9 +263,7 @@ celix_status_t manifest_readAttributes(manifest_pt manifest, properties_pt prope
 			value[len - i] = '\0';
 		}
 
-		if ((properties_set(properties, name, value) != NULL) && (!lineContinued)) {
-			printf("Duplicate entry: %s", name);
-		}
+		properties_set(properties, name, value);
 	}
 
 	return CELIX_SUCCESS;

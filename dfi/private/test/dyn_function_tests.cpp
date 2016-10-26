@@ -37,6 +37,7 @@ extern "C" {
         va_start(ap, msg);
         vfprintf(stderr, msg, ap);
         fprintf(stderr, "\n");
+        va_end(ap);
     }
 
     #define EXAMPLE1_DESCRIPTOR "example(III)I"

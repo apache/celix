@@ -37,17 +37,17 @@ typedef struct module *module_pt;
 #include "bundle.h"
 #include "framework_exports.h"
 
-module_pt module_create(manifest_pt headerMap, char * moduleId, bundle_pt bundle);
+module_pt module_create(manifest_pt headerMap, const char* moduleId, bundle_pt bundle);
 module_pt module_createFrameworkModule(bundle_pt bundle);
 void module_destroy(module_pt module);
 
 FRAMEWORK_EXPORT unsigned int module_hash(void * module);
 FRAMEWORK_EXPORT int module_equals(void * module, void * compare);
 
-FRAMEWORK_EXPORT wire_pt module_getWire(module_pt module, char * serviceName);
+FRAMEWORK_EXPORT wire_pt module_getWire(module_pt module, const char* serviceName);
 
 FRAMEWORK_EXPORT version_pt module_getVersion(module_pt module);
-FRAMEWORK_EXPORT celix_status_t module_getSymbolicName(module_pt module, char **symbolicName);
+FRAMEWORK_EXPORT celix_status_t module_getSymbolicName(module_pt module, const char** symbolicName);
 FRAMEWORK_EXPORT char * module_getId(module_pt module);
 FRAMEWORK_EXPORT linked_list_pt module_getWires(module_pt module);
 FRAMEWORK_EXPORT void module_setWires(module_pt module, linked_list_pt wires);

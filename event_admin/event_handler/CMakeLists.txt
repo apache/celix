@@ -15,7 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(APR REQUIRED)
 
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories(private/include)
@@ -31,6 +30,6 @@ add_bundle(event_handler
 		${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
 )
 
-install_add_bundle(event_handler)
+install_bundle(event_handler)
 
-target_link_libraries(event_handler celix_framework celix_utils ${APR_LIBRARY} ${APRUTIL_LIBRARY})
+target_link_libraries(event_handler celix_framework celix_utils)

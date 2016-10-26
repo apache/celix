@@ -49,45 +49,45 @@ struct manifestParser {
 	linked_list_pt requirements;
 };
 
-static linked_list_pt manifestParser_parseImportHeader(char * header);
-static linked_list_pt manifestParser_parseExportHeader(module_pt module, char * header);
-static linked_list_pt manifestParser_parseDelimitedString(char * value, char * delim);
-static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseString);
-static linked_list_pt manifestParser_parseStandardHeader(char * header);
+static linked_list_pt manifestParser_parseImportHeader(const char* header);
+static linked_list_pt manifestParser_parseExportHeader(module_pt module, const char* header);
+static linked_list_pt manifestParser_parseDelimitedString(const char* value, const char* delim);
+static linked_list_pt manifestParser_parseStandardHeaderClause(const char* clauseString);
+static linked_list_pt manifestParser_parseStandardHeader(const char* header);
 
 celix_status_t manifestParser_create(module_pt owner, manifest_pt manifest, manifest_parser_pt *manifest_parser) {
 	celix_status_t status;
-    manifest_parser_pt parser;
+	manifest_parser_pt parser;
 
-    status = CELIX_SUCCESS;
+	status = CELIX_SUCCESS;
 	parser = (manifest_parser_pt) malloc(sizeof(*parser));
 	if (parser) {
-		char * bundleVersion = NULL;
-		char * bundleSymbolicName = NULL;
-        parser->manifest = manifest;
-        parser->owner = owner;
+		const char * bundleVersion = NULL;
+		const char * bundleSymbolicName = NULL;
+		parser->manifest = manifest;
+		parser->owner = owner;
 
-        bundleVersion = manifest_getValue(manifest, OSGI_FRAMEWORK_BUNDLE_VERSION);
-        if (bundleVersion != NULL) {
-            parser->bundleVersion = NULL;
-            version_createVersionFromString(bundleVersion, &parser->bundleVersion);
-        } else {
-        	parser->bundleVersion = NULL;
+		bundleVersion = manifest_getValue(manifest, OSGI_FRAMEWORK_BUNDLE_VERSION);
+		if (bundleVersion != NULL) {
+			parser->bundleVersion = NULL;
+			version_createVersionFromString(bundleVersion, &parser->bundleVersion);
+		} else {
+			parser->bundleVersion = NULL;
 			version_createEmptyVersion(&parser->bundleVersion);
-        }
-        bundleSymbolicName = manifest_getValue(manifest, OSGI_FRAMEWORK_BUNDLE_SYMBOLICNAME);
-        if (bundleSymbolicName != NULL) {
-            parser->bundleSymbolicName = bundleSymbolicName;
-        }
+		}
+		bundleSymbolicName = manifest_getValue(manifest, OSGI_FRAMEWORK_BUNDLE_SYMBOLICNAME);
+		if (bundleSymbolicName != NULL) {
+			parser->bundleSymbolicName = (char*)bundleSymbolicName;
+		}
 
-        parser->capabilities = manifestParser_parseExportHeader(owner, manifest_getValue(manifest, OSGI_FRAMEWORK_EXPORT_LIBRARY));
-        parser->requirements = manifestParser_parseImportHeader(manifest_getValue(manifest, OSGI_FRAMEWORK_IMPORT_LIBRARY));
+		parser->capabilities = manifestParser_parseExportHeader(owner, manifest_getValue(manifest, OSGI_FRAMEWORK_EXPORT_LIBRARY));
+		parser->requirements = manifestParser_parseImportHeader(manifest_getValue(manifest, OSGI_FRAMEWORK_IMPORT_LIBRARY));
 
-        *manifest_parser = parser;
+		*manifest_parser = parser;
 
-	    status = CELIX_SUCCESS;
+		status = CELIX_SUCCESS;
 	} else {
-        status = CELIX_ENOMEM;
+		status = CELIX_ENOMEM;
 	}
 
 	framework_logIfError(logger, status, NULL, "Cannot create manifest parser");
@@ -96,305 +96,376 @@ celix_status_t manifestParser_create(module_pt owner, manifest_pt manifest, mani
 }
 
 celix_status_t manifestParser_destroy(manifest_parser_pt mp) {
-    linkedList_destroy(mp->capabilities);
-    mp->capabilities = NULL;
-    linkedList_destroy(mp->requirements);
-    mp->requirements = NULL;
-    mp->bundleSymbolicName = NULL;
-    version_destroy(mp->bundleVersion);
-    mp->bundleVersion = NULL;
-    mp->manifest = NULL;
-    mp->owner = NULL;
+	linkedList_destroy(mp->capabilities);
+	mp->capabilities = NULL;
+	linkedList_destroy(mp->requirements);
+	mp->requirements = NULL;
+	mp->bundleSymbolicName = NULL;
+	version_destroy(mp->bundleVersion);
+	mp->bundleVersion = NULL;
+	mp->manifest = NULL;
+	mp->owner = NULL;
 
-    free(mp);
+	free(mp);
 
-    return CELIX_SUCCESS;
+	return CELIX_SUCCESS;
 }
 
-static linked_list_pt manifestParser_parseDelimitedString(char * value, char * delim) {
-    linked_list_pt list;
+static linked_list_pt manifestParser_parseDelimitedString(const char * value, const char * delim) {
+	linked_list_pt list;
 
-    if (linkedList_create(&list) == CELIX_SUCCESS) {
-        if (value != NULL) {
-            int CHAR = 1;
-            int DELIMITER = 2;
-            int STARTQUOTE = 4;
-            int ENDQUOTE = 8;
+	if (linkedList_create(&list) == CELIX_SUCCESS) {
+		if (value != NULL) {
+			int CHAR = 1;
+			int DELIMITER = 2;
+			int STARTQUOTE = 4;
+			int ENDQUOTE = 8;
 
-            char buffer[512];
-            int expecting = (CHAR | DELIMITER | STARTQUOTE);
-            unsigned int i;
+			char buffer[512];
+			int expecting = (CHAR | DELIMITER | STARTQUOTE);
+			unsigned int i;
 
-            buffer[0] = '\0';
+			buffer[0] = '\0';
 
-            for (i = 0; i < strlen(value); i++) {
-                char c = value[i];
+			for (i = 0; i < strlen(value); i++) {
+				char c = value[i];
 
-                bool isDelimiter = (strchr(delim, c) != NULL);
-                bool isQuote = (c == '"');
+				bool isDelimiter = (strchr(delim, c) != NULL);
+				bool isQuote = (c == '"');
 
-                if (isDelimiter && ((expecting & DELIMITER) > 0)) {
-                    linkedList_addElement(list, strdup(buffer));
-                    buffer[0] = '\0';
-                    expecting = (CHAR | DELIMITER | STARTQUOTE);
-                } else if (isQuote && ((expecting & STARTQUOTE) > 0)) {
-                    char tmp[2];
-                    tmp[0] = c;
-                    tmp[1] = '\0';
-                    strcat(buffer, tmp);
-                    expecting = CHAR | ENDQUOTE;
-                } else if (isQuote && ((expecting & ENDQUOTE) > 0)) {
-                    char tmp[2];
-                    tmp[0] = c;
-                    tmp[1] = '\0';
-                    strcat(buffer, tmp);
-                    expecting = (CHAR | STARTQUOTE | DELIMITER);
-                } else if ((expecting & CHAR) > 0) {
-                    char tmp[2];
-                    tmp[0] = c;
-                    tmp[1] = '\0';
-                    strcat(buffer, tmp);
-                } else {
-                    return NULL;
-                }
-            }
+				if (isDelimiter && ((expecting & DELIMITER) > 0)) {
+					linkedList_addElement(list, strdup(buffer));
+					buffer[0] = '\0';
+					expecting = (CHAR | DELIMITER | STARTQUOTE);
+				} else if (isQuote && ((expecting & STARTQUOTE) > 0)) {
+					char tmp[2];
+					tmp[0] = c;
+					tmp[1] = '\0';
+					strcat(buffer, tmp);
+					expecting = CHAR | ENDQUOTE;
+				} else if (isQuote && ((expecting & ENDQUOTE) > 0)) {
+					char tmp[2];
+					tmp[0] = c;
+					tmp[1] = '\0';
+					strcat(buffer, tmp);
+					expecting = (CHAR | STARTQUOTE | DELIMITER);
+				} else if ((expecting & CHAR) > 0) {
+					char tmp[2];
+					tmp[0] = c;
+					tmp[1] = '\0';
+					strcat(buffer, tmp);
+				} else {
+					linkedList_destroy(list);
+					return NULL;
+				}
+			}
 
-            if (strlen(buffer) > 0) {
-                linkedList_addElement(list, strdup(utils_stringTrim(buffer)));
-            }
-        }
-    }
+			if (strlen(buffer) > 0) {
+				linkedList_addElement(list, strdup(utils_stringTrim(buffer)));
+			}
+		}
+	}
 
 	return list;
 }
 
-static linked_list_pt manifestParser_parseStandardHeaderClause(char * clauseString) {
-	linked_list_pt paths;
-    linked_list_pt clause;
-    linked_list_pt pieces;
+static linked_list_pt manifestParser_parseStandardHeaderClause(const char * clauseString) {
+	linked_list_pt paths = NULL;
+	linked_list_pt clause = NULL;
+	linked_list_pt pieces = NULL;
 
-    clause = NULL;
-    pieces = manifestParser_parseDelimitedString(clauseString, ";");
+	if(linkedList_create(&paths) != CELIX_SUCCESS){
+		return NULL;
+	}
 
-    if (linkedList_create(&paths) == CELIX_SUCCESS) {
-        int pathCount = 0;
-        int pieceIdx;
-        hash_map_pt dirsMap = NULL;
-        hash_map_pt attrsMap = NULL;
-        char * sep;
+	pieces = manifestParser_parseDelimitedString(clauseString, ";");
 
-        for (pieceIdx = 0; pieceIdx < linkedList_size(pieces); pieceIdx++) {
-            char * piece = linkedList_get(pieces, pieceIdx);
-            if (strchr(piece, '=') != NULL) {
-                break;
-            } else {
-                linkedList_addElement(paths, strdup(piece));
-                pathCount++;
-            }
-        }
+	if (pieces != NULL) {
+		int pathCount = 0;
+		int pieceIdx;
+		hash_map_pt dirsMap = NULL;
+		hash_map_pt attrsMap = NULL;
+		char * sep;
 
-        if (pathCount == 0) {
-            return NULL;
-        }
+		for (pieceIdx = 0; pieceIdx < linkedList_size(pieces); pieceIdx++) {
+			char * piece = linkedList_get(pieces, pieceIdx);
+			if (strchr(piece, '=') != NULL) {
+				break;
+			} else {
+				linkedList_addElement(paths, strdup(piece));
+				pathCount++;
+			}
+		}
 
-        dirsMap = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
-        attrsMap = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+		if (pathCount != 0) {
 
+			dirsMap = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+			attrsMap = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 
-        for (pieceIdx = pathCount; pieceIdx < linkedList_size(pieces); pieceIdx++) {
-            char * sepPtr;
-            char * key;
-            char * value;
-            char * DIRECTIVE_SEP = ":=";
-            char * ATTRIBUTE_SEP = "=";
-            char * piece = linkedList_get(pieces, pieceIdx);
-            if ((sepPtr = strstr(piece, DIRECTIVE_SEP)) != NULL) {
-                sep = DIRECTIVE_SEP;
-            } else if ((sepPtr = strstr(piece, ATTRIBUTE_SEP)) != NULL) {
-                sep = ATTRIBUTE_SEP;
-            } else {
-                return NULL;
-            }
+			bool failure = false;
+			char *key = NULL;
+			char *value = NULL;
 
-            key = string_ndup(piece, sepPtr - piece);
-            value = strdup(sepPtr+strlen(sep));
+			for (pieceIdx = pathCount; pieceIdx < linkedList_size(pieces) && !failure ; pieceIdx++) {
+				char * sepPtr;
+				char * DIRECTIVE_SEP = ":=";
+				char * ATTRIBUTE_SEP = "=";
+				char * piece = linkedList_get(pieces, pieceIdx);
+				if ((sepPtr = strstr(piece, DIRECTIVE_SEP)) != NULL) {
+					sep = DIRECTIVE_SEP;
+				} else if ((sepPtr = strstr(piece, ATTRIBUTE_SEP)) != NULL) {
+					sep = ATTRIBUTE_SEP;
+				} else {
+					failure=true;
+					break;
+				}
 
-            if (value[0] == '"' && value[strlen(value) -1] == '"') {
-                char * oldV = strdup(value);
-                int len = strlen(oldV) - 2;
-                value = (char *) realloc(value, (sizeof(char) * len+1));
-                value[0] = '\0';
-                value = strncpy(value, oldV+1, strlen(oldV) - 2);
-                value[len] = '\0';
-                //check if correct
-                free(oldV);
-            }
+				if (strcmp(sep, DIRECTIVE_SEP) == 0) {
+					// Not implemented
+				}
+				else {
 
-            if (strcmp(sep, DIRECTIVE_SEP) == 0) {
-                // Not implemented
-            } else {
-                attribute_pt attr = NULL;
-                if (hashMap_containsKey(attrsMap, key)) {
-                    return NULL;
-                }
+					key = string_ndup(piece, sepPtr - piece);
+					value = strdup(sepPtr+strlen(sep));
 
-                if (attribute_create(key, value, &attr) == CELIX_SUCCESS) {
-                    hashMap_put(attrsMap, key, attr);
-                }
-            }
-        }
+					if (value[0] == '"' && value[strlen(value) -1] == '"') {
+						char * oldV = strdup(value);
+						int len = strlen(oldV) - 2;
+						value = (char *) realloc(value, (sizeof(char) * len+1));
+						value[0] = '\0';
+						value = strncpy(value, oldV+1, strlen(oldV) - 2);
+						value[len] = '\0';
+						//check if correct
+						free(oldV);
+					}
 
-        if (linkedList_create(&clause) == CELIX_SUCCESS) {
-            linkedList_addElement(clause, paths);
-            linkedList_addElement(clause, dirsMap);
-            linkedList_addElement(clause, attrsMap);
-        }
-    }
+					attribute_pt attr = NULL;
+					if (hashMap_containsKey(attrsMap, key)) {
+						failure=true;
+						break;
+					}
 
-    for(int listIdx = 0; listIdx < linkedList_size(pieces); listIdx++){
-    	void * element = linkedList_get(pieces, listIdx);
-    	free(element);
-    }
+					if (attribute_create(key, value, &attr) == CELIX_SUCCESS) {
+						hashMap_put(attrsMap, key, attr);
+					}
+				}
+			}
 
-    linkedList_destroy(pieces);
+			if(linkedList_create(&clause) != CELIX_SUCCESS){
+				failure=true;
+			}
 
+			if(failure){
+				hashMap_destroy(dirsMap,false,false);
+
+				hash_map_iterator_pt attrIter = hashMapIterator_create(attrsMap);
+				while(hashMapIterator_hasNext(attrIter)){
+					hash_map_entry_pt entry = hashMapIterator_nextEntry(attrIter);
+					char *mkey = (char*)hashMapEntry_getKey(entry);
+					attribute_pt mattr = (attribute_pt)hashMapEntry_getValue(entry);
+					free(mkey);
+					attribute_destroy(mattr);
+				}
+				hashMapIterator_destroy(attrIter);
+				hashMap_destroy(attrsMap,false,false);
+
+				if(key!=NULL){
+					free(key);
+				}
+				if(value!=NULL){
+					free(value);
+				}
+
+				linked_list_iterator_pt piter = linkedListIterator_create(paths,0);
+				while(linkedListIterator_hasNext(piter)){
+					free(linkedListIterator_next(piter));
+				}
+				linkedListIterator_destroy(piter);
+				linkedList_destroy(paths);
+
+				if(clause!=NULL){
+					linkedList_destroy(clause);
+					clause = NULL;
+				}
+			}
+			else{
+				linkedList_addElement(clause, paths);
+				linkedList_addElement(clause, dirsMap);
+				linkedList_addElement(clause, attrsMap);
+			}
+
+		}
+		else{
+			linkedList_destroy(paths);
+		}
+
+		for(int listIdx = 0; listIdx < linkedList_size(pieces); listIdx++){
+			void * element = linkedList_get(pieces, listIdx);
+			free(element);
+		}
+		linkedList_destroy(pieces);
+	}
+	else{
+		linkedList_destroy(paths);
+	}
 
 	return clause;
 }
 
-static linked_list_pt manifestParser_parseStandardHeader(char * header) {
-    linked_list_pt clauseStrings = NULL;
-    linked_list_pt completeList = NULL;
+static linked_list_pt manifestParser_parseStandardHeader(const char * header) {
+	linked_list_pt clauseStrings = NULL;
+	linked_list_pt completeList = NULL;
 
-    if (linkedList_create(&completeList) == CELIX_SUCCESS) {
-        if (header != NULL) {
-            if (strlen(header) == 0) {
-                return NULL;
-            }
+	if(header != NULL && strlen(header)==0){
+		return NULL;
+	}
 
-            char *hdr = strdup(header);
-            clauseStrings = manifestParser_parseDelimitedString(hdr, ",");
-            free(hdr);
-            if (clauseStrings != NULL) {
-                int i;
-                for (i = 0; i < linkedList_size(clauseStrings); i++) {
-                    char *clauseString = (char *) linkedList_get(clauseStrings, i);
-                    linkedList_addElement(completeList, manifestParser_parseStandardHeaderClause(clauseString));
-                    free(clauseString);
-                }
-                linkedList_destroy(clauseStrings);
-            }
+	if (linkedList_create(&completeList) == CELIX_SUCCESS) {
+		if(header!=NULL){
+			char *hdr = strdup(header);
+			clauseStrings = manifestParser_parseDelimitedString(hdr, ",");
+			free(hdr);
+			if (clauseStrings != NULL) {
+				int i;
+				for (i = 0; i < linkedList_size(clauseStrings); i++) {
+					char *clauseString = (char *) linkedList_get(clauseStrings, i);
+					linkedList_addElement(completeList, manifestParser_parseStandardHeaderClause(clauseString));
+					free(clauseString);
+				}
+				linkedList_destroy(clauseStrings);
+			}
 		}
+
 	}
 
 	return completeList;
 }
 
-static linked_list_pt manifestParser_parseImportHeader(char * header) {
-    linked_list_pt clauses;
-    linked_list_pt requirements;
+static linked_list_pt manifestParser_parseImportHeader(const char * header) {
+	linked_list_pt clauses = NULL;
+	linked_list_pt requirements = NULL;
+	bool failure = false;
 
-        int clauseIdx;
-		linked_list_iterator_pt iter;
-		clauses = manifestParser_parseStandardHeader(header);
-        linkedList_create(&requirements);
-        
-        for (clauseIdx = 0; clauseIdx < linkedList_size(clauses); clauseIdx++) {
-            linked_list_pt clause = linkedList_get(clauses, clauseIdx);
+	int clauseIdx;
+	linked_list_iterator_pt iter;
+	clauses = manifestParser_parseStandardHeader(header);
+	linkedList_create(&requirements);
 
-            linked_list_pt paths = linkedList_get(clause, 0);
-            hash_map_pt directives = linkedList_get(clause, 1);
-            hash_map_pt attributes = linkedList_get(clause, 2);
+	for (clauseIdx = 0; clauseIdx < linkedList_size(clauses) && !failure ; clauseIdx++) {
+		linked_list_pt clause = linkedList_get(clauses, clauseIdx);
 
-            int pathIdx;
-            for (pathIdx = 0; pathIdx < linkedList_size(paths); pathIdx++) {
-            	attribute_pt name = NULL;
-				requirement_pt req = NULL;
-				char * path = (char *) linkedList_get(paths, pathIdx);
-                if (strlen(path) == 0) {
-                    return NULL;
-                }
-                
-                if (attribute_create(strdup("service"), path, &name) == CELIX_SUCCESS) {
-                	char *key = NULL;
-                	attribute_getKey(name, &key);
-                    hashMap_put(attributes, key, name);
-                }
+		linked_list_pt paths = linkedList_get(clause, 0);
+		hash_map_pt directives = linkedList_get(clause, 1);
+		hash_map_pt attributes = linkedList_get(clause, 2);
 
-                requirement_create(directives, attributes, &req);
-                linkedList_addElement(requirements, req);
-            }
-        }
+		int pathIdx;
+		for (pathIdx = 0; pathIdx < linkedList_size(paths) && !failure ; pathIdx++) {
+			attribute_pt name = NULL;
+			requirement_pt req = NULL;
+			char * path = (char *) linkedList_get(paths, pathIdx);
+			if (strlen(path) == 0) {
+				failure = true;
+				break;
+			}
 
-        iter = linkedListIterator_create(clauses, 0);
-        while(linkedListIterator_hasNext(iter)) {
-            linked_list_pt clause = linkedListIterator_next(iter);
+			if (attribute_create(strdup("service"), path, &name) == CELIX_SUCCESS) {
+				char *key = NULL;
+				attribute_getKey(name, &key);
+				hashMap_put(attributes, key, name);
+			}
 
-            linked_list_pt paths = linkedList_get(clause, 0);
-            linkedList_destroy(paths);
+			requirement_create(directives, attributes, &req);
+			linkedList_addElement(requirements, req);
+		}
+	}
 
-            linkedListIterator_remove(iter);
-            linkedList_destroy(clause);
-        }
-        linkedListIterator_destroy(iter);
-        linkedList_destroy(clauses);
+	if(!failure){
+		iter = linkedListIterator_create(clauses, 0);
+		while(linkedListIterator_hasNext(iter)) {
+			linked_list_pt clause = linkedListIterator_next(iter);
+
+			linked_list_pt paths = linkedList_get(clause, 0);
+			linkedList_destroy(paths);
+
+			linkedListIterator_remove(iter);
+			linkedList_destroy(clause);
+		}
+		linkedListIterator_destroy(iter);
+	}
+
+	linkedList_destroy(clauses);
+
+	if(failure){
+		linkedList_destroy(requirements);
+		requirements = NULL;
+	}
 
 	return requirements;
 }
 
-static linked_list_pt manifestParser_parseExportHeader(module_pt module, char * header) {
-    linked_list_pt clauses;
-    linked_list_pt capabilities;
+static linked_list_pt manifestParser_parseExportHeader(module_pt module, const char * header) {
+	linked_list_pt clauses = NULL;
+	linked_list_pt capabilities = NULL;
 	int clauseIdx;
 	linked_list_iterator_pt iter;
-    clauses = manifestParser_parseStandardHeader(header);
-    linkedList_create(&capabilities);
+	bool failure = false;
 
-    
-    for (clauseIdx = 0; clauseIdx < linkedList_size(clauses); clauseIdx++) {
-        linked_list_pt clause = linkedList_get(clauses, clauseIdx);
+	clauses = manifestParser_parseStandardHeader(header);
+	linkedList_create(&capabilities);
 
-        linked_list_pt paths = linkedList_get(clause, 0);
-        hash_map_pt directives = linkedList_get(clause, 1);
-        hash_map_pt attributes = linkedList_get(clause, 2);
+	for (clauseIdx = 0; clauseIdx < linkedList_size(clauses) && !failure ; clauseIdx++) {
+		linked_list_pt clause = linkedList_get(clauses, clauseIdx);
 
-        int pathIdx;
-        for (pathIdx = 0; pathIdx < linkedList_size(paths); pathIdx++) {
-            char * path = (char *) linkedList_get(paths, pathIdx);
-            attribute_pt name = NULL;
+		linked_list_pt paths = linkedList_get(clause, 0);
+		hash_map_pt directives = linkedList_get(clause, 1);
+		hash_map_pt attributes = linkedList_get(clause, 2);
+
+		int pathIdx;
+		for (pathIdx = 0; pathIdx < linkedList_size(paths) && !failure ; pathIdx++) {
+			char * path = (char *) linkedList_get(paths, pathIdx);
+			attribute_pt name = NULL;
 			capability_pt cap = NULL;
 			if (strlen(path) == 0) {
-                return NULL;
-            }
+				failure=true;
+				break;
+			}
 
-            if (attribute_create(strdup("service"), path, &name) == CELIX_SUCCESS) {
-            	char *key = NULL;
+			if (attribute_create(strdup("service"), path, &name) == CELIX_SUCCESS) {
+				char *key = NULL;
 				attribute_getKey(name, &key);
 				hashMap_put(attributes, key, name);
-            }
+			}
 
-            capability_create(module, directives, attributes, &cap);
-            linkedList_addElement(capabilities, cap);
-        }
-    }
-    iter = linkedListIterator_create(clauses, 0);
-    while(linkedListIterator_hasNext(iter)) {
-        linked_list_pt clause = linkedListIterator_next(iter);
+			capability_create(module, directives, attributes, &cap);
+			linkedList_addElement(capabilities, cap);
+		}
+	}
 
-        linked_list_pt paths = linkedList_get(clause, 0);
-        linkedList_destroy(paths);
+	if(!failure){
+		iter = linkedListIterator_create(clauses, 0);
+		while(linkedListIterator_hasNext(iter)) {
+			linked_list_pt clause = linkedListIterator_next(iter);
 
-        linkedListIterator_remove(iter);
-        linkedList_destroy(clause);
-    }
-    linkedListIterator_destroy(iter);
-    linkedList_destroy(clauses);
+			linked_list_pt paths = linkedList_get(clause, 0);
+			linkedList_destroy(paths);
+
+			linkedListIterator_remove(iter);
+			linkedList_destroy(clause);
+		}
+		linkedListIterator_destroy(iter);
+	}
+
+	linkedList_destroy(clauses);
+	if(failure){
+		linkedList_destroy(capabilities);
+		capabilities = NULL;
+	}
 
 	return capabilities;
 }
 
-celix_status_t manifestParser_getSymbolicName(manifest_parser_pt parser, char **symbolicName) {
-	*symbolicName = strdup(parser->bundleSymbolicName);
+celix_status_t manifestParser_getAndDuplicateSymbolicName(manifest_parser_pt parser, char **symbolicName) {
+	*symbolicName = strndup(parser->bundleSymbolicName, 1024*10);
 	return CELIX_SUCCESS;
 }
 

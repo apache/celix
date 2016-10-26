@@ -203,8 +203,9 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
                 } else if (xmlStrcmp(localname, ENDPOINT_DESCRIPTION) == 0) {
                     endpoint_description_pt endpointDescription = NULL;
                     // Completely parsed endpoint description, add it to our list of results...
-                    endpointDescription_create(endpointProperties, &endpointDescription);
-                    arrayList_add(endpointDescriptions, endpointDescription);
+                    if(endpointDescription_create(endpointProperties, &endpointDescription) == CELIX_SUCCESS){
+			arrayList_add(endpointDescriptions, endpointDescription);
+                    }
 
                     endpointProperties = properties_create();
                 } else if (xmlStrcmp(localname, PROPERTY) == 0) {
@@ -357,7 +358,7 @@ int main() {
 		printf("\nEndpoint description #%d:\n", (i+1));
 		endpoint_description_pt edp = arrayList_get(list, i);
 		printf("Id: %s\n", edp->id);
-		printf("Service Id: %ld\n", edp->serviceId);
+		printf("Service Id: %lu\n", edp->serviceId);
 		printf("Framework UUID: %s\n", edp->frameworkUUID);
 		printf("Service: %s\n", edp->service);
 

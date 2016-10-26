@@ -179,7 +179,7 @@ celix_status_t exportRegistration_endpointRemoved(void * handle, service_referen
 
 celix_status_t exportRegistration_open(export_registration_pt registration) {
 	celix_status_t status = CELIX_SUCCESS;
-	char *bundleStore = NULL;
+	const char *bundleStore = NULL;
 
 	bundleContext_getProperty(registration->context, BUNDLE_STORE_PROPERTY_NAME, &bundleStore);
 

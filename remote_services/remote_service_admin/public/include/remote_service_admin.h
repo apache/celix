@@ -34,8 +34,11 @@
 
 #define OSGI_RSA_REMOTE_SERVICE_ADMIN "remote_service_admin"
 
-typedef struct import_registration_factory *import_registration_factory_pt;
-typedef struct remote_service_admin *remote_service_admin_pt;
+typedef struct import_registration_factory import_registration_factory_t;
+typedef import_registration_factory_t* import_registration_factory_pt;
+
+typedef struct remote_service_admin remote_service_admin_t;
+typedef remote_service_admin_t* remote_service_admin_pt;
 
 struct remote_service_admin_service {
 	remote_service_admin_pt admin;
@@ -63,7 +66,8 @@ struct remote_service_admin_service {
 
 };
 
-typedef struct remote_service_admin_service *remote_service_admin_service_pt;
+typedef struct remote_service_admin_service remote_service_admin_service_t;
+typedef remote_service_admin_service_t* remote_service_admin_service_pt;
 
 
 #endif /* REMOTE_SERVICE_ADMIN_H_ */

@@ -37,33 +37,32 @@ void properties_destroy(properties_pt properties) {
 			->withPointerParameters("properties", properties);
 }
 
-properties_pt properties_load(char * filename) {
+properties_pt properties_load(const char * filename) {
 	mock_c()->actualCall("properties_load");
 	return mock_c()->returnValue().value.pointerValue;
 }
 
-void properties_store(properties_pt properties, char * file, char * header) {
+void properties_store(properties_pt properties, const char * file, const char * header) {
 	mock_c()->actualCall("properties_store");
 }
 
-char * properties_get(properties_pt properties, char * key) {
+const char * properties_get(properties_pt properties, const char * key) {
 	mock_c()->actualCall("properties_get")
 			->withPointerParameters("properties", properties)
 			->withStringParameters("key", key);
 	return (char *) mock_c()->returnValue().value.stringValue;
 }
 
-char * properties_getWithDefault(properties_pt properties, char * key, char * defaultValue) {
+const char * properties_getWithDefault(properties_pt properties, const char * key, const char * defaultValue) {
 	mock_c()->actualCall("properties_getWithDefault");
 	return mock_c()->returnValue().value.pointerValue;
 }
 
-char * properties_set(properties_pt properties, char * key, char * value) {
+void properties_set(properties_pt properties, const char * key, const char * value) {
 	mock_c()->actualCall("properties_set")
 		->withPointerParameters("properties", properties)
 		->withStringParameters("key", key)
 		->withStringParameters("value", value);
-	return mock_c()->returnValue().value.pointerValue;
 }
 
 

@@ -32,6 +32,7 @@ extern "C" {
 	    va_start(ap, msg);
 	    vfprintf(stderr, msg, ap);
 	    fprintf(stderr, "\n");
+	    va_end(ap);
 	}
 
     static void runTest(const char *descriptorStr, const char *exName) {

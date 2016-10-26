@@ -123,7 +123,7 @@ celix_status_t inspectCommand_printExportedServices(bundle_context_pt context, a
 
 				if (bundle_getRegisteredServices(bundle, &refs) == CELIX_SUCCESS) {
 					module_pt module = NULL;
-					char * name = NULL;
+					const char * name = NULL;
 					status = bundle_getCurrentModule(bundle, &module);
 					if (status == CELIX_SUCCESS) {
 						status = module_getSymbolicName(module, &name);
@@ -143,11 +143,13 @@ celix_status_t inspectCommand_printExportedServices(bundle_context_pt context, a
 									serviceReference_getPropertyKeys(ref, &keys, &size);
 									for (int k = 0; k < size; k++) {
 									    char *key = keys[k];
-									    char *value = NULL;
+									    const char *value = NULL;
 									    serviceReference_getProperty(ref, key, &value);
 
 										fprintf(outStream, "%s = %s\n", key, value);
 									}
+
+									free(keys);
 
 //									objectClass = properties_get(props, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
 //									sprintf(line, "ObjectClass = %s\n", objectClass);
@@ -158,6 +160,10 @@ celix_status_t inspectCommand_printExportedServices(bundle_context_pt context, a
 							}
 						}
 					}
+				}
+
+				if(refs!=NULL){
+					arrayList_destroy(refs);
 				}
 			}
 		}
@@ -207,7 +213,7 @@ celix_status_t inspectCommand_printImportedServices(bundle_context_pt context, a
 
                 if (bundle_getServicesInUse(bundle, &refs) == CELIX_SUCCESS) {
                     module_pt module = NULL;
-                    char * name = NULL;
+                    const char * name = NULL;
                     status = bundle_getCurrentModule(bundle, &module);
                     if (status == CELIX_SUCCESS) {
                         status = module_getSymbolicName(module, &name);
@@ -223,7 +229,7 @@ celix_status_t inspectCommand_printImportedServices(bundle_context_pt context, a
                                     service_reference_pt ref = (service_reference_pt) arrayList_get(refs, j);
                                     bundle_pt usedBundle = NULL;
                                     module_pt usedModule = NULL;
-                                    char *usedSymbolicName = NULL;
+                                    const char *usedSymbolicName = NULL;
                                     long usedBundleId;
 
                                     serviceReference_getBundle(ref, &usedBundle);
@@ -239,7 +245,7 @@ celix_status_t inspectCommand_printImportedServices(bundle_context_pt context, a
                                     serviceReference_getPropertyKeys(ref, &keys, &size);
                                     for (int k = 0; k < size; k++) {
                                         char *key = keys[k];
-                                        char *value = NULL;
+                                        const char *value = NULL;
                                         serviceReference_getProperty(ref, key, &value);
 
 										fprintf(outStream, "%s = %s\n", key, value);
@@ -255,6 +261,10 @@ celix_status_t inspectCommand_printImportedServices(bundle_context_pt context, a
                             }
                         }
                     }
+                }
+
+                if(refs!=NULL){
+                	arrayList_destroy(refs);
                 }
             }
         }

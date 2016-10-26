@@ -63,7 +63,7 @@ if (UTILS)
         target_link_libraries(celix_utils m)
     ENDIF()
     
-    install(TARGETS celix_utils DESTINATION lib COMPONENT framework)
+    install(TARGETS celix_utils DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
     FILE(GLOB files "public/include/*.h")
     INSTALL(FILES ${files} DESTINATION include/celix COMPONENT framework)
     

@@ -34,7 +34,8 @@
 
 static const char * const OSGI_LOGSERVICE_READER_SERVICE_NAME = "log_reader_service";
 
-typedef struct log_reader_data * log_reader_data_pt;
+typedef struct log_reader_data log_reader_data_t;
+typedef log_reader_data_t* log_reader_data_pt;
 
 struct log_reader_service {
     log_reader_data_pt reader;

@@ -59,7 +59,7 @@ celix_status_t driverAttributes_create(service_reference_pt reference, driver_se
 				(*attributes)->driver = driver;
 				(*attributes)->bundle = bundle;
 
-				char *location;
+				const char *location;
 				status = bundleArchive_getLocation(bundleArchive, &location);
 				if (status == CELIX_SUCCESS) {
 					(*attributes)->dynamic = strncmp(location, DRIVER_LOCATION_PREFIX, 4) == 0 ? true : false;
@@ -72,6 +72,13 @@ celix_status_t driverAttributes_create(service_reference_pt reference, driver_se
 	return status;
 }
 
+celix_status_t driverAttributes_destroy(driver_attributes_pt attributes){
+	if(attributes != NULL){
+		free(attributes);
+	}
+	return CELIX_SUCCESS;
+}
+
 celix_status_t driverAttributes_getReference(driver_attributes_pt driverAttributes, service_reference_pt *reference) {
 	*reference = driverAttributes->reference;
 
@@ -81,7 +88,7 @@ celix_status_t driverAttributes_getReference(driver_attributes_pt driverAttribut
 celix_status_t driverAttributes_getDriverId(driver_attributes_pt driverAttributes, char **driverId) {
 	celix_status_t status = CELIX_SUCCESS;
 
-    char *id_prop = NULL;
+    const char* id_prop = NULL;
     status = serviceReference_getProperty(driverAttributes->reference, "DRIVER_ID", &id_prop);
     if (status == CELIX_SUCCESS) {
         if (!id_prop) {
@@ -118,11 +125,11 @@ celix_status_t driverAttributes_isInUse(driver_attributes_pt driverAttributes, b
 			int i;
 			for (i = 0; i < arrayList_size(references); i++) {
 				service_reference_pt ref = arrayList_get(references, i);
-				char *object = NULL;
-				status = serviceReference_getProperty(ref, (char *) OSGI_FRAMEWORK_OBJECTCLASS, &object);
+				const char *object = NULL;
+				status = serviceReference_getProperty(ref, OSGI_FRAMEWORK_OBJECTCLASS, &object);
 
 				if (status == CELIX_SUCCESS) {
-					char *category = NULL;
+					const char* category = NULL;
 					status = serviceReference_getProperty(ref, "DEVICE_CATEGORY", &category);
 
 					if (status == CELIX_SUCCESS) {

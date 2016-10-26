@@ -16,14 +16,14 @@
 # under the License.
 
 cmake_minimum_required (VERSION 3.2)
+cmake_policy(SET CMP0012 NEW)
+cmake_policy(SET CMP0042 NEW)
+
 project (Celix C CXX)
 
-cmake_policy(SET CMP0012 NEW)
+include(GNUInstallDirs)                                                                                                                                                                             
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
-
-set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-set(CMAKE_INSTALL_NAME_DIR "@rpath")
 
 SET(CMAKE_BUILD_TYPE "Debug")
 
@@ -36,15 +36,21 @@ IF (ANDROID)
     SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -Wall ${CMAKE_C_FLAGS}")
 ENDIF()
 IF(UNIX AND NOT ANDROID)
-    SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -Wall -Werror ${CMAKE_C_FLAGS}")
-    #SET(CMAKE_CXX_FLAGS "-Wall -Werror ${CMAKE_CXX_FLAGS}")
+    SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -Wall -Werror -fPIC ${CMAKE_C_FLAGS}")
+    SET(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}") #TODO enable -Wall -Werror -> warning in cpputest
+    SET(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG")
+    SET(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG")
 ENDIF()
 IF(UNIX AND NOT APPLE) 
 	SET(CMAKE_C_FLAGS "-pthread ${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-pthread ${CMAKE_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "-pthread ${CMAKE_EXE_LINKER_FLAGS}")
 ENDIF()
 IF(WIN32)
 	SET(CMAKE_C_FLAGS "-D_CRT_SECURE_NO_WARNINGS ${CMAKE_C_FLAGS}")
+ENDIF()
+IF(APPLE)
+    set(CMAKE_MACOSX_RPATH 1)
 ENDIF()
 
 # Set version for the framework package/release
@@ -70,22 +76,25 @@ set(DEFAULT_VERSION 1.0.0)
 ## Sub projects depending on another sub project automatically enable these dependencies
 ## For this to work, the order off "add_subdirectory" has to be correct (ie backwards)
 add_subdirectory(config_admin)
-add_subdirectory(examples)
 add_subdirectory(device_access)
 add_subdirectory(deployment_admin)
 add_subdirectory(remote_services)
 add_subdirectory(remote_shell)
-#add_subdirectory(shell_bonjour) shell_bonjour is still based on APR and old shell command service
+add_subdirectory(shell_bonjour)
 add_subdirectory(shell_tui)
 add_subdirectory(shell)
 add_subdirectory(log_writer)
 add_subdirectory(log_service)
 
-#add_subdirectory(event_admin) event_admin is still bases on APR
+#add_subdirectory(event_admin)# event_admin is unstable
 add_subdirectory(dependency_manager)
+add_subdirectory(dependency_manager_cxx)
 #add_subdirectory(scr) scr still needs APR
 
 add_subdirectory(launcher)
 add_subdirectory(framework)
 add_subdirectory(utils)
 add_subdirectory(dfi)
+
+#Example as last, because some example will check if underlining options are enabled
+add_subdirectory(examples)

@@ -60,7 +60,7 @@ static celix_status_t discoveryShmWatcher_getRootPath(char* rootNode) {
 static celix_status_t discoveryShmWatcher_getLocalNodePath(bundle_context_pt context, char* localNodePath) {
     celix_status_t status;
     char rootPath[MAX_ROOTNODE_LENGTH];
-    char* uuid = NULL;
+    const char* uuid = NULL;
 
     status = discoveryShmWatcher_getRootPath(&rootPath[0]);
 
@@ -196,24 +196,19 @@ celix_status_t discoveryShmWatcher_create(discovery_pt discovery) {
         if (status == CELIX_SUCCESS) {
             discovery->watcher = watcher;
         }
+        else{
+        	discovery->watcher = NULL;
+        	free(watcher);
+        }
 
     }
 
     if (status == CELIX_SUCCESS) {
-        status = celixThreadMutex_create(&watcher->watcherLock, NULL);
-    }
-
-    if (status == CELIX_SUCCESS) {
-        status = celixThreadMutex_lock(&watcher->watcherLock);
-    }
-
-    if (status == CELIX_SUCCESS) {
-    	watcher->running = true;
-        status = celixThread_create(&watcher->watcherThread, NULL, discoveryShmWatcher_run, discovery);
-    }
-
-    if (status == CELIX_SUCCESS) {
-        status = celixThreadMutex_unlock(&watcher->watcherLock);
+        status += celixThreadMutex_create(&watcher->watcherLock, NULL);
+        status += celixThreadMutex_lock(&watcher->watcherLock);
+        watcher->running = true;
+        status += celixThread_create(&watcher->watcherThread, NULL, discoveryShmWatcher_run, discovery);
+        status += celixThreadMutex_unlock(&watcher->watcherLock);
     }
 
     return status;
@@ -224,7 +219,9 @@ celix_status_t discoveryShmWatcher_destroy(discovery_pt discovery) {
     shm_watcher_pt watcher = discovery->watcher;
     char localNodePath[MAX_LOCALNODE_LENGTH];
 
+    celixThreadMutex_lock(&watcher->watcherLock);
     watcher->running = false;
+    celixThreadMutex_unlock(&watcher->watcherLock);
 
     celixThread_join(watcher->watcherThread, NULL);
 

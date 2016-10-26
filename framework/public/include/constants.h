@@ -33,6 +33,10 @@ static const char * const OSGI_FRAMEWORK_SERVICE_PID = "service.pid";
 static const char * const OSGI_FRAMEWORK_SERVICE_RANKING = "service.ranking";
 
 static const char * const CELIX_FRAMEWORK_SERVICE_VERSION = "service.version";
+static const char * const CELIX_FRAMEWORK_SERVICE_LANGUAGE = "service.lang";
+static const char * const CELIX_FRAMEWORK_SERVICE_C_LANGUAGE = "C";
+static const char * const CELIX_FRAMEWORK_SERVICE_CXX_LANGUAGE = "C++";
+static const char * const CELIX_FRAMEWORK_SERVICE_SHARED_LANGUAGE = "shared"; //e.g. marker services
 
 static const char * const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR = "Bundle-Activator";
 static const char * const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_CREATE = "bundleActivator_create";

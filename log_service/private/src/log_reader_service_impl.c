@@ -39,7 +39,7 @@ celix_status_t logReaderService_create(log_pt log, log_reader_data_pt *reader) {
 
     *reader = (log_reader_data_pt) calloc(1, sizeof(**reader));
 
-    if (reader == NULL) {
+    if (*reader == NULL) {
         status = CELIX_ENOMEM;
     } else {
         (*reader)->log = log;

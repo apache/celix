@@ -28,10 +28,10 @@ include_directories(
 
 set(MEMSTREAM_SOURCES )
 set(MEMSTREAM_INCLUDES )
-if (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin" OR ANDROID) 
-	set(MEMSTREAM_SOURCES private/src/memstream/open_memstream.c private/src/memstream/fmemopen.c)
-	set(MEMSTREAM_INCLUDES public/include/memstream/open_memstream.h public/include/memstream/fmemopen.h)
-    include_directories(public/include/memstream)
+if (APPLE OR ANDROID)
+	set(MEMSTREAM_SOURCES ${PROJECT_SOURCE_DIR}/utils/private/src/memstream/open_memstream.c  ${PROJECT_SOURCE_DIR}/utils/private/src/memstream/fmemopen.c)
+	set(MEMSTREAM_INCLUDES ${PROJECT_SOURCE_DIR}/utils/public/include/memstream/open_memstream.h ${PROJECT_SOURCE_DIR}/utils/public/include/memstream/fmemopen.h)
+    include_directories(${PROJECT_SOURCE_DIR}/utils/public/include/memstream)
 endif()
 
 add_library(celix_dfi SHARED
@@ -56,7 +56,7 @@ add_library(celix_dfi SHARED
 set_target_properties(celix_dfi PROPERTIES "SOVERSION" 1)
 target_link_libraries(celix_dfi celix_utils ${FFI_LIBRARIES} ${JANSSON_LIBRARY})
 
-install(TARGETS celix_dfi DESTINATION lib COMPONENT framework)
+install(TARGETS celix_dfi DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
 FILE(GLOB files "public/include/*.h" ${MEMSTREAM_INCLUDES})
 INSTALL(FILES ${files} DESTINATION include/celix/dfi COMPONENT framework)
 

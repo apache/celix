@@ -35,7 +35,7 @@ typedef struct arrayList * array_list_pt;
 
 typedef struct arrayListIterator * array_list_iterator_pt;
 
-typedef celix_status_t (*array_list_element_equals_pt)(void *, void *, bool *equals);
+typedef celix_status_t (*array_list_element_equals_pt)(const void*, const void*, bool *equals);
 
 UTILS_EXPORT celix_status_t arrayList_create(array_list_pt *list);
 UTILS_EXPORT celix_status_t arrayList_createWithEquals(array_list_element_equals_pt equals, array_list_pt *list);

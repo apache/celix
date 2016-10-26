@@ -17,9 +17,6 @@
 
 celix_subproject(SHELL_BONJOUR "Option to enable building the Bonjour Shell (shell access by chat clients)" OFF DEPS LAUNCHER shell)
 if (SHELL_BONJOUR)
-	if(NOT ${WITH_APR})
-		message(FATAL_ERROR "SHELL_BONJOUR requires APR, enable WITH_APR option.")
-	endif()
 	find_package(LibXml2 REQUIRED)
 	
 	#TODO create/add FindDNS_SD.cmake and use it (with required)
@@ -33,16 +30,23 @@ if (SHELL_BONJOUR)
 	include_directories("${PROJECT_SOURCE_DIR}/shell/public/include")
 	include_directories("${LIBXML2_INCLUDE_DIR}")
 	include_directories("private/include")
-	
+
+	set(MEMSTREAM_SOURCES )
+	if (APPLE OR ANDROID)
+		set(MEMSTREAM_SOURCES ${PROJECT_SOURCE_DIR}/utils/private/src/memstream/open_memstream.c  ${PROJECT_SOURCE_DIR}/utils/private/src/memstream/fmemopen.c)
+		include_directories(${PROJECT_SOURCE_DIR}/utils/public/include/memstream)
+	endif()
 	add_bundle(bonjour_shell
+                VERSION "1.0.0"
 		SOURCES
 		 	private/src/activator.c
 		 	private/src/bonjour_shell.c
+			${MEMSTREAM_SOURCES}
 	)
 	
 	target_link_libraries(bonjour_shell celix_framework celix_utils ${LIBXML2_LIBRARIES} ${DNS_SD_LIB})
 
-	add_deploy("bonjour_shell" BUNDLES 
+	add_deploy("bonjour_shell_deploy" BUNDLES 
 		shell
 		bonjour_shell
 		PROPERTIES "bonjour.shell.id=Apache Celix"

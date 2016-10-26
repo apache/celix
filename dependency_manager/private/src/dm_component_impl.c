@@ -41,7 +41,7 @@ struct dm_component_struct {
     bundle_context_pt context;
     array_list_pt dm_interfaces;
 
-    void *implementation;
+    void* implementation;
 
     init_fpt callbackInit;
     start_fpt callbackStart;
@@ -55,14 +55,16 @@ struct dm_component_struct {
     bool isStarted;
     bool active;
 
+    bool setCLanguageProperty;
+
     hash_map_pt dependencyEvents; //protected by mutex
 
     dm_executor_pt executor;
 };
 
 typedef struct dm_interface_struct {
-    char *serviceName;
-    void *service;
+    char* serviceName;
+    const void* service;
     properties_pt properties;
     service_registration_pt registration;
 } dm_interface_t;
@@ -154,6 +156,8 @@ celix_status_t component_create(bundle_context_pt context, const char *name, dm_
         component->state = DM_CMP_STATE_INACTIVE;
         component->isStarted = false;
         component->active = false;
+
+        component->setCLanguageProperty = false;
 
         component->dependencyEvents = hashMap_create(NULL, NULL, NULL, NULL);
 
@@ -326,7 +330,12 @@ celix_status_t component_stopTask(dm_component_pt component, void *data __attrib
     return status;
 }
 
-celix_status_t component_addInterface(dm_component_pt component, char *serviceName, char *serviceVersion, void *service, properties_pt properties) {
+celix_status_t setCLanguageProperty(dm_component_pt component, bool setCLangProp) {
+    component->setCLanguageProperty = setCLangProp;
+    return CELIX_SUCCESS;
+}
+
+celix_status_t component_addInterface(dm_component_pt component, const char* serviceName, const char* serviceVersion, const void* service, properties_pt properties) {
     celix_status_t status = CELIX_SUCCESS;
 
     if (component->active) {
@@ -339,8 +348,12 @@ celix_status_t component_addInterface(dm_component_pt component, char *serviceNa
             properties = properties_create();
         }
 
-        if ((properties_get(properties, (char*) CELIX_FRAMEWORK_SERVICE_VERSION) == NULL) && (serviceVersion != NULL)) {
-            properties_set(properties, (char*) CELIX_FRAMEWORK_SERVICE_VERSION, serviceVersion);
+        if ((properties_get(properties, CELIX_FRAMEWORK_SERVICE_VERSION) == NULL) && (serviceVersion != NULL)) {
+            properties_set(properties, CELIX_FRAMEWORK_SERVICE_VERSION, serviceVersion);
+        }
+
+        if (component->setCLanguageProperty && properties_get(properties, CELIX_FRAMEWORK_SERVICE_LANGUAGE) == NULL) { //always set default lang to C
+            properties_set(properties, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
         }
 
         if (interface && name) {
@@ -367,8 +380,11 @@ celix_status_t component_getInterfaces(dm_component_pt component, array_list_pt 
     int size = arrayList_size(component->dm_interfaces);
     int i;
     for (i = 0; i < size; i += 1) {
+        dm_interface_info_pt info = calloc(1, sizeof(*info));
         dm_interface_t *interface = arrayList_get(component->dm_interfaces, i);
-        arrayList_add(names, strdup(interface->serviceName));
+        info->name = strdup(interface->serviceName);
+        properties_copy(interface->properties, &info->properties);
+        arrayList_add(names, info);
     }
     celixThreadMutex_unlock(&component->mutex);
 
@@ -452,9 +468,9 @@ celix_status_t component_handleAdded(dm_component_pt component, dm_service_depen
 
     serviceDependency_setAvailable(dependency, true);
 
-    serviceDependency_invokeSet(dependency, event);
     switch (component->state) {
         case DM_CMP_STATE_WAITING_FOR_REQUIRED: {
+            serviceDependency_invokeSet(dependency, event);
             bool required = false;
             serviceDependency_isRequired(dependency, &required);
             if (required) {
@@ -469,6 +485,7 @@ celix_status_t component_handleAdded(dm_component_pt component, dm_service_depen
             serviceDependency_isRequired(dependency, &required);
             if (!instanceBound) {
                 if (required) {
+                    serviceDependency_invokeSet(dependency, event);
                     serviceDependency_invokeAdd(dependency, event);
                 }
                 dm_event_pt event = NULL;
@@ -482,9 +499,10 @@ celix_status_t component_handleAdded(dm_component_pt component, dm_service_depen
             break;
         }
         case DM_CMP_STATE_TRACKING_OPTIONAL:
-		component_suspend(component,dependency);
+		    component_suspend(component,dependency);
+            serviceDependency_invokeSet(dependency, event);
             serviceDependency_invokeAdd(dependency, event);
-		component_resume(component,dependency);
+		    component_resume(component,dependency);
             dm_event_pt event = NULL;
             component_getDependencyEvent(component, dependency, &event);
             component_updateInstance(component, dependency, event, false, true);
@@ -503,6 +521,7 @@ celix_status_t component_handleChanged(dm_component_pt component, dm_service_dep
     array_list_pt events = hashMap_get(component->dependencyEvents, dependency);
     int index = arrayList_indexOf(events, event);
     if (index < 0) {
+	pthread_mutex_unlock(&component->mutex);
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
         dm_event_pt old = arrayList_remove(events, (unsigned int) index);
@@ -512,9 +531,9 @@ celix_status_t component_handleChanged(dm_component_pt component, dm_service_dep
         serviceDependency_invokeSet(dependency, event);
         switch (component->state) {
             case DM_CMP_STATE_TRACKING_OPTIONAL:
-			component_suspend(component,dependency);
+			    component_suspend(component,dependency);
                 serviceDependency_invokeChange(dependency, event);
-			component_resume(component,dependency);
+			    component_resume(component,dependency);
                 dm_event_pt hevent = NULL;
                 component_getDependencyEvent(component, dependency, &hevent);
                 component_updateInstance(component, dependency, hevent, true, false);
@@ -556,6 +575,7 @@ celix_status_t component_handleRemoved(dm_component_pt component, dm_service_dep
     pthread_mutex_lock(&component->mutex);
     int index = arrayList_indexOf(events, event);
     if (index < 0) {
+	pthread_mutex_unlock(&component->mutex);
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
         dm_event_pt old = arrayList_remove(events, (unsigned int) index);
@@ -580,10 +600,10 @@ celix_status_t component_handleRemoved(dm_component_pt component, dm_service_dep
                 break;
             }
             case DM_CMP_STATE_TRACKING_OPTIONAL:
-			component_suspend(component,dependency);
+			    component_suspend(component,dependency);
                 serviceDependency_invokeSet(dependency, event);
                 serviceDependency_invokeRemove(dependency, event);
-			component_resume(component,dependency);
+			    component_resume(component,dependency);
                 dm_event_pt hevent = NULL;
                 component_getDependencyEvent(component, dependency, &hevent);
                 component_updateInstance(component, dependency, hevent, false, false);
@@ -608,6 +628,7 @@ celix_status_t component_handleSwapped(dm_component_pt component, dm_service_dep
     array_list_pt events = hashMap_get(component->dependencyEvents, dependency);
     int index = arrayList_indexOf(events, event);
     if (index < 0) {
+	pthread_mutex_unlock(&component->mutex);
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
         dm_event_pt old = arrayList_remove(events, (unsigned int) index);
@@ -632,9 +653,9 @@ celix_status_t component_handleSwapped(dm_component_pt component, dm_service_dep
                 break;
             }
             case DM_CMP_STATE_TRACKING_OPTIONAL:
-			component_suspend(component,dependency);
+			    component_suspend(component,dependency);
                 serviceDependency_invokeSwap(dependency, event, newEvent);
-			component_resume(component,dependency);
+			    component_resume(component,dependency);
                 break;
             default:
                 break;
@@ -657,8 +678,8 @@ celix_status_t component_updateInstance(dm_component_pt component, dm_service_de
     serviceDependency_isAutoConfig(dependency, &autoConfig);
 
     if (autoConfig) {
-        void *service = NULL;
-        void **field = NULL;
+        const void *service = NULL;
+        const void **field = NULL;
 
         if (event != NULL) {
             event_getService(event, &service);
@@ -1134,11 +1155,11 @@ celix_status_t component_getDependencyEvent(dm_component_pt component, dm_servic
 celix_status_t component_configureImplementation(dm_component_pt component, dm_service_dependency_pt dependency) {
     celix_status_t status = CELIX_SUCCESS;
 
-    void **field = NULL;
+    const void **field = NULL;
 
     array_list_pt events = hashMap_get(component->dependencyEvents, dependency);
     if (events) {
-        void *service = NULL;
+        const void *service = NULL;
         dm_event_pt event = NULL;
         component_getDependencyEvent(component, dependency, &event);
         if (event != NULL) {
@@ -1156,7 +1177,7 @@ celix_status_t component_configureImplementation(dm_component_pt component, dm_s
 celix_status_t component_registerServices(dm_component_pt component) {
     celix_status_t status = CELIX_SUCCESS;
 
-    if (component->context) {
+    if (component->context != NULL) {
 	    unsigned int i;
         for (i = 0; i < arrayList_size(component->dm_interfaces); i++) {
             dm_interface_t *interface = arrayList_get(component->dm_interfaces, i);
@@ -1340,42 +1361,40 @@ celix_status_t component_getComponentInfo(dm_component_pt component, dm_componen
     dm_component_info_pt info = NULL;
     info = calloc(1, sizeof(*info));
 
-
-    if (info != NULL) {
-        arrayList_create(&info->dependency_list);
-        component_getInterfaces(component, &info->interfaces);
-        info->active = false;
-        memcpy(info->id, component->id, DM_COMPONENT_MAX_ID_LENGTH);
-        memcpy(info->name, component->name, DM_COMPONENT_MAX_NAME_LENGTH);
-
-        switch (component->state) {
-            case DM_CMP_STATE_INACTIVE :
-                info->state = strdup("INACTIVE");
-                break;
-            case DM_CMP_STATE_WAITING_FOR_REQUIRED :
-                info->state = strdup("WAITING_FOR_REQUIRED");
-                break;
-            case DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED :
-                info->state = strdup("INSTANTIATED_AND_WAITING_FOR_REQUIRED");
-                break;
-            case DM_CMP_STATE_TRACKING_OPTIONAL :
-                info->state = strdup("TRACKING_OPTIONAL");
-                info->active = true;
-                break;
-            default :
-                info->state = strdup("UNKNOWN");
-                break;
-        }
-    } else {
-        status = CELIX_ENOMEM;
+    if (info == NULL) {
+        return CELIX_ENOMEM;
     }
 
+    arrayList_create(&info->dependency_list);
+    component_getInterfaces(component, &info->interfaces);
+    info->active = false;
+    memcpy(info->id, component->id, DM_COMPONENT_MAX_ID_LENGTH);
+    memcpy(info->name, component->name, DM_COMPONENT_MAX_NAME_LENGTH);
+
+    switch (component->state) {
+        case DM_CMP_STATE_INACTIVE :
+            info->state = strdup("INACTIVE");
+            break;
+        case DM_CMP_STATE_WAITING_FOR_REQUIRED :
+            info->state = strdup("WAITING_FOR_REQUIRED");
+            break;
+        case DM_CMP_STATE_INSTANTIATED_AND_WAITING_FOR_REQUIRED :
+            info->state = strdup("INSTANTIATED_AND_WAITING_FOR_REQUIRED");
+            break;
+        case DM_CMP_STATE_TRACKING_OPTIONAL :
+            info->state = strdup("TRACKING_OPTIONAL");
+            info->active = true;
+            break;
+        default :
+            info->state = strdup("UNKNOWN");
+            break;
+    }
 
     celixThreadMutex_lock(&component->mutex);
     size = arrayList_size(component->dependencies);
     for (i = 0; i < size; i += 1) {
         dm_service_dependency_pt dep = arrayList_get(component->dependencies, i);
-        dm_service_dependency_info_pt depInfo= NULL;
+        dm_service_dependency_info_pt depInfo = NULL;
         status = serviceDependency_getServiceDependencyInfo(dep, &depInfo);
         if (status == CELIX_SUCCESS) {
             arrayList_add(info->dependency_list, depInfo);
@@ -1403,8 +1422,10 @@ void component_destroyComponentInfo(dm_component_info_pt info) {
         if (info->interfaces != NULL) {
             size = arrayList_size(info->interfaces);
             for (i = 0; i < size; i += 1) {
-                char *intf = arrayList_get(info->interfaces, i);
-                free(intf);
+                dm_interface_info_pt intfInfo = arrayList_get(info->interfaces, i);
+                free(intfInfo->name);
+                properties_destroy(intfInfo->properties);
+                free(intfInfo);
             }
             arrayList_destroy(info->interfaces);
         }

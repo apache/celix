@@ -24,6 +24,7 @@
  *  \copyright  Apache License, Version 2.0
  */
 #include <stdlib.h>
+#include <string.h>
 
 #include "celix_errno.h"
 #include "celix_log.h"
@@ -32,28 +33,36 @@
 #include "remote_constants.h"
 #include "constants.h"
 
-static celix_status_t endpointDescription_verifyLongProperty(properties_pt properties, char *propertyName, long *longProperty);
+static celix_status_t endpointDescription_verifyLongProperty(properties_pt properties, char *propertyName, unsigned long *longProperty);
 
 celix_status_t endpointDescription_create(properties_pt properties, endpoint_description_pt *endpointDescription) {
-	celix_status_t status;
+	celix_status_t status = CELIX_SUCCESS;
 
-    *endpointDescription = malloc(sizeof(**endpointDescription));
+	unsigned long serviceId = 0UL;
+	status = endpointDescription_verifyLongProperty(properties, (char *) OSGI_RSA_ENDPOINT_SERVICE_ID, &serviceId);
+	if (status != CELIX_SUCCESS) {
+		return status;
+	}
 
-    long serviceId = 0L;
-    status = endpointDescription_verifyLongProperty(properties, (char *) OSGI_RSA_ENDPOINT_SERVICE_ID, &serviceId);
-    if (status != CELIX_SUCCESS) {
-    	return status;
-    }
+	endpoint_description_pt ep = calloc(1,sizeof(*ep));
 
-    (*endpointDescription)->properties = properties;
-    (*endpointDescription)->frameworkUUID = properties_get(properties, (char *) OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
-    (*endpointDescription)->id = properties_get(properties, (char *) OSGI_RSA_ENDPOINT_ID);
-    (*endpointDescription)->service = properties_get(properties, (char *) OSGI_FRAMEWORK_OBJECTCLASS);
-    (*endpointDescription)->serviceId = serviceId;
+    ep->properties = properties;
+    ep->frameworkUUID = (char*)properties_get(properties, OSGI_RSA_ENDPOINT_FRAMEWORK_UUID);
+    ep->id = (char*)properties_get(properties, OSGI_RSA_ENDPOINT_ID);
+    ep->service = strndup(properties_get(properties, OSGI_FRAMEWORK_OBJECTCLASS), 1024*10);
+    ep->serviceId = serviceId;
 
-    if (!(*endpointDescription)->frameworkUUID || !(*endpointDescription)->id || !(*endpointDescription)->service) {
+    if (!(ep->frameworkUUID) || !(ep->id) || !(ep->service) ) {
     	fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "ENDPOINT_DESCRIPTION: incomplete description!.");
     	status = CELIX_BUNDLE_EXCEPTION;
+    }
+
+    if(status == CELIX_SUCCESS){
+	*endpointDescription = ep;
+    }
+    else{
+	*endpointDescription = NULL;
+	free(ep);
     }
 
     return status;
@@ -61,18 +70,19 @@ celix_status_t endpointDescription_create(properties_pt properties, endpoint_des
 
 celix_status_t endpointDescription_destroy(endpoint_description_pt description) {
     properties_destroy(description->properties);
+    free(description->service);
     free(description);
     return CELIX_SUCCESS;
 }
 
-static celix_status_t endpointDescription_verifyLongProperty(properties_pt properties, char *propertyName, long *longProperty) {
+static celix_status_t endpointDescription_verifyLongProperty(properties_pt properties, char *propertyName, unsigned long *longProperty) {
     celix_status_t status = CELIX_SUCCESS;
 
-    char *value = properties_get(properties, propertyName);
+    const char *value = properties_get(properties, propertyName);
     if (value == NULL) {
-        *longProperty = 0l;
+        *longProperty = 0UL;
     } else {
-        *longProperty = atol(value);
+        *longProperty = strtoul(value,NULL,10);
     }
 
     return status;

@@ -53,7 +53,7 @@ celix_status_t bundleContext_getFramework(bundle_context_pt context, framework_p
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundleContext_installBundle(bundle_context_pt context, char * location, bundle_pt *bundle) {
+celix_status_t bundleContext_installBundle(bundle_context_pt context, const char * location, bundle_pt *bundle) {
 	mock_c()->actualCall("bundleContext_installBundle")
 			->withPointerParameters("context", context)
 			->withStringParameters("location", location)
@@ -61,7 +61,7 @@ celix_status_t bundleContext_installBundle(bundle_context_pt context, char * loc
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundleContext_installBundle2(bundle_context_pt context, char * location, char *inputFile, bundle_pt *bundle) {
+celix_status_t bundleContext_installBundle2(bundle_context_pt context, const char * location, const char *inputFile, bundle_pt *bundle) {
 	mock_c()->actualCall("bundleContext_installBundle2")
 			->withPointerParameters("context", context)
 			->withStringParameters("location", location)
@@ -71,18 +71,18 @@ celix_status_t bundleContext_installBundle2(bundle_context_pt context, char * lo
 }
 
 
-celix_status_t bundleContext_registerService(bundle_context_pt context, char * serviceName, void * svcObj,
+celix_status_t bundleContext_registerService(bundle_context_pt context, const char * serviceName, const void * svcObj,
         properties_pt properties, service_registration_pt *service_registration) {
 	mock_c()->actualCall("bundleContext_registerService")
 			->withPointerParameters("context", context)
 			->withStringParameters("serviceName", serviceName)
-			->withPointerParameters("svcObj", svcObj)
+			->withPointerParameters("svcObj", (void*)svcObj)
 			->withPointerParameters("properties", properties)
 			->withOutputParameter("service_registration", (void **) service_registration);
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundleContext_registerServiceFactory(bundle_context_pt context, char * serviceName, service_factory_pt factory,
+celix_status_t bundleContext_registerServiceFactory(bundle_context_pt context, const char * serviceName, service_factory_pt factory,
         properties_pt properties, service_registration_pt *service_registration) {
 	mock_c()->actualCall("bundleContext_registerServiceFactory")
 			->withPointerParameters("context", context)
@@ -94,7 +94,7 @@ celix_status_t bundleContext_registerServiceFactory(bundle_context_pt context, c
 }
 
 
-celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, const char * serviceName, char * filter, array_list_pt *service_references) {
+celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, const char * serviceName, const char * filter, array_list_pt *service_references) {
 	mock_c()->actualCall("bundleContext_getServiceReferences")
 			->withPointerParameters("context", context)
 			->withStringParameters("serviceName", serviceName)
@@ -103,7 +103,7 @@ celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, con
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundleContext_getServiceReference(bundle_context_pt context, char * serviceName, service_reference_pt *service_reference) {
+celix_status_t bundleContext_getServiceReference(bundle_context_pt context, const char * serviceName, service_reference_pt *service_reference) {
 	mock_c()->actualCall("bundleContext_getServiceReference")
 			->withPointerParameters("context", context)
 			->withStringParameters("serviceName", serviceName)
@@ -158,7 +158,7 @@ celix_status_t bundleContext_getBundleById(bundle_context_pt context, long id, b
 }
 
 
-celix_status_t bundleContext_addServiceListener(bundle_context_pt context, service_listener_pt listener, char * filter) {
+celix_status_t bundleContext_addServiceListener(bundle_context_pt context, service_listener_pt listener, const char * filter) {
 	mock_c()->actualCall("bundleContext_addServiceListener")
 		->withPointerParameters("context", context)
 		->withPointerParameters("listener", listener)
@@ -185,7 +185,7 @@ celix_status_t bundleContext_removeBundleListener(bundle_context_pt context, bun
 }
 
 
-celix_status_t bundleContext_getProperty(bundle_context_pt context, const char *name, char **value) {
+celix_status_t bundleContext_getProperty(bundle_context_pt context, const char *name, const char** value) {
 	mock_c()->actualCall("bundleContext_getProperty")
 			->withPointerParameters("context", context)
 			->withStringParameters("name", name)

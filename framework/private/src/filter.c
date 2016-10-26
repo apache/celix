@@ -31,16 +31,16 @@
 #include "celix_log.h"
 #include "filter_private.h"
 
-static void filter_skipWhiteSpace(char * filterString, int * pos);
-static filter_pt filter_parseFilter(char * filterString, int * pos);
-static filter_pt filter_parseFilterComp(char * filterString, int * pos);
-static filter_pt filter_parseAnd(char * filterString, int * pos);
-static filter_pt filter_parseOr(char * filterString, int * pos);
-static filter_pt filter_parseNot(char * filterString, int * pos);
-static filter_pt filter_parseItem(char * filterString, int * pos);
-static char * filter_parseAttr(char * filterString, int * pos);
-static char * filter_parseValue(char * filterString, int * pos);
-static array_list_pt filter_parseSubstring(char * filterString, int * pos);
+static void filter_skipWhiteSpace(char* filterString, int* pos);
+static filter_pt filter_parseFilter(char* filterString, int* pos);
+static filter_pt filter_parseFilterComp(char* filterString, int* pos);
+static filter_pt filter_parseAnd(char* filterString, int* pos);
+static filter_pt filter_parseOr(char* filterString, int* pos);
+static filter_pt filter_parseNot(char* filterString, int* pos);
+static filter_pt filter_parseItem(char* filterString, int* pos);
+static char * filter_parseAttr(char* filterString, int* pos);
+static char * filter_parseValue(char* filterString, int* pos);
+static array_list_pt filter_parseSubstring(char* filterString, int* pos);
 
 static celix_status_t filter_compare(OPERAND operand, char * string, void * value2, bool *result);
 static celix_status_t filter_compareString(OPERAND operand, char * string, void * value2, bool *result);
@@ -52,18 +52,19 @@ static void filter_skipWhiteSpace(char * filterString, int * pos) {
 	}
 }
 
-filter_pt filter_create(char * filterString) {
+filter_pt filter_create(const char* filterString) {
 	filter_pt filter = NULL;
+	char* filterStr = (char*) filterString;
 	int pos = 0;
-	filter = filter_parseFilter(filterString, &pos);
-	if (pos != strlen(filterString)) {
+	filter = filter_parseFilter(filterStr, &pos);
+	if (pos != strlen(filterStr)) {
 		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR,  "Error: Extraneous trailing characters.");
 		filter_destroy(filter);
 		return NULL;
 	}
 	if(filter != NULL){
-		filter->filterStr = filterString;
-	}
+		filter->filterStr = filterStr;
+	} 
 
 	return filter;
 }
@@ -107,7 +108,7 @@ static filter_pt filter_parseFilter(char * filterString, int * pos) {
 	filter_pt filter;
 	filter_skipWhiteSpace(filterString, pos);
 	if (filterString[*pos] != '(') {
-		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error: Missing '('.");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error: Missing '(' in filter string '%s'.", filterString);
 		return NULL;
 	}
 	(*pos)++;
@@ -117,7 +118,7 @@ static filter_pt filter_parseFilter(char * filterString, int * pos) {
 	filter_skipWhiteSpace(filterString, pos);
 
 	if (filterString[*pos] != ')') {
-		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error: Missing ')'.");
+		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error: Missing ')' in filter string '%s'.", filterString);
 		if(filter!=NULL){
 			filter_destroy(filter);
 		}
@@ -549,12 +550,12 @@ celix_status_t filter_match(filter_pt filter, properties_pt properties, bool *re
 		case LESS :
         case LESSEQUAL :
 		case APPROX : {
-			char * value = (properties == NULL) ? NULL: properties_get(properties, filter->attribute);
+			char * value = (properties == NULL) ? NULL: (char*)properties_get(properties, filter->attribute);
 
 			return filter_compare(filter->operand, value, filter->value, result);
 		}
 		case PRESENT: {
-			char * value = (properties == NULL) ? NULL: properties_get(properties, filter->attribute);
+			char * value = (properties == NULL) ? NULL: (char*)properties_get(properties, filter->attribute);
 			*result = value != NULL;
 			return CELIX_SUCCESS;
 		}
@@ -662,7 +663,7 @@ static celix_status_t filter_compareString(OPERAND operand, char * string, void 
 	return CELIX_SUCCESS;
 }
 
-celix_status_t filter_getString(filter_pt filter, char **filterStr) {
+celix_status_t filter_getString(filter_pt filter, const char **filterStr) {
 	if (filter != NULL) {
 		*filterStr = filter->filterStr;
 	}

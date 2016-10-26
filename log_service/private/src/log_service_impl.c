@@ -66,7 +66,7 @@ celix_status_t logService_logSr(log_service_data_pt logger, service_reference_pt
     bundle_pt bundle = logger->bundle;
     bundle_archive_pt archive = NULL;
     module_pt module = NULL;
-    char *symbolicName = NULL;
+    const char *symbolicName = NULL;
     long bundleId = -1;
 
     if (reference != NULL) {
@@ -87,8 +87,10 @@ celix_status_t logService_logSr(log_service_data_pt logger, service_reference_pt
         }
     }
 
-    logEntry_create(bundleId, symbolicName, reference, level, message, 0, &entry);
-    log_addEntry(logger->log, entry);
+    if(status == CELIX_SUCCESS && symbolicName != NULL && message != NULL){
+	status = logEntry_create(bundleId, symbolicName, reference, level, message, 0, &entry);
+	log_addEntry(logger->log, entry);
+    }
 
-    return CELIX_SUCCESS;
+    return status;
 }

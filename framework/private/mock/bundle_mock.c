@@ -102,7 +102,7 @@ celix_status_t bundle_setContext(bundle_pt bundle, bundle_context_pt context) {
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundle_getEntry(bundle_pt bundle, char * name, char **entry) {
+celix_status_t bundle_getEntry(bundle_pt bundle, const char * name, char **entry) {
 	mock_c()->actualCall("bundle_getEntry")
 			->withPointerParameters("bundle", bundle)
 			->withStringParameters("name", name)
@@ -120,7 +120,7 @@ celix_status_t bundle_startWithOptions(bundle_pt bundle, int options) {
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t bundle_update(bundle_pt bundle, char *inputFile) {
+celix_status_t bundle_update(bundle_pt bundle, const char *inputFile) {
 	mock_c()->actualCall("bundle_update");
 	return mock_c()->returnValue().value.intValue;
 }
@@ -162,7 +162,7 @@ void uninstallBundle(bundle_pt bundle) {
 }
 
 
-celix_status_t bundle_revise(bundle_pt bundle, char * location, char *inputFile) {
+celix_status_t bundle_revise(bundle_pt bundle, const char * location, const char *inputFile) {
 	mock_c()->actualCall("bundle_revise");
 	return mock_c()->returnValue().value.intValue;
 }

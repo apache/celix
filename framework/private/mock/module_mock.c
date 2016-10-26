@@ -27,7 +27,7 @@
 
 #include "module.h"
 
-module_pt module_create(manifest_pt headerMap, char * moduleId, bundle_pt bundle) {
+module_pt module_create(manifest_pt headerMap, const char * moduleId, bundle_pt bundle) {
 	mock_c()->actualCall("module_create")
 			->withPointerParameters("headerMap", headerMap)
 			->withStringParameters("moduleId", moduleId)
@@ -55,7 +55,7 @@ int module_equals(void * module, void * compare) {
 	return mock_c()->returnValue().value.intValue;
 }
 
-wire_pt module_getWire(module_pt module, char * serviceName) {
+wire_pt module_getWire(module_pt module, const char * serviceName) {
 	mock_c()->actualCall("module_getwire");
 	return mock_c()->returnValue().value.pointerValue;
 }
@@ -66,7 +66,7 @@ version_pt module_getVersion(module_pt module) {
 	return mock_c()->returnValue().value.pointerValue;
 }
 
-celix_status_t module_getSymbolicName(module_pt module, char **symbolicName) {
+celix_status_t module_getSymbolicName(module_pt module, const char **symbolicName) {
 	mock_c()->actualCall("module_getSymbolicName")
 		->withPointerParameters("module", module)
 		->withOutputParameter("symbolicName", (const char **) symbolicName);

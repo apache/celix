@@ -175,7 +175,7 @@ tst2_service_pt test2Serv = NULL;
 		properties = NULL;
 		configuration->configuration_getProperties(configuration->handle, &properties);
 		if (properties != NULL) {
-			char *test_value = properties_get(properties, (char*)OSGI_FRAMEWORK_SERVICE_PID);
+			const char *test_value = properties_get(properties, (char*)OSGI_FRAMEWORK_SERVICE_PID);
 			CHECK_TEXT("base.device1", test_value);
 			test_value = properties_get(properties, (char *)prop1);
 			CHECK_TEXT("printer", test_value);
@@ -195,7 +195,7 @@ tst2_service_pt test2Serv = NULL;
 			configuration->configuration_getProperties(configuration->handle, &properties);
 			CHECK((properties != NULL));
 			if (properties != NULL) {
-				char *test_value = properties_get(properties, (char*)OSGI_FRAMEWORK_SERVICE_PID);
+				const char *test_value = properties_get(properties, (char*)OSGI_FRAMEWORK_SERVICE_PID);
 				CHECK_TEXT("base.device1", test_value);
 				test_value = properties_get(properties, (char *)key);
 				CHECK_TEXT("printer", test_value);
@@ -238,14 +238,14 @@ tst2_service_pt test2Serv = NULL;
 			properties = NULL;
 			configuration->configuration_getProperties(configuration->handle, &properties);
 			if (properties != NULL) {
-				char *test_value = properties_get(properties, (char*)OSGI_FRAMEWORK_SERVICE_PID);
+				const char *test_value = properties_get(properties, (char*)OSGI_FRAMEWORK_SERVICE_PID);
 				CHECK_TEXT("base.device1", test_value);
 				test_value = properties_get(properties, (char *)prop1);
 				CHECK_TEXT("printer", test_value);
 			}
 			configuration2->configuration_getProperties(configuration2->handle, &properties);
 			if (properties != NULL) {
-				char *test_value = properties_get(properties, (char*)OSGI_FRAMEWORK_SERVICE_PID);
+				const char *test_value = properties_get(properties, (char*)OSGI_FRAMEWORK_SERVICE_PID);
 				CHECK_TEXT("test2_pid", test_value);
 				test_value = properties_get(properties, (char *)prop1);
 				CHECK_TEXT("test2_printer", test_value);
@@ -295,7 +295,7 @@ tst2_service_pt test2Serv = NULL;
 			bundle_pt   fwBundle = NULL;
 			bundle_archive_pt	archive = NULL;
 			bundle_context_pt   context = NULL;
-			char                *location = NULL;
+			const char                *location = NULL;
 			/* ------------------ get Configuration -------------------*/
 
 			configuration_pt configuration;

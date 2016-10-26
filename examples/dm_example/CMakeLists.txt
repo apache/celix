@@ -30,13 +30,13 @@ if (BUILD_DEPENDENCY_MANAGER)
     add_deploy("dm_example"
         COPY 
         BUNDLES
+            shell
+            shell_tui
+            dm_shell
             phase1
             phase2a
             phase2b
             phase3
-            shell
-            shell_tui
-            dm_shell
         PROPERTIES
             LOGHELPER_ENABLE_STDOUT_FALLBACK=true
     )

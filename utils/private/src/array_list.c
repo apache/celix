@@ -30,7 +30,7 @@
 #include "array_list.h"
 #include "array_list_private.h"
 
-static celix_status_t arrayList_elementEquals(void *a, void *b, bool *equals);
+static celix_status_t arrayList_elementEquals(const void *a, const void *b, bool *equals);
 
 celix_status_t arrayList_create(array_list_pt *list) {
 	return arrayList_createWithEquals(arrayList_elementEquals, list);
@@ -55,7 +55,7 @@ void arrayList_destroy(array_list_pt list) {
 	free(list);
 }
 
-static celix_status_t arrayList_elementEquals(void *a, void *b, bool *equals) {
+static celix_status_t arrayList_elementEquals(const void *a, const void *b, bool *equals) {
 	*equals = (a == b);
 	return CELIX_SUCCESS;
 }

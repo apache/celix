@@ -104,7 +104,7 @@ function(add_bundle)
 
     set(OPTIONS NO_ACTIVATOR)
     set(ONE_VAL_ARGS VERSION ACTIVATOR SYMBOLIC_NAME NAME DESCRIPTION) 
-    set(MULTI_VAL_ARGS SOURCES PRIVATE_LIBRARIES EXPORT_LIBRARIES HEADERS)
+    set(MULTI_VAL_ARGS SOURCES PRIVATE_LIBRARIES EXPORT_LIBRARIES IMPORT_LIBRARIES HEADERS)
     cmake_parse_arguments(BUNDLE "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
 
     ##check arguments
@@ -179,6 +179,7 @@ function(add_bundle)
     ###### Packaging the bundle using using jar,zip or cpack and a content dir. Configuring dependencies ######
     if(JAR_COMMAND)
         add_custom_command(OUTPUT ${BUNDLE_FILE}
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${BUNDLE_CONTENT_DIR}
             COMMAND ${JAR_COMMAND} -cfm ${BUNDLE_FILE} ${BUNDLE_GEN_DIR}/MANIFEST.MF -C ${BUNDLE_CONTENT_DIR} .
             COMMENT "Packaging ${BUNDLE_TARGET_NAME}"
             DEPENDS  ${BUNDLE_TARGET_NAME} "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_DEPEND_TARGETS>" ${BUNDLE_GEN_DIR}/MANIFEST.MF
@@ -186,6 +187,7 @@ function(add_bundle)
         )
     elseif(ZIP_COMMAND)
         add_custom_command(OUTPUT ${BUNDLE_FILE}
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${BUNDLE_CONTENT_DIR}
             COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE_GEN_DIR}/MANIFEST.MF META-INF/MANIFEST.MF
             COMMAND ${ZIP_COMMAND} -rq ${BUNDLE_FILE} *
             COMMENT "Packaging ${BUNDLE_TARGET_NAME}"
@@ -249,12 +251,15 @@ SET(CPACK_INCLUDE_TOPLEVEL_DIRECTORY \"0\")
     if(BUNDLE_SOURCES) 
         bundle_private_libs(${BUNDLE_TARGET_NAME} ${BUNDLE_TARGET_NAME})
         set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_ACTIVATOR" "$<TARGET_SONAME_FILE_NAME:${BUNDLE_TARGET_NAME}>")
+        set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUILD_WITH_INSTALL_RPATH" true)
 
         if(APPLE)
             set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES INSTALL_RPATH "@loader_path")
         else()
             set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES INSTALL_RPATH "$ORIGIN")
         endif()
+    elseif(BUNDLE_NO_ACTIVATOR)
+        #do nothing
     else() #ACTIVATOR 
         bundle_private_libs(${BUNDLE_TARGET_NAME} ${BUNDLE_ACTIVATOR})
         get_filename_component(ACT_NAME ${BUNDLE_ACTIVATOR} NAME)
@@ -263,6 +268,7 @@ SET(CPACK_INCLUDE_TOPLEVEL_DIRECTORY \"0\")
 
     bundle_private_libs(${BUNDLE_TARGET_NAME} ${BUNDLE_PRIVATE_LIBRARIES})
     bundle_export_libs(${BUNDLE_TARGET_NAME} ${BUNDLE_EXPORT_LIBRARIES})
+    bundle_import_libs(${BUNDLE_TARGET_NAME} ${BUNDLE_IMPORT_LIBRARIES})
     bundle_headers(${BUNDLE_TARGET_NAME} ${BUNDLE_HEADERS})
 endfunction()
 
@@ -338,19 +344,30 @@ function(bundle_libs)
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_DEPEND_TARGETS" "${DEPS}")
 endfunction()
 
-#TODO
-#
-# bundle_import_libs(<target> LIB <lib> RANGE <version_range> ?)
-#
-#
 function(bundle_import_libs)
     #0 is bundle TARGET
-    #1..n is libs
+    #2..n is import libs
     list(GET ARGN 0 BUNDLE)
     list(REMOVE_AT ARGN 0)
 
-    message(WARNING "IMPORT BUNDLES STILL TODO")
+    #check if arg 0 is corrent
+    check_bundle(${BUNDLE})
 
+    get_target_property(LIBS ${BUNDLE} "BUNDLE_IMPORT_LIBS")
+    set(LIBS )
+
+    foreach(LIB IN ITEMS ${ARGN})
+        if(IS_ABSOLUTE ${LIB} AND EXISTS ${LIB})
+            list(APPEND LIBS ${LIB_NAME})
+        else()
+            list(APPEND LIBS "$<TARGET_SONAME_FILE_NAME:${LIB}>")
+        endif()
+
+        target_link_libraries(${BUNDLE} ${LIB})
+    endforeach()
+
+
+    set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_IMPORT_LIBS" "${LIBS}")
 endfunction()
 
 function(bundle_files)
@@ -439,7 +456,7 @@ function(add_deploy)
     list(REMOVE_AT ARGN 0)
 
     set(OPTIONS COPY)
-    set(ONE_VAL_ARGS GROUP NAME)
+    set(ONE_VAL_ARGS GROUP NAME LAUNCHER)
     set(MULTI_VAL_ARGS BUNDLES PROPERTIES)
     cmake_parse_arguments(DEPLOY "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
 
@@ -461,65 +478,114 @@ function(add_deploy)
 
 
     ###### Setup deploy custom target and config.properties file
-    set(TIMESTAMP_FILE "${CMAKE_CURRENT_BINARY_DIR}/${DEPLOY_TARGET}-timestamp")
+    set(TIMESTAMP_FILE "${CMAKE_CURRENT_BINARY_DIR}/${DEPLOY_TARGET}-deploy-timestamp")
 
     add_custom_target(${DEPLOY_TARGET}
         DEPENDS ${TIMESTAMP_FILE}
     )
     add_dependencies(deploy ${DEPLOY_TARGET})
 
+    #FILE TARGETS FOR DEPLOY
+    set(DEPLOY_EXE "${DEPLOY_LOCATION}/${DEPLOY_NAME}")
+    set(DEPLOY_RUN_SH "${DEPLOY_LOCATION}/run.sh")
+    set(DEPLOY_PROPS "${DEPLOY_LOCATION}/config.properties")
+    set(DEPLOY_ECLIPSE_LAUNCHER "${DEPLOY_LOCATION}/${DEPLOY_NAME}.launch")
+    set(DEPLOY_RELEASE_SH "${DEPLOY_LOCATION}/release.sh")
+
+    find_program(LINK_CMD ln)
+    if (LINK_CMD) 
+        #if ln is available use a softlink to celix exe instead of a run.sh
+        list(APPEND DEPLOY_FILE_TARGETS ${DEPLOY_PROPS} ${DEPLOY_ECLIPSE_LAUNCHER} ${DEPLOY_RELEASE_SH} ${DEPLOY_RUN_SH} ${DEPLOY_EXE})
+    else()
+        list(APPEND DEPLOY_FILE_TARGETS ${DEPLOY_PROPS} ${DEPLOY_ECLIPSE_LAUNCHER} ${DEPLOY_RELEASE_SH} ${DEPLOY_RUN_SH})
+    endif()
+
+    #setup dependencies based on timestamp
     add_custom_command(OUTPUT "${TIMESTAMP_FILE}"
         COMMAND ${CMAKE_COMMAND} -E touch ${TIMESTAMP_FILE}
-        DEPENDS  "$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_TARGET_DEPS>" "${DEPLOY_LOCATION}/config.properties" "${DEPLOY_LOCATION}/run.sh" 
+        DEPENDS  "$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_TARGET_DEPS>" ${DEPLOY_FILE_TARGETS} 
         WORKING_DIRECTORY "${DEPLOY_LOCATION}"
         COMMENT "Deploying ${DEPLOY_PRINT_NAME}" VERBATIM
     )
 
+    #Setting CELIX_LIB_DIRS, CELIX_BIN_DIR and CELIX_LAUNCHER 
+    if (EXISTS ${CELIX_FRAMEWORK_LIBRARY}) 
+        #CELIX_FRAMEWORK_LIBRARY set by FindCelix.cmake -> Celix Based Project
+        get_filename_component(CELIX_LIB_DIR ${CELIX_FRAMEWORK_LIBRARY} DIRECTORY) #Note assuming all celix libs are in the same dir
+        set(CELIX_LIB_DIRS "${CELIX_LIB_DIR}")
+        #CELIX_LAUNCHER is set by FindCelix.cmake
+        get_filename_component(CELIX_BIN_DIR ${CELIX_LAUNCHER} DIRECTORY)
+    else()
+        #Celix Main Project
+        set(CELIX_LIB_DIRS "$<TARGET_FILE_DIR:celix_framework>:$<TARGET_FILE_DIR:celix_utils>:$<TARGET_FILE_DIR:celix_dfi>")
+        set(CELIX_LAUNCHER "$<TARGET_FILE:celix>")
+        set(CELIX_BIN_DIR  "$<TARGET_FILE_DIR:celix>")
+    endif()
 
+    #generate config.properties
+    set(STAGE1_PROPERTIES "${CMAKE_CURRENT_BINARY_DIR}/${DEPLOY_TARGET}-deploy-config-stage1.properties")
     file(GENERATE 
-        OUTPUT "${DEPLOY_LOCATION}/config.properties.step1"
+        OUTPUT "${STAGE1_PROPERTIES}"
         CONTENT "cosgi.auto.start.1=$<JOIN:$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_BUNDLES>, >
 $<JOIN:$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_PROPERTIES>,
 >
 "
     )
-
     file(GENERATE
-        OUTPUT "${DEPLOY_LOCATION}/config.properties"
-        INPUT "${DEPLOY_LOCATION}/config.properties.step1"
+        OUTPUT "${DEPLOY_PROPS}"
+        INPUT "${STAGE1_PROPERTIES}"
     )
 
-    set(CONTAINER_NAME ${DEPLOY_NAME})
-    set(PROGRAM_NAME "${CMAKE_BIN_DIRECTORY}/launcher/celix")
-    set(PROJECT_ATTR "build")
-    set(WORKING_DIRECTORY ${DEPLOY_LOCATION})
-    set(PATHS "${CMAKE_BIN_DIRECTORY}/framework:${CMAKE_BIN_DIRECTORY}/utils:${CMAKE_BIN_DIRECTORY}/dfi")
-    configure_file("${CELIX_CMAKE_DIRECTORY}/cmake_celix/RunConfig.in"  "${DEPLOY_LOCATION}/${DEPLOY_NAME}")
 
+    #Setup launcher using celix target, celix binary or custom launcher
+    if (DEPLOY_LAUNCHER)
+        if (IS_ABSOLUTE "${DEPLOY_LAUNCHER}")
+            #assuming target
+            set(LAUNCHER "${DEPLOY_LAUNCHER}")
+        else()
+            set(LAUNCHER "$<TARGET_FILE:${DEPLOY_LAUNCHER}>")
+        endif()
+    else()
+        #Use CELIX_LAUNCHER
+        set(LAUNCHER "${CELIX_LAUNCHER}")
+    endif()
+
+    #softlink celix exe file
+    add_custom_command(OUTPUT "${DEPLOY_EXE}"
+        COMMAND ${LINK_CMD} -s "${LAUNCHER}" "${DEPLOY_EXE}"
+        WORKING_DIRECTORY ${DEPLOY_LOCATION}
+        DEPENDS "${LAUNCHER}" 
+        COMMENT "Symbolic link launcher to ${DEPLOY_EXE}" VERBATIM
+    ) 
+
+
+    #generate release.sh and optional run.sh
     if(APPLE)
         set(LIB_PATH_NAME "DYLD_LIBRARY_PATH")
     else()
         set(LIB_PATH_NAME "LD_LIBRARY_PATH")
     endif()
-
-    if (EXISTS ${CELIX_FRAMEWORK_LIBRARY}) 
-        #Celix Based Project
-        get_filename_component(CELIX_LIB_DIR ${CELIX_FRAMEWORK_LIBRARY} DIRECTORY) #Note assuming all celix libs are in the same dir
-        set(RUN_CONTENT "export ${LIB_PATH_NAME}=${CELIX_LIB_DIR}:\${${LIB_PATH_NAME}}
-${CELIX_LAUNCHER} $@")
-    else()
-        #Celix Main Project
-        set(RUN_CONTENT "export ${LIB_PATH_NAME}=$<TARGET_FILE_DIR:celix_framework>:$<TARGET_FILE_DIR:celix_utils>:$<TARGET_FILE_DIR:celix_dfi>:\${${LIB_PATH_NAME}}
-$<TARGET_FILE:celix> $@")
-    endif()
-
+    set(RELEASE_CONTENT "#!/bin/sh\nexport ${LIB_PATH_NAME}=${CELIX_LIB_DIRS}:\${${LIB_PATH_NAME}}\nexport PATH=${CELIX_BIN_DIR}:\${PATH}")
     file(GENERATE
-        OUTPUT ${DEPLOY_LOCATION}/run.sh
+        OUTPUT ${DEPLOY_RELEASE_SH}
+        CONTENT ${RELEASE_CONTENT}
+    )
+    set(RUN_CONTENT "${RELEASE_CONTENT}\n${LAUNCHER} \$@\n")
+    file(GENERATE
+        OUTPUT ${DEPLOY_RUN_SH}
         CONTENT ${RUN_CONTENT}
     )
 
-    #TODO eclipse launcher file
-    #####
+    #generate eclipse project launch file
+    set(PROGRAM_NAME "${LAUNCHER}")
+    set(CONTAINER_NAME ${DEPLOY_NAME})
+    set(PROJECT_ATTR "${CMAKE_PROJECT_NAME}-build")
+    set(WORKING_DIRECTORY ${DEPLOY_LOCATION})
+    include("${CELIX_CMAKE_DIRECTORY}/cmake_celix/RunConfig.in.cmake") #set VAR RUN_CONFIG_IN
+    file(GENERATE
+        OUTPUT "${DEPLOY_ECLIPSE_LAUNCHER}"
+        CONTENT "${RUN_CONFIG_IN}"    
+    )
 
     ##### Deploy Target Properties #####
     #internal use
@@ -535,6 +601,7 @@ $<TARGET_FILE:celix> $@")
     deploy_bundles(${DEPLOY_TARGET} ${DEPLOY_BUNDLES})
     deploy_properties(${DEPLOY_TARGET} ${DEPLOY_PROPERTIES})
 endfunction()
+
 
 #NOTE can be used for drivers/proxies/endpoints bundle dirs
 function(deploy_bundles_dir)

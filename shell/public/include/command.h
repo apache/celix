@@ -36,7 +36,8 @@
 
 static const char * const OSGI_SHELL_COMMAND_SERVICE_NAME = "commandService";
 
-typedef struct commandService * command_service_pt;
+typedef struct commandService command_service_t;
+typedef command_service_t * command_service_pt;
 
 /**
  * The command service can be used to register additional shell commands.

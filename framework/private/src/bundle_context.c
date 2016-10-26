@@ -98,11 +98,11 @@ celix_status_t bundleContext_getFramework(bundle_context_pt context, framework_p
 	return status;
 }
 
-celix_status_t bundleContext_installBundle(bundle_context_pt context, char * location, bundle_pt *bundle) {
+celix_status_t bundleContext_installBundle(bundle_context_pt context, const char * location, bundle_pt *bundle) {
 	return bundleContext_installBundle2(context, location, NULL, bundle);
 }
 
-celix_status_t bundleContext_installBundle2(bundle_context_pt context, char * location, char *inputFile, bundle_pt *bundle) {
+celix_status_t bundleContext_installBundle2(bundle_context_pt context, const char * location, const char *inputFile, bundle_pt *bundle) {
 	celix_status_t status = CELIX_SUCCESS;
 	bundle_pt b = NULL;
 
@@ -121,7 +121,7 @@ celix_status_t bundleContext_installBundle2(bundle_context_pt context, char * lo
 	return status;
 }
 
-celix_status_t bundleContext_registerService(bundle_context_pt context, char * serviceName, void * svcObj,
+celix_status_t bundleContext_registerService(bundle_context_pt context, const char * serviceName, const void * svcObj,
         properties_pt properties, service_registration_pt *service_registration) {
 	service_registration_pt registration = NULL;
 	celix_status_t status = CELIX_SUCCESS;
@@ -138,7 +138,7 @@ celix_status_t bundleContext_registerService(bundle_context_pt context, char * s
 	return status;
 }
 
-celix_status_t bundleContext_registerServiceFactory(bundle_context_pt context, char * serviceName, service_factory_pt factory,
+celix_status_t bundleContext_registerServiceFactory(bundle_context_pt context, const char * serviceName, service_factory_pt factory,
         properties_pt properties, service_registration_pt *service_registration) {
     service_registration_pt registration = NULL;
     celix_status_t status = CELIX_SUCCESS;
@@ -155,7 +155,7 @@ celix_status_t bundleContext_registerServiceFactory(bundle_context_pt context, c
     return status;
 }
 
-celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, const char * serviceName, char * filter, array_list_pt *service_references) {
+celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, const char * serviceName, const char * filter, array_list_pt *service_references) {
     celix_status_t status = CELIX_SUCCESS;
 
     if (context != NULL && *service_references == NULL) {
@@ -169,7 +169,7 @@ celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, con
 	return status;
 }
 
-celix_status_t bundleContext_getServiceReference(bundle_context_pt context, char * serviceName, service_reference_pt *service_reference) {
+celix_status_t bundleContext_getServiceReference(bundle_context_pt context, const char * serviceName, service_reference_pt *service_reference) {
     service_reference_pt reference = NULL;
     array_list_pt services = NULL;
     celix_status_t status = CELIX_SUCCESS;
@@ -219,11 +219,14 @@ celix_status_t bundleContext_ungetServiceReference(bundle_context_pt context, se
     return status;
 }
 
-celix_status_t bundleContext_getService(bundle_context_pt context, service_reference_pt reference, void **service_instance) {
+celix_status_t bundleContext_getService(bundle_context_pt context, service_reference_pt reference, void** service_instance) {
     celix_status_t status = CELIX_SUCCESS;
 
     if (context != NULL && reference != NULL && *service_instance == NULL) {
-	    status = fw_getService(context->framework, context->bundle, reference, service_instance);
+        /*NOTE argument service_instance should be considerd a 'const void**'. 
+        To ensure backwards compatiblity a cast is made instead.
+        */
+	    status = fw_getService(context->framework, context->bundle, reference, (const void**) service_instance);
     } else {
         status = CELIX_ILLEGAL_ARGUMENT;
     }
@@ -278,7 +281,7 @@ celix_status_t bundleContext_getBundleById(bundle_context_pt context, long id, b
 	return status;
 }
 
-celix_status_t bundleContext_addServiceListener(bundle_context_pt context, service_listener_pt listener, char * filter) {
+celix_status_t bundleContext_addServiceListener(bundle_context_pt context, service_listener_pt listener, const char* filter) {
     celix_status_t status = CELIX_SUCCESS;
 
     if (context != NULL && listener != NULL) {
@@ -362,16 +365,20 @@ celix_status_t bundleContext_removeFrameworkListener(bundle_context_pt context, 
     return status;
 }
 
-celix_status_t bundleContext_getProperty(bundle_context_pt context, const char *name, char **value) {
-	celix_status_t status = CELIX_SUCCESS;
+celix_status_t bundleContext_getProperty(bundle_context_pt context, const char *name, const char** value) {
+	return bundleContext_getPropertyWithDefault(context, name, NULL, value);
+}
 
-	if (context == NULL || name == NULL || *value != NULL) {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	} else {
-		fw_getProperty(context->framework, name, value);
-	}
+celix_status_t bundleContext_getPropertyWithDefault(bundle_context_pt context, const char* name, const char* defaultValue, const char** value) {
+    celix_status_t status = CELIX_SUCCESS;
 
-	framework_logIfError(logger, status, NULL, "Failed to get property [name=%s]", name);
+    if (context == NULL || name == NULL || *value != NULL) {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    } else {
+        fw_getProperty(context->framework, name, defaultValue, value);
+    }
 
-	return status;
+    framework_logIfError(logger, status, NULL, "Failed to get property [name=%s]", name);
+
+    return status;
 }

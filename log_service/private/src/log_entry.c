@@ -32,7 +32,7 @@
 #include "log_service.h"
 #include "log_entry.h"
 
-celix_status_t logEntry_create(long bundleId, char* bundleSymbolicName , service_reference_pt reference,
+celix_status_t logEntry_create(long bundleId, const char* bundleSymbolicName , service_reference_pt reference,
         log_level_t level, char *message, int errorCode,
         log_entry_pt *entry) {
     celix_status_t status = CELIX_SUCCESS;
@@ -63,7 +63,7 @@ celix_status_t logEntry_destroy(log_entry_pt *entry) {
     return CELIX_SUCCESS;
 }
 
-celix_status_t logEntry_getBundleSymbolicName(log_entry_pt entry, char **bundleSymbolicName) {
+celix_status_t logEntry_getBundleSymbolicName(log_entry_pt entry, const char** bundleSymbolicName) {
     *bundleSymbolicName = entry->bundleSymbolicName;
     return CELIX_SUCCESS;
 }
@@ -83,7 +83,7 @@ celix_status_t logEntry_getLevel(log_entry_pt entry, log_level_t *level) {
     return CELIX_SUCCESS;
 }
 
-celix_status_t logEntry_getMessage(log_entry_pt entry, char **message) {
+celix_status_t logEntry_getMessage(log_entry_pt entry, const char **message) {
     *message = entry->message;
     return CELIX_SUCCESS;
 }

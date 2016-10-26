@@ -49,7 +49,7 @@ celix_status_t example_updated(example_pt component, properties_pt updatedProper
         hash_map_iterator_pt iter = hashMapIterator_create(map);
         while(hashMapIterator_hasNext(iter)) {
             char *key = hashMapIterator_nextKey(iter);
-            char *value = properties_get(updatedProperties, key);
+            const char *value = properties_get(updatedProperties, key);
             printf("got property %s:%s\n", key, value);
         }
     } else {

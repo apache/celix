@@ -27,6 +27,10 @@
 #ifndef DM_EVENT_H_
 #define DM_EVENT_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "service_reference.h"
 #include "bundle_context.h"
 #include "bundle.h"
@@ -41,8 +45,8 @@ enum dm_event_type {
 typedef enum dm_event_type dm_event_type_e;
 
 struct dm_event {
-	void *service;
-	long serviceId;
+	const void* service;
+	unsigned long serviceId;
 	long ranking;
 	service_reference_pt reference;
 	bundle_context_pt context;
@@ -53,13 +57,16 @@ struct dm_event {
 typedef struct dm_event *dm_event_pt;
 
 
-celix_status_t event_create(dm_event_type_e event_type, bundle_pt bundle, bundle_context_pt context, service_reference_pt reference, void *service, dm_event_pt *event);
-celix_status_t event_destroy(dm_event_pt *event);
+celix_status_t event_create(dm_event_type_e event_type, bundle_pt bundle, bundle_context_pt context, service_reference_pt reference, const void* service, dm_event_pt *event);
+celix_status_t event_destroy(dm_event_pt* event);
 
-celix_status_t event_equals(void *a, void *b, bool *equals);
+celix_status_t event_equals(const void* a, const void* b, bool* equals);
 
-celix_status_t event_getService(dm_event_pt event, void **service);
-celix_status_t event_compareTo(dm_event_pt event, dm_event_pt compareTo, int *compare);
+celix_status_t event_getService(dm_event_pt event, const void** service);
+celix_status_t event_compareTo(dm_event_pt event, dm_event_pt compareTo, int* compare);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* DM_EVENT_H_ */

@@ -202,7 +202,7 @@ celix_status_t managedServiceTracker_addingService(void * handle, service_refere
 
     celix_status_t status;
 
-    char *pid = NULL;
+    const char* pid = NULL;
 
     bundle_context_pt context = NULL;
 
@@ -211,7 +211,7 @@ celix_status_t managedServiceTracker_addingService(void * handle, service_refere
 
     // (1) reference.getPid
 
-    status = serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_PID, &pid);
+    status = serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_PID, &pid);
     if (status != CELIX_SUCCESS || pid == NULL) {
         *service = NULL;
         printf(" [ ERROR ]: Tracker - PID is NULL \n");
@@ -255,7 +255,7 @@ celix_status_t managedServiceTracker_addingService(void * handle, service_refere
     // (3) trackerInstance.AddManagedServiceToLocalList
     configurationStore_lock(managedServiceTracker_i->configurationStore);
 
-    status = managedServiceTracker_add(managedServiceTracker_i, reference, pid, managedService_s);
+    status = managedServiceTracker_add(managedServiceTracker_i, reference, (char*)pid, managedService_s);
     if (status != CELIX_SUCCESS) {
         bundleContext_ungetService(context, reference, NULL);
     }
@@ -281,19 +281,19 @@ celix_status_t managedServiceTracker_modifiedService(void * handle, service_refe
 
 celix_status_t managedServiceTracker_removedService(void * handle, service_reference_pt reference, void * service) {
     celix_status_t status = CELIX_SUCCESS;
-    char *pid;
+    const char* pid;
     managed_service_tracker_pt managedServiceTracker_i = handle;	//instance
     bundle_context_pt context;
 
 
-    status = serviceReference_getProperty(reference, (char *)OSGI_FRAMEWORK_SERVICE_PID, &pid);
+    status = serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_PID, &pid);
     if (status != CELIX_SUCCESS || pid == NULL){
 	return CELIX_ILLEGAL_ARGUMENT;
     }
     if ( managedServiceTracker_getBundleContext(managedServiceTracker_i, &context) != CELIX_SUCCESS ){
 	return CELIX_ILLEGAL_ARGUMENT;
     }
-    status = managedServiceTracker_remove(managedServiceTracker_i, reference, pid);
+    status = managedServiceTracker_remove(managedServiceTracker_i, reference, (char*)pid);
 
     return status;
 
@@ -306,7 +306,7 @@ celix_status_t managedServiceTracker_add(managed_service_tracker_pt tracker, ser
     celix_status_t status;
 
     bundle_pt bundle = NULL;
-    char *bundleLocation;
+    const char* bundleLocation;
 
     configuration_pt configuration = NULL;
     properties_pt properties = NULL;
@@ -328,7 +328,7 @@ celix_status_t managedServiceTracker_add(managed_service_tracker_pt tracker, ser
             }
 
             // (1) creates a new Configuration for the ManagedService
-            if (configurationStore_getConfiguration(tracker->configurationStore, pid, bundleLocation, &configuration) != CELIX_SUCCESS || configuration == NULL) {
+            if (configurationStore_getConfiguration(tracker->configurationStore, pid, (char*)bundleLocation, &configuration) != CELIX_SUCCESS || configuration == NULL) {
                 return CELIX_ILLEGAL_ARGUMENT;
             }
 

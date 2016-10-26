@@ -313,7 +313,7 @@ static int dynType_parseComplex(FILE *stream, dyn_type *type) {
 
     if (status == OK) {
         type->complex.structType.type =  FFI_TYPE_STRUCT;
-        type->complex.structType.elements = calloc(count + 1, sizeof(ffi_type));
+        type->complex.structType.elements = calloc(count + 1, sizeof(ffi_type*));
         if (type->complex.structType.elements != NULL) {
             type->complex.structType.elements[count] = NULL;
             int index = 0;
@@ -328,7 +328,7 @@ static int dynType_parseComplex(FILE *stream, dyn_type *type) {
 
     if (status == OK) {
         type->complex.types = calloc(count, sizeof(dyn_type *));
-        if (type != NULL) {
+        if (type->complex.types != NULL) {
             int index = 0;
             TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
                 type->complex.types[index++] = entry->type;
@@ -427,15 +427,14 @@ static int dynType_parseRefByValue(FILE *stream, dyn_type *type) {
             LOG_ERROR("Error cannot find type '%s'", name);
         }
         free(name);
-    } 
 
-    if (status == OK) {
         int c = fgetc(stream);
         if (c != ';') {
             status = PARSE_ERROR;
             LOG_ERROR("Error expected ';' got '%c'", c);
         } 
-    }
+    } 
+
 
     return status;
 }
@@ -635,6 +634,7 @@ int dynType_complex_indexForName(dyn_type *type, const char *name) {
 
 int dynType_complex_dynTypeAt(dyn_type *type, int index, dyn_type **result) {
     assert(type->type == DYN_TYPE_COMPLEX);
+    assert(index >= 0);
     dyn_type *sub = type->complex.types[index];
     if (sub->type == DYN_TYPE_REF) {
         sub = sub->ref.ref;
@@ -656,7 +656,7 @@ int dynType_complex_valLocAt(dyn_type *type, int index, void *inst, void **resul
     char *l = (char *)inst;
     void *loc = (void *)(l + dynType_getOffset(type, index));
     *result = loc;
-    return 0;
+    return OK;
 }
 
 int dynType_complex_entries(dyn_type *type, struct complex_type_entries_head **entries) {
@@ -1071,8 +1071,9 @@ static void dynType_printTypedPointer(char *name, dyn_type *type, int depth, FIL
     dynType_printDepth(depth, stream);
     fprintf(stream, "%s: typed pointer, size is %zu, alignment is %i, points to ->\n", name, type->ffiType->size, type->ffiType->alignment);
     char *subName = NULL;
+    char buf[128];
+    memset(buf,0,128);
     if (name != NULL) {
-        char buf[128];
         snprintf(buf, 128, "*%s", name);
         subName = buf;
     }

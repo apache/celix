@@ -606,10 +606,11 @@ TEST(bundle_context, getProperty) {
 	mock().expectOneCall("fw_getProperty")
 		.withParameter("framework", framework)
 		.withParameter("name", name)
+		.withStringParameter("defaultValue", NULL)
 		.withOutputParameterReturning("value", &value, sizeof(value))
 		.andReturnValue(CELIX_SUCCESS);
 
-	char *actualValue = NULL;
+	const char *actualValue = NULL;
 	celix_status_t status = bundleContext_getProperty(context, name, &actualValue);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	STRCMP_EQUAL(value, actualValue);

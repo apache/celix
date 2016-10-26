@@ -26,7 +26,6 @@
 
 #ifndef EVENT_ADMIN_H_
 #define EVENT_ADMIN_H_
-/*#include "event.h"*/
 #include "celix_errno.h"
 
 #include "listener_hook_service.h"
@@ -34,7 +33,13 @@
 #define EVENT_ADMIN_NAME "event_admin"
 typedef struct event_admin *event_admin_pt;
 typedef struct event_admin_service *event_admin_service_pt;
+
+struct event {
+	const char *topic;
+	properties_pt properties;
+};
 typedef struct event *event_pt;
+
 /**
  * @desc service description for the event admin.
  * @param event_admin_pt eventAdmin. incomplete type for the event admin instance.
@@ -46,12 +51,15 @@ struct event_admin_service {
 	celix_status_t (*postEvent)(event_admin_pt event_admin, event_pt event);
 	celix_status_t (*sendEvent)(event_admin_pt event_admin, event_pt event);
 
-	celix_status_t (*createEvent)(event_admin_pt event_admin, char *topic, properties_pt properties,  event_pt *event);
+	celix_status_t (*createEvent)(event_admin_pt event_admin, const char *topic, properties_pt properties,
+								  event_pt *event);
 	celix_status_t (*containsProperty)(event_pt *event, char *property, bool *result);
 	celix_status_t (*event_equals)(event_pt *event, event_pt *compare, bool *result);
-	celix_status_t (*getProperty)( event_pt *event, char *propertyKey, char **propertyValue);
+
+	celix_status_t (*getProperty)(event_pt *event, char *propertyKey, const char **propertyValue);
 	celix_status_t (*getPropertyNames)(event_pt *event, array_list_pt *names);
-	celix_status_t (*getTopic)( event_pt *event, char **topic);
+
+	celix_status_t (*getTopic)(event_pt *event, const char **topic);
 	celix_status_t (*hashCode)(event_pt *event, int *hashCode);
 	celix_status_t (*matches)( event_pt *event);
 	celix_status_t (*toString)( event_pt *event, char *eventString);

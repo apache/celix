@@ -31,7 +31,7 @@
 
 #include "dm_event.h"
 
-celix_status_t event_create(dm_event_type_e event_type, bundle_pt bundle, bundle_context_pt context, service_reference_pt reference, void *service, dm_event_pt *event) {
+celix_status_t event_create(dm_event_type_e event_type, bundle_pt bundle, bundle_context_pt context, service_reference_pt reference, const void *service, dm_event_pt *event) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*event = calloc(1, sizeof(**event));
@@ -39,13 +39,13 @@ celix_status_t event_create(dm_event_type_e event_type, bundle_pt bundle, bundle
 		status = CELIX_ENOMEM;
 	}
 
-	char *serviceIdStr = NULL;
-	serviceReference_getProperty(reference, (char *)OSGI_FRAMEWORK_SERVICE_ID, &serviceIdStr);
-	long servId = atol(serviceIdStr);
+	const char* serviceIdStr = NULL;
+	serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_ID, &serviceIdStr);
+	unsigned long servId = strtoul(serviceIdStr,NULL,10);
 
 	//FIXME service ranking can dynamicly change, but service reference can be removed at any time.
-	char *rankingStr = NULL;
-	serviceReference_getProperty(reference, (char *)OSGI_FRAMEWORK_SERVICE_RANKING, &rankingStr);
+	const char* rankingStr = NULL;
+	serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_RANKING, &rankingStr);
 	long ranking = rankingStr == NULL ? 0 : atol(rankingStr);
 
 	if (status == CELIX_SUCCESS) {
@@ -76,14 +76,14 @@ celix_status_t event_destroy(dm_event_pt *event) {
 	return status;
 }
 
-celix_status_t event_equals(void *a, void *b, bool *equals) {
+celix_status_t event_equals(const void *a, const void *b, bool *equals) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (!a || !b) {
 		*equals = false;
 	} else {
-		dm_event_pt a_ptr = a;
-		dm_event_pt b_ptr = b;
+		dm_event_pt a_ptr = (dm_event_pt)a;
+		dm_event_pt b_ptr = (dm_event_pt)b;
 
 		*equals = a_ptr->serviceId == b_ptr->serviceId;
 	}
@@ -99,7 +99,7 @@ celix_status_t event_compareTo(dm_event_pt event, dm_event_pt compareTo, int *co
 	return status;
 }
 
-celix_status_t event_getService(dm_event_pt event, void **service) {
+celix_status_t event_getService(dm_event_pt event, const void **service) {
 	*service = event->service;
 	return CELIX_SUCCESS;
 }

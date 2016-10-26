@@ -100,7 +100,7 @@ TEST(service_registration, create) {
 	callback.handle = registry;
 	char * name = my_strdup("sevice_name");
 	bundle_pt bundle = (bundle_pt) 0x20;
-	long serviceId = 1l;
+	unsigned long serviceId = 1UL;
 	void *service = (void *) 0x30;
 
 	service_registration_pt registration = serviceRegistration_create(callback, bundle, name, serviceId, service, NULL);
@@ -108,14 +108,15 @@ TEST(service_registration, create) {
 	STRCMP_EQUAL(name, registration->className);
 	POINTERS_EQUAL(bundle, registration->bundle);
 	POINTERS_EQUAL(service, registration->svcObj);
-	LONGS_EQUAL(serviceId, registration->serviceId);
+	UNSIGNED_LONGS_EQUAL(serviceId, registration->serviceId);
+
 	LONGS_EQUAL(0, registration->isUnregistering);
 	LONGS_EQUAL(0, registration->isServiceFactory);
 	POINTERS_EQUAL(NULL, registration->serviceFactory);
 	POINTERS_EQUAL(NULL, registration->services);
 	LONGS_EQUAL(0, registration->nrOfServices);
 
-	char* get;
+	const char* get;
 	get = properties_get(registration->properties, (char*)"service.id");
 	STRCMP_EQUAL("1", get);
 
@@ -132,7 +133,7 @@ TEST(service_registration, createServiceFactory) {
 	callback.handle = registry;
 	char * name = my_strdup("sevice_name");
 	bundle_pt bundle = (bundle_pt) 0x20;
-	long serviceId = 1l;
+	unsigned long serviceId = 1UL;
 	void *service = (void *) 0x30;
 
 	service_registration_pt registration = serviceRegistration_createServiceFactory(callback, bundle, name, serviceId, service, NULL);
@@ -140,14 +141,14 @@ TEST(service_registration, createServiceFactory) {
 	STRCMP_EQUAL(name, registration->className);
 	POINTERS_EQUAL(bundle, registration->bundle);
 	POINTERS_EQUAL(service, registration->svcObj);
-	LONGS_EQUAL(serviceId, registration->serviceId);
+	UNSIGNED_LONGS_EQUAL(serviceId, registration->serviceId);
 	LONGS_EQUAL(0, registration->isUnregistering);
 	LONGS_EQUAL(1, registration->isServiceFactory);
 	POINTERS_EQUAL(service, registration->serviceFactory);
 	POINTERS_EQUAL(NULL, registration->services);
 	LONGS_EQUAL(0, registration->nrOfServices);
 
-	char* get;
+	const char* get;
 	get = properties_get(registration->properties, (char*)"service.id");
 	STRCMP_EQUAL("1", get);
 
@@ -264,7 +265,7 @@ TEST(service_registration, getService) {
 	void *service = (void *) 0x20;
 	service_registration_pt registration = serviceRegistration_create(callback, bundle, name, 0, service, NULL);
 
-	void *actual = NULL;
+	const void *actual = NULL;
 	celix_status_t status = serviceRegistration_getService(registration, bundle, &actual);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	POINTERS_EQUAL(service, actual);
@@ -289,7 +290,7 @@ TEST(service_registration, getServiceFromFactory) {
 			.withParameter("registration", registration)
 			.withOutputParameterReturning("service", &service, sizeof(service));
 
-	void *actual = NULL;
+	const void *actual = NULL;
 	celix_status_t status = serviceRegistration_getService(registration, bundle, &actual);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	POINTERS_EQUAL(service, actual);
@@ -316,7 +317,7 @@ TEST(service_registration, ungetServiceFromFactory) {
 			.withParameter("registration", registration)
 			.withOutputParameterReturning("service", &service, sizeof(service));
 
-	void *actual = NULL;
+	const void *actual = NULL;
 	celix_status_t status = serviceRegistration_ungetService(registration, bundle, &actual);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	POINTERS_EQUAL(service, actual);
@@ -336,7 +337,7 @@ TEST(service_registration, getProperties) {
 	celix_status_t status = serviceRegistration_getProperties(registration, &actual);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 
-	char* get;
+	const char* get;
 	get = properties_get(registration->properties, (char*)"service.id");
 	STRCMP_EQUAL("5", get);
 
@@ -400,7 +401,7 @@ TEST(service_registration, getServiceName) {
 	char * name = my_strdup("sevice_name");
 	service_registration_pt registration = serviceRegistration_create(callback, NULL, name, 0, NULL, NULL);
 
-	char *actual = NULL;
+	const char *actual = NULL;
 	celix_status_t status = serviceRegistration_getServiceName(registration, &actual);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	STRCMP_EQUAL(name, actual);
@@ -413,7 +414,7 @@ TEST(service_registration, getServiceNameIllegalArgument) {
 	registry_callback_t callback;
 	char * name = my_strdup("sevice_name");
 	service_registration_pt registration = serviceRegistration_create(callback, NULL, name, 0, NULL, NULL);
-	char *actual = (char *) 0x01;
+	const char *actual = (char *) 0x01;
 
 	mock().expectOneCall("framework_logCode")
 			.withParameter("code", CELIX_ILLEGAL_ARGUMENT);

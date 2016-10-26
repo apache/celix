@@ -75,9 +75,11 @@ celix_status_t deviceManager_create(bundle_context_pt context, log_helper_pt log
 		(*manager)->loghelper = logHelper;
 
 		status = arrayList_create(&(*manager)->locators);
+
+		logHelper_log((*manager)->loghelper, OSGI_LOGSERVICE_DEBUG, "DEVICE_MANAGER: Initialized");
 	}
 
-	logHelper_log((*manager)->loghelper, OSGI_LOGSERVICE_DEBUG, "DEVICE_MANAGER: Initialized");
+
 	return status;
 }
 
@@ -167,8 +169,8 @@ static celix_status_t deviceManager_attachAlgorithm(device_manager_pt manager, s
 
 				serviceReference_getPropertyKeys(ref, &keys, &size);
 				for (int i = 0; i < size; i++) {
-					char *key = keys[i];
-					char *value = NULL;
+					char* key = keys[i];
+					const char* value = NULL;
 					serviceReference_getProperty(ref, key, &value);
 					properties_set(properties, key, value);
 				}
@@ -193,15 +195,17 @@ static celix_status_t deviceManager_attachAlgorithm(device_manager_pt manager, s
 								}
 							}
 							arrayListIterator_destroy(idsIter);
-						} else {
-							// Ignore
+						}
+						if(id != NULL){
+							free(id);
 						}
 					}
 					hashMapIterator_destroy(iter);
 
 					status = deviceManager_matchAttachDriver(manager, loader, driverIds, included, excluded, service, ref);
-					arrayList_destroy(driverIds);
+
 				}
+				arrayList_destroy(driverIds);
 				properties_destroy(properties);
 				arrayList_destroy(excluded);
 			}
@@ -209,6 +213,8 @@ static celix_status_t deviceManager_attachAlgorithm(device_manager_pt manager, s
 		}
 
 	}
+
+	driverLoader_destroy(&loader);
 	return status;
 }
 
@@ -287,6 +293,9 @@ celix_status_t deviceManager_matchAttachDriver(device_manager_pt manager, driver
 				}
 			}
 		}
+
+		driverMatcher_destroy(&matcher);
+
 	}
 
 	if (references != NULL) {
@@ -298,7 +307,7 @@ celix_status_t deviceManager_matchAttachDriver(device_manager_pt manager, driver
 
 celix_status_t deviceManager_noDriverFound(device_manager_pt manager, void *service, service_reference_pt reference) {
 	celix_status_t status = CELIX_SUCCESS;
-    char *objectClass = NULL;
+    const char* objectClass = NULL;
     serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_OBJECTCLASS, &objectClass);
     if (strcmp(objectClass, OSGI_DEVICEACCESS_DRIVER_SERVICE_NAME) == 0) {
         device_service_pt device = service;
@@ -333,6 +342,9 @@ celix_status_t deviceManager_driverAdded(void * handle, service_reference_pt ref
 	if (status == CELIX_SUCCESS) {
 		hashMap_put(manager->drivers, ref, attributes);
 	}
+	else{
+		driverAttributes_destroy(attributes);
+	}
 	return status;
 }
 
@@ -358,7 +370,7 @@ celix_status_t deviceManager_driverRemoved(void * handle, service_reference_pt r
 		for (i = 0; i < arrayList_size(idleDevices); i++) {
 			celix_status_t forStatus = CELIX_SUCCESS;
 			service_reference_pt ref = arrayList_get(idleDevices, i);
-			char *bsn = NULL;
+			const char *bsn = NULL;
 			bundle_pt bundle = NULL;
 			forStatus = serviceReference_getBundle(ref, &bundle);
 			if (forStatus == CELIX_SUCCESS) {
@@ -413,7 +425,7 @@ celix_status_t deviceManager_getIdleDevices(device_manager_pt manager, array_lis
 		while (hashMapIterator_hasNext(iter)) {
 			celix_status_t substatus = CELIX_SUCCESS;
 			service_reference_pt ref = hashMapIterator_nextKey(iter);
-			char *bsn = NULL;
+			const char *bsn = NULL;
 			module_pt module = NULL;
 			bundle_pt bundle = NULL;
 			substatus = serviceReference_getBundle(ref, &bundle);
@@ -434,7 +446,7 @@ celix_status_t deviceManager_getIdleDevices(device_manager_pt manager, array_lis
 								celix_status_t sstatus = deviceManager_isDriverBundle(manager, bundle, &isDriver);
 								if (sstatus == CELIX_SUCCESS) {
 									if (isDriver) {
-										char *bsn = NULL;
+										const char *bsn = NULL;
 										module_pt module = NULL;
 										bundle_getCurrentModule(bundle, &module);
 										module_getSymbolicName(module, &bsn);
@@ -476,7 +488,7 @@ celix_status_t deviceManager_getIdleDevices_exmaple(device_manager_pt manager, a
 		while (hashMapIterator_hasNext(iter)) {
 			celix_status_t substatus = CELIX_SUCCESS;
 			service_reference_pt ref = hashMapIterator_nextKey(iter);
-			char *bsn = NULL;
+			const char *bsn = NULL;
 			module_pt module = NULL;
 			bundle_pt bundle = NULL;
 			array_list_pt bundles = NULL;
@@ -495,7 +507,7 @@ celix_status_t deviceManager_getIdleDevices_exmaple(device_manager_pt manager, a
 					celix_status_t sstatus = deviceManager_isDriverBundle(manager, bundle, &isDriver);
 					if (sstatus == CELIX_SUCCESS) {
 						if (isDriver) {
-							char *bsn = NULL;
+							const char *bsn = NULL;
 							module_pt module = NULL;
 							bundle_getCurrentModule(bundle, &module);
 							module_getSymbolicName(module, &bsn);
@@ -529,8 +541,8 @@ celix_status_t deviceManager_isDriverBundle(device_manager_pt manager, bundle_pt
 				int i;
 				for (i = 0; i < arrayList_size(refs); i++) {
 					service_reference_pt ref = arrayList_get(refs, i);
-                    char *object = NULL;
-                    serviceReference_getProperty(ref, (char *) OSGI_FRAMEWORK_OBJECTCLASS, &object);
+                    const char* object = NULL;
+                    serviceReference_getProperty(ref, OSGI_FRAMEWORK_OBJECTCLASS, &object);
                     if (strcmp(object, "driver") == 0) {
                         *isDriver = true;
                         break;

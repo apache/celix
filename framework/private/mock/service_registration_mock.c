@@ -28,24 +28,24 @@
 #include "service_registration.h"
 #include "service_registration_private.h"
 
-service_registration_pt serviceRegistration_create(registry_callback_t callback, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary) {
+service_registration_pt serviceRegistration_create(registry_callback_t callback, bundle_pt bundle, const char* serviceName, unsigned long serviceId, const void* serviceObject, properties_pt dictionary) {
 	mock_c()->actualCall("serviceRegistration_create")
 		->withParameterOfType("registry_callback_t", "callback", &callback)
 		->withPointerParameters("bundle", bundle)
 		->withStringParameters("serviceName", serviceName)
-		->withIntParameters("serviceId", serviceId)
-		->withPointerParameters("serviceObject", serviceObject)
+		->withUnsignedLongIntParameters("serviceId", serviceId)
+		->withPointerParameters("serviceObject", (void*)serviceObject)
 		->withPointerParameters("dictionary", dictionary);
 	return mock_c()->returnValue().value.pointerValue;
 }
 
-service_registration_pt serviceRegistration_createServiceFactory(registry_callback_t callback, bundle_pt bundle, char * serviceName, long serviceId, void * serviceObject, properties_pt dictionary) {
+service_registration_pt serviceRegistration_createServiceFactory(registry_callback_t callback, bundle_pt bundle, const char* serviceName, unsigned long serviceId, const void* serviceObject, properties_pt dictionary) {
 	mock_c()->actualCall("serviceRegistration_createServiceFactory")
 		->withParameterOfType("registry_callback_t", "callback", &callback)
 		->withPointerParameters("bundle", bundle)
 		->withStringParameters("serviceName", serviceName)
-		->withIntParameters("serviceId", serviceId)
-		->withPointerParameters("serviceObject", serviceObject)
+		->withUnsignedLongIntParameters("serviceId", serviceId)
+		->withPointerParameters("serviceObject", (void*) serviceObject)
 		->withPointerParameters("dictionary", dictionary);
 	return mock_c()->returnValue().value.pointerValue;
 }
@@ -75,7 +75,7 @@ celix_status_t serviceRegistration_unregister(service_registration_pt registrati
 }
 
 
-celix_status_t serviceRegistration_getService(service_registration_pt registration, bundle_pt bundle, void **service) {
+celix_status_t serviceRegistration_getService(service_registration_pt registration, bundle_pt bundle, const void **service) {
 	mock_c()->actualCall("serviceRegistration_getService")
 		->withPointerParameters("registration", registration)
 		->withPointerParameters("bundle", bundle)
@@ -83,7 +83,7 @@ celix_status_t serviceRegistration_getService(service_registration_pt registrati
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t serviceRegistration_ungetService(service_registration_pt registration, bundle_pt bundle, void **service) {
+celix_status_t serviceRegistration_ungetService(service_registration_pt registration, bundle_pt bundle, const void **service) {
 	mock_c()->actualCall("serviceRegistration_ungetService")
 			->withPointerParameters("registration", registration)
 			->withPointerParameters("bundle", bundle)
@@ -120,7 +120,7 @@ celix_status_t serviceRegistration_getBundle(service_registration_pt registratio
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t serviceRegistration_getServiceName(service_registration_pt registration, char **serviceName) {
+celix_status_t serviceRegistration_getServiceName(service_registration_pt registration, const char **serviceName) {
 	mock_c()->actualCall("serviceRegistration_getServiceName")
 			->withPointerParameters("registration", registration)
 			->withOutputParameter("serviceName", (const char **) serviceName);

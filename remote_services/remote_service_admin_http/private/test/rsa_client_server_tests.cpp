@@ -168,7 +168,7 @@ extern "C" {
 
 			for (i = 0; i < size; i++) {
 				module_pt module = NULL;
-				char *name = NULL;
+				const char *name = NULL;
 
 				bundle_pt bundle = (bundle_pt) arrayList_get(bundles, i);
 
@@ -229,7 +229,7 @@ extern "C" {
 
 			if (status == CELIX_SUCCESS) {
 				module_pt module = NULL;
-				char *name = NULL;
+				const char *name = NULL;
 
 				status = bundle_getCurrentModule(bundle, &module);
 

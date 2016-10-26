@@ -27,15 +27,22 @@
 #ifndef COMPONENT_IMPL_H_
 #define COMPONENT_IMPL_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "dm_component.h"
-
 #include "dm_service_dependency_impl.h"
-
 #include "dm_event.h"
 
 celix_status_t component_start(dm_component_pt component);
+
 celix_status_t component_stop(dm_component_pt component);
 
 celix_status_t component_handleEvent(dm_component_pt component, dm_service_dependency_pt dependency, dm_event_pt event);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* COMPONENT_IMPL_H_ */

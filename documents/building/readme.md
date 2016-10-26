@@ -1,20 +1,34 @@
 #Apache Celix - Building and Installing
+Apache Celix aims to be support a broad range of UNIX platforms.
+ 
+Currently the [continuous integration build server](https://travis-ci.org/apache/celix) builds and tests Apache Celix for:
+
+*   Ubuntu Trusty Tahr (14.04)
+    * GCC 
+    * CLang 
+*   OSX
+    * GCC 
+    * CLang 
+*   Android (cross-compiled on Ubuntu Trusty Tahr) 
+    * GCC 
 
 #Preparing 
 The following packages (libraries + headers) should be installed on your system:
 
 *	Development Environment
-	*	build-essentials 
+	*	build-essentials (gcc/g++ or clang/clang++) 
 	* 	git
     *   java (for packaging bundles)
-	*	cmake (3 or higher)
+	*	cmake (3.2 or higher)
 * 	Apache Celix Dependencies
 	*	curl
 	*	jansson
+	*   libffi
+	*   libxml2 (for remote services and bonjour shell)
+	
 
-For a debian based systems, the following should work:
-
-<pre>
+For debian based systems (apt), the following command should work:
+```bash
 sudo apt-get install -yq --no-install-recommends \
 	build-essential \
     ninja \ 
@@ -23,11 +37,14 @@ sudo apt-get install -yq --no-install-recommends \
   	libjansson-dev \
   	libcurl4-openssl-dev \
     java \
-  	cmake 
-</pre>
+  	cmake \
+  	libffi-dev \
+  	libxml2-dev
+```
 
-For Fedora based systems (dnf), the following should work:
-<pre>
+For Fedora based systems (dnf), the following command should work:
+```bash
+sudo dnf group install -y "C Development Tools and Libraries"
 sudo dnf install \
     cmake \
     ninja-build \
@@ -35,8 +52,18 @@ sudo dnf install \
     git \
     java \
     libcurl-devel \
-    jansson-devel
-</pre>
+    jansson-devel \
+    libffi-devel \
+    libxml2-devel \
+    libuuid-devel
+```
+
+For OSX systems with brew installed, the following command should work:
+```bash
+    brew update && \
+    brew install lcov libffi cmake && \
+    brew link --force libffi
+```
 
 ##Download the Apache Celix sources
 To get started you first have to download the Apache Celix sources. This can be done by cloning the Apache Celix git repository:
@@ -74,8 +101,8 @@ ninja
 ```
 
 ##Editing Build options
-With use of CMake Apache Celix makes it possible to edit build options. This enabled users to configure a install location and selecting additional bundles.
-To edit the options use ccmake or cmake-gui. For cmake-gui an additional package install can be neccesary (Fedora: `dnf install cmake-gui`). 
+With use of CMake, Apache Celix makes it possible to edit build options. This enabled users, among other options, to configure a install location and select additional bundles.
+To edit the options use ccmake or cmake-gui. For cmake-gui an additional package install can be necessary (Fedora: `dnf install cmake-gui`). 
 
 ```bash
 cd ${WS}/celix/build
@@ -97,8 +124,10 @@ sudo make install
 ##Running Apache Celix
 
 If Apache Celix is succesfully installed running
-    celix
+```bash
+celix
+```
 should give the following output:
-"Error: invalid or non-existing configuration file: 'config.properties'.No such file or directory"
+"Error: invalid or non-existing configuration file: 'config.properties'.No such file or directory".
 
-For more info how to build your own projects and/or running the Apache Celix examples see [Getting Started](../getting_started/readme.md)
+For more info how to build your own projects and/or running the Apache Celix examples see [Getting Started](../getting_started/readme.md).

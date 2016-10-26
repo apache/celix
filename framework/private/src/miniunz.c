@@ -333,7 +333,7 @@ int do_extract(unzFile uf, char * revisionRoot) {
     return 0;
 }
 
-celix_status_t extractBundle(char * bundleName, char * revisionRoot) {
+celix_status_t extractBundle(const char* bundleName, const char* revisionRoot) {
     celix_status_t status = CELIX_SUCCESS;
     char filename_try[MAXFILENAME+16] = "";
     unzFile uf=NULL;
@@ -371,7 +371,7 @@ celix_status_t extractBundle(char * bundleName, char * revisionRoot) {
         printf("Cannot open %s or %s.zip\n",bundleName,bundleName);
         status = CELIX_FILE_IO_EXCEPTION;
     } else {
-        if (do_extract(uf, revisionRoot) != 0) {
+        if (do_extract(uf, (char*)revisionRoot) != 0) {
             status = CELIX_FILE_IO_EXCEPTION;
         }
 

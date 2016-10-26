@@ -1204,12 +1204,12 @@ static int start_thread(struct mg_context *ctx, mg_thread_func_pt func,
 
 #ifndef NO_CGI
 static pid_t spawn_process(struct mg_connection *conn, const char *prog,
-                           char *envblk, char *envp[], int fd_stdin,
+		__attribute__((unused)) char *envblk, char *envp[], int fd_stdin,
                            int fd_stdout, const char *dir) {
   pid_t pid;
   const char *interp;
 
-  envblk = NULL; // Unused
+  // envblk = NULL; // Unused
 
   if ((pid = fork()) == -1) {
     // Parent
@@ -1314,8 +1314,8 @@ int mg_read(struct mg_connection *conn, void *buf, size_t len) {
   const char *buffered;
 
   assert(conn->content_len >= conn->consumed_content);
-  DEBUG_TRACE(("%p %zu %lld %lld", buf, len,
-               conn->content_len, conn->consumed_content));
+  DEBUG_TRACE(("%p %zu %ld %ld", buf, len,
+               (long)conn->content_len, (long)conn->consumed_content));
   nread = 0;
   if (strcmp(conn->request_info.request_method, "POST") == 0 &&
       conn->consumed_content < conn->content_len) {
@@ -1930,7 +1930,7 @@ static void MD5Final(unsigned char digest[16], MD5_CTX *ctx) {
   MD5Transform(ctx->buf, (uint32_t *) ctx->in);
   byteReverse((unsigned char *) ctx->buf, 4);
   memcpy(digest, ctx->buf, 16);
-  memset((char *) ctx, 0, sizeof(ctx));
+  memset((char *) ctx, 0, sizeof(*ctx));
 }
 #endif // !HAVE_MD5
 
@@ -2203,6 +2203,7 @@ int mg_modify_passwords_file(struct mg_context *ctx, const char *fname,
     return 0;
   } else if ((fp2 = mg_fopen(tmp, "w+")) == NULL) {
     cry(fc(ctx), "Cannot open %s: %s", tmp, strerror(errno));
+    fclose(fp);
     return 0;
   }
 
@@ -2366,6 +2367,7 @@ static void handle_directory_request(struct mg_connection *conn,
     if (entries == NULL) {
       send_http_error(conn, 500, "Cannot open directory",
           "%s", "Error: cannot allocate memory");
+      closedir(dirp);
       return;
     }
 
@@ -2404,12 +2406,14 @@ static void handle_directory_request(struct mg_connection *conn,
       conn->request_info.uri, "..", "Parent directory", "-", "-");
 
   // Sort and print directory entries
-  qsort(entries, num_entries, sizeof(entries[0]), compare_dir_entries);
-  for (i = 0; i < num_entries; i++) {
-    print_dir_entry(&entries[i]);
-    free(entries[i].file_name);
+  if(entries!=NULL){
+	  qsort(entries, num_entries, sizeof(entries[0]), compare_dir_entries);
+	  for (i = 0; i < num_entries; i++) {
+		  print_dir_entry(&entries[i]);
+		  free(entries[i].file_name);
+	  }
+	  free(entries);
   }
-  free(entries);
 
   conn->num_bytes_sent += mg_printf(conn, "%s", "</table></body></html>");
   conn->request_info.status_code = 200;
@@ -3291,7 +3295,9 @@ static int set_ports_option(struct mg_context *ctx) {
 #endif // !_WIN32
                bind(sock, &so.lsa.u.sa, so.lsa.len) != 0 ||
                listen(sock, 20) != 0) {
-      closesocket(sock);
+      if(sock != INVALID_SOCKET ){
+	  closesocket(sock);
+      }
       cry(fc(ctx), "%s: cannot bind to %.*s: %s", __func__,
           vec.len, vec.ptr, strerror(ERRNO));
       success = 0;
@@ -3448,10 +3454,10 @@ static int set_uid_option(struct mg_context *ctx) {
 #if !defined(NO_SSL)
 static pthread_mutex_t *ssl_mutexes;
 
-static void ssl_locking_callback(int mode, int mutex_num, const char *file,
-                                 int line) {
-  line = 0;    // Unused
-  file = NULL; // Unused
+static void ssl_locking_callback(int mode, int mutex_num, __attribute__((unused)) const char *file,
+		__attribute__((unused)) int line) {
+  // line = 0;    // Unused
+  // file = NULL; // Unused
 
   if (mode & CRYPTO_LOCK) {
     (void) pthread_mutex_lock(&ssl_mutexes[mutex_num]);
@@ -3476,7 +3482,9 @@ static int load_dll(struct mg_context *ctx, const char *dll_name,
     return 0;
   }
 
-  for (fp = sw; fp->name != NULL; fp++) {
+  int ret = 1;
+
+  for (fp = sw; fp->name != NULL && ret==1; fp++) {
 #ifdef _WIN32
     // GetProcAddress() returns pointer to function
     u.fp = (void (*)(void)) dlsym(dll_handle, fp->name);
@@ -3487,13 +3495,15 @@ static int load_dll(struct mg_context *ctx, const char *dll_name,
 #endif /* _WIN32 */
     if (u.fp == NULL) {
       cry(fc(ctx), "%s: %s: cannot find %s", __func__, dll_name, fp->name);
-      return 0;
+      ret=0;
     } else {
       fp->ptr = u.fp;
     }
   }
 
-  return 1;
+  dlclose(dll_handle);
+
+  return ret;
 }
 #endif // NO_SSL_DL
 
@@ -3804,9 +3814,10 @@ static void worker_thread(struct mg_context *ctx) {
   struct mg_connection *conn;
   int buf_size = atoi(ctx->config[MAX_REQUEST_SIZE]);
 
-  conn = calloc(1, sizeof(*conn) + buf_size);
+  conn = calloc(1, sizeof(*conn));
   conn->buf_size = buf_size;
-  conn->buf = (char *) (conn + 1);
+  //+5 because in some point of the code there are direct accesses to buf with index>=2
+  conn->buf = calloc(buf_size + 5, sizeof(char));
   assert(conn != NULL);
 
   while (ctx->stop_flag == 0 && consume_socket(ctx, &conn->client)) {
@@ -3829,6 +3840,7 @@ static void worker_thread(struct mg_context *ctx) {
 
     close_connection(conn);
   }
+  free(conn->buf);
   free(conn);
 
   // Signal master that we're done with connection and exiting
@@ -3863,7 +3875,8 @@ static void produce_socket(struct mg_context *ctx, const struct socket *sp) {
 static void accept_new_connection(const struct socket *listener,
                                   struct mg_context *ctx) {
   struct socket accepted;
-  int allowed;
+  memset(&accepted,0,sizeof(struct socket));
+  int allowed = 0;
 
   accepted.rsa.len = sizeof(accepted.rsa.u.sin);
   accepted.lsa = listener->lsa;

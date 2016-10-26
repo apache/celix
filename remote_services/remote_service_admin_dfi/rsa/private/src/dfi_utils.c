@@ -26,7 +26,7 @@ static celix_status_t dfi_findFileForFramework(bundle_context_pt context, const 
 
     char pwd[1024];
     char path[1024];
-    char *extPath = NULL;
+    const char *extPath = NULL;
    
     status = bundleContext_getProperty(context, "CELIX_FRAMEWORK_EXTENDER_PATH", &extPath);
     if (status != CELIX_SUCCESS || extPath == NULL) {
@@ -52,10 +52,10 @@ static celix_status_t dfi_findFileForBundle(bundle_pt bundle, const char *fileNa
     celix_status_t  status;
 
     char *path = NULL;
-    char metaInfFileName[128];
+    char metaInfFileName[512];
     snprintf(metaInfFileName, sizeof(metaInfFileName), "META-INF/descriptors/%s", fileName);
 
-    status = bundle_getEntry(bundle, (char *)fileName, &path);
+    status = bundle_getEntry(bundle, fileName, &path);
     
     if (status != CELIX_SUCCESS || path == NULL) {
         status = bundle_getEntry(bundle, metaInfFileName, &path);
@@ -69,8 +69,9 @@ static celix_status_t dfi_findFileForBundle(bundle_pt bundle, const char *fileNa
             *out = df;
         }
 
-        free(path);
     }
+
+    free(path);
     return status;
 }
 

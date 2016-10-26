@@ -48,13 +48,13 @@ typedef struct match_key {
 static celix_status_t driverMatcher_get(driver_matcher_pt matcher, int key, array_list_pt *attributesV);
 static celix_status_t driverMatcher_getBestMatchInternal(driver_matcher_pt matcher, match_pt *match);
 
-unsigned int driverMatcher_matchKeyHash(void * match_key) {
-	match_key_t key = match_key;
+unsigned int driverMatcher_matchKeyHash(const void* match_key) {
+	match_key_t key = (match_key_t) match_key;
 
 	return key->matchValue;
 }
 
-int driverMatcher_matchKeyEquals(void * key, void * toCompare) {
+int driverMatcher_matchKeyEquals(const void* key, const void* toCompare) {
 	return ((match_key_t) key)->matchValue == ((match_key_t) toCompare)->matchValue;
 }
 
@@ -81,21 +81,34 @@ celix_status_t driverMatcher_create(bundle_context_pt context, driver_matcher_pt
 }
 
 celix_status_t driverMatcher_destroy(driver_matcher_pt *matcher) {
-	arrayList_destroy((*matcher)->matches);
-	hash_map_iterator_pt iter = hashMapIterator_create((*matcher)->attributes);
-	while (hashMapIterator_hasNext(iter)) {
-		array_list_pt list = hashMapIterator_nextValue(iter);
-		if (list != NULL) {
-			arrayList_destroy(list);
+
+	if((*matcher) != NULL){
+
+		int i = 0;
+
+		for(;i<arrayList_size((*matcher)->matches);i++){
+			free(arrayList_get((*matcher)->matches,i));
 		}
+		arrayList_destroy((*matcher)->matches);
+
+		hash_map_iterator_pt iter = hashMapIterator_create((*matcher)->attributes);
+		while (hashMapIterator_hasNext(iter)) {
+			hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
+			match_key_t match = (match_key_t)hashMapEntry_getKey(entry);
+			array_list_pt list = (array_list_pt)hashMapEntry_getValue(entry);
+			free(match);
+			if (list != NULL) {
+				arrayList_destroy(list);
+			}
+		}
+		hashMapIterator_destroy(iter);
+		hashMap_destroy((*matcher)->attributes, false, false);
+
+		logHelper_stop((*matcher)->loghelper);
+		logHelper_destroy(&(*matcher)->loghelper);
+
+		free(*matcher);
 	}
-	hashMapIterator_destroy(iter);
-	hashMap_destroy((*matcher)->attributes, false, false);
-
-	logHelper_stop((*matcher)->loghelper);
-	logHelper_destroy(&(*matcher)->loghelper);
-
-	free(*matcher);
 
 	return CELIX_SUCCESS;
 }
@@ -136,6 +149,8 @@ celix_status_t driverMatcher_get(driver_matcher_pt matcher, int key, array_list_
 		matchKey->matchValue = key;
 		hashMap_put(matcher->attributes, matchKey, *attributes);
 	}
+
+	free(matchKeyS);
 
 	return status;
 }
@@ -200,7 +215,8 @@ celix_status_t driverMatcher_getBestMatchInternal(driver_matcher_pt matcher, mat
 			celix_status_t substatus = driverAttributes_getReference(attributes, &reference);
 			if (substatus == CELIX_SUCCESS) {
 				if (best != NULL) {
-					char *rank1Str, *rank2Str;
+					const char* rank1Str;
+					const char* rank2Str;
 					int rank1, rank2;
 
 					rank1Str = "0";
@@ -208,8 +224,8 @@ celix_status_t driverMatcher_getBestMatchInternal(driver_matcher_pt matcher, mat
 
 					logHelper_log(matcher->loghelper, OSGI_LOGSERVICE_DEBUG, "DRIVER_MATCHER: Compare ranking");
 
-					serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_RANKING, &rank1Str);
-					serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_RANKING, &rank2Str);
+					serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_RANKING, &rank1Str);
+					serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_RANKING, &rank2Str);
 
 					rank1 = atoi(rank1Str);
 					rank2 = atoi(rank2Str);
@@ -219,7 +235,8 @@ celix_status_t driverMatcher_getBestMatchInternal(driver_matcher_pt matcher, mat
 							best = reference;
 						}
 					} else {
-						char *id1Str, *id2Str;
+						const char* id1Str;
+						const char* id2Str;
 						long id1, id2;
 
 						id1Str = NULL;
@@ -227,8 +244,8 @@ celix_status_t driverMatcher_getBestMatchInternal(driver_matcher_pt matcher, mat
 
 						logHelper_log(matcher->loghelper, OSGI_LOGSERVICE_DEBUG, "DRIVER_MATCHER: Compare id's");
 
-						serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_ID, &id1Str);
-						serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_ID, &id2Str);
+						serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_ID, &id1Str);
+						serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_ID, &id2Str);
 
 						id1 = atol(id1Str);
 						id2 = atol(id2Str);

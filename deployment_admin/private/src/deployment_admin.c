@@ -57,7 +57,11 @@
 #include "miniunz.h"
 
 #define IDENTIFICATION_ID "deployment_admin_identification"
-#define DISCOVERY_URL "deployment_admin_url"
+#define DEFAULT_IDENTIFICATION_ID "celix"
+
+#define ADMIN_URL "deployment_admin_url"
+#define DEFAULT_ADMIN_URL "localhost:8080"
+
 #define DEPLOYMENT_CACHE_DIR "deployment_cache_dir"
 #define DEPLOYMENT_TAGS "deployment_tags"
 // "http://localhost:8080/deployment/"
@@ -97,7 +101,12 @@ celix_status_t deploymentAdmin_create(bundle_context_pt context, deployment_admi
 		(*admin)->pollUrl = NULL;
 		(*admin)->auditlogUrl = NULL;
 
-        bundleContext_getProperty(context, IDENTIFICATION_ID, &(*admin)->targetIdentification);
+        bundleContext_getProperty(context, IDENTIFICATION_ID, (const char**) &(*admin)->targetIdentification);
+        if ((*admin)->targetIdentification == NULL) {
+        	(*admin)->targetIdentification = DEFAULT_IDENTIFICATION_ID;
+        	fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Identification ID not set, using default '%s'. Set id by using '%s'",
+        		DEFAULT_IDENTIFICATION_ID, IDENTIFICATION_ID);
+        }
 
         struct timeval tv;
 		gettimeofday(&tv,NULL);
@@ -106,25 +115,26 @@ celix_status_t deploymentAdmin_create(bundle_context_pt context, deployment_admi
 
 		if ((*admin)->targetIdentification == NULL ) {
 		    fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Target name must be set using \"deployment_admin_identification\"");
-			status = CELIX_ILLEGAL_ARGUMENT;
 		} else {
-			char *url = NULL;
-			bundleContext_getProperty(context, DISCOVERY_URL, &url);
+			const char *url = NULL;
+			bundleContext_getProperty(context, ADMIN_URL, &url);
 			if (url == NULL) {
-			    fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "URL must be set using \"deployment_admin_url\"\n");
-				status = CELIX_ILLEGAL_ARGUMENT;
-			} else {
-				int pollUrlLength = strlen(url) + strlen((*admin)->targetIdentification) + strlen(VERSIONS) + 13;
-				int auditlogUrlLength = strlen(url) + 10;
+				url = DEFAULT_ADMIN_URL;
+			    fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Server URL is not set, using default '%s'. Set id by using '%s'",
+        			DEFAULT_ADMIN_URL, ADMIN_URL);
+			}
+		
+			int pollUrlLength = strlen(url) + strlen((*admin)->targetIdentification) + strlen(VERSIONS) + 13;
+			int auditlogUrlLength = strlen(url) + 10;
 
-				char pollUrl[pollUrlLength];
-				char auditlogUrl[auditlogUrlLength];
+			char pollUrl[pollUrlLength];
+			char auditlogUrl[auditlogUrlLength];
 
-				snprintf(pollUrl, pollUrlLength, "%s/deployment/%s%s", url, (*admin)->targetIdentification, VERSIONS);
-				snprintf(auditlogUrl, auditlogUrlLength, "%s/auditlog", url);
+			snprintf(pollUrl, pollUrlLength, "%s/deployment/%s%s", url, (*admin)->targetIdentification, VERSIONS);
+			snprintf(auditlogUrl, auditlogUrlLength, "%s/auditlog", url);
 
-				(*admin)->pollUrl = strdup(pollUrl);
-				(*admin)->auditlogUrl = strdup(auditlogUrl);
+			(*admin)->pollUrl = strdup(pollUrl);
+			(*admin)->auditlogUrl = strdup(auditlogUrl);
 
 //				log_store_pt store = NULL;
 //				log_pt log = NULL;
@@ -136,8 +146,7 @@ celix_status_t deploymentAdmin_create(bundle_context_pt context, deployment_admi
 //				log_log(log, 20000, NULL);
 
 
-				celixThread_create(&(*admin)->poller, NULL, deploymentAdmin_poll, *admin);
-			}
+			celixThread_create(&(*admin)->poller, NULL, deploymentAdmin_poll, *admin);
 		}
 	}
 
@@ -211,7 +220,7 @@ static celix_status_t deploymentAdmin_performRequest(deployment_admin_pt admin, 
 static celix_status_t deploymentAdmin_auditEventTargetPropertiesSet(deployment_admin_pt admin) {
     celix_status_t status = CELIX_SUCCESS;
 
-    char *tags = NULL;
+    const char *tags = NULL;
 
     bundleContext_getProperty(admin->context, DEPLOYMENT_TAGS, &tags);
 
@@ -295,7 +304,9 @@ static void *deploymentAdmin_poll(void *deploymentAdmin) {
 					uuid_generate(uid);
 					uuid_unparse(uid, uuid);
                     snprintf(tmpDir, 256, "%s%s", entry, uuid);
-                    mkdir(tmpDir, S_IRWXU);
+                    if( mkdir(tmpDir, S_IRWXU) == -1){
+                        fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Failed creating directory %s",tmpDir);
+                    }
 
 					// TODO: update to use bundle cache DataFile instead of module entries.
 					unzip_extractDeploymentPackage(inputFilename, tmpDir);
@@ -306,13 +317,15 @@ static void *deploymentAdmin_poll(void *deploymentAdmin) {
 					manifest_createFromFile(manifest, &mf);
 					deployment_package_pt source = NULL;
 					deploymentPackage_create(admin->context, mf, &source);
-					char *name = NULL;
+					const char *name = NULL;
 					deploymentPackage_getName(source, &name);
 
 					int repoDirLength = strlen(entry) + 5;
 					char repoDir[repoDirLength];
 					snprintf(repoDir, repoDirLength, "%srepo", entry);
-					mkdir(repoDir, S_IRWXU);
+					if( mkdir(repoDir, S_IRWXU) == -1){
+						fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Failed creating directory %s",repoDir);
+					}
 
 					int repoCacheLength = strlen(entry) + strlen(name) + 6;
 					char repoCache[repoCacheLength];
@@ -338,9 +351,13 @@ static void *deploymentAdmin_poll(void *deploymentAdmin) {
 
 					deploymentAdmin_deleteTree(repoCache);
 					deploymentAdmin_deleteTree(tmpDir);
-					remove(inputFilename);
+					if( remove(inputFilename) == -1){
+						fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Remove of %s failed",inputFilename);
+					}
 					admin->current = strdup(last);
-					hashMap_put(admin->packages, name, source);
+					hashMap_put(admin->packages, (char*)name, source);
+
+                    free(entry);
 				}
 				if (inputFilename != NULL) {
 					free(inputFilename);
@@ -427,39 +444,48 @@ celix_status_t deploymentAdmin_download(deployment_admin_pt admin, char * url, c
 	CURLcode res = 0;
 	curl = curl_easy_init();
 	if (curl) {
-		char *dir = NULL;
+		const char *dir = NULL;
 		bundleContext_getProperty(admin->context, DEPLOYMENT_CACHE_DIR, &dir);
 		if (dir != NULL) {
 			*inputFile = calloc(1024, sizeof (char));
 			snprintf(*inputFile, 1024, "%s/%s", dir, "updateXXXXXX");
 		}
 		else {
-				*inputFile = strdup("updateXXXXXX");
+			*inputFile = strdup("updateXXXXXX");
 		}
+		umask(0011);
         int fd = mkstemp(*inputFile);
         if (fd != -1) {
             FILE *fp = fopen(*inputFile, "wb+");
-            curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
-            curl_easy_setopt(curl, CURLOPT_URL, url);
-            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, deploymentAdmin_writeData);
-            curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
-            curl_easy_setopt(curl, CURLOPT_FAILONERROR, true);
-            //curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0);
-            //curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, updateCommand_downloadProgress);
-            res = curl_easy_perform(curl);
-            if (res != CURLE_OK) {
-                status = CELIX_BUNDLE_EXCEPTION;
+            if(fp!=NULL){
+            	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
+            	curl_easy_setopt(curl, CURLOPT_URL, url);
+            	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, deploymentAdmin_writeData);
+            	curl_easy_setopt(curl, CURLOPT_WRITEDATA, fp);
+            	curl_easy_setopt(curl, CURLOPT_FAILONERROR, true);
+            	//curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0);
+            	//curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, updateCommand_downloadProgress);
+            	res = curl_easy_perform(curl);
+
+            	/* always cleanup */
+            	curl_easy_cleanup(curl);
+            	fclose(fp);
             }
-            /* always cleanup */
-            curl_easy_cleanup(curl);
-            fclose(fp);
+            else{
+            	status = CELIX_FILE_IO_EXCEPTION;
+            }
+        }
+        else{
+        	status = CELIX_FILE_IO_EXCEPTION;
         }
 	}
+	else{
+		res = CURLE_FAILED_INIT;
+	}
+
 	if (res != CURLE_OK) {
 		*inputFile[0] = '\0';
 		status = CELIX_ILLEGAL_STATE;
-	} else {
-		status = CELIX_SUCCESS;
 	}
 
 	return status;
@@ -554,7 +580,7 @@ celix_status_t deploymentAdmin_updateDeploymentPackageBundles(deployment_admin_p
 		bundleContext_getBundle(admin->context, &bundle);
 		char *entry = NULL;
 		bundle_getEntry(bundle, "/", &entry);
-		char *name = NULL;
+		const char *name = NULL;
 		deploymentPackage_getName(source, &name);
 
 		int bundlePathLength = strlen(entry) + strlen(name) + strlen(info->path) + 7;
@@ -575,6 +601,8 @@ celix_status_t deploymentAdmin_updateDeploymentPackageBundles(deployment_admin_p
 			//printf("Install bundle from: %s\n", bundlePath);
 			bundleContext_installBundle2(admin->context, bsn, bundlePath, &updateBundle);
 		}
+
+        free(entry);
 	}
 	arrayList_destroy(infos);
 	return status;
@@ -653,8 +681,8 @@ celix_status_t deploymentAdmin_processDeploymentPackageResources(deployment_admi
 				if (status == CELIX_SUCCESS) {
 					bundle_pt bundle = NULL;
 					char *entry = NULL;
-					char *name = NULL;
-					char *packageName = NULL;
+					const char *name = NULL;
+					const char *packageName = NULL;
 					resource_processor_service_pt processor = processorP;
 
 					bundleContext_getBundle(admin->context, &bundle);
@@ -666,8 +694,10 @@ celix_status_t deploymentAdmin_processDeploymentPackageResources(deployment_admi
 					snprintf(resourcePath, length, "%srepo/%s/%s", entry, name, info->path);
 					deploymentPackage_getName(source, &packageName);
 
-					processor->begin(processor->processor, packageName);
+					processor->begin(processor->processor, (char*)packageName);
 					processor->process(processor->processor, info->path, resourcePath);
+
+                    free(entry);
 				}
 			}
 		}
@@ -709,11 +739,11 @@ celix_status_t deploymentAdmin_dropDeploymentPackageResources(deployment_admin_p
                         void *processorP = NULL;
                         status = bundleContext_getService(admin->context, ref, &processorP);
                         if (status == CELIX_SUCCESS) {
-                            char *packageName = NULL;
+                            const char *packageName = NULL;
                             resource_processor_service_pt processor = processorP;
 
                             deploymentPackage_getName(source, &packageName);
-                            processor->begin(processor->processor, packageName);
+                            processor->begin(processor->processor, (char*)packageName);
                             processor->dropped(processor->processor, info->path);
                         }
                     }

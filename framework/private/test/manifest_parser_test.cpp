@@ -151,7 +151,7 @@ TEST(manifest_parser, create){
 	version_pt get_version;
 	linked_list_pt get_caps;
 	linked_list_pt get_reqs;
-	char * get_bundle_name;
+	char* get_bundle_name;
 	celix_status_t status;
 
 	mock().expectOneCall("version_clone")
@@ -199,7 +199,7 @@ TEST(manifest_parser, create){
 	}
 
 
-	status = manifestParser_getSymbolicName(parser, &get_bundle_name);
+	status = manifestParser_getAndDuplicateSymbolicName(parser, &get_bundle_name);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
 	STRCMP_EQUAL(bundle_name, get_bundle_name);
 

@@ -36,13 +36,13 @@ struct serviceRegistry {
 	registry_callback_t callback;
 
 	hash_map_pt serviceRegistrations; //key = bundle (reg owner), value = list ( registration )
-	hash_map_pt serviceReferences; //key = bundle, value = map (key = registration, value = reference)
+	hash_map_pt serviceReferences; //key = bundle, value = map (key = serviceId, value = reference)
 
 	bool checkDeletedReferences; //If enabled. check if provided service references are still valid
 	hash_map_pt deletedServiceReferences; //key = ref pointer, value = bool
 
 	serviceChanged_function_pt serviceChanged;
-	long currentServiceId;
+	unsigned long currentServiceId;
 
 	array_list_pt listenerHooks;
 

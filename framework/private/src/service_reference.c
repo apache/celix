@@ -151,12 +151,15 @@ celix_status_t serviceReference_getReferenceCount(service_reference_pt ref, size
 celix_status_t serviceReference_getService(service_reference_pt ref, void **service) {
     celix_status_t status = CELIX_SUCCESS;
     celixThreadRwlock_readLock(&ref->lock);
-    *service = ref->service;
+    /*NOTE the service argument should be 'const void**'
+      To ensure backwards compatability a cast is made instead.
+    */
+    *service = (const void**) ref->service;
     celixThreadRwlock_unlock(&ref->lock);
     return status;
 }
 
-celix_status_t serviceReference_setService(service_reference_pt ref, void *service) {
+celix_status_t serviceReference_setService(service_reference_pt ref, const void *service) {
     celix_status_t status = CELIX_SUCCESS;
     celixThreadRwlock_writeLock(&ref->lock);
     ref->service = service;
@@ -190,20 +193,24 @@ celix_status_t serviceReference_getOwner(service_reference_pt ref, bundle_pt *ow
 }
 
 celix_status_t serviceReference_getServiceRegistration(service_reference_pt ref, service_registration_pt *out) {
-    celixThreadRwlock_readLock(&ref->lock);
-    *out = ref->registration;
-    celixThreadRwlock_unlock(&ref->lock);
-    return CELIX_SUCCESS;
+    if (ref != NULL) {
+        celixThreadRwlock_readLock(&ref->lock);
+        *out = ref->registration;
+        celixThreadRwlock_unlock(&ref->lock);
+        return CELIX_SUCCESS;
+    } else {
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
 }
 
-celix_status_t serviceReference_getProperty(service_reference_pt ref, char *key, char **value) {
+celix_status_t serviceReference_getProperty(service_reference_pt ref, const char* key, const char** value) {
     celix_status_t status = CELIX_SUCCESS;
     properties_pt props = NULL;
     celixThreadRwlock_readLock(&ref->lock);
     if (ref->registration != NULL) {
         status = serviceRegistration_getProperties(ref->registration, &props);
         if (status == CELIX_SUCCESS) {
-            *value = properties_get(props, key);
+            *value = (char*) properties_get(props, key);
         }
     } else {
         *value = NULL;
@@ -222,7 +229,7 @@ FRAMEWORK_EXPORT celix_status_t serviceReference_getPropertyKeys(service_referen
     int i = 0;
     int vsize = hashMap_size(props);
     *size = (unsigned int)vsize;
-    *keys = malloc(vsize * sizeof(*keys));
+    *keys = malloc(vsize * sizeof(**keys));
     it = hashMapIterator_create(props);
     while (hashMapIterator_hasNext(it)) {
         (*keys)[i] = hashMapIterator_nextKey(it);
@@ -255,7 +262,7 @@ celix_status_t serviceReference_isValid(service_reference_pt ref, bool *result) 
     return CELIX_SUCCESS;
 }
 
-bool serviceReference_isAssignableTo(service_reference_pt reference __attribute__((unused)), bundle_pt requester __attribute__((unused)), char * serviceName __attribute__((unused))) {
+bool serviceReference_isAssignableTo(service_reference_pt reference __attribute__((unused)), bundle_pt requester __attribute__((unused)), const char* serviceName __attribute__((unused))) {
 	bool allow = true;
 
 	/*NOTE for now always true. It would be nice to be able to do somechecks if the services are really assignable.
@@ -279,9 +286,9 @@ celix_status_t serviceReference_equals(service_reference_pt reference, service_r
 	return status;
 }
 
-int serviceReference_equals2(void *reference1, void *reference2) {
+int serviceReference_equals2(const void* reference1, const void* reference2) {
 	bool equal;
-	serviceReference_equals(reference1, reference2, &equal);
+	serviceReference_equals((service_reference_pt)reference1, (service_reference_pt)reference2, &equal);
 	return equal;
 }
 
@@ -289,7 +296,8 @@ celix_status_t serviceReference_compareTo(service_reference_pt reference, servic
 	celix_status_t status = CELIX_SUCCESS;
 
 	long id, other_id;
-	char *id_str, *other_id_str;
+	const char* id_str;
+    const char* other_id_str;
 	serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_ID, &id_str);
 	serviceReference_getProperty(compareTo, (char *) OSGI_FRAMEWORK_SERVICE_ID, &other_id_str);
 
@@ -298,9 +306,10 @@ celix_status_t serviceReference_compareTo(service_reference_pt reference, servic
 
 
 	long rank, other_rank;
-	char *rank_str, *other_rank_str;
-	serviceReference_getProperty(reference, (char *) OSGI_FRAMEWORK_SERVICE_RANKING, &rank_str);
-	serviceReference_getProperty(compareTo, (char *) OSGI_FRAMEWORK_SERVICE_RANKING, &other_rank_str);
+	const char *rank_str;
+    const char* other_rank_str;
+	serviceReference_getProperty(reference, OSGI_FRAMEWORK_SERVICE_RANKING, &rank_str);
+	serviceReference_getProperty(compareTo, OSGI_FRAMEWORK_SERVICE_RANKING, &other_rank_str);
 
 	rank = rank_str == NULL ? 0 : atol(rank_str);
 	other_rank = other_rank_str == NULL ? 0 : atol(other_rank_str);
@@ -310,8 +319,8 @@ celix_status_t serviceReference_compareTo(service_reference_pt reference, servic
 	return status;
 }
 
-unsigned int serviceReference_hashCode(void *referenceP) {
-    service_reference_pt ref = referenceP;
+unsigned int serviceReference_hashCode(const void *referenceP) {
+    service_reference_pt ref = (service_reference_pt)referenceP;
     bundle_pt bundle = NULL;
     service_registration_pt reg = NULL;
 

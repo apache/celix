@@ -55,12 +55,12 @@ int dynMessage_parse(FILE *descriptor, dyn_message_type **out) {
         TAILQ_INIT(&msg->annotations);
         TAILQ_INIT(&msg->types);
 
-        char peek = fgetc(descriptor);
+        char peek = (char)fgetc(descriptor);
         while (peek == ':') {
             ungetc(peek, descriptor);
             status = dynMessage_parseSection(msg, descriptor);
             if (status == OK) {
-                peek = fgetc(descriptor);
+                peek = (char)fgetc(descriptor);
             } else {
                 break;
             }
@@ -93,6 +93,7 @@ int dynMessage_parse(FILE *descriptor, dyn_message_type **out) {
     if (status == OK) {
         *out = msg;
     } else if (msg != NULL) {
+        LOG_ERROR("Error parsing msg\n");
         dynMessage_destroy(msg);
     }
     return status;
@@ -205,9 +206,6 @@ static int dynMessage_parseNameValueSection(dyn_message_type *msg, FILE *stream,
             if (value != NULL) {
                 free(value);
             }
-            if (entry != NULL) {
-                free(entry);
-            }
             break;
         }
         peek = fgetc(stream);
@@ -225,7 +223,7 @@ static int dynMessage_parseTypes(dyn_message_type *msg, FILE *stream) {
     while (peek != ':' && peek != EOF) {
         ungetc(peek, stream);
 
-        char *name;
+        char *name = NULL;
         status = dynCommon_parseName(stream, &name);
 
         if (status == OK) {
@@ -234,10 +232,7 @@ static int dynMessage_parseTypes(dyn_message_type *msg, FILE *stream) {
 
         dyn_type *type = NULL;
         if (status == OK) {
-            dynType_parse(stream, name, &msg->types, &type);
-        }
-        if (name != NULL) {
-            free(name);
+            status = dynType_parse(stream, name, &msg->types, &type);
         }
 
         if (status == OK) {
@@ -248,6 +243,7 @@ static int dynMessage_parseTypes(dyn_message_type *msg, FILE *stream) {
         if (status == OK) {
             entry = calloc(1, sizeof(*entry));
             if (entry != NULL) {
+                LOG_DEBUG("Adding type '%s' with pointer %p to types", name, type);
                 entry->type = type;
                 TAILQ_INSERT_TAIL(&msg->types, entry, entries);
             } else {
@@ -256,12 +252,13 @@ static int dynMessage_parseTypes(dyn_message_type *msg, FILE *stream) {
             }
         }
 
+        if (name != NULL) {
+            free(name);
+        }
+
         if (status != OK) {
             if (type != NULL) {
                 dynType_destroy(type);
-            }
-            if (entry != NULL) {
-                free(entry);
             }
             break;
         }

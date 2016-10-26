@@ -16,7 +16,7 @@
 # under the License.
 
 
-celix_subproject(RSA_REMOTE_SERVICE_ADMIN_DFI "Option to enable building the Remote Service Admin Service DFI" OFF DEPS TOPOLOGY_MANAGER)
+celix_subproject(RSA_REMOTE_SERVICE_ADMIN_DFI "Option to enable building the Remote Service Admin Service DFI" ON DEPS TOPOLOGY_MANAGER)
 
 if (RSA_REMOTE_SERVICE_ADMIN_DFI)
 

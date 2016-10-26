@@ -27,6 +27,10 @@
 #ifndef COMPONENT_H_
 #define COMPONENT_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <bundle_context.h>
 #include <celix_errno.h>
 
@@ -49,26 +53,83 @@ typedef int (*start_fpt)(void *userData);
 typedef int (*stop_fpt)(void *userData);
 typedef int (*deinit_fpt)(void *userData);
 
-celix_status_t component_create(bundle_context_pt context, const char *name, dm_component_pt *component);
+/**
+ * Creates a DM Component
+ * Caller has ownership.
+ */
+celix_status_t component_create(bundle_context_pt context, const char* name, dm_component_pt *component);
+
+/**
+ * Destroys a DM Component
+ */
 void component_destroy(dm_component_pt component);
 
-celix_status_t component_addInterface(dm_component_pt component, char *serviceName, char *serviceVersion, void *service, properties_pt properties);
-celix_status_t component_setImplementation(dm_component_pt component, void *implementation);
+
+/**
+ * Specify if a default 'service.lang=C' should be added to the properties of interfaces if no 'service.lang' has been
+ * provided. Default is true. Note that this should be set before using component_addInterface.
+ */
+celix_status_t setCLanguageProperty(dm_component_pt component, bool setCLangProp);
+
+
+/**
+ * Adds a C interface to provide as service to the Celix framework.
+ *
+ * @param serviceName the service name.
+ * @param version The version of the interface (e.g. "1.0.0"), Can be a NULL pointer.
+ * @param properties To (meta) properties to provide with the service. Can be a NULL pointer.
+ */
+celix_status_t component_addInterface(dm_component_pt component, const char* serviceName, const char* serviceVersion, const void* service, properties_pt properties);
+
+/**
+ * Sets the implementation of the component. e.g. the component handle/self/this pointer.
+ */
+celix_status_t component_setImplementation(dm_component_pt component, void* implementation);
 
 /**
  * Returns an arraylist of service names. The caller owns the arraylist and strings (char *)
  */
 celix_status_t component_getInterfaces(dm_component_pt component, array_list_pt *servicesNames);
 
+/**
+ * Adds a C service dependency to the component
+ */
 celix_status_t component_addServiceDependency(dm_component_pt component, dm_service_dependency_pt dep);
+
+/**
+ * Removes a C service dependency to the component
+ */
 celix_status_t component_removeServiceDependency(dm_component_pt component, dm_service_dependency_pt dependency);
 
+/**
+ * Returns the current state of the component.
+ */
 dm_component_state_t component_currentState(dm_component_pt cmp);
+
+/**
+ * Returns the implementation of the component. e.g. the component handle/self/this pointer.
+ */
 void * component_getImplementation(dm_component_pt cmp);
+
+/**
+ * Returns the DM component name. This is used when printing information about the component.
+ */
 const char * component_getName(dm_component_pt cmp);
 
+/**
+ * Returns bundle context for the bundle where this DM component is part of.
+ */
 celix_status_t component_getBundleContext(dm_component_pt component, bundle_context_pt *out);
 
+/**
+ * Set the component life cycle callbacks.
+ * The first argument will be the component implementation (@see component_getImplementation)
+ */
+celix_status_t component_setCallbacks(dm_component_pt component, init_fpt init, start_fpt start, stop_fpt stop, deinit_fpt deinit);
+
+/**
+ * Set the component life cycle callbacks using a MACRO for improving the type safety.
+ */
 #define component_setCallbacksSafe(dmCmp, type, init, start, stop, deinit) \
     do {  \
         int (*tmp_init)(type)   = (init); \
@@ -78,13 +139,19 @@ celix_status_t component_getBundleContext(dm_component_pt component, bundle_cont
         component_setCallbacks((dmCmp), (init_fpt)tmp_init, (start_fpt)tmp_start, (stop_fpt)tmp_stop, (deinit_fpt)tmp_deinit); \
     } while(0)
 
-celix_status_t component_setCallbacks(dm_component_pt component, init_fpt init, start_fpt start, stop_fpt stop, deinit_fpt deinit);
-
 /**
- * returns a dm_component_info_pt. Caller has ownership.
+ * Create a DM Component info struct. Containing information about the component.
+ * Caller has ownership.
  */
 celix_status_t component_getComponentInfo(dm_component_pt component, dm_component_info_pt *info);
+
+/**
+ * Destroys a DM Component info struct.
+ */
 void component_destroyComponentInfo(dm_component_info_pt info);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* COMPONENT_H_ */

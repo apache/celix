@@ -41,38 +41,38 @@ typedef struct bundle_instance *bundle_instance_pt;
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
-	bundle_instance_pt bi = calloc(1, sizeof(struct bundle_instance));
-	if (userData != NULL) {
-		bi->service=NULL;
-		bi->locator=NULL;
-		bi->locatorRegistration=NULL;
-		(*userData)=bi;
-	} else {
+	(*userData) = calloc(1, sizeof(struct bundle_instance));
+	if ( (*userData) == NULL ){
 		status = CELIX_ENOMEM;
-    }
+	}
     return status;
 }
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
     celix_status_t status = CELIX_SUCCESS;
     bundle_instance_pt bi = (bundle_instance_pt)userData;
-    if (status == CELIX_SUCCESS) {
-        bi->service = calloc(1, sizeof(*(bi->service)));
-        bi->service->findDrivers = driverLocator_findDrivers;
-        bi->service->loadDriver = driverLocator_loadDriver;
 
-        bi->locator = calloc(1, sizeof(*(bi->locator)));
-        bi->service->locator = bi->locator;
-        bi->locator->drivers = NULL;
-        arrayList_create(&bi->locator->drivers);
-        bundleContext_getProperty(context, "DRIVER_LOCATOR_PATH", &bi->locator->path);
-        if (bi->locator->path == NULL ) {
-        	bi->locator->path = (char *)DEFAULT_LOCATOR_PATH;
-        }
-        bundleContext_registerService(context, OSGI_DEVICEACCESS_DRIVER_LOCATOR_SERVICE_NAME, bi->service, NULL, &bi->locatorRegistration);
-    } else {
-        status = CELIX_START_ERROR;
+    bi->service = calloc(1, sizeof(*(bi->service)));
+    bi->locator = calloc(1, sizeof(*(bi->locator)));
+    if(bi->service != NULL && bi->locator != NULL){
+	bi->service->findDrivers = driverLocator_findDrivers;
+	bi->service->loadDriver = driverLocator_loadDriver;
+
+	bi->service->locator = bi->locator;
+	bi->locator->drivers = NULL;
+	arrayList_create(&bi->locator->drivers);
+	bundleContext_getProperty(context, "DRIVER_LOCATOR_PATH", (const char**)&bi->locator->path);
+	if (bi->locator->path == NULL ) {
+		bi->locator->path = (char *)DEFAULT_LOCATOR_PATH;
+	}
+	status = bundleContext_registerService(context, OSGI_DEVICEACCESS_DRIVER_LOCATOR_SERVICE_NAME, bi->service, NULL, &bi->locatorRegistration);
     }
+    else{
+	if(bi->service!=NULL) free(bi->service);
+	if(bi->locator!=NULL) free(bi->locator);
+	status = CELIX_ENOMEM;
+    }
+
     return status;
 }
 

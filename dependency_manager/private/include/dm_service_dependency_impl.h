@@ -27,6 +27,10 @@
 #ifndef DM_SERVICE_DEPENDENCY_IMPL_H_
 #define DM_SERVICE_DEPENDENCY_IMPL_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdbool.h>
 
 #include "dm_event.h"
@@ -43,6 +47,7 @@ struct dm_service_dependency {
 	bool required;
 	dm_service_dependency_strategy_t strategy;
 
+	void* callbackHandle; //This handle can be set to be used instead of the component implementation
 	service_set_fpt set;
 	service_add_fpt add;
 	service_change_fpt change;
@@ -55,11 +60,12 @@ struct dm_service_dependency {
 	service_remove_with_ref_fpt remove_with_ref;
 	service_swap_with_ref_fpt swap_with_ref;
 
-	void **autoConfigure;
+	const void **autoConfigure;
 	celix_thread_mutex_t lock;
 
 	bool isStarted;
 
+	bool addCLanguageFilter;
 	char *tracked_service;
 	char *tracked_filter_unmodified;
 	char *tracked_filter;
@@ -87,9 +93,12 @@ celix_status_t serviceDependency_isRequired(dm_service_dependency_pt dependency,
 celix_status_t serviceDependency_isInstanceBound(dm_service_dependency_pt dependency, bool *instanceBound);
 celix_status_t serviceDependency_isAutoConfig(dm_service_dependency_pt dependency, bool *autoConfig);
 
-celix_status_t serviceDependency_getAutoConfig(dm_service_dependency_pt dependency, void ***autoConfigure);
+celix_status_t serviceDependency_getAutoConfig(dm_service_dependency_pt dependency, const void*** autoConfigure);
 celix_status_t serviceDependency_unlock(dm_service_dependency_pt dependency);
 celix_status_t serviceDependency_lock(dm_service_dependency_pt dependency);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* DM_SERVICE_DEPENDENCY_IMPL_H_ */

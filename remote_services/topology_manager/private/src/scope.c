@@ -47,7 +47,7 @@ struct scope {
     celix_status_t (*importScopeChangedHandler)(void* manager, char *filter);
 };
 
-static celix_status_t import_equal(void *, void *, bool *equals);
+static celix_status_t import_equal(const void *, const void *, bool *equals);
 
 /*
  * SERVICES
@@ -243,7 +243,7 @@ celix_status_t scope_scopeDestroy(scope_pt scope) {
 /*****************************************************************************
  * STATIC FUNCTIONS
  *****************************************************************************/
-static celix_status_t import_equal(void *src, void *dest, bool *equals) {
+static celix_status_t import_equal(const void *src, const void *dest, bool *equals) {
     celix_status_t status;
 
     filter_pt src_filter = (filter_pt) src;
@@ -286,7 +286,7 @@ celix_status_t scope_getExportProperties(scope_pt scope, service_reference_pt re
     serviceReference_getPropertyKeys(reference, &keys, &size);
     for (int i = 0; i < size; i++) {
         char *key = keys[i];
-        char *value = NULL;
+        const char* value = NULL;
 
         if (serviceReference_getProperty(reference, key, &value) == CELIX_SUCCESS) {
 //        		&& strcmp(key, (char*) OSGI_RSA_SERVICE_EXPORTED_INTERFACES) != 0

@@ -76,11 +76,19 @@ TEST(bundle_cache, deleteTree) {
 	char cacheFile[] = "bundle_cache_test_directory/tempXXXXXX";
 	cache->cacheDir = cacheDir;
 
-	mkdir(cacheDir, S_IRWXU);
-	mkdir(cacheDir2, S_IRWXU);
-	//mkstemp opens the file for safety, but bundlecache_delete needs to reopen the file
-	close(mkstemp(cacheFile));
+	int rv = 0;
+	rv += mkdir(cacheDir, S_IRWXU);
+	rv += mkdir(cacheDir2, S_IRWXU);
 
+	/* Check previous mkdir calls were fine*/
+	LONGS_EQUAL(rv,0);
+
+	//mkstemp opens the file for safety, but bundlecache_delete needs to reopen the file
+	umask(0033);
+	int fd = mkstemp(cacheFile);
+	if(fd>=0){
+		close(fd);
+	}
 
 	LONGS_EQUAL(CELIX_SUCCESS, bundleCache_delete(cache));
 
@@ -94,9 +102,13 @@ TEST(bundle_cache, getArchive) {
 
 	char bundle0[] = "bundle_cache_test_directory/bundle0";
 	char bundle1[] = "bundle_cache_test_directory/bundle1";
-	mkdir(cacheDir, S_IRWXU);
-	mkdir(bundle0, S_IRWXU);
-	mkdir(bundle1, S_IRWXU);
+	int rv = 0;
+	rv += mkdir(cacheDir, S_IRWXU);
+	rv += mkdir(bundle0, S_IRWXU);
+	rv += mkdir(bundle1, S_IRWXU);
+
+	/* Check previous mkdir calls were fine*/
+	LONGS_EQUAL(rv,0);
 
 	bundle_archive_pt archive = (bundle_archive_pt) 0x10;
 	mock().expectOneCall("bundleArchive_recreate")

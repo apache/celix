@@ -32,7 +32,8 @@
 
 static const char * const OSGI_SHELL_SERVICE_NAME = "shellService";
 
-typedef struct shell * shell_pt;
+typedef struct shell shell_t;
+typedef shell_t* shell_pt;
 
 struct shellService {
 	shell_pt shell;
@@ -44,6 +45,7 @@ struct shellService {
 	celix_status_t (*executeCommand)(shell_pt shell_ptr, char * command_line_str, FILE *out, FILE *err);
 };
 
-typedef struct shellService * shell_service_pt;
+typedef struct shellService shell_service_t;
+typedef shell_service_t* shell_service_pt;
 
 #endif /* SHELL_H_ */

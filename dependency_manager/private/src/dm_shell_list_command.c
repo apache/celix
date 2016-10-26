@@ -43,6 +43,12 @@ void dmListCommand_execute(bundle_context_pt context, char * line, FILE *out, FI
     array_list_pt servRefs = NULL;
     int i;
     bundleContext_getServiceReferences(context, DM_INFO_SERVICE_NAME ,NULL, &servRefs);
+
+    if(servRefs==NULL){
+	fprintf(out, "Invalid dm_info ServiceReferences List\n");
+	return;
+    }
+
     char *term = getenv("TERM");
     bool colors = false;
     if (strcmp("xterm-256color", term) == 0) {
@@ -71,9 +77,14 @@ void dmListCommand_execute(bundle_context_pt context, char * line, FILE *out, FI
             int interfCnt;
             fprintf(out, "|- Interfaces (%d):\n", arrayList_size(compInfo->interfaces));
             for(interfCnt = 0 ;interfCnt < arrayList_size(compInfo->interfaces); interfCnt++) {
-                char * interface;
-                interface = arrayList_get(compInfo->interfaces, interfCnt);
-                fprintf(out, "   |- Interface: %s\n", interface);
+                dm_interface_info_pt intfInfo= arrayList_get(compInfo->interfaces, interfCnt);
+                fprintf(out, "   |- Interface: %s\n", intfInfo->name);
+
+                hash_map_iterator_t iter = hashMapIterator_construct((hash_map_pt) intfInfo->properties);
+                char* key = NULL;
+                while((key = hashMapIterator_nextKey(&iter)) != NULL) {
+                    fprintf(out, "      | %15s = %s\n", key, properties_get(intfInfo->properties, key));
+                }
             }
 
             int depCnt;
@@ -109,7 +120,7 @@ void dmListCommand_execute(bundle_context_pt context, char * line, FILE *out, FI
 		bundleContext_ungetService(context,servRef,NULL);
 		bundleContext_ungetServiceReference(context,servRef);
 
-        }
+    }
 
 	if(servRefs!=NULL){
 		arrayList_destroy(servRefs);

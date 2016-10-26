@@ -61,10 +61,10 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **out) {
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
     celix_status_t status;
     struct disc_mock_activator * act = userData;
-    char *uuid = NULL;
+    const char *uuid = NULL;
 
     act->reg = NULL;
-    status = bundleContext_registerService(context, (char *) DISC_MOCK_SERVICE_NAME, act->serv, NULL, &act->reg);
+    status = bundleContext_registerService(context, DISC_MOCK_SERVICE_NAME, act->serv, NULL, &act->reg);
 
     bundleContext_getProperty(context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &uuid);
 

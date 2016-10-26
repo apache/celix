@@ -73,7 +73,7 @@ celix_status_t importRegistration_create(bundle_context_pt context, endpoint_des
 
         celixThreadMutex_create(&reg->mutex, NULL);
         celixThreadMutex_create(&reg->proxiesMutex, NULL);
-        version_createVersionFromString((char*)serviceVersion,&(reg->version));
+        status = version_createVersionFromString((char*)serviceVersion,&(reg->version));
 
         reg->factory->handle = reg;
         reg->factory->getService = (void *)importRegistration_getService;
@@ -85,6 +85,9 @@ celix_status_t importRegistration_create(bundle_context_pt context, endpoint_des
     if (status == CELIX_SUCCESS) {
         printf("IMPORT REGISTRATION IS %p\n", reg);
         *out = reg;
+    }
+    else{
+    	importRegistration_destroy(reg);
     }
 
     return status;
@@ -203,16 +206,16 @@ static celix_status_t importRegistration_createProxy(import_registration_pt impo
     status = dfi_findDescriptor(import->context, bundle, import->classObject, &descriptor);
 
     if (status != CELIX_SUCCESS || descriptor == NULL) {
-        status = CELIX_BUNDLE_EXCEPTION;
         //TODO use log helper logHelper_log(helper, OSGI_LOGSERVICE_ERROR, "Cannot find/open descriptor for '%s'", import->classObject);
         fprintf(stderr, "RSA_DFI: Cannot find/open descriptor for '%s'", import->classObject);
+        return CELIX_BUNDLE_EXCEPTION;
     }
 
     if (status == CELIX_SUCCESS) {
         int rc = dynInterface_parse(descriptor, &intf);
         fclose(descriptor);
-        if (rc != 0) {
-            status = CELIX_BUNDLE_EXCEPTION;
+        if (rc != 0 || intf==NULL) {
+            return CELIX_BUNDLE_EXCEPTION;
         }
     }
 

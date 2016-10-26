@@ -50,7 +50,8 @@ struct log_service {
     celix_status_t (*logSr)(log_service_data_pt logger, service_reference_pt reference, log_level_t level, char * message);
 };
 
-typedef struct log_service *log_service_pt;
+typedef struct log_service log_service_t;
+typedef log_service_t* log_service_pt;
 
 
 

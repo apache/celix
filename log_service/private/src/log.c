@@ -252,8 +252,8 @@ celix_status_t log_addLogListener(log_pt logger, log_listener_pt listener) {
 celix_status_t log_removeLogListener(log_pt logger, log_listener_pt listener) {
 	celix_status_t status = CELIX_SUCCESS;
 
-    status = CELIX_DO_IF(status, celixThreadMutex_lock(&logger->deliverLock));
-    status = CELIX_DO_IF(status, celixThreadMutex_lock(&logger->listenerLock));
+    status += celixThreadMutex_lock(&logger->deliverLock);
+    status += celixThreadMutex_lock(&logger->listenerLock);
 
 	if (status == CELIX_SUCCESS) {
 	    bool last = false;
@@ -264,11 +264,11 @@ celix_status_t log_removeLogListener(log_pt logger, log_listener_pt listener) {
 			last = true;
 		}
 
-        status = CELIX_DO_IF(status, celixThreadMutex_unlock(&logger->listenerLock));
-        status = CELIX_DO_IF(status, celixThreadMutex_unlock(&logger->deliverLock));
+        status += celixThreadMutex_unlock(&logger->listenerLock);
+        status += celixThreadMutex_unlock(&logger->deliverLock);
 
 		if (last) {
-		    status = CELIX_DO_IF(status, celixThread_join(logger->listenerThread, NULL));
+		    status += celixThread_join(logger->listenerThread, NULL);
 		}
 	}
 

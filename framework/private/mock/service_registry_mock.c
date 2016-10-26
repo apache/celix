@@ -56,18 +56,18 @@ celix_status_t serviceRegistry_getServicesInUse(service_registry_pt registry, bu
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t serviceRegistry_registerService(service_registry_pt registry, bundle_pt bundle, char * serviceName, void * serviceObject, properties_pt dictionary, service_registration_pt *registration) {
+celix_status_t serviceRegistry_registerService(service_registry_pt registry, bundle_pt bundle, const char* serviceName, const void * serviceObject, properties_pt dictionary, service_registration_pt *registration) {
 	mock_c()->actualCall("serviceRegistry_registerService")
 			->withPointerParameters("registry", registry)
 			->withPointerParameters("bundle", bundle)
 			->withStringParameters("serviceName", serviceName)
-			->withPointerParameters("serviceObject", serviceObject)
+			->withPointerParameters("serviceObject", (void*)serviceObject)
 			->withPointerParameters("dictionary", dictionary)
 			->withOutputParameter("registration", registration);
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t serviceRegistry_registerServiceFactory(service_registry_pt registry, bundle_pt bundle, char * serviceName, service_factory_pt factory, properties_pt dictionary, service_registration_pt *registration) {
+celix_status_t serviceRegistry_registerServiceFactory(service_registry_pt registry, bundle_pt bundle, const char* serviceName, service_factory_pt factory, properties_pt dictionary, service_registration_pt *registration) {
 	mock_c()->actualCall("serviceRegistry_registerServiceFactory")
 		->withPointerParameters("registry", registry)
 		->withPointerParameters("bundle", bundle)
@@ -109,7 +109,7 @@ celix_status_t serviceRegistry_ungetServiceReference(service_registry_pt registr
 	return mock_c()->returnValue().value.intValue;
 }
 
-celix_status_t serviceRegistry_getService(service_registry_pt registry, bundle_pt bundle, service_reference_pt reference, void **service) {
+celix_status_t serviceRegistry_getService(service_registry_pt registry, bundle_pt bundle, service_reference_pt reference, const void **service) {
 	mock_c()->actualCall("serviceRegistry_getService")
 		->withPointerParameters("registry", registry)
 		->withPointerParameters("bundle", bundle)

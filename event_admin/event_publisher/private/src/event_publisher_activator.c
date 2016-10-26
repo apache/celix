@@ -24,13 +24,11 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdlib.h>
-#include <apr_thread_proc.h>
 
 
 #include "event_publisher_impl.h"
 
 struct activator {
-	apr_pool_t *pool;
 	bundle_context_pt context;
 	event_publisher_pt event_publisher;
 	service_tracker_pt tracker;
@@ -38,24 +36,18 @@ struct activator {
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
-	apr_pool_t *pool = NULL;
-	apr_pool_t *parentPool;
+
 	struct activator *activator = NULL;
-	status = bundleContext_getMemoryPool(context, &parentPool);
+
+	activator = calloc(1, sizeof(*activator));
+	activator->context = context;
+	*userData = activator;
+
+	event_publisher_pt eventpublisher;
+	status = eventPublisherCreate(context, &eventpublisher);
 	if(status == CELIX_SUCCESS) {
-		if(apr_pool_create(&pool,parentPool) != APR_SUCCESS) {
-			status = CELIX_BUNDLE_EXCEPTION;
-		}else {
-			activator = apr_palloc(pool,sizeof(*activator));
-			activator->pool = pool;
-			activator->context = context;
-			*userData = activator;
-		}
-		event_publisher_pt eventpublisher;
-        status = eventPublisherCreate(activator->pool,context,&eventpublisher);
-        if(status == CELIX_SUCCESS) {
-            activator->event_publisher = eventpublisher;
-        }
+		activator->event_publisher = eventpublisher;
+
 	}
 
 	return status;
@@ -64,10 +56,9 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator * data = (struct activator *) userData;
-	apr_pool_t *pool;
-	status = bundleContext_getMemoryPool(context, &pool);
-	if(status == CELIX_SUCCESS){
-		service_tracker_customizer_pt cust = NULL;
+
+
+	service_tracker_customizer_pt cust = NULL;
 		service_tracker_pt tracker = NULL;
 		data->context = context;
 		serviceTrackerCustomizer_create(data->event_publisher, eventPublisherAddingService, eventPublisherAddedService, eventPublisherModifiedService, eventPublisherRemovedService, &cust);
@@ -75,7 +66,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 		data->tracker = tracker;
 
 		serviceTracker_open(tracker);
-	}
+
 	eventPublisherStart(&data->event_publisher);
 	return status;
 }

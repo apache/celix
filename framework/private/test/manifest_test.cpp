@@ -192,7 +192,7 @@ TEST(manifest, createFromFileWithSections) {
     properties_pt main = manifest_getMainAttributes(manifest);
     POINTERS_EQUAL(properties, main);
 
-    char *name = manifest_getValue(manifest, "Bundle-SymbolicName");
+    const char *name = manifest_getValue(manifest, "Bundle-SymbolicName");
     STRCMP_EQUAL("bsn", name);
 
     hash_map_pt map = NULL;

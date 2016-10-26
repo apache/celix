@@ -30,16 +30,16 @@
 #include "celix_errno.h"
 #include "celix_log.h"
 
-static void test_logger_log(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line, char *fmsg, ...);
-static void test_logger_print(framework_log_level_t level, const char *func, const char *file, int line, char *msg);
+static void test_logger_log(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line, const char *fmsg, ...);
+static void test_logger_print(framework_log_level_t level, const char *func, const char *file, int line, const char *msg);
 
-void framework_log(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line, char *fmsg, ...) {
+void framework_log(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line, const char *fmsg, ...) {
 	mock_c()->actualCall("framework_log");
 
     test_logger_log(logger, level, func, file, line, "%s", fmsg);
 }
 
-void framework_logCode(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line, celix_status_t code, char *fmsg, ...) {
+void framework_logCode(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line, celix_status_t code, const char *fmsg, ...) {
 	mock_c()->actualCall("framework_logCode")->withIntParameters("code", code);
     char message[256];
     celix_strerror(code, message, 256);
@@ -49,9 +49,11 @@ void framework_logCode(framework_logger_pt logger, framework_log_level_t level, 
     vsprintf(msg, fmsg, listPointer);
 
     test_logger_log(logger, level, func, file, line, "%s [%d]: %s", message, code, msg);
+
+    va_end(listPointer);
 }
 
-celix_status_t frameworkLogger_log(framework_log_level_t level, const char *func, const char *file, int line, char *msg) {
+celix_status_t frameworkLogger_log(framework_log_level_t level, const char *func, const char *file, int line, const char *msg) {
 	mock_c()->actualCall("frameworkLogger_log");
 
 	test_logger_print(level, func, file, line, msg);
@@ -60,16 +62,18 @@ celix_status_t frameworkLogger_log(framework_log_level_t level, const char *func
 }
 
 //test logger functions, let you read the logged errors
-static void test_logger_log(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line, char *fmsg, ...) {
+static void test_logger_log(framework_logger_pt logger, framework_log_level_t level, const char *func, const char *file, int line, const char *fmsg, ...) {
     char msg[512];
     va_list listPointer;
     va_start(listPointer, fmsg);
     vsprintf(msg, fmsg, listPointer);
 
     test_logger_print(level, func, file, line, msg);
+
+    va_end(listPointer);
 }
 
-static void test_logger_print(framework_log_level_t level, const char *func, const char *file, int line, char *msg) {
+static void test_logger_print(framework_log_level_t level, const char *func, const char *file, int line, const char *msg) {
     char *levelStr = NULL;
     switch (level) {
         case OSGI_FRAMEWORK_LOG_ERROR:

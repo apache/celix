@@ -38,17 +38,17 @@
 
 typedef struct bundleArchive * bundle_archive_pt;
 
-celix_status_t bundleArchive_create(char * archiveRoot, long id, char * location, char *inputFile, bundle_archive_pt *bundle_archive);
+celix_status_t bundleArchive_create(const char* archiveRoot, long id, const char* location, const char* inputFile, bundle_archive_pt *bundle_archive);
 celix_status_t bundleArchive_createSystemBundleArchive(bundle_archive_pt *bundle_archive);
-celix_status_t bundleArchive_recreate(char * archiveRoot, bundle_archive_pt *bundle_archive);
+celix_status_t bundleArchive_recreate(const char* archiveRoot, bundle_archive_pt *bundle_archive);
 
 celix_status_t bundleArchive_destroy(bundle_archive_pt archive);
 
 FRAMEWORK_EXPORT celix_status_t bundleArchive_getId(bundle_archive_pt archive, long *id);
-FRAMEWORK_EXPORT celix_status_t bundleArchive_getLocation(bundle_archive_pt archive, char **location);
-FRAMEWORK_EXPORT celix_status_t bundleArchive_getArchiveRoot(bundle_archive_pt archive, char **archiveRoot);
+FRAMEWORK_EXPORT celix_status_t bundleArchive_getLocation(bundle_archive_pt archive, const char **location);
+FRAMEWORK_EXPORT celix_status_t bundleArchive_getArchiveRoot(bundle_archive_pt archive, const char **archiveRoot);
 
-FRAMEWORK_EXPORT celix_status_t bundleArchive_revise(bundle_archive_pt archive, char * location, char *inputFile);
+FRAMEWORK_EXPORT celix_status_t bundleArchive_revise(bundle_archive_pt archive, const char* location, const char* inputFile);
 FRAMEWORK_EXPORT celix_status_t bundleArchive_rollbackRevise(bundle_archive_pt archive, bool *rolledback);
 FRAMEWORK_EXPORT celix_status_t bundleArchive_getRevision(bundle_archive_pt archive, long revNr, bundle_revision_pt *revision);
 FRAMEWORK_EXPORT celix_status_t bundleArchive_getCurrentRevision(bundle_archive_pt archive, bundle_revision_pt *revision);

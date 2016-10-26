@@ -27,10 +27,19 @@
 #ifndef CELIX_DM_DEPENDENCY_MANAGER_IMPL_H
 #define CELIX_DM_DEPENDENCY_MANAGER_IMPL_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 struct dm_dependency_manager {
     array_list_pt components;
 
     pthread_mutex_t mutex;
 };
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //CELIX_DM_DEPENDENCY_MANAGER_IMPL_H

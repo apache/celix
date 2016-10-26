@@ -34,6 +34,6 @@
 #include "bundle.h"
 #include "service_reference.h"
 
-celix_status_t bundle_getBundleLocation(bundle_pt bundle, char **location);
+celix_status_t bundle_getBundleLocation(bundle_pt bundle, const char **location);
 
 #endif /* BUNDLE_PATCH_H_ */

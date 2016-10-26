@@ -130,7 +130,7 @@ TEST(capability, getServiceName) {
 	char serviceName[] = "service";
 	capability->serviceName = serviceName;
 
-	char *actual = NULL;
+	const char *actual = NULL;
 	capability_getServiceName(capability, &actual);
 	STRCMP_EQUAL(serviceName, actual);
 
