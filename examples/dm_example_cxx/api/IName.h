@@ -17,17 +17,23 @@
  * under the License.
  */
 
-#ifndef CELIX_PHASE2_H
-#define CELIX_PHASE2_H
+#ifndef CELIX_INAME_H
+#define CELIX_INAME_H
 
-#define IPHASE2_VERSION "1.0.0"
+#define INAME_VERSION "1.0.0"
 
-class IPhase2 {
-protected:
-    IPhase2() = default;
-    ~IPhase2() = default;
-public:
-    virtual double getData() = 0;
-};
+#include <string>
 
-#endif //CELIX_PHASE2_H
+namespace srv {
+    namespace info {
+        class IName {
+        protected:
+            IName() = default;
+            ~IName() = default;
+        public:
+            virtual std::string getName() = 0;
+        };
+    }
+}
+
+#endif //CELIX_INAME_H

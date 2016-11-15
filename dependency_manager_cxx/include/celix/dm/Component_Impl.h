@@ -23,6 +23,7 @@
 
 #include <memory>
 #include <iostream>
+#include <iomanip>
 
 using namespace celix::dm;
 
@@ -36,28 +37,38 @@ Component<T>::~Component() {
 
 template<class T>
 template<class I>
-Component<T>& Component<T>::addInterface(const std::string version, const Properties props) {
-    std::string name = typeName<I>();
-    if (name.empty()) {
-        std::cerr << "Cannot add interface, because type name could not be inferred. function: '" << __PRETTY_FUNCTION__ << "'\n";
+Component<T>& Component<T>::addInterfaceWithName(const std::string serviceName, const std::string version, const Properties properties) {
+    if (!serviceName.empty()) {
+        //setup c properties
+        properties_pt cProperties = properties_create();
+        properties_set(cProperties, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_CXX_LANGUAGE);
+        for (auto iter = properties.begin(); iter != properties.end(); iter++) {
+            properties_set(cProperties, (char *) iter->first.c_str(), (char *) iter->second.c_str());
+        }
+
+        T* cmpPtr = &this->getInstance();
+        I* intfPtr = static_cast<I*>(cmpPtr); //NOTE T should implement I
+
+        const char *cVersion = version.empty() ? nullptr : version.c_str();
+        component_addInterface(this->cComponent(), (char *) serviceName.c_str(), (char *) cVersion,
+                               intfPtr, cProperties);
     } else {
-        this->addInterface(name, version.c_str(), props);
+        std::cerr << "Cannot add interface with a empty name\n";
     }
+
     return *this;
 }
 
 template<class T>
-Component<T>& Component<T>::addInterface(const std::string serviceName, const std::string version, const Properties properties) {
-    properties_pt cProperties = properties_create();
-    properties_set(cProperties, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_CXX_LANGUAGE);
-    for (auto iter = properties.begin(); iter != properties.end(); iter++) {
-        properties_set(cProperties, (char*)iter->first.c_str(), (char*)iter->second.c_str());
+template<class I>
+Component<T>& Component<T>::addInterface(const std::string version, const Properties properties) {
+    //get name if not provided
+    std::string serviceName = typeName<I>();
+    if (serviceName.empty()) {
+        std::cerr << "Cannot add interface, because type name could not be inferred. function: '"  << __PRETTY_FUNCTION__ << "'\n";
     }
 
-    const char *cVersion = version.empty() ? nullptr : version.c_str();
-    component_addInterface(this->cComponent(), (char*)serviceName.c_str(), (char*)cVersion, &this->getInstance(), cProperties);
-
-    return *this;
+    return this->addInterfaceWithName<I>(serviceName, version, properties);
 };
 
 template<class T>

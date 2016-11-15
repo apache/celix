@@ -61,22 +61,21 @@ namespace celix { namespace dm {
             free(demangled_name);
         }
 #else
-        const char *templateStr = "INTERFACE_TYPENAME =";
+        const char *templateStr = "INTERFACE_TYPENAME = ";
         const size_t templateStrLen = strlen(templateStr);
 
         result = __PRETTY_FUNCTION__; //USING pretty function to retrieve the filled in template argument without using typeid()
-
-        size_t bpos = result.find(templateStr) + templateStrLen + 1; //find begin pos after INTERFACE_TYPENAME = entry
+        size_t bpos = result.find(templateStr) + templateStrLen; //find begin pos after INTERFACE_TYPENAME = entry
         size_t epos = bpos;
-        while (isalnum(result[epos]) || result[epos] == '_' || result[epos] == ';') {
+        while (isalnum(result[epos]) || result[epos] == '_' || result[epos] == ':') {
             epos += 1;
         }
         size_t len = epos - bpos;
         result = result.substr(bpos, len);
 #endif
 
-        //std::cout << "PRETTY IS '" << __PRETTY_FUNCTION__ << "'\n";
-        //std::cout << "RESULT IS '" << result << "'\n";
+//        std::cout << "PRETTY IS '" << __PRETTY_FUNCTION__ << "'\n";
+//        std::cout << "RESULT IS '" << result << "'\n";
 
         if (result.empty()) {
             std::cerr << "Cannot infer type name in function call '" << __PRETTY_FUNCTION__ << "'\n'";

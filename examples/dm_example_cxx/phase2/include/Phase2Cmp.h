@@ -20,6 +20,7 @@
 #ifndef CELIX_PHASE2CMP_H
 #define CELIX_PHASE2CMP_H
 
+#include "IName.h"
 #include "IPhase1.h"
 #include "IPhase2.h"
 #include <stdint.h>
@@ -39,9 +40,10 @@ public:
     virtual ~Phase2Cmp() { std::cout << "Destroying Phase2\n"; };
 
     void setPhase1(IPhase1* phase); //injector used by dependency manager
+    void setName(srv::info::IName* name) { std::cout << "Setting IName with name: " << name->getName() << std::endl; }
     void setLogService(const log_service_t* logSrv);
 
-    virtual double getData(); //implements IPhase2
+    double getData() override; //implements IPhase2
 private:
     IPhase1* phase1 {nullptr};
     const log_service_t* logSrv {nullptr};

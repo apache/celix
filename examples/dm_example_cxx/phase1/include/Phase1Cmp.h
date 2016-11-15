@@ -21,10 +21,11 @@
 #define CELIX_PHASE1CMP_H
 
 #include "IPhase1.h"
+#include "IName.h"
 #include <stdint.h>
 #include <stdio.h>
 
-class Phase1Cmp : public IPhase1 {
+class Phase1Cmp : public srv::info::IName, public IPhase1 {
     uint32_t counter = 0;
 public:
     Phase1Cmp() = default;
@@ -35,8 +36,9 @@ public:
     void stop();
     void deinit();
 
-    virtual int getData(); //implements IPhase1
+    int getData() override; //implements IPhase1
     virtual int infoCmd(char* line, FILE *out, FILE* err);  //implements cmd service
+    std::string getName() override;
 };
 
 #endif //CELIX_PHASE1CMP_H

@@ -17,6 +17,7 @@
  * under the License.
  */
 
+#include <IName.h>
 #include "Phase2Cmp.h"
 #include "Phase2Activator.h"
 #include "log_service.h"
@@ -41,6 +42,10 @@ void Phase2Activator::init() {
     cmp.createServiceDependency<IPhase1>()
             .setRequired(true)
             .setCallbacks(&Phase2Cmp::setPhase1);
+
+    cmp.createServiceDependency<srv::info::IName>()
+            .setVersionRange("[1.0.0,2)")
+            .setCallbacks(&Phase2Cmp::setName);
 
     cmp.createCServiceDependency<log_service_t>(OSGI_LOGSERVICE_NAME)
             .setRequired(false)

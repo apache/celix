@@ -25,6 +25,7 @@
 class IPhase1 {
 protected:
     IPhase1() = default;
+    ~IPhase1() = default;
 public:
     virtual int getData() = 0;
 };

@@ -49,6 +49,7 @@ void Phase1Activator::init() {
     createComponent(cmp)  //using a pointer a instance. Also supported is lazy initialization (default constructor needed) or a rvalue reference (move)
         .addInterface<IPhase1>(IPHASE1_VERSION)
         .addCInterface(&cmd, OSGI_SHELL_COMMAND_SERVICE_NAME, "", cmdProps)
+        .addInterface<srv::info::IName>(INAME_VERSION)
         .setCallbacks(&Phase1Cmp::init, &Phase1Cmp::start, &Phase1Cmp::stop, &Phase1Cmp::deinit);
 }
 

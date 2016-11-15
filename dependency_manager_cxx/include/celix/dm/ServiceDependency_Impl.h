@@ -354,7 +354,7 @@ ServiceDependency<T,I>& ServiceDependency<T,I>::setStrategy(DependencyUpdateStra
 template<class T, class I>
 int ServiceDependency<T,I>::invokeCallback(void(T::*fp)(I*), const void* service) {
     T *cmp = this->componentInstance;
-    I *svc = (I *) service;
+    I *svc = (I*)service;
     (cmp->*fp)(svc);
     return 0;
 };
@@ -364,7 +364,7 @@ int ServiceDependency<T,I>::invokeCallbackWithProperties(void(T::*fp)(I*, Proper
     service_registration_pt reg {nullptr};
     properties_pt props {nullptr};
     T *cmp = this->componentInstance;
-    I *svc = (I *) service;
+    I *svc = (I*)service;
     serviceReference_getServiceRegistration(ref, &reg);
     serviceRegistration_getProperties(reg, &props);
 
