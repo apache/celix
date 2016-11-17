@@ -83,7 +83,7 @@ celix_status_t importRegistration_create(bundle_context_pt context, endpoint_des
     }
 
     if (status == CELIX_SUCCESS) {
-        printf("IMPORT REGISTRATION IS %p\n", reg);
+        //printf("IMPORT REGISTRATION IS %p\n", reg);
         *out = reg;
     }
     else{
