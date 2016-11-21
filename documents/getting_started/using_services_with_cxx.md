@@ -1,4 +1,4 @@
-#Apache Celix - Using Services with C
+#Apache Celix - Using Services with C++
 
 ## Intro 
 
