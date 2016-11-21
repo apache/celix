@@ -33,7 +33,7 @@ if (RSA_TOPOLOGY_MANAGER)
 
         private/include/topology_manager.h
         public/include/tm_scope.h
-        VERSION 0.0.2
+        VERSION 0.9.0
         SYMBOLIC_NAME "apache_celix_rs_topology_manager"
         NAME
             "Apache Celix RS Topology Manager"

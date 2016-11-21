@@ -32,7 +32,7 @@ if (RSA_DISCOVERY_CONFIGURED)
     include_directories(private/include)
 
     add_bundle(discovery_configured 
-    VERSION 0.0.1
+    VERSION 0.9.0
     SYMBOLIC_NAME "apache_celix_rsa_discovery_configured"
     NAME "Apache Celix RSA Configured Discovery"    
     SOURCES

@@ -21,7 +21,7 @@ if (LOG_SERVICE)
     add_bundle(log_service
     	SYMBOLIC_NAME "apache_celix_log_service"
     	NAME "Apache Celix Log Service"
-    	VERSION "1.0.0"
+    	VERSION "1.1.0"
     	SOURCES
 			private/src/log
 			private/src/log_entry

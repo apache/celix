@@ -32,7 +32,7 @@ if (DEPENDENCY_MANAGER)
 
     add_bundle(dm_shell
         SYMBOLIC_NAME "apache_celix_dm_shell"
-        VERSION "0.0.1"
+        VERSION "1.0.0"
         NAME "Apache Celix DM Shell Commands"
         SOURCES
             private/src/dm_shell_activator

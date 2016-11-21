@@ -28,7 +28,7 @@ include_directories(
 )
 
 add_bundle(remote_service_admin_dfi 
-    VERSION 0.0.1
+    VERSION 0.9.0
     SYMBOLIC_NAME "apache_celix_remote_service_admin_dfi"
     NAME "Apache Celix Remote Service Admin Dynamic Function Interface (DFI)"
     SOURCES

@@ -5,6 +5,9 @@ Apache Celix is an implementation of the [OSGi specification](https://www.osgi.o
 
 Apache Celix is primarily developed in C and adds an additional abstraction, in the form of a library, to support for C++. 
 
+##Bundles
+OSGi uses bundles as medium to (run-time) add and remove modules (additional functionality) to OSGi applications. For Java, OSGi bundles are jars with a OSGi specific manifest. For Apache Celix bundles are zip files containing an OSGi manifest (with some differences) and possible modules in the form of shared libraries. One of these modules can be the bundle activator in which case the Apache Celix framework will lookup the bundle create, start, stop and destroy symbols to manage the lifecycle of the bundle; This can be used bootstrap the bundles functionality. 
+
 ##C and Objects
 C is a procedural programming language and as result has no direct support for the notion of a object. 
 To be able to follow the OSGi specification, a standard mapping from C to Java is used. This mapping takes care of how instances, parameters, return values and exceptions (error codes) work in Apache Celix.
@@ -103,7 +106,7 @@ Consumers can dynamically lookup the services providing a filter to specify what
 ##C services in Apache Celix
 As mentioned OSGi uses Java Interfaces to define a service. Since C does not have Interfaces as compilable unit, this is not possible for Celix.  To be able to define a service which hides implementation details, Celix uses structs with function pointers.
  
-See [Apache Celix Best Practices](../best_practices/readme.md) for a more in depth look at services and service usage.
+See [Apache Celix - Getting Started Guide](https://github.com/apache/celix/blob/master/documents/getting_started/readme.md) for a more in depth look at services and service usage.
  
 ##Impact of dynamic services
 Services in Apache Celix are dynamic, meaning that they can come and go at any moment. 

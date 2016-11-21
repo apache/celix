@@ -12,3 +12,29 @@ Remarks:
    - Launcher
    - C Dependency Manager
    - C++ Dependency Manager
+
+
+* Components and version
+ - Shell Tui: 1.1.0
+ - Shell Bonjour: 0.1.0 
+ - Shell: 2.0.0
+ - Remote Shell: 0.0.2 
+ - Log Writer: 1.1.0
+ - Log Service: 1.1.0 
+ - Event Admin: 0.0.0 
+ - Device Access: 0.0.2 
+ - Deployment Admin: 0.0.2 
+ - Config Admin: 0.0.1 
+ - Remote Services
+   - Remote Service Admin Dfi: 0.9.0 
+   - Remote Service Admin HTTP: 0.9.0 
+   - Remote Service Admin SHM: 0.9.0 
+   - Topology Manager: 0.9.0 
+   - ETCD Discovery: 0.9.0 
+   - Configured Discovery: 0.9.0 
+ - C Dependency Manager: 1.0.0
+ - C++ Dependency Manager: 1.0.0
+
+Misc: 
+ - Utils: 2.0.0
+ - Dfi: 1.0.0

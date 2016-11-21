@@ -19,7 +19,7 @@ if (LOG_WRITER_SYSLOG)
     find_package(Syslog REQUIRED)
 
     add_bundle(log_writer_syslog 
-        VERSION 1.0.0
+        VERSION 1.1.0
         SYMBOLIC_NAME "apache_celix_log_writer_syslog"
         NAME "Apache Celix Log Writer Syslog"
         SOURCES

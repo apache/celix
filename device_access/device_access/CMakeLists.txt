@@ -17,7 +17,7 @@
 
 add_bundle(device_manager
 	SYMBOLIC_NAME "apache_celix_device_manager"
-	VERSION "0.0.1"
+	VERSION "0.0.2"
 	NAME "Apache Celix Device Access Device Manager"
 	SOURCES
 		private/src/activator

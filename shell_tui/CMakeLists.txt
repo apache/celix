@@ -19,7 +19,7 @@ if (SHELL_TUI)
 
     add_bundle(shell_tui
     	SYMBOLIC_NAME "apache_celix_shell_tui"
-    	VERSION "1.0.0"
+    	VERSION "1.1.0"
     	NAME "Apache Celix Shell TUI"
     	SOURCES 
     		private/src/activator 

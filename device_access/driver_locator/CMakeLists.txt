@@ -17,7 +17,7 @@
 
 add_bundle(driver_locator
 	SYMBOLIC_NAME "apache_celix_driver_locator"
-	VERSION "0.0.1"
+	VERSION "0.0.2"
 	NAME "Apache Celix Device Access Driver Locator"
 	SOURCES
 		private/src/activator

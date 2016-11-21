@@ -35,7 +35,7 @@ if (RSA_DISCOVERY_ETCD)
 	include_directories("private/include")
     
 	add_bundle(discovery_etcd 
-        VERSION 0.0.1
+        VERSION 0.9.0
         SYMBOLIC_NAME "apache_celix_rsa_discovery_etcd"
         NAME "Apache Celix RSA Discovery ETCD"
         SOURCES

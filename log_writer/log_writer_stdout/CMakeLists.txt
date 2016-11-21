@@ -17,7 +17,7 @@
 
 add_bundle(log_writer
 	SYMBOLIC_NAME "apache_celix_log_writer"
-	VERSION "1.0.0"
+	VERSION "1.1.0"
 	NAME "Apache Celix Log Writer"
 	SOURCES
 		${PROJECT_SOURCE_DIR}/log_writer/log_writer/private/src/log_writer_activator
