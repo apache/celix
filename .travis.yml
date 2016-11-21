@@ -43,7 +43,7 @@ before_install:
   - if [ "$TRAVIS_OS_NAME" = "osx" ]; then brew update && brew install lcov libffi cmake && brew link --force libffi; fi
 
 before_script:
-    - wget https://github.com/cpputest/cpputest.github.io/blob/master/releases/cpputest-3.7.1.tar.gz?raw=true -O /tmp/cpputest.tar.gz
+    - wget https://github.com/cpputest/cpputest/releases/download/v3.8/cpputest-3.8.tar.gz -O /tmp/cpputest.tar.gz
     - tar -xzvf /tmp/cpputest.tar.gz -C /tmp
     - if [ "$CC" = "clang" ]; then export CXX="clang++"; fi && cd /tmp/cpputest-3.7.1 && ./configure --prefix=/usr/local && make && sudo make install && cd -
     - cd /tmp/cpputest-3.7.1 && ./configure --prefix=/usr/local && make && sudo make install && cd -

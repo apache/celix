@@ -78,7 +78,7 @@ static int registry_callback_t_isEqual(const void* object1, const void* object2)
        		callback1.unregister == callback2.unregister;
 }
 
-static char * registry_callback_t_toString(const void* object)
+static const char * registry_callback_t_toString(const void* object)
 {
 	char buff[512];
 	registry_callback_t callback = *(registry_callback_t*) object;
@@ -91,7 +91,7 @@ static char * registry_callback_t_toString(const void* object)
 int main(int argc, char** argv) {
 	mock_c()->installComparator("registry_callback_t", registry_callback_t_isEqual, registry_callback_t_toString);
 	int ret = RUN_ALL_TESTS(argc, argv);
-	mock_c()->removeAllComparators();
+	mock_c()->removeAllComparatorsAndCopiers();
 	return ret;
 }
 

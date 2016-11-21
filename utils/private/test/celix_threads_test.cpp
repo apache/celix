@@ -64,7 +64,7 @@ static int celix_thread_t_equals(const void * object, const void * compareTo){
 			thread1->threadInitialized == thread2->threadInitialized;
 }
 
-static char * celix_thread_t_toString(const void * object){
+static const char * celix_thread_t_toString(const void * object){
 	celix_thread_t * thread = (celix_thread_t*) object;
 	char buff[512];
 	snprintf(buff, 512, "thread: %lu, threadInitialized: %s", (unsigned long)thread->thread, (thread->threadInitialized ? "true" : "false"));
@@ -125,7 +125,7 @@ TEST_GROUP(celix_thread_kill) {
 	void teardown(void) {
 		sigaction(SIGUSR1, &sigactold, &sigact);
 
-		mock_c()->removeAllComparators();
+		mock_c()->removeAllComparatorsAndCopiers();
 	}
 };
 
