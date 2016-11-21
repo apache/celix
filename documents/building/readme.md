@@ -75,7 +75,7 @@ export WS=${HOME}/workspace
 cd ${WS}
 
 #clone the repro
-git clone --single-branch --branch develop https://github.com/apache/celix.git
+git clone --single-branch --branch master https://github.com/apache/celix.git
 ```
 
 ##Building Apache Celix
