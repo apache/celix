@@ -32,16 +32,15 @@ The `DependencyManager` act as an entry point to create (DM) Components.
 
 The (DM) `Component` manages the life cycle of a component (of the template type T). For example, when all required service dependencies are available the `Component` will call the `start` specified callback function of the component.
 
-The `Component::setInstance` can be used to set the component instance to used. If no instance is set the (DM) `Component` will (lazy) create a component instance using the default constructor.
-The `Component::addInterface` can be used to specify one additional C service provided by the component.
-The `Component::addCInterface` can be used to specify one additional C++ service provided by the component.
-The template method `Component::createServiceDependency` can be used to specify one additional typed C++ service dependency.
-The template method `Component::createCServiceDependency` can be used to specify one additional typed C service dependency.
+- The `Component::setInstance` method can be used to set the component instance to used. If no instance is set the (DM) `Component` will (lazy) create a component instance using the default constructor.
+- The `Component::addInterface` method can be used to specify one additional C++ service provided by the component.
+- The `Component::addCInterface` method can be used to specify one additional C service provided by the component.
+- The `Component::createServiceDependency` method can be used to specify one additional typed C++ service dependency.
+- The `Component::createCServiceDependency` method can be used to specify one additional typed C service dependency.
 
 ### ServiceDependency and CServiceDependency
 
-The (DM) `ServiceDependency` can be used to specify C++ service dependencies for a component.
-The (DM) `CServiceDependency` can be used to specify C service dependencies for a component.
+The (DM) `ServiceDependency` can be used to specify C++ service dependencies for a component and the (DM) `CServiceDependency` can be used to specify C service dependencies for a component.
 
 When these dependencies are set to required the `Component` will ensure that components will only be started when all required dependencies are available and stop the component if any of the required dependencies are removed.
 This feature should prevent a lot of boiler plating code compared to using a service tracker or services references directly. 
@@ -49,9 +48,9 @@ This feature should prevent a lot of boiler plating code compared to using a ser
 A service dependency update strategy can also be specified (suspend or locking. Default this strategy is set to `DependencyUpdateStrategy::suspend` this strategy will stop and start (suspend) a component when any of the specified service dependencies changes (are removed, added or modified).
 When correctly used this strategy removes the need for locking services during updates/invocation. See the dependency manager_cxx example for more details.
 
-The `(C)ServiceDependency::setCallbacks` function can be used to specify the function callback used when services are added, set, removed or modified. 
-The `(C)ServiceDependency::setRequired` function can be used to specify if a service dependency is required.
-The `(C)ServiceDependency::setStrategy` function can be used to specify a service dependency update strategy (suspend or locking).
+- The `(C)ServiceDependency::setCallbacks` methods can be used to specify the function callback used when services are added, set, removed or modified. 
+- The `(C)ServiceDependency::setRequired` methods can be used to specify if a service dependency is required.
+- The `(C)ServiceDependency::setStrategy` methods can be used to specify the service dependency update strategy (suspend or locking).
 
 ### References
 
@@ -59,4 +58,4 @@ For more information examples please see
 
 - [The C++ Dependency Manager API](include/celix/dm): The c++ dependency manager header files
 - [Dm C++ example](../examples/dm_example_cxx): A DM C++ example.
-- [Getting Started: Using Services with C++](../documents/getting_started/using_services_with_cxx.md): A introduction how to work with services using the C dependency manager
+- [Getting Started: Using Services with C++](../documents/getting_started/using_services_with_cxx.md): A introduction how to work with services using the C++ dependency manager
