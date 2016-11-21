@@ -363,7 +363,7 @@ void *pthread_getspecific(pthread_key_t key)
 #define ARRAY_SIZE(array) (sizeof(array) / sizeof(array[0]))
 
 #if !defined(DEBUG_TRACE)
-#if defined(DEBUG)
+#if defined(CWDEBUG)
 
 static void DEBUG_TRACE_FUNC(const char *func, unsigned line, PRINTF_FORMAT_STRING(const char *fmt), ...) PRINTF_ARGS(3, 4);
 
@@ -386,7 +386,7 @@ static void DEBUG_TRACE_FUNC(const char *func, unsigned line, const char *fmt, .
 
 #else
 #define DEBUG_TRACE(fmt, ...)
-#endif /* DEBUG */
+#endif /* CWDEBUG */
 #endif /* DEBUG_TRACE */
 
 #if defined(MEMORY_DEBUGGING)
@@ -3284,7 +3284,7 @@ static void open_auth_file(struct mg_connection *conn, const char *path,
     if (gpass != NULL) {
         /* Use global passwords file */
         if (!mg_fopen(conn, gpass, "r", filep)) {
-#ifdef DEBUG
+#ifdef CWDEBUG
             mg_cry(conn, "fopen(%s): %s", gpass, strerror(ERRNO));
 #endif
         }
@@ -3296,7 +3296,7 @@ static void open_auth_file(struct mg_connection *conn, const char *path,
         mg_snprintf(conn, name, sizeof(name), "%s%c%s",
                     path, '/', PASSWORDS_FILE_NAME);
         if (!mg_fopen(conn, name, "r", filep)) {
-#ifdef DEBUG
+#ifdef CWDEBUG
             mg_cry(conn, "fopen(%s): %s", name, strerror(ERRNO));
 #endif
         }
@@ -3310,7 +3310,7 @@ static void open_auth_file(struct mg_connection *conn, const char *path,
         mg_snprintf(conn, name, sizeof(name), "%.*s%c%s",
                     (int) (e - p), p, '/', PASSWORDS_FILE_NAME);
         if (!mg_fopen(conn, name, "r", filep)) {
-#ifdef DEBUG
+#ifdef CWDEBUG
             mg_cry(conn, "fopen(%s): %s", name, strerror(ERRNO));
 #endif
         }

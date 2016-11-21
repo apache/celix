@@ -363,26 +363,21 @@ celix_status_t etcdWatcher_create(discovery_pt discovery, bundle_context_pt cont
 
     status = etcd_init((char*)etcd_server, etcd_port);
 
-    printf(" ININT\n");
     if (status == CELIX_SUCCESS) {
         etcdWatcher_addOwnFramework(*watcher);
         status = celixThreadMutex_create(&(*watcher)->watcherLock, NULL);
-        printf(" 111\n");
     }
 
     if (status == CELIX_SUCCESS) {
         if (celixThreadMutex_lock(&(*watcher)->watcherLock) == CELIX_SUCCESS) {
             status = celixThread_create(&(*watcher)->watcherThread, NULL, etcdWatcher_run, *watcher);
             if (status == CELIX_SUCCESS) {
-                printf(" STARTEDTSTARTED\n");
                 (*watcher)->running = true;
             }
             celixThreadMutex_unlock(&(*watcher)->watcherLock);
         }
     }
 
-
-    printf(" DONEDONE\n");
     return status;
 }
 
