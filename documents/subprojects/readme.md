@@ -6,6 +6,7 @@ Apache Celix is organized into several subprojects. The following subproject are
 * [C Dependency Manager](../../dependency_manager) - A C component/dependency model for use through an API provided as library.
 * [C++ Dependency Manager](../../dependency_manager_cxx) - A C++ component/dependency model for use through an API provided as library.
 * [Device Access](../../device_access) - An implementation of the OSGi Device Access specification adapted to C.
+* [Etcd library](../../etcdlib) - A C library that interfaces with ETCD. 
 * [Examples](../../examples) - A Selection of examples showing how the framework can be used.
 * [Log Service](../../log_service) - An implementation of the OSGi Log Service adapated to C.
 * [Log Writer](../../log_writer) - A simple log writer for use in combination with the Log Service.
