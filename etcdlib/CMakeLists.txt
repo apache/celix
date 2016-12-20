@@ -15,11 +15,29 @@
 # specific language governing permissions and limitations
 # under the License.
 
+
+if (NOT PROJECT_SOURCE_DIR) 
+    #If PROJECT_SOURCE_DIR is not defined, this CMakeLists will
+    #act as a top level project. Making the etcdlib useable 
+    #stand-alone
+
+    cmake_minimum_required (VERSION 3.2)
+    project(ETCDLIB 
+        VERSION 1.0.0
+        LANGUAGES C CXX
+    )
+
+    include(GNUInstallDirs)
+    set(ETCDLIB_CMP ${CMAKE_INSTALL_DEFAULT_COMPONENT_NAME})
+else()
+    set(ETCDLIB_CMP framework)
+endif ()
+
 find_package(CURL REQUIRED)
 find_package(Jansson REQUIRED)
 
 include_directories(
-        ${CURL_INCLUDE_DIR}
+        ${CURL_INCLUDE_DIRS}
         ${JANSSON_INCLUDE_DIRS}
         private/include
         public/include
@@ -30,9 +48,9 @@ add_library(etcdlib SHARED
 )
 
 set_target_properties(etcdlib PROPERTIES "SOVERSION" 1)
-target_link_libraries(etcdlib ${CURL_LIBRARIES} ${JANSSON_LIBRARY})
+target_link_libraries(etcdlib ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
 
-add_library(etcdlib_static  STATIC
+add_library(etcdlib_static STATIC
     private/src/etcd.c
 )
 
@@ -40,6 +58,6 @@ set_target_properties(etcdlib_static PROPERTIES "SOVERSION" 1)
 target_link_libraries(etcdlib_static ${CURL_LIBRARIES} ${JANSSON_LIBRARY})
 
 
-install(TARGETS etcdlib  etcdlib_static  DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
+install(TARGETS etcdlib etcdlib_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${ETCDLIB_CMP})
 FILE(GLOB files "public/include/*.h")
-INSTALL(FILES ${files} DESTINATION include/celix/etcdlib COMPONENT framework)
+INSTALL(FILES ${files} DESTINATION include/etcdlib COMPONENT framework)

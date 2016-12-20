@@ -17,10 +17,18 @@
  *under the License.
  */
 
-#ifndef CELIX_ETCDLIB_H_
-#define CELIX_ETCDLIB_H_
+#ifndef ETCDLIB_H_
+#define ETCDLIB_H_
 
 #include <stdbool.h>
+
+/*
+ * If set etcdlib will _not_ initialize curl
+ * using curl_global_init. Note that 
+ * curl_global_init can be called mutiple 
+ * times, but is _not_ thread-safe.
+ */
+#define ETCDLIB_NO_CURL_INITIALIZATION (1)
 
 typedef void (*etcd_key_value_callback) (const char *key, const char *value, void* arg);
 
@@ -28,9 +36,10 @@ typedef void (*etcd_key_value_callback) (const char *key, const char *value, voi
  * @desc Initialize the ETCD-LIB  with the server/port where Etcd can be reached.
  * @param const char* server. String containing the IP-number of the server.
  * @param int port. Port number of the server.
+ * @param int flags. bitwise flags to control etcdlib initialization. 
  * @return 0 on success, non zero otherwise.
  */
-int etcd_init(const char* server, int port);
+int etcd_init(const char* server, int port, int flags);
 
 /**
  * @desc Retrieve a single value from Etcd.
@@ -91,4 +100,4 @@ int etcd_del(const char* key);
  */
 int etcd_watch(const char* key, long long index, char** action, char** prevValue, char** value, char** rkey, long long* modifiedIndex);
 
-#endif /*CELIX_ETCDLIB_H_ */
+#endif /*ETCDLIB_H_ */

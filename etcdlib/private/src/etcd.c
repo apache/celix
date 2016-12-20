@@ -64,11 +64,17 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
 /**
  * etcd_init
  */
-int etcd_init(const char* server, int port) {
+int etcd_init(const char* server, int port, int flags) {
+        int status = 0;
         etcd_server = server;
         etcd_port = port;
 
-        return curl_global_init(CURL_GLOBAL_ALL) != 0;
+        if ((flags & ETCDLIB_NO_CURL_INITIALIZATION) == 0) {
+            //NO_CURL_INITIALIZATION flag not set
+            status = curl_global_init(CURL_GLOBAL_ALL);
+        }
+
+        return status;
 }
 
 
