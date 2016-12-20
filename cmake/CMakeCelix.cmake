@@ -22,9 +22,6 @@ if (ANDROID)
 	add_definitions( -DANDROID )
 endif ()
 
-include_directories("framework/public/include")
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
 include(cmake_celix/Dependencies)
 include(cmake_celix/Packaging)
 include(cmake_celix/PackagingLegacy)

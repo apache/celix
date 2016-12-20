@@ -67,7 +67,7 @@ if (DEPENDENCY_MANAGER)
 
    	include_directories("public/include")
    	include_directories("private/include")
-    include_directories("../shell/public/include")
+    include_directories("${PROJECT_SOURCE_DIR}/shell/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     target_link_libraries(dependency_manager_static celix_framework)
     

@@ -34,7 +34,7 @@
 #include <stddef.h>
 #include <errno.h>
 
-#include "framework_exports.h"
+#include "exports.h"
 
 /*!
  * Helper macro which check the current status and executes the provided expression if the
@@ -62,7 +62,7 @@ typedef int celix_status_t;
  * Return a readable string for the given error code.
  *
  */
-FRAMEWORK_EXPORT char *celix_strerror(celix_status_t errorcode, char *buffer, size_t bufferSize);
+UTILS_EXPORT char *celix_strerror(celix_status_t errorcode, char *buffer, size_t bufferSize);
 
 /*!
  * Error code indicating successful execution of the function.

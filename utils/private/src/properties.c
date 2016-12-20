@@ -60,7 +60,7 @@ properties_pt properties_load(const char* filename) {
 	return props;
 }
 
-FRAMEWORK_EXPORT properties_pt properties_loadWithStream(FILE *file) {
+properties_pt properties_loadWithStream(FILE *file) {
 	properties_pt props = NULL;
 
 

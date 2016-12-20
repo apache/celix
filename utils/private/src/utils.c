@@ -127,7 +127,7 @@ celix_status_t utils_isNumeric(const char *number, bool *ret) {
 }
 
 
-FRAMEWORK_EXPORT int utils_compareServiceIdsAndRanking(unsigned long servId, long servRank, unsigned long otherServId, long otherServRank) {
+int utils_compareServiceIdsAndRanking(unsigned long servId, long servRank, unsigned long otherServId, long otherServRank) {
 	int result;
 
 	if (servId == otherServId) {

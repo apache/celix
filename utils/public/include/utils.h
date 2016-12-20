@@ -31,19 +31,19 @@
 
 #include "celix_errno.h"
 #include "celixbool.h"
-#include "framework_exports.h"
+#include "exports.h"
 #include "celix_threads.h"
 
-FRAMEWORK_EXPORT unsigned int utils_stringHash(const void* string);
-FRAMEWORK_EXPORT int utils_stringEquals(const void* string, const void* toCompare);
-FRAMEWORK_EXPORT char * string_ndup(const char *s, size_t n);
-FRAMEWORK_EXPORT char * utils_stringTrim(char * string);
-FRAMEWORK_EXPORT bool utils_isStringEmptyOrNull(const char * const str);
+UTILS_EXPORT unsigned int utils_stringHash(const void* string);
+UTILS_EXPORT int utils_stringEquals(const void* string, const void* toCompare);
+UTILS_EXPORT char * string_ndup(const char *s, size_t n);
+UTILS_EXPORT char * utils_stringTrim(char * string);
+UTILS_EXPORT bool utils_isStringEmptyOrNull(const char * const str);
 
-FRAMEWORK_EXPORT int utils_compareServiceIdsAndRanking(unsigned long servId, long servRank, unsigned long otherServId, long otherServRank);
+UTILS_EXPORT int utils_compareServiceIdsAndRanking(unsigned long servId, long servRank, unsigned long otherServId, long otherServRank);
 
-FRAMEWORK_EXPORT celix_status_t thread_equalsSelf(celix_thread_t thread, bool *equals);
+UTILS_EXPORT celix_status_t thread_equalsSelf(celix_thread_t thread, bool *equals);
 
-FRAMEWORK_EXPORT celix_status_t utils_isNumeric(const char *number, bool *ret);
+UTILS_EXPORT celix_status_t utils_isNumeric(const char *number, bool *ret);
 
 #endif /* UTILS_H_ */

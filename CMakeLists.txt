@@ -72,13 +72,19 @@ include(UseDoxygen)
 # Default bundle version
 set(DEFAULT_VERSION 1.0.0)
 
-## New sub project must use a buildoption to be able to enable/disable the project using the CMake Editor
-## Sub projects depending on another sub project automatically enable these dependencies
-## For this to work, the order off "add_subdirectory" has to be correct (ie backwards)
+#utils, dfi and etcdlib are standalone
+#(e.g. no dependency on celix framework
+add_subdirectory(utils)
+add_subdirectory(dfi)
+add_subdirectory(etcdlib)
+
+add_subdirectory(framework)
+
+include_directories(framework/public/include)
+add_subdirectory(launcher)
 add_subdirectory(config_admin)
 add_subdirectory(device_access)
 add_subdirectory(deployment_admin)
-add_subdirectory(etcdlib)
 add_subdirectory(remote_services)
 add_subdirectory(remote_shell)
 add_subdirectory(shell_bonjour)
@@ -90,12 +96,6 @@ add_subdirectory(log_service)
 #add_subdirectory(event_admin)# event_admin is unstable
 add_subdirectory(dependency_manager)
 add_subdirectory(dependency_manager_cxx)
-#add_subdirectory(scr) scr still needs APR
-
-add_subdirectory(launcher)
-add_subdirectory(framework)
-add_subdirectory(utils)
-add_subdirectory(dfi)
 
 #Example as last, because some example will check if underlining options are enabled
 add_subdirectory(examples)

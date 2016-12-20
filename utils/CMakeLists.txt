@@ -19,41 +19,24 @@ celix_subproject(UTILS "Option to build the utilities library" ON)
 if (UTILS) 
     cmake_minimum_required(VERSION 2.6)
     
+if (ANDROID)
     add_definitions(-DUSE_FILE32API)
-    #aux_source_directory("private/src" SRC)
+endif ()
+
     include_directories("private/include")
     include_directories("public/include")
     add_library(celix_utils SHARED 
                 private/src/array_list.c
-                public/include/array_list.h 
-                private/include/array_list_private.h 
-
                 private/src/hash_map.c
-                public/include/hash_map.h 
-                private/include/hash_map_private.h
-
                 private/src/linked_list.c
                 private/src/linked_list_iterator.c
-                public/include/linked_list.h
-                public/include/linked_list_iterator.h 
-                private/include/linked_list_private.h
-
-                public/include/exports.h
-                
                 private/src/celix_threads.c
-                public/include/celix_threads.h
-
                 private/src/version.c
-                private/include/version_private.h
-                public/include/version.h
-		
                 private/src/version_range.c
-                private/include/version_range_private.h
-                public/include/version_range.h
-
                 private/src/thpool.c
-                public/include/thpool.h
-        )
+                private/src/properties.c
+                private/src/utils.c
+    )
 
     set_target_properties(celix_utils PROPERTIES "SOVERSION" 2)
     
@@ -79,8 +62,8 @@ if (UTILS)
 
             include_directories(${CUNIT_INCLUDE_DIRS})
             include_directories(${CPPUTEST_INCLUDE_DIR})
-            include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-            include_directories("${PROJECT_SOURCE_DIR}/utils/private/include")
+            include_directories(public/include)
+            include_directories(utils/private/include)
             
             add_executable(hash_map_test private/test/hash_map_test.cpp)
             target_link_libraries(hash_map_test celix_utils ${CPPUTEST_LIBRARY} pthread)
@@ -96,17 +79,29 @@ if (UTILS)
             add_executable(thread_pool_test private/test/thread_pool_test.cpp)
             target_link_libraries(thread_pool_test celix_utils ${CPPUTEST_LIBRARY} pthread) 
 
+            add_executable(properties_test private/test/properties_test.cpp)
+            target_link_libraries(properties_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} celix_utils pthread)
+
+            add_executable(utils_test private/test/utils_test.cpp)
+            target_link_libraries(utils_test ${CPPUTEST_LIBRARY} celix_utils pthread)
+		
+            configure_file(private/resources-test/properties.txt ${CMAKE_BINARY_DIR}/utils/resources-test/properties.txt COPYONLY)
+
             add_test(NAME run_array_list_test COMMAND array_list_test)
             add_test(NAME run_hash_map_test COMMAND hash_map_test)
             add_test(NAME run_celix_threads_test COMMAND celix_threads_test)
             add_test(NAME run_thread_pool_test COMMAND thread_pool_test)
             add_test(NAME run_linked_list_test COMMAND linked_list_test)
+            add_test(NAME run_properties_test COMMAND properties_test)
+            add_test(NAME run_utils_test COMMAND utils_test)
         
             SETUP_TARGET_FOR_COVERAGE(array_list_test array_list_test ${CMAKE_BINARY_DIR}/coverage/array_list_test/array_list_test)
             SETUP_TARGET_FOR_COVERAGE(hash_map hash_map_test ${CMAKE_BINARY_DIR}/coverage/hash_map_test/hash_map_test)
             SETUP_TARGET_FOR_COVERAGE(celix_threads_test celix_threads_test ${CMAKE_BINARY_DIR}/coverage/celix_threads_test/celix_threads_test)
             SETUP_TARGET_FOR_COVERAGE(thread_pool_test thread_pool_test ${CMAKE_BINARY_DIR}/coverage/thread_pool_test/thread_pool_test)
             SETUP_TARGET_FOR_COVERAGE(linked_list_test linked_list_test ${CMAKE_BINARY_DIR}/coverage/linked_list_test/linked_list_test)
+            SETUP_TARGET_FOR_COVERAGE(properties_test properties_test ${CMAKE_BINARY_DIR}/coverage/properties_test/properties_test)
+            SETUP_TARGET_FOR_COVERAGE(utils_test utils_test ${CMAKE_BINARY_DIR}/coverage/utils_test/utils_test)
 
    endif(ENABLE_TESTING AND UTILS-TESTS)
 endif (UTILS)
