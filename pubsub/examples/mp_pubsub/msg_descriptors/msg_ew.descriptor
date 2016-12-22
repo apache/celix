@@ -1,0 +1,9 @@
+:header
+type=message
+name=ew
+version=1.0.0
+:annotations
+classname=org.example.Ew
+:types
+:message
+{Di area color}
