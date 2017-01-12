@@ -30,14 +30,13 @@
 
 unsigned int utils_stringHash(const void* strPtr) {
     const char* string = strPtr;
-    unsigned int hash = 5381;
-    unsigned int i = 0;
-    unsigned int len = strlen(string);
+    unsigned int hc = 5381;
+    char ch;
+    while((ch = *string++) != '\0'){
+        hc = (hc << 5) + hc + ch;
+    }
 
-    for(i=0; i < len; i++)
-    { hash = (hash << 5) + (*string) + hash; }
-
-    return hash;
+    return hc;
 }
 
 int utils_stringEquals(const void* string, const void* toCompare) {
