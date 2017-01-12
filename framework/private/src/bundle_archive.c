@@ -28,6 +28,13 @@
 #include <string.h>
 #include <time.h>
 #include <sys/stat.h>
+
+#ifdef __APPLE__
+//FIXME: compiling using travix and max osx is giving compile error for unknown type name  '__darwin_pthread_mutex_t'
+//including pthread.h to remove compile error
+#include <pthread.h>
+#endif
+
 #include <dirent.h>
 #include <unistd.h>
 
