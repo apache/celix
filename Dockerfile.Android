@@ -87,7 +87,7 @@ RUN curl -L -O http://downloads.sourceforge.net/libuuid/libuuid-1.0.3.tar.gz && 
 
 
 # zlib
-RUN curl -L -O http://zlib.net/zlib-1.2.10.tar.gz && 
+RUN curl -L -O http://zlib.net/zlib-1.2.10.tar.gz && \
 	tar -xvzf zlib-*.tar.gz && \
 	cd zlib-* && \
 	./configure --prefix=/build/output/zlib && make && make install
