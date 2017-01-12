@@ -36,6 +36,7 @@
 #endif
 
 #include <dirent.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "bundle_archive.h"
