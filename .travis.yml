@@ -1,13 +1,13 @@
 
 sudo: required
 dist: trusty
-osx_image: xcode8.2
+#osx_image: xcode8.2
 
 language: c
 
 os:
     - linux
-    - osx
+      #    - osx
 
 compiler:
     - gcc
