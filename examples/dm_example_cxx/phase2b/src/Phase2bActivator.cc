@@ -33,7 +33,7 @@ void Phase2Activator::init() {
     Properties props {};
     props["name"] = "phase2b";
 
-    Component<Phase2Cmp>& cmp = createComponent<Phase2Cmp>()
+    Component<Phase2Cmp>& cmp = mng.createComponent<Phase2Cmp>()
         .addInterface<IPhase2>(IPHASE2_VERSION, props);
 
     cmp.createServiceDependency<IPhase1>()

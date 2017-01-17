@@ -28,7 +28,7 @@ DmActivator* DmActivator::create(DependencyManager& mng) {
 
 void BazActivator::init() {
 
-    Component<Baz>& cmp = createComponent<Baz>()
+    Component<Baz>& cmp = mng.createComponent<Baz>()
         .setCallbacks(nullptr, &Baz::start, &Baz::stop, nullptr);
 
     cmp.createServiceDependency<IAnotherExample>()

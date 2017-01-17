@@ -155,7 +155,7 @@ public:
     void stop();
     void deinit();
 
-    virtual double method(int arg1, double arg2); //implementation of IAnotherExample::method
+    virtual double method(int arg1, double arg2) override; //implementation of IAnotherExample::method
     int cMethod(int arg1, double arg2, double *out); //implementation of example_t->method;
 };
 
@@ -177,7 +177,7 @@ private:
     example_t cExample {nullptr, nullptr};
 public:
     BarActivator(DependencyManager& mng) : DmActivator(mng) {}
-    virtual void init();
+    virtual void init() override;
 };
 
 #endif //BAR_ACTIVATOR_H
@@ -242,7 +242,7 @@ void BarActivator::init() {
         return bar->cMethod(arg1, arg2, out);
     };
 
-    createComponent(bar)  //using a pointer a instance. Also supported is lazy initialization (default constructor needed) or a rvalue reference (move)
+    mng.createComponent(bar)  //using a pointer a instance. Also supported is lazy initialization (default constructor needed) or a rvalue reference (move)
         .addInterface<IAnotherExample>(IANOTHER_EXAMPLE_VERSION, props)
         .addCInterface(&this->cExample, EXAMPLE_NAME, EXAMPLE_VERSION, cProps)
         .setCallbacks(&Bar::init, &Bar::start, &Bar::stop, &Bar::deinit);
@@ -296,7 +296,7 @@ class FooActivator : public DmActivator {
 private:
 public:
     FooActivator(DependencyManager& mng) : DmActivator(mng) {}
-    virtual void init();
+    virtual void init() override;
 };
 
 #endif //FOO_ACTIVATOR_H
@@ -360,7 +360,7 @@ DmActivator* DmActivator::create(DependencyManager& mng) {
 
 void FooActivator::init() {
 
-    Component<Foo>& cmp = createComponent<Foo>()
+    Component<Foo>& cmp = mng.createComponent<Foo>()
         .setCallbacks(nullptr, &Foo::start, &Foo::stop, nullptr);
 
     cmp.createServiceDependency<IAnotherExample>()
@@ -433,7 +433,7 @@ class BazActivator : public DmActivator {
 private:
 public:
     BazActivator(DependencyManager& mng) : DmActivator(mng) {}
-    virtual void init();
+    virtual void init() override;
 };
 
 #endif //BAZ_ACTIVATOR_H
@@ -521,7 +521,7 @@ DmActivator* DmActivator::create(DependencyManager& mng) {
 
 void BazActivator::init() {
 
-    Component<Baz>& cmp = createComponent<Baz>()
+    Component<Baz>& cmp = mng.createComponent<Baz>()
         .setCallbacks(nullptr, &Baz::start, &Baz::stop, nullptr);
 
     cmp.createServiceDependency<IAnotherExample>()

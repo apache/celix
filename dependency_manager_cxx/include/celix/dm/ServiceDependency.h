@@ -67,6 +67,7 @@ namespace celix { namespace dm {
 
     template<class T>
     class TypedServiceDependency :  public BaseServiceDependency {
+        using cmpType = T;
     protected:
         T* componentInstance {nullptr};
     public:
@@ -81,6 +82,7 @@ namespace celix { namespace dm {
 
     template<class T, typename I>
     class CServiceDependency : public TypedServiceDependency<T> {
+        using type = I;
     private:
         std::string name {};
         std::string filter {};
@@ -174,6 +176,7 @@ namespace celix { namespace dm {
 
     template<class T, class I>
     class ServiceDependency : public TypedServiceDependency<T> {
+        using type = I;
     private:
         bool addCxxLanguageFilter {true};
         std::string name {};

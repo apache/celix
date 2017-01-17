@@ -29,7 +29,7 @@ DmActivator* DmActivator::create(DependencyManager& mng) {
 }
 
 void Phase3Activator::init() {
-    Component<Phase3Cmp>& cmp = createComponent<Phase3Cmp>() //NOTE no setInstance -> lazy initialization using the default constructor
+    Component<Phase3Cmp>& cmp = mng.createComponent<Phase3Cmp>() //NOTE no setInstance -> lazy initialization using the default constructor
             .setCallbacks(nullptr, &Phase3Cmp::start, &Phase3Cmp::stop, nullptr);
 
     cmp.createServiceDependency<IPhase2>()

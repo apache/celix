@@ -27,7 +27,7 @@ DmActivator* DmActivator::create(DependencyManager& mng) {
 }
 
 void BarActivator::init() {
-    std::shared_ptr<Bar> bar = std::shared_ptr<Bar>{new Bar{}};
+    auto bar = std::unique_ptr<Bar>{new Bar{}};
 
     Properties props;
     props["meta.info.key"] = "meta.info.value";
@@ -41,7 +41,7 @@ void BarActivator::init() {
         return bar->cMethod(arg1, arg2, out);
     };
 
-    createComponent(bar)  //using a pointer a instance. Also supported is lazy initialization (default constructor needed) or a rvalue reference (move)
+    mng.createComponent(std::move(bar))  //using a pointer a instance. Also supported is lazy initialization (default constructor needed) or a rvalue reference (move)
         .addInterface<IAnotherExample>(IANOTHER_EXAMPLE_VERSION, props)
         .addCInterface(&this->cExample, EXAMPLE_NAME, EXAMPLE_VERSION, cProps)
         .setCallbacks(&Bar::init, &Bar::start, &Bar::stop, &Bar::deinit);

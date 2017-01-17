@@ -24,6 +24,7 @@
 #include <memory>
 #include <iostream>
 #include <iomanip>
+#include <type_traits>
 
 using namespace celix::dm;
 
@@ -42,8 +43,8 @@ Component<T>& Component<T>::addInterfaceWithName(const std::string serviceName, 
         //setup c properties
         properties_pt cProperties = properties_create();
         properties_set(cProperties, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_CXX_LANGUAGE);
-        for (auto iter = properties.begin(); iter != properties.end(); iter++) {
-            properties_set(cProperties, (char *) iter->first.c_str(), (char *) iter->second.c_str());
+        for (const auto& pair : properties) {
+            properties_set(cProperties, (char *) pair.first.c_str(), (char *) pair.second.c_str());
         }
 
         T* cmpPtr = &this->getInstance();
@@ -63,6 +64,7 @@ template<class T>
 template<class I>
 Component<T>& Component<T>::addInterface(const std::string version, const Properties properties) {
     //get name if not provided
+    static_assert(std::is_base_of<I,T>::value, "Component T must implement Interface I");
     std::string serviceName = typeName<I>();
     if (serviceName.empty()) {
         std::cerr << "Cannot add interface, because type name could not be inferred. function: '"  << __PRETTY_FUNCTION__ << "'\n";
@@ -72,11 +74,13 @@ Component<T>& Component<T>::addInterface(const std::string version, const Proper
 };
 
 template<class T>
-Component<T>& Component<T>::addCInterface(const void* svc, const std::string serviceName, const std::string version, const Properties properties) {
+template<class I>
+Component<T>& Component<T>::addCInterface(const I* svc, const std::string serviceName, const std::string version, const Properties properties) {
+    static_assert(std::is_pod<I>::value, "Service I must be a 'Plain Old Data' object");
     properties_pt cProperties = properties_create();
     properties_set(cProperties, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
-    for (auto iter = properties.begin(); iter != properties.end(); iter++) {
-        properties_set(cProperties, (char*)iter->first.c_str(), (char*)iter->second.c_str());
+    for (const auto& pair : properties) {
+        properties_set(cProperties, (char*)pair.first.c_str(), (char*)pair.second.c_str());
     }
 
     const char *cVersion = version.empty() ? nullptr : version.c_str();
@@ -159,14 +163,16 @@ bool Component<T>::isValid() const {
 
 template<class T>
 T& Component<T>::getInstance() {
-    if (this->refInstance.size() == 1) {
-        return refInstance.front();
+    if (this->valInstance.size() == 1) {
+        return valInstance.front();
+    } else if (this->sharedInstance.get() != nullptr) {
+        return *this->sharedInstance;
     } else {
         if (this->instance.get() == nullptr) {
 #ifdef __EXCEPTIONS
-            this->instance = std::shared_ptr<T> {new T()};
+            this->instance = std::unique_ptr<T> {new T()};
 #else
-            this->instance = std::shared_ptr<T> {new(std::nothrow) T()};
+            this->instance = std::unique_ptr<T> {new(std::nothrow) T()};
 
 #endif
         }
@@ -176,14 +182,26 @@ T& Component<T>::getInstance() {
 
 template<class T>
 Component<T>& Component<T>::setInstance(std::shared_ptr<T> inst) {
-    this->instance = inst;
+    this->valInstance.clear();
+    this->instance = std::unique_ptr<T> {nullptr};
+    this->sharedInstance = inst;
     return *this;
 }
 
 template<class T>
-Component<T>& Component<T>::setInstance(T&& inst) {
-    this->refInstance.clear();
-    this->refInstance.push_back(std::move(inst));
+Component<T>& Component<T>::setInstance(std::unique_ptr<T>&& inst) {
+    this->valInstance.clear();
+    this->sharedInstance = std::shared_ptr<T> {nullptr};
+    this->instance = std::move(inst);
+    return *this;
+}
+
+template<class T>
+Component<T>& Component<T>::setInstance(T inst) {
+    this->instance = std::unique_ptr<T> {nullptr};
+    this->sharedInstance = std::shared_ptr<T> {nullptr};
+    this->valInstance.clear();
+    this->valInstance.push_back(std::forward<T>(inst));
     return *this;
 }
 

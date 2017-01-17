@@ -28,7 +28,7 @@ class FooActivator : public DmActivator {
 private:
 public:
     FooActivator(DependencyManager& mng) : DmActivator(mng) {}
-    virtual void init();
+    virtual void init() override;
 };
 
 #endif //FOO_ACTIVATOR_H

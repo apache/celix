@@ -17,8 +17,8 @@
  * under the License.
  */
 
-#ifndef CELIX_DEPENDENCYMANAGER_H
-#define CELIX_DEPENDENCYMANAGER_H
+#ifndef CELIX_DM_DEPENDENCYMANAGER_H
+#define CELIX_DM_DEPENDENCYMANAGER_H
 
 
 #include "celix/dm/types.h"
@@ -46,20 +46,52 @@ namespace celix { namespace dm {
         const bundle_context_pt bundleContext() const;
         const dm_dependency_manager_pt cDependencyManager() const;
 
+
         /**
-         * Creates and adds a new DM Component for a component of type T and instance inst
-         * If inst if nullptr lazy initializion is used.
+         * Creates and adds a new DM Component for a component of type T.
          *
          * @return Returns a reference to the DM Component
          */
         template<class T>
-        Component<T>& createComponent(std::shared_ptr<T> inst = std::shared_ptr<T>{nullptr}) {
-            Component<T>* cmp = Component<T>::create(this->context);;
+        Component<T>& createComponent() {
+            Component<T>* cmp = Component<T>::create(this->context);
             if (cmp->isValid()) {
-                cmp->setInstance(inst);
                 this->components.push_back(std::unique_ptr<BaseComponent> {cmp});
             }
             return *cmp;
+        }
+
+        /**
+         * Creates and adds a new DM Component for a component of type T and setting
+         * the instance using a unique ptr.
+         *
+         * @return Returns a reference to the DM Component
+         */
+        template<class T>
+        Component<T>& createComponent(std::unique_ptr<T>&& rhs) {
+            return this->createComponent<T>().setInstance(std::move(rhs));
+        }
+
+        /**
+         * Creates and adds a new DM Component for a component of type T and setting
+         * the instance using a shared ptr.
+         *
+         * @return Returns a reference to the DM Component
+         */
+        template<class T>
+        Component<T>& createComponent(std::shared_ptr<T> rhs) {
+            return this->createComponent<T>().setInstance(rhs);
+        }
+
+        /**
+         * Creates and adds a new DM Component for a component of type T and setting
+         * the instance.
+         *
+         * @return Returns a reference to the DM Component
+         */
+        template<class T>
+        Component<T>& createComponent(T rhs) {
+            return this->createComponent<T>().setInstance(std::forward(rhs));
         }
 
         /**
@@ -75,4 +107,4 @@ namespace celix { namespace dm {
 
 }}
 
-#endif //CELIX_DEPENDENCYMANAGER_H
+#endif //CELIX_DM_DEPENDENCYMANAGER_H

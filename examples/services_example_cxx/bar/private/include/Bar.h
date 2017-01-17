@@ -33,7 +33,7 @@ public:
     void stop();
     void deinit();
 
-    virtual double method(int arg1, double arg2); //implementation of IAnotherExample::method
+    virtual double method(int arg1, double arg2) override; //implementation of IAnotherExample::method
     int cMethod(int arg1, double arg2, double *out); //implementation of example_t->method;
 };
 

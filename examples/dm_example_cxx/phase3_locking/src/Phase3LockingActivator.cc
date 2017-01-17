@@ -21,6 +21,8 @@
 #include "Phase3LockingCmp.h"
 #include "Phase3LockingActivator.h"
 
+#include <memory>
+
 using namespace celix::dm;
 
 
@@ -29,8 +31,9 @@ DmActivator* DmActivator::create(DependencyManager& mng) {
 }
 
 void Phase3LockingActivator::init() {
-    Component<Phase3LockingCmp>& cmp = createComponent<Phase3LockingCmp>()
-        //NOTE no setInstance -> lazy initialization using the default constructor
+    auto inst = std::shared_ptr<Phase3LockingCmp> {new Phase3LockingCmp {}};
+
+    Component<Phase3LockingCmp>& cmp = mng.createComponent<Phase3LockingCmp>(inst)  //set inst using a shared ptr
         .setCallbacks(nullptr, &Phase3LockingCmp::start, &Phase3LockingCmp::stop, nullptr);
 
     cmp.createServiceDependency<IPhase2>()

@@ -28,7 +28,7 @@ class BazActivator : public DmActivator {
 private:
 public:
     BazActivator(DependencyManager& mng) : DmActivator(mng) {}
-    virtual void init();
+    virtual void init() override;
 };
 
 #endif //BAZ_ACTIVATOR_H

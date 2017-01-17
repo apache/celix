@@ -30,7 +30,7 @@ private:
     example_t cExample {nullptr, nullptr};
 public:
     BarActivator(DependencyManager& mng) : DmActivator(mng) {}
-    virtual void init();
+    virtual void init() override;
 };
 
 #endif //BAR_ACTIVATOR_H

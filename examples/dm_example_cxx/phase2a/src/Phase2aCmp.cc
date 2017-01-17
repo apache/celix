@@ -22,8 +22,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-Phase2Cmp::Phase2Cmp(Phase2Cmp&& other) : phase1(other.phase1), logSrv{other.logSrv} {
-    std::cout << "Move constructor Phase2Cmp called\n";
+Phase2Cmp::Phase2Cmp(Phase2Cmp&& other) noexcept : phase1(other.phase1), logSrv{other.logSrv} {
+    std::cout << "Move constructor Phase2aCmp called\n";
     other.phase1 = nullptr;
     other.logSrv = nullptr;
 }

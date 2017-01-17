@@ -25,8 +25,7 @@
 
 #include <map>
 #include <string>
-#include <list>
-#include <tuple>
+#include <vector>
 
 namespace celix { namespace dm {
 
@@ -53,10 +52,12 @@ namespace celix { namespace dm {
 
     template<class T>
     class Component : public BaseComponent {
+        using type = T;
     private:
-        std::shared_ptr<T> instance {nullptr};
-        std::list<T> refInstance {};
-        std::list<std::shared_ptr<BaseServiceDependency>> dependencies {};
+        std::unique_ptr<T> instance {nullptr};
+        std::shared_ptr<T> sharedInstance {nullptr};
+        std::vector<T> valInstance {};
+        std::vector<std::shared_ptr<BaseServiceDependency>> dependencies {};
 
         void (T::*initFp)() = {};
         void (T::*startFp)() = {};
@@ -89,19 +90,26 @@ namespace celix { namespace dm {
         T& getInstance();
 
         /**
-         * Set the component instance using a (shared) pointer.
+         * Set the component instance using a shared pointer.
          *
          * @return the DM Component reference for chaining (fluent API)
          */
         Component<T>& setInstance(std::shared_ptr<T> inst);
 
         /**
-         * Set the component instance using rvalue reference
+         * Set the component instance using a unique pointer.
+         *
+         * @return the DM Component reference for chaining (fluent API)
+         */
+        Component<T>& setInstance(std::unique_ptr<T>&& inst);
+
+        /**
+         * Set the component instance using a value or rval reference
          * The DM Component will contain the instance.
          *
          * @return the DM Component reference for chaining (fluent API)
          */
-        Component<T>& setInstance(T&& inst);
+        Component<T>& setInstance(T inst);
 
         /**
          * Adds a C++ interface to provide as service to the Celix framework.
@@ -131,7 +139,7 @@ namespace celix { namespace dm {
          * @param version The version of the interface (e.g. "1.0.0"), can be an empty string
          * @param properties To (meta) properties to provide with the service
          */
-        Component<T>& addCInterface(const void* svc, const std::string serviceName, const std::string version = std::string{}, const Properties properties = Properties{});
+        template<class I> Component<T>& addCInterface(const I* svc, const std::string serviceName, const std::string version = std::string{}, const Properties properties = Properties{});
 
 
         /**
