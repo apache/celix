@@ -262,9 +262,18 @@ SET(CPACK_INCLUDE_TOPLEVEL_DIRECTORY \"0\")
         #do nothing
     else() #ACTIVATOR 
         bundle_private_libs(${BUNDLE_TARGET_NAME} ${BUNDLE_ACTIVATOR})
-        get_filename_component(ACT_NAME ${BUNDLE_ACTIVATOR} NAME)
-        set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_ACTIVATOR" ${ACT_NAME})
+        
+        if(TARGET ${BUNDLE_ACTIVATOR})
+            set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_ACTIVATOR" "$<TARGET_SONAME_FILE_NAME:${BUNDLE_ACTIVATOR}>")
+        elseif(IS_ABSOLUTE ${BUNDLE_ACTIVATOR} AND EXISTS${BUNDLE_ACTIVATOR})
+            get_filename_component(ACT_NAME ${BUNDLE_ACTIVATOR} NAME)
+            set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_ACTIVATOR" "${ACT_NAME}>")
+        else()
+            message(FATAL_ERROR "Provided library (${BUNDLE_ACTIVATOR}) is not a target nor a absolute path to an existing library")
+        endif()
+
     endif()
+
 
     bundle_private_libs(${BUNDLE_TARGET_NAME} ${BUNDLE_PRIVATE_LIBRARIES})
     bundle_export_libs(${BUNDLE_TARGET_NAME} ${BUNDLE_EXPORT_LIBRARIES})
