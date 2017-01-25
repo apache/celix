@@ -25,7 +25,7 @@
 /*
  * If set etcdlib will _not_ initialize curl
  * using curl_global_init. Note that 
- * curl_global_init can be called mutiple 
+ * curl_global_init can be called multiple
  * times, but is _not_ thread-safe.
  */
 #define ETCDLIB_NO_CURL_INITIALIZATION (1)
