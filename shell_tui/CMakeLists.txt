@@ -15,8 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 celix_subproject(SHELL_TUI "Option to enable building the Shell Textual User Interface bundles" ON DEPS LAUNCHER SHELL)
+option(BUILD_USE_READLINE "Enables readline functionality(i.e. history scroll back) for shell_tui" FALSE)
 if (SHELL_TUI)
-
+    if(BUILD_USE_READLINE)
+      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_READLINE")
+    endif(BUILD_USE_READLINE)
+    
     add_bundle(shell_tui
     	SYMBOLIC_NAME "apache_celix_shell_tui"
     	VERSION "1.1.0"
@@ -32,4 +36,7 @@ if (SHELL_TUI)
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/shell/public/include")
     target_link_libraries(shell_tui celix_framework)
+    if(BUILD_USE_READLINE)
+      target_link_libraries(shell_tui readline)
+    endif(BUILD_USE_READLINE)  
 endif (SHELL_TUI)
