@@ -24,6 +24,7 @@ if (RSA_DISCOVERY_ETCD)
 	include_directories("${CURL_INCLUDE_DIR}")
 	include_directories("${JANSSON_INCLUDE_DIR}")
 	include_directories("${LIBXML2_INCLUDE_DIR}")
+	include_directories("${PROJECT_SOURCE_DIR}/etcdlib/public/include")
 	include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 	include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/private/include")
 	include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include")
@@ -40,7 +41,6 @@ if (RSA_DISCOVERY_ETCD)
         NAME "Apache Celix RSA Discovery ETCD"
         SOURCES
 		private/src/discovery_impl.c
-		private/src/etcd.c
 	    private/src/etcd_watcher.c
 		${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/discovery_activator.c
 		${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/discovery.c
@@ -56,6 +56,6 @@ if (RSA_DISCOVERY_ETCD)
 
 	install_bundle(discovery_etcd)
 		
-	target_link_libraries(discovery_etcd celix_framework ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES} ${JANSSON_LIBRARIES})
+	target_link_libraries(discovery_etcd celix_framework etcdlib ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES} ${JANSSON_LIBRARIES})
 
 endif (RSA_DISCOVERY_ETCD)

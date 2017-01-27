@@ -83,7 +83,9 @@ if (RSA_EXAMPLES)
             BUNDLES discovery_etcd topology_manager remote_service_admin_http calculator shell shell_tui log_service log_writer
         )
         deploy_bundles_dir(remote-services-etcd DIR_NAME "endpoints"
-            BUNDLES org.apache.celix.calc.api.Calculator_endpoint
+            BUNDLES
+            	org.apache.celix.calc.api.Calculator_endpoint
+            	org.apache.celix.calc.api.Calculator2_endpoint
         )
 
         add_deploy("remote-services-etcd-client" 

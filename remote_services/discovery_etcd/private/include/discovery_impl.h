@@ -45,9 +45,7 @@
 
 #define DEFAULT_POLL_ENDPOINTS ""
 
-#define MAX_ROOTNODE_LENGTH		 64
-#define MAX_LOCALNODE_LENGTH	256
-
+#define FREE_MEM(ptr) if(ptr) {free(ptr); ptr = NULL;}
 
 struct discovery {
 	bundle_context_pt context;
