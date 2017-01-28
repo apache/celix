@@ -43,7 +43,9 @@
 
 #define PROMPT "-> "
 
-shell_tui_activator_pt act = NULL;
+#ifdef USE_READLINE
+static shell_tui_activator_pt act = NULL;
+#endif
 
 #ifdef USE_READLINE
 void rl_callback_handler(char *dline) {
@@ -63,12 +65,12 @@ void rl_callback_handler(char *dline) {
 }
 
 char ** tab_completion(const char *text, int start, int end) {
-    array_list_pt list;
+    array_list_pt list ;
     act->shell->getCommands(act->shell->shell, &list);
     char **a;
     int size = arrayList_size(list);
     a = calloc(sizeof(char*),  size + 2); // 1 extra for string to be used and one for terminating NULL
-    a[0] = "";
+    a[0] = strdup("");
     unsigned int j = 1;
     for(unsigned int i = 0; i < size; i++) {
         if(text && strlen(text) > 0) {
@@ -81,6 +83,7 @@ char ** tab_completion(const char *text, int start, int end) {
     }
     // In case of one option, use that option
     if(j == 2) {
+        free(a[0]);
         a[0] = a[1];
         a[1] = 0;
     }
