@@ -27,8 +27,11 @@
 #ifndef FRAMEWORK_EVENT_H_
 #define FRAMEWORK_EVENT_H_
 
-enum framework_event_type
-{
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+enum framework_event_type {
 	OSGI_FRAMEWORK_EVENT_STARTED = 0x00000001,
 	OSGI_FRAMEWORK_EVENT_ERROR = 0x00000002,
 	OSGI_FRAMEWORK_EVENT_PACKAGES_REFRESHED = 0x00000004,
@@ -43,16 +46,26 @@ enum framework_event_type
 
 typedef enum framework_event_type framework_event_type_e;
 typedef struct framework_event *framework_event_pt;
+#ifdef __cplusplus
+}
+#endif
 
 #include "service_reference.h"
 #include "bundle.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct framework_event {
 	long bundleId;
-	char* bundleSymbolicName;
+	char *bundleSymbolicName;
 	framework_event_type_e type;
 	celix_status_t errorCode;
 	char *error;
 };
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* FRAMEWORK_EVENT_H_ */

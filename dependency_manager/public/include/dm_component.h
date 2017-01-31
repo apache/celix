@@ -27,14 +27,15 @@
 #ifndef COMPONENT_H_
 #define COMPONENT_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #include <bundle_context.h>
 #include <celix_errno.h>
 
 #include "dm_service_dependency.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct dm_component_struct *dm_component_pt;
 

@@ -32,10 +32,23 @@ typedef struct capability *capability_pt;
 #include "hash_map.h"
 #include "module.h"
 
-celix_status_t capability_create(module_pt module, hash_map_pt directives, hash_map_pt attributes, capability_pt *capability);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+celix_status_t
+capability_create(module_pt module, hash_map_pt directives, hash_map_pt attributes, capability_pt *capability);
+
 celix_status_t capability_destroy(capability_pt capability);
-celix_status_t capability_getServiceName(capability_pt capability, const char** serviceName);
+
+celix_status_t capability_getServiceName(capability_pt capability, const char **serviceName);
+
 celix_status_t capability_getVersion(capability_pt capability, version_pt *version);
+
 celix_status_t capability_getModule(capability_pt capability, module_pt *module);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CAPABILITY_H_ */

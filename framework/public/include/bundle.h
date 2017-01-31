@@ -40,37 +40,63 @@ typedef struct bundle * bundle_pt;
 #include "celix_log.h"
 #include "celix_threads.h"
 
-FRAMEWORK_EXPORT celix_status_t bundle_create(bundle_pt * bundle);
-FRAMEWORK_EXPORT celix_status_t bundle_createFromArchive(bundle_pt * bundle, framework_pt framework, bundle_archive_pt archive);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+FRAMEWORK_EXPORT celix_status_t bundle_create(bundle_pt *bundle);
+
+FRAMEWORK_EXPORT celix_status_t
+bundle_createFromArchive(bundle_pt *bundle, framework_pt framework, bundle_archive_pt archive);
+
 FRAMEWORK_EXPORT celix_status_t bundle_destroy(bundle_pt bundle);
 
 FRAMEWORK_EXPORT celix_status_t bundle_isSystemBundle(bundle_pt bundle, bool *systemBundle);
+
 FRAMEWORK_EXPORT celix_status_t bundle_getArchive(bundle_pt bundle, bundle_archive_pt *archive);
+
 FRAMEWORK_EXPORT celix_status_t bundle_getCurrentModule(bundle_pt bundle, module_pt *module);
+
 FRAMEWORK_EXPORT array_list_pt bundle_getModules(bundle_pt bundle);
-FRAMEWORK_EXPORT void * bundle_getHandle(bundle_pt bundle);
-FRAMEWORK_EXPORT void bundle_setHandle(bundle_pt bundle, void * handle);
+
+FRAMEWORK_EXPORT void *bundle_getHandle(bundle_pt bundle);
+
+FRAMEWORK_EXPORT void bundle_setHandle(bundle_pt bundle, void *handle);
+
 FRAMEWORK_EXPORT activator_pt bundle_getActivator(bundle_pt bundle);
+
 FRAMEWORK_EXPORT celix_status_t bundle_setActivator(bundle_pt bundle, activator_pt activator);
+
 FRAMEWORK_EXPORT celix_status_t bundle_getContext(bundle_pt bundle, bundle_context_pt *context);
+
 FRAMEWORK_EXPORT celix_status_t bundle_setContext(bundle_pt bundle, bundle_context_pt context);
-FRAMEWORK_EXPORT celix_status_t bundle_getEntry(bundle_pt bundle, const char* name, char** entry);
+
+FRAMEWORK_EXPORT celix_status_t bundle_getEntry(bundle_pt bundle, const char *name, char **entry);
 
 FRAMEWORK_EXPORT celix_status_t bundle_start(bundle_pt bundle);
+
 FRAMEWORK_EXPORT celix_status_t bundle_startWithOptions(bundle_pt bundle, int options);
-FRAMEWORK_EXPORT celix_status_t bundle_update(bundle_pt bundle, const char* inputFile);
+
+FRAMEWORK_EXPORT celix_status_t bundle_update(bundle_pt bundle, const char *inputFile);
+
 FRAMEWORK_EXPORT celix_status_t bundle_stop(bundle_pt bundle);
+
 FRAMEWORK_EXPORT celix_status_t bundle_stopWithOptions(bundle_pt bundle, int options);
+
 FRAMEWORK_EXPORT celix_status_t bundle_uninstall(bundle_pt bundle);
 
 FRAMEWORK_EXPORT celix_status_t bundle_setState(bundle_pt bundle, bundle_state_e state);
+
 FRAMEWORK_EXPORT celix_status_t bundle_setPersistentStateInactive(bundle_pt bundle);
+
 FRAMEWORK_EXPORT celix_status_t bundle_setPersistentStateUninstalled(bundle_pt bundle);
 
 FRAMEWORK_EXPORT void uninstallBundle(bundle_pt bundle);
 
-FRAMEWORK_EXPORT celix_status_t bundle_revise(bundle_pt bundle, const char* location, const char* inputFile);
+FRAMEWORK_EXPORT celix_status_t bundle_revise(bundle_pt bundle, const char *location, const char *inputFile);
+
 FRAMEWORK_EXPORT celix_status_t bundle_addModule(bundle_pt bundle, module_pt module);
+
 FRAMEWORK_EXPORT celix_status_t bundle_closeModules(bundle_pt bundle);
 
 // Service Reference Functions
@@ -79,24 +105,35 @@ FRAMEWORK_EXPORT array_list_pt getUsingBundles(service_reference_pt reference);
 FRAMEWORK_EXPORT int compareTo(service_reference_pt a, service_reference_pt b);
 
 FRAMEWORK_EXPORT celix_status_t bundle_getState(bundle_pt bundle, bundle_state_e *state);
+
 FRAMEWORK_EXPORT celix_status_t bundle_isLockable(bundle_pt bundle, bool *lockable);
+
 FRAMEWORK_EXPORT celix_status_t bundle_getLockingThread(bundle_pt bundle, celix_thread_t *thread);
+
 FRAMEWORK_EXPORT celix_status_t bundle_lock(bundle_pt bundle, bool *locked);
+
 FRAMEWORK_EXPORT celix_status_t bundle_unlock(bundle_pt bundle, bool *unlocked);
 
 FRAMEWORK_EXPORT celix_status_t bundle_closeAndDelete(bundle_pt bundle);
+
 FRAMEWORK_EXPORT celix_status_t bundle_close(bundle_pt bundle);
 
 FRAMEWORK_EXPORT celix_status_t bundle_refresh(bundle_pt bundle);
+
 FRAMEWORK_EXPORT celix_status_t bundle_getBundleId(bundle_pt bundle, long *id);
 
 FRAMEWORK_EXPORT celix_status_t bundle_getRegisteredServices(bundle_pt bundle, array_list_pt *list);
+
 FRAMEWORK_EXPORT celix_status_t bundle_getServicesInUse(bundle_pt bundle, array_list_pt *list);
 
 FRAMEWORK_EXPORT celix_status_t bundle_setFramework(bundle_pt bundle, framework_pt framework);
+
 FRAMEWORK_EXPORT celix_status_t bundle_getFramework(bundle_pt bundle, framework_pt *framework);
 
-FRAMEWORK_EXPORT celix_status_t bundle_getBundleLocation(bundle_pt bundle, const char** location);
+FRAMEWORK_EXPORT celix_status_t bundle_getBundleLocation(bundle_pt bundle, const char **location);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* BUNDLE_H_ */

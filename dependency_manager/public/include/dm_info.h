@@ -26,13 +26,14 @@
 #ifndef CELIX_DM_INFO_SERVICE_H
 #define CELIX_DM_INFO_SERVICE_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 
 #include <stdbool.h>
 #include "array_list.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define DM_INFO_SERVICE_NAME "dm_info"
 

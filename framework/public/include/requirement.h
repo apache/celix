@@ -32,12 +32,22 @@ typedef struct requirement *requirement_pt;
 #include "capability.h"
 #include "hash_map.h"
 #include "version_range.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 celix_status_t requirement_create(hash_map_pt directives, hash_map_pt attributes, requirement_pt *requirement);
+
 celix_status_t requirement_destroy(requirement_pt requirement);
+
 celix_status_t requirement_getVersionRange(requirement_pt requirement, version_range_pt *range);
-celix_status_t requirement_getTargetName(requirement_pt requirement, const char** targetName);
+
+celix_status_t requirement_getTargetName(requirement_pt requirement, const char **targetName);
 
 celix_status_t requirement_isSatisfied(requirement_pt requirement, capability_pt capability, bool *inRange);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* REQUIREMENT_H_ */

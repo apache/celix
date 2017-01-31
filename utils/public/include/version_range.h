@@ -37,10 +37,13 @@
 #include "celix_errno.h"
 #include "version.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 /**
  * Type definition for the version_range_pt abstract data type.
  */
-typedef struct versionRange * version_range_pt;
+typedef struct versionRange *version_range_pt;
 
 /**
  * Creates a new <code>version_range_pt</code>.
@@ -54,7 +57,9 @@ typedef struct versionRange * version_range_pt;
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_ENOMEM If allocating memory for <code>versionRange</code> failed.
  */
-celix_status_t versionRange_createVersionRange(version_pt low, bool isLowInclusive, version_pt high, bool isHighInclusive, version_range_pt *versionRange);
+celix_status_t
+versionRange_createVersionRange(version_pt low, bool isLowInclusive, version_pt high, bool isHighInclusive,
+                                version_range_pt *versionRange);
 
 /**
  * Creates an infinite version range using ::version_createEmptyVersion for the low version,
@@ -146,10 +151,10 @@ celix_status_t versionRange_getHighVersion(version_range_pt versionRange, versio
  * 		- CELIX_ILLEGAL_ARGUMENT If the numerical components are negative,
  * 		  	the qualifier string is invalid or <code>versionStr</code> is impropertly formatted.
  */
-celix_status_t versionRange_parse(const char* rangeStr, version_range_pt *range);
+celix_status_t versionRange_parse(const char *rangeStr, version_range_pt *range);
 
-/**
- * @}
- */
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* VERSION_RANGE_H_ */

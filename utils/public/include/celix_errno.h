@@ -36,6 +36,10 @@
 
 #include "exports.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*!
  * Helper macro which check the current status and executes the provided expression if the
  * status is still CELIX_SUCCESS (0)
@@ -108,5 +112,8 @@ UTILS_EXPORT char *celix_strerror(celix_status_t errorcode, char *buffer, size_t
 /**
  * \}
  */
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* CELIX_ERRNO_H_ */

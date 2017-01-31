@@ -30,13 +30,24 @@
 #include <stdio.h>
 #include "framework.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int celixLauncher_launch(const char *configFile, framework_pt *framework);
+
 int celixLauncher_launchWithStream(FILE *config, framework_pt *framework);
+
 int celixLauncher_launchWithProperties(properties_pt config, framework_pt *framework);
 
 void celixLauncher_stop(framework_pt framework);
+
 void celixLauncher_destroy(framework_pt framework);
 
 void celixLauncher_waitForShutdown(framework_pt framework);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //CELIX_LAUNCHER_H

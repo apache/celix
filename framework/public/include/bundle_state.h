@@ -27,8 +27,11 @@
 #ifndef BUNDLE_STATE_H_
 #define BUNDLE_STATE_H_
 
-enum bundleState
-{
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+enum bundleState {
 	OSGI_FRAMEWORK_BUNDLE_UNKNOWN = 0x00000000,
 	OSGI_FRAMEWORK_BUNDLE_UNINSTALLED = 0x00000001,
 	OSGI_FRAMEWORK_BUNDLE_INSTALLED = 0x00000002,
@@ -39,5 +42,8 @@ enum bundleState
 };
 
 typedef enum bundleState bundle_state_e;
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* BUNDLE_STATE_H_ */

@@ -32,23 +32,34 @@
 #include "hash_map.h"
 #include "exports.h"
 #include "celix_errno.h"
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 typedef hash_map_pt properties_pt;
 
 UTILS_EXPORT properties_pt properties_create(void);
-UTILS_EXPORT void properties_destroy(properties_pt properties);
-UTILS_EXPORT properties_pt properties_load(const char* filename);
-UTILS_EXPORT properties_pt properties_loadWithStream(FILE *stream);
-UTILS_EXPORT void properties_store(properties_pt properties, const char* file, const char* header);
 
-UTILS_EXPORT const char* properties_get(properties_pt properties, const char* key);
-UTILS_EXPORT const char* properties_getWithDefault(properties_pt properties, const char* key, const char* defaultValue);
-UTILS_EXPORT void properties_set(properties_pt properties, const char* key, const char* value);
+UTILS_EXPORT void properties_destroy(properties_pt properties);
+
+UTILS_EXPORT properties_pt properties_load(const char *filename);
+
+UTILS_EXPORT properties_pt properties_loadWithStream(FILE *stream);
+
+UTILS_EXPORT void properties_store(properties_pt properties, const char *file, const char *header);
+
+UTILS_EXPORT const char *properties_get(properties_pt properties, const char *key);
+
+UTILS_EXPORT const char *properties_getWithDefault(properties_pt properties, const char *key, const char *defaultValue);
+
+UTILS_EXPORT void properties_set(properties_pt properties, const char *key, const char *value);
 
 UTILS_EXPORT celix_status_t properties_copy(properties_pt properties, properties_pt *copy);
 
 #define PROPERTIES_FOR_EACH(props, key) \
-	for(hash_map_iterator_t iter = hashMapIterator_construct(props); \
-		hashMapIterator_hasNext(&iter), (key) = (const char*)hashMapIterator_nextKey(&iter);) 
+    for(hash_map_iterator_t iter = hashMapIterator_construct(props); \
+        hashMapIterator_hasNext(&iter), (key) = (const char*)hashMapIterator_nextKey(&iter);)
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* PROPERTIES_H_ */

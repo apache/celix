@@ -36,10 +36,23 @@ typedef struct serviceRegistration * service_registration_pt;
 #include "bundle.h"
 #include "framework_exports.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 FRAMEWORK_EXPORT celix_status_t serviceRegistration_unregister(service_registration_pt registration);
-FRAMEWORK_EXPORT celix_status_t serviceRegistration_getProperties(service_registration_pt registration, properties_pt *properties);
-FRAMEWORK_EXPORT celix_status_t serviceRegistration_setProperties(service_registration_pt registration, properties_pt properties);
-FRAMEWORK_EXPORT celix_status_t serviceRegistration_getServiceName(service_registration_pt registration, const char **serviceName);
+
+FRAMEWORK_EXPORT celix_status_t
+serviceRegistration_getProperties(service_registration_pt registration, properties_pt *properties);
+
+FRAMEWORK_EXPORT celix_status_t
+serviceRegistration_setProperties(service_registration_pt registration, properties_pt properties);
+
+FRAMEWORK_EXPORT celix_status_t
+serviceRegistration_getServiceName(service_registration_pt registration, const char **serviceName);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* SERVICE_REGISTRATION_H_ */

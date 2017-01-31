@@ -29,13 +29,14 @@
 #ifndef DM_ACTIVATOR_BASE_H_
 #define DM_ACTIVATOR_BASE_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #include "bundle_context.h"
 #include "celix_errno.h"
 #include "dm_dependency_manager.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * Should be implemented by a bundle specific DM activator.

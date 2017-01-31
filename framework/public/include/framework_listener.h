@@ -33,12 +33,19 @@ typedef struct framework_listener *framework_listener_pt;
 
 #include "celix_errno.h"
 #include "framework_event.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 struct framework_listener {
-	void * handle;
-	celix_status_t (*frameworkEvent)(void * listener, framework_event_pt event);
+	void *handle;
+
+	celix_status_t (*frameworkEvent)(void *listener, framework_event_pt event);
 };
 
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif /* FRAMEWORK_LISTENER_H_ */

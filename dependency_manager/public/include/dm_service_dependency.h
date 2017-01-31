@@ -27,13 +27,13 @@
 #ifndef DM_SERVICE_DEPENDENCY_H_
 #define DM_SERVICE_DEPENDENCY_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "service_reference.h"
 #include "celix_errno.h"
 #include "dm_info.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 
 typedef struct dm_service_dependency *dm_service_dependency_pt;

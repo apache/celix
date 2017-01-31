@@ -35,13 +35,23 @@ typedef struct framework * framework_pt;
 #include "bundle.h"
 #include "properties.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // #TODO: Move to FrameworkFactory according the OSGi Spec
 FRAMEWORK_EXPORT celix_status_t framework_create(framework_pt *framework, properties_pt config);
+
 FRAMEWORK_EXPORT celix_status_t framework_destroy(framework_pt framework);
 
 FRAMEWORK_EXPORT celix_status_t fw_init(framework_pt framework);
+
 FRAMEWORK_EXPORT celix_status_t framework_waitForStop(framework_pt framework);
 
 FRAMEWORK_EXPORT celix_status_t framework_getFrameworkBundle(framework_pt framework, bundle_pt *bundle);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* FRAMEWORK_H_ */

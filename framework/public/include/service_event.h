@@ -28,9 +28,11 @@
  */
 #ifndef SERVICE_EVENT_H_
 #define SERVICE_EVENT_H_
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-enum serviceEventType
-{
+enum serviceEventType {
 	OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED = 0x00000001,
 	OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED = 0x00000002,
 	OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING = 0x00000004,
@@ -40,15 +42,24 @@ enum serviceEventType
 typedef enum serviceEventType service_event_type_e;
 
 typedef struct serviceEvent *service_event_pt;
+#ifdef __cplusplus
+}
+#endif
 
 #include "service_reference.h"
 
 #include "service_reference.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 struct serviceEvent {
 	service_reference_pt reference;
 	service_event_type_e type;
 };
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* SERVICE_EVENT_H_ */
 

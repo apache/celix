@@ -31,6 +31,10 @@
 
 #include "celix_errno.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Extracts the bundle pointed to by bundleName to the given root.
  *
@@ -41,7 +45,11 @@
  * 		- CELIX_SUCCESS when no errors are encountered.
  * 		- CELIX_FILE_IO_EXCEPTION If the zip file cannot be extracted.
  */
-celix_status_t extractBundle(const char* bundleName, const char* revisionRoot);
+celix_status_t extractBundle(const char *bundleName, const char *revisionRoot);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* ARCHIVE_H_ */
 

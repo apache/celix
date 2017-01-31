@@ -34,11 +34,20 @@ typedef struct bundle_listener *bundle_listener_pt;
 #include "celix_errno.h"
 #include "bundle_event.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 struct bundle_listener {
-	void * handle;
-	celix_status_t (*bundleChanged)(void * listener, bundle_event_pt event);
+	void *handle;
+
+	celix_status_t (*bundleChanged)(void *listener, bundle_event_pt event);
 };
 
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif /* service_listener_t_H_ */

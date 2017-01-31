@@ -35,6 +35,9 @@ typedef struct listener_hook_service *listener_hook_service_pt;
 #include "bundle_context.h"
 
 #define OSGI_FRAMEWORK_LISTENER_HOOK_SERVICE_NAME "listener_hook_service"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 struct listener_hook_info {
 	bundle_context_pt context;
@@ -44,8 +47,14 @@ struct listener_hook_info {
 
 struct listener_hook_service {
 	void *handle;
+
 	celix_status_t (*added)(void *hook, array_list_pt listeners);
+
 	celix_status_t (*removed)(void *hook, array_list_pt listeners);
 };
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* LISTENER_HOOK_SERVICE_H_ */

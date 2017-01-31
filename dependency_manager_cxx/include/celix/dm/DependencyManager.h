@@ -25,10 +25,8 @@
 #include "celix/dm/Component.h"
 #include "celix/dm/ServiceDependency.h"
 
-extern "C" {
 #include "bundle_context.h"
 #include "dm_dependency_manager.h"
-}
 
 #include <list>
 

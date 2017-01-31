@@ -31,39 +31,69 @@
 #include "exports.h"
 #include "celix_errno.h"
 
-typedef struct arrayList * array_list_pt;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-typedef struct arrayListIterator * array_list_iterator_pt;
+typedef struct arrayList *array_list_pt;
 
-typedef celix_status_t (*array_list_element_equals_pt)(const void*, const void*, bool *equals);
+typedef struct arrayListIterator *array_list_iterator_pt;
+
+typedef celix_status_t (*array_list_element_equals_pt)(const void *, const void *, bool *equals);
 
 UTILS_EXPORT celix_status_t arrayList_create(array_list_pt *list);
+
 UTILS_EXPORT celix_status_t arrayList_createWithEquals(array_list_element_equals_pt equals, array_list_pt *list);
 
 UTILS_EXPORT void arrayList_destroy(array_list_pt list);
+
 UTILS_EXPORT void arrayList_trimToSize(array_list_pt list);
+
 UTILS_EXPORT void arrayList_ensureCapacity(array_list_pt list, int capacity);
+
 UTILS_EXPORT unsigned int arrayList_size(array_list_pt list);
+
 UTILS_EXPORT bool arrayList_isEmpty(array_list_pt list);
-UTILS_EXPORT bool arrayList_contains(array_list_pt list, void * element);
-UTILS_EXPORT int arrayList_indexOf(array_list_pt list, void * element);
-UTILS_EXPORT int arrayList_lastIndexOf(array_list_pt list, void * element);
-UTILS_EXPORT void * arrayList_get(array_list_pt list, unsigned int index);
-UTILS_EXPORT void * arrayList_set(array_list_pt list, unsigned int index, void * element);
-UTILS_EXPORT bool arrayList_add(array_list_pt list, void * element);
-UTILS_EXPORT int arrayList_addIndex(array_list_pt list, unsigned int index, void * element);
+
+UTILS_EXPORT bool arrayList_contains(array_list_pt list, void *element);
+
+UTILS_EXPORT int arrayList_indexOf(array_list_pt list, void *element);
+
+UTILS_EXPORT int arrayList_lastIndexOf(array_list_pt list, void *element);
+
+UTILS_EXPORT void *arrayList_get(array_list_pt list, unsigned int index);
+
+UTILS_EXPORT void *arrayList_set(array_list_pt list, unsigned int index, void *element);
+
+UTILS_EXPORT bool arrayList_add(array_list_pt list, void *element);
+
+UTILS_EXPORT int arrayList_addIndex(array_list_pt list, unsigned int index, void *element);
+
 UTILS_EXPORT bool arrayList_addAll(array_list_pt list, array_list_pt toAdd);
-UTILS_EXPORT void * arrayList_remove(array_list_pt list, unsigned int index);
-UTILS_EXPORT bool arrayList_removeElement(array_list_pt list, void * element);
+
+UTILS_EXPORT void *arrayList_remove(array_list_pt list, unsigned int index);
+
+UTILS_EXPORT bool arrayList_removeElement(array_list_pt list, void *element);
+
 UTILS_EXPORT void arrayList_clear(array_list_pt list);
+
 UTILS_EXPORT array_list_pt arrayList_clone(array_list_pt list);
 
 UTILS_EXPORT array_list_iterator_pt arrayListIterator_create(array_list_pt list);
+
 UTILS_EXPORT void arrayListIterator_destroy(array_list_iterator_pt iterator);
+
 UTILS_EXPORT bool arrayListIterator_hasNext(array_list_iterator_pt iterator);
-UTILS_EXPORT void * arrayListIterator_next(array_list_iterator_pt iterator);
+
+UTILS_EXPORT void *arrayListIterator_next(array_list_iterator_pt iterator);
+
 UTILS_EXPORT bool arrayListIterator_hasPrevious(array_list_iterator_pt iterator);
-UTILS_EXPORT void * arrayListIterator_previous(array_list_iterator_pt iterator);
+
+UTILS_EXPORT void *arrayListIterator_previous(array_list_iterator_pt iterator);
+
 UTILS_EXPORT void arrayListIterator_remove(array_list_iterator_pt iterator);
 
+#ifdef __cplusplus
+}
+#endif
 #endif /* ARRAY_LIST_H_ */

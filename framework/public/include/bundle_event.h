@@ -27,8 +27,11 @@
 #ifndef BUNDLE_EVENT_H_
 #define BUNDLE_EVENT_H_
 
-enum bundle_event_type
-{
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+enum bundle_event_type {
 	OSGI_FRAMEWORK_BUNDLE_EVENT_INSTALLED = 0x00000001,
 	OSGI_FRAMEWORK_BUNDLE_EVENT_STARTED = 0x00000002,
 	OSGI_FRAMEWORK_BUNDLE_EVENT_STOPPED = 0x00000004,
@@ -48,9 +51,13 @@ typedef struct bundle_event *bundle_event_pt;
 #include "bundle.h"
 
 struct bundle_event {
-    long bundleId;
-    char* bundleSymbolicName;
+	long bundleId;
+	char *bundleSymbolicName;
 	bundle_event_type_e type;
 };
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* BUNDLE_EVENT_H_ */

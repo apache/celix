@@ -27,15 +27,16 @@
 #ifndef DM_DEPENDENCY_MANAGER_H_
 #define DM_DEPENDENCY_MANAGER_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #include "bundle_context.h"
 #include "celix_errno.h"
 #include "array_list.h"
 #include "dm_info.h"
 #include "dm_component.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct dm_dependency_manager *dm_dependency_manager_pt;
 

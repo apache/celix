@@ -32,6 +32,9 @@
 
 #include "celix_errno.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 struct celix_thread {
 	bool threadInitialized;
@@ -44,17 +47,25 @@ typedef pthread_once_t celix_thread_once_t;
 typedef struct celix_thread celix_thread_t;
 typedef pthread_attr_t celix_thread_attr_t;
 
-typedef void *(*celix_thread_start_t)(void*);
+typedef void *(*celix_thread_start_t)(void *);
 
-static const celix_thread_t celix_thread_default = { 0, 0 };
+static const celix_thread_t celix_thread_default = {0, 0};
 
-celix_status_t celixThread_create(celix_thread_t *new_thread, celix_thread_attr_t *attr, celix_thread_start_t func, void *data);
+celix_status_t
+celixThread_create(celix_thread_t *new_thread, celix_thread_attr_t *attr, celix_thread_start_t func, void *data);
+
 void celixThread_exit(void *exitStatus);
+
 celix_status_t celixThread_detach(celix_thread_t thread);
+
 celix_status_t celixThread_join(celix_thread_t thread, void **status);
+
 celix_status_t celixThread_kill(celix_thread_t thread, int sig);
+
 celix_thread_t celixThread_self(void);
+
 int celixThread_equals(celix_thread_t thread1, celix_thread_t thread2);
+
 bool celixThread_initalized(celix_thread_t thread);
 
 
@@ -71,12 +82,17 @@ enum {
 
 
 celix_status_t celixThreadMutex_create(celix_thread_mutex_t *mutex, celix_thread_mutexattr_t *attr);
+
 celix_status_t celixThreadMutex_destroy(celix_thread_mutex_t *mutex);
+
 celix_status_t celixThreadMutex_lock(celix_thread_mutex_t *mutex);
+
 celix_status_t celixThreadMutex_unlock(celix_thread_mutex_t *mutex);
 
 celix_status_t celixThreadMutexAttr_create(celix_thread_mutexattr_t *attr);
+
 celix_status_t celixThreadMutexAttr_destroy(celix_thread_mutexattr_t *attr);
+
 celix_status_t celixThreadMutexAttr_settype(celix_thread_mutexattr_t *attr, int type);
 
 typedef pthread_rwlock_t celix_thread_rwlock_t;
@@ -85,11 +101,15 @@ typedef pthread_rwlockattr_t celix_thread_rwlockattr_t;
 celix_status_t celixThreadRwlock_create(celix_thread_rwlock_t *lock, celix_thread_rwlockattr_t *attr);
 
 celix_status_t celixThreadRwlock_destroy(celix_thread_rwlock_t *lock);
+
 celix_status_t celixThreadRwlock_readLock(celix_thread_rwlock_t *lock);
+
 celix_status_t celixThreadRwlock_writeLock(celix_thread_rwlock_t *lock);
+
 celix_status_t celixThreadRwlock_unlock(celix_thread_rwlock_t *lock);
 
 celix_status_t celixThreadRwlockAttr_create(celix_thread_rwlockattr_t *attr);
+
 celix_status_t celixThreadRwlockAttr_destroy(celix_thread_rwlockattr_t *attr);
 //NOTE: No support yet for setting specific rw lock attributes
 
@@ -98,11 +118,18 @@ typedef pthread_cond_t celix_thread_cond_t;
 typedef pthread_condattr_t celix_thread_condattr_t;
 
 celix_status_t celixThreadCondition_init(celix_thread_cond_t *condition, celix_thread_condattr_t *attr);
+
 celix_status_t celixThreadCondition_destroy(celix_thread_cond_t *condition);
+
 celix_status_t celixThreadCondition_wait(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex);
+
 celix_status_t celixThreadCondition_broadcast(celix_thread_cond_t *cond);
+
 celix_status_t celixThreadCondition_signal(celix_thread_cond_t *cond);
 
 celix_status_t celixThread_once(celix_thread_once_t *once_control, void (*init_routine)(void));
 
+#ifdef __cplusplus
+}
+#endif
 #endif /* CELIX_THREADS_H_ */

@@ -33,22 +33,40 @@
 #include "service_tracker_customizer.h"
 #include "framework_exports.h"
 
-typedef struct serviceTracker * service_tracker_pt;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-FRAMEWORK_EXPORT celix_status_t serviceTracker_create(bundle_context_pt context, const char* service, service_tracker_customizer_pt customizer, service_tracker_pt *tracker);
-FRAMEWORK_EXPORT celix_status_t serviceTracker_createWithFilter(bundle_context_pt context, const char* filter, service_tracker_customizer_pt customizer, service_tracker_pt *tracker);
+typedef struct serviceTracker *service_tracker_pt;
+
+FRAMEWORK_EXPORT celix_status_t
+serviceTracker_create(bundle_context_pt context, const char *service, service_tracker_customizer_pt customizer,
+                      service_tracker_pt *tracker);
+
+FRAMEWORK_EXPORT celix_status_t
+serviceTracker_createWithFilter(bundle_context_pt context, const char *filter, service_tracker_customizer_pt customizer,
+                                service_tracker_pt *tracker);
 
 FRAMEWORK_EXPORT celix_status_t serviceTracker_open(service_tracker_pt tracker);
+
 FRAMEWORK_EXPORT celix_status_t serviceTracker_close(service_tracker_pt tracker);
+
 FRAMEWORK_EXPORT celix_status_t serviceTracker_destroy(service_tracker_pt tracker);
 
 FRAMEWORK_EXPORT service_reference_pt serviceTracker_getServiceReference(service_tracker_pt tracker);
+
 FRAMEWORK_EXPORT array_list_pt serviceTracker_getServiceReferences(service_tracker_pt tracker);
 
-FRAMEWORK_EXPORT void * serviceTracker_getService(service_tracker_pt tracker);
+FRAMEWORK_EXPORT void *serviceTracker_getService(service_tracker_pt tracker);
+
 FRAMEWORK_EXPORT array_list_pt serviceTracker_getServices(service_tracker_pt tracker);
-FRAMEWORK_EXPORT void * serviceTracker_getServiceByReference(service_tracker_pt tracker, service_reference_pt reference);
+
+FRAMEWORK_EXPORT void *serviceTracker_getServiceByReference(service_tracker_pt tracker, service_reference_pt reference);
 
 FRAMEWORK_EXPORT void serviceTracker_serviceChanged(service_listener_pt listener, service_event_pt event);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* SERVICE_TRACKER_H_ */

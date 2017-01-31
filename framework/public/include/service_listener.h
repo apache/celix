@@ -33,12 +33,19 @@ typedef struct serviceListener * service_listener_pt;
 
 #include "celix_errno.h"
 #include "service_event.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 struct serviceListener {
-	void * handle;
-	celix_status_t (*serviceChanged)(void * listener, service_event_pt event);
+	void *handle;
+
+	celix_status_t (*serviceChanged)(void *listener, service_event_pt event);
 };
 
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif /* SERVICE_LISTENER_H_ */

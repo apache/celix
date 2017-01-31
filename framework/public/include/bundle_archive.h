@@ -36,33 +36,58 @@
 #include "framework_exports.h"
 #include "celix_log.h"
 
-typedef struct bundleArchive * bundle_archive_pt;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-celix_status_t bundleArchive_create(const char* archiveRoot, long id, const char* location, const char* inputFile, bundle_archive_pt *bundle_archive);
+typedef struct bundleArchive *bundle_archive_pt;
+
+celix_status_t bundleArchive_create(const char *archiveRoot, long id, const char *location, const char *inputFile,
+                                    bundle_archive_pt *bundle_archive);
+
 celix_status_t bundleArchive_createSystemBundleArchive(bundle_archive_pt *bundle_archive);
-celix_status_t bundleArchive_recreate(const char* archiveRoot, bundle_archive_pt *bundle_archive);
+
+celix_status_t bundleArchive_recreate(const char *archiveRoot, bundle_archive_pt *bundle_archive);
 
 celix_status_t bundleArchive_destroy(bundle_archive_pt archive);
 
 FRAMEWORK_EXPORT celix_status_t bundleArchive_getId(bundle_archive_pt archive, long *id);
+
 FRAMEWORK_EXPORT celix_status_t bundleArchive_getLocation(bundle_archive_pt archive, const char **location);
+
 FRAMEWORK_EXPORT celix_status_t bundleArchive_getArchiveRoot(bundle_archive_pt archive, const char **archiveRoot);
 
-FRAMEWORK_EXPORT celix_status_t bundleArchive_revise(bundle_archive_pt archive, const char* location, const char* inputFile);
+FRAMEWORK_EXPORT celix_status_t
+bundleArchive_revise(bundle_archive_pt archive, const char *location, const char *inputFile);
+
 FRAMEWORK_EXPORT celix_status_t bundleArchive_rollbackRevise(bundle_archive_pt archive, bool *rolledback);
-FRAMEWORK_EXPORT celix_status_t bundleArchive_getRevision(bundle_archive_pt archive, long revNr, bundle_revision_pt *revision);
-FRAMEWORK_EXPORT celix_status_t bundleArchive_getCurrentRevision(bundle_archive_pt archive, bundle_revision_pt *revision);
+
+FRAMEWORK_EXPORT celix_status_t
+bundleArchive_getRevision(bundle_archive_pt archive, long revNr, bundle_revision_pt *revision);
+
+FRAMEWORK_EXPORT celix_status_t
+bundleArchive_getCurrentRevision(bundle_archive_pt archive, bundle_revision_pt *revision);
+
 FRAMEWORK_EXPORT celix_status_t bundleArchive_getCurrentRevisionNumber(bundle_archive_pt archive, long *revisionNumber);
 
 FRAMEWORK_EXPORT celix_status_t bundleArchive_getRefreshCount(bundle_archive_pt archive, long *refreshCount);
+
 FRAMEWORK_EXPORT celix_status_t bundleArchive_setRefreshCount(bundle_archive_pt archive);
 
 FRAMEWORK_EXPORT celix_status_t bundleArchive_close(bundle_archive_pt archive);
+
 FRAMEWORK_EXPORT celix_status_t bundleArchive_closeAndDelete(bundle_archive_pt archive);
 
 FRAMEWORK_EXPORT celix_status_t bundleArchive_setLastModified(bundle_archive_pt archive, time_t lastModifiedTime);
+
 FRAMEWORK_EXPORT celix_status_t bundleArchive_getLastModified(bundle_archive_pt archive, time_t *lastModified);
+
 FRAMEWORK_EXPORT celix_status_t bundleArchive_setPersistentState(bundle_archive_pt archive, bundle_state_e state);
+
 FRAMEWORK_EXPORT celix_status_t bundleArchive_getPersistentState(bundle_archive_pt archive, bundle_state_e *state);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* BUNDLE_ARCHIVE_H_ */

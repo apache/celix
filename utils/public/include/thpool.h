@@ -8,13 +8,15 @@
 #define _THPOOL_
 
 
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 
 /* =================================== API ======================================= */
 
 
-typedef struct thpool_* threadpool;
+typedef struct thpool_ *threadpool;
 
 
 /**
@@ -64,7 +66,7 @@ threadpool thpool_init(int num_threads);
  * @param  arg_p         pointer to an argument
  * @return nothing
  */
-int thpool_add_work(threadpool, void *(*function_p)(void*), void* arg_p);
+int thpool_add_work(threadpool, void *(*function_p)(void *), void *arg_p);
 
 
 /**
@@ -159,6 +161,8 @@ void thpool_resume(threadpool);
 void thpool_destroy(threadpool);
 
 
-
+#ifdef __cplusplus
+}
+#endif
 
 #endif

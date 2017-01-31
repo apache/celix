@@ -35,6 +35,10 @@ typedef struct wire *wire_pt;
 #include "linked_list.h"
 #include "module.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @defgroup Version Version
  * @ingroup framework
@@ -54,7 +58,7 @@ typedef struct wire *wire_pt;
  * 		- CELIX_ENOMEM If allocating memory for <code>wire</code> failed.
  */
 celix_status_t wire_create(module_pt importer, requirement_pt requirement,
-		module_pt exporter, capability_pt capability, wire_pt *wire);
+						   module_pt exporter, capability_pt capability, wire_pt *wire);
 
 /**
  * Getter for the capability of the exporting module.
@@ -109,5 +113,8 @@ celix_status_t wire_getExporter(wire_pt wire, module_pt *exporter);
 /**
  * @}
  */
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* WIRE_H_ */

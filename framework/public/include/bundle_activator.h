@@ -40,6 +40,10 @@
 #include "bundle_context.h"
 #include "framework_exports.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Called when this bundle is started so the bundle can create an instance for its activator.
  * The framework does not assume any type for the activator instance, this is implementation specific.
@@ -108,7 +112,12 @@ ACTIVATOR_EXPORT celix_status_t bundleActivator_stop(void *userData, bundle_cont
  * 		- Any other status code will mark the bundle as stopped and the framework will remove this
  * 		  bundle's listeners, unregister all services, and release all services used by this bundle.
  */
-ACTIVATOR_EXPORT celix_status_t bundleActivator_destroy(void *userData, bundle_context_pt  __attribute__((unused))  __attribute__((unused)) context);
+ACTIVATOR_EXPORT celix_status_t
+bundleActivator_destroy(void *userData, bundle_context_pt  __attribute__((unused))  __attribute__((unused)) context);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* BUNDLE_ACTIVATOR_H_ */
 
