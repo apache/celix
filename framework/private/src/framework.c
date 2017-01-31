@@ -2392,7 +2392,7 @@ static void *fw_eventDispatcher(void *fw) {
                     event->errorCode = request->errorCode;
 
                     fw_invokeFrameworkListener(framework, listener->listener, event, listener->bundle);
-
+                    free(event->bundleSymbolicName);
                     free(event);
                 }
             }
