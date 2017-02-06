@@ -50,3 +50,5 @@ bundle_files(org.apache.celix.pubsub_publisher.PoiPublisher
 		${PROJECT_SOURCE_DIR}/pubsub/examples/keys/subscriber/public
     DESTINATION "META-INF/keys/subscriber"
 )
+
+target_link_libraries(org.apache.celix.pubsub_publisher.PoiPublisher celix_framework celix_utils)

@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-celix_subproject(PUBSUB "Option to build the pubsub bundles" OFF)
+celix_subproject(PUBSUB "Option to build the pubsub bundles" OFF DEPS UTILS)
 if (PUBSUB)
 
 	include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")

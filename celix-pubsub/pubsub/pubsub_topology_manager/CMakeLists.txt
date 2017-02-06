@@ -39,5 +39,6 @@ bundle_files(org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
     DESTINATION "META-INF/"
 )
 
+target_link_libraries(org.apache.celix.pubsub_topology_manager.PubSubTopologyManager celix_framework celix_utils)
 install_bundle(org.apache.celix.pubsub_topology_manager.PubSubTopologyManager)
 

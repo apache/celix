@@ -65,6 +65,6 @@ add_bundle(org.apache.celix.pubsub_admin.PubSubAdmin
 )
 
 set_target_properties(org.apache.celix.pubsub_admin.PubSubAdmin PROPERTIES INSTALL_RPATH "$ORIGIN")
-target_link_libraries(org.apache.celix.pubsub_admin.PubSubAdmin ${CELIX_LIBRARIES} ${ZMQ_LIBRARIES} ${CZMQ_LIBRARIES} ${JANSSON_LIBRARIES} ${OPENSSL_CRYPTO_LIBRARY} ${SERIALIZER_LIBRARY})
+target_link_libraries(org.apache.celix.pubsub_admin.PubSubAdmin celix_framework celix_utils celix_dfi ${ZMQ_LIBRARIES} ${CZMQ_LIBRARIES} ${JANSSON_LIBRARIES} ${OPENSSL_CRYPTO_LIBRARY} ${SERIALIZER_LIBRARY})
 install_bundle(org.apache.celix.pubsub_admin.PubSubAdmin)
 

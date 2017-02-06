@@ -51,7 +51,7 @@ add_bundle(org.apache.celix.pubsub_admin.PubSubAdminUdpMc
 )
 
 set_target_properties(org.apache.celix.pubsub_admin.PubSubAdminUdpMc PROPERTIES INSTALL_RPATH "$ORIGIN")
-target_link_libraries(org.apache.celix.pubsub_admin.PubSubAdminUdpMc ${CELIX_LIBRARIES} ${JANSSON_LIBRARIES} ${SERIALIZER_LIBRARY})
+target_link_libraries(org.apache.celix.pubsub_admin.PubSubAdminUdpMc celix_framework celix_utils celix_dfi ${JANSSON_LIBRARIES} ${SERIALIZER_LIBRARY})
 
 install_bundle(org.apache.celix.pubsub_admin.PubSubAdminUdpMc)
 
