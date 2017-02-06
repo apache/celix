@@ -68,6 +68,7 @@ struct topic_subscription{
 	hash_map_pt socketMap; // key = URL, value = listen-socket
 	unsigned int nrSubscribers;
 	largeUdp_pt largeUdpHandle;
+
 };
 
 typedef struct mp_handle{
@@ -207,64 +208,69 @@ celix_status_t pubsub_topicSubscriptionConnectPublisher(topic_subscription_pt ts
     printf("pubsub_topicSubscriptionConnectPublisher : pubURL = %s\n", pubURL);
 
     celix_status_t status = CELIX_SUCCESS;
-    celixThreadMutex_lock(&ts->ts_lock);
-    int *recvSocket = calloc(sizeof(int), 1);
-    *recvSocket = socket(AF_INET, SOCK_DGRAM, 0);
-    if (*recvSocket < 0) {
-        perror("pubsub_topicSubscriptionCreate:socket");
-        return CELIX_SERVICE_EXCEPTION;
+
+    if (!hashMap_containsKey(ts->socketMap, pubURL)){
+
+		celixThreadMutex_lock(&ts->ts_lock);
+		int *recvSocket = calloc(sizeof(int), 1);
+		*recvSocket = socket(AF_INET, SOCK_DGRAM, 0);
+		if (*recvSocket < 0) {
+			perror("pubsub_topicSubscriptionCreate:socket");
+			return CELIX_SERVICE_EXCEPTION;
+		}
+
+		int reuse = 1;
+		if (setsockopt(*recvSocket, SOL_SOCKET, SO_REUSEADDR, (char*) &reuse, sizeof(reuse)) != 0) {
+			perror("setsockopt() SO_REUSEADDR");
+			return CELIX_SERVICE_EXCEPTION;
+		}
+
+		// TODO Check if there is a better way to parse the URL to IP/Portnr
+		//replace ':' by spaces
+		char *url = strdup(pubURL);
+		char *pt = url;
+		while((pt=strchr(pt, ':')) != NULL) {
+			*pt = ' ';
+		}
+		char mcIp[100];
+		unsigned short mcPort;
+		sscanf(url, "udp //%s %hu", mcIp, &mcPort);
+		free (url);
+
+		printf("pubsub_topicSubscriptionConnectPublisher : IP = %s, Port = %hu\n", mcIp, mcPort);
+
+		struct ip_mreq mc_addr;
+		mc_addr.imr_multiaddr.s_addr = inet_addr(mcIp);
+		mc_addr.imr_interface.s_addr = inet_addr(ts->ifIpAddress);
+		printf("Adding MC %s at interface %s\n", mcIp, ts->ifIpAddress);
+		if (setsockopt(*recvSocket, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char*) &mc_addr, sizeof(mc_addr)) != 0) {
+			perror("setsockopt() IP_ADD_MEMBERSHIP");
+			return CELIX_SERVICE_EXCEPTION;
+		}
+
+		struct sockaddr_in mcListenAddr;
+		mcListenAddr.sin_family = AF_INET;
+		mcListenAddr.sin_addr.s_addr = INADDR_ANY;
+		mcListenAddr.sin_port = htons(mcPort);
+		if(bind(*recvSocket, (struct sockaddr*)&mcListenAddr, sizeof(mcListenAddr)) != 0) {
+			perror("bind()");
+			return CELIX_SERVICE_EXCEPTION;
+		}
+
+
+		struct epoll_event ev;
+		memset(&ev, 0, sizeof(ev));
+		ev.events = EPOLLIN;
+		ev.data.fd = *recvSocket;
+		if(epoll_ctl(ts->topicEpollFd, EPOLL_CTL_ADD, *recvSocket, &ev) == -1) {
+			perror("epoll_ctl() EPOLL_CTL_ADD");
+			return CELIX_SERVICE_EXCEPTION;
+		}
+		hashMap_put(ts->socketMap, pubURL, (void*)recvSocket);
+
+		celixThreadMutex_unlock(&ts->ts_lock);
+
     }
-
-    int reuse = 1;
-    if (setsockopt(*recvSocket, SOL_SOCKET, SO_REUSEADDR, (char*) &reuse, sizeof(reuse)) != 0) {
-        perror("setsockopt() SO_REUSEADDR");
-        return CELIX_SERVICE_EXCEPTION;
-    }
-
-    // TODO Check if there is a better way to parse the URL to IP/Portnr
-    //replace ':' by spaces
-    char *url = strdup(pubURL);
-    char *pt = url;
-    while((pt=strchr(pt, ':')) != NULL) {
-        *pt = ' ';
-    }
-    char mcIp[100];
-    unsigned short mcPort;
-    sscanf(url, "udp //%s %hu", mcIp, &mcPort);
-    free (url);
-
-    printf("pubsub_topicSubscriptionConnectPublisher : IP = %s, Port = %hu\n", mcIp, mcPort);
-
-    struct ip_mreq mc_addr;
-    mc_addr.imr_multiaddr.s_addr = inet_addr(mcIp);
-    mc_addr.imr_interface.s_addr = inet_addr(ts->ifIpAddress);
-    printf("Adding MC %s at interface %s\n", mcIp, ts->ifIpAddress);
-    if (setsockopt(*recvSocket, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char*) &mc_addr, sizeof(mc_addr)) != 0) {
-        perror("setsockopt() IP_ADD_MEMBERSHIP");
-        return CELIX_SERVICE_EXCEPTION;
-    }
-
-    struct sockaddr_in mcListenAddr;
-    mcListenAddr.sin_family = AF_INET;
-    mcListenAddr.sin_addr.s_addr = INADDR_ANY;
-    mcListenAddr.sin_port = htons(mcPort);
-    if(bind(*recvSocket, (struct sockaddr*)&mcListenAddr, sizeof(mcListenAddr)) != 0) {
-        perror("bind()");
-        return CELIX_SERVICE_EXCEPTION;
-    }
-
-
-    struct epoll_event ev;
-    memset(&ev, 0, sizeof(ev));
-    ev.events = EPOLLIN;
-    ev.data.fd = *recvSocket;
-    if(epoll_ctl(ts->topicEpollFd, EPOLL_CTL_ADD, *recvSocket, &ev) == -1) {
-        perror("epoll_ctl() EPOLL_CTL_ADD");
-        return CELIX_SERVICE_EXCEPTION;
-    }
-    hashMap_put(ts->socketMap, pubURL, (void*)recvSocket);
-
-    celixThreadMutex_unlock(&ts->ts_lock);
 
     return status;
 }
@@ -272,19 +278,23 @@ celix_status_t pubsub_topicSubscriptionConnectPublisher(topic_subscription_pt ts
 celix_status_t pubsub_topicSubscriptionDisconnectPublisher(topic_subscription_pt ts, char* pubURL){
     printf("pubsub_topicSubscriptionDisconnectPublisher : pubURL = %s\n", pubURL);
     celix_status_t status = CELIX_SUCCESS;
-    struct epoll_event ev;
-    memset(&ev, 0, sizeof(ev));
 
-    celixThreadMutex_lock(&ts->ts_lock);
+    if (hashMap_containsKey(ts->socketMap, pubURL)){
+		struct epoll_event ev;
+		memset(&ev, 0, sizeof(ev));
 
-    int *s = hashMap_remove(ts->socketMap, pubURL);
-    if(epoll_ctl(ts->topicEpollFd, EPOLL_CTL_DEL, *s, &ev) == -1) {
-        perror("epoll_ctl() EPOLL_CTL_DEL");
-        status = CELIX_SERVICE_EXCEPTION;
+		celixThreadMutex_lock(&ts->ts_lock);
+
+		int *s = hashMap_remove(ts->socketMap, pubURL);
+		if(epoll_ctl(ts->topicEpollFd, EPOLL_CTL_DEL, *s, &ev) == -1) {
+			printf("in if error()\n");
+			perror("epoll_ctl() EPOLL_CTL_DEL");
+			status = CELIX_SERVICE_EXCEPTION;
+		}
+		free(s);
+
+		celixThreadMutex_unlock(&ts->ts_lock);
     }
-    free(s);
-
-    celixThreadMutex_unlock(&ts->ts_lock);
 
 	return status;
 }
