@@ -25,12 +25,12 @@
 #include "celix_log.h"
 #include "constants.h"
 
+#include <curl/curl.h>
 #include "etcd.h"
 #include "etcd_watcher.h"
 
 #include "pubsub_discovery.h"
 #include "pubsub_discovery_impl.h"
-
 
 #define MAX_ROOTNODE_LENGTH		128
 #define MAX_LOCALNODE_LENGTH 	4096
@@ -70,7 +70,7 @@ celix_status_t etcdCommon_init(bundle_context_pt context) {
 
     printf("PSD: Using discovery HOST:PORT: %s:%i\n", etcd_server, etcd_port);
 
-    if (etcd_init(etcd_server, etcd_port) != 0) {
+    if (etcd_init(etcd_server, etcd_port, CURL_GLOBAL_DEFAULT) != 0) {
         status = CELIX_BUNDLE_EXCEPTION;
     } else {
         status = CELIX_SUCCESS;

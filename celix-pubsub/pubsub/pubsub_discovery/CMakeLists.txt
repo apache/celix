@@ -22,6 +22,7 @@ include_directories("${CURL_INCLUDE_DIR}")
 include_directories("${JANSSON_INCLUDE_DIR}")
 include_directories("${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/pubsub/api/pubsub")
+include_directories("${PROJECT_SOURCE_DIR}/etcdlib/public/include")
 include_directories("private/include")
 include_directories("public/include")
 
@@ -35,8 +36,7 @@ add_bundle(org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
 		private/src/etcd_watcher.c
 		private/src/etcd_writer.c
 		${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_endpoint.c
-		${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/etcd.c
 )
 
-target_link_libraries(org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery celix_framework celix_utils ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
+target_link_libraries(org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery celix_framework celix_utils etcdlib ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
 install_bundle(org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery)
