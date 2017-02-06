@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-if (BUILD_PSA_ZMQ)
+if (BUILD_PUBSUB_PSA_ZMQ)
 
 	find_package(ZMQ REQUIRED)
 	find_package(CZMQ REQUIRED)

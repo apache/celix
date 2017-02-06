@@ -92,6 +92,7 @@ add_subdirectory(shell_tui)
 add_subdirectory(shell)
 add_subdirectory(log_writer)
 add_subdirectory(log_service)
+add_subdirectory(pubsub)
 
 #add_subdirectory(event_admin)# event_admin is unstable
 add_subdirectory(dependency_manager)

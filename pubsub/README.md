@@ -21,7 +21,7 @@ The publisher/subscriber implementation contains 2 different PubSubAdmins for ma
   * PubsubAdminUDP: This pubsub admin is using linux sockets to setup a connection. 
   * PubsubAdminZMQ (LGPL License): This pubsub admin is using ZeroMQ and is disabled as default. This is a because the pubsub admin is using ZeroMQ which is licensed as LGPL ([View ZeroMQ License](https://github.com/zeromq/libzmq#license)).
   
-  The ZeroMQ pubsub admin can be enabled by specifying the build flag `BUILD_PSA_ZMQ=ON`. To get the ZeroMQ pubsub admin running, [ZeroMQ](https://github.com/zeromq/libzmq) and [CZMQ](https://github.com/zeromq/czmq) need to be installed. Also, to make use of encrypted traffic, [OpenSSL](https://github.com/openssl/openssl) is required.
+  The ZeroMQ pubsub admin can be enabled by specifying the build flag `BUILD_PUBSUB_PSA_ZMQ=ON`. To get the ZeroMQ pubsub admin running, [ZeroMQ](https://github.com/zeromq/libzmq) and [CZMQ](https://github.com/zeromq/czmq) need to be installed. Also, to make use of encrypted traffic, [OpenSSL](https://github.com/openssl/openssl) is required.
 
 ## Running instructions
 
@@ -36,7 +36,7 @@ The publisher/subscriber implementation contains 2 different PubSubAdmins for ma
 1. Run `cd deploy/pubsub/pubsub_subscriber_udp_mc`
 1. Run `sh run.sh`
 
-Design information can be found at pubsub\_admin\_udp_mc/README.md
+Design information can be found at pubsub\_admin\_udp\_mc/README.md
 
 ### Running PSA ZMQ
 

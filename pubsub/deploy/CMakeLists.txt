@@ -51,7 +51,7 @@ add_deploy("pubsub_subscriber2_udp_mc"
        org.apache.celix.pubsub_subscriber.PoiSubscriber
 )
 
-if (BUILD_PSA_ZMQ)
+if (BUILD_PUBSUB_PSA_ZMQ)
 
 	# Dynamic ZMQ / UDP admin
 	add_deploy("pubsub_publisher"
