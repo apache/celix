@@ -35,6 +35,7 @@ struct pubsub_endpoint {
     char *topic;
     long serviceID;
     char* endpoint;
+    bool is_secure;
 };
 
 typedef struct pubsub_endpoint *pubsub_endpoint_pt;

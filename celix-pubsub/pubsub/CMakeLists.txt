@@ -21,7 +21,7 @@ if (PUBSUB)
 	include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 	include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
 
-	option(ENABLE_ZMQ_SECURITY "Enable security for ZeroMQ" OFF)
+	option(BUILD_ZMQ_SECURITY "Build with security for ZeroMQ." OFF)
 	
 	set (PUBSUB_SERIALIZER_SRC "${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_serializer.c")
 	set (SERIALIZER_PATH "" CACHE FILEPATH "Path to the directory which will contain the serializer (include / src).")

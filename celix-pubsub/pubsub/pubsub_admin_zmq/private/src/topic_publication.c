@@ -53,7 +53,7 @@
 
 #include "pubsub_serializer.h"
 
-#ifdef USE_ZMQ_SECURITY
+#ifdef BUILD_WITH_ZMQ_SECURITY
 	#include "zmq_crypto.h"
 
 	#define MAX_CERT_PATH_LENGTH 512
@@ -109,43 +109,72 @@ static void delay_first_send_for_late_joiners(void);
 celix_status_t pubsub_topicPublicationCreate(bundle_context_pt bundle_context, pubsub_endpoint_pt pubEP,char* bindIP, unsigned int basePort, unsigned int maxPort, topic_publication_pt *out){
 	celix_status_t status = CELIX_SUCCESS;
 
-#ifdef USE_ZMQ_SECURITY
-	char* keys_bundle_dir = pubsub_getKeysBundleDir(bundle_context);
-	if (keys_bundle_dir == NULL){
-		return CELIX_SERVICE_EXCEPTION;
+#ifdef BUILD_WITH_ZMQ_SECURITY
+	char* secure_topics = NULL;
+	bundleContext_getProperty(bundle_context, "SECURE_TOPICS", (const char **) &secure_topics);
+
+	if (secure_topics){
+		array_list_pt secure_topics_list = pubsub_getTopicsFromString(secure_topics);
+
+		int i;
+		int secure_topics_size = arrayList_size(secure_topics_list);
+		for (i = 0; i < secure_topics_size; i++){
+			char* top = arrayList_get(secure_topics_list, i);
+			if (strcmp(pubEP->topic, top) == 0){
+				printf("TP: Secure topic: '%s'\n", top);
+				pubEP->is_secure = true;
+			}
+			free(top);
+			top = NULL;
+		}
+
+		arrayList_destroy(secure_topics_list);
 	}
 
-	const char* keys_file_path = NULL;
-	const char* keys_file_name = NULL;
-	bundleContext_getProperty(bundle_context, PROPERTY_KEYS_FILE_PATH, &keys_file_path);
-	bundleContext_getProperty(bundle_context, PROPERTY_KEYS_FILE_NAME, &keys_file_name);
+	zcert_t* pub_cert = NULL;
+	if (pubEP->is_secure){
+		char* keys_bundle_dir = pubsub_getKeysBundleDir(bundle_context);
+		if (keys_bundle_dir == NULL){
+			return CELIX_SERVICE_EXCEPTION;
+		}
 
-	char cert_path[MAX_CERT_PATH_LENGTH];
+		const char* keys_file_path = NULL;
+		const char* keys_file_name = NULL;
+		bundleContext_getProperty(bundle_context, PROPERTY_KEYS_FILE_PATH, &keys_file_path);
+		bundleContext_getProperty(bundle_context, PROPERTY_KEYS_FILE_NAME, &keys_file_name);
 
-	//certificate path ".cache/bundle{id}/version0.0/./META-INF/keys/publisher/private/pub_{topic}.key"
-	snprintf(cert_path, MAX_CERT_PATH_LENGTH, "%s/META-INF/keys/publisher/private/pub_%s.key.enc", keys_bundle_dir, pubEP->topic);
-	free(keys_bundle_dir);
-	printf("PSA: Loading key '%s'\n", cert_path);
+		char cert_path[MAX_CERT_PATH_LENGTH];
 
-	zcert_t* pub_cert = get_zcert_from_encoded_file((char *) keys_file_path, (char *) keys_file_name, cert_path);
-	if (pub_cert == NULL){
-		printf("PSA: Cannot load key '%s'\n", cert_path);
-		return CELIX_SERVICE_EXCEPTION;
+		//certificate path ".cache/bundle{id}/version0.0/./META-INF/keys/publisher/private/pub_{topic}.key"
+		snprintf(cert_path, MAX_CERT_PATH_LENGTH, "%s/META-INF/keys/publisher/private/pub_%s.key.enc", keys_bundle_dir, pubEP->topic);
+		free(keys_bundle_dir);
+		printf("TP: Loading key '%s'\n", cert_path);
+
+		pub_cert = get_zcert_from_encoded_file((char *) keys_file_path, (char *) keys_file_name, cert_path);
+		if (pub_cert == NULL){
+			printf("TP: Cannot load key '%s'\n", cert_path);
+			printf("TP: Topic '%s' NOT SECURED !\n", pubEP->topic);
+			pubEP->is_secure = false;
+		}
 	}
 #endif
 
 	zsock_t* socket = zsock_new (ZMQ_PUB);
 	if(socket==NULL){
-		#ifdef USE_ZMQ_SECURITY
-			zcert_destroy(&pub_cert);
+		#ifdef BUILD_WITH_ZMQ_SECURITY
+			if (pubEP->is_secure){
+				zcert_destroy(&pub_cert);
+			}
 		#endif
 
         perror("Error for zmq_socket");
 		return CELIX_SERVICE_EXCEPTION;
 	}
-#ifdef USE_ZMQ_SECURITY
-	zcert_apply (pub_cert, socket); // apply certificate to socket
-	zsock_set_curve_server (socket, true); // setup the publisher's socket to use the curve functions
+#ifdef BUILD_WITH_ZMQ_SECURITY
+	if (pubEP->is_secure){
+		zcert_apply (pub_cert, socket); // apply certificate to socket
+		zsock_set_curve_server (socket, true); // setup the publisher's socket to use the curve functions
+	}
 #endif
 
 	int rv = -1, retry=0;
@@ -183,9 +212,11 @@ celix_status_t pubsub_topicPublicationCreate(bundle_context_pt bundle_context, p
 	pub->endpoint = ep;
 	pub->zmq_socket = socket;
 
-	#ifdef USE_ZMQ_SECURITY
-	pub->zmq_cert = pub_cert;
-	#endif
+#ifdef BUILD_WITH_ZMQ_SECURITY
+	if (pubEP->is_secure){
+		pub->zmq_cert = pub_cert;
+	}
+#endif
 
 	pubsub_topicPublicationAddPublisherEP(pub,pubEP);
 
@@ -212,9 +243,9 @@ celix_status_t pubsub_topicPublicationDestroy(topic_publication_pt pub){
 
 	pub->svcFactoryReg = NULL;
 	zsock_destroy(&(pub->zmq_socket));
-	#ifdef USE_ZMQ_SECURITY
+#ifdef BUILD_WITH_ZMQ_SECURITY
 	zcert_destroy(&(pub->zmq_cert));
-	#endif
+#endif
 
 	celixThreadMutex_unlock(&(pub->tp_lock));
 

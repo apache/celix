@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-if (ENABLE_ZMQ_SECURITY)
+if (BUILD_ZMQ_SECURITY)
 
 	find_package(ZMQ REQUIRED)
 	find_package(CZMQ REQUIRED)

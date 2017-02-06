@@ -39,8 +39,8 @@ if (SERIALIZER_LIB_DIR)
 	link_directories("${SERIALIZER_LIB_DIR}")
 endif()
 
-if (ENABLE_ZMQ_SECURITY)
-	add_definitions(-DUSE_ZMQ_SECURITY=1)
+if (BUILD_ZMQ_SECURITY)
+	add_definitions(-DBUILD_WITH_ZMQ_SECURITY=1)
 
 	find_package(OpenSSL 1.1.0 REQUIRED)
 	include_directories("${OPENSSL_INCLUDE_DIR}")

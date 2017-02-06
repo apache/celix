@@ -73,7 +73,7 @@ static celix_status_t pubsubAdmin_addAnySubscription(pubsub_admin_pt admin,pubsu
 celix_status_t pubsubAdmin_create(bundle_context_pt context, pubsub_admin_pt *admin) {
 	celix_status_t status = CELIX_SUCCESS;
 
-#ifdef USE_ZMQ_SECURITY
+#ifdef BUILD_WITH_ZMQ_SECURITY
 	if (!zsys_has_curve()){
 		printf("PSA: zeromq curve unsupported\n");
 		return CELIX_SERVICE_EXCEPTION;
@@ -165,7 +165,7 @@ celix_status_t pubsubAdmin_create(bundle_context_pt context, pubsub_admin_pt *ad
 			}
 		}
 
-#ifdef USE_ZMQ_SECURITY
+#ifdef BUILD_WITH_ZMQ_SECURITY
 		// Setup authenticator
 		zactor_t* auth = zactor_new (zauth, NULL);
 		zstr_sendx(auth, "VERBOSE", NULL);
@@ -232,7 +232,7 @@ celix_status_t pubsubAdmin_destroy(pubsub_admin_pt admin)
 
 	logHelper_destroy(&admin->loghelper);
 
-#ifdef USE_ZMQ_SECURITY
+#ifdef BUILD_WITH_ZMQ_SECURITY
 	if (admin->zmq_auth != NULL){
 		zactor_destroy(&(admin->zmq_auth));
 	}
@@ -254,7 +254,7 @@ static celix_status_t pubsubAdmin_addAnySubscription(pubsub_admin_pt admin,pubsu
 
 		int i;
 
-		status += pubsub_topicSubscriptionCreate(admin->bundle_context, PUBSUB_SUBSCRIBER_SCOPE_DEFAULT, PUBSUB_ANY_SUB_TOPIC, &any_sub);
+		status += pubsub_topicSubscriptionCreate(admin->bundle_context, subEP, PUBSUB_SUBSCRIBER_SCOPE_DEFAULT, PUBSUB_ANY_SUB_TOPIC, &any_sub);
 
 		if (status == CELIX_SUCCESS){
 
@@ -340,7 +340,7 @@ celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint
 		topic_subscription_pt subscription = hashMap_get(admin->subscriptions, scope_topic);
 
 		if(subscription == NULL) {
-			status += pubsub_topicSubscriptionCreate(admin->bundle_context,subEP->scope, subEP->topic,&subscription);
+			status += pubsub_topicSubscriptionCreate(admin->bundle_context,subEP,subEP->scope, subEP->topic,&subscription);
 
 			if (status==CELIX_SUCCESS){
 

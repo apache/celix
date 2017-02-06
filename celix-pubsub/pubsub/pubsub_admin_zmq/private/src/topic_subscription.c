@@ -51,7 +51,7 @@
 
 #include "pubsub_serializer.h"
 
-#ifdef USE_ZMQ_SECURITY
+#ifdef BUILD_WITH_ZMQ_SECURITY
 	#include "zmq_crypto.h"
 
 	#define MAX_CERT_PATH_LENGTH 512
@@ -109,60 +109,94 @@ static void destroy_mp_handle(mp_handle_pt mp_handle);
 static void connectPendingPublishers(topic_subscription_pt sub);
 static void disconnectPendingPublishers(topic_subscription_pt sub);
 
-celix_status_t pubsub_topicSubscriptionCreate(bundle_context_pt bundle_context, char* scope, char* topic,topic_subscription_pt* out){
+celix_status_t pubsub_topicSubscriptionCreate(bundle_context_pt bundle_context, pubsub_endpoint_pt subEP, char* scope, char* topic,topic_subscription_pt* out){
 	celix_status_t status = CELIX_SUCCESS;
 
-#ifdef USE_ZMQ_SECURITY
-	char* keys_bundle_dir = pubsub_getKeysBundleDir(bundle_context);
-	if (keys_bundle_dir == NULL){
-		return CELIX_SERVICE_EXCEPTION;
+#ifdef BUILD_WITH_ZMQ_SECURITY
+	if(strcmp(topic,PUBSUB_ANY_SUB_TOPIC) != 0){
+		char* secure_topics = NULL;
+		bundleContext_getProperty(bundle_context, "SECURE_TOPICS", (const char **) &secure_topics);
+
+		if (secure_topics){
+			array_list_pt secure_topics_list = pubsub_getTopicsFromString(secure_topics);
+
+			int i;
+			int secure_topics_size = arrayList_size(secure_topics_list);
+			for (i = 0; i < secure_topics_size; i++){
+				char* top = arrayList_get(secure_topics_list, i);
+				if (strcmp(topic, top) == 0){
+					printf("TS: Secure topic: '%s'\n", top);
+					subEP->is_secure = true;
+				}
+				free(top);
+				top = NULL;
+			}
+
+			arrayList_destroy(secure_topics_list);
+		}
 	}
 
-	const char* keys_file_path = NULL;
-	const char* keys_file_name = NULL;
-	bundleContext_getProperty(bundle_context, PROPERTY_KEYS_FILE_PATH, &keys_file_path);
-	bundleContext_getProperty(bundle_context, PROPERTY_KEYS_FILE_NAME, &keys_file_name);
+	zcert_t* sub_cert = NULL;
+	zcert_t* pub_cert = NULL;
+	const char* pub_key = NULL;
+	if (subEP->is_secure){
+		char* keys_bundle_dir = pubsub_getKeysBundleDir(bundle_context);
+		if (keys_bundle_dir == NULL){
+			return CELIX_SERVICE_EXCEPTION;
+		}
 
-	char sub_cert_path[MAX_CERT_PATH_LENGTH];
-	char pub_cert_path[MAX_CERT_PATH_LENGTH];
+		const char* keys_file_path = NULL;
+		const char* keys_file_name = NULL;
+		bundleContext_getProperty(bundle_context, PROPERTY_KEYS_FILE_PATH, &keys_file_path);
+		bundleContext_getProperty(bundle_context, PROPERTY_KEYS_FILE_NAME, &keys_file_name);
 
-	//certificate path ".cache/bundle{id}/version0.0/./META-INF/keys/subscriber/private/sub_{topic}.key.enc"
-	snprintf(sub_cert_path, MAX_CERT_PATH_LENGTH, "%s/META-INF/keys/subscriber/private/sub_%s.key.enc", keys_bundle_dir, topic);
-	snprintf(pub_cert_path, MAX_CERT_PATH_LENGTH, "%s/META-INF/keys/publisher/public/pub_%s.pub", keys_bundle_dir, topic);
-	free(keys_bundle_dir);
+		char sub_cert_path[MAX_CERT_PATH_LENGTH];
+		char pub_cert_path[MAX_CERT_PATH_LENGTH];
 
-	printf("PSA: Loading subscriber key '%s'\n", sub_cert_path);
-	printf("PSA: Loading publisher key '%s'\n", pub_cert_path);
+		//certificate path ".cache/bundle{id}/version0.0/./META-INF/keys/subscriber/private/sub_{topic}.key.enc"
+		snprintf(sub_cert_path, MAX_CERT_PATH_LENGTH, "%s/META-INF/keys/subscriber/private/sub_%s.key.enc", keys_bundle_dir, topic);
+		snprintf(pub_cert_path, MAX_CERT_PATH_LENGTH, "%s/META-INF/keys/publisher/public/pub_%s.pub", keys_bundle_dir, topic);
+		free(keys_bundle_dir);
 
-	zcert_t* sub_cert = get_zcert_from_encoded_file((char *) keys_file_path, (char *) keys_file_name, sub_cert_path);
-	if (sub_cert == NULL){
-		printf("PSA: Cannot load key '%s'\n", sub_cert_path);
-		return CELIX_SERVICE_EXCEPTION;
+		printf("TS: Loading subscriber key '%s'\n", sub_cert_path);
+		printf("TS: Loading publisher key '%s'\n", pub_cert_path);
+
+		sub_cert = get_zcert_from_encoded_file((char *) keys_file_path, (char *) keys_file_name, sub_cert_path);
+		if (sub_cert == NULL){
+			printf("TS: Cannot load key '%s'\n", sub_cert_path);
+			printf("TS: Topic '%s' NOT SECURED !\n", topic);
+			subEP->is_secure = false;
+		}
+
+		pub_cert = zcert_load(pub_cert_path);
+		if (sub_cert != NULL && pub_cert == NULL){
+			zcert_destroy(&sub_cert);
+			printf("TS: Cannot load key '%s'\n", pub_cert_path);
+			printf("TS: Topic '%s' NOT SECURED !\n", topic);
+			subEP->is_secure = false;
+		}
+
+		pub_key = zcert_public_txt(pub_cert);
 	}
-
-	zcert_t* pub_cert = zcert_load(pub_cert_path);
-	if (pub_cert == NULL){
-		zcert_destroy(&sub_cert);
-		printf("PSA: Cannot load key '%s'\n", pub_cert_path);
-		return CELIX_SERVICE_EXCEPTION;
-	}
-
-	const char* pub_key = zcert_public_txt(pub_cert);
 #endif
 
 	zsock_t* zmq_s = zsock_new (ZMQ_SUB);
 	if(zmq_s==NULL){
-		#ifdef USE_ZMQ_SECURITY
-		zcert_destroy(&sub_cert);
-		zcert_destroy(&pub_cert);
+		#ifdef BUILD_WITH_ZMQ_SECURITY
+		if (subEP->is_secure){
+			zcert_destroy(&sub_cert);
+			zcert_destroy(&pub_cert);
+		}
 		#endif
 
 		return CELIX_SERVICE_EXCEPTION;
 	}
 
-	#ifdef USE_ZMQ_SECURITY
-	zcert_apply (sub_cert, zmq_s);
-	zsock_set_curve_serverkey (zmq_s, pub_key); //apply key of publisher to socket of subscriber
+	#ifdef BUILD_WITH_ZMQ_SECURITY
+	if (subEP->is_secure){
+		zcert_apply (sub_cert, zmq_s);
+		zsock_set_curve_serverkey (zmq_s, pub_key); //apply key of publisher to socket of subscriber
+	}
 	#endif
 
 	if(strcmp(topic,PUBSUB_ANY_SUB_TOPIC)==0){
@@ -178,9 +212,11 @@ celix_status_t pubsub_topicSubscriptionCreate(bundle_context_pt bundle_context, 
 	ts->running = false;
 	ts->nrSubscribers = 0;
 
-	#ifdef USE_ZMQ_SECURITY
-	ts->zmq_cert = sub_cert;
-	ts->zmq_pub_cert = pub_cert;
+	#ifdef BUILD_WITH_ZMQ_SECURITY
+	if (subEP->is_secure){
+		ts->zmq_cert = sub_cert;
+		ts->zmq_pub_cert = pub_cert;
+	}
 	#endif
 
 	celixThreadMutex_create(&ts->socket_lock, NULL);
@@ -246,7 +282,7 @@ celix_status_t pubsub_topicSubscriptionDestroy(topic_subscription_pt ts){
 
 	celixThreadMutex_lock(&ts->socket_lock);
 	zsock_destroy(&(ts->zmq_socket));
-	#ifdef USE_ZMQ_SECURITY
+	#ifdef BUILD_WITH_ZMQ_SECURITY
 	zcert_destroy(&(ts->zmq_cert));
 	zcert_destroy(&(ts->zmq_pub_cert));
 	#endif
