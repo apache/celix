@@ -104,7 +104,7 @@ celix_status_t pubsubAdmin_create(bundle_context_pt context, pubsub_admin_pt *ad
 		if (mc_ip == NULL) {
 		    const char *mc_prefix = NULL;
             const char *interface = NULL;
-            int b0, b1, b2, b3;
+            int b0 = 224, b1 = 100, b2 = 1, b3 = 1;
             bundleContext_getProperty(context,PSA_MULTICAST_IP_PREFIX , &mc_prefix);
             if(mc_prefix == NULL) {
                 mc_prefix = DEFAULT_MC_PREFIX;
@@ -127,22 +127,28 @@ celix_status_t pubsubAdmin_create(bundle_context_pt context, pubsub_admin_pt *ad
 	        int sendSocket = socket(AF_INET, SOCK_DGRAM, 0);
 	        if(sendSocket == -1) {
 	            perror("pubsubAdmin_create:socket");
-	            return CELIX_SERVICE_EXCEPTION;
-	        }
-	        char loop = 1;
-	        if(setsockopt(sendSocket, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop)) != 0) {
-	            perror("pubsubAdmin_create:setsockopt(IP_MULTICAST_LOOP)");
-	            return CELIX_SERVICE_EXCEPTION;
+	            status = CELIX_SERVICE_EXCEPTION;
 	        }
 
-	        struct in_addr multicast_interface;
-	        inet_aton(if_ip, &multicast_interface);
-	        if(setsockopt(sendSocket,  IPPROTO_IP, IP_MULTICAST_IF, &multicast_interface, sizeof(multicast_interface)) != 0) {
-	            perror("pubsubAdmin_create:setsockopt(IP_MULTICAST_IF)");
-	            return CELIX_SERVICE_EXCEPTION;
-	        }
+	        if (status == CELIX_SUCCESS){
+				char loop = 1;
+				if(setsockopt(sendSocket, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop)) != 0) {
+					perror("pubsubAdmin_create:setsockopt(IP_MULTICAST_LOOP)");
+					status = CELIX_SERVICE_EXCEPTION;
+				}
 
-	        (*admin)->sendSocket = sendSocket;
+				if (status == CELIX_SUCCESS){
+					struct in_addr multicast_interface;
+					inet_aton(if_ip, &multicast_interface);
+					if(setsockopt(sendSocket,  IPPROTO_IP, IP_MULTICAST_IF, &multicast_interface, sizeof(multicast_interface)) != 0) {
+						perror("pubsubAdmin_create:setsockopt(IP_MULTICAST_IF)");
+						status = CELIX_SERVICE_EXCEPTION;
+					}
+
+					(*admin)->sendSocket = sendSocket;
+				}
+
+	        }
 
 		}
 #endif
@@ -160,6 +166,10 @@ celix_status_t pubsubAdmin_create(bundle_context_pt context, pubsub_admin_pt *ad
 		else {
 			logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_WARNING, "PSA: No IP address for service annunciation set. Using %s", DEFAULT_MC_IP);
 			(*admin)->mcIpAddress = strdup(DEFAULT_MC_IP);
+		}
+
+		if (status != CELIX_SUCCESS){
+			pubsubAdmin_destroy(*admin);
 		}
 
 	}

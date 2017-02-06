@@ -336,7 +336,7 @@ celix_status_t pubsub_topicSubscriptionStop(topic_subscription_pt ts){
 celix_status_t pubsub_topicSubscriptionConnectPublisher(topic_subscription_pt ts, char* pubURL){
 	celix_status_t status = CELIX_SUCCESS;
 	celixThreadMutex_lock(&ts->socket_lock);
-	if(!zsock_is(ts->zmq_socket) || zsock_connect(ts->zmq_socket,pubURL) != 0){
+	if(!zsock_is(ts->zmq_socket) || zsock_connect(ts->zmq_socket, "%s", pubURL) != 0){
 		status = CELIX_SERVICE_EXCEPTION;
 	}
 	celixThreadMutex_unlock(&ts->socket_lock);
@@ -366,7 +366,7 @@ celix_status_t pubsub_topicSubscriptionDisconnectPublisher(topic_subscription_pt
 	celix_status_t status = CELIX_SUCCESS;
 
 	celixThreadMutex_lock(&ts->socket_lock);
-	if(!zsock_is(ts->zmq_socket) || zsock_disconnect(ts->zmq_socket,pubURL) != 0){
+	if(!zsock_is(ts->zmq_socket) || zsock_disconnect(ts->zmq_socket, "%s", pubURL) != 0){
 		status = CELIX_SERVICE_EXCEPTION;
 	}
 	celixThreadMutex_unlock(&ts->socket_lock);
@@ -497,9 +497,9 @@ static void process_msg(topic_subscription_pt sub,array_list_pt msg_list){
 
 			if(validVersion){
 
-				int rc = pubsubSerializer_deserialize(msgType, (const void *) zframe_data(((complete_zmq_msg_pt)arrayList_get(msg_list,0))->payload), &msgInst);
+				celix_status_t status = pubsubSerializer_deserialize(msgType, (const void *) zframe_data(((complete_zmq_msg_pt)arrayList_get(msg_list,0))->payload), &msgInst);
 
-				if (rc != -1) {
+				if (status == CELIX_SUCCESS) {
 					bool release = true;
 
 					mp_handle_pt mp_handle = create_mp_handle(msgTypes,msg_list);
@@ -735,9 +735,9 @@ static mp_handle_pt create_mp_handle(hash_map_pt svc_msg_db,array_list_pt rcv_ms
 			bool validVersion = checkVersion(msgVersion,header);
 
 			if(validVersion){
-				int rc = pubsubSerializer_deserialize(msgType, (const void *) zframe_data(c_msg->payload), &msgInst);
+				celix_status_t status = pubsubSerializer_deserialize(msgType, (const void *) zframe_data(c_msg->payload), &msgInst);
 
-				if(rc != -1){
+				if(status == CELIX_SUCCESS){
 					unsigned int* msgId = calloc(1,sizeof(unsigned int));
 					*msgId = header->type;
 					msg_map_entry_pt entry = calloc(1,sizeof(struct msg_map_entry));

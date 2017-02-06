@@ -131,7 +131,6 @@ celix_status_t pubsub_discovery_stop(pubsub_discovery_pt ps_discovery) {
         etcdWatcher_stop(wi->watcher);
     }
     hashMapIterator_destroy(iter);
-    celixThreadMutex_unlock(&ps_discovery->watchersMutex);
 
     celixThreadMutex_lock(&ps_discovery->discoveredPubsMutex);
 
@@ -168,6 +167,7 @@ celix_status_t pubsub_discovery_stop(pubsub_discovery_pt ps_discovery) {
     hashMapIterator_destroy(iter);
     hashMap_destroy(ps_discovery->watchers, true, true);
     celixThreadMutex_unlock(&ps_discovery->watchersMutex);
+
     return status;
 }
 
@@ -316,7 +316,7 @@ celix_status_t pubsub_discovery_removePublisher(void *handle, pubsub_endpoint_pt
 	free(pub_key);
 	if(pubEP_list==NULL){
 		printf("PSD: Cannot find any registered publisher for topic %s. Something is not consistent.\n",pubEP->topic);
-		return CELIX_ILLEGAL_STATE;
+		status = CELIX_ILLEGAL_STATE;
 	}
 	else{
 

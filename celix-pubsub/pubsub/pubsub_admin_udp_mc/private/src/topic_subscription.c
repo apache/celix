@@ -226,65 +226,79 @@ celix_status_t pubsub_topicSubscriptionConnectPublisher(topic_subscription_pt ts
     if (!hashMap_containsKey(ts->socketMap, pubURL)){
 
 		celixThreadMutex_lock(&ts->ts_lock);
+
 		int *recvSocket = calloc(sizeof(int), 1);
 		*recvSocket = socket(AF_INET, SOCK_DGRAM, 0);
 		if (*recvSocket < 0) {
 			perror("pubsub_topicSubscriptionCreate:socket");
-			return CELIX_SERVICE_EXCEPTION;
+			status = CELIX_SERVICE_EXCEPTION;
 		}
 
-		int reuse = 1;
-		if (setsockopt(*recvSocket, SOL_SOCKET, SO_REUSEADDR, (char*) &reuse, sizeof(reuse)) != 0) {
-			perror("setsockopt() SO_REUSEADDR");
-			return CELIX_SERVICE_EXCEPTION;
+		if (status == CELIX_SUCCESS){
+			int reuse = 1;
+			if (setsockopt(*recvSocket, SOL_SOCKET, SO_REUSEADDR, (char*) &reuse, sizeof(reuse)) != 0) {
+				perror("setsockopt() SO_REUSEADDR");
+				status = CELIX_SERVICE_EXCEPTION;
+			}
 		}
 
-		// TODO Check if there is a better way to parse the URL to IP/Portnr
-		//replace ':' by spaces
-		char *url = strdup(pubURL);
-		char *pt = url;
-		while((pt=strchr(pt, ':')) != NULL) {
-			*pt = ' ';
+		if (status == CELIX_SUCCESS){
+			// TODO Check if there is a better way to parse the URL to IP/Portnr
+			//replace ':' by spaces
+			char *url = strdup(pubURL);
+			char *pt = url;
+			while((pt=strchr(pt, ':')) != NULL) {
+				*pt = ' ';
+			}
+			char mcIp[100];
+			unsigned short mcPort;
+			sscanf(url, "udp //%s %hu", mcIp, &mcPort);
+			free (url);
+
+			printf("pubsub_topicSubscriptionConnectPublisher : IP = %s, Port = %hu\n", mcIp, mcPort);
+
+			struct ip_mreq mc_addr;
+			mc_addr.imr_multiaddr.s_addr = inet_addr(mcIp);
+			mc_addr.imr_interface.s_addr = inet_addr(ts->ifIpAddress);
+			printf("Adding MC %s at interface %s\n", mcIp, ts->ifIpAddress);
+			if (setsockopt(*recvSocket, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char*) &mc_addr, sizeof(mc_addr)) != 0) {
+				perror("setsockopt() IP_ADD_MEMBERSHIP");
+				status = CELIX_SERVICE_EXCEPTION;
+			}
+
+			if (status == CELIX_SUCCESS){
+				struct sockaddr_in mcListenAddr;
+				mcListenAddr.sin_family = AF_INET;
+				mcListenAddr.sin_addr.s_addr = INADDR_ANY;
+				mcListenAddr.sin_port = htons(mcPort);
+				if(bind(*recvSocket, (struct sockaddr*)&mcListenAddr, sizeof(mcListenAddr)) != 0) {
+					perror("bind()");
+					status = CELIX_SERVICE_EXCEPTION;
+				}
+			}
+
+			if (status == CELIX_SUCCESS){
+				#if defined(__APPLE__) && defined(__MACH__)
+					//TODO: Use kqueue for OSX
+				#else
+					struct epoll_event ev;
+					memset(&ev, 0, sizeof(ev));
+					ev.events = EPOLLIN;
+					ev.data.fd = *recvSocket;
+					if(epoll_ctl(ts->topicEpollFd, EPOLL_CTL_ADD, *recvSocket, &ev) == -1) {
+						perror("epoll_ctl() EPOLL_CTL_ADD");
+						status = CELIX_SERVICE_EXCEPTION;
+					}
+				#endif
+			}
+
 		}
-		char mcIp[100];
-		unsigned short mcPort;
-		sscanf(url, "udp //%s %hu", mcIp, &mcPort);
-		free (url);
 
-		printf("pubsub_topicSubscriptionConnectPublisher : IP = %s, Port = %hu\n", mcIp, mcPort);
-
-		struct ip_mreq mc_addr;
-		mc_addr.imr_multiaddr.s_addr = inet_addr(mcIp);
-		mc_addr.imr_interface.s_addr = inet_addr(ts->ifIpAddress);
-		printf("Adding MC %s at interface %s\n", mcIp, ts->ifIpAddress);
-		if (setsockopt(*recvSocket, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char*) &mc_addr, sizeof(mc_addr)) != 0) {
-			perror("setsockopt() IP_ADD_MEMBERSHIP");
-			return CELIX_SERVICE_EXCEPTION;
+		if (status == CELIX_SUCCESS){
+			hashMap_put(ts->socketMap, pubURL, (void*)recvSocket);
+		}else{
+			free(recvSocket);
 		}
-
-		struct sockaddr_in mcListenAddr;
-		mcListenAddr.sin_family = AF_INET;
-		mcListenAddr.sin_addr.s_addr = INADDR_ANY;
-		mcListenAddr.sin_port = htons(mcPort);
-		if(bind(*recvSocket, (struct sockaddr*)&mcListenAddr, sizeof(mcListenAddr)) != 0) {
-			perror("bind()");
-			return CELIX_SERVICE_EXCEPTION;
-		}
-
-#if defined(__APPLE__) && defined(__MACH__)
-    //TODO: Use kqueue for OSX
-#else
-		struct epoll_event ev;
-		memset(&ev, 0, sizeof(ev));
-		ev.events = EPOLLIN;
-		ev.data.fd = *recvSocket;
-		if(epoll_ctl(ts->topicEpollFd, EPOLL_CTL_ADD, *recvSocket, &ev) == -1) {
-			perror("epoll_ctl() EPOLL_CTL_ADD");
-			return CELIX_SERVICE_EXCEPTION;
-		}
-#endif
-
-		hashMap_put(ts->socketMap, pubURL, (void*)recvSocket);
 
 		celixThreadMutex_unlock(&ts->ts_lock);
 
@@ -444,9 +458,9 @@ static void process_msg(topic_subscription_pt sub,pubsub_udp_msg_pt msg){
 			bool validVersion = checkVersion(msgVersion,&msg->header);
 
 			if(validVersion){
-				int rc = pubsubSerializer_deserialize(msgType, (const void *) msg->payload, &msgInst);
+				celix_status_t status = pubsubSerializer_deserialize(msgType, (const void *) msg->payload, &msgInst);
 
-				if (rc != -1) {
+				if (status == CELIX_SUCCESS) {
 					bool release = true;
 					pubsub_multipart_callbacks_t mp_callbacks;
 					mp_callbacks.handle = sub;

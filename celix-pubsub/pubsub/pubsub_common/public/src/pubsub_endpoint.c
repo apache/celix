@@ -35,36 +35,43 @@
 #include "constants.h"
 #include "subscriber.h"
 
-celix_status_t pubsubEndpoint_create(const char* fwUUID, const char* scope, const char* topic, long serviceId, const char* endpoint, pubsub_endpoint_pt* psEp) {
+celix_status_t pubsubEndpoint_create(const char* fwUUID, const char* scope, const char* topic, long serviceId, const char* endpoint, pubsub_endpoint_pt* out) {
     celix_status_t status = CELIX_SUCCESS;
-    *psEp = calloc(1, sizeof(**psEp));
+
+    pubsub_endpoint_pt psEp = calloc(1, sizeof(*psEp));
 
     if (fwUUID != NULL) {
-        (*psEp)->frameworkUUID = strdup(fwUUID);
+        psEp->frameworkUUID = strdup(fwUUID);
     }
 
     if (scope != NULL) {
-        (*psEp)->scope = strdup(scope);
+        psEp->scope = strdup(scope);
     }
 
     if (topic != NULL) {
-        (*psEp)->topic = strdup(topic);
+        psEp->topic = strdup(topic);
     }
 
-    (*psEp)->serviceID = serviceId;
+    psEp->serviceID = serviceId;
 
     if (endpoint != NULL) {
-        (*psEp)->endpoint = strdup(endpoint);
+        psEp->endpoint = strdup(endpoint);
     }
+
+    if (status != CELIX_SUCCESS) {
+		pubsubEndpoint_destroy(psEp);
+	} else {
+		*out = psEp;
+	}
 
     return status;
 
 }
 
-celix_status_t pubsubEndpoint_createFromServiceReference(service_reference_pt reference, pubsub_endpoint_pt* psEp){
+celix_status_t pubsubEndpoint_createFromServiceReference(service_reference_pt reference, pubsub_endpoint_pt* out){
 	celix_status_t status = CELIX_SUCCESS;
 
-	*psEp = calloc(1,sizeof(**psEp));
+	pubsub_endpoint_pt psEp = calloc(1,sizeof(*psEp));
 
 	bundle_pt bundle = NULL;
 	bundle_context_pt ctxt = NULL;
@@ -82,28 +89,33 @@ celix_status_t pubsubEndpoint_createFromServiceReference(service_reference_pt re
 	const char* serviceId = NULL;
 	serviceReference_getProperty(reference,(char*)OSGI_FRAMEWORK_SERVICE_ID,&serviceId);
 
-
 	if(fwUUID!=NULL){
-		(*psEp)->frameworkUUID=strdup(fwUUID);
+		psEp->frameworkUUID = strdup(fwUUID);
 	}
 
 	if(scope!=NULL){
-		(*psEp)->scope=strdup(scope);
+		psEp->scope = strdup(scope);
 	} else {
-	    (*psEp)->scope=strdup(PUBSUB_SUBSCRIBER_SCOPE_DEFAULT);
+	    psEp->scope = strdup(PUBSUB_SUBSCRIBER_SCOPE_DEFAULT);
 	}
 
 	if(topic!=NULL){
-		(*psEp)->topic=strdup(topic);
+		psEp->topic = strdup(topic);
 	}
 
 	if(serviceId!=NULL){
-		(*psEp)->serviceID = strtol(serviceId,NULL,10);
+		psEp->serviceID = strtol(serviceId,NULL,10);
 	}
 
-	if (!(*psEp)->frameworkUUID || !(*psEp)->serviceID || !(*psEp)->scope || !(*psEp)->topic) {
+	if (!psEp->frameworkUUID || !psEp->serviceID || !psEp->scope || !psEp->topic) {
 		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "PUBSUB_ENDPOINT: incomplete description!.");
 		status = CELIX_BUNDLE_EXCEPTION;
+	}
+
+	if (status != CELIX_SUCCESS) {
+		pubsubEndpoint_destroy(psEp);
+	} else {
+		*out = psEp;
 	}
 
 	return status;
@@ -111,29 +123,15 @@ celix_status_t pubsubEndpoint_createFromServiceReference(service_reference_pt re
 }
 
 celix_status_t pubsubEndpoint_destroy(pubsub_endpoint_pt psEp){
-    if(psEp->frameworkUUID!=NULL){
+	if (psEp != NULL) {
 		free(psEp->frameworkUUID);
-		psEp->frameworkUUID = NULL;
-	}
-
-	if(psEp->scope!=NULL){
 		free(psEp->scope);
-		psEp->scope = NULL;
-	}
-
-	if(psEp->topic!=NULL){
 		free(psEp->topic);
-		psEp->topic = NULL;
-	}
-
-	if(psEp->endpoint!=NULL){
 		free(psEp->endpoint);
-		psEp->endpoint = NULL;
 	}
-
 	free(psEp);
-	return CELIX_SUCCESS;
 
+	return CELIX_SUCCESS;
 }
 
 bool pubsubEndpoint_equals(pubsub_endpoint_pt psEp1,pubsub_endpoint_pt psEp2){
@@ -144,7 +142,6 @@ bool pubsubEndpoint_equals(pubsub_endpoint_pt psEp1,pubsub_endpoint_pt psEp2){
 			(psEp1->serviceID == psEp2->serviceID) /*&&
 			((psEp1->endpoint==NULL && psEp2->endpoint==NULL)||(strcmp(psEp1->endpoint,psEp2->endpoint)==0))*/
 	);
-
 
 }
 

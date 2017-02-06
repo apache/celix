@@ -149,8 +149,23 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 				if (status == CELIX_SUCCESS) {
 					*userData = activator;
 				}
+				if (status != CELIX_SUCCESS){
+					serviceTracker_destroy(activator->pubsubAdminTracker);
+				}
+			}
+			if (status != CELIX_SUCCESS){
+				serviceTracker_destroy(activator->pubsubDiscoveryTracker);
 			}
 		}
+		if (status != CELIX_SUCCESS){
+			pubsub_topologyManager_destroy(activator->manager);
+		}
+	}
+	if (status != CELIX_SUCCESS){ // an exception occurred so free allocated memory
+		logHelper_stop(activator->loghelper);
+		logHelper_destroy(&activator->loghelper);
+		free(activator);
+
 	}
 
 	return status;

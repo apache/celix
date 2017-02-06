@@ -44,26 +44,32 @@ struct publisherActivator {
 };
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
+	celix_status_t status = CELIX_SUCCESS;
+
 	struct publisherActivator * act = malloc(sizeof(*act));
 
 	const char* fwUUID = NULL;
 
 	bundleContext_getProperty(context,OSGI_FRAMEWORK_FRAMEWORK_UUID,&fwUUID);
-	if(fwUUID==NULL){
+	if(fwUUID == NULL){
 		printf("MP_PUBLISHER: Cannot retrieve fwUUID.\n");
-		return CELIX_INVALID_BUNDLE_CONTEXT;
+		status = CELIX_INVALID_BUNDLE_CONTEXT;
 	}
 
-	bundle_pt bundle = NULL;
-	long bundleId = 0;
-	bundleContext_getBundle(context,&bundle);
-	bundle_getBundleId(bundle,&bundleId);
+	if (status == CELIX_SUCCESS){
+		bundle_pt bundle = NULL;
+		long bundleId = 0;
+		bundleContext_getBundle(context,&bundle);
+		bundle_getBundleId(bundle,&bundleId);
 
-	arrayList_create(&(act->trackerList));
-	act->client = publisher_create(act->trackerList,fwUUID,bundleId);
-	*userData = act;
+		arrayList_create(&(act->trackerList));
+		act->client = publisher_create(act->trackerList,fwUUID,bundleId);
+		*userData = act;
+	} else {
+		free(act);
+	}
 
-	return CELIX_SUCCESS;
+	return status;
 }
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {

@@ -54,13 +54,14 @@ void fillMsgTypesMap(hash_map_pt msgTypesMap,bundle_pt bundle){
 	char *metaInfPath = NULL;
 
 	root = getMsgDescriptionDir(bundle);
-	asprintf(&metaInfPath, "%s/META-INF/descriptors", root);
 
-	addMsgDescriptorsFromBundle(root, bundle, msgTypesMap);
-	addMsgDescriptorsFromBundle(metaInfPath, bundle, msgTypesMap);
+	if(root != NULL){
+		asprintf(&metaInfPath, "%s/META-INF/descriptors", root);
 
-	free(metaInfPath);
-	if(root!=NULL){
+		addMsgDescriptorsFromBundle(root, bundle, msgTypesMap);
+		addMsgDescriptorsFromBundle(metaInfPath, bundle, msgTypesMap);
+
+		free(metaInfPath);
 		free(root);
 	}
 }
@@ -127,25 +128,30 @@ static void addMsgDescriptorsFromBundle(const char *root, bundle_pt bundle, hash
 			snprintf(path, 128, "%s/%s", root, entry->d_name);
 			FILE *stream = fopen(path,"r");
 
-			dyn_message_type* msgType = NULL;
+			if (stream != NULL){
+				dyn_message_type* msgType = NULL;
 
-			int rc = dynMessage_parse(stream, &msgType);
-			if (rc == 0 && msgType!=NULL) {
+				int rc = dynMessage_parse(stream, &msgType);
+				if (rc == 0 && msgType!=NULL) {
 
-				char* msgName = NULL;
-				dynMessage_getName(msgType,&msgName);
+					char* msgName = NULL;
+					dynMessage_getName(msgType,&msgName);
 
-				if(msgName!=NULL){
-					unsigned int* msgId = malloc(sizeof(unsigned int));
-					*msgId = utils_stringHash(msgName);
-					hashMap_put(msgTypesMap,msgId,msgType);
+					if(msgName!=NULL){
+						unsigned int* msgId = malloc(sizeof(unsigned int));
+						*msgId = utils_stringHash(msgName);
+						hashMap_put(msgTypesMap,msgId,msgType);
+					}
+
 				}
+				else{
+					printf("DMU: cannot parse message from descriptor %s\n.",path);
+				}
+				fclose(stream);
+			}else{
+				printf("DMU: cannot open descriptor file %s\n.",path);
+			}
 
-			}
-			else{
-				printf("DMU: cannot parse message from descriptor %s\n.",path);
-			}
-			fclose(stream);
 		}
 		entry = readdir(dir);
 	}

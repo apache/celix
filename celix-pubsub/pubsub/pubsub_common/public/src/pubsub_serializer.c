@@ -42,35 +42,39 @@ struct _pubsub_message_type {	/* _dyn_message_type */
 	version_pt msgVersion;
 };
 
-int pubsubSerializer_serialize(pubsub_message_type *msgType, const void *input, void **output, int *outputLen){
-
-	int rc = 0;
+celix_status_t pubsubSerializer_serialize(pubsub_message_type *msgType, const void *input, void **output, int *outputLen){
+	celix_status_t status = CELIX_SUCCESS;
 
 	dyn_type *type = NULL;
 	dynMessage_getMessageType((dyn_message_type *) msgType, &type);
 
 	char *jsonOutput = NULL;
-	rc = jsonSerializer_serialize(type, (void *) input, &jsonOutput);
+	int rc = jsonSerializer_serialize(type, (void *) input, &jsonOutput);
+	if (rc != 0){
+		status = CELIX_BUNDLE_EXCEPTION;
+	}
 
 	*output = (void *) jsonOutput;
 	*outputLen = strlen(jsonOutput) + 1;
 
-	return rc;
+	return status;
 }
 
-int pubsubSerializer_deserialize(pubsub_message_type *msgType, const void *input, void **output){
-
-	int rc = 0;
+celix_status_t pubsubSerializer_deserialize(pubsub_message_type *msgType, const void *input, void **output){
+	celix_status_t status = CELIX_SUCCESS;
 
 	dyn_type *type = NULL;
 	dynMessage_getMessageType((dyn_message_type *) msgType, &type);
 
 	void *textOutput = NULL;
-	rc = jsonSerializer_deserialize(type, (const char *) input, &textOutput);
+	int rc = jsonSerializer_deserialize(type, (const char *) input, &textOutput);
+	if (rc != 0){
+		status = CELIX_BUNDLE_EXCEPTION;
+	}
 
 	*output = textOutput;
 
-	return rc;
+	return status;
 }
 
 unsigned int pubsubSerializer_hashCode(const char *string){

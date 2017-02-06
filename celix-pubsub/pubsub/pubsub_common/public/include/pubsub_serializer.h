@@ -29,11 +29,12 @@
 
 #include "bundle.h"
 #include "hash_map.h"
+#include "celix_errno.h"
 
 typedef struct _pubsub_message_type pubsub_message_type;
 
-int pubsubSerializer_serialize(pubsub_message_type *msgType, const void *input, void **output, int *outputLen);
-int pubsubSerializer_deserialize(pubsub_message_type *msgType, const void *input, void **output);
+celix_status_t pubsubSerializer_serialize(pubsub_message_type *msgType, const void *input, void **output, int *outputLen);
+celix_status_t pubsubSerializer_deserialize(pubsub_message_type *msgType, const void *input, void **output);
 
 unsigned int pubsubSerializer_hashCode(const char *string);
 version_pt pubsubSerializer_getVersion(pubsub_message_type *msgType);

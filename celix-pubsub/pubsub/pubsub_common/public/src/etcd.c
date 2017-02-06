@@ -289,15 +289,13 @@ int etcd_set_with_check(const char* key, const char* value, int ttl, bool always
     int result = 0;
     if (etcd_get(key, &etcd_value, NULL) == 0) {
         if (strcmp(etcd_value, value) != 0) {
-            printf("[ETCDLIB} WARNING: value already exists and is different\n");
+            printf("[ETCDLIB] WARNING: value already exists and is different\n");
             printf("   key       = %s\n", key);
             printf("   old value = %s\n", etcd_value);
             printf("   new value = %s\n", value);
             result = -1;
         }
-        if (etcd_value) {
-            free(etcd_value);
-        }
+		free(etcd_value);
     }
     if(always_write || !result) {
         result = etcd_set(key, value, ttl, false);

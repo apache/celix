@@ -505,7 +505,7 @@ celix_status_t pubsubAdmin_addPublication(pubsub_admin_pt admin, pubsub_endpoint
     /* And check also for ANY subscription */
     topic_subscription_pt any_sub = (topic_subscription_pt) hashMap_get(admin->subscriptions, PUBSUB_ANY_SUB_TOPIC);
     if (any_sub != NULL && pubEP->endpoint != NULL) {
-        pubsub_topicSubscriptionAddConnectPublisherToPendingList(sub, pubEP->endpoint);
+        pubsub_topicSubscriptionAddConnectPublisherToPendingList(any_sub, pubEP->endpoint);
     }
     free(scope_topic);
 
@@ -559,22 +559,24 @@ celix_status_t pubsubAdmin_removePublication(pubsub_admin_pt admin,pubsub_endpoi
 					arrayList_remove(ext_pub_list,i);
 				}
 			}
-			// Check if there are more publsihers on the same endpoint (happens when 1 celix-instance with multiple bundles publish in same topic)
-                        for(i=0; i<arrayList_size(ext_pub_list);i++) {
-                            pubsub_endpoint_pt p  = (pubsub_endpoint_pt)arrayList_get(ext_pub_list,i);
-                            if (strcmp(pubEP->endpoint,p->endpoint) == 0) {
-                                count++;
-                            }
-                        }
+			// Check if there are more publishers on the same endpoint (happens when 1 celix-instance with multiple bundles publish in same topic)
+			int ext_pub_list_size = arrayList_size(ext_pub_list);
+			for(i=0; i<ext_pub_list_size; i++) {
+				pubsub_endpoint_pt p  = (pubsub_endpoint_pt)arrayList_get(ext_pub_list,i);
+				if (strcmp(pubEP->endpoint,p->endpoint) == 0) {
+					count++;
+				}
+			}
 
-		}
-		if(arrayList_size(ext_pub_list)==0){
-			hash_map_entry_pt entry = hashMap_getEntry(admin->externalPublications,scope_topic);
-			char* topic = (char*)hashMapEntry_getKey(entry);
-			array_list_pt list = (array_list_pt)hashMapEntry_getValue(entry);
-			hashMap_remove(admin->externalPublications,topic);
-			arrayList_destroy(list);
-			free(topic);
+			if(ext_pub_list_size == 0){
+				hash_map_entry_pt entry = hashMap_getEntry(admin->externalPublications,scope_topic);
+				char* topic = (char*)hashMapEntry_getKey(entry);
+				array_list_pt list = (array_list_pt)hashMapEntry_getValue(entry);
+				hashMap_remove(admin->externalPublications,topic);
+				arrayList_destroy(list);
+				free(topic);
+			}
+
 		}
 
 		celixThreadMutex_unlock(&admin->externalPublicationsLock);
@@ -591,7 +593,7 @@ celix_status_t pubsubAdmin_removePublication(pubsub_admin_pt admin,pubsub_endpoi
 	/* And check also for ANY subscription */
 	topic_subscription_pt any_sub = (topic_subscription_pt)hashMap_get(admin->subscriptions,PUBSUB_ANY_SUB_TOPIC);
 	if(any_sub!=NULL && pubEP->endpoint!=NULL && count == 0){
-		pubsub_topicSubscriptionAddDisconnectPublisherToPendingList(sub,pubEP->endpoint);
+		pubsub_topicSubscriptionAddDisconnectPublisherToPendingList(any_sub,pubEP->endpoint);
 	}
 	free(scope_topic);
 	celixThreadMutex_unlock(&admin->subscriptionsLock);

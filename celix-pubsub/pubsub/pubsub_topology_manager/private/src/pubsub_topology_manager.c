@@ -372,7 +372,7 @@ celix_status_t pubsub_topologyManager_subscriberAdded(void * handle, service_ref
 		celixThreadMutex_unlock(&manager->psaListLock);
 	}
 	else{
-		status=CELIX_INVALID_BUNDLE_CONTEXT;
+		status = CELIX_INVALID_BUNDLE_CONTEXT;
 	}
 
 	return status;
@@ -457,7 +457,7 @@ celix_status_t pubsub_topologyManager_subscriberRemoved(void * handle, service_r
 
 	}
 	else{
-		status=CELIX_INVALID_BUNDLE_CONTEXT;
+		status = CELIX_INVALID_BUNDLE_CONTEXT;
 	}
 
 	return status;
@@ -631,14 +631,14 @@ celix_status_t pubsub_topologyManager_publisherTrackerAdded(void *handle, array_
 				celixThreadMutex_unlock(&manager->psaListLock);
 
 			}
-			free(topic);
 
 		}
 		else{
 			status=CELIX_INVALID_BUNDLE_CONTEXT;
 		}
-        free(scope);
 
+		free(topic);
+        free(scope);
 	}
 
 	return status;
@@ -731,8 +731,7 @@ celix_status_t pubsub_topologyManager_publisherTrackerRemoved(void *handle, arra
 				celixThreadMutex_unlock(&manager->psaListLock);
 
 				pubsubEndpoint_destroy(pubcmp);
-				free(pub_scope);
-				free(pub_topic);
+
 				free(pub_key);
 
 			}
@@ -741,6 +740,9 @@ celix_status_t pubsub_topologyManager_publisherTrackerRemoved(void *handle, arra
 		else{
 			status=CELIX_INVALID_BUNDLE_CONTEXT;
 		}
+
+		free(pub_scope);
+		free(pub_topic);
 	}
 
 	return status;

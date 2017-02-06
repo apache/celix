@@ -189,7 +189,7 @@ celix_status_t pubsub_topicPublicationCreate(bundle_context_pt bundle_context, p
 
 		snprintf(ep,EP_ADDRESS_LEN,"tcp://%s:%u",bindIP,port);
         snprintf(bindAddress, EP_ADDRESS_LEN, "tcp://0.0.0.0:%u", port); //NOTE using a different bind addres than endpoint address
-		rv = zsock_bind (socket, bindAddress);
+		rv = zsock_bind (socket, "%s", bindAddress);
         if (rv == -1) {
             perror("Error for zmq_bind");
         }

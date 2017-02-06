@@ -243,18 +243,16 @@ celix_status_t etcdWatcher_create(pubsub_discovery_pt pubsub_discovery, bundle_c
 	(*watcher)->scope = strdup(scope);
 	(*watcher)->topic = strdup(topic);
 
-
     celixThreadMutex_create(&(*watcher)->watcherLock, NULL);
 
     celixThreadMutex_lock(&(*watcher)->watcherLock);
 
-    if ((status = celixThread_create(&(*watcher)->watcherThread, NULL, etcdWatcher_run, *watcher)) != CELIX_SUCCESS) {
-        return status;
+    status = celixThread_create(&(*watcher)->watcherThread, NULL, etcdWatcher_run, *watcher);
+    if (status == CELIX_SUCCESS) {
+    	(*watcher)->running = true;
     }
-    (*watcher)->running = true;
 
     celixThreadMutex_unlock(&(*watcher)->watcherLock);
-
 
 	return status;
 }
