@@ -18,11 +18,15 @@
 celix_subproject(PUBSUB "Option to build the pubsub bundles" OFF DEPS UTILS)
 if (PUBSUB)
 
+	option(BUILD_PSA_ZMQ "Build ZeroMQ PubSub Admin (LGPL License)" OFF)
+	if (BUILD_PSA_ZMQ)
+		message(WARNING "Celix will now contain a dependency with a LGPL License (ZeroMQ). For more information about this, consult the pubsub/README.md file.")
+		option(BUILD_ZMQ_SECURITY "Build with security for ZeroMQ." OFF)
+	endif (BUILD_PSA_ZMQ)
+
 	include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 	include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
 
-	option(BUILD_ZMQ_SECURITY "Build with security for ZeroMQ." OFF)
-	
 	set (PUBSUB_SERIALIZER_SRC "${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_serializer.c")
 	set (SERIALIZER_PATH "" CACHE FILEPATH "Path to the directory which will contain the serializer (include / src).")
 	set (SERIALIZER_LIB_INCLUDE_DIR "" CACHE FILEPATH "Path to the include dir of the addiotional libs.")

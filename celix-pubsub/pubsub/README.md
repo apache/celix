@@ -1,4 +1,4 @@
-# PubSubAdmin
+# Publisher / subscriber implementation
 
 This subdirectory contains an implementation for a publish-subscribe remote services system, that use dfi library for message serialization.
 For low-level communication, UDP and ZMQ is used.
@@ -17,16 +17,31 @@ The publisher/subscriber implementation supports sending of a single message and
 
 ## Getting started
 
-To get the ZeroMQ pubsub admin running, [ZeroMQ](https://github.com/zeromq/libzmq) and [CZMQ](https://github.com/zeromq/czmq) needs to be installed.
-
-Also, to make use of encrypted traffic, [OpenSSL] is required.
-[OpenSSL github repo](https://github.com/openssl/openssl)
+The publisher/subscriber implementation contains 2 different PubSubAdmins for managing connections:
+  * PubsubAdminUDP: This pubsub admin is using linux sockets to setup a connection. 
+  * PubsubAdminZMQ (LGPL License): This pubsub admin is using ZeroMQ and is disabled as default. This is a because the pubsub admin is using ZeroMQ which is licensed as LGPL ([View ZeroMQ License](https://github.com/zeromq/libzmq#license)).
+  
+  The ZeroMQ pubsub admin can be enabled by specifying the build flag `BUILD_PSA_ZMQ=ON`. To get the ZeroMQ pubsub admin running, [ZeroMQ](https://github.com/zeromq/libzmq) and [CZMQ](https://github.com/zeromq/czmq) need to be installed. Also, to make use of encrypted traffic, [OpenSSL](https://github.com/openssl/openssl) is required.
 
 ## Running instructions
+
+### Running PSA UDP-Multicast
+
+1. Open a terminal
+1. Run `etcd`
+1. Open second terminal on project build location
+1. Run `cd deploy/pubsub/pubsub_publisher_udp_mc`
+1. Run `sh run.sh`
+1. Open third terminal on project build location
+1. Run `cd deploy/pubsub/pubsub_subscriber_udp_mc`
+1. Run `sh run.sh`
+
+Design information can be found at pubsub\_admin\_udp_mc/README.md
 
 ### Running PSA ZMQ
 
 For ZeroMQ without encryption, skip the steps 1-12 below
+
 1. Run `touch ~/pubsub.keys`
 1. Run `echo "aes_key:{AES_KEY here}" >> ~/pubsub.keys`
 1. Run `echo "aes_iv:{AES_IV here}" >> ~/pubsub.keys`
@@ -43,29 +58,11 @@ For ZeroMQ without encryption, skip the steps 1-12 below
 For ZeroMQ without encryption, start here
 
 1. Run `etcd`
-
 1. Open second terminal on pubsub root
 1. Run `cd deploy/pubsub/pubsub_publisher_zmq`
-1. Run `cat ~/pubsub.conf >> config.properties` only for ZeroMQ with encryption
+1. Run `cat ~/pubsub.conf >> config.properties` (only for ZeroMQ with encryption)
 1. Run `sh run.sh`
-
 1. Open third terminal on pubsub root
 1. Run `cd deploy/pubsub/pubsub_subscriber_zmq`
-1. Run `cat ~/pubsub.conf >> config.properties` only for ZeroMQ with encryption
+1. Run `cat ~/pubsub.conf >> config.properties` (only for ZeroMQ with encryption)
 1. Run `sh run.sh`
-
-### Running PSA UDP-Multicast
-
-1. Open a terminal
-1. Run `etcd`
-
-1. Open second terminal on project build location
-1. Run `cd deploy/pubsub/pubsub_publisher_udp_mc`
-1. Run `sh run.sh`
-
-1. Open third terminal on project build location
-1. Run `cd deploy/pubsub/pubsub_subscriber_udp_mc`
-1. Run `sh run.sh`
-
-Design information can be found at pubsub\_admin\_udp_mc/README.md
-
