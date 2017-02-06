@@ -96,6 +96,7 @@ add_subdirectory(log_service)
 #add_subdirectory(event_admin)# event_admin is unstable
 add_subdirectory(dependency_manager)
 add_subdirectory(dependency_manager_cxx)
+add_subdirectory(pubsub)
 
 #Example as last, because some example will check if underlining options are enabled
 add_subdirectory(examples)
