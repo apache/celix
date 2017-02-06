@@ -156,7 +156,15 @@ celix_status_t publisher_publishSvcAdded(void * handle, service_reference_pt ref
 celix_status_t publisher_publishSvcRemoved(void * handle, service_reference_pt reference, void * service){
 	pubsub_sender_pt manager = (pubsub_sender_pt)handle;
 	celix_thread_t *tid = hashMap_get(manager->tid_map, service);
+
+#if defined(__APPLE__) && defined(__MACH__)
+	uint64_t threadid;
+	pthread_threadid_np(tid->thread, &threadid);
+	printf("PUBLISHER: publish service unexporting (%s) %llu!\n",manager->ident, threadid);
+#else
 	printf("PUBLISHER: publish service unexporting (%s) %li!\n",manager->ident, tid->thread);
+#endif
+
 	stop=true;
 	celixThread_join(*tid,NULL);
 	free(tid);
