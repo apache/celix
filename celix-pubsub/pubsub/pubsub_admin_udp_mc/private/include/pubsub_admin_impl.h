@@ -51,7 +51,6 @@ struct pubsub_admin {
     char* mcIpAddress; // The multicast IP address
 
 	int sendSocket;
-    void* zmq_context; // to be removed
 
 };
 
@@ -67,5 +66,8 @@ celix_status_t pubsubAdmin_removePublication(pubsub_admin_pt admin,pubsub_endpoi
 
 celix_status_t pubsubAdmin_closeAllPublications(pubsub_admin_pt admin,char* scope, char* topic);
 celix_status_t pubsubAdmin_closeAllSubscriptions(pubsub_admin_pt admin,char* scope, char* topic);
+
+celix_status_t pubsubAdmin_matchPublisher(pubsub_admin_pt admin, pubsub_endpoint_pt pubEP, double* score);
+celix_status_t pubsubAdmin_matchSubscriber(pubsub_admin_pt admin, pubsub_endpoint_pt subEP, double* score);
 
 #endif /* PUBSUB_ADMIN_IMPL_H_ */

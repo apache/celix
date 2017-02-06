@@ -67,7 +67,7 @@ static char *DEFAULT_MC_PREFIX = "224.100";
 static celix_status_t pubsubAdmin_getIpAddress(const char* interface, char** ip);
 static celix_status_t pubsubAdmin_addSubscriptionToPendingList(pubsub_admin_pt admin,pubsub_endpoint_pt subEP);
 static celix_status_t pubsubAdmin_addAnySubscription(pubsub_admin_pt admin,pubsub_endpoint_pt subEP);
-
+static celix_status_t pubsubAdmin_match(pubsub_admin_pt admin, pubsub_endpoint_pt psEP, double* score);
 
 celix_status_t pubsubAdmin_create(bundle_context_pt context, pubsub_admin_pt *admin) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -617,6 +617,36 @@ celix_status_t pubsubAdmin_closeAllSubscriptions(pubsub_admin_pt admin,char *sco
 
 }
 
+celix_status_t pubsubAdmin_matchPublisher(pubsub_admin_pt admin, pubsub_endpoint_pt pubEP, double* score){
+	celix_status_t status = CELIX_SUCCESS;
+	status = pubsubAdmin_match(admin, pubEP, score);
+	return status;
+}
+
+celix_status_t pubsubAdmin_matchSubscriber(pubsub_admin_pt admin, pubsub_endpoint_pt subEP, double* score){
+	celix_status_t status = CELIX_SUCCESS;
+	status = pubsubAdmin_match(admin, subEP, score);
+	return status;
+}
+
+static celix_status_t pubsubAdmin_match(pubsub_admin_pt admin, pubsub_endpoint_pt psEP, double* score){
+	celix_status_t status = CELIX_SUCCESS;
+
+	char topic_psa_prop[1024];
+	snprintf(topic_psa_prop, 1024, "%s.psa", psEP->topic);
+
+	const char* psa_to_use = NULL;
+	bundleContext_getPropertyWithDefault(admin->bundle_context, topic_psa_prop, PSA_DEFAULT, &psa_to_use);
+
+	*score = 0;
+	if (strcmp(psa_to_use, "udp") == 0){
+		*score += 100;
+	}else{
+		*score += 1;
+	}
+
+	return status;
+}
 
 #ifndef ANDROID
 static celix_status_t pubsubAdmin_getIpAddress(const char* interface, char** ip) {

@@ -144,14 +144,10 @@ celix_status_t pubsub_topologyManager_psaAdding(void * handle, service_reference
 celix_status_t pubsub_topologyManager_psaAdded(void * handle, service_reference_pt reference, void * service) {
 	celix_status_t status = CELIX_SUCCESS;
 	pubsub_topology_manager_pt manager = handle;
-	int i;
+	int i, j;
 
-	pubsub_admin_service_pt psa = (pubsub_admin_service_pt) service;
+	pubsub_admin_service_pt new_psa = (pubsub_admin_service_pt) service;
 	logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "PSTM: Added PSA");
-
-	celixThreadMutex_lock(&manager->psaListLock);
-	arrayList_add(manager->psaList, psa);
-	celixThreadMutex_unlock(&manager->psaListLock);
 
 	// Add already detected subscriptions to new PSA
 	celixThreadMutex_lock(&manager->subscriptionsLock);
@@ -160,7 +156,27 @@ celix_status_t pubsub_topologyManager_psaAdded(void * handle, service_reference_
 	while (hashMapIterator_hasNext(subscriptionsIterator)) {
 		array_list_pt sub_ep_list = hashMapIterator_nextValue(subscriptionsIterator);
 		for(i=0;i<arrayList_size(sub_ep_list);i++){
-			status += psa->addSubscription(psa->admin, (pubsub_endpoint_pt)arrayList_get(sub_ep_list,i));
+			pubsub_endpoint_pt sub = (pubsub_endpoint_pt)arrayList_get(sub_ep_list,i);
+			double new_psa_score;
+			new_psa->matchSubscriber(new_psa->admin, sub, &new_psa_score);
+			pubsub_admin_service_pt best_psa = NULL;
+			double highest_score = 0;
+
+			for(j=0;j<arrayList_size(manager->psaList);j++){
+				pubsub_admin_service_pt psa = (pubsub_admin_service_pt)arrayList_get(manager->psaList,j);
+				double score;
+				psa->matchSubscriber(psa->admin, sub, &score);
+				if (score > highest_score){
+					highest_score = score;
+					best_psa = psa;
+				}
+			}
+			if (best_psa != NULL && (new_psa_score > highest_score)){
+				best_psa->removeSubscription(best_psa->admin, sub);
+			}
+			if (new_psa_score > highest_score){
+				status += new_psa->addSubscription(new_psa->admin, sub);
+			}
 		}
 	}
 
@@ -175,13 +191,37 @@ celix_status_t pubsub_topologyManager_psaAdded(void * handle, service_reference_
 	while (hashMapIterator_hasNext(publicationsIterator)) {
 		array_list_pt pub_ep_list = hashMapIterator_nextValue(publicationsIterator);
 		for(i=0;i<arrayList_size(pub_ep_list);i++){
-			status += psa->addPublication(psa->admin, (pubsub_endpoint_pt)arrayList_get(pub_ep_list,i));
+			pubsub_endpoint_pt pub = (pubsub_endpoint_pt)arrayList_get(pub_ep_list,i);
+			double new_psa_score;
+			new_psa->matchPublisher(new_psa->admin, pub, &new_psa_score);
+			pubsub_admin_service_pt best_psa = NULL;
+			double highest_score = 0;
+
+			for(j=0;j<arrayList_size(manager->psaList);j++){
+				pubsub_admin_service_pt psa = (pubsub_admin_service_pt)arrayList_get(manager->psaList,j);
+				double score;
+				psa->matchPublisher(psa->admin, pub, &score);
+				if (score > highest_score){
+					highest_score = score;
+					best_psa = psa;
+				}
+			}
+			if (best_psa != NULL && (new_psa_score > highest_score)){
+				best_psa->removePublication(best_psa->admin, pub);
+			}
+			if (new_psa_score > highest_score){
+				status += new_psa->addPublication(new_psa->admin, pub);
+			}
 		}
 	}
 
 	hashMapIterator_destroy(publicationsIterator);
 
 	celixThreadMutex_unlock(&manager->publicationsLock);
+
+	celixThreadMutex_lock(&manager->psaListLock);
+	arrayList_add(manager->psaList, new_psa);
+	celixThreadMutex_unlock(&manager->psaListLock);
 
 	return status;
 }
@@ -300,10 +340,20 @@ celix_status_t pubsub_topologyManager_subscriberAdded(void * handle, service_ref
 
 		int j;
 		celixThreadMutex_lock(&manager->psaListLock);
-		for(j=0;j<arrayList_size(manager->psaList);j++){
+		double highest_score = -1;
+		pubsub_admin_service_pt best_psa = NULL;
 
+		for(j=0;j<arrayList_size(manager->psaList);j++){
 			pubsub_admin_service_pt psa = (pubsub_admin_service_pt)arrayList_get(manager->psaList,j);
-			psa->addSubscription(psa->admin,sub);
+			double score;
+			psa->matchSubscriber(psa->admin, sub, &score);
+			if (score > highest_score){
+				highest_score = score;
+				best_psa = psa;
+			}
+		}
+		if (best_psa != NULL){
+			best_psa->addSubscription(best_psa->admin,sub);
 		}
 
 		// Inform discoveries for interest in the topic
@@ -367,10 +417,19 @@ celix_status_t pubsub_topologyManager_subscriberRemoved(void * handle, service_r
 				pubsub_endpoint_pt sub = arrayList_get(sub_list_by_topic,j);
 				if(pubsubEndpoint_equals(sub,subcmp)){
 					celixThreadMutex_lock(&manager->psaListLock);
+					double highest_score = -1;
+					pubsub_admin_service_pt best_psa = NULL;
 					for(k=0;k<arrayList_size(manager->psaList);k++){
-
 						pubsub_admin_service_pt psa = (pubsub_admin_service_pt)arrayList_get(manager->psaList,k);
-						psa->removeSubscription(psa->admin,sub);
+						double score;
+						psa->matchSubscriber(psa->admin, sub, &score);
+						if (score > highest_score){
+							highest_score = score;
+							best_psa = psa;
+						}
+					}
+					if (best_psa != NULL){
+						best_psa->removeSubscription(best_psa->admin,sub);
 					}
 					celixThreadMutex_unlock(&manager->psaListLock);
 
@@ -540,10 +599,20 @@ celix_status_t pubsub_topologyManager_publisherTrackerAdded(void *handle, array_
 				int j;
 				celixThreadMutex_lock(&manager->psaListLock);
 
-				for(j=0;j<arrayList_size(manager->psaList);j++){
+				double highest_score = -1;
+				pubsub_admin_service_pt best_psa = NULL;
 
+				for(j=0;j<arrayList_size(manager->psaList);j++){
 					pubsub_admin_service_pt psa = (pubsub_admin_service_pt)arrayList_get(manager->psaList,j);
-					status = psa->addPublication(psa->admin,pub);
+					double score;
+					psa->matchPublisher(psa->admin, pub, &score);
+					if (score > highest_score){
+						highest_score = score;
+						best_psa = psa;
+					}
+				}
+				if (best_psa != NULL){
+					status = best_psa->addPublication(best_psa->admin,pub);
 					if(status==CELIX_SUCCESS){
 						celixThreadMutex_lock(&manager->discoveryListLock);
 						hash_map_iterator_pt iter = hashMapIterator_create(manager->discoveryList);
@@ -614,9 +683,20 @@ celix_status_t pubsub_topologyManager_publisherTrackerRemoved(void *handle, arra
 					for(j=0;j<arrayList_size(pub_list_by_topic);j++){
 						pubsub_endpoint_pt pub = arrayList_get(pub_list_by_topic,j);
 						if(pubsubEndpoint_equals(pub,pubcmp)){
+							double highest_score = -1;
+							pubsub_admin_service_pt best_psa = NULL;
+
 							for(k=0;k<arrayList_size(manager->psaList);k++){
 								pubsub_admin_service_pt psa = (pubsub_admin_service_pt)arrayList_get(manager->psaList,k);
-								status = psa->removePublication(psa->admin,pub);
+								double score;
+								psa->matchPublisher(psa->admin, pub, &score);
+								if (score > highest_score){
+									highest_score = score;
+									best_psa = psa;
+								}
+							}
+							if (best_psa != NULL){
+								status = best_psa->removePublication(best_psa->admin,pub);
 								if(status==CELIX_SUCCESS){
 									celixThreadMutex_lock(&manager->discoveryListLock);
 									hash_map_iterator_pt iter = hashMapIterator_create(manager->discoveryList);
@@ -689,9 +769,20 @@ celix_status_t pubsub_topologyManager_announcePublisher(void *handle, pubsub_end
 	pubsubEndpoint_create(pubEP->frameworkUUID,pubEP->scope,pubEP->topic,pubEP->serviceID,pubEP->endpoint,&p);
 	arrayList_add(pub_list_by_topic,p);
 
+	double highest_score = -1;
+	pubsub_admin_service_pt best_psa = NULL;
+
 	for(i=0;i<arrayList_size(manager->psaList);i++){
 		pubsub_admin_service_pt psa = (pubsub_admin_service_pt)arrayList_get(manager->psaList,i);
-		status += psa->addPublication(psa->admin,p);
+		double score;
+		psa->matchPublisher(psa->admin, p, &score);
+		if (score > highest_score){
+			highest_score = score;
+			best_psa = psa;
+		}
+	}
+	if (best_psa != NULL){
+		status += best_psa->addPublication(best_psa->admin,p);
 	}
 
 	celixThreadMutex_unlock(&manager->psaListLock);
@@ -727,9 +818,20 @@ celix_status_t pubsub_topologyManager_removePublisher(void *handle, pubsub_endpo
 
 		if(found && p !=NULL){
 
+			double highest_score = -1;
+			pubsub_admin_service_pt best_psa = NULL;
+
 			for(i=0;i<arrayList_size(manager->psaList);i++){
 				pubsub_admin_service_pt psa = (pubsub_admin_service_pt)arrayList_get(manager->psaList,i);
-				status += psa->removePublication(psa->admin,p);
+				double score;
+				psa->matchPublisher(psa->admin, p, &score);
+				if (score > highest_score){
+					highest_score = score;
+					best_psa = psa;
+				}
+			}
+			if (best_psa != NULL){
+				status += best_psa->removePublication(best_psa->admin,p);
 			}
 
 			arrayList_removeElement(pub_list_by_topic,p);

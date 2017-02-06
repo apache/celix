@@ -73,6 +73,9 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 		pubsubAdminSvc->closeAllPublications = pubsubAdmin_closeAllPublications;
 		pubsubAdminSvc->closeAllSubscriptions = pubsubAdmin_closeAllSubscriptions;
 
+		pubsubAdminSvc->matchPublisher = pubsubAdmin_matchPublisher;
+		pubsubAdminSvc->matchSubscriber = pubsubAdmin_matchSubscriber;
+
 		activator->adminService = pubsubAdminSvc;
 
 		status = bundleContext_registerService(context, PUBSUB_ADMIN_SERVICE, pubsubAdminSvc, NULL, &activator->registration);

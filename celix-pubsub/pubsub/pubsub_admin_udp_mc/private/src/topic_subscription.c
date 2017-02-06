@@ -398,8 +398,9 @@ static void process_msg(topic_subscription_pt sub,pubsub_udp_msg_pt msg){
 		hash_map_pt msgTypes = hashMapEntry_getValue(entry);
 
 		pubsub_message_type *msgType = hashMap_get(msgTypes,&(msg->header.type));
+
 		if (msgType == NULL) {
-			printf("TS: Primary message %d not supported. NOT sending any part of the whole message.\n",msg->header.type);
+			printf("TS: Primary message %d not supported. NOT receiving any part of the whole message.\n",msg->header.type);
 		}
 		else{
 			void *msgInst = NULL;
@@ -459,7 +460,11 @@ static void* udp_recv_thread_func(void * arg) {
                 	continue;
                 }
 
-                process_msg(sub, udpMsg);
+                if (udpMsg->header.type == 0){
+                	//Raw msg, since raw messages are not supported, don't do anything.
+                }else{
+                	process_msg(sub, udpMsg);
+                }
 
                 free(udpMsg);
             }

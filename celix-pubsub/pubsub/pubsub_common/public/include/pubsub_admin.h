@@ -36,6 +36,8 @@
 #define PSA_ITF	"PSA_INTERFACE"
 #define PSA_MULTICAST_IP_PREFIX "PSA_MC_PREFIX"
 
+#define PSA_DEFAULT "zmq"
+
 typedef struct pubsub_admin *pubsub_admin_pt;
 
 struct pubsub_admin_service {
@@ -49,6 +51,9 @@ struct pubsub_admin_service {
 
 	celix_status_t (*closeAllPublications)(pubsub_admin_pt admin,char* scope, char* topic);
 	celix_status_t (*closeAllSubscriptions)(pubsub_admin_pt admin,char* scope, char* topic);
+
+	celix_status_t (*matchPublisher)(pubsub_admin_pt admin, pubsub_endpoint_pt pubEP, double* score);
+	celix_status_t (*matchSubscriber)(pubsub_admin_pt admin, pubsub_endpoint_pt subEP, double* score);
 };
 
 typedef struct pubsub_admin_service *pubsub_admin_service_pt;
