@@ -112,3 +112,4 @@ after_success:
         if [ $(( $TRAVIS_BUILD_NUMBER  % 5 )) -eq 0 -o ${COVERITY_SCAN_ALWAYS_ON} = "y" ]; then make clean & eval "$COVERITY_SCAN_BUILD"; fi
       fi;
 
+
