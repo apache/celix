@@ -100,3 +100,8 @@ add_subdirectory(dependency_manager_cxx)
 
 #Example as last, because some example will check if underlining options are enabled
 add_subdirectory(examples)
+
+option(ENABLE_DOCKER "Generate DockerFile for all deployments and adds docker building targets the 'docker-images' command")
+if (ENABLE_DOCKER)
+    add_docker_for_all_deployments()
+endif()
