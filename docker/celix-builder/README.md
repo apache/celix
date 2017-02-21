@@ -17,7 +17,7 @@ Run (in the Celix root src dir):
  - `docker build -t celix-base .`
 
 
-# How to create a docker image using Celix
+# How to create a celix based docker image 
 
 Run (in the Celix root src dir):
  - `mkdir build`

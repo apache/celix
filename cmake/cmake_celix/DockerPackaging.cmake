@@ -71,7 +71,7 @@ function(deploy_docker)
             CONTENT "# Dockerfile for inaetics/celix-node-agent-service
 FROM $<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_DOCKERFILE_FROM>
 
-#set standalone env
+#set image name env
 ENV IMAGE_NAME $<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_DOCKERFILE_IMAGE_NAME>
 
 #add bundles, properties and set workdir
