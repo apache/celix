@@ -24,6 +24,7 @@ if (SHELL_TUI)
     	SOURCES 
     		private/src/activator 
     		private/src/shell_tui
+    		private/src/history
 	)
 	
 	install_bundle(shell_tui)
