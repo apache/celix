@@ -14,22 +14,24 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-celix_subproject(EXAMPLES "Option to enable building the Examples" ON DEPS FRAMEWORK LAUNCHER SHELL_TUI LOG_SERVICE LOG_WRITER)
-if (EXAMPLES)
-    add_subdirectory(hello_world)
-    add_subdirectory(hello_world_test)
 
-    add_subdirectory(services_example_c)
-    add_subdirectory(services_example_cxx)
+if(NOT APPLE)
+#Importing and exporting libraries not (yet) work under OSX.
 
-    add_subdirectory(dm_example)
-    add_subdirectory(dm_example_cxx)
+include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+include_directories("public/include")
 
-    if (NOT ANDROID)
-    	add_subdirectory(mongoose)
-    endif()
-    add_subdirectory(whiteboard)
-    add_subdirectory(embedding)
-    add_subdirectory(service_hook_example)
+add_bundle(hook_example
+           BUNDLE_SYMBOLICNAME "Hook_Example"
+           VERSION "1.0.0"
+           SOURCES
+                private/src/activator
+)
 
-endif(EXAMPLES)
+add_deploy("hook_service_example"
+            BUNDLES
+                shell
+                shell_tui
+                hook_example
+)
+endif()
