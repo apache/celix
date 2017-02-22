@@ -223,7 +223,7 @@ function(add_bundle)
     ################################
 
     if(BUNDLE_SOURCES) 
-        bundle_private_libs(${BUNDLE_TARGET_NAME} ${BUNDLE_TARGET_NAME})
+        bundle_libs(${BUNDLE_TARGET_NAME} "PRIVATE" TRUE ${BUNDLE_TARGET_NAME})
         set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_ACTIVATOR" "$<TARGET_SONAME_FILE_NAME:${BUNDLE_TARGET_NAME}>")
         set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUILD_WITH_INSTALL_RPATH" true)
 
@@ -235,7 +235,7 @@ function(add_bundle)
     elseif(BUNDLE_NO_ACTIVATOR)
         #do nothing
     else() #ACTIVATOR 
-        bundle_private_libs(${BUNDLE_TARGET_NAME} ${BUNDLE_ACTIVATOR})
+        bundle_libs(${BUNDLE_TARGET_NAME} "PRIVATE" TRUE ${BUNDLE_ACTIVATOR})
         
         if(TARGET ${BUNDLE_ACTIVATOR})
             set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_ACTIVATOR" "$<TARGET_SONAME_FILE_NAME:${BUNDLE_ACTIVATOR}>")
@@ -263,23 +263,27 @@ endfunction()
 function(bundle_export_libs)
     list(GET ARGN 0 BUNDLE)
     list(REMOVE_AT ARGN 0)
-    bundle_libs(${BUNDLE} "EXPORT" ${ARGN})
+    bundle_libs(${BUNDLE} "EXPORT" TRUE ${ARGN})
 endfunction()
 
 function(bundle_private_libs)
     list(GET ARGN 0 BUNDLE)
     list(REMOVE_AT ARGN 0)
-    bundle_libs(${BUNDLE} "PRIVATE" ${ARGN})
+    bundle_libs(${BUNDLE} "PRIVATE" FALSE ${ARGN})
 endfunction()
 
 function(bundle_libs)
     #0 is bundle TARGET
-    #1 is type (PRIVATE,EXPORT
+    #1 is TYPE, e.g PRIVATE,EXPORT or IMPORT
+    #2 is ADD_TO_MANIFEST 
     #2..n is libs
     list(GET ARGN 0 BUNDLE)
     list(REMOVE_AT ARGN 0)
 
     list(GET ARGN 0 TYPE)
+    list(REMOVE_AT ARGN 0)
+
+    list(GET ARGN 0 ADD_TO_MANIFEST)
     list(REMOVE_AT ARGN 0)
 
     #check if arg 0 is corrent
@@ -298,7 +302,9 @@ function(bundle_libs)
             add_custom_command(OUTPUT ${OUT} 
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LIB} ${OUT} 
             )
-            list(APPEND LIBS ${LIB_NAME})
+            if (ADD_TO_MANIFEST)
+                list(APPEND LIBS ${LIB_NAME})
+            endif()
             list(APPEND DEPS ${OUT}) 
         else()
             #Assuming target
@@ -310,8 +316,10 @@ function(bundle_libs)
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:${LIB}>" "${BUNDLE_DIR}/$<TARGET_SONAME_FILE_NAME:${LIB}>"
                 DEPENDS ${LIB}
             )
-            list(APPEND DEPS "${OUT}") #NOTE depending on ${OUT} not on $<TARGET_FILE:${LIB}>.
-            list(APPEND LIBS "$<TARGET_SONAME_FILE_NAME:${LIB}>")
+            if (ADD_TO_MANIFEST)
+                list(APPEND LIBS "$<TARGET_SONAME_FILE_NAME:${LIB}>")
+            endif()
+                list(APPEND DEPS "${OUT}") #NOTE depending on ${OUT} not on $<TARGET_FILE:${LIB}>.
         endif()
 
         get_target_property(IS_LIB ${BUNDLE} "BUNDLE_TARGET_IS_LIB")
