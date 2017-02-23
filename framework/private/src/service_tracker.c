@@ -166,8 +166,11 @@ celix_status_t serviceTracker_close(service_tracker_pt tracker) {
 	}
     if (status == CELIX_SUCCESS) {
         status = bundleContext_removeServiceListener(tracker->context, tracker->listener);
+        if(status == CELIX_SUCCESS) {
+            free(tracker->listener);
+            tracker->listener = NULL;
+        }
     }
-
 	framework_logIfError(logger, status, NULL, "Cannot close tracker");
 
 	return status;

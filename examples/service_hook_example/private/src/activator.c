@@ -24,6 +24,7 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdlib.h>
+#include <unistd.h>
 #include <stdio.h>
 
 #include "bundle_activator.h"
@@ -86,12 +87,32 @@ celix_status_t bundleActivator_start(void * handle, bundle_context_pt context) {
     userData->hookService = hookService;
     userData->hookReg = NULL;
 
+    printf("Registering hook service\n");
+    bundleContext_registerService(context, OSGI_FRAMEWORK_LISTENER_HOOK_SERVICE_NAME, hookService, NULL, &userData->hookReg);
+
+    printf("Unregistering hook service\n");
+    serviceRegistration_unregister(userData->hookReg);
+
+    printf("Re-Registering hook service\n");
+    userData->hookReg = NULL;
     bundleContext_registerService(context, OSGI_FRAMEWORK_LISTENER_HOOK_SERVICE_NAME, hookService, NULL, &userData->hookReg);
 
     userData->trackerAfter = 0;
     serviceTracker_create(context, "MY_SERVICE_AFTER_REGISTERING_HOOK", NULL, &userData->trackerAfter);
     serviceTracker_open(userData->trackerAfter);
   
+    sleep(1);
+    printf("Closing tracker\n");
+    serviceTracker_close(userData->trackerAfter);
+    printf("Reopening tracker\n");
+    serviceTracker_open(userData->trackerAfter);
+    
+    sleep(1);
+    printf("Closing tracker\n");
+    serviceTracker_close(userData->trackerAfter);
+    printf("Reopening tracker\n");
+    serviceTracker_open(userData->trackerAfter);
+
 	return CELIX_SUCCESS;
 }
 
