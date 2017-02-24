@@ -607,12 +607,14 @@ celix_status_t serviceRegistry_getServicesInUse(service_registry_pt registry, bu
 
     hash_map_pt refsMap = hashMap_get(registry->serviceReferences, bundle);
 
-    hash_map_iterator_pt iter = hashMapIterator_create(refsMap);
-    while (hashMapIterator_hasNext(iter)) {
-        service_reference_pt ref = hashMapIterator_nextValue(iter);
-        arrayList_add(result, ref);
+    if(refsMap) {
+        hash_map_iterator_pt iter = hashMapIterator_create(refsMap);
+        while (hashMapIterator_hasNext(iter)) {
+            service_reference_pt ref = hashMapIterator_nextValue(iter);
+            arrayList_add(result, ref);
+        }
+        hashMapIterator_destroy(iter);
     }
-    hashMapIterator_destroy(iter);
 
     //UNLOCK
     celixThreadRwlock_unlock(&registry->lock);
