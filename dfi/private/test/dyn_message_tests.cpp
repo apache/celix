@@ -168,6 +168,16 @@ static void msg_test3(void) {
 	dynMessage_destroy(dynMsg);
 }
 
+static void msg_test4(void) {
+	int status = 0;
+	dyn_message_type *dynMsg = NULL;
+	FILE *desc = fopen("descriptors/msg_example4.descriptor", "r");
+	assert(desc != NULL);
+	status = dynMessage_parse(desc, &dynMsg);
+	CHECK(status != 0);
+	fclose(desc);
+}
+
 static void msg_invalid(void) {
 	int status = 0;
 	dyn_message_type *dynMsg = NULL;
@@ -232,6 +242,10 @@ TEST(DynMessageTests, msg_test2) {
 
 TEST(DynMessageTests, msg_test3) {
 	msg_test3();
+}
+
+TEST(DynMessageTests, msg_test4) {
+	msg_test4();
 }
 
 TEST(DynMessageTests, msg_invalid) {

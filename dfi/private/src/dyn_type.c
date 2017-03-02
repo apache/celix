@@ -284,31 +284,39 @@ static int dynType_parseComplex(FILE *stream, dyn_type *type) {
             TAILQ_INSERT_TAIL(&type->complex.entriesHead, entry, entries);
             status = dynType_parseAny(stream, entry->type);
         } else {
-            if (entry != NULL) {
-                free(entry);
-            }
+            free(entry);
             status = MEM_ERROR;
             LOG_ERROR("Error allocating memory for type");
         }
+
+        if (status != OK) {
+            break;
+        }
+
         c = fgetc(stream);
     }
 
-    entry = TAILQ_FIRST(&type->complex.entriesHead);
-    char *name = NULL;
-    while (c == ' ' && entry != NULL) {
-        status = dynCommon_parseName(stream, &name);
-        if (status == OK) {
-            entry->name = name;
-            entry = TAILQ_NEXT(entry, entries);
-        } else {
-            break;
+
+    if (status == OK) {
+        entry = TAILQ_FIRST(&type->complex.entriesHead);
+        char *name = NULL;
+        while (c == ' ' && entry != NULL) {
+            status = dynCommon_parseName(stream, &name);
+            if (status == OK) {
+                entry->name = name;
+                entry = TAILQ_NEXT(entry, entries);
+            } else {
+                break;
+            }
+            c = getc(stream); 
         }
-        c = getc(stream); 
     }
 
     int count = 0;
-    TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
-        count +=1;
+    if (status == OK) {
+        TAILQ_FOREACH(entry, &type->complex.entriesHead, entries) {
+            count +=1;
+        }
     }
 
     if (status == OK) {
@@ -322,7 +330,7 @@ static int dynType_parseComplex(FILE *stream, dyn_type *type) {
             }
         } else {
             status = MEM_ERROR;
-            //T\nODO log: error allocating memory
+            LOG_ERROR("Error allocating memory for elements")
         }
     }
 
@@ -427,14 +435,15 @@ static int dynType_parseRefByValue(FILE *stream, dyn_type *type) {
             LOG_ERROR("Error cannot find type '%s'", name);
         }
         free(name);
+    } 
 
+    if (status ==OK) {
         int c = fgetc(stream);
         if (c != ';') {
             status = PARSE_ERROR;
             LOG_ERROR("Error expected ';' got '%c'", c);
         } 
-    } 
-
+    }
 
     return status;
 }
@@ -835,6 +844,10 @@ const char * dynType_getMetaInfo(dyn_type *type, const char *name) {
 
 ffi_type *dynType_ffiType(dyn_type *type) {
     if (type->type == DYN_TYPE_REF) {
+        if (type->ref.ref == NULL) {
+            LOG_ERROR("Error. Ref for %s is not (yet) initialized", type->name);
+            return NULL;
+        }
         return type->ref.ref->ffiType;
     }
     return type->ffiType;
