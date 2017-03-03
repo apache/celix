@@ -199,5 +199,7 @@ celix_status_t logHelper_log(log_helper_pt loghelper, log_level_t level, char* m
 		}
 	}
 
+	va_end(listPointer);
+
 	return status;
 }

@@ -502,6 +502,7 @@ static celix_status_t bundleArchive_readLastModified(bundle_archive_pt archive, 
 		char timeStr[20];
 		int year, month, day, hours, minutes, seconds;
 		struct tm tm_time;
+		memset(&tm_time,0,sizeof(struct tm));
 
 		if (fgets(timeStr, sizeof(timeStr), lastModifiedFile) == NULL) {
 			status = CELIX_FILE_IO_EXCEPTION;

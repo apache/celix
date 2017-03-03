@@ -319,6 +319,7 @@ static int pubsub_topicPublicationSend(void* handle, unsigned int msgTypeId, voi
     int status = 0;
     publish_bundle_bound_service_pt bound = (publish_bundle_bound_service_pt) handle;
 
+    celixThreadMutex_lock(&(bound->parent->tp_lock));
     celixThreadMutex_lock(&(bound->mp_lock));
 
     pubsub_message_type *msgType = hashMap_get(bound->msgTypes, &msgTypeId);
@@ -350,14 +351,12 @@ static int pubsub_topicPublicationSend(void* handle, unsigned int msgTypeId, voi
 		msg->payload = (char *) serializedOutput;
 		msg->payloadSize = serializedOutputLen;
 
-		celixThreadMutex_lock(&(bound->parent->tp_lock));
 		if(send_pubsub_msg(bound, msg,true, NULL) == false) {
 			status = -1;
 		}
 		free(msg_hdr);
 		free(msg);
 		free(serializedOutput);
-		celixThreadMutex_unlock(&(bound->parent->tp_lock));
 
     } else {
         printf("TP: Message %u not supported.",msgTypeId);
@@ -365,6 +364,7 @@ static int pubsub_topicPublicationSend(void* handle, unsigned int msgTypeId, voi
     }
 
     celixThreadMutex_unlock(&(bound->mp_lock));
+	celixThreadMutex_unlock(&(bound->parent->tp_lock));
 
     return status;
 }

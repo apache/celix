@@ -79,7 +79,6 @@ int phase2b_deinit(phase2b_cmp_t *cmp) {
 }
 
 void phase2b_destroy(phase2b_cmp_t *cmp) {
-    celixThreadMutex_lock(&cmp->mutex);
     celixThreadMutex_destroy(&cmp->mutex);
     free(cmp);
 	printf("destroy phase2b\n");

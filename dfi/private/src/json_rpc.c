@@ -137,7 +137,7 @@ int jsonRpc_call(dyn_interface_type *intf, void *service, const char *request, c
 	ffi_sarg returnVal = 1;
 
 	if (status == OK) {
-		dynFunction_call(func, fp, (void *) &returnVal, args);
+		status = dynFunction_call(func, fp, (void *) &returnVal, args);
 	}
 
 	int funcCallStatus = (int)returnVal;

@@ -45,7 +45,6 @@ struct publisherActivator {
 };
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
-	struct publisherActivator * act = malloc(sizeof(*act));
 
 	const char* fwUUID = NULL;
 
@@ -54,6 +53,8 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 		printf("PUBLISHER: Cannot retrieve fwUUID.\n");
 		return CELIX_INVALID_BUNDLE_CONTEXT;
 	}
+
+	struct publisherActivator * act = malloc(sizeof(*act));
 
 	bundle_pt bundle = NULL;
 	long bundleId = 0;

@@ -355,7 +355,9 @@ static celix_status_t pubsub_topicPublicationGetService(void* handle, bundle_pt 
 		bound->getCount++;
 	}
 
-	*service = bound->service;
+	if(bound!=NULL){
+		*service = bound->service;
+	}
 
 	celixThreadMutex_unlock(&(publish->tp_lock));
 
@@ -526,6 +528,11 @@ static int pubsub_topicPublicationSendMultipart(void *handle, unsigned int msgTy
 			printf("TP: ERROR: Invalid MP flags combination\n");
 			status = -4;
 			break;
+		}
+
+		/* Free msg in case we got into a bad branch */
+		if(status==-4){
+			free(msg);
 		}
 
 		if(!snd){

@@ -49,8 +49,8 @@ void updateCommand_execute(void *handle, char * line, FILE *outStream, FILE *err
 		fprintf(errStream, "Incorrect number of arguments.\n");
 	} else {
 		long id = atol(sub);
-		bundleContext_getBundleById(context, id, &bundle);
-		if (bundle != NULL) {
+		celix_status_t ret = bundleContext_getBundleById(context, id, &bundle);
+		if (ret==CELIX_SUCCESS && bundle!=NULL) {
 			char inputFile[256];
 			sub = strtok_r(NULL, delims, &save_ptr);
 			inputFile[0] = '\0';

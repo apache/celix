@@ -34,6 +34,7 @@ celix_status_t uninstallCommand_execute(void *handle, char * line, FILE *outStre
 	char delims[] = " ";
 	char * sub = NULL;
 	char *save_ptr = NULL;
+	celix_status_t status = CELIX_SUCCESS;
 
 	sub = strtok_r(line, delims, &save_ptr);
 	sub = strtok_r(NULL, delims, &save_ptr);
@@ -44,8 +45,8 @@ celix_status_t uninstallCommand_execute(void *handle, char * line, FILE *outStre
 		while (sub != NULL) {
 			long id = atol(sub);
 			bundle_pt bundle = NULL;
-			bundleContext_getBundleById(context, id, &bundle);
-			if (bundle != NULL) {
+			status = bundleContext_getBundleById(context, id, &bundle);
+			if (status==CELIX_SUCCESS && bundle!=NULL) {
 				bundle_uninstall(bundle);
 			} else {
 				fprintf(errStream, "Bundle id is invalid.");
@@ -53,5 +54,5 @@ celix_status_t uninstallCommand_execute(void *handle, char * line, FILE *outStre
 			sub = strtok_r(NULL, delims, &save_ptr);
 		}
 	}
-	return CELIX_SUCCESS;
+	return status;
 }

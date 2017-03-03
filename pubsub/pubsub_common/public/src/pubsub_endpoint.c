@@ -58,11 +58,7 @@ celix_status_t pubsubEndpoint_create(const char* fwUUID, const char* scope, cons
         psEp->endpoint = strdup(endpoint);
     }
 
-    if (status != CELIX_SUCCESS) {
-		pubsubEndpoint_destroy(psEp);
-	} else {
-		*out = psEp;
-	}
+	*out = psEp;
 
     return status;
 

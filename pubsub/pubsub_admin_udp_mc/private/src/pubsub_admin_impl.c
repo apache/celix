@@ -98,17 +98,17 @@ celix_status_t pubsubAdmin_create(bundle_context_pt context, pubsub_admin_pt *ad
 		const char *mc_ip_prop = NULL;
 		bundleContext_getProperty(context,PSA_IP , &mc_ip_prop);
 		if(mc_ip_prop) {
-		    mc_ip = strdup(mc_ip_prop);
+			mc_ip = strdup(mc_ip_prop);
 		}
 #ifndef ANDROID
 		if (mc_ip == NULL) {
-		    const char *mc_prefix = NULL;
-            const char *interface = NULL;
-            int b0 = 224, b1 = 100, b2 = 1, b3 = 1;
-            bundleContext_getProperty(context,PSA_MULTICAST_IP_PREFIX , &mc_prefix);
-            if(mc_prefix == NULL) {
-                mc_prefix = DEFAULT_MC_PREFIX;
-            }
+			const char *mc_prefix = NULL;
+			const char *interface = NULL;
+			int b0 = 224, b1 = 100, b2 = 1, b3 = 1;
+			bundleContext_getProperty(context,PSA_MULTICAST_IP_PREFIX , &mc_prefix);
+			if(mc_prefix == NULL) {
+				mc_prefix = DEFAULT_MC_PREFIX;
+			}
 
 			bundleContext_getProperty(context, PSA_ITF, &interface);
 			if (pubsubAdmin_getIpAddress(interface, &if_ip) != CELIX_SUCCESS) {
@@ -117,20 +117,19 @@ celix_status_t pubsubAdmin_create(bundle_context_pt context, pubsub_admin_pt *ad
 
 			printf("IP Detected : %s\n", if_ip);
 			if(if_ip && sscanf(if_ip, "%i.%i.%i.%i", &b0, &b1, &b2, &b3) != 4) {
-			    logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_WARNING, "PSA: Could not parse IP address %s", if_ip);
-			    b2 = 1;
-			    b3 = 1;
+				logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_WARNING, "PSA: Could not parse IP address %s", if_ip);
+				b2 = 1;
+				b3 = 1;
 			}
 
-            asprintf(&mc_ip, "%s.%d.%d",mc_prefix, b2, b3);
+			asprintf(&mc_ip, "%s.%d.%d",mc_prefix, b2, b3);
 
-	        int sendSocket = socket(AF_INET, SOCK_DGRAM, 0);
-	        if(sendSocket == -1) {
-	            perror("pubsubAdmin_create:socket");
-	            status = CELIX_SERVICE_EXCEPTION;
-	        }
-
-	        if (status == CELIX_SUCCESS){
+			int sendSocket = socket(AF_INET, SOCK_DGRAM, 0);
+			if(sendSocket == -1) {
+				perror("pubsubAdmin_create:socket");
+				status = CELIX_SERVICE_EXCEPTION;
+			}
+			else{
 				char loop = 1;
 				if(setsockopt(sendSocket, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop)) != 0) {
 					perror("pubsubAdmin_create:setsockopt(IP_MULTICAST_LOOP)");
@@ -144,20 +143,27 @@ celix_status_t pubsubAdmin_create(bundle_context_pt context, pubsub_admin_pt *ad
 						perror("pubsubAdmin_create:setsockopt(IP_MULTICAST_IF)");
 						status = CELIX_SERVICE_EXCEPTION;
 					}
-
-					(*admin)->sendSocket = sendSocket;
+					else{
+						(*admin)->sendSocket = sendSocket;
+					}
 				}
 
-	        }
+				if(status!=CELIX_SUCCESS){
+					close(sendSocket);
+				}
+
+			}
+
+
 
 		}
 #endif
-        if (if_ip != NULL) {
-            logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_INFO, "PSA: Using %s as interface for multicast communication", if_ip);
-            (*admin)->ifIpAddress = if_ip;
-        } else {
-            (*admin)->ifIpAddress = strdup("127.0.0.1");
-        }
+		if (if_ip != NULL) {
+			logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_INFO, "PSA: Using %s as interface for multicast communication", if_ip);
+			(*admin)->ifIpAddress = if_ip;
+		} else {
+			(*admin)->ifIpAddress = strdup("127.0.0.1");
+		}
 
 		if (mc_ip != NULL) {
 			logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_INFO, "PSA: Using %s for service annunciation", mc_ip);
@@ -183,7 +189,7 @@ celix_status_t pubsubAdmin_destroy(pubsub_admin_pt admin)
 	celix_status_t status = CELIX_SUCCESS;
 
 	free(admin->mcIpAddress);
-    free(admin->ifIpAddress);
+	free(admin->ifIpAddress);
 
 	celixThreadMutex_lock(&admin->pendingSubscriptionsLock);
 	hash_map_iterator_pt iter = hashMapIterator_create(admin->pendingSubscriptions);
@@ -458,21 +464,21 @@ celix_status_t pubsubAdmin_addPublication(pubsub_admin_pt admin,pubsub_endpoint_
 		celixThreadMutex_unlock(&admin->externalPublicationsLock);
 	}
 
-    /* Connect the new publisher to the subscription for his topic, if there is any */
-    celixThreadMutex_lock(&admin->subscriptionsLock);
+	/* Connect the new publisher to the subscription for his topic, if there is any */
+	celixThreadMutex_lock(&admin->subscriptionsLock);
 
-    topic_subscription_pt sub = (topic_subscription_pt)hashMap_get(admin->subscriptions,scope_topic);
-    if(sub!=NULL && pubEP->endpoint!=NULL){
-        pubsub_topicSubscriptionConnectPublisher(sub,pubEP->endpoint);
-    }
+	topic_subscription_pt sub = (topic_subscription_pt)hashMap_get(admin->subscriptions,scope_topic);
+	if(sub!=NULL && pubEP->endpoint!=NULL){
+		pubsub_topicSubscriptionConnectPublisher(sub,pubEP->endpoint);
+	}
 
-    /* And check also for ANY subscription */
-    topic_subscription_pt any_sub = (topic_subscription_pt)hashMap_get(admin->subscriptions,PUBSUB_ANY_SUB_TOPIC);
-    if(any_sub!=NULL && pubEP->endpoint!=NULL){
-        pubsub_topicSubscriptionConnectPublisher(any_sub,pubEP->endpoint);
-    }
+	/* And check also for ANY subscription */
+	topic_subscription_pt any_sub = (topic_subscription_pt)hashMap_get(admin->subscriptions,PUBSUB_ANY_SUB_TOPIC);
+	if(any_sub!=NULL && pubEP->endpoint!=NULL){
+		pubsub_topicSubscriptionConnectPublisher(any_sub,pubEP->endpoint);
+	}
 
-    celixThreadMutex_unlock(&admin->subscriptionsLock);
+	celixThreadMutex_unlock(&admin->subscriptionsLock);
 
 	/* Re-evaluate the pending subscriptions */
 	celixThreadMutex_lock(&admin->pendingSubscriptionsLock);
@@ -491,9 +497,9 @@ celix_status_t pubsubAdmin_addPublication(pubsub_admin_pt admin,pubsub_endpoint_
 		arrayList_destroy(pendingSubList);
 		free(key);
 	}
-    free(scope_topic);
+	free(scope_topic);
 
-    celixThreadMutex_unlock(&admin->pendingSubscriptionsLock);
+	celixThreadMutex_unlock(&admin->pendingSubscriptionsLock);
 
 	return status;
 
@@ -542,14 +548,14 @@ celix_status_t pubsubAdmin_removePublication(pubsub_admin_pt admin,pubsub_endpoi
 					arrayList_remove(ext_pub_list,i);
 				}
 			}
-            if(arrayList_size(ext_pub_list)==0){
-                hash_map_entry_pt entry = hashMap_getEntry(admin->externalPublications,scope_topic);
-                char* topic = (char*)hashMapEntry_getKey(entry);
-                array_list_pt list = (array_list_pt)hashMapEntry_getValue(entry);
-                hashMap_remove(admin->externalPublications,scope_topic);
-                arrayList_destroy(list);
-                free(topic);
-            }
+			if(arrayList_size(ext_pub_list)==0){
+				hash_map_entry_pt entry = hashMap_getEntry(admin->externalPublications,scope_topic);
+				char* topic = (char*)hashMapEntry_getKey(entry);
+				array_list_pt list = (array_list_pt)hashMapEntry_getValue(entry);
+				hashMap_remove(admin->externalPublications,scope_topic);
+				arrayList_destroy(list);
+				free(topic);
+			}
 		}
 
 		celixThreadMutex_unlock(&admin->externalPublicationsLock);
@@ -702,7 +708,7 @@ static celix_status_t pubsubAdmin_addSubscriptionToPendingList(pubsub_admin_pt a
 		arrayList_create(&pendingListPerTopic);
 		hashMap_put(admin->pendingSubscriptions,scope_topic,pendingListPerTopic);
 	} else {
-	    free(scope_topic);
+		free(scope_topic);
 	}
 	arrayList_add(pendingListPerTopic,subEP);
 

@@ -279,8 +279,6 @@ celix_status_t etcdWatcher_stop(etcd_watcher_pt watcher){
 	watcher->running = false;
 	celixThreadMutex_unlock(&(watcher->watcherLock));
 
-	watcher->running = false;
-
 	celixThread_join(watcher->watcherThread, NULL);
 
 	return status;

@@ -394,6 +394,7 @@ celix_status_t pubsub_topologyManager_subscriberRemoved(void * handle, service_r
 	if(pubsubEndpoint_createFromServiceReference(reference,&subcmp) == CELIX_SUCCESS){
 
 		int j,k;
+		celixThreadMutex_lock(&manager->psaListLock);
 		celixThreadMutex_lock(&manager->subscriptionsLock);
 
 		// Inform discoveries that we not interested in the topic any more
@@ -416,7 +417,6 @@ celix_status_t pubsub_topologyManager_subscriberRemoved(void * handle, service_r
 			for(j=0;j<arrayList_size(sub_list_by_topic);j++){
 				pubsub_endpoint_pt sub = arrayList_get(sub_list_by_topic,j);
 				if(pubsubEndpoint_equals(sub,subcmp)){
-					celixThreadMutex_lock(&manager->psaListLock);
 					double highest_score = -1;
 					pubsub_admin_service_pt best_psa = NULL;
 					for(k=0;k<arrayList_size(manager->psaList);k++){
@@ -431,19 +431,16 @@ celix_status_t pubsub_topologyManager_subscriberRemoved(void * handle, service_r
 					if (best_psa != NULL){
 						best_psa->removeSubscription(best_psa->admin,sub);
 					}
-					celixThreadMutex_unlock(&manager->psaListLock);
 
 				}
 				arrayList_remove(sub_list_by_topic,j);
 
 				/* If it was the last subscriber for this topic, tell PSA to close the ZMQ socket */
 				if(arrayList_size(sub_list_by_topic)==0){
-					celixThreadMutex_lock(&manager->psaListLock);
 					for(k=0;k<arrayList_size(manager->psaList);k++){
 						pubsub_admin_service_pt psa = (pubsub_admin_service_pt)arrayList_get(manager->psaList,k);
 						psa->closeAllSubscriptions(psa->admin,sub->scope, sub->topic);
 					}
-					celixThreadMutex_unlock(&manager->psaListLock);
 				}
 
 				pubsubEndpoint_destroy(sub);
@@ -452,6 +449,7 @@ celix_status_t pubsub_topologyManager_subscriberRemoved(void * handle, service_r
 		}
 
 		celixThreadMutex_unlock(&manager->subscriptionsLock);
+		celixThreadMutex_unlock(&manager->psaListLock);
 
 		pubsubEndpoint_destroy(subcmp);
 
@@ -753,8 +751,9 @@ celix_status_t pubsub_topologyManager_announcePublisher(void *handle, pubsub_end
 	printf("PSTM: New publisher discovered for topic %s [fwUUID=%s, ep=%s]\n",pubEP->topic,pubEP->frameworkUUID,pubEP->endpoint);
 
 	pubsub_topology_manager_pt manager = handle;
-	celixThreadMutex_lock(&manager->publicationsLock);
 	celixThreadMutex_lock(&manager->psaListLock);
+	celixThreadMutex_lock(&manager->publicationsLock);
+
 	int i;
 
 	char *pub_key = createScopeTopicKey(pubEP->scope, pubEP->topic);
@@ -787,8 +786,8 @@ celix_status_t pubsub_topologyManager_announcePublisher(void *handle, pubsub_end
 		status += best_psa->addPublication(best_psa->admin,p);
 	}
 
-	celixThreadMutex_unlock(&manager->psaListLock);
 	celixThreadMutex_unlock(&manager->publicationsLock);
+	celixThreadMutex_unlock(&manager->psaListLock);
 
 	return status;
 }

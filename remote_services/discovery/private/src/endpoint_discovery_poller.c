@@ -247,9 +247,7 @@ celix_status_t endpointDiscoveryPoller_poll(endpoint_discovery_poller_pt poller,
 	arrayList_createWithEquals(endpointDiscoveryPoller_endpointDescriptionEquals, &updatedEndpoints);
 	status = endpointDiscoveryPoller_getEndpoints(poller, url, &updatedEndpoints);
 
-	if (status != CELIX_SUCCESS) {
-		celixThreadMutex_unlock(&poller->pollerLock);
-	} else {
+	if (status == CELIX_SUCCESS && updatedEndpoints!=NULL) {
 		if (updatedEndpoints) {
 			for (unsigned int i = arrayList_size(currentEndpoints); i > 0; i--) {
 				endpoint_description_pt endpoint = arrayList_get(currentEndpoints, i - 1);
@@ -272,11 +270,9 @@ celix_status_t endpointDiscoveryPoller_poll(endpoint_discovery_poller_pt poller,
 
 				}
 			}
-		}
-	}
 
-	if (updatedEndpoints) {
-		arrayList_destroy(updatedEndpoints);
+			arrayList_destroy(updatedEndpoints);
+		}
 	}
 
 	return status;

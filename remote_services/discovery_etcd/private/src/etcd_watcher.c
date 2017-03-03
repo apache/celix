@@ -372,7 +372,9 @@ celix_status_t etcdWatcher_destroy(etcd_watcher_pt watcher) {
 	celix_status_t status = CELIX_SUCCESS;
 	char localNodePath[MAX_LOCALNODE_LENGTH];
 
+	celixThreadMutex_lock(&watcher->watcherLock);
 	watcher->running = false;
+	celixThreadMutex_unlock(&watcher->watcherLock);
 
 	celixThread_join(watcher->watcherThread, NULL);
 
