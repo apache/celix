@@ -32,21 +32,24 @@ namespace celix { namespace dm {
     class BaseComponent {
     private:
         bundle_context_pt context {nullptr};
-        std::string name {};
         dm_component_pt cCmp {nullptr};
     public:
-        BaseComponent(const bundle_context_pt context, std::string name);
-        virtual ~BaseComponent();
+        BaseComponent(const bundle_context_pt con, std::string name) : context{con}, cCmp{nullptr} {
+            component_create(this->context, name.c_str(), &this->cCmp);
+            component_setImplementation(this->cCmp, this);
+        }
+
+        virtual ~BaseComponent() {}
 
         /**
          * Returns the C DM Component
          */
-        const dm_component_pt cComponent() const;
+        dm_component_pt cComponent() const { return this->cCmp; }
 
         /**
          * Returns the C bundle context
          */
-        const bundle_context_pt bundleContext() const;
+        bundle_context_pt bundleContext() const { return this->context; }
     };
         
 
@@ -63,16 +66,29 @@ namespace celix { namespace dm {
         void (T::*startFp)() = {};
         void (T::*stopFp)() = {};
         void (T::*deinitFp)() = {};
+
+        int (T::*initFpNoExc)() = {};
+        int (T::*startFpNoExc)() = {};
+        int (T::*stopFpNoExc)() = {};
+        int (T::*deinitFpNoExc)() = {};
     public:
         Component(const bundle_context_pt context, std::string name);
         virtual ~Component();
+
+        /**
+         * Creates a Component using the provided bundle context
+         * and component name.
+         * Will use new(nothrow) if exceptions are disabled.
+         * @return newly created DM Component or nullptr
+         */
+        static Component<T>* create(bundle_context_pt, std::string name);
 
         /**
          * Creates a Component using the provided bundle context.
          * Will use new(nothrow) if exceptions are disabled.
          * @return newly created DM Component or nullptr
          */
-        static Component<T>* create(bundle_context_pt, std::string name = std::string{});
+        static Component<T>* create(bundle_context_pt);
 
         /**
          * Wether the component is valid. Invalid component can occurs when no new components can be created and
@@ -189,6 +205,24 @@ namespace celix { namespace dm {
             void (T::*start)(),
             void (T::*stop)(),
             void (T::*deinit)()
+        );
+
+        /**
+         * Set the callback for the component life cycle control
+         * with a int return to indicate an error.
+         *
+         * @param init The init callback.
+         * @param start The start callback.
+         * @param stop The stop callback.
+         * @param deinit The deinit callback.
+         *
+         * @return the DM Component reference for chaining (fluent API)
+         */
+        Component<T>& setCallbacks(
+            int (T::*init)(),
+            int (T::*start)(),
+            int (T::*stop)(),
+            int (T::*deinit)()
         );
     };
 }}

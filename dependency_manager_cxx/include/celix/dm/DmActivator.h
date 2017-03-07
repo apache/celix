@@ -58,49 +58,6 @@ namespace celix { namespace dm {
          * @returns A pointer to a DmActivator. The Dependency Manager is responsible for deleting the pointer when the bundle is stopped.
          */
         static DmActivator* create(DependencyManager& mng);
-
-        /**
-         * Creates and adds a new DM Component for a component of type T.
-         *
-         * @return Returns a reference to the DM Component
-         */
-        template<class T>
-        Component<T>& createComponent() {
-            return mng.createComponent<T>();
-        }
-
-        /**
-         * Creates and adds a new DM Component for a component of type T and setting
-         * the instance using a unique ptr.
-         *
-         * @return Returns a reference to the DM Component
-         */
-        template<class T>
-        Component<T>& createComponent(std::unique_ptr<T>&& rhs) {
-            return mng.createComponent<T>(std::move(rhs));
-        }
-
-        /**
-         * Creates and adds a new DM Component for a component of type T and setting
-         * the instance using a shared ptr.
-         *
-         * @return Returns a reference to the DM Component
-         */
-        template<class T>
-        Component<T>& createComponent(std::shared_ptr<T> rhs) {
-            return mng.createComponent<T>(rhs);
-        }
-
-        /**
-         * Creates and adds a new DM Component for a component of type T and setting
-         * the instance.
-         *
-         * @return Returns a reference to the DM Component
-         */
-        template<class T>
-        Component<T>& createComponent(T rhs) {
-            return mng.createComponent<T>(std::forward(rhs));
-        }
     };
 }}
 

@@ -41,8 +41,8 @@ namespace celix { namespace dm {
         DependencyManager(bundle_context_pt context);
         virtual ~DependencyManager();
 
-        const bundle_context_pt bundleContext() const;
-        const dm_dependency_manager_pt cDependencyManager() const;
+        bundle_context_pt bundleContext() const;
+        dm_dependency_manager_pt cDependencyManager() const;
 
 
         /**
@@ -51,11 +51,13 @@ namespace celix { namespace dm {
          * @return Returns a reference to the DM Component
          */
         template<class T>
-        Component<T>& createComponent() {
-            Component<T>* cmp = Component<T>::create(this->context);
+        Component<T>& createComponent(std::string name = std::string{}) {
+            Component<T>* cmp = name.empty() ?
+                Component<T>::create(this->context) :
+                Component<T>::create(this->context, name);
             if (cmp->isValid()) {
                 this->components.push_back(std::unique_ptr<BaseComponent> {cmp});
-            }
+            } 
             return *cmp;
         }
 
@@ -66,8 +68,8 @@ namespace celix { namespace dm {
          * @return Returns a reference to the DM Component
          */
         template<class T>
-        Component<T>& createComponent(std::unique_ptr<T>&& rhs) {
-            return this->createComponent<T>().setInstance(std::move(rhs));
+        Component<T>& createComponent(std::unique_ptr<T>&& rhs, std::string name = std::string{}) {
+            return this->createComponent<T>(name).setInstance(std::move(rhs));
         }
 
         /**
@@ -77,8 +79,8 @@ namespace celix { namespace dm {
          * @return Returns a reference to the DM Component
          */
         template<class T>
-        Component<T>& createComponent(std::shared_ptr<T> rhs) {
-            return this->createComponent<T>().setInstance(rhs);
+        Component<T>& createComponent(std::shared_ptr<T> rhs, std::string name = std::string{}) {
+            return this->createComponent<T>(name).setInstance(rhs);
         }
 
         /**
@@ -88,8 +90,8 @@ namespace celix { namespace dm {
          * @return Returns a reference to the DM Component
          */
         template<class T>
-        Component<T>& createComponent(T rhs) {
-            return this->createComponent<T>().setInstance(std::forward(rhs));
+        Component<T>& createComponent(T rhs, std::string name = std::string{}) {
+            return this->createComponent<T>(name).setInstance(std::forward<T>(rhs));
         }
 
         /**

@@ -142,13 +142,18 @@ Component<T>& Component<T>::remove(CServiceDependency<T,I>& dep) {
 }
 
 template<class T>
+Component<T>* Component<T>::create(bundle_context_pt context) {
+    std::string name = typeName<T>();
+    return Component<T>::create(context, name);
+}
+
+template<class T>
 Component<T>* Component<T>::create(bundle_context_pt context, std::string name) {
-    std::string n = name.empty() ? typeName<T>() : name;
 #ifdef __EXCEPTIONS
-    Component<T>* cmp = new Component<T>{context, n};
+    Component<T>* cmp = new Component<T>{context, name};
 #else
     static Component<T> invalid{nullptr, std::string{}};
-    Component<T>* cmp = new(std::nothrow) Component<T>(context, n);
+    Component<T>* cmp = new(std::nothrow) Component<T>(context, name);
     if (cmp == nullptr) {
         cmp = &invalid;
     }
@@ -250,6 +255,60 @@ Component<T>& Component<T>::setCallbacks(
         void (T::*fp)() = cmp->deinitFp;
         if (fp != nullptr) {
             (inst->*fp)();
+        }
+        return 0;
+    };
+
+    component_setCallbacks(this->cComponent(), cInit, cStart, cStop, cDeinit);
+
+    return *this;
+}
+
+template<class T>
+Component<T>& Component<T>::setCallbacks(
+            int (T::*init)(),
+            int (T::*start)(),
+            int (T::*stop)(),
+            int (T::*deinit)() ) {
+
+    this->initFpNoExc = init;
+    this->startFpNoExc = start;
+    this->stopFpNoExc = stop;
+    this->deinitFpNoExc = deinit;
+
+    int (*cInit)(void *) = [](void *handle) {
+        Component<T>* cmp = (Component<T>*)(handle);
+        T* inst = &cmp->getInstance();
+        int (T::*fp)() = cmp->initFpNoExc;
+        if (fp != nullptr) {
+            return (inst->*fp)();
+        }
+        return 0;
+    };
+    int (*cStart)(void *) = [](void *handle) {
+        Component<T>* cmp = (Component<T>*)(handle);
+        T* inst = &cmp->getInstance();
+        int (T::*fp)() = cmp->startFpNoExc;
+        if (fp != nullptr) {
+            return (inst->*fp)();
+        }
+        return 0;
+    };
+    int (*cStop)(void *) = [](void *handle) {
+        Component<T>* cmp = (Component<T>*)(handle);
+        T* inst = &cmp->getInstance();
+        int (T::*fp)() = cmp->stopFpNoExc;
+        if (fp != nullptr) {
+            return (inst->*fp)();
+        }
+        return 0;
+    };
+    int (*cDeinit)(void *) = [](void *handle) {
+        Component<T>* cmp = (Component<T>*)(handle);
+        T* inst = &cmp->getInstance();
+        int (T::*fp)() = cmp->deinitFpNoExc;
+        if (fp != nullptr) {
+            return (inst->*fp)();
         }
         return 0;
     };

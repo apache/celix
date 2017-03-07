@@ -47,7 +47,6 @@ if (DEPENDENCY_MANAGER_CXX)
         ${DM_DIR}/private/src/dm_dependency_manager_impl.c
 
         src/DependencyManager.cc
-        src/Component.cc
         src/ServiceDependency.cc
         src/dm_activator_base_cxx.cc
     )

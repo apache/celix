@@ -18,7 +18,6 @@
  */
 
 #include "celix/dm/DependencyManager.h"
-#include <typeinfo>
 
 using namespace celix::dm;
 
@@ -32,11 +31,11 @@ DependencyManager::~DependencyManager() {
     this->cDepMan = nullptr;
 }
 
-const bundle_context_pt DependencyManager::bundleContext() const {
+bundle_context_pt DependencyManager::bundleContext() const {
     return context;
 }
 
-const dm_dependency_manager_pt DependencyManager::cDependencyManager() const {
+dm_dependency_manager_pt DependencyManager::cDependencyManager() const {
     return cDepMan;
 }
 
