@@ -56,7 +56,7 @@ void fillMsgTypesMap(hash_map_pt msgTypesMap,bundle_pt bundle){
 	root = getMsgDescriptionDir(bundle);
 
 	if(root != NULL){
-		asprintf(&metaInfPath, "%s/META-INF/descriptors", root);
+		asprintf(&metaInfPath, "%s/META-INF/descriptors/messages", root);
 
 		addMsgDescriptorsFromBundle(root, bundle, msgTypesMap);
 		addMsgDescriptorsFromBundle(metaInfPath, bundle, msgTypesMap);
@@ -99,9 +99,7 @@ static char * getMsgDescriptionDir(bundle_pt bundle)
 			root = getcwd(NULL, 0);
 		}
 	} else {
-	    char *dir;
-		bundle_getEntry(bundle, ".", &dir);
-		root = dir;
+		bundle_getEntry(bundle, ".", &root);
 	}
 
 	return root;

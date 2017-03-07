@@ -32,7 +32,7 @@ add_bundle(org.apache.celix.pubsub_publisher.PoiPublisher2
 bundle_files(org.apache.celix.pubsub_publisher.PoiPublisher2
 	${PROJECT_SOURCE_DIR}/pubsub/examples/pubsub/msg_descriptors/msg_poi1.descriptor
 	${PROJECT_SOURCE_DIR}/pubsub/examples/pubsub/msg_descriptors/msg_poi2.descriptor
-    DESTINATION "META-INF/descriptors"
+    DESTINATION "META-INF/descriptors/messages"
 )
 
 bundle_files(org.apache.celix.pubsub_publisher.PoiPublisher2

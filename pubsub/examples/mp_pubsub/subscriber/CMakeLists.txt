@@ -34,7 +34,7 @@ bundle_files( org.apache.celix.pubsub_subscriber.MpSubscriber
 	    ${PROJECT_SOURCE_DIR}/pubsub/examples/mp_pubsub/msg_descriptors/msg_ew.descriptor
 	    ${PROJECT_SOURCE_DIR}/pubsub/examples/mp_pubsub/msg_descriptors/msg_ide.descriptor
 	    ${PROJECT_SOURCE_DIR}/pubsub/examples/mp_pubsub/msg_descriptors/msg_kinematics.descriptor
-	DESTINATION "META-INF/descriptors"
+	DESTINATION "META-INF/descriptors/messages"
 )
 
 bundle_files(org.apache.celix.pubsub_subscriber.MpSubscriber
