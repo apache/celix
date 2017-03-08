@@ -328,6 +328,8 @@ bool largeUdp_dataAvailable(largeUdp_pt handle, int fd, unsigned int *index, uns
 		msg.msg_iov[1].iov_base = &udpPartList->data[header.offset];
 		msg.msg_iov[1].iov_len = header.part_msg_size;
 		if(recvmsg(fd, &msg, 0)<0){
+			free(udpPartList->data);
+			free(udpPartList);
 			result=false;
 		}
 		else{

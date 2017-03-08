@@ -298,12 +298,14 @@ int etcd_set_with_check(const char* key, const char* value, int ttl, bool always
 	char *etcd_value;
 	int result = 0;
 	if (etcd_get(key, &etcd_value, NULL) == 0) {
-		if (strcmp(etcd_value, value) != 0) {
-			fprintf(stderr, "[ETCDLIB] WARNING: value already exists and is different\n");
-			fprintf(stderr, "   key       = %s\n", key);
-			fprintf(stderr, "   old value = %s\n", etcd_value);
-			fprintf(stderr, "   new value = %s\n", value);
-			result = -1;
+		if(etcd_value!=NULL){
+			if (strcmp(etcd_value, value) != 0) {
+				fprintf(stderr, "[ETCDLIB] WARNING: value already exists and is different\n");
+				fprintf(stderr, "   key       = %s\n", key);
+				fprintf(stderr, "   old value = %s\n", etcd_value);
+				fprintf(stderr, "   new value = %s\n", value);
+				result = -1;
+			}
 			free(etcd_value);
 		}
 	}

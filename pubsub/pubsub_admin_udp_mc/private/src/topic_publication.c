@@ -246,7 +246,9 @@ static celix_status_t pubsub_topicPublicationGetService(void* handle, bundle_pt 
 		bound->getCount++;
 	}
 
-	*service = bound->service;
+	if(bound!=NULL){
+		*service = bound->service;
+	}
 
 	celixThreadMutex_unlock(&(publish->tp_lock));
 
