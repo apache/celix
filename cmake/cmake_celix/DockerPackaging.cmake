@@ -18,6 +18,8 @@
 add_custom_target(dockerfiles)
 add_custom_target(dockerimages)
 
+set(DOCKER_CMD "docker" CACHE STRING "Docker command to use.")
+
 
 function(add_docker_for_all_deployments)
     #NOTE that this function must be called after all CMake add_deploy commands are executed.
@@ -87,7 +89,7 @@ $<JOIN:$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_DOCKERFILE_INSTRUCTIONS>,
     set_target_properties(dockerfiles PROPERTIES "DOCKER_FILES_DEPS" "${DEPS}")
 
     add_custom_target(${DEPLOY_TARGET}-dockerimage
-        COMMAND ${CMAKE_COMMAND} -E chdir $<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_LOCATION> docker build -t "$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_DOCKERFILE_IMAGE_NAME>" .
+	COMMAND ${CMAKE_COMMAND} -E chdir $<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_LOCATION> ${DOCKER_CMD} build -t "$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_DOCKERFILE_IMAGE_NAME>" .
         DEPENDS ${DOCKERFILE} ${DEPLOY_TARGET}
         COMMENT "Creating docker image for deployment '${DEPLOY_TARGET}'" VERBATIM
     )

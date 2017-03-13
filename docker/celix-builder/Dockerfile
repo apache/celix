@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-FROM fedora:23
+FROM fedora:25
 
 #Install required libs for building, docker, python and dokerize
 RUN dnf group install -y "C Development Tools and Libraries"
@@ -30,14 +30,14 @@ RUN dnf -y install \
     libffi-devel \
     libxml2-devel \
     libuuid-devel \
-    python3 \
+    python2 \
     gdb-gdbserver
 
 #jdk installed for jar command
 RUN dnf install -y java-1.8.0-openjdk-devel
 
 #dockerize will be used to extract a single executable with required deps
-RUN pip install dockerize
+RUN pip2 install dockerize
 
 #Building and installing celix
 ADD . /root/celix
