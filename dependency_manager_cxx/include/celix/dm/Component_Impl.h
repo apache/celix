@@ -93,7 +93,7 @@ template<class T>
 template<class I>
 ServiceDependency<T,I>& Component<T>::createServiceDependency(const std::string name) {
 #ifdef __EXCEPTIONS
-    auto dep = std::shared_ptr<ServiceDependency<T,I>> {new ServiceDependency<T,I>()};
+    auto dep = std::shared_ptr<ServiceDependency<T,I>> {new ServiceDependency<T,I>(name)};
 #else
     static ServiceDependency<T,I> invalidDep{std::string{}, false};
     auto dep = std::shared_ptr<ServiceDependency<T,I>> {new(std::nothrow) ServiceDependency<T,I>(name)};
@@ -119,7 +119,7 @@ template<class T>
 template<typename I>
 CServiceDependency<T,I>& Component<T>::createCServiceDependency(const std::string name) {
 #ifdef __EXCEPTIONS
-    auto dep = std::shared_ptr<CServiceDependency<T,I>> {new CServiceDependency<T,I>()};
+    auto dep = std::shared_ptr<CServiceDependency<T,I>> {new CServiceDependency<T,I>(name)};
 #else
     static CServiceDependency<T,I> invalidDep{std::string{}, false};
     auto dep = std::shared_ptr<CServiceDependency<T,I>> {new(std::nothrow) CServiceDependency<T,I>(name)};

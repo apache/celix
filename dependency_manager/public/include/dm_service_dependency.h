@@ -74,7 +74,7 @@ celix_status_t serviceDependency_setRequired(dm_service_dependency_pt dependency
 
 /**
  * Specify if the servide dependency should add a C language filter for this dependency if no "service.lang" part if found the in the provided filter.
- * Default is true
+ * Default is false
  */
 celix_status_t serviceDependency_setAddCLanguageFilter(dm_service_dependency_pt dependency, bool addCLangFilter);
 

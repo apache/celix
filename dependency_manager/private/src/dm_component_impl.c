@@ -330,7 +330,7 @@ celix_status_t component_stopTask(dm_component_pt component, void *data __attrib
     return status;
 }
 
-celix_status_t setCLanguageProperty(dm_component_pt component, bool setCLangProp) {
+celix_status_t component_setCLanguageProperty(dm_component_pt component, bool setCLangProp) {
     component->setCLanguageProperty = setCLangProp;
     return CELIX_SUCCESS;
 }

@@ -68,9 +68,9 @@ void component_destroy(dm_component_pt component);
 
 /**
  * Specify if a default 'service.lang=C' should be added to the properties of interfaces if no 'service.lang' has been
- * provided. Default is true. Note that this should be set before using component_addInterface.
+ * provided. Default is false. Note that this should be set before using component_addInterface.
  */
-celix_status_t setCLanguageProperty(dm_component_pt component, bool setCLangProp);
+celix_status_t component_setCLanguageProperty(dm_component_pt component, bool setCLangProp);
 
 
 /**

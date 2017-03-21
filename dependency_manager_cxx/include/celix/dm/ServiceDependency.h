@@ -29,6 +29,7 @@
 #include <tuple>
 #include <memory>
 #include <iostream>
+#include <functional>
 
 /**
  * TODO add a dependency for a whiteboard pattern or marker service. e.g. a service where the type is irrelevant.
@@ -88,18 +89,12 @@ namespace celix { namespace dm {
         std::string filter {};
         std::string versionRange {};
 
-        void (T::*setFp)(const I* service) {nullptr};
-        void (T::*setFpWithProperties)(const I* service, Properties&& properties) {nullptr};
-
-        void (T::*addFp)(const I* service) {nullptr};
-        void (T::*addFpWithProperties)(const I* service, Properties&& properties) {nullptr};
-
-        void (T::*removeFp)(const I* service) {nullptr};
-        void (T::*removeFpWithProperties)(const I* service, Properties&& properties) {nullptr};
+	std::function<void(const I* service, Properties&& properties)> setFp{nullptr};
+	std::function<void(const I* service, Properties&& properties)> addFp{nullptr};
+	std::function<void(const I* service, Properties&& properties)> removeFp{nullptr};
 
         void setupCallbacks();
-        int invokeCallback(void(T::*fp)(const I*), const void* service);
-        int invokeCallbackWithProperties(void(T::*fp)(const I*, Properties&&), service_reference_pt  ref, const void* service);
+        int invokeCallback(std::function<void(const I*, Properties&&)> fp, service_reference_pt  ref, const void* service);
 
         void setupService();
     public:
@@ -151,11 +146,18 @@ namespace celix { namespace dm {
         CServiceDependency<T,I>& setCallbacks(void (T::*set)(const I* service, Properties&& properties));
 
         /**
+         * Set the set callback for when the service dependency becomes available
+         *
+         * @return the C service dependency reference for chaining (fluent API)
+         */
+        CServiceDependency<T,I>& setCallbacks(std::function<void(const I* service, Properties&& properties)> set);
+
+        /**
          * Set the add and remove callback for when the services of service dependency are added or removed.
          *
          * @return the C service dependency reference for chaining (fluent API)
          */
-        CServiceDependency<T,I>& setCallbacks( void (T::*add)(const I* service),  void (T::*remove)(const I* service));
+        CServiceDependency<T,I>& setCallbacks(void (T::*add)(const I* service),  void (T::*remove)(const I* service));
 
         /**
          * Set the add and remove callback for when the services of service dependency are added or removed.
@@ -165,6 +167,16 @@ namespace celix { namespace dm {
         CServiceDependency<T,I>& setCallbacks(
                 void (T::*add)(const I* service, Properties&& properties),
                 void (T::*remove)(const I* service, Properties&& properties)
+        );
+
+        /**
+         * Set the add and remove callback for when the services of service dependency are added or removed.
+         *
+         * @return the C service dependency reference for chaining (fluent API)
+         */
+        CServiceDependency<T,I>& setCallbacks(
+		std::function<void(const I* service, Properties&& properties)> add,
+		std::function<void(const I* service, Properties&& properties)> remove
         );
 
         /**
@@ -184,19 +196,13 @@ namespace celix { namespace dm {
         std::string versionRange {};
         std::string modifiedFilter {};
 
-        void (T::*setFp)(I* service) {nullptr};
-        void (T::*setFpWithProperties)(I* service, Properties&& properties) {nullptr};
-
-        void (T::*addFp)(I* service) {nullptr};
-        void (T::*addFpWithProperties)(I* service, Properties&& properties) {nullptr};
-
-        void (T::*removeFp)(I* service) {nullptr};
-        void (T::*removeFpWithProperties)(I* service, Properties&& properties) {nullptr};
+	std::function<void(I* service, Properties&& properties)> setFp{nullptr};
+	std::function<void(I* service, Properties&& properties)> addFp{nullptr};
+	std::function<void(I* service, Properties&& properties)> removeFp{nullptr};
 
         void setupService();
         void setupCallbacks();
-        int invokeCallback(void(T::*fp)(I*), const void* service);
-        int invokeCallbackWithProperties(void(T::*fp)(I*, Properties&&), service_reference_pt  ref, const void* service);
+        int invokeCallback(std::function<void(I*, Properties&&)> fp, service_reference_pt  ref, const void* service);
     public:
         ServiceDependency(const std::string name = std::string{}, bool valid = true);
         virtual ~ServiceDependency() = default;
@@ -237,11 +243,18 @@ namespace celix { namespace dm {
         ServiceDependency<T,I>& setCallbacks(void (T::*set)(I* service, Properties&& properties));
 
         /**
+         * Set the set callback for when the service dependency becomes available
+         *
+         * @return the C service dependency reference for chaining (fluent API)
+         */
+        ServiceDependency<T,I>& setCallbacks(std::function<void(I* service, Properties&& properties)> set);
+
+        /**
          * Set the add and remove callback for when the services of service dependency are added or removed.
          *
          * @return the C++ service dependency reference for chaining (fluent API)
          */
-        ServiceDependency<T,I>& setCallbacks( void (T::*add)(I* service),  void (T::*remove)(I* service));
+        ServiceDependency<T,I>& setCallbacks(void (T::*add)(I* service),  void (T::*remove)(I* service));
 
         /**
          * Set the add and remove callback for when the services of service dependency are added or removed.
@@ -251,6 +264,16 @@ namespace celix { namespace dm {
         ServiceDependency<T,I>& setCallbacks(
                 void (T::*add)(I* service, Properties&& properties),
                 void (T::*remove)(I* service, Properties&& properties)
+        );
+
+        /**
+         * Set the add and remove callback for when the services of service dependency are added or removed.
+         *
+         * @return the C service dependency reference for chaining (fluent API)
+         */
+        ServiceDependency<T,I>& setCallbacks(
+		std::function<void(I* service, Properties&& properties)> add,
+		std::function<void(I* service, Properties&& properties)> remove
         );
 
         /**

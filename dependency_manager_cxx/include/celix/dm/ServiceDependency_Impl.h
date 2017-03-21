@@ -55,9 +55,9 @@ void CServiceDependency<T,I>::setupService() {
 
 template<class T, typename I>
 CServiceDependency<T,I>& CServiceDependency<T,I>::setAddLanguageFilter(bool addLang) {
-    if (!this->valid) {
-        *this;
-    }
+//    if (!this->valid) {
+//        *this;
+//    }
     serviceDependency_setAddCLanguageFilter(this->cServiceDependency(), addLang);
     this->setupService();
     return *this;
@@ -84,14 +84,25 @@ CServiceDependency<T,I>& CServiceDependency<T,I>::setStrategy(DependencyUpdateSt
 //set callbacks
 template<class T, typename I>
 CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(void (T::*set)(const I* service)) {
-    this->setFp = set;
-    this->setupCallbacks();
+    this->setCallbacks([this, set](const I* service, Properties&& properties) {
+        T *cmp = this->componentInstance;
+        (cmp->*set)(service);
+    });
     return *this;
 }
 
 template<class T, typename I>
 CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(void (T::*set)(const I* service, Properties&& properties)) {
-    this->setFpWithProperties = set;
+    this->setCallbacks([this, set](const I* service, Properties&& properties) {
+        T *cmp = this->componentInstance;
+        (cmp->*set)(service, std::move(properties));
+    });
+    return *this;
+}
+
+template<class T, typename I>
+CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(std::function<void(const I* service, Properties&& properties)> set) {
+    this->setFp = set;
     this->setupCallbacks();
     return *this;
 }
@@ -101,9 +112,16 @@ template<class T, typename I>
 CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(
         void (T::*add)(const I* service),
         void (T::*remove)(const I* service)) {
-    this->addFp = add;
-    this->removeFp = remove;
-    this->setupCallbacks();
+    this->setCallbacks(
+		    [this, add](const I* service, Properties&& properties) {
+			    T *cmp = this->componentInstance;
+			    (cmp->*add)(service);
+		    },
+		    [this, remove](const I* service, Properties&& properties) {
+			    T *cmp = this->componentInstance;
+			    (cmp->*remove)(service);
+		    }
+    );
     return *this;
 }
 
@@ -112,8 +130,23 @@ CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(
         void (T::*add)(const I* service, Properties&& properties),
         void (T::*remove)(const I* service, Properties&& properties)
 ) {
-    this->addFpWithProperties = add;
-    this->removeFpWithProperties = remove;
+    this->setCallbacks(
+		    [this, add](const I* service, Properties&& properties) {
+			    T *cmp = this->componentInstance;
+			    (cmp->*add)(service, std::move(properties));
+		    },
+		    [this, remove](const I* service, Properties&& properties) {
+			    T *cmp = this->componentInstance;
+			    (cmp->*remove)(service, std::move(properties));
+		    }
+    );
+    return *this;
+}
+
+template<class T, typename I>
+CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(std::function<void(const I* service, Properties&& properties)> add, std::function<void(const I* service, Properties&& properties)> remove) {
+    this->addFp = add;;
+    this->removeFp = remove;
     this->setupCallbacks();
     return *this;
 }
@@ -125,71 +158,36 @@ void CServiceDependency<T,I>::setupCallbacks() {
         return;
     }
 
-    int(*cset)(void*,const void*) {nullptr};
-    int(*cadd)(void*, const void*) {nullptr};
-    int(*cremove)(void*, const void*) {nullptr};
-
+    int(*cset)(void*, service_reference_pt, const void*) {nullptr};
+    int(*cadd)(void*, service_reference_pt, const void*) {nullptr};
+    int(*crem)(void*, service_reference_pt, const void*) {nullptr};
 
     if (setFp != nullptr) {
-        cset = [](void* handle, const void* service) -> int {
+        cset = [](void* handle, service_reference_pt ref, const void* service) -> int {
             auto dep = (CServiceDependency<T,I>*) handle;
-            return dep->invokeCallback(dep->setFp, service);
+            return dep->invokeCallback(dep->setFp, ref, service);
         };
     }
     if (addFp != nullptr) {
-        cadd = [](void* handle, const void* service) -> int {
+        cadd = [](void* handle, service_reference_pt ref, const void* service) -> int {
             auto dep = (CServiceDependency<T,I>*) handle;
-            return dep->invokeCallback(dep->addFp, service);
+            return dep->invokeCallback(dep->addFp, ref, service);
         };
     }
     if (removeFp != nullptr) {
-        cremove = [](void* handle, const void* service) -> int {
+        crem= [](void* handle, service_reference_pt ref, const void* service) -> int {
             auto dep = (CServiceDependency<T,I>*) handle;
-            return dep->invokeCallback(dep->removeFp, service);
+            return dep->invokeCallback(dep->removeFp, ref, service);
         };
     }
-
-    int(*csetWithRef)(void*, service_reference_pt, const void*) {nullptr};
-    int(*caddWithRef)(void*, service_reference_pt, const void*) {nullptr};
-    int(*cremoveWithRef)(void*, service_reference_pt, const void*) {nullptr};
-
-    if (setFpWithProperties != nullptr) {
-        csetWithRef = [](void* handle, service_reference_pt ref, const void* service) -> int {
-            auto dep = (CServiceDependency<T,I>*) handle;
-            return dep->invokeCallbackWithProperties(dep->setFpWithProperties, ref, service);
-        };
-    }
-    if (addFpWithProperties != nullptr) {
-        caddWithRef = [](void* handle, service_reference_pt ref, const void* service) -> int {
-            auto dep = (CServiceDependency<T,I>*) handle;
-            return dep->invokeCallbackWithProperties(dep->addFpWithProperties, ref, service);
-        };
-    }
-    if (removeFpWithProperties != nullptr) {
-        cremoveWithRef = [](void* handle, service_reference_pt ref, const void* service) -> int {
-            auto dep = (CServiceDependency<T,I>*) handle;
-            return dep->invokeCallbackWithProperties(dep->removeFpWithProperties, ref, service);
-        };
-    }
-
     serviceDependency_setCallbackHandle(this->cServiceDependency(), this);
-    serviceDependency_setCallbacks(this->cServiceDependency(), cset, cadd, nullptr, cremove, nullptr);
-    serviceDependency_setCallbacksWithServiceReference(this->cServiceDependency(), csetWithRef, caddWithRef, nullptr, cremoveWithRef, nullptr);
-};
+    serviceDependency_setCallbacksWithServiceReference(this->cServiceDependency(), cset, cadd, nullptr, crem, nullptr);
+}
 
 template<class T, typename I>
-int CServiceDependency<T,I>::invokeCallback(void(T::*fp)(const I*), const void* service) {
-    T *cmp = this->componentInstance;
-    const I* srv = (const I*) service;
-    (cmp->*fp)(srv);
-    return 0;
-};
-
-template<class T, typename I>
-int CServiceDependency<T,I>::invokeCallbackWithProperties(void(T::*fp)(const I*, Properties&&), service_reference_pt  ref, const void* service) {
+int CServiceDependency<T,I>::invokeCallback(std::function<void(const I*, Properties&&)> fp, service_reference_pt  ref, const void* service) {
     service_registration_pt reg {nullptr};
     properties_pt props {nullptr};
-    T *cmp = this->componentInstance;
     serviceReference_getServiceRegistration(ref, &reg);
     serviceRegistration_getProperties(reg, &props);
 
@@ -207,7 +205,7 @@ int CServiceDependency<T,I>::invokeCallbackWithProperties(void(T::*fp)(const I*,
 
     const I* srv = (const I*) service;
 
-    (cmp->*fp)(srv, static_cast<Properties&&>(properties)); //explicit move of lvalue properties.
+    fp(srv, std::move(properties));
     return 0;
 }
 
@@ -305,14 +303,25 @@ ServiceDependency<T,I>& ServiceDependency<T,I>::setAddLanguageFilter(bool addLan
 //set callbacks
 template<class T, class I>
 ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(void (T::*set)(I* service)) {
-    this->setFp = set;
-    this->setupCallbacks();
+    this->setCallbacks([this, set](I* srv, Properties&& props) {
+        T *cmp = this->componentInstance;
+        (cmp->*set)(srv);
+    });
     return *this;
 }
 
 template<class T, class I>
 ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(void (T::*set)(I* service, Properties&& properties)) {
-    this->setFpWithProperties = set;
+    this->setCallbacks([this, set](I* srv, Properties&& props) {
+        T *cmp = this->componentInstance;
+        (cmp->*set)(srv, std::move(props));
+    });
+    return *this;
+}
+
+template<class T, class I>
+ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(std::function<void(I* service, Properties&& properties)> set) {
+    this->setFp = set;
     this->setupCallbacks();
     return *this;
 }
@@ -322,9 +331,16 @@ template<class T, class I>
 ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(
         void (T::*add)(I* service),
         void (T::*remove)(I* service)) {
-    this->addFp = add;
-    this->removeFp = remove;
-    this->setupCallbacks();
+    this->setCallbacks(
+	    [this, add](I* srv, Properties&& props) {
+        	T *cmp = this->componentInstance;
+        	(cmp->*add)(srv);
+    	    },
+	    [this, remove](I* srv, Properties&& props) {
+        	T *cmp = this->componentInstance;
+        	(cmp->*remove)(srv);
+    	    }
+    );
     return *this;
 }
 
@@ -333,8 +349,25 @@ ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(
         void (T::*add)(I* service, Properties&& properties),
         void (T::*remove)(I* service, Properties&& properties)
         ) {
-    this->addFpWithProperties = add;
-    this->removeFpWithProperties = remove;
+    this->setCallbacks(
+	    [this, add](I* srv, Properties&& props) {
+        	T *cmp = this->componentInstance;
+        	(cmp->*add)(srv, std::move(props));
+    	    },
+	    [this, remove](I* srv, Properties&& props) {
+        	T *cmp = this->componentInstance;
+        	(cmp->*remove)(srv, std::move(props));
+    	    }
+    );
+    return *this;
+}
+
+template<class T, class I>
+ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(
+		std::function<void(I* service, Properties&& properties)> add,
+		std::function<void(I* service, Properties&& properties)> remove) {
+    this->addFp = add;
+    this->removeFp = remove;
     this->setupCallbacks();
     return *this;
 }
@@ -352,18 +385,9 @@ ServiceDependency<T,I>& ServiceDependency<T,I>::setStrategy(DependencyUpdateStra
 };
 
 template<class T, class I>
-int ServiceDependency<T,I>::invokeCallback(void(T::*fp)(I*), const void* service) {
-    T *cmp = this->componentInstance;
-    I *svc = (I*)service;
-    (cmp->*fp)(svc);
-    return 0;
-};
-
-template<class T, class I>
-int ServiceDependency<T,I>::invokeCallbackWithProperties(void(T::*fp)(I*, Properties&&), service_reference_pt  ref, const void* service) {
+int ServiceDependency<T,I>::invokeCallback(std::function<void(I*, Properties&&)> fp, service_reference_pt  ref, const void* service) {
     service_registration_pt reg {nullptr};
     properties_pt props {nullptr};
-    T *cmp = this->componentInstance;
     I *svc = (I*)service;
     serviceReference_getServiceRegistration(ref, &reg);
     serviceRegistration_getProperties(reg, &props);
@@ -380,7 +404,7 @@ int ServiceDependency<T,I>::invokeCallbackWithProperties(void(T::*fp)(I*, Proper
         properties[key] = value;
     }
 
-    (cmp->*fp)(svc, static_cast<Properties&&>(properties)); //explicit move of lvalue properties.
+    fp(svc, std::move(properties)); //explicit move of lvalue properties.
     return 0;
 }
 
@@ -390,54 +414,29 @@ void ServiceDependency<T,I>::setupCallbacks() {
         return;
     }
 
-    int(*cset)(void*,const void*) {nullptr};
-    int(*cadd)(void*, const void*) {nullptr};
-    int(*cremove)(void*, const void*) {nullptr};
-
+    int(*cset)(void*, service_reference_pt, const void*) {nullptr};
+    int(*cadd)(void*, service_reference_pt, const void*) {nullptr};
+    int(*crem)(void*, service_reference_pt, const void*) {nullptr};
 
     if (setFp != nullptr) {
-        cset = [](void* handle, const void*service) -> int {
-            auto dep = (ServiceDependency<T, I> *) handle;
-            return dep->invokeCallback(dep->setFp, service);
+        cset = [](void* handle, service_reference_pt ref, const void* service) -> int {
+            auto dep = (ServiceDependency<T,I>*) handle;
+            return dep->invokeCallback(dep->setFp, ref, service);
         };
     }
     if (addFp != nullptr) {
-        cadd = [](void* handle, const void*service) -> int {
-            auto dep = (ServiceDependency<T, I> *) handle;
-            return dep->invokeCallback(dep->addFp, service);
+        cadd = [](void* handle, service_reference_pt ref, const void* service) -> int {
+            auto dep = (ServiceDependency<T,I>*) handle;
+            return dep->invokeCallback(dep->addFp, ref, service);
         };
     }
     if (removeFp != nullptr) {
-        cremove = [](void* handle, const void*service) -> int {
-            auto dep = (ServiceDependency<T, I> *) handle;
-            return dep->invokeCallback(dep->removeFp, service);
-        };
-    }
-
-    int(*csetWithRef)(void*, service_reference_pt, const void*) {nullptr};
-    int(*caddWithRef)(void*, service_reference_pt, const void*) {nullptr};
-    int(*cremoveWithRef)(void*, service_reference_pt, const void*) {nullptr};
-
-    if (setFpWithProperties != nullptr) {
-        csetWithRef = [](void* handle, service_reference_pt ref, const void* service) -> int {
+        crem = [](void* handle, service_reference_pt ref, const void* service) -> int {
             auto dep = (ServiceDependency<T,I>*) handle;
-            return dep->invokeCallbackWithProperties(dep->setFpWithProperties, ref, service);
-        };
-    }
-    if (addFpWithProperties != nullptr) {
-        caddWithRef = [](void* handle, service_reference_pt ref, const void* service) -> int {
-            auto dep = (ServiceDependency<T,I>*) handle;
-            return dep->invokeCallbackWithProperties(dep->addFpWithProperties, ref, service);
-        };
-    }
-    if (removeFpWithProperties != nullptr) {
-        cremoveWithRef = [](void* handle, service_reference_pt ref, const void* service) -> int {
-            auto dep = (ServiceDependency<T,I>*) handle;
-            return dep->invokeCallbackWithProperties(dep->removeFpWithProperties, ref, service);
+            return dep->invokeCallback(dep->removeFp, ref, service);
         };
     }
 
     serviceDependency_setCallbackHandle(this->cServiceDependency(), this);
-    serviceDependency_setCallbacks(this->cServiceDependency(), cset, cadd, nullptr, cremove, nullptr);
-    serviceDependency_setCallbacksWithServiceReference(this->cServiceDependency(), csetWithRef, caddWithRef, nullptr, cremoveWithRef, nullptr);
+    serviceDependency_setCallbacksWithServiceReference(this->cServiceDependency(), cset, cadd, nullptr, crem, nullptr);
 };
