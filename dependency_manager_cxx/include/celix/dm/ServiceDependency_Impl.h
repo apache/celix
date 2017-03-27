@@ -188,19 +188,22 @@ template<class T, typename I>
 int CServiceDependency<T,I>::invokeCallback(std::function<void(const I*, Properties&&)> fp, service_reference_pt  ref, const void* service) {
     service_registration_pt reg {nullptr};
     properties_pt props {nullptr};
-    serviceReference_getServiceRegistration(ref, &reg);
-    serviceRegistration_getProperties(reg, &props);
 
     Properties properties {};
     const char* key {nullptr};
     const char* value {nullptr};
 
-    hash_map_iterator_t iter = hashMapIterator_construct((hash_map_pt)props);
-    while(hashMapIterator_hasNext(&iter)) {
-        key = (const char*) hashMapIterator_nextKey(&iter);
-        value = properties_get(props, key);
-        //std::cout << "got property " << key << "=" << value << "\n";
-        properties[key] = value;
+    if (ref != nullptr) {
+        serviceReference_getServiceRegistration(ref, &reg);
+        serviceRegistration_getProperties(reg, &props);
+        
+        hash_map_iterator_t iter = hashMapIterator_construct((hash_map_pt)props);
+        while(hashMapIterator_hasNext(&iter)) {
+            key = (const char*) hashMapIterator_nextKey(&iter);
+            value = properties_get(props, key);
+            //std::cout << "got property " << key << "=" << value << "\n";
+            properties[key] = value;
+        }
     }
 
     const I* srv = (const I*) service;
@@ -389,19 +392,21 @@ int ServiceDependency<T,I>::invokeCallback(std::function<void(I*, Properties&&)>
     service_registration_pt reg {nullptr};
     properties_pt props {nullptr};
     I *svc = (I*)service;
-    serviceReference_getServiceRegistration(ref, &reg);
-    serviceRegistration_getProperties(reg, &props);
 
     Properties properties {};
     const char* key {nullptr};
     const char* value {nullptr};
 
-    hash_map_iterator_t iter = hashMapIterator_construct((hash_map_pt)props);
-    while(hashMapIterator_hasNext(&iter)) {
-        key = (const char*) hashMapIterator_nextKey(&iter);
-        value = properties_get(props, key);
-        //std::cout << "got property " << key << "=" << value << "\n";
-        properties[key] = value;
+    if (ref != nullptr) {
+        serviceReference_getServiceRegistration(ref, &reg);
+        serviceRegistration_getProperties(reg, &props);
+        hash_map_iterator_t iter = hashMapIterator_construct((hash_map_pt)props);
+        while(hashMapIterator_hasNext(&iter)) {
+            key = (const char*) hashMapIterator_nextKey(&iter);
+            value = properties_get(props, key);
+            //std::cout << "got property " << key << "=" << value << "\n";
+            properties[key] = value;
+        }
     }
 
     fp(svc, std::move(properties)); //explicit move of lvalue properties.

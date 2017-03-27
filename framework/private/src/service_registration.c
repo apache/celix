@@ -221,17 +221,17 @@ celix_status_t serviceRegistration_ungetService(service_registration_pt registra
 celix_status_t serviceRegistration_getProperties(service_registration_pt registration, properties_pt *properties) {
 	celix_status_t status = CELIX_SUCCESS;
 
-    if (registration != NULL && *properties == NULL) {
+    if (registration != NULL) {
         celixThreadRwlock_readLock(&registration->lock);
         *properties = registration->properties;
         celixThreadRwlock_unlock(&registration->lock);
-	} else {
-		status = CELIX_ILLEGAL_ARGUMENT;
-	}
+     } else {
+          status = CELIX_ILLEGAL_ARGUMENT;
+     }
 
     framework_logIfError(logger, status, NULL, "Cannot get registration properties");
 
-	return status;
+    return status;
 }
 
 celix_status_t serviceRegistration_setProperties(service_registration_pt registration, properties_pt properties) {
