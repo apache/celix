@@ -100,8 +100,8 @@ static celix_status_t pubsub_topicPublicationUngetService(void* handle, bundle_p
 static publish_bundle_bound_service_pt pubsub_createPublishBundleBoundService(topic_publication_pt tp,bundle_pt bundle);
 static void pubsub_destroyPublishBundleBoundService(publish_bundle_bound_service_pt boundSvc);
 
-static int pubsub_topicPublicationSend(void* handle,unsigned int msgTypeId, void *msg);
-static int pubsub_topicPublicationSendMultipart(void *handle, unsigned int msgTypeId, void *msg, int flags);
+static int pubsub_topicPublicationSend(void* handle,unsigned int msgTypeId, const void *msg);
+static int pubsub_topicPublicationSendMultipart(void *handle, unsigned int msgTypeId, const void *msg, int flags);
 static int pubsub_localMsgTypeIdForUUID(void* handle, const char* msgType, unsigned int* msgTypeId);
 
 static void delay_first_send_for_late_joiners(void);
@@ -442,13 +442,13 @@ static bool send_pubsub_mp_msg(zsock_t* zmq_socket, array_list_pt mp_msg_parts){
 
 }
 
-static int pubsub_topicPublicationSend(void* handle, unsigned int msgTypeId, void *msg) {
+static int pubsub_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *msg) {
 
 	return pubsub_topicPublicationSendMultipart(handle,msgTypeId,msg, PUBSUB_PUBLISHER_FIRST_MSG | PUBSUB_PUBLISHER_LAST_MSG);
 
 }
 
-static int pubsub_topicPublicationSendMultipart(void *handle, unsigned int msgTypeId, void *msg, int flags){
+static int pubsub_topicPublicationSendMultipart(void *handle, unsigned int msgTypeId, const void *msg, int flags){
 
 	int status = 0;
 

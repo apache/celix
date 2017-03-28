@@ -48,5 +48,9 @@ if (PUBSUB)
 	add_subdirectory(examples)
 	add_subdirectory(deploy)
 	add_subdirectory(keygen)
+	add_subdirectory(mock)
+
+	#install api
+	install(FILES api/pubsub/publisher.h api/pubsub/subscriber.h DESTINATION include/celix/pubsub COMPONENT framework)
 	
 endif(PUBSUB)

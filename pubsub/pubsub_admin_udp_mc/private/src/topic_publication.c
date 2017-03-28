@@ -91,7 +91,7 @@ static celix_status_t pubsub_topicPublicationUngetService(void* handle, bundle_p
 static publish_bundle_bound_service_pt pubsub_createPublishBundleBoundService(topic_publication_pt tp,bundle_pt bundle);
 static void pubsub_destroyPublishBundleBoundService(publish_bundle_bound_service_pt boundSvc);
 
-static int pubsub_topicPublicationSend(void* handle,unsigned int msgTypeId, void *msg);
+static int pubsub_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *msg);
 
 static int pubsub_localMsgTypeIdForUUID(void* handle, const char* msgType, unsigned int* msgTypeId);
 
@@ -317,7 +317,7 @@ static bool send_pubsub_msg(publish_bundle_bound_service_pt bound, pubsub_msg_pt
 }
 
 
-static int pubsub_topicPublicationSend(void* handle, unsigned int msgTypeId, void *msg) {
+static int pubsub_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *msg) {
     int status = 0;
     publish_bundle_bound_service_pt bound = (publish_bundle_bound_service_pt) handle;
 

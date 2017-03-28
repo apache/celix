@@ -70,7 +70,7 @@ struct pubsub_publisher {
      * send is a async function, but the msg can be safely deleted after send returns.
      * Returns 0 on success.
      */
-    int (*send)(void *handle, unsigned int msgTypeId, void *msg);
+    int (*send)(void *handle, unsigned int msgTypeId, const void *msg);
  
   
     /**
@@ -79,7 +79,7 @@ struct pubsub_publisher {
      * The last message of a multipart message must have the flag PUBLISHER_LAST_MSG
      * Returns 0 on success.
      */
-    int (*sendMultipart)(void *handle, unsigned int msgTypeId, void *msg, int flags);
+    int (*sendMultipart)(void *handle, unsigned int msgTypeId, const void *msg, int flags);
  
 };
 typedef struct pubsub_publisher pubsub_publisher_t;
