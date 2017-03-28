@@ -348,29 +348,6 @@ TEST(service_registration, getProperties) {
 	free(name);
 }
 
-TEST(service_registration, getPropertiesIllegalArgument) {
-	registry_callback_t callback;
-	char * name = my_strdup("sevice_name");
-	service_registration_pt registration = serviceRegistration_create(callback, NULL, name, 0, NULL, NULL);
-
-	//get rid of the properties
-	properties_destroy(registration->properties);
-	registration->properties = NULL;
-
-	mock().expectOneCall("framework_logCode")
-			.withParameter("code", CELIX_ILLEGAL_ARGUMENT);
-
-	properties_pt actual = (properties_pt) 0x01;
-	celix_status_t status = serviceRegistration_getProperties(registration, &actual);
-	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
-
-	//recreate properties to prevent segfault on serviceRegsitration_destroy
-	registration->properties = properties_create();
-
-	serviceRegistration_release(registration);
-	free(name);
-}
-
 TEST(service_registration, setProperties){
 	registry_callback_t callback;
 	callback.modified = (callback_modified_signature) serviceRegistry_servicePropertiesModified;
