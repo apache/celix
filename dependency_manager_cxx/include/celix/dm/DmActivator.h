@@ -31,7 +31,7 @@ namespace celix { namespace dm {
         DependencyManager& mng;
         DmActivator(DependencyManager& m) : mng(m) {}
     public:
-        ~DmActivator() = default;
+        virtual ~DmActivator() = default;
 
         DependencyManager& manager() const { return this->mng; }
 
