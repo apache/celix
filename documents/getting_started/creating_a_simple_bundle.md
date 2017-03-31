@@ -1,20 +1,20 @@
-#Apache Celix - Getting Started Guide: Creating a Simple Bundle
+# Apache Celix - Getting Started Guide: Creating a Simple Bundle
 
-##Intro
+## Intro
 This page is intended for first time users of Apache Celix. It should guide you through building & installing Apache Celix, setting up a new project, creating your first bundle, setting up the project for use with Eclipse project and finally running and debugging your bundle directly from eclipse workspace. 
 
 If there are any uncertainties or question, don't hesitate to ask your questions in the [Apache Celix mailing](https://celix.apache.org/support/mailinglist.html).
 
-##Prerequisite
+## Prerequisite
 Some experience with a command line interface (xterm) is expected to be able to follow this guide. 
 
-##Building and Installing
+## Building and Installing
 For Apache Celix see [Building And Installing](../building/readme.md)
 
-##Installing Eclipse CDT
+## Installing Eclipse CDT
 Download the latest eclipse CDT at [http://www.eclipse.org](http://www.eclipse.org) and install it on your system. For more information on how the install eclipse on your system consult the eclipse documentation. For this getting started guide the luna version of eclipse was used ([linux](http://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/luna/R/eclipse-cpp-luna-R-linux-gtk-x86_64.tar.gz) [mac](http://www.eclipse.org/downloads/download.php?file=/technology/epp/downloads/release/luna/R/eclipse-cpp-luna-R-macosx-cocoa-x86_64.tar.gz)).
 
-##Apache Celix Bundle project
+## Apache Celix Bundle project
 Now that Apache Celix and Eclipse is installed, we are ready to create a new Apache Celix Bundle project.
 CMake is used as build tool for Apache Celix projects.
 
@@ -209,7 +209,7 @@ void HelloWorldActivator::deinit() {
 }
 ```
 	
-###Building 
+### Building
 One of the highly recommended features of CMake is the ability to do out of source builds, the benefit is that all of the build results will go in a separate directory without cluttering the (source) project.
 CMake also needs to able to find the cmake files Celix provides. This can be achieved by providing a CMAKE_MODULE_PATH variable (or setting the CMAKE_MODULE_PATH in the top level CMakeLists.txt). 
 For this example it is assumed that Celix in installed in `/usr/local`.
@@ -230,7 +230,7 @@ make all
 Hopefully you will some some build results scrolling over the screen and actual build results in the build directory. There should be a hello_world.zip in the bundles/hello_world directory, this the actual bundle.  
 A bundle on its own has no real value, so lets setup a deployment and run the Apache Celix framwork with these bundles.
 
-###Running 
+### Running
 
 To create a deployment for the hello world bundles two things are needed: 
 	
@@ -275,7 +275,7 @@ help inspect
 stop 0
 ```
 	
-##Apache Celix Bundle Project in Eclipse
+## Apache Celix Bundle Project in Eclipse
 
 A nice feature of CMake is the ability to generate Eclipse project files, with this feature bundles can also be developed with use of Eclipse. This should help speed up the development process. 
 To get started change directory to the build directory and generate a eclipse project file.
@@ -295,7 +295,7 @@ To build the project, use Project->Build All. To run or debug from Eclipse navig
 
 ![run project](getting_started_img3.png) 
  
-##Next
+## Next
 
 The idea behind service oriented programming is that functionality is provided and used by abstract service, which hide implementation details.
 For a guide how to provide and use services see

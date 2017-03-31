@@ -1,4 +1,4 @@
-#Apache Celix - Building and Installing
+# Apache Celix - Building and Installing
 Apache Celix aims to be support a broad range of UNIX platforms.
  
 Currently the [continuous integration build server](https://travis-ci.org/apache/celix) builds and tests Apache Celix for:
@@ -12,7 +12,7 @@ Currently the [continuous integration build server](https://travis-ci.org/apache
 *   Android (cross-compiled on Ubuntu Trusty Tahr) 
     * GCC 
 
-#Preparing 
+# Preparing
 The following packages (libraries + headers) should be installed on your system:
 
 *	Development Environment
@@ -65,7 +65,7 @@ For OSX systems with brew installed, the following command should work:
     brew link --force libffi
 ```
 
-##Download the Apache Celix sources
+## Download the Apache Celix sources
 To get started you first have to download the Apache Celix sources. This can be done by cloning the Apache Celix git repository:
 
 ```bash
@@ -78,11 +78,11 @@ cd ${WS}
 git clone --single-branch --branch master https://github.com/apache/celix.git
 ```
 
-##Building Apache Celix
+## Building Apache Celix
 Apache Celix uses [CMake](https://cmake.org) as build system. CMake can generate (among others) makefiles or ninja build files. 
 using ninja build files will result in a faster build.
 
-###Building using CMake and makefiles:
+### Building using CMake and makefiles:
 ```bash
 cd ${WS}/celix
 mkdir build
@@ -91,7 +91,7 @@ cmake ..
 make 
 ```
 
-###Building using CMake and Ninja
+### Building using CMake and Ninja
 ```bash
 cd ${WS}/celix
 mkdir build
@@ -100,7 +100,7 @@ cmake -G Ninja ..
 ninja
 ```
 
-##Editing Build options
+## Editing Build options
 With use of CMake, Apache Celix makes it possible to edit build options. This enabled users, among other options, to configure a install location and select additional bundles.
 To edit the options use ccmake or cmake-gui. For cmake-gui an additional package install can be necessary (Fedora: `dnf install cmake-gui`). 
 
@@ -113,7 +113,7 @@ ccmake .
 
 For this guide we assume the CMAKE_INSTALL_PREFIX is `/usr/local`.
 
-##Installing Apache Celix
+## Installing Apache Celix
 
 ```bash
 cd ${WS}/celix/build
@@ -121,7 +121,7 @@ make
 sudo make install
 ```
 
-##Running Apache Celix
+## Running Apache Celix
 
 If Apache Celix is succesfully installed running
 ```bash

@@ -87,6 +87,6 @@ could be used if preferable.
 Now an admin is responsible for serialization and communication.
 
 # Add pub sub admins. 
-The current implementation uses JSON over multicast UDP or over ZMQ.
-One or more could be added. i.e. serialization based on Apache-Avro, communication over TCP / Kafka / Shared Memory
-Add interfaces for other languages (Python / Rust / Go / ...)
+The current implementation uses JSON over multicast UDP or over ZMQ.  
+One or more could be added. i.e. serialization based on Apache-Avro, communication over TCP / Kafka / Shared Memory  
+Add interfaces for other languages (Python / Rust / Go / ...)  

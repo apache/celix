@@ -1,18 +1,18 @@
-#Apache Celix Introduction
+# Apache Celix Introduction
 
-##What is Apache Celix
+## What is Apache Celix
 Apache Celix is an implementation of the [OSGi specification](https://www.osgi.org/developer/specifications) adapted to C and C++. It is a provides a framework to develop (dynamic) modular software applications using component and/or service-oriented programming.
 
 Apache Celix is primarily developed in C and adds an additional abstraction, in the form of a library, to support for C++. 
 
-##Bundles
+## Bundles
 OSGi uses bundles as medium to (run-time) add and remove modules (additional functionality) to OSGi applications. For Java, OSGi bundles are jars with a OSGi specific manifest. For Apache Celix bundles are zip files containing an OSGi manifest (with some differences) and possible modules in the form of shared libraries. One of these modules can be the bundle activator in which case the Apache Celix framework will lookup the bundle create, start, stop and destroy symbols to manage the lifecycle of the bundle; This can be used bootstrap the bundles functionality. 
 
-##C and Objects
+## C and Objects
 C is a procedural programming language and as result has no direct support for the notion of a object. 
 To be able to follow the OSGi specification, a standard mapping from C to Java is used. This mapping takes care of how instances, parameters, return values and exceptions (error codes) work in Apache Celix.
 
-###Example
+### Example
 Before going into detail, here is an example of the mapping from a method in Java to a function in C:
 
 ```Java
@@ -29,7 +29,7 @@ public interface BundleContext {
 celix_status_t bundleContext_getServiceReferences(bundle_context_pt context, const char* serviceName, const char* filter, array_list_pt* service_references);
 ```
 
-###Object methods 
+### Object methods
 Using the provided example, the following templates can be extracted for mapping a object method to a C function:
 
 ```C
@@ -67,7 +67,7 @@ Note that although the first template is preferred, Apache Celix still uses the 
 Unless stated otherwise, the caller is owner of the output and should destroy/deallocate the result.
 An exception is a const output parameters, this indicates the callee is still owner.
 
-###Creating and destroying Objects
+### Creating and destroying Objects
 Objects in Apache Celix can generally be created and destroyed using a create and destroy functions.
 For example:
 
@@ -90,25 +90,25 @@ void hashMapIterator_init(hash_map_pt map, hash_map_iterator_pt iterator);
 void hashMapIterator_deinit(hash_map_iterator_pt iterator);
 ```
 
-###OSGi documentation and Apache Celix
+### OSGi documentation and Apache Celix
 Apache Celix follows the OSGi API as close as possible, but since the OSGi specification is written primarily for Java, there will be differences (Java is OO, C is procedural).
 Taking into account those differences and mapping explained before the OSGi javadoc can be used for a more in depth description of what the Apache Celix API offers. 
 
 * [OSGi core specification 4.3](https://osgi.org/javadoc/r4v43/core/index.html)
 * [OSGi compendium specification 4.3](https://osgi.org/javadoc/r4v43/cmpn/index.html)
 
-##What is a OSGi service?
+## What is a OSGi service?
 A OSGi service is a Java object register to the OSGi framework under a certain set of properties.
 OSGi services are generally registered as a well known interface (using the `objectClass` property).
  
 Consumers can dynamically lookup the services providing a filter to specify what kind of services their are interested in.   
 
-##C services in Apache Celix
+## C services in Apache Celix
 As mentioned OSGi uses Java Interfaces to define a service. Since C does not have Interfaces as compilable unit, this is not possible for Celix.  To be able to define a service which hides implementation details, Celix uses structs with function pointers.
  
 See [Apache Celix - Getting Started Guide](https://github.com/apache/celix/blob/master/documents/getting_started/readme.md) for a more in depth look at services and service usage.
  
-##Impact of dynamic services
+## Impact of dynamic services
 Services in Apache Celix are dynamic, meaning that they can come and go at any moment. 
 How to cope with this dynamic behaviour is very critical for creating a stable solution.
  
@@ -124,13 +124,13 @@ Apache Celix offers different solutions how to cope with this dynamic behaviour:
 
 Even though the dependency manager is not part of the OSGi specification, this is the preferred way because it uses a higher abstraction and removes a lot boilerplate code. 
 
-##C++ Support
+## C++ Support
 
 One of the reasons why C was chosen as implementation language is that C can act as a common denominator for (service oriented) interoperability between a range of languages.
 C++ support is added with the use of a [C++ Dependency Manager](../../dependency_manager_cxx/readme.md).
 The Dependency Manager is arguably the most convenient way to interact with services, confers most uses cases and eliminates the necessity to port the rest of the (large) API to C++.
 
-##Documentation
+## Documentation
 
 For more information see:
 

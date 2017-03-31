@@ -1,6 +1,6 @@
-#Apache Celix - Getting Started Guide
+# Apache Celix - Getting Started Guide
 
-##Guides
+## Guides
 There are several guide to help you get started. The first guide is [Getting Started: Creating a simple bundle](creating_a_simple_bundle.md) 
 and this should get you started for your first C and/or C++ bundle.
 

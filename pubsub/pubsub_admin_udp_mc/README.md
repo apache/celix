@@ -1,8 +1,8 @@
-#PUBSUB-Admin UDP Multicast
+# PUBSUB-Admin UDP Multicast
 
 ---
 
-##Description
+## Description
 
 This description is particular for the UDP-Multicast PUB-SUB. 
 
@@ -39,7 +39,7 @@ Now a data-connection is created and data send by the publisher will be received
 
 ---
 
-##Properties
+## Properties
 
 <table border="1">
     <tr><th>Property</th><th>Description</th></tr>
@@ -50,7 +50,7 @@ Now a data-connection is created and data send by the publisher will be received
 
 ---
 
-##Shortcomings
+## Shortcomings
 
 1. Per topic a random portnr is used for creating an endpoint. It is theoretical possible that for 2 topic the same endpoint is created.
 2. For every message a 32 bit random message ID is generated to discriminate segments of different messages which could be sent at the same time. It is theoretically possible that there are 2 equal message ID's at the same time. But since the mesage ID is valid only during the transmission of a message (maximum some milliseconds with large messages) this is not very plausible.

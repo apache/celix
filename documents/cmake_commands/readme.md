@@ -1,10 +1,10 @@
-﻿#Apache Celix - CMake Commands
+﻿# Apache Celix - CMake Commands
 
 For Apache Celix several cmake command are added to be able to work with Apache Celix bundles and deployments.
 
-#Bundles
+# Bundles
 
-##add_bundle
+## add_bundle
 Add a bundle to the project.  There are three variants:
 - With SOURCES the bundle will be created using a list of sources files as input for the bundle activator library.
 - With ACTIVATOR the bundle will be created using the library target or absolute path to existing library as activator library.
@@ -61,7 +61,7 @@ For SOVERSION only the major part is used. Expected scheme is "<major>.<minor>.<
 - If IMPORT_LIBRARIES is provided all provided lib are added to the "Import-Library" manifest statement and added in the root of the bundle. libraries can be cmake library targets or absolute paths to existing libraries.  This is not yet supported by the celix framework
 - If HEADERS is provided the headers values are appended to the bundle manifest.
 
-##bundle_private_libs
+## bundle_private_libs
 Add libraries to a bundle target. The libraries should be cmake library targets or an absolute path to a existing library.
 
 ```CMake
@@ -70,7 +70,7 @@ bundle_private_libs(<bundle_target>
 )
 ```
 
-##bundle_files
+## bundle_files
 Add files to the target bundle. DESTINATION is relative to the bundle archive root. 
 The rest of the command is conform file(COPY ...) cmake command.
 See cmake file(COPY ...) command for more info.
@@ -88,7 +88,7 @@ bundle_files(<bundle_target>
 ```
 
 
-##bundle_headers
+## bundle_headers
 Append the provided headers to the target bundle manifest.
 
 ```CMake
@@ -99,35 +99,35 @@ bundle_headers(<bundle_target>
 )
 ```
 
-##bundle_symbolic_name
+## bundle_symbolic_name
 Set bundle symbolic name
 
 ```CMake
 bundle_symbolic_name(<bundle_target> symbolic_name)
 ```
 
-##bundle_name
+## bundle_name
 Set bundle name
 
 ```CMake
 bundle_name(<bundle_target> name)
 ```
 
-##bundle_version
+## bundle_version
 Set bundle version
 
 ```CMake
 bundle_version(<bundle_target> version)
 ```
 
-##bundle_description
+## bundle_description
 Set bundle description
 
 ```CMake
 bundle_description(<bundle_target> description)
 ```
 
-##install_bundle
+## install_bundle
 Install bundle when 'make install' is executed. 
 Bundles are installed at `<install-prefix>/share/<project_name>/bundles`.
 Headers are installed at `<install-prefix>/include/<project_name>/<bundle_name>`
@@ -147,9 +147,9 @@ install_bundle(<bundle_target>
 - If HEADERS is provided the list of provided headers will be installed.
 - If RESOURCES is provided the list of provided resources will be installed.
 
-#Deployments
+# Deployments
 
-#add_deploy
+# add_deploy
 Add a deployment, consisting out of a selection of bundles, for the project. 
 Deployments can be used to run/test a selection of bundles in the celix framework.
 A deployment can be found in `<cmake_build_dir>/deploy[/<group_name>]/<deploy_name>`. 
@@ -182,7 +182,7 @@ If the bundle target is never added CMake will give an error:
 - If BUNDLES is provided the list of bundles will be added the the generated config.properties for startup. Combined with COPY the bundles will also be copied to a bundles dir.
 - If PROPERTIES is provided the list of properties will be appended to the generated config.properties
 
-#deploy_bundles_dir
+# deploy_bundles_dir
 Deploy a selection of bundles to the provided bundle dir. This can be used to create an endpoints / proxies bundles dir for the remote service admin or drivers bundles dir for the device access. 
 
 ```CMake
@@ -195,7 +195,7 @@ deploy_bundles_dir(<deploy_target_name>
 )
 ```
 
-#deploy_bundles
+# deploy_bundles
 Deploy the selected bundles. The bundles are configured for auto starting. 
 
 ```CMake
@@ -206,7 +206,7 @@ deploy_bundles(<deploy_target_name>
 )
 ```
 
-#deploy_properties
+# deploy_properties
 
 ```CMake
 Add the provided properties to the target deploy config.properties.
