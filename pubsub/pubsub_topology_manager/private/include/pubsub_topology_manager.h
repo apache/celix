@@ -41,6 +41,9 @@
 struct pubsub_topology_manager {
 	bundle_context_pt context;
 
+	celix_thread_mutex_t serializerListLock;
+	array_list_pt serializerList;
+
 	celix_thread_mutex_t psaListLock;
 	array_list_pt psaList;
 
@@ -61,6 +64,11 @@ typedef struct pubsub_topology_manager *pubsub_topology_manager_pt;
 celix_status_t pubsub_topologyManager_create(bundle_context_pt context, log_helper_pt logHelper, pubsub_topology_manager_pt *manager);
 celix_status_t pubsub_topologyManager_destroy(pubsub_topology_manager_pt manager);
 celix_status_t pubsub_topologyManager_closeImports(pubsub_topology_manager_pt manager);
+
+celix_status_t pubsub_topologyManager_pubsubSerializerAdding(void *handle, service_reference_pt reference, void **service);
+celix_status_t pubsub_topologyManager_pubsubSerializerAdded(void *handle, service_reference_pt reference, void *service);
+celix_status_t pubsub_topologyManager_pubsubSerializerModified(void *handle, service_reference_pt reference, void *service);
+celix_status_t pubsub_topologyManager_pubsubSerializerRemoved(void *handle, service_reference_pt reference, void *service);
 
 celix_status_t pubsub_topologyManager_psaAdding(void *handle, service_reference_pt reference, void **service);
 celix_status_t pubsub_topologyManager_psaAdded(void *handle, service_reference_pt reference, void *service);

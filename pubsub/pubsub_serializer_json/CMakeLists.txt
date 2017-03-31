@@ -17,31 +17,28 @@
 
 find_package(Jansson REQUIRED)
 
+include_directories("private/include")
+include_directories("public/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/dfi/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/pubsub/api/pubsub")
-include_directories("private/include")
-include_directories("public/include")
 include_directories("${JANSSON_INCLUDE_DIR}")
 
-add_bundle(org.apache.celix.pubsub_admin.PubSubAdminUdpMc
-    BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_udp_multicast"
+add_bundle(org.apache.celix.pubsub_serializer.PubSubSerializerJson
+    BUNDLE_SYMBOLICNAME "apache_celix_pubsub_serializer_json"
     VERSION "1.0.0"
     SOURCES
-    	private/src/psa_activator.c
-    	private/src/pubsub_admin_impl.c
-    	private/src/topic_subscription.c
-    	private/src/topic_publication.c
-    	private/src/large_udp.c
+    	private/src/ps_activator.c
+    	private/src/pubsub_serializer_impl.c
     	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/dyn_msg_utils.c
-    	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_endpoint.c
     	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/log_helper.c
+    	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_utils.c
 )
 
-set_target_properties(org.apache.celix.pubsub_admin.PubSubAdminUdpMc PROPERTIES INSTALL_RPATH "$ORIGIN")
-target_link_libraries(org.apache.celix.pubsub_admin.PubSubAdminUdpMc celix_framework celix_utils celix_dfi ${JANSSON_LIBRARIES})
+set_target_properties(org.apache.celix.pubsub_serializer.PubSubSerializerJson PROPERTIES INSTALL_RPATH "$ORIGIN")
+target_link_libraries(org.apache.celix.pubsub_serializer.PubSubSerializerJson celix_framework celix_utils celix_dfi ${JANSSON_LIBRARIES})
 
-install_bundle(org.apache.celix.pubsub_admin.PubSubAdminUdpMc)
+install_bundle(org.apache.celix.pubsub_serializer.PubSubSerializerJson)
 

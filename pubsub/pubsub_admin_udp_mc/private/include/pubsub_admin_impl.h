@@ -28,9 +28,12 @@
 #define PUBSUB_ADMIN_IMPL_H_
 
 #include "pubsub_admin.h"
+#include "pubsub_serializer.h"
 #include "log_helper.h"
 
 struct pubsub_admin {
+
+	pubsub_serializer_service_pt serializerSvc;
 
 	bundle_context_pt bundle_context;
 	log_helper_pt loghelper;
@@ -69,5 +72,8 @@ celix_status_t pubsubAdmin_closeAllSubscriptions(pubsub_admin_pt admin,char* sco
 
 celix_status_t pubsubAdmin_matchPublisher(pubsub_admin_pt admin, pubsub_endpoint_pt pubEP, double* score);
 celix_status_t pubsubAdmin_matchSubscriber(pubsub_admin_pt admin, pubsub_endpoint_pt subEP, double* score);
+
+celix_status_t pubsubAdmin_setSerializer(pubsub_admin_pt admin, pubsub_serializer_service_pt serializerSvc);
+celix_status_t pubsubAdmin_removeSerializer(pubsub_admin_pt admin, pubsub_serializer_service_pt serializerSvc);
 
 #endif /* PUBSUB_ADMIN_IMPL_H_ */

@@ -27,6 +27,7 @@
 #ifndef PUBSUB_COMMON_H_
 #define PUBSUB_COMMON_H_
 
+#define PUBSUB_SERIALIZER_SERVICE 		"pubsub_serializer"
 #define PUBSUB_ADMIN_SERVICE 			"pubsub_admin"
 #define PUBSUB_DISCOVERY_SERVICE		"pubsub_discovery"
 #define PUBSUB_TM_ANNOUNCE_PUBLISHER_SERVICE    "pubsub_tm_announce_publisher"

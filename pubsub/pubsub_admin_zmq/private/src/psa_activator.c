@@ -77,6 +77,9 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 		pubsubAdminSvc->matchPublisher = pubsubAdmin_matchPublisher;
 		pubsubAdminSvc->matchSubscriber = pubsubAdmin_matchSubscriber;
 
+		pubsubAdminSvc->setSerializer = pubsubAdmin_setSerializer;
+		pubsubAdminSvc->removeSerializer = pubsubAdmin_removeSerializer;
+
 		activator->adminService = pubsubAdminSvc;
 
 		status = bundleContext_registerService(context, PUBSUB_ADMIN_SERVICE, pubsubAdminSvc, NULL, &activator->registration);

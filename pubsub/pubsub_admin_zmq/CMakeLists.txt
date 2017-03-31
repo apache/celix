@@ -31,15 +31,6 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	include_directories("${PROJECT_SOURCE_DIR}/pubsub/api/pubsub")
 	include_directories("private/include")
 	include_directories("public/include")
-	if (SERIALIZER_PATH)
-		include_directories("${SERIALIZER_PATH}/include")
-	endif()
-	if (SERIALIZER_LIB_INCLUDE_DIR)
-		include_directories("${SERIALIZER_LIB_INCLUDE_DIR}")
-	endif()
-	if (SERIALIZER_LIB_DIR)
-		link_directories("${SERIALIZER_LIB_DIR}")
-	endif()
 
 	if (BUILD_ZMQ_SECURITY)
 		add_definitions(-DBUILD_WITH_ZMQ_SECURITY=1)
@@ -51,7 +42,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	endif()
 
 	add_bundle(org.apache.celix.pubsub_admin.PubSubAdminZmq
-	    BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin"
+	    BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_zmq"
 	    VERSION "1.0.0"
 	    SOURCES
 	    	private/src/psa_activator.c
@@ -63,11 +54,10 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	    	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/log_helper.c
 	    	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/dyn_msg_utils.c
 	    	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_utils.c
-	    	${PUBSUB_SERIALIZER_SRC}
 	)
 
 	set_target_properties(org.apache.celix.pubsub_admin.PubSubAdminZmq PROPERTIES INSTALL_RPATH "$ORIGIN")
-	target_link_libraries(org.apache.celix.pubsub_admin.PubSubAdminZmq celix_framework celix_utils celix_dfi ${ZMQ_LIBRARIES} ${CZMQ_LIBRARIES} ${JANSSON_LIBRARIES} ${OPENSSL_CRYPTO_LIBRARY} ${SERIALIZER_LIBRARY})
+	target_link_libraries(org.apache.celix.pubsub_admin.PubSubAdminZmq celix_framework celix_utils celix_dfi ${ZMQ_LIBRARIES} ${CZMQ_LIBRARIES} ${JANSSON_LIBRARIES} ${OPENSSL_CRYPTO_LIBRARY})
 	install_bundle(org.apache.celix.pubsub_admin.PubSubAdminZmq)
 
 endif()

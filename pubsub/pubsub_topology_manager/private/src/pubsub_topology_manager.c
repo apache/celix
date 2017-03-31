@@ -71,8 +71,10 @@ celix_status_t pubsub_topologyManager_create(bundle_context_pt context, log_help
     status = celixThreadMutex_create(&(*manager)->publicationsLock, NULL);
 	status = celixThreadMutex_create(&(*manager)->subscriptionsLock, NULL);
 	status = celixThreadMutex_create(&(*manager)->discoveryListLock, NULL);
+	status = celixThreadMutex_create(&(*manager)->serializerListLock, NULL);
 
 	arrayList_create(&(*manager)->psaList);
+	arrayList_create(&(*manager)->serializerList);
 
 	(*manager)->discoveryList = hashMap_create(serviceReference_hashCode, NULL, serviceReference_equals2, NULL);
 	(*manager)->publications = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
@@ -95,6 +97,11 @@ celix_status_t pubsub_topologyManager_destroy(pubsub_topology_manager_pt manager
 	arrayList_destroy(manager->psaList);
 	celixThreadMutex_unlock(&manager->psaListLock);
 	celixThreadMutex_destroy(&manager->psaListLock);
+
+	celixThreadMutex_lock(&manager->serializerListLock);
+	arrayList_destroy(manager->serializerList);
+	celixThreadMutex_unlock(&manager->serializerListLock);
+	celixThreadMutex_destroy(&manager->serializerListLock);
 
 	celixThreadMutex_lock(&manager->publicationsLock);
 	hash_map_iterator_pt pubit = hashMapIterator_create(manager->publications);
@@ -308,6 +315,81 @@ celix_status_t pubsub_topologyManager_psaRemoved(void * handle, service_referenc
 	return status;
 }
 
+celix_status_t pubsub_topologyManager_pubsubSerializerAdding(void* handle, service_reference_pt reference, void** service) {
+	celix_status_t status = CELIX_SUCCESS;
+	pubsub_topology_manager_pt manager = handle;
+
+	bundleContext_getService(manager->context, reference, service);
+
+	return status;
+}
+
+celix_status_t pubsub_topologyManager_pubsubSerializerAdded(void* handle, service_reference_pt reference, void* service) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	pubsub_topology_manager_pt manager = handle;
+	pubsub_serializer_service_pt new_serializer = (pubsub_serializer_service_pt) service;
+
+	celixThreadMutex_lock(&manager->serializerListLock);
+
+	logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "PSTM: Added pubsub serializer");
+
+	int i;
+
+	for(i=0; i<arrayList_size(manager->psaList); i++){
+		pubsub_admin_service_pt psa = (pubsub_admin_service_pt) arrayList_get(manager->psaList,i);
+		psa->setSerializer(psa->admin, new_serializer);
+	}
+
+	arrayList_add(manager->serializerList, new_serializer);
+
+	celixThreadMutex_unlock(&manager->serializerListLock);
+
+	return status;
+}
+
+celix_status_t pubsub_topologyManager_pubsubSerializerModified(void * handle, service_reference_pt reference, void * service) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	// Nop...
+
+	return status;
+}
+
+celix_status_t pubsub_topologyManager_pubsubSerializerRemoved(void * handle, service_reference_pt reference, void * service) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	pubsub_topology_manager_pt manager = handle;
+	pubsub_serializer_service_pt new_serializer = (pubsub_serializer_service_pt) service;
+
+	celixThreadMutex_lock(&manager->serializerListLock);
+
+	logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "PSTM: Removed pubsub serializer");
+
+	int i, j;
+
+	for(i=0; i<arrayList_size(manager->psaList); i++){
+		pubsub_admin_service_pt psa = (pubsub_admin_service_pt) arrayList_get(manager->psaList,i);
+		psa->removeSerializer(psa->admin, new_serializer);
+	}
+
+	arrayList_removeElement(manager->serializerList, new_serializer);
+
+	if (arrayList_size(manager->serializerList) > 0){
+		//there is another serializer available, change the admin so it is using another serializer
+		pubsub_serializer_service_pt replacing_serializer = (pubsub_serializer_service_pt) arrayList_get(manager->serializerList,0);
+
+		for(j=0; j<arrayList_size(manager->psaList); j++){
+			pubsub_admin_service_pt psa = (pubsub_admin_service_pt) arrayList_get(manager->psaList,j);
+			psa->setSerializer(psa->admin, replacing_serializer);
+		}
+	}
+
+	celixThreadMutex_unlock(&manager->serializerListLock);
+
+
+	return status;
+}
 
 celix_status_t pubsub_topologyManager_subscriberAdding(void * handle, service_reference_pt reference, void **service) {
 	celix_status_t status = CELIX_SUCCESS;

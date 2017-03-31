@@ -17,32 +17,71 @@
  *under the License.
  */
 /*
- * pubsub_serializer_json.c
+ * pubsub_serializer_impl.c
  *
- *  \date       Dec 7, 2016
+ *  \date       Mar 24, 2017
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
-#include "pubsub_serializer.h"
+#include <stdio.h>
+#include <stdlib.h>
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+
+#include "constants.h"
 #include "utils.h"
+#include "hash_map.h"
+#include "array_list.h"
+#include "bundle_context.h"
+#include "bundle.h"
+#include "service_reference.h"
+#include "service_registration.h"
+#include "log_helper.h"
+#include "log_service.h"
+#include "service_factory.h"
+
 #include "json_serializer.h"
 #include "dyn_msg_utils.h"
-#include "dyn_type.h"
-#include "string.h"
-#include "dyn_message.h"
-#include "dyn_common.h"
 
-struct _pubsub_message_type {	/* _dyn_message_type */
-	struct namvals_head header;
-	struct namvals_head annotations;
-	struct types_head types;
-	dyn_type *msgType;
-	version_pt msgVersion;
-};
+#include "pubsub_serializer_impl.h"
 
-celix_status_t pubsubSerializer_serialize(pubsub_message_type *msgType, const void *input, void **output, int *outputLen){
+celix_status_t pubsubSerializer_create(bundle_context_pt context, pubsub_serializer_pt *serializer) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	*serializer = calloc(1, sizeof(**serializer));
+
+	if (!*serializer) {
+		status = CELIX_ENOMEM;
+	}
+	else{
+
+		(*serializer)->bundle_context= context;
+
+		if (logHelper_create(context, &(*serializer)->loghelper) == CELIX_SUCCESS) {
+			logHelper_start((*serializer)->loghelper);
+		}
+
+	}
+
+	return status;
+}
+
+celix_status_t pubsubSerializer_destroy(pubsub_serializer_pt serializer) {
+	celix_status_t status = CELIX_SUCCESS;
+
+	logHelper_stop(serializer->loghelper);
+	logHelper_destroy(&serializer->loghelper);
+
+	free(serializer);
+
+	return status;
+}
+
+celix_status_t pubsubSerializer_serialize(pubsub_serializer_pt serializer, pubsub_message_type *msgType, const void *input, void **output, int *outputLen){
 	celix_status_t status = CELIX_SUCCESS;
 
 	dyn_type *type = NULL;
@@ -60,7 +99,7 @@ celix_status_t pubsubSerializer_serialize(pubsub_message_type *msgType, const vo
 	return status;
 }
 
-celix_status_t pubsubSerializer_deserialize(pubsub_message_type *msgType, const void *input, void **output){
+celix_status_t pubsubSerializer_deserialize(pubsub_serializer_pt serializer, pubsub_message_type *msgType, const void *input, void **output){
 	celix_status_t status = CELIX_SUCCESS;
 
 	dyn_type *type = NULL;
@@ -77,33 +116,28 @@ celix_status_t pubsubSerializer_deserialize(pubsub_message_type *msgType, const 
 	return status;
 }
 
-unsigned int pubsubSerializer_hashCode(const char *string){
-	return utils_stringHash(string);
+void pubsubSerializer_fillMsgTypesMap(pubsub_serializer_pt serializer, hash_map_pt msgTypesMap, bundle_pt bundle){
+	fillMsgTypesMap(msgTypesMap, bundle);
 }
 
-version_pt pubsubSerializer_getVersion(pubsub_message_type *msgType){
+void pubsubSerializer_emptyMsgTypesMap(pubsub_serializer_pt serializer, hash_map_pt msgTypesMap){
+	emptyMsgTypesMap(msgTypesMap);
+}
+
+version_pt pubsubSerializer_getVersion(pubsub_serializer_pt serializer, pubsub_message_type *msgType){
 	version_pt msgVersion = NULL;
 	dynMessage_getVersion((dyn_message_type *) msgType, &msgVersion);
 	return msgVersion;
 }
 
-char* pubsubSerializer_getName(pubsub_message_type *msgType){
+char* pubsubSerializer_getName(pubsub_serializer_pt serializer, pubsub_message_type *msgType){
 	char *name = NULL;
 	dynMessage_getName((dyn_message_type *) msgType, &name);
 	return name;
 }
 
-void pubsubSerializer_fillMsgTypesMap(hash_map_pt msgTypesMap,bundle_pt bundle){
-	fillMsgTypesMap(msgTypesMap, bundle);
-}
-
-void pubsubSerializer_emptyMsgTypesMap(hash_map_pt msgTypesMap){
-	emptyMsgTypesMap(msgTypesMap);
-}
-
-void pubsubSerializer_freeMsg(pubsub_message_type *msgType, void *msg){
+void pubsubSerializer_freeMsg(pubsub_serializer_pt serializer, pubsub_message_type *msgType, void *msg){
 	dyn_type *type = NULL;
 	dynMessage_getMessageType((dyn_message_type *) msgType, &type);
 	dynType_free(type, msg);
 }
-

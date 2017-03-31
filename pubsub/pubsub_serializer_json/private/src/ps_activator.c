@@ -17,9 +17,9 @@
  *under the License.
  */
 /*
- * psa_activator.c
+ * ps_activator.c
  *
- *  \date       Sep 30, 2011
+ *  \date       Mar 24, 2017
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
@@ -29,11 +29,11 @@
 #include "bundle_activator.h"
 #include "service_registration.h"
 
-#include "pubsub_admin_impl.h"
+#include "pubsub_serializer_impl.h"
 
 struct activator {
-	pubsub_admin_pt admin;
-	pubsub_admin_service_pt adminService;
+	pubsub_serializer_pt serializer;
+	pubsub_serializer_service_pt serializerService;
 	service_registration_pt registration;
 };
 
@@ -47,7 +47,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 	}
 	else{
 		*userData = activator;
-		status = pubsubAdmin_create(context, &(activator->admin));
+		status = pubsubSerializer_create(context, &(activator->serializer));
 	}
 
 	return status;
@@ -56,35 +56,29 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator *activator = userData;
-	pubsub_admin_service_pt pubsubAdminSvc = calloc(1, sizeof(*pubsubAdminSvc));
+	pubsub_serializer_service_pt pubsubSerializerSvc = calloc(1, sizeof(*pubsubSerializerSvc));
 
-	if (!pubsubAdminSvc) {
+	if (!pubsubSerializerSvc) {
 		status = CELIX_ENOMEM;
 	}
 	else{
-		pubsubAdminSvc->admin = activator->admin;
+		pubsubSerializerSvc->serializer = activator->serializer;
 
-		pubsubAdminSvc->addPublication = pubsubAdmin_addPublication;
-		pubsubAdminSvc->removePublication = pubsubAdmin_removePublication;
+		pubsubSerializerSvc->serialize = pubsubSerializer_serialize;
+		pubsubSerializerSvc->deserialize = pubsubSerializer_deserialize;
 
-		pubsubAdminSvc->addSubscription = pubsubAdmin_addSubscription;
-		pubsubAdminSvc->removeSubscription = pubsubAdmin_removeSubscription;
+		pubsubSerializerSvc->fillMsgTypesMap = pubsubSerializer_fillMsgTypesMap;
+		pubsubSerializerSvc->emptyMsgTypesMap = pubsubSerializer_emptyMsgTypesMap;
 
-		pubsubAdminSvc->closeAllPublications = pubsubAdmin_closeAllPublications;
-		pubsubAdminSvc->closeAllSubscriptions = pubsubAdmin_closeAllSubscriptions;
+		pubsubSerializerSvc->getVersion = pubsubSerializer_getVersion;
+		pubsubSerializerSvc->getName = pubsubSerializer_getName;
+		pubsubSerializerSvc->freeMsg = pubsubSerializer_freeMsg;
 
-		pubsubAdminSvc->matchPublisher = pubsubAdmin_matchPublisher;
-		pubsubAdminSvc->matchSubscriber = pubsubAdmin_matchSubscriber;
+		activator->serializerService = pubsubSerializerSvc;
 
-		pubsubAdminSvc->setSerializer = pubsubAdmin_setSerializer;
-		pubsubAdminSvc->removeSerializer = pubsubAdmin_removeSerializer;
-
-		activator->adminService = pubsubAdminSvc;
-
-		status = bundleContext_registerService(context, PUBSUB_ADMIN_SERVICE, pubsubAdminSvc, NULL, &activator->registration);
+		status = bundleContext_registerService(context, PUBSUB_SERIALIZER_SERVICE, pubsubSerializerSvc, NULL, &activator->registration);
 
 	}
-
 
 	return status;
 }
@@ -96,10 +90,8 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	serviceRegistration_unregister(activator->registration);
 	activator->registration = NULL;
 
-	pubsubAdmin_stop(activator->admin);
-
-	free(activator->adminService);
-	activator->adminService = NULL;
+	free(activator->serializerService);
+	activator->serializerService = NULL;
 
 	return status;
 }
@@ -108,8 +100,8 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt contex
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator *activator = userData;
 
-	pubsubAdmin_destroy(activator->admin);
-	activator->admin = NULL;
+	pubsubSerializer_destroy(activator->serializer);
+	activator->serializer = NULL;
 
 	free(activator);
 

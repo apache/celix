@@ -31,6 +31,7 @@
 
 #include "pubsub_common.h"
 #include "pubsub_endpoint.h"
+#include "pubsub_serializer.h"
 
 #define PSA_IP 	"PSA_IP"
 #define PSA_ITF	"PSA_INTERFACE"
@@ -54,6 +55,10 @@ struct pubsub_admin_service {
 
 	celix_status_t (*matchPublisher)(pubsub_admin_pt admin, pubsub_endpoint_pt pubEP, double* score);
 	celix_status_t (*matchSubscriber)(pubsub_admin_pt admin, pubsub_endpoint_pt subEP, double* score);
+
+	celix_status_t (*setSerializer)(pubsub_admin_pt admin, pubsub_serializer_service_pt serializerSvc);
+	celix_status_t (*removeSerializer)(pubsub_admin_pt admin, pubsub_serializer_service_pt serializerSvc);
+
 };
 
 typedef struct pubsub_admin_service *pubsub_admin_service_pt;

@@ -19,30 +19,38 @@
 /*
  * pubsub_serializer.h
  *
- *  \date       Dec 7, 2016
+ *  \date       Mar 24, 2017
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
 
-#ifndef PUBSUB_SERIALIZER_H
-#define PUBSUB_SERIALIZER_H
+#ifndef PUBSUB_SERIALIZER_H_
+#define PUBSUB_SERIALIZER_H_
 
-#include "bundle.h"
-#include "hash_map.h"
-#include "celix_errno.h"
+#include "service_reference.h"
+
+#include "pubsub_common.h"
 
 typedef struct _pubsub_message_type pubsub_message_type;
 
-celix_status_t pubsubSerializer_serialize(pubsub_message_type *msgType, const void *input, void **output, int *outputLen);
-celix_status_t pubsubSerializer_deserialize(pubsub_message_type *msgType, const void *input, void **output);
+typedef struct pubsub_serializer *pubsub_serializer_pt;
 
-unsigned int pubsubSerializer_hashCode(const char *string);
-version_pt pubsubSerializer_getVersion(pubsub_message_type *msgType);
-char* pubsubSerializer_getName(pubsub_message_type *msgType);
+struct pubsub_serializer_service {
 
-void pubsubSerializer_fillMsgTypesMap(hash_map_pt msgTypesMap,bundle_pt bundle);
-void pubsubSerializer_emptyMsgTypesMap(hash_map_pt msgTypesMap);
+	pubsub_serializer_pt serializer;
 
-void pubsubSerializer_freeMsg(pubsub_message_type *msgType, void *msg);
+	celix_status_t (*serialize)(pubsub_serializer_pt serializer, pubsub_message_type *msgType, const void *input, void **output, int *outputLen);
+	celix_status_t (*deserialize)(pubsub_serializer_pt serializer, pubsub_message_type *msgType, const void *input, void **output);
 
-#endif
+	void (*fillMsgTypesMap)(pubsub_serializer_pt serializer, hash_map_pt msgTypesMap,bundle_pt bundle);
+	void (*emptyMsgTypesMap)(pubsub_serializer_pt serializer, hash_map_pt msgTypesMap);
+
+	version_pt (*getVersion)(pubsub_serializer_pt serializer, pubsub_message_type *msgType);
+	char* (*getName)(pubsub_serializer_pt serializer, pubsub_message_type *msgType);
+	void (*freeMsg)(pubsub_serializer_pt serializer, pubsub_message_type *msgType, void *msg);
+
+};
+
+typedef struct pubsub_serializer_service *pubsub_serializer_service_pt;
+
+#endif /* PUBSUB_SERIALIZER_H_ */

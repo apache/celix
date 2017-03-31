@@ -53,8 +53,6 @@
 #include "pubsub_publish_service_private.h"
 #include "large_udp.h"
 
-#include "pubsub_serializer.h"
-
 #define MAX_EPOLL_EVENTS        10
 #define RECV_THREAD_TIMEOUT     5
 #define UDP_BUFFER_SIZE         65535
@@ -74,6 +72,7 @@ struct topic_subscription{
 	hash_map_pt socketMap; // key = URL, value = listen-socket
 	unsigned int nrSubscribers;
 	largeUdp_pt largeUdpHandle;
+	pubsub_serializer_service_pt serializerSvc;
 
 };
 
@@ -95,7 +94,7 @@ static void sigusr1_sighandler(int signo);
 static int pubsub_localMsgTypeIdForMsgType(void* handle, const char* msgType, unsigned int* msgTypeId);
 
 
-celix_status_t pubsub_topicSubscriptionCreate(char* ifIp,bundle_context_pt bundle_context, char* scope, char* topic,topic_subscription_pt* out){
+celix_status_t pubsub_topicSubscriptionCreate(char* ifIp,bundle_context_pt bundle_context, pubsub_serializer_service_pt serializer, char* scope, char* topic,topic_subscription_pt* out){
 	celix_status_t status = CELIX_SUCCESS;
 
 	topic_subscription_pt ts = (topic_subscription_pt) calloc(1,sizeof(*ts));
@@ -112,6 +111,7 @@ celix_status_t pubsub_topicSubscriptionCreate(char* ifIp,bundle_context_pt bundl
 
 	ts->running = false;
 	ts->nrSubscribers = 0;
+	ts->serializerSvc = serializer;
 
 	celixThreadMutex_create(&ts->ts_lock,NULL);
 	arrayList_create(&ts->sub_ep_list);
@@ -391,6 +391,39 @@ unsigned int pubsub_topicGetNrSubscribers(topic_subscription_pt ts) {
 	return ts->nrSubscribers;
 }
 
+celix_status_t pubsub_topicSubscriptionAddSerializer(topic_subscription_pt ts, pubsub_serializer_service_pt serializerSvc){
+	celix_status_t status = CELIX_SUCCESS;
+
+	celixThreadMutex_lock(&ts->ts_lock);
+
+	ts->serializerSvc = serializerSvc;
+
+	celixThreadMutex_unlock(&ts->ts_lock);
+
+	return status;
+}
+
+celix_status_t pubsub_topicSubscriptionRemoveSerializer(topic_subscription_pt ts, pubsub_serializer_service_pt serializerSvc){
+	celix_status_t status = CELIX_SUCCESS;
+
+	celixThreadMutex_lock(&ts->ts_lock);
+
+	hash_map_iterator_pt svc_iter = hashMapIterator_create(ts->servicesMap);
+	while(hashMapIterator_hasNext(svc_iter)){
+		hash_map_pt msgTypes = (hash_map_pt) hashMapIterator_nextValue(svc_iter);
+		if (hashMap_size(msgTypes) > 0){
+			ts->serializerSvc->emptyMsgTypesMap(ts->serializerSvc->serializer, msgTypes);
+		}
+	}
+	hashMapIterator_destroy(svc_iter);
+
+	ts->serializerSvc = NULL;
+
+	celixThreadMutex_unlock(&ts->ts_lock);
+
+	return status;
+}
+
 static celix_status_t topicsub_subscriberTracked(void * handle, service_reference_pt reference, void * service){
 	celix_status_t status = CELIX_SUCCESS;
 	topic_subscription_pt ts = handle;
@@ -401,7 +434,10 @@ static celix_status_t topicsub_subscriberTracked(void * handle, service_referenc
 
 		bundle_pt bundle = NULL;
 		serviceReference_getBundle(reference, &bundle);
-		pubsubSerializer_fillMsgTypesMap(msgTypes,bundle);
+
+		if (ts->serializerSvc != NULL){
+			ts->serializerSvc->fillMsgTypesMap(ts->serializerSvc->serializer, msgTypes,bundle);
+		}
 
 		if(hashMap_size(msgTypes)==0){ //If the msgTypes hashMap is not filled, the service is an unsupported subscriber
 			hashMap_destroy(msgTypes,false,false);
@@ -426,7 +462,9 @@ static celix_status_t topicsub_subscriberUntracked(void * handle, service_refere
 	if (hashMap_containsKey(ts->servicesMap, service)) {
 		hash_map_pt msgTypes = hashMap_remove(ts->servicesMap, service);
 		if(msgTypes!=NULL){
-			pubsubSerializer_emptyMsgTypesMap(msgTypes);
+			if (ts->serializerSvc != NULL){
+				ts->serializerSvc->emptyMsgTypesMap(ts->serializerSvc->serializer, msgTypes);
+			}
 			hashMap_destroy(msgTypes,false,false);
 		}
 	}
@@ -450,15 +488,18 @@ static void process_msg(topic_subscription_pt sub,pubsub_udp_msg_pt msg){
 		if (msgType == NULL) {
 			printf("TS: Primary message %d not supported. NOT receiving any part of the whole message.\n",msg->header.type);
 		}
+		else if (sub->serializerSvc == NULL){
+			printf("TS: No active serializer service found!\n");
+		}
 		else{
 			void *msgInst = NULL;
-			char *name = pubsubSerializer_getName(msgType);
-			version_pt msgVersion = pubsubSerializer_getVersion(msgType);
+			char *name = sub->serializerSvc->getName(sub->serializerSvc->serializer, msgType);
+			version_pt msgVersion = sub->serializerSvc->getVersion(sub->serializerSvc->serializer, msgType);
 
 			bool validVersion = checkVersion(msgVersion,&msg->header);
 
 			if(validVersion){
-				celix_status_t status = pubsubSerializer_deserialize(msgType, (const void *) msg->payload, &msgInst);
+				celix_status_t status = sub->serializerSvc->deserialize(sub->serializerSvc->serializer, msgType, (const void *) msg->payload, &msgInst);
 
 				if (status == CELIX_SUCCESS) {
 					bool release = true;
@@ -469,7 +510,7 @@ static void process_msg(topic_subscription_pt sub,pubsub_udp_msg_pt msg){
 
 					subsvc->receive(subsvc->handle, name, msg->header.type, msgInst, &mp_callbacks, &release);
 					if(release){
-						pubsubSerializer_freeMsg(msgType, msgInst);
+						sub->serializerSvc->freeMsg(sub->serializerSvc->serializer, msgType, msgInst);
 					}
 				}
 				else{
@@ -557,7 +598,7 @@ static bool checkVersion(version_pt msgVersion,pubsub_msg_header_pt hdr){
 }
 
 static int pubsub_localMsgTypeIdForMsgType(void* handle, const char* msgType, unsigned int* msgTypeId){
-	*msgTypeId = pubsubSerializer_hashCode(msgType);
+	*msgTypeId = utils_stringHash(msgType);
 	return 0;
 }
 

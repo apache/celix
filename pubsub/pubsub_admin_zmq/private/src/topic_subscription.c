@@ -49,8 +49,6 @@
 #include "dyn_msg_utils.h"
 #include "pubsub_utils.h"
 
-#include "pubsub_serializer.h"
-
 #ifdef BUILD_WITH_ZMQ_SECURITY
 	#include "zmq_crypto.h"
 
@@ -80,6 +78,8 @@ struct topic_subscription{
 	celix_thread_mutex_t pendingConnections_lock;
 	celix_thread_mutex_t pendingDisconnections_lock;
 	unsigned int nrSubscribers;
+	pubsub_serializer_service_pt serializerSvc;
+
 };
 
 typedef struct complete_zmq_msg{
@@ -104,12 +104,12 @@ static bool checkVersion(version_pt msgVersion,pubsub_msg_header_pt hdr);
 static void sigusr1_sighandler(int signo);
 static int pubsub_localMsgTypeIdForMsgType(void* handle, const char* msgType, unsigned int* msgTypeId);
 static int pubsub_getMultipart(void *handle, unsigned int msgTypeId, bool retain, void **part);
-static mp_handle_pt create_mp_handle(hash_map_pt svc_msg_db,array_list_pt rcv_msg_list);
+static mp_handle_pt create_mp_handle(topic_subscription_pt sub, hash_map_pt svc_msg_db,array_list_pt rcv_msg_list);
 static void destroy_mp_handle(mp_handle_pt mp_handle);
 static void connectPendingPublishers(topic_subscription_pt sub);
 static void disconnectPendingPublishers(topic_subscription_pt sub);
 
-celix_status_t pubsub_topicSubscriptionCreate(bundle_context_pt bundle_context, pubsub_endpoint_pt subEP, char* scope, char* topic,topic_subscription_pt* out){
+celix_status_t pubsub_topicSubscriptionCreate(bundle_context_pt bundle_context, pubsub_endpoint_pt subEP, pubsub_serializer_service_pt serializer, char* scope, char* topic,topic_subscription_pt* out){
 	celix_status_t status = CELIX_SUCCESS;
 
 #ifdef BUILD_WITH_ZMQ_SECURITY
@@ -211,6 +211,7 @@ celix_status_t pubsub_topicSubscriptionCreate(bundle_context_pt bundle_context, 
 	ts->zmq_socket = zmq_s;
 	ts->running = false;
 	ts->nrSubscribers = 0;
+	ts->serializerSvc = serializer;
 
 	#ifdef BUILD_WITH_ZMQ_SECURITY
 	if (subEP->is_secure){
@@ -428,6 +429,39 @@ unsigned int pubsub_topicGetNrSubscribers(topic_subscription_pt ts) {
 	return ts->nrSubscribers;
 }
 
+celix_status_t pubsub_topicSubscriptionAddSerializer(topic_subscription_pt ts, pubsub_serializer_service_pt serializerSvc){
+	celix_status_t status = CELIX_SUCCESS;
+
+	celixThreadMutex_lock(&ts->ts_lock);
+
+	ts->serializerSvc = serializerSvc;
+
+	celixThreadMutex_unlock(&ts->ts_lock);
+
+	return status;
+}
+
+celix_status_t pubsub_topicSubscriptionRemoveSerializer(topic_subscription_pt ts, pubsub_serializer_service_pt serializerSvc){
+	celix_status_t status = CELIX_SUCCESS;
+
+	celixThreadMutex_lock(&ts->ts_lock);
+
+	hash_map_iterator_pt svc_iter = hashMapIterator_create(ts->servicesMap);
+	while(hashMapIterator_hasNext(svc_iter)){
+		hash_map_pt msgTypes = (hash_map_pt) hashMapIterator_nextValue(svc_iter);
+		if (hashMap_size(msgTypes) > 0){
+			ts->serializerSvc->emptyMsgTypesMap(ts->serializerSvc->serializer, msgTypes);
+		}
+	}
+	hashMapIterator_destroy(svc_iter);
+
+	ts->serializerSvc = NULL;
+
+	celixThreadMutex_unlock(&ts->ts_lock);
+
+	return status;
+}
+
 static celix_status_t topicsub_subscriberTracked(void * handle, service_reference_pt reference, void * service){
 	celix_status_t status = CELIX_SUCCESS;
 	topic_subscription_pt ts = handle;
@@ -438,7 +472,10 @@ static celix_status_t topicsub_subscriberTracked(void * handle, service_referenc
 
 		bundle_pt bundle = NULL;
 		serviceReference_getBundle(reference, &bundle);
-		pubsubSerializer_fillMsgTypesMap(msgTypes,bundle);
+
+		if (ts->serializerSvc != NULL){
+			ts->serializerSvc->fillMsgTypesMap(ts->serializerSvc->serializer, msgTypes,bundle);
+		}
 
 		if(hashMap_size(msgTypes)==0){ //If the msgTypes hashMap is not filled, the service is an unsupported subscriber
 			hashMap_destroy(msgTypes,false,false);
@@ -463,7 +500,9 @@ static celix_status_t topicsub_subscriberUntracked(void * handle, service_refere
 	if (hashMap_containsKey(ts->servicesMap, service)) {
 		hash_map_pt msgTypes = hashMap_remove(ts->servicesMap, service);
 		if(msgTypes!=NULL){
-			pubsubSerializer_emptyMsgTypesMap(msgTypes);
+			if (ts->serializerSvc != NULL){
+				ts->serializerSvc->emptyMsgTypesMap(ts->serializerSvc->serializer, msgTypes);
+			}
 			hashMap_destroy(msgTypes,false,false);
 		}
 	}
@@ -488,21 +527,24 @@ static void process_msg(topic_subscription_pt sub,array_list_pt msg_list){
 		if (msgType == NULL) {
 			printf("TS: Primary message %d not supported. NOT sending any part of the whole message.\n",first_msg_hdr->type);
 		}
+		else if (sub->serializerSvc == NULL){
+			printf("TS: No active serializer found!\n");
+		}
 		else{
 			void *msgInst = NULL;
-			char *name = pubsubSerializer_getName(msgType);
-			version_pt msgVersion = pubsubSerializer_getVersion(msgType);
+			char *name = sub->serializerSvc->getName(sub->serializerSvc->serializer, msgType);
+			version_pt msgVersion = sub->serializerSvc->getVersion(sub->serializerSvc->serializer, msgType);
 
 			bool validVersion = checkVersion(msgVersion,first_msg_hdr);
 
 			if(validVersion){
 
-				celix_status_t status = pubsubSerializer_deserialize(msgType, (const void *) zframe_data(((complete_zmq_msg_pt)arrayList_get(msg_list,0))->payload), &msgInst);
+				celix_status_t status = sub->serializerSvc->deserialize(sub->serializerSvc->serializer, msgType, (const void *) zframe_data(((complete_zmq_msg_pt)arrayList_get(msg_list,0))->payload), &msgInst);
 
 				if (status == CELIX_SUCCESS) {
 					bool release = true;
 
-					mp_handle_pt mp_handle = create_mp_handle(msgTypes,msg_list);
+					mp_handle_pt mp_handle = create_mp_handle(sub, msgTypes,msg_list);
 					pubsub_multipart_callbacks_t mp_callbacks;
 					mp_callbacks.handle = mp_handle;
 					mp_callbacks.localMsgTypeIdForMsgType = pubsub_localMsgTypeIdForMsgType;
@@ -510,7 +552,7 @@ static void process_msg(topic_subscription_pt sub,array_list_pt msg_list){
 					subsvc->receive(subsvc->handle, name, first_msg_hdr->type, msgInst, &mp_callbacks, &release);
 
 					if(release){
-						pubsubSerializer_freeMsg(msgType, msgInst);
+						sub->serializerSvc->freeMsg(sub->serializerSvc->serializer, msgType, msgInst);
 					}
 					if(mp_handle!=NULL){
 						destroy_mp_handle(mp_handle);
@@ -684,7 +726,7 @@ static bool checkVersion(version_pt msgVersion,pubsub_msg_header_pt hdr){
 }
 
 static int pubsub_localMsgTypeIdForMsgType(void* handle, const char* msgType, unsigned int* msgTypeId){
-	*msgTypeId = pubsubSerializer_hashCode(msgType);
+	*msgTypeId = utils_stringHash(msgType);
 	return 0;
 }
 
@@ -711,7 +753,7 @@ static int pubsub_getMultipart(void *handle, unsigned int msgTypeId, bool retain
 
 }
 
-static mp_handle_pt create_mp_handle(hash_map_pt svc_msg_db,array_list_pt rcv_msg_list){
+static mp_handle_pt create_mp_handle(topic_subscription_pt sub, hash_map_pt svc_msg_db,array_list_pt rcv_msg_list){
 
 	if(arrayList_size(rcv_msg_list)==1){ //Means it's not a multipart message
 		return NULL;
@@ -728,14 +770,14 @@ static mp_handle_pt create_mp_handle(hash_map_pt svc_msg_db,array_list_pt rcv_ms
 		pubsub_msg_header_pt header = (pubsub_msg_header_pt)zframe_data(c_msg->header);
 
 		pubsub_message_type *msgType = hashMap_get(svc_msg_db,&(header->type));
-		if (msgType != NULL) {
+		if (msgType != NULL && sub->serializerSvc != NULL) {
 			void *msgInst = NULL;
-			version_pt msgVersion = pubsubSerializer_getVersion(msgType);
+			version_pt msgVersion = sub->serializerSvc->getVersion(sub->serializerSvc->serializer, msgType);
 
 			bool validVersion = checkVersion(msgVersion,header);
 
 			if(validVersion){
-				celix_status_t status = pubsubSerializer_deserialize(msgType, (const void *) zframe_data(c_msg->payload), &msgInst);
+				celix_status_t status = sub->serializerSvc->deserialize(sub->serializerSvc->serializer, msgType, (const void *) zframe_data(c_msg->payload), &msgInst);
 
 				if(status == CELIX_SUCCESS){
 					unsigned int* msgId = calloc(1,sizeof(unsigned int));
