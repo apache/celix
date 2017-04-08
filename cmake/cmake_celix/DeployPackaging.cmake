@@ -28,24 +28,27 @@ function(add_deploy)
     list(REMOVE_AT ARGN 0)
 
     set(OPTIONS COPY)
-    set(ONE_VAL_ARGS GROUP NAME LAUNCHER)
+    set(ONE_VAL_ARGS GROUP NAME LAUNCHER DIR)
     set(MULTI_VAL_ARGS BUNDLES PROPERTIES)
     cmake_parse_arguments(DEPLOY "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
 
     ##### Check arguments #####
-    if(NOT DEPLOY_NAME) 
+    if (NOT DEPLOY_NAME)
         set(DEPLOY_NAME "${DEPLOY_TARGET}")
-    endif()
+    endif ()
+    if (NOT DEPLOY_DIR)
+        set(DEPLOY_DIR "${CMAKE_BINARY_DIR}/deploy")
+    endif ()
     ######
 
     ##### Setting defaults #####
-    if(DEPLOY_GROUP) 
-        set(DEPLOY_LOCATION "${CMAKE_BINARY_DIR}/deploy/${DEPLOY_GROUP}/${DEPLOY_NAME}")
+    if (DEPLOY_GROUP)
+        set(DEPLOY_LOCATION "${DEPLOY_DIR}/${DEPLOY_GROUP}/${DEPLOY_NAME}")
         set(DEPLOY_PRINT_NAME "${DEPLOY_GROUP}/${DEPLOY_NAME}")
-    else()
-        set(DEPLOY_LOCATION "${CMAKE_BINARY_DIR}/deploy/${DEPLOY_NAME}")
+    else ()
+        set(DEPLOY_LOCATION "${DEPLOY_DIR}/${DEPLOY_NAME}")
         set(DEPLOY_PRINT_NAME "${DEPLOY_NAME}")
-    endif()
+    endif ()
     ######
 
 
@@ -77,6 +80,9 @@ function(add_deploy)
     #setup dependencies based on timestamp
     add_custom_command(OUTPUT "${TIMESTAMP_FILE}"
         COMMAND ${CMAKE_COMMAND} -E touch ${TIMESTAMP_FILE}
+        COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_LOCATION>
+        COMMAND chmod +x $<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_LOCATION>/run.sh
+        COMMAND chmod +x $<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_LOCATION>/release.sh
         DEPENDS  "$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_TARGET_DEPS>" ${DEPLOY_FILE_TARGETS} 
         WORKING_DIRECTORY "${DEPLOY_LOCATION}"
         COMMENT "Deploying ${DEPLOY_PRINT_NAME}" VERBATIM

@@ -23,15 +23,15 @@ if (CPPUTEST_FOUND)
         api
         ${CPPUTEST_INCLUDE_DIR}
     )
-    
+
     add_library(celix_pubsubmock STATIC
         src/publisher_mock.cc
-    )
+            ../test/test/msg.h)
     target_link_libraries(celix_pubsubmock ${CPPUTEST_LIBRARY})
-	
+
     install(TARGETS celix_pubsubmock DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
     install(FILES api/pubsub/publisher_mock.h DESTINATION include/celix/pubsub COMPONENT framework)
-    
+
     if (ENABLE_TESTING)
         add_executable(pubsubmock_test
             tst/pubsubmock_test.cc

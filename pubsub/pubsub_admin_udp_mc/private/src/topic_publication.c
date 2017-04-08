@@ -364,6 +364,8 @@ static int pubsub_topicPublicationSend(void* handle, unsigned int msgTypeId, con
     celixThreadMutex_lock(&(bound->parent->tp_lock));
     celixThreadMutex_lock(&(bound->mp_lock));
 
+    //TODO //FIXME -> should use pointer to int as identifier, can be many pointers to int ....
+    printf("TODO FIX usage of msg id's in the serializer hashmap. This seems wrongly based on pointers to uints!!!!\n");
     pubsub_message_type *msgType = hashMap_get(bound->msgTypes, &msgTypeId);
 
     int major=0, minor=0;
@@ -401,7 +403,11 @@ static int pubsub_topicPublicationSend(void* handle, unsigned int msgTypeId, con
 		free(serializedOutput);
 
     } else {
-        printf("TP: Message %u not supported.",msgTypeId);
+		if (bound->parent->serializerSvc == NULL) {
+			printf("TP: Serializer is not set!\n");
+		} else {
+			printf("TP: Message %u not supported.\n",msgTypeId);
+		}
         status=-1;
     }
 

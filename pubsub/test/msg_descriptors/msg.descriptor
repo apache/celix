@@ -1,0 +1,8 @@
+:header
+type=message
+name=msg
+version=1.0.0
+:annotations
+:types
+:message
+{n seqnR}

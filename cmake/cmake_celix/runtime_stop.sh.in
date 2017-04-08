@@ -1,0 +1,19 @@
+#!/bin/sh
+
+source $<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_LOCATION>/common.sh
+
+#Options
+USE_SIGNAL=${USE_SIGNAL:-}
+
+#TODO parse option to easily select kill -9
+
+if [ -e ${RUNTIME_DIR}/run/main_pid ] ; then
+    MAIN_PID=$(cat ${RUNTIME_DIR}/run/wait_for_pid)
+    rt_stop ${MAIN_PID}
+fi
+
+if [ -e ${RUNTIME_DIR}/run/pids ] ; then
+    PIDS=$(cat ${RUNTIME_DIR}/run/pids)
+    rt_stop ${PIDS}
+fi
+

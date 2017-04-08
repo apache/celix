@@ -1,0 +1,152 @@
+#!/bin/sh
+
+#Locations
+BUILD_DIR="${BUILD_DIR:-@PROJECT_BINARY_DIR@}"
+RUNTIME_DIR="${RUNTIME_DIR:-$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_LOCATION>}"
+DEPLOY_DIR="${DEPLOY_DIR:-${BUILD_DIR}/deploy}"
+
+#Name & Group
+RUNTIME_NAME="${RUNTIME_NAME:-$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_NAME>}"
+RUNTIME_GROUP="${RUNTIME_NAME:-$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_GROUP>}"
+
+#deployments & commands
+DEPLOYMENTS=${DEPLOYMENTS:-"$<JOIN:$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_DEPLOYMENTS>, >"}
+COMMANDS=${COMMANDS:-"$<JOIN:$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_COMMANDS>, >"}
+
+#Options
+TERM_CMD="${TERM_CMD:-xterm}"
+TERM_OPTS="${TERM_OPTS:-}"
+USE_TERM="${USE_TERM:-$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_USE_TERM>}"
+RELEASE_SH="${RELEASE_SH:-}"
+WAIT_FOR_DEPLOYMENT="${WAIT_FOR_DEPLOYMENT:-$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_WAIT_FOR_DEPLOYMENT>}"
+WAIT_FOR_CMD="${WAIT_FOR_CMD:-$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_WAIT_FOR_COMMAND>}"
+LOG_TO_FILES="${LOG_TO_FILES:-$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_LOG_TO_FILES>}"
+KILL_OPTS="${KILL_OPTS:-}"
+
+PIDS=""
+WAIT_FOR_PID=""
+LOG_SUFFIX=$(date +"%s")
+trap stop_all INT
+
+#clear dirs
+function rt_init() {
+    rm -fr ${RUNTIME_DIR}/run #contains pids, etc
+    mkdir ${RUNTIME_DIR}/run
+    if [ ! -e ${RUNTIME_DIR}/logs ] ; then
+        mkdir ${RUNTIME_DIR}/logs
+    fi
+}
+
+##functions
+function rt_stop_all() {
+    for PID in ${PIDS}; do
+        echo "Sending signal to ${PID}"
+        kill ${KILL_OPTS} ${PID}
+    done
+}
+
+function rt_stop() {
+    PIDS=$@
+    echo "Stopping pids ${PIDS}"
+    kill ${KILL_OPTS} ${PIDS}
+}
+
+function rt_run_deployment() {
+    DEPLOYMENT_DIR=$1
+    DEPLOYMENT=$(basename ${DEPLOYMENT_DIR})
+    LOG_FILE="${RUNTIME_DIR}/logs/${DEPLOYMENT}-${LOG_SUFFIX}.log"
+    echo "Running ${DEPLOYMENT}"
+    cd ${DEPLOYMENT_DIR} #assuming absolute dir
+    if [ -d .cache ] ; then
+        echo "Clearing cache"
+        rm -fr .cache #clear cache
+    fi
+    . ./release.sh #run deployment release
+    if [ "${USE_TERM}" = "TRUE" ] ; then
+        if [ "${LOG_TO_FILES}" = "TRUE" ] ; then
+            ${TERM_CMD} ${TERM_OPTS} -e "./${DEPLOYMENT} &> ${LOG_FILE}" &
+        else
+            ${TERM_CMD} ${TERM_OPTS} -e "./${DEPLOYMENT}" &
+        fi
+    else #run in this shell
+        if [ "${LOG_TO_FILES}" = "TRUE" ] ; then
+            ./${DEPLOYMENT} &> ${LOG_FILE} &
+        else
+            ./${DEPLOYMENT} &
+        fi
+    fi
+    PID=$!
+    echo "PID of DEPLOYMENT '${DEPLOYMENT}' is ${PID}"
+    if [ ! -z "${WAIT_FOR_DEPLOYMENT}" -a "${DEPLOYMENT_DIR}" = "${WAIT_FOR_DEPLOYMENT}" ] ; then
+        WAIT_FOR_PID=${PID}
+        echo "${PID}" > ${RUNTIME_DIR}/run/wait_for_pid
+    else
+        PIDS="${PID} ${PIDS}"
+        echo "${PIDS}" > ${RUNTIME_DIR}/run/pids
+    fi
+    cd -
+}
+
+function rt_run_cmd() {
+    CMD="$1"
+    LOG_FILE="${RUNTIME_DIR}/logs/${CMD}-${LOG_SUFFIX}.log" #TODO only use first word in case of complex command
+    cd ${RUNTIME_DIR}
+    if [ "${USE_TERM}" = "TRUE" ] ; then
+        if [ "${LOG_TO_FILES}" = "TRUE" ] ; then
+            ${TERM_CMD} ${TERM_OPTS} -e "${CMD} &> ${LOG_FILE}" &
+        else
+            ${TERM_CMD} ${TERM_OPTS} -e "${CMD}" &
+        fi
+    else
+        if [ "${LOG_TO_FILES}" = "TRUE" ] ; then
+            ${CMD} &> \"${LOG_FILE}\" &
+        else
+            ${CMD} &
+        fi
+    fi
+    PID=$!
+    echo "PID of COMMAND '${CMD}' is ${PID}"
+    if [ ! -z "${WAIT_FOR_CMD}" -a "${CMD}" = "${MWAIT_FOR_CMD}" ] ; then
+        WAIT_FOR_PID=${PID}
+        echo "${PID}" > ${RUNTIME_DIR}/run/wait_for_pid
+    else
+        PIDS="${PID} ${PIDS}"
+        echo "${PIDS}" > ${RUNTIME_DIR}/run/pids
+    fi
+    cd -
+}
+
+function rt_wait_for() {
+    RESULT=0
+    echo "Waiting for pid ${WAIT_FOR_PID}"
+    if wait ${WAIT_FOR_PID}; then
+        echo "${WAIT_FOR_PID} exited normal"
+    else
+        echo "${WAIT_FOR_PID} exited with error"
+        RESULT=1
+    fi
+
+    echo "Signalling pids:${PIDS}"
+    kill ${PIDS}
+
+    for PID in ${PIDS}; do
+        if wait ${PID}; then
+            echo "${PID} exited normal"
+        else
+            echo "${PID} exited with error"
+        fi
+    done
+
+    echo ${RESULT}
+}
+
+
+if [ -z "${RELEASE_SH}" ] ; then
+    true #pass
+elif [ -e "${RELEASE_SH}" ]; then #absolute release file
+    source ${RELEASE_SH}
+elif [ -e "${RUNTIME_DIR}/${RELEASE_SH}" ] ; then #release file in runtime dir
+    source ${RUNTIME_DIR}/${RELEASE_SH}
+elif [ -e "${BUILD_DIR}/${RELEASE_SH}" ] ; then #release file in build dir
+    source ${BUILD_DIR}/${RELEASE_SH}
+fi

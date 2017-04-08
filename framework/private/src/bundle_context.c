@@ -126,7 +126,7 @@ celix_status_t bundleContext_registerService(bundle_context_pt context, const ch
 	service_registration_pt registration = NULL;
 	celix_status_t status = CELIX_SUCCESS;
 
-	if (context != NULL && *service_registration == NULL) {
+	if (context != NULL) {
 	    fw_registerService(context->framework, &registration, context->bundle, serviceName, svcObj, properties);
 	    *service_registration = registration;
 	} else {
