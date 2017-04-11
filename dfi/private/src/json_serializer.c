@@ -280,7 +280,7 @@ static int jsonSerializer_parseSequence(dyn_type *seq, json_t *array, void *seqL
     return status;
 }
 
-int jsonSerializer_serialize(dyn_type *type, void *input, char **output) {
+int jsonSerializer_serialize(dyn_type *type, const void* input, char **output) {
     int status = OK;
 
     json_t *root = NULL;
@@ -294,11 +294,11 @@ int jsonSerializer_serialize(dyn_type *type, void *input, char **output) {
     return status;
 }
 
-int jsonSerializer_serializeJson(dyn_type *type, void *input, json_t **out) {
-    return jsonSerializer_writeAny(type, input, out);
+int jsonSerializer_serializeJson(dyn_type *type, const void* input, json_t **out) {
+    return jsonSerializer_writeAny(type, (void*)input /*TODO update static function to take const void**/, out);
 }
 
-static int jsonSerializer_writeAny(dyn_type *type, void *input, json_t **out) {
+static int jsonSerializer_writeAny(dyn_type *type, void* input, json_t **out) {
     int status = OK;
 
     int descriptor = dynType_descriptorType(type);

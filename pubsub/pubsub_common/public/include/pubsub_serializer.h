@@ -24,33 +24,44 @@
  *  \copyright	Apache License, Version 2.0
  */
 
-#ifndef PUBSUB_SERIALIZER_H_
-#define PUBSUB_SERIALIZER_H_
+#ifndef PUBSUB_SERIALIZER_SERVICE_H_
+#define PUBSUB_SERIALIZER_SERVICE_H_
 
 #include "service_reference.h"
 
 #include "pubsub_common.h"
 
-typedef struct _pubsub_message_type pubsub_message_type;
+/**
+ * There should be a pubsub_serializer_t
+ * per msg type (msg id) per bundle
+ *
+ * The pubsub_serializer_service can create
+ * a serializer_map per bundle. Potentially using
+ * the extender pattern.
+ */
+typedef struct pubsub_msg_serializer {
+    void* handle;
+    unsigned int msgId;
+    const char* msgName;
+    version_pt msgVersion;
 
-typedef struct pubsub_serializer *pubsub_serializer_pt;
+    celix_status_t (*serialize)(void* handle, const void* input, char** out, size_t* outLen);
+    celix_status_t (*deserialize)(void* handle, const char* input, size_t inputLen, void** out); //note inputLen can be 0 if predefined size is not needed
 
-struct pubsub_serializer_service {
+    void (*freeMsg)(void* handle, void* msg);
+} pubsub_msg_serializer_t;
 
-	pubsub_serializer_pt serializer;
+typedef struct pubsub_msg_serializer_map {
+    bundle_pt bundle;
+    hash_map_pt serializers; //key = msg id (unsigned int), value = pubsub_serializer_t*
+} pubsub_msg_serializer_map_t;
 
-	celix_status_t (*serialize)(pubsub_serializer_pt serializer, pubsub_message_type *msgType, const void *input, void **output, int *outputLen);
-	celix_status_t (*deserialize)(pubsub_serializer_pt serializer, pubsub_message_type *msgType, const void *input, void **output);
+typedef struct pubsub_serializer_service {
+	void* handle;
 
-	void (*fillMsgTypesMap)(pubsub_serializer_pt serializer, hash_map_pt msgTypesMap,bundle_pt bundle);
-	void (*emptyMsgTypesMap)(pubsub_serializer_pt serializer, hash_map_pt msgTypesMap);
+	celix_status_t (*createSerializerMap)(void* handle, bundle_pt bundle, pubsub_msg_serializer_map_t** out);
+    celix_status_t (*destroySerializerMap)(void* handle, pubsub_msg_serializer_map_t* map);
 
-	version_pt (*getVersion)(pubsub_serializer_pt serializer, pubsub_message_type *msgType);
-	char* (*getName)(pubsub_serializer_pt serializer, pubsub_message_type *msgType);
-	void (*freeMsg)(pubsub_serializer_pt serializer, pubsub_message_type *msgType, void *msg);
+} pubsub_serializer_service_t;
 
-};
-
-typedef struct pubsub_serializer_service *pubsub_serializer_service_pt;
-
-#endif /* PUBSUB_SERIALIZER_H_ */
+#endif /* PUBSUB_SERIALIZER_SERVICE_H_ */

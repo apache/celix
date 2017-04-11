@@ -31,7 +31,7 @@ DFI_SETUP_LOG_HEADER(jsonSerializer);
 int jsonSerializer_deserialize(dyn_type *type, const char *input, void **result);
 int jsonSerializer_deserializeJson(dyn_type *type, json_t *input, void **result);
 
-int jsonSerializer_serialize(dyn_type *type, void *input, char **output);
-int jsonSerializer_serializeJson(dyn_type *type, void *input, json_t **out);
+int jsonSerializer_serialize(dyn_type *type, const void* input, char **output);
+int jsonSerializer_serializeJson(dyn_type *type, const void* input, json_t **out);
 
 #endif

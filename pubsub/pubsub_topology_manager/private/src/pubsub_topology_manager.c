@@ -328,7 +328,7 @@ celix_status_t pubsub_topologyManager_pubsubSerializerAdded(void* handle, servic
 	celix_status_t status = CELIX_SUCCESS;
 
 	pubsub_topology_manager_pt manager = handle;
-	pubsub_serializer_service_pt new_serializer = (pubsub_serializer_service_pt) service;
+	pubsub_serializer_service_t* new_serializer = (pubsub_serializer_service_t*) service;
 
 	celixThreadMutex_lock(&manager->serializerListLock);
 
@@ -360,7 +360,7 @@ celix_status_t pubsub_topologyManager_pubsubSerializerRemoved(void * handle, ser
 	celix_status_t status = CELIX_SUCCESS;
 
 	pubsub_topology_manager_pt manager = handle;
-	pubsub_serializer_service_pt new_serializer = (pubsub_serializer_service_pt) service;
+	pubsub_serializer_service_t* new_serializer = (pubsub_serializer_service_t*) service;
 
 	celixThreadMutex_lock(&manager->serializerListLock);
 
@@ -377,7 +377,7 @@ celix_status_t pubsub_topologyManager_pubsubSerializerRemoved(void * handle, ser
 
 	if (arrayList_size(manager->serializerList) > 0){
 		//there is another serializer available, change the admin so it is using another serializer
-		pubsub_serializer_service_pt replacing_serializer = (pubsub_serializer_service_pt) arrayList_get(manager->serializerList,0);
+		pubsub_serializer_service_t* replacing_serializer = (pubsub_serializer_service_t*) arrayList_get(manager->serializerList,0);
 
 		for(j=0; j<arrayList_size(manager->psaList); j++){
 			pubsub_admin_service_pt psa = (pubsub_admin_service_pt) arrayList_get(manager->psaList,j);

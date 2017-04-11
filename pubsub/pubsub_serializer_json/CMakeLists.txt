@@ -32,7 +32,6 @@ add_bundle(org.apache.celix.pubsub_serializer.PubSubSerializerJson
     SOURCES
     	private/src/ps_activator.c
     	private/src/pubsub_serializer_impl.c
-    	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/dyn_msg_utils.c
     	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/log_helper.c
     	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_utils.c
 )

@@ -32,8 +32,8 @@
 #include "pubsub_serializer_impl.h"
 
 struct activator {
-	pubsub_serializer_pt serializer;
-	pubsub_serializer_service_pt serializerService;
+	pubsub_serializer_t* serializer;
+	pubsub_serializer_service_t* serializerService;
 	service_registration_pt registration;
 };
 
@@ -56,24 +56,16 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator *activator = userData;
-	pubsub_serializer_service_pt pubsubSerializerSvc = calloc(1, sizeof(*pubsubSerializerSvc));
+	pubsub_serializer_service_t* pubsubSerializerSvc = calloc(1, sizeof(*pubsubSerializerSvc));
 
 	if (!pubsubSerializerSvc) {
 		status = CELIX_ENOMEM;
 	}
 	else{
-		pubsubSerializerSvc->serializer = activator->serializer;
+		pubsubSerializerSvc->handle = activator->serializer;
 
-		pubsubSerializerSvc->serialize = pubsubSerializer_serialize;
-		pubsubSerializerSvc->deserialize = pubsubSerializer_deserialize;
-
-		pubsubSerializerSvc->fillMsgTypesMap = pubsubSerializer_fillMsgTypesMap;
-		pubsubSerializerSvc->emptyMsgTypesMap = pubsubSerializer_emptyMsgTypesMap;
-
-		pubsubSerializerSvc->getVersion = pubsubSerializer_getVersion;
-		pubsubSerializerSvc->getName = pubsubSerializer_getName;
-		pubsubSerializerSvc->freeMsg = pubsubSerializer_freeMsg;
-
+		pubsubSerializerSvc->createSerializerMap = (void*)pubsubSerializer_createSerializerMap;
+		pubsubSerializerSvc->destroySerializerMap = (void*)pubsubSerializer_destroySerializerMap;
 		activator->serializerService = pubsubSerializerSvc;
 
 		status = bundleContext_registerService(context, PUBSUB_SERIALIZER_SERVICE, pubsubSerializerSvc, NULL, &activator->registration);

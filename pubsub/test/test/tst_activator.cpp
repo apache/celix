@@ -145,13 +145,14 @@ TEST_GROUP(PUBSUB_INT_GROUP)
         //check if message are returned
         msg_t initMsg;
         initMsg.seqNr = 0;
+        int count = 0;
         for (int i = 0; i < TRIES; ++i) {
             pthread_mutex_lock(&g_act.mutex);
             g_act.pubSvc->send(g_act.pubSvc->handle, g_act.msgId, &initMsg);
             pthread_mutex_unlock(&g_act.mutex);
             usleep(TIMEOUT);
             pthread_mutex_lock(&g_act.mutex);
-            int count = g_act.count;
+            count = g_act.count;
             pthread_mutex_unlock(&g_act.mutex);
             if (count > 0) {
                 break;
@@ -159,6 +160,7 @@ TEST_GROUP(PUBSUB_INT_GROUP)
                 printf("No return message received, waiting for a while\n");
             }
         }
+        CHECK(count > 0);
 	}
 
 	void teardown() {
@@ -167,7 +169,10 @@ TEST_GROUP(PUBSUB_INT_GROUP)
 };
 
 TEST(PUBSUB_INT_GROUP, sendRecvTest) {
-    g_act.count = 0;
+    pthread_mutex_lock(&g_act.mutex);
+    g_act.count = 0; //reset counter
+    pthread_mutex_unlock(&g_act.mutex);
+
     constexpr int COUNT = 50;
     msg_t msg;
     for (int i = 0; i < COUNT; ++i) {
