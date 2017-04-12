@@ -17,15 +17,13 @@
  *under the License.
  */
 
-#ifndef MSG_H
-#define MSG_H
+#ifndef SYNC_H
+#define SYNC_H
 
-#include <stdint.h>
+#define SYNC_NAME "sync"
 
-#define MSG_NAME "msg"
+typedef struct sync {
+    float nop; //need at least one entry
+} sync_t;
 
-typedef struct msg {
-    uint32_t seqNr;
-} msg_t;
-
-#endif //MSG_H
+#endif //SYNC_H

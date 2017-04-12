@@ -29,6 +29,7 @@
 #include "pubsub/publisher.h"
 
 #include "msg.h"
+#include "sync.h"
 
 #include <CppUTest/TestHarness.h>
 #include <CppUTestExt/MockSupport.h>
@@ -39,8 +40,6 @@ static int tst_receive(void *handle, const char *msgType, unsigned int msgTypeId
 static int tst_pubAdded(void *handle, service_reference_pt reference, void *service);
 static int tst_pubRemoved(void *handle, service_reference_pt reference, void *service);
 
-#define MSG_NAME "msg"
-
 struct activator {
 	pubsub_subscriber_t subSvc;
 	service_registration_pt reg = nullptr;
@@ -49,6 +48,10 @@ struct activator {
 
 	pthread_mutex_t mutex; //protects below
 	pubsub_publisher_t* pubSvc = nullptr;
+
+    unsigned int syncId = 0;
+    bool gotSync = 0;
+
     unsigned int msgId = 0;
     unsigned int count = 0;
 
@@ -96,7 +99,11 @@ celix_status_t bundleActivator_destroy(__attribute__((unused)) void * userData, 
 static int tst_receive(void *handle, const char *msgType, unsigned int msgTypeId, void *msg, pubsub_multipart_callbacks_t *callbacks, bool *release) {
 	struct activator* act = static_cast<struct activator*>(handle);
     pthread_mutex_lock(&act->mutex);
-    act->count += 1;
+    if (msgTypeId == act->syncId) {
+        act->gotSync = true;
+    } else if (msgTypeId == act->msgId) {
+        act->count += 1;
+    }
     pthread_mutex_unlock(&act->mutex);
 	return CELIX_SUCCESS;
 }
@@ -105,7 +112,9 @@ static int tst_pubAdded(void *handle, service_reference_pt reference, void *serv
     struct activator* act = static_cast<struct activator*>(handle);
     pthread_mutex_lock(&act->mutex);
 	act->pubSvc = static_cast<pubsub_publisher_t*>(service);
-    act->pubSvc->localMsgTypeIdForMsgType(act->pubSvc->handle, MSG_NAME, &g_act.msgId);
+    act->pubSvc->localMsgTypeIdForMsgType(act->pubSvc->handle, MSG_NAME, &act->msgId);
+    act->pubSvc->localMsgTypeIdForMsgType(act->pubSvc->handle, SYNC_NAME, &act->syncId);
+
 	pthread_mutex_unlock(&act->mutex);
 	return CELIX_SUCCESS;
 
@@ -126,43 +135,48 @@ TEST_GROUP(PUBSUB_INT_GROUP)
 {
 	void setup() {
         constexpr int TRIES = 25;
-        constexpr int TIMEOUT = 1000000;
+        constexpr int TIMEOUT = 250000;
+
+        pthread_mutex_lock(&g_act.mutex);
 		CHECK_EQUAL(true, g_act.started);
+        g_act.gotSync = false;
+        pthread_mutex_unlock(&g_act.mutex);
 
         //check if publisher is available
-        unsigned int msgId = 0;
+        unsigned int syncId = 0;
         for (int i = 0; i < TRIES; ++i) {
             pthread_mutex_lock(&g_act.mutex);
-            msgId = g_act.msgId;
+            syncId = g_act.syncId;
             pthread_mutex_unlock(&g_act.mutex);
-            if (msgId == 0) {
-                printf("publisher still nullptr / msg Id is still 0, waiting for a while\n");
+            if (syncId == 0) {
+                printf("publisher still nullptr / sync msg type id is still 0, waiting for a while\n");
                 usleep(TIMEOUT);
             } else {
                 break;
             }
         }
-        CHECK(msgId != 0);
+        CHECK(syncId != 0);
 
         //check if message are returned
-        msg_t initMsg;
-        initMsg.seqNr = 0;
-        int count = 0;
+        sync_t syncMsg;
+        bool gotSync = false;
         for (int i = 0; i < TRIES; ++i) {
+            printf("Sending sync message. Try %d/%d\n", i+1, TRIES);
             pthread_mutex_lock(&g_act.mutex);
-            g_act.pubSvc->send(g_act.pubSvc->handle, g_act.msgId, &initMsg);
+            g_act.pubSvc->send(g_act.pubSvc->handle, g_act.syncId, &syncMsg);
             pthread_mutex_unlock(&g_act.mutex);
             usleep(TIMEOUT);
             pthread_mutex_lock(&g_act.mutex);
-            count = g_act.count;
+            gotSync = g_act.gotSync;
             pthread_mutex_unlock(&g_act.mutex);
-            if (count > 0) {
+            if (gotSync) {
                 break;
-            } else {
-                printf("No return message received, waiting for a while. %d/%d\n", i+1, TRIES);
             }
         }
-        CHECK(count > 0);
+        if (!gotSync) {
+            printf("No sync message received, bailing\n");
+        }
+        CHECK(gotSync);
 	}
 
 	void teardown() {

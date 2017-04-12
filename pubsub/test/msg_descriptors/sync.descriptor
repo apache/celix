@@ -1,0 +1,9 @@
+:header
+type=message
+name=sync
+version=1.0.0
+:annotations
+classname=org.example.Sync
+:types
+:message
+{F nop}

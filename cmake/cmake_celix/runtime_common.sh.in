@@ -59,7 +59,7 @@ function rt_run_deployment() {
     cd ${DEPLOYMENT_DIR} #assuming absolute dir
     if [ -d .cache ] ; then
         echo "Clearing cache"
-        rm -fr .cache #clear cache
+        rm -fr .cache
     fi
     . ./release.sh #run deployment release
     if [ "${USE_TERM}" = "TRUE" ] ; then
@@ -126,16 +126,26 @@ function rt_wait_for() {
         RESULT=1
     fi
 
-    echo "Signalling pids:${PIDS}"
-    kill ${PIDS}
-
-    for PID in ${PIDS}; do
-        if wait ${PID}; then
-            echo "${PID} exited normal"
+    echo "Signalling pids: ${PIDS}"
+    kill -2 ${PIDS}
+    TIMES=15
+    for (( I=1; I<=TIMES; I++ ))
+    do
+        echo "Checking if ${PIDS} are still running. ${I}/${TIMES}"
+        kill -0 ${PIDS} &> /dev/null
+        if [ $? -eq 1 ] ; then #e.g. no such process result
+            #all process stopped
+            break
         else
-            echo "${PID} exited with error"
+            sleep 1
         fi
     done
+
+    kill -0 ${PIDS} &> /dev/null
+    if [ $? -eq 0 ] ; then
+        echo "Using kill -9 to ensure processes are killed"
+        kill -9 ${PIDS}
+    fi
 
     echo ${RESULT}
 }

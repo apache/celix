@@ -36,7 +36,12 @@ if (PUBSUB)
 	add_subdirectory(deploy)
 	add_subdirectory(keygen)
 	add_subdirectory(mock)
+
+
 	if (ENABLE_TESTING)
+		option(BUILD_PUBSUB_TESTS "Enable Tests for PUBSUB" ON)
+	endif()
+	if (ENABLE_TESTING AND BUILD_PUBSUB_TESTS)
 		add_subdirectory(test)
 	endif()
 

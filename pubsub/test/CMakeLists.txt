@@ -33,6 +33,7 @@ add_bundle(pubsub_sut
 )
 bundle_files(pubsub_sut
     msg_descriptors/msg.descriptor
+    msg_descriptors/sync.descriptor
     DESTINATION "META-INF/descriptors/messages"
 )
 add_deploy(pubsub_udpmc_sut
@@ -40,8 +41,8 @@ add_deploy(pubsub_udpmc_sut
     BUNDLES
         org.apache.celix.pubsub_serializer.PubSubSerializerJson
         org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
-        #org.apache.celix.pubsub_admin.PubSubAdminUdpMc
-        org.apache.celix.pubsub_admin.PubSubAdminZmq
+        org.apache.celix.pubsub_admin.PubSubAdminUdpMc
+        #org.apache.celix.pubsub_admin.PubSubAdminZmq
         org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
         pubsub_sut
     DIR ${PROJECT_BINARY_DIR}/runtimes/test/pubsub/udpmc
@@ -55,6 +56,7 @@ add_bundle(pubsub_tst
 )
 bundle_files(pubsub_tst
     msg_descriptors/msg.descriptor
+    msg_descriptors/sync.descriptor
     DESTINATION "META-INF/descriptors/messages"
 )
 add_deploy(pubsub_udpmc_tst
@@ -63,15 +65,15 @@ add_deploy(pubsub_udpmc_tst
         org.apache.celix.pubsub_serializer.PubSubSerializerJson
         org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
         org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
-        #org.apache.celix.pubsub_admin.PubSubAdminUdpMc
-        org.apache.celix.pubsub_admin.PubSubAdminZmq
+        org.apache.celix.pubsub_admin.PubSubAdminUdpMc
+        #org.apache.celix.pubsub_admin.PubSubAdminZmq
         pubsub_tst
     DIR ${PROJECT_BINARY_DIR}/runtimes/test/pubsub/udpmc
     LAUNCHER celix_test_runner
 )
 
 if (ETCD_CMD)
-    add_runtime(pubsub_rt_test_udpmc
+    add_runtime(pubsub_test_udpmc_runtime
         NAME udpmc
         GROUP test/pubsub
         DEPLOYMENTS
@@ -81,7 +83,12 @@ if (ETCD_CMD)
             etcd
         WAIT_FOR
             pubsub_udpmc_tst
-        USE_TERM
+        #USE_TERM
         #LOG_TO_FILES
+    )
+
+    add_test(NAME pubsub_udpmc_test
+            COMMAND ./start.sh
+            WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_test_udpmc_runtime,RUNTIME_LOCATION>
     )
 endif ()

@@ -83,7 +83,7 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt  __att
 
 static int sut_receive(void *handle, const char *msgType, unsigned int msgTypeId, void *msg, pubsub_multipart_callbacks_t *callbacks, bool *release) {
 	struct activator* act = handle;
-	printf("Received msg %s, sending back\n", msgType);
+	printf("Received msg '%s', sending back\n", msgType);
 	pthread_mutex_lock(&act->mutex);
 	if (act->pubSvc != NULL) {
 		unsigned int sendId = 0;
