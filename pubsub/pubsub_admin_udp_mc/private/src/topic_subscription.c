@@ -29,7 +29,6 @@
 #include <unistd.h>
 #include <signal.h>
 
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -57,7 +56,7 @@
 #define UDP_BUFFER_SIZE         65535
 #define MAX_UDP_SESSIONS        16
 
-struct topic_subscription{
+struct topic_subscription {
 
 	char* ifIpAddress;
 	service_tracker_pt tracker;
@@ -70,7 +69,8 @@ struct topic_subscription{
 
     //NOTE. using a service ptr can be dangerous, because pointer can be reused.
     //ensuring that pointer are removed before new (refurbish) pionter comes along is crucial!
-	hash_map_pt msgSerializersMap; // key = service ptr, value = pubsub_msg_serializer_map_t*
+	hash_map_pt msgSerializerMapMap; // key = service ptr, value = pubsub_msg_serializer_map_t*
+    hash_map_pt bundleMap; //key = service ptr, value = bundle_pt
 
 	hash_map_pt socketMap; // key = URL, value = listen-socket
 	unsigned int nrSubscribers;
@@ -118,7 +118,8 @@ celix_status_t pubsub_topicSubscriptionCreate(char* ifIp,bundle_context_pt bundl
 
 	celixThreadMutex_create(&ts->ts_lock,NULL);
 	arrayList_create(&ts->sub_ep_list);
-	ts->msgSerializersMap = hashMap_create(NULL, NULL, NULL, NULL);
+	ts->msgSerializerMapMap = hashMap_create(NULL, NULL, NULL, NULL);
+    ts->bundleMap = hashMap_create(NULL, NULL, NULL, NULL);
 	ts->socketMap =  hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 
 	ts->largeUdpHandle = largeUdp_create(MAX_UDP_SESSIONS);
@@ -164,7 +165,8 @@ celix_status_t pubsub_topicSubscriptionDestroy(topic_subscription_pt ts){
 	serviceTracker_destroy(ts->tracker);
 	arrayList_clear(ts->sub_ep_list);
 	arrayList_destroy(ts->sub_ep_list);
-	hashMap_destroy(ts->msgSerializersMap,false,false);
+	hashMap_destroy(ts->msgSerializerMapMap, false, false);
+    hashMap_destroy(ts->bundleMap, false, false);
 
 	hashMap_destroy(ts->socketMap,false,false);
 	largeUdp_destroy(ts->largeUdpHandle);
@@ -394,13 +396,34 @@ unsigned int pubsub_topicGetNrSubscribers(topic_subscription_pt ts) {
 	return ts->nrSubscribers;
 }
 
-celix_status_t pubsub_topicSubscriptionAddSerializer(topic_subscription_pt ts, pubsub_serializer_service_t* serializerSvc){
+celix_status_t pubsub_topicSubscriptionSetSerializer(topic_subscription_pt ts, pubsub_serializer_service_t* serializerSvc){
 	celix_status_t status = CELIX_SUCCESS;
 
 	celixThreadMutex_lock(&ts->ts_lock);
+    //clear old
+    if (ts->serializerSvc != NULL) {
+        hash_map_iterator_t iter = hashMapIterator_construct(ts->msgSerializerMapMap);
+        while (hashMapIterator_hasNext(&iter)) {
+            hash_map_entry_pt entry = hashMapIterator_nextEntry(&iter);
+            pubsub_subscriber_t* subsvc = hashMapEntry_getKey(entry);
+            pubsub_msg_serializer_map_t* map = hashMapEntry_getValue(entry);
+            ts->serializerSvc->destroySerializerMap(ts->serializerSvc->handle, map);
+            hashMap_put(ts->msgSerializerMapMap, subsvc, NULL);
 
+        }
+    }
 	ts->serializerSvc = serializerSvc;
-
+    //init new
+    if (ts->serializerSvc != NULL) {
+        hash_map_iterator_t iter = hashMapIterator_construct(ts->msgSerializerMapMap);
+        while (hashMapIterator_hasNext(&iter)) {
+            pubsub_subscriber_t* subsvc = hashMapIterator_nextKey(&iter);
+            bundle_pt bundle = hashMap_get(ts->bundleMap, subsvc);
+            pubsub_msg_serializer_map_t* map = NULL;
+            ts->serializerSvc->createSerializerMap(ts->serializerSvc->handle, bundle, &map);
+            hashMap_put(ts->msgSerializerMapMap, subsvc, map);
+        }
+    }
 	celixThreadMutex_unlock(&ts->ts_lock);
 
 	return status;
@@ -411,10 +434,13 @@ celix_status_t pubsub_topicSubscriptionRemoveSerializer(topic_subscription_pt ts
 
 	celixThreadMutex_lock(&ts->ts_lock);
 	if (ts->serializerSvc == serializerSvc) { //only act if svc removed is services used
-		hash_map_iterator_t iter = hashMapIterator_construct(ts->msgSerializersMap);
+		hash_map_iterator_t iter = hashMapIterator_construct(ts->msgSerializerMapMap);
 		while (hashMapIterator_hasNext(&iter)) {
-            pubsub_msg_serializer_map_t* map = hashMapIterator_nextValue(&iter);
+            hash_map_entry_pt entry = hashMapIterator_nextEntry(&iter);
+            pubsub_subscriber_t* subsvc = hashMapEntry_getKey(entry);
+            pubsub_msg_serializer_map_t* map = hashMapEntry_getValue(entry);
             ts->serializerSvc->destroySerializerMap(ts->serializerSvc->handle, map);
+            hashMap_put(ts->msgSerializerMapMap, subsvc, NULL);
 		}
 		ts->serializerSvc = NULL;
 	}
@@ -428,7 +454,7 @@ static celix_status_t topicsub_subscriberTracked(void * handle, service_referenc
 	topic_subscription_pt ts = handle;
 
 	celixThreadMutex_lock(&ts->ts_lock);
-	if (!hashMap_containsKey(ts->msgSerializersMap, svc)) {
+	if (!hashMap_containsKey(ts->msgSerializerMapMap, svc)) {
 		bundle_pt bundle = NULL;
 		serviceReference_getBundle(reference, &bundle);
 
@@ -436,7 +462,8 @@ static celix_status_t topicsub_subscriberTracked(void * handle, service_referenc
             pubsub_msg_serializer_map_t* map = NULL;
             ts->serializerSvc->createSerializerMap(ts->serializerSvc->handle, bundle, &map);
             if (map != NULL) {
-                hashMap_put(ts->msgSerializersMap, svc, map);
+                hashMap_put(ts->msgSerializerMapMap, svc, map);
+                hashMap_put(ts->bundleMap, svc, bundle);
             }
 		}
 	}
@@ -452,10 +479,12 @@ static celix_status_t topicsub_subscriberUntracked(void * handle, service_refere
 
 
     celixThreadMutex_lock(&ts->ts_lock);
-	if (hashMap_containsKey(ts->msgSerializersMap, svc)) {
-		pubsub_msg_serializer_map_t* map = hashMap_remove(ts->msgSerializersMap, svc);
+	if (hashMap_containsKey(ts->msgSerializerMapMap, svc)) {
+		pubsub_msg_serializer_map_t* map = hashMap_remove(ts->msgSerializerMapMap, svc);
 		if (ts->serializerSvc != NULL){
 			ts->serializerSvc->destroySerializerMap(ts->serializerSvc->handle, map);
+            hashMap_remove(ts->bundleMap, svc);
+            hashMap_remove(ts->msgSerializerMapMap, svc);
 		}
 	}
 	celixThreadMutex_unlock(&ts->ts_lock);
@@ -467,7 +496,7 @@ static celix_status_t topicsub_subscriberUntracked(void * handle, service_refere
 
 static void process_msg(topic_subscription_pt sub, pubsub_udp_msg_t* msg){
 
-	hash_map_iterator_t iter = hashMapIterator_construct(sub->msgSerializersMap);
+	hash_map_iterator_t iter = hashMapIterator_construct(sub->msgSerializerMapMap);
 	celixThreadMutex_lock(&sub->ts_lock);
 	while (hashMapIterator_hasNext(&iter)) {
 		hash_map_entry_pt entry = hashMapIterator_nextEntry(&iter);

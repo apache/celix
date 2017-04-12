@@ -32,7 +32,7 @@
 
 #include <CppUTest/TestHarness.h>
 #include <CppUTestExt/MockSupport.h>
-
+#include <constants.h>
 
 
 static int tst_receive(void *handle, const char *msgType, unsigned int msgTypeId, void *msg, pubsub_multipart_callbacks_t *callbacks, bool *release);
@@ -70,8 +70,10 @@ celix_status_t bundleActivator_start(__attribute__((unused)) void * userData, bu
 	g_act.subSvc.receive = tst_receive;
 	bundleContext_registerService(context, PUBSUB_SUBSCRIBER_SERVICE_NAME, &g_act.subSvc, props, &g_act.reg);
 
-    const char* filter = "(&(objectClass=pubsub.publisher)(pubsub.topic=ping))";
-	service_tracker_customizer_pt customizer = NULL;
+    char filter[512];
+    snprintf(filter, 512, "(&(%s=%s)(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, PUBSUB_PUBLISHER_SERVICE_NAME, PUBSUB_PUBLISHER_TOPIC, "ping");
+
+    service_tracker_customizer_pt customizer = NULL;
 	serviceTrackerCustomizer_create(&g_act, NULL, tst_pubAdded, NULL, tst_pubRemoved, &customizer);
 	serviceTracker_createWithFilter(context, filter, customizer, &g_act.tracker);
 	serviceTracker_open(g_act.tracker);
@@ -157,7 +159,7 @@ TEST_GROUP(PUBSUB_INT_GROUP)
             if (count > 0) {
                 break;
             } else {
-                printf("No return message received, waiting for a while\n");
+                printf("No return message received, waiting for a while. %d/%d\n", i+1, TRIES);
             }
         }
         CHECK(count > 0);
@@ -176,7 +178,8 @@ TEST(PUBSUB_INT_GROUP, sendRecvTest) {
     constexpr int COUNT = 50;
     msg_t msg;
     for (int i = 0; i < COUNT; ++i) {
-        msg.seqNr = i;
+        msg.seqNr = i+1;
+        printf("Sending test msg %d of %d\n", i+1, COUNT);
         pthread_mutex_lock(&g_act.mutex);
         g_act.pubSvc->send(g_act.pubSvc->handle, g_act.msgId, &msg);
         pthread_mutex_unlock(&g_act.mutex);

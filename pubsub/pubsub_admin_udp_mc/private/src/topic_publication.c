@@ -63,7 +63,7 @@ struct topic_publication {
 
 typedef struct publish_bundle_bound_service {
 	topic_publication_pt parent;
-	pubsub_publisher_pt service;
+	pubsub_publisher_t pubSvc;
 	bundle_pt bundle;
     char *scope;
 	char *topic;
@@ -97,7 +97,7 @@ static int pubsub_localMsgTypeIdForUUID(void* handle, const char* msgType, unsig
 static void delay_first_send_for_late_joiners(void);
 
 
-celix_status_t pubsub_topicPublicationCreate(int sendSocket, pubsub_endpoint_pt pubEP, pubsub_serializer_service_t* serializer, char* bindIP, topic_publication_pt *out){
+celix_status_t pubsub_topicPublicationCreate(int sendSocket, pubsub_endpoint_pt pubEP, char* bindIP, topic_publication_pt *out){
 
     char* ep = malloc(EP_ADDRESS_LEN);
     memset(ep,0,EP_ADDRESS_LEN);
@@ -116,7 +116,7 @@ celix_status_t pubsub_topicPublicationCreate(int sendSocket, pubsub_endpoint_pt 
 	pub->destAddr.sin_family = AF_INET;
 	pub->destAddr.sin_addr.s_addr = inet_addr(bindIP);
 	pub->destAddr.sin_port = htons(port);
-	pub->serializerSvc = serializer;
+	pub->serializerSvc = NULL;
 
 	pubsub_topicPublicationAddPublisherEP(pub,pubEP);
 
@@ -222,30 +222,36 @@ celix_status_t pubsub_topicPublicationRemovePublisherEP(topic_publication_pt pub
 	return CELIX_SUCCESS;
 }
 
-celix_status_t pubsub_topicPublicationAddSerializer(topic_publication_pt pub, pubsub_serializer_service_t* serializerSvc){
+celix_status_t pubsub_topicPublicationSetSerializer(topic_publication_pt pub, pubsub_serializer_service_t* serializerSvc){
 	celix_status_t status = CELIX_SUCCESS;
 
 	celixThreadMutex_lock(&(pub->tp_lock));
 
     //clear old serializer
     if (pub->serializerSvc != NULL) {
-        hash_map_iterator_t iter = hashMapIterator_construct(pub->boundServices); //key = bundle , value = svc
+        hash_map_iterator_t iter = hashMapIterator_construct(pub->boundServices); //key = bundle_pt, publish_bundle_bound_service_t*
         while (hashMapIterator_hasNext(&iter)) {
             publish_bundle_bound_service_t* bound = hashMapIterator_nextValue(&iter);
+            celixThreadMutex_lock(&bound->mp_lock);
 			pub->serializerSvc->destroySerializerMap(pub->serializerSvc->handle, bound->map);
+            celixThreadMutex_unlock(&bound->mp_lock);
 			bound->map = NULL;
         }
     }
 
     //setup new serializer
 	pub->serializerSvc = serializerSvc;
-	hash_map_iterator_t iter = hashMapIterator_construct(pub->boundServices);
-	while (hashMapIterator_hasNext(&iter)) {
-		hash_map_entry_pt entry = hashMapIterator_nextEntry(&iter);
-		bundle_pt bundle = hashMapEntry_getKey(entry);
-		publish_bundle_bound_service_t* bound = hashMapEntry_getValue(entry);
-		pub->serializerSvc->createSerializerMap(pub->serializerSvc->handle, bundle, &bound->map);
-	}
+    if (pub->serializerSvc != NULL) {
+        hash_map_iterator_t iter = hashMapIterator_construct(pub->boundServices);
+        while (hashMapIterator_hasNext(&iter)) {
+            hash_map_entry_pt entry = hashMapIterator_nextEntry(&iter);
+            bundle_pt bundle = hashMapEntry_getKey(entry);
+            publish_bundle_bound_service_t *bound = hashMapEntry_getValue(entry);
+            celixThreadMutex_lock(&bound->mp_lock);
+            pub->serializerSvc->createSerializerMap(pub->serializerSvc->handle, bundle, &bound->map);
+            celixThreadMutex_unlock(&bound->mp_lock);
+        }
+    }
 
 	celixThreadMutex_unlock(&(pub->tp_lock));
 
@@ -260,7 +266,9 @@ celix_status_t pubsub_topicPublicationRemoveSerializer(topic_publication_pt pub,
         hash_map_iterator_t iter = hashMapIterator_construct(pub->boundServices);
         while (hashMapIterator_hasNext(&iter)) {
             publish_bundle_bound_service_t* bound = hashMapIterator_nextValue(&iter);
+            celixThreadMutex_lock(&bound->mp_lock);
             pub->serializerSvc->destroySerializerMap(pub->serializerSvc->handle, bound->map);
+            celixThreadMutex_unlock(&bound->mp_lock);
 			bound->map = NULL;
         }
     }
@@ -294,7 +302,7 @@ static celix_status_t pubsub_topicPublicationGetService(void* handle, bundle_pt 
 	}
 
 	if (bound != NULL) {
-		*service = bound->service;
+		*service = &bound->pubSvc;
 	}
 
 	celixThreadMutex_unlock(&(publish->tp_lock));
@@ -374,13 +382,21 @@ static int pubsub_topicPublicationSend(void* handle, unsigned int msgTypeId, con
 
     if (bound->map == NULL) {
         printf("TP: Serializer is not set!\n");
+        status = 1;
     } else if (msgSer == NULL ){
         printf("TP: No msg serializer available for msg type id %d\n", msgTypeId);
+        hash_map_iterator_t iter = hashMapIterator_construct(bound->map->serializers);
+        printf("Note supported messages:\n");
+        while (hashMapIterator_hasNext(&iter)) {
+            pubsub_msg_serializer_t *msgSer = hashMapIterator_nextValue(&iter);
+            printf("\tmsg %s with id %d\n", msgSer->msgName, msgSer->msgId);
+        }
+        status = 1;
     }
 
     int major=0, minor=0;
 
-    if (msgSer != NULL) {
+    if (status == 0 && msgSer != NULL) {
 		pubsub_msg_header_pt msg_hdr = calloc(1,sizeof(struct pubsub_msg_header));
 		strncpy(msg_hdr->topic,bound->topic,MAX_TOPIC_LEN-1);
 		msg_hdr->type = msgTypeId;
@@ -407,9 +423,6 @@ static int pubsub_topicPublicationSend(void* handle, unsigned int msgTypeId, con
 		free(msg);
 		free(serializedOutput);
 
-    } else {
-        printf("TP: Message %u not supported.\n",msgTypeId);
-        status=-1;
     }
 
     celixThreadMutex_unlock(&(bound->mp_lock));
@@ -418,9 +431,30 @@ static int pubsub_topicPublicationSend(void* handle, unsigned int msgTypeId, con
     return status;
 }
 
-static int pubsub_localMsgTypeIdForUUID(void* handle, const char* msgType, unsigned int* msgTypeId){
-	*msgTypeId = utils_stringHash(msgType);
-	return 0;
+static int pubsub_localMsgTypeIdForUUID(void* handle, const char* msgType, unsigned int* out){
+    publish_bundle_bound_service_t* bound = handle;
+    unsigned int msgTypeId = 0;
+
+    celixThreadMutex_lock(&bound->mp_lock);
+    if (bound->map != NULL) {
+        hash_map_iterator_t iter = hashMapIterator_construct(bound->map->serializers);
+        while (hashMapIterator_hasNext(&iter)) {
+            pubsub_msg_serializer_t* msgSer = hashMapIterator_nextValue(&iter);
+            if (strncmp(msgType, msgSer->msgName, 1024*1024) == 0) {
+                msgTypeId = msgSer->msgId;
+                break;
+            }
+        }
+    }
+    celixThreadMutex_unlock(&bound->mp_lock);
+
+    if (msgTypeId != 0) {
+        *out = msgTypeId;
+        return 0;
+    } else {
+        printf("TP: Cannot find msg type id for msg type %s\n", msgType);
+        return 1;
+    }
 }
 
 
@@ -432,15 +466,10 @@ static unsigned int rand_range(unsigned int min, unsigned int max){
 }
 
 static publish_bundle_bound_service_t* pubsub_createPublishBundleBoundService(topic_publication_pt tp,bundle_pt bundle) {
-
-	publish_bundle_bound_service_t* bound = calloc(1, sizeof(*bound));
+    //PRECOND lock on publish->tp_lock
+    publish_bundle_bound_service_t* bound = calloc(1, sizeof(*bound));
 
 	if (bound != NULL) {
-		bound->service = calloc(1, sizeof(*bound->service));
-	}
-
-	if (bound != NULL && bound->service != NULL) {
-
 		bound->parent = tp;
 		bound->bundle = bundle;
 		bound->getCount = 1;
@@ -452,21 +481,17 @@ static publish_bundle_bound_service_t* pubsub_createPublishBundleBoundService(to
 		bound->scope=strdup(pubEP->scope);
 		bound->topic=strdup(pubEP->topic);
 		bound->largeUdpHandle = largeUdp_create(1);
-		bound->service->handle = bound;
-		bound->service->localMsgTypeIdForMsgType = pubsub_localMsgTypeIdForUUID;
-		bound->service->send = pubsub_topicPublicationSend;
-		bound->service->sendMultipart = NULL;  //Multipart not supported (jet) for UDP
+		bound->pubSvc.handle = bound;
+		bound->pubSvc.localMsgTypeIdForMsgType = pubsub_localMsgTypeIdForUUID;
+		bound->pubSvc.send = pubsub_topicPublicationSend;
+		bound->pubSvc.sendMultipart = NULL;  //Multipart not supported (jet) for UDP
 
-        //TODO check if lock on tp is needed? (e.g. is lock already done by caller?)
-		if (tp->serializerSvc != NULL) {
+    	if (tp->serializerSvc != NULL) {
             tp->serializerSvc->createSerializerMap(tp->serializerSvc->handle, bundle, &bound->map);
 		}
 	}
 	else
 	{
-		if (bound != NULL) {
-			free(bound->service);
-		}
 		free(bound);
 		return NULL;
 	}
@@ -475,14 +500,9 @@ static publish_bundle_bound_service_t* pubsub_createPublishBundleBoundService(to
 }
 
 static void pubsub_destroyPublishBundleBoundService(publish_bundle_bound_service_t* boundSvc) {
-
+    //PRECOND lock on publish->tp_lock
 	celixThreadMutex_lock(&boundSvc->mp_lock);
 
-	if (boundSvc->service != NULL) {
-		free(boundSvc->service);
-	}
-
-    //TODO check if lock on parent is needed, e.g. does the caller already lock?
     if (boundSvc->map != NULL) {
         if (boundSvc->parent->serializerSvc == NULL) {
             printf("TP: Cannot destroy pubsub msg serializer map. No serliazer service\n");

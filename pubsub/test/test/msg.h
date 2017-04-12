@@ -20,8 +20,10 @@
 #ifndef MSG_H
 #define MSG_H
 
+#include <stdint.h>
+
 typedef struct msg {
-    int seqNr;
+    uint32_t seqNr;
 } msg_t;
 
 #endif //MSG_H

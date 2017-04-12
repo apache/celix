@@ -250,14 +250,17 @@ static void pubsubSerializer_addMsgSerializerFromBundle(const char *root, bundle
                     bool clash = hashMap_containsKey(msgSerializers, (void*)(uintptr_t)msgId);
                     if (clash) {
                         printf("Cannot add msg %s. clash in msg id %d!!\n", msgName, msgId);
+                        free(impl);
+                        dynMessage_destroy(msgType);
                     } else if ( msgName != NULL && msgVersion != NULL && msgId != 0) {
                         hashMap_put(msgSerializers, (void*)(uintptr_t)msgId, &impl->msgSerializer);
                     } else {
-                        printf("Error adding creating msg serializer\n");
+                        printf("Error creating msg serializer\n");
+                        free(impl);
+                        dynMessage_destroy(msgType);
                     }
 
-                }
-                else{
+                } else{
                     printf("DMU: cannot parse message from descriptor %s\n.",path);
                 }
                 fclose(stream);

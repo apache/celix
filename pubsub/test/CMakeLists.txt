@@ -38,11 +38,11 @@ bundle_files(pubsub_sut
 add_deploy(pubsub_udpmc_sut
     NAME deploy_sut
     BUNDLES
-        org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
-        org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
-        org.apache.celix.pubsub_admin.PubSubAdminUdpMc
-        #org.apache.celix.pubsub_admin.PubSubAdminZmq
         org.apache.celix.pubsub_serializer.PubSubSerializerJson
+        org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
+        #org.apache.celix.pubsub_admin.PubSubAdminUdpMc
+        org.apache.celix.pubsub_admin.PubSubAdminZmq
+        org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
         pubsub_sut
     DIR ${PROJECT_BINARY_DIR}/runtimes/test/pubsub/udpmc
 )
@@ -60,11 +60,11 @@ bundle_files(pubsub_tst
 add_deploy(pubsub_udpmc_tst
     NAME deploy_tst
     BUNDLES
-        org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
-        org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
-        org.apache.celix.pubsub_admin.PubSubAdminUdpMc
-        #org.apache.celix.pubsub_admin.PubSubAdminZmq
         org.apache.celix.pubsub_serializer.PubSubSerializerJson
+        org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
+        org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
+        #org.apache.celix.pubsub_admin.PubSubAdminUdpMc
+        org.apache.celix.pubsub_admin.PubSubAdminZmq
         pubsub_tst
     DIR ${PROJECT_BINARY_DIR}/runtimes/test/pubsub/udpmc
     LAUNCHER celix_test_runner

@@ -3,6 +3,7 @@ type=message
 name=msg
 version=1.0.0
 :annotations
+classname=org.example.Msg
 :types
 :message
-{n seqnR}
+{i seqnR}

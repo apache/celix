@@ -19,6 +19,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <constants.h>
 
 #include "bundle_activator.h"
 #include "service_tracker.h"
@@ -57,7 +58,9 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	act->reg = NULL;
 	bundleContext_registerService(context, PUBSUB_SUBSCRIBER_SERVICE_NAME, &act->subSvc, props, &act->reg);
 
-	const char* filter = "(&(objectClass=pubsub.publisher)(pubsub.topic=pong))";
+	char filter[512];
+	snprintf(filter, 512, "(&(%s=%s)(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, PUBSUB_PUBLISHER_SERVICE_NAME, PUBSUB_PUBLISHER_TOPIC, "pong");
+
 	service_tracker_customizer_pt customizer = NULL;
 	serviceTrackerCustomizer_create(act, NULL, sut_pubAdded, NULL, sut_pubRemoved, &customizer);
 	serviceTracker_createWithFilter(context, filter, customizer, &act->tracker);

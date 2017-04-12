@@ -226,9 +226,19 @@ celix_status_t pubsub_topologyManager_psaAdded(void * handle, service_reference_
 
 	celixThreadMutex_unlock(&manager->publicationsLock);
 
+
+	celixThreadMutex_lock(&manager->serializerListLock);
+	unsigned int size = arrayList_size(manager->serializerList);
+	if (size > 0) {
+		pubsub_serializer_service_t* ser = arrayList_get(manager->serializerList, (size-1)); //last, same as result of add/remove serializer
+		new_psa->setSerializer(new_psa->admin, ser);
+	}
+	celixThreadMutex_unlock(&manager->serializerListLock);
+
 	celixThreadMutex_lock(&manager->psaListLock);
 	arrayList_add(manager->psaList, new_psa);
 	celixThreadMutex_unlock(&manager->psaListLock);
+
 
 	return status;
 }
@@ -335,7 +345,6 @@ celix_status_t pubsub_topologyManager_pubsubSerializerAdded(void* handle, servic
 	logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "PSTM: Added pubsub serializer");
 
 	int i;
-
 	for(i=0; i<arrayList_size(manager->psaList); i++){
 		pubsub_admin_service_pt psa = (pubsub_admin_service_pt) arrayList_get(manager->psaList,i);
 		psa->setSerializer(psa->admin, new_serializer);

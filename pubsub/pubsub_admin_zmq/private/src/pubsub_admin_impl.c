@@ -444,7 +444,8 @@ celix_status_t pubsubAdmin_addPublication(pubsub_admin_pt admin, pubsub_endpoint
 
         if (factory == NULL) {
             topic_publication_pt pub = NULL;
-            status = pubsub_topicPublicationCreate(admin->bundle_context, pubEP, admin->serializerSvc, admin->ipAddress, admin->basePort, admin->maxPort, &pub);
+            status = pubsub_topicPublicationCreate(admin->bundle_context, pubEP, admin->ipAddress, admin->basePort, admin->maxPort, &pub);
+			pubsub_topicPublicationSetSerializer(pub, admin->serializerSvc);
             if (status == CELIX_SUCCESS) {
                 status = pubsub_topicPublicationStart(admin->bundle_context, pub, &factory);
                 if (status == CELIX_SUCCESS && factory != NULL) {
@@ -676,7 +677,7 @@ celix_status_t pubsubAdmin_setSerializer(pubsub_admin_pt admin, pubsub_serialize
 	while(hashMapIterator_hasNext(lp_iter)){
 		service_factory_pt factory = (service_factory_pt) hashMapIterator_nextValue(lp_iter);
 		topic_publication_pt topic_pub = (topic_publication_pt) factory->handle;
-		pubsub_topicPublicationAddSerializer(topic_pub, admin->serializerSvc);
+		pubsub_topicPublicationSetSerializer(topic_pub, admin->serializerSvc);
 	}
 	hashMapIterator_destroy(lp_iter);
 	celixThreadMutex_unlock(&admin->localPublicationsLock);
@@ -686,7 +687,7 @@ celix_status_t pubsubAdmin_setSerializer(pubsub_admin_pt admin, pubsub_serialize
 	hash_map_iterator_pt subs_iter = hashMapIterator_create(admin->subscriptions);
 	while(hashMapIterator_hasNext(subs_iter)){
 		topic_subscription_pt topic_sub = (topic_subscription_pt) hashMapIterator_nextValue(subs_iter);
-		pubsub_topicSubscriptionAddSerializer(topic_sub, admin->serializerSvc);
+		pubsub_topicSubscriptionSetSerializer(topic_sub, admin->serializerSvc);
 	}
 	hashMapIterator_destroy(subs_iter);
 	celixThreadMutex_unlock(&admin->subscriptionsLock);

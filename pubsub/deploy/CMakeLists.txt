@@ -24,12 +24,12 @@ add_deploy("pubsub_publisher_udp_mc"
     BUNDLES
        shell
        shell_tui
-       org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
+		org.apache.celix.pubsub_serializer.PubSubSerializerJson
+		org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
        org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
        org.apache.celix.pubsub_admin.PubSubAdminUdpMc
        org.apache.celix.pubsub_publisher.PoiPublisher
        org.apache.celix.pubsub_publisher.PoiPublisher2
-       org.apache.celix.pubsub_serializer.PubSubSerializerJson
 )
 
 add_deploy("pubsub_subscriber_udp_mc" 
@@ -37,11 +37,11 @@ add_deploy("pubsub_subscriber_udp_mc"
     BUNDLES
        shell
        shell_tui
-       org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
+		org.apache.celix.pubsub_serializer.PubSubSerializerJson
+		org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
        org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
        org.apache.celix.pubsub_admin.PubSubAdminUdpMc
        org.apache.celix.pubsub_subscriber.PoiSubscriber
-       org.apache.celix.pubsub_serializer.PubSubSerializerJson
 )
 
 add_deploy("pubsub_subscriber2_udp_mc" 
@@ -49,11 +49,11 @@ add_deploy("pubsub_subscriber2_udp_mc"
     BUNDLES
        shell
        shell_tui
-       org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
+		org.apache.celix.pubsub_serializer.PubSubSerializerJson
+		org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
        org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
        org.apache.celix.pubsub_admin.PubSubAdminUdpMc
        org.apache.celix.pubsub_subscriber.PoiSubscriber
-       org.apache.celix.pubsub_serializer.PubSubSerializerJson
 )
 
 if (ETCD_CMD AND XTERM_CMD)
@@ -81,13 +81,13 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	    BUNDLES
 	       shell
 	       shell_tui
-	       org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
+			org.apache.celix.pubsub_serializer.PubSubSerializerJson
+			org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
 	       org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
 	       org.apache.celix.pubsub_admin.PubSubAdminZmq
 	       org.apache.celix.pubsub_admin.PubSubAdminUdpMc
 	       org.apache.celix.pubsub_publisher.PoiPublisher
 	       org.apache.celix.pubsub_publisher.PoiPublisher2
-	       org.apache.celix.pubsub_serializer.PubSubSerializerJson
 	    PROPERTIES
 	       poi1.psa=zmq
 	       poi2.psa=udp
@@ -98,12 +98,12 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	    BUNDLES
 	       shell
 	       shell_tui
-	       org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
+			org.apache.celix.pubsub_serializer.PubSubSerializerJson
+			org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
 	       org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
 	       org.apache.celix.pubsub_admin.PubSubAdminZmq
 	       org.apache.celix.pubsub_admin.PubSubAdminUdpMc
 	       org.apache.celix.pubsub_subscriber.PoiSubscriber
-	       org.apache.celix.pubsub_serializer.PubSubSerializerJson
 	    PROPERTIES
 	       poi1.psa=zmq
 	       poi2.psa=udp
@@ -115,12 +115,12 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	    BUNDLES
 	       shell
 	       shell_tui
-	       org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
+			org.apache.celix.pubsub_serializer.PubSubSerializerJson
+			org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
 	       org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
 	       org.apache.celix.pubsub_admin.PubSubAdminZmq
 	       org.apache.celix.pubsub_publisher.PoiPublisher
 	       org.apache.celix.pubsub_subscriber.PoiSubscriber
-	       org.apache.celix.pubsub_serializer.PubSubSerializerJson
 	)
 
 	add_deploy("pubsub_publisher_zmq"
@@ -128,12 +128,12 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	    BUNDLES
 	       shell
 	       shell_tui
-	       org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
+			org.apache.celix.pubsub_serializer.PubSubSerializerJson
+			org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
 	       org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
 	       org.apache.celix.pubsub_admin.PubSubAdminZmq
 	       org.apache.celix.pubsub_publisher.PoiPublisher
 	       org.apache.celix.pubsub_publisher.PoiPublisher2
-	       org.apache.celix.pubsub_serializer.PubSubSerializerJson
 	   	PROPERTIES
 		    pubsub.scope=my_small_scope
 	)
@@ -143,11 +143,11 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	    BUNDLES
 	       shell
 	       shell_tui
+			org.apache.celix.pubsub_serializer.PubSubSerializerJson
 	       org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
 	       org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
 	       org.apache.celix.pubsub_admin.PubSubAdminZmq
 	       org.apache.celix.pubsub_subscriber.PoiSubscriber
-	       org.apache.celix.pubsub_serializer.PubSubSerializerJson
 	)
 
 	add_deploy("pubsub_subscriber2_zmq"
@@ -155,11 +155,12 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	    BUNDLES
 	       shell
 	       shell_tui
+			org.apache.celix.pubsub_serializer.PubSubSerializerJson
 	       org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
 	       org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
 	       org.apache.celix.pubsub_admin.PubSubAdminZmq
 	       org.apache.celix.pubsub_subscriber.PoiSubscriber
-	       org.apache.celix.pubsub_serializer.PubSubSerializerJson
+
 	)
 
 	# ZMQ Multipart
@@ -168,23 +169,23 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	    BUNDLES
 	       shell
 	       shell_tui
+			org.apache.celix.pubsub_serializer.PubSubSerializerJson
 	       org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
 	       org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
 	       org.apache.celix.pubsub_admin.PubSubAdminZmq
 	       org.apache.celix.pubsub_subscriber.MpSubscriber
-	       org.apache.celix.pubsub_serializer.PubSubSerializerJson
 	)
 
 	add_deploy("pubsub_mp_publisher_zmq"
 	    GROUP "pubsub"
 	    BUNDLES
-	       shell
-	       shell_tui
-	       org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
-	       org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
-	       org.apache.celix.pubsub_admin.PubSubAdminZmq
-	       org.apache.celix.pubsub_publisher.MpPublisher
-	       org.apache.celix.pubsub_serializer.PubSubSerializerJson
+	   		shell
+	   		shell_tui
+	   		org.apache.celix.pubsub_serializer.PubSubSerializerJson
+			org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
+	   		org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
+	   		org.apache.celix.pubsub_admin.PubSubAdminZmq
+	   		org.apache.celix.pubsub_publisher.MpPublisher
 	)
 
 	if (ETCD_CMD AND XTERM_CMD)
@@ -207,6 +208,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 			GROUP pubsub
 			DEPLOYMENTS
 				pubsub_publisher
+				pubsub_subscriber_zmq
 				pubsub_subscriber2_zmq
 			COMMANDS
 				etcd

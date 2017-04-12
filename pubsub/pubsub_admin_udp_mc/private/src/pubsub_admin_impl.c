@@ -431,7 +431,8 @@ celix_status_t pubsubAdmin_addPublication(pubsub_admin_pt admin,pubsub_endpoint_
 
 		if (factory == NULL) {
 			topic_publication_pt pub = NULL;
-			status = pubsub_topicPublicationCreate(admin->sendSocket, pubEP, admin->serializerSvc, admin->mcIpAddress,&pub);
+			status = pubsub_topicPublicationCreate(admin->sendSocket, pubEP, admin->mcIpAddress,&pub);
+			pubsub_topicPublicationSetSerializer(pub, admin->serializerSvc);
 			if(status == CELIX_SUCCESS){
 				status = pubsub_topicPublicationStart(admin->bundle_context,pub,&factory);
 				if(status==CELIX_SUCCESS && factory !=NULL){
@@ -655,7 +656,7 @@ celix_status_t pubsubAdmin_setSerializer(pubsub_admin_pt admin, pubsub_serialize
 	while(hashMapIterator_hasNext(lp_iter)){
 		service_factory_pt factory = (service_factory_pt) hashMapIterator_nextValue(lp_iter);
 		topic_publication_pt topic_pub = (topic_publication_pt) factory->handle;
-		pubsub_topicPublicationAddSerializer(topic_pub, admin->serializerSvc);
+		pubsub_topicPublicationSetSerializer(topic_pub, admin->serializerSvc);
 	}
 	hashMapIterator_destroy(lp_iter);
 	celixThreadMutex_unlock(&admin->localPublicationsLock);
