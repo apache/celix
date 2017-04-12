@@ -33,7 +33,7 @@ static framework_pt framework = NULL;
 
 int main(int argc, char *argv[]) {
     // Perform some minimal command-line option parsing...
-    char *cfg = DEFAULT_CONFIG_FILE;
+    const char *cfg = DEFAULT_CONFIG_FILE;
 
     // Set signal handler
     (void) signal(SIGINT, shutdown_framework);

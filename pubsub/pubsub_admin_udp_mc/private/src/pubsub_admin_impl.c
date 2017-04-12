@@ -666,7 +666,7 @@ celix_status_t pubsubAdmin_setSerializer(pubsub_admin_pt admin, pubsub_serialize
 	hash_map_iterator_pt subs_iter = hashMapIterator_create(admin->subscriptions);
 	while(hashMapIterator_hasNext(subs_iter)){
 		topic_subscription_pt topic_sub = (topic_subscription_pt) hashMapIterator_nextValue(subs_iter);
-		pubsub_topicSubscriptionAddSerializer(topic_sub, admin->serializerSvc);
+		pubsub_topicSubscriptionSetSerializer(topic_sub, admin->serializerSvc);
 	}
 	hashMapIterator_destroy(subs_iter);
 	celixThreadMutex_unlock(&admin->subscriptionsLock);

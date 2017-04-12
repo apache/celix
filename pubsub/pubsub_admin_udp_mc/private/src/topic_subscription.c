@@ -550,7 +550,7 @@ static void* udp_recv_thread_func(void * arg) {
     while (sub->running) {
     	int nfds = 0;
 		if(nfds > 0) {
-			pubsub_udp_msg_pt udpMsg = NULL;
+			pubsub_udp_msg_t* udpMsg = NULL;
 			process_msg(sub, udpMsg);
 		}
     }
