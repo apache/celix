@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #Locations
 BUILD_DIR="${BUILD_DIR:-@PROJECT_BINARY_DIR@}"
@@ -9,14 +9,14 @@ DEPLOY_DIR="${DEPLOY_DIR:-${BUILD_DIR}/deploy}"
 RUNTIME_NAME="${RUNTIME_NAME:-$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_NAME>}"
 RUNTIME_GROUP="${RUNTIME_NAME:-$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_GROUP>}"
 
-#deployments & commands
+#commands
 COMMANDS=${COMMANDS:-"$<JOIN:$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_COMMANDS>, >"}
 
-declare -A DEPLOYMENTS
+#deployments
 $<JOIN:$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_DEPLOYMENTS>,
 >
 
-declare -A ARGUMENTS
+#deployment arguments
 $<JOIN:$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_ARGUMENTS>,
 >
 
@@ -50,9 +50,9 @@ function rt_start_all() {
     echo ""
     echo ""
     echo "********** Starting runtime ${RUNTIME_NAME} **********"
-    for DEPLOYMENT in "${!DEPLOYMENTS[@]}"
+    for DEPLOYMENT_INDEX in "${!DEPLOYMENT_NAMES[@]}"
     do
-        rt_run_deployment ${DEPLOYMENT}
+        rt_run_deployment ${DEPLOYMENT_INDEX}
     done
 
     for CMD in ${COMMANDS}; do
@@ -75,9 +75,10 @@ function rt_stop() {
 }
 
 function rt_run_deployment() {
-    DEPLOYMENT=$1
-    DEPLOYMENT_DIR=${DEPLOYMENTS[${DEPLOYMENT}]}
-    ARGS=${ARGUMENTS[${DEPLOYMENT}]}
+    INDEX=$1
+    DEPLOYMENT=${DEPLOYMENT_NAMES[${INDEX}]}
+    DEPLOYMENT_DIR=${DEPLOYMENT_DIRS[${INDEX}]}
+    ARGS=${DEPLOYMENT_ARGUMENTS[${INDEX}]}
     LOG_FILE="${RUNTIME_DIR}/logs/${DEPLOYMENT}.log"
     echo ""
     echo "Starting deployment ${DEPLOYMENT}"

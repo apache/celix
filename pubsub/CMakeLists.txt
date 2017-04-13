@@ -39,7 +39,7 @@ if (PUBSUB)
 
 
 	if (ENABLE_TESTING)
-		option(BUILD_PUBSUB_TESTS "Enable Tests for PUBSUB" ON)
+        option(BUILD_PUBSUB_TESTS "Enable Tests for PUBSUB" OFF)
 	endif()
 	if (ENABLE_TESTING AND BUILD_PUBSUB_TESTS)
 		add_subdirectory(test)

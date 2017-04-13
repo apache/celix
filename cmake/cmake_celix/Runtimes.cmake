@@ -49,6 +49,7 @@ function(add_runtime)
     set_target_properties(${RUNTIME_TARGET_NAME} PROPERTIES "RUNTIME_LOCATION" "${RUNTIME_LOCATION}") #The runtime workdir
     set_target_properties(${RUNTIME_TARGET_NAME} PROPERTIES "RUNTIME_USE_TERM" "${RUNTIME_USE_TERM}") #Wether or not the use terminal
     set_target_properties(${RUNTIME_TARGET_NAME} PROPERTIES "RUNTIME_LOG_TO_FILES" "${RUNTIME_LOG_TO_FILES}") #log to files or std out/err
+    set_target_properties(${RUNTIME_TARGET_NAME} PROPERTIES "RUNTIME_NEXT_DEPLOYMENT_ID" "0") #used for indexes int he bash scripts
 
     #wait for deployment, e.g. the one that control the lifecycle of the runtime.
     set_target_properties(${RUNTIME_TARGET_NAME} PROPERTIES "RUNTIME_WAIT_FOR_DEPLOYMENT" "")
@@ -123,8 +124,12 @@ function(runtime_deployments)
 
     get_target_property(DEPLOYMENTS ${RUNTIME_NAME} "RUNTIME_DEPLOYMENTS")
     foreach(DEPLOYMENT IN ITEMS ${ARGN})
-        list(APPEND DEPLOYMENTS "DEPLOYMENTS[$<TARGET_PROPERTY:${DEPLOYMENT},DEPLOY_NAME>]=\"$<TARGET_PROPERTY:${DEPLOYMENT},DEPLOY_LOCATION>\"")
-	    #list(APPEND DEPLOYMENTS "$<TARGET_PROPERTY:${DEPLOYMENT},DEPLOY_LOCATION>")
+        get_target_property(DEP_ID ${RUNTIME_NAME} "RUNTIME_NEXT_DEPLOYMENT_ID")
+        math(EXPR DEP_ID "${DEP_ID}+1")
+        set_target_properties(${RUNTIME_NAME} PROPERTIES "RUNTIME_DEPLOYMENT_${DEPLOYMENT}_ID" "${DEP_ID}")
+        list(APPEND DEPLOYMENTS "DEPLOYMENT_NAMES[${DEP_ID}]=\"$<TARGET_PROPERTY:${DEPLOYMENT},DEPLOY_NAME>\"")
+        list(APPEND DEPLOYMENTS "DEPLOYMENT_DIRS[${DEP_ID}]=\"$<TARGET_PROPERTY:${DEPLOYMENT},DEPLOY_LOCATION>\"")
+        set_target_properties(${RUNTIME_NAME} PROPERTIES "RUNTIME_NEXT_DEPLOYMENT_ID" "${DEP_ID}")
    endforeach()
 
    set_target_properties(${RUNTIME_NAME} PROPERTIES "RUNTIME_DEPLOYMENTS" "${DEPLOYMENTS}")
@@ -174,9 +179,10 @@ function(runtime_arguments)
     if (${ARG_LENGTH} GREATER 1)
         foreach(I RANGE 1 ${ARG_LENGTH} 2)
             math(EXPR IMINUS "${I}-1")
-            list(GET ARGN ${IMINUS} ARG_NAME)
-            list(GET ARGN ${I} ARG_VAL)
-            list(APPEND ARGUMENTS "ARGUMENTS[$<TARGET_PROPERTY:${ARG_NAME},DEPLOY_NAME>]=\"${ARG_VAL}\"")
+            list(GET ARGN ${IMINUS} DEPLOY_NAME)
+            list(GET ARGN ${I} DEPLOY_ARGS)
+            get_target_property(TEST ${RUNTIME_NAME} "RUNTIME_DEPLOYMENT_${DEPLOY_NAME}_ID")
+            list(APPEND ARGUMENTS "DEPLOYMENT_ARGUMENTS[$<TARGET_PROPERTY:${RUNTIME_NAME},RUNTIME_DEPLOYMENT_${DEPLOY_NAME}_ID>]=\"${DEPLOY_ARGS}\"")
         endforeach()
     endif ()
     set_target_properties(${RUNTIME_NAME} PROPERTIES "RUNTIME_ARGUMENTS" "${ARGUMENTS}")
