@@ -445,7 +445,8 @@ celix_status_t pubsubAdmin_addPublication(pubsub_admin_pt admin, pubsub_endpoint
         if (factory == NULL) {
             topic_publication_pt pub = NULL;
             status = pubsub_topicPublicationCreate(admin->bundle_context, pubEP, admin->ipAddress, admin->basePort, admin->maxPort, &pub);
-			pubsub_topicPublicationSetSerializer(pub, admin->serializerSvc);
+			pubsub_topicPublicationSetSerializer(pub, admin->serializerSvc); //TODO serializer back to constructor. This is certainly when
+			//TODO admin are created for every available serializer
             if (status == CELIX_SUCCESS) {
                 status = pubsub_topicPublicationStart(admin->bundle_context, pub, &factory);
                 if (status == CELIX_SUCCESS && factory != NULL) {
@@ -667,7 +668,7 @@ celix_status_t pubsubAdmin_matchSubscriber(pubsub_admin_pt admin, pubsub_endpoin
 	return status;
 }
 
-celix_status_t pubsubAdmin_setSerializer(pubsub_admin_pt admin, pubsub_serializer_service_t* serializerSvc){
+celix_status_t pubsubAdmin_setSerializer(pubsub_admin_pt admin, pubsub_serializer_service_t* serializerSvc) {
 	celix_status_t status = CELIX_SUCCESS;
 	admin->serializerSvc = serializerSvc;
 

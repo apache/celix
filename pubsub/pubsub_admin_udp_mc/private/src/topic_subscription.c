@@ -114,7 +114,7 @@ celix_status_t pubsub_topicSubscriptionCreate(char* ifIp,bundle_context_pt bundl
 
 	ts->running = false;
 	ts->nrSubscribers = 0;
-	ts->serializerSvc = serializer;
+	ts->serializerSvc = NULL;
 
 	celixThreadMutex_create(&ts->ts_lock,NULL);
 	arrayList_create(&ts->sub_ep_list);
@@ -151,7 +151,10 @@ celix_status_t pubsub_topicSubscriptionCreate(char* ifIp,bundle_context_pt bundl
 
 	sigaction(SIGUSR1,&actions,NULL);
 
-	*out=ts;
+    if (status == CELIX_SUCCESS) {
+        *out=ts;
+        pubsub_topicSubscriptionSetSerializer(ts, serializer);
+    }
 
 	return status;
 }
@@ -396,7 +399,7 @@ unsigned int pubsub_topicGetNrSubscribers(topic_subscription_pt ts) {
 	return ts->nrSubscribers;
 }
 
-celix_status_t pubsub_topicSubscriptionSetSerializer(topic_subscription_pt ts, pubsub_serializer_service_t* serializerSvc){
+celix_status_t pubsub_topicSubscriptionSetSerializer(topic_subscription_pt ts, pubsub_serializer_service_t* serializerSvc) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	celixThreadMutex_lock(&ts->ts_lock);

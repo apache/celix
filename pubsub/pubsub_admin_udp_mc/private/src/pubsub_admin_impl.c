@@ -432,7 +432,8 @@ celix_status_t pubsubAdmin_addPublication(pubsub_admin_pt admin,pubsub_endpoint_
 		if (factory == NULL) {
 			topic_publication_pt pub = NULL;
 			status = pubsub_topicPublicationCreate(admin->sendSocket, pubEP, admin->mcIpAddress,&pub);
-			pubsub_topicPublicationSetSerializer(pub, admin->serializerSvc);
+			pubsub_topicPublicationSetSerializer(pub, admin->serializerSvc); //TODO move back to contructor
+			//TODO this is certainly needed when admin are created per available serializer
 			if(status == CELIX_SUCCESS){
 				status = pubsub_topicPublicationStart(admin->bundle_context,pub,&factory);
 				if(status==CELIX_SUCCESS && factory !=NULL){

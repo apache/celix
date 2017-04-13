@@ -10,7 +10,7 @@ function(add_runtime)
 
     set(OPTIONS USE_TERM LOG_TO_FILES)
     set(ONE_VAL_ARGS WAIT_FOR NAME GROUP)
-    set(MULTI_VAL_ARGS DEPLOYMENTS COMMANDS)
+    set(MULTI_VAL_ARGS DEPLOYMENTS COMMANDS ARGUMENTS)
     cmake_parse_arguments(RUNTIME "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
 
     if (NOT RUNTIME_NAME)
@@ -43,6 +43,7 @@ function(add_runtime)
 
     set_target_properties(${RUNTIME_TARGET_NAME} PROPERTIES "RUNTIME_DEPLOYMENTS" "") #deployments that should be runned
     set_target_properties(${RUNTIME_TARGET_NAME} PROPERTIES "RUNTIME_COMMANDS" "") #command that should be executed
+    set_target_properties(${RUNTIME_TARGET_NAME} PROPERTIES "RUNTIME_ARGUMENTS" "") #potential arguments to use for deployments
     set_target_properties(${RUNTIME_TARGET_NAME} PROPERTIES "RUNTIME_NAME" "${RUNTIME_NAME}") #The runtime workdir
     set_target_properties(${RUNTIME_TARGET_NAME} PROPERTIES "RUNTIME_GROUP" "${RUNTIME_GROUP}") #The runtime workdir
     set_target_properties(${RUNTIME_TARGET_NAME} PROPERTIES "RUNTIME_LOCATION" "${RUNTIME_LOCATION}") #The runtime workdir
@@ -90,6 +91,7 @@ function(add_runtime)
 
     runtime_deployments(${RUNTIME_TARGET_NAME} ${RUNTIME_DEPLOYMENTS})
     runtime_commands(${RUNTIME_TARGET_NAME} ${RUNTIME_COMMANDS})
+    runtime_arguments(${RUNTIME_TARGET_NAME} ${RUNTIME_ARGUMENTS})
 
     if (RUNTIME_WAIT_FOR)
         runtime_deployment_wait_for(${RUNTIME_TARGET_NAME} ${RUNTIME_WAIT_FOR})
@@ -121,7 +123,8 @@ function(runtime_deployments)
 
     get_target_property(DEPLOYMENTS ${RUNTIME_NAME} "RUNTIME_DEPLOYMENTS")
     foreach(DEPLOYMENT IN ITEMS ${ARGN})
-	    list(APPEND DEPLOYMENTS "$<TARGET_PROPERTY:${DEPLOYMENT},DEPLOY_LOCATION>")
+        list(APPEND DEPLOYMENTS "DEPLOYMENTS[$<TARGET_PROPERTY:${DEPLOYMENT},DEPLOY_NAME>]=\"$<TARGET_PROPERTY:${DEPLOYMENT},DEPLOY_LOCATION>\"")
+	    #list(APPEND DEPLOYMENTS "$<TARGET_PROPERTY:${DEPLOYMENT},DEPLOY_LOCATION>")
    endforeach()
 
    set_target_properties(${RUNTIME_NAME} PROPERTIES "RUNTIME_DEPLOYMENTS" "${DEPLOYMENTS}")
@@ -151,11 +154,30 @@ function(runtime_commands)
 endfunction()
 
 function(runtime_command_wait_for)
-    #0 is deploy TARGET
+    #0 is runtime TARGET
     #1 is COMMAND STR
     list(GET ARGN 0 RUNTIME_NAME)
     list(GET ARGN 1 COMMAND)
 
     set_target_properties(${RUNTIME_NAME} PROPERTIES "RUNTIME_WAIT_FOR_COMMAND" "${COMMAND}")
     set_target_properties(${RUNTIME_NAME} PROPERTIES "RUNTIME_WAIT_FOR_DEPLOYMENT" "")
+endfunction()
+
+function(runtime_arguments)
+    #0 is runtime TARGET
+    #1..n is commands
+    list(GET ARGN 0 RUNTIME_NAME)
+    list(REMOVE_AT ARGN 0)
+
+    get_target_property(ARGUMENTS ${RUNTIME_NAME} "RUNTIME_ARGUMENTS")
+    list(LENGTH ARGN ARG_LENGTH)
+    if (${ARG_LENGTH} GREATER 1)
+        foreach(I RANGE 1 ${ARG_LENGTH} 2)
+            math(EXPR IMINUS "${I}-1")
+            list(GET ARGN ${IMINUS} ARG_NAME)
+            list(GET ARGN ${I} ARG_VAL)
+            list(APPEND ARGUMENTS "ARGUMENTS[$<TARGET_PROPERTY:${ARG_NAME},DEPLOY_NAME>]=\"${ARG_VAL}\"")
+        endforeach()
+    endif ()
+    set_target_properties(${RUNTIME_NAME} PROPERTIES "RUNTIME_ARGUMENTS" "${ARGUMENTS}")
 endfunction()

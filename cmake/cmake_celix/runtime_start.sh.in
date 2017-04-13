@@ -1,23 +1,12 @@
 #!/bin/sh
 source $<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_LOCATION>/common.sh
 
-echo "Starting runtime ${RUNTIME_NAME}"
-
 rt_init
-
-for DEPLOYMENT_DIR in ${DEPLOYMENTS}; do
-    rt_run_deployment ${DEPLOYMENT_DIR}
-done
-
-for CMD in ${COMMANDS}; do
-    rt_run_cmd "${CMD}"
-done
-
-echo "PIDS are ${PIDS}."
+rt_start_all
 
 if [ ! -z "${WAIT_FOR_PID}" ] ; then
     rt_wait_for #sets RESULT
-    echo "RESULT is ${RESULT}"
+    echo "********** Runtime ${RUNTIME_NAME} result is ${RESULT} **********"
     exit ${RESULT}
 fi
 

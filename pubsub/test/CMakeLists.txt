@@ -42,10 +42,19 @@ add_deploy(pubsub_udpmc_sut
         org.apache.celix.pubsub_serializer.PubSubSerializerJson
         org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
         org.apache.celix.pubsub_admin.PubSubAdminUdpMc
-        #org.apache.celix.pubsub_admin.PubSubAdminZmq
         org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
         pubsub_sut
     DIR ${PROJECT_BINARY_DIR}/runtimes/test/pubsub/udpmc
+)
+add_deploy(pubsub_zmq_sut
+    NAME deploy_sut
+    BUNDLES
+        org.apache.celix.pubsub_serializer.PubSubSerializerJson
+        org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
+        org.apache.celix.pubsub_admin.PubSubAdminZmq
+        org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
+        pubsub_sut
+    DIR ${PROJECT_BINARY_DIR}/runtimes/test/pubsub/zmq
 )
 
 add_bundle(pubsub_tst
@@ -66,9 +75,20 @@ add_deploy(pubsub_udpmc_tst
         org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
         org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
         org.apache.celix.pubsub_admin.PubSubAdminUdpMc
-        #org.apache.celix.pubsub_admin.PubSubAdminZmq
         pubsub_tst
+    #NOTE using $<TARGET_PROPERTY:pubsub_test_udpmc_runtime,RUNTIME_DIR> in DIR not (yet) possible
     DIR ${PROJECT_BINARY_DIR}/runtimes/test/pubsub/udpmc
+    LAUNCHER celix_test_runner
+)
+add_deploy(pubsub_zmq_tst
+    NAME deploy_tst
+    BUNDLES
+        org.apache.celix.pubsub_serializer.PubSubSerializerJson
+        org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
+        org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
+        org.apache.celix.pubsub_admin.PubSubAdminZmq
+        pubsub_tst
+    DIR ${PROJECT_BINARY_DIR}/runtimes/test/pubsub/zmq
     LAUNCHER celix_test_runner
 )
 
@@ -83,12 +103,29 @@ if (ETCD_CMD)
             etcd
         WAIT_FOR
             pubsub_udpmc_tst
+        LOG_TO_FILES
         #USE_TERM
-        #LOG_TO_FILES
+    )
+    add_test(NAME pubsub_udpmc_test
+        COMMAND $<TARGET_PROPERTY:pubsub_test_udpmc_runtime,RUNTIME_LOCATION>/start.sh
     )
 
-    add_test(NAME pubsub_udpmc_test
-            COMMAND ./start.sh
-            WORKING_DIRECTORY $<TARGET_PROPERTY:pubsub_test_udpmc_runtime,RUNTIME_LOCATION>
+    add_runtime(pubsub_test_zmq_runtime
+        NAME zmq
+        GROUP test/pubsub
+        DEPLOYMENTS
+            pubsub_zmq_sut
+            pubsub_zmq_tst
+        COMMANDS
+            etcd
+        ARGUMENTS
+            pubsub_zmq_tst "-o junit"
+        WAIT_FOR
+            pubsub_zmq_tst
+        LOG_TO_FILES
+        #USE_TERM
+    )
+    add_test(NAME pubsub_zmq_test
+        COMMAND $<TARGET_PROPERTY:pubsub_test_zmq_runtime,RUNTIME_LOCATION>/start.sh
     )
 endif ()

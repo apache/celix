@@ -174,7 +174,9 @@ $<JOIN:$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_PROPERTIES>,
     set_target_properties(${DEPLOY_TARGET} PROPERTIES "DEPLOY_COPY_BUNDLES" ${DEPLOY_COPY}) #copy bundles in bundle dir or link using abs paths. NOTE this cannot be changed after a add_deploy command
 
     #deploy specific
-    set_target_properties(${DEPLOY_TARGET} PROPERTIES "DEPLOY_LOCATION" ${DEPLOY_LOCATION})
+    set_target_properties(${DEPLOY_TARGET} PROPERTIES "DEPLOY_NAME" "${DEPLOY_NAME}")
+    set_target_properties(${DEPLOY_TARGET} PROPERTIES "DEPLOY_GROUP" "${DEPLOY_GROUP}")
+    set_target_properties(${DEPLOY_TARGET} PROPERTIES "DEPLOY_LOCATION" "${DEPLOY_LOCATION}")
     set_target_properties(${DEPLOY_TARGET} PROPERTIES "DEPLOY_PROPERTIES" "")
     #####
 

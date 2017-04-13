@@ -127,7 +127,6 @@ celix_status_t pubsub_topicPublicationCreate(int sendSocket, pubsub_endpoint_pt 
 
 celix_status_t pubsub_topicPublicationDestroy(topic_publication_pt pub){
 	celix_status_t status = CELIX_SUCCESS;
-
 	celixThreadMutex_lock(&(pub->tp_lock));
 
 	free(pub->endpoint);

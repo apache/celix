@@ -209,7 +209,7 @@ celix_status_t pubsub_topicSubscriptionCreate(bundle_context_pt bundle_context, 
 	ts->zmq_socket = zmq_s;
 	ts->running = false;
 	ts->nrSubscribers = 0;
-	ts->serializerSvc = serializer;
+	ts->serializerSvc = NULL;
 
 	#ifdef BUILD_WITH_ZMQ_SECURITY
 	if (subEP->is_secure){
@@ -254,7 +254,10 @@ celix_status_t pubsub_topicSubscriptionCreate(bundle_context_pt bundle_context, 
 
 	sigaction(SIGUSR1,&actions,NULL);
 
-	*out=ts;
+	if (status == CELIX_SUCCESS) {
+		*out=ts;
+		pubsub_topicSubscriptionSetSerializer(ts, serializer);
+	}
 
 	return status;
 }
@@ -429,7 +432,7 @@ unsigned int pubsub_topicGetNrSubscribers(topic_subscription_pt ts) {
 	return ts->nrSubscribers;
 }
 
-celix_status_t pubsub_topicSubscriptionSetserializer(topic_subscription_pt ts, pubsub_serializer_service_t* serializerSvc){
+celix_status_t pubsub_topicSubscriptionSetSerializer(topic_subscription_pt ts, pubsub_serializer_service_t* serializerSvc) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	celixThreadMutex_lock(&ts->ts_lock);

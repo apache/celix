@@ -10,8 +10,15 @@ RUNTIME_NAME="${RUNTIME_NAME:-$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_NA
 RUNTIME_GROUP="${RUNTIME_NAME:-$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_GROUP>}"
 
 #deployments & commands
-DEPLOYMENTS=${DEPLOYMENTS:-"$<JOIN:$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_DEPLOYMENTS>, >"}
 COMMANDS=${COMMANDS:-"$<JOIN:$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_COMMANDS>, >"}
+
+declare -A DEPLOYMENTS
+$<JOIN:$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_DEPLOYMENTS>,
+>
+
+declare -A ARGUMENTS
+$<JOIN:$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_ARGUMENTS>,
+>
 
 #Options
 TERM_CMD="${TERM_CMD:-xterm}"
@@ -21,24 +28,40 @@ RELEASE_SH="${RELEASE_SH:-}"
 WAIT_FOR_DEPLOYMENT="${WAIT_FOR_DEPLOYMENT:-$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_WAIT_FOR_DEPLOYMENT>}"
 WAIT_FOR_CMD="${WAIT_FOR_CMD:-$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_WAIT_FOR_COMMAND>}"
 LOG_TO_FILES="${LOG_TO_FILES:-$<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_LOG_TO_FILES>}"
-KILL_OPTS="${KILL_OPTS:-}"
+KILL_OPTS="${KILL_OPTS:--2}" #default is -2, e.g. SIGINT
+PATIENCE="${PATIENCE:-5}" #in seconds
 
 PIDS=""
 WAIT_FOR_PID=""
-LOG_SUFFIX=$(date +"%s")
+RUNTIME_STARTTIME=$(date +"%s")
 trap stop_all INT
 
-#clear dirs
+##functions
 function rt_init() {
     rm -fr ${RUNTIME_DIR}/run #contains pids, etc
+    rm -fr ${RUNTIME_DIR}/logs
     mkdir ${RUNTIME_DIR}/run
-    if [ ! -e ${RUNTIME_DIR}/logs ] ; then
-        mkdir ${RUNTIME_DIR}/logs
-    fi
+    mkdir ${RUNTIME_DIR}/logs
+    echo "Name: ${RUNTIME_NAME}" > ${RUNTIME_DIR}/logs/init.log
+    echo "Start time: ${RUNTIME_STARTTIME}" >> ${RUNTIME_DIR}/logs/init.log
 }
 
-##functions
+function rt_start_all() {
+    echo ""
+    echo ""
+    echo "********** Starting runtime ${RUNTIME_NAME} **********"
+    for DEPLOYMENT in "${!DEPLOYMENTS[@]}"
+    do
+        rt_run_deployment ${DEPLOYMENT}
+    done
+
+    for CMD in ${COMMANDS}; do
+        rt_run_cmd "${CMD}"
+    done
+}
+
 function rt_stop_all() {
+    echo "********** Stopping runtime ${RUNTIME_NAME} **********"
     for PID in ${PIDS}; do
         echo "Sending signal to ${PID}"
         kill ${KILL_OPTS} ${PID}
@@ -52,31 +75,37 @@ function rt_stop() {
 }
 
 function rt_run_deployment() {
-    DEPLOYMENT_DIR=$1
-    DEPLOYMENT=$(basename ${DEPLOYMENT_DIR})
-    LOG_FILE="${RUNTIME_DIR}/logs/${DEPLOYMENT}-${LOG_SUFFIX}.log"
-    echo "Running ${DEPLOYMENT}"
-    cd ${DEPLOYMENT_DIR} #assuming absolute dir
+    DEPLOYMENT=$1
+    DEPLOYMENT_DIR=${DEPLOYMENTS[${DEPLOYMENT}]}
+    ARGS=${ARGUMENTS[${DEPLOYMENT}]}
+    LOG_FILE="${RUNTIME_DIR}/logs/${DEPLOYMENT}.log"
+    echo ""
+    echo "Starting deployment ${DEPLOYMENT}"
+    cd ${DEPLOYMENT_DIR}
     if [ -d .cache ] ; then
-        echo "Clearing cache"
+        echo "  Clearing cache"
         rm -fr .cache
     fi
     . ./release.sh #run deployment release
+    echo "  Workdir: ${DEPLOYMENT_DIR}"
+    echo "  Cmd used: './${DEPLOYMENT} ${ARGS}'"
     if [ "${USE_TERM}" = "TRUE" ] ; then
         if [ "${LOG_TO_FILES}" = "TRUE" ] ; then
-            ${TERM_CMD} ${TERM_OPTS} -e "./${DEPLOYMENT} &> ${LOG_FILE}" &
+            echo "  Using log file ${LOG_FILE}"
+            ${TERM_CMD} ${TERM_OPTS} -e "./${DEPLOYMENT} ${ARGS} &> ${LOG_FILE}"  &> /dev/null &
         else
-            ${TERM_CMD} ${TERM_OPTS} -e "./${DEPLOYMENT}" &
+            ${TERM_CMD} ${TERM_OPTS} -e "./${DEPLOYMENT} ${ARGS}" &> /dev/null &
         fi
     else #run in this shell
         if [ "${LOG_TO_FILES}" = "TRUE" ] ; then
-            ./${DEPLOYMENT} &> ${LOG_FILE} &
+            echo "  Using log file ${LOG_FILE}"
+            ./${DEPLOYMENT} ${ARGS} &> ${LOG_FILE} &
         else
-            ./${DEPLOYMENT} &
+            ./${DEPLOYMENT} ${ARGS} &
         fi
     fi
     PID=$!
-    echo "PID of DEPLOYMENT '${DEPLOYMENT}' is ${PID}"
+    echo "  Pid of deployment '${DEPLOYMENT}' is ${PID}"
     if [ ! -z "${WAIT_FOR_DEPLOYMENT}" -a "${DEPLOYMENT_DIR}" = "${WAIT_FOR_DEPLOYMENT}" ] ; then
         WAIT_FOR_PID=${PID}
         echo "${PID}" > ${RUNTIME_DIR}/run/wait_for_pid
@@ -84,28 +113,40 @@ function rt_run_deployment() {
         PIDS="${PID} ${PIDS}"
         echo "${PIDS}" > ${RUNTIME_DIR}/run/pids
     fi
-    cd -
+    cd - > /dev/null
 }
 
 function rt_run_cmd() {
     CMD="$1"
-    LOG_FILE="${RUNTIME_DIR}/logs/${CMD}-${LOG_SUFFIX}.log" #TODO only use first word in case of complex command
-    cd ${RUNTIME_DIR}
+    echo ""
+    echo "Starting command '${CMD}'"
+    read CMD_NAME _ <<< ${CMD}
+    LOG_FILE="${RUNTIME_DIR}/logs/${CMD_NAME}.log"
+    WD="${RUNTIME_DIR}/${CMD_NAME}"
+    if [ -d {WD} ] ; then
+        echo "  Clearing previous workdir for command '${CMD}'"
+        rm -fr ${WD}
+    fi
+    echo "  Workdir: ${WD}"
+    mkdir -p ${WD}
+    cd ${WD}
     if [ "${USE_TERM}" = "TRUE" ] ; then
         if [ "${LOG_TO_FILES}" = "TRUE" ] ; then
-            ${TERM_CMD} ${TERM_OPTS} -e "${CMD} &> ${LOG_FILE}" &
+            echo "  Using log file ${LOG_FILE}"
+            ${TERM_CMD} ${TERM_OPTS} -e "${CMD} &> ${LOG_FILE}" &> /dev/null &
         else
-            ${TERM_CMD} ${TERM_OPTS} -e "${CMD}" &
+            ${TERM_CMD} ${TERM_OPTS} -e "${CMD}" &> /dev/null &
         fi
     else
         if [ "${LOG_TO_FILES}" = "TRUE" ] ; then
-            ${CMD} &> \"${LOG_FILE}\" &
+            echo "  Using log file ${LOG_FILE}"
+            ${CMD} &> ${LOG_FILE} &
         else
             ${CMD} &
         fi
     fi
     PID=$!
-    echo "PID of COMMAND '${CMD}' is ${PID}"
+    echo "  Pid of command '${CMD}' is ${PID}"
     if [ ! -z "${WAIT_FOR_CMD}" -a "${CMD}" = "${MWAIT_FOR_CMD}" ] ; then
         WAIT_FOR_PID=${PID}
         echo "${PID}" > ${RUNTIME_DIR}/run/wait_for_pid
@@ -113,11 +154,12 @@ function rt_run_cmd() {
         PIDS="${PID} ${PIDS}"
         echo "${PIDS}" > ${RUNTIME_DIR}/run/pids
     fi
-    cd -
+    cd - > /dev/null
 }
 
 function rt_wait_for() {
     RESULT=0
+    echo ""
     echo "Waiting for pid ${WAIT_FOR_PID}"
     if wait ${WAIT_FOR_PID}; then
         echo "${WAIT_FOR_PID} exited normal"
@@ -126,12 +168,13 @@ function rt_wait_for() {
         RESULT=1
     fi
 
-    echo "Signalling pids: ${PIDS}"
-    kill -2 ${PIDS}
-    TIMES=15
+    echo "Signalling pids '${PIDS}' with '${KILL_OPTS}'"
+    kill ${KILL_OPTS} ${PIDS}
+    echo -n "Waiting "
+    TIMES=${PATIENCE}
     for (( I=1; I<=TIMES; I++ ))
     do
-        echo "Checking if ${PIDS} are still running. ${I}/${TIMES}"
+        echo -n "."
         kill -0 ${PIDS} &> /dev/null
         if [ $? -eq 1 ] ; then #e.g. no such process result
             #all process stopped
@@ -140,14 +183,16 @@ function rt_wait_for() {
             sleep 1
         fi
     done
+    echo ""
 
-    kill -0 ${PIDS} &> /dev/null
-    if [ $? -eq 0 ] ; then
-        echo "Using kill -9 to ensure processes are killed"
-        kill -9 ${PIDS}
-    fi
-
-    echo ${RESULT}
+    for PID in ${PIDS}; do
+        kill -0 ${PID} &> /dev/null
+        if [ $? -eq 0 ] ; then
+            NAME=$(ps -p ${PID} -o comm | tail -n 1)
+            echo "Out of patience, killing process '${NAME}' (${PID}), with kill -9"
+            kill -9 ${PID}
+        fi
+    done
 }
 
 
