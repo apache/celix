@@ -82,7 +82,7 @@ celix_status_t pubsubSerializer_destroy(pubsub_serializer_t* serializer) {
 celix_status_t pubsubSerializer_createSerializerMap(pubsub_serializer_t* serializer, bundle_pt bundle, pubsub_msg_serializer_map_t** out) {
     celix_status_t status = CELIX_SUCCESS;
     pubsub_msg_serializer_map_t* map = calloc(1, sizeof(*map));
-    if (status == CELIX_SUCCESS) {
+    if (map != NULL) {
         map->bundle = bundle;
         map->serializers = hashMap_create(NULL, NULL, NULL, NULL);
         pubsubSerializer_fillMsgSerializerMap(map->serializers, bundle);
@@ -143,7 +143,7 @@ celix_status_t pubsubMsgSerializer_deserialize(pubsub_msg_serializer_impl_t* imp
     if (rc != 0) {
         status = CELIX_BUNDLE_EXCEPTION;
     }
-    if (status == CELIX_SUCCESS) {
+    else{
         *out = msg;
     }
 	return status;
@@ -230,34 +230,40 @@ static void pubsubSerializer_addMsgSerializerFromBundle(const char *root, bundle
                 if (rc == 0 && msgType != NULL) {
 
                     char* msgName = NULL;
-                    dynMessage_getName(msgType,&msgName);
+                    rc += dynMessage_getName(msgType,&msgName);
 
                     version_pt msgVersion = NULL;
-                    dynMessage_getVersion(msgType, &msgVersion);
+                    rc += dynMessage_getVersion(msgType, &msgVersion);
 
-                    unsigned int msgId = utils_stringHash(msgName);
+                    if(rc == 0 && msgName != NULL && msgVersion != NULL){
 
-                    pubsub_msg_serializer_impl_t* impl = calloc(1, sizeof(*impl));
-                    impl->dynMsg = msgType;
-                    impl->msgSerializer.handle = impl;
-                    impl->msgSerializer.msgId = msgId;
-                    impl->msgSerializer.msgName = msgName;
-                    impl->msgSerializer.msgVersion = msgVersion;
-                    impl->msgSerializer.serialize = (void*) pubsubMsgSerializer_serialize;
-                    impl->msgSerializer.deserialize = (void*) pubsubMsgSerializer_deserialize;
-                    impl->msgSerializer.freeMsg = (void*) pubsubMsgSerializer_freeMsg;
+                    	unsigned int msgId = utils_stringHash(msgName);
 
-                    bool clash = hashMap_containsKey(msgSerializers, (void*)(uintptr_t)msgId);
-                    if (clash) {
-                        printf("Cannot add msg %s. clash in msg id %d!!\n", msgName, msgId);
-                        free(impl);
-                        dynMessage_destroy(msgType);
-                    } else if ( msgName != NULL && msgVersion != NULL && msgId != 0) {
-                        hashMap_put(msgSerializers, (void*)(uintptr_t)msgId, &impl->msgSerializer);
-                    } else {
-                        printf("Error creating msg serializer\n");
-                        free(impl);
-                        dynMessage_destroy(msgType);
+                    	pubsub_msg_serializer_impl_t* impl = calloc(1, sizeof(*impl));
+                    	impl->dynMsg = msgType;
+                    	impl->msgSerializer.handle = impl;
+                    	impl->msgSerializer.msgId = msgId;
+                    	impl->msgSerializer.msgName = msgName;
+                    	impl->msgSerializer.msgVersion = msgVersion;
+                    	impl->msgSerializer.serialize = (void*) pubsubMsgSerializer_serialize;
+                    	impl->msgSerializer.deserialize = (void*) pubsubMsgSerializer_deserialize;
+                    	impl->msgSerializer.freeMsg = (void*) pubsubMsgSerializer_freeMsg;
+
+                    	bool clash = hashMap_containsKey(msgSerializers, (void*)(uintptr_t)msgId);
+                    	if (clash) {
+                    		printf("Cannot add msg %s. clash in msg id %d!!\n", msgName, msgId);
+                    		free(impl);
+                    		dynMessage_destroy(msgType);
+                    	} else if (msgId != 0) {
+                    		hashMap_put(msgSerializers, (void*)(uintptr_t)msgId, &impl->msgSerializer);
+                    	} else {
+                    		printf("Error creating msg serializer\n");
+                    		free(impl);
+                    		dynMessage_destroy(msgType);
+                    	}
+                    }
+                    else{
+                    	printf("Cannot retrieve name and/or version from msg\n");
                     }
 
                 } else{
