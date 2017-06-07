@@ -28,15 +28,11 @@
 #include "bundle_context.h"
 #include "dm_dependency_manager.h"
 
-#include <list>
+#include <vector>
 
 namespace celix { namespace dm {
 
     class DependencyManager {
-    private:
-        bundle_context_pt context = {nullptr};
-        std::list<std::unique_ptr<BaseComponent>> components {};
-        dm_dependency_manager_pt cDepMan {nullptr};
     public:
         DependencyManager(bundle_context_pt context);
         virtual ~DependencyManager();
@@ -51,15 +47,7 @@ namespace celix { namespace dm {
          * @return Returns a reference to the DM Component
          */
         template<class T>
-        Component<T>& createComponent(std::string name = std::string{}) {
-            Component<T>* cmp = name.empty() ?
-                Component<T>::create(this->context) :
-                Component<T>::create(this->context, name);
-            if (cmp->isValid()) {
-                this->components.push_back(std::unique_ptr<BaseComponent> {cmp});
-            } 
-            return *cmp;
-        }
+        Component<T>& createComponent(std::string name = std::string{});
 
         /**
          * Creates and adds a new DM Component for a component of type T and setting
@@ -68,9 +56,7 @@ namespace celix { namespace dm {
          * @return Returns a reference to the DM Component
          */
         template<class T>
-        Component<T>& createComponent(std::unique_ptr<T>&& rhs, std::string name = std::string{}) {
-            return this->createComponent<T>(name).setInstance(std::move(rhs));
-        }
+        Component<T>& createComponent(std::unique_ptr<T>&& rhs, std::string name = std::string{});
 
         /**
          * Creates and adds a new DM Component for a component of type T and setting
@@ -79,9 +65,7 @@ namespace celix { namespace dm {
          * @return Returns a reference to the DM Component
          */
         template<class T>
-        Component<T>& createComponent(std::shared_ptr<T> rhs, std::string name = std::string{}) {
-            return this->createComponent<T>(name).setInstance(rhs);
-        }
+        Component<T>& createComponent(std::shared_ptr<T> rhs, std::string name = std::string{});
 
         /**
          * Creates and adds a new DM Component for a component of type T and setting
@@ -90,9 +74,7 @@ namespace celix { namespace dm {
          * @return Returns a reference to the DM Component
          */
         template<class T>
-        Component<T>& createComponent(T rhs, std::string name = std::string{}) {
-            return this->createComponent<T>(name).setInstance(std::forward<T>(rhs));
-        }
+        Component<T>& createComponent(T rhs, std::string name = std::string{});
 
         /**
          * Starts the Dependency Manager
@@ -103,8 +85,14 @@ namespace celix { namespace dm {
          * Stops the Dependency Manager
          */
         void stop();
+    private:
+        bundle_context_pt context {nullptr};
+        std::vector<std::unique_ptr<BaseComponent>> components {};
+        dm_dependency_manager_pt cDepMan {nullptr};
     };
 
 }}
+
+#include "celix/dm/DependencyManager_Impl.h"
 
 #endif //CELIX_DM_DEPENDENCYMANAGER_H

@@ -31,10 +31,6 @@
 #include <iostream>
 #include <functional>
 
-/**
- * TODO add a dependency for a whiteboard pattern or marker service. e.g. a service where the type is irrelevant.
- */
-
 namespace celix { namespace dm {
 
     class DependencyManager; //forward declaration
@@ -84,19 +80,6 @@ namespace celix { namespace dm {
     template<class T, typename I>
     class CServiceDependency : public TypedServiceDependency<T> {
         using type = I;
-    private:
-        std::string name {};
-        std::string filter {};
-        std::string versionRange {};
-
-	std::function<void(const I* service, Properties&& properties)> setFp{nullptr};
-	std::function<void(const I* service, Properties&& properties)> addFp{nullptr};
-	std::function<void(const I* service, Properties&& properties)> removeFp{nullptr};
-
-        void setupCallbacks();
-        int invokeCallback(std::function<void(const I*, Properties&&)> fp, service_reference_pt  ref, const void* service);
-
-        void setupService();
     public:
         CServiceDependency(const std::string name, bool valid = true);
         virtual ~CServiceDependency() = default;
@@ -184,25 +167,24 @@ namespace celix { namespace dm {
          * For C service dependencies 'service.lang=C' will be added.
          */
         CServiceDependency<T,I>& setAddLanguageFilter(bool addLang);
+    private:
+        std::string name {};
+        std::string filter {};
+        std::string versionRange {};
+
+        std::function<void(const I* service, Properties&& properties)> setFp{nullptr};
+        std::function<void(const I* service, Properties&& properties)> addFp{nullptr};
+        std::function<void(const I* service, Properties&& properties)> removeFp{nullptr};
+
+        void setupCallbacks();
+        int invokeCallback(std::function<void(const I*, Properties&&)> fp, service_reference_pt  ref, const void* service);
+
+        void setupService();
     };
 
     template<class T, class I>
     class ServiceDependency : public TypedServiceDependency<T> {
         using type = I;
-    private:
-        bool addCxxLanguageFilter {true};
-        std::string name {};
-        std::string filter {};
-        std::string versionRange {};
-        std::string modifiedFilter {};
-
-	std::function<void(I* service, Properties&& properties)> setFp{nullptr};
-	std::function<void(I* service, Properties&& properties)> addFp{nullptr};
-	std::function<void(I* service, Properties&& properties)> removeFp{nullptr};
-
-        void setupService();
-        void setupCallbacks();
-        int invokeCallback(std::function<void(I*, Properties&&)> fp, service_reference_pt  ref, const void* service);
     public:
         ServiceDependency(const std::string name = std::string{}, bool valid = true);
         virtual ~ServiceDependency() = default;
@@ -296,6 +278,20 @@ namespace celix { namespace dm {
          * Should be called before
          */
         ServiceDependency<T,I>& setAddLanguageFilter(bool addLang);
+    private:
+        bool addCxxLanguageFilter {true};
+        std::string name {};
+        std::string filter {};
+        std::string versionRange {};
+        std::string modifiedFilter {};
+
+        std::function<void(I* service, Properties&& properties)> setFp{nullptr};
+        std::function<void(I* service, Properties&& properties)> addFp{nullptr};
+        std::function<void(I* service, Properties&& properties)> removeFp{nullptr};
+
+        void setupService();
+        void setupCallbacks();
+        int invokeCallback(std::function<void(I*, Properties&&)> fp, service_reference_pt  ref, const void* service);
     };
 }}
 

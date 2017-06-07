@@ -42,8 +42,7 @@ if (DEPENDENCY_MANAGER)
 
 
     add_library(dependency_manager_static STATIC 
-    	private/src/dm_activator_base 
-    	private/src/dm_component_impl 
+    	private/src/dm_component_impl
     	private/src/dm_service_dependency
     	private/src/dm_event
     	private/src/dm_dependency_manager_impl
@@ -51,7 +50,6 @@ if (DEPENDENCY_MANAGER)
     set_target_properties(dependency_manager_static PROPERTIES SOVERSION 1)
 
     add_library(dependency_manager_so SHARED
-     	private/src/dm_activator_base
     	private/src/dm_component_impl
     	private/src/dm_service_dependency
      	private/src/dm_event
@@ -86,4 +84,5 @@ if (DEPENDENCY_MANAGER)
     install_bundle(dm_shell)
     install(TARGETS dependency_manager_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dependency_manager)
     install(TARGETS dependency_manager_so DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dependency_manager)
+
 endif (DEPENDENCY_MANAGER)

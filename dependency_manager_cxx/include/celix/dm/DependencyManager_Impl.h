@@ -17,8 +17,6 @@
  * under the License.
  */
 
-#include "celix/dm/DependencyManager.h"
-
 using namespace celix::dm;
 
 DependencyManager::DependencyManager(bundle_context_pt context) : context(context), components() {
@@ -50,5 +48,28 @@ void DependencyManager::stop() {
     components.clear();
 }
 
+template<class T>
+Component<T>& DependencyManager::createComponent(std::string name) {
+    Component<T>* cmp = name.empty() ?
+                        Component<T>::create(this->context) :
+                        Component<T>::create(this->context, name);
+    if (cmp->isValid()) {
+        this->components.push_back(std::unique_ptr<BaseComponent> {cmp});
+    }
+    return *cmp;
+}
 
+template<class T>
+Component<T>& DependencyManager::createComponent(std::unique_ptr<T>&& rhs, std::string name) {
+    return this->createComponent<T>(name).setInstance(std::move(rhs));
+}
 
+template<class T>
+Component<T>& DependencyManager::createComponent(std::shared_ptr<T> rhs, std::string name) {
+    return this->createComponent<T>(name).setInstance(rhs);
+}
+
+template<class T>
+Component<T>& DependencyManager::createComponent(T rhs, std::string name) {
+    return this->createComponent<T>(name).setInstance(std::forward<T>(rhs));
+}

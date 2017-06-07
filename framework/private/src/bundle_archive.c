@@ -23,6 +23,7 @@
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -32,10 +33,7 @@
 #include <unistd.h>
 
 #include "bundle_archive.h"
-#include "bundle_revision.h"
 #include "linked_list_iterator.h"
-#include "celix_log.h"
-
 
 struct bundleArchive {
 	long id;

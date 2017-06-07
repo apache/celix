@@ -17,52 +17,36 @@
  * under the License.
  */
 
-/*
- * dm_activator_base.c
- *
- *  \date       26 Jul 2014
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
-
-
 #include <stdlib.h>
-
 #include "bundle_context.h"
-#include "celix_errno.h"
 #include "dm_dependency_manager.h"
-#include "bundle_activator.h"
-#include "dm_info.h"
-
-#include "dm_activator.h"
 
 struct dm_dependency_activator_base {
-	dm_dependency_manager_pt manager;
-	bundle_context_pt context;
-	service_registration_pt reg;
-	dm_info_service_pt info;
-	void* userData;
+    dm_dependency_manager_pt manager;
+    bundle_context_pt context;
+    service_registration_pt reg;
+    dm_info_service_pt info;
+    void* userData;
 };
 
 typedef struct dm_dependency_activator_base * dependency_activator_base_pt;
 
-
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
-	celix_status_t status = CELIX_ENOMEM;
+    celix_status_t status = CELIX_ENOMEM;
 
-	dependency_activator_base_pt dependency_activator = calloc(1, sizeof(struct dm_dependency_activator_base));
-	dm_info_service_pt serv = calloc(1, sizeof(*serv));
+    dependency_activator_base_pt dependency_activator = calloc(1, sizeof(struct dm_dependency_activator_base));
+    dm_info_service_pt serv = calloc(1, sizeof(*serv));
 
-	if (dependency_activator != NULL && serv != NULL) {
-		dependency_activator->context = context;
-		dm_create(context, &dependency_activator->userData);
-		dependency_activator->info = serv;
+    if (dependency_activator != NULL && serv != NULL) {
+        dependency_activator->context = context;
+        dm_create(context, &dependency_activator->userData);
+        dependency_activator->info = serv;
 
         status = dependencyManager_create(dependency_activator->context, &dependency_activator->manager);
-	} else {
+    } else {
         status = CELIX_ENOMEM;
 
-	}
+    }
 
     if (status == CELIX_SUCCESS) {
         *userData = dependency_activator;
@@ -74,12 +58,12 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
         free(serv);
     }
 
-	return status;
+    return status;
 }
 
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
-	celix_status_t status;
-	dependency_activator_base_pt dependency_activator = (dependency_activator_base_pt) userData;
+    celix_status_t status;
+    dependency_activator_base_pt dependency_activator = (dependency_activator_base_pt) userData;
 
 
     status = dm_init(dependency_activator->userData, context, dependency_activator->manager);
@@ -94,11 +78,11 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
                                                &(dependency_activator->reg));
     }
 
-	return status;
+    return status;
 }
 
 celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context __attribute__((unused))) {
-	celix_status_t status = CELIX_SUCCESS;
+    celix_status_t status = CELIX_SUCCESS;
     dependency_activator_base_pt dependency_activator = (dependency_activator_base_pt) userData;
 
     // Remove the service
@@ -109,12 +93,12 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context _
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context __attribute__((unused))) {
-	celix_status_t status = CELIX_SUCCESS;
-	dependency_activator_base_pt dependency_activator = (dependency_activator_base_pt) userData;
+    celix_status_t status = CELIX_SUCCESS;
+    dependency_activator_base_pt dependency_activator = (dependency_activator_base_pt) userData;
 
-	if(dependency_activator==NULL){
-		return CELIX_ILLEGAL_ARGUMENT;
-	}
+    if(dependency_activator==NULL){
+        return CELIX_ILLEGAL_ARGUMENT;
+    }
 
     status = dm_destroy(dependency_activator->userData, dependency_activator->context,
                         dependency_activator->manager);
@@ -123,13 +107,13 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt contex
         dependencyManager_destroy(dependency_activator->manager);
     }
 
-	dependency_activator->userData = NULL;
-	dependency_activator->manager = NULL;
+    dependency_activator->userData = NULL;
+    dependency_activator->manager = NULL;
 
-	if (dependency_activator != NULL) {
-		free(dependency_activator->info);
-	}
-	free(dependency_activator);
+    if (dependency_activator != NULL) {
+        free(dependency_activator->info);
+    }
+    free(dependency_activator);
 
-	return status;
+    return status;
 }

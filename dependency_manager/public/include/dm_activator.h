@@ -57,6 +57,12 @@ celix_status_t dm_init(void * userData, bundle_context_pt context, dm_dependency
  */
 celix_status_t dm_destroy(void * userData, bundle_context_pt context, dm_dependency_manager_pt manager);
 
+/**
+ * Includes the header implementation of the bundle activator functions. The header impl is used to prevent
+ * source dependency to bundle activator symbols.
+ */
+#include "dm_activator_impl.h"
+
 #ifdef __cplusplus
 }
 #endif
