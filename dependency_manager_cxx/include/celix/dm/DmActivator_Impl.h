@@ -19,7 +19,7 @@
 
 using namespace celix::dm;
 
-DmActivator::DmActivator(DependencyManager& m) : ctx{m.bundleContext()}, mng{m} {}
+DmActivator::DmActivator(DependencyManager& m) : ctx{m.bundleContext()}, mng(m) {}
 
 DmActivator::~DmActivator() = default;
 
