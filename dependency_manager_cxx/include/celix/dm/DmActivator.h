@@ -32,6 +32,9 @@ namespace celix { namespace dm {
         DmActivator(DependencyManager& m);
         virtual ~DmActivator();
 
+        DmActivator(const DmActivator&) = delete;
+        DmActivator& operator=(const DmActivator&) = delete;
+
         DependencyManager& manager() const;
         bundle_context_pt context() const;
 

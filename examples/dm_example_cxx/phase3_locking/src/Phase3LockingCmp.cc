@@ -59,7 +59,7 @@ void Phase3LockingCmp::addPhase2(IPhase2* phase2, celix::dm::Properties&& props)
     this->phases[phase2] = props;
 }
 
-void Phase3LockingCmp::removePhase2(IPhase2* phase2, celix::dm::Properties&& __attribute__((unused)) props) {
+void Phase3LockingCmp::removePhase2(IPhase2* phase2, [[gnu::unused]] celix::dm::Properties&& props) {
     std::cout << "adding Iphase2 for Phase3LockingCmp\n";
     std::lock_guard<std::mutex> lock(mutex);
     this->phases.erase(phase2);

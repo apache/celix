@@ -48,8 +48,10 @@ namespace celix { namespace dm {
         void setDepStrategy(DependencyUpdateStrategy strategy);
     public:
         BaseServiceDependency(bool valid);
-
         virtual ~BaseServiceDependency() = default;
+
+        BaseServiceDependency(const BaseServiceDependency&) = delete;
+        BaseServiceDependency& operator=(const BaseServiceDependency&) = delete;
 
         /**
          * Wether the service dependency is valid.
@@ -70,6 +72,11 @@ namespace celix { namespace dm {
     public:
         TypedServiceDependency(bool valid) : BaseServiceDependency(valid) {}
         virtual ~TypedServiceDependency() = default;
+
+        TypedServiceDependency(const TypedServiceDependency&) = delete;
+        TypedServiceDependency& operator=(const TypedServiceDependency&) = delete;
+        TypedServiceDependency(TypedServiceDependency&&) = default;
+        TypedServiceDependency& operator=(TypedServiceDependency&&) = default;
 
         /**
          * Set the component instance with a pointer

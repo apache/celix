@@ -41,9 +41,14 @@ namespace celix { namespace dm { namespace /*anon*/ {
         dm_info_service_t info{nullptr, nullptr, nullptr};
 
     public:
-        DmActivatorImpl(bundle_context_pt c) : mng{c}, ctx{c} { act = DmActivator::create(mng); }
-
+        DmActivatorImpl(bundle_context_pt c) : mng{c}, ctx{c}, act{DmActivator::create(mng)} { }
         ~DmActivatorImpl() { delete act; }
+
+        DmActivatorImpl(DmActivatorImpl&&) = delete;
+        DmActivatorImpl& operator=(DmActivatorImpl&&) = delete;
+
+        DmActivatorImpl(const DmActivatorImpl&) = delete;
+        DmActivator& operator=(const DmActivatorImpl&) = delete;
 
         celix_status_t start() {
             celix_status_t status = CELIX_SUCCESS;

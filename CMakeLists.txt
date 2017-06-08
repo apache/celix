@@ -35,7 +35,7 @@ ENDIF()
 IF (ANDROID)
     SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -Wall ${CMAKE_C_FLAGS}")
 ELSE ()
-    SET(CMAKE_C_FLAGS "-std=c99 -Wall -Werror -fPIC ${CMAKE_C_FLAGS}") #TODO add -Wextra
+    SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -Wall -Werror -fPIC ${CMAKE_C_FLAGS}") #TODO add -Wextra
     SET(CMAKE_CXX_FLAGS "-std=c++11") #TODO -Wall -Wextra -Werror does not yet work with the unit tests
     SET(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG")
     SET(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG")

@@ -33,8 +33,9 @@ DmActivator* DmActivator::create(DependencyManager& mng) {
 }
 
 struct InvalidCServ {
-    void* handle; //valid pod
-    int (*foo)(double arg); //still valid pod
+    virtual ~InvalidCServ() = default;
+    void* handle {nullptr}; //valid pod
+    int (*foo)(double arg) {nullptr}; //still valid pod
     void bar(double __attribute__((unused)) arg) {} //still valid pod
     virtual void baz(double __attribute__((unused)) arg) {} //not a valid pod
 };

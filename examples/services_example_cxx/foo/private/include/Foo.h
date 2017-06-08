@@ -33,6 +33,9 @@ public:
     Foo() = default;
     virtual ~Foo() = default;
 
+    Foo(const Foo&) = delete;
+    Foo& operator=(const Foo&) = delete;
+
     void start();
     void stop();
 

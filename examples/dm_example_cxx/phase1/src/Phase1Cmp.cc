@@ -47,7 +47,7 @@ std::string Phase1Cmp::getName() {
     return std::string {"IPhase"};
 }
 
-int Phase1Cmp::infoCmd(char * __attribute__((unused)) line, FILE *out, FILE __attribute__((unused)) *err) {
+int Phase1Cmp::infoCmd([[gnu::unused]] char * line, FILE *out, [[gnu::unused]] FILE* err) {
     fprintf(out, "Phase1: number of getData calls: %u\n", counter);
     return 0;
 }

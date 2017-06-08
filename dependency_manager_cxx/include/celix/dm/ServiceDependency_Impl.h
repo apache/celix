@@ -105,7 +105,7 @@ CServiceDependency<T,I>& CServiceDependency<T,I>::setStrategy(DependencyUpdateSt
 //set callbacks
 template<class T, typename I>
 CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(void (T::*set)(const I* service)) {
-    this->setCallbacks([this, set](const I* service, Properties&& __attribute__((unused)) properties) {
+    this->setCallbacks([this, set](const I* service, [[gnu::unused]] Properties&& properties) {
         T *cmp = this->componentInstance;
         (cmp->*set)(service);
     });
@@ -134,11 +134,11 @@ CServiceDependency<T,I>& CServiceDependency<T,I>::setCallbacks(
         void (T::*add)(const I* service),
         void (T::*remove)(const I* service)) {
     this->setCallbacks(
-		    [this, add](const I* service, Properties&& __attribute__((unused)) properties) {
+		    [this, add](const I* service, [[gnu::unused]] Properties&& properties) {
 			    T *cmp = this->componentInstance;
 			    (cmp->*add)(service);
 		    },
-		    [this, remove](const I* service, Properties&& __attribute__((unused)) properties) {
+		    [this, remove](const I* service, [[gnu::unused]] Properties&& properties) {
 			    T *cmp = this->componentInstance;
 			    (cmp->*remove)(service);
 		    }
@@ -327,7 +327,7 @@ ServiceDependency<T,I>& ServiceDependency<T,I>::setAddLanguageFilter(bool addLan
 //set callbacks
 template<class T, class I>
 ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(void (T::*set)(I* service)) {
-    this->setCallbacks([this, set](I* srv, Properties&& __attribute__((unused)) props) {
+    this->setCallbacks([this, set](I* srv, [[gnu::unused]] Properties&& props) {
         T *cmp = this->componentInstance;
         (cmp->*set)(srv);
     });
@@ -356,11 +356,11 @@ ServiceDependency<T,I>& ServiceDependency<T,I>::setCallbacks(
         void (T::*add)(I* service),
         void (T::*remove)(I* service)) {
     this->setCallbacks(
-	    [this, add](I* srv, Properties&& __attribute__((unused)) props) {
+	    [this, add](I* srv, [[gnu::unused]] Properties&& props) {
         	T *cmp = this->componentInstance;
         	(cmp->*add)(srv);
     	    },
-	    [this, remove](I* srv, Properties&& __attribute__((unused)) props) {
+	    [this, remove](I* srv, [[gnu::unused]] Properties&& props) {
         	T *cmp = this->componentInstance;
         	(cmp->*remove)(srv);
     	    }

@@ -38,8 +38,10 @@ namespace celix { namespace dm {
             component_create(this->context, name.c_str(), &this->cCmp);
             component_setImplementation(this->cCmp, this);
         }
-
         virtual ~BaseComponent() {}
+
+        BaseComponent(const BaseComponent&) = delete;
+        BaseComponent& operator=(const BaseComponent&) = delete;
 
         /**
          * Returns the C DM Component

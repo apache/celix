@@ -35,9 +35,13 @@ extern "C" {
 class Phase2Cmp : public IPhase2 {
 public:
     Phase2Cmp() = default;
-    Phase2Cmp(Phase2Cmp&& other) noexcept;
-    Phase2Cmp(const Phase2Cmp& other) = delete;
     virtual ~Phase2Cmp() { std::cout << "Destroying Phase2\n"; };
+
+    Phase2Cmp(Phase2Cmp&& other) noexcept;
+    Phase2Cmp& operator=(Phase2Cmp&&) = default;
+
+    Phase2Cmp(const Phase2Cmp& other) = delete;
+    Phase2Cmp operator=(const Phase2Cmp&) = delete;
 
     void setPhase1(IPhase1* phase); //injector used by dependency manager
     void setName(srv::info::IName* name) { std::cout << "Setting IName with name: " << (name != nullptr ? name->getName() : "null") << std::endl; }

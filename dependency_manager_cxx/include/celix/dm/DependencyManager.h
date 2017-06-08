@@ -37,6 +37,12 @@ namespace celix { namespace dm {
         DependencyManager(bundle_context_pt context);
         virtual ~DependencyManager();
 
+        DependencyManager(DependencyManager&&) = default;
+        DependencyManager& operator=(DependencyManager&&) = default;
+
+        DependencyManager(const DependencyManager&) = delete;
+        DependencyManager& operator=(const DependencyManager&) = delete;
+
         bundle_context_pt bundleContext() const;
         dm_dependency_manager_pt cDependencyManager() const;
 
