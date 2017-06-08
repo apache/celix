@@ -29,6 +29,8 @@ add_bundle(phase2b_cxx
         src/Phase2bCmp.cc
 )
 
+target_compile_options(phase2b_cxx PUBLIC -Wall -Wextra -Weffc++ -Werror)
+
 IF(APPLE)
     target_link_libraries(phase2b_cxx celix_framework -Wl,-all_load dependency_manager_static)
 else()

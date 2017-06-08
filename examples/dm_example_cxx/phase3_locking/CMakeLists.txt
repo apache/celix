@@ -28,6 +28,8 @@ add_bundle(phase3_locking_cxx
         src/Phase3LockingCmp.cc
 )
 
+target_compile_options(phase3_locking_cxx PUBLIC -Wall -Wextra -Weffc++ -Werror)
+
 IF(APPLE)
     target_link_libraries(phase3_locking_cxx celix_framework -Wl,-all_load dependency_manager_static)
 else()

@@ -70,7 +70,6 @@ if (ENABLE_TESTING)
 	SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE) #TODO needed?
     SET(CMAKE_INSTALL_RPATH "${PROJECT_BINARY_DIR}/dfi" "${PROJECT_BINARY_DIR}/utils")
 
-
 	add_executable(test_dfi
 		private/test/dyn_type_tests.cpp
 		private/test/dyn_function_tests.cpp

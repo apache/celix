@@ -27,6 +27,8 @@ add_bundle(bar_cxx
         private/src/BarActivator.cc
 )
 
+target_compile_options(bar_cxx PUBLIC -Wall -Wextra -Weffc++ -Werror)
+
 IF(APPLE)
     target_link_libraries(bar_cxx celix_framework -Wl,-all_load dependency_manager_static)
 else()

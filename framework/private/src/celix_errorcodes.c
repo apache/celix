@@ -55,8 +55,7 @@ static char* celix_error_string(celix_status_t statcode) {
 
 char* celix_strerror(celix_status_t errorcode, char *buffer, size_t bufferSize) {
     if (errorcode < CELIX_START_ERROR) {
-        strerror_r(errorcode, buffer, bufferSize);
-        return buffer;
+        return strerror(errorcode);
     } else {
     	char * str = celix_error_string(errorcode);
     	strncpy(buffer, str, bufferSize);

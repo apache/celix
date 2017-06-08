@@ -514,7 +514,7 @@ static int thread_test_func_recur_lock(celix_thread_mutex_t *mu, int i) {
 	}
 }
 
-static void * thread_test_func_kill(void *arg){
+static void * thread_test_func_kill(void __attribute__((unused)) *arg){
 	int * ret = (int*) malloc(sizeof(*ret));
 	//sleep for a about a minute, or until a kill signal (USR1) is recieved
 	*ret = usleep(60000000);

@@ -27,8 +27,10 @@ add_bundle(foo_cxx
         private/src/FooActivator.cc
 )
 
+target_compile_options(foo_cxx PUBLIC -Wall -Wextra -Weffc++ -Werror)
+
 IF(APPLE)
-    target_link_libraries(foo_cxx celix_framework -Wl,-all_load dependency_manager_cxx_static)
+    target_link_libraries(foo_cxx celix_framework -Wl,-all_load dependency_manager_static)
 else()
     if(ENABLE_ADDRESS_SANITIZER)
         #With asan there can be undefined symbols

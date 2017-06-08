@@ -55,11 +55,11 @@ void Phase3Cmp::addPhase2(IPhase2* phase2, celix::dm::Properties&& props) {
     this->phases[phase2] = props;
 }
 
-void Phase3Cmp::removePhase2(IPhase2* phase2, celix::dm::Properties&& props) {
+void Phase3Cmp::removePhase2(IPhase2* phase2, celix::dm::Properties&& __attribute__((unused)) props) {
     std::cout << "adding Iphase2 for Phase3Cmp\n";
     this->phases.erase(phase2);
 }
 
-void Phase3Cmp::setPhase2a(IPhase2* phase) {
+void Phase3Cmp::setPhase2a(IPhase2* __attribute__((unused)) phase) {
     std::cout << "setting phase2a\n";
 }

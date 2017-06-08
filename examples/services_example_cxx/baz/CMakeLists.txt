@@ -27,6 +27,8 @@ add_bundle(baz_cxx
         private/src/BazActivator.cc
 )
 
+target_compile_options(baz_cxx PUBLIC -Wall -Wextra -Weffc++ -Werror)
+
 IF(APPLE)
     target_link_libraries(baz_cxx celix_framework -Wl,-all_load dependency_manager_static)
 else()

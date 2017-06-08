@@ -74,17 +74,9 @@ find_library(CELIX_DM_STATIC_LIB NAMES dependency_manager_static
 )
 if (CELIX_DM_STATIC_LIB)
     set(CELIX_DM_INCLUDE_DIR ${CELIX_INCLUDE_DIR}/dependency_manager)
-else()
-    set(CELIX_DM_INCLUDE_DIR )
-endif()
-
-find_library(CELIX_DM_CXX_STATIC_LIB NAMES dependency_manager_cxx_static
-		PATHS ${CELIX_DIR_FROM_FINDCELIX} $ENV{CELIX_DIR} ${CELIX_DIR} /usr /usr/local
-		PATH_SUFFIXES lib lib64
-)
-if (CELIX_DM_CXX_STATIC_LIB)
     set(CELIX_DM_CXX_INCLUDE_DIR ${CELIX_INCLUDE_DIR}/dependency_manager_cxx)
 else()
+    set(CELIX_DM_INCLUDE_DIR )
     set(CELIX_DM_CXX_INCLUDE_DIR )
 endif()
 

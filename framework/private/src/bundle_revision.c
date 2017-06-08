@@ -23,16 +23,14 @@
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
-#include <stdlib.h>
-#include <string.h>
+
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/stat.h>
-#include <dirent.h>
-#include <unistd.h>
+#include <archive.h>
+#include <string.h>
 
 #include "bundle_revision_private.h"
-#include "archive.h"
-#include "celix_log.h"
 
 celix_status_t bundleRevision_create(const char *root, const char *location, long revisionNr, const char *inputFile, bundle_revision_pt *bundle_revision) {
     celix_status_t status = CELIX_SUCCESS;

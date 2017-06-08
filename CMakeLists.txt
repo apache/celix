@@ -34,23 +34,19 @@ ENDIF()
 
 IF (ANDROID)
     SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -Wall ${CMAKE_C_FLAGS}")
-ENDIF()
-IF(UNIX AND NOT ANDROID)
-    SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -Wall -Werror -fPIC ${CMAKE_C_FLAGS}")
-    SET(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}") #TODO enable -Wall -Werror -> warning in cpputest
+ELSE ()
+    SET(CMAKE_C_FLAGS "-std=c99 -Wall -Werror -fPIC ${CMAKE_C_FLAGS}") #TODO add -Wextra
+    SET(CMAKE_CXX_FLAGS "-std=c++11") #TODO -Wall -Wextra -Werror does not yet work with the unit tests
     SET(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG")
     SET(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG")
 ENDIF()
-IF(UNIX AND NOT APPLE) 
-	SET(CMAKE_C_FLAGS "-pthread ${CMAKE_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "-pthread ${CMAKE_CXX_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS "-pthread ${CMAKE_EXE_LINKER_FLAGS}")
-ENDIF()
-IF(WIN32)
-	SET(CMAKE_C_FLAGS "-D_CRT_SECURE_NO_WARNINGS ${CMAKE_C_FLAGS}")
-ENDIF()
+
 IF(APPLE)
     set(CMAKE_MACOSX_RPATH 1)
+ELSE ()
+    set(CMAKE_C_FLAGS "-pthread ${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-pthread ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "-pthread ${CMAKE_EXE_LINKER_FLAGS}")
 ENDIF()
 
 # Set version for the framework package/release

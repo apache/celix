@@ -28,6 +28,8 @@ add_bundle(phase1_cxx
         src/Phase1Cmp.cc
 )
 
+target_compile_options(phase1_cxx PUBLIC -Wall -Wextra -Weffc++ -Werror)
+
 IF(APPLE)
     target_link_libraries(phase1_cxx celix_framework -Wl,-all_load dependency_manager_static)
 else()

@@ -62,12 +62,12 @@ int main(int argc, char *argv[]) {
     return rc;
 }
 
-static void shutdown_framework(int signal) {
+static void shutdown_framework(int __attribute__((unused)) signal) {
     if (framework != NULL) {
         celixLauncher_stop(framework); //NOTE main thread will destroy
     }
 }
 
-static void ignore(int signal) {
+static void ignore(int __attribute__((unused)) signal) {
     //ignoring for signal SIGUSR1, SIGUSR2. Can be used to interrupt sleep, etc
 }
