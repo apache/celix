@@ -26,7 +26,7 @@
 using namespace celix::dm;
 
 class Phase1Activator : public DmActivator {
-    command_service_t cmd {};
+    command_service_t cmd {nullptr, nullptr};
 public:
     Phase1Activator(DependencyManager& mng) : DmActivator(mng) {}
     virtual void init();
