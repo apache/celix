@@ -14,7 +14,13 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+
+# Simple case
 a=b
-b=c
+# Simple case, but with members nicely separated
+nice_a =  nice_b 
+# Case with value containing 2 spaces and one tab
+b=c 	 d
+
  // == \\ # 5 \0 \=
  #line to check possible special characters

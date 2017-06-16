@@ -61,13 +61,19 @@ TEST(properties, create) {
 TEST(properties, load) {
 	char propertiesFile[] = "resources-test/properties.txt";
 	properties = properties_load(propertiesFile);
-	LONGS_EQUAL(3, hashMap_size(properties));
+	LONGS_EQUAL(4, hashMap_size(properties));
 
 	const char keyA[] = "a";
 	const char *valueA = properties_get(properties, keyA);
 	STRCMP_EQUAL("b", valueA);
+
+	const char keyNiceA[] = "nice_a";
+	const char *valueNiceA = properties_get(properties, keyNiceA);
+	STRCMP_EQUAL("nice_b", valueNiceA);
+
 	const char keyB[] = "b";
-	STRCMP_EQUAL("c", properties_get(properties, keyB));
+	const char *valueB = properties_get(properties, keyB);
+	STRCMP_EQUAL("c \t d", valueB);
 
 	properties_destroy(properties);
 }
@@ -90,7 +96,7 @@ TEST(properties, copy) {
 	properties_pt copy;
 	char propertiesFile[] = "resources-test/properties.txt";
 	properties = properties_load(propertiesFile);
-	LONGS_EQUAL(3, hashMap_size(properties));
+	LONGS_EQUAL(4, hashMap_size(properties));
 
 	properties_copy(properties, &copy);
 
@@ -98,7 +104,7 @@ TEST(properties, copy) {
 	const char *valueA = properties_get(copy, keyA);
 	STRCMP_EQUAL("b", valueA);
 	const char keyB[] = "b";
-	STRCMP_EQUAL("c", properties_get(copy, keyB));
+	STRCMP_EQUAL("c \t d", properties_get(copy, keyB));
 
 	properties_destroy(properties);
 	properties_destroy(copy);

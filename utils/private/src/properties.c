@@ -232,10 +232,6 @@ static void parseLine(const char* line, properties_pt props) {
 				linePos += 1;
 				continue;
 			}
-			else {
-				output[outputPos++] = line[linePos];
-				updateBuffers(&key, &value, &output, outputPos, &key_len, &value_len);
-			}
 		}
 		else {
 			if (output == NULL) {
