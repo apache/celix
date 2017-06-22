@@ -74,6 +74,11 @@ struct pubsub_admin {
     unsigned int maxPort;
 };
 
+/* Note: correct locking order is
+ * 1. subscriptionsLock
+ * 2. publications locks
+ */
+
 celix_status_t pubsubAdmin_create(bundle_context_pt context, pubsub_admin_pt *admin);
 celix_status_t pubsubAdmin_destroy(pubsub_admin_pt admin);
 

@@ -63,12 +63,13 @@
 
 struct topic_publication {
 	zsock_t* zmq_socket;
+	celix_thread_mutex_t socket_lock; //Protects zmq_socket access
 	zcert_t * zmq_cert;
 	char* endpoint;
 	service_registration_pt svcFactoryReg;
 	array_list_pt pub_ep_list; //List<pubsub_endpoint>
 	hash_map_pt boundServices; //<bundle_pt,bound_service>
-	celix_thread_mutex_t tp_lock;
+	celix_thread_mutex_t tp_lock; // Protects topic_publication data structure
 	pubsub_serializer_service_t* serializerSvc;
 };
 
@@ -79,10 +80,18 @@ typedef struct publish_bundle_bound_service {
 	char *topic;
 	pubsub_msg_serializer_map_t* map;
 	unsigned short getCount;
-	celix_thread_mutex_t mp_lock;
+	celix_thread_mutex_t mp_lock; //Protects publish_bundle_bound_service data structure
 	bool mp_send_in_progress;
 	array_list_pt mp_parts;
 } publish_bundle_bound_service_t;
+
+/* Note: correct locking order is
+ * 1. tp_lock
+ * 2. mp_lock
+ * 3. socket_lock
+ *
+ * tp_lock and socket_lock are independent.
+ */
 
 typedef struct pubsub_msg {
 	pubsub_msg_header_pt header;
@@ -211,6 +220,8 @@ celix_status_t pubsub_topicPublicationCreate(bundle_context_pt bundle_context, p
 	pub->zmq_socket = socket;
 	pub->serializerSvc = NULL;
 
+	celixThreadMutex_create(&(pub->socket_lock),NULL);
+
 #ifdef BUILD_WITH_ZMQ_SECURITY
 	if (pubEP->is_secure){
 		pub->zmq_cert = pub_cert;
@@ -241,7 +252,6 @@ celix_status_t pubsub_topicPublicationDestroy(topic_publication_pt pub){
 	hashMap_destroy(pub->boundServices,false,false);
 
 	pub->svcFactoryReg = NULL;
-	zsock_destroy(&(pub->zmq_socket));
 #ifdef BUILD_WITH_ZMQ_SECURITY
 	zcert_destroy(&(pub->zmq_cert));
 #endif
@@ -249,6 +259,12 @@ celix_status_t pubsub_topicPublicationDestroy(topic_publication_pt pub){
 	celixThreadMutex_unlock(&(pub->tp_lock));
 
 	celixThreadMutex_destroy(&(pub->tp_lock));
+
+	celixThreadMutex_lock(&(pub->socket_lock));
+	zsock_destroy(&(pub->zmq_socket));
+	celixThreadMutex_unlock(&(pub->socket_lock));
+
+	celixThreadMutex_destroy(&(pub->socket_lock));
 
 	free(pub);
 
@@ -570,16 +586,16 @@ static int pubsub_topicPublicationSendMultipart(void *handle, unsigned int msgTy
 			}
 			else{
 				arrayList_add(bound->mp_parts,msg);
-				celixThreadMutex_lock(&(bound->parent->tp_lock));
+				celixThreadMutex_lock(&(bound->parent->socket_lock));
 				snd = send_pubsub_mp_msg(bound->parent->zmq_socket,bound->mp_parts);
 				bound->mp_send_in_progress = false;
-				celixThreadMutex_unlock(&(bound->parent->tp_lock));
+				celixThreadMutex_unlock(&(bound->parent->socket_lock));
 			}
 			break;
 		case PUBSUB_PUBLISHER_FIRST_MSG | PUBSUB_PUBLISHER_LAST_MSG:	//Normal send case
-			celixThreadMutex_lock(&(bound->parent->tp_lock));
+			celixThreadMutex_lock(&(bound->parent->socket_lock));
 			snd = send_pubsub_msg(bound->parent->zmq_socket,msg,true);
-			celixThreadMutex_unlock(&(bound->parent->tp_lock));
+			celixThreadMutex_unlock(&(bound->parent->socket_lock));
 			break;
 		default:
 			printf("TP: ERROR: Invalid MP flags combination\n");

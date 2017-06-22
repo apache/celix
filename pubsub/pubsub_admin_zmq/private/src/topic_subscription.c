@@ -61,12 +61,12 @@ struct topic_subscription {
 	zsock_t* zmq_socket;
 	zcert_t * zmq_cert;
 	zcert_t * zmq_pub_cert;
-	pthread_mutex_t socket_lock;
+	pthread_mutex_t socket_lock; //Protects zmq_socket access
 	service_tracker_pt tracker;
 	array_list_pt sub_ep_list;
 	celix_thread_t recv_thread;
 	bool running;
-	celix_thread_mutex_t ts_lock;
+	celix_thread_mutex_t ts_lock; //Protects topic_subscription data structure access
 	bundle_context_pt context;
 
 	hash_map_pt msgSerializerMapMap; // key = service ptr, value = pubsub_msg_serializer_map_t*
@@ -79,6 +79,11 @@ struct topic_subscription {
 	unsigned int nrSubscribers;
 	pubsub_serializer_service_t* serializerSvc;
 };
+
+/* Note: correct locking order is
+ * 1. socket_lock
+ * 2. ts_lock
+ */
 
 typedef struct complete_zmq_msg {
 	zframe_t* header;
@@ -284,16 +289,17 @@ celix_status_t pubsub_topicSubscriptionDestroy(topic_subscription_pt ts){
 	celixThreadMutex_unlock(&ts->pendingDisconnections_lock);
 	celixThreadMutex_destroy(&ts->pendingDisconnections_lock);
 
-	celixThreadMutex_lock(&ts->socket_lock);
-	zsock_destroy(&(ts->zmq_socket));
 	#ifdef BUILD_WITH_ZMQ_SECURITY
 	zcert_destroy(&(ts->zmq_cert));
 	zcert_destroy(&(ts->zmq_pub_cert));
 	#endif
-	celixThreadMutex_unlock(&ts->socket_lock);
-	celixThreadMutex_destroy(&ts->socket_lock);
 
 	celixThreadMutex_unlock(&ts->ts_lock);
+
+	celixThreadMutex_lock(&ts->socket_lock);
+	zsock_destroy(&(ts->zmq_socket));
+	celixThreadMutex_unlock(&ts->socket_lock);
+	celixThreadMutex_destroy(&ts->socket_lock);
 
 
 	free(ts);
@@ -623,8 +629,6 @@ static void* zmq_recv_thread_func(void * arg) {
 					zframe_destroy(&headerMsg);
 				} else {
 
-					celixThreadMutex_lock(&sub->ts_lock);
-
 					//Let's fetch all the messages from the socket
 					array_list_pt msg_list = NULL;
 					arrayList_create(&msg_list);
@@ -669,8 +673,8 @@ static void* zmq_recv_thread_func(void * arg) {
 						}
 					}
 
+					celixThreadMutex_lock(&sub->ts_lock);
 					process_msg(sub, msg_list);
-
 					celixThreadMutex_unlock(&sub->ts_lock);
 
 				}
