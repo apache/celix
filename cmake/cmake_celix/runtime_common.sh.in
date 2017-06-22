@@ -80,6 +80,8 @@ function rt_run_deployment() {
     DEPLOYMENT_DIR=${DEPLOYMENT_DIRS[${INDEX}]}
     ARGS=${DEPLOYMENT_ARGUMENTS[${INDEX}]}
     LOG_FILE="${RUNTIME_DIR}/logs/${DEPLOYMENT}.log"
+    DEBUG_OPTS=${DEPLOYMENT_DEBUG_OPTS[${INDEX}]}
+
     echo ""
     echo "Starting deployment ${DEPLOYMENT}"
     cd ${DEPLOYMENT_DIR}
@@ -89,20 +91,20 @@ function rt_run_deployment() {
     fi
     . ./release.sh #run deployment release
     echo "  Workdir: ${DEPLOYMENT_DIR}"
-    echo "  Cmd used: './${DEPLOYMENT} ${ARGS}'"
+    echo "  Cmd used: '${DEBUG_OPTS} ./${DEPLOYMENT} ${ARGS}'"
     if [ "${USE_TERM}" = "TRUE" ] ; then
         if [ "${LOG_TO_FILES}" = "TRUE" ] ; then
             echo "  Using log file ${LOG_FILE}"
-            ${TERM_CMD} ${TERM_OPTS} -e "./${DEPLOYMENT} ${ARGS} &> ${LOG_FILE}"  &> /dev/null &
+            ${TERM_CMD} ${TERM_OPTS} -e "${DEBUG_OPTS} ./${DEPLOYMENT} ${ARGS} &> ${LOG_FILE}"  &> /dev/null &
         else
-            ${TERM_CMD} ${TERM_OPTS} -e "./${DEPLOYMENT} ${ARGS}" &> /dev/null &
+            ${TERM_CMD} ${TERM_OPTS} -e "${DEBUG_OPTS} ./${DEPLOYMENT} ${ARGS}" &> /dev/null &
         fi
     else #run in this shell
         if [ "${LOG_TO_FILES}" = "TRUE" ] ; then
             echo "  Using log file ${LOG_FILE}"
-            ./${DEPLOYMENT} ${ARGS} &> ${LOG_FILE} &
+            ${DEBUG_OPTS} ./${DEPLOYMENT} ${ARGS} &> ${LOG_FILE} &
         else
-            ./${DEPLOYMENT} ${ARGS} &
+            ${DEBUG_OPTS} ./${DEPLOYMENT} ${ARGS} &
         fi
     fi
     PID=$!
