@@ -33,6 +33,7 @@
 #include "bundle_context.h"
 #include "celix_errno.h"
 #include "dm_dependency_manager.h"
+#include "bundle_activator.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -56,12 +57,6 @@ celix_status_t dm_init(void * userData, bundle_context_pt context, dm_dependency
  * Should deinitialize and deallocate the undle specific activator struct.
  */
 celix_status_t dm_destroy(void * userData, bundle_context_pt context, dm_dependency_manager_pt manager);
-
-/**
- * Includes the header implementation of the bundle activator functions. The header impl is used to prevent
- * source dependency to bundle activator symbols.
- */
-#include "dm_activator_impl.h"
 
 #ifdef __cplusplus
 }

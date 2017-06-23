@@ -26,8 +26,9 @@
 #  CELIX_LAUNCHER - The path to the celix launcher
 #
 #  CELIX_BUNDLES_DIR - The path where the Celix provided bundles are installed
+#  CELIX_DM_LIB - The Celix Dependency Manager library
 #  CELIX_DM_STATIC_LIB - The Celix Dependency Manager static library
-#  CELIX_DM_CXX_STATIC_LIB - The Celix C++ Dependency Manager static library
+#  CELIX_DM_STATIC_CXX_LIB - The Celix C++ Dependency Manager static library
 
 set(CELIX_DIR_FROM_FINDCELIX "${CMAKE_CURRENT_LIST_DIR}/../../../..")
 
@@ -68,23 +69,36 @@ find_path(CELIX_BUNDLES_DIR shell.zip
           	PATH_SUFFIXES share/celix/bundles
 )
 
+find_library(CELIX_DM_LIB NAMES dependency_manager_so
+		PATHS ${CELIX_DIR_FROM_FINDCELIX} $ENV{CELIX_DIR} ${CELIX_DIR} /usr /usr/local
+		PATH_SUFFIXES lib lib64
+)
+
 find_library(CELIX_DM_STATIC_LIB NAMES dependency_manager_static
 		PATHS ${CELIX_DIR_FROM_FINDCELIX} $ENV{CELIX_DIR} ${CELIX_DIR} /usr /usr/local
 		PATH_SUFFIXES lib lib64
 )
+
+find_library(CELIX_DM_STATIC_CXX_LIB NAMES dependency_manager_cxx_static
+		PATHS ${CELIX_DIR_FROM_FINDCELIX} $ENV{CELIX_DIR} ${CELIX_DIR} /usr /usr/local
+		PATH_SUFFIXES lib lib64
+)
+
 if (CELIX_DM_STATIC_LIB)
     set(CELIX_DM_INCLUDE_DIR ${CELIX_INCLUDE_DIR}/dependency_manager)
-    set(CELIX_DM_CXX_INCLUDE_DIR ${CELIX_INCLUDE_DIR}/dependency_manager_cxx)
-else()
-    set(CELIX_DM_INCLUDE_DIR )
-    set(CELIX_DM_CXX_INCLUDE_DIR )
 endif()
+if (CELIX_DM_LIB)
+    set(CELIX_DM_INCLUDE_DIR ${CELIX_INCLUDE_DIR}/dependency_manager)
+endif ()
+if (CELIX_DM_STATIC_CXX_LIB)
+    set(CELIX_DM_CXX_INCLUDE_DIR ${CELIX_INCLUDE_DIR}/dependency_manager_cxx)
+endif ()
 
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set CELIX_FOUND to TRUE
 # if all listed variables are TRUE
 find_package_handle_standard_args(CELIX  DEFAULT_MSG
-                                  CELIX_FRAMEWORK_LIBRARY CELIX_UTILS_LIBRARY CELIX_DFI_LIBRARY CELIX_DM_STATIC_LIB CELIX_DM_CXX_STATIC_LIB CELIX_INCLUDE_DIR CELIX_LAUNCHER CELIX_CMAKECELIX_FILE)
+	CELIX_FRAMEWORK_LIBRARY CELIX_UTILS_LIBRARY CELIX_DFI_LIBRARY CELIX_DM_SHARED_LIB CELIX_DM_STATIC_LIB CELIX_DM_STATIC_CXX_LIB CELIX_INCLUDE_DIR CELIX_LAUNCHER CELIX_CMAKECELIX_FILE)
 mark_as_advanced(CELIX_INCLUDE_DIR CELIX_FRAMEWORK_LIBRARY CELIX_UTILS_LIBRARY CELIX_LAUNCHER CELIX_CMAKECELIX_FILE)
 
 if(CELIX_FOUND)

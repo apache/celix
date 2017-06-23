@@ -24,19 +24,21 @@
 #include <utility>
 
 #include "celix/dm/DependencyManager.h"
+#include "bundle_activator.h"
 
 namespace celix { namespace dm {
 
     class DmActivator {
     public:
-        DmActivator(DependencyManager& m);
-        virtual ~DmActivator();
+        DmActivator(DependencyManager& m) : ctx{m.bundleContext()}, mng{m}  {}
+        virtual ~DmActivator() = default;
 
         DmActivator(const DmActivator&) = delete;
         DmActivator& operator=(const DmActivator&) = delete;
 
-        DependencyManager& manager() const;
-        bundle_context_pt context() const;
+        DependencyManager& manager() const { return this->mng; }
+
+        bundle_context_pt context() const { return this->ctx; }
 
         /**
          * The init of the DM Activator. Should be overridden by the bundle specific DM activator.
@@ -65,22 +67,45 @@ namespace celix { namespace dm {
     protected:
         bundle_context_pt ctx;
         DependencyManager& mng;
+    private:
+        dm_info_service_t info{};
+        service_registration_pt reg{nullptr};
+
+        int start() {
+            celix_status_t status = CELIX_SUCCESS;
+            this->init();
+            this->mng.start();
+
+            //Create and register the dm info service
+            this->info.handle = this->mng.cDependencyManager();
+            this->info.getInfo = (celix_status_t (*)(void *, dm_dependency_manager_info_pt *)) dependencyManager_getInfo;
+            this->info.destroyInfo = (void (*)(void *, dm_dependency_manager_info_pt)) dependencyManager_destroyInfo;
+            status = bundleContext_registerService(this->ctx, (char *) DM_INFO_SERVICE_NAME, &this->info, NULL, &(this->reg));
+
+            return status;
+        }
+
+        int stop() {
+            celix_status_t status = CELIX_SUCCESS;
+
+            this->deinit();
+
+            // Remove the service
+            if (this->reg != nullptr) {
+                status = serviceRegistration_unregister(this->reg);
+                this->reg = nullptr;
+            }
+            // Remove all components
+            dependencyManager_removeAllComponents(this->mng.cDependencyManager());
+
+            return status;
+        }
+
+        friend celix_status_t ::bundleActivator_create(bundle_context_pt, void**);
+        friend celix_status_t ::bundleActivator_start(void*, bundle_context_pt);
+        friend celix_status_t ::bundleActivator_stop(void*, bundle_context_pt);
+        friend celix_status_t ::bundleActivator_destroy(void*, bundle_context_pt);
     };
-
 }}
-
-#ifndef CELIX_CREATE_BUNDLE_ACTIVATOR_SYMBOLS
-#define CELIX_CREATE_BUNDLE_ACTIVATOR_SYMBOLS 1
-#endif
-
-#if CELIX_CREATE_BUNDLE_ACTIVATOR_SYMBOLS == 1
-extern "C" celix_status_t bundleActivator_create(bundle_context_pt context, void **userData);
-extern "C" celix_status_t bundleActivator_start(void *userData, bundle_context_pt context);
-extern "C" celix_status_t bundleActivator_stop(void *userData, bundle_context_pt context);
-extern "C" celix_status_t bundleActivator_destroy(void *userData, bundle_context_pt context);
-#endif
-
-
-#include "celix/dm/DmActivator_Impl.h"
 
 #endif //CELIX_DM_ACTIVATOR_H

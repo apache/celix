@@ -17,17 +17,19 @@
  * under the License.
  */
 
-#ifndef CELIX_PHASE3ACTIVATOR_H
-#define CELIX_PHASE3ACTIVATOR_H
+#ifndef CELIX_PHASE3BASEACTIVATOR_H
+#define CELIX_PHASE3BASEACTIVATOR_H
 
-#include "Phase3BaseActivator.h"
+#include "celix/dm/DmActivator.h"
 
 using namespace celix::dm;
 
-class Phase3Activator : public Phase3BaseActivator {
+class Phase3BaseActivator : public DmActivator {
 public:
-    Phase3Activator(DependencyManager& mng) : Phase3BaseActivator(mng) {}
-    virtual void init();
+    Phase3BaseActivator(DependencyManager& mng) : DmActivator(mng), cmp{mng.createComponent<Phase3Cmp>()} {}
+    void init();
+protected:
+    celix::dm::Component<Phase3Cmp>& cmp;
 };
 
-#endif //CELIX_PHASE2AACTIVATOR_H
+#endif //CELIX_PHASE3BASEACTIVATOR_H

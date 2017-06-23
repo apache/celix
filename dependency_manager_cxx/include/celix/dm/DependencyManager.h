@@ -34,8 +34,15 @@ namespace celix { namespace dm {
 
     class DependencyManager {
     public:
-        DependencyManager(bundle_context_pt context);
-        virtual ~DependencyManager();
+        DependencyManager(bundle_context_pt ctx) : context(ctx) {
+                this->cDepMan = nullptr;
+                dependencyManager_create(context, &this->cDepMan);
+        }
+
+        virtual ~DependencyManager() {
+                dependencyManager_destroy(this->cDepMan);
+                this->cDepMan = nullptr;
+        }
 
         DependencyManager(DependencyManager&&) = default;
         DependencyManager& operator=(DependencyManager&&) = default;
@@ -43,8 +50,8 @@ namespace celix { namespace dm {
         DependencyManager(const DependencyManager&) = delete;
         DependencyManager& operator=(const DependencyManager&) = delete;
 
-        bundle_context_pt bundleContext() const;
-        dm_dependency_manager_pt cDependencyManager() const;
+        bundle_context_pt bundleContext() const { return context; }
+        dm_dependency_manager_pt cDependencyManager() const { return cDepMan; }
 
 
         /**
@@ -85,12 +92,19 @@ namespace celix { namespace dm {
         /**
          * Starts the Dependency Manager
          */
-        void start();
+        void start() {
+                for(std::unique_ptr<BaseComponent>& cmp : components)  {
+                        dependencyManager_add(cDepMan, cmp->cComponent());
+                }
+        }
 
         /**
          * Stops the Dependency Manager
          */
-        void stop();
+        void stop() {
+                dependencyManager_removeAllComponents(cDepMan);
+                components.clear();
+        }
     private:
         bundle_context_pt context {nullptr};
         std::vector<std::unique_ptr<BaseComponent>> components {};

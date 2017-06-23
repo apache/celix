@@ -46,6 +46,7 @@ if (DEPENDENCY_MANAGER)
     	private/src/dm_service_dependency
     	private/src/dm_event
     	private/src/dm_dependency_manager_impl
+        private/src/dm_activator
     )
     set_target_properties(dependency_manager_static PROPERTIES SOVERSION 1)
 
@@ -54,6 +55,7 @@ if (DEPENDENCY_MANAGER)
     	private/src/dm_service_dependency
      	private/src/dm_event
         private/src/dm_dependency_manager_impl
+        private/src/dm_activator
     )
     set_target_properties(dependency_manager_so PROPERTIES SOVERSION 1)
 
@@ -72,6 +74,7 @@ if (DEPENDENCY_MANAGER)
     install(
     	FILES
     	    public/include/dm_activator.h
+            private/src/dm_activator.c
             public/include/dm_component.h
             public/include/dm_dependency_manager.h
             public/include/dm_service_dependency.h

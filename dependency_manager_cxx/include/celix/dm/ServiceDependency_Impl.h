@@ -23,27 +23,6 @@
 
 using namespace celix::dm;
 
-BaseServiceDependency::BaseServiceDependency(bool v) : valid{v} {
-    if (this->valid) {
-        serviceDependency_create(&this->cServiceDep);
-        //NOTE using suspend as default strategy
-        serviceDependency_setStrategy(this->cServiceDep,  DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND);
-    }
-}
-
-void BaseServiceDependency::setDepStrategy(DependencyUpdateStrategy strategy) {
-    if (!valid) {
-        return;
-    }
-    if (strategy == DependencyUpdateStrategy::locking) {
-        serviceDependency_setStrategy(this->cServiceDependency(), DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING);
-    } else if (strategy == DependencyUpdateStrategy::suspend) {
-        serviceDependency_setStrategy(this->cServiceDependency(), DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND);
-    } else {
-        std::cerr << "Unexpected dependency update strategy. Cannot convert for dm_depdendency\n";
-    }
-}
-
 template<class T, typename I>
 CServiceDependency<T,I>::CServiceDependency(const std::string name, bool valid) : TypedServiceDependency<T>(valid) {
     this->name = name;

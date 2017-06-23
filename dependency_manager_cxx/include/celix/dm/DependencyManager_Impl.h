@@ -19,35 +19,6 @@
 
 using namespace celix::dm;
 
-DependencyManager::DependencyManager(bundle_context_pt context) : context(context), components() {
-    this->cDepMan = nullptr;
-    dependencyManager_create(context, &this->cDepMan);
-}
-
-DependencyManager::~DependencyManager() {
-    dependencyManager_destroy(this->cDepMan);
-    this->cDepMan = nullptr;
-}
-
-bundle_context_pt DependencyManager::bundleContext() const {
-    return context;
-}
-
-dm_dependency_manager_pt DependencyManager::cDependencyManager() const {
-    return cDepMan;
-}
-
-void DependencyManager::start() {
-    for(std::unique_ptr<BaseComponent>& cmp : components)  {
-        dependencyManager_add(cDepMan, cmp->cComponent());
-    }
-}
-
-void DependencyManager::stop() {
-    dependencyManager_removeAllComponents(cDepMan);
-    components.clear();
-}
-
 template<class T>
 Component<T>& DependencyManager::createComponent(std::string name) {
     Component<T>* cmp = name.empty() ?

@@ -45,9 +45,27 @@ namespace celix { namespace dm {
         const bool valid;
         dm_service_dependency_pt cServiceDep {nullptr};
 
-        void setDepStrategy(DependencyUpdateStrategy strategy);
+        void setDepStrategy(DependencyUpdateStrategy strategy) {
+            if (!valid) {
+                return;
+            }
+            if (strategy == DependencyUpdateStrategy::locking) {
+                serviceDependency_setStrategy(this->cServiceDependency(), DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING);
+            } else if (strategy == DependencyUpdateStrategy::suspend) {
+                serviceDependency_setStrategy(this->cServiceDependency(), DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND);
+            } else {
+                std::cerr << "Unexpected dependency update strategy. Cannot convert for dm_depdendency\n";
+            }
+        }
     public:
-        BaseServiceDependency(bool valid);
+        BaseServiceDependency(bool v)  : valid{v} {
+            if (this->valid) {
+                serviceDependency_create(&this->cServiceDep);
+                //NOTE using suspend as default strategy
+                serviceDependency_setStrategy(this->cServiceDep,  DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND);
+            }
+        }
+
         virtual ~BaseServiceDependency() = default;
 
         BaseServiceDependency(const BaseServiceDependency&) = delete;

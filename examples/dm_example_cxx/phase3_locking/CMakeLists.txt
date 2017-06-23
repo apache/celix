@@ -31,12 +31,12 @@ add_bundle(phase3_locking_cxx
 target_compile_options(phase3_locking_cxx PUBLIC -Wall -Wextra -Weffc++ -Werror)
 
 IF(APPLE)
-    target_link_libraries(phase3_locking_cxx celix_framework -Wl,-all_load dependency_manager_static)
+    target_link_libraries(phase3_locking_cxx celix_framework -Wl,-all_load dependency_manager_cxx_static)
 else()
     if(ENABLE_ADDRESS_SANITIZER)
         #With asan there can be undefined symbols
-        target_link_libraries(phase3_locking_cxx -Wl,--whole-archive dependency_manager_static -Wl,--no-whole-archive celix_framework)
+        target_link_libraries(phase3_locking_cxx -Wl,--whole-archive dependency_manager_cxx_static -Wl,--no-whole-archive celix_framework)
     else()
-        target_link_libraries(phase3_locking_cxx -Wl,--no-undefined -Wl,--whole-archive dependency_manager_static -Wl,--no-whole-archive celix_framework)
+        target_link_libraries(phase3_locking_cxx -Wl,--no-undefined -Wl,--whole-archive dependency_manager_cxx_static -Wl,--no-whole-archive celix_framework)
     endif()
 endif()

@@ -17,17 +17,15 @@
  * under the License.
  */
 
-#ifndef CELIX_PHASE3ACTIVATOR_H
-#define CELIX_PHASE3ACTIVATOR_H
-
+#include "Phase3Cmp.h"
 #include "Phase3BaseActivator.h"
 
 using namespace celix::dm;
 
-class Phase3Activator : public Phase3BaseActivator {
-public:
-    Phase3Activator(DependencyManager& mng) : Phase3BaseActivator(mng) {}
-    virtual void init();
-};
+void Phase3BaseActivator::init() {
+    cmp.setCallbacks(nullptr, &Phase3Cmp::start, &Phase3Cmp::stop, nullptr);
 
-#endif //CELIX_PHASE2AACTIVATOR_H
+    cmp.createServiceDependency<IPhase2>()
+            .setRequired(true)
+            .setCallbacks(&Phase3Cmp::addPhase2, &Phase3Cmp::removePhase2);
+}

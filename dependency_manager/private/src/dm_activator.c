@@ -17,9 +17,9 @@
  * under the License.
  */
 
+#include "dm_activator.h"
+
 #include <stdlib.h>
-#include "bundle_context.h"
-#include "dm_dependency_manager.h"
 
 struct dm_dependency_activator_base {
     dm_dependency_manager_pt manager;
