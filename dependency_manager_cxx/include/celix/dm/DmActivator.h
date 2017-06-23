@@ -68,7 +68,7 @@ namespace celix { namespace dm {
         DependencyManager& mng;
         bundle_context_pt ctx;
     private:
-        dm_info_service_t info{};
+        dm_info_service_t info{nullptr, nullptr, nullptr};
         service_registration_pt reg{nullptr};
 
         int start() {
