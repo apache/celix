@@ -30,7 +30,7 @@ namespace celix { namespace dm {
 
     class DmActivator {
     public:
-        DmActivator(DependencyManager& m) : ctx{m.bundleContext()}, mng{m}  {}
+        DmActivator(DependencyManager& m) : mng(m), ctx{m.bundleContext()}  {}
         virtual ~DmActivator() = default;
 
         DmActivator(const DmActivator&) = delete;
@@ -65,8 +65,8 @@ namespace celix { namespace dm {
         static DmActivator* create(DependencyManager& mng);
 
     protected:
-        bundle_context_pt ctx;
         DependencyManager& mng;
+        bundle_context_pt ctx;
     private:
         dm_info_service_t info{};
         service_registration_pt reg{nullptr};
@@ -101,10 +101,10 @@ namespace celix { namespace dm {
             return status;
         }
 
-        friend celix_status_t ::bundleActivator_create(bundle_context_pt, void**);
-        friend celix_status_t ::bundleActivator_start(void*, bundle_context_pt);
-        friend celix_status_t ::bundleActivator_stop(void*, bundle_context_pt);
-        friend celix_status_t ::bundleActivator_destroy(void*, bundle_context_pt);
+        friend int ::bundleActivator_create(::bundle_context_pt, void**);
+        friend int ::bundleActivator_start(void*, ::bundle_context_pt);
+        friend int ::bundleActivator_stop(void*, ::bundle_context_pt);
+        friend int ::bundleActivator_destroy(void*, ::bundle_context_pt);
     };
 }}
 

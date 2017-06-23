@@ -36,6 +36,7 @@
 extern "C" {
 #endif
 typedef hash_map_pt properties_pt;
+typedef hash_map_t properties_t;
 
 UTILS_EXPORT properties_pt properties_create(void);
 
