@@ -1,7 +1,7 @@
 ﻿# Celix Version 3
 
 ## Intro
-The [celix.h](api_v3/celix/celix.h) header contains a proposed API for Apache Celix version 3.
+The [celix.h](celix/celix.h) header contains a proposed API for Apache Celix version 3.
 This API is not fixed, but work in progress and should be considered a starting point for discussion.
 
 There are a few reasons for a API change:
