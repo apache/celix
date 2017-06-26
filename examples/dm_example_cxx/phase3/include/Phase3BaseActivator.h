@@ -26,7 +26,7 @@ using namespace celix::dm;
 
 class Phase3BaseActivator : public DmActivator {
 public:
-    Phase3BaseActivator(DependencyManager& mng) : DmActivator(mng), cmp{mng.createComponent<Phase3Cmp>()} {}
+    Phase3BaseActivator(DependencyManager& mng) : DmActivator(mng), cmp(mng.createComponent<Phase3Cmp>()) {}
     void init();
 protected:
     celix::dm::Component<Phase3Cmp>& cmp;
