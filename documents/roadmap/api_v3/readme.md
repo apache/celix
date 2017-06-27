@@ -132,7 +132,7 @@ the module name is equal to the name target.
 
 celix_module_name(<module_target> <module_name>)
 
-celix_module_files(<module_target>
+celix_module_files(<bundle_or_module_target>
     files... DESTINATION <dir>
     [FILE_PERMISSIONS permissions...]
     [DIRECTORY_PERMISSIONS permissions...]
@@ -169,8 +169,9 @@ int celix_moduleRegistration_registerModule(
 
 ### Bundles
 Bundles are ZIP files which bundle one module.
-The CMake commands for bundle is not changed with expection of the
-added celix_ prefix.
+The CMake commands for add_bundle commands are not changed with exception of the
+added celix_ prefix. The other command are renamed to module and a celix_ is added
+(e.g bundle_name -> celix_module_name)
 
 ```CMake
 celix_add_bundle(<bundle_target_name>
@@ -210,6 +211,44 @@ celix_add_bundle(<bundle_target_name>
 
 ```
 
+### Descriptors
+Descriptors are files which describe interfaces or messages which can be
+parsed by the dynamic function interface (dfi) library.
+The dfi library can be used for runtime 'type introspection'.
+The descriptor files are a bit cryptic for human eyes, but relatively easy to parse.
+
+With these descriptors the Celix framework can runtime compare if
+services and/or messages provider consumer combinations are compatible
+and make remote services / serialization of messages possible.
+
+The `celix_module_descriptor` CMake will register header files
+for descriptor generation and inclusion in the module/bundle
+resources (under META-INF/descriptors/interfaces and
+META-INF/descriptors/messages).
+
+The Celix project will have a `dfi-gen` target which will be used to
+generate the descriptors from the header files.
+
+```CMake
+
+celix_module_descriptor(<bundle_or_module_target>
+    header_file1 header_file2 ...
+)
+```
+
 ### Deployment
 
-TODO update deployment to be able to select bundles and modules
+The `add_deploy` will be changed to `celix_add_deploy` and will accept
+library modules and bundle modules.
+
+```CMake
+celix_add_deploy(<deploy_target_name>
+    [COPY]
+    [GROUP group_name]
+    [NAME deploy_name]
+    [LAUNCHER launcher]
+    [DIR dir]
+    [MODULES <module_or_bundle1> <module_or_bundle2> ...]
+    [PROPERTIES "prop1=val1" "prop2=val2" ...]
+)
+```

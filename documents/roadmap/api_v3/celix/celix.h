@@ -337,7 +337,6 @@ void celix_properties_setProperty(celix_properties* props, const char* key, cons
 typedef struct celix_framework celix_framework;
 typedef struct celix_bundle celix_bundle;
 typedef struct celix_module celix_module;
-typedef struct celix_service_tracker celix_service_tracker;
 typedef struct celix_dependency_manager celix_dependency_manager;
 typedef struct celix_component celix_component;
 typedef struct celix_service_dependency celix_service_dependency;
@@ -457,6 +456,10 @@ celix_module* celix_bundle_module(const celix_bundle* bundle);
 
 
 //celix/module.h
+
+
+#include "dfi/interface.h" //NOTE dyn_intefaces renamed to dfi_interface
+#include "dfi/message.h" //NOTE dyn_message renamed to dfi_message
 
 /**
  * The module can be used to register/unregister services, create service trackers,
@@ -917,6 +920,20 @@ void celix_module_stopTrackerListener(celix_module* mod, uint64_t trackerListene
  * @return pointer to the symbol or NULL if unsuccessful.
  */
 void* celix_module_sym(celix_module* mod, const char* symbol);
+
+/**
+ * Returns the dfi_interface for the provided interface name or
+ * NULL if there is no dfi_interface for the provided service name
+ * (i.e. no descriptor for the service name in the module resources).
+ */
+const dfi_interface* celix_module_dfiInterface(celix_module* mod, const char* serviceName);
+
+/**
+ * Returns the dfi_message for the provided message type or
+ * NULL if there is no dfi_message for the provided message type
+ * (i.e. no descriptor for the message type in the module resources).
+ */
+const dfi_message* celix_module_dfiInterface(celix_module* mod, const char* messageType);
 
 /**
  * Returns a resource entry or NULL if the resource entry cannot be found.
