@@ -154,20 +154,17 @@ celix_module_files(<module_target>
  *
  * @param moduleName The name of the module.
  * @param moduleVersion Optional, the version of the module.
- * @startFp Optional, the start function which will be called if the module is going to be added and ready to start.
- * @startFp Optional, the stop function which will be called if the module going to be removed and ready to start.
- * @opts Optional, the additional options. The options will be needed anymore after the registerModule call.
+ * @startFp Optional the start function which will be called if the module is going to be added and ready to start.
+ * @startFp Optional the stop function which will be called if the module going to be removed and ready to start.
+ * @opts Optional the additional options. The options will only be used during the registerModule call.
  * @return 0 if successful
  */
 int celix_moduleRegistration_registerModule(
         const char* moduleName,
         const char* moduleVersion,
-        celix_properties* manifest,
         celix_module_registration_startModule_fp startFp,
         celix_module_registration_stopModule_fp stopFp,
         const celix_module_registration_options* opts);
-
-
 ```
 
 ### Bundles
