@@ -314,6 +314,7 @@ celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint
 		return pubsubAdmin_addAnySubscription(admin,subEP);
 	}
 
+	celixThreadMutex_lock(&admin->subscriptionsLock);
 	/* Check if we already know some publisher about this topic, otherwise let's put the subscription in the pending hashmap */
 	celixThreadMutex_lock(&admin->localPublicationsLock);
 	celixThreadMutex_lock(&admin->externalPublicationsLock);
@@ -367,9 +368,7 @@ celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint
 			status += pubsub_topicSubscriptionStart(subscription);
 
 			if(status==CELIX_SUCCESS){
-				celixThreadMutex_lock(&admin->subscriptionsLock);
 				hashMap_put(admin->subscriptions,strdup(scope_topic),subscription);
-				celixThreadMutex_unlock(&admin->subscriptionsLock);
 			}
 		}
 		pubsub_topicIncreaseNrSubscribers(subscription);
@@ -378,6 +377,7 @@ celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint
 	free(scope_topic);
 	celixThreadMutex_unlock(&admin->externalPublicationsLock);
 	celixThreadMutex_unlock(&admin->localPublicationsLock);
+	celixThreadMutex_unlock(&admin->subscriptionsLock);
 
 	return status;
 

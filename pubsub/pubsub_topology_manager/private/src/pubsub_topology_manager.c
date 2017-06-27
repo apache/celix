@@ -485,8 +485,6 @@ celix_status_t pubsub_topologyManager_subscriberRemoved(void * handle, service_r
 	if(pubsubEndpoint_createFromServiceReference(reference,&subcmp) == CELIX_SUCCESS){
 
 		int j,k;
-		celixThreadMutex_lock(&manager->psaListLock);
-		celixThreadMutex_lock(&manager->subscriptionsLock);
 
 		// Inform discoveries that we not interested in the topic any more
         celixThreadMutex_lock(&manager->discoveryListLock);
@@ -500,6 +498,9 @@ celix_status_t pubsub_topologyManager_subscriberRemoved(void * handle, service_r
         }
         hashMapIterator_destroy(iter);
         celixThreadMutex_unlock(&manager->discoveryListLock);
+
+        celixThreadMutex_lock(&manager->subscriptionsLock);
+        celixThreadMutex_lock(&manager->psaListLock);
 
 		char *sub_key = createScopeTopicKey(subcmp->scope,subcmp->topic);
 		array_list_pt sub_list_by_topic = hashMap_get(manager->subscriptions,sub_key);
@@ -539,8 +540,8 @@ celix_status_t pubsub_topologyManager_subscriberRemoved(void * handle, service_r
 			}
 		}
 
-		celixThreadMutex_unlock(&manager->subscriptionsLock);
 		celixThreadMutex_unlock(&manager->psaListLock);
+		celixThreadMutex_unlock(&manager->subscriptionsLock);
 
 		pubsubEndpoint_destroy(subcmp);
 

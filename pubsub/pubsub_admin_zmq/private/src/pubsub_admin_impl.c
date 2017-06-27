@@ -98,8 +98,11 @@ celix_status_t pubsubAdmin_create(bundle_context_pt context, pubsub_admin_pt *ad
 
 		celixThreadMutex_create(&(*admin)->localPublicationsLock, NULL);
 		celixThreadMutex_create(&(*admin)->subscriptionsLock, NULL);
-		celixThreadMutex_create(&(*admin)->pendingSubscriptionsLock, NULL);
 		celixThreadMutex_create(&(*admin)->externalPublicationsLock, NULL);
+
+		celixThreadMutexAttr_create(&(*admin)->pendingSubscriptionsAttr);
+		celixThreadMutexAttr_settype(&(*admin)->pendingSubscriptionsAttr, CELIX_THREAD_MUTEX_RECURSIVE);
+		celixThreadMutex_create(&(*admin)->pendingSubscriptionsLock, &(*admin)->pendingSubscriptionsAttr);
 
 		if (logHelper_create(context, &(*admin)->loghelper) == CELIX_SUCCESS) {
 			logHelper_start((*admin)->loghelper);
@@ -225,6 +228,7 @@ celix_status_t pubsubAdmin_destroy(pubsub_admin_pt admin)
 	celixThreadMutex_unlock(&admin->externalPublicationsLock);
 
 	celixThreadMutex_destroy(&admin->pendingSubscriptionsLock);
+	celixThreadMutexAttr_destroy(&admin->pendingSubscriptionsAttr);
 	celixThreadMutex_destroy(&admin->subscriptionsLock);
 	celixThreadMutex_destroy(&admin->localPublicationsLock);
 	celixThreadMutex_destroy(&admin->externalPublicationsLock);

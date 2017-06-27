@@ -270,8 +270,10 @@ celix_status_t pubsub_topicPublicationRemoveSerializer(topic_publication_pt pub,
             celixThreadMutex_unlock(&bound->mp_lock);
 			bound->map = NULL;
         }
+
+        pub->serializerSvc = NULL;
     }
-	pub->serializerSvc = NULL;
+
 	celixThreadMutex_unlock(&(pub->tp_lock));
 
 	return status;
@@ -502,13 +504,9 @@ static void pubsub_destroyPublishBundleBoundService(publish_bundle_bound_service
     //PRECOND lock on publish->tp_lock
 	celixThreadMutex_lock(&boundSvc->mp_lock);
 
-    if (boundSvc->map != NULL) {
-        if (boundSvc->parent->serializerSvc == NULL) {
-            printf("TP: Cannot destroy pubsub msg serializer map. No serliazer service\n");
-        } else {
-            boundSvc->parent->serializerSvc->destroySerializerMap(boundSvc->parent->serializerSvc->handle, boundSvc->map);
-            boundSvc->map = NULL;
-        }
+    if (boundSvc->map != NULL && boundSvc->parent->serializerSvc != NULL) {
+    	boundSvc->parent->serializerSvc->destroySerializerMap(boundSvc->parent->serializerSvc->handle, boundSvc->map);
+    	boundSvc->map = NULL;
     }
 
 	if (boundSvc->mp_parts!=NULL) {

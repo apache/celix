@@ -133,11 +133,18 @@ char* pubsub_getKeysBundleDir(bundle_context_pt ctx)
 	array_list_pt bundles = NULL;
 	bundleContext_getBundles(ctx, &bundles);
 	int nrOfBundles = arrayList_size(bundles);
-
+	long bundle_id = -1;
 	char* result = NULL;
 
 	for (int i = 0; i < nrOfBundles; i++){
 		bundle_pt b = arrayList_get(bundles, i);
+
+		/* Skip bundle 0 (framework bundle) since it has no path nor revisions */
+		bundle_getBundleId(b, &bundle_id);
+		if(bundle_id==0){
+			continue;
+		}
+
 		char* dir = NULL;
 		bundle_getEntry(b, ".", &dir);
 
