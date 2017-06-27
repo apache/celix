@@ -86,19 +86,20 @@ extern "C" {
 typedef struct celix_map celix_map;
 
 typedef enum celix_map_value_type {
-    CELIX_MAP_TYPE_UNKNOWN  = 0,
-    CELIX_MAP_TYPE_STRING   = 1,
-    CELIX_MAP_TYPE_PTR      = 2,
-    CELIX_MAP_TYPE_INT8     = 3,
-    CELIX_MAP_TYPE_UINT8    = 4,
-    CELIX_MAP_TYPE_INT16    = 5,
-    CELIX_MAP_TYPE_UINT16   = 6,
-    CELIX_MAP_TYPE_INT32    = 7,
-    CELIX_MAP_TYPE_UINT32   = 8,
-    CELIX_MAP_TYPE_INT64    = 9,
-    CELIX_MAP_TYPE_UINT64   = 10,
-    CELIX_MAP_TYPE_FLOAT    = 11,
-    CELIX_MAP_TYPE_DOUBLE   = 12,
+    CELIX_MAP_TYPE_UNKNOWN      = 0,
+    CELIX_MAP_TYPE_STRING       = 1,
+    CELIX_MAP_TYPE_PTR          = 2,
+    CELIX_MAP_TYPE_CONST_PTR    = 3,
+    CELIX_MAP_TYPE_INT8         = 4,
+    CELIX_MAP_TYPE_UINT8        = 5,
+    CELIX_MAP_TYPE_INT16        = 6,
+    CELIX_MAP_TYPE_UINT16       = 7,
+    CELIX_MAP_TYPE_INT32        = 8,
+    CELIX_MAP_TYPE_UINT32       = 9,
+    CELIX_MAP_TYPE_INT64        = 10,
+    CELIX_MAP_TYPE_UINT64       = 11,
+    CELIX_MAP_TYPE_FLOAT        = 12,
+    CELIX_MAP_TYPE_DOUBLE       = 13,
 } celix_map_value_type;
 
 typedef struct celix_map_entry {
@@ -129,7 +130,7 @@ celix_map* celix_map_create(void);
 /**
  * Copies (deep copy) a map
  */
-celix_map* celix_properties_copy(const celix_map* map);
+celix_map* celix_map_copy(const celix_map* map);
 
 /**
  * Destroys the map and release the memory.
@@ -1313,8 +1314,8 @@ const celix_module_registration_options CELIX_DEFAULT_MODULE_REGISTRATION_OPTION
  * If no name is provided, the module will not be registered and an error will be logged.
  *
  * When initializing the module, the framework will look for a <module_name>_resourceEntry and
- * <module_name>_resourceEntrySize symbol. If found, the content is assumed to be embedded zip (or tar?) file.
- * the celix_modules_files CMake command will ensure that this is linked to the module libraries.
+ * <module_name>_resourceEntrySize symbol. If found, the content is assumed to be an embedded zip (or tar?) file.
+ * the celix_modules_files CMake command will ensure that these symbols are created and linked to the module library.
  *
  * @param moduleName The name of the module.
  * @param moduleVersion Optional, the version of the module.
@@ -1764,9 +1765,18 @@ typedef struct celix_event {
     const celix_map* entries;
 };
 
+#define CELIX_EVENT_TOPICS      "event.topics"
+#define CELIX_EVENT_FILTER      "event.filter"
+
 /**
  * The celix_event_listener is a generic whiteboard service which can be registered
  * to handle events for specific topics.
+ *
+ * If this service is registered with the event.topics property, only those topics (comma seperated) will trigger the
+ * onEvent callback.
+ * If this service is registered with the event.filter propertie, only event which match the filter, using the
+ * string entries of celix_event.entries as filter target, will trigger the onEvent callback.
+ *
  */
 typedef struct celix_event_listener {
     void* handle;
