@@ -59,6 +59,18 @@ Also taking in to perspective, than in many cases if an error is returned there 
 the proposed API focus more on easy of use and lenient and silently accepting invalid input (i.e. NULL pointers
 or invalid ids).
 
+### Integral API
+Again because the OSGi API has grown overtime, the API seems to be dispersed and not one integral API.
+The proposed API tries to remedy that.
+
+### Runtime Type Introspection
+With OSGi for Java you have runtime type introspection (reflection) build-in the Java language, for C
+(and most other native languages) this is not the case. As effect is not possible to infer if services
+are compatible or to automagically make service remote / serialize types.
+The dynamic function interface library (dfi library) adds type introspection support, by using the extender pattern combined with so called type/interface descriptor files.
+Although not ideal, this can be used to runtime check service compatibility and automagically serialize types.
+If possible the dfi support will be optional and opt-out.
+
 ### Eat your own dog food
 A bit strange, but as a service oriented framework the OSGi specification for the core framework specification does not provide framework services.
 The proposed API moves some of the API for detailed info to framework services.
