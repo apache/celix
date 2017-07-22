@@ -30,6 +30,13 @@
  */
 #define ETCDLIB_NO_CURL_INITIALIZATION (1)
 
+#define ETCDLIB_ACTION_CREATE   "create"
+#define ETCDLIB_ACTION_GET      "get"
+#define ETCDLIB_ACTION_SET      "set"
+#define ETCDLIB_ACTION_UPDATE   "update"
+#define ETCDLIB_ACTION_DELETE   "delete"
+#define ETCDLIB_ACTION_EXPIRE   "expire"
+
 typedef void (*etcd_key_value_callback) (const char *key, const char *value, void* arg);
 
 /**
