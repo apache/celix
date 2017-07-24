@@ -25,6 +25,7 @@
 #include <iostream>
 #include <iomanip>
 #include <type_traits>
+#include <algorithm>
 
 using namespace celix::dm;
 
@@ -111,7 +112,7 @@ template<class T>
 template<class I>
 Component<T>& Component<T>::remove(ServiceDependency<T,I>& dep) {
     component_removeServiceDependency(cComponent(), dep.cServiceDependency());
-    this->dependencies.remove(dep);
+    this->dependencies.erase(std::remove(this->dependencies.begin(), this->dependencies.end(), dep));
     return *this;
 }
 
@@ -137,7 +138,7 @@ template<class T>
 template<typename I>
 Component<T>& Component<T>::remove(CServiceDependency<T,I>& dep) {
     component_removeServiceDependency(cComponent(), dep.cServiceDependency());
-    this->dependencies.remove(dep);
+     this->dependencies.erase(std::remove(this->dependencies.begin(), this->dependencies.end(), dep));
     return *this;
 }
 

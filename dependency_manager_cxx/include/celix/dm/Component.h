@@ -169,7 +169,7 @@ namespace celix { namespace dm {
         ServiceDependency<T,I>& createServiceDependency(const std::string name = std::string{});
 
         /**
-         Creates and adds a C++ service dependency to the component
+         Removes a C++ service dependency from the component
          *
          * @return the DM Component reference for chaining (fluent API)
          */
