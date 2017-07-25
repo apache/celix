@@ -34,6 +34,8 @@
 extern "C" {
 #endif
 
+int celixLauncher_launchWithArgs(int argc, char *argv[]);
+
 int celixLauncher_launch(const char *configFile, framework_pt *framework);
 
 int celixLauncher_launchWithStream(FILE *config, framework_pt *framework);

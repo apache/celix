@@ -36,8 +36,70 @@
 #include <curl/curl.h>
 #endif
 
+#include <string.h>
+#include <curl/curl.h>
+#include <signal.h>
+#include <libgen.h>
+#include "celix_launcher.h"
 #include "framework.h"
 #include "linked_list_iterator.h"
+
+static void show_usage(char* prog_name);
+static void shutdown_framework(int signal);
+static void ignore(int signal);
+
+#define DEFAULT_CONFIG_FILE "config.properties"
+
+static framework_pt framework = NULL;
+
+int celixLauncher_launchWithArgs(int argc, char *argv[]) {
+	// Perform some minimal command-line option parsing...
+	char *opt = NULL;
+	if (argc > 1) {
+		opt = argv[1];
+	}
+
+	char *config_file = NULL;
+
+	if (opt) {
+		// Check whether the user wants some help...
+		if (strcmp("-h", opt) == 0 || strcmp("-help", opt) == 0) {
+			show_usage(argv[0]);
+			return 0;
+		} else {
+			config_file = opt;
+		}
+	} else {
+		config_file = DEFAULT_CONFIG_FILE;
+	}
+
+
+	// Set signal handler
+	(void) signal(SIGINT, shutdown_framework);
+	(void) signal(SIGUSR1, ignore);
+	(void) signal(SIGUSR2, ignore);
+
+	int rc = celixLauncher_launch(config_file, &framework);
+	if (rc == 0) {
+		celixLauncher_waitForShutdown(framework);
+		celixLauncher_destroy(framework);
+	}
+	return rc;
+}
+
+static void show_usage(char* prog_name) {
+	printf("Usage:\n  %s [path/to/config.properties]\n\n", basename(prog_name));
+}
+
+static void shutdown_framework(int signal) {
+	if (framework != NULL) {
+		celixLauncher_stop(framework); //NOTE main thread will destroy
+	}
+}
+
+static void ignore(int signal) {
+	//ignoring for signal SIGUSR1, SIGUSR2. Can be used on threads
+}
 
 int celixLauncher_launch(const char *configFile, framework_pt *framework) {
 	int status = 0;

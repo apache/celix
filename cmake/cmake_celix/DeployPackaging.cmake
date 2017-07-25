@@ -216,9 +216,9 @@ function(deploy_bundles_dir)
             add_custom_command(OUTPUT ${OUT}
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>" ${OUT}
                 COMMENT "Copying bundle '${BUNDLE}' to '${DEPLOY_LOC}/${BD_DIR_NAME}'"
-                DEPENDS ${BUNDLE} #Note cannot directly depends on ${BUNDLE}_bundle, depending in ${BUNDLE} triggering build instead. 
             )
             add_dependencies(${DEPLOY_NAME} ${BUNDLE}_bundle) #ensure the the deploy depends on the _bundle target, custom_command depends on add_library
+
         endif()
         list(APPEND DEPS "${OUT}")
 

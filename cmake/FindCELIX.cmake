@@ -25,6 +25,7 @@
 #  CELIX_LIBRARIES - The libraries needed to use Apache Celix
 #  CELIX_LAUNCHER - The path to the celix launcher
 #
+#
 #  CELIX_BUNDLES_DIR - The path where the Celix provided bundles are installed
 #  CELIX_DM_LIB - The Celix Dependency Manager library
 #  CELIX_DM_STATIC_LIB - The Celix Dependency Manager static library
@@ -35,7 +36,7 @@ set(CELIX_DIR_FROM_FINDCELIX "${CMAKE_CURRENT_LIST_DIR}/../../../..")
 
 find_path(CELIX_INCLUDE_DIR NAMES celix_errno.h
 		PATHS ${CELIX_DIR_FROM_FINDCELIX} $ENV{CELIX_DIR} ${CELIX_DIR} /usr /usr/local
-          	PATH_SUFFIXES include include/celix
+		PATH_SUFFIXES include include/celix
 )
 
 find_path(CELIX_ETCD_INCLUDE_DIR NAMES etcd.h
@@ -44,10 +45,10 @@ find_path(CELIX_ETCD_INCLUDE_DIR NAMES etcd.h
 		)
 
 find_library(CELIX_FRAMEWORK_LIBRARY NAMES celix_framework
-             	PATHS ${CELIX_DIR_FROM_FINDCELIX} $ENV{CELIX_DIR} ${CELIX_DIR} /usr /usr/local
-             	PATH_SUFFIXES lib lib64
+		PATHS ${CELIX_DIR_FROM_FINDCELIX} $ENV{CELIX_DIR} ${CELIX_DIR} /usr /usr/local
+		PATH_SUFFIXES lib lib64
 )
-             
+
 find_library(CELIX_UTILS_LIBRARY NAMES celix_utils
 		PATHS ${CELIX_DIR_FROM_FINDCELIX} $ENV{CELIX_DIR} ${CELIX_DIR} /usr /usr/local
 		PATH_SUFFIXES lib lib64
@@ -71,7 +72,7 @@ find_file(CELIX_CMAKECELIX_FILE NAMES CMakeCelix.cmake
 #NOTE assuming shell.zip is always installed.
 find_path(CELIX_BUNDLES_DIR shell.zip
 		PATHS ${CELIX_DIR_FROM_FINDCELIX} $ENV{CELIX_DIR} ${CELIX_DIR} /usr /usr/local
-          	PATH_SUFFIXES share/celix/bundles
+		PATH_SUFFIXES share/celix/bundles
 )
 
 find_library(CELIX_DM_LIB NAMES dependency_manager_so

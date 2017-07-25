@@ -41,4 +41,19 @@ if (BUILD_DEPENDENCY_MANAGER)
             LOGHELPER_ENABLE_STDOUT_FALLBACK=true
     )
 
+    if (ENABLE_DOCKER)
+        add_docker(dm_exmpl
+        BUNDLES
+            shell
+            shell_tui
+            dm_shell
+            phase1
+            phase2a
+            phase2b
+            phase3
+        PROPERTIES
+            LOGHELPER_ENABLE_STDOUT_FALLBACK=true
+        )
+    endif ()
+
 endif ()
