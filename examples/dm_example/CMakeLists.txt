@@ -42,17 +42,26 @@ if (BUILD_DEPENDENCY_MANAGER)
     )
 
     if (ENABLE_DOCKER)
+        add_docker(dm_exmpl_base
+                NAME dmbase
+                IMAGE_NAME dmbase
+                GROUP examples
+                INSTRUCTIONS
+                    "LABEL exmpl=value"
+        )
         add_docker(dm_exmpl
-        BUNDLES
-            shell
-            shell_tui
-            dm_shell
-            phase1
-            phase2a
-            phase2b
-            phase3
-        PROPERTIES
-            LOGHELPER_ENABLE_STDOUT_FALLBACK=true
+            FROM dmbase
+            GROUP examples
+            BUNDLES
+                shell
+                shell_tui
+                dm_shell
+                phase1
+                phase2a
+                phase2b
+                phase3
+            PROPERTIES
+                LOGHELPER_ENABLE_STDOUT_FALLBACK=true
         )
     endif ()
 

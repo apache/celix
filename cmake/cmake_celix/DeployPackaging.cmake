@@ -20,7 +20,10 @@ add_custom_target(deploy ALL
         DEPENDS $<TARGET_PROPERTY:deploy,DEPLOY_DEPLOYMENTS>
 )
 set_target_properties(deploy PROPERTIES "DEPLOY_DEPLOYMENTS" "") #initial empty deps list
-set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${CMAKE_BINARY_DIR}/deploy")
+
+get_directory_property(CLEANFILES ADDITIONAL_MAKE_CLEAN_FILES)
+list(APPEND CLEANFILES "${CMAKE_BINARY_DIR}/deploy")
+set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${CLEANFILES}")
 #####
 
 function(add_deploy)
@@ -182,6 +185,12 @@ $<JOIN:$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_PROPERTIES>,
 
     deploy_bundles(${DEPLOY_TARGET} ${DEPLOY_BUNDLES})
     deploy_properties(${DEPLOY_TARGET} ${DEPLOY_PROPERTIES})
+
+
+    #ensure the docker dir will be deleted during clean
+    get_directory_property(CLEANFILES ADDITIONAL_MAKE_CLEAN_FILES)
+    list(APPEND CLEANFILES "$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_LOCATION>")
+    set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${CLEANFILES}")
 endfunction()
 
 

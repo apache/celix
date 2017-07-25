@@ -149,7 +149,7 @@ install_bundle(<bundle_target>
 
 # Deployments
 
-# add_deploy
+## add_deploy
 Add a deployment, consisting out of a selection of bundles, for the project. 
 Deployments can be used to run/test a selection of bundles in the celix framework.
 A deployment can be found in `<cmake_build_dir>/deploy[/<group_name>]/<deploy_name>`. 
@@ -168,7 +168,7 @@ add_deploy(<deploy_target_name>
 ```
 
 The provided bundle targets for a deployment do not have to exists (yet).
-This removes the need for correctly ordening the add_bundle commands so that all bundle target are present before an add_deploy command.
+This removes the need for correctly ordering the add_bundle commands so that all bundle target are present before an add_deploy command.
 If the bundle target is never added CMake will give an error:
 ```
   Error evaluating generator expression:
@@ -184,7 +184,7 @@ If the bundle target is never added CMake will give an error:
 - If BUNDLES is provided the list of bundles will be added the the generated config.properties for startup. Combined with COPY the bundles will also be copied to a bundles dir.
 - If PROPERTIES is provided the list of properties will be appended to the generated config.properties
 
-# deploy_bundles_dir
+## deploy_bundles_dir
 Deploy a selection of bundles to the provided bundle dir. This can be used to create an endpoints / proxies bundles dir for the remote service admin or drivers bundles dir for the device access. 
 
 ```CMake
@@ -197,7 +197,7 @@ deploy_bundles_dir(<deploy_target_name>
 )
 ```
 
-# deploy_bundles
+## deploy_bundles
 Deploy the selected bundles. The bundles are configured for auto starting. 
 
 ```CMake
@@ -208,7 +208,7 @@ deploy_bundles(<deploy_target_name>
 )
 ```
 
-# deploy_properties
+## deploy_properties
 
 ```CMake
 Add the provided properties to the target deploy config.properties.
@@ -218,4 +218,76 @@ deploy_properties(<deploy_target_name>
     "prop2=val2" 
     ...
 )
+```
 
+# Celix Docker Images
+It is possible the use the `add_docker` Apache Celix CMake command to create Apache Celix docker directories,
+which in turn can be used to create very small Apache Celix docker images.
+
+## add_docker
+Adds a docker target dir, containing a all the required executables, 
+libraries and filesystem needed to run a Apache Celix framework in a docker container. 
+Also includes the selected bundles. 
+
+The add_docker image use a `celix_docker_depslib` target to infer which shared libraries are required 
+for the docker image. The `celix_docker_depslib` is a empty C++ libraries linked against `jansson`, `libffi` and `m`.
+As result these libraries and some additional required libraries (libgcc_s, libstdc++) are added to the
+docker dir. It is possible to link additional libraries to the `celix_docker_depslib` to that these are also
+added to the docker image. It is also possible to specify a own "docker libs" library to use to infer 
+the required library dependencies
+
+The docker dir can be found in `<cmake_build_dir>/docker[/<group_name>]/<docker_name>`. 
+  
+  
+The provided bundle targets for a docker dir do not have to exists (yet).
+This removes the need for correctly order the add_bundle commands so that all bundle target are present before 
+an `add_docker` command.
+If the bundle target is never added CMake will give an error:
+  ```
+    Error evaluating generator expression:
+  
+      $<TARGET_PROPERTY:foo,BUNDLE_FILE>
+  ```
+ 
+```CMake
+add_docker(<docker_target_name>
+    [GROUP group_name]
+    [NAME deploy_name]
+    [FROM docker_from_image]
+    [BUNDLES_DIR bundle_dir_in_docker_image]
+    [WORKDIR workdir_in_docker_image]
+    [DEPSLIB deps_lib_target_name]
+    [IMAGE_NAME docker_image_name]
+    [ENTRYPOINT docker_entry_point]
+    [BUNDLES <bundle1> <bundle2> ...]
+    [PROPERTIES "prop1=val1" "prop2=val2" ...]
+    [INSTRUCTIONS "instr1" "instr2" ...]
+)
+```
+
+- If GROUP is provided the docker will be grouped in the provided group name. 
+- If NAME is provided that name will be used for the docker dir. Default the deploy target name will be used.
+- If FROM is provided the docker image will use the provide FROM as base, else `FROM scratch` is used and 
+    a minimal filesystem will be created for the docker image
+- If BUNDLES_DIR is provided that directory will be used as bundles location. Default `/bundles` will be used
+- If WORKDIR is provided that directory will be used a workdir. Default `/root` will be used
+- If DEPSLIB is provided that target name will be used to infer the required libraries. Default the target 
+name `celix_docker_libsdep` will be used
+- If IMAGE_NAME is provided that will be used as docker image name. Default the NAME will be used
+- If ENTRYPOINT is provided that will be used as docker entrypoint. Default `/bin/celix` will be used
+- If BUNDLES is provided, the list of bundles will be added to the docker images and configured in the generated 
+ `config.properties`
+- If PROPERTIES is provided, the list of properties will added to the generated `config.properties` file
+- If INSTRUCTIONS id provided, the list of docker instructions will be added the the generated `Dockerfile`
+
+## build-docker-images target
+TODO
+
+## docker_bundles
+TODO
+
+## docker_properties
+TODO
+
+## docker_instructions
+TODO

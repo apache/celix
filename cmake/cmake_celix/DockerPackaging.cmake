@@ -28,7 +28,10 @@ if (ENABLE_DOCKER)
     set(DOCKER_CMD "docker" CACHE STRING "Docker command to use.")
 
     set_target_properties(docker PROPERTIES "DOCKER_DEPS" "") #initial empty deps list
-    set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${CMAKE_BINARY_DIR}/docker")
+
+    get_directory_property(CLEANFILES ADDITIONAL_MAKE_CLEAN_FILES)
+    list(APPEND CLEANFILES "${CMAKE_BINARY_DIR}/docker")
+    set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${CLEANFILES}")
     #####
 
 
@@ -44,14 +47,16 @@ if (ENABLE_DOCKER)
     add_library(celix_docker_depslib SHARED
             ${CMAKE_BINARY_DIR}/.celix_docker_depslib/docker_dummy.cc
     )
-    set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${CMAKE_BINARY_DIR}/.celix_docker_depslib")
+    get_directory_property(CLEANFILES ADDITIONAL_MAKE_CLEAN_FILES)
+    list(APPEND CLEANFILES "${CMAKE_BINARY_DIR}/.celix_docker_depslib")
+    set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${CLEANFILES}")
     set_target_properties(celix_docker_depslib PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/.celix_docker_depslib")
     find_package(FFI REQUIRED)
     find_package(Jansson REQUIRED)
     target_link_libraries(celix_docker_depslib ${JANSSON_LIBRARIES} ${FFI_LIBRARIES})
     target_link_libraries(celix_docker_depslib m)
 
-        #TODO, check if libnss_dns and _files are really not needed... seems so
+    #TODO, check if libnss_dns and _files are really not needed... seems so
     #target_link_libraries(celix_docker_depslib /lib64/libnss_dns.so.2 /lib64/libnss_files.so.2)
 endif ()
 
@@ -101,6 +106,11 @@ function(add_docker)
     if (NOT DOCKER_DEPSLIB)
         set(DOCKER_DEPSLIB "celix_docker_depslib")
     endif ()
+
+    #ensure the docker dir will be deleted during clean
+    get_directory_property(CLEANFILES ADDITIONAL_MAKE_CLEAN_FILES)
+    list(APPEND CLEANFILES "$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOCATION>")
+    set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${CLEANFILES}")
 
     ###### Setup docker custom target timestamp
     set(TIMESTAMP_FILE "${CMAKE_CURRENT_BINARY_DIR}/${DOCKER_TARGET}-docker-timestamp")
@@ -157,7 +167,7 @@ $<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_INSTRUCTIONS>,
 ")
 
     #generate config.properties
-    set(DOCKER_PROPS "${DOCKER_LOC}/root/config.properties")
+    set(DOCKER_PROPS "${DOCKER_LOC}/${DOCKER_WORKDIR}/config.properties")
     set(STAGE1_PROPERTIES "${CMAKE_CURRENT_BINARY_DIR}/${DOCKER_TARGET}-docker-config-stage1.properties")
     file(GENERATE
             OUTPUT "${STAGE1_PROPERTIES}"
@@ -177,6 +187,9 @@ $<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_PROPERTIES>,
     endif()
     if (DOCKER_PROPERTIES)
         docker_properties(${DOCKER_TARGET} ${DOCKER_PROPERTIES})
+    endif ()
+    if (DOCKER_INSTRUCTIONS)
+        docker_instructions(${DOCKER_TARGET} ${DOCKER_INSTRUCTIONS})
     endif ()
 
     get_target_property(DEPS docker "DOCKER_DEPS")
@@ -216,14 +229,14 @@ function(docker_bundles)
         if(IS_ABSOLUTE ${BUNDLE} AND EXISTS ${BUNDLE})
             get_filename_component(BUNDLE_FILENAME ${BUNDLE} NAME)
             list(APPEND BUNDLES "${BUNDLES_DIR}/${BUNDLE_FILENAME}")
-            set(OUT "${LOC}/bundles/${BUNDLE_FILENAME}")
+            set(OUT "${LOC}/${BUNDLES_DIR}/${BUNDLE_FILENAME}")
             add_custom_command(OUTPUT ${OUT}
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE} ${OUT}
                 COMMENT "Copying bundle '${BUNDLE}' to '${OUT}'"
             )
         else() #assuming target
             list(APPEND BUNDLES "${BUNDLES_DIR}/${BUNDLE}.zip")
-            set(OUT ${LOC}/bundles/${BUNDLE}.zip)
+            set(OUT ${LOC}/${BUNDLES_DIR}/${BUNDLE}.zip)
             add_custom_command(OUTPUT ${OUT}
                     COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>" "${OUT}"
                     COMMENT "Copying bundle '${BUNDLE}' to '${OUT}'"
@@ -254,4 +267,23 @@ function(docker_properties)
     endforeach()
 
     set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_PROPERTIES" "${PROPS}")
+endfunction()
+
+function(docker_instructions)
+    if (NOT ENABLE_DOCKER)
+        return()
+    endif()
+
+    #0 is docker TARGET
+    #1..n is instructions
+    list(GET ARGN 0 DOCKER_TARGET)
+    list(REMOVE_AT ARGN 0)
+
+    get_target_property(INSTRUCTIONS ${DOCKER_TARGET} "DOCKER_INSTRUCTIONS")
+
+    foreach(INSTR IN ITEMS ${ARGN})
+        list(APPEND INSTRUCTIONS ${INSTR})
+    endforeach()
+
+    set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_INSTRUCTIONS" "${INSTRUCTIONS}")
 endfunction()
