@@ -54,10 +54,12 @@ done
 
 celix_add_file() {
 	FILE=$1
+	TO_DIR=$2
 	if [ -f ${FILE} ]
 	then #is regular file and not symlink
-
-		if [[ "${FILE}" =~ ^/.* ]]; then #absolute path
+		if [ -n "${TO_DIR}" ]; then
+			DIR=${TO_DIR}
+		elif [[ "${FILE}" =~ ^/.* ]]; then #absolute path
 			DIR=.$(dirname ${FILE})
 		else
 			DIR=$(dirname ${FILE})
@@ -86,14 +88,14 @@ celix_add_lib() {
 	LIB=$1
 	for DEP in $(ldd ${LIB} | grep lib | awk '{print $3}')
 	do
-		celix_add_file ${DEP}
+		celix_add_file ${DEP} lib64
 	done
 
 	#the ld-linux library is handled separately
 	LDLIB=$(ldd ${EXE} | grep ld-linux | awk '{print $1}')
 	if [ -n ${LDLIB} ] 
 	then
-		celix_add_file ${LDLIB}
+		celix_add_file ${LDLIB} lib64
 	fi
 }
 
@@ -101,14 +103,14 @@ celix_add_libs_for_exe() {
 	EXE=$1
 	for LIB in $(ldd ${EXE} | grep lib | awk '{print $3}')
 	do
-		celix_add_file ${LIB}
+		celix_add_file ${LIB} lib64
 	done
 
 	#the ld-linux library is handled separately
 	LDLIB=$(ldd ${EXE} | grep ld-linux | awk '{print $1}')
 	if [ -n ${LDLIB} ] 
 	then
-		celix_add_file ${LDLIB}
+		celix_add_file ${LDLIB} lib64
 	fi
 }
 
@@ -124,7 +126,7 @@ celix_add_exe() {
     #fi
 
     #Always put executables in /bin
-    DIR=bin
+	DIR=bin
 
 	mkdir -p ${DIR} 2> /dev/null
 	cp -vu ${EXE} ${DIR}/
