@@ -505,15 +505,15 @@ static celix_status_t deploymentAdmin_deleteTree(char * directory) {
 	    status = CELIX_FILE_IO_EXCEPTION;
 	} else {
 
-		struct dirent dp;
-		struct dirent *result = NULL;
-		int rc = readdir_r(dir, &dp, &result);
-		while (rc == 0 && result != NULL) {
-			if ((strcmp((dp.d_name), ".") != 0) && (strcmp((dp.d_name), "..") != 0)) {
+		struct dirent *dp;
+		errno = 0;
+		dp = readdir(dir);
+		while (dp != NULL) {
+			if ((strcmp((dp->d_name), ".") != 0) && (strcmp((dp->d_name), "..") != 0)) {
 				char subdir[512];
-				snprintf(subdir, sizeof(subdir), "%s/%s", directory, dp.d_name);
+				snprintf(subdir, sizeof(subdir), "%s/%s", directory, dp->d_name);
 
-				if (dp.d_type == DT_DIR) {
+				if (dp->d_type == DT_DIR) {
 					status = deploymentAdmin_deleteTree(subdir);
 				} else {
 					if (remove(subdir) != 0) {
@@ -522,10 +522,11 @@ static celix_status_t deploymentAdmin_deleteTree(char * directory) {
 					}
 				}
 			}
-			rc = readdir_r(dir, &dp, &result);
+			errno = 0;
+			dp = readdir(dir);
 		}
 
-		if (rc != 0) {
+		if (errno != 0) {
 			status = CELIX_FILE_IO_EXCEPTION;
 		}
 

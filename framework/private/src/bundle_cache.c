@@ -95,22 +95,21 @@ celix_status_t bundleCache_getArchives(bundle_cache_pt cache, array_list_pt *arc
 		array_list_pt list = NULL;
 		arrayList_create(&list);
 
-		struct dirent dp;
-		struct dirent *result = NULL;
-		int rc = 0;
+		struct dirent *dp;
 
-		rc = readdir_r(dir, &dp, &result);
-		while (rc == 0 && result != NULL) {
+		errno = 0;
+		dp = readdir(dir);
+		while (dp != NULL) {
 			char archiveRoot[512];
 
-			snprintf(archiveRoot, sizeof(archiveRoot), "%s/%s", cache->cacheDir, dp.d_name);
+			snprintf(archiveRoot, sizeof(archiveRoot), "%s/%s", cache->cacheDir, dp->d_name);
 
 			if (stat (archiveRoot, &st) == 0) {
 				if (S_ISDIR (st.st_mode)
-						&& (strcmp((dp.d_name), ".") != 0)
-						&& (strcmp((dp.d_name), "..") != 0)
-						&& (strncmp(dp.d_name, "bundle", 6) == 0)
-						&& (strcmp(dp.d_name, "bundle0") != 0)) {
+						&& (strcmp((dp->d_name), ".") != 0)
+						&& (strcmp((dp->d_name), "..") != 0)
+						&& (strncmp(dp->d_name, "bundle", 6) == 0)
+						&& (strcmp(dp->d_name, "bundle0") != 0)) {
 
 					bundle_archive_pt archive = NULL;
 					status = bundleArchive_recreate(archiveRoot, &archive);
@@ -120,10 +119,11 @@ celix_status_t bundleCache_getArchives(bundle_cache_pt cache, array_list_pt *arc
 				}
 			}
 
-			rc = readdir_r(dir, &dp, &result);
+			errno = 0;
+			dp = readdir(dir);
 		}
 
-		if (rc != 0) {
+		if (errno != 0) {
 			fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error reading dir");
 			status = CELIX_FILE_IO_EXCEPTION;
 		} else {
@@ -176,14 +176,12 @@ static celix_status_t bundleCache_deleteTree(bundle_cache_pt cache, char * direc
 	if (dir == NULL) {
 		status = CELIX_FILE_IO_EXCEPTION;
 	} else {
-		struct dirent dp;
-		struct dirent *result = NULL;
-		int rc = 0;
-		rc = readdir_r(dir, &dp, &result);
-		while (rc == 0 && result != NULL) {
-			if ((strcmp((dp.d_name), ".") != 0) && (strcmp((dp.d_name), "..") != 0)) {
+		struct dirent *dp;
+		dp = readdir(dir);
+		while (dp != NULL) {
+			if ((strcmp((dp->d_name), ".") != 0) && (strcmp((dp->d_name), "..") != 0)) {
 				char subdir[512];
-				snprintf(subdir, sizeof(subdir), "%s/%s", directory, dp.d_name);
+				snprintf(subdir, sizeof(subdir), "%s/%s", directory, dp->d_name);
 
 				if (stat(subdir, &st) == 0) {
 					if (S_ISDIR (st.st_mode)) {
@@ -196,7 +194,7 @@ static celix_status_t bundleCache_deleteTree(bundle_cache_pt cache, char * direc
 					}
 				}
 			}
-			rc = readdir_r(dir, &dp, &result);
+			dp = readdir(dir);
 		}
 
 		if (closedir(dir) != 0) {
