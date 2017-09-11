@@ -90,6 +90,7 @@ celix_status_t logHelper_start(log_helper_pt loghelper)
 	status = serviceTrackerCustomizer_create(loghelper, NULL, logHelper_logServiceAdded, NULL, logHelper_logServiceRemoved, &logTrackerCustomizer);
 
 	if (status == CELIX_SUCCESS) {
+        loghelper->logServiceTracker = NULL;
 		status = serviceTracker_create(loghelper->bundleContext, (char*) OSGI_LOGSERVICE_NAME, logTrackerCustomizer, &loghelper->logServiceTracker);
 	}
 
