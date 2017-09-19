@@ -32,3 +32,5 @@ add_deploy(log_example
     GROUP log_service
     BUNDLES log_service_example log_service shell shell_tui
 )
+
+target_link_libraries(log_service_example celix_framework celix_utils)
