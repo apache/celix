@@ -75,11 +75,13 @@ typedef struct publish_bundle_bound_service {
 	largeUdp_pt largeUdpHandle;
 }* publish_bundle_bound_service_pt;
 
+
 typedef struct pubsub_msg{
 	pubsub_msg_header_pt header;
 	char* payload;
-	size_t payloadSize;
+	unsigned int payloadSize;
 } pubsub_msg_t;
+
 
 static unsigned int rand_range(unsigned int min, unsigned int max);
 
@@ -286,8 +288,6 @@ static bool send_pubsub_msg(publish_bundle_bound_service_pt bound, pubsub_msg_t*
 	const int iovec_len = 3; // header + size + payload
 	bool ret = true;
 
-	int compiledMsgSize = sizeof(pubsub_udp_msg_t) + msg->payloadSize;
-
 	struct iovec msg_iovec[iovec_len];
 	msg_iovec[0].iov_base = msg->header;
 	msg_iovec[0].iov_len = sizeof(*msg->header);
@@ -299,7 +299,6 @@ static bool send_pubsub_msg(publish_bundle_bound_service_pt bound, pubsub_msg_t*
 	delay_first_send_for_late_joiners();
 
 	if(largeUdp_sendmsg(bound->largeUdpHandle, bound->parent->sendSocket, msg_iovec, iovec_len, 0, &bound->parent->destAddr, sizeof(bound->parent->destAddr)) == -1) {
-		fprintf(stderr, "Socket: %d, size: %i",bound->parent->sendSocket, compiledMsgSize);
 		perror("send_pubsub_msg:sendSocket");
 		ret = false;
 	}
@@ -342,7 +341,7 @@ static int pubsub_topicPublicationSend(void* handle, unsigned int msgTypeId, con
 
 		pubsub_msg_t *msg = calloc(1,sizeof(pubsub_msg_t));
 		msg->header = msg_hdr;
-		msg->payload = (char *)serializedOutput;
+		msg->payload = (char*)serializedOutput;
 		msg->payloadSize = serializedOutputLen;
 
 

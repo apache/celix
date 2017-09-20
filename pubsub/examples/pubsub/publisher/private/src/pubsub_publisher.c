@@ -77,8 +77,7 @@ static void* send_thread(void* arg){
 		while(stop==false){
 			place->position.lat = randCoordinate(MIN_LAT,MAX_LAT);
 			place->position.lon = randCoordinate(MIN_LON,MAX_LON);
-			//int nr_char = (int)randCoordinate(5,100000);
-			int nr_char = 32;
+			int nr_char = (int)randCoordinate(5,100000);
 			place->data = calloc(nr_char, 1);
 			for(int i = 0; i < (nr_char-1); i++) {
 				place->data[i] = i%10 + '0';
