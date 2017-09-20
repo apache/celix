@@ -30,7 +30,7 @@
 #include <stdbool.h>
 
 #define PUBSUB_SUBSCRIBER_SERVICE_NAME          "pubsub.subscriber"
-#define PUBSUB_SUBSCRIBER_SERVICE_VERSION       "1.0.0"
+#define PUBSUB_SUBSCRIBER_SERVICE_VERSION       "2.0.0"
  
 //properties
 #define PUBSUB_SUBSCRIBER_TOPIC                "pubsub.topic"

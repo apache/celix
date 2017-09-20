@@ -32,6 +32,7 @@
 #include "pubsub_discovery.h"
 #include "pubsub_discovery_impl.h"
 
+
 #define MAX_ROOTNODE_LENGTH		128
 #define MAX_LOCALNODE_LENGTH 	4096
 #define MAX_FIELD_LENGTH		128

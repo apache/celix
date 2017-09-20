@@ -47,11 +47,11 @@
 #define DEFAULT_ETCD_TTL 30
 
 struct etcd_writer {
-    pubsub_discovery_pt pubsub_discovery;
-    celix_thread_mutex_t localPubsLock;
-    array_list_pt localPubs;
-    volatile bool running;
-    celix_thread_t writerThread;
+	pubsub_discovery_pt pubsub_discovery;
+	celix_thread_mutex_t localPubsLock;
+	array_list_pt localPubs;
+	volatile bool running;
+	celix_thread_t writerThread;
 };
 
 
@@ -60,38 +60,38 @@ static void* etcdWriter_run(void* data);
 
 
 etcd_writer_pt etcdWriter_create(pubsub_discovery_pt disc) {
-    etcd_writer_pt writer = calloc(1, sizeof(*writer));
-    if(writer) {
-        celixThreadMutex_create(&writer->localPubsLock, NULL);
-        arrayList_create(&writer->localPubs);
-        writer->pubsub_discovery = disc;
-        writer->running = true;
-        celixThread_create(&writer->writerThread, NULL, etcdWriter_run, writer);
-    }
-    return writer;
+	etcd_writer_pt writer = calloc(1, sizeof(*writer));
+	if(writer) {
+		celixThreadMutex_create(&writer->localPubsLock, NULL);
+		arrayList_create(&writer->localPubs);
+		writer->pubsub_discovery = disc;
+		writer->running = true;
+		celixThread_create(&writer->writerThread, NULL, etcdWriter_run, writer);
+	}
+	return writer;
 }
 
 void etcdWriter_destroy(etcd_writer_pt writer) {
-    char dir[MAX_ROOTNODE_LENGTH];
-    const char *rootPath = etcdWriter_getRootPath(writer->pubsub_discovery->context);
+	char dir[MAX_ROOTNODE_LENGTH];
+	const char *rootPath = etcdWriter_getRootPath(writer->pubsub_discovery->context);
 
-    writer->running = false;
-    celixThread_join(writer->writerThread, NULL);
+	writer->running = false;
+	celixThread_join(writer->writerThread, NULL);
 
-    celixThreadMutex_lock(&writer->localPubsLock);
-    for(int i = 0; i < arrayList_size(writer->localPubs); i++) {
-        pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt)arrayList_get(writer->localPubs,i);
-        memset(dir,0,MAX_ROOTNODE_LENGTH);
-        snprintf(dir,MAX_ROOTNODE_LENGTH,"%s/%s/%s/%s",rootPath,pubEP->scope,pubEP->topic,pubEP->frameworkUUID);
-        etcd_del(dir);
-        pubsubEndpoint_destroy(pubEP);
-    }
-    arrayList_destroy(writer->localPubs);
+	celixThreadMutex_lock(&writer->localPubsLock);
+	for(int i = 0; i < arrayList_size(writer->localPubs); i++) {
+		pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt)arrayList_get(writer->localPubs,i);
+		memset(dir,0,MAX_ROOTNODE_LENGTH);
+		snprintf(dir,MAX_ROOTNODE_LENGTH,"%s/%s/%s/%s",rootPath,pubEP->scope,pubEP->topic,pubEP->frameworkUUID);
+		etcd_del(dir);
+		pubsubEndpoint_destroy(pubEP);
+	}
+	arrayList_destroy(writer->localPubs);
 
-    celixThreadMutex_unlock(&writer->localPubsLock);
-    celixThreadMutex_destroy(&(writer->localPubsLock));
+	celixThreadMutex_unlock(&writer->localPubsLock);
+	celixThreadMutex_destroy(&(writer->localPubsLock));
 
-    free(writer);
+	free(writer);
 }
 
 celix_status_t etcdWriter_addPublisherEndpoint(etcd_writer_pt writer, pubsub_endpoint_pt pubEP, bool storeEP){
@@ -101,11 +101,11 @@ celix_status_t etcdWriter_addPublisherEndpoint(etcd_writer_pt writer, pubsub_end
 		const char *fwUUID = NULL;
 		bundleContext_getProperty(writer->pubsub_discovery->context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &fwUUID);
 		if(fwUUID && strcmp(pubEP->frameworkUUID, fwUUID) == 0) {
-	            celixThreadMutex_lock(&writer->localPubsLock);
-		    pubsub_endpoint_pt p = NULL;
-		    pubsubEndpoint_create(pubEP->frameworkUUID,pubEP->scope,pubEP->topic,pubEP->serviceID,pubEP->endpoint,&p);
-		    arrayList_add(writer->localPubs,p);
-	            celixThreadMutex_unlock(&writer->localPubsLock);
+			celixThreadMutex_lock(&writer->localPubsLock);
+			pubsub_endpoint_pt p = NULL;
+			pubsubEndpoint_clone(pubEP, &p);
+			arrayList_add(writer->localPubs,p);
+			celixThreadMutex_unlock(&writer->localPubsLock);
 		}
 	}
 
@@ -138,52 +138,52 @@ celix_status_t etcdWriter_addPublisherEndpoint(etcd_writer_pt writer, pubsub_end
 }
 
 celix_status_t etcdWriter_deletePublisherEndpoint(etcd_writer_pt writer, pubsub_endpoint_pt pubEP) {
-    celix_status_t status = CELIX_SUCCESS;
-    char *key = NULL;
+	celix_status_t status = CELIX_SUCCESS;
+	char *key = NULL;
 
-    const char *rootPath = etcdWriter_getRootPath(writer->pubsub_discovery->context);
+	const char *rootPath = etcdWriter_getRootPath(writer->pubsub_discovery->context);
 
-    asprintf(&key, "%s/%s/%s/%s/%ld", rootPath, pubEP->scope, pubEP->topic, pubEP->frameworkUUID, pubEP->serviceID);
+	asprintf(&key, "%s/%s/%s/%s/%ld", rootPath, pubEP->scope, pubEP->topic, pubEP->frameworkUUID, pubEP->serviceID);
 
-    celixThreadMutex_lock(&writer->localPubsLock);
-    for (unsigned int i = 0; i < arrayList_size(writer->localPubs); i++) {
-        pubsub_endpoint_pt ep = arrayList_get(writer->localPubs, i);
-        if (pubsubEndpoint_equals(ep, pubEP)) {
-            arrayList_remove(writer->localPubs, i);
-            pubsubEndpoint_destroy(ep);
-            break;
-        }
-    }
-    celixThreadMutex_unlock(&writer->localPubsLock);
+	celixThreadMutex_lock(&writer->localPubsLock);
+	for (unsigned int i = 0; i < arrayList_size(writer->localPubs); i++) {
+		pubsub_endpoint_pt ep = arrayList_get(writer->localPubs, i);
+		if (pubsubEndpoint_equals(ep, pubEP)) {
+			arrayList_remove(writer->localPubs, i);
+			pubsubEndpoint_destroy(ep);
+			break;
+		}
+	}
+	celixThreadMutex_unlock(&writer->localPubsLock);
 
-    if (etcd_del(key)) {
-        printf("Failed to remove key %s from ETCD\n",key);
-        status = CELIX_ILLEGAL_ARGUMENT;
-    }
-    FREE_MEM(key);
-    return status;
+	if (etcd_del(key)) {
+		printf("Failed to remove key %s from ETCD\n",key);
+		status = CELIX_ILLEGAL_ARGUMENT;
+	}
+	FREE_MEM(key);
+	return status;
 }
 
 static void* etcdWriter_run(void* data) {
-    etcd_writer_pt writer = (etcd_writer_pt)data;
-    while(writer->running) {
-          celixThreadMutex_lock(&writer->localPubsLock);
-          for(int i=0; i < arrayList_size(writer->localPubs); i++) {
-              etcdWriter_addPublisherEndpoint(writer,(pubsub_endpoint_pt)arrayList_get(writer->localPubs,i),false);
-          }
-          celixThreadMutex_unlock(&writer->localPubsLock);
-          sleep(DEFAULT_ETCD_TTL / 2);
-    }
+	etcd_writer_pt writer = (etcd_writer_pt)data;
+	while(writer->running) {
+		celixThreadMutex_lock(&writer->localPubsLock);
+		for(int i=0; i < arrayList_size(writer->localPubs); i++) {
+			etcdWriter_addPublisherEndpoint(writer,(pubsub_endpoint_pt)arrayList_get(writer->localPubs,i),false);
+		}
+		celixThreadMutex_unlock(&writer->localPubsLock);
+		sleep(DEFAULT_ETCD_TTL / 2);
+	}
 
-    return NULL;
+	return NULL;
 }
 
 static const char* etcdWriter_getRootPath(bundle_context_pt context) {
-    const char* rootPath = NULL;
-    bundleContext_getProperty(context, CFG_ETCD_ROOT_PATH, &rootPath);
-    if(rootPath == NULL) {
-        rootPath = DEFAULT_ETCD_ROOTPATH;
-    }
-    return rootPath;
+	const char* rootPath = NULL;
+	bundleContext_getProperty(context, CFG_ETCD_ROOT_PATH, &rootPath);
+	if(rootPath == NULL) {
+		rootPath = DEFAULT_ETCD_ROOTPATH;
+	}
+	return rootPath;
 }
 

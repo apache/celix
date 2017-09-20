@@ -28,6 +28,7 @@
 
 #include "bundle_activator.h"
 #include "service_registration.h"
+#include "service_tracker.h"
 
 #include "pubsub_admin_impl.h"
 
@@ -35,6 +36,7 @@ struct activator {
 	pubsub_admin_pt admin;
 	pubsub_admin_service_pt adminService;
 	service_registration_pt registration;
+	service_tracker_pt serializerTracker;
 };
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
@@ -47,7 +49,28 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 	}
 	else{
 		*userData = activator;
+
 		status = pubsubAdmin_create(context, &(activator->admin));
+
+		if(status == CELIX_SUCCESS){
+			service_tracker_customizer_pt customizer = NULL;
+			status = serviceTrackerCustomizer_create(activator->admin,
+					NULL,
+					pubsubAdmin_serializerAdded,
+					NULL,
+					pubsubAdmin_serializerRemoved,
+					&customizer);
+			if(status == CELIX_SUCCESS){
+				status = serviceTracker_create(context, PUBSUB_SERIALIZER_SERVICE, customizer, &(activator->serializerTracker));
+				if(status != CELIX_SUCCESS){
+					serviceTrackerCustomizer_destroy(customizer);
+					pubsubAdmin_destroy(activator->admin);
+				}
+			}
+			else{
+				pubsubAdmin_destroy(activator->admin);
+			}
+		}
 	}
 
 	return status;
@@ -73,15 +96,13 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 		pubsubAdminSvc->closeAllPublications = pubsubAdmin_closeAllPublications;
 		pubsubAdminSvc->closeAllSubscriptions = pubsubAdmin_closeAllSubscriptions;
 
-		pubsubAdminSvc->matchPublisher = pubsubAdmin_matchPublisher;
-		pubsubAdminSvc->matchSubscriber = pubsubAdmin_matchSubscriber;
-
-		pubsubAdminSvc->setSerializer = pubsubAdmin_setSerializer;
-		pubsubAdminSvc->removeSerializer = pubsubAdmin_removeSerializer;
+		pubsubAdminSvc->matchEndpoint = pubsubAdmin_matchEndpoint;
 
 		activator->adminService = pubsubAdminSvc;
 
 		status = bundleContext_registerService(context, PUBSUB_ADMIN_SERVICE, pubsubAdminSvc, NULL, &activator->registration);
+
+		status += serviceTracker_open(activator->serializerTracker);
 
 	}
 
@@ -93,10 +114,10 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator *activator = userData;
 
-	serviceRegistration_unregister(activator->registration);
-	activator->registration = NULL;
+	status += serviceTracker_close(activator->serializerTracker);
+	status += serviceRegistration_unregister(activator->registration);
 
-	pubsubAdmin_stop(activator->admin);
+	activator->registration = NULL;
 
 	free(activator->adminService);
 	activator->adminService = NULL;
@@ -108,6 +129,7 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt contex
 	celix_status_t status = CELIX_SUCCESS;
 	struct activator *activator = userData;
 
+	serviceTracker_destroy(activator->serializerTracker);
 	pubsubAdmin_destroy(activator->admin);
 	activator->admin = NULL;
 

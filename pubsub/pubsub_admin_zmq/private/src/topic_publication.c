@@ -7,7 +7,7 @@
  *"License"); you may not use this file except in compliance
  *with the License.  You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ *  htPSA_ZMQ_TP://www.apache.org/licenses/LICENSE-2.0
  *
  *Unless required by applicable law or agreed to in writing,
  *software distributed under the License is distributed on an
@@ -24,7 +24,6 @@
  *  \copyright	Apache License, Version 2.0
  */
 
-#include "pubsub_publish_service_private.h"
 #include <czmq.h>
 /* The following undefs prevent the collision between:
  * - sys/syslog.h (which is included within czmq)
@@ -50,6 +49,10 @@
 #include "pubsub_utils.h"
 #include "publisher.h"
 
+#include "topic_publication.h"
+
+#include "pubsub_serializer.h"
+
 #ifdef BUILD_WITH_ZMQ_SECURITY
 	#include "zmq_crypto.h"
 
@@ -69,21 +72,21 @@ struct topic_publication {
 	service_registration_pt svcFactoryReg;
 	array_list_pt pub_ep_list; //List<pubsub_endpoint>
 	hash_map_pt boundServices; //<bundle_pt,bound_service>
-	celix_thread_mutex_t tp_lock; // Protects topic_publication data structure
-	pubsub_serializer_service_t* serializerSvc;
+	pubsub_serializer_service_t *serializer;
+	celix_thread_mutex_t tp_lock;
 };
 
 typedef struct publish_bundle_bound_service {
 	topic_publication_pt parent;
-	pubsub_publisher_t pubSvc;
+	pubsub_publisher_t service;
 	bundle_pt bundle;
 	char *topic;
-	pubsub_msg_serializer_map_t* map;
+	hash_map_pt msgTypes;
 	unsigned short getCount;
 	celix_thread_mutex_t mp_lock; //Protects publish_bundle_bound_service data structure
 	bool mp_send_in_progress;
 	array_list_pt mp_parts;
-} publish_bundle_bound_service_t;
+}* publish_bundle_bound_service_pt;
 
 /* Note: correct locking order is
  * 1. tp_lock
@@ -93,27 +96,27 @@ typedef struct publish_bundle_bound_service {
  * tp_lock and socket_lock are independent.
  */
 
-typedef struct pubsub_msg {
+typedef struct pubsub_msg{
 	pubsub_msg_header_pt header;
 	char* payload;
 	int payloadSize;
-} pubsub_msg_t;
+}* pubsub_msg_pt;
 
 static unsigned int rand_range(unsigned int min, unsigned int max);
 
 static celix_status_t pubsub_topicPublicationGetService(void* handle, bundle_pt bundle, service_registration_pt registration, void **service);
 static celix_status_t pubsub_topicPublicationUngetService(void* handle, bundle_pt bundle, service_registration_pt registration, void **service);
 
-static publish_bundle_bound_service_t* pubsub_createPublishBundleBoundService(topic_publication_pt tp,bundle_pt bundle);
-static void pubsub_destroyPublishBundleBoundService(publish_bundle_bound_service_t* boundSvc);
+static publish_bundle_bound_service_pt pubsub_createPublishBundleBoundService(topic_publication_pt tp,bundle_pt bundle);
+static void pubsub_destroyPublishBundleBoundService(publish_bundle_bound_service_pt boundSvc);
 
 static int pubsub_topicPublicationSend(void* handle,unsigned int msgTypeId, const void *msg);
-static int pubsub_topicPublicationSendMultipart(void *handle, unsigned int msgTypeId, const void *msg, int flags);
+static int pubsub_topicPublicationSendMultipart(void *handle, unsigned int msgTypeId, const void *inMsg, int flags);
 static int pubsub_localMsgTypeIdForUUID(void* handle, const char* msgType, unsigned int* msgTypeId);
 
 static void delay_first_send_for_late_joiners(void);
 
-celix_status_t pubsub_topicPublicationCreate(bundle_context_pt bundle_context, pubsub_endpoint_pt pubEP, char* bindIP, unsigned int basePort, unsigned int maxPort, topic_publication_pt *out){
+celix_status_t pubsub_topicPublicationCreate(bundle_context_pt bundle_context, pubsub_endpoint_pt pubEP, pubsub_serializer_service_t *best_serializer, char* bindIP, unsigned int basePort, unsigned int maxPort, topic_publication_pt *out){
 	celix_status_t status = CELIX_SUCCESS;
 
 #ifdef BUILD_WITH_ZMQ_SECURITY
@@ -128,7 +131,7 @@ celix_status_t pubsub_topicPublicationCreate(bundle_context_pt bundle_context, p
 		for (i = 0; i < secure_topics_size; i++){
 			char* top = arrayList_get(secure_topics_list, i);
 			if (strcmp(pubEP->topic, top) == 0){
-				printf("TP: Secure topic: '%s'\n", top);
+				printf("PSA_ZMQ_TP: Secure topic: '%s'\n", top);
 				pubEP->is_secure = true;
 			}
 			free(top);
@@ -155,12 +158,12 @@ celix_status_t pubsub_topicPublicationCreate(bundle_context_pt bundle_context, p
 		//certificate path ".cache/bundle{id}/version0.0/./META-INF/keys/publisher/private/pub_{topic}.key"
 		snprintf(cert_path, MAX_CERT_PATH_LENGTH, "%s/META-INF/keys/publisher/private/pub_%s.key.enc", keys_bundle_dir, pubEP->topic);
 		free(keys_bundle_dir);
-		printf("TP: Loading key '%s'\n", cert_path);
+		printf("PSA_ZMQ_TP: Loading key '%s'\n", cert_path);
 
 		pub_cert = get_zcert_from_encoded_file((char *) keys_file_path, (char *) keys_file_name, cert_path);
 		if (pub_cert == NULL){
-			printf("TP: Cannot load key '%s'\n", cert_path);
-			printf("TP: Topic '%s' NOT SECURED !\n", pubEP->topic);
+			printf("PSA_ZMQ_TP: Cannot load key '%s'\n", cert_path);
+			printf("PSA_ZMQ_TP: Topic '%s' NOT SECURED !\n", pubEP->topic);
 			pubEP->is_secure = false;
 		}
 	}
@@ -218,7 +221,7 @@ celix_status_t pubsub_topicPublicationCreate(bundle_context_pt bundle_context, p
 
 	pub->endpoint = ep;
 	pub->zmq_socket = socket;
-	pub->serializerSvc = NULL;
+	pub->serializer = best_serializer;
 
 	celixThreadMutex_create(&(pub->socket_lock),NULL);
 
@@ -245,13 +248,14 @@ celix_status_t pubsub_topicPublicationDestroy(topic_publication_pt pub){
 
 	hash_map_iterator_pt iter = hashMapIterator_create(pub->boundServices);
 	while(hashMapIterator_hasNext(iter)){
-		publish_bundle_bound_service_t* bound = hashMapIterator_nextValue(iter);
+		publish_bundle_bound_service_pt bound = hashMapIterator_nextValue(iter);
 		pubsub_destroyPublishBundleBoundService(bound);
 	}
 	hashMapIterator_destroy(iter);
 	hashMap_destroy(pub->boundServices,false,false);
 
 	pub->svcFactoryReg = NULL;
+	pub->serializer = NULL;
 #ifdef BUILD_WITH_ZMQ_SECURITY
 	zcert_destroy(&(pub->zmq_cert));
 #endif
@@ -275,7 +279,6 @@ celix_status_t pubsub_topicPublicationStart(bundle_context_pt bundle_context,top
 	celix_status_t status = CELIX_SUCCESS;
 
 	/* Let's register the new service */
-	//celixThreadMutex_lock(&(pub->tp_lock));
 
 	pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt)arrayList_get(pub->pub_ep_list,0);
 
@@ -294,30 +297,22 @@ celix_status_t pubsub_topicPublicationStart(bundle_context_pt bundle_context,top
 
 		if(status != CELIX_SUCCESS){
 			properties_destroy(props);
-			printf("PSA: Cannot register ServiceFactory for topic %s (bundle %ld).\n",pubEP->topic,pubEP->serviceID);
+			printf("PSA_ZMQ_PSA_ZMQ_TP: Cannot register ServiceFactory for topic %s (bundle %ld).\n",pubEP->topic,pubEP->serviceID);
 		}
 		else{
 			*svcFactory = factory;
 		}
 	}
 	else{
-		printf("PSA: Cannot find pubsub_endpoint after adding it...Should never happen!\n");
+		printf("PSA_ZMQ_PSA_ZMQ_TP: Cannot find pubsub_endpoint after adding it...Should never happen!\n");
 		status = CELIX_SERVICE_EXCEPTION;
 	}
-
-	//celixThreadMutex_unlock(&(pub->tp_lock));
 
 	return status;
 }
 
 celix_status_t pubsub_topicPublicationStop(topic_publication_pt pub){
-	celix_status_t status = CELIX_SUCCESS;
-
-	//celixThreadMutex_lock(&(pub->tp_lock));
-	status = serviceRegistration_unregister(pub->svcFactoryReg);
-	//celixThreadMutex_unlock(&(pub->tp_lock));
-
-	return status;
+	return serviceRegistration_unregister(pub->svcFactoryReg);
 }
 
 celix_status_t pubsub_topicPublicationAddPublisherEP(topic_publication_pt pub,pubsub_endpoint_pt ep){
@@ -345,63 +340,12 @@ celix_status_t pubsub_topicPublicationRemovePublisherEP(topic_publication_pt pub
 	return CELIX_SUCCESS;
 }
 
-celix_status_t pubsub_topicPublicationSetSerializer(topic_publication_pt pub, pubsub_serializer_service_t* serializerSvc){
-	celix_status_t status = CELIX_SUCCESS;
-
-	celixThreadMutex_lock(&(pub->tp_lock));
-
-	//clearing pref serializer
-	if (pub->serializerSvc != NULL) {
-		hash_map_iterator_t iter = hashMapIterator_construct(pub->boundServices);
-		while (hashMapIterator_hasNext(&iter)) {
-			publish_bundle_bound_service_t* bound = hashMapIterator_nextValue(&iter);
-            celixThreadMutex_lock(&bound->mp_lock);
-            pub->serializerSvc->destroySerializerMap(pub->serializerSvc->handle, bound->map);
-            celixThreadMutex_unlock(&bound->mp_lock);
-			bound->map = NULL;
-		}
-	}
-
-	pub->serializerSvc = serializerSvc;
-    if (pub->serializerSvc != NULL) {
-        hash_map_iterator_t iter = hashMapIterator_construct(pub->boundServices);
-        while (hashMapIterator_hasNext(&iter)) {
-            hash_map_entry_pt entry = hashMapIterator_nextEntry(&iter);
-            bundle_pt bundle = hashMapEntry_getKey(entry);
-            publish_bundle_bound_service_t* bound = hashMapEntry_getValue(entry);
-            celixThreadMutex_lock(&bound->mp_lock);
-            pub->serializerSvc->createSerializerMap(pub->serializerSvc->handle, bundle, &bound->map);
-            celixThreadMutex_unlock(&bound->mp_lock);
-        }
-    }
-
-	celixThreadMutex_unlock(&(pub->tp_lock));
-
-	return status;
-}
-
-celix_status_t pubsub_topicPublicationRemoveSerializer(topic_publication_pt pub, pubsub_serializer_service_t* svc){
-	celix_status_t status = CELIX_SUCCESS;
-	celixThreadMutex_lock(&(pub->tp_lock));
-
-	if (pub->serializerSvc == svc) {
-		hash_map_iterator_t iter = hashMapIterator_construct(pub->boundServices);
-		while (hashMapIterator_hasNext(&iter)) {
-			publish_bundle_bound_service_t* bound = hashMapIterator_nextValue(&iter);
-            celixThreadMutex_lock(&bound->mp_lock);
-			pub->serializerSvc->destroySerializerMap(pub->serializerSvc->handle, bound->map);
-            celixThreadMutex_unlock(&bound->mp_lock);
-			bound->map = NULL;
-		}
-		pub->serializerSvc = NULL;
-	}
-
-	celixThreadMutex_unlock(&(pub->tp_lock));
-	return status;
-}
-
 array_list_pt pubsub_topicPublicationGetPublisherList(topic_publication_pt pub){
-	return pub->pub_ep_list;
+	array_list_pt list = NULL;
+	celixThreadMutex_lock(&(pub->tp_lock));
+	list = arrayList_clone(pub->pub_ep_list);
+	celixThreadMutex_unlock(&(pub->tp_lock));
+	return list;
 }
 
 
@@ -412,7 +356,7 @@ static celix_status_t pubsub_topicPublicationGetService(void* handle, bundle_pt 
 
 	celixThreadMutex_lock(&(publish->tp_lock));
 
-	publish_bundle_bound_service_t* bound = hashMap_get(publish->boundServices,bundle);
+	publish_bundle_bound_service_pt bound = (publish_bundle_bound_service_pt)hashMap_get(publish->boundServices,bundle);
 	if(bound==NULL){
 		bound = pubsub_createPublishBundleBoundService(publish,bundle);
 		if(bound!=NULL){
@@ -423,9 +367,7 @@ static celix_status_t pubsub_topicPublicationGetService(void* handle, bundle_pt 
 		bound->getCount++;
 	}
 
-	if(bound!=NULL){
-		*service = &bound->pubSvc;
-	}
+	*service = &bound->service;
 
 	celixThreadMutex_unlock(&(publish->tp_lock));
 
@@ -438,7 +380,7 @@ static celix_status_t pubsub_topicPublicationUngetService(void* handle, bundle_p
 
 	celixThreadMutex_lock(&(publish->tp_lock));
 
-	publish_bundle_bound_service_t* bound = hashMap_get(publish->boundServices,bundle);
+	publish_bundle_bound_service_pt bound = (publish_bundle_bound_service_pt)hashMap_get(publish->boundServices,bundle);
 	if(bound!=NULL){
 
 		bound->getCount--;
@@ -451,7 +393,7 @@ static celix_status_t pubsub_topicPublicationUngetService(void* handle, bundle_p
 	else{
 		long bundleId = -1;
 		bundle_getBundleId(bundle,&bundleId);
-		printf("TP: Unexpected ungetService call for bundle %ld.\n", bundleId);
+		printf("PSA_ZMQ_TP: Unexpected ungetService call for bundle %ld.\n", bundleId);
 	}
 
 	/* service should be never used for unget, so let's set the pointer to NULL */
@@ -462,7 +404,7 @@ static celix_status_t pubsub_topicPublicationUngetService(void* handle, bundle_p
 	return CELIX_SUCCESS;
 }
 
-static bool send_pubsub_msg(zsock_t* zmq_socket, pubsub_msg_t* msg, bool last){
+static bool send_pubsub_msg(zsock_t* zmq_socket, pubsub_msg_pt msg, bool last){
 
 	bool ret = true;
 
@@ -502,7 +444,7 @@ static bool send_pubsub_mp_msg(zsock_t* zmq_socket, array_list_pt mp_msg_parts){
 	unsigned int i = 0;
 	unsigned int mp_num = arrayList_size(mp_msg_parts);
 	for(;i<mp_num;i++){
-		ret = ret && send_pubsub_msg(zmq_socket, (pubsub_msg_t*)arrayList_get(mp_msg_parts,i), (i==mp_num-1));
+		ret = ret && send_pubsub_msg(zmq_socket, (pubsub_msg_pt)arrayList_get(mp_msg_parts,i), (i==mp_num-1));
 	}
 	arrayList_clear(mp_msg_parts);
 
@@ -511,44 +453,33 @@ static bool send_pubsub_mp_msg(zsock_t* zmq_socket, array_list_pt mp_msg_parts){
 }
 
 static int pubsub_topicPublicationSend(void* handle, unsigned int msgTypeId, const void *msg) {
+
 	return pubsub_topicPublicationSendMultipart(handle,msgTypeId,msg, PUBSUB_PUBLISHER_FIRST_MSG | PUBSUB_PUBLISHER_LAST_MSG);
+
 }
 
-static int pubsub_topicPublicationSendMultipart(void *handle, unsigned int msgTypeId, const void *msg, int flags){
-	int status = 0;
-	publish_bundle_bound_service_t* bound = handle;
-	celixThreadMutex_lock(&(bound->mp_lock));
+static int pubsub_topicPublicationSendMultipart(void *handle, unsigned int msgTypeId, const void *inMsg, int flags){
 
+	int status = 0;
+
+	publish_bundle_bound_service_pt bound = (publish_bundle_bound_service_pt) handle;
+
+	celixThreadMutex_lock(&(bound->mp_lock));
 	if( (flags & PUBSUB_PUBLISHER_FIRST_MSG) && !(flags & PUBSUB_PUBLISHER_LAST_MSG) && bound->mp_send_in_progress){ //means a real mp_msg
-		printf("TP: Multipart send already in progress. Cannot process a new one.\n");
+		printf("PSA_ZMQ_TP: Multipart send already in progress. Cannot process a new one.\n");
 		celixThreadMutex_unlock(&(bound->mp_lock));
 		return -3;
-    }
-
-	pubsub_msg_serializer_t* msgSer = NULL;
-	if (bound->map != NULL) {
-		msgSer = hashMap_get(bound->map->serializers, (void*)(uintptr_t)msgTypeId);
 	}
 
-    if (bound->map == NULL) {
-        printf("TP: Serializer is not set!\n");
-        status = 1;
-    } else if (msgSer == NULL ){
-        printf("TP: No msg serializer available for msg type id %d\n", msgTypeId);
-        hash_map_iterator_t iter = hashMapIterator_construct(bound->map->serializers);
-        printf("Note supported messages:\n");
-        while (hashMapIterator_hasNext(&iter)) {
-            pubsub_msg_serializer_t *msgSer = hashMapIterator_nextValue(&iter);
-            printf("\tmsg %s with id %d\n", msgSer->msgName, msgSer->msgId);
-        }
-        status = 1;
-    }
+	pubsub_msg_serializer_t* msgSer = (pubsub_msg_serializer_t*)hashMap_get(bound->msgTypes, (void*)(uintptr_t)msgTypeId);
 
-	int major=0, minor=0;
-	if (status == 0 && msgSer != NULL) {
+	if (msgSer!= NULL) {
+		int major=0, minor=0;
+
 		pubsub_msg_header_pt msg_hdr = calloc(1,sizeof(struct pubsub_msg_header));
 		strncpy(msg_hdr->topic,bound->topic,MAX_TOPIC_LEN-1);
 		msg_hdr->type = msgTypeId;
+
 		if (msgSer->msgVersion != NULL){
 			version_getMajor(msgSer->msgVersion, &major);
 			version_getMinor(msgSer->msgVersion, &minor);
@@ -556,23 +487,24 @@ static int pubsub_topicPublicationSendMultipart(void *handle, unsigned int msgTy
 			msg_hdr->minor = minor;
 		}
 
-		char* serializedOutput = NULL;
+		void *serializedOutput = NULL;
 		size_t serializedOutputLen = 0;
-		msgSer->serialize(msgSer->handle, msg, &serializedOutput, &serializedOutputLen);
-		pubsub_msg_t* msg = calloc(1,sizeof(struct pubsub_msg));
+		msgSer->serialize(msgSer,inMsg,&serializedOutput, &serializedOutputLen);
+
+		pubsub_msg_pt msg = calloc(1,sizeof(struct pubsub_msg));
 		msg->header = msg_hdr;
-		msg->payload = (char *) serializedOutput;
+		msg->payload = (char*)serializedOutput;
 		msg->payloadSize = serializedOutputLen;
 		bool snd = true;
 
-		switch (flags) {
+		switch(flags){
 		case PUBSUB_PUBLISHER_FIRST_MSG:
 			bound->mp_send_in_progress = true;
 			arrayList_add(bound->mp_parts,msg);
 			break;
 		case PUBSUB_PUBLISHER_PART_MSG:
 			if(!bound->mp_send_in_progress){
-				printf("TP: ERROR: received msg part without the first part.\n");
+				printf("PSA_ZMQ_TP: ERROR: received msg part without the first part.\n");
 				status = -4;
 			}
 			else{
@@ -581,71 +513,52 @@ static int pubsub_topicPublicationSendMultipart(void *handle, unsigned int msgTy
 			break;
 		case PUBSUB_PUBLISHER_LAST_MSG:
 			if(!bound->mp_send_in_progress){
-				printf("TP: ERROR: received end msg without the first part.\n");
+				printf("PSA_ZMQ_TP: ERROR: received end msg without the first part.\n");
 				status = -4;
 			}
 			else{
 				arrayList_add(bound->mp_parts,msg);
-				celixThreadMutex_lock(&(bound->parent->socket_lock));
+				celixThreadMutex_lock(&(bound->parent->tp_lock));
 				snd = send_pubsub_mp_msg(bound->parent->zmq_socket,bound->mp_parts);
 				bound->mp_send_in_progress = false;
-				celixThreadMutex_unlock(&(bound->parent->socket_lock));
+				celixThreadMutex_unlock(&(bound->parent->tp_lock));
 			}
 			break;
 		case PUBSUB_PUBLISHER_FIRST_MSG | PUBSUB_PUBLISHER_LAST_MSG:	//Normal send case
-			celixThreadMutex_lock(&(bound->parent->socket_lock));
+			celixThreadMutex_lock(&(bound->parent->tp_lock));
 			snd = send_pubsub_msg(bound->parent->zmq_socket,msg,true);
-			celixThreadMutex_unlock(&(bound->parent->socket_lock));
+			celixThreadMutex_unlock(&(bound->parent->tp_lock));
 			break;
 		default:
-			printf("TP: ERROR: Invalid MP flags combination\n");
+			printf("PSA_ZMQ_TP: ERROR: Invalid MP flags combination\n");
 			status = -4;
 			break;
 		}
 
-		/* Free msg in case we got into a bad branch */
 		if(status==-4){
 			free(msg);
 		}
 
 		if(!snd){
-			printf("TP: Failed to send %s message %u.\n",flags == (PUBSUB_PUBLISHER_FIRST_MSG | PUBSUB_PUBLISHER_LAST_MSG) ? "single" : "multipart", msgTypeId);
+			printf("PSA_ZMQ_TP: Failed to send %s message %u.\n",flags == (PUBSUB_PUBLISHER_FIRST_MSG | PUBSUB_PUBLISHER_LAST_MSG) ? "single" : "multipart", msgTypeId);
 		}
 
 	} else {
-		printf("TP: Message %u not supported.\n",msgTypeId);
+        printf("PSA_ZMQ_TP: No msg serializer available for msg type id %d\n", msgTypeId);
 		status=-1;
 	}
 
 	celixThreadMutex_unlock(&(bound->mp_lock));
+
 	return status;
+
 }
 
-static int pubsub_localMsgTypeIdForUUID(void* handle, const char* msgType, unsigned int* out){
-	publish_bundle_bound_service_t* bound = handle;
-	unsigned int msgTypeId = 0;
-
-    celixThreadMutex_lock(&bound->mp_lock);
-	if (bound->map != NULL) {
-		hash_map_iterator_t iter = hashMapIterator_construct(bound->map->serializers);
-		while (hashMapIterator_hasNext(&iter)) {
-			pubsub_msg_serializer_t* msgSer = hashMapIterator_nextValue(&iter);
-			if (strncmp(msgType, msgSer->msgName, 1024*1024) == 0) {
-				msgTypeId = msgSer->msgId;
-				break;
-			}
-		}
-	}
-    celixThreadMutex_unlock(&bound->mp_lock);
-
-	if (msgTypeId != 0) {
-		*out = msgTypeId;
-		return 0;
-	} else {
-		printf("TP: Cannot find msg type id for msg type %s\n", msgType);
-		return 1;
-	}
+static int pubsub_localMsgTypeIdForUUID(void* handle, const char* msgType, unsigned int* msgTypeId){
+	*msgTypeId = utils_stringHash(msgType);
+	return 0;
 }
+
 
 static unsigned int rand_range(unsigned int min, unsigned int max){
 
@@ -654,10 +567,11 @@ static unsigned int rand_range(unsigned int min, unsigned int max){
 
 }
 
-static publish_bundle_bound_service_t* pubsub_createPublishBundleBoundService(topic_publication_pt tp,bundle_pt bundle){
+static publish_bundle_bound_service_pt pubsub_createPublishBundleBoundService(topic_publication_pt tp,bundle_pt bundle){
+
 	//PRECOND lock on tp->lock
 
-	publish_bundle_bound_service_t* bound = calloc(1, sizeof(*bound));
+	publish_bundle_bound_service_pt bound = calloc(1, sizeof(*bound));
 
 	if (bound != NULL) {
 
@@ -667,42 +581,41 @@ static publish_bundle_bound_service_t* pubsub_createPublishBundleBoundService(to
 		bound->mp_send_in_progress = false;
 		celixThreadMutex_create(&bound->mp_lock,NULL);
 
-		if (tp->serializerSvc != NULL) {
-			tp->serializerSvc->createSerializerMap(tp->serializerSvc->handle, bundle, &bound->map);
+		if(tp->serializer != NULL){
+			tp->serializer->createSerializerMap(tp->serializer->handle,bundle,&bound->msgTypes);
 		}
+
 		arrayList_create(&bound->mp_parts);
 
 		pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt)arrayList_get(bound->parent->pub_ep_list,0);
 		bound->topic=strdup(pubEP->topic);
 
-		bound->pubSvc.handle = bound;
-		bound->pubSvc.localMsgTypeIdForMsgType = pubsub_localMsgTypeIdForUUID;
-		bound->pubSvc.send = pubsub_topicPublicationSend;
-		bound->pubSvc.sendMultipart = pubsub_topicPublicationSendMultipart;
-	}
-	else
-	{
-		free(bound);
-		return NULL;
+		bound->service.handle = bound;
+		bound->service.localMsgTypeIdForMsgType = pubsub_localMsgTypeIdForUUID;
+		bound->service.send = pubsub_topicPublicationSend;
+		bound->service.sendMultipart = pubsub_topicPublicationSendMultipart;
+
 	}
 
 	return bound;
 }
 
-static void pubsub_destroyPublishBundleBoundService(publish_bundle_bound_service_t* boundSvc){
-	//PRECOND lock on publish->tp_lock
+static void pubsub_destroyPublishBundleBoundService(publish_bundle_bound_service_pt boundSvc){
+
+	//PRECOND lock on tp->lock
+
 	celixThreadMutex_lock(&boundSvc->mp_lock);
 
-	if (boundSvc->map != NULL && boundSvc->parent->serializerSvc != NULL) {
-		boundSvc->parent->serializerSvc->destroySerializerMap(boundSvc->parent->serializerSvc->handle, boundSvc->map);
-		boundSvc->map = NULL;
+
+	if(boundSvc->parent->serializer != NULL && boundSvc->msgTypes != NULL){
+		boundSvc->parent->serializer->destroySerializerMap(boundSvc->parent->serializer->handle, boundSvc->msgTypes);
 	}
 
-	if (boundSvc->mp_parts!=NULL) {
+	if(boundSvc->mp_parts!=NULL){
 		arrayList_destroy(boundSvc->mp_parts);
 	}
 
-	if (boundSvc->topic!=NULL) {
+	if(boundSvc->topic!=NULL){
 		free(boundSvc->topic);
 	}
 
@@ -718,7 +631,7 @@ static void delay_first_send_for_late_joiners(){
 	static bool firstSend = true;
 
 	if(firstSend){
-		printf("TP: Delaying first send for late joiners...\n");
+		printf("PSA_ZMQ_TP: Delaying first send for late joiners...\n");
 		sleep(FIRST_SEND_DELAY);
 		firstSend = false;
 	}

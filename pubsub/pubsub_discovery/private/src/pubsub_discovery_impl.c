@@ -167,7 +167,6 @@ celix_status_t pubsub_discovery_stop(pubsub_discovery_pt ps_discovery) {
     hashMapIterator_destroy(iter);
     hashMap_destroy(ps_discovery->watchers, true, true);
     celixThreadMutex_unlock(&ps_discovery->watchersMutex);
-
     return status;
 }
 
@@ -293,7 +292,7 @@ celix_status_t pubsub_discovery_announcePublisher(void *handle, pubsub_endpoint_
 	}
 	free(pub_key);
 	pubsub_endpoint_pt p = NULL;
-	pubsubEndpoint_create(pubEP->frameworkUUID,pubEP->scope,pubEP->topic,pubEP->serviceID,pubEP->endpoint,&p);
+	pubsubEndpoint_clone(pubEP, &p);
 
 	arrayList_add(pubEP_list,p);
 
@@ -396,16 +395,6 @@ celix_status_t pubsub_discovery_uninterestedInTopic(void *handle, const char* sc
 }
 
 /* pubsub_topology_manager tracker callbacks */
-
-celix_status_t pubsub_discovery_tmPublisherAnnounceAdding(void * handle, service_reference_pt reference, void **service) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	pubsub_discovery_pt pubsub_discovery = (pubsub_discovery_pt)handle;
-
-	status = bundleContext_getService(pubsub_discovery->context, reference, service);
-
-	return status;
-}
 
 celix_status_t pubsub_discovery_tmPublisherAnnounceAdded(void * handle, service_reference_pt reference, void * service) {
 	celix_status_t status = CELIX_SUCCESS;

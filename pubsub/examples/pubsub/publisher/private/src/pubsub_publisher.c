@@ -77,18 +77,20 @@ static void* send_thread(void* arg){
 		while(stop==false){
 			place->position.lat = randCoordinate(MIN_LAT,MAX_LAT);
 			place->position.lon = randCoordinate(MIN_LON,MAX_LON);
-			int nr_char = (int)randCoordinate(5,100000);
-			//int nr_char = 25;
+			//int nr_char = (int)randCoordinate(5,100000);
+			int nr_char = 32;
 			place->data = calloc(nr_char, 1);
 			for(int i = 0; i < (nr_char-1); i++) {
 				place->data[i] = i%10 + '0';
 			}
 			if(publish_svc->send) {
-				publish_svc->send(publish_svc->handle,msgId,place);
+				if(publish_svc->send(publish_svc->handle,msgId,place)==0){
+					printf("Sent %s [%f, %f] (%s, %s) data len = %d\n",st_struct->topic, place->position.lat, place->position.lon,place->name,place->description, nr_char);
+				}
 			} else {
 				printf("No send for %s\n", st_struct->topic);
 			}
-			printf("Sent %s [%f, %f] (%s, %s) data len = %d\n",st_struct->topic, place->position.lat, place->position.lon,place->name,place->description, nr_char);
+
 			free(place->data);
 			sleep(2);
 		}

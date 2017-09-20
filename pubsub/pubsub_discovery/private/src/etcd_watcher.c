@@ -57,17 +57,17 @@ struct etcd_watcher {
 	celix_thread_mutex_t watcherLock;
 	celix_thread_t watcherThread;
 
-    char *scope;
+	char *scope;
 	char *topic;
 	volatile bool running;
 };
 
 struct etcd_writer {
-    pubsub_discovery_pt pubsub_discovery;
-    celix_thread_mutex_t localPubsLock;
-    array_list_pt localPubs;
-    volatile bool running;
-    celix_thread_t writerThread;
+	pubsub_discovery_pt pubsub_discovery;
+	celix_thread_mutex_t localPubsLock;
+	array_list_pt localPubs;
+	volatile bool running;
+	celix_thread_t writerThread;
 };
 
 
@@ -77,41 +77,41 @@ static celix_status_t etcdWatcher_getTopicRootPath(bundle_context_pt context, co
 	const char* rootPath = NULL;
 
 	if (((bundleContext_getProperty(context, CFG_ETCD_ROOT_PATH, &rootPath)) != CELIX_SUCCESS) || (!rootPath)) {
-	    snprintf(rootNode, rootNodeLen, "%s/%s/%s", DEFAULT_ETCD_ROOTPATH, scope, topic);
+		snprintf(rootNode, rootNodeLen, "%s/%s/%s", DEFAULT_ETCD_ROOTPATH, scope, topic);
 	} else {
-        snprintf(rootNode, rootNodeLen, "%s/%s/%s", rootPath, scope, topic);
+		snprintf(rootNode, rootNodeLen, "%s/%s/%s", rootPath, scope, topic);
 	}
 
 	return status;
 }
 
 static celix_status_t etcdWatcher_getRootPath(bundle_context_pt context, char* rootNode) {
-    celix_status_t status = CELIX_SUCCESS;
-    const char* rootPath = NULL;
+	celix_status_t status = CELIX_SUCCESS;
+	const char* rootPath = NULL;
 
-    if (((bundleContext_getProperty(context, CFG_ETCD_ROOT_PATH, &rootPath)) != CELIX_SUCCESS) || (!rootPath)) {
-        strncpy(rootNode, DEFAULT_ETCD_ROOTPATH, MAX_ROOTNODE_LENGTH);
-    } else {
-        strncpy(rootNode, rootPath, MAX_ROOTNODE_LENGTH);
-    }
+	if (((bundleContext_getProperty(context, CFG_ETCD_ROOT_PATH, &rootPath)) != CELIX_SUCCESS) || (!rootPath)) {
+		strncpy(rootNode, DEFAULT_ETCD_ROOTPATH, MAX_ROOTNODE_LENGTH);
+	} else {
+		strncpy(rootNode, rootPath, MAX_ROOTNODE_LENGTH);
+	}
 
-    return status;
+	return status;
 }
 
 
 static void add_node(const char *key, const char *value, void* arg) {
-    pubsub_discovery_pt ps_discovery = (pubsub_discovery_pt) arg;
-    pubsub_endpoint_pt pubEP = NULL;
-    celix_status_t status = etcdWatcher_getPublisherEndpointFromKey(ps_discovery, key, value, &pubEP);
-    if(!status && pubEP) {
-        pubsub_discovery_addNode(ps_discovery, pubEP);
-    }
+	pubsub_discovery_pt ps_discovery = (pubsub_discovery_pt) arg;
+	pubsub_endpoint_pt pubEP = NULL;
+	celix_status_t status = etcdWatcher_getPublisherEndpointFromKey(ps_discovery, key, value, &pubEP);
+	if(!status && pubEP) {
+		pubsub_discovery_addNode(ps_discovery, pubEP);
+	}
 }
 
 static celix_status_t etcdWatcher_addAlreadyExistingPublishers(pubsub_discovery_pt ps_discovery, const char *rootPath, long long * highestModified) {
 	celix_status_t status = CELIX_SUCCESS;
 	if(etcd_get_directory(rootPath, add_node, ps_discovery, highestModified)) {
-	    status = CELIX_ILLEGAL_ARGUMENT;
+		status = CELIX_ILLEGAL_ARGUMENT;
 	}
 	return status;
 }
@@ -137,14 +137,14 @@ celix_status_t etcdWatcher_getPublisherEndpointFromKey(pubsub_discovery_pt pubsu
 
 	asprintf(&expr, "/%s/%%[^/]/%%[^/]/%%[^/]/%%[^/].*", rootPath);
 	if(expr) {
-            int foundItems = sscanf(etcdKey, expr, scope, topic, fwUUID, serviceId);
-            free(expr);
-            if (foundItems != 4) { // Could happen when a directory is removed, just don't process this.
-                    status = CELIX_ILLEGAL_STATE;
-            }
-            else{
-                    status = pubsubEndpoint_create(fwUUID,scope,topic,strtol(serviceId,NULL,10),etcdValue,pubEP);
-            }
+		int foundItems = sscanf(etcdKey, expr, scope, topic, fwUUID, serviceId);
+		free(expr);
+		if (foundItems != 4) { // Could happen when a directory is removed, just don't process this.
+			status = CELIX_ILLEGAL_STATE;
+		}
+		else{
+			status = pubsubEndpoint_create(fwUUID,scope,topic,strtol(serviceId,NULL,10),etcdValue,NULL,pubEP);
+		}
 	}
 	return status;
 }
@@ -154,75 +154,75 @@ celix_status_t etcdWatcher_getPublisherEndpointFromKey(pubsub_discovery_pt pubsu
  * changing discovery endpoint information within etcd.
  */
 static void* etcdWatcher_run(void* data) {
-    etcd_watcher_pt watcher = (etcd_watcher_pt) data;
-    time_t timeBeforeWatch = time(NULL);
-    char rootPath[MAX_ROOTNODE_LENGTH];
-    long long highestModified = 0;
+	etcd_watcher_pt watcher = (etcd_watcher_pt) data;
+	time_t timeBeforeWatch = time(NULL);
+	char rootPath[MAX_ROOTNODE_LENGTH];
+	long long highestModified = 0;
 
-    pubsub_discovery_pt ps_discovery = watcher->pubsub_discovery;
-    bundle_context_pt context = ps_discovery->context;
+	pubsub_discovery_pt ps_discovery = watcher->pubsub_discovery;
+	bundle_context_pt context = ps_discovery->context;
 
-    memset(rootPath, 0, MAX_ROOTNODE_LENGTH);
+	memset(rootPath, 0, MAX_ROOTNODE_LENGTH);
 
-    //TODO: add topic to etcd key
-    etcdWatcher_getTopicRootPath(context, watcher->scope, watcher->topic, rootPath, MAX_ROOTNODE_LENGTH);
-    etcdWatcher_addAlreadyExistingPublishers(ps_discovery, rootPath, &highestModified);
+	//TODO: add topic to etcd key
+	etcdWatcher_getTopicRootPath(context, watcher->scope, watcher->topic, rootPath, MAX_ROOTNODE_LENGTH);
+	etcdWatcher_addAlreadyExistingPublishers(ps_discovery, rootPath, &highestModified);
 
-    while ((celixThreadMutex_lock(&watcher->watcherLock) == CELIX_SUCCESS) && watcher->running) {
+	while ((celixThreadMutex_lock(&watcher->watcherLock) == CELIX_SUCCESS) && watcher->running) {
 
-        char *rkey = NULL;
-        char *value = NULL;
-        char *preValue = NULL;
-        char *action = NULL;
-        long long modIndex;
+		char *rkey = NULL;
+		char *value = NULL;
+		char *preValue = NULL;
+		char *action = NULL;
+		long long modIndex;
 
-        celixThreadMutex_unlock(&watcher->watcherLock);
+		celixThreadMutex_unlock(&watcher->watcherLock);
 
-        if (etcd_watch(rootPath, highestModified + 1, &action, &preValue, &value, &rkey, &modIndex) == 0 && action != NULL) {
-            pubsub_endpoint_pt pubEP = NULL;
-            if ((strcmp(action, "set") == 0) || (strcmp(action, "create") == 0)) {
-                if (etcdWatcher_getPublisherEndpointFromKey(ps_discovery, rkey, value, &pubEP) == CELIX_SUCCESS) {
-                    pubsub_discovery_addNode(ps_discovery, pubEP);
-                }
-            } else if (strcmp(action, "delete") == 0) {
-                if (etcdWatcher_getPublisherEndpointFromKey(ps_discovery, rkey, preValue, &pubEP) == CELIX_SUCCESS) {
-                    pubsub_discovery_removeNode(ps_discovery, pubEP);
-                }
-            } else if (strcmp(action, "expire") == 0) {
-                if (etcdWatcher_getPublisherEndpointFromKey(ps_discovery, rkey, preValue, &pubEP) == CELIX_SUCCESS) {
-                    pubsub_discovery_removeNode(ps_discovery, pubEP);
-                }
-            } else if (strcmp(action, "update") == 0) {
-                if (etcdWatcher_getPublisherEndpointFromKey(ps_discovery, rkey, value, &pubEP) == CELIX_SUCCESS) {
-                    pubsub_discovery_addNode(ps_discovery, pubEP);
-                }
-            } else {
-                fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Unexpected action: %s", action);
-            }
-            highestModified = modIndex;
-        } else if (time(NULL) - timeBeforeWatch <= (DEFAULT_ETCD_TTL / 4)) {
-            sleep(DEFAULT_ETCD_TTL / 4);
-        }
+		if (etcd_watch(rootPath, highestModified + 1, &action, &preValue, &value, &rkey, &modIndex) == 0 && action != NULL) {
+			pubsub_endpoint_pt pubEP = NULL;
+			if ((strcmp(action, "set") == 0) || (strcmp(action, "create") == 0)) {
+				if (etcdWatcher_getPublisherEndpointFromKey(ps_discovery, rkey, value, &pubEP) == CELIX_SUCCESS) {
+					pubsub_discovery_addNode(ps_discovery, pubEP);
+				}
+			} else if (strcmp(action, "delete") == 0) {
+				if (etcdWatcher_getPublisherEndpointFromKey(ps_discovery, rkey, preValue, &pubEP) == CELIX_SUCCESS) {
+					pubsub_discovery_removeNode(ps_discovery, pubEP);
+				}
+			} else if (strcmp(action, "expire") == 0) {
+				if (etcdWatcher_getPublisherEndpointFromKey(ps_discovery, rkey, preValue, &pubEP) == CELIX_SUCCESS) {
+					pubsub_discovery_removeNode(ps_discovery, pubEP);
+				}
+			} else if (strcmp(action, "update") == 0) {
+				if (etcdWatcher_getPublisherEndpointFromKey(ps_discovery, rkey, value, &pubEP) == CELIX_SUCCESS) {
+					pubsub_discovery_addNode(ps_discovery, pubEP);
+				}
+			} else {
+				fw_log(logger, OSGI_FRAMEWORK_LOG_INFO, "Unexpected action: %s", action);
+			}
+			highestModified = modIndex;
+		} else if (time(NULL) - timeBeforeWatch <= (DEFAULT_ETCD_TTL / 4)) {
+			sleep(DEFAULT_ETCD_TTL / 4);
+		}
 
-        FREE_MEM(action);
-        FREE_MEM(value);
-        FREE_MEM(preValue);
-        FREE_MEM(rkey);
+		FREE_MEM(action);
+		FREE_MEM(value);
+		FREE_MEM(preValue);
+		FREE_MEM(rkey);
 
-        /* prevent busy waiting, in case etcd_watch returns false */
+		/* prevent busy waiting, in case etcd_watch returns false */
 
 
-        if (time(NULL) - timeBeforeWatch > (DEFAULT_ETCD_TTL / 4)) {
-            timeBeforeWatch = time(NULL);
-        }
+		if (time(NULL) - timeBeforeWatch > (DEFAULT_ETCD_TTL / 4)) {
+			timeBeforeWatch = time(NULL);
+		}
 
-    }
+	}
 
-    if (watcher->running == false) {
-        celixThreadMutex_unlock(&watcher->watcherLock);
-    }
+	if (watcher->running == false) {
+		celixThreadMutex_unlock(&watcher->watcherLock);
+	}
 
-    return NULL;
+	return NULL;
 }
 
 celix_status_t etcdWatcher_create(pubsub_discovery_pt pubsub_discovery, bundle_context_pt context, const char *scope, const char *topic, etcd_watcher_pt *watcher) {
@@ -243,16 +243,18 @@ celix_status_t etcdWatcher_create(pubsub_discovery_pt pubsub_discovery, bundle_c
 	(*watcher)->scope = strdup(scope);
 	(*watcher)->topic = strdup(topic);
 
-    celixThreadMutex_create(&(*watcher)->watcherLock, NULL);
 
-    celixThreadMutex_lock(&(*watcher)->watcherLock);
+	celixThreadMutex_create(&(*watcher)->watcherLock, NULL);
 
-    status = celixThread_create(&(*watcher)->watcherThread, NULL, etcdWatcher_run, *watcher);
-    if (status == CELIX_SUCCESS) {
-    	(*watcher)->running = true;
-    }
+	celixThreadMutex_lock(&(*watcher)->watcherLock);
 
-    celixThreadMutex_unlock(&(*watcher)->watcherLock);
+	status = celixThread_create(&(*watcher)->watcherThread, NULL, etcdWatcher_run, *watcher);
+	if (status == CELIX_SUCCESS) {
+		(*watcher)->running = true;
+	}
+
+	celixThreadMutex_unlock(&(*watcher)->watcherLock);
+
 
 	return status;
 }

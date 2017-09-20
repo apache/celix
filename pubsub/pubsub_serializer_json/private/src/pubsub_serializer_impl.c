@@ -79,206 +79,217 @@ celix_status_t pubsubSerializer_destroy(pubsub_serializer_t* serializer) {
 	return status;
 }
 
-celix_status_t pubsubSerializer_createSerializerMap(pubsub_serializer_t* serializer, bundle_pt bundle, pubsub_msg_serializer_map_t** out) {
-    celix_status_t status = CELIX_SUCCESS;
-    pubsub_msg_serializer_map_t* map = calloc(1, sizeof(*map));
-    if (map != NULL) {
-        map->bundle = bundle;
-        map->serializers = hashMap_create(NULL, NULL, NULL, NULL);
-        pubsubSerializer_fillMsgSerializerMap(map->serializers, bundle);
-    } else {
-        logHelper_log(serializer->loghelper, OSGI_LOGSERVICE_ERROR, "Cannot allocate memory for msg map");
-        status = CELIX_ENOMEM;
-    }
+celix_status_t pubsubSerializer_createSerializerMap(pubsub_serializer_t* serializer, bundle_pt bundle, hash_map_pt* serializerMap) {
+	celix_status_t status = CELIX_SUCCESS;
 
-    if (status == CELIX_SUCCESS) {
-        *out = map;
-    }
-    return status;
+	hash_map_pt map = hashMap_create(NULL, NULL, NULL, NULL);
+
+	if (map != NULL) {
+		pubsubSerializer_fillMsgSerializerMap(map, bundle);
+	} else {
+		logHelper_log(serializer->loghelper, OSGI_LOGSERVICE_ERROR, "Cannot allocate memory for msg map");
+		status = CELIX_ENOMEM;
+	}
+
+	if (status == CELIX_SUCCESS) {
+		*serializerMap = map;
+	}
+	return status;
 }
 
-celix_status_t pubsubSerializer_destroySerializerMap(pubsub_serializer_t* serializer, pubsub_msg_serializer_map_t* map) {
-    celix_status_t status = CELIX_SUCCESS;
-    if (map == NULL) {
-        return status;
-    }
+celix_status_t pubsubSerializer_destroySerializerMap(pubsub_serializer_t* serializer, hash_map_pt serializerMap) {
+	celix_status_t status = CELIX_SUCCESS;
+	if (serializerMap == NULL) {
+		return CELIX_ILLEGAL_ARGUMENT;
+	}
 
-    hash_map_iterator_t iter = hashMapIterator_construct(map->serializers);
-    while (hashMapIterator_hasNext(&iter)) {
-        pubsub_msg_serializer_t* msgSer = hashMapIterator_nextValue(&iter);
-        pubsub_msg_serializer_impl_t* impl = msgSer->handle;
-        dynMessage_destroy(impl->dynMsg); //note msgSer->name and msgSer->version owned by dynType
-        free(impl); //also contains the service struct.
-    }
-    hashMap_destroy(map->serializers, false, false);
-    free(map);
-    return status;
+	hash_map_iterator_t iter = hashMapIterator_construct(serializerMap);
+	while (hashMapIterator_hasNext(&iter)) {
+		pubsub_msg_serializer_t* msgSerializer = hashMapIterator_nextValue(&iter);
+		dyn_message_type *dynMsg = (dyn_message_type*)msgSerializer->handle;
+		dynMessage_destroy(dynMsg); //note msgSer->name and msgSer->version owned by dynType
+		free(msgSerializer); //also contains the service struct.
+	}
+
+	hashMap_destroy(serializerMap, false, false);
+
+	return status;
 }
 
 
-celix_status_t pubsubMsgSerializer_serialize(pubsub_msg_serializer_impl_t* impl, const void* msg, char** out, size_t *outLen) {
-    celix_status_t status = CELIX_SUCCESS;
+celix_status_t pubsubMsgSerializer_serialize(pubsub_msg_serializer_t* msgSerializer, const void* msg, void** out, size_t *outLen) {
+	celix_status_t status = CELIX_SUCCESS;
 
-    char *jsonOutput = NULL;
-    dyn_type* dynType = NULL;
-    dynMessage_getMessageType(impl->dynMsg, &dynType);
-	int rc = jsonSerializer_serialize(dynType, msg, &jsonOutput);
-	if (rc != 0){
+	char *jsonOutput = NULL;
+	dyn_type* dynType = NULL;
+	dyn_message_type *dynMsg = (dyn_message_type*)msgSerializer->handle;
+	dynMessage_getMessageType(dynMsg, &dynType);
+
+	if (jsonSerializer_serialize(dynType, msg, &jsonOutput) != 0){
 		status = CELIX_BUNDLE_EXCEPTION;
 	}
-    if (status == CELIX_SUCCESS) {
-        *out = jsonOutput;
-        *outLen = strlen(jsonOutput) + 1;
-    }
+
+	if (status == CELIX_SUCCESS) {
+		*out = jsonOutput;
+		*outLen = strlen(jsonOutput) + 1;
+	}
 
 	return status;
 }
 
-celix_status_t pubsubMsgSerializer_deserialize(pubsub_msg_serializer_impl_t* impl, const char* input, size_t inputLen, void **out) {
-    celix_status_t status = CELIX_SUCCESS;
-    void *msg = NULL;
-    dyn_type* dynType = NULL;
-    dynMessage_getMessageType(impl->dynMsg, &dynType);
-    int rc = jsonSerializer_deserialize(dynType, input, &msg);
-    if (rc != 0) {
-        status = CELIX_BUNDLE_EXCEPTION;
-    }
-    else{
-        *out = msg;
-    }
+celix_status_t pubsubMsgSerializer_deserialize(pubsub_msg_serializer_t* msgSerializer, const void* input, size_t inputLen, void **out) {
+
+	celix_status_t status = CELIX_SUCCESS;
+	void *msg = NULL;
+	dyn_type* dynType = NULL;
+	dyn_message_type *dynMsg = (dyn_message_type*)msgSerializer->handle;
+	dynMessage_getMessageType(dynMsg, &dynType);
+
+	if (jsonSerializer_deserialize(dynType, (const char*)input, &msg) != 0) {
+		status = CELIX_BUNDLE_EXCEPTION;
+	}
+	else{
+		*out = msg;
+	}
+
 	return status;
 }
 
-void pubsubMsgSerializer_freeMsg(pubsub_msg_serializer_impl_t* impl, void *msg) {
-    dyn_type* dynType = NULL;
-    dynMessage_getMessageType(impl->dynMsg, &dynType);
-    if (dynType != NULL) {
-        dynType_free(dynType, msg);
-    }
+void pubsubMsgSerializer_freeMsg(pubsub_msg_serializer_t* msgSerializer, void *msg) {
+	dyn_type* dynType = NULL;
+	dyn_message_type *dynMsg = (dyn_message_type*)msgSerializer->handle;
+	dynMessage_getMessageType(dynMsg, &dynType);
+	if (dynType != NULL) {
+		dynType_free(dynType, msg);
+	}
 }
 
 
 static void pubsubSerializer_fillMsgSerializerMap(hash_map_pt msgSerializers, bundle_pt bundle) {
-    char* root = NULL;
-    char* metaInfPath = NULL;
+	char* root = NULL;
+	char* metaInfPath = NULL;
 
-    root = pubsubSerializer_getMsgDescriptionDir(bundle);
+	root = pubsubSerializer_getMsgDescriptionDir(bundle);
 
-    if(root != NULL){
-        asprintf(&metaInfPath, "%s/META-INF/descriptors/messages", root);
+	if(root != NULL){
+		asprintf(&metaInfPath, "%s/META-INF/descriptors", root);
 
-        pubsubSerializer_addMsgSerializerFromBundle(root, bundle, msgSerializers);
-        pubsubSerializer_addMsgSerializerFromBundle(metaInfPath, bundle, msgSerializers);
+		pubsubSerializer_addMsgSerializerFromBundle(root, bundle, msgSerializers);
+		pubsubSerializer_addMsgSerializerFromBundle(metaInfPath, bundle, msgSerializers);
 
-        free(metaInfPath);
-        free(root);
-    }
+		free(metaInfPath);
+		free(root);
+	}
 }
 
 static char* pubsubSerializer_getMsgDescriptionDir(bundle_pt bundle)
 {
-    char *root = NULL;
+	char *root = NULL;
 
-    bool isSystemBundle = false;
-    bundle_isSystemBundle(bundle, &isSystemBundle);
+	bool isSystemBundle = false;
+	bundle_isSystemBundle(bundle, &isSystemBundle);
 
-    if(isSystemBundle == true) {
-        bundle_context_pt context;
-        bundle_getContext(bundle, &context);
+	if(isSystemBundle == true) {
+		bundle_context_pt context;
+		bundle_getContext(bundle, &context);
 
-        const char *prop = NULL;
+		const char *prop = NULL;
 
-        bundleContext_getProperty(context, SYSTEM_BUNDLE_ARCHIVE_PATH, &prop);
+		bundleContext_getProperty(context, SYSTEM_BUNDLE_ARCHIVE_PATH, &prop);
 
-        if(prop != NULL) {
-            root = strdup(prop);
-        } else {
-            root = getcwd(NULL, 0);
-        }
-    } else {
-        bundle_getEntry(bundle, ".", &root);
-    }
+		if(prop != NULL) {
+			root = strdup(prop);
+		} else {
+			root = getcwd(NULL, 0);
+		}
+	} else {
+		bundle_getEntry(bundle, ".", &root);
+	}
 
-    return root;
+	return root;
 }
 
 
 static void pubsubSerializer_addMsgSerializerFromBundle(const char *root, bundle_pt bundle, hash_map_pt msgSerializers)
 {
-    char path[128];
-    struct dirent *entry = NULL;
-    DIR *dir = opendir(root);
+	char path[128];
+	struct dirent *entry = NULL;
+	DIR *dir = opendir(root);
 
-    if(dir) {
-        entry = readdir(dir);
-    }
+	if(dir) {
+		entry = readdir(dir);
+	}
 
-    while (entry != NULL) {
+	while (entry != NULL) {
 
-        if (strstr(entry->d_name, ".descriptor") != NULL) {
+		if (strstr(entry->d_name, ".descriptor") != NULL) {
 
-            printf("DMU: Parsing entry '%s'\n", entry->d_name);
+			printf("DMU: Parsing entry '%s'\n", entry->d_name);
 
-            memset(path,0,128);
-            snprintf(path, 128, "%s/%s", root, entry->d_name);
-            FILE *stream = fopen(path,"r");
+			memset(path,0,128);
+			snprintf(path, 128, "%s/%s", root, entry->d_name);
+			FILE *stream = fopen(path,"r");
 
-            if (stream != NULL){
-                dyn_message_type* msgType = NULL;
+			if (stream != NULL){
+				dyn_message_type* msgType = NULL;
 
-                int rc = dynMessage_parse(stream, &msgType);
-                if (rc == 0 && msgType != NULL) {
+				int rc = dynMessage_parse(stream, &msgType);
+				if (rc == 0 && msgType != NULL) {
 
-                    char* msgName = NULL;
-                    rc += dynMessage_getName(msgType,&msgName);
+					char* msgName = NULL;
+					rc += dynMessage_getName(msgType,&msgName);
 
-                    version_pt msgVersion = NULL;
-                    rc += dynMessage_getVersion(msgType, &msgVersion);
+					version_pt msgVersion = NULL;
+					rc += dynMessage_getVersion(msgType, &msgVersion);
 
-                    if(rc == 0 && msgName != NULL && msgVersion != NULL){
+					if(rc == 0 && msgName != NULL && msgVersion != NULL){
 
-                    	unsigned int msgId = utils_stringHash(msgName);
+						unsigned int msgId = utils_stringHash(msgName);
 
-                    	pubsub_msg_serializer_impl_t* impl = calloc(1, sizeof(*impl));
-                    	impl->dynMsg = msgType;
-                    	impl->msgSerializer.handle = impl;
-                    	impl->msgSerializer.msgId = msgId;
-                    	impl->msgSerializer.msgName = msgName;
-                    	impl->msgSerializer.msgVersion = msgVersion;
-                    	impl->msgSerializer.serialize = (void*) pubsubMsgSerializer_serialize;
-                    	impl->msgSerializer.deserialize = (void*) pubsubMsgSerializer_deserialize;
-                    	impl->msgSerializer.freeMsg = (void*) pubsubMsgSerializer_freeMsg;
+						pubsub_msg_serializer_t *msgSerializer = calloc(1,sizeof(pubsub_msg_serializer_t));
 
-                    	bool clash = hashMap_containsKey(msgSerializers, (void*)(uintptr_t)msgId);
-                    	if (clash) {
-                    		printf("Cannot add msg %s. clash in msg id %d!!\n", msgName, msgId);
-                    		free(impl);
-                    		dynMessage_destroy(msgType);
-                    	} else if (msgId != 0) {
-                    		hashMap_put(msgSerializers, (void*)(uintptr_t)msgId, &impl->msgSerializer);
-                    	} else {
-                    		printf("Error creating msg serializer\n");
-                    		free(impl);
-                    		dynMessage_destroy(msgType);
-                    	}
-                    }
-                    else{
-                    	printf("Cannot retrieve name and/or version from msg\n");
-                    }
+						msgSerializer->handle = msgType;
+						msgSerializer->msgId = msgId;
+						msgSerializer->msgName = msgName;
+						msgSerializer->msgVersion = msgVersion;
+						msgSerializer->serialize = (void*) pubsubMsgSerializer_serialize;
+						msgSerializer->deserialize = (void*) pubsubMsgSerializer_deserialize;
+						msgSerializer->freeMsg = (void*) pubsubMsgSerializer_freeMsg;
 
-                } else{
-                    printf("DMU: cannot parse message from descriptor %s\n.",path);
-                }
-                fclose(stream);
-            }else{
-                printf("DMU: cannot open descriptor file %s\n.",path);
-            }
+						bool clash = hashMap_containsKey(msgSerializers, (void*)(uintptr_t)msgId);
+						if (clash){
+							printf("Cannot add msg %s. clash in msg id %d!!\n", msgName, msgId);
+							free(msgSerializer);
+							dynMessage_destroy(msgType);
+						}
+						else if (msgId != 0){
+							printf("Adding %u : %s\n", msgId, msgName);
+							hashMap_put(msgSerializers, (void*)(uintptr_t)msgId, msgSerializer);
+						}
+						else{
+							printf("Error creating msg serializer\n");
+							free(msgSerializer);
+							dynMessage_destroy(msgType);
+						}
 
-        }
-        entry = readdir(dir);
-    }
+					}
+					else{
+						printf("Cannot retrieve name and/or version from msg\n");
+					}
 
-    if(dir) {
-        closedir(dir);
-    }
+				} else{
+					printf("DMU: cannot parse message from descriptor %s\n.",path);
+				}
+				fclose(stream);
+			}else{
+				printf("DMU: cannot open descriptor file %s\n.",path);
+			}
+
+		}
+		entry = readdir(dir);
+	}
+
+	if(dir) {
+		closedir(dir);
+	}
 }

@@ -31,13 +31,12 @@
 
 #include "pubsub_common.h"
 #include "pubsub_endpoint.h"
-#include "pubsub_serializer.h"
 
 #define PSA_IP 	"PSA_IP"
 #define PSA_ITF	"PSA_INTERFACE"
 #define PSA_MULTICAST_IP_PREFIX "PSA_MC_PREFIX"
 
-#define PSA_DEFAULT "zmq"
+#define PUBSUB_ADMIN_TYPE_KEY	"pubsub_admin.type"
 
 typedef struct pubsub_admin *pubsub_admin_pt;
 
@@ -53,12 +52,19 @@ struct pubsub_admin_service {
 	celix_status_t (*closeAllPublications)(pubsub_admin_pt admin,char* scope, char* topic);
 	celix_status_t (*closeAllSubscriptions)(pubsub_admin_pt admin,char* scope, char* topic);
 
-	celix_status_t (*matchPublisher)(pubsub_admin_pt admin, pubsub_endpoint_pt pubEP, double* score);
-	celix_status_t (*matchSubscriber)(pubsub_admin_pt admin, pubsub_endpoint_pt subEP, double* score);
-
-	celix_status_t (*setSerializer)(pubsub_admin_pt admin, pubsub_serializer_service_t* serializerSvc);
-	celix_status_t (*removeSerializer)(pubsub_admin_pt admin, pubsub_serializer_service_t* serializerSvc);
-
+	/* Match principle:
+	 * - A full matching pubsub_admin gives 200 points
+	 * - A full matching serializer gives 100 points
+	 * - If QoS = sample
+	 * 		- fallback pubsub_admin order of selection is: udp_mc, zmq. Points allocation is 100,75.
+	 * 		- fallback serializers order of selection is: json, void. Points allocation is 30,20.
+	 * - If QoS = control
+	 * 		- fallback pubsub_admin order of selection is: zmq,udp_mc. Points allocation is 100,75.
+	 * 		- fallback serializers order of selection is: json, void. Points allocation is 30,20.
+	 * - If nothing is specified, QoS = sample is assumed, so the same score applies, just divided by two.
+	 *
+	 */
+	celix_status_t (*matchEndpoint)(pubsub_admin_pt admin, pubsub_endpoint_pt endpoint, double* score);
 };
 
 typedef struct pubsub_admin_service *pubsub_admin_service_pt;

@@ -30,7 +30,7 @@
 #include <stdlib.h>
 
 #define PUBSUB_PUBLISHER_SERVICE_NAME           "pubsub.publisher"
-#define PUBSUB_PUBLISHER_SERVICE_VERSION        "1.0.0"
+#define PUBSUB_PUBLISHER_SERVICE_VERSION	      "2.0.0"
  
 //properties
 #define PUBSUB_PUBLISHER_TOPIC                  "pubsub.topic"
