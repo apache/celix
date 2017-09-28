@@ -117,9 +117,9 @@ add_bundle(HelloWorld
 )
 
 IF(APPLE)
-    target_link_libraries(HelloWorld ${CELIX_LIBRARIES} -Wl,-all_load ${CELIX_DM_CXX_STATIC_LIB})
+    target_link_libraries(HelloWorld ${CELIX_LIBRARIES} -Wl,-all_load ${CELIX_DM_STATIC_CXX_LIB})
 else()
-    target_link_libraries(HelloWorld -Wl,--no-undefined -Wl,--whole-archive ${CELIX_DM_CXX_STATIC_LIB} -Wl,--no-whole-archive ${CELIX_LIBRARIES})
+    target_link_libraries(HelloWorld -Wl,--no-undefined -Wl,--whole-archive ${CELIX_DM_STATIC_CXX_LIB} -Wl,--no-whole-archive ${CELIX_LIBRARIES})
 endif()
 ```
 	

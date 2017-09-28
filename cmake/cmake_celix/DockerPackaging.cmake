@@ -119,12 +119,20 @@ function(add_docker)
         DEPENDS ${TIMESTAMP_FILE}
     )
 
+    #Setting CELIX_LIB_DIRS, CELIX_BIN_DIR and CELIX_LAUNCHER 
+    if (EXISTS ${CELIX_FRAMEWORK_LIBRARY}) 
+        #CELIX_FRAMEWORK_LIBRARY set by FindCelix.cmake -> Celix Based Project
+        #CELIX_LAUNCHER is set by FindCelix.cmake
+    else()
+        set(CELIX_LAUNCHER "$<TARGET_FILE:celix>")
+    endif()
+
     #setup dependencies based on timestamp
     if (DOCKER_CREATE_FS)
         add_custom_command(OUTPUT "${TIMESTAMP_FILE}"
             COMMAND ${CMAKE_COMMAND} -E touch ${TIMESTAMP_FILE}
             COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOCATION>
-            COMMAND cd $<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOCATION> && /bin/bash ${CELIX_CMAKE_DIRECTORY}/cmake_celix/create_target_filesystem.sh -e $<TARGET_FILE:celix> -l $<TARGET_FILE:${DOCKER_DEPSLIB}>
+            COMMAND cd $<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOCATION> && /bin/bash ${CELIX_CMAKE_DIRECTORY}/cmake_celix/create_target_filesystem.sh -e ${CELIX_LAUNCHER} -l $<TARGET_FILE:${DOCKER_DEPSLIB}>
             DEPENDS  "$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_DEPS>" ${DOCKERFILE} ${DOCKER_DEPSLIB}
             WORKING_DIRECTORY "${DOCKER_LOCATION}"
             COMMENT "Creating docker dir for ${DOCKER_TARGET}" VERBATIM
