@@ -116,7 +116,7 @@ celix_status_t pubsubAdmin_create(bundle_context_pt context, pubsub_admin_pt *ad
 		if (mc_ip == NULL) {
 			const char *mc_prefix = NULL;
 			const char *interface = NULL;
-			int b0, b1, b2, b3;
+			int b0 = 0, b1 = 0, b2 = 0, b3 = 0;
 			bundleContext_getProperty(context,PSA_MULTICAST_IP_PREFIX , &mc_prefix);
 			if(mc_prefix == NULL) {
 				mc_prefix = DEFAULT_MC_PREFIX;
