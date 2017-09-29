@@ -24,8 +24,8 @@
  *  \copyright	Apache License, Version 2.0
  */
 
-#ifndef PUBSUB_ADMIN_IMPL_H_
-#define PUBSUB_ADMIN_IMPL_H_
+#ifndef PUBSUB_ADMIN_ZMQ_IMPL_H_
+#define PUBSUB_ADMIN_ZMQ_IMPL_H_
 
 #include <czmq.h>
 /* The following undefs prevent the collision between:
@@ -38,7 +38,7 @@
 #undef LOG_WARNING
 
 #include "pubsub_admin.h"
-#include "pubsub_serializer.h"
+#include "pubsub_admin_match.h"
 #include "log_helper.h"
 
 #define PSA_ZMQ_BASE_PORT "PSA_ZMQ_BASE_PORT"
@@ -47,12 +47,16 @@
 #define PSA_ZMQ_DEFAULT_BASE_PORT 5501
 #define PSA_ZMQ_DEFAULT_MAX_PORT 6000
 
-struct pubsub_admin {
+#define PUBSUB_ADMIN_TYPE	"zmq"
 
-	pubsub_serializer_service_t* serializerSvc;
+struct pubsub_admin {
 
 	bundle_context_pt bundle_context;
 	log_helper_pt loghelper;
+
+	/* List of the available serializers */
+	celix_thread_mutex_t serializerListLock; // List<serializers>
+	array_list_pt serializerList;
 
 	celix_thread_mutex_t localPublicationsLock;
 	hash_map_pt localPublications;//<topic(string),service_factory_pt>
@@ -64,8 +68,16 @@ struct pubsub_admin {
 	hash_map_pt subscriptions; //<topic(string),topic_subscription>
 
 	celix_thread_mutex_t pendingSubscriptionsLock;
-	celix_thread_mutexattr_t pendingSubscriptionsAttr;
 	hash_map_pt pendingSubscriptions; //<topic(string),List<pubsub_ep>>
+
+	/* Those are used to keep track of valid subscriptions/publications that still have no valid serializer */
+	celix_thread_mutex_t noSerializerPendingsLock;
+	array_list_pt noSerializerSubscriptions; // List<pubsub_ep>
+	array_list_pt noSerializerPublications; // List<pubsub_ep>
+
+	celix_thread_mutex_t usedSerializersLock;
+	hash_map_pt topicSubscriptionsPerSerializer; // <serializer,List<topicSubscription>>
+	hash_map_pt topicPublicationsPerSerializer; // <serializer,List<topicPublications>>
 
 	char* ipAddress;
 
@@ -74,11 +86,6 @@ struct pubsub_admin {
     unsigned int basePort;
     unsigned int maxPort;
 };
-
-/* Note: correct locking order is
- * 1. subscriptionsLock
- * 2. publications locks
- */
 
 celix_status_t pubsubAdmin_create(bundle_context_pt context, pubsub_admin_pt *admin);
 celix_status_t pubsubAdmin_destroy(pubsub_admin_pt admin);
@@ -92,10 +99,9 @@ celix_status_t pubsubAdmin_removePublication(pubsub_admin_pt admin,pubsub_endpoi
 celix_status_t pubsubAdmin_closeAllPublications(pubsub_admin_pt admin,char* scope, char* topic);
 celix_status_t pubsubAdmin_closeAllSubscriptions(pubsub_admin_pt admin,char* scope,char* topic);
 
-celix_status_t pubsubAdmin_matchPublisher(pubsub_admin_pt admin, pubsub_endpoint_pt pubEP, double* score);
-celix_status_t pubsubAdmin_matchSubscriber(pubsub_admin_pt admin, pubsub_endpoint_pt subEP, double* score);
+celix_status_t pubsubAdmin_serializerAdded(void * handle, service_reference_pt reference, void * service);
+celix_status_t pubsubAdmin_serializerRemoved(void * handle, service_reference_pt reference, void * service);
 
-celix_status_t pubsubAdmin_setSerializer(pubsub_admin_pt admin, pubsub_serializer_service_t* serializerSvc);
-celix_status_t pubsubAdmin_removeSerializer(pubsub_admin_pt admin, pubsub_serializer_service_t* serializerSvc);
+celix_status_t pubsubAdmin_matchEndpoint(pubsub_admin_pt admin, pubsub_endpoint_pt endpoint, double* score);
 
-#endif /* PUBSUB_ADMIN_IMPL_H_ */
+#endif /* PUBSUB_ADMIN_ZMQ_IMPL_H_ */

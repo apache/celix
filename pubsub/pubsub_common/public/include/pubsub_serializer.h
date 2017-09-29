@@ -28,8 +28,11 @@
 #define PUBSUB_SERIALIZER_SERVICE_H_
 
 #include "service_reference.h"
+#include "hash_map.h"
 
 #include "pubsub_common.h"
+
+#define PUBSUB_SERIALIZER_TYPE_KEY	"pubsub_serializer.type"
 
 /**
  * There should be a pubsub_serializer_t
@@ -39,28 +42,24 @@
  * a serializer_map per bundle. Potentially using
  * the extender pattern.
  */
+
 typedef struct pubsub_msg_serializer {
-    void* handle;
-    unsigned int msgId;
-    const char* msgName;
-    version_pt msgVersion;
+	void* handle;
+	unsigned int msgId;
+	const char* msgName;
+	version_pt msgVersion;
 
-    celix_status_t (*serialize)(void* handle, const void* input, char** out, size_t* outLen);
-    celix_status_t (*deserialize)(void* handle, const char* input, size_t inputLen, void** out); //note inputLen can be 0 if predefined size is not needed
+	celix_status_t (*serialize)(void* handle, const void* input, void** out, size_t* outLen);
+	celix_status_t (*deserialize)(void* handle, const void* input, size_t inputLen, void** out); //note inputLen can be 0 if predefined size is not needed
+	void (*freeMsg)(void* handle, void* msg);
 
-    void (*freeMsg)(void* handle, void* msg);
 } pubsub_msg_serializer_t;
-
-typedef struct pubsub_msg_serializer_map {
-    bundle_pt bundle;
-    hash_map_pt serializers; //key = msg id (unsigned int), value = pubsub_serializer_t*
-} pubsub_msg_serializer_map_t;
 
 typedef struct pubsub_serializer_service {
 	void* handle;
 
-	celix_status_t (*createSerializerMap)(void* handle, bundle_pt bundle, pubsub_msg_serializer_map_t** out);
-    celix_status_t (*destroySerializerMap)(void* handle, pubsub_msg_serializer_map_t* map);
+	celix_status_t (*createSerializerMap)(void* handle, bundle_pt bundle, hash_map_pt* serializerMap);
+	celix_status_t (*destroySerializerMap)(void* handle, hash_map_pt serializerMap);
 
 } pubsub_serializer_service_t;
 

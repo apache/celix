@@ -149,6 +149,9 @@ celix_status_t logHelper_destroy(log_helper_pt* loghelper) {
         return status;
 }
 
+
+
+
 celix_status_t logHelper_log(log_helper_pt loghelper, log_level_t level, char* message, ... )
 {
     celix_status_t status = CELIX_SUCCESS;
@@ -166,6 +169,7 @@ celix_status_t logHelper_log(log_helper_pt loghelper, log_level_t level, char* m
 		int i = 0;
 
 		for (; i < arrayList_size(loghelper->logServices); i++) {
+
 			log_service_pt logService = arrayList_get(loghelper->logServices, i);
 
 			if (logService != NULL) {
@@ -175,31 +179,31 @@ celix_status_t logHelper_log(log_helper_pt loghelper, log_level_t level, char* m
 		}
 
 		pthread_mutex_unlock(&loghelper->logListLock);
-
-		if (!logged && loghelper->stdOutFallback) {
-			char *levelStr = NULL;
-
-			switch (level) {
-				case OSGI_LOGSERVICE_ERROR:
-					levelStr = "ERROR";
-					break;
-				case OSGI_LOGSERVICE_WARNING:
-					levelStr = "WARNING";
-					break;
-				case OSGI_LOGSERVICE_INFO:
-					levelStr = "INFO";
-					break;
-				case OSGI_LOGSERVICE_DEBUG:
-				default:
-					levelStr = "DEBUG";
-					break;
-			}
-
-			printf("%s: %s\n", levelStr, msg);
-		}
 	}
 
-	va_end(listPointer);
+
+    if (!logged && loghelper->stdOutFallback) {
+        char *levelStr = NULL;
+
+        switch (level) {
+            case OSGI_LOGSERVICE_ERROR:
+                levelStr = "ERROR";
+                break;
+            case OSGI_LOGSERVICE_WARNING:
+                levelStr = "WARNING";
+                break;
+            case OSGI_LOGSERVICE_INFO:
+                levelStr = "INFO";
+                break;
+            case OSGI_LOGSERVICE_DEBUG:
+            default:
+                levelStr = "DEBUG";
+                break;
+        }
+
+        printf("%s: %s\n", levelStr, msg);
+    }
+
 
 	return status;
 }

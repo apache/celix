@@ -48,7 +48,7 @@ static celix_status_t createTMPublisherAnnounceTracker(struct activator *activat
 	service_tracker_customizer_pt customizer = NULL;
 
 	status = serviceTrackerCustomizer_create(activator->pubsub_discovery,
-			pubsub_discovery_tmPublisherAnnounceAdding,
+			NULL,
 			pubsub_discovery_tmPublisherAnnounceAdded,
 			pubsub_discovery_tmPublisherAnnounceModified,
 			pubsub_discovery_tmPublisherAnnounceRemoved,

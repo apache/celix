@@ -36,6 +36,7 @@ add_bundle(org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
 		private/src/etcd_watcher.c
 		private/src/etcd_writer.c
 		${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_endpoint.c
+		${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_utils.c
 )
 
 target_link_libraries(org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery celix_framework celix_utils etcdlib_static ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})

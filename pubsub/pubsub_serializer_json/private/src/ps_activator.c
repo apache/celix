@@ -68,7 +68,11 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 		pubsubSerializerSvc->destroySerializerMap = (void*)pubsubSerializer_destroySerializerMap;
 		activator->serializerService = pubsubSerializerSvc;
 
-		status = bundleContext_registerService(context, PUBSUB_SERIALIZER_SERVICE, pubsubSerializerSvc, NULL, &activator->registration);
+		/* Set serializer type */
+		properties_pt props = properties_create();
+		properties_set(props,PUBSUB_SERIALIZER_TYPE_KEY,PUBSUB_SERIALIZER_TYPE);
+
+		status = bundleContext_registerService(context, PUBSUB_SERIALIZER_SERVICE, pubsubSerializerSvc, props, &activator->registration);
 
 	}
 

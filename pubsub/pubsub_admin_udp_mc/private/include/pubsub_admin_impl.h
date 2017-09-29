@@ -24,19 +24,22 @@
  *  \copyright	Apache License, Version 2.0
  */
 
-#ifndef PUBSUB_ADMIN_IMPL_H_
-#define PUBSUB_ADMIN_IMPL_H_
+#ifndef PUBSUB_ADMIN_UDP_MC_IMPL_H_
+#define PUBSUB_ADMIN_UDP_MC_IMPL_H_
 
 #include "pubsub_admin.h"
-#include "pubsub_serializer.h"
 #include "log_helper.h"
+
+#define PUBSUB_ADMIN_TYPE	"udp_mc"
 
 struct pubsub_admin {
 
-	pubsub_serializer_service_t* serializerSvc;
-
 	bundle_context_pt bundle_context;
 	log_helper_pt loghelper;
+
+	/* List of the available serializers */
+	celix_thread_mutex_t serializerListLock; // List<serializers>
+	array_list_pt serializerList;
 
 	celix_thread_mutex_t localPublicationsLock;
 	hash_map_pt localPublications;//<topic(string),service_factory_pt>
@@ -50,15 +53,24 @@ struct pubsub_admin {
 	celix_thread_mutex_t pendingSubscriptionsLock;
 	hash_map_pt pendingSubscriptions; //<topic(string),List<pubsub_ep>>
 
+	/* Those are used to keep track of valid subscriptions/publications that still have no valid serializer */
+	celix_thread_mutex_t noSerializerPendingsLock;
+	array_list_pt noSerializerSubscriptions; // List<pubsub_ep>
+	array_list_pt noSerializerPublications; // List<pubsub_ep>
+
+	celix_thread_mutex_t usedSerializersLock;
+	hash_map_pt topicSubscriptionsPerSerializer; // <serializer,List<topicSubscription>>
+	hash_map_pt topicPublicationsPerSerializer; // <serializer,List<topicPublications>>
+
 	char* ifIpAddress; // The local interface which is used for multicast communication
-    char* mcIpAddress; // The multicast IP address
+	char* mcIpAddress; // The multicast IP address
 
 	int sendSocket;
+	void* zmq_context; // to be removed
 
 };
 
 celix_status_t pubsubAdmin_create(bundle_context_pt context, pubsub_admin_pt *admin);
-celix_status_t pubsubAdmin_stop(pubsub_admin_pt admin);
 celix_status_t pubsubAdmin_destroy(pubsub_admin_pt admin);
 
 celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint_pt subEP);
@@ -70,10 +82,10 @@ celix_status_t pubsubAdmin_removePublication(pubsub_admin_pt admin,pubsub_endpoi
 celix_status_t pubsubAdmin_closeAllPublications(pubsub_admin_pt admin,char* scope, char* topic);
 celix_status_t pubsubAdmin_closeAllSubscriptions(pubsub_admin_pt admin,char* scope, char* topic);
 
-celix_status_t pubsubAdmin_matchPublisher(pubsub_admin_pt admin, pubsub_endpoint_pt pubEP, double* score);
-celix_status_t pubsubAdmin_matchSubscriber(pubsub_admin_pt admin, pubsub_endpoint_pt subEP, double* score);
+celix_status_t pubsubAdmin_serializerAdded(void * handle, service_reference_pt reference, void * service);
+celix_status_t pubsubAdmin_serializerRemoved(void * handle, service_reference_pt reference, void * service);
 
-celix_status_t pubsubAdmin_setSerializer(pubsub_admin_pt admin, pubsub_serializer_service_t* serializerSvc);
-celix_status_t pubsubAdmin_removeSerializer(pubsub_admin_pt admin, pubsub_serializer_service_t* serializerSvc);
+celix_status_t pubsubAdmin_matchEndpoint(pubsub_admin_pt admin, pubsub_endpoint_pt endpoint, double* score);
 
-#endif /* PUBSUB_ADMIN_IMPL_H_ */
+
+#endif /* PUBSUB_ADMIN_UDP_MC_IMPL_H_ */

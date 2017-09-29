@@ -48,7 +48,6 @@ struct activator {
 
 	pubsub_topology_manager_pt manager;
 
-	service_tracker_pt pubsubSerializerTracker;
 	service_tracker_pt pubsubDiscoveryTracker;
 	service_tracker_pt pubsubAdminTracker;
 	service_tracker_pt pubsubSubscribersTracker;
@@ -62,30 +61,11 @@ struct activator {
 	log_helper_pt loghelper;
 };
 
-static celix_status_t bundleActivator_createPSSTracker(struct activator *activator, service_tracker_pt *tracker);
+
 static celix_status_t bundleActivator_createPSDTracker(struct activator *activator, service_tracker_pt *tracker);
 static celix_status_t bundleActivator_createPSATracker(struct activator *activator, service_tracker_pt *tracker);
 static celix_status_t bundleActivator_createPSSubTracker(struct activator *activator, service_tracker_pt *tracker);
 
-
-static celix_status_t bundleActivator_createPSSTracker(struct activator *activator, service_tracker_pt *tracker) {
-	celix_status_t status;
-
-	service_tracker_customizer_pt customizer = NULL;
-
-	status = serviceTrackerCustomizer_create(activator->manager,
-			pubsub_topologyManager_pubsubSerializerAdding,
-			pubsub_topologyManager_pubsubSerializerAdded,
-			pubsub_topologyManager_pubsubSerializerModified,
-			pubsub_topologyManager_pubsubSerializerRemoved,
-			&customizer);
-
-	if (status == CELIX_SUCCESS) {
-		status = serviceTracker_create(activator->context, (char *) PUBSUB_SERIALIZER_SERVICE, customizer, tracker);
-	}
-
-	return status;
-}
 
 static celix_status_t bundleActivator_createPSDTracker(struct activator *activator, service_tracker_pt *tracker) {
 	celix_status_t status;
@@ -93,7 +73,7 @@ static celix_status_t bundleActivator_createPSDTracker(struct activator *activat
 	service_tracker_customizer_pt customizer = NULL;
 
 	status = serviceTrackerCustomizer_create(activator->manager,
-			pubsub_topologyManager_pubsubDiscoveryAdding,
+			NULL,
 			pubsub_topologyManager_pubsubDiscoveryAdded,
 			pubsub_topologyManager_pubsubDiscoveryModified,
 			pubsub_topologyManager_pubsubDiscoveryRemoved,
@@ -112,7 +92,7 @@ static celix_status_t bundleActivator_createPSATracker(struct activator *activat
 	service_tracker_customizer_pt customizer = NULL;
 
 	status = serviceTrackerCustomizer_create(activator->manager,
-			pubsub_topologyManager_psaAdding,
+			NULL,
 			pubsub_topologyManager_psaAdded,
 			pubsub_topologyManager_psaModified,
 			pubsub_topologyManager_psaRemoved,
@@ -131,7 +111,7 @@ static celix_status_t bundleActivator_createPSSubTracker(struct activator *activ
 	service_tracker_customizer_pt customizer = NULL;
 
 	status = serviceTrackerCustomizer_create(activator->manager,
-			pubsub_topologyManager_subscriberAdding,
+			NULL,
 			pubsub_topologyManager_subscriberAdded,
 			pubsub_topologyManager_subscriberModified,
 			pubsub_topologyManager_subscriberRemoved,
@@ -163,35 +143,14 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 	if (status == CELIX_SUCCESS) {
 		status = bundleActivator_createPSDTracker(activator, &activator->pubsubDiscoveryTracker);
 		if (status == CELIX_SUCCESS) {
-			status = bundleActivator_createPSSTracker(activator, &activator->pubsubSerializerTracker);
-			if (status == CELIX_SUCCESS){
-				status = bundleActivator_createPSATracker(activator, &activator->pubsubAdminTracker);
+			status = bundleActivator_createPSATracker(activator, &activator->pubsubAdminTracker);
+			if (status == CELIX_SUCCESS) {
+				status = bundleActivator_createPSSubTracker(activator, &activator->pubsubSubscribersTracker);
 				if (status == CELIX_SUCCESS) {
-					status = bundleActivator_createPSSubTracker(activator, &activator->pubsubSubscribersTracker);
-					if (status == CELIX_SUCCESS) {
-						*userData = activator;
-					}
-					if (status != CELIX_SUCCESS){
-						serviceTracker_destroy(activator->pubsubAdminTracker);
-					}
-				}
-				if (status != CELIX_SUCCESS){
-					serviceTracker_destroy(activator->pubsubSerializerTracker);
+					*userData = activator;
 				}
 			}
-			if (status != CELIX_SUCCESS){
-				serviceTracker_destroy(activator->pubsubDiscoveryTracker);
-			}
 		}
-		if (status != CELIX_SUCCESS){
-			pubsub_topologyManager_destroy(activator->manager);
-		}
-	}
-	if (status != CELIX_SUCCESS){ // an exception occurred so free allocated memory
-		logHelper_stop(activator->loghelper);
-		logHelper_destroy(&activator->loghelper);
-		free(activator);
-
 	}
 
 	return status;
@@ -224,11 +183,12 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	properties_set(props, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, (char *) PUBSUB_TOPIC_INFO_SERVICE);
 	status += bundleContext_registerService(context, (char *) PUBSUB_TOPIC_INFO_SERVICE, activator->topicInfo, props, &activator->topicInfoService);
 	*/
-
-	status += serviceTracker_open(activator->pubsubSerializerTracker);
 	status += serviceTracker_open(activator->pubsubAdminTracker);
+
 	status += serviceTracker_open(activator->pubsubDiscoveryTracker);
+
 	status += serviceTracker_open(activator->pubsubSubscribersTracker);
+
 
 	return status;
 }
@@ -239,7 +199,6 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 
 	serviceTracker_close(activator->pubsubSubscribersTracker);
 	serviceTracker_close(activator->pubsubDiscoveryTracker);
-	serviceTracker_close(activator->pubsubSerializerTracker);
 	serviceTracker_close(activator->pubsubAdminTracker);
 
 	serviceRegistration_unregister(activator->publisherEPDiscoverService);
@@ -261,7 +220,6 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt contex
 
 		serviceTracker_destroy(activator->pubsubSubscribersTracker);
 		serviceTracker_destroy(activator->pubsubDiscoveryTracker);
-		serviceTracker_destroy(activator->pubsubSerializerTracker);
 		serviceTracker_destroy(activator->pubsubAdminTracker);
 
 		logHelper_stop(activator->loghelper);

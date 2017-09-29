@@ -28,6 +28,11 @@
 #define PUBSUB_ENDPOINT_H_
 
 #include "service_reference.h"
+#include "listener_hook_service.h"
+#include "properties.h"
+
+#include "publisher.h"
+#include "subscriber.h"
 
 struct pubsub_endpoint {
     char *frameworkUUID;
@@ -36,12 +41,15 @@ struct pubsub_endpoint {
     long serviceID;
     char* endpoint;
     bool is_secure;
+    properties_pt topic_props;
 };
 
 typedef struct pubsub_endpoint *pubsub_endpoint_pt;
 
-celix_status_t pubsubEndpoint_create(const char* fwUUID, const char* scope, const char* topic, long serviceId,const char* endpoint,pubsub_endpoint_pt* psEp);
-celix_status_t pubsubEndpoint_createFromServiceReference(service_reference_pt reference,pubsub_endpoint_pt* psEp);
+celix_status_t pubsubEndpoint_create(const char* fwUUID, const char* scope, const char* topic, long serviceId,const char* endpoint,properties_pt topic_props,pubsub_endpoint_pt* psEp);
+celix_status_t pubsubEndpoint_createFromServiceReference(service_reference_pt reference,pubsub_endpoint_pt* psEp, bool isPublisher);
+celix_status_t pubsubEndpoint_createFromListenerHookInfo(listener_hook_info_pt info,pubsub_endpoint_pt* psEp, bool isPublisher);
+celix_status_t pubsubEndpoint_clone(pubsub_endpoint_pt in, pubsub_endpoint_pt *out);
 celix_status_t pubsubEndpoint_destroy(pubsub_endpoint_pt psEp);
 bool pubsubEndpoint_equals(pubsub_endpoint_pt psEp1,pubsub_endpoint_pt psEp2);
 

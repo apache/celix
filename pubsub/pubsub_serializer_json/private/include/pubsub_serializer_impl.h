@@ -24,8 +24,8 @@
  *  \copyright	Apache License, Version 2.0
  */
 
-#ifndef PUBSUB_SERIALIZER_IMPL_H_
-#define PUBSUB_SERIALIZER_IMPL_H_
+#ifndef PUBSUB_SERIALIZER_JSON_H_
+#define PUBSUB_SERIALIZER_JSON_H_
 
 #include "dyn_common.h"
 #include "dyn_type.h"
@@ -34,25 +34,22 @@
 
 #include "pubsub_serializer.h"
 
+#define PUBSUB_SERIALIZER_TYPE	"json"
+
 typedef struct pubsub_serializer {
 	bundle_context_pt bundle_context;
 	log_helper_pt loghelper;
 } pubsub_serializer_t;
 
-typedef struct pubsub_msg_serializer_impl {
-    pubsub_msg_serializer_t msgSerializer;
-    dyn_message_type* dynMsg;
-} pubsub_msg_serializer_impl_t;
-
 celix_status_t pubsubSerializer_create(bundle_context_pt context, pubsub_serializer_t* *serializer);
 celix_status_t pubsubSerializer_destroy(pubsub_serializer_t* serializer);
 
-celix_status_t pubsubSerializer_createSerializerMap(pubsub_serializer_t* serializer, bundle_pt bundle, pubsub_msg_serializer_map_t** out);
-celix_status_t pubsubSerializer_destroySerializerMap(pubsub_serializer_t*, pubsub_msg_serializer_map_t* map);
+celix_status_t pubsubSerializer_createSerializerMap(pubsub_serializer_t* serializer, bundle_pt bundle, hash_map_pt* serializerMap);
+celix_status_t pubsubSerializer_destroySerializerMap(pubsub_serializer_t*, hash_map_pt serializerMap);
 
 /* Start of serializer specific functions */
-celix_status_t pubsubMsgSerializer_serialize(pubsub_msg_serializer_impl_t* impl, const void* msg, char** out, size_t *outLen);
-celix_status_t pubsubMsgSerializer_deserialize(pubsub_msg_serializer_impl_t* impl, const char* input, size_t inputLen, void **out);
-void pubsubMsgSerializer_freeMsg(pubsub_msg_serializer_impl_t* impl, void *msg);
+celix_status_t pubsubMsgSerializer_serialize(pubsub_msg_serializer_t* msgSerializer, const void* msg, void** out, size_t *outLen);
+celix_status_t pubsubMsgSerializer_deserialize(pubsub_msg_serializer_t* msgSerializer, const void* input, size_t inputLen, void **out);
+void pubsubMsgSerializer_freeMsg(pubsub_msg_serializer_t* msgSerializer, void *msg);
 
-#endif /* PUBSUB_SERIALIZER_IMPL_H_ */
+#endif /* PUBSUB_SERIALIZER_JSON_H_ */

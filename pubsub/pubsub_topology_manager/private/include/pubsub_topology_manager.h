@@ -41,9 +41,6 @@
 struct pubsub_topology_manager {
 	bundle_context_pt context;
 
-	celix_thread_mutex_t serializerListLock;
-	array_list_pt serializerList;
-
 	celix_thread_mutex_t psaListLock;
 	array_list_pt psaList;
 
@@ -65,22 +62,14 @@ celix_status_t pubsub_topologyManager_create(bundle_context_pt context, log_help
 celix_status_t pubsub_topologyManager_destroy(pubsub_topology_manager_pt manager);
 celix_status_t pubsub_topologyManager_closeImports(pubsub_topology_manager_pt manager);
 
-celix_status_t pubsub_topologyManager_pubsubSerializerAdding(void *handle, service_reference_pt reference, void **service);
-celix_status_t pubsub_topologyManager_pubsubSerializerAdded(void *handle, service_reference_pt reference, void *service);
-celix_status_t pubsub_topologyManager_pubsubSerializerModified(void *handle, service_reference_pt reference, void *service);
-celix_status_t pubsub_topologyManager_pubsubSerializerRemoved(void *handle, service_reference_pt reference, void *service);
-
-celix_status_t pubsub_topologyManager_psaAdding(void *handle, service_reference_pt reference, void **service);
 celix_status_t pubsub_topologyManager_psaAdded(void *handle, service_reference_pt reference, void *service);
 celix_status_t pubsub_topologyManager_psaModified(void *handle, service_reference_pt reference, void *service);
 celix_status_t pubsub_topologyManager_psaRemoved(void *handle, service_reference_pt reference, void *service);
 
-celix_status_t pubsub_topologyManager_pubsubDiscoveryAdding(void* handle, service_reference_pt reference, void** service);
 celix_status_t pubsub_topologyManager_pubsubDiscoveryAdded(void* handle, service_reference_pt reference, void* service);
 celix_status_t pubsub_topologyManager_pubsubDiscoveryModified(void * handle, service_reference_pt reference, void* service);
 celix_status_t pubsub_topologyManager_pubsubDiscoveryRemoved(void * handle, service_reference_pt reference, void* service);
 
-celix_status_t pubsub_topologyManager_subscriberAdding(void * handle, service_reference_pt reference, void **service);
 celix_status_t pubsub_topologyManager_subscriberAdded(void * handle, service_reference_pt reference, void * service);
 celix_status_t pubsub_topologyManager_subscriberModified(void * handle, service_reference_pt reference, void * service);
 celix_status_t pubsub_topologyManager_subscriberRemoved(void * handle, service_reference_pt reference, void * service);
