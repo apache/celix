@@ -682,7 +682,7 @@ celix_status_t pubsubAdmin_removePublication(pubsub_admin_pt admin,pubsub_endpoi
 	/* And check also for ANY subscription */
 	topic_subscription_pt any_sub = (topic_subscription_pt)hashMap_get(admin->subscriptions,PUBSUB_ANY_SUB_TOPIC);
 	if(any_sub!=NULL && pubEP->endpoint!=NULL && count == 0){
-		pubsub_topicSubscriptionAddDisconnectPublisherToPendingList(sub,pubEP->endpoint);
+		pubsub_topicSubscriptionAddDisconnectPublisherToPendingList(any_sub,pubEP->endpoint);
 	}
 
 	free(scope_topic);
@@ -705,9 +705,8 @@ celix_status_t pubsubAdmin_closeAllPublications(pubsub_admin_pt admin, char *sco
 		service_factory_pt factory= (service_factory_pt)hashMapEntry_getValue(pubsvc_entry);
 		topic_publication_pt pub = (topic_publication_pt)factory->handle;
 		status += pubsub_topicPublicationStop(pub);
-		status += pubsub_topicPublicationDestroy(pub);
-
 		disconnectTopicPubSubFromSerializer(admin, pub, true);
+		status += pubsub_topicPublicationDestroy(pub);
 		hashMap_remove(admin->localPublications,scope_topic);
 		free(key);
 		free(factory);
@@ -732,9 +731,8 @@ celix_status_t pubsubAdmin_closeAllSubscriptions(pubsub_admin_pt admin,char* sco
 
 		topic_subscription_pt ts = (topic_subscription_pt)hashMapEntry_getValue(sub_entry);
 		status += pubsub_topicSubscriptionStop(ts);
-		status += pubsub_topicSubscriptionDestroy(ts);
-
 		disconnectTopicPubSubFromSerializer(admin, ts, false);
+		status += pubsub_topicSubscriptionDestroy(ts);
 		hashMap_remove(admin->subscriptions,scope_topic);
 		free(topic);
 

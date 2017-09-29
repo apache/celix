@@ -144,6 +144,7 @@ celix_status_t pubsubAdmin_create(bundle_context_pt context, pubsub_admin_pt *ad
 			char loop = 1;
 			if(setsockopt(sendSocket, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop)) != 0) {
 				perror("pubsubAdmin_create:setsockopt(IP_MULTICAST_LOOP)");
+				close(sendSocket);
 				return CELIX_SERVICE_EXCEPTION;
 			}
 
@@ -151,6 +152,7 @@ celix_status_t pubsubAdmin_create(bundle_context_pt context, pubsub_admin_pt *ad
 			inet_aton(if_ip, &multicast_interface);
 			if(setsockopt(sendSocket,  IPPROTO_IP, IP_MULTICAST_IF, &multicast_interface, sizeof(multicast_interface)) != 0) {
 				perror("pubsubAdmin_create:setsockopt(IP_MULTICAST_IF)");
+				close(sendSocket);
 				return CELIX_SERVICE_EXCEPTION;
 			}
 
@@ -679,9 +681,8 @@ celix_status_t pubsubAdmin_closeAllPublications(pubsub_admin_pt admin,char *scop
 		service_factory_pt factory= (service_factory_pt)hashMapEntry_getValue(pubsvc_entry);
 		topic_publication_pt pub = (topic_publication_pt)factory->handle;
 		status += pubsub_topicPublicationStop(pub);
-		status += pubsub_topicPublicationDestroy(pub);
-
 		disconnectTopicPubSubFromSerializer(admin, pub, true);
+		status += pubsub_topicPublicationDestroy(pub);
 		hashMap_remove(admin->localPublications,scope_topic);
 		free(key);
 		free(factory);
@@ -706,9 +707,8 @@ celix_status_t pubsubAdmin_closeAllSubscriptions(pubsub_admin_pt admin,char *sco
 
 		topic_subscription_pt ts = (topic_subscription_pt)hashMapEntry_getValue(sub_entry);
 		status += pubsub_topicSubscriptionStop(ts);
-		status += pubsub_topicSubscriptionDestroy(ts);
-
 		disconnectTopicPubSubFromSerializer(admin, ts, false);
+		status += pubsub_topicSubscriptionDestroy(ts);
 		hashMap_remove(admin->subscriptions,topic);
 		free(topic);
 
@@ -749,9 +749,7 @@ static celix_status_t pubsubAdmin_getIpAddress(const char* interface, char** ip)
 
 		freeifaddrs(ifaddr);
 	}
-	if(status == CELIX_SUCCESS) {
 
-	}
 	return status;
 }
 #endif

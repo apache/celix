@@ -153,6 +153,10 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 		}
 	}
 
+	if(status != CELIX_SUCCESS){
+		bundleActivator_destroy(activator, context);
+	}
+
 	return status;
 }
 
@@ -214,18 +218,27 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt contex
 	celix_status_t status = CELIX_SUCCESS;
 
 	struct activator *activator = userData;
-	if (!activator || !activator->manager) {
+	if (activator == NULL) {
 		status = CELIX_BUNDLE_EXCEPTION;
 	} else {
 
-		serviceTracker_destroy(activator->pubsubSubscribersTracker);
-		serviceTracker_destroy(activator->pubsubDiscoveryTracker);
-		serviceTracker_destroy(activator->pubsubAdminTracker);
+		if(activator->pubsubSubscribersTracker!=NULL){
+			serviceTracker_destroy(activator->pubsubSubscribersTracker);
+		}
+		if(activator->pubsubDiscoveryTracker!=NULL){
+			serviceTracker_destroy(activator->pubsubDiscoveryTracker);
+		}
+		if(activator->pubsubAdminTracker!=NULL){
+			serviceTracker_destroy(activator->pubsubAdminTracker);
+		}
+
+		if(activator->manager!=NULL){
+			status = pubsub_topologyManager_destroy(activator->manager);
+		}
 
 		logHelper_stop(activator->loghelper);
 		logHelper_destroy(&activator->loghelper);
 
-		status = pubsub_topologyManager_destroy(activator->manager);
 		free(activator);
 	}
 

@@ -127,7 +127,7 @@ celix_status_t pubsubEndpoint_clone(pubsub_endpoint_pt in, pubsub_endpoint_pt *o
 celix_status_t pubsubEndpoint_createFromServiceReference(service_reference_pt reference, pubsub_endpoint_pt* psEp, bool isPublisher){
 	celix_status_t status = CELIX_SUCCESS;
 
-	*psEp = calloc(1,sizeof(**psEp));
+	pubsub_endpoint_pt ep = calloc(1,sizeof(*ep));
 
 	bundle_pt bundle = NULL;
 	bundle_context_pt ctxt = NULL;
@@ -148,11 +148,16 @@ celix_status_t pubsubEndpoint_createFromServiceReference(service_reference_pt re
 	/* TODO: is topic_props==NULL a fatal error such that EP cannot be created? */
 	properties_pt topic_props = pubsubEndpoint_getTopicProperties(bundle, topic, isPublisher);
 
-	pubsubEndpoint_setFields(*psEp, fwUUID, scope!=NULL?scope:PUBSUB_SUBSCRIBER_SCOPE_DEFAULT, topic, strtol(serviceId,NULL,10), NULL, topic_props, false);
+	pubsubEndpoint_setFields(ep, fwUUID, scope!=NULL?scope:PUBSUB_SUBSCRIBER_SCOPE_DEFAULT, topic, strtol(serviceId,NULL,10), NULL, topic_props, false);
 
-	if (!(*psEp)->frameworkUUID || !(*psEp)->serviceID || !(*psEp)->scope || !(*psEp)->topic) {
+	if (!ep->frameworkUUID || !ep->serviceID || !ep->scope || !ep->topic) {
 		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "PUBSUB_ENDPOINT: incomplete description!.");
 		status = CELIX_BUNDLE_EXCEPTION;
+		pubsubEndpoint_destroy(ep);
+		*psEp = NULL;
+	}
+	else{
+		*psEp = ep;
 	}
 
 	return status;
@@ -165,8 +170,12 @@ celix_status_t pubsubEndpoint_createFromListenerHookInfo(listener_hook_info_pt i
 	const char* fwUUID=NULL;
 	bundleContext_getProperty(info->context,OSGI_FRAMEWORK_FRAMEWORK_UUID,&fwUUID);
 
+	if(fwUUID==NULL){
+		return CELIX_BUNDLE_EXCEPTION;
+	}
+
 	char* topic = pubsub_getTopicFromFilter(info->filter);
-	if(topic==NULL || fwUUID==NULL){
+	if(topic==NULL){
 		return CELIX_BUNDLE_EXCEPTION;
 	}
 
