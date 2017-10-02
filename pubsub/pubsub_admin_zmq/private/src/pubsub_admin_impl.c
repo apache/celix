@@ -106,11 +106,14 @@ celix_status_t pubsubAdmin_create(bundle_context_pt context, pubsub_admin_pt *ad
 
 		celixThreadMutex_create(&(*admin)->localPublicationsLock, NULL);
 		celixThreadMutex_create(&(*admin)->subscriptionsLock, NULL);
-		celixThreadMutex_create(&(*admin)->pendingSubscriptionsLock, NULL);
 		celixThreadMutex_create(&(*admin)->externalPublicationsLock, NULL);
 		celixThreadMutex_create(&(*admin)->noSerializerPendingsLock, NULL);
 		celixThreadMutex_create(&(*admin)->serializerListLock, NULL);
 		celixThreadMutex_create(&(*admin)->usedSerializersLock, NULL);
+
+		celixThreadMutexAttr_create(&(*admin)->pendingSubscriptionsAttr);
+		celixThreadMutexAttr_settype(&(*admin)->pendingSubscriptionsAttr, CELIX_THREAD_MUTEX_RECURSIVE);
+		celixThreadMutex_create(&(*admin)->pendingSubscriptionsLock, &(*admin)->pendingSubscriptionsAttr);
 
 		if (logHelper_create(context, &(*admin)->loghelper) == CELIX_SUCCESS) {
 			logHelper_start((*admin)->loghelper);
@@ -267,7 +270,10 @@ celix_status_t pubsubAdmin_destroy(pubsub_admin_pt admin)
 	celixThreadMutex_destroy(&admin->noSerializerPendingsLock);
 	celixThreadMutex_destroy(&admin->serializerListLock);
 	celixThreadMutex_destroy(&admin->pendingSubscriptionsLock);
+
+	celixThreadMutexAttr_destroy(&admin->pendingSubscriptionsAttr);
 	celixThreadMutex_destroy(&admin->subscriptionsLock);
+
 	celixThreadMutex_destroy(&admin->localPublicationsLock);
 	celixThreadMutex_destroy(&admin->externalPublicationsLock);
 
@@ -376,6 +382,7 @@ celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint
 	}
 
 	/* Check if we already know some publisher about this topic, otherwise let's put the subscription in the pending hashmap */
+	celixThreadMutex_lock(&admin->subscriptionsLock);
 	celixThreadMutex_lock(&admin->localPublicationsLock);
 	celixThreadMutex_lock(&admin->externalPublicationsLock);
 
@@ -441,9 +448,9 @@ celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint
 			}
 
 			if(status==CELIX_SUCCESS){
-				celixThreadMutex_lock(&admin->subscriptionsLock);
+
 				hashMap_put(admin->subscriptions,strdup(scope_topic),subscription);
-				celixThreadMutex_unlock(&admin->subscriptionsLock);
+
 				connectTopicPubSubToSerializer(admin, best_serializer, subscription, false);
 			}
 		}
@@ -456,6 +463,7 @@ celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint
 	free(scope_topic);
 	celixThreadMutex_unlock(&admin->externalPublicationsLock);
 	celixThreadMutex_unlock(&admin->localPublicationsLock);
+	celixThreadMutex_unlock(&admin->subscriptionsLock);
 
 	return status;
 

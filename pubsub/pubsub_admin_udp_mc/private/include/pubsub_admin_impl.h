@@ -51,6 +51,7 @@ struct pubsub_admin {
 	hash_map_pt subscriptions; //<topic(string),topic_subscription>
 
 	celix_thread_mutex_t pendingSubscriptionsLock;
+	celix_thread_mutexattr_t pendingSubscriptionsAttr;
 	hash_map_pt pendingSubscriptions; //<topic(string),List<pubsub_ep>>
 
 	/* Those are used to keep track of valid subscriptions/publications that still have no valid serializer */

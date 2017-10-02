@@ -67,6 +67,7 @@ struct topic_subscription{
 	int topicEpollFd; // EPOLL filedescriptor where the sockets are registered.
 	hash_map_pt servicesMap; // key = service, value = msg types map
 	hash_map_pt socketMap; // key = URL, value = listen-socket
+	celix_thread_mutex_t socketMap_lock;
 
 	celix_thread_mutex_t pendingConnections_lock;
 	array_list_pt pendingConnections;
@@ -122,6 +123,7 @@ celix_status_t pubsub_topicSubscriptionCreate(bundle_context_pt bundle_context, 
 	arrayList_create(&ts->pendingDisconnections);
 	celixThreadMutex_create(&ts->pendingConnections_lock, NULL);
 	celixThreadMutex_create(&ts->pendingDisconnections_lock, NULL);
+	celixThreadMutex_create(&ts->socketMap_lock, NULL);
 
 	ts->largeUdpHandle = largeUdp_create(MAX_UDP_SESSIONS);
 
@@ -170,7 +172,10 @@ celix_status_t pubsub_topicSubscriptionDestroy(topic_subscription_pt ts){
 	arrayList_destroy(ts->sub_ep_list);
 	hashMap_destroy(ts->servicesMap,false,false);
 
+	celixThreadMutex_lock(&ts->socketMap_lock);
 	hashMap_destroy(ts->socketMap,true,true);
+	celixThreadMutex_unlock(&ts->socketMap_lock);
+	celixThreadMutex_destroy(&ts->socketMap_lock);
 
 	celixThreadMutex_lock(&ts->pendingConnections_lock);
 	arrayList_destroy(ts->pendingConnections);
@@ -214,6 +219,8 @@ celix_status_t pubsub_topicSubscriptionStart(topic_subscription_pt ts){
 
 celix_status_t pubsub_topicSubscriptionStop(topic_subscription_pt ts){
 	celix_status_t status = CELIX_SUCCESS;
+	struct epoll_event ev;
+	memset(&ev, 0, sizeof(ev));
 
 	ts->running = false;
 
@@ -223,14 +230,25 @@ celix_status_t pubsub_topicSubscriptionStop(topic_subscription_pt ts){
 
 	status = serviceTracker_close(ts->tracker);
 
+	celixThreadMutex_lock(&ts->socketMap_lock);
 	hash_map_iterator_pt it = hashMapIterator_create(ts->socketMap);
 	while(hashMapIterator_hasNext(it)) {
 		hash_map_entry_pt entry = hashMapIterator_nextEntry(it);
 		char *url = hashMapEntry_getKey(entry);
-		pubsub_topicSubscriptionDisconnectPublisher(ts, url);
+		int *s = hashMapEntry_getValue(entry);
+		memset(&ev, 0, sizeof(ev));
+		if(epoll_ctl(ts->topicEpollFd, EPOLL_CTL_DEL, *s, &ev) == -1) {
+			printf("in if error()\n");
+			perror("epoll_ctl() EPOLL_CTL_DEL");
+			status += CELIX_SERVICE_EXCEPTION;
+		}
+		free(s);
 		free(url);
+		//hashMapIterator_remove(it);
 	}
 	hashMapIterator_destroy(it);
+	hashMap_clear(ts->socketMap, false, false);
+	celixThreadMutex_unlock(&ts->socketMap_lock);
 
 
 	return status;
@@ -241,7 +259,8 @@ celix_status_t pubsub_topicSubscriptionConnectPublisher(topic_subscription_pt ts
 	printf("pubsub_topicSubscriptionConnectPublisher : pubURL = %s\n", pubURL);
 
 	celix_status_t status = CELIX_SUCCESS;
-	celixThreadMutex_lock(&ts->ts_lock);
+
+	celixThreadMutex_lock(&ts->socketMap_lock);
 
 	if(!hashMap_containsKey(ts->socketMap, pubURL)){
 
@@ -319,7 +338,8 @@ celix_status_t pubsub_topicSubscriptionConnectPublisher(topic_subscription_pt ts
 			free(recvSocket);
 		}
 	}
-	celixThreadMutex_unlock(&ts->ts_lock);
+
+	celixThreadMutex_unlock(&ts->socketMap_lock);
 
 	return status;
 }
@@ -348,7 +368,7 @@ celix_status_t pubsub_topicSubscriptionDisconnectPublisher(topic_subscription_pt
 	struct epoll_event ev;
 	memset(&ev, 0, sizeof(ev));
 
-	celixThreadMutex_lock(&ts->ts_lock);
+	celixThreadMutex_lock(&ts->socketMap_lock);
 
 	if (hashMap_containsKey(ts->socketMap, pubURL)){
 
@@ -366,7 +386,7 @@ celix_status_t pubsub_topicSubscriptionDisconnectPublisher(topic_subscription_pt
 
 	}
 
-	celixThreadMutex_unlock(&ts->ts_lock);
+	celixThreadMutex_unlock(&ts->socketMap_lock);
 
 	return status;
 }

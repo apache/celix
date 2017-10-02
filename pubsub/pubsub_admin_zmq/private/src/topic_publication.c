@@ -464,10 +464,12 @@ static int pubsub_topicPublicationSendMultipart(void *handle, unsigned int msgTy
 
 	publish_bundle_bound_service_pt bound = (publish_bundle_bound_service_pt) handle;
 
+	celixThreadMutex_lock(&(bound->parent->tp_lock));
 	celixThreadMutex_lock(&(bound->mp_lock));
 	if( (flags & PUBSUB_PUBLISHER_FIRST_MSG) && !(flags & PUBSUB_PUBLISHER_LAST_MSG) && bound->mp_send_in_progress){ //means a real mp_msg
 		printf("PSA_ZMQ_TP: Multipart send already in progress. Cannot process a new one.\n");
 		celixThreadMutex_unlock(&(bound->mp_lock));
+		celixThreadMutex_unlock(&(bound->parent->tp_lock));
 		return -3;
 	}
 
@@ -518,16 +520,12 @@ static int pubsub_topicPublicationSendMultipart(void *handle, unsigned int msgTy
 			}
 			else{
 				arrayList_add(bound->mp_parts,msg);
-				celixThreadMutex_lock(&(bound->parent->tp_lock));
 				snd = send_pubsub_mp_msg(bound->parent->zmq_socket,bound->mp_parts);
 				bound->mp_send_in_progress = false;
-				celixThreadMutex_unlock(&(bound->parent->tp_lock));
 			}
 			break;
 		case PUBSUB_PUBLISHER_FIRST_MSG | PUBSUB_PUBLISHER_LAST_MSG:	//Normal send case
-			celixThreadMutex_lock(&(bound->parent->tp_lock));
 			snd = send_pubsub_msg(bound->parent->zmq_socket,msg,true);
-			celixThreadMutex_unlock(&(bound->parent->tp_lock));
 			break;
 		default:
 			printf("PSA_ZMQ_TP: ERROR: Invalid MP flags combination\n");
@@ -549,6 +547,7 @@ static int pubsub_topicPublicationSendMultipart(void *handle, unsigned int msgTy
 	}
 
 	celixThreadMutex_unlock(&(bound->mp_lock));
+	celixThreadMutex_unlock(&(bound->parent->tp_lock));
 
 	return status;
 

@@ -79,103 +79,128 @@ celix_status_t pubsubAdmin_create(bundle_context_pt context, pubsub_admin_pt *ad
 	*admin = calloc(1, sizeof(**admin));
 
 	if (!*admin) {
-		status = CELIX_ENOMEM;
+		return CELIX_ENOMEM;
 	}
-	else{
 
-		char *mc_ip = NULL;
-		char *if_ip = NULL;
-		(*admin)->bundle_context= context;
-		(*admin)->localPublications = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
-		(*admin)->subscriptions = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
-		(*admin)->pendingSubscriptions = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
-		(*admin)->externalPublications = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
-		(*admin)->topicSubscriptionsPerSerializer = hashMap_create(NULL, NULL, NULL, NULL);
-		(*admin)->topicPublicationsPerSerializer  = hashMap_create(NULL, NULL, NULL, NULL);
-		arrayList_create(&((*admin)->noSerializerSubscriptions));
-		arrayList_create(&((*admin)->noSerializerPublications));
-		arrayList_create(&((*admin)->serializerList));
+	char *mc_ip = NULL;
+	char *if_ip = NULL;
+	int sendSocket = -1;
 
-		celixThreadMutex_create(&(*admin)->localPublicationsLock, NULL);
-		celixThreadMutex_create(&(*admin)->subscriptionsLock, NULL);
-		celixThreadMutex_create(&(*admin)->pendingSubscriptionsLock, NULL);
-		celixThreadMutex_create(&(*admin)->externalPublicationsLock, NULL);
-		celixThreadMutex_create(&(*admin)->noSerializerPendingsLock, NULL);
-		celixThreadMutex_create(&(*admin)->serializerListLock, NULL);
-		celixThreadMutex_create(&(*admin)->usedSerializersLock, NULL);
+	if (logHelper_create(context, &(*admin)->loghelper) == CELIX_SUCCESS) {
+		logHelper_start((*admin)->loghelper);
+	}
+	const char *mc_ip_prop = NULL;
+	bundleContext_getProperty(context,PSA_IP , &mc_ip_prop);
+	if(mc_ip_prop) {
+		mc_ip = strdup(mc_ip_prop);
+	}
 
-		if (logHelper_create(context, &(*admin)->loghelper) == CELIX_SUCCESS) {
-			logHelper_start((*admin)->loghelper);
-		}
-		const char *mc_ip_prop = NULL;
-		bundleContext_getProperty(context,PSA_IP , &mc_ip_prop);
-		if(mc_ip_prop) {
-			mc_ip = strdup(mc_ip_prop);
-		}
 #ifndef ANDROID
-		if (mc_ip == NULL) {
-			const char *mc_prefix = NULL;
-			const char *interface = NULL;
-			int b0 = 0, b1 = 0, b2 = 0, b3 = 0;
-			bundleContext_getProperty(context,PSA_MULTICAST_IP_PREFIX , &mc_prefix);
-			if(mc_prefix == NULL) {
-				mc_prefix = DEFAULT_MC_PREFIX;
-			}
+	if (mc_ip == NULL) {
+		const char *mc_prefix = NULL;
+		const char *interface = NULL;
+		int b0 = 0, b1 = 0, b2 = 0, b3 = 0;
+		bundleContext_getProperty(context,PSA_MULTICAST_IP_PREFIX , &mc_prefix);
+		if(mc_prefix == NULL) {
+			mc_prefix = DEFAULT_MC_PREFIX;
+		}
 
-			bundleContext_getProperty(context, PSA_ITF, &interface);
-			if (pubsubAdmin_getIpAddress(interface, &if_ip) != CELIX_SUCCESS) {
-				logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_WARNING, "PSA_UDP_MC: Could not retrieve IP address for interface %s", interface);
-			}
+		bundleContext_getProperty(context, PSA_ITF, &interface);
+		if (pubsubAdmin_getIpAddress(interface, &if_ip) != CELIX_SUCCESS) {
+			logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_WARNING, "PSA_UDP_MC: Could not retrieve IP address for interface %s", interface);
+		}
 
-			printf("IP Detected : %s\n", if_ip);
-			if(if_ip && sscanf(if_ip, "%i.%i.%i.%i", &b0, &b1, &b2, &b3) != 4) {
-				logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_WARNING, "PSA_UDP_MC: Could not parse IP address %s", if_ip);
-				b2 = 1;
-				b3 = 1;
-			}
+		printf("IP Detected : %s\n", if_ip);
+		if(if_ip && sscanf(if_ip, "%i.%i.%i.%i", &b0, &b1, &b2, &b3) != 4) {
+			logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_WARNING, "PSA_UDP_MC: Could not parse IP address %s", if_ip);
+			b2 = 1;
+			b3 = 1;
+		}
 
-			asprintf(&mc_ip, "%s.%d.%d",mc_prefix, b2, b3);
+		asprintf(&mc_ip, "%s.%d.%d",mc_prefix, b2, b3);
 
-			int sendSocket = socket(AF_INET, SOCK_DGRAM, 0);
-			if(sendSocket == -1) {
-				perror("pubsubAdmin_create:socket");
-				return CELIX_SERVICE_EXCEPTION;
-			}
+		sendSocket = socket(AF_INET, SOCK_DGRAM, 0);
+		if(sendSocket == -1) {
+			perror("pubsubAdmin_create:socket");
+			status = CELIX_SERVICE_EXCEPTION;
+		}
+
+		if(status == CELIX_SUCCESS){
 			char loop = 1;
 			if(setsockopt(sendSocket, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop)) != 0) {
 				perror("pubsubAdmin_create:setsockopt(IP_MULTICAST_LOOP)");
-				close(sendSocket);
-				return CELIX_SERVICE_EXCEPTION;
+				status = CELIX_SERVICE_EXCEPTION;
 			}
+		}
 
+		if(status == CELIX_SUCCESS){
 			struct in_addr multicast_interface;
 			inet_aton(if_ip, &multicast_interface);
 			if(setsockopt(sendSocket,  IPPROTO_IP, IP_MULTICAST_IF, &multicast_interface, sizeof(multicast_interface)) != 0) {
 				perror("pubsubAdmin_create:setsockopt(IP_MULTICAST_IF)");
-				close(sendSocket);
-				return CELIX_SERVICE_EXCEPTION;
+				status = CELIX_SERVICE_EXCEPTION;
 			}
-
-			(*admin)->sendSocket = sendSocket;
-
 		}
+
+	}
+
+
+	if(status != CELIX_SUCCESS){
+		logHelper_stop((*admin)->loghelper);
+		logHelper_destroy(&((*admin)->loghelper));
+		if(sendSocket >=0){
+			close(sendSocket);
+		}
+		if(if_ip != NULL){
+			free(if_ip);
+		}
+		if(mc_ip != NULL){
+			free(mc_ip);
+		}
+		return status;
+	}
+	else{
+		(*admin)->sendSocket = sendSocket;
+	}
+
 #endif
-		if (if_ip != NULL) {
-			logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_INFO, "PSA_UDP_MC: Using %s as interface for multicast communication", if_ip);
-			(*admin)->ifIpAddress = if_ip;
-		} else {
-			(*admin)->ifIpAddress = strdup("127.0.0.1");
-		}
 
-		if (mc_ip != NULL) {
-			logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_INFO, "PSA_UDP_MC: Using %s for service annunciation", mc_ip);
-			(*admin)->mcIpAddress = mc_ip;
-		}
-		else {
-			logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_WARNING, "PSA_UDP_MC: No IP address for service annunciation set. Using %s", DEFAULT_MC_IP);
-			(*admin)->mcIpAddress = strdup(DEFAULT_MC_IP);
-		}
+	(*admin)->bundle_context= context;
+	(*admin)->localPublications = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+	(*admin)->subscriptions = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+	(*admin)->pendingSubscriptions = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+	(*admin)->externalPublications = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+	(*admin)->topicSubscriptionsPerSerializer = hashMap_create(NULL, NULL, NULL, NULL);
+	(*admin)->topicPublicationsPerSerializer  = hashMap_create(NULL, NULL, NULL, NULL);
+	arrayList_create(&((*admin)->noSerializerSubscriptions));
+	arrayList_create(&((*admin)->noSerializerPublications));
+	arrayList_create(&((*admin)->serializerList));
 
+	celixThreadMutex_create(&(*admin)->localPublicationsLock, NULL);
+	celixThreadMutex_create(&(*admin)->subscriptionsLock, NULL);
+	celixThreadMutex_create(&(*admin)->externalPublicationsLock, NULL);
+	celixThreadMutex_create(&(*admin)->noSerializerPendingsLock, NULL);
+	celixThreadMutex_create(&(*admin)->serializerListLock, NULL);
+	celixThreadMutex_create(&(*admin)->usedSerializersLock, NULL);
+
+	celixThreadMutexAttr_create(&(*admin)->pendingSubscriptionsAttr);
+	celixThreadMutexAttr_settype(&(*admin)->pendingSubscriptionsAttr, CELIX_THREAD_MUTEX_RECURSIVE);
+	celixThreadMutex_create(&(*admin)->pendingSubscriptionsLock, &(*admin)->pendingSubscriptionsAttr);
+
+	if (if_ip != NULL) {
+		logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_INFO, "PSA_UDP_MC: Using %s as interface for multicast communication", if_ip);
+		(*admin)->ifIpAddress = if_ip;
+	} else {
+		(*admin)->ifIpAddress = strdup("127.0.0.1");
+	}
+
+	if (mc_ip != NULL) {
+		logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_INFO, "PSA_UDP_MC: Using %s for service annunciation", mc_ip);
+		(*admin)->mcIpAddress = mc_ip;
+	}
+	else {
+		logHelper_log((*admin)->loghelper, OSGI_LOGSERVICE_WARNING, "PSA_UDP_MC: No IP address for service annunciation set. Using %s", DEFAULT_MC_IP);
+		(*admin)->mcIpAddress = strdup(DEFAULT_MC_IP);
 	}
 
 	return status;
@@ -249,7 +274,10 @@ celix_status_t pubsubAdmin_destroy(pubsub_admin_pt admin)
 	celixThreadMutex_destroy(&admin->usedSerializersLock);
 	celixThreadMutex_destroy(&admin->noSerializerPendingsLock);
 	celixThreadMutex_destroy(&admin->serializerListLock);
+
 	celixThreadMutex_destroy(&admin->pendingSubscriptionsLock);
+	celixThreadMutexAttr_destroy(&admin->pendingSubscriptionsAttr);
+
 	celixThreadMutex_destroy(&admin->subscriptionsLock);
 	celixThreadMutex_destroy(&admin->localPublicationsLock);
 	celixThreadMutex_destroy(&admin->externalPublicationsLock);
@@ -353,6 +381,7 @@ celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint
 	}
 
 	/* Check if we already know some publisher about this topic, otherwise let's put the subscription in the pending hashmap */
+	celixThreadMutex_lock(&admin->subscriptionsLock);
 	celixThreadMutex_lock(&admin->localPublicationsLock);
 	celixThreadMutex_lock(&admin->externalPublicationsLock);
 
@@ -418,9 +447,9 @@ celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint
 			}
 
 			if(status==CELIX_SUCCESS){
-				celixThreadMutex_lock(&admin->subscriptionsLock);
+
 				hashMap_put(admin->subscriptions,strdup(scope_topic),subscription);
-				celixThreadMutex_unlock(&admin->subscriptionsLock);
+
 				connectTopicPubSubToSerializer(admin, best_serializer, subscription, false);
 			}
 		}
@@ -433,6 +462,7 @@ celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint
 	free(scope_topic);
 	celixThreadMutex_unlock(&admin->externalPublicationsLock);
 	celixThreadMutex_unlock(&admin->localPublicationsLock);
+	celixThreadMutex_unlock(&admin->subscriptionsLock);
 
 	return status;
 
@@ -658,7 +688,7 @@ celix_status_t pubsubAdmin_removePublication(pubsub_admin_pt admin,pubsub_endpoi
 	/* And check also for ANY subscription */
 	topic_subscription_pt any_sub = (topic_subscription_pt)hashMap_get(admin->subscriptions,PUBSUB_ANY_SUB_TOPIC);
 	if(any_sub!=NULL && pubEP->endpoint!=NULL && count == 0){
-		pubsub_topicSubscriptionAddDisconnectPublisherToPendingList(sub,pubEP->endpoint);
+		pubsub_topicSubscriptionAddDisconnectPublisherToPendingList(any_sub,pubEP->endpoint);
 	}
 
 	free(scope_topic);

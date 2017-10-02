@@ -189,8 +189,6 @@ celix_status_t pubsub_topologyManager_psaRemoved(void * handle, service_referenc
 
 	pubsub_admin_service_pt psa = (pubsub_admin_service_pt) service;
 
-	celixThreadMutex_lock(&manager->psaListLock);
-
 	/* Deactivate all publications */
 	celixThreadMutex_lock(&manager->publicationsLock);
 
@@ -248,8 +246,8 @@ celix_status_t pubsub_topologyManager_psaRemoved(void * handle, service_referenc
 	hashMapIterator_destroy(subit);
 	celixThreadMutex_unlock(&manager->subscriptionsLock);
 
+	celixThreadMutex_lock(&manager->psaListLock);
 	arrayList_removeElement(manager->psaList, psa);
-
 	celixThreadMutex_unlock(&manager->psaListLock);
 
 	logHelper_log(manager->loghelper, OSGI_LOGSERVICE_INFO, "PSTM: Removed PSA");

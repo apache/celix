@@ -29,8 +29,8 @@ add_bundle(org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
     SOURCES
     	private/src/pstm_activator.c
     	private/src/pubsub_topology_manager.c
+	   ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
     	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_endpoint.c
-    	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/log_helper.c
     	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_utils.c	
 )
 

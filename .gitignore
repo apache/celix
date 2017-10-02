@@ -25,3 +25,5 @@ cmake-build*
 .idea
 nbproject
 *.pyc
+*.enc
+*.pub

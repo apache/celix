@@ -35,8 +35,8 @@ add_bundle(org.apache.celix.pubsub_admin.PubSubAdminUdpMc
     	private/src/topic_subscription.c
     	private/src/topic_publication.c
     	private/src/large_udp.c
+	   ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
     	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_endpoint.c
-    	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/log_helper.c
     	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_admin_match.c
     	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_utils.c
 )

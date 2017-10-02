@@ -248,6 +248,8 @@ celix_status_t pubsub_topicSubscriptionDestroy(topic_subscription_pt ts){
 	celixThreadMutex_unlock(&ts->pendingDisconnections_lock);
 	celixThreadMutex_destroy(&ts->pendingDisconnections_lock);
 
+	celixThreadMutex_unlock(&ts->ts_lock);
+
 	celixThreadMutex_lock(&ts->socket_lock);
 	zsock_destroy(&(ts->zmq_socket));
 #ifdef BUILD_WITH_ZMQ_SECURITY
@@ -257,8 +259,7 @@ celix_status_t pubsub_topicSubscriptionDestroy(topic_subscription_pt ts){
 	celixThreadMutex_unlock(&ts->socket_lock);
 	celixThreadMutex_destroy(&ts->socket_lock);
 
-	celixThreadMutex_unlock(&ts->ts_lock);
-
+	celixThreadMutex_destroy(&ts->ts_lock);
 
 	free(ts);
 
@@ -515,7 +516,8 @@ static void* zmq_recv_thread_func(void * arg) {
 			} else {
 				perror("PSA_ZMQ_TS: header_recv thread");
 			}
-		} else {
+		}
+		else {
 
 			pubsub_msg_header_pt hdr = (pubsub_msg_header_pt) zframe_data(headerMsg);
 
