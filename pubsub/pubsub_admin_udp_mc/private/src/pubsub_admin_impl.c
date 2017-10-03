@@ -386,6 +386,7 @@ celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint
 	}
 
 	/* Check if we already know some publisher about this topic, otherwise let's put the subscription in the pending hashmap */
+	celixThreadMutex_lock(&admin->pendingSubscriptionsLock);
 	celixThreadMutex_lock(&admin->subscriptionsLock);
 	celixThreadMutex_lock(&admin->localPublicationsLock);
 	celixThreadMutex_lock(&admin->externalPublicationsLock);
@@ -396,9 +397,7 @@ celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint
 	array_list_pt ext_pub_list = (array_list_pt)hashMap_get(admin->externalPublications,scope_topic);
 
 	if(factory==NULL && ext_pub_list==NULL){ //No (local or external) publishers yet for this topic
-		celixThreadMutex_lock(&admin->pendingSubscriptionsLock);
 		pubsubAdmin_addSubscriptionToPendingList(admin,subEP);
-		celixThreadMutex_unlock(&admin->pendingSubscriptionsLock);
 	}
 	else{
 		int i;
@@ -468,6 +467,7 @@ celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint
 	celixThreadMutex_unlock(&admin->externalPublicationsLock);
 	celixThreadMutex_unlock(&admin->localPublicationsLock);
 	celixThreadMutex_unlock(&admin->subscriptionsLock);
+	celixThreadMutex_unlock(&admin->pendingSubscriptionsLock);
 
 	return status;
 
@@ -871,9 +871,11 @@ celix_status_t pubsubAdmin_serializerRemoved(void * handle, service_reference_pt
 	celixThreadMutex_unlock(&admin->serializerListLock);
 
 	celixThreadMutex_lock(&admin->usedSerializersLock);
+	array_list_pt topicPubList = (array_list_pt)hashMap_remove(admin->topicPublicationsPerSerializer, service);
+	array_list_pt topicSubList = (array_list_pt)hashMap_remove(admin->topicSubscriptionsPerSerializer, service);
+	celixThreadMutex_unlock(&admin->usedSerializersLock);
 
 	/* Now destroy the topicPublications, but first put back the pubsub_endpoints back to the noSerializer pending list */
-	array_list_pt topicPubList = (array_list_pt)hashMap_remove(admin->topicPublicationsPerSerializer, service);
 	if(topicPubList!=NULL){
 		for(i=0;i<arrayList_size(topicPubList);i++){
 			topic_publication_pt topicPub = (topic_publication_pt)arrayList_get(topicPubList,i);
@@ -926,7 +928,6 @@ celix_status_t pubsubAdmin_serializerRemoved(void * handle, service_reference_pt
 	}
 
 	/* Now destroy the topicSubscriptions, but first put back the pubsub_endpoints back to the noSerializer pending list */
-	array_list_pt topicSubList = (array_list_pt)hashMap_remove(admin->topicSubscriptionsPerSerializer, service);
 	if(topicSubList!=NULL){
 		for(i=0;i<arrayList_size(topicSubList);i++){
 			topic_subscription_pt topicSub = (topic_subscription_pt)arrayList_get(topicSubList,i);
@@ -973,8 +974,6 @@ celix_status_t pubsubAdmin_serializerRemoved(void * handle, service_reference_pt
 		}
 		arrayList_destroy(topicSubList);
 	}
-
-	celixThreadMutex_unlock(&admin->usedSerializersLock);
 
 	printf("PSA_UDP_MC: %s serializer removed\n",serType);
 
