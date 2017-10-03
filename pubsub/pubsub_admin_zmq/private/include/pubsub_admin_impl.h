@@ -73,6 +73,7 @@ struct pubsub_admin {
 
 	/* Those are used to keep track of valid subscriptions/publications that still have no valid serializer */
 	celix_thread_mutex_t noSerializerPendingsLock;
+	celix_thread_mutexattr_t noSerializerPendingsAttr;
 	array_list_pt noSerializerSubscriptions; // List<pubsub_ep>
 	array_list_pt noSerializerPublications; // List<pubsub_ep>
 

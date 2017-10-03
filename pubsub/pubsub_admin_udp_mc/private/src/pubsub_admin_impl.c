@@ -179,9 +179,12 @@ celix_status_t pubsubAdmin_create(bundle_context_pt context, pubsub_admin_pt *ad
 	celixThreadMutex_create(&(*admin)->localPublicationsLock, NULL);
 	celixThreadMutex_create(&(*admin)->subscriptionsLock, NULL);
 	celixThreadMutex_create(&(*admin)->externalPublicationsLock, NULL);
-	celixThreadMutex_create(&(*admin)->noSerializerPendingsLock, NULL);
 	celixThreadMutex_create(&(*admin)->serializerListLock, NULL);
 	celixThreadMutex_create(&(*admin)->usedSerializersLock, NULL);
+
+	celixThreadMutexAttr_create(&(*admin)->noSerializerPendingsAttr);
+	celixThreadMutexAttr_settype(&(*admin)->noSerializerPendingsAttr, CELIX_THREAD_MUTEX_RECURSIVE);
+	celixThreadMutex_create(&(*admin)->noSerializerPendingsLock, &(*admin)->noSerializerPendingsAttr);
 
 	celixThreadMutexAttr_create(&(*admin)->pendingSubscriptionsAttr);
 	celixThreadMutexAttr_settype(&(*admin)->pendingSubscriptionsAttr, CELIX_THREAD_MUTEX_RECURSIVE);
@@ -272,8 +275,10 @@ celix_status_t pubsubAdmin_destroy(pubsub_admin_pt admin)
 	celixThreadMutex_unlock(&admin->usedSerializersLock);
 
 	celixThreadMutex_destroy(&admin->usedSerializersLock);
-	celixThreadMutex_destroy(&admin->noSerializerPendingsLock);
 	celixThreadMutex_destroy(&admin->serializerListLock);
+
+	celixThreadMutexAttr_destroy(&admin->noSerializerPendingsAttr);
+	celixThreadMutex_destroy(&admin->noSerializerPendingsLock);
 
 	celixThreadMutex_destroy(&admin->pendingSubscriptionsLock);
 	celixThreadMutexAttr_destroy(&admin->pendingSubscriptionsAttr);
@@ -473,18 +478,19 @@ celix_status_t pubsubAdmin_removeSubscription(pubsub_admin_pt admin,pubsub_endpo
 
 	printf("PSA_UDP_MC: Removing subscription [FWUUID=%s bundleID=%ld scope=%s, topic=%s]\n",subEP->frameworkUUID,subEP->serviceID,subEP->scope, subEP->topic);
 
-	celixThreadMutex_lock(&admin->subscriptionsLock);
-
 	char* scope_topic = createScopeTopicKey(subEP->scope, subEP->topic);
-	topic_subscription_pt sub = (topic_subscription_pt)hashMap_get(admin->subscriptions,scope_topic);
 
+	celixThreadMutex_lock(&admin->subscriptionsLock);
+	topic_subscription_pt sub = (topic_subscription_pt)hashMap_get(admin->subscriptions,scope_topic);
 	if(sub!=NULL){
 		pubsub_topicDecreaseNrSubscribers(sub);
 		if(pubsub_topicGetNrSubscribers(sub) == 0) {
 			status = pubsub_topicSubscriptionRemoveSubscriber(sub,subEP);
 		}
 	}
-	else{
+	celixThreadMutex_unlock(&admin->subscriptionsLock);
+
+	if(sub==NULL){
 		/* Maybe the endpoint was pending */
 		celixThreadMutex_lock(&admin->noSerializerPendingsLock);
 		if(!arrayList_removeElement(admin->noSerializerSubscriptions, subEP)){
@@ -495,7 +501,7 @@ celix_status_t pubsubAdmin_removeSubscription(pubsub_admin_pt admin,pubsub_endpo
 
 	free(scope_topic);
 
-	celixThreadMutex_unlock(&admin->subscriptionsLock);
+
 
 	return status;
 
@@ -625,13 +631,14 @@ celix_status_t pubsubAdmin_removePublication(pubsub_admin_pt admin,pubsub_endpoi
 	if(strcmp(pubEP->frameworkUUID,fwUUID)==0){
 
 		celixThreadMutex_lock(&admin->localPublicationsLock);
-
 		service_factory_pt factory = (service_factory_pt)hashMap_get(admin->localPublications,scope_topic);
 		if(factory!=NULL){
 			topic_publication_pt pub = (topic_publication_pt)factory->handle;
 			pubsub_topicPublicationRemovePublisherEP(pub,pubEP);
 		}
-		else{
+		celixThreadMutex_unlock(&admin->localPublicationsLock);
+
+		if(factory==NULL){
 			/* Maybe the endpoint was pending */
 			celixThreadMutex_lock(&admin->noSerializerPendingsLock);
 			if(!arrayList_removeElement(admin->noSerializerPublications, pubEP)){
@@ -640,7 +647,6 @@ celix_status_t pubsubAdmin_removePublication(pubsub_admin_pt admin,pubsub_endpoi
 			celixThreadMutex_unlock(&admin->noSerializerPendingsLock);
 		}
 
-		celixThreadMutex_unlock(&admin->localPublicationsLock);
 	}
 	else{
 
@@ -860,11 +866,11 @@ celix_status_t pubsubAdmin_serializerRemoved(void * handle, service_reference_pt
 	}
 
 	celixThreadMutex_lock(&admin->serializerListLock);
-	celixThreadMutex_lock(&admin->usedSerializersLock);
-
-
 	/* Remove the serializer from the list */
 	arrayList_removeElement(admin->serializerList, reference);
+	celixThreadMutex_unlock(&admin->serializerListLock);
+
+	celixThreadMutex_lock(&admin->usedSerializersLock);
 
 	/* Now destroy the topicPublications, but first put back the pubsub_endpoints back to the noSerializer pending list */
 	array_list_pt topicPubList = (array_list_pt)hashMap_remove(admin->topicPublicationsPerSerializer, service);
@@ -969,7 +975,6 @@ celix_status_t pubsubAdmin_serializerRemoved(void * handle, service_reference_pt
 	}
 
 	celixThreadMutex_unlock(&admin->usedSerializersLock);
-	celixThreadMutex_unlock(&admin->serializerListLock);
 
 	printf("PSA_UDP_MC: %s serializer removed\n",serType);
 
