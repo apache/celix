@@ -40,7 +40,7 @@ void Phase1Cmp::deinit() {
 
 int Phase1Cmp::getData() {
     counter += 1;
-    return rand();
+    return (int)random();
 };
 
 std::string Phase1Cmp::getName() {
