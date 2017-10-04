@@ -54,6 +54,7 @@ For ZeroMQ without encryption, skip the steps 1-12 below
 1. Run `pubsub/keygen/ed_file ~/pubsub.keys cert_topic1.key cert_topic1.key.enc`
 1. Store the keys in the pubsub/examples/keys/ directory
 1. Build project to include these keys
+1. Add to the config.properties the property SECURE_TOPICS=<list_of_secure_topics> 
 
 For ZeroMQ without encryption, start here
 
