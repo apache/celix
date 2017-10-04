@@ -43,17 +43,15 @@ Design information can be found at pubsub\_admin\_udp\_mc/README.md
 For ZeroMQ without encryption, skip the steps 1-12 below
 
 1. Run `touch ~/pubsub.keys`
-1. Run `echo "aes_key:{AES_KEY here}" >> ~/pubsub.keys`. Note that AES_KEY is just a sequence of random bytes. To generate such a key, you can use the command " cat /dev/urandom | hexdump -v -e '/1 "%02X"' | head -c 32"(this will take out of /dev/urandom 16 bytes, thus a 128bit key)
-1. Run `echo "aes_iv:{AES_IV here}" >> ~/pubsub.keys`.  Note that AES_IV is just a sequence of random bytes. To generate such an initial vector , you can use the command " cat /dev/urandom | hexdump -v -e '/1 "%02X"' | head -c 16"(this will take out of /dev/urandom 8 bytes, thus a 64bit initial vector) 
+1. Run `echo "aes_key:{AES_KEY here}" >> ~/pubsub.keys`. Note that AES_KEY is just a sequence of random bytes. To generate such a key, you can use the command `cat /dev/urandom | hexdump -v -e '/1 "%02X"' | head -c 32` (this will take out of /dev/urandom 16 bytes, thus a 128bit key)
+1. Run `echo "aes_iv:{AES_IV here}" >> ~/pubsub.keys`.  Note that AES_IV is just a sequence of random bytes. To generate such an initial vector , you can use the command `cat /dev/urandom | hexdump -v -e '/1 "%02X"' | head -c 16` (this will take out of /dev/urandom 8 bytes, thus a 64bit initial vector) 
 1. Run `touch ~/pubsub.conf`
 1. Run `echo "keys.file.path=$HOME" >> ~/pubsub.conf`
 1. Run `echo "keys.file.name=pubsub.keys" >> ~/pubsub.conf`
-1. To generate ZMQ keypairs
-1. Run `pubsub/keygen/makecert cert_topic1.pub cert_topic1.key`
-1. To encrypt files
-1. Run `pubsub/keygen/ed_file ~/pubsub.keys cert_topic1.key cert_topic1.key.enc`
-1. Store the keys in the pubsub/examples/keys/ directory
-1. Build project to include these keys
+1. Generate ZMQ keypairs by running `pubsub/keygen/makecert pub_<topic_name>.pub pub_<topic_name>.key`
+1. Encrypt the private key file using `pubsub/keygen/ed_file ~/pubsub.keys pub_<topic_name>.key pub_<topic>.key.enc`
+1. Store the keys in the pubsub/examples/keys/ directory, as described in the pubsub/examples/keys/README.
+1. Build project to include these keys (check the CMakeLists.txt files to be sure that the keys are included in the bundles)
 1. Add to the config.properties the property SECURE_TOPICS=<list_of_secure_topics> 
 
 For ZeroMQ without encryption, start here
