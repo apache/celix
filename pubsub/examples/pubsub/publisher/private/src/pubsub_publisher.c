@@ -41,7 +41,7 @@ static bool stop=false;
 
 static double randCoordinate(double min, double max){
 
-	double ret = min + (((double)rand()) / (((double)RAND_MAX)/(max-min))) ;
+	double ret = min + (((double)random()) / (((double)RAND_MAX)/(max-min))) ;
 
 	return ret;
 

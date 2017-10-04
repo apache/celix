@@ -132,7 +132,7 @@ int largeUdp_sendmsg(largeUdp_pt handle, int fd, struct iovec *largeMsg_iovec, i
 	msg_part_header_t header;
 
 	int written = 0;
-	header.msg_ident = rand();
+	header.msg_ident = (unsigned int)random();
 	header.total_msg_size = 0;
 	for(n = 0; n < len ;n++) {
 		header.total_msg_size += largeMsg_iovec[n].iov_len;
@@ -206,7 +206,7 @@ int largeUdp_sendto(largeUdp_pt handle, int fd, void *buf, size_t count, int fla
 	msg_part_header_t header;
 
 	int written = 0;
-	header.msg_ident = rand();
+	header.msg_ident = (unsigned int)random();
 	header.total_msg_size = count;
 	char *databuf = buf;
 

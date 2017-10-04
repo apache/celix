@@ -43,12 +43,12 @@ static bool stop=false;
 static celix_thread_t tid;
 
 static double randDouble(double min, double max){
-	double ret = min + (((double)rand()) / (((double)RAND_MAX)/(max-min))) ;
+	double ret = min + (((double)random()) / (((double)RAND_MAX)/(max-min))) ;
 	return ret;
 }
 
 static unsigned int randInt(unsigned int min, unsigned int max){
-	double scaled = ((double)rand())/((double)RAND_MAX);
+	double scaled = ((double)random())/((double)RAND_MAX);
 	return (max - min +1)*scaled + min;
 }
 

@@ -372,7 +372,7 @@ static int pubsub_localMsgTypeIdForUUID(void* handle, const char* msgType, unsig
 
 static unsigned int rand_range(unsigned int min, unsigned int max){
 
-	double scaled = (double)(((double)rand())/((double)RAND_MAX));
+	double scaled = (double)(((double)random())/((double)RAND_MAX));
 	return (max-min+1)*scaled + min;
 
 }
