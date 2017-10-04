@@ -43,8 +43,8 @@ Design information can be found at pubsub\_admin\_udp\_mc/README.md
 For ZeroMQ without encryption, skip the steps 1-12 below
 
 1. Run `touch ~/pubsub.keys`
-1. Run `echo "aes_key:{AES_KEY here}" >> ~/pubsub.keys`
-1. Run `echo "aes_iv:{AES_IV here}" >> ~/pubsub.keys`
+1. Run `echo "aes_key:{AES_KEY here}" >> ~/pubsub.keys`. Note that AES_KEY is just a sequence of random bytes. To generate such a key, you can use the command " cat /dev/urandom | hexdump -v -e '/1 "%02X"' | head -c 32"(this will take out of /dev/urandom 16 bytes, thus a 128bit key)
+1. Run `echo "aes_iv:{AES_IV here}" >> ~/pubsub.keys`.  Note that AES_IV is just a sequence of random bytes. To generate such an initial vector , you can use the command " cat /dev/urandom | hexdump -v -e '/1 "%02X"' | head -c 16"(this will take out of /dev/urandom 8 bytes, thus a 64bit initial vector) 
 1. Run `touch ~/pubsub.conf`
 1. Run `echo "keys.file.path=$HOME" >> ~/pubsub.conf`
 1. Run `echo "keys.file.name=pubsub.keys" >> ~/pubsub.conf`
