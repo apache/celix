@@ -203,7 +203,7 @@ Component<T>& Component<T>::setInstance(std::unique_ptr<T>&& inst) {
 }
 
 template<class T>
-Component<T>& Component<T>::setInstance(T inst) {
+Component<T>& Component<T>::setInstance(T&& inst) {
     this->instance = std::unique_ptr<T> {nullptr};
     this->sharedInstance = std::shared_ptr<T> {nullptr};
     this->valInstance.clear();

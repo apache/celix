@@ -127,7 +127,7 @@ namespace celix { namespace dm {
          *
          * @return the DM Component reference for chaining (fluent API)
          */
-        Component<T>& setInstance(T inst);
+        Component<T>& setInstance(T&& inst);
 
         /**
          * Adds a C++ interface to provide as service to the Celix framework.
