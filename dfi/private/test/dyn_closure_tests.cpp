@@ -32,7 +32,7 @@ extern "C" {
 
 static int g_count;
 
-static void stdLog(void *handle, int level, const char *file, int line, const char *msg, ...) {
+static void stdLog(void*, int level, const char *file, int line, const char *msg, ...) {
     va_list ap;
     const char *levels[5] = {"NIL", "ERROR", "WARNING", "INFO", "DEBUG"};
     fprintf(stderr, "%s: FILE:%s, LINE:%i, MSG:",levels[level], file, line);
@@ -43,7 +43,7 @@ static void stdLog(void *handle, int level, const char *file, int line, const ch
 }
 
 #define EXAMPLE1_DESCRIPTOR "example(III)I"
-static void example1_binding(void *userData, void* args[], void *out) {
+static void example1_binding(void*, void* args[], void *out) {
     int32_t a = *((int32_t *)args[0]);
     int32_t b = *((int32_t *)args[1]);
     int32_t c = *((int32_t *)args[2]);
@@ -58,7 +58,7 @@ struct example2_arg2 {
     double val2;
     double val3;
 };
-void example2_binding(void *userData, void* args[], void *out) {
+void example2_binding(void*, void* args[], void *out) {
     int32_t a = *((int32_t *)args[0]);
     struct example2_arg2 b =  *((struct example2_arg2 *)args[1]);
     int32_t c = *((int32_t *)args[2]);
@@ -75,7 +75,7 @@ struct example3_ret {
     int32_t min;
 };
 
-static void example3_binding(void *userData, void* args[], void *out) {
+static void example3_binding(void*, void* args[], void *out) {
     int32_t a = *((int32_t *)args[0]);
     int32_t b = *((int32_t *)args[1]);
     int32_t c = *((int32_t *)args[2]);

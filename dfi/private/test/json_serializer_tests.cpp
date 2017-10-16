@@ -32,7 +32,7 @@ extern "C" {
 #include "dyn_type.h"
 #include "json_serializer.h"
 
-static void stdLog(void *handle, int level, const char *file, int line, const char *msg, ...) {
+static void stdLog(void*, int level, const char *file, int line, const char *msg, ...) {
 	va_list ap;
 	const char *levels[5] = {"NIL", "ERROR", "WARNING", "INFO", "DEBUG"};
 	fprintf(stderr, "%s: FILE:%s, LINE:%i, MSG:",levels[level], file, line);

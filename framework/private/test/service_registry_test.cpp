@@ -694,7 +694,7 @@ TEST(service_registry, ungetServiceReference){
 	count = 5;
 
     const char* mod_name = "mod name";
-    const char* srv_name = "srv name";
+    //const char* srv_name = "srv name";
 	mock().expectOneCall("serviceReference_getUsageCount")
 			.withParameter("reference", reference)
 			.withOutputParameterReturning("count", &count, sizeof(count));
@@ -749,8 +749,8 @@ TEST(service_registry, clearReferencesFor_1){
 	service_registration_pt registration = (service_registration_pt) 0x10;
 	service_reference_pt reference = (service_reference_pt) 0x40;
 	bundle_pt bundle = (bundle_pt) 0x70;
-	module_pt module = (module_pt) 0x80;
-	const char* modName = "mod name";
+	//module_pt module = (module_pt) 0x80;
+	//const char* modName = "mod name";
 
 	hash_map_pt references = hashMap_create(NULL, NULL, NULL, NULL);
 	hashMap_put(references, registration, reference);

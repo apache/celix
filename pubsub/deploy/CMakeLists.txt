@@ -19,58 +19,56 @@ find_program(ETCD_CMD NAMES etcd)
 find_program(XTERM_CMD NAMES xterm)
 
 # UDP Multicast
-add_deploy("pubsub_publisher_udp_mc" 
-    GROUP "pubsub"
-    BUNDLES
-       shell
-       shell_tui
+add_deploy("pubsub_publisher_udp_mc"
+	GROUP "pubsub"
+	BUNDLES
+	   shell
+	   shell_tui
 		org.apache.celix.pubsub_serializer.PubSubSerializerJson
 		org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
-       org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
-       org.apache.celix.pubsub_admin.PubSubAdminUdpMc
-       org.apache.celix.pubsub_publisher.PoiPublisher
-       org.apache.celix.pubsub_publisher.PoiPublisher2
+	   org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
+	   org.apache.celix.pubsub_admin.PubSubAdminUdpMc
+	   org.apache.celix.pubsub_publisher.PoiPublisher
+	   org.apache.celix.pubsub_publisher.PoiPublisher2
 )
 
-add_deploy("pubsub_subscriber_udp_mc" 
-    GROUP "pubsub"
-    BUNDLES
-       shell
-       shell_tui
+add_deploy("pubsub_subscriber_udp_mc"
+	GROUP "pubsub"
+	BUNDLES
+	   shell
+	   shell_tui
 		org.apache.celix.pubsub_serializer.PubSubSerializerJson
 		org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
-       org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
-       org.apache.celix.pubsub_admin.PubSubAdminUdpMc
-       org.apache.celix.pubsub_subscriber.PoiSubscriber
+	   org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
+	   org.apache.celix.pubsub_admin.PubSubAdminUdpMc
+	   org.apache.celix.pubsub_subscriber.PoiSubscriber
 )
 
-add_deploy("pubsub_subscriber2_udp_mc" 
-    GROUP "pubsub"
-    BUNDLES
-       shell
-       shell_tui
+add_deploy("pubsub_subscriber2_udp_mc"
+	GROUP "pubsub"
+	BUNDLES
+	   shell
+	   shell_tui
 		org.apache.celix.pubsub_serializer.PubSubSerializerJson
 		org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
-       org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
-       org.apache.celix.pubsub_admin.PubSubAdminUdpMc
-       org.apache.celix.pubsub_subscriber.PoiSubscriber
+	   org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
+	   org.apache.celix.pubsub_admin.PubSubAdminUdpMc
+	   org.apache.celix.pubsub_subscriber.PoiSubscriber
 )
 
 if (ETCD_CMD AND XTERM_CMD)
 	#Runtime starting a publish and subscriber for udp mc
 	add_runtime(pubsub_rt_upd_mc
-		NAME udp_mc
-		GROUP pubsub
-		DEPLOYMENTS
+			NAME udp_mc
+			GROUP pubsub
+			DEPLOYMENTS
 			pubsub_publisher_udp_mc
 			pubsub_subscriber_udp_mc
 			pubsub_subscriber2_udp_mc
-		COMMANDS
+			COMMANDS
 			etcd
-		USE_TERM
-	)
-else ()
-	message(WARNING "Cannot create runtime for pubsub because etcd and/or xterm is not installed")
+			USE_TERM
+			)
 endif ()
 
 if (BUILD_PUBSUB_PSA_ZMQ)

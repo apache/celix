@@ -56,16 +56,16 @@ TEST_GROUP(service_tracker_customizer) {
 };
 
 extern "C" {
-	celix_status_t serviceTrackerCustomizerTest_addingService(void * handle, service_reference_pt reference, void **service) {
+	celix_status_t serviceTrackerCustomizerTest_addingService(void*, service_reference_pt, void** ) {
 		return CELIX_SUCCESS;
 	}
-	celix_status_t serviceTrackerCustomizerTest_addedService(void * handle, service_reference_pt reference, void * service) {
+	celix_status_t serviceTrackerCustomizerTest_addedService(void*, service_reference_pt, void*) {
 		return CELIX_SUCCESS;
 	}
-	celix_status_t serviceTrackerCustomizerTest_modifiedService(void * handle, service_reference_pt reference, void * service) {
+	celix_status_t serviceTrackerCustomizerTest_modifiedService(void*, service_reference_pt, void*) {
 		return CELIX_SUCCESS;
 	}
-	celix_status_t serviceTrackerCustomizerTest_removedService(void * handle, service_reference_pt reference, void * service) {
+	celix_status_t serviceTrackerCustomizerTest_removedService(void*, service_reference_pt, void*) {
 		return CELIX_SUCCESS;
 	}
 }

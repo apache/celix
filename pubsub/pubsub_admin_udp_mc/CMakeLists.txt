@@ -15,34 +15,36 @@
 # specific language governing permissions and limitations
 # under the License.
 
-find_package(Jansson REQUIRED)
+if (BUILD_PUBSUB_PSA_UDP_MC)
+	find_package(Jansson REQUIRED)
 
-include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/dfi/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/pubsub/api/pubsub")
-include_directories("private/include")
-include_directories("public/include")
-include_directories("${JANSSON_INCLUDE_DIR}")
+	include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+	include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
+	include_directories("${PROJECT_SOURCE_DIR}/dfi/public/include")
+	include_directories("${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/include")
+	include_directories("${PROJECT_SOURCE_DIR}/pubsub/api/pubsub")
+	include_directories("private/include")
+	include_directories("public/include")
+	include_directories("${JANSSON_INCLUDE_DIR}")
 
-add_bundle(org.apache.celix.pubsub_admin.PubSubAdminUdpMc
-    BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_udp_multicast"
-    VERSION "1.0.0"
-    SOURCES
-    	private/src/psa_activator.c
-    	private/src/pubsub_admin_impl.c
-    	private/src/topic_subscription.c
-    	private/src/topic_publication.c
-    	private/src/large_udp.c
-	   ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
-    	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_endpoint.c
-    	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_admin_match.c
-    	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_utils.c
-)
+	add_bundle(org.apache.celix.pubsub_admin.PubSubAdminUdpMc
+		BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_udp_multicast"
+		VERSION "1.0.0"
+		SOURCES
+			private/src/psa_activator.c
+			private/src/pubsub_admin_impl.c
+			private/src/topic_subscription.c
+			private/src/topic_publication.c
+			private/src/large_udp.c
+		   ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
+			${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_endpoint.c
+			${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_admin_match.c
+			${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_utils.c
+	)
 
-set_target_properties(org.apache.celix.pubsub_admin.PubSubAdminUdpMc PROPERTIES INSTALL_RPATH "$ORIGIN")
-target_link_libraries(org.apache.celix.pubsub_admin.PubSubAdminUdpMc celix_framework celix_utils celix_dfi)
+	set_target_properties(org.apache.celix.pubsub_admin.PubSubAdminUdpMc PROPERTIES INSTALL_RPATH "$ORIGIN")
+	target_link_libraries(org.apache.celix.pubsub_admin.PubSubAdminUdpMc celix_framework celix_utils celix_dfi)
 
-install_bundle(org.apache.celix.pubsub_admin.PubSubAdminUdpMc)
+	install_bundle(org.apache.celix.pubsub_admin.PubSubAdminUdpMc)
+endif()
 

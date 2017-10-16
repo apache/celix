@@ -35,7 +35,7 @@ extern "C" {
 #include "json_serializer.h"
 #include "json_rpc.h"
 
-static void stdLog(void *handle, int level, const char *file, int line, const char *msg, ...) {
+static void stdLog(void*, int level, const char *file, int line, const char *msg, ...) {
     va_list ap;
     const char *levels[5] = {"NIL", "ERROR", "WARNING", "INFO", "DEBUG"};
     fprintf(stderr, "%s: FILE:%s, LINE:%i, MSG:",levels[level], file, line);
@@ -92,12 +92,12 @@ static void stdLog(void *handle, int level, const char *file, int line, const ch
         dynFunction_destroy(dynFunc);
     }
 
-    int add(void *handle, double a, double b, double *result) {
+    int add(void*, double a, double b, double *result) {
         *result = a + b;
         return 0;
     }
 
-    int getName_example4(void *handle, char** result) {
+    int getName_example4(void*, char** result) {
         *result = strdup("allocatedInFunction");
         return 0;
     }
@@ -118,7 +118,7 @@ static void stdLog(void *handle, int level, const char *file, int line, const ch
     };
 
 
-    int stats(void *handle, struct tst_seq input, struct tst_StatsResult **out) {
+    int stats(void*, struct tst_seq input, struct tst_StatsResult **out) {
         assert(out != NULL);
         assert(*out == NULL);
         double total = 0.0;
