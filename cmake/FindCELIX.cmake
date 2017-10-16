@@ -102,6 +102,7 @@ if (CELIX_DM_LIB)
     set(CELIX_DM_INCLUDE_DIR ${CELIX_INCLUDE_DIR}/dependency_manager)
 endif ()
 if (CELIX_DM_STATIC_CXX_LIB)
+	set(CELIX_DM_CXX_STATIC_LIB ${CELIX_DM_STATIC_CXX_LIB}) #Ensure that var name from verion 2.0.0 is still valid
     set(CELIX_DM_CXX_INCLUDE_DIR ${CELIX_INCLUDE_DIR}/dependency_manager_cxx)
 endif ()
 
@@ -118,3 +119,4 @@ if(CELIX_FOUND)
 	include(${CELIX_CMAKECELIX_FILE})
 	include_directories(${CELIX_INCLUDE_DIRS})
 endif()
+
