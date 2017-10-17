@@ -16,7 +16,7 @@
 # under the License.
 
 ### Setup Docker Option
-option(ENABLE_DOCKER "Enable the add_docker function to create docker files")
+option(ENABLE_DOCKER "Enable the add_celix_docker function to create docker files")
 
 if (ENABLE_DOCKER)
     ##### setup docker target
@@ -55,12 +55,9 @@ if (ENABLE_DOCKER)
     find_package(Jansson REQUIRED)
     target_link_libraries(celix_docker_depslib ${JANSSON_LIBRARIES} ${FFI_LIBRARIES})
     target_link_libraries(celix_docker_depslib m)
-
-    #TODO, check if libnss_dns and _files are really not needed... seems so
-    #target_link_libraries(celix_docker_depslib /lib64/libnss_dns.so.2 /lib64/libnss_files.so.2)
 endif ()
 
-function(add_docker)
+function(add_celix_docker)
     list(GET ARGN 0 DOCKER_TARGET)
     list(REMOVE_AT ARGN 0)
 
@@ -132,7 +129,7 @@ function(add_docker)
         add_custom_command(OUTPUT "${TIMESTAMP_FILE}"
             COMMAND ${CMAKE_COMMAND} -E touch ${TIMESTAMP_FILE}
             COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOCATION>
-            COMMAND cd $<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOCATION> && /bin/bash ${CELIX_CMAKE_DIRECTORY}/cmake_celix/create_target_filesystem.sh -e ${CELIX_LAUNCHER} -l $<TARGET_FILE:${DOCKER_DEPSLIB}>
+            COMMAND cd $<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOCATION> && /bin/bash ${CELIX_CMAKE_DIRECTORY}/cmake_celix/create_target_filesystem.sh -e ${CELIX_LAUNCHER} -l $<TARGET_FILE:${DOCKER_DEPSLIB}> > /dev/null
             DEPENDS  "$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_DEPS>" ${DOCKERFILE} ${DOCKER_DEPSLIB}
             WORKING_DIRECTORY "${DOCKER_LOCATION}"
             COMMENT "Creating docker dir for ${DOCKER_TARGET}" VERBATIM
@@ -191,13 +188,13 @@ $<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_PROPERTIES>,
 
 
     if (DOCKER_BUNDLES)
-        docker_bundles(${DOCKER_TARGET} ${DOCKER_BUNDLES})
+        celix_docker_bundles(${DOCKER_TARGET} ${DOCKER_BUNDLES})
     endif()
     if (DOCKER_PROPERTIES)
-        docker_properties(${DOCKER_TARGET} ${DOCKER_PROPERTIES})
+        celix_docker_properties(${DOCKER_TARGET} ${DOCKER_PROPERTIES})
     endif ()
     if (DOCKER_INSTRUCTIONS)
-        docker_instructions(${DOCKER_TARGET} ${DOCKER_INSTRUCTIONS})
+        celix_docker_instructions(${DOCKER_TARGET} ${DOCKER_INSTRUCTIONS})
     endif ()
 
     get_target_property(DEPS docker "DOCKER_DEPS")
@@ -218,7 +215,7 @@ $<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_PROPERTIES>,
 
 endfunction()
 
-function(docker_bundles)
+function(celix_docker_bundles)
     if (NOT ENABLE_DOCKER)
         return()
     endif()
@@ -241,6 +238,7 @@ function(docker_bundles)
             add_custom_command(OUTPUT ${OUT}
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE} ${OUT}
                 COMMENT "Copying bundle '${BUNDLE}' to '${OUT}'"
+                DEPENDS ${BUNDLE}
             )
         else() #assuming target
             list(APPEND BUNDLES "${BUNDLES_DIR}/${BUNDLE}.zip")
@@ -248,6 +246,7 @@ function(docker_bundles)
             add_custom_command(OUTPUT ${OUT}
                     COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>" "${OUT}"
                     COMMENT "Copying bundle '${BUNDLE}' to '${OUT}'"
+                    DEPENDS ${BUNDLE}
             )
             add_dependencies(${DOCKER_TARGET} ${BUNDLE}_bundle) #ensure the the deploy depends on the _bundle target, custom_command depends on add_library
         endif()
@@ -258,7 +257,7 @@ function(docker_bundles)
     set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_DEPS" "${DEPS}")
 endfunction()
 
-function(docker_properties)
+function(celix_docker_properties)
     if (NOT ENABLE_DOCKER)
         return()
     endif()
@@ -277,7 +276,7 @@ function(docker_properties)
     set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_PROPERTIES" "${PROPS}")
 endfunction()
 
-function(docker_instructions)
+function(celix_docker_instructions)
     if (NOT ENABLE_DOCKER)
         return()
     endif()

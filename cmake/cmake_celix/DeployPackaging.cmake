@@ -15,11 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-##### setup bundles/deploy target
-add_custom_target(deploy ALL
-        DEPENDS $<TARGET_PROPERTY:deploy,DEPLOY_DEPLOYMENTS>
+##### setup bundles/container target
+add_custom_target(containers ALL
+        DEPENDS $<TARGET_PROPERTY:containers,CONTAINER_DEPLOYMENTS>
 )
-set_target_properties(deploy PROPERTIES "DEPLOY_DEPLOYMENTS" "") #initial empty deps list
+set_target_properties(containers PROPERTIES "CONTAINER_DEPLOYMENTS" "") #initial empty deps list
 
 get_directory_property(CLEANFILES ADDITIONAL_MAKE_CLEAN_FILES)
 list(APPEND CLEANFILES "${CMAKE_BINARY_DIR}/deploy")
@@ -27,68 +27,72 @@ set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${CLEANFILES}")
 #####
 
 function(add_deploy)
-    list(GET ARGN 0 DEPLOY_TARGET)
+    add_celix_container(${ARGN})
+endfunction()
+
+function(add_celix_container)
+    list(GET ARGN 0 CONTAINER_TARGET)
     list(REMOVE_AT ARGN 0)
 
     set(OPTIONS COPY)
     set(ONE_VAL_ARGS GROUP NAME LAUNCHER DIR)
     set(MULTI_VAL_ARGS BUNDLES PROPERTIES)
-    cmake_parse_arguments(DEPLOY "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
+    cmake_parse_arguments(CONTAINER "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
 
     ##### Check arguments #####
-    if (NOT DEPLOY_NAME)
-        set(DEPLOY_NAME "${DEPLOY_TARGET}")
+    if (NOT CONTAINER_NAME)
+        set(CONTAINER_NAME "${CONTAINER_TARGET}")
     endif ()
-    if (NOT DEPLOY_DIR)
-        set(DEPLOY_DIR "${CMAKE_BINARY_DIR}/deploy")
+    if (NOT CONTAINER_DIR)
+        set(CONTAINER_DIR "${CMAKE_BINARY_DIR}/deploy")
     endif ()
     ######
 
     ##### Setting defaults #####
-    if (DEPLOY_GROUP)
-        set(DEPLOY_LOCATION "${DEPLOY_DIR}/${DEPLOY_GROUP}/${DEPLOY_NAME}")
-        set(DEPLOY_PRINT_NAME "${DEPLOY_GROUP}/${DEPLOY_NAME}")
+    if (CONTAINER_GROUP)
+        set(CONTAINER_LOCATION "${CONTAINER_DIR}/${CONTAINER_GROUP}/${CONTAINER_NAME}")
+        set(CONTAINER_PRINT_NAME "${CONTAINER_GROUP}/${CONTAINER_NAME}")
     else ()
-        set(DEPLOY_LOCATION "${DEPLOY_DIR}/${DEPLOY_NAME}")
-        set(DEPLOY_PRINT_NAME "${DEPLOY_NAME}")
+        set(CONTAINER_LOCATION "${CONTAINER_DIR}/${CONTAINER_NAME}")
+        set(CONTAINER_PRINT_NAME "${CONTAINER_NAME}")
     endif ()
     ######
 
 
     ###### Setup deploy custom target and config.properties file
-    set(TIMESTAMP_FILE "${CMAKE_CURRENT_BINARY_DIR}/${DEPLOY_TARGET}-deploy-timestamp")
+    set(TIMESTAMP_FILE "${CMAKE_CURRENT_BINARY_DIR}/${CONTAINER_TARGET}-container-timestamp")
 
-    add_custom_target(${DEPLOY_TARGET}
+    add_custom_target(${CONTAINER_TARGET}
         DEPENDS ${TIMESTAMP_FILE}
     )
-    get_target_property(DEPLOYDEPS deploy "DEPLOY_DEPLOYMENTS")
-    list(APPEND DEPLOYDEPS ${DEPLOY_TARGET})
-    set_target_properties(deploy PROPERTIES "DEPLOY_DEPLOYMENTS" "${DEPLOYDEPS}")
+    get_target_property(CONTAINERDEPS containers "CONTAINER_DEPLOYMENTS")
+    list(APPEND CONTAINERDEPS ${CONTAINER_TARGET})
+    set_target_properties(containers PROPERTIES "CONTAINER_DEPLOYMENTS" "${CONTAINERDEPS}")
 
-    #FILE TARGETS FOR DEPLOY
-    set(DEPLOY_EXE "${DEPLOY_LOCATION}/${DEPLOY_NAME}")
-    set(DEPLOY_RUN_SH "${DEPLOY_LOCATION}/run.sh")
-    set(DEPLOY_PROPS "${DEPLOY_LOCATION}/config.properties")
-    set(DEPLOY_ECLIPSE_LAUNCHER "${DEPLOY_LOCATION}/${DEPLOY_NAME}.launch")
-    set(DEPLOY_RELEASE_SH "${DEPLOY_LOCATION}/release.sh")
+    #FILE TARGETS FOR CONTAINER
+    set(CONTAINER_EXE "${CONTAINER_LOCATION}/${CONTAINER_NAME}")
+    set(CONTAINER_RUN_SH "${CONTAINER_LOCATION}/run.sh")
+    set(CONTAINER_PROPS "${CONTAINER_LOCATION}/config.properties")
+    set(CONTAINER_ECLIPSE_LAUNCHER "${CONTAINER_LOCATION}/${CONTAINER_NAME}.launch")
+    set(CONTAINER_RELEASE_SH "${CONTAINER_LOCATION}/release.sh")
 
     find_program(LINK_CMD ln)
     if (LINK_CMD) 
         #if ln is available use a softlink to celix exe instead of a run.sh
-        list(APPEND DEPLOY_FILE_TARGETS ${DEPLOY_PROPS} ${DEPLOY_ECLIPSE_LAUNCHER} ${DEPLOY_RELEASE_SH} ${DEPLOY_RUN_SH} ${DEPLOY_EXE})
+        list(APPEND CONTAINER_FILE_TARGETS ${CONTAINER_PROPS} ${CONTAINER_ECLIPSE_LAUNCHER} ${CONTAINER_RELEASE_SH} ${CONTAINER_RUN_SH} ${CONTAINER_EXE})
     else()
-        list(APPEND DEPLOY_FILE_TARGETS ${DEPLOY_PROPS} ${DEPLOY_ECLIPSE_LAUNCHER} ${DEPLOY_RELEASE_SH} ${DEPLOY_RUN_SH})
+        list(APPEND CONTAINER_FILE_TARGETS ${CONTAINER_PROPS} ${CONTAINER_ECLIPSE_LAUNCHER} ${CONTAINER_RELEASE_SH} ${CONTAINER_RUN_SH})
     endif()
 
     #setup dependencies based on timestamp
     add_custom_command(OUTPUT "${TIMESTAMP_FILE}"
         COMMAND ${CMAKE_COMMAND} -E touch ${TIMESTAMP_FILE}
-        COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_LOCATION>
-        COMMAND chmod +x $<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_LOCATION>/run.sh
-        COMMAND chmod +x $<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_LOCATION>/release.sh
-        DEPENDS  "$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_TARGET_DEPS>" ${DEPLOY_FILE_TARGETS} 
-        WORKING_DIRECTORY "${DEPLOY_LOCATION}"
-        COMMENT "Deploying ${DEPLOY_PRINT_NAME}" VERBATIM
+        COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_LOCATION>
+        COMMAND chmod +x $<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_LOCATION>/run.sh
+        COMMAND chmod +x $<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_LOCATION>/release.sh
+        DEPENDS  "$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_TARGET_DEPS>" ${CONTAINER_FILE_TARGETS}
+        WORKING_DIRECTORY "${CONTAINER_LOCATION}"
+        COMMENT "Deploying ${CONTAINER_PRINT_NAME} Celix container" VERBATIM
     )
 
     #Setting CELIX_LIB_DIRS, CELIX_BIN_DIR and CELIX_LAUNCHER 
@@ -106,27 +110,27 @@ function(add_deploy)
     endif()
 
     #generate config.properties
-    set(STAGE1_PROPERTIES "${CMAKE_CURRENT_BINARY_DIR}/${DEPLOY_TARGET}-deploy-config-stage1.properties")
+    set(STAGE1_PROPERTIES "${CMAKE_CURRENT_BINARY_DIR}/${CONTAINER_TARGET}-container-config-stage1.properties")
     file(GENERATE 
         OUTPUT "${STAGE1_PROPERTIES}"
-        CONTENT "cosgi.auto.start.1=$<JOIN:$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_BUNDLES>, >
-$<JOIN:$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_PROPERTIES>,
+        CONTENT "cosgi.auto.start.1=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES>, >
+$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_PROPERTIES>,
 >
 "
     )
     file(GENERATE
-        OUTPUT "${DEPLOY_PROPS}"
+        OUTPUT "${CONTAINER_PROPS}"
         INPUT "${STAGE1_PROPERTIES}"
     )
 
 
     #Setup launcher using celix target, celix binary or custom launcher
-    if (DEPLOY_LAUNCHER)
-        if (IS_ABSOLUTE "${DEPLOY_LAUNCHER}")
-            #assuming target
-            set(LAUNCHER "${DEPLOY_LAUNCHER}")
+    if (CONTAINER_LAUNCHER)
+        if (IS_ABSOLUTE "${CONTAINER_LAUNCHER}")
+            set(LAUNCHER "${CONTAINER_LAUNCHER}")
         else()
-            set(LAUNCHER "$<TARGET_FILE:${DEPLOY_LAUNCHER}>")
+            #assuming target
+            set(LAUNCHER "$<TARGET_FILE:${CONTAINER_LAUNCHER}>")
         endif()
     else()
         #Use CELIX_LAUNCHER
@@ -134,11 +138,11 @@ $<JOIN:$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_PROPERTIES>,
     endif()
 
     #softlink celix exe file
-    add_custom_command(OUTPUT "${DEPLOY_EXE}"
-        COMMAND ${LINK_CMD} -s "${LAUNCHER}" "${DEPLOY_EXE}"
-        WORKING_DIRECTORY ${DEPLOY_LOCATION}
+    add_custom_command(OUTPUT "${CONTAINER_EXE}"
+        COMMAND ${LINK_CMD} -s "${LAUNCHER}" "${CONTAINER_EXE}"
+        WORKING_DIRECTORY ${CONTAINER_LOCATION}
         DEPENDS "${LAUNCHER}" 
-        COMMENT "Symbolic link launcher to ${DEPLOY_EXE}" VERBATIM
+        COMMENT "Symbolic link launcher to ${CONTAINER_EXE}" VERBATIM
     ) 
 
 
@@ -150,53 +154,56 @@ $<JOIN:$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_PROPERTIES>,
     endif()
     set(RELEASE_CONTENT "#!/bin/sh\nexport ${LIB_PATH_NAME}=${CELIX_LIB_DIRS}:\${${LIB_PATH_NAME}}\nexport PATH=${CELIX_BIN_DIR}:\${PATH}")
     file(GENERATE
-        OUTPUT ${DEPLOY_RELEASE_SH}
+        OUTPUT ${CONTAINER_RELEASE_SH}
         CONTENT ${RELEASE_CONTENT}
     )
     set(RUN_CONTENT "${RELEASE_CONTENT}\n${LAUNCHER} \$@\n")
     file(GENERATE
-        OUTPUT ${DEPLOY_RUN_SH}
+        OUTPUT ${CONTAINER_RUN_SH}
         CONTENT ${RUN_CONTENT}
     )
 
     #generate eclipse project launch file
     set(PROGRAM_NAME "${LAUNCHER}")
-    set(CONTAINER_NAME ${DEPLOY_NAME})
     set(PROJECT_ATTR "${CMAKE_PROJECT_NAME}-build")
-    set(WORKING_DIRECTORY ${DEPLOY_LOCATION})
+    set(WORKING_DIRECTORY ${CONTAINER_LOCATION})
     include("${CELIX_CMAKE_DIRECTORY}/cmake_celix/RunConfig.in.cmake") #set VAR RUN_CONFIG_IN
     file(GENERATE
-        OUTPUT "${DEPLOY_ECLIPSE_LAUNCHER}"
+        OUTPUT "${CONTAINER_ECLIPSE_LAUNCHER}"
         CONTENT "${RUN_CONFIG_IN}"    
     )
 
-    ##### Deploy Target Properties #####
+    ##### Container Target Properties #####
     #internal use
-    set_target_properties(${DEPLOY_TARGET} PROPERTIES "DEPLOY_TARGET_DEPS" "") #bundles to deploy.
-    set_target_properties(${DEPLOY_TARGET} PROPERTIES "DEPLOY_BUNDLES" "") #bundles to deploy.
-    set_target_properties(${DEPLOY_TARGET} PROPERTIES "DEPLOY_COPY_BUNDLES" ${DEPLOY_COPY}) #copy bundles in bundle dir or link using abs paths. NOTE this cannot be changed after a add_deploy command
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_TARGET_DEPS" "") #target deps for the container.
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES" "") #bundles to deploy fro the container.
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_COPY_BUNDLES" ${CONTAINER_COPY}) #copy bundles in bundle dir or link using abs paths. NOTE this cannot be changed after a add_deploy command
 
     #deploy specific
-    set_target_properties(${DEPLOY_TARGET} PROPERTIES "DEPLOY_NAME" "${DEPLOY_NAME}")
-    set_target_properties(${DEPLOY_TARGET} PROPERTIES "DEPLOY_GROUP" "${DEPLOY_GROUP}")
-    set_target_properties(${DEPLOY_TARGET} PROPERTIES "DEPLOY_LOCATION" "${DEPLOY_LOCATION}")
-    set_target_properties(${DEPLOY_TARGET} PROPERTIES "DEPLOY_PROPERTIES" "")
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_NAME" "${CONTAINER_NAME}")
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_GROUP" "${CONTAINER_GROUP}")
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_LOCATION" "${CONTAINER_LOCATION}")
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_PROPERTIES" "")
     #####
 
-    deploy_bundles(${DEPLOY_TARGET} ${DEPLOY_BUNDLES})
-    deploy_properties(${DEPLOY_TARGET} ${DEPLOY_PROPERTIES})
+    celix_container_bundles(${CONTAINER_TARGET} ${CONTAINER_BUNDLES})
+    celix_container_properties(${CONTAINER_TARGET} ${CONTAINER_PROPERTIES})
 
 
-    #ensure the docker dir will be deleted during clean
+    #ensure the container dir will be deleted during clean
     get_directory_property(CLEANFILES ADDITIONAL_MAKE_CLEAN_FILES)
-    list(APPEND CLEANFILES "$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_LOCATION>")
+    list(APPEND CLEANFILES "$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_LOCATION>")
     set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${CLEANFILES}")
 endfunction()
 
 
 #NOTE can be used for drivers/proxies/endpoints bundle dirs
+
 function(deploy_bundles_dir)
-    list(GET ARGN 0 DEPLOY_NAME)
+    celix_container_bundles_dir(${ARGN})
+endfunction()
+function(celix_container_bundles_dir)
+    list(GET ARGN 0 CONTAINER_TARGET)
     list(REMOVE_AT ARGN 0)
 
     set(OPTIONS)
@@ -208,42 +215,46 @@ function(deploy_bundles_dir)
         message(FATAL_ERROR "Missing mandatory DIR_NAME argument")
     endif()
 
-    get_target_property(DEPLOY_LOC ${DEPLOY_NAME} "DEPLOY_LOCATION")
-    get_target_property(DEPS ${DEPLOY_NAME} "DEPLOY_TARGET_DEPS")
+    get_target_property(CONTAINER_LOC ${CONTAINER_TARGET} "CONTAINER_LOCATION")
+    get_target_property(DEPS ${CONTAINER_TARGET} "CONTAINER_TARGET_DEPS")
 
     foreach(BUNDLE IN ITEMS ${BD_BUNDLES})
         if (IS_ABSOLUTE ${BUNDLE} AND EXISTS ${BUNDLE})
             get_filename_component(BUNDLE_FILENAME ${BUNDLE} NAME) 
-            set(OUT "${DEPLOY_LOC}/${BD_DIR_NAME}/${BUNDLE_FILENAME}")
+            set(OUT "${CONTAINER_LOC}/${BD_DIR_NAME}/${BUNDLE_FILENAME}")
             add_custom_command(OUTPUT ${OUT}
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE} ${OUT}
-                COMMENT "Copying bundle '${BUNDLE}' to '${DEPLOY_LOC}/${BD_DIR_NAME}'"
+                COMMENT "Copying bundle '${BUNDLE}' to '${CONATAINER_LOC}/${BD_DIR_NAME}'"
                 DEPENDS ${BUNDLE}
             )
         else()
-            set(OUT "${DEPLOY_LOC}/${BD_DIR_NAME}/${BUNDLE}.zip")
+            set(OUT "${CONTAINER_LOC}/${BD_DIR_NAME}/${BUNDLE}.zip")
             add_custom_command(OUTPUT ${OUT}
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>" ${OUT}
-                COMMENT "Copying bundle '${BUNDLE}' to '${DEPLOY_LOC}/${BD_DIR_NAME}'"
+                COMMENT "Copying bundle '${BUNDLE}' to '${CONTAINER_LOC}/${BD_DIR_NAME}'"
+                DEPENDS ${BUNDLE}
             )
-            add_dependencies(${DEPLOY_NAME} ${BUNDLE}_bundle) #ensure the the deploy depends on the _bundle target, custom_command depends on add_library
+            add_dependencies(${CONTAINER_TARGET} ${BUNDLE}_bundle) #ensure the the deploy depends on the _bundle target, custom_command depends on add_library
 
         endif()
         list(APPEND DEPS "${OUT}")
 
     endforeach()
 
-    set_target_properties(${DEPLOY_NAME} PROPERTIES "DEPLOY_TARGET_DEPS" "${DEPS}")
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_TARGET_DEPS" "${DEPS}")
 endfunction()
 
 function(deploy_bundles)
-    #0 is deploy TARGET
+    celix_container_bundles(${ARGN})
+endfunction()
+function(celix_container_bundles)
+    #0 is container TARGET
     #1..n is bundles
-    list(GET ARGN 0 DEPLOY_NAME)
+    list(GET ARGN 0 CONTAINER_TARGET)
     list(REMOVE_AT ARGN 0)
 
-    get_target_property(BUNDLES ${DEPLOY_NAME} "DEPLOY_BUNDLES")
-    get_target_property(COPY ${DEPLOY_NAME} "DEPLOY_COPY_BUNDLES")
+    get_target_property(BUNDLES ${CONTAINER_TARGET} "CONTAINER_BUNDLES")
+    get_target_property(COPY ${CONTAINER_TARGET} "CONTAINER_COPY_BUNDLES")
 
     foreach(BUNDLE IN ITEMS ${ARGN})
            if(COPY)
@@ -263,23 +274,26 @@ function(deploy_bundles)
    endforeach()
 
    if(COPY) 
-       deploy_bundles_dir(${DEPLOY_NAME} DIR_NAME bundles BUNDLES ${ARGN})
+       celix_container_bundles_dir(${CONTAINER_TARGET} DIR_NAME bundles BUNDLES ${ARGN})
    endif()
 
-   set_target_properties(${DEPLOY_NAME} PROPERTIES "DEPLOY_BUNDLES" "${BUNDLES}")
+   set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES" "${BUNDLES}")
 endfunction()
 
 function(deploy_properties)
-    #0 is deploy TARGET
+    celix_container_properties(${ARGN})
+endfunction()
+function(celix_container_properties)
+    #0 is container TARGET
     #1..n is bundles
-    list(GET ARGN 0 DEPLOY_NAME)
+    list(GET ARGN 0 CONTAINER_TARGET)
     list(REMOVE_AT ARGN 0)
 
-    get_target_property(PROPS ${DEPLOY_NAME} "DEPLOY_PROPERTIES")
+    get_target_property(PROPS ${CONTAINER_TARGET} "CONTAINER_PROPERTIES")
 
     foreach(PROP IN ITEMS ${ARGN})
         list(APPEND PROPS ${PROP})
     endforeach()
 
-   set_target_properties(${DEPLOY_NAME} PROPERTIES "DEPLOY_PROPERTIES" "${PROPS}")
+   set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_PROPERTIES" "${PROPS}")
 endfunction()

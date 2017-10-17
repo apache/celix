@@ -42,14 +42,14 @@ if (BUILD_DEPENDENCY_MANAGER)
     )
 
     if (ENABLE_DOCKER)
-        add_docker(dm_exmpl_base
+        add_celix_docker(dm_exmpl_base
                 NAME dmbase
                 IMAGE_NAME dmbase
                 GROUP examples
                 INSTRUCTIONS
                     "LABEL exmpl=value"
         )
-        add_docker(dm_exmpl
+        add_celix_docker(dm_exmpl
             FROM dmbase
             GROUP examples
             BUNDLES

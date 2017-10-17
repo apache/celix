@@ -50,7 +50,7 @@ if (BUILD_DEPENDENCY_MANAGER_CXX)
     )
 
     if (ENABLE_DOCKER)
-        add_docker(dm_exmpl_cxx
+        add_celix_docker(dm_exmpl_cxx
             GROUP examples
             BUNDLES_DIR /usr/share/bundles
             WORKDIR /workspace
