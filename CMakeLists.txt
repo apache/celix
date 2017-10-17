@@ -33,12 +33,12 @@ IF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} EQUAL 3.3 AND ${CMAKE_GENERATO
 ENDIF()
 
 IF (ANDROID)
-    SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -Wall ${CMAKE_C_FLAGS}")
+    set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -Wall ${CMAKE_C_FLAGS}")
 ELSE ()
-    SET(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -Wall -Werror -fPIC ${CMAKE_C_FLAGS}") #TODO add -Wextra
-    SET(CMAKE_CXX_FLAGS "-std=c++11 -Wall -Wextra -Werror") #TODO -Weffc++
-    SET(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG")
-    SET(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG")
+    set(CMAKE_C_FLAGS "-D_GNU_SOURCE -std=gnu99 -Wall -Werror -fPIC ${CMAKE_C_FLAGS}") #TODO add -Wextra
+    set(CMAKE_CXX_FLAGS "-Wall -Werror -Wextra -Weffc++ -fno-rtti -fno-exceptions ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_C_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS_DEBUG "-g -DDEBUG ${CMAKE_CXX_FLAGS}")
 ENDIF()
 
 IF(APPLE)
@@ -50,10 +50,10 @@ ELSE ()
 ENDIF()
 
 # Set version for the framework package/release
-SET(CELIX_MAJOR "1")
-SET(CELIX_MINOR "0")
-SET(CELIX_MICRO "0")
-SET(CELIX_QUALIFIER "")
+set(CELIX_MAJOR "1")
+set(CELIX_MINOR "0")
+set(CELIX_MICRO "0")
+set(CELIX_QUALIFIER "")
 
 option(ENABLE_TESTING "Enables unit/bundle testing" FALSE)
 

@@ -226,8 +226,8 @@ static void pubsubSerializer_addMsgSerializerFromBundle(const char *root, bundle
 
 			printf("DMU: Parsing entry '%s'\n", entry->d_name);
 
-			memset(path,0,128);
-			snprintf(path, 128, "%s/%s", root, entry->d_name);
+			memset(path,0,1024);
+			snprintf(path, 1024, "%s/%s", root, entry->d_name);
 			FILE *stream = fopen(path,"r");
 
 			if (stream != NULL){

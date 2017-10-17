@@ -323,15 +323,18 @@ extern "C" {
                         	 json_t* js_key2 = json_object_get(js_service, JSON_SERVICE_KEY2);
 
                              properties=properties_create();
-                             if (js_serviceZone != NULL)
+                             if (js_serviceZone != NULL) {
                         	     properties_set(properties, (char*)JSON_SERVICE_ZONE,
                         		    	                    (char*)json_string_value(js_serviceZone));
-                             if (js_key1 != NULL)
+			     }
+                             if (js_key1 != NULL) {
                         	     properties_set(properties, (char*)JSON_SERVICE_KEY1,
                         		    	 	 	  	 	    (char*)json_string_value(js_key1));
-                             if (js_key2 != NULL)
+			     }
+                             if (js_key2 != NULL) {
                                  properties_set(properties, (char*)JSON_SERVICE_KEY2,
                                     	 	 	  	 	    (char*)json_string_value(js_key2));
+			     }
 
                         	 added = tmScopeService->addExportScope(tmScopeService->handle, (char*)json_string_value(js_filter), properties);
                              if (added == CELIX_SUCCESS) {

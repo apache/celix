@@ -15,9 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 if (BUILD_DEPENDENCY_MANAGER_CXX)
-
-    set(CMAKE_CXX_FLAGS "-Wall -Werror -fno-rtti -fno-exceptions ${CMAKE_CXX_FLAGS}")
-
     include_directories(
             ${PROJECT_SOURCE_DIR}/dependency_manager/public/include
             ${PROJECT_SOURCE_DIR}/dependency_manager_cxx/include
