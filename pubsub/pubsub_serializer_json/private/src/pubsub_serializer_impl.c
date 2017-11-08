@@ -42,6 +42,7 @@
 #include "pubsub_serializer_impl.h"
 
 #define SYSTEM_BUNDLE_ARCHIVE_PATH 		"CELIX_FRAMEWORK_EXTENDER_PATH"
+#define MAX_PATH_LEN    1024
 
 static char* pubsubSerializer_getMsgDescriptionDir(bundle_pt bundle);
 static void pubsubSerializer_addMsgSerializerFromBundle(const char *root, bundle_pt bundle, hash_map_pt msgTypesMap);
@@ -212,7 +213,7 @@ static char* pubsubSerializer_getMsgDescriptionDir(bundle_pt bundle)
 
 static void pubsubSerializer_addMsgSerializerFromBundle(const char *root, bundle_pt bundle, hash_map_pt msgSerializers)
 {
-	char path[128];
+	char path[MAX_PATH_LEN];
 	struct dirent *entry = NULL;
 	DIR *dir = opendir(root);
 
@@ -226,8 +227,7 @@ static void pubsubSerializer_addMsgSerializerFromBundle(const char *root, bundle
 
 			printf("DMU: Parsing entry '%s'\n", entry->d_name);
 
-			memset(path,0,1024);
-			snprintf(path, 1024, "%s/%s", root, entry->d_name);
+			snprintf(path, MAX_PATH_LEN, "%s/%s", root, entry->d_name);
 			FILE *stream = fopen(path,"r");
 
 			if (stream != NULL){
