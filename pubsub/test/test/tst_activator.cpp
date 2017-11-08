@@ -41,12 +41,12 @@ static int tst_pubAdded(void *handle, service_reference_pt reference, void *serv
 static int tst_pubRemoved(void *handle, service_reference_pt reference, void *service);
 
 struct activator {
-	pubsub_subscriber_t subSvc;
+	pubsub_subscriber_t subSvc{};
 	service_registration_pt reg = nullptr;
 
 	service_tracker_pt tracker = nullptr;
 
-	pthread_mutex_t mutex; //protects below
+	pthread_mutex_t mutex{}; //protects below
 	pubsub_publisher_t* pubSvc = nullptr;
 
     unsigned int syncId = 0;
@@ -96,7 +96,7 @@ celix_status_t bundleActivator_destroy(__attribute__((unused)) void * userData, 
 	return CELIX_SUCCESS;
 }
 
-static int tst_receive(void *handle, const char *msgType, unsigned int msgTypeId, void *msg, pubsub_multipart_callbacks_t *callbacks, bool *release) {
+static int tst_receive(void *handle, const char * /*msgType*/, unsigned int msgTypeId, void * /*msg*/, pubsub_multipart_callbacks_t* /*callbacks*/, bool* /*release*/) {
 	struct activator* act = static_cast<struct activator*>(handle);
     pthread_mutex_lock(&act->mutex);
     if (msgTypeId == act->syncId) {
@@ -108,7 +108,7 @@ static int tst_receive(void *handle, const char *msgType, unsigned int msgTypeId
 	return CELIX_SUCCESS;
 }
 
-static int tst_pubAdded(void *handle, service_reference_pt reference, void *service) {
+static int tst_pubAdded(void *handle, service_reference_pt /*reference*/, void *service) {
     struct activator* act = static_cast<struct activator*>(handle);
     pthread_mutex_lock(&act->mutex);
 	act->pubSvc = static_cast<pubsub_publisher_t*>(service);
@@ -120,7 +120,7 @@ static int tst_pubAdded(void *handle, service_reference_pt reference, void *serv
 
 }
 
-static int tst_pubRemoved(void *handle, service_reference_pt reference, void *service) {
+static int tst_pubRemoved(void *handle, service_reference_pt /*reference*/, void *service) {
     struct activator* act = static_cast<struct activator*>(handle);
     pthread_mutex_lock(&act->mutex);
 	if (act->pubSvc == service) {

@@ -115,7 +115,7 @@ if (ETCD_CMD)
         #USE_TERM
     )
     add_test(NAME pubsub_udpmc_test
-        COMMAND $<TARGET_PROPERTY:pubsub_test_udpmc_runtime,RUNTIME_LOCATION>/start.sh
+	    COMMAND $<TARGET_PROPERTY:pubsub_test_udpmc_runtime,RUNTIME_LOC>/start.sh
     )
 
     add_runtime(pubsub_test_zmq_runtime
@@ -134,6 +134,6 @@ if (ETCD_CMD)
         #USE_TERM
     )
     add_test(NAME pubsub_zmq_test
-        COMMAND $<TARGET_PROPERTY:pubsub_test_zmq_runtime,RUNTIME_LOCATION>/start.sh
+	    COMMAND $<TARGET_PROPERTY:pubsub_test_zmq_runtime,RUNTIME_LOC>/start.sh
     )
 endif ()

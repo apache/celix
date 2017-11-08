@@ -106,7 +106,7 @@ function(add_celix_docker)
 
     #ensure the docker dir will be deleted during clean
     get_directory_property(CLEANFILES ADDITIONAL_MAKE_CLEAN_FILES)
-    list(APPEND CLEANFILES "$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOCATION>")
+    list(APPEND CLEANFILES "$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOC>")
     set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${CLEANFILES}")
 
     ###### Setup docker custom target timestamp
@@ -128,24 +128,24 @@ function(add_celix_docker)
     if (DOCKER_CREATE_FS)
         add_custom_command(OUTPUT "${TIMESTAMP_FILE}"
             COMMAND ${CMAKE_COMMAND} -E touch ${TIMESTAMP_FILE}
-            COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOCATION>
-            COMMAND cd $<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOCATION> && /bin/bash ${CELIX_CMAKE_DIRECTORY}/cmake_celix/create_target_filesystem.sh -e ${CELIX_LAUNCHER} -l $<TARGET_FILE:${DOCKER_DEPSLIB}> > /dev/null
+	    COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOC>
+	    COMMAND cd $<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOC> && /bin/bash ${CELIX_CMAKE_DIRECTORY}/cmake_celix/create_target_filesystem.sh -e ${CELIX_LAUNCHER} -l $<TARGET_FILE:${DOCKER_DEPSLIB}> > /dev/null
             DEPENDS  "$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_DEPS>" ${DOCKERFILE} ${DOCKER_DEPSLIB}
-            WORKING_DIRECTORY "${DOCKER_LOCATION}"
+	    WORKING_DIRECTORY "${DOCKER_LOC}"
             COMMENT "Creating docker dir for ${DOCKER_TARGET}" VERBATIM
         )
     else ()
         add_custom_command(OUTPUT "${TIMESTAMP_FILE}"
             COMMAND ${CMAKE_COMMAND} -E touch ${TIMESTAMP_FILE}
-            COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOCATION>
+	    COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOC>
             DEPENDS  "$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_DEPS>" ${DOCKERFILE}
-            WORKING_DIRECTORY "${DOCKER_LOCATION}"
+	    WORKING_DIRECTORY "${DOCKER_LOC}"
             COMMENT "Creating docker dir for ${DOCKER_TARGET}" VERBATIM
         )
     endif ()
 
     ##### Deploy Target Properties for Dockerfile #####
-    set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_LOCATION" "${DOCKER_LOC}")
+    set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_LOC" "${DOCKER_LOC}")
     set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_FROM" "${DOCKER_FROM}") #name of docker base, default celix-base
     set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_IMAGE_NAME" "${DOCKER_IMAGE_NAME}") #name of docker images, default deploy target name
     set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_BUNDLES_DIR" "${DOCKER_BUNDLES_DIR}") #bundles directory in docker image
@@ -157,7 +157,7 @@ function(add_celix_docker)
     set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_PROPERTIES" "")
     set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_DEPS" "")
 
-    set(DOCKERFILE "$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOCATION>/Dockerfile")
+    set(DOCKERFILE "$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOC>/Dockerfile")
 
     file(GENERATE
             OUTPUT "${DOCKERFILE}"
@@ -207,7 +207,7 @@ $<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_PROPERTIES>,
         set(SUDO_CMD "sudo")
     endif ()
     add_custom_target(build-${DOCKER_TARGET}-docker-image
-	    COMMAND cd $<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOCATION> && ${SUDO_CMD} ${DOCKER_CMD} build -t "$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_IMAGE_NAME>" .
+	    COMMAND cd $<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOC> && ${SUDO_CMD} ${DOCKER_CMD} build -t "$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_IMAGE_NAME>" .
         DEPENDS ${DOCKERFILE} ${DOCKER_TARGET}
         COMMENT "Creating docker image for target '${DOCKER_TARGET}'" VERBATIM
     )
@@ -227,7 +227,7 @@ function(celix_docker_bundles)
 
     get_target_property(BUNDLES ${DOCKER_TARGET} "DOCKER_BUNDLES")
     get_target_property(BUNDLES_DIR ${DOCKER_TARGET} "DOCKER_BUNDLES_DIR")
-    get_target_property(LOC ${DOCKER_TARGET} "DOCKER_LOCATION")
+    get_target_property(LOC ${DOCKER_TARGET} "DOCKER_LOC")
     get_target_property(DEPS ${DOCKER_TARGET} "DOCKER_DEPS")
 
     foreach(BUNDLE IN ITEMS ${ARGN})

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source $<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_LOCATION>/common.sh
+source $<TARGET_PROPERTY:@RUNTIME_TARGET_NAME@,RUNTIME_LOC>/common.sh
 
 rt_init
 rt_start_all
