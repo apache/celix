@@ -33,6 +33,7 @@ if (BUILD_DEPENDENCY_MANAGER_CXX)
 
     add_deploy("dm_example_cxx"
         COPY 
+	CXX
         BUNDLES
             shell
             shell_tui

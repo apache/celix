@@ -150,14 +150,15 @@ install_bundle(<bundle_target>
 # Deployments
 
 ## add_deploy
-Add a deployment, consisting out of a selection of bundles, for the project. 
+Add a deployment, consisting out of a selection of bundles and a simple Celix launcher.
 Deployments can be used to run/test a selection of bundles in the celix framework.
 A deployment can be found in `<cmake_build_dir>/deploy[/<group_name>]/<deploy_name>`. 
-Use the run.sh to run the deployments.
+Use the `<deploy_target_name>` executable to run the deployments.
 
 ```CMake
 add_deploy(<deploy_target_name>
     [COPY] 
+    [CXX]
     [GROUP group_name]
     [NAME deploy_name]
     [LAUNCHER launcher]
@@ -176,7 +177,8 @@ If the bundle target is never added CMake will give an error:
     $<TARGET_PROPERTY:foo,BUNDLE_FILE>
 ```
 
-- If COPY is provided the selected bundles will be copied in a bundles dir and the generated config.properties will use relative paths to the bundle locations. Default bundles will not be copied and the generated config.properties will use absolute references to the bundle locations.
+- If the COPY option is provided the selected bundles will be copied in a bundles dir and the generated config.properties will use relative paths to the bundle locations. Default bundles will not be copied and the generated config.properties will use absolute references to the bundle locations.
+- If CXX option is provided the deploy launcher will be build as C++ executable and as result be linked with the required C++ libraries of the used compiler
 - If GROUP is provided the deployment will be grouped in the provided group name. 
 - If NAME is provided that name will be used for the deployment dir. Default the deploy target name will be used.
 - If LAUNCHER is provided that path or target will be used as launcher executable for the deployment. If no LAUNCHER is not provided the celix executable will be used.

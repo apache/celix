@@ -34,7 +34,7 @@ function(add_celix_container)
     list(GET ARGN 0 CONTAINER_TARGET)
     list(REMOVE_AT ARGN 0)
 
-    set(OPTIONS COPY)
+    set(OPTIONS COPY CXX)
     set(ONE_VAL_ARGS GROUP NAME LAUNCHER DIR)
     set(MULTI_VAL_ARGS BUNDLES PROPERTIES)
     cmake_parse_arguments(CONTAINER "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
@@ -66,7 +66,11 @@ function(add_celix_container)
     set(CONTAINER_PROPS "${CONTAINER_LOC}/config.properties")
     set(CONTAINER_ECLIPSE_LAUNCHER "${CONTAINER_LOC}/${CONTAINER_NAME}.launch")
 
-    set(LAUNCHER_SRC "${CMAKE_CURRENT_BINARY_DIR}/${CONTAINER_TARGET}.launcher.c")
+    if (CONTAINER_CXX)
+	    set(LAUNCHER_SRC "${CMAKE_CURRENT_BINARY_DIR}/${CONTAINER_TARGET}.launcher.cc")
+    else()
+	    set(LAUNCHER_SRC "${CMAKE_CURRENT_BINARY_DIR}/${CONTAINER_TARGET}.launcher.c")
+    endif()
 
     add_custom_command(OUTPUT ${LAUNCHER_SRC}
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CELIX_CMAKE_DIRECTORY}/cmake_celix/main.c.in ${LAUNCHER_SRC}
