@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <dm_dependency_manager.h>
+#include <dm_shell_list_command.h>
 #include "dm_info.h"
 #include "service_reference.h"
 #include "array_list.h"
@@ -39,28 +40,25 @@ static const char * const WARNING_COLOR = "\033[93m";
 static const char * const NOK_COLOR = "\033[91m";
 static const char * const END_COLOR = "\033[m";
 
-void dmListCommand_execute(bundle_context_pt context, char * line, FILE *out, FILE *err) {
+void dmListCommand_execute(dm_command_handle_t* handle, char * line, FILE *out, FILE *err) {
+
     array_list_pt servRefs = NULL;
     int i;
-    bundleContext_getServiceReferences(context, DM_INFO_SERVICE_NAME ,NULL, &servRefs);
+    bundleContext_getServiceReferences(handle->context, DM_INFO_SERVICE_NAME ,NULL, &servRefs);
 
     if(servRefs==NULL){
 	fprintf(out, "Invalid dm_info ServiceReferences List\n");
 	return;
     }
 
-    char *term = getenv("TERM");
-    bool colors = false;
-    if (strcmp("xterm-256color", term) == 0) {
-        colors = true;
-    }
+    bool colors = handle->useColors;
 
     for(i = 0; i < arrayList_size(servRefs); i++) {
         dm_dependency_manager_info_pt info = NULL;
         dm_info_service_pt infoServ = NULL;
         service_reference_pt servRef = NULL;
         servRef = arrayList_get(servRefs, i);
-        bundleContext_getService(context,  servRef, (void**)&infoServ);
+        bundleContext_getService(handle->context,  servRef, (void**)&infoServ);
         infoServ->getInfo(infoServ->handle, &info);
 
         int cmpCnt;
@@ -117,8 +115,8 @@ void dmListCommand_execute(bundle_context_pt context, char * line, FILE *out, FI
 
             infoServ->destroyInfo(infoServ->handle, info);
 
-		bundleContext_ungetService(context,servRef,NULL);
-		bundleContext_ungetServiceReference(context,servRef);
+		bundleContext_ungetService(handle->context, servRef, NULL);
+		bundleContext_ungetServiceReference(handle->context, servRef);
 
     }
 

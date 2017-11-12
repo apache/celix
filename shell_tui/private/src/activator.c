@@ -24,6 +24,7 @@
  *  \copyright	Apache License, Version 2.0
  */
 #include <stdlib.h>
+#include <string.h>
 
 #include "bundle_context.h"
 #include "bundle_activator.h"
@@ -32,36 +33,65 @@
 #include "shell_tui.h"
 #include "service_tracker.h"
 
+#define SHELL_USE_ANSI_CONTROL_SEQUENCES "SHELL_USE_ANSI_CONTROL_SEQUENCES"
+
+typedef struct shell_tui_activator {
+    shell_tui_t* shellTui;
+    service_tracker_pt tracker;
+    shell_service_t* currentSvc;
+    bool useAnsiControlSequences;
+} shell_tui_activator_t;
+
 
 static celix_status_t activator_addShellService(void *handle, service_reference_pt ref, void *svc) {
-    shell_tui_activator_pt act = (shell_tui_activator_pt) handle;
-    celixThreadMutex_lock(&act->mutex);
-    act->shell = svc;
-    celixThreadMutex_unlock(&act->mutex);
+    shell_tui_activator_t* act = (shell_tui_activator_t*) handle;
+    act->currentSvc = svc;
+    shellTui_setShell(act->shellTui, svc);
     return CELIX_SUCCESS;
 }
 
 static celix_status_t activator_removeShellService(void *handle, service_reference_pt ref, void *svc) {
-    shell_tui_activator_pt act = (shell_tui_activator_pt) handle;
-    celixThreadMutex_lock(&act->mutex);
-    if (act->shell == svc) {
-        act->shell = NULL;
+    shell_tui_activator_t* act = (shell_tui_activator_t*) handle;
+    if (act->currentSvc == svc) {
+        act->currentSvc = NULL;
+        shellTui_setShell(act->shellTui, NULL);
     }
-    celixThreadMutex_unlock(&act->mutex);
     return CELIX_SUCCESS;
 }
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	shell_tui_activator_pt activator = (shell_tui_activator_pt) calloc(1, sizeof(*activator));
+    shell_tui_activator_t* activator = calloc(1, sizeof(*activator));
 
-	if (activator) {
-		activator->shell = NULL;
-        celixThreadMutex_create(&activator->mutex, NULL);
-		(*userData) = activator;
+	if (activator != NULL) {
+        bool useCommands;
+        const char* config = NULL;
+        bundleContext_getProperty(context, SHELL_USE_ANSI_CONTROL_SEQUENCES, &config);
+        if (config != NULL) {
+            useCommands = strncmp("true", config, 5) == 0;
+        } else {
+            char *term = getenv("TERM");
+            useCommands = term != NULL;
+        }
+
+        activator->shellTui = shellTui_create(useCommands);
+
+        service_tracker_customizer_t* cust = NULL;
+        serviceTrackerCustomizer_create(activator, NULL, activator_addShellService, NULL, activator_removeShellService, &cust);
+        serviceTracker_create(context, OSGI_SHELL_SERVICE_NAME, cust, &activator->tracker);
 	}
-	else {
+
+    if (activator != NULL && activator->shellTui != NULL) {
+        (*userData) = activator;
+    } else {
+        if (activator != NULL) {
+            shellTui_destroy(activator->shellTui);
+            if (activator->tracker != NULL) {
+                serviceTracker_destroy(activator->tracker);
+            }
+        }
+        free(activator);
 		status = CELIX_ENOMEM;
 	}
 
@@ -71,39 +101,33 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	shell_tui_activator_pt act = (shell_tui_activator_pt) userData;
+    shell_tui_activator_t* act = (shell_tui_activator_t*) userData;
 
-    service_tracker_customizer_pt cust = NULL;
-    serviceTrackerCustomizer_create(userData, NULL, activator_addShellService, NULL, activator_removeShellService, &cust);
-    serviceTracker_create(context, (char *) OSGI_SHELL_SERVICE_NAME, cust, &act->tracker);
+    act->currentSvc = NULL;
     serviceTracker_open(act->tracker);
-
-    shellTui_start(act);
+    shellTui_start(act->shellTui);
 
 	return status;
 }
 
 celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
-	shell_tui_activator_pt act = (shell_tui_activator_pt) userData;
+    shell_tui_activator_t* act = (shell_tui_activator_t*) userData;
 
     if (act != NULL) {
-        shellTui_stop(act);
-        if (act->tracker != NULL) {
-            serviceTracker_close(act->tracker);
-        }
+        serviceTracker_close(act->tracker);
+        shellTui_stop(act->shellTui);
     }
 
 	return status;
 }
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
-	shell_tui_activator_pt activator = (shell_tui_activator_pt) userData;
+    shell_tui_activator_t* act = (shell_tui_activator_t*) userData;
 
-    if (activator->tracker != NULL) {
-        serviceTracker_destroy(activator->tracker);
-    }
-	free(activator);
+    shellTui_destroy(act->shellTui);
+    serviceTracker_destroy(act->tracker);
+	free(act);
 
 	return CELIX_SUCCESS;
 }

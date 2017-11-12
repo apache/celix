@@ -26,10 +26,14 @@ extern "C" {
 
 #include <stdlib.h>
 #include <string.h>
-
 #include "command.h"
 
-void dmListCommand_execute(bundle_context_pt context, char * line, FILE *out, FILE *err);
+typedef struct dm_command_handle {
+    bundle_context_pt context;
+    bool useColors;
+} dm_command_handle_t;
+
+void dmListCommand_execute(dm_command_handle_t* handle, char * line, FILE *out, FILE *err);
 
 #ifdef __cplusplus
 }

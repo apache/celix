@@ -29,24 +29,16 @@
 
 #include <stdlib.h>
 
-#include "bundle_context.h"
 #include "celix_threads.h"
-#include "service_reference.h"
 #include "shell.h"
-#include "service_tracker.h"
 
-struct shellTuiActivator {
-    bundle_context_pt context;
-    shell_service_pt shell;
-    service_tracker_pt tracker;
-    bool running;
-    celix_thread_t runnable;
-    celix_thread_mutex_t mutex;
-};
+typedef struct shell_tui shell_tui_t ;
 
-typedef struct shellTuiActivator * shell_tui_activator_pt;
+shell_tui_t* shellTui_create(bool useAnsiControlSequences);
+celix_status_t shellTui_start(shell_tui_t* shellTui);
+celix_status_t shellTui_stop(shell_tui_t* shellTui);
+void shellTui_destroy(shell_tui_t* shellTui);
 
-celix_status_t shellTui_start(shell_tui_activator_pt activator);
-celix_status_t shellTui_stop(shell_tui_activator_pt activator);
+celix_status_t shellTui_setShell(shell_tui_t* shellTui, shell_service_t* svc);
 
 #endif /* SHELL_TUI_H_ */

@@ -44,6 +44,8 @@ typedef celix_status_t (*modified_callback_pt)(void *handle, service_reference_p
 typedef celix_status_t (*removed_callback_pt)(void *handle, service_reference_pt reference, void *service);
 
 typedef struct serviceTrackerCustomizer *service_tracker_customizer_pt;
+typedef struct serviceTrackerCustomizer service_tracker_customizer_t;
+
 
 FRAMEWORK_EXPORT celix_status_t serviceTrackerCustomizer_create(void *handle,
 																adding_callback_pt addingFunction,

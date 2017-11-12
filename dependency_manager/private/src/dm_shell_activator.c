@@ -31,9 +31,12 @@
 
 #include "dm_shell_list_command.h"
 
+#define DM_SHELL_USE_ANSI_COLORS "DM_SHELL_USE_ANSI_COLORS"
+
 struct bundle_instance {
     service_registration_pt reg;
-    command_service_pt  dmCommand;
+    command_service_t  dmCommand;
+    dm_command_handle_t dmHandle;
 };
 
 typedef struct bundle_instance * bundle_instance_pt;
@@ -50,6 +53,11 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
         return CELIX_ENOMEM;
     }
 
+    bi->dmHandle.context = context;
+    const char* config = NULL;
+    bundleContext_getPropertyWithDefault(context, DM_SHELL_USE_ANSI_COLORS, "true", &config);
+    bi->dmHandle.useColors = config != NULL && strncmp("true", config, 5) == 0;
+
     (*userData) = bi;
 
     return CELIX_SUCCESS;
@@ -58,27 +66,18 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
     celix_status_t status = CELIX_SUCCESS;
     bundle_instance_pt bi = (bundle_instance_pt) userData;
-    command_service_pt commandService = calloc(1, sizeof(*commandService));
 
-    if (commandService != NULL) {
-        commandService->handle = context;
-        commandService->executeCommand = (void *)dmListCommand_execute;
+    bi->dmCommand.handle = &bi->dmHandle;
+    bi->dmCommand.executeCommand = (void *)dmListCommand_execute;
 
-        properties_pt props = properties_create();
-        properties_set(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
-        properties_set(props, OSGI_SHELL_COMMAND_NAME, "dm");
-        properties_set(props, OSGI_SHELL_COMMAND_USAGE, "dm");
-        properties_set(props, OSGI_SHELL_COMMAND_DESCRIPTION,
-                       "Gives an overview of the component managemend by a dependency manager.");
+    properties_pt props = properties_create();
+    properties_set(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
+    properties_set(props, OSGI_SHELL_COMMAND_NAME, "dm");
+    properties_set(props, OSGI_SHELL_COMMAND_USAGE, "dm");
+    properties_set(props, OSGI_SHELL_COMMAND_DESCRIPTION,
+                   "Gives an overview of the component managemend by a dependency manager.");
 
-        bi->dmCommand = commandService;
-
-        status = bundleContext_registerService(context, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME, commandService, props,
-                                               &bi->reg);
-    } else {
-        status = CELIX_ENOMEM;
-        free(commandService);
-    }
+    status = bundleContext_registerService(context, OSGI_SHELL_COMMAND_SERVICE_NAME, &bi->dmCommand, props, &bi->reg);
 
     return status;
 }
@@ -91,9 +90,6 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 
 celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
     bundle_instance_pt bi = (bundle_instance_pt) userData;
-    if (bi != NULL) {
-        free(bi->dmCommand);
-    }
     free(bi);
     return CELIX_SUCCESS;
 }

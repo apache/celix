@@ -39,6 +39,7 @@
 #include "utils.h"
 #include <signal.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include "history.h"
 
 #define LINE_SIZE 256
@@ -56,6 +57,25 @@
 #define KEY_DEL1		'3'
 #define KEY_DEL2		'~'
 
+struct shell_tui {
+    celix_thread_mutex_t mutex; //protects shell
+    shell_service_t* shell;
+    celix_thread_t thread;
+
+    int readPipeFd;
+    int writePipeFd;
+
+    bool useAnsiControlSequences;
+};
+
+typedef struct shell_context {
+    char in[LINE_SIZE];
+    char buffer[LINE_SIZE];
+    char dline[LINE_SIZE];
+    int pos;
+    history_t* hist;
+} shell_context_t;
+
 // static function declarations
 static void remove_newlines(char* line);
 static void clearLine();
@@ -63,161 +83,254 @@ static void cursorLeft(int n);
 static void writeLine(const char*line, int pos);
 static int autoComplete(shell_service_pt shellSvc, char *in, int cursorPos, size_t maxLen);
 static void* shellTui_runnable(void *data);
+static void shellTui_parseInputForControl(shell_tui_t* shellTui, shell_context_t* ctx);
+static void shellTui_parseInput(shell_tui_t* shellTui, shell_context_t* ctx);
+static void writePrompt(void);
 
+shell_tui_t* shellTui_create(bool useAnsiControlSequences) {
+    shell_tui_t* result = calloc(1, sizeof(*result));
+    if (result != NULL) {
+        result->useAnsiControlSequences = useAnsiControlSequences;
+        celixThreadMutex_create(&result->mutex, NULL);
+    }
+    return result;
+}
 
-celix_status_t shellTui_start(shell_tui_activator_pt activator) {
-
+celix_status_t shellTui_start(shell_tui_t* shellTui) {
     celix_status_t status = CELIX_SUCCESS;
 
-    activator->running = true;
-    celixThread_create(&activator->runnable, NULL, shellTui_runnable, activator);
+    int fds[2];
+    int rc  = pipe(fds);
+    if (rc == 0) {
+        shellTui->readPipeFd = fds[0];
+        shellTui->writePipeFd = fds[1];
+        fcntl(shellTui->writePipeFd, F_SETFL, O_NONBLOCK);
+        celixThread_create(&shellTui->thread, NULL, shellTui_runnable, shellTui);
+    } else {
+        fprintf(stderr, "Cannot create pipe");
+        status = CELIX_BUNDLE_EXCEPTION;
+    }
 
     return status;
 }
 
-celix_status_t shellTui_stop(shell_tui_activator_pt act) {
+celix_status_t shellTui_stop(shell_tui_t* shellTui) {
     celix_status_t status = CELIX_SUCCESS;
-    act->running = false;
-    celixThread_kill(act->runnable, SIGUSR1);
-    celixThread_join(act->runnable, NULL);
+    write(shellTui->writePipeFd, "\0", 1); //trigger select to stop
+    celixThread_join(shellTui->thread, NULL);
+    close(shellTui->writePipeFd);
+    close(shellTui->readPipeFd);
     return status;
 }
 
+void shellTui_destroy(shell_tui_t* shellTui) {
+    if (shellTui == NULL) return;
 
+    celixThreadMutex_destroy(&shellTui->mutex);
+    free(shellTui);
+}
+
+celix_status_t shellTui_setShell(shell_tui_t* shellTui, shell_service_t* svc) {
+    celixThreadMutex_lock(&shellTui->mutex);
+    shellTui->shell = svc;
+    celixThreadMutex_unlock(&shellTui->mutex);
+    return CELIX_SUCCESS;
+}
 
 static void* shellTui_runnable(void *data) {
-    shell_tui_activator_pt act = (shell_tui_activator_pt) data;
+    shell_tui_t* shellTui = (shell_tui_t*) data;
 
-    char in[LINE_SIZE] = "";
-    char buffer[LINE_SIZE];
-    int pos = 0;
-    char dline[LINE_SIZE];
-    fd_set rfds;
-    struct timeval tv;
+    //setup shell context
+    shell_context_t ctx;
+    memset(&ctx, 0, sizeof(ctx));
+    ctx.hist = historyCreate();
 
+    //setup term
     struct termios term_org, term_new;
-    tcgetattr(STDIN_FILENO, &term_org);
-    term_new = term_org;
-    term_new.c_lflag &= ~( ICANON | ECHO);
-    tcsetattr(STDIN_FILENO,  TCSANOW, &term_new);
+    if (shellTui->useAnsiControlSequences) {
+        tcgetattr(STDIN_FILENO, &term_org);
+        term_new = term_org;
+        term_new.c_lflag &= ~(ICANON | ECHO);
+        tcsetattr(STDIN_FILENO, TCSANOW, &term_new);
+    }
 
-    history_t *hist = historyCreate();
+    //setup file descriptors
+    fd_set rfds;
+    int nfds = shellTui->writePipeFd > STDIN_FILENO ? (shellTui->writePipeFd +1) : (STDIN_FILENO + 1);
 
-    while (act->running) {
-        char * line = NULL;
-        writeLine(in, pos);
+    for (;;) {
+        if (shellTui->useAnsiControlSequences) {
+            writeLine(ctx.in, ctx.pos);
+        } else {
+            writePrompt();
+        }
         FD_ZERO(&rfds);
         FD_SET(STDIN_FILENO, &rfds);
+        FD_SET(shellTui->readPipeFd, &rfds);
 
-        tv.tv_sec = 1;
-        tv.tv_usec = 0;
-
-        if (select(1, &rfds, NULL, NULL, &tv) > 0) {
-        	int nr_chars = read(STDIN_FILENO, buffer, LINE_SIZE-pos);
-            for(int bufpos = 0; bufpos < nr_chars; bufpos++) {
-                if (buffer[bufpos] == KEY_ESC1 && buffer[bufpos+1] == KEY_ESC2) {
-                    switch (buffer[bufpos+2]) {
-                        case KEY_UP:
-                            if(historySize(hist) > 0) {
-                                strncpy(in, historyGetPrevLine(hist), LINE_SIZE);
-                                pos = strlen(in);
-                                writeLine(in, pos);
-                            }
-                            break;
-                        case KEY_DOWN:
-                            if(historySize(hist) > 0) {
-                                strncpy(in, historyGetNextLine(hist), LINE_SIZE);
-                                pos = strlen(in);
-                                writeLine(in, pos);
-                            }
-                            break;
-                        case KEY_RIGHT:
-                            if (pos < strlen(in)) {
-                        		pos++;
-                        	}
-                    		writeLine(in, pos);
-                        	break;
-                        case KEY_LEFT:
-                        	if (pos > 0) {
-                            	pos--;
-                            }
-                    		writeLine(in, pos);
-                            break;
-                        case KEY_DEL1:
-                        	if(buffer[bufpos+3] == KEY_DEL2) {
-                                bufpos++; // delete cmd takes 4 chars
-                                int len = strlen(in);
-                                if (pos < len) {
-                                	for (int i = pos; i <= len; i++) {
-                                		in[i] = in[i + 1];
-                                	}
-                                }
-                                writeLine(in, pos);
-                        	}
-                        	break;
-                        default:
-                        	// Unsupported char, do nothing
-                        	break;
-                    }
-                    bufpos+=2;
-                    continue;
-                } else if(buffer[bufpos] == KEY_BACKSPACE) { // backspace
-                	if(pos > 0) {
-                		int len = strlen(in);
-                		for(int i = pos-1; i <= len; i++) {
-                			in[i] = in[i+1];
-                		}
-                		pos--;
-                	}
-            		writeLine(in, pos);
-            		continue;
-                } else if(buffer[bufpos] == KEY_TAB) {
-                	pos = autoComplete(act->shell, in, pos, LINE_SIZE);
-            		continue;
-                } else if(buffer[bufpos] != KEY_ENTER) { //text
-                	if(in[pos] == '\0') {
-                    	in[pos+1] = '\0';
-                	}
-                	in[pos] = buffer[bufpos];
-                    pos++;
-            		writeLine(in, pos);
-                	fflush(stdout);
-                	continue;
-                }
-        		writeLine(in, pos);
-                write(STDOUT_FILENO, "\n", 1);
-                remove_newlines(in);
-                history_addLine(hist, in);
-
-                memset(dline, 0, LINE_SIZE);
-                strncpy(dline, in, LINE_SIZE);
-
-                pos = 0;
-                in[pos] = '\0';
-
-                line = utils_stringTrim(dline);
-                if ((strlen(line) == 0) || (act->shell == NULL)) {
-                    continue;
-                }
-                historyLineReset(hist);
-                celixThreadMutex_lock(&act->mutex);
-                if (act->shell != NULL) {
-                    act->shell->executeCommand(act->shell->shell, line, stdout, stderr);
-                    pos = 0;
-                    nr_chars = 0;
-                    celixThreadMutex_unlock(&act->mutex);
-                    break;
+        if (select(nfds, &rfds, NULL, NULL, NULL) > 0) {
+            if (FD_ISSET(shellTui->readPipeFd, &rfds)) {
+                break; //something is written to the pipe -> exit thread
+            } else if (FD_ISSET(STDIN_FILENO, &rfds)) {
+                if (shellTui->useAnsiControlSequences) {
+                    shellTui_parseInputForControl(shellTui, &ctx);
                 } else {
-                    fprintf(stderr, "Shell service not available\n");
+                    shellTui_parseInput(shellTui, &ctx);
                 }
-                celixThreadMutex_unlock(&act->mutex);
-            } // for
+            }
         }
     }
-    tcsetattr(STDIN_FILENO,  TCSANOW, &term_org);
-    historyDestroy(hist);
+    tcsetattr(STDIN_FILENO,  TCSANOW, &term_org); //TODO or after SIGINT
+    historyDestroy(ctx.hist);
 
     return NULL;
+}
+
+static void shellTui_parseInput(shell_tui_t* shellTui, shell_context_t* ctx) {
+    char* buffer = ctx->buffer;
+    char* in = ctx->in;
+    int pos = ctx->pos;
+
+    char* line = NULL;
+
+
+    int nr_chars = read(STDIN_FILENO, buffer, LINE_SIZE-pos-1);
+    for(int bufpos = 0; bufpos < nr_chars; bufpos++) {
+        if (buffer[bufpos] == KEY_ENTER) { //end of line -> forward command
+            line = utils_stringTrim(in);
+            celixThreadMutex_lock(&shellTui->mutex);
+            if (shellTui->shell != NULL) {
+                printf("Providing command '%s' from in '%s'\n", line, in);
+                shellTui->shell->executeCommand(shellTui->shell->shell, line, stdout, stderr);
+            } else {
+                fprintf(stderr, "Shell service not available\n");
+            }
+            celixThreadMutex_unlock(&shellTui->mutex);
+            pos = 0;
+            in[pos] = '\0';
+        } else { //text
+            in[pos] = buffer[bufpos];
+            in[pos+1] = '\0';
+            pos++;
+            continue;
+        }
+    } // for
+    ctx->pos = pos;
+}
+
+static void shellTui_parseInputForControl(shell_tui_t* shellTui, shell_context_t* ctx) {
+    char* buffer = ctx->buffer;
+    char* in = ctx->in;
+    char* dline = ctx->dline;
+    history_t* hist = ctx->hist;
+    int pos = ctx->pos;
+
+    char* line = NULL;
+
+    int nr_chars = read(STDIN_FILENO, buffer, LINE_SIZE-pos-1);
+    for(int bufpos = 0; bufpos < nr_chars; bufpos++) {
+        if (buffer[bufpos] == KEY_ESC1 && buffer[bufpos+1] == KEY_ESC2) {
+            switch (buffer[bufpos+2]) {
+                case KEY_UP:
+                    if(historySize(hist) > 0) {
+                        strncpy(in, historyGetPrevLine(hist), LINE_SIZE);
+                        pos = strlen(in);
+                        writeLine(in, pos);
+                    }
+                    break;
+                case KEY_DOWN:
+                    if(historySize(hist) > 0) {
+                        strncpy(in, historyGetNextLine(hist), LINE_SIZE);
+                        pos = strlen(in);
+                        writeLine(in, pos);
+                    }
+                    break;
+                case KEY_RIGHT:
+                    if (pos < strlen(in)) {
+                        pos++;
+                    }
+                    writeLine(in, pos);
+                    break;
+                case KEY_LEFT:
+                    if (pos > 0) {
+                        pos--;
+                    }
+                    writeLine(in, pos);
+                    break;
+                case KEY_DEL1:
+                    if(buffer[bufpos+3] == KEY_DEL2) {
+                        bufpos++; // delete cmd takes 4 chars
+                        int len = strlen(in);
+                        if (pos < len) {
+                            for (int i = pos; i <= len; i++) {
+                                in[i] = in[i + 1];
+                            }
+                        }
+                        writeLine(in, pos);
+                    }
+                    break;
+                default:
+                    // Unsupported char, do nothing
+                    break;
+            }
+            bufpos+=2;
+            continue;
+        } else if (buffer[bufpos] == KEY_BACKSPACE) { // backspace
+            if(pos > 0) {
+                int len = strlen(in);
+                for(int i = pos-1; i <= len; i++) {
+                    in[i] = in[i+1];
+                }
+                pos--;
+            }
+            writeLine(in, pos);
+            continue;
+        } else if(buffer[bufpos] == KEY_TAB) {
+            celixThreadMutex_lock(&shellTui->mutex);
+            if (shellTui != NULL) {
+                pos = autoComplete(shellTui->shell, in, pos, LINE_SIZE);
+            }
+            celixThreadMutex_unlock(&shellTui->mutex);
+            continue;
+        } else if (buffer[bufpos] != KEY_ENTER) { //not end of line -> text
+            if (in[pos] == '\0') {
+                in[pos+1] = '\0';
+            }
+            in[pos] = buffer[bufpos];
+            pos++;
+            writeLine(in, pos);
+            fflush(stdout);
+            continue;
+        }
+
+        //parse enter
+        writeLine(in, pos);
+        write(STDOUT_FILENO, "\n", 1);
+        remove_newlines(in);
+        history_addLine(hist, in);
+
+        memset(dline, 0, LINE_SIZE);
+        strncpy(dline, in, LINE_SIZE);
+
+        pos = 0;
+        in[pos] = '\0';
+
+        line = utils_stringTrim(dline);
+        if ((strlen(line) == 0)) {
+            continue;
+        }
+        historyLineReset(hist);
+        celixThreadMutex_lock(&shellTui->mutex);
+        if (shellTui->shell != NULL) {
+            shellTui->shell->executeCommand(shellTui->shell->shell, line, stdout, stderr);
+            pos = 0;
+            nr_chars = 0;
+        } else {
+            fprintf(stderr, "Shell service not available\n");
+        }
+        celixThreadMutex_unlock(&shellTui->mutex);
+    } // for
+    ctx->pos = pos;
 }
 
 static void remove_newlines(char* line) {
@@ -242,14 +355,18 @@ static void cursorLeft(int n) {
 	}
 }
 
-static void writeLine(const char*line, int pos) {
+static void writePrompt(void) {
+    write(STDIN_FILENO, PROMPT, strlen(PROMPT));
+}
+
+static void writeLine(const char* line, int pos) {
     clearLine();
     write(STDOUT_FILENO, PROMPT, strlen(PROMPT));
     write(STDOUT_FILENO, line, strlen(line));
 	cursorLeft(strlen(line)-pos);
 }
 
-static int autoComplete(shell_service_pt shellSvc, char *in, int cursorPos, size_t maxLen) {
+static int autoComplete(shell_service_t* shellSvc, char *in, int cursorPos, size_t maxLen) {
 	array_list_pt commandList = NULL;
 	array_list_pt possibleCmdList = NULL;
 	shellSvc->getCommands(shellSvc->shell, &commandList);
