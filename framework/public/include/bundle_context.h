@@ -33,6 +33,8 @@
  * Framework.
  */
 typedef struct bundleContext *bundle_context_pt;
+typedef struct bundleContext bundle_context_t;
+
 
 #include "service_factory.h"
 #include "service_listener.h"

@@ -23,22 +23,19 @@
  *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright	Apache License, Version 2.0
  */
+#include <sys/time.h>
+#include <sys/select.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <termios.h>
 #include <unistd.h>
-#include <sys/time.h>
-#include <sys/select.h>
 
 #include "bundle_context.h"
-#include "bundle_activator.h"
-#include "linked_list.h"
 #include "shell.h"
 #include "shell_tui.h"
 #include "utils.h"
 #include <signal.h>
-#include <unistd.h>
 #include <fcntl.h>
 #include "history.h"
 
@@ -145,10 +142,11 @@ static void* shellTui_runnable(void *data) {
     memset(&ctx, 0, sizeof(ctx));
     ctx.hist = historyCreate();
 
-    //setup term
     struct termios term_org, term_new;
     if (shellTui->useAnsiControlSequences) {
         tcgetattr(STDIN_FILENO, &term_org);
+
+
         term_new = term_org;
         term_new.c_lflag &= ~(ICANON | ECHO);
         tcsetattr(STDIN_FILENO, TCSANOW, &term_new);
@@ -180,8 +178,12 @@ static void* shellTui_runnable(void *data) {
             }
         }
     }
-    tcsetattr(STDIN_FILENO,  TCSANOW, &term_org); //TODO or after SIGINT
+
     historyDestroy(ctx.hist);
+    if (shellTui->useAnsiControlSequences) {
+        tcsetattr(STDIN_FILENO, TCSANOW, &term_org);
+    }
+
 
     return NULL;
 }

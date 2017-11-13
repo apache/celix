@@ -43,7 +43,7 @@ if (SHELL)
     
     install_bundle(shell
     	HEADERS
-    		public/include/shell.h public/include/command.h
+    		public/include/shell.h public/include/command.h public/include/shell_constants.h
 	)
 
 	include_directories("public/include")

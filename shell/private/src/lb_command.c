@@ -28,13 +28,22 @@
 
 #include "array_list.h"
 #include "bundle_context.h"
-
 #include "std_commands.h"
+#include "shell_constants.h"
+
+static const char * const EVEN_COLOR = "\033[1m"; //bold
+static const char * const ODD_COLOR = "\033[3m";  //italic
+static const char * const END_COLOR = "\033[0m";
 
 static char * psCommand_stateString(bundle_state_e state); 
 
 celix_status_t psCommand_execute(void *_ptr, char *command_line_str, FILE *out_ptr, FILE *err_ptr) {
     celix_status_t status = CELIX_SUCCESS;
+    bundle_context_t* ctx = _ptr;
+
+    const char* config = NULL;
+    bundleContext_getPropertyWithDefault(ctx, SHELL_USE_ANSI_COLORS, SHELL_USE_ANSI_COLORS_DEFAULT_VALUE, &config);
+    bool useColors = config != NULL && strncmp("true", config, 5) == 0;
 
     bundle_context_pt context_ptr = _ptr;
     array_list_pt bundles_ptr     = NULL;
@@ -149,7 +158,14 @@ celix_status_t psCommand_execute(void *_ptr, char *command_line_str, FILE *out_p
             }
 
             if (sub_status == CELIX_SUCCESS) {
-                fprintf(out_ptr, "  %-5ld %-12s %s\n", id, state_str, name_str);
+                if (useColors) {
+                    const char* start = i % 2 == 0 ? EVEN_COLOR : ODD_COLOR;
+                    const char* end = END_COLOR;
+                    fprintf(out_ptr, "%s  %-5ld %-12s %s%s\n", start, id, state_str, name_str, end);
+                } else { //no colors
+                    fprintf(out_ptr, "  %-5ld %-12s %s\n", id, state_str, name_str);
+                }
+
             }
 
             if (sub_status != CELIX_SUCCESS) {

@@ -73,11 +73,16 @@ int celixLauncher_launchWithArgs(int argc, char *argv[]) {
 		config_file = DEFAULT_CONFIG_FILE;
 	}
 
+	struct sigaction sigact;
+	memset(&sigact, 0, sizeof(sigact));
+	sigact.sa_handler = shutdown_framework;
+	sigaction(SIGINT,  &sigact, NULL);
+	sigaction(SIGTERM, &sigact, NULL);
 
-	// Set signal handler
-	(void) signal(SIGINT, shutdown_framework);
-	(void) signal(SIGUSR1, ignore);
-	(void) signal(SIGUSR2, ignore);
+	memset(&sigact, 0, sizeof(sigact));
+	sigact.sa_handler = ignore;
+	sigaction(SIGUSR1,  &sigact, NULL);
+	sigaction(SIGUSR2,  &sigact, NULL);
 
 	int rc = celixLauncher_launch(config_file, &framework);
 	if (rc == 0) {

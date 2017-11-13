@@ -31,6 +31,7 @@
 
 #include "shell_private.h"
 
+
 #include "utils.h"
 
 celix_status_t shell_getCommands(shell_pt shell_ptr, array_list_pt *commands_ptr);

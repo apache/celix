@@ -121,11 +121,6 @@ There is support for retrieving information of the dm components with
 use of the `dm` command. This command will print all known dm component,
 their state, provided interfaces and required interfaces.
 
-#### Dependency Manager Shell Config Options
-
-- DM_SHELL_USE_ANSI_COLORS - Wether to use ANSI colors when printing dm
-info. default is true.
-
 ### References
 
 For more information examples please see

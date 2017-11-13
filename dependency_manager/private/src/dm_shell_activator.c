@@ -26,12 +26,10 @@
 
 #include <constants.h>
 #include "bundle_context.h"
-#include "service_registration.h"
 #include "command.h"
 
 #include "dm_shell_list_command.h"
-
-#define DM_SHELL_USE_ANSI_COLORS "DM_SHELL_USE_ANSI_COLORS"
+#include "shell_constants.h"
 
 struct bundle_instance {
     service_registration_pt reg;
@@ -55,7 +53,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 
     bi->dmHandle.context = context;
     const char* config = NULL;
-    bundleContext_getPropertyWithDefault(context, DM_SHELL_USE_ANSI_COLORS, "true", &config);
+    bundleContext_getPropertyWithDefault(context, SHELL_USE_ANSI_COLORS, SHELL_USE_ANSI_COLORS_DEFAULT_VALUE, &config);
     bi->dmHandle.useColors = config != NULL && strncmp("true", config, 5) == 0;
 
     (*userData) = bi;
