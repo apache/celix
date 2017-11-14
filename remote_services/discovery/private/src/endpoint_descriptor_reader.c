@@ -169,10 +169,6 @@ celix_status_t endpointDescriptorReader_parseDocument(endpoint_descriptor_reader
                         inProperty = false;
 
                         if (propertyValue != NULL) {
-                        	if (propertyType != VALUE_TYPE_STRING && strcmp(OSGI_RSA_ENDPOINT_SERVICE_ID, (char*) propertyName)) {
-                        		logHelper_log(*reader->loghelper, OSGI_LOGSERVICE_WARNING, "ENDPOINT_DESCRIPTOR_READER: Only single-valued string supported for %s\n", propertyName);
-                        	}
-
                         	endpointDescriptorReader_addSingleValuedProperty(endpointProperties, propertyName, propertyValue);
                         }
 

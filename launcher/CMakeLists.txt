@@ -42,7 +42,8 @@ if (LAUNCHER)
     if (CPPUTEST_FOUND)
         #Test running which start celix and run CppUTest RUN_ALL_TESTS.
         #Using this test running it is possible to create bundles containing CppUTests.
-	include_directories(celix_test_runner ${CPPUTEST_INCLUDE_DIRS})
+	include_directories(celix_test_runner)
+	include_directories(SYSTEM ${CPPUTEST_INCLUDE_DIRS})
         add_executable(celix_test_runner
                 private/src/celix_test_runner.cpp
         )

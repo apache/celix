@@ -22,8 +22,11 @@
 # Once done this will define
 #  CELIX_FOUND - System has Apache Celix
 #  CELIX_INCLUDE_DIRS - The Apache Celix include directories
-#  CELIX_LIBRARIES - The libraries needed to use Apache Celix
+#  CELIX_LIBRARIES - The libraries needed to use Apache Celix (framework,utils and dfi)
 #  CELIX_LAUNCHER - The path to the celix launcher
+#  CELIX_FRAMEWORK_LIBRARY - The path to the celix framework library
+#  CELIX_UTILS_LIBRARY - The path to the celix utils library
+#  CELIX_DFI_LIBRARY - The path to the celix dfi libary
 #
 #
 #  CELIX_BUNDLES_DIR - The path where the Celix provided bundles are installed
@@ -111,7 +114,7 @@ include(FindPackageHandleStandardArgs)
 # if all listed variables are TRUE
 find_package_handle_standard_args(CELIX  DEFAULT_MSG
 	CELIX_FRAMEWORK_LIBRARY CELIX_UTILS_LIBRARY CELIX_DFI_LIBRARY CELIX_DM_LIB CELIX_DM_STATIC_LIB CELIX_DM_STATIC_CXX_LIB CELIX_INCLUDE_DIR CELIX_LAUNCHER CELIX_CMAKECELIX_FILE)
-mark_as_advanced(CELIX_INCLUDE_DIR CELIX_ETCD_INCLUDE_DIR CELIX_FRAMEWORK_LIBRARY CELIX_UTILS_LIBRARY CELIX_LAUNCHER CELIX_CMAKECELIX_FILE)
+mark_as_advanced(CELIX_INCLUDE_DIR CELIX_ETCD_INCLUDE_DIR CELIX_CMAKECELIX_FILE)
 
 if(CELIX_FOUND)
 	set(CELIX_LIBRARIES ${CELIX_FRAMEWORK_LIBRARY} ${CELIX_UTILS_LIBRARY} ${CELIX_DFI_LIBRARY})

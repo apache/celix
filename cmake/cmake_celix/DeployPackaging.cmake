@@ -82,8 +82,9 @@ function(add_celix_container)
     include_directories(${CELIX_INCLUDE_DIRS})
     add_executable(${CONTAINER_TARGET} ${LAUNCHER_SRC})
     set_target_properties(${CONTAINER_TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CONTAINER_LOC})
-    #TODO SETUP CELIX_LIBRARIES AND INCLUDE DIRS for celix project and celix using projects !!
-    target_link_libraries(${CONTAINER_TARGET} ${CELIX_LIBRARIES})
+    target_link_libraries(${CONTAINER_TARGET} ${CELIX_FRAMEWORK_LIBRARY} ${CELIX_UTILS_LIBRARY})
+    #TODO easy setup to link with additiona libs, i.e.
+    #target_link_libraries(${CONTAINER_TARGET} ${CELIX_DEFAULT_CONTAINER_LINK_LIBRARIES})
 
     #generate config.properties
     set(STAGE1_PROPERTIES "${CMAKE_CURRENT_BINARY_DIR}/${CONTAINER_TARGET}-container-config-stage1.properties")

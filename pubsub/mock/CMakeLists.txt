@@ -21,6 +21,8 @@ if (CPPUTEST_FOUND)
     include_directories(
         ../api
         api
+    )
+    include_directories(SYSTEM
         ${CPPUTEST_INCLUDE_DIR}
     )
 
