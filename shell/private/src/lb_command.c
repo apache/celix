@@ -31,6 +31,7 @@
 #include "std_commands.h"
 #include "shell_constants.h"
 
+static const char * const HEAD_COLOR = "\033[4m"; //underline
 static const char * const EVEN_COLOR = "\033[1m"; //bold
 static const char * const ODD_COLOR = "\033[3m";  //italic
 static const char * const END_COLOR = "\033[0m";
@@ -81,7 +82,13 @@ celix_status_t psCommand_execute(void *_ptr, char *command_line_str, FILE *out_p
             sub_str = strtok_r(NULL, OSGI_SHELL_COMMAND_SEPARATOR, &save_ptr);
         }
 
-        fprintf(out_ptr, "  %-5s %-12s %s\n", "ID", "State", message_str);
+	const char* startColor = "";
+	const char* endColor = "";
+	if (useColors) {
+		startColor = HEAD_COLOR;
+		endColor = END_COLOR;
+	} 
+        fprintf(out_ptr, "%s  %-5s %-12s %s%s\n", startColor, "ID", "State", message_str, endColor);
 
         unsigned int size = arrayList_size(bundles_ptr);
 
@@ -158,13 +165,13 @@ celix_status_t psCommand_execute(void *_ptr, char *command_line_str, FILE *out_p
             }
 
             if (sub_status == CELIX_SUCCESS) {
+		startColor = "";
+		endColor = "";
                 if (useColors) {
-                    const char* start = i % 2 == 0 ? EVEN_COLOR : ODD_COLOR;
-                    const char* end = END_COLOR;
-                    fprintf(out_ptr, "%s  %-5ld %-12s %s%s\n", start, id, state_str, name_str, end);
-                } else { //no colors
-                    fprintf(out_ptr, "  %-5ld %-12s %s\n", id, state_str, name_str);
-                }
+                    startColor = i % 2 == 0 ? EVEN_COLOR : ODD_COLOR;
+                    endColor = END_COLOR;
+                } 
+		fprintf(out_ptr, "%s  %-5ld %-12s %s%s\n", startColor, id, state_str, name_str, endColor);
 
             }
 

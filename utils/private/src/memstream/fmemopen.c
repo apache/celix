@@ -8,7 +8,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifndef linux
 struct fmem {
     size_t pos;
     size_t size;
@@ -75,4 +74,3 @@ FILE *fmemopen(void *buf, size_t size, const char *mode)
     mem->size = size, mem->buffer = buf;
     return funopen(mem, readfn, writefn, seekfn, closefn);
 }
-#endif

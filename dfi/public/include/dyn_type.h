@@ -28,7 +28,7 @@
 
 #include "dfi_log_util.h"
 
-#if defined(BSD) || defined(__APPLE__)
+#if defined(BSD) || defined(__APPLE__) || defined(__ANDROID__)
 #include "memstream/open_memstream.h"
 #include "memstream/fmemopen.h"
 #endif
