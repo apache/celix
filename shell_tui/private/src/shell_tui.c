@@ -66,9 +66,9 @@ struct shell_tui {
 };
 
 typedef struct shell_context {
-    char in[LINE_SIZE];
-    char buffer[LINE_SIZE];
-    char dline[LINE_SIZE];
+    char in[LINE_SIZE+1];
+    char buffer[LINE_SIZE+1];
+    char dline[LINE_SIZE+1];
     int pos;
     history_t* hist;
 } shell_context_t;
@@ -101,8 +101,13 @@ celix_status_t shellTui_start(shell_tui_t* shellTui) {
     if (rc == 0) {
         shellTui->readPipeFd = fds[0];
         shellTui->writePipeFd = fds[1];
-        fcntl(shellTui->writePipeFd, F_SETFL, O_NONBLOCK);
-        celixThread_create(&shellTui->thread, NULL, shellTui_runnable, shellTui);
+        if(fcntl(shellTui->writePipeFd, F_SETFL, O_NONBLOCK) == 0){
+        	celixThread_create(&shellTui->thread, NULL, shellTui_runnable, shellTui);
+        }
+        else{
+        	fprintf(stderr,"fcntl on pipe failed");
+        	status = CELIX_FILE_IO_EXCEPTION;
+        }
     } else {
         fprintf(stderr, "Cannot create pipe");
         status = CELIX_BUNDLE_EXCEPTION;
@@ -229,6 +234,10 @@ static void shellTui_parseInputForControl(shell_tui_t* shellTui, shell_context_t
 
     char* line = NULL;
 
+    if (shellTui == NULL) {
+    	return;
+    }
+
     int nr_chars = read(STDIN_FILENO, buffer, LINE_SIZE-pos-1);
     for(int bufpos = 0; bufpos < nr_chars; bufpos++) {
         if (buffer[bufpos] == KEY_ESC1 && buffer[bufpos+1] == KEY_ESC2) {
@@ -289,9 +298,7 @@ static void shellTui_parseInputForControl(shell_tui_t* shellTui, shell_context_t
             continue;
         } else if(buffer[bufpos] == KEY_TAB) {
             celixThreadMutex_lock(&shellTui->mutex);
-            if (shellTui != NULL) {
-                pos = autoComplete(shellTui->shell, in, pos, LINE_SIZE);
-            }
+            pos = autoComplete(shellTui->shell, in, pos, LINE_SIZE);
             celixThreadMutex_unlock(&shellTui->mutex);
             continue;
         } else if (buffer[bufpos] != KEY_ENTER) { //not end of line -> text
