@@ -24,6 +24,23 @@ set_target_properties(containers PROPERTIES "CONTAINER_DEPLOYMENTS" "") #initial
 get_directory_property(CLEANFILES ADDITIONAL_MAKE_CLEAN_FILES)
 list(APPEND CLEANFILES "${CMAKE_BINARY_DIR}/deploy")
 set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${CLEANFILES}")
+
+set(CELIX_MAIN_CONTENT "
+#include \"celix_launcher.h\"
+
+int main(int argc, char *argv[]) {
+    return celixLauncher_launchWithArgs(argc, argv);
+}
+")
+file(GENERATE
+    OUTPUT "${PROJECT_BINARY_DIR}/celix/gen/main.c"
+    CONTENT "${CELIX_MAIN_CONTENT}"
+)
+file(GENERATE
+        OUTPUT "${PROJECT_BINARY_DIR}/celix/gen/main.cc"
+        CONTENT "${CELIX_MAIN_CONTENT}"
+)
+unset(CELIX_MAIN_CONTENT)
 #####
 
 function(add_deploy)
@@ -35,7 +52,7 @@ function(add_celix_container)
     list(REMOVE_AT ARGN 0)
 
     set(OPTIONS COPY CXX)
-    set(ONE_VAL_ARGS GROUP NAME LAUNCHER DIR)
+    set(ONE_VAL_ARGS GROUP NAME LAUNCHER LAUNCHER_SRC DIR)
     set(MULTI_VAL_ARGS BUNDLES PROPERTIES)
     cmake_parse_arguments(CONTAINER "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
 
@@ -66,25 +83,39 @@ function(add_celix_container)
     set(CONTAINER_PROPS "${CONTAINER_LOC}/config.properties")
     set(CONTAINER_ECLIPSE_LAUNCHER "${CONTAINER_LOC}/${CONTAINER_NAME}.launch")
 
-    if (CONTAINER_CXX)
-	    set(LAUNCHER_SRC "${CMAKE_CURRENT_BINARY_DIR}/${CONTAINER_TARGET}.launcher.cc")
+    if (CONTAINER_LAUNCHER_SRC)
+        set(LAUNCHER_SRC ${CONTAINER_LAUNCHER_SRC})
+    elseif (CONTAINER_CXX)
+	    set(LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/main.cc")
     else()
-	    set(LAUNCHER_SRC "${CMAKE_CURRENT_BINARY_DIR}/${CONTAINER_TARGET}.launcher.c")
+	    set(LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/main.c")
     endif()
 
-    add_custom_command(OUTPUT ${LAUNCHER_SRC}
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CELIX_CMAKE_DIRECTORY}/cmake_celix/main.c.in ${LAUNCHER_SRC}
+    set(TIMESTAMP_HEADER ${CMAKE_BINARY_DIR}/celix/timestamps/${CONTAINER_TARGET}-timestamp-header.h)
+    add_custom_command(OUTPUT ${TIMESTAMP_HEADER}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/celix/timestamps
+        COMMAND ${CMAKE_COMMAND} -E touch ${TIMESTAMP_HEADER}
         DEPENDS  "$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_TARGET_DEPS>" ${CONTAINER_FILE_TARGETS}
-        WORKING_DIRECTORY "${CONTAINER_LOC}"
         COMMENT "Deploying ${CONTAINER_PRINT_NAME} Celix container" VERBATIM
     )
 
-    include_directories(${CELIX_INCLUDE_DIRS})
-    add_executable(${CONTAINER_TARGET} ${LAUNCHER_SRC})
-    set_target_properties(${CONTAINER_TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CONTAINER_LOC})
-    target_link_libraries(${CONTAINER_TARGET} ${CELIX_FRAMEWORK_LIBRARY} ${CELIX_UTILS_LIBRARY})
-    #TODO easy setup to link with additiona libs, i.e.
-    #target_link_libraries(${CONTAINER_TARGET} ${CELIX_DEFAULT_CONTAINER_LINK_LIBRARIES})
+    if (CONTAINER_LAUNCHER)
+        add_custom_target(${CONTAINER_TARGET}
+                DEPENDS ${TIMESTAMP_HEADER}
+        )
+        if (IS_ABSOLUTE "${CONTAINER_LAUNCHER}")
+            set(LAUNCHER "${CONTAINER_LAUNCHER}")
+        else()
+            #assuming target
+            set(LAUNCHER "$<TARGET_FILE:${CONTAINER_LAUNCHER}>")
+        endif()
+    else ()
+        include_directories(${CELIX_INCLUDE_DIRS})
+        add_executable(${CONTAINER_TARGET} ${LAUNCHER_SRC} ${TIMESTAMP_HEADER})
+        set_target_properties(${CONTAINER_TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CONTAINER_LOC})
+        target_link_libraries(${CONTAINER_TARGET} ${CELIX_FRAMEWORK_LIBRARY} ${CELIX_UTILS_LIBRARY})
+        set(LAUNCHER "$<TARGET_FILE:${CONTAINER_TARGET}>")
+    endif ()
 
     #generate config.properties
     set(STAGE1_PROPERTIES "${CMAKE_CURRENT_BINARY_DIR}/${CONTAINER_TARGET}-container-config-stage1.properties")
@@ -100,32 +131,17 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_PROPERTIES>,
         INPUT "${STAGE1_PROPERTIES}"
     )
 
-
-    #Setup launcher using specifie exe target / exe loc or the container launcher targer file
-    if (CONTAINER_LAUNCHER)
-        if (IS_ABSOLUTE "${CONTAINER_LAUNCHER}")
-            set(LAUNCHER "${CONTAINER_LAUNCHER}")
-        else()
-            #assuming target
-            set(LAUNCHER "$<TARGET_FILE:${CONTAINER_LAUNCHER}>")
-        endif()
-    else()
-        set(LAUNCHER "$<TARGET_FILE:${CONTAINER_TARGET}>")
-    endif()
-
     #needed in the release.sh & run.sh files
     #Setting CELIX_LIB_DIRS, CELIX_BIN_DIR and CELIX_LAUNCHER
-    if (EXISTS ${CELIX_FRAMEWORK_LIBRARY})
-        #CELIX_FRAMEWORK_LIBRARY set by FindCelix.cmake -> Celix Based Project
-        get_filename_component(CELIX_LIB_DIR ${CELIX_FRAMEWORK_LIBRARY} DIRECTORY) #Note assuming all celix libs are in the same dir
-        set(CELIX_LIB_DIRS "${CELIX_LIB_DIR}")
-        #CELIX_LAUNCHER is set by FindCelix.cmake
-        get_filename_component(CELIX_BIN_DIR ${CELIX_LAUNCHER} DIRECTORY)
-    else()
+    if (TARGET celix_framework)
         #Celix Main Project
         set(CELIX_LIB_DIRS "$<TARGET_FILE_DIR:celix_framework>:$<TARGET_FILE_DIR:celix_utils>:$<TARGET_FILE_DIR:celix_dfi>")
-        set(CELIX_LAUNCHER "$<TARGET_FILE:celix>")
         set(CELIX_BIN_DIR  "$<TARGET_FILE_DIR:celix>")
+    else ()
+        #CELIX_FRAMEWORK_LIBRARY and CELIX_LAUNCHER set by FindCelix.cmake -> Celix Based Project
+        get_filename_component(CELIX_LIB_DIR ${CELIX_FRAMEWORK_LIBRARY} DIRECTORY) #Note assuming all celix libs are in the same dir
+        set(CELIX_LIB_DIRS "${CELIX_LIB_DIR}")
+        get_filename_component(CELIX_BIN_DIR ${CELIX_LAUNCHER} DIRECTORY)
     endif()
 
 
