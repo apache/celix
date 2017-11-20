@@ -39,7 +39,7 @@ add_executable(test_tm_scoped
     
    ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c
 )
-target_link_libraries(test_tm_scoped celix_framework celix_utils ${CPPUTEST_LIBRARY} ${JANSSON_LIBRARY})
+target_link_libraries(test_tm_scoped Celix::framework ${CPPUTEST_LIBRARY} ${JANSSON_LIBRARY} Celix::log_helper)
 
 add_dependencies(test_tm_scoped remote_service_admin_dfi topology_manager calculator)
 

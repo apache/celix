@@ -32,4 +32,4 @@ bundle_files(topology_manager_test_bundle
     DESTINATION .
 )
 
-target_link_libraries(topology_manager_test_bundle ${CPPUTEST_LIBRARY} celix_framework celix_utils)
+target_link_libraries(topology_manager_test_bundle PRIVATE ${CPPUTEST_LIBRARY})

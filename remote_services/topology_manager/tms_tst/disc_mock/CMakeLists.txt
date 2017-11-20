@@ -30,4 +30,4 @@ add_bundle(topology_manager_disc_mock_bundle
         disc_mock_service.c
 
 )
-target_link_libraries(topology_manager_disc_mock_bundle ${CPPUTEST_LIBRARY} celix_framework celix_utils)
+target_link_libraries(topology_manager_disc_mock_bundle PRIVATE ${CPPUTEST_LIBRARY} Celix::framework)

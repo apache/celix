@@ -18,37 +18,40 @@
 celix_subproject(LOG_SERVICE "Option to enable building the Log Service bundles" ON DEPS framework)
 if (LOG_SERVICE)
 
+	add_library(log_service_api INTERFACE)
+	target_include_directories(log_service_api INTERFACE include)
+
+	add_library(log_helper STATIC src/log_helper.c)
+	target_include_directories(log_helper PUBLIC loghelper_include)
+	target_link_libraries(log_helper PUBLIC Celix::framework log_service_api)
+	#TODO install log helper
+
     add_bundle(log_service
     	SYMBOLIC_NAME "apache_celix_log_service"
     	NAME "Apache Celix Log Service"
     	VERSION "1.1.0"
     	SOURCES
-			private/src/log
-			private/src/log_entry
-			private/src/log_factory  
-			private/src/log_service_impl 
-			private/src/log_service_activator
-			private/src/log_reader_service_impl
-		    
-		    private/include/log.h
-		    private/include/log_factory.h
-		    private/include/log_reader_service_impl.h
-		    private/include/log_service_impl.h
+			src/log
+			src/log_entry
+			src/log_factory
+			src/log_service_impl
+			src/log_service_activator
+			src/log_reader_service_impl
     )
     
     install_bundle(log_service
         HEADERS
-        	public/include/log_service.h
-        	public/include/log_reader_service.h
-        	public/include/log_listener.h
-        	public/include/log_entry.h
-        	public/include/log_helper.h
-        RESOURCES
-            public/src/log_helper.c
+        	include/log_service.h
+        	include/log_reader_service.h
+        	include/log_listener.h
+        	include/log_entry.h
     )
-    
-    include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-    include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
-    include_directories("${PROJECT_SOURCE_DIR}/log_service/private/include")
-    target_link_libraries(log_service celix_framework)
+
+	target_include_directories(log_service PRIVATE src)
+	target_link_libraries(log_service PRIVATE log_service_api)
+
+	#Setup target aliases to match external usage
+	add_library(Celix::log_service_api ALIAS log_service_api)
+	add_library(Celix::log_service ALIAS log_service)
+	add_library(Celix::log_helper ALIAS log_helper)
 endif (LOG_SERVICE)

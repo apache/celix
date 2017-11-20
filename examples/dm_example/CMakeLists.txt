@@ -30,8 +30,8 @@ if (BUILD_DEPENDENCY_MANAGER)
     add_deploy("dm_example"
         COPY 
         BUNDLES
-            shell
-            shell_tui
+            Celix::shell
+            Celix::shell_tui
             dm_shell
             phase1
             phase2a
@@ -53,8 +53,8 @@ if (BUILD_DEPENDENCY_MANAGER)
             FROM dmbase
             GROUP examples
             BUNDLES
-                shell
-                shell_tui
+                ${CELIX_SHELL_BUNDLE}
+                ${CELIX_SHELL_TUI_BUNDLE}
                 dm_shell
                 phase1
                 phase2a

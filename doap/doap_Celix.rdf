@@ -37,7 +37,7 @@
     <name>Apache Celix</name>
     <homepage rdf:resource="http://celix.apache.org" />
     <asfext:pmc rdf:resource="http://celix.apache.org" />
-    <shortdesc>OSGi framework implementation in C.</shortdesc>
+    <shortdesc>OSGi framework implementation in C and C++.</shortdesc>
      <description>
      Celix is an implementation of the OSGi specification adapted to C. 
      It will follow the API as close as possible, but since the OSGi specification is written primarily for Java, there will be differences (Java is OO, C is procedural). 

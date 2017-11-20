@@ -102,7 +102,7 @@ function(add_celix_container)
         include_directories(${CELIX_INCLUDE_DIRS})
         add_executable(${CONTAINER_TARGET} ${LAUNCHER_SRC})
         set_target_properties(${CONTAINER_TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CONTAINER_LOC})
-        target_link_libraries(${CONTAINER_TARGET} ${CELIX_FRAMEWORK_LIBRARY} ${CELIX_UTILS_LIBRARY})
+        target_link_libraries(${CONTAINER_TARGET} PRIVATE Celix::framework)
         set(LAUNCHER "$<TARGET_FILE:${CONTAINER_TARGET}>")
     endif ()
 
@@ -122,10 +122,10 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_PROPERTIES>,
 
     #needed in the release.sh & run.sh files
     #Setting CELIX_LIB_DIRS, CELIX_BIN_DIR and CELIX_LAUNCHER
-    if (TARGET celix_framework)
+    if (TARGET framework)
         #Celix Main Project
-        set(CELIX_LIB_DIRS "$<TARGET_FILE_DIR:celix_framework>:$<TARGET_FILE_DIR:celix_utils>:$<TARGET_FILE_DIR:celix_dfi>")
-        set(CELIX_BIN_DIR  "$<TARGET_FILE_DIR:celix>")
+        set(CELIX_LIB_DIRS "$<TARGET_FILE_DIR:Celix::framework>:$<TARGET_FILE_DIR:Celix::utils>:$<TARGET_FILE_DIR:Celix::dfi>")
+        set(CELIX_BIN_DIR  "$<TARGET_FILE_DIR:Celix::launcher>")
     else ()
         #CELIX_FRAMEWORK_LIBRARY and CELIX_LAUNCHER set by FindCelix.cmake -> Celix Based Project
         get_filename_component(CELIX_LIB_DIR ${CELIX_FRAMEWORK_LIBRARY} DIRECTORY) #Note assuming all celix libs are in the same dir
@@ -214,17 +214,21 @@ function(celix_container_bundles_dir)
             set(OUT "${CONTAINER_LOC}/${BD_DIR_NAME}/${BUNDLE_FILENAME}")
             add_custom_command(OUTPUT ${OUT}
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE} ${OUT}
-		COMMENT "Copying bundle '${BUNDLE}' to '${CONTAINER_LOC}/${BD_DIR_NAME}'"
+		        COMMENT "Copying bundle '${BUNDLE}' to '${CONTAINER_LOC}/${BD_DIR_NAME}'"
                 DEPENDS ${BUNDLE}
             )
         else()
-            set(OUT "${CONTAINER_LOC}/${BD_DIR_NAME}/${BUNDLE}.zip")
+            string(MAKE_C_IDENTIFIER ${BUNDLE} BUNDLE_ID) #Create id with no special chars (e.g. for target like Celix::shell)
+            set(OUT "${CMAKE_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}-copy-bundle-for-target-${BUNDLE_ID}.timestamp")
+            set(DEST "${CONTAINER_LOC}/${BD_DIR_NAME}/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
             add_custom_command(OUTPUT ${OUT}
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>" ${OUT}
+                COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>" ${DEST}
                 COMMENT "Copying bundle '${BUNDLE}' to '${CONTAINER_LOC}/${BD_DIR_NAME}'"
-                DEPENDS ${BUNDLE}
+                DEPENDS $<TARGET_PROPERTY:${BUNDLE},BUNDLE_BUILD_BUNDLE_TARGET>
             )
-            add_dependencies(${CONTAINER_TARGET} ${BUNDLE}_bundle) #ensure the the deploy depends on the _bundle target, custom_command depends on add_library
+            get_target_property(BUILD_BUNDLE_TARGET ${BUNDLE} BUNDLE_BUILD_BUNDLE_TARGET)
+            add_dependencies(${CONTAINER_TARGET} ${BUILD_BUNDLE_TARGET}) #ensure the the deploy depends on the _bundle target, custom_command depends on add_library
 
         endif()
         list(APPEND DEPS "${OUT}")
@@ -247,19 +251,18 @@ function(celix_container_bundles)
     get_target_property(COPY ${CONTAINER_TARGET} "CONTAINER_COPY_BUNDLES")
 
     foreach(BUNDLE IN ITEMS ${ARGN})
+           if (IS_ABSOLUTE ${BUNDLE} AND EXISTS ${BUNDLE})
+               get_filename_component(BUNDLE_FILENAME ${BUNDLE} NAME)
+               set(COPY_LOC "bundles/${BUNDLE_FILENAME}")
+               set(ABS_LOC "${BUNDLE}")
+           else () #assume target (could be a future target -> if (TARGET ...) not possible
+               set(COPY_LOC "bundles/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
+               set(ABS_LOC "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>")
+           endif ()
            if(COPY)
-                if(IS_ABSOLUTE ${BUNDLE} AND EXISTS ${BUNDLE})
-                    get_filename_component(BUNDLE_FILENAME ${BUNDLE} NAME) 
-                    list(APPEND BUNDLES "bundles/${BUNDLE_FILENAME}")
-                else() #assuming target
-                    list(APPEND BUNDLES "bundles/${BUNDLE}.zip")
-                endif()
+                list(APPEND BUNDLES ${COPY_LOC})
            else()
-                if(IS_ABSOLUTE ${BUNDLE} AND EXISTS ${BUNDLE})
-                    list(APPEND BUNDLES ${BUNDLE})
-                else() #assuming target
-                    list(APPEND BUNDLES "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>")
-                endif()
+                list(APPEND BUNDLES ${ABS_LOC})
            endif()
    endforeach()
 

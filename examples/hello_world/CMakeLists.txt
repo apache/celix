@@ -51,13 +51,13 @@ bundle_private_libs(hello
 
 add_deploy(helloworld_byref
     GROUP hello
-    BUNDLES hello_export hello shell shell_tui
+    BUNDLES hello_export hello ${CELIX_SHELL_BUNDLE} ${CELIX_SHELL_TUI_BUNDLE}
 )
 
 add_deploy(helloworld_withcopy
     GROUP hello
     COPY #Ensures that bundles are copied in the deploy location
-    BUNDLES hello_export hello shell shell_tui
+    BUNDLES hello_export hello ${SHELL_BUNDLE} ${SHELL_TUI_BUNDLE}
 )
 
 endif()

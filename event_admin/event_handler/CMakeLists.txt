@@ -32,4 +32,4 @@ add_bundle(event_handler
 
 install_bundle(event_handler)
 
-target_link_libraries(event_handler celix_framework celix_utils)
+target_link_libraries(event_handler Celix::framework)

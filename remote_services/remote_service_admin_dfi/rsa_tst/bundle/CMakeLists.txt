@@ -34,4 +34,4 @@ bundle_files(rsa_dfi_tst_bundle
     DESTINATION .
 )
 
-target_link_libraries(rsa_dfi_tst_bundle ${CPPUTEST_LIBRARY} celix_framework celix_utils)
+target_link_libraries(rsa_dfi_tst_bundle PRIVATE ${CPPUTEST_LIBRARY} )

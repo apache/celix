@@ -5,10 +5,20 @@ The Celix Deployment Admin implements the OSGi Deployment Admin specification, w
 It can be used for example with Apache Ace, which allows you to centrally manage and distribute software components, configuration data and other artifacts.
 
 ###### Properties
-    deployment_admin_identification     id used by the deployment admin to identify itself
-    deployment_admin_url                url of the deployment server
-    deployment_cache_dir                possible cache dir for the deployment admin update
-    deployment_tags                     tags used by the deployment admin
+                  tags used by the deployment admin
 
-###### CMake option
+## CMake option
     BUILD_DEPLOYMENT_ADMIN=ON
+
+## Deployment Admin Config Options
+
+- deployment_admin_identification     id used by the deployment admin to identify itself
+- deployment_admin_url                url of the deployment server
+- deployment_cache_dir                possible cache dir for the deployment admin update
+- deployment_tags
+
+## Using info
+
+If the Celix Deployment Admin is installed The `FindCelix.cmake` will set:
+ - The `Celix::deployment_admin_api` interface (i.e. headers only) library target
+ - The `Celix::deployment_admin` bundle target

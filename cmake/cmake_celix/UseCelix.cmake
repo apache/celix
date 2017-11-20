@@ -15,17 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
-#Importing and exporting libraries not (yet) work under OSX.
-
-add_bundle(log_service_example
-    VERSION "1.0"
-    SOURCES
-        src/activator.c
-)
-target_include_directories(log_service_example PRIVATE src)
-target_link_libraries(log_service_example PRIVATE Celix::log_service_api Celix::log_helper)
-
-add_deploy(log_example
-    GROUP log_service
-    BUNDLES log_service_example Celix::log_service Celix::shell Celix::shell_tui
-)
+set(CELIX_CMAKE_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/..)
+include(${CELIX_CMAKE_DIRECTORY}/cmake_celix/BundlePackaging.cmake)
+include(${CELIX_CMAKE_DIRECTORY}/cmake_celix/DeployPackaging.cmake)
+include(${CELIX_CMAKE_DIRECTORY}/cmake_celix/DockerPackaging.cmake)
+include(${CELIX_CMAKE_DIRECTORY}/cmake_celix/Runtimes.cmake)

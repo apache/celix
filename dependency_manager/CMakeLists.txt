@@ -25,67 +25,75 @@ if (DEPENDENCY_MANAGER)
         exec_program(uname ARGS -m OUTPUT_VARIABLE CMAKE_SYSTEM_PROCESSOR)
         set(CMAKE_SYSTEM_PROCESSOR ${CMAKE_SYSTEM_PROCESSOR} CACHE INTERNAL "processor type (i386 and x86_64)")
          if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
-          add_definitions(-fPIC)
+             set(DM_COMP_OPT "-fPIC")
         endif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
       endif(CMAKE_UNAME)
     endif(UNIX AND NOT WIN32)
+
+    add_library(dependency_manager_static STATIC 
+    	src/dm_component_impl
+    	src/dm_service_dependency
+    	src/dm_event
+    	src/dm_dependency_manager_impl
+        src/dm_activator
+    )
+    target_link_libraries(dependency_manager_static Celix::framework)
+    target_compile_options(dependency_manager_static PRIVATE ${DM_COMP_OPT})
+
+    add_library(dependency_manager_so SHARED
+    	src/dm_component_impl
+    	src/dm_service_dependency
+     	src/dm_event
+        src/dm_dependency_manager_impl
+        src/dm_activator
+    )
+    set_target_properties(dependency_manager_so PROPERTIES SOVERSION 1)
+
+    if (APPLE)
+        target_link_libraries(dependency_manager_so Celix::framework "-undefined dynamic_lookup")
+    else()
+        target_link_libraries(dependency_manager_so Celix::framework)
+    endif()
+
+    target_include_directories(dependency_manager_static PUBLIC api)
+    target_include_directories(dependency_manager_static PRIVATE src)
+    target_include_directories(dependency_manager_so PUBLIC api)
+    target_include_directories(dependency_manager_so PRIVATE src)
 
     add_bundle(dm_shell
         SYMBOLIC_NAME "apache_celix_dm_shell"
         VERSION "1.0.0"
         NAME "Apache Celix DM Shell Commands"
         SOURCES
-            private/src/dm_shell_activator
-            private/src/dm_shell_list_command
+            src/dm_shell_activator
+            src/dm_shell_list_command
     )
-    target_link_libraries(dm_shell celix_framework celix_utils)
+    target_include_directories(dm_shell PRIVATE api src)
+    target_link_libraries(dm_shell PRIVATE Celix::shell_api)
 
-
-    add_library(dependency_manager_static STATIC 
-    	private/src/dm_component_impl
-    	private/src/dm_service_dependency
-    	private/src/dm_event
-    	private/src/dm_dependency_manager_impl
-        private/src/dm_activator
-    )
-    set_target_properties(dependency_manager_static PROPERTIES SOVERSION 1)
-
-    add_library(dependency_manager_so SHARED
-    	private/src/dm_component_impl
-    	private/src/dm_service_dependency
-     	private/src/dm_event
-        private/src/dm_dependency_manager_impl
-        private/src/dm_activator
-    )
-    set_target_properties(dependency_manager_so PROPERTIES SOVERSION 1)
-
-    if (APPLE)
-        target_link_libraries(dependency_manager_so celix_framework "-undefined dynamic_lookup")
-    else()
-        target_link_libraries(dependency_manager_so celix_framework)
-    endif()
-
-   	include_directories("public/include")
-   	include_directories("private/include")
-    include_directories("${PROJECT_SOURCE_DIR}/shell/public/include")
-    include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-    target_link_libraries(dependency_manager_static celix_framework)
-    
-    install(
-    	FILES
-    	    public/include/dm_activator.h
-            private/src/dm_activator.c
-            public/include/dm_component.h
-            public/include/dm_dependency_manager.h
-            public/include/dm_service_dependency.h
-            public/include/dm_info.h
-		DESTINATION 
-	    	include/celix/dependency_manager
-		COMPONENT
-			dependency_manager
-	)
+#TODO check
+#    install(
+#    	FILES
+#    	    api/dm_activator.h
+#            src/dm_activator.c
+#            api/dm_component.h
+#            api/dm_dependency_manager.h
+#            apidm_service_dependency.h
+#            apidm_info.h
+#		DESTINATION
+#	    	include/celix/dependency_manager
+#		COMPONENT
+#			dependency_manager
+#	)
     install_bundle(dm_shell)
     install(TARGETS dependency_manager_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dependency_manager)
     install(TARGETS dependency_manager_so DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dependency_manager)
 
+    unset(DM_COMP_OPT)
+
+
+    #Setup target aliases to match external usage
+    add_library(Celix::dm_shell ALIAS dm_shell)
+    add_library(Celix::dependency_manager_static ALIAS dependency_manager_static)
+    add_library(Celix::dependency_manager_so ALIAS dependency_manager_so)
 endif (DEPENDENCY_MANAGER)

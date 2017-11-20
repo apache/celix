@@ -29,8 +29,6 @@ if (RSA_TOPOLOGY_MANAGER)
         private/src/scope
         private/src/activator
 
-        ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
-
         private/include/topology_manager.h
         public/include/tm_scope.h
         VERSION 0.9.0
@@ -38,6 +36,7 @@ if (RSA_TOPOLOGY_MANAGER)
         NAME
             "Apache Celix RS Topology Manager"
     )
+    target_link_libraries(topology_manager PRIVATE Celix::log_helper)
 
     install_bundle(topology_manager)
 
@@ -50,6 +49,4 @@ if (RSA_TOPOLOGY_MANAGER)
         include_directories(${CPPUTEST_EXT_INCLUDE_DIR})
         add_subdirectory(tms_tst)
    endif (ENABLE_TESTING)
-
-   target_link_libraries(topology_manager celix_framework celix_utils)
 endif (RSA_TOPOLOGY_MANAGER)

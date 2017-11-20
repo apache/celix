@@ -16,9 +16,6 @@
 # under the License.
 
 include_directories(
-    ${PROJECT_SOURCE_DIR}/framework/public/include
-    ${PROJECT_SOURCE_DIR}/utils/public/include
-    ${PROJECT_SOURCE_DIR}/utils/public/include
     ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include
     ${PROJECT_SOURCE_DIR}/remote_services/examples/calculator_service/public/include
     bundle
@@ -37,7 +34,7 @@ add_executable(test_rsa_dfi
 
     ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c
 )
-target_link_libraries(test_rsa_dfi celix_framework celix_utils ${CURL_LIBRARIES} ${CPPUTEST_LIBRARY})
+target_link_libraries(test_rsa_dfi Celix::framework ${CURL_LIBRARIES} ${CPPUTEST_LIBRARY})
 
 get_property(rsa_bundle_file TARGET remote_service_admin_dfi PROPERTY BUNDLE_FILE)
 get_property(calc_bundle_file TARGET calculator PROPERTY BUNDLE_FILE)

@@ -31,12 +31,12 @@ add_bundle(phase3
 #bundle_private_libs(phase3 dependency_manager)
 
 IF(APPLE)
-    target_link_libraries(phase3 celix_framework -Wl,-all_load dependency_manager_static)
+    target_link_libraries(phase3 PRIVATE -Wl,-all_load dependency_manager_static)
 else()
     if(ENABLE_ADDRESS_SANITIZER)
         #With asan there can be undefined symbols
-        target_link_libraries(phase3 -Wl,--whole-archive dependency_manager_static -Wl,--no-whole-archive celix_framework)
+        target_link_libraries(phase3 PRIVATE -Wl,--whole-archive dependency_manager_static -Wl,--no-whole-archive)
     else()
-        target_link_libraries(phase3 -Wl,--no-undefined -Wl,--whole-archive dependency_manager_static -Wl,--no-whole-archive celix_framework)
+        target_link_libraries(phase3 PRIVATE -Wl,--no-undefined -Wl,--whole-archive dependency_manager_static -Wl,--no-whole-archive)
     endif()
 ENDIF()

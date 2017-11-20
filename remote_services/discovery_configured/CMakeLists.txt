@@ -46,13 +46,12 @@ if (RSA_DISCOVERY_CONFIGURED)
 	${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_discovery_server.c
 	${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c
 	${PROJECT_SOURCE_DIR}/remote_services/utils/private/src/civetweb.c
-
-	${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
     )
+    target_link_libraries(discovery_configured PRIVATE Celix::log_helper)
 
     install_bundle(discovery_configured)
 
-    target_link_libraries(discovery_configured celix_framework ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES})
+    target_link_libraries(discovery_configured PRIVATE ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES})
 
     if (RSA_ENDPOINT_TEST_READER)
         add_executable(descparser

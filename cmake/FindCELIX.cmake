@@ -37,6 +37,8 @@
 set(CELIX_DIR_FROM_FINDCELIX "${CMAKE_CURRENT_LIST_DIR}/../../../..")
 
 
+#Find libraries celix_framework, celix_utils, etcdlib and celix_dfi
+#Find celix launcher
 find_path(CELIX_INCLUDE_DIR NAMES celix_errno.h
 		PATHS ${CELIX_DIR_FROM_FINDCELIX} $ENV{CELIX_DIR} ${CELIX_DIR} /usr /usr/local
 		PATH_SUFFIXES include include/celix
@@ -67,36 +69,52 @@ find_program(CELIX_LAUNCHER NAMES celix
 		PATH_SUFFIXES bin
 )
 
-find_file(CELIX_CMAKECELIX_FILE NAMES CMakeCelix.cmake
+find_file(CELIX_USECELIX_FILE NAMES UseCelix.cmake
              	PATHS ${CELIX_DIR_FROM_FINDCELIX} $ENV{CELIX_DIR} ${CELIX_DIR} /usr /usr/local
-             	PATH_SUFFIXES share/celix/cmake/modules
+             	PATH_SUFFIXES share/celix/cmake/modules/cmake_celix
 )
 
-#NOTE assuming shell.zip is always installed.
-find_path(CELIX_BUNDLES_DIR shell.zip
-		PATHS ${CELIX_DIR_FROM_FINDCELIX} $ENV{CELIX_DIR} ${CELIX_DIR} /usr /usr/local
-		PATH_SUFFIXES share/celix/bundles
-)
 
+
+
+#Finding dependency manager libraries for C and C++
 find_library(CELIX_DM_LIB NAMES dependency_manager_so
 		PATHS ${CELIX_DIR_FROM_FINDCELIX} $ENV{CELIX_DIR} ${CELIX_DIR} /usr /usr/local
 		PATH_SUFFIXES lib lib64
-)
+		)
 
 find_library(CELIX_DM_STATIC_LIB NAMES dependency_manager_static
 		PATHS ${CELIX_DIR_FROM_FINDCELIX} $ENV{CELIX_DIR} ${CELIX_DIR} /usr /usr/local
 		PATH_SUFFIXES lib lib64
-)
+		)
 
 find_library(CELIX_DM_STATIC_CXX_LIB NAMES dependency_manager_cxx_static
 		PATHS ${CELIX_DIR_FROM_FINDCELIX} $ENV{CELIX_DIR} ${CELIX_DIR} /usr /usr/local
 		PATH_SUFFIXES lib lib64
-)
+		)
 
 find_library(CELIX_ETCD_LIB NAMES etcdlib
 		PATHS ${CELIX_DIR_FROM_FINDCELIX} $ENV{CELIX_DIR} ${CELIX_DIR} /usr /usr/local
 		PATH_SUFFIXES lib lib64
 		)
+
+
+#Finding bundles dir.
+find_path(CELIX_BUNDLES_DIR shell.zip #NOTE assuming shell.zip is always installed.
+		PATHS ${CELIX_DIR_FROM_FINDCELIX} $ENV{CELIX_DIR} ${CELIX_DIR} /usr /usr/local
+		PATH_SUFFIXES share/celix/bundles
+)
+
+#Finding bundles. If not found the <BUNDLEVAR>_BUNDLE var will be set to <BUNDLEVAR>-NOTFOUND
+find_file(CELIX_SHELL_BUNDLE shell.zip
+		PATHS ${CELIX_BUNDLES_DIR}
+		NO_DEFAULT_PATH
+		)
+find_file(CELIX_SHELL_TUI_BUNDLE shell_tui.zip
+		PATHS ${CELIX_BUNDLES_DIR}
+		NO_DEFAULT_PATH
+		)
+
 
 if (CELIX_DM_STATIC_LIB)
     set(CELIX_DM_INCLUDE_DIR ${CELIX_INCLUDE_DIR}/dependency_manager)
@@ -114,12 +132,12 @@ include(FindPackageHandleStandardArgs)
 # if all listed variables are TRUE
 find_package_handle_standard_args(CELIX  DEFAULT_MSG
 	CELIX_FRAMEWORK_LIBRARY CELIX_UTILS_LIBRARY CELIX_DFI_LIBRARY CELIX_DM_LIB CELIX_DM_STATIC_LIB CELIX_DM_STATIC_CXX_LIB CELIX_INCLUDE_DIR CELIX_LAUNCHER CELIX_CMAKECELIX_FILE)
-mark_as_advanced(CELIX_INCLUDE_DIR CELIX_ETCD_INCLUDE_DIR CELIX_CMAKECELIX_FILE)
+mark_as_advanced(CELIX_INCLUDE_DIR CELIX_ETCD_INCLUDE_DIR CELIX_USECELIX_FILE)
 
 if(CELIX_FOUND)
 	set(CELIX_LIBRARIES ${CELIX_FRAMEWORK_LIBRARY} ${CELIX_UTILS_LIBRARY} ${CELIX_DFI_LIBRARY})
 	set(CELIX_INCLUDE_DIRS ${CELIX_INCLUDE_DIR} ${CELIX_ETCD_INCLUDE_DIR} ${CELIX_DM_INCLUDE_DIR} ${CELIX_DM_CXX_INCLUDE_DIR})
-	include(${CELIX_CMAKECELIX_FILE})
-	include_directories(${CELIX_INCLUDE_DIRS})
+
+	include(${CELIX_USECELIX_FILE})
 endif()
 

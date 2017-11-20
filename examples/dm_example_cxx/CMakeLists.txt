@@ -19,7 +19,6 @@ if (BUILD_DEPENDENCY_MANAGER_CXX)
             ${PROJECT_SOURCE_DIR}/dependency_manager/public/include
             ${PROJECT_SOURCE_DIR}/dependency_manager_cxx/include
             ${PROJECT_SOURCE_DIR}/utils/public/include
-            ${PROJECT_SOURCE_DIR}/shell/public/include
             ${PROJECT_SOURCE_DIR}/log_service/public/include
             api
     )
@@ -33,10 +32,10 @@ if (BUILD_DEPENDENCY_MANAGER_CXX)
 
     add_deploy("dm_example_cxx"
         COPY 
-	CXX
+	    CXX
         BUNDLES
-            shell
-            shell_tui
+            Celix::shell
+            Celix::shell_tui
             dm_shell
             log_service
             log_writer
@@ -56,7 +55,7 @@ if (BUILD_DEPENDENCY_MANAGER_CXX)
             BUNDLES_DIR /usr/share/bundles
             WORKDIR /workspace
             BUNDLES
-                shell
+                celix_shell
                 shell_tui
                 dm_shell
                 log_service

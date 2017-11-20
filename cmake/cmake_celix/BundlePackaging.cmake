@@ -94,36 +94,40 @@ function(add_bundle)
     list(REMOVE_AT ARGN 0)
 
     set(OPTIONS NO_ACTIVATOR)
-    set(ONE_VAL_ARGS VERSION ACTIVATOR SYMBOLIC_NAME NAME DESCRIPTION) 
+    set(ONE_VAL_ARGS VERSION ACTIVATOR SYMBOLIC_NAME NAME DESCRIPTION FILENAME)
     set(MULTI_VAL_ARGS SOURCES PRIVATE_LIBRARIES EXPORT_LIBRARIES IMPORT_LIBRARIES HEADERS)
     cmake_parse_arguments(BUNDLE "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
 
     ##check arguments
-    if(NOT BUNDLE_TARGET_NAME)
+    if (NOT BUNDLE_TARGET_NAME)
         message(FATAL_ERROR "add_bunde function requires first target name argument")
-    endif()
-    if((NOT (BUNDLE_SOURCES OR BUNDLE_ACTIVATOR)) AND (NOT BUNDLE_NO_ACTIVATOR))
+    endif ()
+    if ((NOT (BUNDLE_SOURCES OR BUNDLE_ACTIVATOR)) AND (NOT BUNDLE_NO_ACTIVATOR))
         message(FATAL_ERROR "Bundle contain no SOURCES or ACTIVATOR target and the option NO_ACTIVATOR is not set")
-    endif()
-    if(BUNDLE_SOURCES AND BUNDLE_ACTIVATOR)
+    endif ()
+    if (BUNDLE_SOURCES AND BUNDLE_ACTIVATOR)
         message(FATAL_ERROR "add_bundle function requires a value for SOURCES or ACTIVATOR not both")
-    endif()
-    if(BUNDLE_ACTIVATOR)
+    endif ()
+    if (BUNDLE_ACTIVATOR)
         check_lib(${BUNDLE_ACTIVATOR})
-    endif()
+    endif ()
 
     #setting defaults
     if(NOT BUNDLE_VERSION) 
         set(BUNDLE_VERSION "0.0.0")
         message(WARNING "Bundle version for ${BUNDLE_NAME} not provided. Using 0.0.0")
-    endif()
+    endif ()
     if (NOT BUNDLE_NAME)
         set(BUNDLE_NAME ${BUNDLE_TARGET_NAME})
-    endif()
+    endif ()
     if (NOT BUNDLE_SYMBOLIC_NAME)
         set(BUNDLE_SYMBOLIC_NAME ${BUNDLE_TARGET_NAME})
-    endif()
-    set(BUNDLE_FILE "${CMAKE_CURRENT_BINARY_DIR}/${BUNDLE_TARGET_NAME}.zip") 
+    endif ()
+    if (NOT BUNDLE_FILENAME)
+        set(BUNDLE_FILENAME ${BUNDLE_TARGET_NAME}.zip)
+    endif ()
+
+    set(BUNDLE_FILE "${CMAKE_CURRENT_BINARY_DIR}/${BUNDLE_FILENAME}")
     set(BUNDLE_CONTENT_DIR "${CMAKE_CURRENT_BINARY_DIR}/${BUNDLE_TARGET_NAME}_content")
     set(BUNDLE_GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}/${BUNDLE_TARGET_NAME}_gen")
 
@@ -139,12 +143,20 @@ function(add_bundle)
         #create lib from sources
         add_library(${BUNDLE_TARGET_NAME} SHARED ${BUNDLE_SOURCES})
         set_library_version(${BUNDLE_TARGET_NAME} ${BUNDLE_VERSION})
-        set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_TARGET_IS_LIB" TRUE)
+        set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES
+                "BUNDLE_TARGET_IS_LIB" TRUE
+                "BUNDLE_BUILD_BUNDLE_TARGET" "${BUNDLE_TARGET_NAME}_bundle"
+        )
+        target_link_libraries(${BUNDLE_TARGET_NAME} PRIVATE Celix::framework)
     else()
         add_custom_target(${BUNDLE_TARGET_NAME})
+        set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES
+                "BUNDLE_TARGET_IS_LIB" FALSE
+                "BUNDLE_BUILD_BUNDLE_TARGET" "${BUNDLE_TARGET_NAME}_bundle"
+        )
     endif()
     add_custom_target(${BUNDLE_TARGET_NAME}_bundle
-        DEPENDS "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_FILE>"
+        DEPENDS ${BUNDLE_TARGET_NAME} "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_FILE>"
     )
     add_dependencies(bundles ${BUNDLE_TARGET_NAME}_bundle)
     #######################################################################
@@ -199,13 +211,18 @@ function(add_bundle)
     #############################
     ### BUNDLE TARGET PROPERTIES
     #############################
+    #alreadyer set
+    #   BUNDLE_TARGET_IS_LIB -> true (can be use to test if target is bundle target
+    #   BUNDLE_BUILD_BUNDLE_TARGET -> refers to the _bundle target which is responsible for building the zip file
     #internal use
+    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_IS_BUNDLE_TARGET" TRUE) #indicate that this is a bundle target
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_DEPEND_TARGETS" "") #bundle target dependencies. Note can be extended after the add_bundle call
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_GEN_DIR" ${BUNDLE_GEN_DIR}) #location for generated output. 
 
     #bundle specific
-    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_CONTENT_DIR" ${BUNDLE_CONTENT_DIR}) #location where the content to be jar/zipped. 
-    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_FILE" ${BUNDLE_FILE}) #target bundle file (.zip)
+    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_CONTENT_DIR" ${BUNDLE_CONTENT_DIR}) #location where the content to be jar/zipped.
+    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_FILENAME" ${BUNDLE_FILENAME}) #target bundle filename (.zip)
+    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_FILE" ${BUNDLE_FILE}) #target bundle abs file path (.zip)
 
     #name and version
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_NAME" ${BUNDLE_NAME}) #The bundle name default target name
@@ -326,7 +343,7 @@ function(bundle_libs)
         if ("${LIB}" STREQUAL "${BUNDLE}")
             #ignore. Do not have to link agaist own lib
         elseif(IS_LIB)
-            target_link_libraries(${BUNDLE} ${LIB})
+            target_link_libraries(${BUNDLE} PRIVATE ${LIB})
         endif()
     endforeach()
 

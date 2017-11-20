@@ -41,8 +41,7 @@ add_bundle(remote_service_admin_dfi
     ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c
 
     ${PROJECT_SOURCE_DIR}/remote_services/utils/private/src/civetweb.c
-    ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
 )
-target_link_libraries(remote_service_admin_dfi celix_framework celix_utils celix_dfi ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
+target_link_libraries(remote_service_admin_dfi PRIVATE Celix::dfi Celix::log_helper ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
 
 install_bundle(remote_service_admin_dfi)

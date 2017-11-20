@@ -33,5 +33,3 @@ add_bundle(calculator SOURCES
 
 bundle_files(calculator public/include/org.apache.celix.calc.api.Calculator2.descriptor
     DESTINATION .)
-
-target_link_libraries(calculator celix_framework)

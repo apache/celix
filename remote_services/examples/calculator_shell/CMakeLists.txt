@@ -18,7 +18,6 @@
 include_directories("private/include")
 include_directories("../../../utils/public/include")
 include_directories("../calculator_service/public/include")
-include_directories("../../../shell/public/include")
 
 add_bundle(calculator_shell SOURCES
     private/src/add_command 
@@ -40,4 +39,4 @@ bundle_files(calculator_shell
     DESTINATION .
 )
 
-target_link_libraries(calculator_shell celix_framework)
+target_link_libraries(calculator_shell PRIVATE Celix::shell_api)

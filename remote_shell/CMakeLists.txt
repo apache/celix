@@ -22,25 +22,23 @@ if (REMOTE_SHELL)
      	VERSION "0.0.2"
      	NAME: "Apache Celix Remote Shell"
 		SOURCES
-			private/src/activator
-			private/src/connection_listener
-			private/src/shell_mediator
-			private/src/remote_shell
-
-			${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
-
-			private/include/remote_shell.h
-			private/include/connection_listener.h
+			src/activator
+			src/connection_listener
+			src/shell_mediator
+			src/remote_shell
 	)
-	
+
+	target_include_directories(remote_shell PRIVATE src)
+	target_link_libraries(remote_shell PRIVATE log_helper)
 	install_bundle(remote_shell)
- 
-    include_directories("private/include")
+
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-    include_directories("${PROJECT_SOURCE_DIR}/shell/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
     
-    target_link_libraries(remote_shell celix_framework)
+    target_link_libraries(remote_shell PRIVATE Celix::shell_api)
 
-    add_deploy("remote_shell_deploy" NAME "remote_shell"  BUNDLES shell remote_shell shell_tui log_service)
+	#Alias setup to match external usage
+	add_library(Celix::remote_shell ALIAS remote_shell)
+
+    add_deploy("remote_shell_deploy" NAME "remote_shell"  BUNDLES Celix::shell Celix::remote_shell Celix::shell_tui log_service)
 endif (REMOTE_SHELL)

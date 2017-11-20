@@ -37,6 +37,6 @@ add_bundle(mongoose
 
 bundle_files(mongoose ${CMAKE_CURRENT_LIST_DIR}/root)
 
-target_link_libraries(mongoose celix_framework mongooselib ${LIBS})
+target_link_libraries(mongoose PRIVATE mongooselib ${LIBS})
 
-add_deploy("mongoose_deploy" BUNDLES shell shell_tui log_service mongoose)
+add_deploy("mongoose_deploy" BUNDLES Celix::shell Celix::shell_tui log_service mongoose)

@@ -23,9 +23,6 @@ if (PUBSUB)
 		message(WARNING "Celix will now contain a dependency with a LGPL License (ZeroMQ). For more information about this, consult the pubsub/README.md file.")
 		option(BUILD_ZMQ_SECURITY "Build with security for ZeroMQ." OFF)
     endif (BUILD_PUBSUB_PSA_ZMQ)
-
-	include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-	include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
 	
 	add_subdirectory(pubsub_topology_manager)
 	add_subdirectory(pubsub_discovery)
@@ -44,6 +41,10 @@ if (PUBSUB)
 	if (ENABLE_TESTING AND BUILD_PUBSUB_TESTS)
 		add_subdirectory(test)
 	endif()
+
+	#api target
+	add_libary(pubsub_api INTERFACE)
+	target_include_directories(pubsub_api INTERFACE api)
 
 	#install api
 	install(FILES api/pubsub/publisher.h api/pubsub/subscriber.h DESTINATION include/celix/pubsub COMPONENT framework)
@@ -67,5 +68,7 @@ if (PUBSUB)
       DESTINATION share/celix/pubsub 
       COMPONENT framework
    )
-	
+
+	#Setup target aliases to match external usage
+	add_library(Celix::pubsub_api ALIAS pubsub_api)
 endif(PUBSUB)

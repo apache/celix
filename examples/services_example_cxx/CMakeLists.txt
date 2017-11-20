@@ -30,8 +30,8 @@ if (BUILD_DEPENDENCY_MANAGER_CXX)
         GROUP services_example
         COPY
         BUNDLES
-            shell
-            shell_tui
+            Celix::shell
+            Celix::shell_tui
             dm_shell
             bar_cxx
             foo_cxx

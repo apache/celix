@@ -15,17 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
-#Importing and exporting libraries not (yet) work under OSX.
-
-add_bundle(log_service_example
-    VERSION "1.0"
-    SOURCES
-        src/activator.c
+add_library(log_writer_common STATIC
+		src/log_writer.c
+		src/log_writer_activator.c
 )
-target_include_directories(log_service_example PRIVATE src)
-target_link_libraries(log_service_example PRIVATE Celix::log_service_api Celix::log_helper)
-
-add_deploy(log_example
-    GROUP log_service
-    BUNDLES log_service_example Celix::log_service Celix::shell Celix::shell_tui
-)
+target_include_directories(log_writer_common PRIVATE src)
+target_include_directories(log_writer_common PUBLIC include)
+target_link_libraries(log_writer_common PUBLIC Celix::log_service_api Celix::framework)

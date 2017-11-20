@@ -20,17 +20,13 @@ add_bundle(log_writer
 	VERSION "1.1.0"
 	NAME "Apache Celix Log Writer"
 	SOURCES
-		${PROJECT_SOURCE_DIR}/log_writer/log_writer/private/src/log_writer_activator
-		${PROJECT_SOURCE_DIR}/log_writer/log_writer/private/src/log_writer
-		${PROJECT_SOURCE_DIR}/log_writer/log_writer/private/include/log_writer.h
+		#${PROJECT_SOURCE_DIR}/log_writer/log_writer/private/src/log_writer_activator
+		#${PROJECT_SOURCE_DIR}/log_writer/log_writer/private/src/log_writer
+		#${PROJECT_SOURCE_DIR}/log_writer/log_writer/private/include/log_writer.h
 
-		private/src/log_writer_stdout
+		src/log_writer_stdout
 )
 
 install_bundle(log_writer)
-    
-target_link_libraries(log_writer celix_framework)
-    
-include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/log_writer/log_writer/private/include")
+
+target_link_libraries(log_writer PRIVATE Celix::log_service_api log_writer_common)

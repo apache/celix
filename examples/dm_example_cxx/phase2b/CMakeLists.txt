@@ -15,12 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-include_directories(
-        ../phase2/include
-        include
-        ../api
-)
-
 add_bundle(phase2b_cxx
     SYMBOLIC_NAME phase2b_cxx
     VERSION 0.0.1
@@ -28,16 +22,18 @@ add_bundle(phase2b_cxx
         src/Phase2bActivator.cc
         src/Phase2bCmp.cc
 )
+target_link_libraries(phase2b_cxx PRIVATE Celix::log_service_api)
+target_include_directories(phase2b_cxx PRIVATE ../api ../phase2/include)
 
-target_compile_options(phase2b_cxx PUBLIC -Wall -Wextra -Weffc++ -Werror)
+
 
 IF(APPLE)
-    target_link_libraries(phase2b_cxx celix_framework -Wl,-all_load dependency_manager_cxx_static)
+    target_link_libraries(phase2b_cxx PRIVATE  -Wl,-all_load  Celix::dependency_manager_cxx_static)
 else()
     if(ENABLE_ADDRESS_SANITIZER)
         #With asan there can be undefined symbols
-        target_link_libraries(phase2b_cxx -Wl,--whole-archive dependency_manager_cxx_static -Wl,--no-whole-archive celix_framework)
+        target_link_libraries(phase2b_cxx PRIVATE  -Wl,--whole-archive  Celix::dependency_manager_cxx_static -Wl,--no-whole-archive)
     else()
-        target_link_libraries(phase2b_cxx -Wl,--no-undefined -Wl,--whole-archive dependency_manager_cxx_static -Wl,--no-whole-archive celix_framework)
+        target_link_libraries(phase2b_cxx PRIVATE  -Wl,--no-undefined -Wl,--whole-archive  Celix::dependency_manager_cxx_static -Wl,--no-whole-archive)
     endif()
 endif()

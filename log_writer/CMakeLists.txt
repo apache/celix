@@ -17,6 +17,7 @@
 
 celix_subproject(LOG_WRITER "Option to enable building the Log Writer bundles" ON DEPS FRAMEWORK LOG_SERVICE)
 if (LOG_WRITER)
+    add_subdirectory(log_writer)
     add_subdirectory(log_writer_stdout)
   	add_subdirectory(log_writer_syslog) 
 endif (LOG_WRITER)

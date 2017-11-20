@@ -20,14 +20,10 @@ add_bundle(word_consumingdriver
  	VERSION "0.0.1"
  	NAME "Apache Celix Device Access Word Consuming Driver Example"
 	SOURCES
-		private/src/activator
-		private/src/consuming_driver
+		src/activator
+		src/consuming_driver
 )
 
-include_directories(${PROJECT_SOURCE_DIR}/device_access/device_access/public/include)
-include_directories(${PROJECT_SOURCE_DIR}/device_access/example/refining_driver/public/include)
-include_directories(private/include)
-include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
+target_include_directories(word_consumingdriver PRIVATE src)
 
-target_link_libraries(word_consumingdriver celix_utils celix_framework)
+target_link_libraries(word_consumingdriver PRIVATE Celix::device_access_api base_driver char_refiningdriver)

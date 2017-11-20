@@ -36,4 +36,4 @@ add_bundle(event_admin
 
 install_bundle(event_admin)
 
-target_link_libraries(event_admin celix_framework celix_utils)
+target_link_libraries(event_admin Celix::framework)

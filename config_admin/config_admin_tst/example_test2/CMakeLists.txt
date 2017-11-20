@@ -27,4 +27,4 @@ add_bundle(example_test2 SOURCES
     VERSION 0.1.0
 )
 
-target_link_libraries(example_test2 celix_framework celix_utils config_admin)
+target_link_libraries(example_test2 Celix::framework celix_utils config_admin)

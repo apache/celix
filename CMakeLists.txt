@@ -21,26 +21,10 @@ cmake_policy(SET CMP0042 NEW)
 
 project (Celix C CXX)
 
-include(GNUInstallDirs)                                                                                                                                                                             
-
+include(GNUInstallDirs)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
-
-#Setup vars conform the FindCelix setup, so that examples and supporting cmake command can assume these variables are set
-#TODO move this to a seperate cmake file or integrate in the FindCelix.cmake file
-set(CELIX_FOUND true)
-set(CELIX_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/framework/public/include ${CMAKE_SOURCE_DIR}/utils/public/include)
-set(CELIX_LIBRARIES celix_framework celix_utils celix_dfi)
-set(CELIX_LAUNCHER celix)
-set(CELIX_FRAMEWORK_LIBRARY celix_framework)
-set(CELIX_UTILS_LIBRARY celix_utils)
-set(CELIX_DFI_LIBRARY celix_dfi)
-#TODO CELIX_BUNDLES_DIR this will not work, maybe only use var (e.g. ${CELIX_SHELL_BUNDLE}) for bundles
-set(CELIX_DM_LIB dependency_manager_so)
-set(CELIX_DM_STATIC_LIB dependency_manager_static)
-set(CELIX_DM_STATIC_CXX_LIB dependency_manager_cxx_static)
-set(CELIX_PROJECT true) #Note this var is not set by FindCelix and can be used to test if this is the celix project or a project using celix
-
 set(CMAKE_BUILD_TYPE "Debug")
+
 
 # see https://public.kitware.com/Bug/view.php?id=15696
 IF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} EQUAL 3.3 AND ${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
@@ -77,22 +61,25 @@ if (ENABLE_TESTING)
 endif()
 
 
-include(CMakeCelix)
+include(CMakeCelix-local)
 include(UseDoxygen)  
 
 # Default bundle version
 set(DEFAULT_VERSION 1.0.0)
 
+#libraries
 #utils, dfi and etcdlib are standalone
 #(e.g. no dependency on celix framework
 add_subdirectory(utils)
 add_subdirectory(dfi)
 add_subdirectory(etcdlib)
-
 add_subdirectory(framework)
-
 include_directories(framework/public/include)
+
+#launcher
 add_subdirectory(launcher)
+
+#Bundles
 add_subdirectory(config_admin)
 add_subdirectory(device_access)
 add_subdirectory(deployment_admin)
@@ -104,8 +91,8 @@ add_subdirectory(shell)
 add_subdirectory(log_writer)
 add_subdirectory(log_service)
 add_subdirectory(pubsub)
-
 #add_subdirectory(event_admin)# event_admin is unstable
+
 add_subdirectory(dependency_manager)
 add_subdirectory(dependency_manager_cxx)
 

@@ -40,8 +40,8 @@ if (RSA_DISCOVERY_ETCD)
         SYMBOLIC_NAME "apache_celix_rsa_discovery_etcd"
         NAME "Apache Celix RSA Discovery ETCD"
         SOURCES
-		private/src/discovery_impl.c
-	    private/src/etcd_watcher.c
+		src/discovery_impl.c
+	    src/etcd_watcher.c
 		${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/discovery_activator.c
 		${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/discovery.c
 		${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_descriptor_reader.c
@@ -50,12 +50,12 @@ if (RSA_DISCOVERY_ETCD)
 		${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_discovery_server.c
 	    ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c
 	    ${PROJECT_SOURCE_DIR}/remote_services/utils/private/src/civetweb.c
-	    
-	    ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
 	)
+	target_link_libraries(discovery_etcd PRIVATE Celix::log_helper)
+	target_include_directories(discovery_etcd PRIVATE src ../discovery/private/include)
 
 	install_bundle(discovery_etcd)
 		
-	target_link_libraries(discovery_etcd celix_framework etcdlib ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES} ${JANSSON_LIBRARIES})
+	target_link_libraries(discovery_etcd PRIVATE Celix::etcdlib ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES} ${JANSSON_LIBRARIES})
 
 endif (RSA_DISCOVERY_ETCD)

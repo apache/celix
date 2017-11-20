@@ -16,7 +16,9 @@
 # under the License.
 
 
-celix_subproject(CONFIG_ADMIN "Option to enable building the Config Admin Service bundle and its examples" OFF DEPS framework launcher shell_tui log_writer)
+#TODO refactor and improve impl
+#celix_subproject(CONFIG_ADMIN "Option to enable building the Config Admin Service bundle and its examples" OFF DEPS framework launcher shell_tui log_writer)
+set(CONFIG_AMDIN FALSE)
 if (CONFIG_ADMIN)
 
 	add_subdirectory(service)
@@ -49,7 +51,8 @@ if (CONFIG_ADMIN)
        NAME "config_admin"
        BUNDLES 
         config_admin 
-        shell shell_tui 
+        Celix::shell
+	    Celix::shell_tui
         log_service 
         log_writer 
         config_admin_example

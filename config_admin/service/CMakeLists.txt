@@ -34,6 +34,3 @@ add_bundle(config_admin
 	private/src/updated_thread_pool.c
 )
 
-target_link_libraries(config_admin celix_framework celix_utils ${APR_LIBRARY} ${APRUTIL_LIBRARY})
-	
-

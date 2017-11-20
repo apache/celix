@@ -19,10 +19,15 @@ While the shell can be extended with additional commands by other bundles, it al
 
 Further information about a command can be retrieved by using `help` combined with the command.
 
-## Shell Config Options
-
-- SHELL_USE_ANSI_COLORS - Wether shell command are allowed to use
-ANSI colors when printing info. default is true.
-
 ## CMake options
     BUILD_SHELL=ON
+
+## Shell Config Options
+
+- SHELL_USE_ANSI_COLORS - Whether shell command are allowed to use
+ANSI colors when printing info. default is true.
+
+## Using info
+
+If the Celix Shell is installed The `FindCelix.cmake` will set:
+ - The `Celix::dependency_manager_cxx_static` library target
