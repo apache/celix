@@ -47,4 +47,4 @@ bundle_files(org.apache.celix.pubsub_publisher.MpPublisher
     DESTINATION "META-INF/keys/subscriber"
 )
 
-target_link_libraries(org.apache.celix.pubsub_publisher.MpPublisher celix_framework celix_utils)
+target_link_libraries(org.apache.celix.pubsub_publisher.MpPublisher PRIVATE Celix::framework)

@@ -15,25 +15,19 @@
 # specific language governing permissions and limitations
 # under the License.
 
-include_directories(
-        private/include
-)
 
-add_bundle(bar
-    SYMBOLIC_NAME bar
-    VERSION 1.0.0
-    SOURCES
-        private/src/bar_activator
-        private/src/bar.c
-)
+find_package(LibXml2 REQUIRED)
 
-IF(APPLE)
-    target_link_libraries(bar PRIVATE Celix::framework  -Wl,-all_load dependency_manager_static)
-else()
-    if(ENABLE_ADDRESS_SANITIZER)
-        #With asan there can be undefined symbols
-        target_link_libraries(bar PRIVATE -Wl,--whole-archive dependency_manager_static -Wl,--no-whole-archive Celix::framework )
-    else()
-        target_link_libraries(bar PRIVATE -Wl,--no-undefined -Wl,--whole-archive dependency_manager_static -Wl,--no-whole-archive Celix::framework )
-    endif()
-endif()
+add_library(discovery_common STATIC
+		src/discovery.c
+		src/discovery_activator.c
+		src/endpoint_descriptor_reader.c
+		src/endpoint_descriptor_writer.c
+		src/endpoint_discovery_poller.c
+		src/endpoint_discovery_server.c
+        src/civetweb.c
+)
+target_include_directories(discovery_common PUBLIC include)
+target_include_directories(discovery_common PRIVATE src ${LIBXML2_INCLUDE_DIR})
+target_link_libraries(discovery_common PRIVATE ${LIBXML2_LIBRARIES} Celix::framework)
+target_link_libraries(discovery_common PUBLIC Celix::log_helper Celix::remote_service_admin_api)

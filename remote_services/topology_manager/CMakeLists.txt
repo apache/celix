@@ -16,27 +16,19 @@
 # under the License.
 celix_subproject(RSA_TOPOLOGY_MANAGER "Option to enable building the Remote Service Admin Service SHM bundle" ON DEPS REMOTE_SERVICE_ADMIN_DFI)
 if (RSA_TOPOLOGY_MANAGER)
-    include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-    include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include")
-    include_directories("${PROJECT_SOURCE_DIR}/remote_services/topology_manager/private/include")
-    include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
-    include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
-    include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
-    include_directories("${PROJECT_SOURCE_DIR}/remote_services/topology_manager/public/include")
 
-    add_bundle(topology_manager SOURCES
-        private/src/topology_manager
-        private/src/scope
-        private/src/activator
-
-        private/include/topology_manager.h
-        public/include/tm_scope.h
+    add_bundle(topology_manager
+        SOURCES
+            src/topology_manager
+            src/scope
+            src/activator
         VERSION 0.9.0
         SYMBOLIC_NAME "apache_celix_rs_topology_manager"
-        NAME
-            "Apache Celix RS Topology Manager"
+        NAME "Apache Celix RS Topology Manager"
     )
-    target_link_libraries(topology_manager PRIVATE Celix::log_helper)
+    target_include_directories(topology_manager PRIVATE src)
+    target_include_directories(topology_manager PUBLIC include)
+    target_link_libraries(topology_manager PRIVATE Celix::log_helper remote_service_admin_api)
 
     install_bundle(topology_manager)
 

@@ -52,4 +52,4 @@ bundle_files(org.apache.celix.pubsub_subscriber.PoiSubscriber
     DESTINATION "META-INF/keys/publisher"
 )
 
-target_link_libraries(org.apache.celix.pubsub_subscriber.PoiSubscriber celix_framework celix_utils)
+target_link_libraries(org.apache.celix.pubsub_subscriber.PoiSubscriber PRIVATE Celix::framework)

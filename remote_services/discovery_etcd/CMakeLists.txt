@@ -20,42 +20,19 @@ if (RSA_DISCOVERY_ETCD)
 	find_package(CURL REQUIRED)
 	find_package(LibXml2 REQUIRED)
 	find_package(Jansson REQUIRED)
-	
-	include_directories("${CURL_INCLUDE_DIR}")
-	include_directories("${JANSSON_INCLUDE_DIR}")
-	include_directories("${LIBXML2_INCLUDE_DIR}")
-	include_directories("${PROJECT_SOURCE_DIR}/etcdlib/public/include")
-	include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-	include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/private/include")
-	include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include")
-	include_directories("${PROJECT_SOURCE_DIR}/remote_services/discovery/private/include")
-	include_directories("${PROJECT_SOURCE_DIR}/remote_services/discovery_etcd/private/include")
-	include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
-	include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
-	include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
-	include_directories("private/include")
     
 	add_bundle(discovery_etcd 
         VERSION 0.9.0
         SYMBOLIC_NAME "apache_celix_rsa_discovery_etcd"
         NAME "Apache Celix RSA Discovery ETCD"
         SOURCES
-		src/discovery_impl.c
-	    src/etcd_watcher.c
-		${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/discovery_activator.c
-		${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/discovery.c
-		${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_descriptor_reader.c
-		${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_descriptor_writer.c
-		${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_discovery_poller.c
-		${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_discovery_server.c
-	    ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c
-	    ${PROJECT_SOURCE_DIR}/remote_services/utils/private/src/civetweb.c
+			src/discovery_impl.c
+	    	src/etcd_watcher.c
 	)
 	target_link_libraries(discovery_etcd PRIVATE Celix::log_helper)
-	target_include_directories(discovery_etcd PRIVATE src ../discovery/private/include)
+	target_include_directories(discovery_etcd PRIVATE src )
+	target_include_directories(discovery_etcd PRIVATE ${CURL_INCLUDE_DIR} ${JANSSON_INCLUDE_DIR} ${LIBXML2_INCLUDE_DIR})
+	target_link_libraries(discovery_etcd PRIVATE ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES} ${JANSSON_LIBRARIES} discovery_common)
 
 	install_bundle(discovery_etcd)
-		
-	target_link_libraries(discovery_etcd PRIVATE Celix::etcdlib ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES} ${JANSSON_LIBRARIES})
-
 endif (RSA_DISCOVERY_ETCD)

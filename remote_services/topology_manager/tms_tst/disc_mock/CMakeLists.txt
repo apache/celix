@@ -15,14 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-include_directories(
-        ${CPPUTEST_INCLUDE_DIR}
-        ${PROJECT_SOURCE_DIR}/framework/public/include
-        ${PROJECT_SOURCE_DIR}/utils/public/include
-        ${PROJECT_SOURCE_DIR}/remote_services/discovery/private/include
-)
-
-
 add_bundle(topology_manager_disc_mock_bundle
     VERSION 0.0.1
     SOURCES
@@ -30,4 +22,5 @@ add_bundle(topology_manager_disc_mock_bundle
         disc_mock_service.c
 
 )
-target_link_libraries(topology_manager_disc_mock_bundle PRIVATE ${CPPUTEST_LIBRARY} Celix::framework)
+target_include_directories(topology_manager_disc_mock_bundle PRIVATE ${CPPUTEST_INCLUDE_DIR})
+target_link_libraries(topology_manager_disc_mock_bundle PRIVATE ${CPPUTEST_LIBRARY} Celix::framework discovery_common)

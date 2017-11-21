@@ -30,4 +30,5 @@ ANSI colors when printing info. default is true.
 ## Using info
 
 If the Celix Shell is installed The `FindCelix.cmake` will set:
- - The `Celix::dependency_manager_cxx_static` library target
+ - The `Celix::shell_api` interface (i.e. header only) library target
+ - The `Celix::shell` bundle target

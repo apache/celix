@@ -39,7 +39,7 @@ if (SHELL)
           src/help_command
 	)
 	target_include_directories(shell PRIVATE src ${CURL_INCLUDE_DIRS})
-	target_link_libraries(shell PRIVATE Celix::shell_api ${CURL_LIBRARIES} Celix::log_service_api log_helper)
+	target_link_libraries(shell PRIVATE Celix::shell_api ${CURL_LIBRARIES} Celix::log_service_api Celix::log_helper)
 
 	install_bundle(shell
     	HEADERS

@@ -15,14 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-include_directories(
-        ${CPPUTEST_INCLUDE_DIR}
-        ${PROJECT_SOURCE_DIR}/framework/public/include
-        ${PROJECT_SOURCE_DIR}/utils/public/include
-        ${PROJECT_SOURCE_DIR}/remote_services/examples/calculator_service/public/include
-)
-
-
 add_bundle(rsa_dfi_tst_bundle
     VERSION 0.0.1
     SOURCES
@@ -30,8 +22,8 @@ add_bundle(rsa_dfi_tst_bundle
 )
 
 bundle_files(rsa_dfi_tst_bundle
-    ${PROJECT_SOURCE_DIR}/remote_services/examples/calculator_service/public/include/org.apache.celix.calc.api.Calculator2.descriptor
+    ${PROJECT_SOURCE_DIR}/remote_services/examples/calculator_api/include/org.apache.celix.calc.api.Calculator2.descriptor
     DESTINATION .
 )
-
-target_link_libraries(rsa_dfi_tst_bundle PRIVATE ${CPPUTEST_LIBRARY} )
+target_include_directories(rsa_dfi_tst_bundle PRIVATE calculator)
+target_link_libraries(rsa_dfi_tst_bundle PRIVATE ${CPPUTEST_LIBRARY} calculator_api)

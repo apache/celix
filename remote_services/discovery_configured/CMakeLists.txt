@@ -19,39 +19,19 @@ if (RSA_DISCOVERY_CONFIGURED)
     find_package(CURL REQUIRED)
     find_package(LibXml2 REQUIRED)
 
-    include_directories("${CURL_INCLUDE_DIR}")
-    include_directories("${LIBXML2_INCLUDE_DIR}")
-    include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-    include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/private/include")
-    include_directories("${PROJECT_SOURCE_DIR}/remote_services/utils/public/include")
-    include_directories("${PROJECT_SOURCE_DIR}/remote_services/discovery/private/include")
-    include_directories("${PROJECT_SOURCE_DIR}/remote_services/discovery_configured/private/include")
-    include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
-    include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
-    include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
-    include_directories(private/include)
-
     add_bundle(discovery_configured 
-    VERSION 0.9.0
-    SYMBOLIC_NAME "apache_celix_rsa_discovery_configured"
-    NAME "Apache Celix RSA Configured Discovery"    
-    SOURCES
-
-	private/src/discovery_impl.c
-	${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/discovery_activator.c
-	${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/discovery.c
-	${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_descriptor_reader.c
-	${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_descriptor_writer.c
-	${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_discovery_poller.c
-	${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_discovery_server.c
-	${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c
-	${PROJECT_SOURCE_DIR}/remote_services/utils/private/src/civetweb.c
+        VERSION 0.9.0
+        SYMBOLIC_NAME "apache_celix_rsa_discovery_configured"
+        NAME "Apache Celix RSA Configured Discovery"
+        SOURCES
+	        src/discovery_impl.c
     )
-    target_link_libraries(discovery_configured PRIVATE Celix::log_helper)
+    target_include_directories(discovery_configured PRIVATE src)
+    target_link_libraries(discovery_configured PRIVATE ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES} Celix::log_helper discovery_common)
 
     install_bundle(discovery_configured)
 
-    target_link_libraries(discovery_configured PRIVATE ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES})
+
 
     if (RSA_ENDPOINT_TEST_READER)
         add_executable(descparser

@@ -371,7 +371,7 @@ function(bundle_import_libs)
             list(APPEND LIBS "$<TARGET_SONAME_FILE_NAME:${LIB}>")
         endif()
 
-        target_link_libraries(${BUNDLE} ${LIB})
+        target_link_libraries(${BUNDLE} PRIVATE ${LIB})
     endforeach()
 
 

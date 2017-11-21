@@ -31,7 +31,7 @@ add_bundle(pubsub_sut
         test/sut_activator.c
     VERSION 1.0.0
 )
-target_link_libraries(pubsub_sut celix_framework celix_utils)
+target_link_libraries(pubsub_sut PRIVATE Celix::framework)
 bundle_files(pubsub_sut
     msg_descriptors/msg.descriptor
     msg_descriptors/sync.descriptor
@@ -66,9 +66,9 @@ add_bundle(pubsub_tst
 )
 if (APPLE)
     #Note that the launcher celix_test_runner is linked with CppuTest, not the bundle libs. Default libCppUTest.a is not compiled for relocation 
-    target_link_libraries(pubsub_tst celix_framework celix_utils -Wl,-undefined -Wl,dynamic_lookup)
+    target_link_libraries(pubsub_tst PRIVATE Celix::framework -Wl,-undefined -Wl,dynamic_lookup)
 else ()
-    target_link_libraries(pubsub_tst celix_framework celix_utils)
+    target_link_libraries(pubsub_tst PRIVATE Celix::framework)
 endif ()
 
 bundle_files(pubsub_tst

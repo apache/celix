@@ -15,33 +15,20 @@
 # specific language governing permissions and limitations
 # under the License.
 
-include_directories(
-    private/include
-    ${PROJECT_SOURCE_DIR}/utils/public/include
-    ${PROJECT_SOURCE_DIR}/log_service/public/include
-    ${PROJECT_SOURCE_DIR}/remote_services/utils/private/include
-    ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include
-    ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/include
-    ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin_http/private/include
-    ${PROJECT_SOURCE_DIR}/dfi/public/include
-    ${PROJECT_SOURCE_DIR}/remote_services/examples/calculator_service/public/include
-)
-
 add_bundle(remote_service_admin_dfi 
     VERSION 0.9.0
     SYMBOLIC_NAME "apache_celix_remote_service_admin_dfi"
     NAME "Apache Celix Remote Service Admin Dynamic Function Interface (DFI)"
     SOURCES
-    private/src/remote_service_admin_dfi.c
-    private/src/remote_service_admin_activator.c
-    private/src/export_registration_dfi.c
-    private/src/import_registration_dfi.c
-    private/src/dfi_utils.c
-
-    ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c
-
-    ${PROJECT_SOURCE_DIR}/remote_services/utils/private/src/civetweb.c
+        src/remote_service_admin_dfi.c
+        src/remote_service_admin_activator.c
+        src/export_registration_dfi.c
+        src/import_registration_dfi.c
+        src/dfi_utils.c
 )
-target_link_libraries(remote_service_admin_dfi PRIVATE Celix::dfi Celix::log_helper ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
+target_include_directories(remote_service_admin_dfi PRIVATE src)
+target_link_libraries(remote_service_admin_dfi PRIVATE
+        Celix::dfi Celix::log_helper remote_service_admin_common
+        ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
 
 install_bundle(remote_service_admin_dfi)

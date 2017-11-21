@@ -17,32 +17,28 @@
 
 find_package(Jansson REQUIRED)
 
-include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/dfi/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/pubsub/api/pubsub")
-include_directories("private/include")
-include_directories("public/include")
-include_directories("${JANSSON_INCLUDE_DIR}")
-
 add_bundle(org.apache.celix.pubsub_admin.PubSubAdminUdpMc
 	BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_udp_multicast"
 	VERSION "1.0.0"
 	SOURCES
-		private/src/psa_activator.c
-		private/src/pubsub_admin_impl.c
-		private/src/topic_subscription.c
-		private/src/topic_publication.c
-		private/src/large_udp.c
-	   ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
+        src/psa_activator.c
+        src/pubsub_admin_impl.c
+        src/topic_subscription.c
+        src/topic_publication.c
+        src/large_udp.c
 		${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_endpoint.c
 		${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_admin_match.c
 		${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_utils.c
 )
 
+
+target_include_directories(org.apache.celix.pubsub_admin.PubSubAdminUdpMc PRIVATE
+		src
+		${JANSSON_INCLUDE_DIR}
+)
+
 set_target_properties(org.apache.celix.pubsub_admin.PubSubAdminUdpMc PROPERTIES INSTALL_RPATH "$ORIGIN")
-target_link_libraries(org.apache.celix.pubsub_admin.PubSubAdminUdpMc celix_framework celix_utils celix_dfi)
+target_link_libraries(org.apache.celix.pubsub_admin.PubSubAdminUdpMc PRIVATE Celix::framework Celix::dfi Celix::log_helper)
 
 install_bundle(org.apache.celix.pubsub_admin.PubSubAdminUdpMc)
 

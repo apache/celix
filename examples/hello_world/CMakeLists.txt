@@ -32,7 +32,7 @@ add_library(hello_test2lib SHARED
 )
 set_library_version(hello_test2lib "3.3.3")
 
-add_bundle(hello
+add_bundle(hello_bundle
     VERSION "1.2"
     SOURCES
         private/src/activator.c
@@ -45,19 +45,19 @@ add_bundle(hello_export
     EXPORT_LIBRARIES hello_test2lib
 )
 
-bundle_private_libs(hello
+bundle_private_libs(hello_bundle
     hello_testlib
 )
 
 add_deploy(helloworld_byref
     GROUP hello
-    BUNDLES hello_export hello ${CELIX_SHELL_BUNDLE} ${CELIX_SHELL_TUI_BUNDLE}
+    BUNDLES hello_export hello_bundle ${CELIX_SHELL_BUNDLE} ${CELIX_SHELL_TUI_BUNDLE}
 )
 
 add_deploy(helloworld_withcopy
     GROUP hello
     COPY #Ensures that bundles are copied in the deploy location
-    BUNDLES hello_export hello ${SHELL_BUNDLE} ${SHELL_TUI_BUNDLE}
+    BUNDLES hello_export hello_bundle ${SHELL_BUNDLE} ${SHELL_TUI_BUNDLE}
 )
 
 endif()

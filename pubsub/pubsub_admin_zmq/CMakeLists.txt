@@ -50,14 +50,15 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	    	private/src/topic_subscription.c
 	    	private/src/topic_publication.c
 	    	${ZMQ_CRYPTO_C}
-	    	${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
 	    	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_endpoint.c
 	    	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_utils.c
     	   ${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_admin_match.c
 	)
 
 	set_target_properties(org.apache.celix.pubsub_admin.PubSubAdminZmq PROPERTIES INSTALL_RPATH "$ORIGIN")
-	target_link_libraries(org.apache.celix.pubsub_admin.PubSubAdminZmq celix_framework celix_utils celix_dfi ${ZMQ_LIBRARIES} ${CZMQ_LIBRARIES} ${OPENSSL_CRYPTO_LIBRARY})
+	target_link_libraries(org.apache.celix.pubsub_admin.PubSubAdminZmq PRIVATE
+			Celix::framework Celix::dfi Celix::log_helper
+			${ZMQ_LIBRARIES} ${CZMQ_LIBRARIES} ${OPENSSL_CRYPTO_LIBRARY})
 	install_bundle(org.apache.celix.pubsub_admin.PubSubAdminZmq)
 
 endif()

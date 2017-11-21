@@ -19,5 +19,9 @@ celix_subproject(LOG_WRITER "Option to enable building the Log Writer bundles" O
 if (LOG_WRITER)
     add_subdirectory(log_writer)
     add_subdirectory(log_writer_stdout)
-  	add_subdirectory(log_writer_syslog) 
+  	add_subdirectory(log_writer_syslog)
+
+    #Setup target aliases to match external usage
+    add_library(Celix::log_writer_stdout ALIAS log_writer_stdout)
+    add_library(Celix::log_writer_syslog ALIAS log_writer_syslog)
 endif (LOG_WRITER)

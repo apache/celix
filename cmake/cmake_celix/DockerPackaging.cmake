@@ -116,22 +116,16 @@ function(add_celix_docker)
         DEPENDS ${TIMESTAMP_FILE}
     )
 
-    #Setting CELIX_LIB_DIRS, CELIX_BIN_DIR and CELIX_LAUNCHER 
-    if (EXISTS ${CELIX_FRAMEWORK_LIBRARY}) 
-        #CELIX_FRAMEWORK_LIBRARY set by FindCelix.cmake -> Celix Based Project
-        #CELIX_LAUNCHER is set by FindCelix.cmake
-    else()
-        set(CELIX_LAUNCHER "$<TARGET_FILE:celix>")
-    endif()
+    set(CELIX_LAUNCHER "$<TARGET_FILE:Celix::launcher>")
 
     #setup dependencies based on timestamp
     if (DOCKER_CREATE_FS)
         add_custom_command(OUTPUT "${TIMESTAMP_FILE}"
             COMMAND ${CMAKE_COMMAND} -E touch ${TIMESTAMP_FILE}
-	    COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOC>
-	    COMMAND cd $<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOC> && /bin/bash ${CELIX_CMAKE_DIRECTORY}/cmake_celix/create_target_filesystem.sh -e ${CELIX_LAUNCHER} -l $<TARGET_FILE:${DOCKER_DEPSLIB}> > /dev/null
+            COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOC>
+            COMMAND cd $<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOC> && /bin/bash ${CELIX_CMAKE_DIRECTORY}/cmake_celix/create_target_filesystem.sh -e ${CELIX_LAUNCHER} -l $<TARGET_FILE:${DOCKER_DEPSLIB}> > /dev/null
             DEPENDS  "$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_DEPS>" ${DOCKERFILE} ${DOCKER_DEPSLIB}
-	    WORKING_DIRECTORY "${DOCKER_LOC}"
+            WORKING_DIRECTORY "${DOCKER_LOC}"
             COMMENT "Creating docker dir for ${DOCKER_TARGET}" VERBATIM
         )
     else ()
@@ -248,7 +242,8 @@ function(celix_docker_bundles)
                     COMMENT "Copying bundle '${BUNDLE}' to '${OUT}'"
                     DEPENDS ${BUNDLE}
             )
-            add_dependencies(${DOCKER_TARGET} ${BUNDLE}_bundle) #ensure the the deploy depends on the _bundle target, custom_command depends on add_library
+            get_target_property(BUILD_BUNDLE_TARGET ${BUNDLE} BUNDLE_BUILD_BUNDLE_TARGET)
+            add_dependencies(${DOCKER_TARGET} ${BUILD_BUNDLE_TARGET}) #ensure the the deploy depends on the _bundle target, custom_command depends on add_library
         endif()
         list(APPEND DEPS "${OUT}")
     endforeach()

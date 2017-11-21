@@ -23,10 +23,6 @@ if (LOG_WRITER_SYSLOG)
         SYMBOLIC_NAME "apache_celix_log_writer_syslog"
         NAME "Apache Celix Log Writer Syslog"
         SOURCES
-
-            #${PROJECT_SOURCE_DIR}/log_writer/log_writer/private/src/log_writer_activator
-            #${PROJECT_SOURCE_DIR}/log_writer/log_writer/private/src/log_writer
-            #${PROJECT_SOURCE_DIR}/log_writer/log_writer/private/include/log_writer.h
             private/src/log_writer_syslog
     )
 

@@ -43,7 +43,7 @@ if (PUBSUB)
 	endif()
 
 	#api target
-	add_libary(pubsub_api INTERFACE)
+	add_library(pubsub_api INTERFACE)
 	target_include_directories(pubsub_api INTERFACE api)
 
 	#install api

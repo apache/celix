@@ -57,7 +57,7 @@ if (DEPLOYMENT_ADMIN)
     add_library(Celix::deployment_admin ALIAS deployment_admin)
 
     add_deploy(deployment-admin
-        BUNDLES Celix::deployment_admin Celix::shell Celix::shell_tui log_service log_writer
+        BUNDLES Celix::deployment_admin Celix::shell Celix::shell_tui Celix::log_service Celix::log_writer_stdout
         PROPERTIES
     		"deployment_admin_url=http://localhost:8080"
     		"deployment_admin_identification=celix"

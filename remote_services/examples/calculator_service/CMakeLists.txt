@@ -15,21 +15,15 @@
 # specific language governing permissions and limitations
 # under the License.
 
-include_directories("../../../utils/public/include")
-include_directories("../../utils/public/include")
-include_directories("../../remote_service_admin/public/include")
-include_directories("private/include")
-include_directories("public/include")
-
-add_bundle(calculator SOURCES
-	private/src/calculator_impl
-	private/src/calculator_activator
-    
-    private/include/calculator_impl.h
-
+add_bundle(calculator
+	SOURCES
+		src/calculator_impl
+		src/calculator_activator
     SYMBOLIC_NAME "apache_celix_remoting_calculator_impl"
     VERSION 0.0.1
 )
+target_include_directories(calculator PRIVATE src)
+target_link_libraries(calculator PRIVATE Celix::remote_service_admin_api calculator_api)
 
-bundle_files(calculator public/include/org.apache.celix.calc.api.Calculator2.descriptor
-    DESTINATION .)
+get_target_property(DESCR calculator_api INTERFACE_CALCULATOR_DESCRIPTOR)
+bundle_files(calculator ${DESCR} DESTINATION .)

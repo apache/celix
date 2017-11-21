@@ -165,7 +165,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	add_deploy("pubsub_mp_subscriber_zmq"
 	    GROUP "pubsub"
 	    BUNDLES
-			Celix::hell
+			Celix::shell
 			Celix::shell_tui
 	       	org.apache.celix.pubsub_serializer.PubSubSerializerJson
 	       	org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery

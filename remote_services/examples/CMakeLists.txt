@@ -17,6 +17,7 @@
 
 celix_subproject(RSA_EXAMPLES "Option to enable building the RSA examples" ON DEPS LAUNCHER shell_tui log_writer RSA_TOPOLOGY_MANAGER)
 if (RSA_EXAMPLES)
+    add_subdirectory(calculator_api)
     add_subdirectory(calculator_service)
     add_subdirectory(calculator_shell)
 
@@ -47,13 +48,13 @@ if (RSA_EXAMPLES)
         add_deploy(remote-services-dfi 
             NAME "server"
             GROUP "remote-services/remote-services-dfi"
-            BUNDLES discovery_etcd topology_manager remote_service_admin_dfi calculator Celix::shell Celix::shell_tui log_service log_writer
+            BUNDLES discovery_etcd topology_manager remote_service_admin_dfi calculator Celix::shell Celix::shell_tui Celix::log_service Celix::log_writer_stdout
         )
 
         add_deploy("remote-services-dfi-client" 
             NAME "client"
             GROUP "remote-services/remote-services-dfi"
-            BUNDLES topology_manager remote_service_admin_dfi Celix::shell Celix::shell_tui log_service log_writer calculator_shell discovery_etcd
+            BUNDLES topology_manager remote_service_admin_dfi Celix::shell Celix::shell_tui Celix::log_service Celix::log_writer_stdout calculator_shell discovery_etcd
         )
     endif ()
 endif (RSA_EXAMPLES)

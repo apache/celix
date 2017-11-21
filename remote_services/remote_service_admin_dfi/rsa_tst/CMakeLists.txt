@@ -31,10 +31,8 @@ add_executable(test_rsa_dfi
     run_tests.cpp
     rsa_tests.cpp
     rsa_client_server_tests.cpp
-
-    ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c
 )
-target_link_libraries(test_rsa_dfi Celix::framework ${CURL_LIBRARIES} ${CPPUTEST_LIBRARY})
+target_link_libraries(test_rsa_dfi PRIVATE Celix::framework ${CURL_LIBRARIES} ${CPPUTEST_LIBRARY} remote_service_admin_common)
 
 get_property(rsa_bundle_file TARGET remote_service_admin_dfi PROPERTY BUNDLE_FILE)
 get_property(calc_bundle_file TARGET calculator PROPERTY BUNDLE_FILE)

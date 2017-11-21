@@ -36,10 +36,8 @@ SET(CMAKE_INSTALL_RPATH "${PROJECT_BINARY_DIR}/framework" "${PROJECT_BINARY_DIR}
 add_executable(test_tm_scoped
     run_tests.cpp
     tms_tests.cpp
-    
-   ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c
 )
-target_link_libraries(test_tm_scoped Celix::framework ${CPPUTEST_LIBRARY} ${JANSSON_LIBRARY} Celix::log_helper)
+target_link_libraries(test_tm_scoped Celix::framework ${CPPUTEST_LIBRARY} ${JANSSON_LIBRARY} Celix::log_helper remote_service_admin_common)
 
 add_dependencies(test_tm_scoped remote_service_admin_dfi topology_manager calculator)
 

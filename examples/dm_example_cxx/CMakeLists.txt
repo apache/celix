@@ -36,9 +36,9 @@ if (BUILD_DEPENDENCY_MANAGER_CXX)
         BUNDLES
             Celix::shell
             Celix::shell_tui
-            dm_shell
-            log_service
-            log_writer
+            Celix::dm_shell
+            Celix::log_service
+            Celix::log_writer_stdout
 
             phase1_cxx
             phase2a_cxx
@@ -55,11 +55,11 @@ if (BUILD_DEPENDENCY_MANAGER_CXX)
             BUNDLES_DIR /usr/share/bundles
             WORKDIR /workspace
             BUNDLES
-                celix_shell
-                shell_tui
-                dm_shell
-                log_service
-                log_writer
+                Celix::shell
+                Celix::shell_tui
+                Celix::dm_shell
+                Celix::log_service
+                Celix::log_writer_stdout
 
                 phase1_cxx
                 phase2a_cxx
