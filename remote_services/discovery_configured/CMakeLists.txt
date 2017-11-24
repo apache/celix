@@ -33,7 +33,7 @@ if (RSA_DISCOVERY_CONFIGURED)
             $<TARGET_PROPERTY:Celix::rsa_discovery_common,INCLUDE_DIRECTORIES>
             $<TARGET_PROPERTY:Celix::civetweb,INCLUDE_DIRECTORIES>
     )
-    target_link_libraries(rsa_discovery_configured PRIVATE ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES} Celix::log_helper)
+    target_link_libraries(rsa_discovery_configured PRIVATE ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES} Celix::log_helper Celix::rsa_common)
 
     install_bundle(rsa_discovery_configured)
 
