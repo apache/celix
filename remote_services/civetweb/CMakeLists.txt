@@ -15,20 +15,9 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_bundle(remote_service_admin_dfi 
-    VERSION 0.9.0
-    SYMBOLIC_NAME "apache_celix_remote_service_admin_dfi"
-    NAME "Apache Celix Remote Service Admin Dynamic Function Interface (DFI)"
-    SOURCES
-        src/remote_service_admin_dfi.c
-        src/remote_service_admin_activator.c
-        src/export_registration_dfi.c
-        src/import_registration_dfi.c
-        src/dfi_utils.c
-)
-target_include_directories(remote_service_admin_dfi PRIVATE src)
-target_link_libraries(remote_service_admin_dfi PRIVATE
-        Celix::dfi Celix::log_helper remote_service_admin_common
-        ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
 
-install_bundle(remote_service_admin_dfi)
+add_library(civetweb OBJECT
+		src/civetweb.c
+		src/md5.inl
+)
+target_include_directories(civetweb PUBLIC include)

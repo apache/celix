@@ -36,14 +36,10 @@
 #include <jansson.h>
 #include "json_serializer.h"
 #include "remote_service_admin.h"
-#include "celix_threads.h"
-#include "hash_map.h"
-#include "array_list.h"
 
 #include "import_registration_dfi.h"
 #include "export_registration_dfi.h"
 #include "remote_service_admin_dfi.h"
-#include "dyn_interface.h"
 #include "json_rpc.h"
 
 #include "remote_constants.h"
@@ -389,7 +385,7 @@ celix_status_t remoteServiceAdmin_exportService(remote_service_admin_pt admin, c
 
     status = bundleContext_getServiceReferences(admin->context, NULL, filter, &references);
 
-    logHelper_log(admin->loghelper, OSGI_LOGSERVICE_ERROR, "RSA: exportService called for serviceId %s", serviceId);
+    logHelper_log(admin->loghelper, OSGI_LOGSERVICE_DEBUG, "RSA: exportService called for serviceId %s", serviceId);
 
     int i;
     int size = arrayList_size(references);

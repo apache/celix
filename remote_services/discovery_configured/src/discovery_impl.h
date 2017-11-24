@@ -44,19 +44,19 @@
 #define DEFAULT_POLL_ENDPOINTS "http://localhost:9999/org.apache.celix.discovery.configured"
 
 
-struct discovery {
-	bundle_context_pt context;
-
-	celix_thread_mutex_t listenerReferencesMutex;
-	celix_thread_mutex_t discoveredServicesMutex;
-
-	hash_map_pt listenerReferences; //key=serviceReference, value=nop
-	hash_map_pt discoveredServices; //key=endpointId (string), value=endpoint_description_pt
-
-	endpoint_discovery_poller_pt poller;
-	endpoint_discovery_server_pt server;
-
-	log_helper_pt loghelper;
-};
+//struct discovery_impl {
+//	bundle_context_pt context;
+//
+//	celix_thread_mutex_t listenerReferencesMutex;
+//	celix_thread_mutex_t discoveredServicesMutex;
+//
+//	hash_map_pt listenerReferences; //key=serviceReference, value=nop
+//	hash_map_pt discoveredServices; //key=endpointId (string), value=endpoint_description_pt
+//
+//	endpoint_discovery_poller_pt poller;
+//	endpoint_discovery_server_pt server;
+//
+//	log_helper_pt loghelper;
+//};
 
 #endif /* DISCOVERY_IMPL_H_ */

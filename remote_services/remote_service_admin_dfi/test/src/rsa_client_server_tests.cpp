@@ -22,7 +22,7 @@
 #include <constants.h>
 #include <tst_service.h>
 #include "CppUTest/CommandLineTestRunner.h"
-#include "../../examples/calculator_service/public/include/calculator_service.h"
+#include "calculator_service.h"
 
 extern "C" {
 

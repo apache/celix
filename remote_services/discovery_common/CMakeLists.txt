@@ -18,16 +18,22 @@
 
 find_package(LibXml2 REQUIRED)
 
-add_library(discovery_common STATIC
+add_library(discovery_common OBJECT
 		src/discovery.c
 		src/discovery_activator.c
 		src/endpoint_descriptor_reader.c
 		src/endpoint_descriptor_writer.c
 		src/endpoint_discovery_poller.c
 		src/endpoint_discovery_server.c
-        src/civetweb.c
 )
-target_include_directories(discovery_common PUBLIC include)
-target_include_directories(discovery_common PRIVATE src ${LIBXML2_INCLUDE_DIR})
-target_link_libraries(discovery_common PRIVATE ${LIBXML2_LIBRARIES} Celix::framework)
-target_link_libraries(discovery_common PUBLIC Celix::log_helper Celix::remote_service_admin_api)
+target_include_directories(discovery_common PUBLIC
+		include src
+		$<TARGET_PROPERTY:Celix::framework,INTERFACE_INCLUDE_DIRECTORIES>
+		$<TARGET_PROPERTY:Celix::utils,INTERFACE_INCLUDE_DIRECTORIES>
+		$<TARGET_PROPERTY:Celix::log_helper,INTERFACE_INCLUDE_DIRECTORIES>
+		$<TARGET_PROPERTY:Celix::remote_service_admin_api,INTERFACE_INCLUDE_DIRECTORIES>
+		$<TARGET_PROPERTY:Celix::remote_service_admin_api,INTERFACE_INCLUDE_DIRECTORIES>
+		$<TARGET_PROPERTY:civetweb,INCLUDE_DIRECTORIES>
+		${LIBXML2_INCLUDE_DIR})
+
+add_library(Celix::discovery_common ALIAS discovery_common)

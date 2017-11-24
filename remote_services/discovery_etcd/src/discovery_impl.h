@@ -47,20 +47,8 @@
 
 #define FREE_MEM(ptr) if(ptr) {free(ptr); ptr = NULL;}
 
-struct discovery {
-	bundle_context_pt context;
-
-	celix_thread_mutex_t listenerReferencesMutex;
-	celix_thread_mutex_t discoveredServicesMutex;
-
-	hash_map_pt listenerReferences; //key=serviceReference, value=nop
-	hash_map_pt discoveredServices; //key=endpointId (string), value=endpoint_description_pt
-
-	etcd_watcher_pt watcher;
-	endpoint_discovery_poller_pt poller;
-	endpoint_discovery_server_pt server;
-
-	log_helper_pt loghelper;
+struct discovery_impl {
+    etcd_watcher_t* watcher;
 };
 
 #endif /* DISCOVERY_H_ */

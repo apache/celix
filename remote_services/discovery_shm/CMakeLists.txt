@@ -28,13 +28,17 @@ find_package(CURL REQUIRED)
 			src/discovery_shm.c
 			src/discovery_shmWatcher.c
 			src/discovery_impl.c
+			$<TARGET_OBJECTS:discovery_common>
+			$<TARGET_OBJECTS:civetweb>
 	)
 	target_include_directories(discovery_shm PRIVATE
 			src
 			${LIBXML2_INCLUDE_DIR}
 			${CURL_INCLUDE_DIR}
+			$<TARGET_PROPERTY:discovery_common,INCLUDE_DIRECTORIES>
+			$<TARGET_PROPERTY:civetweb,INCLUDE_DIRECTORIES>
 	)
-	target_link_libraries(discovery_shm PRIVATE Celix::framework ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES} discovery_common)
+	target_link_libraries(discovery_shm PRIVATE Celix::framework ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES})
 
 	install_bundle(discovery_shm)
 		

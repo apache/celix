@@ -15,24 +15,30 @@
 # specific language governing permissions and limitations
 # under the License.
 
-include_directories(
-    ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include
-    ${PROJECT_SOURCE_DIR}/remote_services/examples/calculator_service/public/include
-    bundle
+find_package(CppUTest REQUIRED)
+include_directories(${CPPUTEST_INCLUDE_DIR})
+
+add_bundle(rsa_dfi_tst_bundle
+    VERSION 0.0.1
+    SOURCES
+        src/tst_activator.c
 )
-
-add_subdirectory(bundle)
-
-SET(CMAKE_SKIP_BUILD_RPATH  FALSE) #TODO needed?
-SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE) #TODO needed?
-SET(CMAKE_INSTALL_RPATH "${PROJECT_BINARY_DIR}/framework" "${PROJECT_BINARY_DIR}/utils" "${PROJECT_BINARY_DIR}/dfi")
+get_target_property(DESCR calculator_api INTERFACE_CALCULATOR_DESCRIPTOR)
+bundle_files(rsa_dfi_tst_bundle ${DESCR} DESTINATION .)
+target_link_libraries(rsa_dfi_tst_bundle PRIVATE ${CPPUTEST_LIBRARY} calculator_api)
+target_include_directories(rsa_dfi_tst_bundle PRIVATE src)
 
 add_executable(test_rsa_dfi
-    run_tests.cpp
-    rsa_tests.cpp
-    rsa_client_server_tests.cpp
+    src/run_tests.cpp
+    src/rsa_tests.cpp
+    src/rsa_client_server_tests.cpp
 )
-target_link_libraries(test_rsa_dfi PRIVATE Celix::framework ${CURL_LIBRARIES} ${CPPUTEST_LIBRARY} remote_service_admin_common)
+target_include_directories(test_rsa_dfi PRIVATE src)
+target_link_libraries(test_rsa_dfi PRIVATE ${CURL_LIBRARIES} ${CPPUTEST_LIBRARY}
+        Celix::framework
+        Celix::remote_service_admin_api
+        Celix::remote_service_admin_common
+        calculator_api)
 
 get_property(rsa_bundle_file TARGET remote_service_admin_dfi PROPERTY BUNDLE_FILE)
 get_property(calc_bundle_file TARGET calculator PROPERTY BUNDLE_FILE)
@@ -45,7 +51,10 @@ configure_file(config.properties.in config.properties)
 configure_file(client.properties.in client.properties)
 configure_file(server.properties.in server.properties)
 
-add_dependencies(test_rsa_dfi remote_service_admin_dfi calculator)
+add_dependencies(test_rsa_dfi
+        remote_service_admin_dfi_bundle #note depend on the target creating the bundle zip not the lib target
+        calculator_bundle
+)
 
 add_test(NAME run_test_rsa_dfi COMMAND test_rsa_dfi)
 SETUP_TARGET_FOR_COVERAGE(test_rsa_dfi_cov test_rsa_dfi ${CMAKE_BINARY_DIR}/coverage/test_rsa_dfi/test_rsa_dfi)

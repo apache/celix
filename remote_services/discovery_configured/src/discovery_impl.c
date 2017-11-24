@@ -66,12 +66,12 @@ celix_status_t discovery_start(discovery_pt discovery) {
 
 	logHelper_start(discovery->loghelper);
 
-    status = endpointDiscoveryPoller_create(discovery, discovery->context, &discovery->poller);
+    status = endpointDiscoveryPoller_create(discovery, discovery->context, DEFAULT_POLL_ENDPOINTS, &discovery->poller);
     if (status != CELIX_SUCCESS) {
     	return CELIX_BUNDLE_EXCEPTION;
     }
 
-    status = endpointDiscoveryServer_create(discovery, discovery->context, &discovery->server);
+    status = endpointDiscoveryServer_create(discovery, discovery->context, DEFAULT_SERVER_PATH, DEFAULT_SERVER_PORT, DEFAULT_SERVER_IP, &discovery->server);
     if (status != CELIX_SUCCESS) {
     	return CELIX_BUNDLE_EXCEPTION;
     }

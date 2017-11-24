@@ -28,8 +28,11 @@
 #define ENDPOINT_DISCOVERY_POLLER_H_
 
 #include "celix_errno.h"
-#include "discovery.h"
+#include "discovery_type.h"
 #include "log_helper.h"
+
+typedef struct endpoint_discovery_poller endpoint_discovery_poller_t;
+typedef struct endpoint_discovery_poller *endpoint_discovery_poller_pt;
 
 struct endpoint_discovery_poller {
     discovery_pt discovery;
@@ -43,9 +46,7 @@ struct endpoint_discovery_poller {
     volatile bool running;
 };
 
-typedef struct endpoint_discovery_poller *endpoint_discovery_poller_pt;
-
-celix_status_t endpointDiscoveryPoller_create(discovery_pt discovery, bundle_context_pt context, endpoint_discovery_poller_pt *poller);
+celix_status_t endpointDiscoveryPoller_create(discovery_pt discovery, bundle_context_pt context, const char* defaultPollEndpoints, endpoint_discovery_poller_pt *poller);
 celix_status_t endpointDiscoveryPoller_destroy(endpoint_discovery_poller_pt poller);
 
 celix_status_t endpointDiscoveryPoller_addDiscoveryEndpoint(endpoint_discovery_poller_pt poller, char *url);

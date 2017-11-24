@@ -20,7 +20,9 @@ add_bundle(topology_manager_disc_mock_bundle
     SOURCES
         disc_mock_activator.c
         disc_mock_service.c
-
 )
-target_include_directories(topology_manager_disc_mock_bundle PRIVATE ${CPPUTEST_INCLUDE_DIR})
-target_link_libraries(topology_manager_disc_mock_bundle PRIVATE ${CPPUTEST_LIBRARY} Celix::framework discovery_common)
+target_include_directories(topology_manager_disc_mock_bundle PRIVATE
+        ${CPPUTEST_INCLUDE_DIR}
+        $<TARGET_PROPERTY:discovery_common,INCLUDE_DIRECTORIES>
+)
+target_link_libraries(topology_manager_disc_mock_bundle PRIVATE ${CPPUTEST_LIBRARY} Celix::framework)

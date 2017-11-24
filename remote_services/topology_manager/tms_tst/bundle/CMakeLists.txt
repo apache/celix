@@ -32,4 +32,4 @@ bundle_files(topology_manager_test_bundle
     DESTINATION .
 )
 
-target_link_libraries(topology_manager_test_bundle PRIVATE ${CPPUTEST_LIBRARY} remote_service_admin calculator_api)
+target_link_libraries(topology_manager_test_bundle PRIVATE ${CPPUTEST_LIBRARY} Celix::remote_service_admin_api calculator_api)

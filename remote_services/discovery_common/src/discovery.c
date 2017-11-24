@@ -33,7 +33,6 @@
 #include "log_helper.h"
 #include "discovery.h"
 #include "endpoint_discovery_server.h"
-#include "discovery_impl.h" //TODO rename impl
 
 
 celix_status_t discovery_endpointAdded(void *handle, endpoint_description_pt endpoint, char *matchedFilter) {

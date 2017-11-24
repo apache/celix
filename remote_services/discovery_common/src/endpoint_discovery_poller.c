@@ -35,9 +35,8 @@
 #include "log_helper.h"
 #include "utils.h"
 
-#include "discovery_impl.h"
-
 #include "endpoint_descriptor_reader.h"
+#include "discovery.h"
 
 
 #define DISCOVERY_POLL_INTERVAL "DISCOVERY_CFG_POLL_INTERVAL"
@@ -52,7 +51,7 @@ static celix_status_t endpointDiscoveryPoller_endpointDescriptionEquals(const vo
 /**
  * Allocates memory and initializes a new endpoint_discovery_poller instance.
  */
-celix_status_t endpointDiscoveryPoller_create(discovery_pt discovery, bundle_context_pt context, endpoint_discovery_poller_pt *poller) {
+celix_status_t endpointDiscoveryPoller_create(discovery_pt discovery, bundle_context_pt context, const char* defaultPollEndpoints, endpoint_discovery_poller_pt *poller) {
 	celix_status_t status;
 
 	*poller = malloc(sizeof(struct endpoint_discovery_poller));
@@ -76,7 +75,7 @@ celix_status_t endpointDiscoveryPoller_create(discovery_pt discovery, bundle_con
 	const char* endpointsProp = NULL;
 	status = bundleContext_getProperty(context, DISCOVERY_POLL_ENDPOINTS, &endpointsProp);
 	if (!endpointsProp) {
-		endpointsProp = DEFAULT_POLL_ENDPOINTS;
+		endpointsProp = defaultPollEndpoints;
 	}
 	// we're going to mutate the string with strtok, so create a copy...
 	char* endpoints = strdup(endpointsProp);

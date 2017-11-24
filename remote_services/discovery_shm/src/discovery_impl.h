@@ -37,30 +37,17 @@
 #include "endpoint_discovery_server.h"
 #include "discovery_shmWatcher.h"
 
-
 #define DEFAULT_SERVER_IP   "127.0.0.1"
 #define DEFAULT_SERVER_PORT "9999"
 #define DEFAULT_SERVER_PATH "/org.apache.celix.discovery.shm"
 #define DEFAULT_POLL_ENDPOINTS "http://localhost:9999/org.apache.celix.discovery.shm"
 
-#define MAX_ROOTNODE_LENGTH		 64
-#define MAX_LOCALNODE_LENGTH	256
+#define MAX_ROOTNODE_LENGTH    64
+#define MAX_LOCALNODE_LENGTH   256
 
 
-struct discovery {
-	bundle_context_pt context;
-
-	celix_thread_mutex_t listenerReferencesMutex;
-	celix_thread_mutex_t discoveredServicesMutex;
-
-	hash_map_pt listenerReferences; //key=serviceReference, value=nop
-	hash_map_pt discoveredServices; //key=endpointId (string), value=endpoint_description_pt
-
-	shm_watcher_pt watcher;
-	endpoint_discovery_poller_pt poller;
-	endpoint_discovery_server_pt server;
-
-	log_helper_pt loghelper;
+struct discovery_impl {
+    shm_watcher_t* watcher;
 };
 
 #endif /* DISCOVERY_H_ */

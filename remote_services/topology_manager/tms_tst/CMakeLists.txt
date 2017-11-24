@@ -37,9 +37,18 @@ add_executable(test_tm_scoped
     run_tests.cpp
     tms_tests.cpp
 )
-target_link_libraries(test_tm_scoped Celix::framework ${CPPUTEST_LIBRARY} ${JANSSON_LIBRARY} Celix::log_helper remote_service_admin_common)
+target_include_directories(test_tm_scoped PRIVATE ../src ../include)
+target_link_libraries(test_tm_scoped PRIVATE
+        Celix::framework
+        ${CPPUTEST_LIBRARY}
+        ${JANSSON_LIBRARY}
+        Celix::log_helper
+        calculator_api
+        Celix::remote_service_admin_api
+        Celix::remote_service_admin_common
+)
 
-add_dependencies(test_tm_scoped remote_service_admin_dfi topology_manager calculator)
+add_dependencies(test_tm_scoped remote_service_admin_dfi_bundle topology_manager_bundle)
 
 file(GENERATE 
     OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/config.properties"
@@ -56,13 +65,6 @@ cosgi.auto.start.1=$<TARGET_PROPERTY:remote_service_admin_dfi,BUNDLE_FILE> $<TAR
 LOGHELPER_ENABLE_STDOUT_FALLBACK=true
 org.osgi.framework.storage.clean=onFirstInit
 ")
-
-
-#TODO improve copy commands, for now using configure_file as copy 
-#add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/scope.json" COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURE_DIR}/scope.json" "${CMAKE_CURRENT_BINARY_DIR}/scope.json")
-#add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/scope2.json" COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURE_DIR}/scope2.json" "${CMAKE_CURRENT_BINARY_DIR}/scope2.json")
-#add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/scope3.json" COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURE_DIR}/scope3.json" "${CMAKE_CURRENT_BINARY_DIR}/scope3.json")
-#add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/scope4.json" COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURE_DIR}/scope4.json" "${CMAKE_CURRENT_BINARY_DIR}/scope4.json")
 
 configure_file("scope.json" "scope.json")
 configure_file("scope2.json" "scope2.json")

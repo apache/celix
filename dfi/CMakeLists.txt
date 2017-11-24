@@ -18,36 +18,37 @@
 find_package(FFI REQUIRED)
 find_package(Jansson REQUIRED)
 
-add_library(dfi SHARED
-    src/dyn_common.c
-    src/dyn_type.c
-    src/dyn_function.c
-    src/dyn_interface.c
-    src/dyn_message.c
-    src/json_serializer.c
-    src/json_rpc.c
+set(SOURCES
+	src/dyn_common.c
+	src/dyn_type.c
+	src/dyn_function.c
+	src/dyn_interface.c
+	src/dyn_message.c
+	src/json_serializer.c
+	src/json_rpc.c
 )
+
+add_library(dfi SHARED ${SOURCES})
 set_target_properties(dfi PROPERTIES OUTPUT_NAME "celix_dfi")
-
-target_include_directories(dfi PUBLIC
-	include
-	${JANSSON_INCLUDE_DIRS}
-)
-target_include_directories(dfi PRIVATE
-	src
-	${FFI_INCLUDE_DIRS}
-)
-
+target_include_directories(dfi PUBLIC include ${JANSSON_INCLUDE_DIRS})
+target_include_directories(dfi PRIVATE src ${FFI_INCLUDE_DIRS})
 target_link_libraries(dfi PUBLIC ${JANSSON_LIBRARY})
 target_link_libraries(dfi PRIVATE Celix::utils ${FFI_LIBRARIES})
-
 set_target_properties(dfi PROPERTIES "SOVERSION" 1)
 
-install(TARGETS dfi DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
+add_library(dfi_static STATIC ${SOURCES})
+set_target_properties(dfi_static PROPERTIES OUTPUT_NAME "celix_dfi_static")
+target_include_directories(dfi_static PUBLIC include ${JANSSON_INCLUDE_DIRS})
+target_include_directories(dfi_static PRIVATE src ${FFI_INCLUDE_DIRS})
+target_link_libraries(dfi_static PUBLIC ${JANSSON_LIBRARY})
+target_link_libraries(dfi_static PRIVATE Celix::utils ${FFI_LIBRARIES})
+
+install(TARGETS dfi dfi_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
 
 
 #Alias setup to match external usage
 add_library(Celix::dfi ALIAS dfi)
+add_library(Celix::dfi_static ALIAS dfi_static)
 
 if (ENABLE_TESTING)
     find_package(CppUTest REQUIRED)

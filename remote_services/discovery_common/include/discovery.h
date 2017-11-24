@@ -27,11 +27,17 @@
 #ifndef DISCOVERY_H_
 #define DISCOVERY_H_
 
+#include "discovery_type.h"
 #include "bundle_context.h"
 #include "service_reference.h"
 
 #include "endpoint_description.h"
 #include "endpoint_listener.h"
+
+#include "endpoint_discovery_server.h"
+#include "endpoint_discovery_poller.h"
+
+#include "log_helper.h"
 
 #define DISCOVERY_SERVER_INTERFACE	"DISCOVERY_CFG_SERVER_INTERFACE"
 #define DISCOVERY_SERVER_IP 		"DISCOVERY_CFG_SERVER_IP"
@@ -40,7 +46,22 @@
 #define DISCOVERY_POLL_ENDPOINTS 	"DISCOVERY_CFG_POLL_ENDPOINTS"
 #define DISCOVERY_SERVER_MAX_EP	"DISCOVERY_CFG_SERVER_MAX_EP"
 
-typedef struct discovery *discovery_pt;
+struct discovery {
+    bundle_context_t* context;
+
+    celix_thread_mutex_t listenerReferencesMutex;
+    celix_thread_mutex_t discoveredServicesMutex;
+
+    hash_map_t* listenerReferences; //key=serviceReference, value=nop
+    hash_map_t* discoveredServices; //key=endpointId (string), value=endpoint_description_pt
+
+    endpoint_discovery_poller_t* poller;
+    endpoint_discovery_server_t* server;
+
+    log_helper_t* loghelper;
+
+    discovery_impl_t* pImpl;
+};
 
 
 /* those one could be put into a general discovery.h - file */

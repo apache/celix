@@ -22,3 +22,5 @@ add_library(remote_service_admin_common STATIC
 )
 target_include_directories(remote_service_admin_common PRIVATE src)
 target_link_libraries(remote_service_admin_common PUBLIC Celix::framework Celix::remote_service_admin_api Celix::log_helper)
+
+add_library(Celix::remote_service_admin_common ALIAS remote_service_admin_common)

@@ -222,7 +222,7 @@ celix_status_t bundleContext_ungetServiceReference(bundle_context_pt context, se
 celix_status_t bundleContext_getService(bundle_context_pt context, service_reference_pt reference, void** service_instance) {
     celix_status_t status = CELIX_SUCCESS;
 
-    if (context != NULL && reference != NULL && *service_instance == NULL) {
+    if (context != NULL && reference != NULL && service_instance != NULL) {
         /*NOTE argument service_instance should be considerd a 'const void**'. 
         To ensure backwards compatiblity a cast is made instead.
         */

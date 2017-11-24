@@ -28,11 +28,19 @@ if (RSA_DISCOVERY_ETCD)
         SOURCES
 			src/discovery_impl.c
 	    	src/etcd_watcher.c
+			$<TARGET_OBJECTS:discovery_common>
+			$<TARGET_OBJECTS:civetweb>
 	)
-	target_link_libraries(discovery_etcd PRIVATE Celix::log_helper)
-	target_include_directories(discovery_etcd PRIVATE src )
-	target_include_directories(discovery_etcd PRIVATE ${CURL_INCLUDE_DIR} ${JANSSON_INCLUDE_DIR} ${LIBXML2_INCLUDE_DIR})
-	target_link_libraries(discovery_etcd PRIVATE ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES} ${JANSSON_LIBRARIES} discovery_common)
+	target_link_libraries(discovery_etcd PRIVATE Celix::log_helper Celix::etcdlib_static)
+	target_include_directories(discovery_etcd PRIVATE src)
+	target_include_directories(discovery_etcd PRIVATE
+			$<TARGET_PROPERTY:discovery_common,INCLUDE_DIRECTORIES>
+			$<TARGET_PROPERTY:civetweb,INCLUDE_DIRECTORIES>
+			${CURL_INCLUDE_DIR}
+			${JANSSON_INCLUDE_DIR}
+			${LIBXML2_INCLUDE_DIR}
+	)
+	target_link_libraries(discovery_etcd PRIVATE ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES} ${JANSSON_LIBRARIES})
 
 	install_bundle(discovery_etcd)
 endif (RSA_DISCOVERY_ETCD)

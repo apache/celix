@@ -25,9 +25,15 @@ if (RSA_DISCOVERY_CONFIGURED)
         NAME "Apache Celix RSA Configured Discovery"
         SOURCES
 	        src/discovery_impl.c
+            $<TARGET_OBJECTS:discovery_common>
+            $<TARGET_OBJECTS:civetweb>
     )
-    target_include_directories(discovery_configured PRIVATE src)
-    target_link_libraries(discovery_configured PRIVATE ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES} Celix::log_helper discovery_common)
+    target_include_directories(discovery_configured PRIVATE
+            src
+            $<TARGET_PROPERTY:discovery_common,INCLUDE_DIRECTORIES>
+            $<TARGET_PROPERTY:civetweb,INCLUDE_DIRECTORIES>
+    )
+    target_link_libraries(discovery_configured PRIVATE ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES} Celix::log_helper)
 
     install_bundle(discovery_configured)
 

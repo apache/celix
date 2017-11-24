@@ -31,6 +31,7 @@
 #include "discovery.h"
 #include "endpoint_discovery_poller.h"
 
+typedef struct shm_watcher shm_watcher_t;
 typedef struct shm_watcher *shm_watcher_pt;
 
 celix_status_t discoveryShmWatcher_create(discovery_pt discovery);

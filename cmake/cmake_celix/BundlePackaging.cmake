@@ -145,14 +145,14 @@ function(add_bundle)
         set_library_version(${BUNDLE_TARGET_NAME} ${BUNDLE_VERSION})
         set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES
                 "BUNDLE_TARGET_IS_LIB" TRUE
-                "BUNDLE_BUILD_BUNDLE_TARGET" "${BUNDLE_TARGET_NAME}_bundle"
+                "BUNDLE_TARGET" "${BUNDLE_TARGET_NAME}_bundle"
         )
         target_link_libraries(${BUNDLE_TARGET_NAME} PRIVATE Celix::framework)
     else()
         add_custom_target(${BUNDLE_TARGET_NAME})
         set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES
                 "BUNDLE_TARGET_IS_LIB" FALSE
-                "BUNDLE_BUILD_BUNDLE_TARGET" "${BUNDLE_TARGET_NAME}_bundle"
+                "BUNDLE_TARGET" "${BUNDLE_TARGET_NAME}_bundle"
         )
     endif()
     add_custom_target(${BUNDLE_TARGET_NAME}_bundle
@@ -213,7 +213,7 @@ function(add_bundle)
     #############################
     #alreadyer set
     #   BUNDLE_TARGET_IS_LIB -> true (can be use to test if target is bundle target
-    #   BUNDLE_BUILD_BUNDLE_TARGET -> refers to the _bundle target which is responsible for building the zip file
+    #   BUNDLE_TARGET -> refers to the _bundle target which is responsible for building the zip file
     #internal use
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_IS_BUNDLE_TARGET" TRUE) #indicate that this is a bundle target
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_DEPEND_TARGETS" "") #bundle target dependencies. Note can be extended after the add_bundle call

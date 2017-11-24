@@ -17,20 +17,11 @@
  *under the License.
  */
 
+#ifndef DISCOVERY_TYPE_H_
+#define DISCOVERY_TYPE_H_
 
-#ifndef LOGHELPER_H_
-#define LOGHELPER_H_
+typedef struct discovery  discovery_t;
+typedef struct discovery* discovery_pt;
+typedef struct discovery_impl discovery_impl_t;
 
-#include "bundle_context.h"
-#include "log_service.h"
-
-typedef struct log_helper log_helper_t;
-typedef struct log_helper* log_helper_pt;
-
-celix_status_t logHelper_create(bundle_context_pt context, log_helper_pt* log_helper);
-celix_status_t logHelper_start(log_helper_pt loghelper);
-celix_status_t logHelper_stop(log_helper_pt loghelper);
-celix_status_t logHelper_destroy(log_helper_pt* loghelper);
-celix_status_t logHelper_log(log_helper_pt loghelper, log_level_t level, char* message, ... );
-
-#endif /* LOGHELPER_H_ */
+#endif //DISCOVERY_TYPE_H_

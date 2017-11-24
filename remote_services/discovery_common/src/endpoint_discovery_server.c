@@ -35,8 +35,6 @@
 #include "utils.h"
 #include "log_helper.h"
 #include "discovery.h"
-#include "discovery_impl.h"
-
 #include "endpoint_descriptor_writer.h"
 
 // defines how often the webserver is restarted (with an increased port number)
@@ -72,7 +70,13 @@ static char* format_path(const char* path);
 static celix_status_t endpointDiscoveryServer_getIpAdress(char* interface, char** ip);
 #endif
 
-celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_context_pt context, endpoint_discovery_server_pt *server) {
+celix_status_t endpointDiscoveryServer_create(
+		discovery_pt discovery,
+		bundle_context_pt context,
+		const char* defaultServerPath,
+		const char* defaultServerPort,
+		const char* defaultServerIp,
+		endpoint_discovery_server_pt *server) {
 	celix_status_t status;
 
 	const char *port = NULL;
@@ -122,8 +126,8 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 		(*server)->ip = strdup(ip);
 	}
 	else {
-		logHelper_log(*(*server)->loghelper, OSGI_LOGSERVICE_WARNING, "No IP address for service annunciation set. Using %s", DEFAULT_SERVER_IP);
-		(*server)->ip = strdup((char*) DEFAULT_SERVER_IP);
+		logHelper_log(*(*server)->loghelper, OSGI_LOGSERVICE_WARNING, "No IP address for service annunciation set. Using %s", defaultServerIp);
+		(*server)->ip = strdup((char*) defaultServerIp);
 	}
 
 	if (detectedIp != NULL) {
@@ -132,12 +136,12 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 
 	bundleContext_getProperty(context, DISCOVERY_SERVER_PORT, &port);
 	if (port == NULL) {
-		port = DEFAULT_SERVER_PORT;
+		port = defaultServerPort;
 	}
 
 	bundleContext_getProperty(context, DISCOVERY_SERVER_PATH, &path);
 	if (path == NULL) {
-		path = DEFAULT_SERVER_PATH;
+		path = defaultServerPath;
 	}
 
 	bundleContext_getProperty(context, DISCOVERY_SERVER_MAX_EP, &retries);
@@ -177,7 +181,7 @@ celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_con
 			long currentPort = strtol(port, &endptr, 10);
 
 			if (*endptr || errno != 0) {
-				currentPort = strtol(DEFAULT_SERVER_PORT, NULL, 10);
+				currentPort = strtol(defaultServerPort, NULL, 10);
 			}
 
 			port_counter++;

@@ -31,6 +31,7 @@
 
 #include "tst_service.h"
 #include "calculator_service.h"
+#include <unistd.h>
 
 
 struct activator {
@@ -138,9 +139,17 @@ static int test(void *handle) {
 
 	double result = -1.0;
 
+    int retries = 40;
+
+    while (act->calc == NULL) {
+        printf("Waiting for calc service .. %d\n", retries);
+        usleep(100000);
+        --retries;
+    }
+
     int rc = 1;
     if (act->calc != NULL) {
-         rc = act->calc->sqrt(act->calc->calculator, 4, &result);
+		rc = act->calc->sqrt(act->calc->calculator, 4, &result);
         printf("calc result is %f\n", result);
     } else {
         printf("calc not ready\n");

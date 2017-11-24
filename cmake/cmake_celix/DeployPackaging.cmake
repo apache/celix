@@ -227,7 +227,7 @@ function(celix_container_bundles_dir)
                 COMMENT "Copying bundle '${BUNDLE}' to '${CONTAINER_LOC}/${BD_DIR_NAME}'"
                 DEPENDS $<TARGET_PROPERTY:${BUNDLE},BUNDLE_BUILD_BUNDLE_TARGET>
             )
-            get_target_property(BUILD_BUNDLE_TARGET ${BUNDLE} BUNDLE_BUILD_BUNDLE_TARGET)
+            get_target_property(BUILD_BUNDLE_TARGET ${BUNDLE} BUNDLE_TARGET)
             add_dependencies(${CONTAINER_TARGET} ${BUILD_BUNDLE_TARGET}) #ensure the the deploy depends on the _bundle target, custom_command depends on add_library
 
         endif()

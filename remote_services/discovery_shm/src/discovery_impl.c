@@ -48,28 +48,34 @@
 #include "endpoint_discovery_poller.h"
 #include "endpoint_discovery_server.h"
 
-
-
-celix_status_t discovery_create(bundle_context_pt context, discovery_pt *discovery) {
+celix_status_t discovery_create(bundle_context_pt context, discovery_t** out) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	*discovery = calloc(1, sizeof(struct discovery));
-	if (!*discovery) {
-		status = CELIX_ENOMEM;
-	} else {
-        (*discovery)->context = context;
-        (*discovery)->poller = NULL;
-        (*discovery)->server = NULL;
+	discovery_t* discovery = calloc(1, sizeof(*discovery));
+    discovery_impl_t* pImpl = calloc(1, sizeof(*pImpl));
+	if (discovery != NULL && pImpl != NULL) {
+        discovery->pImpl = pImpl;
+        discovery->context = context;
+        discovery->poller = NULL;
+        discovery->server = NULL;
 
-        (*discovery)->listenerReferences = hashMap_create(serviceReference_hashCode, NULL, serviceReference_equals2, NULL);
-        (*discovery)->discoveredServices = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+        discovery->listenerReferences = hashMap_create(serviceReference_hashCode, NULL, serviceReference_equals2, NULL);
+        discovery->discoveredServices = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
 
-        celixThreadMutex_create(&(*discovery)->listenerReferencesMutex, NULL);
-        celixThreadMutex_create(&(*discovery)->discoveredServicesMutex, NULL);
+        celixThreadMutex_create(&discovery->listenerReferencesMutex, NULL);
+        celixThreadMutex_create(&discovery->discoveredServicesMutex, NULL);
 
-        if (logHelper_create(context, &(*discovery)->loghelper) == CELIX_SUCCESS) {
-            logHelper_start((*discovery)->loghelper);
+        if (logHelper_create(context, &discovery->loghelper) == CELIX_SUCCESS) {
+            logHelper_start(discovery->loghelper);
         }
+    } else {
+        status = CELIX_ENOMEM;
+        free(discovery);
+        free(pImpl);
+    }
+
+    if (status == CELIX_SUCCESS) {
+        *out = discovery;
     }
 
 	return status;
@@ -113,9 +119,9 @@ celix_status_t discovery_destroy(discovery_pt discovery) {
 celix_status_t discovery_start(discovery_pt discovery) {
     celix_status_t status;
 
-    status = endpointDiscoveryPoller_create(discovery, discovery->context, &discovery->poller);
+    status = endpointDiscoveryPoller_create(discovery, discovery->context, DEFAULT_POLL_ENDPOINTS, &discovery->poller);
     if (status == CELIX_SUCCESS) {
-        status = endpointDiscoveryServer_create(discovery, discovery->context, &discovery->server);
+        status = endpointDiscoveryServer_create(discovery, discovery->context, DEFAULT_SERVER_PATH, DEFAULT_SERVER_PORT, DEFAULT_SERVER_IP, &discovery->server);
     }
 
     if (status == CELIX_SUCCESS) {

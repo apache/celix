@@ -21,7 +21,7 @@
 #include <remote_constants.h>
 #include <constants.h>
 #include "CppUTest/CommandLineTestRunner.h"
-#include "../../examples/calculator_service/public/include/calculator_service.h"
+#include "calculator_service.h"
 
 extern "C" {
 

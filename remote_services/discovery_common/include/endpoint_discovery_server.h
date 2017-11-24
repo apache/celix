@@ -28,8 +28,9 @@
 #define ENDPOINT_DISCOVERY_SERVER_H_
 
 #include "celix_errno.h"
-#include "discovery.h"
+#include "discovery_type.h"
 
+typedef struct endpoint_discovery_server endpoint_discovery_server_t;
 typedef struct endpoint_discovery_server *endpoint_discovery_server_pt;
 
 /**
@@ -40,7 +41,13 @@ typedef struct endpoint_discovery_server *endpoint_discovery_server_pt;
  * @param server [out] the pointer to the created instance.
  * @return CELIX_SUCCESS when successful.
  */
-celix_status_t endpointDiscoveryServer_create(discovery_pt discovery, bundle_context_pt context, endpoint_discovery_server_pt *server);
+celix_status_t endpointDiscoveryServer_create(
+        discovery_pt discovery,
+        bundle_context_pt context,
+        const char* defaultServerPath,
+        const char* defaultServerPort,
+        const char* defaultServerIp,
+        endpoint_discovery_server_pt *server);
 
 /**
  * Stops and destroys a given instance of an endpoint discovery server.

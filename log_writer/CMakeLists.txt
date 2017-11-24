@@ -23,5 +23,5 @@ if (LOG_WRITER)
 
     #Setup target aliases to match external usage
     add_library(Celix::log_writer_stdout ALIAS log_writer_stdout)
-    add_library(Celix::log_writer_syslog ALIAS log_writer_syslog)
+    #add_library(Celix::log_writer_syslog ALIAS log_writer_syslog)
 endif (LOG_WRITER)

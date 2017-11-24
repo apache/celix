@@ -51,15 +51,25 @@ static celix_status_t dfi_findFileForFramework(bundle_context_pt context, const 
 static celix_status_t dfi_findFileForBundle(bundle_pt bundle, const char *fileName, FILE **out) {
     celix_status_t  status;
 
+    //Checking if descriptor is in root dir of bundle
     char *path = NULL;
-    char metaInfFileName[512];
-    snprintf(metaInfFileName, sizeof(metaInfFileName), "META-INF/descriptors/%s", fileName);
-
     status = bundle_getEntry(bundle, fileName, &path);
-    
+
+    char metaInfFileName[512];
     if (status != CELIX_SUCCESS || path == NULL) {
+        free(path);
+        //Checking if descriptor is in META-INF/descriptors
+        snprintf(metaInfFileName, sizeof(metaInfFileName), "META-INF/descriptors/%s", fileName);
         status = bundle_getEntry(bundle, metaInfFileName, &path);
     }
+
+    if (status != CELIX_SUCCESS || path == NULL) {
+        free(path);
+        //Checking if descriptor is in META-INF/descriptors/services
+        snprintf(metaInfFileName, sizeof(metaInfFileName), "META-INF/descriptors/services/%s", fileName);
+        status = bundle_getEntry(bundle, metaInfFileName, &path);
+    }
+
 
     if (status == CELIX_SUCCESS && path != NULL) {
         FILE *df = fopen(path, "r");

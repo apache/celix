@@ -40,6 +40,15 @@
 
 #include "endpoint_discovery_poller.h"
 
+#define DEFAULT_SERVER_IP   "127.0.0.1"
+#define DEFAULT_SERVER_PORT "9999"
+#define DEFAULT_SERVER_PATH "/org.apache.celix.discovery.shm"
+#define DEFAULT_POLL_ENDPOINTS "http://localhost:9999/org.apache.celix.discovery.shm"
+
+#define MAX_ROOTNODE_LENGTH		 64
+#define MAX_LOCALNODE_LENGTH	256
+
+
 struct shm_watcher {
     shmData_pt shmData;
     celix_thread_t watcherThread;
@@ -82,7 +91,7 @@ static celix_status_t discoveryShmWatcher_getLocalNodePath(bundle_context_pt con
 /* retrieves all endpoints from shm and syncs them with the ones already available */
 static celix_status_t discoveryShmWatcher_syncEndpoints(discovery_pt discovery) {
     celix_status_t status = CELIX_SUCCESS;
-    shm_watcher_pt watcher = discovery->watcher;
+    shm_watcher_pt watcher = discovery->pImpl->watcher;
     char** shmKeyArr = calloc(SHM_DATA_MAX_ENTRIES, sizeof(*shmKeyArr));
     array_list_pt registeredKeyArr = NULL;
 
@@ -147,7 +156,7 @@ static celix_status_t discoveryShmWatcher_syncEndpoints(discovery_pt discovery) 
 
 static void* discoveryShmWatcher_run(void* data) {
     discovery_pt discovery = (discovery_pt) data;
-    shm_watcher_pt watcher = discovery->watcher;
+    shm_watcher_pt watcher = discovery->pImpl->watcher;
     char localNodePath[MAX_LOCALNODE_LENGTH];
     char url[MAX_LOCALNODE_LENGTH];
 
@@ -194,10 +203,10 @@ celix_status_t discoveryShmWatcher_create(discovery_pt discovery) {
         }
 
         if (status == CELIX_SUCCESS) {
-            discovery->watcher = watcher;
+            discovery->pImpl->watcher = watcher;
         }
         else{
-        	discovery->watcher = NULL;
+        	discovery->pImpl->watcher = NULL;
         	free(watcher);
         }
 
@@ -216,7 +225,7 @@ celix_status_t discoveryShmWatcher_create(discovery_pt discovery) {
 
 celix_status_t discoveryShmWatcher_destroy(discovery_pt discovery) {
     celix_status_t status;
-    shm_watcher_pt watcher = discovery->watcher;
+    shm_watcher_pt watcher = discovery->pImpl->watcher;
     char localNodePath[MAX_LOCALNODE_LENGTH];
 
     celixThreadMutex_lock(&watcher->watcherLock);
