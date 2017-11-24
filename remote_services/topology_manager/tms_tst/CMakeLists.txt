@@ -42,18 +42,16 @@ target_link_libraries(test_tm_scoped PRIVATE
         Celix::framework
         ${CPPUTEST_LIBRARY}
         ${JANSSON_LIBRARY}
-        Celix::log_helper
         calculator_api
-        Celix::remote_service_admin_api
-        Celix::remote_service_admin_common
+        Celix::rsa_common
 )
 
-add_dependencies(test_tm_scoped remote_service_admin_dfi_bundle topology_manager_bundle)
+add_dependencies(test_tm_scoped rsa_dfi_bundle rsa_topology_manager_bundle)
 
 file(GENERATE 
     OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/config.properties"
     CONTENT "
-cosgi.auto.start.1=$<TARGET_PROPERTY:remote_service_admin_dfi,BUNDLE_FILE> $<TARGET_PROPERTY:calculator,BUNDLE_FILE> $<TARGET_PROPERTY:topology_manager,BUNDLE_FILE> $<TARGET_PROPERTY:topology_manager_disc_mock_bundle,BUNDLE_FILE>
+cosgi.auto.start.1=$<TARGET_PROPERTY:Celix::rsa_dfi,BUNDLE_FILE> $<TARGET_PROPERTY:calculator,BUNDLE_FILE> $<TARGET_PROPERTY:Celix::rsa_topology_manager,BUNDLE_FILE> $<TARGET_PROPERTY:topology_manager_disc_mock_bundle,BUNDLE_FILE>
 LOGHELPER_ENABLE_STDOUT_FALLBACK=true
 org.osgi.framework.storage.clean=onFirstInit
 ")
@@ -61,7 +59,7 @@ org.osgi.framework.storage.clean=onFirstInit
 file(GENERATE 
     OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/config_import.properties"
     CONTENT "
-cosgi.auto.start.1=$<TARGET_PROPERTY:remote_service_admin_dfi,BUNDLE_FILE> $<TARGET_PROPERTY:calculator,BUNDLE_FILE> $<TARGET_PROPERTY:topology_manager,BUNDLE_FILE> $<TARGET_PROPERTY:topology_manager_test_bundle,BUNDLE_FILE>
+cosgi.auto.start.1=$<TARGET_PROPERTY:Celix::rsa_dfi,BUNDLE_FILE> $<TARGET_PROPERTY:calculator,BUNDLE_FILE> $<TARGET_PROPERTY:Celix::rsa_topology_manager,BUNDLE_FILE> $<TARGET_PROPERTY:topology_manager_test_bundle,BUNDLE_FILE>
 LOGHELPER_ENABLE_STDOUT_FALLBACK=true
 org.osgi.framework.storage.clean=onFirstInit
 ")

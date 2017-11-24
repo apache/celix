@@ -21,26 +21,29 @@ if (RSA_DISCOVERY_ETCD)
 	find_package(LibXml2 REQUIRED)
 	find_package(Jansson REQUIRED)
     
-	add_bundle(discovery_etcd 
+	add_bundle(rsa_discovery_etcd
         VERSION 0.9.0
         SYMBOLIC_NAME "apache_celix_rsa_discovery_etcd"
         NAME "Apache Celix RSA Discovery ETCD"
         SOURCES
 			src/discovery_impl.c
 	    	src/etcd_watcher.c
-			$<TARGET_OBJECTS:discovery_common>
-			$<TARGET_OBJECTS:civetweb>
+			$<TARGET_OBJECTS:Celix::rsa_discovery_common>
+			$<TARGET_OBJECTS:Celix::civetweb>
 	)
-	target_link_libraries(discovery_etcd PRIVATE Celix::log_helper Celix::etcdlib_static)
-	target_include_directories(discovery_etcd PRIVATE src)
-	target_include_directories(discovery_etcd PRIVATE
-			$<TARGET_PROPERTY:discovery_common,INCLUDE_DIRECTORIES>
-			$<TARGET_PROPERTY:civetweb,INCLUDE_DIRECTORIES>
+	target_link_libraries(rsa_discovery_etcd PRIVATE Celix::log_helper Celix::etcdlib_static)
+	target_include_directories(rsa_discovery_etcd PRIVATE src)
+	target_include_directories(rsa_discovery_etcd PRIVATE
+			$<TARGET_PROPERTY:Celix::rsa_discovery_common,INCLUDE_DIRECTORIES>
+			$<TARGET_PROPERTY:Celix::civetweb,INCLUDE_DIRECTORIES>
 			${CURL_INCLUDE_DIR}
 			${JANSSON_INCLUDE_DIR}
 			${LIBXML2_INCLUDE_DIR}
 	)
-	target_link_libraries(discovery_etcd PRIVATE ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES} ${JANSSON_LIBRARIES})
+	target_link_libraries(rsa_discovery_etcd PRIVATE ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES} ${JANSSON_LIBRARIES})
 
-	install_bundle(discovery_etcd)
+	install_bundle(rsa_discovery_etcd)
+
+	#Setup target aliases to match external usage
+	add_library(Celix::rsa_discovery_etcd ALIAS rsa_discovery_etcd)
 endif (RSA_DISCOVERY_ETCD)

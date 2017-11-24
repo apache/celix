@@ -21,3 +21,6 @@ add_library(civetweb OBJECT
 		src/md5.inl
 )
 target_include_directories(civetweb PUBLIC include)
+
+#Setup target aliases to match external usage
+add_library(Celix::civetweb ALIAS civetweb)

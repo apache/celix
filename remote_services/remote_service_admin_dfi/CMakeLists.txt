@@ -23,7 +23,7 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
     find_package(CURL REQUIRED)
     find_package(Jansson REQUIRED)
 
-    add_bundle(remote_service_admin_dfi
+    add_bundle(rsa_dfi
             VERSION 0.9.0
             SYMBOLIC_NAME "apache_celix_remote_service_admin_dfi"
             NAME "Apache Celix Remote Service Admin Dynamic Function Interface (DFI)"
@@ -33,21 +33,21 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
             src/export_registration_dfi.c
             src/import_registration_dfi.c
             src/dfi_utils.c
-            $<TARGET_OBJECTS:civetweb>
+            $<TARGET_OBJECTS:Celix::civetweb>
     )
-    target_include_directories(remote_service_admin_dfi PRIVATE src $<TARGET_PROPERTY:civetweb,INCLUDE_DIRECTORIES>)
-    target_link_libraries(remote_service_admin_dfi PRIVATE
+    target_include_directories(rsa_dfi PRIVATE src $<TARGET_PROPERTY:Celix::civetweb,INCLUDE_DIRECTORIES>)
+    target_link_libraries(rsa_dfi PRIVATE
             Celix::dfi_static
             Celix::log_helper
-            Celix::remote_service_admin_common
+            Celix::rsa_common
             ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
 
-    install_bundle(remote_service_admin_dfi)
+    install_bundle(rsa_dfi)
 
     if (ENABLE_TESTING)
         add_subdirectory(test)
     endif()
 
     #Setup target aliases to match external usage
-    add_library(Celix::remote_service_admin_dfi ALIAS remote_service_admin_dfi)
+    add_library(Celix::rsa_dfi ALIAS rsa_dfi)
 endif()

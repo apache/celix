@@ -17,7 +17,7 @@
 celix_subproject(RSA_TOPOLOGY_MANAGER "Option to enable building the Remote Service Admin Service SHM bundle" ON DEPS REMOTE_SERVICE_ADMIN_DFI)
 if (RSA_TOPOLOGY_MANAGER)
 
-    add_bundle(topology_manager
+    add_bundle(rsa_topology_manager
         SOURCES
             src/topology_manager
             src/scope
@@ -26,11 +26,11 @@ if (RSA_TOPOLOGY_MANAGER)
         SYMBOLIC_NAME "apache_celix_rs_topology_manager"
         NAME "Apache Celix RS Topology Manager"
     )
-    target_include_directories(topology_manager PRIVATE src)
-    target_include_directories(topology_manager PUBLIC include)
-    target_link_libraries(topology_manager PRIVATE Celix::log_helper remote_service_admin_api)
+    target_include_directories(rsa_topology_manager PRIVATE src)
+    target_include_directories(rsa_topology_manager PUBLIC include)
+    target_link_libraries(rsa_topology_manager PRIVATE Celix::log_helper Celix::rsa_api)
 
-    install_bundle(topology_manager)
+    install_bundle(rsa_topology_manager)
 
     if (ENABLE_TESTING)
         find_package(CppUTest REQUIRED)
@@ -41,4 +41,7 @@ if (RSA_TOPOLOGY_MANAGER)
         include_directories(${CPPUTEST_EXT_INCLUDE_DIR})
         add_subdirectory(tms_tst)
    endif (ENABLE_TESTING)
+
+    #Setup target aliases to match external usage
+    add_library(Celix::rsa_topology_manager ALIAS rsa_topology_manager)
 endif (RSA_TOPOLOGY_MANAGER)

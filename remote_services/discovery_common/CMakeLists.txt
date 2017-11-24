@@ -18,7 +18,7 @@
 
 find_package(LibXml2 REQUIRED)
 
-add_library(discovery_common OBJECT
+add_library(rsa_discovery_common OBJECT
 		src/discovery.c
 		src/discovery_activator.c
 		src/endpoint_descriptor_reader.c
@@ -26,14 +26,14 @@ add_library(discovery_common OBJECT
 		src/endpoint_discovery_poller.c
 		src/endpoint_discovery_server.c
 )
-target_include_directories(discovery_common PUBLIC
+target_include_directories(rsa_discovery_common PUBLIC
 		include src
 		$<TARGET_PROPERTY:Celix::framework,INTERFACE_INCLUDE_DIRECTORIES>
 		$<TARGET_PROPERTY:Celix::utils,INTERFACE_INCLUDE_DIRECTORIES>
 		$<TARGET_PROPERTY:Celix::log_helper,INTERFACE_INCLUDE_DIRECTORIES>
-		$<TARGET_PROPERTY:Celix::remote_service_admin_api,INTERFACE_INCLUDE_DIRECTORIES>
-		$<TARGET_PROPERTY:Celix::remote_service_admin_api,INTERFACE_INCLUDE_DIRECTORIES>
+		$<TARGET_PROPERTY:Celix::rsa_api,INTERFACE_INCLUDE_DIRECTORIES>
 		$<TARGET_PROPERTY:civetweb,INCLUDE_DIRECTORIES>
 		${LIBXML2_INCLUDE_DIR})
 
-add_library(Celix::discovery_common ALIAS discovery_common)
+#Setup target aliases to match external usage
+add_library(Celix::rsa_discovery_common ALIAS rsa_discovery_common)

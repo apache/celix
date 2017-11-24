@@ -36,15 +36,14 @@ add_executable(test_rsa_dfi
 target_include_directories(test_rsa_dfi PRIVATE src)
 target_link_libraries(test_rsa_dfi PRIVATE ${CURL_LIBRARIES} ${CPPUTEST_LIBRARY}
         Celix::framework
-        Celix::remote_service_admin_api
-        Celix::remote_service_admin_common
+        Celix::rsa_common
         calculator_api)
 
-get_property(rsa_bundle_file TARGET remote_service_admin_dfi PROPERTY BUNDLE_FILE)
+get_property(rsa_bundle_file TARGET rsa_dfi PROPERTY BUNDLE_FILE)
 get_property(calc_bundle_file TARGET calculator PROPERTY BUNDLE_FILE)
 get_property(calculator_shell_bundle_file TARGET calculator_shell PROPERTY BUNDLE_FILE)
-get_property(discovery_configured_bundle_file TARGET discovery_configured PROPERTY BUNDLE_FILE)
-get_property(topology_manager_bundle_file TARGET topology_manager PROPERTY BUNDLE_FILE)
+get_property(discovery_configured_bundle_file TARGET rsa_discovery_configured PROPERTY BUNDLE_FILE)
+get_property(topology_manager_bundle_file TARGET Celix::rsa_topology_manager PROPERTY BUNDLE_FILE)
 get_property(tst_bundle_file TARGET rsa_dfi_tst_bundle PROPERTY BUNDLE_FILE)
 
 configure_file(config.properties.in config.properties)
@@ -52,7 +51,7 @@ configure_file(client.properties.in client.properties)
 configure_file(server.properties.in server.properties)
 
 add_dependencies(test_rsa_dfi
-        remote_service_admin_dfi_bundle #note depend on the target creating the bundle zip not the lib target
+        rsa_dfi_bundle #note depend on the target creating the bundle zip not the lib target
         calculator_bundle
 )
 

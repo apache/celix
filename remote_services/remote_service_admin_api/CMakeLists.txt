@@ -15,8 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(remote_service_admin_api INTERFACE)
-target_include_directories(remote_service_admin_api INTERFACE include)
+add_library(rsa_api INTERFACE)
+target_include_directories(rsa_api INTERFACE include)
 
 install (FILES 
         include/remote_endpoint_impl.h
@@ -42,4 +42,4 @@ install (FILES
 )
 
 #Setup target aliases to match external usage
-add_library(Celix::remote_service_admin_api ALIAS remote_service_admin_api)
+add_library(Celix::rsa_api ALIAS rsa_api)

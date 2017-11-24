@@ -15,12 +15,13 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(remote_service_admin_common STATIC
+add_library(rsa_common STATIC
     src/endpoint_description.c
     src/export_registration_impl.c
     src/import_registration_impl.c
 )
-target_include_directories(remote_service_admin_common PRIVATE src)
-target_link_libraries(remote_service_admin_common PUBLIC Celix::framework Celix::remote_service_admin_api Celix::log_helper)
+target_include_directories(rsa_common PRIVATE src)
+target_link_libraries(rsa_common PUBLIC Celix::framework Celix::rsa_api Celix::log_helper)
 
-add_library(Celix::remote_service_admin_common ALIAS remote_service_admin_common)
+#Setup target aliases to match external usage
+add_library(Celix::rsa_common ALIAS rsa_common)

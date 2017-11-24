@@ -23,7 +23,6 @@ if (REMOTE_SERVICE_ADMIN)
     add_subdirectory(topology_manager)
 
     add_subdirectory(civetweb)
-
     add_subdirectory(discovery_common)
     add_subdirectory(discovery_configured)
     add_subdirectory(discovery_etcd)

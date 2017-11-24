@@ -19,39 +19,24 @@ if (RSA_DISCOVERY_CONFIGURED)
     find_package(CURL REQUIRED)
     find_package(LibXml2 REQUIRED)
 
-    add_bundle(discovery_configured 
+    add_bundle(rsa_discovery_configured
         VERSION 0.9.0
         SYMBOLIC_NAME "apache_celix_rsa_discovery_configured"
         NAME "Apache Celix RSA Configured Discovery"
         SOURCES
 	        src/discovery_impl.c
-            $<TARGET_OBJECTS:discovery_common>
-            $<TARGET_OBJECTS:civetweb>
+            $<TARGET_OBJECTS:Celix::rsa_discovery_common>
+            $<TARGET_OBJECTS:Celix::civetweb>
     )
-    target_include_directories(discovery_configured PRIVATE
+    target_include_directories(rsa_discovery_configured PRIVATE
             src
-            $<TARGET_PROPERTY:discovery_common,INCLUDE_DIRECTORIES>
-            $<TARGET_PROPERTY:civetweb,INCLUDE_DIRECTORIES>
+            $<TARGET_PROPERTY:Celix::rsa_discovery_common,INCLUDE_DIRECTORIES>
+            $<TARGET_PROPERTY:Celix::civetweb,INCLUDE_DIRECTORIES>
     )
-    target_link_libraries(discovery_configured PRIVATE ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES} Celix::log_helper)
+    target_link_libraries(rsa_discovery_configured PRIVATE ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES} Celix::log_helper)
 
-    install_bundle(discovery_configured)
+    install_bundle(rsa_discovery_configured)
 
-
-
-    if (RSA_ENDPOINT_TEST_READER)
-        add_executable(descparser
-            ${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_descriptor_reader.c
-            ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c)
-
-        target_link_libraries(descparser ${LIBXML2_LIBRARIES} celix_framework celix_utils)
-    endif (RSA_ENDPOINT_TEST_READER)
-
-    if (RSA_ENDPOINT_TEST_WRITER)
-        add_executable(descwriter
-            ${PROJECT_SOURCE_DIR}/remote_services/discovery/private/src/endpoint_descriptor_writer.c
-            ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c)
-
-        target_link_libraries(descwriter ${LIBXML2_LIBRARIES} celix_framework celix_utils)
-    endif(RSA_ENDPOINT_TEST_WRITER)
+    #Setup target aliases to match external usage
+    add_library(Celix::rsa_discovery_configured ALIAS rsa_discovery_configured)
 endif (RSA_DISCOVERY_CONFIGURED)

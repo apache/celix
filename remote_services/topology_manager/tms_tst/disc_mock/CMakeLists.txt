@@ -23,6 +23,6 @@ add_bundle(topology_manager_disc_mock_bundle
 )
 target_include_directories(topology_manager_disc_mock_bundle PRIVATE
         ${CPPUTEST_INCLUDE_DIR}
-        $<TARGET_PROPERTY:discovery_common,INCLUDE_DIRECTORIES>
+        $<TARGET_PROPERTY:Celix::rsa_discovery_common,INCLUDE_DIRECTORIES>
 )
 target_link_libraries(topology_manager_disc_mock_bundle PRIVATE ${CPPUTEST_LIBRARY} Celix::framework)
