@@ -15,17 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 if (BUILD_DEPENDENCY_MANAGER_CXX)
-    include_directories(
-            ${PROJECT_SOURCE_DIR}/dependency_manager/public/include
-            ${PROJECT_SOURCE_DIR}/dependency_manager_cxx/include
-            ${PROJECT_SOURCE_DIR}/utils/public/include
-            ${PROJECT_SOURCE_DIR}/log_service/public/include
-            api
-    )
+
+    add_subdirectory(api)
 
     add_subdirectory(phase1)
-    add_subdirectory(phase2a)
-    add_subdirectory(phase2b)
+    add_subdirectory(phase2)
     add_subdirectory(phase3)
     add_subdirectory(phase3_locking)
 
@@ -40,11 +34,11 @@ if (BUILD_DEPENDENCY_MANAGER_CXX)
             Celix::log_service
             Celix::log_writer_stdout
 
-            phase1_cxx
-            phase2a_cxx
-            phase2b_cxx
-            phase3_cxx
-            phase3_locking_cxx
+            dm_example_cxx_phase1
+            dm_example_cxx_phase2a
+            dm_example_cxx_phase2b
+            dm_example_cxx_phase3
+            dm_example_cxx_phase3_locking
         PROPERTIES
             LOGHELPER_ENABLE_STDOUT_FALLBACK=true
     )
@@ -61,11 +55,11 @@ if (BUILD_DEPENDENCY_MANAGER_CXX)
                 Celix::log_service
                 Celix::log_writer_stdout
 
-                phase1_cxx
-                phase2a_cxx
-                phase2b_cxx
-                phase3_cxx
-                phase3_locking_cxx
+                dm_example_cxx_phase1
+                dm_example_cxx_phase2a
+                dm_example_cxx_phase2b
+                dm_example_cxx_phase3
+                dm_example_cxx_phase3_locking
             PROPERTIES
                 LOGHELPER_ENABLE_STDOUT_FALLBACK=true
         )

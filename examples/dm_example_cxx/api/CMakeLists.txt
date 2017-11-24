@@ -15,24 +15,5 @@
 # specific language governing permissions and limitations
 # under the License.
 
-
-add_bundle(dm_example_phase1
-    SYMBOLIC_NAME phase1
-    VERSION 0.0.1
-    SOURCES
-        src/phase1_activator
-        src/phase1_cmp.c
-)
-target_include_directories(dm_example_phase1 PRIVATE src)
-target_link_libraries(dm_example_phase1 PRIVATE dm_example_api)
-
-IF(APPLE)
-    target_link_libraries(dm_example_phase1 PRIVATE -Wl,-all_load Celix::dependency_manager_static)
-else()
-    if(ENABLE_ADDRESS_SANITIZER)
-        #With asan there can be undefined symbols
-        target_link_libraries(dm_example_phase1 PRIVATE -Wl,--whole-archive Celix::dependency_manager_static -Wl,--no-whole-archive)
-    else()
-        target_link_libraries(dm_example_phase1 PRIVATE -Wl,--no-undefined -Wl,--whole-archive Celix::dependency_manager_static -Wl,--no-whole-archive)
-    endif()
-endif()
+add_library(dm_example_cxx_api INTERFACE)
+target_include_directories(dm_example_cxx_api INTERFACE include)

@@ -15,28 +15,23 @@
 # specific language governing permissions and limitations
 # under the License.
 
-include_directories(
-        private/include
-        ../services
-)
-
-add_bundle(phase3
+add_bundle(dm_example_phase3
         SYMBOLIC_NAME phase3
         VERSION 0.0.1
         SOURCES
-                private/src/phase3_activator
-                private/src/phase3_cmp
+            src/phase3_activator
+            src/phase3_cmp
 )
-
-#bundle_private_libs(phase3 dependency_manager)
+target_include_directories(dm_example_phase3 PRIVATE src)
+target_link_libraries(dm_example_phase3 PRIVATE dm_example_api)
 
 IF(APPLE)
-    target_link_libraries(phase3 PRIVATE -Wl,-all_load dependency_manager_static)
+    target_link_libraries(dm_example_phase3 PRIVATE -Wl,-all_load dependency_manager_static)
 else()
     if(ENABLE_ADDRESS_SANITIZER)
         #With asan there can be undefined symbols
-        target_link_libraries(phase3 PRIVATE -Wl,--whole-archive dependency_manager_static -Wl,--no-whole-archive)
+        target_link_libraries(dm_example_phase3 PRIVATE -Wl,--whole-archive Celix::dependency_manager_static -Wl,--no-whole-archive)
     else()
-        target_link_libraries(phase3 PRIVATE -Wl,--no-undefined -Wl,--whole-archive dependency_manager_static -Wl,--no-whole-archive)
+        target_link_libraries(dm_example_phase3 PRIVATE -Wl,--no-undefined -Wl,--whole-archive Celix::dependency_manager_static -Wl,--no-whole-archive)
     endif()
 ENDIF()

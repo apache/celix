@@ -15,11 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 if (BUILD_DEPENDENCY_MANAGER)
-    include_directories(
-            ${PROJECT_SOURCE_DIR}/dependency_manager/public/include
-            ${PROJECT_SOURCE_DIR}/utils/public/include
-            services
-    )
+
+    add_subdirectory(api)
 
     add_subdirectory(phase1)
     add_subdirectory(phase2a)
@@ -32,11 +29,11 @@ if (BUILD_DEPENDENCY_MANAGER)
         BUNDLES
             Celix::shell
             Celix::shell_tui
-            dm_shell
-            phase1
-            phase2a
-            phase2b
-            phase3
+            Celix::dm_shell
+            dm_example_phase1
+            dm_example_phase2a
+            dm_example_phase2b
+            dm_example_phase3
         PROPERTIES
             LOGHELPER_ENABLE_STDOUT_FALLBACK=true
     )
@@ -53,13 +50,13 @@ if (BUILD_DEPENDENCY_MANAGER)
             FROM dmbase
             GROUP examples
             BUNDLES
-                ${CELIX_SHELL_BUNDLE}
-                ${CELIX_SHELL_TUI_BUNDLE}
-                dm_shell
-                phase1
-                phase2a
-                phase2b
-                phase3
+                Celix::shell
+                Celix::shell_tui
+                Celix::dm_shell
+                dm_example_phase1
+                dm_example_phase2a
+                dm_example_phase2b
+                dm_example_phase3
             PROPERTIES
                 LOGHELPER_ENABLE_STDOUT_FALLBACK=true
         )
