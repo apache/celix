@@ -102,7 +102,7 @@ function(add_celix_container)
         include_directories(${CELIX_INCLUDE_DIRS})
         add_executable(${CONTAINER_TARGET} ${LAUNCHER_SRC})
         set_target_properties(${CONTAINER_TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CONTAINER_LOC})
-        target_link_libraries(${CONTAINER_TARGET} ${CELIX_FRAMEWORK_LIBRARY} ${CELIX_UTILS_LIBRARY})
+        target_link_libraries(${CONTAINER_TARGET} PRIVATE ${CELIX_FRAMEWORK_LIBRARY} ${CELIX_UTILS_LIBRARY})
         set(LAUNCHER "$<TARGET_FILE:${CONTAINER_TARGET}>")
     endif ()
 
