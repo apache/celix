@@ -123,7 +123,8 @@ function(add_bundle)
     if (NOT BUNDLE_SYMBOLIC_NAME)
         set(BUNDLE_SYMBOLIC_NAME ${BUNDLE_TARGET_NAME})
     endif()
-    set(BUNDLE_FILE "${CMAKE_CURRENT_BINARY_DIR}/${BUNDLE_TARGET_NAME}.zip") 
+    set(BUNDLE_FILE_NAME "${BUNDLE_TARGET_NAME}.zip")
+    set(BUNDLE_FILE "${CMAKE_CURRENT_BINARY_DIR}/${BUNDLE_FILE_NAME}")
     set(BUNDLE_CONTENT_DIR "${CMAKE_CURRENT_BINARY_DIR}/${BUNDLE_TARGET_NAME}_content")
     set(BUNDLE_GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}/${BUNDLE_TARGET_NAME}_gen")
 
@@ -206,6 +207,7 @@ function(add_bundle)
     #bundle specific
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_CONTENT_DIR" ${BUNDLE_CONTENT_DIR}) #location where the content to be jar/zipped. 
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_FILE" ${BUNDLE_FILE}) #target bundle file (.zip)
+    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_FILE_NAME" ${BUNDLE_FILE_NAME}) #target bundle file (.zip)
 
     #name and version
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_NAME" ${BUNDLE_NAME}) #The bundle name default target name

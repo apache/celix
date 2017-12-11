@@ -68,7 +68,7 @@ function(add_celix_container)
     set(CONTAINER_ECLIPSE_LAUNCHER "${CONTAINER_LOC}/${CONTAINER_NAME}.launch")
 
     if (CONTAINER_LAUNCHER_SRC)
-        get_filename_component(SRC_FILENAME ${LAUNCHER_SRC} NAME)
+        get_filename_component(SRC_FILENAME ${CONTAINER_LAUNCHER_SRC} NAME)
         set(LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}-${SRC_FILENAME}")
         set(LAUNCHER_ORG "${CONTAINER_LAUNCHER_SRC}")
     elseif (CONTAINER_CXX)
@@ -88,15 +88,11 @@ function(add_celix_container)
         endif()
         add_custom_target(${CONTAINER_TARGET}
                 COMMAND ${CMAKE_COMMAND} -E create_symlink ${LAUNCHER} ${CONTAINER_LOC}/${CONTAINER_TARGET}
-                DEPENDS  "$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_TARGET_DEPS>"
-                COMMENT "Deploying ${CONTAINER_PRINT_NAME} Celix container" VERBATIM
         )
     else ()
         add_custom_command(OUTPUT ${LAUNCHER_SRC}
                 COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/celix/gen
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LAUNCHER_ORG} ${LAUNCHER_SRC}
-                DEPENDS  "$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_TARGET_DEPS>"
-                COMMENT "Deploying ${CONTAINER_PRINT_NAME} Celix container" VERBATIM
         )
 
         include_directories(${CELIX_INCLUDE_DIRS})
@@ -133,6 +129,12 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_PROPERTIES>,
         get_filename_component(CELIX_BIN_DIR ${CELIX_LAUNCHER} DIRECTORY)
     endif()
 
+    if (CONTAINER_COPY)
+        add_custom_target(${CONTAINER_TARGET}-deps
+                DEPENDS $<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_DEPS>
+        )
+        add_dependencies(${CONTAINER_TARGET} ${CONTAINER_TARGET}-deps)
+    endif ()
 
     #generate release.sh and optional run.sh
     if(APPLE)
@@ -165,9 +167,9 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_PROPERTIES>,
 
     ##### Container Target Properties #####
     #internal use
-    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_TARGET_DEPS" "") #target deps for the container.
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES" "") #bundles to deploy fro the container.
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_COPY_BUNDLES" ${CONTAINER_COPY}) #copy bundles in bundle dir or link using abs paths. NOTE this cannot be changed after a add_deploy command
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_DEPS" "") #target deps for copy of bundles
 
     #deploy specific
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_NAME" "${CONTAINER_NAME}")
@@ -206,7 +208,7 @@ function(celix_container_bundles_dir)
     endif()
 
     get_target_property(CONTAINER_LOC ${CONTAINER_TARGET} "CONTAINER_LOC")
-    get_target_property(DEPS ${CONTAINER_TARGET} "CONTAINER_TARGET_DEPS")
+    get_target_property(DEPS ${CONTAINER_TARGET} "CONTAINER_DEPS")
 
     foreach(BUNDLE IN ITEMS ${BD_BUNDLES})
         if (IS_ABSOLUTE ${BUNDLE} AND EXISTS ${BUNDLE})
@@ -214,24 +216,22 @@ function(celix_container_bundles_dir)
             set(OUT "${CONTAINER_LOC}/${BD_DIR_NAME}/${BUNDLE_FILENAME}")
             add_custom_command(OUTPUT ${OUT}
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE} ${OUT}
-		COMMENT "Copying bundle '${BUNDLE}' to '${CONTAINER_LOC}/${BD_DIR_NAME}'"
+		        COMMENT "Copying bundle '${BUNDLE}' to '${CONTAINER_LOC}/${BD_DIR_NAME}'"
                 DEPENDS ${BUNDLE}
             )
         else()
-            set(OUT "${CONTAINER_LOC}/${BD_DIR_NAME}/${BUNDLE}.zip")
+            #assuming target
+            get_target_property(BFN ${BUNDLE} BUNDLE_FILE_NAME) #would prefer to used target generator, but this is not supporte in a OUTPUT argument
+            set(OUT "${CONTAINER_LOC}/${BD_DIR_NAME}/${BFN}")
             add_custom_command(OUTPUT ${OUT}
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>" ${OUT}
-                COMMENT "Copying bundle '${BUNDLE}' to '${CONTAINER_LOC}/${BD_DIR_NAME}'"
-                DEPENDS ${BUNDLE}
+                COMMENT "Copying bundle '${BFN}' to '${CONTAINER_LOC}/${BD_DIR_NAME}'"
+                DEPENDS ${BUNDLE} ${BUNDLE}_bundle
             )
-            add_dependencies(${CONTAINER_TARGET} ${BUNDLE}_bundle) #ensure the the deploy depends on the _bundle target, custom_command depends on add_library
-
         endif()
         list(APPEND DEPS "${OUT}")
-
     endforeach()
-
-    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_TARGET_DEPS" "${DEPS}")
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_DEPS" "${DEPS}")
 endfunction()
 
 function(deploy_bundles)
@@ -252,7 +252,8 @@ function(celix_container_bundles)
                     get_filename_component(BUNDLE_FILENAME ${BUNDLE} NAME) 
                     list(APPEND BUNDLES "bundles/${BUNDLE_FILENAME}")
                 else() #assuming target
-                    list(APPEND BUNDLES "bundles/${BUNDLE}.zip")
+                    get_target_property(BFN ${BUNDLE} BUNDLE_FILE_NAME)
+                    list(APPEND BUNDLES "bundles/${BFN}")
                 endif()
            else()
                 if(IS_ABSOLUTE ${BUNDLE} AND EXISTS ${BUNDLE})
