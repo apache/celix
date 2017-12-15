@@ -165,8 +165,13 @@ celix_status_t pubsub_admin_get_best_serializer(properties_pt endpoint_props, ar
 
 	int i = 0, j = 0;
 
-	const char *requested_serializer_type 	= properties_get(endpoint_props,PUBSUB_SERIALIZER_TYPE_KEY);
-	const char *requested_qos_type			= properties_get(endpoint_props,QOS_ATTRIBUTE_KEY);
+	const char *requested_serializer_type = NULL;
+	const char *requested_qos_type = NULL;
+
+	if (endpoint_props != NULL){
+		requested_serializer_type = properties_get(endpoint_props,PUBSUB_SERIALIZER_TYPE_KEY);
+		requested_qos_type = properties_get(endpoint_props,QOS_ATTRIBUTE_KEY);
+	}
 
 	service_reference_pt svcRef = NULL;
 	void *svc = NULL;
