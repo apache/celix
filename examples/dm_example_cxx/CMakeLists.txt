@@ -33,7 +33,7 @@ if (BUILD_DEPENDENCY_MANAGER_CXX)
 
     add_deploy("dm_example_cxx"
         COPY 
-	CXX
+        CXX
         BUNDLES
             shell
             shell_tui
@@ -50,26 +50,25 @@ if (BUILD_DEPENDENCY_MANAGER_CXX)
             LOGHELPER_ENABLE_STDOUT_FALLBACK=true
     )
 
-    if (ENABLE_DOCKER)
-        add_celix_docker(dm_exmpl_cxx
-            GROUP examples
-            BUNDLES_DIR /usr/share/bundles
-            WORKDIR /workspace
-            BUNDLES
-                shell
-                shell_tui
-                dm_shell
-                log_service
-                log_writer
+    add_celix_docker(dm_exmpl_cxx
+        CXX
+        GROUP examples
+        BUNDLES_DIR /usr/share/bundles
+        WORKDIR /workspace
+        BUNDLES
+            shell
+            shell_tui
+            dm_shell
+            log_service
+            log_writer
 
-                phase1_cxx
-                phase2a_cxx
-                phase2b_cxx
-                phase3_cxx
-                phase3_locking_cxx
-            PROPERTIES
-                LOGHELPER_ENABLE_STDOUT_FALLBACK=true
-        )
-    endif ()
+            phase1_cxx
+            phase2a_cxx
+            phase2b_cxx
+            phase3_cxx
+            phase3_locking_cxx
+        PROPERTIES
+            LOGHELPER_ENABLE_STDOUT_FALLBACK=true
+    )
 
 endif ()

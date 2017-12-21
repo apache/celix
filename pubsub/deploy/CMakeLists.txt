@@ -31,6 +31,7 @@ add_deploy(pubsub_publisher_udp_mc
 	   org.apache.celix.pubsub_publisher.PoiPublisher
 	   org.apache.celix.pubsub_publisher.PoiPublisher2
 )
+target_link_libraries(pubsub_publisher_udp_mc PRIVATE celix_framework celix_utils celix_dfi)
 
 add_deploy("pubsub_subscriber_udp_mc"
 	GROUP "pubsub"
@@ -43,6 +44,7 @@ add_deploy("pubsub_subscriber_udp_mc"
 	   org.apache.celix.pubsub_admin.PubSubAdminUdpMc
 	   org.apache.celix.pubsub_subscriber.PoiSubscriber
 )
+target_link_libraries(pubsub_subscriber_udp_mc PRIVATE celix_framework celix_utils celix_dfi)
 
 add_deploy("pubsub_subscriber2_udp_mc"
 	GROUP "pubsub"
@@ -55,20 +57,21 @@ add_deploy("pubsub_subscriber2_udp_mc"
 	   org.apache.celix.pubsub_admin.PubSubAdminUdpMc
 	   org.apache.celix.pubsub_subscriber.PoiSubscriber
 )
+target_link_libraries(pubsub_subscriber2_udp_mc PRIVATE celix_framework celix_utils celix_dfi)
 
 if (ETCD_CMD AND XTERM_CMD)
 	#Runtime starting a publish and subscriber for udp mc
 	add_runtime(pubsub_rt_upd_mc
-			NAME udp_mc
-			GROUP pubsub
-			DEPLOYMENTS
+		NAME udp_mc
+		GROUP pubsub
+		DEPLOYMENTS
 			pubsub_publisher_udp_mc
 			pubsub_subscriber_udp_mc
 			pubsub_subscriber2_udp_mc
-			COMMANDS
+		COMMANDS
 			etcd
-			USE_TERM
-			)
+		USE_TERM
+	)
 endif ()
 
 if (BUILD_PUBSUB_PSA_ZMQ)
@@ -90,6 +93,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	       poi1.psa=zmq
 	       poi2.psa=udp
 	)
+	target_link_libraries(pubsub_publisher PRIVATE celix_framework celix_utils celix_dfi)
 
 	add_deploy("pubsub_subscriber"
 	    GROUP "pubsub"
@@ -106,6 +110,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	       poi1.psa=zmq
 	       poi2.psa=udp
 	)
+	target_link_libraries(pubsub_subscriber PRIVATE celix_framework celix_utils celix_dfi)
 
 	# ZMQ
 	add_deploy("pubsub_zmq"
@@ -120,6 +125,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	       org.apache.celix.pubsub_publisher.PoiPublisher
 	       org.apache.celix.pubsub_subscriber.PoiSubscriber
 	)
+	target_link_libraries(pubsub_zmq PRIVATE celix_framework celix_utils celix_dfi)
 
 	add_deploy("pubsub_publisher_zmq"
 	    GROUP "pubsub"
@@ -135,6 +141,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	   	PROPERTIES
 		    pubsub.scope=my_small_scope
 	)
+	target_link_libraries(pubsub_publisher_zmq PRIVATE celix_framework celix_utils celix_dfi)
 
 	add_deploy("pubsub_subscriber_zmq"
 	    GROUP "pubsub"
@@ -147,6 +154,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	       org.apache.celix.pubsub_admin.PubSubAdminZmq
 	       org.apache.celix.pubsub_subscriber.PoiSubscriber
 	)
+	target_link_libraries(pubsub_subscriber_zmq PRIVATE celix_framework celix_utils celix_dfi)
 
 	add_deploy("pubsub_subscriber2_zmq"
 	    GROUP "pubsub"
@@ -158,8 +166,8 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	       org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
 	       org.apache.celix.pubsub_admin.PubSubAdminZmq
 	       org.apache.celix.pubsub_subscriber.PoiSubscriber
-
 	)
+	target_link_libraries(pubsub_subscriber2_zmq PRIVATE celix_framework celix_utils celix_dfi)
 
 	# ZMQ Multipart
 	add_deploy("pubsub_mp_subscriber_zmq"
@@ -173,6 +181,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	       org.apache.celix.pubsub_admin.PubSubAdminZmq
 	       org.apache.celix.pubsub_subscriber.MpSubscriber
 	)
+	target_link_libraries(pubsub_mp_subscriber_zmq PRIVATE celix_framework celix_utils celix_dfi)
 
 	add_deploy("pubsub_mp_publisher_zmq"
 	    GROUP "pubsub"
@@ -185,6 +194,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	   		org.apache.celix.pubsub_admin.PubSubAdminZmq
 	   		org.apache.celix.pubsub_publisher.MpPublisher
 	)
+	target_link_libraries(pubsub_mp_publisher_zmq PRIVATE celix_framework celix_utils celix_dfi)
 
 	if (ETCD_CMD AND XTERM_CMD)
 		#Runtime starting two bundles using both zmq and upd mc pubsub
