@@ -221,7 +221,6 @@ function(celix_docker_bundles)
                 COMMENT "Copying bundle '${BUNDLE}' to '${OUT}'"
                 DEPENDS ${BUNDLE}
             )
-            add_dependencies(${DOCKER_TARGET} ${OUT})
         else() #assuming target
             get_target_property(BFN ${BUNDLE} BUNDLE_FILE_NAME)
             list(APPEND BUNDLES "${BUNDLES_DIR}/${BFN}")
