@@ -62,5 +62,6 @@ if (BUILD_DEPENDENCY_MANAGER)
         PROPERTIES
             LOGHELPER_ENABLE_STDOUT_FALLBACK=true
     )
+    add_dependencies(celix-build-dm_exmpl-docker-image celix-build-dm_exmpl_base-docker-image)
 
 endif ()

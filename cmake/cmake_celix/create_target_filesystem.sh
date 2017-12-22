@@ -211,5 +211,4 @@ ftp:x:14:50:FTP User:/var/ftp:/sbin/nologin
 nobody:x:99:99:Nobody:/:/sbin/nologin""" > etc/passwd
 fi
 
-#Currently done by libcelix_docker_dummy.so
-#celix_add_required_libs
+celix_add_required_libs
