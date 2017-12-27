@@ -92,7 +92,33 @@ function(add_celix_container)
     else ()
         add_custom_command(OUTPUT ${LAUNCHER_SRC}
                 COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/celix/gen
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LAUNCHER_ORG} ${LAUNCHER_SRC}
+        )
+
+        if (CONTAINER_CXX)
+            set(STAGE1_LAUNCHER "${CMAKE_CURRENT_BINARY_DIR}/${CONTAINER_TARGET}-main-stage1.cc")
+        else()
+            set(STAGE1_LAUNCHER "${CMAKE_CURRENT_BINARY_DIR}/${CONTAINER_TARGET}-main-stage1.c")
+        endif()
+
+        file(GENERATE
+                OUTPUT "${STAGE1_LAUNCHER}"
+                CONTENT "#include <celix_launcher.h>
+
+int main(int argc, char *argv[]) {
+    const char * config = \"cosgi.auto.start.1=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES>, >\\n\\
+$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_PROPERTIES>,\\n\\
+>\";
+
+    properties_pt packedConfig = properties_loadFromString(config);
+
+    return celixLauncher_launchWithArgsAndProps(argc, argv, packedConfig);
+}
+"
+        )
+
+        file(GENERATE
+                OUTPUT "${LAUNCHER_SRC}"
+                INPUT "${STAGE1_LAUNCHER}"
         )
 
         include_directories(${CELIX_INCLUDE_DIRS})

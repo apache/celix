@@ -48,11 +48,21 @@ static void show_usage(char* prog_name);
 static void shutdown_framework(int signal);
 static void ignore(int signal);
 
+static int celixLauncher_launchWithConfigAndProps(const char *configFile, framework_pt *framework, properties_pt packedConfig);
+static int celixLauncher_launchWithStreamAndProps(FILE *stream, framework_pt *framework, properties_pt packedConfig);
+
 #define DEFAULT_CONFIG_FILE "config.properties"
 
 static framework_pt framework = NULL;
 
+/**
+ * Method kept because of usage in examples & unit tests
+ */
 int celixLauncher_launchWithArgs(int argc, char *argv[]) {
+	return celixLauncher_launchWithArgsAndProps(argc, argv, NULL);
+}
+
+int celixLauncher_launchWithArgsAndProps(int argc, char *argv[], properties_pt packedConfig) {
 	// Perform some minimal command-line option parsing...
 	char *opt = NULL;
 	if (argc > 1) {
@@ -84,7 +94,7 @@ int celixLauncher_launchWithArgs(int argc, char *argv[]) {
 	sigaction(SIGUSR1,  &sigact, NULL);
 	sigaction(SIGUSR2,  &sigact, NULL);
 
-	int rc = celixLauncher_launch(config_file, &framework);
+	int rc = celixLauncher_launchWithConfigAndProps(config_file, &framework, packedConfig);
 	if (rc == 0) {
 		celixLauncher_waitForShutdown(framework);
 		celixLauncher_destroy(framework);
@@ -107,15 +117,25 @@ static void ignore(int signal) {
 }
 
 int celixLauncher_launch(const char *configFile, framework_pt *framework) {
+	return celixLauncher_launchWithConfigAndProps(configFile, framework, NULL);
+}
+
+static int celixLauncher_launchWithConfigAndProps(const char *configFile, framework_pt *framework, properties_pt packedConfig){
 	int status = 0;
 	FILE *config = fopen(configFile, "r");
-	if (config != NULL) {
+
+	if (config != NULL && packedConfig != NULL) {
+		status = celixLauncher_launchWithStreamAndProps(config, framework, packedConfig);
+	} else if (config != NULL) {
 		status = celixLauncher_launchWithStream(config, framework);
+	} else if (packedConfig != NULL) {
+		status = celixLauncher_launchWithProperties(packedConfig, framework);
 	} else {
 		fprintf(stderr, "Error: invalid or non-existing configuration file: '%s'.", configFile);
 		perror("");
 		status = 1;
 	}
+
 	return status;
 }
 
@@ -137,6 +157,53 @@ int celixLauncher_launchWithStream(FILE *stream, framework_pt *framework) {
 	return status;
 }
 
+static int celixLauncher_launchWithStreamAndProps(FILE *stream, framework_pt *framework, properties_pt packedConfig){
+	int status = 0;
+
+	properties_pt runtimeConfig = properties_loadWithStream(stream);
+	fclose(stream);
+
+	// Make sure we've read it and that nothing went wrong with the file access...
+	// If there is no runtimeConfig, the packedConfig can be stored as global config
+	if (runtimeConfig == NULL){
+		runtimeConfig = packedConfig;
+	}
+
+	if (runtimeConfig == NULL) {
+		fprintf(stderr, "Error: invalid configuration file");
+		perror(NULL);
+		status = 1;
+	} else {
+		// Check if there's a pre-compiled config available
+		if (packedConfig != NULL){
+			// runtimeConfig and packedConfig must be merged
+			// when a duplicate of a key is available, the runtimeConfig must be prioritized
+
+			hash_map_iterator_t iter = hashMapIterator_construct(packedConfig);
+
+			hash_map_entry_pt entry = hashMapIterator_nextEntry(&iter);
+			const char * key = (const char *) hashMapEntry_getKey(entry);
+			const char * value = (const char *) hashMapEntry_getValue(entry);
+
+			while (entry != NULL) {
+				// Check existence of key in runtimeConfig
+				if (!hashMap_containsKey(runtimeConfig, key)) {
+					properties_set(runtimeConfig, key, value);
+				}
+
+				entry = hashMapIterator_nextEntry(&iter);
+				if (entry != NULL) {
+					key = (const char *) hashMapEntry_getKey(entry);
+					value = (const char *) hashMapEntry_getValue(entry);
+				}
+			}
+		}
+
+		status = celixLauncher_launchWithProperties(runtimeConfig, framework);
+	}
+
+	return status;
+}
 
 int celixLauncher_launchWithProperties(properties_pt config, framework_pt *framework) {
 	celix_status_t status;
