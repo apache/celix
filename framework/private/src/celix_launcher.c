@@ -197,6 +197,11 @@ static int celixLauncher_launchWithStreamAndProps(FILE *stream, framework_pt *fr
 					value = (const char *) hashMapEntry_getValue(entry);
 				}
 			}
+
+			// normally, the framework_destroy will clean up the properties_pt
+			// since there are 2 properties_pt available (runtimeConfig and packedConfig)
+			// the packedConfig must be destroyed
+			properties_destroy(packedConfig);
 		}
 
 		status = celixLauncher_launchWithProperties(runtimeConfig, framework);
