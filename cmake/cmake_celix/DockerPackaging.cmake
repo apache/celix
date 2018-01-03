@@ -95,7 +95,33 @@ function(add_celix_docker)
     else ()
         add_custom_command(OUTPUT ${LAUNCHER_SRC}
                 COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/celix/gen
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LAUNCHER_ORG} ${LAUNCHER_SRC}
+        )
+
+        if (DOCKER_CXX)
+            set(LAUNCHER_STAGE1 "${CMAKE_CURRENT_BINARY_DIR}/${DOCKER_TARGET}-docker-main-stage1.cc")
+        else()
+            set(LAUNCHER_STAGE1 "${CMAKE_CURRENT_BINARY_DIR}/${DOCKER_TARGET}-docker-main-stage1.c")
+        endif()
+
+        file(GENERATE
+                OUTPUT "${LAUNCHER_STAGE1}"
+                CONTENT "#include <celix_launcher.h>
+
+int main(int argc, char *argv[]) {
+    const char * config = \"cosgi.auto.start.1=$<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_BUNDLES>, >\\n\\
+$<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_PROPERTIES>,\\n\\
+>\";
+
+    properties_pt packedConfig = properties_loadFromString(config);
+
+    return celixLauncher_launchWithArgsAndProps(argc, argv, packedConfig);
+}
+"
+        )
+
+        file(GENERATE
+                OUTPUT "${LAUNCHER_SRC}"
+                INPUT "${LAUNCHER_STAGE1}"
         )
 
         add_executable(${DOCKER_TARGET} ${LAUNCHER_SRC})
