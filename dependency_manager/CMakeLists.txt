@@ -49,6 +49,7 @@ if (DEPENDENCY_MANAGER)
         private/src/dm_activator
     )
     set_target_properties(dependency_manager_static PROPERTIES SOVERSION 1)
+    set_target_properties(dependency_manager_static PROPERTIES VERSION 1.1.0)
 
     add_library(dependency_manager_so SHARED
     	private/src/dm_component_impl
