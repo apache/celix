@@ -30,7 +30,7 @@ if (RSA_REMOTE_SERVICE_ADMIN_HTTP)
 	include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin_http/private/include")
 	include_directories("${PROJECT_SOURCE_DIR}/remote_services/endpoint_listener/public/include")
 
-	add_bundle(remote_service_admin_http 
+	add_celix_bundle(remote_service_admin_http
         VERSION 0.9.0
         SYMBOLIC_NAME "apache_celix_remote_service_admin_http"
         NAME "Apache Celix Remote Service Admin HTTP"
@@ -43,7 +43,7 @@ if (RSA_REMOTE_SERVICE_ADMIN_HTTP)
 	${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
 	)
 
-	install_bundle(remote_service_admin_http)
+	install_celix_bundle(remote_service_admin_http)
 
 	target_link_libraries(remote_service_admin_http celix_framework ${CURL_LIBRARIES} ${UUID})
 

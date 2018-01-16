@@ -173,7 +173,7 @@ add_celix_container(<celix_container_name>
 ```
 
 The provided bundle targets for a celix container do not have to exists (yet).
-This removes the need for correctly ordering the add_bundle commands so that all bundle target are present before an add_celix_container command.
+This removes the need for correctly ordering the add_celix_bundle commands so that all bundle target are present before an add_celix_container command.
 If the bundle target is never added CMake will give an error:
 ```
   Error evaluating generator expression:
@@ -252,7 +252,7 @@ The add_celix_docker target is a executable target and can be used to link libra
 The docker dir can be found in `<cmake_build_dir>/docker[/<group_name>]/<docker_name>`. 
   
 The provided bundle targets for a docker dir do not have to exists (yet).
-This removes the need for correctly order the add_bundle commands so that all bundle target are present before 
+This removes the need for correctly order the add_celix_bundle commands so that all bundle target are present before 
 an `add_celix_docker` command.
 If the bundle target is never added CMake will give an error:
   ```

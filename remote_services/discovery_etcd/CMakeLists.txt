@@ -35,7 +35,7 @@ if (RSA_DISCOVERY_ETCD)
 	include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 	include_directories("private/include")
     
-	add_bundle(discovery_etcd 
+	add_celix_bundle(discovery_etcd
         VERSION 0.9.0
         SYMBOLIC_NAME "apache_celix_rsa_discovery_etcd"
         NAME "Apache Celix RSA Discovery ETCD"
@@ -54,7 +54,7 @@ if (RSA_DISCOVERY_ETCD)
 	    ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
 	)
 
-	install_bundle(discovery_etcd)
+	install_celix_bundle(discovery_etcd)
 		
 	target_link_libraries(discovery_etcd celix_framework etcdlib ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES} ${JANSSON_LIBRARIES})
 

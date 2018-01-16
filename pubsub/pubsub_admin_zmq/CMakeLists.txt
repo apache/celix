@@ -41,7 +41,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 		set (ZMQ_CRYPTO_C "private/src/zmq_crypto.c")
 	endif()
 
-	add_bundle(org.apache.celix.pubsub_admin.PubSubAdminZmq
+	add_celix_bundle(org.apache.celix.pubsub_admin.PubSubAdminZmq
 	    BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_zmq"
 	    VERSION "1.0.0"
 	    SOURCES
@@ -58,6 +58,6 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 
 	set_target_properties(org.apache.celix.pubsub_admin.PubSubAdminZmq PROPERTIES INSTALL_RPATH "$ORIGIN")
 	target_link_libraries(org.apache.celix.pubsub_admin.PubSubAdminZmq celix_framework celix_utils celix_dfi ${ZMQ_LIBRARIES} ${CZMQ_LIBRARIES} ${OPENSSL_CRYPTO_LIBRARY})
-	install_bundle(org.apache.celix.pubsub_admin.PubSubAdminZmq)
+	install_celix_bundle(org.apache.celix.pubsub_admin.PubSubAdminZmq)
 
 endif()

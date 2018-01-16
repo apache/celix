@@ -26,7 +26,7 @@ include_directories("${PROJECT_SOURCE_DIR}/etcdlib/public/include")
 include_directories("private/include")
 include_directories("public/include")
 
-add_bundle(org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
+add_celix_bundle(org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
     BUNDLE_SYMBOLICNAME "apache_celix_pubsub_discovery_etcd"
     VERSION "1.0.0"
     SOURCES
@@ -40,4 +40,4 @@ add_bundle(org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
 )
 
 target_link_libraries(org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery celix_framework celix_utils etcdlib_static ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
-install_bundle(org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery)
+install_celix_bundle(org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery)

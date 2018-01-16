@@ -19,7 +19,7 @@ include_directories(
         private/include
 )
 
-add_bundle(foo2
+add_celix_bundle(foo2
     SYMBOLIC_NAME foo2
     VERSION 1.0.0
     SOURCES

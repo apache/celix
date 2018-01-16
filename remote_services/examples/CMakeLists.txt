@@ -28,7 +28,7 @@ if (RSA_EXAMPLES)
     add_subdirectory(calculator_shell)
 
     if(BUILD_RSA_REMOTE_SERVICE_ADMIN_HTTP AND BUILD_RSA_DISCOVERY_CONFIGURED)
-        add_deploy(remote-services-cfg-server 
+        add_celix_container(remote-services-cfg-server
             NAME "server"
             GROUP "remote-services/remote-services-cfg"
             BUNDLES discovery_configured topology_manager remote_service_admin_http calculator shell shell_tui log_service log_writer
@@ -42,7 +42,7 @@ if (RSA_EXAMPLES)
             org.apache.celix.calc.api.Calculator2_endpoint
         )
 
-        add_deploy(remote-services-cfg-client
+        add_celix_container(remote-services-cfg-client
             NAME "client"
             GROUP "remote-services/remote-services-cfg"
             BUNDLES topology_manager remote_service_admin_http shell shell_tui log_service log_writer calculator_shell discovery_configured
@@ -57,7 +57,7 @@ if (RSA_EXAMPLES)
     endif()
 
     if (BUILD_RSA_REMOTE_SERVICE_ADMIN_SHM AND BUILD_RSA_DISCOVERY_SHM)
-        add_deploy(remote-services-shm 
+        add_celix_container(remote-services-shm
             NAME "server"
             GROUP "remote-services/remote-services-shm"
             BUNDLES discovery_shm topology_manager remote_service_admin_shm calculator shell shell_tui log_service log_writer
@@ -66,7 +66,7 @@ if (RSA_EXAMPLES)
             BUNDLES org.apache.celix.calc.api.Calculator_endpoint
         )
 
-        add_deploy(remote-services-shm-client 
+        add_celix_container(remote-services-shm-client
             NAME "client"
             GROUP "remote-services/remote-services-shm"
             BUNDLES topology_manager remote_service_admin_shm shell shell_tui log_service log_writer calculator_shell discovery_shm
@@ -77,7 +77,7 @@ if (RSA_EXAMPLES)
     endif ()
 
     if (BUILD_RSA_DISCOVERY_ETCD AND BUILD_RSA_REMOTE_SERVICE_ADMIN_HTTP)
-        add_deploy(remote-services-etcd 
+        add_celix_container(remote-services-etcd
             NAME "server"
             GROUP "remote-services/remote-services-etcd"
             BUNDLES discovery_etcd topology_manager remote_service_admin_http calculator shell shell_tui log_service log_writer
@@ -88,7 +88,7 @@ if (RSA_EXAMPLES)
             	org.apache.celix.calc.api.Calculator2_endpoint
         )
 
-        add_deploy("remote-services-etcd-client" 
+        add_celix_container("remote-services-etcd-client"
             NAME "client"
             GROUP "remote-services/remote-services-etcd"
             BUNDLES topology_manager remote_service_admin_http shell shell_tui log_service log_writer calculator_shell discovery_etcd
@@ -99,13 +99,13 @@ if (RSA_EXAMPLES)
     endif ()
 
     if (BUILD_RSA_DISCOVERY_ETCD AND BUILD_RSA_REMOTE_SERVICE_ADMIN_DFI)
-        add_deploy(remote-services-dfi 
+        add_celix_container(remote-services-dfi
             NAME "server"
             GROUP "remote-services/remote-services-dfi"
             BUNDLES discovery_etcd topology_manager remote_service_admin_dfi calculator shell shell_tui log_service log_writer
         )
 
-        add_deploy("remote-services-dfi-client" 
+        add_celix_container("remote-services-dfi-client"
             NAME "client"
             GROUP "remote-services/remote-services-dfi"
             BUNDLES topology_manager remote_service_admin_dfi shell shell_tui log_service log_writer calculator_shell discovery_etcd

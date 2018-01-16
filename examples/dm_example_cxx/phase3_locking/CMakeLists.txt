@@ -20,7 +20,7 @@ include_directories(
         ../api
 )
 
-add_bundle(phase3_locking_cxx
+add_celix_bundle(phase3_locking_cxx
     SYMBOLIC_NAME phase3_locking_cxx
     VERSION 0.0.1
     SOURCES

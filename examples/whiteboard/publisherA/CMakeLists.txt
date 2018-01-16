@@ -16,7 +16,7 @@
 # under the License.
 
 
-add_bundle(publisherA VERSION 1.0.0 SOURCES private/src/activator private/src/publisher)
+add_celix_bundle(publisherA VERSION 1.0.0 SOURCES private/src/activator private/src/publisher)
 include_directories("../publisherService/public/include")
 include_directories("../publisherService/private/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")

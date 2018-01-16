@@ -32,7 +32,7 @@ find_package(CURL REQUIRED)
 	include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 	include_directories("private/include")
 
-	add_bundle(discovery_shm 
+	add_celix_bundle(discovery_shm
         VERSION 0.0.1
         SYMBOLIC_NAME "apache_celix_rsa_discovery_shm"
         NAME "Apache Celix RSA Discovery SHM"
@@ -51,7 +51,7 @@ find_package(CURL REQUIRED)
 	    ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
 	)
 
-	install_bundle(discovery_shm)
+	install_celix_bundle(discovery_shm)
 		
 	target_link_libraries(discovery_shm celix_framework ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES})
 

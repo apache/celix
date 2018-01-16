@@ -22,7 +22,7 @@ include_directories(
         ${PROJECT_SOURCE_DIR}/utils/public/include
 )
 
-add_bundle(topology_manager_test_bundle
+add_celix_bundle(topology_manager_test_bundle
     VERSION 0.0.1
     SOURCES
         tst_activator.c   

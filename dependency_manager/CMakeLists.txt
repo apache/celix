@@ -30,7 +30,7 @@ if (DEPENDENCY_MANAGER)
       endif(CMAKE_UNAME)
     endif(UNIX AND NOT WIN32)
 
-    add_bundle(dm_shell
+    add_celix_bundle(dm_shell
         SYMBOLIC_NAME "apache_celix_dm_shell"
         VERSION "1.0.0"
         NAME "Apache Celix DM Shell Commands"
@@ -85,7 +85,7 @@ if (DEPENDENCY_MANAGER)
 		COMPONENT
 			dependency_manager
 	)
-    install_bundle(dm_shell)
+    install_celix_bundle(dm_shell)
     install(TARGETS dependency_manager_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dependency_manager)
     install(TARGETS dependency_manager_so DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dependency_manager)
 

@@ -18,7 +18,7 @@ celix_subproject(SHELL "Option to enable building the Shell bundles" ON DEPS LAU
 if (SHELL)
 	find_package(CURL REQUIRED)
 
-    add_bundle(shell
+    add_celix_bundle(shell
         SYMBOLIC_NAME "apache_celix_shell"
         VERSION "2.1.0"
         NAME "Apache Celix Shell"
@@ -41,7 +41,7 @@ if (SHELL)
 
     )
     
-    install_bundle(shell
+    install_celix_bundle(shell
     	HEADERS
     		public/include/shell.h public/include/command.h public/include/shell_constants.h
 	)

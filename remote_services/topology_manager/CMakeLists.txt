@@ -24,7 +24,7 @@ if (RSA_TOPOLOGY_MANAGER)
     include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/remote_services/topology_manager/public/include")
 
-    add_bundle(topology_manager SOURCES
+    add_celix_bundle(topology_manager SOURCES
         private/src/topology_manager
         private/src/scope
         private/src/activator
@@ -39,7 +39,7 @@ if (RSA_TOPOLOGY_MANAGER)
             "Apache Celix RS Topology Manager"
     )
 
-    install_bundle(topology_manager)
+    install_celix_bundle(topology_manager)
 
     if (ENABLE_TESTING)
         find_package(CppUTest REQUIRED)

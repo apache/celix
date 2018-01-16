@@ -22,7 +22,7 @@ include_directories(private/include)
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 
-add_bundle(event_admin
+add_celix_bundle(event_admin
     VERSION 0.0.0
 	SOURCES 
 		private/src/event_admin_activator.c
@@ -34,6 +34,6 @@ add_bundle(event_admin
 		${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
 )
 
-install_bundle(event_admin)
+install_celix_bundle(event_admin)
 
 target_link_libraries(event_admin celix_framework celix_utils)

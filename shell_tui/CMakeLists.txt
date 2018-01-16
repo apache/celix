@@ -17,7 +17,7 @@
 celix_subproject(SHELL_TUI "Option to enable building the Shell Textual User Interface bundles" ON DEPS LAUNCHER SHELL)
 if (SHELL_TUI)
 
-    add_bundle(shell_tui
+    add_celix_bundle(shell_tui
     	SYMBOLIC_NAME "apache_celix_shell_tui"
     	VERSION "1.1.0"
     	NAME "Apache Celix Shell TUI"
@@ -27,7 +27,7 @@ if (SHELL_TUI)
     		private/src/history
 	)
 	
-	install_bundle(shell_tui)
+	install_celix_bundle(shell_tui)
 	
 	include_directories("private/include")
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")

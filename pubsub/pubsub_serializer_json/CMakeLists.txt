@@ -26,7 +26,7 @@ include_directories("${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/pubsub/api/pubsub")
 include_directories("${JANSSON_INCLUDE_DIR}")
 
-add_bundle(org.apache.celix.pubsub_serializer.PubSubSerializerJson
+add_celix_bundle(org.apache.celix.pubsub_serializer.PubSubSerializerJson
     BUNDLE_SYMBOLICNAME "apache_celix_pubsub_serializer_json"
     VERSION "1.0.0"
     SOURCES
@@ -39,5 +39,5 @@ add_bundle(org.apache.celix.pubsub_serializer.PubSubSerializerJson
 set_target_properties(org.apache.celix.pubsub_serializer.PubSubSerializerJson PROPERTIES INSTALL_RPATH "$ORIGIN")
 target_link_libraries(org.apache.celix.pubsub_serializer.PubSubSerializerJson celix_framework celix_utils celix_dfi ${JANSSON_LIBRARIES})
 
-install_bundle(org.apache.celix.pubsub_serializer.PubSubSerializerJson)
+install_celix_bundle(org.apache.celix.pubsub_serializer.PubSubSerializerJson)
 

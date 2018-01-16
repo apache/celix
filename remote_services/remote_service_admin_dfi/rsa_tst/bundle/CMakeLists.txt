@@ -23,7 +23,7 @@ include_directories(
 )
 
 
-add_bundle(rsa_dfi_tst_bundle
+add_celix_bundle(rsa_dfi_tst_bundle
     VERSION 0.0.1
     SOURCES
         tst_activator.c

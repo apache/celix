@@ -29,7 +29,7 @@ if (DEPLOYMENT_ADMIN)
     include_directories("${PROJECT_SOURCE_DIR}/deployment_admin/private/include")
     include_directories("${PROJECT_SOURCE_DIR}/deployment_admin/public/include")
     
-    add_bundle(deployment_admin
+    add_celix_bundle(deployment_admin
         SYMBOLIC_NAME "apache_celix_deployment_admin"
         VERSION "0.0.2"
         NAME "Apache Celix Deployment Admin"
@@ -56,7 +56,7 @@ if (DEPLOYMENT_ADMIN)
     )
 
     
-    install_bundle(deployment_admin
+    install_celix_bundle(deployment_admin
     	HEADERS
     		public/include/resource_processor.h
 	)
@@ -64,7 +64,7 @@ if (DEPLOYMENT_ADMIN)
     target_link_libraries(deployment_admin celix_framework ${CURL_LIBRARIES})
 
 
-    add_deploy(deployment-admin
+    add_celix_container(deployment-admin
         BUNDLES deployment_admin shell shell_tui log_service log_writer
         PROPERTIES
     		"deployment_admin_url=http://localhost:8080"

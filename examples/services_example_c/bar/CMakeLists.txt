@@ -19,7 +19,7 @@ include_directories(
         private/include
 )
 
-add_bundle(bar
+add_celix_bundle(bar
     SYMBOLIC_NAME bar
     VERSION 1.0.0
     SOURCES

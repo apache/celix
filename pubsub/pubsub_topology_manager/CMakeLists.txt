@@ -23,7 +23,7 @@ include_directories("${PROJECT_SOURCE_DIR}/pubsub/api/pubsub")
 include_directories("private/include")
 include_directories("public/include")
 
-add_bundle(org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
+add_celix_bundle(org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
     BUNDLE_SYMBOLICNAME "apache_celix_pubsub_topology_manager"
     VERSION "1.0.0"
     SOURCES
@@ -40,5 +40,5 @@ bundle_files(org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
 )
 
 target_link_libraries(org.apache.celix.pubsub_topology_manager.PubSubTopologyManager celix_framework celix_utils)
-install_bundle(org.apache.celix.pubsub_topology_manager.PubSubTopologyManager)
+install_celix_bundle(org.apache.celix.pubsub_topology_manager.PubSubTopologyManager)
 

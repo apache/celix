@@ -21,7 +21,7 @@ include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
 include_directories("public/include")
 include_directories("private/include")
  		
-add_bundle(config_admin 
+add_celix_bundle(config_admin
     VERSION 0.0.1
     SOURCES
 	private/src/activator 

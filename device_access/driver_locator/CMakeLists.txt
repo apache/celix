@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_bundle(driver_locator
+add_celix_bundle(driver_locator
 	SYMBOLIC_NAME "apache_celix_driver_locator"
 	VERSION "0.0.2"
 	NAME "Apache Celix Device Access Driver Locator"
@@ -24,7 +24,7 @@ add_bundle(driver_locator
 		private/src/driver_locator
 )
 
-install_bundle(driver_locator)
+install_celix_bundle(driver_locator)
 
 include_directories(${PROJECT_SOURCE_DIR}/device_access/device_access/public/include)
 include_directories(private/include)

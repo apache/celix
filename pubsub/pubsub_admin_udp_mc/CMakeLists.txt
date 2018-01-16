@@ -26,7 +26,7 @@ include_directories("private/include")
 include_directories("public/include")
 include_directories("${JANSSON_INCLUDE_DIR}")
 
-add_bundle(org.apache.celix.pubsub_admin.PubSubAdminUdpMc
+add_celix_bundle(org.apache.celix.pubsub_admin.PubSubAdminUdpMc
 	BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_udp_multicast"
 	VERSION "1.0.0"
 	SOURCES
@@ -44,6 +44,6 @@ add_bundle(org.apache.celix.pubsub_admin.PubSubAdminUdpMc
 set_target_properties(org.apache.celix.pubsub_admin.PubSubAdminUdpMc PROPERTIES INSTALL_RPATH "$ORIGIN")
 target_link_libraries(org.apache.celix.pubsub_admin.PubSubAdminUdpMc celix_framework celix_utils celix_dfi)
 
-install_bundle(org.apache.celix.pubsub_admin.PubSubAdminUdpMc)
+install_celix_bundle(org.apache.celix.pubsub_admin.PubSubAdminUdpMc)
 
 

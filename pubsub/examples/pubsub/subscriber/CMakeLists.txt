@@ -21,7 +21,7 @@ include_directories("${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/pubsub/api/pubsub")
 include_directories("${PROJECT_SOURCE_DIR}/pubsub/examples/pubsub/common/include")
 
-add_bundle(org.apache.celix.pubsub_subscriber.PoiSubscriber
+add_celix_bundle(org.apache.celix.pubsub_subscriber.PoiSubscriber
     SYMBOLIC_NAME "apache_celix_pubsub_poi_subscriber" 
     VERSION "1.0.0"
     SOURCES 

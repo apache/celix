@@ -20,7 +20,7 @@ include_directories(
         ../api
 )
 
-add_bundle(phase1_cxx
+add_celix_bundle(phase1_cxx
     SYMBOLIC_NAME phase1_cxx
     VERSION 0.0.1
     SOURCES

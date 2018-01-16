@@ -18,7 +18,7 @@
 celix_subproject(LOG_SERVICE "Option to enable building the Log Service bundles" ON DEPS framework)
 if (LOG_SERVICE)
 
-    add_bundle(log_service
+    add_celix_bundle(log_service
     	SYMBOLIC_NAME "apache_celix_log_service"
     	NAME "Apache Celix Log Service"
     	VERSION "1.1.0"
@@ -36,7 +36,7 @@ if (LOG_SERVICE)
 		    private/include/log_service_impl.h
     )
     
-    install_bundle(log_service
+    install_celix_bundle(log_service
         HEADERS
         	public/include/log_service.h
         	public/include/log_reader_service.h

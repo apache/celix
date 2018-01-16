@@ -20,7 +20,7 @@ include_directories("../../../utils/public/include")
 include_directories("../calculator_service/public/include")
 include_directories("../../../shell/public/include")
 
-add_bundle(calculator_shell SOURCES
+add_celix_bundle(calculator_shell SOURCES
     private/src/add_command 
     private/src/sub_command
     private/src/sqrt_command
