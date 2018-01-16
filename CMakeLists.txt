@@ -26,7 +26,6 @@ include(GNUInstallDirs)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
 
 #Setup vars conform the FindCelix setup, so that examples and supporting cmake command can assume these variables are set
-#TODO move this to a seperate cmake file or integrate in the FindCelix.cmake file
 set(CELIX_FOUND true)
 set(CELIX_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/framework/public/include ${CMAKE_SOURCE_DIR}/utils/public/include)
 set(CELIX_LIBRARIES celix_framework celix_utils celix_dfi)
@@ -34,7 +33,6 @@ set(CELIX_LAUNCHER celix)
 set(CELIX_FRAMEWORK_LIBRARY celix_framework)
 set(CELIX_UTILS_LIBRARY celix_utils)
 set(CELIX_DFI_LIBRARY celix_dfi)
-#TODO CELIX_BUNDLES_DIR this will not work, maybe only use var (e.g. ${CELIX_SHELL_BUNDLE}) for bundles
 set(CELIX_DM_LIB dependency_manager_so)
 set(CELIX_DM_STATIC_LIB dependency_manager_static)
 set(CELIX_DM_STATIC_CXX_LIB dependency_manager_cxx_static)

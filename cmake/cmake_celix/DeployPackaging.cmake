@@ -16,10 +16,10 @@
 # under the License.
 
 ##### setup bundles/container target
-add_custom_target(containers ALL
-        DEPENDS $<TARGET_PROPERTY:containers,CONTAINER_DEPLOYMENTS>
+add_custom_target(celix-containers ALL
+        DEPENDS $<TARGET_PROPERTY:celix-containers,CONTAINER_DEPLOYMENTS>
 )
-set_target_properties(containers PROPERTIES "CONTAINER_DEPLOYMENTS" "") #initial empty deps list
+set_target_properties(celix-containers PROPERTIES "CONTAINER_DEPLOYMENTS" "") #initial empty deps list
 
 get_directory_property(CLEANFILES ADDITIONAL_MAKE_CLEAN_FILES)
 list(APPEND CLEANFILES "${CMAKE_BINARY_DIR}/deploy")
@@ -28,6 +28,7 @@ set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${CLEANFILES}")
 #####
 
 function(add_deploy)
+    #message(DEPRECATION "add_deploy is depecrated, use add_celix_container instead.")
     add_celix_container(${ARGN})
 endfunction()
 
@@ -37,7 +38,7 @@ function(add_celix_container)
 
     set(OPTIONS COPY CXX)
     set(ONE_VAL_ARGS GROUP NAME LAUNCHER LAUNCHER_SRC DIR)
-    set(MULTI_VAL_ARGS BUNDLES PROPERTIES)
+    set(MULTI_VAL_ARGS BUNDLES PROPERTIES EMBEDDED_PROPERTIES)
     cmake_parse_arguments(CONTAINER "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
 
     ##### Check arguments #####
@@ -59,9 +60,9 @@ function(add_celix_container)
     endif ()
     ######
 
-    get_target_property(CONTAINERDEPS containers "CONTAINER_DEPLOYMENTS")
+    get_target_property(CONTAINERDEPS celix-containers "CONTAINER_DEPLOYMENTS")
     list(APPEND CONTAINERDEPS ${CONTAINER_TARGET})
-    set_target_properties(containers PROPERTIES "CONTAINER_DEPLOYMENTS" "${CONTAINERDEPS}")
+    set_target_properties(celix-containers PROPERTIES "CONTAINER_DEPLOYMENTS" "${CONTAINERDEPS}")
 
     #FILE TARGETS FOR CONTAINER
     set(CONTAINER_PROPS "${CONTAINER_LOC}/config.properties")
@@ -106,7 +107,7 @@ function(add_celix_container)
 
 int main(int argc, char *argv[]) {
     const char * config = \"cosgi.auto.start.1=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES>, >\\n\\
-$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_PROPERTIES>,\\n\\
+$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_EMBEDDED_PROPERTIES>,\\n\\
 >\";
 
     properties_pt packedConfig = properties_loadFromString(config);
@@ -202,10 +203,12 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_PROPERTIES>,
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_GROUP" "${CONTAINER_GROUP}")
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_LOC" "${CONTAINER_LOC}")
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_PROPERTIES" "")
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_EMBEDDED_PROPERTIES" "")
     #####
 
     celix_container_bundles(${CONTAINER_TARGET} ${CONTAINER_BUNDLES})
     celix_container_properties(${CONTAINER_TARGET} ${CONTAINER_PROPERTIES})
+    celix_container_embedded_properties(${CONTAINER_TARGET} ${CONTAINER_EMBEDDED_PROPERTIES})
 
 
     #ensure the container dir will be deleted during clean
@@ -218,6 +221,7 @@ endfunction()
 #NOTE can be used for drivers/proxies/endpoints bundle dirs
 
 function(deploy_bundles_dir)
+    #message(DEPRECATION "deploy_bundles_dir is depecrated, use celix_container_bundles_dir instead.")
     celix_container_bundles_dir(${ARGN})
 endfunction()
 function(celix_container_bundles_dir)
@@ -261,6 +265,7 @@ function(celix_container_bundles_dir)
 endfunction()
 
 function(deploy_bundles)
+    #message(DEPRECATION "deploy_bundles is depecrated, use celix_container_bundles instead.")
     celix_container_bundles(${ARGN})
 endfunction()
 function(celix_container_bundles)
@@ -298,6 +303,7 @@ function(celix_container_bundles)
 endfunction()
 
 function(deploy_properties)
+    #message(DEPRECATION "deploy_properties is depecrated, use celix_container_properties instead.")
     celix_container_properties(${ARGN})
 endfunction()
 function(celix_container_properties)
@@ -313,4 +319,23 @@ function(celix_container_properties)
     endforeach()
 
    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_PROPERTIES" "${PROPS}")
+endfunction()
+
+function(deploy_embedded_properties)
+    #message(DEPRECATION "deploy_embedded_properties is depecrated, use celix_container_embedded_properties instead.")
+    celix_container_embedded_properties(${ARGN})
+endfunction()
+function(celix_container_embedded_properties)
+    #0 is container TARGET
+    #1..n is bundles
+    list(GET ARGN 0 CONTAINER_TARGET)
+    list(REMOVE_AT ARGN 0)
+
+    get_target_property(PROPS ${CONTAINER_TARGET} "CONTAINER_EMBEDDED_PROPERTIES")
+
+    foreach(PROP IN ITEMS ${ARGN})
+        list(APPEND PROPS ${PROP})
+    endforeach()
+
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_EMBEDDED_PROPERTIES" "${PROPS}")
 endfunction()
