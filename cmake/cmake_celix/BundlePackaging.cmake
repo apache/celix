@@ -338,7 +338,7 @@ function(celix_bundle_libs)
         if ("${LIB}" STREQUAL "${BUNDLE}")
             #ignore. Do not have to link agaist own lib
         elseif(IS_LIB)
-            target_link_libraries(${BUNDLE} ${LIB})
+		target_link_libraries(${BUNDLE} PRIVATE ${LIB})
         endif()
     endforeach()
 
@@ -370,7 +370,7 @@ function(celix_bundle_import_libs)
             list(APPEND LIBS "$<TARGET_SONAME_FILE_NAME:${LIB}>")
         endif()
 
-        target_link_libraries(${BUNDLE} ${LIB})
+	target_link_libraries(${BUNDLE} PRIVATE ${LIB})
     endforeach()
 
 

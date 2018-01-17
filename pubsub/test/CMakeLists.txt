@@ -32,7 +32,7 @@ add_celix_bundle(pubsub_sut
     VERSION 1.0.0
 )
 target_link_libraries(pubsub_sut celix_framework celix_utils)
-bundle_files(pubsub_sut
+celix_bundle_files(pubsub_sut
     msg_descriptors/msg.descriptor
     msg_descriptors/sync.descriptor
     DESTINATION "META-INF/descriptors/messages"
@@ -71,7 +71,7 @@ else ()
     target_link_libraries(pubsub_tst celix_framework celix_utils)
 endif ()
 
-bundle_files(pubsub_tst
+celix_bundle_files(pubsub_tst
     msg_descriptors/msg.descriptor
     msg_descriptors/sync.descriptor
     DESTINATION "META-INF/descriptors/messages"

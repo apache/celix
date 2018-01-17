@@ -37,7 +37,7 @@ if (RSA_EXAMPLES)
                 DISCOVERY_CFG_POLL_ENDPOINTS=http://localhost:8082/org.apache.celix.discovery.configured
                 DISCOVERY_CFG_SERVER_PORT=8081
         )
-        deploy_bundles_dir(remote-services-cfg-server DIR_NAME "endpoints" BUNDLES
+        celix_container_bundles_dir(remote-services-cfg-server DIR_NAME "endpoints" BUNDLES
             org.apache.celix.calc.api.Calculator_endpoint
             org.apache.celix.calc.api.Calculator2_endpoint
         )
@@ -51,7 +51,7 @@ if (RSA_EXAMPLES)
                 DISCOVERY_CFG_POLL_ENDPOINTS=http://localhost:8081/org.apache.celix.discovery.configured
                 DISCOVERY_CFG_SERVER_PORT=8082
         )
-        deploy_bundles_dir(remote-services-cfg-client DIR_NAME "endpoints"
+        celix_container_bundles_dir(remote-services-cfg-client DIR_NAME "endpoints"
             BUNDLES org.apache.celix.calc.api.Calculator_proxy org.apache.celix.calc.api.Calculator2_proxy
         )
     endif()
@@ -62,7 +62,7 @@ if (RSA_EXAMPLES)
             GROUP "remote-services/remote-services-shm"
             BUNDLES discovery_shm topology_manager remote_service_admin_shm calculator shell shell_tui log_service log_writer
         )
-        deploy_bundles_dir(remote-services-shm DIR_NAME "endpoints"
+        celix_container_bundles_dir(remote-services-shm DIR_NAME "endpoints"
             BUNDLES org.apache.celix.calc.api.Calculator_endpoint
         )
 
@@ -71,7 +71,7 @@ if (RSA_EXAMPLES)
             GROUP "remote-services/remote-services-shm"
             BUNDLES topology_manager remote_service_admin_shm shell shell_tui log_service log_writer calculator_shell discovery_shm
         )
-        deploy_bundles_dir(remote-services-shm-client DIR_NAME "endpoints"
+        celix_container_bundles_dir(remote-services-shm-client DIR_NAME "endpoints"
             BUNDLES org.apache.celix.calc.api.Calculator_proxy
         )
     endif ()
@@ -82,7 +82,7 @@ if (RSA_EXAMPLES)
             GROUP "remote-services/remote-services-etcd"
             BUNDLES discovery_etcd topology_manager remote_service_admin_http calculator shell shell_tui log_service log_writer
         )
-        deploy_bundles_dir(remote-services-etcd DIR_NAME "endpoints"
+        celix_container_bundles_dir(remote-services-etcd DIR_NAME "endpoints"
             BUNDLES
             	org.apache.celix.calc.api.Calculator_endpoint
             	org.apache.celix.calc.api.Calculator2_endpoint
@@ -93,7 +93,7 @@ if (RSA_EXAMPLES)
             GROUP "remote-services/remote-services-etcd"
             BUNDLES topology_manager remote_service_admin_http shell shell_tui log_service log_writer calculator_shell discovery_etcd
         )
-        deploy_bundles_dir(remote-services-etcd-client DIR_NAME "endpoints"
+        celix_container_bundles_dir(remote-services-etcd-client DIR_NAME "endpoints"
             BUNDLES org.apache.celix.calc.api.Calculator_proxy
         )
     endif ()

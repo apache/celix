@@ -30,19 +30,19 @@ add_celix_bundle( org.apache.celix.pubsub_subscriber.MpSubscriber
 		${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_utils.c
 )
 
-bundle_files( org.apache.celix.pubsub_subscriber.MpSubscriber
+celix_bundle_files( org.apache.celix.pubsub_subscriber.MpSubscriber
     ${PROJECT_SOURCE_DIR}/pubsub/examples/mp_pubsub/msg_descriptors/msg_ew.descriptor
     ${PROJECT_SOURCE_DIR}/pubsub/examples/mp_pubsub/msg_descriptors/msg_ide.descriptor
     ${PROJECT_SOURCE_DIR}/pubsub/examples/mp_pubsub/msg_descriptors/msg_kinematics.descriptor
 	DESTINATION "META-INF/descriptors"
 )
 
-bundle_files(org.apache.celix.pubsub_subscriber.MpSubscriber
+celix_bundle_files(org.apache.celix.pubsub_subscriber.MpSubscriber
 		${PROJECT_SOURCE_DIR}/pubsub/examples/keys/subscriber
     DESTINATION "META-INF/keys"
 )
 
-bundle_files(org.apache.celix.pubsub_subscriber.MpSubscriber
+celix_bundle_files(org.apache.celix.pubsub_subscriber.MpSubscriber
 		${PROJECT_SOURCE_DIR}/pubsub/examples/keys/publisher/public
     DESTINATION "META-INF/keys/publisher"
 )

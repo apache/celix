@@ -29,7 +29,7 @@ add_celix_bundle(rsa_dfi_tst_bundle
         tst_activator.c
 )
 
-bundle_files(rsa_dfi_tst_bundle
+celix_bundle_files(rsa_dfi_tst_bundle
     ${PROJECT_SOURCE_DIR}/remote_services/examples/calculator_service/public/include/org.apache.celix.calc.api.Calculator2.descriptor
     DESTINATION .
 )

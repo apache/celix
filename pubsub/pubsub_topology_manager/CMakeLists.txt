@@ -34,7 +34,7 @@ add_celix_bundle(org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
     	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_utils.c	
 )
 
-bundle_files(org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
+celix_bundle_files(org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
    ${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/include/pubsub_topic_info.descriptor
     DESTINATION "META-INF/descriptors/services"
 )

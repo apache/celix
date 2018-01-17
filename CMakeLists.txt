@@ -91,7 +91,7 @@ add_subdirectory(framework)
 
 include_directories(framework/public/include)
 add_subdirectory(launcher)
-add_subdirectory(config_admin)
+#add_subdirectory(config_admin) config admin is unstable
 add_subdirectory(device_access)
 add_subdirectory(deployment_admin)
 add_subdirectory(remote_services)

@@ -27,7 +27,7 @@ add_celix_bundle(topology_manager_test_bundle
     SOURCES
         tst_activator.c   
 )
-bundle_files(topology_manager_test_bundle
+celix_bundle_files(topology_manager_test_bundle
     org.apache.celix.test.MyBundle.descriptor
     DESTINATION .
 )
