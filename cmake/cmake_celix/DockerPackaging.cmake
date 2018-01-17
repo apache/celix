@@ -130,7 +130,7 @@ $<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_PROPERTIES>,\\n\\
                 INPUT "${LAUNCHER_STAGE1}"
         )
 
-        add_executable(${DOCKER_TARGET} ${LAUNCHER_SRC})
+        add_executable(${DOCKER_TARGET} EXCLUDE_FROM_ALL ${LAUNCHER_SRC})
         #   set_target_properties(${DOCKER_TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${DOCKER_LOC})
         target_include_directories(${DOCKER_TARGET} PRIVATE ${CELIX_INCLUDE_DIRS})
         target_link_libraries(${DOCKER_TARGET} PRIVATE ${CELIX_FRAMEWORK_LIBRARY} ${CELIX_UTILS_LIBRARY})
