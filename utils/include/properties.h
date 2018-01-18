@@ -46,6 +46,8 @@ UTILS_EXPORT properties_pt properties_load(const char *filename);
 
 UTILS_EXPORT properties_pt properties_loadWithStream(FILE *stream);
 
+UTILS_EXPORT properties_pt properties_loadFromString(const char *input);
+
 UTILS_EXPORT void properties_store(properties_pt properties, const char *file, const char *header);
 
 UTILS_EXPORT const char *properties_get(properties_pt properties, const char *key);

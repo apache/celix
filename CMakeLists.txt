@@ -21,9 +21,9 @@ cmake_policy(SET CMP0042 NEW)
 
 project (Celix C CXX)
 
-include(GNUInstallDirs)
+include(GNUInstallDirs)                                                                                                                                                                             
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
-set(CMAKE_BUILD_TYPE "Debug")
 
 
 # see https://public.kitware.com/Bug/view.php?id=15696
@@ -61,20 +61,19 @@ if (ENABLE_TESTING)
 endif()
 
 
-include(CMakeCelix-local)
+include(CMakeCelix)
 include(UseDoxygen)  
 
 # Default bundle version
 set(DEFAULT_VERSION 1.0.0)
 
-#libraries
 #utils, dfi and etcdlib are standalone
 #(e.g. no dependency on celix framework
 add_subdirectory(utils)
 add_subdirectory(dfi)
 add_subdirectory(etcdlib)
+
 add_subdirectory(framework)
-include_directories(framework/public/include)
 
 #launcher
 add_subdirectory(launcher)
@@ -91,8 +90,8 @@ add_subdirectory(shell)
 add_subdirectory(log_writer)
 add_subdirectory(log_service)
 add_subdirectory(pubsub)
-#add_subdirectory(event_admin)# event_admin is unstable
 
+#add_subdirectory(event_admin)# event_admin is unstable
 add_subdirectory(dependency_manager)
 add_subdirectory(dependency_manager_cxx)
 

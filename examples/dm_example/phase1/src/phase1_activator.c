@@ -62,6 +62,7 @@ celix_status_t dm_init(void * userData, bundle_context_pt context, dm_dependency
 		component_create(context, "PHASE1_PROCESSING_COMPONENT", &cmp);
 		component_setImplementation(cmp, act->phase1Cmp);
 		component_setCallbacksSafe(cmp, phase1_cmp_t *, phase1_init, phase1_start, phase1_stop, phase1_deinit);
+		phase1_setComp(act->phase1Cmp, cmp);
 		component_addInterface(cmp, PHASE1_NAME, PHASE1_VERSION, &act->phase1Serv, props);
 
 		dependencyManager_add(manager, cmp);

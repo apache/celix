@@ -26,11 +26,12 @@
 
 #ifndef PHASE1_CMP_H
 #define PHASE1_CMP_H
-
+#include "dm_component.h"
 
 typedef struct phase1_cmp_struct phase1_cmp_t;
 
 phase1_cmp_t *phase1_create(void);
+void phase1_setComp(phase1_cmp_t *cmp, dm_component_pt dmCmp);
 int phase1_init(phase1_cmp_t *cmp);
 int phase1_start(phase1_cmp_t *cmp);
 int phase1_stop(phase1_cmp_t *cmp);

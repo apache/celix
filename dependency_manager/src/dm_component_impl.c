@@ -39,7 +39,7 @@ struct dm_component_struct {
     char id[DM_COMPONENT_MAX_ID_LENGTH];
     char name[DM_COMPONENT_MAX_NAME_LENGTH];
     bundle_context_pt context;
-    array_list_pt dm_interfaces;
+    array_list_pt dm_interfaces;  //protected by mutex
 
     void* implementation;
 
@@ -338,39 +338,41 @@ celix_status_t component_setCLanguageProperty(dm_component_pt component, bool se
 celix_status_t component_addInterface(dm_component_pt component, const char* serviceName, const char* serviceVersion, const void* service, properties_pt properties) {
     celix_status_t status = CELIX_SUCCESS;
 
-    if (component->active) {
-        return CELIX_ILLEGAL_STATE;
+    dm_interface_t *interface = (dm_interface_t *) calloc(1, sizeof(*interface));
+    char *name = strdup(serviceName);
+
+    if (properties == NULL) {
+        properties = properties_create();
+    }
+
+    if ((properties_get(properties, CELIX_FRAMEWORK_SERVICE_VERSION) == NULL) && (serviceVersion != NULL)) {
+        properties_set(properties, CELIX_FRAMEWORK_SERVICE_VERSION, serviceVersion);
+    }
+
+    if (component->setCLanguageProperty && properties_get(properties, CELIX_FRAMEWORK_SERVICE_LANGUAGE) == NULL) { //always set default lang to C
+        properties_set(properties, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
+    }
+
+    if (interface && name) {
+        interface->serviceName = name;
+        interface->service = service;
+        interface->properties = properties;
+        interface->registration = NULL;
+        celixThreadMutex_lock(&component->mutex);
+        arrayList_add(component->dm_interfaces, interface);
+        celixThreadMutex_unlock(&component->mutex);
+        if (component->state == DM_CMP_STATE_TRACKING_OPTIONAL) {
+            component_registerServices(component);
+        }
     } else {
-        dm_interface_t *interface = (dm_interface_t *) calloc(1, sizeof(*interface));
-        char *name = strdup(serviceName);
-
-        if (properties == NULL) {
-            properties = properties_create();
-        }
-
-        if ((properties_get(properties, CELIX_FRAMEWORK_SERVICE_VERSION) == NULL) && (serviceVersion != NULL)) {
-            properties_set(properties, CELIX_FRAMEWORK_SERVICE_VERSION, serviceVersion);
-        }
-
-        if (component->setCLanguageProperty && properties_get(properties, CELIX_FRAMEWORK_SERVICE_LANGUAGE) == NULL) { //always set default lang to C
-            properties_set(properties, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
-        }
-
-        if (interface && name) {
-            interface->serviceName = name;
-            interface->service = service;
-            interface->properties = properties;
-            interface->registration = NULL;
-            arrayList_add(component->dm_interfaces, interface);
-        } else {
-            free(interface);
-            free(name);
-            status = CELIX_ENOMEM;
-        }
+        free(interface);
+        free(name);
+        status = CELIX_ENOMEM;
     }
 
     return status;
 }
+
 
 celix_status_t component_getInterfaces(dm_component_pt component, array_list_pt *out) {
     celix_status_t status = CELIX_SUCCESS;
@@ -1179,12 +1181,17 @@ celix_status_t component_registerServices(dm_component_pt component) {
 
     if (component->context != NULL) {
 	    unsigned int i;
+        celixThreadMutex_lock(&component->mutex);
         for (i = 0; i < arrayList_size(component->dm_interfaces); i++) {
             dm_interface_t *interface = arrayList_get(component->dm_interfaces, i);
+            if (interface->registration == NULL) {
                 properties_pt regProps = NULL;
                 properties_copy(interface->properties, &regProps);
-                bundleContext_registerService(component->context, interface->serviceName, interface->service, regProps, &interface->registration);
+                bundleContext_registerService(component->context, interface->serviceName, interface->service, regProps,
+                                              &interface->registration);
+            }
         }
+        celixThreadMutex_unlock(&component->mutex);
     }
 
     return status;
@@ -1195,12 +1202,14 @@ celix_status_t component_unregisterServices(dm_component_pt component) {
 
     unsigned int i;
 
+    celixThreadMutex_lock(&component->mutex);
     for (i = 0; i < arrayList_size(component->dm_interfaces); i++) {
-	dm_interface_t *interface = arrayList_get(component->dm_interfaces, i);
+	    dm_interface_t *interface = arrayList_get(component->dm_interfaces, i);
 
-	serviceRegistration_unregister(interface->registration);
-	interface->registration = NULL;
+	    serviceRegistration_unregister(interface->registration);
+	    interface->registration = NULL;
     }
+    celixThreadMutex_unlock(&component->mutex);
 
     return status;
 }

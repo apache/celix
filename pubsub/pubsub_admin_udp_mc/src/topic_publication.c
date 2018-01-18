@@ -7,7 +7,7 @@
  *"License"); you may not use this file except in compliance
  *with the License.  You may obtain a copy of the License at
  *
- *  htPSA_UDP_MC_TP://www.apache.org/licenses/LICENSE-2.0
+ *  http://www.apache.org/licenses/LICENSE-2.0
  *
  *Unless required by applicable law or agreed to in writing,
  *software distributed under the License is distributed on an
@@ -15,13 +15,6 @@
  * KIND, either express or implied.  See the License for the
  *specific language governing permissions and limitations
  *under the License.
- */
-/*
- * topic_publication.c
- *
- *  \date       Sep 24, 2015
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
  */
 
 #include <stdlib.h>
@@ -318,7 +311,7 @@ static int pubsub_topicPublicationSend(void* handle, unsigned int msgTypeId, con
 	celixThreadMutex_lock(&(bound->parent->tp_lock));
 	celixThreadMutex_lock(&(bound->mp_lock));
 
-	pubsub_msg_serializer_t* msgSer = (pubsub_msg_serializer_t*)hashMap_get(bound->msgTypes, (void*)(uintptr_t)msgTypeId);
+	pubsub_msg_serializer_t* msgSer = (pubsub_msg_serializer_t*)hashMap_get(bound->msgTypes, (void*)(intptr_t)msgTypeId);
 
 	if (msgSer != NULL) {
 		int major=0, minor=0;

@@ -31,6 +31,7 @@
 
 #include "celix_threads.h"
 #include "phase1_cmp.h"
+#include "dm_component.h"
 
 #define SLEEPTIME 1000
 
@@ -38,6 +39,8 @@ struct phase1_cmp_struct {
 	celix_thread_t thread;
     bool running;
 	unsigned int counter;
+	dm_component_pt component;
+
 };
 
 static void *phase1_thread(void *data);
@@ -49,6 +52,10 @@ phase1_cmp_t *phase1_create(void) {
         cmp->running = false;
 	}
 	return cmp;
+}
+
+void phase1_setComp(phase1_cmp_t *cmp, dm_component_pt dmCmp) {
+	cmp->component = dmCmp;
 }
 
 int phase1_init(phase1_cmp_t *cmp) {
@@ -86,6 +93,10 @@ static void *phase1_thread(void *data) {
 
     while (cmp->running) {
         cmp->counter += 1;
+        if (cmp->counter == 2) {
+        	static char *runtime_interface = "DUMMY INTERFACE: DO NOT USE\n";
+        	component_addInterface(cmp->component, "RUNTIME_ADDED_INTERFACE", "1.0.0", runtime_interface, NULL);
+        }
         usleep(SLEEPTIME);
     }
 

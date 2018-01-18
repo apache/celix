@@ -28,31 +28,39 @@ set(SOURCES
 	src/json_rpc.c
 )
 
-add_library(dfi SHARED ${SOURCES})
-set_target_properties(dfi PROPERTIES OUTPUT_NAME "celix_dfi")
-target_include_directories(dfi PUBLIC include ${JANSSON_INCLUDE_DIRS})
-target_include_directories(dfi PRIVATE src ${FFI_INCLUDE_DIRS})
-target_link_libraries(dfi PUBLIC ${JANSSON_LIBRARY})
-target_link_libraries(dfi PRIVATE Celix::utils ${FFI_LIBRARIES})
-set_target_properties(dfi PROPERTIES "SOVERSION" 1)
+add_library(celix_dfi SHARED ${SOURCES})
+set_target_properties(celix_dfi PROPERTIES OUTPUT_NAME "celix_dfi")
+target_include_directories(celix_dfi PUBLIC include ${JANSSON_INCLUDE_DIRS})
+target_include_directories(celix_dfi PRIVATE src ${FFI_INCLUDE_DIRS})
+target_link_libraries(celix_dfi PUBLIC ${JANSSON_LIBRARY})
+target_link_libraries(celix_dfi PRIVATE Celix::utils ${FFI_LIBRARIES})
+set_target_properties(celix_dfi PROPERTIES "SOVERSION" 1)
 
-add_library(dfi_static STATIC ${SOURCES})
-set_target_properties(dfi_static PROPERTIES OUTPUT_NAME "celix_dfi_static")
-target_include_directories(dfi_static PUBLIC include ${JANSSON_INCLUDE_DIRS})
-target_include_directories(dfi_static PRIVATE src ${FFI_INCLUDE_DIRS})
-target_link_libraries(dfi_static PUBLIC ${JANSSON_LIBRARY})
-target_link_libraries(dfi_static PRIVATE Celix::utils ${FFI_LIBRARIES})
+add_library(celix_dfi_static STATIC ${SOURCES})
+set_target_properties(celix_dfi_static PROPERTIES OUTPUT_NAME "celix_dfi_static")
+target_include_directories(celix_dfi_static PUBLIC include ${JANSSON_INCLUDE_DIRS})
+target_include_directories(celix_dfi_static PRIVATE src ${FFI_INCLUDE_DIRS})
+target_link_libraries(celix_dfi_static PUBLIC ${JANSSON_LIBRARY})
+target_link_libraries(celix_dfi_static PRIVATE Celix::utils ${FFI_LIBRARIES})
 
-install(TARGETS dfi dfi_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
+install(TARGETS celix_dfi celix_dfi_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
 
+install(TARGETS celix_dfi DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
+FILE(GLOB files "include/*.h")
+INSTALL(FILES ${files} DESTINATION include/celix/dfi COMPONENT framework)
 
 #Alias setup to match external usage
-add_library(Celix::dfi ALIAS dfi)
-add_library(Celix::dfi_static ALIAS dfi_static)
+add_library(Celix::dfi ALIAS celix_dfi)
+add_library(Celix::dfi_static ALIAS celix_dfi_static)
 
 if (ENABLE_TESTING)
     find_package(CppUTest REQUIRED)
+        
     include_directories(${CPPUTEST_INCLUDE_DIR})
+
+	SET(CMAKE_SKIP_BUILD_RPATH  FALSE) #TODO needed?
+	SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE) #TODO needed?
+    SET(CMAKE_INSTALL_RPATH "${PROJECT_BINARY_DIR}/dfi" "${PROJECT_BINARY_DIR}/utils")
 
 	add_executable(test_dfi
 		test/dyn_type_tests.cpp

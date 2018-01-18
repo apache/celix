@@ -96,6 +96,34 @@ properties_pt properties_loadWithStream(FILE *file) {
 	return props;
 }
 
+properties_pt properties_loadFromString(const char *input){
+	properties_pt props = properties_create();
+
+	char *in = strdup(input);
+	char *line = NULL;
+	char *saveLinePointer = NULL;
+
+	bool firstTime = true;
+	do {
+		if (firstTime){
+			line = strtok_r(in, "\n", &saveLinePointer);
+			firstTime = false;
+		}else {
+			line = strtok_r(NULL, "\n", &saveLinePointer);
+		}
+
+		if (line == NULL){
+			break;
+		}
+
+		parseLine(line, props);
+	} while(line != NULL);
+
+	free(in);
+
+	return props;
+}
+
 
 /**
  * Header is ignored for now, cannot handle comments yet

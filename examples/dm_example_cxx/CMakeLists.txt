@@ -24,7 +24,7 @@ if (BUILD_DEPENDENCY_MANAGER_CXX)
     add_subdirectory(phase3_locking)
 
 
-    add_deploy("dm_example_cxx"
+    add_celix_container("dm_example_cxx"
         COPY 
 	    CXX
         BUNDLES
@@ -43,26 +43,26 @@ if (BUILD_DEPENDENCY_MANAGER_CXX)
             LOGHELPER_ENABLE_STDOUT_FALLBACK=true
     )
 
-    if (ENABLE_DOCKER)
-        add_celix_docker(dm_exmpl_cxx
-            GROUP examples
-            BUNDLES_DIR /usr/share/bundles
-            WORKDIR /workspace
-            BUNDLES
-                Celix::shell
-                Celix::shell_tui
-                Celix::dm_shell
-                Celix::log_service
-                Celix::log_writer_stdout
 
-                dm_example_cxx_phase1
-                dm_example_cxx_phase2a
-                dm_example_cxx_phase2b
-                dm_example_cxx_phase3
-                dm_example_cxx_phase3_locking
-            PROPERTIES
-                LOGHELPER_ENABLE_STDOUT_FALLBACK=true
-        )
-    endif ()
+   add_celix_docker(dm_exmpl_cxx_docker
+           IMAGE_NAME dm_exmpl_cxx
+           GROUP examples
+           BUNDLES_DIR /usr/share/bundles
+           WORKDIR /workspace
+           BUNDLES
+               Celix::shell
+               Celix::shell_tui
+               Celix::dm_shell
+               Celix::log_service
+               Celix::log_writer_stdout
+
+               dm_example_cxx_phase1
+               dm_example_cxx_phase2a
+               dm_example_cxx_phase2b
+               dm_example_cxx_phase3
+               dm_example_cxx_phase3_locking
+           PROPERTIES
+               LOGHELPER_ENABLE_STDOUT_FALLBACK=true
+   )
 
 endif ()

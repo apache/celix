@@ -652,7 +652,7 @@ static int pubsub_getMultipart(void *handle, unsigned int msgTypeId, bool retain
 	}
 
 	mp_handle_pt mp_handle = (mp_handle_pt)handle;
-	msg_map_entry_pt entry = hashMap_get(mp_handle->rcv_msg_map,&msgTypeId);
+	msg_map_entry_pt entry = hashMap_get(mp_handle->rcv_msg_map, (void*)(uintptr_t) msgTypeId);
 	if(entry!=NULL){
 		entry->retain = retain;
 		*part = entry->msgInst;
@@ -690,7 +690,7 @@ static mp_handle_pt create_mp_handle(hash_map_pt svc_msg_db,array_list_pt rcv_ms
 			bool validVersion = checkVersion(msgSer->msgVersion,header);
 
 			if(validVersion){
-				celix_status_t status = msgSer->deserialize(msgSer->handle, (const void*)zframe_data(c_msg->payload), 0, &msgInst);
+				celix_status_t status = msgSer->deserialize(msgSer, (const void*)zframe_data(c_msg->payload), 0, &msgInst);
 
 				if(status == CELIX_SUCCESS){
 					msg_map_entry_pt entry = calloc(1,sizeof(struct msg_map_entry));

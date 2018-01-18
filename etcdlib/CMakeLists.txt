@@ -51,7 +51,8 @@ target_include_directories(etcdlib PRIVATE
     ${JANSSON_INCLUDE_DIRS}
 )
 
-set_target_properties(etcdlib PROPERTIES "SOVERSION" 1)
+set_target_properties(etcdlib PROPERTIES SOVERSION 1)
+set_target_properties(etcdlib PROPERTIES VERSION 1.0.0)
 target_link_libraries(etcdlib ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
 
 add_library(etcdlib_static STATIC

@@ -24,7 +24,7 @@ if (BUILD_DEPENDENCY_MANAGER)
     add_subdirectory(phase3)
 
 
-    add_deploy("dm_example"
+    add_deploy(dm_example
         COPY 
         BUNDLES
             Celix::shell
@@ -38,28 +38,26 @@ if (BUILD_DEPENDENCY_MANAGER)
             LOGHELPER_ENABLE_STDOUT_FALLBACK=true
     )
 
-    if (ENABLE_DOCKER)
-        add_celix_docker(dm_exmpl_base
-                NAME dmbase
-                IMAGE_NAME dmbase
-                GROUP examples
-                INSTRUCTIONS
-                    "LABEL exmpl=value"
-        )
-        add_celix_docker(dm_exmpl
-            FROM dmbase
+    add_celix_docker(dm_exmpl_base
+            NAME dmbase
+            IMAGE_NAME dmbase
             GROUP examples
-            BUNDLES
-                Celix::shell
-                Celix::shell_tui
-                Celix::dm_shell
-                dm_example_phase1
-                dm_example_phase2a
-                dm_example_phase2b
-                dm_example_phase3
-            PROPERTIES
-                LOGHELPER_ENABLE_STDOUT_FALLBACK=true
-        )
-    endif ()
+            INSTRUCTIONS
+                "LABEL exmpl=value"
+    )
+    add_celix_docker(dm_exmpl
+        FROM dmbase
+        GROUP examples
+        BUNDLES
+            Celix::shell
+            Celix::shell_tui
+            Celix::dm_shell
+            dm_example_phase1
+            dm_example_phase2a
+            dm_example_phase2b
+            dm_example_phase3
+        PROPERTIES
+            LOGHELPER_ENABLE_STDOUT_FALLBACK=true
+    )
 
 endif ()
