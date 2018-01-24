@@ -23,7 +23,7 @@ add_bundle(calculator
     VERSION 0.0.1
 )
 target_include_directories(calculator PRIVATE src)
-target_link_libraries(calculator PRIVATE Celix::rsa_api calculator_api)
+target_link_libraries(calculator PRIVATE Celix::rsa_spi calculator_api)
 
 get_target_property(DESCR calculator_api INTERFACE_CALCULATOR_DESCRIPTOR)
 bundle_files(calculator ${DESCR} DESTINATION .)

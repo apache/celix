@@ -33,8 +33,6 @@
 #include "service_tracker.h"
 #include "service_registration.h"
 
-#include "endpoint_listener.h"
-#include "remote_constants.h"
 #include "listener_hook_service.h"
 #include "log_service.h"
 #include "log_helper.h"

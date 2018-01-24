@@ -36,7 +36,7 @@
 
 #include "topic_publication.h"
 #include "pubsub_common.h"
-#include "publisher.h"
+#include "pubsub/publisher.h"
 #include "large_udp.h"
 
 #include "pubsub_serializer.h"

@@ -20,23 +20,21 @@ find_program(ETCD_CMD NAMES etcd)
 find_package(CppUTest REQUIRED)
 include_directories(${CPPUTEST_INCLUDE_DIR})
 
-include_directories(
-        ${CMAKE_SOURCE_DIR}/pubsub/api
-        test
-)
-
 add_bundle(pubsub_sut
     #"Vanilla" bundle which is under test
     SOURCES
         test/sut_activator.c
     VERSION 1.0.0
 )
-target_link_libraries(pubsub_sut PRIVATE Celix::framework)
+target_include_directories(pubsub_sut PRIVATE test)
+target_link_libraries(pubsub_sut PRIVATE Celix::pubsub_spi)
+
 bundle_files(pubsub_sut
     msg_descriptors/msg.descriptor
     msg_descriptors/sync.descriptor
     DESTINATION "META-INF/descriptors/messages"
 )
+
 add_deploy(pubsub_udpmc_sut
     NAME deploy_sut
     BUNDLES

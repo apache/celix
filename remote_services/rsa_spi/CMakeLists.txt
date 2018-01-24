@@ -15,25 +15,15 @@
 # specific language governing permissions and limitations
 # under the License.
 
-
-find_package(LibXml2 REQUIRED)
-
-add_library(rsa_discovery_common OBJECT
-		src/discovery.c
-		src/discovery_activator.c
-		src/endpoint_descriptor_reader.c
-		src/endpoint_descriptor_writer.c
-		src/endpoint_discovery_poller.c
-		src/endpoint_discovery_server.c
+add_library(rsa_spi INTERFACE)
+target_include_directories(rsa_spi INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+    $<INSTALL_INTERFACE:include/celix/rsa>
 )
-target_include_directories(rsa_discovery_common PUBLIC
-		include src
-		$<TARGET_PROPERTY:Celix::framework,INTERFACE_INCLUDE_DIRECTORIES>
-		$<TARGET_PROPERTY:Celix::utils,INTERFACE_INCLUDE_DIRECTORIES>
-		$<TARGET_PROPERTY:Celix::log_helper,INTERFACE_INCLUDE_DIRECTORIES>
-		$<TARGET_PROPERTY:Celix::rsa_spi,INTERFACE_INCLUDE_DIRECTORIES>
-		$<TARGET_PROPERTY:civetweb,INCLUDE_DIRECTORIES>
-		${LIBXML2_INCLUDE_DIR})
+target_link_libraries(rsa_spi INTERFACE Celix::remote_services_api)
+
+install(TARGETS rsa_spi EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT rsa)
+install(DIRECTORY include/ DESTINATION include/celix/rsa COMPONENT rsa)
 
 #Setup target aliases to match external usage
-add_library(Celix::rsa_discovery_common ALIAS rsa_discovery_common)
+add_library(Celix::rsa_spi ALIAS rsa_spi)

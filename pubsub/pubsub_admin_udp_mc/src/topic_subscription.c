@@ -42,8 +42,8 @@
 
 #include "topic_subscription.h"
 #include "topic_publication.h"
-#include "subscriber.h"
-#include "publisher.h"
+#include "pubsub/subscriber.h"
+#include "pubsub/publisher.h"
 #include "large_udp.h"
 
 #include "pubsub_serializer.h"

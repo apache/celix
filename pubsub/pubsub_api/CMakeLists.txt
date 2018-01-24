@@ -15,31 +15,18 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(rsa_api INTERFACE)
-target_include_directories(rsa_api INTERFACE include)
+#api target
+add_library(pubsub_api INTERFACE)
 
-install (FILES 
-        include/remote_endpoint_impl.h
-        include/remote_endpoint.h
-        include/remote_proxy.h
-        include/remote_service_admin.h
-        include/export_registration.h
-        include/import_registration.h
-        include/endpoint_description.h
-        include/endpoint_listener.h
-        include/remote_constants.h
-    DESTINATION 
-        include/celix/remote_service_admin 
-    COMPONENT 
-        remote_service_admin
+target_include_directories(framework INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+    $<INSTALL_INTERFACE:include/celix/pubsub>
 )
-install (FILES 
-        public/include/endpoint_listener.h
-    DESTINATION 
-        include/celix/endpoint_listener 
-    COMPONENT 
-        remote_service_admin
-)
+
+#install api
+install(TARGETS pubsub_api EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT pubsub)
+install(DIRECTORY include/ DESTINATION include/celix/pubsub COMPONENT pubsub)
 
 #Setup target aliases to match external usage
-add_library(Celix::rsa_api ALIAS rsa_api)
+add_library(Celix::pubsub_api ALIAS pubsub_api)
+

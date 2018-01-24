@@ -32,12 +32,15 @@
 #include "service_tracker.h"
 #include "constants.h"
 
-#include "pubsub_common.h"
-#include "pubsub_utils.h"
-#include "publisher.h"
+#include "pubsub/publisher.h"
 #include "pubsub_publisher_private.h"
 
-#define PUB_TOPIC "poi1;poi2"
+static const char * PUB_TOPICS[] = {
+		"poi1",
+		"poi2",
+		NULL
+};
+
 
 struct publisherActivator {
 	pubsub_sender_pt client;
@@ -73,22 +76,19 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	struct publisherActivator * act = (struct publisherActivator *) userData;
 
 	int i;
-	array_list_pt topic_list = pubsub_getTopicsFromString(PUB_TOPIC);
-
-	if(topic_list !=NULL){
+	if(PUB_TOPICS !=NULL){
 
 		char filter[128];
-		for(i=0; i<arrayList_size(topic_list);i++){
-			char* topic = arrayList_get(topic_list,i);
-			if(strlen(topic)<MAX_TOPIC_LEN){
+		for(i=0; PUB_TOPICS[i] != NULL; i++){
+			const char* topic = PUB_TOPICS[i];
 
-				bundle_pt bundle = NULL;
-				long bundleId = 0;
-				bundleContext_getBundle(context,&bundle);
-				bundle_getBundleId(bundle,&bundleId);
+			bundle_pt bundle = NULL;
+			long bundleId = 0;
+			bundleContext_getBundle(context,&bundle);
+			bundle_getBundleId(bundle,&bundleId);
 
-				service_tracker_pt tracker = NULL;
-				memset(filter,0,128);
+			service_tracker_pt tracker = NULL;
+			memset(filter,0,128);
 #ifdef USE_SCOPE
 				char *scope;
 				asprintf(&scope, "my_scope_%d", i);
@@ -98,23 +98,15 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 						PUBLISHER_SCOPE, scope);
 				free(scope);
 #else
-				snprintf(filter, 128, "(&(%s=%s)(%s=%s))",
-				          (char*) OSGI_FRAMEWORK_OBJECTCLASS, PUBSUB_PUBLISHER_SERVICE_NAME,
-				                  PUBSUB_PUBLISHER_TOPIC, topic);
+			snprintf(filter, 128, "(&(%s=%s)(%s=%s))", (char*) OSGI_FRAMEWORK_OBJECTCLASS, PUBSUB_PUBLISHER_SERVICE_NAME, PUBSUB_PUBLISHER_TOPIC, topic);
 #endif
-				service_tracker_customizer_pt customizer = NULL;
-				serviceTrackerCustomizer_create(act->client,NULL,publisher_publishSvcAdded,NULL,publisher_publishSvcRemoved,&customizer);
-				serviceTracker_createWithFilter(context, filter, customizer, &tracker);
+			service_tracker_customizer_pt customizer = NULL;
+			serviceTrackerCustomizer_create(act->client,NULL,publisher_publishSvcAdded,NULL,publisher_publishSvcRemoved,&customizer);
+			serviceTracker_createWithFilter(context, filter, customizer, &tracker);
 
-				arrayList_add(act->trackerList,tracker);
-			}
-			else{
-				printf("Topic %s too long. Skipping publication.\n",topic);
-			}
-			free(topic);
+			arrayList_add(act->trackerList,tracker);
+
 		}
-		arrayList_destroy(topic_list);
-
 	}
 
 	publisher_start(act->client);

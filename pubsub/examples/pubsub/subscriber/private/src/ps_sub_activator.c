@@ -25,14 +25,18 @@
  */
 
 #include <stdlib.h>
+#include <pubsub/subscriber.h>
 
 #include "bundle_activator.h"
 
-#include "pubsub_common.h"
-#include "pubsub_utils.h"
 #include "pubsub_subscriber_private.h"
 
-#define SUB_TOPIC "poi1;poi2"
+#define SUB_NAME "poi1;poi2"
+static const char * SUB_TOPICS[] = {
+		"poi1",
+		"poi2",
+		NULL
+};
 
 struct subscriberActivator {
 	array_list_pt registrationList; //List<service_registration_pt>
@@ -51,39 +55,29 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
 
 	pubsub_subscriber_pt subsvc = calloc(1,sizeof(*subsvc));
-	pubsub_receiver_pt sub = subscriber_create(SUB_TOPIC);
+	pubsub_receiver_pt sub = subscriber_create(SUB_NAME);
 	subsvc->handle = sub;
 	subsvc->receive = pubsub_subscriber_recv;
 
 	act->subsvc = subsvc;
 
-	array_list_pt topic_list = pubsub_getTopicsFromString(SUB_TOPIC);
-
-	if(topic_list !=NULL){
+	if (SUB_TOPICS !=NULL){
 
 		int i;
-		for(i=0; i<arrayList_size(topic_list);i++){
-			char* topic = arrayList_get(topic_list,i);
-			if(strlen(topic)<MAX_TOPIC_LEN){
-				properties_pt props = properties_create();
-				properties_set(props, PUBSUB_SUBSCRIBER_TOPIC,topic);
+		for(i=0; SUB_TOPICS[i] != NULL ;i++){
+			const char* topic = SUB_TOPICS[i];
+			properties_pt props = properties_create();
+			properties_set(props, PUBSUB_SUBSCRIBER_TOPIC,topic);
 #ifdef USE_SCOPE
 				char *scope;
 				asprintf(&scope, "my_scope_%d", i);
 				properties_set(props,SUBSCRIBER_SCOPE,scope);
 				free(scope);
 #endif
-				service_registration_pt reg = NULL;
-				bundleContext_registerService(context, PUBSUB_SUBSCRIBER_SERVICE_NAME, subsvc, props, &reg);
-				arrayList_add(act->registrationList,reg);
-			}
-			else{
-				printf("Topic %s too long. Skipping subscription.\n",topic);
-			}
-			free(topic);
+			service_registration_pt reg = NULL;
+			bundleContext_registerService(context, PUBSUB_SUBSCRIBER_SERVICE_NAME, subsvc, props, &reg);
+			arrayList_add(act->registrationList,reg);
 		}
-		arrayList_destroy(topic_list);
-
 	}
 
 	subscriber_start((pubsub_receiver_pt)act->subsvc->handle);

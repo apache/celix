@@ -36,7 +36,10 @@ set(SOURCES
 )
 add_library(framework SHARED ${SOURCES})
 set_target_properties(framework PROPERTIES OUTPUT_NAME "celix_framework")
-target_include_directories(framework PUBLIC include)
+target_include_directories(framework PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+        $<INSTALL_INTERFACE:include/celix>
+)
 target_include_directories(framework PRIVATE
         src
         ${ZLIB_INCLUDE_DIR}
@@ -45,7 +48,6 @@ target_include_directories(framework PRIVATE
 )
 target_compile_definitions(framework PRIVATE -DUSE_FILE32API)
 
-include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 set_target_properties(framework PROPERTIES "SOVERSION" 2)
 
 if(NOT APPLE)
@@ -54,15 +56,15 @@ endif()
 target_link_libraries(framework PUBLIC Celix::utils)
 target_link_libraries(framework PRIVATE ${UUID} ${ZLIB_LIBRARY} ${CURL_LIBRARIES})
 
-install(TARGETS framework DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
+install(TARGETS framework EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
+install(DIRECTORY include/ DESTINATION include/celix COMPONENT framework)
+install(DIRECTORY "${PROJECT_SOURCE_DIR}/cmake/" DESTINATION share/celix/cmake/modules COMPONENT framework
+    PATTERN "CMakeCelix-local.cmake" EXCLUDE
+)
+
 
 #Alias setup to match external usage
 add_library(Celix::framework ALIAS framework)
-
-install(DIRECTORY "${PROJECT_SOURCE_DIR}/cmake/" DESTINATION share/celix/cmake/modules
-        COMPONENT framework
-        PATTERN "CMakeCelix-local.cmake" EXCLUDE
-)
 
 
 if (ENABLE_TESTING)

@@ -28,7 +28,7 @@ if (RSA_TOPOLOGY_MANAGER)
     )
     target_include_directories(rsa_topology_manager PRIVATE src)
     target_include_directories(rsa_topology_manager PUBLIC include)
-    target_link_libraries(rsa_topology_manager PRIVATE Celix::log_helper Celix::rsa_api)
+    target_link_libraries(rsa_topology_manager PRIVATE Celix::log_helper Celix::rsa_spi)
 
     install_bundle(rsa_topology_manager)
 

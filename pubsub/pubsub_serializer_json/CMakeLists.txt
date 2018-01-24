@@ -18,22 +18,23 @@
 find_package(Jansson REQUIRED)
 
 
-add_bundle(org.apache.celix.pubsub_serializer.PubSubSerializerJson
+add_bundle(celix_pubsub_serializer_json
     BUNDLE_SYMBOLICNAME "apache_celix_pubsub_serializer_json"
     VERSION "1.0.0"
     SOURCES
 		src/ps_activator.c
 		src/pubsub_serializer_impl.c
-    	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_utils.c
 )
 
-target_include_directories(org.apache.celix.pubsub_serializer.PubSubSerializerJson PRIVATE
+target_include_directories(celix_pubsub_serializer_json PRIVATE
 	src
 	${JANSSON_INCLUDE_DIR}
 )
 
-set_target_properties(org.apache.celix.pubsub_serializer.PubSubSerializerJson PROPERTIES INSTALL_RPATH "$ORIGIN")
-target_link_libraries(org.apache.celix.pubsub_serializer.PubSubSerializerJson PRIVATE Celix::framework Celix::dfi ${JANSSON_LIBRARIES} Celix::log_helper)
+set_target_properties(celix_pubsub_serializer_json PROPERTIES INSTALL_RPATH "$ORIGIN")
+target_link_libraries(celix_pubsub_serializer_json PRIVATE Celix::pubsub_spi Celix::framework Celix::dfi ${JANSSON_LIBRARIES} Celix::log_helper)
 
-install_bundle(org.apache.celix.pubsub_serializer.PubSubSerializerJson)
+install_bundle(celix_pubsub_serializer_json)
+
+add_library(Celix::pubsub_serializer_json ALIAS celix_pubsub_serializer_json)
 

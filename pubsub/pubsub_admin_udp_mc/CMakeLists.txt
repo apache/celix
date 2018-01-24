@@ -17,7 +17,7 @@
 
 find_package(Jansson REQUIRED)
 
-add_bundle(org.apache.celix.pubsub_admin.PubSubAdminUdpMc
+add_bundle(celix_pubsub_admin_udp_multicast
 	BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_udp_multicast"
 	VERSION "1.0.0"
 	SOURCES
@@ -26,20 +26,19 @@ add_bundle(org.apache.celix.pubsub_admin.PubSubAdminUdpMc
         src/topic_subscription.c
         src/topic_publication.c
         src/large_udp.c
-		${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_endpoint.c
-		${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_admin_match.c
-		${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_utils.c
 )
 
 
-target_include_directories(org.apache.celix.pubsub_admin.PubSubAdminUdpMc PRIVATE
+target_include_directories(celix_pubsub_admin_udp_multicast PRIVATE
 		src
 		${JANSSON_INCLUDE_DIR}
 )
 
-set_target_properties(org.apache.celix.pubsub_admin.PubSubAdminUdpMc PROPERTIES INSTALL_RPATH "$ORIGIN")
-target_link_libraries(org.apache.celix.pubsub_admin.PubSubAdminUdpMc PRIVATE Celix::framework Celix::dfi Celix::log_helper)
+set_target_properties(celix_pubsub_admin_udp_multicast PROPERTIES INSTALL_RPATH "$ORIGIN")
+target_link_libraries(celix_pubsub_admin_udp_multicast PRIVATE Celix::pubsub_spi Celix::framework Celix::dfi Celix::log_helper)
 
-install_bundle(org.apache.celix.pubsub_admin.PubSubAdminUdpMc)
+install_bundle(celix_pubsub_admin_udp_multicast)
+
+add_library(Celix::pubsub_admin_udp_multicast ALIAS celix_pubsub_admin_udp_multicast)
 
 

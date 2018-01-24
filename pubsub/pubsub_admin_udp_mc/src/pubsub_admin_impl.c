@@ -59,7 +59,7 @@
 #include "topic_subscription.h"
 #include "topic_publication.h"
 #include "pubsub_endpoint.h"
-#include "subscriber.h"
+#include "pubsub/subscriber.h"
 #include "pubsub_admin_match.h"
 
 static const char *DEFAULT_MC_IP = "224.100.1.1";

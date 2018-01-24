@@ -18,23 +18,24 @@
 celix_subproject(REMOTE_SERVICE_ADMIN "Option to enable building the Remote Service Admin Service bundles" OFF)
 if (REMOTE_SERVICE_ADMIN)
 
-    add_subdirectory(examples)
+    add_subdirectory(remote_services_api)
+    add_subdirectory(rsa_spi)
+    add_subdirectory(rsa_common)
+
+    add_subdirectory(civetweb)
 
     add_subdirectory(topology_manager)
 
-    add_subdirectory(civetweb)
     add_subdirectory(discovery_common)
     add_subdirectory(discovery_configured)
     add_subdirectory(discovery_etcd)
     add_subdirectory(discovery_shm)
 
     #TODO refactor shm rsa to use dfi
-    add_subdirectory(remote_service_admin_api)
-    add_subdirectory(remote_service_admin_common)
     #add_subdirectory(remote_service_admin_shm)
     add_subdirectory(remote_service_admin_dfi)
 
-
+    add_subdirectory(examples)
 endif (REMOTE_SERVICE_ADMIN)
 
 

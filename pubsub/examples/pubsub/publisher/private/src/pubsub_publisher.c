@@ -32,7 +32,6 @@
 #include "service_tracker.h"
 #include "celix_threads.h"
 
-#include "pubsub_common.h"
 #include "poi.h"
 
 #include "pubsub_publisher_private.h"

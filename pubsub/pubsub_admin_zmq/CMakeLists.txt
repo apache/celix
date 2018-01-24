@@ -21,17 +21,6 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	find_package(CZMQ REQUIRED)
 	find_package(Jansson REQUIRED)
 
-	include_directories("${ZMQ_INCLUDE_DIR}")
-	include_directories("${CZMQ_INCLUDE_DIR}")
-	include_directories("${JANSSON_INCLUDE_DIR}")
-	include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-	include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
-	include_directories("${PROJECT_SOURCE_DIR}/dfi/public/include")
-	include_directories("${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/include")
-	include_directories("${PROJECT_SOURCE_DIR}/pubsub/api/pubsub")
-	include_directories("private/include")
-	include_directories("public/include")
-
 	if (BUILD_ZMQ_SECURITY)
 		add_definitions(-DBUILD_WITH_ZMQ_SECURITY=1)
 
@@ -41,24 +30,31 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 		set (ZMQ_CRYPTO_C "private/src/zmq_crypto.c")
 	endif()
 
-	add_bundle(org.apache.celix.pubsub_admin.PubSubAdminZmq
-	    BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_zmq"
-	    VERSION "1.0.0"
-	    SOURCES
-	    	private/src/psa_activator.c
-	    	private/src/pubsub_admin_impl.c
-	    	private/src/topic_subscription.c
-	    	private/src/topic_publication.c
-	    	${ZMQ_CRYPTO_C}
-	    	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_endpoint.c
-	    	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_utils.c
-    	   ${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_admin_match.c
+	add_bundle(celix_pubsub_admin_zmq
+			BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_zmq"
+			VERSION "1.0.0"
+			SOURCES
+			src/psa_activator.c
+			src/pubsub_admin_impl.c
+			src/topic_subscription.c
+			src/topic_publication.c
+			${ZMQ_CRYPTO_C}
 	)
 
-	set_target_properties(org.apache.celix.pubsub_admin.PubSubAdminZmq PROPERTIES INSTALL_RPATH "$ORIGIN")
-	target_link_libraries(org.apache.celix.pubsub_admin.PubSubAdminZmq PRIVATE
+	set_target_properties(celix_pubsub_admin_zmq PROPERTIES INSTALL_RPATH "$ORIGIN")
+	target_link_libraries(celix_pubsub_admin_zmq PRIVATE
+			Celix::pubsub_spi
 			Celix::framework Celix::dfi Celix::log_helper
-			${ZMQ_LIBRARIES} ${CZMQ_LIBRARIES} ${OPENSSL_CRYPTO_LIBRARY})
+			${ZMQ_LIBRARIES} ${CZMQ_LIBRARIES} ${OPENSSL_CRYPTO_LIBRARY}
+	)
+	target_include_directories(celix_pubsub_admin_zmq PRIVATE
+		${ZMQ_INCLUDE_DIR}
+		${CZMQ_INCLUDE_DIR}
+		${JANSSON_INCLUDE_DIR}
+		src
+	)
+
 	install_bundle(org.apache.celix.pubsub_admin.PubSubAdminZmq)
 
+	add_library(Celix::pubsub_admin_zmq ALIAS celix_pubsub_admin_zmq)
 endif()

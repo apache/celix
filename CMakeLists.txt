@@ -95,5 +95,9 @@ add_subdirectory(pubsub)
 add_subdirectory(dependency_manager)
 add_subdirectory(dependency_manager_cxx)
 
+
+#export targets
+install(EXPORT celix NAMESPACE Celix:: DESTINATION ${CMAKE_INSTALL_LIBDIR}/celix)
+
 #Example as last, because some example will check if underlining options are enabled
 add_subdirectory(examples)

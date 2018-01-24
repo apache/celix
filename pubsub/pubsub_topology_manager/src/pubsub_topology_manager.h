@@ -27,15 +27,14 @@
 #ifndef PUBSUB_TOPOLOGY_MANAGER_H_
 #define PUBSUB_TOPOLOGY_MANAGER_H_
 
-#include "endpoint_listener.h"
 #include "service_reference.h"
 #include "bundle_context.h"
 #include "log_helper.h"
 
 #include "pubsub_common.h"
 #include "pubsub_endpoint.h"
-#include "publisher.h"
-#include "subscriber.h"
+#include "pubsub/publisher.h"
+#include "pubsub/subscriber.h"
 
 
 struct pubsub_topology_manager {

@@ -31,8 +31,8 @@
 #include "listener_hook_service.h"
 #include "properties.h"
 
-#include "publisher.h"
-#include "subscriber.h"
+#include "pubsub/publisher.h"
+#include "pubsub/subscriber.h"
 
 struct pubsub_endpoint {
     char *frameworkUUID;

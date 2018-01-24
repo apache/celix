@@ -19,7 +19,8 @@ set(MEMSTREAM_SOURCES )
 set(MEMSTREAM_INCLUDES )
 if (APPLE OR ANDROID)
     set(MEMSTREAM_SOURCES src/memstream/open_memstream.c  src/memstream/fmemopen.c)
-    set(MEMSTREAM_INCLUDE_DIR include/memstream)
+    set(MEMSTREAM_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/include/memstream)
+    install(DIRECTORY include/memstream/ DESTINATION include/celix/memstream COMPONENT framework)
 endif()
 
 add_library(utils SHARED
@@ -41,7 +42,11 @@ if (ANDROID)
     target_compile_definitions(utils PRIVATE -DUSE_FILE32API)
 endif ()
 
-target_include_directories(utils PUBLIC include ${MEMSTREAM_INCLUDE_DIR})
+target_include_directories(utils PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+        $<BUILD_INTERFACE:${MEMSTREAM_INCLUDE_DIR}>
+        $<INSTALL_INTERFACE:include/celix>
+)
 target_include_directories(utils PRIVATE src)
 set_target_properties(utils PROPERTIES "SOVERSION" 2)
 
@@ -51,7 +56,9 @@ ELSEIF(ANDROID)
     target_link_libraries(utils PRIVATE m)
 ENDIF()
 
-install(TARGETS utils DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
+install(TARGETS utils EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
+install(DIRECTORY include/ DESTINATION include/celix COMPONENT framework
+        PATTERN memstream* EXCLUDE)
 
 #Alias setup to match external usage
 add_library(Celix::utils ALIAS utils)
