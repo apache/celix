@@ -32,9 +32,9 @@ By convention use the following service layout:
 #ifndef EXAMPLE_H_
 #define EXAMPLE_H_
 
-#define EXAMPLE_NAME 			"org.example"
-#define EXAMPLE_VERSION 		"1.0.0"
-#define EXAMPLE_CONSUMER_RANGE   "[1.0.0,2.0.0)"
+#define EXAMPLE_NAME            "org.example"
+#define EXAMPLE_VERSION         "1.0.0"
+#define EXAMPLE_CONSUMER_RANGE  "[1.0.0,2.0.0)"
 
 
 struct example_struct {
@@ -98,7 +98,7 @@ For C services generally platform specific calling convention are used therefore
 ## Components
 
 Component should use the ADT principle (see [ADT in C](http://inst.eecs.berkeley.edu/~selfpace/studyguide/9C.sg/Output/ADTs.in.C.html)).
-Note that is a a convention.
+Note that is a convention.
 
 Components should have a `<cmpName>_create` and `<cmpName>_destroy` function.
 Components can have a `<cmpName>_start` and `<cmpName>_stop` function to start/stop threads or invoke functionality needed a fully created component. 
@@ -180,44 +180,44 @@ struct activator {
 };
 
 celix_status_t dm_create(bundle_context_pt context, void **userData) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator *act = calloc(1, sizeof(*act));
-	if (act != NULL) {
+    celix_status_t status = CELIX_SUCCESS;
+    struct activator *act = calloc(1, sizeof(*act));
+    if (act != NULL) {
 
-		act->bar = bar_create();
-		act->exampleService.handle = act->bar;
-		act->exampleService.method = (void*) bar_method;
+        act->bar = bar_create();
+        act->exampleService.handle = act->bar;
+        act->exampleService.method = (void*) bar_method;
 
-		if (act->bar != NULL) {
+        if (act->bar != NULL) {
             *userData = act;
         } else {
             free(act);
         }
-	} else {
-		status = CELIX_ENOMEM;
+    } else {
+        status = CELIX_ENOMEM;
 	}
 	return status;
 }
 
 celix_status_t dm_init(void *userData, bundle_context_pt context, dm_dependency_manager_pt manager) {
     celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator = userData;
+    struct activator *activator = userData;
 
-	dm_component_pt cmp = NULL;
-	component_create(context, "BAR", &cmp);
-	component_setImplementation(cmp, activator->bar);
-	component_addInterface(cmp, EXAMPLE_NAME, EXAMPLE_VERSION, &activator->exampleService, NULL);
+    dm_component_pt cmp = NULL;
+    component_create(context, "BAR", &cmp);
+    component_setImplementation(cmp, activator->bar);
+    component_addInterface(cmp, EXAMPLE_NAME, EXAMPLE_VERSION, &activator->exampleService, NULL);
 
-	dependencyManager_add(manager, cmp);
+    dependencyManager_add(manager, cmp);
     return status;
 }
 
 celix_status_t dm_destroy(void *userData, bundle_context_pt context, dm_dependency_manager_pt manager) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator = userData;
-	bar_destroy(activator->bar);
-	free(activator);
-	return status;
+    celix_status_t status = CELIX_SUCCESS;
+    struct activator *activator = userData;
+    bar_destroy(activator->bar);
+    free(activator);
+    return status;
 };
 ```
 
@@ -342,53 +342,53 @@ struct activator {
 };
 
 celix_status_t dm_create(bundle_context_pt context, void **userData) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator *act = calloc(1, sizeof(*act));
-	if (act != NULL) {
-		act->foo = foo1_create();
+    celix_status_t status = CELIX_SUCCESS;
+    struct activator *act = calloc(1, sizeof(*act));
+    if (act != NULL) {
+        act->foo = foo1_create();
         if (act->foo != NULL) {
             *userData = act;
         } else {
             free(act);
         }
-	} else {
-		status = CELIX_ENOMEM;
-	}
-	return status;
+    } else {
+        status = CELIX_ENOMEM;
+    }
+    return status;
 }
 
 celix_status_t dm_init(void *userData, bundle_context_pt context, dm_dependency_manager_pt manager) {
     celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator = userData;
+    struct activator *activator = userData;
 
-	dm_component_pt cmp = NULL;
-	component_create(context, "FOO1", &cmp);
-	component_setImplementation(cmp, activator->foo);
+    dm_component_pt cmp = NULL;
+    component_create(context, "FOO1", &cmp);
+    component_setImplementation(cmp, activator->foo);
 
-	/*
-	With the component_setCallbacksSafe we register callbacks when a component is started / stopped using a component
-	 with type foo1_t*
-	*/
+    /*
+    With the component_setCallbacksSafe we register callbacks when a component is started / stopped using a component
+     with type foo1_t*
+    */
     component_setCallbacksSafe(cmp, foo1_t*, NULL, foo1_start, foo1_stop, NULL);
 
-	dm_service_dependency_pt dep = NULL;
-	serviceDependency_create(&dep);
-	serviceDependency_setRequired(dep, true);
-	serviceDependency_setService(dep, EXAMPLE_NAME, EXAMPLE_CONSUMER_RANGE, NULL);
-	serviceDependency_setStrategy(dep, DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING);
+    dm_service_dependency_pt dep = NULL;
+    serviceDependency_create(&dep);
+    serviceDependency_setRequired(dep, true);
+    serviceDependency_setService(dep, EXAMPLE_NAME, EXAMPLE_CONSUMER_RANGE, NULL);
+    serviceDependency_setStrategy(dep, DM_SERVICE_DEPENDENCY_STRATEGY_LOCKING);
 
-	/*
-	With the serviceDependency_setCallbacksSafe we register callbacks when a service
-	is added and about to be removed for the component type foo1_t* and service type example_t*.
+    /*
+    With the serviceDependency_setCallbacksSafe we register callbacks when a service
+    is added and about to be removed for the component type foo1_t* and service type example_t*.
 
-	We should protect the usage of the
- 	service because after removal of the service the memory location of that service
-	could be freed
-	*/
+    We should protect the usage of the
+    service because after removal of the service the memory location of that service
+    could be freed
+    */
     serviceDependency_setCallbacksSafe(dep, foo1_t*, const example_t*, foo1_setExample, NULL, NULL, NULL, NULL);
-	component_addServiceDependency(cmp, dep);
+    component_addServiceDependency(cmp, dep);
 
-	dependencyManager_add(manager, cmp);
+    dependencyManager_add(manager, cmp);
 
     return status;
 }

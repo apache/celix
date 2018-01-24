@@ -48,7 +48,6 @@ For debian based systems (apt), the following command should work:
 ```bash
 sudo apt-get install -yq --no-install-recommends \
 	build-essential \
-    ninja \ 
   	curl \
   	git \
   	libjansson-dev \
@@ -64,7 +63,6 @@ For Fedora based systems (dnf), the following command should work:
 sudo dnf group install -y "C Development Tools and Libraries"
 sudo dnf install \
     cmake \
-    ninja-build \
     make \
     git \
     java \
@@ -96,8 +94,7 @@ git clone --single-branch --branch master https://github.com/apache/celix.git
 ```
 
 ## Building Apache Celix
-Apache Celix uses [CMake](https://cmake.org) as build system. CMake can generate (among others) makefiles or ninja build files. 
-using ninja build files will result in a faster build.
+Apache Celix uses [CMake](https://cmake.org) as build system. CMake can generate (among others) makefiles. 
 
 ### Building using CMake and makefiles:
 ```bash
@@ -106,15 +103,6 @@ mkdir build
 cd build
 cmake .. 
 make 
-```
-
-### Building using CMake and Ninja
-```bash
-cd ${WS}/celix
-mkdir build
-cd build
-cmake -G Ninja ..
-ninja
 ```
 
 ## Editing Build options

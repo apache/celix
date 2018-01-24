@@ -68,8 +68,8 @@ find_package(CELIX REQUIRED)
 include_directories(${CELIX_INCLUDE_DIRS})
 
 #Part 4. Choose C, C++ or both
-add_subdirectory(bundles/hello_world) #C
-add_subdirectory(bundles/HelloWorld) #C++
+add_subdirectory(bundles/HelloWorld_c) #C
+add_subdirectory(bundles/HelloWorld_cxx) #C++
 ```
 		
 This CMakeLists.txt file, sets up the following:
@@ -94,49 +94,46 @@ Create the sub directory:
 ```CMake
 #Create directory structure for the hello_world bundles
 cd ${WS}/myproject
-mkdir -p bundles/hello_world/private/src
-mkdir -p bundles/HelloWorld/private/src
-mkdir -p bundles/HelloWorld/private/include
+mkdir -p bundles/HelloWorld_c/src
+mkdir -p bundles/HelloWorld_cxx/src
+mkdir -p bundles/HelloWorld_cxx/include
 ```
 
 
 And add the following CMakeLists.txt file for the C Bundle:
 
 ```CMake	
-#${WS}/myproject/bundles/hello_world/CMakeLists.txt
+#${WS}/myproject/bundles/HelloWorld_c/CMakeLists.txt
 
-add_celix_bundle(hello_world
+add_celix_bundle(HelloWorld_c
     VERSION 1.0.0
 	SOURCES
-        private/src/hello_world_activator.c
+        src/HelloWorld_activator.c
 )	
 
 if(APPLE)
-    target_link_libraries(hello_world ${CELIX_LIBRARIES} -Wl,-all_load ${CELIX_DM_STATIC_LIB})
+    target_link_libraries(HelloWorld_c ${CELIX_LIBRARIES} -Wl,-all_load ${CELIX_DM_STATIC_LIB})
 else()  
-    target_link_libraries(hello_world -Wl,--no-undefined -Wl,--whole-archive ${CELIX_DM_STATIC_LIB} -Wl,--no-whole-archive ${CELIX_LIBRARIES})
+    target_link_libraries(HelloWorld_c -Wl,--no-undefined -Wl,--whole-archive ${CELIX_DM_STATIC_LIB} -Wl,--no-whole-archive ${CELIX_LIBRARIES})
 endif()
 ```
 
 And/or the following CMakeLists.txt for the C++ bundle:
 
 ```CMake
-#${WS}/myproject/bundles/HelloWorld/CMakeLists.txt
+#${WS}/myproject/bundles/HelloWorld_cxx/CMakeLists.txt
 
-include_directories(
-    private/include
-)
-
-add_celix_bundle(HelloWorld
+add_celix_bundle(HelloWorld_cxx
     VERSION 1.0.0
 	SOURCES
-        private/src/HelloWorldActivator.cc
+        src/HelloWorldActivator.cc
 )
+target_include_directories(HelloWorld_cxx PRIVATE include)
 
 IF(APPLE)
-    target_link_libraries(HelloWorld ${CELIX_LIBRARIES} -Wl,-all_load ${CELIX_DM_STATIC_CXX_LIB})
+    target_link_libraries(HelloWorld_cxx ${CELIX_LIBRARIES} -Wl,-all_load ${CELIX_DM_STATIC_CXX_LIB})
 else()
-    target_link_libraries(HelloWorld -Wl,--no-undefined -Wl,--whole-archive ${CELIX_DM_STATIC_CXX_LIB} -Wl,--no-whole-archive ${CELIX_LIBRARIES})
+    target_link_libraries(HelloWorld_cxx -Wl,--no-undefined -Wl,--whole-archive ${CELIX_DM_STATIC_CXX_LIB} -Wl,--no-whole-archive ${CELIX_LIBRARIES})
 endif()
 ```
 	
@@ -151,7 +148,7 @@ The dependency manager uses a higher abstraction and is more simple to understan
 
 The C Bundle Activator:
 ```C
-//${WS}/myproject/bundles/hello_world/private/src/hello_world_activator.c
+//${WS}/myproject/bundles/hello_world/src/HelloWorld_activator.c
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -188,32 +185,30 @@ celix_status_t dm_destroy(void* userData, bundle_context_pt context, dm_dependen
 	
 The C++ Bundle Activator (header + source):
 ```C++
-//${WS}/myproject/bundles/HelloWorld/private/include/HelloWorldActivator.h
+//${WS}/myproject/bundles/HelloWorld/include/HelloWorldActivator.h
 #ifndef HELLOWORLDACTIVATOR_H_
 #define HELLOWORLDACTIVATOR_H_
 
 #include "celix/dm/DmActivator.h"
 
-using namespace celix::dm;
-
-class HelloWorldActivator : public DmActivator {
+class HelloWorldActivator : public celix::dm::DmActivator {
 private:
-    const std::string word {"C++ World"}; 
+    const std::string word {"C++ World"};
 public:
-    HelloWorldActivator(DependencyManager& mng) : DmActivator {mng} {}
+    HelloWorldActivator(celix::dm::DependencyManager& mng) : DmActivator {mng} {}
     virtual void init();
     virtual void deinit();
 };
 
 #endif //HELLOWORLDACTIVATOR_H_
+```
 
+```C++
 //${WS}/myproject/bundles/HelloWorld/private/src/HelloWorldActivator.cc
 #include "HelloWorldActivator.h"
 #include <iostream>
 
-using namespace celix::dm;
-
-DmActivator* DmActivator::create(DependencyManager& mng) {
+DmActivator* DmActivator::create(celix::dm::DependencyManager& mng) {
     return new HelloWorldActivator(mng);
 }
 
@@ -241,14 +236,16 @@ cmake ../myproject
 make all  
 ```	
 
-Hopefully you will some some build results scrolling over the screen and actual build results in the build directory. There should be a hello_world.zip in the bundles/hello_world directory, this the actual bundle.  
-A bundle on its own has no real value, so lets setup a deployment and run the Apache Celix framwork with these bundles.
+Hopefully you will some some build results scrolling over the screen and actual build results in the build directory.
+There should be a HelloWorld_c.zip in the bundles/HelloWorld_c directory and a HelloWorld_cxx.zip in the bundles/HelloWorld_cxx directory,
+these are the actual bundles.
+A bundle on its own has no real value, so lets setup a Celix container and run Celix with these bundles.
 
 ### Running
 
 To create a deployment for the hello world bundles two things are needed: 
 	
-1. Add a `add_celix_container` statement in the `CMakeLists.txt` file declaring what to deploy and under which name.
+1. Add a `add_celix_container` statement in the (top level) `CMakeLists.txt` file declaring what to deploy and under which name.
 
 ```CMake
 #${WS}/myproject/CMakeLists.txt
@@ -258,11 +255,14 @@ add_celix_container(myproject
 	    ${CELIX_BUNDLES_DIR}/shell.zip 
 	    ${CELIX_BUNDLES_DIR}/shell_tui.zip
 	    ${CELIX_BUNDLES_DIR}/dm_shell.zip 
-	    hello_world #C bundle
-	    HelloWorld #C++ bundle
+	    HelloWorld_c #C bundle
+	    HelloWorld_cxx #C++ bundle
 )		
 ```
- 		   
+
+With the `add_celix_container` CMake function a Celix container will be configured, which bundles to use can be specified with absolute paths to
+bundle files (e.g. the shell.zip bundle) or Celix bundle CMake target (e.g. the HelloWorld_c bundle).
+
 Rerun make again form the build project. the make files generated by CMake will ensure cmake is run it again to update the actual make files.
 
 ```bash 		
@@ -274,20 +274,19 @@ Now a deploy directory myproject should be available in the deploy directory. Th
 
 ```bash
 cd ${WS}/myproject-build/deploy/myproject
-. ./release.sh
-./hello
+./myproject
 ```
 
-The hello_world bundle should be started with the famous "Hello World" text printed twice from the C and C++ bundle. The shell and shell_tui bundle are also deployed and these can be used to query and control the running framework. Below some commands are shown for querying the installed bundles, listing all known shell command, showing the help of a specific command and stopping a specific bundle (note that bundle 0 is the framework "bundle"):
+The HelloWorld_c and HelloWorld_cxx bundles should be started with their own famous "Hello World" text variant printed. One for the C and one for the C++ bundle.
+The shell and shell_tui bundle are also deployed and these can be used to query and control the running framework. Below some commands are shown for querying the installed bundles, listing all known shell command, showing the help of a specific command and stopping a specific bundle (note that bundle 0 is the framework "bundle"):
 
 ```
 lb 
 help
-help inspect
 stop 0
 ```
 	
-## Apache Celix Bundle Project in Eclipse
+## Apache Celix Projects in Eclipse
 
 A nice feature of CMake is the ability to generate Eclipse project files, with this feature bundles can also be developed with use of Eclipse. This should help speed up the development process. 
 To get started change directory to the build directory and generate a eclipse project file.
@@ -303,17 +302,30 @@ Import the project with existing project.
 
 ![import project](getting_started_img2.png)
 
-To build the project, use Project->Build All. To run or debug from Eclipse navigate to the myproject deploy directory and right click on the 'myproject-deploy.launch' file. And select Run As or Debug As to run or debug the bundle.
+To build the project, use Project->Build All.
+To run or debug from Eclipse navigate to the myproject deploy directory and right click on
+the 'myproject' executable and as "Local C/C++ Application"
 
-![run project](getting_started_img3.png) 
+
+## Apache Celix Projects in CLion
+
+Using Apache Celix projects in CLion quite easy.
+Just use `File -> Open ...` and select a Apache Celix project.
+Because CLion is a IDE for CMake projects and Apache Celix projects are CMake projects this works out of the box.
+
+To run a Celix container just select the target from CLion and press Run.
+
  
 ## Next
+
+The get a complete overview of the available Celix CMake commands see:
+ - [Apache Celix - Celix CMake Commands](../cmake_commands/readme.md)
 
 The idea behind service oriented programming is that functionality is provided and used by abstract service, which hide implementation details.
 For a guide how to provide and use services see
 
-* [Apache Celix - Getting Started Guide: Using Services with C](using_services_with_c.md)
-* [Apache Celix - Getting Started Guide: Using Services with C++](using_services_with_cxx.md)
+- [Apache Celix - Getting Started Guide: Using Services with C](using_services_with_c.md)
+- [Apache Celix - Getting Started Guide: Using Services with C++](using_services_with_cxx.md)
  
 
 
