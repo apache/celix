@@ -63,8 +63,8 @@ ELSE ()
 ENDIF()
 
 # Set version for the framework package/release
-set(CELIX_MAJOR "1")
-set(CELIX_MINOR "0")
+set(CELIX_MAJOR "2")
+set(CELIX_MINOR "1")
 set(CELIX_MICRO "0")
 set(CELIX_QUALIFIER "")
 
