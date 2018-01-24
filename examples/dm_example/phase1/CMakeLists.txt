@@ -16,7 +16,7 @@
 # under the License.
 
 
-add_bundle(dm_example_phase1
+add_celix_bundle(dm_example_phase1
     SYMBOLIC_NAME phase1
     VERSION 0.0.1
     SOURCES

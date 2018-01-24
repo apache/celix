@@ -15,21 +15,22 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(celix_pubsub_spi STATIC
+add_library(pubsub_spi STATIC
 		src/pubsub_admin_match.c
         src/pubsub_endpoint.c
         src/pubsub_utils.c
 )
-target_include_directories(celix_pubsub_spi PUBLIC
+set_target_properties(pubsub_spi PROPERTIES OUTPUT_NAME "celix_pubsub_spi")
+target_include_directories(pubsub_spi PUBLIC
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
 		$<INSTALL_INTERFACE:include/celix/pubsub_spi>
 )
-target_link_libraries(celix_pubsub_spi PUBLIC Celix::framework Celix::pubsub_api)
+target_link_libraries(pubsub_spi PUBLIC Celix::framework Celix::pubsub_api)
 
-set_target_properties(celix_pubsub_spi PROPERTIES TOPIC_INFO_DESCRIPTOR ${CMAKE_CURRENT_LIST_DIR}/include/pubsub_topic_info.descriptor)
+set_target_properties(pubsub_spi PROPERTIES TOPIC_INFO_DESCRIPTOR ${CMAKE_CURRENT_LIST_DIR}/include/pubsub_topic_info.descriptor)
 #TODO how to make this descriptor available for imported targets? $<INSTALL_INTERFACE:include/celix/pubsub_spi/pubsub_topic_info.descriptor>
 
-add_library(Celix::pubsub_spi ALIAS celix_pubsub_spi)
+add_library(Celix::pubsub_spi ALIAS pubsub_spi)
 
-install(TARGETS celix_pubsub_spi EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT pubsub)
+install(TARGETS pubsub_spi EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT pubsub)
 install(DIRECTORY include/ DESTINATION include/celix/pubsub_spi COMPONENT pubsub)

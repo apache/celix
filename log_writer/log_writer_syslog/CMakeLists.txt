@@ -18,7 +18,7 @@ celix_subproject(LOG_WRITER_SYSLOG "Option to enable building the Syslog Writer"
 if (LOG_WRITER_SYSLOG)
     find_package(Syslog REQUIRED)
 
-    add_bundle(log_writer_syslog 
+    add_celix_bundle(log_writer_syslog
         VERSION 1.1.0
         SYMBOLIC_NAME "apache_celix_log_writer_syslog"
         NAME "Apache Celix Log Writer Syslog"
@@ -26,7 +26,7 @@ if (LOG_WRITER_SYSLOG)
             private/src/log_writer_syslog
     )
 
-    install_bundle(log_writer_syslog)
+    install_celix_bundle(log_writer_syslog)
 
     target_link_libraries(log_writer_syslog PRIVATE log_writer_common)
 endif (LOG_WRITER_SYSLOG)

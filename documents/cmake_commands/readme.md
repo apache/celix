@@ -1,4 +1,21 @@
-﻿# Apache Celix - CMake Commands
+﻿<!--
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+   
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+# Apache Celix - CMake Commands
 
 For Apache Celix several cmake command are added to be able to work with Apache Celix bundles and deployments.
 
@@ -173,7 +190,7 @@ add_celix_container(<celix_container_name>
 ```
 
 The provided bundle targets for a celix container do not have to exists (yet).
-This removes the need for correctly ordering the add_bundle commands so that all bundle target are present before an add_celix_container command.
+This removes the need for correctly ordering the add_celix_bundle commands so that all bundle target are present before an add_celix_container command.
 If the bundle target is never added CMake will give an error:
 ```
   Error evaluating generator expression:
@@ -252,7 +269,7 @@ The add_celix_docker target is a executable target and can be used to link libra
 The docker dir can be found in `<cmake_build_dir>/docker[/<group_name>]/<docker_name>`. 
   
 The provided bundle targets for a docker dir do not have to exists (yet).
-This removes the need for correctly order the add_bundle commands so that all bundle target are present before 
+This removes the need for correctly order the add_celix_bundle commands so that all bundle target are present before 
 an `add_celix_docker` command.
 If the bundle target is never added CMake will give an error:
   ```

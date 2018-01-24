@@ -21,7 +21,7 @@ if (SHELL)
 	add_library(shell_api INTERFACE)
 	target_include_directories(shell_api INTERFACE include)
 
-    add_bundle(shell
+    add_celix_bundle(shell
         SYMBOLIC_NAME "apache_celix_shell"
         VERSION "2.1.0"
         NAME "Apache Celix Shell"
@@ -41,7 +41,7 @@ if (SHELL)
 	target_include_directories(shell PRIVATE src ${CURL_INCLUDE_DIRS})
 	target_link_libraries(shell PRIVATE Celix::shell_api ${CURL_LIBRARIES} Celix::log_service_api Celix::log_helper)
 
-	install_bundle(shell
+	install_celix_bundle(shell
     	HEADERS
     		include/shell.h include/command.h include/shell_constants.h
     )

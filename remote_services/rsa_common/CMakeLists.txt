@@ -15,15 +15,16 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(celix_rsa_common STATIC
+add_library(rsa_common STATIC
     src/endpoint_description.c
     src/export_registration_impl.c
     src/import_registration_impl.c
 )
-target_include_directories(celix_rsa_common PRIVATE src)
-target_link_libraries(celix_rsa_common PUBLIC Celix::framework Celix::rsa_spi Celix::log_helper)
+set_target_properties(rsa_common PROPERTIES OUTPUT_NAME "celix_rsa_common")
+target_include_directories(rsa_common PRIVATE src)
+target_link_libraries(rsa_common PUBLIC Celix::framework Celix::rsa_spi Celix::log_helper)
 
-install(TARGETS celix_rsa_common EXPORT celix COMPONENT rsa DESTINATION ${CMAKE_INSTALL_LIBDIR})
+#install(TARGETS rsa_common EXPORT celix COMPONENT rsa DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
 #Setup target aliases to match external usage
-add_library(Celix::rsa_common ALIAS celix_rsa_common)
+add_library(Celix::rsa_common ALIAS rsa_common)

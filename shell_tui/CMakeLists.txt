@@ -17,7 +17,7 @@
 celix_subproject(SHELL_TUI "Option to enable building the Shell Textual User Interface bundles" ON DEPS LAUNCHER SHELL)
 if (SHELL_TUI)
 
-    add_bundle(shell_tui
+    add_celix_bundle(shell_tui
     	SYMBOLIC_NAME "apache_celix_shell_tui"
     	VERSION "1.1.0"
     	NAME "Apache Celix Shell TUI"
@@ -33,7 +33,7 @@ if (SHELL_TUI)
 	)
     target_link_libraries(shell_tui PRIVATE Celix::shell_api)
 
-	install_bundle(shell_tui)
+	install_celix_bundle(shell_tui)
 
 	#Alias setup to match external usage
 	add_library(Celix::shell_tui ALIAS shell_tui)

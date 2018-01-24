@@ -21,7 +21,7 @@ include_directories(private/include)
 include_directories(${PROJECT_SOURCE_DIR}/event_admin/event_admin/public/include)
 include_directories(${PROJECT_SOURCE_DIR}/log_service/public/include)
 
-add_bundle(event_publisher
+add_celix_bundle(event_publisher
     VERSION 0.0.0
 		SOURCES
 		private/src/event_publisher_activator.c
@@ -29,6 +29,6 @@ add_bundle(event_publisher
 		${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
 )
 
-install_bundle(event_publisher)
+install_celix_bundle(event_publisher)
 
 target_link_libraries(event_publisher Celix::framework)

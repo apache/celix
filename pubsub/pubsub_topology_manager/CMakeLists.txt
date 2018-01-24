@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_bundle(celix_pubsub_topology_manager
+add_celix_bundle(celix_pubsub_topology_manager
     BUNDLE_SYMBOLICNAME "apache_celix_pubsub_topology_manager"
     VERSION "1.0.0"
     SOURCES
@@ -26,12 +26,12 @@ add_bundle(celix_pubsub_topology_manager
 target_link_libraries(celix_pubsub_topology_manager PRIVATE Celix::framework Celix::log_helper Celix::pubsub_spi)
 
 get_target_property(DESC Celix::pubsub_spi TOPIC_INFO_DESCRIPTOR)
-bundle_files(celix_pubsub_topology_manager
+celix_bundle_files(celix_pubsub_topology_manager
 	${DESC}
     DESTINATION "META-INF/descriptors/services"
 )
 
-install_bundle(celix_pubsub_topology_manager)
+install_celix_bundle(celix_pubsub_topology_manager)
 
 add_library(Celix::pubsub_topology_manager ALIAS celix_pubsub_topology_manager)
 

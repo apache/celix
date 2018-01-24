@@ -21,7 +21,7 @@ if (RSA_DISCOVERY_ETCD)
 	find_package(LibXml2 REQUIRED)
 	find_package(Jansson REQUIRED)
     
-	add_bundle(rsa_discovery_etcd
+	add_celix_bundle(rsa_discovery_etcd
         VERSION 0.9.0
         SYMBOLIC_NAME "apache_celix_rsa_discovery_etcd"
         NAME "Apache Celix RSA Discovery ETCD"
@@ -42,7 +42,7 @@ if (RSA_DISCOVERY_ETCD)
 	)
 	target_link_libraries(rsa_discovery_etcd PRIVATE ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES} ${JANSSON_LIBRARIES})
 
-	install_bundle(rsa_discovery_etcd)
+	install_celix_bundle(rsa_discovery_etcd)
 
 	#Setup target aliases to match external usage
 	add_library(Celix::rsa_discovery_etcd ALIAS rsa_discovery_etcd)

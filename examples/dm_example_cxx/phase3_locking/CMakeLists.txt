@@ -16,7 +16,7 @@
 # under the License.
 
 
-add_bundle(dm_example_cxx_phase3_locking
+add_celix_bundle(dm_example_cxx_phase3_locking
     SYMBOLIC_NAME phase3_locking_cxx
     VERSION 0.0.1
     SOURCES

@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_bundle(calculator_shell
+add_celix_bundle(calculator_shell
     SOURCES
         src/add_command
         src/sub_command
@@ -27,7 +27,7 @@ add_bundle(calculator_shell
 target_include_directories(calculator_shell PRIVATE src)
 target_link_libraries(calculator_shell PRIVATE Celix::shell_api calculator_api)
 
-bundle_files(calculator_shell 
+celix_bundle_files(calculator_shell
     ../calculator_api/include/org.apache.celix.calc.api.Calculator2.descriptor
     #src/org.apache.celix.calc.api.Calculator2.descriptor ##Use this descriptor in case you want to try out versioning!
     DESTINATION .

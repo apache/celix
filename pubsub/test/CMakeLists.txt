@@ -20,7 +20,7 @@ find_program(ETCD_CMD NAMES etcd)
 find_package(CppUTest REQUIRED)
 include_directories(${CPPUTEST_INCLUDE_DIR})
 
-add_bundle(pubsub_sut
+add_celix_bundle(pubsub_sut
     #"Vanilla" bundle which is under test
     SOURCES
         test/sut_activator.c
@@ -29,13 +29,13 @@ add_bundle(pubsub_sut
 target_include_directories(pubsub_sut PRIVATE test)
 target_link_libraries(pubsub_sut PRIVATE Celix::pubsub_spi)
 
-bundle_files(pubsub_sut
+celix_bundle_files(pubsub_sut
     msg_descriptors/msg.descriptor
     msg_descriptors/sync.descriptor
     DESTINATION "META-INF/descriptors/messages"
 )
 
-add_deploy(pubsub_udpmc_sut
+add_celix_container(pubsub_udpmc_sut
     NAME deploy_sut
     BUNDLES
         org.apache.celix.pubsub_serializer.PubSubSerializerJson
@@ -45,7 +45,7 @@ add_deploy(pubsub_udpmc_sut
         pubsub_sut
     DIR ${PROJECT_BINARY_DIR}/runtimes/test/pubsub/udpmc
 )
-add_deploy(pubsub_zmq_sut
+add_celix_container(pubsub_zmq_sut
     NAME deploy_sut
     BUNDLES
         org.apache.celix.pubsub_serializer.PubSubSerializerJson
@@ -56,7 +56,7 @@ add_deploy(pubsub_zmq_sut
     DIR ${PROJECT_BINARY_DIR}/runtimes/test/pubsub/zmq
 )
 
-add_bundle(pubsub_tst
+add_celix_bundle(pubsub_tst
     #Test bundle containing cpputests and uses celix_test_runner launcher instead of the celix launcher
     SOURCES
         test/tst_activator.cpp
@@ -69,12 +69,12 @@ else ()
     target_link_libraries(pubsub_tst PRIVATE Celix::framework)
 endif ()
 
-bundle_files(pubsub_tst
+celix_bundle_files(pubsub_tst
     msg_descriptors/msg.descriptor
     msg_descriptors/sync.descriptor
     DESTINATION "META-INF/descriptors/messages"
 )
-add_deploy(pubsub_udpmc_tst
+add_celix_container(pubsub_udpmc_tst
     NAME deploy_tst
     BUNDLES
         org.apache.celix.pubsub_serializer.PubSubSerializerJson
@@ -86,7 +86,7 @@ add_deploy(pubsub_udpmc_tst
     DIR ${PROJECT_BINARY_DIR}/runtimes/test/pubsub/udpmc
     LAUNCHER celix_test_runner
 )
-add_deploy(pubsub_zmq_tst
+add_celix_container(pubsub_zmq_tst
     NAME deploy_tst
     BUNDLES
         org.apache.celix.pubsub_serializer.PubSubSerializerJson

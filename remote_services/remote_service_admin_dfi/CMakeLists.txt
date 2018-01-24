@@ -23,7 +23,7 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
     find_package(CURL REQUIRED)
     find_package(Jansson REQUIRED)
 
-    add_bundle(rsa_dfi
+    add_celix_bundle(rsa_dfi
             VERSION 0.9.0
             SYMBOLIC_NAME "apache_celix_remote_service_admin_dfi"
             NAME "Apache Celix Remote Service Admin Dynamic Function Interface (DFI)"
@@ -42,7 +42,7 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
             Celix::rsa_common
             ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
 
-    install_bundle(rsa_dfi)
+    install_celix_bundle(rsa_dfi)
 
     if (ENABLE_TESTING)
         add_subdirectory(test)

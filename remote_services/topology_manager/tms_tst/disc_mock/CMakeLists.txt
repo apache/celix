@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_bundle(topology_manager_disc_mock_bundle
+add_celix_bundle(topology_manager_disc_mock_bundle
     VERSION 0.0.1
     SOURCES
         disc_mock_activator.c

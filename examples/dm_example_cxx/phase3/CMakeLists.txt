@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_bundle(dm_example_cxx_phase3
+add_celix_bundle(dm_example_cxx_phase3
     SYMBOLIC_NAME phase3_cxx
     VERSION 0.0.1
     SOURCES

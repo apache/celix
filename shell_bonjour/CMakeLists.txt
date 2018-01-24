@@ -26,7 +26,7 @@ if (SHELL_BONJOUR)
 	set(BUNDLE_VERSION "0.1.0")
 	set(BUNDLE_NAME "bonjour_shell")
 
-	add_bundle(bonjour_shell
+	add_celix_bundle(bonjour_shell
 		VERSION "1.0.0"
 		SOURCES
 		 	private/src/activator.c
@@ -42,7 +42,7 @@ if (SHELL_BONJOUR)
 	)
 	target_link_libraries(bonjour_shell PRIVATE ${LIBXML2_LIBRARIES} ${DNS_SD_LIB} Celix::shell_api)
 
-	add_deploy("bonjour_shell_deploy" BUNDLES 
+	add_celix_container("bonjour_shell_deploy" BUNDLES
 		Celix::shell
 		bonjour_shell
 		PROPERTIES "bonjour.shell.id=Apache Celix"

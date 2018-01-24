@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_bundle(base_driver
+add_celix_bundle(base_driver
  	SYMBOLIC_NAME "apache_celix_base_driver_example"
  	VERSION "0.0.1"
  	NAME "Apache Celix Device Access Base Driver Example"

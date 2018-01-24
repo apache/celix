@@ -19,7 +19,7 @@ if (RSA_DISCOVERY_CONFIGURED)
     find_package(CURL REQUIRED)
     find_package(LibXml2 REQUIRED)
 
-    add_bundle(rsa_discovery_configured
+    add_celix_bundle(rsa_discovery_configured
         VERSION 0.9.0
         SYMBOLIC_NAME "apache_celix_rsa_discovery_configured"
         NAME "Apache Celix RSA Configured Discovery"
@@ -35,7 +35,7 @@ if (RSA_DISCOVERY_CONFIGURED)
     )
     target_link_libraries(rsa_discovery_configured PRIVATE ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES} Celix::log_helper Celix::rsa_common)
 
-    install_bundle(rsa_discovery_configured)
+    install_celix_bundle(rsa_discovery_configured)
 
     #Setup target aliases to match external usage
     add_library(Celix::rsa_discovery_configured ALIAS rsa_discovery_configured)

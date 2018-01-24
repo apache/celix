@@ -18,7 +18,7 @@
 find_package(CURL REQUIRED)
 find_package(Jansson REQUIRED)
 
-add_bundle(celix_pubsub_discovery_etcd
+add_celix_bundle(celix_pubsub_discovery_etcd
     BUNDLE_SYMBOLICNAME "apache_celix_pubsub_discovery_etcd"
     VERSION "1.0.0"
     SOURCES
@@ -36,6 +36,6 @@ target_include_directories(celix_pubsub_discovery_etcd PRIVATE
 )
 
 target_link_libraries(celix_pubsub_discovery_etcd PRIVATE Celix::pubsub_spi Celix::framework Celix::etcdlib_static ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
-install_bundle(celix_pubsub_discovery_etcd)
+install_celix_bundle(celix_pubsub_discovery_etcd)
 
 add_library(Celix::pubsub_discovery_etcd ALIAS celix_pubsub_discovery_etcd)

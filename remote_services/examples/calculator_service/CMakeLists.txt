@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_bundle(calculator
+add_celix_bundle(calculator
 	SOURCES
 		src/calculator_impl
 		src/calculator_activator
@@ -26,4 +26,4 @@ target_include_directories(calculator PRIVATE src)
 target_link_libraries(calculator PRIVATE Celix::rsa_spi calculator_api)
 
 get_target_property(DESCR calculator_api INTERFACE_CALCULATOR_DESCRIPTOR)
-bundle_files(calculator ${DESCR} DESTINATION .)
+celix_bundle_files(calculator ${DESCR} DESTINATION .)

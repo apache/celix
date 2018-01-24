@@ -22,7 +22,7 @@ find_program(ETCD_CMD NAMES etcd)
 find_program(XTERM_CMD NAMES xterm)
 
 # UDP Multicast
-add_deploy(pubsub_publisher_udp_mc
+add_celix_container(pubsub_publisher_udp_mc
         GROUP pubsub
         BUNDLES
         Celix::shell
@@ -35,7 +35,7 @@ add_deploy(pubsub_publisher_udp_mc
         celix_pubsub_poi_publisher2
         )
 
-add_deploy("pubsub_subscriber_udp_mc"
+add_celix_container("pubsub_subscriber_udp_mc"
         GROUP "pubsub"
         BUNDLES
         Celix::shell
@@ -47,7 +47,7 @@ add_deploy("pubsub_subscriber_udp_mc"
         celix_pubsub_poi_subscriber
         )
 
-add_deploy("pubsub_subscriber2_udp_mc"
+add_celix_container("pubsub_subscriber2_udp_mc"
         GROUP "pubsub"
         BUNDLES
         Celix::shell
@@ -77,7 +77,7 @@ endif ()
 if (BUILD_PUBSUB_PSA_ZMQ)
 
     # Dynamic ZMQ / UDP admin
-    add_deploy("pubsub_publisher"
+    add_celix_container("pubsub_publisher"
             GROUP "pubsub"
             BUNDLES
             Celix::shell
@@ -94,7 +94,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             poi2.psa=udp
             )
 
-    add_deploy("pubsub_subscriber"
+    add_celix_container("pubsub_subscriber"
             GROUP "pubsub"
             BUNDLES
             Celix::shell
@@ -111,7 +111,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             )
 
     # ZMQ
-    add_deploy("pubsub_zmq"
+    add_celix_container("pubsub_zmq"
             GROUP "pubsub"
             BUNDLES
             Celix::shell
@@ -119,12 +119,12 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             Celix::pubsub_serializer_json
             Celix::pubsub_discovery_etcd
             Celix::pubsub_topology_manager
-            org.apache.celix.pubsub_admin.PubSubAdminZmq
+            Celix::pubsub_admin_zmq
             celix_pubsub_poi_publisher
             celix_pubsub_poi_subscriber
             )
 
-    add_deploy("pubsub_publisher_zmq"
+    add_celix_container("pubsub_publisher_zmq"
             GROUP "pubsub"
             BUNDLES
             Celix::shell
@@ -139,7 +139,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             pubsub.scope=my_small_scope
             )
 
-    add_deploy("pubsub_subscriber_zmq"
+    add_celix_container("pubsub_subscriber_zmq"
             GROUP "pubsub"
             BUNDLES
             Celix::shell
@@ -147,11 +147,11 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             Celix::pubsub_serializer_json
             Celix::pubsub_discovery_etcd
             Celix::pubsub_topology_manager
-            org.apache.celix.pubsub_admin.PubSubAdminZmq
+            Celix::pubsub_admin_zmq
             celix_pubsub_poi_subscriber
             )
 
-    add_deploy("pubsub_subscriber2_zmq"
+    add_celix_container("pubsub_subscriber2_zmq"
             GROUP "pubsub"
             BUNDLES
             Celix::shell
@@ -165,7 +165,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             )
 
     # ZMQ Multipart
-    add_deploy("pubsub_mp_subscriber_zmq"
+    add_celix_container("pubsub_mp_subscriber_zmq"
             GROUP "pubsub"
             BUNDLES
             Celix::shell
@@ -177,7 +177,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             org.apache.celix.pubsub_subscriber.MpSubscriber
             )
 
-    add_deploy("pubsub_mp_publisher_zmq"
+    add_celix_container("pubsub_mp_publisher_zmq"
             GROUP "pubsub"
             BUNDLES
             Celix::shell

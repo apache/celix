@@ -27,7 +27,7 @@
 #ifndef TOPIC_PUBLICATION_H_
 #define TOPIC_PUBLICATION_H_
 
-#include "publisher.h"
+#include "pubsub/publisher.h"
 #include "pubsub_endpoint.h"
 #include "pubsub_common.h"
 

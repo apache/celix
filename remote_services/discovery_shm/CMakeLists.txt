@@ -20,7 +20,7 @@ if (RSA_DISCOVERY_SHM)
 find_package(CURL REQUIRED)
 	find_package(LibXml2 REQUIRED)
 
-	add_bundle(rsa_discovery_shm
+	add_celix_bundle(rsa_discovery_shm
         VERSION 0.0.1
         SYMBOLIC_NAME "apache_celix_rsa_discovery_shm"
         NAME "Apache Celix RSA Discovery SHM"
@@ -40,7 +40,7 @@ find_package(CURL REQUIRED)
 	)
 	target_link_libraries(rsa_discovery_shm PRIVATE Celix::framework ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES})
 
-	install_bundle(rsa_discovery_shm)
+	install_celix_bundle(rsa_discovery_shm)
 
 
 	#Setup target aliases to match external usage

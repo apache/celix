@@ -37,6 +37,7 @@ if (DEPENDENCY_MANAGER)
     	src/dm_dependency_manager_impl
         src/dm_activator
     )
+    set_target_properties(dependency_manager_static PROPERTIES OUTPUT_NAME "celix_dependency_manager_static")
     target_link_libraries(dependency_manager_static Celix::framework)
     target_compile_options(dependency_manager_static PRIVATE ${DM_COMP_OPT})
 
@@ -47,6 +48,7 @@ if (DEPENDENCY_MANAGER)
         src/dm_dependency_manager_impl
         src/dm_activator
     )
+    set_target_properties(dependency_manager_so PROPERTIES OUTPUT_NAME "celix_dependency_manager_so")
     set_target_properties(dependency_manager_so PROPERTIES SOVERSION 1)
 
     if (APPLE)
@@ -55,12 +57,18 @@ if (DEPENDENCY_MANAGER)
         target_link_libraries(dependency_manager_so Celix::framework)
     endif()
 
-    target_include_directories(dependency_manager_static PUBLIC api)
+    target_include_directories(dependency_manager_static PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
+        $<INSTALL_INTERFACE:include/celix/dependency_manager>
+    )
     target_include_directories(dependency_manager_static PRIVATE src)
-    target_include_directories(dependency_manager_so PUBLIC api)
+    target_include_directories(dependency_manager_so PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
+        $<INSTALL_INTERFACE:include/celix/dependency_manager>
+    )
     target_include_directories(dependency_manager_so PRIVATE src)
 
-    add_bundle(dm_shell
+    add_celix_bundle(dm_shell
         SYMBOLIC_NAME "apache_celix_dm_shell"
         VERSION "1.0.0"
         NAME "Apache Celix DM Shell Commands"
@@ -71,23 +79,9 @@ if (DEPENDENCY_MANAGER)
     target_include_directories(dm_shell PRIVATE api src)
     target_link_libraries(dm_shell PRIVATE Celix::shell_api)
 
-#TODO check
-#    install(
-#    	FILES
-#    	    api/dm_activator.h
-#            src/dm_activator.c
-#            api/dm_component.h
-#            api/dm_dependency_manager.h
-#            apidm_service_dependency.h
-#            apidm_info.h
-#		DESTINATION
-#	    	include/celix/dependency_manager
-#		COMPONENT
-#			dependency_manager
-#	)
-    install_bundle(dm_shell)
-    install(TARGETS dependency_manager_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dependency_manager)
-    install(TARGETS dependency_manager_so DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dependency_manager)
+    install_celix_bundle(dm_shell)
+    install(TARGETS dependency_manager_so dependency_manager_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dependency_manager)
+    install(DIRECTORY api/ DESTINATION include/celix/dependency_manager COMPONENT dependency_manager)
 
     unset(DM_COMP_OPT)
 

@@ -44,8 +44,8 @@
 #include "constants.h"
 #include "version.h"
 
-#include "subscriber.h"
-#include "publisher.h"
+#include "pubsub/subscriber.h"
+#include "pubsub/publisher.h"
 #include "pubsub_utils.h"
 
 #ifdef BUILD_WITH_ZMQ_SECURITY

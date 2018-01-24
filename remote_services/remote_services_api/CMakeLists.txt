@@ -15,14 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(celix_remote_services_api INTERFACE)
-target_include_directories(celix_remote_services_api INTERFACE
+add_library(remote_services_api INTERFACE)
+target_include_directories(remote_services_api INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
     $<INSTALL_INTERFACE:include/celix/remote_services>
 )
 
-install(TARGETS celix_remote_services_api EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT rsa)
+install(TARGETS remote_services_api EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT rsa)
 install(DIRECTORY include/ DESTINATION include/celix/remote_services COMPONENT rsa)
 
 #Setup target aliases to match external usage
-add_library(Celix::remote_services_api ALIAS celix_remote_services_api)
+add_library(Celix::remote_services_api ALIAS remote_services_api)

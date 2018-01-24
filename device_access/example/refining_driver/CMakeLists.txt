@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_bundle(char_refiningdriver
+add_celix_bundle(char_refiningdriver
  	SYMBOLIC_NAME "apache_celix_char_refining_driver_example"
  	NAME "Apache Celix Device Access Char Refining Driver Example"
  	VERSION "0.0.1"

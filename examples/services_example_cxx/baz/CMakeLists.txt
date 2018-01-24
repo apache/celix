@@ -19,7 +19,7 @@ include_directories(
         private/include
 )
 
-add_bundle(baz_cxx
+add_celix_bundle(baz_cxx
     SYMBOLIC_NAME Baz
     VERSION 1.0.0
     SOURCES

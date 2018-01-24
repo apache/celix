@@ -47,7 +47,7 @@ if (CONFIG_ADMIN)
    endif(ENABLE_TESTING)
 	
 
-   add_deploy(config_admin_deploy 
+   add_celix_container(config_admin_deploy
        NAME "config_admin"
        BUNDLES 
         config_admin 

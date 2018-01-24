@@ -28,15 +28,15 @@ if(WIN32)
 	  set(LIBS wsock32)
 endif(WIN32)
 
-add_bundle(mongoose
+add_celix_bundle(mongoose
     VERSION 0.0.1
     SOURCES
         private/src/activator
         private/include/mongoose.h
 )
 
-bundle_files(mongoose ${CMAKE_CURRENT_LIST_DIR}/root)
+celix_bundle_files(mongoose ${CMAKE_CURRENT_LIST_DIR}/root)
 
 target_link_libraries(mongoose PRIVATE mongooselib ${LIBS})
 
-add_deploy("mongoose_deploy" BUNDLES Celix::shell Celix::shell_tui log_service mongoose)
+add_celix_container("mongoose_deploy" BUNDLES Celix::shell Celix::shell_tui log_service mongoose)

@@ -1,20 +1,57 @@
-# Licensed to the Apache Software Foundation (ASF) under one or more
-# contributor license agreements.  See the NOTICE file distributed with
-# this work for additional information regarding copyright ownership.
-# The ASF licenses this file to You under the Apache License, Version 2.0
-# (the "License"); you may not use this file except in compliance with
-# the License.  You may obtain a copy of the License at
-#    
-#     http://www.apache.org/licenses/LICENSE-2.0
-# 
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+<!--
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+   
+    http://www.apache.org/licenses/LICENSE-2.0
 
-Changes for 2.0.0
-** New Features
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+# Changes for 2.1.0
+
+## New Features:
+    CELIX-408: Adds support for generating runtime shell scripts so that multiple Celix containers and other executable can be run with a single command.
+    CELIX-418: Adds support for generating properties in the Celix container launcher.
+    CELIX-407: Adds support for serializers as a service for PubSub. This way PubSubAdmin are purely focused on transport techniques.
+    CELIX-401: Adds support for creating Celix docker images using a CMake function.
+    CELIX-397: Adds support for PubSub selection based on a match function. This way multiple PubSubAdmin can be active.
+    CELIX-389: Adds the PubSub implementation. A set of bundles which together operates as a service based publish subscribe technology agnostic abstraction.
+    CELIX-385: Adds etcdlib as library. This libray can be used to communicate with etcd using a C abstraction.
+    CELIX-370: Adds C++11 support by adding a C++ Dependency Manager library. This is moslty a header based library.
+
+## Improvements:
+    CELIX-415: Improves handling of ANSI control sequences to better support running in IDE's.
+    CELIX-414: Improves support for running Celix container inside IDE's by basicly handling Celix containers as add_executable CMake target.
+    CELIX-406: Improves handling of descriptor files, by allowing different directories for Remote Services and PubSub.
+    CELIX-399: Improves PubSub to use etcdlib instead of local copy of etcd.c file.
+    CELIX-396: Improves the ZMQ PubSub security so that enabling/disable of security can be done per topic.
+    CELIX-395: Improves Remote Service to use the etcdlib instead of a local etcd.c file.
+    CELIX-392: Removes the use of the deprecated readdir_r function. 
+
+## Bugs:
+    CELIX-416: Fixes an issue for the Android build.
+    CELIX-410: Fixes an issue where spaces and tabs are duplicated when loading properties.
+    CELIX-405: Fixes an issue with crashes because of invalid DFI descriptors.
+    CELIX-404: Fixes an issue with crashes using the inspect shell command.
+    CELIX-403: Fixes an memory leak in the service tracker.
+    CELIX-400: Fixes an issue with private libraries being loaded twice.
+    CELIX-398: Fixes an issue with PubSub and multiple UDP connections.
+    CELIX-393: Fixes an issue with the add_bundle CMake function and using existing libaries.
+    CELIX-391: Fixes an issue with the utils_stringHash not genering unique (enough) hashes.
+    CELIX-390: Fixes an issue with cycle dependency between the Celix framework and Celix utils libraries.
+    CELIX-387: Fixes an issue with the travis build and OSX
+    CELIX-386: Fixes an issue with the C++ dependency manager and register multiple C++ services.
+
+# Changes for 2.0.0
+## New Features
     [CELIX-77] Configuration Admin Implementation
     [CELIX-116] Event admin
     [CELIX-119] Remove apr usage from framework
@@ -22,7 +59,7 @@ Changes for 2.0.0
     [CELIX-237] RSA with libffi
     [CELIX-269] New Dependency Manager
     [CELIX-370] Add C++ support
-** Improvements
+## Improvements
     [CELIX-63] make cmake directory useable for custom bundle projects
     [CELIX-66] Refactor shell service struct
     [CELIX-90] add additional build options for RSA components
@@ -80,7 +117,7 @@ Changes for 2.0.0
     [CELIX-352] RSA_DFI and embedded celix
     [CELIX-353] Make bundle context retrievable form dm component
     [CELIX-365] Refactor some usage of void* to const void*
-** Bug
+## Bugs
     [CELIX-104] deployment_admin bundle won't start when missing properties
     [CELIX-105] Fixed array_list_test
     [CELIX-114] Potential deadlock in log_service bundle during stop

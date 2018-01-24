@@ -19,7 +19,7 @@
 add_library(device_access_api INTERFACE)
 target_include_directories(device_access_api INTERFACE include)
 
-add_bundle(device_manager
+add_celix_bundle(device_manager
 	SYMBOLIC_NAME "apache_celix_device_manager"
 	VERSION "0.0.2"
 	NAME "Apache Celix Device Access Device Manager"
@@ -32,7 +32,7 @@ add_bundle(device_manager
 )
 target_link_libraries(device_manager PRIVATE Celix::log_helper)
 
-install_bundle(device_manager
+install_celix_bundle(device_manager
 	HEADERS
 		include/device.h
 		include/driver_locator.h

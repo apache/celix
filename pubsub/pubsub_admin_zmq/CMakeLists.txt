@@ -30,7 +30,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 		set (ZMQ_CRYPTO_C "private/src/zmq_crypto.c")
 	endif()
 
-	add_bundle(celix_pubsub_admin_zmq
+	add_celix_bundle(celix_pubsub_admin_zmq
 			BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_zmq"
 			VERSION "1.0.0"
 			SOURCES
@@ -54,7 +54,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 		src
 	)
 
-	install_bundle(org.apache.celix.pubsub_admin.PubSubAdminZmq)
+	install_celix_bundle(celix_pubsub_admin_zmq)
 
 	add_library(Celix::pubsub_admin_zmq ALIAS celix_pubsub_admin_zmq)
 endif()

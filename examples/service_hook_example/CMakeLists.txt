@@ -15,14 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_bundle(hook_example
+add_celix_bundle(hook_example
     BUNDLE_SYMBOLICNAME "Hook_Example"
     VERSION "1.0.0"
     SOURCES
         src/activator
 )
 
-add_deploy(hook_service_example
+add_celix_container(hook_service_example
     BUNDLES
         Celix::shell
         Celix::shell_tui

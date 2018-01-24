@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_bundle(dm_example_cxx_phase2a
+add_celix_bundle(dm_example_cxx_phase2a
     SYMBOLIC_NAME phase2a_cxx
     VERSION 0.0.1
     SOURCES
@@ -25,7 +25,7 @@ add_bundle(dm_example_cxx_phase2a
 target_include_directories(dm_example_cxx_phase2a PRIVATE src)
 target_link_libraries(dm_example_cxx_phase2a PRIVATE Celix::log_service_api dm_example_cxx_api)
 
-add_bundle(dm_example_cxx_phase2b
+add_celix_bundle(dm_example_cxx_phase2b
         SYMBOLIC_NAME phase2b_cxx
         VERSION 0.0.1
         SOURCES

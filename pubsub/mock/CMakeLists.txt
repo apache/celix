@@ -19,12 +19,12 @@
 find_package(CppUTest QUIET)
 if (CPPUTEST_FOUND)
 
-    add_library(celix_pubsub_mock STATIC
+    add_library(pubsub_mock STATIC
             src/publisher_mock.cc
     )
-    target_include_directories(celix_pubsub_mock PUBLIC api)
-    target_link_libraries(celix_pubsub_mock PRIVATE Celix::pubsub_spi ${CPPUTEST_LIBRARY})
-    target_include_directories(celix_pubsub_mock PRIVATE SYSTEM
+    target_include_directories(pubsub_mock PUBLIC api)
+    target_link_libraries(pubsub_mock PRIVATE Celix::pubsub_spi ${CPPUTEST_LIBRARY})
+    target_include_directories(pubsub_mock PRIVATE SYSTEM
         ${CPPUTEST_INCLUDE_DIR}
     )
 

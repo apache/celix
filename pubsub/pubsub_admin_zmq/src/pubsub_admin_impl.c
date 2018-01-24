@@ -60,7 +60,7 @@
 #include "topic_publication.h"
 #include "pubsub_endpoint.h"
 #include "pubsub_utils.h"
-#include "subscriber.h"
+#include "pubsub/subscriber.h"
 
 #define MAX_KEY_FOLDER_PATH_LENGTH 512
 

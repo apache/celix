@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_bundle(celix_pubsub_poi_publisher2
+add_celix_bundle(celix_pubsub_poi_publisher2
     SYMBOLIC_NAME "apache_celix_pubsub_poi_publisher2"
     VERSION "1.0.0"
     SOURCES 
@@ -26,24 +26,24 @@ target_link_libraries(celix_pubsub_poi_publisher2 PRIVATE Celix::framework Celix
 target_include_directories(celix_pubsub_poi_publisher2 PRIVATE ../publisher/private/include)
 
 
-bundle_files(celix_pubsub_poi_publisher2
+celix_bundle_files(celix_pubsub_poi_publisher2
 	${PROJECT_SOURCE_DIR}/pubsub/examples/pubsub/msg_descriptors/msg_poi1.descriptor
 	${PROJECT_SOURCE_DIR}/pubsub/examples/pubsub/msg_descriptors/msg_poi2.descriptor
     DESTINATION "META-INF/descriptors"
 )
 
-bundle_files(celix_pubsub_poi_publisher2
+celix_bundle_files(celix_pubsub_poi_publisher2
 		${PROJECT_SOURCE_DIR}/pubsub/examples/pubsub/msg_descriptors/poi1.properties
 		${PROJECT_SOURCE_DIR}/pubsub/examples/pubsub/msg_descriptors/poi2.properties
     DESTINATION "META-INF/topics/pub"
 )
 
-bundle_files(celix_pubsub_poi_publisher2
+celix_bundle_files(celix_pubsub_poi_publisher2
 		${PROJECT_SOURCE_DIR}/pubsub/examples/keys/publisher
     DESTINATION "META-INF/keys"
 )
 
-bundle_files(celix_pubsub_poi_publisher2
+celix_bundle_files(celix_pubsub_poi_publisher2
 	${PROJECT_SOURCE_DIR}/pubsub/examples/keys/subscriber/public
     DESTINATION "META-INF/keys/subscriber"
 )

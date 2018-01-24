@@ -24,7 +24,7 @@ if (BUILD_DEPENDENCY_MANAGER)
     add_subdirectory(phase3)
 
 
-    add_deploy(dm_example
+    add_celix_container(dm_example
         COPY 
         BUNDLES
             Celix::shell

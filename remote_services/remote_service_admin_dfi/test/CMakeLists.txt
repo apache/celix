@@ -18,13 +18,13 @@
 find_package(CppUTest REQUIRED)
 include_directories(${CPPUTEST_INCLUDE_DIR})
 
-add_bundle(rsa_dfi_tst_bundle
+add_celix_bundle(rsa_dfi_tst_bundle
     VERSION 0.0.1
     SOURCES
         src/tst_activator.c
 )
 get_target_property(DESCR calculator_api INTERFACE_CALCULATOR_DESCRIPTOR)
-bundle_files(rsa_dfi_tst_bundle ${DESCR} DESTINATION .)
+celix_bundle_files(rsa_dfi_tst_bundle ${DESCR} DESTINATION .)
 target_link_libraries(rsa_dfi_tst_bundle PRIVATE ${CPPUTEST_LIBRARY} calculator_api)
 target_include_directories(rsa_dfi_tst_bundle PRIVATE src)
 

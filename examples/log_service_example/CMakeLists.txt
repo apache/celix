@@ -17,7 +17,7 @@
 
 #Importing and exporting libraries not (yet) work under OSX.
 
-add_bundle(log_service_example
+add_celix_bundle(log_service_example
     VERSION "1.0"
     SOURCES
         src/activator.c
@@ -25,7 +25,7 @@ add_bundle(log_service_example
 target_include_directories(log_service_example PRIVATE src)
 target_link_libraries(log_service_example PRIVATE Celix::log_service_api Celix::log_helper)
 
-add_deploy(log_example
+add_celix_container(log_example
     GROUP log_service
     BUNDLES log_service_example Celix::log_service Celix::shell Celix::shell_tui
 )

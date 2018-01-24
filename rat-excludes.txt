@@ -63,8 +63,8 @@ fmemopen.h
 open_memstream.c
 open_memstream.h
 
- Documentation files
-(.)*.md
+# thpool and memstream documentation files
+./utils/public/include/memstream/README.md
 
 .travis.yml
 
@@ -76,3 +76,6 @@ scope.*\.json
  MIT - C Thread Pool
 thpool.c
 thpool.h
+Design.md
+FAQ.md
+README.md

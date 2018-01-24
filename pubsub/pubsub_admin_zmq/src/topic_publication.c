@@ -40,7 +40,7 @@
 
 #include "pubsub_common.h"
 #include "pubsub_utils.h"
-#include "publisher.h"
+#include "pubsub/publisher.h"
 
 #include "topic_publication.h"
 

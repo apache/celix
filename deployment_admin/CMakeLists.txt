@@ -25,7 +25,7 @@ if (DEPLOYMENT_ADMIN)
     add_library(deployment_admin_api INTERFACE)
     target_include_directories(deployment_admin_api INTERFACE api)
 
-    add_bundle(deployment_admin
+    add_celix_bundle(deployment_admin
         SYMBOLIC_NAME "apache_celix_deployment_admin"
         VERSION "0.0.2"
         NAME "Apache Celix Deployment Admin"
@@ -50,13 +50,13 @@ if (DEPLOYMENT_ADMIN)
     )
     target_link_libraries(deployment_admin PRIVATE ${CURL_LIBRARIES} ${UUID_LIBRARIES} ${ZLIB_LIBRARIES} deployment_admin_api)
 
-    install_bundle(deployment_admin)
+    install_celix_bundle(deployment_admin)
 
     #Setup target aliases to match external usage
     add_library(Celix::deployment_admin_api ALIAS deployment_admin_api)
     add_library(Celix::deployment_admin ALIAS deployment_admin)
 
-    add_deploy(deployment-admin
+    add_celix_container(deployment-admin
         BUNDLES Celix::deployment_admin Celix::shell Celix::shell_tui Celix::log_service Celix::log_writer_stdout
         PROPERTIES
     		"deployment_admin_url=http://localhost:8080"

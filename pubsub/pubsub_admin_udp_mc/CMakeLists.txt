@@ -17,7 +17,7 @@
 
 find_package(Jansson REQUIRED)
 
-add_bundle(celix_pubsub_admin_udp_multicast
+add_celix_bundle(celix_pubsub_admin_udp_multicast
 	BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_udp_multicast"
 	VERSION "1.0.0"
 	SOURCES
@@ -37,7 +37,7 @@ target_include_directories(celix_pubsub_admin_udp_multicast PRIVATE
 set_target_properties(celix_pubsub_admin_udp_multicast PROPERTIES INSTALL_RPATH "$ORIGIN")
 target_link_libraries(celix_pubsub_admin_udp_multicast PRIVATE Celix::pubsub_spi Celix::framework Celix::dfi Celix::log_helper)
 
-install_bundle(celix_pubsub_admin_udp_multicast)
+install_celix_bundle(celix_pubsub_admin_udp_multicast)
 
 add_library(Celix::pubsub_admin_udp_multicast ALIAS celix_pubsub_admin_udp_multicast)
 

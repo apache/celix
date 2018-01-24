@@ -27,6 +27,7 @@ if (LOG_SERVICE)
 	install(DIRECTORY include/ DESTINATION include/celix/log_service)
 
 	add_library(log_helper STATIC src/log_helper.c)
+	set_target_properties(log_helper PROPERTIES OUTPUT_NAME "celix_log_helper")
 	target_include_directories(log_helper PUBLIC
 			$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/loghelper_include>
 			$<INSTALL_INTERFACE:include/celix/log_helper>
@@ -35,7 +36,7 @@ if (LOG_SERVICE)
 	install(TARGETS log_helper EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT log_service)
 	install(DIRECTORY loghelper_include/ DESTINATION include/celix/log_helper COMPONENT log_service)
 
-    add_bundle(log_service
+    add_celix_bundle(log_service
     	SYMBOLIC_NAME "apache_celix_log_service"
     	NAME "Apache Celix Log Service"
     	VERSION "1.1.0"
@@ -48,7 +49,7 @@ if (LOG_SERVICE)
 			src/log_reader_service_impl
     )
     
-    install_bundle(log_service
+    install_celix_bundle(log_service
         HEADERS
         	include/log_service.h
         	include/log_reader_service.h
