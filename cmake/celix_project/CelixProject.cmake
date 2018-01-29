@@ -15,6 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
+option(ENABLE_ADDRESS_SANITIZER "Enabled building with address sanitizer. Note for gcc libasan must be installed" OFF)
+
+if (ENABLE_ADDRESS_SANITIZER)
+    set(CMAKE_C_FLAGS "-lasan -fsanitize=address ${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "-lasan -fsanitize=address ${CMAKE_CXX_FLAGS}")
+endif()
+
+
 MACRO(celix_subproject)
     set(ARGS "${ARGN}")
 
@@ -67,3 +75,6 @@ MACRO(is_enabled name)
         set(${name} "OFF")
     endif()
 ENDMACRO(is_enabled)
+
+include(${CMAKE_CURRENT_LIST_DIR}/ApacheRat.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/CodeCoverage.cmake)

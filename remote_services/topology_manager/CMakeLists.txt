@@ -27,7 +27,7 @@ if (RSA_TOPOLOGY_MANAGER)
         NAME "Apache Celix RS Topology Manager"
     )
     target_include_directories(rsa_topology_manager PRIVATE src)
-    target_include_directories(rsa_topology_manager PUBLIC include)
+    target_include_directories(rsa_topology_manager PRIVATE include)
     target_link_libraries(rsa_topology_manager PRIVATE Celix::log_helper Celix::rsa_spi)
 
     install_celix_bundle(rsa_topology_manager)

@@ -26,7 +26,7 @@ target_include_directories(dm_example_phase3 PRIVATE src)
 target_link_libraries(dm_example_phase3 PRIVATE dm_example_api)
 
 IF(APPLE)
-    target_link_libraries(dm_example_phase3 PRIVATE -Wl,-all_load dependency_manager_static)
+    target_link_libraries(dm_example_phase3 PRIVATE -Wl,-all_load Celix::dependency_manager_static)
 else()
     if(ENABLE_ADDRESS_SANITIZER)
         #With asan there can be undefined symbols

@@ -168,7 +168,7 @@ function(add_celix_bundle)
 
     ##### MANIFEST configuration and generation ##################
     #Step1 configure the file so that the target name is present in in the template
-    configure_file(${CELIX_CMAKE_DIRECTORY}/cmake_celix/Manifest.template.in ${BUNDLE_GEN_DIR}/MANIFEST.step1)
+    configure_file(${CELIX_CMAKE_DIRECTORY}/Manifest.template.in ${BUNDLE_GEN_DIR}/MANIFEST.step1)
 
     #Step2 replace headers with target property values. Note this is done build time
     file(GENERATE 
@@ -222,7 +222,8 @@ function(add_celix_bundle)
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_IS_BUNDLE_TARGET" TRUE) #indicate that this is a bundle target
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_DEPEND_TARGETS" "") #bundle target dependencies. Note can be extended after the add_bundle call
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_GEN_DIR" ${BUNDLE_GEN_DIR}) #location for generated output.
-    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_CREATE_BUNDLE_TARGET" ${BUNDLE_TARGET_NAME}_bundle)
+    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_CREATE_BUNDLE_TARGET" ${BUNDLE_TARGET_NAME}_bundle) #target which creat the bundle zip
+    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_IMPORTED" FALSE) #whethet target is a imported (bundle) target
 
     #bundle specific
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_CONTENT_DIR" ${BUNDLE_CONTENT_DIR}) #location where the content to be jar/zipped.
@@ -482,7 +483,7 @@ function(install_celix_bundle)
     list(REMOVE_AT ARGN 0)
 
     set(OPTIONS )
-    set(ONE_VAL_ARGS PROJECT_NAME BUNDLE_NAME) 
+    set(ONE_VAL_ARGS PROJECT_NAME BUNDLE_NAME EXPORT)
     set(MULTI_VAL_ARGS HEADERS RESOURCES)
     cmake_parse_arguments(INSTALL "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
     
@@ -494,6 +495,23 @@ function(install_celix_bundle)
     endif()
 
     install(FILES "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>" DESTINATION share/${INSTALL_PROJECT_NAME}/bundles COMPONENT ${BUNDLE})
+
+    if (INSTALL_EXPORT)
+        get_target_property(CURRENT_EXPORT_BUNDLES celix-bundles EXPORT_${INSTALL_EXPORT}_BUNDLES)
+
+        if (NOT CURRENT_EXPORT_BUNDLES)
+            set(CURRENT_EXPORT_BUNDLES ${BUNDLE})
+        else ()
+            list(APPEND CURRENT_EXPORT_BUNDLES ${BUNDLE})
+        endif ()
+
+        list(REMOVE_DUPLICATES CURRENT_EXPORT_BUNDLES)
+
+        set_target_properties(celix-bundles PROPERTIES
+                EXPORT_${INSTALL_EXPORT}_BUNDLES "${CURRENT_EXPORT_BUNDLES}"
+        )
+    endif ()
+
     if(INSTALL_HEADERS)
         install (FILES ${INSTALL_HEADERS} DESTINATION include/${INSTALL_PROJECT_NAME}/${INSTALL_BUNDLE_NAME} COMPONENT ${BUNDLE})
     endif()
@@ -501,4 +519,73 @@ function(install_celix_bundle)
         install (FILES ${INSTALL_RESOURCES} DESTINATION share/${INSTALL_PROJECT_NAME}/${INSTALL_BUNDLE_NAME} COMPONENT ${BUNDLE})
     endif()
 
+endfunction()
+
+function(install_celix_bundle_targets)
+    #0 is the export name
+    list(GET ARGN 0 EXPORT_NAME)
+    list(REMOVE_AT ARGN 0)
+
+    set(OPTIONS )
+    set(ONE_VAL_ARGS NAMESPACE DESTINATION FILE COMPONENT PROJECT_NAME)
+    set(MULTI_VAL_ARGS )
+    cmake_parse_arguments(EXPORT "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
+
+    get_target_property(EXPORT_BUNDLES celix-bundles EXPORT_${EXPORT_NAME}_BUNDLES)
+
+    if (NOT EXPORT_BUNDLES)
+        message(FATAL_ERROR "Export ${EXPORT_NAME} not defined. Did you forgot to use a install_celix_bundle with the 'EXPORT ${EXPORT_NAME}' option?")
+    endif ()
+
+    if (NOT EXPORT_FILE)
+        set(EXPORT_FILE ${EXPORT_NAME}BundleTargets.cmake)
+    endif ()
+    if (NOT EXPORT_PROJECT_NAME)
+        string(TOLOWER ${PROJECT_NAME} EXPORT_PROJECT_NAME)
+    endif()
+    if (NOT EXPORT_DESTINATION)
+        set(EXPORT_DESTINATION share/${EXPORT_PROJECT_NAME}/cmake)
+    endif ()
+    if (EXPORT_COMPONENT)
+        set(CMP_OPT "COMPONENT ${EXPORT_COMPONENT}")
+    endif ()
+
+    #extract number of .. needed ot reach install prefix (e.g. howto calculte _IMPORT_PREFIX
+    file(TO_CMAKE_PATH ${EXPORT_DESTINATION} DEST_PATH)
+    string(REGEX MATCHALL "/" SLASH_MATCHES ${DEST_PATH})
+    list(LENGTH SLASH_MATCHES NR_OF_SUB_DIRS)
+
+    set(CONF_IN_FILE "${CMAKE_BINARY_DIR}/celix/gen/${EXPORT_NAME}-ImportedBundleTargets.cmake.in")
+    set(CONF_FILE "${CMAKE_BINARY_DIR}/celix/gen/${EXPORT_NAME}-ImportedBundleTargets.cmake")
+    file(REMOVE "${CONF_IN_FILE}")
+
+
+    file(APPEND "${CONF_IN_FILE}" "# Compute the installation prefix relative to this file.
+get_filename_component(_IMPORT_PREFIX \"\${CMAKE_CURRENT_LIST_FILE}\" PATH)
+")
+    foreach(_VAR RANGE ${NR_OF_SUB_DIRS})
+        file(APPEND "${CONF_IN_FILE}" "get_filename_component(_IMPORT_PREFIX \"\${_IMPORT_PREFIX}\" PATH)
+")
+    endforeach()
+        file(APPEND "${CONF_IN_FILE}" "
+")
+
+    foreach(BUNDLE_TARGET IN LISTS EXPORT_BUNDLES)
+        set(TN "${EXPORT_NAMESPACE}${BUNDLE_TARGET}")
+        file(APPEND "${CONF_IN_FILE}" "
+add_library(${TN} SHARED IMPORTED)
+set_target_properties(${TN} PROPERTIES
+    BUNDLE_IMPORTED TRUE
+    BUNDLE_FILE \"\${_IMPORT_PREFIX}/share/${EXPORT_PROJECT_NAME}/bundles/$<TARGET_PROPERTY:${BUNDLE_TARGET},BUNDLE_FILENAME>\"
+    BUNDLE_FILENAME \"$<TARGET_PROPERTY:${BUNDLE_TARGET},BUNDLE_FILENAME>\"
+)
+")
+    endforeach()
+    file(GENERATE OUTPUT "${CONF_FILE}" INPUT "${CONF_IN_FILE}")
+
+    if (EXPORT_COMPONENT)
+        install(FILES "${CONF_FILE}" DESTINATION ${EXPORT_DESTINATION} RENAME ${EXPORT_FILE} COMPONENT ${EXPORT_COMPONENT})
+    else ()
+        install(FILES "${CONF_FILE}" DESTINATION ${EXPORT_DESTINATION} RENAME ${EXPORT_FILE})
+    endif ()
 endfunction()

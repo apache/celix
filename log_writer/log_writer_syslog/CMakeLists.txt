@@ -26,7 +26,7 @@ if (LOG_WRITER_SYSLOG)
             private/src/log_writer_syslog
     )
 
-    install_celix_bundle(log_writer_syslog)
+    install_celix_bundle(log_writer_syslog EXPORT celix)
 
     target_link_libraries(log_writer_syslog PRIVATE log_writer_common)
 endif (LOG_WRITER_SYSLOG)

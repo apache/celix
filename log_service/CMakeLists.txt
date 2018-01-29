@@ -55,6 +55,7 @@ if (LOG_SERVICE)
         	include/log_reader_service.h
         	include/log_listener.h
         	include/log_entry.h
+		EXPORT celix
     )
 
 	target_include_directories(log_service PRIVATE src)

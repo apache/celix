@@ -167,7 +167,7 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_PROPERTIES>,
     set(PROGRAM_NAME "${LAUNCHER}")
     set(PROJECT_ATTR "${CMAKE_PROJECT_NAME}-build")
     set(WORKING_DIRECTORY ${CONTAINER_LOC})
-    include("${CELIX_CMAKE_DIRECTORY}/cmake_celix/RunConfig.in.cmake") #set VAR RUN_CONFIG_IN
+    include("${CELIX_CMAKE_DIRECTORY}/RunConfig.in.cmake") #set VAR RUN_CONFIG_IN
     file(GENERATE
         OUTPUT "${CONTAINER_ECLIPSE_LAUNCHER}"
         CONTENT "${RUN_CONFIG_IN}"
@@ -233,15 +233,32 @@ function(celix_container_bundles_dir)
     get_target_property(DEPS ${CONTAINER_TARGET} "CONTAINER_TARGET_DEPS")
 
     foreach(BUNDLE IN ITEMS ${BD_BUNDLES})
+        set(HANDLED FALSE)
         if (IS_ABSOLUTE ${BUNDLE} AND EXISTS ${BUNDLE})
             get_filename_component(BUNDLE_FILENAME ${BUNDLE} NAME) 
             set(OUT "${CONTAINER_LOC}/${BD_DIR_NAME}/${BUNDLE_FILENAME}")
             add_custom_command(OUTPUT ${OUT}
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE} ${OUT}
-		        COMMENT "Copying bundle '${BUNDLE}' to '${CONTAINER_LOC}/${BD_DIR_NAME}'"
-                DEPENDS ${BUNDLE}
+		        COMMENT "Copying (file) bundle '${BUNDLE}' to '${CONTAINER_LOC}/${BD_DIR_NAME}'"
             )
-        else()
+            set(HANDLED TRUE)
+        elseif (TARGET ${BUNDLE})
+            get_target_property(IMP ${BUNDLE} BUNDLE_IMPORTED)
+            if (IMP) #An imported bundle target -> handle target without DEPENDS
+                string(MAKE_C_IDENTIFIER ${BUNDLE} BUNDLE_ID) #Create id with no special chars (e.g. for target like Celix::shell)
+                set(OUT "${CMAKE_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}-copy-bundle-for-target-${BUNDLE_ID}.timestamp")
+                set(DEST "${CONTAINER_LOC}/${BD_DIR_NAME}/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
+                add_custom_command(OUTPUT ${OUT}
+                    COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
+                    COMMAND ${CMAKE_COMMAND} -E make_directory ${CONTAINER_LOC}/${BD_DIR_NAME}
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>" ${DEST}
+                    COMMENT "Copying (imported) bundle '${BUNDLE}' to '${CONTAINER_LOC}/${BD_DIR_NAME}'"
+                )
+                set(HANDLED TRUE)
+            endif ()
+        endif ()
+
+        if (NOT HANDLED) #not a imported bundle target so (assuming) a future bundle target
             string(MAKE_C_IDENTIFIER ${BUNDLE} BUNDLE_ID) #Create id with no special chars (e.g. for target like Celix::shell)
             set(OUT "${CMAKE_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}-copy-bundle-for-target-${BUNDLE_ID}.timestamp")
             set(DEST "${CONTAINER_LOC}/${BD_DIR_NAME}/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
@@ -249,7 +266,7 @@ function(celix_container_bundles_dir)
                 COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
                 COMMAND ${CMAKE_COMMAND} -E make_directory ${CONTAINER_LOC}/${BD_DIR_NAME}
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>" ${DEST}
-                COMMENT "Copying bundle '${BUNDLE}' to '${CONTAINER_LOC}/${BD_DIR_NAME}'"
+                COMMENT "Copying (target) bundle '${BUNDLE}' to '${CONTAINER_LOC}/${BD_DIR_NAME}'"
                 DEPENDS ${BUNDLE} $<TARGET_PROPERTY:${BUNDLE},BUNDLE_CREATE_BUNDLE_TARGET>
             )
         endif()
@@ -274,11 +291,22 @@ function(celix_container_bundles)
     get_target_property(DEPS ${CONTAINER_TARGET} "CONTAINER_TARGET_DEPS")
 
     foreach(BUNDLE IN ITEMS ${ARGN})
-           if (IS_ABSOLUTE ${BUNDLE} AND EXISTS ${BUNDLE})
+        set(HANDLED FALSE)
+        if (IS_ABSOLUTE ${BUNDLE} AND EXISTS ${BUNDLE})
                get_filename_component(BUNDLE_FILENAME ${BUNDLE} NAME)
                set(COPY_LOC "bundles/${BUNDLE_FILENAME}")
                set(ABS_LOC "${BUNDLE}")
-           else () #assume target (could be a future target -> if (TARGET ...) not possible
+               set(HANDLED TRUE)
+           elseif (TARGET ${BUNDLE})
+               get_target_property(IMP ${BUNDLE} BUNDLE_IMPORTED)
+               if (IMP) #An imported bundle target -> handle target without DEPENDS
+                   set(COPY_LOC "bundles/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
+                   set(ABS_LOC "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>")
+                   set(HANDLED TRUE)
+               endif ()
+           endif ()
+
+           if (NOT HANDLED) #not a imported bundle target, so assuming a (future) bundle target
                set(COPY_LOC "bundles/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
                set(ABS_LOC "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>")
 

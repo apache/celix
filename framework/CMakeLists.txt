@@ -58,10 +58,6 @@ target_link_libraries(framework PRIVATE ${UUID} ${ZLIB_LIBRARY} ${CURL_LIBRARIES
 
 install(TARGETS framework EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
 install(DIRECTORY include/ DESTINATION include/celix COMPONENT framework)
-install(DIRECTORY "${PROJECT_SOURCE_DIR}/cmake/" DESTINATION share/celix/cmake/modules COMPONENT framework
-    PATTERN "CMakeCelix-local.cmake" EXCLUDE
-)
-
 
 #Alias setup to match external usage
 add_library(Celix::framework ALIAS framework)

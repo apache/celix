@@ -21,10 +21,8 @@ cmake_policy(SET CMP0042 NEW)
 
 project (Celix C CXX)
 
-include(GNUInstallDirs)                                                                                                                                                                             
-
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
-
+include(cmake/celix_project/CelixProject.cmake)
+include(cmake/cmake_celix/UseCelix.cmake)
 
 # see https://public.kitware.com/Bug/view.php?id=15696
 IF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} EQUAL 3.3 AND ${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
@@ -52,17 +50,12 @@ ENDIF()
 set(CELIX_MAJOR "1")
 set(CELIX_MINOR "0")
 set(CELIX_MICRO "0")
-set(CELIX_QUALIFIER "")
 
 option(ENABLE_TESTING "Enables unit/bundle testing" FALSE)
 
 if (ENABLE_TESTING)
 	enable_testing()
 endif()
-
-
-include(CMakeCelix)
-include(UseDoxygen)  
 
 # Default bundle version
 set(DEFAULT_VERSION 1.0.0)
@@ -95,9 +88,22 @@ add_subdirectory(pubsub)
 add_subdirectory(dependency_manager)
 add_subdirectory(dependency_manager_cxx)
 
-
-#export targets
-install(EXPORT celix NAMESPACE Celix:: DESTINATION ${CMAKE_INSTALL_LIBDIR}/celix)
-
 #Example as last, because some example will check if underlining options are enabled
 add_subdirectory(examples)
+
+#export targets
+install(EXPORT celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE CelixTargets.cmake COMPONENT cmake)
+install_celix_bundle_targets(celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE CelixBundleTargets.cmake COMPONENT cmake)
+
+#install celix cmake modules
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/cmake/Modules/ DESTINATION share/celix/cmake/Modules)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/cmake/cmake_celix/ DESTINATION share/celix/cmake/cmake_celix)
+
+#configure and install CelixConfig and CelixConfigVersion files
+configure_file(cmake/CelixConfigVersion.cmake.in
+        "${PROJECT_BINARY_DIR}/celix/gen/CelixConfigVersion.cmake" @ONLY)
+
+install(FILES
+        "cmake/CelixConfig.cmake"
+        "${PROJECT_BINARY_DIR}/celix/gen/CelixConfigVersion.cmake"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/CMake/Celix" COMPONENT cmake)

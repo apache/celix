@@ -15,8 +15,11 @@
 # specific language governing permissions and limitations
 # under the License.
 
-set(CELIX_CMAKE_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/..)
-include(${CELIX_CMAKE_DIRECTORY}/cmake_celix/BundlePackaging.cmake)
-include(${CELIX_CMAKE_DIRECTORY}/cmake_celix/DeployPackaging.cmake)
-include(${CELIX_CMAKE_DIRECTORY}/cmake_celix/DockerPackaging.cmake)
-include(${CELIX_CMAKE_DIRECTORY}/cmake_celix/Runtimes.cmake)
+include(GNUInstallDirs)
+
+set(CELIX_CMAKE_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CELIX_CMAKE_DIRECTORY}/../Modules)
+include(${CELIX_CMAKE_DIRECTORY}/BundlePackaging.cmake)
+include(${CELIX_CMAKE_DIRECTORY}/DeployPackaging.cmake)
+include(${CELIX_CMAKE_DIRECTORY}/DockerPackaging.cmake)
+include(${CELIX_CMAKE_DIRECTORY}/Runtimes.cmake)

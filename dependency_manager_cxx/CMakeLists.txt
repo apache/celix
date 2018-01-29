@@ -40,8 +40,8 @@ if (DEPENDENCY_MANAGER_CXX)
     target_include_directories(dependency_manager_cxx_static PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
             $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/dependency_manager/api>
-            $<INSTALL_INTERFACE:include/celix/dependency_manager_cxx>
             $<INSTALL_INTERFACE:include/celix/dependency_manager>
+            $<INSTALL_INTERFACE:include/celix/dependency_manager_cxx>
     )
     target_include_directories(dependency_manager_cxx_static PRIVATE src)
     target_compile_options(dependency_manager_cxx_static PRIVATE ${DM_COMP_OPT})
@@ -52,8 +52,8 @@ if (DEPENDENCY_MANAGER_CXX)
         target_link_libraries(dependency_manager_cxx_static Celix::framework)
     endif()
 
-    install(TARGETS dependency_manager_cxx_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dependency_manager_cxx)
-    install(DIRECTORY include DESTINATION include/celix/dependency_manager_cxx COMPONENT dependency_manager_cxx)
+    install(TARGETS dependency_manager_cxx_static EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dependency_manager_cxx)
+    install(DIRECTORY include/ DESTINATION include/celix/dependency_manager_cxx COMPONENT dependency_manager_cxx)
 
     unset(DM_COMP_OPT)
 

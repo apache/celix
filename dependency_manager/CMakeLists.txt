@@ -79,8 +79,8 @@ if (DEPENDENCY_MANAGER)
     target_include_directories(dm_shell PRIVATE api src)
     target_link_libraries(dm_shell PRIVATE Celix::shell_api)
 
-    install_celix_bundle(dm_shell)
-    install(TARGETS dependency_manager_so dependency_manager_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dependency_manager)
+    install_celix_bundle(dm_shell EXPORT celix)
+    install(TARGETS dependency_manager_so dependency_manager_static EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dependency_manager)
     install(DIRECTORY api/ DESTINATION include/celix/dependency_manager COMPONENT dependency_manager)
 
     unset(DM_COMP_OPT)

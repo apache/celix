@@ -19,7 +19,12 @@ if (SHELL)
 	find_package(CURL REQUIRED)
 
 	add_library(shell_api INTERFACE)
-	target_include_directories(shell_api INTERFACE include)
+	target_include_directories(shell_api INTERFACE
+			$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+			$<INSTALL_INTERFACE:include/celix/shell>
+	)
+	install(TARGETS shell_api EXPORT celix)
+	install(DIRECTORY include/ DESTINATION include/celix/shell COMPONENT shell)
 
     add_celix_bundle(shell
         SYMBOLIC_NAME "apache_celix_shell"
@@ -44,6 +49,7 @@ if (SHELL)
 	install_celix_bundle(shell
     	HEADERS
     		include/shell.h include/command.h include/shell_constants.h
+		EXPORT celix
     )
 
 	#Setup target aliases to match external usage

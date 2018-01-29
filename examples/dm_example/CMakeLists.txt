@@ -14,7 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-if (BUILD_DEPENDENCY_MANAGER)
+if (TARGET Celix::dependency_manager_static AND TARGET Celix::dm_shell)
 
     add_subdirectory(api)
 

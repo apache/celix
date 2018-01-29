@@ -33,7 +33,7 @@ if (SHELL_TUI)
 	)
     target_link_libraries(shell_tui PRIVATE Celix::shell_api)
 
-	install_celix_bundle(shell_tui)
+	install_celix_bundle(shell_tui EXPORT celix)
 
 	#Alias setup to match external usage
 	add_library(Celix::shell_tui ALIAS shell_tui)
