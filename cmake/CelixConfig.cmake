@@ -22,22 +22,23 @@
 #  CELIX_LIBRARIES         - libraries to link against
 #  CELIX_LAUNCHER          - The Celix launcher
 
-set(REL_INSTALL_DIR "${CMAKE_CURRENT_LIST_DIR}/../../..") #from lib/Cmake/Celix
+# relative install dir from lib/CMake/Celix.
+get_filename_component(REL_INSTALL_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
+get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
+get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
 
+include("${REL_INSTALL_DIR}/share/celix/cmake/cmake_celix/UseCelix.cmake") #adds celix commands (e.g. add_celix_bundle)
+include("${REL_INSTALL_DIR}/share/celix/cmake/CelixTargets.cmake") #imports lib and exe targets (e.g. Celix::framework)
+include("${REL_INSTALL_DIR}/share/celix/cmake/CelixBundleTargets.cmake") #imports bundle targets (e.g. Celix::shell)
+
+# The rest is added to ensure backwards compatiblity with project using the cmake lib/include var instead of targets.
 set(CELIX_CMAKE_MODULES_DIR ${REL_INSTALL_DIR}/share/celix/cmake/Modules)
+
 set(CELIX_FRAMEWORK_INCLUDE_DIR "${REL_INSTALL_DIR}/include/celix")
 set(CELIX_UTILS_INCLUDE_DIR "${REL_INSTALL_DIR}/include/utils")
 set(CELIX_DFI_INCLUDE_DIR "${REL_INSTALL_DIR}/include/dfi")
 
-include("${REL_INSTALL_DIR}/share/celix/cmake/cmake_celix/UseCelix.cmake")
-
-if(NOT TARGET Celix::framework)
-  include("${REL_INSTALL_DIR}/share/celix/cmake/CelixTargets.cmake")
-  include("${REL_INSTALL_DIR}/share/celix/cmake/CelixBundleTargets.cmake")
-endif()
-
-
-# The rest is added to ensure backwards compatiblity with project using the cmake lib/include var instead of targets.
 set(CELIX_LIBRARIES Celix::framework Celix::utils Celix::dfi)
 set(CELIX_INCLUDE_DIRS
   $<TARGET_PROPERTY:Celix::framework,INTERFACE_INCLUDE_DIRECTORIES>
