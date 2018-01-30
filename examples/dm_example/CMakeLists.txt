@@ -14,12 +14,9 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-if (BUILD_DEPENDENCY_MANAGER)
-    include_directories(
-            ${PROJECT_SOURCE_DIR}/dependency_manager/public/include
-            ${PROJECT_SOURCE_DIR}/utils/public/include
-            services
-    )
+if (TARGET Celix::dependency_manager_static AND TARGET Celix::dm_shell)
+
+    add_subdirectory(api)
 
     add_subdirectory(phase1)
     add_subdirectory(phase2a)
@@ -27,16 +24,16 @@ if (BUILD_DEPENDENCY_MANAGER)
     add_subdirectory(phase3)
 
 
-    add_celix_container("dm_example"
+    add_celix_container(dm_example
         COPY 
         BUNDLES
-            shell
-            shell_tui
-            dm_shell
-            phase1
-            phase2a
-            phase2b
-            phase3
+            Celix::shell
+            Celix::shell_tui
+            Celix::dm_shell
+            dm_example_phase1
+            dm_example_phase2a
+            dm_example_phase2b
+            dm_example_phase3
         PROPERTIES
             LOGHELPER_ENABLE_STDOUT_FALLBACK=true
     )
@@ -52,16 +49,15 @@ if (BUILD_DEPENDENCY_MANAGER)
         FROM dmbase
         GROUP examples
         BUNDLES
-            shell
-            shell_tui
-            dm_shell
-            phase1
-            phase2a
-            phase2b
-            phase3
+            Celix::shell
+            Celix::shell_tui
+            Celix::dm_shell
+            dm_example_phase1
+            dm_example_phase2a
+            dm_example_phase2b
+            dm_example_phase3
         PROPERTIES
             LOGHELPER_ENABLE_STDOUT_FALLBACK=true
     )
-    add_dependencies(celix-build-dm_exmpl-docker-image celix-build-dm_exmpl_base-docker-image)
 
 endif ()

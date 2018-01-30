@@ -21,24 +21,8 @@ cmake_policy(SET CMP0042 NEW)
 
 project (Celix C CXX)
 
-include(GNUInstallDirs)                                                                                                                                                                             
-
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake")
-
-#Setup vars conform the FindCelix setup, so that examples and supporting cmake command can assume these variables are set
-set(CELIX_FOUND true)
-set(CELIX_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/framework/public/include ${CMAKE_SOURCE_DIR}/utils/public/include)
-set(CELIX_LIBRARIES celix_framework celix_utils celix_dfi)
-set(CELIX_LAUNCHER celix)
-set(CELIX_FRAMEWORK_LIBRARY celix_framework)
-set(CELIX_UTILS_LIBRARY celix_utils)
-set(CELIX_DFI_LIBRARY celix_dfi)
-set(CELIX_DM_LIB dependency_manager_so)
-set(CELIX_DM_STATIC_LIB dependency_manager_static)
-set(CELIX_DM_STATIC_CXX_LIB dependency_manager_cxx_static)
-set(CELIX_PROJECT true) #Note this var is not set by FindCelix and can be used to test if this is the celix project or a project using celix
-
-set(CMAKE_BUILD_TYPE "Debug")
+include(cmake/celix_project/CelixProject.cmake)
+include(cmake/cmake_celix/UseCelix.cmake)
 
 # see https://public.kitware.com/Bug/view.php?id=15696
 IF (${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} EQUAL 3.3 AND ${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
@@ -63,20 +47,15 @@ ELSE ()
 ENDIF()
 
 # Set version for the framework package/release
-set(CELIX_MAJOR "2")
-set(CELIX_MINOR "1")
+set(CELIX_MAJOR "1")
+set(CELIX_MINOR "0")
 set(CELIX_MICRO "0")
-set(CELIX_QUALIFIER "")
 
 option(ENABLE_TESTING "Enables unit/bundle testing" FALSE)
 
 if (ENABLE_TESTING)
 	enable_testing()
 endif()
-
-
-include(CMakeCelix)
-include(UseDoxygen)  
 
 # Default bundle version
 set(DEFAULT_VERSION 1.0.0)
@@ -89,9 +68,11 @@ add_subdirectory(etcdlib)
 
 add_subdirectory(framework)
 
-include_directories(framework/public/include)
+#launcher
 add_subdirectory(launcher)
-#add_subdirectory(config_admin) config admin is unstable
+
+#Bundles
+add_subdirectory(config_admin)
 add_subdirectory(device_access)
 add_subdirectory(deployment_admin)
 add_subdirectory(remote_services)
@@ -109,3 +90,20 @@ add_subdirectory(dependency_manager_cxx)
 
 #Example as last, because some example will check if underlining options are enabled
 add_subdirectory(examples)
+
+#export targets
+install(EXPORT celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE CelixTargets.cmake COMPONENT cmake)
+install_celix_bundle_targets(celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE CelixBundleTargets.cmake COMPONENT cmake)
+
+#install celix cmake modules
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/cmake/Modules/ DESTINATION share/celix/cmake/Modules)
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/cmake/cmake_celix/ DESTINATION share/celix/cmake/cmake_celix)
+
+#configure and install CelixConfig and CelixConfigVersion files
+configure_file(cmake/CelixConfigVersion.cmake.in
+        "${PROJECT_BINARY_DIR}/celix/gen/CelixConfigVersion.cmake" @ONLY)
+
+install(FILES
+        "cmake/CelixConfig.cmake"
+        "${PROJECT_BINARY_DIR}/celix/gen/CelixConfigVersion.cmake"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/Celix" COMPONENT cmake)

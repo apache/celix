@@ -18,26 +18,24 @@
 find_package(CURL REQUIRED)
 find_package(Jansson REQUIRED)
 
-include_directories("${CURL_INCLUDE_DIR}")
-include_directories("${JANSSON_INCLUDE_DIR}")
-include_directories("${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/pubsub/api/pubsub")
-include_directories("${PROJECT_SOURCE_DIR}/etcdlib/public/include")
-include_directories("private/include")
-include_directories("public/include")
-
-add_celix_bundle(org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
+add_celix_bundle(celix_pubsub_discovery_etcd
     BUNDLE_SYMBOLICNAME "apache_celix_pubsub_discovery_etcd"
     VERSION "1.0.0"
     SOURCES
-		private/src/psd_activator.c
-		private/src/pubsub_discovery_impl.c
-		private/src/etcd_common.c
-		private/src/etcd_watcher.c
-		private/src/etcd_writer.c
-		${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_endpoint.c
-		${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_utils.c
+        src/psd_activator.c
+        src/pubsub_discovery_impl.c
+        src/etcd_common.c
+        src/etcd_watcher.c
+        src/etcd_writer.c
 )
 
-target_link_libraries(org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery celix_framework celix_utils etcdlib_static ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
-install_celix_bundle(org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery)
+target_include_directories(celix_pubsub_discovery_etcd PRIVATE
+    src
+	${CURL_INCLUDE_DIR}
+	${JANSSON_INCLUDE_DIR}
+)
+
+target_link_libraries(celix_pubsub_discovery_etcd PRIVATE Celix::pubsub_spi Celix::framework Celix::etcdlib_static ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
+install_celix_bundle(celix_pubsub_discovery_etcd)
+
+add_library(Celix::pubsub_discovery_etcd ALIAS celix_pubsub_discovery_etcd)

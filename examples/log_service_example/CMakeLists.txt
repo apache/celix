@@ -17,20 +17,15 @@
 
 #Importing and exporting libraries not (yet) work under OSX.
 
-include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-include_directories("public/include")
-include_directories("${CMAKE_SOURCE_DIR}/log_service/public/include")
-
 add_celix_bundle(log_service_example
     VERSION "1.0"
     SOURCES
-        private/src/activator.c
-        ${CMAKE_SOURCE_DIR}/log_service/public/src/log_helper.c
+        src/activator.c
 )
+target_include_directories(log_service_example PRIVATE src)
+target_link_libraries(log_service_example PRIVATE Celix::log_service_api Celix::log_helper)
 
 add_celix_container(log_example
     GROUP log_service
-    BUNDLES log_service_example log_service shell shell_tui
+    BUNDLES log_service_example Celix::log_service Celix::shell Celix::shell_tui
 )
-
-target_link_libraries(log_service_example celix_framework celix_utils)

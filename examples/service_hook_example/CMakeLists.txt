@@ -15,23 +15,16 @@
 # specific language governing permissions and limitations
 # under the License.
 
-if(NOT APPLE)
-#Importing and exporting libraries not (yet) work under OSX.
-
-include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-include_directories("public/include")
-
 add_celix_bundle(hook_example
-           BUNDLE_SYMBOLICNAME "Hook_Example"
-           VERSION "1.0.0"
-           SOURCES
-                private/src/activator
+    BUNDLE_SYMBOLICNAME "Hook_Example"
+    VERSION "1.0.0"
+    SOURCES
+        src/activator
 )
 
-add_celix_container("hook_service_example"
-            BUNDLES
-                shell
-                shell_tui
-                hook_example
+add_celix_container(hook_service_example
+    BUNDLES
+        Celix::shell
+        Celix::shell_tui
+        hook_example
 )
-endif()

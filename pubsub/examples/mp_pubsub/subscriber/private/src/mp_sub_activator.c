@@ -26,17 +26,20 @@
 
 #include <stdlib.h>
 
+#include "pubsub/subscriber.h"
 #include "bundle_activator.h"
 
-#include "pubsub_common.h"
-#include "pubsub_utils.h"
 #include "mp_subscriber_private.h"
 
-#define SUB_TOPIC "multipart"
+#define SUB_NAME "multipart"
+static const char * SUB_TOPICS[] = {
+		"multipart",
+		NULL
+};
 
 struct subscriberActivator {
 	array_list_pt registrationList; //List<service_registration_pt>
-	pubsub_subscriber_pt subsvc;
+	pubsub_subscriber_t* subsvc;
 };
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
@@ -51,33 +54,21 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
 
 	pubsub_subscriber_pt subsvc = calloc(1,sizeof(*subsvc));
-	pubsub_receiver_pt sub = subscriber_create(SUB_TOPIC);
+	pubsub_receiver_pt sub = subscriber_create(SUB_NAME);
 	subsvc->handle = sub;
 	subsvc->receive = pubsub_subscriber_recv;
 
 	act->subsvc = subsvc;
 
-	array_list_pt topic_list = pubsub_getTopicsFromString(SUB_TOPIC);
+	int i;
+	for(i=0; SUB_TOPICS[i] != NULL; i++){
+		const char* topic = SUB_TOPICS[i];
 
-	if(topic_list !=NULL){
-
-		int i;
-		for(i=0; i<arrayList_size(topic_list);i++){
-			char* topic = arrayList_get(topic_list,i);
-			if(strlen(topic)<MAX_TOPIC_LEN){
-				properties_pt props = properties_create();
-				properties_set(props, PUBSUB_SUBSCRIBER_TOPIC,topic);
-				service_registration_pt reg = NULL;
-				bundleContext_registerService(context, PUBSUB_SUBSCRIBER_SERVICE_NAME, subsvc, props, &reg);
-				arrayList_add(act->registrationList,reg);
-			}
-			else{
-				printf("Topic %s too long. Skipping subscription.\n",topic);
-			}
-			free(topic);
-		}
-		arrayList_destroy(topic_list);
-
+		properties_pt props = properties_create();
+		properties_set(props, PUBSUB_SUBSCRIBER_TOPIC,topic);
+		service_registration_pt reg = NULL;
+		bundleContext_registerService(context, PUBSUB_SUBSCRIBER_SERVICE_NAME, subsvc, props, &reg);
+		arrayList_add(act->registrationList,reg);
 	}
 
 	subscriber_start((pubsub_receiver_pt)act->subsvc->handle);

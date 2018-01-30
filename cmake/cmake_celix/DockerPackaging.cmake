@@ -75,18 +75,6 @@ function(add_celix_docker)
     list(APPEND CLEANFILES "$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOC>")
     set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${CLEANFILES}")
 
-    if (DOCKER_LAUNCHER_SRC)
-        get_filename_component(SRC_FILENAME ${DOCKER_LAUNCHER_SRC} NAME)
-        set(LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/${DOCKER_TARGET}-${SRC_FILENAME}")
-        set(LAUNCHER_ORG "${DOCKER_LAUNCHER_SRC}")
-    elseif (DOCKER_CXX)
-        set(LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/${DOCKER_TARGET}-main.cc")
-        set(LAUNCHER_ORG "${CELIX_CMAKE_DIRECTORY}/cmake_celix/main.c.in")
-    else()
-        set(LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/${DOCKER_TARGET}-main.c")
-        set(LAUNCHER_ORG "${CELIX_CMAKE_DIRECTORY}/cmake_celix/main.c.in")
-    endif()
-
     if (DOCKER_LAUNCHER)
         add_custom_target(${DOCKER_TARGET})
         if (IS_ABSOLUTE "${DOCKER_LAUNCHER}")
@@ -98,42 +86,35 @@ function(add_celix_docker)
             set(LAUNCHER "$<TARGET_FILE:${DOCKER_LAUNCHER}>")
             set(DOCKER_ENTRYPOINT "ENTRYPOINT [\"/bin/$<TARGET_FILE_NAME:${DOCKER_TARGET}>\"]")
         endif()
-    else ()
-        add_custom_command(OUTPUT ${LAUNCHER_SRC}
-                COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/celix/gen
-        )
-
+    elseif (DOCKER_LAUNHCER_SRC)
+        add_executable(${DOCKER_TARGET} EXCLUDE_FROM_ALL ${DOCKER_LAUNCHER_SRC})
+        target_link_libraries(${DOCKER_TARGET} PRIVATE Celix::framework)
+        set(LAUNCHER "$<TARGET_FILE:${DOCKER_TARGET}>")
+        set(DOCKER_ENTRYPOINT "ENTRYPOINT [\"/bin/$<TARGET_FILE_NAME:${DOCKER_TARGET}>\"]")
+    else()
         if (DOCKER_CXX)
-            set(LAUNCHER_STAGE1 "${CMAKE_CURRENT_BINARY_DIR}/${DOCKER_TARGET}-docker-main-stage1.cc")
+            set(LAUNCHER_SRC "${CMAKE_CURRENT_BINARY_DIR}/${DOCKER_TARGET}-docker-main.cc")
         else()
-            set(LAUNCHER_STAGE1 "${CMAKE_CURRENT_BINARY_DIR}/${DOCKER_TARGET}-docker-main-stage1.c")
+            set(LAUNCHER_SRC "${CMAKE_CURRENT_BINARY_DIR}/${DOCKER_TARGET}-docker-main.c")
         endif()
 
         file(GENERATE
-                OUTPUT "${LAUNCHER_STAGE1}"
+                OUTPUT ${LAUNCHER_SRC}
                 CONTENT "#include <celix_launcher.h>
 
 int main(int argc, char *argv[]) {
-    const char * config = \"cosgi.auto.start.1=$<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_BUNDLES>, >\\n\\
-$<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_PROPERTIES>,\\n\\
+    const char * config = \"\\
+$<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_EMBEDDED_PROPERTIES>,\\n\\
 >\";
 
     properties_pt packedConfig = properties_loadFromString(config);
-
     return celixLauncher_launchWithArgsAndProps(argc, argv, packedConfig);
 }
 "
         )
 
-        file(GENERATE
-                OUTPUT "${LAUNCHER_SRC}"
-                INPUT "${LAUNCHER_STAGE1}"
-        )
-
         add_executable(${DOCKER_TARGET} EXCLUDE_FROM_ALL ${LAUNCHER_SRC})
-        #   set_target_properties(${DOCKER_TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${DOCKER_LOC})
-        target_include_directories(${DOCKER_TARGET} PRIVATE ${CELIX_INCLUDE_DIRS})
-        target_link_libraries(${DOCKER_TARGET} PRIVATE ${CELIX_FRAMEWORK_LIBRARY} ${CELIX_UTILS_LIBRARY})
+        target_link_libraries(${DOCKER_TARGET} PRIVATE Celix::framework)
         set(LAUNCHER "$<TARGET_FILE:${DOCKER_TARGET}>")
         set(DOCKER_ENTRYPOINT "ENTRYPOINT [\"/bin/$<TARGET_FILE_NAME:${DOCKER_TARGET}>\"]")
     endif ()
@@ -149,7 +130,7 @@ $<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_PROPERTIES>,\\n\\
     if (DOCKER_CREATE_FS)
         add_custom_command(TARGET ${DOCKER_TARGET} POST_BUILD
 	        COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOC>
-	        COMMAND cd $<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOC> && /bin/bash ${CELIX_CMAKE_DIRECTORY}/cmake_celix/create_target_filesystem.sh -e ${LAUNCHER} > /dev/null
+	        COMMAND cd $<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOC> && /bin/bash ${CELIX_CMAKE_DIRECTORY}/create_target_filesystem.sh -e ${LAUNCHER} > /dev/null
     	    WORKING_DIRECTORY "${DOCKER_LOC}"
             COMMENT "Creating docker dir for ${DOCKER_TARGET}" VERBATIM
         )
@@ -173,6 +154,7 @@ $<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_PROPERTIES>,\\n\\
     set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_CREATE_FS" "${DOCKER_CREATE_FS}") #wether to create a fs with the minimal needed libraries / etc files
     set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_INSTRUCTIONS" "") #list of additional instructions
     set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_PROPERTIES" "")
+    set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_EMBEDDED_PROPERTIES" "")
     set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_DEPS" "")
 
     set(DOCKERFILE_STAGE1 ${CMAKE_BINARY_DIR}/celix/gen/${DOCKER_TARGET}-Dockerfile.in)
@@ -244,24 +226,46 @@ function(celix_docker_bundles)
     get_target_property(DEPS ${DOCKER_TARGET} "DOCKER_DEPS")
 
     foreach(BUNDLE IN ITEMS ${ARGN})
+        set(HANDLED FALSE)
         if(IS_ABSOLUTE ${BUNDLE} AND EXISTS ${BUNDLE})
             get_filename_component(BUNDLE_FILENAME ${BUNDLE} NAME)
-            list(APPEND BUNDLES "${BUNDLES_DIR}/${BUNDLE_FILENAME}")
             set(OUT "${LOC}/${BUNDLES_DIR}/${BUNDLE_FILENAME}")
             add_custom_command(OUTPUT ${OUT}
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BUNDLE} ${OUT}
-                COMMENT "Copying bundle '${BUNDLE}' to '${OUT}'"
+                COMMENT "Copying (file) bundle '${BUNDLE}' to '${LOC}/${BUNDLES_DIR}'"
                 DEPENDS ${BUNDLE}
             )
-        else() #assuming target
-            get_target_property(BFN ${BUNDLE} BUNDLE_FILE_NAME)
-            list(APPEND BUNDLES "${BUNDLES_DIR}/${BFN}")
-            set(OUT ${LOC}/${BUNDLES_DIR}/${BFN})
+            list(APPEND BUNDLES "${BUNDLES_DIR}/${BUNDLE_FILENAME}")
+            set(HANDLED TRUE)
+        elseif (TARGET ${BUNDLE})
+            get_target_property(IMP ${BUNDLE} BUNDLE_IMPORTED)
+            if (IMP) #An imported bundle target -> handle target without DEPENDS
+                string(MAKE_C_IDENTIFIER ${BUNDLE} BUNDLE_ID) #Create id with no special chars (e.g. for target like Celix::shell)
+                set(OUT "${CMAKE_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}-copy-bundle-for-target-${BUNDLE_ID}.timestamp")
+                set(DEST "${LOC}/${BUNDLES_DIR}/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
+                add_custom_command(OUTPUT ${OUT}
+                    COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
+                    COMMAND ${CMAKE_COMMAND} -E make_directory ${LOC}/${BUNDLES_DIR}
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>" ${DEST}
+                    COMMENT "Copying (imported) bundle '${BUNDLE}' to '${LOC}/${BUNDLES_DIR}'"
+                )
+                list(APPEND BUNDLES "${BUNDLES_DIR}/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
+                set(HANDLED TRUE)
+            endif ()
+        endif ()
+
+        if(NOT HANDLED) #assuming (future) bundle target
+            string(MAKE_C_IDENTIFIER ${BUNDLE} BUNDLE_ID) #Create id with no special chars (e.g. for target like Celix::shell)
+            set(OUT "${CMAKE_BINARY_DIR}/celix/gen/${DOCKER_TARGET}-copy-bundle-for-target-${BUNDLE_ID}.timestamp")
+            set(DEST "${LOC}/${BUNDLES_DIR}/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
             add_custom_command(OUTPUT ${OUT}
-                    COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>" "${OUT}"
-                    COMMENT "Copying bundle '${BUNDLE}' to '${OUT}'"
-                    DEPENDS ${BUNDLE} ${BUNDLE}_bundle
+                    COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
+                    COMMAND ${CMAKE_COMMAND} -E make_directory ${LOC}/${BUNDLES_DIR}
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>" ${DEST}
+                    COMMENT "Copying (target) bundle '${BUNDLE}' to '${LOC}/${BUNDLES_DIR}'"
+                    DEPENDS ${BUNDLE} $<TARGET_PROPERTY:${BUNDLE},BUNDLE_CREATE_BUNDLE_TARGET>
             )
+            list(APPEND BUNDLES "${BUNDLES_DIR}/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
         endif()
         list(APPEND DEPS "${OUT}")
     endforeach()
@@ -283,6 +287,21 @@ function(celix_docker_properties)
     endforeach()
 
     set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_PROPERTIES" "${PROPS}")
+endfunction()
+
+function(celix_docker_embedded_properties)
+    #0 is docker TARGET
+    #1..n is properties
+    list(GET ARGN 0 DOCKER_TARGET)
+    list(REMOVE_AT ARGN 0)
+
+    get_target_property(PROPS ${DOCKER_TARGET} "DOCKER_EMBEDDED_PROPERTIES")
+
+    foreach(PROP IN ITEMS ${ARGN})
+        list(APPEND PROPS ${PROP})
+    endforeach()
+
+    set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_EMBEDDED_PROPERTIES" "${PROPS}")
 endfunction()
 
 function(celix_docker_instructions)

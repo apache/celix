@@ -18,37 +18,51 @@
 celix_subproject(LOG_SERVICE "Option to enable building the Log Service bundles" ON DEPS framework)
 if (LOG_SERVICE)
 
+	add_library(log_service_api INTERFACE)
+	target_include_directories(log_service_api INTERFACE
+			$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+			$<INSTALL_INTERFACE:include/celix/log_service>
+	)
+	install(TARGETS log_service_api EXPORT celix)
+	install(DIRECTORY include/ DESTINATION include/celix/log_service)
+
+	add_library(log_helper STATIC src/log_helper.c)
+	set_target_properties(log_helper PROPERTIES OUTPUT_NAME "celix_log_helper")
+	target_include_directories(log_helper PUBLIC
+			$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/loghelper_include>
+			$<INSTALL_INTERFACE:include/celix/log_helper>
+	)
+	target_link_libraries(log_helper PUBLIC Celix::framework log_service_api)
+	install(TARGETS log_helper EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT log_service)
+	install(DIRECTORY loghelper_include/ DESTINATION include/celix/log_helper COMPONENT log_service)
+
     add_celix_bundle(log_service
     	SYMBOLIC_NAME "apache_celix_log_service"
     	NAME "Apache Celix Log Service"
     	VERSION "1.1.0"
     	SOURCES
-			private/src/log
-			private/src/log_entry
-			private/src/log_factory  
-			private/src/log_service_impl 
-			private/src/log_service_activator
-			private/src/log_reader_service_impl
-		    
-		    private/include/log.h
-		    private/include/log_factory.h
-		    private/include/log_reader_service_impl.h
-		    private/include/log_service_impl.h
+			src/log
+			src/log_entry
+			src/log_factory
+			src/log_service_impl
+			src/log_service_activator
+			src/log_reader_service_impl
     )
     
     install_celix_bundle(log_service
         HEADERS
-        	public/include/log_service.h
-        	public/include/log_reader_service.h
-        	public/include/log_listener.h
-        	public/include/log_entry.h
-        	public/include/log_helper.h
-        RESOURCES
-            public/src/log_helper.c
+        	include/log_service.h
+        	include/log_reader_service.h
+        	include/log_listener.h
+        	include/log_entry.h
+		EXPORT celix
     )
-    
-    include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-    include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
-    include_directories("${PROJECT_SOURCE_DIR}/log_service/private/include")
-    target_link_libraries(log_service celix_framework)
+
+	target_include_directories(log_service PRIVATE src)
+	target_link_libraries(log_service PRIVATE log_service_api)
+
+	#Setup target aliases to match external usage
+	add_library(Celix::log_service_api ALIAS log_service_api)
+	add_library(Celix::log_service ALIAS log_service)
+	add_library(Celix::log_helper ALIAS log_helper)
 endif (LOG_SERVICE)

@@ -31,4 +31,4 @@ add_celix_bundle(event_publisher
 
 install_celix_bundle(event_publisher)
 
-target_link_libraries(event_publisher celix_framework celix_utils)
+target_link_libraries(event_publisher Celix::framework)

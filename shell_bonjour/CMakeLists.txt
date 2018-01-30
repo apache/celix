@@ -26,28 +26,24 @@ if (SHELL_BONJOUR)
 	set(BUNDLE_VERSION "0.1.0")
 	set(BUNDLE_NAME "bonjour_shell")
 
-	include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-	include_directories("${PROJECT_SOURCE_DIR}/shell/public/include")
-	include_directories("${LIBXML2_INCLUDE_DIR}")
-	include_directories("private/include")
-
-	set(MEMSTREAM_SOURCES )
-	if (APPLE OR ANDROID)
-		set(MEMSTREAM_SOURCES ${PROJECT_SOURCE_DIR}/utils/private/src/memstream/open_memstream.c  ${PROJECT_SOURCE_DIR}/utils/private/src/memstream/fmemopen.c)
-		include_directories(${PROJECT_SOURCE_DIR}/utils/public/include/memstream)
-	endif()
 	add_celix_bundle(bonjour_shell
-                VERSION "1.0.0"
+		VERSION "1.0.0"
 		SOURCES
 		 	private/src/activator.c
 		 	private/src/bonjour_shell.c
-			${MEMSTREAM_SOURCES}
 	)
-	
-	target_link_libraries(bonjour_shell celix_framework celix_utils ${LIBXML2_LIBRARIES} ${DNS_SD_LIB})
+	add_library(Celix::bonjour_shell ALIAS bonjour_shell)
+
+
+	target_include_directories(bonjour_shell PRIVATE
+			"${PROJECT_SOURCE_DIR}/utils/public/include"
+			"${LIBXML2_INCLUDE_DIR}"
+			private/include
+	)
+	target_link_libraries(bonjour_shell PRIVATE ${LIBXML2_LIBRARIES} ${DNS_SD_LIB} Celix::shell_api)
 
 	add_celix_container("bonjour_shell_deploy" BUNDLES
-		shell
+		Celix::shell
 		bonjour_shell
 		PROPERTIES "bonjour.shell.id=Apache Celix"
 	)

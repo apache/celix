@@ -20,15 +20,13 @@ add_celix_bundle(driver_locator
 	VERSION "0.0.2"
 	NAME "Apache Celix Device Access Driver Locator"
 	SOURCES
-		private/src/activator
-		private/src/driver_locator
+		src/activator
+		src/driver_locator
 )
 
 install_celix_bundle(driver_locator)
+target_include_directories(driver_locator PRIVATE src)
+target_link_libraries(driver_locator PRIVATE Celix::device_access_api)
 
-include_directories(${PROJECT_SOURCE_DIR}/device_access/device_access/public/include)
-include_directories(private/include)
-include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-
-target_link_libraries(driver_locator celix_utils celix_framework)
+#Setup target aliases to match external usage
+add_library(Celix::driver_locator ALIAS driver_locator)

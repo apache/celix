@@ -15,22 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_celix_bundle(log_writer
+add_celix_bundle(log_writer_stdout
 	SYMBOLIC_NAME "apache_celix_log_writer"
 	VERSION "1.1.0"
 	NAME "Apache Celix Log Writer"
 	SOURCES
-		${PROJECT_SOURCE_DIR}/log_writer/log_writer/private/src/log_writer_activator
-		${PROJECT_SOURCE_DIR}/log_writer/log_writer/private/src/log_writer
-		${PROJECT_SOURCE_DIR}/log_writer/log_writer/private/include/log_writer.h
-
-		private/src/log_writer_stdout
+		src/log_writer_stdout
 )
 
-install_celix_bundle(log_writer)
-    
-target_link_libraries(log_writer celix_framework)
-    
-include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/log_writer/log_writer/private/include")
+install_celix_bundle(log_writer_stdout EXPORT celix)
+
+target_link_libraries(log_writer_stdout PRIVATE Celix::log_service_api log_writer_common)

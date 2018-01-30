@@ -17,3 +17,216 @@
 
 add_subdirectory(pubsub)
 add_subdirectory(mp_pubsub)
+
+find_program(ETCD_CMD NAMES etcd)
+find_program(XTERM_CMD NAMES xterm)
+
+# UDP Multicast
+add_celix_container(pubsub_publisher_udp_mc
+        GROUP pubsub
+        BUNDLES
+        Celix::shell
+        Celix::shell_tui
+        Celix::pubsub_serializer_json
+        Celix::pubsub_discovery_etcd
+        Celix::pubsub_topology_manager
+        Celix::pubsub_admin_udp_multicast
+        celix_pubsub_poi_publisher
+        celix_pubsub_poi_publisher2
+        )
+
+add_celix_container("pubsub_subscriber_udp_mc"
+        GROUP "pubsub"
+        BUNDLES
+        Celix::shell
+        Celix::shell_tui
+        Celix::pubsub_serializer_json
+        Celix::pubsub_discovery_etcd
+        Celix::pubsub_topology_manager
+        Celix::pubsub_admin_udp_multicast
+        celix_pubsub_poi_subscriber
+        )
+
+add_celix_container("pubsub_subscriber2_udp_mc"
+        GROUP "pubsub"
+        BUNDLES
+        Celix::shell
+        Celix::shell_tui
+        Celix::pubsub_serializer_json
+        Celix::pubsub_discovery_etcd
+        Celix::pubsub_topology_manager
+        Celix::pubsub_admin_udp_multicast
+        celix_pubsub_poi_subscriber
+        )
+
+if (ETCD_CMD AND XTERM_CMD)
+    #Runtime starting a publish and subscriber for udp mc
+    add_runtime(pubsub_rt_upd_mc
+            NAME udp_mc
+            GROUP pubsub
+            DEPLOYMENTS
+            pubsub_publisher_udp_mc
+            pubsub_subscriber_udp_mc
+            pubsub_subscriber2_udp_mc
+            COMMANDS
+            etcd
+            USE_TERM
+            )
+endif ()
+
+if (BUILD_PUBSUB_PSA_ZMQ)
+
+    # Dynamic ZMQ / UDP admin
+    add_celix_container("pubsub_publisher"
+            GROUP "pubsub"
+            BUNDLES
+            Celix::shell
+            Celix::shell_tui
+            Celix::pubsub_serializer_json
+            Celix::pubsub_discovery_etcd
+            Celix::pubsub_topology_manager
+            Celix::pubsub_admin_zmq
+            Celix::pubsub_admin_udp_multicast
+            celix_pubsub_poi_publisher
+            celix_pubsub_poi_publisher2
+            PROPERTIES
+            poi1.psa=zmq
+            poi2.psa=udp
+            )
+
+    add_celix_container("pubsub_subscriber"
+            GROUP "pubsub"
+            BUNDLES
+            Celix::shell
+            Celix::shell_tui
+            Celix::pubsub_serializer_json
+            Celix::pubsub_discovery_etcd
+            Celix::pubsub_topology_manager
+            Celix::pubsub_admin_zmq
+            Celix::pubsub_admin_udp_multicast
+            celix_pubsub_poi_subscriber
+            PROPERTIES
+            poi1.psa=zmq
+            poi2.psa=udp
+            )
+
+    # ZMQ
+    add_celix_container("pubsub_zmq"
+            GROUP "pubsub"
+            BUNDLES
+            Celix::shell
+            Celix::shell_tui
+            Celix::pubsub_serializer_json
+            Celix::pubsub_discovery_etcd
+            Celix::pubsub_topology_manager
+            Celix::pubsub_admin_zmq
+            celix_pubsub_poi_publisher
+            celix_pubsub_poi_subscriber
+            )
+
+    add_celix_container("pubsub_publisher_zmq"
+            GROUP "pubsub"
+            BUNDLES
+            Celix::shell
+            Celix::shell_tui
+            Celix::pubsub_serializer_json
+            Celix::pubsub_discovery_etcd
+            Celix::pubsub_topology_manager
+            Celix::pubsub_admin_zmq
+            celix_pubsub_poi_publisher
+            celix_pubsub_poi_publisher2
+            PROPERTIES
+            pubsub.scope=my_small_scope
+            )
+
+    add_celix_container("pubsub_subscriber_zmq"
+            GROUP "pubsub"
+            BUNDLES
+            Celix::shell
+            Celix::shell_tui
+            Celix::pubsub_serializer_json
+            Celix::pubsub_discovery_etcd
+            Celix::pubsub_topology_manager
+            Celix::pubsub_admin_zmq
+            celix_pubsub_poi_subscriber
+            )
+
+    add_celix_container("pubsub_subscriber2_zmq"
+            GROUP "pubsub"
+            BUNDLES
+            Celix::shell
+            Celix::shell_tui
+            Celix::pubsub_serializer_json
+            Celix::pubsub_discovery_etcd
+            Celix::pubsub_topology_manager
+            Celix::pubsub_admin_zmq
+            celix_pubsub_poi_subscriber
+
+            )
+
+    # ZMQ Multipart
+    add_celix_container("pubsub_mp_subscriber_zmq"
+            GROUP "pubsub"
+            BUNDLES
+            Celix::shell
+            Celix::shell_tui
+            Celix::pubsub_serializer_json
+            Celix::pubsub_discovery_etcd
+            Celix::pubsub_topology_manager
+            Celix::pubsub_admin_zmq
+            org.apache.celix.pubsub_subscriber.MpSubscriber
+            )
+
+    add_celix_container("pubsub_mp_publisher_zmq"
+            GROUP "pubsub"
+            BUNDLES
+            Celix::shell
+            Celix::shell_tui
+            Celix::pubsub_serializer_json
+            Celix::pubsub_discovery_etcd
+            Celix::pubsub_topology_manager
+            Celix::pubsub_admin_zmq
+            org.apache.celix.pubsub_publisher.MpPublisher
+            )
+
+    if (ETCD_CMD AND XTERM_CMD)
+        #Runtime starting two bundles using both zmq and upd mc pubsub
+        add_runtime(pubsub_rt_zmq_udpmc_combi
+                NAME combi
+                GROUP pubsub
+                DEPLOYMENTS
+                pubsub_publisher_zmq
+                pubsub_subscriber_zmq
+                pubsub_subscriber_zmq
+                COMMANDS
+                etcd
+                USE_TERM
+                )
+
+        #Runtime starting a publish and 2 subscribers for zmq
+        add_runtime(pubsub_rt_zmq
+                NAME zmq
+                GROUP pubsub
+                DEPLOYMENTS
+                pubsub_publisher
+                pubsub_subscriber_zmq
+                pubsub_subscriber2_zmq
+                COMMANDS
+                etcd
+                USE_TERM
+                )
+
+        #Runtime starting a multipart (multiple message in one send) publish and subscriber for zmq
+        add_runtime(pubsub_rt_multipart_zmq
+                NAME zmq_multipart
+                GROUP pubsub
+                DEPLOYMENTS
+                pubsub_mp_subscriber_zmq
+                pubsub_mp_publisher_zmq
+                COMMANDS
+                etcd
+                USE_TERM
+                )
+    endif ()
+
+endif()

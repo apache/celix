@@ -131,17 +131,23 @@ celix_status_t dm_destroy(void * userData, bundle_context_pt context, dm_depende
 }  
 ```
 
-
-### Dependency Manager Shell support
-
-There is support for retrieving information of the dm components with
-use of the `dm` command. This command will print all known dm component,
-their state, provided interfaces and required interfaces.
-
 ### References
 
 For more information examples please see
 
 - [The Dependency Manager API](public/include): The dependency manager header files
 - [Getting Started: Using Service with C](../documents/getting_started/using_services_with_c.md): A introduction how to work with services using the dependency manager
-- [Dm example](../examples/dm_example): A DM example.  
+- [Dm example](../examples/dm_example): A DM example.
+
+## Dependency Manager Shell support
+
+There is support for retrieving information of the dm components with
+use of the `dm` command. This command will print all known dm component,
+their state, provided interfaces and required interfaces.
+
+
+## Using info
+
+If the Celix Dependency Manager is installed The `FindCelix.cmake` will set:
+ - The `Celix::dm_shell` bundle target
+ - The `Celix::dependency_manger_static` library target

@@ -20,23 +20,21 @@ find_program(ETCD_CMD NAMES etcd)
 find_package(CppUTest REQUIRED)
 include_directories(${CPPUTEST_INCLUDE_DIR})
 
-include_directories(
-        ${CMAKE_SOURCE_DIR}/pubsub/api
-        test
-)
-
 add_celix_bundle(pubsub_sut
     #"Vanilla" bundle which is under test
     SOURCES
         test/sut_activator.c
     VERSION 1.0.0
 )
-target_link_libraries(pubsub_sut celix_framework celix_utils)
+target_include_directories(pubsub_sut PRIVATE test)
+target_link_libraries(pubsub_sut PRIVATE Celix::pubsub_spi)
+
 celix_bundle_files(pubsub_sut
     msg_descriptors/msg.descriptor
     msg_descriptors/sync.descriptor
     DESTINATION "META-INF/descriptors/messages"
 )
+
 add_celix_container(pubsub_udpmc_sut
     NAME deploy_sut
     BUNDLES
@@ -66,9 +64,9 @@ add_celix_bundle(pubsub_tst
 )
 if (APPLE)
     #Note that the launcher celix_test_runner is linked with CppuTest, not the bundle libs. Default libCppUTest.a is not compiled for relocation 
-    target_link_libraries(pubsub_tst celix_framework celix_utils -Wl,-undefined -Wl,dynamic_lookup)
+    target_link_libraries(pubsub_tst PRIVATE Celix::framework -Wl,-undefined -Wl,dynamic_lookup)
 else ()
-    target_link_libraries(pubsub_tst celix_framework celix_utils)
+    target_link_libraries(pubsub_tst PRIVATE Celix::framework)
 endif ()
 
 celix_bundle_files(pubsub_tst

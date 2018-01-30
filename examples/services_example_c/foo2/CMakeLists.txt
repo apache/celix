@@ -28,12 +28,12 @@ add_celix_bundle(foo2
 )
 
 IF(APPLE)
-    target_link_libraries(foo2 celix_framework -Wl,-all_load dependency_manager_static)
+    target_link_libraries(foo2 PRIVATE -Wl,-all_load dependency_manager_static)
 else()
     if(ENABLE_ADDRESS_SANITIZER)
         #With asan there can be undefined symbols
-        target_link_libraries(foo2 -Wl,--whole-archive dependency_manager_static -Wl,--no-whole-archive celix_framework)
+        target_link_libraries(foo2 PRIVATE -Wl,--whole-archive dependency_manager_static -Wl,--no-whole-archive)
     else()
-        target_link_libraries(foo2 -Wl,--no-undefined -Wl,--whole-archive dependency_manager_static -Wl,--no-whole-archive celix_framework)
+        target_link_libraries(foo2 PRIVATE -Wl,--no-undefined -Wl,--whole-archive dependency_manager_static -Wl,--no-whole-archive)
     endif()
 endif()

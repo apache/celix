@@ -20,15 +20,10 @@ add_celix_bundle(char_refiningdriver
  	NAME "Apache Celix Device Access Char Refining Driver Example"
  	VERSION "0.0.1"
 	SOURCES
-		private/src/activator
-		private/src/refining_driver
+		src/activator
+		src/refining_driver
 )
 
-include_directories(${PROJECT_SOURCE_DIR}/device_access/device_access/public/include)
-include_directories(${PROJECT_SOURCE_DIR}/device_access/example/base_driver/public/include)
-include_directories(private/include)
-include_directories(public/include)
-include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-
-target_link_libraries(char_refiningdriver celix_utils celix_framework)
+target_include_directories(char_refiningdriver PRIVATE src)
+target_include_directories(char_refiningdriver PUBLIC include)
+target_link_libraries(char_refiningdriver PRIVATE Celix::device_access_api base_driver)

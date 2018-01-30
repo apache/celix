@@ -36,17 +36,22 @@ SET(CMAKE_INSTALL_RPATH "${PROJECT_BINARY_DIR}/framework" "${PROJECT_BINARY_DIR}
 add_executable(test_tm_scoped
     run_tests.cpp
     tms_tests.cpp
-    
-   ${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/private/src/endpoint_description.c
 )
-target_link_libraries(test_tm_scoped celix_framework celix_utils ${CPPUTEST_LIBRARY} ${JANSSON_LIBRARY})
+target_include_directories(test_tm_scoped PRIVATE ../src ../include)
+target_link_libraries(test_tm_scoped PRIVATE
+        Celix::framework
+        ${CPPUTEST_LIBRARY}
+        ${JANSSON_LIBRARY}
+        calculator_api
+        Celix::rsa_common
+)
 
-add_dependencies(test_tm_scoped remote_service_admin_dfi topology_manager calculator)
+add_dependencies(test_tm_scoped rsa_dfi_bundle rsa_topology_manager_bundle)
 
 file(GENERATE 
     OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/config.properties"
     CONTENT "
-cosgi.auto.start.1=$<TARGET_PROPERTY:remote_service_admin_dfi,BUNDLE_FILE> $<TARGET_PROPERTY:calculator,BUNDLE_FILE> $<TARGET_PROPERTY:topology_manager,BUNDLE_FILE> $<TARGET_PROPERTY:topology_manager_disc_mock_bundle,BUNDLE_FILE>
+cosgi.auto.start.1=$<TARGET_PROPERTY:Celix::rsa_dfi,BUNDLE_FILE> $<TARGET_PROPERTY:calculator,BUNDLE_FILE> $<TARGET_PROPERTY:Celix::rsa_topology_manager,BUNDLE_FILE> $<TARGET_PROPERTY:topology_manager_disc_mock_bundle,BUNDLE_FILE>
 LOGHELPER_ENABLE_STDOUT_FALLBACK=true
 org.osgi.framework.storage.clean=onFirstInit
 ")
@@ -54,17 +59,10 @@ org.osgi.framework.storage.clean=onFirstInit
 file(GENERATE 
     OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/config_import.properties"
     CONTENT "
-cosgi.auto.start.1=$<TARGET_PROPERTY:remote_service_admin_dfi,BUNDLE_FILE> $<TARGET_PROPERTY:calculator,BUNDLE_FILE> $<TARGET_PROPERTY:topology_manager,BUNDLE_FILE> $<TARGET_PROPERTY:topology_manager_test_bundle,BUNDLE_FILE>
+cosgi.auto.start.1=$<TARGET_PROPERTY:Celix::rsa_dfi,BUNDLE_FILE> $<TARGET_PROPERTY:calculator,BUNDLE_FILE> $<TARGET_PROPERTY:Celix::rsa_topology_manager,BUNDLE_FILE> $<TARGET_PROPERTY:topology_manager_test_bundle,BUNDLE_FILE>
 LOGHELPER_ENABLE_STDOUT_FALLBACK=true
 org.osgi.framework.storage.clean=onFirstInit
 ")
-
-
-#TODO improve copy commands, for now using configure_file as copy 
-#add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/scope.json" COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURE_DIR}/scope.json" "${CMAKE_CURRENT_BINARY_DIR}/scope.json")
-#add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/scope2.json" COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURE_DIR}/scope2.json" "${CMAKE_CURRENT_BINARY_DIR}/scope2.json")
-#add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/scope3.json" COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURE_DIR}/scope3.json" "${CMAKE_CURRENT_BINARY_DIR}/scope3.json")
-#add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/scope4.json" COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURE_DIR}/scope4.json" "${CMAKE_CURRENT_BINARY_DIR}/scope4.json")
 
 configure_file("scope.json" "scope.json")
 configure_file("scope2.json" "scope2.json")

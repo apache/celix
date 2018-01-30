@@ -15,29 +15,22 @@
 # specific language governing permissions and limitations
 # under the License.
 
-include_directories("private/include")
-include_directories("../../../utils/public/include")
-include_directories("../calculator_service/public/include")
-include_directories("../../../shell/public/include")
-
-add_celix_bundle(calculator_shell SOURCES
-    private/src/add_command 
-    private/src/sub_command
-    private/src/sqrt_command
-    private/src/calculator_shell_activator
-    
-    private/include/add_command.h
-    private/include/sqrt_command.h
-    private/include/sub_command.h
-    
+add_celix_bundle(calculator_shell
+    SOURCES
+        src/add_command
+        src/sub_command
+        src/sqrt_command
+        src/calculator_shell_activator
     VERSION 0.0.1
     SYMBOLIC_NAME "apache_celix_remoting_calculator_shell"
 )
+target_include_directories(calculator_shell PRIVATE src)
+target_link_libraries(calculator_shell PRIVATE Celix::shell_api calculator_api)
 
 celix_bundle_files(calculator_shell
-    ../calculator_service/public/include/org.apache.celix.calc.api.Calculator2.descriptor
-    #private/include/org.apache.celix.calc.api.Calculator2.descriptor ##Use this descriptor in case you want to try out versioning!
+    ../calculator_api/include/org.apache.celix.calc.api.Calculator2.descriptor
+    #src/org.apache.celix.calc.api.Calculator2.descriptor ##Use this descriptor in case you want to try out versioning!
     DESTINATION .
 )
 
-target_link_libraries(calculator_shell celix_framework)
+

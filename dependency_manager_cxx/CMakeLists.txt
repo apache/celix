@@ -24,42 +24,40 @@ if (DEPENDENCY_MANAGER_CXX)
             exec_program(uname ARGS -m OUTPUT_VARIABLE CMAKE_SYSTEM_PROCESSOR)
             set(CMAKE_SYSTEM_PROCESSOR ${CMAKE_SYSTEM_PROCESSOR} CACHE INTERNAL "processor type (i386 and x86_64)")
             if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
-                add_definitions(-fPIC)
+                set(DM_COMP_OPT -fPIC)
             endif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
         endif(CMAKE_UNAME)
     endif(UNIX AND NOT WIN32)
 
-    include_directories(
-            include
-            ${PROJECT_SOURCE_DIR}/dependency_manager/public/include
-            ${PROJECT_SOURCE_DIR}/dependency_manager/private/include
-            ${PROJECT_SOURCE_DIR}/utils/public/include
-    )
-
     add_library(dependency_manager_cxx_static STATIC
-            ${CMAKE_SOURCE_DIR}/dependency_manager/private/src/dm_component_impl
-            ${CMAKE_SOURCE_DIR}/dependency_manager/private/src/dm_service_dependency
-            ${CMAKE_SOURCE_DIR}/dependency_manager/private/src/dm_event
-            ${CMAKE_SOURCE_DIR}/dependency_manager/private/src/dm_dependency_manager_impl
+            ${CMAKE_SOURCE_DIR}/dependency_manager/src/dm_component_impl
+            ${CMAKE_SOURCE_DIR}/dependency_manager/src/dm_service_dependency
+            ${CMAKE_SOURCE_DIR}/dependency_manager/src/dm_event
+            ${CMAKE_SOURCE_DIR}/dependency_manager/src/dm_dependency_manager_impl
             src/dm_activator.cc
     )
-    set_target_properties(dependency_manager_cxx_static PROPERTIES SOVERSION 1)
-    set_target_properties(dependency_manager_cxx_static PROPERTIES VERSION 2.0.0)
+    set_target_properties(dependency_manager_cxx_static PROPERTIES OUTPUT_NAME "celix_dependency_manager_cxx_static")
+    target_include_directories(dependency_manager_cxx_static PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+            $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/dependency_manager/api>
+            $<INSTALL_INTERFACE:include/celix/dependency_manager>
+            $<INSTALL_INTERFACE:include/celix/dependency_manager_cxx>
+    )
+    target_include_directories(dependency_manager_cxx_static PRIVATE src)
+    target_compile_options(dependency_manager_cxx_static PRIVATE ${DM_COMP_OPT})
 
     if (APPLE)
-        target_link_libraries(dependency_manager_cxx_static celix_framework "-undefined dynamic_lookup")
+        target_link_libraries(dependency_manager_cxx_static Celix::framework "-undefined dynamic_lookup")
     else()
-        target_link_libraries(dependency_manager_cxx_static celix_framework)
+        target_link_libraries(dependency_manager_cxx_static Celix::framework)
     endif()
 
-    install(
-        DIRECTORY
-            include/celix
-        DESTINATION
-            include/celix/dependency_manager_cxx
-        COMPONENT
-            dependency_manager_cxx
-    )
-    install(TARGETS dependency_manager_cxx_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dependency_manager_cxx)
+    install(TARGETS dependency_manager_cxx_static EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dependency_manager_cxx)
+    install(DIRECTORY include/ DESTINATION include/celix/dependency_manager_cxx COMPONENT dependency_manager_cxx)
 
+    unset(DM_COMP_OPT)
+
+
+    #Setup target aliases to match external usage
+    add_library(Celix::dependency_manager_cxx_static ALIAS dependency_manager_cxx_static)
 endif (DEPENDENCY_MANAGER_CXX)

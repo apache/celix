@@ -32,8 +32,7 @@
 
 #include "celixbool.h"
 
-#include "pubsub_common.h"
-#include "subscriber.h"
+#include "pubsub/subscriber.h"
 
 struct pubsub_receiver {
 	char * name;

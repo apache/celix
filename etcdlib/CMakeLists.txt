@@ -41,15 +41,14 @@ endif ()
 find_package(CURL REQUIRED)
 find_package(Jansson REQUIRED)
 
-include_directories(
-        ${CURL_INCLUDE_DIRS}
-        ${JANSSON_INCLUDE_DIRS}
-        private/include
-        public/include
-)
-
 add_library(etcdlib SHARED
-    private/src/etcd.c
+    src/etcd.c
+)
+target_include_directories(etcdlib PUBLIC api)
+target_include_directories(etcdlib PRIVATE
+    src
+    ${CURL_INCLUDE_DIRS}
+    ${JANSSON_INCLUDE_DIRS}
 )
 
 set_target_properties(etcdlib PROPERTIES SOVERSION 1)
@@ -57,13 +56,20 @@ set_target_properties(etcdlib PROPERTIES VERSION 1.0.0)
 target_link_libraries(etcdlib ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
 
 add_library(etcdlib_static STATIC
-    private/src/etcd.c
+    src/etcd.c
 )
-
+target_include_directories(etcdlib_static PUBLIC api)
+target_include_directories(etcdlib_static PRIVATE
+    src
+    ${CURL_INCLUDE_DIRS}
+    ${JANSSON_INCLUDE_DIRS}
+)
 set_target_properties(etcdlib_static PROPERTIES "SOVERSION" 1)
 target_link_libraries(etcdlib_static ${CURL_LIBRARIES} ${JANSSON_LIBRARY})
 
 
 install(TARGETS etcdlib etcdlib_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${ETCDLIB_CMP})
-FILE(GLOB files "public/include/*.h")
-INSTALL(FILES ${files} DESTINATION include/etcdlib COMPONENT framework)
+
+#Setup target aliases to match external usage
+add_library(Celix::etcdlib ALIAS etcdlib)
+add_library(Celix::etcdlib_static ALIAS etcdlib_static)

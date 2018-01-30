@@ -18,49 +18,45 @@
 find_package(FFI REQUIRED)
 find_package(Jansson REQUIRED)
 
-include_directories(
-        ${FFI_INCLUDE_DIRS}
-        ${JANSSON_INCLUDE_DIRS}
-	    private/include
-	    public/include
-	    ${PROJECT_SOURCE_DIR}/utils/public/include
+set(SOURCES
+	src/dyn_common.c
+	src/dyn_type.c
+	src/dyn_function.c
+	src/dyn_interface.c
+	src/dyn_message.c
+	src/json_serializer.c
+	src/json_rpc.c
 )
 
-set(MEMSTREAM_SOURCES )
-set(MEMSTREAM_INCLUDES )
-if (APPLE OR ANDROID)
-	set(MEMSTREAM_SOURCES ${PROJECT_SOURCE_DIR}/utils/private/src/memstream/open_memstream.c  ${PROJECT_SOURCE_DIR}/utils/private/src/memstream/fmemopen.c)
-	set(MEMSTREAM_INCLUDES ${PROJECT_SOURCE_DIR}/utils/public/include/memstream/open_memstream.h ${PROJECT_SOURCE_DIR}/utils/public/include/memstream/fmemopen.h)
-    include_directories(${PROJECT_SOURCE_DIR}/utils/public/include/memstream)
-endif()
-
-add_library(celix_dfi SHARED
-    private/src/dyn_common.c
-    private/src/dyn_type.c
-    private/src/dyn_function.c
-    private/src/dyn_interface.c
-    private/src/dyn_message.c
-    private/src/json_serializer.c
-    private/src/json_rpc.c
-    ${MEMSTREAM_SOURCES}
-
-    public/include/dyn_common.h
-    public/include/dyn_type.h
-    public/include/dyn_function.h
-    public/include/dyn_interface.h
-    public/include/dyn_message.h
-    public/include/json_serializer.h
-    public/include/json_rpc.h
-    ${MEMSTREAM_INCLUDES}
+add_library(dfi SHARED ${SOURCES})
+set_target_properties(dfi PROPERTIES OUTPUT_NAME "celix_dfi")
+target_include_directories(dfi PUBLIC
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+		$<INSTALL_INTERFACE:include/celix/dfi>
+		${JANSSON_INCLUDE_DIRS}
 )
-set_target_properties(celix_dfi PROPERTIES "SOVERSION" 1)
-set_target_properties(celix_dfi PROPERTIES "VERSION" 1.1.0)
-target_link_libraries(celix_dfi celix_utils ${FFI_LIBRARIES} ${JANSSON_LIBRARY})
+target_include_directories(dfi PRIVATE src ${FFI_INCLUDE_DIRS})
+target_link_libraries(dfi PUBLIC ${JANSSON_LIBRARY})
+target_link_libraries(dfi PRIVATE Celix::utils ${FFI_LIBRARIES})
+set_target_properties(dfi PROPERTIES "SOVERSION" 1)
 
-install(TARGETS celix_dfi DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
-FILE(GLOB files "public/include/*.h" ${MEMSTREAM_INCLUDES})
-INSTALL(FILES ${files} DESTINATION include/celix/dfi COMPONENT framework)
+add_library(dfi_static STATIC ${SOURCES})
+set_target_properties(dfi_static PROPERTIES OUTPUT_NAME "celix_dfi_static")
+target_include_directories(dfi_static PUBLIC
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+		$<INSTALL_INTERFACE:include/celix/dfi>
+		${JANSSON_INCLUDE_DIRS}
+)
+target_include_directories(dfi_static PRIVATE src ${FFI_INCLUDE_DIRS})
+target_link_libraries(dfi_static PUBLIC ${JANSSON_LIBRARY})
+target_link_libraries(dfi_static PRIVATE Celix::utils ${FFI_LIBRARIES})
 
+install(TARGETS dfi dfi_static EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dfi)
+install(DIRECTORY include/ DESTINATION include/celix/dfi COMPONENT dfi)
+
+#Alias setup to match external usage
+add_library(Celix::dfi ALIAS dfi)
+add_library(Celix::dfi_static ALIAS dfi_static)
 
 if (ENABLE_TESTING)
     find_package(CppUTest REQUIRED)
@@ -72,19 +68,20 @@ if (ENABLE_TESTING)
     SET(CMAKE_INSTALL_RPATH "${PROJECT_BINARY_DIR}/dfi" "${PROJECT_BINARY_DIR}/utils")
 
 	add_executable(test_dfi
-		private/test/dyn_type_tests.cpp
-		private/test/dyn_function_tests.cpp
-		private/test/dyn_closure_tests.cpp
-		private/test/dyn_interface_tests.cpp
-		private/test/dyn_message_tests.cpp
-		private/test/json_serializer_tests.cpp
-		private/test/json_rpc_tests.cpp
-		private/test/run_tests.cpp
+		test/dyn_type_tests.cpp
+		test/dyn_function_tests.cpp
+		test/dyn_closure_tests.cpp
+		test/dyn_interface_tests.cpp
+		test/dyn_message_tests.cpp
+		test/json_serializer_tests.cpp
+		test/json_rpc_tests.cpp
+		test/run_tests.cpp
 	)
-	target_link_libraries(test_dfi celix_dfi ${FFI_LIBRARIES} ${CPPUTEST_LIBRARY})
+	target_link_libraries(test_dfi PRIVATE Celix::dfi Celix::utils ${FFI_LIBRARIES} ${CPPUTEST_LIBRARY})
+	target_include_directories(test_dfi PRIVATE ${FFI_INCLUDE_DIRS})
 
-    file(COPY ${CMAKE_CURRENT_LIST_DIR}/private/test/schemas DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-    file(COPY ${CMAKE_CURRENT_LIST_DIR}/private/test/descriptors DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    file(COPY ${CMAKE_CURRENT_LIST_DIR}/test/schemas DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    file(COPY ${CMAKE_CURRENT_LIST_DIR}/test/descriptors DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 	add_test(NAME run_test_dfi COMMAND test_dfi)
 	SETUP_TARGET_FOR_COVERAGE(test_dfi_cov test_dfi ${CMAKE_BINARY_DIR}/coverage/test_dfi/test_dfi)

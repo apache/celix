@@ -17,31 +17,23 @@
 
 celix_subproject(REMOTE_SERVICE_ADMIN "Option to enable building the Remote Service Admin Service bundles" OFF)
 if (REMOTE_SERVICE_ADMIN)
-    # Add -fPIC for x86_64 Unix platforms; this lib will be linked to a shared lib
-    if(UNIX AND NOT WIN32)
-      find_program(CMAKE_UNAME uname /bin /usr/bin /usr/local/bin )
-      if(CMAKE_UNAME)
-        exec_program(uname ARGS -m OUTPUT_VARIABLE CMAKE_SYSTEM_PROCESSOR)
-        set(CMAKE_SYSTEM_PROCESSOR ${CMAKE_SYSTEM_PROCESSOR} CACHE INTERNAL "processor type (i386 and x86_64)")
-         if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
-          add_definitions(-fPIC)
-        endif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
-      endif(CMAKE_UNAME)
-    endif(UNIX AND NOT WIN32)
-
+    add_subdirectory(remote_services_api)
     add_subdirectory(examples)
 
+    add_subdirectory(rsa_spi)
+    add_subdirectory(rsa_common)
+    add_subdirectory(civetweb)
+
     add_subdirectory(topology_manager)
- 
+
+    add_subdirectory(discovery_common)
     add_subdirectory(discovery_configured)
     add_subdirectory(discovery_etcd)
     add_subdirectory(discovery_shm)
 
-    add_subdirectory(remote_service_admin_http)
-    add_subdirectory(remote_service_admin_shm)
-    add_subdirectory(remote_service_admin)
+    #TODO refactor shm rsa to use dfi
+    #add_subdirectory(remote_service_admin_shm)
     add_subdirectory(remote_service_admin_dfi)
-
 
 endif (REMOTE_SERVICE_ADMIN)
 

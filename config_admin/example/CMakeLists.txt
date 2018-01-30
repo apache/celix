@@ -23,5 +23,3 @@ add_celix_bundle(config_admin_example
 		private/src/bundle_activator
 		private/src/example
 )
-
-target_link_libraries(config_admin_example ${CELIX_FRAMEWORK_LIBRARY} ${CELIX_UTILS_LIBRARY})

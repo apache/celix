@@ -66,7 +66,6 @@ before_script:
     - cd -
     - mkdir build install
     - export BUILD_OPTIONS=" \
-        -DBUILD_CONFIG_ADMIN=OFF \
         -DBUILD_RSA_REMOTE_SERVICE_ADMIN_DFI=ON \
         -DBUILD_DEPLOYMENT_ADMIN=ON \
         -DBUILD_DEPENDENCY_MANAGER=ON \
@@ -76,7 +75,6 @@ before_script:
         -DBUILD_RSA_DISCOVERY_CONFIGURED=ON \
         -DBUILD_RSA_DISCOVERY_ETCD=ON \
         -DBUILD_RSA_EXAMPLES=ON \
-        -DBUILD_RSA_REMOTE_SERVICE_ADMIN_HTTP=ON \
         -DBUILD_REMOTE_SHELL=ON \
         -DBUILD_SHELL=ON \
         -DBUILD_SHELL_TUI=ON -DBUILD_DEVICE_ACCESS=ON \
@@ -101,8 +99,8 @@ script:
      # RSA_SHM is only working on linux, but both compilers (see CELIX-277)
     - cd build
     - if [ "$CC" = "gcc" ] && [ "$TRAVIS_OS_NAME" = "linux" ]; then export BUILD_OPTS="${BUILD_OPTS} -DENABLE_CODE_COVERAGE=ON"; fi
-    - if [ "$TRAVIS_OS_NAME" = "linux" ] && [ -z "$ANDROID" ]; then cmake ${BUILD_OPTIONS} ${BUILD_OPTIONS_LINUX} -DBUILD_FRAMEWORK_TESTS=ON -DBUILD_UTILS-TESTS=ON -DENABLE_TESTING=ON ${BUILD_OPTS} -DCMAKE_INSTALL_PREFIX=../install ..; fi
-    - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cmake ${BUILD_OPTIONS} ${BUILD_OPTIONS_OSX} -DBUILD_FRAMEWORK_TESTS=ON -DBUILD_UTILS-TESTS=ON -DENABLE_TESTING=ON -DFFI_LIBRARY=/usr/local/opt/libffi/lib/libffi.dylib ${BUILD_OPTS} -DCMAKE_INSTALL_PREFIX=../install ..; fi
+    - if [ "$TRAVIS_OS_NAME" = "linux" ] && [ -z "$ANDROID" ]; then cmake -DCMAKE_BUILD_TYPE=Debug ${BUILD_OPTIONS} ${BUILD_OPTIONS_LINUX} -DBUILD_FRAMEWORK_TESTS=ON -DBUILD_UTILS-TESTS=ON -DENABLE_TESTING=ON ${BUILD_OPTS} -DCMAKE_INSTALL_PREFIX=../install ..; fi
+    - if [ "$TRAVIS_OS_NAME" = "osx" ]; then cmake -DCMAKE_BUILD_TYPE=Debug ${BUILD_OPTIONS} ${BUILD_OPTIONS_OSX} -DBUILD_FRAMEWORK_TESTS=ON -DBUILD_UTILS-TESTS=ON -DENABLE_TESTING=ON -DFFI_LIBRARY=/usr/local/opt/libffi/lib/libffi.dylib ${BUILD_OPTS} -DCMAKE_INSTALL_PREFIX=../install ..; fi
     - if [ -z "$ANDROID" ]; then make all && make deploy && sudo make install; else cd .. && docker build -t celixandroid - < Dockerfile.Android ; fi
     - if [ -z "$ANDROID" ]; then export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH:`pwd`/utils:`pwd`/framework:`pwd`/dfi && make test ARGS="-V"; else docker run celixandroid; fi 
 

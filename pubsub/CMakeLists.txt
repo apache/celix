@@ -24,48 +24,23 @@ if (PUBSUB)
 		option(BUILD_ZMQ_SECURITY "Build with security for ZeroMQ." OFF)
     endif (BUILD_PUBSUB_PSA_ZMQ)
 
-	include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-	include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
-	
+	add_subdirectory(pubsub_api)
+	add_subdirectory(pubsub_spi)
 	add_subdirectory(pubsub_topology_manager)
 	add_subdirectory(pubsub_discovery)
 	add_subdirectory(pubsub_serializer_json)
 	add_subdirectory(pubsub_admin_zmq)
 	add_subdirectory(pubsub_admin_udp_mc)
-	add_subdirectory(examples)
-	add_subdirectory(deploy)
 	add_subdirectory(keygen)
 	add_subdirectory(mock)
 
+	add_subdirectory(examples)
 
 	if (ENABLE_TESTING)
-        option(BUILD_PUBSUB_TESTS "Enable Tests for PUBSUB" OFF)
+		option(BUILD_PUBSUB_TESTS "Enable Tests for PUBSUB" OFF)
 	endif()
 	if (ENABLE_TESTING AND BUILD_PUBSUB_TESTS AND BUILD_PUBSUB_PSA_ZMQ)
 		add_subdirectory(test)
 	endif()
 
-	#install api
-	install(FILES api/pubsub/publisher.h api/pubsub/subscriber.h DESTINATION include/celix/pubsub COMPONENT framework)
-   
-   #install public common files
-   install(FILES
-      pubsub_common/public/include/pubsub_serializer.h
-      pubsub_common/public/include/pubsub_utils.h
-      pubsub_common/public/include/pubsub_common.h
-      pubsub_common/public/include/pubsub_endpoint.h
-      pubsub_common/public/include/pubsub_admin_match.h
-      pubsub_common/public/include/publisher_endpoint_announce.h
-      pubsub_common/public/include/pubsub_admin.h
-      DESTINATION include/celix/pubsub
-      COMPONENT framework
-   )
-   install(FILES
-      pubsub_common/public/src/pubsub_admin_match.c
-      pubsub_common/public/src/pubsub_utils.c
-      pubsub_common/public/src/pubsub_endpoint.c
-      DESTINATION share/celix/pubsub 
-      COMPONENT framework
-   )
-	
 endif(PUBSUB)

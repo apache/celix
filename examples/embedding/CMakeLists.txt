@@ -17,5 +17,4 @@
 
 
 add_executable(embedding private/src/main)
-include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-target_link_libraries(embedding celix_framework)
+target_link_libraries(embedding Celix::framework )

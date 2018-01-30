@@ -15,28 +15,23 @@
 # specific language governing permissions and limitations
 # under the License.
 
-include_directories(
-        private/include
-        ../services
-)
-
-add_celix_bundle(phase2b
+add_celix_bundle(dm_example_phase2b
         SYMBOLIC_NAME phase2b
         VERSION 0.0.1
         SOURCES
-                private/src/phase2b_activator
-                private/src/phase2b_cmp
+            src/phase2b_activator
+            src/phase2b_cmp
 )
-
-#bundle_private_libs(phase2b dependency_manager)
+target_include_directories(dm_example_phase2b PRIVATE src)
+target_link_libraries(dm_example_phase2b PRIVATE dm_example_api)
 
 IF(APPLE)
-    target_link_libraries(phase2b celix_framework -Wl,-all_load dependency_manager_static)
+    target_link_libraries(dm_example_phase2b PRIVATE -Wl,-all_load Celix::dependency_manager_static)
 else()
     if(ENABLE_ADDRESS_SANITIZER)
         #With asan there can be undefined symbols
-        target_link_libraries(phase2b -Wl,--whole-archive dependency_manager_static -Wl,--no-whole-archive celix_framework)
+        target_link_libraries(dm_example_phase2b PRIVATE -Wl,--whole-archive Celix::dependency_manager_static -Wl,--no-whole-archive)
     else()
-        target_link_libraries(phase2b -Wl,--no-undefined -Wl,--whole-archive dependency_manager_static -Wl,--no-whole-archive celix_framework)
+        target_link_libraries(dm_example_phase2b PRIVATE -Wl,--no-undefined -Wl,--whole-archive Celix::dependency_manager_static -Wl,--no-whole-archive)
     endif()
 ENDIF()

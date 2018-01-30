@@ -29,7 +29,6 @@
 #include "celix_errno.h"
 
 #include "disc_mock_service.h"
-#include "discovery.h"
 #include "constants.h"
 #include "remote_constants.h"
 

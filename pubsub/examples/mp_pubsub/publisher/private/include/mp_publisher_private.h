@@ -29,7 +29,7 @@
 
 #include <celixbool.h>
 
-#include "publisher.h"
+#include "pubsub/publisher.h"
 
 struct pubsub_sender {
 	array_list_pt trackers;

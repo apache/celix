@@ -18,38 +18,41 @@ celix_subproject(SHELL "Option to enable building the Shell bundles" ON DEPS LAU
 if (SHELL)
 	find_package(CURL REQUIRED)
 
+	add_library(shell_api INTERFACE)
+	target_include_directories(shell_api INTERFACE
+			$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+			$<INSTALL_INTERFACE:include/celix/shell>
+	)
+	install(TARGETS shell_api EXPORT celix)
+	install(DIRECTORY include/ DESTINATION include/celix/shell COMPONENT shell)
+
     add_celix_bundle(shell
         SYMBOLIC_NAME "apache_celix_shell"
         VERSION "2.1.0"
         NAME "Apache Celix Shell"
-
         SOURCES
-
-          private/src/activator
-          private/src/shell
-          private/src/lb_command
-          private/src/start_command
-          private/src/stop_command
-          private/src/install_command
-          private/src/update_command
-          private/src/uninstall_command
-          private/src/log_command
-          private/src/inspect_command
-          private/src/help_command
-
-          ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
-
-    )
-    
-    install_celix_bundle(shell
-    	HEADERS
-    		public/include/shell.h public/include/command.h public/include/shell_constants.h
+          src/activator
+          src/shell
+          src/lb_command
+          src/start_command
+          src/stop_command
+          src/install_command
+          src/update_command
+          src/uninstall_command
+          src/log_command
+          src/inspect_command
+          src/help_command
 	)
+	target_include_directories(shell PRIVATE src ${CURL_INCLUDE_DIRS})
+	target_link_libraries(shell PRIVATE Celix::shell_api ${CURL_LIBRARIES} Celix::log_service_api Celix::log_helper)
 
-	include_directories("public/include")
-	include_directories("private/include")
-    include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-    include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
-	include_directories(${CURL_INCLUDE_DIRS})
-    target_link_libraries(shell celix_framework ${CURL_LIBRARIES})
+	install_celix_bundle(shell
+    	HEADERS
+    		include/shell.h include/command.h include/shell_constants.h
+		EXPORT celix
+    )
+
+	#Setup target aliases to match external usage
+	add_library(Celix::shell_api ALIAS shell_api)
+	add_library(Celix::shell ALIAS shell)
 endif (SHELL)

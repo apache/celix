@@ -27,10 +27,14 @@ if (SHELL_TUI)
     		private/src/history
 	)
 	
-	install_celix_bundle(shell_tui)
-	
-	include_directories("private/include")
-    include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-    include_directories("${PROJECT_SOURCE_DIR}/shell/public/include")
-    target_link_libraries(shell_tui celix_framework)
+	target_include_directories(shell_tui PRIVATE
+			"${PROJECT_SOURCE_DIR}/utils/public/include"
+			private/include
+	)
+    target_link_libraries(shell_tui PRIVATE Celix::shell_api)
+
+	install_celix_bundle(shell_tui EXPORT celix)
+
+	#Alias setup to match external usage
+	add_library(Celix::shell_tui ALIAS shell_tui)
 endif (SHELL_TUI)

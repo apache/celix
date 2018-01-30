@@ -15,30 +15,23 @@
 # specific language governing permissions and limitations
 # under the License.
 
-include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/remote_services/remote_service_admin/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/pubsub/pubsub_admin/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/pubsub/api/pubsub")
-include_directories("private/include")
-include_directories("public/include")
-
-add_celix_bundle(org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
+add_celix_bundle(celix_pubsub_topology_manager
     BUNDLE_SYMBOLICNAME "apache_celix_pubsub_topology_manager"
     VERSION "1.0.0"
     SOURCES
-    	private/src/pstm_activator.c
-    	private/src/pubsub_topology_manager.c
-	   ${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
-    	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_endpoint.c
-    	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_utils.c	
+    	src/pstm_activator.c
+    	src/pubsub_topology_manager.c
+    	src/pubsub_topology_manager.h
 )
+target_link_libraries(celix_pubsub_topology_manager PRIVATE Celix::framework Celix::log_helper Celix::pubsub_spi)
 
-celix_bundle_files(org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
-   ${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/include/pubsub_topic_info.descriptor
+get_target_property(DESC Celix::pubsub_spi TOPIC_INFO_DESCRIPTOR)
+celix_bundle_files(celix_pubsub_topology_manager
+	${DESC}
     DESTINATION "META-INF/descriptors/services"
 )
 
-target_link_libraries(org.apache.celix.pubsub_topology_manager.PubSubTopologyManager celix_framework celix_utils)
-install_celix_bundle(org.apache.celix.pubsub_topology_manager.PubSubTopologyManager)
+install_celix_bundle(celix_pubsub_topology_manager)
+
+add_library(Celix::pubsub_topology_manager ALIAS celix_pubsub_topology_manager)
 

@@ -14,61 +14,55 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-if (BUILD_DEPENDENCY_MANAGER_CXX)
-    include_directories(
-            ${PROJECT_SOURCE_DIR}/dependency_manager/public/include
-            ${PROJECT_SOURCE_DIR}/dependency_manager_cxx/include
-            ${PROJECT_SOURCE_DIR}/utils/public/include
-            ${PROJECT_SOURCE_DIR}/shell/public/include
-            ${PROJECT_SOURCE_DIR}/log_service/public/include
-            api
-    )
+if (TARGET Celix::dependency_manager_cxx_static AND TARGET Celix::dm_shell)
+
+    add_subdirectory(api)
 
     add_subdirectory(phase1)
-    add_subdirectory(phase2a)
-    add_subdirectory(phase2b)
+    add_subdirectory(phase2)
     add_subdirectory(phase3)
     add_subdirectory(phase3_locking)
 
 
     add_celix_container("dm_example_cxx"
         COPY 
-        CXX
+	    CXX
         BUNDLES
-            shell
-            shell_tui
-            dm_shell
-            log_service
-            log_writer
+            Celix::shell
+            Celix::shell_tui
+            Celix::dm_shell
+            Celix::log_service
+            Celix::log_writer_stdout
 
-            phase1_cxx
-            phase2a_cxx
-            phase2b_cxx
-            phase3_cxx
-            phase3_locking_cxx
+            dm_example_cxx_phase1
+            dm_example_cxx_phase2a
+            dm_example_cxx_phase2b
+            dm_example_cxx_phase3
+            dm_example_cxx_phase3_locking
         PROPERTIES
             LOGHELPER_ENABLE_STDOUT_FALLBACK=true
     )
 
-    add_celix_docker(dm_exmpl_cxx
-        CXX
-        GROUP examples
-        BUNDLES_DIR /usr/share/bundles
-        WORKDIR /workspace
-        BUNDLES
-            shell
-            shell_tui
-            dm_shell
-            log_service
-            log_writer
 
-            phase1_cxx
-            phase2a_cxx
-            phase2b_cxx
-            phase3_cxx
-            phase3_locking_cxx
-        PROPERTIES
-            LOGHELPER_ENABLE_STDOUT_FALLBACK=true
-    )
+   add_celix_docker(dm_exmpl_cxx_docker
+           IMAGE_NAME dm_exmpl_cxx
+           GROUP examples
+           BUNDLES_DIR /usr/share/bundles
+           WORKDIR /workspace
+           BUNDLES
+               Celix::shell
+               Celix::shell_tui
+               Celix::dm_shell
+               Celix::log_service
+               Celix::log_writer_stdout
+
+               dm_example_cxx_phase1
+               dm_example_cxx_phase2a
+               dm_example_cxx_phase2b
+               dm_example_cxx_phase3
+               dm_example_cxx_phase3_locking
+           PROPERTIES
+               LOGHELPER_ENABLE_STDOUT_FALLBACK=true
+   )
 
 endif ()

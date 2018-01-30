@@ -28,4 +28,4 @@ add_celix_bundle(example_test
 	private/src/example_managed_service_impl
 )
 
-target_link_libraries(example_test celix_framework celix_utils config_admin)
+target_link_libraries(example_test PRIVATE Celix::framework celix_utils config_admin)

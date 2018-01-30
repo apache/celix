@@ -88,8 +88,9 @@ function(check_bundle BUNDLE)
     endif()
 endfunction()
 
+
 function(add_bundle)
-    message(DEPRECATION "add_bundle is DEPRECATION, use add_celix_bundle instead.")
+    message(DEPRECATION "add_bundle is deprecated, use add_celix_bundle instead.")
     add_celix_bundle(${ARGN})
 endfunction()
 function(add_celix_bundle)
@@ -97,37 +98,40 @@ function(add_celix_bundle)
     list(REMOVE_AT ARGN 0)
 
     set(OPTIONS NO_ACTIVATOR)
-    set(ONE_VAL_ARGS VERSION ACTIVATOR SYMBOLIC_NAME NAME DESCRIPTION) 
+    set(ONE_VAL_ARGS VERSION ACTIVATOR SYMBOLIC_NAME NAME DESCRIPTION FILE_NAME)
     set(MULTI_VAL_ARGS SOURCES PRIVATE_LIBRARIES EXPORT_LIBRARIES IMPORT_LIBRARIES HEADERS)
     cmake_parse_arguments(BUNDLE "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
 
     ##check arguments
-    if(NOT BUNDLE_TARGET_NAME)
+    if (NOT BUNDLE_TARGET_NAME)
         message(FATAL_ERROR "add_bunde function requires first target name argument")
-    endif()
-    if((NOT (BUNDLE_SOURCES OR BUNDLE_ACTIVATOR)) AND (NOT BUNDLE_NO_ACTIVATOR))
+    endif ()
+    if ((NOT (BUNDLE_SOURCES OR BUNDLE_ACTIVATOR)) AND (NOT BUNDLE_NO_ACTIVATOR))
         message(FATAL_ERROR "Bundle contain no SOURCES or ACTIVATOR target and the option NO_ACTIVATOR is not set")
-    endif()
-    if(BUNDLE_SOURCES AND BUNDLE_ACTIVATOR)
+    endif ()
+    if (BUNDLE_SOURCES AND BUNDLE_ACTIVATOR)
         message(FATAL_ERROR "add_bundle function requires a value for SOURCES or ACTIVATOR not both")
-    endif()
-    if(BUNDLE_ACTIVATOR)
+    endif ()
+    if (BUNDLE_ACTIVATOR)
         check_lib(${BUNDLE_ACTIVATOR})
-    endif()
+    endif ()
 
     #setting defaults
     if(NOT BUNDLE_VERSION) 
         set(BUNDLE_VERSION "0.0.0")
         message(WARNING "Bundle version for ${BUNDLE_NAME} not provided. Using 0.0.0")
-    endif()
+    endif ()
     if (NOT BUNDLE_NAME)
         set(BUNDLE_NAME ${BUNDLE_TARGET_NAME})
-    endif()
+    endif ()
     if (NOT BUNDLE_SYMBOLIC_NAME)
         set(BUNDLE_SYMBOLIC_NAME ${BUNDLE_TARGET_NAME})
-    endif()
-    set(BUNDLE_FILE_NAME "${BUNDLE_TARGET_NAME}.zip")
-    set(BUNDLE_FILE "${CMAKE_CURRENT_BINARY_DIR}/${BUNDLE_FILE_NAME}")
+    endif ()
+    if (NOT BUNDLE_FILENAME)
+        set(BUNDLE_FILENAME ${BUNDLE_TARGET_NAME}.zip)
+    endif ()
+
+    set(BUNDLE_FILE "${CMAKE_CURRENT_BINARY_DIR}/${BUNDLE_FILENAME}")
     set(BUNDLE_CONTENT_DIR "${CMAKE_CURRENT_BINARY_DIR}/${BUNDLE_TARGET_NAME}_content")
     set(BUNDLE_GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}/${BUNDLE_TARGET_NAME}_gen")
 
@@ -143,12 +147,20 @@ function(add_celix_bundle)
         #create lib from sources
         add_library(${BUNDLE_TARGET_NAME} SHARED ${BUNDLE_SOURCES})
         set_library_version(${BUNDLE_TARGET_NAME} ${BUNDLE_VERSION})
-        set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_TARGET_IS_LIB" TRUE)
+        set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES
+                "BUNDLE_TARGET_IS_LIB" TRUE
+                "BUNDLE_TARGET" "${BUNDLE_TARGET_NAME}_bundle"
+        )
+        target_link_libraries(${BUNDLE_TARGET_NAME} PRIVATE Celix::framework)
     else()
         add_custom_target(${BUNDLE_TARGET_NAME})
+        set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES
+                "BUNDLE_TARGET_IS_LIB" FALSE
+                "BUNDLE_TARGET" "${BUNDLE_TARGET_NAME}_bundle"
+        )
     endif()
     add_custom_target(${BUNDLE_TARGET_NAME}_bundle
-        DEPENDS "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_FILE>"
+        DEPENDS ${BUNDLE_TARGET_NAME} "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_FILE>"
     )
     add_dependencies(celix-bundles ${BUNDLE_TARGET_NAME}_bundle)
     #######################################################################
@@ -156,7 +168,7 @@ function(add_celix_bundle)
 
     ##### MANIFEST configuration and generation ##################
     #Step1 configure the file so that the target name is present in in the template
-    configure_file(${CELIX_CMAKE_DIRECTORY}/cmake_celix/Manifest.template.in ${BUNDLE_GEN_DIR}/MANIFEST.step1)
+    configure_file(${CELIX_CMAKE_DIRECTORY}/Manifest.template.in ${BUNDLE_GEN_DIR}/MANIFEST.step1)
 
     #Step2 replace headers with target property values. Note this is done build time
     file(GENERATE 
@@ -203,14 +215,20 @@ function(add_celix_bundle)
     #############################
     ### BUNDLE TARGET PROPERTIES
     #############################
+    #alreadyer set
+    #   BUNDLE_TARGET_IS_LIB -> true (can be use to test if target is bundle target
+    #   BUNDLE_TARGET -> refers to the _bundle target which is responsible for building the zip file
     #internal use
+    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_IS_BUNDLE_TARGET" TRUE) #indicate that this is a bundle target
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_DEPEND_TARGETS" "") #bundle target dependencies. Note can be extended after the add_bundle call
-    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_GEN_DIR" ${BUNDLE_GEN_DIR}) #location for generated output. 
+    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_GEN_DIR" ${BUNDLE_GEN_DIR}) #location for generated output.
+    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_CREATE_BUNDLE_TARGET" ${BUNDLE_TARGET_NAME}_bundle) #target which creat the bundle zip
+    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_IMPORTED" FALSE) #whethet target is a imported (bundle) target
 
     #bundle specific
-    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_CONTENT_DIR" ${BUNDLE_CONTENT_DIR}) #location where the content to be jar/zipped. 
-    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_FILE" ${BUNDLE_FILE}) #target bundle file (.zip)
-    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_FILE_NAME" ${BUNDLE_FILE_NAME}) #target bundle file (.zip)
+    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_CONTENT_DIR" ${BUNDLE_CONTENT_DIR}) #location where the content to be jar/zipped.
+    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_FILENAME" ${BUNDLE_FILENAME}) #target bundle filename (.zip)
+    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_FILE" ${BUNDLE_FILE}) #target bundle abs file path (.zip)
 
     #name and version
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_NAME" ${BUNDLE_NAME}) #The bundle name default target name
@@ -261,7 +279,7 @@ function(add_celix_bundle)
 endfunction()
 
 function(bundle_export_libs)
-    message(DEPRECATION "bundle_export_libs is DEPRECATION, use celix_bundle_export_libs instead.")
+    message(DEPRECATION "bundle_export_libs is deprecated, use celix_bundle_export_libs instead.")
     celix_bundle_export_libs(${ARGN})
 endfunction()
 function(celix_bundle_export_libs)
@@ -271,7 +289,7 @@ function(celix_bundle_export_libs)
 endfunction()
 
 function(bundle_private_libs)
-    message(DEPRECATION "bundle_private_libs is DEPRECATION, use celix_bundle_private_libs instead.")
+    message(DEPRECATION "bundle_private_libs is deprecated, use celix_bundle_private_libs instead.")
     celix_bundle_private_libs(${ARGN})
 endfunction()
 function(celix_bundle_private_libs)
@@ -281,7 +299,7 @@ function(celix_bundle_private_libs)
 endfunction()
 
 function(bundle_libs)
-    message(DEPRECATION "bundle_libs is DEPRECATION, use celix_bundle_libs instead.")
+    message(DEPRECATION "bundle_libs is deprecated, use celix_bundle_libs instead.")
     celix_bundle_libs(${ARGN})
 endfunction()
 function(celix_bundle_libs)
@@ -338,7 +356,7 @@ function(celix_bundle_libs)
         if ("${LIB}" STREQUAL "${BUNDLE}")
             #ignore. Do not have to link agaist own lib
         elseif(IS_LIB)
-		target_link_libraries(${BUNDLE} PRIVATE ${LIB})
+            target_link_libraries(${BUNDLE} PRIVATE ${LIB})
         endif()
     endforeach()
 
@@ -348,7 +366,7 @@ function(celix_bundle_libs)
 endfunction()
 
 function(bundle_import_libs)
-    message(DEPRECATION "bundle_import_libs is DEPRECATION, use celix_bundle_import_libs instead.")
+    message(DEPRECATION "bundle_import_libs is deprecated, use celix_bundle_import_libs instead.")
     celix_bundle_import_libs(${ARGN})
 endfunction()
 function(celix_bundle_import_libs)
@@ -370,7 +388,7 @@ function(celix_bundle_import_libs)
             list(APPEND LIBS "$<TARGET_SONAME_FILE_NAME:${LIB}>")
         endif()
 
-	target_link_libraries(${BUNDLE} PRIVATE ${LIB})
+        target_link_libraries(${BUNDLE} PRIVATE ${LIB})
     endforeach()
 
 
@@ -378,7 +396,7 @@ function(celix_bundle_import_libs)
 endfunction()
 
 function(bundle_files)
-    message(DEPRECATION "bundle_files is DEPRECATION, use celix_bundle_files instead.")
+    message(DEPRECATION "bundle_files is deprecated, use celix_bundle_files instead.")
     celix_bundle_files(${ARGN})
 endfunction()
 function(celix_bundle_files)
@@ -405,7 +423,7 @@ function(celix_bundle_files)
 endfunction()
 
 function(bundle_headers)
-    message(DEPRECATION "bundle_headers is DEPRECATION, use celix_bundle_headers instead.")
+    message(DEPRECATION "bundle_headers is deprecated, use celix_bundle_headers instead.")
     celix_bundle_headers(${ARGN})
 endfunction()
 function(celix_bundle_headers)
@@ -424,7 +442,7 @@ function(celix_bundle_headers)
 endfunction()
 
 function(bundle_symbolic_name)
-    message(DEPRECATION "bundle_symbolic_name is DEPRECATION, use celix_bundle_symbolic_name instead.")
+    message(DEPRECATION "bundle_symbolic_name is deprecated, use celix_bundle_symbolic_name instead.")
     celix_bundle_symbolic_name(${ARGN})
 endfunction()
 function(celix_bundle_symbolic_name BUNDLE SYMBOLIC_NAME)
@@ -432,7 +450,7 @@ function(celix_bundle_symbolic_name BUNDLE SYMBOLIC_NAME)
 endfunction()
 
 function(bundle_name)
-    message(DEPRECATION "bundle_name is DEPRECATION, use celix_bundle_name instead.")
+    message(DEPRECATION "bundle_name is deprecated, use celix_bundle_name instead.")
     celix_bundle_symbolic_name(${ARGN})
 endfunction()
 function(celix_bundle_name BUNDLE NAME)
@@ -440,7 +458,7 @@ function(celix_bundle_name BUNDLE NAME)
 endfunction()
 
 function(bundle_version)
-    message(DEPRECATION "bundle_version is DEPRECATION, use celix_bundle_version instead.")
+    message(DEPRECATION "bundle_version is deprecated, use celix_bundle_version instead.")
     celix_bundle_symbolic_name(${ARGN})
 endfunction()
 function(celix_bundle_version BUNDLE VERSION)
@@ -448,7 +466,7 @@ function(celix_bundle_version BUNDLE VERSION)
 endfunction()
 
 function(bundle_description)
-    message(DEPRECATION "bundle_description is DEPRECATION, use celix_bundle_description instead.")
+    message(DEPRECATION "bundle_description is deprecated, use celix_bundle_description instead.")
     celix_bundle_symbolic_name(${ARGN})
 endfunction()
 function(celix_bundle_description BUNDLE DESC)
@@ -456,7 +474,7 @@ function(celix_bundle_description BUNDLE DESC)
 endfunction()
 
 function(install_bundle)
-    message(DEPRECATION "install_bundle is DEPRECATION, use install_celix_bundle instead.")
+    message(DEPRECATION "install_bundle is deprecated, use install_celix_bundle instead.")
     install_celix_bundle(${ARGN})
 endfunction()
 function(install_celix_bundle)
@@ -465,7 +483,7 @@ function(install_celix_bundle)
     list(REMOVE_AT ARGN 0)
 
     set(OPTIONS )
-    set(ONE_VAL_ARGS PROJECT_NAME BUNDLE_NAME) 
+    set(ONE_VAL_ARGS PROJECT_NAME BUNDLE_NAME EXPORT)
     set(MULTI_VAL_ARGS HEADERS RESOURCES)
     cmake_parse_arguments(INSTALL "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
     
@@ -477,6 +495,23 @@ function(install_celix_bundle)
     endif()
 
     install(FILES "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>" DESTINATION share/${INSTALL_PROJECT_NAME}/bundles COMPONENT ${BUNDLE})
+
+    if (INSTALL_EXPORT)
+        get_target_property(CURRENT_EXPORT_BUNDLES celix-bundles EXPORT_${INSTALL_EXPORT}_BUNDLES)
+
+        if (NOT CURRENT_EXPORT_BUNDLES)
+            set(CURRENT_EXPORT_BUNDLES ${BUNDLE})
+        else ()
+            list(APPEND CURRENT_EXPORT_BUNDLES ${BUNDLE})
+        endif ()
+
+        list(REMOVE_DUPLICATES CURRENT_EXPORT_BUNDLES)
+
+        set_target_properties(celix-bundles PROPERTIES
+                EXPORT_${INSTALL_EXPORT}_BUNDLES "${CURRENT_EXPORT_BUNDLES}"
+        )
+    endif ()
+
     if(INSTALL_HEADERS)
         install (FILES ${INSTALL_HEADERS} DESTINATION include/${INSTALL_PROJECT_NAME}/${INSTALL_BUNDLE_NAME} COMPONENT ${BUNDLE})
     endif()
@@ -484,4 +519,73 @@ function(install_celix_bundle)
         install (FILES ${INSTALL_RESOURCES} DESTINATION share/${INSTALL_PROJECT_NAME}/${INSTALL_BUNDLE_NAME} COMPONENT ${BUNDLE})
     endif()
 
+endfunction()
+
+function(install_celix_bundle_targets)
+    #0 is the export name
+    list(GET ARGN 0 EXPORT_NAME)
+    list(REMOVE_AT ARGN 0)
+
+    set(OPTIONS )
+    set(ONE_VAL_ARGS NAMESPACE DESTINATION FILE COMPONENT PROJECT_NAME)
+    set(MULTI_VAL_ARGS )
+    cmake_parse_arguments(EXPORT "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
+
+    get_target_property(EXPORT_BUNDLES celix-bundles EXPORT_${EXPORT_NAME}_BUNDLES)
+
+    if (NOT EXPORT_BUNDLES)
+        message(FATAL_ERROR "Export ${EXPORT_NAME} not defined. Did you forgot to use a install_celix_bundle with the 'EXPORT ${EXPORT_NAME}' option?")
+    endif ()
+
+    if (NOT EXPORT_FILE)
+        set(EXPORT_FILE ${EXPORT_NAME}BundleTargets.cmake)
+    endif ()
+    if (NOT EXPORT_PROJECT_NAME)
+        string(TOLOWER ${PROJECT_NAME} EXPORT_PROJECT_NAME)
+    endif()
+    if (NOT EXPORT_DESTINATION)
+        set(EXPORT_DESTINATION share/${EXPORT_PROJECT_NAME}/cmake)
+    endif ()
+    if (EXPORT_COMPONENT)
+        set(CMP_OPT "COMPONENT ${EXPORT_COMPONENT}")
+    endif ()
+
+    #extract number of .. needed ot reach install prefix (e.g. howto calculte _IMPORT_PREFIX
+    file(TO_CMAKE_PATH ${EXPORT_DESTINATION} DEST_PATH)
+    string(REGEX MATCHALL "/" SLASH_MATCHES ${DEST_PATH})
+    list(LENGTH SLASH_MATCHES NR_OF_SUB_DIRS)
+
+    set(CONF_IN_FILE "${CMAKE_BINARY_DIR}/celix/gen/${EXPORT_NAME}-ImportedBundleTargets.cmake.in")
+    set(CONF_FILE "${CMAKE_BINARY_DIR}/celix/gen/${EXPORT_NAME}-ImportedBundleTargets.cmake")
+    file(REMOVE "${CONF_IN_FILE}")
+
+
+    file(APPEND "${CONF_IN_FILE}" "# Compute the installation prefix relative to this file.
+get_filename_component(_IMPORT_PREFIX \"\${CMAKE_CURRENT_LIST_FILE}\" PATH)
+")
+    foreach(_VAR RANGE ${NR_OF_SUB_DIRS})
+        file(APPEND "${CONF_IN_FILE}" "get_filename_component(_IMPORT_PREFIX \"\${_IMPORT_PREFIX}\" PATH)
+")
+    endforeach()
+        file(APPEND "${CONF_IN_FILE}" "
+")
+
+    foreach(BUNDLE_TARGET IN LISTS EXPORT_BUNDLES)
+        set(TN "${EXPORT_NAMESPACE}${BUNDLE_TARGET}")
+        file(APPEND "${CONF_IN_FILE}" "
+add_library(${TN} SHARED IMPORTED)
+set_target_properties(${TN} PROPERTIES
+    BUNDLE_IMPORTED TRUE
+    BUNDLE_FILE \"\${_IMPORT_PREFIX}/share/${EXPORT_PROJECT_NAME}/bundles/$<TARGET_PROPERTY:${BUNDLE_TARGET},BUNDLE_FILENAME>\"
+    BUNDLE_FILENAME \"$<TARGET_PROPERTY:${BUNDLE_TARGET},BUNDLE_FILENAME>\"
+)
+")
+    endforeach()
+    file(GENERATE OUTPUT "${CONF_FILE}" INPUT "${CONF_IN_FILE}")
+
+    if (EXPORT_COMPONENT)
+        install(FILES "${CONF_FILE}" DESTINATION ${EXPORT_DESTINATION} RENAME ${EXPORT_FILE} COMPONENT ${EXPORT_COMPONENT})
+    else ()
+        install(FILES "${CONF_FILE}" DESTINATION ${EXPORT_DESTINATION} RENAME ${EXPORT_FILE})
+    endif ()
 endfunction()

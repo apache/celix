@@ -14,7 +14,12 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-celix_subproject(EXAMPLES "Option to enable building the Examples" ON DEPS FRAMEWORK LAUNCHER SHELL_TUI LOG_SERVICE LOG_WRITER)
+
+if (COMMAND celix_subproject)
+    celix_subproject(EXAMPLES "Option to enable building the Examples" ON DEPS FRAMEWORK LAUNCHER SHELL_TUI LOG_SERVICE LOG_WRITER)
+else ()
+    set(EXAMPLES true) #celix_subproject is only available in the celix project -> using examples dir in other project is also supported
+endif ()
 if (EXAMPLES)
     add_subdirectory(hello_world)
     add_subdirectory(hello_world_test)
@@ -28,7 +33,6 @@ if (EXAMPLES)
     if (NOT ANDROID)
     	add_subdirectory(mongoose)
     endif()
-    add_subdirectory(whiteboard)
     add_subdirectory(embedding)
     add_subdirectory(service_hook_example)
     add_subdirectory(log_service_example)

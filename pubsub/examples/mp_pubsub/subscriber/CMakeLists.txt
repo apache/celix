@@ -15,20 +15,15 @@
 # specific language governing permissions and limitations
 # under the License.
 
-include_directories("private/include")
-include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/pubsub/api/pubsub")
-include_directories("${PROJECT_SOURCE_DIR}/pubsub/examples/mp_pubsub/common/include")
-
-add_celix_bundle( org.apache.celix.pubsub_subscriber.MpSubscriber
+add_celix_bundle(org.apache.celix.pubsub_subscriber.MpSubscriber
     SYMBOLIC_NAME "apache_celix_pubsub_mp_subscriber"
     VERSION "1.0.0"
     SOURCES 
 		private/src/mp_sub_activator.c
 		private/src/mp_subscriber.c
-		${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_utils.c
 )
+target_link_libraries(org.apache.celix.pubsub_subscriber.MpSubscriber PRIVATE Celix::framework Celix::pubsub_api)
+target_include_directories(org.apache.celix.pubsub_subscriber.MpSubscriber PRIVATE private/include)
 
 celix_bundle_files( org.apache.celix.pubsub_subscriber.MpSubscriber
     ${PROJECT_SOURCE_DIR}/pubsub/examples/mp_pubsub/msg_descriptors/msg_ew.descriptor
@@ -43,8 +38,6 @@ celix_bundle_files(org.apache.celix.pubsub_subscriber.MpSubscriber
 )
 
 celix_bundle_files(org.apache.celix.pubsub_subscriber.MpSubscriber
-		${PROJECT_SOURCE_DIR}/pubsub/examples/keys/publisher/public
+	${PROJECT_SOURCE_DIR}/pubsub/examples/keys/publisher/public
     DESTINATION "META-INF/keys/publisher"
 )
-
-target_link_libraries(org.apache.celix.pubsub_subscriber.MpSubscriber celix_framework celix_utils)

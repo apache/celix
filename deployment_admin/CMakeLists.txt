@@ -20,55 +20,48 @@ if (DEPLOYMENT_ADMIN)
 	
     find_package(CURL REQUIRED)
     find_package(UUID REQUIRED)
+    find_package(ZLIB REQUIRED)
 
-    add_definitions(-DUSE_FILE32API)
+    add_library(deployment_admin_api INTERFACE)
+    target_include_directories(deployment_admin_api INTERFACE api)
 
-    include_directories("${CURL_INCLUDE_DIR}")
-    include_directories("${UUID_INCLUDE_DIR}")
-    include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-    include_directories("${PROJECT_SOURCE_DIR}/deployment_admin/private/include")
-    include_directories("${PROJECT_SOURCE_DIR}/deployment_admin/public/include")
-    
     add_celix_bundle(deployment_admin
         SYMBOLIC_NAME "apache_celix_deployment_admin"
         VERSION "0.0.2"
         NAME "Apache Celix Deployment Admin"
         SOURCES
-            private/src/deployment_package
-            private/src/deployment_admin
-            private/src/deployment_admin_activator
-            private/src/ioapi
-            private/src/miniunz
-            private/src/unzip
-            private/src/log
-            private/src/log_store
-            private/src/log_sync
-
-            private/include/deployment_admin.h
-            private/include/deployment_package.h
-            private/include/ioapi.h
-            private/include/log.h
-            private/include/log_event.h
-            private/include/log_store.h
-            private/include/log_sync.h
-            private/include/miniunz.h
-            private/include/unzip.h
+            src/deployment_package
+            src/deployment_admin
+            src/deployment_admin_activator
+            src/ioapi
+            src/miniunz
+            src/unzip
+            src/log
+            src/log_store
+            src/log_sync
     )
 
-    
-    install_celix_bundle(deployment_admin
-    	HEADERS
-    		public/include/resource_processor.h
-	)
-    
-    target_link_libraries(deployment_admin celix_framework ${CURL_LIBRARIES})
+    target_compile_definitions(deployment_admin PRIVATE -DUSE_FILE32API)
+    target_include_directories(deployment_admin PRIVATE
+            src
+            ${CURL_INCLUDE_DIRS}
+            ${UUID_INCLUDE_DIRS}
+            ${ZLIB_INCLUDE_DIRS}
+    )
+    target_link_libraries(deployment_admin PRIVATE ${CURL_LIBRARIES} ${UUID_LIBRARIES} ${ZLIB_LIBRARIES} deployment_admin_api)
 
+    install_celix_bundle(deployment_admin)
+
+    #Setup target aliases to match external usage
+    add_library(Celix::deployment_admin_api ALIAS deployment_admin_api)
+    add_library(Celix::deployment_admin ALIAS deployment_admin)
 
     add_celix_container(deployment-admin
-        BUNDLES deployment_admin shell shell_tui log_service log_writer
+        BUNDLES Celix::deployment_admin Celix::shell Celix::shell_tui Celix::log_service Celix::log_writer_stdout
         PROPERTIES
     		"deployment_admin_url=http://localhost:8080"
     		"deployment_admin_identification=celix"
     		"org.osgi.framework.storage.clean=onFirstInit"
     )
+
 endif (DEPLOYMENT_ADMIN)

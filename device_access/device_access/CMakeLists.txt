@@ -15,39 +15,37 @@
 # specific language governing permissions and limitations
 # under the License.
 
+
+add_library(device_access_api INTERFACE)
+target_include_directories(device_access_api INTERFACE include)
+
 add_celix_bundle(device_manager
 	SYMBOLIC_NAME "apache_celix_device_manager"
 	VERSION "0.0.2"
 	NAME "Apache Celix Device Access Device Manager"
 	SOURCES
-		private/src/activator
-		private/src/driver_attributes
-		private/src/device_manager
-		private/src/driver_loader
-		private/src/driver_matcher
-
-		${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
-
-		private/include/device_manager.h
-		private/include/driver_attributes.h
-		private/include/driver_loader.h
-		private/include/driver_matcher.h
+		src/activator
+		src/driver_attributes
+		src/device_manager
+		src/driver_loader
+		src/driver_matcher
 )
+target_link_libraries(device_manager PRIVATE Celix::log_helper)
 
 install_celix_bundle(device_manager
 	HEADERS
-		public/include/device.h
-		public/include/driver_locator.h
-		public/include/driver_selector.h
-		public/include/driver.h
-		public/include/match.h
+		include/device.h
+		include/driver_locator.h
+		include/driver_selector.h
+		include/driver.h
+		include/match.h
 )
+target_include_directories(device_manager PRIVATE src)
+target_link_libraries(device_manager PRIVATE device_access_api)
 
-include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
 
-include_directories("public/include")
-include_directories("private/include")
+#Setup target aliases to match external usage
+add_library(Celix::device_access_api ALIAS device_access_api)
+add_library(Celix::device_manager ALIAS device_manager)
 
-target_link_libraries(device_manager celix_framework celix_utils)

@@ -20,14 +20,9 @@ add_celix_bundle(base_driver
  	VERSION "0.0.1"
  	NAME "Apache Celix Device Access Base Driver Example"
 	SOURCES
-		private/src/activator
-		private/src/base_driver
+		src/activator
+		src/base_driver
 )
-
-include_directories(${PROJECT_SOURCE_DIR}/device_access/device_access/public/include)
-include_directories(private/include)
-include_directories(public/include)
-include_directories("${PROJECT_SOURCE_DIR}/framework/public/include")
-include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-
-target_link_libraries(base_driver celix_utils celix_framework)
+target_include_directories(base_driver PRIVATE src)
+target_include_directories(base_driver PUBLIC include)
+target_link_libraries(base_driver PRIVATE Celix::device_access_api)
