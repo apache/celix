@@ -106,4 +106,4 @@ configure_file(cmake/CelixConfigVersion.cmake.in
 install(FILES
         "cmake/CelixConfig.cmake"
         "${PROJECT_BINARY_DIR}/celix/gen/CelixConfigVersion.cmake"
-        DESTINATION "${CMAKE_INSTALL_LIBDIR}/CMake/Celix" COMPONENT cmake)
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/Celix" COMPONENT cmake)
