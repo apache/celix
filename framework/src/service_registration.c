@@ -210,7 +210,7 @@ celix_status_t serviceRegistration_ungetService(service_registration_pt registra
     if (registration->isServiceFactory) {
         service_factory_pt factory = (void*) registration->serviceFactory;
         /*NOTE the service argument of the service_factory should be const void**.
-          To ensure backwards compatability a cast is made instead.
+          To ensure backwards compatibility a cast is made instead.
         */
         factory->ungetService(factory->handle, bundle, registration, (void**) service);
     }
