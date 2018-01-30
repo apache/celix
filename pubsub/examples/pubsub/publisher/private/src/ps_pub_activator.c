@@ -76,37 +76,34 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 	struct publisherActivator * act = (struct publisherActivator *) userData;
 
 	int i;
-	if(PUB_TOPICS !=NULL){
+	char filter[128];
+	for(i=0; PUB_TOPICS[i] != NULL; i++){
+		const char* topic = PUB_TOPICS[i];
 
-		char filter[128];
-		for(i=0; PUB_TOPICS[i] != NULL; i++){
-			const char* topic = PUB_TOPICS[i];
+		bundle_pt bundle = NULL;
+		long bundleId = 0;
+		bundleContext_getBundle(context,&bundle);
+		bundle_getBundleId(bundle,&bundleId);
 
-			bundle_pt bundle = NULL;
-			long bundleId = 0;
-			bundleContext_getBundle(context,&bundle);
-			bundle_getBundleId(bundle,&bundleId);
-
-			service_tracker_pt tracker = NULL;
-			memset(filter,0,128);
+		service_tracker_pt tracker = NULL;
+		memset(filter,0,128);
 #ifdef USE_SCOPE
-				char *scope;
-				asprintf(&scope, "my_scope_%d", i);
-				snprintf(filter, 128, "(&(&(%s=%s)(%s=%s))(%s=%s))",
-						(char*) OSGI_FRAMEWORK_OBJECTCLASS, PUBSUB_PUBLISHER_SERVICE_NAME,
-						PUBSUB_PUBLISHER_TOPIC, topic,
-						PUBLISHER_SCOPE, scope);
-				free(scope);
+			char *scope;
+			asprintf(&scope, "my_scope_%d", i);
+			snprintf(filter, 128, "(&(&(%s=%s)(%s=%s))(%s=%s))",
+					(char*) OSGI_FRAMEWORK_OBJECTCLASS, PUBSUB_PUBLISHER_SERVICE_NAME,
+					PUBSUB_PUBLISHER_TOPIC, topic,
+					PUBLISHER_SCOPE, scope);
+			free(scope);
 #else
-			snprintf(filter, 128, "(&(%s=%s)(%s=%s))", (char*) OSGI_FRAMEWORK_OBJECTCLASS, PUBSUB_PUBLISHER_SERVICE_NAME, PUBSUB_PUBLISHER_TOPIC, topic);
+		snprintf(filter, 128, "(&(%s=%s)(%s=%s))", (char*) OSGI_FRAMEWORK_OBJECTCLASS, PUBSUB_PUBLISHER_SERVICE_NAME, PUBSUB_PUBLISHER_TOPIC, topic);
 #endif
-			service_tracker_customizer_pt customizer = NULL;
-			serviceTrackerCustomizer_create(act->client,NULL,publisher_publishSvcAdded,NULL,publisher_publishSvcRemoved,&customizer);
-			serviceTracker_createWithFilter(context, filter, customizer, &tracker);
+		service_tracker_customizer_pt customizer = NULL;
+		serviceTrackerCustomizer_create(act->client,NULL,publisher_publishSvcAdded,NULL,publisher_publishSvcRemoved,&customizer);
+		serviceTracker_createWithFilter(context, filter, customizer, &tracker);
 
-			arrayList_add(act->trackerList,tracker);
+		arrayList_add(act->trackerList,tracker);
 
-		}
 	}
 
 	publisher_start(act->client);

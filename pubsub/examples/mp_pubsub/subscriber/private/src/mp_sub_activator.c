@@ -60,18 +60,15 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
 	act->subsvc = subsvc;
 
-	if (SUB_TOPICS !=NULL) {
+	int i;
+	for(i=0; SUB_TOPICS[i] != NULL; i++){
+		const char* topic = SUB_TOPICS[i];
 
-		int i;
-		for(i=0; SUB_TOPICS[i] != NULL; i++){
-			const char* topic = SUB_TOPICS[i];
-
-			properties_pt props = properties_create();
-			properties_set(props, PUBSUB_SUBSCRIBER_TOPIC,topic);
-			service_registration_pt reg = NULL;
-			bundleContext_registerService(context, PUBSUB_SUBSCRIBER_SERVICE_NAME, subsvc, props, &reg);
-			arrayList_add(act->registrationList,reg);
-		}
+		properties_pt props = properties_create();
+		properties_set(props, PUBSUB_SUBSCRIBER_TOPIC,topic);
+		service_registration_pt reg = NULL;
+		bundleContext_registerService(context, PUBSUB_SUBSCRIBER_SERVICE_NAME, subsvc, props, &reg);
+		arrayList_add(act->registrationList,reg);
 	}
 
 	subscriber_start((pubsub_receiver_pt)act->subsvc->handle);

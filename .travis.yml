@@ -66,7 +66,6 @@ before_script:
     - cd -
     - mkdir build install
     - export BUILD_OPTIONS=" \
-        -DBUILD_CONFIG_ADMIN=OFF \
         -DBUILD_RSA_REMOTE_SERVICE_ADMIN_DFI=ON \
         -DBUILD_DEPLOYMENT_ADMIN=ON \
         -DBUILD_DEPENDENCY_MANAGER=ON \
@@ -76,7 +75,6 @@ before_script:
         -DBUILD_RSA_DISCOVERY_CONFIGURED=ON \
         -DBUILD_RSA_DISCOVERY_ETCD=ON \
         -DBUILD_RSA_EXAMPLES=ON \
-        -DBUILD_RSA_REMOTE_SERVICE_ADMIN_HTTP=ON \
         -DBUILD_REMOTE_SHELL=ON \
         -DBUILD_SHELL=ON \
         -DBUILD_SHELL_TUI=ON -DBUILD_DEVICE_ACCESS=ON \
