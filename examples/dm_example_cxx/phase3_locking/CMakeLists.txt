@@ -24,7 +24,7 @@ add_celix_bundle(dm_example_cxx_phase3_locking
         src/Phase3LockingCmp.cc
 )
 target_include_directories(dm_example_cxx_phase3_locking PRIVATE src)
-target_link_libraries(dm_example_cxx_phase3_locking PRIVATE dm_example_cxx_api)
+target_link_libraries(dm_example_cxx_phase3_locking PRIVATE dm_example_cxx_api pthread)
 
 IF(APPLE)
     target_link_libraries(dm_example_cxx_phase3_locking PRIVATE -Wl,-all_load Celix::dependency_manager_cxx_static)

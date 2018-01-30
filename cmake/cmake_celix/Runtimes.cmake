@@ -77,9 +77,9 @@ function(add_runtime)
 
     #replaces @RUNTIME_TARGET_NAME@
     #TODO move to another location
-    configure_file("${CELIX_CMAKE_DIRECTORY}/cmake_celix/runtime_start.sh.in" "${CMAKE_CURRENT_BINARY_DIR}/start.sh.${RUNTIME_TARGET_NAME}.in.1" @ONLY)
-    configure_file("${CELIX_CMAKE_DIRECTORY}/cmake_celix/runtime_stop.sh.in" "${CMAKE_CURRENT_BINARY_DIR}/stop.sh.${RUNTIME_TARGET_NAME}.in.1" @ONLY)
-    configure_file("${CELIX_CMAKE_DIRECTORY}/cmake_celix/runtime_common.sh.in" "${CMAKE_CURRENT_BINARY_DIR}/common.sh.${RUNTIME_TARGET_NAME}.in.1" @ONLY)
+    configure_file("${CELIX_CMAKE_DIRECTORY}/runtime_start.sh.in" "${CMAKE_CURRENT_BINARY_DIR}/start.sh.${RUNTIME_TARGET_NAME}.in.1" @ONLY)
+    configure_file("${CELIX_CMAKE_DIRECTORY}/runtime_stop.sh.in" "${CMAKE_CURRENT_BINARY_DIR}/stop.sh.${RUNTIME_TARGET_NAME}.in.1" @ONLY)
+    configure_file("${CELIX_CMAKE_DIRECTORY}/runtime_common.sh.in" "${CMAKE_CURRENT_BINARY_DIR}/common.sh.${RUNTIME_TARGET_NAME}.in.1" @ONLY)
 
 
     #replaces $<TARGET_PROPERTY:<RUNTIME_NAME>,RUNTIME_DEPLOYMENTS>
