@@ -33,7 +33,8 @@ if (CPPUTEST_FOUND)
             tst/pubsubmock_test.cc
             tst/run_tests.cc
         )
-        target_link_libraries(pubsubmock_test celix_pubsub_mock ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} Celix::framework)
+        target_include_directories(pubsubmock_test PRIVATE ${CMAKE_CURRENT_LIST_DIR}/api)
+        target_link_libraries(pubsubmock_test pubsub_mock ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} Celix::framework)
         add_test(NAME pubsubmock_test COMMAND pubsubmock_test)
     endif()
 endif()
