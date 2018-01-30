@@ -19,7 +19,7 @@ find_program(ETCD_CMD NAMES etcd)
 find_program(XTERM_CMD NAMES xterm)
 
 # UDP Multicast
-add_deploy(pubsub_publisher_udp_mc
+add_celix_container(pubsub_publisher_udp_mc
 	GROUP pubsub
 	BUNDLES
 	   shell
@@ -33,7 +33,7 @@ add_deploy(pubsub_publisher_udp_mc
 )
 target_link_libraries(pubsub_publisher_udp_mc PRIVATE celix_framework celix_utils celix_dfi)
 
-add_deploy("pubsub_subscriber_udp_mc"
+add_celix_container("pubsub_subscriber_udp_mc"
 	GROUP "pubsub"
 	BUNDLES
 	   shell
@@ -46,7 +46,7 @@ add_deploy("pubsub_subscriber_udp_mc"
 )
 target_link_libraries(pubsub_subscriber_udp_mc PRIVATE celix_framework celix_utils celix_dfi)
 
-add_deploy("pubsub_subscriber2_udp_mc"
+add_celix_container("pubsub_subscriber2_udp_mc"
 	GROUP "pubsub"
 	BUNDLES
 	   shell
@@ -77,7 +77,7 @@ endif ()
 if (BUILD_PUBSUB_PSA_ZMQ)
 
 	# Dynamic ZMQ / UDP admin
-	add_deploy("pubsub_publisher"
+	add_celix_container("pubsub_publisher"
 	    GROUP "pubsub"
 	    BUNDLES
 	       shell
@@ -95,7 +95,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	)
 	target_link_libraries(pubsub_publisher PRIVATE celix_framework celix_utils celix_dfi)
 
-	add_deploy("pubsub_subscriber"
+	add_celix_container("pubsub_subscriber"
 	    GROUP "pubsub"
 	    BUNDLES
 	       shell
@@ -113,7 +113,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	target_link_libraries(pubsub_subscriber PRIVATE celix_framework celix_utils celix_dfi)
 
 	# ZMQ
-	add_deploy("pubsub_zmq"
+	add_celix_container("pubsub_zmq"
 	    GROUP "pubsub"
 	    BUNDLES
 	       shell
@@ -127,7 +127,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	)
 	target_link_libraries(pubsub_zmq PRIVATE celix_framework celix_utils celix_dfi)
 
-	add_deploy("pubsub_publisher_zmq"
+	add_celix_container("pubsub_publisher_zmq"
 	    GROUP "pubsub"
 	    BUNDLES
 	       shell
@@ -143,7 +143,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	)
 	target_link_libraries(pubsub_publisher_zmq PRIVATE celix_framework celix_utils celix_dfi)
 
-	add_deploy("pubsub_subscriber_zmq"
+	add_celix_container("pubsub_subscriber_zmq"
 	    GROUP "pubsub"
 	    BUNDLES
 	       shell
@@ -156,7 +156,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	)
 	target_link_libraries(pubsub_subscriber_zmq PRIVATE celix_framework celix_utils celix_dfi)
 
-	add_deploy("pubsub_subscriber2_zmq"
+	add_celix_container("pubsub_subscriber2_zmq"
 	    GROUP "pubsub"
 	    BUNDLES
 	       shell
@@ -170,7 +170,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	target_link_libraries(pubsub_subscriber2_zmq PRIVATE celix_framework celix_utils celix_dfi)
 
 	# ZMQ Multipart
-	add_deploy("pubsub_mp_subscriber_zmq"
+	add_celix_container("pubsub_mp_subscriber_zmq"
 	    GROUP "pubsub"
 	    BUNDLES
 	       shell
@@ -183,7 +183,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	)
 	target_link_libraries(pubsub_mp_subscriber_zmq PRIVATE celix_framework celix_utils celix_dfi)
 
-	add_deploy("pubsub_mp_publisher_zmq"
+	add_celix_container("pubsub_mp_publisher_zmq"
 	    GROUP "pubsub"
 	    BUNDLES
 	   		shell

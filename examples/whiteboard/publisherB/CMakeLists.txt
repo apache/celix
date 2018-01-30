@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_bundle(publisherB VERSION 1.0.0 SOURCES private/src/activator private/src/publisher)
+add_celix_bundle(publisherB VERSION 1.0.0 SOURCES private/src/activator private/src/publisher)
 include_directories("../publisherService/public/include")
 include_directories("../publisherService/private/include")
 target_link_libraries(publisherB celix_framework)

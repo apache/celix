@@ -27,7 +27,7 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/remote_services/examples/calculator_service/public/include
 )
 
-add_bundle(remote_service_admin_dfi 
+add_celix_bundle(remote_service_admin_dfi
     VERSION 0.9.0
     SYMBOLIC_NAME "apache_celix_remote_service_admin_dfi"
     NAME "Apache Celix Remote Service Admin Dynamic Function Interface (DFI)"
@@ -45,4 +45,4 @@ add_bundle(remote_service_admin_dfi
 )
 target_link_libraries(remote_service_admin_dfi celix_framework celix_utils celix_dfi ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
 
-install_bundle(remote_service_admin_dfi)
+install_celix_bundle(remote_service_admin_dfi)

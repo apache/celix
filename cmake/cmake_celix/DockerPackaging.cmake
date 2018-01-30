@@ -16,9 +16,15 @@
 # under the License.
 
 ##### setup docker target
-add_custom_target(celix-build-docker-dirs ALL
-    DEPENDS $<TARGET_PROPERTY:celix-build-docker-dirs,DOCKER_DEPS>
-)
+if (APPLE) #create filesystem script is not working on mac os, exclude target from ALL
+    add_custom_target(celix-build-docker-dirs 
+        DEPENDS $<TARGET_PROPERTY:celix-build-docker-dirs,DOCKER_DEPS>
+    )
+else ()
+    add_custom_target(celix-build-docker-dirs ALL
+        DEPENDS $<TARGET_PROPERTY:celix-build-docker-dirs,DOCKER_DEPS>
+    )
+endif ()
 set_target_properties(celix-build-docker-dirs PROPERTIES "DOCKER_DEPS" "") #initial empty deps list
 
 add_custom_target(celix-build-docker-images)
@@ -124,7 +130,7 @@ $<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_PROPERTIES>,\\n\\
                 INPUT "${LAUNCHER_STAGE1}"
         )
 
-        add_executable(${DOCKER_TARGET} ${LAUNCHER_SRC})
+        add_executable(${DOCKER_TARGET} EXCLUDE_FROM_ALL ${LAUNCHER_SRC})
         #   set_target_properties(${DOCKER_TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${DOCKER_LOC})
         target_include_directories(${DOCKER_TARGET} PRIVATE ${CELIX_INCLUDE_DIRS})
         target_link_libraries(${DOCKER_TARGET} PRIVATE ${CELIX_FRAMEWORK_LIBRARY} ${CELIX_UTILS_LIBRARY})

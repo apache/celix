@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_bundle(device_manager
+add_celix_bundle(device_manager
 	SYMBOLIC_NAME "apache_celix_device_manager"
 	VERSION "0.0.2"
 	NAME "Apache Celix Device Access Device Manager"
@@ -34,7 +34,7 @@ add_bundle(device_manager
 		private/include/driver_matcher.h
 )
 
-install_bundle(device_manager
+install_celix_bundle(device_manager
 	HEADERS
 		public/include/device.h
 		public/include/driver_locator.h

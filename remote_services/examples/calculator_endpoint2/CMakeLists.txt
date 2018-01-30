@@ -23,7 +23,7 @@ include_directories("../../remote_service_admin/public/include")
 include_directories("../calculator_service/public/include")
 include_directories("private/include")
 
-add_bundle(org.apache.celix.calc.api.Calculator2_endpoint SOURCES
+add_celix_bundle(org.apache.celix.calc.api.Calculator2_endpoint SOURCES
 	private/src/calculator_endpoint_activator
 	private/src/calculator_endpoint_impl.c
     

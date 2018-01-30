@@ -17,7 +17,7 @@
 celix_subproject(REMOTE_SHELL "Option to enable building the Remote Shell bundles" ON DEPS LAUNCHER SHELL_TUI)
 if (REMOTE_SHELL)
 
-    add_bundle(remote_shell
+    add_celix_bundle(remote_shell
      	SYMBOLIC_NAME "apache_celix_remote_shell"
      	VERSION "0.0.2"
      	NAME: "Apache Celix Remote Shell"
@@ -33,7 +33,7 @@ if (REMOTE_SHELL)
 			private/include/connection_listener.h
 	)
 	
-	install_bundle(remote_shell)
+	install_celix_bundle(remote_shell)
  
     include_directories("private/include")
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
@@ -42,5 +42,5 @@ if (REMOTE_SHELL)
     
     target_link_libraries(remote_shell celix_framework)
 
-    add_deploy("remote_shell_deploy" NAME "remote_shell"  BUNDLES shell remote_shell shell_tui log_service)
+    add_celix_container("remote_shell_deploy" NAME "remote_shell"  BUNDLES shell remote_shell shell_tui log_service)
 endif (REMOTE_SHELL)

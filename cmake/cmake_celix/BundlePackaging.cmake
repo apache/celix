@@ -30,7 +30,7 @@ endif()
 
 
 ##### setup bundles/deploy target
-add_custom_target(bundles ALL)
+add_custom_target(celix-bundles ALL)
 #####
 
 macro(extract_version_parts VERSION MAJOR MINOR PATCH)
@@ -88,8 +88,11 @@ function(check_bundle BUNDLE)
     endif()
 endfunction()
 
-
 function(add_bundle)
+    message(DEPRECATION "add_bundle is DEPRECATION, use add_celix_bundle instead.")
+    add_celix_bundle(${ARGN})
+endfunction()
+function(add_celix_bundle)
     list(GET ARGN 0 BUNDLE_TARGET_NAME)
     list(REMOVE_AT ARGN 0)
 
@@ -130,9 +133,9 @@ function(add_bundle)
 
 
     ###### Setting up dependency for bundles target
-    get_target_property(DEPS bundles "BUNDLES_DEPS")
+    get_target_property(DEPS celix-bundles "BUNDLES_DEPS")
     list(APPEND DEPS "${BUNDLE_FILE}")
-    set_target_properties(bundles PROPERTIES "BUNDLES_DEPS" "${DEPS}")
+    set_target_properties(celix-bundles PROPERTIES "BUNDLES_DEPS" "${DEPS}")
     #####
 
     ####### Setting target for activator lib if neccesary ####################
@@ -147,7 +150,7 @@ function(add_bundle)
     add_custom_target(${BUNDLE_TARGET_NAME}_bundle
         DEPENDS "$<TARGET_PROPERTY:${BUNDLE_TARGET_NAME},BUNDLE_FILE>"
     )
-    add_dependencies(bundles ${BUNDLE_TARGET_NAME}_bundle)
+    add_dependencies(celix-bundles ${BUNDLE_TARGET_NAME}_bundle)
     #######################################################################
    
 
@@ -225,7 +228,7 @@ function(add_bundle)
     ################################
 
     if(BUNDLE_SOURCES) 
-        bundle_libs(${BUNDLE_TARGET_NAME} "PRIVATE" TRUE ${BUNDLE_TARGET_NAME})
+        celix_bundle_libs(${BUNDLE_TARGET_NAME} "PRIVATE" TRUE ${BUNDLE_TARGET_NAME})
         set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_ACTIVATOR" "$<TARGET_SONAME_FILE_NAME:${BUNDLE_TARGET_NAME}>")
         set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUILD_WITH_INSTALL_RPATH" true)
 
@@ -237,7 +240,7 @@ function(add_bundle)
     elseif(BUNDLE_NO_ACTIVATOR)
         #do nothing
     else() #ACTIVATOR 
-        bundle_libs(${BUNDLE_TARGET_NAME} "PRIVATE" TRUE ${BUNDLE_ACTIVATOR})
+        celix_bundle_libs(${BUNDLE_TARGET_NAME} "PRIVATE" TRUE ${BUNDLE_ACTIVATOR})
         
         if(TARGET ${BUNDLE_ACTIVATOR})
             set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_ACTIVATOR" "$<TARGET_SONAME_FILE_NAME:${BUNDLE_ACTIVATOR}>")
@@ -251,30 +254,37 @@ function(add_bundle)
     endif()
 
 
-    bundle_private_libs(${BUNDLE_TARGET_NAME} ${BUNDLE_PRIVATE_LIBRARIES})
-    bundle_export_libs(${BUNDLE_TARGET_NAME} ${BUNDLE_EXPORT_LIBRARIES})
-    bundle_import_libs(${BUNDLE_TARGET_NAME} ${BUNDLE_IMPORT_LIBRARIES})
-    bundle_headers(${BUNDLE_TARGET_NAME} ${BUNDLE_HEADERS})
-endfunction()
-
-function(get_bundle_file BUNDLE OUT)
-    check_bundle(${BUNDLE})
-    get_target_property(${OUT} ${BUNDLE} "BUNDLE_FILE")
+    celix_bundle_private_libs(${BUNDLE_TARGET_NAME} ${BUNDLE_PRIVATE_LIBRARIES})
+    celix_bundle_export_libs(${BUNDLE_TARGET_NAME} ${BUNDLE_EXPORT_LIBRARIES})
+    celix_bundle_import_libs(${BUNDLE_TARGET_NAME} ${BUNDLE_IMPORT_LIBRARIES})
+    celix_bundle_headers(${BUNDLE_TARGET_NAME} ${BUNDLE_HEADERS})
 endfunction()
 
 function(bundle_export_libs)
+    message(DEPRECATION "bundle_export_libs is DEPRECATION, use celix_bundle_export_libs instead.")
+    celix_bundle_export_libs(${ARGN})
+endfunction()
+function(celix_bundle_export_libs)
     list(GET ARGN 0 BUNDLE)
     list(REMOVE_AT ARGN 0)
-    bundle_libs(${BUNDLE} "EXPORT" TRUE ${ARGN})
+    celix_bundle_libs(${BUNDLE} "EXPORT" TRUE ${ARGN})
 endfunction()
 
 function(bundle_private_libs)
+    message(DEPRECATION "bundle_private_libs is DEPRECATION, use celix_bundle_private_libs instead.")
+    celix_bundle_private_libs(${ARGN})
+endfunction()
+function(celix_bundle_private_libs)
     list(GET ARGN 0 BUNDLE)
     list(REMOVE_AT ARGN 0)
-    bundle_libs(${BUNDLE} "PRIVATE" FALSE ${ARGN})
+    celix_bundle_libs(${BUNDLE} "PRIVATE" FALSE ${ARGN})
 endfunction()
 
 function(bundle_libs)
+    message(DEPRECATION "bundle_libs is DEPRECATION, use celix_bundle_libs instead.")
+    celix_bundle_libs(${ARGN})
+endfunction()
+function(celix_bundle_libs)
     #0 is bundle TARGET
     #1 is TYPE, e.g PRIVATE,EXPORT or IMPORT
     #2 is ADD_TO_MANIFEST 
@@ -328,7 +338,7 @@ function(bundle_libs)
         if ("${LIB}" STREQUAL "${BUNDLE}")
             #ignore. Do not have to link agaist own lib
         elseif(IS_LIB)
-            target_link_libraries(${BUNDLE} ${LIB})
+		target_link_libraries(${BUNDLE} PRIVATE ${LIB})
         endif()
     endforeach()
 
@@ -338,6 +348,10 @@ function(bundle_libs)
 endfunction()
 
 function(bundle_import_libs)
+    message(DEPRECATION "bundle_import_libs is DEPRECATION, use celix_bundle_import_libs instead.")
+    celix_bundle_import_libs(${ARGN})
+endfunction()
+function(celix_bundle_import_libs)
     #0 is bundle TARGET
     #2..n is import libs
     list(GET ARGN 0 BUNDLE)
@@ -356,7 +370,7 @@ function(bundle_import_libs)
             list(APPEND LIBS "$<TARGET_SONAME_FILE_NAME:${LIB}>")
         endif()
 
-        target_link_libraries(${BUNDLE} ${LIB})
+	target_link_libraries(${BUNDLE} PRIVATE ${LIB})
     endforeach()
 
 
@@ -364,6 +378,10 @@ function(bundle_import_libs)
 endfunction()
 
 function(bundle_files)
+    message(DEPRECATION "bundle_files is DEPRECATION, use celix_bundle_files instead.")
+    celix_bundle_files(${ARGN})
+endfunction()
+function(celix_bundle_files)
     #0 is bundle TARGET
     #1..n is header name / header value
     list(GET ARGN 0 BUNDLE)
@@ -387,6 +405,10 @@ function(bundle_files)
 endfunction()
 
 function(bundle_headers)
+    message(DEPRECATION "bundle_headers is DEPRECATION, use celix_bundle_headers instead.")
+    celix_bundle_headers(${ARGN})
+endfunction()
+function(celix_bundle_headers)
     #0 is bundle TARGET
     #1..n is header name / header value
     list(GET ARGN 0 BUNDLE)
@@ -401,23 +423,43 @@ function(bundle_headers)
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_HEADERS" "${HEADERS}")
 endfunction()
 
-function(bundle_symbolic_name BUNDLE SYMBOLIC_NAME) 
+function(bundle_symbolic_name)
+    message(DEPRECATION "bundle_symbolic_name is DEPRECATION, use celix_bundle_symbolic_name instead.")
+    celix_bundle_symbolic_name(${ARGN})
+endfunction()
+function(celix_bundle_symbolic_name BUNDLE SYMBOLIC_NAME)
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_SYMBOLIC_NAME" ${SYMBOLIC_NAME})
 endfunction()
 
-function(bundle_name BUNDLE NAME) 
+function(bundle_name)
+    message(DEPRECATION "bundle_name is DEPRECATION, use celix_bundle_name instead.")
+    celix_bundle_symbolic_name(${ARGN})
+endfunction()
+function(celix_bundle_name BUNDLE NAME)
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_NAME" ${NAME})
 endfunction()
 
-function(bundle_version BUNDLE VERSION) 
+function(bundle_version)
+    message(DEPRECATION "bundle_version is DEPRECATION, use celix_bundle_version instead.")
+    celix_bundle_symbolic_name(${ARGN})
+endfunction()
+function(celix_bundle_version BUNDLE VERSION)
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_VERSION" ${VERSION})
 endfunction()
 
-function(bundle_description BUNDLE DESC) 
+function(bundle_description)
+    message(DEPRECATION "bundle_description is DEPRECATION, use celix_bundle_description instead.")
+    celix_bundle_symbolic_name(${ARGN})
+endfunction()
+function(celix_bundle_description BUNDLE DESC)
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_DESCRIPTION" ${DESC})
 endfunction()
 
 function(install_bundle)
+    message(DEPRECATION "install_bundle is DEPRECATION, use install_celix_bundle instead.")
+    install_celix_bundle(${ARGN})
+endfunction()
+function(install_celix_bundle)
     #0 is bundle TARGET
     list(GET ARGN 0 BUNDLE)
     list(REMOVE_AT ARGN 0)

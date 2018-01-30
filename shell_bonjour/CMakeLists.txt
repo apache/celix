@@ -36,7 +36,7 @@ if (SHELL_BONJOUR)
 		set(MEMSTREAM_SOURCES ${PROJECT_SOURCE_DIR}/utils/private/src/memstream/open_memstream.c  ${PROJECT_SOURCE_DIR}/utils/private/src/memstream/fmemopen.c)
 		include_directories(${PROJECT_SOURCE_DIR}/utils/public/include/memstream)
 	endif()
-	add_bundle(bonjour_shell
+	add_celix_bundle(bonjour_shell
                 VERSION "1.0.0"
 		SOURCES
 		 	private/src/activator.c
@@ -46,7 +46,7 @@ if (SHELL_BONJOUR)
 	
 	target_link_libraries(bonjour_shell celix_framework celix_utils ${LIBXML2_LIBRARIES} ${DNS_SD_LIB})
 
-	add_deploy("bonjour_shell_deploy" BUNDLES 
+	add_celix_container("bonjour_shell_deploy" BUNDLES
 		shell
 		bonjour_shell
 		PROPERTIES "bonjour.shell.id=Apache Celix"

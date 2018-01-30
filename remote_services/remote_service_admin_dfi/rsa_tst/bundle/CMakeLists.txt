@@ -23,13 +23,13 @@ include_directories(
 )
 
 
-add_bundle(rsa_dfi_tst_bundle
+add_celix_bundle(rsa_dfi_tst_bundle
     VERSION 0.0.1
     SOURCES
         tst_activator.c
 )
 
-bundle_files(rsa_dfi_tst_bundle
+celix_bundle_files(rsa_dfi_tst_bundle
     ${PROJECT_SOURCE_DIR}/remote_services/examples/calculator_service/public/include/org.apache.celix.calc.api.Calculator2.descriptor
     DESTINATION .
 )

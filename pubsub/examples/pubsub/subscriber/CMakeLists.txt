@@ -21,7 +21,7 @@ include_directories("${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/pubsub/api/pubsub")
 include_directories("${PROJECT_SOURCE_DIR}/pubsub/examples/pubsub/common/include")
 
-add_bundle(org.apache.celix.pubsub_subscriber.PoiSubscriber
+add_celix_bundle(org.apache.celix.pubsub_subscriber.PoiSubscriber
     SYMBOLIC_NAME "apache_celix_pubsub_poi_subscriber" 
     VERSION "1.0.0"
     SOURCES 
@@ -30,24 +30,24 @@ add_bundle(org.apache.celix.pubsub_subscriber.PoiSubscriber
     	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_utils.c
 )
 
-bundle_files(org.apache.celix.pubsub_subscriber.PoiSubscriber
+celix_bundle_files(org.apache.celix.pubsub_subscriber.PoiSubscriber
 	    ${PROJECT_SOURCE_DIR}/pubsub/examples/pubsub/msg_descriptors/msg_poi1.descriptor
 	    ${PROJECT_SOURCE_DIR}/pubsub/examples/pubsub/msg_descriptors/msg_poi2.descriptor
     DESTINATION "META-INF/descriptors"
 )
 
-bundle_files(org.apache.celix.pubsub_subscriber.PoiSubscriber
+celix_bundle_files(org.apache.celix.pubsub_subscriber.PoiSubscriber
 		${PROJECT_SOURCE_DIR}/pubsub/examples/pubsub/msg_descriptors/poi1.properties
 		${PROJECT_SOURCE_DIR}/pubsub/examples/pubsub/msg_descriptors/poi2.properties
     DESTINATION "META-INF/topics/sub"
 )
 
-bundle_files(org.apache.celix.pubsub_subscriber.PoiSubscriber
+celix_bundle_files(org.apache.celix.pubsub_subscriber.PoiSubscriber
 		${PROJECT_SOURCE_DIR}/pubsub/examples/keys/subscriber
     DESTINATION "META-INF/keys"
 )
 
-bundle_files(org.apache.celix.pubsub_subscriber.PoiSubscriber
+celix_bundle_files(org.apache.celix.pubsub_subscriber.PoiSubscriber
 		${PROJECT_SOURCE_DIR}/pubsub/examples/keys/publisher/public
     DESTINATION "META-INF/keys/publisher"
 )

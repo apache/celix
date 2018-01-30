@@ -31,7 +31,7 @@ if (RSA_DISCOVERY_CONFIGURED)
     include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
     include_directories(private/include)
 
-    add_bundle(discovery_configured 
+    add_celix_bundle(discovery_configured
     VERSION 0.9.0
     SYMBOLIC_NAME "apache_celix_rsa_discovery_configured"
     NAME "Apache Celix RSA Configured Discovery"    
@@ -50,7 +50,7 @@ if (RSA_DISCOVERY_CONFIGURED)
 	${PROJECT_SOURCE_DIR}/log_service/public/src/log_helper.c
     )
 
-    install_bundle(discovery_configured)
+    install_celix_bundle(discovery_configured)
 
     target_link_libraries(discovery_configured celix_framework ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES})
 

@@ -21,7 +21,7 @@ include_directories("../../remote_service_admin/public/include")
 include_directories("private/include")
 include_directories("public/include")
 
-add_bundle(calculator SOURCES
+add_celix_bundle(calculator SOURCES
 	private/src/calculator_impl
 	private/src/calculator_activator
     
@@ -31,7 +31,7 @@ add_bundle(calculator SOURCES
     VERSION 0.0.1
 )
 
-bundle_files(calculator public/include/org.apache.celix.calc.api.Calculator2.descriptor
+celix_bundle_files(calculator public/include/org.apache.celix.calc.api.Calculator2.descriptor
     DESTINATION .)
 
 target_link_libraries(calculator celix_framework)

@@ -21,7 +21,7 @@ include_directories("${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/pubsub/api/pubsub")
 include_directories("${PROJECT_SOURCE_DIR}/pubsub/examples/mp_pubsub/common/include")
 
-add_bundle(org.apache.celix.pubsub_publisher.MpPublisher
+add_celix_bundle(org.apache.celix.pubsub_publisher.MpPublisher
     SYMBOLIC_NAME "apache_celix_pubsub_mp_publisher"
     VERSION "1.0.0"
     SOURCES 
@@ -30,19 +30,19 @@ add_bundle(org.apache.celix.pubsub_publisher.MpPublisher
     	${PROJECT_SOURCE_DIR}/pubsub/pubsub_common/public/src/pubsub_utils.c
 )
 
-bundle_files(org.apache.celix.pubsub_publisher.MpPublisher
+celix_bundle_files(org.apache.celix.pubsub_publisher.MpPublisher
 	${PROJECT_SOURCE_DIR}/pubsub/examples/mp_pubsub/msg_descriptors/msg_ew.descriptor
 	${PROJECT_SOURCE_DIR}/pubsub/examples/mp_pubsub/msg_descriptors/msg_ide.descriptor
 	${PROJECT_SOURCE_DIR}/pubsub/examples/mp_pubsub/msg_descriptors/msg_kinematics.descriptor
 	DESTINATION "META-INF/descriptors"
 )
 
-bundle_files(org.apache.celix.pubsub_publisher.MpPublisher
+celix_bundle_files(org.apache.celix.pubsub_publisher.MpPublisher
 		${PROJECT_SOURCE_DIR}/pubsub/examples/keys/publisher
     DESTINATION "META-INF/keys"
 )
 
-bundle_files(org.apache.celix.pubsub_publisher.MpPublisher
+celix_bundle_files(org.apache.celix.pubsub_publisher.MpPublisher
 		${PROJECT_SOURCE_DIR}/pubsub/examples/keys/subscriber/public
     DESTINATION "META-INF/keys/subscriber"
 )

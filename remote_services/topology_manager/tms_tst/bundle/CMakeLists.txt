@@ -22,12 +22,12 @@ include_directories(
         ${PROJECT_SOURCE_DIR}/utils/public/include
 )
 
-add_bundle(topology_manager_test_bundle
+add_celix_bundle(topology_manager_test_bundle
     VERSION 0.0.1
     SOURCES
         tst_activator.c   
 )
-bundle_files(topology_manager_test_bundle
+celix_bundle_files(topology_manager_test_bundle
     org.apache.celix.test.MyBundle.descriptor
     DESTINATION .
 )

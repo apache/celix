@@ -26,7 +26,7 @@ if (BUILD_DEPENDENCY_MANAGER)
     add_subdirectory(foo2)
     add_subdirectory(bar)
 
-    add_deploy(services_example_c
+    add_celix_container(services_example_c
         GROUP services_example
         COPY
         BUNDLES

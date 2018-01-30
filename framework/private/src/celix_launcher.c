@@ -244,11 +244,13 @@ int celixLauncher_launchWithProperties(properties_pt config, framework_pt *frame
 				unsigned int i;
 
 				linkedList_create(&bundles);
-				result = strtok_r(autoStart, delims, &save_ptr);
-				while (result != NULL) {
-					char *location = strdup(result);
-					linkedList_addElement(bundles, location);
-					result = strtok_r(NULL, delims, &save_ptr);
+				if (autoStart != NULL) {
+					result = strtok_r(autoStart, delims, &save_ptr);
+					while (result != NULL) {
+						char *location = strdup(result);
+						linkedList_addElement(bundles, location);
+						result = strtok_r(NULL, delims, &save_ptr);
+					}
 				}
 				// First install all bundles
 				// Afterwards start them

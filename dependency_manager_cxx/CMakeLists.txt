@@ -36,14 +36,15 @@ if (DEPENDENCY_MANAGER_CXX)
             ${PROJECT_SOURCE_DIR}/utils/public/include
     )
 
-    add_library( dependency_manager_cxx_static STATIC
+    add_library(dependency_manager_cxx_static STATIC
             ${CMAKE_SOURCE_DIR}/dependency_manager/private/src/dm_component_impl
             ${CMAKE_SOURCE_DIR}/dependency_manager/private/src/dm_service_dependency
             ${CMAKE_SOURCE_DIR}/dependency_manager/private/src/dm_event
             ${CMAKE_SOURCE_DIR}/dependency_manager/private/src/dm_dependency_manager_impl
             src/dm_activator.cc
     )
-    #set_target_properties(dependency_manager_cxx_static PROPERTIES SOVERSION 1)
+    set_target_properties(dependency_manager_cxx_static PROPERTIES SOVERSION 1)
+    set_target_properties(dependency_manager_cxx_static PROPERTIES VERSION 2.0.0)
 
     if (APPLE)
         target_link_libraries(dependency_manager_cxx_static celix_framework "-undefined dynamic_lookup")

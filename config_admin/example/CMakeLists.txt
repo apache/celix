@@ -17,7 +17,7 @@ include_directories(
     ../service/public/include
 )
 
-add_bundle(config_admin_example 
+add_celix_bundle(config_admin_example
 	VERSION 0.0.1
 	SOURCES
 		private/src/bundle_activator

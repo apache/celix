@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_bundle(word_consumingdriver
+add_celix_bundle(word_consumingdriver
  	SYMBOLIC_NAME "apache_celix_word_consuming_driver_example"
  	VERSION "0.0.1"
  	NAME "Apache Celix Device Access Word Consuming Driver Example"

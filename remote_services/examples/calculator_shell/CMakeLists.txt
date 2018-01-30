@@ -20,7 +20,7 @@ include_directories("../../../utils/public/include")
 include_directories("../calculator_service/public/include")
 include_directories("../../../shell/public/include")
 
-add_bundle(calculator_shell SOURCES
+add_celix_bundle(calculator_shell SOURCES
     private/src/add_command 
     private/src/sub_command
     private/src/sqrt_command
@@ -34,7 +34,7 @@ add_bundle(calculator_shell SOURCES
     SYMBOLIC_NAME "apache_celix_remoting_calculator_shell"
 )
 
-bundle_files(calculator_shell 
+celix_bundle_files(calculator_shell
     ../calculator_service/public/include/org.apache.celix.calc.api.Calculator2.descriptor
     #private/include/org.apache.celix.calc.api.Calculator2.descriptor ##Use this descriptor in case you want to try out versioning!
     DESTINATION .

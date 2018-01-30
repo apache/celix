@@ -30,7 +30,7 @@ if (DEPENDENCY_MANAGER)
       endif(CMAKE_UNAME)
     endif(UNIX AND NOT WIN32)
 
-    add_bundle(dm_shell
+    add_celix_bundle(dm_shell
         SYMBOLIC_NAME "apache_celix_dm_shell"
         VERSION "1.0.0"
         NAME "Apache Celix DM Shell Commands"
@@ -49,6 +49,7 @@ if (DEPENDENCY_MANAGER)
         private/src/dm_activator
     )
     set_target_properties(dependency_manager_static PROPERTIES SOVERSION 1)
+    set_target_properties(dependency_manager_static PROPERTIES VERSION 1.1.0)
 
     add_library(dependency_manager_so SHARED
     	private/src/dm_component_impl
@@ -84,7 +85,7 @@ if (DEPENDENCY_MANAGER)
 		COMPONENT
 			dependency_manager
 	)
-    install_bundle(dm_shell)
+    install_celix_bundle(dm_shell)
     install(TARGETS dependency_manager_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dependency_manager)
     install(TARGETS dependency_manager_so DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dependency_manager)
 

@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_bundle(log_writer
+add_celix_bundle(log_writer
 	SYMBOLIC_NAME "apache_celix_log_writer"
 	VERSION "1.1.0"
 	NAME "Apache Celix Log Writer"
@@ -27,7 +27,7 @@ add_bundle(log_writer
 		private/src/log_writer_stdout
 )
 
-install_bundle(log_writer)
+install_celix_bundle(log_writer)
     
 target_link_libraries(log_writer celix_framework)
     

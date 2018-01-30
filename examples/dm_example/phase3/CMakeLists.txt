@@ -20,7 +20,7 @@ include_directories(
         ../services
 )
 
-add_bundle(phase3
+add_celix_bundle(phase3
         SYMBOLIC_NAME phase3
         VERSION 0.0.1
         SOURCES

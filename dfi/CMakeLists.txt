@@ -54,6 +54,7 @@ add_library(celix_dfi SHARED
     ${MEMSTREAM_INCLUDES}
 )
 set_target_properties(celix_dfi PROPERTIES "SOVERSION" 1)
+set_target_properties(celix_dfi PROPERTIES "VERSION" 1.1.0)
 target_link_libraries(celix_dfi celix_utils ${FFI_LIBRARIES} ${JANSSON_LIBRARY})
 
 install(TARGETS celix_dfi DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)

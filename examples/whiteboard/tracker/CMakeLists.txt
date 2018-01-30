@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_bundle(tracker VERSION 1.0.0 SOURCES private/src/activator)
+add_celix_bundle(tracker VERSION 1.0.0 SOURCES private/src/activator)
 include_directories("../publisherService/public/include")
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 target_link_libraries(tracker celix_framework)

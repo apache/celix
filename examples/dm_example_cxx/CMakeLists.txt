@@ -31,7 +31,7 @@ if (BUILD_DEPENDENCY_MANAGER_CXX)
     add_subdirectory(phase3_locking)
 
 
-    add_deploy("dm_example_cxx"
+    add_celix_container("dm_example_cxx"
         COPY 
         CXX
         BUNDLES

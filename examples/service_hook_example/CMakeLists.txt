@@ -21,14 +21,14 @@ if(NOT APPLE)
 include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("public/include")
 
-add_bundle(hook_example
+add_celix_bundle(hook_example
            BUNDLE_SYMBOLICNAME "Hook_Example"
            VERSION "1.0.0"
            SOURCES
                 private/src/activator
 )
 
-add_deploy("hook_service_example"
+add_celix_container("hook_service_example"
             BUNDLES
                 shell
                 shell_tui

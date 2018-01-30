@@ -21,14 +21,14 @@ include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
 include_directories("public/include")
 include_directories("${CMAKE_SOURCE_DIR}/log_service/public/include")
 
-add_bundle(log_service_example
+add_celix_bundle(log_service_example
     VERSION "1.0"
     SOURCES
         private/src/activator.c
         ${CMAKE_SOURCE_DIR}/log_service/public/src/log_helper.c
 )
 
-add_deploy(log_example
+add_celix_container(log_example
     GROUP log_service
     BUNDLES log_service_example log_service shell shell_tui
 )

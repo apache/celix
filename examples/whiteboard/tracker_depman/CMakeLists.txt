@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_bundle(tracker_depman VERSION 1.0.0 SOURCES
+add_celix_bundle(tracker_depman VERSION 1.0.0 SOURCES
     private/src/dependency_activator
     private/src/tracker
     

@@ -20,7 +20,7 @@ include_directories(
         ../services
 )
 
-add_bundle(phase2b
+add_celix_bundle(phase2b
         SYMBOLIC_NAME phase2b
         VERSION 0.0.1
         SOURCES

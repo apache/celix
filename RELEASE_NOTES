@@ -1,23 +1,35 @@
-Release Notes for 2.0.0
-Remarks:
- * Components that are 2.0.0 are
-   - Framework
-   - Utils
-   - Shell
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-* Components that are 1.0.0
-   - Shell TUI
-   - Log Service
-   - Log Writer
-   - Launcher
-   - C Dependency Manager
-   - C++ Dependency Manager
+# Release Notes for Apache Celix 2.1.0
 
+## Versions
 
-* Components and version
+### Libraries:
+ - Celix Framework library: 2.1.0
+ - Celix Utils library: 2.1.0
+ - Dependency Manager:
+   - C : 1.1.0
+   - C++ : 2.0.0
+ - Celix DFI library: 1.1.0
+ - Celix etcdlib: 1.0.0
+
+### Bundles
  - Shell Tui: 1.1.0
  - Shell Bonjour: 0.1.0 
- - Shell: 2.0.0
+ - Shell: 2.1.0
  - Remote Shell: 0.0.2 
  - Log Writer: 1.1.0
  - Log Service: 1.1.0 
@@ -25,6 +37,7 @@ Remarks:
  - Device Access: 0.0.2 
  - Deployment Admin: 0.0.2 
  - Config Admin: 0.0.1 
+ - Dm Shell Bundle: 1.0.0 
  - Remote Services
    - Remote Service Admin Dfi: 0.9.0 
    - Remote Service Admin HTTP: 0.9.0 
@@ -32,9 +45,9 @@ Remarks:
    - Topology Manager: 0.9.0 
    - ETCD Discovery: 0.9.0 
    - Configured Discovery: 0.9.0 
- - C Dependency Manager: 1.0.0
- - C++ Dependency Manager: 1.0.0
-
-Misc: 
- - Utils: 2.0.0
- - Dfi: 1.0.0
+ - PubSub
+   - PubSubAdmin UDP Multicast : 1.0.0
+   - PubSubAdmin ZMQ : 1.0.0
+   - PubSub ETCD Discovery: 1.0.0
+   - PubSub Topology Manager: 1.0.0
+   - PubSub JSON Serializer : 1.0.0
