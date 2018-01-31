@@ -56,6 +56,8 @@ UTILS_EXPORT const char *properties_getWithDefault(properties_pt properties, con
 
 UTILS_EXPORT void properties_set(properties_pt properties, const char *key, const char *value);
 
+UTILS_EXPORT void properties_unset(properties_pt properties, const char *key);
+
 UTILS_EXPORT celix_status_t properties_copy(properties_pt properties, properties_pt *copy);
 
 #define PROPERTIES_FOR_EACH(props, key) \

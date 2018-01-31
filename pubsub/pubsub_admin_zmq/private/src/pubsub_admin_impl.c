@@ -312,7 +312,8 @@ static celix_status_t pubsubAdmin_addAnySubscription(pubsub_admin_pt admin,pubsu
 			status = pubsub_topicSubscriptionCreate(admin->bundle_context, PUBSUB_SUBSCRIBER_SCOPE_DEFAULT, PUBSUB_ANY_SUB_TOPIC, best_serializer, &any_sub);
 		}
 		else{
-			printf("PSA_ZMQ: Cannot find a serializer for subscribing topic %s. Adding it to pending list.\n",subEP->topic);
+			printf("PSA_ZMQ: Cannot find a serializer for subscribing topic %s. Adding it to pending list.\n",
+				   properties_get(subEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 			celixThreadMutex_lock(&admin->noSerializerPendingsLock);
 			arrayList_add(admin->noSerializerSubscriptions,subEP);
 			celixThreadMutex_unlock(&admin->noSerializerPendingsLock);
@@ -331,8 +332,8 @@ static celix_status_t pubsubAdmin_addAnySubscription(pubsub_admin_pt admin,pubsu
 				if(topic_publishers!=NULL){
 					for(i=0;i<arrayList_size(topic_publishers);i++){
 						pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt)arrayList_get(topic_publishers,i);
-						if(pubEP->endpoint !=NULL){
-							status += pubsub_topicSubscriptionConnectPublisher(any_sub,pubEP->endpoint);
+						if(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_URL) !=NULL){
+							status += pubsub_topicSubscriptionConnectPublisher(any_sub, (char*) properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_URL));
 						}
 					}
 					arrayList_destroy(topic_publishers);
@@ -349,8 +350,8 @@ static celix_status_t pubsubAdmin_addAnySubscription(pubsub_admin_pt admin,pubsu
 				if(ext_pub_list!=NULL){
 					for(i=0;i<arrayList_size(ext_pub_list);i++){
 						pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt)arrayList_get(ext_pub_list,i);
-						if(pubEP->endpoint !=NULL){
-							status += pubsub_topicSubscriptionConnectPublisher(any_sub,pubEP->endpoint);
+						if(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_URL) !=NULL){
+							status += pubsub_topicSubscriptionConnectPublisher(any_sub, (char*) properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_URL));
 						}
 					}
 				}
@@ -380,9 +381,13 @@ static celix_status_t pubsubAdmin_addAnySubscription(pubsub_admin_pt admin,pubsu
 celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint_pt subEP){
 	celix_status_t status = CELIX_SUCCESS;
 
-	printf("PSA_ZMQ: Received subscription [FWUUID=%s bundleID=%ld scope=%s, topic=%s]\n",subEP->frameworkUUID,subEP->serviceID,subEP->scope, subEP->topic);
+	printf("PSA_ZMQ: Received subscription [FWUUID=%s bundleID=%ld scope=%s, topic=%s]\n",
+		   properties_get(subEP->endpoint_props, OSGI_FRAMEWORK_FRAMEWORK_UUID),
+		   subEP->serviceID,
+		   properties_get(subEP->endpoint_props, PUBSUB_ENDPOINT_SCOPE),
+		   properties_get(subEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 
-	if(strcmp(subEP->topic,PUBSUB_ANY_SUB_TOPIC)==0){
+	if(strcmp(properties_get(subEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC),PUBSUB_ANY_SUB_TOPIC)==0){
 		return pubsubAdmin_addAnySubscription(admin,subEP);
 	}
 
@@ -392,7 +397,7 @@ celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint
 	celixThreadMutex_lock(&admin->localPublicationsLock);
 	celixThreadMutex_lock(&admin->externalPublicationsLock);
 
-	char* scope_topic = createScopeTopicKey(subEP->scope, subEP->topic);
+	char* scope_topic = createScopeTopicKey(properties_get(subEP->endpoint_props, PUBSUB_ENDPOINT_SCOPE), properties_get(subEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 
 	service_factory_pt factory = (service_factory_pt)hashMap_get(admin->localPublications,scope_topic);
 	array_list_pt ext_pub_list = (array_list_pt)hashMap_get(admin->externalPublications,scope_topic);
@@ -407,10 +412,11 @@ celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint
 		if(subscription == NULL) {
 			pubsub_serializer_service_t *best_serializer = NULL;
 			if( (status=pubsubAdmin_getBestSerializer(admin, subEP, &best_serializer)) == CELIX_SUCCESS){
-				status += pubsub_topicSubscriptionCreate(admin->bundle_context,subEP->scope, subEP->topic, best_serializer, &subscription);
+				status += pubsub_topicSubscriptionCreate(admin->bundle_context, (char*) properties_get(subEP->endpoint_props, PUBSUB_ENDPOINT_SCOPE), (char*) properties_get(subEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC), best_serializer, &subscription);
 			}
 			else{
-				printf("PSA_ZMQ: Cannot find a serializer for subscribing topic %s. Adding it to pending list.\n",subEP->topic);
+				printf("PSA_ZMQ: Cannot find a serializer for subscribing topic %s. Adding it to pending list.\n",
+					   properties_get(subEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 				celixThreadMutex_lock(&admin->noSerializerPendingsLock);
 				arrayList_add(admin->noSerializerSubscriptions,subEP);
 				celixThreadMutex_unlock(&admin->noSerializerPendingsLock);
@@ -426,8 +432,8 @@ celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint
 					if(topic_publishers!=NULL){
 						for(i=0;i<arrayList_size(topic_publishers);i++){
 							pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt)arrayList_get(topic_publishers,i);
-							if(pubEP->endpoint !=NULL){
-								status += pubsub_topicSubscriptionConnectPublisher(subscription,pubEP->endpoint);
+							if(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_URL) !=NULL){
+								status += pubsub_topicSubscriptionConnectPublisher(subscription,(char*)properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_URL));
 							}
 						}
 						arrayList_destroy(topic_publishers);
@@ -439,8 +445,8 @@ celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint
 				if(ext_pub_list!=NULL){
 					for(i=0;i<arrayList_size(ext_pub_list);i++){
 						pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt)arrayList_get(ext_pub_list,i);
-						if(pubEP->endpoint !=NULL){
-							status += pubsub_topicSubscriptionConnectPublisher(subscription,pubEP->endpoint);
+						if(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_URL) !=NULL){
+							status += pubsub_topicSubscriptionConnectPublisher(subscription,(char*) properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_URL));
 						}
 					}
 				}
@@ -477,9 +483,12 @@ celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint
 celix_status_t pubsubAdmin_removeSubscription(pubsub_admin_pt admin,pubsub_endpoint_pt subEP){
 	celix_status_t status = CELIX_SUCCESS;
 
-	printf("PSA_ZMQ: Removing subscription [FWUUID=%s bundleID=%ld topic=%s]\n",subEP->frameworkUUID,subEP->serviceID,subEP->topic);
+	printf("PSA_ZMQ: Removing subscription [FWUUID=%s bundleID=%ld topic=%s]\n",
+		   properties_get(subEP->endpoint_props, OSGI_FRAMEWORK_FRAMEWORK_UUID),
+		   subEP->serviceID,
+		   properties_get(subEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 
-	char* scope_topic = createScopeTopicKey(subEP->scope, subEP->topic);
+	char* scope_topic = createScopeTopicKey(properties_get(subEP->endpoint_props, PUBSUB_ENDPOINT_SCOPE), properties_get(subEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 
 	celixThreadMutex_lock(&admin->subscriptionsLock);
 	topic_subscription_pt sub = (topic_subscription_pt)hashMap_get(admin->subscriptions,scope_topic);
@@ -511,7 +520,11 @@ celix_status_t pubsubAdmin_removeSubscription(pubsub_admin_pt admin,pubsub_endpo
 celix_status_t pubsubAdmin_addPublication(pubsub_admin_pt admin, pubsub_endpoint_pt pubEP) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	printf("PSA_ZMQ: Received publication [FWUUID=%s bundleID=%ld scope=%s, topic=%s]\n", pubEP->frameworkUUID, pubEP->serviceID, pubEP->scope, pubEP->topic);
+	printf("PSA_ZMQ: Received publication [FWUUID=%s bundleID=%ld scope=%s, topic=%s]\n",
+		   properties_get(pubEP->endpoint_props, OSGI_FRAMEWORK_FRAMEWORK_UUID),
+		   pubEP->serviceID,
+		   properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_SCOPE),
+		   properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 
 	const char* fwUUID = NULL;
 
@@ -521,9 +534,10 @@ celix_status_t pubsubAdmin_addPublication(pubsub_admin_pt admin, pubsub_endpoint
 		return CELIX_INVALID_BUNDLE_CONTEXT;
 	}
 
-	char *scope_topic = createScopeTopicKey(pubEP->scope, pubEP->topic);
+	char *scope_topic = createScopeTopicKey(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_SCOPE), properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 
-	if ((strcmp(pubEP->frameworkUUID, fwUUID) == 0) && (pubEP->endpoint == NULL)) {
+	if ((strcmp(properties_get(pubEP->endpoint_props, OSGI_FRAMEWORK_FRAMEWORK_UUID), fwUUID) == 0) &&
+			(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_URL) == NULL)) {
 
 		celixThreadMutex_lock(&admin->localPublicationsLock);
 
@@ -536,7 +550,8 @@ celix_status_t pubsubAdmin_addPublication(pubsub_admin_pt admin, pubsub_endpoint
 				status = pubsub_topicPublicationCreate(admin->bundle_context, pubEP, best_serializer, admin->ipAddress, admin->basePort, admin->maxPort, &pub);
 			}
 			else{
-				printf("PSA_ZMQ: Cannot find a serializer for publishing topic %s. Adding it to pending list.\n", pubEP->topic);
+				printf("PSA_ZMQ: Cannot find a serializer for publishing topic %s. Adding it to pending list.\n",
+					   properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 				celixThreadMutex_lock(&admin->noSerializerPendingsLock);
 				arrayList_add(admin->noSerializerPublications,pubEP);
 				celixThreadMutex_unlock(&admin->noSerializerPendingsLock);
@@ -549,7 +564,10 @@ celix_status_t pubsubAdmin_addPublication(pubsub_admin_pt admin, pubsub_endpoint
 					connectTopicPubSubToSerializer(admin, best_serializer, pub, true);
 				}
 			} else {
-				printf("PSA_ZMQ: Cannot create a topicPublication for scope=%s, topic=%s (bundle %ld).\n", pubEP->scope, pubEP->topic, pubEP->serviceID);
+				printf("PSA_ZMQ: Cannot create a topicPublication for scope=%s, topic=%s (bundle %ld).\n",
+					   properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_SCOPE),
+					   properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC),
+					   pubEP->serviceID);
 			}
 		} else {
 			//just add the new EP to the list
@@ -597,14 +615,14 @@ celix_status_t pubsubAdmin_addPublication(pubsub_admin_pt admin, pubsub_endpoint
 	celixThreadMutex_lock(&admin->subscriptionsLock);
 
 	topic_subscription_pt sub = (topic_subscription_pt) hashMap_get(admin->subscriptions, scope_topic);
-	if (sub != NULL && pubEP->endpoint != NULL) {
-		pubsub_topicSubscriptionAddConnectPublisherToPendingList(sub, pubEP->endpoint);
+	if (sub != NULL && properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_URL) != NULL) {
+		pubsub_topicSubscriptionAddConnectPublisherToPendingList(sub, (char*)properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_URL));
 	}
 
 	/* And check also for ANY subscription */
 	topic_subscription_pt any_sub = (topic_subscription_pt) hashMap_get(admin->subscriptions, PUBSUB_ANY_SUB_TOPIC);
-	if (any_sub != NULL && pubEP->endpoint != NULL) {
-		pubsub_topicSubscriptionAddConnectPublisherToPendingList(any_sub, pubEP->endpoint);
+	if (any_sub != NULL && properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_URL) != NULL) {
+		pubsub_topicSubscriptionAddConnectPublisherToPendingList(any_sub, (char*)properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_URL));
 	}
 
 	free(scope_topic);
@@ -619,7 +637,10 @@ celix_status_t pubsubAdmin_removePublication(pubsub_admin_pt admin,pubsub_endpoi
 	celix_status_t status = CELIX_SUCCESS;
 	int count = 0;
 
-	printf("PSA_ZMQ: Removing publication [FWUUID=%s bundleID=%ld topic=%s]\n",pubEP->frameworkUUID,pubEP->serviceID,pubEP->topic);
+	printf("PSA_ZMQ: Removing publication [FWUUID=%s bundleID=%ld topic=%s]\n",
+		   properties_get(pubEP->endpoint_props, OSGI_FRAMEWORK_FRAMEWORK_UUID),
+		   pubEP->serviceID,
+		   properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 
 	const char* fwUUID = NULL;
 
@@ -628,9 +649,9 @@ celix_status_t pubsubAdmin_removePublication(pubsub_admin_pt admin,pubsub_endpoi
 		printf("PSA_ZMQ: Cannot retrieve fwUUID.\n");
 		return CELIX_INVALID_BUNDLE_CONTEXT;
 	}
-	char *scope_topic = createScopeTopicKey(pubEP->scope, pubEP->topic);
+	char *scope_topic = createScopeTopicKey(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_SCOPE), properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 
-	if(strcmp(pubEP->frameworkUUID,fwUUID)==0){
+	if(strcmp(properties_get(pubEP->endpoint_props, OSGI_FRAMEWORK_FRAMEWORK_UUID),fwUUID)==0){
 
 		celixThreadMutex_lock(&admin->localPublicationsLock);
 		service_factory_pt factory = (service_factory_pt)hashMap_get(admin->localPublications,scope_topic);
@@ -666,7 +687,7 @@ celix_status_t pubsubAdmin_removePublication(pubsub_admin_pt admin,pubsub_endpoi
 			// Check if there are more publishers on the same endpoint (happens when 1 celix-instance with multiple bundles publish in same topic)
 			for(i=0; i<arrayList_size(ext_pub_list);i++) {
 				pubsub_endpoint_pt p  = (pubsub_endpoint_pt)arrayList_get(ext_pub_list,i);
-				if (strcmp(pubEP->endpoint,p->endpoint) == 0) {
+				if (strcmp(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_URL),properties_get(p->endpoint_props, PUBSUB_ENDPOINT_URL)) == 0) {
 					count++;
 				}
 			}
@@ -688,14 +709,14 @@ celix_status_t pubsubAdmin_removePublication(pubsub_admin_pt admin,pubsub_endpoi
 	celixThreadMutex_lock(&admin->subscriptionsLock);
 
 	topic_subscription_pt sub = (topic_subscription_pt)hashMap_get(admin->subscriptions,scope_topic);
-	if(sub!=NULL && pubEP->endpoint!=NULL && count == 0){
-		pubsub_topicSubscriptionAddDisconnectPublisherToPendingList(sub,pubEP->endpoint);
+	if(sub!=NULL && properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_URL)!=NULL && count == 0){
+		pubsub_topicSubscriptionAddDisconnectPublisherToPendingList(sub,(char*)properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_URL));
 	}
 
 	/* And check also for ANY subscription */
 	topic_subscription_pt any_sub = (topic_subscription_pt)hashMap_get(admin->subscriptions,PUBSUB_ANY_SUB_TOPIC);
-	if(any_sub!=NULL && pubEP->endpoint!=NULL && count == 0){
-		pubsub_topicSubscriptionAddDisconnectPublisherToPendingList(any_sub,pubEP->endpoint);
+	if(any_sub!=NULL && properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_URL)!=NULL && count == 0){
+		pubsub_topicSubscriptionAddDisconnectPublisherToPendingList(any_sub,(char*)properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_URL));
 	}
 
 	free(scope_topic);
@@ -793,7 +814,7 @@ static celix_status_t pubsubAdmin_getIpAdress(const char* interface, char** ip) 
 
 static celix_status_t pubsubAdmin_addSubscriptionToPendingList(pubsub_admin_pt admin,pubsub_endpoint_pt subEP){
 	celix_status_t status = CELIX_SUCCESS;
-	char* scope_topic = createScopeTopicKey(subEP->scope, subEP->topic);
+	char* scope_topic = createScopeTopicKey(properties_get(subEP->endpoint_props, PUBSUB_ENDPOINT_SCOPE), properties_get(subEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 	array_list_pt pendingListPerTopic = hashMap_get(admin->pendingSubscriptions,scope_topic);
 	if(pendingListPerTopic==NULL){
 		arrayList_create(&pendingListPerTopic);
@@ -887,9 +908,8 @@ celix_status_t pubsubAdmin_serializerRemoved(void * handle, service_reference_pt
 				/* Remove the publication */
 				pubsubAdmin_removePublication(admin, pubEP);
 				/* Reset the endpoint field, so that will be recreated from scratch when a new serializer will be found */
-				if(pubEP->endpoint!=NULL){
-					free(pubEP->endpoint);
-					pubEP->endpoint = NULL;
+				if(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_URL)!=NULL){
+					properties_unset(pubEP->endpoint_props, PUBSUB_ENDPOINT_URL);
 				}
 				/* Add the orphan endpoint to the noSerializer pending list */
 				celixThreadMutex_lock(&admin->noSerializerPendingsLock);
@@ -939,9 +959,8 @@ celix_status_t pubsubAdmin_serializerRemoved(void * handle, service_reference_pt
 				/* Remove the subscription */
 				pubsubAdmin_removeSubscription(admin, subEP);
 				/* Reset the endpoint field, so that will be recreated from scratch when a new serializer will be found */
-				if(subEP->endpoint!=NULL){
-					free(subEP->endpoint);
-					subEP->endpoint = NULL;
+				if(properties_get(subEP->endpoint_props, PUBSUB_ENDPOINT_URL)!=NULL){
+					properties_unset(subEP->endpoint_props, PUBSUB_ENDPOINT_URL);
 				}
 				/* Add the orphan endpoint to the noSerializer pending list */
 				celixThreadMutex_lock(&admin->noSerializerPendingsLock);

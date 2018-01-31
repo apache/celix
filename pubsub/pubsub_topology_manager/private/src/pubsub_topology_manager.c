@@ -216,7 +216,7 @@ celix_status_t pubsub_topologyManager_psaRemoved(void * handle, service_referenc
 				int i;
 				for(i=0;i<arrayList_size(pubEP_list);i++){
 					pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt)arrayList_get(pubEP_list,i);
-					if(strcmp(pubEP->frameworkUUID,fwUUID)==0){
+					if(strcmp(properties_get(pubEP->endpoint_props, OSGI_FRAMEWORK_FRAMEWORK_UUID),fwUUID)==0){
 						disc->removePublisher(disc->handle,pubEP);
 					}
 				}
@@ -263,7 +263,7 @@ celix_status_t pubsub_topologyManager_subscriberAdded(void * handle, service_ref
 	pubsub_endpoint_pt sub = NULL;
 	if(pubsubEndpoint_createFromServiceReference(reference,&sub,false) == CELIX_SUCCESS){
 		celixThreadMutex_lock(&manager->subscriptionsLock);
-		char *sub_key = createScopeTopicKey(sub->scope, sub->topic);
+		char *sub_key = createScopeTopicKey(properties_get(sub->endpoint_props, PUBSUB_ENDPOINT_SCOPE), properties_get(sub->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 
 		array_list_pt sub_list_by_topic = hashMap_get(manager->subscriptions,sub_key);
 		if(sub_list_by_topic==NULL){
@@ -300,7 +300,7 @@ celix_status_t pubsub_topologyManager_subscriberAdded(void * handle, service_ref
 			service_reference_pt disc_sr = (service_reference_pt)hashMapIterator_nextKey(iter);
 			publisher_endpoint_announce_pt disc = NULL;
 			bundleContext_getService(manager->context, disc_sr, (void**) &disc);
-			disc->interestedInTopic(disc->handle, sub->scope, sub->topic);
+			disc->interestedInTopic(disc->handle, properties_get(sub->endpoint_props, PUBSUB_ENDPOINT_SCOPE), properties_get(sub->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 			bundleContext_ungetService(manager->context, disc_sr, NULL);
 		}
 		hashMapIterator_destroy(iter);
@@ -339,7 +339,7 @@ celix_status_t pubsub_topologyManager_subscriberRemoved(void * handle, service_r
 			service_reference_pt disc_sr = (service_reference_pt)hashMapIterator_nextKey(iter);
 			publisher_endpoint_announce_pt disc = NULL;
 			bundleContext_getService(manager->context, disc_sr, (void**) &disc);
-			disc->uninterestedInTopic(disc->handle, subcmp->scope, subcmp->topic);
+			disc->uninterestedInTopic(disc->handle, properties_get(subcmp->endpoint_props, PUBSUB_ENDPOINT_SCOPE), properties_get(subcmp->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 			bundleContext_ungetService(manager->context, disc_sr, NULL);
 		}
 		hashMapIterator_destroy(iter);
@@ -348,7 +348,7 @@ celix_status_t pubsub_topologyManager_subscriberRemoved(void * handle, service_r
 		celixThreadMutex_lock(&manager->subscriptionsLock);
 		celixThreadMutex_lock(&manager->psaListLock);
 
-		char *sub_key = createScopeTopicKey(subcmp->scope,subcmp->topic);
+		char *sub_key = createScopeTopicKey(properties_get(subcmp->endpoint_props, PUBSUB_ENDPOINT_SCOPE),properties_get(subcmp->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 		array_list_pt sub_list_by_topic = hashMap_get(manager->subscriptions,sub_key);
 		free(sub_key);
 		if(sub_list_by_topic!=NULL){
@@ -368,7 +368,7 @@ celix_status_t pubsub_topologyManager_subscriberRemoved(void * handle, service_r
 				if(arrayList_size(sub_list_by_topic)==0){
 					for(k=0;k<arrayList_size(manager->psaList);k++){
 						pubsub_admin_service_pt psa = (pubsub_admin_service_pt)arrayList_get(manager->psaList,k);
-						psa->closeAllSubscriptions(psa->admin,sub->scope, sub->topic);
+						psa->closeAllSubscriptions(psa->admin, (char*) properties_get(subcmp->endpoint_props, PUBSUB_ENDPOINT_SCOPE), (char*) properties_get(subcmp->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 					}
 				}
 
@@ -415,7 +415,7 @@ celix_status_t pubsub_topologyManager_pubsubDiscoveryAdded(void* handle, service
 		array_list_pt pubEP_list = (array_list_pt)hashMapIterator_nextValue(iter);
 		for(int i = 0; i < arrayList_size(pubEP_list); i++) {
 			pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt)arrayList_get(pubEP_list,i);
-			if( (strcmp(pubEP->frameworkUUID,fwUUID)==0) && (pubEP->endpoint!=NULL)){
+			if( (strcmp(properties_get(pubEP->endpoint_props, OSGI_FRAMEWORK_FRAMEWORK_UUID),fwUUID)==0) && (properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_URL)!=NULL)){
 				status += disc->announcePublisher(disc->handle,pubEP);
 			}
 		}
@@ -433,7 +433,7 @@ celix_status_t pubsub_topologyManager_pubsubDiscoveryAdded(void* handle, service
 		for(i=0;i<arrayList_size(l);i++){
 			pubsub_endpoint_pt subEp = (pubsub_endpoint_pt)arrayList_get(l,i);
 
-			disc->interestedInTopic(disc->handle, subEp->scope, subEp->topic);
+			disc->interestedInTopic(disc->handle, properties_get(subEp->endpoint_props, PUBSUB_ENDPOINT_SCOPE), properties_get(subEp->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 		}
 	}
 	hashMapIterator_destroy(iter);
@@ -486,7 +486,7 @@ celix_status_t pubsub_topologyManager_publisherTrackerAdded(void *handle, array_
 		if(pubsubEndpoint_createFromListenerHookInfo(info, &pub, true) == CELIX_SUCCESS){
 
 			celixThreadMutex_lock(&manager->publicationsLock);
-			char *pub_key = createScopeTopicKey(pub->scope, pub->topic);
+			char *pub_key = createScopeTopicKey(properties_get(pub->endpoint_props, PUBSUB_ENDPOINT_SCOPE), properties_get(pub->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 			array_list_pt pub_list_by_topic = hashMap_get(manager->publications, pub_key);
 			if(pub_list_by_topic==NULL){
 				arrayList_create(&pub_list_by_topic);
@@ -558,7 +558,7 @@ celix_status_t pubsub_topologyManager_publisherTrackerRemoved(void *handle, arra
 			celixThreadMutex_lock(&manager->psaListLock);
 			celixThreadMutex_lock(&manager->publicationsLock);
 
-			char *pub_key = createScopeTopicKey(pubcmp->scope, pubcmp->topic);
+			char *pub_key = createScopeTopicKey(properties_get(pubcmp->endpoint_props, PUBSUB_ENDPOINT_SCOPE), properties_get(pubcmp->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 			array_list_pt pub_list_by_topic = hashMap_get(manager->publications,pub_key);
 			if(pub_list_by_topic!=NULL){
 				for(j=0;j<arrayList_size(pub_list_by_topic);j++){
@@ -591,7 +591,7 @@ celix_status_t pubsub_topologyManager_publisherTrackerRemoved(void *handle, arra
 						if(arrayList_size(pub_list_by_topic)==0){
 							for(k=0;k<arrayList_size(manager->psaList);k++){
 								pubsub_admin_service_pt psa = (pubsub_admin_service_pt)arrayList_get(manager->psaList,k);
-								psa->closeAllPublications(psa->admin,pub->scope, pub->topic);
+								psa->closeAllPublications(psa->admin, (char*) properties_get(pub->endpoint_props, PUBSUB_ENDPOINT_SCOPE), (char*) properties_get(pub->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 							}
 						}
 
@@ -617,13 +617,16 @@ celix_status_t pubsub_topologyManager_publisherTrackerRemoved(void *handle, arra
 
 celix_status_t pubsub_topologyManager_announcePublisher(void *handle, pubsub_endpoint_pt pubEP){
 	celix_status_t status = CELIX_SUCCESS;
-	printf("PSTM: New publisher discovered for topic %s [fwUUID=%s, ep=%s]\n",pubEP->topic,pubEP->frameworkUUID,pubEP->endpoint);
+	printf("PSTM: New publisher discovered for topic %s [fwUUID=%s, ep=%s]\n",
+		   properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC),
+		   properties_get(pubEP->endpoint_props, OSGI_FRAMEWORK_FRAMEWORK_UUID),
+		   properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_URL));
 
 	pubsub_topology_manager_pt manager = handle;
 	celixThreadMutex_lock(&manager->psaListLock);
 	celixThreadMutex_lock(&manager->publicationsLock);
 
-	char *pub_key = createScopeTopicKey(pubEP->scope, pubEP->topic);
+	char *pub_key = createScopeTopicKey(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_SCOPE), properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 
 	array_list_pt pub_list_by_topic = hashMap_get(manager->publications,pub_key);
 	if(pub_list_by_topic==NULL){
@@ -666,17 +669,20 @@ celix_status_t pubsub_topologyManager_announcePublisher(void *handle, pubsub_end
 
 celix_status_t pubsub_topologyManager_removePublisher(void *handle, pubsub_endpoint_pt pubEP){
 	celix_status_t status = CELIX_SUCCESS;
-	printf("PSTM: Publisher removed for topic %s [fwUUID=%s, ep=%s]\n",pubEP->topic,pubEP->frameworkUUID,pubEP->endpoint);
+	printf("PSTM: Publisher removed for topic %s [fwUUID=%s, ep=%s]\n",
+		   properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC),
+		   properties_get(pubEP->endpoint_props, OSGI_FRAMEWORK_FRAMEWORK_UUID),
+		   properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_URL));
 
 	pubsub_topology_manager_pt manager = handle;
 	celixThreadMutex_lock(&manager->psaListLock);
 	celixThreadMutex_lock(&manager->publicationsLock);
 	int i;
 
-	char *pub_key = createScopeTopicKey(pubEP->scope, pubEP->topic);
+	char *pub_key = createScopeTopicKey(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_SCOPE), properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 	array_list_pt pub_list_by_topic = hashMap_get(manager->publications,pub_key);
 	if(pub_list_by_topic==NULL){
-		printf("PSTM: ERROR: Cannot find topic for known endpoint [%s,%s,%s]. Something is inconsistent.\n",pub_key,pubEP->frameworkUUID,pubEP->endpoint);
+		printf("PSTM: ERROR: Cannot find topic for known endpoint [%s,%s,%s]. Something is inconsistent.\n",pub_key,properties_get(pubEP->endpoint_props, OSGI_FRAMEWORK_FRAMEWORK_UUID),properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_URL));
 		status = CELIX_ILLEGAL_STATE;
 	}
 	else{
@@ -704,7 +710,7 @@ celix_status_t pubsub_topologyManager_removePublisher(void *handle, pubsub_endpo
 
 				for(i=0;i<arrayList_size(manager->psaList);i++){
 					pubsub_admin_service_pt psa = (pubsub_admin_service_pt)arrayList_get(manager->psaList,i);
-					psa->closeAllPublications(psa->admin,p->scope, p->topic);
+					psa->closeAllPublications(psa->admin, (char*) properties_get(p->endpoint_props, PUBSUB_ENDPOINT_SCOPE), (char*) properties_get(p->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 				}
 			}
 

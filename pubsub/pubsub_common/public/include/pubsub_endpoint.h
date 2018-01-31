@@ -34,13 +34,19 @@
 #include "publisher.h"
 #include "subscriber.h"
 
+#define PUBSUB_ENDPOINT_ID              "pubsub.endpoint.id"
+#define PUBSUB_ENDPOINT_SERVICE_ID      "service.id"
+#define PUBSUB_ENDPOINT_SERIALIZER      "serializer"
+#define PUBSUB_ENDPOINT_ADMIN_TYPE      "pubsub.admin.type"
+#define PUBSUB_ENDPOINT_URL             "pubsub.endpoint"
+#define PUBSUB_ENDPOINT_TOPIC           "pubsub.topic"
+#define PUBSUB_ENDPOINT_SCOPE           "pubsub.scope"
+#define PUBSUB_ENDPOINT_TYPE            "pubsub.type"
+
 struct pubsub_endpoint {
-    char *frameworkUUID;
-    char *scope;
-    char *topic;
-    long serviceID;
-    char* endpoint;
-    bool is_secure;
+    long serviceID;         //optional
+    bool is_secure;         //optional
+    properties_pt endpoint_props;
     properties_pt topic_props;
 };
 
@@ -52,6 +58,7 @@ celix_status_t pubsubEndpoint_createFromListenerHookInfo(listener_hook_info_pt i
 celix_status_t pubsubEndpoint_clone(pubsub_endpoint_pt in, pubsub_endpoint_pt *out);
 celix_status_t pubsubEndpoint_destroy(pubsub_endpoint_pt psEp);
 bool pubsubEndpoint_equals(pubsub_endpoint_pt psEp1,pubsub_endpoint_pt psEp2);
+celix_status_t pubsubEndpoint_setField(pubsub_endpoint_pt ep, const char* key, const char* value);
 
 char *createScopeTopicKey(const char* scope, const char* topic);
 
