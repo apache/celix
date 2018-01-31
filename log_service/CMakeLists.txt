@@ -48,21 +48,12 @@ if (LOG_SERVICE)
 			src/log_service_activator
 			src/log_reader_service_impl
     )
-    
-    install_celix_bundle(log_service
-        HEADERS
-        	include/log_service.h
-        	include/log_reader_service.h
-        	include/log_listener.h
-        	include/log_entry.h
-		EXPORT celix
-    )
+    target_include_directories(log_service PRIVATE src)
+    target_link_libraries(log_service PRIVATE log_service_api)
+    install_celix_bundle(log_service EXPORT celix COMPONENT log_service)
 
-	target_include_directories(log_service PRIVATE src)
-	target_link_libraries(log_service PRIVATE log_service_api)
-
-	#Setup target aliases to match external usage
-	add_library(Celix::log_service_api ALIAS log_service_api)
-	add_library(Celix::log_service ALIAS log_service)
-	add_library(Celix::log_helper ALIAS log_helper)
+    #Setup target aliases to match external usage
+    add_library(Celix::log_service_api ALIAS log_service_api)
+    add_library(Celix::log_service ALIAS log_service)
+    add_library(Celix::log_helper ALIAS log_helper)
 endif (LOG_SERVICE)

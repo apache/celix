@@ -35,8 +35,7 @@ if (RSA_DISCOVERY_CONFIGURED)
     )
     target_link_libraries(rsa_discovery_configured PRIVATE ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES} Celix::log_helper Celix::rsa_common)
 
-    install_celix_bundle(rsa_discovery_configured)
-
+    install_celix_bundle(rsa_discovery_configured EXPORT celix COMPONENT rsa)
     #Setup target aliases to match external usage
     add_library(Celix::rsa_discovery_configured ALIAS rsa_discovery_configured)
 endif (RSA_DISCOVERY_CONFIGURED)

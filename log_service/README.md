@@ -13,7 +13,7 @@ To ease the use of the Log Service, the [Log Helper](public/include/log_helper.h
 
 ## Using info
 
-If the Celix Log Service is installed The `FindCelix.cmake` will set:
+If the Celix Log Service is installed, 'find_package(Celix)' will set:
  - The `Celix::log_service_api` interface (i.e. header only) library target
  - The `Celix::log_service` bundle target
  - The `Celix::log_helper` static library target

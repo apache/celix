@@ -8,6 +8,6 @@ The Celix Log Writers are components that read/listen to the Log Service and pri
 
 ## Using info
 
-If the Celix Log Writers is installed The `FindCelix.cmake` will set:
+If the Celix Log Writers are installed `find_package(CELIX)` will set:
  - The `Celix::log_writer_stdout` bundle target
  - The `Celix::log_writer_syslog` bundle target

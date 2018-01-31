@@ -30,5 +30,5 @@ shell tui. Default is true if a TERM environment is set else false.
 
 ## Using info
 
-If the Celix Shell TUI is installed The `FindCelix.cmake` will set:
+If the Celix Shell TUI is installed, 'find_package(Celix)' will set:
  - The `Celix::shell_tui` bundle target if the shell_tui is installed

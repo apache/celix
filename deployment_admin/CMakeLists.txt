@@ -23,7 +23,10 @@ if (DEPLOYMENT_ADMIN)
     find_package(ZLIB REQUIRED)
 
     add_library(deployment_admin_api INTERFACE)
-    target_include_directories(deployment_admin_api INTERFACE api)
+    target_include_directories(deployment_admin_api INTERFACE 
+	    $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
+	    $<INSTALL_INTERFACE:include/celix/deployment_admin>
+    )
 
     add_celix_bundle(deployment_admin
         SYMBOLIC_NAME "apache_celix_deployment_admin"
@@ -50,7 +53,9 @@ if (DEPLOYMENT_ADMIN)
     )
     target_link_libraries(deployment_admin PRIVATE ${CURL_LIBRARIES} ${UUID_LIBRARIES} ${ZLIB_LIBRARIES} deployment_admin_api)
 
-    install_celix_bundle(deployment_admin)
+    install(TARGETS deployment_admin_api EXPORT celix COMPONENT deployment_admin)
+    install(DIRECTORY api/ DESTINATION include/celix/deployment_admin COMPONENT deployment_admin)
+    install_celix_bundle(deployment_admin EXPORT celix COMPONENT deployment_admin)
 
     #Setup target aliases to match external usage
     add_library(Celix::deployment_admin_api ALIAS deployment_admin_api)

@@ -17,7 +17,10 @@
 
 
 add_library(device_access_api INTERFACE)
-target_include_directories(device_access_api INTERFACE include)
+target_include_directories(device_access_api INTERFACE 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+    $<INSTALL_INTERFACE:include/celix/device_access>
+)
 
 add_celix_bundle(device_manager
 	SYMBOLIC_NAME "apache_celix_device_manager"
@@ -32,18 +35,14 @@ add_celix_bundle(device_manager
 )
 target_link_libraries(device_manager PRIVATE Celix::log_helper)
 
-install_celix_bundle(device_manager
-	HEADERS
-		include/device.h
-		include/driver_locator.h
-		include/driver_selector.h
-		include/driver.h
-		include/match.h
-)
 target_include_directories(device_manager PRIVATE src)
 target_link_libraries(device_manager PRIVATE device_access_api)
 
 include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
+
+install(TARGETS device_access_api EXPORT celix COMPONENT device_access)
+install(DIRECTORY include/ DESTINATION include/celix/device_access COMPONENT device_access)
+install_celix_bundle(device_manager EXPORT celix COMPONENT device_access)
 
 #Setup target aliases to match external usage
 add_library(Celix::device_access_api ALIAS device_access_api)

@@ -30,7 +30,6 @@ if (RSA_TOPOLOGY_MANAGER)
     target_include_directories(rsa_topology_manager PRIVATE include)
     target_link_libraries(rsa_topology_manager PRIVATE Celix::log_helper Celix::rsa_spi)
 
-    install_celix_bundle(rsa_topology_manager)
 
     if (ENABLE_TESTING)
         find_package(CppUTest REQUIRED)
@@ -42,6 +41,7 @@ if (RSA_TOPOLOGY_MANAGER)
         add_subdirectory(tms_tst)
    endif (ENABLE_TESTING)
 
+    install_celix_bundle(rsa_topology_manager EXPORT celix COMPONENT rsa)
     #Setup target aliases to match external usage
     add_library(Celix::rsa_topology_manager ALIAS rsa_topology_manager)
 endif (RSA_TOPOLOGY_MANAGER)

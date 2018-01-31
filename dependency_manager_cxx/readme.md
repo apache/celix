@@ -79,6 +79,6 @@ For more information examples please see
 
 ## Using info
 
-If the Celix C++ Dependency Manager is installed The `FindCelix.cmake` will set:
+If the Celix C++ Dependency Manager is installed, 'find_package(Celix)' will set:
  - The `Celix::shell_api` interface (i.e. headers only) library target
  - The `Celix::shell` bundle target

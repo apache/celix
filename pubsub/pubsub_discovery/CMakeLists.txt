@@ -28,14 +28,13 @@ add_celix_bundle(celix_pubsub_discovery_etcd
         src/etcd_watcher.c
         src/etcd_writer.c
 )
-
 target_include_directories(celix_pubsub_discovery_etcd PRIVATE
     src
 	${CURL_INCLUDE_DIR}
 	${JANSSON_INCLUDE_DIR}
 )
-
 target_link_libraries(celix_pubsub_discovery_etcd PRIVATE Celix::pubsub_spi Celix::framework Celix::etcdlib_static ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
-install_celix_bundle(celix_pubsub_discovery_etcd)
+
+install_celix_bundle(celix_pubsub_discovery_etcd EXPORT celix COMPONENT pubsub)
 
 add_library(Celix::pubsub_discovery_etcd ALIAS celix_pubsub_discovery_etcd)

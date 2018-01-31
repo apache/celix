@@ -40,8 +40,7 @@ find_package(CURL REQUIRED)
 	)
 	target_link_libraries(rsa_discovery_shm PRIVATE Celix::framework ${CURL_LIBRARIES} ${LIBXML2_LIBRARIES})
 
-	install_celix_bundle(rsa_discovery_shm)
-
+	install_celix_bundle(rsa_discovery_shm EXPORT celix COMPONENT rsa)
 
 	#Setup target aliases to match external usage
 	add_library(Celix::rsa_discovery_shm ALIAS rsa_discovery_shm)

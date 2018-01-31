@@ -36,6 +36,6 @@ It can be used for example with Apache Ace, which allows you to centrally manage
 
 ## Using info
 
-If the Celix Deployment Admin is installed The `FindCelix.cmake` will set:
+If the Celix Deployment Admin is installed, 'find_package(Celix)' will set:
  - The `Celix::deployment_admin_api` interface (i.e. headers only) library target
  - The `Celix::deployment_admin` bundle target

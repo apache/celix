@@ -25,8 +25,8 @@ if (LOG_WRITER_SYSLOG)
         SOURCES
             private/src/log_writer_syslog
     )
+    target_link_libraries(log_writer_syslog PRIVATE log_writer_common)
 
     install_celix_bundle(log_writer_syslog EXPORT celix)
-
-    target_link_libraries(log_writer_syslog PRIVATE log_writer_common)
+    add_library(Celix::log_writer_syslog ALIAS log_writer_syslog)
 endif (LOG_WRITER_SYSLOG)

@@ -24,14 +24,13 @@ add_celix_bundle(celix_pubsub_topology_manager
     	src/pubsub_topology_manager.h
 )
 target_link_libraries(celix_pubsub_topology_manager PRIVATE Celix::framework Celix::log_helper Celix::pubsub_spi)
-
 get_target_property(DESC Celix::pubsub_spi TOPIC_INFO_DESCRIPTOR)
 celix_bundle_files(celix_pubsub_topology_manager
 	${DESC}
     DESTINATION "META-INF/descriptors/services"
 )
 
-install_celix_bundle(celix_pubsub_topology_manager)
+install_celix_bundle(celix_pubsub_topology_manager EXPORT celix COMPONENT pubsub)
 
 add_library(Celix::pubsub_topology_manager ALIAS celix_pubsub_topology_manager)
 

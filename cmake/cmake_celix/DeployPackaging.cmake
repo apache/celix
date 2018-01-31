@@ -131,15 +131,12 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_PROPERTIES>,
 
     #needed in the release.sh & run.sh files
     #Setting CELIX_LIB_DIRS, CELIX_BIN_DIR and CELIX_LAUNCHER
-    if (TARGET framework)
+    if (TARGET Celix::framework)
         #Celix Main Project
         set(CELIX_LIB_DIRS "$<TARGET_FILE_DIR:Celix::framework>:$<TARGET_FILE_DIR:Celix::utils>:$<TARGET_FILE_DIR:Celix::dfi>")
         set(CELIX_BIN_DIR  "$<TARGET_FILE_DIR:Celix::launcher>")
     else ()
-        #CELIX_FRAMEWORK_LIBRARY and CELIX_LAUNCHER set by FindCelix.cmake -> Celix Based Project
-        get_filename_component(CELIX_LIB_DIR ${CELIX_FRAMEWORK_LIBRARY} DIRECTORY) #Note assuming all celix libs are in the same dir
-        set(CELIX_LIB_DIRS "${CELIX_LIB_DIR}")
-        get_filename_component(CELIX_BIN_DIR ${CELIX_LAUNCHER} DIRECTORY)
+	message(FATAL_ERROR "No Celix::framework target is defined. Did you use find_package(Celix REQUIRED)?")
     endif()
 
     #generate release.sh and optional run.sh

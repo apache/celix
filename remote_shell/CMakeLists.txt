@@ -30,13 +30,13 @@ if (REMOTE_SHELL)
 
 	target_include_directories(remote_shell PRIVATE src)
 	target_link_libraries(remote_shell PRIVATE log_helper)
-	install_celix_bundle(remote_shell)
 
     include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
     include_directories("${PROJECT_SOURCE_DIR}/log_service/public/include")
     
     target_link_libraries(remote_shell PRIVATE Celix::shell_api)
 
+        install_celix_bundle(remote_shell EXPORT celix COMPONENT remote_shell)
 	#Alias setup to match external usage
 	add_library(Celix::remote_shell ALIAS remote_shell)
 

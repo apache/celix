@@ -23,7 +23,7 @@ if (SHELL)
 			$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
 			$<INSTALL_INTERFACE:include/celix/shell>
 	)
-	install(TARGETS shell_api EXPORT celix)
+        install(TARGETS shell_api EXPORT celix COMPONENT shell)
 	install(DIRECTORY include/ DESTINATION include/celix/shell COMPONENT shell)
 
     add_celix_bundle(shell
@@ -46,11 +46,7 @@ if (SHELL)
 	target_include_directories(shell PRIVATE src ${CURL_INCLUDE_DIRS})
 	target_link_libraries(shell PRIVATE Celix::shell_api ${CURL_LIBRARIES} Celix::log_service_api Celix::log_helper)
 
-	install_celix_bundle(shell
-    	HEADERS
-    		include/shell.h include/command.h include/shell_constants.h
-		EXPORT celix
-    )
+	install_celix_bundle(shell EXPORT celix COMPONENT shell)
 
 	#Setup target aliases to match external usage
 	add_library(Celix::shell_api ALIAS shell_api)

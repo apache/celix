@@ -42,12 +42,12 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
             Celix::rsa_common
             ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
 
-    install_celix_bundle(rsa_dfi)
-
     if (ENABLE_TESTING)
         add_subdirectory(test)
     endif()
 
+
+    install_celix_bundle(rsa_dfi EXPORT celix COMPONENT rsa)
     #Setup target aliases to match external usage
     add_library(Celix::rsa_dfi ALIAS rsa_dfi)
 endif()

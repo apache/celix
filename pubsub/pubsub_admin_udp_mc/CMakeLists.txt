@@ -27,17 +27,14 @@ add_celix_bundle(celix_pubsub_admin_udp_multicast
         src/topic_publication.c
         src/large_udp.c
 )
-
-
 target_include_directories(celix_pubsub_admin_udp_multicast PRIVATE
 		src
 		${JANSSON_INCLUDE_DIR}
 )
-
 set_target_properties(celix_pubsub_admin_udp_multicast PROPERTIES INSTALL_RPATH "$ORIGIN")
 target_link_libraries(celix_pubsub_admin_udp_multicast PRIVATE Celix::pubsub_spi Celix::framework Celix::dfi Celix::log_helper)
 
-install_celix_bundle(celix_pubsub_admin_udp_multicast)
+install_celix_bundle(celix_pubsub_admin_udp_multicast EXPORT celix COMPONENT pubsub)
 
 add_library(Celix::pubsub_admin_udp_multicast ALIAS celix_pubsub_admin_udp_multicast)
 

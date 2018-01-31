@@ -148,6 +148,6 @@ their state, provided interfaces and required interfaces.
 
 ## Using info
 
-If the Celix Dependency Manager is installed The `FindCelix.cmake` will set:
+If the Celix Dependency Manager is installed, 'find_package(Celix)' will set:
  - The `Celix::dm_shell` bundle target
  - The `Celix::dependency_manger_static` library target

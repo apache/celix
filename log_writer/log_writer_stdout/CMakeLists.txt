@@ -22,7 +22,8 @@ add_celix_bundle(log_writer_stdout
 	SOURCES
 		src/log_writer_stdout
 )
+target_link_libraries(log_writer_stdout PRIVATE Celix::log_service_api log_writer_common)
 
 install_celix_bundle(log_writer_stdout EXPORT celix)
+add_library(Celix::log_writer_stdout ALIAS log_writer_stdout)
 
-target_link_libraries(log_writer_stdout PRIVATE Celix::log_service_api log_writer_common)

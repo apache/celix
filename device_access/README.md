@@ -28,7 +28,7 @@ The Device Access contains a for Celix adapted implementation of the OSGi Compen
 
 ## Using info
 
-If the Celix Device Access is installed The `FindCelix.cmake` will set:
+If the Celix Device Access is installed, 'find_package(Celix)' will set:
  - The `Celix::device_access_api` interface (i.e. headers only) library target
  - The `Celix::device_manager` bundle target
  - The `Celix::driver_locator` bundle target

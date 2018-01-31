@@ -25,16 +25,14 @@ add_celix_bundle(celix_pubsub_serializer_json
 		src/ps_activator.c
 		src/pubsub_serializer_impl.c
 )
-
 target_include_directories(celix_pubsub_serializer_json PRIVATE
 	src
 	${JANSSON_INCLUDE_DIR}
 )
-
 set_target_properties(celix_pubsub_serializer_json PROPERTIES INSTALL_RPATH "$ORIGIN")
 target_link_libraries(celix_pubsub_serializer_json PRIVATE Celix::pubsub_spi Celix::framework Celix::dfi ${JANSSON_LIBRARIES} Celix::log_helper)
 
-install_celix_bundle(celix_pubsub_serializer_json)
+install_celix_bundle(celix_pubsub_serializer_json EXPORT celix COMPONENT pubsub)
 
 add_library(Celix::pubsub_serializer_json ALIAS celix_pubsub_serializer_json)
 
