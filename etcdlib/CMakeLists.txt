@@ -16,8 +16,8 @@
 # under the License.
 
 
-if (NOT PROJECT_SOURCE_DIR) 
-    #If PROJECT_SOURCE_DIR is not defined, this CMakeLists will
+if (NOT COMMAND celix_subproject) 
+    #If COMMAND celix_subproject is not defined, this CMakeLists will
     #act as a top level project. Making the etcdlib useable 
     #stand-alone
 
@@ -44,7 +44,10 @@ find_package(Jansson REQUIRED)
 add_library(etcdlib SHARED
     src/etcd.c
 )
-target_include_directories(etcdlib PUBLIC api)
+target_include_directories(etcdlib PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
+    $<INSTALL_INTERFACE:include/etcdlib>
+)
 target_include_directories(etcdlib PRIVATE
     src
     ${CURL_INCLUDE_DIRS}
@@ -58,7 +61,10 @@ target_link_libraries(etcdlib ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
 add_library(etcdlib_static STATIC
     src/etcd.c
 )
-target_include_directories(etcdlib_static PUBLIC api)
+target_include_directories(etcdlib_static PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
+    $<INSTALL_INTERFACE:include/etcdlib>
+)
 target_include_directories(etcdlib_static PRIVATE
     src
     ${CURL_INCLUDE_DIRS}
@@ -67,9 +73,12 @@ target_include_directories(etcdlib_static PRIVATE
 set_target_properties(etcdlib_static PROPERTIES "SOVERSION" 1)
 target_link_libraries(etcdlib_static ${CURL_LIBRARIES} ${JANSSON_LIBRARY})
 
-
-install(TARGETS etcdlib etcdlib_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${ETCDLIB_CMP})
-
-#Setup target aliases to match external usage
-add_library(Celix::etcdlib ALIAS etcdlib)
-add_library(Celix::etcdlib_static ALIAS etcdlib_static)
+install(DIRECTORY api/ DESTINATION include/etcdlib COMPONENT ${ETCDLIB_CMP})
+if (NOT COMMAND celix_subproject) 
+    install(TARGETS etcdlib etcdlib_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${ETCDLIB_CMP})
+else ()
+    install(TARGETS etcdlib etcdlib_static EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${ETCDLIB_CMP})
+    #Setup target aliases to match external usage
+    add_library(Celix::etcdlib ALIAS etcdlib)
+    add_library(Celix::etcdlib_static ALIAS etcdlib_static)
+endif ()

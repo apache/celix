@@ -15,20 +15,26 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# This Project contains some example how to use Apache Celix,
-# including CMake files, C examples and C++ examples.
+if (COMMAND celix_subproject)
+    celix_subproject(EXAMPLES "Option to enable building the Examples" ON DEPS FRAMEWORK LAUNCHER SHELL_TUI LOG_SERVICE LOG_WRITER)
+else ()
+    set(EXAMPLES true) #celix_subproject is only available in the celix project -> using examples dir in other project is also supported
+endif ()
+if (EXAMPLES)
+    add_subdirectory(hello_world)
+    add_subdirectory(hello_world_test)
 
-# To build these example:
-# - build and install celix
-# - Create a new build project dir and cd to it
-# - set the CMAKE_PREFIX_PATH to the install location
-#   of Celix (e.g. /opt/local) if this is different from
-#   /usr or /usr/local
-# - cmake <loc_to_celix_src>/examples
-# - make -j all
+    add_subdirectory(services_example_c)
+    add_subdirectory(services_example_cxx)
 
-cmake_minimum_required (VERSION 3.2)
-project (CelixUse C CXX)
-set(CMAKE_CXX_FLAGS "-std=c++11")
-find_package(Celix REQUIRED)
-add_subdirectory(celix-examples examples)
+    add_subdirectory(dm_example)
+    add_subdirectory(dm_example_cxx)
+
+    if (NOT ANDROID)
+    	add_subdirectory(mongoose)
+    endif()
+    add_subdirectory(embedding)
+    add_subdirectory(service_hook_example)
+    add_subdirectory(log_service_example)
+
+endif(EXAMPLES)
