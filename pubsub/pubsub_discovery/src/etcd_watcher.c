@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <jansson.h>
 
 #include "celix_log.h"
 #include "constants.h"
@@ -143,7 +144,60 @@ celix_status_t etcdWatcher_getPublisherEndpointFromKey(pubsub_discovery_pt pubsu
 			status = CELIX_ILLEGAL_STATE;
 		}
 		else{
-			status = pubsubEndpoint_create(fwUUID,scope,topic,strtol(serviceId,NULL,10),etcdValue,NULL,pubEP);
+
+			// etcdValue contains the json formatted string
+			json_error_t error;
+			json_t* jsonRoot = json_loads(etcdValue, JSON_DECODE_ANY, &error);
+
+			const char* endpoint_serializer = NULL;
+			const char* endpoint_admin_type = NULL;
+			const char* endpoint_url = NULL;
+			const char* endpoint_type = NULL;
+
+			if (json_is_object(jsonRoot)){
+
+				void *iter = json_object_iter(jsonRoot);
+
+				const char *key;
+				json_t *value;
+
+				while (iter) {
+					key = json_object_iter_key(iter);
+					value = json_object_iter_value(iter);
+
+					if (strcmp(key, PUBSUB_ENDPOINT_SERIALIZER) == 0) {
+						endpoint_serializer = json_string_value(value);
+					} else if (strcmp(key, PUBSUB_ENDPOINT_ADMIN_TYPE) == 0) {
+						endpoint_admin_type = json_string_value(value);
+					} else if (strcmp(key, PUBSUB_ENDPOINT_URL) == 0) {
+						endpoint_url = json_string_value(value);
+					} else if (strcmp(key, PUBSUB_ENDPOINT_TYPE) == 0) {
+						endpoint_type = json_string_value(value);
+					}
+
+					iter = json_object_iter_next(jsonRoot, iter);
+				}
+
+				if (endpoint_url == NULL) {
+					printf("EW: No endpoint found in json object!\n");
+					endpoint_url = etcdValue;
+				}
+
+			} else {
+				endpoint_url = etcdValue;
+			}
+
+			status = pubsubEndpoint_create(fwUUID,scope,topic,strtol(serviceId,NULL,10),endpoint_url,NULL,pubEP);
+
+            if (status == CELIX_SUCCESS) {
+                status += pubsubEndpoint_setField(*pubEP, PUBSUB_ENDPOINT_SERIALIZER, endpoint_serializer);
+                status += pubsubEndpoint_setField(*pubEP, PUBSUB_ENDPOINT_ADMIN_TYPE, endpoint_admin_type);
+                status += pubsubEndpoint_setField(*pubEP, PUBSUB_ENDPOINT_TYPE, endpoint_type);
+            }
+
+			if (jsonRoot != NULL) {
+				json_decref(jsonRoot);
+			}
 		}
 	}
 	return status;

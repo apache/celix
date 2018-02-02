@@ -212,6 +212,11 @@ void properties_set(properties_pt properties, const char* key, const char* value
 	free(oldValue);
 }
 
+void properties_unset(properties_pt properties, const char* key) {
+	char* oldValue = hashMap_remove(properties, key);
+	free(oldValue);
+}
+
 static void updateBuffers(char **key, char ** value, char **output, int outputPos, int *key_len, int *value_len) {
 	if (*output == *key) {
 		if (outputPos == (*key_len) - 1) {

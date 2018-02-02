@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <jansson.h>
 
 #include "celix_log.h"
 #include "constants.h"
@@ -82,7 +83,12 @@ void etcdWriter_destroy(etcd_writer_pt writer) {
 	for(int i = 0; i < arrayList_size(writer->localPubs); i++) {
 		pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt)arrayList_get(writer->localPubs,i);
 		memset(dir,0,MAX_ROOTNODE_LENGTH);
-		snprintf(dir,MAX_ROOTNODE_LENGTH,"%s/%s/%s/%s",rootPath,pubEP->scope,pubEP->topic,pubEP->frameworkUUID);
+		snprintf(dir,MAX_ROOTNODE_LENGTH,"%s/%s/%s/%s",
+				 rootPath,
+				 properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_SCOPE),
+				 properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC),
+				 properties_get(pubEP->endpoint_props, OSGI_FRAMEWORK_FRAMEWORK_UUID));
+
 		etcd_del(dir);
 		pubsubEndpoint_destroy(pubEP);
 	}
@@ -100,7 +106,7 @@ celix_status_t etcdWriter_addPublisherEndpoint(etcd_writer_pt writer, pubsub_end
 	if(storeEP){
 		const char *fwUUID = NULL;
 		bundleContext_getProperty(writer->pubsub_discovery->context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &fwUUID);
-		if(fwUUID && strcmp(pubEP->frameworkUUID, fwUUID) == 0) {
+		if(fwUUID && strcmp(properties_get(pubEP->endpoint_props, OSGI_FRAMEWORK_FRAMEWORK_UUID), fwUUID) == 0) {
 			celixThreadMutex_lock(&writer->localPubsLock);
 			pubsub_endpoint_pt p = NULL;
 			pubsubEndpoint_clone(pubEP, &p);
@@ -128,12 +134,33 @@ celix_status_t etcdWriter_addPublisherEndpoint(etcd_writer_pt writer, pubsub_end
 
 	const char *rootPath = etcdWriter_getRootPath(writer->pubsub_discovery->context);
 
-	asprintf(&key,"%s/%s/%s/%s/%ld",rootPath,pubEP->scope,pubEP->topic,pubEP->frameworkUUID,pubEP->serviceID);
+	asprintf(&key,"%s/%s/%s/%s/%ld",
+			 rootPath,
+			 properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_SCOPE),
+			 properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC),
+			 properties_get(pubEP->endpoint_props, OSGI_FRAMEWORK_FRAMEWORK_UUID),
+			 pubEP->serviceID);
 
-	if(!etcd_set(key,pubEP->endpoint,ttl,false)){
+    char serviceID [sizeof(pubEP->serviceID)];
+    snprintf(serviceID, sizeof(pubEP->serviceID), "%ld", pubEP->serviceID);
+	json_t* jsonEndpoint = json_pack("{s:s,s:s,s:s,s:s,s:s,s:s,s:s}",
+									 PUBSUB_ENDPOINT_SERVICE_ID, serviceID,
+									 PUBSUB_ENDPOINT_SERIALIZER, "serializer.json", //TODO: Serializer not (yet) stored in endpoint
+									 PUBSUB_ENDPOINT_ADMIN_TYPE, "zmq", //TODO: PSA type not (yet) stored in endpoint
+									 PUBSUB_ENDPOINT_URL, properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_URL),
+									 PUBSUB_ENDPOINT_TYPE, "publisher", //TODO: Check if necessary
+									 PUBSUB_ENDPOINT_TOPIC, properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC),
+									 PUBSUB_ENDPOINT_SCOPE, properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_SCOPE)
+	);
+	char* jsonEndpointStr = json_dumps(jsonEndpoint, JSON_COMPACT);
+
+	if (!etcd_set(key,jsonEndpointStr,ttl,false)) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	}
 	FREE_MEM(key);
+	FREE_MEM(jsonEndpointStr);
+	json_decref(jsonEndpoint);
+
 	return status;
 }
 
@@ -143,7 +170,12 @@ celix_status_t etcdWriter_deletePublisherEndpoint(etcd_writer_pt writer, pubsub_
 
 	const char *rootPath = etcdWriter_getRootPath(writer->pubsub_discovery->context);
 
-	asprintf(&key, "%s/%s/%s/%s/%ld", rootPath, pubEP->scope, pubEP->topic, pubEP->frameworkUUID, pubEP->serviceID);
+	asprintf(&key, "%s/%s/%s/%s/%ld",
+			 rootPath,
+			 properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_SCOPE),
+			 properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC),
+			 properties_get(pubEP->endpoint_props, OSGI_FRAMEWORK_FRAMEWORK_UUID),
+			 pubEP->serviceID);
 
 	celixThreadMutex_lock(&writer->localPubsLock);
 	for (unsigned int i = 0; i < arrayList_size(writer->localPubs); i++) {

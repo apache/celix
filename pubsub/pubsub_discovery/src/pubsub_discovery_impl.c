@@ -143,7 +143,7 @@ celix_status_t pubsub_discovery_stop(pubsub_discovery_pt ps_discovery) {
         int i;
         for (i = 0; i < arrayList_size(pubEP_list); i++) {
             pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt) arrayList_get(pubEP_list, i);
-            if (strcmp(pubEP->frameworkUUID, fwUUID) == 0) {
+            if (strcmp(properties_get(pubEP->endpoint_props, OSGI_FRAMEWORK_FRAMEWORK_UUID), fwUUID) == 0) {
                 etcdWriter_deletePublisherEndpoint(ps_discovery->writer, pubEP);
             } else {
                 pubsub_discovery_informPublishersListeners(ps_discovery, pubEP, false);
@@ -177,7 +177,7 @@ celix_status_t pubsub_discovery_addNode(pubsub_discovery_pt pubsub_discovery, pu
 	bool inform=false;
 	celixThreadMutex_lock(&pubsub_discovery->discoveredPubsMutex);
 
-	char *pubs_key = createScopeTopicKey(pubEP->scope, pubEP->topic);
+	char *pubs_key = createScopeTopicKey(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_SCOPE), properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 	array_list_pt pubEP_list = (array_list_pt)hashMap_get(pubsub_discovery->discoveredPubs,pubs_key);
 	if(pubEP_list==NULL){
 		arrayList_create(&pubEP_list);
@@ -216,11 +216,12 @@ celix_status_t pubsub_discovery_removeNode(pubsub_discovery_pt pubsub_discovery,
     bool found = false;
 
     celixThreadMutex_lock(&pubsub_discovery->discoveredPubsMutex);
-    char *pubs_key = createScopeTopicKey(pubEP->scope, pubEP->topic);
+    char *pubs_key = createScopeTopicKey(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_SCOPE), properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
     array_list_pt pubEP_list = (array_list_pt) hashMap_get(pubsub_discovery->discoveredPubs, pubs_key);
     free(pubs_key);
     if (pubEP_list == NULL) {
-        printf("PSD: Cannot find any registered publisher for topic %s. Something is not consistent.\n", pubEP->topic);
+        printf("PSD: Cannot find any registered publisher for topic %s. Something is not consistent.\n",
+			   properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
         status = CELIX_ILLEGAL_STATE;
     } else {
         int i;
@@ -278,12 +279,14 @@ celix_status_t pubsub_discovery_informPublishersListeners(pubsub_discovery_pt pu
 /* Service's functions implementation */
 celix_status_t pubsub_discovery_announcePublisher(void *handle, pubsub_endpoint_pt pubEP) {
 	celix_status_t status = CELIX_SUCCESS;
-	printf("pubsub_discovery_announcePublisher : %s / %s\n", pubEP->topic, pubEP->endpoint);
+	printf("pubsub_discovery_announcePublisher : %s / %s\n",
+		   properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC),
+		   properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_URL));
 	pubsub_discovery_pt pubsub_discovery = (pubsub_discovery_pt) handle;
 
 	celixThreadMutex_lock(&pubsub_discovery->discoveredPubsMutex);
 
-	char *pub_key = createScopeTopicKey(pubEP->scope,pubEP->topic);
+	char *pub_key = createScopeTopicKey(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_SCOPE),properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 	array_list_pt pubEP_list = (array_list_pt)hashMap_get(pubsub_discovery->discoveredPubs,pub_key);
 
 	if(pubEP_list==NULL){
@@ -310,11 +313,11 @@ celix_status_t pubsub_discovery_removePublisher(void *handle, pubsub_endpoint_pt
 
 	celixThreadMutex_lock(&pubsub_discovery->discoveredPubsMutex);
 
-	char *pub_key = createScopeTopicKey(pubEP->scope,pubEP->topic);
+	char *pub_key = createScopeTopicKey(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_SCOPE),properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 	array_list_pt pubEP_list = (array_list_pt)hashMap_get(pubsub_discovery->discoveredPubs,pub_key);
 	free(pub_key);
 	if(pubEP_list==NULL){
-		printf("PSD: Cannot find any registered publisher for topic %s. Something is not consistent.\n",pubEP->topic);
+		printf("PSD: Cannot find any registered publisher for topic %s. Something is not consistent.\n",properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 		status = CELIX_ILLEGAL_STATE;
 	}
 	else{

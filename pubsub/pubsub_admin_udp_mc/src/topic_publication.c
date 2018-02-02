@@ -167,14 +167,17 @@ celix_status_t pubsub_topicPublicationStart(bundle_context_pt bundle_context,top
 		factory->ungetService = pubsub_topicPublicationUngetService;
 
 		properties_pt props = properties_create();
-		properties_set(props,PUBSUB_PUBLISHER_SCOPE,pubEP->scope);
-		properties_set(props,PUBSUB_PUBLISHER_TOPIC,pubEP->topic);
+		properties_set(props,PUBSUB_PUBLISHER_SCOPE,properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_SCOPE));
+		properties_set(props,PUBSUB_PUBLISHER_TOPIC,properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 
 		status = bundleContext_registerServiceFactory(bundle_context,PUBSUB_PUBLISHER_SERVICE_NAME,factory,props,&(pub->svcFactoryReg));
 
 		if(status != CELIX_SUCCESS){
 			properties_destroy(props);
-			printf("PSA_UDP_MC_PSA_UDP_MC_TP: Cannot register ServiceFactory for topic %s, topic %s (bundle %ld).\n",pubEP->scope, pubEP->topic,pubEP->serviceID);
+			printf("PSA_UDP_MC_PSA_UDP_MC_TP: Cannot register ServiceFactory for topic %s, topic %s (bundle %ld).\n",
+				   properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_SCOPE),
+				   properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC),
+				   pubEP->serviceID);
 		}
 		else{
 			*svcFactory = factory;
@@ -195,7 +198,7 @@ celix_status_t pubsub_topicPublicationStop(topic_publication_pt pub){
 celix_status_t pubsub_topicPublicationAddPublisherEP(topic_publication_pt pub,pubsub_endpoint_pt ep){
 
 	celixThreadMutex_lock(&(pub->tp_lock));
-	ep->endpoint = strdup(pub->endpoint);
+	pubsubEndpoint_setField(ep, PUBSUB_ENDPOINT_URL, pub->endpoint);
 	arrayList_add(pub->pub_ep_list,ep);
 	celixThreadMutex_unlock(&(pub->tp_lock));
 
@@ -386,8 +389,8 @@ static publish_bundle_bound_service_pt pubsub_createPublishBundleBoundService(to
 		}
 
 		pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt)arrayList_get(bound->parent->pub_ep_list,0);
-		bound->scope=strdup(pubEP->scope);
-		bound->topic=strdup(pubEP->topic);
+		bound->scope=strdup(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_SCOPE));
+		bound->topic=strdup(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
 		bound->largeUdpHandle = largeUdp_create(1);
 
 		bound->service.handle = bound;
