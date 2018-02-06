@@ -326,6 +326,7 @@ function(celix_bundle_libs)
     get_target_property(DEPS ${BUNDLE} "BUNDLE_DEPEND_TARGETS")
 
     foreach(LIB IN ITEMS ${ARGN})
+        string(MAKE_C_IDENTIFIER ${LIB} LIBID)
         if(IS_ABSOLUTE ${LIB} AND EXISTS ${LIB})
             get_filename_component(LIB_NAME ${LIB} NAME) 
             set(OUT "${BUNDLE_DIR}/${LIB_NAME}") 
@@ -336,11 +337,11 @@ function(celix_bundle_libs)
                 list(APPEND LIBS ${LIB_NAME})
             endif()
             list(APPEND DEPS ${OUT}) 
-        else()
+        elseif (TARGET ${LIB})
             #Assuming target
             #NOTE add_custom_command does not support generator expression in OUTPUT value (e.g. $<TARGET_FILE:${LIB}>)
             #Using a two step approach to be able to use add_custom_command instead of add_custom_target
-            set(OUT "${BUNDLE_GEN_DIR}/lib-${LIB}-copy-timestamp")
+            set(OUT "${BUNDLE_GEN_DIR}/lib-${LIBID}-copy-timestamp")
             add_custom_command(OUTPUT ${OUT}
                 COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:${LIB}>" "${BUNDLE_DIR}/$<TARGET_SONAME_FILE_NAME:${LIB}>"
@@ -350,6 +351,8 @@ function(celix_bundle_libs)
                 list(APPEND LIBS "$<TARGET_SONAME_FILE_NAME:${LIB}>")
             endif()
             list(APPEND DEPS "${OUT}") #NOTE depending on ${OUT} not on $<TARGET_FILE:${LIB}>.
+        else()
+            message(FATAL_ERROR "Unexpected library argument '${LIB}'. Expected a absolute path to a library or a cmake library target")
         endif()
 
         get_target_property(IS_LIB ${BUNDLE} "BUNDLE_TARGET_IS_LIB")
