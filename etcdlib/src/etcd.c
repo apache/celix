@@ -259,7 +259,6 @@ int etcd_set(const char* key, const char* value, int ttl, bool prevExist) {
 	}
 
 	res = performRequest(url, PUT, WriteMemoryCallback, request, (void*) &reply);
-
 	if(url) {
 		free(url);
 	}
