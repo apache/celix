@@ -23,7 +23,7 @@ add_celix_bundle(celix_pubsub_topology_manager
     	src/pubsub_topology_manager.c
     	src/pubsub_topology_manager.h
 )
-target_link_libraries(celix_pubsub_topology_manager PRIVATE Celix::framework Celix::log_helper Celix::pubsub_spi)
+target_link_libraries(celix_pubsub_topology_manager PRIVATE Celix::framework Celix::log_helper Celix::pubsub_spi Celix::shell_api)
 get_target_property(DESC Celix::pubsub_spi TOPIC_INFO_DESCRIPTOR)
 celix_bundle_files(celix_pubsub_topology_manager
 	${DESC}

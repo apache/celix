@@ -30,6 +30,7 @@
 #include "service_reference.h"
 #include "bundle_context.h"
 #include "log_helper.h"
+#include "command.h"
 
 #include "pubsub_common.h"
 #include "pubsub_endpoint.h"
@@ -51,6 +52,10 @@ struct pubsub_topology_manager {
 
 	celix_thread_mutex_t subscriptionsLock;
 	hash_map_pt subscriptions; //<topic(string),list<pubsub_ep>>
+
+	command_service_t shellCmdService;
+	service_registration_pt  shellCmdReg;
+
 
 	log_helper_pt loghelper;
 };
