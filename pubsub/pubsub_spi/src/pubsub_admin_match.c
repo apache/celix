@@ -189,7 +189,17 @@ celix_status_t pubsub_admin_get_best_serializer(properties_pt endpoint_props, ar
 	void *svc = NULL;
 
 	/* Analyze the serializers */
-	if(requested_serializer_type != NULL){ /* We got precise specification on the serializer we want */
+	if (arrayList_size(serializerList) == 1) {
+		// Only one serializer, use this one
+		svcRef = (service_reference_pt)arrayList_get(serializerList,0);
+		manage_service_from_reference(svcRef, &svc, true);
+		*serSvc = svc;
+		char *serializer_type = NULL;
+		get_serializer_type(svcRef, &serializer_type);
+		printf("Selected the only serializer available. Type = %s\n", serializer_type);
+
+	}
+	else if(requested_serializer_type != NULL){ /* We got precise specification on the serializer we want */
 		for(i=0;i<arrayList_size(serializerList);i++){
 			svcRef = (service_reference_pt)arrayList_get(serializerList,i);
 			char *serializer_type = NULL;
