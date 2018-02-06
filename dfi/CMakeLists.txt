@@ -33,30 +33,24 @@ set_target_properties(dfi PROPERTIES OUTPUT_NAME "celix_dfi")
 target_include_directories(dfi PUBLIC
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
 		$<INSTALL_INTERFACE:include/celix/dfi>
+)
+
+#TODO JANNSON should be public, but this only really works if JANSSON is a imported target
+#So make FindJansson deliver targets
+target_include_directories(dfi SYSTEM PRIVATE
 		${JANSSON_INCLUDE_DIRS}
 )
-target_include_directories(dfi PRIVATE src ${FFI_INCLUDE_DIRS})
-target_link_libraries(dfi PUBLIC ${JANSSON_LIBRARY})
+target_include_directories(dfi PRIVATE src)
+target_include_directories(dfi SYSTEM PRIVATE ${FFI_INCLUDE_DIRS})
+target_link_libraries(dfi PRIVATE ${JANSSON_LIBRARY})
 target_link_libraries(dfi PRIVATE Celix::utils ${FFI_LIBRARIES})
 set_target_properties(dfi PROPERTIES "SOVERSION" 1)
 
-add_library(dfi_static STATIC ${SOURCES})
-set_target_properties(dfi_static PROPERTIES OUTPUT_NAME "celix_dfi_static")
-target_include_directories(dfi_static PUBLIC
-		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-		$<INSTALL_INTERFACE:include/celix/dfi>
-		${JANSSON_INCLUDE_DIRS}
-)
-target_include_directories(dfi_static PRIVATE src ${FFI_INCLUDE_DIRS})
-target_link_libraries(dfi_static PUBLIC ${JANSSON_LIBRARY})
-target_link_libraries(dfi_static PRIVATE Celix::utils ${FFI_LIBRARIES})
-
-install(TARGETS dfi dfi_static EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dfi)
+install(TARGETS dfi EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT dfi)
 install(DIRECTORY include/ DESTINATION include/celix/dfi COMPONENT dfi)
 
 #Alias setup to match external usage
 add_library(Celix::dfi ALIAS dfi)
-add_library(Celix::dfi_static ALIAS dfi_static)
 
 if (ENABLE_TESTING)
     find_package(CppUTest REQUIRED)
@@ -65,7 +59,7 @@ if (ENABLE_TESTING)
 
 	SET(CMAKE_SKIP_BUILD_RPATH  FALSE) #TODO needed?
 	SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE) #TODO needed?
-    SET(CMAKE_INSTALL_RPATH "${PROJECT_BINARY_DIR}/dfi" "${PROJECT_BINARY_DIR}/utils")
+	SET(CMAKE_INSTALL_RPATH "${PROJECT_BINARY_DIR}/dfi" "${PROJECT_BINARY_DIR}/utils")
 
 	add_executable(test_dfi
 		test/dyn_type_tests.cpp

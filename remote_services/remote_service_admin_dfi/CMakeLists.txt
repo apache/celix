@@ -36,8 +36,9 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
             $<TARGET_OBJECTS:Celix::civetweb>
     )
     target_include_directories(rsa_dfi PRIVATE src $<TARGET_PROPERTY:Celix::civetweb,INCLUDE_DIRECTORIES>)
+    target_include_directories(rsa_dfi SYSTEM PRIVATE ${CURL_INCLUDE_DIRS} ${JANSSON_INCLUDE_DIRS})
     target_link_libraries(rsa_dfi PRIVATE
-            Celix::dfi_static
+            Celix::dfi
             Celix::log_helper
             Celix::rsa_common
             ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})

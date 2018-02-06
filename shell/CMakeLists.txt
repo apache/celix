@@ -43,7 +43,8 @@ if (SHELL)
           src/inspect_command
           src/help_command
 	)
-	target_include_directories(shell PRIVATE src ${CURL_INCLUDE_DIRS})
+	target_include_directories(shell PRIVATE src)
+        target_include_directories(shell SYSTEM PRIVATE	${CURL_INCLUDE_DIRS})
 	target_link_libraries(shell PRIVATE Celix::shell_api ${CURL_LIBRARIES} Celix::log_service_api Celix::log_helper)
 
 	install_celix_bundle(shell EXPORT celix COMPONENT shell)

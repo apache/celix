@@ -45,8 +45,8 @@ if (DEPLOYMENT_ADMIN)
     )
 
     target_compile_definitions(deployment_admin PRIVATE -DUSE_FILE32API)
-    target_include_directories(deployment_admin PRIVATE
-            src
+    target_include_directories(deployment_admin PRIVATE src)
+    target_include_directories(deployment_admin SYSTEM PRIVATE
             ${CURL_INCLUDE_DIRS}
             ${UUID_INCLUDE_DIRS}
             ${ZLIB_INCLUDE_DIRS}

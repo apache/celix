@@ -36,6 +36,8 @@ if (RSA_DISCOVERY_ETCD)
 	target_include_directories(rsa_discovery_etcd PRIVATE
 			$<TARGET_PROPERTY:Celix::rsa_discovery_common,INCLUDE_DIRECTORIES>
 			$<TARGET_PROPERTY:Celix::civetweb,INCLUDE_DIRECTORIES>
+	)
+        target_include_directories(rsa_discovery_etcd SYSTEM PRIVATE
 			${CURL_INCLUDE_DIR}
 			${JANSSON_INCLUDE_DIR}
 			${LIBXML2_INCLUDE_DIR}

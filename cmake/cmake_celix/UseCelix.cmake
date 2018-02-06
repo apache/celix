@@ -16,6 +16,7 @@
 # under the License.
 
 include(GNUInstallDirs)
+include(CMakeParseArguments)
 
 set(CELIX_CMAKE_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CELIX_CMAKE_DIRECTORY}/../Modules)

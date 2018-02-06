@@ -48,15 +48,15 @@ target_include_directories(etcdlib PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
     $<INSTALL_INTERFACE:include/etcdlib>
 )
-target_include_directories(etcdlib PRIVATE
-    src
+target_include_directories(etcdlib PRIVATE src)
+target_include_directories(etcdlib SYSTEM PRIVATE 
     ${CURL_INCLUDE_DIRS}
     ${JANSSON_INCLUDE_DIRS}
 )
 
 set_target_properties(etcdlib PROPERTIES SOVERSION 1)
 set_target_properties(etcdlib PROPERTIES VERSION 1.0.0)
-target_link_libraries(etcdlib ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
+target_link_libraries(etcdlib PRIVATE ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
 
 add_library(etcdlib_static STATIC
     src/etcd.c
@@ -65,19 +65,21 @@ target_include_directories(etcdlib_static PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
     $<INSTALL_INTERFACE:include/etcdlib>
 )
-target_include_directories(etcdlib_static PRIVATE
-    src
+target_include_directories(etcdlib_static PRIVATE src)
+target_include_directories(etcdlib_static SYSTEM PRIVATE 
     ${CURL_INCLUDE_DIRS}
     ${JANSSON_INCLUDE_DIRS}
 )
 set_target_properties(etcdlib_static PROPERTIES "SOVERSION" 1)
-target_link_libraries(etcdlib_static ${CURL_LIBRARIES} ${JANSSON_LIBRARY})
+target_link_libraries(etcdlib_static PRIVATE ${CURL_LIBRARIES} ${JANSSON_LIBRARY})
 
+
+#TODO install etcdlib_static. For now left out, because the imported target leaks library paths
 install(DIRECTORY api/ DESTINATION include/etcdlib COMPONENT ${ETCDLIB_CMP})
 if (NOT COMMAND celix_subproject) 
-    install(TARGETS etcdlib etcdlib_static DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${ETCDLIB_CMP})
+    install(TARGETS etcdlib DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${ETCDLIB_CMP})
 else ()
-    install(TARGETS etcdlib etcdlib_static EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${ETCDLIB_CMP})
+    install(TARGETS etcdlib EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${ETCDLIB_CMP})
     #Setup target aliases to match external usage
     add_library(Celix::etcdlib ALIAS etcdlib)
     add_library(Celix::etcdlib_static ALIAS etcdlib_static)

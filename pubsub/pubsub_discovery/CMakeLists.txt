@@ -28,8 +28,8 @@ add_celix_bundle(celix_pubsub_discovery_etcd
         src/etcd_watcher.c
         src/etcd_writer.c
 )
-target_include_directories(celix_pubsub_discovery_etcd PRIVATE
-    src
+target_include_directories(celix_pubsub_discovery_etcd PRIVATE src)
+target_include_directories(celix_pubsub_discovery_etcd SYSTEM PRIVATE 
 	${CURL_INCLUDE_DIR}
 	${JANSSON_INCLUDE_DIR}
 )

@@ -24,7 +24,7 @@ if (CPPUTEST_FOUND)
     )
     target_include_directories(pubsub_mock PUBLIC api)
     target_link_libraries(pubsub_mock PRIVATE Celix::pubsub_spi ${CPPUTEST_LIBRARY})
-    target_include_directories(pubsub_mock PRIVATE SYSTEM
+    target_include_directories(pubsub_mock SYSTEM PRIVATE 
         ${CPPUTEST_INCLUDE_DIR}
     )
 

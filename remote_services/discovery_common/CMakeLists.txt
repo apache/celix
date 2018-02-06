@@ -16,6 +16,7 @@
 # under the License.
 
 
+find_package(CURL REQUIRED)
 find_package(LibXml2 REQUIRED)
 
 add_library(rsa_discovery_common OBJECT
@@ -33,6 +34,7 @@ target_include_directories(rsa_discovery_common PUBLIC
 		$<TARGET_PROPERTY:Celix::log_helper,INTERFACE_INCLUDE_DIRECTORIES>
 		$<TARGET_PROPERTY:Celix::rsa_spi,INTERFACE_INCLUDE_DIRECTORIES>
 		$<TARGET_PROPERTY:civetweb,INCLUDE_DIRECTORIES>
+		${CURL_INCLUDE_DIRS}
 		${LIBXML2_INCLUDE_DIR})
 
 #Setup target aliases to match external usage

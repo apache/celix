@@ -40,8 +40,8 @@ target_include_directories(framework PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
         $<INSTALL_INTERFACE:include/celix>
 )
-target_include_directories(framework PRIVATE
-        src
+target_include_directories(framework PRIVATE src)
+target_include_directories(framework SYSTEM PRIVATE 
         ${ZLIB_INCLUDE_DIR}
         ${CURL_INCLUDE_DIR}
         ${UUID_INCLUDE_DIR}
