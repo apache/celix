@@ -61,6 +61,7 @@ target_link_libraries(etcdlib ${CURL_LIBRARIES} ${JANSSON_LIBRARIES})
 add_library(etcdlib_static STATIC
     src/etcd.c
 )
+
 target_include_directories(etcdlib_static PUBLIC 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
     $<INSTALL_INTERFACE:include/etcdlib>
@@ -72,6 +73,9 @@ target_include_directories(etcdlib_static PRIVATE
 )
 set_target_properties(etcdlib_static PROPERTIES "SOVERSION" 1)
 target_link_libraries(etcdlib_static ${CURL_LIBRARIES} ${JANSSON_LIBRARY})
+
+add_executable(etcdlib_test ${CMAKE_CURRENT_SOURCE_DIR}/test/etcdlib_test.c)
+target_link_libraries(etcdlib_test etcdlib_static)
 
 install(DIRECTORY api/ DESTINATION include/etcdlib COMPONENT ${ETCDLIB_CMP})
 if (NOT COMMAND celix_subproject) 
