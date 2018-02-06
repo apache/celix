@@ -54,7 +54,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 		src
 	)
 
-        install_celix_bundle(celix_pubsub_admin_zmq EXPORT celix COMPONENT pubsub)
-
+	install_celix_bundle(celix_pubsub_admin_zmq EXPORT celix COMPONENT pubsub)
+	target_link_libraries(celix_pubsub_admin_zmq PRIVATE Celix::shell_api)
 	add_library(Celix::pubsub_admin_zmq ALIAS celix_pubsub_admin_zmq)
 endif()

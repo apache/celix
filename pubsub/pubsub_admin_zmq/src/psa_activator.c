@@ -27,7 +27,6 @@
 #include <stdlib.h>
 
 #include "bundle_activator.h"
-#include "service_registration.h"
 #include "service_tracker.h"
 
 #include "pubsub_admin_impl.h"
@@ -39,6 +38,43 @@ struct activator {
 	service_registration_pt registration;
 	service_tracker_pt serializerTracker;
 };
+
+
+static celix_status_t shellCommand(void *handle, char * commandLine, FILE *outStream, FILE *errorStream) {
+    struct activator *act= (struct activator*)handle;
+    if (act->admin->externalPublications && !hashMap_isEmpty(act->admin->externalPublications)) {
+        fprintf(outStream, "External Publications:\n");
+        for(hash_map_iterator_t iter = hashMapIterator_construct(act->admin->externalPublications); hashMapIterator_hasNext(&iter);) {
+            const char* key = (const char*)hashMapIterator_nextKey(&iter);
+            fprintf(outStream, "    %s\n", key);
+        }
+    }
+    if (act->admin->localPublications && !hashMap_isEmpty(act->admin->localPublications)) {
+        fprintf(outStream, "Local Publications:\n");
+        for (hash_map_iterator_t iter = hashMapIterator_construct(
+                act->admin->localPublications); hashMapIterator_hasNext(&iter);) {
+            const char *key = (const char *) hashMapIterator_nextKey(&iter);
+            fprintf(outStream, "    %s\n", key);
+        }
+    }
+    if (act->admin->subscriptions && !hashMap_isEmpty(act->admin->subscriptions)) {
+        fprintf(outStream, "Active Subscriptions:\n");
+        for (hash_map_iterator_t iter = hashMapIterator_construct(
+                act->admin->subscriptions); hashMapIterator_hasNext(&iter);) {
+            const char *key = (const char *) hashMapIterator_nextKey(&iter);
+            fprintf(outStream, "    %s\n", key);
+        }
+    }
+    if (act->admin->pendingSubscriptions && !hashMap_isEmpty(act->admin->pendingSubscriptions)) {
+        fprintf(outStream, "Pending Subscriptions:\n");
+        for (hash_map_iterator_t iter = hashMapIterator_construct(
+                act->admin->pendingSubscriptions); hashMapIterator_hasNext(&iter);) {
+            const char *key = (const char *) hashMapIterator_nextKey(&iter);
+            fprintf(outStream, "    %s\n", key);
+        }
+    }
+    return CELIX_SUCCESS;
+}
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -73,7 +109,13 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 			}
 		}
 	}
-
+    properties_pt shellProps = properties_create();
+    properties_set(shellProps, OSGI_SHELL_COMMAND_NAME, "psa_zmq_info");
+    properties_set(shellProps, OSGI_SHELL_COMMAND_USAGE, "psa_zmq_info");
+    properties_set(shellProps, OSGI_SHELL_COMMAND_DESCRIPTION, "psa_zmq_info: Overview of PubSub ZMQ Admin");
+    activator->admin->shellCmdService.handle = activator;
+    activator->admin->shellCmdService.executeCommand = shellCommand;
+    bundleContext_registerService(context, OSGI_SHELL_COMMAND_SERVICE_NAME, &activator->admin->shellCmdService, shellProps, &activator->admin->shellCmdReg);
 	return status;
 }
 
@@ -133,7 +175,7 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt contex
 	serviceTracker_destroy(activator->serializerTracker);
 	pubsubAdmin_destroy(activator->admin);
 	activator->admin = NULL;
-
+    serviceRegistration_unregister(activator->admin->shellCmdReg);
 	free(activator);
 
 	return status;

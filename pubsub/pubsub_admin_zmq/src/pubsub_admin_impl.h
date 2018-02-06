@@ -40,6 +40,7 @@
 #include "pubsub_admin.h"
 #include "pubsub_admin_match.h"
 #include "log_helper.h"
+#include "command.h"
 
 #define PSA_ZMQ_BASE_PORT "PSA_ZMQ_BASE_PORT"
 #define PSA_ZMQ_MAX_PORT "PSA_ZMQ_MAX_PORT"
@@ -87,6 +88,9 @@ struct pubsub_admin {
 
     unsigned int basePort;
     unsigned int maxPort;
+
+	command_service_t shellCmdService;
+	service_registration_pt  shellCmdReg;
 };
 
 celix_status_t pubsubAdmin_create(bundle_context_pt context, pubsub_admin_pt *admin);
