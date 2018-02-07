@@ -27,7 +27,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <curl/curl.h>
 #include "etcd.h"
 
 #include <pthread.h>
