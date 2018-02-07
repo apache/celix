@@ -169,6 +169,8 @@ celix_status_t pubsub_topicPublicationStart(bundle_context_pt bundle_context,top
 		properties_pt props = properties_create();
 		properties_set(props,PUBSUB_PUBLISHER_SCOPE,properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_SCOPE));
 		properties_set(props,PUBSUB_PUBLISHER_TOPIC,properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
+                properties_set(props,"service.version", PUBSUB_PUBLISHER_SERVICE_VERSION);
+
 
 		status = bundleContext_registerServiceFactory(bundle_context,PUBSUB_PUBLISHER_SERVICE_NAME,factory,props,&(pub->svcFactoryReg));
 
