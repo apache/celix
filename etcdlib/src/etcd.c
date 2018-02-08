@@ -374,9 +374,6 @@ int etcd_watch(const char* key, long long index, char** action, char** prevValue
     reply.header = NULL; /* will be grown as needed by the realloc above */
     reply.headerSize = 0; /* no data at this point */
 
-    reply.header = malloc(1); /* will be grown as needed by the realloc above */
-    reply.headerSize = 0; /* no data at this point */
-
 	if (index != 0)
 		asprintf(&url, "http://%s:%d/v2/keys/%s?wait=true&recursive=true&waitIndex=%lld", etcd_server, etcd_port, key, index);
 	else
@@ -431,9 +428,7 @@ int etcd_watch(const char* key, long long index, char** action, char** prevValue
 
 	}
 
-	if (reply.memory) {
-		free(reply.memory);
-	}
+	free(reply.memory);
 
 	return retVal;
 }
@@ -475,7 +470,6 @@ int etcd_del(const char* key) {
 	}
 
 	free(reply.memory);
-	free(reply.header);
 
 	return retVal;
 }

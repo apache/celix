@@ -40,6 +40,7 @@ int simplewritetest() {
         printf("etcdlib test error: expected testvalue got %s\n", value);
         res = -1;
     }
+    free(value);
     return res;
 }
 
@@ -53,6 +54,10 @@ void* waitForChange(void*arg) {
     printf("Watching for index %d\n", *idx);
     etcd_watch("hier/ar", *idx, &action, &prevValue, &value, &rkey, &modifiedIndex);
     printf(" New value from watch : [%s]%s => %s\n", rkey, prevValue, value);
+    free (action);
+    free(prevValue);
+    free(rkey);
+    free(value);
     *idx = modifiedIndex+1;
     etcd_watch("hier/ar", *idx, &action, &prevValue, &value, &rkey, &modifiedIndex);
     printf(" New value from watch : [%s]%s => %s\n", rkey, prevValue, value);
@@ -70,6 +75,7 @@ int waitforchangetest() {
 
     int index;
     etcd_get("hier/ar/chi/cal", &value, &index);
+    free(value);
     pthread_t waitThread;
     index++;
     pthread_create(&waitThread, NULL, waitForChange, &index);
@@ -83,6 +89,7 @@ int waitforchangetest() {
         printf("etcdtest::waitforchange1 expected testvalue3, got %s\n", (char*)resVal);
         res = -1;
     }
+    free(resVal);
     return res;
 }
 
