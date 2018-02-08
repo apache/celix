@@ -159,6 +159,8 @@ celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) 
 	struct activator *activator = userData;
 
 	status += serviceTracker_close(activator->serializerTracker);
+	serviceRegistration_unregister(activator->admin->shellCmdReg);
+	activator->admin->shellCmdReg = NULL;
 	status += serviceRegistration_unregister(activator->registration);
 
 	activator->registration = NULL;
@@ -176,7 +178,6 @@ celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt contex
 	serviceTracker_destroy(activator->serializerTracker);
 	pubsubAdmin_destroy(activator->admin);
 	activator->admin = NULL;
-    serviceRegistration_unregister(activator->admin->shellCmdReg);
 	free(activator);
 
 	return status;
