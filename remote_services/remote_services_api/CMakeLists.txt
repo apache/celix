@@ -18,11 +18,11 @@
 add_library(remote_services_api INTERFACE)
 target_include_directories(remote_services_api INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-    $<INSTALL_INTERFACE:include/celix/remote_services>
+    $<INSTALL_INTERFACE:include/celix/remote_service_admin>
 )
 
 install(TARGETS remote_services_api EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT rsa)
-install(DIRECTORY include/ DESTINATION include/celix/remote_services COMPONENT rsa)
+install(DIRECTORY include/ DESTINATION include/celix/remote_service_admin COMPONENT rsa)
 
 #Setup target aliases to match external usage
 add_library(Celix::remote_services_api ALIAS remote_services_api)
