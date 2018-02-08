@@ -33,6 +33,7 @@
 #define ETCD_JSON_VALUE                 "value"
 #define ETCD_JSON_DIR                   "dir"
 #define ETCD_JSON_MODIFIEDINDEX         "modifiedIndex"
+#define ETCD_JSON_INDEX                 "index"
 
 #define MAX_OVERHEAD_LENGTH           64
 #define DEFAULT_CURL_TIMEOUT          10
@@ -198,7 +199,6 @@ int etcd_get_directory(const char* directory, etcd_key_value_callback callback, 
 
 	res = performRequest(url, GET, WriteMemoryCallback, NULL, (void*) &reply);
 	free(url);
-
 	if (res == CURLE_OK) {
 		js_root = json_loads(reply.memory, 0, &error);
 		if (js_root != NULL) {
@@ -210,6 +210,18 @@ int etcd_get_directory(const char* directory, etcd_key_value_callback callback, 
 		if (js_rootnode != NULL) {
 			*modifiedIndex = 0;
 			retVal = etcd_get_recursive_values(js_rootnode, callback, arg, (json_int_t*)modifiedIndex);
+		} else {
+			// Error occured, retrieve the index of ETCD from the error code
+			js_rootnode = json_object_get(js_root, ETCD_JSON_INDEX);
+			if(js_rootnode) {
+				json_int_t index = json_integer_value(js_rootnode);
+				*modifiedIndex = index;
+
+			} else {
+				fprintf(stderr, "[ETCDLIB] Error: index not found in error %s\n", reply.memory);
+
+			}
+
 		}
 		if (js_root != NULL) {
 			json_decref(js_root);

@@ -108,14 +108,14 @@ celix_status_t bundleActivator_create(bundle_context_pt context, void **userData
 				pubsubAdmin_destroy(activator->admin);
 			}
 		}
+		properties_pt shellProps = properties_create();
+		properties_set(shellProps, OSGI_SHELL_COMMAND_NAME, "psa_zmq_info");
+		properties_set(shellProps, OSGI_SHELL_COMMAND_USAGE, "psa_zmq_info");
+		properties_set(shellProps, OSGI_SHELL_COMMAND_DESCRIPTION, "psa_zmq_info: Overview of PubSub ZMQ Admin");
+		activator->admin->shellCmdService.handle = activator;
+		activator->admin->shellCmdService.executeCommand = shellCommand;
+		bundleContext_registerService(context, OSGI_SHELL_COMMAND_SERVICE_NAME, &activator->admin->shellCmdService, shellProps, &activator->admin->shellCmdReg);
 	}
-    properties_pt shellProps = properties_create();
-    properties_set(shellProps, OSGI_SHELL_COMMAND_NAME, "psa_zmq_info");
-    properties_set(shellProps, OSGI_SHELL_COMMAND_USAGE, "psa_zmq_info");
-    properties_set(shellProps, OSGI_SHELL_COMMAND_DESCRIPTION, "psa_zmq_info: Overview of PubSub ZMQ Admin");
-    activator->admin->shellCmdService.handle = activator;
-    activator->admin->shellCmdService.executeCommand = shellCommand;
-    bundleContext_registerService(context, OSGI_SHELL_COMMAND_SERVICE_NAME, &activator->admin->shellCmdService, shellProps, &activator->admin->shellCmdReg);
 	return status;
 }
 
