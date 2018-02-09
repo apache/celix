@@ -57,6 +57,11 @@
 #define POLL_TIMEOUT  	250
 #define ZMQ_POLL_TIMEOUT_MS_ENV 	"ZMQ_POLL_TIMEOUT_MS"
 
+#define PSA_ZMQ_RECEIVE_TIMEOUT_MICROSEC "PSA_ZMQ_RECEIVE_TIMEOUT_MICROSEC"
+#define PSA_ZMQ_RECV_DEFAULT_TIMEOUT_STR "1000"
+#define PSA_ZMQ_RECV_DEFAULT_TIMEOUT 1000
+
+
 struct topic_subscription{
 
 	zsock_t* zmq_socket;
@@ -81,6 +86,7 @@ struct topic_subscription{
 	celix_thread_mutex_t pendingDisconnections_lock;
 
 	unsigned int nrSubscribers;
+	int zmqReceiveTimeout;
 };
 
 typedef struct complete_zmq_msg{
@@ -109,6 +115,24 @@ static mp_handle_pt create_mp_handle(hash_map_pt svc_msg_db,array_list_pt rcv_ms
 static void destroy_mp_handle(mp_handle_pt mp_handle);
 static void connectPendingPublishers(topic_subscription_pt sub);
 static void disconnectPendingPublishers(topic_subscription_pt sub);
+static unsigned int get_zmq_receive_timeout(bundle_context_pt context);
+
+
+static unsigned int get_zmq_receive_timeout(bundle_context_pt context) {
+	unsigned int timeout;
+	const char* timeout_str = NULL;
+	bundleContext_getPropertyWithDefault(context,
+										 PSA_ZMQ_RECEIVE_TIMEOUT_MICROSEC,
+										 PSA_ZMQ_RECV_DEFAULT_TIMEOUT_STR,
+										 &timeout_str);
+	timeout = strtoul(timeout_str, NULL, 10);
+	if (timeout == 0) {
+		// on errror strtol returns 0
+		timeout = PSA_ZMQ_RECV_DEFAULT_TIMEOUT;
+	}
+
+	return timeout;
+}
 
 celix_status_t pubsub_topicSubscriptionCreate(bundle_context_pt bundle_context, char* scope, char* topic, pubsub_serializer_service_t *best_serializer, topic_subscription_pt* out){
 	celix_status_t status = CELIX_SUCCESS;
@@ -179,7 +203,7 @@ celix_status_t pubsub_topicSubscriptionCreate(bundle_context_pt bundle_context, 
 	ts->running = false;
 	ts->nrSubscribers = 0;
 	ts->serializer = best_serializer;
-
+	ts->zmqReceiveTimeout = get_zmq_receive_timeout(bundle_context);
 #ifdef BUILD_WITH_ZMQ_SECURITY
 	ts->zmq_cert = sub_cert;
 	ts->zmq_pub_cert = pub_cert;
@@ -508,9 +532,11 @@ static void* zmq_recv_thread_func(void * arg) {
 
 		celixThreadMutex_lock(&sub->socket_lock);
 
-		zframe_t* headerMsg = zframe_recv(sub->zmq_socket);
+		zframe_t* headerMsg = zframe_recv_nowait(sub->zmq_socket);
 		if (headerMsg == NULL) {
-			if (errno == EINTR) {
+			if(errno == EAGAIN) {
+				usleep(sub->zmqReceiveTimeout);
+			} else if (errno == EINTR) {
 				//It means we got a signal and we have to exit...
 				printf("PSA_ZMQ_TS: header_recv thread for topic got a signal and will exit.\n");
 			} else {
