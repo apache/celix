@@ -36,8 +36,10 @@ extern "C" {
 #endif
 
 typedef struct arrayList *array_list_pt;
+typedef struct arrayList array_list_t;
 
 typedef struct arrayListIterator *array_list_iterator_pt;
+typedef struct arrayListIterator array_list_iterator_t;
 
 typedef celix_status_t (*array_list_element_equals_pt)(const void *, const void *, bool *equals);
 

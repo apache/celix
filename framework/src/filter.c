@@ -27,23 +27,22 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <assert.h>
 
 #include "celix_log.h"
-#include "filter_private.h"
+#include "filter.h"
 
 static void filter_skipWhiteSpace(char* filterString, int* pos);
-static filter_pt filter_parseFilter(char* filterString, int* pos);
-static filter_pt filter_parseFilterComp(char* filterString, int* pos);
-static filter_pt filter_parseAnd(char* filterString, int* pos);
-static filter_pt filter_parseOr(char* filterString, int* pos);
-static filter_pt filter_parseNot(char* filterString, int* pos);
-static filter_pt filter_parseItem(char* filterString, int* pos);
+static celix_filter_t * filter_parseFilter(char* filterString, int* pos);
+static celix_filter_t * filter_parseFilterComp(char* filterString, int* pos);
+static celix_filter_t * filter_parseAndOrOr(char* filterString, celix_filter_operand_t andOrOr, int* pos);
+static celix_filter_t * filter_parseNot(char* filterString, int* pos);
+static celix_filter_t * filter_parseItem(char* filterString, int* pos);
 static char * filter_parseAttr(char* filterString, int* pos);
 static char * filter_parseValue(char* filterString, int* pos);
 static array_list_pt filter_parseSubstring(char* filterString, int* pos);
 
-static celix_status_t filter_compare(OPERAND operand, char * string, void * value2, bool *result);
-static celix_status_t filter_compareString(OPERAND operand, char * string, void * value2, bool *result);
+static celix_status_t filter_compare(celix_filter_t* filter, const char *propertyValue, bool *result);
 
 static void filter_skipWhiteSpace(char * filterString, int * pos) {
 	int length;
@@ -52,60 +51,69 @@ static void filter_skipWhiteSpace(char * filterString, int * pos) {
 	}
 }
 
-filter_pt filter_create(const char* filterString) {
-	filter_pt filter = NULL;
-	char* filterStr = (char*) filterString;
+celix_filter_t * filter_create(const char* filterString) {
+	celix_filter_t * filter = NULL;
+	char* filterStr = strndup(filterString, 1024*1024);
 	int pos = 0;
 	filter = filter_parseFilter(filterStr, &pos);
 	if (pos != strlen(filterStr)) {
 		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR,  "Error: Extraneous trailing characters.");
+        free(filterStr);
 		filter_destroy(filter);
 		return NULL;
 	}
-	if(filter != NULL){
-		filter->filterStr = filterStr;
-	} 
+	if (filter != NULL) {
+        filter->filterStr = filterStr;
+
+        if (filter->operand != CELIX_FILTER_OPERAND_OR && filter->operand != CELIX_FILTER_OPERAND_AND &&
+            filter->operand != CELIX_FILTER_OPERAND_NOT && filter->operand != CELIX_FILTER_OPERAND_SUBSTRING &&
+            filter->operand != CELIX_FILTER_OPERAND_PRESENT) {
+            if (filter->attribute == NULL || filter->value == NULL) {
+                filter_destroy(filter);
+                filter = NULL;
+            }
+        }
+    }
 
 	return filter;
 }
 
-void filter_destroy(filter_pt filter) {
+void filter_destroy(celix_filter_t * filter) {
 	if (filter != NULL) {
-		if(filter->value!=NULL){
-			if (filter->operand == SUBSTRING) {
-				int size = arrayList_size(filter->value);
+		if(filter->children != NULL){
+			if (filter->operand == CELIX_FILTER_OPERAND_SUBSTRING) {
+				int size = arrayList_size(filter->children);
 				for (; size > 0; --size) {
-					char* operand = (char*) arrayList_remove(filter->value, 0);
+					char* operand = (char*) arrayList_remove(filter->children, 0);
 					free(operand);
 				}
-				arrayList_destroy(filter->value);
-				filter->value = NULL;
-			} else if ( (filter->operand == OR) || (filter->operand == AND) ) {
-				int size = arrayList_size(filter->value);
-				unsigned int i = 0;
-				for (i = 0; i < size; i++) {
-					filter_pt f = arrayList_get(filter->value, i);
-					filter_destroy(f);
-				}
-				arrayList_destroy(filter->value);
-				filter->value = NULL;
-			} else  if (filter->operand == NOT) {
-				filter_destroy(filter->value);
-				filter->value = NULL;
-			} else {
-				free(filter->value);
-				filter->value = NULL;
-			}
+				arrayList_destroy(filter->children);
+				filter->children = NULL;
+			} else if (filter->operand == CELIX_FILTER_OPERAND_OR || filter->operand == CELIX_FILTER_OPERAND_AND || filter->operand == CELIX_FILTER_OPERAND_NOT) {
+                int size = arrayList_size(filter->children);
+                unsigned int i = 0;
+                for (i = 0; i < size; i++) {
+                    celix_filter_t *f = arrayList_get(filter->children, i);
+                    filter_destroy(f);
+                }
+                arrayList_destroy(filter->children);
+                filter->children = NULL;
+            } else {
+                fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR,  "Error: Corrupt filter. childern has a value, but not an expected operand");
+            }
 		}
+        free(filter->value);
+        filter->value = NULL;
 		free(filter->attribute);
 		filter->attribute = NULL;
 		free(filter);
-		filter = NULL;
+        free(filter->filterStr);
+        filter->filterStr = NULL;
 	}
 }
 
-static filter_pt filter_parseFilter(char * filterString, int * pos) {
-	filter_pt filter;
+static celix_filter_t * filter_parseFilter(char * filterString, int * pos) {
+	celix_filter_t * filter;
 	filter_skipWhiteSpace(filterString, pos);
 	if (filterString[*pos] != '(') {
 		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error: Missing '(' in filter string '%s'.", filterString);
@@ -127,17 +135,10 @@ static filter_pt filter_parseFilter(char * filterString, int * pos) {
 	(*pos)++;
 	filter_skipWhiteSpace(filterString, pos);
 
-	if(filter != NULL){
-		if(filter->value == NULL && filter->operand!=PRESENT){
-			filter_destroy(filter);
-			return NULL;
-		}
-	}
-
 	return filter;
 }
 
-static filter_pt filter_parseFilterComp(char * filterString, int * pos) {
+static celix_filter_t * filter_parseFilterComp(char * filterString, int * pos) {
 	char c;
 	filter_skipWhiteSpace(filterString, pos);
 
@@ -146,11 +147,11 @@ static filter_pt filter_parseFilterComp(char * filterString, int * pos) {
 	switch (c) {
 		case '&': {
 			(*pos)++;
-			return filter_parseAnd(filterString, pos);
+			return filter_parseAndOrOr(filterString, CELIX_FILTER_OPERAND_AND, pos);
 		}
 		case '|': {
 			(*pos)++;
-			return filter_parseOr(filterString, pos);
+			return filter_parseAndOrOr(filterString, CELIX_FILTER_OPERAND_OR, pos);
 		}
 		case '!': {
 			(*pos)++;
@@ -160,9 +161,9 @@ static filter_pt filter_parseFilterComp(char * filterString, int * pos) {
 	return filter_parseItem(filterString, pos);
 }
 
-static filter_pt filter_parseAnd(char * filterString, int * pos) {
+static celix_filter_t * filter_parseAndOrOr(char * filterString, celix_filter_operand_t andOrOr, int * pos) {
 
-	array_list_pt operands = NULL;
+	array_list_pt children = NULL;
 	filter_skipWhiteSpace(filterString, pos);
 	bool failure = false;
 
@@ -171,78 +172,35 @@ static filter_pt filter_parseAnd(char * filterString, int * pos) {
 		return NULL;
 	}
 
-	arrayList_create(&operands);
+	arrayList_create(&children);
 	while(filterString[*pos] == '(') {
-		filter_pt child = filter_parseFilter(filterString, pos);
-		if(child == NULL){
+		celix_filter_t * child = filter_parseFilter(filterString, pos);
+		if(child == NULL) {
 			failure = true;
 			break;
 		}
-		arrayList_add(operands, child);
+		arrayList_add(children, child);
 	}
 
 	if(failure == true){
-		array_list_iterator_pt listIt = arrayListIterator_create(operands);
-		while(arrayListIterator_hasNext(listIt)){
-			filter_pt f = arrayListIterator_next(listIt);
+        int i;
+		for (i = 0; i < arrayList_size(children); ++i) {
+			celix_filter_t * f = arrayList_get(children, i);
 			filter_destroy(f);
 		}
-		arrayListIterator_destroy(listIt);
-		arrayList_destroy(operands);
-		operands = NULL;
+		arrayList_destroy(children);
+        children = NULL;
 	}
 
-	filter_pt filter = (filter_pt) malloc(sizeof(*filter));
-	filter->operand = AND;
-	filter->attribute = NULL;
-	filter->value = operands;
+	celix_filter_t * filter = (celix_filter_t *) calloc(1, sizeof(*filter));
+	filter->operand = andOrOr;
+    filter->children = children;
 
 	return filter;
 }
 
-static filter_pt filter_parseOr(char * filterString, int * pos) {
-
-	array_list_pt operands = NULL;
-
-	filter_skipWhiteSpace(filterString, pos);
-	bool failure = false;
-
-	if (filterString[*pos] != '(') {
-		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Error: Missing '('.");
-		return NULL;
-	}
-
-	arrayList_create(&operands);
-	while(filterString[*pos] == '(') {
-		filter_pt child = filter_parseFilter(filterString, pos);
-		if(child == NULL){
-			failure = true;
-			break;
-		}
-		arrayList_add(operands, child);
-	}
-
-	if(failure == true){
-		array_list_iterator_pt listIt = arrayListIterator_create(operands);
-		while(arrayListIterator_hasNext(listIt)){
-			filter_pt f = arrayListIterator_next(listIt);
-			filter_destroy(f);
-		}
-		arrayListIterator_destroy(listIt);
-		arrayList_destroy(operands);
-		operands = NULL;
-	}
-
-	filter_pt filter = (filter_pt) malloc(sizeof(*filter));
-	filter->operand = OR;
-	filter->attribute = NULL;
-	filter->value = operands;
-
-	return filter;
-}
-
-static filter_pt filter_parseNot(char * filterString, int * pos) {
-	filter_pt child = NULL;
+static celix_filter_t * filter_parseNot(char * filterString, int * pos) {
+	celix_filter_t * child = NULL;
 	filter_skipWhiteSpace(filterString, pos);
 
 	if (filterString[*pos] != '(') {
@@ -252,16 +210,18 @@ static filter_pt filter_parseNot(char * filterString, int * pos) {
 
 	child = filter_parseFilter(filterString, pos);
 
+    array_list_t* children = NULL;
+    arrayList_create(&children);
+    arrayList_add(children, child);
 
-	filter_pt filter = (filter_pt) malloc(sizeof(*filter));
-	filter->operand = NOT;
-	filter->attribute = NULL;
-	filter->value = child;
+	celix_filter_t * filter = (celix_filter_t *) calloc(1, sizeof(*filter));
+	filter->operand = CELIX_FILTER_OPERAND_NOT;
+	filter->children = children;
 
 	return filter;
 }
 
-static filter_pt filter_parseItem(char * filterString, int * pos) {
+static celix_filter_t * filter_parseItem(char * filterString, int * pos) {
 	char * attr = filter_parseAttr(filterString, pos);
 	if(attr == NULL){
 		return NULL;
@@ -271,9 +231,9 @@ static filter_pt filter_parseItem(char * filterString, int * pos) {
 	switch(filterString[*pos]) {
 		case '~': {
 			if (filterString[*pos + 1] == '=') {
-				filter_pt filter = (filter_pt) malloc(sizeof(*filter));
+				celix_filter_t * filter = (celix_filter_t *) calloc(1, sizeof(*filter));
 				*pos += 2;
-				filter->operand = APPROX;
+				filter->operand = CELIX_FILTER_OPERAND_APPROX;
 				filter->attribute = attr;
 				filter->value = filter_parseValue(filterString, pos);
 				return filter;
@@ -282,17 +242,17 @@ static filter_pt filter_parseItem(char * filterString, int * pos) {
 		}
 		case '>': {
 			if (filterString[*pos + 1] == '=') {
-				filter_pt filter = (filter_pt) malloc(sizeof(*filter));
+				celix_filter_t * filter = (celix_filter_t *) calloc(1, sizeof(*filter));
 				*pos += 2;
-				filter->operand = GREATEREQUAL;
+				filter->operand = CELIX_FILTER_OPERAND_GREATEREQUAL;
 				filter->attribute = attr;
 				filter->value = filter_parseValue(filterString, pos);
 				return filter;
 			}
 			else {
-                filter_pt filter = (filter_pt) malloc(sizeof(*filter));
+                celix_filter_t * filter = (celix_filter_t *) calloc(1, sizeof(*filter));
                 *pos += 1;
-                filter->operand = GREATER;
+                filter->operand = CELIX_FILTER_OPERAND_GREATER;
                 filter->attribute = attr;
                 filter->value = filter_parseValue(filterString, pos);
                 return filter;
@@ -301,17 +261,17 @@ static filter_pt filter_parseItem(char * filterString, int * pos) {
 		}
 		case '<': {
 			if (filterString[*pos + 1] == '=') {
-				filter_pt filter = (filter_pt) malloc(sizeof(*filter));
+				celix_filter_t * filter = (celix_filter_t *) calloc(1, sizeof(*filter));
 				*pos += 2;
-				filter->operand = LESSEQUAL;
+				filter->operand = CELIX_FILTER_OPERAND_LESSEQUAL;
 				filter->attribute = attr;
 				filter->value = filter_parseValue(filterString, pos);
 				return filter;
 			}
 			else {
-                filter_pt filter = (filter_pt) malloc(sizeof(*filter));
+                celix_filter_t * filter = (celix_filter_t *) calloc(1, sizeof(*filter));
                 *pos += 1;
-                filter->operand = LESS;
+                filter->operand = CELIX_FILTER_OPERAND_LESS;
                 filter->attribute = attr;
                 filter->value = filter_parseValue(filterString, pos);
                 return filter;
@@ -319,29 +279,29 @@ static filter_pt filter_parseItem(char * filterString, int * pos) {
 			break;
 		}
 		case '=': {
-			filter_pt filter = NULL;
+			celix_filter_t * filter = NULL;
 			array_list_pt subs;
 			if (filterString[*pos + 1] == '*') {
 				int oldPos = *pos;
 				*pos += 2;
 				filter_skipWhiteSpace(filterString, pos);
 				if (filterString[*pos] == ')') {
-					filter_pt filter = (filter_pt) malloc(sizeof(*filter));
-					filter->operand = PRESENT;
+					celix_filter_t * filter = (celix_filter_t *) calloc(1, sizeof(*filter));
+					filter->operand = CELIX_FILTER_OPERAND_PRESENT;
 					filter->attribute = attr;
 					filter->value = NULL;
 					return filter;
 				}
 				*pos = oldPos;
 			}
-			filter = (filter_pt) malloc(sizeof(*filter));			
+			filter = (celix_filter_t *) calloc(1, sizeof(*filter));			
 			(*pos)++;
 			subs = filter_parseSubstring(filterString, pos);
 			if(subs!=NULL){
 				if (arrayList_size(subs) == 1) {
 					char * string = (char *) arrayList_get(subs, 0);
 					if (string != NULL) {
-						filter->operand = EQUAL;
+						filter->operand = CELIX_FILTER_OPERAND_EQUAL;
 						filter->attribute = attr;
 						filter->value = string;
 
@@ -352,9 +312,9 @@ static filter_pt filter_parseItem(char * filterString, int * pos) {
 					}
 				}
 			}
-			filter->operand = SUBSTRING;
+			filter->operand = CELIX_FILTER_OPERAND_SUBSTRING;
 			filter->attribute = attr;
-			filter->value = subs;
+            filter->children = subs;
 			return filter;
 		}
 	}
@@ -388,7 +348,7 @@ static char * filter_parseAttr(char * filterString, int * pos) {
 		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "Missing attr.");
 		return NULL;
 	} else {
-		char * attr = (char *) malloc(length+1);
+		char * attr = (char *) calloc(1, length+1);
 		strncpy(attr, filterString+begin, length);
 		attr[length] = '\0';
 		return attr;
@@ -504,13 +464,13 @@ static array_list_pt filter_parseSubstring(char * filterString, int * pos) {
 	return operands;
 }
 
-celix_status_t filter_match(filter_pt filter, properties_pt properties, bool *result) {
+celix_status_t filter_match(celix_filter_t * filter, properties_pt properties, bool *result) {
 	switch (filter->operand) {
-		case AND: {
-			array_list_pt filters = (array_list_pt) filter->value;
+		case CELIX_FILTER_OPERAND_AND: {
+			array_list_pt children = filter->children;
 			unsigned int i;
-			for (i = 0; i < arrayList_size(filters); i++) {
-				filter_pt sfilter = (filter_pt) arrayList_get(filters, i);
+			for (i = 0; i < arrayList_size(children); i++) {
+				celix_filter_t * sfilter = (celix_filter_t *) arrayList_get(children, i);
 				bool mresult;
 				filter_match(sfilter, properties, &mresult);
 				if (!mresult) {
@@ -521,11 +481,11 @@ celix_status_t filter_match(filter_pt filter, properties_pt properties, bool *re
 			*result = 1;
 			return CELIX_SUCCESS;
 		}
-		case OR: {
-			array_list_pt filters = (array_list_pt) filter->value;
+		case CELIX_FILTER_OPERAND_OR: {
+			array_list_pt children = filter->children;
 			unsigned int i;
-			for (i = 0; i < arrayList_size(filters); i++) {
-				filter_pt sfilter = (filter_pt) arrayList_get(filters, i);
+			for (i = 0; i < arrayList_size(children); i++) {
+				celix_filter_t * sfilter = (celix_filter_t *) arrayList_get(children, i);
 				bool mresult;
 				filter_match(sfilter, properties, &mresult);
 				if (mresult) {
@@ -536,25 +496,25 @@ celix_status_t filter_match(filter_pt filter, properties_pt properties, bool *re
 			*result = 0;
 			return CELIX_SUCCESS;
 		}
-		case NOT: {
-			filter_pt sfilter = (filter_pt) filter->value;
+		case CELIX_FILTER_OPERAND_NOT: {
+			celix_filter_t * sfilter = arrayList_get(filter->children, 0);
 			bool mresult;
 			filter_match(sfilter, properties, &mresult);
 			*result = !mresult;
 			return CELIX_SUCCESS;
 		}
-		case SUBSTRING :
-		case EQUAL :
-		case GREATER :
-        case GREATEREQUAL :
-		case LESS :
-        case LESSEQUAL :
-		case APPROX : {
+		case CELIX_FILTER_OPERAND_SUBSTRING :
+		case CELIX_FILTER_OPERAND_EQUAL :
+		case CELIX_FILTER_OPERAND_GREATER :
+        case CELIX_FILTER_OPERAND_GREATEREQUAL :
+		case CELIX_FILTER_OPERAND_LESS :
+        case CELIX_FILTER_OPERAND_LESSEQUAL :
+		case CELIX_FILTER_OPERAND_APPROX : {
 			char * value = (properties == NULL) ? NULL: (char*)properties_get(properties, filter->attribute);
 
-			return filter_compare(filter->operand, value, filter->value, result);
+			return filter_compare(filter, value, result);
 		}
-		case PRESENT: {
+		case CELIX_FILTER_OPERAND_PRESENT: {
 			char * value = (properties == NULL) ? NULL: (char*)properties_get(properties, filter->attribute);
 			*result = value != NULL;
 			return CELIX_SUCCESS;
@@ -564,124 +524,165 @@ celix_status_t filter_match(filter_pt filter, properties_pt properties, bool *re
 	return CELIX_SUCCESS;
 }
 
-static celix_status_t filter_compare(OPERAND operand, char * string, void * value2, bool *result) {
-	if (string == NULL) {
-		*result = 0;
-		return CELIX_SUCCESS;
-	}
-	return filter_compareString(operand, string, value2, result);
+static celix_status_t filter_compare(celix_filter_t* filter, const char *propertyValue, bool *out) {
+    celix_status_t  status = CELIX_SUCCESS;
+    bool result = false;
 
-}
+    if (filter == NULL || propertyValue == NULL) {
+        *out = false;
+        return status;
+    }
 
-static celix_status_t filter_compareString(OPERAND operand, char * string, void * value2, bool *result) {
-	switch (operand) {
-		case SUBSTRING: {
-			array_list_pt subs = (array_list_pt) value2;
-			int pos = 0;
-			unsigned int i;
-			int size = arrayList_size(subs);
-			for (i = 0; i < size; i++) {
-				char * substr = (char *) arrayList_get(subs, i);
+    switch (filter->operand) {
+        case CELIX_FILTER_OPERAND_SUBSTRING: {
+            int pos = 0;
+            unsigned int i;
+            int size = arrayList_size(filter->children);
+            for (i = 0; i < size; i++) {
+                char * substr = (char *) arrayList_get(filter->children, i);
 
-				if (i + 1 < size) {
-					if (substr == NULL) {
-						unsigned int index;
-						char * substr2 = (char *) arrayList_get(subs, i + 1);
-						if (substr2 == NULL) {
-							continue;
-						}
-						index = strcspn(string+pos, substr2);
-						if (index == strlen(string+pos)) {
-							*result = false;
-							return CELIX_SUCCESS;
-						}
+                if (i + 1 < size) {
+                    if (substr == NULL) {
+                        unsigned int index;
+                        char * substr2 = (char *) arrayList_get(filter->children, i + 1);
+                        if (substr2 == NULL) {
+                            continue;
+                        }
+                        index = strcspn(propertyValue+pos, substr2);
+                        if (index == strlen(propertyValue+pos)) {
+                            *out = false;
+                            return CELIX_SUCCESS;
+                        }
 
-						pos = index + strlen(substr2);
-						if (i + 2 < size) {
-							i++;
-						}
-					} else {
-						unsigned int len = strlen(substr);
-						char * region = (char *)malloc(len+1);
-						strncpy(region, string+pos, len);
-						region[len]	= '\0';
-						if (strcmp(region, substr) == 0) {
-							pos += len;
-						} else {
-							free(region);
-							*result = false;
-							return CELIX_SUCCESS;
-						}
-						free(region);
-					}
-				} else {
-					unsigned int len;
-					int begin;
+                        pos = index + strlen(substr2);
+                        if (i + 2 < size) {
+                            i++;
+                        }
+                    } else {
+                        unsigned int len = strlen(substr);
+                        char * region = (char *)calloc(1, len+1);
+                        strncpy(region, propertyValue+pos, len);
+                        region[len]	= '\0';
+                        if (strcmp(region, substr) == 0) {
+                            pos += len;
+                        } else {
+                            free(region);
+                            *out = false;
+                            return CELIX_SUCCESS;
+                        }
+                        free(region);
+                    }
+                } else {
+                    unsigned int len;
+                    int begin;
 
-					if (substr == NULL) {
-						*result = true;
-						return CELIX_SUCCESS;
-					}
-					len = strlen(substr);
-					begin = strlen(string)-len;
-					*result = (strcmp(string+begin, substr) == 0);
-					return CELIX_SUCCESS;
-				}
-			}
-			*result = true;
-			return CELIX_SUCCESS;
-		}
-		case APPROX: //TODO: Implement strcmp with ignorecase and ignorespaces
-		case EQUAL: {
-			*result = (strcmp(string, (char *) value2) == 0);
-			return CELIX_SUCCESS;
-		}
-		case GREATER: {
-			*result = (strcmp(string, (char *) value2) > 0);
-			return CELIX_SUCCESS;
-		}
-        case GREATEREQUAL: {
-            *result = (strcmp(string, (char *) value2) >= 0);
+                    if (substr == NULL) {
+                        *out = true;
+                        return CELIX_SUCCESS;
+                    }
+                    len = strlen(substr);
+                    begin = strlen(propertyValue)-len;
+                    *out = (strcmp(propertyValue+begin, substr) == 0);
+                    return CELIX_SUCCESS;
+                }
+            }
+            *out = true;
             return CELIX_SUCCESS;
         }
-		case LESS: {
-			*result = (strcmp(string, (char *) value2) < 0);
-			return CELIX_SUCCESS;
-		}
-        case LESSEQUAL: {
-            *result = (strcmp(string, (char *) value2) <= 0);
+        case CELIX_FILTER_OPERAND_APPROX: //TODO: Implement strcmp with ignorecase and ignorespaces
+        case CELIX_FILTER_OPERAND_EQUAL: {
+            *out = (strcmp(propertyValue, filter->value) == 0);
             return CELIX_SUCCESS;
         }
-		case AND:
-		case NOT:
-		case OR:
-		case PRESENT: {
-		}
-		/* no break */
-	}
-	*result = false;
-	return CELIX_SUCCESS;
+        case CELIX_FILTER_OPERAND_GREATER: {
+            *out = (strcmp(propertyValue, filter->value) > 0);
+            return CELIX_SUCCESS;
+        }
+        case CELIX_FILTER_OPERAND_GREATEREQUAL: {
+            *out = (strcmp(propertyValue, filter->value) >= 0);
+            return CELIX_SUCCESS;
+        }
+        case CELIX_FILTER_OPERAND_LESS: {
+            *out = (strcmp(propertyValue, filter->value) < 0);
+            return CELIX_SUCCESS;
+        }
+        case CELIX_FILTER_OPERAND_LESSEQUAL: {
+            *out = (strcmp(propertyValue, filter->value) <= 0);
+            return CELIX_SUCCESS;
+        }
+        case CELIX_FILTER_OPERAND_AND:
+        case CELIX_FILTER_OPERAND_NOT:
+        case CELIX_FILTER_OPERAND_OR:
+        case CELIX_FILTER_OPERAND_PRESENT: {
+        }
+            /* no break */
+    }
+
+    if (status == CELIX_SUCCESS && out != NULL) {
+        *out = result;
+    }
+    return status;
 }
 
-celix_status_t filter_getString(filter_pt filter, const char **filterStr) {
+celix_status_t filter_getString(celix_filter_t * filter, const char **filterStr) {
 	if (filter != NULL) {
 		*filterStr = filter->filterStr;
 	}
 	return CELIX_SUCCESS;
 }
 
-celix_status_t filter_match_filter(filter_pt src, filter_pt dest, bool *result) {
-	char *srcStr = NULL;
-	char *destStr = NULL;
-	*result = false;
+celix_status_t filter_match_filter(celix_filter_t *src, celix_filter_t *dest, bool *out) {
+    celix_status_t  status = CELIX_SUCCESS;
+	bool result = false;
 
-	if (src) srcStr = src->filterStr;
-	if (dest) destStr = dest->filterStr;
+    if (src == dest) {
+        result = true; //NOTE. also means NULL filter are equal
+    } else if (src != NULL && dest != NULL && src->operand == dest->operand) {
+        if (src->operand == CELIX_FILTER_OPERAND_AND || src->operand == CELIX_FILTER_OPERAND_OR || src->operand == CELIX_FILTER_OPERAND_NOT) {
+            assert(src->children != NULL);
+            assert(dest->children != NULL);
+            int sizeSrc = arrayList_size(src->children);
+            int sizeDest = arrayList_size(dest->children);
+            if (sizeSrc == sizeDest) {
+                int i;
+                int k;
+                int sameCount = 0;
+                for (i =0; i < sizeSrc; ++i) {
+                    bool same = false;
+                    celix_filter_t *srcPart = arrayList_get(src->children, i);
+                    for (k = 0; k < sizeDest; ++k) {
+                        celix_filter_t *destPart = arrayList_get(dest->children, k);
+                        filter_match_filter(srcPart, destPart, &same);
+                        if (same) {
+                            sameCount += 1;
+                            break;
+                        }
+                    }
+                }
+                result = sameCount == sizeSrc;
+            }
+        } else { //compare attr and value
+            bool attrSame = false;
+            bool valSame = false;
+            if (src->attribute == NULL && dest->attribute == NULL) {
+                attrSame = true;
+            } else if (src->attribute != NULL && dest->attribute != NULL) {
+                attrSame = strncmp(src->attribute, dest->attribute, 1024 * 1024) == 0;
+            }
 
-	if ((srcStr != NULL) && (destStr != NULL)) {
-		// TODO: should be done smarted, e.g. src="&(a=1)(b=2)" and dest="&(b=2)(a=1)" should result in true
-		*result = (strcmp(srcStr, destStr) == 0);
-	}
+            if (src->value == NULL  && dest->value == NULL) {
+                valSame = true;
+            } else if (src->value != NULL && dest->value != NULL) {
+                valSame = strncmp(src->value, dest->value, 1024 * 1024) == 0;
+            }
 
-	return CELIX_SUCCESS;
+            result = attrSame && valSame;
+        }
+    }
+
+    if (status == CELIX_SUCCESS && out != NULL) {
+        *out = result;
+    }
+
+	return status;
 }

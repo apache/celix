@@ -31,22 +31,54 @@
 #include "properties.h"
 #include "celixbool.h"
 #include "framework_exports.h"
+#include "array_list.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct filter *filter_pt;
+typedef enum celix_filter_operand_enum
+{
+    CELIX_FILTER_OPERAND_EQUAL,
+    CELIX_FILTER_OPERAND_APPROX,
+    CELIX_FILTER_OPERAND_GREATER,
+    CELIX_FILTER_OPERAND_GREATEREQUAL,
+    CELIX_FILTER_OPERAND_LESS,
+    CELIX_FILTER_OPERAND_LESSEQUAL,
+    CELIX_FILTER_OPERAND_PRESENT,
+    CELIX_FILTER_OPERAND_SUBSTRING,
+    CELIX_FILTER_OPERAND_AND,
+    CELIX_FILTER_OPERAND_OR,
+    CELIX_FILTER_OPERAND_NOT,
+} celix_filter_operand_t;
 
-FRAMEWORK_EXPORT filter_pt filter_create(const char *filterString);
+typedef struct celix_filter_struct filter_t; //deprecated
+typedef struct celix_filter_struct *filter_pt; //deprecated
 
-FRAMEWORK_EXPORT void filter_destroy(filter_pt filter);
+typedef struct celix_filter_struct celix_filter_t;
 
-FRAMEWORK_EXPORT celix_status_t filter_match(filter_pt filter, properties_pt properties, bool *result);
+struct celix_filter_struct {
+    celix_filter_operand_t operand;
+    char *attribute; //NULL for operands AND, OR ot NOT
+    char *value; //NULL for operands AND, OR or NOT NOT
+    char *filterStr;
 
-FRAMEWORK_EXPORT celix_status_t filter_match_filter(filter_pt src, filter_pt dest, bool *result);
+    //type is celix_filter_t* for AND, OR and NOT operator and char* for SUBSTRING
+    //for other operands childern is NULL
+    array_list_t *children;
+};
 
-FRAMEWORK_EXPORT celix_status_t filter_getString(filter_pt filter, const char **filterStr);
+FRAMEWORK_EXPORT celix_filter_t* filter_create(const char *filterString);
+
+FRAMEWORK_EXPORT void filter_destroy(celix_filter_t *filter);
+
+FRAMEWORK_EXPORT celix_status_t filter_match(celix_filter_t *filter, properties_t *properties, bool *result);
+
+FRAMEWORK_EXPORT celix_status_t filter_match_filter(celix_filter_t *src, filter_t *dest, bool *result);
+
+FRAMEWORK_EXPORT celix_status_t filter_getString(celix_filter_t *filter, const char **filterStr);
+
+FRAMEWORK_EXPORT celix_status_t filter_getString(celix_filter_t *filter, const char **filterStr);
 
 #ifdef __cplusplus
 }

@@ -16,13 +16,7 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * filter_test.cpp
- *
- *  \date       Feb 11, 2013
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -33,8 +27,8 @@
 #include "CppUTestExt/MockSupport.h"
 
 extern "C" {
-#include "filter_private.h"
 #include "celix_log.h"
+#include "filter.h"
 
 framework_logger_pt logger = (framework_logger_pt) 0x42;
 }
@@ -73,7 +67,7 @@ TEST_GROUP(filter) {
 //----------------FILTER TESTS----------------
 TEST(filter, create_destroy){
 	char * filter_str = my_strdup("(&(test_attr1=attr1)(|(test_attr2=attr2)(test_attr3=attr3)))");
-	filter_pt get_filter;
+	celix_filter_t * get_filter;
 
 	get_filter = filter_create(filter_str);
 	CHECK(get_filter != NULL);
@@ -88,7 +82,7 @@ TEST(filter, create_destroy){
 
 TEST(filter, create_fail_missing_opening_brackets){
 	char * filter_str;
-	filter_pt get_filter;
+	celix_filter_t * get_filter;
 
 	//test missing opening brackets in main filter
 	mock().expectNCalls(2, "framework_log");
@@ -125,7 +119,7 @@ TEST(filter, create_fail_missing_opening_brackets){
 
 TEST(filter, create_fail_missing_closing_brackets){
 	char * filter_str;
-	filter_pt get_filter;
+	celix_filter_t * get_filter;
 	//test missing closing brackets in substring
 	mock().expectNCalls(5, "framework_log");
 	filter_str = my_strdup("(&(test_attr1=attr1)(|(test_attr2=attr2)(test_attr3=attr3");
@@ -145,7 +139,7 @@ TEST(filter, create_fail_missing_closing_brackets){
 
 TEST(filter, create_fail_invalid_closing_brackets){
 	char * filter_str;
-	filter_pt get_filter;
+	celix_filter_t * get_filter;
 	//test missing closing brackets in substring
 	mock().expectNCalls(6, "framework_log");
 	filter_str = my_strdup("(&(test_attr1=attr1)(|(test_attr2=attr2)(test_attr3=at(tr3)))");
@@ -165,7 +159,7 @@ TEST(filter, create_fail_invalid_closing_brackets){
 
 TEST(filter, create_misc){
 	char * filter_str;
-	filter_pt get_filter;
+	celix_filter_t * get_filter;
 	//test trailing chars
 	mock().expectOneCall("framework_log");
 	filter_str = my_strdup("(&(test_attr1=attr1)(|(test_attr2=attr2)(test_attr3=attr3))) oh no! trailing chars");
@@ -186,8 +180,8 @@ TEST(filter, create_misc){
 	filter_str = my_strdup("(test_attr3=*attr3)");
 	get_filter = filter_create(filter_str);
 	CHECK(get_filter != NULL);
-	LONGS_EQUAL(SUBSTRING, get_filter->operand)
-	LONGS_EQUAL(2, arrayList_size((array_list_pt) get_filter->value));
+	LONGS_EQUAL(CELIX_FILTER_OPERAND_SUBSTRING, get_filter->operand)
+	LONGS_EQUAL(2, arrayList_size((array_list_pt) get_filter->children));
 	filter_destroy(get_filter);
 	free(filter_str);
 	mock().checkExpectations();
@@ -229,7 +223,7 @@ TEST(filter, create_misc){
 
 TEST(filter, match_comparators){
 	char * filter_str;
-	filter_pt filter;
+	celix_filter_t * filter;
 	properties_pt props = properties_create();
 	char * key = my_strdup("test_attr1");
 	char * val = my_strdup("attr1");
@@ -268,7 +262,7 @@ TEST(filter, match_comparators){
 
 TEST(filter, match_operators){
 	char * filter_str;
-	filter_pt filter;
+	celix_filter_t * filter;
 	properties_pt props = properties_create();
 	char * key = my_strdup("test_attr1");
 	char * val = my_strdup("attr1");
@@ -470,7 +464,7 @@ TEST(filter, match_operators){
 TEST(filter, match_recursion){
 
 	char * filter_str = my_strdup("(&(test_attr1=attr1)(|(&(test_attr2=attr2)(!(&(test_attr1=attr1)(test_attr3=attr3))))(test_attr3=attr3)))");
-	filter_pt filter = filter_create(filter_str);
+	celix_filter_t * filter = filter_create(filter_str);
 	properties_pt props = properties_create();
 	char * key = my_strdup("test_attr1");
 	char * val = my_strdup("attr1");
@@ -497,7 +491,7 @@ TEST(filter, match_recursion){
 
 TEST(filter, match_false){
 	char * filter_str = my_strdup("(&(test_attr1=attr1)(&(test_attr2=attr2)(test_attr3=attr3)))");
-	filter_pt filter = filter_create(filter_str);
+	celix_filter_t * filter = filter_create(filter_str);
 	properties_pt props = properties_create();
 	char * key = my_strdup("test_attr1");
 	char * val = my_strdup("attr1");
@@ -523,26 +517,54 @@ TEST(filter, match_false){
 }
 
 TEST(filter, match_filter){
-	char * filter_str = my_strdup("(&(test_attr1=attr1)(|(test_attr2=attr2)(test_attr3=attr3)))");
-	char * compareTo_str = my_strdup("(&(test_attr1=attr1)(|(test_attr2=attr2)(test_attr3=attr3)))");
-	filter_pt filter = filter_create(filter_str);
-	filter_pt compareTo = filter_create(compareTo_str);
+	mock().ignoreOtherCalls(); //only log
+
+	celix_filter_t *filter = filter_create("(&(test_attr1=attr1)(|(test_attr2=attr2)(test_attr3=attr3)))");
+    celix_filter_t *compareTo = filter_create("(&(test_attr1=attr1)(|(test_attr2=attr2)(test_attr3=attr3)))");
 
 	bool result;
-	filter_match_filter(filter, compareTo, &result);
-
+	filter_match_filter(filter, compareTo, &result); //equal same order
+    CHECK_TRUE(result);
 	//cleanup
 	filter_destroy(filter);
 	filter_destroy(compareTo);
-	free(filter_str);
-	free(compareTo_str);
 
-	mock().checkExpectations();
+    filter = filter_create("(&(test_attr1=attr1)(test_attr2=attr2)(test_attr3=attr3))");
+    compareTo = filter_create("(&(test_attr3=attr3)(test_attr2=attr2)(test_attr1=attr1))");
+	CHECK(filter != NULL);
+	CHECK(compareTo != NULL);
+    filter_match_filter(filter, compareTo, &result); //equal not same order
+    CHECK_TRUE(result);
+    //cleanup
+    filter_destroy(filter);
+    filter_destroy(compareTo);
+
+    filter = filter_create("(&(test_attr1=attr1)(test_attr2=attr2)(test_attr3=attr3))");
+    compareTo = filter_create("(&(test_attr1=attr1)(test_attr2=attr2)(test_attr4=attr4))");
+	CHECK(filter != NULL);
+	CHECK(compareTo != NULL);
+    filter_match_filter(filter, compareTo, &result); //almost, but not equal
+    CHECK_FALSE(result);
+    //cleanup
+    filter_destroy(filter);
+    filter_destroy(compareTo);
+
+	filter_match_filter(NULL, NULL, &result); //both null  -> equal
+	CHECK_TRUE(result);
+
+	filter = filter_create("(attr1=)");
+	filter_match_filter(filter, NULL, &result); //one null  -> not equal
+	CHECK_FALSE(result);
+
+	filter_match_filter(NULL, filter, &result); //one null  -> not equal
+	CHECK_FALSE(result);
+
+	filter_destroy(filter);
 }
 
 TEST(filter, getString){
 	char * filter_str = my_strdup("(&(test_attr1=attr1)(|(test_attr2=attr2)(test_attr3=attr3)))");
-	filter_pt filter = filter_create(filter_str);
+	celix_filter_t * filter = filter_create(filter_str);
 
 	const char * get_str;
 	filter_getString(filter, &get_str);
