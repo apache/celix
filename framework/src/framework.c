@@ -1290,7 +1290,7 @@ celix_status_t fw_registerService(framework_pt framework, service_registration_p
                         info->context = lContext;
                         info->removed = false;
                     }
-                    subs = CELIX_DO_IF(subs, filter_getString(listener->filter, (const char**)&info->filter));
+                    subs = CELIX_DO_IF(subs, filter_getString(listener->filter, &info->filter));
 
                     if (subs == CELIX_SUCCESS) {
                         arrayList_add(infos, info);
@@ -1408,7 +1408,6 @@ celix_status_t framework_ungetService(framework_pt framework, bundle_pt bundle, 
 
 void fw_addServiceListener(framework_pt framework, bundle_pt bundle, service_listener_pt listener, const char* sfilter) {
 	array_list_pt listenerHooks = NULL;
-	listener_hook_info_pt info;
 	unsigned int i;
 
 	fw_service_listener_pt fwListener = (fw_service_listener_pt) calloc(1, sizeof(*fwListener));
@@ -1428,13 +1427,12 @@ void fw_addServiceListener(framework_pt framework, bundle_pt bundle, service_lis
 
 	serviceRegistry_getListenerHooks(framework->registry, framework->bundle, &listenerHooks);
 
-	info = (listener_hook_info_pt) malloc(sizeof(*info));
+    struct listener_hook_info info;
 
 	bundle_getContext(bundle, &context);
-	info->context = context;
-
-	info->removed = false;
-	info->filter = sfilter == NULL ? NULL : strdup(sfilter);
+	info.context = context;
+	info.removed = false;
+	info.filter = sfilter;
 
 	for (i = 0; i < arrayList_size(listenerHooks); i++) {
 		service_reference_pt ref = (service_reference_pt) arrayList_get(listenerHooks, i);
@@ -1445,90 +1443,80 @@ void fw_addServiceListener(framework_pt framework, bundle_pt bundle, service_lis
 		fw_getService(framework, framework->bundle, ref, (const void **) &hook);
 
 		arrayList_create(&infos);
-		arrayList_add(infos, info);
+		arrayList_add(infos, &info);
 		hook->added(hook->handle, infos);
 		serviceRegistry_ungetService(framework->registry, framework->bundle, ref, &ungetResult);
 		serviceRegistry_ungetServiceReference(framework->registry, framework->bundle, ref);
 		arrayList_destroy(infos);
 	}
 
-	if (info->filter != NULL) {
-	    free(info->filter);
-	}
-	free(info);
-
 	arrayList_destroy(listenerHooks);
 }
 
 void fw_removeServiceListener(framework_pt framework, bundle_pt bundle, service_listener_pt listener) {
-	listener_hook_info_pt info = NULL;
-	unsigned int i;
-	fw_service_listener_pt element;
+	fw_service_listener_pt match = NULL;
 
 	bundle_context_pt context;
 	bundle_getContext(bundle, &context);
 
+    int i;
 	for (i = 0; i < arrayList_size(framework->serviceListeners); i++) {
-		element = (fw_service_listener_pt) arrayList_get(framework->serviceListeners, i);
-		if (element->listener == listener && element->bundle == bundle) {
-			bundle_context_pt lContext = NULL;
+        fw_service_listener_pt visit = (fw_service_listener_pt) arrayList_get(framework->serviceListeners, i);
+        if (visit->listener == listener && visit->bundle == bundle) {
+            match = visit;
+            arrayList_remove(framework->serviceListeners, i);
+            break;
+        }
+    }
 
-			info = (listener_hook_info_pt) malloc(sizeof(*info));
+    if (match != NULL) {
+        //invoke listener hooks
 
-			bundle_getContext(element->bundle, &lContext);
-			info->context = lContext;
+        bundle_context_pt lContext = NULL;
 
-			// TODO Filter toString;
-			filter_getString(element->filter, (const char**)&info->filter);
-			info->removed = true;
+        struct listener_hook_info info;
+        bundle_getContext(match->bundle, &lContext);
+        info.context = lContext;
+        filter_getString(match->filter, &info.filter);
+        info.removed = true;
 
-			arrayList_remove(framework->serviceListeners, i);
-			i--;
-            
-            //unregistering retained service references. For these refs a unregister event will not be triggered.
-            int k;
-            int rSize = arrayList_size(element->retainedReferences);
-            for (k = 0; k < rSize; k += 1) {
-                service_reference_pt ref = arrayList_get(element->retainedReferences, k);
-                if (ref != NULL) {
-                    serviceRegistry_ungetServiceReference(framework->registry, element->bundle, ref); // decrease retain counter                                       
-                } 
+        array_list_pt listenerHooks = NULL;
+        serviceRegistry_getListenerHooks(framework->registry, framework->bundle, &listenerHooks);
+        for (i = 0; i < arrayList_size(listenerHooks); i++) {
+            service_reference_pt ref = (service_reference_pt) arrayList_get(listenerHooks, i);
+            listener_hook_service_pt hook = NULL;
+            array_list_pt infos = NULL;
+            bool ungetResult;
+
+            fw_getService(framework, framework->bundle, ref, (const void **) &hook);
+
+            arrayList_create(&infos);
+            arrayList_add(infos, &info);
+            hook->removed(hook->handle, infos);
+            serviceRegistry_ungetService(framework->registry, framework->bundle, ref, &ungetResult);
+            serviceRegistry_ungetServiceReference(framework->registry, framework->bundle, ref);
+            arrayList_destroy(infos);
+        }
+        arrayList_destroy(listenerHooks);
+    }
+
+    if (match != NULL) {
+        //unregistering retained service references. For these refs a unregister event will not be triggered.
+        int rSize = arrayList_size(match->retainedReferences);
+        for (i = 0; i < rSize; i += 1) {
+            service_reference_pt ref = arrayList_get(match->retainedReferences, i);
+            if (ref != NULL) {
+                serviceRegistry_ungetServiceReference(framework->registry, match->bundle, ref); // decrease retain counter
             }
+        }
 
-			element->bundle = NULL;
-			filter_destroy(element->filter);
-            arrayList_destroy(element->retainedReferences);
-			element->filter = NULL;
-			element->listener = NULL;
-			free(element);
-			element = NULL;
-			break;
-		}
-	}
-
-	if (info != NULL) {
-		unsigned int i;
-		array_list_pt listenerHooks = NULL;
-		serviceRegistry_getListenerHooks(framework->registry, framework->bundle, &listenerHooks);
-
-		for (i = 0; i < arrayList_size(listenerHooks); i++) {
-			service_reference_pt ref = (service_reference_pt) arrayList_get(listenerHooks, i);
-			listener_hook_service_pt hook = NULL;
-			array_list_pt infos = NULL;
-			bool ungetResult;
-
-			fw_getService(framework, framework->bundle, ref, (const void **) &hook);
-
-			arrayList_create(&infos);
-			arrayList_add(infos, info);
-			hook->removed(hook->handle, infos);
-			serviceRegistry_ungetService(framework->registry, framework->bundle, ref, &ungetResult);
-			serviceRegistry_ungetServiceReference(framework->registry, framework->bundle, ref);
-			arrayList_destroy(infos);
-		}
-
-		arrayList_destroy(listenerHooks);
-        free(info);
+        match->bundle = NULL;
+        filter_destroy(match->filter);
+        arrayList_destroy(match->retainedReferences);
+        match->filter = NULL;
+        match->listener = NULL;
+        free(match);
+        match = NULL;
 	}
 }
 
@@ -1653,7 +1641,7 @@ void fw_serviceChanged(framework_pt framework, service_event_type_e eventType, s
                 event = (service_event_pt) malloc(sizeof (*event));
 
                 serviceRegistry_getServiceReference(framework->registry, element->bundle, registration, &reference);
-                
+
                 //NOTE: that you are never sure that the UNREGISTERED event will by handle by an service_listener. listener could be gone
                 //Every reference retained is therefore stored and called when a service listener is removed from the framework.
                 if (eventType == OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED) {
@@ -1667,14 +1655,14 @@ void fw_serviceChanged(framework_pt framework, service_event_type_e eventType, s
                 element->listener->serviceChanged(element->listener, event);
 
                 serviceRegistry_ungetServiceReference(framework->registry, element->bundle, reference);
-                
+
                 if (eventType == OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING) {
                     //if service listener was active when service was registered, release the retained reference
                     if (arrayList_removeElement(element->retainedReferences, reference)) {
                         serviceRegistry_ungetServiceReference(framework->registry, element->bundle, reference); // decrease retain counter
                     }
                 }
-                
+
                 free(event);
 
             } else if (eventType == OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED) {

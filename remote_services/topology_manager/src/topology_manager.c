@@ -866,7 +866,7 @@ celix_status_t topologyManager_notifyListenersEndpointRemoved(topology_manager_p
 	return status;
 }
 
-celix_status_t topologyManager_extendFilter(topology_manager_pt manager, char *filter, char **updatedFilter) {
+static celix_status_t topologyManager_extendFilter(topology_manager_pt manager,  const char *filter, char **updatedFilter) {
 	celix_status_t status;
 	bundle_context_pt context = manager->context;
 	const char* uuid = NULL;

@@ -30,10 +30,10 @@
 #include "bundle_context.h"
 #include "array_list.h"
 
-char* pubsub_getScopeFromFilter(char* bundle_filter);
-char* pubsub_getTopicFromFilter(char* bundle_filter);
+char* pubsub_getScopeFromFilter(const char* bundle_filter);
+char* pubsub_getTopicFromFilter(const char* bundle_filter);
 char* pubsub_getKeysBundleDir(bundle_context_pt ctx);
-array_list_pt pubsub_getTopicsFromString(char* string);
+array_list_pt pubsub_getTopicsFromString(const char* string);
 
 
 #endif /* PUBSUB_UTILS_H_ */

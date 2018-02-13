@@ -42,7 +42,7 @@
 
 #define MAX_KEYBUNDLE_LENGTH 256
 
-char* pubsub_getScopeFromFilter(char* bundle_filter){
+char* pubsub_getScopeFromFilter(const char* bundle_filter){
 
 	char* scope = NULL;
 
@@ -72,7 +72,7 @@ char* pubsub_getScopeFromFilter(char* bundle_filter){
 	return scope;
 }
 
-char* pubsub_getTopicFromFilter(char* bundle_filter){
+char* pubsub_getTopicFromFilter(const char* bundle_filter){
 
 	char* topic = NULL;
 
@@ -102,7 +102,7 @@ char* pubsub_getTopicFromFilter(char* bundle_filter){
 
 }
 
-array_list_pt pubsub_getTopicsFromString(char* string){
+array_list_pt pubsub_getTopicsFromString(const char* string){
 
 	array_list_pt topic_list = NULL;
 	arrayList_create(&topic_list);

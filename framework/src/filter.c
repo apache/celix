@@ -110,9 +110,9 @@ void filter_destroy(celix_filter_t * filter) {
         filter->value = NULL;
 		free((char*)filter->attribute);
 		filter->attribute = NULL;
-		free(filter);
         free((char*)filter->filterStr);
         filter->filterStr = NULL;
+        free(filter);
 	}
 }
 

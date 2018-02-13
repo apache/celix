@@ -28,7 +28,6 @@
 #define LISTENER_HOOK_SERVICE_H_
 
 
-typedef struct listener_hook *listener_hook_pt;
 typedef struct listener_hook_info *listener_hook_info_pt;
 typedef struct listener_hook_service *listener_hook_service_pt;
 
@@ -41,7 +40,7 @@ extern "C" {
 
 struct listener_hook_info {
 	bundle_context_pt context;
-	char *filter;
+	const char *filter;
 	bool removed;
 };
 
