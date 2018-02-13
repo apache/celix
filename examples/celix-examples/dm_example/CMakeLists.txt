@@ -38,6 +38,7 @@ if (TARGET Celix::dependency_manager_static AND TARGET Celix::dm_shell)
             LOGHELPER_ENABLE_STDOUT_FALLBACK=true
     )
 
+
     add_celix_docker(dm_exmpl_base
             NAME dmbase
             IMAGE_NAME dmbase
@@ -47,6 +48,19 @@ if (TARGET Celix::dependency_manager_static AND TARGET Celix::dm_shell)
     )
     add_celix_docker(dm_exmpl
         FROM dmbase
+        GROUP examples
+        BUNDLES
+            Celix::shell
+            Celix::shell_tui
+            Celix::dm_shell
+            dm_example_phase1
+            dm_example_phase2a
+            dm_example_phase2b
+            dm_example_phase3
+        PROPERTIES
+            LOGHELPER_ENABLE_STDOUT_FALLBACK=true
+    )
+    add_celix_docker(dm_exmpl2
         GROUP examples
         BUNDLES
             Celix::shell

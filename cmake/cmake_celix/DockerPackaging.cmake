@@ -241,7 +241,7 @@ function(celix_docker_bundles)
             get_target_property(IMP ${BUNDLE} BUNDLE_IMPORTED)
             if (IMP) #An imported bundle target -> handle target without DEPENDS
                 string(MAKE_C_IDENTIFIER ${BUNDLE} BUNDLE_ID) #Create id with no special chars (e.g. for target like Celix::shell)
-                set(OUT "${CMAKE_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}-copy-bundle-for-target-${BUNDLE_ID}.timestamp")
+                set(OUT "${CMAKE_BINARY_DIR}/celix/gen/${DOCKER_TARGET}-copy-bundle-for-target-${BUNDLE_ID}.timestamp")
                 set(DEST "${LOC}/${BUNDLES_DIR}/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
                 add_custom_command(OUTPUT ${OUT}
                     COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
