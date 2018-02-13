@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <assert.h>
+#include <utils.h>
 
 #include "celix_log.h"
 #include "filter.h"
@@ -53,18 +54,14 @@ static void filter_skipWhiteSpace(char * filterString, int * pos) {
 
 celix_filter_t * filter_create(const char* filterString) {
 	celix_filter_t * filter = NULL;
-	char* filterStr = strndup(filterString, 1024*1024);
+	char* filterStr = string_ndup(filterString, 1024*1024);
 	int pos = 0;
 	filter = filter_parseFilter(filterStr, &pos);
-	if (pos != strlen(filterStr)) {
+	if (filter != NULL && pos != strlen(filterStr)) {
 		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR,  "Error: Extraneous trailing characters.");
-        free(filterStr);
 		filter_destroy(filter);
-		return NULL;
-	}
-	if (filter != NULL) {
-        filter->filterStr = filterStr;
-
+		filter = NULL;
+	} else if (filter != NULL) {
         if (filter->operand != CELIX_FILTER_OPERAND_OR && filter->operand != CELIX_FILTER_OPERAND_AND &&
             filter->operand != CELIX_FILTER_OPERAND_NOT && filter->operand != CELIX_FILTER_OPERAND_SUBSTRING &&
             filter->operand != CELIX_FILTER_OPERAND_PRESENT) {
@@ -75,6 +72,12 @@ celix_filter_t * filter_create(const char* filterString) {
         }
     }
 
+	if (filter == NULL) {
+		free(filterStr);
+	} else {
+		filter->filterStr = filterStr;
+	}
+
 	return filter;
 }
 
@@ -83,15 +86,16 @@ void filter_destroy(celix_filter_t * filter) {
 		if(filter->children != NULL){
 			if (filter->operand == CELIX_FILTER_OPERAND_SUBSTRING) {
 				int size = arrayList_size(filter->children);
-				for (; size > 0; --size) {
-					char* operand = (char*) arrayList_remove(filter->children, 0);
+				int i = 0;
+				for (i = 0; i < size; i++) {
+					char *operand = arrayList_get(filter->children, i);
 					free(operand);
 				}
 				arrayList_destroy(filter->children);
 				filter->children = NULL;
 			} else if (filter->operand == CELIX_FILTER_OPERAND_OR || filter->operand == CELIX_FILTER_OPERAND_AND || filter->operand == CELIX_FILTER_OPERAND_NOT) {
                 int size = arrayList_size(filter->children);
-                unsigned int i = 0;
+                int i = 0;
                 for (i = 0; i < size; i++) {
                     celix_filter_t *f = arrayList_get(filter->children, i);
                     filter_destroy(f);
@@ -102,12 +106,12 @@ void filter_destroy(celix_filter_t * filter) {
                 fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR,  "Error: Corrupt filter. childern has a value, but not an expected operand");
             }
 		}
-        free(filter->value);
+        free((char*)filter->value);
         filter->value = NULL;
-		free(filter->attribute);
+		free((char*)filter->attribute);
 		filter->attribute = NULL;
 		free(filter);
-        free(filter->filterStr);
+        free((char*)filter->filterStr);
         filter->filterStr = NULL;
 	}
 }

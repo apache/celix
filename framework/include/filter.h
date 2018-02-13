@@ -59,9 +59,9 @@ typedef struct celix_filter_struct celix_filter_t;
 
 struct celix_filter_struct {
     celix_filter_operand_t operand;
-    char *attribute; //NULL for operands AND, OR ot NOT
-    char *value; //NULL for operands AND, OR or NOT NOT
-    char *filterStr;
+    const char *attribute; //NULL for operands AND, OR ot NOT
+    const char *value; //NULL for operands AND, OR or NOT NOT
+    const char *filterStr;
 
     //type is celix_filter_t* for AND, OR and NOT operator and char* for SUBSTRING
     //for other operands childern is NULL
