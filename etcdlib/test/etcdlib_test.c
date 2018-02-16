@@ -32,73 +32,85 @@
 #include <pthread.h>
 
 int simplewritetest() {
-    int res = 0;
-    char*value = NULL;
-    etcd_set("simplekey", "testvalue", 5, false);
-    etcd_get("simplekey", &value, NULL);
-    if (value && strcmp(value, "testvalue")) {
-        printf("etcdlib test error: expected testvalue got %s\n", value);
-        res = -1;
-    }
-    free(value);
-    return res;
+	int res = 0;
+	char*value = NULL;
+	etcd_set("simplekey", "testvalue", 5, false);
+	etcd_get("simplekey", &value, NULL);
+	if (value && strcmp(value, "testvalue")) {
+		printf("etcdlib test error: expected testvalue got %s\n", value);
+		res = -1;
+	}
+	free(value);
+	return res;
 }
 
 void* waitForChange(void*arg) {
-    int *idx = (int*)arg;
-    char *action = NULL;
-    char *prevValue;
-    char *value;
-    char *rkey;
-    long long modifiedIndex;
-    printf("Watching for index %d\n", *idx);
-    etcd_watch("hier/ar", *idx, &action, &prevValue, &value, &rkey, &modifiedIndex);
-    printf(" New value from watch : [%s]%s => %s\n", rkey, prevValue, value);
-    free (action);
-    free(prevValue);
-    free(rkey);
-    free(value);
-    *idx = modifiedIndex+1;
-    etcd_watch("hier/ar", *idx, &action, &prevValue, &value, &rkey, &modifiedIndex);
-    printf(" New value from watch : [%s]%s => %s\n", rkey, prevValue, value);
-    free (action);
-    free(prevValue);
-    free(rkey);
-    return value;
+	int *idx = (int*)arg;
+	char *action = NULL;
+	char *prevValue = NULL;
+	char *value = NULL;
+	char *rkey = NULL;
+	long long modifiedIndex;
+
+	printf("Watching for index %d\n", *idx);
+
+	if(etcd_watch("hier/ar", *idx, &action, &prevValue, &value, &rkey, &modifiedIndex) == 0){
+		printf(" New value from watch : [%s]%s => %s\n", rkey, prevValue, value);
+		if(action != NULL) free(action);
+		if(prevValue != NULL) free(prevValue);
+		if(rkey != NULL) free(rkey);
+		if(value != NULL) free(value);
+	}
+
+	*idx = modifiedIndex+1;
+
+	action = NULL;
+	prevValue = NULL;
+	value = NULL;
+	rkey = NULL;
+
+	if(etcd_watch("hier/ar", *idx, &action, &prevValue, &value, &rkey, &modifiedIndex) == 0){
+		printf(" New value from watch : [%s]%s => %s\n", rkey, prevValue, value);
+		if(action != NULL) free(action);
+		if(prevValue != NULL) free(prevValue);
+		if(rkey != NULL) free(rkey);
+	}
+
+	return value;
 }
 
 int waitforchangetest() {
-    int res = 0;
-    char*value = NULL;
+	int res = 0;
+	char*value = NULL;
 
-    etcd_set("hier/ar/chi/cal", "testvalue1", 5, false);
+	etcd_set("hier/ar/chi/cal", "testvalue1", 5, false);
 
-    int index;
-    etcd_get("hier/ar/chi/cal", &value, &index);
-    free(value);
-    pthread_t waitThread;
-    index++;
-    pthread_create(&waitThread, NULL, waitForChange, &index);
-    sleep(1);
-    etcd_set("hier/ar/chi/cal", "testvalue2", 5, false);
-    sleep(1);
-    etcd_set("hier/ar/chi/cal", "testvalue3", 5, false);
-    void *resVal;
-    pthread_join(waitThread, &resVal);
-    if(strcmp((char*)resVal,"testvalue3" )) {
-        printf("etcdtest::waitforchange1 expected testvalue3, got %s\n", (char*)resVal);
-        res = -1;
-    }
-    free(resVal);
-    return res;
+	int index;
+	etcd_get("hier/ar/chi/cal", &value, &index);
+	free(value);
+	pthread_t waitThread;
+	index++;
+	pthread_create(&waitThread, NULL, waitForChange, &index);
+	sleep(1);
+	etcd_set("hier/ar/chi/cal", "testvalue2", 5, false);
+	sleep(1);
+	etcd_set("hier/ar/chi/cal", "testvalue3", 5, false);
+	void *resVal;
+	pthread_join(waitThread, &resVal);
+	if(strcmp((char*)resVal,"testvalue3" )) {
+		printf("etcdtest::waitforchange1 expected testvalue3, got %s\n", (char*)resVal);
+		res = -1;
+	}
+	free(resVal);
+	return res;
 }
 
 int main (void) {
-    etcd_init("localhost", 2379, 0);
+	etcd_init("localhost", 2379, 0);
 
-    int res = simplewritetest(); if(res) return res; else printf("simplewrite test success\n");
-    res = waitforchangetest(); if(res) return res;else printf("waitforchange1 test success\n");
+	int res = simplewritetest(); if(res) return res; else printf("simplewrite test success\n");
+	res = waitforchangetest(); if(res) return res;else printf("waitforchange1 test success\n");
 
-    return 0;
+	return 0;
 }
 

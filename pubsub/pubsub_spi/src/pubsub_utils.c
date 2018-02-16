@@ -58,11 +58,14 @@ char* pubsub_getScopeFromFilter(const char* bundle_filter){
 
 				scopes+=strlen(PUBSUB_PUBLISHER_SCOPE)+1;
 				char* bottom=strchr(scopes,')');
-				*bottom='\0';
+
+				if(bottom!=NULL){
+					*bottom='\0';
+				}
 
 				scope=strdup(scopes);
 			} else {
-			    scope=strdup(PUBSUB_PUBLISHER_SCOPE_DEFAULT);
+				scope=strdup(PUBSUB_PUBLISHER_SCOPE_DEFAULT);
 			}
 		}
 	}
@@ -88,7 +91,10 @@ char* pubsub_getTopicFromFilter(const char* bundle_filter){
 
 				topics+=strlen(PUBSUB_PUBLISHER_TOPIC)+1;
 				char* bottom=strchr(topics,')');
-				*bottom='\0';
+
+				if(bottom!=NULL){
+					*bottom='\0';
+				}
 
 				topic=strdup(topics);
 

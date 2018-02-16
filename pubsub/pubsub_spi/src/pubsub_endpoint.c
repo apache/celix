@@ -134,7 +134,12 @@ celix_status_t pubsubEndpoint_create(const char* fwUUID, const char* scope, cons
 
 	*psEp = calloc(1, sizeof(**psEp));
 
-	pubsubEndpoint_setFields(*psEp, fwUUID, scope, topic, serviceId, endpoint, topic_props, true);
+	if(*psEp!=NULL){
+		pubsubEndpoint_setFields(*psEp, fwUUID, scope, topic, serviceId, endpoint, topic_props, true);
+	}
+	else{
+		status = CELIX_ENOMEM;
+	}
 
 	return status;
 
