@@ -333,9 +333,10 @@ TEST(service_reference, getProperty){
 			.withParameter("registration", registration)
 			.withOutputParameterReturning("properties", &props, sizeof(props));
 
-	mock().expectOneCall("properties_get")
+	mock().expectOneCall("properties_getWithDefault")
 			.withParameter("key", key)
 			.withParameter("properties", props)
+			.ignoreOtherParameters()
 			.andReturnValue(value);
 
 	celix_status_t status = serviceReference_getProperty(reference, key, &get_value);
@@ -558,43 +559,51 @@ TEST(service_reference, compareTo){
 			.withOutputParameterReturning("properties", &props2, sizeof(props2));
 
 	//service 1 is higher ranked and has a irrelevant ID
-	mock().expectOneCall("properties_get")
+	mock().expectOneCall("properties_getWithDefault")
 			.withParameter("key", OSGI_FRAMEWORK_SERVICE_ID)
 			.withParameter("properties", props)
+			.ignoreOtherParameters()
 			.andReturnValue("2");
-	mock().expectOneCall("properties_get")
+	mock().expectOneCall("properties_getWithDefault")
 			.withParameter("key", OSGI_FRAMEWORK_SERVICE_ID)
 			.withParameter("properties", props2)
+			.ignoreOtherParameters()
 			.andReturnValue("1");
 
-	mock().expectOneCall("properties_get")
+	mock().expectOneCall("properties_getWithDefault")
 			.withParameter("key", OSGI_FRAMEWORK_SERVICE_RANKING)
 			.withParameter("properties", props)
+			.ignoreOtherParameters()
 			.andReturnValue("2");
-	mock().expectOneCall("properties_get")
+	mock().expectOneCall("properties_getWithDefault")
 			.withParameter("key", OSGI_FRAMEWORK_SERVICE_RANKING)
 			.withParameter("properties", props2)
+			.ignoreOtherParameters()
 			.andReturnValue("1");
 
 	serviceReference_compareTo(reference, reference2, &compare);
 	LONGS_EQUAL(1, compare);
 
 	//service 1 is equally ranked and has a lower ID
-	mock().expectOneCall("properties_get")
+	mock().expectOneCall("properties_getWithDefault")
 			.withParameter("key", OSGI_FRAMEWORK_SERVICE_ID)
 			.withParameter("properties", props)
+			.ignoreOtherParameters()
 			.andReturnValue("1");
-	mock().expectOneCall("properties_get")
+	mock().expectOneCall("properties_getWithDefault")
 			.withParameter("key", OSGI_FRAMEWORK_SERVICE_ID)
 			.withParameter("properties", props2)
+			.ignoreOtherParameters()
 			.andReturnValue("2");
 
-	mock().expectOneCall("properties_get")
+	mock().expectOneCall("properties_getWithDefault")
 			.withParameter("key", OSGI_FRAMEWORK_SERVICE_RANKING)
 			.withParameter("properties", props)
+			.ignoreOtherParameters()
 			.andReturnValue("1");
-	mock().expectOneCall("properties_get")
+	mock().expectOneCall("properties_getWithDefault")
 			.withParameter("key", OSGI_FRAMEWORK_SERVICE_RANKING)
+			.ignoreOtherParameters()
 			.withParameter("properties", props2)
 			.andReturnValue("1");
 
@@ -602,21 +611,25 @@ TEST(service_reference, compareTo){
 	LONGS_EQUAL(1, compare);
 
 	//service 1 is equally ranked and has a higher ID
-	mock().expectOneCall("properties_get")
+	mock().expectOneCall("properties_getWithDefault")
 			.withParameter("key", OSGI_FRAMEWORK_SERVICE_ID)
+			.ignoreOtherParameters()
 			.withParameter("properties", props)
 			.andReturnValue("2");
-	mock().expectOneCall("properties_get")
+	mock().expectOneCall("properties_getWithDefault")
 			.withParameter("key", OSGI_FRAMEWORK_SERVICE_ID)
 			.withParameter("properties", props2)
+			.ignoreOtherParameters()
 			.andReturnValue("1");
 
-	mock().expectOneCall("properties_get")
+	mock().expectOneCall("properties_getWithDefault")
 			.withParameter("key", OSGI_FRAMEWORK_SERVICE_RANKING)
+			.ignoreOtherParameters()
 			.withParameter("properties", props)
 			.andReturnValue("1");
-	mock().expectOneCall("properties_get")
+	mock().expectOneCall("properties_getWithDefault")
 			.withParameter("key", OSGI_FRAMEWORK_SERVICE_RANKING)
+			.ignoreOtherParameters()
 			.withParameter("properties", props2)
 			.andReturnValue("1");
 
@@ -624,21 +637,25 @@ TEST(service_reference, compareTo){
 	LONGS_EQUAL(-1, compare);
 
 	//service 1 is lower ranked and has a irrelevant ID
-	mock().expectOneCall("properties_get")
+	mock().expectOneCall("properties_getWithDefault")
 			.withParameter("key", OSGI_FRAMEWORK_SERVICE_ID)
+			.ignoreOtherParameters()
 			.withParameter("properties", props)
 			.andReturnValue("1");
-	mock().expectOneCall("properties_get")
+	mock().expectOneCall("properties_getWithDefault")
 			.withParameter("key", OSGI_FRAMEWORK_SERVICE_ID)
+			.ignoreOtherParameters()
 			.withParameter("properties", props2)
 			.andReturnValue("2");
 
-	mock().expectOneCall("properties_get")
+	mock().expectOneCall("properties_getWithDefault")
 			.withParameter("key", OSGI_FRAMEWORK_SERVICE_RANKING)
+			.ignoreOtherParameters()
 			.withParameter("properties", props)
 			.andReturnValue("1");
-	mock().expectOneCall("properties_get")
+	mock().expectOneCall("properties_getWithDefault")
 			.withParameter("key", OSGI_FRAMEWORK_SERVICE_RANKING)
+			.ignoreOtherParameters()
 			.withParameter("properties", props2)
 			.andReturnValue("2");
 
@@ -646,21 +663,25 @@ TEST(service_reference, compareTo){
 	LONGS_EQUAL(-1, compare);
 
 	//service 1 is equal in ID and irrelevantly ranked
-	mock().expectOneCall("properties_get")
+	mock().expectOneCall("properties_getWithDefault")
 			.withParameter("key", OSGI_FRAMEWORK_SERVICE_ID)
+			.ignoreOtherParameters()
 			.withParameter("properties", props)
 			.andReturnValue("1);");
-	mock().expectOneCall("properties_get")
+	mock().expectOneCall("properties_getWithDefault")
 			.withParameter("key", OSGI_FRAMEWORK_SERVICE_ID)
+			.ignoreOtherParameters()
 			.withParameter("properties", props2)
 			.andReturnValue("1");
 
-	mock().expectOneCall("properties_get")
+	mock().expectOneCall("properties_getWithDefault")
 			.withParameter("key", OSGI_FRAMEWORK_SERVICE_RANKING)
+			.ignoreOtherParameters()
 			.withParameter("properties", props)
 			.andReturnValue("1");
-	mock().expectOneCall("properties_get")
+	mock().expectOneCall("properties_getWithDefault")
 			.withParameter("key", OSGI_FRAMEWORK_SERVICE_RANKING)
+			.ignoreOtherParameters()
 			.withParameter("properties", props2)
 			.andReturnValue("1");
 
@@ -668,21 +689,25 @@ TEST(service_reference, compareTo){
 	LONGS_EQUAL(0, compare);
 
 	//services have no rank and service 1 has a higher ID
-	mock().expectOneCall("properties_get")
+	mock().expectOneCall("properties_getWithDefault")
 			.withParameter("key", OSGI_FRAMEWORK_SERVICE_ID)
+			.ignoreOtherParameters()
 			.withParameter("properties", props)
 			.andReturnValue("2");
-	mock().expectOneCall("properties_get")
+	mock().expectOneCall("properties_getWithDefault")
 			.withParameter("key", OSGI_FRAMEWORK_SERVICE_ID)
+			.ignoreOtherParameters()
 			.withParameter("properties", props2)
 			.andReturnValue("1");
 
-	mock().expectOneCall("properties_get")
+	mock().expectOneCall("properties_getWithDefault")
 			.withParameter("key", OSGI_FRAMEWORK_SERVICE_RANKING)
+			.ignoreOtherParameters()
 			.withParameter("properties", props)
 			.andReturnValue((void*)NULL);
-	mock().expectOneCall("properties_get")
+	mock().expectOneCall("properties_getWithDefault")
 			.withParameter("key", OSGI_FRAMEWORK_SERVICE_RANKING)
+			.ignoreOtherParameters()
 			.withParameter("properties", props2)
 			.andReturnValue((void*)NULL);
 

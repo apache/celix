@@ -54,7 +54,10 @@ const char * properties_get(properties_pt properties, const char * key) {
 }
 
 const char * properties_getWithDefault(properties_pt properties, const char * key, const char * defaultValue) {
-	mock_c()->actualCall("properties_getWithDefault");
+	mock_c()->actualCall("properties_get")
+			->withPointerParameters("properties", properties)
+			->withStringParameters("key", key)
+			->withStringParameters("defaultValue", defaultValue);
 	return mock_c()->returnValue().value.pointerValue;
 }
 
