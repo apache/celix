@@ -104,7 +104,7 @@ static void add_node(const char *key, const char *value, void* arg) {
 	pubsub_discovery_pt ps_discovery = (pubsub_discovery_pt) arg;
 	pubsub_endpoint_pt pubEP = NULL;
 	celix_status_t status = etcdWatcher_getPublisherEndpointFromKey(ps_discovery, key, value, &pubEP);
-	if(!status && pubEP) {
+	if(status == CELIX_SUCCESS) {
 		pubsub_discovery_addNode(ps_discovery, pubEP);
 	}
 }

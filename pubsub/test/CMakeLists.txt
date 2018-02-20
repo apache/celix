@@ -38,20 +38,20 @@ celix_bundle_files(pubsub_sut
 add_celix_container(pubsub_udpmc_sut
     NAME deploy_sut
     BUNDLES
-        org.apache.celix.pubsub_serializer.PubSubSerializerJson
-        org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
-        org.apache.celix.pubsub_admin.PubSubAdminUdpMc
-        org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
+        celix_pubsub_serializer_json
+        celix_pubsub_discovery_etcd
+        celix_pubsub_admin_udp_multicast
+        celix_pubsub_topology_manager
         pubsub_sut
     DIR ${PROJECT_BINARY_DIR}/runtimes/test/pubsub/udpmc
 )
 add_celix_container(pubsub_zmq_sut
     NAME deploy_sut
     BUNDLES
-        org.apache.celix.pubsub_serializer.PubSubSerializerJson
-        org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
-        org.apache.celix.pubsub_admin.PubSubAdminZmq
-        org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
+        celix_pubsub_serializer_json
+        celix_pubsub_discovery_etcd
+        celix_pubsub_admin_zmq
+        celix_pubsub_topology_manager
         pubsub_sut
     DIR ${PROJECT_BINARY_DIR}/runtimes/test/pubsub/zmq
 )
@@ -77,10 +77,10 @@ celix_bundle_files(pubsub_tst
 add_celix_container(pubsub_udpmc_tst
     NAME deploy_tst
     BUNDLES
-        org.apache.celix.pubsub_serializer.PubSubSerializerJson
-        org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
-        org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
-        org.apache.celix.pubsub_admin.PubSubAdminUdpMc
+        celix_pubsub_serializer_json
+        celix_pubsub_topology_manager
+        celix_pubsub_discovery_etcd
+        celix_pubsub_admin_udp_multicast
         pubsub_tst
     #NOTE using $<TARGET_PROPERTY:pubsub_test_udpmc_runtime,RUNTIME_DIR> in DIR not (yet) possible
     DIR ${PROJECT_BINARY_DIR}/runtimes/test/pubsub/udpmc
@@ -89,10 +89,10 @@ add_celix_container(pubsub_udpmc_tst
 add_celix_container(pubsub_zmq_tst
     NAME deploy_tst
     BUNDLES
-        org.apache.celix.pubsub_serializer.PubSubSerializerJson
-        org.apache.celix.pubsub_topology_manager.PubSubTopologyManager
-        org.apache.celix.pubsub_discovery.etcd.PubsubDiscovery
-        org.apache.celix.pubsub_admin.PubSubAdminZmq
+        celix_pubsub_serializer_json
+        celix_pubsub_topology_manager
+        celix_pubsub_discovery_etcd
+        celix_pubsub_admin_zmq
         pubsub_tst
     DIR ${PROJECT_BINARY_DIR}/runtimes/test/pubsub/zmq
     LAUNCHER celix_test_runner
