@@ -27,10 +27,9 @@
 #ifndef PUBSUB_ADMIN_UDP_MC_IMPL_H_
 #define PUBSUB_ADMIN_UDP_MC_IMPL_H_
 
+#include "pubsub_psa_udpmc_constants.h"
 #include "pubsub_admin.h"
 #include "log_helper.h"
-
-#define PUBSUB_ADMIN_TYPE	"udp_mc"
 
 struct pubsub_admin {
 
@@ -68,8 +67,13 @@ struct pubsub_admin {
 	char* mcIpAddress; // The multicast IP address
 
 	int sendSocket;
-	void* zmq_context; // to be removed
 
+
+	double qosSampleScore;
+	double qosControlScore;
+	double defaultScore;
+
+	bool verbose;
 };
 
 celix_status_t pubsubAdmin_create(bundle_context_pt context, pubsub_admin_pt *admin);

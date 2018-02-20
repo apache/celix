@@ -29,7 +29,6 @@
 
 #include "pubsub_common.h"
 #include "publisher_endpoint_announce.h"
-#include "pubsub_discovery.h"
 #include "pubsub_discovery_impl.h"
 
 struct activator {

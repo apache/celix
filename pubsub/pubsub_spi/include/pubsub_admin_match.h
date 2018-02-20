@@ -31,10 +31,17 @@
 #define QOS_TYPE_SAMPLE		"sample"	/* A.k.a. unreliable connection */
 #define QOS_TYPE_CONTROL	"control"	/* A.k.a. reliable connection */
 
-#define PUBSUB_ADMIN_FULL_MATCH_SCORE	200.0F
-#define SERIALIZER_FULL_MATCH_SCORE		100.0F
+#define PUBSUB_ADMIN_FULL_MATCH_SCORE	100.0F
 
-celix_status_t pubsub_admin_match(properties_pt endpoint_props, const char *pubsub_admin_type, array_list_pt serializerList, double *score);
-celix_status_t pubsub_admin_get_best_serializer(properties_pt endpoint_props, array_list_pt serializerList, pubsub_serializer_service_t **serSvc);
+celix_status_t pubsub_admin_match(
+        pubsub_endpoint_pt endpoint,
+        const char *pubsub_admin_type,
+        const char *frameworkUuid,
+        double sampleScore,
+        double controlScore,
+        double defaultScore,
+        array_list_pt serializerList,
+        double *score);
+celix_status_t pubsub_admin_get_best_serializer(properties_pt endpoint_props, array_list_pt serializerList, service_reference_pt *out);
 
 #endif /* PUBSUB_ADMIN_MATCH_H_ */

@@ -37,18 +37,12 @@
 #undef LOG_INFO
 #undef LOG_WARNING
 
+#include "pubsub_psa_zmq_constants.h"
 #include "pubsub_admin.h"
 #include "pubsub_admin_match.h"
 #include "log_helper.h"
 #include "command.h"
 
-#define PSA_ZMQ_BASE_PORT "PSA_ZMQ_BASE_PORT"
-#define PSA_ZMQ_MAX_PORT "PSA_ZMQ_MAX_PORT"
-
-#define PSA_ZMQ_DEFAULT_BASE_PORT 5501
-#define PSA_ZMQ_DEFAULT_MAX_PORT 6000
-
-#define PUBSUB_ADMIN_TYPE	"zmq"
 
 struct pubsub_admin {
 
@@ -56,8 +50,8 @@ struct pubsub_admin {
 	log_helper_pt loghelper;
 
 	/* List of the available serializers */
-	celix_thread_mutex_t serializerListLock; // List<serializers>
-	array_list_pt serializerList;
+	celix_thread_mutex_t serializerListLock;
+	array_list_pt serializerList; // List<serializers service references>
 
 	celix_thread_mutex_t localPublicationsLock;
 	hash_map_pt localPublications;//<topic(string),service_factory_pt>
@@ -91,6 +85,12 @@ struct pubsub_admin {
 
 	command_service_t shellCmdService;
 	service_registration_pt  shellCmdReg;
+
+	double qosSampleScore;
+	double qosControlScore;
+	double defaultScore;
+
+	bool verbose;
 };
 
 celix_status_t pubsubAdmin_create(bundle_context_pt context, pubsub_admin_pt *admin);

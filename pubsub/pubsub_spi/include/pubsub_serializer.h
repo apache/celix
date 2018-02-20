@@ -32,8 +32,6 @@
 
 #include "pubsub_common.h"
 
-#define PUBSUB_SERIALIZER_TYPE_KEY	"pubsub_serializer.type"
-
 /**
  * There should be a pubsub_serializer_t
  * per msg type (msg id) per bundle

@@ -127,18 +127,18 @@ celix_status_t etcdWatcher_getPublisherEndpointFromKey(pubsub_discovery_pt pubsu
 	char scope[MAX_FIELD_LENGTH];
 	char topic[MAX_FIELD_LENGTH];
 	char fwUUID[MAX_FIELD_LENGTH];
-	char serviceId[MAX_FIELD_LENGTH];
+	char pubsubUUID[MAX_FIELD_LENGTH];
 
 	memset(rootPath,0,MAX_ROOTNODE_LENGTH);
 	memset(topic,0,MAX_FIELD_LENGTH);
 	memset(fwUUID,0,MAX_FIELD_LENGTH);
-	memset(serviceId,0,MAX_FIELD_LENGTH);
+	memset(pubsubUUID,0,MAX_FIELD_LENGTH);
 
 	etcdWatcher_getRootPath(pubsub_discovery->context, rootPath);
 
 	asprintf(&expr, "/%s/%%[^/]/%%[^/]/%%[^/]/%%[^/].*", rootPath);
 	if(expr) {
-		int foundItems = sscanf(etcdKey, expr, scope, topic, fwUUID, serviceId);
+		int foundItems = sscanf(etcdKey, expr, scope, topic, fwUUID, pubsubUUID);
 		free(expr);
 		if (foundItems != 4) { // Could happen when a directory is removed, just don't process this.
 			status = CELIX_ILLEGAL_STATE;
@@ -149,50 +149,28 @@ celix_status_t etcdWatcher_getPublisherEndpointFromKey(pubsub_discovery_pt pubsu
 			json_error_t error;
 			json_t* jsonRoot = json_loads(etcdValue, JSON_DECODE_ANY, &error);
 
-			const char* endpoint_serializer = NULL;
-			const char* endpoint_admin_type = NULL;
-			const char* endpoint_url = NULL;
-			const char* endpoint_type = NULL;
+			properties_t *discovered_props = properties_create();
 
-			if (json_is_object(jsonRoot)){
+			if (json_is_object(jsonRoot)) {
 
-				void *iter = json_object_iter(jsonRoot);
+                void *iter = json_object_iter(jsonRoot);
 
-				const char *key;
-				json_t *value;
+                const char *key;
+                json_t *value;
 
-				while (iter) {
-					key = json_object_iter_key(iter);
-					value = json_object_iter_value(iter);
+                while (iter) {
+                    key = json_object_iter_key(iter);
+                    value = json_object_iter_value(iter);
 
-					if (strcmp(key, PUBSUB_ENDPOINT_SERIALIZER) == 0) {
-						endpoint_serializer = json_string_value(value);
-					} else if (strcmp(key, PUBSUB_ENDPOINT_ADMIN_TYPE) == 0) {
-						endpoint_admin_type = json_string_value(value);
-					} else if (strcmp(key, PUBSUB_ENDPOINT_URL) == 0) {
-						endpoint_url = json_string_value(value);
-					} else if (strcmp(key, PUBSUB_ENDPOINT_TYPE) == 0) {
-						endpoint_type = json_string_value(value);
-					}
+                    properties_set(discovered_props, key, json_string_value(value));
+                    iter = json_object_iter_next(jsonRoot, iter);
+                }
+            }
 
-					iter = json_object_iter_next(jsonRoot, iter);
-				}
 
-				if (endpoint_url == NULL) {
-					printf("EW: No endpoint found in json object!\n");
-					endpoint_url = etcdValue;
-				}
-
-			} else {
-				endpoint_url = etcdValue;
-			}
-
-			status = pubsubEndpoint_create(fwUUID,scope,topic,strtol(serviceId,NULL,10),endpoint_url,NULL,pubEP);
-
-            if (status == CELIX_SUCCESS) {
-                status += pubsubEndpoint_setField(*pubEP, PUBSUB_ENDPOINT_SERIALIZER, endpoint_serializer);
-                status += pubsubEndpoint_setField(*pubEP, PUBSUB_ENDPOINT_ADMIN_TYPE, endpoint_admin_type);
-                status += pubsubEndpoint_setField(*pubEP, PUBSUB_ENDPOINT_TYPE, endpoint_type);
+            status = pubsubEndpoint_createFromDiscoveredProperties(discovered_props, pubEP);
+            if (status != CELIX_SUCCESS) {
+                properties_destroy(discovered_props);
             }
 
 			if (jsonRoot != NULL) {

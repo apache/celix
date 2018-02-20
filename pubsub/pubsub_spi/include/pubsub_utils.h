@@ -30,10 +30,8 @@
 #include "bundle_context.h"
 #include "array_list.h"
 
-char* pubsub_getScopeFromFilter(const char* bundle_filter);
-char* pubsub_getTopicFromFilter(const char* bundle_filter);
+celix_status_t pubsub_getPubSubInfoFromFilter(const char* filterstr, const char **topic, const char **scope);
 char* pubsub_getKeysBundleDir(bundle_context_pt ctx);
-array_list_pt pubsub_getTopicsFromString(const char* string);
 
 
 #endif /* PUBSUB_UTILS_H_ */

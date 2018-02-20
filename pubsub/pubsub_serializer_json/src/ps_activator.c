@@ -28,6 +28,7 @@
 
 #include "bundle_activator.h"
 #include "service_registration.h"
+#include "pubsub_constants.h"
 
 #include "pubsub_serializer_impl.h"
 
@@ -70,7 +71,7 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
 
 		/* Set serializer type */
 		properties_pt props = properties_create();
-		properties_set(props,PUBSUB_SERIALIZER_TYPE_KEY,PUBSUB_SERIALIZER_TYPE);
+		properties_set(props, PUBSUB_SERIALIZER_TYPE_KEY, PUBSUB_SERIALIZER_TYPE);
 
 		status = bundleContext_registerService(context, PUBSUB_SERIALIZER_SERVICE, pubsubSerializerSvc, props, &activator->registration);
 

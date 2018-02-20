@@ -48,6 +48,9 @@ FRAMEWORK_EXPORT celix_status_t
 serviceReference_getProperty(service_reference_pt reference, const char *key, const char **value);
 
 FRAMEWORK_EXPORT celix_status_t
+serviceReference_getPropertyWithDefault(service_reference_pt reference, const char *key, const char* def, const char **value);
+
+FRAMEWORK_EXPORT celix_status_t
 serviceReference_getPropertyKeys(service_reference_pt reference, char **keys[], unsigned int *size);
 
 FRAMEWORK_EXPORT celix_status_t

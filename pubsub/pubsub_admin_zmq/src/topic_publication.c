@@ -45,6 +45,7 @@
 #include "topic_publication.h"
 
 #include "pubsub_serializer.h"
+#include "pubsub_psa_zmq_constants.h"
 
 #ifdef BUILD_WITH_ZMQ_SECURITY
 	#include "zmq_crypto.h"
@@ -65,7 +66,10 @@ struct topic_publication {
 	service_registration_pt svcFactoryReg;
 	array_list_pt pub_ep_list; //List<pubsub_endpoint>
 	hash_map_pt boundServices; //<bundle_pt,bound_service>
-	pubsub_serializer_service_t *serializer;
+	struct {
+		const char* type;
+		pubsub_serializer_service_t *svc;
+	} serializer;
 	celix_thread_mutex_t tp_lock;
 };
 
@@ -109,7 +113,7 @@ static int pubsub_localMsgTypeIdForUUID(void* handle, const char* msgType, unsig
 
 static void delay_first_send_for_late_joiners(void);
 
-celix_status_t pubsub_topicPublicationCreate(bundle_context_pt bundle_context, pubsub_endpoint_pt pubEP, pubsub_serializer_service_t *best_serializer, char* bindIP, unsigned int basePort, unsigned int maxPort, topic_publication_pt *out){
+celix_status_t pubsub_topicPublicationCreate(bundle_context_pt bundle_context, pubsub_endpoint_pt pubEP, pubsub_serializer_service_t *best_serializer, const char* serType, char* bindIP, unsigned int basePort, unsigned int maxPort, topic_publication_pt *out){
 	celix_status_t status = CELIX_SUCCESS;
 
 #ifdef BUILD_WITH_ZMQ_SECURITY
@@ -214,7 +218,8 @@ celix_status_t pubsub_topicPublicationCreate(bundle_context_pt bundle_context, p
 
 	pub->endpoint = ep;
 	pub->zmq_socket = socket;
-	pub->serializer = best_serializer;
+	pub->serializer.svc = best_serializer;
+	pub->serializer.type = serType;
 
 	celixThreadMutex_create(&(pub->socket_lock),NULL);
 
@@ -248,7 +253,8 @@ celix_status_t pubsub_topicPublicationDestroy(topic_publication_pt pub){
 	hashMap_destroy(pub->boundServices,false,false);
 
 	pub->svcFactoryReg = NULL;
-	pub->serializer = NULL;
+	pub->serializer.svc = NULL;
+	pub->serializer.type = NULL;
 #ifdef BUILD_WITH_ZMQ_SECURITY
 	zcert_destroy(&(pub->zmq_cert));
 #endif
@@ -282,16 +288,17 @@ celix_status_t pubsub_topicPublicationStart(bundle_context_pt bundle_context,top
 		factory->ungetService = pubsub_topicPublicationUngetService;
 
 		properties_pt props = properties_create();
-		properties_set(props,PUBSUB_PUBLISHER_TOPIC,properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
-		properties_set(props,PUBSUB_PUBLISHER_SCOPE,properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_SCOPE));
+		properties_set(props,PUBSUB_PUBLISHER_TOPIC,properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_NAME));
+		properties_set(props,PUBSUB_PUBLISHER_SCOPE,properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_SCOPE));
 		properties_set(props,"service.version", PUBSUB_PUBLISHER_SERVICE_VERSION);
 
 		status = bundleContext_registerServiceFactory(bundle_context,PUBSUB_PUBLISHER_SERVICE_NAME,factory,props,&(pub->svcFactoryReg));
 
 		if(status != CELIX_SUCCESS){
 			properties_destroy(props);
-			printf("PSA_ZMQ_PSA_ZMQ_TP: Cannot register ServiceFactory for topic %s (bundle %ld).\n",
-				   properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC),pubEP->serviceID);
+			printf("PSA_ZMQ_PSA_ZMQ_TP: Cannot register ServiceFactory for topic %s (bundle %s).\n",
+				   properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_NAME),
+				   properties_get(pubEP->endpoint_props, PUBSUB_BUNDLE_ID));
 		}
 		else{
 			*svcFactory = factory;
@@ -309,9 +316,11 @@ celix_status_t pubsub_topicPublicationStop(topic_publication_pt pub){
 	return serviceRegistration_unregister(pub->svcFactoryReg);
 }
 
-celix_status_t pubsub_topicPublicationAddPublisherEP(topic_publication_pt pub,pubsub_endpoint_pt ep){
+celix_status_t pubsub_topicPublicationAddPublisherEP(topic_publication_pt pub, pubsub_endpoint_pt ep) {
 
 	celixThreadMutex_lock(&(pub->tp_lock));
+	pubsubEndpoint_setField(ep, PUBSUB_ADMIN_TYPE_KEY, PSA_ZMQ_PUBSUB_ADMIN_TYPE);
+	pubsubEndpoint_setField(ep, PUBSUB_SERIALIZER_TYPE_KEY, pub->serializer.type);
     pubsubEndpoint_setField(ep, PUBSUB_ENDPOINT_URL, pub->endpoint);
 	arrayList_add(pub->pub_ep_list,ep);
 	celixThreadMutex_unlock(&(pub->tp_lock));
@@ -574,14 +583,14 @@ static publish_bundle_bound_service_pt pubsub_createPublishBundleBoundService(to
 		bound->mp_send_in_progress = false;
 		celixThreadMutex_create(&bound->mp_lock,NULL);
 
-		if(tp->serializer != NULL){
-			tp->serializer->createSerializerMap(tp->serializer->handle,bundle,&bound->msgTypes);
+		if(tp->serializer.svc != NULL){
+			tp->serializer.svc->createSerializerMap(tp->serializer.svc->handle,bundle,&bound->msgTypes);
 		}
 
 		arrayList_create(&bound->mp_parts);
 
 		pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt)arrayList_get(bound->parent->pub_ep_list,0);
-		bound->topic=strdup(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
+		bound->topic=strdup(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_NAME));
 
 		bound->service.handle = bound;
 		bound->service.localMsgTypeIdForMsgType = pubsub_localMsgTypeIdForUUID;
@@ -600,8 +609,8 @@ static void pubsub_destroyPublishBundleBoundService(publish_bundle_bound_service
 	celixThreadMutex_lock(&boundSvc->mp_lock);
 
 
-	if(boundSvc->parent->serializer != NULL && boundSvc->msgTypes != NULL){
-		boundSvc->parent->serializer->destroySerializerMap(boundSvc->parent->serializer->handle, boundSvc->msgTypes);
+	if(boundSvc->parent->serializer.svc != NULL && boundSvc->msgTypes != NULL){
+		boundSvc->parent->serializer.svc->destroySerializerMap(boundSvc->parent->serializer.svc->handle, boundSvc->msgTypes);
 	}
 
 	if(boundSvc->mp_parts!=NULL){

@@ -203,20 +203,25 @@ celix_status_t serviceReference_getServiceRegistration(service_reference_pt ref,
     }
 }
 
-celix_status_t serviceReference_getProperty(service_reference_pt ref, const char* key, const char** value) {
+FRAMEWORK_EXPORT celix_status_t
+serviceReference_getPropertyWithDefault(service_reference_pt ref, const char *key, const char* def, const char **value) {
     celix_status_t status = CELIX_SUCCESS;
     properties_pt props = NULL;
     celixThreadRwlock_readLock(&ref->lock);
     if (ref->registration != NULL) {
         status = serviceRegistration_getProperties(ref->registration, &props);
         if (status == CELIX_SUCCESS) {
-            *value = (char*) properties_get(props, key);
+            *value = (char*) properties_getWithDefault(props, key, def);
         }
     } else {
         *value = NULL;
     }
     celixThreadRwlock_unlock(&ref->lock);
     return status;
+}
+
+celix_status_t serviceReference_getProperty(service_reference_pt ref, const char* key, const char** value) {
+    return serviceReference_getPropertyWithDefault(ref, key, NULL, value);
 }
 
 FRAMEWORK_EXPORT celix_status_t serviceReference_getPropertyKeys(service_reference_pt ref, char **keys[], unsigned int *size) {

@@ -40,6 +40,7 @@
 #include "large_udp.h"
 
 #include "pubsub_serializer.h"
+#include "pubsub_psa_udpmc_constants.h"
 
 #define EP_ADDRESS_LEN		32
 
@@ -52,7 +53,10 @@ struct topic_publication {
 	array_list_pt pub_ep_list; //List<pubsub_endpoint>
 	hash_map_pt boundServices; //<bundle_pt,bound_service>
 	celix_thread_mutex_t tp_lock;
-	pubsub_serializer_service_t *serializer;
+	struct {
+		const char* type;
+		pubsub_serializer_service_t* svc;
+	} serializer;
 	struct sockaddr_in destAddr;
 };
 
@@ -92,11 +96,14 @@ static int pubsub_localMsgTypeIdForUUID(void* handle, const char* msgType, unsig
 static void delay_first_send_for_late_joiners(void);
 
 
-celix_status_t pubsub_topicPublicationCreate(int sendSocket, pubsub_endpoint_pt pubEP, pubsub_serializer_service_t *best_serializer, char* bindIP, topic_publication_pt *out){
+celix_status_t pubsub_topicPublicationCreate(int sendSocket, pubsub_endpoint_pt pubEP, pubsub_serializer_service_t *best_serializer, const char* best_serializer_type, char* bindIP, topic_publication_pt *out){
 
 	char* ep = malloc(EP_ADDRESS_LEN);
 	memset(ep,0,EP_ADDRESS_LEN);
-	unsigned int port = pubEP->serviceID + rand_range(UDP_BASE_PORT+pubEP->serviceID+3, UDP_MAX_PORT);
+
+	long serviceId =strtol(properties_getWithDefault(pubEP->endpoint_props, PUBSUB_ENDPOINT_SERVICE_ID, "0"), NULL, 10);
+
+	unsigned int port = serviceId + rand_range(UDP_BASE_PORT+serviceId+3, UDP_MAX_PORT);
 	snprintf(ep,EP_ADDRESS_LEN,"udp://%s:%u",bindIP,port);
 
 
@@ -112,9 +119,10 @@ celix_status_t pubsub_topicPublicationCreate(int sendSocket, pubsub_endpoint_pt 
 	pub->destAddr.sin_addr.s_addr = inet_addr(bindIP);
 	pub->destAddr.sin_port = htons(port);
 
-	pub->serializer = best_serializer;
+	pub->serializer.type = best_serializer_type;
+	pub->serializer.svc = best_serializer;
 
-	pubsub_topicPublicationAddPublisherEP(pub,pubEP);
+	pubsub_topicPublicationAddPublisherEP(pub, pubEP);
 
 	*out = pub;
 
@@ -138,7 +146,8 @@ celix_status_t pubsub_topicPublicationDestroy(topic_publication_pt pub){
 	hashMap_destroy(pub->boundServices,false,false);
 
 	pub->svcFactoryReg = NULL;
-	pub->serializer = NULL;
+	pub->serializer.svc= NULL;
+	pub->serializer.type= NULL;
 
 	if(close(pub->sendSocket) != 0){
 		status = CELIX_FILE_IO_EXCEPTION;
@@ -167,8 +176,8 @@ celix_status_t pubsub_topicPublicationStart(bundle_context_pt bundle_context,top
 		factory->ungetService = pubsub_topicPublicationUngetService;
 
 		properties_pt props = properties_create();
-		properties_set(props,PUBSUB_PUBLISHER_SCOPE,properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_SCOPE));
-		properties_set(props,PUBSUB_PUBLISHER_TOPIC,properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
+		properties_set(props,PUBSUB_PUBLISHER_SCOPE,properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_SCOPE));
+		properties_set(props,PUBSUB_PUBLISHER_TOPIC,properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_NAME));
                 properties_set(props,"service.version", PUBSUB_PUBLISHER_SERVICE_VERSION);
 
 
@@ -176,10 +185,10 @@ celix_status_t pubsub_topicPublicationStart(bundle_context_pt bundle_context,top
 
 		if(status != CELIX_SUCCESS){
 			properties_destroy(props);
-			printf("PSA_UDP_MC_PSA_UDP_MC_TP: Cannot register ServiceFactory for topic %s, topic %s (bundle %ld).\n",
-				   properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_SCOPE),
-				   properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC),
-				   pubEP->serviceID);
+			printf("PSA_UDP_MC_PSA_UDP_MC_TP: Cannot register ServiceFactory for topic %s, topic %s (bundle %s).\n",
+				   properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_SCOPE),
+				   properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_NAME),
+				   properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_BUNDLE_ID));
 		}
 		else{
 			*svcFactory = factory;
@@ -197,17 +206,19 @@ celix_status_t pubsub_topicPublicationStop(topic_publication_pt pub){
 	return serviceRegistration_unregister(pub->svcFactoryReg);
 }
 
-celix_status_t pubsub_topicPublicationAddPublisherEP(topic_publication_pt pub,pubsub_endpoint_pt ep){
+celix_status_t pubsub_topicPublicationAddPublisherEP(topic_publication_pt pub, pubsub_endpoint_pt ep) {
 
 	celixThreadMutex_lock(&(pub->tp_lock));
 	pubsubEndpoint_setField(ep, PUBSUB_ENDPOINT_URL, pub->endpoint);
+	pubsubEndpoint_setField(ep, PUBSUB_ADMIN_TYPE_KEY, PSA_UDPMC_PUBSUB_ADMIN_TYPE);
+	pubsubEndpoint_setField(ep, PUBSUB_SERIALIZER_TYPE_KEY, pub->serializer.type);
 	arrayList_add(pub->pub_ep_list,ep);
 	celixThreadMutex_unlock(&(pub->tp_lock));
 
 	return CELIX_SUCCESS;
 }
 
-celix_status_t pubsub_topicPublicationRemovePublisherEP(topic_publication_pt pub,pubsub_endpoint_pt ep){
+celix_status_t pubsub_topicPublicationRemovePublisherEP(topic_publication_pt pub,pubsub_endpoint_pt ep) {
 
 	celixThreadMutex_lock(&(pub->tp_lock));
 	arrayList_removeElement(pub->pub_ep_list,ep);
@@ -386,13 +397,13 @@ static publish_bundle_bound_service_pt pubsub_createPublishBundleBoundService(to
 		bound->getCount = 1;
 		celixThreadMutex_create(&bound->mp_lock,NULL);
 
-		if(tp->serializer != NULL){
-			tp->serializer->createSerializerMap(tp->serializer->handle,bundle,&bound->msgTypes);
+		if (tp->serializer.svc != NULL){
+			tp->serializer.svc->createSerializerMap(tp->serializer.svc->handle,bundle,&bound->msgTypes);
 		}
 
 		pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt)arrayList_get(bound->parent->pub_ep_list,0);
-		bound->scope=strdup(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_SCOPE));
-		bound->topic=strdup(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC));
+		bound->scope=strdup(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_SCOPE));
+		bound->topic=strdup(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_NAME));
 		bound->largeUdpHandle = largeUdp_create(1);
 
 		bound->service.handle = bound;
@@ -409,8 +420,8 @@ static void pubsub_destroyPublishBundleBoundService(publish_bundle_bound_service
 
 	celixThreadMutex_lock(&boundSvc->mp_lock);
 
-	if(boundSvc->parent->serializer != NULL && boundSvc->msgTypes != NULL){
-		boundSvc->parent->serializer->destroySerializerMap(boundSvc->parent->serializer->handle, boundSvc->msgTypes);
+	if(boundSvc->parent->serializer.svc != NULL && boundSvc->msgTypes != NULL){
+		boundSvc->parent->serializer.svc->destroySerializerMap(boundSvc->parent->serializer.svc->handle, boundSvc->msgTypes);
 	}
 
 	if(boundSvc->scope!=NULL){

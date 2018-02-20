@@ -32,11 +32,8 @@
 #include "pubsub_common.h"
 #include "pubsub_endpoint.h"
 
-#define PSA_IP 	"PSA_IP"
-#define PSA_ITF	"PSA_INTERFACE"
-#define PSA_MULTICAST_IP_PREFIX "PSA_MC_PREFIX"
+#include "pubsub_constants.h"
 
-#define PUBSUB_ADMIN_TYPE_KEY	"pubsub_admin.type"
 
 typedef struct pubsub_admin *pubsub_admin_pt;
 
@@ -52,19 +49,20 @@ struct pubsub_admin_service {
 	celix_status_t (*closeAllPublications)(pubsub_admin_pt admin,char* scope, char* topic);
 	celix_status_t (*closeAllSubscriptions)(pubsub_admin_pt admin,char* scope, char* topic);
 
+	//TODO add match function for subscription service and publication listeners, e.g.:
+	//matchPublisherListener(admin, bundle, filter, outScore)
+	//matchSubscriberService(admin, svcRef, outScore)
+
 	/* Match principle:
-	 * - A full matching pubsub_admin gives 200 points
-	 * - A full matching serializer gives 100 points
-	 * - If QoS = sample
-	 * 		- fallback pubsub_admin order of selection is: udp_mc, zmq. Points allocation is 100,75.
-	 * 		- fallback serializers order of selection is: json, void. Points allocation is 30,20.
-	 * - If QoS = control
-	 * 		- fallback pubsub_admin order of selection is: zmq,udp_mc. Points allocation is 100,75.
-	 * 		- fallback serializers order of selection is: json, void. Points allocation is 30,20.
-	 * - If nothing is specified, QoS = sample is assumed, so the same score applies, just divided by two.
-	 *
+	 * - A full matching pubsub_admin gives 100 points
 	 */
+	//TODO this should only be called for remote endpoints (e.g. not endpoints from this framework
 	celix_status_t (*matchEndpoint)(pubsub_admin_pt admin, pubsub_endpoint_pt endpoint, double* score);
+
+        //TODO redesign add function for handling endpoint seperate, e.g.: 
+        //addEndpoint(admin, endpoint); 
+        //note that endpoints can be subscribers and publishers
+        //Also note that we than can have pending subscribers and pending (subscriber/publisher) endpoints.
 };
 
 typedef struct pubsub_admin_service *pubsub_admin_service_pt;

@@ -30,12 +30,11 @@
 #include <stdlib.h>
 
 #define PUBSUB_PUBLISHER_SERVICE_NAME           "pubsub.publisher"
-#define PUBSUB_PUBLISHER_SERVICE_VERSION	      "2.0.0"
+#define PUBSUB_PUBLISHER_SERVICE_VERSION	    "2.0.0"
  
 //properties
-#define PUBSUB_PUBLISHER_TOPIC                  "pubsub.topic"
-#define PUBSUB_PUBLISHER_SCOPE                  "pubsub.scope"
-#define PUBSUB_PUBLISHER_STRATEGY               "pubsub.strategy"
+#define PUBSUB_PUBLISHER_TOPIC                  "topic"
+#define PUBSUB_PUBLISHER_SCOPE                  "scope"
 #define PUBSUB_PUBLISHER_CONFIG                 "pubsub.config"
  
 #define PUBSUB_PUBLISHER_SCOPE_DEFAULT			"default"

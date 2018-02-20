@@ -17,24 +17,23 @@
  *under the License.
  */
 
-#ifndef PUBLISHER_ENDPOINT_ANNOUNCE_H_
-#define PUBLISHER_ENDPOINT_ANNOUNCE_H_
-
-#include "pubsub_endpoint.h"
+#ifndef PUBSUB_PSA_UDPMC_CONSTANTS_H_
+#define PUBSUB_PSA_UDPMC_CONSTANTS_H_
 
 
-//TODO refactor to pubsub_endpoint_announce
-//can be used to announce and remove publisher and subscriber endpoints
+#define PSA_UDPMC_PUBSUB_ADMIN_TYPE	            "udp_mc"
 
-struct publisher_endpoint_announce {
-	void *handle;
-	celix_status_t (*announcePublisher)(void *handle, pubsub_endpoint_pt pubEP);
-	celix_status_t (*removePublisher)(void *handle, pubsub_endpoint_pt pubEP);
-	celix_status_t (*interestedInTopic)(void* handle, const char *scope, const char *topic);
-	celix_status_t (*uninterestedInTopic)(void* handle, const char *scope, const char *topic);
-};
+#define PSA_UDPMC_DEFAULT_QOS_SAMPLE_SCORE 		70
+#define PSA_UDPMC_DEFAULT_QOS_CONTROL_SCORE 	30
+#define PSA_UDPMC_DEFAULT_SCORE 				50
 
-typedef struct publisher_endpoint_announce *publisher_endpoint_announce_pt;
+#define PSA_UDPMC_QOS_SAMPLE_SCORE_KEY 			"PSA_UDPMC_QOS_SAMPLE_SCORE"
+#define PSA_UDPMC_QOS_CONTROL_SCORE_KEY 		"PSA_UDPMC_QOS_CONTROL_SCORE"
+#define PSA_UDPMC_DEFAULT_SCORE_KEY 			"PSA_UDPMC_DEFAULT_SCORE"
+
+#define PSA_UDPMC_DEFAULT_VERBOSE 				false
+
+#define PSA_UDPMC_VERBOSE_KEY    			    "PSA_UDPMC_VERBOSE"
 
 
-#endif /* PUBLISHER_ENDPOINT_ANNOUNCE_H_ */
+#endif /* PUBSUB_PSA_UDPMC_CONSTANTS_H_ */

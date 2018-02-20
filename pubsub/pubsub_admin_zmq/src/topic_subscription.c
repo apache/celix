@@ -75,7 +75,10 @@ struct topic_subscription{
 	celix_thread_mutex_t ts_lock;
 	bundle_context_pt context;
 
-	pubsub_serializer_service_t *serializer;
+	struct {
+		const char* type;
+		pubsub_serializer_service_t *svc;
+	} serializer;
 
 	hash_map_pt servicesMap; // key = service, value = msg types map
 
@@ -134,7 +137,7 @@ static unsigned int get_zmq_receive_timeout(bundle_context_pt context) {
 	return timeout;
 }
 
-celix_status_t pubsub_topicSubscriptionCreate(bundle_context_pt bundle_context, char* scope, char* topic, pubsub_serializer_service_t *best_serializer, topic_subscription_pt* out){
+celix_status_t pubsub_topicSubscriptionCreate(bundle_context_pt bundle_context, char* scope, char* topic, pubsub_serializer_service_t *best_serializer, const char *serType, topic_subscription_pt* out){
 	celix_status_t status = CELIX_SUCCESS;
 
 #ifdef BUILD_WITH_ZMQ_SECURITY
@@ -202,7 +205,7 @@ celix_status_t pubsub_topicSubscriptionCreate(bundle_context_pt bundle_context, 
 	ts->zmq_socket = zmq_s;
 	ts->running = false;
 	ts->nrSubscribers = 0;
-	ts->serializer = best_serializer;
+	ts->serializer.svc = best_serializer;
 	ts->zmqReceiveTimeout = get_zmq_receive_timeout(bundle_context);
 #ifdef BUILD_WITH_ZMQ_SECURITY
 	ts->zmq_cert = sub_cert;
@@ -419,8 +422,8 @@ static celix_status_t topicsub_subscriberTracked(void * handle, service_referenc
 
 		serviceReference_getBundle(reference, &bundle);
 
-		if(ts->serializer != NULL && bundle!=NULL){
-			ts->serializer->createSerializerMap(ts->serializer->handle,bundle,&msgTypes);
+		if(ts->serializer.svc != NULL && bundle!=NULL){
+			ts->serializer.svc->createSerializerMap(ts->serializer.svc->handle,bundle,&msgTypes);
 			if(msgTypes != NULL){
 				hashMap_put(ts->servicesMap, service, msgTypes);
 				printf("PSA_ZMQ_TS: New subscriber registered.\n");
@@ -443,8 +446,8 @@ static celix_status_t topicsub_subscriberUntracked(void * handle, service_refere
 	celixThreadMutex_lock(&ts->ts_lock);
 	if (hashMap_containsKey(ts->servicesMap, service)) {
 		hash_map_pt msgTypes = hashMap_remove(ts->servicesMap, service);
-		if(msgTypes!=NULL && ts->serializer!=NULL){
-			ts->serializer->destroySerializerMap(ts->serializer->handle,msgTypes);
+		if(msgTypes!=NULL && ts->serializer.svc!=NULL){
+			ts->serializer.svc->destroySerializerMap(ts->serializer.svc->handle,msgTypes);
 			printf("PSA_ZMQ_TS: Subscriber unregistered.\n");
 		}
 		else{

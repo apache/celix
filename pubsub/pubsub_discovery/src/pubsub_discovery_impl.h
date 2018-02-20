@@ -29,12 +29,15 @@
 
 #define FREE_MEM(ptr) if(ptr) {free(ptr); ptr = NULL;}
 
+#define PUBSUB_ETCD_DISCOVERY_VERBOSE_KEY "PUBSUB_ETCD_DISCOVERY_VERBOSE"
+#define PUBSUB_ETCD_DISCOVERY_DEFAULT_VERBOSE false
+
 struct watcher_info {
     etcd_watcher_pt watcher;
     int nr_references;
 };
 
-struct pubsub_discovery {
+typedef struct pubsub_discovery {
 	bundle_context_pt context;
 
 	celix_thread_mutex_t discoveredPubsMutex;
@@ -47,7 +50,11 @@ struct pubsub_discovery {
 	hash_map_pt watchers; //key = topicname, value = struct watcher_info
 
 	etcd_writer_pt writer;
-};
+
+	bool verbose;
+} pubsub_discovery_t;
+
+typedef struct pubsub_discovery *pubsub_discovery_pt;
 
 
 celix_status_t pubsub_discovery_create(bundle_context_pt context, pubsub_discovery_pt* node_discovery);

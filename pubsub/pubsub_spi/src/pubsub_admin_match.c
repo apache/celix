@@ -19,312 +19,151 @@
 
 
 #include <string.h>
+#include <limits.h>
+
 #include "service_reference.h"
 
 #include "pubsub_admin.h"
 
 #include "pubsub_admin_match.h"
+#include "constants.h"
 
-#define KNOWN_PUBSUB_ADMIN_NUM	2
-#define KNOWN_SERIALIZER_NUM	2
-
-static char* qos_sample_pubsub_admin_prio_list[KNOWN_PUBSUB_ADMIN_NUM] = {"udp_mc","zmq"};
-static char* qos_sample_serializer_prio_list[KNOWN_SERIALIZER_NUM] = {"json","void"};
-
-static char* qos_control_pubsub_admin_prio_list[KNOWN_PUBSUB_ADMIN_NUM] = {"zmq","udp_mc"};
-static char* qos_control_serializer_prio_list[KNOWN_SERIALIZER_NUM] = {"json","void"};
-
-static double qos_pubsub_admin_score[KNOWN_PUBSUB_ADMIN_NUM] = {100.0F,75.0F};
-static double qos_serializer_score[KNOWN_SERIALIZER_NUM] = {30.0F,20.0F};
-
-static void get_serializer_type(service_reference_pt svcRef, char **serializerType);
-static void manage_service_from_reference(service_reference_pt svcRef, void **svc, bool getService);
-
-celix_status_t pubsub_admin_match(properties_pt endpoint_props, const char *pubsub_admin_type, array_list_pt serializerList, double *score){
+/*
+ * Match can be called by
+ * a) a local registered pubsub_subscriber service
+ * b) a local opened service tracker for a pubsub_publisher service
+ * c) a remote found publisher endpoint
+ * Note subscribers are not (yet) dicovered remotely
+ */
+celix_status_t pubsub_admin_match(
+		pubsub_endpoint_pt endpoint,
+		const char *pubsub_admin_type,
+		const char *frameworkUuid,
+		double sampleScore,
+		double controlScore,
+		double defaultScore,
+		array_list_pt serializerList,
+		double *out) {
 
 	celix_status_t status = CELIX_SUCCESS;
-	double final_score = 0;
-	int i = 0, j = 0;
+	double score = 0;
+
+	const char *endpointFrameworkUuid		= NULL;
+	const char *endpointAdminType 			= NULL;
 
 	const char *requested_admin_type 		= NULL;
-	const char *requested_serializer_type 	= NULL;
 	const char *requested_qos_type			= NULL;
 
-	if(endpoint_props!=NULL){
-		requested_admin_type 		= properties_get(endpoint_props,PUBSUB_ADMIN_TYPE_KEY);
-		requested_serializer_type 	= properties_get(endpoint_props,PUBSUB_SERIALIZER_TYPE_KEY);
-		requested_qos_type			= properties_get(endpoint_props,QOS_ATTRIBUTE_KEY);
+	if (endpoint->endpoint_props != NULL) {
+		endpointFrameworkUuid = properties_get(endpoint->endpoint_props, PUBSUB_ENDPOINT_FRAMEWORK_UUID);
+		endpointAdminType = properties_get(endpoint->endpoint_props, PUBSUB_ENDPOINT_ADMIN_TYPE);
+	}
+	if (endpoint->topic_props != NULL) {
+		requested_admin_type = properties_get(endpoint->topic_props, PUBSUB_ADMIN_TYPE_KEY);
+		requested_qos_type = properties_get(endpoint->topic_props, QOS_ATTRIBUTE_KEY);
 	}
 
-	/* Analyze the pubsub_admin */
-	if(requested_admin_type != NULL){ /* We got precise specification on the pubsub_admin we want */
-		if(strncmp(requested_admin_type,pubsub_admin_type,strlen(pubsub_admin_type))==0){ //Full match
-			final_score += PUBSUB_ADMIN_FULL_MATCH_SCORE;
-		}
-	}
-	else if(requested_qos_type != NULL){ /* We got QoS specification that will determine the selected PSA */
-		if(strncmp(requested_qos_type,QOS_TYPE_SAMPLE,strlen(QOS_TYPE_SAMPLE))==0){
-			for(i=0;i<KNOWN_PUBSUB_ADMIN_NUM;i++){
-				if(strncmp(qos_sample_pubsub_admin_prio_list[i],pubsub_admin_type,strlen(pubsub_admin_type))==0){
-					final_score += qos_pubsub_admin_score[i];
-					break;
-				}
+	if (endpointFrameworkUuid != NULL && frameworkUuid != NULL && strncmp(frameworkUuid, endpointFrameworkUuid, 128) == 0) {
+		//match for local subscriber or publisher
+
+		/* Analyze the pubsub_admin */
+		if (requested_admin_type != NULL) { /* We got precise specification on the pubsub_admin we want */
+			if (strncmp(requested_admin_type, pubsub_admin_type, strlen(pubsub_admin_type)) == 0) { //Full match
+				score = PUBSUB_ADMIN_FULL_MATCH_SCORE;
 			}
-		}
-		else if(strncmp(requested_qos_type,QOS_TYPE_CONTROL,strlen(QOS_TYPE_CONTROL))==0){
-			for(i=0;i<KNOWN_PUBSUB_ADMIN_NUM;i++){
-				if(strncmp(qos_control_pubsub_admin_prio_list[i],pubsub_admin_type,strlen(pubsub_admin_type))==0){
-					final_score += qos_pubsub_admin_score[i];
-					break;
-				}
+		} else if (requested_qos_type != NULL) { /* We got QoS specification that will determine the selected PSA */
+			if (strncmp(requested_qos_type, QOS_TYPE_SAMPLE, strlen(QOS_TYPE_SAMPLE)) == 0) {
+				score = sampleScore;
+			} else if (strncmp(requested_qos_type, QOS_TYPE_CONTROL, strlen(QOS_TYPE_CONTROL)) == 0) {
+				score += controlScore;
+			} else {
+				printf("Unknown QoS type '%s'\n", requested_qos_type);
+				status = CELIX_ILLEGAL_ARGUMENT;
 			}
+		} else { /* We got no specification: fallback to default score */
+			score = defaultScore;
 		}
-		else{
-			printf("Unknown QoS type '%s'\n",requested_qos_type);
-			status = CELIX_ILLEGAL_ARGUMENT;
+
+		//NOTE serializer influence the score if a specific serializer is configured and not available.
+		//get best serializer. This is based on service raking or requested serializer. In the case of a request NULL is return if not request match is found.
+		service_reference_pt serSvcRef = NULL;
+		pubsub_admin_get_best_serializer(endpoint->topic_props, serializerList, &serSvcRef);
+		const char *serType = NULL; //for printing info
+		if (serSvcRef == NULL) {
+			score = 0;
+		} else {
+			serviceReference_getProperty(serSvcRef, PUBSUB_SERIALIZER_TYPE_KEY, &serType);
 		}
-	}
-	else{ /* We got no specification: fallback to Qos=Sample, but count half the score */
-		for(i=0;i<KNOWN_PUBSUB_ADMIN_NUM;i++){
-			if(strncmp(qos_sample_pubsub_admin_prio_list[i],pubsub_admin_type,strlen(pubsub_admin_type))==0){
-				final_score += (qos_pubsub_admin_score[i]/2);
-				break;
-			}
+
+		printf("Score for psa type %s is %f. Serializer used is '%s'\n", pubsub_admin_type, score, serType);
+	} else {
+		//remote publisher. score will be 0 or 100. nothing else.
+		//TODO FIXME remote publisher should go through a different process. Currently it is confusing what to match
+		if (endpointAdminType == NULL) {
+			score = 0;
+
+//			const char *key = NULL;
+//			printf("Endpoint properties:\n");
+//			PROPERTIES_FOR_EACH(endpoint->endpoint_props, key) {
+//				printf("\t%s=%s\n", key, properties_get(endpoint->endpoint_props, key));
+//			}
+
+			fprintf(stderr, "WARNING PSA MATCH: remote publisher has no type. The key '%s' must be specified\n", PUBSUB_ENDPOINT_ADMIN_TYPE);
+		} else  {
+			score = strncmp(endpointAdminType, pubsub_admin_type, 1024) == 0 ? 100 : 0;
 		}
+		printf("Score for psa type %s is %f. Publisher is remote\n", pubsub_admin_type, score);
 	}
 
-	char *serializer_type = NULL;
-	/* Analyze the serializers */
-	if(requested_serializer_type != NULL){ /* We got precise specification on the serializer we want */
-		for(i=0;i<arrayList_size(serializerList);i++){
-			service_reference_pt svcRef = (service_reference_pt)arrayList_get(serializerList,i);
-			get_serializer_type(svcRef, &serializer_type);
-			if(serializer_type != NULL){
-				if(strncmp(requested_serializer_type,serializer_type,strlen(serializer_type))==0){
-					final_score += SERIALIZER_FULL_MATCH_SCORE;
-					break;
-				}
-			}
-		}
-	}
-	else if(requested_qos_type != NULL){ /* We got QoS specification that will determine the selected serializer */
-		if(strncmp(requested_qos_type,QOS_TYPE_SAMPLE,strlen(QOS_TYPE_SAMPLE))==0){
-			bool ser_found = false;
-			for(i=0;i<KNOWN_SERIALIZER_NUM && !ser_found;i++){
-				for(j=0;j<arrayList_size(serializerList) && !ser_found;j++){
-					service_reference_pt svcRef = (service_reference_pt)arrayList_get(serializerList,j);
-					get_serializer_type(svcRef, &serializer_type);
-					if(serializer_type != NULL){
-						if(strncmp(qos_sample_serializer_prio_list[i],serializer_type,strlen(serializer_type))==0){
-							ser_found = true;
-						}
-					}
-				}
-				if(ser_found){
-					final_score += qos_serializer_score[i];
-				}
-			}
-		}
-		else if(strncmp(requested_qos_type,QOS_TYPE_CONTROL,strlen(QOS_TYPE_CONTROL))==0){
-			bool ser_found = false;
-			for(i=0;i<KNOWN_SERIALIZER_NUM && !ser_found;i++){
-				for(j=0;j<arrayList_size(serializerList) && !ser_found;j++){
-					service_reference_pt svcRef = (service_reference_pt)arrayList_get(serializerList,j);
-					get_serializer_type(svcRef, &serializer_type);
-					if(serializer_type != NULL){
-						if(strncmp(qos_control_serializer_prio_list[i],serializer_type,strlen(serializer_type))==0){
-							ser_found = true;
-						}
-					}
-				}
-				if(ser_found){
-					final_score += qos_serializer_score[i];
-				}
-			}
-		}
-		else{
-			printf("Unknown QoS type '%s'\n",requested_qos_type);
-			status = CELIX_ILLEGAL_ARGUMENT;
-		}
-	}
-	else{ /* We got no specification: fallback to Qos=Sample, but count half the score */
-		bool ser_found = false;
-		for(i=0;i<KNOWN_SERIALIZER_NUM && !ser_found;i++){
-			for(j=0;j<arrayList_size(serializerList) && !ser_found;j++){
-				service_reference_pt svcRef = (service_reference_pt)arrayList_get(serializerList,j);
-				get_serializer_type(svcRef, &serializer_type);
-				if(serializer_type != NULL){
-					if(strncmp(qos_sample_serializer_prio_list[i],serializer_type,strlen(serializer_type))==0){
-						ser_found = true;
-					}
-				}
-			}
-			if(ser_found){
-				final_score += (qos_serializer_score[i]/2);
-			}
-		}
-	}
 
-	*score = final_score;
-
-	printf("Score for pair <%s,%s> = %f\n",pubsub_admin_type,serializer_type,final_score);
+	*out = score;
 
 	return status;
 }
 
-celix_status_t pubsub_admin_get_best_serializer(properties_pt endpoint_props, array_list_pt serializerList, pubsub_serializer_service_t **serSvc){
+celix_status_t pubsub_admin_get_best_serializer(properties_pt endpoint_props, array_list_pt serializerList, service_reference_pt *out){
 	celix_status_t status = CELIX_SUCCESS;
-
-	int i = 0, j = 0;
-
+	int i;
 	const char *requested_serializer_type = NULL;
-	const char *requested_qos_type = NULL;
 
 	if (endpoint_props != NULL){
 		requested_serializer_type = properties_get(endpoint_props,PUBSUB_SERIALIZER_TYPE_KEY);
-		requested_qos_type = properties_get(endpoint_props,QOS_ATTRIBUTE_KEY);
 	}
 
 	service_reference_pt svcRef = NULL;
-	void *svc = NULL;
+    service_reference_pt best = NULL;
+    long hightestRanking = LONG_MIN;
 
-	/* Analyze the serializers */
-	if (arrayList_size(serializerList) == 1) {
-		// Only one serializer, use this one
-		svcRef = (service_reference_pt)arrayList_get(serializerList,0);
-		manage_service_from_reference(svcRef, &svc, true);
-		*serSvc = svc;
-		char *serializer_type = NULL;
-		get_serializer_type(svcRef, &serializer_type);
-		printf("Selected the only serializer available. Type = %s\n", serializer_type);
-
-	}
-	else if(requested_serializer_type != NULL){ /* We got precise specification on the serializer we want */
-		for(i=0;i<arrayList_size(serializerList);i++){
-			svcRef = (service_reference_pt)arrayList_get(serializerList,i);
-			char *serializer_type = NULL;
-			get_serializer_type(svcRef, &serializer_type);
-			if(serializer_type != NULL){
-				if(strncmp(requested_serializer_type,serializer_type,strlen(serializer_type))==0){
-					manage_service_from_reference(svcRef, &svc,true);
-					if(svc==NULL){
-						printf("Cannot get pubsub_serializer_service from serviceReference %p\n",svcRef);
-						status = CELIX_SERVICE_EXCEPTION;
-					}
-					*serSvc = svc;
-					break;
-				}
+    if (requested_serializer_type != NULL) {
+        for (i = 0; i < arrayList_size(serializerList); ++i) {
+            svcRef = (service_reference_pt) arrayList_get(serializerList, 0);
+			const char* currentSerType = NULL;
+            serviceReference_getProperty(svcRef, PUBSUB_SERIALIZER_TYPE_KEY, &currentSerType);
+            if (currentSerType != NULL && strncmp(requested_serializer_type, currentSerType, 128) == 0) {
+                best = svcRef;
+                break;
+            }
+        }
+    } else {
+        //no specific serializer request -> search for highest ranking serializer service
+        for (i = 0; i < arrayList_size(serializerList); ++i) {
+            svcRef = (service_reference_pt)arrayList_get(serializerList,0);
+            const char *service_ranking_str  = NULL;
+			const char* currentSerType = NULL;
+            serviceReference_getProperty(svcRef, OSGI_FRAMEWORK_SERVICE_RANKING, &service_ranking_str);
+			serviceReference_getProperty(svcRef, PUBSUB_SERIALIZER_TYPE_KEY, &currentSerType);
+            long svcRanking = service_ranking_str == NULL ? LONG_MIN : strtol(service_ranking_str, NULL, 10);
+            if (best == NULL || (svcRanking > hightestRanking && currentSerType != NULL)) {
+                best = svcRef;
+                hightestRanking = svcRanking;
+            }
+			if (currentSerType == NULL) {
+				fprintf(stderr, "Invalid pubsub_serializer service. Must have a property '%s'\n", PUBSUB_SERIALIZER_TYPE_KEY);
 			}
-		}
-	}
-	else if(requested_qos_type != NULL){ /* We got QoS specification that will determine the selected serializer */
-		if(strncmp(requested_qos_type,QOS_TYPE_SAMPLE,strlen(QOS_TYPE_SAMPLE))==0){
-			bool ser_found = false;
-			for(i=0;i<KNOWN_SERIALIZER_NUM && !ser_found;i++){
-				for(j=0;j<arrayList_size(serializerList) && !ser_found;j++){
-					svcRef = (service_reference_pt)arrayList_get(serializerList,j);
-					char *serializer_type = NULL;
-					get_serializer_type(svcRef, &serializer_type);
-					if(serializer_type != NULL){
-						if(strncmp(qos_sample_serializer_prio_list[i],serializer_type,strlen(serializer_type))==0){
-							manage_service_from_reference(svcRef, &svc,true);
-							if(svc==NULL){
-								printf("Cannot get pubsub_serializer_service from serviceReference %p\n",svcRef);
-								status = CELIX_SERVICE_EXCEPTION;
-							}
-							else{
-								*serSvc = svc;
-								ser_found = true;
-								printf("Selected %s serializer as best for QoS=%s\n",qos_sample_serializer_prio_list[i],QOS_TYPE_SAMPLE);
-							}
-						}
-					}
-				}
-			}
-		}
-		else if(strncmp(requested_qos_type,QOS_TYPE_CONTROL,strlen(QOS_TYPE_CONTROL))==0){
-			bool ser_found = false;
-			for(i=0;i<KNOWN_SERIALIZER_NUM && !ser_found;i++){
-				for(j=0;j<arrayList_size(serializerList) && !ser_found;j++){
-					svcRef = (service_reference_pt)arrayList_get(serializerList,j);
-					char *serializer_type = NULL;
-					get_serializer_type(svcRef, &serializer_type);
-					if(serializer_type != NULL){
-						if(strncmp(qos_control_serializer_prio_list[i],serializer_type,strlen(serializer_type))==0){
-							manage_service_from_reference(svcRef, &svc,true);
-							if(svc==NULL){
-								printf("Cannot get pubsub_serializer_service from serviceReference %p\n",svcRef);
-								status = CELIX_SERVICE_EXCEPTION;
-							}
-							else{
-								*serSvc = svc;
-								ser_found = true;
-								printf("Selected %s serializer as best for QoS=%s\n",qos_control_serializer_prio_list[i],QOS_TYPE_CONTROL);
-							}
-						}
-					}
-				}
-			}
-		}
-		else{
-			printf("Unknown QoS type '%s'\n",requested_qos_type);
-			status = CELIX_ILLEGAL_ARGUMENT;
-		}
-	}
-	else{ /* We got no specification: fallback to Qos=Sample, but count half the score */
-		bool ser_found = false;
-		for(i=0;i<KNOWN_SERIALIZER_NUM && !ser_found;i++){
-			for(j=0;j<arrayList_size(serializerList) && !ser_found;j++){
-				svcRef = (service_reference_pt)arrayList_get(serializerList,j);
-				char *serializer_type = NULL;
-				get_serializer_type(svcRef, &serializer_type);
-				if(serializer_type != NULL){
-					if(strncmp(qos_sample_serializer_prio_list[i],serializer_type,strlen(serializer_type))==0){
-						manage_service_from_reference(svcRef, &svc,true);
-						if(svc==NULL){
-							printf("Cannot get pubsub_serializer_service from serviceReference %p\n",svcRef);
-							status = CELIX_SERVICE_EXCEPTION;
-						}
-						else{
-							*serSvc = svc;
-							ser_found = true;
-							printf("Selected %s serializer as best without any specification\n",qos_sample_serializer_prio_list[i]);
-						}
-					}
-				}
-			}
-		}
-	}
+        }
+    }
 
-	if(svc!=NULL && svcRef!=NULL){
-		manage_service_from_reference(svcRef, svc, false);
-	}
+	*out = best;
 
-	return status;
-}
-
-static void get_serializer_type(service_reference_pt svcRef, char **serializerType){
-
-	const char *serType = NULL;
-	serviceReference_getProperty(svcRef, PUBSUB_SERIALIZER_TYPE_KEY,&serType);
-	if(serType != NULL){
-		*serializerType = (char*)serType;
-	}
-	else{
-		printf("Serializer serviceReference %p has no pubsub_serializer.type property specified\n",svcRef);
-		*serializerType = NULL;
-	}
-}
-
-static void manage_service_from_reference(service_reference_pt svcRef, void **svc, bool getService){
-	bundle_context_pt context = NULL;
-	bundle_pt bundle = NULL;
-	serviceReference_getBundle(svcRef, &bundle);
-	bundle_getContext(bundle, &context);
-	if(getService){
-		bundleContext_getService(context, svcRef, svc);
-	}
-	else{
-		bundleContext_ungetService(context, svcRef, NULL);
-	}
+    return status;
 }

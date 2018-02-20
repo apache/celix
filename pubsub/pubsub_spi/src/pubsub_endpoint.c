@@ -38,10 +38,11 @@
 #include "pubsub_utils.h"
 
 
-static void pubsubEndpoint_setFields(pubsub_endpoint_pt psEp, const char* fwUUID, const char* scope, const char* topic, long serviceId,const char* endpoint,properties_pt topic_props, bool cloneProps);
+static void pubsubEndpoint_setFields(pubsub_endpoint_pt psEp, const char* fwUUID, const char* scope, const char* topic, long bundleId, long serviceId,const char* endpoint, const char *pubsubType, properties_pt topic_props);
 static properties_pt pubsubEndpoint_getTopicProperties(bundle_pt bundle, const char *topic, bool isPublisher);
+static bool pubsubEndpoint_isEndpointValid(pubsub_endpoint_pt psEp);
 
-static void pubsubEndpoint_setFields(pubsub_endpoint_pt psEp, const char* fwUUID, const char* scope, const char* topic, long serviceId,const char* endpoint,properties_pt topic_props, bool cloneProps){
+static void pubsubEndpoint_setFields(pubsub_endpoint_pt psEp, const char* fwUUID, const char* scope, const char* topic, long bundleId, long serviceId, const char* endpoint, const char *pubsubType, properties_pt topic_props) {
 
 	if (psEp->endpoint_props == NULL) {
 		psEp->endpoint_props = properties_create();
@@ -52,33 +53,43 @@ static void pubsubEndpoint_setFields(pubsub_endpoint_pt psEp, const char* fwUUID
 	uuid_t endpointUid;
 	uuid_generate(endpointUid);
 	uuid_unparse(endpointUid, endpointUuid);
-	properties_set(psEp->endpoint_props, PUBSUB_ENDPOINT_ID, endpointUuid);
+
+	properties_set(psEp->endpoint_props, PUBSUB_ENDPOINT_UUID, endpointUuid);
 
 	if (fwUUID != NULL) {
-		properties_set(psEp->endpoint_props, OSGI_FRAMEWORK_FRAMEWORK_UUID, fwUUID);
+		properties_set(psEp->endpoint_props, PUBSUB_ENDPOINT_FRAMEWORK_UUID, fwUUID);
 	}
 
 	if (scope != NULL) {
-		properties_set(psEp->endpoint_props, PUBSUB_ENDPOINT_SCOPE, scope);
+		properties_set(psEp->endpoint_props, PUBSUB_ENDPOINT_TOPIC_SCOPE, scope);
 	}
 
 	if (topic != NULL) {
-		properties_set(psEp->endpoint_props, PUBSUB_ENDPOINT_TOPIC, topic);
+		properties_set(psEp->endpoint_props, PUBSUB_ENDPOINT_TOPIC_NAME, topic);
 	}
 
-	psEp->serviceID = serviceId;
+    char idBuf[32];
+
+    if (bundleId >= 0) {
+        snprintf(idBuf, sizeof(idBuf), "%li", bundleId);
+        properties_set(psEp->endpoint_props, PUBSUB_ENDPOINT_BUNDLE_ID, idBuf);
+    }
+
+    if (serviceId >= 0) {
+        snprintf(idBuf, sizeof(idBuf), "%li", bundleId);
+        properties_set(psEp->endpoint_props, PUBSUB_ENDPOINT_SERVICE_ID, idBuf);
+    }
 
 	if(endpoint != NULL) {
 		properties_set(psEp->endpoint_props, PUBSUB_ENDPOINT_URL, endpoint);
 	}
 
-	if(topic_props != NULL){
-		if(cloneProps){
-			properties_copy(topic_props, &(psEp->topic_props));
-		}
-		else{
-			psEp->topic_props = topic_props;
-		}
+    if (pubsubType != NULL) {
+        properties_set(psEp->endpoint_props, PUBSUB_ENDPOINT_TYPE, pubsubType);
+    }
+
+	if(topic_props != NULL) {
+        properties_copy(topic_props, &(psEp->topic_props));
 	}
 }
 
@@ -129,12 +140,22 @@ celix_status_t pubsubEndpoint_setField(pubsub_endpoint_pt ep, const char* key, c
 	return status;
 }
 
-celix_status_t pubsubEndpoint_create(const char* fwUUID, const char* scope, const char* topic, long serviceId,const char* endpoint,properties_pt topic_props,pubsub_endpoint_pt* psEp){
+celix_status_t pubsubEndpoint_create(const char* fwUUID, const char* scope, const char* topic, long bundleId,  long serviceId, const char* endpoint, const char* pubsubType, properties_pt topic_props,pubsub_endpoint_pt* out){
 	celix_status_t status = CELIX_SUCCESS;
 
-	*psEp = calloc(1, sizeof(**psEp));
+    pubsub_endpoint_pt psEp = calloc(1, sizeof(*psEp));
 
-	pubsubEndpoint_setFields(*psEp, fwUUID, scope, topic, serviceId, endpoint, topic_props, true);
+	pubsubEndpoint_setFields(psEp, fwUUID, scope, topic, bundleId, serviceId, endpoint, pubsubType, topic_props);
+
+    if (!pubsubEndpoint_isEndpointValid(psEp)) {
+        status = CELIX_ILLEGAL_STATE;
+    }
+
+    if (status == CELIX_SUCCESS) {
+        *out = psEp;
+    } else {
+        pubsubEndpoint_destroy(psEp);
+    }
 
 	return status;
 
@@ -151,8 +172,50 @@ celix_status_t pubsubEndpoint_clone(pubsub_endpoint_pt in, pubsub_endpoint_pt *o
         status += properties_copy(in->topic_props, &(ep->topic_props));
     }
 
-	ep->serviceID = in->serviceID;
-	ep->is_secure = in->is_secure;
+    if (status == CELIX_SUCCESS) {
+        *out = ep;
+    } else {
+        pubsubEndpoint_destroy(ep);
+    }
+
+	return status;
+}
+
+celix_status_t pubsubEndpoint_createFromServiceReference(bundle_context_t *ctx, service_reference_pt reference, bool isPublisher, pubsub_endpoint_pt* out){
+	celix_status_t status = CELIX_SUCCESS;
+
+	pubsub_endpoint_pt ep = calloc(1,sizeof(*ep));
+
+	const char* fwUUID = NULL;
+	bundleContext_getProperty(ctx, OSGI_FRAMEWORK_FRAMEWORK_UUID, &fwUUID);
+
+	const char* scope = NULL;
+	serviceReference_getPropertyWithDefault(reference, PUBSUB_SUBSCRIBER_SCOPE, PUBSUB_SUBSCRIBER_SCOPE_DEFAULT, &scope);
+
+	const char* topic = NULL;
+	serviceReference_getProperty(reference, PUBSUB_SUBSCRIBER_TOPIC,&topic);
+
+	const char* serviceId = NULL;
+	serviceReference_getProperty(reference,(char*)OSGI_FRAMEWORK_SERVICE_ID,&serviceId);
+
+
+    long bundleId = -1;
+    bundle_pt bundle = NULL;
+    serviceReference_getBundle(reference, &bundle);
+    if (bundle != NULL) {
+        bundle_getBundleId(bundle, &bundleId);
+    }
+
+	/* TODO: is topic_props==NULL a fatal error such that EP cannot be created? */
+	properties_pt topic_props = pubsubEndpoint_getTopicProperties(bundle, topic, isPublisher);
+
+    const char *pubsubType = isPublisher ? PUBSUB_PUBLISHER_ENDPOINT_TYPE : PUBSUB_SUBSCRIBER_ENDPOINT_TYPE;
+
+	pubsubEndpoint_setFields(ep, fwUUID, scope, topic, bundleId, strtol(serviceId,NULL,10), NULL, pubsubType, topic_props);
+
+    if (!pubsubEndpoint_isEndpointValid(ep)) {
+        status = CELIX_ILLEGAL_STATE;
+    }
 
     if (status == CELIX_SUCCESS) {
         *out = ep;
@@ -164,91 +227,76 @@ celix_status_t pubsubEndpoint_clone(pubsub_endpoint_pt in, pubsub_endpoint_pt *o
 
 }
 
-celix_status_t pubsubEndpoint_createFromServiceReference(service_reference_pt reference, pubsub_endpoint_pt* psEp, bool isPublisher){
-	celix_status_t status = CELIX_SUCCESS;
+celix_status_t pubsubEndpoint_createFromDiscoveredProperties(properties_t *discoveredProperties, pubsub_endpoint_pt* out) {
+    celix_status_t status = CELIX_SUCCESS;
+    pubsub_endpoint_pt psEp = calloc(1, sizeof(*psEp));
+    if (psEp != NULL) {
+        psEp->endpoint_props = discoveredProperties;
+    } else {
+        status = CELIX_ENOMEM;
+    }
 
-	pubsub_endpoint_pt ep = calloc(1,sizeof(*ep));
+    if (!pubsubEndpoint_isEndpointValid(psEp)) {
+        status = CELIX_ILLEGAL_STATE;
+    }
 
-	bundle_pt bundle = NULL;
-	bundle_context_pt ctxt = NULL;
-	const char* fwUUID = NULL;
-	serviceReference_getBundle(reference,&bundle);
-	bundle_getContext(bundle,&ctxt);
-	bundleContext_getProperty(ctxt,OSGI_FRAMEWORK_FRAMEWORK_UUID,&fwUUID);
+    if (status == CELIX_SUCCESS) {
+        *out = psEp;
+    } else {
+        pubsubEndpoint_destroy(psEp);
+    }
 
-	const char* scope = NULL;
-	serviceReference_getProperty(reference, PUBSUB_SUBSCRIBER_SCOPE,&scope);
-
-	const char* topic = NULL;
-	serviceReference_getProperty(reference, PUBSUB_SUBSCRIBER_TOPIC,&topic);
-
-	const char* serviceId = NULL;
-	serviceReference_getProperty(reference,(char*)OSGI_FRAMEWORK_SERVICE_ID,&serviceId);
-
-	/* TODO: is topic_props==NULL a fatal error such that EP cannot be created? */
-	properties_pt topic_props = pubsubEndpoint_getTopicProperties(bundle, topic, isPublisher);
-
-	pubsubEndpoint_setFields(ep, fwUUID, scope!=NULL?scope:PUBSUB_SUBSCRIBER_SCOPE_DEFAULT, topic, strtol(serviceId,NULL,10), NULL, topic_props, false);
-
-	if (!properties_get(ep->endpoint_props, OSGI_FRAMEWORK_FRAMEWORK_UUID) ||
-			!ep->serviceID ||
-			!properties_get(ep->endpoint_props, PUBSUB_ENDPOINT_SCOPE) ||
-			!properties_get(ep->endpoint_props, PUBSUB_ENDPOINT_TOPIC)) {
-
-		fw_log(logger, OSGI_FRAMEWORK_LOG_ERROR, "PUBSUB_ENDPOINT: incomplete description!.");
-		status = CELIX_BUNDLE_EXCEPTION;
-		pubsubEndpoint_destroy(ep);
-		*psEp = NULL;
-	}
-	else{
-		*psEp = ep;
-	}
-
-	return status;
-
+    return status;
 }
 
-celix_status_t pubsubEndpoint_createFromListenerHookInfo(listener_hook_info_pt info,pubsub_endpoint_pt* psEp, bool isPublisher){
+celix_status_t pubsubEndpoint_createFromListenerHookInfo(bundle_context_t *ctx, listener_hook_info_pt info, bool isPublisher, pubsub_endpoint_pt* out){
 	celix_status_t status = CELIX_SUCCESS;
 
 	const char* fwUUID=NULL;
-	bundleContext_getProperty(info->context,OSGI_FRAMEWORK_FRAMEWORK_UUID,&fwUUID);
+	bundleContext_getProperty(ctx, OSGI_FRAMEWORK_FRAMEWORK_UUID, &fwUUID);
 
-	if(fwUUID==NULL){
+	if( fwUUID==NULL) {
 		return CELIX_BUNDLE_EXCEPTION;
 	}
 
-	char* topic = pubsub_getTopicFromFilter(info->filter);
-	if(topic==NULL){
+	const char* topic = NULL;
+	const char* scope = NULL;
+	pubsub_getPubSubInfoFromFilter(info->filter, &topic, &scope);
+
+	if (topic==NULL) {
 		return CELIX_BUNDLE_EXCEPTION;
 	}
-
-	*psEp = calloc(1, sizeof(**psEp));
-
-	char* scope = pubsub_getScopeFromFilter(info->filter);
 	if(scope == NULL) {
 		scope = strdup(PUBSUB_PUBLISHER_SCOPE_DEFAULT);
 	}
 
+    pubsub_endpoint_pt psEp = calloc(1, sizeof(**out));
+
 	bundle_pt bundle = NULL;
 	long bundleId = -1;
 	bundleContext_getBundle(info->context,&bundle);
-
 	bundle_getBundleId(bundle,&bundleId);
 
 	properties_pt topic_props = pubsubEndpoint_getTopicProperties(bundle, topic, isPublisher);
 
 	/* TODO: is topic_props==NULL a fatal error such that EP cannot be created? */
-	pubsubEndpoint_setFields(*psEp, fwUUID, scope!=NULL?scope:PUBSUB_SUBSCRIBER_SCOPE_DEFAULT, topic, bundleId, NULL, topic_props, false);
+	pubsubEndpoint_setFields(psEp, fwUUID, scope, topic, bundleId, -1, NULL, PUBSUB_PUBLISHER_ENDPOINT_TYPE, topic_props);
 
-	free(topic);
-	free(scope);
+    if (!pubsubEndpoint_isEndpointValid(psEp)) {
+        status = CELIX_ILLEGAL_STATE;
+    }
 
+    if (status == CELIX_SUCCESS) {
+        *out = psEp;
+    } else {
+        pubsubEndpoint_destroy(psEp);
+    }
 
 	return status;
 }
 
-celix_status_t pubsubEndpoint_destroy(pubsub_endpoint_pt psEp){
+void pubsubEndpoint_destroy(pubsub_endpoint_pt psEp){
+    if (psEp == NULL) return;
 
 	if(psEp->topic_props != NULL){
 		properties_destroy(psEp->topic_props);
@@ -260,23 +308,53 @@ celix_status_t pubsubEndpoint_destroy(pubsub_endpoint_pt psEp){
 
 	free(psEp);
 
-	return CELIX_SUCCESS;
+	return;
 
 }
 
 bool pubsubEndpoint_equals(pubsub_endpoint_pt psEp1,pubsub_endpoint_pt psEp2){
 
-	return ((strcmp(properties_get(psEp1->endpoint_props, OSGI_FRAMEWORK_FRAMEWORK_UUID),properties_get(psEp2->endpoint_props, OSGI_FRAMEWORK_FRAMEWORK_UUID))==0) &&
-			(strcmp(properties_get(psEp1->endpoint_props, PUBSUB_ENDPOINT_SCOPE),properties_get(psEp2->endpoint_props, PUBSUB_ENDPOINT_SCOPE))==0) &&
-			(strcmp(properties_get(psEp1->endpoint_props, PUBSUB_ENDPOINT_TOPIC),properties_get(psEp2->endpoint_props, PUBSUB_ENDPOINT_TOPIC))==0) &&
-			(psEp1->serviceID == psEp2->serviceID) /*&&
-			((psEp1->endpoint==NULL && psEp2->endpoint==NULL)||(strcmp(psEp1->endpoint,psEp2->endpoint)==0))*/
-	);
+	return strcmp(properties_get(psEp1->endpoint_props, PUBSUB_ENDPOINT_UUID),properties_get(psEp2->endpoint_props, PUBSUB_ENDPOINT_UUID));
 }
 
-char *createScopeTopicKey(const char* scope, const char* topic) {
+char * pubsubEndpoint_createScopeTopicKey(const char* scope, const char* topic) {
 	char *result = NULL;
 	asprintf(&result, "%s:%s", scope, topic);
 
 	return result;
+}
+
+
+static bool pubsubEndpoint_isEndpointValid(pubsub_endpoint_pt psEp) {
+    //required properties
+    bool valid = true;
+    static const char* keys[] = {
+        PUBSUB_ENDPOINT_UUID,
+        PUBSUB_ENDPOINT_FRAMEWORK_UUID,
+        PUBSUB_ENDPOINT_TYPE,
+        PUBSUB_ENDPOINT_TOPIC_NAME,
+        PUBSUB_ENDPOINT_TOPIC_SCOPE,
+        NULL };
+    int i;
+    for (i = 0; keys[i] != NULL; ++i) {
+        const char *val = properties_get(psEp->endpoint_props, keys[i]);
+        if (val == NULL) { //missing required key
+            fprintf(stderr, "[ERROR] PubSubEndpoint: Invalid endpoint missing key: '%s'\n", keys[i]);
+            valid = false;
+        }
+    }
+    if (!valid) {
+        const char *key = NULL;
+        fprintf(stderr, "PubSubEndpoint entries:\n");
+        PROPERTIES_FOR_EACH(psEp->endpoint_props, key) {
+            fprintf(stderr, "\t'%s' : '%s'\n", key, properties_get(psEp->endpoint_props, key));
+        }
+        if (psEp->topic_props != NULL) {
+            fprintf(stderr, "PubSubEndpoint topic properties entries:\n");
+            PROPERTIES_FOR_EACH(psEp->topic_props, key) {
+                fprintf(stderr, "\t'%s' : '%s'\n", key, properties_get(psEp->topic_props, key));
+            }
+        }
+    }
+    return valid;
 }

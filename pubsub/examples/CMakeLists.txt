@@ -21,6 +21,12 @@ add_subdirectory(mp_pubsub)
 find_program(ETCD_CMD NAMES etcd)
 find_program(XTERM_CMD NAMES xterm)
 
+find_package(ZMQ REQUIRED)
+find_package(CZMQ REQUIRED)
+find_package(Jansson REQUIRED)
+
+set(PUBSUB_CONTAINER_LIBS ${JANSSON_LIBRARY} ${ZMQ_LIBRARIES} ${CZMQ_LIBRARIES} ${OPENSSL_CRYPTO_LIBRARY} Celix::dfi)
+
 # UDP Multicast
 add_celix_container(pubsub_publisher_udp_mc
         GROUP pubsub
@@ -34,6 +40,7 @@ add_celix_container(pubsub_publisher_udp_mc
         celix_pubsub_poi_publisher
         celix_pubsub_poi_publisher2
         )
+target_link_libraries(pubsub_publisher_udp_mc PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
 add_celix_container("pubsub_subscriber_udp_mc"
         GROUP "pubsub"
@@ -46,7 +53,7 @@ add_celix_container("pubsub_subscriber_udp_mc"
         Celix::pubsub_admin_udp_multicast
         celix_pubsub_poi_subscriber
         )
-
+target_link_libraries(pubsub_subscriber_udp_mc PRIVATE ${PUBSUB_CONTAINER_LIBS})
 add_celix_container("pubsub_subscriber2_udp_mc"
         GROUP "pubsub"
         BUNDLES
@@ -58,7 +65,7 @@ add_celix_container("pubsub_subscriber2_udp_mc"
         Celix::pubsub_admin_udp_multicast
         celix_pubsub_poi_subscriber
         )
-
+target_link_libraries(pubsub_subscriber2_udp_mc PRIVATE ${PUBSUB_CONTAINER_LIBS})
 if (ETCD_CMD AND XTERM_CMD)
     #Runtime starting a publish and subscriber for udp mc
     add_runtime(pubsub_rt_upd_mc
@@ -78,8 +85,8 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 
     # Dynamic ZMQ / UDP admin
     add_celix_container("pubsub_publisher"
-            GROUP "pubsub"
-            BUNDLES
+        GROUP "pubsub"
+        BUNDLES
             Celix::shell
             Celix::shell_tui
             Celix::pubsub_serializer_json
@@ -89,10 +96,11 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             Celix::pubsub_admin_udp_multicast
             celix_pubsub_poi_publisher
             celix_pubsub_poi_publisher2
-            PROPERTIES
+        PROPERTIES
             poi1.psa=zmq
             poi2.psa=udp
-            )
+    )
+    target_link_libraries(pubsub_publisher PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
     add_celix_container("pubsub_subscriber"
             GROUP "pubsub"
@@ -109,6 +117,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             poi1.psa=zmq
             poi2.psa=udp
             )
+    target_link_libraries(pubsub_subscriber PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
     # ZMQ
     add_celix_container("pubsub_zmq"
@@ -123,6 +132,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             celix_pubsub_poi_publisher
             celix_pubsub_poi_subscriber
             )
+    target_link_libraries(pubsub_zmq PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
     add_celix_container("pubsub_publisher_zmq"
             GROUP "pubsub"
@@ -138,6 +148,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             PROPERTIES
             pubsub.scope=my_small_scope
             )
+    target_link_libraries(pubsub_publisher_zmq PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
     add_celix_container("pubsub_subscriber_zmq"
             GROUP "pubsub"
@@ -150,6 +161,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             Celix::pubsub_admin_zmq
             celix_pubsub_poi_subscriber
             )
+    target_link_libraries(pubsub_subscriber_zmq PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
     add_celix_container("pubsub_subscriber2_zmq"
             GROUP "pubsub"
@@ -163,6 +175,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             celix_pubsub_poi_subscriber
 
             )
+    target_link_libraries(pubsub_subscriber2_zmq PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
     # ZMQ Multipart
     add_celix_container("pubsub_mp_subscriber_zmq"
@@ -176,6 +189,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             Celix::pubsub_admin_zmq
             org.apache.celix.pubsub_subscriber.MpSubscriber
             )
+    target_link_libraries(pubsub_mp_subscriber_zmq PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
     add_celix_container("pubsub_mp_publisher_zmq"
             GROUP "pubsub"
@@ -188,6 +202,7 @@ if (BUILD_PUBSUB_PSA_ZMQ)
             Celix::pubsub_admin_zmq
             org.apache.celix.pubsub_publisher.MpPublisher
             )
+    target_link_libraries(pubsub_mp_publisher_zmq PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
     if (ETCD_CMD AND XTERM_CMD)
         #Runtime starting two bundles using both zmq and upd mc pubsub

@@ -42,85 +42,43 @@
 
 #define MAX_KEYBUNDLE_LENGTH 256
 
-char* pubsub_getScopeFromFilter(const char* bundle_filter){
 
-	char* scope = NULL;
-
-	char* filter = strdup(bundle_filter);
-
-	char* oc = strstr(filter,OSGI_FRAMEWORK_OBJECTCLASS);
-	if(oc!=NULL){
-		oc+=strlen(OSGI_FRAMEWORK_OBJECTCLASS)+1;
-		if(strncmp(oc,PUBSUB_PUBLISHER_SERVICE_NAME,strlen(PUBSUB_PUBLISHER_SERVICE_NAME))==0){
-
-			char* scopes = strstr(filter,PUBSUB_PUBLISHER_SCOPE);
-			if(scopes!=NULL){
-
-				scopes+=strlen(PUBSUB_PUBLISHER_SCOPE)+1;
-				char* bottom=strchr(scopes,')');
-				*bottom='\0';
-
-				scope=strdup(scopes);
-			} else {
-			    scope=strdup(PUBSUB_PUBLISHER_SCOPE_DEFAULT);
+celix_status_t pubsub_getPubSubInfoFromFilter(const char* filterstr, const char **topicOut, const char **scopeOut) {
+	celix_status_t status = CELIX_SUCCESS;
+	const char *topic = NULL;
+	const char *scope = NULL;
+	const char *objectClass = NULL;
+	celix_filter_t *filter = filter_create(filterstr);
+	if (filter != NULL) {
+		if (filter->operand == CELIX_FILTER_OPERAND_AND) { //only and pubsub filter valid (e.g. (&(objectClass=pubsub_publisher)(topic=exmpl))
+			array_list_t *attributes = filter->children;
+			unsigned int i;
+			unsigned int size = arrayList_size(attributes);
+			for (i = 0; i < size; ++i) {
+				filter_t *attr = arrayList_get(attributes, i);
+				if (attr->operand == CELIX_FILTER_OPERAND_EQUAL) {
+					if (strncmp(OSGI_FRAMEWORK_OBJECTCLASS, attr->attribute, 128) == 0) {
+						objectClass = attr->value;
+					} else if (strncmp(PUBSUB_PUBLISHER_TOPIC, attr->attribute, 128) == 0) {
+						topic = attr->value;
+					} else if (strncmp(PUBSUB_PUBLISHER_SCOPE, attr->attribute, 128) == 0) {
+						scope = attr->value;
+					}
+				}
 			}
 		}
 	}
 
-	free(filter);
-
-	return scope;
-}
-
-char* pubsub_getTopicFromFilter(const char* bundle_filter){
-
-	char* topic = NULL;
-
-	char* filter = strdup(bundle_filter);
-
-	char* oc = strstr(filter,OSGI_FRAMEWORK_OBJECTCLASS);
-	if(oc!=NULL){
-		oc+=strlen(OSGI_FRAMEWORK_OBJECTCLASS)+1;
-		if(strncmp(oc,PUBSUB_PUBLISHER_SERVICE_NAME,strlen(PUBSUB_PUBLISHER_SERVICE_NAME))==0){
-
-			char* topics = strstr(filter,PUBSUB_PUBLISHER_TOPIC);
-			if(topics!=NULL){
-
-				topics+=strlen(PUBSUB_PUBLISHER_TOPIC)+1;
-				char* bottom=strchr(topics,')');
-				*bottom='\0';
-
-				topic=strdup(topics);
-
-			}
-		}
+	if (topic != NULL && objectClass != NULL && strncmp(objectClass, PUBSUB_PUBLISHER_SERVICE_NAME, 128) == 0) {
+		*topicOut = topic;
+		*scopeOut = scope;
+	} else {
+		*topicOut = NULL;
+		*scopeOut = NULL;
 	}
-
-	free(filter);
-
-	return topic;
-
+	return status;
 }
 
-array_list_pt pubsub_getTopicsFromString(const char* string){
-
-	array_list_pt topic_list = NULL;
-	arrayList_create(&topic_list);
-
-	char* topics = strdup(string);
-
-	char* topic = strtok(topics,",;|# ");
-	arrayList_add(topic_list,strdup(topic));
-
-	while( (topic = strtok(NULL,",;|# ")) !=NULL){
-		arrayList_add(topic_list,strdup(topic));
-	}
-
-	free(topics);
-
-	return topic_list;
-
-}
 
 /**
  * Loop through all bundles and look for the bundle with the keys inside.

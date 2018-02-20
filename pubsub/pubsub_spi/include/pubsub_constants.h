@@ -17,24 +17,14 @@
  *under the License.
  */
 
-#ifndef PUBLISHER_ENDPOINT_ANNOUNCE_H_
-#define PUBLISHER_ENDPOINT_ANNOUNCE_H_
+#ifndef PUBSUB_CONSTANTS_H_
+#define PUBSUB_CONSTANTS_H_
 
-#include "pubsub_endpoint.h"
+#define PSA_IP 	"PSA_IP"
+#define PSA_ITF	"PSA_INTERFACE"
+#define PSA_MULTICAST_IP_PREFIX "PSA_MC_PREFIX"
 
+#define PUBSUB_ADMIN_TYPE_KEY	   "pubsub.config"
+#define PUBSUB_SERIALIZER_TYPE_KEY "pubsub.serializer.type"
 
-//TODO refactor to pubsub_endpoint_announce
-//can be used to announce and remove publisher and subscriber endpoints
-
-struct publisher_endpoint_announce {
-	void *handle;
-	celix_status_t (*announcePublisher)(void *handle, pubsub_endpoint_pt pubEP);
-	celix_status_t (*removePublisher)(void *handle, pubsub_endpoint_pt pubEP);
-	celix_status_t (*interestedInTopic)(void* handle, const char *scope, const char *topic);
-	celix_status_t (*uninterestedInTopic)(void* handle, const char *scope, const char *topic);
-};
-
-typedef struct publisher_endpoint_announce *publisher_endpoint_announce_pt;
-
-
-#endif /* PUBLISHER_ENDPOINT_ANNOUNCE_H_ */
+#endif /* PUBSUB_CONSTANTS_H_ */

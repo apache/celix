@@ -37,6 +37,9 @@
 #include "pubsub/publisher.h"
 #include "pubsub/subscriber.h"
 
+	#define PUBSUB_TOPOLOGY_MANAGER_VERBOSE_KEY 		"PUBSUB_TOPOLOGY_MANAGER_VERBOSE"
+#define PUBSUB_TOPOLOGY_MANAGER_DEFAULT_VERBOSE		false
+
 
 struct pubsub_topology_manager {
 	bundle_context_pt context;
@@ -58,6 +61,8 @@ struct pubsub_topology_manager {
 
 
 	log_helper_pt loghelper;
+
+	bool verbose;
 };
 
 typedef struct pubsub_topology_manager *pubsub_topology_manager_pt;

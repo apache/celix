@@ -33,9 +33,8 @@
 #define PUBSUB_SUBSCRIBER_SERVICE_VERSION       "2.0.0"
  
 //properties
-#define PUBSUB_SUBSCRIBER_TOPIC                "pubsub.topic"
-#define PUBSUB_SUBSCRIBER_SCOPE                "pubsub.scope"
-#define PUBSUB_SUBSCRIBER_STRATEGY             "pubsub.strategy"
+#define PUBSUB_SUBSCRIBER_TOPIC                "topic"
+#define PUBSUB_SUBSCRIBER_SCOPE                "scope"
 #define PUBSUB_SUBSCRIBER_CONFIG               "pubsub.config"
 
 #define PUBSUB_SUBSCRIBER_SCOPE_DEFAULT        "default"
