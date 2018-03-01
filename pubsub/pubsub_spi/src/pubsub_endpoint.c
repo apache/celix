@@ -314,7 +314,12 @@ void pubsubEndpoint_destroy(pubsub_endpoint_pt psEp){
 
 bool pubsubEndpoint_equals(pubsub_endpoint_pt psEp1,pubsub_endpoint_pt psEp2){
 
-	return strcmp(properties_get(psEp1->endpoint_props, PUBSUB_ENDPOINT_UUID),properties_get(psEp2->endpoint_props, PUBSUB_ENDPOINT_UUID));
+	if (psEp1->endpoint_props && psEp2->endpoint_props) {
+		return !strcmp(properties_get(psEp1->endpoint_props, PUBSUB_ENDPOINT_UUID),
+					  properties_get(psEp2->endpoint_props, PUBSUB_ENDPOINT_UUID));
+	}else {
+		return false;
+	}
 }
 
 char * pubsubEndpoint_createScopeTopicKey(const char* scope, const char* topic) {
