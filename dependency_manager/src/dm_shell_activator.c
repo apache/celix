@@ -71,9 +71,9 @@ celix_status_t bundleActivator_start(void * userData, bundle_context_pt context)
     properties_pt props = properties_create();
     properties_set(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
     properties_set(props, OSGI_SHELL_COMMAND_NAME, "dm");
-    properties_set(props, OSGI_SHELL_COMMAND_USAGE, "dm");
+    properties_set(props, OSGI_SHELL_COMMAND_USAGE, "dm [f|full] [<Bundle ID> [<Bundle ID> [...]]]");
     properties_set(props, OSGI_SHELL_COMMAND_DESCRIPTION,
-                   "Gives an overview of the component managemend by a dependency manager.");
+                   "Gives an overview of the component managemed by a dependency manager.");
 
     status = bundleContext_registerService(context, OSGI_SHELL_COMMAND_SERVICE_NAME, &bi->dmCommand, props, &bi->reg);
 
