@@ -84,7 +84,7 @@ static bool is_bundleId_in_list(array_list_pt ids, long id) {
 }
 
 
-void printFullInfo(FILE *out, bool colors, dm_component_info_pt compInfo) {
+static void printFullInfo(FILE *out, bool colors, dm_component_info_pt compInfo) {
     const char *startColors = "";
     const char *endColors = "";
     if (colors) {
@@ -128,7 +128,7 @@ void printFullInfo(FILE *out, bool colors, dm_component_info_pt compInfo) {
 
 }
 
-void printBasicInfo(FILE *out, bool colors, dm_component_info_pt compInfo) {
+static void printBasicInfo(FILE *out, bool colors, dm_component_info_pt compInfo) {
     const char *startColors = "";
     const char *endColors = "";
     if (colors) {
