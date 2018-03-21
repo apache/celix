@@ -43,7 +43,7 @@
 #define MAX_KEYBUNDLE_LENGTH 256
 
 
-celix_status_t pubsub_getPubSubInfoFromFilter(const char* filterstr, const char **topicOut, const char **scopeOut) {
+celix_status_t pubsub_getPubSubInfoFromFilter(const char* filterstr, char **topicOut, char **scopeOut) {
 	celix_status_t status = CELIX_SUCCESS;
 	const char *topic = NULL;
 	const char *scope = NULL;
@@ -71,12 +71,16 @@ celix_status_t pubsub_getPubSubInfoFromFilter(const char* filterstr, const char 
 	filter_destroy(filter);
 
 	if (topic != NULL && objectClass != NULL && strncmp(objectClass, PUBSUB_PUBLISHER_SERVICE_NAME, 128) == 0) {
-		*topicOut = topic;
-		*scopeOut = scope;
+		*topicOut = strdup(topic);
+		*scopeOut = strdup(scope);
 	} else {
 		*topicOut = NULL;
 		*scopeOut = NULL;
 	}
+
+	if (filter != NULL) {
+             filter_destroy(filter);
+        }
 	return status;
 }
 

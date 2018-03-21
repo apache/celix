@@ -259,18 +259,19 @@ celix_status_t pubsubEndpoint_createFromListenerHookInfo(bundle_context_t *ctx, 
 		return CELIX_BUNDLE_EXCEPTION;
 	}
 
-	const char* topic = NULL;
-	const char* scope = NULL;
+	char* topic = NULL;
+	char* scope = NULL;
 	pubsub_getPubSubInfoFromFilter(info->filter, &topic, &scope);
 
 	if (topic==NULL) {
+		free(scope);
 		return CELIX_BUNDLE_EXCEPTION;
 	}
-	if(scope == NULL) {
+	if (scope == NULL) {
 		scope = strdup(PUBSUB_PUBLISHER_SCOPE_DEFAULT);
 	}
 
-    pubsub_endpoint_pt psEp = calloc(1, sizeof(**out));
+        pubsub_endpoint_pt psEp = calloc(1, sizeof(**out));
 
 	bundle_pt bundle = NULL;
 	long bundleId = -1;
@@ -281,6 +282,8 @@ celix_status_t pubsubEndpoint_createFromListenerHookInfo(bundle_context_t *ctx, 
 
 	/* TODO: is topic_props==NULL a fatal error such that EP cannot be created? */
 	pubsubEndpoint_setFields(psEp, fwUUID, scope, topic, bundleId, -1, NULL, PUBSUB_PUBLISHER_ENDPOINT_TYPE, topic_props);
+	free(scope);
+	free(topic);
 
     if (!pubsubEndpoint_isEndpointValid(psEp)) {
         status = CELIX_ILLEGAL_STATE;
