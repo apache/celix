@@ -37,7 +37,7 @@ struct watcher_info {
     int nr_references;
 };
 
-typedef struct pubsub_discovery {
+struct pubsub_discovery {
 	bundle_context_pt context;
 
 	celix_thread_mutex_t discoveredPubsMutex;
@@ -52,9 +52,7 @@ typedef struct pubsub_discovery {
 	etcd_writer_pt writer;
 
 	bool verbose;
-} pubsub_discovery_t;
-
-typedef struct pubsub_discovery *pubsub_discovery_pt;
+};
 
 
 celix_status_t pubsub_discovery_create(bundle_context_pt context, pubsub_discovery_pt* node_discovery);
