@@ -69,11 +69,9 @@ celix_status_t pubsub_getPubSubInfoFromFilter(const char* filterstr, char **topi
 		}
 	}
 
-	if (topic != NULL && objectClass != NULL && strncmp(objectClass, PUBSUB_PUBLISHER_SERVICE_NAME, 128) == 0) {
+	if (topic != NULL && scope != NULL && objectClass != NULL && strncmp(objectClass, PUBSUB_PUBLISHER_SERVICE_NAME, 128) == 0) {
 		*topicOut = strdup(topic);
-		if (scope != NULL) {
-			*scopeOut = strdup(scope);
-		}
+		*scopeOut = strdup(scope);
 	} else {
 		*topicOut = NULL;
 		*scopeOut = NULL;

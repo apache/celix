@@ -229,12 +229,14 @@ celix_status_t pubsubEndpoint_createFromServiceReference(bundle_context_t *ctx, 
 
 celix_status_t pubsubEndpoint_createFromDiscoveredProperties(properties_t *discoveredProperties, pubsub_endpoint_pt* out) {
     celix_status_t status = CELIX_SUCCESS;
+    
     pubsub_endpoint_pt psEp = calloc(1, sizeof(*psEp));
-    if (psEp != NULL) {
-        psEp->endpoint_props = discoveredProperties;
-    } else {
-        status = CELIX_ENOMEM;
+    
+    if (psEp == NULL) {
+        return CELIX_ENOMEM;
     }
+
+    psEp->endpoint_props = discoveredProperties;
 
     if (!pubsubEndpoint_isEndpointValid(psEp)) {
         status = CELIX_ILLEGAL_STATE;

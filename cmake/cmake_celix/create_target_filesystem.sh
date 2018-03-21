@@ -137,7 +137,8 @@ celix_add_required_libs() {
 	then
 		echo "ERROR: Assuming 64 bit architecture for docker creating. Created filesystem will not be valid"
 	fi
-	LIBS=$(ls -1 /lib64/ld-linux* /lib64/libnss_dns* /lib64/libnss_files*)
+	#LIBS=$(ls -1 /lib64/ld-linux* /lib64/libnss_dns* /lib64/libnss_files*)
+	LIBS=$(ls -1 /lib64/ld-linux* /lib64/libnss_dns* /lib64/libnss_files* /lib/x86_64-linux-gnu/libnss_dns* /lib/x86_64-linux-gnu/libnss_files*)
 	for LIB in ${LIBS}
 	do
 		celix_add_file ${LIB} 
