@@ -30,7 +30,15 @@
 #include "bundle_context.h"
 #include "array_list.h"
 
+/**
+ * Returns the pubsub info from the provided filter. A pubsub filter should have a topic and can 
+ * have a scope. If no topic is present the topic and scope output will be NULL.
+ * If a topic is present the topic output will contain a allocated topic string and if a scope was
+ * present a allocated scope string.
+ * The caller is owner of the topic and scope output string.
+ */
 celix_status_t pubsub_getPubSubInfoFromFilter(const char* filterstr, char **topic, char **scope);
+
 char* pubsub_getKeysBundleDir(bundle_context_pt ctx);
 
 

@@ -106,6 +106,7 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_EMBEDDED_PROPERTIES>,\\n\
     if (LAUNCHER_SRC) #compilation needed
         add_executable(${CONTAINER_TARGET} ${LAUNCHER_SRC})
         set_target_properties(${CONTAINER_TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CONTAINER_LOC})
+	set_target_properties(${CONTAINER_TARGET} PROPERTIES OUTPUT_NAME ${CONTAINER_NAME})
         target_link_libraries(${CONTAINER_TARGET} PRIVATE Celix::framework)
         set(LAUNCHER "$<TARGET_FILE:${CONTAINER_TARGET}>")
     else ()
