@@ -49,7 +49,6 @@ function(add_runtime)
         COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_PROPERTY:${RUNTIME_TARGET_NAME},RUNTIME_LOC>
         COMMAND chmod +x $<TARGET_PROPERTY:${RUNTIME_TARGET_NAME},RUNTIME_LOC>/start.sh
         COMMAND chmod +x $<TARGET_PROPERTY:${RUNTIME_TARGET_NAME},RUNTIME_LOC>/stop.sh
-        #TODO DEPENDS  "$<TARGET_PROPERTY:${DEPLOY_TARGET},DEPLOY_TARGET_DEPS>" ${DEPLOY_FILE_TARGETS}
         DEPENDS  ${START_SCRIPT} ${STOP_SCRIPT} ${SETUP_SCRIPT}
         WORKING_DIRECTORY "${RUNTIME_LOC}"
         COMMENT "Creating runtime ${RUNTIME_TARGET_NAME}" VERBATIM
@@ -97,7 +96,6 @@ function(add_runtime)
     )
 
 
-    #replaces list of $<TARGET_PROPERTY:<DEPLOY_NAME>,DEPLOY_LOC>, only needed for common
     file(GENERATE
         OUTPUT "${COMMON_SCRIPT}"
         INPUT "${CMAKE_CURRENT_BINARY_DIR}/common.sh.${RUNTIME_TARGET_NAME}.in.2"
@@ -159,7 +157,7 @@ function(runtime_deployment_wait_for)
     list(GET ARGN 0 RUNTIME_NAME)
     list(GET ARGN 1 DEPLOYMENT)
 
-    set_target_properties(${RUNTIME_NAME} PROPERTIES "RUNTIME_WAIT_FOR_DEPLOYMENT" "$<TARGET_PROPERTY:${DEPLOYMENT},DEPLOY_LOC>")
+    set_target_properties(${RUNTIME_NAME} PROPERTIES "RUNTIME_WAIT_FOR_DEPLOYMENT" "$<TARGET_PROPERTY:${DEPLOYMENT},CONTAINER_LOC>")
     set_target_properties(${RUNTIME_NAME} PROPERTIES "RUNTIME_WAIT_FOR_COMMAND" "")
 endfunction()
 
