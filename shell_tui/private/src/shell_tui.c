@@ -73,16 +73,29 @@ typedef struct shell_context {
     history_t* hist;
 } shell_context_t;
 
+struct OriginalSettings {
+    struct termios term_org;
+    struct sigaction oldSigIntAction;
+    struct sigaction oldSigSegvAction;
+    struct sigaction oldSigAbrtAction;
+    struct sigaction oldSigQuitAction;
+
+};
+
 // static function declarations
 static void remove_newlines(char* line);
 static void clearLine();
 static void cursorLeft(int n);
 static void writeLine(const char*line, int pos);
 static int autoComplete(shell_service_pt shellSvc, char *in, int cursorPos, size_t maxLen);
+static void shellSigHandler(int sig, siginfo_t *info, void* ptr);
 static void* shellTui_runnable(void *data);
 static void shellTui_parseInputForControl(shell_tui_t* shellTui, shell_context_t* ctx);
 static void shellTui_parseInput(shell_tui_t* shellTui, shell_context_t* ctx);
 static void writePrompt(void);
+
+// Unfortunately has to be static, it is not possible to pass user defined data to the handler
+static struct OriginalSettings originalSettings;
 
 shell_tui_t* shellTui_create(bool useAnsiControlSequences) {
     shell_tui_t* result = calloc(1, sizeof(*result));
@@ -139,6 +152,19 @@ celix_status_t shellTui_setShell(shell_tui_t* shellTui, shell_service_t* svc) {
     return CELIX_SUCCESS;
 }
 
+static void shellSigHandler(int sig, siginfo_t *info, void* ptr) {
+    tcsetattr(STDIN_FILENO, TCSANOW, &originalSettings.term_org);
+    if (sig == SIGINT) {
+        originalSettings.oldSigIntAction.sa_sigaction(sig, info, ptr);
+    } else if (sig == SIGSEGV){
+        originalSettings.oldSigSegvAction.sa_sigaction(sig, info, ptr);
+    } else if (sig == SIGABRT){
+        originalSettings.oldSigAbrtAction.sa_sigaction(sig, info, ptr);
+    } else if (sig == SIGQUIT){
+        originalSettings.oldSigQuitAction.sa_sigaction(sig, info, ptr);
+    }
+}
+
 static void* shellTui_runnable(void *data) {
     shell_tui_t* shellTui = (shell_tui_t*) data;
 
@@ -147,12 +173,24 @@ static void* shellTui_runnable(void *data) {
     memset(&ctx, 0, sizeof(ctx));
     ctx.hist = historyCreate();
 
-    struct termios term_org, term_new;
+    struct termios term_new;
     if (shellTui->useAnsiControlSequences) {
-        tcgetattr(STDIN_FILENO, &term_org);
+        sigaction(SIGINT, NULL, &originalSettings.oldSigIntAction);
+        sigaction(SIGSEGV, NULL, &originalSettings.oldSigSegvAction);
+        sigaction(SIGABRT, NULL, &originalSettings.oldSigAbrtAction);
+        sigaction(SIGQUIT, NULL, &originalSettings.oldSigQuitAction);
+        struct sigaction newAction;
+        memset(&newAction, 0, sizeof(newAction));
+        newAction.sa_flags = SA_SIGINFO;
+        newAction.sa_sigaction = shellSigHandler;
+        sigaction(SIGINT, &newAction, NULL);
+        sigaction(SIGSEGV, &newAction, NULL);
+        sigaction(SIGABRT, &newAction, NULL);
+        sigaction(SIGQUIT, &newAction, NULL);
+        tcgetattr(STDIN_FILENO, &originalSettings.term_org);
 
 
-        term_new = term_org;
+        term_new = originalSettings.term_org;
         term_new.c_lflag &= ~(ICANON | ECHO);
         tcsetattr(STDIN_FILENO, TCSANOW, &term_new);
     }
@@ -186,7 +224,11 @@ static void* shellTui_runnable(void *data) {
 
     historyDestroy(ctx.hist);
     if (shellTui->useAnsiControlSequences) {
-        tcsetattr(STDIN_FILENO, TCSANOW, &term_org);
+        tcsetattr(STDIN_FILENO, TCSANOW, &originalSettings.term_org);
+        sigaction(SIGINT, &originalSettings.oldSigIntAction, NULL);
+        sigaction(SIGSEGV, &originalSettings.oldSigSegvAction, NULL);
+        sigaction(SIGABRT, &originalSettings.oldSigAbrtAction, NULL);
+        sigaction(SIGQUIT, &originalSettings.oldSigQuitAction, NULL);
     }
 
 
