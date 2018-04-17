@@ -29,41 +29,61 @@
 
 #include "service_listener.h"
 #include "array_list.h"
-#include "bundle_context.h"
 #include "service_tracker_customizer.h"
 #include "framework_exports.h"
+#include "bundle_context.h"
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 typedef struct serviceTracker *service_tracker_pt;
+typedef struct serviceTracker service_tracker_t;
 
 FRAMEWORK_EXPORT celix_status_t
-serviceTracker_create(bundle_context_pt context, const char *service, service_tracker_customizer_pt customizer,
-                      service_tracker_pt *tracker);
+serviceTracker_create(bundle_context_t *ctx, const char *service, service_tracker_customizer_pt customizer,
+                      service_tracker_t **tracker);
 
 FRAMEWORK_EXPORT celix_status_t
-serviceTracker_createWithFilter(bundle_context_pt context, const char *filter, service_tracker_customizer_pt customizer,
-                                service_tracker_pt *tracker);
+serviceTracker_createWithFilter(bundle_context_t *ctx, const char *filter, service_tracker_customizer_pt customizer,
+                                service_tracker_t **tracker);
 
-FRAMEWORK_EXPORT celix_status_t serviceTracker_open(service_tracker_pt tracker);
+FRAMEWORK_EXPORT celix_status_t serviceTracker_open(service_tracker_t *tracker);
 
-FRAMEWORK_EXPORT celix_status_t serviceTracker_close(service_tracker_pt tracker);
+FRAMEWORK_EXPORT celix_status_t serviceTracker_close(service_tracker_t *tracker);
 
-FRAMEWORK_EXPORT celix_status_t serviceTracker_destroy(service_tracker_pt tracker);
+FRAMEWORK_EXPORT celix_status_t serviceTracker_destroy(service_tracker_t *tracker);
 
-FRAMEWORK_EXPORT service_reference_pt serviceTracker_getServiceReference(service_tracker_pt tracker);
+FRAMEWORK_EXPORT service_reference_pt serviceTracker_getServiceReference(service_tracker_t *tracker);
 
-FRAMEWORK_EXPORT array_list_pt serviceTracker_getServiceReferences(service_tracker_pt tracker);
+FRAMEWORK_EXPORT array_list_pt serviceTracker_getServiceReferences(service_tracker_t *tracker);
 
-FRAMEWORK_EXPORT void *serviceTracker_getService(service_tracker_pt tracker);
+FRAMEWORK_EXPORT void *serviceTracker_getService(service_tracker_t *tracker);
 
-FRAMEWORK_EXPORT array_list_pt serviceTracker_getServices(service_tracker_pt tracker);
+FRAMEWORK_EXPORT array_list_pt serviceTracker_getServices(service_tracker_t *tracker);
 
-FRAMEWORK_EXPORT void *serviceTracker_getServiceByReference(service_tracker_pt tracker, service_reference_pt reference);
+FRAMEWORK_EXPORT void *serviceTracker_getServiceByReference(service_tracker_t *tracker, service_reference_pt reference);
 
 FRAMEWORK_EXPORT void serviceTracker_serviceChanged(service_listener_pt listener, service_event_pt event);
+
+/**
+ * Locks and get the highest ranking service. This call needs to be followed with the unlockAndUngetService call
+ *
+ * @param tracker The service tracker
+ * @param svcPropsOut The ptr to ptr of the properties output, can be NULL.
+ * @param ownerOut The ptr to ptr of the bundle servic owner output, can be NULL.
+ * @return the svc if found or NULL.
+ */
+FRAMEWORK_EXPORT void* serviceTracker_lockAndGetService(service_tracker_t *tracker, properties_t **svcPropsOut, bundle_t **ownerOut);
+
+/**
+ * Unlocks and unget the requested service.
+ * @param tracker The service tracker
+ * @param svc The svc for which a lock is held
+ */
+FRAMEWORK_EXPORT void serviceTracker_unlockAndUngetService(service_tracker_t *tracker, void *svc);
+
 
 #ifdef __cplusplus
 }

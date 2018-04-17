@@ -28,7 +28,7 @@ extern "C" {
 #include <ctype.h>
 
 #include "celix_launcher.h"
-#include "framework.h"
+#include "celix_framework_factory.h"
 
 
     static framework_pt framework = NULL;
@@ -81,3 +81,43 @@ TEST_GROUP(CelixFramework) {
 TEST(CelixFramework, testFramework) {
     testFramework();
 }
+
+TEST_GROUP(FrameworkFactory) {
+};
+
+
+TEST(FrameworkFactory, testFactoryCreate) {
+    framework_t* fw = frameworkFactory_newFramework(NULL);
+    CHECK(fw != NULL);
+    framework_destroy(fw);
+}
+
+TEST(FrameworkFactory, testFactoryCreateAndToManyStartAndStops) {
+    framework_t* fw = frameworkFactory_newFramework(NULL);
+    CHECK(fw != NULL);
+
+    framework_start(fw); //should already be done by frameworkFactory_newFramework();
+    framework_start(fw);
+    framework_start(fw);
+    framework_start(fw);
+
+    framework_stop(fw); //will also be implicitly done by framework_destroy
+    framework_stop(fw);
+    framework_stop(fw);
+    framework_stop(fw);
+
+    framework_destroy(fw);
+}
+
+TEST(FrameworkFactory, restartFramework) {
+    framework_t* fw = frameworkFactory_newFramework(NULL);
+    CHECK(fw != NULL);
+
+    framework_stop(fw);
+    framework_start(fw);
+    framework_stop(fw);
+    framework_start(fw);
+
+    framework_destroy(fw);
+}
+

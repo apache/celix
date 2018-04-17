@@ -31,7 +31,7 @@
 #include "service_tracker.h"
 
 struct serviceTracker {
-	bundle_context_pt context;
+	bundle_context_t *context;
 	char * filter;
 
 	service_tracker_pt tracker;
@@ -43,10 +43,13 @@ struct serviceTracker {
 };
 
 struct tracked {
+	celix_thread_mutex_t getLock; //TODO improve to count to that multiple services can be used in parallel from a single tracker
 	service_reference_pt reference;
 	void * service;
+	properties_t *properties;
+	bundle_t* serviceOwner;
 };
 
-typedef struct tracked * tracked_pt;
+typedef struct tracked tracked_t;
 
 #endif /* SERVICE_TRACKER_PRIVATE_H_ */

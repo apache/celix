@@ -16,21 +16,18 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * bundle_context.c
- *
- *  \date       Mar 26, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
+
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
+#include "constants.h"
 #include "bundle_context_private.h"
 #include "framework_private.h"
 #include "bundle.h"
 #include "celix_log.h"
+#include "service_tracker.h"
 
 celix_status_t bundleContext_create(framework_pt framework, framework_logger_pt logger, bundle_pt bundle, bundle_context_pt *bundle_context) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -45,6 +42,9 @@ celix_status_t bundleContext_create(framework_pt framework, framework_logger_pt 
         } else {
             context->framework = framework;
             context->bundle = bundle;
+
+            arrayList_create(&context->svcRegistrations);
+            celixThreadMutex_create(&context->mutex, NULL);
 
             *bundle_context = context;
         }
@@ -381,4 +381,90 @@ celix_status_t bundleContext_getPropertyWithDefault(bundle_context_pt context, c
     framework_logIfError(logger, status, NULL, "Failed to get property [name=%s]", name);
 
     return status;
+}
+
+
+long bundleContext_registerCService(bundle_context_t *ctx, const char *serviceName, const void *svc, properties_t *properties) {
+    return bundleContext_registerServiceForLang(ctx, serviceName, svc, properties, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
+}
+
+
+long bundleContext_registerServiceForLang(bundle_context_t *ctx, const char *serviceName, const void *svc, properties_t *properties, const char* lang) {
+    long svcId = -1;
+    if (properties == NULL) {
+        properties = properties_create();
+    }
+    service_registration_t *reg = NULL;
+    if (serviceName != NULL && lang != NULL) {
+        properties_set(properties, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang);
+        bundleContext_registerService(ctx, serviceName, svc, properties, &reg);
+        svcId = serviceRegistration_getServiceId(reg); //save to call with NULL
+    } else {
+        if (serviceName == NULL) {
+            framework_logIfError(logger, CELIX_ILLEGAL_ARGUMENT, NULL, "Required serviceName argument is NULL");
+        }
+        if (lang == NULL) {
+            framework_logIfError(logger, CELIX_ILLEGAL_ARGUMENT, NULL, "Required lang argument is NULL");
+        }
+    }
+    if (svcId < 0) {
+        properties_destroy(properties);
+    } else {
+        celixThreadMutex_lock(&ctx->mutex);
+        arrayList_add(ctx->svcRegistrations, reg);
+        celixThreadMutex_unlock(&ctx->mutex);
+    }
+    return svcId;
+}
+
+void bundleContext_unregisterService(bundle_context_t *ctx, long serviceId) {
+    service_registration_t *found = NULL;
+    if (ctx != NULL && serviceId >= 0) {
+        celixThreadMutex_lock(&ctx->mutex);
+        unsigned int size = arrayList_size(ctx->svcRegistrations);
+        for (unsigned int i = 0; i < size; ++i) {
+            service_registration_t *reg = arrayList_get(ctx->svcRegistrations, i);
+            if (reg != NULL) {
+                long svcId = serviceRegistration_getServiceId(reg);
+                if (svcId == serviceId) {
+                    found = reg;
+                    arrayList_remove(ctx->svcRegistrations, i);
+                    break;
+                }
+            }
+        }
+        celixThreadMutex_unlock(&ctx->mutex);
+
+        if (found != NULL) {
+            serviceRegistration_unregister(found);
+        } else {
+            framework_logIfError(logger, CELIX_ILLEGAL_ARGUMENT, NULL, "Provided service id is not used to registered using bundleContext_registerCService/registerServiceForLang");
+        }
+    }
+}
+
+bool bundleContext_useServiceWithId(
+        bundle_context_t *ctx,
+        long serviceId,
+        void *callbackHandle,
+        void (*use)(void *handle, void *svc, const properties_t *props, const bundle_t *owner)) {
+    bool called = false;
+    char filter[64];
+    snprintf(filter, 64, "(%s=%li)", OSGI_FRAMEWORK_SERVICE_ID, serviceId);
+    service_tracker_t *trk = NULL;
+    serviceTracker_createWithFilter(ctx, filter, NULL, &trk);
+    serviceTracker_open(trk);
+    if (trk != NULL) {
+        bundle_t *bnd = NULL;
+        properties_t *props = NULL;
+        void *svc = serviceTracker_lockAndGetService(trk, &props, &bnd);
+        if (svc != NULL) {
+            use(callbackHandle, svc, props, bnd);
+            called = true;
+            serviceTracker_unlockAndUngetService(trk, svc);
+        }
+        serviceTracker_close(trk);
+        serviceTracker_destroy(trk);
+    }
+    return called;
 }

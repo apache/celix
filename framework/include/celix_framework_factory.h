@@ -16,31 +16,26 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * bundle_context_private.h
- *
- *  \date       Feb 12, 2013
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
+#ifndef CELIX_FRAMEWORK_FACTORY_H_
+#define CELIX_FRAMEWORK_FACTORY_H_
 
-#ifndef BUNDLE_CONTEXT_PRIVATE_H_
-#define BUNDLE_CONTEXT_PRIVATE_H_
+#include "framework.h"
 
-#include "bundle_context.h"
-#include "celix_log.h"
-
-struct bundleContext {
-#ifdef WITH_APR
-    apr_pool_t *pool;
+#ifdef __cplusplus
+extern "C" {
 #endif
-	struct framework * framework;
-	struct bundle * bundle;
 
-	celix_thread_mutex_t mutex; //protect svcRegistrations.
-	array_list_t *svcRegistrations;
-};
+/**
+ * Creates a new framework. The framework will be in the started state.
+ * @param config The framework configuration. Can be NULL.
+ * @return a started framework or NULL
+ */
+framework_t* frameworkFactory_newFramework(properties_t *config);
 
 
-#endif /* BUNDLE_CONTEXT_PRIVATE_H_ */
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* CELIX_FRAMEWORK_FACTORY_H_ */

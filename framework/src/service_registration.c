@@ -276,7 +276,7 @@ celix_status_t serviceRegistration_getBundle(service_registration_pt registratio
 celix_status_t serviceRegistration_getServiceName(service_registration_pt registration, const char **serviceName) {
 	celix_status_t status = CELIX_SUCCESS;
 
-    if (registration != NULL && *serviceName == NULL) {
+    if (registration != NULL && serviceName != NULL) {
         celixThreadRwlock_readLock(&registration->lock);
         *serviceName = registration->className;
         celixThreadRwlock_unlock(&registration->lock);
@@ -288,4 +288,14 @@ celix_status_t serviceRegistration_getServiceName(service_registration_pt regist
     framework_logIfError(logger, status, NULL, "Cannot get service name");
 
 	return status;
+}
+
+long serviceRegistration_getServiceId(service_registration_t *registration) {
+    long svcId = -1;
+    if (registration != NULL) {
+        celixThreadRwlock_readLock(&registration->lock);
+        svcId = registration->serviceId;
+        celixThreadRwlock_unlock(&registration->lock);
+    }
+    return svcId;
 }

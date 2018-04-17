@@ -81,6 +81,9 @@ function(add_celix_container)
         get_filename_component(SRC_FILENAME ${CONTAINER_LAUNCHER_SRC} NAME)
         set(LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}-${SRC_FILENAME}")
         set(LAUNCHER_ORG "${CONTAINER_LAUNCHER_SRC}")
+        add_custom_command(OUTPUT ${LAUNCHER_SRC}
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LAUNCHER_ORG} ${LAUNCHER_SRC}
+        )
     else () #generate custom launcher
         if (CONTAINER_CXX)
             set(LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}-main.cc")
@@ -106,7 +109,7 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_EMBEDDED_PROPERTIES>,\\n\
     if (LAUNCHER_SRC) #compilation needed
         add_executable(${CONTAINER_TARGET} ${LAUNCHER_SRC})
         set_target_properties(${CONTAINER_TARGET} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CONTAINER_LOC})
-	set_target_properties(${CONTAINER_TARGET} PROPERTIES OUTPUT_NAME ${CONTAINER_NAME})
+	    set_target_properties(${CONTAINER_TARGET} PROPERTIES OUTPUT_NAME ${CONTAINER_NAME})
         target_link_libraries(${CONTAINER_TARGET} PRIVATE Celix::framework)
         set(LAUNCHER "$<TARGET_FILE:${CONTAINER_TARGET}>")
     else ()

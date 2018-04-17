@@ -28,6 +28,7 @@
 #define BUNDLE_H_
 
 typedef struct bundle * bundle_pt;
+typedef struct bundle bundle_t;
 
 #include "celix_errno.h"
 #include "bundle_state.h"

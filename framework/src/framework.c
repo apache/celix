@@ -45,6 +45,7 @@
 #include "service_reference_private.h"
 #include "listener_hook_service.h"
 #include "service_registration_private.h"
+#include "bundle_private.h"
 
 typedef celix_status_t (*create_function_pt)(bundle_context_pt context, void **userData);
 typedef celix_status_t (*start_function_pt)(void * handle, bundle_context_pt context);
@@ -258,7 +259,6 @@ celix_status_t framework_create(framework_pt *framework, properties_pt config) {
 
 celix_status_t framework_destroy(framework_pt framework) {
     celix_status_t status = CELIX_SUCCESS;
-
     celixThreadMutex_lock(&framework->installedBundleMapLock);
 
     if (framework->installedBundleMap != NULL) {
@@ -525,8 +525,8 @@ celix_status_t framework_start(framework_pt framework) {
 	return status;
 }
 
-void framework_stop(framework_pt framework) {
-	fw_stopBundle(framework, framework->bundle, true);
+celix_status_t framework_stop(framework_pt framework) {
+	return fw_stopBundle(framework, framework->bundle, true);
 }
 
 celix_status_t fw_getProperty(framework_pt framework, const char* name, const char* defaultValue, const char** value) {
@@ -2094,7 +2094,7 @@ celix_status_t framework_waitForStop(framework_pt framework) {
 		return CELIX_FRAMEWORK_EXCEPTION;
 	}
 
-	celixThread_join(framework->shutdownThread, NULL);
+    celixThread_join(framework->shutdownThread, NULL);
 
 	fw_log(framework->logger, OSGI_FRAMEWORK_LOG_INFO, "FRAMEWORK: Successful shutdown");
 	return CELIX_SUCCESS;
@@ -2187,6 +2187,14 @@ celix_status_t framework_getFrameworkBundle(framework_pt framework, bundle_pt *b
 	}
 
 	return status;
+}
+
+bundle_context_t* framework_getContext(framework_t *framework) {
+    bundle_context_t *result = NULL;
+    if (framework != NULL && framework->bundle != NULL) {
+        result = framework->bundle->context;
+    }
+    return result;
 }
 
 celix_status_t fw_fireBundleEvent(framework_pt framework, bundle_event_type_e eventType, bundle_pt bundle) {

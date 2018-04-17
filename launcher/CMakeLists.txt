@@ -36,22 +36,4 @@ if (LAUNCHER)
     install(TARGETS launcher EXPORT celix RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT framework)
     #Setup target aliases to match external usage
     add_executable(Celix::launcher ALIAS launcher)
-
-    find_package(CppUTest QUIET)
-    if (CPPUTEST_FOUND)
-        #Test running which start celix and run CppUTest RUN_ALL_TESTS.
-        #Using this test running it is possible to create bundles containing CppUTests.
-	    include_directories(celix_test_runner)
-	    include_directories(SYSTEM ${CPPUTEST_INCLUDE_DIRS})
-        add_executable(celix_test_runner
-                src/celix_test_runner.cpp
-        )
-        set_target_properties(celix_test_runner PROPERTIES "INSTALL_RPATH" "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
-        target_link_libraries(celix_test_runner PRIVATE
-            Celix::framework
-            ${CPPUTEST_LIBRARIES}
-            ${CPPUTEST_EXT_LIBRARIES}
-        )
-        install(TARGETS celix_test_runner RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT framework)
-    endif ()
 endif (LAUNCHER) 

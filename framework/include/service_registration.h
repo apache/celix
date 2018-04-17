@@ -16,13 +16,7 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * service_registration.h
- *
- *  \date       Aug 6, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
+
 
 #ifndef SERVICE_REGISTRATION_H_
 #define SERVICE_REGISTRATION_H_
@@ -30,6 +24,8 @@
 #include "celixbool.h"
 
 typedef struct serviceRegistration * service_registration_pt;
+typedef struct serviceRegistration service_registration_t;
+
 
 #include "service_registry.h"
 #include "array_list.h"
@@ -40,16 +36,19 @@ typedef struct serviceRegistration * service_registration_pt;
 extern "C" {
 #endif
 
-FRAMEWORK_EXPORT celix_status_t serviceRegistration_unregister(service_registration_pt registration);
+FRAMEWORK_EXPORT celix_status_t serviceRegistration_unregister(service_registration_t *registration);
 
 FRAMEWORK_EXPORT celix_status_t
-serviceRegistration_getProperties(service_registration_pt registration, properties_pt *properties);
+serviceRegistration_getProperties(service_registration_t *registration, properties_pt *properties);
 
 FRAMEWORK_EXPORT celix_status_t
-serviceRegistration_setProperties(service_registration_pt registration, properties_pt properties);
+serviceRegistration_setProperties(service_registration_t *registration, properties_pt properties);
 
 FRAMEWORK_EXPORT celix_status_t
-serviceRegistration_getServiceName(service_registration_pt registration, const char **serviceName);
+serviceRegistration_getServiceName(service_registration_t *registration, const char **serviceName);
+
+FRAMEWORK_EXPORT long
+serviceRegistration_getServiceId(service_registration_t *registration);
 
 #ifdef __cplusplus
 }

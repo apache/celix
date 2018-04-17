@@ -71,6 +71,61 @@ bundleContext_registerServiceFactory(bundle_context_pt context, const char *serv
                                      properties_pt properties, service_registration_pt *service_registration);
 
 /**
+ * Register a C lang service to the framework.
+ *
+ * @param ctx The bundle context
+ * @param serviceName the service name, cannot be NULL
+ * @param svc the service object. Normally a pointer to a service struct (e.g. a struct with function pointers)
+ * @param properties The meta properties assiated with the service. The service registration will take ownership of the properties
+ * @return The serviceId or < 0 if registration was unsuccessful.
+ */
+long bundleContext_registerCService(bundle_context_t *ctx, const char *serviceName, const void *svc, properties_t *properties);
+
+/**
+* Register a service for the specified language to the framework.
+*
+* @param ctx The bundle context
+* @param serviceName the service name, cannot be NULL
+* @param svc the service object. Normally a pointer to a service struct (e.g. a struct with function pointers)
+* @param properties The meta properties assiated with the service. The service registration will take ownership of the properties
+* @return The serviceId or < 0 if registration was unsuccessful.
+*/
+long bundleContext_registerServiceForLang(bundle_context_t *ctx, const char *serviceName, const void *svc, properties_t *properties, const char* lang);
+
+/**
+ * Unregister the service with service id. The service will only be unregistered if the bundle of the bundle context
+ * is the owner of the service.
+ * TODO explain that this should nu be used in combination with the service_registration_t type.
+ *
+ * @param ctx The bundle context
+ * @param serviceId The service id
+ */
+void bundleContext_unregisterService(bundle_context_t *ctx, long serviceId);
+
+
+/**
+ * Get and lock the service with the provided service id
+ * Invokes the provided callback with the found service.
+ * The svc, props and owner in the callback are only valid during the callback.
+ * If no service is found the callback will not be invoked
+ *
+ * This function will block till the callback is finished. As result it is possible to provide callback data from the
+ * stack.
+ *
+ * @param ctx The bundle context
+ * @param serviceId the service id.
+ * @param callbackHandle The data pointer, which will be used in the callbacks
+ * @param use The callback, which will be called when service is retrieved.
+ * @param bool returns true if a service was found.
+ */
+bool bundleContext_useServiceWithId(
+        bundle_context_t *ctx,
+        long serviceId,
+        void *callbackHandle,
+        void (*use)(void *handle, void* svc, const properties_t *props, const bundle_t *owner)
+);
+
+/**
  * Get a service reference for the bundle context. When the service reference is no longer needed use bundleContext_ungetServiceReference.
  * ServiceReference are coupled to a bundle context. Do not share service reference between bundles. Exchange the service.id instead.
  * 

@@ -32,6 +32,7 @@ set(SOURCES
         src/service_registry.c src/service_tracker.c src/service_tracker_customizer.c
         src/unzip.c src/wire.c
         src/celix_log.c src/celix_launcher.c
+        src/celix_framework_factory.c
         ${IO}
 )
 add_library(framework SHARED ${SOURCES})

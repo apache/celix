@@ -16,31 +16,25 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * bundle_context_private.h
- *
- *  \date       Feb 12, 2013
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
 
+#include "celix_framework_factory.h"
 
-#ifndef BUNDLE_CONTEXT_PRIVATE_H_
-#define BUNDLE_CONTEXT_PRIVATE_H_
+framework_t* frameworkFactory_newFramework(properties_t *config) {
+    framework_t* fw = NULL;
 
-#include "bundle_context.h"
-#include "celix_log.h"
+    if (config == NULL) {
+        config = properties_create();
+    }
 
-struct bundleContext {
-#ifdef WITH_APR
-    apr_pool_t *pool;
-#endif
-	struct framework * framework;
-	struct bundle * bundle;
-
-	celix_thread_mutex_t mutex; //protect svcRegistrations.
-	array_list_t *svcRegistrations;
-};
-
-
-#endif /* BUNDLE_CONTEXT_PRIVATE_H_ */
+    if (config != NULL) {
+        framework_create(&fw, config);
+    }
+    if (fw != NULL) {
+        celix_status_t rc = framework_start(fw);
+        if (rc != CELIX_SUCCESS) {
+            framework_destroy(fw);
+            fw = NULL;
+        }
+    }
+    return fw;
+}
