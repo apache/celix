@@ -25,7 +25,8 @@ Component<T>& DependencyManager::createComponent(std::string name) {
                         Component<T>::create(this->context) :
                         Component<T>::create(this->context, name);
     if (cmp->isValid()) {
-        this->components.push_back(std::unique_ptr<BaseComponent> {cmp});
+        std::lock_guard<std::mutex> lock(componentsMutex);
+        this->queuedComponents.push_back(std::unique_ptr<BaseComponent> {cmp});
     }
     return *cmp;
 }

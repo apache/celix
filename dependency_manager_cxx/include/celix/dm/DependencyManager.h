@@ -29,6 +29,7 @@
 #include "dm_dependency_manager.h"
 
 #include <vector>
+#include <mutex>
 
 namespace celix { namespace dm {
 
@@ -44,7 +45,15 @@ namespace celix { namespace dm {
                 this->cDepMan = nullptr;
         }
 
-        DependencyManager(DependencyManager&&) = default;
+        DependencyManager(DependencyManager&& mgr) : componentsMutex{} {
+                std::lock_guard<std::mutex> lock(componentsMutex);
+                mgr.context = context;
+                mgr.queuedComponents = std::move(queuedComponents);
+                mgr.startedComponents = std::move(startedComponents);
+                mgr.cDepMan = cDepMan;
+                cDepMan = nullptr;
+                context = nullptr;
+        }
         DependencyManager& operator=(DependencyManager&&) = default;
 
         DependencyManager(const DependencyManager&) = delete;
@@ -93,9 +102,12 @@ namespace celix { namespace dm {
          * Starts the Dependency Manager
          */
         void start() {
-                for(std::unique_ptr<BaseComponent>& cmp : components)  {
-                        dependencyManager_add(cDepMan, cmp->cComponent());
+                std::lock_guard<std::mutex> lock(componentsMutex);
+                for (auto it = queuedComponents.begin(); it != queuedComponents.end(); ++it) {
+                        dependencyManager_add(cDepMan, (*it)->cComponent());
+                        startedComponents.push_back(std::move(*it));
                 }
+                queuedComponents.clear();
         }
 
         /**
@@ -103,12 +115,15 @@ namespace celix { namespace dm {
          */
         void stop() {
                 dependencyManager_removeAllComponents(cDepMan);
-                components.clear();
+                queuedComponents.clear();
+                startedComponents.clear();
         }
     private:
         bundle_context_pt context {nullptr};
-        std::vector<std::unique_ptr<BaseComponent>> components {};
+        std::vector<std::unique_ptr<BaseComponent>> queuedComponents {};
+        std::vector<std::unique_ptr<BaseComponent>> startedComponents {};
         dm_dependency_manager_pt cDepMan {nullptr};
+        std::mutex componentsMutex{};
     };
 
 }}
