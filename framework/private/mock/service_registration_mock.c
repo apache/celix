@@ -23,6 +23,7 @@
  *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright  Apache License, Version 2.0
  */
+#include <CppUTestExt/MockSupport_c.h>
 #include "CppUTestExt/MockSupport_c.h"
 
 #include "service_registration.h"
@@ -138,4 +139,9 @@ void serviceRegistration_release(service_registration_pt registration) {
 }
 
 
+long serviceRegistration_getServiceId(service_registration_t *registration) {
+	mock_c()->actualCall("serviceRegistration_getServiceId")
+			->withPointerParameters("registration", registration);
+	return mock_c()->returnValue().value.longIntValue;
+}
 

@@ -23,6 +23,7 @@
  *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright  Apache License, Version 2.0
  */
+#include <CppUTestExt/MockSupport_c.h>
 #include "CppUTestExt/MockSupport_c.h"
 
 #include "framework_private.h"
@@ -47,8 +48,9 @@ celix_status_t framework_start(framework_pt framework) {
 		return mock_c()->returnValue().value.intValue;
 }
 
-void framework_stop(framework_pt framework) {
+celix_status_t framework_stop(framework_pt framework) {
 	mock_c()->actualCall("framework_stop");
+	return mock_c()->returnValue().value.intValue;
 }
 
 celix_status_t fw_getProperty(framework_pt framework, const char* name, const char* defaultValue, const char** value) {

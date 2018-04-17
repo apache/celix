@@ -116,6 +116,10 @@ if (ENABLE_TESTING AND FRAMEWORK_TESTS)
         private/mock/bundle_mock.c
         private/mock/framework_mock.c
         private/mock/service_registry_mock.c
+        private/mock/service_registration_mock.c
+        private/mock/service_reference_mock.c
+        src/service_tracker.c #TODO make mock for svc tracker
+        src/service_tracker_customizer.c
         src/bundle_context.c
         src/celix_errorcodes.c
         private/mock/celix_log_mock.c)

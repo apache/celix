@@ -387,22 +387,6 @@ TEST(service_registration, getServiceName) {
 	free(name);
 }
 
-TEST(service_registration, getServiceNameIllegalArgument) {
-	registry_callback_t callback;
-	char * name = my_strdup("sevice_name");
-	service_registration_pt registration = serviceRegistration_create(callback, NULL, name, 0, NULL, NULL);
-	const char *actual = (char *) 0x01;
-
-	mock().expectOneCall("framework_logCode")
-			.withParameter("code", CELIX_ILLEGAL_ARGUMENT);
-
-	celix_status_t status = serviceRegistration_getServiceName(registration, &actual);
-	LONGS_EQUAL(CELIX_ILLEGAL_ARGUMENT, status);
-
-	serviceRegistration_release(registration);
-	free(name);
-}
-
 TEST(service_registration, getBundle) {
 	registry_callback_t callback;
 	char * name = my_strdup("sevice_name");

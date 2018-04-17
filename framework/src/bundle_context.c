@@ -384,12 +384,12 @@ celix_status_t bundleContext_getPropertyWithDefault(bundle_context_pt context, c
 }
 
 
-long bundleContext_registerCService(bundle_context_t *ctx, const char *serviceName, const void *svc, properties_t *properties) {
+long bundleContext_registerCService(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties) {
     return bundleContext_registerServiceForLang(ctx, serviceName, svc, properties, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
 }
 
 
-long bundleContext_registerServiceForLang(bundle_context_t *ctx, const char *serviceName, const void *svc, properties_t *properties, const char* lang) {
+long bundleContext_registerServiceForLang(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties, const char* lang) {
     long svcId = -1;
     if (properties == NULL) {
         properties = properties_create();

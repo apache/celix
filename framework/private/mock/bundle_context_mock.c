@@ -23,6 +23,7 @@
  *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright  Apache License, Version 2.0
  */
+#include <CppUTestExt/MockSupport_c.h>
 #include "CppUTestExt/MockSupport_c.h"
 
 #include "bundle_context.h"
@@ -191,4 +192,43 @@ celix_status_t bundleContext_getProperty(bundle_context_pt context, const char *
 			->withStringParameters("name", name)
 			->withOutputParameter("value", value);
 	return mock_c()->returnValue().value.intValue;
+}
+
+long bundleContext_registerCService(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties) {
+	mock_c()->actualCall("bundleContext_registerCService")
+			->withPointerParameters("ctx", ctx)
+			->withStringParameters("serviceName", serviceName)
+			->withPointerParameters("svc", svc)
+			->withPointerParameters("properties", properties);
+	return mock_c()->returnValue().value.longIntValue;
+}
+
+long bundleContext_registerServiceForLang(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties, const char* lang) {
+	mock_c()->actualCall("bundleContext_registerServiceForLang")
+			->withPointerParameters("ctx", ctx)
+			->withStringParameters("serviceName", serviceName)
+			->withConstPointerParameters("svc", svc)
+			->withPointerParameters("properties", properties)
+			->withStringParameters("lang", lang);
+	return mock_c()->returnValue().value.longIntValue;
+}
+
+void bundleContext_unregisterService(bundle_context_t *ctx, long serviceId) {
+	mock_c()->actualCall("bundleContext_unregisterService")
+			->withPointerParameters("ctx", ctx)
+			->withLongIntParameters("serviceId", serviceId);
+}
+
+bool bundleContext_useServiceWithId(
+		bundle_context_t *ctx,
+		long serviceId,
+		void *callbackHandle,
+		void (*use)(void *handle, void* svc, const properties_t *props, const bundle_t *owner)
+) {
+	mock_c()->actualCall("bundleContext_registerServiceForLang")
+			->withPointerParameters("ctx", ctx)
+			->withLongIntParameters("serviceId", serviceId)
+			->withPointerParameters("callbackHandle", callbackHandle)
+			->withPointerParameters("use", use);
+	return mock_c()->returnValue().value.boolValue;
 }

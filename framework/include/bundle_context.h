@@ -79,7 +79,7 @@ bundleContext_registerServiceFactory(bundle_context_pt context, const char *serv
  * @param properties The meta properties assiated with the service. The service registration will take ownership of the properties
  * @return The serviceId or < 0 if registration was unsuccessful.
  */
-long bundleContext_registerCService(bundle_context_t *ctx, const char *serviceName, const void *svc, properties_t *properties);
+long bundleContext_registerCService(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties);
 
 /**
 * Register a service for the specified language to the framework.
@@ -90,7 +90,7 @@ long bundleContext_registerCService(bundle_context_t *ctx, const char *serviceNa
 * @param properties The meta properties assiated with the service. The service registration will take ownership of the properties
 * @return The serviceId or < 0 if registration was unsuccessful.
 */
-long bundleContext_registerServiceForLang(bundle_context_t *ctx, const char *serviceName, const void *svc, properties_t *properties, const char* lang);
+long bundleContext_registerServiceForLang(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties, const char* lang);
 
 /**
  * Unregister the service with service id. The service will only be unregistered if the bundle of the bundle context
