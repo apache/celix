@@ -46,13 +46,13 @@ namespace celix { namespace dm {
         }
 
         DependencyManager(DependencyManager&& mgr) : componentsMutex{} {
-                std::lock_guard<std::mutex> lock(componentsMutex);
-                mgr.context = context;
-                mgr.queuedComponents = std::move(queuedComponents);
-                mgr.startedComponents = std::move(startedComponents);
-                mgr.cDepMan = cDepMan;
-                cDepMan = nullptr;
-                context = nullptr;
+                std::lock_guard<std::recursive_mutex> lock(this->componentsMutex);
+                mgr.context = this->context;
+                mgr.queuedComponents = std::move(this->queuedComponents);
+                mgr.startedComponents = std::move(this->startedComponents);
+                mgr.cDepMan = this->cDepMan;
+                this->cDepMan = nullptr;
+                this->context = nullptr;
         }
         DependencyManager& operator=(DependencyManager&&) = default;
 
@@ -102,12 +102,22 @@ namespace celix { namespace dm {
          * Starts the Dependency Manager
          */
         void start() {
-                std::lock_guard<std::mutex> lock(componentsMutex);
-                for (auto it = queuedComponents.begin(); it != queuedComponents.end(); ++it) {
-                        dependencyManager_add(cDepMan, (*it)->cComponent());
-                        startedComponents.push_back(std::move(*it));
+                std::vector<std::unique_ptr<BaseComponent>> toBeStartedComponents {};
+                {
+                        std::lock_guard<std::recursive_mutex> lock(componentsMutex);
+                        for (auto it = queuedComponents.begin(); it != queuedComponents.end(); ++it) {
+                                toBeStartedComponents.push_back(std::move(*it));
+                        }
+                        queuedComponents.clear();
                 }
-                queuedComponents.clear();
+                for (auto it = toBeStartedComponents.begin(); it != toBeStartedComponents.end(); ++it) {
+
+                        dependencyManager_add(cDepMan, (*it)->cComponent());
+                        {
+                                std::lock_guard<std::recursive_mutex> lock(componentsMutex);
+                                startedComponents.push_back(std::move(*it));
+                        }
+                }
         }
 
         /**
@@ -123,7 +133,7 @@ namespace celix { namespace dm {
         std::vector<std::unique_ptr<BaseComponent>> queuedComponents {};
         std::vector<std::unique_ptr<BaseComponent>> startedComponents {};
         dm_dependency_manager_pt cDepMan {nullptr};
-        std::mutex componentsMutex{};
+        std::recursive_mutex componentsMutex{};
     };
 
 }}
