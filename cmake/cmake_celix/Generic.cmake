@@ -15,13 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-include(GNUInstallDirs)
-include(CMakeParseArguments)
-
-set(CELIX_CMAKE_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CELIX_CMAKE_DIRECTORY}/../Modules)
-include(${CELIX_CMAKE_DIRECTORY}/BundlePackaging.cmake)
-include(${CELIX_CMAKE_DIRECTORY}/DeployPackaging.cmake)
-include(${CELIX_CMAKE_DIRECTORY}/DockerPackaging.cmake)
-include(${CELIX_CMAKE_DIRECTORY}/Runtimes.cmake)
-include(${CELIX_CMAKE_DIRECTORY}/Generic.cmake)
+function(install_celix_targets)
+    install_celix_bundle_targets(${ARGN})
+endfunction ()

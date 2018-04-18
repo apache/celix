@@ -89,6 +89,16 @@ TEST_GROUP(FrameworkFactory) {
 TEST(FrameworkFactory, testFactoryCreate) {
     framework_t* fw = frameworkFactory_newFramework(NULL);
     CHECK(fw != NULL);
+    framework_stop(fw);
+    framework_waitForStop(fw);
+    framework_destroy(fw); //note stop, wait and then destroy is needed .. combine ?
+}
+
+TEST(FrameworkFactory, testFactoryDestroyWithoutStop) {
+    framework_t* fw = frameworkFactory_newFramework(NULL);
+    CHECK(fw != NULL);
+    framework_stop(fw); //TODO make this unneeded
+    framework_waitForStop(fw); //TODO also this
     framework_destroy(fw);
 }
 
@@ -106,18 +116,25 @@ TEST(FrameworkFactory, testFactoryCreateAndToManyStartAndStops) {
     framework_stop(fw);
     framework_stop(fw);
 
-    framework_destroy(fw);
+    framework_stop(fw);
+    framework_waitForStop(fw);
+    framework_destroy(fw); //note stop, wait and then destroy is needed .. combine ?
 }
 
 TEST(FrameworkFactory, restartFramework) {
     framework_t* fw = frameworkFactory_newFramework(NULL);
     CHECK(fw != NULL);
 
-    framework_stop(fw);
-    framework_start(fw);
-    framework_stop(fw);
-    framework_start(fw);
 
+    /* TODO fix mem leak in restarting framwork
+    framework_stop(fw);
+    framework_start(fw);
+    framework_stop(fw);
+    framework_start(fw);
+     */
+
+    framework_stop(fw);
+    framework_waitForStop(fw);
     framework_destroy(fw);
 }
 

@@ -29,8 +29,8 @@ get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
 get_filename_component(REL_INSTALL_DIR "${REL_INSTALL_DIR}" PATH)
 
 include("${REL_INSTALL_DIR}/share/celix/cmake/cmake_celix/UseCelix.cmake") #adds celix commands (e.g. add_celix_bundle)
-include("${REL_INSTALL_DIR}/share/celix/cmake/CelixTargets.cmake") #imports lib and exe targets (e.g. Celix::framework)
-include("${REL_INSTALL_DIR}/share/celix/cmake/CelixBundleTargets.cmake") #imports bundle targets (e.g. Celix::shell)
+include("${REL_INSTALL_DIR}/share/celix/cmake/Targets.cmake") #imports lib and exe targets (e.g. Celix::framework)
+include("${REL_INSTALL_DIR}/share/celix/cmake/CelixTargets.cmake") #imports bundle targets (e.g. Celix::shell)
 
 # The rest is added to ensure backwards compatiblity with project using the cmake lib/include var instead of targets.
 set(CELIX_CMAKE_MODULES_DIR ${REL_INSTALL_DIR}/share/celix/cmake/Modules)

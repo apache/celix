@@ -18,7 +18,7 @@
 #api target
 add_library(pubsub_api INTERFACE)
 
-target_include_directories(framework INTERFACE
+target_include_directories(pubsub_api INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
     $<INSTALL_INTERFACE:include/celix/pubsub>
 )

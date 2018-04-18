@@ -30,7 +30,9 @@ endif()
 
 
 ##### setup bundles/deploy target
-add_custom_target(celix-bundles ALL)
+if (NOT TARGET celix-bundles)
+    add_custom_target(celix-bundles ALL)
+endif ()
 #####
 
 macro(extract_version_parts VERSION MAJOR MINOR PATCH)

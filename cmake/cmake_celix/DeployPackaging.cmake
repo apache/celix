@@ -16,15 +16,17 @@
 # under the License.
 
 ##### setup bundles/container target
-add_custom_target(celix-containers ALL
-        DEPENDS $<TARGET_PROPERTY:celix-containers,CONTAINER_DEPLOYMENTS>
-)
-set_target_properties(celix-containers PROPERTIES "CONTAINER_DEPLOYMENTS" "") #initial empty deps list
+if (NOT TARGET celix-containers)
+	add_custom_target(celix-containers ALL
+		DEPENDS $<TARGET_PROPERTY:celix-containers,CONTAINER_DEPLOYMENTS>
+	)
+	set_target_properties(celix-containers PROPERTIES "CONTAINER_DEPLOYMENTS" "") #initial empty deps list
 
-get_directory_property(CLEANFILES ADDITIONAL_MAKE_CLEAN_FILES)
-list(APPEND CLEANFILES "${CMAKE_BINARY_DIR}/deploy")
-list(APPEND CLEANFILES "${CMAKE_BINARY_DIR}/celix")
-set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${CLEANFILES}")
+	get_directory_property(CLEANFILES ADDITIONAL_MAKE_CLEAN_FILES)
+	list(APPEND CLEANFILES "${CMAKE_BINARY_DIR}/deploy")
+	list(APPEND CLEANFILES "${CMAKE_BINARY_DIR}/celix")
+	set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${CLEANFILES}")
+endif ()
 #####
 
 function(add_deploy)

@@ -213,6 +213,9 @@ static int celixLauncher_launchWithStreamAndProps(FILE *stream, framework_pt *fr
 
 int celixLauncher_launchWithProperties(properties_pt config, framework_pt *framework) {
 	celix_status_t status;
+	if (config == NULL) {
+		config = properties_create();
+	}
 #ifndef CELIX_NO_CURLINIT
 	// Before doing anything else, let's setup Curl
 	curl_global_init(CURL_GLOBAL_NOTHING);

@@ -92,8 +92,8 @@ add_subdirectory(dependency_manager_cxx)
 add_subdirectory(examples/celix-examples examples)
 
 #export targets
-install(EXPORT celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE CelixTargets.cmake COMPONENT cmake)
-install_celix_bundle_targets(celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE CelixBundleTargets.cmake COMPONENT cmake)
+install(EXPORT celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE Targets.cmake COMPONENT cmake)
+install_celix_targets(celix NAMESPACE Celix:: DESTINATION share/celix/cmake FILE CelixTargets.cmake COMPONENT cmake)
 
 #install celix cmake modules
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/cmake/Modules/ DESTINATION share/celix/cmake/Modules)

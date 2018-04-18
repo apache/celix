@@ -400,13 +400,15 @@ int ServiceDependency<T,I>::invokeCallback(std::function<void(I*, Properties&&)>
     if (ref != nullptr) {
         serviceReference_getServiceRegistration(ref, &reg);
         serviceRegistration_getProperties(reg, &props);
-        hash_map_iterator_t iter = hashMapIterator_construct((hash_map_pt)props);
-        while(hashMapIterator_hasNext(&iter)) {
-            key = (const char*) hashMapIterator_nextKey(&iter);
-            value = properties_get(props, key);
-            //std::cout << "got property " << key << "=" << value << "\n";
-            properties[key] = value;
-        }
+	if (props != nullptr) {
+            hash_map_iterator_t iter = hashMapIterator_construct((hash_map_pt)props);
+            while(hashMapIterator_hasNext(&iter)) {
+                key = (const char*) hashMapIterator_nextKey(&iter);
+                value = properties_get(props, key);
+                //std::cout << "got property " << key << "=" << value << "\n";
+                properties[key] = value;
+            }
+	}
     }
 
     fp(svc, std::move(properties)); //explicit move of lvalue properties.

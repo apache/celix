@@ -18,6 +18,7 @@
  */
 #include <CppUTest/TestHarness.h>
 #include <CppUTest/CommandLineTestRunner.h>
+#include <celix_launcher.h>
 
 #include "celix_framework_factory.h"
 
@@ -32,6 +33,8 @@ TEST_GROUP(CelixFrameworkContextTests) {
     }
 
     void teardown() {
+        framework_stop(fw);
+        framework_waitForStop(fw);
         framework_destroy(fw);
     }
 };
@@ -42,7 +45,7 @@ TEST(CelixFrameworkContextTests, registerService) {
     };
 
     const char *calcName = "calc";
-    calc svc{};
+    calc svc;
     svc.calc = [](int n) -> int {
         return n * 42;
     };

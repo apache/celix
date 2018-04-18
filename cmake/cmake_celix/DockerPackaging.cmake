@@ -16,24 +16,28 @@
 # under the License.
 
 ##### setup docker target
-if (APPLE) #create filesystem script is not working on mac os, exclude target from ALL
-    add_custom_target(celix-build-docker-dirs 
-        DEPENDS $<TARGET_PROPERTY:celix-build-docker-dirs,DOCKER_DEPS>
-    )
-else ()
-    add_custom_target(celix-build-docker-dirs ALL
-        DEPENDS $<TARGET_PROPERTY:celix-build-docker-dirs,DOCKER_DEPS>
-    )
+if (NOT TARGET celix-build-docker-dirs)
+	if (APPLE) #create filesystem script is not working on mac os, exclude target from ALL
+	    add_custom_target(celix-build-docker-dirs 
+		DEPENDS $<TARGET_PROPERTY:celix-build-docker-dirs,DOCKER_DEPS>
+	    )
+	else ()
+	    add_custom_target(celix-build-docker-dirs ALL
+		DEPENDS $<TARGET_PROPERTY:celix-build-docker-dirs,DOCKER_DEPS>
+	    )
+	endif ()
+	set_target_properties(celix-build-docker-dirs PROPERTIES "DOCKER_DEPS" "") #initial empty deps list
 endif ()
-set_target_properties(celix-build-docker-dirs PROPERTIES "DOCKER_DEPS" "") #initial empty deps list
 
-add_custom_target(celix-build-docker-images)
-set(DOCKER_USE_SUDO ON CACHE BOOL "Wether the use of sudo is needed to run docker")
-set(DOCKER_CMD "docker" CACHE STRING "Docker command to use.")
+if (NOT TARGET celix-build-docker-images)
+	add_custom_target(celix-build-docker-images)
+	set(DOCKER_USE_SUDO ON CACHE BOOL "Wether the use of sudo is needed to run docker")
+	set(DOCKER_CMD "docker" CACHE STRING "Docker command to use.")
 
-get_directory_property(CLEANFILES ADDITIONAL_MAKE_CLEAN_FILES)
-list(APPEND CLEANFILES "${CMAKE_BINARY_DIR}/docker")
-set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${CLEANFILES}")
+	get_directory_property(CLEANFILES ADDITIONAL_MAKE_CLEAN_FILES)
+	list(APPEND CLEANFILES "${CMAKE_BINARY_DIR}/docker")
+	set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${CLEANFILES}")
+endif ()
 #####
 
 function(add_celix_docker)

@@ -15,11 +15,13 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_custom_target(runtimes ALL
-    DEPENDS "$<TARGET_PROPERTY:runtimes,DEPS>"
-)
-set_target_properties(runtimes PROPERTIES "DEPS" "")
-set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${CMAKE_BINARY_DIR}/runtimes")
+if (NOT TARGET celix-runtimes)
+	add_custom_target(celix-runtimes ALL
+	    DEPENDS "$<TARGET_PROPERTY:celix-runtimes,DEPS>"
+	)
+	set_target_properties(celix-runtimes PROPERTIES "DEPS" "")
+	set_directory_properties(PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${CMAKE_BINARY_DIR}/runtimes")
+endif ()
 
 function(add_runtime)
     list(GET ARGN 0 RUNTIME_TARGET_NAME)
@@ -101,9 +103,9 @@ function(add_runtime)
         INPUT "${CMAKE_CURRENT_BINARY_DIR}/common.sh.${RUNTIME_TARGET_NAME}.in.2"
     )
 
-    get_target_property(DEPS runtimes "DEPS")
+    get_target_property(DEPS celix-runtimes "DEPS")
     list(APPEND DEPS "${RUNTIME_TARGET_NAME}")
-    set_target_properties(runtimes PROPERTIES "DEPS" "${DEPS}")
+    set_target_properties(celix-runtimes PROPERTIES "DEPS" "${DEPS}")
 
     runtime_deployments(${RUNTIME_TARGET_NAME} ${RUNTIME_DEPLOYMENTS})
     runtime_commands(${RUNTIME_TARGET_NAME} ${RUNTIME_COMMANDS})

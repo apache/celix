@@ -65,16 +65,13 @@ TEST(bundle_context, create) {
 
 	bundleContext_create(NULL, logger, NULL, &context);
 
-	free(context);
+	bundleContext_destroy(context);
 }
 
 TEST(bundle_context, destroy) {
 	mock().expectOneCall("framework_logCode").withParameter("code", CELIX_ILLEGAL_ARGUMENT);
-	bundle_context_pt context = (bundle_context_pt) malloc(sizeof(*context));
-	framework_pt framework = (framework_pt) 0x10;
-	bundle_pt bundle = (bundle_pt) 0x20;
-	context->framework = framework;
-	context->bundle = bundle;
+	bundle_context_pt context = NULL;
+        bundleContext_create((framework_pt) 0x10, (framework_logger_pt)(0x30), (bundle_pt)(0x20), &context);
 
 	celix_status_t status = bundleContext_destroy(context);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
