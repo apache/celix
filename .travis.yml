@@ -36,11 +36,11 @@ matrix:
          dist: trusty
          compiler: gcc
          env: SANITIZE=1
-       - os: linux
-         dist: trusty
-         compiler: clang
-         env: ANDROID=1
-         services: docker
+         #       - os: linux
+         #dist: trusty
+         #compiler: clang
+         #env: ANDROID=1
+         #services: docker
 
 before_install:
   - if [ "$TRAVIS_OS_NAME" = "linux" ] &&  [ -z "$ANDROID" ]; then sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y && sudo apt-get -qq update && sudo apt-get install -y uuid-dev libxml2-dev lcov libffi-dev gcc-4.8 g++-4.8; fi
