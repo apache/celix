@@ -57,6 +57,11 @@ void dependencyManager_destroy(dm_dependency_manager_pt manager);
 celix_status_t dependencyManager_add(dm_dependency_manager_pt manager, dm_component_pt component);
 
 /**
+ * Removes a DM component from the dependency manager and destroys it
+ */
+celix_status_t dependencyManager_remove(dm_dependency_manager_pt manager, dm_component_pt component);
+
+/**
  * Removes all DM components from the dependency manager
  */
 celix_status_t dependencyManager_removeAllComponents(dm_dependency_manager_pt manager);
