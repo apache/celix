@@ -241,9 +241,8 @@ int celixLauncher_launchWithProperties(properties_pt config, framework_pt *frame
 		char delims[] = " ";
 		char *result = NULL;
 		char *save_ptr = NULL;
-		linked_list_pt bundles;
+		linked_list_pt bundles = NULL;
 		array_list_pt installed = NULL;
-		bundle_context_pt context = NULL;
 		linked_list_iterator_pt iter = NULL;
 		unsigned int i;
 

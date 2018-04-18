@@ -68,7 +68,7 @@ TEST(CelixFrameworkContextTests, registerAndUseService) {
     };
 
     const char *calcName = "calc";
-    struct calc svc{};
+    struct calc svc;
     svc.calc = [](int n) -> int {
         return n * 42;
     };
