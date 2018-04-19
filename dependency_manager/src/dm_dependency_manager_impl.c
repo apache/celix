@@ -66,6 +66,16 @@ celix_status_t dependencyManager_add(dm_dependency_manager_pt manager, dm_compon
 	return status;
 }
 
+celix_status_t dependencyManager_remove(dm_dependency_manager_pt manager, dm_component_pt component) {
+    celix_status_t status;
+
+	arrayList_removeElement(manager->components, component);
+    status = component_stop(component);
+    component_destroy(component);
+
+    return status;
+}
+
 celix_status_t dependencyManager_removeAllComponents(dm_dependency_manager_pt manager) {
 	celix_status_t status = CELIX_SUCCESS;
 
@@ -89,7 +99,7 @@ celix_status_t dependencyManager_removeAllComponents(dm_dependency_manager_pt ma
 
 celix_status_t dependencyManager_getInfo(dm_dependency_manager_pt manager, dm_dependency_manager_info_pt *out) {
 	celix_status_t status = CELIX_SUCCESS;
-	int i;
+	unsigned int i;
 	int size;
 	dm_component_info_pt cmpInfo = NULL;
 	dm_dependency_manager_info_pt info = calloc(1, sizeof(*info));
@@ -118,7 +128,7 @@ celix_status_t dependencyManager_getInfo(dm_dependency_manager_pt manager, dm_de
 	return status;
 }
 
-void dependencyManager_destroyInfo(dm_dependency_manager_pt manager, dm_dependency_manager_info_pt info) {
+void dependencyManager_destroyInfo(dm_dependency_manager_pt __attribute__((__unused__)) manager, dm_dependency_manager_info_pt info) {
     unsigned int i = 0;
     for (; i < arrayList_size(info->components); i += 1) {
         dm_component_info_pt cmpinfo = (dm_component_info_pt)arrayList_get(info->components, i);
