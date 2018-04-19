@@ -254,7 +254,7 @@ void* serviceTracker_lockAndGetService(service_tracker_t *tracker, properties_t 
         *svcPropsOut = highest->properties;
     }
     if (highest != NULL && ownerOut != NULL) {
-        *ownerOut = tracked->serviceOwner;
+        *ownerOut = highest->serviceOwner;
     }
     return result;
 }
@@ -472,9 +472,10 @@ static celix_status_t serviceTracker_untrack(service_tracker_pt tracker, service
     celixThreadRwlock_unlock(&tracker->lock);
 
     if (found != NULL) {
-        celixThreadMutex_lock(&found->getLock);
+	celixThreadMutex_lock(&found->getLock);
         serviceTracker_invokeRemovingService(tracker, found->reference, found->service);
         bundleContext_ungetServiceReference(tracker->context, reference);
+	celixThreadMutex_unlock(&found->getLock);
         celixThreadMutex_destroy(&found->getLock);
         free(found);
     }

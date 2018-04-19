@@ -59,8 +59,6 @@ celix_status_t bundleContext_destroy(bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (context != NULL) {
-            celixThreadMutex_lock(&context->mutex);
-
 	    //NOTE still present service registartion will be cleared during bundle stop in the
 	    //service registry (serviceRegistry_clearServiceRegistrations).
 	    celixThreadMutex_destroy(&context->mutex); 
@@ -458,8 +456,8 @@ bool bundleContext_useServiceWithId(
     snprintf(filter, 64, "(%s=%li)", OSGI_FRAMEWORK_SERVICE_ID, serviceId);
     service_tracker_t *trk = NULL;
     serviceTracker_createWithFilter(ctx, filter, NULL, &trk);
-    serviceTracker_open(trk);
     if (trk != NULL) {
+	serviceTracker_open(trk);
         bundle_t *bnd = NULL;
         properties_t *props = NULL;
         void *svc = serviceTracker_lockAndGetService(trk, &props, &bnd);
