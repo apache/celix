@@ -273,7 +273,7 @@ celix_status_t serviceRegistry_clearServiceRegistrations(service_registry_pt reg
 static void serviceRegistry_logWarningServiceRegistration(service_registry_pt registry __attribute__((unused)), service_registration_pt reg) {
     const char *servName = NULL;
     serviceRegistration_getServiceName(reg, &servName);
-    fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Dangling service registration for service %s. Look for missing serviceRegistration_unregister calls.", servName);
+    fw_log(logger, OSGI_FRAMEWORK_LOG_WARNING, "Dangling service registration for service %s. Look for missing bundleContext_unregisterService/serviceRegistration_unregister calls.", servName);
 }
 
 celix_status_t serviceRegistry_getServiceReference(service_registry_pt registry, bundle_pt owner,

@@ -66,7 +66,7 @@ celix_add_file() {
 		fi
 
 		mkdir -p ${DIR} 2> /dev/null
-		cp -vu ${FILE} ${DIR}/
+		cp -vu ${FILE} ${DIR}/ 
 	else
 		echo "Skipping file ${FILE}"
 	fi
@@ -138,7 +138,7 @@ celix_add_required_libs() {
 		echo "ERROR: Assuming 64 bit architecture for docker creating. Created filesystem will not be valid"
 	fi
 	#LIBS=$(ls -1 /lib64/ld-linux* /lib64/libnss_dns* /lib64/libnss_files*)
-	LIBS=$(ls -1 /lib64/ld-linux* /lib64/libnss_dns* /lib64/libnss_files* /lib/x86_64-linux-gnu/libnss_dns* /lib/x86_64-linux-gnu/libnss_files*)
+	LIBS=$(ls -1 /lib64/ld-linux* /lib64/libnss_dns* /lib64/libnss_files* /lib/x86_64-linux-gnu/libnss_dns* /lib/x86_64-linux-gnu/libnss_files* 2> /dev/null)
 	for LIB in ${LIBS}
 	do
 		celix_add_file ${LIB} 

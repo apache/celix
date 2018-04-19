@@ -59,22 +59,11 @@ celix_status_t bundleContext_destroy(bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (context != NULL) {
-	    bool last = false;
-	    do {
-            service_registration_t *reg = NULL;
             celixThreadMutex_lock(&context->mutex);
-            if (arrayList_size(context->svcRegistrations) > 0) {
-                reg = arrayList_remove(context->svcRegistrations, 0);
-            } else {
-                last = true;
-            }
-            celixThreadMutex_unlock(&context->mutex);
-            if (reg != NULL) {
-                serviceRegistration_unregister(reg);
-            }
-	    } while (!last);
 
-	    celixThreadMutex_destroy(&context->mutex);
+	    //NOTE still present service registartion will be cleared during bundle stop in the
+	    //service registry (serviceRegistry_clearServiceRegistrations).
+	    celixThreadMutex_destroy(&context->mutex); 
 	    arrayList_destroy(context->svcRegistrations);
 	    free(context);
 	} else {
