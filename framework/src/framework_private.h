@@ -54,8 +54,12 @@ struct framework {
     struct bundle * bundle;
     hash_map_pt installedBundleMap;
     hash_map_pt installRequestMap;
+
+    celix_thread_mutex_t serviceListenersLock;
     array_list_pt serviceListeners;
+
     array_list_pt frameworkListeners;
+    celix_thread_mutex_t frameworkListenersLock;
 
     array_list_pt bundleListeners;
     celix_thread_mutex_t bundleListenerLock;

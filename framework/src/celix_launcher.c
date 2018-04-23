@@ -55,14 +55,7 @@ static int celixLauncher_launchWithStreamAndProps(FILE *stream, framework_pt *fr
 
 static framework_pt framework = NULL;
 
-/**
- * Method kept because of usage in examples & unit tests
- */
-int celixLauncher_launchWithArgs(int argc, char *argv[]) {
-	return celixLauncher_launchWithArgsAndProps(argc, argv, NULL);
-}
-
-int celixLauncher_launchWithArgsAndProps(int argc, char *argv[], properties_pt packedConfig) {
+int celixLauncher_launchAndWaitForShutdown(int argc, char *argv[], properties_pt packedConfig) {
 	// Perform some minimal command-line option parsing...
 	char *opt = NULL;
 	if (argc > 1) {
@@ -123,35 +116,14 @@ int celixLauncher_launch(const char *configFile, framework_pt *framework) {
 static int celixLauncher_launchWithConfigAndProps(const char *configFile, framework_pt *framework, properties_pt packedConfig){
 	int status = 0;
 	FILE *config = fopen(configFile, "r");
+	if (packedConfig == NULL) {
+		packedConfig = properties_create();
+	}
 
-	if (config != NULL && packedConfig != NULL) {
+	if (config != NULL) {
 		status = celixLauncher_launchWithStreamAndProps(config, framework, packedConfig);
-	} else if (config != NULL) {
-		status = celixLauncher_launchWithStream(config, framework);
-	} else if (packedConfig != NULL) {
-		status = celixLauncher_launchWithProperties(packedConfig, framework);
 	} else {
-		fprintf(stderr, "Error: invalid or non-existing configuration file: '%s'.", configFile);
-		perror("");
-		status = 1;
-	}
-
-	return status;
-}
-
-int celixLauncher_launchWithStream(FILE *stream, framework_pt *framework) {
-	int status = 0;
-
-	properties_pt config = properties_loadWithStream(stream);
-	fclose(stream);
-	// Make sure we've read it and that nothing went wrong with the file access...
-	if (config == NULL) {
-		fprintf(stderr, "Error: invalid configuration file");
-		perror(NULL);
-		status = 1;
-	}
-	else {
-		status = celixLauncher_launchWithProperties(config, framework);
+		status = celixLauncher_launchWithProperties(packedConfig, framework);
 	}
 
 	return status;
@@ -221,74 +193,15 @@ int celixLauncher_launchWithProperties(properties_pt config, framework_pt *frame
 	curl_global_init(CURL_GLOBAL_NOTHING);
 #endif
 
-	const char* autoStartProp = properties_get(config, "cosgi.auto.start.1");
-	char* autoStart = NULL;
-	if (autoStartProp != NULL) {
-		autoStart = strndup(autoStartProp, 1024*10);
-	}
 
-    bundle_context_t *context = NULL;
 	status = framework_create(framework, config);
 	if (status == CELIX_SUCCESS) {
 		status = framework_start(*framework);
-
-	}
-    if (status == CELIX_SUCCESS) {
-        context = framework_getContext(*framework);
-    }
-
-	if (context != NULL && status == CELIX_SUCCESS) {
-		char delims[] = " ";
-		char *result = NULL;
-		char *save_ptr = NULL;
-		linked_list_pt bundles = NULL;
-		array_list_pt installed = NULL;
-		linked_list_iterator_pt iter = NULL;
-		unsigned int i;
-
-		linkedList_create(&bundles);
-		if (autoStart != NULL) {
-			result = strtok_r(autoStart, delims, &save_ptr);
-			while (result != NULL) {
-				char *location = strdup(result);
-				linkedList_addElement(bundles, location);
-				result = strtok_r(NULL, delims, &save_ptr);
-			}
-		}
-		// First install all bundles
-		// Afterwards start them
-		arrayList_create(&installed);
-		iter = linkedListIterator_create(bundles, 0);
-		while (linkedListIterator_hasNext(iter)) {
-			bundle_pt current = NULL;
-			char *location = (char *) linkedListIterator_next(iter);
-			if (bundleContext_installBundle(context, location, &current) == CELIX_SUCCESS) {
-				// Only add bundle if it is installed correctly
-				arrayList_add(installed, current);
-			} else {
-				printf("Could not install bundle from %s\n", location);
-			}
-			linkedListIterator_remove(iter);
-			free(location);
-		}
-		linkedListIterator_destroy(iter);
-		linkedList_destroy(bundles);
-
-		for (i = 0; i < arrayList_size(installed); i++) {
-			bundle_pt installedBundle = (bundle_pt) arrayList_get(installed, i);
-			bundle_startWithOptions(installedBundle, 0);
-		}
-
-		arrayList_destroy(installed);
 	}
 
-	if (status != CELIX_SUCCESS) {
-		printf("Problem creating framework\n");
+	if (status == CELIX_SUCCESS) {
+		printf("Launcher: Framework Started\n");
 	}
-
-	printf("Launcher: Framework Started\n");
-
-	free(autoStart);
 	
 	return status;
 }

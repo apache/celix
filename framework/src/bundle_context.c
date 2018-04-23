@@ -375,7 +375,7 @@ celix_status_t bundleContext_getProperty(bundle_context_pt context, const char *
 celix_status_t bundleContext_getPropertyWithDefault(bundle_context_pt context, const char* name, const char* defaultValue, const char** value) {
     celix_status_t status = CELIX_SUCCESS;
 
-    if (context == NULL || name == NULL || *value != NULL) {
+    if (context == NULL || name == NULL) {
         status = CELIX_ILLEGAL_ARGUMENT;
     } else {
         fw_getProperty(context->framework, name, defaultValue, value);
@@ -387,17 +387,20 @@ celix_status_t bundleContext_getPropertyWithDefault(bundle_context_pt context, c
 }
 
 
-long bundleContext_registerCService(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties) {
-    return bundleContext_registerServiceForLang(ctx, serviceName, svc, properties, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
+long bundleContext_registerCService(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties, const char *serviceVersion) {
+    return bundleContext_registerServiceForLang(ctx, serviceName, svc, properties, serviceVersion, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
 }
 
 
-long bundleContext_registerServiceForLang(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties, const char* lang) {
+long bundleContext_registerServiceForLang(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties, const char *serviceVersion, const char* lang) {
     long svcId = -1;
     if (properties == NULL) {
         properties = properties_create();
     }
     service_registration_t *reg = NULL;
+    if (serviceVersion != NULL) {
+        properties_set(properties, CELIX_FRAMEWORK_SERVICE_VERSION, serviceVersion);
+    }
     if (serviceName != NULL && lang != NULL) {
         properties_set(properties, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang);
         bundleContext_registerService(ctx, serviceName, svc, properties, &reg);
@@ -449,6 +452,7 @@ void bundleContext_unregisterService(bundle_context_t *ctx, long serviceId) {
 bool bundleContext_useServiceWithId(
         bundle_context_t *ctx,
         long serviceId,
+        const char *serviceName,
         void *callbackHandle,
         void (*use)(void *handle, void *svc, const properties_t *props, const bundle_t *owner)) {
     bool called = false;
@@ -460,12 +464,22 @@ bool bundleContext_useServiceWithId(
 	serviceTracker_open(trk);
         bundle_t *bnd = NULL;
         properties_t *props = NULL;
+        const char *registerServiceName = NULL;
+        bool sameName = false;
         void *svc = serviceTracker_lockAndGetService(trk, &props, &bnd);
-        if (svc != NULL) {
+        if (props != NULL) {
+            registerServiceName = properties_get(props, OSGI_FRAMEWORK_OBJECTCLASS);
+            sameName = strncmp(serviceName, registerServiceName, 1024*1024*10) == 0;
+        }
+        if (svc != NULL && sameName) {
             use(callbackHandle, svc, props, bnd);
             called = true;
-            serviceTracker_unlockAndUngetService(trk, svc);
+        } else if (svc != NULL) {
+            framework_logIfError(logger, CELIX_ILLEGAL_ARGUMENT, NULL,
+                                 "Service with id %li does not have service name '%s', but has service name '%s'",
+                                 serviceId, serviceName, registerServiceName);
         }
+        serviceTracker_unlockAndUngetService(trk, svc);
         serviceTracker_close(trk);
         serviceTracker_destroy(trk);
     }

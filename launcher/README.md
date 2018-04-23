@@ -23,10 +23,26 @@ The Launcher also passes the entire configuration to the Framework, this makes t
 
 ###### Properties
 
-    cosgi.auto.start.1                  Space delimited list of bundles to install and start when the
-                                        Launcher/Framework is started. Note: Celix currently has no
-                                        support for start levels, even though the "1" is meant for this.
-    org.osgi.framework.storage          sets the bundle cache directory
+    CELIX_AUTO_START_0                  Space delimited list of bundles to install and start when the
+                                        Framework is started. The is for runtime level 0, which is started first.
+
+    CELIX_AUTO_START_1                  Space delimited list of bundles to install and start when the
+                                        Framework is started. The is for runtime level 1.
+
+    CELIX_AUTO_START_2                  Space delimited list of bundles to install and start when the
+                                        Framework is started. The is for runtime level 2.
+
+    CELIX_AUTO_START_3                  Space delimited list of bundles to install and start when the
+                                        Framework is started. The is for runtime level 3.
+
+    CELIX_AUTO_START_4                  Space delimited list of bundles to install and start when the
+                                        Framework is started. The is for runtime level 4.
+
+    CELIX_AUTO_START_5                  Space delimited list of bundles to install and start when the
+                                        Framework is started. The is for runtime level 5, which is started last.
+
+    org.osgi.framework.storage          Sets the bundle cache directory
+
     org.osgi.framework.storage.clean    If set to "onFirstInit", the bundle cache will be flushed
                                         when the framework starts
 

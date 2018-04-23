@@ -34,21 +34,80 @@
 extern "C" {
 #endif
 
-int celixLauncher_launchWithArgs(int argc, char *argv[]);
 
-int celixLauncher_launchWithArgsAndProps(int argc, char *argv[], properties_pt config);
+/**
+ * Launched a celix framework and wait (block) till the framework is stopped.
+ * The function will also destroy the framework when it has been stopped.
+ *
+ * The launcher will also setup signal handlers for SIGINT, SIGTERM, SIGUSR1 and SIGUSR2 and initialize libcurl.
+ * For SIGINT and SIGTERM the framework will be stopped
+ * SIGUSR1 and SIGUSR2 will be ignored.
+ *
+ *
+ * @param argc argc as provided in a main function.
+ * @param argv argv as provided in a main function.
+ * @param embeddedConfig The optional embbeded config, will be overriden with the config.properties if found.
+ * @return CELIX_SUCCESS if successful.
+ */
+int celixLauncher_launchAndWaitForShutdown(int argc, char *argv[], properties_t *embeddedConfig);
 
-int celixLauncher_launch(const char *configFile, framework_pt *framework);
 
-int celixLauncher_launchWithStream(FILE *config, framework_pt *framework);
+/**
+ * Launches the a celix framework and returns the framework.
+ *
+ * The launcher will also setup signal handlers for SIGINT, SIGTERM, SIGUSR1 and SIGUSR2 and initialize libcurl.
+ * For SIGINT and SIGTERM the framework will be stopped
+ * SIGUSR1 and SIGUSR2 will be ignored.
+ *
+ * @param configFile Path to the config file (config.properties)
+ * @param framework Output parameter for the framework.
+ * @return CELIX_SUCCESS if successful. 
+ */
+int celixLauncher_launch(const char *configFile, framework_t **framework);
 
-int celixLauncher_launchWithProperties(properties_pt config, framework_pt *framework);
+/**
+ * Launches the a celix framework and returns the framework.
+ *
+ * The launcher will also setup signal handlers for SIGINT, SIGTERM, SIGUSR1 and SIGUSR2 and initialize libcurl.
+ * For SIGINT and SIGTERM the framework will be stopped
+ * SIGUSR1 and SIGUSR2 will be ignored.
+ *
+ * @param config FILE* to the config file (config.properties)
+ * @param framework Output parameter for the framework.
+ * @return CELIX_SUCCESS if successful.
+ */
+int celixLauncher_launchWithStream(FILE *config, framework_t **framework);
 
-void celixLauncher_stop(framework_pt framework);
+/**
+ * Launches the a celix framework and returns the framework.
+ *
+ * The launcher will also setup signal handlers for SIGINT, SIGTERM, SIGUSR1 and SIGUSR2 and initialize libcurl.
+ * For SIGINT and SIGTERM the framework will be stopped
+ * SIGUSR1 and SIGUSR2 will be ignored.
+ *
+ * @param config the config properties.
+ * @param framework Output parameter for the framework.
+ * @return CELIX_SUCCESS if successful.
+ */
+int celixLauncher_launchWithProperties(properties_t *config, framework_t **framework);
 
-void celixLauncher_destroy(framework_pt framework);
+/**
+ * Wait (blocks) for the shutdown of the provided celix framework.
+ * @param framework The framework to wait for.
+ */
+void celixLauncher_waitForShutdown(framework_t *framework);
 
-void celixLauncher_waitForShutdown(framework_pt framework);
+/**
+ * Stop the provided celix framework.
+ * @param framework The framework to stop.
+ */
+void celixLauncher_stop(framework_t *framework);
+
+/**
+ * Destroys the provided framework and if needed stops it first.
+ * @param framework The framework to stop.
+ */
+void celixLauncher_destroy(framework_t *framework);
 
 #ifdef __cplusplus
 }

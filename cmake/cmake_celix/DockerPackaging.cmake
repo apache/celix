@@ -112,7 +112,7 @@ $<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_EMBEDDED_PROPERTIES>,\\n\\
 >\";
 
     properties_pt packedConfig = properties_loadFromString(config);
-    return celixLauncher_launchWithArgsAndProps(argc, argv, packedConfig);
+    return celixLauncher_launchAndWaitForShutdown(argc, argv, packedConfig);
 }
 "
         )
@@ -152,7 +152,12 @@ $<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_EMBEDDED_PROPERTIES>,\\n\\
     set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_FROM" "${DOCKER_FROM}") #name of docker base, default celix-base
     set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_IMAGE_NAME" "${DOCKER_IMAGE_NAME}") #name of docker images, default deploy target name
     set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_BUNDLES_DIR" "${DOCKER_BUNDLES_DIR}") #bundles directory in docker image
-    set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_BUNDLES" "") #bundles
+    set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_BUNDLES_LEVEL_0" "") #bundles for runtime level 0
+    set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_BUNDLES_LEVEL_1" "") #bundles for runtime level 1
+    set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_BUNDLES_LEVEL_2" "") #bundles for runtime level 2
+    set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_BUNDLES_LEVEL_3" "") #bundles for runtime level 3
+    set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_BUNDLES_LEVEL_4" "") #bundles for runtime level 4
+    set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_BUNDLES_LEVEL_5" "") #bundles for runtime level 5
     set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_WORKDIR" "${DOCKER_WORKDIR}") #workdir in docker image, should also contain the config.properties
     set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_ENTRYPOINT" "${DOCKER_ENTRYPOINT}")
     set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_CREATE_FS" "${DOCKER_CREATE_FS}") #wether to create a fs with the minimal needed libraries / etc files
@@ -161,7 +166,7 @@ $<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_EMBEDDED_PROPERTIES>,\\n\\
     set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_EMBEDDED_PROPERTIES" "")
     set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_DEPS" "")
 
-    set(DOCKERFILE_STAGE1 ${CMAKE_BINARY_DIR}/celix/gen/${DOCKER_TARGET}-Dockerfile.in)
+    set(DOCKERFILE_STAGE1 ${CMAKE_BINARY_DIR}/celix/gen/${DOCKER_TARGET}/Dockerfile.in)
     set(DOCKERFILE "$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOC>/Dockerfile")
 
     file(GENERATE
@@ -182,10 +187,15 @@ $<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_INSTRUCTIONS>,
 
     #generate config.properties
     set(DOCKER_PROPERTIES_FILE "${DOCKER_LOC}/${DOCKER_WORKDIR}/config.properties")
-    set(STAGE1_PROPERTIES_FILE "${CMAKE_BINARY_DIR}/celix/gen/${DOCKER_TARGET}-docker-config-stage1.properties")
+    set(STAGE1_PROPERTIES_FILE "${CMAKE_BINARY_DIR}/celix/gen/${DOCKER_TARGET}/docker-config-stage1.properties")
     file(GENERATE
             OUTPUT "${STAGE1_PROPERTIES_FILE}"
-            CONTENT "cosgi.auto.start.1=$<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_BUNDLES>, >
+            CONTENT "CELIX_AUTO_START_0=$<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_BUNDLES_LEVEL_0>, >
+CELIX_AUTO_START_1=$<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_BUNDLES_LEVEL_1>, >
+CELIX_AUTO_START_2=$<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_BUNDLES_LEVEL_2>, >
+CELIX_AUTO_START_3=$<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_BUNDLES_LEVEL_3>, >
+CELIX_AUTO_START_4=$<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_BUNDLES_LEVEL_4>, >
+CELIX_AUTO_START_5=$<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_BUNDLES_LEVEL_5>, >
 $<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_PROPERTIES>,
 >
 "
@@ -196,7 +206,7 @@ $<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_PROPERTIES>,
     )
 
     if (DOCKER_BUNDLES)
-        celix_docker_bundles(${DOCKER_TARGET} ${DOCKER_BUNDLES})
+        celix_docker_bundles(${DOCKER_TARGET} LEVEL 1 ${DOCKER_BUNDLES})
     endif()
     if (DOCKER_PROPERTIES)
         celix_docker_properties(${DOCKER_TARGET} ${DOCKER_PROPERTIES})
@@ -224,12 +234,22 @@ function(celix_docker_bundles)
     list(GET ARGN 0 DOCKER_TARGET)
     list(REMOVE_AT ARGN 0)
 
-    get_target_property(BUNDLES ${DOCKER_TARGET} "DOCKER_BUNDLES")
+    set(OPTIONS )
+    set(ONE_VAL_ARGS LEVEL)
+    set(MULTI_VAL_ARGS )
+    cmake_parse_arguments(BUNDLES "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
+    set(BUNDLES_LIST ${BUNDLES_UNPARSED_ARGUMENTS})
+
+    if (NOT BUNDLES_LEVEL)
+        set(BUNDLES_LEVEL 1)
+    endif ()
+
+    get_target_property(BUNDLES ${DOCKER_TARGET} "DOCKER_BUNDLES_LEVEL_${BUNDLES_LEVEL}")
     get_target_property(BUNDLES_DIR ${DOCKER_TARGET} "DOCKER_BUNDLES_DIR")
     get_target_property(LOC ${DOCKER_TARGET} "DOCKER_LOC")
     get_target_property(DEPS ${DOCKER_TARGET} "DOCKER_DEPS")
 
-    foreach(BUNDLE IN ITEMS ${ARGN})
+    foreach(BUNDLE IN ITEMS ${BUNDLES_LIST})
         set(HANDLED FALSE)
         if(IS_ABSOLUTE ${BUNDLE} AND EXISTS ${BUNDLE})
             get_filename_component(BUNDLE_FILENAME ${BUNDLE} NAME)
@@ -245,7 +265,7 @@ function(celix_docker_bundles)
             get_target_property(IMP ${BUNDLE} BUNDLE_IMPORTED)
             if (IMP) #An imported bundle target -> handle target without DEPENDS
                 string(MAKE_C_IDENTIFIER ${BUNDLE} BUNDLE_ID) #Create id with no special chars (e.g. for target like Celix::shell)
-                set(OUT "${CMAKE_BINARY_DIR}/celix/gen/${DOCKER_TARGET}-copy-bundle-for-target-${BUNDLE_ID}.timestamp")
+                set(OUT "${CMAKE_BINARY_DIR}/celix/gen/${DOCKER_TARGET}/copy-bundle-for-target-${BUNDLE_ID}.timestamp")
                 set(DEST "${LOC}/${BUNDLES_DIR}/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
                 add_custom_command(OUTPUT ${OUT}
                     COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
@@ -260,7 +280,7 @@ function(celix_docker_bundles)
 
         if(NOT HANDLED) #assuming (future) bundle target
             string(MAKE_C_IDENTIFIER ${BUNDLE} BUNDLE_ID) #Create id with no special chars (e.g. for target like Celix::shell)
-            set(OUT "${CMAKE_BINARY_DIR}/celix/gen/${DOCKER_TARGET}-copy-bundle-for-target-${BUNDLE_ID}.timestamp")
+            set(OUT "${CMAKE_BINARY_DIR}/celix/gen/${DOCKER_TARGET}/copy-bundle-for-target-${BUNDLE_ID}.timestamp")
             set(DEST "${LOC}/${BUNDLES_DIR}/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
             add_custom_command(OUTPUT ${OUT}
                     COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
@@ -274,7 +294,7 @@ function(celix_docker_bundles)
         list(APPEND DEPS "${OUT}")
     endforeach()
 
-    set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_BUNDLES" "${BUNDLES}")
+    set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_BUNDLES_LEVEL_${BUNDLES_LEVEL}" "${BUNDLES}")
     set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_DEPS" "${DEPS}")
 endfunction()
 

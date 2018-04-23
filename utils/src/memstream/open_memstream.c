@@ -92,7 +92,7 @@ memstream_seek(void *cookie, fpos_t pos, int whence)
 		break;
 	}
 #ifdef DEBUG
-	fprintf(stderr, "MS: seek(%p, %zd, %d) %zd -> %zd\n", ms, pos, whence,
+	fprintf(stderr, "MS: seek(%p, %lld, %d) %zd -> %zd\n", ms, pos, whence,
 	    old, ms->offset);
 #endif
 	return (ms->offset);

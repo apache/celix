@@ -80,6 +80,8 @@ celix_status_t serviceTracker_createWithFilter(bundle_context_pt context, const 
 		arrayList_create(&(*tracker)->trackedServices);
 		(*tracker)->customizer = customizer;
 		(*tracker)->listener = NULL;
+
+		arrayList_create(&(*tracker)->untrackedServices);
 	}
 
 	framework_logIfError(logger, status, NULL, "Cannot create service tracker [filter=%s]", filter);
@@ -265,6 +267,13 @@ void serviceTracker_unlockAndUngetService(service_tracker_t *tracker, void *svc)
         unsigned int i;
         for (i = 0; i < arrayList_size(tracker->trackedServices); i++) {
             tracked_t *tracked = (tracked_t *) arrayList_get(tracker->trackedServices, i);
+            if (tracked->service == svc) {
+                celixThreadMutex_unlock(&tracked->getLock);
+            }
+        }
+        //also check untrackedServices
+        for (i = 0; i < arrayList_size(tracker->untrackedServices); i++) {
+            tracked_t *tracked = (tracked_t *) arrayList_get(tracker->untrackedServices, i);
             if (tracked->service == svc) {
                 celixThreadMutex_unlock(&tracked->getLock);
             }
@@ -465,17 +474,23 @@ static celix_status_t serviceTracker_untrack(service_tracker_pt tracker, service
         serviceReference_equals(reference, tracked->reference, &equals);
         if (equals) {
             found = tracked;
+            //remove from trackedServices to prevent getting this service, but still keep it to ensure
+            //that it is still available if it being locked and used at the moment (untrackedServices).
             arrayList_remove(tracker->trackedServices, i);
+            arrayList_add(tracker->untrackedServices, found);
             break;
         }
     }
     celixThreadRwlock_unlock(&tracker->lock);
 
-    if (found != NULL) {
-	celixThreadMutex_lock(&found->getLock);
+    if (found != NULL) { //note already locked
+        celixThreadMutex_lock(&found->getLock);
+        celixThreadRwlock_writeLock(&tracker->lock);
+        arrayList_removeElement(tracker->untrackedServices, found);
+        celixThreadRwlock_unlock(&tracker->lock);
         serviceTracker_invokeRemovingService(tracker, found->reference, found->service);
         bundleContext_ungetServiceReference(tracker->context, reference);
-	celixThreadMutex_unlock(&found->getLock);
+        celixThreadMutex_unlock(&found->getLock);
         celixThreadMutex_destroy(&found->getLock);
         free(found);
     }

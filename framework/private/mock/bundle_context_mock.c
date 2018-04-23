@@ -194,21 +194,23 @@ celix_status_t bundleContext_getProperty(bundle_context_pt context, const char *
 	return mock_c()->returnValue().value.intValue;
 }
 
-long bundleContext_registerCService(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties) {
+long bundleContext_registerCService(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties, const char *serviceVersion) {
 	mock_c()->actualCall("bundleContext_registerCService")
 			->withPointerParameters("ctx", ctx)
 			->withStringParameters("serviceName", serviceName)
 			->withPointerParameters("svc", svc)
-			->withPointerParameters("properties", properties);
+			->withPointerParameters("properties", properties)
+			->withStringParameters("serviceName", serviceVersion);
 	return mock_c()->returnValue().value.longIntValue;
 }
 
-long bundleContext_registerServiceForLang(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties, const char* lang) {
+long bundleContext_registerServiceForLang(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties, const char *serviceVersion, const char* lang) {
 	mock_c()->actualCall("bundleContext_registerServiceForLang")
 			->withPointerParameters("ctx", ctx)
 			->withStringParameters("serviceName", serviceName)
 			->withConstPointerParameters("svc", svc)
 			->withPointerParameters("properties", properties)
+			->withStringParameters("serviceName", serviceVersion)
 			->withStringParameters("lang", lang);
 	return mock_c()->returnValue().value.longIntValue;
 }
@@ -222,12 +224,14 @@ void bundleContext_unregisterService(bundle_context_t *ctx, long serviceId) {
 bool bundleContext_useServiceWithId(
 		bundle_context_t *ctx,
 		long serviceId,
+		const char *serviceName,
 		void *callbackHandle,
 		void (*use)(void *handle, void* svc, const properties_t *props, const bundle_t *owner)
 ) {
 	mock_c()->actualCall("bundleContext_registerServiceForLang")
 			->withPointerParameters("ctx", ctx)
 			->withLongIntParameters("serviceId", serviceId)
+			->withStringParameters("serviceName", serviceName)
 			->withPointerParameters("callbackHandle", callbackHandle)
 			->withPointerParameters("use", use);
 	return mock_c()->returnValue().value.boolValue;

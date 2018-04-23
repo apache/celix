@@ -17,8 +17,18 @@
  *under the License.
  */
 
-#include "celix_launcher.h"
+#ifndef CELIX_CELIX_UTILS_API_H_
+#define CELIX_CELIX_UTILS_API_H_
 
-int main(int argc, char *argv[]) {
-    return celixLauncher_launchAndWaitForShutdown(argc, argv, NULL);
-}
+#include "celix_errno.h"
+#include "celixbool.h"
+#include "celix_threads.h"
+#include "array_list.h"
+#include "hash_map.h"
+#include "properties.h"
+#include "utils.h"
+#include "version.h"
+#include "version_range.h"
+#include "thpool.h"
+
+#endif //CELIX_CELIX_UTILS_API_H_

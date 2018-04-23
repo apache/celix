@@ -94,14 +94,6 @@ TEST(FrameworkFactory, testFactoryCreate) {
     framework_destroy(fw); //note stop, wait and then destroy is needed .. combine ?
 }
 
-TEST(FrameworkFactory, testFactoryDestroyWithoutStop) {
-    framework_t* fw = frameworkFactory_newFramework(NULL);
-    CHECK(fw != NULL);
-    framework_stop(fw); //TODO make this unneeded
-    framework_waitForStop(fw); //TODO also this
-    framework_destroy(fw);
-}
-
 TEST(FrameworkFactory, testFactoryCreateAndToManyStartAndStops) {
     framework_t* fw = frameworkFactory_newFramework(NULL);
     CHECK(fw != NULL);

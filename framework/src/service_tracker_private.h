@@ -38,8 +38,9 @@ struct serviceTracker {
 	service_tracker_customizer_pt customizer;
 	service_listener_pt listener;
 
-	celix_thread_rwlock_t lock; //projects trackedServices
-	array_list_pt trackedServices;
+	celix_thread_rwlock_t lock; //projects trackedServices and untrackedServices
+	array_list_t *trackedServices;
+	array_list_t *untrackedServices;
 };
 
 struct tracked {

@@ -54,11 +54,18 @@ static const char *const OSGI_FRAMEWORK_PRIVATE_LIBRARY = "Private-Library";
 static const char *const OSGI_FRAMEWORK_EXPORT_LIBRARY = "Export-Library";
 static const char *const OSGI_FRAMEWORK_IMPORT_LIBRARY = "Import-Library";
 
-
 static const char *const OSGI_FRAMEWORK_FRAMEWORK_STORAGE = "org.osgi.framework.storage";
 static const char *const OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN = "org.osgi.framework.storage.clean";
 static const char *const OSGI_FRAMEWORK_FRAMEWORK_STORAGE_CLEAN_ONFIRSTINIT = "onFirstInit";
 static const char *const OSGI_FRAMEWORK_FRAMEWORK_UUID = "org.osgi.framework.uuid";
+
+#define CELIX_AUTO_START_0 "CELIX_AUTO_START_0"
+#define CELIX_AUTO_START_1 "CELIX_AUTO_START_1"
+#define CELIX_AUTO_START_2 "CELIX_AUTO_START_2"
+#define CELIX_AUTO_START_3 "CELIX_AUTO_START_3"
+#define CELIX_AUTO_START_4 "CELIX_AUTO_START_4"
+#define CELIX_AUTO_START_5 "CELIX_AUTO_START_5"
+
 
 #ifdef __cplusplus
 }

@@ -27,8 +27,6 @@ Add a Celix bundle to the project.  There are three variants:
 - With ACTIVATOR the bundle will be created using the library target or absolute path to existing library as activator library.
 - With no SOURCES or ACTIVATOR a bundle without a activator will be created.
 
-Also available under the add_bundle CMake function (deprecated).
-
 ```CMake
 add_celix_bundle(<bundle_target_name> 
     SOURCES source1 source2 ...
@@ -174,8 +172,6 @@ Celix containers can be used to run/test a selection of bundles in the celix fra
 A Celix container can be found in `<cmake_build_dir>/deploy[/<group_name>]/<celix_container_name>`. 
 Use the `<celix_container_name>` executable to run the deployments.
 
-Also available under the add_deploy CMake function (deprecated).
-
 ```CMake
 add_celix_container(<celix_container_name>
     [COPY] 
@@ -189,15 +185,6 @@ add_celix_container(<celix_container_name>
 )
 ```
 
-The provided bundle targets for a celix container do not have to exists (yet).
-This removes the need for correctly ordering the add_celix_bundle commands so that all bundle target are present before an add_celix_container command.
-If the bundle target is never added CMake will give an error:
-```
-  Error evaluating generator expression:
-
-    $<TARGET_PROPERTY:foo,BUNDLE_FILE>
-```
-
 - If the COPY option is provided the selected bundles will be copied in a bundles dir and the generated config.properties will use relative paths to the bundle locations. Default bundles will not be copied and the generated config.properties will use absolute references to the bundle locations.
 - If CXX option is provided the celix container launcher will be build as C++ executable and as result be linked with the required C++ libraries of the used compiler
 - If GROUP is provided the celix container will be grouped in the provided group name. 
@@ -207,29 +194,24 @@ If the bundle target is never added CMake will give an error:
 - If BUNDLES is provided the list of bundles will be added the the generated config.properties for startup. Combined with COPY the bundles will also be copied to a bundles dir.
 - If PROPERTIES is provided the list of properties will be appended to the generated config.properties
 
-## celix_container_bundles_dir
-Deploy a selection of bundles to the provided bundle dir. This can be used to create an endpoints / proxies bundles dir for the remote service admin or drivers bundles dir for the device access. 
-
-```CMake
-celix_container_bundles_dir(<celix_container_target_name>
-    DIR_NAME dir_name
-    BUNDLES 
-        bundle1 
-        bundle2 
-        ...
-)
-```
-
 ## celix_container_bundles
-Deploy the selected bundles. The bundles are configured for auto starting. 
+Add the selected bundles to the container.
+The bundles are configured for auto starting.
 
 ```CMake
 celix_container_bundles(<celix_container_target_name>
+    [LEVEL (0..5)]
     bundle1 
     bundle2 
     ...
 )
 ```
+
+- If the LEVEL is provided this will be used as the bundle run level.
+  If no run level is provided run level 1 is used.
+  Run levels can be used to control to start order of the bundles.
+  Bundles in run level 0 arre started first and bundles in run level 5
+  are started last.
 
 ## celix_container_properties
 Add the provided properties to the target Celix container config.properties.
@@ -255,6 +237,19 @@ celix_container_embedded_properties(<celix_container_target_name>
 )
 ```
 
+## celix_container_bundles_dir
+Deploy a selection of bundles to the provided bundle dir. This can be used to create an endpoints / proxies bundles dir for the remote service admin or drivers bundles dir for the device access.
+
+```CMake
+celix_container_bundles_dir(<celix_container_target_name>
+    DIR_NAME dir_name
+    BUNDLES
+        bundle1
+        bundle2
+        ...
+)
+```
+
 # Celix Docker Images
 It is possible the use the `add_celix_docker` Apache Celix CMake command to create Apache Celix docker directories,
 which in turn can be used to create very small Apache Celix docker images.
@@ -266,18 +261,16 @@ Also includes the selected bundles.
 
 The add_celix_docker target is a executable target and can be used to link libraries which are needed in the docker image.
 
-The docker dir can be found in `<cmake_build_dir>/docker[/<group_name>]/<docker_name>`. 
-  
-The provided bundle targets for a docker dir do not have to exists (yet).
-This removes the need for correctly order the add_celix_bundle commands so that all bundle target are present before 
-an `add_celix_docker` command.
-If the bundle target is never added CMake will give an error:
-  ```
-    Error evaluating generator expression:
-  
-      $<TARGET_PROPERTY:foo,BUNDLE_FILE>
-  ```
- 
+The docker dir can be found in `<cmake_build_dir>/docker[/<group_name>]/<docker_name>`.
+
+The docker directories are build with the target `celix-build-docker-dirs`, this does not create the
+docker images and can also be executed on systems without docker. The `celix-build-docker-dirs` is trigger
+with `make all`.
+
+The docker images are build with the target `celix-build-docker-images`. For this to work docker needs te installed
+and the user executing the `celix-build-docker-images` should have right to create docker images.
+The `celix-build-docker-images` is not triggered with `make all`
+
 ```CMake
 add_celix_docker(<docker_target_name>
     [CXX]
@@ -305,3 +298,56 @@ add_celix_docker(<docker_target_name>
  `config.properties`
 - If PROPERTIES is provided, the list of properties will added to the generated `config.properties` file
 - If INSTRUCTIONS id provided, the list of docker instructions will be added the the generated `Dockerfile`
+
+## celix_docker_bundles
+
+Same as `celix_container_bundles`, but then for the celix container
+in the docker image.
+
+```CMake
+celix_docker_bundles(<docker_target_name>
+    [LEVEL (0..5)]
+    bundle1
+    bundle2
+    ...
+)
+```
+
+## celix_docker_properties
+
+Same as `celix_container_properties`, but then for the celix container
+in the docker image.
+
+```CMake
+celix_docker_properties(<docker_target_name>
+    "prop1=val1"
+    "prop2=val2"
+    ...
+)
+```
+
+## celix_docker_embedded_properties
+
+Same as `celix_container_embedded_properties`, but then for the celix container
+in the docker image.
+
+```CMake
+celix_docker_embedded_properties(<docker_target_name>
+    "prop1=val1"
+    "prop2=val2"
+    ...
+)
+```
+
+## celix_docker_instructions
+
+Add the provided docker instruction to the end of the generated
+Dockerfile.
+
+```CMake
+celix_docker_instructions(<docker_target_name>
+    "instruction1"
+    "instruction2"
+    ...
+)
+```

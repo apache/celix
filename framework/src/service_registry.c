@@ -455,20 +455,22 @@ celix_status_t serviceRegistry_ungetServiceReference(service_registry_pt registr
 
             unsigned long refId = 0UL;
             service_reference_pt ref = NULL;
-            hash_map_iterator_pt iter = hashMapIterator_create(refsMap);
-            while (hashMapIterator_hasNext(iter)) {
-                hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-                refId = (unsigned long)hashMapEntry_getKey(entry); //note could be invalid e.g. freed
-                ref = hashMapEntry_getValue(entry);
 
-                if (ref == reference) {
-                    break;
-                } else {
-                    ref = NULL;
-                    refId = 0UL;
+            if (refsMap != NULL) {
+                hash_map_iterator_t iter = hashMapIterator_construct(refsMap);
+                while (hashMapIterator_hasNext(&iter)) {
+                    hash_map_entry_pt entry = hashMapIterator_nextEntry(&iter);
+                    refId = (unsigned long) hashMapEntry_getKey(entry); //note could be invalid e.g. freed
+                    ref = hashMapEntry_getValue(entry);
+
+                    if (ref == reference) {
+                        break;
+                    } else {
+                        ref = NULL;
+                        refId = 0UL;
+                    }
                 }
             }
-            hashMapIterator_destroy(iter);
 
             if (ref != NULL) {
                 hashMap_remove(refsMap, (void*)refId);

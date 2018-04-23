@@ -17,8 +17,20 @@
  *under the License.
  */
 
+#ifndef CELIX_CELIX_API_H_
+#define CELIX_CELIX_API_H_
+
+#include "celix_utils_api.h"
+#include "bundle.h"
+#include "bundle_context.h"
+#include "service_registration.h"
+#include "service_factory.h"
+#include "service_reference.h"
+#include "service_tracker.h"
+#include "service_tracker_customizer.h"
+#include "listener_hook_service.h"
+#include "framework.h"
+#include "celix_framework_factory.h"
 #include "celix_launcher.h"
 
-int main(int argc, char *argv[]) {
-    return celixLauncher_launchAndWaitForShutdown(argc, argv, NULL);
-}
+#endif //CELIX_CELIX_API_H_

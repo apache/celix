@@ -81,16 +81,16 @@ function(add_celix_container)
         endif()
     elseif (CONTAINER_LAUNCHER_SRC)
         get_filename_component(SRC_FILENAME ${CONTAINER_LAUNCHER_SRC} NAME)
-        set(LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}-${SRC_FILENAME}")
+        set(LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}/${SRC_FILENAME}")
         set(LAUNCHER_ORG "${CONTAINER_LAUNCHER_SRC}")
         add_custom_command(OUTPUT ${LAUNCHER_SRC}
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LAUNCHER_ORG} ${LAUNCHER_SRC}
         )
     else () #generate custom launcher
         if (CONTAINER_CXX)
-            set(LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}-main.cc")
+            set(LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}/main.cc")
         else()
-            set(LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}-main.c")
+            set(LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}/main.c")
         endif()
 
         file(GENERATE
@@ -102,7 +102,7 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_EMBEDDED_PROPERTIES>,\\n\
 >\";
 
     properties_pt packedConfig = properties_loadFromString(config);
-    return celixLauncher_launchWithArgsAndProps(argc, argv, packedConfig);
+    return celixLauncher_launchAndWaitForShutdown(argc, argv, packedConfig);
 }
 "
         )
@@ -122,10 +122,15 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_EMBEDDED_PROPERTIES>,\\n\
     endif ()
 
     #generate config.properties
-    set(STAGE1_PROPERTIES "${PROJECT_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}-container-config-stage1.properties")
+    set(STAGE1_PROPERTIES "${PROJECT_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}/container-config-stage1.properties")
     file(GENERATE 
         OUTPUT "${STAGE1_PROPERTIES}"
-        CONTENT "cosgi.auto.start.1=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES>, >
+        CONTENT "CELIX_AUTO_START_0=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_0>, >
+CELIX_AUTO_START_1=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_1>, >
+CELIX_AUTO_START_2=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_2>, >
+CELIX_AUTO_START_3=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_3>, >
+CELIX_AUTO_START_4=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_4>, >
+CELIX_AUTO_START_5=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_5>, >
 $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_PROPERTIES>,
 >
 "
@@ -191,7 +196,12 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_PROPERTIES>,
     ##### Container Target Properties #####
     #internal use
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_TARGET_DEPS" "") #target deps for the container.
-    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES" "") #bundles to deploy fro the container.
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_0" "") #bundles to deploy for the container for run level 0
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_1" "") #bundles to deploy for the container for run level 0
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_2" "") #bundles to deploy for the container for run level 0
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_3" "") #bundles to deploy for the container for run level 0
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_4" "") #bundles to deploy for the container for run level 0
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_5" "") #bundles to deploy for the container for run level 0
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_COPY_BUNDLES" ${CONTAINER_COPY}) #copy bundles in bundle dir or link using abs paths. NOTE this cannot be changed after a add_deploy command
 
     #deploy specific
@@ -202,7 +212,7 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_PROPERTIES>,
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_EMBEDDED_PROPERTIES" "")
     #####
 
-    celix_container_bundles(${CONTAINER_TARGET} ${CONTAINER_BUNDLES})
+    celix_container_bundles(${CONTAINER_TARGET} LEVEL 1 ${CONTAINER_BUNDLES})
     celix_container_properties(${CONTAINER_TARGET} ${CONTAINER_PROPERTIES})
     celix_container_embedded_properties(${CONTAINER_TARGET} ${CONTAINER_EMBEDDED_PROPERTIES})
 
@@ -249,7 +259,7 @@ function(celix_container_bundles_dir)
             get_target_property(IMP ${BUNDLE} BUNDLE_IMPORTED)
             if (IMP) #An imported bundle target -> handle target without DEPENDS
                 string(MAKE_C_IDENTIFIER ${BUNDLE} BUNDLE_ID) #Create id with no special chars (e.g. for target like Celix::shell)
-                set(OUT "${CMAKE_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}-copy-bundle-for-target-${BUNDLE_ID}.timestamp")
+                set(OUT "${CMAKE_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}/copy-bundle-for-target-${BUNDLE_ID}.timestamp")
                 set(DEST "${CONTAINER_LOC}/${BD_DIR_NAME}/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
                 add_custom_command(OUTPUT ${OUT}
                     COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
@@ -263,7 +273,7 @@ function(celix_container_bundles_dir)
 
         if (NOT HANDLED) #not a imported bundle target so (assuming) a future bundle target
             string(MAKE_C_IDENTIFIER ${BUNDLE} BUNDLE_ID) #Create id with no special chars (e.g. for target like Celix::shell)
-            set(OUT "${CMAKE_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}-copy-bundle-for-target-${BUNDLE_ID}.timestamp")
+            set(OUT "${CMAKE_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}/copy-bundle-for-target-${BUNDLE_ID}.timestamp")
             set(DEST "${CONTAINER_LOC}/${BD_DIR_NAME}/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
             add_custom_command(OUTPUT ${OUT}
                 COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
@@ -289,11 +299,21 @@ function(celix_container_bundles)
     list(GET ARGN 0 CONTAINER_TARGET)
     list(REMOVE_AT ARGN 0)
 
-    get_target_property(BUNDLES ${CONTAINER_TARGET} "CONTAINER_BUNDLES")
+    set(OPTIONS )
+    set(ONE_VAL_ARGS LEVEL)
+    set(MULTI_VAL_ARGS )
+    cmake_parse_arguments(BUNDLES "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
+    set(BUNDLES_LIST ${BUNDLES_UNPARSED_ARGUMENTS})
+
+    if (NOT BUNDLES_LEVEL)
+        set(BUNDLES_LEVEL 1)
+    endif ()
+
+    get_target_property(BUNDLES ${CONTAINER_TARGET} "CONTAINER_BUNDLES_LEVEL_${BUNDLES_LEVEL}")
     get_target_property(COPY ${CONTAINER_TARGET} "CONTAINER_COPY_BUNDLES")
     get_target_property(DEPS ${CONTAINER_TARGET} "CONTAINER_TARGET_DEPS")
 
-    foreach(BUNDLE IN ITEMS ${ARGN})
+    foreach(BUNDLE IN ITEMS ${BUNDLES_LIST})
         set(HANDLED FALSE)
         if (IS_ABSOLUTE ${BUNDLE} AND EXISTS ${BUNDLE})
                get_filename_component(BUNDLE_FILENAME ${BUNDLE} NAME)
@@ -315,7 +335,7 @@ function(celix_container_bundles)
 
                if (NOT COPY) #in case of COPY dep will be added in celix_container_bundles_dir
                    string(MAKE_C_IDENTIFIER ${BUNDLE} BUNDLE_ID) #Create id with no special chars (e.g. for target like Celix::shell)
-                   set(OUT "${CMAKE_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}-check-bundle-for-target-${BUNDLE_ID}.timestamp")
+                   set(OUT "${CMAKE_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}/check-bundle-for-target-${BUNDLE_ID}.timestamp")
                    add_custom_command(OUTPUT ${OUT}
                        COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
                        DEPENDS ${BUNDLE} $<TARGET_PROPERTY:${BUNDLE},BUNDLE_CREATE_BUNDLE_TARGET>
@@ -330,11 +350,11 @@ function(celix_container_bundles)
            endif()
    endforeach()
 
-    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES" "${BUNDLES}")
+    set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_BUNDLES_LEVEL_${BUNDLES_LEVEL}" "${BUNDLES}")
     set_target_properties(${CONTAINER_TARGET} PROPERTIES "CONTAINER_TARGET_DEPS" "${DEPS}")
 
    if(COPY) 
-       celix_container_bundles_dir(${CONTAINER_TARGET} DIR_NAME bundles BUNDLES ${ARGN})
+       celix_container_bundles_dir(${CONTAINER_TARGET} DIR_NAME bundles BUNDLES ${BUNDLES_LIST})
    endif()
 endfunction()
 
