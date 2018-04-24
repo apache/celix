@@ -27,6 +27,8 @@
 #ifndef BUNDLE_ARCHIVE_H_
 #define BUNDLE_ARCHIVE_H_
 
+#include "celix_types.h"
+
 #include <time.h>
 
 #include "bundle_revision.h"
@@ -39,8 +41,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-typedef struct bundleArchive *bundle_archive_pt;
 
 celix_status_t bundleArchive_create(const char *archiveRoot, long id, const char *location, const char *inputFile,
                                     bundle_archive_pt *bundle_archive);

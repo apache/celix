@@ -48,6 +48,12 @@ static const char *const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_START = "bundleActivato
 static const char *const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_STOP = "bundleActivator_stop";
 static const char *const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_DESTROY = "bundleActivator_destroy";
 
+static const char *const OSGI_FRAMEWORK_BUNDLE_DM_ACTIVATOR_CREATE = "dm_create";
+static const char *const OSGI_FRAMEWORK_BUNDLE_DM_ACTIVATOR_START = "dm_init";
+//NOTE dm stop is not available
+static const char *const OSGI_FRAMEWORK_BUNDLE_DM_ACTIVATOR_DESTROY = "dm_destroy";
+
+
 static const char *const OSGI_FRAMEWORK_BUNDLE_SYMBOLICNAME = "Bundle-SymbolicName";
 static const char *const OSGI_FRAMEWORK_BUNDLE_VERSION = "Bundle-Version";
 static const char *const OSGI_FRAMEWORK_PRIVATE_LIBRARY = "Private-Library";

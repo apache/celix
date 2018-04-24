@@ -27,55 +27,53 @@
 #ifndef DM_DEPENDENCY_MANAGER_H_
 #define DM_DEPENDENCY_MANAGER_H_
 
+#include "celix_types.h"
 
-#include "bundle_context.h"
 #include "celix_errno.h"
 #include "array_list.h"
 #include "dm_info.h"
-#include "dm_component.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct dm_dependency_manager *dm_dependency_manager_pt;
 
 /**
  * Creates a dependency manager.
  * Caller has ownership.
  */
-celix_status_t dependencyManager_create(bundle_context_pt context, dm_dependency_manager_pt *manager);
+celix_status_t dependencyManager_create(bundle_context_t *context, dm_dependency_manager_t **manager);
 
 /**
  * Destroys the provided dependency manager
  */
-void dependencyManager_destroy(dm_dependency_manager_pt manager);
+void dependencyManager_destroy(dm_dependency_manager_t *manager);
 
 /**
  * Adds a DM component to the dependency manager
  */
-celix_status_t dependencyManager_add(dm_dependency_manager_pt manager, dm_component_pt component);
+celix_status_t dependencyManager_add(dm_dependency_manager_t *manager, dm_component_t *component);
 
 /**
  * Removes a DM component from the dependency manager and destroys it
  */
-celix_status_t dependencyManager_remove(dm_dependency_manager_pt manager, dm_component_pt component);
+celix_status_t dependencyManager_remove(dm_dependency_manager_t *manager, dm_component_t *component);
 
 /**
  * Removes all DM components from the dependency manager
  */
-celix_status_t dependencyManager_removeAllComponents(dm_dependency_manager_pt manager);
+celix_status_t dependencyManager_removeAllComponents(dm_dependency_manager_t *manager);
 
 /**
  * Create and returns a DM Info struct. Which contains information about the state of the DM components
  * Caller has ownership.
  */
-celix_status_t dependencyManager_getInfo(dm_dependency_manager_pt manager, dm_dependency_manager_info_pt *info);
+celix_status_t dependencyManager_getInfo(dm_dependency_manager_t *manager, dm_dependency_manager_info_t **info);
 
 /**
  * Destroys a DM info struct.
  */
-void dependencyManager_destroyInfo(dm_dependency_manager_pt manager, dm_dependency_manager_info_pt info);
+void dependencyManager_destroyInfo(dm_dependency_manager_t *manager, dm_dependency_manager_info_t *info);
 
 #ifdef __cplusplus
 }

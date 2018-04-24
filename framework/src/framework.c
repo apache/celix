@@ -47,16 +47,28 @@
 #include "service_registration_private.h"
 #include "bundle_private.h"
 
-typedef celix_status_t (*create_function_pt)(bundle_context_pt context, void **userData);
-typedef celix_status_t (*start_function_pt)(void * handle, bundle_context_pt context);
-typedef celix_status_t (*stop_function_pt)(void * handle, bundle_context_pt context);
-typedef celix_status_t (*destroy_function_pt)(void * handle, bundle_context_pt context);
+typedef celix_status_t (*create_function_fp)(bundle_context_t *context, void **userData);
+typedef celix_status_t (*start_function_fp)(void *userData, bundle_context_t *context);
+typedef celix_status_t (*stop_function_fp)(void *userData, bundle_context_t *context);
+typedef celix_status_t (*destroy_function_fp)(void *userData, bundle_context_t *context);
+
+typedef celix_status_t (*dm_create_fp)(bundle_context_t *context, void ** userData);
+typedef celix_status_t (*dm_start_fp)(void * userData, bundle_context_pt context, dm_dependency_manager_pt manager);
+typedef celix_status_t (*dm_stop_fp)(void * userData, bundle_context_pt context, dm_dependency_manager_pt manager);
+typedef celix_status_t (*dm_destroy_fp)(void * userData, bundle_context_pt context, dm_dependency_manager_pt manager);
 
 struct activator {
     void * userData;
-    start_function_pt start;
-    stop_function_pt stop;
-    destroy_function_pt destroy;
+
+    create_function_fp create;
+    start_function_fp start;
+    stop_function_fp stop;
+    destroy_function_fp destroy;
+
+    dm_create_fp dmCreate;
+    dm_start_fp dmStart;
+    dm_stop_fp dmStop;
+    dm_destroy_fp dmDestroy;
 };
 
 celix_status_t framework_setBundleStateAndNotify(framework_pt framework, bundle_pt bundle, int state);
@@ -91,12 +103,14 @@ static celix_status_t framework_loadBundleLibraries(framework_pt framework, bund
 static celix_status_t framework_loadLibraries(framework_pt framework, const char* libraries, const char* activator, bundle_archive_pt archive, void **activatorHandle);
 static celix_status_t framework_loadLibrary(framework_pt framework, const char* library, bundle_archive_pt archive, void **handle);
 
-static celix_status_t frameworkActivator_start(void * userData, bundle_context_pt context);
-static celix_status_t frameworkActivator_stop(void * userData, bundle_context_pt context);
-static celix_status_t frameworkActivator_destroy(void * userData, bundle_context_pt context);
+static celix_status_t frameworkActivator_start(void * userData, bundle_context_t *context);
+static celix_status_t frameworkActivator_stop(void * userData, bundle_context_t *context);
+static celix_status_t frameworkActivator_destroy(void * userData, bundle_context_t *context);
 
 static void framework_autoStartConfiguredBundles(bundle_context_t *fwCtx);
 static void framework_autoStartConfiguredBundlesForList(bundle_context_t *fwCtx, const char *autoStart);
+
+static  celix_status_t framework_defaultDmStop(void * userData, bundle_context_pt context, dm_dependency_manager_pt manager);
 
 
 struct fw_refreshHelper {
@@ -281,7 +295,7 @@ celix_status_t framework_destroy(framework_pt framework) {
             bool systemBundle = false;
             bundle_isSystemBundle(bundle, &systemBundle);
             if (systemBundle) {
-                bundle_context_pt context = NULL;
+                bundle_context_t *context = NULL;
                 bundle_getContext(framework->bundle, &context);
                 bundleContext_destroy(context);
             }
@@ -452,20 +466,20 @@ celix_status_t fw_init(framework_pt framework) {
     status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, framework->bundle, OSGI_FRAMEWORK_BUNDLE_STARTING));
     status = CELIX_DO_IF(status, celixThreadCondition_init(&framework->shutdownGate, NULL));
 
-    bundle_context_pt context = NULL;
+    bundle_context_t *context = NULL;
     status = CELIX_DO_IF(status, bundleContext_create(framework, framework->logger, framework->bundle, &context));
     status = CELIX_DO_IF(status, bundle_setContext(framework->bundle, context));
     if (status == CELIX_SUCCESS) {
         activator_pt activator = NULL;
         activator = (activator_pt) calloc(1,(sizeof(*activator)));
         if (activator != NULL) {
-            bundle_context_pt context = NULL;
+            bundle_context_t *context = NULL;
             void * userData = NULL;
 
 			//create_function_pt create = NULL;
-			start_function_pt start = (start_function_pt) frameworkActivator_start;
-			stop_function_pt stop = (stop_function_pt) frameworkActivator_stop;
-			destroy_function_pt destroy = (destroy_function_pt) frameworkActivator_destroy;
+			start_function_fp start = (start_function_fp) frameworkActivator_start;
+			stop_function_fp stop = (stop_function_fp) frameworkActivator_stop;
+			destroy_function_fp destroy = (destroy_function_fp) frameworkActivator_destroy;
 
             activator->start = start;
             activator->stop = stop;
@@ -476,7 +490,7 @@ celix_status_t fw_init(framework_pt framework) {
             if (status == CELIX_SUCCESS) {
                 /* This code part is in principle dead, but in future it may do something.
                  * That's why it's outcommented and not deleted
-		if (create != NULL) {
+		        if (create != NULL) {
                     create(context, &userData);
                 }
                 */
@@ -726,7 +740,7 @@ celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int opti
 	celix_status_t status = CELIX_SUCCESS;
 
 	linked_list_pt wires = NULL;
-	bundle_context_pt context = NULL;
+	bundle_context_t *context = NULL;
 	bundle_state_e state;
 	module_pt module = NULL;
 	activator_pt activator = NULL;
@@ -783,15 +797,35 @@ celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int opti
                         status = CELIX_ENOMEM;
                     } else {
                         void * userData = NULL;
-                        bundle_context_pt context;
-                        create_function_pt create = (create_function_pt) fw_getSymbol((handle_t) bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_CREATE);
-                        start_function_pt start = (start_function_pt) fw_getSymbol((handle_t) bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_START);
-                        stop_function_pt stop = (stop_function_pt) fw_getSymbol((handle_t) bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_STOP);
-                        destroy_function_pt destroy = (destroy_function_pt) fw_getSymbol((handle_t) bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_DESTROY);
+                        bundle_context_t *context;
+                        create_function_fp create = (create_function_fp) fw_getSymbol((handle_t) bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_CREATE);
+                        start_function_fp start = (start_function_fp) fw_getSymbol((handle_t) bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_START);
+                        stop_function_fp stop = (stop_function_fp) fw_getSymbol((handle_t) bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_STOP);
+                        destroy_function_fp destroy = (destroy_function_fp) fw_getSymbol((handle_t) bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_DESTROY);
 
+                        dm_create_fp dmCreate = fw_getSymbol((handle_t)bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_DM_ACTIVATOR_CREATE);
+                        dm_start_fp dmStart = fw_getSymbol((handle_t)bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_DM_ACTIVATOR_START);
+                        dm_stop_fp dmStop = framework_defaultDmStop;
+                        dm_destroy_fp dmDestroy = fw_getSymbol((handle_t)bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_DM_ACTIVATOR_DESTROY);
+
+                        activator->create = create;
                         activator->start = start;
                         activator->stop = stop;
                         activator->destroy = destroy;
+
+                        activator->dmCreate = dmCreate;
+                        activator->dmStart = dmStart;
+                        activator->dmStop = dmStop;
+                        activator->dmDestroy = dmDestroy;
+
+                        if (activator->dmCreate != NULL) {
+                            //only allow one activator, if dm is used -> set other to NULL
+                            activator->create = NULL;
+                            activator->start = NULL;
+                            activator->stop = NULL;
+                            activator->destroy = NULL;
+                        }
+
                         status = CELIX_DO_IF(status, bundle_setActivator(bundle, activator));
 
                         status = CELIX_DO_IF(status, framework_setBundleStateAndNotify(framework, bundle, OSGI_FRAMEWORK_BUNDLE_STARTING));
@@ -805,11 +839,19 @@ celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int opti
                                 if (status == CELIX_SUCCESS) {
                                     activator->userData = userData;
                                 }
+                            } else if (dmCreate != NULL) {
+                                status = CELIX_DO_IF(status, dmCreate(context, &userData));
+                                if (status == CELIX_SUCCESS) {
+                                    activator->userData = userData;
+                                }
                             }
                         }
                         if (status == CELIX_SUCCESS) {
                             if (start != NULL) {
                                 status = CELIX_DO_IF(status, start(userData, context));
+                            } else if (dmStart != NULL) {
+                                dm_dependency_manager_t *mng = bundleContext_getDependencyManager(context);
+                                status = CELIX_DO_IF(status, dmStart(userData, context, mng));
                             }
                         }
 
@@ -922,7 +964,7 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
 	celix_status_t status = CELIX_SUCCESS;
 	bundle_state_e state;
     activator_pt activator = NULL;
-    bundle_context_pt context = NULL;
+    bundle_context_t *context = NULL;
     bool wasActive = false;
     long id = 0;
     char *error = NULL;
@@ -973,11 +1015,17 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
 	        if (status == CELIX_SUCCESS) {
                 if (activator->stop != NULL) {
                     status = CELIX_DO_IF(status, activator->stop(activator->userData, context));
+                } else if (activator->dmStop != NULL) {
+                    dm_dependency_manager_t *mng = bundleContext_getDependencyManager(context);
+                    status = CELIX_DO_IF(status, activator->dmStop(activator->userData, context, mng));
                 }
 	        }
             if (status == CELIX_SUCCESS) {
                 if (activator->destroy != NULL) {
                     status = CELIX_DO_IF(status, activator->destroy(activator->userData, context));
+                } else if (activator->dmDestroy != NULL) {
+                    dm_dependency_manager_t *mng = bundleContext_getDependencyManager(context);
+                    status = CELIX_DO_IF(status, activator->dmDestroy(activator->userData, context, mng));
                 }
 	        }
 
@@ -1345,7 +1393,7 @@ celix_status_t fw_registerService(framework_pt framework, service_registration_p
                 celixThreadMutex_lock(&framework->serviceListenersLock);
                 for (i = 0; i < arrayList_size(framework->serviceListeners); i++) {
                     fw_service_listener_pt listener =(fw_service_listener_pt) arrayList_get(framework->serviceListeners, i);
-                    bundle_context_pt context = NULL;
+                    bundle_context_t *context = NULL;
                     listener_hook_info_pt info = NULL;
                     bundle_context_pt lContext = NULL;
 
@@ -1484,7 +1532,7 @@ void fw_addServiceListener(framework_pt framework, bundle_pt bundle, service_lis
 	unsigned int i;
 
 	fw_service_listener_pt fwListener = (fw_service_listener_pt) calloc(1, sizeof(*fwListener));
-	bundle_context_pt context = NULL;
+	bundle_context_t *context = NULL;
 
 	fwListener->bundle = bundle;
     arrayList_create(&fwListener->retainedReferences);
@@ -1531,7 +1579,7 @@ void fw_addServiceListener(framework_pt framework, bundle_pt bundle, service_lis
 void fw_removeServiceListener(framework_pt framework, bundle_pt bundle, service_listener_pt listener) {
 	fw_service_listener_pt match = NULL;
 
-	bundle_context_pt context;
+	bundle_context_t *context;
 	bundle_getContext(bundle, &context);
 
     int i;
@@ -2523,12 +2571,12 @@ celix_status_t fw_invokeFrameworkListener(framework_pt framework, framework_list
 	return ret;
 }
 
-static celix_status_t frameworkActivator_start(void * userData, bundle_context_pt context) {
+static celix_status_t frameworkActivator_start(void * userData, bundle_context_t *context) {
 	// nothing to do
 	return CELIX_SUCCESS;
 }
 
-static celix_status_t frameworkActivator_stop(void * userData, bundle_context_pt context) {
+static celix_status_t frameworkActivator_stop(void * userData, bundle_context_t *context) {
     celix_status_t status = CELIX_SUCCESS;
 	framework_pt framework;
 
@@ -2548,7 +2596,7 @@ static celix_status_t frameworkActivator_stop(void * userData, bundle_context_pt
 	return status;
 }
 
-static celix_status_t frameworkActivator_destroy(void * userData, bundle_context_pt context) {
+static celix_status_t frameworkActivator_destroy(void * userData, bundle_context_t *context) {
 	return CELIX_SUCCESS;
 }
 
@@ -2701,4 +2749,9 @@ static celix_status_t framework_loadLibrary(framework_pt framework, const char *
     framework_logIfError(framework->logger, status, error, "Could not load library: %s", libraryPath);
 
     return status;
+}
+
+static  celix_status_t framework_defaultDmStop(void * userData __attribute__((unused)), bundle_context_pt context __attribute__((unused)), dm_dependency_manager_pt manager) {
+    dependencyManager_removeAllComponents(manager);
+    return CELIX_SUCCESS;
 }

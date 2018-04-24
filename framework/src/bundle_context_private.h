@@ -38,8 +38,9 @@ struct bundleContext {
 	struct framework * framework;
 	struct bundle * bundle;
 
-	celix_thread_mutex_t mutex; //protect svcRegistrations.
+	celix_thread_mutex_t mutex; //protect svcRegistrations & mng
 	array_list_t *svcRegistrations;
+	dm_dependency_manager_t *mng;
 };
 
 

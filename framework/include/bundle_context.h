@@ -16,13 +16,6 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * bundle_context.h
- *
- *  \date       Mar 26, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
 #ifndef BUNDLE_CONTEXT_H_
 #define BUNDLE_CONTEXT_H_
@@ -32,9 +25,8 @@
  * grant access to other methods so that this bundle can interact with the
  * Framework.
  */
-typedef struct bundleContext *bundle_context_pt;
-typedef struct bundleContext bundle_context_t;
 
+#include "celix_types.h"
 
 #include "service_factory.h"
 #include "service_listener.h"
@@ -42,6 +34,8 @@ typedef struct bundleContext bundle_context_t;
 #include "framework_listener.h"
 #include "properties.h"
 #include "array_list.h"
+
+#include "dm_dependency_manager.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -224,6 +218,15 @@ bundleContext_getProperty(bundle_context_pt context, const char *name, const cha
  */
 FRAMEWORK_EXPORT celix_status_t
 bundleContext_getPropertyWithDefault(bundle_context_pt context, const char *name, const char *defaultValue, const char **value);
+
+
+/**
+ * Gets the dependency manager for this bundle context.
+ *
+ * @return the dependency manager or NULL
+ */
+dm_dependency_manager_t* bundleContext_getDependencyManager(bundle_context_t *ctx);
+
 
 #ifdef __cplusplus
 }

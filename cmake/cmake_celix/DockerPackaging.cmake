@@ -262,19 +262,25 @@ function(celix_docker_bundles)
             list(APPEND BUNDLES "${BUNDLES_DIR}/${BUNDLE_FILENAME}")
             set(HANDLED TRUE)
         elseif (TARGET ${BUNDLE})
-            get_target_property(IMP ${BUNDLE} BUNDLE_IMPORTED)
-            if (IMP) #An imported bundle target -> handle target without DEPENDS
-                string(MAKE_C_IDENTIFIER ${BUNDLE} BUNDLE_ID) #Create id with no special chars (e.g. for target like Celix::shell)
-                set(OUT "${CMAKE_BINARY_DIR}/celix/gen/${DOCKER_TARGET}/copy-bundle-for-target-${BUNDLE_ID}.timestamp")
-                set(DEST "${LOC}/${BUNDLES_DIR}/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
-                add_custom_command(OUTPUT ${OUT}
-                    COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
-                    COMMAND ${CMAKE_COMMAND} -E make_directory ${LOC}/${BUNDLES_DIR}
-                    COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>" ${DEST}
-                    COMMENT "Copying (imported) bundle '${BUNDLE}' to '${LOC}/${BUNDLES_DIR}'"
-                )
-                list(APPEND BUNDLES "${BUNDLES_DIR}/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
+            get_target_property(TARGET_TYPE ${BUNDLE} TYPE)
+            if (TARGET_TYPE STREQUAL "INTERFACE_LIBRARY")
+                #ignore 
                 set(HANDLED TRUE)
+            else ()
+                get_target_property(IMP ${BUNDLE} BUNDLE_IMPORTED)
+                if (IMP) #An imported bundle target -> handle target without DEPENDS
+                    string(MAKE_C_IDENTIFIER ${BUNDLE} BUNDLE_ID) #Create id with no special chars (e.g. for target like Celix::shell)
+                    set(OUT "${CMAKE_BINARY_DIR}/celix/gen/${DOCKER_TARGET}/copy-bundle-for-target-${BUNDLE_ID}.timestamp")
+                    set(DEST "${LOC}/${BUNDLES_DIR}/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
+                    add_custom_command(OUTPUT ${OUT}
+                        COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
+                        COMMAND ${CMAKE_COMMAND} -E make_directory ${LOC}/${BUNDLES_DIR}
+                        COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>" ${DEST}
+                        COMMENT "Copying (imported) bundle '${BUNDLE}' to '${LOC}/${BUNDLES_DIR}'"
+                    )
+                    list(APPEND BUNDLES "${BUNDLES_DIR}/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
+                    set(HANDLED TRUE)
+                endif ()
             endif ()
         endif ()
 

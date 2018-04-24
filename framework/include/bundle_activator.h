@@ -58,7 +58,7 @@ extern "C" {
  * 		- Any other status code will mark the bundle as stopped and the framework will remove this
  * 		  bundle's listeners, unregister all services, and release all services used by this bundle.
  */
-ACTIVATOR_EXPORT celix_status_t bundleActivator_create(bundle_context_pt context_ptr, void **userData);
+ACTIVATOR_EXPORT celix_status_t bundleActivator_create(bundle_context_t *context_ptr, void **userData);
 
 /**
  * Called when this bundle is started so the Framework can perform the bundle-specific activities necessary
@@ -76,7 +76,7 @@ ACTIVATOR_EXPORT celix_status_t bundleActivator_create(bundle_context_pt context
  * 		- Any other status code will mark the bundle as stopped and the framework will remove this
  * 		  bundle's listeners, unregister all services, and release all services used by this bundle.
  */
-ACTIVATOR_EXPORT celix_status_t bundleActivator_start(void *userData, bundle_context_pt context);
+ACTIVATOR_EXPORT celix_status_t bundleActivator_start(void *userData, bundle_context_t *context);
 
 /**
  * Called when this bundle is stopped so the Framework can perform the bundle-specific activities necessary
@@ -95,7 +95,7 @@ ACTIVATOR_EXPORT celix_status_t bundleActivator_start(void *userData, bundle_con
  * 		- Any other status code will mark the bundle as stopped and the framework will remove this
  * 		  bundle's listeners, unregister all services, and release all services used by this bundle.
  */
-ACTIVATOR_EXPORT celix_status_t bundleActivator_stop(void *userData, bundle_context_pt context);
+ACTIVATOR_EXPORT celix_status_t bundleActivator_stop(void *userData, bundle_context_t *context);
 
 /**
  * Called when this bundle is stopped so the bundle can destroy the instance of its activator. In general, this
@@ -113,7 +113,7 @@ ACTIVATOR_EXPORT celix_status_t bundleActivator_stop(void *userData, bundle_cont
  * 		  bundle's listeners, unregister all services, and release all services used by this bundle.
  */
 ACTIVATOR_EXPORT celix_status_t
-bundleActivator_destroy(void *userData, bundle_context_pt  __attribute__((unused))  __attribute__((unused)) context);
+bundleActivator_destroy(void *userData, bundle_context_t* context);
 
 #ifdef __cplusplus
 }

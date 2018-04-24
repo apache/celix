@@ -32,7 +32,7 @@
 #include "service_tracker.h"
 #include "constants.h"
 
-#define NUMBER_OF_COMMANDS 10
+#define NUMBER_OF_COMMANDS 11
 
 struct command {
     celix_status_t (*exec)(void *handle, char *commandLine, FILE *out, FILE *err);
@@ -139,6 +139,13 @@ celix_status_t bundleActivator_create(bundle_context_pt context_ptr, void **_ppt
                         .usage = "inspect (service) (capability|requirement) [<id> ...]"
                 };
         instance_ptr->std_commands[9] =
+                (struct command) {
+                        .exec = dmListCommand_execute,
+                        .name = "dm",
+                        .description = "Gives an overview of the component managemed by a dependency manager.",
+                        .usage = "dm [f|full] [<Bundle ID> [<Bundle ID> [...]]]"
+                };
+        instance_ptr->std_commands[10] =
                 (struct command) { NULL, NULL, NULL, NULL, NULL, NULL, NULL }; /*marker for last element*/
 
         unsigned int i = 0;

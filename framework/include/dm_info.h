@@ -30,6 +30,7 @@
 
 #include <stdbool.h>
 #include "array_list.h"
+#include "properties.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,14 +42,16 @@ extern "C" {
 typedef struct dm_interface_info_struct {
     char* name;
     properties_pt properties;
-} * dm_interface_info_pt;
+} dm_interface_info_t;
+typedef struct dm_interface_info_struct *dm_interface_info_pt;
 
 typedef struct dm_service_dependency_info_struct {
     char *filter;
     bool available;
     bool required;
     size_t count;
-} * dm_service_dependency_info_pt;
+} dm_service_dependency_info_t;
+typedef struct dm_service_dependency_info_struct *dm_service_dependency_info_pt;
 
 typedef struct dm_component_info_struct {
     char id[64];
@@ -57,22 +60,14 @@ typedef struct dm_component_info_struct {
     char * state;
     array_list_pt interfaces;   // type dm_interface_info_pt
     array_list_pt dependency_list;  // type dm_service_dependency_info_pt
-} * dm_component_info_pt;
+} dm_component_info_t;
+typedef struct dm_component_info_struct *dm_component_info_pt;
 
 typedef struct dm_dependency_manager_info_struct {
     array_list_pt  components;      // type dm_component_info
-} * dm_dependency_manager_info_pt;
+} dm_dependency_manager_info_t;
+typedef struct dm_dependency_manager_info_struct *dm_dependency_manager_info_pt;
 
-struct dm_info_service_struct {
-    void *handle;
-
-    /*Note: dm_caller has the ownership of the result.*/
-    celix_status_t (*getInfo)(void *handle, dm_dependency_manager_info_pt *info);
-    void (*destroyInfo)(void *handle, dm_dependency_manager_info_pt info);
-};
-
-typedef struct dm_info_service_struct dm_info_service_t;
-typedef dm_info_service_t* dm_info_service_pt;
 
 #ifdef __cplusplus
 }

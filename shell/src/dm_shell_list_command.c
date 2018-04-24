@@ -16,17 +16,13 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * dm_shell_list_command.c
- *
- *  \date       Oct 16, 2015
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
+
 #include <stdlib.h>
 #include <string.h>
-#include <dm_dependency_manager.h>
-#include <dm_shell_list_command.h>
+#include <shell_constants.h>
+#include "bundle_context.h"
+#include "dm_dependency_manager.h"
+
 
 static const char * const OK_COLOR = "\033[92m";
 static const char * const WARNING_COLOR = "\033[93m";
@@ -140,52 +136,54 @@ static void printBasicInfo(FILE *out, bool colors, dm_component_info_pt compInfo
 
 }
 
-void dmListCommand_execute(dm_command_handle_t* handle, char * line, FILE *out, FILE *err) {
+celix_status_t dmListCommand_execute(void* handle, char * line, FILE *out, FILE *err) {
+    bundle_context_t *ctx = handle;
 
-    array_list_pt servRefs = NULL;
+    array_list_t *bundles = NULL;
+    bundleContext_getBundles(ctx, &bundles);
+
+    const char *config = NULL;
+    bundleContext_getPropertyWithDefault(ctx, SHELL_USE_ANSI_COLORS, SHELL_USE_ANSI_COLORS_DEFAULT_VALUE, &config);
+    bool useColors = config != NULL && strncmp("true", config, 5) == 0;
+
     array_list_pt bundleIds = NULL;
-
-    bundleContext_getServiceReferences(handle->context, DM_INFO_SERVICE_NAME ,NULL, &servRefs);
-
-    if(servRefs==NULL){
-	fprintf(out, "Invalid dm_info ServiceReferences List\n");
-	return;
-    }
-
-    bool colors = handle->useColors;
     bool fullInfo = false;
     parseCommandLine(line, &bundleIds, &fullInfo, err);
-    unsigned int size =  arrayList_size(servRefs);
-    for(unsigned int i = 0; i < size; i++) {
-        dm_dependency_manager_info_pt info = NULL;
-        dm_info_service_pt infoServ = NULL;
-        service_reference_pt servRef = NULL;
-        servRef = arrayList_get(servRefs, i);
-        bundleContext_getService(handle->context,  servRef, (void**)&infoServ);
-        bundle_pt bundle = NULL;
-        serviceReference_getBundle(servRef, &bundle);
-        long id = 0;
-        bundle_getBundleId(bundle, &id);
-        if (is_bundleId_in_list(bundleIds, id)) {
 
-            infoServ->getInfo(infoServ->handle, &info);
-
-            fprintf(out, "[Bundle: %ld]\n", id);
-            for (unsigned int cmpCnt = 0; cmpCnt < arrayList_size(info->components); cmpCnt++) {
-                dm_component_info_pt compInfo = arrayList_get(info->components, cmpCnt);
-                if (fullInfo) {
-                    printFullInfo(out, colors, compInfo);
-                } else {
-                    printBasicInfo(out, colors, compInfo);
-                }
+    if (bundles != NULL) {
+        unsigned int size = arrayList_size(bundles);
+        for (unsigned int i = 0; i < size; ++i) {
+            long bndId = -1;
+            bundle_t *bnd = arrayList_get(bundles, i);
+            bundle_getBundleId(bnd, &bndId);
+            if (!is_bundleId_in_list(bundleIds, bndId)) {
+                continue;
             }
-            infoServ->destroyInfo(infoServ->handle, info);
+            bundle_context_t *bndCtx = NULL;
+            bundle_getContext(bnd, &bndCtx);
+            if (bndCtx != NULL) {
+                dm_dependency_manager_t *mng = bundleContext_getDependencyManager(bndCtx);
+                dm_dependency_manager_info_t *info = NULL;
+                dependencyManager_getInfo(mng, &info);
+                if (info != NULL) {
+                    fprintf(out, "[Bundle: %ld]\n", bndId);
+                    for (unsigned int cmpCnt = 0; cmpCnt < arrayList_size(info->components); cmpCnt++) {
+                        dm_component_info_pt compInfo = arrayList_get(info->components, cmpCnt);
+                        if (fullInfo) {
+                            printFullInfo(out, useColors, compInfo);
+                        } else {
+                            printBasicInfo(out, useColors, compInfo);
+                        }
+                    }
+                    fprintf(out, "\n");
+                    dependencyManager_destroyInfo(mng, info);
+                }
+
+            }
         }
-        bundleContext_ungetService(handle->context, servRef, NULL);
-        bundleContext_ungetServiceReference(handle->context, servRef);
     }
+
     destroyBundleIdList(bundleIds);
-	if(servRefs!=NULL){
-		arrayList_destroy(servRefs);
-    }
+
+    return CELIX_SUCCESS;
 }

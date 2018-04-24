@@ -33,4 +33,7 @@
 #include "celix_framework_factory.h"
 #include "celix_launcher.h"
 
+#include "dm_dependency_manager.h"
+#include "dm_service_dependency.h"
+
 #endif //CELIX_CELIX_API_H_

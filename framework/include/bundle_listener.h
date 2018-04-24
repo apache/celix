@@ -16,20 +16,12 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/**
- *
- * @defgroup BundleListener Bundle Listener
- * @ingroup framework
- * @{
- *
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \date      	June 28, 2012
- *  \copyright	Apache License, Version 2.0
- */
+
 #ifndef BUNDLE_LISTENER_H_
 #define BUNDLE_LISTENER_H_
 
 typedef struct bundle_listener *bundle_listener_pt;
+typedef struct bundle_listener bundle_listener_t;
 
 #include "celix_errno.h"
 #include "bundle_event.h"

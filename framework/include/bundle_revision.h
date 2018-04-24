@@ -31,6 +31,8 @@
 
 #include <stdio.h>
 
+#include "celix_types.h"
+
 #include "celix_errno.h"
 #include "manifest.h"
 #include "celix_log.h"
@@ -41,14 +43,12 @@ extern "C" {
 #endif
 
 /**
- * Typedef for bundle_revision_pt.
  *
  * A bundle revision represents the content of a bundle. A revision is associated with a bundle archive.
  * An archive can have multiple revisions, each update of a bundle results in a new one.
  *
  * In a revision the content of a bundle (ZIP file) is extracted to a specified location inside the archive.
  */
-typedef struct bundleRevision *bundle_revision_pt;
 
 /**
  * Creates a new revision for the given inputFile or location.

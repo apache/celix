@@ -42,6 +42,7 @@ if (SHELL)
           src/log_command
           src/inspect_command
           src/help_command
+		  src/dm_shell_list_command
 	)
 	target_include_directories(shell PRIVATE src)
         target_include_directories(shell SYSTEM PRIVATE	${CURL_INCLUDE_DIRS})

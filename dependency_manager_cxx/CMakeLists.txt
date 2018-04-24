@@ -30,10 +30,10 @@ if (DEPENDENCY_MANAGER_CXX)
     endif(UNIX AND NOT WIN32)
 
     add_library(dependency_manager_cxx_static STATIC
-            ${CMAKE_SOURCE_DIR}/dependency_manager/src/dm_component_impl
-            ${CMAKE_SOURCE_DIR}/dependency_manager/src/dm_service_dependency
-            ${CMAKE_SOURCE_DIR}/dependency_manager/src/dm_event
-            ${CMAKE_SOURCE_DIR}/dependency_manager/src/dm_dependency_manager_impl
+            ${CMAKE_SOURCE_DIR}/framework/src/dm_component_impl
+            ${CMAKE_SOURCE_DIR}/framework/src/dm_service_dependency
+            ${CMAKE_SOURCE_DIR}/framework/src/dm_event
+            ${CMAKE_SOURCE_DIR}/framework/src/dm_dependency_manager_impl
             src/dm_activator.cc
     )
     set_target_properties(dependency_manager_cxx_static PROPERTIES OUTPUT_NAME "celix_dependency_manager_cxx_static")

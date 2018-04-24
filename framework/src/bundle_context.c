@@ -42,11 +42,13 @@ celix_status_t bundleContext_create(framework_pt framework, framework_logger_pt 
         } else {
             context->framework = framework;
             context->bundle = bundle;
+            context->mng = NULL;
 
             arrayList_create(&context->svcRegistrations);
             celixThreadMutex_create(&context->mutex, NULL);
 
             *bundle_context = context;
+
         }
 	}
 
@@ -484,4 +486,21 @@ bool bundleContext_useServiceWithId(
         serviceTracker_destroy(trk);
     }
     return called;
+}
+
+
+dm_dependency_manager_t* bundleContext_getDependencyManager(bundle_context_t *ctx) {
+    dm_dependency_manager_t* result = NULL;
+    if (ctx != NULL) {
+        celixThreadMutex_lock(&ctx->mutex);
+        if (ctx->mng == NULL) {
+            dependencyManager_create(ctx, &ctx->mng);
+        }
+        if (ctx->mng == NULL) {
+            framework_logIfError(logger, CELIX_BUNDLE_EXCEPTION, NULL, "Cannot create dependency manager");
+        }
+        result = ctx->mng;
+        celixThreadMutex_unlock(&ctx->mutex);
+    }
+    return result;
 }

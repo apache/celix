@@ -256,18 +256,24 @@ function(celix_container_bundles_dir)
             )
             set(HANDLED TRUE)
         elseif (TARGET ${BUNDLE})
-            get_target_property(IMP ${BUNDLE} BUNDLE_IMPORTED)
-            if (IMP) #An imported bundle target -> handle target without DEPENDS
-                string(MAKE_C_IDENTIFIER ${BUNDLE} BUNDLE_ID) #Create id with no special chars (e.g. for target like Celix::shell)
-                set(OUT "${CMAKE_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}/copy-bundle-for-target-${BUNDLE_ID}.timestamp")
-                set(DEST "${CONTAINER_LOC}/${BD_DIR_NAME}/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
-                add_custom_command(OUTPUT ${OUT}
-                    COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
-                    COMMAND ${CMAKE_COMMAND} -E make_directory ${CONTAINER_LOC}/${BD_DIR_NAME}
-                    COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>" ${DEST}
-                    COMMENT "Copying (imported) bundle '${BUNDLE}' to '${CONTAINER_LOC}/${BD_DIR_NAME}'"
-                )
+            get_target_property(TARGET_TYPE ${BUNDLE} TYPE)
+            if (TARGET_TYPE STREQUAL "INTERFACE_LIBRARY")
+                #ignore
                 set(HANDLED TRUE)
+            else ()
+                get_target_property(IMP ${BUNDLE} BUNDLE_IMPORTED)
+                if (IMP) #An imported bundle target -> handle target without DEPENDS
+                    string(MAKE_C_IDENTIFIER ${BUNDLE} BUNDLE_ID) #Create id with no special chars (e.g. for target like Celix::shell)
+                    set(OUT "${CMAKE_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}/copy-bundle-for-target-${BUNDLE_ID}.timestamp")
+                    set(DEST "${CONTAINER_LOC}/${BD_DIR_NAME}/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
+                    add_custom_command(OUTPUT ${OUT}
+                        COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
+                        COMMAND ${CMAKE_COMMAND} -E make_directory ${CONTAINER_LOC}/${BD_DIR_NAME}
+                        COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>" ${DEST}
+                        COMMENT "Copying (imported) bundle '${BUNDLE}' to '${CONTAINER_LOC}/${BD_DIR_NAME}'"
+                    )
+                    set(HANDLED TRUE)
+                endif ()
             endif ()
         endif ()
 
@@ -321,11 +327,17 @@ function(celix_container_bundles)
                set(ABS_LOC "${BUNDLE}")
                set(HANDLED TRUE)
            elseif (TARGET ${BUNDLE})
-               get_target_property(IMP ${BUNDLE} BUNDLE_IMPORTED)
-               if (IMP) #An imported bundle target -> handle target without DEPENDS
-                   set(COPY_LOC "bundles/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
-                   set(ABS_LOC "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>")
+               get_target_property(TARGET_TYPE ${BUNDLE} TYPE)
+               if (TARGET_TYPE STREQUAL "INTERFACE_LIBRARY")
+                   #ignore. this can be used to keep targets name, but ignore it use in containers (e.g. Celix::dm_shell)
                    set(HANDLED TRUE)
+               else()
+                   get_target_property(IMP ${BUNDLE} BUNDLE_IMPORTED)
+                   if (IMP) #An imported bundle target -> handle target without DEPENDS
+                       set(COPY_LOC "bundles/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
+                       set(ABS_LOC "$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILE>")
+                       set(HANDLED TRUE)
+                   endif ()
                endif ()
            endif ()
 

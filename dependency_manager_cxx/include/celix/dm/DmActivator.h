@@ -68,19 +68,10 @@ namespace celix { namespace dm {
         DependencyManager& mng;
         bundle_context_pt ctx;
     private:
-        dm_info_service_t info{nullptr, nullptr, nullptr};
-        service_registration_pt reg{nullptr};
-
         int start() {
             celix_status_t status = CELIX_SUCCESS;
             this->init();
             this->mng.start();
-
-            //Create and register the dm info service
-            this->info.handle = this->mng.cDependencyManager();
-            this->info.getInfo = (celix_status_t (*)(void *, dm_dependency_manager_info_pt *)) dependencyManager_getInfo;
-            this->info.destroyInfo = (void (*)(void *, dm_dependency_manager_info_pt)) dependencyManager_destroyInfo;
-            status = bundleContext_registerService(this->ctx, (char *) DM_INFO_SERVICE_NAME, &this->info, NULL, &(this->reg));
 
             return status;
         }
@@ -90,11 +81,6 @@ namespace celix { namespace dm {
 
             this->deinit();
 
-            // Remove the service
-            if (this->reg != nullptr) {
-                status = serviceRegistration_unregister(this->reg);
-                this->reg = nullptr;
-            }
             // Remove all components
             dependencyManager_removeAllComponents(this->mng.cDependencyManager());
 

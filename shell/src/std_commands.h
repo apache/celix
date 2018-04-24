@@ -40,5 +40,7 @@ celix_status_t updateCommand_execute(void *handle, char * commandline, FILE *out
 celix_status_t logCommand_execute(void *handle, char * commandline, FILE *outStream, FILE *errStream);
 celix_status_t inspectCommand_execute(void *handle, char * commandline, FILE *outStream, FILE *errStream);
 celix_status_t helpCommand_execute(void *handle, char * commandline, FILE *outStream, FILE *errStream);
+celix_status_t dmListCommand_execute(void* handle, char * line, FILE *out, FILE *err);
+
 
 #endif

@@ -33,6 +33,8 @@ set(SOURCES
         src/unzip.c src/wire.c
         src/celix_log.c src/celix_launcher.c
         src/celix_framework_factory.c
+        src/dm_dependency_manager_impl.c src/dm_component_impl.c
+        src/dm_service_dependency.c src/dm_event.c
         ${IO}
 )
 add_library(framework SHARED ${SOURCES})
