@@ -14,64 +14,63 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-if (TARGET Celix::dependency_manager_static AND TARGET Celix::dm_shell)
 
-    add_subdirectory(api)
+add_subdirectory(api)
 
-    add_subdirectory(phase1)
-    add_subdirectory(phase2a)
-    add_subdirectory(phase2b)
-    add_subdirectory(phase3)
-
-
-    add_celix_container(dm_example
-        COPY 
-        BUNDLES
-            Celix::shell
-            Celix::shell_tui
-            Celix::dm_shell
-            dm_example_phase1
-            dm_example_phase2a
-            dm_example_phase2b
-            dm_example_phase3
-        PROPERTIES
-            LOGHELPER_ENABLE_STDOUT_FALLBACK=true
-    )
+add_subdirectory(phase1)
+add_subdirectory(phase2a)
+add_subdirectory(phase2b)
+add_subdirectory(phase3)
 
 
-    add_celix_docker(dm_exmpl_base
-            NAME dmbase
-            IMAGE_NAME dmbase
-            GROUP examples
-            INSTRUCTIONS
-                "LABEL exmpl=value"
-    )
-    add_celix_docker(dm_exmpl
-        FROM dmbase
+add_celix_container(dm_example
+    COPY
+    BUNDLES
+        Celix::shell
+        Celix::shell_tui
+        Celix::dm_shell
+
+        dm_example_phase1
+        dm_example_phase2a
+        dm_example_phase2b
+        dm_example_phase3
+    PROPERTIES
+        LOGHELPER_ENABLE_STDOUT_FALLBACK=true
+)
+
+
+add_celix_docker(dm_exmpl_base
+        NAME dmbase
+        IMAGE_NAME dmbase
         GROUP examples
-        BUNDLES
-            Celix::shell
-            Celix::shell_tui
-            Celix::dm_shell
-            dm_example_phase1
-            dm_example_phase2a
-            dm_example_phase2b
-            dm_example_phase3
-        PROPERTIES
-            LOGHELPER_ENABLE_STDOUT_FALLBACK=true
-    )
-    add_celix_docker(dm_exmpl2
-        GROUP examples
-        BUNDLES
-            Celix::shell
-            Celix::shell_tui
-            Celix::dm_shell
-            dm_example_phase1
-            dm_example_phase2a
-            dm_example_phase2b
-            dm_example_phase3
-        PROPERTIES
-            LOGHELPER_ENABLE_STDOUT_FALLBACK=true
-    )
+        INSTRUCTIONS
+            "LABEL exmpl=value"
+)
+add_celix_docker(dm_exmpl
+    FROM dmbase
+    GROUP examples
+    BUNDLES
+        Celix::shell
+        Celix::shell_tui
+        Celix::dm_shell
+        dm_example_phase1
+        dm_example_phase2a
+        dm_example_phase2b
+        dm_example_phase3
+    PROPERTIES
+        LOGHELPER_ENABLE_STDOUT_FALLBACK=true
+)
+add_celix_docker(dm_exmpl2
+    GROUP examples
+    BUNDLES
+        Celix::shell
+        Celix::shell_tui
+        Celix::dm_shell
+        dm_example_phase1
+        dm_example_phase2a
+        dm_example_phase2b
+        dm_example_phase3
+    PROPERTIES
+        LOGHELPER_ENABLE_STDOUT_FALLBACK=true
+)
 
-endif ()

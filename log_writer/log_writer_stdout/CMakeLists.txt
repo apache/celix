@@ -22,7 +22,19 @@ add_celix_bundle(log_writer_stdout
 	SOURCES
 		src/log_writer_stdout
 )
-target_link_libraries(log_writer_stdout PRIVATE Celix::log_service_api log_writer_common)
+
+IF(APPLE)
+	target_link_libraries(log_writer_stdout PRIVATE -Wl,-all_load log_writer_common)
+else()
+	if(ENABLE_ADDRESS_SANITIZER)
+		#With asan there can be undefined symbols
+		target_link_libraries(log_writer_stdout PRIVATE -Wl,--whole-archive log_writer_common -Wl,--no-whole-archive)
+	else()
+		target_link_libraries(log_writer_stdout PRIVATE -Wl,--no-undefined -Wl,--whole-archive log_writer_common -Wl,--no-whole-archive)
+	endif()
+endif()
+
+target_link_libraries(log_writer_stdout PRIVATE Celix::log_service_api)
 
 install_celix_bundle(log_writer_stdout EXPORT celix)
 add_library(Celix::log_writer_stdout ALIAS log_writer_stdout)

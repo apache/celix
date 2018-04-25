@@ -236,3 +236,8 @@ bool bundleContext_useServiceWithId(
 			->withPointerParameters("use", use);
 	return mock_c()->returnValue().value.boolValue;
 }
+
+dm_dependency_manager_t* bundleContext_getDependencyManager(bundle_context_t *ctx) {
+	mock_c()->actualCall("bundleContext_getDependencyManager");
+	return mock_c()->returnValue().value.pointerValue;
+}

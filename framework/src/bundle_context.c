@@ -28,6 +28,7 @@
 #include "bundle.h"
 #include "celix_log.h"
 #include "service_tracker.h"
+#include "dm_dependency_manager.h"
 
 celix_status_t bundleContext_create(framework_pt framework, framework_logger_pt logger, bundle_pt bundle, bundle_context_pt *bundle_context) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -61,10 +62,16 @@ celix_status_t bundleContext_destroy(bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (context != NULL) {
-	    //NOTE still present service registartion will be cleared during bundle stop in the
+	    //NOTE still present service registrations will be cleared during bundle stop in the
 	    //service registry (serviceRegistry_clearServiceRegistrations).
 	    celixThreadMutex_destroy(&context->mutex); 
 	    arrayList_destroy(context->svcRegistrations);
+
+	    if (context->mng != NULL) {
+            dependencyManager_destroy(context->mng);
+            context->mng = NULL;
+	    }
+
 	    free(context);
 	} else {
 		status = CELIX_ILLEGAL_ARGUMENT;

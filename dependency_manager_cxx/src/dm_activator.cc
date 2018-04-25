@@ -18,13 +18,16 @@
  */
 
 #include <utility>
+#include <memory>
+
 #include "celix/dm/DependencyManager.h"
 #include "celix/dm/DmActivator.h"
 #include "bundle_activator.h"
 
+
 struct BundleActivatorData {
     DependencyManager mng;
-    DmActivator* act;
+    std::unique_ptr<celix::dm::DmActivator> act;
 };
 
 extern "C" celix_status_t bundleActivator_create(bundle_context_pt context, void** userData) {
@@ -43,13 +46,13 @@ extern "C" celix_status_t bundleActivator_create(bundle_context_pt context, void
     };
 #endif
     if (data != nullptr) {
-        data->act = celix::dm::DmActivator::create(data->mng);
+        data->act = std::unique_ptr<celix::dm::DmActivator>{celix::dm::DmActivator::create(data->mng)};
     }
 
     if (data == nullptr || data->act == nullptr) {
         status = CELIX_ENOMEM;
         if (data != nullptr) {
-            delete data->act;
+            data->act = nullptr;
         }
         delete data;
         *userData = nullptr;
@@ -81,7 +84,7 @@ extern "C" celix_status_t bundleActivator_destroy([[gnu::unused]] void* userData
     int status = CELIX_SUCCESS;
     BundleActivatorData* data = static_cast<BundleActivatorData*>(userData);
     if (data != nullptr) {
-        delete data->act;
+        data->act = nullptr;
     }
     delete data;
     return status;

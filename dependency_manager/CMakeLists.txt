@@ -25,3 +25,6 @@ add_library(Celix::dm_shell ALIAS dm_shell)
 add_library(Celix::dependency_manager_static ALIAS dependency_manager_static)
 add_library(Celix::dependency_manager_so ALIAS dependency_manager_so)
 
+#install dummy libs
+install(TARGETS dependency_manager_static dependency_manager_so dm_shell EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
+

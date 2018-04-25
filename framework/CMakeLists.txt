@@ -124,6 +124,7 @@ if (ENABLE_TESTING AND FRAMEWORK_TESTS)
         src/service_tracker_customizer.c
         src/bundle_context.c
         src/celix_errorcodes.c
+        private/mock/dm_dependency_manager_mock.c
         private/mock/celix_log_mock.c)
     target_link_libraries(bundle_context_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} Celix::utils pthread)
 
@@ -185,6 +186,7 @@ if (ENABLE_TESTING AND FRAMEWORK_TESTS)
         private/mock/bundle_revision_mock.c
         private/mock/bundle_cache_mock.c
         private/mock/manifest_mock.c
+        private/mock/dm_dependency_manager_mock.c
         src/celix_errorcodes.c
         private/mock/celix_log_mock.c
         src/framework.c)

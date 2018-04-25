@@ -25,7 +25,19 @@ if (LOG_WRITER_SYSLOG)
         SOURCES
             private/src/log_writer_syslog
     )
-    target_link_libraries(log_writer_syslog PRIVATE log_writer_common)
+
+    IF(APPLE)
+        target_link_libraries(log_writer_syslog PRIVATE -Wl,-all_load log_writer_common)
+    else()
+        if(ENABLE_ADDRESS_SANITIZER)
+            #With asan there can be undefined symbols
+            target_link_libraries(log_writer_syslog PRIVATE -Wl,--whole-archive log_writer_common -Wl,--no-whole-archive)
+        else()
+            target_link_libraries(log_writer_syslog PRIVATE -Wl,--no-undefined -Wl,--whole-archive log_writer_common -Wl,--no-whole-archive)
+        endif()
+    endif()
+
+    target_link_libraries(log_writer_syslog PRIVATE Celix::log_service_ap)
 
     install_celix_bundle(log_writer_syslog EXPORT celix)
     add_library(Celix::log_writer_syslog ALIAS log_writer_syslog)
