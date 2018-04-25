@@ -18,10 +18,12 @@
  */
 #include <thread>
 #include <chrono>
+#include <iostream>
+#include <mutex>
+#include <condition_variable>
 
 #include <CppUTest/TestHarness.h>
 #include <CppUTest/CommandLineTestRunner.h>
-#include <iostream>
 
 #include "bundle.h"
 #include "properties.h"
