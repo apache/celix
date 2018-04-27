@@ -57,16 +57,16 @@ TEST(CelixFrameworkContextTests, registerService) {
         return n * 42;
     };
 
-    long svcId = bundleContext_registerCService(ctx, calcName, &svc, NULL, NULL);
+    long svcId = celix_bundleContext_registerService(ctx, calcName, &svc, NULL, NULL);
     CHECK(svcId >= 0);
-    bundleContext_unregisterService(ctx, svcId);
+    celix_bundleContext_unregisterService(ctx, svcId);
 };
 
 TEST(CelixFrameworkContextTests, incorrectUnregisterCalls) {
-    bundleContext_unregisterService(ctx, 1);
-    bundleContext_unregisterService(ctx, 2);
-    bundleContext_unregisterService(ctx, -1);
-    bundleContext_unregisterService(ctx, -2);
+    celix_bundleContext_unregisterService(ctx, 1);
+    celix_bundleContext_unregisterService(ctx, 2);
+    celix_bundleContext_unregisterService(ctx, -1);
+    celix_bundleContext_unregisterService(ctx, -2);
 };
 
 TEST(CelixFrameworkContextTests, registerAndUseService) {
@@ -80,11 +80,11 @@ TEST(CelixFrameworkContextTests, registerAndUseService) {
         return n * 42;
     };
 
-    long svcId = bundleContext_registerCService(ctx, calcName, &svc, NULL, NULL);
+    long svcId = celix_bundleContext_registerService(ctx, calcName, &svc, NULL, NULL);
     CHECK(svcId >= 0);
 
     int result = 0;
-    bool called = bundleContext_useServiceWithId(ctx, svcId, calcName, &result, [](void *handle, void *svc, const properties_t *props, const bundle_t *bnd) {
+    bool called = celix_bundleContext_useServiceWithId(ctx, svcId, calcName, &result, [](void *handle, void *svc, const properties_t *props, const bundle_t *bnd) {
         CHECK(svc != NULL);
         CHECK(props != NULL);
         CHECK(bnd != NULL);
@@ -98,7 +98,7 @@ TEST(CelixFrameworkContextTests, registerAndUseService) {
 
     result = 0;
     long nonExistingSvcId = 101;
-    called = bundleContext_useServiceWithId(ctx, nonExistingSvcId, calcName, &result, [](void *handle, void *svc, const properties_t *, const bundle_t *) {
+    called = celix_bundleContext_useServiceWithId(ctx, nonExistingSvcId, calcName, &result, [](void *handle, void *svc, const properties_t *, const bundle_t *) {
         int *result =  static_cast<int*>(handle);
         struct calc *calc = static_cast<struct calc*>(svc);
         int tmp = calc->calc(2);
@@ -107,7 +107,7 @@ TEST(CelixFrameworkContextTests, registerAndUseService) {
     CHECK(!called);
     CHECK_EQUAL(0, result); //e.g. not called
 
-    bundleContext_unregisterService(ctx, svcId);
+    celix_bundleContext_unregisterService(ctx, svcId);
 };
 
 TEST(CelixFrameworkContextTests, registerAndUseWithForcedRaceCondition) {
@@ -121,7 +121,7 @@ TEST(CelixFrameworkContextTests, registerAndUseWithForcedRaceCondition) {
         return n * 42;
     };
 
-    long svcId = bundleContext_registerCService(ctx, calcName, &svc, NULL, NULL);
+    long svcId = celix_bundleContext_registerService(ctx, calcName, &svc, NULL, NULL);
     CHECK(svcId >= 0);
 
     struct sync {
@@ -155,7 +155,7 @@ TEST(CelixFrameworkContextTests, registerAndUseWithForcedRaceCondition) {
     };
 
     auto call = [&] {
-        bool called = bundleContext_useServiceWithId(ctx, svcId, calcName, &callInfo, use);
+        bool called = celix_bundleContext_useServiceWithId(ctx, svcId, calcName, &callInfo, use);
         CHECK(called);
         CHECK_EQUAL(84, callInfo.result);
     };
@@ -168,7 +168,7 @@ TEST(CelixFrameworkContextTests, registerAndUseWithForcedRaceCondition) {
         callInfo.sync.wait(lock, [&]{return callInfo.inUseCall;});
         lock.unlock();
         std::cout << "trying to unregister ..." << std::endl;
-        bundleContext_unregisterService(ctx, svcId);
+        celix_bundleContext_unregisterService(ctx, svcId);
         std::cout << "done unregistering" << std::endl;
     }};
 
@@ -189,4 +189,43 @@ TEST(CelixFrameworkContextTests, registerAndUseWithForcedRaceCondition) {
     std::cout << "use thread joined" << std::endl;
     unregisterThread.join();
     std::cout << "unregister thread joined" << std::endl;
+};
+
+TEST(CelixFrameworkContextTests, useBundlesTest) {
+    int count = 0;
+
+    celix_bundleContext_useBundles(ctx, &count, [](void *handle, const bundle_t *bnd) {
+        int *c = (int*)handle;
+        ++(*c);
+        long id = celix_bundle_getId(bnd);
+        CHECK_EQUAL(0, id);
+    });
+
+    CHECK_EQUAL(1, count);
+};
+
+TEST(CelixFrameworkContextTests, useBundleTest) {
+    int count = 0;
+
+    celix_bundleContext_useBundle(ctx, 0, &count, [](void *handle, const bundle_t *bnd) {
+        int *c = (int*)handle;
+        ++(*c);
+        long id = celix_bundle_getId(bnd);
+        CHECK_EQUAL(0, id);
+    });
+
+    CHECK_EQUAL(1, count);
+};
+
+TEST(CelixFrameworkContextTests, trackBundlesTest) {
+    int count = 0;
+
+    celix_bundleContext_useBundles(ctx, &count, [](void *handle, const bundle_t *bnd) {
+        int *c = (int*)handle;
+        ++(*c);
+        long id = celix_bundle_getId(bnd); //only framework bundles, id == 0.
+        CHECK_EQUAL(0, id);
+    });
+
+    CHECK_EQUAL(1, count);
 };

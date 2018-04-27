@@ -23,6 +23,7 @@
  *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
  *  \copyright  Apache License, Version 2.0
  */
+#include <CppUTestExt/MockSupport_c.h>
 #include "CppUTestExt/MockSupport_c.h"
 
 #include "bundle_private.h"
@@ -275,6 +276,18 @@ celix_status_t bundle_getFramework(bundle_pt bundle, framework_pt *framework) {
 			->withPointerParameters("bundle", bundle)
 			->withOutputParameter("framework", framework);
 	return mock_c()->returnValue().value.intValue;
+}
+
+long celix_bundle_getId(const bundle_t *bnd) {
+	mock_c()->actualCall("celix_bundle_getId")
+			->withConstPointerParameters("bnd", bnd);
+	return mock_c()->returnValue().value.longIntValue;
+}
+
+celix_bundle_state_e celix_bundle_getState(const bundle_t *bnd) {
+	mock_c()->actualCall("celix_bundle_getState")
+			->withConstPointerParameters("bnd", bnd);
+	return (celix_bundle_state_e)mock_c()->returnValue().value.intValue;
 }
 
 

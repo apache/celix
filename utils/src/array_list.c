@@ -31,33 +31,46 @@
 #include "array_list_private.h"
 
 static celix_status_t arrayList_elementEquals(const void *a, const void *b, bool *equals);
+static bool celix_arrayList_defaultEquals(const void *a, const void *b);
+static bool celix_arrayList_equalsForElement(celix_array_list_t *list, void *a, void *b);
+
 
 celix_status_t arrayList_create(array_list_pt *list) {
 	return arrayList_createWithEquals(arrayList_elementEquals, list);
 }
 
- celix_status_t arrayList_createWithEquals(array_list_element_equals_pt equals, array_list_pt *list) {
-	*list = (array_list_pt) malloc(sizeof(**list));
+celix_status_t arrayList_createWithEquals(array_list_element_equals_pt equals, array_list_pt *list) {
+	*list = celix_arrayList_create();
+	if (*list != NULL) {
+		(*list)->equalsDeprecated = equals;
 
-	(*list)->equals = equals;
-	(*list)->size = 0;
-	(*list)->capacity = 10;
-	(*list)->modCount = 0;
-	(*list)->elementData = (void **) malloc(sizeof(void*) * (*list)->capacity);
-
+	}
 	return CELIX_SUCCESS;
 }
 
 void arrayList_destroy(array_list_pt list) {
-	list->size = 0;
-	free(list->elementData);
-	list->elementData = NULL;
-	free(list);
+	celix_arrayList_destroy(list);
 }
 
 static celix_status_t arrayList_elementEquals(const void *a, const void *b, bool *equals) {
 	*equals = (a == b);
 	return CELIX_SUCCESS;
+}
+
+static bool celix_arrayList_defaultEquals(const void *a, const void *b) {
+	return a == b;
+}
+
+static bool celix_arrayList_equalsForElement(celix_array_list_t *list, void *a, void *b) {
+	bool equals = false;
+	if (list != NULL) {
+		if (list->equalsDeprecated != NULL) {
+			list->equalsDeprecated(a, b, &equals);
+		} else if (list->equals != NULL) {
+			equals = list->equals(a, b);
+		}
+	}
+	return equals;
 }
 
 void arrayList_trimToSize(array_list_pt list) {
@@ -111,8 +124,7 @@ int arrayList_indexOf(array_list_pt list, void * element) {
 	} else {
 		unsigned int i = 0;
 		for (i = 0; i < list->size; i++) {
-			bool equals = false;
-			list->equals(element, list->elementData[i], &equals);
+			bool equals = celix_arrayList_equalsForElement(list, element, list->elementData[i]);
 			if (equals) {
 				return i;
 			}
@@ -132,8 +144,7 @@ int arrayList_lastIndexOf(array_list_pt list, void * element) {
 	} else {
 		int i = 0;
 		for (i = list->size - 1; i >= 0; i--) {
-			bool equals = false;
-			list->equals(element, list->elementData[i], &equals);
+			bool equals = celix_arrayList_equalsForElement(list, element, list->elementData[i]);
 			if (equals) {
 				return i;
 			}
@@ -218,8 +229,7 @@ bool arrayList_removeElement(array_list_pt list, void * element) {
 	} else {
 		unsigned int i = 0;
 		for (i = 0; i < list->size; i++) {
-			bool equals = false;
-			list->equals(element, list->elementData[i], &equals);
+			bool equals = celix_arrayList_equalsForElement(list, element, list->elementData[i]);
 			if (equals) {
 				arrayList_fastRemove(list, i);
 				return true;
@@ -331,6 +341,48 @@ void arrayListIterator_remove(array_list_iterator_pt iterator) {
 		iterator->expectedModificationCount = iterator->list->modCount;
 	}
 }
+
+
+
+
+/**********************************************************************************************************************
+ **********************************************************************************************************************
+ * Updated API
+ **********************************************************************************************************************
+ **********************************************************************************************************************/
+
+celix_array_list_t* celix_arrayList_create() {
+	return celix_arrayList_createWithEquals(celix_arrayList_defaultEquals);
+}
+
+celix_array_list_t* celix_arrayList_createWithEquals(celix_arrayList_equals_fp equals) {
+	array_list_t *list = calloc(1, sizeof(*list));
+	if (list != NULL) {
+		list->capacity = 10;
+		list->elementData = malloc(sizeof(void*) * list->capacity);
+		list->equals = equals;
+	}
+	return list;
+}
+
+void celix_arrayList_destroy(celix_array_list_t *list) {
+	list->size = 0;
+	free(list->elementData);
+	free(list);
+}
+
+size_t celix_arrayList_size(const celix_array_list_t *list) {
+	return list->size;
+}
+
+void* celix_arrayList_get(const celix_array_list_t *list, int index) {
+	void *el = NULL;
+	if (index < list->size) {
+		el = list->elementData[index];
+	}
+	return el;
+}
+
 
 
 

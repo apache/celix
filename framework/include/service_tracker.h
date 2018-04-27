@@ -38,8 +38,10 @@
 extern "C" {
 #endif
 
-typedef struct serviceTracker *service_tracker_pt;
-typedef struct serviceTracker service_tracker_t;
+typedef struct celix_serviceTracker celix_service_tracker_t;
+
+typedef struct celix_serviceTracker *service_tracker_pt;
+typedef struct celix_serviceTracker service_tracker_t;
 
 FRAMEWORK_EXPORT celix_status_t
 serviceTracker_create(bundle_context_t *ctx, const char *service, service_tracker_customizer_pt customizer,
@@ -67,22 +69,27 @@ FRAMEWORK_EXPORT void *serviceTracker_getServiceByReference(service_tracker_t *t
 
 FRAMEWORK_EXPORT void serviceTracker_serviceChanged(service_listener_pt listener, service_event_pt event);
 
-/**
- * Locks and get the highest ranking service. This call needs to be followed with the unlockAndUngetService call
- *
- * @param tracker The service tracker
- * @param svcPropsOut The ptr to ptr of the properties output, can be NULL.
- * @param ownerOut The ptr to ptr of the bundle servic owner output, can be NULL.
- * @return the svc if found or NULL.
- */
-FRAMEWORK_EXPORT void* serviceTracker_lockAndGetService(service_tracker_t *tracker, properties_t **svcPropsOut, bundle_t **ownerOut);
+
+
+/**********************************************************************************************************************
+ **********************************************************************************************************************
+ * Updated API
+ **********************************************************************************************************************
+ **********************************************************************************************************************/
+
 
 /**
- * Unlocks and unget the requested service.
- * @param tracker The service tracker
- * @param svc The svc for which a lock is held
+ * Use the highest ranking service of the service tracker.
+ * If a serviceName is provided this will also be checked.
+ * No match -> no call to use.
+ *
+ * @return bool     if the service if found and use has been called.
  */
-FRAMEWORK_EXPORT void serviceTracker_unlockAndUngetService(service_tracker_t *tracker, void *svc);
+bool celix_serviceTracker_useHighestRankingService(
+        celix_service_tracker_t *tracker,
+        const char *serviceName /*sanity*/,
+        void *callbackHandle,
+        void (*use)(void *handle, void *svc, const properties_t *props, const bundle_t *owner));
 
 
 #ifdef __cplusplus

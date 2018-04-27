@@ -75,7 +75,7 @@ celix_status_t bundleArchive_createSystemBundleArchive(bundle_archive_pt *bundle
 		} else {
 			status = linkedList_create(&archive->revisions);
 			if (status == CELIX_SUCCESS) {
-				archive->id = 0l;
+				archive->id = 0L;
 				archive->location = strdup("System Bundle");
 				archive->archiveRoot = NULL;
 				archive->archiveRootDir = NULL;

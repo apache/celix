@@ -132,6 +132,20 @@ FRAMEWORK_EXPORT celix_status_t bundle_getFramework(bundle_pt bundle, framework_
 
 FRAMEWORK_EXPORT celix_status_t bundle_getBundleLocation(bundle_pt bundle, const char **location);
 
+
+
+/**********************************************************************************************************************
+ **********************************************************************************************************************
+ * Updated API
+ **********************************************************************************************************************
+ **********************************************************************************************************************/
+
+long celix_bundle_getId(const bundle_t *bnd);
+
+celix_bundle_state_e celix_bundle_getState(const bundle_t *bnd);
+
+
+
 #ifdef __cplusplus
 }
 #endif

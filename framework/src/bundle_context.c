@@ -30,6 +30,9 @@
 #include "service_tracker.h"
 #include "dm_dependency_manager.h"
 
+static celix_status_t bundleContext_bundleChanged(void *handle, bundle_event_t *event);
+static void bundleContext_stopAndDestroyBundleTracker(bundle_context_t *ctx, celix_bundle_context_bundle_tracker_t *tracker);
+
 celix_status_t bundleContext_create(framework_pt framework, framework_logger_pt logger, bundle_pt bundle, bundle_context_pt *bundle_context) {
 	celix_status_t status = CELIX_SUCCESS;
 	bundle_context_pt context = NULL;
@@ -45,8 +48,11 @@ celix_status_t bundleContext_create(framework_pt framework, framework_logger_pt 
             context->bundle = bundle;
             context->mng = NULL;
 
-            arrayList_create(&context->svcRegistrations);
             celixThreadMutex_create(&context->mutex, NULL);
+
+            arrayList_create(&context->svcRegistrations);
+            context->bundleTrackers = hashMap_create(NULL,NULL,NULL,NULL);
+            context->nextTrackerId = 1L;
 
             *bundle_context = context;
 
@@ -62,6 +68,12 @@ celix_status_t bundleContext_destroy(bundle_context_pt context) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	if (context != NULL) {
+        hash_map_iterator_t iter = hashMapIterator_construct(context->bundleTrackers);
+        while (hashMapIterator_hasNext(&iter)) {
+            celix_bundle_context_bundle_tracker_t *tracker = hashMapIterator_nextValue(&iter);
+            bundleContext_stopAndDestroyBundleTracker(context, tracker);
+        }
+
 	    //NOTE still present service registrations will be cleared during bundle stop in the
 	    //service registry (serviceRegistry_clearServiceRegistrations).
 	    celixThreadMutex_destroy(&context->mutex); 
@@ -396,12 +408,27 @@ celix_status_t bundleContext_getPropertyWithDefault(bundle_context_pt context, c
 }
 
 
-long bundleContext_registerCService(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties, const char *serviceVersion) {
-    return bundleContext_registerServiceForLang(ctx, serviceName, svc, properties, serviceVersion, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
+
+
+
+
+
+
+
+
+/**********************************************************************************************************************
+ **********************************************************************************************************************
+ * Updated API
+ **********************************************************************************************************************
+ **********************************************************************************************************************/
+
+
+long celix_bundleContext_registerService(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties, const char *serviceVersion) {
+    return celix_bundleContext_registerServiceForLang(ctx, serviceName, svc, properties, serviceVersion, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE);
 }
 
 
-long bundleContext_registerServiceForLang(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties, const char *serviceVersion, const char* lang) {
+long celix_bundleContext_registerServiceForLang(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties, const char *serviceVersion, const char* lang) {
     long svcId = -1;
     if (properties == NULL) {
         properties = properties_create();
@@ -432,9 +459,9 @@ long bundleContext_registerServiceForLang(bundle_context_t *ctx, const char *ser
     return svcId;
 }
 
-void bundleContext_unregisterService(bundle_context_t *ctx, long serviceId) {
+void celix_bundleContext_unregisterService(bundle_context_t *ctx, long serviceId) {
     service_registration_t *found = NULL;
-    if (ctx != NULL && serviceId >= 0) {
+    if (ctx != NULL && serviceId > 0) {
         celixThreadMutex_lock(&ctx->mutex);
         unsigned int size = arrayList_size(ctx->svcRegistrations);
         for (unsigned int i = 0; i < size; ++i) {
@@ -458,7 +485,7 @@ void bundleContext_unregisterService(bundle_context_t *ctx, long serviceId) {
     }
 }
 
-bool bundleContext_useServiceWithId(
+bool celix_bundleContext_useServiceWithId(
         bundle_context_t *ctx,
         long serviceId,
         const char *serviceName,
@@ -471,24 +498,7 @@ bool bundleContext_useServiceWithId(
     serviceTracker_createWithFilter(ctx, filter, NULL, &trk);
     if (trk != NULL) {
 	serviceTracker_open(trk);
-        bundle_t *bnd = NULL;
-        properties_t *props = NULL;
-        const char *registerServiceName = NULL;
-        bool sameName = false;
-        void *svc = serviceTracker_lockAndGetService(trk, &props, &bnd);
-        if (props != NULL) {
-            registerServiceName = properties_get(props, OSGI_FRAMEWORK_OBJECTCLASS);
-            sameName = strncmp(serviceName, registerServiceName, 1024*1024*10) == 0;
-        }
-        if (svc != NULL && sameName) {
-            use(callbackHandle, svc, props, bnd);
-            called = true;
-        } else if (svc != NULL) {
-            framework_logIfError(logger, CELIX_ILLEGAL_ARGUMENT, NULL,
-                                 "Service with id %li does not have service name '%s', but has service name '%s'",
-                                 serviceId, serviceName, registerServiceName);
-        }
-        serviceTracker_unlockAndUngetService(trk, svc);
+        called = celix_serviceTracker_useHighestRankingService(trk, serviceName, callbackHandle, use);
         serviceTracker_close(trk);
         serviceTracker_destroy(trk);
     }
@@ -496,7 +506,7 @@ bool bundleContext_useServiceWithId(
 }
 
 
-dm_dependency_manager_t* bundleContext_getDependencyManager(bundle_context_t *ctx) {
+dm_dependency_manager_t* celix_bundleContext_getDependencyManager(bundle_context_t *ctx) {
     dm_dependency_manager_t* result = NULL;
     if (ctx != NULL) {
         celixThreadMutex_lock(&ctx->mutex);
@@ -510,4 +520,103 @@ dm_dependency_manager_t* bundleContext_getDependencyManager(bundle_context_t *ct
         celixThreadMutex_unlock(&ctx->mutex);
     }
     return result;
+}
+
+static celix_status_t bundleContext_bundleChanged(void *handle, bundle_event_t *event) {
+    celix_status_t status = CELIX_SUCCESS;
+    celix_bundle_context_bundle_tracker_t *tracker = handle;
+    void *callbackHandle = tracker->opts.callbackHandle;
+
+    if (handle != NULL) {
+        if (event->type == OSGI_FRAMEWORK_BUNDLE_EVENT_STARTED && tracker->opts.onStarted != NULL) {
+            bundle_t *bnd = framework_getBundleById(tracker->ctx->framework, event->bundleId);
+            tracker->opts.onStarted(callbackHandle, bnd);
+        } else if (event->type == OSGI_FRAMEWORK_BUNDLE_STOPPING && tracker->opts.onStopped != NULL) {
+            bundle_t *bnd = framework_getBundleById(tracker->ctx->framework, event->bundleId);
+            tracker->opts.onStopped(callbackHandle, bnd);
+        }
+        if (tracker->opts.onBundleEvent != NULL) {
+            tracker->opts.onBundleEvent(callbackHandle, event);
+        }
+    }
+    return status;
+}
+
+long celix_bundleContext_trackBundlesWithOptions(
+        bundle_context_t* ctx,
+        const celix_bundle_tracker_options_t *opts) {
+    long trackId = -1;
+    struct celix_bundle_context_bundle_tracker *tracker = calloc(1, sizeof(*tracker));
+    if (tracker != NULL) {
+        memcpy(&tracker->opts, opts, sizeof(*opts));
+        tracker->ctx = ctx;
+        tracker->listener.handle = tracker;
+        tracker->listener.bundleChanged = bundleContext_bundleChanged;
+        fw_addBundleListener(ctx->framework, ctx->bundle, &tracker->listener);
+
+        celixThreadMutex_lock(&ctx->mutex);
+        tracker->trackId = ++ctx->nextTrackerId;
+        trackId = tracker->trackId;
+        hashMap_put(ctx->bundleTrackers, (void*)tracker->trackId, tracker);
+        celixThreadMutex_unlock(&ctx->mutex);
+
+        //loop through all already installed bundles.
+        // FIXME there is a race condition between installing the listener and looping through the started bundles.
+
+        if (tracker->opts.onStarted != NULL) {
+            celix_framework_useBundles(ctx->framework, tracker->opts.callbackHandle, tracker->opts.onStarted);
+        }
+    }
+    return trackId;
+}
+
+long celix_bundleContext_trackBundles(
+        bundle_context_t* ctx,
+        void* callbackHandle,
+        void (*onStarted)(void* handle, const bundle_t *bundle),
+        void (*onStopped)(void *handle, const bundle_t *bundle)) {
+    celix_bundle_tracker_options_t opts;
+    memset(&opts, 0, sizeof(opts));
+    opts.callbackHandle = callbackHandle;
+    opts.onStarted = onStarted;
+    opts.onStopped = onStopped;
+    return celix_bundleContext_trackBundlesWithOptions(ctx, &opts);
+}
+
+
+void celix_bundleContext_useBundles(
+        bundle_context_t *ctx,
+        void *callbackHandle,
+        void (*use)(void *handle, const bundle_t *bundle)) {
+    celix_framework_useBundles(ctx->framework, callbackHandle, use);
+}
+
+void celix_bundleContext_useBundle(
+        bundle_context_t *ctx,
+        long bundleId,
+        void *callbackHandle,
+        void (*use)(void *handle, const bundle_t *bundle)) {
+    celix_framework_useBundle(ctx->framework, bundleId, callbackHandle, use);
+}
+
+static void bundleContext_stopAndDestroyBundleTracker(bundle_context_t *ctx, celix_bundle_context_bundle_tracker_t *tracker) {
+    fw_removeBundleListener(ctx->framework, ctx->bundle, &tracker->listener);
+    free(tracker);
+}
+
+void celix_bundleContext_stopTracking(bundle_context_t *ctx, long trackerId) {
+    if (ctx != NULL && trackerId >0) {
+        bool found = false;
+        celixThreadMutex_lock(&ctx->mutex);
+        if (hashMap_containsKey(ctx->bundleTrackers, (void*)trackerId)) {
+            found  = true;
+            celix_bundle_context_bundle_tracker_t *tracker = hashMap_remove(ctx->bundleTrackers, (void*)trackerId);
+            bundleContext_stopAndDestroyBundleTracker(ctx, tracker);
+        }
+        //TODO service tracker, service tracker tracker
+        if (!found) {
+            framework_logIfError(logger, CELIX_ILLEGAL_ARGUMENT, NULL, "No tracker with id %li found'", trackerId);
+        }
+        celixThreadMutex_unlock(&ctx->mutex);
+    }
 }

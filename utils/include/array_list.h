@@ -35,13 +35,17 @@
 extern "C" {
 #endif
 
-typedef struct arrayList *array_list_pt;
-typedef struct arrayList array_list_t;
+typedef struct celix_arrayList celix_array_list_t;
+
+typedef struct celix_arrayList *array_list_pt;
+typedef struct celix_arrayList array_list_t;
 
 typedef struct arrayListIterator *array_list_iterator_pt;
 typedef struct arrayListIterator array_list_iterator_t;
 
 typedef celix_status_t (*array_list_element_equals_pt)(const void *, const void *, bool *equals);
+
+typedef bool (*celix_arrayList_equals_fp)(const void *, const void *);
 
 UTILS_EXPORT celix_status_t arrayList_create(array_list_pt *list);
 
@@ -94,6 +98,27 @@ UTILS_EXPORT bool arrayListIterator_hasPrevious(array_list_iterator_pt iterator)
 UTILS_EXPORT void *arrayListIterator_previous(array_list_iterator_pt iterator);
 
 UTILS_EXPORT void arrayListIterator_remove(array_list_iterator_pt iterator);
+
+
+
+/**********************************************************************************************************************
+ **********************************************************************************************************************
+ * Updated API
+ **********************************************************************************************************************
+ **********************************************************************************************************************/
+
+celix_array_list_t* celix_arrayList_create();
+
+celix_array_list_t* celix_arrayList_createWithEquals(celix_arrayList_equals_fp equals);
+
+void celix_arrayList_destroy(celix_array_list_t *list);
+
+size_t celix_arrayList_size(const celix_array_list_t *list);
+
+void* celix_arrayList_get(const celix_array_list_t *list, int index);
+
+//TODO rest
+
 
 #ifdef __cplusplus
 }

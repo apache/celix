@@ -238,7 +238,7 @@ celix_status_t framework_create(framework_pt *framework, properties_pt config) {
             (*framework)->globalLockWaitersList = NULL;
             (*framework)->globalLockCount = 0;
             (*framework)->globalLockThread = celix_thread_default;
-            (*framework)->nextBundleId = 1l;
+            (*framework)->nextBundleId = 1L; //system bundle is 0
             (*framework)->cache = NULL;
             (*framework)->installRequestMap = hashMap_create(utils_stringHash, utils_stringHash, utils_stringEquals, utils_stringEquals);
             (*framework)->serviceListeners = NULL;
@@ -838,7 +838,7 @@ celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int opti
                             if (start != NULL) {
                                 status = CELIX_DO_IF(status, start(userData, context));
                             } else if (dmInit != NULL) {
-                                dm_dependency_manager_t *mng = bundleContext_getDependencyManager(context);
+                                dm_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(context);
                                 status = CELIX_DO_IF(status, dmInit(userData, context, mng));
                             }
                         }
@@ -1005,7 +1005,7 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
                     status = CELIX_DO_IF(status, activator->stop(activator->userData, context));
                 } else if (activator->dmInit != NULL) {
                     //NOTE there is no dmDeinit -> "just" call removeAllComponents
-                    dm_dependency_manager_t *mng = bundleContext_getDependencyManager(context);
+                    dm_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(context);
                     dependencyManager_removeAllComponents(mng);
                 }
 	        }
@@ -1013,7 +1013,7 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
                 if (activator->destroy != NULL) {
                     status = CELIX_DO_IF(status, activator->destroy(activator->userData, context));
                 } else if (activator->dmDestroy != NULL) {
-                    dm_dependency_manager_t *mng = bundleContext_getDependencyManager(context);
+                    dm_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(context);
                     status = CELIX_DO_IF(status, activator->dmDestroy(activator->userData, context, mng));
                 }
 	        }
@@ -2736,4 +2736,51 @@ static celix_status_t framework_loadLibrary(framework_pt framework, const char *
     framework_logIfError(framework->logger, status, error, "Could not load library: %s", libraryPath);
 
     return status;
+}
+
+
+
+
+
+
+/**********************************************************************************************************************
+ **********************************************************************************************************************
+ * Updated API
+ **********************************************************************************************************************
+ **********************************************************************************************************************/
+
+
+void celix_framework_useBundles(framework_t *fw, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd)) {
+    array_list_t *bundleIds = celix_arrayList_create();
+    if (bundleIds != NULL) {
+        celixThreadMutex_lock(&fw->installedBundleMapLock);
+        hash_map_iterator_t iter = hashMapIterator_construct(fw->installedBundleMap);
+        while (hashMapIterator_hasNext(&iter)) {
+            bundle_t *bnd = (bundle_t *) hashMapIterator_nextValue(&iter);
+            long bndId = celix_bundle_getId(bnd);
+            if (bndId >= 0) {
+                //NOTE bundle state is checked in celix_framework_useBundles
+                arrayList_add(bundleIds, (void*)bndId);
+            }
+        }
+        celixThreadMutex_unlock(&fw->installedBundleMapLock);
+
+        size_t size = celix_arrayList_size(bundleIds);
+        for (int i = 0; i < size; ++i) {
+            long bndId = (long)celix_arrayList_get(bundleIds, i);
+            celix_framework_useBundle(fw, bndId, callbackHandle, use);
+        }
+    }
+}
+
+void celix_framework_useBundle(framework_t *fw, long bundleId, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd)) {
+    if (bundleId >= 0) {
+        //TODO get bundle lock without throwing errors framework_acquireBundleLock() -> a more simple lock ??
+        bundle_t *bnd = framework_getBundleById(fw, bundleId);
+        celix_bundle_state_e bndState = celix_bundle_getState(bnd);
+        if (bndState == OSGI_FRAMEWORK_BUNDLE_ACTIVE) {
+            use(callbackHandle, bnd);
+        }
+        //TODO unlock
+    }
 }

@@ -31,7 +31,7 @@
 extern "C" {
 #endif
 
-enum bundleState {
+enum celix_bundleState {
 	OSGI_FRAMEWORK_BUNDLE_UNKNOWN = 0x00000000,
 	OSGI_FRAMEWORK_BUNDLE_UNINSTALLED = 0x00000001,
 	OSGI_FRAMEWORK_BUNDLE_INSTALLED = 0x00000002,
@@ -41,7 +41,8 @@ enum bundleState {
 	OSGI_FRAMEWORK_BUNDLE_ACTIVE = 0x00000020,
 };
 
-typedef enum bundleState bundle_state_e;
+typedef enum celix_bundleState bundle_state_e;
+typedef enum celix_bundleState celix_bundle_state_e;
 #ifdef __cplusplus
 }
 #endif

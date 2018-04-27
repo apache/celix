@@ -143,4 +143,20 @@ FRAMEWORK_EXPORT array_list_pt framework_getBundles(framework_pt framework);
 FRAMEWORK_EXPORT bundle_pt framework_getBundle(framework_pt framework, const char* location);
 FRAMEWORK_EXPORT bundle_pt framework_getBundleById(framework_pt framework, long id);
 
+
+
+
+
+
+
+
+/**********************************************************************************************************************
+ **********************************************************************************************************************
+ * Updated API
+ **********************************************************************************************************************
+ **********************************************************************************************************************/
+
+void celix_framework_useBundles(framework_t *fw, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd));
+void celix_framework_useBundle(framework_t *fw, long bundleId, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd));
+
 #endif /* FRAMEWORK_PRIVATE_H_ */

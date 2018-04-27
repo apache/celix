@@ -162,7 +162,7 @@ celix_status_t dmListCommand_execute(void* handle, char * line, FILE *out, FILE 
             bundle_context_t *bndCtx = NULL;
             bundle_getContext(bnd, &bndCtx);
             if (bndCtx != NULL) {
-                dm_dependency_manager_t *mng = bundleContext_getDependencyManager(bndCtx);
+                dm_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(bndCtx);
                 dm_dependency_manager_info_t *info = NULL;
                 dependencyManager_getInfo(mng, &info);
                 if (info != NULL) {

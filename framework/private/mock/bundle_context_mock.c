@@ -194,8 +194,8 @@ celix_status_t bundleContext_getProperty(bundle_context_pt context, const char *
 	return mock_c()->returnValue().value.intValue;
 }
 
-long bundleContext_registerCService(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties, const char *serviceVersion) {
-	mock_c()->actualCall("bundleContext_registerCService")
+long celix_bundleContext_registerService(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties, const char *serviceVersion) {
+	mock_c()->actualCall("celix_bundleContext_registerCService")
 			->withPointerParameters("ctx", ctx)
 			->withStringParameters("serviceName", serviceName)
 			->withPointerParameters("svc", svc)
@@ -204,8 +204,8 @@ long bundleContext_registerCService(bundle_context_t *ctx, const char *serviceNa
 	return mock_c()->returnValue().value.longIntValue;
 }
 
-long bundleContext_registerServiceForLang(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties, const char *serviceVersion, const char* lang) {
-	mock_c()->actualCall("bundleContext_registerServiceForLang")
+long celix_bundleContext_registerServiceForLang(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties, const char *serviceVersion, const char* lang) {
+	mock_c()->actualCall("celix_bundleContext_registerServiceForLang")
 			->withPointerParameters("ctx", ctx)
 			->withStringParameters("serviceName", serviceName)
 			->withConstPointerParameters("svc", svc)
@@ -215,20 +215,20 @@ long bundleContext_registerServiceForLang(bundle_context_t *ctx, const char *ser
 	return mock_c()->returnValue().value.longIntValue;
 }
 
-void bundleContext_unregisterService(bundle_context_t *ctx, long serviceId) {
-	mock_c()->actualCall("bundleContext_unregisterService")
+void celix_bundleContext_unregisterService(bundle_context_t *ctx, long serviceId) {
+	mock_c()->actualCall("celix_bundleContext_unregisterService")
 			->withPointerParameters("ctx", ctx)
 			->withLongIntParameters("serviceId", serviceId);
 }
 
-bool bundleContext_useServiceWithId(
+bool celix_bundleContext_useServiceWithId(
 		bundle_context_t *ctx,
 		long serviceId,
 		const char *serviceName,
 		void *callbackHandle,
 		void (*use)(void *handle, void* svc, const properties_t *props, const bundle_t *owner)
 ) {
-	mock_c()->actualCall("bundleContext_registerServiceForLang")
+	mock_c()->actualCall("celix_bundleContext_registerServiceForLang")
 			->withPointerParameters("ctx", ctx)
 			->withLongIntParameters("serviceId", serviceId)
 			->withStringParameters("serviceName", serviceName)
@@ -237,7 +237,59 @@ bool bundleContext_useServiceWithId(
 	return mock_c()->returnValue().value.boolValue;
 }
 
-dm_dependency_manager_t* bundleContext_getDependencyManager(bundle_context_t *ctx) {
-	mock_c()->actualCall("bundleContext_getDependencyManager");
+dm_dependency_manager_t* celix_bundleContext_getDependencyManager(bundle_context_t *ctx) {
+	mock_c()->actualCall("celix_bundleContext_getDependencyManager");
 	return mock_c()->returnValue().value.pointerValue;
+}
+
+long celix_bundleContext_trackBundlesWithOptions(
+		bundle_context_t* ctx,
+		const celix_bundle_tracker_options_t *opts) {
+	mock_c()->actualCall("celix_bundleContext_trackBundlesWithOptions")
+			->withPointerParameters("ctx", ctx)
+			->withConstPointerParameters("opts", opts);
+	return mock_c()->returnValue().value.longIntValue;
+}
+
+long celix_bundleContext_trackBundles(
+		bundle_context_t* ctx,
+		void* callbackHandle,
+		void (*onStarted)(void* handle, const bundle_t *bundle),
+		void (*onStopped)(void *handle, const bundle_t *bundle)) {
+	mock_c()->actualCall("celix_bundleContext_trackBundles")
+			->withPointerParameters("ctx", ctx)
+			->withPointerParameters("callbackHandle", callbackHandle)
+			->withPointerParameters("onStarted", onStarted)
+			->withPointerParameters("onStopped", onStopped);
+	return mock_c()->returnValue().value.longIntValue;
+}
+
+
+void celix_bundleContext_useBundles(
+		bundle_context_t *ctx,
+		void *callbackHandle,
+		void (*use)(void *handle, const bundle_t *bundle)) {
+	mock_c()->actualCall("celix_bundleContext_useBundles")
+			->withPointerParameters("ctx", ctx)
+			->withPointerParameters("callbackHandle", callbackHandle)
+			->withPointerParameters("use", use);
+}
+
+
+void celix_bundleContext_useBundle(
+		bundle_context_t *ctx,
+		long bundleId,
+		void *callbackHandle,
+		void (*use)(void *handle, const bundle_t *bundle)) {
+	mock_c()->actualCall("celix_bundleContext_useBundle")
+			->withPointerParameters("ctx", ctx)
+			->withLongIntParameters("bundleId", bundleId)
+			->withPointerParameters("callbackHandle", callbackHandle)
+			->withPointerParameters("use", use);
+}
+
+void celix_bundleContext_stopTracking(bundle_context_t *ctx, long trackerId) {
+	mock_c()->actualCall("celix_bundleContext_stopTracking")
+			->withPointerParameters("ctx", ctx)
+			->withLongIntParameters("trackerId", trackerId);
 }

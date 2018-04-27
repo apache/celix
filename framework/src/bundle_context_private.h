@@ -30,17 +30,25 @@
 
 #include "bundle_context.h"
 #include "celix_log.h"
+#include "bundle_listener.h"
+
+typedef struct celix_bundle_context_bundle_tracker {
+	bundle_context_t *ctx;
+	long trackId;
+	bundle_listener_t listener;
+	celix_bundle_tracker_options_t opts;
+} celix_bundle_context_bundle_tracker_t;
 
 struct bundleContext {
-#ifdef WITH_APR
-    apr_pool_t *pool;
-#endif
 	struct framework * framework;
 	struct bundle * bundle;
 
-	celix_thread_mutex_t mutex; //protect svcRegistrations & mng
+	celix_thread_mutex_t mutex; //protects fields below
 	array_list_t *svcRegistrations;
 	dm_dependency_manager_t *mng;
+	long nextTrackerId;
+	hash_map_t *bundleTrackers; //key = trackId, value = celix_bundle_context_bundle_tracker_t
+
 };
 
 

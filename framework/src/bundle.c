@@ -612,16 +612,15 @@ celix_status_t bundle_refresh(bundle_pt bundle) {
     return status;
 }
 
-celix_status_t bundle_getBundleId(bundle_pt bundle, long *id) {
-	celix_status_t status;
-	bundle_archive_pt archive = NULL;
-	status = bundle_getArchive(bundle, &archive);
-	if (status == CELIX_SUCCESS) {
-		status = bundleArchive_getId(archive, id);
+celix_status_t bundle_getBundleId(bundle_t *bundle, long *bndId) {
+	celix_status_t status = CELIX_SUCCESS;
+	long id = celix_bundle_getId(bundle);
+	if (id >= 0) {
+		*bndId = id;
+	} else {
+		status = CELIX_BUNDLE_EXCEPTION;
+		*bndId = -1;
 	}
-
-	framework_logIfError(logger, status, NULL, "Failed to get bundle id");
-
 	return status;
 }
 
@@ -692,4 +691,33 @@ celix_status_t bundle_getBundleLocation(bundle_pt bundle, const char **location)
 	}
 
 	return CELIX_SUCCESS;
+}
+
+
+
+
+
+
+/**********************************************************************************************************************
+ **********************************************************************************************************************
+ * Updated API
+ **********************************************************************************************************************
+ **********************************************************************************************************************/
+
+long celix_bundle_getId(const bundle_t* bnd) {
+	long bndId = -1;
+	bundle_archive_pt archive = NULL;
+	bundle_getArchive((bundle_t*)bnd, &archive);
+	if (archive != NULL) {
+		bundleArchive_getId(archive, &bndId);
+	}
+
+	if (bndId < 0) {
+		framework_logIfError(logger, CELIX_BUNDLE_EXCEPTION, NULL, "Failed to get bundle id");
+	}
+	return bndId;
+}
+
+celix_bundle_state_e celix_bundle_getState(const bundle_t *bnd) {
+	return bnd->state;
 }

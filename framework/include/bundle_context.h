@@ -65,63 +65,6 @@ bundleContext_registerServiceFactory(bundle_context_pt context, const char *serv
                                      properties_pt properties, service_registration_pt *service_registration);
 
 /**
- * Register a C lang service to the framework.
- *
- * @param ctx The bundle context
- * @param serviceName the service name, cannot be NULL
- * @param svc the service object. Normally a pointer to a service struct (e.g. a struct with function pointers)
- * @param properties The meta properties assiated with the service. The service registration will take ownership of the properties
- * @return The serviceId or < 0 if registration was unsuccessful.
- */
-long bundleContext_registerCService(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties, const char *serviceVersion);
-
-/**
-* Register a service for the specified language to the framework.
-*
-* @param ctx The bundle context
-* @param serviceName the service name, cannot be NULL
-* @param svc the service object. Normally a pointer to a service struct (e.g. a struct with function pointers)
-* @param properties The meta properties assiated with the service. The service registration will take ownership of the properties
-* @return The serviceId or < 0 if registration was unsuccessful.
-*/
-long bundleContext_registerServiceForLang(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties, const char *serviceVersion, const char* lang);
-
-/**
- * Unregister the service with service id. The service will only be unregistered if the bundle of the bundle context
- * is the owner of the service.
- * TODO explain that this should nu be used in combination with the service_registration_t type.
- *
- * @param ctx The bundle context
- * @param serviceId The service id
- */
-void bundleContext_unregisterService(bundle_context_t *ctx, long serviceId);
-
-
-/**
- * Get and lock the service with the provided service id
- * Invokes the provided callback with the found service.
- * The svc, props and owner in the callback are only valid during the callback.
- * If no service is found the callback will not be invoked
- *
- * This function will block till the callback is finished. As result it is possible to provide callback data from the
- * stack.
- *
- * @param ctx The bundle context
- * @param serviceId the service id.
- * @param serviceName the service name of the service. Should match with the registered service name of the provided service id (sanity check)
- * @param callbackHandle The data pointer, which will be used in the callbacks
- * @param use The callback, which will be called when service is retrieved.
- * @param bool returns true if a service was found.
- */
-bool bundleContext_useServiceWithId(
-        bundle_context_t *ctx,
-        long serviceId,
-        const char *serviceName,
-        void *callbackHandle,
-        void (*use)(void *handle, void* svc, const properties_t *props, const bundle_t *owner)
-);
-
-/**
  * Get a service reference for the bundle context. When the service reference is no longer needed use bundleContext_ungetServiceReference.
  * ServiceReference are coupled to a bundle context. Do not share service reference between bundles. Exchange the service.id instead.
  * 
@@ -220,12 +163,215 @@ FRAMEWORK_EXPORT celix_status_t
 bundleContext_getPropertyWithDefault(bundle_context_pt context, const char *name, const char *defaultValue, const char **value);
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**********************************************************************************************************************
+ **********************************************************************************************************************
+ * Updated API
+ **********************************************************************************************************************
+ **********************************************************************************************************************/
+
 /**
  * Gets the dependency manager for this bundle context.
  *
- * @return the dependency manager or NULL
+ * @return the dependency manager or NULL if unsuccessful.
  */
-dm_dependency_manager_t* bundleContext_getDependencyManager(bundle_context_t *ctx);
+dm_dependency_manager_t* celix_bundleContext_getDependencyManager(bundle_context_t *ctx);
+
+/**
+ * Register a C lang service to the framework.
+ *
+ * @param ctx The bundle context
+ * @param serviceName the service name, cannot be NULL
+ * @param svc the service object. Normally a pointer to a service struct (e.g. a struct with function pointers)
+ * @param properties The meta properties assiated with the service. The service registration will take ownership of the properties
+ * @return The serviceId, which should > 0. If <= 0 then the registration was unsuccessful.
+ */
+long celix_bundleContext_registerService(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties, const char *serviceVersion);
+
+/**
+* Register a service for the specified language to the framework.
+*
+* @param ctx The bundle context
+* @param serviceName the service name, cannot be NULL
+* @param svc the service object. Normally a pointer to a service struct (e.g. a struct with function pointers)
+* @param properties The meta properties assiated with the service. The service registration will take ownership of the properties
+* @return The serviceId, which should > 0. If <= 0 then the registration was unsuccessful.
+*/
+long celix_bundleContext_registerServiceForLang(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties, const char *serviceVersion, const char* lang);
+
+//TODO register service factory
+
+/**
+ * Unregister the service with service id. The service will only be unregistered if the bundle of the bundle context
+ * is the owner of the service.
+ *
+ * Will log an error if service id is unknown. Will silently ignore services ids <= 0.
+ *
+ * @param ctx The bundle context
+ * @param serviceId The service id
+ */
+void celix_bundleContext_unregisterService(bundle_context_t *ctx, long serviceId);
+
+
+
+//TODO track services
+
+/**
+ * Get and lock the service with the provided service id
+ * Invokes the provided callback with the found service.
+ * The svc, props and owner in the callback are only valid during the callback.
+ * If no service is found the callback will not be invoked
+ *
+ * This function will block till the callback is finished. As result it is possible to provide callback data from the
+ * stack.
+ *
+ * @param ctx The bundle context
+ * @param serviceId the service id.
+ * @param serviceName the service name of the service. Should match with the registered service name of the provided service id (sanity check)
+ * @param callbackHandle The data pointer, which will be used in the callbacks
+ * @param use The callback, which will be called when service is retrieved.
+ * @param bool returns true if a service was found.
+ */
+bool celix_bundleContext_useServiceWithId(
+        bundle_context_t *ctx,
+        long serviceId,
+        const char *serviceName,
+        void *callbackHandle,
+        void (*use)(void *handle, void* svc, const properties_t *props, const bundle_t *owner)
+);
+
+//TODO useServices
+
+/**
+ * Service tracker options. This struct can be used to fine grained tune the
+ * requested bundle tracker ootions.
+ */
+typedef struct celix_bundle_tracker_options {
+    /**
+     * Handle used in the tracker callbacks.
+     */
+    void* callbackHandle;
+
+    /**
+     * Tracker callback when a bundle is installed.
+     * @param handle    The handle, contains the value of the callbackHandle.
+     * @param bundle    The bundle which has been started.
+     *                  The bundle pointer is only guaranteed to be valid during the callback.
+     */
+    void (*onStarted)(void *handle, const bundle_t *bundle); //highest ranking
+
+    /**
+     * Tracker callback when a bundle is removed.
+     * @param handle    The handle, contains the value of the callbackHandle.
+     * @param bundle    The bundle which has been started.
+     *                  The bundle pointer is only guaranteed to be valid during the callback.
+     */
+    void (*onStopped)(void *handle, const bundle_t *bundle);
+
+    //TODO callback for on installed, resolved, uninstalled ??
+
+    /**
+     *
+     * @param handle    The handle, contains the value of the callbackHandle.
+     * @param event     The bundle event. Is only valid during the callback.
+     */
+    void (*onBundleEvent)(void *handle, const bundle_event_t *event);
+} celix_bundle_tracker_options_t;
+
+/**
+ * Tracks bundles using the provided bundle tracker options.
+ * The tracker options are only using during this call and can safely be freed/reused after this call returns.
+ * (i.e. can be on the stack)
+ *
+ * @param ctx   The bundle context.
+ * @param opts  The pointer to the bundle tracker options.
+ * @return      The bundle tracker id or < 0 if unsuccessful.
+ */
+long celix_bundleContext_trackBundlesWithOptions(
+        bundle_context_t* ctx,
+        const celix_bundle_tracker_options_t *opts
+);
+
+/**
+ * track bundles
+ * The add bundle callback will also be called for already installed bundles.
+ *
+ * @param ctx               The bundle context.
+ * @param callbackHandle    The data pointer, which will be used in the callbacks
+ * @param add               The callback which will be called for started bundles.
+ * @param remove            The callback which will be called when bundles are stopped.
+ * @return                  The bundle tracker id or < 0 if unsuccessful.
+ */
+long celix_bundleContext_trackBundles(
+        bundle_context_t* ctx,
+        void* callbackHandle,
+        void (*onStarted)(void* handle, const bundle_t *bundle),
+        void (*onStopped)(void *handle, const bundle_t *bundle)
+);
+
+/**
+ * Use the bundle with the provided bundle id if it is in the active (started) state
+ * The provided callback will be called if the bundle is found and in the active (started) state.
+ *
+ * @param ctx               The bundle context.
+ * @param bundleId          The bundle id.
+ * @param callbackHandle    The data pointer, which will be used in the callbacks
+ * @param use               The callback which will be called for the currently started bundles.
+ *                          The bundle pointers are only guaranteed to be valid during the callback.
+ */
+void celix_bundleContext_useBundle(
+        bundle_context_t *ctx,
+        long bundleId,
+        void *callbackHandle,
+        void (*use)(void *handle, const bundle_t *bundle)
+);
+
+//TODO add useBundleWithState (bit wise or?)
+
+/**
+ * Use the currently active (started) bundles.
+ * The provided callback will be called for all the currently started bundles.
+ *
+ * @param ctx               The bundle context.
+ * @param callbackHandle    The data pointer, which will be used in the callbacks
+ * @param use               The callback which will be called for the currently started bundles.
+ *                          The bundle pointers are only guaranteed to be valid during the callback.
+ */
+void celix_bundleContext_useBundles(
+        bundle_context_t *ctx,
+        void *callbackHandle,
+        void (*use)(void *handle, const bundle_t *bundle)
+);
+
+
+//TODO trackerServiceTracker
+
+/**
+ * Stop the tracker with the provided track id.
+ * Could be a service tracker, bundle tracker or service tracker tracker.
+ * Only works for the trackers owned by the bundle of the bundle context.
+ *
+ * Will log a error if the provided tracker id is unknown. Will silently ignore trackerId <= 0.
+ */
+void celix_bundleContext_stopTracking(bundle_context_t *ctx, long trackerId);
 
 
 #ifdef __cplusplus

@@ -29,14 +29,15 @@
 
 #include "array_list.h"
 
-struct arrayList {
+struct celix_arrayList {
 	void ** elementData;
-	unsigned int size;
-	unsigned int capacity;
+	size_t size;
+	size_t capacity;
 
 	unsigned int modCount;
 
-	array_list_element_equals_pt equals;
+	array_list_element_equals_pt equalsDeprecated;
+	celix_arrayList_equals_fp  equals;
 };
 
 struct arrayListIterator {
