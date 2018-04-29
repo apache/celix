@@ -293,3 +293,18 @@ void celix_bundleContext_stopTracking(bundle_context_t *ctx, long trackerId) {
 			->withPointerParameters("ctx", ctx)
 			->withLongIntParameters("trackerId", trackerId);
 }
+
+long celix_bundleContext_installBundle(bundle_context_t *ctx, const char *bundleLoc, bool autoStart) {
+	mock_c()->actualCall("celix_bundleContext_installBundle")
+			->withPointerParameters("ctx", ctx)
+			->withStringParameters("bundleLoc", bundleLoc)
+			->withBoolParameters("autoStart", autoStart);
+	return mock_c()->returnValue().value.longIntValue;
+}
+
+bool celix_bundleContext_uninstallBundle(bundle_context_t *ctx, long bundleId) {
+	mock_c()->actualCall("celix_bundleContext_uninstallBundle")
+			->withPointerParameters("ctx", ctx)
+			->withLongIntParameters("bundleId", bundleId);
+	return mock_c()->returnValue().value.boolValue;
+}

@@ -24,18 +24,25 @@
 
 #include <CppUTest/TestHarness.h>
 #include <CppUTest/CommandLineTestRunner.h>
+#include <zconf.h>
 
 #include "bundle.h"
 #include "properties.h"
 #include "celix_framework_factory.h"
 
 
-TEST_GROUP(CelixFrameworkContextTests) {
+TEST_GROUP(CelixBundleContextServicesTests) {
     framework_t* fw = NULL;
     bundle_context_t *ctx = NULL;
+    properties_t *properties = NULL;
 
     void setup() {
-        fw = frameworkFactory_newFramework(NULL);
+        properties = properties_create();
+        properties_set(properties, "LOGHELPER_ENABLE_STDOUT_FALLBACK", "true");
+        properties_set(properties, "org.osgi.framework.storage.clean", "onFirstInit");
+        properties_set(properties, "org.osgi.framework.storage", ".cacheBundleContextTestFramework");
+
+        fw = frameworkFactory_newFramework(properties);
         ctx = framework_getContext(fw);
     }
 
@@ -46,7 +53,7 @@ TEST_GROUP(CelixFrameworkContextTests) {
     }
 };
 
-TEST(CelixFrameworkContextTests, registerService) {
+TEST(CelixBundleContextServicesTests, registerService) {
     struct calc {
         int (*calc)(int);
     };
@@ -62,14 +69,63 @@ TEST(CelixFrameworkContextTests, registerService) {
     celix_bundleContext_unregisterService(ctx, svcId);
 };
 
-TEST(CelixFrameworkContextTests, incorrectUnregisterCalls) {
+TEST(CelixBundleContextServicesTests, incorrectUnregisterCalls) {
     celix_bundleContext_unregisterService(ctx, 1);
     celix_bundleContext_unregisterService(ctx, 2);
     celix_bundleContext_unregisterService(ctx, -1);
     celix_bundleContext_unregisterService(ctx, -2);
 };
 
-TEST(CelixFrameworkContextTests, registerAndUseService) {
+TEST(CelixBundleContextServicesTests, registerMultipleAndUseServices) {
+    struct calc {
+        int (*calc)(int);
+    };
+
+    const char *calcName = "calc";
+    struct calc svc;
+    svc.calc = [](int n) -> int {
+        return n * 42;
+    };
+
+    long svcId1 = celix_bundleContext_registerService(ctx, calcName, &svc, NULL, NULL);
+    CHECK(svcId1 >= 0);
+
+    long svcId2 = celix_bundleContext_registerService(ctx, calcName, &svc, NULL, NULL);
+    CHECK(svcId2 >= 0);
+
+    long svcId3 = celix_bundleContext_registerService(ctx, calcName, &svc, NULL, NULL);
+    CHECK(svcId3 >= 0);
+
+    auto use = [](void *handle, void *svc, const properties_t *props, const bundle_t *bnd) {
+        CHECK(svc != NULL);
+        CHECK(props != NULL);
+        CHECK(bnd != NULL);
+        int *total =  static_cast<int*>(handle);
+        struct calc *calc = static_cast<struct calc*>(svc);
+        int tmp = calc->calc(1);
+        *total += tmp;
+    };
+
+    int total = 0;
+    celix_bundleContext_useServices(ctx, "calc", NULL, NULL, &total, use);
+    CHECK_EQUAL(42 * 3, total);
+
+
+    celix_bundleContext_unregisterService(ctx, svcId3);
+    total = 0;
+    celix_bundleContext_useServices(ctx, "calc", NULL, NULL, &total, use);
+    CHECK_EQUAL(42 * 2, total);
+
+    total = 0;
+    bool called = celix_bundleContext_useService(ctx, "calc", NULL, NULL, &total, use);
+    CHECK(called);
+    CHECK_EQUAL(42, total);
+
+    celix_bundleContext_unregisterService(ctx, svcId1);
+    celix_bundleContext_unregisterService(ctx, svcId2);
+};
+
+TEST(CelixBundleContextServicesTests, registerAndUseService) {
     struct calc {
         int (*calc)(int);
     };
@@ -110,7 +166,7 @@ TEST(CelixFrameworkContextTests, registerAndUseService) {
     celix_bundleContext_unregisterService(ctx, svcId);
 };
 
-TEST(CelixFrameworkContextTests, registerAndUseWithForcedRaceCondition) {
+TEST(CelixBundleContextServicesTests, registerAndUseWithForcedRaceCondition) {
     struct calc {
         int (*calc)(int);
     };
@@ -173,7 +229,7 @@ TEST(CelixFrameworkContextTests, registerAndUseWithForcedRaceCondition) {
     }};
 
 
-    //sleep 1 second to give unregister a change to sink in
+    //sleep 100 milli to give unregister a change to sink in
     std::cout << "before sleep" << std::endl;
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     std::cout << "after sleep" << std::endl;
@@ -189,43 +245,4 @@ TEST(CelixFrameworkContextTests, registerAndUseWithForcedRaceCondition) {
     std::cout << "use thread joined" << std::endl;
     unregisterThread.join();
     std::cout << "unregister thread joined" << std::endl;
-};
-
-TEST(CelixFrameworkContextTests, useBundlesTest) {
-    int count = 0;
-
-    celix_bundleContext_useBundles(ctx, &count, [](void *handle, const bundle_t *bnd) {
-        int *c = (int*)handle;
-        ++(*c);
-        long id = celix_bundle_getId(bnd);
-        CHECK_EQUAL(0, id);
-    });
-
-    CHECK_EQUAL(1, count);
-};
-
-TEST(CelixFrameworkContextTests, useBundleTest) {
-    int count = 0;
-
-    celix_bundleContext_useBundle(ctx, 0, &count, [](void *handle, const bundle_t *bnd) {
-        int *c = (int*)handle;
-        ++(*c);
-        long id = celix_bundle_getId(bnd);
-        CHECK_EQUAL(0, id);
-    });
-
-    CHECK_EQUAL(1, count);
-};
-
-TEST(CelixFrameworkContextTests, trackBundlesTest) {
-    int count = 0;
-
-    celix_bundleContext_useBundles(ctx, &count, [](void *handle, const bundle_t *bnd) {
-        int *c = (int*)handle;
-        ++(*c);
-        long id = celix_bundle_getId(bnd); //only framework bundles, id == 0.
-        CHECK_EQUAL(0, id);
-    });
-
-    CHECK_EQUAL(1, count);
 };

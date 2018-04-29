@@ -202,7 +202,7 @@ dm_dependency_manager_t* celix_bundleContext_getDependencyManager(bundle_context
  * @param serviceName the service name, cannot be NULL
  * @param svc the service object. Normally a pointer to a service struct (e.g. a struct with function pointers)
  * @param properties The meta properties assiated with the service. The service registration will take ownership of the properties
- * @return The serviceId, which should > 0. If <= 0 then the registration was unsuccessful.
+ * @return The serviceId, which should be >= 0. If < 0 then the registration was unsuccessful.
  */
 long celix_bundleContext_registerService(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties, const char *serviceVersion);
 
@@ -213,7 +213,7 @@ long celix_bundleContext_registerService(bundle_context_t *ctx, const char *serv
 * @param serviceName the service name, cannot be NULL
 * @param svc the service object. Normally a pointer to a service struct (e.g. a struct with function pointers)
 * @param properties The meta properties assiated with the service. The service registration will take ownership of the properties
-* @return The serviceId, which should > 0. If <= 0 then the registration was unsuccessful.
+* @return The serviceId, which should >= 0. If < 0 then the registration was unsuccessful.
 */
 long celix_bundleContext_registerServiceForLang(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties, const char *serviceVersion, const char* lang);
 
@@ -223,7 +223,7 @@ long celix_bundleContext_registerServiceForLang(bundle_context_t *ctx, const cha
  * Unregister the service with service id. The service will only be unregistered if the bundle of the bundle context
  * is the owner of the service.
  *
- * Will log an error if service id is unknown. Will silently ignore services ids <= 0.
+ * Will log an error if service id is unknown. Will silently ignore services ids < 0.
  *
  * @param ctx The bundle context
  * @param serviceId The service id
@@ -253,12 +253,84 @@ void celix_bundleContext_unregisterService(bundle_context_t *ctx, long serviceId
 bool celix_bundleContext_useServiceWithId(
         bundle_context_t *ctx,
         long serviceId,
-        const char *serviceName,
+        const char *serviceName /*sanity check*/,
         void *callbackHandle,
         void (*use)(void *handle, void* svc, const properties_t *props, const bundle_t *owner)
 );
 
-//TODO useServices
+/**
+ * Get and lock the current highest ranking service conform serviceName, versionRange an filter.
+ * Invokes the provided callback with the found service.
+ * The svc, props and owner in the callback are only valid during the callback.
+ * If no service is found the callback will not be invoked.
+ * At least a serviceName or filter needs to be provided, if not the callback is not invoked.
+ *
+ * This function will block till the callback is finished. As result it is possible to provide callback data from the
+ * stack.
+ *
+ * @param   ctx The bundle context
+ * @param   serviceName the required service name.
+ * @param   serviceRange the optional service version range (e.g. '[1.0.0,2.0.0)' )
+ * @param   filter the optional filer.
+ * @param   callbackHandle The data pointer, which will be used in the callbacks
+ * @param   use The callback, which will be called when service is retrieved.
+ * @return  True if a service was found.
+ */
+bool celix_bundleContext_useService(
+        bundle_context_t *ctx,
+        const char* serviceName,
+        const char* versionRange,
+        const char* filter,
+        void *callbackHandle,
+        void (*use)(void *handle, void *svc, const properties_t *props, const bundle_t *owner)
+);
+
+/**
+ * Get and lock the current services conform serviceName, versionRange an filter.
+ * Invokes the provided callback with the found services.
+ * The svc, props and owner in the callback are only valid during the callback.
+ * If no services are found the callback will not be invoked.
+ * At least a serviceName or filter needs to be provided, if not the callback is not invoked.
+ *
+ * This function will block till the callback is finished. As result it is possible to provide callback data from the
+ * stack.
+ *
+ * @param   ctx The bundle context
+ * @param   serviceName the required service name.
+ * @param   serviceRange the optional service version range (e.g. '[1.0.0,2.0.0)' )
+ * @param   filter the optional filter.
+ * @param   callbackHandle The data pointer, which will be used in the callbacks
+ * @param   use The callback, which will be called when service is retrieved.
+ */
+void celix_bundleContext_useServices(
+        bundle_context_t *ctx,
+        const char* serviceName,
+        const char* versionRange,
+        const char* filter,
+        void *callbackHandle,
+        void (*use)(void *handle, void *svc, const properties_t *props, const bundle_t *owner)
+);
+
+
+/**
+ * Install and optional start a bundle.
+ *
+ * @param ctx The bundle context
+ * @param bundleLoc The bundle location to the bundle zip file.
+ * @param autoStart If the bundle should also be started.
+ * @return the bundleId >= 0 or < 0 if the bundle could not be installed and possibly started.
+ */
+long celix_bundleContext_installBundle(bundle_context_t *ctx, const char *bundleLoc, bool autoStart);
+
+/**
+ * Uninstall the bundle with the provided bundle id. If needed the bundle will be stopped first.
+ *
+ * @param ctx The bundle context
+ * @param bundleId The bundle id to stop
+ * @return true if the bundle is correctly uninstalled. False if not.
+ */
+bool celix_bundleContext_uninstallBundle(bundle_context_t *ctx, long bundleId);
+
 
 /**
  * Service tracker options. This struct can be used to fine grained tune the
@@ -369,9 +441,10 @@ void celix_bundleContext_useBundles(
  * Could be a service tracker, bundle tracker or service tracker tracker.
  * Only works for the trackers owned by the bundle of the bundle context.
  *
- * Will log a error if the provided tracker id is unknown. Will silently ignore trackerId <= 0.
+ * Will log a error if the provided tracker id is unknown. Will silently ignore trackerId < 0.
  */
 void celix_bundleContext_stopTracking(bundle_context_t *ctx, long trackerId);
+
 
 
 #ifdef __cplusplus

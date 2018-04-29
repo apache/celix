@@ -2751,25 +2751,24 @@ static celix_status_t framework_loadLibrary(framework_pt framework, const char *
 
 
 void celix_framework_useBundles(framework_t *fw, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd)) {
-    array_list_t *bundleIds = celix_arrayList_create();
-    if (bundleIds != NULL) {
-        celixThreadMutex_lock(&fw->installedBundleMapLock);
-        hash_map_iterator_t iter = hashMapIterator_construct(fw->installedBundleMap);
-        while (hashMapIterator_hasNext(&iter)) {
-            bundle_t *bnd = (bundle_t *) hashMapIterator_nextValue(&iter);
-            long bndId = celix_bundle_getId(bnd);
-            if (bndId >= 0) {
-                //NOTE bundle state is checked in celix_framework_useBundles
-                arrayList_add(bundleIds, (void*)bndId);
-            }
+    celixThreadMutex_lock(&fw->installedBundleMapLock);
+    int size = hashMap_size(fw->installedBundleMap);
+    long bundleIds[size];
+    int i = 0;
+    hash_map_iterator_t iter = hashMapIterator_construct(fw->installedBundleMap);
+    while (hashMapIterator_hasNext(&iter)) {
+        bundle_t *bnd = (bundle_t *) hashMapIterator_nextValue(&iter);
+        long bndId = celix_bundle_getId(bnd);
+        if (bndId >= 0) {
+            //NOTE bundle state is checked in celix_framework_useBundles
+            bundleIds[i++] =bndId;
         }
-        celixThreadMutex_unlock(&fw->installedBundleMapLock);
+    }
+    celixThreadMutex_unlock(&fw->installedBundleMapLock);
 
-        size_t size = celix_arrayList_size(bundleIds);
-        for (int i = 0; i < size; ++i) {
-            long bndId = (long)celix_arrayList_get(bundleIds, i);
-            celix_framework_useBundle(fw, bndId, callbackHandle, use);
-        }
+    size = i;
+    for (i = 0; i < size; ++i) {
+        celix_framework_useBundle(fw, bundleIds[i], callbackHandle, use);
     }
 }
 

@@ -34,22 +34,28 @@ struct celix_serviceTracker {
 	bundle_context_t *context;
 	char * filter;
 
-	service_tracker_pt tracker;
-	service_tracker_customizer_pt customizer;
+	service_tracker_customizer_t *customizer;
 	service_listener_pt listener;
 
-	celix_thread_rwlock_t lock; //projects trackedServices and untrackedServices
+	void *callbackHandle;
+	void (*add)(void *handle, void *svc, const properties_t *svcProps, const bundle_t *svcOwner);
+	void (*remove)(void *handle, void *svc, const properties_t *svcProps, const bundle_t *svcOwner);
+	void (*modified)(void *handle, void *svc, const properties_t *svcProps, const bundle_t *svcOwner);
+
+	celix_thread_rwlock_t lock; //projects trackedServices
 	array_list_t *trackedServices;
 };
 
 struct celix_tracked_entry {
-	celix_thread_mutex_t lock;
-	celix_thread_cond_t useCond;
-	size_t useCount;
 	service_reference_pt reference;
-	void * service;
+	void *service;
+	const char *serviceName;
 	properties_t *properties;
-	bundle_t* serviceOwner;
+	bundle_t *serviceOwner;
+
+    celix_thread_cond_t useCond; //condition for useCount == 0
+    celix_thread_mutex_t mutex; //protects useCount
+    size_t useCount;
 };
 
 typedef struct celix_tracked_entry celix_tracked_entry_t;

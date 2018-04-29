@@ -77,6 +77,33 @@ FRAMEWORK_EXPORT void serviceTracker_serviceChanged(service_listener_pt listener
  **********************************************************************************************************************
  **********************************************************************************************************************/
 
+typedef struct celix_service_tracker_options {
+    const char *serviceName; //required serviceName
+    const char *versionRange; //optional service range (e.g. "[1,2)" or "[1.1.0,1.2.0)")
+    const char *filter;
+
+    void *callbackHandle;
+
+    //TODO adding for interceptors??
+    void (*add)(void *handle, void *svc, const properties_t *svcProps, const bundle_t *svcOwner);
+    void (*remove)(void *handle, void *svc, const properties_t *svcProps, const bundle_t *svcOwner);
+    void (*modified)(void *handle, void *svc, const properties_t *svcProps, const bundle_t *svcOwner);
+} celix_service_tracker_options_t;
+
+celix_service_tracker_t* celix_serviceTracker_create(
+        bundle_context_t *ctx,
+        const char *serviceName,
+        const char *versionRange,
+        const char *filter
+
+);
+
+celix_service_tracker_t* celix_serviceTracker_createWithOptions(
+        bundle_context_t *ctx,
+        const celix_service_tracker_options_t *opts
+);
+
+
 
 /**
  * Use the highest ranking service of the service tracker.
@@ -89,8 +116,19 @@ bool celix_serviceTracker_useHighestRankingService(
         celix_service_tracker_t *tracker,
         const char *serviceName /*sanity*/,
         void *callbackHandle,
-        void (*use)(void *handle, void *svc, const properties_t *props, const bundle_t *owner));
+        void (*use)(void *handle, void *svc, const properties_t *props, const bundle_t *owner)
+);
 
+
+/**
+ * Calls the use callback for every services found by this tracker.
+ */
+void celix_serviceTracker_useServices(
+        service_tracker_t *tracker,
+        const char* serviceName /*sanity*/,
+        void *callbackHandle,
+        void (*use)(void *handle, void *svc, const properties_t *props, const bundle_t *owner)
+);
 
 #ifdef __cplusplus
 }

@@ -16,13 +16,19 @@
 # under the License.
 
 
+add_celix_bundle(simple_test_bundle1 NO_ACTIVATOR VERSION 1.0.0)
+add_celix_bundle(simple_test_bundle2 NO_ACTIVATOR VERSION 1.0.0)
+add_celix_bundle(simple_test_bundle3 NO_ACTIVATOR VERSION 1.0.0)
+
 add_executable(test_framework
     run_tests.cpp
     single_framework_test.cpp
     multiple_frameworks_test.cpp
-    framework_bundle_context.cpp
+    bundle_context_bundles_tests.cpp
+    bundle_context_services_test.cpp
 )
 target_link_libraries(test_framework Celix::framework ${CURL_LIBRARIES} ${CPPUTEST_LIBRARY})
+add_dependencies(test_framework simple_test_bundle1_bundle simple_test_bundle2_bundle simple_test_bundle3_bundle)
 
 configure_file(config.properties.in config.properties @ONLY)
 configure_file(framework1.properties.in framework1.properties @ONLY)
