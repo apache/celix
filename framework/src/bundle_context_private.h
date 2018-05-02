@@ -47,8 +47,8 @@ struct bundleContext {
 	array_list_t *svcRegistrations;
 	dm_dependency_manager_t *mng;
 	long nextTrackerId;
-	hash_map_t *bundleTrackers; //key = trackId, value = celix_bundle_context_bundle_tracker_t
-
+	hash_map_t *bundleTrackers; //key = trackerId, value = celix_bundle_context_bundle_tracker_t*
+	hash_map_t *serviceTrackers; //key = trackerId, value = celix_service_tracker_t*
 };
 
 

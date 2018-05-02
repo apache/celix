@@ -193,7 +193,7 @@ bundleContext_getPropertyWithDefault(bundle_context_pt context, const char *name
  *
  * @return the dependency manager or NULL if unsuccessful.
  */
-dm_dependency_manager_t* celix_bundleContext_getDependencyManager(bundle_context_t *ctx);
+dm_dependency_manager_t* celix_bundleContext_getDependencyManager(celix_bundle_context_t *ctx);
 
 /**
  * Register a C lang service to the framework.
@@ -201,10 +201,10 @@ dm_dependency_manager_t* celix_bundleContext_getDependencyManager(bundle_context
  * @param ctx The bundle context
  * @param serviceName the service name, cannot be NULL
  * @param svc the service object. Normally a pointer to a service struct (e.g. a struct with function pointers)
- * @param properties The meta properties assiated with the service. The service registration will take ownership of the properties
+ * @param properties The meta properties assiated with the service. The service registration will take ownership of the properties (e.g. no destroy needed)
  * @return The serviceId, which should be >= 0. If < 0 then the registration was unsuccessful.
  */
-long celix_bundleContext_registerService(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties, const char *serviceVersion);
+long celix_bundleContext_registerService(celix_bundle_context_t *ctx, const char *serviceName, void *svc, const char *serviceVersion, celix_properties_t *properties);
 
 /**
 * Register a service for the specified language to the framework.
@@ -215,7 +215,7 @@ long celix_bundleContext_registerService(bundle_context_t *ctx, const char *serv
 * @param properties The meta properties assiated with the service. The service registration will take ownership of the properties
 * @return The serviceId, which should >= 0. If < 0 then the registration was unsuccessful.
 */
-long celix_bundleContext_registerServiceForLang(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties, const char *serviceVersion, const char* lang);
+long celix_bundleContext_registerServiceForLang(celix_bundle_context_t *ctx, const char *serviceName, void *svc, const char *serviceVersion, const char* lang, celix_properties_t *properties);
 
 //TODO register service factory
 
@@ -228,11 +228,90 @@ long celix_bundleContext_registerServiceForLang(bundle_context_t *ctx, const cha
  * @param ctx The bundle context
  * @param serviceId The service id
  */
-void celix_bundleContext_unregisterService(bundle_context_t *ctx, long serviceId);
+void celix_bundleContext_unregisterService(celix_bundle_context_t *ctx, long serviceId);
+
+/**
+ * track service for the provided serviceName and/or filter.
+ * The highest ranking services will used for the callback.
+ * If a new and higher ranking services the callback with be called again with the new service.
+ * If a service is removed a the callback with be called with next highest ranking service or NULL as service.
+ *
+ * @param ctx The bundle context.
+ * @param serviceName The required service name to track
+ * @param serviceVersionRange Optional the service version range to track
+ * @param filter Optional the LDAP filter to use
+ * @param callbackHandle The data pointer, which will be used in the callbacks
+ * @param set is a required callback, which will be called when a new highest ranking service is set.
+ * @return the tracker id or < 0 if unsuccessful.
+ */
+long celix_bundleContext_trackService(
+        celix_bundle_context_t* ctx,
+        const char* serviceName,
+        const char* versioRange,
+        const char* filter,
+        void* callbackHandle,
+        void (*set)(void* handle, void* svc)
+);
+
+/**
+ * track services for the provided serviceName and/or filter.
+ *
+ * @param ctx The bundle context.
+ * @param serviceName The required service name to track
+ * @param serviceVersionRange Optional the service version range to track
+ * @param filter Optional the LDAP filter to use
+ * @param callbackHandle The data pointer, which will be used in the callbacks
+ * @param add is a required callback, which will be called when a service is added and initially for the existing service.
+ * @param remove is a required callback, which will be called when a service is removed
+ * @return the tracker id or < 0 if unsuccessful.
+ */
+long celix_bundleContext_trackServices(
+        celix_bundle_context_t* ctx,
+        const char* serviceName,
+        const char* versioRange,
+        const char* filter,
+        void* callbackHandle,
+        void (*add)(void* handle, void* svc),
+        void (*remove)(void* handle, void* svc)
+);
+
+typedef struct celix_service_tracker_options {
+    //service filter options
+    const char* serviceName;
+    const char* versionRange;
+    const char* filter;
+    const char* lang; //NULL -> 'CELIX_LANG_C'
+
+    //callback options
+    void* callbackHandle;
+
+    void (*set)(void *handle, void *svc); //highest ranking
+    void (*add)(void *handle, void *svc);
+    void (*remove)(void *handle, void *svc);
+    void (*modified)(void *handle, void *svc);
+
+    void (*setWithProperties)(void *handle, void *svc, const celix_properties_t *props); //highest ranking
+    void (*addWithProperties)(void *handle, void *svc, const celix_properties_t *props);
+    void (*removeWithProperties)(void *handle, void *svc, const celix_properties_t *props);
+    void (*modifiedWithProperties)(void *handle, void *svc, const celix_properties_t *props);
+
+    void (*setWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner); //highest ranking
+    void (*addWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner);
+    void (*removeWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner);
+    void (*modifiedWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner);
+} celix_service_tracker_options_t;
+
+/**
+ * Tracks services using the provided tracker options.
+ * The tracker options are only using during this call and can safely be freed/reused after this call returns.
+ *
+ * @param ctx The bundle context.
+ * @param opts The pointer to the tracker options.
+ * @return the tracker id or < 0 if unsuccessful.
+ */
+long celix_bundleContext_trackServicesWithOptions(celix_bundle_context_t *ctx, const celix_service_tracker_options_t *opts);
 
 
-
-//TODO track services
 
 /**
  * Get and lock the service with the provided service id
@@ -251,11 +330,11 @@ void celix_bundleContext_unregisterService(bundle_context_t *ctx, long serviceId
  * @param bool returns true if a service was found.
  */
 bool celix_bundleContext_useServiceWithId(
-        bundle_context_t *ctx,
+        celix_bundle_context_t *ctx,
         long serviceId,
         const char *serviceName /*sanity check*/,
         void *callbackHandle,
-        void (*use)(void *handle, void* svc, const properties_t *props, const bundle_t *owner)
+        void (*use)(void *handle, void* svc, const celix_properties_t *props, const celix_bundle_t *owner)
 );
 
 /**
@@ -277,12 +356,12 @@ bool celix_bundleContext_useServiceWithId(
  * @return  True if a service was found.
  */
 bool celix_bundleContext_useService(
-        bundle_context_t *ctx,
+        celix_bundle_context_t *ctx,
         const char* serviceName,
         const char* versionRange,
         const char* filter,
         void *callbackHandle,
-        void (*use)(void *handle, void *svc, const properties_t *props, const bundle_t *owner)
+        void (*use)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner)
 );
 
 /**
@@ -303,12 +382,12 @@ bool celix_bundleContext_useService(
  * @param   use The callback, which will be called when service is retrieved.
  */
 void celix_bundleContext_useServices(
-        bundle_context_t *ctx,
+        celix_bundle_context_t *ctx,
         const char* serviceName,
         const char* versionRange,
         const char* filter,
         void *callbackHandle,
-        void (*use)(void *handle, void *svc, const properties_t *props, const bundle_t *owner)
+        void (*use)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner)
 );
 
 
@@ -320,7 +399,7 @@ void celix_bundleContext_useServices(
  * @param autoStart If the bundle should also be started.
  * @return the bundleId >= 0 or < 0 if the bundle could not be installed and possibly started.
  */
-long celix_bundleContext_installBundle(bundle_context_t *ctx, const char *bundleLoc, bool autoStart);
+long celix_bundleContext_installBundle(celix_bundle_context_t *ctx, const char *bundleLoc, bool autoStart);
 
 /**
  * Uninstall the bundle with the provided bundle id. If needed the bundle will be stopped first.
@@ -329,7 +408,7 @@ long celix_bundleContext_installBundle(bundle_context_t *ctx, const char *bundle
  * @param bundleId The bundle id to stop
  * @return true if the bundle is correctly uninstalled. False if not.
  */
-bool celix_bundleContext_uninstallBundle(bundle_context_t *ctx, long bundleId);
+bool celix_bundleContext_uninstallBundle(celix_bundle_context_t *ctx, long bundleId);
 
 
 /**
@@ -337,6 +416,8 @@ bool celix_bundleContext_uninstallBundle(bundle_context_t *ctx, long bundleId);
  * requested bundle tracker ootions.
  */
 typedef struct celix_bundle_tracker_options {
+    //TODO options to track framework & own bundle
+
     /**
      * Handle used in the tracker callbacks.
      */
@@ -348,7 +429,7 @@ typedef struct celix_bundle_tracker_options {
      * @param bundle    The bundle which has been started.
      *                  The bundle pointer is only guaranteed to be valid during the callback.
      */
-    void (*onStarted)(void *handle, const bundle_t *bundle); //highest ranking
+    void (*onStarted)(void *handle, const celix_bundle_t *bundle); //highest ranking
 
     /**
      * Tracker callback when a bundle is removed.
@@ -356,7 +437,7 @@ typedef struct celix_bundle_tracker_options {
      * @param bundle    The bundle which has been started.
      *                  The bundle pointer is only guaranteed to be valid during the callback.
      */
-    void (*onStopped)(void *handle, const bundle_t *bundle);
+    void (*onStopped)(void *handle, const celix_bundle_t *bundle);
 
     //TODO callback for on installed, resolved, uninstalled ??
 
@@ -365,7 +446,7 @@ typedef struct celix_bundle_tracker_options {
      * @param handle    The handle, contains the value of the callbackHandle.
      * @param event     The bundle event. Is only valid during the callback.
      */
-    void (*onBundleEvent)(void *handle, const bundle_event_t *event);
+    void (*onBundleEvent)(void *handle, const celix_bundle_event_t *event);
 } celix_bundle_tracker_options_t;
 
 /**
@@ -378,10 +459,11 @@ typedef struct celix_bundle_tracker_options {
  * @return      The bundle tracker id or < 0 if unsuccessful.
  */
 long celix_bundleContext_trackBundlesWithOptions(
-        bundle_context_t* ctx,
+        celix_bundle_context_t* ctx,
         const celix_bundle_tracker_options_t *opts
 );
 
+//TODO except framework & own bundle
 /**
  * track bundles
  * The add bundle callback will also be called for already installed bundles.
@@ -393,10 +475,10 @@ long celix_bundleContext_trackBundlesWithOptions(
  * @return                  The bundle tracker id or < 0 if unsuccessful.
  */
 long celix_bundleContext_trackBundles(
-        bundle_context_t* ctx,
+        celix_bundle_context_t* ctx,
         void* callbackHandle,
-        void (*onStarted)(void* handle, const bundle_t *bundle),
-        void (*onStopped)(void *handle, const bundle_t *bundle)
+        void (*onStarted)(void* handle, const celix_bundle_t *bundle),
+        void (*onStopped)(void *handle, const celix_bundle_t *bundle)
 );
 
 /**
@@ -410,14 +492,16 @@ long celix_bundleContext_trackBundles(
  *                          The bundle pointers are only guaranteed to be valid during the callback.
  */
 void celix_bundleContext_useBundle(
-        bundle_context_t *ctx,
+        celix_bundle_context_t *ctx,
         long bundleId,
         void *callbackHandle,
-        void (*use)(void *handle, const bundle_t *bundle)
+        void (*use)(void *handle, const celix_bundle_t *bundle)
 );
 
 //TODO add useBundleWithState (bit wise or?)
 
+
+//TODO except framework & own bundle
 /**
  * Use the currently active (started) bundles.
  * The provided callback will be called for all the currently started bundles.
@@ -428,9 +512,9 @@ void celix_bundleContext_useBundle(
  *                          The bundle pointers are only guaranteed to be valid during the callback.
  */
 void celix_bundleContext_useBundles(
-        bundle_context_t *ctx,
+        celix_bundle_context_t *ctx,
         void *callbackHandle,
-        void (*use)(void *handle, const bundle_t *bundle)
+        void (*use)(void *handle, const celix_bundle_t *bundle)
 );
 
 
@@ -443,7 +527,7 @@ void celix_bundleContext_useBundles(
  *
  * Will log a error if the provided tracker id is unknown. Will silently ignore trackerId < 0.
  */
-void celix_bundleContext_stopTracking(bundle_context_t *ctx, long trackerId);
+void celix_bundleContext_stopTracker(celix_bundle_context_t *ctx, long trackerId);
 
 
 

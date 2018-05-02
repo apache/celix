@@ -1631,7 +1631,6 @@ void fw_removeServiceListener(framework_pt framework, bundle_pt bundle, service_
         match->filter = NULL;
         match->listener = NULL;
         free(match);
-        match = NULL;
 	}
 }
 

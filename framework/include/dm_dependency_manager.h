@@ -42,6 +42,7 @@ extern "C" {
  * Creates a dependency manager.
  * Caller has ownership.
  */
+ //TODO make this private, dep man should always be retrieved from the bundle context
 celix_status_t dependencyManager_create(bundle_context_t *context, dm_dependency_manager_t **manager);
 
 /**

@@ -36,12 +36,10 @@ namespace celix { namespace dm {
     class DependencyManager {
     public:
         DependencyManager(bundle_context_pt ctx) : context(ctx) {
-                this->cDepMan = nullptr;
-                dependencyManager_create(context, &this->cDepMan);
+                this->cDepMan = celix_bundleContext_getDependencyManager(ctx);
         }
 
         virtual ~DependencyManager() {
-                dependencyManager_destroy(this->cDepMan);
                 this->cDepMan = nullptr;
         }
 

@@ -167,7 +167,7 @@ TEST(CelixBundleContextBundlesTests, trackBundlesTest) {
      */
 
 
-    celix_bundleContext_stopTracking(ctx, trackerId);
+    celix_bundleContext_stopTracker(ctx, trackerId);
 };
 
 /* IGNORE TODO need to add locks

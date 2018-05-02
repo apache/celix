@@ -77,19 +77,10 @@ FRAMEWORK_EXPORT void serviceTracker_serviceChanged(service_listener_pt listener
  **********************************************************************************************************************
  **********************************************************************************************************************/
 
-typedef struct celix_service_tracker_options {
-    const char *serviceName; //required serviceName
-    const char *versionRange; //optional service range (e.g. "[1,2)" or "[1.1.0,1.2.0)")
-    const char *filter;
-
-    void *callbackHandle;
-
-    //TODO adding for interceptors??
-    void (*add)(void *handle, void *svc, const properties_t *svcProps, const bundle_t *svcOwner);
-    void (*remove)(void *handle, void *svc, const properties_t *svcProps, const bundle_t *svcOwner);
-    void (*modified)(void *handle, void *svc, const properties_t *svcProps, const bundle_t *svcOwner);
-} celix_service_tracker_options_t;
-
+/**
+ * Creates and starts (open) a service tracker.
+ * Note that is different from the serviceTracker_create function, because is also starts the service tracker
+ */
 celix_service_tracker_t* celix_serviceTracker_create(
         bundle_context_t *ctx,
         const char *serviceName,
@@ -98,12 +89,21 @@ celix_service_tracker_t* celix_serviceTracker_create(
 
 );
 
+/**
+ * Creates and starts (open) a service tracker.
+ * Note that is different from the serviceTracker_create function, because is also starts the service tracker
+ */
 celix_service_tracker_t* celix_serviceTracker_createWithOptions(
         bundle_context_t *ctx,
         const celix_service_tracker_options_t *opts
 );
 
 
+/**
+ * Stops (close) and destroys a service tracker.
+ * Note that is different from the serviceTracker_destroy function, because is also stops the service tracker
+ */
+void celix_serviceTracker_destroy(celix_service_tracker_t *tracker);
 
 /**
  * Use the highest ranking service of the service tracker.
@@ -116,7 +116,7 @@ bool celix_serviceTracker_useHighestRankingService(
         celix_service_tracker_t *tracker,
         const char *serviceName /*sanity*/,
         void *callbackHandle,
-        void (*use)(void *handle, void *svc, const properties_t *props, const bundle_t *owner)
+        void (*use)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner)
 );
 
 
@@ -127,7 +127,7 @@ void celix_serviceTracker_useServices(
         service_tracker_t *tracker,
         const char* serviceName /*sanity*/,
         void *callbackHandle,
-        void (*use)(void *handle, void *svc, const properties_t *props, const bundle_t *owner)
+        void (*use)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner)
 );
 
 #ifdef __cplusplus

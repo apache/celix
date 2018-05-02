@@ -38,12 +38,27 @@ struct celix_serviceTracker {
 	service_listener_pt listener;
 
 	void *callbackHandle;
-	void (*add)(void *handle, void *svc, const properties_t *svcProps, const bundle_t *svcOwner);
-	void (*remove)(void *handle, void *svc, const properties_t *svcProps, const bundle_t *svcOwner);
-	void (*modified)(void *handle, void *svc, const properties_t *svcProps, const bundle_t *svcOwner);
+
+	void (*set)(void *handle, void *svc); //highest ranking
+	void (*add)(void *handle, void *svc);
+	void (*remove)(void *handle, void *svc);
+	void (*modified)(void *handle, void *svc);
+
+	void (*setWithProperties)(void *handle, void *svc, const properties_t *props); //highest ranking
+	void (*addWithProperties)(void *handle, void *svc, const properties_t *props);
+	void (*removeWithProperties)(void *handle, void *svc, const properties_t *props);
+	void (*modifiedWithProperties)(void *handle, void *svc, const properties_t *props);
+
+	void (*setWithOwner)(void *handle, void *svc, const properties_t *props, const bundle_t *owner); //highest ranking
+	void (*addWithOwner)(void *handle, void *svc, const properties_t *props, const bundle_t *owner);
+	void (*removeWithOwner)(void *handle, void *svc, const properties_t *props, const bundle_t *owner);
+	void (*modifiedWithOwner)(void *handle, void *svc, const properties_t *props, const bundle_t *owner);
 
 	celix_thread_rwlock_t lock; //projects trackedServices
 	array_list_t *trackedServices;
+
+	celix_thread_mutex_t mutex; //protect current highest service id
+	long currentHighestServiceId;
 };
 
 struct celix_tracked_entry {

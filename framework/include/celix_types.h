@@ -27,6 +27,7 @@
 
 typedef struct bundle * bundle_pt;
 typedef struct bundle bundle_t;
+typedef struct bundle celix_bundle_t;
 
 typedef struct bundleArchive *bundle_archive_pt;
 typedef struct bundleArchive bundle_archive_t;
@@ -36,6 +37,7 @@ typedef struct bundleRevision bundle_revision_t;
 
 typedef struct bundleContext *bundle_context_pt;
 typedef struct bundleContext bundle_context_t;
+typedef struct bundleContext celix_bundle_context_t;
 
 typedef struct dm_dependency_manager *dm_dependency_manager_pt;
 typedef struct dm_dependency_manager dm_dependency_manager_t;

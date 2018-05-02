@@ -194,7 +194,7 @@ celix_status_t bundleContext_getProperty(bundle_context_pt context, const char *
 	return mock_c()->returnValue().value.intValue;
 }
 
-long celix_bundleContext_registerService(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties, const char *serviceVersion) {
+long celix_bundleContext_registerService(bundle_context_t *ctx, const char *serviceName, void *svc, const char *serviceVersion, properties_t *properties) {
 	mock_c()->actualCall("celix_bundleContext_registerCService")
 			->withPointerParameters("ctx", ctx)
 			->withStringParameters("serviceName", serviceName)
@@ -204,7 +204,7 @@ long celix_bundleContext_registerService(bundle_context_t *ctx, const char *serv
 	return mock_c()->returnValue().value.longIntValue;
 }
 
-long celix_bundleContext_registerServiceForLang(bundle_context_t *ctx, const char *serviceName, void *svc, properties_t *properties, const char *serviceVersion, const char* lang) {
+long celix_bundleContext_registerServiceForLang(bundle_context_t *ctx, const char *serviceName, void *svc, const char *serviceVersion, const char* lang, properties_t *properties) {
 	mock_c()->actualCall("celix_bundleContext_registerServiceForLang")
 			->withPointerParameters("ctx", ctx)
 			->withStringParameters("serviceName", serviceName)
@@ -288,8 +288,8 @@ void celix_bundleContext_useBundle(
 			->withPointerParameters("use", use);
 }
 
-void celix_bundleContext_stopTracking(bundle_context_t *ctx, long trackerId) {
-	mock_c()->actualCall("celix_bundleContext_stopTracking")
+void celix_bundleContext_stopTracker(bundle_context_t *ctx, long trackerId) {
+	mock_c()->actualCall("celix_bundleContext_stopTracker")
 			->withPointerParameters("ctx", ctx)
 			->withLongIntParameters("trackerId", trackerId);
 }

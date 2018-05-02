@@ -36,92 +36,23 @@
 static void parseLine(const char* line, properties_pt props);
 
 properties_pt properties_create(void) {
-	return hashMap_create(utils_stringHash, utils_stringHash, utils_stringEquals, utils_stringEquals);
+	return celix_properties_create();
 }
 
 void properties_destroy(properties_pt properties) {
-	hash_map_iterator_pt iter = hashMapIterator_create(properties);
-	while (hashMapIterator_hasNext(iter)) {
-		hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-		free(hashMapEntry_getKey(entry));
-		free(hashMapEntry_getValue(entry));
-	}
-	hashMapIterator_destroy(iter);
-	hashMap_destroy(properties, false, false);
+	celix_properties_destroy(properties);
 }
 
 properties_pt properties_load(const char* filename) {
-	FILE *file = fopen(filename, "r");
-	if(file==NULL){
-		return NULL;
-	}
-	properties_pt props = properties_loadWithStream(file);
-	fclose(file);
-	return props;
+	return celix_properties_load(filename);
 }
 
 properties_pt properties_loadWithStream(FILE *file) {
-	properties_pt props = NULL;
-
-
-	if (file != NULL ) {
-		char *saveptr;
-		char *filebuffer = NULL;
-		char *line = NULL;
-		size_t file_size = 0;
-
-		props = properties_create();
-		fseek(file, 0, SEEK_END);
-		file_size = ftell(file);
-		fseek(file, 0, SEEK_SET);
-
-		if(file_size > 0){
-			filebuffer = calloc(file_size + 1, sizeof(char));
-			if(filebuffer) {
-				size_t rs = fread(filebuffer, sizeof(char), file_size, file);
-				if(rs != file_size){
-					fprintf(stderr,"fread read only %lu bytes out of %lu\n",rs,file_size);
-				}
-				filebuffer[file_size]='\0';
-				line = strtok_r(filebuffer, "\n", &saveptr);
-				while ( line != NULL ) {
-					parseLine(line, props);
-					line = strtok_r(NULL, "\n", &saveptr);
-				}
-				free(filebuffer);
-			}
-		}
-	}
-
-	return props;
+	return celix_properties_loadWithStream(file);
 }
 
 properties_pt properties_loadFromString(const char *input){
-	properties_pt props = properties_create();
-
-	char *in = strdup(input);
-	char *line = NULL;
-	char *saveLinePointer = NULL;
-
-	bool firstTime = true;
-	do {
-		if (firstTime){
-			line = strtok_r(in, "\n", &saveLinePointer);
-			firstTime = false;
-		}else {
-			line = strtok_r(NULL, "\n", &saveLinePointer);
-		}
-
-		if (line == NULL){
-			break;
-		}
-
-		parseLine(line, props);
-	} while(line != NULL);
-
-	free(in);
-
-	return props;
+	return celix_properties_loadFromString(input);
 }
 
 
@@ -129,92 +60,29 @@ properties_pt properties_loadFromString(const char *input){
  * Header is ignored for now, cannot handle comments yet
  */
 void properties_store(properties_pt properties, const char* filename, const char* header) {
-	FILE *file = fopen ( filename, "w+" );
-	char *str;
-
-	if (file != NULL) {
-		if (hashMap_size(properties) > 0) {
-			hash_map_iterator_pt iterator = hashMapIterator_create(properties);
-			while (hashMapIterator_hasNext(iterator)) {
-				hash_map_entry_pt entry = hashMapIterator_nextEntry(iterator);
-				str = hashMapEntry_getKey(entry);
-				for (int i = 0; i < strlen(str); i += 1) {
-					if (str[i] == '#' || str[i] == '!' || str[i] == '=' || str[i] == ':') {
-						fputc('\\', file);
-					}
-					fputc(str[i], file);
-				}
-
-				fputc('=', file);
-
-				str = hashMapEntry_getValue(entry);
-				for (int i = 0; i < strlen(str); i += 1) {
-					if (str[i] == '#' || str[i] == '!' || str[i] == '=' || str[i] == ':') {
-						fputc('\\', file);
-					}
-					fputc(str[i], file);
-				}
-
-				fputc('\n', file);
-
-			}
-			hashMapIterator_destroy(iterator);
-		}
-		fclose(file);
-	} else {
-		perror("File is null");
-	}
+	return celix_properties_store(properties, filename, header);
 }
 
 celix_status_t properties_copy(properties_pt properties, properties_pt *out) {
-	celix_status_t status = CELIX_SUCCESS;
-	properties_pt copy = properties_create();
-
-	if (copy != NULL) {
-		hash_map_iterator_pt iter = hashMapIterator_create(properties);
-		while (hashMapIterator_hasNext(iter)) {
-			hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
-			char *key = hashMapEntry_getKey(entry);
-			char *value = hashMapEntry_getValue(entry);
-			properties_set(copy, key, value);
-		}
-		hashMapIterator_destroy(iter);
-	} else {
-		status = CELIX_ENOMEM;
-	}
-
-	if (status == CELIX_SUCCESS) {
-		*out = copy;
-	}
-
-	return status;
+	celix_properties_t *copy = celix_properties_copy(properties);
+	*out = copy;
+	return copy == NULL ? CELIX_BUNDLE_EXCEPTION : CELIX_SUCCESS;
 }
 
 const char* properties_get(properties_pt properties, const char* key) {
-	return hashMap_get(properties, (void*)key);
+	return celix_properties_get(properties, key);
 }
 
 const char* properties_getWithDefault(properties_pt properties, const char* key, const char* defaultValue) {
-	const char* value = properties_get(properties, key);
-	return value == NULL ? defaultValue : value;
+	return celix_properties_getWithDefault(properties, key, defaultValue);
 }
 
 void properties_set(properties_pt properties, const char* key, const char* value) {
-	hash_map_entry_pt entry = hashMap_getEntry(properties, key);
-	char* oldValue = NULL;
-	if (entry != NULL) {
-		char* oldKey = hashMapEntry_getKey(entry);
-		oldValue = hashMapEntry_getValue(entry);
-		hashMap_put(properties, oldKey, strndup(value, 1024*10));
-	} else {
-		hashMap_put(properties, strndup(key, 1024*10), strndup(value, 1024*10));
-	}
-	free(oldValue);
+	celix_properties_set(properties, key, value);
 }
 
 void properties_unset(properties_pt properties, const char* key) {
-	char* oldValue = hashMap_remove(properties, key);
-	free(oldValue);
+	celix_properties_unset(properties, key);
 }
 
 static void updateBuffers(char **key, char ** value, char **output, int outputPos, int *key_len, int *value_len) {
@@ -332,4 +200,205 @@ static void parseLine(const char* line, properties_pt props) {
 		free(value);
 	}
 
+}
+
+
+
+/**********************************************************************************************************************
+ **********************************************************************************************************************
+ * Updated API
+ **********************************************************************************************************************
+ **********************************************************************************************************************/
+
+
+
+celix_properties_t* celix_properties_create(void) {
+	return hashMap_create(utils_stringHash, utils_stringHash, utils_stringEquals, utils_stringEquals);
+}
+
+void celix_properties_destroy(celix_properties_t *properties) {
+	hash_map_iterator_pt iter = hashMapIterator_create(properties);
+	while (hashMapIterator_hasNext(iter)) {
+		hash_map_entry_pt entry = hashMapIterator_nextEntry(iter);
+		free(hashMapEntry_getKey(entry));
+		free(hashMapEntry_getValue(entry));
+	}
+	hashMapIterator_destroy(iter);
+	hashMap_destroy(properties, false, false);
+}
+
+celix_properties_t* celix_properties_load(const char *filename) {
+	FILE *file = fopen(filename, "r");
+	if(file==NULL){
+		return NULL;
+	}
+	properties_pt props = celix_properties_loadWithStream(file);
+	fclose(file);
+	return props;
+}
+
+celix_properties_t* celix_properties_loadWithStream(FILE *file) {
+	properties_pt props = NULL;
+
+
+	if (file != NULL ) {
+		char *saveptr;
+		char *filebuffer = NULL;
+		char *line = NULL;
+		size_t file_size = 0;
+
+		props = celix_properties_create();
+		fseek(file, 0, SEEK_END);
+		file_size = ftell(file);
+		fseek(file, 0, SEEK_SET);
+
+		if(file_size > 0){
+			filebuffer = calloc(file_size + 1, sizeof(char));
+			if(filebuffer) {
+				size_t rs = fread(filebuffer, sizeof(char), file_size, file);
+				if(rs != file_size){
+					fprintf(stderr,"fread read only %lu bytes out of %lu\n",rs,file_size);
+				}
+				filebuffer[file_size]='\0';
+				line = strtok_r(filebuffer, "\n", &saveptr);
+				while ( line != NULL ) {
+					parseLine(line, props);
+					line = strtok_r(NULL, "\n", &saveptr);
+				}
+				free(filebuffer);
+			}
+		}
+	}
+
+	return props;
+}
+
+celix_properties_t* celix_properties_loadFromString(const char *input) {
+	properties_pt props = celix_properties_create();
+
+	char *in = strdup(input);
+	char *line = NULL;
+	char *saveLinePointer = NULL;
+
+	bool firstTime = true;
+	do {
+		if (firstTime){
+			line = strtok_r(in, "\n", &saveLinePointer);
+			firstTime = false;
+		}else {
+			line = strtok_r(NULL, "\n", &saveLinePointer);
+		}
+
+		if (line == NULL){
+			break;
+		}
+
+		parseLine(line, props);
+	} while(line != NULL);
+
+	free(in);
+
+	return props;
+}
+
+void celix_properties_store(celix_properties_t *properties, const char *filename, const char *header) {
+	FILE *file = fopen (filename, "w+" );
+	char *str;
+
+	if (file != NULL) {
+		if (hashMap_size(properties) > 0) {
+			hash_map_iterator_pt iterator = hashMapIterator_create(properties);
+			while (hashMapIterator_hasNext(iterator)) {
+				hash_map_entry_pt entry = hashMapIterator_nextEntry(iterator);
+				str = hashMapEntry_getKey(entry);
+				for (int i = 0; i < strlen(str); i += 1) {
+					if (str[i] == '#' || str[i] == '!' || str[i] == '=' || str[i] == ':') {
+						fputc('\\', file);
+					}
+					fputc(str[i], file);
+				}
+
+				fputc('=', file);
+
+				str = hashMapEntry_getValue(entry);
+				for (int i = 0; i < strlen(str); i += 1) {
+					if (str[i] == '#' || str[i] == '!' || str[i] == '=' || str[i] == ':') {
+						fputc('\\', file);
+					}
+					fputc(str[i], file);
+				}
+
+				fputc('\n', file);
+
+			}
+			hashMapIterator_destroy(iterator);
+		}
+		fclose(file);
+	} else {
+		perror("File is null");
+	}
+}
+
+celix_properties_t* celix_properties_copy(celix_properties_t *properties) {
+	celix_properties_t *copy = celix_properties_create();
+	if (copy != NULL) {
+		hash_map_iterator_t iter = hashMapIterator_construct(properties);
+		while (hashMapIterator_hasNext(&iter)) {
+			hash_map_entry_pt entry = hashMapIterator_nextEntry(&iter);
+			char *key = hashMapEntry_getKey(entry);
+			char *value = hashMapEntry_getValue(entry);
+			celix_properties_set(copy, key, value);
+		}
+	}
+	return copy;
+}
+
+const char* celix_properties_get(const celix_properties_t *properties, const char *key) {
+	return hashMap_get((hash_map_t*)properties, (void*)key);
+}
+
+const char* celix_properties_getWithDefault(const celix_properties_t *properties, const char *key, const char *defaultValue) {
+	const char* value = celix_properties_get(properties, key);
+	return value == NULL ? defaultValue : value;
+}
+
+void celix_properties_set(celix_properties_t *properties, const char *key, const char *value) {
+	hash_map_entry_pt entry = hashMap_getEntry(properties, key);
+	char* oldValue = NULL;
+	if (entry != NULL) {
+		char* oldKey = hashMapEntry_getKey(entry);
+		oldValue = hashMapEntry_getValue(entry);
+		hashMap_put(properties, oldKey, strndup(value, 1024*10));
+	} else {
+		hashMap_put(properties, strndup(key, 1024*10), strndup(value, 1024*10));
+	}
+	free(oldValue);
+}
+
+void celix_properties_unset(celix_properties_t *properties, const char *key) {
+	char* oldValue = hashMap_remove(properties, key);
+	free(oldValue);
+}
+
+long celix_properties_getAsLong(const celix_properties_t *props, const char *key, long defaultValue) {
+	long result = defaultValue;
+	const char *val = celix_properties_get(props, key);
+	if (val != NULL) {
+		long r = strtol(val, NULL, 10);
+		if (errno == 0) {
+			result = r;
+		}
+		errno = 0;
+	}
+	return result;
+}
+
+void celix_properties_setLong(celix_properties_t *props, const char *key, long value) {
+	char buf[32]; //should be enough to store long long int
+	int writen = snprintf(buf, 32, "%li", value);
+	if (writen <= 31) {
+		celix_properties_set(props, key, buf);
+	} else {
+		fprintf(stderr,"buf to small for value '%li'\n", value);
+	}
 }
