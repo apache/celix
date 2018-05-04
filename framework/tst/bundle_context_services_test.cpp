@@ -25,8 +25,9 @@
 #include <CppUTest/TestHarness.h>
 #include <CppUTest/CommandLineTestRunner.h>
 #include <zconf.h>
-#include <constants.h>
+#include <string.h>
 
+#include "constants.h"
 #include "bundle.h"
 #include "properties.h"
 #include "celix_framework_factory.h"
@@ -477,7 +478,7 @@ TEST(CelixBundleContextServicesTests, serviceTrackerWithRaceConditionTest) {
         lock.unlock();
     };
 
-    long trackerId = trackerId = celix_bundleContext_trackServices(ctx, calcName, NULL, NULL, &data, add, remove);
+    long trackerId = celix_bundleContext_trackServices(ctx, calcName, NULL, NULL, &data, add, remove);
 
     std::thread registerThread{[&]{
         long id = celix_bundleContext_registerService(ctx, calcName, &svc, NULL, NULL);
