@@ -297,7 +297,7 @@ TEST(CelixBundleContextServicesTests, servicesTrackerInvalidArgsTest) {
     CHECK(trackerId < 0); //required ctx and opts missing
     trackerId = celix_bundleContext_trackServicesWithOptions(ctx, NULL);
     CHECK(trackerId < 0); //required opts missing
-    celix_service_tracker_options_t opts{};
+    celix_service_tracker_options_t opts;
     memset(&opts, 0, sizeof(opts));
     trackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
     CHECK(trackerId < 0); //required opts->serviceName missing
@@ -363,7 +363,7 @@ TEST(CelixBundleContextServicesTests, servicesTrackerTestWithProperties) {
 
     long svcId1 = celix_bundleContext_registerService(ctx, "calc", (void*)0x100, NULL, NULL);
 
-    celix_service_tracker_options_t opts{};
+    celix_service_tracker_options_t opts;
     memset(&opts, 0, sizeof(opts));
     opts.serviceName = "calc";
     opts.callbackHandle = &count;
@@ -403,7 +403,7 @@ TEST(CelixBundleContextServicesTests, servicesTrackerTestWithOwner) {
 
     long svcId1 = celix_bundleContext_registerService(ctx, "calc", (void*)0x100, NULL, NULL);
 
-    celix_service_tracker_options_t opts{};
+    celix_service_tracker_options_t opts;
     memset(&opts, 0, sizeof(opts));
     opts.serviceName = "calc";
     opts.callbackHandle = &count;
