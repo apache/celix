@@ -560,7 +560,7 @@ celix_service_tracker_t* celix_serviceTracker_create(
         const char *serviceName,
         const char *versionRange,
         const char *filter) {
-    celix_service_tracker_options_t opts;
+    celix_service_tracking_options_t opts;
     memset(&opts, 0, sizeof(opts));
     opts.serviceName = serviceName;
     opts.filter = filter;
@@ -570,7 +570,7 @@ celix_service_tracker_t* celix_serviceTracker_create(
 
 celix_service_tracker_t* celix_serviceTracker_createWithOptions(
         bundle_context_t *ctx,
-        const celix_service_tracker_options_t *opts
+        const celix_service_tracking_options_t *opts
 ) {
     celix_service_tracker_t *tracker = NULL;
     if (ctx != NULL && opts != NULL && opts->serviceName != NULL) {
@@ -600,8 +600,13 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
             celixThreadMutex_create(&tracker->mutex, NULL);
             tracker->currentHighestServiceId = -1;
 
+            //setting lang
+            const char *lang = opts->lang;
+            if (lang == NULL || strncmp("", lang, 1) == 0) {
+                lang = CELIX_FRAMEWORK_SERVICE_C_LANGUAGE;
+            }
+
             //setting filter
-            const char *lang = opts->lang != NULL ? opts->lang : CELIX_FRAMEWORK_SERVICE_C_LANGUAGE;
             if (opts->filter != NULL && opts->versionRange != NULL) {
                 //TODO version range
                 asprintf(&tracker->filter, "&((%s=%s)(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, opts->filter);
@@ -619,7 +624,8 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
         }
     } else {
         if (opts != NULL && opts->serviceName == NULL) {
-            framework_log(logger, OSGI_FRAMEWORK_LOG_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__, "Error incorrect arguments. Missing service name.");
+            framework_log(logger, OSGI_FRAMEWORK_LOG_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__,
+                          "Error incorrect arguments. Missing service name.");
         } else {
             framework_log(logger, OSGI_FRAMEWORK_LOG_ERROR, __FUNCTION__, __BASE_FILE__, __LINE__, "Error incorrect arguments. Required context (%p) or opts (%p) is NULL", ctx, opts);
         }

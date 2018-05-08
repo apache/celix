@@ -95,7 +95,7 @@ celix_service_tracker_t* celix_serviceTracker_create(
  */
 celix_service_tracker_t* celix_serviceTracker_createWithOptions(
         bundle_context_t *ctx,
-        const celix_service_tracker_options_t *opts
+        const celix_service_tracking_options_t *opts
 );
 
 

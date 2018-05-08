@@ -308,3 +308,21 @@ bool celix_bundleContext_uninstallBundle(bundle_context_t *ctx, long bundleId) {
 			->withLongIntParameters("bundleId", bundleId);
 	return mock_c()->returnValue().value.boolValue;
 }
+
+bool celix_bundleContext_useServiceWithOptions(
+		celix_bundle_context_t *ctx,
+		const celix_service_use_options_t *opts) {
+	mock_c()->actualCall("celix_bundleContext_useServiceWithOptions")
+			->withPointerParameters("ctx", ctx)
+			->withConstPointerParameters("opts", opts);
+	return mock_c()->returnValue().value.boolValue;
+}
+
+
+void celix_bundleContext_useServicesWithOptions(
+		celix_bundle_context_t *ctx,
+		const celix_service_use_options_t *opts) {
+	mock_c()->actualCall("celix_bundleContext_useServicesWithOptions")
+			->withPointerParameters("ctx", ctx)
+			->withConstPointerParameters("opts", opts);
+}

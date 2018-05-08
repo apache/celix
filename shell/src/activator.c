@@ -40,8 +40,8 @@ struct command {
     char *description;
     char *usage;
     command_service_pt service;
-    service_registration_pt reg;
     properties_pt props;
+    long svcId; //used for service (un)registration
 };
 
 struct bundle_instance {
@@ -146,7 +146,7 @@ celix_status_t bundleActivator_create(bundle_context_pt context_ptr, void **_ppt
                         .usage = "dm [f|full] [<Bundle ID> [<Bundle ID> [...]]]"
                 };
         instance_ptr->std_commands[10] =
-                (struct command) { NULL, NULL, NULL, NULL, NULL, NULL, NULL }; /*marker for last element*/
+                (struct command) { NULL, NULL, NULL, NULL, NULL, NULL, -1L }; /*marker for last element*/
 
         unsigned int i = 0;
         while (instance_ptr->std_commands[i].exec != NULL) {
@@ -211,14 +211,12 @@ celix_status_t bundleActivator_start(void *_ptr, bundle_context_pt context_ptr) 
 
     if (status == CELIX_SUCCESS) {
         for (unsigned int i = 0; instance_ptr->std_commands[i].exec != NULL; i++) {
-            status = bundleContext_registerService(context_ptr, (char *) OSGI_SHELL_COMMAND_SERVICE_NAME,
-                                                   instance_ptr->std_commands[i].service,
-                                                   instance_ptr->std_commands[i].props,
-                                                   &instance_ptr->std_commands[i].reg);
-            if (status != CELIX_SUCCESS) {
-                break;
-            }
-
+            instance_ptr->std_commands[i].svcId = celix_bundleContext_registerService(
+                    context_ptr,
+                    OSGI_SHELL_COMMAND_SERVICE_NAME,
+                    instance_ptr->std_commands[i].service,
+                    OSGI_SHELL_COMMAND_SERVICE_VERSION,
+                    instance_ptr->std_commands[i].props);
         }
 	}
 
@@ -232,9 +230,8 @@ celix_status_t bundleActivator_stop(void *_ptr, bundle_context_pt context_ptr) {
 
     if (instance_ptr) {
         for (unsigned int i = 0; instance_ptr->std_commands[i].exec != NULL; i++) {
-            if (instance_ptr->std_commands[i].reg != NULL) {
-                status = serviceRegistration_unregister(instance_ptr->std_commands[i].reg);
-                instance_ptr->std_commands[i].reg = NULL;
+            if (instance_ptr->std_commands[i].svcId >= 0) {
+                celix_bundleContext_unregisterService(context_ptr, instance_ptr->std_commands[i].svcId);
                 instance_ptr->std_commands[i].props = NULL;
             }
         }

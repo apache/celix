@@ -247,8 +247,6 @@ void celix_bundleContext_unregisterService(celix_bundle_context_t *ctx, long ser
 long celix_bundleContext_trackService(
         celix_bundle_context_t* ctx,
         const char* serviceName,
-        const char* versioRange,
-        const char* filter,
         void* callbackHandle,
         void (*set)(void* handle, void* svc)
 );
@@ -268,8 +266,6 @@ long celix_bundleContext_trackService(
 long celix_bundleContext_trackServices(
         celix_bundle_context_t* ctx,
         const char* serviceName,
-        const char* versioRange,
-        const char* filter,
         void* callbackHandle,
         void (*add)(void* handle, void* svc),
         void (*remove)(void* handle, void* svc)
@@ -295,11 +291,11 @@ typedef struct celix_service_tracker_options {
     void (*removeWithProperties)(void *handle, void *svc, const celix_properties_t *props);
     void (*modifiedWithProperties)(void *handle, void *svc, const celix_properties_t *props);
 
-    void (*setWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner); //highest ranking
-    void (*addWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner);
-    void (*removeWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner);
-    void (*modifiedWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner);
-} celix_service_tracker_options_t;
+    void (*setWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner); //highest ranking
+    void (*addWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner);
+    void (*removeWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner);
+    void (*modifiedWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner);
+} celix_service_tracking_options_t;
 
 /**
  * Tracks services using the provided tracker options.
@@ -309,7 +305,7 @@ typedef struct celix_service_tracker_options {
  * @param opts The pointer to the tracker options.
  * @return the tracker id or < 0 if unsuccessful.
  */
-long celix_bundleContext_trackServicesWithOptions(celix_bundle_context_t *ctx, const celix_service_tracker_options_t *opts);
+long celix_bundleContext_trackServicesWithOptions(celix_bundle_context_t *ctx, const celix_service_tracking_options_t *opts);
 
 
 
@@ -334,7 +330,7 @@ bool celix_bundleContext_useServiceWithId(
         long serviceId,
         const char *serviceName /*sanity check*/,
         void *callbackHandle,
-        void (*use)(void *handle, void* svc, const celix_properties_t *props, const celix_bundle_t *owner)
+        void (*use)(void *handle, void* svc, const celix_properties_t *props, const celix_bundle_t *svcOwner)
 );
 
 /**
@@ -342,15 +338,12 @@ bool celix_bundleContext_useServiceWithId(
  * Invokes the provided callback with the found service.
  * The svc, props and owner in the callback are only valid during the callback.
  * If no service is found the callback will not be invoked.
- * At least a serviceName or filter needs to be provided, if not the callback is not invoked.
  *
  * This function will block till the callback is finished. As result it is possible to provide callback data from the
  * stack.
  *
  * @param   ctx The bundle context
  * @param   serviceName the required service name.
- * @param   serviceRange the optional service version range (e.g. '[1.0.0,2.0.0)' )
- * @param   filter the optional filer.
  * @param   callbackHandle The data pointer, which will be used in the callbacks
  * @param   use The callback, which will be called when service is retrieved.
  * @return  True if a service was found.
@@ -358,10 +351,8 @@ bool celix_bundleContext_useServiceWithId(
 bool celix_bundleContext_useService(
         celix_bundle_context_t *ctx,
         const char* serviceName,
-        const char* versionRange,
-        const char* filter,
         void *callbackHandle,
-        void (*use)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner)
+        void (*use)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner)
 );
 
 /**
@@ -369,7 +360,6 @@ bool celix_bundleContext_useService(
  * Invokes the provided callback with the found services.
  * The svc, props and owner in the callback are only valid during the callback.
  * If no services are found the callback will not be invoked.
- * At least a serviceName or filter needs to be provided, if not the callback is not invoked.
  *
  * This function will block till the callback is finished. As result it is possible to provide callback data from the
  * stack.
@@ -379,16 +369,72 @@ bool celix_bundleContext_useService(
  * @param   serviceRange the optional service version range (e.g. '[1.0.0,2.0.0)' )
  * @param   filter the optional filter.
  * @param   callbackHandle The data pointer, which will be used in the callbacks
- * @param   use The callback, which will be called when service is retrieved.
+ * @param   use The callback, which will be called for every service found.
  */
 void celix_bundleContext_useServices(
         celix_bundle_context_t *ctx,
         const char* serviceName,
-        const char* versionRange,
-        const char* filter,
         void *callbackHandle,
-        void (*use)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner)
+        void (*use)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner)
 );
+
+
+typedef struct celix_service_use_options {
+    /**
+     * service filter options. Note the serviceName is required.
+     */
+    const char *serviceName; //REQUIRED
+    const char *versionRange; //default will be empty
+    const char *filter; //default will be empty
+    const char *lang; //default will be LANG_C
+
+    /**
+     * Callback info
+     */
+     void *callbackHandle;
+     void (*use)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner);
+} celix_service_use_options_t;
+
+/**
+ * Get and lock the current highest ranking service conform the service filter info from the provided options.
+ *
+ * Invokes the provided callback with the found service.
+ * The svc, props and owner in the callback are only valid during the callback.
+ * If no service is found the callback will not be invoked.
+ *
+ * This function will block till the callback is finished. As result it is possible to provide callback data from the
+ * stack.
+ *
+ * @param   ctx The bundle context.
+ * @param   serviceName the required service name.
+ * @param   opts The required options. Note that the serviceName is required.
+ * @return  True if a service was found.
+ */
+bool celix_bundleContext_useServiceWithOptions(
+        celix_bundle_context_t *ctx,
+        const celix_service_use_options_t *opts);
+
+
+/**
+ * Get and lock the current services conform the service filter info from the provided options.
+ *
+ * Invokes the provided callback with the found services.
+ * The svc, props and owner in the callback are only valid during the callback.
+ * If no services are found the callback will not be invoked.
+ * At least a serviceName needs to be provided, if not the callback is not invoked.
+ *
+ * This function will block till all the callbacks are finished. As result it is possible to provide callback data from the
+ * stack.
+ *
+ * @param   ctx The bundle context.
+ * @param   serviceName the required service name.
+ * @param   opts The required options. Note that the serviceName is required.
+ * @param   callbackHandle The data pointer, which will be used in the callbacks.
+ * @param   use The callback, which will be called for every service found.
+ */
+void celix_bundleContext_useServicesWithOptions(
+        celix_bundle_context_t *ctx,
+        const celix_service_use_options_t *opts);
 
 
 /**
