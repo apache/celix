@@ -330,7 +330,7 @@ bool celix_bundleContext_useServiceWithId(
         long serviceId,
         const char *serviceName /*sanity check*/,
         void *callbackHandle,
-        void (*use)(void *handle, void* svc, const celix_properties_t *props, const celix_bundle_t *svcOwner)
+        void (*use)(void *handle, void* svc)
 );
 
 /**
@@ -352,7 +352,7 @@ bool celix_bundleContext_useService(
         celix_bundle_context_t *ctx,
         const char* serviceName,
         void *callbackHandle,
-        void (*use)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner)
+        void (*use)(void *handle, void *svc)
 );
 
 /**
@@ -375,7 +375,7 @@ void celix_bundleContext_useServices(
         celix_bundle_context_t *ctx,
         const char* serviceName,
         void *callbackHandle,
-        void (*use)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner)
+        void (*use)(void *handle, void *svc)
 );
 
 
@@ -392,7 +392,10 @@ typedef struct celix_service_use_options {
      * Callback info
      */
      void *callbackHandle;
-     void (*use)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner);
+
+     void (*use)(void *handle, void *svc);
+     void (*useWithProperties)(void *handle, void *svc, const celix_properties_t *props);
+     void (*useWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner);
 } celix_service_use_options_t;
 
 /**

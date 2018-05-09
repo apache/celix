@@ -116,7 +116,9 @@ bool celix_serviceTracker_useHighestRankingService(
         celix_service_tracker_t *tracker,
         const char *serviceName /*sanity*/,
         void *callbackHandle,
-        void (*use)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner)
+        void (*use)(void *handle, void *svc),
+        void (*useWithProperties)(void *handle, void *svc, const celix_properties_t *props),
+        void (*useWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner)
 );
 
 
@@ -127,7 +129,9 @@ void celix_serviceTracker_useServices(
         service_tracker_t *tracker,
         const char* serviceName /*sanity*/,
         void *callbackHandle,
-        void (*use)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner)
+        void (*use)(void *handle, void *svc),
+        void (*useWithProperties)(void *handle, void *svc, const celix_properties_t *props),
+        void (*useWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner)
 );
 
 #ifdef __cplusplus

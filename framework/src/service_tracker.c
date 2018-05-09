@@ -332,7 +332,7 @@ static celix_status_t serviceTracker_track(service_tracker_pt tracker, service_r
             celixThreadRwlock_unlock(&tracker->lock);
 
             serviceTracker_invokeAddService(tracker, tracked);
-            celix_serviceTracker_useHighestRankingService(tracker, tracked->serviceName, tracker, serviceTracker_checkAndInvokeSetService);
+            celix_serviceTracker_useHighestRankingService(tracker, tracked->serviceName, tracker, NULL, NULL, serviceTracker_checkAndInvokeSetService);
             tracked_decreaseUse(tracked);
         }
     }
@@ -482,7 +482,7 @@ static celix_status_t serviceTracker_untrack(service_tracker_pt tracker, service
     if (size == 0) {
         serviceTracker_checkAndInvokeSetService(tracker, NULL, NULL, NULL);
     } else {
-        celix_serviceTracker_useHighestRankingService(tracker, serviceName, tracker, serviceTracker_checkAndInvokeSetService);
+        celix_serviceTracker_useHighestRankingService(tracker, serviceName, tracker, NULL, NULL, serviceTracker_checkAndInvokeSetService);
     }
 
     framework_logIfError(logger, status, NULL, "Cannot untrack reference");
@@ -645,7 +645,9 @@ bool celix_serviceTracker_useHighestRankingService(
         celix_service_tracker_t *tracker,
         const char *serviceName /*sanity*/,
         void *callbackHandle,
-        void (*use)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner)) {
+        void (*use)(void *handle, void *svc),
+        void (*useWithProperties)(void *handle, void *svc, const celix_properties_t *props),
+        void (*useWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner)) {
     bool called = false;
     celix_tracked_entry_t *tracked = NULL;
     celix_tracked_entry_t *highest = NULL;
@@ -673,7 +675,15 @@ bool celix_serviceTracker_useHighestRankingService(
 
     if (highest != NULL) {
         //got service, call, decrease use count an signal useCond after.
-        use(callbackHandle, highest->service, highest->properties, highest->serviceOwner);
+        if (use != NULL) {
+            use(callbackHandle, highest->service);
+        }
+        if (useWithProperties != NULL) {
+            useWithProperties(callbackHandle, highest->service, highest->properties);
+        }
+        if (useWithOwner != NULL) {
+            useWithOwner(callbackHandle, highest->service, highest->properties, highest->serviceOwner);
+        }
         called = true;
         tracked_decreaseUse(highest);
     }
@@ -685,7 +695,9 @@ void celix_serviceTracker_useServices(
         service_tracker_t *tracker,
         const char* serviceName /*sanity*/,
         void *callbackHandle,
-        void (*use)(void *handle, void *svc, const properties_t *props, const bundle_t *owner)) {
+        void (*use)(void *handle, void *svc),
+        void (*useWithProperties)(void *handle, void *svc, const celix_properties_t *props),
+        void (*useWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner)) {
     int i;
 
     //first lock tracker, get tracked entries and increase use count
@@ -704,7 +716,15 @@ void celix_serviceTracker_useServices(
     for (i = 0; i < size; i++) {
         celix_tracked_entry_t *entry = entries[i];
         //got service, call, decrease use count an signal useCond after.
-        use(callbackHandle, entry->service, entry->properties, entry->serviceOwner);
+        if (use != NULL) {
+            use(callbackHandle, entry->service);
+        }
+        if (useWithProperties != NULL) {
+            useWithProperties(callbackHandle, entry->service, entry->properties);
+        }
+        if (useWithOwner != NULL) {
+            useWithOwner(callbackHandle, entry->service, entry->properties, entry->serviceOwner);
+        }
 
         tracked_decreaseUse(entry);
     }

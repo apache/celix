@@ -5,9 +5,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -15,26 +15,26 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(services_example_c_api INTERFACE)
-target_include_directories(services_example_c_api INTERFACE api)
-
-
-add_celix_bundle(provider_example
-        VERSION 1.0.0
-        SOURCES src/provider_example.c
+include_directories(
+        ${PROJECT_SOURCE_DIR}/dependency_manager/public/include
+        ${PROJECT_SOURCE_DIR}/utils/public/include
+        api
 )
-target_link_libraries(provider_example PRIVATE services_example_c_api)
 
-add_celix_bundle(consumer_example
-        VERSION 1.0.0
-        SOURCES src/consumer_example.c
-        )
-target_link_libraries(consumer_example PRIVATE services_example_c_api)
+add_subdirectory(foo1)
+add_subdirectory(foo2)
+add_subdirectory(bar)
 
-add_celix_container(services_example_c
+add_celix_container(best_practice_example_c
+    GROUP services_example
+    COPY
     BUNDLES
         Celix::shell
         Celix::shell_tui
-        provider_example
-        consumer_example
+        dm_shell
+        bar
+        foo1
+        foo2
+    PROPERTIES
+        example=value
 )

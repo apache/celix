@@ -676,7 +676,7 @@ bool celix_bundleContext_useServiceWithId(
         long serviceId,
         const char *serviceName,
         void *callbackHandle,
-        void (*use)(void *handle, void *svc, const properties_t *props, const bundle_t *owner)) {
+        void (*use)(void *handle, void *svc)) {
     celix_service_use_options_t opts;
     memset(&opts, 0, sizeof(opts));
 
@@ -694,7 +694,7 @@ bool celix_bundleContext_useService(
         bundle_context_t *ctx,
         const char* serviceName,
         void *callbackHandle,
-        void (*use)(void *handle, void *svc, const properties_t *props, const bundle_t *owner)) {
+        void (*use)(void *handle, void *svc)) {
     celix_service_use_options_t opts;
     memset(&opts, 0, sizeof(opts));
     opts.serviceName = serviceName;
@@ -708,7 +708,7 @@ void celix_bundleContext_useServices(
         bundle_context_t *ctx,
         const char* serviceName,
         void *callbackHandle,
-        void (*use)(void *handle, void *svc, const properties_t *props, const bundle_t *owner)) {
+        void (*use)(void *handle, void *svc)) {
     celix_service_use_options_t opts;
     memset(&opts, 0, sizeof(opts));
     opts.serviceName = serviceName;
@@ -716,6 +716,7 @@ void celix_bundleContext_useServices(
     opts.use = use;
     celix_bundleContext_useServicesWithOptions(ctx, &opts);
 }
+
 
 bool celix_bundleContext_useServiceWithOptions(
         celix_bundle_context_t *ctx,
@@ -732,7 +733,16 @@ bool celix_bundleContext_useServiceWithOptions(
 
         service_tracker_t *trk = celix_serviceTracker_createWithOptions(ctx, &trkOpts);
         if (trk != NULL) {
-            called = celix_serviceTracker_useHighestRankingService(trk, opts->serviceName, opts->callbackHandle, opts->use);
+            if (opts->use != NULL) {
+
+            }
+            if (opts->useWithProperties != NULL) {
+
+            }
+            if (opts->useWithOwner != NULL) {
+
+            }
+            called = celix_serviceTracker_useHighestRankingService(trk, opts->serviceName, opts->callbackHandle, opts->use, opts->useWithProperties, opts->useWithOwner);
             celix_serviceTracker_destroy(trk);
         }
     }
@@ -755,7 +765,7 @@ void celix_bundleContext_useServicesWithOptions(
 
         service_tracker_t *trk = celix_serviceTracker_createWithOptions(ctx, &trkOpts);
         if (trk != NULL) {
-            celix_serviceTracker_useServices(trk, opts->serviceName, opts->callbackHandle, opts->use);
+            celix_serviceTracker_useServices(trk, opts->serviceName, opts->callbackHandle, opts->use, opts->useWithProperties, opts->useWithOwner);
             celix_serviceTracker_destroy(trk);
         }
     }

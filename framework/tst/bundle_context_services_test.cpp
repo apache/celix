@@ -98,10 +98,8 @@ TEST(CelixBundleContextServicesTests, registerMultipleAndUseServices) {
     long svcId3 = celix_bundleContext_registerService(ctx, calcName, &svc, NULL, NULL);
     CHECK(svcId3 >= 0);
 
-    auto use = [](void *handle, void *svc, const properties_t *props, const bundle_t *bnd) {
+    auto use = [](void *handle, void *svc) {
         CHECK(svc != NULL);
-        CHECK(props != NULL);
-        CHECK(bnd != NULL);
         int *total =  static_cast<int*>(handle);
         struct calc *calc = static_cast<struct calc*>(svc);
         int tmp = calc->calc(1);
@@ -142,10 +140,8 @@ TEST(CelixBundleContextServicesTests, registerAndUseService) {
     CHECK(svcId >= 0);
 
     int result = 0;
-    bool called = celix_bundleContext_useServiceWithId(ctx, svcId, calcName, &result, [](void *handle, void *svc, const properties_t *props, const bundle_t *bnd) {
+    bool called = celix_bundleContext_useServiceWithId(ctx, svcId, calcName, &result, [](void *handle, void *svc) {
         CHECK(svc != NULL);
-        CHECK(props != NULL);
-        CHECK(bnd != NULL);
         int *result =  static_cast<int*>(handle);
         struct calc *calc = static_cast<struct calc*>(svc);
         int tmp = calc->calc(2);
@@ -156,7 +152,7 @@ TEST(CelixBundleContextServicesTests, registerAndUseService) {
 
     result = 0;
     long nonExistingSvcId = 101;
-    called = celix_bundleContext_useServiceWithId(ctx, nonExistingSvcId, calcName, &result, [](void *handle, void *svc, const properties_t *, const bundle_t *) {
+    called = celix_bundleContext_useServiceWithId(ctx, nonExistingSvcId, calcName, &result, [](void *handle, void *svc) {
         int *result =  static_cast<int*>(handle);
         struct calc *calc = static_cast<struct calc*>(svc);
         int tmp = calc->calc(2);
@@ -192,10 +188,8 @@ TEST(CelixBundleContextServicesTests, registerAndUseWithForcedRaceCondition) {
     };
     struct sync callInfo{};
 
-    auto use = [](void *handle, void *svc, const properties_t *props, const bundle_t *bnd) {
+    auto use = [](void *handle, void *svc) {
         CHECK(svc != NULL);
-        CHECK(props != NULL);
-        CHECK(bnd != NULL);
 
         struct sync *h = static_cast<struct sync*>(handle);
 

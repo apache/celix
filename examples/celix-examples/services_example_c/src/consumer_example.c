@@ -1,0 +1,182 @@
+/**
+ *Licensed to the Apache Software Foundation (ASF) under one
+ *or more contributor license agreements.  See the NOTICE file
+ *distributed with this work for additional information
+ *regarding copyright ownership.  The ASF licenses this file
+ *to you under the Apache License, Version 2.0 (the
+ *"License"); you may not use this file except in compliance
+ *with the License.  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *Unless required by applicable law or agreed to in writing,
+ *software distributed under the License is distributed on an
+ *"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ *specific language governing permissions and limitations
+ *under the License.
+ */
+
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <constants.h>
+
+#include "example_calc.h"
+#include "bundle_activator.h"
+
+typedef struct activator_data {
+    int trackCount;
+    celix_bundle_context_t *ctx;
+    pthread_t thread;
+
+    pthread_mutex_t mutex; //protects running
+    bool running;
+} activator_data_t;
+
+static bool isRunning(activator_data_t *data) {
+    bool result = false;
+    pthread_mutex_lock(&data->mutex);
+    result = data->running;
+    pthread_mutex_unlock(&data->mutex);
+    return result;
+}
+
+static void setRunning(activator_data_t *data, bool val) {
+    pthread_mutex_lock(&data->mutex);
+    data->running = val;
+    pthread_mutex_unlock(&data->mutex);
+}
+
+struct info {
+    int result;
+    int count;
+};
+
+static void useCalc(void *handle, void *svc) {
+    struct info *i = handle;
+    example_calc_t *calc = svc;
+    i->result += calc->calc(calc->handle, 1);
+    i->count += 1;
+}
+
+static void gccExample(activator_data_t *data) {
+#ifdef __GNUC__
+
+    int result = 0;
+    long rank = 0;
+    long svcId = 0;
+
+    void use(void *handle, void *svc, const celix_properties_t *props) {
+        example_calc_t *calc = svc;
+        rank = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_RANKING, -1L);
+        svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+        result = calc->calc(calc->handle, 1);
+    }
+
+    celix_service_use_options_t opts;
+    memset(&opts, 0, sizeof(opts));
+
+    opts.serviceName = EXAMPLE_CALC_NAME;
+    opts.callbackHandle = NULL; //can be null for trampolines
+    opts.useWithProperties = use;
+    bool called = celix_bundleContext_useServiceWithOptions(data->ctx, &opts);
+
+    printf("Called func %s. Result is %i, rank is %li and svc id is %li\n", called ? "called" : "not called", result, rank, svcId);
+
+#endif
+}
+
+static void clangExample(activator_data_t *data) {
+#ifdef __clang__
+    /*TODO
+#include <Block.h>
+    __block result = 0;
+    __block rank = 0;
+    __block svcId = 0;
+
+    void (^use)(void *handle, void *svc, const celix_properties_t *props)  =  ^(void *handle, void *svc, const celix_properties_t *props) {
+        example_calc_t *calc = svc;
+        rank = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_RANKING, -1L);
+        svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+        result = calc->calc(calc->handle, 1);
+    };
+
+    celix_service_use_options_t opts;
+    memset(&opts, 0, sizeof(opts));
+
+    opts.serviceName = EXAMPLE_CALC_NAME;
+    opts.callbackHandle = NULL; //can be null for trampolines
+    opts.useWithProperties = use;
+    bool called = celix_bundleContext_useServiceWithOptions(data->ctx, &opts);
+
+    printf("Called func %s. Result is %i, rank is %li and svc id is %li\n", called ? "called" : "not called", result, rank, svcId);
+     */
+#endif
+}
+
+void * run(void *handle) {
+    activator_data_t *data = handle;
+
+    printf("starting consumer thread\n");
+
+    while (isRunning(data)) {
+
+        struct info info;
+        info.result = 0;
+        info.count = 0;
+        celix_bundleContext_useServices(data->ctx, EXAMPLE_CALC_NAME, &info, useCalc);
+        printf("Called calc services %i times, total result is %i\n", info.count, info.result);
+
+        gccExample(data); //gcc trampolines example (nested functions)
+
+        clangExample(data); //TODO use clang blocks
+
+        //TODO tracker example
+
+        sleep(5);
+    }
+
+    printf("exiting consumer thread\n");
+
+    pthread_exit(NULL);
+    return NULL;
+}
+
+celix_status_t bundleActivator_create(celix_bundle_context_t *ctx, void **out) {
+	celix_status_t status = CELIX_SUCCESS;
+    activator_data_t *data = calloc(1, sizeof(*data));
+    if (data != NULL) {
+       data->ctx = ctx;
+       data->trackCount = 0;
+       data->running = true;
+       pthread_mutex_init(&data->mutex, NULL);
+       *out = data;
+	} else {
+		status = CELIX_ENOMEM;
+	}
+	return status;
+}
+
+celix_status_t bundleActivator_start(void * handle, celix_bundle_context_t *ctx) {
+    activator_data_t *data = handle;
+    pthread_create(&data->thread, NULL, run, data);
+	return CELIX_SUCCESS;
+}
+
+celix_status_t bundleActivator_stop(void * handle, celix_bundle_context_t *ctx) {
+    activator_data_t *data = handle;
+    setRunning(data, false);
+    pthread_join(data->thread, NULL);
+    return CELIX_SUCCESS;
+}
+
+celix_status_t bundleActivator_destroy(void * handle, celix_bundle_context_t *ctx) {
+    activator_data_t *data = handle;
+    if (data != NULL) {
+        pthread_mutex_destroy(&data->mutex);
+        free(data);
+    }
+	return CELIX_SUCCESS;
+}

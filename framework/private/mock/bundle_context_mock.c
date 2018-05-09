@@ -226,7 +226,7 @@ bool celix_bundleContext_useServiceWithId(
 		long serviceId,
 		const char *serviceName,
 		void *callbackHandle,
-		void (*use)(void *handle, void* svc, const properties_t *props, const bundle_t *owner)
+		void (*use)(void *handle, void* svc)
 ) {
 	mock_c()->actualCall("celix_bundleContext_registerServiceForLang")
 			->withPointerParameters("ctx", ctx)
