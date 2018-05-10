@@ -230,6 +230,16 @@ long celix_bundleContext_registerServiceForLang(celix_bundle_context_t *ctx, con
  */
 void celix_bundleContext_unregisterService(celix_bundle_context_t *ctx, long serviceId);
 
+
+//TODO 
+//typedef struct celix_service_find_filter_options {
+// servicname, versionrange, filter, lang
+//} celix_service_find_filter_options_t;
+//celix_array_list_t* celix_bundleContext_findServices(celix_bundle_context_t *ctx, const char *serviceName);
+//celix_array_list_t* celix_bundleContext_findServices(celix_bundle_context_t *ctx, const char *serviceName);
+//alts WithOptions
+
+
 /**
  * track service for the provided serviceName and/or filter.
  * The highest ranking services will used for the callback.

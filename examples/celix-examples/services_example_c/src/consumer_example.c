@@ -27,12 +27,12 @@
 #include "bundle_activator.h"
 
 typedef struct activator_data {
-    int trackCount;
     celix_bundle_context_t *ctx;
     pthread_t thread;
 
     pthread_mutex_t mutex; //protects running
     bool running;
+    int trackCount;
 } activator_data_t;
 
 static bool isRunning(activator_data_t *data) {
@@ -62,7 +62,7 @@ static void useCalc(void *handle, void *svc) {
 }
 
 static void gccExample(activator_data_t *data) {
-#ifdef __GNUC__
+#ifdef USE_NESTED_FUNCTION_EXAMPLE
 
     int result = 0;
     long rank = 0;
@@ -88,41 +88,33 @@ static void gccExample(activator_data_t *data) {
 #endif
 }
 
-static void clangExample(activator_data_t *data) {
-#ifdef __clang__
-    /*TODO
-#include <Block.h>
-    __block result = 0;
-    __block rank = 0;
-    __block svcId = 0;
-
-    void (^use)(void *handle, void *svc, const celix_properties_t *props)  =  ^(void *handle, void *svc, const celix_properties_t *props) {
-        example_calc_t *calc = svc;
-        rank = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_RANKING, -1L);
-        svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
-        result = calc->calc(calc->handle, 1);
-    };
-
-    celix_service_use_options_t opts;
-    memset(&opts, 0, sizeof(opts));
-
-    opts.serviceName = EXAMPLE_CALC_NAME;
-    opts.callbackHandle = NULL; //can be null for trampolines
-    opts.useWithProperties = use;
-    bool called = celix_bundleContext_useServiceWithOptions(data->ctx, &opts);
-
-    printf("Called func %s. Result is %i, rank is %li and svc id is %li\n", called ? "called" : "not called", result, rank, svcId);
-     */
-#endif
+static void addSvc(activator_data_t *data, void *svc __attribute__((unused))) {
+    pthread_mutex_lock(&data->mutex);
+    data->trackCount += 1;
+    pthread_mutex_unlock(&data->mutex);
 }
+
+static void removeSvc(activator_data_t *data, void *svc __attribute__((unused))) {
+    pthread_mutex_lock(&data->mutex);
+    data->trackCount -= 1;
+    pthread_mutex_unlock(&data->mutex);
+}
+
+static void useHighest(activator_data_t *data __attribute__((unused)), example_calc_t *svc, const celix_properties_t *props) {
+    int result = svc->calc(svc->handle, 2);
+    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+    long rank = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_RANKING, -1L);
+    printf("Called highest ranking service. Result is %i, svc id is %li, svc ranking is %li\n", result, svcId, rank);
+}
+
 
 void * run(void *handle) {
     activator_data_t *data = handle;
 
     printf("starting consumer thread\n");
+    long trkId = celix_bundleContext_trackServices(data->ctx, EXAMPLE_CALC_NAME, data, (void*)addSvc, (void*)removeSvc);
 
     while (isRunning(data)) {
-
         struct info info;
         info.result = 0;
         info.count = 0;
@@ -131,13 +123,23 @@ void * run(void *handle) {
 
         gccExample(data); //gcc trampolines example (nested functions)
 
-        clangExample(data); //TODO use clang blocks
+        celix_service_use_options_t opts;
+        memset(&opts, 0, sizeof(opts));
 
-        //TODO tracker example
+        opts.serviceName = EXAMPLE_CALC_NAME;
+        opts.callbackHandle = data;
+        opts.useWithProperties = (void*)useHighest;
+        celix_bundleContext_useServiceWithOptions(data->ctx, &opts);
+
+        pthread_mutex_lock(&data->mutex);
+        int count = data->trackCount;
+        pthread_mutex_unlock(&data->mutex);
+        printf("Current tracking count is %i\n", count);
 
         sleep(5);
     }
 
+    celix_bundleContext_stopTracker(data->ctx, trkId);
     printf("exiting consumer thread\n");
 
     pthread_exit(NULL);

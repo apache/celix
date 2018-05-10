@@ -31,6 +31,10 @@ add_celix_bundle(consumer_example
         )
 target_link_libraries(consumer_example PRIVATE services_example_c_api)
 
+if ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
+  target_compile_definitions(consumer_example PRIVATE USE_NESTED_FUNCTION_EXAMPLE)
+endif()
+
 add_celix_container(services_example_c
     BUNDLES
         Celix::shell
