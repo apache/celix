@@ -16,29 +16,28 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-#ifndef SERVICE_FACTORY_H_
-#define SERVICE_FACTORY_H_
+#ifndef CELIX_SERVICE_FACTORY_H_
+#define CELIX_SERVICE_FACTORY_H_
 
-#include "celix_types.h"
-#include "celix_errno.h"
-#include "service_registration.h"
+#include "properties.h"
 #include "bundle.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct service_factory {
+typedef struct celix_service_factory celix_service_factory_t;
+
+struct celix_service_factory {
     void *handle;
 
-    celix_status_t (*getService)(void *handle, celix_bundle_t *bnd, service_registration_pt registration, void **service);
+    void* (*getService)(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 
-    celix_status_t
-    (*ungetService)(void *handle, celix_bundle_t *bnd, service_registration_pt registration, void **service);
+    void (*ungetService)(void *handle, const celix_bundle_t *requestingBundle, const celix_properties_t *svcProperties);
 };
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* SERVICE_FACTORY_H_ */
+#endif /* CELIX_SERVICE_FACTORY_H_ */

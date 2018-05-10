@@ -426,30 +426,25 @@ celix_status_t bundleContext_getPropertyWithDefault(bundle_context_pt context, c
 
 
 long celix_bundleContext_registerService(bundle_context_t *ctx, const char *serviceName, void *svc, const char *serviceVersion, properties_t *properties) {
-    return celix_bundleContext_registerServiceForLang(ctx, serviceName, svc, serviceVersion, CELIX_FRAMEWORK_SERVICE_C_LANGUAGE, properties);
+    return celix_bundleContext_registerServiceForLang(ctx, serviceName, svc, serviceVersion, NULL, properties);
 }
 
 
 long celix_bundleContext_registerServiceForLang(bundle_context_t *ctx, const char *serviceName, void *svc, const char *serviceVersion, const char* lang, properties_t *properties) {
     long svcId = -1;
+    service_registration_t *reg = NULL;
     if (properties == NULL) {
         properties = properties_create();
     }
-    service_registration_t *reg = NULL;
     if (serviceVersion != NULL) {
         properties_set(properties, CELIX_FRAMEWORK_SERVICE_VERSION, serviceVersion);
     }
-    if (serviceName != NULL && lang != NULL) {
-        properties_set(properties, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang);
+    if (serviceName != NULL) {
+        properties_set(properties, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang == NULL ? CELIX_FRAMEWORK_SERVICE_C_LANGUAGE : lang);
         bundleContext_registerService(ctx, serviceName, svc, properties, &reg);
         svcId = serviceRegistration_getServiceId(reg); //save to call with NULL
     } else {
-        if (serviceName == NULL) {
-            framework_logIfError(logger, CELIX_ILLEGAL_ARGUMENT, NULL, "Required serviceName argument is NULL");
-        }
-        if (lang == NULL) {
-            framework_logIfError(logger, CELIX_ILLEGAL_ARGUMENT, NULL, "Required lang argument is NULL");
-        }
+        framework_logIfError(logger, CELIX_ILLEGAL_ARGUMENT, NULL, "Required serviceName argument is NULL");
     }
     if (svcId < 0) {
         properties_destroy(properties);
@@ -812,4 +807,28 @@ long celix_bundleContext_trackServicesWithOptions(bundle_context_t *ctx, const c
         celixThreadMutex_unlock(&ctx->mutex);
     }
     return trackerId;
+}
+
+long celix_bundleContext_registerServiceFactory(celix_bundle_context_t *ctx, const char *serviceName, celix_service_factory_t *factory, const char *serviceVersion, celix_properties_t *props) {
+    return celix_bundleContext_registerServiceFactorForLang(ctx, serviceName, factory, serviceVersion, NULL, props);
+}
+
+long celix_bundleContext_registerServiceFactorForLang(celix_bundle_context_t *ctx, const char *serviceName, celix_service_factory_t *factory, const char *serviceVersion, const char *lang, celix_properties_t *props) {
+    if (props == NULL) {
+        props = celix_properties_create();
+    }
+    if (serviceVersion != NULL) {
+        celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_VERSION, serviceVersion);
+    }
+    celix_properties_set(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang == NULL ? CELIX_FRAMEWORK_SERVICE_C_LANGUAGE : lang);
+    service_registration_t *reg = celix_framework_registerServiceFactory(ctx->framework, ctx->bundle, serviceName, factory, props);
+    long facId = serviceRegistration_getServiceId(reg); //save to call with NULL
+    if (facId < 0) {
+        properties_destroy(props);
+    } else {
+        celixThreadMutex_lock(&ctx->mutex);
+        arrayList_add(ctx->svcRegistrations, reg);
+        celixThreadMutex_unlock(&ctx->mutex);
+    }
+    return facId;
 }

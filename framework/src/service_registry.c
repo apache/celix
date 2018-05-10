@@ -41,7 +41,7 @@
 #define CHECK_DELETED_REFERENCES false
 #endif
 
-static celix_status_t serviceRegistry_registerServiceInternal(service_registry_pt registry, bundle_pt bundle, const char* serviceName, const void * serviceObject, properties_pt dictionary, bool isFactory, service_registration_pt *registration);
+static celix_status_t serviceRegistry_registerServiceInternal(service_registry_pt registry, bundle_pt bundle, const char* serviceName, const void * serviceObject, properties_pt dictionary, enum celix_service_type svcType, service_registration_pt *registration);
 static celix_status_t serviceRegistry_addHooks(service_registry_pt registry, const char* serviceName, const void *serviceObject, service_registration_pt registration);
 static celix_status_t serviceRegistry_removeHook(service_registry_pt registry, service_registration_pt registration);
 static void serviceRegistry_logWarningServiceReferenceUsageCount(service_registry_pt registry, bundle_pt bundle, service_reference_pt ref, size_t usageCount, size_t refCount);
@@ -154,12 +154,16 @@ celix_status_t serviceRegistry_registerServiceFactory(service_registry_pt regist
     return serviceRegistry_registerServiceInternal(registry, bundle, serviceName, (const void *) factory, dictionary, true, registration);
 }
 
-static celix_status_t serviceRegistry_registerServiceInternal(service_registry_pt registry, bundle_pt bundle, const char* serviceName, const void* serviceObject, properties_pt dictionary, bool isFactory, service_registration_pt *registration) {
+static celix_status_t serviceRegistry_registerServiceInternal(service_registry_pt registry, bundle_pt bundle, const char* serviceName, const void * serviceObject, properties_pt dictionary, enum celix_service_type svcType, service_registration_pt *registration) {
 	array_list_pt regs;
 
-	if (isFactory) {
-	    *registration = serviceRegistration_createServiceFactory(registry->callback, bundle, serviceName, ++registry->currentServiceId, serviceObject, dictionary);
-	} else {
+	if (svcType == CELIX_DEPRECATED_FACTORY_SERVICE) {
+        *registration = serviceRegistration_createServiceFactory(registry->callback, bundle, serviceName,
+                                                                 ++registry->currentServiceId, serviceObject,
+                                                                 dictionary);
+    } else if (svcType == CELIX_FACTORY_SERVICE) {
+        *registration = celix_serviceRegistration_createServiceFactory(registry->callback, bundle, serviceName, ++registry->currentServiceId, (celix_service_factory_t*)serviceObject, dictionary);
+	} else { //plain
 	    *registration = serviceRegistration_create(registry->callback, bundle, serviceName, ++registry->currentServiceId, serviceObject, dictionary);
 	}
 
@@ -799,4 +803,15 @@ static celix_status_t serviceRegistry_getUsingBundles(service_registry_pt regist
     }
 
     return status;
+}
+
+celix_status_t
+celix_serviceRegistry_registerServiceFactory(
+        celix_service_registry_t *reg,
+        const celix_bundle_t *bnd,
+        const char *serviceName,
+        celix_service_factory_t *factory,
+        celix_properties_t* props,
+        service_registration_t **registration) {
+    return serviceRegistry_registerServiceInternal(reg, (celix_bundle_t*)bnd, serviceName, (const void *) factory, props, CELIX_FACTORY_SERVICE, registration);
 }

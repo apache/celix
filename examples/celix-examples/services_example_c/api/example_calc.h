@@ -21,6 +21,7 @@
 #define CELIX_EXAMPLE_CALC_H
 
 #define EXAMPLE_CALC_NAME "example_calc"
+#define EXAMPLE_CALC_VERSION "1.0.0"
 
 struct example_calc {
     void *handle;

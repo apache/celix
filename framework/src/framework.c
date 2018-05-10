@@ -2782,3 +2782,21 @@ void celix_framework_useBundle(framework_t *fw, long bundleId, void *callbackHan
         //TODO unlock
     }
 }
+
+service_registration_t* celix_framework_registerServiceFactory(framework_t *fw , const celix_bundle_t *bnd, const char* serviceName, celix_service_factory_t *factory, celix_properties_t *properties) {
+    const char *error = NULL;
+    celix_status_t status = CELIX_SUCCESS;
+    service_registration_t *reg = NULL;
+    if (serviceName != NULL && factory != NULL) {
+        status = framework_acquireBundleLock(fw, (celix_bundle_t*)bnd, OSGI_FRAMEWORK_BUNDLE_STARTING|OSGI_FRAMEWORK_BUNDLE_ACTIVE);
+        status = CELIX_DO_IF(status, celix_serviceRegistry_registerServiceFactory(fw->registry, bnd, serviceName, factory, properties, &reg));
+        if (!framework_releaseBundleLock(fw, (celix_bundle_t*)bnd)) {
+            status = CELIX_ILLEGAL_STATE;
+            error = "Could not release bundle lock";
+        }
+    }
+
+    framework_logIfError(fw->logger, status, error, "Cannot register service factory: %s", serviceName);
+
+    return reg;
+}

@@ -21,24 +21,48 @@ target_include_directories(services_example_c_api INTERFACE api)
 
 add_celix_bundle(provider_example
         VERSION 1.0.0
-        SOURCES src/provider_example.c
+        SOURCES src/simple_provider_example.c
 )
 target_link_libraries(provider_example PRIVATE services_example_c_api)
 
 add_celix_bundle(consumer_example
         VERSION 1.0.0
-        SOURCES src/consumer_example.c
+        SOURCES src/simple_consumer_example.c
         )
 target_link_libraries(consumer_example PRIVATE services_example_c_api)
 
+
+
+add_celix_bundle(dynamic_provider_example
+        VERSION 1.0.0
+        SOURCES src/dynamic_provider_example.c
+)
+target_link_libraries(dynamic_provider_example PRIVATE services_example_c_api)
+
+add_celix_bundle(dynamic_consumer_example
+        VERSION 1.0.0
+        SOURCES src/dynamic_consumer_example.c
+)
+target_link_libraries(dynamic_consumer_example PRIVATE services_example_c_api)
+
 if ("${CMAKE_C_COMPILER_ID}" STREQUAL "GNU")
-  target_compile_definitions(consumer_example PRIVATE USE_NESTED_FUNCTION_EXAMPLE)
+  target_compile_definitions(dynamic_consumer_example PRIVATE USE_NESTED_FUNCTION_EXAMPLE)
 endif()
 
 add_celix_container(services_example_c
+    GROUP services_example
     BUNDLES
         Celix::shell
         Celix::shell_tui
         provider_example
         consumer_example
+)
+
+add_celix_container(dynamic_services_example_c
+    GROUP services_example
+    BUNDLES
+      Celix::shell
+      Celix::shell_tui
+      dynamic_provider_example
+      dynamic_consumer_example
 )

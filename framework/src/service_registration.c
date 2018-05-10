@@ -33,7 +33,7 @@
 
 static celix_status_t serviceRegistration_initializeProperties(service_registration_pt registration, properties_pt properties);
 static celix_status_t serviceRegistration_createInternal(registry_callback_t callback, bundle_pt bundle, const char* serviceName, unsigned long serviceId,
-        const void * serviceObject, properties_pt dictionary, bool isFactory, service_registration_pt *registration);
+        const void * serviceObject, properties_pt dictionary, enum celix_service_type svcType, service_registration_pt *registration);
 static celix_status_t serviceRegistration_destroy(service_registration_pt registration);
 
 service_registration_pt serviceRegistration_create(registry_callback_t callback, bundle_pt bundle, const char* serviceName, unsigned long serviceId, const void * serviceObject, properties_pt dictionary) {
@@ -49,25 +49,25 @@ service_registration_pt serviceRegistration_createServiceFactory(registry_callba
 }
 
 static celix_status_t serviceRegistration_createInternal(registry_callback_t callback, bundle_pt bundle, const char* serviceName, unsigned long serviceId,
-        const void * serviceObject, properties_pt dictionary, bool isFactory, service_registration_pt *out) {
-    celix_status_t status = CELIX_SUCCESS;
+                                                         const void * serviceObject, properties_pt dictionary, enum celix_service_type svcType, service_registration_pt *out) {
 
+    celix_status_t status = CELIX_SUCCESS;
 	service_registration_pt  reg = calloc(1, sizeof(*reg));
     if (reg) {
         reg->callback = callback;
         reg->services = NULL;
         reg->nrOfServices = 0;
-		reg->isServiceFactory = isFactory;
+		reg->svcType = svcType;
 		reg->className = strndup(serviceName, 1024*10);
 		reg->bundle = bundle;
 		reg->refCount = 1;
-
 		reg->serviceId = serviceId;
-	reg->svcObj = serviceObject;
-		if (isFactory) {
-			reg->serviceFactory = (service_factory_pt) reg->svcObj;
-		} else {
-			reg->serviceFactory = NULL;
+	    reg->svcObj = serviceObject;
+
+		if (svcType == CELIX_DEPRECATED_FACTORY_SERVICE) {
+			reg->deprecatedFactory = (service_factory_pt) reg->svcObj;
+		} else if (svcType == CELIX_FACTORY_SERVICE) {
+			reg->factory = (celix_service_factory_t*) reg->svcObj;
 		}
 
 		reg->isUnregistering = false;
@@ -190,29 +190,29 @@ celix_status_t serviceRegistration_unregister(service_registration_pt registrati
 }
 
 celix_status_t serviceRegistration_getService(service_registration_pt registration, bundle_pt bundle, const void** service) {
-	int status = CELIX_SUCCESS;
     celixThreadRwlock_readLock(&registration->lock);
-    if (registration->isServiceFactory) {
-        service_factory_pt factory = (void*) registration->serviceFactory;
-        /*NOTE the service argument of the service_factory should be const void**.
-          To ensure backwards compatability a cast is made instead.
-        */
-        status = factory->getService(factory->handle, bundle, registration, (void**) service);
-    } else {
+    if (registration->svcType == CELIX_DEPRECATED_FACTORY_SERVICE) {
+        service_factory_pt factory = registration->deprecatedFactory;
+        factory->getService(factory->handle, bundle, registration, (void **) service);
+    } else if (registration->svcType == CELIX_FACTORY_SERVICE) {
+        celix_service_factory_t *fac = registration->factory;
+        *service = fac->getService(fac->handle, bundle, registration->properties);
+    } else { //plain service
         (*service) = registration->svcObj;
     }
     celixThreadRwlock_unlock(&registration->lock);
-    return status;
+
+    return CELIX_SUCCESS;
 }
 
 celix_status_t serviceRegistration_ungetService(service_registration_pt registration, bundle_pt bundle, const void** service) {
     celixThreadRwlock_readLock(&registration->lock);
-    if (registration->isServiceFactory) {
-        service_factory_pt factory = (void*) registration->serviceFactory;
-        /*NOTE the service argument of the service_factory should be const void**.
-          To ensure backwards compatibility a cast is made instead.
-        */
+    if (registration->svcType == CELIX_DEPRECATED_FACTORY_SERVICE) {
+        service_factory_pt factory = registration->deprecatedFactory;
         factory->ungetService(factory->handle, bundle, registration, (void**) service);
+    } else if (registration->svcType == CELIX_FACTORY_SERVICE) {
+        celix_service_factory_t *fac = registration->factory;
+        fac->ungetService(fac->handle, bundle, registration->properties);
     }
     celixThreadRwlock_unlock(&registration->lock);
     return CELIX_SUCCESS;
@@ -298,4 +298,17 @@ long serviceRegistration_getServiceId(service_registration_t *registration) {
         celixThreadRwlock_unlock(&registration->lock);
     }
     return svcId;
+}
+
+
+service_registration_t* celix_serviceRegistration_createServiceFactory(
+        registry_callback_t callback,
+        const celix_bundle_t *bnd,
+        const char *serviceName,
+        long svcId,
+        celix_service_factory_t* factory,
+        celix_properties_t *props) {
+    service_registration_pt registration = NULL;
+    serviceRegistration_createInternal(callback, (celix_bundle_t*)bnd, serviceName, svcId, factory, props, CELIX_FACTORY_SERVICE, &registration);
+    return registration;
 }

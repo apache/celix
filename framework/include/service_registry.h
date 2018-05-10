@@ -27,7 +27,8 @@
 #ifndef SERVICE_REGISTRY_H_
 #define SERVICE_REGISTRY_H_
 
-typedef struct serviceRegistry * service_registry_pt;
+typedef struct celix_serviceRegistry * service_registry_pt;
+typedef struct celix_serviceRegistry celix_service_registry_t;
 
 #include "properties.h"
 #include "filter.h"
@@ -35,6 +36,8 @@ typedef struct serviceRegistry * service_registry_pt;
 #include "service_event.h"
 #include "array_list.h"
 #include "service_registration.h"
+#include "celix_service_factory.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -95,6 +98,15 @@ celix_status_t serviceRegistry_getListenerHooks(service_registry_pt registry, bu
 celix_status_t
 serviceRegistry_servicePropertiesModified(service_registry_pt registry, service_registration_pt registration,
                                           properties_pt oldprops);
+
+celix_status_t
+celix_serviceRegistry_registerServiceFactory(
+        celix_service_registry_t *reg,
+        const celix_bundle_t *bnd,
+        const char *serviceName,
+        celix_service_factory_t *factory,
+        celix_properties_t* props,
+        service_registration_t **registration);
 
 #ifdef __cplusplus
 }

@@ -112,7 +112,12 @@ void * run(void *handle) {
     activator_data_t *data = handle;
 
     printf("starting consumer thread\n");
-    long trkId = celix_bundleContext_trackServices(data->ctx, EXAMPLE_CALC_NAME, data, (void*)addSvc, (void*)removeSvc);
+    celix_service_tracking_options_t opts;
+    opts.serviceName = EXAMPLE_CALC_NAME;
+    opts.callbackHandle = data;
+    opts.addWithProperties = (void*)addSvc;
+    opts.removeWithProperties = (void*)removeSvc;
+    long trkId = celix_bundleContext_trackServicesWithOptions(data->ctx, &opts);
 
     while (isRunning(data)) {
         struct info info;

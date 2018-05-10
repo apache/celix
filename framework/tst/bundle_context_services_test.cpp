@@ -26,11 +26,13 @@
 #include <CppUTest/CommandLineTestRunner.h>
 #include <zconf.h>
 #include <string.h>
+#include <map>
 
 #include "constants.h"
 #include "bundle.h"
 #include "properties.h"
 #include "celix_framework_factory.h"
+#include "celix_service_factory.h"
 
 
 TEST_GROUP(CelixBundleContextServicesTests) {
@@ -582,3 +584,47 @@ TEST(CelixBundleContextServicesTests, servicesTrackerSetTest) {
 }
 
 //TODO test tracker with options for properties & service owners
+
+
+TEST(CelixBundleContextServicesTests, serviceFactoryTest) {
+    struct calc {
+        int (*calc)(int);
+    };
+    auto name = "CALC";
+    auto version = "1.0.0";
+
+
+    int count = 0;
+    celix_service_factory_t fac;
+    memset(&fac, 0, sizeof(fac));
+    fac.handle = (void*)&count;
+    fac.getService = [](void *handle, const celix_bundle_t *, const celix_properties_t *) -> void* {
+        auto *c = (int *)handle;
+        *c += 1;
+        static struct calc svc{}; //normally a service per bundle
+        svc.calc = [](int arg) { return arg * 42; };
+        return &svc;
+    };
+    fac.ungetService = [](void *handle, const celix_bundle_t *, const celix_properties_t *) {
+        auto *c = (int *)handle;
+        *c += 1;
+    };
+
+    long facId = celix_bundleContext_registerServiceFactory(ctx, name, &fac, version, NULL);
+    CHECK_TRUE(facId >= 0);
+
+
+    int result = -1;
+    bool called = celix_bundleContext_useService(ctx, name, &result, [](void *handle, void* svc) {
+        auto *r = (int *)(handle);
+        auto *calc = (struct calc*)svc;
+        *r = calc->calc(2);
+    });
+    CHECK_TRUE(called);
+    CHECK_EQUAL(84, result);
+    CHECK_EQUAL(2, count); //expecting getService & unGetService to be called during the useService call.
+
+
+    celix_bundleContext_unregisterService(ctx, facId);
+}
+

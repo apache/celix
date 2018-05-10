@@ -31,7 +31,7 @@
 #include "registry_callback_private.h"
 #include "service_registry.h"
 
-struct serviceRegistry {
+struct celix_serviceRegistry {
 	framework_pt framework;
 	registry_callback_t callback;
 

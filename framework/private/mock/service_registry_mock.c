@@ -164,3 +164,21 @@ celix_status_t serviceRegistry_clearServiceRegistrations(service_registry_pt reg
 			->withPointerParameters("bundle", bundle);
 	return mock_c()->returnValue().value.intValue;
 }
+
+celix_status_t
+celix_serviceRegistry_registerServiceFactory(
+		celix_service_registry_t *reg,
+		const celix_bundle_t *bnd,
+		const char *serviceName,
+		celix_service_factory_t *factory,
+		celix_properties_t* props,
+		service_registration_t **registration) {
+	mock_c()->actualCall("celix_serviceRegistry_registerServiceFactory")
+			->withPointerParameters("reg", reg)
+			->withConstPointerParameters("bnd", bnd)
+			->withStringParameters("serviceName", serviceName)
+			->withPointerParameters("factory", factory)
+			->withPointerParameters("props", props)
+			->withOutputParameter("registration", registration);
+	return mock_c()->returnValue().value.intValue;
+}

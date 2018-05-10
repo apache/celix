@@ -1,0 +1,58 @@
+<!--
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+   
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+# Intro
+
+This example show how services can be provided and consumer by bundles.
+
+The example uses the `celix_bundleContext_registerService` to provide
+services and uses a combination of `celix_bundleContext_useService`,
+ `celix_bundleContext_useServices` and `celix_bundleContext_trackServices`
+ to consume services.
+
+ TODO intro bundle context
+
+ See the `bundle_context.h` for documentation about these - and other -functions
+
+# Simple Service Provider & Consumer Example
+
+The simple provider/consumer example can be executed by launching the
+`services_example_c` executable target
+(build in `${CMAKE_BUILD_DIR}/deploy/services_example/services_example_c`)
+
+In this example the provide bundle only register one calc service. And
+the consumer bundle tries to use this during startup and registerd
+a service tracker for the calc service.
+
+Try stopping/starting the provider / consumer bundles (respectively bundle id 3 & 4)
+to see how this work runtime. E.g. use `stop 3`, `stop 4`, `start 3`, `start 4` in different combinations.
+
+
+# Dynamic Service Provider & Consumer Example
+
+The dynamic provider/consumer example can be executed by launching the
+`dynamic_services_example_c` executable target
+(build in `${CMAKE_BUILD_DIR}/deploy/services_example/dynamic_services_example_c`)
+
+The dynamic service provide / consumer example show how the framework copes
+with the dynamic behaviour of services.
+
+This this example the provided dynammically register more and less calc services in a thread.
+The consumer bundle uses these services in a every 5 seconds and print some info.
+
+Hopefully this example will give an idea how services can be safely used and tracked in a dynamic environment.
+

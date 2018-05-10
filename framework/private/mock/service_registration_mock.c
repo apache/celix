@@ -145,3 +145,20 @@ long serviceRegistration_getServiceId(service_registration_t *registration) {
 	return mock_c()->returnValue().value.longIntValue;
 }
 
+service_registration_t* celix_serviceRegistration_createServiceFactory(
+		registry_callback_t callback,
+		const celix_bundle_t *bnd,
+		const char *serviceName,
+		long svcId,
+		celix_service_factory_t* factory,
+		celix_properties_t *props) {
+	mock_c()->actualCall("celix_serviceRegistration_createServiceFactory")
+			->withParameterOfType("registry_callback_t", "callback", &callback)
+			->withConstPointerParameters("bnd", bnd)
+			->withStringParameters("serviceName", serviceName)
+			->withUnsignedLongIntParameters("svcId", svcId)
+			->withPointerParameters("factory", (void*) factory)
+			->withPointerParameters("props", props);
+	return mock_c()->returnValue().value.pointerValue;
+}
+

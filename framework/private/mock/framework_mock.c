@@ -335,4 +335,12 @@ void celix_framework_useBundle(framework_t *fw, long bundleId, void *callbackHan
 			->withPointerParameters("use", use);
 }
 
-
+service_registration_t* celix_framework_registerServiceFactory(framework_t *fw , const celix_bundle_t *bnd, const char* serviceName, celix_service_factory_t *factory, celix_properties_t *properties) {
+	mock_c()->actualCall("celix_framework_registerServiceFactory")
+			->withPointerParameters("fw", fw)
+			->withConstPointerParameters("bnd", bnd)
+			->withStringParameters("serviceName", serviceName)
+			->withPointerParameters("factory", factory)
+			->withPointerParameters("properties", properties);
+	return mock_c()->returnValue().value.pointerValue;
+}

@@ -111,8 +111,9 @@ TEST(service_registration, create) {
 	UNSIGNED_LONGS_EQUAL(serviceId, registration->serviceId);
 
 	LONGS_EQUAL(0, registration->isUnregistering);
-	LONGS_EQUAL(0, registration->isServiceFactory);
-	POINTERS_EQUAL(NULL, registration->serviceFactory);
+	LONGS_EQUAL(CELIX_PLAIN_SERVICE, registration->svcType);
+	POINTERS_EQUAL(NULL, registration->deprecatedFactory);
+	POINTERS_EQUAL(NULL, registration->factory);
 	POINTERS_EQUAL(NULL, registration->services);
 	LONGS_EQUAL(0, registration->nrOfServices);
 
@@ -143,8 +144,8 @@ TEST(service_registration, createServiceFactory) {
 	POINTERS_EQUAL(service, registration->svcObj);
 	UNSIGNED_LONGS_EQUAL(serviceId, registration->serviceId);
 	LONGS_EQUAL(0, registration->isUnregistering);
-	LONGS_EQUAL(1, registration->isServiceFactory);
-	POINTERS_EQUAL(service, registration->serviceFactory);
+	LONGS_EQUAL(CELIX_DEPRECATED_FACTORY_SERVICE, registration->svcType);
+	POINTERS_EQUAL(service, registration->deprecatedFactory);
 	POINTERS_EQUAL(NULL, registration->services);
 	LONGS_EQUAL(0, registration->nrOfServices);
 

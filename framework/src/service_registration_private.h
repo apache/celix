@@ -31,19 +31,26 @@
 #include "registry_callback_private.h"
 #include "service_registration.h"
 
+enum celix_service_type {
+	CELIX_PLAIN_SERVICE,
+	CELIX_FACTORY_SERVICE,
+	CELIX_DEPRECATED_FACTORY_SERVICE
+};
+
 struct serviceRegistration {
     registry_callback_t callback;
 
 	char * className;
 	bundle_pt bundle;
 	properties_pt properties;
-	const void * svcObj;
 	unsigned long serviceId;
 
 	bool isUnregistering;
 
-	bool isServiceFactory;
-	const void *serviceFactory;
+	enum celix_service_type svcType;
+	const void * svcObj;
+	service_factory_pt deprecatedFactory;
+	celix_service_factory_t *factory;
 
 	struct service *services;
 	int nrOfServices;
@@ -67,5 +74,14 @@ celix_status_t serviceRegistration_ungetService(service_registration_pt registra
 
 celix_status_t serviceRegistration_getBundle(service_registration_pt registration, bundle_pt *bundle);
 celix_status_t serviceRegistration_getServiceName(service_registration_pt registration, const char **serviceName);
+
+
+service_registration_t* celix_serviceRegistration_createServiceFactory(
+		registry_callback_t callback,
+		const celix_bundle_t *bnd,
+		const char *serviceName,
+		long svcId,
+		celix_service_factory_t* factory,
+		celix_properties_t *props);
 
 #endif /* SERVICE_REGISTRATION_PRIVATE_H_ */
