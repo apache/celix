@@ -38,13 +38,13 @@ static celix_status_t serviceRegistration_destroy(service_registration_pt regist
 
 service_registration_pt serviceRegistration_create(registry_callback_t callback, bundle_pt bundle, const char* serviceName, unsigned long serviceId, const void * serviceObject, properties_pt dictionary) {
     service_registration_pt registration = NULL;
-	serviceRegistration_createInternal(callback, bundle, serviceName, serviceId, serviceObject, dictionary, false, &registration);
+	serviceRegistration_createInternal(callback, bundle, serviceName, serviceId, serviceObject, dictionary, CELIX_PLAIN_SERVICE, &registration);
 	return registration;
 }
 
 service_registration_pt serviceRegistration_createServiceFactory(registry_callback_t callback, bundle_pt bundle, const char* serviceName, unsigned long serviceId, const void * serviceObject, properties_pt dictionary) {
     service_registration_pt registration = NULL;
-    serviceRegistration_createInternal(callback, bundle, serviceName, serviceId, serviceObject, dictionary, true, &registration);
+    serviceRegistration_createInternal(callback, bundle, serviceName, serviceId, serviceObject, dictionary, CELIX_DEPRECATED_FACTORY_SERVICE, &registration);
     return registration;
 }
 

@@ -147,11 +147,11 @@ celix_status_t serviceRegistry_getRegisteredServices(service_registry_pt registr
 }
 
 celix_status_t serviceRegistry_registerService(service_registry_pt registry, bundle_pt bundle, const char* serviceName, const void* serviceObject, properties_pt dictionary, service_registration_pt *registration) {
-    return serviceRegistry_registerServiceInternal(registry, bundle, serviceName, serviceObject, dictionary, false, registration);
+    return serviceRegistry_registerServiceInternal(registry, bundle, serviceName, serviceObject, dictionary, CELIX_PLAIN_SERVICE, registration);
 }
 
 celix_status_t serviceRegistry_registerServiceFactory(service_registry_pt registry, bundle_pt bundle, const char* serviceName, service_factory_pt factory, properties_pt dictionary, service_registration_pt *registration) {
-    return serviceRegistry_registerServiceInternal(registry, bundle, serviceName, (const void *) factory, dictionary, true, registration);
+    return serviceRegistry_registerServiceInternal(registry, bundle, serviceName, (const void *) factory, dictionary, CELIX_DEPRECATED_FACTORY_SERVICE, registration);
 }
 
 static celix_status_t serviceRegistry_registerServiceInternal(service_registry_pt registry, bundle_pt bundle, const char* serviceName, const void * serviceObject, properties_pt dictionary, enum celix_service_type svcType, service_registration_pt *registration) {
