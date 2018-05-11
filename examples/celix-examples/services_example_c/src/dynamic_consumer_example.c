@@ -75,11 +75,10 @@ static void gccExample(activator_data_t *data) {
         result = calc->calc(calc->handle, 1);
     }
 
-    celix_service_use_options_t opts;
-    memset(&opts, 0, sizeof(opts));
+    celix_service_use_options_t opts = CELIX_EMPTY_SERVICE_USE_OPTIONS;
 
-    opts.serviceName = EXAMPLE_CALC_NAME;
-    opts.callbackHandle = NULL; //can be null for trampolines
+    opts.filter.serviceName = EXAMPLE_CALC_NAME;
+    opts.callbackHandle = NULL; //can be null
     opts.useWithProperties = use;
     bool called = celix_bundleContext_useServiceWithOptions(data->ctx, &opts);
 
