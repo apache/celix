@@ -30,7 +30,7 @@
 #include "array_list.h"
 
 struct celix_arrayList {
-	void ** elementData;
+	celix_array_list_entry_t* elementData;
 	size_t size;
 	size_t capacity;
 

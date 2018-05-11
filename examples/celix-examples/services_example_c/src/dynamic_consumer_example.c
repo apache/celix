@@ -112,8 +112,8 @@ void * run(void *handle) {
     activator_data_t *data = handle;
 
     printf("starting consumer thread\n");
-    celix_service_tracking_options_t opts;
-    opts.serviceName = EXAMPLE_CALC_NAME;
+    celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
+    opts.filter.serviceName = EXAMPLE_CALC_NAME;
     opts.callbackHandle = data;
     opts.addWithProperties = (void*)addSvc;
     opts.removeWithProperties = (void*)removeSvc;
@@ -128,10 +128,9 @@ void * run(void *handle) {
 
         gccExample(data); //gcc trampolines example (nested functions)
 
-        celix_service_use_options_t opts;
-        memset(&opts, 0, sizeof(opts));
+        celix_service_use_options_t opts = CELIX_EMPTY_SERVICE_USE_OPTIONS;
 
-        opts.serviceName = EXAMPLE_CALC_NAME;
+        opts.filter.serviceName = EXAMPLE_CALC_NAME;
         opts.callbackHandle = data;
         opts.useWithProperties = (void*)useHighest;
         celix_bundleContext_useServiceWithOptions(data->ctx, &opts);

@@ -297,7 +297,7 @@ TEST(CelixBundleContextServicesTests, servicesTrackerInvalidArgsTest) {
     memset(&opts, 0, sizeof(opts));
     trackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
     CHECK(trackerId < 0); //required opts->serviceName missing
-    opts.serviceName = "calc";
+    opts.filter.serviceName = "calc";
     trackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
     CHECK(trackerId >= 0); //valid
     celix_bundleContext_stopTracker(ctx, trackerId);
@@ -361,7 +361,7 @@ TEST(CelixBundleContextServicesTests, servicesTrackerTestWithProperties) {
 
     celix_service_tracking_options_t opts;
     memset(&opts, 0, sizeof(opts));
-    opts.serviceName = "calc";
+    opts.filter.serviceName = "calc";
     opts.callbackHandle = &count;
     opts.addWithProperties = add;
     opts.removeWithProperties = remove;
@@ -401,7 +401,7 @@ TEST(CelixBundleContextServicesTests, servicesTrackerTestWithOwner) {
 
     celix_service_tracking_options_t opts;
     memset(&opts, 0, sizeof(opts));
-    opts.serviceName = "calc";
+    opts.filter.serviceName = "calc";
     opts.callbackHandle = &count;
     opts.addWithOwner = add;
     opts.removeWithOwner = remove;
@@ -557,7 +557,7 @@ TEST(CelixBundleContextServicesTests, servicesTrackerSetTest) {
     celix_service_tracking_options_t opts;
     memset(&opts, 0, sizeof(opts));
     opts.callbackHandle = (void*)&count;
-    opts.serviceName = "NA";
+    opts.filter.serviceName = "NA";
     opts.set = set;
     long trackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
     CHECK(trackerId > 0);
@@ -628,3 +628,30 @@ TEST(CelixBundleContextServicesTests, serviceFactoryTest) {
     celix_bundleContext_unregisterService(ctx, facId);
 }
 
+TEST(CelixBundleContextServicesTests, findServicesTest) {
+    long svcId1 = celix_bundleContext_registerService(ctx, "example", (void*)0x100, NULL, NULL);
+    long svcId2 = celix_bundleContext_registerService(ctx, "example", (void*)0x100, NULL, NULL);
+
+    long foundId = celix_bundleContext_findService(ctx, "non existing service name");
+    CHECK_EQUAL(-1L, foundId);
+
+    foundId = celix_bundleContext_findService(ctx, "example");
+    CHECK_EQUAL(foundId, svcId1); //oldest should have highest ranking
+
+    array_list_t *list = celix_bundleContext_findServices(ctx, "non existintg service name");
+    CHECK_EQUAL(0, celix_arrayList_size(list));
+    arrayList_destroy(list);
+
+    list = celix_bundleContext_findServices(ctx, "example");
+    CHECK_EQUAL(2, celix_arrayList_size(list));
+    arrayList_destroy(list);
+
+    celix_bundleContext_unregisterService(ctx, svcId1);
+
+    celix_service_filter_options_t opts = CELIX_EMPTY_SERVICE_FILTER_OPTIONS;
+    opts.serviceName = "example";
+    foundId = celix_bundleContext_findServiceWithOptions(ctx, &opts);
+    CHECK_EQUAL(foundId, svcId2); //only one left
+
+    celix_bundleContext_unregisterService(ctx, svcId2);
+}

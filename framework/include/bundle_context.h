@@ -272,13 +272,51 @@ long celix_bundleContext_registerServiceFactorForLang(celix_bundle_context_t *ct
 void celix_bundleContext_unregisterService(celix_bundle_context_t *ctx, long serviceId);
 
 
-//TODO 
-//typedef struct celix_service_find_filter_options {
-// servicname, versionrange, filter, lang
-//} celix_service_find_filter_options_t;
-//celix_array_list_t* celix_bundleContext_findServices(celix_bundle_context_t *ctx, const char *serviceName);
-//celix_array_list_t* celix_bundleContext_findServices(celix_bundle_context_t *ctx, const char *serviceName);
-//alts WithOptions
+typedef struct celix_service_filter_options {
+    const char* serviceName; //REQUIRED
+    const char* versionRange;
+    const char* filter;
+    const char* lang; //NULL -> 'CELIX_LANG_C'
+} celix_service_filter_options_t;
+
+#define CELIX_EMPTY_SERVICE_FILTER_OPTIONS {.serviceName = NULL, .versionRange = NULL, .filter = NULL, .lang = NULL}
+
+
+/**
+ * Finds the highest ranking service and returns the service id.
+ *
+ * @param ctx The bundle context
+ * @param serviceName The required service name
+ * @return If found a valid service id (>= 0) if not found -1.
+ */
+long celix_bundleContext_findService(celix_bundle_context_t *ctx, const char *serviceName);
+
+/**
+ * Finds the highest ranking service and returns the service id.
+ *
+ * @param ctx The bundle context
+ * @param opts The pointer to the filter options.
+ * @return If found a valid service id (>= 0) if not found -1.
+ */
+long celix_bundleContext_findServiceWithOptions(celix_bundle_context_t *ctx, const celix_service_filter_options_t *opts);
+
+/**
+ * Finds the services with the provided service name and returns a list of the found service ids.
+ *
+ * @param ctx The bundle context
+ * @param serviceName The required service name
+ * @return A array list with as value a long int.
+ */
+celix_array_list_t* celix_bundleContext_findServices(celix_bundle_context_t *ctx, const char *serviceName);
+
+/**
+ * Finds the services conform the provider filter options and returns a list of the found service ids.
+ *
+ * @param ctx The bundle context
+ * @param opts The pointer to the filter options.
+ * @return A array list with as value a long int.
+ */
+celix_array_list_t* celix_bundleContext_findServicesWithOptions(celix_bundle_context_t *ctx, const celix_service_filter_options_t *opts);
 
 
 /**
@@ -323,11 +361,7 @@ long celix_bundleContext_trackServices(
 );
 
 typedef struct celix_service_tracker_options {
-    //service filter options
-    const char* serviceName;
-    const char* versionRange;
-    const char* filter;
-    const char* lang; //NULL -> 'CELIX_LANG_C'
+    celix_service_filter_options_t filter;
 
     //callback options
     void* callbackHandle;
@@ -335,18 +369,30 @@ typedef struct celix_service_tracker_options {
     void (*set)(void *handle, void *svc); //highest ranking
     void (*add)(void *handle, void *svc);
     void (*remove)(void *handle, void *svc);
-    void (*modified)(void *handle, void *svc);
 
     void (*setWithProperties)(void *handle, void *svc, const celix_properties_t *props); //highest ranking
     void (*addWithProperties)(void *handle, void *svc, const celix_properties_t *props);
     void (*removeWithProperties)(void *handle, void *svc, const celix_properties_t *props);
-    void (*modifiedWithProperties)(void *handle, void *svc, const celix_properties_t *props);
 
     void (*setWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner); //highest ranking
     void (*addWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner);
     void (*removeWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner);
-    void (*modifiedWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner);
 } celix_service_tracking_options_t;
+
+#define CELIX_EMPTY_SERVICE_TRACKING_OPTIONS { .filter.serviceName = NULL, \
+    .filter.versionRange = NULL, \
+    .filter.filter = NULL, \
+    .filter.lang = NULL, \
+    .callbackHandle = NULL, \
+    .set = NULL, \
+    .add = NULL, \
+    .remove = NULL, \
+    .setWithProperties = NULL, \
+    .addWithProperties = NULL, \
+    .removeWithProperties = NULL, \
+    .setWithOwner = NULL, \
+    .addWithOwner = NULL, \
+    .removeWithOwner = NULL}
 
 /**
  * Tracks services using the provided tracker options.
@@ -431,13 +477,7 @@ void celix_bundleContext_useServices(
 
 
 typedef struct celix_service_use_options {
-    /**
-     * service filter options. Note the serviceName is required.
-     */
-    const char *serviceName; //REQUIRED
-    const char *versionRange; //default will be empty
-    const char *filter; //default will be empty
-    const char *lang; //default will be LANG_C
+    celix_service_filter_options_t filter;
 
     /**
      * Callback info
@@ -448,6 +488,15 @@ typedef struct celix_service_use_options {
      void (*useWithProperties)(void *handle, void *svc, const celix_properties_t *props);
      void (*useWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *svcOwner);
 } celix_service_use_options_t;
+
+#define CELIX_EMPTY_SERVICE_USE_OPTIONS {.filter.serviceName = NULL, \
+    .filter.versionRange = NULL, \
+    .filter.filter = NULL, \
+    .filter.lang = NULL, \
+    .callbackHandle = NULL, \
+    .use = NULL, \
+    .useWithProperties = NULL, \
+    .useWithOwner = NULL}
 
 /**
  * Get and lock the current highest ranking service conform the service filter info from the provided options.

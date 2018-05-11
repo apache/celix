@@ -347,3 +347,33 @@ long celix_bundleContext_registerServiceFactorForLang(celix_bundle_context_t *ct
 			->withPointerParameters("props", props);
 	return mock_c()->returnValue().value.longIntValue;
 }
+
+long celix_bundleContext_findService(celix_bundle_context_t *ctx, const char *serviceName) {
+	mock_c()->actualCall("celix_bundleContext_findService")
+			->withPointerParameters("ctx", ctx)
+			->withStringParameters("serviceName", serviceName);
+	return mock_c()->returnValue().value.longIntValue;
+}
+
+
+long celix_bundleContext_findServiceWithOptions(celix_bundle_context_t *ctx, const celix_service_filter_options_t *opts) {
+	mock_c()->actualCall("celix_bundleContext_findServiceWithOptions")
+			->withPointerParameters("ctx", ctx)
+			->withConstPointerParameters("opts", opts);
+	return mock_c()->returnValue().value.longIntValue;
+}
+
+
+celix_array_list_t* celix_bundleContext_findServices(celix_bundle_context_t *ctx, const char *serviceName) {
+	mock_c()->actualCall("celix_bundleContext_findServices")
+			->withPointerParameters("ctx", ctx)
+			->withStringParameters("serviceName", serviceName);
+	return mock_c()->returnValue().value.pointerValue;
+}
+
+celix_array_list_t* celix_bundleContext_findServicesWithOptions(celix_bundle_context_t *ctx, const celix_service_filter_options_t *opts) {
+	mock_c()->actualCall("celix_bundleContext_findServicesWithOptions")
+			->withPointerParameters("ctx", ctx)
+			->withConstPointerParameters("opts", opts);
+	return mock_c()->returnValue().value.pointerValue;
+}

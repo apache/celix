@@ -67,7 +67,8 @@ void * run(void *handle) {
             celix_properties_setLong(props, OSGI_FRAMEWORK_SERVICE_RANKING, rand());
             data->svcIds[i++] = celix_bundleContext_registerService(data->ctx, EXAMPLE_CALC_NAME, &data->svc, NULL, props);
         } else { //down
-            celix_bundleContext_unregisterService(data->ctx, data->svcIds[i--]);
+            celix_bundleContext_unregisterService(data->ctx, data->svcIds[i]);
+            data->svcIds[--i] = -1L;
         }
         if (i == 99) {
             up = false;
@@ -79,9 +80,7 @@ void * run(void *handle) {
 
     for (int i = 0; i < 100; ++i) {
         long id = data->svcIds[i];
-        if (id >=0 ) {
-            celix_bundleContext_unregisterService(data->ctx, id);
-        }
+        celix_bundleContext_unregisterService(data->ctx, id);
     }
 
     printf("exiting service register thread\n");
