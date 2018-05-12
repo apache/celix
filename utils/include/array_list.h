@@ -155,6 +155,11 @@ void celix_arrayList_addSize(celix_array_list_t *list, size_t val);
 
 int celix_arrayList_indexOf(celix_array_list_t *list, celix_array_list_entry_t entry);
 void celix_arrayList_remove(celix_array_list_t *list, int index);
+
+/**
+ * Remove entry from array list. To use this first memset the entry to null to ensure it completely initialized or
+ * ensure that the array list is created with a custom equals which matches the used entry.
+ */
 void celix_arrayList_removeEntry(celix_array_list_t *list, celix_array_list_entry_t entry);
 
 #ifdef __cplusplus

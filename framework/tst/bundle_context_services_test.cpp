@@ -21,9 +21,6 @@
 #include <iostream>
 #include <mutex>
 #include <condition_variable>
-
-#include <CppUTest/TestHarness.h>
-#include <CppUTest/CommandLineTestRunner.h>
 #include <zconf.h>
 #include <string.h>
 #include <map>
@@ -33,6 +30,11 @@
 #include "properties.h"
 #include "celix_framework_factory.h"
 #include "celix_service_factory.h"
+
+
+#include <CppUTest/TestHarness.h>
+#include <CppUTest/CommandLineTestRunner.h>
+
 
 
 TEST_GROUP(CelixBundleContextServicesTests) {
@@ -601,7 +603,7 @@ TEST(CelixBundleContextServicesTests, serviceFactoryTest) {
     fac.getService = [](void *handle, const celix_bundle_t *, const celix_properties_t *) -> void* {
         auto *c = (int *)handle;
         *c += 1;
-        static struct calc svc{}; //normally a service per bundle
+        static struct calc svc; //normally a service per bundle
         svc.calc = [](int arg) { return arg * 42; };
         return &svc;
     };

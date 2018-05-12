@@ -122,7 +122,9 @@ int arrayList_indexOf(array_list_pt list, void * element) {
 	} else {
 		unsigned int i = 0;
 		for (i = 0; i < list->size; i++) {
-			celix_array_list_entry_t entry = { .voidPtrVal = element };
+			celix_array_list_entry_t entry;
+			memset(&entry, 0, sizeof(entry));
+			entry.voidPtrVal = element;
 			bool equals = celix_arrayList_equalsForElement(list, entry, list->elementData[i]);
 			if (equals) {
 				return i;
@@ -145,8 +147,9 @@ int arrayList_lastIndexOf(array_list_pt list, void * element) {
 		int i = 0;
 		int size = (int)list->size;
 		for (i = size - 1; i >= 0; i--) {
-			celix_array_list_entry_t entry = { .voidPtrVal = element };
-
+			celix_array_list_entry_t entry;
+			memset(&entry, 0, sizeof(entry));
+			entry.voidPtrVal = element;
 			bool equals = celix_arrayList_equalsForElement(list, entry, list->elementData[i]);
 			if (equals) {
 				return (int)i;
@@ -235,6 +238,7 @@ bool arrayList_removeElement(array_list_pt list, void * element) {
 		unsigned int i = 0;
 		for (i = 0; i < list->size; i++) {
 			celix_array_list_entry_t entry;
+			memset(&entry, 0, sizeof(entry));
 			entry.voidPtrVal = element;
 			bool equals = celix_arrayList_equalsForElement(list, entry, list->elementData[i]);
 			if (equals) {
