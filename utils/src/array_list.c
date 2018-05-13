@@ -28,6 +28,7 @@
 #include <string.h>
 
 #include "array_list.h"
+#include "celix_array_list.h"
 #include "array_list_private.h"
 
 static celix_status_t arrayList_elementEquals(const void *a, const void *b, bool *equals);

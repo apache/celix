@@ -32,6 +32,7 @@
 #include "service_tracker_customizer.h"
 #include "framework_exports.h"
 #include "bundle_context.h"
+#include "celix_bundle_context.h"
 
 
 #ifdef __cplusplus

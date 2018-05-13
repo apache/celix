@@ -48,8 +48,6 @@ typedef union celix_array_list_entry {
     size_t sizeVal;
 } celix_array_list_entry_t;
 
-typedef struct celix_arrayList celix_array_list_t;
-
 typedef struct celix_arrayList *array_list_pt;
 typedef struct celix_arrayList array_list_t;
 
@@ -111,56 +109,6 @@ UTILS_EXPORT bool arrayListIterator_hasPrevious(array_list_iterator_pt iterator)
 UTILS_EXPORT void *arrayListIterator_previous(array_list_iterator_pt iterator);
 
 UTILS_EXPORT void arrayListIterator_remove(array_list_iterator_pt iterator);
-
-
-
-/**********************************************************************************************************************
- **********************************************************************************************************************
- * Updated API
- **********************************************************************************************************************
- **********************************************************************************************************************/
-
-
-celix_array_list_t* celix_arrayList_create();
-
-celix_array_list_t* celix_arrayList_createWithEquals(celix_arrayList_equals_fp equals);
-
-void celix_arrayList_destroy(celix_array_list_t *list);
-
-size_t celix_arrayList_size(const celix_array_list_t *list);
-
-void* celix_arrayList_get(const celix_array_list_t *list, int index);
-
-//more of the same for the different entry types
-int celix_arrayList_getInt(const celix_array_list_t *list, int index);
-long int celix_arrayList_getLong(const celix_array_list_t *list, int index);
-unsigned int celix_arrayList_getUInt(const celix_array_list_t *list, int index);
-unsigned long int celix_arrayList_getULong(const celix_array_list_t *list, int index);
-float celix_arrayList_getFloat(const celix_array_list_t *list, int index);
-double celix_arrayList_getDouble(const celix_array_list_t *list, int index);
-bool celix_arrayList_getBool(const celix_array_list_t *list, int index);
-size_t celix_arrayList_getSize(const celix_array_list_t *list, int index);
-
-void celix_arrayList_add(celix_array_list_t *list, void* val);
-
-//more of the same for the different entry types
-void celix_arrayList_addInt(celix_array_list_t *list, int val);
-void celix_arrayList_addLong(celix_array_list_t *list, long val);
-void celix_arrayList_addUInt(celix_array_list_t *list, unsigned int val);
-void celix_arrayList_addULong(celix_array_list_t *list, unsigned long val);
-void celix_arrayList_addFloat(celix_array_list_t *list, float val);
-void celix_arrayList_addDouble(celix_array_list_t *list, double val);
-void celix_arrayList_addBool(celix_array_list_t *list, bool val);
-void celix_arrayList_addSize(celix_array_list_t *list, size_t val);
-
-int celix_arrayList_indexOf(celix_array_list_t *list, celix_array_list_entry_t entry);
-void celix_arrayList_remove(celix_array_list_t *list, int index);
-
-/**
- * Remove entry from array list. To use this first memset the entry to null to ensure it completely initialized or
- * ensure that the array list is created with a custom equals which matches the used entry.
- */
-void celix_arrayList_removeEntry(celix_array_list_t *list, celix_array_list_entry_t entry);
 
 #ifdef __cplusplus
 }

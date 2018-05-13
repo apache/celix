@@ -27,6 +27,7 @@
 #include "CppUTestExt/MockSupport_c.h"
 
 #include "bundle_context.h"
+#include "celix_bundle_context.h"
 
 celix_status_t bundleContext_create(framework_pt framework, framework_logger_pt logger, bundle_pt bundle, bundle_context_pt *bundle_context) {
 	mock_c()->actualCall("bundleContext_create")
@@ -239,7 +240,7 @@ dm_dependency_manager_t* celix_bundleContext_getDependencyManager(bundle_context
 
 long celix_bundleContext_trackBundlesWithOptions(
 		bundle_context_t* ctx,
-		const celix_bundle_tracker_options_t *opts) {
+		const celix_bundle_tracking_options_t *opts) {
 	mock_c()->actualCall("celix_bundleContext_trackBundlesWithOptions")
 			->withPointerParameters("ctx", ctx)
 			->withConstPointerParameters("opts", opts);

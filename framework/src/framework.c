@@ -41,6 +41,7 @@
 #include "listener_hook_service.h"
 #include "service_registration_private.h"
 #include "bundle_private.h"
+#include "celix_bundle_context.h"
 
 typedef celix_status_t (*create_function_fp)(bundle_context_t *context, void **userData);
 typedef celix_status_t (*start_function_fp)(void *userData, bundle_context_t *context);

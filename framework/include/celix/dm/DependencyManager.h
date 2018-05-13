@@ -17,19 +17,20 @@
  * under the License.
  */
 
-#ifndef CELIX_DM_DEPENDENCYMANAGER_H
-#define CELIX_DM_DEPENDENCYMANAGER_H
-
 
 #include "celix/dm/types.h"
 #include "celix/dm/Component.h"
 #include "celix/dm/ServiceDependency.h"
 
 #include "bundle_context.h"
+#include "celix_bundle_context.h"
 #include "dm_dependency_manager.h"
 
 #include <vector>
 #include <mutex>
+
+#ifndef CELIX_DM_DEPENDENCYMANAGER_H
+#define CELIX_DM_DEPENDENCYMANAGER_H
 
 namespace celix { namespace dm {
 

@@ -38,8 +38,6 @@ extern "C" {
 typedef hash_map_pt properties_pt;
 typedef hash_map_t properties_t;
 
-typedef hash_map_t celix_properties_t;
-
 UTILS_EXPORT properties_pt properties_create(void);
 
 UTILS_EXPORT void properties_destroy(properties_pt properties);
@@ -65,44 +63,6 @@ UTILS_EXPORT celix_status_t properties_copy(properties_pt properties, properties
 #define PROPERTIES_FOR_EACH(props, key) \
     for(hash_map_iterator_t iter = hashMapIterator_construct(props); \
         hashMapIterator_hasNext(&iter), (key) = (const char*)hashMapIterator_nextKey(&iter);)
-
-
-/**********************************************************************************************************************
- **********************************************************************************************************************
- * Updated API
- **********************************************************************************************************************
- **********************************************************************************************************************/
- 
-celix_properties_t* celix_properties_create(void);
-
-void celix_properties_destroy(celix_properties_t *properties);
-
-celix_properties_t* celix_properties_load(const char *filename);
-
-celix_properties_t* celix_properties_loadWithStream(FILE *stream);
-
-celix_properties_t* celix_properties_loadFromString(const char *input);
-
-void celix_properties_store(celix_properties_t *properties, const char *file, const char *header);
-
-const char* celix_properties_get(const celix_properties_t *properties, const char *key);
-
-const char* celix_properties_getWithDefault(const celix_properties_t *properties, const char *key, const char *defaultValue);
-
-void celix_properties_set(celix_properties_t *properties, const char *key, const char *value);
-
-void celix_properties_unset(celix_properties_t *properties, const char *key);
-
-celix_properties_t* celix_properties_copy(celix_properties_t *properties);
-
-long celix_properties_getAsLong(const celix_properties_t *props, const char *key, long defaultValue);
-
-void celix_properties_setLong(celix_properties_t *props, const char *key, long value);
-
-#define CELIX_PROPERTIES_FOR_EACH(props, key) \
-    for(hash_map_iterator_t iter = hashMapIterator_construct(props); \
-        hashMapIterator_hasNext(&iter), (key) = (const char*)hashMapIterator_nextKey(&iter);)
-
 
 
 #ifdef __cplusplus

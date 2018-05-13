@@ -31,12 +31,13 @@
 #include "bundle_context.h"
 #include "celix_log.h"
 #include "bundle_listener.h"
+#include "celix_bundle_context.h"
 
 typedef struct celix_bundle_context_bundle_tracker {
 	bundle_context_t *ctx;
 	long trackId;
 	bundle_listener_t listener;
-	celix_bundle_tracker_options_t opts;
+	celix_bundle_tracking_options_t opts;
 } celix_bundle_context_bundle_tracker_t;
 
 struct bundleContext {

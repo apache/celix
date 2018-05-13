@@ -29,6 +29,7 @@
 #include <ctype.h>
 #include "celixbool.h"
 #include "properties.h"
+#include "celix_properties.h"
 #include "utils.h"
 
 #define MALLOC_BLOCK_SIZE		5

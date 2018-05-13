@@ -17,36 +17,30 @@
  *under the License.
  */
 
-#ifndef CELIX_CELIX_API_H_
-#define CELIX_CELIX_API_H_
+#include "celix_types.h"
+#include "bundle_state.h"
 
-#include "properties.h"
+#ifndef CELIX_BUNDLE_H_
+#define CELIX_BUNDLE_H_
 
-#include "array_list.h"
-#include "celix_array_list.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#include "constants.h"
+/**********************************************************************************************************************
+ **********************************************************************************************************************
+ * Updated API
+ **********************************************************************************************************************
+ **********************************************************************************************************************/
 
-#include "celix_utils_api.h"
+long celix_bundle_getId(const bundle_t *bnd);
 
-#include "bundle.h"
-#include "celix_bundle.h"
+celix_bundle_state_e celix_bundle_getState(const bundle_t *bnd);
 
-#include "bundle_context.h"
-#include "celix_bundle_context.h"
 
-#include "service_registration.h"
-#include "service_factory.h"
-#include "service_reference.h"
-#include "service_tracker.h"
-#include "service_tracker_customizer.h"
-#include "listener_hook_service.h"
 
-#include "framework.h"
-#include "celix_framework_factory.h"
-#include "celix_launcher.h"
+#ifdef __cplusplus
+}
+#endif
 
-#include "dm_dependency_manager.h"
-#include "dm_service_dependency.h"
-
-#endif //CELIX_CELIX_API_H_
+#endif /* CELIX_BUNDLE_H_ */

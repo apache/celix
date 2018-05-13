@@ -26,9 +26,11 @@
 #include "bundle_context_private.h"
 #include "framework_private.h"
 #include "bundle.h"
+#include "celix_bundle.h"
 #include "celix_log.h"
 #include "service_tracker.h"
 #include "dm_dependency_manager.h"
+#include "celix_array_list.h"
 
 static celix_status_t bundleContext_bundleChanged(void *handle, bundle_event_t *event);
 static void bundleContext_cleanupBundleTracker(bundle_context_t *ct);
@@ -545,7 +547,7 @@ static celix_status_t bundleContext_bundleChanged(void *listenerSvc, bundle_even
 
 long celix_bundleContext_trackBundlesWithOptions(
         bundle_context_t* ctx,
-        const celix_bundle_tracker_options_t *opts) {
+        const celix_bundle_tracking_options_t *opts) {
     long trackId = -1;
     struct celix_bundle_context_bundle_tracker *tracker = calloc(1, sizeof(*tracker));
     if (tracker != NULL) {
@@ -580,7 +582,7 @@ long celix_bundleContext_trackBundles(
         void* callbackHandle,
         void (*onStarted)(void* handle, const bundle_t *bundle),
         void (*onStopped)(void *handle, const bundle_t *bundle)) {
-    celix_bundle_tracker_options_t opts;
+    celix_bundle_tracking_options_t opts;
     memset(&opts, 0, sizeof(opts));
     opts.callbackHandle = callbackHandle;
     opts.onStarted = onStarted;
@@ -739,7 +741,7 @@ bool celix_bundleContext_useServiceWithOptions(
         trkOpts.filter.serviceName = opts->filter.serviceName;
         trkOpts.filter = opts->filter;
         trkOpts.filter.versionRange = opts->filter.versionRange;
-        trkOpts.filter.lang = opts->filter.lang;
+        trkOpts.filter.serviceLanguage = opts->filter.serviceLanguage;
 
         service_tracker_t *trk = celix_serviceTracker_createWithOptions(ctx, &trkOpts);
         if (trk != NULL) {
@@ -770,7 +772,7 @@ void celix_bundleContext_useServicesWithOptions(
         trkOpts.filter.serviceName = opts->filter.serviceName;
         trkOpts.filter.filter = opts->filter.filter;
         trkOpts.filter.versionRange = opts->filter.versionRange;
-        trkOpts.filter.lang = opts->filter.lang;
+        trkOpts.filter.serviceLanguage = opts->filter.serviceLanguage;
 
         service_tracker_t *trk = celix_serviceTracker_createWithOptions(ctx, &trkOpts);
         if (trk != NULL) {

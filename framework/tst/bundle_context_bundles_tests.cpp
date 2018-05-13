@@ -26,9 +26,7 @@
 #include <CppUTest/CommandLineTestRunner.h>
 #include <zconf.h>
 
-#include "bundle.h"
-#include "properties.h"
-#include "celix_framework_factory.h"
+#include "celix_api.h"
 
 
 TEST_GROUP(CelixBundleContextBundlesTests) {

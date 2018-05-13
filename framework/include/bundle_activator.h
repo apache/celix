@@ -38,6 +38,7 @@
 #define BUNDLE_ACTIVATOR_H_
 
 #include "bundle_context.h"
+#include "celix_bundle_context.h"
 #include "framework_exports.h"
 
 #ifdef __cplusplus

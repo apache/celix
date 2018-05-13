@@ -30,6 +30,7 @@
 #include "celix_log.h"
 #include "service_tracker_customizer_private.h"
 #include "bundle_context_private.h"
+#include "celix_array_list.h"
 
 static celix_status_t serviceTracker_track(service_tracker_pt tracker, service_reference_pt reference, service_event_pt event);
 static celix_status_t serviceTracker_untrack(service_tracker_pt tracker, service_reference_pt reference, service_event_pt event);
@@ -597,7 +598,7 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
             tracker->currentHighestServiceId = -1;
 
             //setting lang
-            const char *lang = opts->filter.lang;
+            const char *lang = opts->filter.serviceLanguage;
             if (lang == NULL || strncmp("", lang, 1) == 0) {
                 lang = CELIX_FRAMEWORK_SERVICE_C_LANGUAGE;
             }

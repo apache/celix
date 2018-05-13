@@ -25,9 +25,7 @@
 #include <string.h>
 #include <map>
 
-#include "constants.h"
-#include "bundle.h"
-#include "properties.h"
+#include "celix_api.h"
 #include "celix_framework_factory.h"
 #include "celix_service_factory.h"
 

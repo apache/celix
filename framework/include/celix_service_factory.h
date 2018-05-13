@@ -16,11 +16,12 @@
  *specific language governing permissions and limitations
  *under the License.
  */
+
+#include "celix_properties.h"
+#include "bundle.h"
+
 #ifndef CELIX_SERVICE_FACTORY_H_
 #define CELIX_SERVICE_FACTORY_H_
-
-#include "properties.h"
-#include "bundle.h"
 
 #ifdef __cplusplus
 extern "C" {

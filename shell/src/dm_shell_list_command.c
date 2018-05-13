@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <shell_constants.h>
-#include "bundle_context.h"
+#include "celix_bundle_context.h"
 #include "dm_dependency_manager.h"
 
 
