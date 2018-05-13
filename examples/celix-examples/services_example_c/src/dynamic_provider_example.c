@@ -65,7 +65,7 @@ void * run(void *handle) {
         if (up) {
             properties_t *props = properties_create();
             celix_properties_setLong(props, OSGI_FRAMEWORK_SERVICE_RANKING, rand());
-            data->svcIds[i++] = celix_bundleContext_registerService(data->ctx, EXAMPLE_CALC_NAME, &data->svc, NULL, props);
+            data->svcIds[i++] = celix_bundleContext_registerService(data->ctx, &data->svc, EXAMPLE_CALC_NAME, props);
         } else { //down
             celix_bundleContext_unregisterService(data->ctx, data->svcIds[i]);
             data->svcIds[--i] = -1L;

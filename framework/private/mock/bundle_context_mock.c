@@ -194,24 +194,19 @@ celix_status_t bundleContext_getProperty(bundle_context_pt context, const char *
 	return mock_c()->returnValue().value.intValue;
 }
 
-long celix_bundleContext_registerService(bundle_context_t *ctx, const char *serviceName, void *svc, const char *serviceVersion, properties_t *properties) {
+long celix_bundleContext_registerService(bundle_context_t *ctx, void *svc, const char *serviceName, properties_t *properties) {
 	mock_c()->actualCall("celix_bundleContext_registerCService")
 			->withPointerParameters("ctx", ctx)
 			->withStringParameters("serviceName", serviceName)
 			->withPointerParameters("svc", svc)
-			->withPointerParameters("properties", properties)
-			->withStringParameters("serviceName", serviceVersion);
+			->withPointerParameters("properties", properties);
 	return mock_c()->returnValue().value.longIntValue;
 }
 
-long celix_bundleContext_registerServiceForLang(bundle_context_t *ctx, const char *serviceName, void *svc, const char *serviceVersion, const char* lang, properties_t *properties) {
-	mock_c()->actualCall("celix_bundleContext_registerServiceForLang")
+long celix_bundleContext_registerServiceWithOptions(celix_bundle_context_t *ctx, const celix_service_registration_options_t *opts) {
+	mock_c()->actualCall("celix_bundleContext_registerServiceWithOptions")
 			->withPointerParameters("ctx", ctx)
-			->withStringParameters("serviceName", serviceName)
-			->withConstPointerParameters("svc", svc)
-			->withPointerParameters("properties", properties)
-			->withStringParameters("serviceName", serviceVersion)
-			->withStringParameters("lang", lang);
+			->withConstPointerParameters("opts", opts);
 	return mock_c()->returnValue().value.longIntValue;
 }
 
@@ -327,23 +322,11 @@ void celix_bundleContext_useServicesWithOptions(
 			->withConstPointerParameters("opts", opts);
 }
 
-long celix_bundleContext_registerServiceFactory(celix_bundle_context_t *ctx, const char *serviceName, celix_service_factory_t *factory, const char *serviceVersion, celix_properties_t *props) {
+long celix_bundleContext_registerServiceFactory(celix_bundle_context_t *ctx, celix_service_factory_t *factory, const char *serviceName, celix_properties_t *props) {
 	mock_c()->actualCall("celix_bundleContext_registerServiceFactory")
 			->withPointerParameters("ctx", ctx)
 			->withStringParameters("serviceName", serviceName)
 			->withPointerParameters("factory", factory)
-			->withStringParameters("serviceVersion", serviceVersion)
-			->withPointerParameters("props", props);
-	return mock_c()->returnValue().value.longIntValue;
-}
-
-long celix_bundleContext_registerServiceFactorForLang(celix_bundle_context_t *ctx, const char *serviceName, celix_service_factory_t *factory, const char *serviceVersion, const char *lang, celix_properties_t *props) {
-	mock_c()->actualCall("celix_bundleContext_registerServiceFactorForLang")
-			->withPointerParameters("ctx", ctx)
-			->withStringParameters("serviceName", serviceName)
-			->withPointerParameters("factory", factory)
-			->withStringParameters("serviceVersion", serviceVersion)
-			->withStringParameters("lang", lang)
 			->withPointerParameters("props", props);
 	return mock_c()->returnValue().value.longIntValue;
 }

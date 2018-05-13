@@ -211,12 +211,12 @@ celix_status_t bundleActivator_start(void *_ptr, bundle_context_pt context_ptr) 
 
     if (status == CELIX_SUCCESS) {
         for (unsigned int i = 0; instance_ptr->std_commands[i].exec != NULL; i++) {
-            instance_ptr->std_commands[i].svcId = celix_bundleContext_registerService(
-                    context_ptr,
-                    OSGI_SHELL_COMMAND_SERVICE_NAME,
-                    instance_ptr->std_commands[i].service,
-                    OSGI_SHELL_COMMAND_SERVICE_VERSION,
-                    instance_ptr->std_commands[i].props);
+            celix_service_registration_options_t opts = CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS;
+            opts.svc = instance_ptr->std_commands[i].service;
+            opts.serviceName = OSGI_SHELL_COMMAND_SERVICE_NAME;
+            opts.serviceVersion = OSGI_SHELL_COMMAND_SERVICE_VERSION;
+            opts.properties = instance_ptr->std_commands[i].props;
+            instance_ptr->std_commands[i].svcId = celix_bundleContext_registerServiceWithOptions(context_ptr, &opts);
         }
 	}
 

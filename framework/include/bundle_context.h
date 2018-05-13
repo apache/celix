@@ -196,34 +196,83 @@ bundleContext_getPropertyWithDefault(bundle_context_pt context, const char *name
  */
 dm_dependency_manager_t* celix_bundleContext_getDependencyManager(celix_bundle_context_t *ctx);
 
+
+typedef struct celix_service_registration_options {
+    /**
+     * The service pointer. The actual pointer to the service. For C this is normally a pointer to a struct
+     * with function pointers, but theoretically this can be a pointer to anything (e.g. a pointer to a single function,
+     * or a pointer to a C++ interface implementation, or just a pointer to a data structure).
+     *
+     * The bundle is responsible to keep the service pointer valid as long as it is registered in the Celix framework.
+     */
+    void *svc;
+
+    /**
+     * The service factory pointer.
+     * Note if the factory service is set, the svc field will not be used.
+     *
+     * The service factory will be called for every bundle requesting/de-requesting a service. This gives the provider the
+     * option to create bundle specific service instances.
+     *
+     * When a service is requested for a bundle the getService of the factory service will be called. This function must
+     * return a valid pointer to a service conform the registered service name or NULL.
+     * When a service in no longer needed for a bundle (e.g. ending the useService(s) calls when a service tacker is stopped)
+     * the ungetService function of the service factory will be called.
+     *
+     * The bundle is responsible to keep the service factory pointer valid as long as it is registered in the Celix framework.
+     */
+    celix_service_factory_t *factory;
+
+    /**
+     * The required service name. This is used to identify the service. A fully qualified name with a namespace is
+     * advisable to prevent name collision. (e.g. EXAMPLE_PRESURE_SENSOR).
+     */
+    const char *serviceName;
+
+    /**
+     * The optional service properties. These contain meta information about the service in the
+     * form of string key/values. (e.g. the location of a pressure sensor: location=left-tire).
+     *
+     * When a service is registered the Celix framework will take ownership of the provided properties.
+     * If a registration fails, the properties will be destroyed (freed) by the Celix framework.
+     */
+     celix_properties_t *properties;
+
+     /**
+      * The optional service language. If this is NULL, CELIX_FRAMEWORK_SERVICE_LANGUAGE_C is used.
+      */
+      const char *serviceLanguage;
+
+      /**
+       * The optional service version (in the form of <MAJOR>.<MINOR>.<MICRO>.<QUALIFIER>).
+       * If present consumer of the service can specific which service version range of
+       * a specific service they are interested in. Note that it is the responsibility of the users to ensure that
+       * service in those version range are compatible (binary of source). It is advisable to use semantic versioning
+       * for this.
+       */
+      const char *serviceVersion;
+} celix_service_registration_options_t;
+
+#define CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS { .svc = NULL, \
+    .serviceName = NULL, \
+    .properties = NULL, \
+    .serviceLanguage = NULL, \
+    .serviceVersion = NULL }
+
 /**
  * Register a C lang service to the framework.
  *
  * @param ctx The bundle context
- * @param serviceName the service name, cannot be NULL
  * @param svc the service object. Normally a pointer to a service struct (e.g. a struct with function pointers)
- * @param serviceVersion The optional service version.
+ * @param serviceName the service name, cannot be NULL
  * @param properties The meta properties associated with the service. The service registration will take ownership of the properties (e.g. no destroy needed)
  * @return The serviceId, which should be >= 0. If < 0 then the registration was unsuccessful.
  */
-long celix_bundleContext_registerService(celix_bundle_context_t *ctx, const char *serviceName, void *svc, const char *serviceVersion, celix_properties_t *properties);
-
-/**
-* Register a service for the specified language to the framework.
-*
-* @param ctx The bundle context
-* @param serviceName the service name, cannot be NULL
-* @param svc Pointer to the service. Normally a pointer to a service struct (e.g. a struct with function pointers)
-* @param serviceVersion The optional service version.
-* @param lang The service language. Will be set to CELIX_FRAMEWORK_SERVICE_LANGUAGE_C if NULL is provided.
-* @param properties The meta properties associated with the service. The service registration will take ownership of the properties
-* @return The serviceId, which should >= 0. If < 0 then the registration was unsuccessful.
-*/
-long celix_bundleContext_registerServiceForLang(celix_bundle_context_t *ctx, const char *serviceName, void *svc, const char *serviceVersion, const char* lang, celix_properties_t *properties);
+long celix_bundleContext_registerService(celix_bundle_context_t *ctx, void *svc, const char *serviceName, celix_properties_t *properties);
 
 /**
  * Register a service factory in the framework (for the C language).
- * THe service factory will be called for every bundle requesting/de-requesting a service. This gives the provider the
+ * The service factory will be called for every bundle requesting/de-requesting a service. This gives the provider the
  * option to create bundle specific service instances.
  *
  * When a service is requested for a bundle the getService of the factory service will be called. This function must
@@ -232,33 +281,22 @@ long celix_bundleContext_registerServiceForLang(celix_bundle_context_t *ctx, con
  * the ungetService function of the service factory will be called.
  *
  * @param ctx The bundle context
- * @param serviceName The required service name of the services this factory will produce.
  * @param factory The pointer to the factory service.
- * @param serviceVersion The optional service version.
+ * @param serviceName The required service name of the services this factory will produce.
  * @param properties The optional service factory properties. For a service consumer this will be seen as the service properties.
  * @return The service id of the service factory or < 0 if the registration was unsuccessful.
  */
-long celix_bundleContext_registerServiceFactory(celix_bundle_context_t *ctx, const char *serviceName, celix_service_factory_t *factory, const char *serviceVersion, celix_properties_t *properties);
+long celix_bundleContext_registerServiceFactory(celix_bundle_context_t *ctx, celix_service_factory_t *factory, const char *serviceName, celix_properties_t *props);
 
 /**
- * Register a service factory in the framework.
- * THe service factory will be called for every bundle requesting/de-requesting a service. This gives the provider the
- * option to create bundle specific service instances.
- *
- * When a service is requested for a bundle the getService of the factory service will be called. This function must
- * return a valid pointer to a service conform the registered service name or NULL.
- * When a service in no longer needed for a bundle (e.g. ending the useService(s) calls when a service tacker is stopped)
- * the ungetService function of the service factory will be called.
- *
- * @param ctx The bundle context
- * @param serviceName The required service name of the services this factory will produce.
- * @param factory The pointer to the factory service.
- * @param serviceVersion The optional service version.
- * @param lang The d service language. Will be set to CELIX_FRAMEWORK_SERVICE_LANGUAGE_C if NULL is provided.
- * @param properties The optional service factory properties. For a service consumer this will be seen as the service properties.
- * @return The service id of the service factory or < 0 if the registration was unsuccessful.
- */
-long celix_bundleContext_registerServiceFactorForLang(celix_bundle_context_t *ctx, const char *serviceName, celix_service_factory_t *factory, const char *serviceVersion, const char *lang, celix_properties_t *properties);
+* Register a service Celix to the framework using the provded registration options.
+*
+* @param ctx The bundle context
+* @param opts The pointer to the registration options. The options are only in the during registration call.
+* @return The serviceId, which should >= 0. If < 0 then the registration was unsuccessful.
+*/
+long celix_bundleContext_registerServiceWithOptions(celix_bundle_context_t *ctx, const celix_service_registration_options_t *opts);
+
 
 /**
  * Unregister the service or service factory with service id.
@@ -565,8 +603,6 @@ bool celix_bundleContext_uninstallBundle(celix_bundle_context_t *ctx, long bundl
  * requested bundle tracker ootions.
  */
 typedef struct celix_bundle_tracker_options {
-    //TODO options to track framework & own bundle
-
     /**
      * Handle used in the tracker callbacks.
      */
@@ -612,7 +648,6 @@ long celix_bundleContext_trackBundlesWithOptions(
         const celix_bundle_tracker_options_t *opts
 );
 
-//TODO except framework & own bundle
 /**
  * track bundles
  * The add bundle callback will also be called for already installed bundles.

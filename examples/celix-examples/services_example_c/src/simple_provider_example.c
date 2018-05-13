@@ -54,7 +54,7 @@ celix_status_t bundleActivator_create(celix_bundle_context_t *ctx, void **out) {
 
 celix_status_t bundleActivator_start(void * handle, celix_bundle_context_t *ctx) {
     activator_data_t *data = handle;
-    data->svcId = celix_bundleContext_registerService(data->ctx, EXAMPLE_CALC_NAME, &data->svc, EXAMPLE_CALC_VERSION, NULL);
+    data->svcId = celix_bundleContext_registerService(data->ctx, &data->svc, EXAMPLE_CALC_NAME, NULL);
     printf("Registered calc service with service id %li\n", data->svcId);
 	return CELIX_SUCCESS;
 }
