@@ -17,7 +17,9 @@
 
 #dummy libaries to ensure backward compatability with projects using the dependency manager libs/shell
 add_library(dependency_manager_static INTERFACE)
+target_link_libraries(dependency_manager_static INTERFACE Celix::framework)
 add_library(dependency_manager_so INTERFACE)
+target_link_libraries(dependency_manager_so INTERFACE Celix::framework)
 add_library(dm_shell INTERFACE)
 
 #Setup target aliases to match external usage

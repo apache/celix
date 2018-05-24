@@ -715,3 +715,11 @@ long celix_bundle_getId(const bundle_t* bnd) {
 celix_bundle_state_e celix_bundle_getState(const bundle_t *bnd) {
 	return bnd->state;
 }
+
+char* celix_bundle_getEntry(const bundle_t* bnd, const char *path) {
+	char *entry = NULL;
+	if (bnd != NULL && bnd->framework != NULL) {
+		framework_getBundleEntry(bnd->framework, (celix_bundle_t*)bnd, path, &entry);
+	}
+	return entry;
+}

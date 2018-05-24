@@ -28,6 +28,7 @@
 #ifndef FRAMEWORK_PRIVATE_H_
 #define FRAMEWORK_PRIVATE_H_
 
+#include "celix_framework.h"
 #include "framework.h"
 
 #include "manifest.h"
