@@ -42,15 +42,12 @@
 #include "service_registration_private.h"
 #include "bundle_private.h"
 #include "celix_bundle_context.h"
+#include "bundle_context_private.h"
 
 typedef celix_status_t (*create_function_fp)(bundle_context_t *context, void **userData);
 typedef celix_status_t (*start_function_fp)(void *userData, bundle_context_t *context);
 typedef celix_status_t (*stop_function_fp)(void *userData, bundle_context_t *context);
 typedef celix_status_t (*destroy_function_fp)(void *userData, bundle_context_t *context);
-
-typedef celix_status_t (*dm_create_fp)(bundle_context_t *context, void ** userData);
-typedef celix_status_t (*dm_init_fp)(void * userData, bundle_context_pt context, dm_dependency_manager_pt manager);
-typedef celix_status_t (*dm_destroy_fp)(void * userData, bundle_context_pt context, dm_dependency_manager_pt manager);
 
 struct activator {
     void * userData;
@@ -59,10 +56,6 @@ struct activator {
     start_function_fp start;
     stop_function_fp stop;
     destroy_function_fp destroy;
-
-    dm_create_fp dmCreate;
-    dm_init_fp dmInit;
-    dm_destroy_fp dmDestroy;
 };
 
 celix_status_t framework_setBundleStateAndNotify(framework_pt framework, bundle_pt bundle, int state);
@@ -794,26 +787,10 @@ celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int opti
                         stop_function_fp stop = (stop_function_fp) fw_getSymbol((handle_t) bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_STOP);
                         destroy_function_fp destroy = (destroy_function_fp) fw_getSymbol((handle_t) bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_DESTROY);
 
-                        dm_create_fp dmCreate = fw_getSymbol((handle_t)bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_DM_ACTIVATOR_CREATE);
-                        dm_init_fp dmInit = fw_getSymbol((handle_t)bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_DM_ACTIVATOR_INIT);
-                        dm_destroy_fp dmDestroy = fw_getSymbol((handle_t)bundle_getHandle(bundle), OSGI_FRAMEWORK_BUNDLE_DM_ACTIVATOR_DESTROY);
-
                         activator->create = create;
                         activator->start = start;
                         activator->stop = stop;
                         activator->destroy = destroy;
-
-                        activator->dmCreate = dmCreate;
-                        activator->dmInit = dmInit;
-                        activator->dmDestroy = dmDestroy;
-
-                        if (activator->dmCreate != NULL) {
-                            //only allow one activator, if dm is used -> set other to NULL
-                            activator->create = NULL;
-                            activator->start = NULL;
-                            activator->stop = NULL;
-                            activator->destroy = NULL;
-                        }
 
                         status = CELIX_DO_IF(status, bundle_setActivator(bundle, activator));
 
@@ -828,19 +805,11 @@ celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int opti
                                 if (status == CELIX_SUCCESS) {
                                     activator->userData = userData;
                                 }
-                            } else if (dmCreate != NULL) {
-                                status = CELIX_DO_IF(status, dmCreate(context, &userData));
-                                if (status == CELIX_SUCCESS) {
-                                    activator->userData = userData;
-                                }
                             }
                         }
                         if (status == CELIX_SUCCESS) {
                             if (start != NULL) {
                                 status = CELIX_DO_IF(status, start(userData, context));
-                            } else if (dmInit != NULL) {
-                                dm_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(context);
-                                status = CELIX_DO_IF(status, dmInit(userData, context, mng));
                             }
                         }
 
@@ -1004,18 +973,15 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
 	        if (status == CELIX_SUCCESS) {
                 if (activator->stop != NULL) {
                     status = CELIX_DO_IF(status, activator->stop(activator->userData, context));
-                } else if (activator->dmInit != NULL) {
-                    //NOTE there is no dmDeinit -> "just" call removeAllComponents
-                    dm_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(context);
-                    dependencyManager_removeAllComponents(mng);
+                    if (status == CELIX_SUCCESS) {
+                        dm_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(context);
+                        dependencyManager_removeAllComponents(mng);
+                    }
                 }
 	        }
             if (status == CELIX_SUCCESS) {
                 if (activator->destroy != NULL) {
                     status = CELIX_DO_IF(status, activator->destroy(activator->userData, context));
-                } else if (activator->dmDestroy != NULL) {
-                    dm_dependency_manager_t *mng = celix_bundleContext_getDependencyManager(context);
-                    status = CELIX_DO_IF(status, activator->dmDestroy(activator->userData, context, mng));
                 }
 	        }
 

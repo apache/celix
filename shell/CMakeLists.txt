@@ -23,7 +23,7 @@ if (SHELL)
 			$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
 			$<INSTALL_INTERFACE:include/celix/shell>
 	)
-        install(TARGETS shell_api EXPORT celix COMPONENT shell)
+	install(TARGETS shell_api EXPORT celix COMPONENT shell)
 	install(DIRECTORY include/ DESTINATION include/celix/shell COMPONENT shell)
 
     add_celix_bundle(shell
@@ -45,7 +45,7 @@ if (SHELL)
 		  src/dm_shell_list_command
 	)
 	target_include_directories(shell PRIVATE src)
-        target_include_directories(shell SYSTEM PRIVATE	${CURL_INCLUDE_DIRS})
+	target_include_directories(shell SYSTEM PRIVATE	${CURL_INCLUDE_DIRS})
 	target_link_libraries(shell PRIVATE Celix::shell_api ${CURL_LIBRARIES} Celix::log_service_api Celix::log_helper)
 
 	install_celix_bundle(shell EXPORT celix COMPONENT shell)

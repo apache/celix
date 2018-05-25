@@ -16,8 +16,21 @@
 # under the License.
 
 #dummy libaries to ensure backward compatability with projects using the dependency manager libs/shell
-add_library(dependency_manager_static INTERFACE)
-add_library(dependency_manager_so INTERFACE)
+add_library(dependency_manager_static STATIC src/dm_activator.c)
+target_include_directories(dependency_manager_static PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
+        $<INSTALL_INTERFACE:include/celix/dependency_manager>
+)
+target_link_libraries(dependency_manager_static PUBLIC Celix::framework)
+
+add_library(dependency_manager_so SHARED src/dm_activator.c)
+target_include_directories(dependency_manager_so PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
+        $<INSTALL_INTERFACE:include/celix/dependency_manager>
+)
+target_link_libraries(dependency_manager_so PUBLIC Celix::framework)
+
+#now part of the the shell bundle
 add_library(dm_shell INTERFACE)
 
 #Setup target aliases to match external usage
@@ -25,6 +38,7 @@ add_library(Celix::dm_shell ALIAS dm_shell)
 add_library(Celix::dependency_manager_static ALIAS dependency_manager_static)
 add_library(Celix::dependency_manager_so ALIAS dependency_manager_so)
 
-#install dummy libs
+#install libs & dummy libs
 install(TARGETS dependency_manager_static dependency_manager_so dm_shell EXPORT celix DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT framework)
+install(DIRECTORY api/ DESTINATION include/celix/dependency_manager COMPONENT framework)
 

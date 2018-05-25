@@ -166,16 +166,19 @@ celix_status_t dmListCommand_execute(void* handle, char * line, FILE *out, FILE 
                 dm_dependency_manager_info_t *info = NULL;
                 dependencyManager_getInfo(mng, &info);
                 if (info != NULL) {
-                    fprintf(out, "[Bundle: %ld]\n", bndId);
-                    for (unsigned int cmpCnt = 0; cmpCnt < arrayList_size(info->components); cmpCnt++) {
-                        dm_component_info_pt compInfo = arrayList_get(info->components, cmpCnt);
-                        if (fullInfo) {
-                            printFullInfo(out, useColors, compInfo);
-                        } else {
-                            printBasicInfo(out, useColors, compInfo);
+                    size_t size = celix_arrayList_size(info->components);
+                    if (size > 0) {
+                        fprintf(out, "[Bundle: %ld]\n", bndId);
+                        for (unsigned int cmpCnt = 0; cmpCnt < size; cmpCnt++) {
+                            dm_component_info_pt compInfo = celix_arrayList_get(info->components, cmpCnt);
+                            if (fullInfo) {
+                                printFullInfo(out, useColors, compInfo);
+                            } else {
+                                printBasicInfo(out, useColors, compInfo);
+                            }
                         }
+                        fprintf(out, "\n");
                     }
-                    fprintf(out, "\n");
                     dependencyManager_destroyInfo(mng, info);
                 }
 

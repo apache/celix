@@ -84,6 +84,7 @@ celix_status_t bundleContext_destroy(bundle_context_pt context) {
 	    arrayList_destroy(context->svcRegistrations);
 
 	    if (context->mng != NULL) {
+	        dependencyManager_removeAllComponents(context->mng);
             dependencyManager_destroy(context->mng);
             context->mng = NULL;
 	    }
