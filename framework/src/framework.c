@@ -2767,3 +2767,29 @@ service_registration_t* celix_framework_registerServiceFactory(framework_t *fw ,
 
     return reg;
 }
+
+const char* celix_framework_getUUID(const celix_framework_t *fw) {
+    if (fw != NULL) {
+        return celix_properties_get(fw->configurationMap, OSGI_FRAMEWORK_FRAMEWORK_UUID);
+    }
+    return NULL;
+}
+
+
+celix_bundle_context_t* celix_framework_getFrameworkContext(const celix_framework_t *fw) {
+    celix_bundle_context_t* ctx = NULL;
+    if (fw != NULL) {
+        if (fw->bundle != NULL) {
+            ctx = fw->bundle->context;
+        }
+    }
+    return ctx;
+}
+
+celix_bundle_t* celix_framework_getFrameworkBundle(const celix_framework_t *fw) {
+    celix_bundle_t* bnd = NULL;
+    if (fw != NULL) {
+        bnd = fw->bundle;
+    }
+    return bnd;
+}
