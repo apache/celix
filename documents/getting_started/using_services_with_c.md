@@ -607,4 +607,4 @@ The suspend strategy has the advantage of reducing locks' usage: of course, susp
 
 ## See also
 
-See the [C Dependeny Manager](../../dependency_manager/readme.md) and [C Dependency Manager example](../../examples/dm_example) for more information and a more complex working example.
+See the [C Dependeny Manager](../../libs/dependency_manager/readme.md) and [C Dependency Manager example](../../examples/celix-examples/dm_example) for more information and a more complex working example.

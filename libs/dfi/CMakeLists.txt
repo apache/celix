@@ -35,8 +35,6 @@ target_include_directories(dfi PUBLIC
 		$<INSTALL_INTERFACE:include/celix/dfi>
 )
 
-#TODO JANNSON should be public, but this only really works if JANSSON is a imported target
-#So make FindJansson deliver targets
 target_include_directories(dfi SYSTEM PRIVATE
 		${JANSSON_INCLUDE_DIRS}
 )
@@ -56,10 +54,6 @@ if (ENABLE_TESTING)
     find_package(CppUTest REQUIRED)
         
     include_directories(${CPPUTEST_INCLUDE_DIR})
-
-	SET(CMAKE_SKIP_BUILD_RPATH  FALSE) #TODO needed?
-	SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE) #TODO needed?
-	SET(CMAKE_INSTALL_RPATH "${PROJECT_BINARY_DIR}/dfi" "${PROJECT_BINARY_DIR}/utils")
 
 	add_executable(test_dfi
 		test/dyn_type_tests.cpp

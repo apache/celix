@@ -304,8 +304,8 @@ if (ENABLE_TESTING AND FRAMEWORK_TESTS)
         private/test/wire_test.cpp)
     target_link_libraries(wire_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} Celix::utils)
 
-    configure_file(private/resources-test/manifest_sections.txt ${CMAKE_BINARY_DIR}/framework/resources-test/manifest_sections.txt COPYONLY)
-    configure_file(private/resources-test/manifest.txt ${CMAKE_BINARY_DIR}/framework/resources-test/manifest.txt COPYONLY)
+    configure_file(private/resources-test/manifest_sections.txt ${CMAKE_CURRENT_BINARY_DIR}/resources-test/manifest_sections.txt COPYONLY)
+    configure_file(private/resources-test/manifest.txt ${CMAKE_CURRENT_BINARY_DIR}/resources-test/manifest.txt COPYONLY)
 
     #set_target_properties(wire_test PROPERTIES COMPILE_FLAGS "-include ${CPPUTEST_INCLUDE_DIR}/CppUTest/MemoryLeakDetectorMallocMacros.h -include ${CPPUTEST_INCLUDE_DIR}/CppUTest/MemoryLeakDetectorNewMacros.h")
 

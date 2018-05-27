@@ -60,33 +60,11 @@ endif()
 # Default bundle version
 set(DEFAULT_VERSION 1.0.0)
 
-#utils, dfi and etcdlib are standalone
-#(e.g. no dependency on celix framework
-add_subdirectory(utils)
-add_subdirectory(dfi)
-add_subdirectory(etcdlib)
-
-add_subdirectory(framework)
-
-#launcher
-add_subdirectory(launcher)
+#Libraries and Launcher
+add_subdirectory(libs)
 
 #Bundles
-add_subdirectory(config_admin)
-add_subdirectory(device_access)
-add_subdirectory(deployment_admin)
-add_subdirectory(remote_services)
-add_subdirectory(remote_shell)
-add_subdirectory(shell_bonjour)
-add_subdirectory(shell_tui)
-add_subdirectory(shell)
-add_subdirectory(log_writer)
-add_subdirectory(log_service)
-add_subdirectory(pubsub)
-
-#add_subdirectory(event_admin)# event_admin is unstable
-add_subdirectory(dependency_manager)
-add_subdirectory(dependency_manager_cxx)
+add_subdirectory(bundles)
 
 #Example as last, because some example will check if underlining options are enabled
 add_subdirectory(examples/celix-examples examples)

@@ -69,11 +69,6 @@ celix_subproject(UTILS-TESTS "Option to build the utilities library tests" "OFF"
 if (ENABLE_TESTING AND UTILS-TESTS)
     find_package(CppUTest REQUIRED)
 
-    SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
-    SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-    SET(CMAKE_INSTALL_RPATH "${PROJECT_BINARY_DIR}/utils")
-
-
     include_directories(${CUNIT_INCLUDE_DIRS})
     include_directories(${CPPUTEST_INCLUDE_DIR})
     include_directories(include)
@@ -102,7 +97,7 @@ if (ENABLE_TESTING AND UTILS-TESTS)
     add_executable(filter_test private/test/filter_test.cpp)
     target_link_libraries(filter_test ${CPPUTEST_LIBRARY}  Celix::utils pthread)
 
-    configure_file(private/resources-test/properties.txt ${CMAKE_BINARY_DIR}/utils/resources-test/properties.txt COPYONLY)
+    configure_file(private/resources-test/properties.txt ${CMAKE_CURRENT_BINARY_DIR}/resources-test/properties.txt COPYONLY)
 
     add_test(NAME run_array_list_test COMMAND array_list_test)
     add_test(NAME run_hash_map_test COMMAND hash_map_test)

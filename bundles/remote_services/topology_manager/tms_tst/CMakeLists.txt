@@ -29,9 +29,9 @@ include_directories(
 add_subdirectory(bundle)
 add_subdirectory(disc_mock)
 
-SET(CMAKE_SKIP_BUILD_RPATH  FALSE) #TODO needed?
-SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE) #TODO needed?
-SET(CMAKE_INSTALL_RPATH "${PROJECT_BINARY_DIR}/framework" "${PROJECT_BINARY_DIR}/utils" "${PROJECT_BINARY_DIR}/dfi")
+#SET(CMAKE_SKIP_BUILD_RPATH  FALSE) #TODO needed?
+#SET(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE) #TODO needed?
+#SET(CMAKE_INSTALL_RPATH "${PROJECT_BINARY_DIR}/framework" "${PROJECT_BINARY_DIR}/utils" "${PROJECT_BINARY_DIR}/dfi")
 
 add_executable(test_tm_scoped
     run_tests.cpp

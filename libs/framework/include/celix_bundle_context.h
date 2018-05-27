@@ -29,19 +29,13 @@
 extern "C" {
 #endif
 
-/**********************************************************************************************************************
- **********************************************************************************************************************
- * Updated API
- **********************************************************************************************************************
- **********************************************************************************************************************/
-
 /**
 * Register a service to the Celix framework.
 *
 * @param ctx The bundle context
 * @param svc the service object. Normally a pointer to a service struct (i.e. a struct with function pointers)
 * @param serviceName the service name, cannot be NULL
-* @param properties The meta properties associated with the service. The service registration will take ownership of the properties (e.g. no destroy needed)
+* @param properties The meta properties associated with the service. The service registration will take ownership of the properties (i.e. no destroy needed)
 * @return The serviceId (>= 0) or < 0 if the registration was unsuccessful.
 */
 long celix_bundleContext_registerService(celix_bundle_context_t *ctx, void *svc, const char *serviceName, celix_properties_t *properties);
@@ -53,7 +47,7 @@ long celix_bundleContext_registerService(celix_bundle_context_t *ctx, void *svc,
  *
  * When a service is requested for a bundle the getService of the factory service will be called. This function must
  * return a valid pointer to a service conform the registered service name or NULL.
- * When a service in no longer needed for a bundle (e.g. ending the useService(s) calls when a service tacker is stopped)
+ * When a service in no longer needed for a bundle (e.g. ending the useService(s) calls or when a service tracker is stopped)
  * the ungetService function of the service factory will be called.
  *
  * @param ctx The bundle context
@@ -127,6 +121,7 @@ typedef struct celix_service_registration_options {
  * Macro to create a empty celix_service_registration_options_t type.
  */
 #define CELIX_EMPTY_SERVICE_REGISTRATION_OPTIONS { .svc = NULL, \
+    .factory = NULL, \
     .serviceName = NULL, \
     .properties = NULL, \
     .serviceLanguage = NULL, \
