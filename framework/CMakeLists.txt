@@ -26,7 +26,7 @@ endif(WIN32)
 set(SOURCES
         src/attribute.c src/bundle.c src/bundle_archive.c src/bundle_cache.c
         src/bundle_context.c src/bundle_revision.c src/capability.c src/celix_errorcodes.c
-        src/filter.c src/framework.c src/manifest.c src/ioapi.c
+        src/framework.c src/manifest.c src/ioapi.c
         src/manifest_parser.c src/miniunz.c src/module.c
         src/requirement.c src/resolver.c src/service_reference.c src/service_registration.c
         src/service_registry.c src/service_tracker.c src/service_tracker_customizer.c
@@ -163,13 +163,6 @@ if (ENABLE_TESTING AND FRAMEWORK_TESTS)
         private/test/celix_errorcodes_test.cpp
         src/celix_errorcodes.c)
     target_link_libraries(celix_errorcodes_test ${CPPUTEST_LIBRARY} Celix::utils)
-
-    add_executable(filter_test
-        private/test/filter_test.cpp
-        src/filter.c
-        src/celix_errorcodes.c
-        private/mock/celix_log_mock.c)
-    target_link_libraries(filter_test ${CPPUTEST_LIBRARY} ${CPPUTEST_EXT_LIBRARY} Celix::utils pthread)
 
     add_executable(framework_test
         private/test/framework_test.cpp

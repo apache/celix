@@ -34,6 +34,7 @@ add_library(utils SHARED
     src/thpool.c
     src/properties.c
     src/utils.c
+    src/filter.c
     ${MEMSTREAM_SOURCES}
 )
 set_target_properties(utils PROPERTIES OUTPUT_NAME "celix_utils")
@@ -98,6 +99,9 @@ if (ENABLE_TESTING AND UTILS-TESTS)
     add_executable(utils_test private/test/utils_test.cpp)
     target_link_libraries(utils_test ${CPPUTEST_LIBRARY}  Celix::utils pthread)
 
+    add_executable(filter_test private/test/filter_test.cpp)
+    target_link_libraries(filter_test ${CPPUTEST_LIBRARY}  Celix::utils pthread)
+
     configure_file(private/resources-test/properties.txt ${CMAKE_BINARY_DIR}/utils/resources-test/properties.txt COPYONLY)
 
     add_test(NAME run_array_list_test COMMAND array_list_test)
@@ -107,6 +111,7 @@ if (ENABLE_TESTING AND UTILS-TESTS)
     add_test(NAME run_linked_list_test COMMAND linked_list_test)
     add_test(NAME run_properties_test COMMAND properties_test)
     add_test(NAME run_utils_test COMMAND utils_test)
+    add_test(NAME filter_test COMMAND filter_test)
 
     SETUP_TARGET_FOR_COVERAGE(array_list_test array_list_test ${CMAKE_BINARY_DIR}/coverage/array_list_test/array_list_test)
     SETUP_TARGET_FOR_COVERAGE(hash_map hash_map_test ${CMAKE_BINARY_DIR}/coverage/hash_map_test/hash_map_test)

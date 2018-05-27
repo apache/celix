@@ -653,3 +653,40 @@ TEST(CelixBundleContextServicesTests, findServicesTest) {
 
     celix_bundleContext_unregisterService(ctx, svcId2);
 }
+
+TEST(CelixBundleContextServicesTests, trackServiceTrackerTest) {
+
+    int count = 0;
+
+    auto add = [](void *handle, const celix_service_tracker_info_t *info) {
+        STRCMP_EQUAL("example", info->serviceName);
+        STRCMP_EQUAL(CELIX_FRAMEWORK_SERVICE_C_LANGUAGE, info->serviceLanguage);
+        auto *c = static_cast<int*>(handle);
+        *c += 1;
+    };
+    auto remove = [](void *handle, const celix_service_tracker_info_t *info) {
+        STRCMP_EQUAL("example", info->serviceName);
+        STRCMP_EQUAL(CELIX_FRAMEWORK_SERVICE_C_LANGUAGE, info->serviceLanguage);
+        auto *c = static_cast<int*>(handle);
+        *c -= 1;
+    };
+
+    long trackerId = celix_bundleContext_trackServiceTrackers(ctx, "example", &count, add, remove);
+    CHECK_TRUE(trackerId >= 0);
+    CHECK_EQUAL(0, count);
+
+    long tracker2 = celix_bundleContext_trackService(ctx, "example", NULL, NULL);
+    CHECK_TRUE(tracker2 >= 0);
+    CHECK_EQUAL(1, count);
+
+    long tracker3 = celix_bundleContext_trackServices(ctx, "example", NULL, NULL, NULL);
+    CHECK_TRUE(tracker3 >= 0);
+    CHECK_EQUAL(2, count);
+
+    celix_bundleContext_stopTracker(ctx, tracker2);
+    CHECK_EQUAL(1, count);
+    celix_bundleContext_stopTracker(ctx, tracker3);
+    CHECK_EQUAL(0, count);
+
+    celix_bundleContext_stopTracker(ctx, trackerId);
+}

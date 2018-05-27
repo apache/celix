@@ -673,9 +673,58 @@ void celix_bundleContext_useBundles(
 );
 
 
+
 //TODO add useBundleWithOptions (e.g. which state)
 //TODO findBundles
-//TODO trackServiceTracker
+
+/**
+ * Service Tracker Info provided to the service tracker tracker callbacks.
+ */
+typedef struct celix_service_tracker_info {
+    /**
+     * The parsed service filter, e.g. parsed "(&(objectClass=example_calc)(service.language=C)(meta.info=foo))"
+     */
+    celix_filter_t *filter;
+
+    /**
+     *The service name filter attribute parsed from the service filter (i.e. the value of the objectClass attribute key)
+     */
+    const char *serviceName;
+
+    /**
+     * The service language filter attribute parsed from the service filter. Can be null
+     */
+    const char *serviceLanguage;
+
+    /**
+     * Bundle id of the owner of the service tracker.
+     */
+    long bundleId;
+} celix_service_tracker_info_t;
+
+/**
+ * Track the service tracker targeting the provided service name. This can be used to track if there is an interest
+ * in a certain service and ad-hoc act on that interest.
+ *
+ * Note that the celix_service_tracker_info_t pointer in the trackerAdd/trackerRemove callbacks are only valid during
+ * the callback.
+ *
+ * This tracker can be stopped with the celix_bundleContext_stopTracker function.
+ *
+ * @param ctx The bundle context
+ * @param serviceName The target service name for the service tracker to track.
+ * @param callbackHandle The callback handle which will be provided as handle in the trackerAdd and trackerRemove callback.
+ * @param trackerAdd Called when a service tracker is added, which tracks the provided service name. Will also be called
+ *                   for all existing service tracker when this tracker is started.
+ * @param trackerRemove Called when a service tracker is removed, which tracks the provided service name
+ * @return The tracker id or <0 if something went wrong (will log an error).
+ */
+long celix_bundleContext_trackServiceTrackers(
+        celix_bundle_context_t *ctx,
+        const char *serviceName,
+        void *callbackHandle,
+        void (*trackerAdd)(void *handle, const celix_service_tracker_info_t *info),
+        void (*trackerRemove)(void *handle, const celix_service_tracker_info_t *info));
 
 /**
  * Gets the dependency manager for this bundle context.

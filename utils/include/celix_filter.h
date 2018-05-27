@@ -16,22 +16,12 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * filter.h
- *
- *  \date       Apr 28, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
-#ifndef FILTER_H_
-#define FILTER_H_
+#ifndef CELIX_FILTER_H_
+#define CELIX_FILTER_H_
 
-#include "celix_errno.h"
-#include "properties.h"
-#include "celixbool.h"
-#include "framework_exports.h"
-#include "array_list.h"
+#include "celix_properties.h"
+#include "celix_array_list.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,9 +42,6 @@ typedef enum celix_filter_operand_enum
     CELIX_FILTER_OPERAND_NOT,
 } celix_filter_operand_t;
 
-typedef struct celix_filter_struct filter_t; //deprecated
-typedef struct celix_filter_struct *filter_pt; //deprecated
-
 typedef struct celix_filter_struct celix_filter_t;
 
 struct celix_filter_struct {
@@ -64,24 +51,31 @@ struct celix_filter_struct {
     const char *filterStr;
 
     //type is celix_filter_t* for AND, OR and NOT operator and char* for SUBSTRING
-    //for other operands childern is NULL
-    array_list_t *children;
+    //for other operands children is NULL
+    celix_array_list_t *children;
 };
 
-FRAMEWORK_EXPORT celix_filter_t* filter_create(const char *filterString);
 
-FRAMEWORK_EXPORT void filter_destroy(celix_filter_t *filter);
 
-FRAMEWORK_EXPORT celix_status_t filter_match(celix_filter_t *filter, properties_t *properties, bool *result);
+celix_filter_t* celix_filter_create(const char *filterStr);
 
-FRAMEWORK_EXPORT celix_status_t filter_match_filter(celix_filter_t *src, filter_t *dest, bool *result);
+void celix_filter_destroy(celix_filter_t *filter);
 
-FRAMEWORK_EXPORT celix_status_t filter_getString(celix_filter_t *filter, const char **filterStr);
+bool celix_filter_match(const celix_filter_t *filter, const celix_properties_t* props);
 
-FRAMEWORK_EXPORT celix_status_t filter_getString(celix_filter_t *filter, const char **filterStr);
+bool celix_filter_matchFilter(const celix_filter_t *filter1, const celix_filter_t *filter2);
+
+const char* celix_filter_getFilterString(const celix_filter_t *filter);
+
+/**
+ * Find the filter attribute.
+ * @return The attribute value or NULL if the attribute is not found.
+ */
+const char* celix_filter_findAttribute(const celix_filter_t *filter, const char *attribute);
+
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* FILTER_H_ */
+#endif /* CELIX_FILTER_H_ */
