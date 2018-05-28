@@ -22,49 +22,32 @@
 
 #include <stdlib.h>
 
-struct activator {
+typedef struct activator {
 	bar_t *bar;
 	example_t exampleService;
-};
+} activator_t;
 
-celix_status_t dm_create(bundle_context_pt context, void **userData) {
+static celix_status_t activator_start(activator_t *act, celix_bundle_context_t *ctx) {
 	celix_status_t status = CELIX_SUCCESS;
-	struct activator *act = calloc(1, sizeof(*act));
-	if (act != NULL) {
-
-		act->bar = bar_create();
-		act->exampleService.handle = act->bar;
-		act->exampleService.method = (void*) bar_method;
-
-		if (act->bar != NULL) {
-            *userData = act;
-        } else {
-            free(act);
-        }
-	} else {
+	act->bar = bar_create();
+	act->exampleService.handle = act->bar;
+	act->exampleService.method = (void*) bar_method;
+	if (act->bar == NULL) {
 		status = CELIX_ENOMEM;
+	} else {
+		dm_component_pt cmp = NULL;
+		component_create(ctx, "BAR", &cmp);
+		component_setImplementation(cmp, act->bar);
+		component_addInterface(cmp, EXAMPLE_NAME, EXAMPLE_VERSION, &act->exampleService, NULL);
+		dependencyManager_add(celix_bundleContext_getDependencyManager(ctx), cmp);
 	}
 	return status;
 }
 
-celix_status_t dm_init(void *userData, bundle_context_pt context, dm_dependency_manager_pt manager) {
-    celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator = userData;
-
-	dm_component_pt cmp = NULL;
-	component_create(context, "BAR", &cmp);
-	component_setImplementation(cmp, activator->bar);
-	component_addInterface(cmp, EXAMPLE_NAME, EXAMPLE_VERSION, &activator->exampleService, NULL);
-
-	dependencyManager_add(manager, cmp);
-    return status;
+static celix_status_t activator_stop(activator_t *act, celix_bundle_context_t *ctx) {
+	dependencyManager_removeAllComponents(celix_bundleContext_getDependencyManager(ctx));
+	bar_destroy(act->bar);
+	return CELIX_SUCCESS;
 }
 
-celix_status_t dm_destroy(void *userData, bundle_context_pt context, dm_dependency_manager_pt manager) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator = userData;
-	bar_destroy(activator->bar);
-	free(activator);
-	return status;
-};
-
+CELIX_GEN_BUNDLE_ACTIVATOR(activator_t, activator_start, activator_stop)

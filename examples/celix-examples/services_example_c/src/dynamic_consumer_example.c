@@ -149,39 +149,24 @@ void * run(void *handle) {
     return NULL;
 }
 
-celix_status_t bundleActivator_create(celix_bundle_context_t *ctx, void **out) {
-	celix_status_t status = CELIX_SUCCESS;
-    activator_data_t *data = calloc(1, sizeof(*data));
+static celix_status_t activator_start(activator_data_t *data, celix_bundle_context_t *ctx) {
     if (data != NULL) {
-       data->ctx = ctx;
-       data->trackCount = 0;
-       data->running = true;
-       pthread_mutex_init(&data->mutex, NULL);
-       *out = data;
-	} else {
-		status = CELIX_ENOMEM;
-	}
-	return status;
-}
-
-celix_status_t bundleActivator_start(void * handle, celix_bundle_context_t *ctx) {
-    activator_data_t *data = handle;
-    pthread_create(&data->thread, NULL, run, data);
-	return CELIX_SUCCESS;
-}
-
-celix_status_t bundleActivator_stop(void * handle, celix_bundle_context_t *ctx) {
-    activator_data_t *data = handle;
-    setRunning(data, false);
-    pthread_join(data->thread, NULL);
+        data->ctx = ctx;
+        data->trackCount = 0;
+        data->running = true;
+        pthread_mutex_init(&data->mutex, NULL);
+        pthread_create(&data->thread, NULL, run, data);
+    }
     return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * handle, celix_bundle_context_t *ctx) {
-    activator_data_t *data = handle;
+static celix_status_t activator_stop(activator_data_t *data, celix_bundle_context_t *ctx __attribute__((unused))) {
     if (data != NULL) {
+        setRunning(data, false);
+        pthread_join(data->thread, NULL);
         pthread_mutex_destroy(&data->mutex);
-        free(data);
     }
-	return CELIX_SUCCESS;
+    return CELIX_SUCCESS;
 }
+
+CELIX_GEN_BUNDLE_ACTIVATOR(activator_data_t, activator_start, activator_stop)

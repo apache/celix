@@ -25,7 +25,6 @@
 #include "constants.h"
 
 typedef struct activator_data {
-    celix_bundle_context_t *ctx;
     example_calc_t svc;
     int seed;
     long svcId;
@@ -36,38 +35,22 @@ static int calc(activator_data_t *data, int input) {
     return data->seed * input;
 }
 
-celix_status_t bundleActivator_create(celix_bundle_context_t *ctx, void **out) {
-	celix_status_t status = CELIX_SUCCESS;
-    activator_data_t *data = calloc(1, sizeof(*data));
-    if (data != NULL) {
-       data->svc.handle = data;
-       data->svc.calc = (void*)calc;
-       data->ctx = ctx;
-       data->seed = 42;
-       data->svcId = -1L;
-       *out = data;
-	} else {
-		status = CELIX_ENOMEM;
-	}
-	return status;
-}
+static celix_status_t activator_start(activator_data_t *data, celix_bundle_context_t *ctx) {
+    data->svc.handle = data;
+    data->svc.calc = (void*)calc;
+    data->seed = 42;
+    data->svcId = -1L;
 
-celix_status_t bundleActivator_start(void * handle, celix_bundle_context_t *ctx) {
-    activator_data_t *data = handle;
-    data->svcId = celix_bundleContext_registerService(data->ctx, &data->svc, EXAMPLE_CALC_NAME, NULL);
+    data->svcId = celix_bundleContext_registerService(ctx, &data->svc, EXAMPLE_CALC_NAME, NULL);
     printf("Registered calc service with service id %li\n", data->svcId);
-	return CELIX_SUCCESS;
+
+    return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_stop(void * handle, celix_bundle_context_t *ctx) {
-    activator_data_t *data = handle;
-    celix_bundleContext_unregisterService(data->ctx, data->svcId);
+static celix_status_t activator_stop(activator_data_t *data, celix_bundle_context_t *ctx) {
+    celix_bundleContext_unregisterService(ctx, data->svcId);
     printf("Unregistered calc service with service id %li\n", data->svcId);
     return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * handle, celix_bundle_context_t *ctx) {
-    activator_data_t *data = handle;
-    free(data);
-	return CELIX_SUCCESS;
-}
+CELIX_GEN_BUNDLE_ACTIVATOR(activator_data_t, activator_start, activator_stop)

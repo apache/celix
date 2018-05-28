@@ -116,6 +116,45 @@ ACTIVATOR_EXPORT celix_status_t bundleActivator_stop(void *userData, bundle_cont
 ACTIVATOR_EXPORT celix_status_t
 bundleActivator_destroy(void *userData, bundle_context_t* context);
 
+
+/**
+ * This macro generated the required bundle activator functions. These can be used to more type safe bundle activator
+ * entries.
+ *
+ * The macro will create the following bundlea activator functions:
+ * - bundleActivator_create which allocates a pointer to the provided type.
+ * - bundleActivator_start/stop which will call the respectively provided typed start/stop functions.
+ * - bundleActivator_destroy will free the allocated for the provided type.
+ *
+ * @param type The activator type (e.g. 'struct shell_activator').
+ * @param start the activator actStart function with the following signature: celix_status_t (*)(<actType>*, celix_bundle_context_t*).
+ * @param stop the activator actStop function with the following signature: celix_status_t (*)(<actType>*, celix_bundle_context_t*).
+ */
+#define CELIX_GEN_BUNDLE_ACTIVATOR(actType, actStart, actStop)                                                         \
+celix_status_t bundleActivator_create(celix_bundle_context_t *ctx __attribute__((unused)), void **userData) {          \
+    celix_status_t status = CELIX_SUCCESS;                                                                             \
+    actType *data = calloc(1, sizeof(*data));                                                                          \
+    if (data != NULL) {                                                                                                \
+        *userData = data;                                                                                              \
+    } else {                                                                                                           \
+        status = CELIX_ENOMEM;                                                                                         \
+    }                                                                                                                  \
+    return status;                                                                                                     \
+}                                                                                                                      \
+                                                                                                                       \
+celix_status_t bundleActivator_start(void *userData, celix_bundle_context_t *ctx) {                                    \
+    return actStart((actType*)userData, ctx);                                                                          \
+}                                                                                                                      \
+                                                                                                                       \
+celix_status_t bundleActivator_stop(void *userData, celix_bundle_context_t *ctx) {                                     \
+    return actStop((actType*)userData, ctx);                                                                           \
+}                                                                                                                      \
+                                                                                                                       \
+celix_status_t bundleActivator_destroy(void *userData, celix_bundle_context_t *ctx __attribute__((unused))) {          \
+    free(userData);                                                                                                    \
+    return CELIX_SUCCESS;                                                                                              \
+}
+
 #ifdef __cplusplus
 }
 #endif

@@ -26,63 +26,52 @@ struct activator {
 	foo2_t *foo;
 };
 
-celix_status_t dm_create(bundle_context_pt context, void **userData) {
+static celix_status_t activator_start(struct activator *act, celix_bundle_context_t *ctx) {
 	celix_status_t status = CELIX_SUCCESS;
-	struct activator *act = calloc(1, sizeof(*act));
-	if (act != NULL) {
-		act->foo = foo2_create();
-        if (act->foo != NULL) {
-            *userData = act;
-        } else {
-            free(act);
-        }
-	} else {
+	act->foo = foo2_create();
+	if (act->foo == NULL) {
 		status = CELIX_ENOMEM;
+	} else {
+
+		dm_component_pt cmp = NULL;
+		component_create(ctx, "FOO2", &cmp);
+		component_setImplementation(cmp, act->foo);
+
+		/*
+		With the component_setCallbacksSafe we register callbacks when a component is started / stopped using a component
+		 with type foo1_t*
+		*/
+		component_setCallbacksSafe(cmp, foo2_t*, NULL, foo2_start, foo2_stop, NULL);
+
+		dm_service_dependency_pt dep = NULL;
+		serviceDependency_create(&dep);
+		serviceDependency_setRequired(dep, false);
+		serviceDependency_setService(dep, EXAMPLE_NAME, EXAMPLE_CONSUMER_RANGE, NULL);
+		serviceDependency_setStrategy(dep, DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND);
+
+		/*
+		With the serviceDependency_setCallbacksSafe we register callbacks when a service
+		is added and about to be removed for the component type foo1_t* and service type example_t*.
+
+		We should protect the usage of the
+		service because after removal of the service the memory location of that service
+		could be freed
+		*/
+		serviceDependency_setCallbacksSafe(dep, foo2_t*, const example_t*, NULL, foo2_addExample, NULL,
+										   foo2_removeExample, NULL);
+		component_addServiceDependency(cmp, dep);
+
+		dependencyManager_add(celix_bundleContext_getDependencyManager(ctx), cmp);
 	}
+
 	return status;
 }
 
-celix_status_t dm_init(void *userData, bundle_context_pt context, dm_dependency_manager_pt manager) {
-    celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator = userData;
-
-	dm_component_pt cmp = NULL;
-	component_create(context, "FOO2", &cmp);
-	component_setImplementation(cmp, activator->foo);
-
-	/*
-	With the component_setCallbacksSafe we register callbacks when a component is started / stopped using a component
-	 with type foo1_t*
-	*/
-    component_setCallbacksSafe(cmp, foo2_t*, NULL, foo2_start, foo2_stop, NULL);
-
-	dm_service_dependency_pt dep = NULL;
-	serviceDependency_create(&dep);
-	serviceDependency_setRequired(dep, false);
-	serviceDependency_setService(dep, EXAMPLE_NAME, EXAMPLE_CONSUMER_RANGE, NULL);
-	serviceDependency_setStrategy(dep, DM_SERVICE_DEPENDENCY_STRATEGY_SUSPEND);
-
-	/*
-	With the serviceDependency_setCallbacksSafe we register callbacks when a service
-	is added and about to be removed for the component type foo1_t* and service type example_t*.
-
-	We should protect the usage of the
- 	service because after removal of the service the memory location of that service
-	could be freed
-	*/
-    serviceDependency_setCallbacksSafe(dep, foo2_t*, const example_t*, NULL, foo2_addExample, NULL, foo2_removeExample, NULL);
-	component_addServiceDependency(cmp, dep);
-
-	dependencyManager_add(manager, cmp);
-
-    return status;
+static celix_status_t activator_stop(struct activator *act, celix_bundle_context_t *ctx) {
+	dependencyManager_removeAllComponents(celix_bundleContext_getDependencyManager(ctx));
+	foo2_destroy(act->foo);
+	return CELIX_SUCCESS;
 }
 
-celix_status_t dm_destroy(void *userData, bundle_context_pt context, dm_dependency_manager_pt manager) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator = userData;
-	foo2_destroy(activator->foo);
-	free(activator);
-	return status;
-};
 
+CELIX_GEN_BUNDLE_ACTIVATOR(struct activator, activator_start, activator_stop)

@@ -41,7 +41,7 @@ static int calc(void *handle __attribute__((unused)), int input) {
 }
 
 static bool isRunning(activator_data_t *data) {
-    bool result = false;
+    bool result;
     pthread_mutex_lock(&data->mutex);
     result = data->running;
     pthread_mutex_unlock(&data->mutex);
@@ -68,7 +68,7 @@ void * run(void *handle) {
             data->svcIds[i++] = celix_bundleContext_registerService(data->ctx, &data->svc, EXAMPLE_CALC_NAME, props);
         } else { //down
             celix_bundleContext_unregisterService(data->ctx, data->svcIds[i]);
-            data->svcIds[--i] = -1L;
+            data->svcIds[i--] = -1L;
         }
         if (i == 99) {
             up = false;
@@ -89,45 +89,26 @@ void * run(void *handle) {
     return NULL;
 }
 
-celix_status_t bundleActivator_create(celix_bundle_context_t *ctx, void **out) {
-	celix_status_t status = CELIX_SUCCESS;
-    activator_data_t *data = calloc(1, sizeof(*data));
-    if (data != NULL) {
-       data->svc.handle = data;
-       data->svc.calc = calc;
-       data->ctx = ctx;
-       data->running = true;
-       pthread_mutex_init(&data->mutex, NULL);
+static celix_status_t activator_start(activator_data_t *data, celix_bundle_context_t *ctx) {
+    data->svc.handle = data;
+    data->svc.calc = calc;
+    data->ctx = ctx;
+    data->running = true;
+    pthread_mutex_init(&data->mutex, NULL);
 
-       for (int i = 0; i < 100; ++i) {
-           data->svcIds[i] = -1L;
-       }
+    for (int i = 0; i < 100; ++i) {
+        data->svcIds[i] = -1L;
+    }
 
-       *out = data;
-	} else {
-		status = CELIX_ENOMEM;
-	}
-	return status;
-}
-
-celix_status_t bundleActivator_start(void * handle, celix_bundle_context_t *ctx) {
-    activator_data_t *data = handle;
     pthread_create(&data->thread, NULL, run ,data);
 	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_stop(void * handle, celix_bundle_context_t *ctx) {
-    activator_data_t *data = handle;
+static celix_status_t activator_stop(activator_data_t *data, celix_bundle_context_t *ctx __attribute__((unused))) {
     setRunning(data, false);
     pthread_join(data->thread, NULL);
-    return CELIX_SUCCESS;
-}
-
-celix_status_t bundleActivator_destroy(void * handle, celix_bundle_context_t *ctx) {
-    activator_data_t *data = handle;
-    if (data != NULL) {
-        pthread_mutex_destroy(&data->mutex);
-        free(data);
-    }
+    pthread_mutex_destroy(&data->mutex);
 	return CELIX_SUCCESS;
 }
+
+CELIX_GEN_BUNDLE_ACTIVATOR(activator_data_t, activator_start, activator_stop)

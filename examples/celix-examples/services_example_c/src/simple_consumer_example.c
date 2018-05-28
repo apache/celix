@@ -47,21 +47,9 @@ static void useCalc(activator_data_t *data __attribute__((unused)), example_calc
     printf("Called highest ranking service. Result is %i\n", result);
 }
 
-celix_status_t bundleActivator_create(celix_bundle_context_t *ctx, void **out) {
-	celix_status_t status = CELIX_SUCCESS;
-    activator_data_t *data = calloc(1, sizeof(*data));
-    if (data != NULL) {
-       data->ctx = ctx;
-       data->trkId = -1L;
-       *out = data;
-	} else {
-		status = CELIX_ENOMEM;
-	}
-	return status;
-}
-
-celix_status_t bundleActivator_start(void * handle, celix_bundle_context_t *ctx) {
-    activator_data_t *data = handle;
+static celix_status_t activator_start(activator_data_t *data, celix_bundle_context_t *ctx) {
+    data->ctx = ctx;
+    data->trkId = -1L;
 
     printf("Starting service tracker\n");
     data->trkId = celix_bundleContext_trackServices(data->ctx, EXAMPLE_CALC_NAME, data, (void*)addSvc, (void*)removeSvc);
@@ -69,17 +57,12 @@ celix_status_t bundleActivator_start(void * handle, celix_bundle_context_t *ctx)
     printf("Trying to use calc service\n");
     celix_bundleContext_useService(data->ctx, EXAMPLE_CALC_NAME, data, (void*)useCalc);
 
-	return CELIX_SUCCESS;
+    return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_stop(void * handle, celix_bundle_context_t *ctx) {
-    activator_data_t *data = handle;
+static celix_status_t activator_stop(activator_data_t *data, celix_bundle_context_t *ctx) {
     celix_bundleContext_stopTracker(data->ctx, data->trkId);
     return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_destroy(void * handle, celix_bundle_context_t *ctx) {
-    activator_data_t *data = handle;
-    free(data);
-	return CELIX_SUCCESS;
-}
+CELIX_GEN_BUNDLE_ACTIVATOR(activator_data_t, activator_start, activator_stop)
