@@ -28,23 +28,23 @@ target_include_directories(celix_pubsub_poi_subscriber PRIVATE private/include)
 
 
 celix_bundle_files(celix_pubsub_poi_subscriber
-	    ${PROJECT_SOURCE_DIR}/pubsub/examples/pubsub/msg_descriptors/msg_poi1.descriptor
-	    ${PROJECT_SOURCE_DIR}/pubsub/examples/pubsub/msg_descriptors/msg_poi2.descriptor
+	    ${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/pubsub/msg_descriptors/msg_poi1.descriptor
+	    ${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/pubsub/msg_descriptors/msg_poi2.descriptor
     DESTINATION "META-INF/descriptors"
 )
 
 celix_bundle_files(celix_pubsub_poi_subscriber
-		${PROJECT_SOURCE_DIR}/pubsub/examples/pubsub/msg_descriptors/poi1.properties
-		${PROJECT_SOURCE_DIR}/pubsub/examples/pubsub/msg_descriptors/poi2.properties
+		${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/pubsub/msg_descriptors/poi1.properties
+		${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/pubsub/msg_descriptors/poi2.properties
     DESTINATION "META-INF/topics/sub"
 )
 
 celix_bundle_files(celix_pubsub_poi_subscriber
-		${PROJECT_SOURCE_DIR}/pubsub/examples/keys/subscriber
+		${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/keys/subscriber
     DESTINATION "META-INF/keys"
 )
 
 celix_bundle_files(celix_pubsub_poi_subscriber
-		${PROJECT_SOURCE_DIR}/pubsub/examples/keys/publisher/public
+		${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/keys/publisher/public
     DESTINATION "META-INF/keys/publisher"
 )

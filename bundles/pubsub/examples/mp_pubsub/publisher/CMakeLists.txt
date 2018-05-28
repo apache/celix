@@ -26,18 +26,18 @@ target_link_libraries(org.apache.celix.pubsub_publisher.MpPublisher PRIVATE Celi
 target_include_directories(org.apache.celix.pubsub_publisher.MpPublisher PRIVATE private/include)
 
 celix_bundle_files(org.apache.celix.pubsub_publisher.MpPublisher
-	${PROJECT_SOURCE_DIR}/pubsub/examples/mp_pubsub/msg_descriptors/msg_ew.descriptor
-	${PROJECT_SOURCE_DIR}/pubsub/examples/mp_pubsub/msg_descriptors/msg_ide.descriptor
-	${PROJECT_SOURCE_DIR}/pubsub/examples/mp_pubsub/msg_descriptors/msg_kinematics.descriptor
+	${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/mp_pubsub/msg_descriptors/msg_ew.descriptor
+	${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/mp_pubsub/msg_descriptors/msg_ide.descriptor
+	${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/mp_pubsub/msg_descriptors/msg_kinematics.descriptor
 	DESTINATION "META-INF/descriptors"
 )
 
 celix_bundle_files(org.apache.celix.pubsub_publisher.MpPublisher
-		${PROJECT_SOURCE_DIR}/pubsub/examples/keys/publisher
+	${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/keys/publisher
     DESTINATION "META-INF/keys"
 )
 
 celix_bundle_files(org.apache.celix.pubsub_publisher.MpPublisher
-		${PROJECT_SOURCE_DIR}/pubsub/examples/keys/subscriber/public
+	${PROJECT_SOURCE_DIR}/bundles/pubsub/examples/keys/subscriber/public
     DESTINATION "META-INF/keys/subscriber"
 )
