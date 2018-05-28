@@ -44,6 +44,9 @@
 extern "C" {
 #endif
 
+struct celix_bundle_activator;
+typedef struct celix_bundle_activator celix_bundle_activator_t;
+
 FRAMEWORK_EXPORT celix_status_t bundle_create(bundle_pt *bundle);
 
 FRAMEWORK_EXPORT celix_status_t
@@ -63,9 +66,9 @@ FRAMEWORK_EXPORT void *bundle_getHandle(bundle_pt bundle);
 
 FRAMEWORK_EXPORT void bundle_setHandle(bundle_pt bundle, void *handle);
 
-FRAMEWORK_EXPORT activator_pt bundle_getActivator(bundle_pt bundle);
+FRAMEWORK_EXPORT celix_bundle_activator_t *bundle_getActivator(bundle_pt bundle);
 
-FRAMEWORK_EXPORT celix_status_t bundle_setActivator(bundle_pt bundle, activator_pt activator);
+FRAMEWORK_EXPORT celix_status_t bundle_setActivator(bundle_pt bundle, celix_bundle_activator_t *activator);
 
 FRAMEWORK_EXPORT celix_status_t bundle_getContext(bundle_pt bundle, bundle_context_pt *context);
 

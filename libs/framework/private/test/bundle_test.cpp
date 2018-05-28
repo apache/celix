@@ -258,10 +258,10 @@ TEST(bundle, setHandle) {
 
 TEST(bundle, getActivator) {
 	bundle_pt bundle = (bundle_pt) malloc(sizeof(*bundle));
-	activator_pt expected = (activator_pt) 0x10;
+	celix_bundle_activator_t *expected = (celix_bundle_activator_t*) 0x10;
 	bundle->activator = expected;
 
-	activator_pt actual = bundle_getActivator(bundle);
+	celix_bundle_activator_t *actual = bundle_getActivator(bundle);
 	POINTERS_EQUAL(expected, actual);
 
 	free(bundle);
@@ -269,7 +269,7 @@ TEST(bundle, getActivator) {
 
 TEST(bundle, setActivator) {
 	bundle_pt bundle = (bundle_pt) malloc(sizeof(*bundle));
-	activator_pt expected = (activator_pt) 0x10;
+	celix_bundle_activator_t *expected = (celix_bundle_activator_t*) 0x10;
 
 	celix_status_t status = bundle_setActivator(bundle, expected);
 	LONGS_EQUAL(CELIX_SUCCESS, status);

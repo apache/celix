@@ -22,9 +22,9 @@
 
 #include <stdlib.h>
 
-struct activator {
+typedef struct activator {
 	foo1_t *foo;
-};
+} activator_t;
 
 static celix_status_t activator_start(activator_t *act, celix_bundle_context_t *ctx) {
 	celix_status_t status = CELIX_SUCCESS;

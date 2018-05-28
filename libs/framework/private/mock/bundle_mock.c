@@ -81,12 +81,12 @@ void bundle_setHandle(bundle_pt bundle, void * handle) {
 	mock_c()->actualCall("bundle_setHandle");
 }
 
-activator_pt bundle_getActivator(bundle_pt bundle) {
+celix_bundle_activator_t *bundle_getActivator(bundle_pt bundle) {
 	mock_c()->actualCall("bundle_getActivator");
 	return mock_c()->returnValue().value.pointerValue;
 }
 
-celix_status_t bundle_setActivator(bundle_pt bundle, activator_pt activator) {
+celix_status_t bundle_setActivator(bundle_pt bundle, celix_bundle_activator_t *activator) {
 	mock_c()->actualCall("bundle_setActivator");
 	return mock_c()->returnValue().value.intValue;
 }

@@ -24,9 +24,11 @@
 #include "bundle.h"
 #include "celix_bundle.h"
 
+
+
 struct bundle {
 	bundle_context_pt context;
-	activator_pt activator;
+	struct celix_bundle_activator *activator;
 	bundle_state_e state;
 	void * handle;
 	bundle_archive_pt archive;

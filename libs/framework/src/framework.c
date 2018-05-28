@@ -49,7 +49,7 @@ typedef celix_status_t (*start_function_fp)(void *userData, bundle_context_t *co
 typedef celix_status_t (*stop_function_fp)(void *userData, bundle_context_t *context);
 typedef celix_status_t (*destroy_function_fp)(void *userData, bundle_context_t *context);
 
-struct activator {
+struct celix_bundle_activator {
     void * userData;
 
     create_function_fp create;
@@ -454,8 +454,7 @@ celix_status_t fw_init(framework_pt framework) {
     status = CELIX_DO_IF(status, bundleContext_create(framework, framework->logger, framework->bundle, &context));
     status = CELIX_DO_IF(status, bundle_setContext(framework->bundle, context));
     if (status == CELIX_SUCCESS) {
-        activator_pt activator = NULL;
-        activator = (activator_pt) calloc(1,(sizeof(*activator)));
+        celix_bundle_activator_t *activator = calloc(1,(sizeof(*activator)));
         if (activator != NULL) {
             bundle_context_t *context = NULL;
             void * userData = NULL;
@@ -727,7 +726,7 @@ celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int opti
 	bundle_context_t *context = NULL;
 	bundle_state_e state;
 	module_pt module = NULL;
-	activator_pt activator = NULL;
+    celix_bundle_activator_t *activator = NULL;
 	char *error = NULL;
 	const char *name = NULL;
 
@@ -776,7 +775,7 @@ celix_status_t fw_startBundle(framework_pt framework, bundle_pt bundle, int opti
                 status = CELIX_DO_IF(status, bundle_setContext(bundle, context));
 
                 if (status == CELIX_SUCCESS) {
-                    activator = (activator_pt) calloc(1,(sizeof(*activator)));
+                    activator = calloc(1,(sizeof(*activator)));
                     if (activator == NULL) {
                         status = CELIX_ENOMEM;
                     } else {
@@ -921,7 +920,7 @@ celix_status_t framework_updateBundle(framework_pt framework, bundle_pt bundle, 
 celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool record) {
 	celix_status_t status = CELIX_SUCCESS;
 	bundle_state_e state;
-    activator_pt activator = NULL;
+    celix_bundle_activator_t *activator = NULL;
     bundle_context_t *context = NULL;
     bool wasActive = false;
     long id = 0;

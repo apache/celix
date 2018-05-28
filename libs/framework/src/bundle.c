@@ -157,11 +157,11 @@ void bundle_setHandle(bundle_pt bundle, void * handle) {
 	bundle->handle = handle;
 }
 
-activator_pt bundle_getActivator(bundle_pt bundle) {
+celix_bundle_activator_t* bundle_getActivator(bundle_pt bundle) {
 	return bundle->activator;
 }
 
-celix_status_t bundle_setActivator(bundle_pt bundle, activator_pt activator) {
+celix_status_t bundle_setActivator(bundle_pt bundle, celix_bundle_activator_t *activator) {
 	bundle->activator = activator;
 	return CELIX_SUCCESS;
 }
