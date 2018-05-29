@@ -21,12 +21,20 @@ This example show how services can be provided and consumer by bundles.
 
 The example uses the `celix_bundleContext_registerService` to provide
 services and uses a combination of `celix_bundleContext_useService`,
- `celix_bundleContext_useServices` and `celix_bundleContext_trackServices`
- to consume services.
+`celix_bundleContext_useServices` and `celix_bundleContext_trackServices`
+to consume services.
 
- TODO intro bundle context
+The bundle context is the proxy to the Celix framework for a bundle
+and can be used to:
 
- See the `bundle_context.h` for documentation about these - and other -functions
+- Register services
+- Register service factories
+- Use services
+- Track services
+- Track bundles
+- Track service trackers
+
+See the `bundle_context.h` for documentation about these - and other -functions
 
 # Simple Service Provider & Consumer Example
 

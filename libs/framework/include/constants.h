@@ -43,10 +43,17 @@ static const char *const CELIX_FRAMEWORK_SERVICE_CXX_LANGUAGE = "C++";
 static const char *const CELIX_FRAMEWORK_SERVICE_SHARED_LANGUAGE = "shared"; //e.g. marker services
 
 static const char *const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR = "Bundle-Activator";
-static const char *const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_CREATE = "bundleActivator_create";
-static const char *const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_START = "bundleActivator_start";
-static const char *const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_STOP = "bundleActivator_stop";
-static const char *const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_DESTROY = "bundleActivator_destroy";
+
+static const char *const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_CREATE = "celix_bundleActivator_create";
+static const char *const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_START = "celix_bundleActivator_start";
+static const char *const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_STOP = "celix_bundleActivator_stop";
+static const char *const OSGI_FRAMEWORK_BUNDLE_ACTIVATOR_DESTROY = "celix_bundleActivator_destroy";
+
+static const char *const OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_CREATE = "bundleActivator_create";
+static const char *const OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_START = "bundleActivator_start";
+static const char *const OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_STOP = "bundleActivator_stop";
+static const char *const OSGI_FRAMEWORK_DEPRECATED_BUNDLE_ACTIVATOR_DESTROY = "bundleActivator_destroy";
+
 
 static const char *const OSGI_FRAMEWORK_BUNDLE_DM_ACTIVATOR_CREATE = "dm_create";
 static const char *const OSGI_FRAMEWORK_BUNDLE_DM_ACTIVATOR_INIT = "dm_init";

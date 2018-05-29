@@ -22,7 +22,7 @@
 #include <stdlib.h>
 
 #include "example_calc.h"
-#include "bundle_activator.h"
+#include "celix_bundle_activator.h"
 #include "constants.h"
 
 typedef struct activator_data {

@@ -728,6 +728,21 @@ long celix_bundleContext_trackServiceTrackers(
  */
 dm_dependency_manager_t* celix_bundleContext_getDependencyManager(celix_bundle_context_t *ctx);
 
+
+/**
+ * Returns the bundle for this bundle context.
+ */
+celix_bundle_t* celix_bundleContext_getBundle(celix_bundle_context_t *ctx);
+
+
+/**
+ * Gets the config property - or environment variable if the config property does not exist - for the provided name.
+ * @param key The key of the property to receive
+ * @param defaultVal The default value to use if the property is not found (can be NULL)
+ * @return The property value for the provided key or the provided defaultValue is the key is not found.
+ */
+const char* celix_bundleContext_getProperty(celix_bundle_context_t *ctx, const char *key, const char *defaultVal);
+
 #ifdef __cplusplus
 }
 #endif

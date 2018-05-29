@@ -35,7 +35,7 @@
 #include "dm_dependency_manager.h"
 #include "dm_component.h"
 #include "dm_service_dependency.h"
-#include "bundle_activator.h"
+#include "celix_bundle_activator.h"
 
 #ifdef __cplusplus
 extern "C" {

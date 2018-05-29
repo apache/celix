@@ -21,6 +21,8 @@ else ()
     set(EXAMPLES true) #celix_subproject is only available in the celix project -> using examples dir in other project is also supported
 endif ()
 if (EXAMPLES)
+    add_subdirectory(bundle_example_c)
+
     add_subdirectory(hello_world)
     add_subdirectory(hello_world_test)
 

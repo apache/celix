@@ -17,39 +17,23 @@
  *under the License.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
 
-#include "example_calc.h"
 #include "celix_bundle_activator.h"
-#include "constants.h"
+#include "celix_bundle.h"
 
 typedef struct activator_data {
-    example_calc_t svc;
-    int seed;
-    long svcId;
+    /*intentional empty*/
 } activator_data_t;
 
 
-static int calc(activator_data_t *data, int input) {
-    return data->seed * input;
-}
 
 static celix_status_t activator_start(activator_data_t *data, celix_bundle_context_t *ctx) {
-    data->svc.handle = data;
-    data->svc.calc = (void*)calc;
-    data->seed = 42;
-    data->svcId = -1L;
-
-    data->svcId = celix_bundleContext_registerService(ctx, &data->svc, EXAMPLE_CALC_NAME, NULL);
-    printf("Registered calc service with service id %li\n", data->svcId);
-
+    printf("Hello world from C bundle with id %li\n", celix_bundle_getId(celix_bundleContext_getBundle(ctx)));
     return CELIX_SUCCESS;
 }
 
 static celix_status_t activator_stop(activator_data_t *data, celix_bundle_context_t *ctx) {
-    celix_bundleContext_unregisterService(ctx, data->svcId);
-    printf("Unregistered calc service with service id %li\n", data->svcId);
+    printf("Goodbye world from C bundle with id %li\n", celix_bundle_getId(celix_bundleContext_getBundle(ctx)));
     return CELIX_SUCCESS;
 }
 
