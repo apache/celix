@@ -108,9 +108,15 @@ celix_status_t bundleContext_destroy(bundle_context_pt context) {
 celix_status_t bundleContext_getBundle(bundle_context_pt context, bundle_pt *out) {
 	celix_status_t status = CELIX_SUCCESS;
     celix_bundle_t *bnd = celix_bundleContext_getBundle(context);
+    if (context == NULL) {
+        status = CELIX_ILLEGAL_ARGUMENT;
+    }
     if (out != NULL) {
         *out = bnd;
     }
+
+    framework_logIfError(logger, status, NULL, "Failed to get bundle");
+
 	return status;
 }
 
