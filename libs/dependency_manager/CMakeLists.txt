@@ -19,7 +19,7 @@
 add_library(dependency_manager_static STATIC src/dm_activator.c)
 target_include_directories(dependency_manager_static PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
-        $<INSTALL_INTERFACE:include/celix/dependency_manager>
+        $<INSTALL_INTERFACE:include/celix>
 )
 if (APPLE)
     target_link_libraries(dependency_manager_static Celix::framework "-undefined dynamic_lookup")
@@ -30,7 +30,7 @@ endif()
 add_library(dependency_manager_so SHARED src/dm_activator.c)
 target_include_directories(dependency_manager_so PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/api>
-        $<INSTALL_INTERFACE:include/celix/dependency_manager>
+        $<INSTALL_INTERFACE:include/celix>
 )
 if (APPLE)
     target_link_libraries(dependency_manager_so Celix::framework "-undefined dynamic_lookup")
