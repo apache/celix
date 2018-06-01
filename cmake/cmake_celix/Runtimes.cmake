@@ -24,12 +24,16 @@ if (NOT TARGET celix-runtimes)
 endif ()
 
 function(add_runtime)
+    message(DEPRECATION "add_runtime is depecrated, use add_celix_runtime instead.")
+    add_celix_runtime(${ARGN})
+endfunction()
+function(add_celix_runtime)
     list(GET ARGN 0 RUNTIME_TARGET_NAME)
     list(REMOVE_AT ARGN 0)
 
     set(OPTIONS USE_TERM LOG_TO_FILES)
     set(ONE_VAL_ARGS WAIT_FOR NAME GROUP)
-    set(MULTI_VAL_ARGS DEPLOYMENTS COMMANDS ARGUMENTS)
+    set(MULTI_VAL_ARGS DEPLOYMENTS CONTAINERS COMMANDS ARGUMENTS RELEASE_FILES)
     cmake_parse_arguments(RUNTIME "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
 
     if (NOT RUNTIME_NAME)
@@ -59,18 +63,19 @@ function(add_runtime)
         DEPENDS "${TIMESTAMP_FILE}"
     )
 
-    set_target_properties(${RUNTIME_TARGET_NAME} PROPERTIES "RUNTIME_DEPLOYMENTS" "") #deployments that should be runned
+    set_target_properties(${RUNTIME_TARGET_NAME} PROPERTIES "RUNTIME_CONTAINERS" "") #containers that should be runned
     set_target_properties(${RUNTIME_TARGET_NAME} PROPERTIES "RUNTIME_COMMANDS" "") #command that should be executed
     set_target_properties(${RUNTIME_TARGET_NAME} PROPERTIES "RUNTIME_ARGUMENTS" "") #potential arguments to use for deployments
+    set_target_properties(${RUNTIME_TARGET_NAME} PROPERTIES "RELEASE_FILES" "") #release files which needs to be released before starting the containers/commands
     set_target_properties(${RUNTIME_TARGET_NAME} PROPERTIES "RUNTIME_NAME" "${RUNTIME_NAME}") #The runtime workdir
     set_target_properties(${RUNTIME_TARGET_NAME} PROPERTIES "RUNTIME_GROUP" "${RUNTIME_GROUP}") #The runtime workdir
     set_target_properties(${RUNTIME_TARGET_NAME} PROPERTIES "RUNTIME_LOC" "${RUNTIME_LOC}") #The runtime workdir
     set_target_properties(${RUNTIME_TARGET_NAME} PROPERTIES "RUNTIME_USE_TERM" "${RUNTIME_USE_TERM}") #Wether or not the use terminal
     set_target_properties(${RUNTIME_TARGET_NAME} PROPERTIES "RUNTIME_LOG_TO_FILES" "${RUNTIME_LOG_TO_FILES}") #log to files or std out/err
-    set_target_properties(${RUNTIME_TARGET_NAME} PROPERTIES "RUNTIME_NEXT_DEPLOYMENT_ID" "0") #used for indexes int he bash scripts
+    set_target_properties(${RUNTIME_TARGET_NAME} PROPERTIES "RUNTIME_NEXT_CONTAINER_ID" "0") #used for indexes int he bash scripts
 
     #wait for deployment, e.g. the one that control the lifecycle of the runtime.
-    set_target_properties(${RUNTIME_TARGET_NAME} PROPERTIES "RUNTIME_WAIT_FOR_DEPLOYMENT" "")
+    set_target_properties(${RUNTIME_TARGET_NAME} PROPERTIES "RUNTIME_WAIT_FOR_CONTAINER" "")
 
     #wait for command, e.g. the one that control the lifecycle of the runtime.
     set_target_properties(${RUNTIME_TARGET_NAME} PROPERTIES "RUNTIME_WAIT_FOR_COMMAND" "")
@@ -83,7 +88,6 @@ function(add_runtime)
     configure_file("${CELIX_CMAKE_DIRECTORY}/runtime_common.sh.in" "${CMAKE_CURRENT_BINARY_DIR}/common.sh.${RUNTIME_TARGET_NAME}.in.1" @ONLY)
 
 
-    #replaces $<TARGET_PROPERTY:<RUNTIME_NAME>,RUNTIME_DEPLOYMENTS>
     file(GENERATE
             OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/common.sh.${RUNTIME_TARGET_NAME}.in.2"
             INPUT "${CMAKE_CURRENT_BINARY_DIR}/common.sh.${RUNTIME_TARGET_NAME}.in.1"
@@ -107,17 +111,23 @@ function(add_runtime)
     list(APPEND DEPS "${RUNTIME_TARGET_NAME}")
     set_target_properties(celix-runtimes PROPERTIES "DEPS" "${DEPS}")
 
-    runtime_deployments(${RUNTIME_TARGET_NAME} ${RUNTIME_DEPLOYMENTS})
-    runtime_commands(${RUNTIME_TARGET_NAME} ${RUNTIME_COMMANDS})
-    runtime_arguments(${RUNTIME_TARGET_NAME} ${RUNTIME_ARGUMENTS})
+    celix_runtime_containers(${RUNTIME_TARGET_NAME} ${RUNTIME_DEPLOYMENTS})
+    celix_runtime_containers(${RUNTIME_TARGET_NAME} ${RUNTIME_CONTAINERS})
+    celix_runtime_commands(${RUNTIME_TARGET_NAME} ${RUNTIME_COMMANDS})
+    celix_runtime_arguments(${RUNTIME_TARGET_NAME} ${RUNTIME_ARGUMENTS})
+    celix_runtime_release_files(${RUNTIME_TARGET_NAME} ${RUNTIME_RELEASE_FILES})
 
     if (RUNTIME_WAIT_FOR)
-        runtime_deployment_wait_for(${RUNTIME_TARGET_NAME} ${RUNTIME_WAIT_FOR})
+        celix_runtime_deployment_wait_for(${RUNTIME_TARGET_NAME} ${RUNTIME_WAIT_FOR})
     endif ()
 
 endfunction()
 
 function(runtime_use_term)
+    message(DEPRECATION "runtime_use_term is depecrated, use celix_runtime_use_term instead.")
+    celix_runtime_use_term(${ARGN})
+endfunction()
+function(celix_runtime_use_term)
     #0 is runtime TARGET
     #1 is BOOL (use xterm)
     list(GET ARGN 0 RUNTIME_NAME)
@@ -126,6 +136,10 @@ function(runtime_use_term)
 endfunction()
 
 function(runtime_log_to_files)
+    message(DEPRECATION "runtime_log_to_files is depecrated, use celix_runtime_log_to_files instead.")
+    celix_runtime_log_to_files(${ARGN})
+endfunction()
+function(celix_runtime_log_to_files)
     #0 is runtime TARGET
     #1 is BOOL (log to files)
     list(GET ARGN 0 RUNTIME_NAME)
@@ -134,36 +148,48 @@ function(runtime_log_to_files)
 endfunction()
 
 function(runtime_deployments)
+    message(DEPRECATION "runtime_deployments is depecrated, use celix_runtime_containers instead.")
+    celix_runtime_containers(${ARGN})
+endfunction()
+function(celix_runtime_containers)
     #0 is runtime TARGET
     #1..n is deployments
     list(GET ARGN 0 RUNTIME_NAME)
     list(REMOVE_AT ARGN 0)
 
-    get_target_property(DEPLOYMENTS ${RUNTIME_NAME} "RUNTIME_DEPLOYMENTS")
-    foreach(DEPLOYMENT IN ITEMS ${ARGN})
-        get_target_property(DEP_ID ${RUNTIME_NAME} "RUNTIME_NEXT_DEPLOYMENT_ID")
+    get_target_property(CONTAINERS ${RUNTIME_NAME} "RUNTIME_CONTAINERS")
+    foreach(CONTAINER IN ITEMS ${ARGN})
+        get_target_property(DEP_ID ${RUNTIME_NAME} "RUNTIME_NEXT_CONTAINER_ID")
         math(EXPR DEP_ID "${DEP_ID}+1")
-        set_target_properties(${RUNTIME_NAME} PROPERTIES "RUNTIME_DEPLOYMENT_${DEPLOYMENT}_ID" "${DEP_ID}")
-        list(APPEND DEPLOYMENTS "DEPLOYMENT_NAMES[${DEP_ID}]=\"$<TARGET_PROPERTY:${DEPLOYMENT},CONTAINER_NAME>\"")
-        list(APPEND DEPLOYMENTS "DEPLOYMENT_DIRS[${DEP_ID}]=\"$<TARGET_PROPERTY:${DEPLOYMENT},CONTAINER_LOC>\"")
-        list(APPEND DEPLOYMENTS "DEPLOYMENT_DEBUG_OPTS[${DEP_ID}]=\"\${${DEPLOYMENT}_DEBUG_OPTS:-}\"")
-        set_target_properties(${RUNTIME_NAME} PROPERTIES "RUNTIME_NEXT_DEPLOYMENT_ID" "${DEP_ID}")
+        set_target_properties(${RUNTIME_NAME} PROPERTIES "RUNTIME_DEPLOYMENT_${CONTAINER}_ID" "${DEP_ID}")
+        list(APPEND CONTAINERS "CONTAINERS_NAMES[${DEP_ID}]=\"$<TARGET_PROPERTY:${CONTAINER},CONTAINER_NAME>\"")
+        list(APPEND CONTAINERS "CONTAINERS_DIRS[${DEP_ID}]=\"$<TARGET_PROPERTY:${CONTAINER},CONTAINER_LOC>\"")
+        list(APPEND CONTAINERS "CONTAINERS_DEBUG_OPTS[${DEP_ID}]=\"\${${CONTAINER}_DEBUG_OPTS:-}\"")
+        set_target_properties(${RUNTIME_NAME} PROPERTIES "RUNTIME_NEXT_CONTAINER_ID" "${DEP_ID}")
    endforeach()
 
-   set_target_properties(${RUNTIME_NAME} PROPERTIES "RUNTIME_DEPLOYMENTS" "${DEPLOYMENTS}")
+   set_target_properties(${RUNTIME_NAME} PROPERTIES "RUNTIME_CONTAINERS" "${CONTAINERS}")
 endfunction()
 
 function(runtime_deployment_wait_for)
+    message(DEPRECATION "runtime_deployment_wait_for is depecrated, use celix_runtime_container_wait_for instead.")
+    celix_runtime_container_wait_for(${ARGN})
+endfunction()
+function(celix_runtime_container_wait_for)
     #0 is runtime TARGET
     #1 is deployment TARGET
     list(GET ARGN 0 RUNTIME_NAME)
-    list(GET ARGN 1 DEPLOYMENT)
+    list(GET ARGN 1 CONTAINER)
 
-    set_target_properties(${RUNTIME_NAME} PROPERTIES "RUNTIME_WAIT_FOR_DEPLOYMENT" "$<TARGET_PROPERTY:${DEPLOYMENT},CONTAINER_LOC>")
+    set_target_properties(${RUNTIME_NAME} PROPERTIES "RUNTIME_WAIT_FOR_CONTAINER" "$<TARGET_PROPERTY:${CONTAINER},CONTAINER_LOC>")
     set_target_properties(${RUNTIME_NAME} PROPERTIES "RUNTIME_WAIT_FOR_COMMAND" "")
 endfunction()
 
 function(runtime_commands)
+    message(DEPRECATION "runtime_commands is depecrated, use celix_runtime_commands instead.")
+    celix_runtime_commands(${ARGN})
+endfunction()
+function(celix_runtime_commands)
     #0 is runtime TARGET
     #1..n is commands
     list(GET ARGN 0 RUNTIME_NAME)
@@ -177,16 +203,24 @@ function(runtime_commands)
 endfunction()
 
 function(runtime_command_wait_for)
+    message(DEPRECATION "runtime_command_wait_for is depecrated, use celix_runtime_command_wait_for instead.")
+    celix_runtime_command_wait_for(${ARGN})
+endfunction()
+function(celix_runtime_command_wait_for)
     #0 is runtime TARGET
     #1 is COMMAND STR
     list(GET ARGN 0 RUNTIME_NAME)
     list(GET ARGN 1 COMMAND)
 
     set_target_properties(${RUNTIME_NAME} PROPERTIES "RUNTIME_WAIT_FOR_COMMAND" "${COMMAND}")
-    set_target_properties(${RUNTIME_NAME} PROPERTIES "RUNTIME_WAIT_FOR_DEPLOYMENT" "")
+    set_target_properties(${RUNTIME_NAME} PROPERTIES "RUNTIME_WAIT_FOR_CONTAINER" "")
 endfunction()
 
 function(runtime_arguments)
+    message(DEPRECATION "runtime_arguments is depecrated, use celix_runtime_arguments instead.")
+    celix_runtime_arguments(${ARGN})
+endfunction()
+function(celix_runtime_arguments)
     #0 is runtime TARGET
     #1..n is commands
     list(GET ARGN 0 RUNTIME_NAME)
@@ -199,9 +233,21 @@ function(runtime_arguments)
             math(EXPR IMINUS "${I}-1")
             list(GET ARGN ${IMINUS} DEPLOY_NAME)
             list(GET ARGN ${I} DEPLOY_ARGS)
-            get_target_property(TEST ${RUNTIME_NAME} "RUNTIME_DEPLOYMENT_${DEPLOY_NAME}_ID")
-            list(APPEND ARGUMENTS "DEPLOYMENT_ARGUMENTS[$<TARGET_PROPERTY:${RUNTIME_NAME},RUNTIME_DEPLOYMENT_${DEPLOY_NAME}_ID>]=\"${DEPLOY_ARGS}\"")
+            list(APPEND ARGUMENTS "CONTAIMER_ARGUMENTS[$<TARGET_PROPERTY:${RUNTIME_NAME},RUNTIME_CONTAIMER_${DEPLOY_NAME}_ID>]=\"${DEPLOY_ARGS}\"")
         endforeach()
     endif ()
     set_target_properties(${RUNTIME_NAME} PROPERTIES "RUNTIME_ARGUMENTS" "${ARGUMENTS}")
+endfunction()
+
+function(celix_runtime_release_files)
+    #0 is runtime TARGET
+    #1..n is release files
+    list(GET ARGN 0 RUNTIME_NAME)
+    list(REMOVE_AT ARGN 0)
+
+    get_target_property(RELEASE_FILES ${RUNTIME_NAME} "RELEASE_FILES")
+    foreach(RELEASE_FILE IN ITEMS ${ARGN})
+        list(APPEND RELEASE_FILES "source ${RELEASE_FILE}")
+    endforeach()
+    set_target_properties(${RUNTIME_NAME} PROPERTIES "RELEASE_FILES" "${RELEASE_FILES}")
 endfunction()

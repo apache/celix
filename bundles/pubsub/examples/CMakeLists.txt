@@ -68,17 +68,17 @@ add_celix_container("pubsub_subscriber2_udp_mc"
 target_link_libraries(pubsub_subscriber2_udp_mc PRIVATE ${PUBSUB_CONTAINER_LIBS})
 if (ETCD_CMD AND XTERM_CMD)
     #Runtime starting a publish and subscriber for udp mc
-    add_runtime(pubsub_rt_upd_mc
-            NAME udp_mc
-            GROUP pubsub
-            DEPLOYMENTS
+    add_celix_runtime(pubsub_rt_upd_mc
+        NAME udp_mc
+        GROUP pubsub
+        CONTAINERS
             pubsub_publisher_udp_mc
             pubsub_subscriber_udp_mc
             pubsub_subscriber2_udp_mc
-            COMMANDS
+        COMMANDS
             etcd
-            USE_TERM
-            )
+        USE_TERM
+    )
 endif ()
 
 if (BUILD_PUBSUB_PSA_ZMQ)
@@ -206,42 +206,42 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 
     if (ETCD_CMD AND XTERM_CMD)
         #Runtime starting two bundles using both zmq and upd mc pubsub
-        add_runtime(pubsub_rt_zmq_udpmc_combi
-                NAME combi
-                GROUP pubsub
-                DEPLOYMENTS
+        add_celix_runtime(pubsub_rt_zmq_udpmc_combi
+            NAME combi
+            GROUP pubsub
+            CONTAINERS
                 pubsub_publisher_zmq
                 pubsub_subscriber_zmq
                 pubsub_subscriber_zmq
-                COMMANDS
+            COMMANDS
                 etcd
-                USE_TERM
-                )
+            USE_TERM
+        )
 
         #Runtime starting a publish and 2 subscribers for zmq
-        add_runtime(pubsub_rt_zmq
-                NAME zmq
-                GROUP pubsub
-                DEPLOYMENTS
+        add_celix_runtime(pubsub_rt_zmq
+            NAME zmq
+            GROUP pubsub
+            CONTAINERS
                 pubsub_publisher
                 pubsub_subscriber_zmq
                 pubsub_subscriber2_zmq
-                COMMANDS
+            COMMANDS
                 etcd
-                USE_TERM
-                )
+            USE_TERM
+        )
 
         #Runtime starting a multipart (multiple message in one send) publish and subscriber for zmq
-        add_runtime(pubsub_rt_multipart_zmq
-                NAME zmq_multipart
-                GROUP pubsub
-                DEPLOYMENTS
+        add_celix_runtime(pubsub_rt_multipart_zmq
+            NAME zmq_multipart
+            GROUP pubsub
+            CONTAINERS
                 pubsub_mp_subscriber_zmq
                 pubsub_mp_publisher_zmq
-                COMMANDS
+            COMMANDS
                 etcd
-                USE_TERM
-                )
+            USE_TERM
+        )
     endif ()
 
 endif()
