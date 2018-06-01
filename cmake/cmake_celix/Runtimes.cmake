@@ -118,7 +118,7 @@ function(add_celix_runtime)
     celix_runtime_release_files(${RUNTIME_TARGET_NAME} ${RUNTIME_RELEASE_FILES})
 
     if (RUNTIME_WAIT_FOR)
-        celix_runtime_deployment_wait_for(${RUNTIME_TARGET_NAME} ${RUNTIME_WAIT_FOR})
+        celix_runtime_container_wait_for(${RUNTIME_TARGET_NAME} ${RUNTIME_WAIT_FOR})
     endif ()
 
 endfunction()
