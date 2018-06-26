@@ -184,6 +184,7 @@ celix_status_t dmListCommand_execute(void* handle, char * line, FILE *out, FILE 
 
             }
         }
+        arrayList_destroy(bundles);
     }
 
     destroyBundleIdList(bundleIds);
