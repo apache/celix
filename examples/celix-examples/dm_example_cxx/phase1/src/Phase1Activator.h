@@ -24,11 +24,20 @@
 #include "command.h"
 
 using namespace celix::dm;
+struct DummyService {
+    void *handle;
+};
 
 class Phase1Activator : public DmActivator {
     command_service_t cmd {nullptr, nullptr};
-public:
+    command_service_t addCmd {nullptr, nullptr};
+    command_service_t removeCmd {nullptr, nullptr};
+    Component<Phase1Cmp> *phase1cmp{nullptr};
+    DummyService *dummySvc{new DummyService};
+    public:
     Phase1Activator(DependencyManager& mng) : DmActivator(mng) {}
+    Phase1Activator(const Phase1Activator&) = delete;
+    Phase1Activator& operator=(const Phase1Activator&) = delete;
     virtual void init();
     virtual void deinit();
 };

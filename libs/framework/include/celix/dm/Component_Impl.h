@@ -92,6 +92,14 @@ Component<T>& Component<T>::addCInterface(const I* svc, const std::string servic
 
 template<class T>
 template<class I>
+Component<T>& Component<T>::removeCInterface(const I* svc){
+    static_assert(std::is_pod<I>::value, "Service I must be a 'Plain Old Data' object");
+    component_removeInterface(this->cComponent(), svc);
+    return *this;
+};
+
+template<class T>
+template<class I>
 ServiceDependency<T,I>& Component<T>::createServiceDependency(const std::string name) {
 #ifdef __EXCEPTIONS
     auto dep = std::shared_ptr<ServiceDependency<T,I>> {new ServiceDependency<T,I>(name)};

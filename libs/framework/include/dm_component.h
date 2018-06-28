@@ -83,6 +83,13 @@ celix_status_t component_setCLanguageProperty(dm_component_t *component, bool se
 celix_status_t component_addInterface(dm_component_t *component, const char* serviceName, const char* serviceVersion, const void* service, properties_t *properties);
 
 /**
+ * Removed  a C interface from a component the Celix framework.
+ *
+ * @param serviceName the service name.
+ * @return CELIX_SUCCESS when removed, CELIX_ILLEGAL_ARGUMENT when the component does not provide the interface
+ */
+celix_status_t component_removeInterface(dm_component_pt component, const void* service);
+/**
  * Sets the implementation of the component. e.g. the component handle/self/this pointer.
  */
 celix_status_t component_setImplementation(dm_component_t *component, void* implementation);

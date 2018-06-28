@@ -161,6 +161,17 @@ namespace celix { namespace dm {
 
 
         /**
+         * Adds a C interface to provide as service to the Celix framework.
+         *
+         * @param svc The service struct
+         * @param serviceName The service name to use
+         * @param version The version of the interface (e.g. "1.0.0"), can be an empty string
+         * @param properties To (meta) properties to provide with the service
+         */
+        template<class I> Component<T>& removeCInterface(const I* svc);
+
+
+        /**
          * Creates and adds a C++ service dependency to the component
          *
          * @return the Service Dependency reference for chaining (fluent API)

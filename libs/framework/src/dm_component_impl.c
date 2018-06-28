@@ -373,6 +373,29 @@ celix_status_t component_addInterface(dm_component_pt component, const char* ser
     return status;
 }
 
+celix_status_t component_removeInterface(dm_component_pt component, const void* service) {
+    celix_status_t status = CELIX_ILLEGAL_ARGUMENT;
+
+    celixThreadMutex_lock(&component->mutex);
+    int nof_interfaces = arrayList_size(component->dm_interfaces);
+    for (unsigned int i = 0; i < nof_interfaces; ++i) {
+        dm_interface_t *interface = (dm_interface_t *) arrayList_get(component->dm_interfaces, i);
+        if (interface->service == service) {
+            arrayList_remove(component->dm_interfaces, i);
+            if (component->state == DM_CMP_STATE_TRACKING_OPTIONAL) {
+                celixThreadMutex_unlock(&component->mutex);
+                component_unregisterServices(component);
+                component_registerServices(component);
+                celixThreadMutex_lock(&component->mutex);
+            }
+            status = CELIX_SUCCESS;
+            break;
+        }
+    }
+    celixThreadMutex_unlock(&component->mutex);
+
+    return status;
+}
 
 celix_status_t component_getInterfaces(dm_component_pt component, array_list_pt *out) {
     celix_status_t status = CELIX_SUCCESS;
