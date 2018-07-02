@@ -39,20 +39,19 @@
     <asfext:pmc rdf:resource="http://celix.apache.org" />
     <shortdesc>OSGi framework implementation in C and C++.</shortdesc>
      <description>
-     Celix is an implementation of the OSGi specification adapted to C. 
-     It will follow the API as close as possible, but since the OSGi specification is written primarily for Java, there will be differences (Java is OO, C is procedural). 
-     An important aspect of the implementation is interoperability between Java and C. This interoperability is achieved by porting and implementing the Remote Services specification in Celix.
+     Apache Celix is an implementation of the OSGi specification adapted to C and C++ (C++11). It is a provides a framework to develop (dynamic) modular software applications using component and/or service-oriented programming.
      </description>
     <bug-database rdf:resource="https://issues.apache.org/jira/browse/celix" />
     <download-page rdf:resource="http://celix.apache.org/download.html" />
     <mailing-list rdf:resource="http://celix.apache.org/support/mailinglist.html" />
     <programming-language>C</programming-language>
+    <programming-language>C++</programming-language>
     <category rdf:resource="http://projects.apache.org/category/network-server" />
     <repository>
-      <SVNRepository>
-        <location rdf:resource="https://svn.apache.org/repos/asf/celix"/>
-        <browse rdf:resource="http://svn.apache.org/viewvc/celix"/>
-      </SVNRepository>
+      <GitRepository>
+        <location rdf:resource="https://git-wip-us.apache.org/repos/asf/celix.git"/>
+        <browse rdf:resource="https://github.com/apache/celix"/>
+      </GitRepository>
     </repository>
   </Project>
 </rdf:RDF>
