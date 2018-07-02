@@ -160,6 +160,16 @@ Also the following libraries are required for building and/or using the Remote S
 - Jansson (build and runtime)
 - cURL (build and runtime)
 
+## RSA Bundles
+
+* [Remote Service Admin HTTP](../bundles/remote_services/remote_service_admin_http) - A HTTP implementation of the RSA.
+* [Remote Service Admin DFI](../bundles/remote_services/remote_service_admin_dfi) - A Dynamic Function Interface (DFI) implementation of the RSA.
+* [Remote Service Admin SHM](../bundles/remote_services/remote_service_admin_shm) - A shared memory implementation of the RSA.
+* [Topology Manager](../bundles/remote_services/topology_manager) - A (scoped) RSA Topology Manager implementation.
+* [Discovery Configured](../bundles/remote_services/discovery_configured) - A RSA Discovery implementation using static configuration (xml).
+* [Discovery Etcd](../bundles/remote_services/dicovery_etcd) - A RSA Discovery implementation using etcd.
+* [Discovery SHM](../bundles/remote_services/dicovery_shm) - A RSA Discovery implementation using shared memory.
+
 
 ## Notes
 
