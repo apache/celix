@@ -340,15 +340,26 @@ function(celix_bundle_libs)
             endif()
             list(APPEND DEPS ${OUT}) 
         elseif (TARGET ${LIB})
+            get_target_property(TARGET_TYPE ${LIB} TYPE)
             #Assuming target
             #NOTE add_custom_command does not support generator expression in OUTPUT value (e.g. $<TARGET_FILE:${LIB}>)
             #Using a two step approach to be able to use add_custom_command instead of add_custom_target
             set(OUT "${BUNDLE_GEN_DIR}/lib-${LIBID}-copy-timestamp")
-            add_custom_command(OUTPUT ${OUT}
-                COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:${LIB}>" "${BUNDLE_DIR}/$<TARGET_SONAME_FILE_NAME:${LIB}>"
-                DEPENDS ${LIB}
-            )
+            if ("${TARGET_TYPE}" STREQUAL "STATIC_LIBRARY")
+                add_custom_command(OUTPUT ${OUT}
+                    COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:${LIB}>" "${BUNDLE_DIR}/$<TARGET_FILE_NAME:${LIB}>"
+                    DEPENDS ${LIB}
+                )
+            elseif ("${TARGET_TYPE}" STREQUAL "SHARED_LIBRARY")
+                add_custom_command(OUTPUT ${OUT}
+                    COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:${LIB}>" "${BUNDLE_DIR}/$<TARGET_SONAME_FILE_NAME:${LIB}>"
+                    DEPENDS ${LIB}
+                    )
+            else()
+                message(FATAL_ERROR "Unexptected target type (${TARGET_TYPE}) for target ${LIB}. Not a library")
+            endif()
             if (ADD_TO_MANIFEST)
                 list(APPEND LIBS "$<TARGET_SONAME_FILE_NAME:${LIB}>")
             endif()
@@ -404,9 +415,9 @@ function(bundle_files)
     message(DEPRECATION "bundle_files is deprecated, use celix_bundle_files instead.")
     celix_bundle_files(${ARGN})
 endfunction()
+#Note with celix_bundle_files, files are copied cmake generation time. Updates are not copied !!
 function(celix_bundle_files)
     #0 is bundle TARGET
-    #1..n is header name / header value
     list(GET ARGN 0 BUNDLE)
     list(REMOVE_AT ARGN 0)
 
@@ -425,6 +436,50 @@ function(celix_bundle_files)
 
     #message("call: files(COPY ${FILES_UNPARSED_ARGUMENTS} DESTINATION \"${DESTINATION}\"")
     file(COPY ${FILES_UNPARSED_ARGUMENTS} DESTINATION ${DESTINATION})
+endfunction()
+
+#Note celix_bundle_dir copies the dir and can track changes.
+function(celix_bundle_dir)
+    #0 is bundle TARGET
+    list(GET ARGN 0 BUNDLE)
+    list(REMOVE_AT ARGN 0)
+
+    #1 is the input dir
+    list(GET ARGN 0 INPUT_DIR)
+    list(REMOVE_AT ARGN 0)
+
+    if (NOT BUNDLE OR NOT INPUT_DIR)
+        message(FATAL_ERROR "celix_bundle_dir must have atleast two arguments: BUNDLE_TARGET and INPUT_DIR!")
+    endif()
+
+    set(OPTIONS )
+    set(ONE_VAL_ARGS DESTINATION)
+    set(MULTI_VAL_ARGS )
+    cmake_parse_arguments(COPY "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
+
+    get_target_property(BUNDLE_DIR ${BUNDLE} "BUNDLE_CONTENT_DIR")
+    if (NOT COPY_DESTINATION)
+        set(DESTINATION "${BUNDLE_DIR}/${FILES_DESTINATION}")
+    else()
+        set(DESTINATION "${BUNDLE_DIR}")
+    endif()
+
+    set(COPY_CMAKE_SCRIPT "${CMAKE_BINARY_DIR}/celix/gen/bundles/${BUNDLE}/copy-${INPUT_DIR}.cmake")
+    file(WRITE ${COPY_CMAKE_SCRIPT}
+            "file(COPY ${CMAKE_CURRENT_LIST_DIR}/${INPUT_DIR} DESTINATION ${DESTINATION})")
+
+    set(TIMESTAMP "${CMAKE_BINARY_DIR}/celix/gen/bundles/${BUNDLE}/copy-${INPUT_DIR}.timestamp")
+    file(GLOB DIR_FILES ${INPUT_DIR})
+    add_custom_command(OUTPUT ${TIMESTAMP}
+            COMMAND ${CMAKE_COMMAND} -E touch ${TIMESTAMP}
+            COMMAND ${CMAKE_COMMAND} -P ${COPY_CMAKE_SCRIPT}
+            DEPENDS ${DIR_FILES}
+            COMMENT "Copying dir ${INPUT_DIR} to ${DESTINATION}"
+    )
+
+    get_target_property(DEPS ${BUNDLE} "BUNDLE_DEPEND_TARGETS")
+    list(APPEND DEPS "${TIMESTAMP}")
+    set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_DEPEND_TARGETS" "${DEPS}")
 endfunction()
 
 function(bundle_headers)

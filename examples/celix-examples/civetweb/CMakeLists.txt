@@ -5,9 +5,9 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 #   http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing,
 # software distributed under the License is distributed on an
 # "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -15,28 +15,23 @@
 # specific language governing permissions and limitations
 # under the License.
 
-add_library(mongooselib STATIC private/src/mongoose.c)
-SET_TARGET_PROPERTIES(mongooselib PROPERTIES COMPILE_FLAGS -fPIC)
-
-SET(BUNDLE_SYMBOLICNAME "apache_celix_examples_mongoose")
-SET(BUNDLE_VERSION "0.0.1")
-
-include_directories("private/include")
-include_directories("${PROJECT_SOURCE_DIR}/utils/public/include")
-
-if(WIN32)
-	  set(LIBS wsock32)
-endif(WIN32)
-
-add_celix_bundle(mongoose
-    VERSION 0.0.1
-    SOURCES
-        private/src/activator
-        private/include/mongoose.h
+add_library(civetweb_static STATIC
+        civetweb/civetweb.c
 )
+target_include_directories(civetweb_static PUBLIC SYSTEM civetweb)
+target_compile_options(civetweb_static PRIVATE -Wno-format -Wno-implicit-function-declaration -DUSE_WEBSOCKET)
 
-celix_bundle_files(mongoose ${CMAKE_CURRENT_LIST_DIR}/root)
+add_celix_bundle(embedded_civetweb
+    VERSION 1.0.0
+    SOURCES src/bundle_activator.c
+)
+target_link_libraries(embedded_civetweb PRIVATE Celix::shell_api)
+celix_bundle_private_libs(embedded_civetweb civetweb_static)
+celix_bundle_dir(embedded_civetweb resources)
 
-target_link_libraries(mongoose PRIVATE mongooselib ${LIBS})
-
-add_celix_container("mongoose_deploy" BUNDLES Celix::shell Celix::shell_tui Celix::log_service mongoose)
+add_celix_container(civetweb_example
+    BUNDLES
+        Celix::shell
+        Celix::shell_tui
+        embedded_civetweb
+)

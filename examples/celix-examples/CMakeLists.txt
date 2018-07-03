@@ -35,7 +35,7 @@ if (EXAMPLES)
     add_subdirectory(dm_example_cxx)
 
     if (NOT ANDROID)
-    	add_subdirectory(mongoose)
+        add_subdirectory(civetweb)
     endif()
     add_subdirectory(embedding)
     add_subdirectory(service_hook_example)

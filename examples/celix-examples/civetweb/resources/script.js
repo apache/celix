@@ -1,4 +1,4 @@
-<!--
+/**
  *Licensed to the Apache Software Foundation (ASF) under one
  *or more contributor license agreements.  See the NOTICE file
  *distributed with this work for additional information
@@ -15,9 +15,29 @@
  * KIND, either express or implied.  See the License for the
  *specific language governing permissions and limitations
  *under the License.
--->
-<div align="center"><FONT 
-color="#ffffff" size="+1"><MARQUEE bgcolor="#000080" 
-direction="right" loop="20" width="75%"><STRONG>
-Serving content from within a bundle works!!1!11!!
-</STRONG></MARQUEE></FONT></DIV>
+ */
+
+function docReady() {
+    var host = window.location.host;
+    var shellSocket = new WebSocket("ws://" + host + "/shellsocket");
+
+    shellSocket.onmessage = function (event) {
+        document.getElementById("console_output").value = event.data;
+    };
+    shellSocket.onopen = function (event) {
+        shellSocket.send("lb");
+    };
+
+    document.getElementById("command_button").onclick = function() {
+        input = document.getElementById("command_input").value;
+        shellSocket.send(input);
+    };
+
+    var input = document.getElementById("command_input");
+    input.addEventListener("keyup", function(event) {
+        event.preventDefault();
+        if (event.key === "Enter") {
+            document.getElementById("command_button").click();
+        }
+    });
+}
