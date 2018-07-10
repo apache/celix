@@ -19,7 +19,7 @@ add_library(civetweb_static STATIC
         civetweb/civetweb.c
 )
 target_include_directories(civetweb_static PUBLIC SYSTEM civetweb)
-target_compile_options(civetweb_static PRIVATE -Wno-format -Wno-implicit-function-declaration -DUSE_WEBSOCKET)
+target_compile_options(civetweb_static PRIVATE -w -DUSE_WEBSOCKET)
 
 add_celix_bundle(embedded_civetweb
     VERSION 1.0.0
