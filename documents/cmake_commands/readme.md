@@ -256,8 +256,7 @@ which in turn can be used to create very small Apache Celix docker images.
 
 ## add_celix_docker
 Adds a docker target dir, containing a all the required executables, 
-libraries and filesystem needed to run a Apache Celix framework in a docker container. 
-Also includes the selected bundles. 
+libraries, filesystem files and selected bundles needed to run a Apache Celix framework in a docker container. 
 
 The add_celix_docker target is a executable target and can be used to link libraries which are needed in the docker image.
 

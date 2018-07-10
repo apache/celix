@@ -134,8 +134,10 @@ function(add_celix_bundle)
     endif ()
 
     set(BUNDLE_FILE "${CMAKE_CURRENT_BINARY_DIR}/${BUNDLE_FILENAME}")
-    set(BUNDLE_CONTENT_DIR "${CMAKE_CURRENT_BINARY_DIR}/${BUNDLE_TARGET_NAME}_content")
-    set(BUNDLE_GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}/${BUNDLE_TARGET_NAME}_gen")
+    #set(BUNDLE_CONTENT_DIR "${CMAKE_CURRENT_BINARY_DIR}/${BUNDLE_TARGET_NAME}_content")
+    #set(BUNDLE_GEN_DIR "${CMAKE_CURRENT_BINARY_DIR}/${BUNDLE_TARGET_NAME}_gen")
+    set(BUNDLE_CONTENT_DIR "${CMAKE_BINARY_DIR}/celix/gen/bundles/${BUNDLE_TARGET_NAME}/content")
+    set(BUNDLE_GEN_DIR "${CMAKE_BINARY_DIR}/celix/gen/bundles/${BUNDLE_TARGET_NAME}")
 
 
     ###### Setting up dependency for bundles target
@@ -217,7 +219,7 @@ function(add_celix_bundle)
     #############################
     ### BUNDLE TARGET PROPERTIES
     #############################
-    #alreadyer set
+    #already set
     #   BUNDLE_TARGET_IS_LIB -> true (can be use to test if target is bundle target
     #   BUNDLE_TARGET -> refers to the _bundle target which is responsible for building the zip file
     #internal use
@@ -225,7 +227,7 @@ function(add_celix_bundle)
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_DEPEND_TARGETS" "") #bundle target dependencies. Note can be extended after the add_bundle call
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_GEN_DIR" ${BUNDLE_GEN_DIR}) #location for generated output.
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_CREATE_BUNDLE_TARGET" ${BUNDLE_TARGET_NAME}_bundle) #target which creat the bundle zip
-    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_IMPORTED" FALSE) #whethet target is a imported (bundle) target
+    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_IMPORTED" FALSE) #whether targer is a imported (bundle) target
 
     #bundle specific
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_CONTENT_DIR" ${BUNDLE_CONTENT_DIR}) #location where the content to be jar/zipped.
@@ -438,8 +440,8 @@ function(celix_bundle_files)
     file(COPY ${FILES_UNPARSED_ARGUMENTS} DESTINATION ${DESTINATION})
 endfunction()
 
-#Note celix_bundle_dir copies the dir and can track changes.
-function(celix_bundle_dir)
+#Note celix_bundle_add_dir copies the dir and can track changes.
+function(celix_bundle_add_dir)
     #0 is bundle TARGET
     list(GET ARGN 0 BUNDLE)
     list(REMOVE_AT ARGN 0)
@@ -459,22 +461,73 @@ function(celix_bundle_dir)
 
     get_target_property(BUNDLE_DIR ${BUNDLE} "BUNDLE_CONTENT_DIR")
     if (NOT COPY_DESTINATION)
-        set(DESTINATION "${BUNDLE_DIR}/${FILES_DESTINATION}")
-    else()
         set(DESTINATION "${BUNDLE_DIR}")
+    else()
+	set(DESTINATION "${BUNDLE_DIR}/${COPY_DESTINATION}")
     endif()
 
-    set(COPY_CMAKE_SCRIPT "${CMAKE_BINARY_DIR}/celix/gen/bundles/${BUNDLE}/copy-${INPUT_DIR}.cmake")
-    file(WRITE ${COPY_CMAKE_SCRIPT}
-            "file(COPY ${CMAKE_CURRENT_LIST_DIR}/${INPUT_DIR} DESTINATION ${DESTINATION})")
+    string(UUID COPY_ID NAMESPACE "661ee07c-842d-11e8-adfc-80fa5b02e11b" NAME "${INPUT_DIR}" TYPE MD5)
 
-    set(TIMESTAMP "${CMAKE_BINARY_DIR}/celix/gen/bundles/${BUNDLE}/copy-${INPUT_DIR}.timestamp")
+    set(COPY_CMAKE_SCRIPT "${CMAKE_BINARY_DIR}/celix/gen/bundles/${BUNDLE}/copy-dir-${COPY_ID}.cmake")
+    if (IS_ABSOLUTE ${INPUT_DIR})
+	    file(WRITE ${COPY_CMAKE_SCRIPT}
+		    "file(COPY ${INPUT_DIR} DESTINATION ${DESTINATION})")
+    else()
+	    file(WRITE ${COPY_CMAKE_SCRIPT}
+		    "file(COPY ${CMAKE_CURRENT_LIST_DIR}/${INPUT_DIR} DESTINATION ${DESTINATION})")
+    endif()
+
+    set(TIMESTAMP "${CMAKE_BINARY_DIR}/celix/gen/bundles/${BUNDLE}/copy-dir-${COPY_ID}.timestamp")
     file(GLOB DIR_FILES ${INPUT_DIR})
     add_custom_command(OUTPUT ${TIMESTAMP}
             COMMAND ${CMAKE_COMMAND} -E touch ${TIMESTAMP}
             COMMAND ${CMAKE_COMMAND} -P ${COPY_CMAKE_SCRIPT}
             DEPENDS ${DIR_FILES}
             COMMENT "Copying dir ${INPUT_DIR} to ${DESTINATION}"
+    )
+
+    get_target_property(DEPS ${BUNDLE} "BUNDLE_DEPEND_TARGETS")
+    list(APPEND DEPS "${TIMESTAMP}")
+    set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_DEPEND_TARGETS" "${DEPS}")
+endfunction()
+
+function(celix_bundle_add_files)
+    #0 is bundle TARGET
+    list(GET ARGN 0 BUNDLE)
+    list(REMOVE_AT ARGN 0)
+
+    set(OPTIONS )
+    set(ONE_VAL_ARGS DESTINATION)
+    set(MULTI_VAL_ARGS FILES)
+    cmake_parse_arguments(COPY "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
+
+    get_target_property(BUNDLE_DIR ${BUNDLE} "BUNDLE_CONTENT_DIR")
+    if (NOT COPY_DESTINATION)
+        set(DESTINATION "${BUNDLE_DIR}")
+    else()
+	set(DESTINATION "${BUNDLE_DIR}/${COPY_DESTINATION}")
+    endif()
+
+    string(UUID COPY_ID NAMESPACE "661ee07c-842d-11e8-adfc-80fa5b02e11b" NAME "${COPY_FILES}" TYPE MD5)
+
+    set(TIMESTAMP "${CMAKE_BINARY_DIR}/celix/gen/bundles/${BUNDLE}/copy-files-${COPY_ID}.timestamp")
+    set(COPY_CMAKE_SCRIPT "${CMAKE_BINARY_DIR}/celix/gen/bundles/${BUNDLE}/copy-files-${COPY_ID}.cmake")
+    file(WRITE ${COPY_CMAKE_SCRIPT}
+	    "#Copy script, copies the file on a file per file base\n")
+    foreach(FILE IN ITEMS ${COPY_FILES})
+	    if (IS_ABSOLUTE ${FILE})
+	    	file(APPEND ${COPY_CMAKE_SCRIPT}
+			"file(COPY ${FILE} DESTINATION ${DESTINATION})\n")
+	    else()
+	    	file(APPEND ${COPY_CMAKE_SCRIPT}
+			"file(COPY ${CMAKE_CURRENT_LIST_DIR}/${FILE} DESTINATION ${DESTINATION})\n")
+	    endif()
+    endforeach()
+    add_custom_command(OUTPUT ${TIMESTAMP}
+            COMMAND ${CMAKE_COMMAND} -E touch ${TIMESTAMP}
+            COMMAND ${CMAKE_COMMAND} -P ${COPY_CMAKE_SCRIPT}
+	    DEPENDS ${COPY_FILES}
+	    COMMENT "Copying files to ${DESTINATION}"
     )
 
     get_target_property(DEPS ${BUNDLE} "BUNDLE_DEPEND_TARGETS")
@@ -615,8 +668,8 @@ function(install_celix_bundle_targets)
     string(REGEX MATCHALL "/" SLASH_MATCHES ${DEST_PATH})
     list(LENGTH SLASH_MATCHES NR_OF_SUB_DIRS)
 
-    set(CONF_IN_FILE "${CMAKE_BINARY_DIR}/celix/gen/${EXPORT_NAME}-ImportedBundleTargets.cmake.in")
-    set(CONF_FILE "${CMAKE_BINARY_DIR}/celix/gen/${EXPORT_NAME}-ImportedBundleTargets.cmake")
+    set(CONF_IN_FILE "${CMAKE_BINARY_DIR}/celix/gen/cmake/${EXPORT_NAME}-ImportedBundleTargets.cmake.in")
+    set(CONF_FILE "${CMAKE_BINARY_DIR}/celix/gen/cmake/${EXPORT_NAME}-ImportedBundleTargets.cmake")
     file(REMOVE "${CONF_IN_FILE}")
 
 

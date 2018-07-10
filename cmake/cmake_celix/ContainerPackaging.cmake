@@ -81,16 +81,16 @@ function(add_celix_container)
         endif()
     elseif (CONTAINER_LAUNCHER_SRC)
         get_filename_component(SRC_FILENAME ${CONTAINER_LAUNCHER_SRC} NAME)
-        set(LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}/${SRC_FILENAME}")
+        set(LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/${SRC_FILENAME}")
         set(LAUNCHER_ORG "${CONTAINER_LAUNCHER_SRC}")
         add_custom_command(OUTPUT ${LAUNCHER_SRC}
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LAUNCHER_ORG} ${LAUNCHER_SRC}
         )
     else () #generate custom launcher
         if (CONTAINER_CXX)
-            set(LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}/main.cc")
+            set(LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/main.cc")
         else()
-            set(LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}/main.c")
+            set(LAUNCHER_SRC "${PROJECT_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/main.c")
         endif()
 
         file(GENERATE
@@ -122,7 +122,7 @@ $<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_EMBEDDED_PROPERTIES>,\\n\
     endif ()
 
     #generate config.properties
-    set(STAGE1_PROPERTIES "${PROJECT_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}/container-config-stage1.properties")
+    set(STAGE1_PROPERTIES "${PROJECT_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/container-config-stage1.properties")
     file(GENERATE 
         OUTPUT "${STAGE1_PROPERTIES}"
         CONTENT "CELIX_AUTO_START_0=$<JOIN:$<TARGET_PROPERTY:${CONTAINER_TARGET},CONTAINER_BUNDLES_LEVEL_0>, >
@@ -264,7 +264,7 @@ function(celix_container_bundles_dir)
                 get_target_property(IMP ${BUNDLE} BUNDLE_IMPORTED)
                 if (IMP) #An imported bundle target -> handle target without DEPENDS
                     string(MAKE_C_IDENTIFIER ${BUNDLE} BUNDLE_ID) #Create id with no special chars (e.g. for target like Celix::shell)
-                    set(OUT "${CMAKE_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}/copy-bundle-for-target-${BUNDLE_ID}.timestamp")
+                    set(OUT "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/copy-bundle-for-target-${BUNDLE_ID}.timestamp")
                     set(DEST "${CONTAINER_LOC}/${BD_DIR_NAME}/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
                     add_custom_command(OUTPUT ${OUT}
                         COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
@@ -279,7 +279,7 @@ function(celix_container_bundles_dir)
 
         if (NOT HANDLED) #not a imported bundle target so (assuming) a future bundle target
             string(MAKE_C_IDENTIFIER ${BUNDLE} BUNDLE_ID) #Create id with no special chars (e.g. for target like Celix::shell)
-            set(OUT "${CMAKE_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}/copy-bundle-for-target-${BUNDLE_ID}.timestamp")
+            set(OUT "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/copy-bundle-for-target-${BUNDLE_ID}.timestamp")
             set(DEST "${CONTAINER_LOC}/${BD_DIR_NAME}/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
             add_custom_command(OUTPUT ${OUT}
                 COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
@@ -347,7 +347,7 @@ function(celix_container_bundles)
 
                if (NOT COPY) #in case of COPY dep will be added in celix_container_bundles_dir
                    string(MAKE_C_IDENTIFIER ${BUNDLE} BUNDLE_ID) #Create id with no special chars (e.g. for target like Celix::shell)
-                   set(OUT "${CMAKE_BINARY_DIR}/celix/gen/${CONTAINER_TARGET}/check-bundle-for-target-${BUNDLE_ID}.timestamp")
+                   set(OUT "${CMAKE_BINARY_DIR}/celix/gen/containers/${CONTAINER_TARGET}/check-bundle-for-target-${BUNDLE_ID}.timestamp")
                    add_custom_command(OUTPUT ${OUT}
                        COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
                        DEPENDS ${BUNDLE} $<TARGET_PROPERTY:${BUNDLE},BUNDLE_CREATE_BUNDLE_TARGET>

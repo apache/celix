@@ -166,7 +166,7 @@ $<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_EMBEDDED_PROPERTIES>,\\n\\
     set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_EMBEDDED_PROPERTIES" "")
     set_target_properties(${DOCKER_TARGET} PROPERTIES "DOCKER_DEPS" "")
 
-    set(DOCKERFILE_STAGE1 ${CMAKE_BINARY_DIR}/celix/gen/${DOCKER_TARGET}/Dockerfile.in)
+    set(DOCKERFILE_STAGE1 ${CMAKE_BINARY_DIR}/celix/gen/docker/${DOCKER_TARGET}/Dockerfile.in)
     set(DOCKERFILE "$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_LOC>/Dockerfile")
 
     file(GENERATE
@@ -187,7 +187,7 @@ $<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_INSTRUCTIONS>,
 
     #generate config.properties
     set(DOCKER_PROPERTIES_FILE "${DOCKER_LOC}/${DOCKER_WORKDIR}/config.properties")
-    set(STAGE1_PROPERTIES_FILE "${CMAKE_BINARY_DIR}/celix/gen/${DOCKER_TARGET}/docker-config-stage1.properties")
+    set(STAGE1_PROPERTIES_FILE "${CMAKE_BINARY_DIR}/celix/gen/docker/${DOCKER_TARGET}/docker-config-stage1.properties")
     file(GENERATE
             OUTPUT "${STAGE1_PROPERTIES_FILE}"
             CONTENT "CELIX_AUTO_START_0=$<JOIN:$<TARGET_PROPERTY:${DOCKER_TARGET},DOCKER_BUNDLES_LEVEL_0>, >
@@ -270,7 +270,7 @@ function(celix_docker_bundles)
                 get_target_property(IMP ${BUNDLE} BUNDLE_IMPORTED)
                 if (IMP) #An imported bundle target -> handle target without DEPENDS
                     string(MAKE_C_IDENTIFIER ${BUNDLE} BUNDLE_ID) #Create id with no special chars (e.g. for target like Celix::shell)
-                    set(OUT "${CMAKE_BINARY_DIR}/celix/gen/${DOCKER_TARGET}/copy-bundle-for-target-${BUNDLE_ID}.timestamp")
+                    set(OUT "${CMAKE_BINARY_DIR}/celix/gen/docker/${DOCKER_TARGET}/copy-bundle-for-target-${BUNDLE_ID}.timestamp")
                     set(DEST "${LOC}/${BUNDLES_DIR}/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
                     add_custom_command(OUTPUT ${OUT}
                         COMMAND ${CMAKE_COMMAND} -E touch ${OUT}
@@ -286,7 +286,7 @@ function(celix_docker_bundles)
 
         if(NOT HANDLED) #assuming (future) bundle target
             string(MAKE_C_IDENTIFIER ${BUNDLE} BUNDLE_ID) #Create id with no special chars (e.g. for target like Celix::shell)
-            set(OUT "${CMAKE_BINARY_DIR}/celix/gen/${DOCKER_TARGET}/copy-bundle-for-target-${BUNDLE_ID}.timestamp")
+            set(OUT "${CMAKE_BINARY_DIR}/celix/gen/docker/${DOCKER_TARGET}/copy-bundle-for-target-${BUNDLE_ID}.timestamp")
             set(DEST "${LOC}/${BUNDLES_DIR}/$<TARGET_PROPERTY:${BUNDLE},BUNDLE_FILENAME>")
             add_custom_command(OUTPUT ${OUT}
                     COMMAND ${CMAKE_COMMAND} -E touch ${OUT}

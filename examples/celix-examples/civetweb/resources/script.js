@@ -30,6 +30,7 @@ function docReady() {
 
     document.getElementById("command_button").onclick = function() {
         input = document.getElementById("command_input").value;
+	document.getElementById("command_input").value = "";
         shellSocket.send(input);
     };
 

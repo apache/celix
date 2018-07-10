@@ -79,9 +79,9 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/cmake/cmake_celix/ DESTINATION share/celix
 
 #configure and install CelixConfig and CelixConfigVersion files
 configure_file(cmake/CelixConfigVersion.cmake.in
-        "${PROJECT_BINARY_DIR}/celix/gen/CelixConfigVersion.cmake" @ONLY)
+        "${PROJECT_BINARY_DIR}/celix/gen/cmake/CelixConfigVersion.cmake" @ONLY)
 
 install(FILES
         "cmake/CelixConfig.cmake"
-        "${PROJECT_BINARY_DIR}/celix/gen/CelixConfigVersion.cmake"
+        "${PROJECT_BINARY_DIR}/celix/gen/cmake/CelixConfigVersion.cmake"
         DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/Celix" COMPONENT cmake)

@@ -27,7 +27,7 @@ add_celix_bundle(embedded_civetweb
 )
 target_link_libraries(embedded_civetweb PRIVATE Celix::shell_api)
 celix_bundle_private_libs(embedded_civetweb civetweb_static)
-celix_bundle_dir(embedded_civetweb resources)
+celix_bundle_add_dir(embedded_civetweb resources)
 
 add_celix_container(civetweb_example
     BUNDLES
