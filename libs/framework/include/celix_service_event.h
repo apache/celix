@@ -17,9 +17,10 @@
  *under the License.
  */
 
+#include "celix_types.h"
+
 #ifndef CELIX_SERVICE_EVENT_H_
 #define CELIX_SERVICE_EVENT_H_
-
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,8 +32,6 @@ typedef enum celix_service_event_type {
 	OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING = 0x00000004,
 	OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED_ENDMATCH = 0x00000008,
 } celix_service_event_type_t;
-
-typedef struct serviceReference * service_reference_pt; //forward declaration
 
 typedef struct celix_service_event {
 	service_reference_pt reference;

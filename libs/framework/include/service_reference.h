@@ -20,8 +20,7 @@
 #ifndef SERVICE_REFERENCE_H_
 #define SERVICE_REFERENCE_H_
 
-typedef struct serviceReference * service_reference_pt;
-
+#include "celix_types.h"
 #include "celixbool.h"
 #include "array_list.h"
 #include "service_registration.h"

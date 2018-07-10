@@ -49,5 +49,6 @@ typedef struct dm_service_dependency *dm_service_dependency_pt;
 typedef struct dm_service_dependency dm_service_dependency_t;
 
 typedef struct service_factory *service_factory_pt; //deprecated
+typedef struct serviceReference * service_reference_pt;
 
 #endif //CELIX_CELIX_TYPES_H
