@@ -30,11 +30,12 @@
 
 #include "service_factory.h"
 #include "celix_service_factory.h"
-#include "service_listener.h"
+#include "celix_service_listener.h"
 #include "bundle_listener.h"
 #include "framework_listener.h"
 #include "properties.h"
 #include "array_list.h"
+#include "celix_service_listener.h"
 
 #include "dm_dependency_manager.h"
 
@@ -124,10 +125,10 @@ FRAMEWORK_EXPORT celix_status_t bundleContext_getBundles(bundle_context_pt conte
 FRAMEWORK_EXPORT celix_status_t bundleContext_getBundleById(bundle_context_pt context, long id, bundle_pt *bundle);
 
 FRAMEWORK_EXPORT celix_status_t
-bundleContext_addServiceListener(bundle_context_pt context, service_listener_pt listener, const char *filter);
+bundleContext_addServiceListener(bundle_context_pt context, celix_service_listener_t *listener, const char *filter);
 
 FRAMEWORK_EXPORT celix_status_t
-bundleContext_removeServiceListener(bundle_context_pt context, service_listener_pt listener);
+bundleContext_removeServiceListener(bundle_context_pt context, celix_service_listener_t *listener);
 
 FRAMEWORK_EXPORT celix_status_t bundleContext_addBundleListener(bundle_context_pt context, bundle_listener_pt listener);
 

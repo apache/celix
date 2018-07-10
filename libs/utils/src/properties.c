@@ -71,11 +71,11 @@ celix_status_t properties_copy(properties_pt properties, properties_pt *out) {
 }
 
 const char* properties_get(properties_pt properties, const char* key) {
-	return celix_properties_get(properties, key);
+	return celix_properties_get(properties, key, NULL);
 }
 
 const char* properties_getWithDefault(properties_pt properties, const char* key, const char* defaultValue) {
-	return celix_properties_getWithDefault(properties, key, defaultValue);
+	return celix_properties_get(properties, key, defaultValue);
 }
 
 void properties_set(properties_pt properties, const char* key, const char* value) {
@@ -354,12 +354,8 @@ celix_properties_t* celix_properties_copy(celix_properties_t *properties) {
 	return copy;
 }
 
-const char* celix_properties_get(const celix_properties_t *properties, const char *key) {
-	return hashMap_get((hash_map_t*)properties, (void*)key);
-}
-
-const char* celix_properties_getWithDefault(const celix_properties_t *properties, const char *key, const char *defaultValue) {
-	const char* value = celix_properties_get(properties, key);
+const char* celix_properties_get(const celix_properties_t *properties, const char *key, const char *defaultValue) {
+	const char* value = hashMap_get((hash_map_t*)properties, (void*)key);
 	return value == NULL ? defaultValue : value;
 }
 
@@ -383,7 +379,7 @@ void celix_properties_unset(celix_properties_t *properties, const char *key) {
 
 long celix_properties_getAsLong(const celix_properties_t *props, const char *key, long defaultValue) {
 	long result = defaultValue;
-	const char *val = celix_properties_get(props, key);
+	const char *val = celix_properties_get(props, key, NULL);
 	if (val != NULL) {
 		long r = strtol(val, NULL, 10);
 		if (errno == 0) {

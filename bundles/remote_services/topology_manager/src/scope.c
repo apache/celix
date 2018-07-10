@@ -16,13 +16,7 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * scope.c
- *
- *  \date       Sep 29, 2015
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,6 +24,7 @@
 #include "tm_scope.h"
 #include "topology_manager.h"
 #include "utils.h"
+#include "filter.h"
 
 struct scope_item {
     properties_pt props;

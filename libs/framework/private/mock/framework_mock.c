@@ -193,7 +193,7 @@ celix_status_t fw_getBundleServicesInUse(framework_pt framework, bundle_pt bundl
 }
 
 
-void fw_addServiceListener(framework_pt framework, bundle_pt bundle, service_listener_pt listener, const char* filter) {
+void fw_addServiceListener(framework_pt framework, bundle_pt bundle, celix_service_listener_t *listener, const char* filter) {
 	mock_c()->actualCall("fw_addServiceListener")
 		->withPointerParameters("framework", framework)
 		->withPointerParameters("bundle", bundle)
@@ -201,7 +201,7 @@ void fw_addServiceListener(framework_pt framework, bundle_pt bundle, service_lis
 		->withStringParameters("filter", filter);
 }
 
-void fw_removeServiceListener(framework_pt framework, bundle_pt bundle, service_listener_pt listener) {
+void fw_removeServiceListener(framework_pt framework, bundle_pt bundle, celix_service_listener_t *listener) {
 	mock_c()->actualCall("fw_removeServiceListener")
 		->withPointerParameters("framework", framework)
 		->withPointerParameters("bundle", bundle)
@@ -241,7 +241,7 @@ celix_status_t fw_removeFrameworkListener(framework_pt framework, bundle_pt bund
         return mock_c()->returnValue().value.intValue;
 }
 
-void fw_serviceChanged(framework_pt framework, service_event_type_e eventType, service_registration_pt registration, properties_pt oldprops) {
+void fw_serviceChanged(framework_pt framework, celix_service_event_type_t eventType, service_registration_pt registration, properties_pt oldprops) {
 	mock_c()->actualCall("fw_serviceChanged");
 }
 

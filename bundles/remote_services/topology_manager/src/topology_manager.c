@@ -376,9 +376,9 @@ celix_status_t topologyManager_rsaRemoved(void * handle, service_reference_pt re
 }
 
 
-celix_status_t topologyManager_serviceChanged(void *listener, service_event_pt event) {
+celix_status_t topologyManager_serviceChanged(void *listener, celix_service_event_t *event) {
 	celix_status_t status = CELIX_SUCCESS;
-	service_listener_pt listen = listener;
+	celix_service_listener_t *listen = listener;
 	topology_manager_pt manager = listen->handle;
 
 	const char* export = NULL;

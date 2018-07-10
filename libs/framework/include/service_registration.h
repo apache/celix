@@ -27,7 +27,6 @@ typedef struct serviceRegistration * service_registration_pt;
 typedef struct serviceRegistration service_registration_t;
 
 
-#include "service_registry.h"
 #include "array_list.h"
 #include "bundle.h"
 #include "framework_exports.h"

@@ -16,18 +16,13 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * service_registration_mock.c
- *
- *  \date       Feb 7, 2013
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
+
 #include <CppUTestExt/MockSupport_c.h>
 #include "CppUTestExt/MockSupport_c.h"
 
 #include "service_registration.h"
 #include "service_registration_private.h"
+#include "service_registry.h"
 
 service_registration_pt serviceRegistration_create(registry_callback_t callback, bundle_pt bundle, const char* serviceName, unsigned long serviceId, const void* serviceObject, properties_pt dictionary) {
 	mock_c()->actualCall("serviceRegistration_create")

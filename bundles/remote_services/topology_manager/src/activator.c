@@ -50,7 +50,7 @@ struct activator {
 
 	service_tracker_pt endpointListenerTracker;
 	service_tracker_pt remoteServiceAdminTracker;
-	service_listener_pt serviceListener;
+	celix_service_listener_t *serviceListener;
 
 	endpoint_listener_pt endpointListener;
 	service_registration_pt endpointListenerService;
@@ -67,7 +67,7 @@ struct activator {
 
 static celix_status_t bundleActivator_createEPLTracker(struct activator *activator, service_tracker_pt *tracker);
 static celix_status_t bundleActivator_createRSATracker(struct activator *activator, service_tracker_pt *tracker);
-static celix_status_t bundleActivator_createServiceListener(struct activator *activator, service_listener_pt *listener);
+static celix_status_t bundleActivator_createServiceListener(struct activator *activator, celix_service_listener_t **listener);
 
 celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
 	celix_status_t status = CELIX_SUCCESS;
@@ -155,7 +155,7 @@ static celix_status_t bundleActivator_createRSATracker(struct activator *activat
 	return status;
 }
 
-static celix_status_t bundleActivator_createServiceListener(struct activator *activator, service_listener_pt *listener) {
+static celix_status_t bundleActivator_createServiceListener(struct activator *activator, celix_service_listener_t **listener) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*listener = malloc(sizeof(**listener));

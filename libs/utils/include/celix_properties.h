@@ -51,9 +51,7 @@ celix_properties_t* celix_properties_loadFromString(const char *input);
 
 void celix_properties_store(celix_properties_t *properties, const char *file, const char *header);
 
-const char* celix_properties_get(const celix_properties_t *properties, const char *key);
-
-const char* celix_properties_getWithDefault(const celix_properties_t *properties, const char *key, const char *defaultValue);
+const char* celix_properties_get(const celix_properties_t *properties, const char *key, const char *defaultValue);
 
 void celix_properties_set(celix_properties_t *properties, const char *key, const char *value);
 

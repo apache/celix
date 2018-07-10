@@ -16,13 +16,7 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * service_registration_test.cpp
- *
- *  \date       Feb 8, 2013
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -37,6 +31,7 @@ extern "C" {
 #include "CppUTestExt/MockSupport_c.h"
 #include "service_registration_private.h"
 #include "celix_log.h"
+#include "service_registry.h"
 
 framework_logger_pt logger = (framework_logger_pt) 0x42;
 

@@ -16,53 +16,23 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/**
- *
- * @defgroup ServiceListener Service Listener
- * @ingroup framework
- * @{
- *
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \date      	January 11, 2012
- *  \copyright	Apache License, Version 2.0
- */
+
 #ifndef SERVICE_EVENT_H_
 #define SERVICE_EVENT_H_
+
+#include "celix_service_event.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-enum serviceEventType {
-	OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED = 0x00000001,
-	OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED = 0x00000002,
-	OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING = 0x00000004,
-	OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED_ENDMATCH = 0x00000008,
-};
+//Deprecated use celix_service_event_type_t instead
+typedef enum celix_service_event_type service_event_type_e;
+typedef struct celix_service_event *service_event_pt;
 
-typedef enum serviceEventType service_event_type_e;
-
-typedef struct serviceEvent *service_event_pt;
-#ifdef __cplusplus
-}
-#endif
-
-#include "service_reference.h"
-
-#include "service_reference.h"
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-struct serviceEvent {
-	service_reference_pt reference;
-	service_event_type_e type;
-};
 #ifdef __cplusplus
 }
 #endif
 
 #endif /* SERVICE_EVENT_H_ */
 
-/**
- * @}
- */

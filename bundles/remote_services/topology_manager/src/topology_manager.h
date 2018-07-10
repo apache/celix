@@ -52,7 +52,7 @@ celix_status_t topologyManager_endpointListenerAdded(void* handle, service_refer
 celix_status_t topologyManager_endpointListenerModified(void * handle, service_reference_pt reference, void* service);
 celix_status_t topologyManager_endpointListenerRemoved(void * handle, service_reference_pt reference, void* service);
 
-celix_status_t topologyManager_serviceChanged(void *listener, service_event_pt event);
+celix_status_t topologyManager_serviceChanged(void *listener, celix_service_event_t *event);
 
 celix_status_t topologyManager_addImportedService(void *handle, endpoint_description_pt endpoint, char *matchedFilter);
 celix_status_t topologyManager_removeImportedService(void *handle, endpoint_description_pt endpoint, char *matchedFilter);

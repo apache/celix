@@ -16,13 +16,6 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * bundle.h
- *
- *  \date       Mar 23, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
 #ifndef BUNDLE_H_
 #define BUNDLE_H_
@@ -36,9 +29,9 @@
 #include "wire.h"
 #include "module.h"
 #include "service_reference.h"
-#include "bundle_context.h"
 #include "celix_log.h"
 #include "celix_threads.h"
+#include "bundle_context.h"
 
 #ifdef __cplusplus
 extern "C" {

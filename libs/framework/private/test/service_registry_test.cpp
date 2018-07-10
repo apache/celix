@@ -43,7 +43,7 @@ extern "C" {
 
 framework_logger_pt logger = (framework_logger_pt) 0x42;
 
-void serviceRegistryTest_serviceChanged(framework_pt framework, service_event_type_e eventType, service_registration_pt registration, properties_pt oldprops) {
+void serviceRegistryTest_serviceChanged(framework_pt framework, celix_service_event_type_t eventType, service_registration_pt registration, properties_pt oldprops) {
 	mock_c()->actualCall("serviceRegistryTest_serviceChanged")
 			->withPointerParameters("framework", framework)
 			->withIntParameters("eventType", eventType)

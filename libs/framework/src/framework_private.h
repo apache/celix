@@ -16,14 +16,6 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * framework_private.h
- *
- *  \date       May 22, 2013
- *  \author     <a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright  Apache License, Version 2.0
- */
-
 
 #ifndef FRAMEWORK_PRIVATE_H_
 #define FRAMEWORK_PRIVATE_H_
@@ -38,7 +30,7 @@
 #include "celix_errno.h"
 #include "service_factory.h"
 #include "bundle_archive.h"
-#include "service_listener.h"
+#include "celix_service_listener.h"
 #include "bundle_listener.h"
 #include "framework_listener.h"
 #include "service_registration.h"
@@ -47,6 +39,7 @@
 #include "celix_log.h"
 
 #include "celix_threads.h"
+#include "service_registry.h"
 
 struct framework {
 #ifdef WITH_APR
@@ -117,8 +110,8 @@ FRAMEWORK_EXPORT celix_status_t framework_ungetService(framework_pt framework, b
 FRAMEWORK_EXPORT celix_status_t fw_getBundleRegisteredServices(framework_pt framework, bundle_pt bundle, array_list_pt *services);
 FRAMEWORK_EXPORT celix_status_t fw_getBundleServicesInUse(framework_pt framework, bundle_pt bundle, array_list_pt *services);
 
-FRAMEWORK_EXPORT void fw_addServiceListener(framework_pt framework, bundle_pt bundle, service_listener_pt listener, const char* filter);
-FRAMEWORK_EXPORT void fw_removeServiceListener(framework_pt framework, bundle_pt bundle, service_listener_pt listener);
+FRAMEWORK_EXPORT void fw_addServiceListener(framework_pt framework, bundle_pt bundle, celix_service_listener_t *listener, const char* filter);
+FRAMEWORK_EXPORT void fw_removeServiceListener(framework_pt framework, bundle_pt bundle, celix_service_listener_t *listener);
 
 FRAMEWORK_EXPORT celix_status_t fw_addBundleListener(framework_pt framework, bundle_pt bundle, bundle_listener_pt listener);
 FRAMEWORK_EXPORT celix_status_t fw_removeBundleListener(framework_pt framework, bundle_pt bundle, bundle_listener_pt listener);
@@ -126,7 +119,7 @@ FRAMEWORK_EXPORT celix_status_t fw_removeBundleListener(framework_pt framework, 
 FRAMEWORK_EXPORT celix_status_t fw_addFrameworkListener(framework_pt framework, bundle_pt bundle, framework_listener_pt listener);
 FRAMEWORK_EXPORT celix_status_t fw_removeFrameworkListener(framework_pt framework, bundle_pt bundle, framework_listener_pt listener);
 
-FRAMEWORK_EXPORT void fw_serviceChanged(framework_pt framework, service_event_type_e eventType, service_registration_pt registration, properties_pt oldprops);
+FRAMEWORK_EXPORT void fw_serviceChanged(framework_pt framework, celix_service_event_type_t eventType, service_registration_pt registration, properties_pt oldprops);
 
 FRAMEWORK_EXPORT celix_status_t fw_isServiceAssignable(framework_pt fw, bundle_pt requester, service_reference_pt reference, bool* assignable);
 

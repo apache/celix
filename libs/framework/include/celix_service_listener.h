@@ -17,23 +17,26 @@
  *under the License.
  */
 
-#ifndef SERVICE_LISTENER_H_
-#define SERVICE_LISTENER_H_
+#ifndef CELIX_SERVICE_LISTENER_H_
+#define CELIX_SERVICE_LISTENER_H_
 
-
-#include "celix_service_listener.h"
+#include "celix_errno.h"
+#include "celix_service_event.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-//Deprecated use celix_service_listener_t instead
-typedef struct celix_service_listener *service_listener_pt;
+typedef struct celix_service_listener {
+	void *handle;
 
+	celix_status_t (*serviceChanged)(void *handle, celix_service_event_t *event);
+} celix_service_listener_t;
 
 #ifdef __cplusplus
 }
 #endif
 
 
-#endif /* SERVICE_LISTENER_H_ */
+#endif /* CELIX_SERVICE_LISTENER_H_ */
+

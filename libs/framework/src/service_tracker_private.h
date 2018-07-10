@@ -35,7 +35,7 @@ struct celix_serviceTracker {
 	char * filter;
 
 	service_tracker_customizer_t *customizer;
-	service_listener_pt listener;
+	celix_service_listener_t *listener;
 
 	void *callbackHandle;
 
@@ -68,7 +68,6 @@ struct celix_tracked_entry {
 	properties_t *properties;
 	bundle_t *serviceOwner;
 
-    celix_thread_cond_t useCond; //condition for useCount == 0
     celix_thread_mutex_t mutex; //protects useCount
     size_t useCount;
 };

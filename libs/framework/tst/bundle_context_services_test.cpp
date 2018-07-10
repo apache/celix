@@ -346,13 +346,13 @@ TEST(CelixBundleContextServicesTests, servicesTrackerTestWithProperties) {
     int count = 0;
     auto add = [](void *handle, void *svc, const properties_t *props) {
         CHECK(svc != NULL);
-        STRCMP_EQUAL("C", celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE));
+        STRCMP_EQUAL("C", celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, NULL));
         int *c = static_cast<int*>(handle);
         *c += 1;
     };
     auto remove = [](void *handle, void *svc, const properties_t *props) {
         CHECK(svc != NULL);
-        STRCMP_EQUAL("C", celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE));
+        STRCMP_EQUAL("C", celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, NULL));
         int *c = static_cast<int*>(handle);
         *c -= 1;
     };
@@ -384,14 +384,14 @@ TEST(CelixBundleContextServicesTests, servicesTrackerTestWithOwner) {
     int count = 0;
     auto add = [](void *handle, void *svc, const properties_t *props, const bundle_t *svcOwner) {
         CHECK(svc != NULL);
-        STRCMP_EQUAL("C", celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE));
+        STRCMP_EQUAL("C", celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, NULL));
         CHECK(celix_bundle_getId(svcOwner) >= 0);
         int *c = static_cast<int*>(handle);
         *c += 1;
     };
     auto remove = [](void *handle, void *svc, const properties_t *props, const bundle_t *svcOwner) {
         CHECK(svc != NULL);
-        STRCMP_EQUAL("C", celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE));
+        STRCMP_EQUAL("C", celix_properties_get(props, CELIX_FRAMEWORK_SERVICE_LANGUAGE, NULL));
         CHECK(celix_bundle_getId(svcOwner) >= 0);
         int *c = static_cast<int*>(handle);
         *c -= 1;

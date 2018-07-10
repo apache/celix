@@ -159,7 +159,7 @@ TEST(service_tracker, destroy) {
 	char * filter = my_strdup("(objectClass=test)");
 	status = serviceTracker_createWithFilter(context, filter, NULL, &tracker);
 	LONGS_EQUAL(CELIX_SUCCESS, status);
-	service_listener_pt listener = (service_listener_pt) calloc(1, sizeof(serviceListener));
+	celix_service_listener_t *listener = (celix_service_listener_t*) calloc(1, sizeof(serviceListener));
 	tracker->listener = listener;
 
 	mock()
@@ -325,7 +325,7 @@ TEST(service_tracker, close) {
 	service_tracker_pt tracker = NULL;
 	serviceTracker_create(context, service, NULL, &tracker);
 
-	service_listener_pt listener = (service_listener_pt) malloc(sizeof(*listener));
+	celix_service_listener_t *listener = (celix_service_listener_t*) malloc(sizeof(*listener));
 	tracked_pt entry = (tracked_pt) malloc(sizeof(*entry));
 	service_reference_pt ref = (service_reference_pt) 0x02;
 
@@ -585,7 +585,7 @@ TEST(service_tracker, serviceChangedRegistered) {
 	service_tracker_pt tracker = NULL;
 	serviceTracker_create(context, service, NULL, &tracker);
 
-	service_listener_pt listener = (service_listener_pt) malloc(sizeof(*listener));
+	celix_service_listener_t *listener = (celix_service_listener_t*) malloc(sizeof(*listener));
 	tracker->listener = listener;
 	listener->handle = tracker;
 
@@ -631,7 +631,7 @@ TEST(service_tracker, serviceChangedModified) {
 	service_tracker_pt tracker = NULL;
 	serviceTracker_create(context, service, NULL, &tracker);
 
-	service_listener_pt listener = (service_listener_pt) malloc(sizeof(*listener));
+	celix_service_listener_t *listener = (celix_service_listener_t*) malloc(sizeof(*listener));
 	tracker->listener = listener;
 	listener->handle = tracker;
 
@@ -677,7 +677,7 @@ TEST(service_tracker, serviceChangedUnregistering) {
 	service_tracker_pt tracker = NULL;
 	serviceTracker_create(context, service, NULL, &tracker);
 
-	service_listener_pt listener = (service_listener_pt) malloc(sizeof(*listener));
+	celix_service_listener_t *listener = (celix_service_listener_t*) malloc(sizeof(*listener));
 	tracker->listener = listener;
 	listener->handle = tracker;
 
@@ -728,7 +728,7 @@ TEST(service_tracker, serviceChangedModifiedEndmatch) {
 	char * service = my_strdup("service_name");
 	service_tracker_pt tracker = NULL;
 	serviceTracker_create(context, service, NULL, &tracker);
-	service_listener_pt listener = (service_listener_pt) malloc(sizeof(*listener));
+	celix_service_listener_t *listener = (celix_service_listener_t*) malloc(sizeof(*listener));
 	tracker->listener = listener;
 	listener->handle = tracker;
 
@@ -774,7 +774,7 @@ TEST(service_tracker, serviceChangedRegisteredCustomizer) {
 	service_tracker_pt tracker = NULL;
 	service_tracker_customizer_pt customizer = (service_tracker_customizer_pt) 0x20;
 	serviceTracker_create(context, service, customizer, &tracker);
-	service_listener_pt listener = (service_listener_pt) malloc(sizeof(*listener));
+	celix_service_listener_t *listener = (celix_service_listener_t*) malloc(sizeof(*listener));
 	tracker->listener = listener;
 	listener->handle = tracker;
 
@@ -847,7 +847,7 @@ TEST(service_tracker, serviceChangedModifiedCustomizer) {
 	service_tracker_pt tracker = NULL;
 	service_tracker_customizer_pt customizer = (service_tracker_customizer_pt) 0x20;
 	serviceTracker_create(context, service, customizer, &tracker);
-	service_listener_pt listener = (service_listener_pt) malloc(sizeof(*listener));
+	celix_service_listener_t *listener = (celix_service_listener_t*) malloc(sizeof(*listener));
 	tracker->listener = listener;
 	listener->handle = tracker;
 	//adding_callback_pt adding_func = NULL;
@@ -946,7 +946,7 @@ TEST(service_tracker, serviceChangedUnregisteringCustomizer) {
 	service_tracker_pt tracker = NULL;
 	service_tracker_customizer_pt customizer = (service_tracker_customizer_pt) 0x20;
 	serviceTracker_create(context, service, customizer, &tracker);
-	service_listener_pt listener = (service_listener_pt) malloc(sizeof(*listener));
+	celix_service_listener_t *listener = (celix_service_listener_t*) malloc(sizeof(*listener));
 	tracker->listener = listener;
 	listener->handle = tracker;
 
@@ -1015,7 +1015,7 @@ TEST(service_tracker, serviceChangedUnregisteringCustomizerNoFunc) {
 	service_tracker_pt tracker = NULL;
 	service_tracker_customizer_pt customizer = (service_tracker_customizer_pt) 0x20;
 	serviceTracker_create(context, service, customizer, &tracker);
-	service_listener_pt listener = (service_listener_pt) malloc(sizeof(*listener));
+	celix_service_listener_t *listener = (celix_service_listener_t*) malloc(sizeof(*listener));
 	tracker->listener = listener;
 	listener->handle = tracker;
 

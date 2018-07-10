@@ -16,18 +16,13 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * pubsub_utils.c
- *
- *  \date       Sep 24, 2015
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
 #include <string.h>
 #include <stdlib.h>
 
 #include "constants.h"
+#include "celix_filter.h"
+#include "filter.h"
 
 #include "pubsub_common.h"
 #include "pubsub/publisher.h"

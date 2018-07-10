@@ -27,7 +27,7 @@
 #ifndef SERVICE_TRACKER_H_
 #define SERVICE_TRACKER_H_
 
-#include "service_listener.h"
+#include "celix_service_listener.h"
 #include "array_list.h"
 #include "service_tracker_customizer.h"
 #include "framework_exports.h"
@@ -68,7 +68,7 @@ FRAMEWORK_EXPORT array_list_pt serviceTracker_getServices(service_tracker_t *tra
 
 FRAMEWORK_EXPORT void *serviceTracker_getServiceByReference(service_tracker_t *tracker, service_reference_pt reference);
 
-FRAMEWORK_EXPORT void serviceTracker_serviceChanged(service_listener_pt listener, service_event_pt event);
+FRAMEWORK_EXPORT void serviceTracker_serviceChanged(celix_service_listener_t *listener, celix_service_event_t *event);
 
 
 

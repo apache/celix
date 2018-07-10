@@ -36,7 +36,7 @@
 #include "bundle_activator.h"
 #include "bundle_context.h"
 #include "service_tracker.h"
-#include "service_listener.h"
+#include "celix_service_listener.h"
 #include "service_registration.h"
 #include "listener_hook_service.h"
 #include "event_admin.h"

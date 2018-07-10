@@ -52,7 +52,7 @@ struct refining_driver_device {
 	refining_driver_pt driver;
 	service_reference_pt baseServiceReference;
 	service_registration_pt deviceRegistration;
-	service_listener_pt listener;
+	celix_service_listener_t *listener;
 };
 
 celix_status_t refiningDriver_destroy(refining_driver_pt driver) {
@@ -109,7 +109,7 @@ static celix_status_t refiningDriver_stopDevice(refining_driver_device_pt device
 }
 
 
-static celix_status_t refiningDriver_serviceChanged(service_listener_pt listener, service_event_pt event) {
+static celix_status_t refiningDriver_serviceChanged(celix_service_listener_t *listener, celix_service_event_t *event) {
 	celix_status_t status =  CELIX_SUCCESS;
 	refining_driver_device_pt device = listener->handle;
 	if (event->type == OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING) {
@@ -148,9 +148,9 @@ celix_status_t refiningDriver_createDevice(refining_driver_pt driver, service_re
 		(*device)->deviceRegistration=NULL;
 		(*device)->listener=NULL;
 
-		service_listener_pt listener = calloc(1, sizeof(*listener));
+		celix_service_listener_t *listener = calloc(1, sizeof(*listener));
 		listener->handle=(void *)(*device);
-		listener->serviceChanged=(celix_status_t (*)(void * listener, service_event_pt event))refiningDriver_serviceChanged;
+		listener->serviceChanged=(celix_status_t (*)(void * listener, celix_service_event_t *event))refiningDriver_serviceChanged;
 		bundleContext_addServiceListener(driver->context, listener, NULL);
 		(*device)->listener=listener;
 

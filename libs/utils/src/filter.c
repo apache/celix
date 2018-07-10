@@ -634,12 +634,12 @@ bool celix_filter_match(const celix_filter_t *filter, const celix_properties_t* 
 		case CELIX_FILTER_OPERAND_LESS :
 		case CELIX_FILTER_OPERAND_LESSEQUAL :
 		case CELIX_FILTER_OPERAND_APPROX : {
-			char * value = (properties == NULL) ? NULL: (char*)celix_properties_get(properties, filter->attribute);
+			char * value = (properties == NULL) ? NULL: (char*)celix_properties_get(properties, filter->attribute, NULL);
 			filter_compare(filter, value, &result);
 			return result;
 		}
 		case CELIX_FILTER_OPERAND_PRESENT: {
-			char * value = (properties == NULL) ? NULL: (char*)celix_properties_get(properties, filter->attribute);
+			char * value = (properties == NULL) ? NULL: (char*)celix_properties_get(properties, filter->attribute, NULL);
 			return value != NULL;
 		}
 	}

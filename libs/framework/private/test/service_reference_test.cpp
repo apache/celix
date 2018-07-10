@@ -37,6 +37,7 @@ extern "C" {
 #include "service_reference.h"
 #include "constants.h"
 #include "celix_log.h"
+#include "service_registry.h"
 #include "CppUTestExt/MockSupport_c.h"
 
 framework_logger_pt logger = (framework_logger_pt) 0x42;

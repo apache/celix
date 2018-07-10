@@ -16,13 +16,6 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * service_reference.h
- *
- *  \date       Jul 20, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
 #ifndef SERVICE_REFERENCE_H_
 #define SERVICE_REFERENCE_H_

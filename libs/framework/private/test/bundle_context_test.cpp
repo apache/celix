@@ -452,7 +452,7 @@ TEST(bundle_context, addServiceListener) {
 	context->framework = framework;
 	context->bundle = bundle;
 
-	service_listener_pt listener = (service_listener_pt) 0x30;
+	celix_service_listener_t *listener = (celix_service_listener_t*) 0x30;
 	char filter[] = "";
 	mock().expectOneCall("fw_addServiceListener")
 		.withParameter("framework", framework)
@@ -479,7 +479,7 @@ TEST(bundle_context, removeServiceListener) {
 	context->framework = framework;
 	context->bundle = bundle;
 
-	service_listener_pt listener = (service_listener_pt) 0x30;
+	celix_service_listener_t *listener = (celix_service_listener_t*) 0x30;
 	mock().expectOneCall("fw_removeServiceListener")
 		.withParameter("framework", framework)
 		.withParameter("bundle", bundle)

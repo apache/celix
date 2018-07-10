@@ -33,7 +33,7 @@ typedef struct celix_serviceRegistry celix_service_registry_t;
 #include "properties.h"
 #include "filter.h"
 #include "service_factory.h"
-#include "service_event.h"
+#include "celix_service_event.h"
 #include "array_list.h"
 #include "service_registration.h"
 #include "celix_service_factory.h"
@@ -42,7 +42,7 @@ typedef struct celix_serviceRegistry celix_service_registry_t;
 extern "C" {
 #endif
 
-typedef void (*serviceChanged_function_pt)(framework_pt, service_event_type_e, service_registration_pt, properties_pt);
+typedef void (*serviceChanged_function_pt)(framework_pt, celix_service_event_type_t, service_registration_pt, properties_pt);
 
 celix_status_t serviceRegistry_create(framework_pt framework, serviceChanged_function_pt serviceChanged,
                                       service_registry_pt *registry);

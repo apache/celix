@@ -28,6 +28,8 @@
 #include <netdb.h>
 #include <string.h>
 
+#include "celix_filter.h"
+#include "filter.h"
 #include "celix_threads.h"
 #include "bundle_context.h"
 #include "log_helper.h"

@@ -21,6 +21,7 @@
 #include "celix_service_factory.h"
 #include "celix_properties.h"
 #include "celix_array_list.h"
+#include "celix_filter.h"
 
 #ifndef CELIX_BUNDLE_CONTEXT_H_
 #define CELIX_BUNDLE_CONTEXT_H_

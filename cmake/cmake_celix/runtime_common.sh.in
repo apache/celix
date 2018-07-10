@@ -36,7 +36,8 @@ KILL_OPTS="${KILL_OPTS:--2}" #default is -2, e.g. SIGINT
 PATIENCE="${PATIENCE:-5}" #in seconds
 
 PIDS=""
-WAIT_FOR_PID=""
+
+=""
 RUNTIME_STARTTIME=$(date +"%s")
 trap stop_all INT
 
