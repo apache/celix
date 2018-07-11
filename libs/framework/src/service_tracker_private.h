@@ -69,6 +69,7 @@ struct celix_tracked_entry {
 	bundle_t *serviceOwner;
 
     celix_thread_mutex_t mutex; //protects useCount
+	celix_thread_cond_t useCond;
     size_t useCount;
 };
 

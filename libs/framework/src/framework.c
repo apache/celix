@@ -31,6 +31,7 @@
 #include <dlfcn.h>
 #endif
 #include <uuid/uuid.h>
+#include <assert.h>
 
 #include "framework_private.h"
 #include "constants.h"
@@ -153,6 +154,7 @@ typedef struct celix_fw_service_listener_entry {
 
     celix_thread_mutex_t mutex; //protects retainedReferences and useCount
 	celix_array_list_t* retainedReferences;
+	celix_thread_cond_t useCond;
     size_t useCount;
 } celix_fw_service_listener_entry_t;
 
@@ -167,6 +169,7 @@ static inline celix_fw_service_listener_entry_t* listener_create(celix_bundle_t 
 
     entry->useCount = 1;
     celixThreadMutex_create(&entry->mutex, NULL);
+    celixThreadCondition_init(&entry->useCond, NULL);
     return entry;
 }
 
@@ -176,27 +179,38 @@ static inline void listener_retain(celix_fw_service_listener_entry_t *entry) {
     celixThreadMutex_unlock(&entry->mutex);
 }
 
-static inline void listener_release(celix_framework_t* framework, celix_fw_service_listener_entry_t *entry) {
+static inline void listener_release(celix_fw_service_listener_entry_t *entry) {
     celixThreadMutex_lock(&entry->mutex);
+    assert(entry->useCount > 0);
     entry->useCount -= 1;
-    int count = entry->useCount;
-    celixThreadMutex_unlock(&entry->mutex);
-    //use count == 0 -> safe to destroy.
-
-    if (count == 0) {
-        //destroy
-        int rSize = arrayList_size(entry->retainedReferences);
-        for (int i = 0; i < rSize; i += 1) {
-            service_reference_pt ref = arrayList_get(entry->retainedReferences, i);
-            if (ref != NULL) {
-                serviceRegistry_ungetServiceReference(framework->registry, entry->bundle, ref); // decrease retain counter
-            }
-        }
-        celix_filter_destroy(entry->filter);
-        celix_arrayList_destroy(entry->retainedReferences);
-        celixThreadMutex_destroy(&entry->mutex);
-        free(entry);
+    if (entry->useCount == 0) {
+        celixThreadCondition_signal(&entry->useCond);
     }
+    celixThreadMutex_unlock(&entry->mutex);
+}
+
+static inline void listener_waitAndDestroy(celix_framework_t *framework, celix_fw_service_listener_entry_t *entry) {
+    celixThreadMutex_lock(&entry->mutex);
+    while(entry->useCount != 0) {
+        celixThreadCondition_wait(&entry->useCond, &entry->mutex);
+    }
+    celixThreadMutex_unlock(&entry->mutex);
+
+
+    //use count == 0 -> safe to destroy.
+    //destroy
+    int rSize = arrayList_size(entry->retainedReferences);
+    for (int i = 0; i < rSize; i += 1) {
+        service_reference_pt ref = arrayList_get(entry->retainedReferences, i);
+        if (ref != NULL) {
+            serviceRegistry_ungetServiceReference(framework->registry, entry->bundle, ref); // decrease retain counter
+        }
+    }
+    celix_filter_destroy(entry->filter);
+    celix_arrayList_destroy(entry->retainedReferences);
+    celixThreadMutex_destroy(&entry->mutex);
+    celixThreadCondition_destroy(&entry->useCond);
+    free(entry);
 }
 
 framework_logger_pt logger;
@@ -1632,7 +1646,8 @@ void fw_removeServiceListener(framework_pt framework, bundle_pt bundle, celix_se
     }
 
     if (match != NULL) {
-        listener_release(framework, match);
+        listener_release(match);
+        listener_waitAndDestroy(framework, match);
 	}
 }
 
@@ -1821,7 +1836,7 @@ void fw_serviceChanged(framework_pt framework, celix_service_event_type_t eventT
 
             }
         }
-        listener_release(framework, entry); //decrease usage, so that the listener can be destroyed (if use count is now 0)
+        listener_release(entry); //decrease usage, so that the listener can be destroyed (if use count is now 0)
     }
     celix_arrayList_destroy(copy);
 }

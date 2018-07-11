@@ -52,6 +52,7 @@ static inline celix_tracked_entry_t* tracked_create(service_reference_pt ref, vo
 
     tracked->useCount = 1;
     celixThreadMutex_create(&tracked->mutex, NULL);
+    celixThreadCondition_init(&tracked->useCond, NULL);
     return tracked;
 }
 
@@ -63,15 +64,25 @@ static inline void tracked_retain(celix_tracked_entry_t *tracked) {
 
 static inline void tracked_release(celix_tracked_entry_t *tracked) {
     celixThreadMutex_lock(&tracked->mutex);
+    assert(tracked->useCount > 0);
     tracked->useCount -= 1;
-    size_t count = tracked->useCount;
+    if (tracked->useCount == 0) {
+        celixThreadCondition_signal(&tracked->useCond);
+    }
+    celixThreadMutex_unlock(&tracked->mutex);
+}
+
+static inline void tracked_waitAndDestroy(celix_tracked_entry_t *tracked) {
+    celixThreadMutex_lock(&tracked->mutex);
+    while (tracked->useCount != 0) {
+        celixThreadCondition_wait(&tracked->useCond, &tracked->mutex);
+    }
     celixThreadMutex_unlock(&tracked->mutex);
 
-    if (count == 0) {
-        //destroy
-        celixThreadMutex_destroy(&tracked->mutex);
-        free(tracked);
-    }
+    //destroy
+    celixThreadMutex_destroy(&tracked->mutex);
+    celixThreadCondition_destroy(&tracked->useCond);
+    free(tracked);
 }
 
 celix_status_t serviceTracker_create(bundle_context_pt context, const char * service, service_tracker_customizer_pt customizer, service_tracker_pt *tracker) {
@@ -522,6 +533,9 @@ static void serviceTracker_untrackTracked(celix_service_tracker_t *tracker, celi
         serviceTracker_invokeRemovingService(tracker, tracked);
         bundleContext_ungetServiceReference(tracker->context, tracked->reference);
         tracked_release(tracked);
+
+        //Wait till the useCount is 0, because the untrack should only return if the service is not used anymore.
+        tracked_waitAndDestroy(tracked);
     }
 }
 
