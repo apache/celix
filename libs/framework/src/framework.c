@@ -1640,12 +1640,14 @@ void fw_removeServiceListener(framework_pt framework, bundle_pt bundle, celix_se
 
             fw_getService(framework, framework->bundle, ref, (const void **) &hook);
 
-            arrayList_create(&infos);
-            arrayList_add(infos, &info);
-            hook->removed(hook->handle, infos);
-            serviceRegistry_ungetService(framework->registry, framework->bundle, ref, &ungetResult);
-            serviceRegistry_ungetServiceReference(framework->registry, framework->bundle, ref);
-            arrayList_destroy(infos);
+            if (hook != NULL) {
+                arrayList_create(&infos);
+                arrayList_add(infos, &info);
+                hook->removed(hook->handle, infos);
+                serviceRegistry_ungetService(framework->registry, framework->bundle, ref, &ungetResult);
+                serviceRegistry_ungetServiceReference(framework->registry, framework->bundle, ref);
+                arrayList_destroy(infos);
+            }
         }
         arrayList_destroy(listenerHooks);
     }
