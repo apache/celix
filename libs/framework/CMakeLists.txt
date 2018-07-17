@@ -180,6 +180,7 @@ if (ENABLE_TESTING AND FRAMEWORK_TESTS)
         private/mock/bundle_cache_mock.c
         private/mock/manifest_mock.c
         private/mock/dm_dependency_manager_mock.c
+        private/mock/service_tracker_stub.c
         src/celix_errorcodes.c
         private/mock/celix_log_mock.c
         src/framework.c)
