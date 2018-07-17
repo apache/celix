@@ -21,6 +21,7 @@
 
 typedef struct framework celix_framework_t;
 
+
 #include "celix_types.h"
 #include "celix_properties.h"
 

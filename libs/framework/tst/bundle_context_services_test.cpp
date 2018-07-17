@@ -28,6 +28,7 @@
 #include "celix_api.h"
 #include "celix_framework_factory.h"
 #include "celix_service_factory.h"
+#include "service_tracker_private.h"
 
 
 #include <CppUTest/TestHarness.h>
@@ -684,8 +685,10 @@ TEST(CelixBundleContextServicesTests, trackServiceTrackerTest) {
     CHECK_EQUAL(2, count);
 
     celix_bundleContext_stopTracker(ctx, tracker2);
+    celix_serviceTracker_syncForContext(ctx); //service tracker shutdown on separate track -> need sync
     CHECK_EQUAL(1, count);
     celix_bundleContext_stopTracker(ctx, tracker3);
+    celix_serviceTracker_syncForContext(ctx); //service tracker shutdown on separate track -> need sync
     CHECK_EQUAL(0, count);
 
     celix_bundleContext_stopTracker(ctx, trackerId);

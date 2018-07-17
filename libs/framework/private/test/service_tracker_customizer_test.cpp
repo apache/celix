@@ -34,7 +34,7 @@
 
 extern "C"
 {
-#include "service_tracker_customizer_private.h"
+#include "service_tracker_customizer.h"
 #include "service_reference.h"
 #include "celix_log.h"
 

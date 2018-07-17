@@ -29,6 +29,7 @@ add_executable(test_framework
 )
 target_link_libraries(test_framework Celix::framework ${CURL_LIBRARIES} ${CPPUTEST_LIBRARY})
 add_dependencies(test_framework simple_test_bundle1_bundle simple_test_bundle2_bundle simple_test_bundle3_bundle)
+target_include_directories(test_framework PRIVATE ../src)
 
 configure_file(config.properties.in config.properties @ONLY)
 configure_file(framework1.properties.in framework1.properties @ONLY)

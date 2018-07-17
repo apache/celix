@@ -44,6 +44,7 @@
 #include "bundle_private.h"
 #include "celix_bundle_context.h"
 #include "bundle_context_private.h"
+#include "service_tracker.h"
 
 typedef celix_status_t (*create_function_fp)(bundle_context_t *context, void **userData);
 typedef celix_status_t (*start_function_fp)(void *userData, bundle_context_t *context);
@@ -184,7 +185,7 @@ static inline void listener_release(celix_fw_service_listener_entry_t *entry) {
     assert(entry->useCount > 0);
     entry->useCount -= 1;
     if (entry->useCount == 0) {
-        celixThreadCondition_signal(&entry->useCond);
+        celixThreadCondition_broadcast(&entry->useCond);
     }
     celixThreadMutex_unlock(&entry->mutex);
 }
@@ -389,6 +390,7 @@ celix_status_t framework_destroy(framework_pt framework) {
 	    int i;
 	    for (i = 0; i < arrayList_size(framework->requests); i++) {
 	        request_pt request = arrayList_get(framework->requests, i);
+	        free(request->bundleSymbolicName);
 	        free(request);
 	    }
 	    arrayList_destroy(framework->requests);
@@ -1057,6 +1059,7 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
 	        }
 
             if (id != 0) {
+	            celix_serviceTracker_syncForContext(bundle->context);
                 status = CELIX_DO_IF(status, serviceRegistry_clearServiceRegistrations(framework->registry, bundle));
                 if (status == CELIX_SUCCESS) {
                     module_pt module = NULL;
@@ -1102,6 +1105,8 @@ celix_status_t fw_stopBundle(framework_pt framework, bundle_pt bundle, bool reco
  	} else {
         fw_fireBundleEvent(framework, OSGI_FRAMEWORK_BUNDLE_EVENT_STOPPED, bundle);
  	}
+
+ 	celix_serviceTracker_syncForFramework(framework);
 
 	return status;
 }

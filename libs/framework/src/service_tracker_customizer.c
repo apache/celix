@@ -25,8 +25,8 @@
  */
 
 #include <stdlib.h>
+#include "service_tracker_customizer.h"
 
-#include "service_tracker_customizer_private.h"
 #include "celix_log.h"
 
 celix_status_t serviceTrackerCustomizer_create(void *handle,

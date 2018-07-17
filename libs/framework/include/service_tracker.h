@@ -135,6 +135,17 @@ void celix_serviceTracker_useServices(
         void (*useWithOwner)(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *owner)
 );
 
+/**
+ * blocks until all shutdown threads for the service tracker instances for the provided framework are done.
+ */
+void celix_serviceTracker_syncForFramework(void *fw);
+
+/**
+ * blocks until all shutdown threads for the service tracker instances for the provided bundle context are done.
+ */
+void celix_serviceTracker_syncForContext(void *ctx);
+
+
 #ifdef __cplusplus
 }
 #endif
