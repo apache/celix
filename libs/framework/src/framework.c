@@ -1757,18 +1757,19 @@ void fw_serviceChanged(framework_pt framework, celix_service_event_type_t eventT
     unsigned int i;
     celix_fw_service_listener_entry_t *entry;
 
-    celix_array_list_t* copy = celix_arrayList_create();
+    celix_array_list_t* retainedEntries = celix_arrayList_create();
+    celix_array_list_t* matchedEntries = celix_arrayList_create();
 
     celixThreadMutex_lock(&framework->serviceListenersLock);
     for (i = 0; i < celix_arrayList_size(framework->serviceListeners); i++) {
         entry = (celix_fw_service_listener_entry_t *) celix_arrayList_get(framework->serviceListeners, i);
-        celix_arrayList_add(copy, entry);
+        celix_arrayList_add(retainedEntries, entry);
         listener_retain(entry); //ensure that use count > 0, so that the listener cannot be destroyed until all pending event are handled.
     }
     celixThreadMutex_unlock(&framework->serviceListenersLock);
 
-    for (i = 0; i < celix_arrayList_size(copy); ++i) {
-        entry = (celix_fw_service_listener_entry_t *) celix_arrayList_get(copy, i);
+    for (i = 0; i < celix_arrayList_size(retainedEntries); ++i) {
+        entry = (celix_fw_service_listener_entry_t *) celix_arrayList_get(retainedEntries, i);
         int matched = 0;
         properties_pt props = NULL;
         bool matchResult = false;
@@ -1778,67 +1779,63 @@ void fw_serviceChanged(framework_pt framework, celix_service_event_type_t eventT
         }
         matched = (entry->filter == NULL) || matchResult;
         if (matched) {
-            service_reference_pt reference = NULL;
-            celix_service_event_t *event;
+            celix_arrayList_add(matchedEntries, entry);
+        } else {
+            listener_release(entry); //Not a match -> release entry
+        }
+    }
+    celix_arrayList_destroy(retainedEntries);
 
-            event = malloc(sizeof(*event));
+    /*
+     * TODO FIXME, A deadlock can happen when (e.g.) a service is deregistered, triggering this fw_serviceChanged and
+     * one of the matching service listener callback tries to remove an other matched service listener.
+     * The remove service listener will call the listener_waitForDestroy and the fw_serviceChanged part keeps the
+     * usageCount on > 0.
+     *
+     * Not sure how to prevent/handle this.
+     */
+    for (i = 0; i < celix_arrayList_size(matchedEntries); ++i) {
+        entry = (celix_fw_service_listener_entry_t *) celix_arrayList_get(matchedEntries, i);
 
-            serviceRegistry_getServiceReference(framework->registry, entry->bundle, registration, &reference);
+        service_reference_pt reference = NULL;
+        celix_service_event_t event;
 
-            //NOTE: that you are never sure that the UNREGISTERED event will by handle by an service_listener. listener could be gone
-            //Every reference retained is therefore stored and called when a service listener is removed from the framework.
-            if (eventType == OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED) {
-                serviceRegistry_retainServiceReference(framework->registry, entry->bundle, reference);
-                celixThreadMutex_lock(&entry->mutex);
-                arrayList_add(entry->retainedReferences, reference); //TODO improve by using set (or hashmap) instead of list
-                celixThreadMutex_unlock(&entry->mutex);
+        serviceRegistry_getServiceReference(framework->registry, entry->bundle, registration, &reference);
+
+        //NOTE: that you are never sure that the UNREGISTERED event will by handle by an service_listener. listener could be gone
+        //Every reference retained is therefore stored and called when a service listener is removed from the framework.
+        if (eventType == OSGI_FRAMEWORK_SERVICE_EVENT_REGISTERED) {
+            serviceRegistry_retainServiceReference(framework->registry, entry->bundle, reference);
+            celixThreadMutex_lock(&entry->mutex);
+            arrayList_add(entry->retainedReferences, reference); //TODO improve by using set (or hashmap) instead of list
+            celixThreadMutex_unlock(&entry->mutex);
+        }
+
+        event.type = eventType;
+        event.reference = reference;
+
+        entry->listener->serviceChanged(entry->listener, &event);
+
+        serviceRegistry_ungetServiceReference(framework->registry, entry->bundle, reference);
+
+        if (eventType == OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING) {
+            //if service listener was active when service was registered, release the retained reference
+            celixThreadMutex_lock(&entry->mutex);
+            bool removed = arrayList_removeElement(entry->retainedReferences, reference);
+            celixThreadMutex_unlock(&entry->mutex);
+            if (removed) {
+                serviceRegistry_ungetServiceReference(framework->registry, entry->bundle,
+                                                      reference); // decrease retain counter
             }
 
-            event->type = eventType;
-            event->reference = reference;
+        }
 
-            entry->listener->serviceChanged(entry->listener, event);
-
-            serviceRegistry_ungetServiceReference(framework->registry, entry->bundle, reference);
-
-            if (eventType == OSGI_FRAMEWORK_SERVICE_EVENT_UNREGISTERING) {
-                //if service listener was active when service was registered, release the retained reference
-                celixThreadMutex_lock(&entry->mutex);
-                bool removed = arrayList_removeElement(entry->retainedReferences, reference);
-                celixThreadMutex_unlock(&entry->mutex);
-                if (removed) {
-                    serviceRegistry_ungetServiceReference(framework->registry, entry->bundle, reference); // decrease retain counter
-                }
-
-            }
-
-            free(event);
-
-        } else if (eventType == OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED) {
-            bool matchResult = false;
-            int matched = 0;
-            if (entry->filter != NULL) {
-                filter_match(entry->filter, oldprops, &matchResult);
-            }
-            matched = (entry->filter == NULL) || matchResult;
-            if (matched) {
-                service_reference_pt reference = NULL;
-                celix_service_event_t *endmatch = malloc(sizeof(*endmatch));
-
-                serviceRegistry_getServiceReference(framework->registry, entry->bundle, registration, &reference);
-
-                endmatch->reference = reference;
-                endmatch->type = OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED_ENDMATCH;
-                entry->listener->serviceChanged(entry->listener, endmatch);
-
-                serviceRegistry_ungetServiceReference(framework->registry, entry->bundle, reference);
-                free(endmatch);
-
-            }
+        if (eventType == OSGI_FRAMEWORK_SERVICE_EVENT_MODIFIED) {
+            entry->listener->serviceChanged(entry->listener, &event);
         }
         listener_release(entry); //decrease usage, so that the listener can be destroyed (if use count is now 0)
     }
-    celix_arrayList_destroy(copy);
+    celix_arrayList_destroy(matchedEntries);
 }
 
 //celix_status_t fw_isServiceAssignable(framework_pt fw, bundle_pt requester, service_reference_pt reference, bool *assignable) {

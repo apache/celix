@@ -149,6 +149,9 @@ celix_status_t bundleCache_getArchives(bundle_cache_pt cache, array_list_pt *arc
 	}
 
 	framework_logIfError(logger, status, NULL, "Failed to get bundle archives");
+	if (status != CELIX_SUCCESS) {
+		perror("\t");
+	}
 
 	return status;
 }
