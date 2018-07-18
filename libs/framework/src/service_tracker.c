@@ -535,17 +535,15 @@ static void serviceTracker_checkAndInvokeSetService(void *handle, void *highestS
 
 static celix_status_t serviceTracker_invokeModifiedService(celix_service_tracker_instance_t *instance, celix_tracked_entry_t *tracked) {
     celix_status_t status = CELIX_SUCCESS;
-    if (&instance->customizer != NULL) {
-        void *handle = NULL;
-        modified_callback_pt function = NULL;
 
-        serviceTrackerCustomizer_getHandle(&instance->customizer, &handle);
-        serviceTrackerCustomizer_getModifiedFunction(&instance->customizer, &function);
-
-        if (function != NULL) {
-            function(handle, tracked->reference, tracked->service);
-        }
+    void *customizerHandle = NULL;
+    modified_callback_pt function = NULL;
+    serviceTrackerCustomizer_getHandle(&instance->customizer, &customizerHandle);
+    serviceTrackerCustomizer_getModifiedFunction(&instance->customizer, &function);
+    if (function != NULL) {
+        function(customizerHandle, tracked->reference, tracked->service);
     }
+    
     void *handle = instance->callbackHandle;
     if (instance->modified != NULL) {
         instance->modified(handle, tracked->service);
