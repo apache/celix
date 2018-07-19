@@ -442,7 +442,7 @@ int celix_arrayList_indexOf(celix_array_list_t *list, celix_array_list_entry_t e
 	}
 	return index;
 }
-void celix_arrayList_remove(celix_array_list_t *list, int index) {
+void celix_arrayList_removeAt(celix_array_list_t *list, int index) {
 	if (index >= 0 && index < list->size) {
 		list->modCount++;
 		size_t numMoved = list->size - index - 1;
@@ -453,8 +453,51 @@ void celix_arrayList_remove(celix_array_list_t *list, int index) {
 
 void celix_arrayList_removeEntry(celix_array_list_t *list, celix_array_list_entry_t entry) {
 	int index = celix_arrayList_indexOf(list, entry);
-	celix_arrayList_remove(list, index);
+	celix_arrayList_removeAt(list, index);
 }
 
 
+void celix_arrayList_remove(celix_array_list_t *list, void *ptr) {
+	celix_array_list_entry_t entry = {.voidPtrVal = ptr};
+	celix_arrayList_removeEntry(list, entry);
+}
 
+void celix_arrayList_removeInt(celix_array_list_t *list, int val) {
+	celix_array_list_entry_t entry = {.intVal = val};
+	celix_arrayList_removeEntry(list, entry);
+}
+
+void celix_arrayList_removeLong(celix_array_list_t *list, long val) {
+	celix_array_list_entry_t entry = {.longVal = val};
+	celix_arrayList_removeEntry(list, entry);
+}
+
+void celix_arrayList_removeUInt(celix_array_list_t *list, unsigned int val) {
+	celix_array_list_entry_t entry = {.uintVal = val};
+	celix_arrayList_removeEntry(list, entry);
+}
+
+void celix_arrayList_removeULong(celix_array_list_t *list, unsigned long val) {
+	celix_array_list_entry_t entry = {.ulongVal = val};
+	celix_arrayList_removeEntry(list, entry);
+}
+
+void celix_arrayList_removeFloat(celix_array_list_t *list, float val) {
+	celix_array_list_entry_t entry = {.floatVal = val};
+	celix_arrayList_removeEntry(list, entry);
+}
+
+void celix_arrayList_removeDouble(celix_array_list_t *list, double val) {
+	celix_array_list_entry_t entry = {.doubleVal = val};
+	celix_arrayList_removeEntry(list, entry);
+}
+
+void celix_arrayList_removeBool(celix_array_list_t *list, bool val) {
+	celix_array_list_entry_t entry = {.boolVal = val};
+	celix_arrayList_removeEntry(list, entry);
+}
+
+void celix_arrayList_removeSize(celix_array_list_t *list, size_t val) {
+	celix_array_list_entry_t entry = {.sizeVal = val};
+	celix_arrayList_removeEntry(list, entry);
+}
