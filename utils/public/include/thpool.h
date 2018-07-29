@@ -22,7 +22,7 @@ typedef struct thpool_ *threadpool;
 /**
  * @brief  Initialize threadpool
  * 
- * Initializes a threadpool. This function will not return untill all
+ * Initializes a threadpool. This function will not return until all
  * threads have initialized successfully.
  * 
  * @example
