@@ -15,7 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-#Apache Celix - Subprojects
+# Apache Celix - Subprojects
 
 Apache Celix is organized into several subprojects. The following subproject are currently available:
 
