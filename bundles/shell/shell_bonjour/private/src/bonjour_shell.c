@@ -245,7 +245,7 @@ static void bonjourShell_acceptConnection(bonjour_shell_pt shell, int connection
 		}
 
 		if (sockStatus == 0) { //shell stopped still connected
-			usleep(1500); //wait untill all data is send
+			usleep(1500); //wait until all data is send
 			xmlTextWriterEndElement(context.writer); //end stream
 			xmlTextWriterEndDocument(context.writer);
 			close(context.sockfd);
