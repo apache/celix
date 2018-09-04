@@ -33,6 +33,7 @@
 
 extern "C" {
 #include "properties.h"
+#include "celix_properties.h"
 }
 
 int main(int argc, char** argv) {
@@ -76,6 +77,33 @@ TEST(properties, load) {
 	STRCMP_EQUAL("c \t d", valueB);
 
 	properties_destroy(properties);
+}
+
+TEST(properties, asLong) {
+	celix_properties_t *props = celix_properties_create();
+	celix_properties_set(props, "t1", "42");
+	celix_properties_set(props, "t2", "-42");
+	celix_properties_set(props, "t3", "");
+	celix_properties_set(props, "t4", "42 bla"); //converts to 42
+	celix_properties_set(props, "t5", "bla");
+
+	long v = celix_properties_getAsLong(props, "t1", -1);
+	LONGS_EQUAL(42, v);
+
+	v = celix_properties_getAsLong(props, "t2", -1);
+	LONGS_EQUAL(-42, v);
+
+	v = celix_properties_getAsLong(props, "t3", -1);
+	LONGS_EQUAL(-1, v);
+
+	v = celix_properties_getAsLong(props, "t4", -1);
+	LONGS_EQUAL(42, v);
+
+	v = celix_properties_getAsLong(props, "t5", -1);
+	LONGS_EQUAL(-1, v);
+
+	v = celix_properties_getAsLong(props, "non-existing", -1);
+	LONGS_EQUAL(-1, v);
 }
 
 TEST(properties, store) {

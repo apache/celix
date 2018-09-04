@@ -31,6 +31,8 @@
 #include "properties.h"
 #include "celix_properties.h"
 #include "utils.h"
+#include <errno.h>
+
 
 #define MALLOC_BLOCK_SIZE		5
 
@@ -381,11 +383,12 @@ long celix_properties_getAsLong(const celix_properties_t *props, const char *key
 	long result = defaultValue;
 	const char *val = celix_properties_get(props, key, NULL);
 	if (val != NULL) {
-		long r = strtol(val, NULL, 10);
-		if (errno == 0) {
-			result = r;
-		}
+		char *enptr = NULL;
 		errno = 0;
+		long r = strtol(val, &enptr, 10);
+		if (enptr != val && errno == 0) {
+		    result = r;
+		}
 	}
 	return result;
 }
