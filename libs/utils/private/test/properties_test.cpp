@@ -104,6 +104,8 @@ TEST(properties, asLong) {
 
 	v = celix_properties_getAsLong(props, "non-existing", -1);
 	LONGS_EQUAL(-1, v);
+
+	celix_properties_destroy(props);
 }
 
 TEST(properties, store) {
