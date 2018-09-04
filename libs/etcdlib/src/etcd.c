@@ -100,7 +100,7 @@ int etcd_get(const char* key, char** value, int* modifiedIndex) {
 	reply.header = NULL; /* will be grown as needed by the realloc above */
 	reply.headerSize = 0; /* no data at this point */
 
-	int retVal;
+	int retVal = ETCDLIB_RC_ERROR;
 	char *url;
 	asprintf(&url, "http://%s:%d/v2/keys/%s", etcd_server, etcd_port, key);
 	res = performRequest(url, GET, NULL, (void *) &reply);
