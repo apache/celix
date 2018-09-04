@@ -95,10 +95,10 @@ int waitforchangetest() {
 	etcd_set("hier/ar/chi/cal", "testvalue2", 5, false);
 	sleep(1);
 	etcd_set("hier/ar/chi/cal", "testvalue3", 5, false);
-	void *resVal;
+	void *resVal = NULL;
 	pthread_join(waitThread, &resVal);
-	if(strcmp((char*)resVal,"testvalue3" )) {
-		printf("etcdtest::waitforchange1 expected testvalue3, got %s\n", (char*)resVal);
+	if(resVal == NULL || strcmp((char*)resVal,"testvalue3" ) != 0) {
+		printf("etcdtest::waitforchange1 expected 'testvalue3', got '%s'\n", (char*)resVal);
 		res = -1;
 	}
 	free(resVal);
@@ -107,6 +107,35 @@ int waitforchangetest() {
 
 int main (void) {
 	etcd_init("localhost", 2379, 0);
+
+//	long long index = 0;
+//	char* action;
+//	char* prevValue;
+//	char* value;
+//	char* rkey;
+//
+//	while (1) {
+//		long long modIndex;
+//		int rc = etcd_watch("entries", index, &action, &prevValue, &value, &rkey, &modIndex);
+//		if (rc == ETCDLIB_RC_OK) {
+//			printf("Got result on index %lli, action:'%s', prevValue:'%s', value:'%s', rkey:'%s', modIndex %lli\n",
+//				   index, action, prevValue, value, rkey, modIndex);
+//			index = modIndex + 1;
+//		} else if (rc == ETCDLIB_RC_TIMEOUT) {
+//			printf("timeout\n");
+//		} else {
+//			printf("Got error %i, action:'%s', prevValue:'%s', value:'%s', rkey:'%s', modIndex %lli\n", rc, action, prevValue, value, rkey, modIndex);
+//		}
+//		free(action);
+//		free(prevValue);
+//		free(value);
+//		free(rkey);
+//		action = NULL;
+//		prevValue = NULL;
+//		value = NULL;
+//		rkey = NULL;
+//	}
+
 
 	int res = simplewritetest(); if(res) return res; else printf("simplewrite test success\n");
 	res = waitforchangetest(); if(res) return res;else printf("waitforchange1 test success\n");

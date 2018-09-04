@@ -87,23 +87,23 @@ int etcd_init(const char* server, int port, int flags) {
  * etcd_get
  */
 int etcd_get(const char* key, char** value, int* modifiedIndex) {
-	json_t* js_root = NULL;
-	json_t* js_node = NULL;
-	json_t* js_value = NULL;
-	json_t* js_modifiedIndex = NULL;
+	json_t *js_root = NULL;
+	json_t *js_node = NULL;
+	json_t *js_value = NULL;
+	json_t *js_modifiedIndex = NULL;
 	json_error_t error;
 	int res = -1;
 	struct MemoryStruct reply;
 
 	reply.memory = malloc(1); /* will be grown as needed by the realloc above */
 	reply.memorySize = 0; /* no data at this point */
-    reply.header = NULL; /* will be grown as needed by the realloc above */
-    reply.headerSize = 0; /* no data at this point */
+	reply.header = NULL; /* will be grown as needed by the realloc above */
+	reply.headerSize = 0; /* no data at this point */
 
-	int retVal = -1;
+	int retVal;
 	char *url;
 	asprintf(&url, "http://%s:%d/v2/keys/%s", etcd_server, etcd_port, key);
-	res = performRequest(url, GET, NULL, (void*) &reply);
+	res = performRequest(url, GET, NULL, (void *) &reply);
 	free(url);
 
 	if (res == CURLE_OK) {
@@ -115,25 +115,31 @@ int etcd_get(const char* key, char** value, int* modifiedIndex) {
 		if (js_node != NULL) {
 			js_value = json_object_get(js_node, ETCD_JSON_VALUE);
 			js_modifiedIndex = json_object_get(js_node,
-					ETCD_JSON_MODIFIEDINDEX);
+											   ETCD_JSON_MODIFIEDINDEX);
 
 			if (js_modifiedIndex != NULL && js_value != NULL) {
 				if (modifiedIndex) {
 					*modifiedIndex = json_integer_value(js_modifiedIndex);
 				}
 				*value = strdup(json_string_value(js_value));
-				retVal = 0;
+				retVal = ETCDLIB_RC_OK;
 			}
 		}
 		if (js_root != NULL) {
 			json_decref(js_root);
 		}
+	} else if (res == CURLE_OPERATION_TIMEDOUT) {
+		//timeout
+		retVal = ETCDLIB_RC_TIMEOUT;
+	} else {
+		retVal = ETCDLIB_RC_ERROR;
+		fprintf(stderr, "Error getting etcd value, curl error: '%s'\n", curl_easy_strerror(res));
 	}
 
 	if (reply.memory) {
 		free(reply.memory);
 	}
-	if(retVal != 0) {
+	if(retVal != ETCDLIB_RC_OK) {
 		*value = NULL;
 	}
 	return retVal;
@@ -211,7 +217,7 @@ int etcd_get_directory(const char* directory, etcd_key_value_callback callback, 
     reply.header = malloc(1); /* will be grown as needed by the realloc above */
     reply.headerSize = 0; /* no data at this point */
 
-	int retVal = 0;
+	int retVal = ETCDLIB_RC_OK;
 	char *url;
 
 	asprintf(&url, "http://%s:%d/v2/keys/%s?recursive=true", etcd_server, etcd_port, directory);
@@ -223,7 +229,7 @@ int etcd_get_directory(const char* directory, etcd_key_value_callback callback, 
 		if (js_root != NULL) {
 			js_rootnode = json_object_get(js_root, ETCD_JSON_NODE);
 		} else {
-			retVal = -1;
+			retVal = ETCDLIB_RC_ERROR;
 			fprintf(stderr, "[ETCDLIB] Error: %s in js_root not found", ETCD_JSON_NODE);
 		}
 		if (js_rootnode != NULL) {
@@ -249,6 +255,10 @@ int etcd_get_directory(const char* directory, etcd_key_value_callback callback, 
 		if (js_root != NULL) {
 			json_decref(js_root);
 		}
+	} else if (res == CURLE_OPERATION_TIMEDOUT) {
+		retVal = ETCDLIB_RC_TIMEOUT;
+	} else {
+		//TODO return error ?
 	}
 
     free(reply.memory);
@@ -265,7 +275,7 @@ int etcd_set(const char* key, const char* value, int ttl, bool prevExist) {
 	json_t* js_root = NULL;
 	json_t* js_node = NULL;
 	json_t* js_value = NULL;
-	int retVal = -1;
+	int retVal = ETCDLIB_RC_ERROR;
 	char *url;
 	size_t req_len = strlen(value) + MAX_OVERHEAD_LENGTH;
 	char request[req_len];
@@ -310,7 +320,7 @@ int etcd_set(const char* key, const char* value, int ttl, bool prevExist) {
 		}
 		if (js_value != NULL && json_is_string(js_value)) {
 			if(strcmp(json_string_value(js_value), value) == 0) {
-				retVal = 0;
+				retVal = ETCDLIB_RC_OK;
 			}
 		}
 		if (js_root != NULL) {
@@ -364,7 +374,7 @@ int etcd_watch(const char* key, long long index, char** action, char** prevValue
 	json_t* js_rkey = NULL;
 	json_t* js_prevValue = NULL;
 	json_t* js_modIndex = NULL;
-	int retVal = -1;
+	int retVal = ETCDLIB_RC_ERROR;
 	char *url = NULL;
 	int res;
 	struct MemoryStruct reply;
@@ -388,7 +398,7 @@ int etcd_watch(const char* key, long long index, char** action, char** prevValue
 			js_action = json_object_get(js_root, ETCD_JSON_ACTION);
 			js_node = json_object_get(js_root, ETCD_JSON_NODE);
 			js_prevNode = json_object_get(js_root, ETCD_JSON_PREVNODE);
-			retVal = 0;
+			retVal = ETCDLIB_RC_OK;
 		}
 		if (js_prevNode != NULL) {
 			js_prevValue = json_object_get(js_prevNode, ETCD_JSON_VALUE);
@@ -426,6 +436,12 @@ int etcd_watch(const char* key, long long index, char** action, char** prevValue
 			json_decref(js_root);
 		}
 
+	} else if (res == CURLE_OPERATION_TIMEDOUT) {
+		//ignore timeout
+		retVal = ETCDLIB_RC_TIMEOUT;
+	} else {
+		fprintf(stderr, "Got curl error: %s\n", curl_easy_strerror(res));
+		retVal = ETCDLIB_RC_ERROR;
 	}
 
 	free(reply.memory);
@@ -440,7 +456,7 @@ int etcd_del(const char* key) {
 	json_error_t error;
 	json_t* js_root = NULL;
 	json_t* js_node = NULL;
-	int retVal = -1;
+	int retVal = ETCDLIB_RC_ERROR;
 	char *url;
 	int res;
 	struct MemoryStruct reply;
@@ -461,7 +477,7 @@ int etcd_del(const char* key) {
 		}
 
 		if (js_node != NULL) {
-			retVal = 0;
+			retVal = ETCDLIB_RC_OK;
 		}
 
 		if (js_root != NULL) {

@@ -659,21 +659,26 @@ celix_status_t framework_stop(framework_pt framework) {
 	return fw_stopBundle(framework, framework->bundle, true);
 }
 
-celix_status_t fw_getProperty(framework_pt framework, const char* name, const char* defaultValue, const char** value) {
+celix_status_t fw_getProperty(framework_pt framework, const char* name, const char* defaultValue, const char** out) {
 	celix_status_t status = CELIX_SUCCESS;
+
+
+	const char *result = NULL;
 
 	if (framework == NULL || name == NULL) {
 		status = CELIX_ILLEGAL_ARGUMENT;
 	} else {
-		if (framework->configurationMap != NULL) {
-			*value = properties_get(framework->configurationMap, name);
+		result = getenv(name); //NOTE that an env environment overrides the config.properties values
+		if (result == NULL && framework->configurationMap != NULL) {
+		    result = properties_get(framework->configurationMap, name);
 		}
-		if (*value == NULL) {
-			*value = getenv(name);
-		}
-        if (*value == NULL) {
-            *value = defaultValue;
-        }
+                if (result == NULL) {
+                    result = defaultValue;
+                }
+	}
+
+	if (out != NULL) {
+		*out = result;
 	}
 
 	return status;

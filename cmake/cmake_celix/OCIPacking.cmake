@@ -89,7 +89,7 @@ function (celix_oci_container_bundles)
     cmake_parse_arguments(BUNDLES "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
     set(BUNDLES_LIST ${BUNDLES_UNPARSED_ARGUMENTS})
 
-    if (NOT BUNDLES_LEVEL)
+    if (NOT DEFINED BUNDLES_LEVEL)
         set(BUNDLES_LEVEL 1)
     endif ()
 

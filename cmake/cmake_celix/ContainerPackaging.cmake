@@ -43,10 +43,10 @@ function(add_celix_container)
     cmake_parse_arguments(CONTAINER "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
 
     ##### Check arguments #####
-    if (NOT CONTAINER_NAME)
+    if (NOT DEFINED CONTAINER_NAME)
         set(CONTAINER_NAME "${CONTAINER_TARGET}")
     endif ()
-    if (NOT CONTAINER_DIR)
+    if (NOT DEFINED CONTAINER_DIR)
         set(CONTAINER_DIR "${CMAKE_BINARY_DIR}/deploy")
     endif ()
     ######
@@ -314,7 +314,7 @@ function(celix_container_bundles)
     cmake_parse_arguments(BUNDLES "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
     set(BUNDLES_LIST ${BUNDLES_UNPARSED_ARGUMENTS})
 
-    if (NOT BUNDLES_LEVEL)
+    if (NOT DEFINED BUNDLES_LEVEL)
         set(BUNDLES_LEVEL 1)
     endif ()
 
