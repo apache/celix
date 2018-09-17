@@ -27,6 +27,7 @@ if (RSA_REMOTE_SERVICE_ADMIN_DFI)
             VERSION 0.9.0
             SYMBOLIC_NAME "apache_celix_remote_service_admin_dfi"
             NAME "Apache Celix Remote Service Admin Dynamic Function Interface (DFI)"
+            GROUP "Celix/RSA"
             SOURCES
             src/remote_service_admin_dfi.c
             src/remote_service_admin_activator.c

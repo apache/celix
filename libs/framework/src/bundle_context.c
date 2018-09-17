@@ -529,7 +529,12 @@ static celix_status_t bundleContext_bundleChanged(void *listenerSvc, bundle_even
         tracker = listener->handle;
     }
 
-    if (tracker != NULL) {
+    bool handleEvent = true;
+    if (event->bundleId == 0 /*framework bundle*/)  {
+        handleEvent = tracker->opts.includeFrameworkBundle;
+    }
+
+    if (tracker != NULL && handleEvent) {
         void *callbackHandle = tracker->opts.callbackHandle;
 
         if (event->type == OSGI_FRAMEWORK_BUNDLE_EVENT_STARTED && tracker->opts.onStarted != NULL) {
@@ -568,7 +573,7 @@ long celix_bundleContext_trackBundlesWithOptions(
         // FIXME there is a race condition between installing the listener and looping through the started bundles.
         // NOTE move this to the framework, so that the framework can ensure locking to ensure not bundles is missed.
         if (entry->opts.onStarted != NULL) {
-            celix_framework_useBundles(ctx->framework, entry->opts.callbackHandle, entry->opts.onStarted);
+            celix_framework_useBundles(ctx->framework, entry->opts.includeFrameworkBundle, entry->opts.callbackHandle, entry->opts.onStarted);
         }
 
         celixThreadMutex_lock(&ctx->mutex);
@@ -597,7 +602,7 @@ void celix_bundleContext_useBundles(
         bundle_context_t *ctx,
         void *callbackHandle,
         void (*use)(void *handle, const bundle_t *bundle)) {
-    celix_framework_useBundles(ctx->framework, callbackHandle, use);
+    celix_framework_useBundles(ctx->framework, false, callbackHandle, use);
 }
 
 void celix_bundleContext_useBundle(
@@ -605,7 +610,7 @@ void celix_bundleContext_useBundle(
         long bundleId,
         void *callbackHandle,
         void (*use)(void *handle, const bundle_t *bundle)) {
-    celix_framework_useBundle(ctx->framework, bundleId, callbackHandle, use);
+    celix_framework_useBundle(ctx->framework, true, bundleId, callbackHandle, use);
 }
 
 static void bundleContext_cleanupBundleTrackers(bundle_context_t *ctx) {
@@ -686,7 +691,56 @@ long celix_bundleContext_installBundle(bundle_context_t *ctx, const char *bundle
     return bundleId;
 }
 
-static void bundleContext_stopBundle(void *handle, const bundle_t *c_bnd) {
+static void bundleContext_listBundlesCallback(void *handle, const bundle_t *c_bnd) {
+    celix_array_list_t* ids = handle;
+    long id = celix_bundle_getId(c_bnd);
+    if (id > 0) { //note skipping framework bundle id (0)
+        celix_arrayList_addLong(ids, id);
+    }
+}
+
+celix_array_list_t* celix_bundleContext_listBundles(celix_bundle_context_t *ctx) {
+    celix_array_list_t *result = celix_arrayList_create();
+    celix_bundleContext_useBundles(ctx, result, bundleContext_listBundlesCallback);
+    return result;
+}
+
+static void bundleContext_startBundleCallback(void *handle, const bundle_t *c_bnd) {
+    bool *started = handle;
+    *started = false;
+    bundle_t *bnd = (bundle_t*)c_bnd;
+    celix_bundle_state_e state = celix_bundle_getState(bnd);
+    if (state == OSGI_FRAMEWORK_BUNDLE_INSTALLED || state == OSGI_FRAMEWORK_BUNDLE_RESOLVED) {
+        celix_status_t rc = bundle_start(bnd);
+        *started = rc == CELIX_SUCCESS;
+    }
+}
+
+bool celix_bundleContext_startBundle(celix_bundle_context_t *ctx, long bundleId) {
+    bool started = false;
+
+    celix_framework_useBundle(ctx->framework, false, bundleId, &started, bundleContext_startBundleCallback);
+    return started;
+}
+
+
+static void bundleContext_stopBundleCallback(void *handle, const bundle_t *c_bnd) {
+    bool *stopped = handle;
+    *stopped = false;
+    bundle_t *bnd = (bundle_t*)c_bnd;
+    if (celix_bundle_getState(bnd) == OSGI_FRAMEWORK_BUNDLE_ACTIVE) {
+        celix_status_t rc = bundle_stop(bnd);
+        *stopped = rc == CELIX_SUCCESS;
+    }
+}
+
+bool celix_bundleContext_stopBundle(celix_bundle_context_t *ctx, long bundleId) {
+    bool stopped = false;
+    celix_framework_useBundle(ctx->framework, true, bundleId, &stopped, bundleContext_stopBundleCallback);
+    return stopped;
+}
+
+static void bundleContext_uninstallBundleCallback(void *handle, const bundle_t *c_bnd) {
     bool *uninstalled = handle;
     bundle_t *bnd = (bundle_t*)c_bnd; //TODO use mute-able variant ??
     if (celix_bundle_getState(bnd) == OSGI_FRAMEWORK_BUNDLE_ACTIVE) {
@@ -698,7 +752,7 @@ static void bundleContext_stopBundle(void *handle, const bundle_t *c_bnd) {
 
 bool celix_bundleContext_uninstallBundle(bundle_context_t *ctx, long bundleId) {
     bool uninstalled = false;
-    celix_framework_useBundle(ctx->framework, bundleId, &uninstalled, bundleContext_stopBundle);
+    celix_framework_useBundle(ctx->framework, true, bundleId, &uninstalled, bundleContext_uninstallBundleCallback);
     return uninstalled;
 }
 

@@ -320,16 +320,18 @@ celix_status_t framework_getFrameworkBundle(framework_pt framework, bundle_pt *b
 	return mock_c()->returnValue().value.intValue;
 }
 
-void celix_framework_useBundles(framework_t *fw, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd)) {
+void celix_framework_useBundles(framework_t *fw, bool includeFrameworkBundle, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd)) {
 	mock_c()->actualCall("celix_framework_useBundles")
 			->withPointerParameters("fw", fw)
+			->withBoolParameters("includeFrameworkBundle", includeFrameworkBundle)
 			->withPointerParameters("callbackHandle", callbackHandle)
 			->withPointerParameters("use", use);
 }
 
-void celix_framework_useBundle(framework_t *fw, long bundleId, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd)) {
+void celix_framework_useBundle(framework_t *fw, bool onlyActive, long bundleId, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd)) {
 	mock_c()->actualCall("celix_framework_useBundle")
 			->withPointerParameters("fw", fw)
+			->withBoolParameters("onlyActive", onlyActive)
 			->withLongIntParameters("bundleId", bundleId)
 			->withPointerParameters("callbackHandle", callbackHandle)
 			->withPointerParameters("use", use);

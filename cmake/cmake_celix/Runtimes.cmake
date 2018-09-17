@@ -83,28 +83,28 @@ function(add_celix_runtime)
 
     #replaces @RUNTIME_TARGET_NAME@
     #TODO move to another location
-    configure_file("${CELIX_CMAKE_DIRECTORY}/runtime_start.sh.in" "${CMAKE_CURRENT_BINARY_DIR}/start.sh.${RUNTIME_TARGET_NAME}.in.1" @ONLY)
-    configure_file("${CELIX_CMAKE_DIRECTORY}/runtime_stop.sh.in" "${CMAKE_CURRENT_BINARY_DIR}/stop.sh.${RUNTIME_TARGET_NAME}.in.1" @ONLY)
-    configure_file("${CELIX_CMAKE_DIRECTORY}/runtime_common.sh.in" "${CMAKE_CURRENT_BINARY_DIR}/common.sh.${RUNTIME_TARGET_NAME}.in.1" @ONLY)
+    configure_file("${CELIX_CMAKE_DIRECTORY}/runtime_start.sh.in" "${CMAKE_BINARY_DIR}/celix/gen/runtimes/${RUNTIME_TARGET_NAME}/start.sh.in.1" @ONLY)
+    configure_file("${CELIX_CMAKE_DIRECTORY}/runtime_stop.sh.in" "${CMAKE_BINARY_DIR}/celix/gen/runtimes/${RUNTIME_TARGET_NAME}/stop.sh.in.1" @ONLY)
+    configure_file("${CELIX_CMAKE_DIRECTORY}/runtime_common.sh.in" "${CMAKE_BINARY_DIR}/celix/gen/runtimes/${RUNTIME_TARGET_NAME}/common.sh.in.1" @ONLY)
 
 
     file(GENERATE
-            OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/common.sh.${RUNTIME_TARGET_NAME}.in.2"
-            INPUT "${CMAKE_CURRENT_BINARY_DIR}/common.sh.${RUNTIME_TARGET_NAME}.in.1"
+            OUTPUT "${CMAKE_BINARY_DIR}/celix/gen/runtimes/${RUNTIME_TARGET_NAME}/common.sh.in.2"
+            INPUT  "${CMAKE_BINARY_DIR}/celix/gen/runtimes/${RUNTIME_TARGET_NAME}/common.sh.in.1"
     )
     file(GENERATE
         OUTPUT "${START_SCRIPT}"
-        INPUT "${CMAKE_CURRENT_BINARY_DIR}/start.sh.${RUNTIME_TARGET_NAME}.in.1"
+        INPUT "${CMAKE_BINARY_DIR}/celix/gen/runtimes/${RUNTIME_TARGET_NAME}/start.sh.in.1"
     )
     file(GENERATE
         OUTPUT "${STOP_SCRIPT}"
-        INPUT "${CMAKE_CURRENT_BINARY_DIR}/stop.sh.${RUNTIME_TARGET_NAME}.in.1"
+        INPUT "${CMAKE_BINARY_DIR}/celix/gen/runtimes/${RUNTIME_TARGET_NAME}/stop.sh.in.1"
     )
 
 
     file(GENERATE
         OUTPUT "${COMMON_SCRIPT}"
-        INPUT "${CMAKE_CURRENT_BINARY_DIR}/common.sh.${RUNTIME_TARGET_NAME}.in.2"
+        INPUT "${CMAKE_BINARY_DIR}/celix/gen/runtimes/${RUNTIME_TARGET_NAME}/common.sh.in.2"
     )
 
     get_target_property(DEPS celix-runtimes "DEPS")

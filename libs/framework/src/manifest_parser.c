@@ -464,6 +464,16 @@ static linked_list_pt manifestParser_parseExportHeader(module_pt module, const c
 	return capabilities;
 }
 
+celix_status_t manifestParser_getAndDuplicateGroup(manifest_parser_pt parser, char **group) {
+	const char *val = manifest_getValue(parser->manifest, "Bundle-Group");
+	if (group != NULL && val == NULL) {
+		*group = NULL;
+	} else if (group != NULL) {
+		*group = strndup(val, 1024*10);
+	}
+	return CELIX_SUCCESS;
+}
+
 celix_status_t manifestParser_getAndDuplicateSymbolicName(manifest_parser_pt parser, char **symbolicName) {
 	*symbolicName = strndup(parser->bundleSymbolicName, 1024*10);
 	return CELIX_SUCCESS;

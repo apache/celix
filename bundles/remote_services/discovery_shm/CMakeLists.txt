@@ -24,6 +24,7 @@ find_package(CURL REQUIRED)
         VERSION 0.0.1
         SYMBOLIC_NAME "apache_celix_rsa_discovery_shm"
         NAME "Apache Celix RSA Discovery SHM"
+		GROUP "Celix/RSA"
         SOURCES
 			src/discovery_shm.c
 			src/discovery_shmWatcher.c

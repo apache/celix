@@ -71,7 +71,7 @@ TEST(CelixBundleContextBundlesTests, useBundlesTest) {
     count = 0;
     celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
     celix_bundleContext_useBundles(ctx, &count, use);
-    CHECK_EQUAL(2, count);
+    CHECK_EQUAL(1, count);
 };
 
 TEST(CelixBundleContextBundlesTests, useBundleTest) {
@@ -86,6 +86,52 @@ TEST(CelixBundleContextBundlesTests, useBundleTest) {
 
     CHECK_EQUAL(1, count);
 };
+
+TEST(CelixBundleContextBundlesTests, StopStartTest) {
+    celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
+    celix_bundleContext_installBundle(ctx, TEST_BND2_LOC, true);
+    celix_bundleContext_installBundle(ctx, TEST_BND3_LOC, true);
+
+
+    celix_array_list_t *ids = celix_bundleContext_listBundles(ctx);
+    size_t size = arrayList_size(ids);
+    CHECK_EQUAL(3, size);
+
+    int count = 0;
+    celix_bundleContext_useBundles(ctx, &count, [](void *handle, const celix_bundle_t *bnd) {
+        auto *c = (int*)handle;
+        CHECK_EQUAL(OSGI_FRAMEWORK_BUNDLE_ACTIVE, celix_bundle_getState(bnd));
+        *c += 1;
+    });
+    CHECK_EQUAL(3, count);
+
+
+    for (size_t i = 0; i < size; ++i) {
+        bool stopped = celix_bundleContext_stopBundle(ctx, celix_arrayList_getLong(ids, (int)i));
+        CHECK_TRUE(stopped);
+    }
+
+    bool stopped = celix_bundleContext_stopBundle(ctx, 42 /*non existing*/);
+    CHECK_FALSE(stopped);
+
+    bool started = celix_bundleContext_startBundle(ctx, 42 /*non existing*/);
+    CHECK_FALSE(started);
+
+    for (size_t i = 0; i < size; ++i) {
+        bool started = celix_bundleContext_startBundle(ctx, celix_arrayList_getLong(ids, (int)i));
+        CHECK_TRUE(started);
+    }
+
+    count = 0;
+    celix_bundleContext_useBundles(ctx, &count, [](void *handle, const celix_bundle_t *bnd) {
+        auto *c = (int*)handle;
+        CHECK_EQUAL(OSGI_FRAMEWORK_BUNDLE_ACTIVE, celix_bundle_getState(bnd));
+        *c += 1;
+    });
+    CHECK_EQUAL(3, count);
+
+    celix_arrayList_destroy(ids);
+}
 
 TEST(CelixBundleContextBundlesTests, trackBundlesTest) {
     struct data {
@@ -113,7 +159,7 @@ TEST(CelixBundleContextBundlesTests, trackBundlesTest) {
     };
 
     long trackerId = celix_bundleContext_trackBundles(ctx, static_cast<void*>(&data), started, stopped);
-    CHECK_EQUAL(1, data.count); //framework bundle
+    CHECK_EQUAL(0, data.count); //note default framework bundle is not tracked
 
 
     long bundleId1 = celix_bundleContext_installBundle(ctx, TEST_BND1_LOC, true);
@@ -124,7 +170,7 @@ TEST(CelixBundleContextBundlesTests, trackBundlesTest) {
         data.cond.wait_for(lock, std::chrono::milliseconds(100), [&]{return data.count == 2;});
 
     }
-    CHECK_EQUAL(2, data.count);
+    CHECK_EQUAL(1, data.count);
 
 
     long bundleId2 = celix_bundleContext_installBundle(ctx, TEST_BND2_LOC, true);
@@ -134,7 +180,7 @@ TEST(CelixBundleContextBundlesTests, trackBundlesTest) {
         data.cond.wait_for(lock, std::chrono::milliseconds(100), [&]{return data.count == 3;});
 
     }
-    CHECK_EQUAL(3, data.count);
+    CHECK_EQUAL(2, data.count);
 
     /* TODO does not work -> stopping bundle event is never forward to the bundle listener ?? very old bug?
     celix_bundleContext_uninstallBundle(ctx, bundleId2);

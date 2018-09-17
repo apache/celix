@@ -30,6 +30,7 @@ if (SHELL)
         SYMBOLIC_NAME "apache_celix_shell"
         VERSION "2.1.0"
         NAME "Apache Celix Shell"
+		GROUP "Celix/Shell"
         SOURCES
           src/activator
           src/shell

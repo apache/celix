@@ -32,6 +32,7 @@ if (DEPLOYMENT_ADMIN)
         SYMBOLIC_NAME "apache_celix_deployment_admin"
         VERSION "0.0.2"
         NAME "Apache Celix Deployment Admin"
+        GROUP "Celix/DeploymentAdmin"
         SOURCES
             src/deployment_package
             src/deployment_admin

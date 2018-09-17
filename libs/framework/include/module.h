@@ -87,6 +87,8 @@ FRAMEWORK_EXPORT void module_removeDependentRequirer(module_pt module, module_pt
 
 FRAMEWORK_EXPORT array_list_pt module_getDependents(module_pt module);
 
+FRAMEWORK_EXPORT celix_status_t module_getGroup(module_pt module, const char **group);
+
 #ifdef __cplusplus
 }
 #endif

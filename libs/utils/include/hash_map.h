@@ -35,7 +35,7 @@ extern "C" {
 #endif
 
 typedef struct hashMapEntry* hash_map_entry_pt;
-typedef struct hasMapEntry hash_map_entry_t;
+typedef struct hashMapEntry hash_map_entry_t;
 
 typedef struct hashMap* hash_map_pt;
 typedef struct hashMap hash_map_t;

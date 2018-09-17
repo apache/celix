@@ -39,7 +39,7 @@ celix_array_list_t* celix_arrayList_createWithEquals(celix_arrayList_equals_fp e
 
 void celix_arrayList_destroy(celix_array_list_t *list);
 
-size_t celix_arrayList_size(const celix_array_list_t *list);
+int celix_arrayList_size(const celix_array_list_t *list);
 
 void* celix_arrayList_get(const celix_array_list_t *list, int index);
 

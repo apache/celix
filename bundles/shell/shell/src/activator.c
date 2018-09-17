@@ -77,10 +77,12 @@ celix_status_t bundleActivator_create(bundle_context_pt context_ptr, void **_ppt
     if (status == CELIX_SUCCESS) {
         instance_ptr->std_commands[0] =
                 (struct command) {
-                        .exec = psCommand_execute,
+                        .exec = lbCommand_execute,
                         .name = "lb",
-                        .description = "list bundles.",
-                        .usage = "lb [-l | -s | -u]"
+                        .description = "list bundles. Default only the groupless bundles are listed. Use -a to list all bundles." \
+                            "\nIf a group string is provided only bundles matching the group string will be listed." \
+                            "\nUse -l to print the bundle locations.\nUse -s to print the bundle symbolic names\nUse -u to print the bundle update location.",
+                        .usage = "lb [-l | -s | -u | -a] [group]"
                 };
         instance_ptr->std_commands[1] =
                 (struct command) {

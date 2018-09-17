@@ -24,6 +24,7 @@ if (RSA_TOPOLOGY_MANAGER)
             src/activator
         VERSION 0.9.0
         SYMBOLIC_NAME "apache_celix_rs_topology_manager"
+        GROUP "Celix/RSA"
         NAME "Apache Celix RS Topology Manager"
     )
     target_include_directories(rsa_topology_manager PRIVATE src)

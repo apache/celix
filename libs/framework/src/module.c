@@ -16,13 +16,6 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * module.c
- *
- *  \date       Jul 19, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,6 +33,7 @@ struct module {
 
 	version_pt version;
 	char * symbolicName;
+	char * group;
 	bool resolved;
 
 	manifest_pt headerMap;
@@ -53,7 +47,7 @@ module_pt module_create(manifest_pt headerMap, const char * moduleId, bundle_pt 
     manifest_parser_pt mp;
 
     if (headerMap != NULL) {
-        module = (module_pt) malloc(sizeof(*module));
+        module = (module_pt) calloc(1, sizeof(*module));
         module->headerMap = headerMap;
         module->id = strdup(moduleId);
         module->bundle = bundle;
@@ -65,6 +59,9 @@ module_pt module_create(manifest_pt headerMap, const char * moduleId, bundle_pt 
         if (manifestParser_create(module, headerMap, &mp) == CELIX_SUCCESS) {
             module->symbolicName = NULL;
             manifestParser_getAndDuplicateSymbolicName(mp, &module->symbolicName);
+
+            module->group = NULL;
+            manifestParser_getAndDuplicateGroup(mp, &module->group);
 
             module->version = NULL;
             manifestParser_getBundleVersion(mp, &module->version);
@@ -87,10 +84,11 @@ module_pt module_create(manifest_pt headerMap, const char * moduleId, bundle_pt 
 module_pt module_createFrameworkModule(bundle_pt bundle) {
     module_pt module;
 
-	module = (module_pt) malloc(sizeof(*module));
+	module = (module_pt) calloc(1, sizeof(*module));
 	if (module) {
         module->id = strdup("0");
-        module->symbolicName = strdup("framework");
+        module->symbolicName = strdup("Framework");
+        module->group = strdup("Celix/Framework");
         module->version = NULL;
         version_createVersion(1, 0, 0, "", &module->version);
 
@@ -148,6 +146,7 @@ void module_destroy(module_pt module) {
 
 	free(module->id);
 	free(module->symbolicName);
+	free(module->group);
 	free(module);
 }
 
@@ -278,4 +277,11 @@ array_list_pt module_getDependents(module_pt module) {
     arrayList_addAll(dependents, module->dependentImporters);
 
     return dependents;
+}
+
+celix_status_t module_getGroup(module_pt module, const char **group) {
+    if (group != NULL) {
+        *group = module->group;
+    }
+    return CELIX_SUCCESS;
 }

@@ -21,6 +21,7 @@ find_package(Jansson REQUIRED)
 add_celix_bundle(celix_pubsub_discovery_etcd
     BUNDLE_SYMBOLICNAME "apache_celix_pubsub_discovery_etcd"
     VERSION "1.0.0"
+	GROUP "Celix/PubSub"
     SOURCES
         src/psd_activator.c
         src/pubsub_discovery_impl.c

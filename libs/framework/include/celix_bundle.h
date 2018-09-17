@@ -32,14 +32,14 @@ extern "C" {
  * @param bnd The bundle
  * @return The bundle id or < 0 if something went wrong.
  */
-long celix_bundle_getId(const bundle_t *bnd);
+long celix_bundle_getId(const celix_bundle_t *bnd);
 
 /**
  * Returns the bundle state.
  * @param bnd The bundle
  * @return The bundle state or OSGI_FRAMEWORK_BUNDLE_UNKNOWN if something went wrong.
  */
-celix_bundle_state_e celix_bundle_getState(const bundle_t *bnd);
+celix_bundle_state_e celix_bundle_getState(const celix_bundle_t *bnd);
 
 /**
  * Returns a the use-able entry path for the provided relative path to a bundle resource.
@@ -52,7 +52,9 @@ celix_bundle_state_e celix_bundle_getState(const bundle_t *bnd);
  * @param bnd The bundle
  * @return A use-able path to the bundle resource entry of NULL if the entry is not found.
  */
-char* celix_bundle_getEntry(const bundle_t* bnd, const char *path);
+char* celix_bundle_getEntry(const celix_bundle_t* bnd, const char *path);
+
+const char* celix_bundle_getGroup(const celix_bundle_t *bnd);
 
 
 #ifdef __cplusplus

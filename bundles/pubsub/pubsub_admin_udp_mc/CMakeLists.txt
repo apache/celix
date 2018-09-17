@@ -20,6 +20,7 @@ find_package(Jansson REQUIRED)
 add_celix_bundle(celix_pubsub_admin_udp_multicast
 	BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_udp_multicast"
 	VERSION "1.0.0"
+	GROUP "Celix/PubSub"
 	SOURCES
         src/psa_activator.c
         src/pubsub_admin_impl.c

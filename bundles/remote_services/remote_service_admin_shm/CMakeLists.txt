@@ -33,6 +33,7 @@ if (RSA_REMOTE_SERVICE_ADMIN_SHM)
         VERSION 0.9.0
         SYMBOLIC_NAME "apache_celix_remote_service_admin_shm"
         NAME "Apache Celix Remote Service Admin SHM"
+		GROUP "Celix/RSA"
         SOURCES
 
 		private/src/remote_service_admin_impl

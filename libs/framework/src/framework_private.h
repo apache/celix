@@ -150,8 +150,8 @@ FRAMEWORK_EXPORT bundle_pt framework_getBundleById(framework_pt framework, long 
  **********************************************************************************************************************
  **********************************************************************************************************************/
 
-void celix_framework_useBundles(framework_t *fw, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd));
-void celix_framework_useBundle(framework_t *fw, long bundleId, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd));
+void celix_framework_useBundles(framework_t *fw, bool includeFrameworkBundle, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd));
+void celix_framework_useBundle(framework_t *fw, bool onlyActive, long bundleId, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd));
 service_registration_t* celix_framework_registerServiceFactory(framework_t *fw , const celix_bundle_t *bnd, const char* serviceName, celix_service_factory_t *factory, celix_properties_t *properties);
 
 #endif /* FRAMEWORK_PRIVATE_H_ */

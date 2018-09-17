@@ -21,6 +21,7 @@ find_package(Jansson REQUIRED)
 add_celix_bundle(celix_pubsub_serializer_json
     BUNDLE_SYMBOLICNAME "apache_celix_pubsub_serializer_json"
     VERSION "1.0.0"
+	GROUP "Celix/PubSub"
     SOURCES
 		src/ps_activator.c
 		src/pubsub_serializer_impl.c

@@ -39,6 +39,7 @@ if (LOG_SERVICE)
     add_celix_bundle(log_service
     	SYMBOLIC_NAME "apache_celix_log_service"
     	NAME "Apache Celix Log Service"
+		GROUP "Celix/Logging"
     	VERSION "1.1.0"
     	SOURCES
 			src/log

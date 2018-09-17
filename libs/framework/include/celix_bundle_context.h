@@ -542,11 +542,19 @@ void celix_bundleContext_useServicesWithOptions(
 
 
 
-
+/**
+ * List the installed and started bundle ids.
+ * The bundle ids does not include the framework bundle (bundle id 0).
+ *
+ * @param ctx The bundle context
+ * @return A array with bundle ids (long). The caller is responsible for destroying the array.
+ */
+celix_array_list_t* celix_bundleContext_listBundles(celix_bundle_context_t *ctx);
 
 
 /**
  * Install and optional start a bundle.
+ * Will silently ignore bundle ids < 0.
  *
  * @param ctx The bundle context
  * @param bundleLoc The bundle location to the bundle zip file.
@@ -557,12 +565,33 @@ long celix_bundleContext_installBundle(celix_bundle_context_t *ctx, const char *
 
 /**
  * Uninstall the bundle with the provided bundle id. If needed the bundle will be stopped first.
+ * Will silently ignore bundle ids < 0.
  *
  * @param ctx The bundle context
- * @param bundleId The bundle id to stop
+ * @param bundleId The bundle id to uninstall.
  * @return true if the bundle is correctly uninstalled. False if not.
  */
 bool celix_bundleContext_uninstallBundle(celix_bundle_context_t *ctx, long bundleId);
+
+/**
+ * Stop the bundle with the provided bundle id.
+ * Will silently ignore bundle ids < 0.
+ *
+ * @param ctx The bundle context
+ * @param bundleId The bundle id to stop.
+ * @return true if the bundle is found & correctly stop. False if not.
+ */
+bool celix_bundleContext_stopBundle(celix_bundle_context_t *ctx, long bundleId);
+
+/**
+ * Start the bundle with the provided bundle id.
+ * Will silently ignore bundle ids < 0.
+ *
+ * @param ctx The bundle context
+ * @param bundleId The bundle id to start.
+ * @return true if the bundle is found & correctly started. False if not.
+ */
+bool celix_bundleContext_startBundle(celix_bundle_context_t *ctx, long bundleId);
 
 /**
  * track bundles
@@ -615,6 +644,12 @@ typedef struct celix_bundle_tracker_options {
      * @param event     The bundle event. Is only valid during the callback.
      */
     void (*onBundleEvent)(void *handle, const celix_bundle_event_t *event);
+
+    /**
+     * Default the framework bundle (bundle id 0) will not trigger the callbacks.
+     * This is done, because the framework bundle is a special bundle which is generally not needed in the callbacks.
+     */
+    bool includeFrameworkBundle;
 } celix_bundle_tracking_options_t;
 
 /**

@@ -309,6 +309,7 @@ celix_status_t framework_create(framework_pt *framework, properties_pt config) {
             status = CELIX_DO_IF(status, bundle_setFramework((*framework)->bundle, (*framework)));
             if (status == CELIX_SUCCESS) {
                 //
+                //TODO set group (*framework)->bundle
             } else {
                 status = CELIX_FRAMEWORK_EXCEPTION;
                 fw_logCode((*framework)->logger, OSGI_FRAMEWORK_LOG_ERROR, status, "Could not create framework");
@@ -2787,35 +2788,47 @@ static celix_status_t framework_loadLibrary(framework_pt framework, const char *
  **********************************************************************************************************************/
 
 
-void celix_framework_useBundles(framework_t *fw, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd)) {
+void celix_framework_useBundles(framework_t *fw, bool includeFrameworkBundle, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd)) {
     celixThreadMutex_lock(&fw->installedBundleMapLock);
     int size = hashMap_size(fw->installedBundleMap);
+    if (!includeFrameworkBundle) {
+        size -= 1; //skip framework bundle
+    }
     long bundleIds[size];
     int i = 0;
     hash_map_iterator_t iter = hashMapIterator_construct(fw->installedBundleMap);
     while (hashMapIterator_hasNext(&iter)) {
         bundle_t *bnd = (bundle_t *) hashMapIterator_nextValue(&iter);
         long bndId = celix_bundle_getId(bnd);
-        if (bndId >= 0) {
+        if (bndId > 0) {
             //NOTE bundle state is checked in celix_framework_useBundles
             bundleIds[i++] =bndId;
+        }
+        if (bndId == 0 && includeFrameworkBundle) {
+            bundleIds[i++] = bndId;
         }
     }
     celixThreadMutex_unlock(&fw->installedBundleMapLock);
 
     size = i;
     for (i = 0; i < size; ++i) {
-        celix_framework_useBundle(fw, bundleIds[i], callbackHandle, use);
+        celix_framework_useBundle(fw, true, bundleIds[i], callbackHandle, use);
     }
 }
 
-void celix_framework_useBundle(framework_t *fw, long bundleId, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd)) {
+void celix_framework_useBundle(framework_t *fw, bool onlyActive, long bundleId, void *callbackHandle, void(*use)(void *handle, const bundle_t *bnd)) {
     if (bundleId >= 0) {
         //TODO get bundle lock without throwing errors framework_acquireBundleLock() -> a more simple lock ??
         bundle_t *bnd = framework_getBundleById(fw, bundleId);
-        celix_bundle_state_e bndState = celix_bundle_getState(bnd);
-        if (bndState == OSGI_FRAMEWORK_BUNDLE_ACTIVE) {
-            use(callbackHandle, bnd);
+        if (bnd != NULL) {
+            celix_bundle_state_e bndState = celix_bundle_getState(bnd);
+            if (onlyActive && bndState == OSGI_FRAMEWORK_BUNDLE_ACTIVE) {
+                use(callbackHandle, bnd);
+            } else if (!onlyActive) {
+                use(callbackHandle, bnd);
+            }
+        } else {
+            framework_logIfError(fw->logger, CELIX_FRAMEWORK_EXCEPTION, NULL, "Bundle with id %li is not installed", bundleId);
         }
         //TODO unlock
     }

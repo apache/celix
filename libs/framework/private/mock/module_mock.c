@@ -73,6 +73,13 @@ celix_status_t module_getSymbolicName(module_pt module, const char **symbolicNam
 	return mock_c()->returnValue().value.intValue;
 }
 
+celix_status_t module_getGroup(module_pt module, const char **group) {
+	mock_c()->actualCall("module_getGroup")
+			->withPointerParameters("module", module)
+			->withOutputParameter("group", (const char **) group);
+	return mock_c()->returnValue().value.intValue;
+}
+
 char * module_getId(module_pt module) {
 	mock_c()->actualCall("module_getId");
 	return (char *) mock_c()->returnValue().value.stringValue;

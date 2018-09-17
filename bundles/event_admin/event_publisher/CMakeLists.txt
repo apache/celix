@@ -23,6 +23,7 @@ include_directories(${PROJECT_SOURCE_DIR}/log_service/public/include)
 
 add_celix_bundle(event_publisher
     VERSION 0.0.0
+	GROUP "Celix/EventAdmin"
 		SOURCES
 		private/src/event_publisher_activator.c
 		private/src/event_publisher_impl.c

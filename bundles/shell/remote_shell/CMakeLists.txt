@@ -20,7 +20,8 @@ if (REMOTE_SHELL)
     add_celix_bundle(remote_shell
      	SYMBOLIC_NAME "apache_celix_remote_shell"
      	VERSION "0.0.2"
-     	NAME: "Apache Celix Remote Shell"
+     	NAME "Apache Celix Remote Shell"
+		GROUP "Celix/Shell"
 		SOURCES
 			src/activator
 			src/connection_listener

@@ -100,7 +100,7 @@ function(add_celix_bundle)
     list(REMOVE_AT ARGN 0)
 
     set(OPTIONS NO_ACTIVATOR)
-    set(ONE_VAL_ARGS VERSION ACTIVATOR SYMBOLIC_NAME NAME DESCRIPTION FILE_NAME)
+    set(ONE_VAL_ARGS VERSION ACTIVATOR SYMBOLIC_NAME NAME DESCRIPTION FILE_NAME GROUP)
     set(MULTI_VAL_ARGS SOURCES PRIVATE_LIBRARIES EXPORT_LIBRARIES IMPORT_LIBRARIES HEADERS)
     cmake_parse_arguments(BUNDLE "${OPTIONS}" "${ONE_VAL_ARGS}" "${MULTI_VAL_ARGS}" ${ARGN})
 
@@ -116,6 +116,9 @@ function(add_celix_bundle)
     endif ()
     if (BUNDLE_ACTIVATOR)
         check_lib(${BUNDLE_ACTIVATOR})
+    endif ()
+    if (NOT DEFINED BUNDLE_GROUP)
+        set(BUNDLE_GROUP "")
     endif ()
 
     #setting defaults
@@ -237,6 +240,7 @@ function(add_celix_bundle)
     #name and version
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_NAME" ${BUNDLE_NAME}) #The bundle name default target name
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_SYMBOLIC_NAME" ${BUNDLE_SYMBOLIC_NAME}) #The bundle symbolic name. Default target name
+    set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_GROUP" "${BUNDLE_GROUP}") #The bundle group, default ""
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_VERSION" ${BUNDLE_VERSION}) #The bundle version. Default 0.0.0
     set_target_properties(${BUNDLE_TARGET_NAME} PROPERTIES "BUNDLE_DESCRIPTION" "${BUNDLE_DESCRIPTION}") #The bundle description.
 
@@ -560,6 +564,10 @@ function(bundle_symbolic_name)
 endfunction()
 function(celix_bundle_symbolic_name BUNDLE SYMBOLIC_NAME)
     set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_SYMBOLIC_NAME" ${SYMBOLIC_NAME})
+endfunction()
+
+function(celix_bundle_group BUNDLE GROUP)
+    set_target_properties(${BUNDLE} PROPERTIES "BUNDLE_GROUP" ${GROUP})
 endfunction()
 
 function(bundle_name)

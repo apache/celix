@@ -23,6 +23,7 @@ include_directories("private/include")
  		
 add_celix_bundle(config_admin
     VERSION 0.0.1
+	GROUP "Celix/ConfigAdmin"
     SOURCES
 	private/src/activator 
 	private/src/configuration_admin_factory

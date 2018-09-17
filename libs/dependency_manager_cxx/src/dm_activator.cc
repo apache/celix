@@ -64,7 +64,7 @@ extern "C" celix_status_t bundleActivator_create(bundle_context_pt context, void
 
 extern "C" celix_status_t bundleActivator_start(void* userData, [[gnu::unused]] bundle_context_pt context) {
     int status = CELIX_SUCCESS;
-    BundleActivatorData* data = static_cast<BundleActivatorData*>(userData);
+    auto* data = static_cast<BundleActivatorData*>(userData);
     if (data != nullptr) {
         status = data->act->start();
     }
@@ -73,7 +73,7 @@ extern "C" celix_status_t bundleActivator_start(void* userData, [[gnu::unused]] 
 
 extern "C" celix_status_t bundleActivator_stop(void* userData, [[gnu::unused]] bundle_context_pt context) {
     int status = CELIX_SUCCESS;
-    BundleActivatorData* data = static_cast<BundleActivatorData*>(userData);
+    auto* data = static_cast<BundleActivatorData*>(userData);
     if (data != nullptr) {
         status = data->act->stop();
     }
@@ -82,7 +82,7 @@ extern "C" celix_status_t bundleActivator_stop(void* userData, [[gnu::unused]] b
 
 extern "C" celix_status_t bundleActivator_destroy([[gnu::unused]] void* userData,[[gnu::unused]]     bundle_context_pt context ) {
     int status = CELIX_SUCCESS;
-    BundleActivatorData* data = static_cast<BundleActivatorData*>(userData);
+    auto* data = static_cast<BundleActivatorData*>(userData);
     if (data != nullptr) {
         data->act = nullptr;
     }

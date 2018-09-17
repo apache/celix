@@ -383,7 +383,7 @@ void celix_arrayList_destroy(celix_array_list_t *list) {
 	free(list);
 }
 
-size_t celix_arrayList_size(const celix_array_list_t *list) {
+int celix_arrayList_size(const celix_array_list_t *list) {
 	return list->size;
 }
 

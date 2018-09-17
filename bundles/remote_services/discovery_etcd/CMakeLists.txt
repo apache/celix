@@ -25,6 +25,7 @@ if (RSA_DISCOVERY_ETCD)
         VERSION 0.9.0
         SYMBOLIC_NAME "apache_celix_rsa_discovery_etcd"
         NAME "Apache Celix RSA Discovery ETCD"
+		GROUP "Celix/RSA"
         SOURCES
 			src/discovery_impl.c
 	    	src/etcd_watcher.c

@@ -21,6 +21,7 @@ if (SHELL_TUI)
     	SYMBOLIC_NAME "apache_celix_shell_tui"
     	VERSION "1.1.0"
     	NAME "Apache Celix Shell TUI"
+		GROUP "Celix/Shell"
     	SOURCES 
     		private/src/activator 
     		private/src/shell_tui

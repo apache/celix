@@ -723,3 +723,16 @@ char* celix_bundle_getEntry(const bundle_t* bnd, const char *path) {
 	}
 	return entry;
 }
+
+
+const char* celix_bundle_getGroup(const celix_bundle_t *bnd) {
+	const char *result = NULL;
+	if (bnd != NULL) {
+		module_pt mod = NULL;
+		bundle_getCurrentModule((celix_bundle_t*)bnd, &mod);
+		if (mod != NULL) {
+			module_getGroup(mod, &result);
+		}
+	}
+	return result;
+}

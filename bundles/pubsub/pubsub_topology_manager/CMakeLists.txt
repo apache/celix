@@ -18,6 +18,7 @@
 add_celix_bundle(celix_pubsub_topology_manager
     BUNDLE_SYMBOLICNAME "apache_celix_pubsub_topology_manager"
     VERSION "1.0.0"
+	GROUP "Celix/PubSub"
     SOURCES
     	src/pstm_activator.c
     	src/pubsub_topology_manager.c
