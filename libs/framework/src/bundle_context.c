@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <utils.h>
 
 #include "constants.h"
 #include "bundle_context_private.h"
@@ -1021,4 +1022,35 @@ const char* celix_bundleContext_getProperty(celix_bundle_context_t *ctx, const c
         fw_getProperty(ctx->framework, key, defaultVal, &val);
     }
     return val;
+}
+
+long celix_bundleContext_getPropertyAsLong(celix_bundle_context_t *ctx, const char *key, long defaultValue) {
+    long result = defaultValue;
+    const char *val = celix_bundleContext_getProperty(ctx, key, NULL);
+    if (val != NULL) {
+        char *enptr = NULL;
+        errno = 0;
+        long r = strtol(val, &enptr, 10);
+        if (enptr != val && errno == 0) {
+            result = r;
+        }
+    }
+    return result;
+}
+
+
+bool celix_bundleContext_getPropertyAsBool(celix_bundle_context_t *ctx, const char *key, bool defaultValue) {
+    bool result = defaultValue;
+    const char *val = celix_bundleContext_getProperty(ctx, key, NULL);
+    if (val != NULL) {
+        char buf[32];
+        snprintf(buf, 32, "%s", val);
+        char *trimmed = utils_stringTrim(buf);
+        if (strncasecmp("true", trimmed, strlen("true")) == 0) {
+            result = true;
+        } else if (strncasecmp("false", trimmed, strlen("false")) == 0) {
+            result = false;
+        }
+    }
+    return result;
 }

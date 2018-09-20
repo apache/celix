@@ -143,6 +143,13 @@ celix_status_t celixThreadCondition_wait(celix_thread_cond_t *cond, celix_thread
     return pthread_cond_wait(cond, mutex);
 }
 
+celix_status_t celixThreadCondition_timedwait(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex, long seconds, long nanoseconds) {
+	struct timespec time;
+	time.tv_sec = seconds;
+	time.tv_nsec = nanoseconds;
+	return pthread_cond_timedwait(cond, mutex, &time);
+}
+
 celix_status_t celixThreadCondition_broadcast(celix_thread_cond_t *cond) {
     return pthread_cond_broadcast(cond);
 }

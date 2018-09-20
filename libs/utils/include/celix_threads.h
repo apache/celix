@@ -123,6 +123,8 @@ celix_status_t celixThreadCondition_destroy(celix_thread_cond_t *condition);
 
 celix_status_t celixThreadCondition_wait(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex);
 
+celix_status_t celixThreadCondition_timedwait(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex, long seconds, long nanoseconds);
+
 celix_status_t celixThreadCondition_broadcast(celix_thread_cond_t *cond);
 
 celix_status_t celixThreadCondition_signal(celix_thread_cond_t *cond);

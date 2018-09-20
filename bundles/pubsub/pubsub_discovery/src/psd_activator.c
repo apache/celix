@@ -21,150 +21,61 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "bundle_activator.h"
-#include "service_tracker.h"
-#include "service_registration.h"
+#include "celix_bundle_context.h"
+#include "celix_bundle_activator.h"
 #include "constants.h"
 #include "celix_log.h"
 
 #include "pubsub_common.h"
-#include "publisher_endpoint_announce.h"
+#include "pubsub_listeners.h"
 #include "pubsub_discovery_impl.h"
 
-struct activator {
-	bundle_context_pt context;
-	pubsub_discovery_pt pubsub_discovery;
+typedef struct psd_activator {
+	pubsub_discovery_t *pubsub_discovery;
 
-	service_tracker_pt pstmPublishersTracker;
+	long publishAnnounceSvcTrackerId;
+	//service_tracker_pt pstmPublishersTracker;
 
-	publisher_endpoint_announce_pt publisherEPAnnounce;
-	service_registration_pt publisherEPAnnounceService;
-};
+	pubsub_announce_endpoint_listener_t listenerSvc;
+	long listenerSvcId;
+} psd_activator_t;
 
-static celix_status_t createTMPublisherAnnounceTracker(struct activator *activator, service_tracker_pt *tracker) {
-	celix_status_t status = CELIX_SUCCESS;
+static celix_status_t psd_start(psd_activator_t *act, celix_bundle_context_t *ctx) {
+	celix_status_t status;
 
-	service_tracker_customizer_pt customizer = NULL;
+	pubsub_discovery_create(ctx, &act->pubsub_discovery);
+	// pubsub_discovery_start needs to be first to initialize
+	status = pubsub_discovery_start(act->pubsub_discovery);
 
-	status = serviceTrackerCustomizer_create(activator->pubsub_discovery,
-			NULL,
-			pubsub_discovery_tmPublisherAnnounceAdded,
-			pubsub_discovery_tmPublisherAnnounceModified,
-			pubsub_discovery_tmPublisherAnnounceRemoved,
-			&customizer);
+	celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
+	opts.filter.serviceName = PUBSUB_ANNOUNCE_ENDPOINT_LISTENER_SERVICE;
+	opts.callbackHandle = act->pubsub_discovery;
+	opts.addWithOwner = pubsub_discovery_discoveredEndpointsListenerAdded;
+	opts.removeWithOwner = pubsub_discovery_discoveredEndpointsListenerRemoved;
+	act->publishAnnounceSvcTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
+
+	act->listenerSvc.handle = act->pubsub_discovery;
+	act->listenerSvc.announceEndpoint = pubsub_discovery_announceEndpoint;
+	act->listenerSvc.removeEndpoint = pubsub_discovery_removeEndpoint;
 
 	if (status == CELIX_SUCCESS) {
-		status = serviceTracker_create(activator->context, (char *) PUBSUB_TM_ANNOUNCE_PUBLISHER_SERVICE, customizer, tracker);
-	}
-
-	return status;
-}
-
-celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	struct activator* activator = calloc(1, sizeof(*activator));
-
-	if (activator) {
-		activator->context = context;
-		activator->pstmPublishersTracker = NULL;
-		activator->publisherEPAnnounce = NULL;
-		activator->publisherEPAnnounceService = NULL;
-
-		status = pubsub_discovery_create(context, &activator->pubsub_discovery);
-
-		if (status == CELIX_SUCCESS) {
-			status = createTMPublisherAnnounceTracker(activator, &(activator->pstmPublishersTracker));
-		}
-
-		if (status == CELIX_SUCCESS) {
-			*userData = activator;
-		} else {
-			free(activator);
-		}
+		act->listenerSvcId = celix_bundleContext_registerService(ctx, &act->listenerSvc, PUBSUB_ANNOUNCE_ENDPOINT_LISTENER_SERVICE, NULL);
 	} else {
-		status = CELIX_ENOMEM;
-	}
-
-	return status;
-
-}
-
-celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	struct activator *activator = userData;
-
-	publisher_endpoint_announce_pt pubEPAnnouncer = calloc(1, sizeof(*pubEPAnnouncer));
-
-	if (pubEPAnnouncer) {
-
-		pubEPAnnouncer->handle = activator->pubsub_discovery;
-		pubEPAnnouncer->announcePublisher = pubsub_discovery_announcePublisher;
-		pubEPAnnouncer->removePublisher = pubsub_discovery_removePublisher;
-		pubEPAnnouncer->interestedInTopic = pubsub_discovery_interestedInTopic;
-		pubEPAnnouncer->uninterestedInTopic = pubsub_discovery_uninterestedInTopic;
-		activator->publisherEPAnnounce = pubEPAnnouncer;
-
-		properties_pt props = properties_create();
-		properties_set(props, "PUBSUB_DISCOVERY", "true");
-
-		// pubsub_discovery_start needs to be first to initalize the propert etcd_watcher values
-		status = pubsub_discovery_start(activator->pubsub_discovery);
-
-		if (status == CELIX_SUCCESS) {
-			status = serviceTracker_open(activator->pstmPublishersTracker);
-		}
-
-		if (status == CELIX_SUCCESS) {
-			status = bundleContext_registerService(context, (char *) PUBSUB_DISCOVERY_SERVICE, pubEPAnnouncer, props, &activator->publisherEPAnnounceService);
-		}
-
-
-	}
-	else{
-		status = CELIX_ENOMEM;
-	}
-
-	if(status!=CELIX_SUCCESS && pubEPAnnouncer!=NULL){
-		free(pubEPAnnouncer);
-	}
-
-
-	return status;
-}
-
-celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator = userData;
-
-	status += pubsub_discovery_stop(activator->pubsub_discovery);
-
-	status += serviceTracker_close(activator->pstmPublishersTracker);
-
-	status += serviceRegistration_unregister(activator->publisherEPAnnounceService);
-
-	if (status == CELIX_SUCCESS) {
-		free(activator->publisherEPAnnounce);
+		act->listenerSvcId = -1L;
 	}
 
 	return status;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator = userData;
+static celix_status_t psd_stop(psd_activator_t *act, celix_bundle_context_t *ctx) {
+	celix_bundleContext_stopTracker(ctx, act->publishAnnounceSvcTrackerId);
+	celix_bundleContext_unregisterService(ctx, act->listenerSvcId);
 
-	status += serviceTracker_destroy(activator->pstmPublishersTracker);
-	status += pubsub_discovery_destroy(activator->pubsub_discovery);
-
-	activator->publisherEPAnnounce = NULL;
-	activator->publisherEPAnnounceService = NULL;
-	activator->pstmPublishersTracker = NULL;
-	activator->pubsub_discovery = NULL;
-	activator->context = NULL;
-
-	free(activator);
+	celix_status_t status = pubsub_discovery_stop(act->pubsub_discovery);
+	pubsub_discovery_destroy(act->pubsub_discovery);
 
 	return status;
 }
+
+
+CELIX_GEN_BUNDLE_ACTIVATOR(psd_activator_t, psd_start, psd_stop);

@@ -742,17 +742,32 @@ celix_service_tracker_t* celix_serviceTracker_createWithOptions(
             }
 
             //setting filter
-            if (opts->filter.filter != NULL && opts->filter.versionRange != NULL) {
-                //TODO version range
-                asprintf(&tracker->filter, "&((%s=%s)(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, opts->filter.filter);
-            } else if (opts->filter.versionRange != NULL) {
-                //TODO version range
-                asprintf(&tracker->filter, "&((%s=%s)(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang);
-            } else if (opts->filter.filter != NULL) {
-                asprintf(&tracker->filter, "(&(%s=%s)(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, opts->filter.filter);
+            if (opts->filter.ignoreServiceLanguage) {
+                if (opts->filter.filter != NULL && opts->filter.versionRange != NULL) {
+                    //TODO version range
+                    asprintf(&tracker->filter, "&((%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, opts->filter.filter);
+                } else if (opts->filter.versionRange != NULL) {
+                    //TODO version range
+                    asprintf(&tracker->filter, "&((%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName);
+                } else if (opts->filter.filter != NULL) {
+                    asprintf(&tracker->filter, "(&(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, opts->filter.filter);
+                } else {
+                    asprintf(&tracker->filter, "(&(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName);
+                }
             } else {
-                asprintf(&tracker->filter, "(&(%s=%s)(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang);
+                if (opts->filter.filter != NULL && opts->filter.versionRange != NULL) {
+                    //TODO version range
+                    asprintf(&tracker->filter, "&((%s=%s)(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, opts->filter.filter);
+                } else if (opts->filter.versionRange != NULL) {
+                    //TODO version range
+                    asprintf(&tracker->filter, "&((%s=%s)(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang);
+                } else if (opts->filter.filter != NULL) {
+                    asprintf(&tracker->filter, "(&(%s=%s)(%s=%s)%s)", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang, opts->filter.filter);
+                } else {
+                    asprintf(&tracker->filter, "(&(%s=%s)(%s=%s))", OSGI_FRAMEWORK_OBJECTCLASS, opts->filter.serviceName, CELIX_FRAMEWORK_SERVICE_LANGUAGE, lang);
+                }
             }
+
 
             //TODO open on other thread?
             serviceTracker_open(tracker);

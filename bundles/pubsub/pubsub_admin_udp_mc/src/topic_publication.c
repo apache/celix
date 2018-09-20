@@ -26,6 +26,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <celix_api.h>
 
 #include "array_list.h"
 #include "celixbool.h"
@@ -41,6 +42,7 @@
 
 #include "pubsub_serializer.h"
 #include "pubsub_psa_udpmc_constants.h"
+#include "pubsub_admin_impl.h"
 
 #define EP_ADDRESS_LEN		32
 
@@ -101,7 +103,7 @@ celix_status_t pubsub_topicPublicationCreate(int sendSocket, pubsub_endpoint_pt 
 	char* ep = malloc(EP_ADDRESS_LEN);
 	memset(ep,0,EP_ADDRESS_LEN);
 
-	long serviceId =strtol(properties_getWithDefault(pubEP->endpoint_props, PUBSUB_ENDPOINT_SERVICE_ID, "0"), NULL, 10);
+	long serviceId = celix_properties_getAsLong(pubEP->properties, OSGI_FRAMEWORK_SERVICE_ID, 0);
 
 	unsigned int port = serviceId + rand_range(UDP_BASE_PORT+serviceId+3, UDP_MAX_PORT);
 	snprintf(ep,EP_ADDRESS_LEN,"udp://%s:%u",bindIP,port);
@@ -176,8 +178,8 @@ celix_status_t pubsub_topicPublicationStart(bundle_context_pt bundle_context,top
 		factory->ungetService = pubsub_topicPublicationUngetService;
 
 		properties_pt props = properties_create();
-		properties_set(props,PUBSUB_PUBLISHER_SCOPE,properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_SCOPE));
-		properties_set(props,PUBSUB_PUBLISHER_TOPIC,properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_NAME));
+		properties_set(props,PUBSUB_PUBLISHER_SCOPE,properties_get(pubEP->properties, PUBSUB_ENDPOINT_TOPIC_SCOPE));
+		properties_set(props,PUBSUB_PUBLISHER_TOPIC,properties_get(pubEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME));
                 properties_set(props,"service.version", PUBSUB_PUBLISHER_SERVICE_VERSION);
 
 
@@ -185,12 +187,10 @@ celix_status_t pubsub_topicPublicationStart(bundle_context_pt bundle_context,top
 
 		if(status != CELIX_SUCCESS){
 			properties_destroy(props);
-			printf("PSA_UDP_MC_PSA_UDP_MC_TP: Cannot register ServiceFactory for topic %s, topic %s (bundle %s).\n",
-				   properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_SCOPE),
-				   properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_NAME),
-				   properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_BUNDLE_ID));
-		}
-		else{
+			printf("[PSA UDPMC] Cannot register ServiceFactory for topic %s, topic %s.\n",
+				   properties_get(pubEP->properties, PUBSUB_ENDPOINT_TOPIC_SCOPE),
+				   properties_get(pubEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME));
+		} else {
 			*svcFactory = factory;
 		}
 	}
@@ -209,7 +209,7 @@ celix_status_t pubsub_topicPublicationStop(topic_publication_pt pub){
 celix_status_t pubsub_topicPublicationAddPublisherEP(topic_publication_pt pub, pubsub_endpoint_pt ep) {
 
 	celixThreadMutex_lock(&(pub->tp_lock));
-	pubsubEndpoint_setField(ep, PUBSUB_ENDPOINT_URL, pub->endpoint);
+	pubsubEndpoint_setField(ep, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY, pub->endpoint);
 	pubsubEndpoint_setField(ep, PUBSUB_ADMIN_TYPE_KEY, PSA_UDPMC_PUBSUB_ADMIN_TYPE);
 	pubsubEndpoint_setField(ep, PUBSUB_SERIALIZER_TYPE_KEY, pub->serializer.type);
 	arrayList_add(pub->pub_ep_list,ep);
@@ -402,8 +402,8 @@ static publish_bundle_bound_service_pt pubsub_createPublishBundleBoundService(to
 		}
 
 		pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt)arrayList_get(bound->parent->pub_ep_list,0);
-		bound->scope=strdup(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_SCOPE));
-		bound->topic=strdup(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_NAME));
+		bound->scope=strdup(properties_get(pubEP->properties, PUBSUB_ENDPOINT_TOPIC_SCOPE));
+		bound->topic=strdup(properties_get(pubEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME));
 		bound->largeUdpHandle = largeUdp_create(1);
 
 		bound->service.handle = bound;

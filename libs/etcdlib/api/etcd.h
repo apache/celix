@@ -82,7 +82,15 @@ int etcd_get_directory(const char* directory, etcd_key_value_callback callback, 
 int etcd_set(const char* key, const char* value, int ttl, bool prevExist);
 
 /**
- * @desc Setting an Etcd-key/value and checks if there is a different previuos value
+ * @desc Refresh the ttl of an existing key.
+ * @param key the etcd key to refresh.
+ * @param ttl the ttl value to use.
+ * @return 0 on success, non zero otherwise.
+ */
+int etcd_refresh(const char *key, int ttl);
+
+/**
+ * @desc Setting an Etcd-key/value and checks if there is a different previous value
  * @param const char* key. The Etcd-key (Note: a leading '/' should be avoided)
  * @param const char* value. The Etcd-value 
  * @param int ttl. If non-zero this is used as the TTL value

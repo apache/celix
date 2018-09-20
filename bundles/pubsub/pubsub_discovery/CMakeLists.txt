@@ -25,9 +25,6 @@ add_celix_bundle(celix_pubsub_discovery_etcd
     SOURCES
         src/psd_activator.c
         src/pubsub_discovery_impl.c
-        src/etcd_common.c
-        src/etcd_watcher.c
-        src/etcd_writer.c
 )
 target_include_directories(celix_pubsub_discovery_etcd PRIVATE src)
 target_include_directories(celix_pubsub_discovery_etcd SYSTEM PRIVATE 

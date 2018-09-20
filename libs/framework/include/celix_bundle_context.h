@@ -201,12 +201,19 @@ typedef struct celix_service_filter_options {
      * The optional service language to filter for. If this is NULL or "" the C language will be used.
      */
     const char* serviceLanguage;
+
+
+    /**
+     * Whether to ignore (not filter for) the service.lang property.
+     * If this is set the serviceLanguage field is ignored and the (service.lang=<>) part is not added tot he filter
+     */
+    bool ignoreServiceLanguage;
 } celix_service_filter_options_t;
 
 /**
  * Macro to create a empty celix_service_filter_options_t type.
  */
-#define CELIX_EMPTY_SERVICE_FILTER_OPTIONS {.serviceName = NULL, .versionRange = NULL, .filter = NULL, .serviceLanguage = NULL}
+#define CELIX_EMPTY_SERVICE_FILTER_OPTIONS {.serviceName = NULL, .versionRange = NULL, .filter = NULL, .serviceLanguage = NULL, .ignoreServiceLanguage = false}
 
 
 /**
@@ -773,11 +780,33 @@ celix_bundle_t* celix_bundleContext_getBundle(celix_bundle_context_t *ctx);
 
 /**
  * Gets the config property - or environment variable if the config property does not exist - for the provided name.
- * @param key The key of the property to receive
- * @param defaultVal The default value to use if the property is not found (can be NULL)
+ * @param key The key of the property to receive.
+ * @param defaultVal The default value to use if the property is not found (can be NULL).
  * @return The property value for the provided key or the provided defaultValue is the key is not found.
  */
 const char* celix_bundleContext_getProperty(celix_bundle_context_t *ctx, const char *key, const char *defaultVal);
+
+/**
+ * Gets the config property as converts it to long. If the property is not a valid long, the defaultValue will be returned.
+ * The rest of the behaviour is the same as celix_bundleContext_getProperty.
+
+ * @param key The key of the property to receive.
+ * @param defaultVal The default value to use if the property is not found.
+ * @return The property value for the provided key or the provided defaultValue is the key is not found.
+ */
+long celix_bundleContext_getPropertyAsLong(celix_bundle_context_t *ctx, const char *key, long defaultValue);
+
+/**
+ * Gets the config property as converts it to bool. If the property is not a valid bool, the defaultValue will be returned.
+ * The rest of the behaviour is the same as celix_bundleContext_getProperty.
+
+ * @param key The key of the property to receive.
+ * @param defaultVal The default value to use if the property is not found.
+ * @return The property value for the provided key or the provided defaultValue is the key is not found.
+ */
+bool celix_bundleContext_getPropertyAsBool(celix_bundle_context_t *ctx, const char *key, bool defaultValue);
+
+//TODO getPropertyAs for int, uint, ulong, bool, etc
 
 #ifdef __cplusplus
 }

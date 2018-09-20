@@ -44,5 +44,7 @@
 #define PSA_ZMQ_VERBOSE_KEY		 			    "PSA_ZMQ_VERBOSE"
 
 
+#define PUBSUB_PSA_ZMQ_ENDPOINT_URL_KEY			"pubsub.zmq.url"
+
 
 #endif /* PUBSUB_PSA_ZMQ_CONSTANTS_H_ */

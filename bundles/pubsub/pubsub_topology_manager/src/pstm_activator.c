@@ -16,229 +16,126 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * pstm_activator.c
- *
- *  \date       Sep 29, 2011
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
+
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <celix_bundle_activator.h>
 
-#include "constants.h"
-#include "bundle_activator.h"
-#include "service_tracker.h"
-#include "service_registration.h"
+#include "celix_api.h"
 
-#include "listener_hook_service.h"
 #include "log_service.h"
 #include "log_helper.h"
 
 
 #include "pubsub_topology_manager.h"
-#include "publisher_endpoint_announce.h"
+#include "pubsub_listeners.h"
 
-struct activator {
-	bundle_context_pt context;
+typedef struct pstm_activator {
+	pubsub_topology_manager_t *manager;
 
-	pubsub_topology_manager_pt manager;
-
-	service_tracker_pt pubsubDiscoveryTracker;
-	service_tracker_pt pubsubAdminTracker;
-	service_tracker_pt pubsubSubscribersTracker;
-
+	long pubsubDiscoveryTrackerId;
+	long pubsubAdminTrackerId;
+	long pubsubSubscribersTrackerId;
+	long pubsubPublishServiceTrackerId;
 	listener_hook_service_pt hookService;
 	service_registration_pt hook;
 
-	publisher_endpoint_announce_pt publisherEPDiscover;
-	service_registration_pt publisherEPDiscoverService;
+	pubsub_discovered_endpoint_listener_t discListenerSvc;
+	long discListenerSvcId;
 
 	log_helper_pt loghelper;
-};
+} pstm_activator_t;
 
 
-static celix_status_t bundleActivator_createPSDTracker(struct activator *activator, service_tracker_pt *tracker);
-static celix_status_t bundleActivator_createPSATracker(struct activator *activator, service_tracker_pt *tracker);
-static celix_status_t bundleActivator_createPSSubTracker(struct activator *activator, service_tracker_pt *tracker);
-
-
-static celix_status_t bundleActivator_createPSDTracker(struct activator *activator, service_tracker_pt *tracker) {
-	celix_status_t status;
-
-	service_tracker_customizer_pt customizer = NULL;
-
-	status = serviceTrackerCustomizer_create(activator->manager,
-			NULL,
-			pubsub_topologyManager_pubsubDiscoveryAdded,
-			pubsub_topologyManager_pubsubDiscoveryModified,
-			pubsub_topologyManager_pubsubDiscoveryRemoved,
-			&customizer);
-
-	if (status == CELIX_SUCCESS) {
-		status = serviceTracker_create(activator->context, (char *) PUBSUB_DISCOVERY_SERVICE, customizer, tracker);
-	}
-
-	return status;
-}
-
-static celix_status_t bundleActivator_createPSATracker(struct activator *activator, service_tracker_pt *tracker) {
+static int pstm_start(pstm_activator_t *act, celix_bundle_context_t *ctx) {
 	celix_status_t status = CELIX_SUCCESS;
 
-	service_tracker_customizer_pt customizer = NULL;
+	act->discListenerSvcId = -1L;
+	act->pubsubSubscribersTrackerId = -1L;
+	act->pubsubAdminTrackerId = -1L;
+	act->pubsubDiscoveryTrackerId = -1L;
+	act->pubsubPublishServiceTrackerId = -1L;
 
-	status = serviceTrackerCustomizer_create(activator->manager,
-			NULL,
-			pubsub_topologyManager_psaAdded,
-			pubsub_topologyManager_psaModified,
-			pubsub_topologyManager_psaRemoved,
-			&customizer);
+	logHelper_create(ctx, &act->loghelper);
+	logHelper_start(act->loghelper);
 
+	status = pubsub_topologyManager_create(ctx, act->loghelper, &act->manager);
+
+	//create PSD tracker
 	if (status == CELIX_SUCCESS) {
-		status = serviceTracker_create(activator->context, PUBSUB_ADMIN_SERVICE, customizer, tracker);
+		celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
+		opts.addWithProperties = pubsub_topologyManager_pubsubDiscoveryAdded;
+		opts.removeWithProperties = pubsub_topologyManager_pubsubDiscoveryRemoved;
+		opts.callbackHandle = act->manager;
+		opts.filter.serviceName = PUBSUB_ANNOUNCE_ENDPOINT_LISTENER_SERVICE;
+		act->pubsubDiscoveryTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
 	}
 
-	return status;
-}
-
-static celix_status_t bundleActivator_createPSSubTracker(struct activator *activator, service_tracker_pt *tracker) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	service_tracker_customizer_pt customizer = NULL;
-
-	status = serviceTrackerCustomizer_create(activator->manager,
-			NULL,
-			pubsub_topologyManager_subscriberAdded,
-			pubsub_topologyManager_subscriberModified,
-			pubsub_topologyManager_subscriberRemoved,
-			&customizer);
-
+	//create PSA tracker
 	if (status == CELIX_SUCCESS) {
-		status = serviceTracker_create(activator->context, PUBSUB_SUBSCRIBER_SERVICE_NAME, customizer, tracker);
+		celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
+		opts.addWithProperties = pubsub_topologyManager_psaAdded;
+		opts.removeWithProperties = pubsub_topologyManager_psaRemoved;
+		opts.callbackHandle = act->manager;
+		opts.filter.serviceName = PUBSUB_ADMIN_SERVICE;
+        opts.filter.ignoreServiceLanguage = true;
+		act->pubsubAdminTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
 	}
 
-	return status;
-}
-
-celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator = NULL;
-
-	activator = calloc(1,sizeof(struct activator));
-
-	if (!activator) {
-		return CELIX_ENOMEM;
-	}
-
-	activator->context = context;
-
-	logHelper_create(context, &activator->loghelper);
-	logHelper_start(activator->loghelper);
-
-	status = pubsub_topologyManager_create(context, activator->loghelper, &activator->manager);
+	//create PSSubtracker
 	if (status == CELIX_SUCCESS) {
-		status = bundleActivator_createPSDTracker(activator, &activator->pubsubDiscoveryTracker);
-		if (status == CELIX_SUCCESS) {
-			status = bundleActivator_createPSATracker(activator, &activator->pubsubAdminTracker);
-			if (status == CELIX_SUCCESS) {
-				status = bundleActivator_createPSSubTracker(activator, &activator->pubsubSubscribersTracker);
-				if (status == CELIX_SUCCESS) {
-					*userData = activator;
-				}
-			}
-		}
+		celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
+		opts.addWithOwner = pubsub_topologyManager_subscriberAdded;
+		opts.removeWithOwner = pubsub_topologyManager_subscriberRemoved;
+		opts.callbackHandle = act->manager;
+		opts.filter.serviceName = PUBSUB_SUBSCRIBER_SERVICE_NAME;
+        opts.filter.ignoreServiceLanguage = true;
+		act->pubsubSubscribersTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
 	}
 
-	if(status != CELIX_SUCCESS){
-		bundleActivator_destroy(activator, context);
+
+	//track interest for publishers
+	if (status == CELIX_SUCCESS) {
+		act->pubsubPublishServiceTrackerId = celix_bundleContext_trackServiceTrackers(ctx,
+																					  PUBSUB_PUBLISHER_SERVICE_NAME,
+																					  act->manager,
+																					  pubsub_topologyManager_publisherTrackerAdded,
+																					  pubsub_topologyManager_publisherTrackerRemoved);
 	}
 
-	return status;
-}
+	//register listener for discovery event
+	if (status == CELIX_SUCCESS) {
+		act->discListenerSvc.handle = act->manager;
+		act->discListenerSvc.addDiscoveredEndpoint = pubsub_topologyManager_addDiscoveredEndpoint;
+		act->discListenerSvc.removeDiscoveredEndpoint = pubsub_topologyManager_removeDiscoveredEndpoint;
+		act->discListenerSvcId = celix_bundleContext_registerService(ctx, &act->discListenerSvc, PUBSUB_DISCOVERED_ENDPOINT_LISTENER_SERVICE, NULL);
+	}
 
-
-celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator = userData;
-
-	publisher_endpoint_announce_pt pubEPDiscover = calloc(1, sizeof(*pubEPDiscover));
-	pubEPDiscover->handle = activator->manager;
-	pubEPDiscover->announcePublisher = pubsub_topologyManager_announcePublisher;
-	pubEPDiscover->removePublisher = pubsub_topologyManager_removePublisher;
-	activator->publisherEPDiscover = pubEPDiscover;
-
-	status += bundleContext_registerService(context, (char *) PUBSUB_TM_ANNOUNCE_PUBLISHER_SERVICE, pubEPDiscover, NULL, &activator->publisherEPDiscoverService);
-
-
-	listener_hook_service_pt hookService = calloc(1,sizeof(*hookService));
-	hookService->handle = activator->manager;
-	hookService->added = pubsub_topologyManager_publisherTrackerAdded;
-	hookService->removed = pubsub_topologyManager_publisherTrackerRemoved;
-	activator->hookService = hookService;
-
-	status += bundleContext_registerService(context, (char *) OSGI_FRAMEWORK_LISTENER_HOOK_SERVICE_NAME, hookService, NULL, &activator->hook);
 
 	/* NOTE: Enable those line in order to remotely expose the topic_info service
 	properties_pt props = properties_create();
 	properties_set(props, (char *) OSGI_RSA_SERVICE_EXPORTED_INTERFACES, (char *) PUBSUB_TOPIC_INFO_SERVICE);
 	status += bundleContext_registerService(context, (char *) PUBSUB_TOPIC_INFO_SERVICE, activator->topicInfo, props, &activator->topicInfoService);
 	*/
-	status += serviceTracker_open(activator->pubsubAdminTracker);
 
-	status += serviceTracker_open(activator->pubsubDiscoveryTracker);
-
-	status += serviceTracker_open(activator->pubsubSubscribersTracker);
-
-
-	return status;
+	return 0;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator = userData;
+static int pstm_stop(pstm_activator_t *act, celix_bundle_context_t *ctx) {
+	celix_bundleContext_stopTracker(ctx, act->pubsubSubscribersTrackerId);
+	celix_bundleContext_stopTracker(ctx, act->pubsubDiscoveryTrackerId);
+	celix_bundleContext_stopTracker(ctx, act->pubsubAdminTrackerId);
+	celix_bundleContext_stopTracker(ctx, act->pubsubPublishServiceTrackerId);
+	celix_bundleContext_unregisterService(ctx, act->discListenerSvcId);
 
-	serviceTracker_close(activator->pubsubSubscribersTracker);
-	serviceTracker_close(activator->pubsubDiscoveryTracker);
-	serviceTracker_close(activator->pubsubAdminTracker);
+	pubsub_topologyManager_destroy(act->manager);
 
-	serviceRegistration_unregister(activator->publisherEPDiscoverService);
-	free(activator->publisherEPDiscover);
+	logHelper_stop(act->loghelper);
+	logHelper_destroy(&act->loghelper);
 
-	serviceRegistration_unregister(activator->hook);
-	free(activator->hookService);
-
-	return status;
+	return 0;
 }
 
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
-	celix_status_t status = CELIX_SUCCESS;
-
-	struct activator *activator = userData;
-	if (activator == NULL) {
-		status = CELIX_BUNDLE_EXCEPTION;
-	} else {
-
-		if(activator->pubsubSubscribersTracker!=NULL){
-			serviceTracker_destroy(activator->pubsubSubscribersTracker);
-		}
-		if(activator->pubsubDiscoveryTracker!=NULL){
-			serviceTracker_destroy(activator->pubsubDiscoveryTracker);
-		}
-		if(activator->pubsubAdminTracker!=NULL){
-			serviceTracker_destroy(activator->pubsubAdminTracker);
-		}
-
-		if(activator->manager!=NULL){
-			status = pubsub_topologyManager_destroy(activator->manager);
-		}
-
-		logHelper_stop(activator->loghelper);
-		logHelper_destroy(&activator->loghelper);
-
-		free(activator);
-	}
-
-	return status;
-}
+CELIX_GEN_BUNDLE_ACTIVATOR(pstm_activator_t, pstm_start, pstm_stop);

@@ -27,17 +27,15 @@
 #ifndef PUBSUB_COMMON_H_
 #define PUBSUB_COMMON_H_
 
-#define PUBSUB_SERIALIZER_SERVICE 		"pubsub_serializer"
-#define PUBSUB_ADMIN_SERVICE 			"pubsub_admin"
-#define PUBSUB_DISCOVERY_SERVICE		"pubsub_discovery"
-#define PUBSUB_TM_ANNOUNCE_PUBLISHER_SERVICE    "pubsub_tm_announce_publisher"
+#define PUBSUB_SERIALIZER_SERVICE 					"pubsub_serializer"
+#define PUBSUB_ADMIN_SERVICE 						"pubsub_admin"
+#define PUBSUB_ANNOUNCE_ENDPOINT_LISTENER_SERVICE	"pubsub_announce_endpoint_listener"
+#define PUBSUB_DISCOVERED_ENDPOINT_LISTENER_SERVICE	"pubsub_discovered_endpoint_listener"
 
-#define PUBSUB_ANY_SUB_TOPIC		        "any"
+#define PUBSUB_ANY_SUB_TOPIC		        		"any"
 
-#define	PUBSUB_BUNDLE_ID			"bundle.id"
-
-#define MAX_SCOPE_LEN                           1024
-#define MAX_TOPIC_LEN				1024
+#define MAX_SCOPE_LEN                           	1024
+#define MAX_TOPIC_LEN								1024
 
 struct pubsub_msg_header{
 	char topic[MAX_TOPIC_LEN];

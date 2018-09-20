@@ -43,7 +43,6 @@
 #include "log_helper.h"
 #include "command.h"
 
-
 struct pubsub_admin {
 
 	bundle_context_pt bundle_context;

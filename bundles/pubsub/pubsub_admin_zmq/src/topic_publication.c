@@ -288,17 +288,16 @@ celix_status_t pubsub_topicPublicationStart(bundle_context_pt bundle_context,top
 		factory->ungetService = pubsub_topicPublicationUngetService;
 
 		properties_pt props = properties_create();
-		properties_set(props,PUBSUB_PUBLISHER_TOPIC,properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_NAME));
-		properties_set(props,PUBSUB_PUBLISHER_SCOPE,properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_SCOPE));
+		properties_set(props,PUBSUB_PUBLISHER_TOPIC,properties_get(pubEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME));
+		properties_set(props,PUBSUB_PUBLISHER_SCOPE,properties_get(pubEP->properties, PUBSUB_ENDPOINT_TOPIC_SCOPE));
 		properties_set(props,"service.version", PUBSUB_PUBLISHER_SERVICE_VERSION);
 
 		status = bundleContext_registerServiceFactory(bundle_context,PUBSUB_PUBLISHER_SERVICE_NAME,factory,props,&(pub->svcFactoryReg));
 
 		if(status != CELIX_SUCCESS){
 			properties_destroy(props);
-			printf("PSA_ZMQ_PSA_ZMQ_TP: Cannot register ServiceFactory for topic %s (bundle %s).\n",
-				   properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_NAME),
-				   properties_get(pubEP->endpoint_props, PUBSUB_BUNDLE_ID));
+			printf("PSA_ZMQ_PSA_ZMQ_TP: Cannot register ServiceFactory for topic %s.\n",
+				   properties_get(pubEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME));
 		}
 		else{
 			*svcFactory = factory;
@@ -321,7 +320,7 @@ celix_status_t pubsub_topicPublicationAddPublisherEP(topic_publication_pt pub, p
 	celixThreadMutex_lock(&(pub->tp_lock));
 	pubsubEndpoint_setField(ep, PUBSUB_ADMIN_TYPE_KEY, PSA_ZMQ_PUBSUB_ADMIN_TYPE);
 	pubsubEndpoint_setField(ep, PUBSUB_SERIALIZER_TYPE_KEY, pub->serializer.type);
-    pubsubEndpoint_setField(ep, PUBSUB_ENDPOINT_URL, pub->endpoint);
+    pubsubEndpoint_setField(ep, PUBSUB_PSA_ZMQ_ENDPOINT_URL_KEY, pub->endpoint);
 	arrayList_add(pub->pub_ep_list,ep);
 	celixThreadMutex_unlock(&(pub->tp_lock));
 
@@ -590,7 +589,7 @@ static publish_bundle_bound_service_pt pubsub_createPublishBundleBoundService(to
 		arrayList_create(&bound->mp_parts);
 
 		pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt)arrayList_get(bound->parent->pub_ep_list,0);
-		bound->topic=strdup(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_NAME));
+		bound->topic=strdup(properties_get(pubEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME));
 
 		bound->service.handle = bound;
 		bound->service.localMsgTypeIdForMsgType = pubsub_localMsgTypeIdForUUID;

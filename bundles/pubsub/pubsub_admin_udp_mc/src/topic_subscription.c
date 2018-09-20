@@ -254,15 +254,15 @@ celix_status_t pubsub_topicSubscriptionStop(topic_subscription_pt ts){
 	return status;
 }
 
-celix_status_t pubsub_topicSubscriptionConnectPublisher(topic_subscription_pt ts, char* pubURL) {
+celix_status_t pubsub_topicSubscriptionConnectPublisher(topic_subscription_pt ts, char* socketAddress) {
 
-	printf("pubsub_topicSubscriptionConnectPublisher : pubURL = %s\n", pubURL);
+	printf("[PSA UDPMC] topicSubscriptionConnectPublisher : socket address = %s\n", socketAddress);
 
 	celix_status_t status = CELIX_SUCCESS;
 
 	celixThreadMutex_lock(&ts->socketMap_lock);
 
-	if(!hashMap_containsKey(ts->socketMap, pubURL)){
+	if(!hashMap_containsKey(ts->socketMap, socketAddress)){
 
 		int *recvSocket = calloc(sizeof(int), 1);
 		*recvSocket = socket(AF_INET, SOCK_DGRAM, 0);
@@ -282,7 +282,7 @@ celix_status_t pubsub_topicSubscriptionConnectPublisher(topic_subscription_pt ts
 		if(status == CELIX_SUCCESS){
 			// TODO Check if there is a better way to parse the URL to IP/Portnr
 			//replace ':' by spaces
-			char *url = strdup(pubURL);
+			char *url = strdup(socketAddress);
 			char *pt = url;
 			while((pt=strchr(pt, ':')) != NULL) {
 				*pt = ' ';
@@ -292,7 +292,7 @@ celix_status_t pubsub_topicSubscriptionConnectPublisher(topic_subscription_pt ts
 			sscanf(url, "udp //%s %hu", mcIp, &mcPort);
 			free(url);
 
-			printf("pubsub_topicSubscriptionConnectPublisher : IP = %s, Port = %hu\n", mcIp, mcPort);
+			printf("[PSA UDPMC] topicSubscriptionConnectPublisher : IP = %s, Port = %hu\n", mcIp, mcPort);
 
 			struct ip_mreq mc_addr;
 			mc_addr.imr_multiaddr.s_addr = inet_addr(mcIp);
@@ -332,7 +332,7 @@ celix_status_t pubsub_topicSubscriptionConnectPublisher(topic_subscription_pt ts
 		}
 
 		if (status == CELIX_SUCCESS){
-			hashMap_put(ts->socketMap, strdup(pubURL), (void*)recvSocket);
+			hashMap_put(ts->socketMap, strdup(socketAddress), (void*)recvSocket);
 		}
 		else{
 			free(recvSocket);
@@ -344,18 +344,18 @@ celix_status_t pubsub_topicSubscriptionConnectPublisher(topic_subscription_pt ts
 	return status;
 }
 
-celix_status_t pubsub_topicSubscriptionAddConnectPublisherToPendingList(topic_subscription_pt ts, char* pubURL) {
+celix_status_t pubsub_topicSubscriptionAddConnectPublisherToPendingList(topic_subscription_pt ts, char* socketAddress) {
 	celix_status_t status = CELIX_SUCCESS;
-	char *url = strdup(pubURL);
+	char *url = strdup(socketAddress);
 	celixThreadMutex_lock(&ts->pendingConnections_lock);
 	arrayList_add(ts->pendingConnections, url);
 	celixThreadMutex_unlock(&ts->pendingConnections_lock);
 	return status;
 }
 
-celix_status_t pubsub_topicSubscriptionAddDisconnectPublisherToPendingList(topic_subscription_pt ts, char* pubURL) {
+celix_status_t pubsub_topicSubscriptionAddDisconnectPublisherToPendingList(topic_subscription_pt ts, char* socketAddress) {
 	celix_status_t status = CELIX_SUCCESS;
-	char *url = strdup(pubURL);
+	char *url = strdup(socketAddress);
 	celixThreadMutex_lock(&ts->pendingDisconnections_lock);
 	arrayList_add(ts->pendingDisconnections, url);
 	celixThreadMutex_unlock(&ts->pendingDisconnections_lock);

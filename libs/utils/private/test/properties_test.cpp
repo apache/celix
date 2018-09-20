@@ -158,3 +158,64 @@ TEST(properties, getSet) {
 	properties_destroy(properties);
 }
 
+TEST(properties, longTest) {
+	properties = properties_create();
+
+	celix_properties_set(properties, "a", "2");
+	celix_properties_set(properties, "b", "-10032L");
+	celix_properties_set(properties, "c", "");
+	celix_properties_set(properties, "d", "garbage");
+
+	long a = celix_properties_getAsLong(properties, "a", -1L);
+	long b = celix_properties_getAsLong(properties, "b", -1L);
+	long c = celix_properties_getAsLong(properties, "c", -1L);
+	long d = celix_properties_getAsLong(properties, "d", -1L);
+	long e = celix_properties_getAsLong(properties, "e", -1L);
+
+	CHECK_EQUAL(2, a);
+	CHECK_EQUAL(-10032L, b);
+	CHECK_EQUAL(-1L, c);
+	CHECK_EQUAL(-1L, d);
+	CHECK_EQUAL(-1L, e);
+
+	celix_properties_setLong(properties, "a", 3L);
+	celix_properties_setLong(properties, "b", -4L);
+	a = celix_properties_getAsLong(properties, "a", -1L);
+	b = celix_properties_getAsLong(properties, "b", -1L);
+	CHECK_EQUAL(3L, a);
+	CHECK_EQUAL(-4L, b);
+
+	celix_properties_destroy(properties);
+}
+
+TEST(properties, boolTest) {
+	properties = properties_create();
+
+	celix_properties_set(properties, "a", "true");
+	celix_properties_set(properties, "b", "false");
+	celix_properties_set(properties, "c", "  true  ");
+	celix_properties_set(properties, "d", "garbage");
+
+	bool a = celix_properties_getAsBool(properties, "a", false);
+	bool b = celix_properties_getAsBool(properties, "b", true);
+	bool c = celix_properties_getAsBool(properties, "c", false);
+	bool d = celix_properties_getAsBool(properties, "d", true);
+	bool e = celix_properties_getAsBool(properties, "e", false);
+	bool f = celix_properties_getAsBool(properties, "f", true);
+
+	CHECK_EQUAL(true, a);
+	CHECK_EQUAL(false, b);
+	CHECK_EQUAL(true, c);
+	CHECK_EQUAL(true, d);
+	CHECK_EQUAL(false, e);
+	CHECK_EQUAL(true, f);
+
+	celix_properties_setBool(properties, "a", true);
+	celix_properties_setBool(properties, "b", false);
+	a = celix_properties_getAsBool(properties, "a", false);
+	b = celix_properties_getAsBool(properties, "b", true);
+	CHECK_EQUAL(true, a);
+	CHECK_EQUAL(false, b);
+
+	celix_properties_destroy(properties);
+}

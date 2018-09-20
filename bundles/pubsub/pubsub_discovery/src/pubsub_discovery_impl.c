@@ -24,28 +24,30 @@
 #include <stdbool.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <jansson.h>
+#include <assert.h>
+#include <sys/time.h>
 
+#include "celix_bundle_context.h"
+#include "celix_properties.h"
 #include "constants.h"
 #include "celix_threads.h"
-#include "bundle_context.h"
 #include "array_list.h"
 #include "utils.h"
 #include "celix_errno.h"
 #include "filter.h"
-#include "service_reference.h"
-#include "service_registration.h"
 
-#include "publisher_endpoint_announce.h"
-#include "etcd_common.h"
-#include "etcd_watcher.h"
-#include "etcd_writer.h"
+#include "pubsub_listeners.h"
 #include "pubsub_endpoint.h"
 #include "pubsub_discovery_impl.h"
 
-static bool pubsub_discovery_isEndpointValid(pubsub_endpoint_pt psEp);
+static celix_properties_t* pubsub_discovery_parseEndpoint(const char *value);
+static char* pubsub_discovery_createJsonEndpoint(const celix_properties_t *props);
+static void pubsub_discovery_addDiscoveredEndpoint(pubsub_discovery_t *disc, celix_properties_t *endpoint);
+static void pubsub_discovery_removeDiscoveredEndpoint(pubsub_discovery_t *disc, const char *uuid);
 
 /* Discovery activator functions */
-celix_status_t pubsub_discovery_create(bundle_context_pt context, pubsub_discovery_pt *ps_discovery) {
+celix_status_t pubsub_discovery_create(bundle_context_pt context, pubsub_discovery_t **ps_discovery) {
     celix_status_t status = CELIX_SUCCESS;
 
     *ps_discovery = calloc(1, sizeof(**ps_discovery));
@@ -55,476 +57,401 @@ celix_status_t pubsub_discovery_create(bundle_context_pt context, pubsub_discove
     }
 
     (*ps_discovery)->context = context;
-    (*ps_discovery)->discoveredPubs = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
-    (*ps_discovery)->listenerReferences = hashMap_create(serviceReference_hashCode, NULL, serviceReference_equals2, NULL);
-    (*ps_discovery)->watchers = hashMap_create(utils_stringHash,NULL,utils_stringEquals, NULL);
-    (*ps_discovery)->verbose = PUBSUB_ETCD_DISCOVERY_DEFAULT_VERBOSE;
-    celixThreadMutex_create(&(*ps_discovery)->listenerReferencesMutex, NULL);
-    celixThreadMutex_create(&(*ps_discovery)->discoveredPubsMutex, NULL);
-    celixThreadMutex_create(&(*ps_discovery)->watchersMutex, NULL);
+    (*ps_discovery)->discoveredEndpoints = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+    (*ps_discovery)->announcedEndpoints = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+    (*ps_discovery)->discoveredEndpointsListeners = hashMap_create(NULL, NULL, NULL, NULL);
+    celixThreadMutex_create(&(*ps_discovery)->discoveredEndpointsListenersMutex, NULL);
+    celixThreadMutex_create(&(*ps_discovery)->announcedEndpointsMutex, NULL);
+    celixThreadMutex_create(&(*ps_discovery)->discoveredEndpointsMutex, NULL);
+    celixThreadMutex_create(&(*ps_discovery)->waitMutex, NULL);
+    celixThreadCondition_init(&(*ps_discovery)->waitCond, NULL);
+    celixThreadMutex_create(&(*ps_discovery)->runningMutex, NULL);
+    (*ps_discovery)->running = true;
 
-    const char *verboseStr = NULL;
-    bundleContext_getProperty(context, PUBSUB_ETCD_DISCOVERY_VERBOSE_KEY, &verboseStr);
-    if (verboseStr != NULL) {
-        (*ps_discovery)->verbose = strncasecmp("true", verboseStr, strlen("true")) == 0;
-    }
+
+    (*ps_discovery)->verbose = celix_bundleContext_getPropertyAsBool(context, PUBSUB_ETCD_DISCOVERY_VERBOSE_KEY, PUBSUB_ETCD_DISCOVERY_DEFAULT_VERBOSE);
+
+    const char* etcdIp = celix_bundleContext_getProperty(context, PUBSUB_DISCOVERY_SERVER_IP_KEY, PUBSUB_DISCOVERY_SERVER_IP_DEFAULT);
+    long etcdPort = celix_bundleContext_getPropertyAsLong(context, PUBSUB_DISCOVERY_SERVER_PORT_KEY, PUBSUB_DISCOVERY_SERVER_PORT_DEFAULT);
+    long ttl = celix_bundleContext_getPropertyAsLong(context, PUBSUB_DISCOVERY_ETCD_TTL_KEY, PUBSUB_DISCOVERY_ETCD_TTL_DEFAULT);
+
+    etcd_init(etcdIp, (int)etcdPort, ETCDLIB_NO_CURL_INITIALIZATION);
+    (*ps_discovery)->ttlForEntries = (int)ttl;
+    (*ps_discovery)->sleepInsecBetweenTTLRefresh = (int)(((float)ttl)/2.0);
+    (*ps_discovery)->pubsubPath = celix_bundleContext_getProperty(context, PUBSUB_DISCOVERY_SERVER_PATH_KEY, PUBSUB_DISCOVERY_SERVER_PATH_DEFAULT);
 
     return status;
 }
 
-celix_status_t pubsub_discovery_destroy(pubsub_discovery_pt ps_discovery) {
+celix_status_t pubsub_discovery_destroy(pubsub_discovery_t *ps_discovery) {
     celix_status_t status = CELIX_SUCCESS;
 
-    celixThreadMutex_lock(&ps_discovery->discoveredPubsMutex);
+    celixThreadMutex_lock(&ps_discovery->discoveredEndpointsMutex);
+    hashMap_destroy(ps_discovery->discoveredEndpoints, false, false);
+    celixThreadMutex_unlock(&ps_discovery->discoveredEndpointsMutex);
+    celixThreadMutex_destroy(&ps_discovery->discoveredEndpointsMutex);
 
-    hash_map_iterator_pt iter = hashMapIterator_create(ps_discovery->discoveredPubs);
+    celixThreadMutex_lock(&ps_discovery->discoveredEndpointsListenersMutex);
+    hashMap_destroy(ps_discovery->discoveredEndpointsListeners, false, false);
+    celixThreadMutex_unlock(&ps_discovery->discoveredEndpointsListenersMutex);
+    celixThreadMutex_destroy(&ps_discovery->discoveredEndpointsListenersMutex);
 
-    while (hashMapIterator_hasNext(iter)) {
-        array_list_pt pubEP_list = (array_list_pt) hashMapIterator_nextValue(iter);
+    celixThreadMutex_lock(&ps_discovery->announcedEndpointsMutex);
+    hashMap_destroy(ps_discovery->announcedEndpoints, false, false);
+    celixThreadMutex_unlock(&ps_discovery->announcedEndpointsMutex);
+    celixThreadMutex_destroy(&ps_discovery->announcedEndpointsMutex);
 
-        for(int i=0; i < arrayList_size(pubEP_list); i++) {
-            pubsubEndpoint_destroy(((pubsub_endpoint_pt)arrayList_get(pubEP_list,i)));
-        }
-        arrayList_destroy(pubEP_list);
-    }
+    celixThreadMutex_destroy(&ps_discovery->waitMutex);
+    celixThreadCondition_destroy(&ps_discovery->waitCond);
 
-    hashMapIterator_destroy(iter);
-
-    hashMap_destroy(ps_discovery->discoveredPubs, true, false);
-    ps_discovery->discoveredPubs = NULL;
-
-    celixThreadMutex_unlock(&ps_discovery->discoveredPubsMutex);
-
-    celixThreadMutex_destroy(&ps_discovery->discoveredPubsMutex);
-
-
-    celixThreadMutex_lock(&ps_discovery->listenerReferencesMutex);
-
-    hashMap_destroy(ps_discovery->listenerReferences, false, false);
-    ps_discovery->listenerReferences = NULL;
-
-    celixThreadMutex_unlock(&ps_discovery->listenerReferencesMutex);
-
-    celixThreadMutex_destroy(&ps_discovery->listenerReferencesMutex);
+    celixThreadMutex_destroy(&ps_discovery->runningMutex);
 
     free(ps_discovery);
 
     return status;
 }
 
-celix_status_t pubsub_discovery_start(pubsub_discovery_pt ps_discovery) {
-    celix_status_t status = CELIX_SUCCESS;
-    status = etcdCommon_init(ps_discovery->context);
-    ps_discovery->writer = etcdWriter_create(ps_discovery);
+void* psd_watch(void *data) {
+    pubsub_discovery_t *disc = data;
 
-    return status;
-}
+    celixThreadMutex_lock(&disc->runningMutex);
+    bool running = disc->running;
+    celixThreadMutex_unlock(&disc->runningMutex);
 
-celix_status_t pubsub_discovery_stop(pubsub_discovery_pt ps_discovery) {
-    celix_status_t status = CELIX_SUCCESS;
+    long long prevIndex = 0L;
 
-    const char* fwUUID = NULL;
-
-    bundleContext_getProperty(ps_discovery->context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &fwUUID);
-    if (fwUUID == NULL) {
-        fprintf(stderr, "ERROR PSD: Cannot retrieve fwUUID.\n");
-        return CELIX_INVALID_BUNDLE_CONTEXT;
-    }
-
-    celixThreadMutex_lock(&ps_discovery->watchersMutex);
-
-    hash_map_iterator_pt iter = hashMapIterator_create(ps_discovery->watchers);
-    while (hashMapIterator_hasNext(iter)) {
-        struct watcher_info * wi = hashMapIterator_nextValue(iter);
-        etcdWatcher_stop(wi->watcher);
-    }
-    hashMapIterator_destroy(iter);
-
-    celixThreadMutex_lock(&ps_discovery->discoveredPubsMutex);
-
-    /* Unexport all publishers for the local framework, and also delete from ETCD publisher belonging to the local framework */
-
-    iter = hashMapIterator_create(ps_discovery->discoveredPubs);
-    while (hashMapIterator_hasNext(iter)) {
-        array_list_pt pubEP_list = (array_list_pt) hashMapIterator_nextValue(iter);
-
-        int i;
-        for (i = 0; i < arrayList_size(pubEP_list); i++) {
-            pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt) arrayList_get(pubEP_list, i);
-            if (strcmp(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_FRAMEWORK_UUID), fwUUID) == 0) {
-                etcdWriter_deletePublisherEndpoint(ps_discovery->writer, pubEP);
+    while (running) {
+        char *action = NULL;
+        char *value = NULL;
+        char *readKey = NULL;
+        long long mIndex;
+        //TODO add interruptable etcd_wait -> which returns a handle to interrupt and a can be used for a wait call
+        int rc = etcd_watch(disc->pubsubPath, prevIndex, &action, NULL, &value, &readKey, &mIndex);
+        if (rc == ETCDLIB_RC_TIMEOUT) {
+            //nop
+        } else if (rc == ETCDLIB_RC_ERROR) {
+            printf("WARNING PSD: Error communicating with etcd.\n");
+        } else {
+            if (strncmp(ETCDLIB_ACTION_CREATE, action, strlen(ETCDLIB_ACTION_CREATE)) == 0 ||
+                strncmp(ETCDLIB_ACTION_SET, action, strlen(ETCDLIB_ACTION_SET)) == 0 ||
+                strncmp(ETCDLIB_ACTION_UPDATE, action, strlen(ETCDLIB_ACTION_UPDATE)) == 0) {
+                celix_properties_t *props = pubsub_discovery_parseEndpoint(value);
+                if (props != NULL) {
+                    pubsub_discovery_addDiscoveredEndpoint(disc, props);
+                }
+            } else if (strncmp(ETCDLIB_ACTION_DELETE, action, strlen(ETCDLIB_ACTION_DELETE)) == 0 ||
+                        strncmp(ETCDLIB_ACTION_EXPIRE, action, strlen(ETCDLIB_ACTION_EXPIRE)) == 0) {
+                celix_properties_t *props = pubsub_discovery_parseEndpoint(value);
+                if (props != NULL) {
+                    const char *uuid = celix_properties_get(props, PUBSUB_ENDPOINT_UUID, NULL);
+                    pubsub_discovery_removeDiscoveredEndpoint(disc, uuid);
+                }
             } else {
-                pubsub_discovery_informPublishersListeners(ps_discovery, pubEP, false);
-                arrayList_remove(pubEP_list, i);
-                pubsubEndpoint_destroy(pubEP);
-                i--;
+                //ETCDLIB_ACTION_GET -> nop
             }
+
+            free(action);
+            free(value);
+            free(readKey);
+            prevIndex = mIndex;
         }
+
+
+        celixThreadMutex_lock(&disc->runningMutex);
+        running = disc->running;
+        celixThreadMutex_unlock(&disc->runningMutex);
     }
 
-    hashMapIterator_destroy(iter);
-
-    celixThreadMutex_unlock(&ps_discovery->discoveredPubsMutex);
-    etcdWriter_destroy(ps_discovery->writer);
-
-    iter = hashMapIterator_create(ps_discovery->watchers);
-    while (hashMapIterator_hasNext(iter)) {
-        struct watcher_info * wi = hashMapIterator_nextValue(iter);
-        etcdWatcher_destroy(wi->watcher);
-    }
-    hashMapIterator_destroy(iter);
-    hashMap_destroy(ps_discovery->watchers, true, true);
-    celixThreadMutex_unlock(&ps_discovery->watchersMutex);
-    return status;
+    return NULL;
 }
 
-/* Functions called by the etcd_watcher */
+void* psd_refresh(void *data) {
+    pubsub_discovery_t *disc = data;
 
-celix_status_t pubsub_discovery_addNode(pubsub_discovery_pt pubsub_discovery, pubsub_endpoint_pt pubEP) {
-    celix_status_t status = CELIX_SUCCESS;
+    celixThreadMutex_lock(&disc->runningMutex);
+    bool running = disc->running;
+    celixThreadMutex_unlock(&disc->runningMutex);
 
-    bool valid = pubsub_discovery_isEndpointValid(pubEP);
-    if (!valid) {
-        status = CELIX_ILLEGAL_STATE;
-        return status;
-    }
+    while (running) {
+        struct timeval start;
+        gettimeofday(&start, NULL);
 
-    bool inform = false;
-    celixThreadMutex_lock(&pubsub_discovery->discoveredPubsMutex);
-
-    char *pubs_key = pubsubEndpoint_createScopeTopicKey(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_SCOPE), properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_NAME));
-    array_list_pt pubEP_list = (array_list_pt)hashMap_get(pubsub_discovery->discoveredPubs,pubs_key);
-    if(pubEP_list==NULL){
-        arrayList_create(&pubEP_list);
-        arrayList_add(pubEP_list,pubEP);
-        hashMap_put(pubsub_discovery->discoveredPubs,strdup(pubs_key),pubEP_list);
-        inform=true;
-    }
-    else{
-        int i;
-        bool found = false;
-        for(i=0;i<arrayList_size(pubEP_list) && !found;i++){
-            found = pubsubEndpoint_equals(pubEP,(pubsub_endpoint_pt)arrayList_get(pubEP_list,i));
-        }
-        if(found){
-            pubsubEndpoint_destroy(pubEP);
-        }
-        else{
-            arrayList_add(pubEP_list,pubEP);
-            inform=true;
-        }
-    }
-    free(pubs_key);
-
-    celixThreadMutex_unlock(&pubsub_discovery->discoveredPubsMutex);
-
-    if(inform){
-        status = pubsub_discovery_informPublishersListeners(pubsub_discovery,pubEP,true);
-    }
-
-    return status;
-}
-
-celix_status_t pubsub_discovery_removeNode(pubsub_discovery_pt pubsub_discovery, pubsub_endpoint_pt pubEP) {
-    celix_status_t status = CELIX_SUCCESS;
-    pubsub_endpoint_pt p = NULL;
-    bool found = false;
-
-    celixThreadMutex_lock(&pubsub_discovery->discoveredPubsMutex);
-    char *pubs_key = pubsubEndpoint_createScopeTopicKey(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_SCOPE), properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_NAME));
-    array_list_pt pubEP_list = (array_list_pt) hashMap_get(pubsub_discovery->discoveredPubs, pubs_key);
-    free(pubs_key);
-    if (pubEP_list == NULL) {
-        printf("WARNING PSD: Cannot find any registered publisher for topic %s. Something is not consistent.\n",
-                properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_NAME));
-        status = CELIX_ILLEGAL_STATE;
-    } else {
-        int i;
-
-        for (i = 0; !found && i < arrayList_size(pubEP_list); i++) {
-            p = arrayList_get(pubEP_list, i);
-            found = pubsubEndpoint_equals(pubEP, p);
-            if (found) {
-                arrayList_remove(pubEP_list, i);
-                pubsubEndpoint_destroy(p);
-            }
-        }
-    }
-
-    celixThreadMutex_unlock(&pubsub_discovery->discoveredPubsMutex);
-    if (found) {
-        status = pubsub_discovery_informPublishersListeners(pubsub_discovery, pubEP, false);
-    }
-    pubsubEndpoint_destroy(pubEP);
-
-    return status;
-}
-
-/* Callback to the pubsub_topology_manager */
-celix_status_t pubsub_discovery_informPublishersListeners(pubsub_discovery_pt pubsub_discovery, pubsub_endpoint_pt pubEP, bool epAdded) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    // Inform listeners of new publisher endpoint
-    celixThreadMutex_lock(&pubsub_discovery->listenerReferencesMutex);
-
-    if (pubsub_discovery->listenerReferences != NULL) {
-        hash_map_iterator_pt iter = hashMapIterator_create(pubsub_discovery->listenerReferences);
-        while (hashMapIterator_hasNext(iter)) {
-            service_reference_pt reference = hashMapIterator_nextKey(iter);
-
-            publisher_endpoint_announce_pt listener = NULL;
-
-            bundleContext_getService(pubsub_discovery->context, reference, (void**) &listener);
-            if (epAdded) {
-                listener->announcePublisher(listener->handle, pubEP);
+        celixThreadMutex_lock(&disc->announcedEndpointsMutex);
+        hash_map_iterator_t iter = hashMapIterator_construct(disc->announcedEndpoints);
+        while (hashMapIterator_hasNext(&iter)) {
+            pubsub_announce_entry_t *entry = hashMapIterator_nextValue(&iter);
+            if (entry->isSet) {
+                //only refresh ttl -> no index update -> no watch trigger
+                int rc = etcd_refresh(entry->key, disc->ttlForEntries);
+                if (rc != ETCDLIB_RC_OK) {
+                    fprintf(stderr, "[PSD] Warning: error refreshing etcd key %s\n", entry->key);
+                    entry->isSet = false;
+                }
             } else {
-                listener->removePublisher(listener->handle, pubEP);
+                char *str = pubsub_discovery_createJsonEndpoint(entry->properties);
+                int rc = etcd_set(entry->key, str, disc->ttlForEntries, false);
+                if (rc == ETCDLIB_RC_OK) {
+                    entry->isSet = true;
+                } else {
+                    fprintf(stderr, "[PSD] Warning: error setting endpoint in etcd for key %s\n", entry->key);
+                }
             }
-            bundleContext_ungetService(pubsub_discovery->context, reference, NULL);
         }
-        hashMapIterator_destroy(iter);
+        celixThreadMutex_unlock(&disc->announcedEndpointsMutex);
+
+        struct timeval end;
+        gettimeofday(&end, NULL);
+
+        double s = start.tv_sec + (start.tv_usec / 1000.0 / 1000.0 );
+        double e = end.tv_sec + (end.tv_usec / 1000.0 / 1000.0 );
+        double elapsedInsec = e - s;
+        double sleepNeededInSec = disc->sleepInsecBetweenTTLRefresh - elapsedInsec;
+        if (sleepNeededInSec > 0) {
+            celixThreadMutex_lock(&disc->waitMutex);
+            double waitTill = sleepNeededInSec + end.tv_sec + (end.tv_usec / 1000.0 / 1000.0);
+            long sec = (long)waitTill;
+            long nsec = (long)((waitTill - sec) * 1000 * 1000 * 1000);
+            celixThreadCondition_timedwait(&disc->waitCond, &disc->waitMutex, sec, nsec);
+            celixThreadMutex_unlock(&disc->waitMutex);
+        }
+
+        celixThreadMutex_lock(&disc->runningMutex);
+        running = disc->running;
+        celixThreadMutex_unlock(&disc->runningMutex);
     }
-
-    celixThreadMutex_unlock(&pubsub_discovery->listenerReferencesMutex);
-
-    return status;
+    return NULL;
 }
 
-
-/* Service's functions implementation */
-celix_status_t pubsub_discovery_announcePublisher(void *handle, pubsub_endpoint_pt pubEP) {
+celix_status_t pubsub_discovery_start(pubsub_discovery_t *ps_discovery) {
     celix_status_t status = CELIX_SUCCESS;
-    pubsub_discovery_pt pubsub_discovery = (pubsub_discovery_pt) handle;
 
-    bool valid = pubsub_discovery_isEndpointValid(pubEP);
-    if (!valid) {
-        status = CELIX_ILLEGAL_ARGUMENT;
-        return status;
-    }
-
-    if (pubsub_discovery->verbose) {
-        printf("pubsub_discovery_announcePublisher : %s / %s\n",
-                properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_NAME),
-                properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_URL));
-    }
-
-
-
-    celixThreadMutex_lock(&pubsub_discovery->discoveredPubsMutex);
-
-    char *pub_key = pubsubEndpoint_createScopeTopicKey(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_SCOPE),properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_NAME));
-    array_list_pt pubEP_list = (array_list_pt)hashMap_get(pubsub_discovery->discoveredPubs,pub_key);
-
-    if(pubEP_list==NULL){
-        arrayList_create(&pubEP_list);
-        hashMap_put(pubsub_discovery->discoveredPubs,strdup(pub_key),pubEP_list);
-    }
-    free(pub_key);
-    pubsub_endpoint_pt p = NULL;
-    pubsubEndpoint_clone(pubEP, &p);
-
-    arrayList_add(pubEP_list,p);
-
-    status = etcdWriter_addPublisherEndpoint(pubsub_discovery->writer,p,true);
-
-    celixThreadMutex_unlock(&pubsub_discovery->discoveredPubsMutex);
-
+    celixThread_create(&ps_discovery->watchThread, NULL, psd_watch, ps_discovery);
+    celixThread_create(&ps_discovery->refreshTTLThread, NULL, psd_refresh, ps_discovery);
     return status;
 }
 
-celix_status_t pubsub_discovery_removePublisher(void *handle, pubsub_endpoint_pt pubEP) {
+celix_status_t pubsub_discovery_stop(pubsub_discovery_t *disc) {
     celix_status_t status = CELIX_SUCCESS;
-    pubsub_discovery_pt pubsub_discovery = (pubsub_discovery_pt) handle;
 
-    bool valid = pubsub_discovery_isEndpointValid(pubEP);
-    if (!valid) {
-        status = CELIX_ILLEGAL_ARGUMENT;
-        return status;
-    }
+    celixThreadMutex_lock(&disc->runningMutex);
+    disc->running = false;
+    celixThreadMutex_unlock(&disc->runningMutex);
 
-    celixThreadMutex_lock(&pubsub_discovery->discoveredPubsMutex);
+    celixThreadMutex_lock(&disc->waitMutex);
+    celixThreadCondition_broadcast(&disc->waitCond);
+    celixThreadMutex_unlock(&disc->waitMutex);
 
-    char *pub_key = pubsubEndpoint_createScopeTopicKey(properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_SCOPE),properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_NAME));
-    array_list_pt pubEP_list = (array_list_pt)hashMap_get(pubsub_discovery->discoveredPubs,pub_key);
-    free(pub_key);
-    if(pubEP_list==NULL){
-        printf("WARNING PSD: Cannot find any registered publisher for topic %s. Something is not consistent.\n",properties_get(pubEP->endpoint_props, PUBSUB_ENDPOINT_TOPIC_NAME));
-        status = CELIX_ILLEGAL_STATE;
-    }
-    else{
+    celixThread_join(disc->watchThread, NULL);
+    celixThread_join(disc->refreshTTLThread, NULL);
 
-        int i;
-        bool found = false;
-        pubsub_endpoint_pt p = NULL;
+    //TODO NOTE double lock , check if this is always done in the same order
+    celixThreadMutex_lock(&disc->discoveredEndpointsMutex);
+    hash_map_iterator_t iter = hashMapIterator_construct(disc->discoveredEndpoints);
+    while (hashMapIterator_hasNext(&iter)) {
+        celix_properties_t *props = hashMapIterator_nextValue(&iter);
 
-        for(i=0;!found && i<arrayList_size(pubEP_list);i++){
-            p = (pubsub_endpoint_pt)arrayList_get(pubEP_list,i);
-            found = pubsubEndpoint_equals(pubEP,p);
+        celixThreadMutex_lock(&disc->discoveredEndpointsListenersMutex);
+        hash_map_iterator_t iter2 = hashMapIterator_construct(disc->discoveredEndpointsListeners);
+        while (hashMapIterator_hasNext(&iter2)) {
+            pubsub_discovered_endpoint_listener_t *listener = hashMapIterator_nextValue(&iter2);
+            listener->removeDiscoveredEndpoint(listener->handle, props);
         }
+        celixThreadMutex_unlock(&disc->discoveredEndpointsListenersMutex);
 
-        if(!found){
-            printf("WARNING PSD: Trying to remove a not existing endpoint. Something is not consistent.\n");
-            status = CELIX_ILLEGAL_STATE;
-        }
-        else{
-
-            arrayList_removeElement(pubEP_list,p);
-
-            status = etcdWriter_deletePublisherEndpoint(pubsub_discovery->writer,p);
-
-            pubsubEndpoint_destroy(p);
-        }
+        celix_properties_destroy(props);
     }
+    hashMap_clear(disc->discoveredEndpoints, false, false);
+    celixThreadMutex_unlock(&disc->discoveredEndpointsMutex);
 
-    celixThreadMutex_unlock(&pubsub_discovery->discoveredPubsMutex);
+    celixThreadMutex_lock(&disc->announcedEndpointsMutex);
+    iter = hashMapIterator_construct(disc->announcedEndpoints);
+    while (hashMapIterator_hasNext(&iter)) {
+        pubsub_announce_entry_t *entry = hashMapIterator_nextValue(&iter);
+        if (entry->isSet) {
+            etcd_del(entry->key);
+        }
+        celix_properties_destroy(entry->properties);
+        free(entry);
+    }
+    hashMap_clear(disc->announcedEndpoints, false, false);
+    celixThreadMutex_unlock(&disc->announcedEndpointsMutex);
 
     return status;
 }
 
-celix_status_t pubsub_discovery_interestedInTopic(void *handle, const char* scope, const char* topic) {
-    pubsub_discovery_pt pubsub_discovery = (pubsub_discovery_pt) handle;
+void pubsub_discovery_discoveredEndpointsListenerAdded(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *bnd) {
+    pubsub_discovery_t *disc = handle;
+    pubsub_discovered_endpoint_listener_t *listener = svc;
 
-    char *scope_topic_key = pubsubEndpoint_createScopeTopicKey(scope, topic);
-    celixThreadMutex_lock(&pubsub_discovery->watchersMutex);
-    struct watcher_info * wi = hashMap_get(pubsub_discovery->watchers, scope_topic_key);
-    if(wi) {
-        wi->nr_references++;
-        free(scope_topic_key);
+    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+    celixThreadMutex_lock(&disc->discoveredEndpointsListenersMutex);
+    hashMap_put(disc->discoveredEndpointsListeners, (void*)svcId, listener);
+    celixThreadMutex_unlock(&disc->discoveredEndpointsListenersMutex);
+
+    celixThreadMutex_lock(&disc->discoveredEndpointsMutex);
+    hash_map_iterator_t iter = hashMapIterator_construct(disc->discoveredEndpoints);
+    while (hashMapIterator_hasNext(&iter)) {
+        celix_properties_t *props = hashMapIterator_nextValue(&iter);
+        listener->addDiscoveredEndpoint(listener->handle, props);
+    }
+    celixThreadMutex_unlock(&disc->discoveredEndpointsMutex);
+}
+
+void pubsub_discovery_discoveredEndpointsListenerRemoved(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *bnd) {
+    pubsub_discovery_t *disc = handle;
+    pubsub_discovered_endpoint_listener_t *listener = svc;
+
+    long svcId = celix_properties_getAsLong(props, OSGI_FRAMEWORK_SERVICE_ID, -1L);
+    celixThreadMutex_lock(&disc->discoveredEndpointsListenersMutex);
+    hashMap_put(disc->discoveredEndpointsListeners, (void*)svcId, listener);
+    celixThreadMutex_unlock(&disc->discoveredEndpointsListenersMutex);
+}
+
+celix_status_t pubsub_discovery_announceEndpoint(void *handle, const celix_properties_t *endpoint) {
+    pubsub_discovery_t *disc = handle;
+    celix_status_t status = CELIX_SUCCESS;
+
+    bool valid = pubsubEndpoint_isValid(endpoint, true, true);
+    const char *config = celix_properties_get(endpoint, PUBSUB_ENDPOINT_ADMIN_TYPE, NULL);
+    const char *scope = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_SCOPE, NULL);
+    const char *topic = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TOPIC_NAME, NULL);
+    const char *uuid = celix_properties_get(endpoint, PUBSUB_ENDPOINT_UUID, NULL);
+
+    if (valid) {
+        pubsub_announce_entry_t *entry = calloc(1, sizeof(*entry));
+        entry->isSet = false;
+        entry->properties = celix_properties_copy(endpoint);
+        asprintf(&entry->key, "/pubsub/%s/%s/%s/%s", config, scope, topic, uuid);
+
+        const char *hashKey = celix_properties_get(entry->properties, PUBSUB_ENDPOINT_UUID, NULL);
+        celixThreadMutex_lock(&disc->announcedEndpointsMutex);
+        hashMap_put(disc->announcedEndpoints, (void*)hashKey, entry);
+        celixThreadMutex_unlock(&disc->announcedEndpointsMutex);
+
+        celixThreadMutex_lock(&disc->waitMutex);
+        celixThreadCondition_broadcast(&disc->waitCond);
+        celixThreadMutex_unlock(&disc->waitMutex);
     } else {
-        wi = calloc(1, sizeof(*wi));
-        etcdWatcher_create(pubsub_discovery, pubsub_discovery->context, scope, topic, &wi->watcher);
-        wi->nr_references = 1;
-        hashMap_put(pubsub_discovery->watchers, scope_topic_key, wi);
+        printf("[PSD] Error cannot announce endpoint. missing some mandatory properties\n");
     }
 
-    celixThreadMutex_unlock(&pubsub_discovery->watchersMutex);
-
-    return CELIX_SUCCESS;
+    return status;
 }
+celix_status_t pubsub_discovery_removeEndpoint(void *handle, const celix_properties_t *endpoint) {
+    pubsub_discovery_t *disc = handle;
+    celix_status_t status = CELIX_SUCCESS;
 
-celix_status_t pubsub_discovery_uninterestedInTopic(void *handle, const char* scope, const char* topic) {
-    pubsub_discovery_pt pubsub_discovery = (pubsub_discovery_pt) handle;
+    const char *uuid = celix_properties_get(endpoint, PUBSUB_ENDPOINT_UUID, NULL);
+    pubsub_announce_entry_t *entry = NULL;
 
-    char *scope_topic_key = pubsubEndpoint_createScopeTopicKey(scope, topic);
-    celixThreadMutex_lock(&pubsub_discovery->watchersMutex);
-
-    hash_map_entry_pt entry =  hashMap_getEntry(pubsub_discovery->watchers, scope_topic_key);
-    if(entry) {
-        struct watcher_info * wi = hashMapEntry_getValue(entry);
-        wi->nr_references--;
-        if(wi->nr_references == 0) {
-            char *key = hashMapEntry_getKey(entry);
-            hashMap_remove(pubsub_discovery->watchers, scope_topic_key);
-            free(key);
-            free(scope_topic_key);
-            etcdWatcher_stop(wi->watcher);
-            etcdWatcher_destroy(wi->watcher);
-            free(wi);
-        }
+    if (uuid != NULL) {
+        celixThreadMutex_lock(&disc->announcedEndpointsMutex);
+        entry = hashMap_remove(disc->announcedEndpoints, uuid);
+        celixThreadMutex_unlock(&disc->announcedEndpointsMutex);
     } else {
-        fprintf(stderr, "[DISC] Inconsistency error: Removing unknown topic %s\n", topic);
+        printf("[PSD] Error cannot remove announced endpoint. missing endpoint uuid property\n");
     }
-    celixThreadMutex_unlock(&pubsub_discovery->watchersMutex);
-    return CELIX_SUCCESS;
-}
 
-/* pubsub_topology_manager tracker callbacks */
-
-celix_status_t pubsub_discovery_tmPublisherAnnounceAdded(void * handle, service_reference_pt reference, void * service) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    pubsub_discovery_pt pubsub_discovery = (pubsub_discovery_pt)handle;
-    publisher_endpoint_announce_pt listener = (publisher_endpoint_announce_pt)service;
-
-    celixThreadMutex_lock(&pubsub_discovery->discoveredPubsMutex);
-    celixThreadMutex_lock(&pubsub_discovery->listenerReferencesMutex);
-
-    /* Notify the PSTM about discovered publisher endpoints */
-    hash_map_iterator_pt iter = hashMapIterator_create(pubsub_discovery->discoveredPubs);
-    while(hashMapIterator_hasNext(iter)){
-        array_list_pt pubEP_list = (array_list_pt)hashMapIterator_nextValue(iter);
-        int i;
-        for(i=0;i<arrayList_size(pubEP_list);i++){
-            pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt)arrayList_get(pubEP_list,i);
-            status += listener->announcePublisher(listener->handle, pubEP);
+    if (entry != NULL) {
+        if (entry->isSet) {
+            etcd_del(entry->key);
         }
-    }
-
-    hashMapIterator_destroy(iter);
-
-    hashMap_put(pubsub_discovery->listenerReferences, reference, NULL);
-
-    celixThreadMutex_unlock(&pubsub_discovery->listenerReferencesMutex);
-    celixThreadMutex_unlock(&pubsub_discovery->discoveredPubsMutex);
-
-    if (pubsub_discovery->verbose) {
-        printf("PSD: pubsub_tm_announce_publisher added.\n");
+        free(entry->key);
+        celix_properties_destroy(entry->properties);
+        free(entry);
     }
 
     return status;
 }
 
-celix_status_t pubsub_discovery_tmPublisherAnnounceModified(void * handle, service_reference_pt reference, void * service) {
-    celix_status_t status = CELIX_SUCCESS;
 
-    status = pubsub_discovery_tmPublisherAnnounceRemoved(handle, reference, service);
-    if (status == CELIX_SUCCESS) {
-        status = pubsub_discovery_tmPublisherAnnounceAdded(handle, reference, service);
+static void pubsub_discovery_addDiscoveredEndpoint(pubsub_discovery_t *disc, celix_properties_t *endpoint) {
+    const char *uuid = celix_properties_get(endpoint, PUBSUB_ENDPOINT_UUID, NULL);
+    assert(uuid != NULL); //note endpoint should already be check to be valid pubsubEndpoint_isValid
+
+    celixThreadMutex_lock(&disc->discoveredEndpointsMutex);
+    bool exists = hashMap_containsKey(disc->discoveredEndpoints, (void*)uuid);
+    hashMap_put(disc->discoveredEndpoints, (void*)uuid, endpoint);
+    celixThreadMutex_unlock(&disc->discoveredEndpointsMutex);
+
+    if (!exists) {
+        celixThreadMutex_lock(&disc->discoveredEndpointsListenersMutex);
+        hash_map_iterator_t iter = hashMapIterator_construct(disc->discoveredEndpointsListeners);
+        while (hashMapIterator_hasNext(&iter)) {
+            pubsub_discovered_endpoint_listener_t *listener = hashMapIterator_nextValue(&iter);
+            listener->addDiscoveredEndpoint(listener->handle, endpoint);
+        }
+        celixThreadMutex_unlock(&disc->discoveredEndpointsListenersMutex);
+    } else {
+        fprintf(stderr, "[PSD] Warning unexpected update from an already existing endpoint (uuid is %s)\n", uuid);
     }
-
-    return status;
 }
 
-celix_status_t pubsub_discovery_tmPublisherAnnounceRemoved(void * handle, service_reference_pt reference, void * service) {
-    celix_status_t status = CELIX_SUCCESS;
-    pubsub_discovery_pt pubsub_discovery = handle;
+static void pubsub_discovery_removeDiscoveredEndpoint(pubsub_discovery_t *disc, const char *uuid) {
+    celixThreadMutex_lock(&disc->discoveredEndpointsMutex);
+    bool exists = hashMap_containsKey(disc->discoveredEndpoints, (void*)uuid);
+    celix_properties_t *endpoint = hashMap_remove(disc->discoveredEndpoints, (void*)uuid);
+    celixThreadMutex_unlock(&disc->discoveredEndpointsMutex);
 
-    celixThreadMutex_lock(&pubsub_discovery->listenerReferencesMutex);
-
-    if (pubsub_discovery->listenerReferences != NULL) {
-        if (hashMap_remove(pubsub_discovery->listenerReferences, reference)) {
-            if (pubsub_discovery->verbose) {
-                printf("PSD: pubsub_tm_announce_publisher removed.\n");
-            }
+    if (exists && endpoint != NULL) {
+        celixThreadMutex_lock(&disc->discoveredEndpointsListenersMutex);
+        hash_map_iterator_t iter = hashMapIterator_construct(disc->discoveredEndpointsListeners);
+        while (hashMapIterator_hasNext(&iter)) {
+            pubsub_discovered_endpoint_listener_t *listener = hashMapIterator_nextValue(&iter);
+            listener->removeDiscoveredEndpoint(listener->handle, endpoint);
         }
+        celixThreadMutex_unlock(&disc->discoveredEndpointsListenersMutex);
+    } else {
+        fprintf(stderr, "[PSD] Warning unexpected remove from non existing endpoint (uuid is %s)\n", uuid);
     }
-    celixThreadMutex_unlock(&pubsub_discovery->listenerReferencesMutex);
-
-    return status;
 }
 
-static bool pubsub_discovery_isEndpointValid(pubsub_endpoint_pt psEp) {
-    //required properties
-    bool valid = true;
-    static const char* keys[] = {
-        PUBSUB_ENDPOINT_UUID,
-        PUBSUB_ENDPOINT_FRAMEWORK_UUID,
-        PUBSUB_ENDPOINT_TYPE,
-        PUBSUB_ENDPOINT_ADMIN_TYPE,
-        PUBSUB_ENDPOINT_SERIALIZER,
-        PUBSUB_ENDPOINT_TOPIC_NAME,
-        PUBSUB_ENDPOINT_TOPIC_SCOPE,
-        NULL };
-    int i;
-    for (i = 0; keys[i] != NULL; ++i) {
-        const char *val = properties_get(psEp->endpoint_props, keys[i]);
-        if (val == NULL) { //missing required key
-            fprintf(stderr, "[ERROR] PSD: Invalid endpoint missing key: '%s'\n", keys[i]);
-            valid = false;
+celix_properties_t* pubsub_discovery_parseEndpoint(const char* etcdValue) {
+    properties_t *props = properties_create();
+
+    // etcdValue contains the json formatted string
+    json_error_t error;
+    json_t* jsonRoot = json_loads(etcdValue, JSON_DECODE_ANY, &error);
+
+    if (json_is_object(jsonRoot)) {
+
+        void *iter = json_object_iter(jsonRoot);
+
+        const char *key;
+        json_t *value;
+
+        while (iter) {
+            key = json_object_iter_key(iter);
+            value = json_object_iter_value(iter);
+            properties_set(props, key, json_string_value(value));
+            iter = json_object_iter_next(jsonRoot, iter);
         }
     }
+
+    if (jsonRoot != NULL) {
+        json_decref(jsonRoot);
+    }
+
+    bool valid = pubsubEndpoint_isValid(props, true, true);
     if (!valid) {
-        const char *key = NULL;
-        fprintf(stderr, "PubSubEndpoint entries:\n");
-        PROPERTIES_FOR_EACH(psEp->endpoint_props, key) {
-            fprintf(stderr, "\t'%s' : '%s'\n", key, properties_get(psEp->endpoint_props, key));
-        }
-        if (psEp->topic_props != NULL) {
-            fprintf(stderr, "PubSubEndpoint topic properties entries:\n");
-            PROPERTIES_FOR_EACH(psEp->topic_props, key) {
-                fprintf(stderr, "\t'%s' : '%s'\n", key, properties_get(psEp->topic_props, key));
-            }
-        }
+        fprintf(stderr, "[PSD] Warning retrieved endpoint is not valid\n");
+        celix_properties_destroy(props);
+        props = NULL;
     }
-    return valid;
+
+    return props;
+}
+
+static char* pubsub_discovery_createJsonEndpoint(const celix_properties_t *props) {
+    //note props is already check for validity (pubsubEndpoint_isValid)
+
+    json_t *jsEndpoint = json_object();
+    const char* propKey = NULL;
+    PROPERTIES_FOR_EACH((celix_properties_t*)props, propKey) {
+        const char* val = celix_properties_get(props, propKey, NULL);
+        json_object_set_new(jsEndpoint, propKey, json_string(val));
+    }
+    char* str = json_dumps(jsEndpoint, JSON_COMPACT);
+    json_decref(jsEndpoint);
+    return str;
 }

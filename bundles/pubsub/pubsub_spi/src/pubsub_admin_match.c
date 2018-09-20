@@ -54,13 +54,13 @@ celix_status_t pubsub_admin_match(
 	const char *requested_admin_type 		= NULL;
 	const char *requested_qos_type			= NULL;
 
-	if (endpoint->endpoint_props != NULL) {
-		endpointFrameworkUuid = properties_get(endpoint->endpoint_props, PUBSUB_ENDPOINT_FRAMEWORK_UUID);
-		endpointAdminType = properties_get(endpoint->endpoint_props, PUBSUB_ENDPOINT_ADMIN_TYPE);
+	if (endpoint->properties != NULL) {
+		endpointFrameworkUuid = properties_get(endpoint->properties, PUBSUB_ENDPOINT_FRAMEWORK_UUID);
+		endpointAdminType = properties_get(endpoint->properties, PUBSUB_ENDPOINT_ADMIN_TYPE);
 	}
-	if (endpoint->topic_props != NULL) {
-		requested_admin_type = properties_get(endpoint->topic_props, PUBSUB_ADMIN_TYPE_KEY);
-		requested_qos_type = properties_get(endpoint->topic_props, QOS_ATTRIBUTE_KEY);
+	if (endpoint->properties != NULL) {
+		requested_admin_type = properties_get(endpoint->properties, PUBSUB_ADMIN_TYPE_KEY);
+		requested_qos_type = properties_get(endpoint->properties, QOS_ATTRIBUTE_KEY);
 	}
 
 	if (endpointFrameworkUuid != NULL && frameworkUuid != NULL && strncmp(frameworkUuid, endpointFrameworkUuid, 128) == 0) {
@@ -87,7 +87,7 @@ celix_status_t pubsub_admin_match(
 		//NOTE serializer influence the score if a specific serializer is configured and not available.
 		//get best serializer. This is based on service raking or requested serializer. In the case of a request NULL is return if not request match is found.
 		service_reference_pt serSvcRef = NULL;
-		pubsub_admin_get_best_serializer(endpoint->topic_props, serializerList, &serSvcRef);
+		pubsub_admin_get_best_serializer(endpoint->properties, serializerList, &serSvcRef);
 		const char *serType = NULL; //for printing info
 		if (serSvcRef == NULL) {
 			score = 0;

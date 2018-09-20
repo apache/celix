@@ -31,6 +31,9 @@
 #include "pubsub_admin.h"
 #include "log_helper.h"
 
+
+#define PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY			"pubsub.udpmc.socket_address"
+
 struct pubsub_admin {
 
 	bundle_context_pt bundle_context;

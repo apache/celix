@@ -33,7 +33,7 @@ static const char * const ODD_COLOR = "\033[3m";  //italic
 static const char * const END_COLOR = "\033[0m";
 
 
-#define NONE_GROUP "-"
+#define NONE_GROUP ""
 
 typedef struct lb_options {
     //details
@@ -65,7 +65,7 @@ static void collectGroups(void *handle, const celix_bundle_t *bnd) {
     hash_map_t *map = handle;
     const char *group = celix_bundle_getGroup(bnd);
     if (group == NULL) {
-        group = NONE_GROUP;
+        group = "-";
         addToGroup(map, group, celix_bundle_getId(bnd));
     } else {
         char *at = strstr(group, "/");
@@ -74,7 +74,6 @@ static void collectGroups(void *handle, const celix_bundle_t *bnd) {
             char buf[size+1];
             strncpy(buf, group, size);
             buf[size] = '\0';
-            group = buf;
             addToGroup(map, buf, celix_bundle_getId(bnd));
         } else {
             addToGroup(map, group, celix_bundle_getId(bnd));

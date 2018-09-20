@@ -267,9 +267,6 @@ int etcd_get_directory(const char* directory, etcd_key_value_callback callback, 
 	return retVal;
 }
 
-/**
- * etcd_set
- */
 int etcd_set(const char* key, const char* value, int ttl, bool prevExist) {
 	json_error_t error;
 	json_t* js_root = NULL;
@@ -290,13 +287,14 @@ int etcd_set(const char* key, const char* value, int ttl, bool prevExist) {
 
 	reply.memory = calloc(1, 1); /* will be grown as needed by the realloc above */
 	reply.memorySize = 0; /* no data at this point */
-    reply.header = NULL; /* will be grown as needed by the realloc above */
-    reply.headerSize = 0; /* no data at this point */
+	reply.header = NULL; /* will be grown as needed by the realloc above */
+	reply.headerSize = 0; /* no data at this point */
 
 	asprintf(&url, "http://%s:%d/v2/keys/%s", etcd_server, etcd_port, key);
 
 	requestPtr += snprintf(requestPtr, req_len, "value=%s", value);
 	if (ttl > 0) {
+		requestPtr += snprintf(requestPtr, req_len-(requestPtr-request), ";ttl=%d", ttl);
 		requestPtr += snprintf(requestPtr, req_len-(requestPtr-request), ";ttl=%d", ttl);
 	}
 
@@ -335,6 +333,44 @@ int etcd_set(const char* key, const char* value, int ttl, bool prevExist) {
 	return retVal;
 }
 
+
+int etcd_refresh(const char* key, int ttl) {
+	int retVal = ETCDLIB_RC_ERROR;
+	char *url;
+	size_t req_len = MAX_OVERHEAD_LENGTH;
+	char request[req_len];
+
+	int res;
+	struct MemoryStruct reply;
+
+	/* Skip leading '/', etcd cannot handle this. */
+	while(*key == '/') {
+		key++;
+	}
+
+	reply.memory = calloc(1, 1); /* will be grown as needed by the realloc above */
+	reply.memorySize = 0; /* no data at this point */
+    reply.header = NULL; /* will be grown as needed by the realloc above */
+    reply.headerSize = 0; /* no data at this point */
+
+	asprintf(&url, "http://%s:%d/v2/keys/%s", etcd_server, etcd_port, key);
+	snprintf(request, req_len, "ttl=%d;prevExists=true;refresh=true", ttl);
+
+	res = performRequest(url, PUT, request, (void*) &reply);
+	if(url) {
+		free(url);
+	}
+
+	if (res == CURLE_OK) {
+		retVal = ETCDLIB_RC_OK;
+	}
+
+	if (reply.memory) {
+		free(reply.memory);
+	}
+
+	return retVal;
+}
 
 /**
  * etcd_set_with_check
