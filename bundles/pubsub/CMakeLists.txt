@@ -19,6 +19,8 @@ celix_subproject(PUBSUB "Option to build the pubsub bundles" OFF DEPS UTILS)
 if (PUBSUB)
 
     option(BUILD_PUBSUB_PSA_ZMQ "Build ZeroMQ PubSub Admin (LGPL License)" OFF)
+	set(BUILD_PUBSUB_PSA_ZMQ OFF)
+	message(WARNING "TODO enable PSA_ZMQ again, for now disabled because refactoring is needed")
     if (BUILD_PUBSUB_PSA_ZMQ)
 		message(WARNING "Celix will now contain a dependency with a LGPL License (ZeroMQ). For more information about this, consult the pubsub/README.md file.")
 		option(BUILD_ZMQ_SECURITY "Build with security for ZeroMQ." OFF)

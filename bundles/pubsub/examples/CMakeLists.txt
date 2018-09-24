@@ -29,8 +29,9 @@ set(PUBSUB_CONTAINER_LIBS ${JANSSON_LIBRARY} ${ZMQ_LIBRARIES} ${CZMQ_LIBRARIES} 
 
 # UDP Multicast
 add_celix_container(pubsub_publisher_udp_mc
-        GROUP pubsub
-        BUNDLES
+    GROUP pubsub
+    BUNDLES
+        Celix::log_service
         Celix::shell
         Celix::shell_tui
         Celix::pubsub_serializer_json
@@ -39,12 +40,17 @@ add_celix_container(pubsub_publisher_udp_mc
         Celix::pubsub_admin_udp_multicast
         celix_pubsub_poi_publisher
         celix_pubsub_poi_publisher2
-        )
+    PROPERTIES
+        PSA_UDPMC_VERBOSE=true
+        PUBSUB_ETCD_DISCOVERY_VERBOSE=true
+        PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
+)
 target_link_libraries(pubsub_publisher_udp_mc PRIVATE ${PUBSUB_CONTAINER_LIBS})
 
-add_celix_container("pubsub_subscriber_udp_mc"
-        GROUP "pubsub"
-        BUNDLES
+add_celix_container(pubsub_subscriber_udp_mc
+    GROUP "pubsub"
+    BUNDLES
+        Celix::log_service
         Celix::shell
         Celix::shell_tui
         Celix::pubsub_serializer_json
@@ -52,11 +58,18 @@ add_celix_container("pubsub_subscriber_udp_mc"
         Celix::pubsub_topology_manager
         Celix::pubsub_admin_udp_multicast
         celix_pubsub_poi_subscriber
-        )
+    PROPERTIES
+        PSA_UDPMC_VERBOSE=true
+        PUBSUB_ETCD_DISCOVERY_VERBOSE=true
+        PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
+)
 target_link_libraries(pubsub_subscriber_udp_mc PRIVATE ${PUBSUB_CONTAINER_LIBS})
-add_celix_container("pubsub_subscriber2_udp_mc"
-        GROUP "pubsub"
-        BUNDLES
+
+
+add_celix_container(pubsub_subscriber2_udp_mc
+    GROUP "pubsub"
+    BUNDLES
+        Celix::log_service
         Celix::shell
         Celix::shell_tui
         Celix::pubsub_serializer_json
@@ -64,8 +77,13 @@ add_celix_container("pubsub_subscriber2_udp_mc"
         Celix::pubsub_topology_manager
         Celix::pubsub_admin_udp_multicast
         celix_pubsub_poi_subscriber
-        )
+    PROPERTIES
+        PSA_UDPMC_VERBOSE=true
+        PUBSUB_ETCD_DISCOVERY_VERBOSE=true
+        PUBSUB_TOPOLOGY_MANAGER_VERBOSE=true
+)
 target_link_libraries(pubsub_subscriber2_udp_mc PRIVATE ${PUBSUB_CONTAINER_LIBS})
+
 if (ETCD_CMD AND XTERM_CMD)
     #Runtime starting a publish and subscriber for udp mc
     add_celix_runtime(pubsub_rt_upd_mc

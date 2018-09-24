@@ -16,18 +16,11 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * pubsub_publisher_private.h
- *
- *  \date       Sep 21, 2010
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
 #ifndef PUBSUB_PUBLISHER_PRIVATE_H_
 #define PUBSUB_PUBLISHER_PRIVATE_H_
 
-#include <celixbool.h>
+#include "celix_api.h"
 #include <pthread.h>
 #include "pubsub/publisher.h"
 
@@ -53,8 +46,8 @@ void publisher_stop(pubsub_sender_pt client);
 
 void publisher_destroy(pubsub_sender_pt client);
 
-celix_status_t publisher_publishSvcAdded(void * handle, service_reference_pt reference, void * service);
-celix_status_t publisher_publishSvcRemoved(void * handle, service_reference_pt reference, void * service);
+void publisher_publishSvcAdded(void * handle, void *svc, const celix_properties_t *props);
+void publisher_publishSvcRemoved(void * handle, void *svc, const celix_properties_t *props);
 
 
 #endif /* PUBSUB_PUBLISHER_PRIVATE_H_ */

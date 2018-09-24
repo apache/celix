@@ -1038,6 +1038,20 @@ long celix_bundleContext_getPropertyAsLong(celix_bundle_context_t *ctx, const ch
     return result;
 }
 
+double celix_bundleContext_getPropertyAsDouble(celix_bundle_context_t *ctx, const char *key, double defaultValue) {
+    double result = defaultValue;
+    const char *val = celix_bundleContext_getProperty(ctx, key, NULL);
+    if (val != NULL) {
+        char *enptr = NULL;
+        errno = 0;
+        double r = strtod(val, &enptr);
+        if (enptr != val && errno == 0) {
+            result = r;
+        }
+    }
+    return result;
+}
+
 
 bool celix_bundleContext_getPropertyAsBool(celix_bundle_context_t *ctx, const char *key, bool defaultValue) {
     bool result = defaultValue;

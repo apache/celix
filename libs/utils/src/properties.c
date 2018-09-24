@@ -394,13 +394,37 @@ long celix_properties_getAsLong(const celix_properties_t *props, const char *key
 }
 
 void celix_properties_setLong(celix_properties_t *props, const char *key, long value) {
-	char buf[32]; //should be enough to store long long int
-	int writen = snprintf(buf, 32, "%li", value);
-	if (writen <= 31) {
-		celix_properties_set(props, key, buf);
-	} else {
-		fprintf(stderr,"buf to small for value '%li'\n", value);
+    char buf[32]; //should be enough to store long long int
+    int writen = snprintf(buf, 32, "%li", value);
+    if (writen <= 31) {
+        celix_properties_set(props, key, buf);
+    } else {
+        fprintf(stderr,"buf to small for value '%li'\n", value);
+    }
+}
+
+double celix_properties_getAsDouble(const celix_properties_t *props, const char *key, double defaultValue) {
+	double result = defaultValue;
+	const char *val = celix_properties_get(props, key, NULL);
+	if (val != NULL) {
+		char *enptr = NULL;
+		errno = 0;
+		double r = strtod(val, &enptr);
+		if (enptr != val && errno == 0) {
+			result = r;
+		}
 	}
+	return result;
+}
+
+void celix_properties_setDouble(celix_properties_t *props, const char *key, double val) {
+    char buf[32]; //should be enough to store long long int
+    int writen = snprintf(buf, 32, "%f", val);
+    if (writen <= 31) {
+        celix_properties_set(props, key, buf);
+    } else {
+        fprintf(stderr,"buf to small for value '%f'\n", val);
+    }
 }
 
 bool celix_properties_getAsBool(celix_properties_t *props, const char *key, bool defaultValue) {

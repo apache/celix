@@ -43,33 +43,11 @@
 #define PUBSUB_SUBSCRIBER_ENDPOINT_TYPE "pubsub.subscriber"
 
 
-struct pubsub_endpoint {
-    const char *topicName;
-    const char *topicScope;
+celix_properties_t* pubsubEndpoint_create(const char* fwUUID, const char* scope, const char* topic, const char* pubsubType, const char* adminType, const char *serType, celix_properties_t *topic_props);
+celix_properties_t* pubsubEndpoint_createFromSubscriberSvc(bundle_context_t* ctx, long svcBndId, const celix_properties_t *svcProps);
+celix_properties_t* pubsubEndpoint_createFromPublisherTrackerInfo(bundle_context_t *ctx, long bundleId, const char *filter);
 
-    const char *uuid;
-    const char *frameworkUUid;
-    const char *type;
-    const char *adminType;
-    const char *serializerType;
-
-    celix_properties_t *properties;
-};
-
-typedef struct pubsub_endpoint *pubsub_endpoint_pt;
-typedef struct pubsub_endpoint pubsub_endpoint_t;
-
-celix_status_t pubsubEndpoint_create(const char* fwUUID, const char* scope, const char* topic, const char* pubsubType, const char* adminType, const char *serType, celix_properties_t *topic_props, pubsub_endpoint_pt* psEp);
-celix_status_t pubsubEndpoint_createFromProperties(const celix_properties_t *props, pubsub_endpoint_t **out);
-celix_status_t pubsubEndpoint_createFromSvc(bundle_context_t* ctx, const celix_bundle_t *bnd, const celix_properties_t *svcProps, bool isPublisher, pubsub_endpoint_pt* out);
-celix_status_t pubsubEndpoint_createFromListenerHookInfo(bundle_context_t *ctx, const celix_service_tracker_info_t *info, bool isPublisher, pubsub_endpoint_pt* out);
-celix_status_t pubsubEndpoint_clone(pubsub_endpoint_pt in, pubsub_endpoint_pt *out);
-
-void pubsubEndpoint_destroy(pubsub_endpoint_pt psEp);
-bool pubsubEndpoint_equals(pubsub_endpoint_pt psEp1,pubsub_endpoint_pt psEp2);
-bool pubsubEndpoint_equalsWithProperties(pubsub_endpoint_pt psEp1, const celix_properties_t *props);
-
-void pubsubEndpoint_setField(pubsub_endpoint_t *ep, const char *key, const char *val);
+bool pubsubEndpoint_equals(const celix_properties_t *psEp1, const celix_properties_t *psEp2);
 
 //check if the required properties are available for the endpoint
 bool pubsubEndpoint_isValid(const celix_properties_t *endpointProperties, bool requireAdminType, bool requireSerializerType);

@@ -20,10 +20,6 @@
 #ifndef PUBSUB_CONSTANTS_H_
 #define PUBSUB_CONSTANTS_H_
 
-#define PSA_IP 	"PSA_IP"
-#define PSA_ITF	"PSA_INTERFACE"
-#define PSA_MULTICAST_IP_PREFIX "PSA_MC_PREFIX"
-
 #define PUBSUB_ADMIN_TYPE_KEY	   "pubsub.config"
 #define PUBSUB_SERIALIZER_TYPE_KEY "pubsub.serializer.type"
 

@@ -113,7 +113,7 @@ static int pubsub_localMsgTypeIdForUUID(void* handle, const char* msgType, unsig
 
 static void delay_first_send_for_late_joiners(void);
 
-celix_status_t pubsub_topicPublicationCreate(bundle_context_pt bundle_context, pubsub_endpoint_pt pubEP, pubsub_serializer_service_t *best_serializer, const char* serType, char* bindIP, unsigned int basePort, unsigned int maxPort, topic_publication_pt *out){
+celix_status_t pubsub_topicPublicationCreate(bundle_context_pt bundle_context, celix_properties_t *pubEP, pubsub_serializer_service_t *best_serializer, const char* serType, char* bindIP, unsigned int basePort, unsigned int maxPort, topic_publication_pt *out){
 	celix_status_t status = CELIX_SUCCESS;
 
 #ifdef BUILD_WITH_ZMQ_SECURITY
@@ -279,7 +279,7 @@ celix_status_t pubsub_topicPublicationStart(bundle_context_pt bundle_context,top
 
 	/* Let's register the new service */
 
-	pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt)arrayList_get(pub->pub_ep_list,0);
+	celix_properties_t *pubEP = (pubsub_endpoint_pt)arrayList_get(pub->pub_ep_list,0);
 
 	if(pubEP!=NULL){
 		service_factory_pt factory = calloc(1, sizeof(*factory));
@@ -315,7 +315,7 @@ celix_status_t pubsub_topicPublicationStop(topic_publication_pt pub){
 	return serviceRegistration_unregister(pub->svcFactoryReg);
 }
 
-celix_status_t pubsub_topicPublicationAddPublisherEP(topic_publication_pt pub, pubsub_endpoint_pt ep) {
+celix_status_t pubsub_topicPublicationAddPublisherEP(topic_publication_pt pub, celix_properties_t *ep) {
 
 	celixThreadMutex_lock(&(pub->tp_lock));
 	pubsubEndpoint_setField(ep, PUBSUB_ADMIN_TYPE_KEY, PSA_ZMQ_PUBSUB_ADMIN_TYPE);
@@ -327,11 +327,11 @@ celix_status_t pubsub_topicPublicationAddPublisherEP(topic_publication_pt pub, p
 	return CELIX_SUCCESS;
 }
 
-celix_status_t pubsub_topicPublicationRemovePublisherEP(topic_publication_pt pub,pubsub_endpoint_pt ep){
+celix_status_t pubsub_topicPublicationRemovePublisherEP(topic_publication_pt pub,celix_properties_t *ep){
 
 	celixThreadMutex_lock(&(pub->tp_lock));
 	for (int i = 0; i < arrayList_size(pub->pub_ep_list); i++) {
-	        pubsub_endpoint_pt e = arrayList_get(pub->pub_ep_list, i);
+	        celix_properties_t *e = arrayList_get(pub->pub_ep_list, i);
 	        if(pubsubEndpoint_equals(ep, e)) {
 	            arrayList_removeElement(pub->pub_ep_list,ep);
 	            break;
@@ -588,7 +588,7 @@ static publish_bundle_bound_service_pt pubsub_createPublishBundleBoundService(to
 
 		arrayList_create(&bound->mp_parts);
 
-		pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt)arrayList_get(bound->parent->pub_ep_list,0);
+		celix_properties_t *pubEP = (pubsub_endpoint_pt)arrayList_get(bound->parent->pub_ep_list,0);
 		bound->topic=strdup(properties_get(pubEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME));
 
 		bound->service.handle = bound;

@@ -419,83 +419,107 @@ celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint
         return pubsubAdmin_addAnySubscription(admin,subEP);
     }
 
-    /* Check if we already know some publisher about this topic, otherwise let's put the subscription in the pending hashmap */
-    celixThreadMutex_lock(&admin->pendingSubscriptionsLock);
-    celixThreadMutex_lock(&admin->subscriptionsLock);
-    celixThreadMutex_lock(&admin->localPublicationsLock);
-    celixThreadMutex_lock(&admin->externalPublicationsLock);
+    pubsub_serializer_service_t *best_serializer = NULL;
+    const char *serType = NULL;
+    status = pubsubAdmin_getBestSerializer(admin, subEP, &best_serializer, &serType);
 
-    char* scope_topic = pubsubEndpoint_createScopeTopicKey(properties_get(subEP->properties, PUBSUB_ENDPOINT_TOPIC_SCOPE), properties_get(subEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME));
 
-    service_factory_pt factory = (service_factory_pt)hashMap_get(admin->localPublications,scope_topic);
-    array_list_pt ext_pub_list = (array_list_pt)hashMap_get(admin->externalPublications,scope_topic);
-
-    if(factory==NULL && ext_pub_list==NULL){ //No (local or external) publishers yet for this topic
-        pubsubAdmin_addSubscriptionToPendingList(admin,subEP);
+    if (status == CELIX_SUCCESS) {
+        //admin type and ser type now known -> update ep
+        pubsubEndpoint_setField(subEP, PUBSUB_ENDPOINT_ADMIN_TYPE, PSA_ZMQ_PUBSUB_ADMIN_TYPE);
+        pubsubEndpoint_setField(subEP, PUBSUB_ENDPOINT_SERIALIZER, serType);
+    } else {
+        printf("PSA_ZMQ: Cannot find a serializer for subscribing topic %s. Adding it to pending list.\n",
+               properties_get(subEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME));
+        celixThreadMutex_lock(&admin->noSerializerPendingsLock);
+        arrayList_add(admin->noSerializerSubscriptions,subEP);
+        celixThreadMutex_unlock(&admin->noSerializerPendingsLock);
     }
-    else{
-        int i;
-        topic_subscription_pt subscription = hashMap_get(admin->subscriptions, scope_topic);
 
-        if(subscription == NULL) {
-            pubsub_serializer_service_t *best_serializer = NULL;
-            const char *serType = NULL;
-            if( (status=pubsubAdmin_getBestSerializer(admin, subEP, &best_serializer, &serType)) == CELIX_SUCCESS){
-                status += pubsub_topicSubscriptionCreate(admin->bundle_context, (char*) properties_get(subEP->properties, PUBSUB_ENDPOINT_TOPIC_SCOPE), (char*) properties_get(subEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME), best_serializer, serType, &subscription);
-            }
-            else{
-                printf("PSA_ZMQ: Cannot find a serializer for subscribing topic %s. Adding it to pending list.\n",
-                        properties_get(subEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME));
-                celixThreadMutex_lock(&admin->noSerializerPendingsLock);
-                arrayList_add(admin->noSerializerSubscriptions,subEP);
-                celixThreadMutex_unlock(&admin->noSerializerPendingsLock);
-            }
+    char *scope_topic = NULL;
+    if (status == CELIX_SUCCESS) {
+        /* Check if we already know some publisher about this topic, otherwise let's put the subscription in the pending hashmap */
+        celixThreadMutex_lock(&admin->pendingSubscriptionsLock);
+        celixThreadMutex_lock(&admin->subscriptionsLock);
+        celixThreadMutex_lock(&admin->localPublicationsLock);
+        celixThreadMutex_lock(&admin->externalPublicationsLock);
 
-            if (status==CELIX_SUCCESS){
+        scope_topic = pubsubEndpoint_createScopeTopicKey(
+                properties_get(subEP->properties, PUBSUB_ENDPOINT_TOPIC_SCOPE),
+                properties_get(subEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME));
 
-                /* Try to connect internal publishers */
-                if(factory!=NULL){
-                    topic_publication_pt topic_pubs = (topic_publication_pt)factory->handle;
-                    array_list_pt topic_publishers = pubsub_topicPublicationGetPublisherList(topic_pubs);
+        service_factory_pt factory = (service_factory_pt) hashMap_get(admin->localPublications, scope_topic);
+        array_list_pt ext_pub_list = (array_list_pt) hashMap_get(admin->externalPublications, scope_topic);
 
-                    if(topic_publishers!=NULL){
-                        for(i=0;i<arrayList_size(topic_publishers);i++){
-                            pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt)arrayList_get(topic_publishers,i);
-                            if(properties_get(pubEP->properties, PUBSUB_PSA_ZMQ_ENDPOINT_URL_KEY) !=NULL){
-                                status += pubsub_topicSubscriptionConnectPublisher(subscription,(char*)properties_get(pubEP->properties, PUBSUB_PSA_ZMQ_ENDPOINT_URL_KEY));
+        if (factory == NULL && ext_pub_list == NULL) { //No (local or external) publishers yet for this topic
+            pubsubAdmin_addSubscriptionToPendingList(admin, subEP);
+        } else {
+            int i;
+            topic_subscription_pt subscription = hashMap_get(admin->subscriptions, scope_topic);
+
+            if (subscription == NULL) {
+                status += pubsub_topicSubscriptionCreate(admin->bundle_context,
+                                                         (char *) properties_get(subEP->properties,
+                                                                                 PUBSUB_ENDPOINT_TOPIC_SCOPE),
+                                                         (char *) properties_get(subEP->properties,
+                                                                                 PUBSUB_ENDPOINT_TOPIC_NAME),
+                                                         best_serializer, serType, &subscription);
+
+                if (status == CELIX_SUCCESS) {
+                    //got type and serializer -> update endpoint
+                    pubsubEndpoint_setField(subEP, PUBSUB_ENDPOINT_ADMIN_TYPE, PSA_ZMQ_PUBSUB_ADMIN_TYPE);
+                    pubsubEndpoint_setField(subEP, PUBSUB_ENDPOINT_SERIALIZER, serType);
+
+                    /* Try to connect internal publishers */
+                    if (factory != NULL) {
+                        topic_publication_pt topic_pubs = (topic_publication_pt) factory->handle;
+                        array_list_pt topic_publishers = pubsub_topicPublicationGetPublisherList(topic_pubs);
+
+                        if (topic_publishers != NULL) {
+                            for (i = 0; i < arrayList_size(topic_publishers); i++) {
+                                pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt) arrayList_get(topic_publishers, i);
+                                if (properties_get(pubEP->properties, PUBSUB_PSA_ZMQ_ENDPOINT_URL_KEY) != NULL) {
+                                    status += pubsub_topicSubscriptionConnectPublisher(subscription,
+                                                                                       (char *) properties_get(
+                                                                                               pubEP->properties,
+                                                                                               PUBSUB_PSA_ZMQ_ENDPOINT_URL_KEY));
+                                }
+                            }
+                            arrayList_destroy(topic_publishers);
+                        }
+
+                    }
+
+                    /* Look also for external publishers */
+                    if (ext_pub_list != NULL) {
+                        for (i = 0; i < arrayList_size(ext_pub_list); i++) {
+                            pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt) arrayList_get(ext_pub_list, i);
+                            if (properties_get(pubEP->properties, PUBSUB_PSA_ZMQ_ENDPOINT_URL_KEY) != NULL) {
+                                status += pubsub_topicSubscriptionConnectPublisher(subscription,
+                                                                                   (char *) properties_get(
+                                                                                           pubEP->properties,
+                                                                                           PUBSUB_PSA_ZMQ_ENDPOINT_URL_KEY));
                             }
                         }
-                        arrayList_destroy(topic_publishers);
                     }
+
+                    pubsub_topicSubscriptionAddSubscriber(subscription, subEP);
+
+                    status += pubsub_topicSubscriptionStart(subscription);
 
                 }
 
-                /* Look also for external publishers */
-                if(ext_pub_list!=NULL){
-                    for(i=0;i<arrayList_size(ext_pub_list);i++){
-                        pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt)arrayList_get(ext_pub_list,i);
-                        if(properties_get(pubEP->properties, PUBSUB_PSA_ZMQ_ENDPOINT_URL_KEY) !=NULL){
-                            status += pubsub_topicSubscriptionConnectPublisher(subscription,(char*) properties_get(pubEP->properties, PUBSUB_PSA_ZMQ_ENDPOINT_URL_KEY));
-                        }
-                    }
+                if (status == CELIX_SUCCESS) {
+
+                    hashMap_put(admin->subscriptions, strdup(scope_topic), subscription);
+
+                    connectTopicPubSubToSerializer(admin, best_serializer, subscription, false);
                 }
-
-                pubsub_topicSubscriptionAddSubscriber(subscription,subEP);
-
-                status += pubsub_topicSubscriptionStart(subscription);
-
             }
 
-            if(status==CELIX_SUCCESS){
-
-                hashMap_put(admin->subscriptions,strdup(scope_topic),subscription);
-
-                connectTopicPubSubToSerializer(admin, best_serializer, subscription, false);
+            if (status == CELIX_SUCCESS) {
+                pubsub_topicIncreaseNrSubscribers(subscription);
             }
-        }
-
-        if (status == CELIX_SUCCESS){
-            pubsub_topicIncreaseNrSubscribers(subscription);
         }
     }
 

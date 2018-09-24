@@ -23,9 +23,11 @@ add_celix_bundle(celix_pubsub_admin_udp_multicast
 	GROUP "Celix/PubSub"
 	SOURCES
         src/psa_activator.c
-        src/pubsub_admin_impl.c
-        src/topic_subscription.c
-        src/topic_publication.c
+		src/pubsub_udpmc_admin.c
+		src/pubsub_udpmc_topic_sender.c
+        #src/pubsub_admin_impl.c
+        #src/topic_subscription.c
+        #src/topic_publication.c
         src/large_udp.c
 )
 target_include_directories(celix_pubsub_admin_udp_multicast PRIVATE

@@ -134,28 +134,25 @@ void publisher_destroy(pubsub_sender_pt client) {
 	free(client);
 }
 
-celix_status_t publisher_publishSvcAdded(void * handle, service_reference_pt reference, void * service){
-	pubsub_publisher_pt publish_svc = (pubsub_publisher_pt)service;
+void publisher_publishSvcAdded(void * handle, void *svc, const celix_properties_t *props) {
+	pubsub_publisher_pt publish_svc = (pubsub_publisher_pt)svc;
 	pubsub_sender_pt manager = (pubsub_sender_pt)handle;
 
 	printf("PUBLISHER: new publish service exported (%s).\n",manager->ident);
 
 	send_thread_struct_pt data = calloc(1,sizeof(struct send_thread_struct));
-	const char *value = NULL;
-	serviceReference_getProperty(reference, PUBSUB_PUBLISHER_TOPIC, &value);
 	data->service = publish_svc;
 	data->publisher = manager;
-	data->topic = value;
+	data->topic = celix_properties_get(props, PUBSUB_PUBLISHER_TOPIC, "!ERROR!");
 	celix_thread_t *tid = malloc(sizeof(*tid));
 	stop=false;
 	celixThread_create(tid,NULL,send_thread,(void*)data);
 	hashMap_put(manager->tid_map, publish_svc, tid);
-	return CELIX_SUCCESS;
 }
 
-celix_status_t publisher_publishSvcRemoved(void * handle, service_reference_pt reference, void * service){
+void publisher_publishSvcRemoved(void * handle, void *svc, const celix_properties_t *props) {
 	pubsub_sender_pt manager = (pubsub_sender_pt)handle;
-	celix_thread_t *tid = hashMap_get(manager->tid_map, service);
+	celix_thread_t *tid = hashMap_get(manager->tid_map, svc);
 
 #if defined(__APPLE__) && defined(__MACH__)
 	uint64_t threadid;
@@ -168,5 +165,4 @@ celix_status_t publisher_publishSvcRemoved(void * handle, service_reference_pt r
 	stop=true;
 	celixThread_join(*tid,NULL);
 	free(tid);
-	return CELIX_SUCCESS;
 }

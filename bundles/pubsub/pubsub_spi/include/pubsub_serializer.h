@@ -16,21 +16,13 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * pubsub_serializer.h
- *
- *  \date       Mar 24, 2017
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
 #ifndef PUBSUB_SERIALIZER_SERVICE_H_
 #define PUBSUB_SERIALIZER_SERVICE_H_
 
-#include "service_reference.h"
 #include "hash_map.h"
-
-#include "pubsub_common.h"
+#include "version.h"
+#include "celix_bundle.h"
 
 /**
  * There should be a pubsub_serializer_t
@@ -40,6 +32,10 @@
  * a serializer_map per bundle. Potentially using
  * the extender pattern.
  */
+
+#define PUBSUB_SERIALIZER_SERVICE_NAME		"pubsub_serializer"
+#define PUBSUB_SERIALIZER_SERVICE_VERSION	"1.0.0"
+#define PUBSUB_SERIALIZER_SERVICE_RANGE		"[1,2)"
 
 typedef struct pubsub_msg_serializer {
 	void* handle;
@@ -56,7 +52,7 @@ typedef struct pubsub_msg_serializer {
 typedef struct pubsub_serializer_service {
 	void* handle;
 
-	celix_status_t (*createSerializerMap)(void* handle, bundle_pt bundle, hash_map_pt* serializerMap);
+	celix_status_t (*createSerializerMap)(void* handle, celix_bundle_t *bundle, hash_map_pt* serializerMap);
 	celix_status_t (*destroySerializerMap)(void* handle, hash_map_pt serializerMap);
 
 } pubsub_serializer_service_t;

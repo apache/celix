@@ -27,44 +27,41 @@
 #ifndef PUBSUB_ADMIN_H_
 #define PUBSUB_ADMIN_H_
 
-#include "service_reference.h"
+#include "celix_properties.h"
+#include "celix_bundle.h"
+#include "celix_filter.h"
 
-#include "pubsub_common.h"
-#include "pubsub_endpoint.h"
+#define PUBSUB_ADMIN_SERVICE_NAME		"pubsub_admin"
+#define PUBSUB_ADMIN_SERVICE_VERSION	"2.0.0"
+#define PUBSUB_ADMIN_SERVICE_RANGE		"[2,3)"
 
-#include "pubsub_constants.h"
+//expected service properties
+#define PUBSUB_ADMIN_SERVICE_TYPE		"psa_type"
 
-
-typedef struct pubsub_admin *pubsub_admin_pt;
+#define PUBSUB_ADMIN_FULL_MATCH_SCORE	100.0F
+#define PUBSUB_ADMIN_NO_MATCH_SCORE	    0.0F
 
 struct pubsub_admin_service {
-	pubsub_admin_pt admin;
+	void *handle;
 
-	celix_status_t (*addSubscription)(pubsub_admin_pt admin,pubsub_endpoint_pt subEP);
-	celix_status_t (*removeSubscription)(pubsub_admin_pt admin,pubsub_endpoint_pt subEP);
+	celix_status_t (*matchPublisher)(void *handle, long svcRequesterBndId, const celix_filter_t *svcFilter, double *score, long *serializerSvcId);
+	celix_status_t (*matchSubscriber)(void *handle, long svcProviderBndId, const celix_properties_t *svcProperties, double *score, long *serializerSvcId);
+	celix_status_t (*matchEndpoint)(void *handle, const celix_properties_t *endpoint, double *score);
 
-	celix_status_t (*addPublication)(pubsub_admin_pt admin,pubsub_endpoint_pt subEP);
-	celix_status_t (*removePublication)(pubsub_admin_pt admin,pubsub_endpoint_pt subEP);
+	//note endpoint is owned by caller
+	celix_status_t (*setupTopicSender)(void *handle, const char *scope, const char *topic, long serializerSvcId, celix_properties_t **publisherEndpoint);
+	celix_status_t (*teardownTopicSender)(void *handle, const char *scope, const char *topic);
 
-	celix_status_t (*closeAllPublications)(pubsub_admin_pt admin,char* scope, char* topic);
-	celix_status_t (*closeAllSubscriptions)(pubsub_admin_pt admin,char* scope, char* topic);
+	//note endpoint is owned by caller
+	celix_status_t (*setupTopicReciever)(void *handle, const char *scope, const char *topic, long serializerSvcId, celix_properties_t **subscriberEndpoint);
+	celix_status_t (*teardownTopicReciever)(void *handle, const char *scope, const char *topic);
 
-	//TODO add match function for subscription service and publication listeners, e.g.:
-	//matchPublisherListener(admin, bundle, filter, outScore)
-	//matchSubscriberService(admin, svcRef, outScore)
-
-	/* Match principle:
-	 * - A full matching pubsub_admin gives 100 points
-	 */
-	//TODO this should only be called for remote endpoints (e.g. not endpoints from this framework
-	celix_status_t (*matchEndpoint)(pubsub_admin_pt admin, pubsub_endpoint_pt endpoint, double* score);
-
-        //TODO redesign add function for handling endpoint seperate, e.g.: 
-        //addEndpoint(admin, endpoint); 
-        //note that endpoints can be subscribers and publishers
-        //Also note that we than can have pending subscribers and pending (subscriber/publisher) endpoints.
+	celix_status_t (*addEndpoint)(void *handle, const celix_properties_t *endpoint);
+	celix_status_t (*removeEndpoint)(void *handle, const celix_properties_t *endpoint);
 };
 
-typedef struct pubsub_admin_service *pubsub_admin_service_pt;
+typedef struct pubsub_admin_service pubsub_admin_service_t;
 
 #endif /* PUBSUB_ADMIN_H_ */
+
+

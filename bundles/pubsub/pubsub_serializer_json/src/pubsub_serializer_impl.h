@@ -16,13 +16,6 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * pubsub_serializer_impl.h
- *
- *  \date       Mar 24, 2017
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
 #ifndef PUBSUB_SERIALIZER_JSON_H_
 #define PUBSUB_SERIALIZER_JSON_H_
@@ -34,7 +27,7 @@
 
 #include "pubsub_serializer.h"
 
-#define PUBSUB_SERIALIZER_TYPE	"json"
+#define PUBSUB_JSON_SERIALIZER_TYPE	"json"
 
 typedef struct pubsub_serializer {
 	bundle_context_pt bundle_context;

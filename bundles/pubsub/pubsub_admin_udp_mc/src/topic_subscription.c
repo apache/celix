@@ -391,7 +391,7 @@ celix_status_t pubsub_topicSubscriptionDisconnectPublisher(topic_subscription_pt
 	return status;
 }
 
-celix_status_t pubsub_topicSubscriptionAddSubscriber(topic_subscription_pt ts, pubsub_endpoint_pt subEP){
+celix_status_t pubsub_topicSubscriptionAddSubscriber(topic_subscription_pt ts, celix_properties_t *subEP){
 	celix_status_t status = CELIX_SUCCESS;
 
 	celixThreadMutex_lock(&ts->ts_lock);
@@ -412,7 +412,7 @@ celix_status_t pubsub_topicIncreaseNrSubscribers(topic_subscription_pt ts) {
 	return status;
 }
 
-celix_status_t pubsub_topicSubscriptionRemoveSubscriber(topic_subscription_pt ts, pubsub_endpoint_pt subEP){
+celix_status_t pubsub_topicSubscriptionRemoveSubscriber(topic_subscription_pt ts, celix_properties_t *subEP){
 	celix_status_t status = CELIX_SUCCESS;
 
 	celixThreadMutex_lock(&ts->ts_lock);

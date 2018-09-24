@@ -16,19 +16,18 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * pubsub_utils.h
- *
- *  \date       Sep 24, 2015
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
 #ifndef PUBSUB_UTILS_H_
 #define PUBSUB_UTILS_H_
 
 #include "bundle_context.h"
-#include "array_list.h"
+#include "celix_array_list.h"
+#include "celix_bundle_context.h"
+
+#define PUBSUB_UTILS_QOS_ATTRIBUTE_KEY	    "qos"
+#define PUBSUB_UTILS_QOS_TYPE_SAMPLE		"sample"	/* A.k.a. unreliable connection */
+#define PUBSUB_UTILS_QOS_TYPE_CONTROL	    "control"	/* A.k.a. reliable connection */
+
 
 /**
  * Returns the pubsub info from the provided filter. A pubsub filter should have a topic and can 
@@ -40,6 +39,38 @@
 celix_status_t pubsub_getPubSubInfoFromFilter(const char* filterstr, char **topic, char **scope);
 
 char* pubsub_getKeysBundleDir(bundle_context_pt ctx);
+
+double pubsub_utils_matchPublisher(
+        celix_bundle_context_t *ctx,
+        long bundleId,
+        const char *filter,
+        const char *adminType,
+        double sampleScore,
+        double controlScore,
+        double defaultScore,
+        long *outSerializerSvcId);
+
+double pubsub_utils_matchSubscriber(
+        celix_bundle_context_t *ctx,
+        long svcProviderBundleId,
+        const celix_properties_t *svcProperties,
+        const char *adminType,
+        double sampleScore,
+        double controlScore,
+        double defaultScore,
+        long *outSerializerSvcId);
+
+double pubsub_utils_matchEndpoint(
+        celix_bundle_context_t *ctx,
+        const celix_properties_t *endpoint,
+        const char *adminType,
+        double sampleScore,
+        double controlScore,
+        double defaultScore,
+        long *outSerializerSvcId);
+
+
+celix_properties_t* pubsub_utils_getTopicProperties(const celix_bundle_t *bundle, const char *topic, bool isPublisher);
 
 
 #endif /* PUBSUB_UTILS_H_ */

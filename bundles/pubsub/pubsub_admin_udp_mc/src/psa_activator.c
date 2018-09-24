@@ -16,126 +16,83 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * psa_activator.c
- *
- *  \date       Sep 30, 2011
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
+
 
 #include <stdlib.h>
 
-#include "bundle_activator.h"
-#include "service_registration.h"
-#include "service_tracker.h"
+#include "celix_api.h"
+#include "pubsub_serializer.h"
+#include "log_helper.h"
 
-#include "pubsub_admin_impl.h"
+#include "pubsub_admin.h"
+#include "pubsub_udpmc_admin.h"
+#include "../../../shell/shell/include/command.h"
 
-struct activator {
-	pubsub_admin_pt admin;
-	pubsub_admin_service_pt adminService;
-	service_registration_pt registration;
-	service_tracker_pt serializerTracker;
-};
+typedef struct psa_udpmc_activator {
+	log_helper_t *logHelper;
 
-celix_status_t bundleActivator_create(bundle_context_pt context, void **userData) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator;
+	pubsub_udpmc_admin_t *admin;
 
-	activator = calloc(1, sizeof(*activator));
-	if (!activator) {
-		status = CELIX_ENOMEM;
+	pubsub_admin_service_t adminService;
+	long adminSvcId;
+
+	command_service_t cmdSvc;
+	long cmdSvcId;
+} psa_udpmc_activator_t;
+
+int psa_udpmc_start(psa_udpmc_activator_t *act, celix_bundle_context_t *ctx) {
+	act->adminSvcId = -1L;
+	act->cmdSvcId = -1L;
+
+	logHelper_create(ctx, &act->logHelper);
+	logHelper_start(act->logHelper);
+
+	act->admin = pubsub_udpmcAdmin_create(ctx, act->logHelper);
+	celix_status_t status = act->admin != NULL ? CELIX_SUCCESS : CELIX_BUNDLE_EXCEPTION;
+
+	//register pubsub admin service
+	if (status == CELIX_SUCCESS) {
+		pubsub_admin_service_t *psaSvc = &act->adminService;
+		psaSvc->handle = act->admin;
+		psaSvc->matchPublisher = pubsub_udpmcAdmin_matchPublisher;
+		psaSvc->matchSubscriber = pubsub_udpmcAdmin_matchSubscriber;
+		psaSvc->matchEndpoint = pubsub_udpmcAdmin_matchEndpoint;
+		psaSvc->setupTopicSender = pubsub_udpmcAdmin_setupTopicSender;
+		psaSvc->teardownTopicSender = pubsub_udpmcAdmin_teardownTopicSender;
+		psaSvc->setupTopicReciever = pubsub_udpmcAdmin_setupTopicReciever;
+		psaSvc->teardownTopicReciever = pubsub_udpmcAdmin_teardownTopicReciever;
+		psaSvc->addEndpoint = pubsub_udpmcAdmin_addEndpoint;
+		psaSvc->removeEndpoint = pubsub_udpmcAdmin_removeEndpoint;
+
+		celix_properties_t *props = celix_properties_create();
+		celix_properties_set(props, PUBSUB_ADMIN_SERVICE_TYPE, PUBSUB_UDPMC_ADMIN_TYPE);
+
+		act->adminSvcId = celix_bundleContext_registerService(ctx, psaSvc, PUBSUB_ADMIN_SERVICE_NAME, props);
 	}
-	else{
-		*userData = activator;
 
-		status = pubsubAdmin_create(context, &(activator->admin));
-
-		if(status == CELIX_SUCCESS){
-			service_tracker_customizer_pt customizer = NULL;
-			status = serviceTrackerCustomizer_create(activator->admin,
-					NULL,
-					pubsubAdmin_serializerAdded,
-					NULL,
-					pubsubAdmin_serializerRemoved,
-					&customizer);
-			if(status == CELIX_SUCCESS){
-				status = serviceTracker_create(context, PUBSUB_SERIALIZER_SERVICE, customizer, &(activator->serializerTracker));
-				if(status != CELIX_SUCCESS){
-					serviceTrackerCustomizer_destroy(customizer);
-					pubsubAdmin_destroy(activator->admin);
-				}
-			}
-			else{
-				pubsubAdmin_destroy(activator->admin);
-			}
-		}
+	//register shell command service
+	{
+		act->cmdSvc.handle = act->admin;
+		act->cmdSvc.executeCommand = pubsub_udpmcAdmin_executeCommand;
+		celix_properties_t *props = celix_properties_create();
+		celix_properties_set(props, OSGI_SHELL_COMMAND_NAME, "psa_udpmc");
+		celix_properties_set(props, OSGI_SHELL_COMMAND_USAGE, "psa_udpmc");
+		celix_properties_set(props, OSGI_SHELL_COMMAND_DESCRIPTION, "Print the information about the TopicSender and TopicReceivers for the UDPMC PSA");
+		celix_bundleContext_registerService(ctx, &act->cmdSvc, OSGI_SHELL_COMMAND_SERVICE_NAME, props);
 	}
 
 	return status;
 }
 
-celix_status_t bundleActivator_start(void * userData, bundle_context_pt context) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator = userData;
-	pubsub_admin_service_pt pubsubAdminSvc = calloc(1, sizeof(*pubsubAdminSvc));
+int psa_udpmc_stop(psa_udpmc_activator_t *act, celix_bundle_context_t *ctx) {
+	celix_bundleContext_unregisterService(ctx, act->adminSvcId);
+	celix_bundleContext_unregisterService(ctx, act->cmdSvcId);
+	pubsub_udpmcAdmin_destroy(act->admin);
 
-	if (!pubsubAdminSvc) {
-		status = CELIX_ENOMEM;
-	}
-	else{
-		pubsubAdminSvc->admin = activator->admin;
+	logHelper_stop(act->logHelper);
+	logHelper_destroy(&act->logHelper);
 
-		pubsubAdminSvc->addPublication = pubsubAdmin_addPublication;
-		pubsubAdminSvc->removePublication = pubsubAdmin_removePublication;
-
-		pubsubAdminSvc->addSubscription = pubsubAdmin_addSubscription;
-		pubsubAdminSvc->removeSubscription = pubsubAdmin_removeSubscription;
-
-		pubsubAdminSvc->closeAllPublications = pubsubAdmin_closeAllPublications;
-		pubsubAdminSvc->closeAllSubscriptions = pubsubAdmin_closeAllSubscriptions;
-
-		pubsubAdminSvc->matchEndpoint = pubsubAdmin_matchEndpoint;
-
-		activator->adminService = pubsubAdminSvc;
-
-		status = bundleContext_registerService(context, PUBSUB_ADMIN_SERVICE, pubsubAdminSvc, NULL, &activator->registration);
-
-		status += serviceTracker_open(activator->serializerTracker);
-
-	}
-
-
-	return status;
+	return CELIX_SUCCESS;
 }
 
-celix_status_t bundleActivator_stop(void * userData, bundle_context_pt context) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator = userData;
-
-	status += serviceTracker_close(activator->serializerTracker);
-	status += serviceRegistration_unregister(activator->registration);
-
-	activator->registration = NULL;
-
-	free(activator->adminService);
-	activator->adminService = NULL;
-
-	return status;
-}
-
-celix_status_t bundleActivator_destroy(void * userData, bundle_context_pt context) {
-	celix_status_t status = CELIX_SUCCESS;
-	struct activator *activator = userData;
-
-	serviceTracker_destroy(activator->serializerTracker);
-	pubsubAdmin_destroy(activator->admin);
-	activator->admin = NULL;
-
-	free(activator);
-
-	return status;
-}
-
-
+CELIX_GEN_BUNDLE_ACTIVATOR(psa_udpmc_activator_t, psa_udpmc_start, psa_udpmc_stop);

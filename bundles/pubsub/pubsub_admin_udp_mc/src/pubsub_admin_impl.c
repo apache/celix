@@ -16,13 +16,6 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * pubsub_admin_impl.c
- *
- *  \date       Sep 30, 2011
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -61,20 +54,20 @@
 #include "topic_publication.h"
 #include "pubsub_endpoint.h"
 #include "pubsub/subscriber.h"
-#include "pubsub_admin_match.h"
+#include "pubsub_utils.h"
 
 static const char *DEFAULT_MC_IP = "224.100.1.1";
 static char *DEFAULT_MC_PREFIX = "224.100";
 
 static celix_status_t pubsubAdmin_getIpAddress(const char* interface, char** ip);
-static celix_status_t pubsubAdmin_addSubscriptionToPendingList(pubsub_admin_pt admin,pubsub_endpoint_pt subEP);
-static celix_status_t pubsubAdmin_addAnySubscription(pubsub_admin_pt admin,pubsub_endpoint_pt subEP);
+static celix_status_t pubsubAdmin_addSubscriptionToPendingList(pubsub_admin_t *admin,celix_properties_t *subEP);
+static celix_status_t pubsubAdmin_addAnySubscription(pubsub_admin_t *admin,celix_properties_t *subEP);
 
-static celix_status_t pubsubAdmin_getBestSerializer(pubsub_admin_pt admin, pubsub_endpoint_pt ep, pubsub_serializer_service_t **out, const char **serType);
-static void connectTopicPubSubToSerializer(pubsub_admin_pt admin,pubsub_serializer_service_t *serializer,void *topicPubSub,bool isPublication);
-static void disconnectTopicPubSubFromSerializer(pubsub_admin_pt admin,void *topicPubSub,bool isPublication);
+static celix_status_t pubsubAdmin_getBestSerializer(pubsub_admin_t *admin, celix_properties_t *ep, pubsub_serializer_service_t **out, const char **serType);
+static void connectTopicPubSubToSerializer(pubsub_admin_t *admin,pubsub_serializer_service_t *serializer,void *topicPubSub,bool isPublication);
+static void disconnectTopicPubSubFromSerializer(pubsub_admin_t *admin,void *topicPubSub,bool isPublication);
 
-celix_status_t pubsubAdmin_create(bundle_context_pt context, pubsub_admin_pt *admin) {
+celix_status_t pubsubAdmin_create(bundle_context_pt context, pubsub_admin_t **admin) {
 	celix_status_t status = CELIX_SUCCESS;
 
 	*admin = calloc(1, sizeof(**admin));
@@ -239,7 +232,7 @@ celix_status_t pubsubAdmin_create(bundle_context_pt context, pubsub_admin_pt *ad
 }
 
 
-celix_status_t pubsubAdmin_destroy(pubsub_admin_pt admin)
+celix_status_t pubsubAdmin_destroy(pubsub_admin_t *admin)
 {
 	celix_status_t status = CELIX_SUCCESS;
 
@@ -325,7 +318,7 @@ celix_status_t pubsubAdmin_destroy(pubsub_admin_pt admin)
 	return status;
 }
 
-static celix_status_t pubsubAdmin_addAnySubscription(pubsub_admin_pt admin,pubsub_endpoint_pt subEP){
+static celix_status_t pubsubAdmin_addAnySubscription(pubsub_admin_t *admin,celix_properties_t *subEP){
 	celix_status_t status = CELIX_SUCCESS;
 
 	celixThreadMutex_lock(&admin->subscriptionsLock);
@@ -342,7 +335,7 @@ static celix_status_t pubsubAdmin_addAnySubscription(pubsub_admin_pt admin,pubsu
 		else{
 			if (admin->verbose) {
 				printf("PSA_UDP_MC: Cannot find a serializer for subscribing topic %s. Adding it to pending list.\n",
-					   properties_get(subEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME));
+					   properties_get(subEP, PUBSUB_ENDPOINT_TOPIC_NAME));
 			}
 
 			celixThreadMutex_lock(&admin->noSerializerPendingsLock);
@@ -362,9 +355,9 @@ static celix_status_t pubsubAdmin_addAnySubscription(pubsub_admin_pt admin,pubsu
 
 				if(topic_publishers!=NULL){
 					for(i=0;i<arrayList_size(topic_publishers);i++){
-						pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt)arrayList_get(topic_publishers,i);
-						if(properties_get(pubEP->properties, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY) !=NULL){
-							status += pubsub_topicSubscriptionConnectPublisher(any_sub, (char*) properties_get(pubEP->properties, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY));
+						celix_properties_t *pubEP = arrayList_get(topic_publishers,i);
+						if(properties_get(pubEP, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY) !=NULL){
+							status += pubsub_topicSubscriptionConnectPublisher(any_sub, (char*) properties_get(pubEP, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY));
 						}
 					}
 					arrayList_destroy(topic_publishers);
@@ -380,9 +373,9 @@ static celix_status_t pubsubAdmin_addAnySubscription(pubsub_admin_pt admin,pubsu
 				array_list_pt ext_pub_list = (array_list_pt)hashMapIterator_nextValue(extp_iter);
 				if(ext_pub_list!=NULL){
 					for(i=0;i<arrayList_size(ext_pub_list);i++){
-						pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt)arrayList_get(ext_pub_list,i);
-						if(properties_get(pubEP->properties, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY) !=NULL){
-							status += pubsub_topicSubscriptionConnectPublisher(any_sub, (char*) properties_get(pubEP->properties, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY));
+						celix_properties_t *pubEP = arrayList_get(ext_pub_list,i);
+						if(properties_get(pubEP, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY) !=NULL){
+							status += pubsub_topicSubscriptionConnectPublisher(any_sub, (char*) properties_get(pubEP, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY));
 						}
 					}
 				}
@@ -409,10 +402,10 @@ static celix_status_t pubsubAdmin_addAnySubscription(pubsub_admin_pt admin,pubsu
 	return status;
 }
 
-celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint_pt subEP){
+celix_status_t pubsubAdmin_addSubscription(pubsub_admin_t *admin, celix_properties_t *subEP){
 	celix_status_t status = CELIX_SUCCESS;
 
-	if(strcmp(properties_get(subEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME),PUBSUB_ANY_SUB_TOPIC)==0){
+	if(strcmp(properties_get(subEP, PUBSUB_ENDPOINT_TOPIC_NAME),PUBSUB_ANY_SUB_TOPIC)==0){
 		return pubsubAdmin_addAnySubscription(admin,subEP);
 	}
 
@@ -422,7 +415,7 @@ celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint
 	celixThreadMutex_lock(&admin->localPublicationsLock);
 	celixThreadMutex_lock(&admin->externalPublicationsLock);
 
-	char* scope_topic = pubsubEndpoint_createScopeTopicKey(properties_get(subEP->properties, PUBSUB_ENDPOINT_TOPIC_SCOPE),properties_get(subEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME));
+	char* scope_topic = pubsubEndpoint_createScopeTopicKey(properties_get(subEP, PUBSUB_ENDPOINT_TOPIC_SCOPE),properties_get(subEP, PUBSUB_ENDPOINT_TOPIC_NAME));
 
 	service_factory_pt factory = (service_factory_pt)hashMap_get(admin->localPublications,scope_topic);
 	array_list_pt ext_pub_list = (array_list_pt)hashMap_get(admin->externalPublications,scope_topic);
@@ -437,11 +430,11 @@ celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint
 			pubsub_serializer_service_t *best_serializer = NULL;
             const char *serType = NULL;
 			if( (status=pubsubAdmin_getBestSerializer(admin, subEP, &best_serializer, &serType)) == CELIX_SUCCESS){
-				status += pubsub_topicSubscriptionCreate(admin->bundle_context,admin->ifIpAddress, (char*) properties_get(subEP->properties, PUBSUB_ENDPOINT_TOPIC_SCOPE), (char*) properties_get(subEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME), best_serializer, &subscription);
+				status += pubsub_topicSubscriptionCreate(admin->bundle_context,admin->ifIpAddress, (char*) properties_get(subEP, PUBSUB_ENDPOINT_TOPIC_SCOPE), (char*) properties_get(subEP, PUBSUB_ENDPOINT_TOPIC_NAME), best_serializer, &subscription);
 			} else {
 				if (admin->verbose) {
 					printf("PSA_UDP_MC: Cannot find a serializer for subscribing topic %s. Adding it to pending list.\n",
-						   properties_get(subEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME));
+						   properties_get(subEP, PUBSUB_ENDPOINT_TOPIC_NAME));
 				}
 
 				celixThreadMutex_lock(&admin->noSerializerPendingsLock);
@@ -450,6 +443,9 @@ celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint
 			}
 
 			if (status==CELIX_SUCCESS){
+				//got type and serializer -> update endpoint
+				celix_properties_set(subEP, PUBSUB_ENDPOINT_ADMIN_TYPE, PSA_UDPMC_PUBSUB_ADMIN_TYPE);
+				celix_properties_set(subEP, PUBSUB_ENDPOINT_SERIALIZER, serType);
 
 				/* Try to connect internal publishers */
 				if(factory!=NULL){
@@ -458,9 +454,9 @@ celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint
 
 					if(topic_publishers!=NULL){
 						for(i=0;i<arrayList_size(topic_publishers);i++){
-							pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt)arrayList_get(topic_publishers,i);
-							if(properties_get(pubEP->properties, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY) !=NULL){
-								status += pubsub_topicSubscriptionConnectPublisher(subscription, (char*) properties_get(pubEP->properties, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY));
+							celix_properties_t *pubEP = arrayList_get(topic_publishers,i);
+							if(properties_get(pubEP, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY) !=NULL){
+								status += pubsub_topicSubscriptionConnectPublisher(subscription, (char*) properties_get(pubEP, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY));
 							}
 						}
 						arrayList_destroy(topic_publishers);
@@ -471,9 +467,9 @@ celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint
 				/* Look also for external publishers */
 				if(ext_pub_list!=NULL){
 					for(i=0;i<arrayList_size(ext_pub_list);i++){
-						pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt)arrayList_get(ext_pub_list,i);
-						if(properties_get(pubEP->properties, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY) !=NULL){
-							status += pubsub_topicSubscriptionConnectPublisher(subscription, (char*) properties_get(pubEP->properties, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY));
+						celix_properties_t *pubEP = arrayList_get(ext_pub_list,i);
+						if(properties_get(pubEP, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY) !=NULL){
+							status += pubsub_topicSubscriptionConnectPublisher(subscription, (char*) properties_get(pubEP, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY));
 						}
 					}
 				}
@@ -505,38 +501,38 @@ celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint
 
     if (admin->verbose) {
         printf("[PSA_UDPMC] Added subscription [FWUUID=%s endpointUUID=%s scope=%s, topic=%s]\n",
-               properties_get(subEP->properties, PUBSUB_ENDPOINT_FRAMEWORK_UUID),
-               properties_get(subEP->properties, PUBSUB_ENDPOINT_UUID),
-               properties_get(subEP->properties, PUBSUB_ENDPOINT_TOPIC_SCOPE),
-               properties_get(subEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME));
+               properties_get(subEP, PUBSUB_ENDPOINT_FRAMEWORK_UUID),
+               properties_get(subEP, PUBSUB_ENDPOINT_UUID),
+               properties_get(subEP, PUBSUB_ENDPOINT_TOPIC_SCOPE),
+               properties_get(subEP, PUBSUB_ENDPOINT_TOPIC_NAME));
         printf("[PSA_UDPMC] \t [psa type = %s, ser type = %s, pubsub endpoint type = %s]\n",
-               properties_get(subEP->properties, PUBSUB_ADMIN_TYPE_KEY),
-               properties_get(subEP->properties, PUBSUB_SERIALIZER_TYPE_KEY),
-               properties_get(subEP->properties, PUBSUB_ENDPOINT_TYPE));
-        printf("[PSA_UDPMC] \t [endpoint socket address = %s]\n", properties_get(subEP->properties, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY));
+               properties_get(subEP, PUBSUB_ADMIN_TYPE_KEY),
+               properties_get(subEP, PUBSUB_SERIALIZER_TYPE_KEY),
+               properties_get(subEP, PUBSUB_ENDPOINT_TYPE));
+        printf("[PSA_UDPMC] \t [endpoint socket address = %s]\n", properties_get(subEP, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY));
     }
 
 	return status;
 
 }
 
-celix_status_t pubsubAdmin_removeSubscription(pubsub_admin_pt admin,pubsub_endpoint_pt subEP){
+celix_status_t pubsubAdmin_removeSubscription(pubsub_admin_t *admin,celix_properties_t *subEP){
 	celix_status_t status = CELIX_SUCCESS;
 
     if (admin->verbose) {
         printf("[PSA_UDPMC] Removing subscription [FWUUID=%s endpointUUID=%s scope=%s, topic=%s]\n",
-               properties_get(subEP->properties, PUBSUB_ENDPOINT_FRAMEWORK_UUID),
-               properties_get(subEP->properties, PUBSUB_ENDPOINT_UUID),
-               properties_get(subEP->properties, PUBSUB_ENDPOINT_TOPIC_SCOPE),
-               properties_get(subEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME));
+               properties_get(subEP, PUBSUB_ENDPOINT_FRAMEWORK_UUID),
+               properties_get(subEP, PUBSUB_ENDPOINT_UUID),
+               properties_get(subEP, PUBSUB_ENDPOINT_TOPIC_SCOPE),
+               properties_get(subEP, PUBSUB_ENDPOINT_TOPIC_NAME));
         printf("[PSA_UDPMC] \t [psa type = %s, ser type = %s, pubsub endpoint type = %s]\n",
-               properties_get(subEP->properties, PUBSUB_ADMIN_TYPE_KEY),
-               properties_get(subEP->properties, PUBSUB_SERIALIZER_TYPE_KEY),
-               properties_get(subEP->properties, PUBSUB_ENDPOINT_TYPE));
-        printf("[PSA_UDPMC] \t [endpoint url = %s]\n", properties_get(subEP->properties, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY));
+               properties_get(subEP, PUBSUB_ADMIN_TYPE_KEY),
+               properties_get(subEP, PUBSUB_SERIALIZER_TYPE_KEY),
+               properties_get(subEP, PUBSUB_ENDPOINT_TYPE));
+        printf("[PSA_UDPMC] \t [endpoint url = %s]\n", properties_get(subEP, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY));
     }
 
-	char* scope_topic = pubsubEndpoint_createScopeTopicKey(properties_get(subEP->properties, PUBSUB_ENDPOINT_TOPIC_SCOPE), properties_get(subEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME));
+	char* scope_topic = pubsubEndpoint_createScopeTopicKey(properties_get(subEP, PUBSUB_ENDPOINT_TOPIC_SCOPE), properties_get(subEP, PUBSUB_ENDPOINT_TOPIC_NAME));
 
 	celixThreadMutex_lock(&admin->subscriptionsLock);
 	topic_subscription_pt sub = (topic_subscription_pt)hashMap_get(admin->subscriptions,scope_topic);
@@ -565,7 +561,7 @@ celix_status_t pubsubAdmin_removeSubscription(pubsub_admin_pt admin,pubsub_endpo
 
 }
 
-celix_status_t pubsubAdmin_addPublication(pubsub_admin_pt admin,pubsub_endpoint_pt pubEP){
+celix_status_t pubsubAdmin_addPublication(pubsub_admin_t *admin,celix_properties_t *pubEP){
 	celix_status_t status = CELIX_SUCCESS;
 
     const char* fwUUID = NULL;
@@ -575,22 +571,22 @@ celix_status_t pubsubAdmin_addPublication(pubsub_admin_pt admin,pubsub_endpoint_
         return CELIX_INVALID_BUNDLE_CONTEXT;
     }
 
-    const char *epFwUUID = properties_get(pubEP->properties, PUBSUB_ENDPOINT_FRAMEWORK_UUID);
+    const char *epFwUUID = properties_get(pubEP, PUBSUB_ENDPOINT_FRAMEWORK_UUID);
     bool isOwn = strncmp(fwUUID, epFwUUID, 128) == 0;
 
     if (isOwn) {
         //should be null, willl be set in this call
-        assert(properties_get(pubEP->properties, PUBSUB_ADMIN_TYPE_KEY) == NULL);
-        assert(properties_get(pubEP->properties, PUBSUB_SERIALIZER_TYPE_KEY) == NULL);
+        assert(properties_get(pubEP, PUBSUB_ADMIN_TYPE_KEY) == NULL);
+        assert(properties_get(pubEP, PUBSUB_SERIALIZER_TYPE_KEY) == NULL);
     }
 
     if (isOwn) {
-        properties_set(pubEP->properties, PUBSUB_ADMIN_TYPE_KEY, PSA_UDPMC_PUBSUB_ADMIN_TYPE);
+        properties_set(pubEP, PUBSUB_ADMIN_TYPE_KEY, PSA_UDPMC_PUBSUB_ADMIN_TYPE);
     }
 
-	char* scope_topic = pubsubEndpoint_createScopeTopicKey(properties_get(pubEP->properties, PUBSUB_ENDPOINT_TOPIC_SCOPE), properties_get(pubEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME));
+	char* scope_topic = pubsubEndpoint_createScopeTopicKey(properties_get(pubEP, PUBSUB_ENDPOINT_TOPIC_SCOPE), properties_get(pubEP, PUBSUB_ENDPOINT_TOPIC_NAME));
 
-	if ((strcmp(properties_get(pubEP->properties, PUBSUB_ENDPOINT_FRAMEWORK_UUID), fwUUID) == 0) && (properties_get(pubEP->properties, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY) == NULL)) {
+	if ((strcmp(properties_get(pubEP, PUBSUB_ENDPOINT_FRAMEWORK_UUID), fwUUID) == 0) && (properties_get(pubEP, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY) == NULL)) {
 
 		celixThreadMutex_lock(&admin->localPublicationsLock);
 
@@ -603,11 +599,11 @@ celix_status_t pubsubAdmin_addPublication(pubsub_admin_pt admin,pubsub_endpoint_
 			if( (status=pubsubAdmin_getBestSerializer(admin, pubEP, &best_serializer, &serType)) == CELIX_SUCCESS){
 				status = pubsub_topicPublicationCreate(admin->sendSocket, pubEP, best_serializer, serType, admin->mcIpAddress, &pub);
                 if (isOwn) {
-                    properties_set(pubEP->properties, PUBSUB_SERIALIZER_TYPE_KEY, serType);
+                    properties_set(pubEP, PUBSUB_SERIALIZER_TYPE_KEY, serType);
                 }
 			} else {
 				printf("PSA_UDP_MC: Cannot find a serializer for publishing topic %s. Adding it to pending list.\n",
-					   properties_get(pubEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME));
+					   properties_get(pubEP, PUBSUB_ENDPOINT_TOPIC_NAME));
 
 				celixThreadMutex_lock(&admin->noSerializerPendingsLock);
 				arrayList_add(admin->noSerializerPublications,pubEP);
@@ -622,8 +618,8 @@ celix_status_t pubsubAdmin_addPublication(pubsub_admin_pt admin,pubsub_endpoint_
 				}
 			} else {
 				printf("PSA_UDP_MC: Cannot create a topicPublication for scope=%s, topic=%s.\n",
-					   properties_get(pubEP->properties, PUBSUB_ENDPOINT_TOPIC_SCOPE),
-					   properties_get(pubEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME));
+					   properties_get(pubEP, PUBSUB_ENDPOINT_TOPIC_SCOPE),
+					   properties_get(pubEP, PUBSUB_ENDPOINT_TOPIC_NAME));
 			}
 		} else {
 			//just add the new EP to the list
@@ -655,7 +651,7 @@ celix_status_t pubsubAdmin_addPublication(pubsub_admin_pt admin,pubsub_endpoint_
 		array_list_pt pendingSubList = (array_list_pt) hashMapEntry_getValue(pendingSub);
 		int i;
 		for (i = 0; i < arrayList_size(pendingSubList); i++) {
-			pubsub_endpoint_pt subEP = (pubsub_endpoint_pt) arrayList_get(pendingSubList, i);
+			celix_properties_t *subEP = arrayList_get(pendingSubList, i);
 			pubsubAdmin_addSubscription(admin, subEP);
 		}
 		hashMap_remove(admin->pendingSubscriptions, scope_topic);
@@ -670,14 +666,14 @@ celix_status_t pubsubAdmin_addPublication(pubsub_admin_pt admin,pubsub_endpoint_
 	celixThreadMutex_lock(&admin->subscriptionsLock);
 
 	topic_subscription_pt sub = (topic_subscription_pt) hashMap_get(admin->subscriptions, scope_topic);
-	if (sub != NULL && properties_get(pubEP->properties, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY) != NULL) {
-		pubsub_topicSubscriptionAddConnectPublisherToPendingList(sub, (char*) properties_get(pubEP->properties, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY));
+	if (sub != NULL && properties_get(pubEP, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY) != NULL) {
+		pubsub_topicSubscriptionAddConnectPublisherToPendingList(sub, (char*) properties_get(pubEP, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY));
 	}
 
 	/* And check also for ANY subscription */
 	topic_subscription_pt any_sub = (topic_subscription_pt) hashMap_get(admin->subscriptions, PUBSUB_ANY_SUB_TOPIC);
-	if (any_sub != NULL && properties_get(pubEP->properties, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY) != NULL) {
-		pubsub_topicSubscriptionAddConnectPublisherToPendingList(any_sub, (char*) properties_get(pubEP->properties, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY));
+	if (any_sub != NULL && properties_get(pubEP, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY) != NULL) {
+		pubsub_topicSubscriptionAddConnectPublisherToPendingList(any_sub, (char*) properties_get(pubEP, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY));
 	}
 
 	free(scope_topic);
@@ -686,16 +682,16 @@ celix_status_t pubsubAdmin_addPublication(pubsub_admin_pt admin,pubsub_endpoint_
 
     if (admin->verbose) {
         printf("PSA_UDPMC: Added publication [FWUUID=%s endpointUUID=%s scope=%s, topic=%s]\n",
-               properties_get(pubEP->properties, PUBSUB_ENDPOINT_FRAMEWORK_UUID),
-               properties_get(pubEP->properties, PUBSUB_ENDPOINT_UUID),
-               properties_get(pubEP->properties, PUBSUB_ENDPOINT_TOPIC_SCOPE),
-               properties_get(pubEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME));
+               properties_get(pubEP, PUBSUB_ENDPOINT_FRAMEWORK_UUID),
+               properties_get(pubEP, PUBSUB_ENDPOINT_UUID),
+               properties_get(pubEP, PUBSUB_ENDPOINT_TOPIC_SCOPE),
+               properties_get(pubEP, PUBSUB_ENDPOINT_TOPIC_NAME));
         printf("PSA_UDPMC: \t [psa type = %s, ser type = %s, pubsub endpoint type = %s]\n",
-               properties_get(pubEP->properties, PUBSUB_ADMIN_TYPE_KEY),
-               properties_get(pubEP->properties, PUBSUB_SERIALIZER_TYPE_KEY),
-               properties_get(pubEP->properties, PUBSUB_ENDPOINT_TYPE));
+               properties_get(pubEP, PUBSUB_ADMIN_TYPE_KEY),
+               properties_get(pubEP, PUBSUB_SERIALIZER_TYPE_KEY),
+               properties_get(pubEP, PUBSUB_ENDPOINT_TYPE));
         printf("PSA_UDPMC: \t [endpoint url = %s, own = %i]\n",
-               properties_get(pubEP->properties, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY),
+               properties_get(pubEP, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY),
                isOwn);
     }
 
@@ -703,21 +699,21 @@ celix_status_t pubsubAdmin_addPublication(pubsub_admin_pt admin,pubsub_endpoint_
 
 }
 
-celix_status_t pubsubAdmin_removePublication(pubsub_admin_pt admin,pubsub_endpoint_pt pubEP){
+celix_status_t pubsubAdmin_removePublication(pubsub_admin_t *admin,celix_properties_t *pubEP){
 	celix_status_t status = CELIX_SUCCESS;
 	int count = 0;
 
     if (admin->verbose) {
-        printf("PSA_UDPMC: Adding publication [FWUUID=%s endpointUUID=%s scope=%s, topic=%s]\n",
-               properties_get(pubEP->properties, PUBSUB_ENDPOINT_FRAMEWORK_UUID),
-               properties_get(pubEP->properties, PUBSUB_ENDPOINT_UUID),
-               properties_get(pubEP->properties, PUBSUB_ENDPOINT_TOPIC_SCOPE),
-               properties_get(pubEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME));
+        printf("PSA_UDPMC: Remove publication [FWUUID=%s endpointUUID=%s scope=%s, topic=%s]\n",
+               properties_get(pubEP, PUBSUB_ENDPOINT_FRAMEWORK_UUID),
+               properties_get(pubEP, PUBSUB_ENDPOINT_UUID),
+               properties_get(pubEP, PUBSUB_ENDPOINT_TOPIC_SCOPE),
+               properties_get(pubEP, PUBSUB_ENDPOINT_TOPIC_NAME));
         printf("PSA_UDPMC: \t [psa type = %s, ser type = %s, pubsub endpoint type = %s]\n",
-               properties_get(pubEP->properties, PUBSUB_ADMIN_TYPE_KEY),
-               properties_get(pubEP->properties, PUBSUB_SERIALIZER_TYPE_KEY),
-               properties_get(pubEP->properties, PUBSUB_ENDPOINT_TYPE));
-        printf("PSA_UDPMC: \t [endpoint url = %s]\n", properties_get(pubEP->properties, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY));
+               properties_get(pubEP, PUBSUB_ADMIN_TYPE_KEY),
+               properties_get(pubEP, PUBSUB_SERIALIZER_TYPE_KEY),
+               properties_get(pubEP, PUBSUB_ENDPOINT_TYPE));
+        printf("PSA_UDPMC: \t [endpoint url = %s]\n", properties_get(pubEP, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY));
     }
 
 	const char* fwUUID = NULL;
@@ -727,9 +723,9 @@ celix_status_t pubsubAdmin_removePublication(pubsub_admin_pt admin,pubsub_endpoi
 		printf("PSA_UDP_MC: Cannot retrieve fwUUID.\n");
 		return CELIX_INVALID_BUNDLE_CONTEXT;
 	}
-	char *scope_topic = pubsubEndpoint_createScopeTopicKey(properties_get(pubEP->properties, PUBSUB_ENDPOINT_TOPIC_SCOPE), properties_get(pubEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME));
+	char *scope_topic = pubsubEndpoint_createScopeTopicKey(properties_get(pubEP, PUBSUB_ENDPOINT_TOPIC_SCOPE), properties_get(pubEP, PUBSUB_ENDPOINT_TOPIC_NAME));
 
-	if(strcmp(properties_get(pubEP->properties, PUBSUB_ENDPOINT_FRAMEWORK_UUID),fwUUID)==0){
+	if(strcmp(properties_get(pubEP, PUBSUB_ENDPOINT_FRAMEWORK_UUID),fwUUID)==0){
 
 		celixThreadMutex_lock(&admin->localPublicationsLock);
 		service_factory_pt factory = (service_factory_pt)hashMap_get(admin->localPublications,scope_topic);
@@ -757,7 +753,7 @@ celix_status_t pubsubAdmin_removePublication(pubsub_admin_pt admin,pubsub_endpoi
 			int i;
 			bool found = false;
 			for(i=0;!found && i<arrayList_size(ext_pub_list);i++){
-				pubsub_endpoint_pt p  = (pubsub_endpoint_pt)arrayList_get(ext_pub_list,i);
+				celix_properties_t *p  = arrayList_get(ext_pub_list,i);
 				found = pubsubEndpoint_equals(pubEP,p);
 				if (found){
 					arrayList_remove(ext_pub_list,i);
@@ -765,8 +761,8 @@ celix_status_t pubsubAdmin_removePublication(pubsub_admin_pt admin,pubsub_endpoi
 			}
 			// Check if there are more publishers on the same endpoint (happens when 1 celix-instance with multiple bundles publish in same topic)
 			for(i=0; i<arrayList_size(ext_pub_list);i++) {
-				pubsub_endpoint_pt p  = (pubsub_endpoint_pt)arrayList_get(ext_pub_list,i);
-				if (strcmp(properties_get(pubEP->properties, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY),properties_get(p->properties, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY)) == 0) {
+				celix_properties_t *p  = arrayList_get(ext_pub_list,i);
+				if (strcmp(properties_get(pubEP, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY),properties_get(p, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY)) == 0) {
 					count++;
 				}
 			}
@@ -788,14 +784,14 @@ celix_status_t pubsubAdmin_removePublication(pubsub_admin_pt admin,pubsub_endpoi
 	celixThreadMutex_lock(&admin->subscriptionsLock);
 
 	topic_subscription_pt sub = (topic_subscription_pt)hashMap_get(admin->subscriptions,scope_topic);
-	if(sub!=NULL && properties_get(pubEP->properties, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY)!=NULL && count == 0){
-		pubsub_topicSubscriptionAddDisconnectPublisherToPendingList(sub, (char*) properties_get(pubEP->properties, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY));
+	if(sub!=NULL && properties_get(pubEP, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY)!=NULL && count == 0){
+		pubsub_topicSubscriptionAddDisconnectPublisherToPendingList(sub, (char*) properties_get(pubEP, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY));
 	}
 
 	/* And check also for ANY subscription */
 	topic_subscription_pt any_sub = (topic_subscription_pt)hashMap_get(admin->subscriptions,PUBSUB_ANY_SUB_TOPIC);
-	if(any_sub!=NULL && properties_get(pubEP->properties, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY)!=NULL && count == 0){
-		pubsub_topicSubscriptionAddDisconnectPublisherToPendingList(any_sub, (char*) properties_get(pubEP->properties, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY));
+	if(any_sub!=NULL && properties_get(pubEP, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY)!=NULL && count == 0){
+		pubsub_topicSubscriptionAddDisconnectPublisherToPendingList(any_sub, (char*) properties_get(pubEP, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY));
 	}
 
 	free(scope_topic);
@@ -805,7 +801,7 @@ celix_status_t pubsubAdmin_removePublication(pubsub_admin_pt admin,pubsub_endpoi
 
 }
 
-celix_status_t pubsubAdmin_closeAllPublications(pubsub_admin_pt admin,char *scope, char* topic){
+celix_status_t pubsubAdmin_closeAllPublications(pubsub_admin_t *admin,char *scope, char* topic){
 	celix_status_t status = CELIX_SUCCESS;
 
 	printf("PSA_UDP_MC: Closing all publications for scope=%s,topic=%s\n", scope, topic);
@@ -831,7 +827,7 @@ celix_status_t pubsubAdmin_closeAllPublications(pubsub_admin_pt admin,char *scop
 
 }
 
-celix_status_t pubsubAdmin_closeAllSubscriptions(pubsub_admin_pt admin,char *scope, char* topic){
+celix_status_t pubsubAdmin_closeAllSubscriptions(pubsub_admin_t *admin,char *scope, char* topic){
 	celix_status_t status = CELIX_SUCCESS;
 
 	printf("PSA_UDP_MC: Closing all subscriptions\n");
@@ -891,10 +887,10 @@ static celix_status_t pubsubAdmin_getIpAddress(const char* interface, char** ip)
 }
 #endif
 
-static celix_status_t pubsubAdmin_addSubscriptionToPendingList(pubsub_admin_pt admin,pubsub_endpoint_pt subEP){
+static celix_status_t pubsubAdmin_addSubscriptionToPendingList(pubsub_admin_t *admin,celix_properties_t *subEP){
 	celix_status_t status = CELIX_SUCCESS;
 
-	char* scope_topic = pubsubEndpoint_createScopeTopicKey(properties_get(subEP->properties, PUBSUB_ENDPOINT_TOPIC_SCOPE), properties_get(subEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME));
+	char* scope_topic = pubsubEndpoint_createScopeTopicKey(properties_get(subEP, PUBSUB_ENDPOINT_TOPIC_SCOPE), properties_get(subEP, PUBSUB_ENDPOINT_TOPIC_NAME));
 	array_list_pt pendingListPerTopic = hashMap_get(admin->pendingSubscriptions,scope_topic);
 	if(pendingListPerTopic==NULL){
 		arrayList_create(&pendingListPerTopic);
@@ -921,7 +917,7 @@ celix_status_t pubsubAdmin_serializerAdded(void * handle, service_reference_pt r
 		return CELIX_SERVICE_EXCEPTION;
 	}
 
-	pubsub_admin_pt admin = (pubsub_admin_pt)handle;
+	pubsub_admin_t *admin = (pubsub_admin_t*)handle;
 	celixThreadMutex_lock(&admin->serializerListLock);
 	arrayList_add(admin->serializerList, reference);
 	celixThreadMutex_unlock(&admin->serializerListLock);
@@ -930,7 +926,7 @@ celix_status_t pubsubAdmin_serializerAdded(void * handle, service_reference_pt r
 	celixThreadMutex_lock(&admin->noSerializerPendingsLock);
 
 	for(i=0;i<arrayList_size(admin->noSerializerSubscriptions);i++){
-		pubsub_endpoint_pt ep = (pubsub_endpoint_pt)arrayList_get(admin->noSerializerSubscriptions,i);
+		celix_properties_t *ep = arrayList_get(admin->noSerializerSubscriptions,i);
 		pubsub_serializer_service_t *best_serializer = NULL;
 		pubsubAdmin_getBestSerializer(admin, ep, &best_serializer, NULL);
 		if(best_serializer != NULL){ /* Finally we have a valid serializer! */
@@ -939,7 +935,7 @@ celix_status_t pubsubAdmin_serializerAdded(void * handle, service_reference_pt r
 	}
 
 	for(i=0;i<arrayList_size(admin->noSerializerPublications);i++){
-		pubsub_endpoint_pt ep = (pubsub_endpoint_pt)arrayList_get(admin->noSerializerPublications,i);
+		celix_properties_t *ep = arrayList_get(admin->noSerializerPublications,i);
 		pubsub_serializer_service_t *best_serializer = NULL;
 		pubsubAdmin_getBestSerializer(admin, ep, &best_serializer, NULL);
 		if(best_serializer != NULL){ /* Finally we have a valid serializer! */
@@ -958,7 +954,7 @@ celix_status_t pubsubAdmin_serializerAdded(void * handle, service_reference_pt r
 
 celix_status_t pubsubAdmin_serializerRemoved(void * handle, service_reference_pt reference, void * service){
 
-	pubsub_admin_pt admin = (pubsub_admin_pt)handle;
+	pubsub_admin_t *admin = (pubsub_admin_t*)handle;
 	int i=0, j=0;
 	const char *serType = NULL;
 
@@ -987,12 +983,12 @@ celix_status_t pubsubAdmin_serializerRemoved(void * handle, service_reference_pt
 			/* Get the endpoints that are going to be orphan */
 			array_list_pt pubList = pubsub_topicPublicationGetPublisherList(topicPub);
 			for(j=0;j<arrayList_size(pubList);j++){
-				pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt)arrayList_get(pubList,j);
+				celix_properties_t *pubEP = arrayList_get(pubList,j);
 				/* Remove the publication */
 				pubsubAdmin_removePublication(admin, pubEP);
 				/* Reset the endpoint field, so that will be recreated from scratch when a new serializer will be found */
-				if(properties_get(pubEP->properties, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY)!=NULL){
-					properties_unset(pubEP->properties, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY);
+				if(properties_get(pubEP, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY)!=NULL){
+					properties_unset(pubEP, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY);
 				}
 				/* Add the orphan endpoint to the noSerializer pending list */
 				celixThreadMutex_lock(&admin->noSerializerPendingsLock);
@@ -1038,12 +1034,12 @@ celix_status_t pubsubAdmin_serializerRemoved(void * handle, service_reference_pt
 			/* Get the endpoints that are going to be orphan */
 			array_list_pt subList = pubsub_topicSubscriptionGetSubscribersList(topicSub);
 			for(j=0;j<arrayList_size(subList);j++){
-				pubsub_endpoint_pt subEP = (pubsub_endpoint_pt)arrayList_get(subList,j);
+				celix_properties_t *subEP = arrayList_get(subList,j);
 				/* Remove the subscription */
 				pubsubAdmin_removeSubscription(admin, subEP);
 				/* Reset the endpoint field, so that will be recreated from scratch when a new serializer will be found */
-				if(properties_get(subEP->properties, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY)!=NULL){
-					properties_unset(subEP->properties, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY);
+				if(properties_get(subEP, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY)!=NULL){
+					properties_unset(subEP, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY);
 				}
 				/* Add the orphan endpoint to the noSerializer pending list */
 				celixThreadMutex_lock(&admin->noSerializerPendingsLock);
@@ -1084,24 +1080,10 @@ celix_status_t pubsubAdmin_serializerRemoved(void * handle, service_reference_pt
 	return CELIX_SUCCESS;
 }
 
-celix_status_t pubsubAdmin_matchEndpoint(pubsub_admin_pt admin, pubsub_endpoint_pt endpoint, double* score){
-	celix_status_t status = CELIX_SUCCESS;
-
-    const char *fwUuid = NULL;
-    bundleContext_getProperty(admin->bundle_context, OSGI_FRAMEWORK_FRAMEWORK_UUID, &fwUuid);
-    if (fwUuid == NULL) {
-        return CELIX_ILLEGAL_STATE;
-    }
-
-	celixThreadMutex_lock(&admin->serializerListLock);
-	status = pubsub_admin_match(endpoint, PSA_UDPMC_PUBSUB_ADMIN_TYPE, fwUuid, admin->qosSampleScore, admin->qosControlScore, admin->defaultScore, admin->serializerList,score);
-	celixThreadMutex_unlock(&admin->serializerListLock);
-
-	return status;
-}
 
 /* This one recall the same logic as in the match function */
-static celix_status_t pubsubAdmin_getBestSerializer(pubsub_admin_pt admin, pubsub_endpoint_pt ep, pubsub_serializer_service_t **out, const char **serType){
+/*
+static celix_status_t pubsubAdmin_getBestSerializer(pubsub_admin_t *admin, celix_properties_t *ep, pubsub_serializer_service_t **out, const char **serType){
 	celix_status_t status = CELIX_SUCCESS;
 
 	pubsub_serializer_service_t *serSvc = NULL;
@@ -1122,9 +1104,9 @@ static celix_status_t pubsubAdmin_getBestSerializer(pubsub_admin_pt admin, pubsu
 	*out = serSvc;
 
 	return status;
-}
+}*/
 
-static void connectTopicPubSubToSerializer(pubsub_admin_pt admin,pubsub_serializer_service_t *serializer,void *topicPubSub,bool isPublication){
+static void connectTopicPubSubToSerializer(pubsub_admin_t *admin,pubsub_serializer_service_t *serializer,void *topicPubSub,bool isPublication){
 
 	celixThreadMutex_lock(&admin->usedSerializersLock);
 
@@ -1140,7 +1122,7 @@ static void connectTopicPubSubToSerializer(pubsub_admin_pt admin,pubsub_serializ
 
 }
 
-static void disconnectTopicPubSubFromSerializer(pubsub_admin_pt admin,void *topicPubSub,bool isPublication){
+static void disconnectTopicPubSubFromSerializer(pubsub_admin_t *admin,void *topicPubSub,bool isPublication){
 
 	celixThreadMutex_lock(&admin->usedSerializersLock);
 
@@ -1156,4 +1138,84 @@ static void disconnectTopicPubSubFromSerializer(pubsub_admin_pt admin,void *topi
 
 	celixThreadMutex_unlock(&admin->usedSerializersLock);
 
+}
+
+celix_status_t pubsubAdmin_matchPublisher(void *handle, long svcRequesterBndId, const celix_filter_t *svcFilter, double *outScore, long *outSerializerSvcId) {
+	pubsub_admin_t *admin = handle;
+	celix_status_t status = CELIX_SUCCESS;
+	celixThreadMutex_lock(&admin->serializerListLock);
+	long serializerSvcId = -1L;
+	double score = pubsub_utils_matchPublisher(admin->bundle_context, svcRequesterBndId, svcFilter->filterStr, PSA_UDPMC_PUBSUB_ADMIN_TYPE, admin->qosSampleScore, admin->qosControlScore, admin->defaultScore, admin->serializerList, &serializerSvcId);
+	celixThreadMutex_unlock(&admin->serializerListLock);
+	if (outScore != NULL) {
+		*outScore = score;
+	}
+	if (outSerializerSvcId != NULL) {
+		*outSerializerSvcId = serializerSvcId;
+	}
+	return status;
+}
+
+celix_status_t pubsubAdmin_matchSubscriber(void *handle, long svcProviderBndId, const celix_properties_t *svcProperties, double *outScore, long *outSerializerSvcId) {
+	pubsub_admin_t *admin = handle;
+	celix_status_t status = CELIX_SUCCESS;
+	celixThreadMutex_lock(&admin->serializerListLock);
+	long serializerSvcId = -1L;
+	double score = pubsub_utils_matchSubscriber(admin->bundle_context, svcProviderBndId, svcProperties, PSA_UDPMC_PUBSUB_ADMIN_TYPE, admin->qosSampleScore, admin->qosControlScore, admin->defaultScore, admin->serializerList, &serializerSvcId);
+	celixThreadMutex_unlock(&admin->serializerListLock);
+	if (outScore != NULL) {
+		*outScore = score;
+	}
+	if (outSerializerSvcId != NULL) {
+		*outSerializerSvcId = serializerSvcId;
+	}
+	return status;
+}
+
+celix_status_t pubsubAdmin_matchEndpoint(void *handle, const celix_properties_t *endpoint, double *outScore) {
+	pubsub_admin_t *admin = handle;
+	celix_status_t status = CELIX_SUCCESS;
+	celixThreadMutex_lock(&admin->serializerListLock);
+	long serializerSvcId = -1L;
+	double score = pubsub_utils_matchEndpoint(admin->bundle_context, endpoint, PSA_UDPMC_PUBSUB_ADMIN_TYPE, admin->qosSampleScore, admin->qosControlScore, admin->defaultScore, admin->serializerList, &serializerSvcId);
+	celixThreadMutex_unlock(&admin->serializerListLock);
+	if (outScore != NULL) {
+		*outScore = score;
+	}
+	return status;
+}
+
+celix_status_t pubsubAdmin_setupTopicSender(void *handle, const char *scope, const char *topic, long serializerSvcId, celix_properties_t **publisherEndpoint) {
+	pubsub_admin_t *admin = handle;
+	celix_status_t status = CELIX_SUCCESS;
+	return status;
+}
+celix_status_t pubsubAdmin_teardownTopicSender(void *handle, const char *scope, const char *topic) {
+	pubsub_admin_t *admin = handle;
+	celix_status_t status = CELIX_SUCCESS;
+	return status;
+}
+
+celix_status_t pubsubAdmin_setupTopicReciever(void *handle, const char *scope, const char *topic, long serializerSvcId, celix_properties_t **subscriberEndpoint) {
+	pubsub_admin_t *admin = handle;
+	celix_status_t status = CELIX_SUCCESS;
+	return status;
+}
+
+celix_status_t pubsubAdmin_teardownTopicReciever(void *handle, const char *scope, const char *topic) {
+	pubsub_admin_t *admin = handle;
+	celix_status_t status = CELIX_SUCCESS;
+	return status;
+}
+
+celix_status_t pubsubAdmin_addEndpoint(void *handle, const celix_properties_t *endpoint) {
+	pubsub_admin_t *admin = handle;
+	celix_status_t status = CELIX_SUCCESS;
+	return status;
+}
+
+celix_status_t pubsubAdmin_removeEndpoint(void *handle, const celix_properties_t *endpoint) {
+	pubsub_admin_t *admin = handle;
+	celix_status_t status = CELIX_SUCCESS;
+	return status;
 }

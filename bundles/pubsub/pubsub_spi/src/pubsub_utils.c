@@ -130,3 +130,34 @@ char* pubsub_getKeysBundleDir(bundle_context_pt ctx)
 	return result;
 }
 
+celix_properties_t *pubsub_utils_getTopicProperties(const celix_bundle_t *bundle, const char *topic, bool isPublisher) {
+
+	celix_properties_t *topic_props = NULL;
+
+	bool isSystemBundle = false;
+	bundle_isSystemBundle((bundle_pt)bundle, &isSystemBundle);
+	long bundleId = -1;
+	bundle_isSystemBundle((bundle_pt)bundle, &isSystemBundle);
+	bundle_getBundleId((bundle_pt)bundle,&bundleId);
+
+	if(isSystemBundle == false) {
+
+		char *bundleRoot = NULL;
+		char* topicPropertiesPath = NULL;
+		bundle_getEntry((bundle_pt)bundle, ".", &bundleRoot);
+
+		if(bundleRoot != NULL){
+
+			asprintf(&topicPropertiesPath, "%s/META-INF/topics/%s/%s.properties", bundleRoot, isPublisher?"pub":"sub", topic);
+			topic_props = properties_load(topicPropertiesPath);
+			if(topic_props==NULL){
+				printf("PSEP: Could not load properties for %s on topic %s, bundleId=%ld\n", isPublisher?"publication":"subscription", topic,bundleId);
+			}
+
+			free(topicPropertiesPath);
+			free(bundleRoot);
+		}
+	}
+
+	return topic_props;
+}

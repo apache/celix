@@ -36,31 +36,68 @@
 #define PUBSUB_TOPOLOGY_MANAGER_DEFAULT_VERBOSE		false
 
 
-struct pubsub_topology_manager {
+typedef struct pubsub_topology_manager {
 	bundle_context_pt context;
 
-	celix_thread_mutex_t psaListLock;
-	array_list_pt psaList;
+	struct {
+		celix_thread_mutex_t mutex;
+		hash_map_t *map; //key = svcId, value = pubsub_admin_t*
+	} pubsubadmins;
 
-	celix_thread_mutex_t discoveryListLock;
-	hash_map_pt discoveryList; //<svcId,NULL>
+	struct {
+		celix_thread_mutex_t mutex;
+		hash_map_t *map; //key = psa svc id, value = list<celix_properties_t /*endpoint*/>
+	} announcedEndpoints;
 
-	celix_thread_mutex_t publicationsLock;
-	hash_map_pt publications; //<topic(string),list<pubsub_ep>>
+	struct {
+		celix_thread_mutex_t mutex;
+		hash_map_t *map; //key = uuid , value = pstm_discovered_endpoint_entry_t
+	} discoveredEndpoints;
 
-	celix_thread_mutex_t subscriptionsLock;
-	hash_map_pt subscriptions; //<topic(string),list<pubsub_ep>>
+	struct {
+		celix_thread_mutex_t mutex;
+		hash_map_t *map; //key = scope/topic key, value = pstm_topic_receiver_or_sender_entry_t*
+	} topicReceivers;
 
-	command_service_t shellCmdService;
-	service_registration_pt  shellCmdReg;
+	struct {
+		celix_thread_mutex_t mutex;
+		hash_map_t *map; //key = scope/topic key, value = pstm_topic_receiver_or_sender_entry_t*
+	} topicSenders;
 
+	struct {
+		celix_thread_mutex_t mutex;
+		celix_array_list_t *list; //<pubsub_announce_endpoint_listener_t*>
+	} announceEndpointListeners;
+
+	struct {
+		celix_thread_t thread;
+		celix_thread_mutex_t mutex; //protect running and condition
+		celix_thread_cond_t cond;
+		bool running;
+	} psaHandling;
 
 	log_helper_pt loghelper;
 
 	bool verbose;
-};
+} pubsub_topology_manager_t;
 
-typedef struct pubsub_topology_manager pubsub_topology_manager_t;
+typedef struct pstm_discovered_endpoint_entry {
+	const char *uuid;
+	long selectedPsaSvcId;
+	int usageCount; //note that discovered endpoints can be found multiple times by different pubsub discovery components
+	celix_properties_t *endpoint;
+} pstm_discovered_endpoint_entry_t;
+
+typedef struct pstm_topic_receiver_or_sender_entry {
+	char *scopeAndTopicKey; //key of the combined value of the scope and topic
+	celix_properties_t *endpoint;
+	const char *topic;
+	const char *scope;
+	const char *endpointUUID;
+	int usageCount; //nr of subscriber service for the topic receiver (matching scope & topic)
+	long selectedPsaSvcId;
+	long selectedSerializerSvcId;
+} pstm_topic_receiver_or_sender_entry_t;
 
 celix_status_t pubsub_topologyManager_create(bundle_context_pt context, log_helper_pt logHelper, pubsub_topology_manager_t **manager);
 celix_status_t pubsub_topologyManager_destroy(pubsub_topology_manager_t *manager);
@@ -69,8 +106,8 @@ celix_status_t pubsub_topologyManager_closeImports(pubsub_topology_manager_t *ma
 void pubsub_topologyManager_psaAdded(void *handle, void *svc, const celix_properties_t *props);
 void pubsub_topologyManager_psaRemoved(void *handle, void *svc, const celix_properties_t *props);
 
-void pubsub_topologyManager_pubsubDiscoveryAdded(void* handle, void *svc, const celix_properties_t *props);
-void pubsub_topologyManager_pubsubDiscoveryRemoved(void * handle, void *svc, const celix_properties_t *props);
+void pubsub_topologyManager_pubsubAnnounceEndpointListenerAdded(void* handle, void *svc, const celix_properties_t *props);
+void pubsub_topologyManager_pubsubAnnounceEndpointListenerRemoved(void * handle, void *svc, const celix_properties_t *props);
 
 void pubsub_topologyManager_subscriberAdded(void * handle, void *svc, const celix_properties_t *props, const celix_bundle_t *bnd);
 void pubsub_topologyManager_subscriberRemoved(void * handle, void *svc, const celix_properties_t *props, const celix_bundle_t *bnd);
@@ -80,5 +117,7 @@ void pubsub_topologyManager_publisherTrackerRemoved(void *handle, const celix_se
 
 celix_status_t pubsub_topologyManager_addDiscoveredEndpoint(void *handle, const celix_properties_t *properties);
 celix_status_t pubsub_topologyManager_removeDiscoveredEndpoint(void *handle, const celix_properties_t *properties);
+
+celix_status_t pubsub_topologyManager_shellCommand(void *handle, char * commandLine, FILE *outStream, FILE *errorStream);
 
 #endif /* PUBSUB_TOPOLOGY_MANAGER_H_ */

@@ -24,6 +24,7 @@
  *  \copyright  Apache License, Version 2.0
  */
 #include <stdlib.h>
+#include <sys/time.h>
 #include "signal.h"
 #include "celix_threads.h"
 
@@ -40,6 +41,16 @@ celix_status_t celixThread_create(celix_thread_t *new_thread, celix_thread_attr_
 
 	return status;
 }
+
+#ifdef _GNU_SOURCE
+void celixThread_setName(celix_thread_t *thread, const char *threadName) {
+	pthread_setname_np(thread->thread, threadName);
+}
+#else
+void celixThread_setName(celix_thread_t *thread __attribute__((unused)), const char *threadName  __attribute__((unused))); {
+	//nop
+}
+#endif
 
 // Returns void, since pthread_exit does exit the thread and never returns.
 void celixThread_exit(void *exitStatus) {
@@ -143,10 +154,11 @@ celix_status_t celixThreadCondition_wait(celix_thread_cond_t *cond, celix_thread
     return pthread_cond_wait(cond, mutex);
 }
 
-celix_status_t celixThreadCondition_timedwait(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex, long seconds, long nanoseconds) {
+celix_status_t celixThreadCondition_timedwaitRelative(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex, long seconds, long nanoseconds) {
 	struct timespec time;
-	time.tv_sec = seconds;
-	time.tv_nsec = nanoseconds;
+	clock_gettime(CLOCK_REALTIME, &time);
+	time.tv_sec += seconds;
+	time.tv_nsec += nanoseconds;
 	return pthread_cond_timedwait(cond, mutex, &time);
 }
 

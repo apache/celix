@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <celix_bundle_activator.h>
+#include <pubsub_admin.h>
 
 #include "celix_api.h"
 
@@ -39,52 +40,56 @@ typedef struct pstm_activator {
 	long pubsubAdminTrackerId;
 	long pubsubSubscribersTrackerId;
 	long pubsubPublishServiceTrackerId;
-	listener_hook_service_pt hookService;
-	service_registration_pt hook;
 
 	pubsub_discovered_endpoint_listener_t discListenerSvc;
 	long discListenerSvcId;
+
+
+	command_service_t shellCmdSvc;
+	long shellCmdSvcId;
+
 
 	log_helper_pt loghelper;
 } pstm_activator_t;
 
 
 static int pstm_start(pstm_activator_t *act, celix_bundle_context_t *ctx) {
-	celix_status_t status = CELIX_SUCCESS;
+	celix_status_t status;
 
 	act->discListenerSvcId = -1L;
 	act->pubsubSubscribersTrackerId = -1L;
 	act->pubsubAdminTrackerId = -1L;
 	act->pubsubDiscoveryTrackerId = -1L;
 	act->pubsubPublishServiceTrackerId = -1L;
+	act->shellCmdSvcId = -1L;
 
 	logHelper_create(ctx, &act->loghelper);
 	logHelper_start(act->loghelper);
 
 	status = pubsub_topologyManager_create(ctx, act->loghelper, &act->manager);
 
-	//create PSD tracker
+	//track pubsub announce endpoint listener services (pubsub discovery components)
 	if (status == CELIX_SUCCESS) {
 		celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
-		opts.addWithProperties = pubsub_topologyManager_pubsubDiscoveryAdded;
-		opts.removeWithProperties = pubsub_topologyManager_pubsubDiscoveryRemoved;
+		opts.addWithProperties = pubsub_topologyManager_pubsubAnnounceEndpointListenerAdded;
+		opts.removeWithProperties = pubsub_topologyManager_pubsubAnnounceEndpointListenerRemoved;
 		opts.callbackHandle = act->manager;
 		opts.filter.serviceName = PUBSUB_ANNOUNCE_ENDPOINT_LISTENER_SERVICE;
 		act->pubsubDiscoveryTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
 	}
 
-	//create PSA tracker
+	//track pubsub admin service (psa components)
 	if (status == CELIX_SUCCESS) {
 		celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
 		opts.addWithProperties = pubsub_topologyManager_psaAdded;
 		opts.removeWithProperties = pubsub_topologyManager_psaRemoved;
 		opts.callbackHandle = act->manager;
-		opts.filter.serviceName = PUBSUB_ADMIN_SERVICE;
+		opts.filter.serviceName = PUBSUB_ADMIN_SERVICE_NAME;
         opts.filter.ignoreServiceLanguage = true;
 		act->pubsubAdminTrackerId = celix_bundleContext_trackServicesWithOptions(ctx, &opts);
 	}
 
-	//create PSSubtracker
+	//track subscriber service
 	if (status == CELIX_SUCCESS) {
 		celix_service_tracking_options_t opts = CELIX_EMPTY_SERVICE_TRACKING_OPTIONS;
 		opts.addWithOwner = pubsub_topologyManager_subscriberAdded;
@@ -96,7 +101,7 @@ static int pstm_start(pstm_activator_t *act, celix_bundle_context_t *ctx) {
 	}
 
 
-	//track interest for publishers
+	//track requests for publisher services
 	if (status == CELIX_SUCCESS) {
 		act->pubsubPublishServiceTrackerId = celix_bundleContext_trackServiceTrackers(ctx,
 																					  PUBSUB_PUBLISHER_SERVICE_NAME,
@@ -105,7 +110,7 @@ static int pstm_start(pstm_activator_t *act, celix_bundle_context_t *ctx) {
 																					  pubsub_topologyManager_publisherTrackerRemoved);
 	}
 
-	//register listener for discovery event
+	//register discovered endpoints listener service (called by pubsub discovery components)
 	if (status == CELIX_SUCCESS) {
 		act->discListenerSvc.handle = act->manager;
 		act->discListenerSvc.addDiscoveredEndpoint = pubsub_topologyManager_addDiscoveredEndpoint;
@@ -113,6 +118,16 @@ static int pstm_start(pstm_activator_t *act, celix_bundle_context_t *ctx) {
 		act->discListenerSvcId = celix_bundleContext_registerService(ctx, &act->discListenerSvc, PUBSUB_DISCOVERED_ENDPOINT_LISTENER_SERVICE, NULL);
 	}
 
+	//register shell command
+	if (status == CELIX_SUCCESS) {
+		act->shellCmdSvc.handle = act->manager;
+		act->shellCmdSvc.executeCommand = pubsub_topologyManager_shellCommand;
+		celix_properties_t *props = celix_properties_create();
+		properties_set(props, OSGI_SHELL_COMMAND_NAME, "pstm");
+		properties_set(props, OSGI_SHELL_COMMAND_USAGE, "pstm"); //TODO add search topic/scope option
+		properties_set(props, OSGI_SHELL_COMMAND_DESCRIPTION, "pubsub_topology_info: Overview of Topology information for PubSub");
+		act->shellCmdSvcId = celix_bundleContext_registerService(ctx, &act->shellCmdSvc, OSGI_SHELL_COMMAND_SERVICE_NAME, props);
+	}
 
 	/* NOTE: Enable those line in order to remotely expose the topic_info service
 	properties_pt props = properties_create();
@@ -129,6 +144,7 @@ static int pstm_stop(pstm_activator_t *act, celix_bundle_context_t *ctx) {
 	celix_bundleContext_stopTracker(ctx, act->pubsubAdminTrackerId);
 	celix_bundleContext_stopTracker(ctx, act->pubsubPublishServiceTrackerId);
 	celix_bundleContext_unregisterService(ctx, act->discListenerSvcId);
+	celix_bundleContext_unregisterService(ctx, act->shellCmdSvcId);
 
 	pubsub_topologyManager_destroy(act->manager);
 

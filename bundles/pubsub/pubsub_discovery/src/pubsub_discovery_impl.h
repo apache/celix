@@ -40,20 +40,21 @@
 
 #define PUBSUB_DISCOVERY_SERVER_IP_DEFAULT 		"127.0.0.1"
 #define PUBSUB_DISCOVERY_SERVER_PORT_DEFAULT	2379
-#define PUBSUB_DISCOVERY_SERVER_PATH_DEFAULT 	"pubsub/discovery"
+#define PUBSUB_DISCOVERY_SERVER_PATH_DEFAULT 	"pubsub/"
 #define PUBSUB_DISCOVERY_ETCD_TTL_DEFAULT       30
 
 typedef struct pubsub_discovery {
 	bundle_context_pt context;
+	//TODO add logHelper
 
-	celix_thread_mutex_t discoveredEndpointsMutex;
+	celix_thread_mutex_t discoveredEndpointsMutex; //when locked with EndpointsListenersMutex -> first lock this
 	hash_map_pt discoveredEndpoints; //<key = uuid,celix_properties_t /*endpoint*/>>
 
 	celix_thread_mutex_t announcedEndpointsMutex;
 	hash_map_pt announcedEndpoints; //<key = char* (etcd key),pubsub_announce_entry_t /*endpoint*/>>
 
 	celix_thread_mutex_t discoveredEndpointsListenersMutex;
-	hash_map_pt discoveredEndpointsListeners; //key=svcId, value=pubsub_discover_listener_t
+	hash_map_pt discoveredEndpointsListeners; //key=svcId, value=pubsub_discovered_endpoint_listener_t
 
 	celix_thread_mutex_t waitMutex;
 	celix_thread_cond_t  waitCond;
@@ -69,6 +70,7 @@ typedef struct pubsub_discovery {
 	bool verbose;
 	int ttlForEntries;
 	int sleepInsecBetweenTTLRefresh;
+	const char *fwUUID;
 } pubsub_discovery_t;
 
 typedef struct pubsub_announce_entry {
@@ -83,15 +85,10 @@ celix_status_t pubsub_discovery_destroy(pubsub_discovery_t *node_discovery);
 celix_status_t pubsub_discovery_start(pubsub_discovery_t *node_discovery);
 celix_status_t pubsub_discovery_stop(pubsub_discovery_t *node_discovery);
 
-celix_status_t pubsub_discovery_addNode(pubsub_discovery_t *node_discovery, pubsub_endpoint_pt pubEP);
-celix_status_t pubsub_discovery_removeNode(pubsub_discovery_t *node_discovery, pubsub_endpoint_pt pubEP);
-
 void pubsub_discovery_discoveredEndpointsListenerAdded(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *bnd);
 void pubsub_discovery_discoveredEndpointsListenerRemoved(void *handle, void *svc, const celix_properties_t *props, const celix_bundle_t *bnd);
 
 celix_status_t pubsub_discovery_announceEndpoint(void *handle, const celix_properties_t *endpoint);
 celix_status_t pubsub_discovery_removeEndpoint(void *handle, const celix_properties_t *endpoint);
-
-celix_status_t pubsub_discovery_informPublishersListeners(pubsub_discovery_t *discovery, pubsub_endpoint_pt endpoint, bool endpointAdded);
 
 #endif /* PUBSUB_DISCOVERY_IMPL_H_ */

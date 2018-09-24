@@ -49,8 +49,8 @@ celix_status_t pubsub_topicSubscriptionAddDisconnectPublisherToPendingList(topic
 celix_status_t pubsub_topicSubscriptionConnectPublisher(topic_subscription_pt ts, char* pubURL);
 celix_status_t pubsub_topicSubscriptionDisconnectPublisher(topic_subscription_pt ts, char* pubURL);
 
-celix_status_t pubsub_topicSubscriptionAddSubscriber(topic_subscription_pt ts, pubsub_endpoint_pt subEP);
-celix_status_t pubsub_topicSubscriptionRemoveSubscriber(topic_subscription_pt ts, pubsub_endpoint_pt subEP);
+celix_status_t pubsub_topicSubscriptionAddSubscriber(topic_subscription_pt ts, celix_properties_t *subEP);
+celix_status_t pubsub_topicSubscriptionRemoveSubscriber(topic_subscription_pt ts, celix_properties_t *subEP);
 
 array_list_pt pubsub_topicSubscriptionGetSubscribersList(topic_subscription_pt sub);
 celix_status_t pubsub_topicIncreaseNrSubscribers(topic_subscription_pt subscription);

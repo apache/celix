@@ -98,12 +98,12 @@ static int pubsub_localMsgTypeIdForUUID(void* handle, const char* msgType, unsig
 static void delay_first_send_for_late_joiners(void);
 
 
-celix_status_t pubsub_topicPublicationCreate(int sendSocket, pubsub_endpoint_pt pubEP, pubsub_serializer_service_t *best_serializer, const char* best_serializer_type, char* bindIP, topic_publication_pt *out){
+celix_status_t pubsub_topicPublicationCreate(int sendSocket, celix_properties_t *pubEP, pubsub_serializer_service_t *best_serializer, const char* best_serializer_type, char* bindIP, topic_publication_pt *out){
 
 	char* ep = malloc(EP_ADDRESS_LEN);
 	memset(ep,0,EP_ADDRESS_LEN);
 
-	long serviceId = celix_properties_getAsLong(pubEP->properties, OSGI_FRAMEWORK_SERVICE_ID, 0);
+	long serviceId = celix_properties_getAsLong(pubEP, OSGI_FRAMEWORK_SERVICE_ID, 0);
 
 	unsigned int port = serviceId + rand_range(UDP_BASE_PORT+serviceId+3, UDP_MAX_PORT);
 	snprintf(ep,EP_ADDRESS_LEN,"udp://%s:%u",bindIP,port);
@@ -169,7 +169,7 @@ celix_status_t pubsub_topicPublicationStart(bundle_context_pt bundle_context,top
 
 	/* Let's register the new service */
 
-	pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt)arrayList_get(pub->pub_ep_list,0);
+	celix_properties_t *pubEP = arrayList_get(pub->pub_ep_list,0);
 
 	if(pubEP!=NULL){
 		service_factory_pt factory = calloc(1, sizeof(*factory));
@@ -178,8 +178,8 @@ celix_status_t pubsub_topicPublicationStart(bundle_context_pt bundle_context,top
 		factory->ungetService = pubsub_topicPublicationUngetService;
 
 		properties_pt props = properties_create();
-		properties_set(props,PUBSUB_PUBLISHER_SCOPE,properties_get(pubEP->properties, PUBSUB_ENDPOINT_TOPIC_SCOPE));
-		properties_set(props,PUBSUB_PUBLISHER_TOPIC,properties_get(pubEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME));
+		properties_set(props,PUBSUB_PUBLISHER_SCOPE,properties_get(pubEP, PUBSUB_ENDPOINT_TOPIC_SCOPE));
+		properties_set(props,PUBSUB_PUBLISHER_TOPIC,properties_get(pubEP, PUBSUB_ENDPOINT_TOPIC_NAME));
                 properties_set(props,"service.version", PUBSUB_PUBLISHER_SERVICE_VERSION);
 
 
@@ -188,8 +188,8 @@ celix_status_t pubsub_topicPublicationStart(bundle_context_pt bundle_context,top
 		if(status != CELIX_SUCCESS){
 			properties_destroy(props);
 			printf("[PSA UDPMC] Cannot register ServiceFactory for topic %s, topic %s.\n",
-				   properties_get(pubEP->properties, PUBSUB_ENDPOINT_TOPIC_SCOPE),
-				   properties_get(pubEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME));
+				   properties_get(pubEP, PUBSUB_ENDPOINT_TOPIC_SCOPE),
+				   properties_get(pubEP, PUBSUB_ENDPOINT_TOPIC_NAME));
 		} else {
 			*svcFactory = factory;
 		}
@@ -206,19 +206,19 @@ celix_status_t pubsub_topicPublicationStop(topic_publication_pt pub){
 	return serviceRegistration_unregister(pub->svcFactoryReg);
 }
 
-celix_status_t pubsub_topicPublicationAddPublisherEP(topic_publication_pt pub, pubsub_endpoint_pt ep) {
+celix_status_t pubsub_topicPublicationAddPublisherEP(topic_publication_pt pub, celix_properties_t *ep) {
 
 	celixThreadMutex_lock(&(pub->tp_lock));
-	pubsubEndpoint_setField(ep, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY, pub->endpoint);
-	pubsubEndpoint_setField(ep, PUBSUB_ADMIN_TYPE_KEY, PSA_UDPMC_PUBSUB_ADMIN_TYPE);
-	pubsubEndpoint_setField(ep, PUBSUB_SERIALIZER_TYPE_KEY, pub->serializer.type);
+	celix_properties_set(ep, PUBSUB_PSA_UDPMC_SOCKET_ADDRESS_KEY, pub->endpoint);
+	celix_properties_set(ep, PUBSUB_ADMIN_TYPE_KEY, PSA_UDPMC_PUBSUB_ADMIN_TYPE);
+	celix_properties_set(ep, PUBSUB_SERIALIZER_TYPE_KEY, pub->serializer.type);
 	arrayList_add(pub->pub_ep_list,ep);
 	celixThreadMutex_unlock(&(pub->tp_lock));
 
 	return CELIX_SUCCESS;
 }
 
-celix_status_t pubsub_topicPublicationRemovePublisherEP(topic_publication_pt pub,pubsub_endpoint_pt ep) {
+celix_status_t pubsub_topicPublicationRemovePublisherEP(topic_publication_pt pub,celix_properties_t *ep) {
 
 	celixThreadMutex_lock(&(pub->tp_lock));
 	arrayList_removeElement(pub->pub_ep_list,ep);
@@ -401,9 +401,9 @@ static publish_bundle_bound_service_pt pubsub_createPublishBundleBoundService(to
 			tp->serializer.svc->createSerializerMap(tp->serializer.svc->handle,bundle,&bound->msgTypes);
 		}
 
-		pubsub_endpoint_pt pubEP = (pubsub_endpoint_pt)arrayList_get(bound->parent->pub_ep_list,0);
-		bound->scope=strdup(properties_get(pubEP->properties, PUBSUB_ENDPOINT_TOPIC_SCOPE));
-		bound->topic=strdup(properties_get(pubEP->properties, PUBSUB_ENDPOINT_TOPIC_NAME));
+		celix_properties_t *pubEP = arrayList_get(bound->parent->pub_ep_list,0);
+		bound->scope=strdup(properties_get(pubEP, PUBSUB_ENDPOINT_TOPIC_SCOPE));
+		bound->topic=strdup(properties_get(pubEP, PUBSUB_ENDPOINT_TOPIC_NAME));
 		bound->largeUdpHandle = largeUdp_create(1);
 
 		bound->service.handle = bound;

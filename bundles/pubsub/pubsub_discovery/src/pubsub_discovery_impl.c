@@ -79,6 +79,7 @@ celix_status_t pubsub_discovery_create(bundle_context_pt context, pubsub_discove
     (*ps_discovery)->ttlForEntries = (int)ttl;
     (*ps_discovery)->sleepInsecBetweenTTLRefresh = (int)(((float)ttl)/2.0);
     (*ps_discovery)->pubsubPath = celix_bundleContext_getProperty(context, PUBSUB_DISCOVERY_SERVER_PATH_KEY, PUBSUB_DISCOVERY_SERVER_PATH_DEFAULT);
+    (*ps_discovery)->fwUUID = celix_bundleContext_getProperty(context, OSGI_FRAMEWORK_FRAMEWORK_UUID, NULL);
 
     return status;
 }
@@ -111,39 +112,58 @@ celix_status_t pubsub_discovery_destroy(pubsub_discovery_t *ps_discovery) {
     return status;
 }
 
-void* psd_watch(void *data) {
-    pubsub_discovery_t *disc = data;
 
-    celixThreadMutex_lock(&disc->runningMutex);
-    bool running = disc->running;
-    celixThreadMutex_unlock(&disc->runningMutex);
+static void psd_etcdReadCallback(const char *key __attribute__((unused)), const char *value, void* arg) {
+    pubsub_discovery_t *disc = arg;
+    celix_properties_t *props = pubsub_discovery_parseEndpoint(value);
+    if (props != NULL) {
+        pubsub_discovery_addDiscoveredEndpoint(disc, props);
+    }
+}
 
-    long long prevIndex = 0L;
+static void psd_watchSetupConnection(pubsub_discovery_t *disc, bool *connectedPtr, long long *mIndex) {
+    bool connected = *connectedPtr;
+    if (!connected) {
+        if (disc->verbose) {
+            printf("[PSD] Reading etcd directory at %s\n", disc->pubsubPath);
+        }
+        int rc = etcd_get_directory(disc->pubsubPath, psd_etcdReadCallback, disc, mIndex);
+        if (rc == ETCDLIB_RC_OK) {
+            *connectedPtr = true;
+        } else {
+            *connectedPtr = false;
+        }
+    }
+}
 
-    while (running) {
+static void psd_watchForChange(pubsub_discovery_t *disc, bool *connectedPtr, long long *mIndex) {
+    bool connected = *connectedPtr;
+    if (connected) {
+        long long watchIndex = *mIndex + 1;
+
         char *action = NULL;
         char *value = NULL;
         char *readKey = NULL;
-        long long mIndex;
         //TODO add interruptable etcd_wait -> which returns a handle to interrupt and a can be used for a wait call
-        int rc = etcd_watch(disc->pubsubPath, prevIndex, &action, NULL, &value, &readKey, &mIndex);
+        int rc = etcd_watch(disc->pubsubPath, watchIndex, &action, NULL, &value, &readKey, mIndex);
         if (rc == ETCDLIB_RC_TIMEOUT) {
             //nop
-        } else if (rc == ETCDLIB_RC_ERROR) {
-            printf("WARNING PSD: Error communicating with etcd.\n");
+        } else if (rc == ETCDLIB_RC_ERROR || action == NULL) {
+            printf("[PSD] Error communicating with etcd. rc is %i, action value is %s\n", rc, action);
+            *connectedPtr = false;
         } else {
             if (strncmp(ETCDLIB_ACTION_CREATE, action, strlen(ETCDLIB_ACTION_CREATE)) == 0 ||
-                strncmp(ETCDLIB_ACTION_SET, action, strlen(ETCDLIB_ACTION_SET)) == 0 ||
-                strncmp(ETCDLIB_ACTION_UPDATE, action, strlen(ETCDLIB_ACTION_UPDATE)) == 0) {
+                       strncmp(ETCDLIB_ACTION_SET, action, strlen(ETCDLIB_ACTION_SET)) == 0 ||
+                       strncmp(ETCDLIB_ACTION_UPDATE, action, strlen(ETCDLIB_ACTION_UPDATE)) == 0) {
                 celix_properties_t *props = pubsub_discovery_parseEndpoint(value);
                 if (props != NULL) {
                     pubsub_discovery_addDiscoveredEndpoint(disc, props);
                 }
             } else if (strncmp(ETCDLIB_ACTION_DELETE, action, strlen(ETCDLIB_ACTION_DELETE)) == 0 ||
-                        strncmp(ETCDLIB_ACTION_EXPIRE, action, strlen(ETCDLIB_ACTION_EXPIRE)) == 0) {
-                celix_properties_t *props = pubsub_discovery_parseEndpoint(value);
-                if (props != NULL) {
-                    const char *uuid = celix_properties_get(props, PUBSUB_ENDPOINT_UUID, NULL);
+                       strncmp(ETCDLIB_ACTION_EXPIRE, action, strlen(ETCDLIB_ACTION_EXPIRE)) == 0) {
+                char *uuid = strrchr(readKey, '/');
+                if (uuid != NULL) {
+                    uuid = uuid + 1;
                     pubsub_discovery_removeDiscoveredEndpoint(disc, uuid);
                 }
             } else {
@@ -153,9 +173,61 @@ void* psd_watch(void *data) {
             free(action);
             free(value);
             free(readKey);
-            prevIndex = mIndex;
+        }
+    } else {
+        if (disc->verbose) {
+            printf("[PSD] Skipping etcd watch -> not connected\n");
+        }
+    }
+}
+
+static void psd_cleanupIfDisconnected(pubsub_discovery_t *disc, bool *connectedPtr) {
+    bool connected = *connectedPtr;
+    if (!connected) {
+
+        celixThreadMutex_lock(&disc->discoveredEndpointsMutex);
+        int size = hashMap_size(disc->discoveredEndpoints);
+        if (disc->verbose) {
+            printf("[PSD] Removing all discovered entries (%i) -> not connected\n", size);
         }
 
+        hash_map_iterator_t iter = hashMapIterator_construct(disc->discoveredEndpoints);
+        while (hashMapIterator_hasNext(&iter)) {
+            celix_properties_t *endpoint = hashMapIterator_nextValue(&iter);
+
+            celixThreadMutex_lock(&disc->discoveredEndpointsListenersMutex);
+            hash_map_iterator_t iter2 = hashMapIterator_construct(disc->discoveredEndpointsListeners);
+            while (hashMapIterator_hasNext(&iter2)) {
+                pubsub_discovered_endpoint_listener_t *listener = hashMapIterator_nextValue(&iter2);
+                listener->removeDiscoveredEndpoint(listener->handle, endpoint);
+            }
+            celixThreadMutex_unlock(&disc->discoveredEndpointsListenersMutex);
+
+            celix_properties_destroy(endpoint);
+        }
+        hashMap_clear(disc->discoveredEndpoints, false, false);
+        celixThreadMutex_unlock(&disc->discoveredEndpointsMutex);
+    }
+}
+
+void* psd_watch(void *data) {
+    pubsub_discovery_t *disc = data;
+
+    long long mIndex = 0L;
+    bool connected = false;
+
+    celixThreadMutex_lock(&disc->runningMutex);
+    bool running = disc->running;
+    celixThreadMutex_unlock(&disc->runningMutex);
+
+    while (running) {
+        psd_watchSetupConnection(disc, &connected, &mIndex);
+        psd_watchForChange(disc, &connected, &mIndex);
+        psd_cleanupIfDisconnected(disc, &connected);
+
+        if (!connected) {
+            usleep(5000000); //if not connected wait a few seconds
+        }
 
         celixThreadMutex_lock(&disc->runningMutex);
         running = disc->running;
@@ -173,8 +245,8 @@ void* psd_refresh(void *data) {
     celixThreadMutex_unlock(&disc->runningMutex);
 
     while (running) {
-        struct timeval start;
-        gettimeofday(&start, NULL);
+        struct timespec start;
+        clock_gettime(CLOCK_REALTIME, &start);
 
         celixThreadMutex_lock(&disc->announcedEndpointsMutex);
         hash_map_iterator_t iter = hashMapIterator_construct(disc->announcedEndpoints);
@@ -199,21 +271,11 @@ void* psd_refresh(void *data) {
         }
         celixThreadMutex_unlock(&disc->announcedEndpointsMutex);
 
-        struct timeval end;
-        gettimeofday(&end, NULL);
-
-        double s = start.tv_sec + (start.tv_usec / 1000.0 / 1000.0 );
-        double e = end.tv_sec + (end.tv_usec / 1000.0 / 1000.0 );
-        double elapsedInsec = e - s;
-        double sleepNeededInSec = disc->sleepInsecBetweenTTLRefresh - elapsedInsec;
-        if (sleepNeededInSec > 0) {
-            celixThreadMutex_lock(&disc->waitMutex);
-            double waitTill = sleepNeededInSec + end.tv_sec + (end.tv_usec / 1000.0 / 1000.0);
-            long sec = (long)waitTill;
-            long nsec = (long)((waitTill - sec) * 1000 * 1000 * 1000);
-            celixThreadCondition_timedwait(&disc->waitCond, &disc->waitMutex, sec, nsec);
-            celixThreadMutex_unlock(&disc->waitMutex);
-        }
+        struct timespec waitTill = start;
+        waitTill.tv_sec += disc->sleepInsecBetweenTTLRefresh;
+        celixThreadMutex_lock(&disc->waitMutex);
+        pthread_cond_timedwait(&disc->waitCond, &disc->waitMutex, &waitTill); //TODO add timedwait abs for celixThread
+        celixThreadMutex_unlock(&disc->waitMutex);
 
         celixThreadMutex_lock(&disc->runningMutex);
         running = disc->running;
@@ -226,7 +288,10 @@ celix_status_t pubsub_discovery_start(pubsub_discovery_t *ps_discovery) {
     celix_status_t status = CELIX_SUCCESS;
 
     celixThread_create(&ps_discovery->watchThread, NULL, psd_watch, ps_discovery);
+    celixThread_setName(&ps_discovery->watchThread, "PubSub ETCD Watch");
     celixThread_create(&ps_discovery->refreshTTLThread, NULL, psd_refresh, ps_discovery);
+    celixThread_setName(&ps_discovery->refreshTTLThread, "PubSub ETCD Refresh TTL");
+
     return status;
 }
 
@@ -244,7 +309,6 @@ celix_status_t pubsub_discovery_stop(pubsub_discovery_t *disc) {
     celixThread_join(disc->watchThread, NULL);
     celixThread_join(disc->refreshTTLThread, NULL);
 
-    //TODO NOTE double lock , check if this is always done in the same order
     celixThreadMutex_lock(&disc->discoveredEndpointsMutex);
     hash_map_iterator_t iter = hashMapIterator_construct(disc->discoveredEndpoints);
     while (hashMapIterator_hasNext(&iter)) {
@@ -367,7 +431,27 @@ celix_status_t pubsub_discovery_removeEndpoint(void *handle, const celix_propert
 
 static void pubsub_discovery_addDiscoveredEndpoint(pubsub_discovery_t *disc, celix_properties_t *endpoint) {
     const char *uuid = celix_properties_get(endpoint, PUBSUB_ENDPOINT_UUID, NULL);
-    assert(uuid != NULL); //note endpoint should already be check to be valid pubsubEndpoint_isValid
+    const char *fwUUID = celix_properties_get(endpoint, PUBSUB_ENDPOINT_FRAMEWORK_UUID, NULL);
+
+    //note endpoint should already be check to be valid pubsubEndpoint_isValid
+    assert(uuid != NULL);
+    assert(fwUUID != NULL);
+
+    if (fwUUID != NULL && strncmp(disc->fwUUID, fwUUID, strlen(disc->fwUUID)) == 0) {
+        if (disc->verbose) {
+            printf("[PSD] Ignoring endpoint %s from own framework\n", uuid);
+        }
+        return;
+    }
+
+    if (disc->verbose) {
+        const char *uuid = celix_properties_get(endpoint, PUBSUB_ENDPOINT_UUID, "!Error!");
+        const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, "!Error!");
+        const char *admin = celix_properties_get(endpoint, PUBSUB_ENDPOINT_ADMIN_TYPE, "!Error!");
+        const char *ser = celix_properties_get(endpoint, PUBSUB_SERIALIZER_TYPE_KEY, "!Error!");
+        printf("[PSD] Adding discovered endpoint %s. type is %s, admin is %s, serializer is %s.\n",
+               uuid, type, admin, ser);
+    }
 
     celixThreadMutex_lock(&disc->discoveredEndpointsMutex);
     bool exists = hashMap_containsKey(disc->discoveredEndpoints, (void*)uuid);
@@ -383,7 +467,7 @@ static void pubsub_discovery_addDiscoveredEndpoint(pubsub_discovery_t *disc, cel
         }
         celixThreadMutex_unlock(&disc->discoveredEndpointsListenersMutex);
     } else {
-        fprintf(stderr, "[PSD] Warning unexpected update from an already existing endpoint (uuid is %s)\n", uuid);
+        //assuming this is the same endpoint -> ignore
     }
 }
 
@@ -392,6 +476,20 @@ static void pubsub_discovery_removeDiscoveredEndpoint(pubsub_discovery_t *disc, 
     bool exists = hashMap_containsKey(disc->discoveredEndpoints, (void*)uuid);
     celix_properties_t *endpoint = hashMap_remove(disc->discoveredEndpoints, (void*)uuid);
     celixThreadMutex_unlock(&disc->discoveredEndpointsMutex);
+
+    if (endpoint == NULL) {
+        //NOTE assuming this was a endpoint from this framework -> ignore
+        return;
+    }
+
+    if (disc->verbose) {
+        const char *uuid = celix_properties_get(endpoint, PUBSUB_ENDPOINT_UUID, "!Error!");
+        const char *type = celix_properties_get(endpoint, PUBSUB_ENDPOINT_TYPE, "!Error!");
+        const char *admin = celix_properties_get(endpoint, PUBSUB_ENDPOINT_ADMIN_TYPE, "!Error!");
+        const char *ser = celix_properties_get(endpoint, PUBSUB_SERIALIZER_TYPE_KEY, "!Error!");
+        printf("[PSD] Removing discovered endpoint %s. type is %s, admin is %s, serializer is %s.\n",
+               uuid, type, admin, ser);
+    }
 
     if (exists && endpoint != NULL) {
         celixThreadMutex_lock(&disc->discoveredEndpointsListenersMutex);

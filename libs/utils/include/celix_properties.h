@@ -60,11 +60,15 @@ void celix_properties_unset(celix_properties_t *properties, const char *key);
 celix_properties_t* celix_properties_copy(const celix_properties_t *properties);
 
 long celix_properties_getAsLong(const celix_properties_t *props, const char *key, long defaultValue);
-
 void celix_properties_setLong(celix_properties_t *props, const char *key, long value);
 
 bool celix_properties_getAsBool(celix_properties_t *props, const char *key, bool defaultValue);
 void celix_properties_setBool(celix_properties_t *props, const char *key, bool val);
+
+
+void celix_properties_setDouble(celix_properties_t *props, const char *key, double val);
+double celix_properties_getAsDouble(const celix_properties_t *props, const char *key, double defaultValue);
+
 
 #define CELIX_PROPERTIES_FOR_EACH(props, key) \
     for(hash_map_iterator_t iter = hashMapIterator_construct(props); \

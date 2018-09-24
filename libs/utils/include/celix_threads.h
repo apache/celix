@@ -54,6 +54,11 @@ static const celix_thread_t celix_thread_default = {0, 0};
 celix_status_t
 celixThread_create(celix_thread_t *new_thread, celix_thread_attr_t *attr, celix_thread_start_t func, void *data);
 
+/**
+ * If supported by the platform sets the name of the thread.
+ */
+void celixThread_setName(celix_thread_t *thread, const char *threadName);
+
 void celixThread_exit(void *exitStatus);
 
 celix_status_t celixThread_detach(celix_thread_t thread);
@@ -123,7 +128,7 @@ celix_status_t celixThreadCondition_destroy(celix_thread_cond_t *condition);
 
 celix_status_t celixThreadCondition_wait(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex);
 
-celix_status_t celixThreadCondition_timedwait(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex, long seconds, long nanoseconds);
+celix_status_t celixThreadCondition_timedwaitRelative(celix_thread_cond_t *cond, celix_thread_mutex_t *mutex, long seconds, long nanoseconds);
 
 celix_status_t celixThreadCondition_broadcast(celix_thread_cond_t *cond);
 

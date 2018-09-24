@@ -2822,7 +2822,7 @@ void celix_framework_useBundle(framework_t *fw, bool onlyActive, long bundleId, 
         bundle_t *bnd = framework_getBundleById(fw, bundleId);
         if (bnd != NULL) {
             celix_bundle_state_e bndState = celix_bundle_getState(bnd);
-            if (onlyActive && bndState == OSGI_FRAMEWORK_BUNDLE_ACTIVE) {
+            if (onlyActive && (bndState == OSGI_FRAMEWORK_BUNDLE_ACTIVE || bndState == OSGI_FRAMEWORK_BUNDLE_STARTING)) {
                 use(callbackHandle, bnd);
             } else if (!onlyActive) {
                 use(callbackHandle, bnd);

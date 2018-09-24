@@ -357,6 +357,7 @@ typedef struct celix_service_tracker_options {
     .filter.versionRange = NULL, \
     .filter.filter = NULL, \
     .filter.serviceLanguage = NULL, \
+    .filter.ignoreServiceLanguage = false, \
     .callbackHandle = NULL, \
     .set = NULL, \
     .add = NULL, \
@@ -795,6 +796,16 @@ const char* celix_bundleContext_getProperty(celix_bundle_context_t *ctx, const c
  * @return The property value for the provided key or the provided defaultValue is the key is not found.
  */
 long celix_bundleContext_getPropertyAsLong(celix_bundle_context_t *ctx, const char *key, long defaultValue);
+
+/**
+ * Gets the config property as converts it to double. If the property is not a valid double, the defaultValue will be returned.
+ * The rest of the behaviour is the same as celix_bundleContext_getProperty.
+
+ * @param key The key of the property to receive.
+ * @param defaultVal The default value to use if the property is not found.
+ * @return The property value for the provided key or the provided defaultValue is the key is not found.
+ */
+double celix_bundleContext_getPropertyAsDouble(celix_bundle_context_t *ctx, const char *key, double defaultValue);
 
 /**
  * Gets the config property as converts it to bool. If the property is not a valid bool, the defaultValue will be returned.

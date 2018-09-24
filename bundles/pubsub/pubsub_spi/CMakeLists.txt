@@ -16,7 +16,7 @@
 # under the License.
 
 add_library(pubsub_spi STATIC
-		src/pubsub_admin_match.c
+        src/pubsub_utils_match.c
         src/pubsub_endpoint.c
         src/pubsub_utils.c
 )

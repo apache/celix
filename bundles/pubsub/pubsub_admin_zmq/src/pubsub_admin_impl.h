@@ -39,11 +39,13 @@
 
 #include "pubsub_psa_zmq_constants.h"
 #include "pubsub_admin.h"
-#include "pubsub_admin_match.h"
+#include "pubsub_utils.h"
 #include "log_helper.h"
 #include "command.h"
 
-struct pubsub_admin {
+#define PUBSUB_PSA_ZMQ_PSA_TYPE		"zmq"
+
+typedef struct pubsub_admin {
 
 	bundle_context_pt bundle_context;
 	log_helper_pt loghelper;
@@ -82,31 +84,37 @@ struct pubsub_admin {
     unsigned int basePort;
     unsigned int maxPort;
 
-	command_service_t shellCmdService;
-	service_registration_pt  shellCmdReg;
-
 	double qosSampleScore;
 	double qosControlScore;
 	double defaultScore;
 
 	bool verbose;
-};
+} pubsub_admin_t;
 
-celix_status_t pubsubAdmin_create(bundle_context_pt context, pubsub_admin_pt *admin);
-celix_status_t pubsubAdmin_destroy(pubsub_admin_pt admin);
+celix_status_t pubsubAdmin_create(bundle_context_pt context, pubsub_admin_t **admin);
+celix_status_t pubsubAdmin_destroy(pubsub_admin_t *admin);
 
-celix_status_t pubsubAdmin_addSubscription(pubsub_admin_pt admin,pubsub_endpoint_pt subEP);
-celix_status_t pubsubAdmin_removeSubscription(pubsub_admin_pt admin,pubsub_endpoint_pt subEP);
+void pubsubAdmin_addSerializer(void * handle, void *svc, const celix_properties_t *properties);
+void pubsubAdmin_removeSerializer(void * handle, void *svc, const celix_properties_t *properties);
 
-celix_status_t pubsubAdmin_addPublication(pubsub_admin_pt admin,pubsub_endpoint_pt pubEP);
-celix_status_t pubsubAdmin_removePublication(pubsub_admin_pt admin,pubsub_endpoint_pt pubEP);
 
-celix_status_t pubsubAdmin_closeAllPublications(pubsub_admin_pt admin,char* scope, char* topic);
-celix_status_t pubsubAdmin_closeAllSubscriptions(pubsub_admin_pt admin,char* scope,char* topic);
 
-celix_status_t pubsubAdmin_serializerAdded(void * handle, service_reference_pt reference, void * service);
-celix_status_t pubsubAdmin_serializerRemoved(void * handle, service_reference_pt reference, void * service);
+//for the pubsub_admin_service
 
-celix_status_t pubsubAdmin_matchEndpoint(pubsub_admin_pt admin, pubsub_endpoint_pt endpoint, double* score);
+celix_status_t pubsubAdmin_matchPublisher(void *handle, long svcRequesterBndId, const celix_filter_t *svcFilter, double *score, long *serializerSvcId);
+celix_status_t pubsubAdmin_matchSubscriber(void *handle, long svcProviderBndId, const celix_properties_t *svcProperties, double *score, long *serializerSvcId);
+celix_status_t pubsubAdmin_matchEndpoint(void *handle, const celix_properties_t *endpoint, double *score);
+
+//note endpoint is owned by caller
+celix_status_t pubsubAdmin_setupTopicSender(void *handle, const char *scope, const char *topic, long serializerSvcId, celix_properties_t **publisherEndpoint);
+celix_status_t pubsubAdmin_teardownTopicSender(void *handle, const char *scope, const char *topic);
+
+//note endpoint is owned by caller
+celix_status_t pubsubAdmin_setupTopicReciever(void *handle, const char *scope, const char *topic, long serializerSvcId, celix_properties_t **subscriberEndpoint);
+celix_status_t pubsubAdmin_teardownTopicReciever(void *handle, const char *scope, const char *topic);
+
+celix_status_t pubsubAdmin_addEndpoint(void *handle, const celix_properties_t *endpoint);
+celix_status_t pubsubAdmin_removeEndpoint(void *handle, const celix_properties_t *endpoint);
+
 
 #endif /* PUBSUB_ADMIN_ZMQ_IMPL_H_ */
