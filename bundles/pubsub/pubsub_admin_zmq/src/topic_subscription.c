@@ -110,7 +110,7 @@ typedef struct msg_map_entry{
 static celix_status_t topicsub_subscriberTracked(void * handle, service_reference_pt reference, void * service);
 static celix_status_t topicsub_subscriberUntracked(void * handle, service_reference_pt reference, void * service);
 static void* zmq_recv_thread_func(void* arg);
-static bool checkVersion(version_pt msgVersion,pubsub_msg_header_pt hdr);
+static bool checkVersion(version_pt msgVersion,receiver hdr);
 static void sigusr1_sighandler(int signo);
 static int pubsub_localMsgTypeIdForMsgType(void* handle, const char* msgType, unsigned int* msgTypeId);
 static int pubsub_getMultipart(void *handle, unsigned int msgTypeId, bool retain, void **part);

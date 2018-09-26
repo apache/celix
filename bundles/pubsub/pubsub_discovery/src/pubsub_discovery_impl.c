@@ -63,8 +63,11 @@ celix_status_t pubsub_discovery_create(bundle_context_pt context, pubsub_discove
     celixThreadMutex_create(&(*ps_discovery)->discoveredEndpointsListenersMutex, NULL);
     celixThreadMutex_create(&(*ps_discovery)->announcedEndpointsMutex, NULL);
     celixThreadMutex_create(&(*ps_discovery)->discoveredEndpointsMutex, NULL);
-    celixThreadMutex_create(&(*ps_discovery)->waitMutex, NULL);
-    celixThreadCondition_init(&(*ps_discovery)->waitCond, NULL);
+    pthread_mutex_init(&(*ps_discovery)->waitMutex, NULL);
+    pthread_condattr_t attr;
+    pthread_condattr_init(&attr);
+    pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
+    pthread_cond_init(&(*ps_discovery)->waitCond, &attr);
     celixThreadMutex_create(&(*ps_discovery)->runningMutex, NULL);
     (*ps_discovery)->running = true;
 
@@ -102,8 +105,8 @@ celix_status_t pubsub_discovery_destroy(pubsub_discovery_t *ps_discovery) {
     celixThreadMutex_unlock(&ps_discovery->announcedEndpointsMutex);
     celixThreadMutex_destroy(&ps_discovery->announcedEndpointsMutex);
 
-    celixThreadMutex_destroy(&ps_discovery->waitMutex);
-    celixThreadCondition_destroy(&ps_discovery->waitCond);
+    pthread_mutex_destroy(&ps_discovery->waitMutex);
+    pthread_cond_destroy(&ps_discovery->waitCond);
 
     celixThreadMutex_destroy(&ps_discovery->runningMutex);
 
@@ -246,7 +249,7 @@ void* psd_refresh(void *data) {
 
     while (running) {
         struct timespec start;
-        clock_gettime(CLOCK_REALTIME, &start);
+        clock_gettime(CLOCK_MONOTONIC, &start);
 
         celixThreadMutex_lock(&disc->announcedEndpointsMutex);
         hash_map_iterator_t iter = hashMapIterator_construct(disc->announcedEndpoints);
@@ -273,9 +276,9 @@ void* psd_refresh(void *data) {
 
         struct timespec waitTill = start;
         waitTill.tv_sec += disc->sleepInsecBetweenTTLRefresh;
-        celixThreadMutex_lock(&disc->waitMutex);
-        pthread_cond_timedwait(&disc->waitCond, &disc->waitMutex, &waitTill); //TODO add timedwait abs for celixThread
-        celixThreadMutex_unlock(&disc->waitMutex);
+        pthread_mutex_lock(&disc->waitMutex);
+        pthread_cond_timedwait(&disc->waitCond, &disc->waitMutex, &waitTill); //TODO add timedwait abs for celixThread (including MONOTONIC ..)
+        pthread_mutex_unlock(&disc->waitMutex);
 
         celixThreadMutex_lock(&disc->runningMutex);
         running = disc->running;
@@ -438,9 +441,9 @@ static void pubsub_discovery_addDiscoveredEndpoint(pubsub_discovery_t *disc, cel
     assert(fwUUID != NULL);
 
     if (fwUUID != NULL && strncmp(disc->fwUUID, fwUUID, strlen(disc->fwUUID)) == 0) {
-        if (disc->verbose) {
-            printf("[PSD] Ignoring endpoint %s from own framework\n", uuid);
-        }
+//        if (disc->verbose) {
+//            printf("[PSD] Ignoring endpoint %s from own framework\n", uuid);
+//        }
         return;
     }
 
@@ -552,4 +555,11 @@ static char* pubsub_discovery_createJsonEndpoint(const celix_properties_t *props
     char* str = json_dumps(jsEndpoint, JSON_COMPACT);
     json_decref(jsEndpoint);
     return str;
+}
+
+celix_status_t pubsub_discovery_executeCommand(void *handle, char * commandLine __attribute__((unused)), FILE *os, FILE *errorStream __attribute__((unused))) {
+    //pubsub_discovery_t *psd = handle;
+    //TODO
+    fprintf(os, "TODO\n");
+    return CELIX_SUCCESS;
 }

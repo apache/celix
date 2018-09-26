@@ -25,6 +25,8 @@ add_celix_bundle(celix_pubsub_admin_udp_multicast
         src/psa_activator.c
 		src/pubsub_udpmc_admin.c
 		src/pubsub_udpmc_topic_sender.c
+		src/pubsub_udpmc_topic_receiver.c
+		src/pubsub_udpmc_common.c
         #src/pubsub_admin_impl.c
         #src/topic_subscription.c
         #src/topic_publication.c

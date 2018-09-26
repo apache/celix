@@ -183,7 +183,7 @@ double pubsub_utils_matchSubscriber(
 		score = PUBSUB_ADMIN_NO_MATCH_SCORE; //no serializer, no match
 	}
 
-	printf("Score subscriber service match for psa type %s is %f", adminType, score);
+	printf("Score subscriber service match for psa type %s is %f\n", adminType, score);
 
 	if (outSerializerSvcId != NULL) {
 		*outSerializerSvcId = serializerSvcId;
@@ -196,35 +196,32 @@ double pubsub_utils_matchSubscriber(
 	return score;
 }
 
-double pubsub_utils_matchEndpoint(
+bool pubsub_utils_matchEndpoint(
 		celix_bundle_context_t *ctx,
 		const celix_properties_t *ep,
 		const char *adminType,
-		double sampleScore,
-		double controlScore,
-		double defaultScore,
 		long *outSerializerSvcId) {
 
-	const char *requested_admin 		= NULL;
-	const char *requested_qos			= NULL;
-	if (ep != NULL) {
-		requested_admin = celix_properties_get(ep, PUBSUB_ENDPOINT_ADMIN_TYPE, NULL);
-		requested_qos = celix_properties_get(ep, PUBSUB_UTILS_QOS_ATTRIBUTE_KEY, NULL);
+	bool psaMatch = false;
+	const char *configured_admin = celix_properties_get(ep, PUBSUB_ENDPOINT_ADMIN_TYPE, NULL);
+	if (configured_admin != NULL) {
+		psaMatch = strncmp(configured_admin, adminType, strlen(adminType)) == 0;
 	}
 
-	double score = getPSAScore(requested_admin, requested_qos, adminType, sampleScore, controlScore, defaultScore);
-
-	const char *requested_serializer = celix_properties_get(ep, PUBSUB_ENDPOINT_SERIALIZER, NULL);
-	long serializerSvcId = getPSASerializer(ctx, requested_serializer);
-	if (serializerSvcId < 0) {
-		score = PUBSUB_ADMIN_NO_MATCH_SCORE; //no serializer, no match
+	bool serMatch = false;
+	long serializerSvcId = -1L;
+	if (psaMatch) {
+		const char *configured_serializer = celix_properties_get(ep, PUBSUB_ENDPOINT_SERIALIZER, NULL);
+		serializerSvcId = getPSASerializer(ctx, configured_serializer);
+		serMatch = serializerSvcId >= 0;
 	}
 
-	printf("Score endpoint match for psa type %s is %f", adminType, score);
+	bool match = psaMatch && serMatch;
+	printf("Match for endpoint for psa type %s is %s\n", adminType, match ? "true" : "false");
 
 	if (outSerializerSvcId != NULL) {
 		*outSerializerSvcId = serializerSvcId;
 	}
 
-	return score;
+	return match;
 }

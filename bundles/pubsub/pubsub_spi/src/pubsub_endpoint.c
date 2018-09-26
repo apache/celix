@@ -85,7 +85,14 @@ static void pubsubEndpoint_setFields(celix_properties_t *ep, const char* fwUUID,
 	}
 }
 
-celix_properties_t* pubsubEndpoint_create(const char* fwUUID, const char* scope, const char* topic, const char* pubsubType, const char* adminType, const char *serType, celix_properties_t *topic_props) {
+celix_properties_t* pubsubEndpoint_create(
+        const char* fwUUID,
+        const char* scope,
+        const char* topic,
+        const char* pubsubType,
+        const char* adminType,
+        const char *serType,
+        celix_properties_t *topic_props) {
 	celix_properties_t *ep = properties_create();
 	pubsubEndpoint_setFields(ep, fwUUID, scope, topic, pubsubType, adminType, serType, topic_props);
 	if (!pubsubEndpoint_isValid(ep, true, true)) {

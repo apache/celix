@@ -16,31 +16,25 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * pubsub_common.h
- *
- *  \date       Sep 17, 2015
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
-#ifndef PUBSUB_COMMON_H_
-#define PUBSUB_COMMON_H_
+#include "pubsub_udpmc_common.h"
 
-#define PUBSUB_ANNOUNCE_ENDPOINT_LISTENER_SERVICE	"pubsub_announce_endpoint_listener"
-#define PUBSUB_DISCOVERED_ENDPOINT_LISTENER_SERVICE	"pubsub_discovered_endpoint_listener"
+int psa_udpmc_localMsgTypeIdForMsgType(void* handle __attribute__((unused)), const char* msgType, unsigned int* msgTypeId) {
+    *msgTypeId = utils_stringHash(msgType);
+    return 0;
+}
 
-#define MAX_SCOPE_LEN                           	1024
-#define MAX_TOPIC_LEN								1024
+bool psa_udpmc_checkVersion(version_pt msgVersion, pubsub_msg_header_t *hdr) {
+    bool check=false;
+    int major=0,minor=0;
 
-struct pubsub_msg_header{
-	char topic[MAX_TOPIC_LEN];
-	unsigned int type;
-	unsigned char major;
-	unsigned char minor;
-};
+    if(msgVersion!=NULL){
+        version_getMajor(msgVersion,&major);
+        version_getMinor(msgVersion,&minor);
+        if(hdr->major==((unsigned char)major)){ /* Different major means incompatible */
+            check = (hdr->minor>=((unsigned char)minor)); /* Compatible only if the provider has a minor equals or greater (means compatible update) */
+        }
+    }
 
-typedef struct pubsub_msg_header pubsub_msg_header_t;
-
-
-#endif /* PUBSUB_COMMON_H_ */
+    return check;
+}

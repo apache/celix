@@ -60,13 +60,10 @@ double pubsub_utils_matchSubscriber(
         double defaultScore,
         long *outSerializerSvcId);
 
-double pubsub_utils_matchEndpoint(
+bool pubsub_utils_matchEndpoint(
         celix_bundle_context_t *ctx,
         const celix_properties_t *endpoint,
         const char *adminType,
-        double sampleScore,
-        double controlScore,
-        double defaultScore,
         long *outSerializerSvcId);
 
 

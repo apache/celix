@@ -275,7 +275,7 @@ long celix_bundleContext_trackServices(
 /**
  * Service Tracker Options used to fine tune which services to track and the callback to be used for the tracked services.
  */
-typedef struct celix_service_tracker_options {
+typedef struct celix_service_tracking_options {
     /**
      * The service filter options, used to setup the filter for the service to track.
      */

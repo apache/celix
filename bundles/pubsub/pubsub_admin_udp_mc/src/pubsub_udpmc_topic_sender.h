@@ -23,7 +23,13 @@
 
 typedef struct pubsub_updmc_topic_sender pubsub_updmc_topic_sender_t;
 
-pubsub_updmc_topic_sender_t* pubsub_udpmcTopicSender_create(celix_bundle_context_t *ctx, /*TODO rest args*/ const char *scope, const char *topic, long serializerSvcId);
+pubsub_updmc_topic_sender_t* pubsub_udpmcTopicSender_create(
+        celix_bundle_context_t *ctx,
+        const char *scope,
+        const char *topic,
+        long serializerSvcId,
+        int sendSocket,
+        const char *bindIP);
 void pubsub_udpmcTopicSender_destroy(pubsub_updmc_topic_sender_t *sender);
 
 const char* pubsub_udpmcTopicSender_psaType(pubsub_updmc_topic_sender_t *sender);
@@ -31,6 +37,8 @@ const char* pubsub_udpmcTopicSender_serializerType(pubsub_updmc_topic_sender_t *
 const char* pubsub_udpmcTopicSender_scope(pubsub_updmc_topic_sender_t *sender);
 const char* pubsub_udpmcTopicSender_topic(pubsub_updmc_topic_sender_t *sender);
 const char* pubsub_udpmcTopicSender_socketAddress(pubsub_updmc_topic_sender_t *sender);
+long pubsub_udpmcTopicSender_socketPort(pubsub_updmc_topic_sender_t *sender);
+
 //TODO connections etc
 
 void pubsub_udpmcTopicSender_connectTo(pubsub_updmc_topic_sender_t *sender, const celix_properties_t *endpoint);

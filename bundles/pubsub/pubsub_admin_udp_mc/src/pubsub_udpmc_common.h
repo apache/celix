@@ -16,31 +16,24 @@
  *specific language governing permissions and limitations
  *under the License.
  */
-/*
- * pubsub_common.h
- *
- *  \date       Sep 17, 2015
- *  \author    	<a href="mailto:dev@celix.apache.org">Apache Celix Project Team</a>
- *  \copyright	Apache License, Version 2.0
- */
 
-#ifndef PUBSUB_COMMON_H_
-#define PUBSUB_COMMON_H_
+#ifndef CELIX_PUBSUB_UDPMC_COMMON_H
+#define CELIX_PUBSUB_UDPMC_COMMON_H
 
-#define PUBSUB_ANNOUNCE_ENDPOINT_LISTENER_SERVICE	"pubsub_announce_endpoint_listener"
-#define PUBSUB_DISCOVERED_ENDPOINT_LISTENER_SERVICE	"pubsub_discovered_endpoint_listener"
+#include <utils.h>
 
-#define MAX_SCOPE_LEN                           	1024
-#define MAX_TOPIC_LEN								1024
+#include "version.h"
+#include "pubsub_common.h"
 
-struct pubsub_msg_header{
-	char topic[MAX_TOPIC_LEN];
-	unsigned int type;
-	unsigned char major;
-	unsigned char minor;
-};
+typedef struct pubsub_udp_msg {
+    struct pubsub_msg_header header;
+    unsigned int payloadSize;
+    char payload[];
+} pubsub_udp_msg_t;
 
-typedef struct pubsub_msg_header pubsub_msg_header_t;
+int psa_udpmc_localMsgTypeIdForMsgType(void* handle __attribute__((unused)), const char* msgType, unsigned int* msgTypeId);
+
+bool psa_udpmc_checkVersion(version_pt msgVersion, pubsub_msg_header_t *hdr);
 
 
-#endif /* PUBSUB_COMMON_H_ */
+#endif //CELIX_PUBSUB_UDPMC_COMMON_H

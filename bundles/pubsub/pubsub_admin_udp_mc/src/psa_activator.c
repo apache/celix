@@ -59,8 +59,8 @@ int psa_udpmc_start(psa_udpmc_activator_t *act, celix_bundle_context_t *ctx) {
 		psaSvc->matchEndpoint = pubsub_udpmcAdmin_matchEndpoint;
 		psaSvc->setupTopicSender = pubsub_udpmcAdmin_setupTopicSender;
 		psaSvc->teardownTopicSender = pubsub_udpmcAdmin_teardownTopicSender;
-		psaSvc->setupTopicReciever = pubsub_udpmcAdmin_setupTopicReciever;
-		psaSvc->teardownTopicReciever = pubsub_udpmcAdmin_teardownTopicReciever;
+		psaSvc->setupTopicReciever = pubsub_udpmcAdmin_setupTopicReceiver;
+		psaSvc->teardownTopicReciever = pubsub_udpmcAdmin_teardownTopicReceiver;
 		psaSvc->addEndpoint = pubsub_udpmcAdmin_addEndpoint;
 		psaSvc->removeEndpoint = pubsub_udpmcAdmin_removeEndpoint;
 
@@ -78,7 +78,7 @@ int psa_udpmc_start(psa_udpmc_activator_t *act, celix_bundle_context_t *ctx) {
 		celix_properties_set(props, OSGI_SHELL_COMMAND_NAME, "psa_udpmc");
 		celix_properties_set(props, OSGI_SHELL_COMMAND_USAGE, "psa_udpmc");
 		celix_properties_set(props, OSGI_SHELL_COMMAND_DESCRIPTION, "Print the information about the TopicSender and TopicReceivers for the UDPMC PSA");
-		celix_bundleContext_registerService(ctx, &act->cmdSvc, OSGI_SHELL_COMMAND_SERVICE_NAME, props);
+		act->cmdSvcId = celix_bundleContext_registerService(ctx, &act->cmdSvc, OSGI_SHELL_COMMAND_SERVICE_NAME, props);
 	}
 
 	return status;

@@ -83,7 +83,7 @@ typedef struct pubsub_topology_manager {
 
 typedef struct pstm_discovered_endpoint_entry {
 	const char *uuid;
-	long selectedPsaSvcId;
+	long selectedPsaSvcId; // -1L, indicates no selected psa
 	int usageCount; //note that discovered endpoints can be found multiple times by different pubsub discovery components
 	celix_properties_t *endpoint;
 } pstm_discovered_endpoint_entry_t;
@@ -91,12 +91,19 @@ typedef struct pstm_discovered_endpoint_entry {
 typedef struct pstm_topic_receiver_or_sender_entry {
 	char *scopeAndTopicKey; //key of the combined value of the scope and topic
 	celix_properties_t *endpoint;
-	const char *topic;
-	const char *scope;
-	const char *endpointUUID;
+	char *topic;
+	char *scope;
 	int usageCount; //nr of subscriber service for the topic receiver (matching scope & topic)
 	long selectedPsaSvcId;
 	long selectedSerializerSvcId;
+	long bndId;
+	bool setup;
+
+	//for sender entry
+	celix_filter_t *publisherFilter;
+
+	//for receiver entry
+	celix_properties_t *subscriberProperties;
 } pstm_topic_receiver_or_sender_entry_t;
 
 celix_status_t pubsub_topologyManager_create(bundle_context_pt context, log_helper_pt logHelper, pubsub_topology_manager_t **manager);

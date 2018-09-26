@@ -76,7 +76,7 @@ typedef struct publish_bundle_bound_service {
 
 
 typedef struct pubsub_msg{
-	pubsub_msg_header_pt header;
+	pubsub_msg_header_t *header;
 	char* payload;
 	unsigned int payloadSize;
 } pubsub_msg_t;
