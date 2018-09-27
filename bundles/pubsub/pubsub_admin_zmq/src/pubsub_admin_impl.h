@@ -44,6 +44,9 @@
 #include "command.h"
 
 #define PUBSUB_PSA_ZMQ_PSA_TYPE		"zmq"
+#define PUBSUB_PSA_ZMQ_IP 			"PSA_IP"
+#define PUBSUB_PSA_ZMQ_ITF			"PSA_INTERFACE"
+
 
 typedef struct pubsub_admin {
 

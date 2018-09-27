@@ -20,6 +20,7 @@
 #ifndef PUBSUB_DISCOVERY_IMPL_H_
 #define PUBSUB_DISCOVERY_IMPL_H_
 
+#include <log_helper.h>
 #include "bundle_context.h"
 #include "service_reference.h"
 
@@ -45,7 +46,7 @@
 
 typedef struct pubsub_discovery {
 	bundle_context_pt context;
-	//TODO add logHelper
+	log_helper_t *logHelper;
 
 	celix_thread_mutex_t discoveredEndpointsMutex; //when locked with EndpointsListenersMutex -> first lock this
 	hash_map_pt discoveredEndpoints; //<key = uuid,celix_properties_t /*endpoint*/>>
@@ -77,11 +78,15 @@ typedef struct pubsub_discovery {
 typedef struct pubsub_announce_entry {
 	char *key; //etcd key
 	bool isSet; //whether the value is already set (in case of unavailable etcd server this can linger)
+	int refreshCount;
+	int setCount;
+	int errorCount;
 	celix_properties_t *properties; //the endpoint properties
+	struct timespec createTime; //from MONOTONIC clock
 } pubsub_announce_entry_t;
 
 
-celix_status_t pubsub_discovery_create(bundle_context_pt context, pubsub_discovery_t **out);
+pubsub_discovery_t* pubsub_discovery_create(bundle_context_pt context, log_helper_t *logHelper);
 celix_status_t pubsub_discovery_destroy(pubsub_discovery_t *node_discovery);
 celix_status_t pubsub_discovery_start(pubsub_discovery_t *node_discovery);
 celix_status_t pubsub_discovery_stop(pubsub_discovery_t *node_discovery);

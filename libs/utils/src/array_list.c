@@ -252,14 +252,7 @@ bool arrayList_removeElement(array_list_pt list, void * element) {
 }
 
 void arrayList_clear(array_list_pt list) {
-	unsigned int i;
-	list->modCount++;
-
-	for (i = 0; i < list->size; i++) {
-		// free(list->elementData[i]);
-		memset(&list->elementData[i], 0, sizeof(celix_array_list_entry_t));
-	}
-	list->size = 0;
+	celix_arrayList_clear(list);
 }
 
 bool arrayList_addAll(array_list_pt list, array_list_pt toAdd) {
@@ -558,4 +551,15 @@ void celix_arrayList_removeSize(celix_array_list_t *list, size_t val) {
         memset(&entry, 0, sizeof(entry));
 	entry.sizeVal = val;
 	celix_arrayList_removeEntry(list, entry);
+}
+
+void celix_arrayList_clear(celix_array_list_t *list) {
+	unsigned int i;
+	list->modCount++;
+
+	for (i = 0; i < list->size; i++) {
+		// free(list->elementData[i]);
+		memset(&list->elementData[i], 0, sizeof(celix_array_list_entry_t));
+	}
+	list->size = 0;
 }

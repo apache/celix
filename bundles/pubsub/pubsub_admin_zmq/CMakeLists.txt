@@ -31,14 +31,15 @@ if (BUILD_PUBSUB_PSA_ZMQ)
 	endif()
 
 	add_celix_bundle(celix_pubsub_admin_zmq
-			BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_zmq"
-			VERSION "1.0.0"
-			GROUP "Celix/PubSub"
-			SOURCES
+		BUNDLE_SYMBOLICNAME "apache_celix_pubsub_admin_zmq"
+		VERSION "1.0.0"
+		GROUP "Celix/PubSub"
+		SOURCES
 			src/psa_activator.c
-			src/pubsub_admin_impl.c
-			src/topic_subscription.c
-			src/topic_publication.c
+			src/pubsub_zmq_admin.c
+			src/pubsub_zmq_topic_sender.c
+			src/pubsub_zmq_topic_receiver.c
+			src/pubsub_zmq_common.c
 			${ZMQ_CRYPTO_C}
 	)
 

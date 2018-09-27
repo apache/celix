@@ -73,13 +73,6 @@ struct pubsub_udpmc_admin {
 
 };
 
-typedef struct psa_udpmc_connected_endpoint {
-    void *sender; //if connected endpoint is subscriber. todo type
-    void *receiver; //if connected endpoint is publisher. TODO type
-    char *endpointUUID;
-} psa_udpmc_connected_endpoint_t;
-
-
 static celix_status_t udpmc_getIpAddress(const char* interface, char** ip);
 static celix_status_t pubsub_udpmcAdmin_connectEndpointToReceiver(pubsub_udpmc_admin_t* psa, pubsub_updmc_topic_receiver_t *receiver, const celix_properties_t *endpoint);
 static celix_status_t pubsub_udpmcAdmin_disconnectEndpointFromReceiver(pubsub_udpmc_admin_t* psa, pubsub_updmc_topic_receiver_t *receiver, const celix_properties_t *endpoint);
@@ -540,7 +533,7 @@ celix_status_t pubsub_udpmcAdmin_executeCommand(void *handle, char *commandLine 
         const char *serType = pubsub_udpmcTopicReceiver_serializerType(receiver);
         const char *scope = pubsub_udpmcTopicReceiver_scope(receiver);
         const char *topic = pubsub_udpmcTopicReceiver_topic(receiver);
-        fprintf(out, "|- Topic Sender %s/%s\n", scope, topic);
+        fprintf(out, "|- Topic Receiver %s/%s\n", scope, topic);
         fprintf(out, "   |- psa type        = %s\n", psaType);
         fprintf(out, "   |- serializer type = %s\n", serType);
     }

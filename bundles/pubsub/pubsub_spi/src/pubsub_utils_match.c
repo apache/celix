@@ -126,7 +126,7 @@ double pubsub_utils_matchPublisher(
 		score = PUBSUB_ADMIN_NO_MATCH_SCORE; //no serializer, no match
 	}
 
-	printf("Score publisher service for psa type %s is %f\n", adminType, score);
+//	printf("Score publisher service for psa type %s is %f\n", adminType, score);
 
 	if (outSerializerSvcId != NULL) {
 		*outSerializerSvcId = serializerSvcId;
@@ -183,7 +183,7 @@ double pubsub_utils_matchSubscriber(
 		score = PUBSUB_ADMIN_NO_MATCH_SCORE; //no serializer, no match
 	}
 
-	printf("Score subscriber service match for psa type %s is %f\n", adminType, score);
+//	printf("Score subscriber service match for psa type %s is %f\n", adminType, score);
 
 	if (outSerializerSvcId != NULL) {
 		*outSerializerSvcId = serializerSvcId;
@@ -217,7 +217,7 @@ bool pubsub_utils_matchEndpoint(
 	}
 
 	bool match = psaMatch && serMatch;
-	printf("Match for endpoint for psa type %s is %s\n", adminType, match ? "true" : "false");
+//	printf("Match for endpoint for psa type %s is %s\n", adminType, match ? "true" : "false");
 
 	if (outSerializerSvcId != NULL) {
 		*outSerializerSvcId = serializerSvcId;

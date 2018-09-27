@@ -41,50 +41,53 @@
 #include "pubsub_endpoint.h"
 #include "pubsub_discovery_impl.h"
 
-static celix_properties_t* pubsub_discovery_parseEndpoint(const char *value);
+#define L_DEBUG(...) \
+    logHelper_log(disc->logHelper, OSGI_LOGSERVICE_DEBUG, __VA_ARGS__)
+#define L_INFO(...) \
+    logHelper_log(disc->logHelper, OSGI_LOGSERVICE_INFO, __VA_ARGS__)
+#define L_WARN(...) \
+    logHelper_log(disc->logHelper, OSGI_LOGSERVICE_WARNING, __VA_ARGS__)
+#define L_ERROR(...) \
+    logHelper_log(disc->logHelper, OSGI_LOGSERVICE_ERROR, __VA_ARGS__)
+
+static celix_properties_t* pubsub_discovery_parseEndpoint(pubsub_discovery_t *disc, const char *value);
 static char* pubsub_discovery_createJsonEndpoint(const celix_properties_t *props);
 static void pubsub_discovery_addDiscoveredEndpoint(pubsub_discovery_t *disc, celix_properties_t *endpoint);
 static void pubsub_discovery_removeDiscoveredEndpoint(pubsub_discovery_t *disc, const char *uuid);
 
 /* Discovery activator functions */
-celix_status_t pubsub_discovery_create(bundle_context_pt context, pubsub_discovery_t **ps_discovery) {
-    celix_status_t status = CELIX_SUCCESS;
-
-    *ps_discovery = calloc(1, sizeof(**ps_discovery));
-
-    if (*ps_discovery == NULL) {
-        return CELIX_ENOMEM;
-    }
-
-    (*ps_discovery)->context = context;
-    (*ps_discovery)->discoveredEndpoints = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
-    (*ps_discovery)->announcedEndpoints = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
-    (*ps_discovery)->discoveredEndpointsListeners = hashMap_create(NULL, NULL, NULL, NULL);
-    celixThreadMutex_create(&(*ps_discovery)->discoveredEndpointsListenersMutex, NULL);
-    celixThreadMutex_create(&(*ps_discovery)->announcedEndpointsMutex, NULL);
-    celixThreadMutex_create(&(*ps_discovery)->discoveredEndpointsMutex, NULL);
-    pthread_mutex_init(&(*ps_discovery)->waitMutex, NULL);
+pubsub_discovery_t* pubsub_discovery_create(bundle_context_pt context, log_helper_t *logHelper) {
+    pubsub_discovery_t *disc = calloc(1, sizeof(*disc));
+    disc->logHelper = logHelper;
+    disc->context = context;
+    disc->discoveredEndpoints = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+    disc->announcedEndpoints = hashMap_create(utils_stringHash, NULL, utils_stringEquals, NULL);
+    disc->discoveredEndpointsListeners = hashMap_create(NULL, NULL, NULL, NULL);
+    celixThreadMutex_create(&disc->discoveredEndpointsListenersMutex, NULL);
+    celixThreadMutex_create(&disc->announcedEndpointsMutex, NULL);
+    celixThreadMutex_create(&disc->discoveredEndpointsMutex, NULL);
+    pthread_mutex_init(&disc->waitMutex, NULL);
     pthread_condattr_t attr;
     pthread_condattr_init(&attr);
     pthread_condattr_setclock(&attr, CLOCK_MONOTONIC);
-    pthread_cond_init(&(*ps_discovery)->waitCond, &attr);
-    celixThreadMutex_create(&(*ps_discovery)->runningMutex, NULL);
-    (*ps_discovery)->running = true;
+    pthread_cond_init(&disc->waitCond, &attr);
+    celixThreadMutex_create(&disc->runningMutex, NULL);
+    disc->running = true;
 
 
-    (*ps_discovery)->verbose = celix_bundleContext_getPropertyAsBool(context, PUBSUB_ETCD_DISCOVERY_VERBOSE_KEY, PUBSUB_ETCD_DISCOVERY_DEFAULT_VERBOSE);
+    disc->verbose = celix_bundleContext_getPropertyAsBool(context, PUBSUB_ETCD_DISCOVERY_VERBOSE_KEY, PUBSUB_ETCD_DISCOVERY_DEFAULT_VERBOSE);
 
     const char* etcdIp = celix_bundleContext_getProperty(context, PUBSUB_DISCOVERY_SERVER_IP_KEY, PUBSUB_DISCOVERY_SERVER_IP_DEFAULT);
     long etcdPort = celix_bundleContext_getPropertyAsLong(context, PUBSUB_DISCOVERY_SERVER_PORT_KEY, PUBSUB_DISCOVERY_SERVER_PORT_DEFAULT);
     long ttl = celix_bundleContext_getPropertyAsLong(context, PUBSUB_DISCOVERY_ETCD_TTL_KEY, PUBSUB_DISCOVERY_ETCD_TTL_DEFAULT);
 
     etcd_init(etcdIp, (int)etcdPort, ETCDLIB_NO_CURL_INITIALIZATION);
-    (*ps_discovery)->ttlForEntries = (int)ttl;
-    (*ps_discovery)->sleepInsecBetweenTTLRefresh = (int)(((float)ttl)/2.0);
-    (*ps_discovery)->pubsubPath = celix_bundleContext_getProperty(context, PUBSUB_DISCOVERY_SERVER_PATH_KEY, PUBSUB_DISCOVERY_SERVER_PATH_DEFAULT);
-    (*ps_discovery)->fwUUID = celix_bundleContext_getProperty(context, OSGI_FRAMEWORK_FRAMEWORK_UUID, NULL);
+    disc->ttlForEntries = (int)ttl;
+    disc->sleepInsecBetweenTTLRefresh = (int)(((float)ttl)/2.0);
+    disc->pubsubPath = celix_bundleContext_getProperty(context, PUBSUB_DISCOVERY_SERVER_PATH_KEY, PUBSUB_DISCOVERY_SERVER_PATH_DEFAULT);
+    disc->fwUUID = celix_bundleContext_getProperty(context, OSGI_FRAMEWORK_FRAMEWORK_UUID, NULL);
 
-    return status;
+    return disc;
 }
 
 celix_status_t pubsub_discovery_destroy(pubsub_discovery_t *ps_discovery) {
@@ -118,7 +121,7 @@ celix_status_t pubsub_discovery_destroy(pubsub_discovery_t *ps_discovery) {
 
 static void psd_etcdReadCallback(const char *key __attribute__((unused)), const char *value, void* arg) {
     pubsub_discovery_t *disc = arg;
-    celix_properties_t *props = pubsub_discovery_parseEndpoint(value);
+    celix_properties_t *props = pubsub_discovery_parseEndpoint(disc, value);
     if (props != NULL) {
         pubsub_discovery_addDiscoveredEndpoint(disc, props);
     }
@@ -158,7 +161,7 @@ static void psd_watchForChange(pubsub_discovery_t *disc, bool *connectedPtr, lon
             if (strncmp(ETCDLIB_ACTION_CREATE, action, strlen(ETCDLIB_ACTION_CREATE)) == 0 ||
                        strncmp(ETCDLIB_ACTION_SET, action, strlen(ETCDLIB_ACTION_SET)) == 0 ||
                        strncmp(ETCDLIB_ACTION_UPDATE, action, strlen(ETCDLIB_ACTION_UPDATE)) == 0) {
-                celix_properties_t *props = pubsub_discovery_parseEndpoint(value);
+                celix_properties_t *props = pubsub_discovery_parseEndpoint(disc, value);
                 if (props != NULL) {
                     pubsub_discovery_addDiscoveredEndpoint(disc, props);
                 }
@@ -259,16 +262,21 @@ void* psd_refresh(void *data) {
                 //only refresh ttl -> no index update -> no watch trigger
                 int rc = etcd_refresh(entry->key, disc->ttlForEntries);
                 if (rc != ETCDLIB_RC_OK) {
-                    fprintf(stderr, "[PSD] Warning: error refreshing etcd key %s\n", entry->key);
+                    L_ERROR("[PSD] Warning: error refreshing etcd key %s\n", entry->key);
                     entry->isSet = false;
+                    entry->errorCount += 1;
+                } else {
+                    entry->refreshCount += 1;
                 }
             } else {
                 char *str = pubsub_discovery_createJsonEndpoint(entry->properties);
                 int rc = etcd_set(entry->key, str, disc->ttlForEntries, false);
                 if (rc == ETCDLIB_RC_OK) {
                     entry->isSet = true;
+                    entry->setCount += 1;
                 } else {
-                    fprintf(stderr, "[PSD] Warning: error setting endpoint in etcd for key %s\n", entry->key);
+                    L_ERROR("[PSD] Warning: error setting endpoint in etcd for key %s\n", entry->key);
+                    entry->errorCount += 1;
                 }
             }
         }
@@ -337,6 +345,7 @@ celix_status_t pubsub_discovery_stop(pubsub_discovery_t *disc) {
         if (entry->isSet) {
             etcd_del(entry->key);
         }
+        free(entry->key);
         celix_properties_destroy(entry->properties);
         free(entry);
     }
@@ -386,6 +395,7 @@ celix_status_t pubsub_discovery_announceEndpoint(void *handle, const celix_prope
 
     if (valid) {
         pubsub_announce_entry_t *entry = calloc(1, sizeof(*entry));
+        clock_gettime(CLOCK_MONOTONIC, &entry->createTime);
         entry->isSet = false;
         entry->properties = celix_properties_copy(endpoint);
         asprintf(&entry->key, "/pubsub/%s/%s/%s/%s", config, scope, topic, uuid);
@@ -503,11 +513,11 @@ static void pubsub_discovery_removeDiscoveredEndpoint(pubsub_discovery_t *disc, 
         }
         celixThreadMutex_unlock(&disc->discoveredEndpointsListenersMutex);
     } else {
-        fprintf(stderr, "[PSD] Warning unexpected remove from non existing endpoint (uuid is %s)\n", uuid);
+        L_ERROR("[PSD] Warning unexpected remove from non existing endpoint (uuid is %s)\n", uuid);
     }
 }
 
-celix_properties_t* pubsub_discovery_parseEndpoint(const char* etcdValue) {
+celix_properties_t* pubsub_discovery_parseEndpoint(pubsub_discovery_t *disc, const char* etcdValue) {
     properties_t *props = properties_create();
 
     // etcdValue contains the json formatted string
@@ -535,7 +545,7 @@ celix_properties_t* pubsub_discovery_parseEndpoint(const char* etcdValue) {
 
     bool valid = pubsubEndpoint_isValid(props, true, true);
     if (!valid) {
-        fprintf(stderr, "[PSD] Warning retrieved endpoint is not valid\n");
+        L_ERROR("[PSD] Warning retrieved endpoint is not valid\n");
         celix_properties_destroy(props);
         props = NULL;
     }
@@ -558,8 +568,61 @@ static char* pubsub_discovery_createJsonEndpoint(const celix_properties_t *props
 }
 
 celix_status_t pubsub_discovery_executeCommand(void *handle, char * commandLine __attribute__((unused)), FILE *os, FILE *errorStream __attribute__((unused))) {
-    //pubsub_discovery_t *psd = handle;
-    //TODO
-    fprintf(os, "TODO\n");
+    pubsub_discovery_t *disc = handle;
+
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    //TODO add support for query (scope / topic)
+
+    fprintf(os, "\n");
+    fprintf(os, "Discovered Endpoints:\n");
+    celixThreadMutex_lock(&disc->discoveredEndpointsMutex);
+    hash_map_iterator_t iter = hashMapIterator_construct(disc->discoveredEndpoints);
+    while (hashMapIterator_hasNext(&iter)) {
+        celix_properties_t *ep = hashMapIterator_nextValue(&iter);
+        const char *uuid = celix_properties_get(ep, PUBSUB_ENDPOINT_UUID, "!Error!");
+        const char *scope = celix_properties_get(ep, PUBSUB_ENDPOINT_TOPIC_SCOPE, "!Error!");
+        const char *topic = celix_properties_get(ep, PUBSUB_ENDPOINT_TOPIC_NAME, "!Error!");
+        const char *adminType = celix_properties_get(ep, PUBSUB_ENDPOINT_ADMIN_TYPE, "!Error!");
+        const char *serType = celix_properties_get(ep, PUBSUB_ENDPOINT_SERIALIZER, "!Error!");
+        const char *type = celix_properties_get(ep, PUBSUB_ENDPOINT_TYPE, "!Error!");
+        fprintf(os, "Endpoint %s:\n", uuid);
+        fprintf(os, "   |- type          = %s\n", type);
+        fprintf(os, "   |- scope         = %s\n", scope);
+        fprintf(os, "   |- topic         = %s\n", topic);
+        fprintf(os, "   |- admin type    = %s\n", adminType);
+        fprintf(os, "   |- serializer    = %s\n", serType);
+    }
+    celixThreadMutex_unlock(&disc->discoveredEndpointsMutex);
+
+    fprintf(os, "\n");
+    fprintf(os, "Announced Endpoints:\n");
+    celixThreadMutex_lock(&disc->announcedEndpointsMutex);
+    iter = hashMapIterator_construct(disc->announcedEndpoints);
+    while (hashMapIterator_hasNext(&iter)) {
+        pubsub_announce_entry_t *entry = hashMapIterator_nextValue(&iter);
+        const char *uuid = celix_properties_get(entry->properties, PUBSUB_ENDPOINT_UUID, "!Error!");
+        const char *scope = celix_properties_get(entry->properties, PUBSUB_ENDPOINT_TOPIC_SCOPE, "!Error!");
+        const char *topic = celix_properties_get(entry->properties, PUBSUB_ENDPOINT_TOPIC_NAME, "!Error!");
+        const char *adminType = celix_properties_get(entry->properties, PUBSUB_ENDPOINT_ADMIN_TYPE, "!Error!");
+        const char *serType = celix_properties_get(entry->properties, PUBSUB_ENDPOINT_SERIALIZER, "!Error!");
+        const char *type = celix_properties_get(entry->properties, PUBSUB_ENDPOINT_TYPE, "!Error!");
+        int age = (int)(now.tv_sec - entry->createTime.tv_sec);
+        fprintf(os, "Endpoint %s:\n", uuid);
+        fprintf(os, "   |- type          = %s\n", type);
+        fprintf(os, "   |- scope         = %s\n", scope);
+        fprintf(os, "   |- topic         = %s\n", topic);
+        fprintf(os, "   |- admin type    = %s\n", adminType);
+        fprintf(os, "   |- serializer    = %s\n", serType);
+        fprintf(os, "   |- age           = %ds\n", age);
+        fprintf(os, "   |- is set        = %s\n", entry->isSet ? "true" : "false");
+        if (disc->verbose) {
+            fprintf(os, "   |- set count     = %d\n", entry->setCount);
+            fprintf(os, "   |- refresh count = %d\n", entry->refreshCount);
+            fprintf(os, "   |- error count   = %d\n", entry->errorCount);
+        }
+    }
+    celixThreadMutex_unlock(&disc->announcedEndpointsMutex);
+
     return CELIX_SUCCESS;
 }

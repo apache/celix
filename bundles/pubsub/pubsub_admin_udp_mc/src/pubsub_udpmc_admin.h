@@ -33,7 +33,7 @@
 #define PUBSUB_UDPMC_VERBOSE_KEY                    "PSA_UDPMC_VERBOSE"
 
 #define PUBSUB_UDPMC_MULTICAST_IP_PREFIX_DEFAULT    "224.100"
-#define PUBSUB_UDPMC_VERBOSE_DEFAULT                "true"
+#define PUBSUB_UDPMC_VERBOSE_DEFAULT                true
 
 typedef struct pubsub_udpmc_admin pubsub_udpmc_admin_t;
 

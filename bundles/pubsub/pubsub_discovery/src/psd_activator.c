@@ -21,6 +21,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "log_helper.h"
+#include "command.h"
+
 #include "celix_bundle_context.h"
 #include "celix_bundle_activator.h"
 #include "constants.h"
@@ -29,7 +32,6 @@
 #include "pubsub_common.h"
 #include "pubsub_listeners.h"
 #include "pubsub_discovery_impl.h"
-#include "../../../shell/shell/include/command.h"
 
 typedef struct psd_activator {
 	pubsub_discovery_t *pubsub_discovery;
@@ -42,12 +44,17 @@ typedef struct psd_activator {
 
 	command_service_t cmdSvc;
 	long cmdSvcId;
+
+	log_helper_t *loghelper;
 } psd_activator_t;
 
 static celix_status_t psd_start(psd_activator_t *act, celix_bundle_context_t *ctx) {
 	celix_status_t status;
 
-	pubsub_discovery_create(ctx, &act->pubsub_discovery);
+	logHelper_create(ctx, &act->loghelper);
+	logHelper_start(act->loghelper);
+
+	act->pubsub_discovery = pubsub_discovery_create(ctx, act->loghelper);
 	// pubsub_discovery_start needs to be first to initialize
 	status = pubsub_discovery_start(act->pubsub_discovery);
 
@@ -90,6 +97,9 @@ static celix_status_t psd_stop(psd_activator_t *act, celix_bundle_context_t *ctx
 
 	celix_status_t status = pubsub_discovery_stop(act->pubsub_discovery);
 	pubsub_discovery_destroy(act->pubsub_discovery);
+
+	logHelper_stop(act->loghelper);
+	logHelper_destroy(&act->loghelper);
 
 	return status;
 }

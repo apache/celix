@@ -98,6 +98,18 @@ celix_status_t pubsub_topologyManager_destroy(pubsub_topology_manager_t *manager
 
 
 	celixThreadMutex_lock(&manager->announcedEndpoints.mutex);
+	hash_map_iterator_t iter = hashMapIterator_construct(manager->announcedEndpoints.map);
+	while (hashMapIterator_hasNext(&iter)) {
+	    celix_array_list_t *endpoints = hashMapIterator_nextValue(&iter);
+	    if (endpoints != NULL) {
+	        int size = celix_arrayList_size(endpoints);
+	        for (int i = 0; i < size; ++i) {
+	            celix_properties_t *ep = celix_arrayList_get(endpoints, i);
+	            celix_properties_destroy(ep);
+	        }
+	        celix_arrayList_destroy(endpoints);
+	    }
+	}
 	hashMap_destroy(manager->announcedEndpoints.map, false, false);
 	celixThreadMutex_unlock(&manager->announcedEndpoints.mutex);
 	celixThreadMutex_destroy(&manager->announcedEndpoints.mutex);
@@ -108,9 +120,51 @@ celix_status_t pubsub_topologyManager_destroy(pubsub_topology_manager_t *manager
 	celixThreadMutex_destroy(&manager->pubsubadmins.mutex);
 
 	celixThreadMutex_lock(&manager->discoveredEndpoints.mutex);
-	hashMap_destroy(manager->discoveredEndpoints.map, true, false);
+    iter = hashMapIterator_construct(manager->discoveredEndpoints.map);
+    while (hashMapIterator_hasNext(&iter)) {
+        pstm_discovered_endpoint_entry_t *entry = hashMapIterator_nextValue(&iter);
+        if (entry != NULL) {
+            celix_properties_destroy(entry->endpoint);
+            free(entry);
+        }
+    }
+	hashMap_destroy(manager->discoveredEndpoints.map, false, false);
 	celixThreadMutex_unlock(&manager->discoveredEndpoints.mutex);
 	celixThreadMutex_destroy(&manager->discoveredEndpoints.mutex);
+
+    celixThreadMutex_lock(&manager->topicReceivers.mutex);
+    iter = hashMapIterator_construct(manager->topicReceivers.map);
+    while (hashMapIterator_hasNext(&iter)) {
+        pstm_topic_receiver_or_sender_entry_t *entry = hashMapIterator_nextValue(&iter);
+        if (entry != NULL) {
+            free(entry->scopeAndTopicKey);
+            free(entry->scope);
+            free(entry->topic);
+            celix_properties_destroy(entry->subscriberProperties);
+            celix_properties_destroy(entry->endpoint);
+            free(entry);
+        }
+    }
+    hashMap_destroy(manager->topicReceivers.map, false, false);
+    celixThreadMutex_unlock(&manager->topicReceivers.mutex);
+    celixThreadMutex_destroy(&manager->topicReceivers.mutex);
+
+    celixThreadMutex_lock(&manager->topicSenders.mutex);
+    iter = hashMapIterator_construct(manager->topicSenders.map);
+    while (hashMapIterator_hasNext(&iter)) {
+        pstm_topic_receiver_or_sender_entry_t *entry = hashMapIterator_nextValue(&iter);
+        if (entry != NULL) {
+            free(entry->scopeAndTopicKey);
+            free(entry->scope);
+            free(entry->topic);
+            celix_properties_destroy(entry->endpoint);
+            celix_filter_destroy(entry->publisherFilter);
+            free(entry);
+        }
+    }
+    hashMap_destroy(manager->topicSenders.map, false, false);
+    celixThreadMutex_unlock(&manager->topicSenders.mutex);
+    celixThreadMutex_destroy(&manager->topicSenders.mutex);
 
 	free(manager);
 
@@ -180,7 +234,8 @@ void pubsub_topologyManager_psaRemoved(void * handle, void *svc __attribute__((u
             }
 	    }
 	}
-    celixThreadMutex_unlock(&manager->topicReceivers.mutex);
+    celixThreadMutex_unlock(&manager->topicSenders.mutex);
+
     celixThreadMutex_lock(&manager->topicReceivers.mutex);
     iter = hashMapIterator_construct(manager->topicReceivers.map);
     while (hashMapIterator_hasNext(&iter)) {

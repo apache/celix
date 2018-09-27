@@ -34,6 +34,7 @@
 #define ETCD_JSON_DIR                   "dir"
 #define ETCD_JSON_MODIFIEDINDEX         "modifiedIndex"
 #define ETCD_JSON_INDEX                 "index"
+#define ETCD_JSON_ERRORCODE				"errorCode"
 
 #define ETCD_HEADER_INDEX               "X-Etcd-Index: "
 
@@ -258,7 +259,7 @@ int etcd_get_directory(const char* directory, etcd_key_value_callback callback, 
 	} else if (res == CURLE_OPERATION_TIMEDOUT) {
 		retVal = ETCDLIB_RC_TIMEOUT;
 	} else {
-		//TODO return error ?
+		retVal = ETCDLIB_RC_ERROR;
 	}
 
     free(reply.memory);
@@ -361,8 +362,21 @@ int etcd_refresh(const char* key, int ttl) {
 		free(url);
 	}
 
-	if (res == CURLE_OK) {
-		retVal = ETCDLIB_RC_OK;
+	if (res == CURLE_OK && reply.memory != NULL) {
+		json_error_t error;
+		json_t *root = json_loads(reply.memory, 0, &error);
+		if (root != NULL) {
+			json_t *errorCode = json_object_get(root, ETCD_JSON_ERRORCODE);
+			if (errorCode == NULL) {
+				//no curl error and no etcd errorcode reply -> OK
+				retVal = ETCDLIB_RC_OK;
+			} else {
+				retVal = ETCDLIB_RC_ERROR;
+			}
+		} else {
+			retVal = ETCDLIB_RC_ERROR;
+			fprintf(stderr, "[ETCDLIB] Error: %s is not json", reply.memory);
+		}
 	}
 
 	if (reply.memory) {
